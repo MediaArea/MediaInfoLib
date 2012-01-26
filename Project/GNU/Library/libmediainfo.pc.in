@@ -9,5 +9,6 @@ la_name=lib@MediaInfoLib_LibName@.la
 Name: libmediainfo
 Version: @PACKAGE_VERSION@
 Description: MediaInfoLib
-Libs: -L@libdir@ -l@MediaInfoLib_LibName@ -lzen -lz -lpthread
+Requires: libzen
+Libs: -L@libdir@ -l@MediaInfoLib_LibName@ -lz -lpthread
 Cflags: -I@includedir@ @MediaInfoLib_CXXFLAGS@

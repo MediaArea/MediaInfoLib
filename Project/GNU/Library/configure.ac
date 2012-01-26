@@ -442,7 +442,6 @@ else
 		else
 			with_zenlib="system"
 			LIBS="$LIBS $(pkg-config --libs libzen)"
-			MediaInfoLib_LIBS="$MediaInfoLib_LIBS $(pkg-config --libs libzen)"
 			MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --variable=LIBS libzen)"
 		fi
 	else
