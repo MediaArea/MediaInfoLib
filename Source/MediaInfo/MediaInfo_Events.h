@@ -227,6 +227,21 @@ struct MediaInfo_Event_Generic
 };
 
 /*-------------------------------------------------------------------------*/
+/* MediaInfo_Event_Log_0                                                   */
+#define MediaInfo_Event_Log 0x0F00
+struct MediaInfo_Event_Log_0
+{
+    MediaInfo_int32u        EventCode;
+    MediaInfo_int8u         Type;
+    MediaInfo_int8u         Severity;
+    MediaInfo_int8u         Reserved2;
+    MediaInfo_int8u         Reserved3;
+    MediaInfo_int32u        MessageCode;
+    MediaInfo_int32u        Reserved4;
+    const wchar_t*          MessageString;
+};
+
+/*-------------------------------------------------------------------------*/
 /* Demux                                                                   */
 #define MediaInfo_Event_Global_Demux 0xAF00
 enum MediaInfo_Event_Global_Demux_0_contenttype
@@ -493,6 +508,18 @@ struct MediaInfo_Event_DvDif_Analysis_Frame_0
 /***************************************************************************/
 
 #define MediaInfo_Parser_Lxf            0x0E
+
+/***************************************************************************/
+/* HLS                                                                     */
+/***************************************************************************/
+
+#define MediaInfo_Parser_Hls            0x70
+
+/***************************************************************************/
+/* HLS Index                                                               */
+/***************************************************************************/
+
+#define MediaInfo_Parser_HlsIndex       0x71
 
 /***************************************************************************/
 /* MPEG Video                                                              */

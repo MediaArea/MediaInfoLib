@@ -97,7 +97,7 @@ File_Riff::File_Riff()
     //Configuration
     #if MEDIAINFO_EVENTS
         ParserIDs[0]=MediaInfo_Parser_Riff;
-        StreamIDs_Width[0]=17;
+        StreamIDs_Width[0]=4;
     #endif //MEDIAINFO_EVENTS
     #if MEDIAINFO_DEMUX
         Demux_Level=2; //Container
@@ -299,7 +299,7 @@ void File_Riff::Streams_Finish ()
                         Fill(Stream_Audio, Pos, Audio_MuxingMode, "DV");
                         Fill(Stream_Audio, Pos, Audio_Duration, Retrieve(Stream_Video, Temp->second.StreamPos, Video_Duration));
                         Fill(Stream_Audio, Pos, "MuxingMode_MoreInfo", _T("Muxed in Video #")+Ztring().From_Number(Temp->second.StreamPos+1));
-                        Fill(Stream_Audio, Pos, Audio_StreamSize, "0"); //Included in the DV stream size
+                        Fill(Stream_Audio, Pos, Audio_StreamSize_Encoded, 0); //Included in the DV stream size
                         Ztring ID=Retrieve(Stream_Audio, Pos, Audio_ID);
                         Fill(Stream_Audio, Pos, Audio_ID, Retrieve(Stream_Video, Temp->second.StreamPos, Video_ID)+_T("-")+ID, true);
                     }
@@ -521,7 +521,7 @@ void File_Riff::Read_Buffer_Init()
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_SEEK
-size_t File_Riff::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
+size_t File_Riff::Read_Buffer_Seek (size_t Method, int64u Value, int64u /*ID*/)
 {
     //Only Wave and AIFF
     switch (Kind)
@@ -582,7 +582,7 @@ void File_Riff::Read_Buffer_Unsynched()
     if (IsSub)
     {
         while(Element_Level)
-            Element_End();
+            Element_End0();
 
         //Ancillary specific
         if (Ancillary && (*Ancillary))
@@ -629,7 +629,7 @@ bool File_Riff::Header_Begin()
         if (Buffer_Offset+(size_t)Element_Size>Buffer_Size)
             return false;
         
-        Element_Begin();
+        Element_Begin0();
         switch (Kind)
         {
             case Kind_Wave : WAVE_data_Continue(); break;
@@ -652,7 +652,7 @@ bool File_Riff::Header_Begin()
             Element_Size-=Element_Offset;
         }
         Element_Offset=0;
-        Element_End();
+        Element_End0();
 
         if (Buffer_Offset>=Buffer_Size)
             return false;
@@ -778,12 +778,12 @@ void File_Riff::Header_Parse()
         if (Name==Elements::RF64 && CC4(Buffer+Buffer_Offset+0x0C)==Elements::WAVE_ds64)
         {
             Size_Complete=LittleEndian2int64u(Buffer+Buffer_Offset+0x14);
-            Param_Info(Size_Complete);
+            Param_Info1(Size_Complete);
         }
         else if (Name==Elements::WAVE_data)
         {
             Size_Complete=WAVE_data_Size;
-            Param_Info(Size_Complete);
+            Param_Info1(Size_Complete);
         }
     }
 

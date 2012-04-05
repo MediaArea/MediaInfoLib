@@ -99,6 +99,7 @@ libmediainfo_la_SOURCES = \
                        ../../../Source/MediaInfo/Multiple/File_Flv.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Gxf.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Gxf_TimeCode.cpp \
+                       ../../../Source/MediaInfo/Multiple/File_Hls.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Ibi.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Ibi_Creation.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Ism.cpp \
@@ -161,11 +162,13 @@ libmediainfo_la_SOURCES = \
                        ../../../Source/MediaInfo/Video/File_Flic.cpp \
                        ../../../Source/MediaInfo/Video/File_Fraps.cpp \
                        ../../../Source/MediaInfo/Video/File_Lagarith.cpp \
+                       ../../../Source/MediaInfo/Video/File_H263.cpp \
                        ../../../Source/MediaInfo/Video/File_Mpeg4v.cpp \
                        ../../../Source/MediaInfo/Video/File_Mpegv.cpp \
                        ../../../Source/MediaInfo/Video/File_Theora.cpp \
                        ../../../Source/MediaInfo/Video/File_Vc1.cpp \
                        ../../../Source/MediaInfo/Video/File_Vc3.cpp \
+                       ../../../Source/MediaInfo/Video/File_Vp8.cpp \
                        ../../../Source/MediaInfo/Video/File_Y4m.cpp \
                        ../../../Source/MediaInfoDLL/MediaInfoDLL.cpp
 

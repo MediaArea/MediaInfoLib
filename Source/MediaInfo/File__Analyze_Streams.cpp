@@ -989,6 +989,8 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
             Fill(Stream_Audio, StreamPos, Audio_Channel_s_, 1, 10, true); //AMR is always with 1 channel
 
         //Well known bitrate values
+        if (StreamKind==Stream_Video && (Parameter==Video_BitRate || Parameter==Video_BitRate_Nominal))
+            Video_BitRate_Rounding(StreamPos, (video)Parameter);
         if (StreamKind==Stream_Audio && (Parameter==Audio_BitRate || Parameter==Audio_BitRate_Nominal))
             Audio_BitRate_Rounding(StreamPos, (audio)Parameter);
     }
@@ -1190,7 +1192,9 @@ void File__Analyze::Clear (stream_t StreamKind, size_t StreamPos, size_t Paramet
             const Ztring &List_Measure_Value=MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Measure);
                  if (List_Measure_Value==_T(" byte"))
             {
-                for (size_t Pos=Parameter+1; Pos<=Parameter+5; Pos++)
+                const Ztring &Temp=MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Name);
+                size_t List_Size=Temp.find(_T("StreamSize"))==string::npos?5:7; //for /String5, with percentage, and proportion
+                for (size_t Pos=Parameter+1; Pos<=Parameter+List_Size; Pos++)
                     if (Pos<(*Stream)[StreamKind][StreamPos].size())
                         (*Stream)[StreamKind][StreamPos][Pos].clear();
             }
@@ -1483,6 +1487,22 @@ void File__Analyze::Video_FrameRate_Rounding(size_t Pos, video Parameter)
 
     if (FrameRate!=FrameRate_Sav)
         Fill(Stream_Video, Pos, Parameter, FrameRate, 3, true);
+}
+
+//---------------------------------------------------------------------------
+void File__Analyze::Video_BitRate_Rounding(size_t Pos, video Parameter)
+{
+    const Ztring& Format=Retrieve(Stream_Video, Pos, Video_Format);
+    int32u BitRate=Retrieve(Stream_Video, Pos, Parameter).To_int32u();
+    int32u BitRate_Sav=BitRate;
+    if (Format==_T("AVC"))
+    {
+        if (BitRate>= 54942720 && BitRate<= 57185280) BitRate= 56064000; //AVC-INTRA50
+        if (BitRate>=111390720 && BitRate<=115937280) BitRate=113664000; //AVC-INTRA100
+    }
+
+    if (BitRate!=BitRate_Sav)
+        Fill(Stream_Video, Pos, Parameter, BitRate, 0, true);
 }
 
 //---------------------------------------------------------------------------
@@ -1892,6 +1912,24 @@ void File__Analyze::FileSize_FileSize123(stream_t StreamKind, size_t StreamPos, 
         Fill(StreamKind, StreamPos, Parameter+6, MediaInfoLib::Config.Language_Get(Ztring::ToZtring(F1, I3), Measure, MeasureIsAlwaysSame)+_T(" (")+Ztring::ToZtring(F2*100/File_Size_WithReferencedFiles, 0)+_T("%)"), true); // /String5
         Fill(StreamKind, StreamPos, Parameter+1,  MediaInfoLib::Config.Language_Get(Ztring::ToZtring(F1, I3), Measure, MeasureIsAlwaysSame)+_T(" (")+Ztring::ToZtring(F2*100/File_Size_WithReferencedFiles, 0)+_T("%)"), true);
     }
+    else if (File_Size_WithReferencedFiles>0 && Parameter==Fill_Parameter(StreamKind, Generic_StreamSize_Encoded) && F2*100/File_Size_WithReferencedFiles<=100)
+    {
+        Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_StreamSize_Encoded_Proportion), F2/File_Size_WithReferencedFiles, 5, true);
+        Fill(StreamKind, StreamPos, Parameter+6, MediaInfoLib::Config.Language_Get(Ztring::ToZtring(F1, I3), Measure, MeasureIsAlwaysSame)+_T(" (")+Ztring::ToZtring(F2*100/File_Size_WithReferencedFiles, 0)+_T("%)"), true); // /String5
+        Fill(StreamKind, StreamPos, Parameter+1,  MediaInfoLib::Config.Language_Get(Ztring::ToZtring(F1, I3), Measure, MeasureIsAlwaysSame)+_T(" (")+Ztring::ToZtring(F2*100/File_Size_WithReferencedFiles, 0)+_T("%)"), true);
+    }
+    else if (File_Size_WithReferencedFiles>0 && Parameter==Fill_Parameter(StreamKind, Generic_Source_StreamSize) && F2*100/File_Size_WithReferencedFiles<=100)
+    {
+        Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Source_StreamSize_Proportion), F2/File_Size_WithReferencedFiles, 5, true);
+        Fill(StreamKind, StreamPos, Parameter+6, MediaInfoLib::Config.Language_Get(Ztring::ToZtring(F1, I3), Measure, MeasureIsAlwaysSame)+_T(" (")+Ztring::ToZtring(F2*100/File_Size_WithReferencedFiles, 0)+_T("%)"), true); // /String5
+        Fill(StreamKind, StreamPos, Parameter+1,  MediaInfoLib::Config.Language_Get(Ztring::ToZtring(F1, I3), Measure, MeasureIsAlwaysSame)+_T(" (")+Ztring::ToZtring(F2*100/File_Size_WithReferencedFiles, 0)+_T("%)"), true);
+    }
+    else if (File_Size_WithReferencedFiles>0 && Parameter==Fill_Parameter(StreamKind, Generic_Source_StreamSize_Encoded) && F2*100/File_Size_WithReferencedFiles<=100)
+    {
+        Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Source_StreamSize_Encoded_Proportion), F2/File_Size_WithReferencedFiles, 5, true);
+        Fill(StreamKind, StreamPos, Parameter+6, MediaInfoLib::Config.Language_Get(Ztring::ToZtring(F1, I3), Measure, MeasureIsAlwaysSame)+_T(" (")+Ztring::ToZtring(F2*100/File_Size_WithReferencedFiles, 0)+_T("%)"), true); // /String5
+        Fill(StreamKind, StreamPos, Parameter+1,  MediaInfoLib::Config.Language_Get(Ztring::ToZtring(F1, I3), Measure, MeasureIsAlwaysSame)+_T(" (")+Ztring::ToZtring(F2*100/File_Size_WithReferencedFiles, 0)+_T("%)"), true);
+    }
     else
         Fill(StreamKind, StreamPos, Parameter+1,  MediaInfoLib::Config.Language_Get(Ztring::ToZtring(F1, I3), Measure, MeasureIsAlwaysSame), true);
 }
@@ -1917,7 +1955,7 @@ void File__Analyze::Kilo_Kilo123(stream_t StreamKind, size_t StreamPos, size_t P
         int32u BitRate=List[Pos].To_int32u();
 
         //Text
-        if (BitRate==      0)
+        if (BitRate==0 && (List[Pos].empty() || List[Pos][0]>_T('9')))
         {
             Fill(StreamKind, StreamPos, Parameter+1, MediaInfoLib::Config.Language_Get(List[Pos]));
         }
@@ -1927,7 +1965,6 @@ void File__Analyze::Kilo_Kilo123(stream_t StreamKind, size_t StreamPos, size_t P
             Ztring BitRateS;
             if (StreamKind==Stream_Audio)
             {
-                Ztring A=Retrieve(Stream_Audio, StreamPos, Audio_Format);
                 if (Parameter==Audio_BitRate
                  && (Retrieve(Stream_Audio, StreamPos, Audio_Format)==_T("PCM")
                   || Retrieve(Stream_Audio, StreamPos, Audio_Format)==_T("ADPCM")
@@ -1952,6 +1989,8 @@ void File__Analyze::Kilo_Kilo123(stream_t StreamKind, size_t StreamPos, size_t P
                     if (BitRate==  22050) BitRateS=  "22.05";
                     if (BitRate==  44100) BitRateS=  "44.1";
                     if (BitRate==  88200) BitRateS=  "88.2";
+                    if (BitRate== 176400) BitRateS= "176.4";
+                    if (BitRate== 352800) BitRateS= "352.8";
                 }
             }
             if (!BitRateS.empty())
@@ -1975,7 +2014,7 @@ void File__Analyze::Kilo_Kilo123(stream_t StreamKind, size_t StreamPos, size_t P
                     Measure.insert(1, _T("K"));
                     Fill(StreamKind, StreamPos, Parameter+1, MediaInfoLib::Config.Language_Get(Ztring::ToZtring(((float)BitRate)/1000, BitRate>100000?0:1), Measure, true));
                 }
-                else if (BitRate>0)
+                else
                     Fill(StreamKind, StreamPos, Parameter+1, MediaInfoLib::Config.Language_Get(Ztring::ToZtring(BitRate), MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Measure), true));
             }
         }
@@ -2107,6 +2146,11 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Duration_String1 : return Video_Duration_String1;
                                     case Generic_Duration_String2 : return Video_Duration_String2;
                                     case Generic_Duration_String3 : return Video_Duration_String3;
+                                    case Generic_Source_Duration : return Video_Source_Duration;
+                                    case Generic_Source_Duration_String : return Video_Source_Duration_String;
+                                    case Generic_Source_Duration_String1 : return Video_Source_Duration_String1;
+                                    case Generic_Source_Duration_String2 : return Video_Source_Duration_String2;
+                                    case Generic_Source_Duration_String3 : return Video_Source_Duration_String3;
                                     case Generic_BitRate_Mode : return Video_BitRate_Mode;
                                     case Generic_BitRate_Mode_String : return Video_BitRate_Mode_String;
                                     case Generic_BitRate : return Video_BitRate;
@@ -2117,7 +2161,10 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_BitRate_Nominal_String : return Video_BitRate_Nominal_String;
                                     case Generic_BitRate_Maximum : return Video_BitRate_Maximum;
                                     case Generic_BitRate_Maximum_String : return Video_BitRate_Maximum_String;
+                                    case Generic_BitRate_Encoded : return Video_BitRate_Encoded;
+                                    case Generic_BitRate_Encoded_String : return Video_BitRate_Encoded_String;
                                     case Generic_FrameCount : return Video_FrameCount;
+                                    case Generic_Source_FrameCount : return Video_Source_FrameCount;
                                     case Generic_ColorSpace : return Video_ColorSpace;
                                     case Generic_ChromaSubsampling : return Video_ChromaSubsampling;
                                     case Generic_Resolution : return Video_Resolution;
@@ -2152,6 +2199,30 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_StreamSize_String4 : return Video_StreamSize_String4;
                                     case Generic_StreamSize_String5 : return Video_StreamSize_String5;
                                     case Generic_StreamSize_Proportion : return Video_StreamSize_Proportion;
+                                    case Generic_StreamSize_Encoded : return Video_StreamSize_Encoded;
+                                    case Generic_StreamSize_Encoded_String : return Video_StreamSize_Encoded_String;
+                                    case Generic_StreamSize_Encoded_String1 : return Video_StreamSize_Encoded_String1;
+                                    case Generic_StreamSize_Encoded_String2 : return Video_StreamSize_Encoded_String2;
+                                    case Generic_StreamSize_Encoded_String3 : return Video_StreamSize_Encoded_String3;
+                                    case Generic_StreamSize_Encoded_String4 : return Video_StreamSize_Encoded_String4;
+                                    case Generic_StreamSize_Encoded_String5 : return Video_StreamSize_Encoded_String5;
+                                    case Generic_StreamSize_Encoded_Proportion : return Video_StreamSize_Encoded_Proportion;
+                                    case Generic_Source_StreamSize : return Video_Source_StreamSize;
+                                    case Generic_Source_StreamSize_String : return Video_Source_StreamSize_String;
+                                    case Generic_Source_StreamSize_String1 : return Video_Source_StreamSize_String1;
+                                    case Generic_Source_StreamSize_String2 : return Video_Source_StreamSize_String2;
+                                    case Generic_Source_StreamSize_String3 : return Video_Source_StreamSize_String3;
+                                    case Generic_Source_StreamSize_String4 : return Video_Source_StreamSize_String4;
+                                    case Generic_Source_StreamSize_String5 : return Video_Source_StreamSize_String5;
+                                    case Generic_Source_StreamSize_Proportion : return Video_Source_StreamSize_Proportion;
+                                    case Generic_Source_StreamSize_Encoded : return Video_Source_StreamSize_Encoded;
+                                    case Generic_Source_StreamSize_Encoded_String : return Video_Source_StreamSize_Encoded_String;
+                                    case Generic_Source_StreamSize_Encoded_String1 : return Video_Source_StreamSize_Encoded_String1;
+                                    case Generic_Source_StreamSize_Encoded_String2 : return Video_Source_StreamSize_Encoded_String2;
+                                    case Generic_Source_StreamSize_Encoded_String3 : return Video_Source_StreamSize_Encoded_String3;
+                                    case Generic_Source_StreamSize_Encoded_String4 : return Video_Source_StreamSize_Encoded_String4;
+                                    case Generic_Source_StreamSize_Encoded_String5 : return Video_Source_StreamSize_Encoded_String5;
+                                    case Generic_Source_StreamSize_Encoded_Proportion : return Video_Source_StreamSize_Encoded_Proportion;
                                     case Generic_Language : return Video_Language;
                                     default: return (size_t)-1;
                                 }
@@ -2182,6 +2253,11 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Duration_String1 : return Audio_Duration_String1;
                                     case Generic_Duration_String2 : return Audio_Duration_String2;
                                     case Generic_Duration_String3 : return Audio_Duration_String3;
+                                    case Generic_Source_Duration : return Audio_Source_Duration;
+                                    case Generic_Source_Duration_String : return Audio_Source_Duration_String;
+                                    case Generic_Source_Duration_String1 : return Audio_Source_Duration_String1;
+                                    case Generic_Source_Duration_String2 : return Audio_Source_Duration_String2;
+                                    case Generic_Source_Duration_String3 : return Audio_Source_Duration_String3;
                                     case Generic_BitRate_Mode : return Audio_BitRate_Mode;
                                     case Generic_BitRate_Mode_String : return Audio_BitRate_Mode_String;
                                     case Generic_BitRate : return Audio_BitRate;
@@ -2192,7 +2268,10 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_BitRate_Nominal_String : return Audio_BitRate_Nominal_String;
                                     case Generic_BitRate_Maximum : return Audio_BitRate_Maximum;
                                     case Generic_BitRate_Maximum_String : return Audio_BitRate_Maximum_String;
+                                    case Generic_BitRate_Encoded : return Audio_BitRate_Encoded;
+                                    case Generic_BitRate_Encoded_String : return Audio_BitRate_Encoded_String;
                                     case Generic_FrameCount : return Audio_FrameCount;
+                                    case Generic_Source_FrameCount : return Audio_Source_FrameCount;
                                     case Generic_Resolution : return Audio_Resolution;
                                     case Generic_Resolution_String : return Audio_Resolution_String;
                                     case Generic_BitDepth : return Audio_BitDepth;
@@ -2231,6 +2310,30 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_StreamSize_String4 : return Audio_StreamSize_String4;
                                     case Generic_StreamSize_String5 : return Audio_StreamSize_String5;
                                     case Generic_StreamSize_Proportion : return Audio_StreamSize_Proportion;
+                                    case Generic_StreamSize_Encoded : return Audio_StreamSize_Encoded;
+                                    case Generic_StreamSize_Encoded_String : return Audio_StreamSize_Encoded_String;
+                                    case Generic_StreamSize_Encoded_String1 : return Audio_StreamSize_Encoded_String1;
+                                    case Generic_StreamSize_Encoded_String2 : return Audio_StreamSize_Encoded_String2;
+                                    case Generic_StreamSize_Encoded_String3 : return Audio_StreamSize_Encoded_String3;
+                                    case Generic_StreamSize_Encoded_String4 : return Audio_StreamSize_Encoded_String4;
+                                    case Generic_StreamSize_Encoded_String5 : return Audio_StreamSize_Encoded_String5;
+                                    case Generic_StreamSize_Encoded_Proportion : return Audio_StreamSize_Encoded_Proportion;
+                                    case Generic_Source_StreamSize : return Audio_Source_StreamSize;
+                                    case Generic_Source_StreamSize_String : return Audio_Source_StreamSize_String;
+                                    case Generic_Source_StreamSize_String1 : return Audio_Source_StreamSize_String1;
+                                    case Generic_Source_StreamSize_String2 : return Audio_Source_StreamSize_String2;
+                                    case Generic_Source_StreamSize_String3 : return Audio_Source_StreamSize_String3;
+                                    case Generic_Source_StreamSize_String4 : return Audio_Source_StreamSize_String4;
+                                    case Generic_Source_StreamSize_String5 : return Audio_Source_StreamSize_String5;
+                                    case Generic_Source_StreamSize_Proportion : return Audio_Source_StreamSize_Proportion;
+                                    case Generic_Source_StreamSize_Encoded : return Audio_Source_StreamSize_Encoded;
+                                    case Generic_Source_StreamSize_Encoded_String : return Audio_Source_StreamSize_Encoded_String;
+                                    case Generic_Source_StreamSize_Encoded_String1 : return Audio_Source_StreamSize_Encoded_String1;
+                                    case Generic_Source_StreamSize_Encoded_String2 : return Audio_Source_StreamSize_Encoded_String2;
+                                    case Generic_Source_StreamSize_Encoded_String3 : return Audio_Source_StreamSize_Encoded_String3;
+                                    case Generic_Source_StreamSize_Encoded_String4 : return Audio_Source_StreamSize_Encoded_String4;
+                                    case Generic_Source_StreamSize_Encoded_String5 : return Audio_Source_StreamSize_Encoded_String5;
+                                    case Generic_Source_StreamSize_Encoded_Proportion : return Audio_Source_StreamSize_Encoded_Proportion;
                                     case Generic_Language : return Audio_Language;
                                     default: return (size_t)-1;
                                 }
@@ -2261,6 +2364,11 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Duration_String1 : return Text_Duration_String1;
                                     case Generic_Duration_String2 : return Text_Duration_String2;
                                     case Generic_Duration_String3 : return Text_Duration_String3;
+                                    case Generic_Source_Duration : return Text_Source_Duration;
+                                    case Generic_Source_Duration_String : return Text_Source_Duration_String;
+                                    case Generic_Source_Duration_String1 : return Text_Source_Duration_String1;
+                                    case Generic_Source_Duration_String2 : return Text_Source_Duration_String2;
+                                    case Generic_Source_Duration_String3 : return Text_Source_Duration_String3;
                                     case Generic_BitRate_Mode : return Text_BitRate_Mode;
                                     case Generic_BitRate_Mode_String : return Text_BitRate_Mode_String;
                                     case Generic_BitRate : return Text_BitRate;
@@ -2271,7 +2379,10 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_BitRate_Nominal_String : return Text_BitRate_Nominal_String;
                                     case Generic_BitRate_Maximum : return Text_BitRate_Maximum;
                                     case Generic_BitRate_Maximum_String : return Text_BitRate_Maximum_String;
-                                    case Generic_FrameCount : return Video_FrameCount;
+                                    case Generic_BitRate_Encoded : return Text_BitRate_Encoded;
+                                    case Generic_BitRate_Encoded_String : return Text_BitRate_Encoded_String;
+                                    case Generic_FrameCount : return Text_FrameCount;
+                                    case Generic_Source_FrameCount : return Text_Source_FrameCount;
                                     case Generic_ColorSpace : return Text_ColorSpace;
                                     case Generic_ChromaSubsampling : return Text_ChromaSubsampling;
                                     case Generic_Resolution : return Text_Resolution;
@@ -2312,6 +2423,30 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_StreamSize_String4 : return Text_StreamSize_String4;
                                     case Generic_StreamSize_String5 : return Text_StreamSize_String5;
                                     case Generic_StreamSize_Proportion : return Text_StreamSize_Proportion;
+                                    case Generic_StreamSize_Encoded : return Text_StreamSize_Encoded;
+                                    case Generic_StreamSize_Encoded_String : return Text_StreamSize_Encoded_String;
+                                    case Generic_StreamSize_Encoded_String1 : return Text_StreamSize_Encoded_String1;
+                                    case Generic_StreamSize_Encoded_String2 : return Text_StreamSize_Encoded_String2;
+                                    case Generic_StreamSize_Encoded_String3 : return Text_StreamSize_Encoded_String3;
+                                    case Generic_StreamSize_Encoded_String4 : return Text_StreamSize_Encoded_String4;
+                                    case Generic_StreamSize_Encoded_String5 : return Text_StreamSize_Encoded_String5;
+                                    case Generic_StreamSize_Encoded_Proportion : return Text_StreamSize_Encoded_Proportion;
+                                    case Generic_Source_StreamSize : return Text_Source_StreamSize;
+                                    case Generic_Source_StreamSize_String : return Text_Source_StreamSize_String;
+                                    case Generic_Source_StreamSize_String1 : return Text_Source_StreamSize_String1;
+                                    case Generic_Source_StreamSize_String2 : return Text_Source_StreamSize_String2;
+                                    case Generic_Source_StreamSize_String3 : return Text_Source_StreamSize_String3;
+                                    case Generic_Source_StreamSize_String4 : return Text_Source_StreamSize_String4;
+                                    case Generic_Source_StreamSize_String5 : return Text_Source_StreamSize_String5;
+                                    case Generic_Source_StreamSize_Proportion : return Text_Source_StreamSize_Proportion;
+                                    case Generic_Source_StreamSize_Encoded : return Text_Source_StreamSize_Encoded;
+                                    case Generic_Source_StreamSize_Encoded_String : return Text_Source_StreamSize_Encoded_String;
+                                    case Generic_Source_StreamSize_Encoded_String1 : return Text_Source_StreamSize_Encoded_String1;
+                                    case Generic_Source_StreamSize_Encoded_String2 : return Text_Source_StreamSize_Encoded_String2;
+                                    case Generic_Source_StreamSize_Encoded_String3 : return Text_Source_StreamSize_Encoded_String3;
+                                    case Generic_Source_StreamSize_Encoded_String4 : return Text_Source_StreamSize_Encoded_String4;
+                                    case Generic_Source_StreamSize_Encoded_String5 : return Text_Source_StreamSize_Encoded_String5;
+                                    case Generic_Source_StreamSize_Encoded_Proportion : return Text_Source_StreamSize_Encoded_Proportion;
                                     case Generic_Language : return Text_Language;
                                     default: return (size_t)-1;
                                 }

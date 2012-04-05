@@ -139,7 +139,7 @@ void File_Aac::Streams_Finish()
     {
         if (FrameSize_Max>FrameSize_Min*1.02)
         {
-            Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
+            Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR", Unlimited, true, true);
             Fill(Stream_Audio, 0, Audio_BitRate_Minimum, ((float64)FrameSize_Min)/1024*48000*8, 0);
             Fill(Stream_Audio, 0, Audio_BitRate_Maximum, ((float64)FrameSize_Max)/1024*48000*8, 0);
         }
@@ -264,7 +264,9 @@ void File_Aac::Read_Buffer_Continue_raw_data_block()
     FILLING_BEGIN();
         //Counting
         Frame_Count++;
-        Element_Info(Ztring::ToZtring(Frame_Count));
+        if (Frame_Count_NotParsedIncluded!=(int64u)-1)
+            Frame_Count_NotParsedIncluded++;
+        Element_Info1(Ztring::ToZtring(Frame_Count));
 
         //Filling
         if (!Status[IsAccepted])
@@ -632,16 +634,19 @@ void File_Aac::Data_Parse()
         if (File_Offset+Buffer_Offset+Element_Size==File_Size)
             Frame_Count_Valid=Frame_Count; //Finish frames in case of there are less than Frame_Count_Valid frames
         Frame_Count++;
-        Element_Info(Ztring::ToZtring(Frame_Count));
+        Element_Info1(Ztring::ToZtring(Frame_Count));
 
         //Filling
-        if (Frame_Count>=Frame_Count_Valid || CanFill)
+        if ((Frame_Count>=Frame_Count_Valid || CanFill) && Config_ParseSpeed<1.0)
         {
             //No more need data
             switch (Mode)
             {
-                case Mode_ADTS        : File__Tags_Helper::Finish(); break;
-                case Mode_LATM        : File__Analyze::Finish(); break;
+                case Mode_ADTS        : 
+                case Mode_LATM        : 
+                                        Fill();
+                                        if (!IsSub)
+                                            File__Tags_Helper::Finish(); break;
                 default               : ; //No header
             }
 

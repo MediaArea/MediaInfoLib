@@ -94,36 +94,8 @@ size_t MediaInfoList_Internal::Open(const String &File_Name, const fileoptions_t
 
     //Get all filenames
     ZtringList List;
-    if ((File_Name.size()>=7
-      && File_Name[0]==_T('h')
-      && File_Name[1]==_T('t')
-      && File_Name[2]==_T('t')
-      && File_Name[3]==_T('p')
-      && File_Name[4]==_T(':')
-      && File_Name[5]==_T('/')
-      && File_Name[6]==_T('/'))
-     || (File_Name.size()>=6
-      && File_Name[0]==_T('f')
-      && File_Name[1]==_T('t')
-      && File_Name[2]==_T('p')
-      && File_Name[3]==_T(':')
-      && File_Name[4]==_T('/')
-      && File_Name[5]==_T('/'))
-     || (File_Name.size()>=6
-      && File_Name[0]==_T('m')
-      && File_Name[1]==_T('m')
-      && File_Name[2]==_T('s')
-      && File_Name[3]==_T(':')
-      && File_Name[4]==_T('/')
-      && File_Name[5]==_T('/'))
-     || (File_Name.size()>=7
-      && File_Name[0]==_T('m')
-      && File_Name[1]==_T('m')
-      && File_Name[2]==_T('s')
-      && File_Name[3]==_T('h')
-      && File_Name[4]==_T(':')
-      && File_Name[5]==_T('/')
-      && File_Name[6]==_T('/')))
+    size_t Pos=File_Name.find(_T(':'));
+    if (Pos!=string::npos && Pos!=1)
         List.push_back(File_Name);
     else if (File::Exists(File_Name))
         List.push_back(File_Name);
@@ -171,7 +143,7 @@ void MediaInfoList_Internal::Entry()
     if (ToParse_Total==0)
         return;
 
-    while (1)
+    for (;;)
     {
         CS.Enter();
         if (!ToParse.empty())

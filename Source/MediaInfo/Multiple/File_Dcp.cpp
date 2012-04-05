@@ -55,6 +55,11 @@ namespace MediaInfoLib
 File_Dcp::File_Dcp()
 :File__Analyze()
 {
+    #if MEDIAINFO_EVENTS
+        ParserIDs[0]=MediaInfo_Parser_None; //TODO
+        StreamIDs_Width[0]=sizeof(size_t)*2;
+    #endif //MEDIAINFO_EVENTS
+
     //Temp
     ReferenceFiles=NULL;
 }
@@ -167,7 +172,7 @@ bool File_Dcp::FileHeader_Begin()
                             {
                                 File__ReferenceFilesHelper::reference ReferenceFile;
                                 ReferenceFile.FileNames.push_back(Path->GetText());
-                                ReferenceFile.StreamID=Ztring::ToZtring(ReferenceFiles->References.size()+1);
+                                ReferenceFile.StreamID=ReferenceFiles->References.size()+1;
                                 ReferenceFiles->References.push_back(ReferenceFile);
                             }
                         }

@@ -42,6 +42,7 @@ class File_Mpeg4 : public File__Analyze
 {
 protected :
     //Streams management
+    void Streams_Accept();
     void Streams_Finish();
     void Streams_Finish_CommercialNames ();
 
@@ -174,11 +175,17 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_damr();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_esds();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_fiel();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_glbl();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_idfm();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h() {jp2h();}
     void moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_colr() {jp2h_colr();}
     void moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_ihdr() {jp2h_ihdr();}
     void moov_trak_mdia_minf_stbl_stsd_xxxx_pasp();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_frma();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_imif();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schm();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schi();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_wave();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_wave_acbf();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_wave_enda();
@@ -314,6 +321,7 @@ private :
     int64u                                  moof_traf_base_data_offset;
     int32u                                  moof_traf_default_sample_duration;
     int32u                                  moof_traf_default_sample_size;
+    int32u                                  MajorBrand;
     bool                                    IsSecondPass;
     bool                                    IsParsing_mdat;
     bool                                    IsFragmented;
@@ -335,6 +343,13 @@ private :
         timecode* TimeCode;
         stream_t                StreamKind;
         size_t                  StreamPos;
+        struct edts_struct
+        {
+            int32u  Duration;
+            int32u  Delay;
+            int32u  Rate;
+        };
+        std::vector<edts_struct> edts;            
         std::vector<int64u>     stco;
         struct stsc_struct
         {
@@ -362,6 +377,8 @@ private :
         int32u                  stts_Max;
         int64u                  stts_FrameCount;
         int64u                  stts_Duration;
+        int64u                  stts_Duration_FirstFrame;
+        int64u                  stts_Duration_LastFrame;
         int64u                  stts_SampleDuration;
         int32u                  mvex_trex_default_sample_duration;
         int32u                  mvex_trex_default_sample_size;
@@ -408,6 +425,8 @@ private :
             stts_Max=0;
             stts_FrameCount=0;
             stts_Duration=0;
+            stts_Duration_FirstFrame=0;
+            stts_Duration_LastFrame=0;
             mvex_trex_default_sample_duration=0;
             mvex_trex_default_sample_size=0;
             TimeCode_TrackID=(int32u)-1;

@@ -366,6 +366,15 @@ void File_DvDif::Streams_Fill()
                 default   : ;
             }
         }
+        else if (Interlaced)
+        {
+            Fill(Stream_Video, 0, Video_ScanType, "Interlaced");
+            if (FieldOrder_FF)
+                Fill(Stream_Video, 0, Video_ScanOrder, FieldOrder_FS?"BFF":"TFF");
+            else
+                Fill(Stream_Video, 0, Video_ScanOrder, FieldOrder_FS?"Bottom field only":"Top field only");
+            Fill(Stream_Video, 0, Video_Interlacement, "Interlaced");
+        }
         else
         {
             Fill(Stream_Video, 0, Video_ScanType, Interlaced?"Interlaced":"Progressive");
@@ -415,8 +424,7 @@ void File_DvDif::Streams_Fill()
 
     if (FrameSize_Theory && !IsHd)
     {
-        float64 OverallBitRate=FrameSize_Theory*(DSF?25.000:29.970)*8;
-        if (OverallBitRate>27360000 && OverallBitRate<=30240000) OverallBitRate=DSF?28800000:28771229;
+        float64 OverallBitRate=FrameSize_Theory*(DSF?((float64)25.000):((float64)30000/1001))*8;
         if (FSC_WasSet)
         {
             if (FSP_WasNotSet)
@@ -426,7 +434,10 @@ void File_DvDif::Streams_Fill()
         }
         if (OverallBitRate)
         {
-            Fill(Stream_General, 0, General_OverallBitRate, OverallBitRate, 0);
+            if (IsSub)
+                Fill(Stream_Video, 0, Video_BitRate_Encoded, OverallBitRate, 0);
+            else
+                Fill(Stream_General, 0, General_OverallBitRate, OverallBitRate, 0);
             Fill(Stream_Video, 0, (FSC_WasSet && FSP_WasNotSet)?Video_BitRate_Maximum:Video_BitRate, OverallBitRate*134/150*76/80, 0); //134 Video DIF from 150 DIF, 76 bytes from 80 byte DIF
         }
     }
@@ -437,7 +448,27 @@ void File_DvDif::Streams_Fill()
             Stream_Prepare(Stream_Audio);
             for (std::map<std::string, Ztring>::iterator Info=Streams_Audio[Pos]->Infos.begin(); Info!=Streams_Audio[Pos]->Infos.end(); Info++)
                 Fill(Stream_Audio, StreamPos_Last, Info->first.c_str(), Info->second, true);
+            Fill(Stream_Audio, StreamPos_Last, Audio_BitRate_Encoded, 0);
         }
+    
+    if (Stream_BitRateFromContainer && Retrieve(Stream_Video, 0, Video_BitRate).empty())
+    {
+        if (Stream_BitRateFromContainer>=28800000*0.98 && Stream_BitRateFromContainer<=28800000*1.02)
+        {
+            Fill(Stream_Video, 0, Video_BitRate, ((float64)28800000)*134/150*76/80, 0); 
+            Fill(Stream_Video, 0, Video_BitRate_Encoded, 28800000);
+        }
+        if (Stream_BitRateFromContainer>=57600000*0.98 && Stream_BitRateFromContainer<=57600000*1.02)
+        {
+            Fill(Stream_Video, 0, Video_BitRate, ((float64)57600000)*134/150*76/80, 0); 
+            Fill(Stream_Video, 0, Video_BitRate_Encoded, 57600000);
+        }
+        if (Stream_BitRateFromContainer>=115200000*0.98 && Stream_BitRateFromContainer<=115200000*1.02)
+        {
+            Fill(Stream_Video, 0, Video_BitRate, ((float64)115200000)*134/150*76/80, 0); 
+            Fill(Stream_Video, 0, Video_BitRate_Encoded, 115200000);
+        }
+    }
 
     //Library settings
     Fill(Stream_Video, 0, Video_Encoded_Library_Settings, Encoded_Library_Settings);
@@ -481,13 +512,17 @@ void File_DvDif::Streams_Fill()
 
     #if defined(MEDIAINFO_EIA608_YES)
         for (size_t Pos=0; Pos<CC_Parsers.size(); Pos++)
-            if (CC_Parsers[Pos] && CC_Parsers[Pos]->Status[IsFilled])
+            if (CC_Parsers[Pos] && CC_Parsers[Pos]->Status[IsAccepted])
             {
-                CC_Parsers[Pos]->Finish();
-                Merge(*CC_Parsers[Pos]);
-                Fill(Stream_Text, StreamPos_Last, Text_ID, Pos+1, 10, true);
+                Finish(CC_Parsers[Pos]);
+                for (size_t Pos2=0; Pos2<CC_Parsers[Pos]->Count_Get(Stream_Text); Pos2++)
+                {
+                    Stream_Prepare(Stream_Text);
+                    Merge(*CC_Parsers[Pos], Stream_Text, Pos2, StreamPos_Last);
+                    Fill(Stream_Text, StreamPos_Last, Text_ID, CC_Parsers[Pos]->Retrieve(Stream_Text, Pos2, Text_ID), true);
+                }
             }
-    #endif
+    #endif //defined(MEDIAINFO_EIA608_YES)
 }
 
 //---------------------------------------------------------------------------
@@ -794,7 +829,7 @@ void File_DvDif::Read_Buffer_Unsynched()
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_SEEK
-size_t File_DvDif::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
+size_t File_DvDif::Read_Buffer_Seek (size_t Method, int64u Value, int64u /*ID*/)
 {
     //Init
     if (!Duration_Detected)
@@ -899,7 +934,7 @@ void File_DvDif::Header_Parse()
     //Parsing
     BS_Begin();
     //0
-    Get_S1 (3, SCT,                                             "SCT - Section Type"); Param_Info(Dv_sct[SCT]);
+    Get_S1 (3, SCT,                                             "SCT - Section Type"); Param_Info1(Dv_sct[SCT]);
     Skip_SB(                                                    "Res - Reserved");
     Skip_S1(4,                                                  "Arb - Arbitrary bits");
     //1
@@ -978,7 +1013,7 @@ void File_DvDif::Data_Parse()
         return;
     }
 
-    Element_Info(DBN);
+    Element_Info1(DBN);
 
     switch (SCT)
     {
@@ -1115,7 +1150,7 @@ void File_DvDif::Subcode()
 //---------------------------------------------------------------------------
 void File_DvDif::Subcode_Ssyb(int8u syb_num)
 {
-    Element_Begin("ssyb");
+    Element_Begin1("ssyb");
 
     //Parsing
     BS_Begin();
@@ -1140,7 +1175,7 @@ void File_DvDif::Subcode_Ssyb(int8u syb_num)
     //PC0-PC4
     Element();
 
-    Element_End();
+    Element_End0();
 }
 
 //---------------------------------------------------------------------------
@@ -1224,7 +1259,7 @@ void File_DvDif::Video()
 //---------------------------------------------------------------------------
 void File_DvDif::Element()
 {
-    Element_Begin();
+    Element_Begin0();
     int8u PackType;
     if (AuxToAnalyze==0x00)
         Get_B1 (PackType,                                       "Pack Type");
@@ -1251,7 +1286,7 @@ void File_DvDif::Element()
         default   : Element_Name(Ztring().From_Number(PackType, 16));
                     Skip_B4(                                    "Unknown");
     }
-    Element_End();
+    Element_End0();
 }
 
 //---------------------------------------------------------------------------
@@ -1349,7 +1384,7 @@ void File_DvDif::timecode()
     MilliSeconds+=Temp*10*60*60*1000;
     Get_S1 (4, Temp,                                            "Hours (Units)");
     MilliSeconds+=Temp*60*60*1000;
-    Element_Info(Ztring().Duration_From_Milliseconds(MilliSeconds+((DSF_IsValid && Frames!=45)?((int64u)(Frames/(DSF?25.000:29.970)*1000)):0)));
+    Element_Info1(Ztring().Duration_From_Milliseconds(MilliSeconds+((DSF_IsValid && Frames!=45)?((int64u)(Frames/(DSF?25.000:29.970)*1000)):0)));
     BS_End();
 
     if (TimeCode_First==(int64u)-1 && MilliSeconds!=167185000) //if all bits are set to 1, this is not a valid timestamp
@@ -1379,20 +1414,20 @@ void File_DvDif::audio_source()
     Skip_S1(6,                                                  "AF - Samples in this frame");
 
     //PC2
-    Info_S1(1, StereoMode,                                      "SM - Stereo mode"); Param_Info(Dv_StereoMode[StereoMode]);
-    Info_S1(2, ChannelsPerBlock,                                "CHN - Channels per block"); Param_Info(Dv_ChannelsPerBlock[ChannelsPerBlock]);
-    Info_S1(1, Pair,                                            "PA - Pair"); Param_Info(Dv_Pair[Pair]);
+    Info_S1(1, StereoMode,                                      "SM - Stereo mode"); Param_Info1(Dv_StereoMode[StereoMode]);
+    Info_S1(2, ChannelsPerBlock,                                "CHN - Channels per block"); Param_Info1(Dv_ChannelsPerBlock[ChannelsPerBlock]);
+    Info_S1(1, Pair,                                            "PA - Pair"); Param_Info1(Dv_Pair[Pair]);
     Skip_S1(4,                                                  "AM - Audio mode");
 
     Skip_SB(                                                    "Reserved");
     Skip_SB(                                                    "ML - Multi-language");
     Skip_SB(                                                    "50/60");
-    Get_S1 (5, audio_source_stype,                              "STYPE - audio blocks per video frame"); Param_Info(audio_source_stype==0?"2 channels":(audio_source_stype==2?"4 channels":"Unknown")); //0=25 Mbps, 2=50 Mbps
+    Get_S1 (5, audio_source_stype,                              "STYPE - audio blocks per video frame"); Param_Info1(audio_source_stype==0?"2 channels":(audio_source_stype==2?"4 channels":"Unknown")); //0=25 Mbps, 2=50 Mbps
 
     Skip_SB(                                                    "EF - Emphasis off");
     Skip_SB(                                                    "TC - Time constant of emphasis");
-    Get_S1 (3, SamplingRate,                                    "SMP - Sampling rate"); Param_Info(Dv_Audio_SamplingRate[SamplingRate]);
-    Get_S1 (3, Resolution,                                      "QU - Resolution"); Param_Info(Dv_Audio_BitDepth[Resolution]);
+    Get_S1 (3, SamplingRate,                                    "SMP - Sampling rate"); Param_Info1(Dv_Audio_SamplingRate[SamplingRate]);
+    Get_S1 (3, Resolution,                                      "QU - Resolution"); Param_Info1(Dv_Audio_BitDepth[Resolution]);
     BS_End();
 
     FILLING_BEGIN();
@@ -1439,10 +1474,10 @@ void File_DvDif::audio_sourcecontrol()
     BS_Begin();
 
     //PC1
-    Info_S1(2, CopyGenerationManagementSystem,                  "CGMS - Copy generation management system"); Param_Info(Dv_CopyGenerationManagementSystem[CopyGenerationManagementSystem]);
-    Info_S1(2, InputType,                                       "ISR - Input type"); Param_Info(Dv_InputType[InputType]);
-    Info_S1(2, CompressionTimes,                                "CMP - Compression times"); Param_Info(Dv_CompressionTimes[CompressionTimes]);
-    Info_S1(2, Emphasis,                                        "EFC - Emphasis"); Param_Info(Dv_Emphasis[Emphasis]);
+    Info_S1(2, CopyGenerationManagementSystem,                  "CGMS - Copy generation management system"); Param_Info1(Dv_CopyGenerationManagementSystem[CopyGenerationManagementSystem]);
+    Info_S1(2, InputType,                                       "ISR - Input type"); Param_Info1(Dv_InputType[InputType]);
+    Info_S1(2, CompressionTimes,                                "CMP - Compression times"); Param_Info1(Dv_CompressionTimes[CompressionTimes]);
+    Info_S1(2, Emphasis,                                        "EFC - Emphasis"); Param_Info1(Dv_Emphasis[Emphasis]);
 
     //PC2
     Skip_SB(                                                    "REC S Non-recording start point");
@@ -1552,7 +1587,7 @@ void File_DvDif::video_sourcecontrol()
 
     BS_Begin();
     //PC1
-    Info_S1(2, CopyGenerationManagementSystem,                  "CGMS - Copy generation management system"); Param_Info(Dv_CopyGenerationManagementSystem[CopyGenerationManagementSystem]);
+    Info_S1(2, CopyGenerationManagementSystem,                  "CGMS - Copy generation management system"); Param_Info1(Dv_CopyGenerationManagementSystem[CopyGenerationManagementSystem]);
     Skip_S1(2,                                                  "ISR");
     Skip_S1(2,                                                  "CMP");
     Skip_S2(2,                                                  "SS");
@@ -1562,11 +1597,11 @@ void File_DvDif::video_sourcecontrol()
     Skip_SB(                                                    "Reserved");
     Skip_S1(2,                                                  "REC M");
     Skip_SB(                                                    "Reserved");
-    Get_S1 (3, aspect,                                          "DISP - Aspect ratio"); Param_Info(Dv_Disp[aspect]);
+    Get_S1 (3, aspect,                                          "DISP - Aspect ratio"); Param_Info1(Dv_Disp[aspect]);
 
     //PC3
-    Skip_SB(                                                    "FF - Frame/Field"); //1=Frame, 0=Field
-    Skip_SB(                                                    "FS - First/second field"); //0=Field 2, 1=Field 1, if FF=0 x is output twice, if FF=1, Field x fisrst, other second
+    Get_SB (   FieldOrder_FF,                                   "FF - Frame/Field"); //1=Frame, 0=Field
+    Get_SB (   FieldOrder_FS,                                   "FS - First/second field"); //0=Field 2, 1=Field 1, if FF=0 x is output twice, if FF=1, Field x fisrst, other second
     Skip_SB(                                                    "FC - Frame Change"); //0=Same picture as before
     Get_SB (   Interlaced,                                      "IL - Interlaced"); //1=Interlaced
     Skip_SB(                                                    "SF");
@@ -1625,8 +1660,11 @@ void File_DvDif::closed_captions()
         if (CC_Parsers.empty())
         {
             CC_Parsers.resize(2);
-            for (size_t Pos=0; Pos<2; Pos++)
+            for (int8u Pos=0; Pos<2; Pos++)
+            {
                 CC_Parsers[Pos]=new File_Eia608();
+                ((File_Eia608*)CC_Parsers[Pos])->cc_type=Pos;
+            }
             Frame_Count_Valid*=10; //More frames
         }
         if (Dseq==0) //CC are duplicated for each DIF sequence!
@@ -1650,14 +1688,15 @@ void File_DvDif::consumer_camera_1()
 
     //Parsing
     BS_Begin();
+    int8u ae_mode, wb_mode, white_balance, fcm;
     Mark_1_NoTrustError();
     Mark_1_NoTrustError();
     Skip_S1(6,                                                  "iris");
-    Info_S1(4, ae_mode,                                         "ae mode"); Param_Info(Dv_consumer_camera_1_ae_mode[ae_mode]);
+    Get_S1 (4, ae_mode,                                         "ae mode"); Param_Info1(Dv_consumer_camera_1_ae_mode[ae_mode]);
     Skip_S1(4,                                                  "agc(Automatic Gain Control)");
-    Info_S1(3, wb_mode,                                         "wb mode (white balance mode)"); Param_Info(Dv_consumer_camera_1_wb_mode[wb_mode]);
-    Info_S1(5, white_balance,                                   "white balance"); Param_Info(Dv_consumer_camera_1_white_balance(white_balance));
-    Info_S1(1, fcm,                                             "fcm (Focus mode)"); Param_Info(Dv_consumer_camera_1_fcm[fcm]);
+    Get_S1 (3, wb_mode,                                         "wb mode (white balance mode)"); Param_Info1(Dv_consumer_camera_1_wb_mode[wb_mode]);
+    Get_S1 (5, white_balance,                                   "white balance"); Param_Info1(Dv_consumer_camera_1_white_balance(white_balance));
+    Get_S1 (1, fcm,                                             "fcm (Focus mode)"); Param_Info1(Dv_consumer_camera_1_fcm[fcm]);
     Skip_S1(7,                                                  "focus (focal point)");
     BS_End();
 
@@ -1687,7 +1726,7 @@ void File_DvDif::consumer_camera_2()
     Skip_S1(8,                                                  "focal length");
     Skip_S1(1,                                                  "zen");
     Info_S1(3, zoom_U,                                          "units of e-zoom");
-    Info_S1(4, zoom_D,                                          "1/10 of e-zoom"); if (zoom_D!=0xF) Param_Info(_T("zoom=")+Ztring().From_Number(zoom_U+((float32)zoom_U)/10, 2));
+    Info_S1(4, zoom_D,                                          "1/10 of e-zoom"); /*if (zoom_D!=0xF)*/ Param_Info1(_T("zoom=")+Ztring().From_Number(zoom_U+((float32)zoom_U)/10, 2));
     BS_End();
 }
 
@@ -1722,7 +1761,7 @@ Ztring File_DvDif::recdate()
     Get_S1 (4, Temp,                                            "Year (Units)");
     Year+=Temp;
     Year+=Year<25?2000:1900;
-    Element_Info(Ztring::ToZtring(Year)+_T("-")+Ztring::ToZtring(Month)+_T("-")+Ztring::ToZtring(Day));
+    Element_Info1(Ztring::ToZtring(Year)+_T("-")+Ztring::ToZtring(Month)+_T("-")+Ztring::ToZtring(Day));
 
     BS_End();
 
@@ -1787,7 +1826,7 @@ Ztring File_DvDif::rectime()
     Time+=Temp*10*60*60*1000;
     Get_S1 (4, Temp,                                            "Hours (Units)");
     Time+=Temp*60*60*1000;
-    Element_Info(Ztring().Duration_From_Milliseconds(Time));
+    Element_Info1(Ztring().Duration_From_Milliseconds(Time));
 
     BS_End();
 

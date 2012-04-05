@@ -107,9 +107,11 @@ File_Scte20::~File_Scte20()
 //---------------------------------------------------------------------------
 void File_Scte20::Streams_Update()
 {
+    Clear(Stream_Text);
+
     //Per stream
     for (size_t Pos=0; Pos<Streams.size(); Pos++)
-        if (Streams[Pos] && Streams[Pos]->Parser && Streams[Pos]->Parser->Status[IsFilled] && Streams[Pos]->Parser->Status[IsUpdated])
+        if (Streams[Pos] && Streams[Pos]->Parser && Streams[Pos]->Parser->Status[IsFilled] /*&& Streams[Pos]->Parser->Status[IsUpdated]*/ && Streams[Pos]->Parser->Count_Get(Stream_Text))
             Streams_Update_PerStream(Pos);
 }
 
@@ -118,36 +120,28 @@ void File_Scte20::Streams_Update_PerStream(size_t Pos)
 {
     Update(Streams[Pos]->Parser);
 
-    //Creating the text stream if not already present
-    if (Streams[Pos]->StreamPos==(size_t)-1)
-    {
-        Streams[Pos]->StreamPos=0;
-        for (size_t Pos2=0; Pos2<Streams.size(); Pos2++)
+    if (Streams[Pos] && Streams[Pos]->Parser)
+        for (size_t Pos2=0; Pos2<Streams[Pos]->Parser->Count_Get(Stream_Text); Pos2++)
         {
-            if (Pos2==Pos)
-            {
-                Stream_Prepare(Stream_Text, Streams[Pos]->StreamPos);
-                Fill(Stream_Text, StreamPos_Last, "MuxingMode", _T("SCTE 20"), Unlimited, true);
-            }
-            else if (Pos2<Pos && Streams[Pos2] && Streams[Pos2]->StreamPos!=(size_t)-1 && Streams[Pos2]->StreamPos>=Streams[Pos]->StreamPos)
-                Streams[Pos]->StreamPos=Streams[Pos2]->StreamPos+1;
-            else if (Streams[Pos2] && Streams[Pos2]->StreamPos!=(size_t)-1)
-                Streams[Pos2]->StreamPos++;
+            Stream_Prepare(Stream_Text);
+            Merge(*Streams[Pos]->Parser, Stream_Text, Pos2, StreamPos_Last);
+            Fill(Stream_Text, StreamPos_Last, "MuxingMode", "SCTE 20");
+            Fill(Stream_Text, StreamPos_Last, Text_ID, Streams[Pos]->Parser->Retrieve(Stream_Text, Pos2, Text_ID), true);
         }
-    }
-
-    Merge(*Streams[Pos]->Parser, Stream_Text, 0, Streams[Pos]->StreamPos);
-    if (Pos<2)
-        Fill(Stream_Text, StreamPos_Last, Text_ID, _T("608-")+Ztring::ToZtring(Pos+1), true);
 }
 
 //---------------------------------------------------------------------------
 void File_Scte20::Streams_Finish()
 {
+    Clear(Stream_Text);
+
     //Per stream
     for (size_t Pos=0; Pos<Streams.size(); Pos++)
-        if (Streams[Pos] && Streams[Pos]->Parser && Streams[Pos]->Parser->Status[IsFilled] && Streams[Pos]->Parser->Status[IsUpdated])
+        if (Streams[Pos] && Streams[Pos]->Parser && Streams[Pos]->Parser->Status[IsAccepted] /*&& Streams[Pos]->Parser->Status[IsUpdated]*/)
+        {
             Finish(Streams[Pos]->Parser);
+            Streams_Update_PerStream(Pos);
+        }
 }
 
 //***************************************************************************
@@ -181,7 +175,7 @@ static inline int8u ReverseBits(int8u c)
 void File_Scte20::Read_Buffer_Continue()
 {
     //Parsing
-    Element_Begin("SCTE 20");
+    Element_Begin1("SCTE 20");
     int8u  cc_count;
     bool vbi_data_flag;
     BS_Begin();
@@ -198,22 +192,22 @@ void File_Scte20::Read_Buffer_Continue()
         Get_S1 (5, cc_count,                                    "cc_count");
         for (int8u Pos=0; Pos<cc_count; Pos++)
         {
-            Element_Begin("cc");
+            Element_Begin1("cc");
             int8u cc_data[2];
             int8u field_number, cc_data_1, cc_data_2;
             Skip_S1(2,                                          "cc_priority");
-            Get_S1 (2, field_number,                            "field_number"); Param_Info(Scte20_field_number(field_number));
+            Get_S1 (2, field_number,                            "field_number"); Param_Info1(Scte20_field_number(field_number));
             Skip_S1(5,                                          "line_offset");
             Get_S1 (8, cc_data_1,                               "cc_data_1");
             cc_data[0]=ReverseBits(cc_data_1);
-            Param_Info(Ztring::ToZtring(cc_data[0], 16));
+            Param_Info1(Ztring::ToZtring(cc_data[0], 16));
             Get_S1 (8, cc_data_2,                               "cc_data_2");
             cc_data[1]=ReverseBits(cc_data_2);
-            Param_Info(Ztring::ToZtring(cc_data[1], 16));
+            Param_Info1(Ztring::ToZtring(cc_data[1], 16));
             Mark_1_NoTrustError();
             if (field_number!=0 && picture_structure!=(int8u)-1 && picture_structure!=0)
             {
-                Element_Begin("cc_data");
+                Element_Begin1("cc_data");
 
                 //Finding the corresponding cc_type (CEA-608 1st field or 2nd field)
                 int8u cc_type;
@@ -236,6 +230,7 @@ void File_Scte20::Read_Buffer_Continue()
                 {
                     #if defined(MEDIAINFO_EIA608_YES)
                         Streams[cc_type]->Parser=new File_Eia608();
+                        ((File_Eia608*)Streams[cc_type]->Parser)->cc_type=cc_type;
                     #else //defined(MEDIAINFO_EIA608_YES)
                         Streams[cc_type]->Parser=new File__Analyze();
                     #endif //defined(MEDIAINFO_EIA608_YES)
@@ -255,21 +250,14 @@ void File_Scte20::Read_Buffer_Continue()
                     Element_Show();
 
                     //Filled
-                    if (!Streams[cc_type]->IsFilled && Streams[cc_type]->Parser->Status[IsFilled])
-                    {
-                        if (Count_Get(Stream_General)==0)
-                            Accept("SCTE 20");
-                        Streams_Count++;
-                        if (Streams_Count==3)
-                            Fill("SCTE 20");
-                        Streams[cc_type]->IsFilled=true;
-                    }
+                    if (!Status[IsAccepted])
+                        Accept("SCTE 20");
                 }
                 else
                     Skip_XX(2,                                  "Data");
-                Element_End();
+                Element_End0();
             }
-            Element_End();
+            Element_End0();
         }
     }
     Skip_S1(4,                                                  "non_real_time_video_count");
@@ -277,7 +265,7 @@ void File_Scte20::Read_Buffer_Continue()
 
     if (Element_Size-Element_Offset)
         Skip_XX(Element_Size-Element_Offset,                    "non_real_time_video + reserved");
-    Element_End();
+    Element_End0();
     Element_Show();
 }
 

@@ -182,12 +182,9 @@ const char* Mpeg4_Descriptors_StreamType(int8u ID)
 }
 
 //---------------------------------------------------------------------------
-const char* Mpeg4_Descriptors_ODProfileLevelIndication(int8u ID)
+const char* Mpeg4_Descriptors_ODProfileLevelIndication(int8u /*ID*/)
 {
-    switch (ID)
-    {
-        default   : return "";
-    }
+    return "";
 }
 
 //---------------------------------------------------------------------------
@@ -446,11 +443,11 @@ void File_Mpeg4_Descriptors::Descriptor_01()
     }
     if (Element_Code==0x02 || Element_Code==0x10)
     {
-        Info_B1(ODProfileLevel,                                 "ODProfileLevelIndication"); Param_Info(Mpeg4_Descriptors_ODProfileLevelIndication(ODProfileLevel));
-        Info_B1(SceneProfileLevel,                              "sceneProfileLevelIndication"); Param_Info(Mpeg4_Descriptors_SceneProfileLevelIndication(SceneProfileLevel));
-        Info_B1(AudioProfileLevel,                              "audioProfileLevelIndication"); Param_Info(Mpeg4_Descriptors_AudioProfileLevelIndication(AudioProfileLevel));
-        Info_B1(VisualProfileLevel,                             "visualProfileLevelIndication"); Param_Info(Mpeg4v_Profile_Level(VisualProfileLevel));
-        Info_B1(GraphicsProfileLevel,                           "graphicsProfileLevelIndication"); Param_Info(Mpeg4_Descriptors_GraphicsProfileLevelIndication(GraphicsProfileLevel));
+        Info_B1(ODProfileLevel,                                 "ODProfileLevelIndication"); Param_Info1(Mpeg4_Descriptors_ODProfileLevelIndication(ODProfileLevel));
+        Info_B1(SceneProfileLevel,                              "sceneProfileLevelIndication"); Param_Info1(Mpeg4_Descriptors_SceneProfileLevelIndication(SceneProfileLevel));
+        Info_B1(AudioProfileLevel,                              "audioProfileLevelIndication"); Param_Info1(Mpeg4_Descriptors_AudioProfileLevelIndication(AudioProfileLevel));
+        Info_B1(VisualProfileLevel,                             "visualProfileLevelIndication"); Param_Info1(Mpeg4v_Profile_Level(VisualProfileLevel));
+        Info_B1(GraphicsProfileLevel,                           "graphicsProfileLevelIndication"); Param_Info1(Mpeg4_Descriptors_GraphicsProfileLevelIndication(GraphicsProfileLevel));
     }
 
     FILLING_BEGIN();
@@ -492,9 +489,9 @@ void File_Mpeg4_Descriptors::Descriptor_04()
     //Parsing
     int32u bufferSizeDB, MaxBitrate, AvgBitrate;
     int8u  streamType;
-    Get_B1 (ObjectTypeId,                                       "objectTypeIndication"); Param_Info(Mpeg4_Descriptors_ObjectTypeIndication(ObjectTypeId));
+    Get_B1 (ObjectTypeId,                                       "objectTypeIndication"); Param_Info1(Mpeg4_Descriptors_ObjectTypeIndication(ObjectTypeId));
     BS_Begin();
-    Get_S1 (6, streamType,                                      "streamType"); Param_Info(Mpeg4_Descriptors_StreamType(streamType));
+    Get_S1 (6, streamType,                                      "streamType"); Param_Info1(Mpeg4_Descriptors_StreamType(streamType));
     Skip_SB(                                                    "upStream");
     Skip_SB(                                                    "reserved");
     BS_End();
@@ -858,7 +855,7 @@ void File_Mpeg4_Descriptors::Descriptor_06()
 
     //Parsing
     int8u predefined;
-    Get_B1 (predefined,                                         "predefined"); Param_Info(Mpeg4_Descriptors_Predefined(predefined));
+    Get_B1 (predefined,                                         "predefined"); Param_Info1(Mpeg4_Descriptors_Predefined(predefined));
     switch (predefined)
     {
         case 0x00 :

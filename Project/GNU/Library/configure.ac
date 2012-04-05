@@ -156,11 +156,13 @@ AC_ARG_ENABLE(scc,     AC_HELP_STRING([--disable-scc] ,    [Disable Text - SCC])
 AC_ARG_ENABLE(avc,     AC_HELP_STRING([--disable-avc],     [Disable Video - AVC/H264]),                                   MediaInfoAvc=$enableval,     MediaInfoAvc=depend)
 AC_ARG_ENABLE(avsV,    AC_HELP_STRING([--disable-avsv],    [Disable Video - AVS (Chinese)]),                              MediaInfoAvsV=$enableval,    MediaInfoAvsV=depend)
 AC_ARG_ENABLE(flic,    AC_HELP_STRING([--disable-flic],    [Disable Video - FLIC (fli, flc)]),                            MediaInfoFlic=$enableval,    MediaInfoFlic=depend)
+AC_ARG_ENABLE(h263,    AC_HELP_STRING([--disable-h263],    [Disable Video - H.263]),                                      MediaInfoH263=$enableval,    MediaInfoH263=depend)
 AC_ARG_ENABLE(mpeg4v,  AC_HELP_STRING([--disable-mpeg4v],  [Disable Video - MPEG-4 Video based formats (DivX, XviD...)]), MediaInfoMpeg4v=$enableval,  MediaInfoMpeg4v=depend)
 AC_ARG_ENABLE(mpegv,   AC_HELP_STRING([--disable-mpegv],   [Disable Video - MPEG-Video]),                                 MediaInfoMpegv=$enableval,   MediaInfoMpegv=depend)
 AC_ARG_ENABLE(theora,  AC_HELP_STRING([--disable-theora],  [Disable Video - Theora]),                                     MediaInfoTheora=$enableval,  MediaInfoTheora=depend)
 AC_ARG_ENABLE(vc1,     AC_HELP_STRING([--disable-vc1],     [Disable Video - VC-1]),                                       MediaInfoVc1=$enableval,     MediaInfoVc1=depend)
 AC_ARG_ENABLE(vc3,     AC_HELP_STRING([--disable-vc3],     [Disable Video - VC-3 (DNxHD)]),                               MediaInfoVc3=$enableval,     MediaInfoVc3=depend)
+AC_ARG_ENABLE(vp8,     AC_HELP_STRING([--disable-vp8],     [Disable Video - VP8]),                                        MediaInfovp8=$enableval,     MediaInfovp8=depend)
 AC_ARG_ENABLE(y4m,     AC_HELP_STRING([--disable-y4m],     [Disable Video - YUV4MPEG2]),                                  MediaInfoy4m=$enableval,     MediaInfoy4m=depend)
 
 dnl -------------------------------------------------------------------------
@@ -279,12 +281,14 @@ if test "$MediaInfoPgs"     = "no";  then AC_DEFINE(MEDIAINFO_PGS_NO)     fi; if
 if test "$MediaInfoScc"     = "no";  then AC_DEFINE(MEDIAINFO_PGS_NO)     fi; if test "$MediaInfoScc"     = "yes"; then AC_DEFINE(MEDIAINFO_PGS_YES)     fi
 if test "$MediaInfoAvc"     = "no";  then AC_DEFINE(MEDIAINFO_AVC_NO)     fi; if test "$MediaInfoAvc"     = "yes"; then AC_DEFINE(MEDIAINFO_AVC_YES)     fi
 if test "$MediaInfoAvsV"    = "no";  then AC_DEFINE(MEDIAINFO_AVSV_NO)    fi; if test "$MediaInfoAvsV"    = "yes"; then AC_DEFINE(MEDIAINFO_AVSV_YES)    fi
-if test "$MediaInfoFlic"    = "no";  then AC_DEFINE(MEDIAINFO_FLIC_NO)    fi; if test "$MediaInfoflic"    = "yes"; then AC_DEFINE(MEDIAINFO_FLIC_YES)    fi
+if test "$MediaInfoFlic"    = "no";  then AC_DEFINE(MEDIAINFO_FLIC_NO)    fi; if test "$MediaInfoFlic"    = "yes"; then AC_DEFINE(MEDIAINFO_FLIC_YES)    fi
+if test "$MediaInfoH263"    = "no";  then AC_DEFINE(MEDIAINFO_H263_NO)    fi; if test "$MediaInfoH263"    = "yes"; then AC_DEFINE(MEDIAINFO_H263_YES)    fi
 if test "$MediaInfoMpeg4v"  = "no";  then AC_DEFINE(MEDIAINFO_MPEG4V_NO)  fi; if test "$MediaInfoMpeg4v"  = "yes"; then AC_DEFINE(MEDIAINFO_MPEG4V_YES)  fi
 if test "$MediaInfoMpegv"   = "no";  then AC_DEFINE(MEDIAINFO_MPEGV_NO)   fi; if test "$MediaInfoMpegv"   = "yes"; then AC_DEFINE(MEDIAINFO_MPEGV_YES)   fi
 if test "$MediaInfoTheora"  = "no";  then AC_DEFINE(MEDIAINFO_THEORA_NO)  fi; if test "$MediaInfoTheora"  = "yes"; then AC_DEFINE(MEDIAINFO_THEORA_YES)  fi
 if test "$MediaInfoVc1"     = "no";  then AC_DEFINE(MEDIAINFO_VC1_NO)     fi; if test "$MediaInfoVc1"     = "yes"; then AC_DEFINE(MEDIAINFO_VC1_YES)     fi
 if test "$MediaInfoVc3"     = "no";  then AC_DEFINE(MEDIAINFO_VC3_NO)     fi; if test "$MediaInfoVc3"     = "yes"; then AC_DEFINE(MEDIAINFO_VC3_YES)     fi
+if test "$MediaInfoVp8"     = "no";  then AC_DEFINE(MEDIAINFO_VP8_NO)     fi; if test "$MediaInfoVp8"     = "yes"; then AC_DEFINE(MEDIAINFO_VP8_YES)     fi
 if test "$MediaInfoY4m"     = "no";  then AC_DEFINE(MEDIAINFO_Y4M_NO)     fi; if test "$MediaInfoY4m"     = "yes"; then AC_DEFINE(MEDIAINFO_Y4M_YES)     fi
 
 dnl #########################################################################
@@ -466,8 +470,7 @@ elif test -e ../../../../Shared/Project/curl/Compile.sh; then
 		AC_MSG_ERROR([Problem while compiling builtin curl])
 	fi
 else
-	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_LIBCURL_NO"
-	using_libcurl="not found"
+	AC_MSG_ERROR([libcurl development files are not found. Install the corresponding libcurl development package (e.g. "apt-get install libcurl-dev" or "yum install libcurl-devel"])
 fi
 
 dnl -------------------------------------------------------------------------
@@ -521,16 +524,13 @@ dnl -------------------------------------------------------------------------
 dnl libtinyxml
 dnl
 if test "$with_libtinyxml" = "yes"; then
-	if pkg-config --exists tinyxml; then
-		CXXFLAGS="$CXXFLAGS $(pkg-config --cflags tinyxml)"
-		MediaInfoLib_CXXFLAGS="$MediaInfoLib_CXXFLAGS $(pkg-config --cflags tinyxml)"
-		MediaInfoLib_LIBS="$MediaInfoLib_LIBS $(pkg-config --libs tinyxml)"
-		MediaInfoLib_Requires="$MediaInfoLib_Requires tinyxml"
-		using_libtinyxml="system"
-		AM_CONDITIONAL(COMPILE_TINYXML, false)
-	else
-		AC_MSG_ERROR([libtinyxml is not found, please install development package of libtinyxml])
-	fi
+	PKG_CHECK_MODULES([TINYXML], [tinyxml])
+	CXXFLAGS="$CXXFLAGS $TINYXML_CXXFLAGS"
+	MediaInfoLib_CXXFLAGS="$MediaInfoLib_CXXFLAGS $TINYXML_CXXFLAGS"
+	LIBS="$LIBS $TINYXML_LIBS"
+	MediaInfoLib_LIBS="$MediaInfoLib_LIBS $TINYXML_LIBS"
+	AM_CONDITIONAL(COMPILE_TINYXML, false)
+	using_libtinyxml="system"
 else
 	CXXFLAGS="$CXXFLAGS -I../../../Source/ThirdParty/tinyxml"
 	using_libtinyxml="internal"
@@ -551,6 +551,9 @@ case "${build}" in
   powerpc-montavista* )
     CFLAGS="$CFLAGS -D__MONTAVISTA__"
     CXXFLAGS="$CXXFLAGS -D__MONTAVISTA__"
+  ;;
+  powerpc64-* )
+    enable_visibility="no"
   ;;
 esac
 
@@ -667,7 +670,6 @@ AC_SUBST(MediaInfoLib_CXXFLAGS)
 AC_SUBST(MediaInfoLib_LIBS)
 AC_SUBST(MediaInfoLib_LIBS_Static)
 AC_SUBST(MediaInfoLib_Unicode)
-AC_SUBST(MediaInfoLib_Requires)
 AC_CONFIG_FILES(libmediainfo-config, [chmod u+x libmediainfo-config])
 AC_CONFIG_FILES(libmediainfo.pc)
 
@@ -797,11 +799,13 @@ Mcho "Scc    " "$MediaInfoScc"
 Mcho "Avc    " "$MediaInfoAvc"
 Mcho "AvsV   " "$MediaInfoAvsV"
 Mcho "Flic   " "$MediaInfoFlic"
+Mcho "H263   " "$MediaInfoH263"
 Mcho "Mpeg4v " "$MediaInfoMpeg4v"
 Mcho "Mpegv  " "$MediaInfoMpegv"
 Mcho "Mpegv  " "$MediaInfoTheora"
 Mcho "Vc1    " "$MediaInfoVc1"
 Mcho "Vc3    " "$MediaInfoVc3"
+Mcho "VP8    " "$MediaInfoVp8"
 Mcho "Y4m    " "$MediaInfoY4m"
 echo ""
 echo "  CXXFLAGS: $CXXFLAGS"

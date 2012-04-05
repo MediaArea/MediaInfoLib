@@ -57,6 +57,9 @@
 #if defined(MEDIAINFO_GXF_YES)
     #include "MediaInfo/Multiple/File_Gxf.h"
 #endif
+#if defined(MEDIAINFO_HLS_YES)
+    #include "MediaInfo/Multiple/File_Hls.h"
+#endif
 #if defined(MEDIAINFO_ISM_YES)
     #include "MediaInfo/Multiple/File_Ism.h"
 #endif
@@ -125,6 +128,9 @@
 #endif
 #if defined(MEDIAINFO_FLIC_YES)
     #include "MediaInfo/Video/File_Flic.h"
+#endif
+#if defined(MEDIAINFO_H263_YES)
+    #include "MediaInfo/Video/File_H263.h"
 #endif
 #if defined(MEDIAINFO_MPEG4V_YES)
     #include "MediaInfo/Video/File_Mpeg4v.h"
@@ -355,6 +361,9 @@ File__MultipleParsing::File__MultipleParsing()
     #if defined(MEDIAINFO_GXF_YES)
         Temp=new File_Gxf(); Parser.push_back(Temp);
     #endif
+    #if defined(MEDIAINFO_HLS_YES)
+        Temp=new File_Hls(); Parser.push_back(Temp);
+    #endif
     #if defined(MEDIAINFO_ISM_YES)
         Temp=new File_Ism(); Parser.push_back(Temp);
     #endif
@@ -425,6 +434,9 @@ File__MultipleParsing::File__MultipleParsing()
     #endif
     #if defined(MEDIAINFO_FLIC_YES)
         Temp=new File_Flic(); Parser.push_back(Temp);
+    #endif
+    #if defined(MEDIAINFO_H263_YES)
+        Temp=new File_H263(); Parser.push_back(Temp);
     #endif
     #if defined(MEDIAINFO_MPEG4V_YES)
         Temp=new File_Mpeg4v(); Parser.push_back(Temp);

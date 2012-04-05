@@ -27,7 +27,8 @@
 #include "MediaInfo/File__Base.h"
 #include "MediaInfo/File__Analyse_Automatic.h"
 #include "MediaInfo/MediaInfo_Config.h"
-#include "ZenLib/BitStream.h"
+#include "ZenLib/BitStream_Fast.h"
+#include "ZenLib/BitStream_LE.h"
 #include "ZenLib/int128u.h"
 #include "ZenLib/ZtringListList.h"
 #include <vector>
@@ -170,8 +171,10 @@ protected :
     virtual void Read_Buffer_AfterParsing ()  {}; //Temp, should be in File__Base caller
     #if MEDIAINFO_SEEK
     virtual size_t Read_Buffer_Seek (size_t, int64u, int64u); //Temp, should be in File__Base caller
+    size_t Read_Buffer_Seek_OneFramePerFile (size_t, int64u, int64u);
     #endif //MEDIAINFO_SEEK
     virtual void Read_Buffer_Unsynched ()     {}; //Temp, should be in File__Base caller
+    void Read_Buffer_Unsynched_OneFramePerFile ();
     virtual void Read_Buffer_Finalize ()      {}; //Temp, should be in File__Base caller
     bool Buffer_Parse();
 
@@ -250,9 +253,12 @@ protected :
 
     //Elements - Begin
     void Element_Begin ();
-    void Element_Begin (const Ztring &Name, int64u Size=(int64u)-1);
-    inline void Element_Begin (int64u Size) {Element_Begin(Ztring(), Size);}
-    inline void Element_Begin (const char *Name, int64u Size=(int64u)-1) {Element_Begin(Ztring().From_UTF8(Name), Size);}
+    void Element_Begin (const Ztring &Name);
+    inline void Element_Begin (const char *Name) {Element_Begin(Ztring().From_UTF8(Name));}
+    #define Element_Begin0() Element_Begin()
+    #define Element_Begin1(_NAME) Element_Begin(_NAME)
+    #define Element_Trace_Begin0() Element_Begin()
+    #define Element_Trace_Begin1(_NAME) Element_Begin(_NAME)
 
     //Elements - Name
     void Element_Name (const Ztring &Name);
@@ -276,13 +282,20 @@ protected :
     #endif //SIZE_T_IS_LONG
     inline void Element_Info (float32       Parameter, int8u AfterComma=3, const char*   Measure=NULL) {Element_Info(Ztring::ToZtring(Parameter, AfterComma)+Ztring().From_UTF8(Measure));}
     inline void Element_Info (float64       Parameter, int8u AfterComma=3, const char*   Measure=NULL) {Element_Info(Ztring::ToZtring(Parameter, AfterComma)+Ztring().From_UTF8(Measure));}
+    #define Element_Info1(_A) Element_Info(_A)
+    #define Element_Info2(_A,_B) Element_Info(_A, _B)
+    #define Element_Info3(_A,_B,_C) Element_Info(_A, _B, _C)
+    #define Element_Info1C(_CONDITION,_A) if (_CONDITION) Element_Info(_A)
     inline void Element_Info_From_Milliseconds (int64u Parameter)                  {Element_Info(Ztring().Duration_From_Milliseconds(Parameter));}
 
     //Elements - End
-    void Element_End ();
-    void Element_End (const Ztring &Name, int64u Size=(int64u)-1);
-    inline void Element_End (int64u Size) {Element_End(Ztring(), Size);}
-    inline void Element_End (const char *Name, int64u Size=(int64u)-1) {Element_End(Ztring().From_UTF8(Name), Size);}
+    inline void Element_End () {Element_End_Common_Flush();}
+    void Element_End (const Ztring &Name);
+    inline void Element_End (const char *Name) {Element_End(Ztring().From_UTF8(Name));}
+    #define Element_End0() Element_End()
+    #define Element_End1(_NAME) Element_End(_NAME)
+    #define Element_Trace_End0() Element_End()
+    #define Element_Trace_End1(_NAME) Element_End(_NAME)
 
     //Elements - Preparation of element from external app
     void Element_Prepare (int64u Size);
@@ -335,6 +348,9 @@ public :
     inline void Param      (const char*   Parameter, float80 Value, int8u AfterComma=3) {Param(Parameter, Ztring::ToZtring(Value, AfterComma));}
     inline void Param      (const int32u  Parameter, const Ztring& Value) {Param(Ztring().From_CC4(Parameter), Value);};
     inline void Param      (const int16u  Parameter, const Ztring& Value) {Param(Ztring().From_CC2(Parameter), Value);};
+    #define Param1(_A) Param_(_A)
+    #define Param2(_A,_B) Param(_A, _B)
+    #define Param3(_A,_B,_C) Param(_A, _B, _C)
 
     //Param - Info
     void Param_Info (const Ztring &Parameter);
@@ -354,6 +370,12 @@ public :
     #ifdef SIZE_T_IS_LONG
     inline void Param_Info (size_t        Parameter, const char*   Measure=NULL) {Param_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
     #endif //SIZE_T_IS_LONG
+    #define Param_Info1(_A) Param_Info(_A)
+    #define Param_Info2(_A,_B) Param_Info(_A, _B)
+    #define Param_Info3(_A,_B,_C) Param_Info(_A, _B, _C)
+    #define Param_Info1C(_CONDITION,_A) if (_CONDITION) Param_Info(_A)
+    #define Param_Info2C(_CONDITION,_A,_B) if (_CONDITION) Param_Info(_A, _B)
+    #define Param_Info3C(_CONDITION,_A,_B,_C) if (_CONDITION) Param_Info(_A, _B, _C)
     inline void Param_Info_From_Milliseconds (int64u Parameter)                  {Param_Info(Ztring().Duration_From_Milliseconds(Parameter));}
 
     //***************************************************************************
@@ -580,9 +602,29 @@ public :
     // Variable Length Code
     //***************************************************************************
 
-    void Get_VL (int32u Call(int8u Size, int32u ToCall), int32u &Info, const char* Name);
-    void Skip_VL(int32u Call(int8u Size, int32u ToCall),               const char* Name);
-    #define Info_VL(_CALL, _INFO, _NAME) int32u _INFO; Get_VL(_CALL, _INFO, _NAME)
+    struct vlc
+    {
+        int32u  value;
+        int8u   bit_increment;
+        int8s   mapped_to1;
+        int8s   mapped_to2;
+        int8s   mapped_to3;
+    };
+    struct vlc_fast
+    {
+        int8u*      Array;
+        int8u*      BitsToSkip;
+        const vlc*  Vlc;
+        int8u       Size;
+    };
+    #define VLC_END \
+        {(int32u)-1, (int8u)-1, 0, 0, 0}
+    void Get_VL_Prepare(vlc_fast &Vlc);
+    void Get_VL (const vlc Vlc[], size_t &Info, const char* Name);
+    void Get_VL (vlc_fast &Vlc, size_t &Info, const char* Name);
+    void Skip_VL(const vlc Vlc[], const char* Name);
+    void Skip_VL(vlc_fast &Vlc, const char* Name);
+    #define Info_VL(Vlc, Info, Name) size_t Info; Get_VL(Vlc, Info, Name)
 
     //***************************************************************************
     // Characters
@@ -660,6 +702,8 @@ public :
     void Get_Flags (int64u ValueToPut,          int8u &Info, const char* Name);
     void Skip_Flags(int64u Flags, size_t Order,              const char* Name);
     void Skip_Flags(int64u ValueToPut,                       const char* Name);
+    #define Get_FlagsM(_VALUE, _INFO, _NAME) Get_Flags(_VALUE, _INFO, _NAME)
+    #define Skip_FlagsM(_VALUE, _NAME) Skip_Flags(_VALUE, _NAME)
     #define Info_Flags(_FLAGS, _ORDER, _INFO, _NAME) bool _INFO; Get_Flags (_FLAGS, _ORDER, _INFO, _NAME)
 
     //***************************************************************************
@@ -720,7 +764,7 @@ public :
                 Skip_SB(                                        _NAME); \
             else \
             { \
-                Element_Begin(_NAME); \
+                Element_Begin1(_NAME); \
                 Skip_SB(                                        _NAME); \
 
     #define TEST_SB_SKIP(_NAME) \
@@ -729,7 +773,7 @@ public :
                 Skip_SB(                                        _NAME); \
             else \
             { \
-                Element_Begin(_NAME); \
+                Element_Begin1(_NAME); \
                 Skip_SB(                                        _NAME); \
 
     #define TESTELSE_SB_GET(_CODE, _NAME) \
@@ -737,18 +781,18 @@ public :
             Peek_SB(_CODE); \
             if (_CODE) \
             { \
-                Element_Begin(_NAME); \
+                Element_Begin1(_NAME); \
                 Skip_SB(                                        _NAME); \
 
     #define TESTELSE_SB_SKIP(_NAME) \
         { \
             if (Peek_SB()) \
             { \
-                Element_Begin(_NAME); \
+                Element_Begin1(_NAME); \
                 Skip_SB(                                        _NAME); \
 
     #define TESTELSE_SB_ELSE(_NAME) \
-                Element_End(); \
+                Element_End0(); \
             } \
             else \
             { \
@@ -759,7 +803,104 @@ public :
         } \
 
     #define TEST_SB_END() \
-                Element_End(); \
+                Element_End0(); \
+            } \
+        } \
+
+    //***************************************************************************
+    // BitStream (Little Endian)
+    //***************************************************************************
+
+    void Get_BT (size_t Bits, int32u  &Info, const char* Name);
+    void Get_TB (             bool    &Info, const char* Name);
+    bool Get_TB(                             const char* Name)  {bool Temp; Get_TB(Temp, Name); return Temp;}
+    void Get_T1 (size_t Bits, int8u   &Info, const char* Name);
+    void Get_T2 (size_t Bits, int16u  &Info, const char* Name);
+    void Get_T3 (size_t Bits, int32u  &Info, const char* Name);
+    void Get_T4 (size_t Bits, int32u  &Info, const char* Name);
+    void Get_T5 (size_t Bits, int64u  &Info, const char* Name);
+    void Get_T6 (size_t Bits, int64u  &Info, const char* Name);
+    void Get_T7 (size_t Bits, int64u  &Info, const char* Name);
+    void Get_T8 (size_t Bits, int64u  &Info, const char* Name);
+    void Peek_BT(size_t Bits, int32u  &Info);
+    void Peek_TB(              bool    &Info);
+    bool Peek_TB()                                              {bool Temp; Peek_TB(Temp); return Temp;}
+    void Peek_T1(size_t Bits, int8u   &Info);
+    void Peek_T2(size_t Bits, int16u  &Info);
+    void Peek_T3(size_t Bits, int32u  &Info);
+    void Peek_T4(size_t Bits, int32u  &Info);
+    void Peek_T5(size_t Bits, int64u  &Info);
+    void Peek_T6(size_t Bits, int64u  &Info);
+    void Peek_T7(size_t Bits, int64u  &Info);
+    void Peek_T8(size_t Bits, int64u  &Info);
+    void Skip_BT(size_t Bits,                const char* Name);
+    void Skip_TB(                            const char* Name);
+    void Skip_T1(size_t Bits,                const char* Name);
+    void Skip_T2(size_t Bits,                const char* Name);
+    void Skip_T3(size_t Bits,                const char* Name);
+    void Skip_T4(size_t Bits,                const char* Name);
+    void Skip_T5(size_t Bits,                const char* Name);
+    void Skip_T6(size_t Bits,                const char* Name);
+    void Skip_T7(size_t Bits,                const char* Name);
+    void Skip_T8(size_t Bits,                const char* Name);
+    #define Info_BT(_BITS, _INFO, _NAME) int32u  _INFO; Get_BT(_BITS, _INFO, _NAME)
+    #define Info_TB(_INFO, _NAME)        bool    _INFO; Get_TB(       _INFO, _NAME)
+    #define Info_T1(_BITS, _INFO, _NAME) int8u   _INFO; Get_T1(_BITS, _INFO, _NAME)
+    #define Info_T2(_BITS, _INFO, _NAME) int16u  _INFO; Get_T2(_BITS, _INFO, _NAME)
+    #define Info_T3(_BITS, _INFO, _NAME) int32u  _INFO; Get_T4(_BITS, _INFO, _NAME)
+    #define Info_T4(_BITS, _INFO, _NAME) int32u  _INFO; Get_T4(_BITS, _INFO, _NAME)
+    #define Info_T5(_BITS, _INFO, _NAME) int64u  _INFO; Get_T5(_BITS, _INFO, _NAME)
+    #define Info_T6(_BITS, _INFO, _NAME) int64u  _INFO; Get_T6(_BITS, _INFO, _NAME)
+    #define Info_T7(_BITS, _INFO, _NAME) int64u  _INFO; Get_T7(_BITS, _INFO, _NAME)
+    #define Info_T8(_BITS, _INFO, _NAME) int64u  _INFO; Get_T8(_BITS, _INFO, _NAME)
+
+    #define TEST_TB_GET(_CODE, _NAME) \
+        { \
+            Peek_TB(_CODE); \
+            if (!_CODE) \
+                Skip_TB(                                        _NAME); \
+            else \
+            { \
+                Element_Begin1(_NAME); \
+                Skip_TB(                                        _NAME); \
+
+    #define TEST_TB_SKIP(_NAME) \
+        { \
+            if (!Peek_TB()) \
+                Skip_TB(                                        _NAME); \
+            else \
+            { \
+                Element_Begin1(_NAME); \
+                Skip_TB(                                        _NAME); \
+
+    #define TESTELSE_TB_GET(_CODE, _NAME) \
+        { \
+            Peek_TB(_CODE); \
+            if (_CODE) \
+            { \
+                Element_Begin1(_NAME); \
+                Skip_TB(                                        _NAME); \
+
+    #define TESTELSE_TB_SKIP(_NAME) \
+        { \
+            if (Peek_TB()) \
+            { \
+                Element_Begin1(_NAME); \
+                Skip_TB(                                        _NAME); \
+
+    #define TESTELSE_TB_ELSE(_NAME) \
+                Element_End0(); \
+            } \
+            else \
+            { \
+                Skip_TB(                                        _NAME); \
+
+    #define TESTELSE_TB_END() \
+            } \
+        } \
+
+    #define TEST_TB_END() \
+                Element_End0(); \
             } \
         } \
 
@@ -935,6 +1076,7 @@ protected :
 
     void Tags ();
     void Video_FrameRate_Rounding (size_t Pos, video Parameter);
+    void Video_BitRate_Rounding (size_t Pos, video Parameter);
     void Audio_BitRate_Rounding (size_t Pos, audio Parameter);
 
     //Utils - Finalize
@@ -990,7 +1132,10 @@ protected :
     const int8u* Buffer;
 public : //TO CHANGE
     size_t Buffer_Size;
+    int64u Buffer_TotalBytes;
     int64u Buffer_TotalBytes_FirstSynched;
+    int64u Buffer_PaddingBytes;
+    float64 Stream_BitRateFromContainer;
 protected :
     int8u* Buffer_Temp;
     size_t Buffer_Temp_Size;
@@ -999,7 +1144,6 @@ protected :
     size_t Buffer_Offset_Temp; //Temporary usage in this parser
     size_t Buffer_MinimumSize;
     size_t Buffer_MaximumSize;
-    int64u Buffer_TotalBytes;
     int64u Buffer_TotalBytes_FirstSynched_Max;
     int64u Buffer_TotalBytes_Fill_Max;
     friend class File__Tags_Helper;
@@ -1010,6 +1154,7 @@ protected :
 
     bool FileHeader_Begin_0x000001();
     bool Synchronize_0x000001();
+    void Streams_Accept_TestContinuousFileNames();
 
 private :
 
@@ -1021,7 +1166,8 @@ private :
     size_t Data_Level;              //Current level for Data ("Top level")
 
     //Element
-    BitStream* BS;                  //For conversion from bytes to bitstream
+    BitStream_Fast* BS;             //For conversion from bytes to bitstream
+    BitStream*      BT;             //For conversion from bytes to bitstream
 public : //TO CHANGE
     int64u Header_Size;             //Size of the header of the current element
     const Ztring &Details_Get() {return Element[0].ToShow.Details;} //Direct access to details
@@ -1125,6 +1271,7 @@ public :
     #if MEDIAINFO_DEMUX
         void Demux (const int8u* Buffer, size_t Buffer_Size, contenttype ContentType);
         virtual bool Demux_UnpacketizeContainer_Test() {return true;}
+        bool Demux_UnpacketizeContainer_Test_OneFramePerFile();
         void Demux_UnpacketizeContainer_Demux(bool random_access=true);
         void Demux_UnpacketizeContainer_Demux_Clear();
         bool Demux_EventWasSent_Accept_Specific;
@@ -1223,6 +1370,12 @@ public :
                     } \
                     break; \
 
+#define ATOM_PARTIAL(_ATOM) \
+            case Elements::_ATOM : \
+                    if (Level==Element_Level) \
+                        _ATOM(); \
+                    break; \
+
 #define ATOM_DEFAULT(_ATOM) \
             default : \
                     if (Level==Element_Level) \
@@ -1279,6 +1432,20 @@ public :
                 return; \
             } \
         } \
+    } \
+    break; \
+
+#define LIST_DEFAULT_ALONE_BEGIN(_ATOM) \
+    if (Level!=Element_Level) \
+    { \
+        Level++; \
+        if (Level==Element_Level) \
+        { \
+            Element_ThisIsAList(); \
+            _ATOM(); \
+        } \
+
+#define LIST_DEFAULT_ALONE_END \
     } \
     break; \
 

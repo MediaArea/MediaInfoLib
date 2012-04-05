@@ -56,6 +56,9 @@
 #if defined(MEDIAINFO_MPEGV_YES)
     #include "MediaInfo/Video/File_Mpegv.h"
 #endif
+#if defined(MEDIAINFO_VP8_YES)
+    #include "MediaInfo/Video/File_Vp8.h"
+#endif
 #if defined(MEDIAINFO_AAC_YES)
     #include "MediaInfo/Audio/File_Aac.h"
 #endif
@@ -264,7 +267,7 @@ void File_Mk::Streams_Finish()
             if (StreamKind_Last==Stream_Video)
             {
                 //FrameRate
-                if (Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).empty()&& Temp->second.TimeCodes.size()>1)
+                if (Temp->second.TimeCodes.size()>1)
                 {
                     //Trying to detect VFR
                     std::vector<int64s> FrameRate_Between;
@@ -282,15 +285,33 @@ void File_Mk::Streams_Finish()
                             Time=(float)(Temp->second.TimeCodes[30]-Temp->second.TimeCodes[0])/30; //30 frames for handling 30 fps rounding problems
                         if (Time)
                         {
-                            Fill(Stream_Video, StreamPos_Last, Video_FrameRate, 1000/Time);
-                            Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode, "CFR");
+                            float32 FrameRate_FromCluster=1000000000/Time/TimecodeScale;
+                            if (!Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).empty())
+                            {
+                                float32 FrameRate_FromTrack=Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).To_float32();
+                                if (FrameRate_FromCluster*1.01<FrameRate_FromTrack*0.99
+                                 || FrameRate_FromCluster*0.99>FrameRate_FromTrack*1.01)
+                                    Clear(Stream_Video, StreamPos_Last, Video_FrameRate); //There is a problem
+                            }
+                            else
+                            {
+                                Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate_FromCluster);
+                                Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode, "CFR");
+                            }
                         }
                     }
                     else
+                    {
                         Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode, "VFR");
+                        if (Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).To_float32()==1000.0)
+                            Clear(Stream_Video, StreamPos_Last, Video_FrameRate); //Some files on the net have a frame rate of 1000, it is not possible to be sure this is the real frame rate.
+                    }
                 }
             }
         }
+
+        if (Temp->second.FrameRate!=0 && Retrieve(Stream_Video, Temp->second.StreamPos, Video_FrameRate).empty())
+            Fill(Stream_Video, Temp->second.StreamPos, Video_FrameRate, Temp->second.FrameRate, 3);
 
         //Flags
         Fill(Temp->second.StreamKind, Temp->second.StreamPos, "Default", Temp->second.Default?"Yes":"No");
@@ -551,6 +572,7 @@ namespace Elements
     const int64u Segment_Tracks_TrackEntry_Video_DisplayUnit=0x14B2;
     const int64u Segment_Tracks_TrackEntry_Video_DisplayWidth=0x14B0;
     const int64u Segment_Tracks_TrackEntry_Video_FlagInterlaced=0x1A;
+    const int64u Segment_Tracks_TrackEntry_Video_FrameRate=0x383E3;
     const int64u Segment_Tracks_TrackEntry_Video_PixelCropBottom=0x14AA;
     const int64u Segment_Tracks_TrackEntry_Video_PixelCropLeft=0x14CC;
     const int64u Segment_Tracks_TrackEntry_Video_PixelCropRight=0x14DD;
@@ -845,6 +867,7 @@ void File_Mk::Data_Parse()
                     ATOM(Segment_Tracks_TrackEntry_Video_DisplayUnit)
                     ATOM(Segment_Tracks_TrackEntry_Video_DisplayWidth)
                     ATOM(Segment_Tracks_TrackEntry_Video_FlagInterlaced)
+                    ATOM(Segment_Tracks_TrackEntry_Video_FrameRate)
                     ATOM(Segment_Tracks_TrackEntry_Video_PixelCropBottom)
                     ATOM(Segment_Tracks_TrackEntry_Video_PixelCropLeft)
                     ATOM(Segment_Tracks_TrackEntry_Video_PixelCropRight)
@@ -945,7 +968,7 @@ void File_Mk::Ebml_DocType()
 
     //Parsing
     Ztring Data;
-    Get_Local(Element_Size, Data,                               "Data"); Element_Info(Data);
+    Get_Local(Element_Size, Data,                               "Data"); Element_Info1(Data);
 
     //Filling
     FILLING_BEGIN();
@@ -1348,7 +1371,7 @@ void File_Mk::Segment_Cluster()
                 Temp->second.Searching_Payload=true;
             if (Temp->second.StreamKind==Stream_Video || Temp->second.StreamKind==Stream_Audio)
                 Temp->second.Searching_TimeStamp_Start=true;
-            if (Temp->second.StreamKind==Stream_Video && Retrieve(Stream_Video, Temp->second.StreamPos, Video_FrameRate).empty())
+            if (Temp->second.StreamKind==Stream_Video)
                 Temp->second.Searching_TimeStamps=true;
             if (Temp->second.Searching_Payload
              || Temp->second.Searching_TimeStamp_Start
@@ -1429,7 +1452,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
     {
         std::vector<int64u> Laces;
         int32u Lacing;
-        Element_Begin("Flags", 1);
+        Element_Begin1("Flags");
             BS_Begin();
             Skip_BS(1,                                              "KeyFrame");
             Skip_BS(3,                                              "Reserved");
@@ -1437,10 +1460,10 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
             Get_BS (2, Lacing,                                      "Lacing");
             Skip_BS(1,                                              "Discardable");
             BS_End();
-        Element_End();
+        Element_End0();
         if (Lacing>0)
         {
-            Element_Begin("Lacing");
+            Element_Begin1("Lacing");
                 int8u FrameCountMinus1;
                 Get_B1(FrameCountMinus1,                            "Frame count minus 1");
                 switch (Lacing)
@@ -1458,7 +1481,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
                                         Size+=Size8;
                                     }
                                     while (Size8==0xFF);
-                                    Param_Info(Size);
+                                    Param_Info1(Size);
                                     Element_Offset_Virtual+=Size;
                                     Laces.push_back(Size);
                                 }
@@ -1481,16 +1504,16 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
                                 {
                                     int64s Diff;
                                     Get_ES (Diff,                   "Difference");
-                                    Size+=Diff; Param_Info(Size);
+                                    Size+=Diff; Param_Info1(Size);
                                     Element_Offset_Virtual+=Size;
                                     Laces.push_back(Size);
                                 }
-                                Laces.push_back(Element_Size-Element_Offset-Element_Offset_Virtual); Param_Info(Size); //last lace
+                                Laces.push_back(Element_Size-Element_Offset-Element_Offset_Virtual); Param_Info1(Size); //last lace
                             }
                             break;
                     default : ; //Should never be here
                 }
-            Element_End();
+            Element_End0();
         }
         else
             Laces.push_back(Element_Size-Element_Offset);
@@ -1782,7 +1805,7 @@ void File_Mk::Segment_Info_DateUTC()
 
     //Parsing
     int64u Data;
-    Get_B8(Data,                                                "Data"); Element_Info(Data/1000000000+978307200); //From Beginning of the millenium, in nanoseconds
+    Get_B8(Data,                                                "Data"); Element_Info1(Data/1000000000+978307200); //From Beginning of the millenium, in nanoseconds
 
     FILLING_BEGIN();
         Fill(Stream_General, 0, "Encoded_Date", Ztring().Date_From_Seconds_1970((int32u)(Data/1000000000+978307200))); //978307200s between beginning of the millenium and 1970
@@ -1956,7 +1979,7 @@ void File_Mk::Segment_SeekHead_Seek_SeekPosition()
     int64u Data=UInteger_Get();
 
     Segment_Seeks.push_back(Segment_Offset_Begin+Data);
-    Element_Info(Ztring::ToZtring(Segment_Offset_Begin+Data, 16));
+    Element_Info1(Ztring::ToZtring(Segment_Offset_Begin+Data, 16));
 }
 
 //---------------------------------------------------------------------------
@@ -2000,7 +2023,7 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagLanguage()
 
     //Parsing
     Ztring Data;
-    Get_Local(Element_Size, Data,                              "Data"); Element_Info(Data);
+    Get_Local(Element_Size, Data,                              "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
         //Fill(StreamKind_Last, StreamPos_Last, "Language", Data);
@@ -2239,7 +2262,7 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecID()
 
     //Parsing
     Ztring Data;
-    Get_Local(Element_Size, Data,                               "Data"); Element_Info(Data);
+    Get_Local(Element_Size, Data,                               "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
         CodecID=Data;
@@ -2261,7 +2284,7 @@ void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compres
 void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression_ContentCompAlgo()
 {
     //Parsing
-    int64u Algo=UInteger_Get(); Param_Info(Mk_ContentCompAlgo(Algo));
+    int64u Algo=UInteger_Get(); Param_Info1(Mk_ContentCompAlgo(Algo));
 
     FILLING_BEGIN();
         Stream[TrackNumber].ContentCompAlgo=Algo;
@@ -2336,7 +2359,7 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate()
 //--------------------------------------------------------------------------
 void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_auds()
 {
-    Element_Info("Copy of auds");
+    Element_Info1("Copy of auds");
 
     //Parsing
     int32u SamplesPerSec;
@@ -2401,9 +2424,8 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_auds_ExtensibleWave()
             Fill(Stream_Audio, StreamPos_Last, Audio_Codec, MediaInfoLib::Config.Codec_Get(Ztring().From_Number((int16u)SubFormat.hi, 16)), true);
 
             //Creating the parser
-                 if (0);
             #if defined(MEDIAINFO_PCM_YES)
-            else if (MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Riff, Ztring().From_Number((int16u)SubFormat.hi, 16))==_T("PCM"))
+            if (MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Riff, Ztring().From_Number((int16u)SubFormat.hi, 16))==_T("PCM"))
             {
                 //Creating the parser
                 File_Pcm MI;
@@ -2431,7 +2453,7 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_auds_ExtensibleWave()
 //---------------------------------------------------------------------------
 void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_vids()
 {
-    Element_Info("Copy of vids");
+    Element_Info1("Copy of vids");
 
     //Parsing
     int32u Width, Height, Compression;
@@ -2505,12 +2527,12 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_vids()
 
     if (Data_Remain())
     {
-        Element_Begin("Private data");
+        Element_Begin1("Private data");
         if (Stream[TrackNumber].Parser)
             Open_Buffer_Continue(Stream[TrackNumber].Parser);
         else
             Skip_XX(Data_Remain(),                                  "Unknown");
-        Element_End();
+        Element_End0();
     }
 }
 
@@ -2586,7 +2608,7 @@ void File_Mk::Segment_Tracks_TrackEntry_Language()
 
     //Parsing
     Ztring Data;
-    Get_Local(Element_Size, Data,                               "Data"); Element_Info(Data);
+    Get_Local(Element_Size, Data,                               "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
         Fill(StreamKind_Last, StreamPos_Last, "Language", Data, true);
@@ -2627,7 +2649,7 @@ void File_Mk::Segment_Tracks_TrackEntry_Name()
 
     //Parsing
     Ztring Data;
-    Get_UTF8(Element_Size, Data,                               "Data"); Element_Info(Data);
+    Get_UTF8(Element_Size, Data,                               "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
         Fill(StreamKind_Last, StreamPos_Last, "Title", Data);
@@ -2804,6 +2826,20 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_FlagInterlaced()
 }
 
 //---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_Video_FrameRate()
+{
+    Element_Name("FrameRate");
+
+    //Parsing
+   float64 Value=Float_Get();
+
+    //Filling
+    FILLING_BEGIN();
+        Stream[TrackNumber].FrameRate=Value;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Mk::Segment_Tracks_TrackEntry_Video_PixelCropBottom()
 {
     Element_Name("PixelCropBottom");
@@ -2877,7 +2913,7 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_StereoMode()
     Element_Name("StereoMode");
 
     //Parsing
-    int64u UInteger=UInteger_Get(); Element_Info(Format_Version==2?Mk_StereoMode_v2(UInteger):Mk_StereoMode(UInteger));
+    int64u UInteger=UInteger_Get(); Element_Info1(Format_Version==2?Mk_StereoMode_v2(UInteger):Mk_StereoMode(UInteger));
 
     //Filling
     FILLING_BEGIN();
@@ -2936,47 +2972,47 @@ void File_Mk::UInteger_Info()
     {
         case 1 :
                 {
-                    Info_B1(Data,                               "Data"); Element_Info(Data);
+                    Info_B1(Data,                               "Data"); Element_Info1(Data);
                     return;
                 }
         case 2 :
                 {
-                    Info_B2(Data,                               "Data"); Element_Info(Data);
+                    Info_B2(Data,                               "Data"); Element_Info1(Data);
                     return;
                 }
         case 3 :
                 {
-                    Info_B3(Data,                               "Data"); Element_Info(Data);
+                    Info_B3(Data,                               "Data"); Element_Info1(Data);
                     return;
                 }
         case 4 :
                 {
-                    Info_B4(Data,                               "Data"); Element_Info(Data);
+                    Info_B4(Data,                               "Data"); Element_Info1(Data);
                     return;
                 }
         case 5 :
                 {
-                    Info_B5(Data,                               "Data"); Element_Info(Data);
+                    Info_B5(Data,                               "Data"); Element_Info1(Data);
                     return;
                 }
         case 6 :
                 {
-                    Info_B6(Data,                               "Data"); Element_Info(Data);
+                    Info_B6(Data,                               "Data"); Element_Info1(Data);
                     return;
                 }
         case 7 :
                 {
-                    Info_B7(Data,                               "Data"); Element_Info(Data);
+                    Info_B7(Data,                               "Data"); Element_Info1(Data);
                     return;
                 }
         case 8 :
                 {
-                    Info_B8(Data,                               "Data"); Element_Info(Data);
+                    Info_B8(Data,                               "Data"); Element_Info1(Data);
                     return;
                 }
         case 16:
                 {
-                    Info_B16(Data,                              "Data"); Element_Info(Data);
+                    Info_B16(Data,                              "Data"); Element_Info1(Data);
                     return;
                 }
         default : Skip_XX(Element_Size,                         "Data");
@@ -2991,49 +3027,49 @@ int64u File_Mk::UInteger_Get()
         case 1 :
                 {
                     int8u Data;
-                    Get_B1 (Data,                               "Data"); Element_Info(Data);
+                    Get_B1 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 2 :
                 {
                     int16u Data;
-                    Get_B2 (Data,                               "Data"); Element_Info(Data);
+                    Get_B2 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 3 :
                 {
                     int32u Data;
-                    Get_B3 (Data,                               "Data"); Element_Info(Data);
+                    Get_B3 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 4 :
                 {
                     int32u Data;
-                    Get_B4 (Data,                               "Data"); Element_Info(Data);
+                    Get_B4 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 5 :
                 {
                     int64u Data;
-                    Get_B5 (Data,                               "Data"); Element_Info(Data);
+                    Get_B5 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 6 :
                 {
                     int64u Data;
-                    Get_B6 (Data,                               "Data"); Element_Info(Data);
+                    Get_B6 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 7 :
                 {
                     int64u Data;
-                    Get_B7 (Data,                               "Data"); Element_Info(Data);
+                    Get_B7 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 8 :
                 {
                     int64u Data;
-                    Get_B8 (Data,                               "Data"); Element_Info(Data);
+                    Get_B8 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         default :   Skip_XX(Element_Size,                       "Data");
@@ -3049,55 +3085,55 @@ int128u File_Mk::UInteger16_Get()
         case 1 :
                 {
                     int8u Data;
-                    Get_B1 (Data,                               "Data"); Element_Info(Data);
+                    Get_B1 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 2 :
                 {
                     int16u Data;
-                    Get_B2 (Data,                               "Data"); Element_Info(Data);
+                    Get_B2 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 3 :
                 {
                     int32u Data;
-                    Get_B3 (Data,                               "Data"); Element_Info(Data);
+                    Get_B3 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 4 :
                 {
                     int32u Data;
-                    Get_B4 (Data,                               "Data"); Element_Info(Data);
+                    Get_B4 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 5 :
                 {
                     int64u Data;
-                    Get_B5 (Data,                               "Data"); Element_Info(Data);
+                    Get_B5 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 6 :
                 {
                     int64u Data;
-                    Get_B6 (Data,                               "Data"); Element_Info(Data);
+                    Get_B6 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 7 :
                 {
                     int64u Data;
-                    Get_B7 (Data,                               "Data"); Element_Info(Data);
+                    Get_B7 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 8 :
                 {
                     int64u Data;
-                    Get_B8 (Data,                               "Data"); Element_Info(Data);
+                    Get_B8 (Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 16:
                 {
                     int128u Data;
-                    Get_B16(Data,                               "Data"); Element_Info(Data);
+                    Get_B16(Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         default :   Skip_XX(Element_Size,                       "Data");
@@ -3113,13 +3149,13 @@ float64 File_Mk::Float_Get()
         case 4 :
                 {
                     float32 Data;
-                    Get_BF4(Data,                               "Data"); Element_Info(Data);
+                    Get_BF4(Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         case 8 :
                 {
                     float64 Data;
-                    Get_BF8(Data,                               "Data"); Element_Info(Data);
+                    Get_BF8(Data,                               "Data"); Element_Info1(Data);
                     return Data;
                 }
         default :   Skip_XX(Element_Size,                       "Data");
@@ -3134,12 +3170,12 @@ void File_Mk::Float_Info()
     {
         case 4 :
                 {
-                    Info_BF4(Data,                              "Data"); Element_Info(Data);
+                    Info_BF4(Data,                              "Data"); Element_Info1(Data);
                     return;
                 }
         case 8 :
                 {
-                    Info_BF8(Data,                              "Data"); Element_Info(Data);
+                    Info_BF8(Data,                              "Data"); Element_Info1(Data);
                     return;
                 }
         default :   Skip_XX(Element_Size,                       "Data");
@@ -3151,28 +3187,28 @@ void File_Mk::Float_Info()
 Ztring File_Mk::UTF8_Get()
 {
     Ztring Data;
-    Get_UTF8(Element_Size, Data,                                "Data"); Element_Info(Data);
+    Get_UTF8(Element_Size, Data,                                "Data"); Element_Info1(Data);
     return Data;
 }
 
 //---------------------------------------------------------------------------
 void File_Mk::UTF8_Info()
 {
-    Info_UTF8(Element_Size, Data,                               "Data"); Element_Info(Data);
+    Info_UTF8(Element_Size, Data,                               "Data"); Element_Info1(Data);
 }
 
 //---------------------------------------------------------------------------
 Ztring File_Mk::Local_Get()
 {
     Ztring Data;
-    Get_Local(Element_Size, Data,                               "Data"); Element_Info(Data);
+    Get_Local(Element_Size, Data,                               "Data"); Element_Info1(Data);
     return Data;
 }
 
 //---------------------------------------------------------------------------
 void File_Mk::Local_Info()
 {
-    Info_Local(Element_Size, Data,                              "Data"); Element_Info(Data);
+    Info_Local(Element_Size, Data,                              "Data"); Element_Info1(Data);
 }
 
 //***************************************************************************
@@ -3236,6 +3272,12 @@ void File_Mk::CodecID_Manage()
         Stream[TrackNumber].Parser=new File_Mpegv;
         ((File_Mpegv*)Stream[TrackNumber].Parser)->FrameIsAlwaysComplete=true;
         ((File_Mpegv*)Stream[TrackNumber].Parser)->Frame_Count_Valid=1;
+    }
+    #endif
+    #if defined(MEDIAINFO_VP8_YES)
+    else if (Format==_T("VP8"))
+    {
+        Stream[TrackNumber].Parser=new File_Vp8;
     }
     #endif
     #if defined(MEDIAINFO_OGG_YES)

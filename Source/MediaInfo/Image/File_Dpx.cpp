@@ -35,9 +35,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Image/File_Dpx.h"
-#if MEDIAINFO_DEMUX
-    #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
-#endif //MEDIAINFO_DEMUX
+#include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -300,47 +298,22 @@ void File_Dpx::Streams_Accept()
     Fill(Stream_General, 0, General_Format, "DPX");
     Fill(Stream_General, 0, General_Format_Version, Version==1?"Version 1":"Version 2");
 
+    if (!IsSub)
+    {
+        Streams_Accept_TestContinuousFileNames();
+    
+        Stream_Prepare(Config->File_Names.size()>1?Stream_Video:Stream_Image);
+        Fill(StreamKind_Last, StreamPos_Last, "StreamSize", File_Size);
+        if (StreamKind_Last==Stream_Video)
+            Fill(Stream_Video, StreamPos_Last, Video_FrameCount, Config->File_Names.size());
+    }
+    else
+        Stream_Prepare(Stream_Image);
+
     //Configuration
     Buffer_MaximumSize=64*1024*1024;
     Frame_Count_NotParsedIncluded=0;
 }
-
-//---------------------------------------------------------------------------
-void File_Dpx::Streams_Finish()
-{
-}
-
-//***************************************************************************
-// Buffer - Demux
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-#if MEDIAINFO_DEMUX
-bool File_Dpx::Demux_UnpacketizeContainer_Test()
-{
-    if (Buffer_Size<File_Size)
-    {
-        size_t* File_Buffer_Size_Hint_Pointer=Config->File_Buffer_Size_Hint_Pointer_Get();
-        if (File_Buffer_Size_Hint_Pointer)
-            (*File_Buffer_Size_Hint_Pointer)=(size_t)File_Size;
-        return false;
-    }
-
-    if (Config->Demux_Rate_Get())
-    {
-        if (Frame_Count_NotParsedIncluded!=(int64u)-1)
-            FrameInfo.DTS=float64_int64s(Frame_Count_NotParsedIncluded*1000000000/Config->Demux_Rate_Get());
-        else
-            FrameInfo.DTS=(int64u)-1;
-        FrameInfo.PTS=FrameInfo.DTS;
-        FrameInfo.DUR=float64_int64s(1000000000/Config->Demux_Rate_Get());
-    }
-    Demux_Offset=Buffer_Size;
-    Demux_UnpacketizeContainer_Demux();
-
-    return true;
-}
-#endif //MEDIAINFO_DEMUX
 
 //***************************************************************************
 // Buffer
@@ -387,26 +360,16 @@ bool File_Dpx::FileHeader_Begin()
         case 0xD75F2A80 :   //       (v1 Little)
         case 0x58504453 :   //"XDPS" (v2 Little)
                             LittleEndian=true;
-                            Sizes.push_back(LittleEndian2int32u(Buffer+24));
                             break;
         case 0x802A5FD7 :   //       (v1 Big)
         case 0x53445058 :   //"SPDX" (v2 Big)
                             LittleEndian=false;
-                            Sizes.push_back(BigEndian2int32u(Buffer+24));
                             break;
         default         :   ;
     }
 
     //All should be OK...
     Accept();
-
-    //Testing if parsing is needed
-    if (Count_Get(Stream_Video))
-    {
-        //In a video stream, no need to parse all frames)
-        GoToFromEnd(0);
-        return true;
-    }
 
     return true;
 }
@@ -420,14 +383,25 @@ void File_Dpx::Header_Parse()
 {
     //Filling
     Header_Fill_Code(Sizes_Pos); //We use Sizes_Pos as the unique key
-    Header_Fill_Size(Sizes[Sizes_Pos]);
+    if (Sizes.empty())
+    {
+        if (Element_Size<28)
+        {
+            Element_WaitForMoreData();
+            return;
+        }
+        int32u Size=LittleEndian?LittleEndian2int32u(Buffer+Buffer_Offset+24):BigEndian2int32u(Buffer+Buffer_Offset+24);
+        if (Size==(int32u)-1)
+            Size=LittleEndian?LittleEndian2int32u(Buffer+Buffer_Offset+4):BigEndian2int32u(Buffer+Buffer_Offset+4);
+        Header_Fill_Size(Size);
+    }
+    else
+        Header_Fill_Size(Sizes[Sizes_Pos]);
 }
 
 //---------------------------------------------------------------------------
 void File_Dpx::Data_Parse()
 {
-    Sizes_Pos++; //We go automaticly to the next block
-
     if (Version==1)
     {
         switch (Element_Code)
@@ -435,6 +409,8 @@ void File_Dpx::Data_Parse()
             case Pos_GenericSection   : GenericSectionHeader_v1(); break;
             case Pos_IndustrySpecific : IndustrySpecificHeader_v1(); break;
             case Pos_UserDefined      : UserDefinedHeader_v1(); break;
+            case Pos_Padding          : Padding(); break;
+            case Pos_ImageData        : ImageData(); break;
             default                   : ;
         }
     }
@@ -445,26 +421,24 @@ void File_Dpx::Data_Parse()
             case Pos_GenericSection   : GenericSectionHeader_v2(); break;
             case Pos_IndustrySpecific : IndustrySpecificHeader_v2(); break;
             case Pos_UserDefined      : UserDefinedHeader_v2(); break;
+            case Pos_Padding          : Padding(); break;
+            case Pos_ImageData        : ImageData(); break;
             default                   : ;
         }
     }
 
-    //Special cases
-    bool ShouldParseMore=false;
-    for (size_t Pos=Pos_Padding-1; Pos>(size_t)Element_Code; Pos--) //Start from padding position (excluded), finish at current element
-        if (Sizes[Pos])
-            ShouldParseMore=true; //More blocks are interesting
-    if (!ShouldParseMore)
+    do
+        Sizes_Pos++; //We go automaticly to the next block
+    while (Sizes_Pos<Sizes.size() && Sizes[Sizes_Pos]==0);
+    if (Sizes_Pos==Sizes.size())
     {
-        //Not related to this block, but we have not more intersting stuff, simply skip the rest
-        Element_End(); //This is not in this block, but the next one
-        //if (Sizes[Pos_Padding])
-        //    Skip_XX(Sizes[Pos_Padding],                         "Padding");
-        //Skip_XX(Sizes[Pos_ImageData],                           "Image data");
+        Sizes.clear();
+        Sizes_Pos=0;
 
-        if (Frame_Count_NotParsedIncluded!=(int64u)-1)
-            Frame_Count_NotParsedIncluded++;
-        GoToFromEnd(0);
+        if (!Status[IsFilled])
+            Fill();
+        if (Config_ParseSpeed<1.0)
+            Finish();
     }
 }
 
@@ -478,7 +452,7 @@ void File_Dpx::GenericSectionHeader_v1()
     Element_Name("Generic section header");
 
     //Parsing
-    Element_Begin("File information");
+    Element_Begin1("File information");
     Ztring CreationDate, CreationTime;
     int32u Size_Header, Size_Total, Size_Generic, Size_Industry, Size_User;
     Skip_B4(                                                    "Magic number");
@@ -492,11 +466,11 @@ void File_Dpx::GenericSectionHeader_v1()
     Get_UTF8   (12,  CreationDate,                              "Creation Date");
     Get_UTF8   (12,  CreationTime,                              "Creation Time");
     Skip_XX(36,                                                 "Reserved for future use");
-    Element_End();
+    Element_End0();
 
-    Element_Begin("Image information");
+    Element_Begin1("Image information");
     int8u ImageElements;
-    Info_B1(ImageOrientation,                                   "Image orientation"); Param_Info(DPX_Orientation[ImageOrientation>8?8:ImageOrientation]);
+    Info_B1(ImageOrientation,                                   "Image orientation"); Param_Info1(DPX_Orientation[ImageOrientation>8?8:ImageOrientation]);
     Get_B1 (ImageElements,                                      "Number of image elements");
     Skip_B2(                                                    "Unused");
     if (ImageElements>8)
@@ -515,9 +489,9 @@ void File_Dpx::GenericSectionHeader_v1()
     Skip_BFP4(9,                                                "Blue primary chromaticity - y");
     Skip_UTF8(200,                                              "Label text");
     Skip_XX(28,                                                 "Reserved for future use");
-    Element_End();
+    Element_End0();
 
-    Element_Begin("Image Data Format Information");
+    Element_Begin1("Image Data Format Information");
     Skip_B1(                                                    "Data interleave");
     Skip_B1(                                                    "Packing");
     Skip_B1(                                                    "Data signed or unsigned");
@@ -526,7 +500,7 @@ void File_Dpx::GenericSectionHeader_v1()
     Skip_B4(                                                    "End of channel padding");
     Skip_XX(20,                                                 "Reserved for future use");
 
-    Element_Begin("Image Origination Information");
+    Element_Begin1("Image Origination Information");
     Skip_B4(                                                    "X offset");
     Skip_B4(                                                    "Y offset");
     Skip_UTF8  (100,                                            "FileName");
@@ -539,7 +513,7 @@ void File_Dpx::GenericSectionHeader_v1()
     Skip_BFP4(9,                                                "Y input device pitch");
     Skip_BFP4(9,                                                "Image gamma of capture device");
     Skip_XX(40,                                                 "Reserved for future use");
-    Element_End();
+    Element_End0();
 
     FILLING_BEGIN();
         //Coherency tests
@@ -550,21 +524,25 @@ void File_Dpx::GenericSectionHeader_v1()
         }
 
         //Filling sizes
+        Sizes.push_back(Size_Header);
         Sizes.push_back(Size_Industry);
         Sizes.push_back(Size_User);
         Sizes.push_back(Size_Header-(Size_Generic+Size_Industry+Size_User)); //Size of padding
         Sizes.push_back(Size_Total-Size_Header); //Size of image
 
         //Filling meta
-        Fill(Stream_General, 0, General_Encoded_Date, CreationDate+_T(' ')+CreationTime); //ToDo: transform it in UTC
-        Fill(Stream_Image, 0, Image_Encoded_Date, CreationDate+_T(' ')+CreationTime); //ToDo: transform it in UTC
+        if (Frame_Count==0)
+        {
+            Fill(Stream_General, 0, General_Encoded_Date, CreationDate+_T(' ')+CreationTime); //ToDo: transform it in UTC
+            Fill(StreamKind_Last, StreamPos_Last, "Encoded_Date", CreationDate+_T(' ')+CreationTime); //ToDo: transform it in UTC
+        }
     FILLING_END();
 }
 
 //---------------------------------------------------------------------------
 void File_Dpx::GenericSectionHeader_v1_ImageElement()
 {
-    Element_Begin("image element");
+    Element_Begin1("image element");
     int32u Width, Height;
     Skip_B1(                                                    "Designator - Byte 0");
     Skip_B1(                                                    "Designator - Byte 1");
@@ -576,16 +554,15 @@ void File_Dpx::GenericSectionHeader_v1_ImageElement()
     Skip_BFP4(9,                                                "Minimum quantity represented");
     Skip_BFP4(9,                                                "Maximum data value");
     Skip_BFP4(9,                                                "Maximum quantity represented");
-    Element_End();
+    Element_End0();
 
     FILLING_BEGIN();
-        if (Count_Get(Stream_Image)==0)
+        if (Frame_Count==0)
         {
-            Stream_Prepare(Stream_Image);
-            Fill(Stream_Image, StreamPos_Last, Image_Format, "DPX");
-            Fill(Stream_Image, StreamPos_Last, Image_Format_Version, "Version 1");
-            Fill(Stream_Image, StreamPos_Last, Image_Width, Width);
-            Fill(Stream_Image, StreamPos_Last, Image_Height, Height);
+            Fill(StreamKind_Last, StreamPos_Last, "Format", "DPX");
+            Fill(StreamKind_Last, StreamPos_Last, "Format_Version", "Version 1");
+            Fill(StreamKind_Last, StreamPos_Last, "Width", Width);
+            Fill(StreamKind_Last, StreamPos_Last, "Height", Height);
         }
     FILLING_END();
 }
@@ -596,7 +573,7 @@ void File_Dpx::GenericSectionHeader_v2()
     Element_Name("Generic section header");
 
     //Parsing
-    Element_Begin("File information");
+    Element_Begin1("File information");
     std::string CreationDate, Creator, Project, Copyright; 
     int32u Size_Header, Size_Total, Size_Generic, Size_Industry, Size_User;
     Skip_String(4,                                              "Magic number");
@@ -614,12 +591,12 @@ void File_Dpx::GenericSectionHeader_v2()
     Get_String (200, Copyright,                                 "Right to use or copyright statement");
     Skip_B4(                                                    "Encryption key");
     Skip_XX(104,                                                "Reserved for future use");
-    Element_End();
+    Element_End0();
 
-    Element_Begin("Image information");
+    Element_Begin1("Image information");
     int32u Width, Height, PAR_H, PAR_V;
     int16u ImageElements;
-    Info_B2(ImageOrientation,                                   "Image orientation");Param_Info(DPX_Orientation[ImageOrientation]);
+    Info_B2(ImageOrientation,                                   "Image orientation");Param_Info1(DPX_Orientation[ImageOrientation]);
     Get_X2 (ImageElements,                                      "Number of image elements");
     if (ImageElements>8)
         ImageElements=8;
@@ -630,9 +607,9 @@ void File_Dpx::GenericSectionHeader_v2()
     if (ImageElements!=8)
         Skip_XX((8-ImageElements)*72,                           "Padding");
     Skip_XX(52,                                                 "Reserved for future use");
-    Element_End();
+    Element_End0();
 
-    Element_Begin("Image source information");
+    Element_Begin1("Image source information");
     Skip_B4(                                                    "X Offset");
     Skip_B4(                                                    "Y Offset");
     Skip_BFP4(9,                                                "X center");
@@ -643,23 +620,29 @@ void File_Dpx::GenericSectionHeader_v2()
     Skip_UTF8(24,                                               "Source image date/time");
     Skip_UTF8(32,                                               "Input device name");
     Skip_UTF8(32,                                               "Input device serial number");
-    Element_Begin("Border validity");
+    Element_Begin1("Border validity");
     Skip_B2(                                                    "XL border");
     Skip_B2(                                                    "XR border");
     Skip_B2(                                                    "YT border");
     Skip_B2(                                                    "YB border");
-    Element_End();
+    Element_End0();
     Get_X4 (PAR_H,                                              "Pixel ratio : horizontal");
     Get_X4 (PAR_V,                                              "Pixel ratio : vertical");
     
-    Element_Begin("Additional source image information");
+    Element_Begin1("Additional source image information");
     Skip_BFP4(9,                                                "X scanned size");
     Skip_BFP4(9,                                                "Y scanned size");
     Skip_XX(20,                                                 "Reserved for future use");
-    Element_End();
+    Element_End0();
 
     FILLING_BEGIN();
         //Coherency tests
+        if (Size_Generic==(int32u)-1)
+            Size_Generic=Element_Size;
+        if (Size_Industry==(int32u)-1)
+            Size_Industry=0;    
+        if (Size_User==(int32u)-1)
+            Size_User=0;    
         if (Size_Generic+Size_Industry+Size_User>Size_Header || Size_Header>Size_Total)
         {
             Reject();
@@ -667,25 +650,28 @@ void File_Dpx::GenericSectionHeader_v2()
         }
 
         //Filling sizes
+        Sizes.push_back(Size_Header);
         Sizes.push_back(Size_Industry);
         Sizes.push_back(Size_User);
         Sizes.push_back(Size_Header-(Size_Generic+Size_Industry+Size_User)); //Size of padding
         Sizes.push_back(Size_Total-Size_Header); //Size of image
 
         //Filling meta
-        Fill(Stream_General, 0, General_Encoded_Date, CreationDate); //ToDo: transform it in UTC
-        Fill(Stream_Image, 0, Image_Encoded_Date, CreationDate); //ToDo: transform it in UTC
-        Fill(Stream_General, 0, General_Encoded_Library, Creator);
-        Fill(Stream_Image, 0, Image_Encoded_Library, Creator);
-        Fill(Stream_General, 0, "Project", Project); //ToDo: map to a MediaInfo field (which one?)
-        Fill(Stream_General, 0, General_Copyright, Copyright);
-
-        for (size_t StreamPos=0; StreamPos<Count_Get(Stream_Image); StreamPos++) //This is for all images
+        if (Frame_Count==0)
         {
-            Fill(Stream_Image, StreamPos, Image_Width, Width);
-            Fill(Stream_Image, StreamPos, Image_Height, Height);
-            //if (PAR_V) //ToDo: add aspect ratio field for images
-                //Fill(Stream_Image, StreamPos, Image_PixelAspectRatio, ((float)PAR_H)/PAR_V);
+            Fill(Stream_General, 0, General_Encoded_Date, CreationDate); //ToDo: transform it in UTC
+            Fill(StreamKind_Last, StreamPos_Last, "Encoded_Date", CreationDate); //ToDo: transform it in UTC
+            Fill(Stream_General, 0, General_Encoded_Library, Creator);
+            Fill(StreamKind_Last, StreamPos_Last, "Encoded_Library", Creator);
+            Fill(Stream_General, 0, "Project", Project); //ToDo: map to a MediaInfo field (which one?)
+            Fill(Stream_General, 0, General_Copyright, Copyright);
+
+            Fill(StreamKind_Last, StreamPos_Last, "Width", Width);
+            Fill(StreamKind_Last, StreamPos_Last, "Height", Height);
+            if (PAR_V && PAR_H!=(int32u)-1 && PAR_V!=(int32u)-1)
+                Fill(StreamKind_Last, StreamPos_Last, "PixelAspectRatio", ((float)PAR_H)/PAR_V);
+            else
+                Fill(StreamKind_Last, StreamPos_Last, "PixelAspectRatio", (float)1, 3);
         }
     FILLING_END();
 }
@@ -693,29 +679,32 @@ void File_Dpx::GenericSectionHeader_v2()
 //---------------------------------------------------------------------------
 void File_Dpx::GenericSectionHeader_v2_ImageElement()
 {
-    Element_Begin("image element");
-    Info_B4(DataSign,                                           "Data sign");Param_Info((DataSign==0?"unsigned":"signed"));
+    Element_Begin1("image element");
+    int8u BitDephs;
+    Info_B4(DataSign,                                           "Data sign");Param_Info1((DataSign==0?"unsigned":"signed"));
     Skip_B4(                                                    "Reference low data code value");
     Skip_BFP4(9,                                                "Reference low quantity represented");
     Skip_B4(                                                    "Reference high data code value");
     Skip_BFP4(9,                                                "Reference high quantity represented");
-    Info_B1(Descriptor,                                         "Descriptor");Param_Info(DPX_Descriptors(Descriptor));
-    Info_B1(TransferCharacteristic,                             "Transfer characteristic");Param_Info(DPX_TransferCharacteristic[TransferCharacteristic]);
-    Info_B1(ColorimetricSpecification,                          "Colorimetric specification");Param_Info(DPX_ColorimetricSpecification[ColorimetricSpecification]);
-    Info_B1(BitDephs,                                           "Bit depth");Param_Info(DPX_ValidBitDephs(BitDephs));
-    Info_B2(ComponentDataPackingMethod,                         "Packing");Param_Info((ComponentDataPackingMethod<8?DPX_ComponentDataPackingMethod[ComponentDataPackingMethod]:"invalid"));
-    Info_B2(ComponentDataEncodingMethod,                        "Encoding");Param_Info((ComponentDataEncodingMethod<8?DPX_ComponentDataEncodingMethod[ComponentDataEncodingMethod]:"invalid"));
+    Info_B1(Descriptor,                                         "Descriptor");Param_Info1(DPX_Descriptors(Descriptor));
+    Info_B1(TransferCharacteristic,                             "Transfer characteristic");Param_Info1(DPX_TransferCharacteristic[TransferCharacteristic]);
+    Info_B1(ColorimetricSpecification,                          "Colorimetric specification");Param_Info1(DPX_ColorimetricSpecification[ColorimetricSpecification]);
+    Get_B1 (BitDephs,                                           "Bit depth");Param_Info1(DPX_ValidBitDephs(BitDephs));
+    Info_B2(ComponentDataPackingMethod,                         "Packing");Param_Info1((ComponentDataPackingMethod<8?DPX_ComponentDataPackingMethod[ComponentDataPackingMethod]:"invalid"));
+    Info_B2(ComponentDataEncodingMethod,                        "Encoding");Param_Info1((ComponentDataEncodingMethod<8?DPX_ComponentDataEncodingMethod[ComponentDataEncodingMethod]:"invalid"));
     Skip_B4(                                                    "Offset to data");
     Skip_B4(                                                    "End-of-line padding");
     Skip_B4(                                                    "End-of-image padding");
     Skip_UTF8(32,                                               "Description of image element");
-    Element_End();
+    Element_End0();
 
     FILLING_BEGIN();
-        Stream_Prepare(Stream_Image);
-        Fill(Stream_Image, StreamPos_Last, Image_Format, "DPX");
-        Fill(Stream_Image, StreamPos_Last, Image_Format_Version, "Version 2");
-        Fill(Stream_Image, StreamPos_Last, Image_BitDepth, BitDephs);
+        if (Frame_Count==0)
+        {
+            Fill(StreamKind_Last, StreamPos_Last, "Format", "DPX");
+            Fill(StreamKind_Last, StreamPos_Last, "Format_Version", "Version 2");
+            Fill(StreamKind_Last, StreamPos_Last, "BitDepth", BitDephs);
+        }
     FILLING_END();
 }
 
@@ -725,7 +714,7 @@ void File_Dpx::IndustrySpecificHeader_v1()
     Element_Name("Motion picture industry specific header");
 
     //Parsing
-    Element_Begin("Motion-picture film information");
+    Element_Begin1("Motion-picture film information");
     Skip_B1(                                                    "?");
     Skip_B1(                                                    "?");
     Skip_B1(                                                    "?");
@@ -738,7 +727,7 @@ void File_Dpx::IndustrySpecificHeader_v1()
     Skip_UTF8(32,                                               "?");
     Skip_UTF8(200,                                              "?");
     Skip_XX(740,                                                "Reserved for future use");
-    Element_End();
+    Element_End0();
 }
 
 //---------------------------------------------------------------------------
@@ -747,7 +736,7 @@ void File_Dpx::IndustrySpecificHeader_v2()
     Element_Name("Industry specific header");
 
     //Parsing
-    Element_Begin("Motion-picture film information");
+    Element_Begin1("Motion-picture film information");
     Skip_String(2,                                              "Film mfg. ID code");
     Skip_String(2,                                              "Film type");
     Skip_String(2,                                              "Offset in perfs");
@@ -762,14 +751,14 @@ void File_Dpx::IndustrySpecificHeader_v2()
     Skip_UTF8(32,                                               "Frame identification - e.g. keyframe");
     Skip_UTF8(100,                                              "Slate information");
     Skip_XX(56,                                                 "Reserved for future use");
-    Element_End();
+    Element_End0();
     
-    Element_Begin("Television information");
+    Element_Begin1("Television information");
     Skip_B4(                                                    "SMPTE time code");
     Skip_B4(                                                    "SMPTE user bits");
-    Info_B1(Interlace,                                          "Interlace");Param_Info((Interlace==0?"noninterlaced":"2:1 interlace"));
+    Info_B1(Interlace,                                          "Interlace");Param_Info1((Interlace==0?"noninterlaced":"2:1 interlace"));
     Skip_B1(                                                    "Field number");
-    Info_B1(VideoSignalStandard,                                "Video signal standard");Param_Info(DPX_VideoSignalStandard(VideoSignalStandard));
+    Info_B1(VideoSignalStandard,                                "Video signal standard");Param_Info1(DPX_VideoSignalStandard(VideoSignalStandard));
     Skip_B1(                                                    "Zero");
     Skip_BFP4(9,                                                "Horizontal sampling rate (Hz)");
     Skip_BFP4(9,                                                "Vertical sampling rate (Hz)");
@@ -782,7 +771,7 @@ void File_Dpx::IndustrySpecificHeader_v2()
     Skip_BFP4(9,                                                "Reference white level code value");
     Skip_BFP4(9,                                                "Integration time (s)");
     Skip_XX(76,                                                 "Reserved for future use");
-    Element_End();
+    Element_End0();
 }
 
 //---------------------------------------------------------------------------
@@ -807,7 +796,29 @@ void File_Dpx::UserDefinedHeader_v2()
         return;            
     }
     Skip_UTF8(32,                                               "User identification");
-    Skip_XX(Sizes[Pos_UserDefined],                             "User defined");
+    Skip_XX(Sizes[Pos_UserDefined]-32,                          "User defined");
+}
+
+//---------------------------------------------------------------------------
+void File_Dpx::Padding()
+{
+    Element_Name("Padding");
+
+    //Parsing
+    Skip_XX(Sizes[Pos_Padding],                                 "Padding");
+}
+
+//---------------------------------------------------------------------------
+void File_Dpx::ImageData()
+{
+    Element_Name("Image Data");
+
+    //Parsing
+    Skip_XX(Sizes[Pos_ImageData],                               "Data");
+
+    Frame_Count++;
+    if (Frame_Count_NotParsedIncluded!=(int64u)-1)
+        Frame_Count_NotParsedIncluded++;
 }
 
 //***************************************************************************

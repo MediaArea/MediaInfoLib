@@ -47,6 +47,9 @@
     //#if !defined (MEDIAINFO_DUPLICATE_NO) && !defined (MEDIAINFO_DUPLICATE_YES) 
     //    #define MEDIAINFO_DUPLICATE_NO
     //#endif
+    #if !defined (MEDIAINFO_MACROBLOCKS_NO) && !defined (MEDIAINFO_MACROBLOCKS_YES) 
+        #define MEDIAINFO_MACROBLOCKS_NO
+    #endif
     #if !defined (MEDIAINFO_NEXTPACKET_NO) && !defined (MEDIAINFO_NEXTPACKET_YES) 
         #define MEDIAINFO_NEXTPACKET_NO
     #endif
@@ -81,6 +84,9 @@
     #endif
     #if !defined (MEDIAINFO_DUPLICATE_NO) && !defined (MEDIAINFO_DUPLICATE_YES) 
         #define MEDIAINFO_DUPLICATE_NO
+    #endif
+    #if !defined (MEDIAINFO_MACROBLOCKS_NO) && !defined (MEDIAINFO_MACROBLOCKS_YES) 
+        #define MEDIAINFO_MACROBLOCKS_NO
     #endif
     #if !defined (MEDIAINFO_NEXTPACKET_NO) && !defined (MEDIAINFO_NEXTPACKET_YES) 
         #define MEDIAINFO_NEXTPACKET_NO
@@ -144,6 +150,16 @@
         #define MEDIAINFO_DUPLICATE 0
     #else
         #define MEDIAINFO_DUPLICATE 1
+    #endif
+#endif
+#if !defined(MEDIAINFO_MACROBLOCKS)
+    #if defined(MEDIAINFO_MACROBLOCKS_NO) && defined(MEDIAINFO_MACROBLOCKS_YES)
+        #undef MEDIAINFO_MACROBLOCKS_NO //MEDIAINFO_MACROBLOCKS_YES has priority
+    #endif
+    #if defined(MEDIAINFO_MACROBLOCKS_NO)
+        #define MEDIAINFO_MACROBLOCKS 0
+    #else
+        #define MEDIAINFO_MACROBLOCKS 1
     #endif
 #endif
 #if !defined(MEDIAINFO_NEXTPACKET)
@@ -286,6 +302,9 @@
 #if !defined(MEDIAINFO_MULTI_NO) && !defined(MEDIAINFO_GXF_NO) && !defined(MEDIAINFO_GXF_YES)
     #define MEDIAINFO_GXF_YES
 #endif
+#if !defined(MEDIAINFO_MULTI_NO) && !defined(MEDIAINFO_HLS_NO) && !defined(MEDIAINFO_HLS_YES)
+    #define MEDIAINFO_HLS_YES
+#endif
 #if !defined(MEDIAINFO_MULTI_NO) && !defined(MEDIAINFO_ISM_NO) && !defined(MEDIAINFO_ISM_YES)
     #define MEDIAINFO_ISM_YES
 #endif
@@ -382,6 +401,9 @@
 #if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_FRAPS_NO) && !defined(MEDIAINFO_FRAPS_YES)
     #define MEDIAINFO_FRAPS_YES
 #endif
+#if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_H263_NO) && !defined(MEDIAINFO_H263_YES)
+    #define MEDIAINFO_H263_YES
+#endif
 #if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_LAGARITH_NO) && !defined(MEDIAINFO_LAGARITH_YES)
     #define MEDIAINFO_LAGARITH_YES
 #endif
@@ -399,6 +421,9 @@
 #endif
 #if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_THEORA_NO) && !defined(MEDIAINFO_THEORA_YES)
     #define MEDIAINFO_THEORA_YES
+#endif
+#if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_VP8_NO) && !defined(MEDIAINFO_VP8_YES)
+    #define MEDIAINFO_VP8_YES
 #endif
 #if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_Y4M_NO) && !defined(MEDIAINFO_Y4M_YES)
     #define MEDIAINFO_Y4M_YES

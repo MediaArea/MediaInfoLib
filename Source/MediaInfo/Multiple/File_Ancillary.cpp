@@ -265,6 +265,12 @@ void File_Ancillary::Read_Buffer_Continue()
 }
 
 //---------------------------------------------------------------------------
+void File_Ancillary::Read_Buffer_AfterParsing()
+{
+    Buffer_Offset=Buffer_Size; //This is per frame
+}
+
+//---------------------------------------------------------------------------
 void File_Ancillary::Read_Buffer_Unsynched()
 {
     #if defined(MEDIAINFO_CDP_YES)
@@ -307,22 +313,27 @@ void File_Ancillary::Header_Parse()
     Get_L1 (DataID,                                             "Data ID");
     if (WithTenBit)
         Skip_L1(                                                "Parity+Unused"); //even:1, odd:2
-    Get_L1 (SecondaryDataID,                                    "Secondary Data ID"); Param_Info(Ancillary_DataID(DataID, SecondaryDataID));
+    Get_L1 (SecondaryDataID,                                    "Secondary Data ID"); Param_Info1(Ancillary_DataID(DataID, SecondaryDataID));
     if (WithTenBit)
         Skip_L1(                                                "Parity+Unused"); //even:1, odd:2
     Get_L1 (DataCount,                                          "Data count");
     if (WithTenBit)
         Skip_L1(                                                "Parity+Unused"); //even:1, odd:2
 
+    //Test (in some container formats, Cheksum is present sometimes)
+    bool WithChecksum_Temp=WithChecksum;
+    if (!MustSynchronize && !WithChecksum && (size_t)((3+DataCount+1)*(WithTenBit?2:1))==Buffer_Size)
+        WithChecksum_Temp=true; 
+    
     //Filling
     Header_Fill_Code((((int16u)DataID)<<8)|SecondaryDataID, Ztring().From_CC1(DataID)+_T('-')+Ztring().From_CC1(SecondaryDataID));
-    Header_Fill_Size(((MustSynchronize?3:0)+3+DataCount+(WithChecksum?1:0))*(WithTenBit?2:1));
+    Header_Fill_Size(((MustSynchronize?3:0)+3+DataCount+(WithChecksum_Temp?1:0))*(WithTenBit?2:1));
 }
 
 //---------------------------------------------------------------------------
 void File_Ancillary::Data_Parse()
 {
-    Element_Info(Ancillary_DataID(DataID, SecondaryDataID));
+    Element_Info1(Ancillary_DataID(DataID, SecondaryDataID));
 
     //Buffer
     int8u* Payload=new int8u[DataCount];

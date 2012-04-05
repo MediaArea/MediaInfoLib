@@ -398,14 +398,14 @@ void File_Id3v2::FileHeader_Parse()
              | ((Size>>1)&0x3F80)
              | ((Size>>2)&0x1FC000)
              | ((Size>>3)&0x0FE00000);
-    Param_Info(Id3v2_Size);
+    Param_Info1(Id3v2_Size);
     if (ExtendedHeader)
     {
-        Element_Begin("Extended header");
+        Element_Begin1("Extended header");
         int32u Size_Extended;
         Get_B4 (Size_Extended,                                  "Size");
         Skip_XX(Size_Extended,                                  "Extended header");
-        Element_End();
+        Element_End0();
     }
 
     FILLING_BEGIN();
@@ -479,7 +479,7 @@ void File_Id3v2::Header_Parse()
                | ((Size>>1)&0x3F80)
                | ((Size>>2)&0x1FC000)
                | ((Size>>3)&0x0FE00000);
-            Param_Info(Size, " bytes");
+            Param_Info2(Size, " bytes");
         }
         Get_B2 (Flags,                                          "Flags");
         if (Id3v2_Version==3)
@@ -527,7 +527,7 @@ void File_Id3v2::Data_Parse()
                  | ((DataLength>>1)&0x3F80)
                  | ((DataLength>>2)&0x1FC000)
                  | ((DataLength>>3)&0x0FE00000);
-        Param_Info(DataLength, " bytes");
+        Param_Info2(DataLength, " bytes");
     }
 
     //Unsynchronisation
@@ -572,7 +572,7 @@ void File_Id3v2::Data_Parse()
     }
 
     #define CASE_INFO(_NAME, _DETAIL) \
-        case Elements::_NAME : Element_Info(_DETAIL); _NAME(); break;
+        case Elements::_NAME : Element_Info1(_DETAIL); _NAME(); break;
 
     //Parsing
     Element_Value.clear();
@@ -917,7 +917,7 @@ void File_Id3v2::APIC()
         Get_ISO_8859_1(Element_Size-Element_Offset, Mime,       "MIME_type");
         Element_Offset=Element_Offset_Real+Mime.size()+1;
     }
-    Get_B1 (PictureType,                                        "Picture_type"); Element_Info(Id3v2_PictureType(PictureType));
+    Get_B1 (PictureType,                                        "Picture_type"); Element_Info1(Id3v2_PictureType(PictureType));
     int64u Element_Offset_Real=Element_Offset;
     switch (Encoding)
     {
@@ -984,17 +984,17 @@ void File_Id3v2::RGAD()
     Get_BF4 (Peak_Amplitude,                                    "Peak Amplitude");
     while (Element_Offset+2<=Element_Size)
     {
-        Element_Begin("Gain Adjustement", 2);
+        Element_Begin1("Gain Adjustement");
         int16u Replay_Gain_Adjustment;
         int8u  Name_code;
         bool   Sign_bit;
         BS_Begin();
-        Get_S1 (3, Name_code,                                   "Name code"); Param_Info(Id3v2_RGAD_Name_code[Name_code]);
-        Info_S1(3, Originator_code,                             "Originator code"); Param_Info(Id3v2_RGAD_Originator_code[Originator_code]);
+        Get_S1 (3, Name_code,                                   "Name code"); Param_Info1(Id3v2_RGAD_Name_code[Name_code]);
+        Info_S1(3, Originator_code,                             "Originator code"); Param_Info1(Id3v2_RGAD_Originator_code[Originator_code]);
         Get_SB (Sign_bit,                                       "Sign bit");
-        Get_S2 (9, Replay_Gain_Adjustment,                      "Replay Gain Adjustment"); Param_Info ((Sign_bit?-1:1)*(float)Replay_Gain_Adjustment/10, 1, " dB");
+        Get_S2 (9, Replay_Gain_Adjustment,                      "Replay Gain Adjustment"); Param_Info3 ((Sign_bit?-1:1)*(float)Replay_Gain_Adjustment/10, 1, " dB");
         BS_End();
-        Element_End();
+        Element_End0();
 
         FILLING_BEGIN();
             switch (Name_code)
@@ -1150,7 +1150,7 @@ void File_Id3v2::Fill_Name()
         case Elements::TDRC : Normalize_Date(Element_Value); Fill(Stream_General, 0, General_Recorded_Date, Element_Value); break;
         case Elements::TDRL : Normalize_Date(Element_Value); Fill(Stream_General, 0, General_Released_Date, Element_Value); break;
         case Elements::TDTG : Normalize_Date(Element_Value); Fill(Stream_General, 0, General_Tagged_Date, Element_Value); break;
-        case Elements::TENC : Fill(Stream_General, 0, General_Encoded_Library, Element_Value); break;
+        case Elements::TENC : Fill(Stream_General, 0, General_EncodedBy, Element_Value); break;
         case Elements::TEXT : Fill(Stream_General, 0, General_Lyricist, Element_Value); break;
         case Elements::TFLT : Fill(Stream_General, 0, "File type", Element_Value); break;
         case Elements::TIM  :
@@ -1209,7 +1209,7 @@ void File_Id3v2::Fill_Name()
         case Elements::TSOP : Fill(Stream_General, 0, General_Performer_Sort, Element_Value); break;
         case Elements::TSOT : Fill(Stream_General, 0, General_Track_Sort, Element_Value); break;
         case Elements::TSRC : Fill(Stream_General, 0, General_ISRC, Element_Value); break;
-        case Elements::TSSE : Fill(Stream_General, 0, General_Encoded_Library_Settings, Element_Value); break;
+        case Elements::TSSE : Fill(Stream_General, 0, General_Encoded_Library, Element_Value); break;
         case Elements::TSST : Fill(Stream_General, 0, "Set subtitle", Element_Value); break;
         case Elements::TXXX : if (Element_Values(0)==_T("AccurateRipResult"))      ;
                          else if (Element_Values(0)==_T("AccurateRipDiscID"))      ;

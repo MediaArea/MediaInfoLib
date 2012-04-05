@@ -171,6 +171,7 @@ File_Mpeg4::File_Mpeg4()
     Vendor=0x00000000;
     FirstMdatPos=(int64u)-1;
     FirstMoovPos=(int64u)-1;
+    MajorBrand=0x00000000;
     IsSecondPass=false;
     IsParsing_mdat=false;
     IsFragmented=false;
@@ -194,6 +195,19 @@ File_Mpeg4::~File_Mpeg4()
 //***************************************************************************
 // Streams management
 //***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::Streams_Accept()
+{
+    if (!IsSub && MajorBrand==0x6A703220) //"jp2 "
+    {
+        Streams_Accept_TestContinuousFileNames();
+    
+        Stream_Prepare(Config->File_Names.size()>1?Stream_Video:Stream_Image);
+        if (StreamKind_Last==Stream_Video)
+            Fill(Stream_Video, StreamPos_Last, Video_FrameCount, Config->File_Names.size());
+    }
+}
 
 //---------------------------------------------------------------------------
 void File_Mpeg4::Streams_Finish()
@@ -246,93 +260,89 @@ void File_Mpeg4::Streams_Finish()
         StreamKind_Last=Temp->second.StreamKind;
         StreamPos_Last=Temp->second.StreamPos;
 
-        if (StreamKind_Last==Stream_Video && Temp->second.TimeCode==NULL)
+        //if (Temp->second.stsz_StreamSize)
+        //    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), Temp->second.stsz_StreamSize);
+        
+        //Edit lists coherencies
+        if (Temp->second.edts.size()>1 && Temp->second.edts[0].Duration==Temp->second.tkhd_Duration)
         {
-            if (Temp->second.mdhd_TimeScale && Temp->second.stts_Min && Temp->second.stts_Max)
-            {
-                if (Temp->second.stts_Min==0 || Temp->second.stts_Max==0 || (Temp->second.stts_Min!=Temp->second.stts_Max && ((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Min-((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Max>=0.001))
-                {
-                    if (Temp->second.stts_Max)
-                        Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Minimum, ((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Max, 3, true);
-                    if (Temp->second.stts_Min)
-                        Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Maximum, ((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Min, 3, true);
-                    Fill(Stream_Video, StreamPos_Last, Video_FrameRate,         ((float)Temp->second.stts_FrameCount)/Temp->second.mdhd_Duration*Temp->second.mdhd_TimeScale, 3, true);
-                    Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode,    "VFR", Unlimited, true, true);
-                }
-                else
-                {
-                    Fill(Stream_Video, StreamPos_Last, Video_FrameRate,         ((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Max, 3, true);
-                    Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode,    "CFR", Unlimited, true, true);
-                }
-            }
-        }
-        if (Temp->second.stsz_StreamSize)
-            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), Temp->second.stsz_StreamSize);
-        if (IsFragmented)
-        {
-            int64u stts_FrameCount=0;
-            int64u stts_Duration=0;
-            for (size_t stts_Pos=0; stts_Pos<Temp->second.stts.size(); stts_Pos++)
-            {
-                stts_FrameCount+=Temp->second.stts[stts_Pos].SampleCount;
-                stts_Duration+=Temp->second.stts[stts_Pos].SampleCount*Temp->second.stts[stts_Pos].SampleDuration;
-            }
-            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), stts_FrameCount, 10, true);
-            if (Temp->second.mdhd_TimeScale)
-            {
-                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), stts_Duration*1000/Temp->second.mdhd_TimeScale, 10, true);
-                if (stts_Duration)
-                    Fill(StreamKind_Last, StreamPos_Last, "FrameRate", ((float)stts_FrameCount)/stts_Duration*Temp->second.mdhd_TimeScale, 3, true);
-            }
+            bool Duplicates=true;
+            for (size_t Pos=1; Pos<Temp->second.edts.size(); Pos++)
+                if (Temp->second.edts[Pos-1].Delay!=Temp->second.edts[Pos].Delay || Temp->second.edts[Pos-1].Duration!=Temp->second.edts[Pos].Duration || Temp->second.edts[Pos-1].Rate!=Temp->second.edts[Pos].Rate)
+                    Duplicates=false;
+            if (Duplicates)
+                Temp->second.edts.resize(1);
         }
 
-        //Coherency testing (or fragmented streams)
-        if (!IsFragmented && TimeScale && Temp->second.TimeCode==NULL && Temp->second.mdhd_TimeScale)
+        //Edit Lists
+        float64 Delay=0;
+        switch (Temp->second.edts.size())
         {
+            case 0 : 
+                    break;
+            case 1 : 
+                    if (Temp->second.edts[0].Duration==Temp->second.tkhd_Duration && Temp->second.edts[0].Rate==0x00010000)
+                        Delay=Temp->second.edts[0].Delay;
+                    break;
+            case 2 : 
+                    if (Temp->second.edts[0].Delay==(int32u)-1 && Temp->second.edts[0].Duration+Temp->second.edts[1].Duration==Temp->second.tkhd_Duration && Temp->second.edts[0].Rate==0x00010000 && Temp->second.edts[1].Rate==0x00010000)
+                    {
+                        Delay=Temp->second.edts[0].Duration;
+                        Temp->second.tkhd_Duration-=Temp->second.edts[0].Duration;
+                    }
+                    break;
+            default:
+                    break; //TODO: handle more complex Edit Lists
+        }
+        Delay/=TimeScale; //In seconds
+        Delay+=Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay)).To_float64()/1000; //TODO: use TimeCode value directly instead of the rounded value
+        if (!Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source)).empty() && Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source))!=_T("Container"))
+        {
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Original), Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay)));
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Original_Source), Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source)));
+        }
+        Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay), Delay*1000, 0, true);
+        Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container", Unlimited, true, true);
+        
+        //Fragments
+        if (IsFragmented)
+        {
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Temp->second.stts_Duration/((float)Temp->second.mdhd_TimeScale)*1000, 0, true);
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), Temp->second.stts_FrameCount, 10, true);
+        }
+
+        //Duration/StreamSize
+        if (TimeScale && Temp->second.TimeCode==NULL && Temp->second.mdhd_TimeScale)
+        {
+            Ztring Duration_stts_FirstFrame, Duration_stts_LastFrame;
+            if (Temp->second.stts_Duration_FirstFrame)
+                Duration_stts_FirstFrame.From_Number(((float32)(((int32s)Temp->second.stts_Duration_FirstFrame)-((int32s)Temp->second.stts[1].SampleDuration)))*1000/Temp->second.mdhd_TimeScale, 0); //The duration of the frame minus 1 normal frame duration
+            if (Temp->second.stts_Duration_LastFrame)
+                Duration_stts_LastFrame.From_Number(((float32)(((int32s)Temp->second.stts_Duration_LastFrame)-((int32s)Temp->second.stts[Temp->second.stts_Duration_FirstFrame?1:0].SampleDuration)))*1000/Temp->second.mdhd_TimeScale, 0); //The duration of the frame minus 1 normal frame duration
+
             float32 Duration_tkhd_H=((float32)(Temp->second.tkhd_Duration+1))/TimeScale;
             float32 Duration_tkhd_L=((float32)(Temp->second.tkhd_Duration-1))/TimeScale;
             float32 Duration_stts=((float32)Temp->second.stts_Duration)/Temp->second.mdhd_TimeScale;
-            float32 Duration_mdhd=((float32)Temp->second.mdhd_Duration)/Temp->second.mdhd_TimeScale;
-            if (Duration_stts && !(Duration_stts>=Duration_tkhd_L && Duration_stts<=Duration_tkhd_H))
+            if (!IsFragmented && Duration_stts && !(Duration_stts>=Duration_tkhd_L && Duration_stts<=Duration_tkhd_H))
             {
                 //There is a difference between media/stts atom and track atom
                 Fill(StreamKind_Last, StreamPos_Last, "Source_Duration", Duration_stts*1000, 0);
-                if (Temp->second.stts_Min==Temp->second.stts_Max)
-                {
-                    Ztring Material_Duration_FirstFrame=Retrieve(StreamKind_Last, StreamPos_Last, "Duration_FirstFrame");
-                    if (!Material_Duration_FirstFrame.empty())
-                    {
-                        Fill(StreamKind_Last, StreamPos_Last, "Source_Duration_FirstFrame", Material_Duration_FirstFrame);
-                        Clear(StreamKind_Last, StreamPos_Last, "Duration_FirstFrame");
-                    }
-                    Ztring Material_Duration_LastFrame=Retrieve(StreamKind_Last, StreamPos_Last, "Duration_LastFrame");
-                    if (!Material_Duration_LastFrame.empty())
-                    {
-                        Fill(StreamKind_Last, StreamPos_Last, "Source_Duration_LastFrame", Material_Duration_LastFrame);
-                        Clear(StreamKind_Last, StreamPos_Last, "Duration_LastFrame");
-                    }
-                }
-                Ztring Material_StreamSize=Retrieve(StreamKind_Last, StreamPos_Last, "StreamSize");
-                if (!Material_StreamSize.empty())
-                {
-                    Fill(StreamKind_Last, StreamPos_Last, "Source_StreamSize", Material_StreamSize);
-                    Clear(StreamKind_Last, StreamPos_Last, "StreamSize");
-                }
-                Ztring Material_FrameCount=Retrieve(StreamKind_Last, StreamPos_Last, "FrameCount");
-                bool FillFrameCount=false;
-                if (!Material_FrameCount.empty())
-                {
-                    FillFrameCount=true;
-                    Fill(StreamKind_Last, StreamPos_Last, "Source_FrameCount", Material_FrameCount);
-                    Clear(StreamKind_Last, StreamPos_Last, "FrameCount");
-                }
+                Fill(StreamKind_Last, StreamPos_Last, "Source_Duration_FirstFrame", Duration_stts_FirstFrame);
+                Fill(StreamKind_Last, StreamPos_Last, "Source_Duration_LastFrame", Duration_stts_LastFrame);
+                if (Temp->second.stts.size()!=1 || Temp->second.mdhd_TimeScale<100 || Temp->second.stts[0].SampleDuration!=1) //TODO: test PCM
+                    if (Temp->second.stts_FrameCount)
+                        Fill(StreamKind_Last, StreamPos_Last, "Source_FrameCount", Temp->second.stts_FrameCount);
+                if (Temp->second.stsz_StreamSize)
+                    Fill(StreamKind_Last, StreamPos_Last, "Source_StreamSize", Temp->second.stsz_StreamSize);
 
-                //Calculating new stream size
+                //Calculating new properties based on track duration
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), ((float32)Temp->second.tkhd_Duration)/TimeScale*1000, 0, true);
+                //Fill(StreamKind_Last, StreamPos_Last, "Duration_FirstFrame", Duration_stts_FirstFrame);
+                Clear(StreamKind_Last, StreamPos_Last, "Duration_LastFrame"); //TODO
+
                 int64u FrameCount;
                 if (Temp->second.stts_Min && Temp->second.stts_Min==Temp->second.stts_Max)
-                {
-                    FrameCount=(float64_int64s(((float64)Temp->second.tkhd_Duration)/TimeScale*Temp->second.mdhd_TimeScale/Temp->second.stts_Min));
-                }
+                    FrameCount=float64_int64s(((float64)Temp->second.tkhd_Duration)/TimeScale*Temp->second.mdhd_TimeScale/Temp->second.stts_Min);
                 else
                 {
                     FrameCount=0;
@@ -351,27 +361,63 @@ void File_Mpeg4::Streams_Finish()
                         FrameCount+=Temp->second.stts[stts_Pos].SampleCount;
                     }
                 }
+                if (Temp->second.stts.size()!=1 || Temp->second.mdhd_TimeScale<100 || Temp->second.stts[0].SampleDuration!=1) //TODO: test PCM
+                    Fill(StreamKind_Last, StreamPos_Last, "FrameCount", FrameCount, 10, true);
+
                 if (Temp->second.stsz_Total.empty())
-                {
                     Fill(StreamKind_Last, StreamPos_Last, "StreamSize", FrameCount*Temp->second.stsz_Sample_Size*Temp->second.stsz_Sample_Multiplier);
-                    if (FillFrameCount)
-                        Fill(StreamKind_Last, StreamPos_Last, "FrameCount", FrameCount);
-                }
                 else if (FrameCount<=Temp->second.stsz_Total.size())
                 {
                     int64u StreamSize=0;
                     for (size_t stsz_Pos=0; stsz_Pos<FrameCount; stsz_Pos++)
                         StreamSize+=Temp->second.stsz_Total[stsz_Pos];
-                    Fill(StreamKind_Last, StreamPos_Last, "StreamSize", StreamSize);
-                    if (FillFrameCount)
-                        Fill(StreamKind_Last, StreamPos_Last, "FrameCount", FrameCount);
+                    bool HasEncodedBitRate=!Retrieve(StreamKind_Last, StreamPos_Last, "BitRate_Encoded").empty();
+                    Fill(StreamKind_Last, StreamPos_Last, HasEncodedBitRate?"StreamSize_Encoded":"StreamSize", StreamSize);
                 }
             }
-            else if (Temp->second.tkhd_Duration && !(Duration_mdhd>=Duration_tkhd_L && Duration_mdhd<=Duration_tkhd_H))
+            else
             {
-                //There is a difference between media/mdhd atom and track atom
-                Fill(StreamKind_Last, StreamPos_Last, "mdhd_Duration", Duration_mdhd*1000, 0);
+                //Normal
+                if (Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration)).empty())
+                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration_stts*1000, 0);
+                Fill(StreamKind_Last, StreamPos_Last, "Duration_FirstFrame", Duration_stts_FirstFrame);
+                Fill(StreamKind_Last, StreamPos_Last, "Duration_LastFrame", Duration_stts_LastFrame);
+                if (Temp->second.stts.size()!=1 || Temp->second.mdhd_TimeScale<100 || Temp->second.stts[0].SampleDuration!=1) //TODO: test PCM
+                    if (Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount)).empty() && Temp->second.stts_FrameCount)
+                        Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), Temp->second.stts_FrameCount);
+                bool HasPadding=(Temp->second.Parser && !Temp->second.Parser->Retrieve(StreamKind_Last, StreamPos_Last, "BitRate_Encoded").empty()) || (Temp->second.Parser && Temp->second.Parser->Buffer_TotalBytes && ((float32)Temp->second.Parser->Buffer_PaddingBytes)/Temp->second.Parser->Buffer_TotalBytes>0.02);
+                if (Temp->second.stsz_StreamSize)
+                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, HasPadding?Generic_StreamSize_Encoded:Generic_StreamSize), Temp->second.stsz_StreamSize);
             }
+        }
+
+        if (StreamKind_Last==Stream_Video && Temp->second.TimeCode==NULL)
+        {
+            if (Temp->second.mdhd_TimeScale && Temp->second.stts_Min && Temp->second.stts_Max)
+            {
+                if (Temp->second.stts_Min==0 || Temp->second.stts_Max==0 || (Temp->second.stts_Min!=Temp->second.stts_Max && ((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Min-((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Max>=0.001))
+                {
+                    if (Temp->second.stts_Max)
+                        Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Minimum, ((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Max, 3, true);
+                    if (Temp->second.stts_Min)
+                        Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Maximum, ((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Min, 3, true);
+                    if (Temp->second.stts_Duration)
+                        Fill(Stream_Video, StreamPos_Last, Video_FrameRate,         ((float)Temp->second.stts_FrameCount)/Temp->second.stts_Duration*Temp->second.mdhd_TimeScale, 3, true);
+                    Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode,    "VFR", Unlimited, true, true);
+                }
+                else
+                {
+                    Fill(Stream_Video, StreamPos_Last, Video_FrameRate,         ((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Max, 3, true);
+                    Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode,    "CFR", Unlimited, true, true);
+                }
+            }
+        }
+
+        //Coherency
+        if (!IsFragmented && Temp->second.stts_Duration!=Temp->second.mdhd_Duration && Temp->second.mdhd_TimeScale)
+        {
+            //There is a difference between media/mdhd atom and track atom
+            Fill(StreamKind_Last, StreamPos_Last, "mdhd_Duration", ((float32)Temp->second.mdhd_Duration)/Temp->second.mdhd_TimeScale*1000, 0);
         }
 
         //Parser specific
@@ -555,7 +601,7 @@ void File_Mpeg4::Streams_Finish()
                             Fill(Stream_Audio, Pos, Audio_MuxingMode, Retrieve(Stream_Video, Temp->second.StreamPos, Video_Format)+_T(" / ")+Retrieve(Stream_Audio, Pos, Audio_MuxingMode), true);
                         Fill(Stream_Audio, Pos, Audio_MuxingMode_MoreInfo, _T("Muxed in Video #")+Ztring().From_Number(Temp->second.StreamPos+1));
                         Fill(Stream_Audio, Pos, Audio_Duration, Retrieve(Stream_Video, Temp->second.StreamPos, Video_Duration));
-                        Fill(Stream_Audio, Pos, Audio_StreamSize, 0, 10, true); //Included in the DV stream size
+                        Fill(Stream_Audio, Pos, Audio_StreamSize_Encoded, 0); //Included in the DV stream size
                         Ztring ID=Retrieve(Stream_Audio, Pos, Audio_ID);
                         Fill(Stream_Audio, Pos, Audio_ID, Retrieve(Stream_Video, Temp->second.StreamPos, Video_ID)+_T("-")+ID, true);
                         Fill(Stream_Audio, Pos, "Source", Retrieve(Stream_Video, Temp->second.StreamPos, "Source"));
@@ -576,7 +622,7 @@ void File_Mpeg4::Streams_Finish()
                             Fill(Stream_Text, Pos, Text_MuxingMode, Retrieve(Stream_Video, Temp->second.StreamPos, Video_Format)+_T(" / ")+Retrieve(Stream_Text, Pos, Text_MuxingMode), true);
                         Fill(Stream_Text, Pos, Text_MuxingMode_MoreInfo, _T("Muxed in Video #")+Ztring().From_Number(Temp->second.StreamPos+1));
                         Fill(Stream_Text, Pos, Text_Duration, Retrieve(Stream_Video, Temp->second.StreamPos, Video_Duration));
-                        Fill(Stream_Text, Pos, Text_StreamSize, 0, 10, true); //Included in the DV stream size
+                        Fill(Stream_Text, Pos, Text_StreamSize_Encoded, 0); //Included in the DV stream size
                         Ztring ID=Retrieve(Stream_Text, Pos, Text_ID);
                         Fill(Stream_Text, Pos, Text_ID, Retrieve(Stream_Video, Temp->second.StreamPos, Video_ID)+_T("-")+ID, true);
                         Fill(Stream_Text, Pos, "Source", Retrieve(Stream_Video, Temp->second.StreamPos, "Source"));
@@ -642,7 +688,7 @@ void File_Mpeg4::Streams_Finish()
                         Fill(Stream_Audio, Pos, Audio_MuxingMode, Retrieve(Stream_Video, Temp->second.StreamPos, Video_Format)+_T(" / ")+Retrieve(Stream_Audio, Pos, Audio_MuxingMode), true);
                     Fill(Stream_Audio, Pos, Audio_MuxingMode_MoreInfo, _T("Muxed in Video #")+Ztring().From_Number(Temp->second.StreamPos+1));
                     Fill(Stream_Audio, Pos, Audio_Duration, Retrieve(Stream_Video, Temp->second.StreamPos, Video_Duration), true);
-                    Fill(Stream_Audio, Pos, Audio_StreamSize, 0, 10, true); //Included in the DV stream size
+                    Fill(Stream_Audio, Pos, Audio_StreamSize_Encoded, 0); //Included in the DV stream size
                     Ztring ID=Retrieve(Stream_Audio, Pos, Audio_ID);
                     Fill(Stream_Audio, Pos, Audio_ID, Retrieve(Stream_Video, Temp->second.StreamPos, Video_ID)+_T("-")+ID, true);
                     Fill(Stream_Audio, Pos, "Source", Retrieve(Stream_Video, Temp->second.StreamPos, "Source"));
@@ -663,7 +709,7 @@ void File_Mpeg4::Streams_Finish()
                         Fill(Stream_Text, Pos, Text_MuxingMode, Retrieve(Stream_Video, Temp->second.StreamPos, Video_Format)+_T(" / ")+Retrieve(Stream_Text, Pos, Text_MuxingMode), true);
                     Fill(Stream_Text, Pos, Text_MuxingMode_MoreInfo, _T("Muxed in Video #")+Ztring().From_Number(Temp->second.StreamPos+1));
                     Fill(Stream_Text, Pos, Text_Duration, Retrieve(Stream_Video, Temp->second.StreamPos, Video_Duration));
-                    Fill(Stream_Text, Pos, Text_StreamSize, 0, 10, true); //Included in the DV stream size
+                    Fill(Stream_Text, Pos, Text_StreamSize_Encoded, 0); //Included in the DV stream size
                     Ztring ID=Retrieve(Stream_Text, Pos, Text_ID);
                     Fill(Stream_Text, Pos, Text_ID, Retrieve(Stream_Video, Temp->second.StreamPos, Video_ID)+_T("-")+ID, true);
                     Fill(Stream_Text, Pos, "Source", Retrieve(Stream_Video, Temp->second.StreamPos, "Source"));
@@ -730,14 +776,14 @@ void File_Mpeg4::Streams_Finish()
                 if (ReferenceFiles==NULL)
                     ReferenceFiles=new File__ReferenceFilesHelper(this, Config);
 
-                File__ReferenceFilesHelper::reference Reference;
-                Reference.FileNames.push_back(Stream->second.File_Name);
-                Reference.StreamKind=Stream->second.StreamKind;
-                Reference.StreamPos=Stream->second.StreamPos;
-                Reference.StreamID=Retrieve(Stream->second.StreamKind, Stream->second.StreamPos, General_ID);
+                File__ReferenceFilesHelper::reference ReferenceFile;
+                ReferenceFile.FileNames.push_back(Stream->second.File_Name);
+                ReferenceFile.StreamKind=Stream->second.StreamKind;
+                ReferenceFile.StreamPos=Stream->second.StreamPos;
+                ReferenceFile.StreamID=Retrieve(Stream->second.StreamKind, Stream->second.StreamPos, General_ID).To_int64u();
                 if (Stream->second.StreamKind==Stream_Video)
                 {
-                    Reference.FrameRate=Retrieve(Stream_Video, Stream->second.StreamPos, Video_FrameRate).To_float64();
+                    ReferenceFile.FrameRate=Retrieve(Stream_Video, Stream->second.StreamPos, Video_FrameRate).To_float64();
 
                     #ifdef MEDIAINFO_IBI_YES
                         for (size_t stss_Pos=0; stss_Pos<Stream->second.stss.size(); stss_Pos++)
@@ -764,7 +810,7 @@ void File_Mpeg4::Streams_Finish()
                                         IbiInfo.StreamOffset=Stream->second.stco[stco_Pos];
                                         IbiInfo.FrameNumber=Value;
                                         IbiInfo.Dts=TimeCode_DtsOffset+(stts_Duration->DTS_Begin+(((int64u)stts_Duration->SampleDuration)*(Value-stts_Duration->Pos_Begin)))*1000000000/Stream->second.mdhd_TimeScale;
-                                        Reference.IbiStream.Add(IbiInfo);
+                                        ReferenceFile.IbiStream.Add(IbiInfo);
                                     }
                                 }
                             }
@@ -772,7 +818,7 @@ void File_Mpeg4::Streams_Finish()
                     #endif //MEDIAINFO_IBI_YES
 
                 }
-                ReferenceFiles->References.push_back(Reference);
+                ReferenceFiles->References.push_back(ReferenceFile);
             }
 
         if (ReferenceFiles)
@@ -845,6 +891,9 @@ void File_Mpeg4::Streams_Finish_CommercialNames()
 //---------------------------------------------------------------------------
 void File_Mpeg4::Read_Buffer_Unsynched()
 {
+    if (!IsSub && MajorBrand==0x6A703220) //"jp2 "
+        return Read_Buffer_Unsynched_OneFramePerFile();
+
     mdat_Pos_Temp=mdat_Pos.begin();
     while (mdat_Pos_Temp!=mdat_Pos.end() && mdat_Pos_Temp->first<File_GoTo)
         mdat_Pos_Temp++;
@@ -903,6 +952,8 @@ size_t File_Mpeg4::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
 {
     if (ReferenceFiles)
         return ReferenceFiles->Read_Buffer_Seek(Method, Value, ID);
+    if (!IsSub && MajorBrand==0x6A703220) //"jp2 "
+        return Read_Buffer_Seek_OneFramePerFile(Method, Value, ID);
                         
     //Parsing
     switch (Method)
@@ -1021,7 +1072,7 @@ bool File_Mpeg4::Header_Begin()
     #endif //MEDIAINFO_DEMUX
 
     if (IsParsing_mdat && Element_Level==0)
-        Element_Begin();
+        Element_Begin0();
 
     return true;
 }
@@ -1089,7 +1140,7 @@ void File_Mpeg4::Header_Parse()
         //Special case: until the end of the atom
             if (Size==0)
         {
-            Size=File_Size-(File_Offset+Buffer_Offset);
+            Size=Config->File_Current_Size-(File_Offset+Buffer_Offset);
             if (Status[IsAccepted] && Element_Level==2 && Name==0x00000000) //First real level (Level 1 is atom, level 2 is header block)
             {
                 Element_Offset=0;
@@ -1105,7 +1156,7 @@ void File_Mpeg4::Header_Parse()
         //Not in specs!
         else
         {
-            Size=File_Size-(File_Offset+Buffer_Offset);
+            Size=Config->File_Current_Size-(File_Offset+Buffer_Offset);
         }
     }
 
@@ -1130,6 +1181,40 @@ bool File_Mpeg4::BookMark_Needed()
     if (!mdat_MustParse)
         return false;
 
+    //Handling of some wrong stsz and stsc atoms (ADPCM)
+    if (!IsSecondPass)
+        for (std::map<int32u, stream>::iterator Temp=Streams.begin(); Temp!=Streams.end(); Temp++)
+            if (Temp->second.StreamKind==Stream_Audio
+             && (Retrieve(Stream_Audio, Temp->second.StreamPos, Audio_CodecID)==_T("ima4")
+              || Retrieve(Stream_Audio, Temp->second.StreamPos, Audio_CodecID)==_T("11")))
+            {
+                Temp->second.stsz_StreamSize/=16;
+                Temp->second.stsz_StreamSize*=17;
+                float32 BitRate_Nominal=Retrieve(Stream_Audio, Temp->second.StreamPos, Audio_BitRate_Nominal).To_float32();
+                if (BitRate_Nominal)
+                {
+                    BitRate_Nominal/=16;
+                    BitRate_Nominal*=17;
+                    Fill(Stream_Audio, Temp->second.StreamPos, Audio_BitRate_Nominal, BitRate_Nominal, 0, true);
+                }
+                int64u Channels=Retrieve(Stream_Audio, Temp->second.StreamPos, Audio_Channel_s_).To_int64u();
+                if (Channels!=2)
+                {
+                    Temp->second.stsz_StreamSize/=2;
+                    Temp->second.stsz_StreamSize*=Channels;
+                }
+                for (size_t Pos=0; Pos<Temp->second.stsc.size(); Pos++)
+                {
+                    Temp->second.stsc[Pos].SamplesPerChunk/=16;
+                    Temp->second.stsc[Pos].SamplesPerChunk*=17;
+                    if (Channels!=2)
+                    {
+                        Temp->second.stsc[Pos].SamplesPerChunk/=2;
+                        Temp->second.stsc[Pos].SamplesPerChunk*=(int32u)Channels;
+                    }
+                }
+            }
+
     //In case of second pass
     if (mdat_Pos.empty())
     {
@@ -1142,6 +1227,10 @@ bool File_Mpeg4::BookMark_Needed()
                 size_t stsz_Pos=0;
                 size_t Chunk_FrameCount=0;
                 int32u Chunk_Number=1;
+                int32u Sample_ByteSize=0;
+                if (Temp->second.StreamKind==Stream_Audio)
+                    Sample_ByteSize=Retrieve(Stream_Audio, Temp->second.StreamPos, Audio_BitDepth).To_int32u()*Retrieve(Stream_Audio, Temp->second.StreamPos, Audio_Channel_s_).To_int32u()/8;
+
                 #if MEDIAINFO_DEMUX
                     stream::stts_durations Temp_stts_Durations;
                 #endif //MEDIAINFO_DEMUX
@@ -1166,7 +1255,7 @@ bool File_Mpeg4::BookMark_Needed()
                         if (stsz_Pos>=Temp->second.stsz.size())
                             break;
                     }
-                    else if (Temp->second.StreamKind==Stream_Audio && Temp->second.stsz_Sample_Size<=32 && Temp->second.stsc[stsc_Pos].SamplesPerChunk*Temp->second.stsz_Sample_Size*Temp->second.stsz_Sample_Multiplier<0x1000000)
+                    else if (Temp->second.StreamKind==Stream_Audio && Temp->second.stsz_Sample_Size<=Sample_ByteSize && Temp->second.stsc[stsc_Pos].SamplesPerChunk*Temp->second.stsz_Sample_Size*Temp->second.stsz_Sample_Multiplier<0x1000000)
                     {
                         //Same size per sample, but granularity is too small
                         mdat_Pos[Temp->second.stco[stco_Pos]].StreamID=Temp->first;
@@ -1208,6 +1297,7 @@ bool File_Mpeg4::BookMark_Needed()
 
                     Chunk_Number++;
                 }
+                Temp->second.Parser->Stream_BitRateFromContainer=Temp->second.stsz_StreamSize*8/(((float64)Temp->second.stts_Duration)/Temp->second.mdhd_TimeScale);
                 #if MEDIAINFO_DEMUX
                     if (!Temp_stts_Durations.empty())
                     {
@@ -1235,8 +1325,8 @@ bool File_Mpeg4::BookMark_Needed()
             {
                 Element_Show();
                 while (Element_Level>0)
-                    Element_End();
-                Element_Begin("Priority streams", File_Size);
+                    Element_End0();
+                Element_Begin1("Priority streams");
 
                 mdat_Pos_Temp=Temp;
                 GoTo(Temp->first);
@@ -1250,8 +1340,8 @@ bool File_Mpeg4::BookMark_Needed()
     {
         Element_Show();
         while (Element_Level>0)
-            Element_End();
-        Element_Begin("Second pass", File_Size);
+            Element_End0();
+        Element_Begin1("Second pass");
 
         mdat_Pos_Temp=mdat_Pos.begin();
         GoTo(mdat_Pos_Temp->first);
@@ -1412,6 +1502,21 @@ void File_Mpeg4::Descriptors()
 //---------------------------------------------------------------------------
 void File_Mpeg4::TimeCode_Associate(int32u TrackID)
 {
+    //Trying to detect time code attached to 1 video only but for all streams in reality
+    int32u TimeCode_TrackID=(int32u)-1;
+    bool   TimeCode_TrackID_MoreThanOne=false;
+    for (std::map<int32u, stream>::iterator Strea=Streams.begin(); Strea!=Streams.end(); Strea++)
+        if (Strea->second.TimeCode_TrackID!=(int32u)-1)
+        {
+            if (TimeCode_TrackID==(int32u)-1)
+                TimeCode_TrackID=Strea->second.TimeCode_TrackID;
+            else
+                TimeCode_TrackID_MoreThanOne=true;
+        }
+    if (!TimeCode_TrackID_MoreThanOne && TimeCode_TrackID!=(int32u)-1)
+        for (std::map<int32u, stream>::iterator Strea=Streams.begin(); Strea!=Streams.end(); Strea++)
+            Strea->second.TimeCode_TrackID=TimeCode_TrackID; //For all tracks actually
+
     //Is it general or for a specific stream?
     bool IsGeneral=true;
     for (std::map<int32u, stream>::iterator Strea=Streams.begin(); Strea!=Streams.end(); Strea++)
