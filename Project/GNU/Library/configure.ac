@@ -599,6 +599,9 @@ else
 	AM_CONDITIONAL(COMPILE_AES, true)
 fi
 
+dnl Needed in case with_libmd5=no while using pkg-config for other things
+PKG_PROG_PKG_CONFIG
+
 dnl -------------------------------------------------------------------------
 dnl libmd5
 dnl
