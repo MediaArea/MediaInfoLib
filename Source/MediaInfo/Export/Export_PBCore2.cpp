@@ -18,7 +18,7 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#include "MediaInfo/Export/Export_PBCore.h"
+#include "MediaInfo/Export/Export_PBCore2.h"
 #include "MediaInfo/File__Analyse_Automatic.h"
 #include <ctime>
 using namespace std;
@@ -55,12 +55,12 @@ Ztring PBCore_MediaType(MediaInfo_Internal &MI)
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-Export_PBCore::Export_PBCore ()
+Export_PBCore2::Export_PBCore2 ()
 {
 }
 
 //---------------------------------------------------------------------------
-Export_PBCore::~Export_PBCore ()
+Export_PBCore2::~Export_PBCore2 ()
 {
 }
 
@@ -69,7 +69,7 @@ Export_PBCore::~Export_PBCore ()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-void PBCore_Transform(Ztring &ToReturn, MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos)
+void PBCore2_Transform(Ztring &ToReturn, MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos)
 {
     //Menu: only if TimeCode
     if (StreamKind==Stream_Menu && MI.Get(Stream_Menu, StreamPos, Menu_Format)!=__T("TimeCode"))
@@ -329,7 +329,7 @@ void PBCore_Transform(Ztring &ToReturn, MediaInfo_Internal &MI, stream_t StreamK
 }
 
 //---------------------------------------------------------------------------
-Ztring Export_PBCore::Transform(MediaInfo_Internal &MI)
+Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI)
 {
     //Current date/time is ISO format
     time_t Time=time(NULL);
@@ -492,7 +492,7 @@ Ztring Export_PBCore::Transform(MediaInfo_Internal &MI)
     //Streams
     for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
         for (size_t StreamPos=0; StreamPos<MI.Count_Get((stream_t)StreamKind); StreamPos++)
-            PBCore_Transform(ToReturn, MI, (stream_t)StreamKind, StreamPos);
+            PBCore2_Transform(ToReturn, MI, (stream_t)StreamKind, StreamPos);
 
     //instantiationAnnotations
     for (size_t Pos=0; Pos<MI.Count_Get(Stream_General, 0); Pos++)
