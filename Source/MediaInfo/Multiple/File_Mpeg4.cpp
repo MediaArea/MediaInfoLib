@@ -909,7 +909,7 @@ void File_Mpeg4::Streams_Finish()
             }
         }
 
-        for (std::map<string, Ztring>::iterator Info=Temp->second.Infos.begin(); Info!=Temp->second.Infos.end(); Info++)
+        for (std::map<string, Ztring>::iterator Info=Temp->second.Infos.begin(); Info!=Temp->second.Infos.end(); ++Info)
             Fill(StreamKind_Last, StreamPos_Last, Info->first.c_str(), Info->second);
 
         ++Temp;

@@ -78,7 +78,7 @@ void File_Teletext::Streams_Fill()
 //---------------------------------------------------------------------------
 void File_Teletext::Streams_Finish()
 {
-    for (streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); Stream++)
+    for (streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); ++Stream)
     {
         Stream_Prepare(Stream_Text);
         Fill(Stream_Text, StreamPos_Last, Text_Format, IsSubtitle?"Teletext Subtitle":"Teletext");
@@ -180,7 +180,7 @@ void File_Teletext::Synched_Init()
 //---------------------------------------------------------------------------
 void File_Teletext::Read_Buffer_Unsynched()
 {
-    for (streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); Stream++)
+    for (streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); ++Stream)
         {
             Stream_HasChanged=0;
             for (size_t PosY=0; PosY<26; ++PosY)

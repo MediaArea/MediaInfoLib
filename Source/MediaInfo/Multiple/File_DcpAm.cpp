@@ -251,7 +251,7 @@ bool File_DcpAm::FileHeader_Begin()
     {
         ReferenceFiles=new File__ReferenceFilesHelper(this, Config);
 
-        for (File_DcpPkl::streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); Stream++)
+        for (File_DcpPkl::streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); ++Stream)
             if (Stream->StreamKind==(stream_t)(Stream_Max+1) && Stream->ChunkList.size()==1) // Means CPL
             {
                 File__ReferenceFilesHelper::reference ReferenceFile;

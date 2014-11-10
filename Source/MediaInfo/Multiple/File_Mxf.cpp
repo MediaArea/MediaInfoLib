@@ -4065,7 +4065,7 @@ size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
     {
         //Searching single descriptor if it is the only valid descriptor
         descriptors::iterator SingleDescriptor=Descriptors.end();
-        for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); SingleDescriptor_Temp++)
+        for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); ++SingleDescriptor_Temp)
             if (SingleDescriptor_Temp->second.StreamKind!=Stream_Max)
             {
                 if (SingleDescriptor!=Descriptors.end())
@@ -4090,7 +4090,7 @@ size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
             }
         }
 
-        for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); Descriptor++)
+        for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
         {
             //Configuring EditRate if needed (e.g. audio at 48000 Hz)
             if (Descriptor->second.SampleRate>1000)
@@ -4521,7 +4521,7 @@ bool File_Mxf::Header_Begin()
         #if MEDIAINFO_DEMUX
             //Searching single descriptor if it is the only valid descriptor
             descriptors::iterator SingleDescriptor=Descriptors.end();
-            for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); SingleDescriptor_Temp++)
+            for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); ++SingleDescriptor_Temp)
                 if (SingleDescriptor_Temp->second.StreamKind!=Stream_Max)
                 {
                     if (SingleDescriptor!=Descriptors.end())
@@ -5078,7 +5078,7 @@ void File_Mxf::Data_Parse()
             #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
             //Searching single descriptor if it is the only valid descriptor
             descriptors::iterator SingleDescriptor=Descriptors.end();
-            for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); SingleDescriptor_Temp++)
+            for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); ++SingleDescriptor_Temp)
                 if (SingleDescriptor_Temp->second.StreamKind!=Stream_Max)
                 {
                     if (SingleDescriptor!=Descriptors.end())
@@ -5103,7 +5103,7 @@ void File_Mxf::Data_Parse()
                 }
             }
 
-            for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); Descriptor++)
+            for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
             {
                 //Configuring EditRate if needed (e.g. audio at 48000 Hz)
                 if (Descriptor->second.SampleRate>1000)
@@ -5165,7 +5165,7 @@ void File_Mxf::Data_Parse()
         {
             //Searching single descriptor if it is the only valid descriptor
             descriptors::iterator SingleDescriptor=Descriptors.end();
-            for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); SingleDescriptor_Temp++)
+            for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); ++SingleDescriptor_Temp)
                 if (SingleDescriptor_Temp->second.StreamKind!=Stream_Max)
                 {
                     if (SingleDescriptor!=Descriptors.end())
@@ -5336,7 +5336,7 @@ void File_Mxf::Data_Parse()
             {
                 //Searching single descriptor if it is the only valid descriptor
                 descriptors::iterator SingleDescriptor=Descriptors.end();
-                for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); SingleDescriptor_Temp++)
+                for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); ++SingleDescriptor_Temp)
                     if (SingleDescriptor_Temp->second.StreamKind!=Stream_Max)
                     {
                         if (SingleDescriptor!=Descriptors.end())
