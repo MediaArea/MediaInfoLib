@@ -352,8 +352,10 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI)
     ToReturn+=__T("\t<instantiationIdentifier source=\"File Name\">");
     ToReturn+=MI.Get(Stream_General, 0, General_FileName);
     if (!MI.Get(Stream_General, 0, General_FileExtension).empty())
+    {
         ToReturn+=__T(".");
         ToReturn+=MI.Get(Stream_General, 0, General_FileExtension);
+    }
     ToReturn+=__T("</instantiationIdentifier>\n");
 
     // need to figure out how to get to non-internally-declared-values
