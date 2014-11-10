@@ -2522,7 +2522,7 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                             Open_Buffer_Finalize(&MI);
                             Merge(MI, Stream_General, 0, 0);
                         }
-                        else   
+                        else
                             Metadata_Get(Parameter, moov_meta_ilst_xxxx_name_Name);
                     }
                     else

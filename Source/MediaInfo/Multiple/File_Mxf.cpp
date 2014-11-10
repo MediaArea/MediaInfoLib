@@ -5195,7 +5195,7 @@ void File_Mxf::Data_Parse()
                                 Essence->second.TrackID=Track->second.TrackID;
                     }
                 #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
-                
+
                 // Fallback in case TrackID is not detected, forcing TrackID and TrackNumber
                 if (Essence->second.TrackID==(int32u)-1 && SingleDescriptor!=Descriptors.end())
                 {
@@ -5229,7 +5229,7 @@ void File_Mxf::Data_Parse()
                         }
                     }
                 }
-                
+
                 Essence->second.TrackID_WasLookedFor=true;
             }
 

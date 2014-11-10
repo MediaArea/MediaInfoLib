@@ -128,7 +128,7 @@ bool File_Sdp::Synchronize()
             Reject();
             return false;
         }
-        
+
         Accept();
     }
     return true;
@@ -213,7 +213,7 @@ void File_Sdp::Header_Parse()
 void File_Sdp::Data_Parse()
 {
     Element_Name("Packet");
-    
+
     for (int8u Pos=0; Pos<5; Pos++)
     {
         if (FieldLines[Pos])

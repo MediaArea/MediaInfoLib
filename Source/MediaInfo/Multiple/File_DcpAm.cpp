@@ -52,8 +52,8 @@ File_DcpAm::File_DcpAm()
     #endif //MEDIAINFO_DEMUX
 
     //PKL
-    PKL_Pos=(size_t)-1;    
-        
+    PKL_Pos=(size_t)-1;
+
     //Temp
     ReferenceFiles=NULL;
 }
@@ -250,7 +250,7 @@ bool File_DcpAm::FileHeader_Begin()
     if (!Config->File_IsReferenced_Get())
     {
         ReferenceFiles=new File__ReferenceFilesHelper(this, Config);
-        
+
         for (File_DcpPkl::streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); Stream++)
             if (Stream->StreamKind==(stream_t)(Stream_Max+1) && Stream->ChunkList.size()==1) // Means CPL
             {
