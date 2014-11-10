@@ -580,7 +580,6 @@ void File_Teletext::Data_Parse()
             Element_Info1(Y);
             if (Y<26)
             {
-                wstring line;
                 Element_Info1(Streams[(X<<8)|PageNumber].CC_Displayed_Values[Y].c_str());
                 if (Y==0)
                 {
