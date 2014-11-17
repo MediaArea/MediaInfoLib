@@ -133,6 +133,8 @@ public :
     #if MEDIAINFO_ADVANCED
         void          File_RiskyBitRateEstimation_Set (bool NewValue);
         bool          File_RiskyBitRateEstimation_Get ();
+        void          File_MergeBitRateInfo_Set (bool NewValue);
+        bool          File_MergeBitRateInfo_Get ();
     #endif //MEDIAINFO_ADVANCED
 
     #if MEDIAINFO_DEMUX
@@ -384,6 +386,7 @@ private :
         float64             File_DefaultFrameRate;
         bool                File_Source_List;
         bool                File_RiskyBitRateEstimation;
+        bool                File_MergeBitRateInfo;
         #if MEDIAINFO_DEMUX
             bool                File_Demux_Unpacketize_StreamLayoutChange_Skip;
         #endif //MEDIAINFO_DEMUX
