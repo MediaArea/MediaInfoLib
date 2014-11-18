@@ -1807,10 +1807,12 @@ void File_Avc::slice_header()
                             int32u tempPicOrderCnt;
                             if (Element_Code==5) //IdrPicFlag
                                 tempPicOrderCnt=0;
-                            else if (nal_ref_idc)
-                                tempPicOrderCnt=2*(FrameNumOffset+frame_num);
                             else
-                                tempPicOrderCnt=2*(FrameNumOffset+frame_num)-1;
+                            {
+                                tempPicOrderCnt=2*(FrameNumOffset+frame_num);
+                                if (!nal_ref_idc && tempPicOrderCnt) //Note: if nal_ref_idc is 0, tempPicOrderCnt is not expected to be 0 but it may be the case with invalid streams
+                                    tempPicOrderCnt--;
+                            }
 
                             pic_order_cnt=tempPicOrderCnt;
 
@@ -2842,7 +2844,8 @@ void File_Avc::seq_parameter_set()
 
     //parsing
     int32u seq_parameter_set_id;
-    if (!seq_parameter_set_data(seq_parameter_sets, seq_parameter_set_id))
+    seq_parameter_set_struct* Data_Item_New=seq_parameter_set_data(seq_parameter_set_id);
+    if (!Data_Item_New)
         return;
     Mark_1(                                                     );
     size_t BS_bits=Data_BS_Remain()%8;
@@ -2886,6 +2889,9 @@ void File_Avc::seq_parameter_set()
         NextCode_Clear();
         NextCode_Add(0x08);
 
+        //Add
+        seq_parameter_set_data_Add(seq_parameter_sets, seq_parameter_set_id, Data_Item_New);
+        
         //Autorisation of other streams
         Streams[0x08].Searching_Payload=true; //pic_parameter_set
         if (Streams[0x07].ShouldDuplicate)
@@ -2897,6 +2903,36 @@ void File_Avc::seq_parameter_set()
         if (Streams[0x07].ShouldDuplicate)
             Streams[0x0B].ShouldDuplicate=true; //end_of_stream
     FILLING_END();
+}
+
+void File_Avc::seq_parameter_set_data_Add(std::vector<seq_parameter_set_struct*> &Data, const int32u Data_id, seq_parameter_set_struct* Data_Item_New)
+{
+    //Creating Data
+    if (Data_id>=Data.size())
+        Data.resize(Data_id+1);
+    std::vector<seq_parameter_set_struct*>::iterator Data_Item=Data.begin()+Data_id;
+    delete *Data_Item; *Data_Item=Data_Item_New;
+
+    //Computing values (for speed)
+    size_t MaxNumber;
+    switch (Data_Item_New->pic_order_cnt_type)
+    {
+        case 0 :
+                    MaxNumber=Data_Item_New->MaxPicOrderCntLsb;
+                    break;
+        case 1 :
+        case 2 :
+                    MaxNumber=Data_Item_New->MaxFrameNum*2;
+                    break;
+        default:
+                    MaxNumber = 0;
+    }
+
+    if (MaxNumber>TemporalReferences_Reserved)
+    {
+        TemporalReferences.resize(4*MaxNumber);
+        TemporalReferences_Reserved=MaxNumber;
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -3134,10 +3170,10 @@ void File_Avc::subset_seq_parameter_set()
 
     //Parsing
     int32u subset_seq_parameter_set_id;
-    if (!seq_parameter_set_data(subset_seq_parameter_sets, subset_seq_parameter_set_id))
+    seq_parameter_set_struct* Data_Item_New=seq_parameter_set_data(subset_seq_parameter_set_id);
+    if (!Data_Item_New)
         return;
-    std::vector<seq_parameter_set_struct*>::iterator subset_seq_parameter_sets_Item=subset_seq_parameter_sets.begin()+subset_seq_parameter_set_id;
-    if ((*subset_seq_parameter_sets_Item)->profile_idc==83 || (*subset_seq_parameter_sets_Item)->profile_idc==86)
+    if (Data_Item_New->profile_idc==83 || Data_Item_New->profile_idc==86)
     {
         //bool svc_vui_parameters_present_flag;
         seq_parameter_set_svc_extension();
@@ -3147,11 +3183,11 @@ void File_Avc::subset_seq_parameter_set()
             svc_vui_parameters_extension();
         */
     }
-    else if ((*subset_seq_parameter_sets_Item)->profile_idc==118 || (*subset_seq_parameter_sets_Item)->profile_idc==128)
+    else if (Data_Item_New->profile_idc==118 || Data_Item_New->profile_idc==128)
     {
         //bool mvc_vui_parameters_present_flag, additional_extension2_flag;
         Mark_1();
-        seq_parameter_set_mvc_extension(subset_seq_parameter_set_id);
+        seq_parameter_set_mvc_extension(Data_Item_New);
         /* The rest is not yet implemented
         Get_SB (mvc_vui_parameters_present_flag,                "mvc_vui_parameters_present_flag");
         if (mvc_vui_parameters_present_flag)
@@ -3174,6 +3210,9 @@ void File_Avc::subset_seq_parameter_set()
         //NextCode
         NextCode_Clear();
         NextCode_Add(0x08);
+
+        //Add
+        seq_parameter_set_data_Add(subset_seq_parameter_sets, subset_seq_parameter_set_id, Data_Item_New);
 
         //Autorisation of other streams
         Streams[0x08].Searching_Payload=true; //pic_parameter_set
@@ -3213,7 +3252,7 @@ void File_Avc::slice_layer_extension(bool svc_extension_flag)
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-bool File_Avc::seq_parameter_set_data(std::vector<seq_parameter_set_struct*> &Data, int32u &Data_id)
+File_Avc::seq_parameter_set_struct* File_Avc::seq_parameter_set_data(int32u &Data_id)
 {
     //Parsing
     seq_parameter_set_struct::vui_parameters_struct* vui_parameters_Item=NULL;
@@ -3278,7 +3317,7 @@ bool File_Avc::seq_parameter_set_data(std::vector<seq_parameter_set_struct*> &Da
         if (num_ref_frames_in_pic_order_cnt_cycle>=256)
         {
             Trusted_IsNot("num_ref_frames_in_pic_order_cnt_cycle too high");
-            return false;
+            return NULL;
         }
         for(int32u Pos=0; Pos<num_ref_frames_in_pic_order_cnt_cycle; Pos++)
             Skip_SE(                                            "offset_for_ref_frame");
@@ -3286,7 +3325,7 @@ bool File_Avc::seq_parameter_set_data(std::vector<seq_parameter_set_struct*> &Da
     else if (pic_order_cnt_type > 2)
     {
         Trusted_IsNot("pic_order_cnt_type not supported");
-        return false;
+        return NULL;
     }
     Get_UE (max_num_ref_frames,                                 "max_num_ref_frames");
     Skip_SB(                                                    "gaps_in_frame_num_value_allowed_flag");
@@ -3328,10 +3367,7 @@ bool File_Avc::seq_parameter_set_data(std::vector<seq_parameter_set_struct*> &Da
         }
 
         //Creating Data
-        if (Data_id>=Data.size())
-            Data.resize(Data_id+1);
-        std::vector<seq_parameter_set_struct*>::iterator Data_Item=Data.begin()+Data_id;
-        delete *Data_Item; *Data_Item=new seq_parameter_set_struct(
+        return new seq_parameter_set_struct(
                                                                     vui_parameters_Item,
                                                                     pic_width_in_mbs_minus1,
                                                                     pic_height_in_map_units_minus1,
@@ -3354,32 +3390,10 @@ bool File_Avc::seq_parameter_set_data(std::vector<seq_parameter_set_struct*> &Da
                                                                     frame_mbs_only_flag,
                                                                     mb_adaptive_frame_field_flag
                                                                   );
-
-        //Computing values (for speed)
-        size_t MaxNumber;
-        switch (pic_order_cnt_type)
-        {
-            case 0 :
-                        MaxNumber=(*Data_Item)->MaxPicOrderCntLsb;
-                        break;
-            case 1 :
-            case 2 :
-                        MaxNumber=(*Data_Item)->MaxFrameNum*2;
-                        break;
-            default:
-                        MaxNumber = 0;
-        }
-
-        if (MaxNumber>TemporalReferences_Reserved)
-        {
-            TemporalReferences.resize(4*MaxNumber);
-            TemporalReferences_Reserved=MaxNumber;
-        }
     FILLING_ELSE();
         delete vui_parameters_Item; //vui_parameters_Item=NULL;
-        return false;
+        return NULL;
     FILLING_END();
-    return true;
 }
 
 //---------------------------------------------------------------------------
@@ -3602,7 +3616,7 @@ void File_Avc::svc_vui_parameters_extension()
 }
 
 //---------------------------------------------------------------------------
-void File_Avc::seq_parameter_set_mvc_extension(int32u subset_seq_parameter_sets_id)
+void File_Avc::seq_parameter_set_mvc_extension(seq_parameter_set_struct* Data_Item)
 {
     //Parsing
     Element_Begin1("seq_parameter_set_mvc_extension");
@@ -3612,7 +3626,7 @@ void File_Avc::seq_parameter_set_mvc_extension(int32u subset_seq_parameter_sets_
     Element_End0();
 
     FILLING_BEGIN();
-        subset_seq_parameter_sets[subset_seq_parameter_sets_id]->num_views_minus1 = (int16u)num_views_minus1;
+        Data_Item->num_views_minus1 = (int16u)num_views_minus1;
     FILLING_END();
 }
 
