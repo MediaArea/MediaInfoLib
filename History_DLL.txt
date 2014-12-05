@@ -14,6 +14,7 @@ x Previous version was built with SSE2 instructions, switching back to SSE instr
 x AVC: infinite loop fix
 x AVC: trying to avoid the wrong detection of AVC in the case of invalid (e.g. encrypted) streams
 x Crash on Windows Vista and Win7 pre-SP1 and a CPU having FMA support, due to a bug in MSVC2013, since 0.7.71. Thanks to Pavel Pimenov for the report and patch
+x MXF: AS-11 Typo (SerieTitle changed to SeriesTitle), TotalProgrammeDuration added
 
 Version 0.7.71, 2014-11-09
 --------------

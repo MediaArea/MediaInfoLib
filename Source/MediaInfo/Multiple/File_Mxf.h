@@ -391,7 +391,7 @@ protected :
     void WaveAudioDescriptor_PeakEnvelopeTimestamp();           //3D30
     void WaveAudioDescriptor_PeakEnvelopeData();                //3D31
     void WaveAudioDescriptor_ChannelAssignment();               //3D31
-    void AS11_Core_SerieTitle();
+    void AS11_Core_SeriesTitle();
     void AS11_Core_ProgrammeTitle();
     void AS11_Core_EpisodeTitleNumber();
     void AS11_Core_ShimName();
@@ -880,7 +880,7 @@ protected :
             Type_UKDPP,
         };
         as11_type Type;
-        Ztring SerieTitle;
+        Ztring SeriesTitle;
         Ztring ProgrammeTitle;
         Ztring EpisodeTitleNumber;
         Ztring ShimName;

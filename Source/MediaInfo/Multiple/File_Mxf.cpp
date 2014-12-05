@@ -326,7 +326,7 @@ namespace Elements
     //                                 0B - ?
     //                                   01 - AS-11 core metadata framework
     UUID(060E2B34, 02530101, 0D010701, 0B010100, 0000, "AMWA AS-11", AS11_AAF_Core, "")
-    UUID(060E2B34, 01010101, 0D010701, 0B010101, 0000, "AMWA AS-11", AS11_Core_SerieTitle, "")
+    UUID(060E2B34, 01010101, 0D010701, 0B010101, 0000, "AMWA AS-11", AS11_Core_SeriesTitle, "")
     UUID(060E2B34, 01010101, 0D010701, 0B010102, 0000, "AMWA AS-11", AS11_Core_ProgrammeTitle, "")
     UUID(060E2B34, 01010101, 0D010701, 0B010103, 0000, "AMWA AS-11", AS11_Core_EpisodeTitleNumber, "")
     UUID(060E2B34, 01010101, 0D010701, 0B010104, 0000, "AMWA AS-11", AS11_Core_ShimName, "")
@@ -3430,7 +3430,7 @@ void File_Mxf::Streams_Finish_Component_ForAS11(const int128u ComponentUID, floa
                 {
                     case as11::Type_Core:
                                                     Fill(Stream_Other, StreamPos_Last, "Format", "AS-11 Core");
-                                                    Fill(Stream_Other, StreamPos_Last, "SerieTitle", AS11->second.SerieTitle);
+                                                    Fill(Stream_Other, StreamPos_Last, "SeriesTitle", AS11->second.SeriesTitle);
                                                     Fill(Stream_Other, StreamPos_Last, "ProgrammeTitle", AS11->second.ProgrammeTitle);
                                                     Fill(Stream_Other, StreamPos_Last, "EpisodeTitleNumber", AS11->second.EpisodeTitleNumber);
                                                     Fill(Stream_Other, StreamPos_Last, "ShimName", AS11->second.ShimName);
@@ -3558,7 +3558,7 @@ void File_Mxf::Streams_Finish_Component_ForAS11(const int128u ComponentUID, floa
         }
     }
     if (Duration_Programme)
-        Fill(Stream_Other, StreamPos_Last, "Total Programme Duration", TimeCode(Duration_Programme, FrameRate_TempI, DropFrame_Temp).ToString());
+        Fill(Stream_Other, StreamPos_Last, "TotalProgrammeDuration", TimeCode(Duration_Programme, FrameRate_TempI, DropFrame_Temp).ToString());
 }
 
 //---------------------------------------------------------------------------
@@ -6472,7 +6472,7 @@ void File_Mxf::AS11_AAF_Core()
             int32u Code_Compare3=Primer_Value->second.lo>>32;
             int32u Code_Compare4=(int32u)Primer_Value->second.lo;
             if(0);
-            ELEMENT_UUID(AS11_Core_SerieTitle,                  "Serie Title")
+            ELEMENT_UUID(AS11_Core_SeriesTitle,                 "Series Title")
             ELEMENT_UUID(AS11_Core_ProgrammeTitle,              "Programme Title")
             ELEMENT_UUID(AS11_Core_EpisodeTitleNumber,          "Episode Title Number")
             ELEMENT_UUID(AS11_Core_ShimName,                    "Shim Name")
@@ -10035,14 +10035,14 @@ void File_Mxf::WaveAudioDescriptor_ChannelAssignment()
 
 //---------------------------------------------------------------------------
 // AAF
-void File_Mxf::AS11_Core_SerieTitle()
+void File_Mxf::AS11_Core_SeriesTitle()
 {
     //Parsing
     Ztring Value;
     Get_UTF16B(Length2, Value,                                  "Value"); Element_Info1(Value);
 
     FILLING_BEGIN();
-        AS11s[InstanceUID].SerieTitle=Value;
+        AS11s[InstanceUID].SeriesTitle=Value;
     FILLING_END();
 }
 

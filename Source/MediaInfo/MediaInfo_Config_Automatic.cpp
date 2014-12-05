@@ -1005,7 +1005,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "Send HeaderFile;Please send me the Header file here : http://sourceforge.net/projects/mediainfo/ (Bug section)\n"
     "Separator_Columns;columns separator\n"
     "Separator_Lines;lines separator\n"
-    "SerieTitle;Serie Title\n"
+    "SeriesTitle;Series Title\n"
     "ServiceChannel;Service channel number\n"
     "ServiceName;Service name\n"
     "ServiceProvider;Service provider\n"
