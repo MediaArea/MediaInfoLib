@@ -152,8 +152,8 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     File_Current_Offset=0;
     File_Current_Size=(int64u)-1;
     File_IgnoreFramesBefore=0;
-    File_IgnoreFramesAfter=(int64u)-1;
-    File_IgnoreFramesRate=0;
+    File_IgnoreEditsAfter=(int64u)-1;
+    File_EditRate=0;
     File_Size=(int64u)-1;
     ParseSpeed=MediaInfoLib::Config.ParseSpeed_Get();
     #if MEDIAINFO_EVENTS
@@ -2123,9 +2123,9 @@ void MediaInfo_Config_MediaInfo::Event_Send (File__Analyze* Source, const int8u*
             }
             if (Temp->DTS!=(int64u)-1)
             {
-                if (File_IgnoreFramesBefore && File_IgnoreFramesRate)
+                if (File_IgnoreFramesBefore && File_EditRate)
                 {
-                    int64u TimeOffset=float64_int64s(((float64)File_IgnoreFramesBefore)/File_IgnoreFramesRate*1000000000);
+                    int64u TimeOffset=float64_int64s(((float64)File_IgnoreFramesBefore)/File_EditRate*1000000000);
                     if (Temp->DTS>TimeOffset)
                         Temp->DTS-=TimeOffset;
                     else
@@ -2134,9 +2134,9 @@ void MediaInfo_Config_MediaInfo::Event_Send (File__Analyze* Source, const int8u*
             }
             if (Temp->PTS!=(int64u)-1)
             {
-                if (File_IgnoreFramesBefore && File_IgnoreFramesRate)
+                if (File_IgnoreFramesBefore && File_EditRate)
                 {
-                    int64u TimeOffset=float64_int64s(((float64)File_IgnoreFramesBefore)/File_IgnoreFramesRate*1000000000);
+                    int64u TimeOffset=float64_int64s(((float64)File_IgnoreFramesBefore)/File_EditRate*1000000000);
                     if (Temp->PTS>TimeOffset)
                         Temp->PTS-=TimeOffset;
                     else

@@ -346,8 +346,8 @@ public :
     int64u        File_Current_Offset;
     int64u        File_Current_Size;
     int64u        File_IgnoreFramesBefore;
-    int64u        File_IgnoreFramesAfter;
-    float64       File_IgnoreFramesRate;
+    int64u        File_IgnoreEditsAfter;
+    float64       File_EditRate;
     int64u        File_Size;
     float32       ParseSpeed;
     #if MEDIAINFO_EVENTS

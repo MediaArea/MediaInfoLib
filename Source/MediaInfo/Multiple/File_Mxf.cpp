@@ -2071,7 +2071,7 @@ void File_Mxf::Streams_Finish()
             }
 
     //File size in case of partial file analysis
-    if (Config->File_IgnoreFramesBefore || Config->File_IgnoreFramesAfter!=(int64u)-1)
+    if (Config->File_IgnoreFramesBefore || Config->File_IgnoreEditsAfter!=(int64u)-1)
     {
         int64u FrameCount_FromComponent=(int64u)-1;
         for (components::iterator Component=Components.begin(); Component!=Components.end(); ++Component)
@@ -2085,13 +2085,13 @@ void File_Mxf::Streams_Finish()
         {
             int64u FrameCount=FrameCount_FromComponent;
             int64u File_IgnoreFramesBefore=Config->File_IgnoreFramesBefore;
-            if (File_IgnoreFramesBefore && Config->File_IgnoreFramesRate && (EditRate_FromTrack<Config->File_IgnoreFramesRate*0.9 || EditRate_FromTrack>Config->File_IgnoreFramesRate*1.1)) //In case of problem or EditRate being sampling rate
-                File_IgnoreFramesBefore=float64_int64s(((float64)File_IgnoreFramesBefore)/Config->File_IgnoreFramesRate*EditRate_FromTrack);
-            int64u File_IgnoreFramesAfter=Config->File_IgnoreFramesAfter;
-            if (File_IgnoreFramesAfter!=(int64u)-1 && Config->File_IgnoreFramesRate && (EditRate_FromTrack<Config->File_IgnoreFramesRate*0.9 || EditRate_FromTrack>Config->File_IgnoreFramesRate*1.1)) //In case of problem or EditRate being sampling rate
-                File_IgnoreFramesAfter=float64_int64s(((float64)File_IgnoreFramesAfter)/Config->File_IgnoreFramesRate*EditRate_FromTrack);
-            if (File_IgnoreFramesAfter<FrameCount)
-                FrameCount=File_IgnoreFramesAfter;
+            if (File_IgnoreFramesBefore && Config->File_EditRate && (EditRate_FromTrack<Config->File_EditRate*0.9 || EditRate_FromTrack>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
+                File_IgnoreFramesBefore=float64_int64s(((float64)File_IgnoreFramesBefore)/Config->File_EditRate*EditRate_FromTrack);
+            int64u File_IgnoreEditsAfter=Config->File_IgnoreEditsAfter;
+            if (File_IgnoreEditsAfter!=(int64u)-1 && Config->File_EditRate && (EditRate_FromTrack<Config->File_EditRate*0.9 || EditRate_FromTrack>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
+                File_IgnoreEditsAfter=float64_int64s(((float64)File_IgnoreEditsAfter)/Config->File_EditRate*EditRate_FromTrack);
+            if (File_IgnoreEditsAfter<FrameCount)
+                FrameCount=File_IgnoreEditsAfter;
             if (FrameCount<File_IgnoreFramesBefore)
                 FrameCount=File_IgnoreFramesBefore;
             FrameCount-=File_IgnoreFramesBefore;
@@ -2693,7 +2693,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
     {
         //TODO: Stream_Size is present only if there is one stream, so it works in most cases. We should find a better way.
         int64u Stream_Size=Essence->second.Stream_Size;
-        if (Config->File_IgnoreFramesBefore || Config->File_IgnoreFramesAfter!=(int64u)-1)
+        if (Config->File_IgnoreFramesBefore || Config->File_IgnoreEditsAfter!=(int64u)-1)
         {
             int64u FrameCount_FromComponent=(int64u)-1;
             for (components::iterator Component=Components.begin(); Component!=Components.end(); ++Component)
@@ -2707,13 +2707,13 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             {
                 int64u FrameCount=FrameCount_FromComponent;
                 int64u File_IgnoreFramesBefore=Config->File_IgnoreFramesBefore;
-                if (File_IgnoreFramesBefore && Config->File_IgnoreFramesRate && (EditRate_FromTrack<Config->File_IgnoreFramesRate*0.9 || EditRate_FromTrack>Config->File_IgnoreFramesRate*1.1)) //In case of problem or EditRate being sampling rate
-                    File_IgnoreFramesBefore=float64_int64s(((float64)File_IgnoreFramesBefore)/Config->File_IgnoreFramesRate*EditRate_FromTrack);
-                int64u File_IgnoreFramesAfter=Config->File_IgnoreFramesAfter;
-                if (File_IgnoreFramesAfter!=(int64u)-1 && Config->File_IgnoreFramesRate && (EditRate_FromTrack<Config->File_IgnoreFramesRate*0.9 || EditRate_FromTrack>Config->File_IgnoreFramesRate*1.1)) //In case of problem or EditRate being sampling rate
-                    File_IgnoreFramesAfter=float64_int64s(((float64)File_IgnoreFramesAfter)/Config->File_IgnoreFramesRate*EditRate_FromTrack);
-                if (File_IgnoreFramesAfter<FrameCount)
-                    FrameCount=File_IgnoreFramesAfter;
+                if (File_IgnoreFramesBefore && Config->File_EditRate && (EditRate_FromTrack<Config->File_EditRate*0.9 || EditRate_FromTrack>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
+                    File_IgnoreFramesBefore=float64_int64s(((float64)File_IgnoreFramesBefore)/Config->File_EditRate*EditRate_FromTrack);
+                int64u File_IgnoreEditsAfter=Config->File_IgnoreEditsAfter;
+                if (File_IgnoreEditsAfter!=(int64u)-1 && Config->File_EditRate && (EditRate_FromTrack<Config->File_EditRate*0.9 || EditRate_FromTrack>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
+                    File_IgnoreEditsAfter=float64_int64s(((float64)File_IgnoreEditsAfter)/Config->File_EditRate*EditRate_FromTrack);
+                if (File_IgnoreEditsAfter<FrameCount)
+                    FrameCount=File_IgnoreEditsAfter;
                 if (FrameCount<File_IgnoreFramesBefore)
                     FrameCount=File_IgnoreFramesBefore;
                 FrameCount-=File_IgnoreFramesBefore;
@@ -3270,16 +3270,16 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
     if (EditRate && StreamKind_Last!=Stream_Max && Component->second.Duration!=(int64u)-1)
     {
         int64u FrameCount=Component->second.Duration;
-        if (StreamKind_Last==Stream_Video || Config->File_IgnoreFramesRate)
+        if (StreamKind_Last==Stream_Video || Config->File_EditRate)
         {
             int64u File_IgnoreFramesBefore=Config->File_IgnoreFramesBefore;
-            if (File_IgnoreFramesBefore && Config->File_IgnoreFramesRate && (EditRate<Config->File_IgnoreFramesRate*0.9 || EditRate>Config->File_IgnoreFramesRate*1.1)) //In case of problem or EditRate being sampling rate
-                File_IgnoreFramesBefore=float64_int64s(((float64)File_IgnoreFramesBefore)/Config->File_IgnoreFramesRate*EditRate);
-            int64u File_IgnoreFramesAfter=Config->File_IgnoreFramesAfter;
-            if (File_IgnoreFramesAfter!=(int64u)-1 && Config->File_IgnoreFramesRate && (EditRate<Config->File_IgnoreFramesRate*0.9 || EditRate>Config->File_IgnoreFramesRate*1.1)) //In case of problem or EditRate being sampling rate
-                File_IgnoreFramesAfter=float64_int64s(((float64)File_IgnoreFramesAfter)/Config->File_IgnoreFramesRate*EditRate);
-            if (File_IgnoreFramesAfter<FrameCount)
-                FrameCount=File_IgnoreFramesAfter;
+            if (File_IgnoreFramesBefore && Config->File_EditRate && (EditRate<Config->File_EditRate*0.9 || EditRate>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
+                File_IgnoreFramesBefore=float64_int64s(((float64)File_IgnoreFramesBefore)/Config->File_EditRate*EditRate);
+            int64u File_IgnoreEditsAfter=Config->File_IgnoreEditsAfter;
+            if (File_IgnoreEditsAfter!=(int64u)-1 && Config->File_EditRate && (EditRate<Config->File_EditRate*0.9 || EditRate>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
+                File_IgnoreEditsAfter=float64_int64s(((float64)File_IgnoreEditsAfter)/Config->File_EditRate*EditRate);
+            if (File_IgnoreEditsAfter<FrameCount)
+                FrameCount=File_IgnoreEditsAfter;
             if (FrameCount<File_IgnoreFramesBefore)
                 FrameCount=File_IgnoreFramesBefore;
             FrameCount-=File_IgnoreFramesBefore;
@@ -4121,7 +4121,7 @@ size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
     {
         case 0  :
                     {
-                    if (Config->File_IgnoreFramesBefore && Config->File_IgnoreFramesRate)
+                    if (Config->File_IgnoreFramesBefore && Config->File_EditRate)
                     {
                         Read_Buffer_Seek(3, 0, (int64u)-1);
                         if (File_GoTo!=(int64u)-1)
@@ -4195,8 +4195,8 @@ size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
                     return Read_Buffer_Seek(0, File_Size*Value/10000, ID);
         case 2  :   //Timestamp
                     {
-                        if (Config->File_IgnoreFramesBefore && Config->File_IgnoreFramesRate)
-                            Value+=float64_int64s(((float64)Config->File_IgnoreFramesBefore)/Config->File_IgnoreFramesRate*1000000000);
+                        if (Config->File_IgnoreFramesBefore && Config->File_EditRate)
+                            Value+=float64_int64s(((float64)Config->File_IgnoreFramesBefore)/Config->File_EditRate*1000000000);
 
                         //We transform TimeStamp to a frame number
                         descriptors::iterator Descriptor;
@@ -5560,7 +5560,7 @@ void File_Mxf::Data_Parse()
         }
 
         //Ignore tail
-        if (Config->ParseSpeed>=1.0 && Frame_Count_NotParsedIncluded!=(int64u)-1 && Config->File_IgnoreFramesAfter!=(int64u)-1 && Frame_Count_NotParsedIncluded>=Config->File_IgnoreFramesAfter)
+        if (Config->ParseSpeed>=1.0 && Frame_Count_NotParsedIncluded!=(int64u)-1 && Config->File_IgnoreEditsAfter!=(int64u)-1 && Frame_Count_NotParsedIncluded>=Config->File_IgnoreEditsAfter)
         {
             if (PartitionMetadata_FooterPartition!=(int64u)-1 && PartitionMetadata_FooterPartition>=File_Offset+Buffer_Offset+Element_Size)
                 GoTo(PartitionMetadata_FooterPartition);

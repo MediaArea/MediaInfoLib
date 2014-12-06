@@ -821,10 +821,10 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
                 Reference->CompleteDuration[Pos].MI=MI_Create();
                 Reference->CompleteDuration[Pos].MI->Config.File_IgnoreFramesBefore=Reference->CompleteDuration[Pos].IgnoreFramesBefore;
                 if (Reference->CompleteDuration[Pos].IgnoreFramesAfter==(int64u)-1 && Reference->CompleteDuration[Pos].IgnoreFramesAfterDuration!=(int64u)-1)
-                    Reference->CompleteDuration[Pos].MI->Config.File_IgnoreFramesAfter=Reference->CompleteDuration[Pos].IgnoreFramesBefore+Reference->CompleteDuration[Pos].IgnoreFramesAfterDuration;
+                    Reference->CompleteDuration[Pos].MI->Config.File_IgnoreEditsAfter=Reference->CompleteDuration[Pos].IgnoreFramesBefore+Reference->CompleteDuration[Pos].IgnoreFramesAfterDuration;
                 else
-                    Reference->CompleteDuration[Pos].MI->Config.File_IgnoreFramesAfter=Reference->CompleteDuration[Pos].IgnoreFramesAfter;
-                Reference->CompleteDuration[Pos].MI->Config.File_IgnoreFramesRate=Reference->CompleteDuration[Pos].IgnoreFramesRate;
+                    Reference->CompleteDuration[Pos].MI->Config.File_IgnoreEditsAfter=Reference->CompleteDuration[Pos].IgnoreFramesAfter;
+                Reference->CompleteDuration[Pos].MI->Config.File_EditRate=Reference->CompleteDuration[Pos].IgnoreFramesRate;
                 #if MEDIAINFO_DEMUX
                     Reference->CompleteDuration[Pos].MI->Config.Demux_Offset_Frame=Reference->CompleteDuration[Pos].Demux_Offset_Frame;
                     Reference->CompleteDuration[Pos].MI->Config.Demux_Offset_DTS=Reference->CompleteDuration[Pos].Demux_Offset_DTS;
@@ -835,10 +835,10 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
         {
             Reference->MI->Config.File_IgnoreFramesBefore=Reference->CompleteDuration[0].IgnoreFramesBefore;
             if (Reference->CompleteDuration[0].IgnoreFramesAfter==(int64u)-1 && Reference->CompleteDuration[0].IgnoreFramesAfterDuration!=(int64u)-1)
-                Reference->MI->Config.File_IgnoreFramesAfter=Reference->CompleteDuration[0].IgnoreFramesBefore+Reference->CompleteDuration[0].IgnoreFramesAfterDuration;
+                Reference->MI->Config.File_IgnoreEditsAfter=Reference->CompleteDuration[0].IgnoreFramesBefore+Reference->CompleteDuration[0].IgnoreFramesAfterDuration;
             else
-                Reference->MI->Config.File_IgnoreFramesAfter=Reference->CompleteDuration[0].IgnoreFramesAfter;
-            Reference->MI->Config.File_IgnoreFramesRate=Reference->CompleteDuration[0].IgnoreFramesRate;
+                Reference->MI->Config.File_IgnoreEditsAfter=Reference->CompleteDuration[0].IgnoreFramesAfter;
+            Reference->MI->Config.File_EditRate=Reference->CompleteDuration[0].IgnoreFramesRate;
             #if MEDIAINFO_DEMUX
                 Reference->MI->Config.Demux_Offset_Frame=Reference->CompleteDuration[0].Demux_Offset_Frame;
                 Reference->MI->Config.Demux_Offset_DTS=Reference->CompleteDuration[0].Demux_Offset_DTS;
@@ -1135,10 +1135,10 @@ void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()
             MI2.Option(__T("Demux"), Ztring());
             MI2.Config.File_IgnoreFramesBefore=Reference->CompleteDuration[Pos].IgnoreFramesBefore;
             if (Reference->CompleteDuration[Pos].IgnoreFramesAfter==(int64u)-1 && Reference->CompleteDuration[Pos].IgnoreFramesAfterDuration!=(int64u)-1)
-                MI2.Config.File_IgnoreFramesAfter=Reference->CompleteDuration[Pos].IgnoreFramesBefore+Reference->CompleteDuration[Pos].IgnoreFramesAfterDuration;
+                MI2.Config.File_IgnoreEditsAfter=Reference->CompleteDuration[Pos].IgnoreFramesBefore+Reference->CompleteDuration[Pos].IgnoreFramesAfterDuration;
             else
-                MI2.Config.File_IgnoreFramesAfter=Reference->CompleteDuration[Pos].IgnoreFramesAfter;
-            MI2.Config.File_IgnoreFramesRate=Reference->CompleteDuration[Pos].IgnoreFramesRate;
+                MI2.Config.File_IgnoreEditsAfter=Reference->CompleteDuration[Pos].IgnoreFramesAfter;
+            MI2.Config.File_EditRate=Reference->CompleteDuration[Pos].IgnoreFramesRate;
             size_t MiOpenResult=MI2.Open(Reference->CompleteDuration[Pos].FileName);
             MI2.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
             MI2.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
