@@ -3835,6 +3835,9 @@ void File_Mxf::Read_Buffer_Unsynched()
             Partitions_Pos++;
         }
 
+        if (Partitions_Pos==2 && Partitions[1].StreamOffset==FutureFileOffset && Descriptors.size()==1 && Descriptors.begin()->second.StreamKind==Stream_Text)
+            Frame_Count_NotParsedIncluded=0;
+
         if (Descriptors.size()==1 && Descriptors.begin()->second.ByteRate!=(int32u)-1 && Descriptors.begin()->second.SampleRate)
         {
             float64 BytePerFrame=Descriptors.begin()->second.ByteRate/Descriptors.begin()->second.SampleRate;
@@ -5279,10 +5282,10 @@ void File_Mxf::Data_Parse()
                 if (!IsSub) //Updating for MXF only if MXF is not embedded in another container
                 {
                     Essence->second.Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded;
-                    if (Essence->second.Frame_Count_NotParsedIncluded!=(int64u)-1 && Essence->second.Frame_Count_NotParsedIncluded)
+                    if (Essence->second.Frame_Count_NotParsedIncluded!=(int64u)-1 && Essence->second.Frame_Count_NotParsedIncluded && Essence->first!=Essences_UsedForFrameCount)
                         Essence->second.Frame_Count_NotParsedIncluded--; //Info is from the first essence parsed, and 1 frame is already parsed
                     Essence->second.FrameInfo.DTS=FrameInfo.DTS;
-                    if (Essence->second.FrameInfo.DTS!=(int64u)-1 && FrameInfo.DUR!=(int64u)-1 && Frame_Count_NotParsedIncluded)
+                    if (Essence->second.FrameInfo.DTS!=(int64u)-1 && FrameInfo.DUR!=(int64u)-1 && Frame_Count_NotParsedIncluded && Essence->first!=Essences_UsedForFrameCount)
                         Essence->second.FrameInfo.DTS-=FrameInfo.DUR; //Info is from the first essence parsed, and 1 frame is already parsed
                     if (!Tracks.empty() && Tracks.begin()->second.EditRate) //TODO: use the corresponding track instead of the first one
                         Essence->second.FrameInfo.DUR=float64_int64s(1000000000/Tracks.begin()->second.EditRate);
