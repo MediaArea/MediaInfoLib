@@ -819,7 +819,7 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
             if (Pos)
             {
                 Reference->CompleteDuration[Pos].MI=MI_Create();
-                Reference->CompleteDuration[Pos].MI->Config.File_IgnoreFramesBefore=Reference->CompleteDuration[Pos].IgnoreFramesBefore;
+                Reference->CompleteDuration[Pos].MI->Config.File_IgnoreEditsBefore=Reference->CompleteDuration[Pos].IgnoreFramesBefore;
                 if (Reference->CompleteDuration[Pos].IgnoreFramesAfter==(int64u)-1 && Reference->CompleteDuration[Pos].IgnoreFramesAfterDuration!=(int64u)-1)
                     Reference->CompleteDuration[Pos].MI->Config.File_IgnoreEditsAfter=Reference->CompleteDuration[Pos].IgnoreFramesBefore+Reference->CompleteDuration[Pos].IgnoreFramesAfterDuration;
                 else
@@ -833,7 +833,7 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
         }
         if (!Reference->CompleteDuration.empty())
         {
-            Reference->MI->Config.File_IgnoreFramesBefore=Reference->CompleteDuration[0].IgnoreFramesBefore;
+            Reference->MI->Config.File_IgnoreEditsBefore=Reference->CompleteDuration[0].IgnoreFramesBefore;
             if (Reference->CompleteDuration[0].IgnoreFramesAfter==(int64u)-1 && Reference->CompleteDuration[0].IgnoreFramesAfterDuration!=(int64u)-1)
                 Reference->MI->Config.File_IgnoreEditsAfter=Reference->CompleteDuration[0].IgnoreFramesBefore+Reference->CompleteDuration[0].IgnoreFramesAfterDuration;
             else
@@ -1133,7 +1133,7 @@ void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()
             Ztring Demux_Save=MI2.Option(__T("Demux_Get"), __T(""));
             MI2.Option(__T("ParseSpeed"), __T("0"));
             MI2.Option(__T("Demux"), Ztring());
-            MI2.Config.File_IgnoreFramesBefore=Reference->CompleteDuration[Pos].IgnoreFramesBefore;
+            MI2.Config.File_IgnoreEditsBefore=Reference->CompleteDuration[Pos].IgnoreFramesBefore;
             if (Reference->CompleteDuration[Pos].IgnoreFramesAfter==(int64u)-1 && Reference->CompleteDuration[Pos].IgnoreFramesAfterDuration!=(int64u)-1)
                 MI2.Config.File_IgnoreEditsAfter=Reference->CompleteDuration[Pos].IgnoreFramesBefore+Reference->CompleteDuration[Pos].IgnoreFramesAfterDuration;
             else

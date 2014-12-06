@@ -2071,7 +2071,7 @@ void File_Mxf::Streams_Finish()
             }
 
     //File size in case of partial file analysis
-    if (Config->File_IgnoreFramesBefore || Config->File_IgnoreEditsAfter!=(int64u)-1)
+    if (Config->File_IgnoreEditsBefore || Config->File_IgnoreEditsAfter!=(int64u)-1)
     {
         int64u FrameCount_FromComponent=(int64u)-1;
         for (components::iterator Component=Components.begin(); Component!=Components.end(); ++Component)
@@ -2084,17 +2084,17 @@ void File_Mxf::Streams_Finish()
         if (FrameCount_FromComponent!=(int64u)-1 && FrameCount_FromComponent && EditRate_FromTrack!=DBL_MAX && EditRate_FromTrack)
         {
             int64u FrameCount=FrameCount_FromComponent;
-            int64u File_IgnoreFramesBefore=Config->File_IgnoreFramesBefore;
-            if (File_IgnoreFramesBefore && Config->File_EditRate && (EditRate_FromTrack<Config->File_EditRate*0.9 || EditRate_FromTrack>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
-                File_IgnoreFramesBefore=float64_int64s(((float64)File_IgnoreFramesBefore)/Config->File_EditRate*EditRate_FromTrack);
+            int64u File_IgnoreEditsBefore=Config->File_IgnoreEditsBefore;
+            if (File_IgnoreEditsBefore && Config->File_EditRate && (EditRate_FromTrack<Config->File_EditRate*0.9 || EditRate_FromTrack>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
+                File_IgnoreEditsBefore=float64_int64s(((float64)File_IgnoreEditsBefore)/Config->File_EditRate*EditRate_FromTrack);
             int64u File_IgnoreEditsAfter=Config->File_IgnoreEditsAfter;
             if (File_IgnoreEditsAfter!=(int64u)-1 && Config->File_EditRate && (EditRate_FromTrack<Config->File_EditRate*0.9 || EditRate_FromTrack>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
                 File_IgnoreEditsAfter=float64_int64s(((float64)File_IgnoreEditsAfter)/Config->File_EditRate*EditRate_FromTrack);
             if (File_IgnoreEditsAfter<FrameCount)
                 FrameCount=File_IgnoreEditsAfter;
-            if (FrameCount<File_IgnoreFramesBefore)
-                FrameCount=File_IgnoreFramesBefore;
-            FrameCount-=File_IgnoreFramesBefore;
+            if (FrameCount<File_IgnoreEditsBefore)
+                FrameCount=File_IgnoreEditsBefore;
+            FrameCount-=File_IgnoreEditsBefore;
 
             float64 File_Size_Temp=(float64)File_Size;
             File_Size_Temp/=FrameCount_FromComponent;
@@ -2373,7 +2373,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
         Fill(StreamKind_Last, StreamPos_Last, Info->first.c_str(), Info->second, true);
     if (TimeCode_RoundedTimecodeBase && TimeCode_StartTimecode!=(int64u)-1)
     {
-        float64 TimeCode_StartTimecode_Temp=((float64)(TimeCode_StartTimecode+Config->File_IgnoreFramesBefore))/TimeCode_RoundedTimecodeBase;
+        float64 TimeCode_StartTimecode_Temp=((float64)(TimeCode_StartTimecode+Config->File_IgnoreEditsBefore))/TimeCode_RoundedTimecodeBase;
         if (TimeCode_DropFrame)
         {
             TimeCode_StartTimecode_Temp*=1001;
@@ -2597,7 +2597,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
                 (*Parser)->Finish();
                 if (TimeCode_RoundedTimecodeBase && TimeCode_StartTimecode!=(int64u)-1)
                 {
-                    float64 TimeCode_StartTimecode_Temp=((float64)(TimeCode_StartTimecode+Config->File_IgnoreFramesBefore))/TimeCode_RoundedTimecodeBase;
+                    float64 TimeCode_StartTimecode_Temp=((float64)(TimeCode_StartTimecode+Config->File_IgnoreEditsBefore))/TimeCode_RoundedTimecodeBase;
                     if (TimeCode_DropFrame)
                     {
                         TimeCode_StartTimecode_Temp*=1001;
@@ -2637,7 +2637,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             (*Parser)->Finish();
             if (TimeCode_RoundedTimecodeBase && TimeCode_StartTimecode!=(int64u)-1)
             {
-                float64 TimeCode_StartTimecode_Temp=((float64)(TimeCode_StartTimecode+Config->File_IgnoreFramesBefore))/TimeCode_RoundedTimecodeBase;
+                float64 TimeCode_StartTimecode_Temp=((float64)(TimeCode_StartTimecode+Config->File_IgnoreEditsBefore))/TimeCode_RoundedTimecodeBase;
                 if (TimeCode_DropFrame)
                 {
                     TimeCode_StartTimecode_Temp*=1001;
@@ -2693,7 +2693,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
     {
         //TODO: Stream_Size is present only if there is one stream, so it works in most cases. We should find a better way.
         int64u Stream_Size=Essence->second.Stream_Size;
-        if (Config->File_IgnoreFramesBefore || Config->File_IgnoreEditsAfter!=(int64u)-1)
+        if (Config->File_IgnoreEditsBefore || Config->File_IgnoreEditsAfter!=(int64u)-1)
         {
             int64u FrameCount_FromComponent=(int64u)-1;
             for (components::iterator Component=Components.begin(); Component!=Components.end(); ++Component)
@@ -2706,17 +2706,17 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             if (FrameCount_FromComponent!=(int64u)-1 && FrameCount_FromComponent && EditRate_FromTrack!=DBL_MAX && EditRate_FromTrack)
             {
                 int64u FrameCount=FrameCount_FromComponent;
-                int64u File_IgnoreFramesBefore=Config->File_IgnoreFramesBefore;
-                if (File_IgnoreFramesBefore && Config->File_EditRate && (EditRate_FromTrack<Config->File_EditRate*0.9 || EditRate_FromTrack>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
-                    File_IgnoreFramesBefore=float64_int64s(((float64)File_IgnoreFramesBefore)/Config->File_EditRate*EditRate_FromTrack);
+                int64u File_IgnoreEditsBefore=Config->File_IgnoreEditsBefore;
+                if (File_IgnoreEditsBefore && Config->File_EditRate && (EditRate_FromTrack<Config->File_EditRate*0.9 || EditRate_FromTrack>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
+                    File_IgnoreEditsBefore=float64_int64s(((float64)File_IgnoreEditsBefore)/Config->File_EditRate*EditRate_FromTrack);
                 int64u File_IgnoreEditsAfter=Config->File_IgnoreEditsAfter;
                 if (File_IgnoreEditsAfter!=(int64u)-1 && Config->File_EditRate && (EditRate_FromTrack<Config->File_EditRate*0.9 || EditRate_FromTrack>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
                     File_IgnoreEditsAfter=float64_int64s(((float64)File_IgnoreEditsAfter)/Config->File_EditRate*EditRate_FromTrack);
                 if (File_IgnoreEditsAfter<FrameCount)
                     FrameCount=File_IgnoreEditsAfter;
-                if (FrameCount<File_IgnoreFramesBefore)
-                    FrameCount=File_IgnoreFramesBefore;
-                FrameCount-=File_IgnoreFramesBefore;
+                if (FrameCount<File_IgnoreEditsBefore)
+                    FrameCount=File_IgnoreEditsBefore;
+                FrameCount-=File_IgnoreEditsBefore;
 
                 float64 Stream_Size_Temp=(float64)Stream_Size;
                 Stream_Size_Temp/=FrameCount_FromComponent;
@@ -3272,17 +3272,17 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
         int64u FrameCount=Component->second.Duration;
         if (StreamKind_Last==Stream_Video || Config->File_EditRate)
         {
-            int64u File_IgnoreFramesBefore=Config->File_IgnoreFramesBefore;
-            if (File_IgnoreFramesBefore && Config->File_EditRate && (EditRate<Config->File_EditRate*0.9 || EditRate>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
-                File_IgnoreFramesBefore=float64_int64s(((float64)File_IgnoreFramesBefore)/Config->File_EditRate*EditRate);
+            int64u File_IgnoreEditsBefore=Config->File_IgnoreEditsBefore;
+            if (File_IgnoreEditsBefore && Config->File_EditRate && (EditRate<Config->File_EditRate*0.9 || EditRate>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
+                File_IgnoreEditsBefore=float64_int64s(((float64)File_IgnoreEditsBefore)/Config->File_EditRate*EditRate);
             int64u File_IgnoreEditsAfter=Config->File_IgnoreEditsAfter;
             if (File_IgnoreEditsAfter!=(int64u)-1 && Config->File_EditRate && (EditRate<Config->File_EditRate*0.9 || EditRate>Config->File_EditRate*1.1)) //In case of problem or EditRate being sampling rate
                 File_IgnoreEditsAfter=float64_int64s(((float64)File_IgnoreEditsAfter)/Config->File_EditRate*EditRate);
             if (File_IgnoreEditsAfter<FrameCount)
                 FrameCount=File_IgnoreEditsAfter;
-            if (FrameCount<File_IgnoreFramesBefore)
-                FrameCount=File_IgnoreFramesBefore;
-            FrameCount-=File_IgnoreFramesBefore;
+            if (FrameCount<File_IgnoreEditsBefore)
+                FrameCount=File_IgnoreEditsBefore;
+            FrameCount-=File_IgnoreEditsBefore;
         }
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), FrameCount*1000/EditRate, 0, true);
         size_t ID_SubStreamInfo_Pos=Retrieve(StreamKind_Last, StreamPos_Last, General_ID).find(__T("-"));
@@ -3332,7 +3332,7 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
         if (Component2!=Components.end() && Component2->second.TimeCode_StartTimecode!=(int64u)-1 && !Config->File_IsReferenced_Get())
         {
             //Note: Origin is not part of the StartTimecode for the first frame in the source package. From specs: "For a Timecode Track with a single Timecode Component and with origin N, where N greater than 0, the timecode value at the Zero Point of the Track equals the start timecode of the Timecode Component incremented by N units."
-            TimeCode TC(Component2->second.TimeCode_StartTimecode+Config->File_IgnoreFramesBefore, (int8u)Component2->second.TimeCode_RoundedTimecodeBase, Component2->second.TimeCode_DropFrame);
+            TimeCode TC(Component2->second.TimeCode_StartTimecode+Config->File_IgnoreEditsBefore, (int8u)Component2->second.TimeCode_RoundedTimecodeBase, Component2->second.TimeCode_DropFrame);
             Stream_Prepare(Stream_Other);
             Fill(Stream_Other, StreamPos_Last, Other_ID, Ztring::ToZtring(TrackID)+(IsSourcePackage?__T("-Source"):__T("-Material")));
             Fill(Stream_Other, StreamPos_Last, Other_Type, "Time code");
@@ -4121,7 +4121,7 @@ size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
     {
         case 0  :
                     {
-                    if (Config->File_IgnoreFramesBefore && Config->File_EditRate)
+                    if (Config->File_IgnoreEditsBefore && Config->File_EditRate)
                     {
                         Read_Buffer_Seek(3, 0, (int64u)-1);
                         if (File_GoTo!=(int64u)-1)
@@ -4195,8 +4195,8 @@ size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
                     return Read_Buffer_Seek(0, File_Size*Value/10000, ID);
         case 2  :   //Timestamp
                     {
-                        if (Config->File_IgnoreFramesBefore && Config->File_EditRate)
-                            Value+=float64_int64s(((float64)Config->File_IgnoreFramesBefore)/Config->File_EditRate*1000000000);
+                        if (Config->File_IgnoreEditsBefore && Config->File_EditRate)
+                            Value+=float64_int64s(((float64)Config->File_IgnoreEditsBefore)/Config->File_EditRate*1000000000);
 
                         //We transform TimeStamp to a frame number
                         descriptors::iterator Descriptor;
@@ -4224,7 +4224,7 @@ size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
                         }
                     //No break;
         case 3  :   //FrameNumber
-                    Value+=Config->File_IgnoreFramesBefore;
+                    Value+=Config->File_IgnoreEditsBefore;
 
                     if (Descriptors.size()==1 && Descriptors.begin()->second.ByteRate!=(int32u)-1 && Descriptors.begin()->second.BlockAlign && Descriptors.begin()->second.BlockAlign!=(int16u)-1  && Descriptors.begin()->second.SampleRate)
                     {
@@ -4802,8 +4802,8 @@ void File_Mxf::Header_Parse()
             //Testing locators
             Locators_CleanUp();
 
-            if (Config->File_IgnoreFramesBefore && !Config->File_IsDetectingDuration_Get())
-                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreFramesBefore
+            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get())
+                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
             if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
             {
                 if (Locators.empty())
@@ -5701,8 +5701,8 @@ void File_Mxf::OpenIncompleteBodyPartition()
             //Testing locators
             Locators_CleanUp();
 
-            if (Config->File_IgnoreFramesBefore && !Config->File_IsDetectingDuration_Get())
-                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreFramesBefore
+            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get())
+                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
             if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
             {
                 if (Locators.empty())
@@ -5729,8 +5729,8 @@ void File_Mxf::ClosedIncompleteBodyPartition()
             //Testing locators
             Locators_CleanUp();
 
-            if (Config->File_IgnoreFramesBefore && !Config->File_IsDetectingDuration_Get())
-                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreFramesBefore
+            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get())
+                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
             if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
             {
                 if (Locators.empty())
@@ -5757,8 +5757,8 @@ void File_Mxf::OpenCompleteBodyPartition()
             //Testing locators
             Locators_CleanUp();
 
-            if (Config->File_IgnoreFramesBefore && !Config->File_IsDetectingDuration_Get())
-                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreFramesBefore
+            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get())
+                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
             if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
             {
                 if (Locators.empty())
@@ -5785,8 +5785,8 @@ void File_Mxf::ClosedCompleteBodyPartition()
             //Testing locators
             Locators_CleanUp();
 
-            if (Config->File_IgnoreFramesBefore && !Config->File_IsDetectingDuration_Get())
-                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreFramesBefore
+            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get())
+                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
             if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
             {
                 if (Locators.empty())

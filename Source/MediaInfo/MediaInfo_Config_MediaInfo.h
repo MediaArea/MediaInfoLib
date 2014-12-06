@@ -345,7 +345,7 @@ public :
     bool          File_IsNotGrowingAnymore;
     int64u        File_Current_Offset;
     int64u        File_Current_Size;
-    int64u        File_IgnoreFramesBefore;
+    int64u        File_IgnoreEditsBefore;
     int64u        File_IgnoreEditsAfter;
     float64       File_EditRate;
     int64u        File_Size;
