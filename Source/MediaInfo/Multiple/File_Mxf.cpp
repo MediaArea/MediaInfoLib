@@ -2043,7 +2043,7 @@ void File_Mxf::Streams_Finish()
     //Parsing locators
     Locators_Test();
     #if MEDIAINFO_NEXTPACKET
-        if (Config->NextPacket_Get() && ReferenceFiles && !!ReferenceFiles->Sequences_Size())
+        if (Config->NextPacket_Get() && ReferenceFiles && ReferenceFiles->Sequences_Size())
         {
             ReferenceFiles_IsParsing=true;
             return;

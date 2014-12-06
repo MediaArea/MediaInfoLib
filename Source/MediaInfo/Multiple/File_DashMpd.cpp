@@ -589,7 +589,7 @@ bool File_DashMpd::FileHeader_Begin()
                                                 {
                                                     Attribute=SegmentBase_Item->Attribute("sourceURL");
                                                     if (Attribute)
-                                                        Template_Generic_PerRepresentation.Sequence->FileNames.insert(Template_Generic_PerRepresentation.Sequence->FileNames.begin(), BaseURL+Ztring().From_UTF8(Attribute));
+                                                        Template_Generic_PerRepresentation.Sequence->AddFileName(BaseURL+Ztring().From_UTF8(Attribute), 0);
                                                 }
                                             }
                                         }
@@ -670,7 +670,7 @@ bool File_DashMpd::FileHeader_Begin()
                                         {
                                             Attribute=SegmentInfo_Item->Attribute("sourceURL");
                                             if (Attribute)
-                                                Sequence->FileNames.insert(Sequence->FileNames.begin(), BaseURL+Ztring().From_UTF8(Attribute));
+                                                Sequence->AddFileName(BaseURL+Ztring().From_UTF8(Attribute), 0);
                                         }
 
                                         //Url

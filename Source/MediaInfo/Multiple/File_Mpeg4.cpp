@@ -989,7 +989,7 @@ void File_Mpeg4::Streams_Finish()
         {
             ReferenceFiles->ParseReferences();
             #if MEDIAINFO_NEXTPACKET
-                if (Config->NextPacket_Get() && ReferenceFiles && !!ReferenceFiles->Sequences_Size())
+                if (Config->NextPacket_Get() && ReferenceFiles && ReferenceFiles->Sequences_Size())
                 {
                     ReferenceFiles_IsParsing=true;
                     return;
