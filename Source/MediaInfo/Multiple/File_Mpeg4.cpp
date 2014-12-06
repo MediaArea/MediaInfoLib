@@ -947,7 +947,7 @@ void File_Mpeg4::Streams_Finish()
                 Sequence->StreamID=Retrieve(Stream->second.StreamKind, Stream->second.StreamPos, General_ID).To_int64u();
                 if (Stream->second.StreamKind==Stream_Video)
                 {
-                    Sequence->FrameRate=Retrieve(Stream_Video, Stream->second.StreamPos, Video_FrameRate).To_float64();
+                    Sequence->FrameRate_Set(Retrieve(Stream_Video, Stream->second.StreamPos, Video_FrameRate).To_float64());
 
                     #ifdef MEDIAINFO_IBI_YES
                         for (size_t stss_Pos=0; stss_Pos<Stream->second.stss.size(); stss_Pos++)

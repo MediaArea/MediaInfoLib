@@ -153,7 +153,7 @@ bool File_Dxw::FileHeader_Begin()
                     Attribute=Track->Attribute("framerate");
                     if (Attribute)
                     {
-                        Sequence->FrameRate=Ztring().From_UTF8(Attribute).To_float64();
+                        Sequence->FrameRate_Set(Ztring().From_UTF8(Attribute).To_float64());
 
                         Attribute=Track->Attribute("type");
                         if (Attribute)

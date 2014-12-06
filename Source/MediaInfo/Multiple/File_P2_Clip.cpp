@@ -145,6 +145,7 @@ bool File_P2_Clip::FileHeader_Begin()
                         if (Field=="Video")
                         {
                             sequence* Sequence=new sequence;
+                            float64 FrameRate=0;
 
                             //FrameRate
                             ChildElement=Track->FirstChildElement("FrameRate");
@@ -152,18 +153,19 @@ bool File_P2_Clip::FileHeader_Begin()
                             {
                                 Ztring FrameRateS=Ztring(ChildElement->GetText());
                                         if (FrameRateS.find(__T("23.97"))==0)
-                                    Sequence->FrameRate=((float64)24)*1000/1001;
+                                    FrameRate=((float64)24)*1000/1001;
                                 else if (FrameRateS.find(__T("29.97"))==0)
-                                    Sequence->FrameRate=((float64)30)*1000/1001;
+                                    FrameRate=((float64)30)*1000/1001;
                                 else if (FrameRateS.find(__T("59.94"))==0)
-                                    Sequence->FrameRate=((float64)60)*1000/1001;
+                                    FrameRate=((float64)60)*1000/1001;
                                 else
-                                    Sequence->FrameRate=FrameRateS.To_float64();
+                                    FrameRate=FrameRateS.To_float64();
                                 if (FrameRateS.find('i')!=string::npos)
-                                    Sequence->FrameRate/=2;
+                                    FrameRate/=2;
+                                Sequence->FrameRate_Set(FrameRate);
                             }
 
-                            //CreationDate
+                            //StartTimecode
                             ChildElement=Track->FirstChildElement("StartTimecode");
                             if (ChildElement)
                             {
@@ -176,8 +178,8 @@ bool File_P2_Clip::FileHeader_Begin()
                                                 + (Text[4]-'0')      *60*1000
                                                 + (Text[6]-'0')      *10*1000
                                                 + (Text[7]-'0')         *1000;
-                                        if (Sequence->FrameRate)
-                                            ToFill+=float64_int64s(((Text[9]-'0')*10+(Text[10]-'0'))*1000/Sequence->FrameRate);
+                                        if (FrameRate)
+                                            ToFill+=float64_int64s(((Text[9]-'0')*10+(Text[10]-'0'))*1000/FrameRate);
                                     //Fill(Stream_Video, StreamPos_Last, Video_Delay, ToFill);
                                     //Fill(Stream_Video, StreamPos_Last, Video_Delay_Source, "P2 Clip");
                                 }

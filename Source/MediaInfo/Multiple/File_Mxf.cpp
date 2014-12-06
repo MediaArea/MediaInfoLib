@@ -14707,7 +14707,7 @@ void File_Mxf::Locators_Test()
                     for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
                         for (size_t LocatorPos=0; LocatorPos<Descriptor->second.Locators.size(); LocatorPos++)
                             if (Descriptor->second.Locators[LocatorPos]==Locator->first)
-                                Sequence->FrameRate=Descriptor->second.SampleRate;
+                                Sequence->FrameRate_Set(Descriptor->second.SampleRate);
                 }
 
 

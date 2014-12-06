@@ -69,6 +69,12 @@ void sequence::AddFileName(const Ztring& FileName, size_t Pos)
 	FileNames.push_back(FileName);
 }
 
+//---------------------------------------------------------------------------
+void sequence::FrameRate_Set(float64 NewFrameRate)
+{
+	FrameRate=NewFrameRate;
+}
+
 } //NameSpace
 
 #endif //MEDIAINFO_REFERENCES_YES
