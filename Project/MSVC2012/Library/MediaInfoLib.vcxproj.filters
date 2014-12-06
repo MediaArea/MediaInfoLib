@@ -716,6 +716,12 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_PBCore2.cpp">
       <Filter>Source Files\Export</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Resource.cpp">
+      <Filter>Source Files\Multiple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Sequence.cpp">
+      <Filter>Source Files\Multiple</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1341,6 +1347,18 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_PBCore2.h">
       <Filter>Header Files\Export</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Common.h">
+      <Filter>Header Files\Multiple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Resource.h">
+      <Filter>Header Files\Multiple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Sequence.h">
+      <Filter>Header Files\Multiple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Sequence_Common.h">
+      <Filter>Header Files\Multiple</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

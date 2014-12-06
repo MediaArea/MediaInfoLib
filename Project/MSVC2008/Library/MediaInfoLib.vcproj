@@ -1088,6 +1088,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Resource.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Sequence.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\..\Source\MediaInfo\Multiple\File_Aaf.cpp"
 					>
 				</File>
@@ -1889,6 +1897,22 @@
 				>
 				<File
 					RelativePath="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Common.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Resource.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Sequence.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Sequence_Common.h"
 					>
 				</File>
 				<File

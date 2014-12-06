@@ -2043,7 +2043,7 @@ void File_Mxf::Streams_Finish()
     //Parsing locators
     Locators_Test();
     #if MEDIAINFO_NEXTPACKET
-        if (Config->NextPacket_Get() && ReferenceFiles && !ReferenceFiles->References.empty())
+        if (Config->NextPacket_Get() && ReferenceFiles && !!ReferenceFiles->Sequences_Size())
         {
             ReferenceFiles_IsParsing=true;
             return;
@@ -4054,7 +4054,7 @@ bool File_Mxf::DetectDuration ()
 size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
 {
     if (ReferenceFiles)
-        return ReferenceFiles->Read_Buffer_Seek(Method, Value, ID);
+        return ReferenceFiles->Seek(Method, Value, ID);
 
     //Init
     if (!Duration_Detected)
@@ -14690,15 +14690,15 @@ void File_Mxf::Locators_Test()
         for (locators::iterator Locator=Locators.begin(); Locator!=Locators.end(); ++Locator)
             if (!Locator->second.IsTextLocator && !Locator->second.EssenceLocator.empty())
             {
-                File__ReferenceFilesHelper::reference ReferenceFile;
-                ReferenceFile.FileNames.push_back(Locator->second.EssenceLocator);
-                ReferenceFile.StreamKind=Locator->second.StreamKind;
-                ReferenceFile.StreamPos=Locator->second.StreamPos;
+                sequence* Sequence=new sequence;
+                Sequence->AddFileName(Locator->second.EssenceLocator);
+                Sequence->StreamKind=Locator->second.StreamKind;
+                Sequence->StreamPos=Locator->second.StreamPos;
                 if (Locator->second.LinkedTrackID!=(int32u)-1)
-                    ReferenceFile.StreamID=Locator->second.LinkedTrackID;
+                    Sequence->StreamID=Locator->second.LinkedTrackID;
                 else if (!Retrieve(Locator->second.StreamKind, Locator->second.StreamPos, General_ID).empty())
-                    ReferenceFile.StreamID=Retrieve(Locator->second.StreamKind, Locator->second.StreamPos, General_ID).To_int64u();
-                ReferenceFile.Delay=float64_int64s(DTS_Delay*1000000000);
+                    Sequence->StreamID=Retrieve(Locator->second.StreamKind, Locator->second.StreamPos, General_ID).To_int64u();
+                Sequence->Delay=float64_int64s(DTS_Delay*1000000000);
 
                 //Special cases
                 if (Locator->second.StreamKind==Stream_Video)
@@ -14707,18 +14707,18 @@ void File_Mxf::Locators_Test()
                     for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
                         for (size_t LocatorPos=0; LocatorPos<Descriptor->second.Locators.size(); LocatorPos++)
                             if (Descriptor->second.Locators[LocatorPos]==Locator->first)
-                                ReferenceFile.FrameRate=Descriptor->second.SampleRate;
+                                Sequence->FrameRate=Descriptor->second.SampleRate;
                 }
 
 
-                if (ReferenceFile.StreamID!=(int32u)-1)
+                if (Sequence->StreamID!=(int32u)-1)
                 {
                     //Descriptive Metadata
                     std::vector<int128u> DMScheme1s_List;
 
                     for (dmsegments::iterator DMSegment=DMSegments.begin(); DMSegment!=DMSegments.end(); ++DMSegment)
                         for (size_t Pos=0; Pos<DMSegment->second.TrackIDs.size(); Pos++)
-                            if (DMSegment->second.TrackIDs[Pos]==ReferenceFile.StreamID)
+                            if (DMSegment->second.TrackIDs[Pos]==Sequence->StreamID)
                                 DMScheme1s_List.push_back(DMSegment->second.Framework);
 
                     for (size_t Pos=0; Pos<DMScheme1s_List.size(); Pos++)
@@ -14726,12 +14726,12 @@ void File_Mxf::Locators_Test()
                         dmscheme1s::iterator DMScheme1=DMScheme1s.find(DMScheme1s_List[Pos]);
                         if (DMScheme1!=DMScheme1s.end())
                         {
-                            ReferenceFile.Infos["Language"]=DMScheme1->second.PrimaryExtendedSpokenLanguage;
+                            Sequence->Infos["Language"]=DMScheme1->second.PrimaryExtendedSpokenLanguage;
                         }
                     }
                 }
 
-                ReferenceFiles->References.push_back(ReferenceFile);
+                ReferenceFiles->AddSequence(Sequence);
             }
             else
             {

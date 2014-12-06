@@ -540,6 +540,14 @@
 				<DependentOn>..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper.h</DependentOn>
 				<BuildOrder>6</BuildOrder>
 			</CppCompile>
+			<CppCompile Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Resource.cpp">
+				<DependentOn>..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Resource.h</DependentOn>
+				<BuildOrder>205</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Sequence.cpp">
+				<DependentOn>..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Sequence.h</DependentOn>
+				<BuildOrder>206</BuildOrder>
+			</CppCompile>
 			<CppCompile Include="..\..\..\Source\MediaInfo\PreComp.cpp">
 				<BuildOrder>196</BuildOrder>
 			</CppCompile>

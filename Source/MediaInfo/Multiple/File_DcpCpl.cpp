@@ -44,7 +44,7 @@ namespace MediaInfoLib
 struct DcpCpl_info
 {
     Ztring FileName;
-    File__ReferenceFilesHelper::references::iterator Reference;
+    File__ReferenceFilesHelper::sequences::iterator Sequence;
 };
 
 //***************************************************************************
@@ -97,7 +97,7 @@ size_t File_DcpCpl::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
     if (Config->File_IsReferenced_Get() || ReferenceFiles==NULL)
         return 0;
 
-    return ReferenceFiles->Read_Buffer_Seek(Method, Value, ID);
+    return ReferenceFiles->Seek(Method, Value, ID);
 }
 #endif //MEDIAINFO_SEEK
 
@@ -153,11 +153,11 @@ bool File_DcpCpl::FileHeader_Begin()
         //CompositionTimecode
         if (IsImf && (!strcmp(CompositionPlaylist_Item->Value(), "CompositionTimecode") || !strcmp(CompositionPlaylist_Item->Value(), "cpl:CompositionTimecode")))
         {
-            File__ReferenceFilesHelper::reference ReferenceFile;
-            ReferenceFile.StreamKind=Stream_Other;
-            ReferenceFile.Infos["Type"]=__T("Time code");
-            ReferenceFile.Infos["Format"]=__T("CPL TC");
-            ReferenceFile.Infos["TimeCode_Striped"]=__T("Yes");
+            sequence* Sequence=new sequence;
+            Sequence->StreamKind=Stream_Other;
+            Sequence->Infos["Type"]=__T("Time code");
+            Sequence->Infos["Format"]=__T("CPL TC");
+            Sequence->Infos["TimeCode_Striped"]=__T("Yes");
             bool IsDropFrame=false;
 
             for (XMLElement* CompositionTimecode_Item=CompositionPlaylist_Item->FirstChildElement(); CompositionTimecode_Item; CompositionTimecode_Item=CompositionTimecode_Item->NextSiblingElement())
@@ -171,27 +171,27 @@ bool File_DcpCpl::FileHeader_Begin()
 
                 //TimecodeRate
                 if (!strcmp(CompositionTimecode_Item->Value(), "TimecodeRate") || !strcmp(CompositionTimecode_Item->Value(), "cpl:TimecodeRate"))
-                    ReferenceFile.Infos["FrameRate"].From_UTF8(CompositionTimecode_Item->GetText());
+                    Sequence->Infos["FrameRate"].From_UTF8(CompositionTimecode_Item->GetText());
 
                 //TimecodeStartAddress
                 if (!strcmp(CompositionTimecode_Item->Value(), "TimecodeStartAddress") || !strcmp(CompositionTimecode_Item->Value(), "cpl:TimecodeStartAddress"))
-                    ReferenceFile.Infos["TimeCode_FirstFrame"].From_UTF8(CompositionTimecode_Item->GetText());
+                    Sequence->Infos["TimeCode_FirstFrame"].From_UTF8(CompositionTimecode_Item->GetText());
             }
 
             //Adaptation
             if (IsDropFrame)
             {
-                std::map<string, Ztring>::iterator Info=ReferenceFile.Infos.find("TimeCode_FirstFrame");
-                if (Info!=ReferenceFile.Infos.end() && Info->second.size()>=11 && Info->second[8]!=__T(';'))
+                std::map<string, Ztring>::iterator Info=Sequence->Infos.find("TimeCode_FirstFrame");
+                if (Info!=Sequence->Infos.end() && Info->second.size()>=11 && Info->second[8]!=__T(';'))
                     Info->second[8]=__T(';');
             }
 
-            ReferenceFile.StreamID=ReferenceFiles->References.size()+1;
-            ReferenceFiles->References.push_back(ReferenceFile);
+            Sequence->StreamID=ReferenceFiles->Sequences_Size()+1;
+            ReferenceFiles->AddSequence(Sequence);
 
             Stream_Prepare(Stream_Other);
-            Fill(Stream_Other, StreamPos_Last, Other_ID, ReferenceFile.StreamID);
-            for (std::map<string, Ztring>::iterator Info=ReferenceFile.Infos.begin(); Info!=ReferenceFile.Infos.end(); ++Info)
+            Fill(Stream_Other, StreamPos_Last, Other_ID, Sequence->StreamID);
+            for (std::map<string, Ztring>::iterator Info=Sequence->Infos.begin(); Info!=Sequence->Infos.end(); ++Info)
                 Fill(Stream_Other, StreamPos_Last, Info->first.c_str(), Info->second);
         }
 
@@ -217,15 +217,15 @@ bool File_DcpCpl::FileHeader_Begin()
                                 //if ((IsDcp && (!strcmp(AssetList_Item->Value(), "MainPicture") || !strcmp(AssetList_Item->Value(), "MainSound")))
                                 // || (IsImf && (!strcmp(AssetList_Item->Value(), "cc:MainImageSequence") || !strcmp(AssetList_Item->Value(), "cc:MainImage"))))
                                 {
-                                    File__ReferenceFilesHelper::reference ReferenceFile;
+                                    sequence* Sequence=new sequence;
                                     Ztring Asset_Id;
 
                                     if ((IsDcp && !strcmp(AssetList_Item->Value(), "MainPicture"))
                                      || (IsImf && !strcmp(AssetList_Item->Value(), "cc:MainImageSequence")))
-                                        ReferenceFile.StreamKind=Stream_Video;
+                                        Sequence->StreamKind=Stream_Video;
                                     if ((IsDcp && !strcmp(AssetList_Item->Value(), "MainSound"))
                                      || (IsImf && !strcmp(AssetList_Item->Value(), "cc:MainAudioSequence")))
-                                        ReferenceFile.StreamKind=Stream_Audio;
+                                        Sequence->StreamKind=Stream_Audio;
 
                                     for (XMLElement* File_Item=AssetList_Item->FirstChildElement(); File_Item; File_Item=File_Item->NextSiblingElement())
                                     {
@@ -243,7 +243,7 @@ bool File_DcpCpl::FileHeader_Begin()
                                                 {
                                                     Ztring Resource_Id;
 
-                                                    File__ReferenceFilesHelper::reference::completeduration Resource;
+                                                    sequence::completeduration Resource;
                                                     for (XMLElement* Resource_Item=ResourceList_Item->FirstChildElement(); Resource_Item; Resource_Item=Resource_Item->NextSiblingElement())
                                                     {
                                                         //EditRate
@@ -283,20 +283,20 @@ bool File_DcpCpl::FileHeader_Begin()
 
                                                     if (Resource.FileName.empty())
                                                         Resource.FileName=Resource_Id;
-                                                    ReferenceFile.CompleteDuration.push_back(Resource);
+                                                    Sequence->CompleteDuration.push_back(Resource);
                                                 }
                                             }
                                         }
                                     }
 
-                                    if (ReferenceFile.CompleteDuration.empty())
+                                    if (Sequence->CompleteDuration.empty())
                                     {
-                                        File__ReferenceFilesHelper::reference::completeduration Resource;
+                                        sequence::completeduration Resource;
                                         Resource.FileName=Asset_Id;
-                                        ReferenceFile.CompleteDuration.push_back(Resource);
+                                        Sequence->CompleteDuration.push_back(Resource);
                                     }
-                                    ReferenceFile.StreamID=ReferenceFiles->References.size()+1;
-                                    ReferenceFiles->References.push_back(ReferenceFile);
+                                    Sequence->StreamID=ReferenceFiles->Sequences_Size()+1;
+                                    ReferenceFiles->AddSequence(Sequence);
                                 }
                             }
                         }
@@ -357,42 +357,42 @@ void File_DcpCpl::MergeFromAm (File_DcpPkl::streams &StreamsToMerge)
     for (File_DcpPkl::streams::iterator StreamToMerge=StreamsToMerge.begin(); StreamToMerge!=StreamsToMerge.end(); ++StreamToMerge)
         Map[Ztring().From_UTF8(StreamToMerge->Id)]=StreamToMerge;
 
-    for (size_t References_Pos=0; References_Pos<ReferenceFiles->References.size(); ++References_Pos)
+    for (size_t References_Pos=0; References_Pos<ReferenceFiles->Sequences_Size(); ++References_Pos)
     {
-        for (size_t Pos=0; Pos<ReferenceFiles->References[References_Pos].FileNames.size(); ++Pos)
+        for (size_t Pos=0; Pos<ReferenceFiles->Sequences[References_Pos]->FileNames.size(); ++Pos)
         {
-            map<Ztring, File_DcpPkl::streams::iterator>::iterator Map_Item=Map.find(ReferenceFiles->References[References_Pos].FileNames[Pos]);
+            map<Ztring, File_DcpPkl::streams::iterator>::iterator Map_Item=Map.find(ReferenceFiles->Sequences[References_Pos]->FileNames[Pos]);
             if (Map_Item!=Map.end() && !Map_Item->second->ChunkList.empty()) // Note: ChunkLists with more than 1 file are not yet supported
             {
-                ReferenceFiles->References[References_Pos].FileNames[Pos].From_UTF8(Map_Item->second->ChunkList[0].Path);
-                ReferenceFiles->References[References_Pos].Infos["UniqueID"].From_UTF8(Map_Item->second->Id);
+                ReferenceFiles->Sequences[References_Pos]->FileNames[Pos].From_UTF8(Map_Item->second->ChunkList[0].Path);
+                ReferenceFiles->Sequences[References_Pos]->Infos["UniqueID"].From_UTF8(Map_Item->second->Id);
             }
             else
             {
-                ReferenceFiles->References[References_Pos].FileNames.erase(ReferenceFiles->References[References_Pos].FileNames.begin()+Pos);
+                ReferenceFiles->Sequences[References_Pos]->FileNames.erase(ReferenceFiles->Sequences[References_Pos]->FileNames.begin()+Pos);
                 Pos--;
             }
         }
 
-        for (size_t Pos=0; Pos<ReferenceFiles->References[References_Pos].CompleteDuration.size(); ++Pos)
+        for (size_t Pos=0; Pos<ReferenceFiles->Sequences[References_Pos]->CompleteDuration.size(); ++Pos)
         {
-            map<Ztring, File_DcpPkl::streams::iterator>::iterator Map_Item=Map.find(ReferenceFiles->References[References_Pos].CompleteDuration[Pos].FileName);
+            map<Ztring, File_DcpPkl::streams::iterator>::iterator Map_Item=Map.find(ReferenceFiles->Sequences[References_Pos]->CompleteDuration[Pos].FileName);
             if (Map_Item!=Map.end() && !Map_Item->second->ChunkList.empty()) // Note: ChunkLists with more than 1 file are not yet supported
             {
-                ReferenceFiles->References[References_Pos].CompleteDuration[Pos].FileName.From_UTF8(Map_Item->second->ChunkList[0].Path);
-                if (ReferenceFiles->References[References_Pos].Infos["UniqueID"].empty())
-                    ReferenceFiles->References[References_Pos].Infos["UniqueID"].From_UTF8(Map_Item->second->Id);
+                ReferenceFiles->Sequences[References_Pos]->CompleteDuration[Pos].FileName.From_UTF8(Map_Item->second->ChunkList[0].Path);
+                if (ReferenceFiles->Sequences[References_Pos]->Infos["UniqueID"].empty())
+                    ReferenceFiles->Sequences[References_Pos]->Infos["UniqueID"].From_UTF8(Map_Item->second->Id);
             }
             else
             {
-                ReferenceFiles->References[References_Pos].CompleteDuration.erase(ReferenceFiles->References[References_Pos].CompleteDuration.begin()+Pos);
+                ReferenceFiles->Sequences[References_Pos]->CompleteDuration.erase(ReferenceFiles->Sequences[References_Pos]->CompleteDuration.begin()+Pos);
                 Pos--;
             }
         }
 
-        if (ReferenceFiles->References[References_Pos].FileNames.empty() && ReferenceFiles->References[References_Pos].CompleteDuration.empty())
+        if (ReferenceFiles->Sequences[References_Pos]->FileNames.empty() && ReferenceFiles->Sequences[References_Pos]->CompleteDuration.empty())
         {
-            ReferenceFiles->References.erase(ReferenceFiles->References.begin()+References_Pos);
+            ReferenceFiles->Sequences.erase(ReferenceFiles->Sequences.begin()+References_Pos);
             References_Pos--;
         }
     }
