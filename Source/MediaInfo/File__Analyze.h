@@ -982,7 +982,7 @@ public :
     #endif //SIZE_T_IS_LONG
     ZtringListList Fill_Temp;
     void Fill_Flush ();
-    size_t Fill_Parameter(stream_t StreamKind, generic StreamPos);
+    static size_t Fill_Parameter(stream_t StreamKind, generic StreamPos);
 
     const Ztring &Retrieve_Const (stream_t StreamKind, size_t StreamPos, size_t Parameter, info_t KindOfInfo=Info_Text);
     Ztring Retrieve (stream_t StreamKind, size_t StreamPos, size_t Parameter, info_t KindOfInfo=Info_Text);
