@@ -14476,6 +14476,8 @@ void File_Mxf::ChooseParser_Pcm(const essences::iterator &Essence, const descrip
         {
             if (Channels)
                 Parser->Channels=Channels;
+            if (Descriptor->second.Infos.find("SamplingRate")!=Descriptor->second.Infos.end())
+                Parser->SamplingRate=Descriptor->second.Infos["SamplingRate"].To_int16u();
             if (Parser->Channels && Descriptor->second.BlockAlign!=(int16u)-1)
                 Parser->BitDepth=(int8u)(Descriptor->second.BlockAlign*8/Parser->Channels);
             else if (Descriptor->second.QuantizationBits<256)
