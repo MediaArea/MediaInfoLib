@@ -31,19 +31,19 @@ namespace MediaInfoLib
 //---------------------------------------------------------------------------
 sequence::sequence()
 {
-	FileNames.Separator_Set(0, __T(","));
-	StreamKind=Stream_Max;
-	StreamPos=(size_t)-1;
-	MenuPos=(size_t)-1;
-	StreamID=(int64u)-1;
-	FrameRate=0;
-	Delay=0;
-	FileSize=(int64u)-1;
-	IsCircular=false;
-	IsMain=false;
-	FileSize_IsPresent=false;
-	#if MEDIAINFO_ADVANCED || MEDIAINFO_MD5
-		List_Compute_Done=false;
+    FileNames.Separator_Set(0, __T(","));
+    StreamKind=Stream_Max;
+    StreamPos=(size_t)-1;
+    MenuPos=(size_t)-1;
+    StreamID=(int64u)-1;
+    FrameRate=0;
+    Delay=0;
+    FileSize=(int64u)-1;
+    IsCircular=false;
+    IsMain=false;
+    FileSize_IsPresent=false;
+    #if MEDIAINFO_ADVANCED || MEDIAINFO_MD5
+        List_Compute_Done=false;
 	#endif //MEDIAINFO_ADVANCED || MEDIAINFO_MD5
 	State=0;
 	MI=NULL;
