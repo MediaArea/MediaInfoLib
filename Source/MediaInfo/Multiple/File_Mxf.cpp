@@ -14688,6 +14688,7 @@ void File_Mxf::ChooseParser_Jpeg2000(const essences::iterator &Essence, const de
                 {
                     Parser->Demux_Level=2; //Container
                     Parser->Demux_UnpacketizeContainer=true;
+					Parser->FrameRate=Descriptor->second.SampleRate;
                 }
             #endif //MEDIAINFO_DEMUX
         }
