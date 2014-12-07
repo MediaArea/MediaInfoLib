@@ -277,6 +277,18 @@ void File__ReferenceFilesHelper::AddSequence(sequence* NewSequence)
     Sequences.push_back(NewSequence);
 }
 
+//---------------------------------------------------------------------------
+void File__ReferenceFilesHelper::UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileName)
+{
+    size_t Sequences_Size=Sequences.size();
+    for (size_t Sequences_Pos=0; Sequences_Pos<Sequences_Size; ++Sequences_Pos)
+    {
+        sequence* Sequence=Sequences[Sequences_Pos];
+
+        Sequence->UpdateFileName(OldFileName, NewFileName);
+    }
+}
+
 //***************************************************************************
 // Streams management
 //***************************************************************************

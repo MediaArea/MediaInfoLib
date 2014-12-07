@@ -46,14 +46,22 @@ namespace MediaInfoLib
 
 resource::resource()
 {
-	MI=NULL;
-	IgnoreEditsBefore=0;
+    //In
+    EditRate=0;
+    IgnoreEditsBefore=0;
+    IgnoreEditsAfter=(int64u)-1;
+
+    //Config
+    #if MEDIAINFO_NEXTPACKET
+        Demux_Offset_Frame=(int64u)-1;
+        Demux_Offset_DTS=(int64u)-1;
+    #endif //MEDIAINFO_NEXTPACKET
+
+    //Private
+    MI=NULL;
+
 	IgnoreEditsAfterDuration=(int64u)-1;
-	IgnoreEditsAfter=(int64u)-1;
-	EditRate=0;
 	#if MEDIAINFO_DEMUX
-		Demux_Offset_Frame=0;
-		Demux_Offset_DTS=0;
 		Demux_Offset_FileSize=0;
 	#endif //MEDIAINFO_DEMUX
 }

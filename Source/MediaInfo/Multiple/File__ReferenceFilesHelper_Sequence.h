@@ -34,6 +34,8 @@ struct sequence
 
     //In
     void                            AddFileName(const Ztring& FileName, size_t Pos=(size_t)-1);
+    void                            AddResource(resource* NewResource, size_t Pos=(size_t)-1);
+    void                            UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileName);
     void                            FrameRate_Set(float64 NewFrameRate);
 
 

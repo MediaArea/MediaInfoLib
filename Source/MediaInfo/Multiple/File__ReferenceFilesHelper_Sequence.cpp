@@ -70,6 +70,44 @@ void sequence::AddFileName(const Ztring& FileName, size_t Pos)
 }
 
 //---------------------------------------------------------------------------
+void sequence::AddResource(resource* NewResource, size_t Pos)
+{
+    if (Resources.empty())
+    {
+        NewResource->Demux_Offset_DTS=0;
+    }
+
+    if (Pos>=Resources.size())
+        Resources.push_back(NewResource);
+    else
+        Resources.insert(Resources.begin()+Pos, NewResource);
+}
+
+//---------------------------------------------------------------------------
+void sequence::UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileName)
+{
+    size_t Resources_Size=Resources.size();
+    for (size_t Resources_Pos=0; Resources_Pos<Resources_Size; ++Resources_Pos)
+    {
+        resource* Resource=Resources[Resources_Pos];
+
+        Resource->UpdateFileName(OldFileName, NewFileName);
+
+        if (Resource->FileName==NewFileName)
+            Infos["UniqueID"]=OldFileName;
+    }
+
+    size_t FileNames_Size=FileNames.size();
+    for (size_t Pos=0; Pos<FileNames_Size; Pos++)
+        if (FileNames[Pos]==OldFileName)
+        {
+            FileNames[Pos]=NewFileName;
+
+            Infos["UniqueID"]=OldFileName;
+        }
+}
+
+//---------------------------------------------------------------------------
 void sequence::FrameRate_Set(float64 NewFrameRate)
 {
 	FrameRate=NewFrameRate;

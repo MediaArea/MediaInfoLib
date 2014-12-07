@@ -29,15 +29,23 @@ struct resource
 
     //In
     void                            UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileName);
-	Ztring FileName;
-	MediaInfo_Internal* MI;
-	int64u  IgnoreEditsBefore;
+    Ztring                          FileName; //Source file name (relative path)
+    float64                         EditRate;
+    int64u                          IgnoreEditsBefore;
+    int64u                          IgnoreEditsAfter;
+        
+    //Config
+    #if MEDIAINFO_NEXTPACKET
+        int64u                      Demux_Offset_Frame;
+        int64u                      Demux_Offset_DTS;
+    #endif //MEDIAINFO_NEXTPACKET
+
+    MediaInfo_Internal*             MI;
+    
+
+
 	int64u  IgnoreEditsAfterDuration; //temporary value, some formats have duration instead of frame position
-	int64u  IgnoreEditsAfter;
-	float64 EditRate;
 	#if MEDIAINFO_DEMUX
-		int64u Demux_Offset_Frame;
-		int64u Demux_Offset_DTS;
 		int64u Demux_Offset_FileSize;
 	#endif //MEDIAINFO_DEMUX
 };

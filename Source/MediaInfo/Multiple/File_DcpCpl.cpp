@@ -283,7 +283,7 @@ bool File_DcpCpl::FileHeader_Begin()
 
                                                     if (Resource->FileName.empty())
                                                         Resource->FileName=Resource_Id;
-                                                    Sequence->Resources.push_back(Resource);
+                                                    Sequence->AddResource(Resource);
                                                 }
                                             }
                                         }
@@ -293,7 +293,7 @@ bool File_DcpCpl::FileHeader_Begin()
                                     {
                                         resource* Resource=new resource;
                                         Resource->FileName=Asset_Id;
-                                        Sequence->Resources.push_back(Resource);
+                                        Sequence->AddResource(Resource);
                                     }
                                     Sequence->StreamID=ReferenceFiles->Sequences_Size()+1;
                                     ReferenceFiles->AddSequence(Sequence);
@@ -353,49 +353,9 @@ bool File_DcpCpl::FileHeader_Begin()
 //---------------------------------------------------------------------------
 void File_DcpCpl::MergeFromAm (File_DcpPkl::streams &StreamsToMerge)
 {
-    map<Ztring, File_DcpPkl::streams::iterator> Map;
     for (File_DcpPkl::streams::iterator StreamToMerge=StreamsToMerge.begin(); StreamToMerge!=StreamsToMerge.end(); ++StreamToMerge)
-        Map[Ztring().From_UTF8(StreamToMerge->Id)]=StreamToMerge;
-
-    for (size_t References_Pos=0; References_Pos<ReferenceFiles->Sequences_Size(); ++References_Pos)
-    {
-        for (size_t Pos=0; Pos<ReferenceFiles->Sequences[References_Pos]->FileNames.size(); ++Pos)
-        {
-            map<Ztring, File_DcpPkl::streams::iterator>::iterator Map_Item=Map.find(ReferenceFiles->Sequences[References_Pos]->FileNames[Pos]);
-            if (Map_Item!=Map.end() && !Map_Item->second->ChunkList.empty()) // Note: ChunkLists with more than 1 file are not yet supported
-            {
-                ReferenceFiles->Sequences[References_Pos]->FileNames[Pos].From_UTF8(Map_Item->second->ChunkList[0].Path);
-                ReferenceFiles->Sequences[References_Pos]->Infos["UniqueID"].From_UTF8(Map_Item->second->Id);
-            }
-            else
-            {
-                ReferenceFiles->Sequences[References_Pos]->FileNames.erase(ReferenceFiles->Sequences[References_Pos]->FileNames.begin()+Pos);
-                Pos--;
-            }
-        }
-
-        for (size_t Pos=0; Pos<ReferenceFiles->Sequences[References_Pos]->Resources.size(); ++Pos)
-        {
-            map<Ztring, File_DcpPkl::streams::iterator>::iterator Map_Item=Map.find(ReferenceFiles->Sequences[References_Pos]->Resources[Pos]->FileName);
-            if (Map_Item!=Map.end() && !Map_Item->second->ChunkList.empty()) // Note: ChunkLists with more than 1 file are not yet supported
-            {
-                ReferenceFiles->Sequences[References_Pos]->Resources[Pos]->FileName.From_UTF8(Map_Item->second->ChunkList[0].Path);
-                if (ReferenceFiles->Sequences[References_Pos]->Infos["UniqueID"].empty())
-                    ReferenceFiles->Sequences[References_Pos]->Infos["UniqueID"].From_UTF8(Map_Item->second->Id);
-            }
-            else
-            {
-                ReferenceFiles->Sequences[References_Pos]->Resources.erase(ReferenceFiles->Sequences[References_Pos]->Resources.begin()+Pos);
-                Pos--;
-            }
-        }
-
-        if (ReferenceFiles->Sequences[References_Pos]->FileNames.empty() && ReferenceFiles->Sequences[References_Pos]->Resources.empty())
-        {
-            ReferenceFiles->Sequences.erase(ReferenceFiles->Sequences.begin()+References_Pos);
-            References_Pos--;
-        }
-    }
+        if (!StreamToMerge->ChunkList.empty()) // Note: ChunkLists with more than 1 file are not yet supported)
+            ReferenceFiles->UpdateFileName(Ztring().From_UTF8(StreamToMerge->Id), Ztring().From_UTF8(StreamToMerge->ChunkList[0].Path));
 }
 
 } //NameSpace

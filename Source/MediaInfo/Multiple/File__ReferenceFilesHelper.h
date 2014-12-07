@@ -28,6 +28,7 @@ class File__ReferenceFilesHelper
 public :
     //In
     void                            AddSequence(sequence* NewSequence);
+    void                            UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileName);
     size_t                          Sequences_Size() {return Sequences.size();}
     void                            Clear() {Sequences.clear();}
     typedef std::vector<sequence*>  sequences;
