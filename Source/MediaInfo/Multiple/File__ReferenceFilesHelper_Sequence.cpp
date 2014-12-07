@@ -47,7 +47,7 @@ sequence::sequence()
 	#endif //MEDIAINFO_ADVANCED || MEDIAINFO_MD5
 	State=0;
 	MI=NULL;
-	CompleteDuration_Pos=0;
+	Resources_Pos=0;
 	#if MEDIAINFO_FILTER
 		Enabled=true;
 	#endif //MEDIAINFO_FILTER

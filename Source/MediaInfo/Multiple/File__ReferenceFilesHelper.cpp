@@ -289,44 +289,44 @@ void File__ReferenceFilesHelper::ParseReferences()
         size_t  EditRate_Count=0;
         for (Sequence=Sequences.begin(); Sequence!=Sequences.end(); Sequence++)
             if ((*Sequence)->FileNames.empty())
-                for (size_t Pos=0; Pos<(*Sequence)->CompleteDuration.size(); Pos++)
+                for (size_t Pos=0; Pos<(*Sequence)->Resources.size(); Pos++)
                 {
-                    (*Sequence)->FileNames.push_back((*Sequence)->CompleteDuration[Pos].FileName);
-                    if ((*Sequence)->CompleteDuration[Pos].IgnoreFramesRate && EditRate!=(*Sequence)->CompleteDuration[Pos].IgnoreFramesRate)
+                    (*Sequence)->FileNames.push_back((*Sequence)->Resources[Pos]->FileName);
+                    if ((*Sequence)->Resources[Pos]->IgnoreFramesRate && EditRate!=(*Sequence)->Resources[Pos]->IgnoreFramesRate)
                     {
-                        if (EditRate>(*Sequence)->CompleteDuration[Pos].IgnoreFramesRate)
-                            EditRate=(*Sequence)->CompleteDuration[Pos].IgnoreFramesRate;
+                        if (EditRate>(*Sequence)->Resources[Pos]->IgnoreFramesRate)
+                            EditRate=(*Sequence)->Resources[Pos]->IgnoreFramesRate;
                         EditRate_Count++;
                     }
                 }
         if (EditRate_Count>1)
             //Multiple rates, using only one rate
             for (Sequence=Sequences.begin(); Sequence!=Sequences.end(); Sequence++)
-                for (size_t Pos=0; Pos<(*Sequence)->CompleteDuration.size(); Pos++)
-                    if ((*Sequence)->CompleteDuration[Pos].IgnoreFramesRate && EditRate!=(*Sequence)->CompleteDuration[Pos].IgnoreFramesRate)
+                for (size_t Pos=0; Pos<(*Sequence)->Resources.size(); Pos++)
+                    if ((*Sequence)->Resources[Pos]->IgnoreFramesRate && EditRate!=(*Sequence)->Resources[Pos]->IgnoreFramesRate)
                     {
-                        if ((*Sequence)->CompleteDuration[Pos].IgnoreFramesBefore)
+                        if ((*Sequence)->Resources[Pos]->IgnoreFramesBefore)
                         {
-                            float64 Temp=(float64)(*Sequence)->CompleteDuration[Pos].IgnoreFramesBefore;
-                            Temp/=(*Sequence)->CompleteDuration[Pos].IgnoreFramesRate;
+                            float64 Temp=(float64)(*Sequence)->Resources[Pos]->IgnoreFramesBefore;
+                            Temp/=(*Sequence)->Resources[Pos]->IgnoreFramesRate;
                             Temp*=EditRate;
-                            (*Sequence)->CompleteDuration[Pos].IgnoreFramesBefore=float64_int64s(Temp);
+                            (*Sequence)->Resources[Pos]->IgnoreFramesBefore=float64_int64s(Temp);
                         }
-                        if ((*Sequence)->CompleteDuration[Pos].IgnoreFramesAfter!=(int64u)-1)
+                        if ((*Sequence)->Resources[Pos]->IgnoreFramesAfter!=(int64u)-1)
                         {
-                            float64 Temp=(float64)(*Sequence)->CompleteDuration[Pos].IgnoreFramesAfter;
-                            Temp/=(*Sequence)->CompleteDuration[Pos].IgnoreFramesRate;
+                            float64 Temp=(float64)(*Sequence)->Resources[Pos]->IgnoreFramesAfter;
+                            Temp/=(*Sequence)->Resources[Pos]->IgnoreFramesRate;
                             Temp*=EditRate;
-                            (*Sequence)->CompleteDuration[Pos].IgnoreFramesAfter=float64_int64s(Temp);
+                            (*Sequence)->Resources[Pos]->IgnoreFramesAfter=float64_int64s(Temp);
                         }
-                        if ((*Sequence)->CompleteDuration[Pos].IgnoreFramesAfterDuration!=(int64u)-1)
+                        if ((*Sequence)->Resources[Pos]->IgnoreFramesAfterDuration!=(int64u)-1)
                         {
-                            float64 Temp=(float64)(*Sequence)->CompleteDuration[Pos].IgnoreFramesAfterDuration;
-                            Temp/=(*Sequence)->CompleteDuration[Pos].IgnoreFramesRate;
+                            float64 Temp=(float64)(*Sequence)->Resources[Pos]->IgnoreFramesAfterDuration;
+                            Temp/=(*Sequence)->Resources[Pos]->IgnoreFramesRate;
                             Temp*=EditRate;
-                            (*Sequence)->CompleteDuration[Pos].IgnoreFramesAfterDuration=float64_int64s(Temp);
+                            (*Sequence)->Resources[Pos]->IgnoreFramesAfterDuration=float64_int64s(Temp);
                         }
-                        (*Sequence)->CompleteDuration[Pos].IgnoreFramesRate=EditRate;
+                        (*Sequence)->Resources[Pos]->IgnoreFramesRate=EditRate;
                     }
 
         //Testing IDs
@@ -572,9 +572,9 @@ void File__ReferenceFilesHelper::ParseReferences()
             {
                 for (size_t Pos=0; Pos<(*Sequence)->FileNames.size(); Pos++)
                 {
-                    if (Pos>=(*Sequence)->CompleteDuration.size())
-                        (*Sequence)->CompleteDuration.resize(Pos+1);
-                    (*Sequence)->CompleteDuration[Pos].FileName=(*Sequence)->FileNames[Pos];
+                    if (Pos==(*Sequence)->Resources.size())
+                        (*Sequence)->Resources.push_back(new resource);
+                    (*Sequence)->Resources[Pos]->FileName=(*Sequence)->FileNames[Pos];
                 }
                 (*Sequence)->FileNames.resize(1);
             }
@@ -679,13 +679,13 @@ void File__ReferenceFilesHelper::ParseReferences()
 
                 #if MEDIAINFO_NEXTPACKET
                     //Minimal DTS
-                    if (DTS_Interval!=(int64u)-1 && !(*Sequence)->Status[File__Analyze::IsFinished] && ((*ReferenceTemp)->CompleteDuration.empty() || (*ReferenceTemp)->CompleteDuration_Pos<(*ReferenceTemp)->CompleteDuration.size()))
+                    if (DTS_Interval!=(int64u)-1 && !(*Sequence)->Status[File__Analyze::IsFinished] && ((*ReferenceTemp)->Resources.empty() || (*ReferenceTemp)->Resources_Pos<(*ReferenceTemp)->Resources.size()))
                     {
                         int64u DTS_Temp;
-                        if (!(*ReferenceTemp)->CompleteDuration.empty() && (*ReferenceTemp)->CompleteDuration_Pos)
+                        if (!(*ReferenceTemp)->Resources.empty() && (*ReferenceTemp)->Resources_Pos)
                         {
-                            if ((*ReferenceTemp)->CompleteDuration[(*ReferenceTemp)->CompleteDuration_Pos].MI->Info->FrameInfo.DTS!=(int64u)-1)
-                                DTS_Temp=(*ReferenceTemp)->CompleteDuration[(*ReferenceTemp)->CompleteDuration_Pos].MI->Info->FrameInfo.DTS-(*ReferenceTemp)->CompleteDuration[(*ReferenceTemp)->CompleteDuration_Pos].MI->Info->Config->Demux_Offset_DTS_FromStream;
+                            if ((*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Pos]->MI->Info->FrameInfo.DTS!=(int64u)-1)
+                                DTS_Temp=(*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Pos]->MI->Info->FrameInfo.DTS-(*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Pos]->MI->Info->Config->Demux_Offset_DTS_FromStream;
                             else
                                 DTS_Temp=0;
                         }
@@ -696,7 +696,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                             else
                                 DTS_Temp=0;
                         }
-                        DTS_Temp+=(*ReferenceTemp)->CompleteDuration[(*ReferenceTemp)->CompleteDuration_Pos].Demux_Offset_DTS;
+                        DTS_Temp+=(*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Pos]->Demux_Offset_DTS;
                         if (DTS_Minimal>DTS_Temp)
                             DTS_Minimal=DTS_Temp;
                     }
@@ -765,20 +765,20 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
     (*Sequence)->MI=MI_Create();
     if (Config->ParseSpeed>=1)
     {
-        for (size_t Pos=0; Pos<(*Sequence)->CompleteDuration.size(); Pos++)
+        for (size_t Pos=0; Pos<(*Sequence)->Resources.size(); Pos++)
         {
-            if ((*Sequence)->CompleteDuration[0].IgnoreFramesRate)
+            if ((*Sequence)->Resources[0]->IgnoreFramesRate)
             {
                 #if MEDIAINFO_DEMUX
                     if (Pos==0)
                     {
-                        (*Sequence)->CompleteDuration[0].Demux_Offset_DTS=0;
-                        (*Sequence)->CompleteDuration[0].Demux_Offset_Frame=0;
+                        (*Sequence)->Resources[0]->Demux_Offset_DTS=0;
+                        (*Sequence)->Resources[0]->Demux_Offset_Frame=0;
                     }
-                    if (Pos+1<(*Sequence)->CompleteDuration.size())
+                    if (Pos+1<(*Sequence)->Resources.size())
                     {
-                        (*Sequence)->CompleteDuration[Pos+1].Demux_Offset_DTS=float64_int64s((*Sequence)->CompleteDuration[Pos].Demux_Offset_DTS+((*Sequence)->CompleteDuration[Pos].IgnoreFramesAfter-(*Sequence)->CompleteDuration[Pos].IgnoreFramesBefore)/(*Sequence)->CompleteDuration[0].IgnoreFramesRate*1000000000);
-                        (*Sequence)->CompleteDuration[Pos+1].Demux_Offset_Frame=(*Sequence)->CompleteDuration[Pos].Demux_Offset_Frame+(*Sequence)->CompleteDuration[Pos].IgnoreFramesAfter-(*Sequence)->CompleteDuration[Pos].IgnoreFramesBefore;
+                        (*Sequence)->Resources[Pos+1]->Demux_Offset_DTS=float64_int64s((*Sequence)->Resources[Pos]->Demux_Offset_DTS+((*Sequence)->Resources[Pos]->IgnoreFramesAfter-(*Sequence)->Resources[Pos]->IgnoreFramesBefore)/(*Sequence)->Resources[0]->IgnoreFramesRate*1000000000);
+                        (*Sequence)->Resources[Pos+1]->Demux_Offset_Frame=(*Sequence)->Resources[Pos]->Demux_Offset_Frame+(*Sequence)->Resources[Pos]->IgnoreFramesAfter-(*Sequence)->Resources[Pos]->IgnoreFramesBefore;
                     }
                 #endif //MEDIAINFO_DEMUX
             }
@@ -790,7 +790,7 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
                 Ztring Demux_Save=MI2.Option(__T("Demux_Get"), __T(""));
                 MI2.Option(__T("ParseSpeed"), __T("0"));
                 MI2.Option(__T("Demux"), Ztring());
-                size_t MiOpenResult=MI2.Open((*Sequence)->CompleteDuration[Pos].FileName);
+                size_t MiOpenResult=MI2.Open((*Sequence)->Resources[Pos]->FileName);
                 MI2.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
                 MI2.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
                 if (MiOpenResult)
@@ -803,46 +803,46 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
                             int64u Delay=MI2.Get(Stream_Video, 0, Video_Delay).To_int64u()*1000000;
                             if ((*Sequence)->StreamKind==Stream_Video && Offset_Video_DTS==0)
                                 Offset_Video_DTS=Delay;
-                            (*Sequence)->CompleteDuration[0].Demux_Offset_DTS=Offset_Video_DTS;
-                            (*Sequence)->CompleteDuration[0].Demux_Offset_Frame=0;
+                            (*Sequence)->Resources[0]->Demux_Offset_DTS=Offset_Video_DTS;
+                            (*Sequence)->Resources[0]->Demux_Offset_Frame=0;
                         }
-                        if (Pos+1<(*Sequence)->CompleteDuration.size())
+                        if (Pos+1<(*Sequence)->Resources.size())
                         {
-                            (*Sequence)->CompleteDuration[Pos+1].Demux_Offset_DTS=(*Sequence)->CompleteDuration[Pos].Demux_Offset_DTS+Duration;
-                            (*Sequence)->CompleteDuration[Pos+1].Demux_Offset_Frame=(*Sequence)->CompleteDuration[Pos].Demux_Offset_Frame+FrameCount;
+                            (*Sequence)->Resources[Pos+1]->Demux_Offset_DTS=(*Sequence)->Resources[Pos]->Demux_Offset_DTS+Duration;
+                            (*Sequence)->Resources[Pos+1]->Demux_Offset_Frame=(*Sequence)->Resources[Pos]->Demux_Offset_Frame+FrameCount;
                         }
                         else
-                            Duration=(*Sequence)->CompleteDuration[Pos].Demux_Offset_DTS+Duration-(*Sequence)->CompleteDuration[0].Demux_Offset_DTS;
+                            Duration=(*Sequence)->Resources[Pos]->Demux_Offset_DTS+Duration-(*Sequence)->Resources[0]->Demux_Offset_DTS;
                     #endif //MEDIAINFO_DEMUX
                 }
             }
 
             if (Pos)
             {
-                (*Sequence)->CompleteDuration[Pos].MI=MI_Create();
-                (*Sequence)->CompleteDuration[Pos].MI->Config.File_IgnoreEditsBefore=(*Sequence)->CompleteDuration[Pos].IgnoreFramesBefore;
-                if ((*Sequence)->CompleteDuration[Pos].IgnoreFramesAfter==(int64u)-1 && (*Sequence)->CompleteDuration[Pos].IgnoreFramesAfterDuration!=(int64u)-1)
-                    (*Sequence)->CompleteDuration[Pos].MI->Config.File_IgnoreEditsAfter=(*Sequence)->CompleteDuration[Pos].IgnoreFramesBefore+(*Sequence)->CompleteDuration[Pos].IgnoreFramesAfterDuration;
+                (*Sequence)->Resources[Pos]->MI=MI_Create();
+                (*Sequence)->Resources[Pos]->MI->Config.File_IgnoreEditsBefore=(*Sequence)->Resources[Pos]->IgnoreFramesBefore;
+                if ((*Sequence)->Resources[Pos]->IgnoreFramesAfter==(int64u)-1 && (*Sequence)->Resources[Pos]->IgnoreFramesAfterDuration!=(int64u)-1)
+                    (*Sequence)->Resources[Pos]->MI->Config.File_IgnoreEditsAfter=(*Sequence)->Resources[Pos]->IgnoreFramesBefore+(*Sequence)->Resources[Pos]->IgnoreFramesAfterDuration;
                 else
-                    (*Sequence)->CompleteDuration[Pos].MI->Config.File_IgnoreEditsAfter=(*Sequence)->CompleteDuration[Pos].IgnoreFramesAfter;
-                (*Sequence)->CompleteDuration[Pos].MI->Config.File_EditRate=(*Sequence)->CompleteDuration[Pos].IgnoreFramesRate;
+                    (*Sequence)->Resources[Pos]->MI->Config.File_IgnoreEditsAfter=(*Sequence)->Resources[Pos]->IgnoreFramesAfter;
+                (*Sequence)->Resources[Pos]->MI->Config.File_EditRate=(*Sequence)->Resources[Pos]->IgnoreFramesRate;
                 #if MEDIAINFO_DEMUX
-                    (*Sequence)->CompleteDuration[Pos].MI->Config.Demux_Offset_Frame=(*Sequence)->CompleteDuration[Pos].Demux_Offset_Frame;
-                    (*Sequence)->CompleteDuration[Pos].MI->Config.Demux_Offset_DTS=(*Sequence)->CompleteDuration[Pos].Demux_Offset_DTS;
+                    (*Sequence)->Resources[Pos]->MI->Config.Demux_Offset_Frame=(*Sequence)->Resources[Pos]->Demux_Offset_Frame;
+                    (*Sequence)->Resources[Pos]->MI->Config.Demux_Offset_DTS=(*Sequence)->Resources[Pos]->Demux_Offset_DTS;
                 #endif //MEDIAINFO_DEMUX
             }
         }
-        if (!(*Sequence)->CompleteDuration.empty())
+        if (!(*Sequence)->Resources.empty())
         {
-            (*Sequence)->MI->Config.File_IgnoreEditsBefore=(*Sequence)->CompleteDuration[0].IgnoreFramesBefore;
-            if ((*Sequence)->CompleteDuration[0].IgnoreFramesAfter==(int64u)-1 && (*Sequence)->CompleteDuration[0].IgnoreFramesAfterDuration!=(int64u)-1)
-                (*Sequence)->MI->Config.File_IgnoreEditsAfter=(*Sequence)->CompleteDuration[0].IgnoreFramesBefore+(*Sequence)->CompleteDuration[0].IgnoreFramesAfterDuration;
+            (*Sequence)->MI->Config.File_IgnoreEditsBefore=(*Sequence)->Resources[0]->IgnoreFramesBefore;
+            if ((*Sequence)->Resources[0]->IgnoreFramesAfter==(int64u)-1 && (*Sequence)->Resources[0]->IgnoreFramesAfterDuration!=(int64u)-1)
+                (*Sequence)->MI->Config.File_IgnoreEditsAfter=(*Sequence)->Resources[0]->IgnoreFramesBefore+(*Sequence)->Resources[0]->IgnoreFramesAfterDuration;
             else
-                (*Sequence)->MI->Config.File_IgnoreEditsAfter=(*Sequence)->CompleteDuration[0].IgnoreFramesAfter;
-            (*Sequence)->MI->Config.File_EditRate=(*Sequence)->CompleteDuration[0].IgnoreFramesRate;
+                (*Sequence)->MI->Config.File_IgnoreEditsAfter=(*Sequence)->Resources[0]->IgnoreFramesAfter;
+            (*Sequence)->MI->Config.File_EditRate=(*Sequence)->Resources[0]->IgnoreFramesRate;
             #if MEDIAINFO_DEMUX
-                (*Sequence)->MI->Config.Demux_Offset_Frame=(*Sequence)->CompleteDuration[0].Demux_Offset_Frame;
-                (*Sequence)->MI->Config.Demux_Offset_DTS=(*Sequence)->CompleteDuration[0].Demux_Offset_DTS;
+                (*Sequence)->MI->Config.Demux_Offset_Frame=(*Sequence)->Resources[0]->Demux_Offset_Frame;
+                (*Sequence)->MI->Config.Demux_Offset_DTS=(*Sequence)->Resources[0]->Demux_Offset_DTS;
             #endif //MEDIAINFO_DEMUX
         }
     }
@@ -889,8 +889,8 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
         }
 
         if (Config->ParseSpeed>=1)
-            for (size_t Pos=1; Pos<(*Sequence)->CompleteDuration.size(); Pos++)
-                (*Sequence)->CompleteDuration[Pos].MI->Open((*Sequence)->CompleteDuration[Pos].FileName);
+            for (size_t Pos=1; Pos<(*Sequence)->Resources.size(); Pos++)
+                (*Sequence)->Resources[Pos]->MI->Open((*Sequence)->Resources[Pos]->FileName);
 
         #if MEDIAINFO_NEXTPACKET && MEDIAINFO_DEMUX
             if (Config->NextPacket_Get())
@@ -913,13 +913,13 @@ void File__ReferenceFilesHelper::ParseReference()
     if ((*Sequence)->MI)
     {
         #if MEDIAINFO_EVENTS && MEDIAINFO_NEXTPACKET
-            if (DTS_Interval!=(int64u)-1 && !(*Sequence)->Status[File__Analyze::IsFinished] && (*Sequence)->MI->Info->FrameInfo.DTS!=(int64u)-1 && DTS_Minimal!=(int64u)-1 && ((*Sequence)->CompleteDuration.empty() || (*Sequence)->CompleteDuration_Pos<(*Sequence)->CompleteDuration.size()))
+            if (DTS_Interval!=(int64u)-1 && !(*Sequence)->Status[File__Analyze::IsFinished] && (*Sequence)->MI->Info->FrameInfo.DTS!=(int64u)-1 && DTS_Minimal!=(int64u)-1 && ((*Sequence)->Resources.empty() || (*Sequence)->Resources_Pos<(*Sequence)->Resources.size()))
             {
                 int64u DTS_Temp;
-                if (!(*Sequence)->CompleteDuration.empty() && (*Sequence)->CompleteDuration_Pos)
+                if (!(*Sequence)->Resources.empty() && (*Sequence)->Resources_Pos)
                 {
-                    if ((*Sequence)->CompleteDuration[(*Sequence)->CompleteDuration_Pos].MI->Info->FrameInfo.DTS!=(int64u)-1)
-                        DTS_Temp=(*Sequence)->CompleteDuration[(*Sequence)->CompleteDuration_Pos].MI->Info->FrameInfo.DTS-(*Sequence)->CompleteDuration[(*Sequence)->CompleteDuration_Pos].MI->Info->Config->Demux_Offset_DTS_FromStream;
+                    if ((*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI->Info->FrameInfo.DTS!=(int64u)-1)
+                        DTS_Temp=(*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI->Info->FrameInfo.DTS-(*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI->Info->Config->Demux_Offset_DTS_FromStream;
                     else
                         DTS_Temp=0;
                 }
@@ -930,10 +930,10 @@ void File__ReferenceFilesHelper::ParseReference()
                     else
                         DTS_Temp=0;
                 }
-                DTS_Temp+=(*Sequence)->CompleteDuration[(*Sequence)->CompleteDuration_Pos].Demux_Offset_DTS;
-                if (!(*Sequence)->CompleteDuration.empty() && (*Sequence)->CompleteDuration_Pos<(*Sequence)->CompleteDuration.size() && (*Sequence)->CompleteDuration[(*Sequence)->CompleteDuration_Pos].IgnoreFramesRate && (*Sequence)->CompleteDuration[(*Sequence)->CompleteDuration_Pos].IgnoreFramesBefore)
+                DTS_Temp+=(*Sequence)->Resources[(*Sequence)->Resources_Pos]->Demux_Offset_DTS;
+                if (!(*Sequence)->Resources.empty() && (*Sequence)->Resources_Pos<(*Sequence)->Resources.size() && (*Sequence)->Resources[(*Sequence)->Resources_Pos]->IgnoreFramesRate && (*Sequence)->Resources[(*Sequence)->Resources_Pos]->IgnoreFramesBefore)
                 {
-                    int64u TimeOffset=float64_int64s(((float64)(*Sequence)->CompleteDuration[(*Sequence)->CompleteDuration_Pos].IgnoreFramesBefore)/(*Sequence)->CompleteDuration[(*Sequence)->CompleteDuration_Pos].IgnoreFramesRate*1000000000);
+                    int64u TimeOffset=float64_int64s(((float64)(*Sequence)->Resources[(*Sequence)->Resources_Pos]->IgnoreFramesBefore)/(*Sequence)->Resources[(*Sequence)->Resources_Pos]->IgnoreFramesRate*1000000000);
                     if (DTS_Temp>TimeOffset)
                         DTS_Temp-=TimeOffset;
                     else
@@ -946,7 +946,7 @@ void File__ReferenceFilesHelper::ParseReference()
             {
                 #if MEDIAINFO_DEMUX
                     SubFile_Start();
-                    if ((*Sequence)->CompleteDuration_Pos==0)
+                    if ((*Sequence)->Resources_Pos==0)
                     {
                         while (((*Sequence)->Status=(*Sequence)->MI->Open_NextPacket())[8])
                         {
@@ -967,19 +967,19 @@ void File__ReferenceFilesHelper::ParseReference()
                                     return;
                                 }
                         }
-                        (*Sequence)->CompleteDuration_Pos++;
-                        if ((*Sequence)->CompleteDuration_Pos<(*Sequence)->CompleteDuration.size() && (*Sequence)->CompleteDuration[(*Sequence)->CompleteDuration_Pos].MI)
-                            (*Sequence)->CompleteDuration[(*Sequence)->CompleteDuration_Pos].MI->Open_Buffer_Seek(0, 0, (int64u)-1);
+                        (*Sequence)->Resources_Pos++;
+                        if ((*Sequence)->Resources_Pos<(*Sequence)->Resources.size() && (*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI)
+                            (*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI->Open_Buffer_Seek(0, 0, (int64u)-1);
                     }
 
                     #if MEDIAINFO_NEXTPACKET && MEDIAINFO_DEMUX
                         if (Config->ParseSpeed<1.0)
-                            (*Sequence)->CompleteDuration_Pos=(*Sequence)->CompleteDuration.size(); //No need to parse all files
+                            (*Sequence)->Resources_Pos=(*Sequence)->Resources.size(); //No need to parse all files
                     #endif //MEDIAINFO_NEXTPACKET
 
-                    while ((*Sequence)->CompleteDuration_Pos<(*Sequence)->CompleteDuration.size())
+                    while ((*Sequence)->Resources_Pos<(*Sequence)->Resources.size())
                     {
-                        while (((*Sequence)->Status=(*Sequence)->CompleteDuration[(*Sequence)->CompleteDuration_Pos].MI->Open_NextPacket())[8])
+                        while (((*Sequence)->Status=(*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI->Open_NextPacket())[8])
                         {
                                 if (!(*Sequence)->FileSize_IsPresent && (*Sequence)->MI->Config.File_Size!=(int64u)-1)
                                 {
@@ -998,9 +998,9 @@ void File__ReferenceFilesHelper::ParseReference()
                                     return;
                                 }
                         }
-                        (*Sequence)->CompleteDuration_Pos++;
-                        if ((*Sequence)->CompleteDuration_Pos<(*Sequence)->CompleteDuration.size() && (*Sequence)->CompleteDuration[(*Sequence)->CompleteDuration_Pos].MI)
-                            (*Sequence)->CompleteDuration[(*Sequence)->CompleteDuration_Pos].MI->Open_Buffer_Seek(0, 0, (int64u)-1);
+                        (*Sequence)->Resources_Pos++;
+                        if ((*Sequence)->Resources_Pos<(*Sequence)->Resources.size() && (*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI)
+                            (*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI->Open_Buffer_Seek(0, 0, (int64u)-1);
                     }
                 if (CountOfReferencesToParse)
                     CountOfReferencesToParse--;
@@ -1013,13 +1013,13 @@ void File__ReferenceFilesHelper::ParseReference()
             (*Sequence)->StreamKind=Stream_Max;
             (*Sequence)->StreamPos=(size_t)-1;
             (*Sequence)->State=10000;
-            if ((*Sequence)->CompleteDuration.empty())
+            if ((*Sequence)->Resources.empty())
                 (*Sequence)->FileSize=(*Sequence)->MI->Config.File_Size;
             else if ((*Sequence)->FileSize==(int64u)-1)
             {
                 (*Sequence)->FileSize=0;
-                for (size_t Pos=0; Pos<(*Sequence)->CompleteDuration.size(); Pos++)
-                    (*Sequence)->FileSize+=File::Size_Get((*Sequence)->CompleteDuration[Pos].FileName);
+                for (size_t Pos=0; Pos<(*Sequence)->Resources.size(); Pos++)
+                    (*Sequence)->FileSize+=File::Size_Get((*Sequence)->Resources[Pos]->FileName);
             }
             delete (*Sequence)->MI; (*Sequence)->MI=NULL;
         }
@@ -1114,7 +1114,7 @@ void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()
 
     MI->Merge(*(*Sequence)->MI->Info, StreamKind_Last, StreamPos_From, StreamPos_To);
 
-    if (!(*Sequence)->CompleteDuration.empty())
+    if (!(*Sequence)->Resources.empty())
     {
         MI->Clear(StreamKind_Last, StreamPos_To, MI->Fill_Parameter(StreamKind_Last, Generic_BitRate));
         MI->Clear(StreamKind_Last, StreamPos_To, MI->Fill_Parameter(StreamKind_Last, Generic_Duration));
@@ -1126,7 +1126,7 @@ void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()
         int64u FrameCount_Temp=0;
         int64u StreamSize_Temp=0;
         int64u FileSize_Temp=0;
-        for (size_t Pos=0; Pos<(*Sequence)->CompleteDuration.size(); Pos++)
+        for (size_t Pos=0; Pos<(*Sequence)->Resources.size(); Pos++)
         {
             MediaInfo_Internal MI2;
             MI2.Option(__T("File_KeepInfo"), __T("1"));
@@ -1134,13 +1134,13 @@ void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()
             Ztring Demux_Save=MI2.Option(__T("Demux_Get"), __T(""));
             MI2.Option(__T("ParseSpeed"), __T("0"));
             MI2.Option(__T("Demux"), Ztring());
-            MI2.Config.File_IgnoreEditsBefore=(*Sequence)->CompleteDuration[Pos].IgnoreFramesBefore;
-            if ((*Sequence)->CompleteDuration[Pos].IgnoreFramesAfter==(int64u)-1 && (*Sequence)->CompleteDuration[Pos].IgnoreFramesAfterDuration!=(int64u)-1)
-                MI2.Config.File_IgnoreEditsAfter=(*Sequence)->CompleteDuration[Pos].IgnoreFramesBefore+(*Sequence)->CompleteDuration[Pos].IgnoreFramesAfterDuration;
+            MI2.Config.File_IgnoreEditsBefore=(*Sequence)->Resources[Pos]->IgnoreFramesBefore;
+            if ((*Sequence)->Resources[Pos]->IgnoreFramesAfter==(int64u)-1 && (*Sequence)->Resources[Pos]->IgnoreFramesAfterDuration!=(int64u)-1)
+                MI2.Config.File_IgnoreEditsAfter=(*Sequence)->Resources[Pos]->IgnoreFramesBefore+(*Sequence)->Resources[Pos]->IgnoreFramesAfterDuration;
             else
-                MI2.Config.File_IgnoreEditsAfter=(*Sequence)->CompleteDuration[Pos].IgnoreFramesAfter;
-            MI2.Config.File_EditRate=(*Sequence)->CompleteDuration[Pos].IgnoreFramesRate;
-            size_t MiOpenResult=MI2.Open((*Sequence)->CompleteDuration[Pos].FileName);
+                MI2.Config.File_IgnoreEditsAfter=(*Sequence)->Resources[Pos]->IgnoreFramesAfter;
+            MI2.Config.File_EditRate=(*Sequence)->Resources[Pos]->IgnoreFramesRate;
+            size_t MiOpenResult=MI2.Open((*Sequence)->Resources[Pos]->FileName);
             MI2.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
             MI2.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
             if (MiOpenResult)
@@ -1488,8 +1488,8 @@ MediaInfo_Internal* File__ReferenceFilesHelper::MI_Create()
             MI_Temp->Option(__T("File_Demux_Hevc_Transcode_Iso14496_15_to_AnnexB"), __T("1"));
         if (FrameRate)
             MI_Temp->Option(__T("File_Demux_Rate"), Ztring::ToZtring(FrameRate));
-        else if (!(*Sequence)->CompleteDuration.empty() && (*Sequence)->CompleteDuration[0].IgnoreFramesRate) //TODO: per Pos
-            MI_Temp->Option(__T("File_Demux_Rate"), Ztring::ToZtring((*Sequence)->CompleteDuration[0].IgnoreFramesRate));
+        else if (!(*Sequence)->Resources.empty() && (*Sequence)->Resources[0]->IgnoreFramesRate) //TODO: per Pos
+            MI_Temp->Option(__T("File_Demux_Rate"), Ztring::ToZtring((*Sequence)->Resources[0]->IgnoreFramesRate));
         switch (Config->Demux_InitData_Get())
         {
             case 0 : MI_Temp->Option(__T("File_Demux_InitData"), __T("Event")); break;
@@ -1590,20 +1590,20 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                                 if ((*Sequence)->MI)
                                 {
                                     Ztring Result;
-                                    if ((*Sequence)->CompleteDuration.size()<=1 || DurationM<(*Sequence)->CompleteDuration[1].Demux_Offset_DTS)
+                                    if ((*Sequence)->Resources.size()<=1 || DurationM<(*Sequence)->Resources[1]->Demux_Offset_DTS)
                                     {
-                                        (*Sequence)->CompleteDuration_Pos=0;
+                                        (*Sequence)->Resources_Pos=0;
                                         Result=(*Sequence)->MI->Option(__T("File_Seek"), DurationS);
                                     }
                                     else
                                     {
-                                        size_t CompleteDuration_Pos_Temp=1;
-                                        while (CompleteDuration_Pos_Temp<(*Sequence)->CompleteDuration.size() && DurationM>=(*Sequence)->CompleteDuration[CompleteDuration_Pos_Temp].Demux_Offset_DTS)
-                                            CompleteDuration_Pos_Temp++;
-                                        CompleteDuration_Pos_Temp--;
-                                        Result=(*Sequence)->CompleteDuration[CompleteDuration_Pos_Temp].MI->Option(__T("File_Seek"), DurationS);
+                                        size_t Resources_Pos_Temp=1;
+                                        while (Resources_Pos_Temp<(*Sequence)->Resources.size() && DurationM>=(*Sequence)->Resources[Resources_Pos_Temp]->Demux_Offset_DTS)
+                                            Resources_Pos_Temp++;
+                                        Resources_Pos_Temp--;
+                                        Result=(*Sequence)->Resources[Resources_Pos_Temp]->MI->Option(__T("File_Seek"), DurationS);
                                         if (Result.empty())
-                                            (*Sequence)->CompleteDuration_Pos=CompleteDuration_Pos_Temp;
+                                            (*Sequence)->Resources_Pos=Resources_Pos_Temp;
                                     }
                                     if (!Result.empty())
                                         HasProblem=true;
@@ -1621,7 +1621,7 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                         {
                             if ((*Sequence)->MI)
                             {
-                                (*Sequence)->CompleteDuration_Pos=0;
+                                (*Sequence)->Resources_Pos=0;
                                 Ztring Result=(*Sequence)->MI->Option(__T("File_Seek"), Ztring::ToZtring(Value));
                                 if (!Result.empty())
                                     HasProblem=true;
@@ -1668,20 +1668,20 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                             if ((*Sequence)->MI)
                             {
                                 Ztring Result;
-                                if ((*Sequence)->CompleteDuration.empty() || Duration<(*Sequence)->CompleteDuration[1].Demux_Offset_DTS)
+                                if ((*Sequence)->Resources.empty() || Duration<(*Sequence)->Resources[1]->Demux_Offset_DTS)
                                 {
-                                    (*Sequence)->CompleteDuration_Pos=0;
+                                    (*Sequence)->Resources_Pos=0;
                                     Result=(*Sequence)->MI->Option(__T("File_Seek"), DurationS);
                                 }
                                 else
                                 {
-                                    size_t CompleteDuration_Pos_Temp=1;
-                                    while (CompleteDuration_Pos_Temp<(*Sequence)->CompleteDuration.size() && Duration>=(*Sequence)->CompleteDuration[CompleteDuration_Pos_Temp].Demux_Offset_DTS)
-                                        CompleteDuration_Pos_Temp++;
-                                    CompleteDuration_Pos_Temp--;
-                                    Result=(*Sequence)->CompleteDuration[CompleteDuration_Pos_Temp].MI->Option(__T("File_Seek"), DurationS);
+                                    size_t Resources_Pos_Temp=1;
+                                    while (Resources_Pos_Temp<(*Sequence)->Resources.size() && Duration>=(*Sequence)->Resources[Resources_Pos_Temp]->Demux_Offset_DTS)
+                                        Resources_Pos_Temp++;
+                                    Resources_Pos_Temp--;
+                                    Result=(*Sequence)->Resources[Resources_Pos_Temp]->MI->Option(__T("File_Seek"), DurationS);
                                     if (Result.empty())
-                                        (*Sequence)->CompleteDuration_Pos=CompleteDuration_Pos_Temp;
+                                        (*Sequence)->Resources_Pos=Resources_Pos_Temp;
                                 }
                                 if (!Result.empty())
                                     HasProblem=true;
@@ -1705,20 +1705,20 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                             if ((*Sequence)->MI)
                             {
                                 Ztring Result;
-                                if ((*Sequence)->CompleteDuration.size()<2 || Value<(*Sequence)->CompleteDuration[1].Demux_Offset_DTS)
+                                if ((*Sequence)->Resources.size()<2 || Value<(*Sequence)->Resources[1]->Demux_Offset_DTS)
                                 {
-                                    (*Sequence)->CompleteDuration_Pos=0;
+                                    (*Sequence)->Resources_Pos=0;
                                     Result=(*Sequence)->MI->Option(__T("File_Seek"), Time);
                                 }
                                 else
                                 {
-                                    size_t CompleteDuration_Pos_Temp=1;
-                                    while (CompleteDuration_Pos_Temp<(*Sequence)->CompleteDuration.size() && Value>=(*Sequence)->CompleteDuration[CompleteDuration_Pos_Temp].Demux_Offset_DTS)
-                                        CompleteDuration_Pos_Temp++;
-                                    CompleteDuration_Pos_Temp--;
-                                    Result=(*Sequence)->CompleteDuration[CompleteDuration_Pos_Temp].MI->Option(__T("File_Seek"), Time);
+                                    size_t Resources_Pos_Temp=1;
+                                    while (Resources_Pos_Temp<(*Sequence)->Resources.size() && Value>=(*Sequence)->Resources[Resources_Pos_Temp]->Demux_Offset_DTS)
+                                        Resources_Pos_Temp++;
+                                    Resources_Pos_Temp--;
+                                    Result=(*Sequence)->Resources[Resources_Pos_Temp]->MI->Option(__T("File_Seek"), Time);
                                     if (Result.empty())
-                                        (*Sequence)->CompleteDuration_Pos=CompleteDuration_Pos_Temp;
+                                        (*Sequence)->Resources_Pos=Resources_Pos_Temp;
                                 }
                                 if (!Result.empty())
                                     return 2; //Invalid value
@@ -1746,20 +1746,20 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                             if ((*Sequence)->MI)
                             {
                                     Ztring Result;
-                                    if ((*Sequence)->CompleteDuration.size()<2 || Value<(*Sequence)->CompleteDuration[1].Demux_Offset_Frame)
+                                    if ((*Sequence)->Resources.size()<2 || Value<(*Sequence)->Resources[1]->Demux_Offset_Frame)
                                     {
-                                        (*Sequence)->CompleteDuration_Pos=0;
+                                        (*Sequence)->Resources_Pos=0;
                                         Result=(*Sequence)->MI->Option(__T("File_Seek"), __T("Frame=")+Ztring::ToZtring(Value));
                                     }
                                     else
                                     {
-                                        size_t CompleteDuration_Pos_Temp=1;
-                                        while (CompleteDuration_Pos_Temp<(*Sequence)->CompleteDuration.size() && Value>=(*Sequence)->CompleteDuration[CompleteDuration_Pos_Temp].Demux_Offset_Frame)
-                                            CompleteDuration_Pos_Temp++;
-                                        CompleteDuration_Pos_Temp--;
-                                        Result=(*Sequence)->CompleteDuration[CompleteDuration_Pos_Temp].MI->Option(__T("File_Seek"), __T("Frame=")+Ztring::ToZtring(Value-(*Sequence)->CompleteDuration[CompleteDuration_Pos_Temp].Demux_Offset_Frame));
+                                        size_t Resources_Pos_Temp=1;
+                                        while (Resources_Pos_Temp<(*Sequence)->Resources.size() && Value>=(*Sequence)->Resources[Resources_Pos_Temp]->Demux_Offset_Frame)
+                                            Resources_Pos_Temp++;
+                                        Resources_Pos_Temp--;
+                                        Result=(*Sequence)->Resources[Resources_Pos_Temp]->MI->Option(__T("File_Seek"), __T("Frame=")+Ztring::ToZtring(Value-(*Sequence)->Resources[Resources_Pos_Temp]->Demux_Offset_Frame));
                                         if (Result.empty())
-                                            (*Sequence)->CompleteDuration_Pos=CompleteDuration_Pos_Temp;
+                                            (*Sequence)->Resources_Pos=Resources_Pos_Temp;
                                     }
                                 if (!Result.empty())
                                     return 2; //Invalid value
@@ -1813,9 +1813,9 @@ void File__ReferenceFilesHelper::FileSize_Compute ()
                 if (!Config->File_IgnoreSequenceFileSize_Get())
             #endif //MEDIAINFO_ADVANCED
                 {
-                    if (!(*Sequence)->CompleteDuration.empty())
-                        for (size_t Pos=1; Pos<(*Sequence)->CompleteDuration.size(); Pos++)
-                            MI->Config->File_Size+=File::Size_Get((*Sequence)->CompleteDuration[Pos].FileName);
+                    if (!(*Sequence)->Resources.empty())
+                        for (size_t Pos=1; Pos<(*Sequence)->Resources.size(); Pos++)
+                            MI->Config->File_Size+=File::Size_Get((*Sequence)->Resources[Pos]->FileName);
                 }
         }
         else
@@ -1824,12 +1824,12 @@ void File__ReferenceFilesHelper::FileSize_Compute ()
                 if (!Config->File_IgnoreSequenceFileSize_Get())
             #endif //MEDIAINFO_ADVANCED
                 {
-                    if ((*Sequence)->CompleteDuration.empty())
+                    if ((*Sequence)->Resources.empty())
                         for (size_t Pos=0; Pos<(*Sequence)->FileNames.size(); Pos++)
                             MI->Config->File_Size+=File::Size_Get((*Sequence)->FileNames[Pos]);
                     else
-                        for (size_t Pos=0; Pos<(*Sequence)->CompleteDuration.size(); Pos++)
-                            MI->Config->File_Size+=File::Size_Get((*Sequence)->CompleteDuration[Pos].FileName);
+                        for (size_t Pos=0; Pos<(*Sequence)->Resources.size(); Pos++)
+                            MI->Config->File_Size+=File::Size_Get((*Sequence)->Resources[Pos]->FileName);
                 }
         }
     }

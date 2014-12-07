@@ -40,6 +40,29 @@ using namespace ZenLib;
 namespace MediaInfoLib
 {
 
+//***************************************************************************
+// Constructor/Destructor
+//***************************************************************************
+
+resource::resource()
+{
+	MI=NULL;
+	IgnoreFramesBefore=0;
+	IgnoreFramesAfterDuration=(int64u)-1;
+	IgnoreFramesAfter=(int64u)-1;
+	IgnoreFramesRate=0;
+	#if MEDIAINFO_DEMUX
+		Demux_Offset_Frame=0;
+		Demux_Offset_DTS=0;
+		Demux_Offset_FileSize=0;
+	#endif //MEDIAINFO_DEMUX
+}
+
+resource::~resource()
+{
+    delete MI;
+}
+
 } //NameSpace
 
 #endif //MEDIAINFO_REFERENCES_YES

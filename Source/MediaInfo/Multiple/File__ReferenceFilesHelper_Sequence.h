@@ -17,7 +17,7 @@
 namespace MediaInfoLib
 {
 
-class resource;
+struct resource;
 typedef std::vector<resource*> resources;
 
 class rfhs_common;
@@ -56,41 +56,8 @@ struct sequence
 	size_t              State;
 	std::map<std::string, Ztring> Infos;
 	MediaInfo_Internal* MI;
-	struct completeduration
-	{
-		Ztring FileName;
-		MediaInfo_Internal* MI;
-		int64u  IgnoreFramesBefore;
-		int64u  IgnoreFramesAfterDuration; //temporary value, some formats have duration instead of frame position
-		int64u  IgnoreFramesAfter;
-		float64 IgnoreFramesRate;
-		#if MEDIAINFO_DEMUX
-			int64u Demux_Offset_Frame;
-			int64u Demux_Offset_DTS;
-			int64u Demux_Offset_FileSize;
-		#endif //MEDIAINFO_DEMUX
-
-		completeduration()
-		{
-			MI=NULL;
-			IgnoreFramesBefore=0;
-			IgnoreFramesAfterDuration=(int64u)-1;
-			IgnoreFramesAfter=(int64u)-1;
-			IgnoreFramesRate=0;
-			#if MEDIAINFO_DEMUX
-				Demux_Offset_Frame=0;
-				Demux_Offset_DTS=0;
-				Demux_Offset_FileSize=0;
-			#endif //MEDIAINFO_DEMUX
-		}
-
-		~completeduration()
-		{
-			delete MI;
-		}
-	};
-	vector<completeduration>    CompleteDuration;
-	size_t                      CompleteDuration_Pos;
+	vector<resource*>           Resources;
+	size_t                      Resources_Pos;
 	#if MEDIAINFO_FILTER
 		int64u          Enabled;
 	#endif //MEDIAINFO_FILTER

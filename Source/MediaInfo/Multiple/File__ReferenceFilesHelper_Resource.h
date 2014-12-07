@@ -21,6 +21,26 @@
 namespace MediaInfoLib
 {
 
+struct resource
+{
+    //Constructor/Desctructor
+                                    resource();
+                                    ~resource();
+
+    //In
+	Ztring FileName;
+	MediaInfo_Internal* MI;
+	int64u  IgnoreFramesBefore;
+	int64u  IgnoreFramesAfterDuration; //temporary value, some formats have duration instead of frame position
+	int64u  IgnoreFramesAfter;
+	float64 IgnoreFramesRate;
+	#if MEDIAINFO_DEMUX
+		int64u Demux_Offset_Frame;
+		int64u Demux_Offset_DTS;
+		int64u Demux_Offset_FileSize;
+	#endif //MEDIAINFO_DEMUX
+};
+
 } //NameSpace
 
 #endif

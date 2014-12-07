@@ -243,29 +243,29 @@ bool File_DcpCpl::FileHeader_Begin()
                                                 {
                                                     Ztring Resource_Id;
 
-                                                    sequence::completeduration Resource;
+                                                    resource* Resource=new resource;
                                                     for (XMLElement* Resource_Item=ResourceList_Item->FirstChildElement(); Resource_Item; Resource_Item=Resource_Item->NextSiblingElement())
                                                     {
                                                         //EditRate
                                                         if (!strcmp(Resource_Item->Value(), "EditRate"))
                                                         {
                                                             const char* EditRate=Resource_Item->GetText();
-                                                            Resource.IgnoreFramesRate=atof(EditRate);
+                                                            Resource->IgnoreFramesRate=atof(EditRate);
                                                             const char* EditRate2=strchr(EditRate, ' ');
                                                             if (EditRate2!=NULL)
                                                             {
                                                                 float64 EditRate2f=atof(EditRate2);
                                                                 if (EditRate2f)
-                                                                    Resource.IgnoreFramesRate/=EditRate2f;
+                                                                    Resource->IgnoreFramesRate/=EditRate2f;
                                                             }
                                                         }
 
                                                         //EntryPoint
                                                         if (!strcmp(Resource_Item->Value(), "EntryPoint"))
                                                         {
-                                                            Resource.IgnoreFramesBefore=atoi(Resource_Item->GetText());
-                                                            if (Resource.IgnoreFramesAfter!=(int64u)-1)
-                                                                Resource.IgnoreFramesAfter+=Resource.IgnoreFramesBefore;
+                                                            Resource->IgnoreFramesBefore=atoi(Resource_Item->GetText());
+                                                            if (Resource->IgnoreFramesAfter!=(int64u)-1)
+                                                                Resource->IgnoreFramesAfter+=Resource->IgnoreFramesBefore;
                                                         }
 
                                                         //Id
@@ -274,26 +274,26 @@ bool File_DcpCpl::FileHeader_Begin()
 
                                                         //SourceDuration
                                                         if (!strcmp(Resource_Item->Value(), "SourceDuration"))
-                                                            Resource.IgnoreFramesAfter=Resource.IgnoreFramesBefore+atoi(Resource_Item->GetText());
+                                                            Resource->IgnoreFramesAfter=Resource->IgnoreFramesBefore+atoi(Resource_Item->GetText());
 
                                                         //TrackFileId
                                                         if (!strcmp(Resource_Item->Value(), "TrackFileId"))
-                                                            Resource.FileName.From_UTF8(Resource_Item->GetText());
+                                                            Resource->FileName.From_UTF8(Resource_Item->GetText());
                                                     }
 
-                                                    if (Resource.FileName.empty())
-                                                        Resource.FileName=Resource_Id;
-                                                    Sequence->CompleteDuration.push_back(Resource);
+                                                    if (Resource->FileName.empty())
+                                                        Resource->FileName=Resource_Id;
+                                                    Sequence->Resources.push_back(Resource);
                                                 }
                                             }
                                         }
                                     }
 
-                                    if (Sequence->CompleteDuration.empty())
+                                    if (Sequence->Resources.empty())
                                     {
-                                        sequence::completeduration Resource;
-                                        Resource.FileName=Asset_Id;
-                                        Sequence->CompleteDuration.push_back(Resource);
+                                        resource* Resource=new resource;
+                                        Resource->FileName=Asset_Id;
+                                        Sequence->Resources.push_back(Resource);
                                     }
                                     Sequence->StreamID=ReferenceFiles->Sequences_Size()+1;
                                     ReferenceFiles->AddSequence(Sequence);
@@ -374,23 +374,23 @@ void File_DcpCpl::MergeFromAm (File_DcpPkl::streams &StreamsToMerge)
             }
         }
 
-        for (size_t Pos=0; Pos<ReferenceFiles->Sequences[References_Pos]->CompleteDuration.size(); ++Pos)
+        for (size_t Pos=0; Pos<ReferenceFiles->Sequences[References_Pos]->Resources.size(); ++Pos)
         {
-            map<Ztring, File_DcpPkl::streams::iterator>::iterator Map_Item=Map.find(ReferenceFiles->Sequences[References_Pos]->CompleteDuration[Pos].FileName);
+            map<Ztring, File_DcpPkl::streams::iterator>::iterator Map_Item=Map.find(ReferenceFiles->Sequences[References_Pos]->Resources[Pos]->FileName);
             if (Map_Item!=Map.end() && !Map_Item->second->ChunkList.empty()) // Note: ChunkLists with more than 1 file are not yet supported
             {
-                ReferenceFiles->Sequences[References_Pos]->CompleteDuration[Pos].FileName.From_UTF8(Map_Item->second->ChunkList[0].Path);
+                ReferenceFiles->Sequences[References_Pos]->Resources[Pos]->FileName.From_UTF8(Map_Item->second->ChunkList[0].Path);
                 if (ReferenceFiles->Sequences[References_Pos]->Infos["UniqueID"].empty())
                     ReferenceFiles->Sequences[References_Pos]->Infos["UniqueID"].From_UTF8(Map_Item->second->Id);
             }
             else
             {
-                ReferenceFiles->Sequences[References_Pos]->CompleteDuration.erase(ReferenceFiles->Sequences[References_Pos]->CompleteDuration.begin()+Pos);
+                ReferenceFiles->Sequences[References_Pos]->Resources.erase(ReferenceFiles->Sequences[References_Pos]->Resources.begin()+Pos);
                 Pos--;
             }
         }
 
-        if (ReferenceFiles->Sequences[References_Pos]->FileNames.empty() && ReferenceFiles->Sequences[References_Pos]->CompleteDuration.empty())
+        if (ReferenceFiles->Sequences[References_Pos]->FileNames.empty() && ReferenceFiles->Sequences[References_Pos]->Resources.empty())
         {
             ReferenceFiles->Sequences.erase(ReferenceFiles->Sequences.begin()+References_Pos);
             References_Pos--;
