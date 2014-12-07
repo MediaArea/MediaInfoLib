@@ -47,10 +47,10 @@ namespace MediaInfoLib
 resource::resource()
 {
 	MI=NULL;
-	IgnoreFramesBefore=0;
-	IgnoreFramesAfterDuration=(int64u)-1;
-	IgnoreFramesAfter=(int64u)-1;
-	IgnoreFramesRate=0;
+	IgnoreEditsBefore=0;
+	IgnoreEditsAfterDuration=(int64u)-1;
+	IgnoreEditsAfter=(int64u)-1;
+	EditRate=0;
 	#if MEDIAINFO_DEMUX
 		Demux_Offset_Frame=0;
 		Demux_Offset_DTS=0;
@@ -61,6 +61,17 @@ resource::resource()
 resource::~resource()
 {
     delete MI;
+}
+
+//***************************************************************************
+// In
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void resource::UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileName)
+{
+    if (FileName==OldFileName)
+        FileName=NewFileName;
 }
 
 } //NameSpace

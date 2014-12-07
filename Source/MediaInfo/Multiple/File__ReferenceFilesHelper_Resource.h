@@ -28,12 +28,13 @@ struct resource
                                     ~resource();
 
     //In
+    void                            UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileName);
 	Ztring FileName;
 	MediaInfo_Internal* MI;
-	int64u  IgnoreFramesBefore;
-	int64u  IgnoreFramesAfterDuration; //temporary value, some formats have duration instead of frame position
-	int64u  IgnoreFramesAfter;
-	float64 IgnoreFramesRate;
+	int64u  IgnoreEditsBefore;
+	int64u  IgnoreEditsAfterDuration; //temporary value, some formats have duration instead of frame position
+	int64u  IgnoreEditsAfter;
+	float64 EditRate;
 	#if MEDIAINFO_DEMUX
 		int64u Demux_Offset_Frame;
 		int64u Demux_Offset_DTS;

@@ -27,7 +27,7 @@ class File__ReferenceFilesHelper
 {
 public :
     //In
-    void                            AddSequence(sequence* NewSequence) {Sequences.push_back(NewSequence);}
+    void                            AddSequence(sequence* NewSequence);
     size_t                          Sequences_Size() {return Sequences.size();}
     void                            Clear() {Sequences.clear();}
     typedef std::vector<sequence*>  sequences;

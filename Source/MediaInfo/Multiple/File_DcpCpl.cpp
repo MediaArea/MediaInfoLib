@@ -250,22 +250,22 @@ bool File_DcpCpl::FileHeader_Begin()
                                                         if (!strcmp(Resource_Item->Value(), "EditRate"))
                                                         {
                                                             const char* EditRate=Resource_Item->GetText();
-                                                            Resource->IgnoreFramesRate=atof(EditRate);
+                                                            Resource->EditRate=atof(EditRate);
                                                             const char* EditRate2=strchr(EditRate, ' ');
                                                             if (EditRate2!=NULL)
                                                             {
                                                                 float64 EditRate2f=atof(EditRate2);
                                                                 if (EditRate2f)
-                                                                    Resource->IgnoreFramesRate/=EditRate2f;
+                                                                    Resource->EditRate/=EditRate2f;
                                                             }
                                                         }
 
                                                         //EntryPoint
                                                         if (!strcmp(Resource_Item->Value(), "EntryPoint"))
                                                         {
-                                                            Resource->IgnoreFramesBefore=atoi(Resource_Item->GetText());
-                                                            if (Resource->IgnoreFramesAfter!=(int64u)-1)
-                                                                Resource->IgnoreFramesAfter+=Resource->IgnoreFramesBefore;
+                                                            Resource->IgnoreEditsBefore=atoi(Resource_Item->GetText());
+                                                            if (Resource->IgnoreEditsAfter!=(int64u)-1)
+                                                                Resource->IgnoreEditsAfter+=Resource->IgnoreEditsBefore;
                                                         }
 
                                                         //Id
@@ -274,7 +274,7 @@ bool File_DcpCpl::FileHeader_Begin()
 
                                                         //SourceDuration
                                                         if (!strcmp(Resource_Item->Value(), "SourceDuration"))
-                                                            Resource->IgnoreFramesAfter=Resource->IgnoreFramesBefore+atoi(Resource_Item->GetText());
+                                                            Resource->IgnoreEditsAfter=Resource->IgnoreEditsBefore+atoi(Resource_Item->GetText());
 
                                                         //TrackFileId
                                                         if (!strcmp(Resource_Item->Value(), "TrackFileId"))
