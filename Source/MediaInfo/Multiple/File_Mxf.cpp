@@ -5498,14 +5498,28 @@ void File_Mxf::Data_Parse()
                 for (size_t Pos=0; Pos<Essence->second.Parsers.size(); Pos++)
                 {
                     //Parsing
-                    if (Essence->second.Frame_Count_NotParsedIncluded!=(int64u)-1)
-                        Essence->second.Parsers[Pos]->Frame_Count_NotParsedIncluded=Essence->second.Frame_Count_NotParsedIncluded;
-                    if (Essence->second.FrameInfo.DTS!=(int64u)-1)
-                        Essence->second.Parsers[Pos]->FrameInfo.DTS=Essence->second.FrameInfo.DTS;
-                    if (Essence->second.FrameInfo.PTS!=(int64u)-1)
-                        Essence->second.Parsers[Pos]->FrameInfo.PTS=Essence->second.FrameInfo.PTS;
-                    if (Essence->second.FrameInfo.DUR!=(int64u)-1)
-                        Essence->second.Parsers[Pos]->FrameInfo.DUR=Essence->second.FrameInfo.DUR;
+                    if (IsSub)
+                    {
+                        if (Frame_Count_NotParsedIncluded!=(int64u)-1)
+                            Essence->second.Parsers[Pos]->Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded;
+                        if (FrameInfo.DTS!=(int64u)-1)
+                            Essence->second.Parsers[Pos]->FrameInfo.DTS=FrameInfo.DTS;
+                        if (FrameInfo.PTS!=(int64u)-1)
+                           Essence->second.Parsers[Pos]->FrameInfo.PTS=FrameInfo.PTS;
+                        if (FrameInfo.DUR!=(int64u)-1)
+                            Essence->second.Parsers[Pos]->FrameInfo.DUR=FrameInfo.DUR;
+                    }
+                    else
+                    {
+                        if (Essence->second.Frame_Count_NotParsedIncluded!=(int64u)-1)
+                            Essence->second.Parsers[Pos]->Frame_Count_NotParsedIncluded=Essence->second.Frame_Count_NotParsedIncluded;
+                        if (Essence->second.FrameInfo.DTS!=(int64u)-1)
+                            Essence->second.Parsers[Pos]->FrameInfo.DTS=Essence->second.FrameInfo.DTS;
+                        if (Essence->second.FrameInfo.PTS!=(int64u)-1)
+                            Essence->second.Parsers[Pos]->FrameInfo.PTS=Essence->second.FrameInfo.PTS;
+                        if (Essence->second.FrameInfo.DUR!=(int64u)-1)
+                            Essence->second.Parsers[Pos]->FrameInfo.DUR=Essence->second.FrameInfo.DUR;
+                    }
                     Open_Buffer_Continue(Essence->second.Parsers[Pos], Buffer+Buffer_Offset, (size_t)Element_Size);
                     #if MEDIAINFO_DEMUX
                         if (Demux_Level==4 && Config->Demux_EventWasSent && Essence->second.StreamKind==Stream_Video && Essence->second.Parsers[Pos]->ParserIDs[StreamIDs_Size]==MediaInfo_Parser_Jpeg) // Only File_Jpeg. TODO: limit to File_Jpeg instead of video streams
