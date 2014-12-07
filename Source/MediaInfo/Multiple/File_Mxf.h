@@ -1142,6 +1142,10 @@ protected :
         int64u  OverallBitrate_IsCbrForSure;
         bool    Duration_Detected;
         bool    DetectDuration();
+        int64u  DemuxedSampleCount_Total;
+        int64u  DemuxedSampleCount_Current;
+        int64u  DemuxedSampleCount_AddedToFirstFrame;
+        int64u  DemuxedElementSize_AddedToFirstFrame;
     #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
 };
 
