@@ -15,9 +15,6 @@
 #include "MediaInfo/Multiple/File__ReferenceFilesHelper_Sequence.h"
 #include "MediaInfo/Multiple/File__ReferenceFilesHelper_Common.h"
 #include <vector>
-#if MEDIAINFO_EVENTS
-    #include <set>
-#endif //MEDIAINFO_EVENTS
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -109,10 +106,6 @@ private :
     #if MEDIAINFO_DEMUX
         int64u                      Offset_Video_DTS;
     #endif //MEDIAINFO_DEMUX
-
-    #if MEDIAINFO_EVENTS
-        std::set<Ztring>            FilesList_Total;
-    #endif //MEDIAINFO_EVENTS
 };
 
 } //NameSpace
