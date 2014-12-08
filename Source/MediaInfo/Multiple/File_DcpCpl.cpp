@@ -38,16 +38,6 @@ namespace MediaInfoLib
 {
 
 //***************************************************************************
-// Infos
-//***************************************************************************
-
-struct DcpCpl_info
-{
-    Ztring FileName;
-    File__ReferenceFilesHelper::sequences::iterator Sequence;
-};
-
-//***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
 
@@ -94,7 +84,7 @@ void File_DcpCpl::Streams_Finish()
 #if MEDIAINFO_SEEK
 size_t File_DcpCpl::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
 {
-    if (Config->File_IsReferenced_Get() || ReferenceFiles==NULL)
+    if (ReferenceFiles==NULL)
         return 0;
 
     return ReferenceFiles->Seek(Method, Value, ID);
@@ -278,11 +268,11 @@ bool File_DcpCpl::FileHeader_Begin()
 
                                                         //TrackFileId
                                                         if (!strcmp(Resource_Item->Value(), "TrackFileId"))
-                                                            Resource->FileName.From_UTF8(Resource_Item->GetText());
+                                                            Resource->FileNames.push_back(Ztring().From_UTF8(Resource_Item->GetText()));
                                                     }
 
-                                                    if (Resource->FileName.empty())
-                                                        Resource->FileName=Resource_Id;
+                                                    if (Resource->FileNames.empty())
+                                                        Resource->FileNames.push_back(Resource_Id);
                                                     Sequence->AddResource(Resource);
                                                 }
                                             }
@@ -292,7 +282,7 @@ bool File_DcpCpl::FileHeader_Begin()
                                     if (Sequence->Resources.empty())
                                     {
                                         resource* Resource=new resource;
-                                        Resource->FileName=Asset_Id;
+                                        Resource->FileNames.push_back(Asset_Id);
                                         Sequence->AddResource(Resource);
                                     }
                                     Sequence->StreamID=ReferenceFiles->Sequences_Size()+1;

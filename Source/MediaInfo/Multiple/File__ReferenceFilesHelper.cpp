@@ -317,7 +317,8 @@ void File__ReferenceFilesHelper::ParseReferences()
             if ((*Sequence)->FileNames.empty())
                 for (size_t Pos=0; Pos<(*Sequence)->Resources.size(); Pos++)
                 {
-                    (*Sequence)->FileNames.push_back((*Sequence)->Resources[Pos]->FileName);
+                    for (size_t Resource_FileNames_Pos=0; Resource_FileNames_Pos<(*Sequence)->Resources[Pos]->FileNames.size(); Resource_FileNames_Pos++)
+                        (*Sequence)->FileNames.push_back((*Sequence)->Resources[Pos]->FileNames[Resource_FileNames_Pos]);
                     if ((*Sequence)->Resources[Pos]->EditRate && EditRate!=(*Sequence)->Resources[Pos]->EditRate)
                     {
                         if (EditRate>(*Sequence)->Resources[Pos]->EditRate)
@@ -600,7 +601,8 @@ void File__ReferenceFilesHelper::ParseReferences()
                 {
                     if (Pos==(*Sequence)->Resources.size())
                         (*Sequence)->Resources.push_back(new resource);
-                    (*Sequence)->Resources[Pos]->FileName=(*Sequence)->FileNames[Pos];
+                    (*Sequence)->Resources[Pos]->FileNames.clear();
+                    (*Sequence)->Resources[Pos]->FileNames.push_back((*Sequence)->FileNames[Pos]);
                 }
                 (*Sequence)->FileNames.resize(1);
             }
@@ -816,7 +818,8 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
                 Ztring Demux_Save=MI2.Option(__T("Demux_Get"), __T(""));
                 MI2.Option(__T("ParseSpeed"), __T("0"));
                 MI2.Option(__T("Demux"), Ztring());
-                size_t MiOpenResult=MI2.Open((*Sequence)->Resources[Pos]->FileName);
+                (*Sequence)->Resources[Pos]->FileNames.Separator_Set(0, ",");
+                size_t MiOpenResult=MI2.Open((*Sequence)->Resources[Pos]->FileNames.Read());
                 MI2.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
                 MI2.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
                 if (MiOpenResult)
@@ -916,7 +919,10 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
 
         if (Config->ParseSpeed>=1)
             for (size_t Pos=1; Pos<(*Sequence)->Resources.size(); Pos++)
-                (*Sequence)->Resources[Pos]->MI->Open((*Sequence)->Resources[Pos]->FileName);
+            {
+                (*Sequence)->Resources[Pos]->FileNames.Separator_Set(0, ",");
+                (*Sequence)->Resources[Pos]->MI->Open((*Sequence)->Resources[Pos]->FileNames.Read());
+            }
 
         #if MEDIAINFO_NEXTPACKET && MEDIAINFO_DEMUX
             if (Config->NextPacket_Get())
@@ -1045,7 +1051,8 @@ void File__ReferenceFilesHelper::ParseReference()
             {
                 (*Sequence)->FileSize=0;
                 for (size_t Pos=0; Pos<(*Sequence)->Resources.size(); Pos++)
-                    (*Sequence)->FileSize+=File::Size_Get((*Sequence)->Resources[Pos]->FileName);
+                    for (size_t Resource_FileNames_Pos=0; Resource_FileNames_Pos<(*Sequence)->Resources[Pos]->FileNames.size(); Resource_FileNames_Pos++)
+                        (*Sequence)->FileSize+=File::Size_Get((*Sequence)->Resources[Pos]->FileNames[Resource_FileNames_Pos]);
             }
             delete (*Sequence)->MI; (*Sequence)->MI=NULL;
         }
@@ -1166,7 +1173,8 @@ void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()
             else
                 MI2.Config.File_IgnoreEditsAfter=(*Sequence)->Resources[Pos]->IgnoreEditsAfter;
             MI2.Config.File_EditRate=(*Sequence)->Resources[Pos]->EditRate;
-            size_t MiOpenResult=MI2.Open((*Sequence)->Resources[Pos]->FileName);
+            (*Sequence)->Resources[Pos]->FileNames.Separator_Set(0, ",");
+            size_t MiOpenResult=MI2.Open((*Sequence)->Resources[Pos]->FileNames.Read());
             MI2.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
             MI2.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
             if (MiOpenResult)
@@ -1841,7 +1849,8 @@ void File__ReferenceFilesHelper::FileSize_Compute ()
                 {
                     if (!(*Sequence)->Resources.empty())
                         for (size_t Pos=1; Pos<(*Sequence)->Resources.size(); Pos++)
-                            MI->Config->File_Size+=File::Size_Get((*Sequence)->Resources[Pos]->FileName);
+                            for (size_t Resource_FileNames_Pos=0; Resource_FileNames_Pos<(*Sequence)->Resources[Pos]->FileNames.size(); Resource_FileNames_Pos++)
+                                MI->Config->File_Size+=File::Size_Get((*Sequence)->Resources[Pos]->FileNames[Resource_FileNames_Pos]);
                 }
         }
         else
@@ -1855,7 +1864,8 @@ void File__ReferenceFilesHelper::FileSize_Compute ()
                             MI->Config->File_Size+=File::Size_Get((*Sequence)->FileNames[Pos]);
                     else
                         for (size_t Pos=0; Pos<(*Sequence)->Resources.size(); Pos++)
-                            MI->Config->File_Size+=File::Size_Get((*Sequence)->Resources[Pos]->FileName);
+                            for (size_t Resource_FileNames_Pos=0; Resource_FileNames_Pos<(*Sequence)->Resources[Pos]->FileNames.size(); Resource_FileNames_Pos++)
+                                MI->Config->File_Size+=File::Size_Get((*Sequence)->Resources[Pos]->FileNames[Resource_FileNames_Pos]);
                 }
         }
     }

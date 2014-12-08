@@ -38,13 +38,6 @@ namespace MediaInfoLib
 {
 
 //***************************************************************************
-// Infos
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-extern void DcpCpl_MergeFromAm(File__ReferenceFilesHelper* FromCpl, File__ReferenceFilesHelper* FromPkl);
-
-//***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
 
@@ -238,7 +231,7 @@ bool File_DcpPkl::FileHeader_Begin()
             if (Stream->StreamKind==(stream_t)(Stream_Max+1) && Stream->ChunkList.size()==1) // Means CPL
             {
                 sequence* Sequence=new sequence;
-                Sequence->AddFileName(Ztring().From_UTF8(Stream->ChunkList[0].Path));
+                Sequence->FileNames.push_back(Ztring().From_UTF8(Stream->ChunkList[0].Path));
 
                 ReferenceFiles->AddSequence(Sequence);
             }

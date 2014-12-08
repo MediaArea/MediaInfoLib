@@ -29,7 +29,7 @@ struct resource
 
     //In
     void                            UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileName);
-    Ztring                          FileName; //Source file name (relative path)
+    ZtringList                      FileNames; //Source file name (relative path)
     float64                         EditRate;
     int64u                          IgnoreEditsBefore;
     int64u                          IgnoreEditsAfter;

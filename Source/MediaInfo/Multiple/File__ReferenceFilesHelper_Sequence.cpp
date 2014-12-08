@@ -93,18 +93,10 @@ void sequence::UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileNa
 
         Resource->UpdateFileName(OldFileName, NewFileName);
 
-        if (Resource->FileName==NewFileName)
-            Infos["UniqueID"]=OldFileName;
+        for (size_t Pos=0; Pos<Resource->FileNames.size(); Pos++)
+            if (Resource->FileNames[Pos]==NewFileName)
+                Infos["UniqueID"]=OldFileName;
     }
-
-    size_t FileNames_Size=FileNames.size();
-    for (size_t Pos=0; Pos<FileNames_Size; Pos++)
-        if (FileNames[Pos]==OldFileName)
-        {
-            FileNames[Pos]=NewFileName;
-
-            Infos["UniqueID"]=OldFileName;
-        }
 }
 
 //---------------------------------------------------------------------------
