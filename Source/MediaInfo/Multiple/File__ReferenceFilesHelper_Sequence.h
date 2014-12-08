@@ -17,7 +17,7 @@
 namespace MediaInfoLib
 {
 
-struct resource;
+class resource;
 typedef std::vector<resource*> resources;
 
 class rfhs_common;
@@ -26,8 +26,9 @@ class rfhs_common;
 // Class sequence
 //***************************************************************************
 
-struct sequence
+class sequence
 {
+public:
     //Constructor/Desctructor
                                     sequence();
                                     ~sequence();
@@ -55,14 +56,14 @@ struct sequence
     #if MEDIAINFO_ADVANCED || MEDIAINFO_MD5
         bool            List_Compute_Done;
     #endif //MEDIAINFO_ADVANCED || MEDIAINFO_MD5
-	size_t              State;
-	std::map<std::string, Ztring> Infos;
-	MediaInfo_Internal* MI;
-	vector<resource*>           Resources;
-	size_t                      Resources_Pos;
-	#if MEDIAINFO_FILTER
-		int64u          Enabled;
-	#endif //MEDIAINFO_FILTER
+    size_t              State;
+    std::map<std::string, Ztring> Infos;
+    MediaInfo_Internal* MI;
+    vector<resource*>           Resources;
+    size_t                      Resources_Pos;
+    #if MEDIAINFO_FILTER
+        int64u          Enabled;
+    #endif //MEDIAINFO_FILTER
     std::bitset<32> Status;
     #if MEDIAINFO_NEXTPACKET && MEDIAINFO_IBI
         ibi::stream IbiStream;

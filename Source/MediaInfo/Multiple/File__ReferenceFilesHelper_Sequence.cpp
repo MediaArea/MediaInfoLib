@@ -44,13 +44,13 @@ sequence::sequence()
     FileSize_IsPresent=false;
     #if MEDIAINFO_ADVANCED || MEDIAINFO_MD5
         List_Compute_Done=false;
-	#endif //MEDIAINFO_ADVANCED || MEDIAINFO_MD5
-	State=0;
-	MI=NULL;
-	Resources_Pos=0;
-	#if MEDIAINFO_FILTER
-		Enabled=true;
-	#endif //MEDIAINFO_FILTER
+    #endif //MEDIAINFO_ADVANCED || MEDIAINFO_MD5
+    State=0;
+    MI=NULL;
+    Resources_Pos=0;
+    #if MEDIAINFO_FILTER
+        Enabled=true;
+    #endif //MEDIAINFO_FILTER
 }
 
 //---------------------------------------------------------------------------
@@ -102,7 +102,7 @@ void sequence::UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileNa
 //---------------------------------------------------------------------------
 void sequence::FrameRate_Set(float64 NewFrameRate)
 {
-	FrameRate=NewFrameRate;
+    FrameRate=NewFrameRate;
 }
 
 } //NameSpace

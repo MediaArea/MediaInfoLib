@@ -21,8 +21,9 @@
 namespace MediaInfoLib
 {
 
-struct resource
+class resource
 {
+public:
     //Constructor/Desctructor
                                     resource();
                                     ~resource();
@@ -30,6 +31,7 @@ struct resource
     //In
     void                            UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileName);
     ZtringList                      FileNames; //Source file name (relative path)
+    ZtringList                      AbsoluteFileNames;
     float64                         EditRate;
     int64u                          IgnoreEditsBefore;
     int64u                          IgnoreEditsAfter;
@@ -44,10 +46,10 @@ struct resource
     
 
 
-	int64u  IgnoreEditsAfterDuration; //temporary value, some formats have duration instead of frame position
-	#if MEDIAINFO_DEMUX
-		int64u Demux_Offset_FileSize;
-	#endif //MEDIAINFO_DEMUX
+    int64u  IgnoreEditsAfterDuration; //temporary value, some formats have duration instead of frame position
+    #if MEDIAINFO_DEMUX
+        int64u Demux_Offset_FileSize;
+    #endif //MEDIAINFO_DEMUX
 };
 
 } //NameSpace

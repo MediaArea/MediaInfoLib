@@ -47,6 +47,7 @@ namespace MediaInfoLib
 resource::resource()
 {
     //In
+    FileNames.Separator_Set(0, __T(","));
     EditRate=0;
     IgnoreEditsBefore=0;
     IgnoreEditsAfter=(int64u)-1;
@@ -60,10 +61,10 @@ resource::resource()
     //Private
     MI=NULL;
 
-	IgnoreEditsAfterDuration=(int64u)-1;
-	#if MEDIAINFO_DEMUX
-		Demux_Offset_FileSize=0;
-	#endif //MEDIAINFO_DEMUX
+    IgnoreEditsAfterDuration=(int64u)-1;
+    #if MEDIAINFO_DEMUX
+        Demux_Offset_FileSize=0;
+    #endif //MEDIAINFO_DEMUX
 }
 
 resource::~resource()
