@@ -50,28 +50,48 @@ namespace MediaInfoLib
 //---------------------------------------------------------------------------
 File__ReferenceFilesHelper::File__ReferenceFilesHelper(File__Analyze* MI_, MediaInfo_Config_MediaInfo* Config_)
 {
-    //Temp
+    //In
+    TestContinuousFileNames=false;
+    ContainerHasNoId=false;
+    ID_Max=0;
+    
+    //Private
+    Sequence=Sequences.begin();
     MI=MI_;
     Config=Config_;
-    Sequence=Sequences.end();
     Init_Done=false;
-    TestContinuousFileNames=false;
-    FilesForStorage=false;
-    ContainerHasNoId=false;
-    HasMainFile=false;
-    HasMainFile_Filled=false;
-    ID_Max=0;
     FrameRate=0;
     Duration=0;
-    #if MEDIAINFO_NEXTPACKET
-        DTS_Interval=(int64u)-1;
-    #endif //MEDIAINFO_NEXTPACKET
+    #if MEDIAINFO_DEMUX
+        Demux_Interleave=false;
+        DTS_Minimal=(int64u)-1;
+    #endif //MEDIAINFO_DEMUX
     #if MEDIAINFO_EVENTS
         StreamID_Previous=(int64u)-1;
     #endif //MEDIAINFO_EVENTS
     #if MEDIAINFO_DEMUX
         Offset_Video_DTS=0;
     #endif //MEDIAINFO_DEMUX
+
+    //Private
+    #if MEDIAINFO_DEMUX
+        Common=new rfh_common(&Demux_Interleave, &DTS_Minimal);
+    #else //MEDIAINFO_DEMUX
+        Common=new rfh_common();
+    #endif //MEDIAINFO_DEMUX
+    Common->ReferenceFilesHelper=this;
+    Common->MI=MI;
+    Common->Config=Config;
+
+
+
+    //Temp
+    FilesForStorage=false;
+    HasMainFile=false;
+    HasMainFile_Filled=false;
+    #if MEDIAINFO_NEXTPACKET
+        DTS_Interval=(int64u)-1;
+    #endif //MEDIAINFO_NEXTPACKET
 }
 
 //---------------------------------------------------------------------------
@@ -90,12 +110,12 @@ File__ReferenceFilesHelper::~File__ReferenceFilesHelper()
 bool File__ReferenceFilesHelper_Algo1 (const sequence* Ref1, const sequence* Ref2) { return (Ref1->StreamID<Ref2->StreamID);}
 bool File__ReferenceFilesHelper_Algo2 (const sequence* Ref1, const sequence* Ref2) { return (Ref1->StreamPos<Ref2->StreamPos);}
 bool File__ReferenceFilesHelper_Algo3 (const sequence* Ref1, const sequence* Ref2) { return (Ref1->StreamKind<Ref2->StreamKind);}
-void File__ReferenceFilesHelper_InfoFromFileName (File__ReferenceFilesHelper::sequences &Sequences)
+void File__ReferenceFilesHelper_InfoFromFileName (sequences &Sequences)
 {
     ZtringListList List;
-    vector<File__ReferenceFilesHelper::sequences::iterator> Iterators;
+    vector<sequences::iterator> Iterators;
 
-    for (File__ReferenceFilesHelper::sequences::iterator Sequence=Sequences.begin(); Sequence<Sequences.end(); ++Sequence)
+    for (sequences::iterator Sequence=Sequences.begin(); Sequence<Sequences.end(); ++Sequence)
     {
         ZtringList List2;
         List2.Separator_Set(0, __T(" "));
@@ -274,6 +294,11 @@ void File__ReferenceFilesHelper_InfoFromFileName (File__ReferenceFilesHelper::se
 //---------------------------------------------------------------------------
 void File__ReferenceFilesHelper::AddSequence(sequence* NewSequence)
 {
+    Common->HasMultipleSequences=!Sequences.empty(); //If not empty, there will be more than 1 sequence just after
+
+    NewSequence->Package=Common;
+    NewSequence->Common->Package=Common;
+
     Sequences.push_back(NewSequence);
 }
 
@@ -707,13 +732,13 @@ void File__ReferenceFilesHelper::ParseReferences()
 
                 #if MEDIAINFO_NEXTPACKET
                     //Minimal DTS
-                    if (DTS_Interval!=(int64u)-1 && !(*Sequence)->Status[File__Analyze::IsFinished] && ((*ReferenceTemp)->Resources.empty() || (*ReferenceTemp)->Resources_Pos<(*ReferenceTemp)->Resources.size()))
+                    if (DTS_Interval!=(int64u)-1 && !(*Sequence)->Status[File__Analyze::IsFinished] && ((*ReferenceTemp)->Resources.empty() || (*ReferenceTemp)->Resources_Current<(*ReferenceTemp)->Resources.size()))
                     {
                         int64u DTS_Temp;
-                        if (!(*ReferenceTemp)->Resources.empty() && (*ReferenceTemp)->Resources_Pos)
+                        if (!(*ReferenceTemp)->Resources.empty() && (*ReferenceTemp)->Resources_Current)
                         {
-                            if ((*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Pos]->MI->Info->FrameInfo.DTS!=(int64u)-1)
-                                DTS_Temp=(*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Pos]->MI->Info->FrameInfo.DTS-(*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Pos]->MI->Info->Config->Demux_Offset_DTS_FromStream;
+                            if ((*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Current]->MI->Info->FrameInfo.DTS!=(int64u)-1)
+                                DTS_Temp=(*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Current]->MI->Info->FrameInfo.DTS-(*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Current]->MI->Info->Config->Demux_Offset_DTS_FromStream;
                             else
                                 DTS_Temp=0;
                         }
@@ -724,7 +749,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                             else
                                 DTS_Temp=0;
                         }
-                        DTS_Temp+=(*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Pos]->Demux_Offset_DTS;
+                        DTS_Temp+=(*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Current]->Demux_Offset_DTS;
                         if (DTS_Minimal>DTS_Temp)
                             DTS_Minimal=DTS_Temp;
                     }
@@ -945,13 +970,13 @@ void File__ReferenceFilesHelper::ParseReference()
     if ((*Sequence)->MI)
     {
         #if MEDIAINFO_EVENTS && MEDIAINFO_NEXTPACKET
-            if (DTS_Interval!=(int64u)-1 && !(*Sequence)->Status[File__Analyze::IsFinished] && (*Sequence)->MI->Info->FrameInfo.DTS!=(int64u)-1 && DTS_Minimal!=(int64u)-1 && ((*Sequence)->Resources.empty() || (*Sequence)->Resources_Pos<(*Sequence)->Resources.size()))
+            if (DTS_Interval!=(int64u)-1 && !(*Sequence)->Status[File__Analyze::IsFinished] && (*Sequence)->MI->Info->FrameInfo.DTS!=(int64u)-1 && DTS_Minimal!=(int64u)-1 && ((*Sequence)->Resources.empty() || (*Sequence)->Resources_Current<(*Sequence)->Resources.size()))
             {
                 int64u DTS_Temp;
-                if (!(*Sequence)->Resources.empty() && (*Sequence)->Resources_Pos)
+                if (!(*Sequence)->Resources.empty() && (*Sequence)->Resources_Current)
                 {
-                    if ((*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI->Info->FrameInfo.DTS!=(int64u)-1)
-                        DTS_Temp=(*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI->Info->FrameInfo.DTS-(*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI->Info->Config->Demux_Offset_DTS_FromStream;
+                    if ((*Sequence)->Resources[(*Sequence)->Resources_Current]->MI->Info->FrameInfo.DTS!=(int64u)-1)
+                        DTS_Temp=(*Sequence)->Resources[(*Sequence)->Resources_Current]->MI->Info->FrameInfo.DTS-(*Sequence)->Resources[(*Sequence)->Resources_Current]->MI->Info->Config->Demux_Offset_DTS_FromStream;
                     else
                         DTS_Temp=0;
                 }
@@ -962,10 +987,10 @@ void File__ReferenceFilesHelper::ParseReference()
                     else
                         DTS_Temp=0;
                 }
-                DTS_Temp+=(*Sequence)->Resources[(*Sequence)->Resources_Pos]->Demux_Offset_DTS;
-                if (!(*Sequence)->Resources.empty() && (*Sequence)->Resources_Pos<(*Sequence)->Resources.size() && (*Sequence)->Resources[(*Sequence)->Resources_Pos]->EditRate && (*Sequence)->Resources[(*Sequence)->Resources_Pos]->IgnoreEditsBefore)
+                DTS_Temp+=(*Sequence)->Resources[(*Sequence)->Resources_Current]->Demux_Offset_DTS;
+                if (!(*Sequence)->Resources.empty() && (*Sequence)->Resources_Current<(*Sequence)->Resources.size() && (*Sequence)->Resources[(*Sequence)->Resources_Current]->EditRate && (*Sequence)->Resources[(*Sequence)->Resources_Current]->IgnoreEditsBefore)
                 {
-                    int64u TimeOffset=float64_int64s(((float64)(*Sequence)->Resources[(*Sequence)->Resources_Pos]->IgnoreEditsBefore)/(*Sequence)->Resources[(*Sequence)->Resources_Pos]->EditRate*1000000000);
+                    int64u TimeOffset=float64_int64s(((float64)(*Sequence)->Resources[(*Sequence)->Resources_Current]->IgnoreEditsBefore)/(*Sequence)->Resources[(*Sequence)->Resources_Current]->EditRate*1000000000);
                     if (DTS_Temp>TimeOffset)
                         DTS_Temp-=TimeOffset;
                     else
@@ -978,7 +1003,7 @@ void File__ReferenceFilesHelper::ParseReference()
             {
                 #if MEDIAINFO_DEMUX
                     SubFile_Start();
-                    if ((*Sequence)->Resources_Pos==0)
+                    if ((*Sequence)->Resources_Current==0)
                     {
                         while (((*Sequence)->Status=(*Sequence)->MI->Open_NextPacket())[8])
                         {
@@ -999,19 +1024,19 @@ void File__ReferenceFilesHelper::ParseReference()
                                     return;
                                 }
                         }
-                        (*Sequence)->Resources_Pos++;
-                        if ((*Sequence)->Resources_Pos<(*Sequence)->Resources.size() && (*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI)
-                            (*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI->Open_Buffer_Seek(0, 0, (int64u)-1);
+                        (*Sequence)->Resources_Current++;
+                        if ((*Sequence)->Resources_Current<(*Sequence)->Resources.size() && (*Sequence)->Resources[(*Sequence)->Resources_Current]->MI)
+                            (*Sequence)->Resources[(*Sequence)->Resources_Current]->MI->Open_Buffer_Seek(0, 0, (int64u)-1);
                     }
 
                     #if MEDIAINFO_NEXTPACKET && MEDIAINFO_DEMUX
                         if (Config->ParseSpeed<1.0)
-                            (*Sequence)->Resources_Pos=(*Sequence)->Resources.size(); //No need to parse all files
+                            (*Sequence)->Resources_Current=(*Sequence)->Resources.size(); //No need to parse all files
                     #endif //MEDIAINFO_NEXTPACKET
 
-                    while ((*Sequence)->Resources_Pos<(*Sequence)->Resources.size())
+                    while ((*Sequence)->Resources_Current<(*Sequence)->Resources.size())
                     {
-                        while (((*Sequence)->Status=(*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI->Open_NextPacket())[8])
+                        while (((*Sequence)->Status=(*Sequence)->Resources[(*Sequence)->Resources_Current]->MI->Open_NextPacket())[8])
                         {
                                 if (!(*Sequence)->FileSize_IsPresent && (*Sequence)->MI->Config.File_Size!=(int64u)-1)
                                 {
@@ -1030,9 +1055,9 @@ void File__ReferenceFilesHelper::ParseReference()
                                     return;
                                 }
                         }
-                        (*Sequence)->Resources_Pos++;
-                        if ((*Sequence)->Resources_Pos<(*Sequence)->Resources.size() && (*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI)
-                            (*Sequence)->Resources[(*Sequence)->Resources_Pos]->MI->Open_Buffer_Seek(0, 0, (int64u)-1);
+                        (*Sequence)->Resources_Current++;
+                        if ((*Sequence)->Resources_Current<(*Sequence)->Resources.size() && (*Sequence)->Resources[(*Sequence)->Resources_Current]->MI)
+                            (*Sequence)->Resources[(*Sequence)->Resources_Current]->MI->Open_Buffer_Seek(0, 0, (int64u)-1);
                     }
                 if (CountOfReferencesToParse)
                     CountOfReferencesToParse--;
@@ -1626,18 +1651,18 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                                     Ztring Result;
                                     if ((*Sequence)->Resources.size()<=1 || DurationM<(*Sequence)->Resources[1]->Demux_Offset_DTS)
                                     {
-                                        (*Sequence)->Resources_Pos=0;
+                                        (*Sequence)->Resources_Current=0;
                                         Result=(*Sequence)->MI->Option(__T("File_Seek"), DurationS);
                                     }
                                     else
                                     {
-                                        size_t Resources_Pos_Temp=1;
-                                        while (Resources_Pos_Temp<(*Sequence)->Resources.size() && DurationM>=(*Sequence)->Resources[Resources_Pos_Temp]->Demux_Offset_DTS)
-                                            Resources_Pos_Temp++;
-                                        Resources_Pos_Temp--;
-                                        Result=(*Sequence)->Resources[Resources_Pos_Temp]->MI->Option(__T("File_Seek"), DurationS);
+                                        size_t Resources_Current_Temp=1;
+                                        while (Resources_Current_Temp<(*Sequence)->Resources.size() && DurationM>=(*Sequence)->Resources[Resources_Current_Temp]->Demux_Offset_DTS)
+                                            Resources_Current_Temp++;
+                                        Resources_Current_Temp--;
+                                        Result=(*Sequence)->Resources[Resources_Current_Temp]->MI->Option(__T("File_Seek"), DurationS);
                                         if (Result.empty())
-                                            (*Sequence)->Resources_Pos=Resources_Pos_Temp;
+                                            (*Sequence)->Resources_Current=Resources_Current_Temp;
                                     }
                                     if (!Result.empty())
                                         HasProblem=true;
@@ -1655,7 +1680,7 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                         {
                             if ((*Sequence)->MI)
                             {
-                                (*Sequence)->Resources_Pos=0;
+                                (*Sequence)->Resources_Current=0;
                                 Ztring Result=(*Sequence)->MI->Option(__T("File_Seek"), Ztring::ToZtring(Value));
                                 if (!Result.empty())
                                     HasProblem=true;
@@ -1704,18 +1729,18 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                                 Ztring Result;
                                 if ((*Sequence)->Resources.empty() || Duration<(*Sequence)->Resources[1]->Demux_Offset_DTS)
                                 {
-                                    (*Sequence)->Resources_Pos=0;
+                                    (*Sequence)->Resources_Current=0;
                                     Result=(*Sequence)->MI->Option(__T("File_Seek"), DurationS);
                                 }
                                 else
                                 {
-                                    size_t Resources_Pos_Temp=1;
-                                    while (Resources_Pos_Temp<(*Sequence)->Resources.size() && Duration>=(*Sequence)->Resources[Resources_Pos_Temp]->Demux_Offset_DTS)
-                                        Resources_Pos_Temp++;
-                                    Resources_Pos_Temp--;
-                                    Result=(*Sequence)->Resources[Resources_Pos_Temp]->MI->Option(__T("File_Seek"), DurationS);
+                                    size_t Resources_Current_Temp=1;
+                                    while (Resources_Current_Temp<(*Sequence)->Resources.size() && Duration>=(*Sequence)->Resources[Resources_Current_Temp]->Demux_Offset_DTS)
+                                        Resources_Current_Temp++;
+                                    Resources_Current_Temp--;
+                                    Result=(*Sequence)->Resources[Resources_Current_Temp]->MI->Option(__T("File_Seek"), DurationS);
                                     if (Result.empty())
-                                        (*Sequence)->Resources_Pos=Resources_Pos_Temp;
+                                        (*Sequence)->Resources_Current=Resources_Current_Temp;
                                 }
                                 if (!Result.empty())
                                     HasProblem=true;
@@ -1741,18 +1766,18 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                                 Ztring Result;
                                 if ((*Sequence)->Resources.size()<2 || Value<(*Sequence)->Resources[1]->Demux_Offset_DTS)
                                 {
-                                    (*Sequence)->Resources_Pos=0;
+                                    (*Sequence)->Resources_Current=0;
                                     Result=(*Sequence)->MI->Option(__T("File_Seek"), Time);
                                 }
                                 else
                                 {
-                                    size_t Resources_Pos_Temp=1;
-                                    while (Resources_Pos_Temp<(*Sequence)->Resources.size() && Value>=(*Sequence)->Resources[Resources_Pos_Temp]->Demux_Offset_DTS)
-                                        Resources_Pos_Temp++;
-                                    Resources_Pos_Temp--;
-                                    Result=(*Sequence)->Resources[Resources_Pos_Temp]->MI->Option(__T("File_Seek"), Time);
+                                    size_t Resources_Current_Temp=1;
+                                    while (Resources_Current_Temp<(*Sequence)->Resources.size() && Value>=(*Sequence)->Resources[Resources_Current_Temp]->Demux_Offset_DTS)
+                                        Resources_Current_Temp++;
+                                    Resources_Current_Temp--;
+                                    Result=(*Sequence)->Resources[Resources_Current_Temp]->MI->Option(__T("File_Seek"), Time);
                                     if (Result.empty())
-                                        (*Sequence)->Resources_Pos=Resources_Pos_Temp;
+                                        (*Sequence)->Resources_Current=Resources_Current_Temp;
                                 }
                                 if (!Result.empty())
                                     return 2; //Invalid value
@@ -1782,18 +1807,18 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                                     Ztring Result;
                                     if ((*Sequence)->Resources.size()<2 || Value<(*Sequence)->Resources[1]->Demux_Offset_Frame)
                                     {
-                                        (*Sequence)->Resources_Pos=0;
+                                        (*Sequence)->Resources_Current=0;
                                         Result=(*Sequence)->MI->Option(__T("File_Seek"), __T("Frame=")+Ztring::ToZtring(Value));
                                     }
                                     else
                                     {
-                                        size_t Resources_Pos_Temp=1;
-                                        while (Resources_Pos_Temp<(*Sequence)->Resources.size() && Value>=(*Sequence)->Resources[Resources_Pos_Temp]->Demux_Offset_Frame)
-                                            Resources_Pos_Temp++;
-                                        Resources_Pos_Temp--;
-                                        Result=(*Sequence)->Resources[Resources_Pos_Temp]->MI->Option(__T("File_Seek"), __T("Frame=")+Ztring::ToZtring(Value-(*Sequence)->Resources[Resources_Pos_Temp]->Demux_Offset_Frame));
+                                        size_t Resources_Current_Temp=1;
+                                        while (Resources_Current_Temp<(*Sequence)->Resources.size() && Value>=(*Sequence)->Resources[Resources_Current_Temp]->Demux_Offset_Frame)
+                                            Resources_Current_Temp++;
+                                        Resources_Current_Temp--;
+                                        Result=(*Sequence)->Resources[Resources_Current_Temp]->MI->Option(__T("File_Seek"), __T("Frame=")+Ztring::ToZtring(Value-(*Sequence)->Resources[Resources_Current_Temp]->Demux_Offset_Frame));
                                         if (Result.empty())
-                                            (*Sequence)->Resources_Pos=Resources_Pos_Temp;
+                                            (*Sequence)->Resources_Current=Resources_Current_Temp;
                                     }
                                 if (!Result.empty())
                                     return 2; //Invalid value

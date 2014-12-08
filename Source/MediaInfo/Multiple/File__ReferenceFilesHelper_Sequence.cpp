@@ -31,26 +31,42 @@ namespace MediaInfoLib
 //---------------------------------------------------------------------------
 sequence::sequence()
 {
-    FileNames.Separator_Set(0, __T(","));
+    //In
     StreamKind=Stream_Max;
     StreamPos=(size_t)-1;
-    MenuPos=(size_t)-1;
     StreamID=(int64u)-1;
+    MenuPos=(size_t)-1;
+    Enabled=true;
+    IsMain=false;
+    //MenuPos=(size_t)-1;
+
+    //Out
+    State=0;
+    IsCircular=false;
+    #if MEDIAINFO_ADVANCED || MEDIAINFO_MD5
+        List_Compute_Done=false;
+    #endif //MEDIAINFO_ADVANCED || MEDIAINFO_MD5
+
+    //Config
+    Package=NULL;
+
+    //Private
+    Resources_Current=0;
+    Common=new rfhs_common(&StreamKind, &StreamPos, &StreamID, NULL, &Enabled, &IsMain);
+
+
+
+
+    FileNames.Separator_Set(0, __T(","));
     FrameRate=0;
     Delay=0;
     FileSize=(int64u)-1;
-    IsCircular=false;
     IsMain=false;
     FileSize_IsPresent=false;
     #if MEDIAINFO_ADVANCED || MEDIAINFO_MD5
         List_Compute_Done=false;
     #endif //MEDIAINFO_ADVANCED || MEDIAINFO_MD5
-    State=0;
     MI=NULL;
-    Resources_Pos=0;
-    #if MEDIAINFO_FILTER
-        Enabled=true;
-    #endif //MEDIAINFO_FILTER
 }
 
 //---------------------------------------------------------------------------
@@ -72,6 +88,8 @@ void sequence::AddFileName(const Ztring& FileName, size_t Pos)
 //---------------------------------------------------------------------------
 void sequence::AddResource(resource* NewResource, size_t Pos)
 {
+    NewResource->Sequence=Common;
+
     if (Resources.empty())
     {
         NewResource->Demux_Offset_DTS=0;

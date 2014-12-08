@@ -37,44 +37,49 @@ public:
     void                            AddFileName(const Ztring& FileName, size_t Pos=(size_t)-1);
     void                            AddResource(resource* NewResource, size_t Pos=(size_t)-1);
     void                            UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileName);
+    stream_t                        StreamKind;
+    size_t                          StreamPos;
+    int64u                          StreamID;
+    size_t                          MenuPos;
+    bool                            Enabled;
+    bool                            IsMain;
+    std::map<std::string, Ztring>   Infos;
     void                            FrameRate_Set(float64 NewFrameRate);
 
+    //Out
+    bool                            IsFinished()                                    {return !Enabled || Resources_Current>=Resources.size();}
+    size_t                          State;
+    bool                            IsCircular;
+    #if MEDIAINFO_ADVANCED || MEDIAINFO_MD5
+        bool                        List_Compute_Done;
+    #endif //MEDIAINFO_ADVANCED || MEDIAINFO_MD5
+
+    //Config
+    rfh_common*                     Package;
+    #if MEDIAINFO_NEXTPACKET && MEDIAINFO_IBI
+        ibi::stream                 IbiStream;
+    #endif //MEDIAINFO_NEXTPACKET && MEDIAINFO_IBI
+
+    resources                       Resources;
+    size_t                          Resources_Current;
+
+public:
+    rfhs_common*                    Common;
 
 
+
+public:
     ZtringList          FileNames;
     Ztring              Source; //Source file name (relative path)
-    stream_t            StreamKind;
-    size_t              StreamPos;
-    size_t              MenuPos;
-    int64u              StreamID;
     float64             FrameRate;
     int64u              Delay;
     int64u              FileSize;
-    bool                IsCircular;
-    bool                IsMain;
     bool                FileSize_IsPresent; //TODO: merge with FileSize after regression tests
-    #if MEDIAINFO_ADVANCED || MEDIAINFO_MD5
-        bool            List_Compute_Done;
-    #endif //MEDIAINFO_ADVANCED || MEDIAINFO_MD5
-    size_t              State;
-    std::map<std::string, Ztring> Infos;
     MediaInfo_Internal* MI;
-    vector<resource*>           Resources;
-    size_t                      Resources_Pos;
-    #if MEDIAINFO_FILTER
-        int64u          Enabled;
-    #endif //MEDIAINFO_FILTER
     std::bitset<32> Status;
-    #if MEDIAINFO_NEXTPACKET && MEDIAINFO_IBI
-        ibi::stream IbiStream;
-    #endif //MEDIAINFO_NEXTPACKET && MEDIAINFO_IBI
-    #if MEDIAINFO_EVENTS
-        Ztring          TargetDuration;
-        ZtringList      ExpectedDurations;
-        Ztring          ExpectedBitRate;
-        ZtringList      DiscontinuityFilePositions;
-    #endif //MEDIAINFO_EVENTS
 };
+
+typedef std::vector<sequence*> sequences;
 
 } //NameSpace
 

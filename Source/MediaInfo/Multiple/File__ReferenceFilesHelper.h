@@ -13,7 +13,11 @@
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/Multiple/File__ReferenceFilesHelper_Sequence.h"
+#include "MediaInfo/Multiple/File__ReferenceFilesHelper_Common.h"
 #include <vector>
+#if MEDIAINFO_EVENTS
+    #include <set>
+#endif //MEDIAINFO_EVENTS
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -26,27 +30,38 @@ namespace MediaInfoLib
 class File__ReferenceFilesHelper
 {
 public :
+    //Constructor / Destructor
+                                    File__ReferenceFilesHelper(File__Analyze* MI, MediaInfo_Config_MediaInfo* Config);
+                                    ~File__ReferenceFilesHelper();
+
     //In
     void                            AddSequence(sequence* NewSequence);
     void                            UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileName);
-    size_t                          Sequences_Size() {return Sequences.size();}
-    void                            Clear() {Sequences.clear();}
-    typedef std::vector<sequence*>  sequences;
-    sequences                       Sequences;
     bool                            TestContinuousFileNames;
-    bool                            FilesForStorage;
     bool                            ContainerHasNoId;
-    bool                            HasMainFile;
-    bool                            HasMainFile_Filled;
     int64u                          ID_Max;
 
     //Streams management
-    bool ParseReference_Init();
     void ParseReferences();
 
-    //Constructor / Destructor
-    File__ReferenceFilesHelper(File__Analyze* MI, MediaInfo_Config_MediaInfo* Config);
-    ~File__ReferenceFilesHelper();
+private :
+    sequences                       Sequences;
+    sequences::iterator             Sequence;
+
+    //Temp
+    rfh_common*                     Common;
+
+
+
+public:
+    size_t                          Sequences_Size() {return Sequences.size();}
+    void                            Clear() {Sequences.clear();}
+    bool                            FilesForStorage;
+    bool                            HasMainFile;
+    bool                            HasMainFile_Filled;
+
+    //Streams management
+    bool ParseReference_Init();
 
     #if MEDIAINFO_SEEK
     size_t Seek (size_t Method, int64u Value, int64u ID);
@@ -65,7 +80,6 @@ private :
     //temp
     File__Analyze*                  MI;
     MediaInfo_Config_MediaInfo*     Config;
-    sequences::iterator             Sequence;
     bool                            Init_Done;
     bool                            Demux_Interleave;
     size_t                          CountOfReferencesToParse;
@@ -95,6 +109,10 @@ private :
     #if MEDIAINFO_DEMUX
         int64u                      Offset_Video_DTS;
     #endif //MEDIAINFO_DEMUX
+
+    #if MEDIAINFO_EVENTS
+        std::set<Ztring>            FilesList_Total;
+    #endif //MEDIAINFO_EVENTS
 };
 
 } //NameSpace

@@ -53,6 +53,7 @@ resource::resource()
     IgnoreEditsAfter=(int64u)-1;
 
     //Config
+    Sequence=NULL;
     #if MEDIAINFO_NEXTPACKET
         Demux_Offset_Frame=(int64u)-1;
         Demux_Offset_DTS=(int64u)-1;
@@ -60,6 +61,8 @@ resource::resource()
 
     //Private
     MI=NULL;
+
+
 
     IgnoreEditsAfterDuration=(int64u)-1;
     #if MEDIAINFO_DEMUX
