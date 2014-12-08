@@ -31,7 +31,6 @@ public:
     //In
     void                            UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileName);
     ZtringList                      FileNames; //Source file name (relative path)
-    ZtringList                      AbsoluteFileNames;
     float64                         EditRate;
     int64u                          IgnoreEditsBefore;
     int64u                          IgnoreEditsAfter;
