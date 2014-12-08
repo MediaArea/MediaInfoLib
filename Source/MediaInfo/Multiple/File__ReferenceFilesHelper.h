@@ -46,7 +46,7 @@ public :
 
 private :
     sequences                       Sequences;
-    sequences::iterator             Sequence;
+    size_t                          Sequences_Current;
 
     //Temp
     rfh_common*                     Common;
