@@ -791,7 +791,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                 Sequences_Current++;
             }
         #else //MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
-            ++Sequence;
+            Sequences_Current++;
         #endif //MEDIAINFO_DEMUX
     }
 

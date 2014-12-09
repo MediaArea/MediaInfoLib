@@ -90,10 +90,12 @@ void sequence::AddResource(resource* NewResource, size_t Pos)
 {
     NewResource->Sequence=Common;
 
+    #if MEDIAINFO_DEMUX
     if (Resources.empty())
     {
         NewResource->Demux_Offset_DTS=0;
     }
+    #endif //MEDIAINFO_DEMUX
 
     if (Pos>=Resources.size())
         Resources.push_back(NewResource);

@@ -55,10 +55,12 @@ public:
     bool                            HasMainFile;
     bool                            HasMainFile_Filled;
     bool                            ContainerHasNoId;
+    #if MEDIAINFO_DEMUX
     const bool                      Demux_Interleave_Get()                          {return *Demux_Interleave;}
     void                            Demux_Interleave_Set(bool Demux_Interleave_n)   {*Demux_Interleave=Demux_Interleave_n;}
     const int64u                    DTS_Minimal_Get()                               {return *DTS_Minimal;}
     void                            DTS_Minimal_Set(size_t DTS_Minimal_n)           {*DTS_Minimal=DTS_Minimal_n;}
+    #endif //MEDIAINFO_DEMUX
 
 private:
     #if MEDIAINFO_DEMUX
