@@ -307,7 +307,6 @@ set(MediaInfoLib_SRCS
 
 add_library(mediainfo ${MediaInfoLib_SRCS})
 target_include_directories(mediainfo INTERFACE ${INCLUDE_INSTALL_DIR})
-target_compile_definitions(mediainfo PUBLIC )
 
 if(BUILD_ZLIB)
   add_dependencies(mediainfo zlibstatic)
