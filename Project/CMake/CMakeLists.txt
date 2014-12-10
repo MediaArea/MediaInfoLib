@@ -80,7 +80,7 @@ elseif(APPLE)
 endif()
 
 # use bundled tinyxml only if no system
-find_package(TinyXML REQUIRED)
+find_package(TinyXML)
 
 include_directories(${MediaInfoLib_SOURCES_PATH})
 include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/md5/)
