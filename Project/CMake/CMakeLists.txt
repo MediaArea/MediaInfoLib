@@ -2,6 +2,8 @@ project(MediaInfoLib)
 
 cmake_minimum_required(VERSION 2.8.11)
 
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+
 set(MediaInfoLib_MAJOR_VERSION 0)
 set(MediaInfoLib_MINOR_VERSION 7)
 set(MediaInfoLib_PATCH_VERSION 71)
@@ -77,9 +79,11 @@ elseif(APPLE)
   set(CMAKE_DEBUG_POSTFIX "_debug")
 endif()
 
+# use bundled tinyxml only if no system
+find_package(TinyXML REQUIRED)
+
 include_directories(${MediaInfoLib_SOURCES_PATH})
 include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/md5/)
-include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/)
 include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/base64/)
 include_directories(${ZLIB_INCLUDE_DIRS})
 
@@ -93,7 +97,6 @@ set(MediaInfoLib_PUBLIC_HDRS
 )
 
 set(MediaInfoLib_SRCS
-  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/tinyxml2.cpp
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/md5/md5.c
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze_Buffer.cpp
@@ -304,6 +307,10 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfoDLL/MediaInfoDLL.def
 )
 
+if(NOT TinyXML_FOUND)
+  include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/)
+  list(APPEND MediaInfoLib_SRCS ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/tinyxml2.cpp)
+endif()
 
 add_library(mediainfo ${MediaInfoLib_SRCS})
 target_include_directories(mediainfo INTERFACE ${INCLUDE_INSTALL_DIR})
@@ -319,8 +326,13 @@ target_include_directories(mediainfo PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/../../../ZenLib/Source
   ${MediaInfoLib_SOURCES_PATH}
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/md5/
-  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/base64/)
+
+if(NOT TinyXML_FOUND)
+  target_include_directories(mediainfo PRIVATE ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/)
+else()
+  target_link_libraries(mediainfo "${TinyXML_LIBRARIES}")
+endif()
 
 if(BUILD_ZENLIB)
   target_include_directories(mediainfo PRIVATE ${ZLIB_INCLUDE_DIRS})
