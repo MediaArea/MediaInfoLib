@@ -82,6 +82,9 @@ endif()
 # use bundled tinyxml only if no system
 find_package(TinyXML)
 
+# use system curl if is present
+find_package(CURL)
+
 include_directories(${MediaInfoLib_SOURCES_PATH})
 include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/md5/)
 include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/base64/)
@@ -320,7 +323,13 @@ if(BUILD_ZLIB)
 endif()
 
 # disable some features. Maybe it should be enabled.
-target_compile_definitions(mediainfo PRIVATE MEDIAINFO_AES_NO MEDIAINFO_LIBMMS_NO MEDIAINFO_LIBCURL_NO)
+target_compile_definitions(mediainfo PRIVATE MEDIAINFO_AES_NO MEDIAINFO_LIBMMS_NO)
+if(NOT CURL_FOUND)
+  target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBCURL_NO)
+else()
+  include_directories(${CURL_INCLUDE_DIRS})
+  target_link_libraries(mediainfo "${CURL_LIBRARIES}")
+endif()
 
 target_include_directories(mediainfo PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/../../../ZenLib/Source
