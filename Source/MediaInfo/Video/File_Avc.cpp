@@ -3351,19 +3351,19 @@ File_Avc::seq_parameter_set_struct* File_Avc::seq_parameter_set_data(int32u &Dat
         {
             Trusted_IsNot("seq_parameter_set_id not valid");
             delete (seq_parameter_set_struct::vui_parameters_struct*)vui_parameters_Item;
-            return false; //Problem, not valid
+            return NULL; //Problem, not valid
         }
         if (pic_order_cnt_type==0 && log2_max_pic_order_cnt_lsb_minus4>12)
         {
             Trusted_IsNot("log2_max_pic_order_cnt_lsb_minus4 not valid");
             delete (seq_parameter_set_struct::vui_parameters_struct*)vui_parameters_Item;
-            return false; //Problem, not valid
+            return NULL; //Problem, not valid
         }
         if (log2_max_frame_num_minus4>12)
         {
             Trusted_IsNot("log2_max_frame_num_minus4 not valid");
             delete (seq_parameter_set_struct::vui_parameters_struct*)vui_parameters_Item;
-            return false; //Problem, not valid
+            return NULL; //Problem, not valid
         }
 
         //Creating Data
