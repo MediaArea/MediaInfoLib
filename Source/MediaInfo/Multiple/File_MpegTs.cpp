@@ -324,7 +324,7 @@ void File_MpegTs::Streams_Accept()
                 Config->File_IgnoreSequenceFileSize_Set(false);
             if (Config->File_IgnoreSequenceFilesCount_Get())
                 Config->File_IgnoreSequenceFilesCount_Set(false);
-        #endif MEDIAINFO_ADVANCED
+        #endif //MEDIAINFO_ADVANCED
 
         TestContinuousFileNames();
     }

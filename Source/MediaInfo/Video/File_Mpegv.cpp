@@ -2184,7 +2184,7 @@ void File_Mpegv::Detect_EOF()
                 Streams[0x00].Searching_Payload=GA94_03_IsPresent || Cdp_IsPresent;
                 Streams[0xB2].Searching_Payload=GA94_03_IsPresent || CC___IsPresent || Scte_IsPresent;
                 Streams[0xB3].Searching_Payload=GA94_03_IsPresent || Cdp_IsPresent;
-            #endif defined(MEDIAINFO_DTVCCTRANSPORT_YES) || defined(MEDIAINFO_SCTE20_YES) || (defined(MEDIAINFO_GXF_YES) && defined(MEDIAINFO_CDP_YES))
+            #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES) || defined(MEDIAINFO_SCTE20_YES) || (defined(MEDIAINFO_GXF_YES) && defined(MEDIAINFO_CDP_YES))
             return;
         }
 
