@@ -10,6 +10,7 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 
 Version 0.7.72,
 --------------
++ Option "File_IsImageSequence" for being able to skip frames in a sequence of files.
 x OP-47/SDP/Teletext: some streams were not detected
 x Previous version was built with SSE2 instructions, switching back to SSE instructions
 x AVC: infinite loop fix

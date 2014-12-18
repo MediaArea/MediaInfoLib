@@ -121,6 +121,11 @@ public :
     #endif //MEDIAINFO_ADVANCED
 
     #if MEDIAINFO_ADVANCED
+        void          File_SequenceFilesSkipFrames_Set (int64u NewValue);
+        int64u        File_SequenceFilesSkipFrames_Get ();
+    #endif //MEDIAINFO_ADVANCED
+
+    #if MEDIAINFO_ADVANCED
         void          File_DefaultFrameRate_Set (float64 NewValue);
         float64       File_DefaultFrameRate_Get ();
     #endif //MEDIAINFO_ADVANCED
@@ -343,6 +348,7 @@ public :
     bool          File_Buffer_Repeat_IsSupported;
     bool          File_IsGrowing;
     bool          File_IsNotGrowingAnymore;
+    bool          File_IsImageSequence;
     int64u        File_Current_Offset;
     int64u        File_Current_Size;
     int64u        File_IgnoreEditsBefore;
@@ -383,6 +389,7 @@ private :
     #if MEDIAINFO_ADVANCED
         bool                File_IgnoreSequenceFileSize;
         bool                File_IgnoreSequenceFilesCount;
+        int64u              File_SequenceFilesSkipFrames;
         float64             File_DefaultFrameRate;
         bool                File_Source_List;
         bool                File_RiskyBitRateEstimation;

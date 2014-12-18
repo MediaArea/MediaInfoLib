@@ -58,6 +58,7 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     #if MEDIAINFO_ADVANCED
         File_IgnoreSequenceFileSize=false;
         File_IgnoreSequenceFilesCount=false;
+        File_SequenceFilesSkipFrames=0;
         File_DefaultFrameRate=0;
         File_Source_List=false;
         File_RiskyBitRateEstimation=false;
@@ -149,6 +150,7 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     File_Buffer_Repeat_IsSupported=false;
     File_IsGrowing=false;
     File_IsNotGrowingAnymore=false;
+    File_IsImageSequence=false;
     File_Current_Offset=0;
     File_Current_Size=(int64u)-1;
     File_IgnoreEditsBefore=0;
@@ -308,6 +310,15 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
         #else //MEDIAINFO_MD5
             return __T("Disabled due to compilation options");
         #endif //MEDIAINFO_MD5
+    }
+    else if (Option_Lower==__T("file_sequencefilesskipframes") || Option_Lower==__T("file_sequencefileskipframes"))
+    {
+        #if MEDIAINFO_ADVANCED
+            File_SequenceFilesSkipFrames_Set(Ztring(Value).To_int64u());
+            return Ztring();
+        #else //MEDIAINFO_ADVANCED
+            return __T("Disabled due to compilation options");
+        #endif //MEDIAINFO_ADVANCED
     }
     else if (Option_Lower==__T("file_defaultframerate"))
     {
@@ -1199,6 +1210,21 @@ bool MediaInfo_Config_MediaInfo::File_IgnoreSequenceFilesCount_Get ()
 {
     CriticalSectionLocker CSL(CS);
     return File_IgnoreSequenceFilesCount;
+}
+#endif //MEDIAINFO_ADVANCED
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_ADVANCED
+void MediaInfo_Config_MediaInfo::File_SequenceFilesSkipFrames_Set (int64u NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    File_SequenceFilesSkipFrames=NewValue;
+}
+
+int64u MediaInfo_Config_MediaInfo::File_SequenceFilesSkipFrames_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return File_SequenceFilesSkipFrames;
 }
 #endif //MEDIAINFO_ADVANCED
 

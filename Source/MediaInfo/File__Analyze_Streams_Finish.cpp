@@ -148,6 +148,31 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
         size_t Pos_Add_Max = 1;
         #if MEDIAINFO_ADVANCED
             bool File_IgnoreSequenceFileSize=Config->File_IgnoreSequenceFilesCount_Get(); //TODO: double check if it is expected
+
+            size_t SequenceFileSkipFrames=Config->File_SequenceFilesSkipFrames_Get();
+            if (SequenceFileSkipFrames)
+            {
+                for (;;)
+                {
+                    size_t Pos_Add_Max_Old=Pos_Add_Max;
+                    for (size_t TempPos=Pos_Add_Max; TempPos<=Pos_Add_Max+SequenceFileSkipFrames; TempPos++)
+                    {
+                        Ztring Pos_Ztring; Pos_Ztring.From_Number(Pos_Base+TempPos);
+                        if (Numbers_Size>Pos_Ztring.size())
+                            Pos_Ztring.insert(0, Numbers_Size-Pos_Ztring.size(), __T('0'));
+                        Ztring Next=FileToTest_Name_Begin+Pos_Ztring+FileToTest_Name_End;
+                        if (File::Exists(Next))
+                        {
+                            Pos_Add_Max=TempPos+1;
+                            break;
+                        }
+                    }
+                    if (Pos_Add_Max==Pos_Add_Max_Old)
+                        break;
+                }
+            }
+            else
+            {
         #endif //MEDIAINFO_ADVANCED
         for (;;)
         {
@@ -177,8 +202,37 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
                 Pos_Add_Max=Pos_Add_Middle;
         }
 
+        #if MEDIAINFO_ADVANCED
+            size_t SequenceFileSkipFrames=30;
+            if (SequenceFileSkipFrames)
+            {
+                for (;;)
+                {
+                    size_t Pos_Add_Max_Old=Pos_Add_Max;
+                    for (size_t TempPos=Pos_Add_Max; TempPos<=Pos_Add_Max+SequenceFileSkipFrames; TempPos++)
+                    {
+                        Ztring Pos_Ztring; Pos_Ztring.From_Number(Pos_Base+TempPos);
+                        if (Numbers_Size>Pos_Ztring.size())
+                            Pos_Ztring.insert(0, Numbers_Size-Pos_Ztring.size(), __T('0'));
+                        Ztring Next=FileToTest_Name_Begin+Pos_Ztring+FileToTest_Name_End;
+                        if (File::Exists(Next))
+                        {
+                            Pos_Add_Max=TempPos+1;
+                            break;
+                        }
+                    }
+                    if (Pos_Add_Max==Pos_Add_Max_Old)
+                        break;
+                }
+            }
+        #endif //MEDIAINFO_ADVANCED
+
+        #if MEDIAINFO_ADVANCED
+            } //SequenceFileSkipFrames
+        #endif //MEDIAINFO_ADVANCED
+
         size_t Pos_Max = Pos_Base + Pos_Add_Max;
-        Config->File_Names.reserve(Pos_Add_Max);
+        Config->File_Names.reserve(Pos_Max);
         for (Pos=Pos_Base+1; Pos<Pos_Max; ++Pos)
         {
             Ztring Pos_Ztring; Pos_Ztring.From_Number(Pos);
@@ -193,6 +247,8 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
 
     if (Config->File_Names.size()==Pos)
         return;
+
+    Config->File_IsImageSequence=true;
 
     #if MEDIAINFO_ADVANCED
         if (!Config->File_IgnoreSequenceFileSize_Get() || Config->File_Names.size()<=1)
