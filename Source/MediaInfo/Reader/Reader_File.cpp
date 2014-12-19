@@ -531,34 +531,14 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                         MI->Config.Event_SubFile_Start(MI->Config.File_Names[MI->Config.File_Names_Pos]);
                     #endif //MEDIAINFO_EVENTS
                     F.Open(MI->Config.File_Names[MI->Config.File_Names_Pos]);
-                    #if MEDIAINFO_EVENTS
-                        size_t File_Names_Pos_Previous=MI->Config.File_Names_Pos;
-                    #endif //MEDIAINFO_EVENTS
                     while (!F.Opened_Get())
                     {
-                        #if MEDIAINFO_EVENTS
-                            MI->Config.Event_SubFile_Missing_Absolute(MI->Config.File_Names[MI->Config.File_Names_Pos]);
-                        #endif //MEDIAINFO_EVENTS
                         if (MI->Config.File_Names_Pos+1<MI->Config.File_Names.size())
                         {
                             MI->Config.File_Names_Pos++;
                             F.Open(MI->Config.File_Names[MI->Config.File_Names_Pos]);
                         }
                     }
-                    #if MEDIAINFO_EVENTS
-                        if (MI->Config.File_IsImageSequence && File_Names_Pos_Previous!=MI->Config.File_Names_Pos)
-                        {
-                            struct MediaInfo_Event_Global_TimeStamp_Discountinuity_0 Event;
-                            memset(&Event, 0xFF, sizeof(struct MediaInfo_Event_Global_TimeStamp_Discountinuity_0));
-                            Event.EventCode=MediaInfo_EventCode_Create(MediaInfo_Parser_None, MediaInfo_Event_Global_TimeStamp_Discountinuity, 0);
-                            Event.EventSize=sizeof(struct MediaInfo_Event_Global_TimeStamp_Discountinuity_0);
-                            Event.StreamIDs_Size=0;
-                            Event.StreamOffset=(int64u)-1;
-                            Event.DTS_Previous=MI->Info->FrameInfo.DTS;
-                            Event.DTS_Theory=(int64u)-1; //Not implemented
-                            MI->Config.Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_Global_TimeStamp_Discountinuity_0));
-                        }
-                    #endif //MEDIAINFO_EVENTS
                     if (MI->Config.File_Names_Pos>=MI->Config.File_Sizes.size())
                     {
                         MI->Config.File_Sizes.resize(MI->Config.File_Names_Pos, 0);
