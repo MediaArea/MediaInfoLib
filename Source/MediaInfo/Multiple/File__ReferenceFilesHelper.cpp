@@ -1484,6 +1484,8 @@ MediaInfo_Internal* File__ReferenceFilesHelper::MI_Create()
     #if MEDIAINFO_NEXTPACKET
         if (Config->NextPacket_Get())
             MI_Temp->Option(__T("File_NextPacket"), __T("1"));
+        if (Config->File_Demux_Interleave_Get())
+            MI_Temp->Option(__T("File_Demux_Interleave"), __T("1"));
     #endif //MEDIAINFO_NEXTPACKET
     #if MEDIAINFO_ADVANCED
         if (Config->File_IgnoreSequenceFileSize_Get())
