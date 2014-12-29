@@ -1008,8 +1008,13 @@ protected :
 
     //Helpers
     void Subsampling_Compute(descriptors::iterator Descriptor);
-    void Locators_CleanUp();
-    void Locators_Test();
+    #if MEDIAINFO_REFERENCES
+        void Locators_CleanUp();
+        void Locators_Test();
+    #else MEDIAINFO_REFERENCES
+        inline void Locators_CleanUp() {}
+        inline void Locators_Test() {}
+    #endif //MEDIAINFO_REFERENCES
     void TryToFinish();
 
     //Temp

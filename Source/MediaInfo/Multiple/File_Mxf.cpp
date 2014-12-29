@@ -73,7 +73,9 @@
 #include "ZenLib/FileName.h"
 #include "ZenLib/Dir.h"
 #include "MediaInfo/MediaInfo_Internal.h"
-#include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
+#if MEDIAINFO_REFERENCES
+    #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
+#endif //MEDIAINFO_REFERENCES
 #include "ZenLib/Format/Http/Http_Utils.h"
 #include <cfloat>
 #if MEDIAINFO_SEEK
@@ -1886,9 +1888,13 @@ File_Mxf::File_Mxf()
 //---------------------------------------------------------------------------
 File_Mxf::~File_Mxf()
 {
-    delete ReferenceFiles;
-    if (!Ancillary_IsBinded)
-        delete Ancillary;
+    #if MEDIAINFO_REFERENCES
+        delete ReferenceFiles;
+    #endif //MEDIAINFO_REFERENCES
+    #if MEDIAINFO_ANCILLARY
+        if (!Ancillary_IsBinded)
+            delete Ancillary;
+    #endif //MEDIAINFO_ANCILLARY
 }
 
 //***************************************************************************
@@ -1913,7 +1919,7 @@ void File_Mxf::Streams_Fill()
 //---------------------------------------------------------------------------
 void File_Mxf::Streams_Finish()
 {
-    #if MEDIAINFO_NEXTPACKET
+    #if MEDIAINFO_NEXTPACKET && MEDIAINFO_REFERENCES
         //Locators only
         if (ReferenceFiles_IsParsing)
         {
@@ -1926,12 +1932,12 @@ void File_Mxf::Streams_Finish()
             Streams_Finish_CommercialNames();
             return;
         }
-    #endif //MEDIAINFO_NEXTPACKET
+    #endif //MEDIAINFO_NEXTPACKET && MEDIAINFO_REFERENCES
 
     //Per stream
     for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
     {
-        if (Essence->second.Parsers.size()!=1 && Essence->second.StreamKind==Stream_Audio) // Last parser is PCM, impossible to detect with another method if there is only one block
+        if (Essence->second.Parsers.size()>1 && Essence->second.StreamKind==Stream_Audio) // Last parser is PCM, impossible to detect with another method if there is only one block
         {
             for (size_t Pos=0; Pos<Essence->second.Parsers.size()-1; Pos++)
                 delete Essence->second.Parsers[Pos];
@@ -4059,8 +4065,10 @@ bool File_Mxf::DetectDuration ()
 #if MEDIAINFO_SEEK
 size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
 {
-    if (ReferenceFiles)
-        return ReferenceFiles->Seek(Method, Value, ID);
+    #if MEDIAINFO_REFERENCES
+        if (ReferenceFiles)
+            return ReferenceFiles->Seek(Method, Value, ID);
+    #endif //MEDIAINFO_REFERENCES
 
     //Init
     if (!Duration_Detected)
@@ -5462,20 +5470,22 @@ void File_Mxf::Data_Parse()
                             (*Parser)->FrameInfo.PTS=Essence->second.FrameInfo.PTS;
                         if (Essence->second.FrameInfo.DUR!=(int64u)-1)
                             (*Parser)->FrameInfo.DUR=Essence->second.FrameInfo.DUR;
-                        if ((*Parser)->ParserName==__T("Ancillary"))
-                            ((File_Ancillary*)(*Parser))->LineNumber=LineNumber;
-                        if ((*Parser)->ParserName==__T("Ancillary") && (((File_Ancillary*)(*Parser))->FrameRate==0 || ((File_Ancillary*)(*Parser))->AspectRatio==0))
-                        {
-                            //Configuring with video info
-                            for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
-                                if (Descriptor->second.StreamKind==Stream_Video)
-                                {
-                                    ((File_Ancillary*)(*Parser))->HasBFrames=Descriptor->second.HasBFrames;
-                                    ((File_Ancillary*)(*Parser))->AspectRatio=Descriptor->second.DisplayAspectRatio;
-                                    ((File_Ancillary*)(*Parser))->FrameRate=Descriptor->second.SampleRate;
-                                    break;
-                                }
-                        }
+                        #if MEDIAINFO_ANCILLARY
+                            if ((*Parser)->ParserName==__T("Ancillary"))
+                                ((File_Ancillary*)(*Parser))->LineNumber=LineNumber;
+                            if ((*Parser)->ParserName==__T("Ancillary") && (((File_Ancillary*)(*Parser))->FrameRate==0 || ((File_Ancillary*)(*Parser))->AspectRatio==0))
+                            {
+                                //Configuring with video info
+                                for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
+                                    if (Descriptor->second.StreamKind==Stream_Video)
+                                    {
+                                        ((File_Ancillary*)(*Parser))->HasBFrames=Descriptor->second.HasBFrames;
+                                        ((File_Ancillary*)(*Parser))->AspectRatio=Descriptor->second.DisplayAspectRatio;
+                                        ((File_Ancillary*)(*Parser))->FrameRate=Descriptor->second.SampleRate;
+                                        break;
+                                    }
+                            }
+                        #endif //MEDIAINFO_ANCILLARY
                         if (Element_Offset+Size>Element_Size)
                             Size=(int16u)(Element_Size-Element_Offset);
                         Open_Buffer_Continue((*Parser), Buffer+Buffer_Offset+(size_t)(Element_Offset), Size);
@@ -8462,7 +8472,12 @@ void File_Mxf::GenericPictureEssenceDescriptor_ActiveFormatDescriptor()
 {
     //Parsing
     int8u Data;
-    Get_B1 (Data,                                                "Data"); Element_Info1C((Data<16), AfdBarData_active_format[Data]);
+    BS_Begin();
+    Skip_SB(                                                    "");
+    Skip_SB(                                                    "");
+    Get_S1 (4, Data,                                            "Data"); Element_Info1C((Data<16), AfdBarData_active_format[Data]);
+    Skip_S1(2,                                                  "Reserved");
+    BS_End();
 
     FILLING_BEGIN();
         Descriptors[InstanceUID].ActiveFormat=Data;
@@ -14183,10 +14198,12 @@ void File_Mxf::ChooseParser__Aaf_GC_Data(const essences::iterator &Essence, cons
                     Essence->second.Parsers.push_back(new File__Analyze());
                     break;
         case 0x02 : //Ancillary
-                    if (!Ancillary)
-                        Ancillary=new File_Ancillary();
-                    Essence->second.Parsers.push_back(Ancillary);
-                    Ancillary_IsBinded=true;
+                    #if MEDIAINFO_ANCILLARY
+                        if (!Ancillary)
+                            Ancillary=new File_Ancillary();
+                        Essence->second.Parsers.push_back(Ancillary);
+                        Ancillary_IsBinded=true;
+                    #endif //MEDIAINFO_ANCILLARY
                     break;
         case 0x08 : //Line Wrapped Data Element, SMPTE 384M
         case 0x09 : //Line Wrapped VANC Data Element, SMPTE 384M
@@ -14463,6 +14480,8 @@ void File_Mxf::ChooseParser_ChannelGrouping(const essences::iterator &Essence, c
 {
     Essence->second.StreamKind=Stream_Audio;
 
+    #if defined(MEDIAINFO_SMPTEST0337_YES)
+
     //Creating the parser
     if (!((Essence->second.StreamPos-(StreamPos_StartAtOne?1:0))%2 && Essences[Essence->first-1].Parsers.size()<=1))
     {
@@ -14513,6 +14532,7 @@ void File_Mxf::ChooseParser_ChannelGrouping(const essences::iterator &Essence, c
 
         Essence->second.Parsers.push_back(Parser);
     }
+    #endif //defined(MEDIAINFO_SMPTEST0337_YES)
 
     //Adding PCM
     ChooseParser_Pcm(Essence, Descriptor);
@@ -14688,7 +14708,7 @@ void File_Mxf::ChooseParser_Jpeg2000(const essences::iterator &Essence, const de
                 {
                     Parser->Demux_Level=2; //Container
                     Parser->Demux_UnpacketizeContainer=true;
-					Parser->FrameRate=Descriptor->second.SampleRate;
+                    Parser->FrameRate=Descriptor->second.SampleRate;
                 }
             #endif //MEDIAINFO_DEMUX
         }
@@ -14735,6 +14755,7 @@ void File_Mxf::Subsampling_Compute(descriptors::iterator Descriptor)
 }
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_REFERENCES
 void File_Mxf::Locators_CleanUp()
 {
     //Testing locators (TODO: check if this is still useful)
@@ -14764,8 +14785,10 @@ void File_Mxf::Locators_CleanUp()
     }
 
 }
+#endif //MEDIAINFO_REFERENCES
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_REFERENCES
 void File_Mxf::Locators_Test()
 {
     Locators_CleanUp();
@@ -14828,6 +14851,7 @@ void File_Mxf::Locators_Test()
         ReferenceFiles->ParseReferences();
     }
 }
+#endif //MEDIAINFO_REFERENCES
 
 //---------------------------------------------------------------------------
 void File_Mxf::TryToFinish()

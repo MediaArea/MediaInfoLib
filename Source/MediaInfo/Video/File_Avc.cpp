@@ -96,7 +96,7 @@ const size_t Avc_Errors_MaxCount=32;
 
 //---------------------------------------------------------------------------
 extern const int8u Avc_PixelAspectRatio_Size=17;
-extern const float32 Avc_PixelAspectRatio[]=
+extern const float32 Avc_PixelAspectRatio[Avc_PixelAspectRatio_Size]=
 {
     (float32)1, //Reserved
     (float32)1,
@@ -1995,8 +1995,10 @@ void File_Avc::slice_header()
                             if ((Pos%2)==0)
                                 PictureTypes+=' ';
                         }
-                    if (!GOP_Detect(PictureTypes).empty() && !GA94_03_IsPresent)
-                        Frame_Count_Valid=Frame_Count; //We have enough frames
+                        #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
+                            if (!GOP_Detect(PictureTypes).empty() && !GA94_03_IsPresent)
+                                Frame_Count_Valid=Frame_Count; //We have enough frames
+                        #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
                 }
             }
         }
@@ -2057,8 +2059,10 @@ void File_Avc::slice_header()
             Accept("AVC");
         if (!Status[IsFilled])
         {
-            if (!GA94_03_IsPresent && IFrame_Count>=8)
-                Frame_Count_Valid=Frame_Count; //We have enough frames
+            #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
+                if (!GA94_03_IsPresent && IFrame_Count>=8)
+                    Frame_Count_Valid=Frame_Count; //We have enough frames
+            #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
             if (Frame_Count>=Frame_Count_Valid)
             {
                 Fill("AVC");

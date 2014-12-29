@@ -333,7 +333,7 @@ void File__Analyze::Open_Buffer_Init (File__Analyze* Sub)
 void File__Analyze::Open_Buffer_Init (File__Analyze* Sub, int64u File_Size_)
 {
     //Integrity
-    if (Sub==NULL)
+    if (Sub==NULL || StreamIDs_Size==0)
         return;
 
     //Parsing
