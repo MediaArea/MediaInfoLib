@@ -835,7 +835,7 @@ Ztring EbuCore_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
     if (!MI.Get(Stream_Video, StreamPos, Video_MultiView_Count).empty())
         ToReturn+=__T("\t\t\t\t<ebucore:flag_3D>true</ebucore:flag_3D>\n");
 
-     ToReturn+=__T("\t\t\t</ebucore:videoFormat>\n");
+    ToReturn+=__T("\t\t\t</ebucore:videoFormat>\n");
 
     return ToReturn;
 }
@@ -1004,13 +1004,13 @@ Ztring EbuCore_Transform_TimeCode(Ztring &ToReturn, MediaInfo_Internal &MI, size
     if (!MI.Get(Stream_Other, StreamPos, Other_Title).empty())
         ToReturn+=__T(" trackName=\"")+MI.Get(Stream_Other, StreamPos, Other_Title)+__T("\"");
     if (!MI.Get(Stream_Other, StreamPos, Other_ID).empty())
-	{
+    {
         Ztring ID=MI.Get(Stream_Other, StreamPos, Other_ID);
         ID.FindAndReplace(__T("-Material"), Ztring());
         ID.FindAndReplace(__T("-Source"), Ztring());
         ToReturn+=__T(" formatId=\"")+ID+__T("\"");
-	}
-	ToReturn+=__T(">\n");
+    }
+    ToReturn+=__T(">\n");
 
     //start
     {
@@ -1024,10 +1024,10 @@ Ztring EbuCore_Transform_TimeCode(Ztring &ToReturn, MediaInfo_Internal &MI, size
         ToReturn+=__T("\t\t\t</ebucore:start>\n");
     }
 
-	if (!MI.Get(Stream_Other, StreamPos, Other_ID).empty())
-	    ToReturn+=__T("\t\t\t<ebucore:technicalAttributeBoolean typeLabel=\"Stripped\">")+Ztring(MI.Get(Stream_Other, StreamPos, __T("TimeCode_Striped"))==__T("Yes")?__T("true"):__T("false"))+__T("</ebucore:technicalAttributeBoolean>\n");
+    if (!MI.Get(Stream_Other, StreamPos, Other_ID).empty())
+        ToReturn+=__T("\t\t\t<ebucore:technicalAttributeBoolean typeLabel=\"Stripped\">")+Ztring(MI.Get(Stream_Other, StreamPos, __T("TimeCode_Striped"))==__T("Yes")?__T("true"):__T("false"))+__T("</ebucore:technicalAttributeBoolean>\n");
 
-	ToReturn+=__T("\t\t</ebucore:format>\n");
+    ToReturn+=__T("\t\t</ebucore:format>\n");
 
     return ToReturn;
 }
@@ -1070,26 +1070,21 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI)
         ToReturn+=__T(" formatLabel=\"")+MI.Get(Stream_General, 0, General_Format)+__T("\"");
     if (!MI.Get(Stream_General, 0, General_ID).empty())
         ToReturn+=__T(" containerFormatId=\"")+MI.Get(Stream_General, 0, General_ID)+__T("\"");
-    if (!MI.Get(Stream_General, 0, General_CodecID).empty() || !MI.Get(Stream_General, 0, General_Format_Commercial_IfAny).empty())
+    ToReturn+=__T(">\n");
+    if (!MI.Get(Stream_General, 0, General_CodecID).empty() || (!MI.Get(Stream_General, 0, General_Format_Commercial_IfAny).empty()))
     {
-        ToReturn+=__T(">\n");
-        if (!MI.Get(Stream_General, 0, General_CodecID).empty() || (!MI.Get(Stream_General, 0, General_Format_Commercial_IfAny).empty()))
+        ToReturn+=__T("\t\t\t\t<ebucore:codec>\n");
+        if (!MI.Get(Stream_General, 0, General_CodecID).empty())
         {
-            ToReturn+=__T("\t\t\t\t<ebucore:codec>\n");
-            if (!MI.Get(Stream_General, 0, General_CodecID).empty())
-            {
-                ToReturn+=__T("\t\t\t\t\t<ebucore:codecIdentifier>\n");
-                ToReturn+=__T("\t\t\t\t\t\t<dc:identifier>")+MI.Get(Stream_General, 0, General_CodecID)+__T("</dc:identifier>\n");
-                ToReturn+=__T("\t\t\t\t\t</ebucore:codecIdentifier>\n");
-            }
-            if (!MI.Get(Stream_General, 0, General_Format_Commercial_IfAny).empty())
-                ToReturn+=__T("\t\t\t\t\t<ebucore:name>")+MI.Get(Stream_General, 0, General_Format_Commercial_IfAny)+__T("</ebucore:name>\n");
-            ToReturn+=__T("\t\t\t\t</ebucore:codec>\n");
+            ToReturn+=__T("\t\t\t\t\t<ebucore:codecIdentifier>\n");
+            ToReturn+=__T("\t\t\t\t\t\t<dc:identifier>")+MI.Get(Stream_General, 0, General_CodecID)+__T("</dc:identifier>\n");
+            ToReturn+=__T("\t\t\t\t\t</ebucore:codecIdentifier>\n");
         }
-        ToReturn+=__T("\t\t\t</ebucore:containerFormat>\n");
+        if (!MI.Get(Stream_General, 0, General_Format_Commercial_IfAny).empty())
+            ToReturn+=__T("\t\t\t\t\t<ebucore:name>")+MI.Get(Stream_General, 0, General_Format_Commercial_IfAny)+__T("</ebucore:name>\n");
+        ToReturn+=__T("\t\t\t\t</ebucore:codec>\n");
     }
-    else
-        ToReturn+=__T("/>\n");
+    ToReturn+=__T("\t\t\t</ebucore:containerFormat>\n");
 
     //format - dataFormat
     for (size_t Pos=0; Pos<MI.Count_Get(Stream_Text); Pos++)
@@ -1172,7 +1167,7 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI)
     //format - time codes
     for (size_t Pos=0; Pos<MI.Count_Get(Stream_Other); Pos++)
         if (MI.Get(Stream_Other, Pos, Other_Type)==__T("Time code"))
-			EbuCore_Transform_TimeCode(ToReturn, MI, Pos);
+            EbuCore_Transform_TimeCode(ToReturn, MI, Pos);
 
     //coreMetadata
     ToReturn+=__T("\t</ebucore:coreMetadata>\n");
