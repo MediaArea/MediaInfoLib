@@ -896,13 +896,6 @@ Ztring EbuCore_Transform_Audio(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
         ToReturn+=__T("\t\t\t\t</ebucore:codec>\n");
     }
 
-    //audioTrackConfiguration //TODO
-    if (!MI.Get(Stream_Audio, StreamPos, Audio_ChannelPositions).empty())
-    {
-        Ztring ChannelPositions=MI.Get(Stream_Audio, StreamPos, Audio_ChannelPositions);
-        ToReturn+=__T("\t\t\t\t<ebucore:audioTrackConfiguration typeLabel=\"")+ChannelPositions+__T("\"/>\n");
-    }
-
     //samplingRate
     if (!MI.Get(Stream_Audio, StreamPos, Audio_SamplingRate).empty())
         ToReturn+=__T("\t\t\t\t<ebucore:samplingRate>")+MI.Get(Stream_Audio, StreamPos, Audio_SamplingRate)+__T("</ebucore:samplingRate>\n");
