@@ -1003,6 +1003,43 @@ Ztring EbuCore_Transform_Text(Ztring &ToReturn, MediaInfo_Internal &MI, size_t S
 }
 
 //---------------------------------------------------------------------------
+Ztring EbuCore_Transform_TimeCode(Ztring &ToReturn, MediaInfo_Internal &MI, size_t StreamPos)
+{
+    ToReturn+=__T("\t\t<ebucore:format typeLabel=\"timecode\"");
+    if (!MI.Get(Stream_Other, StreamPos, Other_Format).empty())
+        ToReturn+=__T(" formatName=\"")+MI.Get(Stream_Other, StreamPos, Other_Format)+__T("\"");
+    if (!MI.Get(Stream_Other, StreamPos, Other_Title).empty())
+        ToReturn+=__T(" trackName=\"")+MI.Get(Stream_Other, StreamPos, Other_Title)+__T("\"");
+    if (!MI.Get(Stream_Other, StreamPos, Other_ID).empty())
+	{
+        Ztring ID=MI.Get(Stream_Other, StreamPos, Other_ID);
+        ID.FindAndReplace(__T("-Material"), Ztring());
+        ID.FindAndReplace(__T("-Source"), Ztring());
+        ToReturn+=__T(" formatId=\"")+ID+__T("\"");
+	}
+	ToReturn+=__T(">\n");
+
+    //start
+    {
+        if (MI.Get(Stream_Other, StreamPos, Other_ID).find(__T("-Material"))!=string::npos)
+            ToReturn+=__T("\t\t\t<ebucore:start typeLabel=\"Material\">\n");
+        else if (MI.Get(Stream_Other, StreamPos, Other_ID).find(__T("-Source"))!=string::npos)
+            ToReturn+=__T("\t\t\t<ebucore:start typeLabel=\"Source\">\n");
+        else
+            ToReturn+=__T("\t\t\t<ebucore:start>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:timecode>")+MI.Get(Stream_Other, StreamPos, Other_TimeCode_FirstFrame)+__T("</ebucore:timecode>\n");
+        ToReturn+=__T("\t\t\t</ebucore:start>\n");
+    }
+
+	if (!MI.Get(Stream_Other, StreamPos, Other_ID).empty())
+	    ToReturn+=__T("\t\t\t<ebucore:technicalAttributeBoolean typeLabel=\"Stripped\">")+Ztring(MI.Get(Stream_Other, StreamPos, __T("TimeCode_Striped"))==__T("Yes")?__T("true"):__T("false"))+__T("</ebucore:technicalAttributeBoolean>\n");
+
+	ToReturn+=__T("\t\t</ebucore:format>\n");
+
+    return ToReturn;
+}
+
+//---------------------------------------------------------------------------
 Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI)
 {
     //Current date/time is ISO format
@@ -1064,53 +1101,6 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI)
     //format - dataFormat
     for (size_t Pos=0; Pos<MI.Count_Get(Stream_Text); Pos++)
         EbuCore_Transform_Text(ToReturn, MI, Pos);
-
-    //format - start
-    bool startCount=false;
-    for (size_t StreamPos=0; StreamPos<MI.Count_Get(Stream_Other); ++StreamPos)
-    {
-        if (MI.Get(Stream_Other, StreamPos, Other_Type)==__T("Time code"))
-        {
-            if (startCount)
-                ToReturn+=__T("\t\t\t<!-- (Not in XSD)\n");
-            if (!(!MI.Get(Stream_Video, StreamPos, Video_ID).empty() || !MI.Get(Stream_Video, StreamPos, Video_Title).empty())) //No extra out of spec fields
-                ToReturn+=__T("\t\t\t<ebucore:start>\n");
-            else if (startCount) //No out of spec in all cases
-            {
-                ToReturn+=__T("\t\t\t<ebucore:start");
-                if (!MI.Get(Stream_Video, StreamPos, Video_ID).empty() || !MI.Get(Stream_Video, StreamPos, Video_Title).empty())
-                {
-                    if (!MI.Get(Stream_Video, StreamPos, Video_ID).empty())
-                        ToReturn+=__T(" trackId=\"")+MI.Get(Stream_Video, StreamPos, Video_ID)+__T("\"");
-                    if (!MI.Get(Stream_Video, StreamPos, Video_Title).empty())
-                        ToReturn+=__T(" trackName=\"")+MI.Get(Stream_Video, StreamPos, Video_Title)+__T("\"");
-                }
-                ToReturn+=__T(">\n");
-            }
-            else //Extra out of spec fields
-            {
-                ToReturn+=__T("\t\t\t<ebucore:start><!-- (Not in XSD)");
-                if (!MI.Get(Stream_Video, StreamPos, Video_ID).empty())
-                    ToReturn+=__T(" trackId=\"")+MI.Get(Stream_Video, StreamPos, Video_ID)+__T("\"");
-                if (!MI.Get(Stream_Video, StreamPos, Video_Title).empty())
-                    ToReturn+=__T(" trackName=\"")+MI.Get(Stream_Video, StreamPos, Video_Title)+__T("\"");
-                ToReturn+=__T("-->\n");
-            }
-            ToReturn+=__T("\t\t\t\t<ebucore:timecode>")+MI.Get(Stream_Other, StreamPos, Other_TimeCode_FirstFrame)+__T("</ebucore:timecode>\n");
-            if (!MI.Get(Stream_Other, 0, Other_MuxingMode).empty())
-            {
-                if (!startCount)
-                    ToReturn+=__T("\t\t\t\t<!-- (Not in XSD)\n");
-                ToReturn+=__T("\t\t\t\t<ebucore:source>")+MI.Get(Stream_Other, StreamPos, Other_MuxingMode)+__T("</ebucore:source>\n");
-                if (!startCount)
-                    ToReturn+=__T("\t\t\t\t-->\n");
-            }
-            ToReturn+=__T("\t\t\t</ebucore:start>\n");
-            if (startCount)
-                ToReturn+=__T("\t\t\t-->\n");
-            startCount=true;
-        }
-    }
 
     //format - duration
     if (!MI.Get(Stream_General, 0, General_Duration).empty())
@@ -1185,6 +1175,11 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI)
 
     //format
     ToReturn+=__T("\t\t</ebucore:format>\n");
+
+    //format - time codes
+    for (size_t Pos=0; Pos<MI.Count_Get(Stream_Other); Pos++)
+        if (MI.Get(Stream_Other, Pos, Other_Type)==__T("Time code"))
+			EbuCore_Transform_TimeCode(ToReturn, MI, Pos);
 
     //coreMetadata
     ToReturn+=__T("\t</ebucore:coreMetadata>\n");
