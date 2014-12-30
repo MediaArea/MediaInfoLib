@@ -2,6 +2,10 @@ I changed some elements in the interface.
 No break in binary compatibily (no crash), but some details.
 
 
+0.7.71 --> 0.7.72
+-----------------
+- EBUCore 1.5 output is slighly modified, check the compatibility with your workflow
+
 0.7.70 --> 0.7.71
 -----------------
 - Time code striped/not striped information is moved from "Format_Settings" to "TimeCode_Striped"
