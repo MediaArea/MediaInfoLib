@@ -39,6 +39,26 @@ extern MediaInfo_Config Config;
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+Ztring XML_Encode (const Ztring& Data)
+{
+    Ztring Result;
+    wstring::size_type Pos;
+    for (Pos=0; Pos<Data.size(); Pos++)
+    {
+        switch (Data[Pos])
+        {
+            case __T('"'): Result+=__T("&quot;"); break;
+            case __T('&'): Result+=__T("&amp;"); break;
+            case __T('\''): Result+=__T("&apos;"); break;
+            case __T('<'): Result+=__T("&lt;"); break;
+            case __T('>'): Result+=__T("&lg;"); break;
+            default: Result+=Data[Pos];
+        }
+    }
+     return Result;
+}
+
+//---------------------------------------------------------------------------
 int32u EbuCore_VideoCompressionCodeCS_termID(MediaInfo_Internal &MI, size_t StreamPos)
 {
     const Ztring &Format=MI.Get(Stream_Video, StreamPos, Video_Format);
@@ -780,7 +800,7 @@ Ztring EbuCore_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
     //scanningFormat
     if (!MI.Get(Stream_Video, StreamPos, Video_ScanType).empty())
     {
-        Ztring ScanType=MI.Get(Stream_Video, 0, Video_ScanType);
+        Ztring ScanType=MI.Get(Stream_Video, StreamPos, Video_ScanType);
         if (ScanType==__T("MBAFF"))
             ScanType=__T("Interlaced");
         ScanType.MakeLowerCase();
@@ -790,7 +810,7 @@ Ztring EbuCore_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
     //scanningOrder
     if (!MI.Get(Stream_Video, StreamPos, Video_ScanOrder).empty())
     {
-        Ztring ScanOrder=MI.Get(Stream_Video, 0, Video_ScanOrder);
+        Ztring ScanOrder=MI.Get(Stream_Video, StreamPos, Video_ScanOrder);
         if (ScanOrder==__T("TFF"))
             ScanOrder=__T("top");
         if (ScanOrder==__T("BFF"))
@@ -798,7 +818,7 @@ Ztring EbuCore_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
         if (ScanOrder.find(__T("Pulldown"))!=string::npos)
             ScanOrder=__T("pulldown");
         ToReturn+=__T("\t\t\t\t<ebucore:scanningOrder>")+ScanOrder+__T("</ebucore:scanningOrder>\n");
-     }
+    }
 
     //videoTrack
     if (!MI.Get(Stream_Video, StreamPos, Video_ID).empty() || !MI.Get(Stream_Video, StreamPos, Video_Title).empty())
@@ -1124,24 +1144,13 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI)
             Name+=__T('.');
             Name+=MI.Get(Stream_General, 0, General_FileExtension);
         }
-        Name.FindAndReplace(__T("&"), __T("&amp;"), 0, Ztring_Recursive);
-        Name.FindAndReplace(__T("<"), __T("&lt;"), 0, Ztring_Recursive);
-        Name.FindAndReplace(__T(">"), __T("&gt;"), 0, Ztring_Recursive);
-        Name.FindAndReplace(__T("\""), __T("&quot;"), 0, Ztring_Recursive);
-        Name.FindAndReplace(__T("'"), __T("&apos;"), 0, Ztring_Recursive);
-        ToReturn+=__T("\t\t\t<ebucore:fileName>")+Name+__T("</ebucore:fileName>\n");
+        ToReturn+=__T("\t\t\t<ebucore:fileName>")+XML_Encode(Name)+__T("</ebucore:fileName>\n");
     }
 
     //format - locator
     if (!MI.Get(Stream_General, 0, General_CompleteName).empty())
     {
-        Ztring Name=MI.Get(Stream_General, 0, General_CompleteName);
-        Name.FindAndReplace(__T("&"), __T("&amp;"), 0, Ztring_Recursive);
-        Name.FindAndReplace(__T("<"), __T("&lt;"), 0, Ztring_Recursive);
-        Name.FindAndReplace(__T(">"), __T("&gt;"), 0, Ztring_Recursive);
-        Name.FindAndReplace(__T("\""), __T("&quot;"), 0, Ztring_Recursive);
-        Name.FindAndReplace(__T("'"), __T("&apos;"), 0, Ztring_Recursive);
-        ToReturn+=__T("\t\t\t<ebucore:locator>")+Name+__T("</ebucore:locator>\n");
+        ToReturn+=__T("\t\t\t<ebucore:locator>")+XML_Encode(MI.Get(Stream_General, 0, General_CompleteName))+__T("</ebucore:locator>\n");
     }
 
     //format - technicalAttributeString - overallBitRate
