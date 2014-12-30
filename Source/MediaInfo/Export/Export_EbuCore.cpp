@@ -835,6 +835,76 @@ Ztring EbuCore_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
     if (!MI.Get(Stream_Video, StreamPos, Video_MultiView_Count).empty())
         ToReturn+=__T("\t\t\t\t<ebucore:flag_3D>true</ebucore:flag_3D>\n");
 
+    //technicalAttributeString - ActiveFormatDescription
+    if (!MI.Get(Stream_Video, StreamPos, Video_ActiveFormatDescription).empty())
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeString typeLabel=\"ActiveFormatDescription\">")+MI.Get(Stream_Video, StreamPos, Video_ActiveFormatDescription)+__T("</ebucore:technicalAttributeString>\n");
+
+    //technicalAttributeString - Standard
+    if (!MI.Get(Stream_Video, StreamPos, Video_Standard).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeString typeLabel=\"Standard\">")+MI.Get(Stream_Video, StreamPos, Video_Standard)+__T("</ebucore:technicalAttributeString>\n");
+    }
+
+    //technicalAttributeString - ColorSpace
+    if (!MI.Get(Stream_Video, StreamPos, Video_ColorSpace).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeString typeLabel=\"ColorSpace\">")+MI.Get(Stream_Video, StreamPos, Video_ColorSpace)+__T("</ebucore:technicalAttributeString>\n");
+    }
+
+    //technicalAttributeString - ChromaSubsampling
+    if (!MI.Get(Stream_Video, StreamPos, Video_ChromaSubsampling).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeString typeLabel=\"ChromaSubsampling\">")+MI.Get(Stream_Video, StreamPos, Video_ChromaSubsampling)+__T("</ebucore:technicalAttributeString>\n");
+    }
+
+    //technicalAttributeString - colour_primaries
+    if (!MI.Get(Stream_Video, StreamPos, __T("colour_primaries")).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeString typeLabel=\"colour_primaries\">")+MI.Get(Stream_Video, StreamPos, __T("colour_primaries"))+__T("</ebucore:technicalAttributeString>\n");
+    }
+
+    //technicalAttributeString - transfer_characteristics
+    if (!MI.Get(Stream_Video, StreamPos, __T("transfer_characteristics")).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeString typeLabel=\"transfer_characteristics\">")+MI.Get(Stream_Video, StreamPos, __T("transfer_characteristics"))+__T("</ebucore:technicalAttributeString>\n");
+    }
+
+    //technicalAttributeString - matrix_coefficients
+    if (!MI.Get(Stream_Video, StreamPos, __T("matrix_coefficients")).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeString typeLabel=\"matrix_coefficients\">")+MI.Get(Stream_Video, StreamPos, __T("matrix_coefficients"))+__T("</ebucore:technicalAttributeString>\n");
+    }
+
+    //technicalAttributeString - colour_range
+    if (!MI.Get(Stream_Video, StreamPos, __T("colour_range")).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeString typeLabel=\"colour_range\">")+MI.Get(Stream_Video, StreamPos, __T("colour_range"))+__T("</ebucore:technicalAttributeString>\n");
+    }
+
+    //technicalAttributeString - StreamSize
+    if (!MI.Get(Stream_Video, StreamPos, Video_StreamSize).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeInteger typeLabel=\"StreamSize\">")+MI.Get(Stream_Video, StreamPos, Video_StreamSize)+__T("</ebucore:technicalAttributeInteger>\n");
+    }
+
+    //technicalAttributeString - BitDepth
+    if (!MI.Get(Stream_Video, StreamPos, Video_BitDepth).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeInteger typeLabel=\"BitDepth\">")+MI.Get(Stream_Video, StreamPos, Video_BitDepth)+__T("</ebucore:technicalAttributeInteger>\n");
+    }
+
+    //technicalAttributeBoolean - Format_Settings_CABAC
+    if (MI.Get(Stream_Video, StreamPos, Video_Format)==__T("AVC") && !MI.Get(Stream_Video, StreamPos, Video_Format_Settings_CABAC).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeBoolean typeLabel=\"CABAC\">")+Ztring(MI.Get(Stream_Video, StreamPos, Video_Format_Settings_CABAC)==__T("Yes")?__T("true"):__T("false"))+__T("</ebucore:technicalAttributeBoolean>\n");
+    }
+
+    //technicalAttributeBoolean - Format_Settings_MBAFF
+    if (MI.Get(Stream_Video, StreamPos, Video_Format)==__T("AVC") && !MI.Get(Stream_Video, StreamPos, Video_ScanType).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeBoolean typeLabel=\"MBAFF\">")+Ztring(MI.Get(Stream_Video, StreamPos, Video_ScanType)==__T("MBAFF")?__T("true"):__T("false"))+__T("</ebucore:technicalAttributeBoolean>\n");
+    }
+
     ToReturn+=__T("\t\t\t</ebucore:videoFormat>\n");
 
     return ToReturn;
@@ -943,6 +1013,36 @@ Ztring EbuCore_Transform_Audio(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
     //channels
     if (!MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_).empty())
         ToReturn+=__T("\t\t\t\t<ebucore:channels>")+MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_)+__T("</ebucore:channels>\n");
+
+    //format - technicalAttributeString - ChannelPositions
+    if (!MI.Get(Stream_Audio, StreamPos, Audio_ChannelPositions).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeString typeLabel=\"ChannelPositions\">")+MI.Get(Stream_Audio, StreamPos, Audio_ChannelPositions)+__T("</ebucore:technicalAttributeString>\n");
+    }
+
+    //format - technicalAttributeString - ChannelLayout
+    if (!MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeString typeLabel=\"ChannelLayout\">")+MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout)+__T("</ebucore:technicalAttributeString>\n");
+    }
+
+    //technicalAttributeString - Format_Settings_Endianness
+    if (!MI.Get(Stream_Audio, StreamPos, Audio_Format_Settings_Endianness).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeString typeLabel=\"Endianness\">")+MI.Get(Stream_Audio, StreamPos, Audio_Format_Settings_Endianness)+__T("</ebucore:technicalAttributeString>\n");
+    }
+
+    //technicalAttributeString - Format_Settings_Wrapping
+    if (!MI.Get(Stream_Audio, StreamPos, Audio_Format_Settings_Wrapping).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeString typeLabel=\"Wrapping\">")+MI.Get(Stream_Audio, StreamPos, Audio_Format_Settings_Wrapping)+__T("</ebucore:technicalAttributeString>\n");
+    }
+
+    //technicalAttributeString - StreamSize
+    if (!MI.Get(Stream_Audio, StreamPos, Audio_StreamSize).empty())
+    {
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeInteger typeLabel=\"StreamSize\">")+MI.Get(Stream_Audio, StreamPos, Audio_StreamSize)+__T("</ebucore:technicalAttributeInteger>\n");
+    }
 
     ToReturn+=__T("\t\t\t</ebucore:audioFormat>\n");
 
