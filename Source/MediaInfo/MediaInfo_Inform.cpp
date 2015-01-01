@@ -71,6 +71,8 @@ Ztring MediaInfo_Internal::Inform()
     #endif //MEDIAINFO_TRACE
 
     #if defined(MEDIAINFO_EBUCORE_YES)
+        if (MediaInfoLib::Config.Inform_Get()==__T("EBUCore_1.6"))
+            return Export_EbuCore().Transform(*this, Export_EbuCore::Version_1_6);
         if (MediaInfoLib::Config.Inform_Get()==__T("EBUCore") || MediaInfoLib::Config.Inform_Get()==__T("EBUCore_1.5"))
             return Export_EbuCore().Transform(*this);
     #endif //defined(MEDIAINFO_EBUCORE_YES)
