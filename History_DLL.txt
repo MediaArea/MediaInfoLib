@@ -12,6 +12,7 @@ Version 0.7.72,
 --------------
 + Option "File_IsImageSequence" for being able to skip frames in a sequence of files.
 + EBUCore: EBUCore 1.6 draft output, sponsored by EBU
++ EBUCore: AS-11 to EBUCore mapping, sponsored by EBU
 + EBUCore: more technicalAttributes, sponsored by EBU
 x EBUCore: time code tracks moved to their own "format" block
 x EBUCore: audioTrackConfiguration removed (not the expected behavior)
