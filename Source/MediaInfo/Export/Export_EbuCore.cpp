@@ -643,9 +643,8 @@ Export_EbuCore::~Export_EbuCore ()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-Ztring EbuCore_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t StreamPos)
+Ztring EbuCore_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t StreamPos, Export_EbuCore::version Version)
 {
-
     size_t As11_UkDpp_Pos=(size_t)-1;
     for (size_t StreamPos_Temp=0; StreamPos_Temp<MI.Count_Get(Stream_Other); StreamPos_Temp++)
     {
@@ -892,13 +891,13 @@ Ztring EbuCore_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
     //technicalAttributeString - StreamSize
     if (!MI.Get(Stream_Video, StreamPos, Video_StreamSize).empty())
     {
-        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeInteger typeLabel=\"StreamSize\">")+MI.Get(Stream_Video, StreamPos, Video_StreamSize)+__T("</ebucore:technicalAttributeInteger>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeInteger typeLabel=\"StreamSize\"")+(Version>=Export_EbuCore::Version_1_6?Ztring(__T(" unit=\"byte\"")):Ztring())+__T(">")+MI.Get(Stream_Video, StreamPos, Video_StreamSize)+__T("</ebucore:technicalAttributeInteger>\n");
     }
 
     //technicalAttributeString - BitDepth
     if (!MI.Get(Stream_Video, StreamPos, Video_BitDepth).empty())
     {
-        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeInteger typeLabel=\"BitDepth\">")+MI.Get(Stream_Video, StreamPos, Video_BitDepth)+__T("</ebucore:technicalAttributeInteger>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeInteger typeLabel=\"BitDepth\"")+(Version>=Export_EbuCore::Version_1_6?Ztring(__T(" unit=\"bit\"")):Ztring())+__T(">")+MI.Get(Stream_Video, StreamPos, Video_BitDepth)+__T("</ebucore:technicalAttributeInteger>\n");
     }
 
     //technicalAttributeString
@@ -943,7 +942,7 @@ Ztring EbuCore_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
 }
 
 //---------------------------------------------------------------------------
-Ztring EbuCore_Transform_Audio(Ztring &ToReturn, MediaInfo_Internal &MI, size_t StreamPos)
+Ztring EbuCore_Transform_Audio(Ztring &ToReturn, MediaInfo_Internal &MI, size_t StreamPos, Export_EbuCore::version Version)
 {
 
     size_t As11_Core_Pos=(size_t)-1;
@@ -1090,7 +1089,7 @@ Ztring EbuCore_Transform_Audio(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
     //technicalAttributeString - StreamSize
     if (!MI.Get(Stream_Audio, StreamPos, Audio_StreamSize).empty())
     {
-        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeInteger typeLabel=\"StreamSize\">")+MI.Get(Stream_Audio, StreamPos, Audio_StreamSize)+__T("</ebucore:technicalAttributeInteger>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:technicalAttributeInteger typeLabel=\"StreamSize\"")+(Version>=Export_EbuCore::Version_1_6?Ztring(__T(" unit=\"byte\"")):Ztring())+__T(">")+MI.Get(Stream_Audio, StreamPos, Audio_StreamSize)+__T("</ebucore:technicalAttributeInteger>\n");
     }
 
     //technicalAttributeString
@@ -1368,11 +1367,11 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI, version Version)
 
     //format - videoFormat
     for (size_t Pos=0; Pos<MI.Count_Get(Stream_Video); Pos++)
-        EbuCore_Transform_Video(ToReturn, MI, Pos);
+        EbuCore_Transform_Video(ToReturn, MI, Pos, Version);
 
     //format - audioFormat
     for (size_t Pos=0; Pos<MI.Count_Get(Stream_Audio); Pos++)
-        EbuCore_Transform_Audio(ToReturn, MI, Pos);
+        EbuCore_Transform_Audio(ToReturn, MI, Pos, Version);
 
     //format - containerFormat
     ToReturn+=__T("\t\t\t<ebucore:containerFormat");
@@ -1406,37 +1405,37 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI, version Version)
     //format - containerFormat - technicalAttributeString - AS11ShimName
     if (As11_Core_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_Core_Pos, __T("ShimName")).empty())
     {
-        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"AS11ShimName\">")+MI.Get(Stream_Other, As11_Core_Pos, __T("ShimName"))+__T("</ebucore:technicalAttributeString>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"AS11ShimName\">")+MI.Get(Stream_Other, As11_Core_Pos, __T("ShimName"))+__T("</ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(">\n");
     }
 
     //format - containerFormat - technicalAttributeString - AS11ShimVersion
     if (As11_Core_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_Core_Pos, __T("ShimVersion")).empty())
     {
-        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"AS11ShimVersion\">")+MI.Get(Stream_Other, As11_Core_Pos, __T("ShimVersion"))+__T("</ebucore:technicalAttributeString>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"AS11ShimVersion\">")+MI.Get(Stream_Other, As11_Core_Pos, __T("ShimVersion"))+__T("</ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(">\n");
     }
 
     //format - containerFormat - technicalAttributeString - Format_Profile
     if (!MI.Get(Stream_General, 0, __T("Format_Profile")).empty())
     {
-        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"FormatProfile\">")+MI.Get(Stream_General, 0, __T("Format_Profile"))+__T("</ebucore:technicalAttributeString>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"FormatProfile\">")+MI.Get(Stream_General, 0, __T("Format_Profile"))+__T("</ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(">\n");
     }
 
     //format - containerFormat - technicalAttributeString - Format_Settings
     if (!MI.Get(Stream_General, 0, __T("Format_Profile")).empty())
     {
-        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"FormatSettings\">")+MI.Get(Stream_General, 0, __T("Format_Settings"))+__T("</ebucore:technicalAttributeString>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"FormatSettings\">")+MI.Get(Stream_General, 0, __T("Format_Settings"))+__T("</ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(">\n");
     }
 
     //format - containerFormat - technicalAttributeString - Encoded_Application
     if (!MI.Get(Stream_General, 0, __T("Encoded_Application")).empty())
     {
-        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"WrittingApplication\">")+MI.Get(Stream_General, 0, __T("Encoded_Application"))+__T("</ebucore:technicalAttributeString>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"WrittingApplication\">")+MI.Get(Stream_General, 0, __T("Encoded_Application"))+__T("</ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(">\n");
     }
 
     //format - containerFormat - technicalAttributeString - Encoded_Library
     if (!MI.Get(Stream_General, 0, __T("Encoded_Library/String")).empty())
     {
-        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"WrittingLibrary\">")+MI.Get(Stream_General, 0, __T("Encoded_Library/String"))+__T("</ebucore:technicalAttributeString>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"WrittingLibrary\">")+MI.Get(Stream_General, 0, __T("Encoded_Library/String"))+__T("</ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(">\n");
     }
 
     ToReturn+=__T("\t\t\t</ebucore:containerFormat>\n");
@@ -1575,7 +1574,7 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI, version Version)
     //format - technicalAttributeString - overallBitRate
     if (!MI.Get(Stream_General, 0, General_OverallBitRate).empty())
     {
-        ToReturn+=__T("\t\t\t<ebucore:technicalAttributeInteger typeLabel=\"OverallBitRate\">")+MI.Get(Stream_General, 0, General_OverallBitRate)+__T("</ebucore:technicalAttributeInteger>\n");
+        ToReturn+=__T("\t\t\t<ebucore:technicalAttributeInteger typeLabel=\"OverallBitRate\"")+(Version>=Version_1_6?Ztring(__T(" unit=\"bps\"")):Ztring())+__T(">")+MI.Get(Stream_General, 0, General_OverallBitRate)+__T("</ebucore:technicalAttributeInteger>\n");
     }
 
     //format - technicalAttributeString - ProgrammeHasText
