@@ -130,6 +130,9 @@ protected :
     void TerminatingFiller();
     void XmlDocumentText();
     void SubDescriptors();
+    void LensUnitMetadata();
+    void CameraUnitMetadata();
+    void UserDefinedAcquisitionMetadata();
     void Filler53();
     void Sequence();
     void SourceClip();
@@ -391,6 +394,28 @@ protected :
     void WaveAudioDescriptor_PeakEnvelopeTimestamp();           //3D30
     void WaveAudioDescriptor_PeakEnvelopeData();                //3D31
     void WaveAudioDescriptor_ChannelAssignment();               //3D31
+    void CameraUnitMetadata_CaptureGammaEquation();             //3210
+    void CameraUnitMetadata_NeutralDensityFilterWheelSetting(); //8103
+    void CameraUnitMetadata_CaptureFrameRate();                 //8106
+    void CameraUnitMetadata_ImageSensorReadoutMode();           //8107
+    void CameraUnitMetadata_ShutterSpeed_Angle();               //8108
+    void CameraUnitMetadata_ISOSensitivity();                   //810B
+    void CameraUnitMetadata_WhiteBalance();                     //800E
+    void CameraUnitMetadata_CameraAttributes();                 //8114
+    void CameraUnitMetadata_ExposureIndexofPhotoMeter();        //8115
+    void CameraUnitMetadata_GammaforCDL();                      //8116
+    void CameraUnitMetadata_ASCCDLV1_2();                       //8117
+    void UserDefinedAcquisitionMetadata_UdamSetIdentifier();    //E000
+    void UserDefinedAcquisitionMetadata_Sony_8007();
+    void UserDefinedAcquisitionMetadata_Sony_E101();
+    void UserDefinedAcquisitionMetadata_Sony_E102();
+    void UserDefinedAcquisitionMetadata_Sony_E103();
+    void UserDefinedAcquisitionMetadata_Sony_E104();
+    void UserDefinedAcquisitionMetadata_Sony_E109();
+    void UserDefinedAcquisitionMetadata_Sony_E10B();
+    void UserDefinedAcquisitionMetadata_Sony_E201();
+    void UserDefinedAcquisitionMetadata_Sony_E202();
+    void UserDefinedAcquisitionMetadata_Sony_E203();
     void AS11_Core_SeriesTitle();
     void AS11_Core_ProgrammeTitle();
     void AS11_Core_EpisodeTitleNumber();
@@ -1036,6 +1061,7 @@ protected :
     int64u SystemScheme1_FrameRateFromDescriptor;
     bool   Essences_FirstEssence_Parsed;
     bool   StereoscopicPictureSubDescriptor_IsPresent;
+    bool   UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony;
     int32u Essences_UsedForFrameCount;
     int32u IndexTable_NSL;
     int32u IndexTable_NPE;

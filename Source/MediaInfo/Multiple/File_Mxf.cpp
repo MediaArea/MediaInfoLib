@@ -116,7 +116,7 @@ namespace MediaInfoLib
 
 namespace Elements
 {
-    //                       01 - Identifiers and locators
+    //                       01 - Identification and location
     //                         01 - Globally Unique Identifiers
     //                           15 - Object Identifiers
     UUID(060E2B34, 0101010C, 01011512, 00000000, 0000, "SMPTE ST 429-5", ResourceID, "Resource ID")
@@ -149,6 +149,8 @@ namespace Elements
     UUID(060E2B34, 0101010E, 01051100, 00000000, 0000, "SMPTE ST 377-4", MCATitleVersion, "MCA Title Version")
     UUID(060E2B34, 0101010E, 01051200, 00000000, 0000, "SMPTE ST 377-4", MCATitleSubVersion, "MCA Title Sub-version")
     UUID(060E2B34, 0101010E, 01051300, 00000000, 0000, "SMPTE ST 377-4", MCAEpisode, "MCA Episode")
+
+    //                       02 - Administrative
 
     //                       03 - Interpretive
     //                         01 - Fundamental
@@ -223,12 +225,24 @@ namespace Elements
     //                         09 - Format Characteristics
     UUID(060E2B34, 0101010C, 04090500, 00000000, 0000, "SMPTE ST 429-5", UCSEncoding, "UCS Encoding")
 
+    //                       05 - Process
+
     //                       06 - Relational
     //                         01 - Essence and Metadata Relationships
     //                           04 - Essence to Essence Relationships
     UUID(060E2B34, 01010109, 06010104, 06100000, 0000, "", SubDescriptors, "")
 
-    //                       0D - User organization registred for public use
+    //                       07 - Spatio-temporal
+
+    //                       0C - Compound
+    //                         02 - Metadata sets created at point of creation or capture
+    //                           01 - Metadata sets associated with a video camera
+    //                             01 - Frame-based metadata set
+    UUID(060E2B34, 02530101, 0C020101, 01010000, 0000, "SMPTE RDD 18", LensUnitMetadata, "")
+    UUID(060E2B34, 02530101, 0C020101, 02010000, 0000, "SMPTE RDD 18", CameraUnitMetadata, "")
+    UUID(060E2B34, 02530101, 0C020101, 7F010000, 0000, "SMPTE RDD 18", UserDefinedAcquisitionMetadata, "")
+
+    //                       0D - Organizationally registered for public use
     //                         01 - AAF Association
     //                           01 - MXF Structural Metadata Sets
     //                             01 - Version 1
@@ -388,7 +402,7 @@ namespace Elements
     UUID(060E2B34, 01010101, 0D0C0101, 01012400, 0000, "AMWA AS-11", AS11_UKDPP_ContactEmail, "")
     UUID(060E2B34, 01010101, 0D0C0101, 01012500, 0000, "AMWA AS-11", AS11_UKDPP_ContactTelephoneNumber, "")
 
-    //                       0E - User organization registred for private use
+    //                       0E - Organizationally registered for private use
     //                         04 - Avid
     UUID(060E2B34, 01020101, 0E040301, 00000000, 0000, "", GenericContainer_Avid, "")
 
@@ -1779,9 +1793,59 @@ const char* Mxf_AS11_SignLanguage[Mxf_AS11_SignLanguage_Count]=
     "BSL (Makaton)",
 };
 
+
+//---------------------------------------------------------------------------
+// EBU Tech 3349
+string Mxf_CameraUnitMetadata_GammaforCDL(int8u Value)
+{
+    switch(Value)
+    {
+        case 0x00 : return "Same as Capture Gamma";
+        case 0x01 : return "Scene Linear";
+        case 0x02 : return "S-Log";
+        case 0x03 : return "Cine-Log";
+        case 0xFF : return "Undefined";
+        default   : return Ztring::ToZtring(Value).To_UTF8();
+    }
+};
+
+//---------------------------------------------------------------------------
+// EBU Tech 3349
+string Mxf_CameraUnitMetadata_ImageSensorReadoutMode(int8u Value)
+{
+    switch(Value)
+    {
+        case 0x00 : return "Interlaced field";
+        case 0x01 : return "Interlaced frame";
+        case 0x02 : return "Progressive frame ";
+        case 0xFF : return "Undefined";
+        default   : return Ztring::ToZtring(Value).To_UTF8();
+    }
+};
+
+//---------------------------------------------------------------------------
+// EBU Tech 3349
+string Mxf_CameraUnitMetadata_CaptureGammaEquation(int128u Value)
+{
+    switch(Value.lo)
+    {
+        case 0x0401010101020000 : return "BT.709";
+        case 0x0401010101030000 : return "SMPTE ST 240";
+        default   :
+                    {
+                    Ztring ValueS;
+                    ValueS.From_Number(Value.lo, 16);
+                    if (ValueS.size()<16)
+                        ValueS.insert(0, 16-ValueS.size(), __T('0'));
+                    return ValueS.To_UTF8();
+                    }
+    }
+};
+
 //---------------------------------------------------------------------------
 extern const char* Mpegv_profile_and_level_indication_profile[];
 extern const char* Mpegv_profile_and_level_indication_level[];
+extern const char* Mpeg4v_Profile_Level(int32u Profile_Level);
 
 //---------------------------------------------------------------------------
 extern const char* AfdBarData_active_format[];
@@ -1847,6 +1911,7 @@ File_Mxf::File_Mxf()
     SystemScheme1_FrameRateFromDescriptor=0;
     Essences_FirstEssence_Parsed=false;
     StereoscopicPictureSubDescriptor_IsPresent=false;
+    UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony=false;
     Essences_UsedForFrameCount=(int32u)-1;
     #if MEDIAINFO_ADVANCED
         Footer_Position=(int64u)-1;
@@ -1855,10 +1920,10 @@ File_Mxf::File_Mxf()
     #if MEDIAINFO_NEXTPACKET
         ReferenceFiles_IsParsing=false;
     #endif //MEDIAINFO_NEXTPACKET
-    #if defined(defined(MEDIAINFO_ANCILLARY_YES)_YES)
+    #if defined(MEDIAINFO_ANCILLARY_YES)
         Ancillary=NULL;
         Ancillary_IsBinded=false;
-    #endif //defined(defined(MEDIAINFO_ANCILLARY_YES)_YES)
+    #endif //defined(MEDIAINFO_ANCILLARY_YES)
 
     #if MEDIAINFO_DEMUX
         Demux_HeaderParsed=false;
@@ -5026,6 +5091,9 @@ void File_Mxf::Data_Parse()
     ELEMENT(TerminatingFiller,                                  "Terminating Filler")
     ELEMENT(XmlDocumentText,                                    "XML Document Text")
     ELEMENT(SubDescriptors,                                     "Sub Descriptors")
+    ELEMENT(LensUnitMetadata,                                   "Lens Unit Metadata")
+    ELEMENT(CameraUnitMetadata,                                 "Camera Unit Metadata")
+    ELEMENT(UserDefinedAcquisitionMetadata,                     "User Defined Acquisition Metadata")
     ELEMENT(Filler53,                                           "Filler")
     ELEMENT(Sequence,                                           "Sequence")
     ELEMENT(SourceClip,                                         "Source Clip")
@@ -7331,6 +7399,71 @@ void File_Mxf::SubDescriptors()
         FILLING_BEGIN();
             Descriptors[InstanceUID].SubDescriptors.push_back(Data);
         FILLING_END();
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::LensUnitMetadata()
+{
+    //switch(Code2)
+    //{
+    //    default:
+                    GenerationInterchangeObject();
+    //}
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::CameraUnitMetadata()
+{
+    if (Count_Get(Stream_Other)==0)
+        Stream_Prepare(Stream_Other);
+
+    switch(Code2)
+    {
+        ELEMENT(3210, CameraUnitMetadata_CaptureGammaEquation,  "Capture Gamma Equation")
+        ELEMENT(8103, CameraUnitMetadata_NeutralDensityFilterWheelSetting, "Neutral Density Filter Wheel Setting")
+        ELEMENT(8106, CameraUnitMetadata_CaptureFrameRate,      "Capture Frame Rate")
+        ELEMENT(8107, CameraUnitMetadata_ImageSensorReadoutMode,"Image Sensor Readout Mode")
+        ELEMENT(8108, CameraUnitMetadata_ShutterSpeed_Angle,    "Shutter Speed (Angle)")
+        ELEMENT(810B, CameraUnitMetadata_ISOSensitivity,        "ISO Sensitivity")
+        ELEMENT(810E, CameraUnitMetadata_WhiteBalance,          "White Balance")
+        ELEMENT(8114, CameraUnitMetadata_CameraAttributes,      "Camera Attributes")
+        ELEMENT(8115, CameraUnitMetadata_ExposureIndexofPhotoMeter,"Exposure Index of Photo Meter")
+        ELEMENT(8116, CameraUnitMetadata_GammaforCDL,           "Gamma for CDL")
+        ELEMENT(8117, CameraUnitMetadata_ASCCDLV1_2,            "ASC CDL V1.2")
+        default:
+                    GenerationInterchangeObject();
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata()
+{
+    if (Count_Get(Stream_Other)==0)
+        Stream_Prepare(Stream_Other);
+
+    switch(Code2)
+    {
+        ELEMENT(E000, UserDefinedAcquisitionMetadata_UdamSetIdentifier,  "UDAM Set Identifier")
+        default:
+                if (UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony)
+                    switch(Code2)
+                    {
+                        ELEMENT(8007, UserDefinedAcquisitionMetadata_Sony_8007, "Lens Attributes")
+                        ELEMENT(E101, UserDefinedAcquisitionMetadata_Sony_E101, "Effective Marker Coverage")
+                        ELEMENT(E102, UserDefinedAcquisitionMetadata_Sony_E102, "Effective Marker Aspect Ratio")
+                        ELEMENT(E103, UserDefinedAcquisitionMetadata_Sony_E103, "Camera Process Discrimination Code")
+                        ELEMENT(E104, UserDefinedAcquisitionMetadata_Sony_E104, "Rotary Shutter Mode")
+                        ELEMENT(E109, UserDefinedAcquisitionMetadata_Sony_E109, "Monitoring Descriptions")
+                        ELEMENT(E10B, UserDefinedAcquisitionMetadata_Sony_E10B, "E10B")
+                        ELEMENT(E201, UserDefinedAcquisitionMetadata_Sony_E201, "E201")
+                        ELEMENT(E202, UserDefinedAcquisitionMetadata_Sony_E202, "E202")
+                        ELEMENT(E203, UserDefinedAcquisitionMetadata_Sony_E203, "E203")
+                        default:
+                                    GenerationInterchangeObject();
+                    }
+                else
+                    GenerationInterchangeObject();
     }
 }
 
@@ -10135,6 +10268,314 @@ void File_Mxf::WaveAudioDescriptor_ChannelAssignment()
         //    Descriptors[InstanceUID].Infos["ChannelPositions"]=ChannelLayoutID;
         //Descriptors[InstanceUID].Infos["ChannelPositions/String2"]=Mxf_ChannelAssignment_ChannelPositions2(Value, Descriptors[InstanceUID].ChannelCount);
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::CameraUnitMetadata_CaptureGammaEquation()
+{
+    //Parsing
+    int128u Value;
+    Get_UUID(Value,                                             "Value");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "CaptureGammaEquation").empty())
+            Fill(Stream_Other, 0, "CaptureGammaEquation", Mxf_CameraUnitMetadata_CaptureGammaEquation(Value));
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::CameraUnitMetadata_NeutralDensityFilterWheelSetting()
+{
+    //Parsing
+    int16u Value;
+    Get_B2(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "NeutralDensityFilterWheelSetting").empty())
+            Fill(Stream_Other, 0, "NeutralDensityFilterWheelSetting", Value);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::CameraUnitMetadata_CaptureFrameRate()
+{
+    //Parsing
+    float64 Value;
+    Get_Rational(Value);
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "CaptureFrameRate").empty())
+            Fill(Stream_Other, 0, "CaptureFrameRate", Value);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::CameraUnitMetadata_ImageSensorReadoutMode()
+{
+    //Parsing
+    int8u Value;
+    Get_B1(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "ImageSensorReadoutMode").empty())
+            Fill(Stream_Other, 0, "ImageSensorReadoutMode", Mxf_CameraUnitMetadata_ImageSensorReadoutMode(Value));
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::CameraUnitMetadata_ShutterSpeed_Angle()
+{
+    //Parsing
+    int32u Value;
+    Get_B4(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "ShutterSpeed_Angle").empty())
+            Fill(Stream_Other, 0, "ShutterSpeed_Angle", ((float)Value)/60, 1);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::CameraUnitMetadata_ISOSensitivity()
+{
+    //Parsing
+    int16u Value;
+    Get_B2(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "ISOSensitivity").empty())
+            Fill(Stream_Other, 0, "ISOSensitivity", Value);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::CameraUnitMetadata_WhiteBalance()
+{
+    //Parsing
+    int16u Value;
+    Get_B2(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "WhiteBalance").empty())
+            Fill(Stream_Other, 0, "WhiteBalance", Value);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::CameraUnitMetadata_CameraAttributes()
+{
+    //Parsing
+    Ztring Value;
+    Get_UTF8(Length2, Value,                                    "Value");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "CameraAttributes").empty())
+            Fill(Stream_Other, 0, "CameraAttributes", Value);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::CameraUnitMetadata_ExposureIndexofPhotoMeter()
+{
+    //Parsing
+    int16u Value;
+    Get_B2(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "ExposureIndexofPhotoMeter").empty())
+            Fill(Stream_Other, 0, "ExposureIndexofPhotoMeter", Value);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::CameraUnitMetadata_GammaforCDL()
+{
+    //Parsing
+    int8u Value;
+    Get_B1(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "GammaforCDL").empty())
+            Fill(Stream_Other, 0, "GammaforCDL", Mxf_CameraUnitMetadata_GammaforCDL(Value));
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::CameraUnitMetadata_ASCCDLV1_2()
+{
+    //Parsing
+    //Vector
+    int32u Count, Length;
+    Get_B4 (Count,                                              "Count");
+    Get_B4 (Length,                                             "Length");
+    if (Count!=10 || Length!=2)
+    {
+        Skip_XX (Length2-8,                                     "Data");
+        return;
+    }
+    float32 sR, sG, sB, oR, oG, oB, pR, pG, pB, sat;
+    Get_BF2(sR,                                                 "sR");
+    Get_BF2(sG,                                                 "sG");
+    Get_BF2(sB,                                                 "sB");
+    Get_BF2(oR,                                                 "oR");
+    Get_BF2(oG,                                                 "oG");
+    Get_BF2(oB,                                                 "oB");
+    Get_BF2(pR,                                                 "pR");
+    Get_BF2(pG,                                                 "pG");
+    Get_BF2(pB,                                                 "pB");
+    Get_BF2(sat,                                                "sat");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "ASCCDLV1_2").empty())
+        {
+            Ztring ValueS=__T("sR=")+Ztring::ToZtring(sR, 1)+__T(" sG=")+Ztring::ToZtring(sG, 1)+__T(" sB=")+Ztring::ToZtring(sB, 1)+__T(" oR=")+Ztring::ToZtring(oR, 1)+__T(" oG=")+Ztring::ToZtring(oG, 1)+__T(" oB=")+Ztring::ToZtring(oB, 1)+__T(" pR=")+Ztring::ToZtring(pR, 1)+__T(" pG=")+Ztring::ToZtring(pG, 1)+__T(" pB=")+Ztring::ToZtring(pB, 1)+__T(" sat=")+Ztring::ToZtring(sat, 1);
+            Fill(Stream_Other, 0, "ASCCDLV1_2", ValueS);
+        }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::UserDefinedAcquisitionMetadata_UdamSetIdentifier()
+{
+    //Parsing
+    int128u Value;
+    Get_UUID(Value,                                             "Value");
+
+    FILLING_BEGIN();
+        if (Value.hi==0x966908004678031C && Value.lo==0x20500000F0C01181)
+            UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony=true;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_8007()
+{
+    //Parsing
+    Ztring Value;
+    Get_UTF8(Length2, Value,                                    "Value");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "LensAttributes").empty())
+            Fill(Stream_Other, 0, "LensAttributes", Value);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E101()
+{
+    //Parsing
+    int32u Width, Height;
+    Get_B4 (Width,                                              "Width");
+    Get_B4 (Height,                                             "Height");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "EffectiveMarkerCoverage").empty())
+            Fill(Stream_Other, 0, "EffectiveMarkerCoverage", Ztring::ToZtring(Width)+__T("x")+Ztring::ToZtring(Height));
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E102()
+{
+    //Parsing
+    int32u Width, Height;
+    Get_B4 (Width,                                              "Width");
+    Get_B4 (Height,                                             "Height");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "EffectiveMarkerAspectRatio").empty())
+            Fill(Stream_Other, 0, "EffectiveMarkerAspectRatio", Ztring::ToZtring(Width)+__T(":")+Ztring::ToZtring(Height));
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E103()
+{
+    //Parsing
+    int16u Value;
+    Get_B2(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "CameraProcessDiscriminationCode").empty())
+            Fill(Stream_Other, 0, "CameraProcessDiscriminationCode", Value, 16);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E104()
+{
+    //Parsing
+    int8u Value;
+    Get_B1(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "RotaryShutterMode").empty())
+            Fill(Stream_Other, 0, "RotaryShutterMode", Value?"Yes":"No");
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E109()
+{
+    //Parsing
+    Ztring Value;
+    Get_UTF8(Length2, Value,                                    "Value");
+
+    FILLING_BEGIN();
+        if (Retrieve(Stream_Other, 0, "MonitoringDescriptions").empty())
+            Fill(Stream_Other, 0, "MonitoringDescriptions", Value);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E10B()
+{
+    //Parsing
+    Skip_UUID(                                                  "Value");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E201()
+{
+    //Parsing
+    Skip_XX(Length2,                                            "Value");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E202()
+{
+    //Parsing
+    Ztring Value;
+    Get_UTF8(Length2, Value,                                    "Value");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E203()
+{
+    //Parsing
+    Skip_B1(                                                    "Value");
 }
 
 //---------------------------------------------------------------------------

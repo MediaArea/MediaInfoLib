@@ -425,6 +425,7 @@ public :
     void Get_B7   (int64u  &Info, const char* Name);
     void Get_B8   (int64u  &Info, const char* Name);
     void Get_B16  (int128u &Info, const char* Name);
+    void Get_BF2  (float32 &Info, const char* Name);
     void Get_BF4  (float32 &Info, const char* Name);
     void Get_BF8  (float64 &Info, const char* Name);
     void Get_BF10 (float80 &Info, const char* Name);
@@ -464,6 +465,7 @@ public :
     #define Info_B7(_INFO, _NAME)   int64u  _INFO; Get_B7  (_INFO, _NAME)
     #define Info_B8(_INFO, _NAME)   int64u  _INFO; Get_B8  (_INFO, _NAME)
     #define Info_B16(_INFO, _NAME)  int128u _INFO; Get_B16 (_INFO, _NAME)
+    #define Info_BF2(_INFO, _NAME)  float32 _INFO; Get_BF2 (_INFO, _NAME)
     #define Info_BF4(_INFO, _NAME)  float32 _INFO; Get_BF4 (_INFO, _NAME)
     #define Info_BF8(_INFO, _NAME)  float64 _INFO; Get_BF8 (_INFO, _NAME)
     #define Info_BF10(_INFO, _NAME) float80 _INFO; Get_BF10(_INFO, _NAME)

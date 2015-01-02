@@ -14,6 +14,7 @@ Version 0.7.72,
 + EBUCore: EBUCore 1.6 draft output, sponsored by EBU
 + EBUCore: AS-11 to EBUCore mapping, sponsored by EBU
 + EBUCore: more technicalAttributes, sponsored by EBU
++ MXF Acquisition Metadata (RDD-18, EBU Tech 3349) basic support
 x EBUCore: time code tracks moved to their own "format" block
 x EBUCore: audioTrackConfiguration removed (not the expected behavior)
 x EBUCore: OverallBitRate information changed from technicalAttributeString to technicalAttributeInteger
