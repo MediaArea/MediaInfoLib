@@ -196,16 +196,28 @@ namespace Elements
     //                           06 - Digital Video and Image Compression Parameters
     //                             02 - MPEG Coding Parameters
     //                                 01 - MPEG-2 Coding Parameters
-    UUID(060E2B34, 01010105, 04010602, 01020000, 0000, "", MPEG2VideoDescriptor_SingleSequence, "")
-    UUID(060E2B34, 01010105, 04010602, 01030000, 0000, "", MPEG2VideoDescriptor_ConstantBFrames, "")
-    UUID(060E2B34, 01010105, 04010602, 01040000, 0000, "", MPEG2VideoDescriptor_CodedContentType, "")
-    UUID(060E2B34, 01010105, 04010602, 01050000, 0000, "", MPEG2VideoDescriptor_LowDelay, "")
-    UUID(060E2B34, 01010105, 04010602, 01060000, 0000, "", MPEG2VideoDescriptor_ClosedGOP, "")
-    UUID(060E2B34, 01010105, 04010602, 01070000, 0000, "", MPEG2VideoDescriptor_IdenticalGOP, "")
-    UUID(060E2B34, 01010105, 04010602, 01080000, 0000, "", MPEG2VideoDescriptor_MaxGOP, "")
-    UUID(060E2B34, 01010105, 04010602, 01090000, 0000, "", MPEG2VideoDescriptor_BPictureCount, "")
-    UUID(060E2B34, 01010105, 04010602, 010A0000, 0000, "", MPEG2VideoDescriptor_ProfileAndLevel, "")
-    UUID(060E2B34, 01010105, 04010602, 010B0000, 0000, "", MPEG2VideoDescriptor_BitRate, "")
+    UUID(060E2B34, 01010105, 04010602, 01020000, 0000, "SMPTE ST 381-1", MPEG2VideoDescriptor_SingleSequence, "")
+    UUID(060E2B34, 01010105, 04010602, 01030000, 0000, "SMPTE ST 381-1", MPEG2VideoDescriptor_ConstantBFrames, "")
+    UUID(060E2B34, 01010105, 04010602, 01040000, 0000, "SMPTE ST 381-1", MPEG2VideoDescriptor_CodedContentType, "")
+    UUID(060E2B34, 01010105, 04010602, 01050000, 0000, "SMPTE ST 381-1", MPEG2VideoDescriptor_LowDelay, "")
+    UUID(060E2B34, 01010105, 04010602, 01060000, 0000, "SMPTE ST 381-1", MPEG2VideoDescriptor_ClosedGOP, "")
+    UUID(060E2B34, 01010105, 04010602, 01070000, 0000, "SMPTE ST 381-1", MPEG2VideoDescriptor_IdenticalGOP, "")
+    UUID(060E2B34, 01010105, 04010602, 01080000, 0000, "SMPTE ST 381-1", MPEG2VideoDescriptor_MaxGOP, "")
+    UUID(060E2B34, 01010105, 04010602, 01090000, 0000, "SMPTE ST 381-1", MPEG2VideoDescriptor_BPictureCount, "")
+    UUID(060E2B34, 01010105, 04010602, 010A0000, 0000, "SMPTE ST 381-1", MPEG2VideoDescriptor_ProfileAndLevel, "")
+    UUID(060E2B34, 01010105, 04010602, 010B0000, 0000, "SMPTE ST 381-1", MPEG2VideoDescriptor_BitRate, "")
+
+    //                                 02 - MPEG-4 Visual Coding Parameters
+    UUID(060E2B34, 01010105, 04010602, 02020000, 0000, "SMPTE ST 381-2", Mpeg4VisualDescriptor_SingleSequence, "")
+    UUID(060E2B34, 01010105, 04010602, 02030000, 0000, "SMPTE ST 381-2", Mpeg4VisualDescriptor_ConstantBFrames, "")
+    UUID(060E2B34, 01010105, 04010602, 02040000, 0000, "SMPTE ST 381-2", Mpeg4VisualDescriptor_CodedContentType, "")
+    UUID(060E2B34, 01010105, 04010602, 02050000, 0000, "SMPTE ST 381-2", Mpeg4VisualDescriptor_LowDelay, "")
+    UUID(060E2B34, 01010105, 04010602, 02060000, 0000, "SMPTE ST 381-2", Mpeg4VisualDescriptor_ClosedGOP, "")
+    UUID(060E2B34, 01010105, 04010602, 02070000, 0000, "SMPTE ST 381-2", Mpeg4VisualDescriptor_IdenticalGOP, "")
+    UUID(060E2B34, 01010105, 04010602, 02080000, 0000, "SMPTE ST 381-2", Mpeg4VisualDescriptor_MaxGOP, "")
+    UUID(060E2B34, 01010105, 04010602, 02090000, 0000, "SMPTE ST 381-2", Mpeg4VisualDescriptor_BPictureCount, "")
+    UUID(060E2B34, 01010105, 04010602, 020A0000, 0000, "SMPTE ST 381-2", Mpeg4VisualDescriptor_ProfileAndLevel, "")
+    UUID(060E2B34, 01010105, 04010602, 020B0000, 0000, "SMPTE ST 381-2", Mpeg4VisualDescriptor_BitRate, "")
 
     //                             02 - JPEG 2000 Coding Parameters
     UUID(060E2B34, 0101010A, 04010603, 01000000, 0000, "", JPEG2000PictureSubDescriptor_Rsiz, "")
@@ -221,6 +233,12 @@ namespace Elements
     UUID(060E2B34, 0101010A, 04010603, 0B000000, 0000, "", JPEG2000PictureSubDescriptor_PictureComponentSizing, "")
     UUID(060E2B34, 0101010A, 04010603, 0C000000, 0000, "", JPEG2000PictureSubDescriptor_CodingStyleDefault, "")
     UUID(060E2B34, 0101010A, 04010603, 0D000000, 0000, "", JPEG2000PictureSubDescriptor_QuantizationDefault, "")
+
+    //                         02 - Audio Essence Characteristics
+    //                           04 - Audio Compression Parameters
+    //                             03 - MPEG Coding Parameters
+    //                                 01 - MPEG-2 Coding Parameters
+    UUID(060E2B34, 01010105, 04020403, 01020000, 0000, "SMPTE ST 381-2", MpegAudioDescriptor_BitRate, "")
 
     //                         09 - Format Characteristics
     UUID(060E2B34, 0101010C, 04090500, 00000000, 0000, "SMPTE ST 429-5", UCSEncoding, "UCS Encoding")
@@ -281,11 +299,12 @@ namespace Elements
     UUID(060E2B34, 02530101, 0D010101, 01014500, 0000, "SMPTE ST 377-1", DMSourceClip, "")
     UUID(060E2B34, 02530101, 0D010101, 01014700, 0000, "", AES3PCMDescriptor, "")
     UUID(060E2B34, 02530101, 0D010101, 01014800, 0000, "", WaveAudioDescriptor, "")
-    UUID(060E2B34, 02530101, 0D010101, 01015100, 0000, "", MPEG2VideoDescriptor, "")
+    UUID(060E2B34, 02530101, 0D010101, 01015100, 0000, "SMPTE ST 381-1", MPEG2VideoDescriptor, "")
+    UUID(060E2B34, 02530101, 0D010101, 01015900, 0000, "SMPTE ST 377-1", SubDescriptor, "Sub Descriptor")
     UUID(060E2B34, 02530101, 0D010101, 01015A00, 0000, "", JPEG2000PictureSubDescriptor, "")
     UUID(060E2B34, 02530101, 0D010101, 01015B00, 0000, "", VbiPacketsDescriptor, "")
     UUID(060E2B34, 02530101, 0D010101, 01015C00, 0000, "", AncPacketsDescriptor, "")
-    UUID(060E2B34, 02530101, 0D010101, 01015900, 0000, "SMPTE ST 377-1", SubDescriptor, "Sub Descriptor")
+    UUID(060E2B34, 02530101, 0D010101, 01015E00, 0000, "SMPTE ST 381-2", MpegAudioDescriptor, "MPEG Audio Descriptor")
     UUID(060E2B34, 02530101, 0D010101, 01016000, 0000, "SMPTE ST 377-1", PackageMarkerObject, "")
     UUID(060E2B34, 02530101, 0D010101, 01016100, 0000, "SMPTE ST 377-1", ApplicationPlugInObject, "")
     UUID(060E2B34, 02530101, 0D010101, 01016200, 0000, "SMPTE ST 377-1", ApplicationReferencedObject, "")
@@ -293,6 +312,8 @@ namespace Elements
     UUID(060E2B34, 02530101, 0D010101, 01016400, 0000, "SMPTE ST 429-5", TimedTextDescriptor, "")
     UUID(060E2B34, 02530101, 0D010101, 01016500, 0000, "SMPTE ST 429-5", TimedTextResourceSubDescriptor, "")
     UUID(060E2B34, 02530101, 0D010101, 01016600, 0000, "SMPTE ST 377-1", ApplicationObject, "Application Object")
+    UUID(060E2B34, 02530101, 0D010101, 01016700, 0000, "SMPTE ST ?", Unknown67SubDescriptor, "Unknown 0x67 Sub-Descriptor")
+    UUID(060E2B34, 02530101, 0D010101, 01016800, 0000, "SMPTE ST 381-2", Mpeg4VisualSubDescriptor, "MPEG-4 Visual Sub-Descriptor")
     UUID(060E2B34, 02530101, 0D010101, 01016A00, 0000, "SMPTE ST 377-4", MCALabelSubDescriptor, "")
     UUID(060E2B34, 02530101, 0D010101, 01016B00, 0000, "SMPTE ST 377-4", AudioChannelLabelSubDescriptor, "")
     UUID(060E2B34, 02530101, 0D010101, 01016C00, 0000, "SMPTE ST 377-4", SoundfieldGroupLabelSubDescriptor, "")
@@ -5124,12 +5145,15 @@ void File_Mxf::Data_Parse()
     ELEMENT(JPEG2000PictureSubDescriptor,                       "JPEG 2000 Picture Sub Descriptor")
     ELEMENT(VbiPacketsDescriptor,                               "VBI Descriptor")
     ELEMENT(AncPacketsDescriptor,                               "ANC Packets Descriptor")
+    ELEMENT(MpegAudioDescriptor,                                "MPEG Audio Descriptor")
     ELEMENT(PackageMarkerObject,                                "DM Source Clip")
     ELEMENT(ApplicationPlugInObject,                            "Application Plug-In Object")
     ELEMENT(ApplicationReferencedObject,                        "Application Referenced Object")
     ELEMENT(MCALabelSubDescriptor,                              "MCA Label Sub-Descriptor")
     ELEMENT(TimedTextDescriptor,                                "Timed Text Descriptor")
     ELEMENT(TimedTextResourceSubDescriptor,                     "Timed Text Resource Sub-Descriptor")
+    ELEMENT(Unknown67SubDescriptor,                             "Unknown 0x67 Sub-Descriptor")
+    ELEMENT(Mpeg4VisualSubDescriptor,                           "MPEG-4 Visual Sub-Descriptor")
     ELEMENT(AudioChannelLabelSubDescriptor,                     "Audio Channel Label Sub-Descriptor")
     ELEMENT(SoundfieldGroupLabelSubDescriptor,                  "Soundfield Group Label Sub-Descriptor")
     ELEMENT(GroupOfSoundfieldGroupsLabelSubDescriptor,          "Group Of Soundfield Groups Label Sub-Descriptor")
@@ -6933,6 +6957,37 @@ void File_Mxf::AncPacketsDescriptor()
 }
 
 //---------------------------------------------------------------------------
+void File_Mxf::MpegAudioDescriptor()
+{
+    if (Code2>=0x8000)
+    {
+        // Not a short code
+        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+        if (Primer_Value!=Primer_Values.end())
+        {
+            int32u Code_Compare1=Primer_Value->second.hi>>32;
+            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+            int32u Code_Compare3=Primer_Value->second.lo>>32;
+            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+            if(0);
+            ELEMENT_UUID(MpegAudioDescriptor_BitRate,                   "Bit Rate")
+            else
+            {
+                Element_Info1(Ztring().From_UUID(Primer_Value->second));
+                Skip_XX(Length2,                                        "Data");
+            }
+
+            return;
+        }
+    }
+
+    //switch(Code2)
+    //{
+    //    default: GenericSoundEssenceDescriptor();
+    //}
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::PackageMarkerObject()
 {
     //switch(Code2)
@@ -7057,6 +7112,57 @@ void File_Mxf::TimedTextDescriptor()
 //---------------------------------------------------------------------------
 void File_Mxf::TimedTextResourceSubDescriptor()
 {
+    //switch(Code2)
+    //{
+    //    default:
+                GenerationInterchangeObject();
+    //}
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Unknown67SubDescriptor()
+{
+    //switch(Code2)
+    //{
+    //    default:
+                GenerationInterchangeObject();
+    //}
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Mpeg4VisualSubDescriptor()
+{
+    if (Code2>=0x8000)
+    {
+        // Not a short code
+        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+        if (Primer_Value!=Primer_Values.end())
+        {
+            int32u Code_Compare1=Primer_Value->second.hi>>32;
+            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+            int32u Code_Compare3=Primer_Value->second.lo>>32;
+            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+            if(0);
+            ELEMENT_UUID(Mpeg4VisualDescriptor_SingleSequence,          "Single sequence")
+            ELEMENT_UUID(Mpeg4VisualDescriptor_ConstantBFrames,         "Number of B frames always constant")
+            ELEMENT_UUID(Mpeg4VisualDescriptor_CodedContentType,        "Coded content type")
+            ELEMENT_UUID(Mpeg4VisualDescriptor_LowDelay,                "Low delay")
+            ELEMENT_UUID(Mpeg4VisualDescriptor_ClosedGOP,               "Closed GOP")
+            ELEMENT_UUID(Mpeg4VisualDescriptor_IdenticalGOP,            "Identical GOP")
+            ELEMENT_UUID(Mpeg4VisualDescriptor_MaxGOP,                  "Maximum occurring spacing between I frames")
+            ELEMENT_UUID(Mpeg4VisualDescriptor_BPictureCount,           "Maximum number of B pictures between P or I frames")
+            ELEMENT_UUID(Mpeg4VisualDescriptor_ProfileAndLevel,         "Profile and level")
+            ELEMENT_UUID(Mpeg4VisualDescriptor_BitRate,                 "Maximum bit rate")
+            else
+            {
+                Element_Info1(Ztring().From_UUID(Primer_Value->second));
+                Skip_XX(Length2,                                        "Data");
+            }
+
+            return;
+        }
+    }
+
     //switch(Code2)
     //{
     //    default:
@@ -9228,6 +9334,13 @@ void File_Mxf::JPEG2000PictureSubDescriptor_QuantizationDefault()
 }
 
 //---------------------------------------------------------------------------
+//
+void File_Mxf::MpegAudioDescriptor_BitRate()
+{
+    Skip_B4(                                                    "Data");
+}
+
+//---------------------------------------------------------------------------
 // 0x3B02
 void File_Mxf::Preface_LastModifiedDate()
 {
@@ -9400,6 +9513,20 @@ void File_Mxf::MPEG2VideoDescriptor_ProfileAndLevel()
     FILLING_BEGIN();
         if (profile_and_level_indication_profile && profile_and_level_indication_level)
             Descriptors[InstanceUID].Infos["Format_Profile"]=Ztring().From_Local(Mpegv_profile_and_level_indication_profile[profile_and_level_indication_profile])+__T("@")+Ztring().From_Local(Mpegv_profile_and_level_indication_level[profile_and_level_indication_level]);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+// 0x
+void File_Mxf::Mpeg4VisualDescriptor_ProfileAndLevel()
+{
+    //Parsing
+    int8u profile_and_level_indication;
+    Get_B1 (profile_and_level_indication,                       "profile_and_level_indication"); Param_Info1(Mpeg4v_Profile_Level(profile_and_level_indication));
+
+    FILLING_BEGIN();
+        if (profile_and_level_indication)
+            Descriptors[InstanceUID].Infos["Format_Profile"]=Ztring().From_Local(Mpeg4v_Profile_Level(profile_and_level_indication));
     FILLING_END();
 }
 

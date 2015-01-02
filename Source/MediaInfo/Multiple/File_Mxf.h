@@ -162,12 +162,15 @@ protected :
     void JPEG2000PictureSubDescriptor();
     void VbiPacketsDescriptor();
     void AncPacketsDescriptor();
+    void MpegAudioDescriptor();
     void PackageMarkerObject();
     void ApplicationPlugInObject();
     void ApplicationReferencedObject();
     void MCALabelSubDescriptor();
     void TimedTextDescriptor();
     void TimedTextResourceSubDescriptor();
+    void Unknown67SubDescriptor();
+    void Mpeg4VisualSubDescriptor();
     void AudioChannelLabelSubDescriptor();
     void SoundfieldGroupLabelSubDescriptor();
     void GroupOfSoundfieldGroupsLabelSubDescriptor();
@@ -324,6 +327,7 @@ protected :
     void JPEG2000PictureSubDescriptor_PictureComponentSizing(); //800B
     void JPEG2000PictureSubDescriptor_CodingStyleDefault();     //
     void JPEG2000PictureSubDescriptor_QuantizationDefault();    //
+    void MpegAudioDescriptor_BitRate();                         //
     void MultipleDescriptor_SubDescriptorUIDs();                //3F01
     void PrimaryExtendedSpokenLanguage();                       //
     void SecondaryExtendedSpokenLanguage();                     //
@@ -340,6 +344,16 @@ protected :
     void MPEG2VideoDescriptor_BPictureCount();                  //
     void MPEG2VideoDescriptor_ProfileAndLevel();                //
     void MPEG2VideoDescriptor_BitRate();                        //
+    void Mpeg4VisualDescriptor_SingleSequence() {MPEG2VideoDescriptor_SingleSequence();}
+    void Mpeg4VisualDescriptor_ConstantBFrames() {MPEG2VideoDescriptor_ConstantBFrames();}
+    void Mpeg4VisualDescriptor_CodedContentType() {MPEG2VideoDescriptor_CodedContentType();}
+    void Mpeg4VisualDescriptor_LowDelay() {MPEG2VideoDescriptor_LowDelay();}
+    void Mpeg4VisualDescriptor_ClosedGOP() {MPEG2VideoDescriptor_ClosedGOP();}
+    void Mpeg4VisualDescriptor_IdenticalGOP() {MPEG2VideoDescriptor_IdenticalGOP();}
+    void Mpeg4VisualDescriptor_MaxGOP() {MPEG2VideoDescriptor_MaxGOP();}
+    void Mpeg4VisualDescriptor_BPictureCount() {MPEG2VideoDescriptor_BPictureCount();}
+    void Mpeg4VisualDescriptor_ProfileAndLevel();               //
+    void Mpeg4VisualDescriptor_BitRate() {MPEG2VideoDescriptor_BitRate();}
     void NetworkLocator_URLString();                            //4001
     void Preface_LastModifiedDate();                            //3B02
     void Preface_ContentStorage();                              //3B03
