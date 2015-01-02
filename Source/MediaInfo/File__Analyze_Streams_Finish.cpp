@@ -232,7 +232,7 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
         #endif //MEDIAINFO_ADVANCED
 
         size_t Pos_Max = Pos_Base + Pos_Add_Max;
-        Config->File_Names.reserve(Pos_Max);
+        Config->File_Names.reserve(Pos_Add_Max);
         for (Pos=Pos_Base+1; Pos<Pos_Max; ++Pos)
         {
             Ztring Pos_Ztring; Pos_Ztring.From_Number(Pos);
