@@ -333,7 +333,11 @@ void File__Analyze::Open_Buffer_Init (File__Analyze* Sub)
 void File__Analyze::Open_Buffer_Init (File__Analyze* Sub, int64u File_Size_)
 {
     //Integrity
-    if (Sub==NULL || StreamIDs_Size==0)
+    if (Sub==NULL
+ 	    #if MEDIAINFO_EVENTS
+ 	            || StreamIDs_Size==0
+ 	    #endif
+                )
         return;
 
     //Parsing
