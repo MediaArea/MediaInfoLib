@@ -9637,8 +9637,9 @@ void File_Mxf::PartitionMetadata()
     int64u PreviousPartition, FooterPartition, HeaderByteCount, IndexByteCount, BodyOffset;
     int32u IndexSID;
     int32u KAGSize;
-    Skip_B2(                                                    "MajorVersion");
-    Skip_B2(                                                    "MinorVersion");
+    int16u MajorVersion, MinorVersion;
+    Get_B2 (MajorVersion,                                       "MajorVersion");
+    Get_B2 (MinorVersion,                                       "MinorVersion");
     Get_B4 (KAGSize,                                            "KAGSize");
     Skip_B8(                                                    "ThisPartition");
     Get_B8 (PreviousPartition,                                  "PreviousPartition");
@@ -9687,6 +9688,8 @@ void File_Mxf::PartitionMetadata()
         Partitions.insert(Partitions.begin()+Partitions_Pos, Partition);
         Partitions_IsCalculatingHeaderByteCount=true;
     }
+
+    Fill(Stream_General, 0, General_Format_Version, Ztring::ToZtring(MajorVersion)+__T('.')+Ztring::ToZtring(MinorVersion), true);
 
     if ((Code.lo&0xFF0000)==0x020000) //If Header Partition Pack
         switch ((Code.lo>>8)&0xFF)
