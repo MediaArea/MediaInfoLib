@@ -5828,6 +5828,31 @@ void File_Mxf::AES3PCMDescriptor()
 //---------------------------------------------------------------------------
 void File_Mxf::CDCIEssenceDescriptor()
 {
+    /*
+    //TODO: check when MPEG-4 Visual subdescriptor, it disabled stream info merge
+    if (Code2>=0x8000)
+    {
+        // Not a short code
+        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+        if (Primer_Value!=Primer_Values.end())
+        {
+            int32u Code_Compare1=Primer_Value->second.hi>>32;
+            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+            int32u Code_Compare3=Primer_Value->second.lo>>32;
+            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+            if(0);
+            ELEMENT_UUID(SubDescriptors,                                "Sub Descriptors")
+            else
+            {
+                Element_Info1(Ztring().From_UUID(Primer_Value->second));
+                Skip_XX(Length2,                                        "Data");
+            }
+
+            return;
+        }
+    }
+    */
+
     switch(Code2)
     {
         ELEMENT(3301, CDCIEssenceDescriptor_ComponentDepth,     "Active bits per sample")
@@ -6392,6 +6417,31 @@ void File_Mxf::MultipleDescriptor()
 {
     if (Descriptors[InstanceUID].Type==descriptor::Type_Unknown)
         Descriptors[InstanceUID].Type=descriptor::type_Mutiple;
+
+    /*
+    //TODO: check when MPEG-4 Visual subdescriptor, it disabled stream info merge
+    if (Code2>=0x8000)
+    {
+        // Not a short code
+        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+        if (Primer_Value!=Primer_Values.end())
+        {
+            int32u Code_Compare1=Primer_Value->second.hi>>32;
+            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+            int32u Code_Compare3=Primer_Value->second.lo>>32;
+            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+            if(0);
+            ELEMENT_UUID(SubDescriptors,                                "Sub Descriptors")
+            else
+            {
+                Element_Info1(Ztring().From_UUID(Primer_Value->second));
+                Skip_XX(Length2,                                        "Data");
+            }
+
+            return;
+        }
+    }
+    */
 
     switch(Code2)
     {
