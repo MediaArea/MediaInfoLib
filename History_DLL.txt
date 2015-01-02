@@ -26,6 +26,7 @@ x AVC: trying to avoid the wrong detection of AVC in the case of invalid (e.g. e
 x Crash on Windows Vista and Win7 pre-SP1 and a CPU having FMA support, due to a bug in MSVC2013, since 0.7.71. Thanks to Pavel Pimenov for the report and patch
 x MXF: AS-11 Typo (SerieTitle changed to SeriesTitle), TotalProgrammeDuration added
 x ID3v2: support of 3-byte ID3v2.3 tags
+x CEA-608 in MPEG-4: demux PTS was wrong in case of multiple blocks in one frame
 
 Version 0.7.71, 2014-11-09
 --------------
