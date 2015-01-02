@@ -1855,10 +1855,10 @@ File_Mxf::File_Mxf()
     #if MEDIAINFO_NEXTPACKET
         ReferenceFiles_IsParsing=false;
     #endif //MEDIAINFO_NEXTPACKET
-    #if defined(MEDIAINFO_ANCILLARY_YES)
+    #if defined(defined(MEDIAINFO_ANCILLARY_YES)_YES)
         Ancillary=NULL;
         Ancillary_IsBinded=false;
-    #endif //defined(MEDIAINFO_ANCILLARY_YES)
+    #endif //defined(defined(MEDIAINFO_ANCILLARY_YES)_YES)
 
     #if MEDIAINFO_DEMUX
         Demux_HeaderParsed=false;
@@ -1891,10 +1891,10 @@ File_Mxf::~File_Mxf()
     #if MEDIAINFO_REFERENCES
         delete ReferenceFiles;
     #endif //MEDIAINFO_REFERENCES
-    #if MEDIAINFO_ANCILLARY
+    #if defined(MEDIAINFO_ANCILLARY_YES)
         if (!Ancillary_IsBinded)
             delete Ancillary;
-    #endif //MEDIAINFO_ANCILLARY
+    #endif //defined(MEDIAINFO_ANCILLARY_YES)
 }
 
 //***************************************************************************
@@ -5470,7 +5470,7 @@ void File_Mxf::Data_Parse()
                             (*Parser)->FrameInfo.PTS=Essence->second.FrameInfo.PTS;
                         if (Essence->second.FrameInfo.DUR!=(int64u)-1)
                             (*Parser)->FrameInfo.DUR=Essence->second.FrameInfo.DUR;
-                        #if MEDIAINFO_ANCILLARY
+                        #if defined(MEDIAINFO_ANCILLARY_YES)
                             if ((*Parser)->ParserName==__T("Ancillary"))
                                 ((File_Ancillary*)(*Parser))->LineNumber=LineNumber;
                             if ((*Parser)->ParserName==__T("Ancillary") && (((File_Ancillary*)(*Parser))->FrameRate==0 || ((File_Ancillary*)(*Parser))->AspectRatio==0))
@@ -5485,7 +5485,7 @@ void File_Mxf::Data_Parse()
                                         break;
                                     }
                             }
-                        #endif //MEDIAINFO_ANCILLARY
+                        #endif //defined(MEDIAINFO_ANCILLARY_YES)
                         if (Element_Offset+Size>Element_Size)
                             Size=(int16u)(Element_Size-Element_Offset);
                         Open_Buffer_Continue((*Parser), Buffer+Buffer_Offset+(size_t)(Element_Offset), Size);
@@ -6000,7 +6000,7 @@ void File_Mxf::Identification()
         ELEMENT(3C03, Identification_ProductVersion,            "ProductVersion")
         ELEMENT(3C04, Identification_VersionString,             "VersionString")
         ELEMENT(3C05, Identification_ProductUID,                "ProductUID")
-        ELEMENT(3C06, Identification_ModificationDate ,         "ModificationDate ")
+        ELEMENT(3C06, Identification_ModificationDate ,         "ModificationDate")
         ELEMENT(3C07, Identification_ToolkitVersion,            "ToolkitVersion")
         ELEMENT(3C08, Identification_Platform,                  "Platform")
         ELEMENT(3C09, Identification_ThisGenerationUID,         "ThisGenerationUID")
@@ -14198,12 +14198,12 @@ void File_Mxf::ChooseParser__Aaf_GC_Data(const essences::iterator &Essence, cons
                     Essence->second.Parsers.push_back(new File__Analyze());
                     break;
         case 0x02 : //Ancillary
-                    #if MEDIAINFO_ANCILLARY
+                    #if defined(MEDIAINFO_ANCILLARY_YES)
                         if (!Ancillary)
                             Ancillary=new File_Ancillary();
                         Essence->second.Parsers.push_back(Ancillary);
                         Ancillary_IsBinded=true;
-                    #endif //MEDIAINFO_ANCILLARY
+                    #endif //defined(MEDIAINFO_ANCILLARY_YES)
                     break;
         case 0x08 : //Line Wrapped Data Element, SMPTE 384M
         case 0x09 : //Line Wrapped VANC Data Element, SMPTE 384M
