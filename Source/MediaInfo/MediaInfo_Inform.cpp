@@ -38,6 +38,7 @@
     #include "MediaInfo/Export/Export_PBCore2.h"
 #endif //defined(MEDIAINFO_PBCORE_YES)
 #include "MediaInfo/MediaInfo_Internal.h"
+#include "MediaInfo/File__Analyze.h"
 #include "base64.h"
 //---------------------------------------------------------------------------
 
@@ -85,7 +86,7 @@ Ztring MediaInfo_Internal::Inform()
             return Export_PBCore().Transform(*this);
         if (MediaInfoLib::Config.Inform_Get()==__T("PBCore2") || MediaInfoLib::Config.Inform_Get()==__T("PBCore_2.0"))
             return Export_PBCore2().Transform(*this);
-    #endif defined(MEDIAINFO_PBCORE_YES)
+    #endif //defined(MEDIAINFO_PBCORE_YES)
     #if defined(MEDIAINFO_REVTMD_YES)
         if (MediaInfoLib::Config.Inform_Get()==__T("reVTMD"))
             return __T("reVTMD is disabled due to its non-free licensing."); //return Export_reVTMD().Transform(*this);
