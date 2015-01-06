@@ -203,7 +203,7 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
         }
 
         #if MEDIAINFO_ADVANCED
-            size_t SequenceFileSkipFrames=30;
+            size_t SequenceFileSkipFrames=Config->File_SequenceFilesSkipFrames_Get();
             if (SequenceFileSkipFrames)
             {
                 for (;;)
