@@ -1047,13 +1047,13 @@ protected :
 
     //Helpers
     void Subsampling_Compute(descriptors::iterator Descriptor);
-    #if MEDIAINFO_REFERENCES
+    #if defined(MEDIAINFO_REFERENCES_YES)
         void Locators_CleanUp();
         void Locators_Test();
-    #else MEDIAINFO_REFERENCES
+    #else //defined(MEDIAINFO_REFERENCES_YES)
         inline void Locators_CleanUp() {}
         inline void Locators_Test() {}
-    #endif //MEDIAINFO_REFERENCES
+    #endif //defined(MEDIAINFO_REFERENCES_YES)
     void TryToFinish();
 
     //Temp

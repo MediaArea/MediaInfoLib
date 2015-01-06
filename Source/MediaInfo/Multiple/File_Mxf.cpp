@@ -73,9 +73,9 @@
 #include "ZenLib/FileName.h"
 #include "ZenLib/Dir.h"
 #include "MediaInfo/MediaInfo_Internal.h"
-#if MEDIAINFO_REFERENCES
+#if defined(MEDIAINFO_REFERENCES_YES)
     #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
-#endif //MEDIAINFO_REFERENCES
+#endif //defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/Format/Http/Http_Utils.h"
 #include <cfloat>
 #if MEDIAINFO_SEEK
@@ -1850,8 +1850,8 @@ string Mxf_CameraUnitMetadata_CaptureGammaEquation(int128u Value)
 {
     switch(Value.lo)
     {
-        case 0x0401010101020000 : return "BT.709";
-        case 0x0401010101030000 : return "SMPTE ST 240";
+        case 0x0401010101020000LL : return "BT.709";
+        case 0x0401010101030000LL : return "SMPTE ST 240";
         default   :
                     {
                     Ztring ValueS;
@@ -1974,9 +1974,9 @@ File_Mxf::File_Mxf()
 //---------------------------------------------------------------------------
 File_Mxf::~File_Mxf()
 {
-    #if MEDIAINFO_REFERENCES
+    #if defined(MEDIAINFO_REFERENCES_YES)
         delete ReferenceFiles;
-    #endif //MEDIAINFO_REFERENCES
+    #endif //defined(MEDIAINFO_REFERENCES_YES)
     #if defined(MEDIAINFO_ANCILLARY_YES)
         if (!Ancillary_IsBinded)
             delete Ancillary;
@@ -2005,7 +2005,7 @@ void File_Mxf::Streams_Fill()
 //---------------------------------------------------------------------------
 void File_Mxf::Streams_Finish()
 {
-    #if MEDIAINFO_NEXTPACKET && MEDIAINFO_REFERENCES
+    #if MEDIAINFO_NEXTPACKET && defined(MEDIAINFO_REFERENCES_YES)
         //Locators only
         if (ReferenceFiles_IsParsing)
         {
@@ -2018,7 +2018,7 @@ void File_Mxf::Streams_Finish()
             Streams_Finish_CommercialNames();
             return;
         }
-    #endif //MEDIAINFO_NEXTPACKET && MEDIAINFO_REFERENCES
+    #endif //MEDIAINFO_NEXTPACKET && defined(MEDIAINFO_REFERENCES_YES)
 
     //Per stream
     for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
@@ -4151,10 +4151,10 @@ bool File_Mxf::DetectDuration ()
 #if MEDIAINFO_SEEK
 size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
 {
-    #if MEDIAINFO_REFERENCES
+    #if defined(MEDIAINFO_REFERENCES_YES)
         if (ReferenceFiles)
             return ReferenceFiles->Seek(Method, Value, ID);
-    #endif //MEDIAINFO_REFERENCES
+    #endif //defined(MEDIAINFO_REFERENCES_YES)
 
     //Init
     if (!Duration_Detected)
@@ -10634,7 +10634,7 @@ void File_Mxf::UserDefinedAcquisitionMetadata_UdamSetIdentifier()
     Get_UUID(Value,                                             "Value");
 
     FILLING_BEGIN();
-        if (Value.hi==0x966908004678031C && Value.lo==0x20500000F0C01181)
+        if (Value.hi==0x966908004678031CLL && Value.lo==0x20500000F0C01181LL)
             UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony=true;
     FILLING_END();
 }
@@ -15376,7 +15376,7 @@ void File_Mxf::Subsampling_Compute(descriptors::iterator Descriptor)
 }
 
 //---------------------------------------------------------------------------
-#if MEDIAINFO_REFERENCES
+#if defined(MEDIAINFO_REFERENCES_YES)
 void File_Mxf::Locators_CleanUp()
 {
     //Testing locators (TODO: check if this is still useful)
@@ -15406,10 +15406,10 @@ void File_Mxf::Locators_CleanUp()
     }
 
 }
-#endif //MEDIAINFO_REFERENCES
+#endif //defined(MEDIAINFO_REFERENCES_YES)
 
 //---------------------------------------------------------------------------
-#if MEDIAINFO_REFERENCES
+#if defined(MEDIAINFO_REFERENCES_YES)
 void File_Mxf::Locators_Test()
 {
     Locators_CleanUp();
@@ -15472,7 +15472,7 @@ void File_Mxf::Locators_Test()
         ReferenceFiles->ParseReferences();
     }
 }
-#endif //MEDIAINFO_REFERENCES
+#endif //defined(MEDIAINFO_REFERENCES_YES)
 
 //---------------------------------------------------------------------------
 void File_Mxf::TryToFinish()
