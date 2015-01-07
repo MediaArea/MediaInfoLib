@@ -203,31 +203,6 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
         }
 
         #if MEDIAINFO_ADVANCED
-            size_t SequenceFileSkipFrames=Config->File_SequenceFilesSkipFrames_Get();
-            if (SequenceFileSkipFrames)
-            {
-                for (;;)
-                {
-                    size_t Pos_Add_Max_Old=Pos_Add_Max;
-                    for (size_t TempPos=Pos_Add_Max; TempPos<=Pos_Add_Max+SequenceFileSkipFrames; TempPos++)
-                    {
-                        Ztring Pos_Ztring; Pos_Ztring.From_Number(Pos_Base+TempPos);
-                        if (Numbers_Size>Pos_Ztring.size())
-                            Pos_Ztring.insert(0, Numbers_Size-Pos_Ztring.size(), __T('0'));
-                        Ztring Next=FileToTest_Name_Begin+Pos_Ztring+FileToTest_Name_End;
-                        if (File::Exists(Next))
-                        {
-                            Pos_Add_Max=TempPos+1;
-                            break;
-                        }
-                    }
-                    if (Pos_Add_Max==Pos_Add_Max_Old)
-                        break;
-                }
-            }
-        #endif //MEDIAINFO_ADVANCED
-
-        #if MEDIAINFO_ADVANCED
             } //SequenceFileSkipFrames
         #endif //MEDIAINFO_ADVANCED
 
