@@ -84,8 +84,6 @@ void PBCore2_Transform(Ztring &ToReturn, MediaInfo_Internal &MI, stream_t Stream
     if (StreamKind==Stream_Menu && MI.Get(Stream_Menu, StreamPos, Menu_Format)!=__T("TimeCode"))
         return;
 
-    ToReturn+=__T("\t<instantiationEssenceTrack>\n");
-
     //essenceTrackType
     Ztring essenceTrackType;
     switch (StreamKind)
@@ -118,6 +116,9 @@ void PBCore2_Transform(Ztring &ToReturn, MediaInfo_Internal &MI, stream_t Stream
                 return; //Not supported
         default:            return; //Not supported
     }
+
+    ToReturn+=__T("\t<instantiationEssenceTrack>\n");
+
     ToReturn+=__T("\t\t<essenceTrackType>");
     ToReturn+=essenceTrackType;
     ToReturn+=__T("</essenceTrackType>\n");
