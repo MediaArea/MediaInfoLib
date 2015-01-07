@@ -20,6 +20,7 @@ x EBUCore: time code tracks moved to their own "format" block
 x EBUCore: audioTrackConfiguration removed (not the expected behavior)
 x EBUCore: OverallBitRate information changed from technicalAttributeString to technicalAttributeInteger
 x PBCore: invalid output in case of time code stream, fix thanks to Dave Rice
+x PBCore2: codecid changed, thanks to Dave Rice
 x OP-47/SDP/Teletext: some streams were not detected
 x Previous version was built with SSE2 instructions, switching back to SSE instructions
 x AVC: infinite loop fix

@@ -163,7 +163,8 @@ void PBCore2_Transform(Ztring &ToReturn, MediaInfo_Internal &MI, stream_t Stream
         ToReturn+=__T("\t\t<essenceTrackEncoding");
         if (!MI.Get(StreamKind, StreamPos, __T("CodecID")).empty())
         {
-            ToReturn+=__T(" ref=\"codecid:");
+            ToReturn+=__T(" source=\"codecid\"");
+            ToReturn+=__T(" ref=\"");
             ToReturn+=MI.Get(StreamKind, StreamPos, __T("CodecID"));
             ToReturn+=__T("\"");
         }
