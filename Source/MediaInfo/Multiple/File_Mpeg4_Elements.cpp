@@ -4489,6 +4489,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
 
     int16u Width, Height, Depth, ColorTableID;
     int8u  CompressorName_Size;
+    bool   IsGreyscale;
     Skip_B2(                                                    "Version");
     Skip_B2(                                                    "Revision level");
     Skip_C4(                                                    "Vendor");
@@ -4512,9 +4513,31 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
         //this is hard-coded 32-byte string
         Skip_Local(32,                                          "Compressor name");
     Get_B2 (Depth,                                              "Depth");
+    if (Depth>0x20 && Depth<0x40)
+    {
+        Depth-=0x20;
+        IsGreyscale=true;
+    }
+    else if (Depth==1)
+        IsGreyscale=true;
+    else
+        IsGreyscale=false;
     Get_B2 (ColorTableID,                                       "Color table ID");
-    if (ColorTableID==0 && Width && Height) //In one file, if Zero-filled, Color table is not present
-        Skip_XX(32,                                             "Color Table");
+    if (!IsGreyscale && (Depth>1 && Depth<=8) && !ColorTableID)
+    {
+        int32u ColorStart;
+        int16u ColorEnd;
+        Get_B4 (ColorStart,                                     "Color Start");
+        Skip_B2(                                                "Color Count");
+        Get_B2 (ColorEnd,                                       "Color End");
+        for (int32u Color=ColorStart; Color<=ColorEnd; Color++)
+        {
+            Skip_B2(                                            "Alpha");
+            Skip_B2(                                            "Red");
+            Skip_B2(                                            "Green");
+            Skip_B2(                                            "Blue");
+        }
+    }
 
     if (moov_trak_mdia_minf_stbl_stsd_Pos)
         return; //Handling only the first description
@@ -4693,17 +4716,12 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
         //RGB(A)
         if (Codec=="raw " || Codec=="rle ")
         {
-            if (Depth==1)
+            if (IsGreyscale)
             {
                 Fill(Stream_Video, StreamPos_Last, Video_ColorSpace, "Y", Unlimited, true, true);
-                Fill(Stream_Video, StreamPos_Last, Video_BitDepth, 1);
+                Fill(Stream_Video, StreamPos_Last, Video_BitDepth, Depth);
             }
-            else if (Depth<15)
-            {
-                Fill(Stream_Video, StreamPos_Last, Video_ColorSpace, "RGB", Unlimited, true, true);
-                Fill(Stream_Video, StreamPos_Last, Video_BitDepth, 8);
-            }
-            else if (Depth==32 || Depth==36)
+            else if (Depth==32)
             {
                 Fill(Stream_Video, StreamPos_Last, Video_ColorSpace, "RGBA", Unlimited, true, true);
                 Fill(Stream_Video, StreamPos_Last, Video_BitDepth, Depth/4);

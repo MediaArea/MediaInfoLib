@@ -29,6 +29,7 @@ x Crash on Windows Vista and Win7 pre-SP1 and a CPU having FMA support, due to a
 x MXF: AS-11 Typo (SerieTitle changed to SeriesTitle), TotalProgrammeDuration added
 x ID3v2: support of 3-byte ID3v2.3 tags
 x CEA-608 in MPEG-4: demux PTS was wrong in case of multiple blocks in one frame
+x MOV: better Grey scale files and color palettes handling, with help from Vittorio Giovara
 
 Version 0.7.72, 2014-11-09
 --------------
