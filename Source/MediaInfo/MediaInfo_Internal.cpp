@@ -702,21 +702,22 @@ size_t MediaInfo_Internal::Open_Buffer_Init (int64u File_Size_, const String &Fi
         Info->File_Name=File_Name;
     Info->Open_Buffer_Init(File_Size_);
 
-    #if MEDIAINFO_EVENTS
-        {
-            string File_Name_Local=Ztring(File_Name).To_Local();
-            wstring File_Name_Unicode=Ztring(File_Name).To_Unicode();
-            struct MediaInfo_Event_General_Start_0 Event;
-            memset(&Event, 0xFF, sizeof(struct MediaInfo_Event_Generic));
-            Event.EventCode=MediaInfo_EventCode_Create(MediaInfo_Parser_None, MediaInfo_Event_General_Start, 0);
-            Event.EventSize=sizeof(struct MediaInfo_Event_General_Start_0);
-            Event.StreamIDs_Size=0;
-            Event.Stream_Size=File_Size_;
-            Event.FileName=File_Name_Local.c_str();
-            Event.FileName_Unicode=File_Name_Unicode.c_str();
-            Config.Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_General_Start_0));
-        }
-    #endif //MEDIAINFO_EVENTS
+    if (File_Name.empty())
+    {
+        #if MEDIAINFO_EVENTS
+            {
+                struct MediaInfo_Event_General_Start_0 Event;
+                memset(&Event, 0xFF, sizeof(struct MediaInfo_Event_Generic));
+                Event.EventCode=MediaInfo_EventCode_Create(MediaInfo_Parser_None, MediaInfo_Event_General_Start, 0);
+                Event.EventSize=sizeof(struct MediaInfo_Event_General_Start_0);
+                Event.StreamIDs_Size=0;
+                Event.Stream_Size=File_Size_;
+                Event.FileName=NULL;
+                Event.FileName_Unicode=NULL;
+                Config.Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_General_Start_0));
+            }
+        #endif //MEDIAINFO_EVENTS
+    }
 
     return 1;
 }
