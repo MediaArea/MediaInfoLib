@@ -1126,7 +1126,7 @@ void File__ReferenceFilesHelper::ParseReference_Finalize ()
             ParseReference_Finalize_PerStream();
         }
 
-    if (!StreamFound && Sequences[Sequences_Current]->StreamKind!=Stream_Max && Sequences[Sequences_Current]->StreamPos!=(size_t)-1)
+    if (!StreamFound && Sequences[Sequences_Current]->StreamKind!=Stream_Max && Sequences[Sequences_Current]->StreamPos!=(size_t)-1 && Sequences[Sequences_Current]->MI->Info)
     {
         Ztring MuxingMode=MI->Retrieve(Sequences[Sequences_Current]->StreamKind, Sequences[Sequences_Current]->StreamPos, "MuxingMode");
         if (!MuxingMode.empty())
