@@ -1323,6 +1323,15 @@ size_t File_Mpeg4::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
                                 default           : ;
                             }
 
+                        if (!StreamOffset_Jump.empty())
+                        {
+                            std::map<int64u, int64u>::iterator StreamOffset_Current=StreamOffset_Jump.end();
+                            do
+                                StreamOffset_Current--;
+                            while (StreamOffset_Current->second>JumpTo && StreamOffset_Current!=StreamOffset_Jump.begin());
+                            JumpTo=StreamOffset_Current->second;
+                        }
+
                         GoTo(JumpTo);
                         Open_Buffer_Unsynch();
                         return 1;
