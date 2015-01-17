@@ -45,7 +45,10 @@ struct UserHandle_struct
 void Basic_General_Start_0 (struct MediaInfo_Event_General_Start_0* Event, struct UserHandle_struct* UserHandle)
 {
     if (Event->FileName_Unicode)
+    {
         UserHandle->Name=Event->FileName_Unicode;
+        UserHandle->Time_File.Write(Event->FileName_Unicode+__T(';'));
+    }
     UserHandle->Size=Event->Stream_Size;
     UserHandle->Time_Start=time(NULL);
     UserHandle->Parser.clear();
@@ -59,8 +62,8 @@ void Basic_General_End_0 (struct MediaInfo_Event_General_End_0* Event, struct Us
     else
         Diff=(time_t)-1;
 
-    if (Diff!=(time_t)-1)
-        UserHandle->Time_File.Write(UserHandle->Name+__T(';')+Ztring::ToZtring(UserHandle->Size)+__T(';')+Ztring::ToZtring(Diff)+EOL);
+   if (Diff!=(time_t)-1)
+        UserHandle->Time_File.Write(__T(';')+Ztring::ToZtring(UserHandle->Size)+__T(';')+Ztring::ToZtring(Diff)+EOL);
 
     UserHandle->Time_Start=(time_t)-1;
     UserHandle->Parser.clear();
