@@ -731,6 +731,9 @@
 #if !defined(MEDIAINFO_IMAGE_NO) && !defined(MEDIAINFO_BMP_NO) && !defined(MEDIAINFO_BMP_YES)
     #define MEDIAINFO_BMP_YES
 #endif
+#if !defined(MEDIAINFO_IMAGE_NO) && !defined(MEDIAINFO_BPG_NO) && !defined(MEDIAINFO_BPG_YES)
+    #define MEDIAINFO_BPG_YES
+#endif
 #if !defined(MEDIAINFO_IMAGE_NO) && !defined(MEDIAINFO_DDS_NO) && !defined(MEDIAINFO_DDS_YES)
     #define MEDIAINFO_DDS_YES
 #endif

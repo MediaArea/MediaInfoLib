@@ -186,6 +186,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_reVTMD.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_ArriRaw.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Bmp.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Bpg.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Dds.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Dpx.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Exr.cpp

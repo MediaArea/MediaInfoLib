@@ -296,6 +296,9 @@
 #if defined(MEDIAINFO_BMP_YES)
     #include "MediaInfo/Image/File_Bmp.h"
 #endif
+#if defined(MEDIAINFO_BPG_YES)
+    #include "MediaInfo/Image/File_Bpg.h"
+#endif
 #if defined(MEDIAINFO_DDS_YES)
     #include "MediaInfo/Image/File_Dds.h"
 #endif
@@ -657,6 +660,9 @@ bool MediaInfo_Internal::SelectFromExtension (const String &Parser)
     #if defined(MEDIAINFO_BMP_YES)
         else if (Parser==__T("Bmp"))         Info=new File_Bmp();
     #endif
+    #if defined(MEDIAINFO_BPG_YES)
+        else if (Parser==__T("Bpg"))         Info=new File_Bpg();
+    #endif
     #if defined(MEDIAINFO_DDS_YES)
         else if (Parser==__T("Dds"))         Info=new File_Dds();
     #endif
@@ -1006,6 +1012,9 @@ int MediaInfo_Internal::ListFormats(const String &File_Name)
     #endif
     #if defined(MEDIAINFO_BMP_YES)
         delete Info; Info=new File_Bmp();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
+    #endif
+    #if defined(MEDIAINFO_BPG_YES)
+        delete Info; Info=new File_Bpg();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     #endif
     #if defined(MEDIAINFO_DDS_YES)
         delete Info; Info=new File_Dds();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;

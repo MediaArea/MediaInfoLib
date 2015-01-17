@@ -104,6 +104,7 @@ Wave64;;;A;Riff;;w64;;;
 WavPack;;;A;Wvpk;;wv wvc;;http://www.wavpack.com;
 Arri Raw;;;I;ArriRaw;;ari;;;
 Bitmap;;;I;Bmp;;bmp;image/bmp;;Lossless
+BPG;;;I;Bpg;Better Portable Graphics;bpg;image/bpg;http://bellard.org/bpg/;
 DDS;;;I;Dds;DirectDraw Surface;dds;;;
 DPX;;;I;Dpx;;dpx cin;;;Lossless
 EXR;;;I;Exr;;exr;;;Lossless

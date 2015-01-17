@@ -508,6 +508,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\..\Source\MediaInfo\Image\File_Bpg.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\..\Source\MediaInfo\Image\File_Dds.cpp"
 					>
 				</File>
@@ -1267,6 +1271,10 @@
 				</File>
 				<File
 					RelativePath="..\..\..\Source\MediaInfo\Image\File_Bmp.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\Source\MediaInfo\Image\File_Bpg.h"
 					>
 				</File>
 				<File
