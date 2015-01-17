@@ -4200,7 +4200,7 @@ size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
             {
                 float64 EditRate_FromTrack=DBL_MAX;
                 for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end(); ++Track)
-                    if (EditRate_FromTrack>Track->second.EditRate)
+                    if (Track->second.EditRate && EditRate_FromTrack>Track->second.EditRate)
                         EditRate_FromTrack=Track->second.EditRate;
                 if (EditRate_FromTrack>1000)
                     EditRate_FromTrack=Demux_Rate; //Default value;
@@ -5250,7 +5250,7 @@ void File_Mxf::Data_Parse()
                 {
                     float64 EditRate_FromTrack=DBL_MAX;
                     for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end(); ++Track)
-                        if (EditRate_FromTrack>Track->second.EditRate)
+                        if (Track->second.EditRate && EditRate_FromTrack>Track->second.EditRate)
                             EditRate_FromTrack=Track->second.EditRate;
                     if (EditRate_FromTrack>1000)
                         EditRate_FromTrack=Demux_Rate; //Default value;
