@@ -569,8 +569,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
         #endif //MEDIAINFO_DEMUX
          )
     {
-        if (!BookMark_Code.empty())
-            BookMark_Get();
+        BookMark_Get();
 
         if (File_GoTo>=File_Size)
         {
@@ -3007,8 +3006,7 @@ void File__Analyze::GoTo (int64u GoTo, const char* ParserName)
 
     if (GoTo==File_Size)
     {
-        if (!BookMark_Code.empty())
-            BookMark_Get();
+        BookMark_Get();
         if (File_GoTo==(int64u)-1)
             ForceFinish();
         return;
@@ -3074,8 +3072,7 @@ void File__Analyze::GoTo (int64u GoTo)
 
     if (GoTo==File_Size)
     {
-        if (!BookMark_Code.empty())
-            BookMark_Get();
+        BookMark_Get();
         if (File_GoTo==(int64u)-1)
             ForceFinish();
         return;
