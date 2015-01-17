@@ -611,8 +611,8 @@ void File_Jpeg::SIZ()
     vector<int8u> BitDepths;
     int8u SamplingFactors_Max=0;
     int32u Xsiz, Ysiz;
-    int16u Count;
-    Skip_B2(                                                    "Rsiz - Capability of the codestream");
+    int16u Rsiz, Count;
+    Get_B2 (Rsiz,                                               "Rsiz - Capability of the codestream");
     Get_B4 (Xsiz,                                               "Xsiz - Image size X");
     Get_B4 (Ysiz,                                               "Ysiz - Image size Y");
     Skip_B4(                                                    "XOsiz - Image offset X");
@@ -656,6 +656,7 @@ void File_Jpeg::SIZ()
                 Stream_Prepare(StreamKind_Last);
             Fill(StreamKind_Last, 0, Fill_Parameter(StreamKind_Last, Generic_Format), "JPEG 2000");
             Fill(StreamKind_Last, 0, Fill_Parameter(StreamKind_Last, Generic_Codec), "JPEG 2000");
+            Fill(StreamKind_Last, 0, "Format_Profile", Rsiz);
             if (StreamKind_Last==Stream_Image)
                 Fill(Stream_Image, 0, Image_Codec_String, "JPEG 2000", Unlimited, true, true); //To Avoid automatic filling
             Fill(StreamKind_Last, 0, StreamKind_Last==Stream_Image?(size_t)Image_Width:(size_t)Video_Width, Xsiz);
@@ -683,7 +684,9 @@ void File_Jpeg::SIZ()
                 Fill(StreamKind_Last, 0, "ChromaSubsampling", ChromaSubsampling);
 
                 //Not for sure
-                if (!IsSub)
+                if (ChromaSubsampling==__T("4:4:4") && (Retrieve(StreamKind_Last, 0, "Format_Profile")==__T("3") || Retrieve(StreamKind_Last, 0, "Format_Profile")==__T("4")))
+                    Fill(StreamKind_Last, 0, "ColorSpace", "XYZ");
+                else if (!IsSub)
                 {
                     if (ChromaSubsampling==__T("4:2:0") || ChromaSubsampling==__T("4:2:2"))
                         Fill(StreamKind_Last, 0, "ColorSpace", "YUV");

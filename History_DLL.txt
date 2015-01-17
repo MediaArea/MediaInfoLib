@@ -8,6 +8,11 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
+Version 0.7.72, 2015-01-
+--------------
++ JPEG-2000: Display of profile (Rsiz)
++ JPEG-2000: detection of XYZ colorspace (based on D-Cinema profile)
+
 Version 0.7.72, 2015-01-07
 --------------
 + MXF: MXF version (e.g. "1.3")
