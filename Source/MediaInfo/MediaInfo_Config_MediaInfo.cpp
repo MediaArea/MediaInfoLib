@@ -107,10 +107,12 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
         Demux_FirstFrameNumber=(int64u)-1;
         Demux_InitData=0; //In Demux event
     #endif //MEDIAINFO_DEMUX
-    #if MEDIAINFO_IBI
-        Ibi_Create=false;
+    #if MEDIAINFO_IBIUSAGE
         Ibi_UseIbiInfoIfAvailable=false;
-    #endif //MEDIAINFO_IBI
+    #endif //MEDIAINFO_IBIUSAGE
+    #if MEDIAINFO_IBIUSAGE
+        Ibi_Create=false;
+    #endif //MEDIAINFO_IBIUSAGE
 
     //Specific
     File_MpegTs_ForceMenu=false;
@@ -637,36 +639,36 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     }
     else if (Option_Lower==__T("file_ibi"))
     {
-        #if MEDIAINFO_IBI
+        #if MEDIAINFO_IBIUSAGE
             Ibi_Set(Value);
             return Ztring();
-        #else //MEDIAINFO_IBI
+        #else //MEDIAINFO_IBIUSAGE
             return __T("IBI support is disabled due to compilation options");
-        #endif //MEDIAINFO_IBI
+        #endif //MEDIAINFO_IBIUSAGE
     }
     else if (Option_Lower==__T("file_ibi_create"))
     {
-        #if MEDIAINFO_IBI
+        #if MEDIAINFO_IBIUSAGE
             if (Ztring(Value).To_int64u()==0)
                 Ibi_Create_Set(false);
             else
                 Ibi_Create_Set(true);
             return Ztring();
-        #else //MEDIAINFO_IBI
+        #else //MEDIAINFO_IBIUSAGE
             return __T("IBI support is disabled due to compilation options");
-        #endif //MEDIAINFO_IBI
+        #endif //MEDIAINFO_IBIUSAGE
     }
     else if (Option_Lower==__T("file_ibi_useibiinfoifavailable"))
     {
-        #if MEDIAINFO_IBI
+        #if MEDIAINFO_IBIUSAGE
             if (Ztring(Value).To_int64u()==0)
                 Ibi_UseIbiInfoIfAvailable_Set(false);
             else
                 Ibi_UseIbiInfoIfAvailable_Set(true);
             return Ztring();
-        #else //MEDIAINFO_IBI
+        #else //MEDIAINFO_IBIUSAGE
             return __T("IBI support is disabled due to compilation options");
-        #endif //MEDIAINFO_IBI
+        #endif //MEDIAINFO_IBIUSAGE
     }
     else if (Option_Lower==__T("file_encryption_format"))
     {
@@ -1726,7 +1728,7 @@ int8u MediaInfo_Config_MediaInfo::Demux_InitData_Get ()
 // IBI support
 //***************************************************************************
 
-#if MEDIAINFO_IBI
+#if MEDIAINFO_IBIUSAGE
 //---------------------------------------------------------------------------
 void MediaInfo_Config_MediaInfo::Ibi_Set (const Ztring &Value)
 {
@@ -1743,19 +1745,6 @@ string MediaInfo_Config_MediaInfo::Ibi_Get ()
 }
 
 //---------------------------------------------------------------------------
-void MediaInfo_Config_MediaInfo::Ibi_Create_Set (bool NewValue)
-{
-    CriticalSectionLocker CSL(CS);
-    Ibi_Create=NewValue;
-}
-
-bool MediaInfo_Config_MediaInfo::Ibi_Create_Get ()
-{
-    CriticalSectionLocker CSL(CS);
-    return Ibi_Create;
-}
-
-//---------------------------------------------------------------------------
 void MediaInfo_Config_MediaInfo::Ibi_UseIbiInfoIfAvailable_Set (bool NewValue)
 {
     CriticalSectionLocker CSL(CS);
@@ -1767,7 +1756,22 @@ bool MediaInfo_Config_MediaInfo::Ibi_UseIbiInfoIfAvailable_Get ()
     CriticalSectionLocker CSL(CS);
     return Ibi_UseIbiInfoIfAvailable;
 }
-#endif //MEDIAINFO_IBI
+#endif //MEDIAINFO_IBIUSAGE
+
+#if MEDIAINFO_IBIUSAGE
+//---------------------------------------------------------------------------
+void MediaInfo_Config_MediaInfo::Ibi_Create_Set (bool NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    Ibi_Create=NewValue;
+}
+
+bool MediaInfo_Config_MediaInfo::Ibi_Create_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return Ibi_Create;
+}
+#endif //MEDIAINFO_IBIUSAGE
 
 //***************************************************************************
 // Encryption

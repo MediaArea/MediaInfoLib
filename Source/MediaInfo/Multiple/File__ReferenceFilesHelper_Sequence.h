@@ -56,9 +56,9 @@ public:
 
     //Config
     rfh_common*                     Package;
-    #if MEDIAINFO_NEXTPACKET && MEDIAINFO_IBI
+    #if MEDIAINFO_NEXTPACKET && MEDIAINFO_IBIUSAGE
         ibi::stream                 IbiStream;
-    #endif //MEDIAINFO_NEXTPACKET && MEDIAINFO_IBI
+    #endif //MEDIAINFO_NEXTPACKET && MEDIAINFO_IBIUSAGE
 
     resources                       Resources;
     size_t                          Resources_Current;

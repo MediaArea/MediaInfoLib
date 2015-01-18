@@ -327,7 +327,7 @@ size_t MediaInfo_Internal::Open(const String &File_Name_)
     Close();
 
     //External IBI
-    #if defined(MEDIAINFO_IBI_YES)
+    #if MEDIAINFO_IBIUSAGE
         if (Config.Ibi_UseIbiInfoIfAvailable_Get())
         {
             std::string IbiFile=Config.Ibi_Get();
@@ -345,7 +345,7 @@ size_t MediaInfo_Internal::Open(const String &File_Name_)
                 Close();
             }
         }
-    #endif //MEDIAINFO_IBI_YES
+    #endif //MEDIAINFO_IBIUSAGE
 
     CS.Enter();
     MEDIAINFO_DEBUG_CONFIG_TEXT(Debug+=__T("Open, File=");Debug+=Ztring(File_Name_).c_str();)
@@ -1298,15 +1298,15 @@ String MediaInfo_Internal::Option (const String &Option, const String &Value)
             {
                 case 1  : return __T("");
                 case 2  : return __T("Invalid value");
-                #if MEDIAINFO_IBI
+                #if MEDIAINFO_IBIUSAGE
                 case 3  : return __T("Feature not supported / IBI file not provided");
                 case 4  : return __T("Problem during IBI file parsing");
-                #endif //MEDIAINFO_IBI
+                #endif //MEDIAINFO_IBIUSAGE
                 case 5  : return __T("Invalid ID");
                 case 6  : return __T("Internal error");
-                #if !MEDIAINFO_IBI
+                #if !MEDIAINFO_IBIUSAGE
                 case (size_t)-2 : return __T("Feature not supported / IBI support disabled due to compilation options");
-                #endif //MEDIAINFO_IBI
+                #endif //MEDIAINFO_IBIUSAGE
                 case (size_t)-1 : return __T("Feature not supported");
                 default : return __T("Unknown error");
             }

@@ -60,7 +60,7 @@ void File__Analyze::Streams_Finish_Global()
             Fill(Stream_Video, 0, Video_FrameCount, Frame_Count_NotParsedIncluded);
         else if (Config->File_Names.size()>1)
             Fill(Stream_Video, 0, Video_FrameCount, Config->File_Names.size());
-        #if MEDIAINFO_IBI
+        #if MEDIAINFO_IBIUSAGE
         else
         {
             //External IBI
@@ -83,7 +83,7 @@ void File__Analyze::Streams_Finish_Global()
             if (IbiStream && !IbiStream->Infos.empty() && IbiStream->Infos[IbiStream->Infos.size()-1].IsContinuous && IbiStream->Infos[IbiStream->Infos.size()-1].FrameNumber!=(int64u)-1)
                 Fill(Stream_Video, 0, Video_FrameCount, IbiStream->Infos[IbiStream->Infos.size()-1].FrameNumber);
         }
-        #endif //MEDIAINFO_IBI
+        #endif //MEDIAINFO_IBIUSAGE
     }
 
     Streams_Finish_StreamOnly();

@@ -949,7 +949,7 @@ void File_Mpeg4::Streams_Finish()
                 {
                     Sequence->FrameRate_Set(Retrieve(Stream_Video, Stream->second.StreamPos, Video_FrameRate).To_float64());
 
-                    #ifdef MEDIAINFO_IBI_YES
+                    #if MEDIAINFO_IBIUSAGE
                         for (size_t stss_Pos=0; stss_Pos<Stream->second.stss.size(); stss_Pos++)
                         {
                             int64u Value=Stream->second.stss[stss_Pos];
@@ -979,7 +979,7 @@ void File_Mpeg4::Streams_Finish()
                                 }
                             }
                         }
-                    #endif //MEDIAINFO_IBI_YES
+                    #endif //MEDIAINFO_IBIUSAGE
 
                 }
                 ReferenceFiles->AddSequence(Sequence);

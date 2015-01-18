@@ -1559,7 +1559,7 @@ MediaInfo_Internal* File__ReferenceFilesHelper::MI_Create()
             default: ;
         }
     #endif //MEDIAINFO_DEMUX
-    #if MEDIAINFO_IBI
+    #if MEDIAINFO_IBIUSAGE
         if (!Sequences[Sequences_Current]->IbiStream.Infos.empty())
         {
             ibi Ibi;
@@ -1571,7 +1571,7 @@ MediaInfo_Internal* File__ReferenceFilesHelper::MI_Create()
             if (!IbiText.empty())
                 MI_Temp->Option(__T("File_Ibi"), IbiText);
         }
-    #endif //MEDIAINFO_IBI
+    #endif //MEDIAINFO_IBIUSAGE
 
     return MI_Temp;
 }

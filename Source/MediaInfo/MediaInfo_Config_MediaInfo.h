@@ -276,14 +276,16 @@ public :
     int8u         Demux_InitData_Get ();
     #endif //MEDIAINFO_DEMUX
 
-    #if MEDIAINFO_IBI
+    #if MEDIAINFO_IBIUSAGE
     void          Ibi_Set (const Ztring &NewValue);
     std::string   Ibi_Get ();
-    void          Ibi_Create_Set (bool NewValue);
-    bool          Ibi_Create_Get ();
     void          Ibi_UseIbiInfoIfAvailable_Set (bool NewValue);
     bool          Ibi_UseIbiInfoIfAvailable_Get ();
-    #endif //MEDIAINFO_IBI
+    #endif //MEDIAINFO_IBIUSAGE
+    #if MEDIAINFO_IBIUSAGE
+    void          Ibi_Create_Set (bool NewValue);
+    bool          Ibi_Create_Get ();
+    #endif //MEDIAINFO_IBIUSAGE
 
     //Specific
     void          File_MpegTs_ForceMenu_Set (bool NewValue);
@@ -482,11 +484,13 @@ private :
     int8u                   Demux_InitData;
     #endif //MEDIAINFO_DEMUX
 
-    #if MEDIAINFO_IBI
+    #if MEDIAINFO_IBIUSAGE
     std::string             Ibi;
-    bool                    Ibi_Create;
     bool                    Ibi_UseIbiInfoIfAvailable;
-    #endif //MEDIAINFO_IBI
+    #endif //MEDIAINFO_IBIUSAGE
+    #if MEDIAINFO_IBIUSAGE
+    bool                    Ibi_Create;
+    #endif //MEDIAINFO_IBIUSAGE
 
     //Specific
     bool                    File_MpegTs_ForceMenu;

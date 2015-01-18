@@ -635,10 +635,10 @@ void File_Avc::Streams_Finish()
         }
     #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
 
-    #if MEDIAINFO_IBI
+    #if MEDIAINFO_IBIUSAGE
         if (seq_parameter_sets.size()==1 && (*seq_parameter_sets.begin())->vui_parameters && (*seq_parameter_sets.begin())->vui_parameters->timing_info_present_flag && (*seq_parameter_sets.begin())->vui_parameters->fixed_frame_rate_flag)
             Ibi_Stream_Finish((*seq_parameter_sets.begin())->vui_parameters->time_scale, (*seq_parameter_sets.begin())->vui_parameters->num_units_in_tick);
-    #endif //MEDIAINFO_IBI
+    #endif //MEDIAINFO_IBIUSAGE
 }
 
 //***************************************************************************
@@ -728,12 +728,12 @@ bool File_Avc::Synched_Test()
     if (!Header_Parser_QuickSearch())
         return false;
 
-    #if MEDIAINFO_IBI
+    #if MEDIAINFO_IBIUSAGE
         bool zero_byte=Buffer[Buffer_Offset+2]==0x00;
         bool RandomAccess=(Buffer[Buffer_Offset+(zero_byte?4:3)]&0x1F)==0x07 || ((Buffer[Buffer_Offset+(zero_byte?4:3)]&0x1F)==0x09 && ((Buffer[Buffer_Offset+(zero_byte?5:4)]&0xE0)==0x00 || (Buffer[Buffer_Offset+(zero_byte?5:4)]&0xE0)==0xA0)); //seq_parameter_set or access_unit_delimiter with value=0 or 5 (3 bits)
         if (RandomAccess)
             Ibi_Add();
-    #endif //MEDIAINFO_IBI
+    #endif //MEDIAINFO_IBIUSAGE
 
     //We continue
     return true;
