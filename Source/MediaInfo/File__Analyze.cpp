@@ -3319,13 +3319,14 @@ void File__Analyze::BookMark_Get ()
         Element_WantNextLevel=true;
     }
 
-    for (size_t Pos=0; Pos<=Element_Level; Pos++)
+    for (size_t Pos=0; Pos<=BookMark_Element_Level; Pos++)
     {
         Element[Pos].Code=BookMark_Code[Pos];
         Element[Pos].Next=BookMark_Next[Pos];
     }
     BookMark_Code.clear();
     BookMark_Next.clear();
+    BookMark_Element_Level=0;
     if (File_GoTo==(int64u)-1)
     {
         #if MEDIAINFO_MD5
