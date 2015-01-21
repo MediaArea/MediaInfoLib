@@ -8761,11 +8761,24 @@ void File_Mxf::GenericPictureEssenceDescriptor_ActiveFormatDescriptor()
 {
     //Parsing
     int8u Data;
+    bool Is1dot3=Retrieve(Stream_General, 0, General_Format_Version).To_float32()>=1.3?true:false;
+    if (!Is1dot3 && Element_Size && Buffer[(size_t)(Buffer_Offset+Element_Offset)]&0x60)
+        Is1dot3=true;
+
     BS_Begin();
-    Skip_SB(                                                    "");
-    Skip_SB(                                                    "");
-    Get_S1 (4, Data,                                            "Data"); Element_Info1C((Data<16), AfdBarData_active_format[Data]);
-    Skip_S1(2,                                                  "Reserved");
+    if (Is1dot3)
+    {
+        Skip_SB(                                                    "Reserved");
+        Get_S1 (4, Data,                                            "Data"); Element_Info1C((Data<16), AfdBarData_active_format[Data]);
+        Skip_SB(                                                    "AR");
+        Skip_S1(2,                                                  "Reserved");
+    }
+    else
+    {
+        Skip_S1(3,                                                  "Reserved");
+        Get_S1 (4, Data,                                            "Data"); Element_Info1C((Data<16), AfdBarData_active_format[Data]);
+        Skip_SB(                                                    "AR");
+    }
     BS_End();
 
     FILLING_BEGIN();

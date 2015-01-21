@@ -13,6 +13,7 @@ Version 0.7.72, 2015-01-
 + BPG: basic support, thanks to Kurtnoise
 + JPEG-2000: Display of profile (Rsiz)
 + JPEG-2000: detection of XYZ colorspace (based on D-Cinema profile)
+x MXF: AFD value was wrong (displaying the complete byte, but AFD is only 4 bits of this byte)
 x DTS: some streams in Little endian were not detected
 x MPEG-4: some files were having an incorrect frame count
 x AVC: Some SCTE 128 caption streams were displayed twice
