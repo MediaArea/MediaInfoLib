@@ -1907,7 +1907,7 @@ void File_Hevc::sei_message_user_data_unregistered_x265(int32u payloadSize)
             Element_Begin1("options");
             size_t Options_Pos_Before=Data_Pos_Before;
             Encoded_Library_Settings.clear();
-            do
+            while (Options_Pos_Before!=Data.size())
             {
                 size_t Options_Pos=Data.find(__T(" "), Options_Pos_Before);
                 if (Options_Pos==std::string::npos)
@@ -1915,7 +1915,7 @@ void File_Hevc::sei_message_user_data_unregistered_x265(int32u payloadSize)
                 Ztring option;
                 Get_Local (Options_Pos-Options_Pos_Before, option, "option");
                 Options_Pos_Before=Options_Pos;
-                do
+                while (Options_Pos_Before!=Data.size())
                 {
                     Ztring Separator;
                     Peek_Local(1, Separator);
@@ -1927,7 +1927,6 @@ void File_Hevc::sei_message_user_data_unregistered_x265(int32u payloadSize)
                     else
                         break;
                 }
-                while (Options_Pos_Before!=Data.size());
 
                 //Filling
                 if (option!=__T("options:") && !(!option.empty() && option[0]>=__T('0') && option[0]<=__T('9')) && option.find(__T("fps="))!=0 && option.find(__T("bitdepth="))!=0) //Ignoring redundant information e.g. width, height, frame rate, bit depth
@@ -1937,7 +1936,6 @@ void File_Hevc::sei_message_user_data_unregistered_x265(int32u payloadSize)
                     Encoded_Library_Settings+=option;
                 }
             }
-            while (Options_Pos_Before!=Data.size());
             Element_End0();
         }
         else
