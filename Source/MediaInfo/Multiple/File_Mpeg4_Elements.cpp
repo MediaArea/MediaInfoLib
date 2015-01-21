@@ -694,6 +694,8 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_clap=0x636C6170;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_chan=0x6368616E;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr=0x636F6C72;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc=0x6E636C63;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof=0x70726F66;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_d263=0x64323633;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dac3=0x64616333;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_damr=0x64616D72;
@@ -5053,8 +5055,21 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr()
     Element_Name("Color Parameter");
 
     //Parsing
+    int32u ColorParameterType;
+    Get_C4 (ColorParameterType,                                 "Color parameter type");
+    switch (ColorParameterType)
+    {
+        case Elements::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc: moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc(); break;
+        case Elements::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof: moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof(); break;
+        default                                                    : Skip_XX(Element_Size-Element_Offset, "Unknown");
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc()
+{
+    //Parsing
     int16u  colour_primaries, transfer_characteristics, matrix_coefficients;
-    Skip_C4(                                                    "Color parameter type");
     Get_B2 (colour_primaries,                                   "Primaries index"); Param_Info1(Mpegv_colour_primaries((int8u)colour_primaries));
     Get_B2 (transfer_characteristics,                           "Transfer function index"); Param_Info1(Mpegv_transfer_characteristics((int8u)transfer_characteristics));
     Get_B2 (matrix_coefficients,                                "Matrix index"); Param_Info1(Mpegv_matrix_coefficients((int8u)matrix_coefficients));
@@ -5068,6 +5083,13 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr()
             Fill(Stream_Video, StreamPos_Last, Video_matrix_coefficients, Mpegv_matrix_coefficients((int8u)matrix_coefficients));
         }
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof()
+{
+    //Parsing
+    Skip_XX(Element_Size-Element_Offset,                        "ICC profile"); //TODO: parse ICC profile
 }
 
 //---------------------------------------------------------------------------
@@ -5631,6 +5653,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pasp()
             Fill(Stream_Video, StreamPos_Last, Video_PixelAspectRatio, PixelAspectRatio, 3, true);
             Streams[moov_trak_tkhd_TrackID].CleanAperture_PixelAspectRatio=PixelAspectRatio; //This is the PAR of the clean aperture
         }
+        Fill(Stream_Video, StreamPos_Last, "pasp_IsPresent", "Yes");
     FILLING_END();
 }
 
