@@ -17,6 +17,7 @@ x MXF: AFD value was wrong (displaying the complete byte, but AFD is only 4 bits
 x DTS: some streams in Little endian were not detected
 x MPEG-4: some files were having an incorrect frame count
 x AVC: Some SCTE 128 caption streams were displayed twice
+x BMP; accepting files with file size information set to -1
 
 Version 0.7.72, 2015-01-07
 --------------
