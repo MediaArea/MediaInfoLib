@@ -617,6 +617,8 @@ void File_Avc::Streams_Finish()
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
         if (GA94_03_Parser && GA94_03_Parser->Status[IsAccepted])
         {
+            Clear(Stream_Text);
+            
             Finish(GA94_03_Parser);
             Merge(*GA94_03_Parser);
 
