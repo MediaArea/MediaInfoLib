@@ -928,7 +928,7 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
         if (!Sequences[Sequences_Current]->MI->Open(Sequences[Sequences_Current]->FileNames.Read()))
         {
             if (Sequences[Sequences_Current]->StreamKind!=Stream_Max)
-                MI->Fill(Sequences[Sequences_Current]->StreamKind, Sequences[Sequences_Current]->StreamPos, "Source_Info", "Missing");
+                MI->Fill(Sequences[Sequences_Current]->StreamKind, Sequences[Sequences_Current]->StreamPos, "Source_Info", "Missing", Unlimited, true, true);
             if (!Config->File_KeepInfo_Get())
             {
                 #if MEDIAINFO_DEMUX
