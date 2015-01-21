@@ -977,7 +977,7 @@ void File_Riff::Header_Parse()
 //---------------------------------------------------------------------------
 bool File_Riff::BookMark_Needed()
 {
-    if (!movi_Size)
+    if (!movi_Size || SecondPass)
         return false;
 
     //Go to the first usefull chunk
