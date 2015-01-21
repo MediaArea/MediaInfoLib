@@ -636,6 +636,7 @@ void File_Mpeg4::Streams_Finish()
                 else
                 {
                     //Temp->second.Parsers[0]->Clear(StreamKind_Last, StreamPos_Last, "Delay"); //DV TimeCode is removed
+                    Temp->second.Parsers[0]->Clear(StreamKind_Last, StreamPos_Last, "FrameCount");
                     Merge(*Temp->second.Parsers[0], StreamKind_Last, 0, StreamPos_Last);
 
                     //Law rating
