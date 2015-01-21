@@ -8,7 +8,7 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
-Version 0.7.72, 2015-01-
+Version 0.7.73, 2015-01-
 --------------
 + BPG: basic support, thanks to Kurtnoise
 + JPEG-2000: Display of profile (Rsiz)
@@ -43,7 +43,7 @@ x ID3v2: support of 3-byte ID3v2.3 tags
 x CEA-608 in MPEG-4: demux PTS was wrong in case of multiple blocks in one frame
 x MOV: better Grey scale files and color palettes handling, with help from Vittorio Giovara
 
-Version 0.7.72, 2014-11-09
+Version 0.7.71, 2014-11-09
 --------------
 + AS-11 (Core, Segmentation, UK DPP items) display
 + MXF: support of TTML (SMPTE ST 2052) detection
