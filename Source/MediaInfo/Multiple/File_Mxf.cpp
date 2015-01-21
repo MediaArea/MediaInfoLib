@@ -5374,13 +5374,14 @@ void File_Mxf::Data_Parse()
                 Essence->second.TrackID_WasLookedFor=true;
             }
 
+            if ((Code_Compare4&0x000000FF)==0x00000000)
+                StreamPos_StartAtOne=false;
+
             //Searching the corresponding Descriptor
             for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
                 if (Descriptor==SingleDescriptor || (Descriptor->second.LinkedTrackID==Essence->second.TrackID && Descriptor->second.LinkedTrackID!=(int32u)-1))
                 {
                     Essence->second.StreamPos_Initial=Essence->second.StreamPos=Code_Compare4&0x000000FF;
-                    if ((Code_Compare4&0x000000FF)==0x00000000)
-                        StreamPos_StartAtOne=false;
 
                     if (Descriptor->second.StreamKind==Stream_Audio && Descriptor->second.Infos.find("Format_Settings_Endianness")==Descriptor->second.Infos.end())
                     {
