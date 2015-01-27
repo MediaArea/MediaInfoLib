@@ -5653,7 +5653,6 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pasp()
             Fill(Stream_Video, StreamPos_Last, Video_PixelAspectRatio, PixelAspectRatio, 3, true);
             Streams[moov_trak_tkhd_TrackID].CleanAperture_PixelAspectRatio=PixelAspectRatio; //This is the PAR of the clean aperture
         }
-        Fill(Stream_Video, StreamPos_Last, "pasp_IsPresent", "Yes");
     FILLING_END();
 }
 
