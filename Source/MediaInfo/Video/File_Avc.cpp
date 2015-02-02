@@ -73,6 +73,9 @@ const char* Avc_profile_idc(int8u profile_idc)
 #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
     #include "MediaInfo/Text/File_DtvccTransport.h"
 #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
+#if MEDIAINFO_ADVANCED2
+    #include "base64.h"
+#endif //MEDIAINFO_ADVANCED2
 #if MEDIAINFO_EVENTS
     #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
     #include "MediaInfo/MediaInfo_Events.h"
@@ -371,6 +374,13 @@ void File_Avc::Streams_Fill()
                 Streams_Fill_subset(subset_seq_parameter_set_Item);
             Fill(Stream_Video, 0, Video_MultiView_Count, (*subset_seq_parameter_set_Item)->num_views_minus1+1);
         }
+
+    #if MEDIAINFO_ADVANCED2
+        for (size_t Pos = 0; Pos<Dump_SPS.size(); Pos++)
+            Fill(Stream_Video, 0, "Dump_seq_parameter_set", Dump_SPS[Pos].c_str());
+        for (size_t Pos = 0; Pos<Dump_PPS.size(); Pos++)
+            Fill(Stream_Video, 0, "Dump_pic_parameter_set", Dump_PPS[Pos].c_str());
+    #endif //MEDIAINFO_ADVANCED2
 }
 
 //---------------------------------------------------------------------------
@@ -1332,6 +1342,24 @@ void File_Avc::Data_Parse()
             Element_Size--;
     }
 
+    //Dump of the SPS/PPS - Init
+    #if MEDIAINFO_ADVANCED2
+        size_t spspps_Size=0;
+        if (true) //TODO: add an option for activating this extra piece of information in the output
+        {
+            switch (Element_Code)
+            {
+                case 0x07 : //seq_parameter_set();
+                            spspps_Size = seq_parameter_sets.size();
+                            break;
+                case 0x08 : //pic_parameter_set();
+                            spspps_Size = pic_parameter_sets.size();
+                            break;
+                default: ;
+            }
+        }
+    #endif //MEDIAINFO_ADVANCED2
+
     //svc_extension
     bool svc_extension_flag=false;
     if (Element_Code==0x0E || Element_Code==0x14)
@@ -1480,6 +1508,31 @@ void File_Avc::Data_Parse()
             }
         }
     #endif //MEDIAINFO_DEMUX
+
+    //Dump of the SPS/PPS - Fill
+    #if MEDIAINFO_ADVANCED2
+        if (false) //TODO: add an option for activating this extra piece of information in the output
+        {
+            switch (Element_Code)
+            {
+                case 0x07 : //seq_parameter_set();
+                            if (spspps_Size != seq_parameter_sets.size() && !Status[IsFilled])
+                            {
+                                std::string Data_Raw((const char*)(Buffer+(size_t)(Buffer_Offset-1)), (size_t)(Element_Size+1)); //Including the last byte in the header
+                                Dump_SPS.push_back(Base64::encode(Data_Raw));
+                            }
+                            break;
+                case 0x08 : //pic_parameter_set();
+                            if (spspps_Size != pic_parameter_sets.size() && !Status[IsFilled])
+                            {
+                                std::string Data_Raw((const char*)(Buffer+(size_t)(Buffer_Offset-1)), (size_t)(Element_Size+1)); //Including the last byte in the header
+                                Dump_PPS.push_back(Base64::encode(Data_Raw));
+                            }
+                            break;
+                default: ;
+            }
+        }
+    #endif //MEDIAINFO_ADVANCED2
 
     //Trailing zeroes
     Element_Size=Element_Size_SaveBeforeZeroes;

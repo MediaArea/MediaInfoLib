@@ -545,6 +545,10 @@ private :
     int8u                               nal_ref_idc;
     int8u                               FrameRate_Divider;
     bool                                FirstPFrameInGop_IsParsed;
+    #if MEDIAINFO_ADVANCED2
+        std::vector<std::string>        Dump_SPS;
+        std::vector<std::string>        Dump_PPS;
+    #endif //MEDIAINFO_ADVANCED2
 
     //Helpers
     string                              GOP_Detect                              (string PictureTypes);
