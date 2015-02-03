@@ -694,6 +694,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_clap=0x636C6170;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_chan=0x6368616E;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr=0x636F6C72;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_clcn=0x636C636E;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc=0x6E636C63;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof=0x70726F66;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_d263=0x64323633;
@@ -5059,6 +5060,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr()
     Get_C4 (ColorParameterType,                                 "Color parameter type");
     switch (ColorParameterType)
     {
+        case Elements::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_clcn: moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc(true); break;
         case Elements::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc: moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc(); break;
         case Elements::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof: moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof(); break;
         default                                                    : Skip_XX(Element_Size-Element_Offset, "Unknown");
@@ -5066,13 +5068,25 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr()
 }
 
 //---------------------------------------------------------------------------
-void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc()
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc(bool LittleEndian)
 {
     //Parsing
     int16u  colour_primaries, transfer_characteristics, matrix_coefficients;
-    Get_B2 (colour_primaries,                                   "Primaries index"); Param_Info1(Mpegv_colour_primaries((int8u)colour_primaries));
-    Get_B2 (transfer_characteristics,                           "Transfer function index"); Param_Info1(Mpegv_transfer_characteristics((int8u)transfer_characteristics));
-    Get_B2 (matrix_coefficients,                                "Matrix index"); Param_Info1(Mpegv_matrix_coefficients((int8u)matrix_coefficients));
+    if (LittleEndian)
+        Get_L2 (colour_primaries,                               "Primaries index");
+    else
+        Get_B2 (colour_primaries,                               "Primaries index");
+    Param_Info1(Mpegv_colour_primaries((int8u)colour_primaries));
+    if (LittleEndian)
+        Get_L2 (transfer_characteristics,                       "Transfer function index");
+    else
+        Get_B2 (transfer_characteristics,                       "Transfer function index");
+    Param_Info1(Mpegv_transfer_characteristics((int8u)transfer_characteristics));
+    if (LittleEndian)
+        Get_L2 (matrix_coefficients,                            "Matrix index");
+    else
+        Get_B2 (matrix_coefficients,                            "Matrix index");
+    Param_Info1(Mpegv_matrix_coefficients((int8u)matrix_coefficients));
 
     FILLING_BEGIN();
         if (Retrieve(Stream_Video, StreamPos_Last, Video_colour_description_present).empty()) //Using only the first one met
