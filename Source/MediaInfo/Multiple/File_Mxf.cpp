@@ -5829,8 +5829,6 @@ void File_Mxf::AES3PCMDescriptor()
 //---------------------------------------------------------------------------
 void File_Mxf::CDCIEssenceDescriptor()
 {
-    /*
-    //TODO: check when MPEG-4 Visual subdescriptor, it disabled stream info merge
     if (Code2>=0x8000)
     {
         // Not a short code
@@ -5852,7 +5850,6 @@ void File_Mxf::CDCIEssenceDescriptor()
             return;
         }
     }
-    */
 
     switch(Code2)
     {
