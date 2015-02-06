@@ -598,7 +598,10 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         Fill(Stream_Video, 0, Video_Format_Settings_RefFrames, (*seq_parameter_set_Item)->max_num_ref_frames);
         Fill(Stream_Video, 0, Video_Codec_Settings_RefFrames, (*seq_parameter_set_Item)->max_num_ref_frames);
     }
-    Fill(Stream_Video, 0, Video_ColorSpace, "YUV");
+    if ((*seq_parameter_set_Item)->vui_parameters->matrix_coefficients == 0)
+        Fill(Stream_Video, 0, Video_ColorSpace, "RGB");
+    else
+        Fill(Stream_Video, 0, Video_ColorSpace, "YUV");
     Fill(Stream_Video, 0, Video_Colorimetry, Avc_Colorimetry_format_idc[(*seq_parameter_set_Item)->chroma_format_idc]);
     if ((*seq_parameter_set_Item)->bit_depth_luma_minus8==(*seq_parameter_set_Item)->bit_depth_chroma_minus8)
         Fill(Stream_Video, 0, Video_BitDepth, (*seq_parameter_set_Item)->bit_depth_luma_minus8+8);
