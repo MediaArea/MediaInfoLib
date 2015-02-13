@@ -4015,7 +4015,7 @@ void File_Mxf::Read_Buffer_Unsynched()
                         int64u Entry0_StreamOffset=0; //For coherency checking
                         int64u Entry_StreamOffset=IndexTables[Pos].Entries[EntryPos].StreamOffset+(IndexTables[Pos].IndexStartPosition+EntryPos)*SDTI_SizePerFrame;
                         int64u Entry1_StreamOffset=File_Size; //For coherency checking
-                        if (EntryPos==0 && Pos && IndexTables[Pos-1].Entries.empty())
+                        if (EntryPos==0 && Pos && !IndexTables[Pos-1].Entries.empty())
                             Entry0_StreamOffset=IndexTables[Pos-1].Entries[IndexTables[Pos-1].Entries.size()-1].StreamOffset+(IndexTables[Pos].IndexStartPosition+EntryPos-1)*SDTI_SizePerFrame;
                         else if (EntryPos)
                             Entry0_StreamOffset=IndexTables[Pos].Entries[EntryPos-1].StreamOffset+(IndexTables[Pos].IndexStartPosition+EntryPos-1)*SDTI_SizePerFrame;
@@ -4761,7 +4761,7 @@ bool File_Mxf::Header_Begin()
                             int64u Entry0_StreamOffset=0; //For coherency checking
                             int64u Entry_StreamOffset=IndexTables[Pos].Entries[EntryPos].StreamOffset+(IndexTables[Pos].IndexStartPosition+EntryPos)*SDTI_SizePerFrame;
                             int64u Entry1_StreamOffset=File_Size; //For coherency checking
-                            if (EntryPos==0 && Pos && IndexTables[Pos-1].Entries.empty())
+                            if (EntryPos==0 && Pos && !IndexTables[Pos-1].Entries.empty())
                                 Entry0_StreamOffset=IndexTables[Pos-1].Entries[IndexTables[Pos-1].Entries.size()-1].StreamOffset+(IndexTables[Pos].IndexStartPosition+EntryPos-1)*SDTI_SizePerFrame;
                             else if (EntryPos)
                                 Entry0_StreamOffset=IndexTables[Pos].Entries[EntryPos-1].StreamOffset+(IndexTables[Pos].IndexStartPosition+EntryPos-1)*SDTI_SizePerFrame;
