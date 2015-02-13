@@ -21,6 +21,7 @@ x AVC: Some SCTE 128 caption streams were displayed twice
 x BMP; accepting files with file size information set to -1
 x RF64: samplesCount was not always right
 x MOV: avoid wrong parsing in case of "colr" atom with "prof" color parameter type
+x DCP/IMF: ID has now the AM/PKL CPL order in order in all cases (not only when there is more than one CPL)
 
 Version 0.7.72, 2015-01-07
 --------------

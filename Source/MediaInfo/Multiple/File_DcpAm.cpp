@@ -257,6 +257,7 @@ bool File_DcpAm::FileHeader_Begin()
                 sequence* Sequence=new sequence;
                 Sequence->FileNames.push_back(Ztring().From_UTF8(Stream->ChunkList[0].Path));
 
+                Sequence->StreamID=ReferenceFiles->Sequences_Size()+1;
                 ReferenceFiles->AddSequence(Sequence);
             }
 
