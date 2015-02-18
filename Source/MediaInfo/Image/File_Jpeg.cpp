@@ -711,7 +711,7 @@ void File_Jpeg::SIZ()
                 Fill(StreamKind_Last, 0, "ChromaSubsampling", ChromaSubsampling);
 
                 //Not for sure
-                if (ChromaSubsampling==__T("4:4:4") && (Retrieve(StreamKind_Last, 0, "Format_Profile")==__T("3") || Retrieve(StreamKind_Last, 0, "Format_Profile")==__T("4")))
+                if (ChromaSubsampling==__T("4:4:4") && (Retrieve(StreamKind_Last, 0, "Format_Profile")==__T("D-Cinema 2k") || Retrieve(StreamKind_Last, 0, "Format_Profile")==__T("D-Cinema 4k")))
                     Fill(StreamKind_Last, 0, "ColorSpace", "XYZ");
                 else if (!IsSub)
                 {
