@@ -2693,8 +2693,9 @@ void MediaInfo_Config_CodecID_Text_Matroska (InfoMap &Info)
     "S_TEXT/UTF8;UTF-8;;UTF-8 Plain Text\n"
     "S_USF;USF;;Universal Subtitle Format\n"
     "S_UTF8;UTF-8;;UTF-8 Plain Text\n"
-    "S_VOBSUB;VobSub;;The same subtitle format used on DVDs\n"
-    "S_HDMV/PGS;PGS;;The same subtitle format used on BDs/HD-DVDs\n"
+    "S_VOBSUB;VobSub;;Picture based subtitle format used on DVDs\n"
+    "S_HDMV/PGS;PGS;;Picture based subtitle format used on BDs/HD-DVDs\n"
+    "S_HDMV/TEXTST;TEXTST;;Text based subtitle format used on BDs\n"
     ));
     Info.Separator_Set(0, ZenLib::EOL);
 }
@@ -3821,7 +3822,9 @@ void MediaInfo_Config_Codec (InfoMap &Info)
     "S_TEXT/ASS;ASS;Mk;T;;;Advanced Sub Station Alpha\n"
     "S_TEXT/USF;USF;Mk;T;;;Universal Subtitle Format\n"
     "S_IMAGE/BMP;Bitmap;Mk;T;;;Basic image based subtitle format\n"
-    "S_VOBSUB;VobSub;Mk;T;;;The same subtitle format used on DVDs\n"
+    "S_VOBSUB;VobSub;Mk;T;;;Picture based subtitle format used on DVDs\n"
+    "S_HDMV/PGS;PGS;Mk;T;;;Picture based subtitle format used on BDs/HD-DVDs\n"
+    "S_HDMV/TEXTST;TEXTST;Mk;T;;;Text based subtitle format used on BDs\n"
     ));
     Info.Separator_Set(0, ZenLib::EOL);
 }
