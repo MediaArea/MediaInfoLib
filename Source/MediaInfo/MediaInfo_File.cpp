@@ -200,6 +200,9 @@
 #if defined(MEDIAINFO_AU_YES)
     #include "MediaInfo/Audio/File_Au.h"
 #endif
+#if defined(MEDIAINFO_CAF_YES)
+    #include "MediaInfo/Audio/File_Caf.h"
+#endif
 #if defined(MEDIAINFO_DTS_YES)
     #include "MediaInfo/Audio/File_Dts.h"
 #endif
@@ -567,6 +570,9 @@ bool MediaInfo_Internal::SelectFromExtension (const String &Parser)
     #if defined(MEDIAINFO_AU_YES)
         else if (Parser==__T("Au"))          Info=new File_Au();
     #endif
+    #if defined(MEDIAINFO_CAF_YES)
+        else if (Parser==__T("Caf"))          Info=new File_Caf();
+    #endif
     #if defined(MEDIAINFO_DTS_YES)
         else if (Parser==__T("Dts"))         Info=new File_Dts();
     #endif
@@ -923,6 +929,9 @@ int MediaInfo_Internal::ListFormats(const String &File_Name)
     #endif
     #if defined(MEDIAINFO_AU_YES)
         delete Info; Info=new File_Au();                 if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
+    #endif
+    #if defined(MEDIAINFO_CAF_YES)
+        delete Info; Info=new File_Caf();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     #endif
     #if defined(MEDIAINFO_DTS_YES)
         delete Info; Info=new File_Dts();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;

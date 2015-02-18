@@ -2364,6 +2364,7 @@ void MediaInfo_Config_CodecID_Audio_Mpeg4 (InfoMap &Info)
     Info.Write(Ztring().From_UTF8(
     ".mp3;MPEG Audio;;;\n"
     "A104;AMR;;;http://www.apple.com/quicktime/download/standalone.html;Wide band\n"
+    "aac ;AAC;;;\n"
     "ac-3;AC-3;;;\n"
     "alac;ALAC;;Apple Lossless Audio Codec;http://www.apple.com/quicktime/download/standalone.html\n"
     "alaw;ADPCM;;;http://www.apple.com/quicktime/download/standalone.html\n"

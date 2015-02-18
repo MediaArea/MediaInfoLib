@@ -812,6 +812,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\..\Source\MediaInfo\Audio\File_Caf.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\..\Source\MediaInfo\Audio\File_Celt.cpp"
 					>
 				</File>
@@ -1713,6 +1717,10 @@
 				</File>
 				<File
 					RelativePath="..\..\..\Source\MediaInfo\Audio\File_Au.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\Source\MediaInfo\Audio\File_Caf.h"
 					>
 				</File>
 				<File

@@ -191,6 +191,9 @@
 #if defined(MEDIAINFO_AU_YES)
     #include "MediaInfo/Audio/File_Au.h"
 #endif
+#if defined(MEDIAINFO_CAF_YES)
+    #include "MediaInfo/Audio/File_Caf.h"
+#endif
 #if defined(MEDIAINFO_DTS_YES)
     #include "MediaInfo/Audio/File_Dts.h"
 #endif
@@ -567,6 +570,9 @@ File__MultipleParsing::File__MultipleParsing()
     #endif
     #if defined(MEDIAINFO_AU_YES)
         Parser.push_back(new File_Au());
+    #endif
+    #if defined(MEDIAINFO_CAF_YES)
+        Parser.push_back(new File_Caf());
     #endif
     #if defined(MEDIAINFO_DTS_YES)
         Parser.push_back(new File_Dts());

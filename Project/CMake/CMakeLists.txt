@@ -146,6 +146,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Amv.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Ape.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Au.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Caf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Celt.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_ChannelGrouping.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Dts.cpp

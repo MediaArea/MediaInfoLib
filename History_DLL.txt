@@ -11,6 +11,7 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 Version 0.7.73, 2015-01-
 --------------
 + BPG: basic support, thanks to Kurtnoise
++ CAF: basic support of Apple Core Audio Format, sponsored by FlavorSys
 + JPEG-2000: Display of profile (Rsiz)
 + JPEG-2000: detection of XYZ colorspace (based on D-Cinema profile)
 + MOV/MPEG-4: handling of clcn (little endian nclc) Color parameter type
