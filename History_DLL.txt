@@ -15,7 +15,8 @@ Version 0.7.73, 2015-01-
 + JPEG-2000: Display of profile (Rsiz)
 + JPEG-2000: detection of XYZ colorspace (based on D-Cinema profile)
 + MOV/MPEG-4: handling of clcn (little endian nclc) Color parameter type
-+ Matroska: Add TEXTST support to the MKV Parser, thanks to Kurtnoise
++ #P84, Matroska: Add TEXTST support to the MKV Parser, thanks to Kurtnoise
++ #P85, MPEG-TS: Add TEXTST support to the MPEG-PSI Parser, thanks to Kurtnoise
 x MXF: AFD value was wrong (displaying the complete byte, but AFD is only 4 bits of this byte)
 x DTS: some streams in Little endian were not detected
 x MPEG-4: some files were having an incorrect frame count
