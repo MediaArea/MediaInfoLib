@@ -110,6 +110,7 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
         return;
 
     //Trying to detect continuous file names (e.g. video stream as an image or HLS)
+	size_t Pos_Base = (size_t)-1;
     bool AlreadyPresent=Config->File_Names.size()==1?true:false;
     FileName FileToTest(Config->File_Names.Read(Config->File_Names.size()-1));
     Ztring FileToTest_Name=FileToTest.Name_Get();
@@ -144,7 +145,7 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
         //Detecting with a smarter algo (but missing frames are not detected)
         Ztring FileToTest_Name_Begin=FileToTest.Path_Get()+PathSeparator+FileToTest_Name;
         Ztring FileToTest_Name_End=FileToTest_Name_After+__T('.')+(FileExtension.empty()?FileToTest.Extension_Get():FileExtension);
-        size_t Pos_Base = (size_t)Pos;
+        Pos_Base = (size_t)Pos;
         size_t Pos_Add_Max = 1;
         #if MEDIAINFO_ADVANCED
             bool File_IgnoreSequenceFileSize=Config->File_IgnoreSequenceFilesCount_Get(); //TODO: double check if it is expected
@@ -224,6 +225,11 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
         return;
 
     Config->File_IsImageSequence=true;
+    Frame_Count_NotParsedIncluded=Pos_Base;
+    float64 Demux_Rate=Config->Demux_Rate_Get();
+    if (!Demux_Rate)
+        Demux_Rate=24;
+	Fill(Stream_Video, 0, Video_Delay, float64_int64s(Frame_Count_NotParsedIncluded*1000/Demux_Rate));
 
     #if MEDIAINFO_ADVANCED
         if (!Config->File_IgnoreSequenceFileSize_Get() || Config->File_Names.size()<=1)

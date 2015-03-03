@@ -27,6 +27,7 @@ x MOV: avoid wrong parsing in case of "colr" atom with "prof" color parameter ty
 x DCP/IMF: ID has now the AM/PKL CPL order in order in all cases (not only when there is more than one CPL)
 x #B893, MXF: Crash with Panasonic P2 3.0 files
 x DPX: time information was with native ":" character
+x Images sequence: "Delay" field is filled from the number in the name of the first file
 
 Version 0.7.72, 2015-01-07
 --------------
