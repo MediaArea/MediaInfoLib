@@ -1732,15 +1732,15 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
             return;
         }
         Buffer_Pos_Flags++;
-        PTS_DTS_flags               =Buffer[Buffer_Pos_Flags]>>6;
-        ESCR_flag                   =Buffer[Buffer_Pos_Flags]&0x20?true:false;
-        ES_rate_flag                =Buffer[Buffer_Pos_Flags]&0x10?true:false;
-        DSM_trick_mode_flag         =Buffer[Buffer_Pos_Flags]&0x08?true:false;
-        additional_copy_info_flag   =Buffer[Buffer_Pos_Flags]&0x04?true:false;
-        PES_CRC_flag                =Buffer[Buffer_Pos_Flags]&0x02?true:false;
-        PES_extension_flag          =Buffer[Buffer_Pos_Flags]&0x01?true:false;
+        PTS_DTS_flags               = Buffer[Buffer_Pos_Flags] >> 6;
+        ESCR_flag                   = (Buffer[Buffer_Pos_Flags] & 0x20) ? true: false;
+        ES_rate_flag                = (Buffer[Buffer_Pos_Flags] & 0x10) ? true: false;
+        DSM_trick_mode_flag         = (Buffer[Buffer_Pos_Flags] & 0x08) ? true: false;
+        additional_copy_info_flag   = (Buffer[Buffer_Pos_Flags] & 0x04) ? true: false;
+        PES_CRC_flag                = (Buffer[Buffer_Pos_Flags] & 0x02) ? true: false;
+        PES_extension_flag          = (Buffer[Buffer_Pos_Flags] & 0x01) ? true: false;
         Buffer_Pos_Flags++;
-        PES_header_data_length      =Buffer[Buffer_Pos_Flags];
+        PES_header_data_length      = Buffer[Buffer_Pos_Flags];
         Element_Offset+=3;
     #if MEDIAINFO_TRACE
     }
