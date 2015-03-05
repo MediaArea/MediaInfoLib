@@ -1940,7 +1940,7 @@ void File_MpegTs::Read_Buffer_AfterParsing()
                         MpegTs_JumpTo_Begin=File_Size-MpegTs_JumpTo_End;
                 }
             }
-            
+
             //Jumping
             if (Config->ParseSpeed<1.0 && Config->File_IsSeekable_Get()
             #if MEDIAINFO_ADVANCED

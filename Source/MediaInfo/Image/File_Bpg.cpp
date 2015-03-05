@@ -135,7 +135,7 @@ void File_Bpg::Read_Buffer_Continue()
 
         Stream_Prepare(Stream_Image);
         Fill(Stream_Image, 0, Image_Width, Width);
-        Fill(Stream_Image, 0, Image_Height, Height); 
+        Fill(Stream_Image, 0, Image_Height, Height);
         Fill(Stream_Image, 0, Image_Format, __T("BPG"));
         Fill(Stream_Image, 0, Image_ChromaSubsampling, Bpg_Pixel_format(pixelformat));
         Fill(Stream_Image, 0, Image_ColorSpace, Bpg_ColorSpace(ColorSpace));

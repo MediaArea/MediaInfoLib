@@ -631,7 +631,7 @@ void File_Avc::Streams_Finish()
         if (GA94_03_Parser && GA94_03_Parser->Status[IsAccepted])
         {
             Clear(Stream_Text);
-            
+
             Finish(GA94_03_Parser);
             Merge(*GA94_03_Parser);
 
@@ -2953,7 +2953,7 @@ void File_Avc::seq_parameter_set()
 
         //Add
         seq_parameter_set_data_Add(seq_parameter_sets, seq_parameter_set_id, Data_Item_New);
-        
+
         //Autorisation of other streams
         Streams[0x08].Searching_Payload=true; //pic_parameter_set
         if (Streams[0x07].ShouldDuplicate)

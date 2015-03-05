@@ -110,7 +110,7 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
         return;
 
     //Trying to detect continuous file names (e.g. video stream as an image or HLS)
-	size_t Pos_Base = (size_t)-1;
+    size_t Pos_Base = (size_t)-1;
     bool AlreadyPresent=Config->File_Names.size()==1?true:false;
     FileName FileToTest(Config->File_Names.Read(Config->File_Names.size()-1));
     Ztring FileToTest_Name=FileToTest.Name_Get();
@@ -229,7 +229,7 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
     float64 Demux_Rate=Config->Demux_Rate_Get();
     if (!Demux_Rate)
         Demux_Rate=24;
-	Fill(Stream_Video, 0, Video_Delay, float64_int64s(Frame_Count_NotParsedIncluded*1000/Demux_Rate));
+    Fill(Stream_Video, 0, Video_Delay, float64_int64s(Frame_Count_NotParsedIncluded*1000/Demux_Rate));
 
     #if MEDIAINFO_ADVANCED
         if (!Config->File_IgnoreSequenceFileSize_Get() || Config->File_Names.size()<=1)
