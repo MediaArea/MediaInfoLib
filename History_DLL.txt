@@ -14,6 +14,7 @@ Version 0.7.73, 2015-01-
 + CAF: basic support of Apple Core Audio Format, sponsored by FlavorSys
 + JPEG-2000: Display of profile (Rsiz)
 + JPEG-2000: detection of XYZ colorspace (based on D-Cinema profile)
++ FFV1 in MOV: more details (version...)
 + MOV/MPEG-4: handling of clcn (little endian nclc) Color parameter type
 + #P84, Matroska: Add TEXTST support to the MKV Parser, thanks to Kurtnoise
 + #P85, MPEG-TS: Add TEXTST support to the MPEG-PSI Parser, thanks to Kurtnoise

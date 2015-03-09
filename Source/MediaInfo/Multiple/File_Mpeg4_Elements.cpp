@@ -40,6 +40,9 @@
 #if defined(MEDIAINFO_AVC_YES)
     #include "MediaInfo/Video/File_Avc.h"
 #endif
+#if defined(MEDIAINFO_FFV1_YES)
+    #include "MediaInfo/Video/File_Ffv1.h"
+#endif
 #if defined(MEDIAINFO_H263_YES)
     #include "MediaInfo/Video/File_H263.h"
 #endif
@@ -4614,6 +4617,13 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                             Parser->Demux_UnpacketizeContainer=true;
                         }
                     #endif //MEDIAINFO_DEMUX
+                    Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                }
+            #endif
+            #if defined(MEDIAINFO_FFV1_YES)
+                if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("FFV1"))
+                {
+                    File_Ffv1* Parser=new File_Ffv1;
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
                 }
             #endif

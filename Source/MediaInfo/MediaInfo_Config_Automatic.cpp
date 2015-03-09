@@ -1460,6 +1460,7 @@ void MediaInfo_Config_CodecID_Video_Mpeg4 (InfoMap &Info)
     "DVTV;Digital Voodoo;;Digital Voodoo intermediate 2vuy;http://www.digitalvoodoo.net/;;;\n"
     "DVVT;Digital Voodoo;;Digital Voodoo intermediate v210;http://www.digitalvoodoo.net/;;;\n"
     "encv;(Encrypted);;;http://www.apple.com/quicktime/download/standalone.html;;;\n"
+    "FFV1;FFV1;;;;;;;\n"
     "gif ;M-GIF;;;;;;\n"
     "Hap1;Hap;;Hap Video Codec;https://github.com/Vidvox/hap;;;\n"
     "Hap5;Hap Alpha;;Hap Video Codec;https://github.com/Vidvox/hap;;;\n"
