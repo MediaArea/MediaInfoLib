@@ -1305,11 +1305,13 @@ void File__Analyze::Read_Buffer_Unsynched_OneFramePerFile()
     }
 
     #if MEDIAINFO_DEMUX
-        if (Config->Demux_Rate_Get())
+        if (!IsSub && Config->Demux_Rate_Get()) //TODO: remove !IsSub when time code delay is removed from PTS
         {
             FrameInfo.DTS=float64_int64s(Frame_Count_NotParsedIncluded*((float64)1000000000)/Config->Demux_Rate_Get());
             FrameInfo.PTS=FrameInfo.DTS;
         }
+        else
+            FrameInfo.PTS=FrameInfo.DTS=(int64u)-1;
     #endif //MEDIAINFO_DEMUX
 }
 
