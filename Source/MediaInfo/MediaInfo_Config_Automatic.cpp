@@ -1528,6 +1528,7 @@ void MediaInfo_Config_CodecID_Video_Mpeg4 (InfoMap &Info)
     "SVQ2;Sorenson 2;;Sorenson Media Video 2 (Apple QuickTime 4);http://www.apple.com/quicktime/download/standalone.html;;;\n"
     "SVQ3;Sorenson 3;;Sorenson Media Video 3 (Apple QuickTime 5);http://www.apple.com/quicktime/download/standalone.html;;;\n"
     "v210;YUV;AJA Video Systems Xena;;;;;YUV;4:2:2\n"
+    "V210;YUV;AJA Video Systems Xena;;;;;YUV;4:2:2\n"
     "vc-1;VC-1;;SMPTE VC-1;http://www.smpte.org/;;;YUV\n"
     "WMV3;VC-1;WMV3;Windows Media Video 9;http://www.microsoft.com/windows/windowsmedia/format/codecdownload.aspx;;;\n"
     "WRLE;Bitmap;;Windows BMP image format;http://www.apple.com/quicktime/download/standalone.html;;;YUV\n"
