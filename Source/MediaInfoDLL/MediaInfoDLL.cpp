@@ -54,7 +54,7 @@ struct MI_List
 struct MI_List_FromAnsi
 {
     int8u Pos;                          //Where are we?
-    std::vector<ZenLib::Ztring> Unicode;  //Unicode characters multiple times
+    std::vector<Ztring> Unicode;  //Unicode characters multiple times
 };
 
 std::map<void*, MI_List*> MI_Handle;
@@ -85,7 +85,7 @@ const char* WC2MB(void* Handle, const wchar_t* Text)
     if (utf8)
        MI_Handle[Handle]->Ansi=Ztring(Text).To_UTF8();
     else
-       MI_Handle[Handle]->Ansi=Ztring(Text).To_Local();
+       MI_Handle[Handle]->Ansi=Ztring(Text).To_UTF8();
     return MI_Handle[Handle]->Ansi.c_str();
 }
 
@@ -119,121 +119,229 @@ const wchar_t* MB2WC(void* Handle, const char* Text)
 #endif //_DEBUG
 
 //---------------------------------------------------------------------------
-//To clarify the code
+// Debug
 #ifdef MEDIAINFO_DEBUG
     #include <stdio.h>
-    FILE* F;
-    std::string Debug;
+    #include <windows.h>
+    namespace MediaInfoDLL_Debug
+    {
+        FILE* F;
+        std::string Debug;
+        SYSTEMTIME st_In;
 
-#undef MEDIAINFO_DEBUG
-    #define MEDIAINFO_DEBUG(_TOAPPEND) \
-        F=fopen("MediaInfo_Debug.txt", "a+t"); \
-        Debug.clear(); \
+        void Debug_Open(bool Out)
+        {
+            F=fopen("C:\\Temp\\MediaInfo_Debug.txt", "a+t");
+            Debug.clear();
+            SYSTEMTIME st;
+            GetLocalTime( &st );
+
+            char Duration[100];
+            if (Out)
+            {
+                FILETIME ft_In;
+                if (SystemTimeToFileTime(&st_In, &ft_In))
+                {
+                    FILETIME ft_Out;
+                    if (SystemTimeToFileTime(&st, &ft_Out))
+                    {
+                        ULARGE_INTEGER UI_In;
+                        UI_In.HighPart=ft_In.dwHighDateTime;
+                        UI_In.LowPart=ft_In.dwLowDateTime;
+
+                        ULARGE_INTEGER UI_Out;
+                        UI_Out.HighPart=ft_Out.dwHighDateTime;
+                        UI_Out.LowPart=ft_Out.dwLowDateTime;
+
+                        ULARGE_INTEGER UI_Diff;
+                        UI_Diff.QuadPart=UI_Out.QuadPart-UI_In.QuadPart;
+
+                        FILETIME ft_Diff;
+                        ft_Diff.dwHighDateTime=UI_Diff.HighPart;
+                        ft_Diff.dwLowDateTime=UI_Diff.LowPart;
+
+                        SYSTEMTIME st_Diff;
+                        if (FileTimeToSystemTime(&ft_Diff, &st_Diff))
+                        {
+                            sprintf(Duration, "%02hd:%02hd:%02hd.%03hd", st_Diff.wHour, st_Diff.wMinute, st_Diff.wSecond, st_Diff.wMilliseconds);
+                        }
+                        else
+                            strcpy(Duration, "            ");
+                    }
+                    else
+                        strcpy(Duration, "            ");
+
+                }
+                else
+                    strcpy(Duration, "            ");
+            }
+            else
+            {
+                st_In=st;
+                strcpy(Duration, "            ");
+            }
+            
+            fprintf(F,"%02hd:%02hd:%02hd.%03hd %s", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds, Duration);
+        }
+
+        void Debug_Close()
+        {
+            Debug += "\r\n";
+            fwrite(Debug.c_str(), Debug.size(), 1, F); \
+            fclose(F);
+        }
+    }
+    using namespace MediaInfoDLL_Debug;
+
+    #define MEDIAINFO_DEBUG1(_NAME,_TOAPPEND) \
+        Debug_Open(false); \
+        { \
+        Ztring HandleTemp=Ztring::ToZtring((size_t)Handle, 16); \
+        while (HandleTemp.size()<8) \
+            HandleTemp.insert(0, 1, __T('0')); \
+        Debug+=", H=";Debug+=HandleTemp.To_UTF8(); \
+        } \
+        Debug+=", ";Debug+=_NAME; \
         _TOAPPEND; \
-        fwrite(Debug.c_str(), Debug.size(), 1, F); \
-        fclose(F);
+        Debug_Close();
+
+    #define MEDIAINFO_DEBUG2(_NAME,_TOAPPEND) \
+        Debug_Open(true); \
+        { \
+        Ztring HandleTemp=Ztring::ToZtring((size_t)Handle, 16); \
+        while (HandleTemp.size()<8) \
+            HandleTemp.insert(0, 1, __T('0')); \
+        Debug+=", H=";Debug+=HandleTemp.To_UTF8(); \
+        } \
+        Debug+=", ";Debug+=_NAME; \
+        _TOAPPEND; \
+        Debug_Close();
 #else // MEDIAINFO_DEBUG
-    #define MEDIAINFO_DEBUG(_TOAPPEND)
+    #define MEDIAINFO_DEBUG1(_NAME,_TOAPPEND)
+    #define MEDIAINFO_DEBUG2(_NAME,_TOAPPEND)
 #endif // MEDIAINFO_DEBUG
 
 //---------------------------------------------------------------------------
-#define INTEGRITY_VOID(_DEBUGA) \
-    MEDIAINFO_DEBUG(_DEBUGA) \
+//To clarify the code
+#define INTEGRITY_VOID(_NAME,_DEBUGA) \
+    MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
     CriticalSectionLocker Locker(Critical); \
     if (Handle==NULL || MI_Handle.find(Handle)==MI_Handle.end()) \
+    { \
+        MEDIAINFO_DEBUG2(_NAME,Debug+="Handle error") \
         return; \
+    } \
 
-#define INTEGRITY_SIZE_T(_DEBUGA) \
-    MEDIAINFO_DEBUG(_DEBUGA) \
+#define INTEGRITY_SIZE_T(_NAME,_DEBUGA) \
+    MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
     CriticalSectionLocker Locker(Critical); \
     if (Handle==NULL || MI_Handle.find(Handle)==MI_Handle.end()) \
+    { \
+        MEDIAINFO_DEBUG2(_NAME, Debug+="Handle error") \
         return 0; \
+    } \
 
-#define INTEGRITY_INT64U(_DEBUGA) \
-    MEDIAINFO_DEBUG(_DEBUGA) \
+#define INTEGRITY_INT64U(_NAME,_DEBUGA) \
+    MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
     CriticalSectionLocker Locker(Critical); \
     if (Handle==NULL || MI_Handle.find(Handle)==MI_Handle.end()) \
+    { \
+        MEDIAINFO_DEBUG2(_NAME, Debug+="Handle error") \
         return 0; \
+    } \
 
-#define INTEGRITY_STRING(_DEBUGA) \
-    MEDIAINFO_DEBUG(_DEBUGA) \
+#define INTEGRITY_STRING(_NAME,_DEBUGA) \
+    MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
     CriticalSectionLocker Locker(Critical); \
     if (Handle==NULL || MI_Handle.find(Handle)==MI_Handle.end()) \
     { \
         if (v07Mode==false) \
         { \
+            MEDIAINFO_DEBUG2(_NAME, Debug+="v0.6 mode, not supported") \
             MediaInfo_Info_Unicode=L"Your software uses an outdated interface, You must use MediaInfoList.DLL 0.6 instead"; \
             return MediaInfo_Info_Unicode.c_str(); \
         } \
+        MEDIAINFO_DEBUG2(_NAME, Debug+="Handle error") \
         MI_Handle[NULL]->Unicode==L"Note to developer : you must create an object before"; \
         return MI_Handle[NULL]->Unicode.c_str(); \
     } \
 
 #ifndef MEDIAINFO_DEBUG
-#define EXECUTE_VOID(_CLASS,_METHOD,_DEBUGB) \
+#define EXECUTE_VOID(_NAME,_CLASS,_METHOD) \
     try \
     { \
         ((_CLASS*)Handle)->_METHOD; \
     } catch (...) {return;}
 #else //MEDIAINFO_DEBUG
-#define EXECUTE_VOID(_CLASS,_METHOD,_DEBUGB) \
+#define EXECUTE_VOID(_NAME,_CLASS,_METHOD) \
     try \
     { \
         ((_CLASS*)Handle)->_METHOD; \
-        MEDIAINFO_DEBUG(_DEBUGB) \
+        MEDIAINFO_DEBUG2(_NAME, "") \
     } catch (...) {return;}
 #endif //MEDIAINFO_DEBUG
 
 #ifndef MEDIAINFO_DEBUG
-#define EXECUTE_SIZE_T(_CLASS,_METHOD,_DEBUGB) \
+#define EXECUTE_SIZE_T(_NAME,_CLASS,_METHOD) \
     try \
     { \
         return ((_CLASS*)Handle)->_METHOD; \
-    } catch (...) {return -1;}
+    } catch (...) {return (size_t)-1;}
 #else //MEDIAINFO_DEBUG
-#define EXECUTE_SIZE_T(_CLASS,_METHOD, _DEBUGB) \
+#define EXECUTE_SIZE_T(_NAME,_CLASS,_METHOD) \
     try \
     { \
         size_t ToReturn=((_CLASS*)Handle)->_METHOD; \
-        MEDIAINFO_DEBUG(_DEBUGB) \
+        MEDIAINFO_DEBUG2(_NAME, Debug+=", returns ";Debug+=Ztring::ToZtring((size_t)ToReturn).To_UTF8();) \
         return ToReturn; \
-    } catch (...) {MEDIAINFO_DEBUG(Debug+="!!!Exception thrown!!!\r\n";) return (size_t)-1;}
-
-#define EXECUTE_INT64U(_CLASS,_METHOD, _DEBUGB) \
-    try \
-    { \
-        int64u ToReturn=((_CLASS*)Handle)->_METHOD; \
-        MEDIAINFO_DEBUG(_DEBUGB) \
-        return ToReturn; \
-    } catch (...) {MEDIAINFO_DEBUG(Debug+="!!!Exception thrown!!!\r\n";) return (size_t)-1;}
+    } catch (...) {MEDIAINFO_DEBUG2(_NAME, Debug+="!!!Exception thrown!!!";) return (size_t)-1;}
 #endif //MEDIAINFO_DEBUG
 
 #ifndef MEDIAINFO_DEBUG
-#define EXECUTE_STRING(_CLASS,_METHOD,_DEBUGB) \
+#define EXECUTE_INT64U(_NAME,_CLASS,_METHOD) \
+    try \
+    { \
+        return ((_CLASS*)Handle)->_METHOD; \
+    } catch (...) {return (size_t)-1;}
+#else //MEDIAINFO_DEBUG
+#define EXECUTE_INT64U(_NAME,_CLASS,_METHOD) \
+    try \
+    { \
+        int64u ToReturn=((_CLASS*)Handle)->_METHOD; \
+        MEDIAINFO_DEBUG2(_NAME, Debug+=", returns ";Debug+=Ztring::ToZtring((size_t)ToReturn).To_UTF8();) \
+        return ToReturn; \
+    } catch (...) {MEDIAINFO_DEBUG2(_NAME, Debug+="!!!Exception thrown!!!";) return (size_t)-1;}
+#endif //MEDIAINFO_DEBUG
+
+#ifndef MEDIAINFO_DEBUG
+#define EXECUTE_STRING(_NAME,_CLASS,_METHOD) \
     try \
     { \
         MI_Handle[Handle]->Unicode=((_CLASS*)Handle)->_METHOD; \
     } catch (...) {MI_Handle[Handle]->Unicode.clear();} \
     return MI_Handle[Handle]->Unicode.c_str();
 #else //MEDIAINFO_DEBUG
-#define EXECUTE_STRING(_CLASS,_METHOD,_DEBUGB) \
+#define EXECUTE_STRING(_NAME,_CLASS,_METHOD) \
     try \
     { \
         MI_Handle[Handle]->Unicode=((_CLASS*)Handle)->_METHOD; \
-    } catch (...) {MEDIAINFO_DEBUG(Debug+="!!!Exception thrown!!!\r\n";) MI_Handle[Handle]->Unicode.clear();} \
-    ZenLib::Ztring ToReturn=MI_Handle[Handle]->Unicode; \
-    MEDIAINFO_DEBUG(_DEBUGB) \
+    } catch (...) {MEDIAINFO_DEBUG2(_NAME, Debug+="!!!Exception thrown!!!";) MI_Handle[Handle]->Unicode.clear();} \
+    Ztring ToReturn=MI_Handle[Handle]->Unicode; \
+    MEDIAINFO_DEBUG2(_NAME, Debug+=", returns ";Debug+=ToReturn.To_UTF8();) \
     return MI_Handle[Handle]->Unicode.c_str();
 #endif //MEDIAINFO_DEBUG
 
-#define MANAGE_VOID(_CLASS,_METHOD,_DEBUGA,_DEBUGB) \
-    INTEGRITY_VOID(_DEBUGA) EXECUTE_VOID(_CLASS,_METHOD,_DEBUGB)
+#define MANAGE_VOID(_NAME,_CLASS,_METHOD,_DEBUGA) \
+    INTEGRITY_VOID(_NAME,_DEBUGA)       EXECUTE_VOID(_NAME,_CLASS,_METHOD)
 
-#define MANAGE_INT(_CLASS,_METHOD,_DEBUGA,_DEBUGB) \
-    INTEGRITY_SIZE_T(_DEBUGA) EXECUTE_SIZE_T(_CLASS,_METHOD,_DEBUGB)
+#define MANAGE_SIZE_T(_NAME,_CLASS,_METHOD,_DEBUGA) \
+    INTEGRITY_SIZE_T(_NAME,_DEBUGA)     EXECUTE_SIZE_T(_NAME,_CLASS,_METHOD)
 
-#define MANAGE_STRING(_CLASS,_METHOD,_DEBUGA,_DEBUGB) \
-    INTEGRITY_STRING(_DEBUGA) EXECUTE_STRING(_CLASS,_METHOD,_DEBUGB)
+#define MANAGE_INT64U(_NAME,_CLASS,_METHOD,_DEBUGA) \
+    INTEGRITY_INT64U(_NAME,_DEBUGA)     EXECUTE_INT64U(_NAME,_CLASS,_METHOD)
+
+#define MANAGE_STRING(_NAME,_CLASS,_METHOD,_DEBUGA) \
+    INTEGRITY_STRING(_NAME,_DEBUGA)     EXECUTE_STRING(_NAME,_CLASS,_METHOD)
 
 //***************************************************************************
 //
@@ -243,7 +351,6 @@ const wchar_t* MB2WC(void* Handle, const char* Text)
 
 void*           __stdcall MediaInfoA_New ()
 {
-    MEDIAINFO_DEBUG(Debug+="MediaInfoA_New(), no arguments\r\n";)
     return MediaInfo_New();
 }
 
@@ -259,7 +366,6 @@ void            __stdcall MediaInfoA_Delete (void* Handle)
 
 size_t          __stdcall MediaInfoA_Open (void* Handle, const char* File)
 {
-    MEDIAINFO_DEBUG(Debug+="OpenA, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", File=";Debug+=File;Debug+="\r\n";)
     return MediaInfo_Open(Handle, MB2WC(Handle, File));
 }
 
@@ -315,7 +421,6 @@ const char*     __stdcall MediaInfoA_GetI (void* Handle, MediaInfo_stream_t Stre
 
 const char*     __stdcall MediaInfoA_Get (void* Handle, MediaInfo_stream_t StreamKind, size_t StreamNumber, const char* Parameter, MediaInfo_info_C KindOfInfo, MediaInfo_info_C KindOfSearch)
 {
-    MEDIAINFO_DEBUG(Debug+="Get, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", Parameter=";Parameter;Debug+="\r\n";)
     return WC2MB(Handle, MediaInfo_Get(Handle, StreamKind, StreamNumber, MB2WC(Handle, Parameter), KindOfInfo, KindOfSearch));
 }
 
@@ -440,8 +545,13 @@ size_t          __stdcall MediaInfoListA_Count_Get_Files(void* Handle)
 
 void*           __stdcall MediaInfo_New ()
 {
-    MEDIAINFO_DEBUG(Debug+="New, no arguments\r\n";)
     CriticalSectionLocker Locker(Critical);
+
+    #ifdef MEDIAINFO_DEBUG
+        Debug_Open(false);
+        Debug+=",             New, Build="; Debug+=__DATE__; Debug+=' '; Debug+=__TIME__;
+        Debug_Close();
+    #endif //MEDIAINFO_DEBUG
 
     //First init
     if (MI_Handle.find(NULL)==MI_Handle.end())
@@ -452,18 +562,24 @@ void*           __stdcall MediaInfo_New ()
     v07Mode=true; //Application is compatible with v0.7+ interface
 
     //New
-    MediaInfo* M=NULL;
+    MediaInfo* Handle=NULL;
     try
     {
-        M=new MediaInfo;
-        MI_Handle[M]=new MI_List;
-        MI_Handle[M]->Ansi.clear();
-        MEDIAINFO_DEBUG(Debug+="New, will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)M).To_Local().c_str();Debug+="\r\n";)
-        return M;
+        Handle=new MediaInfo;
+        MI_Handle[Handle]=new MI_List;
+        MI_Handle[Handle]->Ansi.clear();
+
+        MEDIAINFO_DEBUG2(   "New",
+                            Debug+=", returns ";Debug+=Ztring::ToZtring((size_t)Handle).To_UTF8();)
+
+        return Handle;
     }
     catch(...)
     {
-        delete M;
+        MEDIAINFO_DEBUG2(   "New",
+                            Debug+="!!!Exception thrown!!!";)
+            
+        delete Handle;
         return NULL;
     }
 }
@@ -475,8 +591,7 @@ void*           __stdcall MediaInfo_New_Quick (const wchar_t* File, const wchar_
     if (MediaInfo_Open(Handle, File)==0)
     {
         //No valid files, return NULL
-        MediaInfo* M=(MediaInfo*)Handle;
-        delete M;
+        delete (MediaInfo*)Handle;
         return NULL;
     }
     return Handle;
@@ -484,7 +599,8 @@ void*           __stdcall MediaInfo_New_Quick (const wchar_t* File, const wchar_
 
 void            __stdcall MediaInfo_Delete (void* Handle)
 {
-    CriticalSectionLocker Locker(Critical);
+    INTEGRITY_VOID(     "Delete"
+                        ,)
 
     //Integrity test
     if (MI_Handle.find(Handle)==MI_Handle.end())
@@ -502,91 +618,99 @@ void            __stdcall MediaInfo_Delete (void* Handle)
         delete MI_Handle[NULL];
         MI_Handle.erase(NULL);
     }
+
+    MEDIAINFO_DEBUG2(   "Delete",
+                        )
 }
 
 size_t          __stdcall MediaInfo_Open (void* Handle, const wchar_t* File)
 {
-    INTEGRITY_SIZE_T(Debug+="Open, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", File=";Debug+=ZenLib::Ztring(File).To_Local();Debug+="\r\n";)
-
-    if (MI_Handle.find(Handle)==MI_Handle.end())
-    {
-        //Compatibility <0.7 : return a MediaInfo handle, but empty
-        MediaInfo* M=new MediaInfo;
-        return (size_t)M;
-    }
-
-    EXECUTE_SIZE_T(MediaInfo, Open(File), Debug+="Open, will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Open",
+                    MediaInfo,
+                    Open(File),
+                    Debug+=", File=";Debug+=Ztring(File).To_UTF8();)
 }
 
 size_t          __stdcall MediaInfo_Open_Buffer (void* Handle, const unsigned char* Begin, size_t  Begin_Size, const unsigned char* End, size_t  End_Size)
 {
-    INTEGRITY_SIZE_T(Debug+="Open_Buffer, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", ";Debug+="\r\n";)
-
-    if (MI_Handle.find(Handle)==MI_Handle.end())
-    {
-        //Compatibility <0.7 : return a MediaInfo handle, but empty
-        MediaInfo* M=new MediaInfo;
-        return (size_t)M;
-    }
-
-    EXECUTE_SIZE_T(MediaInfo, Open(Begin, Begin_Size, End, End_Size), Debug+="Open_Buffer, will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Open_Buffer",
+                    MediaInfo,
+                    Open(Begin, Begin_Size, End, End_Size),
+                    Debug+=", Begin_Size=";Debug+=Ztring::ToZtring(Begin_Size).To_UTF8();Debug+=", End_Size=";Debug+=Ztring::ToZtring(End_Size).To_UTF8();)
 }
 
 size_t          __stdcall MediaInfo_Open_Buffer_Init (void* Handle, MediaInfo_int64u File_Size, MediaInfo_int64u File_Offset)
 {
-    INTEGRITY_SIZE_T(Debug+="Open_Buffer_Init, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", ";Debug+="\r\n";)
-
-    EXECUTE_SIZE_T(MediaInfo, Open_Buffer_Init(File_Size, File_Offset), Debug+="Open_Buffer_Init, will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Open_Buffer_Init",
+                    MediaInfo,
+                    Open_Buffer_Init(File_Size, File_Offset),
+                    Debug+=", File_Size=";Debug+=Ztring::ToZtring(File_Size).To_UTF8();Debug+=", File_Offset=";Debug+=Ztring::ToZtring(File_Offset).To_UTF8();)
 }
 
 size_t          __stdcall MediaInfo_Open_Buffer_Continue (void* Handle, MediaInfo_int8u* Buffer, size_t Buffer_Size)
 {
-    INTEGRITY_SIZE_T(Debug+="MediaInfo_Open_Buffer_Continue, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", ";Debug+="\r\n";)
-
-    EXECUTE_SIZE_T(MediaInfo, Open_Buffer_Continue(Buffer, Buffer_Size), Debug+="MediaInfo_Open_Buffer_Continue, will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Open_Buffer_Continue",
+                    MediaInfo,
+                    Open_Buffer_Continue(Buffer, Buffer_Size),
+                    Debug+=", Buffer_Size=";Debug+=Ztring::ToZtring(Buffer_Size).To_UTF8();)
 }
 
 MediaInfo_int64u __stdcall MediaInfo_Open_Buffer_Continue_GoTo_Get (void* Handle)
 {
-    INTEGRITY_INT64U(Debug+="MediaInfo_Open_Buffer_Continue_GoTo_Get, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", ";Debug+="\r\n";)
-
-    EXECUTE_INT64U(MediaInfo, Open_Buffer_Continue_GoTo_Get(), Debug+="MediaInfo_Open_Buffer_Continue_GoTo_Get, will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_INT64U(  "Open_Buffer_Continue_GoTo_Get",
+                    MediaInfo,
+                    Open_Buffer_Continue_GoTo_Get(),
+                    )
 }
 
 size_t          __stdcall MediaInfo_Open_Buffer_Finalize (void* Handle)
 {
-    INTEGRITY_SIZE_T(Debug+="MediaInfo_Open_Buffer_Finalize, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", ";Debug+="\r\n";)
-
-    EXECUTE_SIZE_T(MediaInfo, Open_Buffer_Finalize(), Debug+="MediaInfo_Open_Buffer_Finalize, will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Open_Buffer_Finalize",
+                    MediaInfo,
+                    Open_Buffer_Finalize(),
+                    )
 }
 
 size_t          __stdcall MediaInfo_Open_NextPacket (void* Handle)
 {
-    INTEGRITY_SIZE_T(Debug+="MediaInfo_Open_NextPacket, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", ";Debug+="\r\n";)
-
-    EXECUTE_SIZE_T(MediaInfo, Open_NextPacket(), Debug+="MediaInfo_Open_NextPacket, will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Open_NextPacket",
+                    MediaInfo,
+                    Open_NextPacket(),
+                    )
 }
 
 size_t          __stdcall MediaInfo_Save (void* Handle)
 {
-    MANAGE_INT(MediaInfo, Save(), Debug+="Save, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";, Debug+="Save, will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Save",
+                    MediaInfo,
+                    Save(),
+                    )
 }
 
 void            __stdcall MediaInfo_Close (void* Handle)
 {
-    MANAGE_VOID(MediaInfo, Close(), Debug+="Close, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";,  Debug+="Close, will return nothing\r\n";)
+    MANAGE_VOID(    "Close",
+                    MediaInfo,
+                    Close(),
+                    )
 }
 
 const wchar_t*  __stdcall MediaInfo_Inform (void* Handle, size_t Reserved)
 {
-    MANAGE_STRING(MediaInfo, Inform(), Debug+="Inform, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";, Debug+="Inform, will return ";Debug+=ToReturn.To_Local().c_str();Debug+="\r\n";)
+    MANAGE_STRING(  "Inform",
+                    MediaInfo,
+                    Inform(),
+                    )
 }
 
 const wchar_t*  __stdcall MediaInfo_GetI (void* Handle, MediaInfo_stream_t StreamKind, size_t StreamNumber, size_t  Parameter, MediaInfo_info_C KindOfInfo)
 {
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
     KindOfInfo=(MediaInfo_info_C)  (((size_t)KindOfInfo)&0xFF);
-    MANAGE_STRING(MediaInfo, Get((stream_t)StreamKind, StreamNumber, Parameter, (info_t)KindOfInfo), Debug+="GetI, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";, Debug+="GetI, will return ";Debug+=ToReturn.To_Local().c_str();Debug+="\r\n";)
+    MANAGE_STRING(  "GetI",
+                    MediaInfo,
+                    Get((stream_t)StreamKind, StreamNumber, Parameter, (info_t)KindOfInfo),
+                    Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring::ToZtring(Parameter).To_UTF8();Debug+=", KindOfInfo=";Debug+=Ztring::ToZtring(KindOfInfo).To_UTF8();)
 }
 
 const wchar_t*  __stdcall MediaInfo_Get (void* Handle, MediaInfo_stream_t StreamKind, size_t StreamNumber, const wchar_t* Parameter, MediaInfo_info_C KindOfInfo, MediaInfo_info_C KindOfSearch)
@@ -594,34 +718,51 @@ const wchar_t*  __stdcall MediaInfo_Get (void* Handle, MediaInfo_stream_t Stream
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
     KindOfInfo=(MediaInfo_info_C)  (((size_t)KindOfInfo)&0xFF);
     KindOfSearch=(MediaInfo_info_C)(((size_t)KindOfSearch)&0xFF);
-    MANAGE_STRING(MediaInfo, Get((stream_t)StreamKind, StreamNumber, Parameter, (info_t)KindOfInfo, (info_t)KindOfSearch), Debug+="Get, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", Parameter=";Debug+=ZenLib::Ztring(Parameter).To_Local().c_str();Debug+=", KindOfInfo=";Debug+=ZenLib::Ztring::ToZtring(KindOfInfo).To_Local().c_str();Debug+=", KindOfSearch=";Debug+=ZenLib::Ztring::ToZtring(KindOfSearch).To_Local().c_str();Debug+="\r\n";, Debug+="Get, will return ";Debug+=ToReturn.To_Local().c_str();Debug+="\r\n";)
+    MANAGE_STRING(  "Get",
+                    MediaInfo,
+                    Get((stream_t)StreamKind, StreamNumber, Parameter, (info_t)KindOfInfo, (info_t)KindOfSearch),
+                    Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring(Parameter).To_UTF8();Debug+=", KindOfInfo=";Debug+=Ztring::ToZtring(KindOfInfo).To_UTF8();Debug+=", KindOfSearch=";Debug+=Ztring::ToZtring(KindOfSearch).To_UTF8();)
 }
 
 size_t          __stdcall MediaInfo_SetI (void* Handle, const wchar_t* ToSet, MediaInfo_stream_t StreamKind, size_t StreamNumber, size_t  Parameter, const wchar_t* OldParameter)
 {
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
-    MANAGE_INT(MediaInfo, Set(ToSet, (stream_t)StreamKind, StreamNumber, Parameter, OldParameter), Debug+="SetI, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";, Debug+="SetI, will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "SetI",
+                    MediaInfo,
+                    Set(ToSet, (stream_t)StreamKind, StreamNumber, Parameter, OldParameter),
+                    Debug+=", ToSet=";Debug+=Ztring(ToSet).To_UTF8();Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring::ToZtring(Parameter).To_UTF8();)
 }
 
 size_t          __stdcall MediaInfo_Set (void* Handle, const wchar_t* ToSet, MediaInfo_stream_t StreamKind, size_t StreamNumber, const wchar_t* Parameter, const wchar_t* OldParameter)
 {
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
-    MANAGE_INT(MediaInfo, Set(ToSet, (stream_t)StreamKind, StreamNumber, Parameter, OldParameter), Debug+="Set, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";, Debug+="Set, will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Set",
+                    MediaInfo,
+                    Set(ToSet, (stream_t)StreamKind, StreamNumber, Parameter, OldParameter),
+                    Debug+=", ToSet=";Debug+=Ztring(ToSet).To_UTF8();Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring(Parameter).To_UTF8();)
 }
 
 size_t          __stdcall MediaInfo_Output_Buffer_Get (void* Handle, const wchar_t* Value)
 {
-    MANAGE_INT(MediaInfo, Output_Buffer_Get(Value), ;, ;)
+    MANAGE_SIZE_T(  "Output_Buffer_Get",
+                    MediaInfo,
+                    Output_Buffer_Get(Value),
+                    Debug+=", Value=";Debug+=Ztring(Value).To_UTF8();)
 }
 
 size_t          __stdcall MediaInfo_Output_Buffer_GetI (void* Handle, size_t Pos)
 {
-    MANAGE_INT(MediaInfo, Output_Buffer_Get(Pos), ;, ;)
+    MANAGE_SIZE_T(  "Output_Buffer_GetI",
+                    MediaInfo,
+                    Output_Buffer_Get(Pos),
+                    Debug+=", Pos=";Debug+=Ztring::ToZtring(Pos).To_UTF8();)
 }
 
 const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Option, const wchar_t* Value)
 {
-    MEDIAINFO_DEBUG(Debug+="Option, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", Option=";Debug+=ZenLib::Ztring(Option).To_Local().c_str();Debug+="\r\n";)
+    MEDIAINFO_DEBUG1(   "Option",
+                        Debug+=", Option=";Debug+=Ztring(Option).To_UTF8();Debug+=", Value=";Debug+=Ztring(Value).To_UTF8();)
+
     CriticalSectionLocker Locker(Critical);
 
     //First init - Option could be called without using MediaInfo_New()
@@ -632,18 +773,22 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
     }
 
     //DLL only option
-    if (ZenLib::Ztring(Option).Compare(L"CharSet", L"=="))
+    if (Ztring(Option).Compare(L"CharSet", L"=="))
     {
-        if (ZenLib::Ztring(Value).Compare(L"UTF-8", L"=="))
+        if (Ztring(Value).Compare(L"UTF-8", L"=="))
             utf8=true;
         else
             utf8=false;
         MI_Handle[NULL]->Unicode=L"OK";
-        return MI_Handle[NULL]->Unicode.c_str();
+ 
+       MEDIAINFO_DEBUG2(   "CharSet",
+                           )
+
+       return MI_Handle[NULL]->Unicode.c_str();
     }
-    if (ZenLib::Ztring(Option).Compare(L"setlocale_LC_CTYPE", L"=="))
+    if (Ztring(Option).Compare(L"setlocale_LC_CTYPE", L"=="))
     {
-        setlocale(LC_CTYPE, utf8?ZenLib::Ztring(Value).To_UTF8().c_str():ZenLib::Ztring(Value).To_Local().c_str());
+        setlocale(LC_CTYPE, utf8?Ztring(Value).To_UTF8().c_str():Ztring(Value).To_Local().c_str());
         return MI_Handle[NULL]->Unicode.c_str();
     }
 
@@ -653,37 +798,59 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
         {
             if (v07Mode==false)
             {
+                MEDIAINFO_DEBUG2(   "Option",
+                                    Debug+="v0.6 mode, not supported")
+
                 MediaInfo_Info_Unicode=L"Your software uses an outdated interface, You must use MediaInfoList.DLL 0.6 instead";
                 return MediaInfo_Info_Unicode.c_str();
             }
+
+            MEDIAINFO_DEBUG2(   "Option",
+                                Debug+="Handle error")
+
             MI_Handle[NULL]->Unicode==L"Note to developer : you must create an object before";
             return MI_Handle[NULL]->Unicode.c_str();
         }
-        EXECUTE_STRING(MediaInfo, Option(Option, Value), Debug+="Option, will return ";Debug+=ToReturn.To_Local().c_str();Debug+="\r\n";)
+
+        EXECUTE_STRING( "Option",
+                        MediaInfo,
+                        Option(Option, Value))
     }
     else
     {
-        MI_Handle[NULL]->Unicode=MediaInfo::Option_Static(Option, Value);
-        return MI_Handle[NULL]->Unicode.c_str();
+        EXECUTE_STRING( "Option",
+                        MediaInfo,
+                        Option_Static(Option, Value))
     }
 }
 
 size_t          __stdcall MediaInfo_State_Get(void* Handle)
 {
-    MANAGE_INT(MediaInfo, State_Get(), Debug+="State_Get, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";, Debug+="State_Get, will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "State_Get",
+                    MediaInfo,
+                    State_Get(),
+                    )
 }
 
 size_t          __stdcall MediaInfo_Count_Get(void* Handle, MediaInfo_stream_t StreamKind, size_t StreamNumber)
 {
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
-    MANAGE_INT(MediaInfo, Count_Get((stream_t)StreamKind, StreamNumber), Debug+="Count_Get, Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", StreamKind=";Debug+=ZenLib::Ztring::ToZtring((size_t)StreamKind).To_Local().c_str();Debug+=", StreamNumber=";Debug+=ZenLib::Ztring::ToZtring((size_t)StreamNumber).To_Local().c_str();Debug+="\r\n", Debug+="Count_Get, will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Count_Get",
+                    MediaInfo,
+                    Count_Get((stream_t)StreamKind, StreamNumber),
+                    Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring((size_t)StreamNumber).To_UTF8();)
 }
 
 //---------------------------------------------------------------------------
 
 void*           __stdcall MediaInfoList_New ()
 {
-    MEDIAINFO_DEBUG(Debug+="New(L)";Debug+="\r\n";)
+    #ifdef MEDIAINFO_DEBUG
+        Debug_Open(false);
+        Debug+=",             New, Build="; Debug+=__DATE__; Debug+=' '; Debug+=__TIME__;
+        Debug_Close();
+    #endif //MEDIAINFO_DEBUG
+
     CriticalSectionLocker Locker(Critical);
 
     //First init
@@ -695,18 +862,24 @@ void*           __stdcall MediaInfoList_New ()
     v07Mode=true; //Application is compatible with v0.7+ interface
 
     //New
-    MediaInfoList* M=NULL;
+    MediaInfoList* Handle=NULL;
     try
     {
-        M=new MediaInfoList;
-        MI_Handle[M]=new MI_List;
-        MI_Handle[M]->Ansi.clear();
-        MEDIAINFO_DEBUG(Debug+="New(L), will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)M).To_Local().c_str();Debug+="\r\n";)
-        return M;
+        Handle=new MediaInfoList;
+        MI_Handle[Handle]=new MI_List;
+        MI_Handle[Handle]->Ansi.clear();
+
+        MEDIAINFO_DEBUG2(   "New",
+                            Debug+=", returns ";Debug+=Ztring::ToZtring((size_t)Handle).To_UTF8();)
+
+        return Handle;
     }
     catch(...)
     {
-        delete M;
+        MEDIAINFO_DEBUG2(   "New",
+                            Debug+="!!!Exception thrown!!!";)
+            
+        delete Handle;
         return NULL;
     }
 }
@@ -718,8 +891,7 @@ void*           __stdcall MediaInfoList_New_Quick (const wchar_t* File, const wc
     if (MediaInfoList_Open(Handle, File, MediaInfo_FileOption_Nothing)==0)
     {
         //No valid files, return NULL
-        MediaInfoList* M=(MediaInfoList*)Handle;
-        delete M;
+        delete (MediaInfoList*)Handle;
         return NULL;
     }
     return Handle;
@@ -727,7 +899,8 @@ void*           __stdcall MediaInfoList_New_Quick (const wchar_t* File, const wc
 
 void            __stdcall MediaInfoList_Delete (void* Handle)
 {
-    CriticalSectionLocker Locker(Critical);
+    INTEGRITY_VOID(     "Delete"
+                        ,)
 
     //Integrity test
     if (MI_Handle.find(Handle)==MI_Handle.end())
@@ -745,80 +918,91 @@ void            __stdcall MediaInfoList_Delete (void* Handle)
         delete MI_Handle[NULL];
         MI_Handle.erase(NULL);
     }
+
+    MEDIAINFO_DEBUG2(   "Delete",
+                        )
 }
 
 size_t          __stdcall MediaInfoList_Open (void* Handle, const wchar_t* File, const MediaInfo_fileoptions_C Options)
 {
-    INTEGRITY_SIZE_T(Debug+="Open(L), Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", ";Debug+="\r\n";)
-
-    if (MI_Handle.find(Handle)==MI_Handle.end())
-    {
-        //Compatibility <0.7 : return a MediaInfo handle, but empty
-        MediaInfo* M=new MediaInfo;
-        return (size_t)M;
-    }
-
-    EXECUTE_SIZE_T(MediaInfoList, Open(File, (fileoptions_t)Options), Debug+="Open(L), will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Open",
+                    MediaInfoList,
+                    Open(File),
+                    Debug+=", File=";Debug+=Ztring(File).To_UTF8();)
 }
 
 size_t          __stdcall MediaInfoList_Open_Buffer (void* Handle, const unsigned char* Begin, size_t  Begin_Size, const unsigned char* End, size_t  End_Size)
 {
-    INTEGRITY_SIZE_T(Debug+="Open_Buffer(L), Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";)
-
-    if (MI_Handle.find(Handle)==MI_Handle.end())
-    {
-        //Compatibility <0.7 : return a MediaInfo handle, but empty
-        MediaInfo* M=new MediaInfo;
-        return (size_t)M;
-    }
-
-    return 0; //No more implemented
+    return 0; // Not implemented
 }
 
 size_t          __stdcall MediaInfoList_Save (void* Handle, size_t  FilePos)
 {
-    MANAGE_INT(MediaInfoList, Save(FilePos), Debug+="Save(L), Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";, Debug+="Save(L), will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Save",
+                    MediaInfoList,
+                    Save(FilePos),
+                    )
 }
 
 void            __stdcall MediaInfoList_Close (void* Handle, size_t  FilePos)
 {
-    MANAGE_VOID(MediaInfoList, Close(FilePos), Debug+="MediaInfoList_Close\r\n";, Debug+="MediaInfoList_Close 2\r\n";)
+    MANAGE_VOID(    "Close",
+                    MediaInfoList,
+                    Close(FilePos),
+                    )
 }
 
 const wchar_t*  __stdcall MediaInfoList_Inform (void* Handle, size_t  FilePos, size_t Reserved)
 {
-    MANAGE_STRING(MediaInfoList, Inform(FilePos, 0), Debug+="Inform(L), Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";, Debug+="Inform(L), will return ";Debug+=ToReturn.To_Local();Debug+="\r\n";)
+    MANAGE_STRING(  "Inform",
+                    MediaInfoList,
+                    Inform(FilePos),
+                    )
 }
 
 const wchar_t*  __stdcall MediaInfoList_GetI (void* Handle, size_t  FilePos, MediaInfo_stream_t StreamKind, size_t StreamNumber, size_t  Parameter, MediaInfo_info_C KindOfInfo)
 {
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
     KindOfInfo=(MediaInfo_info_C)  (((size_t)KindOfInfo)&0xFF);
-    MANAGE_STRING(MediaInfoList, Get(FilePos, (stream_t)StreamKind, StreamNumber, Parameter, (info_t)KindOfInfo), Debug+="Get(L), Handle=";Debug+=ZenLib::Ztring::ToZtring((int64u)Handle).To_Local().c_str();Debug+=", FilePos=";Debug+=ZenLib::Ztring::ToZtring((size_t)FilePos).To_Local().c_str();Debug+=", StreamKind=";Debug+=ZenLib::Ztring::ToZtring((int8u)StreamKind).To_Local().c_str();Debug+=", StreamNumber=";Debug+=ZenLib::Ztring::ToZtring((int8u)StreamNumber).To_Local().c_str();Debug+=", Parameter=";Debug+=ZenLib::Ztring::ToZtring(Parameter).To_Local().c_str();Debug+=", KindOfInfo=";Debug+=ZenLib::Ztring::ToZtring((int8u)KindOfInfo).To_Local().c_str();Debug+="\r\n";, Debug+="Get(L), will return ";Debug+=ToReturn.To_Local();Debug+="\r\n";)
+    MANAGE_STRING(  "GetI",
+                    MediaInfoList,
+                    Get(FilePos, (stream_t)StreamKind, StreamNumber, Parameter, (info_t)KindOfInfo),
+                    Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring::ToZtring(Parameter).To_UTF8();Debug+=", KindOfInfo=";Debug+=Ztring::ToZtring(KindOfInfo).To_UTF8();)
 }
 
 const wchar_t*  __stdcall MediaInfoList_Get (void* Handle, size_t  FilePos, MediaInfo_stream_t StreamKind, size_t StreamNumber, const wchar_t* Parameter, MediaInfo_info_C KindOfInfo, MediaInfo_info_C KindOfSearch)
 {
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
     KindOfInfo=(MediaInfo_info_C)  (((size_t)KindOfInfo)&0xFF);
-    MANAGE_STRING(MediaInfoList, Get(FilePos, (stream_t)((int8u)StreamKind), StreamNumber, Parameter, (info_t)((int8u)KindOfInfo), (info_t)((int8u)KindOfSearch)), Debug+="Get(L), Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", FilePos=";Debug+=ZenLib::Ztring::ToZtring((size_t)FilePos).To_Local().c_str();Debug+=", StreamKind=";Debug+=ZenLib::Ztring::ToZtring((int8u)StreamKind).To_Local().c_str();Debug+=", StreamNumber=";Debug+=ZenLib::Ztring::ToZtring((int8u)StreamNumber).To_Local().c_str();Debug+=", Parameter=";Debug+=ZenLib::Ztring(Parameter).To_Local().c_str();Debug+=", KindOfInfo=";Debug+=ZenLib::Ztring::ToZtring((int8u)KindOfInfo).To_Local().c_str();Debug+=", KindOfSearch=";Debug+=ZenLib::Ztring::ToZtring((int8u)KindOfSearch).To_Local().c_str();Debug+="\r\n";, Debug+="Get(L), will return ";Debug+=ToReturn.To_Local();Debug+="\r\n";)
+    MANAGE_STRING(  "Get",
+                    MediaInfoList,
+                    Get(FilePos, (stream_t)StreamKind, StreamNumber, Parameter, (info_t)KindOfInfo, (info_t)KindOfSearch),
+                    Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring(Parameter).To_UTF8();Debug+=", KindOfInfo=";Debug+=Ztring::ToZtring(KindOfInfo).To_UTF8();Debug+=", KindOfSearch=";Debug+=Ztring::ToZtring(KindOfSearch).To_UTF8();)
 }
 
 size_t          __stdcall MediaInfoList_SetI (void* Handle, const wchar_t* ToSet, size_t  FilePos, MediaInfo_stream_t StreamKind, size_t StreamNumber, size_t  Parameter, const wchar_t* OldParameter)
 {
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
-    MANAGE_INT(MediaInfoList, Set(ToSet, FilePos, (stream_t)StreamKind, StreamNumber, Parameter, OldParameter), Debug+="SetI(L), Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";, Debug+="SetI(L), will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "SetI",
+                    MediaInfoList,
+                    Set(ToSet, FilePos, (stream_t)StreamKind, StreamNumber, Parameter),
+                    Debug+=", ToSet=";Debug+=Ztring(ToSet).To_UTF8();Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring::ToZtring(Parameter).To_UTF8();)
 }
 
 size_t          __stdcall MediaInfoList_Set (void* Handle, const wchar_t* ToSet, size_t  FilePos, MediaInfo_stream_t StreamKind, size_t StreamNumber, const wchar_t* Parameter, const wchar_t* OldParameter)
 {
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
-    MANAGE_INT(MediaInfoList, Set(ToSet, FilePos, (stream_t)StreamKind, StreamNumber, Parameter, OldParameter), Debug+="Set(L), Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";, Debug+="Set(L), will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Set",
+                    MediaInfoList,
+                    Set(ToSet, FilePos, (stream_t)StreamKind, StreamNumber, Parameter, OldParameter),
+                    Debug+=", ToSet=";Debug+=Ztring(ToSet).To_UTF8();Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring(Parameter).To_UTF8();)
 }
 
 const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* Option, const wchar_t* Value)
 {
-    MEDIAINFO_DEBUG(Debug+="Option(L), Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", Option=";Debug+=ZenLib::Ztring(Option).To_Local().c_str();Debug+=", Value=";Debug+=ZenLib::Ztring(Value).To_Local().c_str();Debug+="\r\n";)
+    MEDIAINFO_DEBUG1(   "Option",
+                        Debug+=", Option=";Debug+=Ztring(Option).To_UTF8();Debug+=", Value=";Debug+=Ztring(Value).To_UTF8();)
+
     CriticalSectionLocker Locker(Critical);
 
     //First init - Option could be called without using MediaInfo_New()
@@ -836,11 +1020,15 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
         else
             utf8=false;
         MI_Handle[NULL]->Unicode=L"OK";
+ 
+       MEDIAINFO_DEBUG2(   "CharSet",
+                           )
+
         return MI_Handle[NULL]->Unicode.c_str();
     }
-    if (ZenLib::Ztring(Option).Compare(L"setlocale_LC_CTYPE", L"=="))
+    if (Ztring(Option).Compare(L"setlocale_LC_CTYPE", L"=="))
     {
-        setlocale(LC_CTYPE, utf8?ZenLib::Ztring(Value).To_UTF8().c_str():ZenLib::Ztring(Value).To_Local().c_str());
+        setlocale(LC_CTYPE, utf8?Ztring(Value).To_UTF8().c_str():Ztring(Value).To_Local().c_str());
         return MI_Handle[NULL]->Unicode.c_str();
     }
 
@@ -850,13 +1038,23 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
         {
             if (v07Mode==false)
             {
+                MEDIAINFO_DEBUG2(   "Option",
+                                    Debug+="v0.6 mode, not supported")
+
                 MediaInfo_Info_Unicode=L"Your software uses an outdated interface, You must use MediaInfoList.DLL 0.6 instead";
                 return MediaInfo_Info_Unicode.c_str();
             }
+
+            MEDIAINFO_DEBUG2(   "Option",
+                                Debug+="Handle error")
+
             MI_Handle[NULL]->Unicode==L"Note to developer : you must create an object before";
             return MI_Handle[NULL]->Unicode.c_str();
         }
-        EXECUTE_STRING(MediaInfoList, Option(Option, Value), Debug+="Option(L), will return ";Debug+=ToReturn.To_Local().c_str();Debug+="\r\n";)
+
+        EXECUTE_STRING( "Option",
+                        MediaInfoList,
+                        Option(Option, Value))
     }
     else
     {
@@ -867,27 +1065,48 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
 
 size_t          __stdcall MediaInfoList_State_Get(void* Handle)
 {
-    MANAGE_INT(MediaInfoList, State_Get(), Debug+="State_Get(L), Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";, Debug+="State_Get(L), will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "State_Get",
+                    MediaInfoList,
+                    State_Get(),
+                    )
 }
 
 size_t          __stdcall MediaInfoList_Count_Get(void* Handle, size_t  FilePos, MediaInfo_stream_t StreamKind, size_t StreamNumber)
 {
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
-    MANAGE_INT(MediaInfoList, Count_Get(FilePos, (stream_t)StreamKind, StreamNumber), Debug+="Count_Get(L), Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+=", FilePos=";Debug+=ZenLib::Ztring::ToZtring((size_t)FilePos).To_Local().c_str();Debug+=", StreamKind=";Debug+=ZenLib::Ztring::ToZtring((size_t)StreamKind).To_Local().c_str();Debug+=", StreamNumber=";Debug+=ZenLib::Ztring::ToZtring((size_t)StreamNumber).To_Local().c_str();Debug+="\r\n";, Debug+="Count_Get(L), will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Count_Get",
+                    MediaInfoList,
+                    Count_Get(FilePos, (stream_t)StreamKind, StreamNumber),
+                    Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring((size_t)StreamNumber).To_UTF8();)
 }
 
 size_t          __stdcall MediaInfoList_Count_Get_Files(void* Handle)
 {
-    MANAGE_INT(MediaInfoList, Count_Get(), Debug+="Count_Get_Files(L), Handle=";Debug+=ZenLib::Ztring::ToZtring((size_t)Handle).To_Local().c_str();Debug+="\r\n";, Debug+="Count_Get_Files(L), will return ";Debug+=ZenLib::Ztring::ToZtring((size_t)ToReturn).To_Local().c_str();Debug+="\r\n";)
+    MANAGE_SIZE_T(  "Count_Get",
+                    MediaInfoList,
+                    Count_Get(),
+                    )
 }
 
 //---------------------------------------------------------------------------
 
 const char*     __stdcall MediaInfo_Info_Version()
 {
-    MEDIAINFO_DEBUG("Info_Version") \
+    #ifdef MEDIAINFO_DEBUG
+        Debug_Open(false);
+        Debug+=",             MediaInfo_Info_Version";
+        Debug_Close();
+    #endif //MEDIAINFO_DEBUG
+
     //Compatibility <0.7 : return a message
     MediaInfo_Info_Ansi="Your software uses an outdated interface, You must use MediaInfo.DLL 0.4.1.1 instead";
+
+    #ifdef MEDIAINFO_DEBUG
+        Debug_Open(true);
+        Debug+=",             MediaInfo_Info_Version";
+        Debug_Close();
+    #endif //MEDIAINFO_DEBUG
+
     return MediaInfo_Info_Ansi.c_str();
     //wchar_t* MediaInfo_wChar=new wchar_t[1000];
     //GetModuleFileNameW (NULL, MediaInfo_wChar, 1000);
