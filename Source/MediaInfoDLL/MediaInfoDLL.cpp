@@ -45,24 +45,22 @@ using namespace std;
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-struct MI_List
+struct mi_output
 {
     std::string  Ansi;    //One-Byte-sized characters
     std::wstring Unicode; //Unicode characters
 };
+typedef std::map<void*, mi_output*> mi_outputs;
 
-struct MI_List_FromAnsi
+struct mi_input
 {
-    int8u Pos;                          //Where are we?
-    std::vector<Ztring> Unicode;  //Unicode characters multiple times
+    Ztring Unicode[8];  //Unicode characters multiple times
 };
+typedef std::map<void*, mi_input*> mi_inputs;
 
-std::map<void*, MI_List*> MI_Handle;
-std::map<void*, MI_List_FromAnsi> MI_FromAnsi;
-std::string  MediaInfo_Info_Ansi;    //For general information
-std::wstring MediaInfo_Info_Unicode; //For general information
+mi_outputs MI_Outputs;
+mi_inputs MI_Inputs;
 
-static bool v07Mode=false; //Legacy : Test if the user try to use <0.7 Open method
 static CriticalSection Critical;
 static bool utf8=false;
 
@@ -72,39 +70,39 @@ const char* WC2MB(void* Handle, const wchar_t* Text)
     CriticalSectionLocker Locker(Critical);
 
     //Coherancy
-    if (MI_Handle.find(Handle)==MI_Handle.end())
+    mi_outputs::iterator MI_Output=MI_Outputs.find(Handle);
+    if (MI_Outputs.find(Handle)==MI_Outputs.end())
     {
-        if (Handle==NULL && v07Mode)
-            MediaInfo_Info_Ansi="Note to developer : you must create an object before using this method";
-        else
-            MediaInfo_Info_Ansi="Your software uses an outdated interface, you must use MediaInfo.DLL 0.6 instead"; //Compatibility <0.7 : return a message
-        return MediaInfo_Info_Ansi.c_str();
+        MI_Outputs[Handle]=new mi_output; //Generic Handle
+        MI_Output=MI_Outputs.find(Handle);
     }
 
     //Adaptation
     if (utf8)
-       MI_Handle[Handle]->Ansi=Ztring(Text).To_UTF8();
+       MI_Output->second->Ansi=Ztring(Text).To_UTF8();
     else
-       MI_Handle[Handle]->Ansi=Ztring(Text).To_UTF8();
-    return MI_Handle[Handle]->Ansi.c_str();
+        MI_Output->second->Ansi=Ztring(Text).To_UTF8();
+    return  MI_Output->second->Ansi.c_str();
 }
 
 //---------------------------------------------------------------------------
-const wchar_t* MB2WC(void* Handle, const char* Text)
+const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
 {
-    //2 strings at same time
-    if (MI_FromAnsi[Handle].Unicode.size()<2)
+    CriticalSectionLocker Locker(Critical);
+
+    //Coherancy
+    mi_inputs::iterator MI_Input=MI_Inputs.find(Handle);
+    if (MI_Input==MI_Inputs.end())
     {
-        MI_FromAnsi[Handle].Pos=1;
-        MI_FromAnsi[Handle].Unicode.resize(2);
+        MI_Inputs[Handle]=new mi_input; //Generic Handle
+        MI_Input=MI_Inputs.find(Handle);
     }
-    MI_FromAnsi[Handle].Pos=(MI_FromAnsi[Handle].Pos==0?1:0); //Changing the position
 
     //Adaptation
     if (utf8)
-        return MI_FromAnsi[Handle].Unicode[MI_FromAnsi[Handle].Pos].From_UTF8(Text).c_str();
+        return MI_Input->second->Unicode[Pos].From_UTF8(Text).c_str();
     else
-        return MI_FromAnsi[Handle].Unicode[MI_FromAnsi[Handle].Pos].From_Local(Text).c_str();
+        return MI_Input->second->Unicode[Pos].From_Local(Text).c_str();
 }
 
 //***************************************************************************
@@ -226,7 +224,9 @@ const wchar_t* MB2WC(void* Handle, const char* Text)
 #define INTEGRITY_VOID(_NAME,_DEBUGA) \
     MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
     CriticalSectionLocker Locker(Critical); \
-    if (Handle==NULL || MI_Handle.find(Handle)==MI_Handle.end()) \
+    mi_outputs::iterator MI_Output=MI_Outputs.find(Handle); \
+    bool MI_Output_IsOk=MI_Outputs.find(Handle)!=MI_Outputs.end(); \
+    if (Handle==NULL || !MI_Output_IsOk) \
     { \
         MEDIAINFO_DEBUG2(_NAME,Debug+="Handle error") \
         return; \
@@ -235,7 +235,9 @@ const wchar_t* MB2WC(void* Handle, const char* Text)
 #define INTEGRITY_SIZE_T(_NAME,_DEBUGA) \
     MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
     CriticalSectionLocker Locker(Critical); \
-    if (Handle==NULL || MI_Handle.find(Handle)==MI_Handle.end()) \
+    mi_outputs::iterator MI_Output=MI_Outputs.find(Handle); \
+    bool MI_Output_IsOk=MI_Outputs.find(Handle)!=MI_Outputs.end(); \
+    if (Handle==NULL || !MI_Output_IsOk) \
     { \
         MEDIAINFO_DEBUG2(_NAME, Debug+="Handle error") \
         return 0; \
@@ -244,7 +246,9 @@ const wchar_t* MB2WC(void* Handle, const char* Text)
 #define INTEGRITY_INT64U(_NAME,_DEBUGA) \
     MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
     CriticalSectionLocker Locker(Critical); \
-    if (Handle==NULL || MI_Handle.find(Handle)==MI_Handle.end()) \
+    mi_outputs::iterator MI_Output=MI_Outputs.find(Handle); \
+    bool MI_Output_IsOk=MI_Outputs.find(Handle)!=MI_Outputs.end(); \
+    if (Handle==NULL || !MI_Output_IsOk) \
     { \
         MEDIAINFO_DEBUG2(_NAME, Debug+="Handle error") \
         return 0; \
@@ -253,17 +257,13 @@ const wchar_t* MB2WC(void* Handle, const char* Text)
 #define INTEGRITY_STRING(_NAME,_DEBUGA) \
     MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
     CriticalSectionLocker Locker(Critical); \
-    if (Handle==NULL || MI_Handle.find(Handle)==MI_Handle.end()) \
+    mi_outputs::iterator MI_Output=MI_Outputs.find(Handle); \
+    bool MI_Output_IsOk=MI_Outputs.find(Handle)!=MI_Outputs.end(); \
+    if (Handle==NULL || !MI_Output_IsOk) \
     { \
-        if (v07Mode==false) \
-        { \
-            MEDIAINFO_DEBUG2(_NAME, Debug+="v0.6 mode, not supported") \
-            MediaInfo_Info_Unicode=L"Your software uses an outdated interface, You must use MediaInfoList.DLL 0.6 instead"; \
-            return MediaInfo_Info_Unicode.c_str(); \
-        } \
         MEDIAINFO_DEBUG2(_NAME, Debug+="Handle error") \
-        MI_Handle[NULL]->Unicode==L"Note to developer : you must create an object before"; \
-        return MI_Handle[NULL]->Unicode.c_str(); \
+        MI_Outputs[NULL]->Unicode==L"Note to developer : you must create an object before"; \
+        return MI_Outputs[NULL]->Unicode.c_str(); \
     } \
 
 #ifndef MEDIAINFO_DEBUG
@@ -317,18 +317,18 @@ const wchar_t* MB2WC(void* Handle, const char* Text)
 #define EXECUTE_STRING(_NAME,_CLASS,_METHOD) \
     try \
     { \
-        MI_Handle[Handle]->Unicode=((_CLASS*)Handle)->_METHOD; \
-    } catch (...) {MI_Handle[Handle]->Unicode.clear();} \
-    return MI_Handle[Handle]->Unicode.c_str();
+        MI_Outputs[Handle]->Unicode=((_CLASS*)Handle)->_METHOD; \
+    } catch (...) {MI_Outputs[Handle]->Unicode.clear();} \
+    return MI_Outputs[Handle]->Unicode.c_str();
 #else //MEDIAINFO_DEBUG
 #define EXECUTE_STRING(_NAME,_CLASS,_METHOD) \
     try \
     { \
-        MI_Handle[Handle]->Unicode=((_CLASS*)Handle)->_METHOD; \
-    } catch (...) {MEDIAINFO_DEBUG2(_NAME, Debug+="!!!Exception thrown!!!";) MI_Handle[Handle]->Unicode.clear();} \
-    Ztring ToReturn=MI_Handle[Handle]->Unicode; \
+        MI_Outputs[Handle]->Unicode=((_CLASS*)Handle)->_METHOD; \
+    } catch (...) {MEDIAINFO_DEBUG2(_NAME, Debug+="!!!Exception thrown!!!";) MI_Outputs[Handle]->Unicode.clear();} \
+    Ztring ToReturn=MI_Outputs[Handle]->Unicode; \
     MEDIAINFO_DEBUG2(_NAME, Debug+=", returns ";Debug+=ToReturn.To_UTF8();) \
-    return MI_Handle[Handle]->Unicode.c_str();
+    return MI_Outputs[Handle]->Unicode.c_str();
 #endif //MEDIAINFO_DEBUG
 
 #define MANAGE_VOID(_NAME,_CLASS,_METHOD,_DEBUGA) \
@@ -356,7 +356,7 @@ void*           __stdcall MediaInfoA_New ()
 
 void*           __stdcall MediaInfoA_New_Quick (const char* File, const char* Options)
 {
-    return MediaInfo_New_Quick(MB2WC(NULL, File), MB2WC(NULL, Options));
+    return MediaInfo_New_Quick(MB2WC(NULL, 0, File), MB2WC(NULL, 1, Options));
 }
 
 void            __stdcall MediaInfoA_Delete (void* Handle)
@@ -366,7 +366,7 @@ void            __stdcall MediaInfoA_Delete (void* Handle)
 
 size_t          __stdcall MediaInfoA_Open (void* Handle, const char* File)
 {
-    return MediaInfo_Open(Handle, MB2WC(Handle, File));
+    return MediaInfo_Open(Handle, MB2WC(Handle, 0, File));
 }
 
 size_t          __stdcall MediaInfoA_Open_Buffer (void* Handle, const unsigned char* Begin, size_t  Begin_Size, const unsigned char* End, size_t  End_Size)
@@ -421,22 +421,22 @@ const char*     __stdcall MediaInfoA_GetI (void* Handle, MediaInfo_stream_t Stre
 
 const char*     __stdcall MediaInfoA_Get (void* Handle, MediaInfo_stream_t StreamKind, size_t StreamNumber, const char* Parameter, MediaInfo_info_C KindOfInfo, MediaInfo_info_C KindOfSearch)
 {
-    return WC2MB(Handle, MediaInfo_Get(Handle, StreamKind, StreamNumber, MB2WC(Handle, Parameter), KindOfInfo, KindOfSearch));
+    return WC2MB(Handle, MediaInfo_Get(Handle, StreamKind, StreamNumber, MB2WC(Handle, 0, Parameter), KindOfInfo, KindOfSearch));
 }
 
 size_t          __stdcall MediaInfoA_SetI (void* Handle, const char* ToSet, MediaInfo_stream_t StreamKind, size_t StreamNumber, size_t  Parameter, const char* OldParameter)
 {
-    return MediaInfo_SetI(Handle, MB2WC(Handle, ToSet), StreamKind, StreamNumber, Parameter, MB2WC(Handle, OldParameter));
+    return MediaInfo_SetI(Handle, MB2WC(Handle, 0, ToSet), StreamKind, StreamNumber, Parameter, MB2WC(Handle, 1, OldParameter));
 }
 
 size_t          __stdcall MediaInfoA_Set (void* Handle, const char* ToSet, MediaInfo_stream_t StreamKind, size_t StreamNumber, const char* Parameter, const char* OldParameter)
 {
-    return MediaInfo_Set(Handle, MB2WC(Handle, ToSet), StreamKind, StreamNumber, MB2WC(Handle, Parameter), MB2WC(Handle, OldParameter));
+    return MediaInfo_Set(Handle, MB2WC(Handle, 0, ToSet), StreamKind, StreamNumber, MB2WC(Handle, 1, Parameter), MB2WC(Handle, 2, OldParameter));
 }
 
 size_t          __stdcall MediaInfoA_Output_Buffer_Get (void* Handle, const char* Value)
 {
-    return MediaInfo_Output_Buffer_Get(Handle, MB2WC(Handle, Value));
+    return MediaInfo_Output_Buffer_Get(Handle, MB2WC(Handle, 0, Value));
 }
 
 size_t          __stdcall MediaInfoA_Output_Buffer_GetI (void* Handle, size_t Pos)
@@ -446,7 +446,7 @@ size_t          __stdcall MediaInfoA_Output_Buffer_GetI (void* Handle, size_t Po
 
 const char*     __stdcall MediaInfoA_Option (void* Handle, const char* Option, const char* Value)
 {
-    return WC2MB(Handle, MediaInfo_Option(Handle, MB2WC(Handle, Option), MB2WC(Handle, Value)));
+    return WC2MB(Handle, MediaInfo_Option(Handle, MB2WC(Handle, 0, Option), MB2WC(Handle, 1, Value)));
 }
 
 size_t          __stdcall MediaInfoA_State_Get(void* Handle)
@@ -468,7 +468,7 @@ void*           __stdcall MediaInfoListA_New ()
 
 void*           __stdcall MediaInfoListA_New_Quick (const char* File, const char* Options)
 {
-    return MediaInfoList_New_Quick(MB2WC(NULL, File), MB2WC(NULL, Options));
+    return MediaInfoList_New_Quick(MB2WC(NULL, 0, File), MB2WC(NULL, 1, Options));
 }
 
 void            __stdcall MediaInfoListA_Delete (void* Handle)
@@ -478,7 +478,7 @@ void            __stdcall MediaInfoListA_Delete (void* Handle)
 
 size_t          __stdcall MediaInfoListA_Open (void* Handle, const char* File, const MediaInfo_fileoptions_C Options)
 {
-    return MediaInfoList_Open(Handle, MB2WC(Handle, File), Options);
+    return MediaInfoList_Open(Handle, MB2WC(Handle, 0, File), Options);
 }
 
 size_t          __stdcall MediaInfoListA_Open_Buffer (void* Handle, const unsigned char* Begin, size_t  Begin_Size, const unsigned char* End, size_t  End_Size)
@@ -508,22 +508,22 @@ const char*     __stdcall MediaInfoListA_GetI (void* Handle, size_t  FilePos, Me
 
 const char*     __stdcall MediaInfoListA_Get (void* Handle, size_t  FilePos, MediaInfo_stream_t StreamKind, size_t StreamNumber, const char* Parameter, MediaInfo_info_C KindOfInfo, MediaInfo_info_C KindOfSearch)
 {
-    return WC2MB(Handle, MediaInfoList_Get(Handle, FilePos, StreamKind, StreamNumber, MB2WC(Handle, Parameter), KindOfInfo, KindOfSearch));
+    return WC2MB(Handle, MediaInfoList_Get(Handle, FilePos, StreamKind, StreamNumber, MB2WC(Handle, 1, Parameter), KindOfInfo, KindOfSearch));
 }
 
 size_t          __stdcall MediaInfoListA_SetI (void* Handle, const char* ToSet, size_t  FilePos, MediaInfo_stream_t StreamKind, size_t StreamNumber, size_t  Parameter, const char* OldParameter)
 {
-    return MediaInfoList_SetI(Handle, MB2WC(Handle, ToSet), FilePos, StreamKind, StreamNumber, Parameter, MB2WC(Handle, OldParameter));
+    return MediaInfoList_SetI(Handle, MB2WC(Handle, 0, ToSet), FilePos, StreamKind, StreamNumber, Parameter, MB2WC(Handle, 1, OldParameter));
 }
 
 size_t          __stdcall MediaInfoListA_Set (void* Handle, const char* ToSet, size_t  FilePos, MediaInfo_stream_t StreamKind, size_t StreamNumber, const char* Parameter, const char* OldParameter)
 {
-    return MediaInfoList_Set(Handle, MB2WC(Handle, ToSet), FilePos, StreamKind, StreamNumber, MB2WC(Handle, Parameter), MB2WC(Handle, OldParameter));
+    return MediaInfoList_Set(Handle, MB2WC(Handle, 0, ToSet), FilePos, StreamKind, StreamNumber, MB2WC(Handle, 1, Parameter), MB2WC(Handle, 2, OldParameter));
 }
 
 const char*     __stdcall MediaInfoListA_Option (void* Handle, const char* Option, const char* Value)
 {
-    return WC2MB(Handle, MediaInfoList_Option(Handle, MB2WC(Handle, Option), MB2WC(Handle, Value)));
+    return WC2MB(Handle, MediaInfoList_Option(Handle, MB2WC(Handle, 0, Option), MB2WC(Handle, 1, Value)));
 }
 
 size_t          __stdcall MediaInfoListA_State_Get(void* Handle)
@@ -545,8 +545,6 @@ size_t          __stdcall MediaInfoListA_Count_Get_Files(void* Handle)
 
 void*           __stdcall MediaInfo_New ()
 {
-    CriticalSectionLocker Locker(Critical);
-
     #ifdef MEDIAINFO_DEBUG
         Debug_Open(false);
         Debug+=",             New, Build="; Debug+=__DATE__; Debug+=' '; Debug+=__TIME__;
@@ -554,25 +552,18 @@ void*           __stdcall MediaInfo_New ()
     #endif //MEDIAINFO_DEBUG
 
     //First init
-    if (MI_Handle.find(NULL)==MI_Handle.end())
+    Critical.Enter();
+    if (MI_Outputs.find(NULL)==MI_Outputs.end())
     {
-        MI_Handle[NULL]=new MI_List; //Generic Handle
-        MI_Handle[NULL]->Ansi.clear();
+        MI_Outputs[NULL]=new mi_output; //Generic Handle
     }
-    v07Mode=true; //Application is compatible with v0.7+ interface
+    Critical.Leave();
 
     //New
     MediaInfo* Handle=NULL;
     try
     {
         Handle=new MediaInfo;
-        MI_Handle[Handle]=new MI_List;
-        MI_Handle[Handle]->Ansi.clear();
-
-        MEDIAINFO_DEBUG2(   "New",
-                            Debug+=", returns ";Debug+=Ztring::ToZtring((size_t)Handle).To_UTF8();)
-
-        return Handle;
     }
     catch(...)
     {
@@ -582,6 +573,16 @@ void*           __stdcall MediaInfo_New ()
         delete Handle;
         return NULL;
     }
+
+    Critical.Enter();
+    MI_Outputs[Handle]=new mi_output;
+    MI_Outputs[Handle]->Ansi.clear();
+    Critical.Leave();
+
+    MEDIAINFO_DEBUG2(   "New",
+                        Debug+=", returns ";Debug+=Ztring::ToZtring((size_t)Handle).To_UTF8();)
+
+    return Handle;
 }
 
 void*           __stdcall MediaInfo_New_Quick (const wchar_t* File, const wchar_t* Options)
@@ -602,21 +603,16 @@ void            __stdcall MediaInfo_Delete (void* Handle)
     INTEGRITY_VOID(     "Delete"
                         ,)
 
-    //Integrity test
-    if (MI_Handle.find(Handle)==MI_Handle.end())
-        return; //Handle is not a MediaInfo Handle
-
     //Delete the object
-    MediaInfo* M=(MediaInfo*)Handle;
-    delete MI_Handle[M];
-    MI_Handle.erase(M);
-    delete M;
+    delete (MediaInfo*)Handle;
+    delete MI_Outputs[Handle];
+    MI_Outputs.erase(Handle);
 
     //In case of the last object : delete the NULL object, no more need
-    if (MI_Handle.size()==1 && MI_Handle.find(NULL)!=MI_Handle.end())
+    if (MI_Outputs.size()==1 && MI_Outputs.find(NULL)!=MI_Outputs.end())
     {
-        delete MI_Handle[NULL];
-        MI_Handle.erase(NULL);
+        delete MI_Outputs[NULL];
+        MI_Outputs.erase(NULL);
     }
 
     MEDIAINFO_DEBUG2(   "Delete",
@@ -766,10 +762,9 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
     CriticalSectionLocker Locker(Critical);
 
     //First init - Option could be called without using MediaInfo_New()
-    if (MI_Handle.find(NULL)==MI_Handle.end())
+    if (MI_Outputs.find(NULL)==MI_Outputs.end())
     {
-        MI_Handle[NULL]=new MI_List; //Generic Handle
-        MI_Handle[NULL]->Ansi.clear();
+        MI_Outputs[NULL]=new mi_output; //Generic Handle
     }
 
     //DLL only option
@@ -779,37 +774,28 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
             utf8=true;
         else
             utf8=false;
-        MI_Handle[NULL]->Unicode=L"OK";
+        MI_Outputs[NULL]->Unicode=L"OK";
  
        MEDIAINFO_DEBUG2(   "CharSet",
                            )
 
-       return MI_Handle[NULL]->Unicode.c_str();
+       return MI_Outputs[NULL]->Unicode.c_str();
     }
     if (Ztring(Option).Compare(L"setlocale_LC_CTYPE", L"=="))
     {
         setlocale(LC_CTYPE, utf8?Ztring(Value).To_UTF8().c_str():Ztring(Value).To_Local().c_str());
-        return MI_Handle[NULL]->Unicode.c_str();
+        return MI_Outputs[NULL]->Unicode.c_str();
     }
 
     if (Handle)
     {
-        if (MI_Handle.find(Handle)==MI_Handle.end())
+        if (MI_Outputs.find(Handle)==MI_Outputs.end())
         {
-            if (v07Mode==false)
-            {
-                MEDIAINFO_DEBUG2(   "Option",
-                                    Debug+="v0.6 mode, not supported")
-
-                MediaInfo_Info_Unicode=L"Your software uses an outdated interface, You must use MediaInfoList.DLL 0.6 instead";
-                return MediaInfo_Info_Unicode.c_str();
-            }
-
             MEDIAINFO_DEBUG2(   "Option",
                                 Debug+="Handle error")
 
-            MI_Handle[NULL]->Unicode==L"Note to developer : you must create an object before";
-            return MI_Handle[NULL]->Unicode.c_str();
+            MI_Outputs[NULL]->Unicode==L"Note to developer : you must create an object before";
+            return MI_Outputs[NULL]->Unicode.c_str();
         }
 
         EXECUTE_STRING( "Option",
@@ -851,28 +837,20 @@ void*           __stdcall MediaInfoList_New ()
         Debug_Close();
     #endif //MEDIAINFO_DEBUG
 
-    CriticalSectionLocker Locker(Critical);
-
     //First init
-    if (MI_Handle.find(NULL)==MI_Handle.end())
+    Critical.Enter();
+    if (MI_Outputs.find(NULL)==MI_Outputs.end())
     {
-        MI_Handle[NULL]=new MI_List; //Generic Handle
-        MI_Handle[NULL]->Ansi.clear();
+        MI_Outputs[NULL]=new mi_output; //Generic Handle
+        MI_Outputs[NULL]->Ansi.clear();
     }
-    v07Mode=true; //Application is compatible with v0.7+ interface
+    Critical.Leave();
 
     //New
     MediaInfoList* Handle=NULL;
     try
     {
         Handle=new MediaInfoList;
-        MI_Handle[Handle]=new MI_List;
-        MI_Handle[Handle]->Ansi.clear();
-
-        MEDIAINFO_DEBUG2(   "New",
-                            Debug+=", returns ";Debug+=Ztring::ToZtring((size_t)Handle).To_UTF8();)
-
-        return Handle;
     }
     catch(...)
     {
@@ -882,6 +860,16 @@ void*           __stdcall MediaInfoList_New ()
         delete Handle;
         return NULL;
     }
+
+    Critical.Enter();
+    MI_Outputs[Handle]=new mi_output;
+    MI_Outputs[Handle]->Ansi.clear();
+    Critical.Leave();
+
+    MEDIAINFO_DEBUG2(   "New",
+                        Debug+=", returns ";Debug+=Ztring::ToZtring((size_t)Handle).To_UTF8();)
+
+    return Handle;
 }
 
 void*           __stdcall MediaInfoList_New_Quick (const wchar_t* File, const wchar_t* Options)
@@ -902,21 +890,16 @@ void            __stdcall MediaInfoList_Delete (void* Handle)
     INTEGRITY_VOID(     "Delete"
                         ,)
 
-    //Integrity test
-    if (MI_Handle.find(Handle)==MI_Handle.end())
-        return; //Handle is not a MediaInfoList Handle
-
     //Delete the object
-    MediaInfoList* M=(MediaInfoList*)Handle;
-    delete MI_Handle[M];
-    MI_Handle.erase(M);
-    delete M;
+    delete (MediaInfoList*)Handle;
+    delete MI_Outputs[Handle];
+    MI_Outputs.erase(Handle);
 
     //In case of the last object : delete the NULL object, no more need
-    if (MI_Handle.size()==1 && MI_Handle.find(NULL)!=MI_Handle.end())
+    if (MI_Outputs.size()==1 && MI_Outputs.find(NULL)!=MI_Outputs.end())
     {
-        delete MI_Handle[NULL];
-        MI_Handle.erase(NULL);
+        delete MI_Outputs[NULL];
+        MI_Outputs.erase(NULL);
     }
 
     MEDIAINFO_DEBUG2(   "Delete",
@@ -1006,10 +989,10 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
     CriticalSectionLocker Locker(Critical);
 
     //First init - Option could be called without using MediaInfo_New()
-    if (MI_Handle.find(NULL)==MI_Handle.end())
+    if (MI_Outputs.find(NULL)==MI_Outputs.end())
     {
-        MI_Handle[NULL]=new MI_List; //Generic Handle
-        MI_Handle[NULL]->Ansi.clear();
+        MI_Outputs[NULL]=new mi_output; //Generic Handle
+        MI_Outputs[NULL]->Ansi.clear();
     }
 
     //DLL only option
@@ -1019,37 +1002,28 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
             utf8=true;
         else
             utf8=false;
-        MI_Handle[NULL]->Unicode=L"OK";
+        MI_Outputs[NULL]->Unicode=L"OK";
  
        MEDIAINFO_DEBUG2(   "CharSet",
                            )
 
-        return MI_Handle[NULL]->Unicode.c_str();
+        return MI_Outputs[NULL]->Unicode.c_str();
     }
     if (Ztring(Option).Compare(L"setlocale_LC_CTYPE", L"=="))
     {
         setlocale(LC_CTYPE, utf8?Ztring(Value).To_UTF8().c_str():Ztring(Value).To_Local().c_str());
-        return MI_Handle[NULL]->Unicode.c_str();
+        return MI_Outputs[NULL]->Unicode.c_str();
     }
 
     if (Handle)
     {
-        if (MI_Handle.find(Handle)==MI_Handle.end())
+        if (MI_Outputs.find(Handle)==MI_Outputs.end())
         {
-            if (v07Mode==false)
-            {
-                MEDIAINFO_DEBUG2(   "Option",
-                                    Debug+="v0.6 mode, not supported")
-
-                MediaInfo_Info_Unicode=L"Your software uses an outdated interface, You must use MediaInfoList.DLL 0.6 instead";
-                return MediaInfo_Info_Unicode.c_str();
-            }
-
             MEDIAINFO_DEBUG2(   "Option",
                                 Debug+="Handle error")
 
-            MI_Handle[NULL]->Unicode==L"Note to developer : you must create an object before";
-            return MI_Handle[NULL]->Unicode.c_str();
+            MI_Outputs[NULL]->Unicode==L"Note to developer : you must create an object before";
+            return MI_Outputs[NULL]->Unicode.c_str();
         }
 
         EXECUTE_STRING( "Option",
@@ -1058,8 +1032,8 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
     }
     else
     {
-        MI_Handle[NULL]->Unicode=MediaInfoList::Option_Static(Option, Value);
-        return MI_Handle[NULL]->Unicode.c_str();
+        MI_Outputs[NULL]->Unicode=MediaInfoList::Option_Static(Option, Value);
+        return MI_Outputs[NULL]->Unicode.c_str();
     }
 }
 
@@ -1098,16 +1072,13 @@ const char*     __stdcall MediaInfo_Info_Version()
         Debug_Close();
     #endif //MEDIAINFO_DEBUG
 
-    //Compatibility <0.7 : return a message
-    MediaInfo_Info_Ansi="Your software uses an outdated interface, You must use MediaInfo.DLL 0.4.1.1 instead";
-
     #ifdef MEDIAINFO_DEBUG
         Debug_Open(true);
         Debug+=",             MediaInfo_Info_Version";
         Debug_Close();
     #endif //MEDIAINFO_DEBUG
 
-    return MediaInfo_Info_Ansi.c_str();
+    return "Your software uses an outdated interface, You must use MediaInfo.DLL 0.4.1.1 instead";
     //wchar_t* MediaInfo_wChar=new wchar_t[1000];
     //GetModuleFileNameW (NULL, MediaInfo_wChar, 1000);
     //return WC2MB(MediaInfo_wChar);

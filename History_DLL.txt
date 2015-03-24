@@ -18,8 +18,9 @@ Version 0.7.73, 2015-01-
 + MOV/MPEG-4: handling of clcn (little endian nclc) Color parameter type
 + #P84, Matroska: Add TEXTST support to the MKV Parser, thanks to Kurtnoise
 + #P85, MPEG-TS: Add TEXTST support to the MPEG-PSI Parser, thanks to Kurtnoise
++ MediaInfoDLL interface: clean up, more debug features added
 + #F460, VC-3/DNxHD: detection of RGB 444 and other SMPTE ST 2019 (2014) new CIDs
-+ #B758, VC-3/DNxHD: wrong color space and subsampling in case of unknown CID, now empty if format version is not known
+x #B758, VC-3/DNxHD: wrong color space and subsampling in case of unknown CID, now empty if format version is not known
 x MXF: AFD value was wrong (displaying the complete byte, but AFD is only 4 bits of this byte)
 x DTS: some streams in Little endian were not detected
 x MPEG-4: some files were having an incorrect frame count
