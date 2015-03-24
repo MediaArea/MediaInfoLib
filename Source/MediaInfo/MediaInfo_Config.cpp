@@ -249,7 +249,9 @@ void MediaInfo_Config::Init()
 
 Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
 {
+    CS.Enter();
     SubFile_Config(Option)=Value_Raw;
+    CS.Leave();
 
     String Option_Lower(Option);
     size_t Egal_Pos=Option_Lower.find(__T('='));

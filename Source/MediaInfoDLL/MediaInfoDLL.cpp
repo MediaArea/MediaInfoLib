@@ -67,36 +67,36 @@ static bool utf8=false;
 //---------------------------------------------------------------------------
 const char* WC2MB(void* Handle, const wchar_t* Text)
 {
-    CriticalSectionLocker Locker(Critical);
-
     //Coherancy
+    Critical.Enter();
     mi_outputs::iterator MI_Output=MI_Outputs.find(Handle);
     if (MI_Outputs.find(Handle)==MI_Outputs.end())
     {
         MI_Outputs[Handle]=new mi_output; //Generic Handle
         MI_Output=MI_Outputs.find(Handle);
     }
+    Critical.Leave();
 
     //Adaptation
     if (utf8)
-       MI_Output->second->Ansi=Ztring(Text).To_UTF8();
-    else
         MI_Output->second->Ansi=Ztring(Text).To_UTF8();
+    else
+        MI_Output->second->Ansi=Ztring(Text).To_Local();
     return  MI_Output->second->Ansi.c_str();
 }
 
 //---------------------------------------------------------------------------
 const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
 {
-    CriticalSectionLocker Locker(Critical);
-
     //Coherancy
+    Critical.Enter();
     mi_inputs::iterator MI_Input=MI_Inputs.find(Handle);
     if (MI_Input==MI_Inputs.end())
     {
         MI_Inputs[Handle]=new mi_input; //Generic Handle
         MI_Input=MI_Inputs.find(Handle);
     }
+    Critical.Leave();
 
     //Adaptation
     if (utf8)
@@ -223,9 +223,10 @@ const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
 //To clarify the code
 #define INTEGRITY_VOID(_NAME,_DEBUGA) \
     MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
-    CriticalSectionLocker Locker(Critical); \
+    Critical.Enter(); \
     mi_outputs::iterator MI_Output=MI_Outputs.find(Handle); \
     bool MI_Output_IsOk=MI_Outputs.find(Handle)!=MI_Outputs.end(); \
+    Critical.Leave(); \
     if (Handle==NULL || !MI_Output_IsOk) \
     { \
         MEDIAINFO_DEBUG2(_NAME,Debug+="Handle error") \
@@ -234,9 +235,10 @@ const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
 
 #define INTEGRITY_SIZE_T(_NAME,_DEBUGA) \
     MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
-    CriticalSectionLocker Locker(Critical); \
+    Critical.Enter(); \
     mi_outputs::iterator MI_Output=MI_Outputs.find(Handle); \
     bool MI_Output_IsOk=MI_Outputs.find(Handle)!=MI_Outputs.end(); \
+    Critical.Leave(); \
     if (Handle==NULL || !MI_Output_IsOk) \
     { \
         MEDIAINFO_DEBUG2(_NAME, Debug+="Handle error") \
@@ -245,9 +247,10 @@ const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
 
 #define INTEGRITY_INT64U(_NAME,_DEBUGA) \
     MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
-    CriticalSectionLocker Locker(Critical); \
+    Critical.Enter(); \
     mi_outputs::iterator MI_Output=MI_Outputs.find(Handle); \
     bool MI_Output_IsOk=MI_Outputs.find(Handle)!=MI_Outputs.end(); \
+    Critical.Leave(); \
     if (Handle==NULL || !MI_Output_IsOk) \
     { \
         MEDIAINFO_DEBUG2(_NAME, Debug+="Handle error") \
@@ -256,9 +259,10 @@ const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
 
 #define INTEGRITY_STRING(_NAME,_DEBUGA) \
     MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
-    CriticalSectionLocker Locker(Critical); \
+    Critical.Enter(); \
     mi_outputs::iterator MI_Output=MI_Outputs.find(Handle); \
     bool MI_Output_IsOk=MI_Outputs.find(Handle)!=MI_Outputs.end(); \
+    Critical.Leave(); \
     if (Handle==NULL || !MI_Output_IsOk) \
     { \
         MEDIAINFO_DEBUG2(_NAME, Debug+="Handle error") \
@@ -317,18 +321,18 @@ const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
 #define EXECUTE_STRING(_NAME,_CLASS,_METHOD) \
     try \
     { \
-        MI_Outputs[Handle]->Unicode=((_CLASS*)Handle)->_METHOD; \
-    } catch (...) {MI_Outputs[Handle]->Unicode.clear();} \
-    return MI_Outputs[Handle]->Unicode.c_str();
+        MI_Output->second->Unicode=((_CLASS*)Handle)->_METHOD; \
+    } catch (...) {MI_Output->second->Unicode.clear();} \
+    return MI_Output->second->Unicode.c_str();
 #else //MEDIAINFO_DEBUG
 #define EXECUTE_STRING(_NAME,_CLASS,_METHOD) \
     try \
     { \
-        MI_Outputs[Handle]->Unicode=((_CLASS*)Handle)->_METHOD; \
-    } catch (...) {MEDIAINFO_DEBUG2(_NAME, Debug+="!!!Exception thrown!!!";) MI_Outputs[Handle]->Unicode.clear();} \
-    Ztring ToReturn=MI_Outputs[Handle]->Unicode; \
+        MI_Output->second->Unicode=((_CLASS*)Handle)->_METHOD; \
+    } catch (...) {MEDIAINFO_DEBUG2(_NAME, Debug+="!!!Exception thrown!!!";) MI_Output->second->Unicode.clear();} \
+    Ztring ToReturn=MI_Output->second->Unicode; \
     MEDIAINFO_DEBUG2(_NAME, Debug+=", returns ";Debug+=ToReturn.To_UTF8();) \
-    return MI_Outputs[Handle]->Unicode.c_str();
+    return MI_Output->second->Unicode.c_str();
 #endif //MEDIAINFO_DEBUG
 
 #define MANAGE_VOID(_NAME,_CLASS,_METHOD,_DEBUGA) \
@@ -576,7 +580,6 @@ void*           __stdcall MediaInfo_New ()
 
     Critical.Enter();
     MI_Outputs[Handle]=new mi_output;
-    MI_Outputs[Handle]->Ansi.clear();
     Critical.Leave();
 
     MEDIAINFO_DEBUG2(   "New",
@@ -605,15 +608,17 @@ void            __stdcall MediaInfo_Delete (void* Handle)
 
     //Delete the object
     delete (MediaInfo*)Handle;
+
+    //Delete strings
+    Critical.Enter();
     delete MI_Outputs[Handle];
     MI_Outputs.erase(Handle);
-
-    //In case of the last object : delete the NULL object, no more need
-    if (MI_Outputs.size()==1 && MI_Outputs.find(NULL)!=MI_Outputs.end())
+    if (MI_Outputs.size()==1 && MI_Outputs.find(NULL)!=MI_Outputs.end()) //In case of the last object : delete the NULL object, no more need
     {
         delete MI_Outputs[NULL];
         MI_Outputs.erase(NULL);
     }
+    Critical.Leave();
 
     MEDIAINFO_DEBUG2(   "Delete",
                         )
@@ -756,57 +761,67 @@ size_t          __stdcall MediaInfo_Output_Buffer_GetI (void* Handle, size_t Pos
 
 const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Option, const wchar_t* Value)
 {
-    MEDIAINFO_DEBUG1(   "Option",
-                        Debug+=", Option=";Debug+=Ztring(Option).To_UTF8();Debug+=", Value=";Debug+=Ztring(Value).To_UTF8();)
-
-    CriticalSectionLocker Locker(Critical);
-
-    //First init - Option could be called without using MediaInfo_New()
-    if (MI_Outputs.find(NULL)==MI_Outputs.end())
-    {
-        MI_Outputs[NULL]=new mi_output; //Generic Handle
-    }
-
     //DLL only option
     if (Ztring(Option).Compare(L"CharSet", L"=="))
     {
+        MEDIAINFO_DEBUG1(   "Option",
+                            Debug+=", Option=";Debug+=Ztring(Option).To_UTF8();Debug+=", Value=";Debug+=Ztring(Value).To_UTF8();)
+
+        //Coherancy
+        Critical.Enter();
+        mi_outputs::iterator MI_Output=MI_Outputs.find(NULL);
+        if (MI_Outputs.find(NULL)==MI_Outputs.end())
+        {
+            MI_Outputs[NULL]=new mi_output; //Generic Handle
+            MI_Output=MI_Outputs.find(NULL);
+        }
+        Critical.Leave();
+
         if (Ztring(Value).Compare(L"UTF-8", L"=="))
             utf8=true;
         else
             utf8=false;
-        MI_Outputs[NULL]->Unicode=L"OK";
+        MI_Output->second->Unicode.clear();
  
-       MEDIAINFO_DEBUG2(   "CharSet",
-                           )
+        MEDIAINFO_DEBUG2(   "CharSet",
+                            )
 
-       return MI_Outputs[NULL]->Unicode.c_str();
+       return MI_Output->second->Unicode.c_str();
     }
     if (Ztring(Option).Compare(L"setlocale_LC_CTYPE", L"=="))
     {
+        //Coherancy
+        Critical.Enter();
+        mi_outputs::iterator MI_Output=MI_Outputs.find(NULL);
+        if (MI_Outputs.find(NULL)==MI_Outputs.end())
+        {
+            MI_Outputs[NULL]=new mi_output; //Generic Handle
+            MI_Output=MI_Outputs.find(NULL);
+        }
+        Critical.Leave();
+ 
         setlocale(LC_CTYPE, utf8?Ztring(Value).To_UTF8().c_str():Ztring(Value).To_Local().c_str());
-        return MI_Outputs[NULL]->Unicode.c_str();
+        MI_Output->second->Unicode.clear();
+
+        MEDIAINFO_DEBUG2(   "setlocale_LC_CTYPE",
+                            )
+        
+        return MI_Output->second->Unicode.c_str();
     }
 
     if (Handle)
     {
-        if (MI_Outputs.find(Handle)==MI_Outputs.end())
-        {
-            MEDIAINFO_DEBUG2(   "Option",
-                                Debug+="Handle error")
-
-            MI_Outputs[NULL]->Unicode==L"Note to developer : you must create an object before";
-            return MI_Outputs[NULL]->Unicode.c_str();
-        }
-
-        EXECUTE_STRING( "Option",
+        MANAGE_STRING(  "Option",
                         MediaInfo,
-                        Option(Option, Value))
+                        Option(Option, Value),
+                        )
     }
     else
     {
-        EXECUTE_STRING( "Option",
+        MANAGE_STRING(  "Option_Static",
                         MediaInfo,
-                        Option_Static(Option, Value))
+                        Option_Static(Option, Value),
+                        )
     }
 }
 
@@ -842,7 +857,6 @@ void*           __stdcall MediaInfoList_New ()
     if (MI_Outputs.find(NULL)==MI_Outputs.end())
     {
         MI_Outputs[NULL]=new mi_output; //Generic Handle
-        MI_Outputs[NULL]->Ansi.clear();
     }
     Critical.Leave();
 
@@ -863,7 +877,6 @@ void*           __stdcall MediaInfoList_New ()
 
     Critical.Enter();
     MI_Outputs[Handle]=new mi_output;
-    MI_Outputs[Handle]->Ansi.clear();
     Critical.Leave();
 
     MEDIAINFO_DEBUG2(   "New",
@@ -892,15 +905,17 @@ void            __stdcall MediaInfoList_Delete (void* Handle)
 
     //Delete the object
     delete (MediaInfoList*)Handle;
+
+    //Delete strings
+    Critical.Enter();
     delete MI_Outputs[Handle];
     MI_Outputs.erase(Handle);
-
-    //In case of the last object : delete the NULL object, no more need
-    if (MI_Outputs.size()==1 && MI_Outputs.find(NULL)!=MI_Outputs.end())
+    if (MI_Outputs.size()==1 && MI_Outputs.find(NULL)!=MI_Outputs.end()) //In case of the last object : delete the NULL object, no more need
     {
         delete MI_Outputs[NULL];
         MI_Outputs.erase(NULL);
     }
+    Critical.Leave();
 
     MEDIAINFO_DEBUG2(   "Delete",
                         )
@@ -983,57 +998,67 @@ size_t          __stdcall MediaInfoList_Set (void* Handle, const wchar_t* ToSet,
 
 const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* Option, const wchar_t* Value)
 {
-    MEDIAINFO_DEBUG1(   "Option",
-                        Debug+=", Option=";Debug+=Ztring(Option).To_UTF8();Debug+=", Value=";Debug+=Ztring(Value).To_UTF8();)
-
-    CriticalSectionLocker Locker(Critical);
-
-    //First init - Option could be called without using MediaInfo_New()
-    if (MI_Outputs.find(NULL)==MI_Outputs.end())
-    {
-        MI_Outputs[NULL]=new mi_output; //Generic Handle
-        MI_Outputs[NULL]->Ansi.clear();
-    }
-
     //DLL only option
-    if (std::wstring(Option).compare(L"CharSet")==0)
+    if (Ztring(Option).Compare(L"CharSet", L"=="))
     {
-        if (std::wstring(Value).compare(L"UTF-8")==0)
+        MEDIAINFO_DEBUG1(   "Option",
+                            Debug+=", Option=";Debug+=Ztring(Option).To_UTF8();Debug+=", Value=";Debug+=Ztring(Value).To_UTF8();)
+
+        //Coherancy
+        Critical.Enter();
+        mi_outputs::iterator MI_Output=MI_Outputs.find(NULL);
+        if (MI_Outputs.find(NULL)==MI_Outputs.end())
+        {
+            MI_Outputs[NULL]=new mi_output; //Generic Handle
+            MI_Output=MI_Outputs.find(NULL);
+        }
+        Critical.Leave();
+
+        if (Ztring(Value).Compare(L"UTF-8", L"=="))
             utf8=true;
         else
             utf8=false;
-        MI_Outputs[NULL]->Unicode=L"OK";
+        MI_Output->second->Unicode.clear();
  
-       MEDIAINFO_DEBUG2(   "CharSet",
-                           )
+        MEDIAINFO_DEBUG2(   "CharSet",
+                            )
 
-        return MI_Outputs[NULL]->Unicode.c_str();
+       return MI_Output->second->Unicode.c_str();
     }
     if (Ztring(Option).Compare(L"setlocale_LC_CTYPE", L"=="))
     {
+        //Coherancy
+        Critical.Enter();
+        mi_outputs::iterator MI_Output=MI_Outputs.find(NULL);
+        if (MI_Outputs.find(NULL)==MI_Outputs.end())
+        {
+            MI_Outputs[NULL]=new mi_output; //Generic Handle
+            MI_Output=MI_Outputs.find(NULL);
+        }
+        Critical.Leave();
+ 
         setlocale(LC_CTYPE, utf8?Ztring(Value).To_UTF8().c_str():Ztring(Value).To_Local().c_str());
-        return MI_Outputs[NULL]->Unicode.c_str();
+        MI_Output->second->Unicode.clear();
+
+        MEDIAINFO_DEBUG2(   "setlocale_LC_CTYPE",
+                            )
+        
+        return MI_Output->second->Unicode.c_str();
     }
 
     if (Handle)
     {
-        if (MI_Outputs.find(Handle)==MI_Outputs.end())
-        {
-            MEDIAINFO_DEBUG2(   "Option",
-                                Debug+="Handle error")
-
-            MI_Outputs[NULL]->Unicode==L"Note to developer : you must create an object before";
-            return MI_Outputs[NULL]->Unicode.c_str();
-        }
-
-        EXECUTE_STRING( "Option",
+        MANAGE_STRING(  "Option",
                         MediaInfoList,
-                        Option(Option, Value))
+                        Option(Option, Value),
+                        )
     }
     else
     {
-        MI_Outputs[NULL]->Unicode=MediaInfoList::Option_Static(Option, Value);
-        return MI_Outputs[NULL]->Unicode.c_str();
+        MANAGE_STRING(  "Option_Static",
+                        MediaInfoList,
+                        Option_Static(Option, Value),
+                        )
     }
 }
 
