@@ -66,7 +66,6 @@ private :
     void MacroblockScanIndices();
 
     //Temp
-    int64u  Data_ToParse;
     int32u  CID;
     bool    CRCF;
     int16u  ALPF;

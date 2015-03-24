@@ -1422,7 +1422,7 @@ void MediaInfo_Config_CodecID_Video_Mpeg4 (InfoMap &Info)
     "AVDJ;JPEG;;Avid\n"
     "AVdv;DV;;Avid;http://www.apple.com/quicktime/download/standalone.html;;;YUV;4:2:2\n"
     "AVd1;DV;;Avid;http://www.apple.com/quicktime/download/standalone.html;;\n"
-    "AVdn;VC-3;DNxHD;Avid;http://www.apple.com/quicktime/download/standalone.html;;;YUV;4:2:2\n"
+    "AVdn;VC-3;DNxHD;Avid;http://www.apple.com/quicktime/download/standalone.html;;;;\n"
     "AVmp;MPEG Video;Avid IMX;;;;Version 2;;\n"
     "avr ;JPEG;;;;;;\n"
     "b16g;Gray;;;;;;Y;16\n"

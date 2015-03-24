@@ -87,11 +87,19 @@ const int8u Vc3_SBD_FromCID (int32u CompressionID)
 {
     switch (CompressionID)
     {
+        case 1237 :
+        case 1238 :
+        case 1242 :
+        case 1243 :
+        case 1251 :
+        case 1252 :
+        case 1253 :
+                    return 8;
         case 1235 :
         case 1241 :
         case 1250 :
                     return 10;
-        default   : return 8;
+        default   : return 0;
     }
 }
 
@@ -132,11 +140,19 @@ const char* Vc3_SST_FromCID (int32u CompressionID)
 {
     switch (CompressionID)
     {
+        case 1235 :
+        case 1237 :
+        case 1238 :
+        case 1250 :
+        case 1251 :
+        case 1252 :
+        case 1253 :
+                    return Vc3_SST[0];
         case 1241 :
         case 1242 :
         case 1243 :
                     return Vc3_SST[1];
-        default   : return Vc3_SST[0];
+        default   : return "";
     }
 }
 
@@ -149,7 +165,15 @@ const int16u Vc3_SPL_FromCID (int32u CompressionID)
         case 1251 :
         case 1252 :
                     return 1280;
-        default   : return 1920;
+        case 1235 :
+        case 1237 :
+        case 1238 :
+        case 1241 :
+        case 1242 :
+        case 1243 :
+        case 1253 :
+                    return 1920;
+        default   : return 0;
     }
 }
 
@@ -162,9 +186,57 @@ const int16u Vc3_ALPF_PerFrame_FromCID (int32u CompressionID)
         case 1251 :
         case 1252 :
                     return 720;
-        default   : return 1080;
+        case 1235 :
+        case 1237 :
+        case 1238 :
+        case 1241 :
+        case 1242 :
+        case 1243 :
+        case 1253 :
+                    return 1080;
+        default   : return 0;
     }
 }
+
+//---------------------------------------------------------------------------
+const char* Vc3_ColorSpace_FromCID (int32u CompressionID)
+{
+    switch (CompressionID)
+    {
+        case 1235 :
+        case 1237 :
+        case 1238 :
+        case 1241 :
+        case 1242 :
+        case 1243 :
+        case 1250 :
+        case 1251 :
+        case 1252 :
+        case 1253 :
+                    return "YUV";
+        default   : return "";
+    }
+};
+
+//---------------------------------------------------------------------------
+const char* Vc3_ColorSubSampling_FromCID (int32u CompressionID)
+{
+    switch (CompressionID)
+    {
+        case 1235 :
+        case 1237 :
+        case 1238 :
+        case 1241 :
+        case 1242 :
+        case 1243 :
+        case 1250 :
+        case 1251 :
+        case 1252 :
+        case 1253 :
+                    return "4:2:2";
+        default   : return "";
+    }
+};
 
 //***************************************************************************
 // Constructor/Destructor
@@ -182,7 +254,6 @@ File_Vc3::File_Vc3()
     FrameRate=0;
 
     //Temp
-    Data_ToParse=0;
     FFC_FirstFrame=(int8u)-1;
 }
 
@@ -197,16 +268,19 @@ void File_Vc3::Streams_Fill()
     Stream_Prepare(Stream_Video);
     Fill(Stream_Video, 0, Video_Format, "VC-3");
     Fill(Stream_Video, 0, Video_BitRate_Mode, "CBR");
-    if (FrameRate)
+    if (FrameRate && Vc3_CompressedFrameSize(CID))
         Fill(Stream_Video, 0, Video_BitRate, Vc3_CompressedFrameSize(CID)*8*FrameRate, 0);
     if (Vc3_FromCID_IsSupported(CID))
     {
-        Fill(Stream_Video, 0, Video_Width, Vc3_SPL_FromCID(CID));
-        Fill(Stream_Video, 0, Video_Height, Vc3_ALPF_PerFrame_FromCID(CID));
-        Fill(Stream_Video, 0, Video_BitDepth, Vc3_SBD_FromCID(CID));
+        if (Vc3_SPL_FromCID(CID))
+            Fill(Stream_Video, 0, Video_Width, Vc3_SPL_FromCID(CID));
+        if (Vc3_ALPF_PerFrame_FromCID(CID))
+            Fill(Stream_Video, 0, Video_Height, Vc3_ALPF_PerFrame_FromCID(CID));
+        if (Vc3_SBD_FromCID(CID))
+            Fill(Stream_Video, 0, Video_BitDepth, Vc3_SBD_FromCID(CID));
         Fill(Stream_Video, 0, Video_ScanType, Vc3_SST_FromCID(CID));
-        Fill(Stream_Video, 0, Video_ColorSpace, "YUV");
-        Fill(Stream_Video, 0, Video_ChromaSubsampling, "4:2:2");
+        Fill(Stream_Video, 0, Video_ColorSpace, Vc3_ColorSpace_FromCID(CID));
+        Fill(Stream_Video, 0, Video_ChromaSubsampling, Vc3_ColorSubSampling_FromCID(CID));
     }
     else
     {
@@ -298,7 +372,16 @@ bool File_Vc3::Demux_UnpacketizeContainer_Test()
         return false;
 
     int32u CompressionID=BigEndian2int32u(Buffer+Buffer_Offset+0x28);
-    int32u Size=Vc3_CompressedFrameSize(CompressionID);
+    size_t Size=Vc3_CompressedFrameSize(CompressionID);
+    if (!Size)
+    {
+        if (!IsSub)
+        {
+            Reject();
+            return false;
+        }
+        Size=Buffer_Size; //Hoping that the packet is complete. TODO: add a flag in the container parser saying if the packet is complete
+    }
     Demux_Offset=Buffer_Offset+Size;
 
     if (Demux_Offset>Buffer_Size && File_Offset+Buffer_Size!=File_Size)
@@ -329,7 +412,17 @@ void File_Vc3::Header_Parse()
     int32u CompressionID=BigEndian2int32u(Buffer+Buffer_Offset+0x28);
 
     Header_Fill_Code(0, "Frame");
-    Header_Fill_Size(Vc3_CompressedFrameSize(CompressionID));
+    size_t Size=Vc3_CompressedFrameSize(CompressionID);
+    if (!Size)
+    {
+        if (!IsSub)
+        {
+            Reject();
+            return;
+        }
+        Size=Buffer_Size; //Hoping that the packet is complete. TODO: add a flag in the container parser saying if the packet is complete
+    }
+    Header_Fill_Size(Size);
 }
 
 //---------------------------------------------------------------------------
@@ -358,7 +451,6 @@ void File_Vc3::Data_Parse()
     }
 
     FILLING_BEGIN();
-        Data_ToParse-=Buffer_Size-(size_t)Buffer_Offset;
         Frame_Count++;
         if (Frame_Count_NotParsedIncluded!=(int64u)-1)
             Frame_Count_NotParsedIncluded++;
@@ -488,9 +580,6 @@ void File_Vc3::CompressionID()
 
     FILLING_BEGIN();
         CID=Data;
-        Data_ToParse=Vc3_CompressedFrameSize(Data);
-        if (Data_ToParse==0)
-            Reject("VC-3");
     FILLING_END();
 }
 
