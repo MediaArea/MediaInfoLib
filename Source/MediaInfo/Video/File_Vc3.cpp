@@ -46,6 +46,10 @@ const bool Vc3_FromCID_IsSupported (int32u CompressionID)
         case 1251 :
         case 1252 :
         case 1253 :
+        case 1256 :
+        case 1258 :
+        case 1259 :
+        case 1260 :
                     return true;
         default   : return false;
     }
@@ -67,6 +71,10 @@ const int32u Vc3_CompressedFrameSize(int32u CompressionID)
         case 1251 : return 458752;
         case 1252 : return 303104;
         case 1253 : return 188416;
+        case 1256 : return 1835008;
+        case 1258 : return 212992;
+        case 1259 : return 417792;
+        case 1260 : return 417792;
         default   : return 0;
     }
 };
@@ -94,10 +102,14 @@ const int8u Vc3_SBD_FromCID (int32u CompressionID)
         case 1251 :
         case 1252 :
         case 1253 :
+        case 1258 :
+        case 1259 :
+        case 1260 :
                     return 8;
         case 1235 :
         case 1241 :
         case 1250 :
+        case 1256 :
                     return 10;
         default   : return 0;
     }
@@ -199,7 +211,20 @@ const int16u Vc3_ALPF_PerFrame_FromCID (int32u CompressionID)
 }
 
 //---------------------------------------------------------------------------
-const char* Vc3_ColorSpace_FromCID (int32u CompressionID)
+const char* Vc3_CLR[8]=
+{
+    "YUV",
+    "RGB",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+};
+
+//---------------------------------------------------------------------------
+const char* Vc3_CLR_FromCID (int32u CompressionID)
 {
     switch (CompressionID)
     {
@@ -213,13 +238,25 @@ const char* Vc3_ColorSpace_FromCID (int32u CompressionID)
         case 1251 :
         case 1252 :
         case 1253 :
-                    return "YUV";
+        case 1258 :
+        case 1259 :
+        case 1260 :
+                    return Vc3_CLR[0];
+        case 1256 :
+                    return Vc3_CLR[1];
         default   : return "";
     }
 };
 
 //---------------------------------------------------------------------------
-const char* Vc3_ColorSubSampling_FromCID (int32u CompressionID)
+const char* Vc3_SSC[2]=
+{
+    "4:2:2",
+    "", // 4:4:4
+};
+
+//---------------------------------------------------------------------------
+const char* Vc3_SSC_FromCID (int32u CompressionID)
 {
     switch (CompressionID)
     {
@@ -233,7 +270,12 @@ const char* Vc3_ColorSubSampling_FromCID (int32u CompressionID)
         case 1251 :
         case 1252 :
         case 1253 :
-                    return "4:2:2";
+        case 1258 :
+        case 1259 :
+        case 1260 :
+                    return Vc3_SSC[0];
+        case 1256 :
+                    return Vc3_SSC[1];
         default   : return "";
     }
 };
@@ -279,8 +321,8 @@ void File_Vc3::Streams_Fill()
         if (Vc3_SBD_FromCID(CID))
             Fill(Stream_Video, 0, Video_BitDepth, Vc3_SBD_FromCID(CID));
         Fill(Stream_Video, 0, Video_ScanType, Vc3_SST_FromCID(CID));
-        Fill(Stream_Video, 0, Video_ColorSpace, Vc3_ColorSpace_FromCID(CID));
-        Fill(Stream_Video, 0, Video_ChromaSubsampling, Vc3_ColorSubSampling_FromCID(CID));
+        Fill(Stream_Video, 0, Video_ColorSpace, Vc3_CLR_FromCID(CID));
+        Fill(Stream_Video, 0, Video_ChromaSubsampling, Vc3_SSC_FromCID(CID));
     }
     else
     {
@@ -288,6 +330,8 @@ void File_Vc3::Streams_Fill()
         Fill(Stream_Video, 0, Video_Height, ALPF*(SST?2:1));
         Fill(Stream_Video, 0, Video_BitDepth, Vc3_SBD(SBD));
         Fill(Stream_Video, 0, Video_ScanType, Vc3_SST[SST]);
+        Fill(Stream_Video, 0, Video_ColorSpace, Vc3_CLR[SSC]);
+        Fill(Stream_Video, 0, Video_ChromaSubsampling, Vc3_SSC[CLR]);
     }
     if (FFC_FirstFrame!=(int8u)-1)
         Fill(Stream_Video, 0, Video_ScanOrder, Vc3_FFC_ScanOrder[FFC_FirstFrame]);
@@ -305,7 +349,7 @@ bool File_Vc3::Synchronize()
                                          || Buffer[Buffer_Offset+1]!=0x00
                                          || Buffer[Buffer_Offset+2]!=0x02
                                          || Buffer[Buffer_Offset+3]!=0x80
-                                         || Buffer[Buffer_Offset+4]!=0x01))
+                                         || Buffer[Buffer_Offset+4]==0x00))
     {
         Buffer_Offset+=2;
         while (Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset]!=0x00)
@@ -350,7 +394,7 @@ bool File_Vc3::Synched_Test()
      || Buffer[Buffer_Offset+1]!=0x00
      || Buffer[Buffer_Offset+2]!=0x02
      || Buffer[Buffer_Offset+3]!=0x80
-     || Buffer[Buffer_Offset+4]!=0x01)
+     || Buffer[Buffer_Offset+4]==0x00)
     {
         Synched=false;
         return true;
@@ -437,16 +481,19 @@ void File_Vc3::Data_Parse()
     {
     Element_Info1(Frame_Count+1);
     HeaderPrefix();
-    CodingControlA();
-    Skip_XX(16,                                                 "Reserved");
-    ImageGeometry();
-    Skip_XX( 5,                                                 "Reserved");
-    CompressionID();
-    CodingControlB();
-    Skip_XX( 3,                                                 "Reserved");
-    TimeCode();
+    if (HVN <= 2)
+    {
+        CodingControlA();
+        Skip_XX(16,                                             "Reserved");
+        ImageGeometry();
+        Skip_XX( 5,                                             "Reserved");
+        CompressionID();
+        CodingControlB();
+        Skip_XX( 3,                                             "Reserved");
+        TimeCode();
 
-    Skip_XX(640-Element_Offset,                                 "ToDo");
+        Skip_XX(640-Element_Offset,                             "ToDo");
+    }
     Skip_XX(Element_Size-Element_Offset,                        "Data");
     }
 
@@ -481,12 +528,13 @@ void File_Vc3::HeaderPrefix()
 {
     //Parsing
     Element_Begin1("Header Prefix");
-    int64u Data;
-    Get_B5 (Data,                                               "Contents");
+    int32u Data;
+    Get_B4 (Data,                                               "Magic number");
+    Get_B1 (HVN,                                                "HVN: Header Version Number");
     Element_End0();
 
     FILLING_BEGIN();
-        if (Data==0x0000028001LL)
+        if (Data==0x00000280LL)
             Accept("VC-3");
         else
             Reject("VC-3");
@@ -511,8 +559,11 @@ void File_Vc3::CodingControlA()
 
     Mark_1();
     Mark_0();
-    Mark_0();
-    Get_SB (   CRCF,                                             "CRC flag");
+    if (HVN==1)
+        Mark_0();
+    else
+        Skip_SB(                                                "MACF: Macroblock Adaptive Control Flag");                                  
+    Get_SB (   CRCF,                                            "CRC flag");
     Mark_0();
     Mark_0();
     Mark_0();
@@ -591,13 +642,29 @@ void File_Vc3::CodingControlB()
     BS_Begin();
 
     Info_S1(1, FFE,                                             "Field/Frame Count"); Param_Info1(Vc3_FFE[FFE]);
+    if (HVN==1)
+    {
+        Mark_0();
+        SSC=false;
+    }
+    else
+    {
+        Get_SB (SSC,                                            "SSC: Sub Sampling Control"); Param_Info1(Vc3_SSC[SSC]);
+    }
     Mark_0();
     Mark_0();
     Mark_0();
-    Mark_0();
-    Mark_0();
-    Mark_0();
-    Mark_0();
+    if (HVN==1)
+    {
+        Mark_0();
+        Mark_0();
+        Mark_0();
+        CLR=0;
+    }
+    else
+    {
+        Get_S1 (3, CLR,                                         "CLR: Color"); Param_Info1(Vc3_CLR[CLR]);
+    }
 
     BS_End();
     Element_End0();

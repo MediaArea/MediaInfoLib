@@ -72,7 +72,10 @@ private :
     int16u  SPL;
     int8u   SBD;
     int8u   FFC_FirstFrame;
+    int8u   HVN;
+    int8u   CLR;
     bool    SST;
+    bool    SSC;
 };
 
 } //NameSpace
