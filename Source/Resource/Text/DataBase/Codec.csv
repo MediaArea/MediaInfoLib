@@ -1078,4 +1078,6 @@ S_TEXT/SSA;SSA;Mk;T;;;Sub Station Alpha;
 S_TEXT/ASS;ASS;Mk;T;;;Advanced Sub Station Alpha;
 S_TEXT/USF;USF;Mk;T;;;Universal Subtitle Format;
 S_IMAGE/BMP;Bitmap;Mk;T;;;Basic image based subtitle format;
-S_VOBSUB;VobSub;Mk;T;;;The same subtitle format used on DVDs;
+S_VOBSUB;VobSub;Mk;T;;;Picture based subtitle format used on DVDs
+S_HDMV/PGS;PGS;Mk;T;;;Picture based subtitle format used on BDs/HD-DVDs
+S_HDMV/TEXTST;TEXTST;Mk;T;;;Text based subtitle format used on BDs
