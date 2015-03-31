@@ -4063,6 +4063,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx()
                                     default                                           : Skip_XX(Element_TotalSize_Get()-Element_Offset, "Unknown");
                                 }
         }
+        if (Element_IsWaitingForMoreData())
+            return;
 
         if (Streams[moov_trak_tkhd_TrackID].Parsers.size()==1 && !Retrieve(StreamKind_Last, StreamPos_Last, "Encryption").empty())
         {
