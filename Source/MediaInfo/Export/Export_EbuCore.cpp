@@ -24,6 +24,7 @@
 #include "MediaInfo/Export/Export_EbuCore.h"
 #include "MediaInfo/File__Analyse_Automatic.h"
 #include <ctime>
+#include <cmath>
 using namespace std;
 //---------------------------------------------------------------------------
 
@@ -723,22 +724,32 @@ Ztring EbuCore_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
     if (!MI.Get(Stream_Video, StreamPos, Video_DisplayAspectRatio).empty())
     {
         Ztring AspectRatioString=MI.Get(Stream_Video, StreamPos, Video_DisplayAspectRatio_String);
-        size_t AspectRatioString_Pos=AspectRatioString.find(__T(':'));
+        size_t AspectRatioString_Pos=-1; //AspectRatioString.find(__T(':'));
         Ztring factorNumerator, factorDenominator;
         if (AspectRatioString_Pos!=(size_t)-1)
         {
             factorNumerator=AspectRatioString.substr(0, AspectRatioString_Pos);
             factorDenominator=AspectRatioString.substr(AspectRatioString_Pos+1);
         }
-        if (factorNumerator.empty())
-            ToReturn+=__T("\t\t\t\t<ebucore:aspectRatio typeLabel=\"display\">")+MI.Get(Stream_Video, StreamPos, Video_DisplayAspectRatio)+__T("</ebucore:aspectRatio>\n");
         else
         {
-            ToReturn+=__T("\t\t\t\t<ebucore:aspectRatio typeLabel=\"display\">\n");
-            ToReturn+=__T("\t\t\t\t\t<ebucore:factorNumerator>")+factorNumerator+__T("</ebucore:factorNumerator>\n");
-            ToReturn+=__T("\t\t\t\t\t<ebucore:factorDenominator>")+factorDenominator+__T("</ebucore:factorDenominator>\n");
-            ToReturn+=__T("\t\t\t\t</ebucore:aspectRatio>\n");
+            AspectRatioString_Pos=AspectRatioString.find(__T('.'));
+            if (AspectRatioString_Pos!=(size_t)-1)
+            {
+                int64s Denominator=float64_int64s(pow(10, AspectRatioString.size()-AspectRatioString_Pos+1)); //Computing the right denomintor compared to the count of decimals in the value e.g. 1.778 will have a denominator of 1000 (3 digits after the comma)
+                factorNumerator=Ztring::ToZtring(AspectRatioString.To_float32()*Denominator, 0); 
+                factorDenominator=Ztring::ToZtring(Denominator);
+            }
+            else
+            {
+                factorNumerator=AspectRatioString; //No decimal
+                factorDenominator=__T("1");
+            }
         }
+        ToReturn+=__T("\t\t\t\t<ebucore:aspectRatio typeLabel=\"display\">\n");
+        ToReturn+=__T("\t\t\t\t\t<ebucore:factorNumerator>")+factorNumerator+__T("</ebucore:factorNumerator>\n");
+        ToReturn+=__T("\t\t\t\t\t<ebucore:factorDenominator>")+factorDenominator+__T("</ebucore:factorDenominator>\n");
+        ToReturn+=__T("\t\t\t\t</ebucore:aspectRatio>\n");
     }
 
     //videoEncoding
