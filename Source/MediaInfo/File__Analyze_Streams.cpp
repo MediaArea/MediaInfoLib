@@ -2145,7 +2145,7 @@ void File__Analyze::DisplayAspectRatio_Fill(const Ztring &Value, stream_t Stream
     else if (DAR>=(float)1.30 && DAR<(float)1.37)   DARS=__T("4:3");
     else if (DAR>=(float)1.45 && DAR<(float)1.55)   DARS=__T("3:2");
     else if (DAR>=(float)1.55 && DAR<(float)1.65)   DARS=__T("16:10");
-    else if (DAR>=(float)1.65 && DAR<(float)1.70)   DARS=__T("5:4");
+    else if (DAR>=(float)1.65 && DAR<(float)1.70)   DARS=__T("5:3");
     else if (DAR>=(float)1.74 && DAR<(float)1.82)   DARS=__T("16:9");
     else if (DAR>=(float)1.82 && DAR<(float)1.88)   DARS=__T("1.85:1");
     else if (DAR>=(float)2.15 && DAR<(float)2.22)   DARS=__T("2.2:1");
