@@ -2,6 +2,10 @@ I changed some elements in the interface.
 No break in binary compatibily (no crash), but some details.
 
 
+0.7.72 --> 0.7.73
+-----------------
+- Clean aperture size is move from width/height to its own field
+
 0.7.71 --> 0.7.72
 -----------------
 - EBUCore 1.5 output is slighly modified, check the compatibility with your workflow

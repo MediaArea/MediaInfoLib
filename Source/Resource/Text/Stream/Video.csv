@@ -126,24 +126,32 @@ BitRate_Encoded;; bps;N YF;;;Encoded (with forced padding) bit rate in bps, if s
 BitRate_Encoded/String;;;Y NT;;;Encoded (with forced padding) bit rate (with measurement), if some container padding is present
 Width;; pixel;N YI;;;Width (aperture size if present) in pixel
 Width/String;;;Y NT;;;Width (aperture size if present) with measurement (pixel)
-Width_Offset;; pixel;N YI;;;Offset between original width and displayed width (aperture size) in pixel
-Width_Offset/String;;;N NT;;;Offset between original width and displayed width (aperture size)  in pixel
+Width_Offset;; pixel;N YI;;;Offset between original width and displayed width in pixel
+Width_Offset/String;;;N NT;;;Offset between original width and displayed width in pixel
 Width_Original;; pixel;N YI;;;Original (in the raw stream) width in pixel
 Width_Original/String;;;Y NT;;;Original (in the raw stream) width with measurement (pixel)
-Height;; pixel;N YI;;;Height (aperture size if present) in pixel
-Height/String;;;Y NT;;;Height (aperture size if present) with measurement (pixel)
-Height_Offset;; pixel;N YI;;;Offset between original height and displayed height (aperture size) in pixel
-Height_Offset/String;;;N NT;;;Offset between original height and displayed height (aperture size)  in pixel
+Width_CleanAperture;; pixel;N YI;;;Clean Aperture width in pixel
+Width_CleanAperture/String;;;Y NT;;;Clean Aperture width with measurement (pixel)
+Height;; pixel;N YI;;;Height in pixel
+Height/String;;;Y NT;;;Height with measurement (pixel)
+Height_Offset;; pixel;N YI;;;Offset between original height and displayed height in pixel
+Height_Offset/String;;;N NT;;;Offset between original height and displayed height  in pixel
 Height_Original;; pixel;N YI;;;Original (in the raw stream) height in pixel
 Height_Original/String;;;Y NT;;;Original (in the raw stream) height with measurement (pixel)
+Height_CleanAperture;; pixel;N YI;;;Clean Aperture height in pixel
+Height_CleanAperture/String;;;Y NT;;;Clean Aperture height with measurement (pixel)
 PixelAspectRatio;;;N YF;;;Pixel Aspect ratio
 PixelAspectRatio/String;;;N NT;;;Pixel Aspect ratio
 PixelAspectRatio_Original;;;N YF;;;Original (in the raw stream) Pixel Aspect ratio
 PixelAspectRatio_Original/String;;;N NT;;;Original (in the raw stream) Pixel Aspect ratio
+PixelAspectRatio_CleanAperture;;;N YF;;;Clean Aperture Pixel Aspect ratio
+PixelAspectRatio_CleanAperture/String;;;N NT;;;Clean Aperture Pixel Aspect ratio
 DisplayAspectRatio;;;N YF;;;Display Aspect ratio
 DisplayAspectRatio/String;;;Y NT;;;Display Aspect ratio
 DisplayAspectRatio_Original;;;N YF;;;Original (in the raw stream) Display Aspect ratio
 DisplayAspectRatio_Original/String;;;Y NT;;;Original (in the raw stream) Display Aspect ratio
+DisplayAspectRatio_CleanAperture;;;N YF;;;Clean Aperture Display Aspect ratio
+DisplayAspectRatio_CleanAperture/String;;;Y NT;;;Clean Aperture Display Aspect ratio
 ActiveFormatDescription;;;N YN;;;Active Format Description (AFD value)
 ActiveFormatDescription/String;;;Y NT;;;Active Format Description (text)
 ActiveFormatDescription_MuxingMode;;;N YT;;;Active Format Description (AFD value) muxing mode (Ancillary or Raw stream)
