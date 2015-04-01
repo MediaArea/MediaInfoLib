@@ -310,13 +310,17 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                                 case Video_PixelAspectRatio:    PixelAspectRatio_Fill(Value, Stream_Video, StreamPos, Video_Width, Video_Height, Video_PixelAspectRatio, Video_DisplayAspectRatio);   break;
                                 case Video_DisplayAspectRatio_CleanAperture:  DisplayAspectRatio_Fill(Value, Stream_Video, StreamPos, Video_Width_CleanAperture, Video_Height_CleanAperture, Video_PixelAspectRatio_CleanAperture, Video_DisplayAspectRatio_CleanAperture); break;
                                 case Video_PixelAspectRatio_CleanAperture:    PixelAspectRatio_Fill(Value, Stream_Video, StreamPos, Video_Width_CleanAperture, Video_Height_CleanAperture, Video_PixelAspectRatio_CleanAperture, Video_DisplayAspectRatio_CleanAperture);   break;
+                                case Video_DisplayAspectRatio_Original:  DisplayAspectRatio_Fill(Value, Stream_Video, StreamPos, Video_Width_Original, Video_Height_Original, Video_PixelAspectRatio_Original, Video_DisplayAspectRatio_Original); break;
+                                case Video_PixelAspectRatio_Original:    PixelAspectRatio_Fill(Value, Stream_Video, StreamPos, Video_Width_Original, Video_Height_Original, Video_PixelAspectRatio_Original, Video_DisplayAspectRatio_Original);   break;
                             }
                             break;
         case Stream_Image:
                             switch (Parameter)
                             {
-                                case Video_DisplayAspectRatio:  DisplayAspectRatio_Fill(Value, Stream_Image, StreamPos, Image_Width, Image_Height, Image_PixelAspectRatio, Image_DisplayAspectRatio); break;
+                                case Image_DisplayAspectRatio:  DisplayAspectRatio_Fill(Value, Stream_Image, StreamPos, Image_Width, Image_Height, Image_PixelAspectRatio, Image_DisplayAspectRatio); break;
                                 case Image_PixelAspectRatio:    PixelAspectRatio_Fill(Value, Stream_Image, StreamPos, Image_Width, Image_Height, Image_PixelAspectRatio, Image_DisplayAspectRatio);   break;
+                                case Image_DisplayAspectRatio_Original:  DisplayAspectRatio_Fill(Value, Stream_Image, StreamPos, Image_Width_Original, Image_Height_Original, Image_PixelAspectRatio_Original, Image_DisplayAspectRatio_Original); break;
+                                case Image_PixelAspectRatio_Original:    PixelAspectRatio_Fill(Value, Stream_Image, StreamPos, Image_Width_Original, Image_Height_Original, Image_PixelAspectRatio_Original, Image_DisplayAspectRatio_Original);   break;
                             }
                             break;
     }
@@ -730,94 +734,6 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                 Clear(Stream_Video, StreamPos, Video_FrameRate_Nominal);
             if (Parameter!=Video_FrameRate_Original && Retrieve(Stream_Video, StreamPos, Video_FrameRate_Original)==Retrieve(Stream_Video, StreamPos, Video_FrameRate))
                 Clear(Stream_Video, StreamPos, Video_FrameRate_Original);
-        }
-
-        //Display Aspect Ratio and Pixel Aspect Ratio
-        if (StreamKind==Stream_Video && Parameter==Video_DisplayAspectRatio && !Value.empty())
-        {
-            float F1=Retrieve(Stream_Video, StreamPos, Video_DisplayAspectRatio).To_float32();
-            Ztring C1;
-                 if (F1>=(float)1.23 && F1<(float)1.27) C1=__T("5:4");
-            else if (F1>=(float)1.30 && F1<(float)1.37) C1=__T("4:3");
-            else if (F1>=(float)1.45 && F1<(float)1.55) C1=__T("3:2");
-            else if (F1>=(float)1.55 && F1<(float)1.65) C1=__T("16:10");
-            else if (F1>=(float)1.74 && F1<(float)1.82) C1=__T("16:9");
-            else if (F1>=(float)1.82 && F1<(float)1.88) C1=__T("1.85:1");
-            else if (F1>=(float)2.15 && F1<(float)2.22) C1=__T("2.2:1");
-            else if (F1>=(float)2.23 && F1<(float)2.30) C1=__T("2.25:1");
-            else if (F1>=(float)2.30 && F1<(float)2.37) C1=__T("2.35:1");
-            else if (F1>=(float)2.37 && F1<(float)2.45) C1=__T("2.40:1");
-            else              C1.From_Number(F1);
-            C1.FindAndReplace(__T("."), MediaInfoLib::Config.Language_Get(__T("  Config_Text_FloatSeparator")));
-            if (MediaInfoLib::Config.Language_Get(__T("  Language_ISO639"))==__T("fr") && C1.find(__T(":1"))==string::npos)
-                C1.FindAndReplace(__T(":"), __T("/"));
-            Fill(Stream_Video, StreamPos, Video_DisplayAspectRatio_String, C1, true);
-        }
-
-        //Original Display Aspect Ratio and Original Pixel Aspect Ratio
-        if (StreamKind==Stream_Video && Parameter==Video_DisplayAspectRatio_Original)
-        {
-            float F1=Retrieve(Stream_Video, StreamPos, Video_DisplayAspectRatio_Original).To_float32();
-            Ztring C1;
-                 if (F1>=(float)1.23 && F1<(float)1.27) C1=__T("5:4");
-            else if (F1>=(float)1.30 && F1<(float)1.37) C1=__T("4:3");
-            else if (F1>=(float)1.45 && F1<(float)1.55) C1=__T("3:2");
-            else if (F1>=(float)1.55 && F1<(float)1.65) C1=__T("16:10");
-            else if (F1>=(float)1.74 && F1<(float)1.82) C1=__T("16:9");
-            else if (F1>=(float)1.82 && F1<(float)1.88) C1=__T("1.85:1");
-            else if (F1>=(float)2.15 && F1<(float)2.22) C1=__T("2.2:1");
-            else if (F1>=(float)2.23 && F1<(float)2.30) C1=__T("2.25:1");
-            else if (F1>=(float)2.30 && F1<(float)2.37) C1=__T("2.35:1");
-            else if (F1>=(float)2.37 && F1<(float)2.45) C1=__T("2.40:1");
-            else              C1.From_Number(F1);
-            C1.FindAndReplace(__T("."), MediaInfoLib::Config.Language_Get(__T("  Config_Text_FloatSeparator")));
-            if (MediaInfoLib::Config.Language_Get(__T("  Language_ISO639"))==__T("fr") && C1.find(__T(":1"))==string::npos)
-                C1.FindAndReplace(__T(":"), __T("/"));
-            Fill(Stream_Video, StreamPos, Video_DisplayAspectRatio_Original_String, C1, true);
-        }
-
-        //Display Aspect Ratio and Pixel Aspect Ratio
-        if (StreamKind==Stream_Image && Parameter==Image_DisplayAspectRatio && !Value.empty())
-        {
-            float F1=Retrieve(Stream_Image, StreamPos, Image_DisplayAspectRatio).To_float32();
-            Ztring C1;
-                 if (F1>=(float)1.23 && F1<(float)1.27) C1=__T("5:4");
-            else if (F1>=(float)1.30 && F1<(float)1.37) C1=__T("4:3");
-            else if (F1>=(float)1.45 && F1<(float)1.55) C1=__T("3:2");
-            else if (F1>=(float)1.55 && F1<(float)1.65) C1=__T("16:10");
-            else if (F1>=(float)1.74 && F1<(float)1.82) C1=__T("16:9");
-            else if (F1>=(float)1.82 && F1<(float)1.88) C1=__T("1.85:1");
-            else if (F1>=(float)2.15 && F1<(float)2.22) C1=__T("2.2:1");
-            else if (F1>=(float)2.23 && F1<(float)2.30) C1=__T("2.25:1");
-            else if (F1>=(float)2.30 && F1<(float)2.37) C1=__T("2.35:1");
-            else if (F1>=(float)2.37 && F1<(float)2.45) C1=__T("2.40:1");
-            else              C1.From_Number(F1);
-            C1.FindAndReplace(__T("."), MediaInfoLib::Config.Language_Get(__T("  Config_Text_FloatSeparator")));
-            if (MediaInfoLib::Config.Language_Get(__T("  Language_ISO639"))==__T("fr") && C1.find(__T(":1"))==string::npos)
-                C1.FindAndReplace(__T(":"), __T("/"));
-            Fill(Stream_Image, StreamPos, Image_DisplayAspectRatio_String, C1, true);
-        }
-
-        //Original Display Aspect Ratio and Original Pixel Aspect Ratio
-        if (StreamKind==Stream_Image && Parameter==Image_DisplayAspectRatio_Original)
-        {
-            float F1=Retrieve(Stream_Image, StreamPos, Image_DisplayAspectRatio_Original).To_float32();
-            Ztring C1;
-                 if (F1>=(float)1.23 && F1<(float)1.27) C1=__T("5:4");
-            else if (F1>=(float)1.30 && F1<(float)1.37) C1=__T("4:3");
-            else if (F1>=(float)1.45 && F1<(float)1.55) C1=__T("3:2");
-            else if (F1>=(float)1.55 && F1<(float)1.65) C1=__T("16:10");
-            else if (F1>=(float)1.74 && F1<(float)1.82) C1=__T("16:9");
-            else if (F1>=(float)1.82 && F1<(float)1.88) C1=__T("1.85:1");
-            else if (F1>=(float)2.15 && F1<(float)2.22) C1=__T("2.2:1");
-            else if (F1>=(float)2.23 && F1<(float)2.30) C1=__T("2.25:1");
-            else if (F1>=(float)2.30 && F1<(float)2.37) C1=__T("2.35:1");
-            else if (F1>=(float)2.37 && F1<(float)2.45) C1=__T("2.40:1");
-            else              C1.From_Number(F1);
-            C1.FindAndReplace(__T("."), MediaInfoLib::Config.Language_Get(__T("  Config_Text_FloatSeparator")));
-            if (MediaInfoLib::Config.Language_Get(__T("  Language_ISO639"))==__T("fr") && C1.find(__T(":1"))==string::npos)
-                C1.FindAndReplace(__T(":"), __T("/"));
-            Fill(Stream_Image, StreamPos, Image_DisplayAspectRatio_Original_String, C1, true);
         }
 
         //Bits/(Pixel*Frame)
