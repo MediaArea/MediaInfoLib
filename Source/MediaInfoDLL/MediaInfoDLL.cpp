@@ -266,8 +266,16 @@ const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
     if (Handle==NULL || !MI_Output_IsOk) \
     { \
         MEDIAINFO_DEBUG2(_NAME, Debug+="Handle error") \
-        MI_Outputs[NULL]->Unicode==L"Note to developer : you must create an object before"; \
-        return MI_Outputs[NULL]->Unicode.c_str(); \
+        Critical.Enter(); \
+        MI_Output=MI_Outputs.find(NULL); \
+        if (MI_Output==MI_Outputs.end()) \
+        { \
+            MI_Outputs[NULL]=new mi_output; \
+            MI_Output=MI_Outputs.find(NULL); \
+        } \
+        Critical.Leave(); \
+        MI_Output->second->Unicode=L"Note to developer : you must create an object before"; \
+        return MI_Output->second->Unicode.c_str(); \
     } \
 
 #ifndef MEDIAINFO_DEBUG
@@ -818,10 +826,19 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
     }
     else
     {
-        MANAGE_STRING(  "Option_Static",
+        //MANAGE_STRING
+        Critical.Enter();
+        mi_outputs::iterator MI_Output=MI_Outputs.find(NULL);
+        if (MI_Output==MI_Outputs.end())
+        {
+            MI_Outputs[NULL]=new mi_output;
+            MI_Output=MI_Outputs.find(NULL);
+        }
+        Critical.Leave();
+
+        EXECUTE_STRING( "Option_Static",
                         MediaInfo,
-                        Option_Static(Option, Value),
-                        )
+                        Option_Static(Option, Value));
     }
 }
 
@@ -1055,10 +1072,19 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
     }
     else
     {
-        MANAGE_STRING(  "Option_Static",
+        //MANAGE_STRING
+        Critical.Enter();
+        mi_outputs::iterator MI_Output=MI_Outputs.find(NULL);
+        if (MI_Output==MI_Outputs.end())
+        {
+            MI_Outputs[NULL]=new mi_output;
+            MI_Output=MI_Outputs.find(NULL);
+        }
+        Critical.Leave();
+
+        EXECUTE_STRING( "Option_Static",
                         MediaInfoList,
-                        Option_Static(Option, Value),
-                        )
+                        Option_Static(Option, Value));
     }
 }
 
