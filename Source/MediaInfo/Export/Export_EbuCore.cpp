@@ -724,7 +724,7 @@ Ztring EbuCore_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
     if (!MI.Get(Stream_Video, StreamPos, Video_DisplayAspectRatio).empty())
     {
         Ztring AspectRatioString=MI.Get(Stream_Video, StreamPos, Video_DisplayAspectRatio_String);
-        size_t AspectRatioString_Pos=-1; //AspectRatioString.find(__T(':'));
+        size_t AspectRatioString_Pos=AspectRatioString.find(__T(':'));
         Ztring factorNumerator, factorDenominator;
         if (AspectRatioString_Pos!=(size_t)-1)
         {
