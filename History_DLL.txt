@@ -37,6 +37,7 @@ x #B893, MXF: Crash with Panasonic P2 3.0 files
 x DPX: time information was with native ":" character
 x Images sequence: "Delay" field is filled from the number in the name of the first file
 x FLV: some files were not having the right duration
+x DPX: Cineon files were detected as DPX Version 1, version number was not corresponding to the real version
 
 Version 0.7.72, 2015-01-07
 --------------

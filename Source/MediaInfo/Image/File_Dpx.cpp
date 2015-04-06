@@ -284,9 +284,6 @@ File_Dpx::File_Dpx()
 //---------------------------------------------------------------------------
 void File_Dpx::Streams_Accept()
 {
-    Fill(Stream_General, 0, General_Format, "DPX");
-    Fill(Stream_General, 0, General_Format_Version, Version==1?"Version 1":"Version 2");
-
     if (!IsSub)
     {
         TestContinuousFileNames();
@@ -318,10 +315,10 @@ bool File_Dpx::FileHeader_Begin()
     int32u Magic=CC4(Buffer);
     switch (Magic)
     {
-        case 0x802A5FD7 :   //       (v1 Big)
-        case 0xD75F2A80 :   //       (v1 Little)
-        case 0x53445058 :   //"SPDX" (v2 Big)
-        case 0x58504453 :   //"XDPS" (v2 Little)
+        case 0x802A5FD7 :   //       (Cineon Big)
+        case 0xD75F2A80 :   //       (Cineon Little)
+        case 0x53445058 :   //"SPDX" (Dpx Big)
+        case 0x58504453 :   //"XDPS" (Dpx Little)
                             break;
         default         :
                             Reject();
@@ -334,24 +331,24 @@ bool File_Dpx::FileHeader_Begin()
     Sizes_Pos=Pos_GenericSection;
     switch (Magic)
     {
-        case 0x802A5FD7 :   //       (v1 Big)
-        case 0xD75F2A80 :   //       (v1 Little)
-                            Version=1;
+        case 0x802A5FD7 :   //       (Cineon Big)
+        case 0xD75F2A80 :   //       (Cineon Little)
+                            IsDpx=false;
                             break;
-        case 0x58504453 :   //"XDPS" (v2 Little)
-        case 0x53445058 :   //"SPDX" (v2 Big)
-                            Version=2;
+        case 0x58504453 :   //"XDPS" (Dpx Little)
+        case 0x53445058 :   //"SPDX" (Dpx Big)
+                            IsDpx=true;
                             break;
         default         :   ;
     }
     switch (Magic)
     {
-        case 0xD75F2A80 :   //       (v1 Little)
-        case 0x58504453 :   //"XDPS" (v2 Little)
+        case 0xD75F2A80 :   //       (Cineon Little)
+        case 0x58504453 :   //"XDPS" (Dpx Little)
                             LittleEndian=true;
                             break;
-        case 0x802A5FD7 :   //       (v1 Big)
-        case 0x53445058 :   //"SPDX" (v2 Big)
+        case 0x802A5FD7 :   //       (Cineon Big)
+        case 0x53445058 :   //"SPDX" (Dpx Big)
                             LittleEndian=false;
                             break;
         default         :   ;
@@ -391,13 +388,13 @@ void File_Dpx::Header_Parse()
 //---------------------------------------------------------------------------
 void File_Dpx::Data_Parse()
 {
-    if (Version==1)
+    if (!IsDpx) // Is Cineon
     {
         switch (Element_Code)
         {
-            case Pos_GenericSection   : GenericSectionHeader_v1(); break;
-            case Pos_IndustrySpecific : IndustrySpecificHeader_v1(); break;
-            case Pos_UserDefined      : UserDefinedHeader_v1(); break;
+            case Pos_GenericSection   : GenericSectionHeader_Cineon(); break;
+            case Pos_IndustrySpecific : IndustrySpecificHeader_Cineon(); break;
+            case Pos_UserDefined      : UserDefinedHeader_Cineon(); break;
             case Pos_Padding          : Padding(); break;
             case Pos_ImageData        : ImageData(); break;
             default                   : ;
@@ -407,9 +404,9 @@ void File_Dpx::Data_Parse()
     {
         switch (Element_Code)
         {
-            case Pos_GenericSection   : GenericSectionHeader_v2(); break;
-            case Pos_IndustrySpecific : IndustrySpecificHeader_v2(); break;
-            case Pos_UserDefined      : UserDefinedHeader_v2(); break;
+            case Pos_GenericSection   : GenericSectionHeader_Dpx(); break;
+            case Pos_IndustrySpecific : IndustrySpecificHeader_Dpx(); break;
+            case Pos_UserDefined      : UserDefinedHeader_Dpx(); break;
             case Pos_Padding          : Padding(); break;
             case Pos_ImageData        : ImageData(); break;
             default                   : ;
@@ -436,13 +433,14 @@ void File_Dpx::Data_Parse()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-void File_Dpx::GenericSectionHeader_v1()
+void File_Dpx::GenericSectionHeader_Cineon()
 {
     Element_Name("Generic section header");
 
     //Parsing
     Element_Begin1("File information");
     Ztring CreationDate, CreationTime;
+    string Version;
     int32u Size_Header, Size_Total, Size_Generic, Size_Industry, Size_User;
     Skip_B4(                                                    "Magic number");
     Get_X4 (Size_Header,                                        "Offset to image data");
@@ -450,7 +448,7 @@ void File_Dpx::GenericSectionHeader_v1()
     Get_X4 (Size_Industry,                                      "Industry specific header length");
     Get_X4 (Size_User,                                          "User-defined header length");
     Get_X4 (Size_Total,                                         "Total image file size");
-    Skip_String(8,                                              "Version number of header format");
+    Get_String(8, Version,                                      "Version number of header format");
     Skip_UTF8  (100,                                            "FileName");
     Get_UTF8   (12,  CreationDate,                              "Creation Date");
     Get_UTF8   (12,  CreationTime,                              "Creation Time");
@@ -465,7 +463,7 @@ void File_Dpx::GenericSectionHeader_v1()
     if (ImageElements>8)
         ImageElements=8;
     for(int8u ImageElement=0; ImageElement<ImageElements; ImageElement++)
-        GenericSectionHeader_v1_ImageElement();
+        GenericSectionHeader_Cineon_ImageElement();
     if (ImageElements!=8)
         Skip_XX((8-ImageElements)*28,                           "Padding");
     Skip_BF4(                                                   "White point - x");
@@ -526,12 +524,17 @@ void File_Dpx::GenericSectionHeader_v1()
         {
             Fill(Stream_General, 0, General_Encoded_Date, CreationDate+__T(' ')+CreationTime); //ToDo: transform it in UTC
             Fill(StreamKind_Last, StreamPos_Last, "Encoded_Date", CreationDate+__T(' ')+CreationTime); //ToDo: transform it in UTC
+            Fill(StreamKind_Last, StreamPos_Last, "Format", "Cineom");
+            if (Version.size()>2 && Version[0]=='V' && Version[1]>='0' && Version[2]<='9')
+                Version.insert(1, "ersion ");
+            Fill(StreamKind_Last, StreamPos_Last, "Format_Version", Version);
+            Fill(Stream_General, 0, General_Format_Version, Version);
         }
     FILLING_END();
 }
 
 //---------------------------------------------------------------------------
-void File_Dpx::GenericSectionHeader_v1_ImageElement()
+void File_Dpx::GenericSectionHeader_Cineon_ImageElement()
 {
     Element_Begin1("image element");
     int32u Width, Height;
@@ -550,8 +553,6 @@ void File_Dpx::GenericSectionHeader_v1_ImageElement()
     FILLING_BEGIN();
         if (Frame_Count==0)
         {
-            Fill(StreamKind_Last, StreamPos_Last, "Format", "DPX");
-            Fill(StreamKind_Last, StreamPos_Last, "Format_Version", "Version 1");
             Fill(StreamKind_Last, StreamPos_Last, "Width", Width);
             Fill(StreamKind_Last, StreamPos_Last, "Height", Height);
         }
@@ -559,17 +560,17 @@ void File_Dpx::GenericSectionHeader_v1_ImageElement()
 }
 
 //---------------------------------------------------------------------------
-void File_Dpx::GenericSectionHeader_v2()
+void File_Dpx::GenericSectionHeader_Dpx()
 {
     Element_Name("Generic section header");
 
     //Parsing
     Element_Begin1("File information");
-    std::string CreationDate, Creator, Project, Copyright;
+    std::string Version, CreationDate, Creator, Project, Copyright;
     int32u Size_Header, Size_Total, Size_Generic, Size_Industry, Size_User;
     Skip_String(4,                                              "Magic number");
     Get_X4 (Size_Header,                                        "Offset to image data");
-    Skip_String(8,                                              "Version number of header format");
+    Get_String(8, Version,                                      "Version number of header format");
     Get_X4 (Size_Total,                                         "Total image file size");
     Skip_B4(                                                    "Ditto Key");
     Get_X4 (Size_Generic,                                       "Generic section header length");
@@ -594,7 +595,7 @@ void File_Dpx::GenericSectionHeader_v2()
     Get_X4 (Width,                                              "Pixels per line");
     Get_X4 (Height,                                             "Lines per image element");
     for(int16u ImageElement=0; ImageElement<ImageElements; ImageElement++)
-        GenericSectionHeader_v2_ImageElement();
+        GenericSectionHeader_Dpx_ImageElement();
     if (ImageElements!=8)
         Skip_XX((8-ImageElements)*72,                           "Padding");
     Skip_XX(52,                                                 "Reserved for future use");
@@ -658,6 +659,11 @@ void File_Dpx::GenericSectionHeader_v2()
             Fill(StreamKind_Last, StreamPos_Last, "Encoded_Library", Creator);
             Fill(Stream_General, 0, "Project", Project); //ToDo: map to a MediaInfo field (which one?)
             Fill(Stream_General, 0, General_Copyright, Copyright);
+            Fill(StreamKind_Last, StreamPos_Last, "Format", "DPX");
+            if (Version.size()>2 && Version[0]=='V' && Version[1]>='0' && Version[2]<='9')
+                Version.insert(1, "ersion ");
+            Fill(StreamKind_Last, StreamPos_Last, "Format_Version", Version);
+            Fill(Stream_General, 0, General_Format_Version, Version);
 
             Fill(StreamKind_Last, StreamPos_Last, "Width", Width);
             Fill(StreamKind_Last, StreamPos_Last, "Height", Height);
@@ -670,7 +676,7 @@ void File_Dpx::GenericSectionHeader_v2()
 }
 
 //---------------------------------------------------------------------------
-void File_Dpx::GenericSectionHeader_v2_ImageElement()
+void File_Dpx::GenericSectionHeader_Dpx_ImageElement()
 {
     Element_Begin1("image element");
     int8u TransferCharacteristic, ColorimetricSpecification, BitDephs;
@@ -694,8 +700,6 @@ void File_Dpx::GenericSectionHeader_v2_ImageElement()
     FILLING_BEGIN();
         if (Frame_Count==0)
         {
-            Fill(StreamKind_Last, StreamPos_Last, "Format", "DPX");
-            Fill(StreamKind_Last, StreamPos_Last, "Format_Version", "Version 2");
             Fill(StreamKind_Last, StreamPos_Last, "BitDepth", BitDephs);
             Fill(StreamKind_Last, StreamPos_Last, "colour_description_present", "Yes");
             Fill(StreamKind_Last, StreamPos_Last, "colour_primaries", DPX_TransferCharacteristic(TransferCharacteristic));
@@ -705,7 +709,7 @@ void File_Dpx::GenericSectionHeader_v2_ImageElement()
 }
 
 //---------------------------------------------------------------------------
-void File_Dpx::IndustrySpecificHeader_v1()
+void File_Dpx::IndustrySpecificHeader_Cineon()
 {
     Element_Name("Motion picture industry specific header");
 
@@ -727,7 +731,7 @@ void File_Dpx::IndustrySpecificHeader_v1()
 }
 
 //---------------------------------------------------------------------------
-void File_Dpx::IndustrySpecificHeader_v2()
+void File_Dpx::IndustrySpecificHeader_Dpx()
 {
     Element_Name("Industry specific header");
 
@@ -771,7 +775,7 @@ void File_Dpx::IndustrySpecificHeader_v2()
 }
 
 //---------------------------------------------------------------------------
-void File_Dpx::UserDefinedHeader_v1()
+void File_Dpx::UserDefinedHeader_Cineon()
 {
     Element_Name("User defined header");
 
@@ -780,7 +784,7 @@ void File_Dpx::UserDefinedHeader_v1()
 }
 
 //---------------------------------------------------------------------------
-void File_Dpx::UserDefinedHeader_v2()
+void File_Dpx::UserDefinedHeader_Dpx()
 {
     Element_Name("User defined header");
 
