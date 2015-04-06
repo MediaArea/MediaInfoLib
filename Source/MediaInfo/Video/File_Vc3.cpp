@@ -312,6 +312,7 @@ void File_Vc3::Streams_Fill()
     Fill(Stream_Video, 0, Video_BitRate_Mode, "CBR");
     if (FrameRate && Vc3_CompressedFrameSize(CID))
         Fill(Stream_Video, 0, Video_BitRate, Vc3_CompressedFrameSize(CID)*8*FrameRate, 0);
+    Fill(Stream_Video, 0, Video_Format_Version, __T("Version ")+Ztring::ToZtring(HVN));
     if (Vc3_FromCID_IsSupported(CID))
     {
         if (Vc3_SPL_FromCID(CID))

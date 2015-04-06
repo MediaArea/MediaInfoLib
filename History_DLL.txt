@@ -21,6 +21,7 @@ Version 0.7.73, 2015-01-
 + MediaInfoDLL interface: clean up, more debug features added
 + MediaInfoDLL interface: Giant threads lock removed
 + #F460, VC-3/DNxHD: detection of RGB 444 and other SMPTE ST 2019 (2014) new CIDs
++ VC-3/DNxHD: version number (HVN)
 + Clean aperture size is move from width/height to its own field
 + HEVC: tier
 x B886, XML and HTML outputs were broken
