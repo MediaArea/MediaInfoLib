@@ -468,14 +468,14 @@ void File_Dpx::GenericSectionHeader_v1()
         GenericSectionHeader_v1_ImageElement();
     if (ImageElements!=8)
         Skip_XX((8-ImageElements)*28,                           "Padding");
-    Skip_BFP4(9,                                                "White point - x");
-    Skip_BFP4(9,                                                "White point - y");
-    Skip_BFP4(9,                                                "Red primary chromaticity - x");
-    Skip_BFP4(9,                                                "Red primary chromaticity - u");
-    Skip_BFP4(9,                                                "Green primary chromaticity - x");
-    Skip_BFP4(9,                                                "Green primary chromaticity - y");
-    Skip_BFP4(9,                                                "Blue primary chromaticity - x");
-    Skip_BFP4(9,                                                "Blue primary chromaticity - y");
+    Skip_BF4(                                                   "White point - x");
+    Skip_BF4(                                                   "White point - y");
+    Skip_BF4(                                                   "Red primary chromaticity - x");
+    Skip_BF4(                                                   "Red primary chromaticity - u");
+    Skip_BF4(                                                   "Green primary chromaticity - x");
+    Skip_BF4(                                                   "Green primary chromaticity - y");
+    Skip_BF4(                                                   "Blue primary chromaticity - x");
+    Skip_BF4(                                                   "Blue primary chromaticity - y");
     Skip_UTF8(200,                                              "Label text");
     Skip_XX(28,                                                 "Reserved for future use");
     Element_End0();
@@ -498,9 +498,9 @@ void File_Dpx::GenericSectionHeader_v1()
     Skip_UTF8(64,                                               "Input device");
     Skip_UTF8(32,                                               "Input device model number");
     Skip_UTF8(32,                                               "Input device serial number");
-    Skip_BFP4(9,                                                "X input device pitch");
-    Skip_BFP4(9,                                                "Y input device pitch");
-    Skip_BFP4(9,                                                "Image gamma of capture device");
+    Skip_BF4(                                                   "X input device pitch");
+    Skip_BF4(                                                   "Y input device pitch");
+    Skip_BF4(                                                   "Image gamma of capture device");
     Skip_XX(40,                                                 "Reserved for future use");
     Element_End0();
 
@@ -541,10 +541,10 @@ void File_Dpx::GenericSectionHeader_v1_ImageElement()
     Skip_B1(                                                    "Unused");
     Get_X4 (Width,                                              "Pixels per line");
     Get_X4 (Height,                                             "Lines per image element");
-    Skip_BFP4(9,                                                "Minimum data value");
-    Skip_BFP4(9,                                                "Minimum quantity represented");
-    Skip_BFP4(9,                                                "Maximum data value");
-    Skip_BFP4(9,                                                "Maximum quantity represented");
+    Skip_BF4(                                                   "Minimum data value");
+    Skip_BF4(                                                   "Minimum quantity represented");
+    Skip_BF4(                                                   "Maximum data value");
+    Skip_BF4(                                                   "Maximum quantity represented");
     Element_End0();
 
     FILLING_BEGIN();
@@ -603,8 +603,8 @@ void File_Dpx::GenericSectionHeader_v2()
     Element_Begin1("Image source information");
     Skip_B4(                                                    "X Offset");
     Skip_B4(                                                    "Y Offset");
-    Skip_BFP4(9,                                                "X center");
-    Skip_BFP4(9,                                                "Y center");
+    Skip_BF4(                                                   "X center");
+    Skip_BF4(                                                   "Y center");
     Skip_B4(                                                    "X original size");
     Skip_B4(                                                    "Y original size");
     Skip_UTF8(100,                                              "Source image filename");
@@ -621,8 +621,8 @@ void File_Dpx::GenericSectionHeader_v2()
     Get_X4 (PAR_V,                                              "Pixel ratio : vertical");
 
     Element_Begin1("Additional source image information");
-    Skip_BFP4(9,                                                "X scanned size");
-    Skip_BFP4(9,                                                "Y scanned size");
+    Skip_BF4(                                                   "X scanned size");
+    Skip_BF4(                                                   "Y scanned size");
     Skip_XX(20,                                                 "Reserved for future use");
     Element_End0();
 
@@ -676,9 +676,9 @@ void File_Dpx::GenericSectionHeader_v2_ImageElement()
     int8u TransferCharacteristic, ColorimetricSpecification, BitDephs;
     Info_B4(DataSign,                                           "Data sign");Param_Info1((DataSign==0?"unsigned":"signed"));
     Skip_B4(                                                    "Reference low data code value");
-    Skip_BFP4(9,                                                "Reference low quantity represented");
+    Skip_BF4(                                                   "Reference low quantity represented");
     Skip_B4(                                                    "Reference high data code value");
-    Skip_BFP4(9,                                                "Reference high quantity represented");
+    Skip_BF4(                                                   "Reference high quantity represented");
     Info_B1(Descriptor,                                         "Descriptor");Param_Info1(DPX_Descriptors(Descriptor));
     Get_B1 (TransferCharacteristic,                             "Transfer characteristic");Param_Info1(DPX_TransferCharacteristic(TransferCharacteristic));
     Get_B1 (ColorimetricSpecification,                          "Colorimetric specification");Param_Info1(DPX_ColorimetricSpecification(ColorimetricSpecification));
@@ -742,8 +742,8 @@ void File_Dpx::IndustrySpecificHeader_v2()
     Skip_B4(                                                    "Frame position in sequence");
     Skip_B4(                                                    "Sequence length (frames)");
     Skip_B4(                                                    "Held count (1 = default)");
-    Skip_BFP4(9,                                                "Frame rate of original (frames/s)");
-    Skip_BFP4(9,                                                "Shutter angle of camera in degrees");
+    Skip_BF4(                                                   "Frame rate of original (frames/s)");
+    Skip_BF4(                                                   "Shutter angle of camera in degrees");
     Skip_UTF8(32,                                               "Frame identification - e.g. keyframe");
     Skip_UTF8(100,                                              "Slate information");
     Skip_XX(56,                                                 "Reserved for future use");
@@ -756,16 +756,16 @@ void File_Dpx::IndustrySpecificHeader_v2()
     Skip_B1(                                                    "Field number");
     Info_B1(VideoSignalStandard,                                "Video signal standard");Param_Info1(DPX_VideoSignalStandard(VideoSignalStandard));
     Skip_B1(                                                    "Zero");
-    Skip_BFP4(9,                                                "Horizontal sampling rate (Hz)");
-    Skip_BFP4(9,                                                "Vertical sampling rate (Hz)");
-    Skip_BFP4(9,                                                "Temporal sampling rate or frame rate (Hz)");
-    Skip_BFP4(9,                                                "Time offset from sync to first pixel (ms)");
-    Skip_BFP4(9,                                                "Gamma");
-    Skip_BFP4(9,                                                "Black level code value");
-    Skip_BFP4(9,                                                "Black gain");
-    Skip_BFP4(9,                                                "Breakpoint");
-    Skip_BFP4(9,                                                "Reference white level code value");
-    Skip_BFP4(9,                                                "Integration time (s)");
+    Skip_BF4(                                                   "Horizontal sampling rate (Hz)");
+    Skip_BF4(                                                   "Vertical sampling rate (Hz)");
+    Skip_BF4(                                                   "Temporal sampling rate or frame rate (Hz)");
+    Skip_BF4(                                                   "Time offset from sync to first pixel (ms)");
+    Skip_BF4(                                                   "Gamma");
+    Skip_BF4(                                                   "Black level code value");
+    Skip_BF4(                                                   "Black gain");
+    Skip_BF4(                                                   "Breakpoint");
+    Skip_BF4(                                                   "Reference white level code value");
+    Skip_BF4(                                                   "Integration time (s)");
     Skip_XX(76,                                                 "Reserved for future use");
     Element_End0();
 }
