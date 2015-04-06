@@ -22,6 +22,7 @@ Version 0.7.73, 2015-01-
 + MediaInfoDLL interface: Giant threads lock removed
 + #F460, VC-3/DNxHD: detection of RGB 444 and other SMPTE ST 2019 (2014) new CIDs
 + Clean aperture size is move from width/height to its own field
++ HEVC: tier
 x B886, XML and HTML outputs were broken
 x B902: EBU AspectRatio invalid in case of non classic numerator:denominator format
 x #B758, VC-3/DNxHD: wrong color space and subsampling in case of unknown CID, now empty if format version is not known
