@@ -95,7 +95,7 @@ using namespace std;
                 st_In=st;
                 strcpy(Duration, "            ");
             }
-            
+
             fprintf(F,"                                       %02hd:%02hd:%02hd.%03hd %s", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds, Duration);
         }
 
@@ -2307,7 +2307,7 @@ void MediaInfo_Config_MediaInfo::Event_Send (File__Analyze* Source, const int8u*
                             Debug+=", EventID=";Debug+=Ztring::ToZtring(LittleEndian2int32u(Data_Content), 16).To_UTF8();)
 
         Event_CallBackFunction ((unsigned char*)Data_Content, Data_Size, Event_UserHandler);
- 
+
         MEDIAINFO_DEBUG2(   "CallBackFunction",
                             )
     }

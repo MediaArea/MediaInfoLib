@@ -562,7 +562,7 @@ void File_Vc3::CodingControlA()
     if (HVN==1)
         Mark_0();
     else
-        Skip_SB(                                                "MACF: Macroblock Adaptive Control Flag");                                  
+        Skip_SB(                                                "MACF: Macroblock Adaptive Control Flag");
     Get_SB (   CRCF,                                            "CRC flag");
     Mark_0();
     Mark_0();

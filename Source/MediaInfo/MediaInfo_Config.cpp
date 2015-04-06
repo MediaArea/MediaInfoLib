@@ -80,7 +80,7 @@
                 st_In=st;
                 strcpy(Duration, "            ");
             }
-            
+
             fprintf(F,"                                       %02hd:%02hd:%02hd.%03hd %s", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds, Duration);
         }
 
@@ -2254,7 +2254,7 @@ void MediaInfo_Config::Event_Send (const int8u* Data_Content, size_t Data_Size, 
                             Debug+=", EventID=";Debug+=Ztring::ToZtring(LittleEndian2int32u(Data_Content), 16).To_UTF8();)
 
         Event_CallBackFunction ((unsigned char*)Data_Content, Data_Size, Event_UserHandler);
- 
+
         MEDIAINFO_DEBUG2(   "Event",
                             )
     }

@@ -178,7 +178,7 @@ const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
                 st_In=st;
                 strcpy(Duration, "            ");
             }
-            
+
             fprintf(F,"%02hd:%02hd:%02hd.%03hd %s", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds, Duration);
         }
 
@@ -581,7 +581,7 @@ void*           __stdcall MediaInfo_New ()
     {
         MEDIAINFO_DEBUG2(   "New",
                             Debug+="!!!Exception thrown!!!";)
-            
+
         delete Handle;
         return NULL;
     }
@@ -790,7 +790,7 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
         else
             utf8=false;
         MI_Output->second->Unicode.clear();
- 
+
         MEDIAINFO_DEBUG2(   "CharSet",
                             )
 
@@ -807,13 +807,13 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
             MI_Output=MI_Outputs.find(NULL);
         }
         Critical.Leave();
- 
+
         setlocale(LC_CTYPE, utf8?Ztring(Value).To_UTF8().c_str():Ztring(Value).To_Local().c_str());
         MI_Output->second->Unicode.clear();
 
         MEDIAINFO_DEBUG2(   "setlocale_LC_CTYPE",
                             )
-        
+
         return MI_Output->second->Unicode.c_str();
     }
 
@@ -887,7 +887,7 @@ void*           __stdcall MediaInfoList_New ()
     {
         MEDIAINFO_DEBUG2(   "New",
                             Debug+="!!!Exception thrown!!!";)
-            
+
         delete Handle;
         return NULL;
     }
@@ -1036,7 +1036,7 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
         else
             utf8=false;
         MI_Output->second->Unicode.clear();
- 
+
         MEDIAINFO_DEBUG2(   "CharSet",
                             )
 
@@ -1053,13 +1053,13 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
             MI_Output=MI_Outputs.find(NULL);
         }
         Critical.Leave();
- 
+
         setlocale(LC_CTYPE, utf8?Ztring(Value).To_UTF8().c_str():Ztring(Value).To_Local().c_str());
         MI_Output->second->Unicode.clear();
 
         MEDIAINFO_DEBUG2(   "setlocale_LC_CTYPE",
                             )
-        
+
         return MI_Output->second->Unicode.c_str();
     }
 
