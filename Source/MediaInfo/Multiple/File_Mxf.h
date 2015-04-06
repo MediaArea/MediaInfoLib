@@ -569,6 +569,8 @@ protected :
         Ztring ProductName;
         Ztring ProductVersion;
         Ztring VersionString;
+        Ztring ToolkitVersion;
+        Ztring Platform;
         std::map<std::string, Ztring> Infos;
     };
     typedef std::map<int128u, identification> identifications; //Key is InstanceUID of identification

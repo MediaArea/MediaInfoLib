@@ -24,6 +24,7 @@ Version 0.7.73, 2015-01-
 + VC-3/DNxHD: version number (HVN)
 + Clean aperture size is move from width/height to its own field
 + HEVC: tier
++ MXF: writing library and writing application fields are cleaned up
 x B886, XML and HTML outputs were broken
 x B902: EBU AspectRatio invalid in case of non classic numerator:denominator format
 x #B758, VC-3/DNxHD: wrong color space and subsampling in case of unknown CID, now empty if format version is not known

@@ -991,19 +991,65 @@ void File__Analyze::Streams_Finish_HumanReadable_PerStream(stream_t StreamKind, 
         Fill(StreamKind, StreamPos, StreamKind==Stream_General?"OverallBitRate_Mode/String":"BitRate_Mode/String", Translated.find(__T("BitRate_Mode_"))?Translated:Value);
     }
 
-    //Encoded_Library
-    if ((ParameterName==__T("Encoded_Library")
-         || ParameterName==__T("Encoded_Library/Name")
-         || ParameterName==__T("Encoded_Library/Version")
-         || ParameterName==__T("Encoded_Library/Date"))
-        && Retrieve(StreamKind, StreamPos, "Encoded_Library/String").empty())
+    //Encoded_Application
+    if ((   ParameterName==__T("Encoded_Application")
+         || ParameterName==__T("Encoded_Application_CompanyName")
+         || ParameterName==__T("Encoded_Application_Name")
+         || ParameterName==__T("Encoded_Application_Version")
+         || ParameterName==__T("Encoded_Application_Date"))
+        && Retrieve(StreamKind, StreamPos, "Encoded_Application/String").empty())
     {
-        Ztring Name=Retrieve(StreamKind, StreamPos, "Encoded_Library/Name");
-        Ztring Version=Retrieve(StreamKind, StreamPos, "Encoded_Library/Version");
-        Ztring Date=Retrieve(StreamKind, StreamPos, "Encoded_Library/Date");
+        Ztring CompanyName=Retrieve(StreamKind, StreamPos, "Encoded_Application_CompanyName");
+        Ztring Name=Retrieve(StreamKind, StreamPos, "Encoded_Application_Name");
+        Ztring Version=Retrieve(StreamKind, StreamPos, "Encoded_Application_Version");
+        Ztring Date=Retrieve(StreamKind, StreamPos, "Encoded_Application_Date");
         if (!Name.empty())
         {
-            Ztring String=Name;
+            Ztring String;
+            if (!CompanyName.empty())
+            {
+                String+=CompanyName;
+                String+=__T(" ");
+            }
+            String+=Name;
+            if (!Version.empty())
+            {
+                String+=__T(" ");
+                String+=Version;
+            }
+            if (!Date.empty())
+            {
+                String+=__T(" (");
+                String+=Date;
+                String+=__T(")");
+            }
+            Fill(StreamKind, StreamPos, "Encoded_Application/String", String, true);
+        }
+        else
+            Fill(StreamKind, StreamPos, "Encoded_Application/String", Retrieve(StreamKind, StreamPos, "Encoded_Application"), true);
+    }
+
+    //Encoded_Library
+    if ((   ParameterName==__T("Encoded_Library")
+         || ParameterName==__T("Encoded_Library_CompanyName")
+         || ParameterName==__T("Encoded_Library_Name")
+         || ParameterName==__T("Encoded_Library_Version")
+         || ParameterName==__T("Encoded_Library_Date"))
+        && Retrieve(StreamKind, StreamPos, "Encoded_Library/String").empty())
+    {
+        Ztring CompanyName=Retrieve(StreamKind, StreamPos, "Encoded_Library_CompanyName");
+        Ztring Name=Retrieve(StreamKind, StreamPos, "Encoded_Library_Name");
+        Ztring Version=Retrieve(StreamKind, StreamPos, "Encoded_Library_Version");
+        Ztring Date=Retrieve(StreamKind, StreamPos, "Encoded_Library_Date");
+        if (!Name.empty())
+        {
+            Ztring String;
+            if (!CompanyName.empty())
+            {
+                String+=CompanyName;
+                String+=__T(" ");
+            }
+            String+=Name;
             if (!Version.empty())
             {
                 String+=__T(" ");

@@ -3666,34 +3666,37 @@ void File_Mxf::Streams_Finish_Identification (const int128u IdentificationUID)
     if (Identification==Identifications.end())
         return;
 
-    if (!Identification->second.ProductName.empty())
+    //Product part
+    Ztring Encoded_Application_Version=Identification->second.ProductVersion.empty()?Identification->second.VersionString:Identification->second.ProductVersion;
+    Ztring Encoded_Application_ProductName(Identification->second.ProductName);
+    if (!Identification->second.CompanyName.empty() && Identification->second.CompanyName.size()<Encoded_Application_ProductName.size())
     {
-        Ztring Encoded_Library_Name;
-        if (!Identification->second.CompanyName.empty())
-        {
-            Encoded_Library_Name+=Identification->second.CompanyName;
-            Encoded_Library_Name+=__T(' ');
-        }
-        Encoded_Library_Name+=Identification->second.ProductName;
-        Ztring Encoded_Library_Version;
-        if (!Identification->second.ProductVersion.empty())
-        {
-            Encoded_Library_Version=Identification->second.ProductVersion;
-        }
-        else if (!Identification->second.VersionString.empty())
-        {
-            Encoded_Library_Version=Identification->second.VersionString;
-        }
-        Ztring Encoded_Application=Encoded_Library_Name;
-        if (!Encoded_Library_Version.empty())
-        {
-            Encoded_Application+=__T(' ');
-            Encoded_Application+=Encoded_Library_Version;
-        }
-        Fill(Stream_General, 0, General_Encoded_Application, Encoded_Application, true);
-        Fill(Stream_General, 0, General_Encoded_Library_Name, Encoded_Library_Name, true);
-        Fill(Stream_General, 0, General_Encoded_Library_Version, Encoded_Library_Version, true);
+        Ztring ProductName_Begin(Encoded_Application_ProductName.c_str(), Identification->second.CompanyName.size());
+        if (Identification->second.CompanyName.Compare(ProductName_Begin) && Encoded_Application_ProductName[Identification->second.CompanyName.size()]==__T(' '))
+            Encoded_Application_ProductName.erase(0, Identification->second.CompanyName.size()+1);
     }
+    size_t Encoded_Application_ProductName_Pos = Encoded_Application_ProductName.find_last_of(__T(' '));
+    if (Encoded_Application_ProductName_Pos!=string::npos)
+    {
+        Ztring Encoded_Application_ProductName_End(Encoded_Application_ProductName.c_str()+Encoded_Application_ProductName_Pos+1);
+        if (Encoded_Application_Version.find(Encoded_Application_ProductName_End)==0)
+            Encoded_Application_ProductName.resize(Encoded_Application_ProductName_Pos); //Removing version number from the name (format not conform)
+    }
+    Fill(Stream_General, 0, General_Encoded_Application_CompanyName, Identification->second.CompanyName, true);
+    Fill(Stream_General, 0, General_Encoded_Application_Name, Encoded_Application_ProductName, true);
+    Fill(Stream_General, 0, General_Encoded_Application_Version, Encoded_Application_Version, true);
+
+    //Platform part
+    Ztring Library_Name(Identification->second.Platform);
+    size_t Library_Name_Pos = Library_Name.find_last_of(__T(' '));
+    if (Library_Name_Pos!=string::npos)
+    {
+        Ztring Library_Name_End(Library_Name.c_str()+Library_Name_Pos+1);
+        if (Identification->second.ToolkitVersion.find(Library_Name_End)==0)
+            Library_Name.resize(Library_Name_Pos); //Removing version number from the name (format not conform)
+    }
+    Fill(Stream_General, 0, General_Encoded_Library_Name, Library_Name, true);
+    Fill(Stream_General, 0, General_Encoded_Library_Version, Identification->second.ToolkitVersion, true);
 
     for (std::map<std::string, Ztring>::iterator Info=Identification->second.Infos.begin(); Info!=Identification->second.Infos.end(); ++Info)
         Fill(Stream_General, 0, Info->first.c_str(), Info->second, true);
@@ -9026,7 +9029,8 @@ void File_Mxf::Identification_ProductVersion()
     Element_Info1(Version);
 
     FILLING_BEGIN();
-        Identifications[InstanceUID].ProductVersion=Version;
+        if (Major || Minor || Patch || Build || Release)
+            Identifications[InstanceUID].ProductVersion=Version;
     FILLING_END();
 }
 
@@ -9064,17 +9068,23 @@ void File_Mxf::Identification_ModificationDate()
 void File_Mxf::Identification_ToolkitVersion()
 {
     //Parsing
-    //Parsing
-    Info_B2(Major,                                              "Major");
-    Info_B2(Minor,                                              "Minor");
-    Info_B2(Patch,                                              "Patch");
-    Info_B2(Build,                                              "Build");
-    Info_B2(Release,                                            "Release");
-    Element_Info1(Ztring::ToZtring(Major)+__T('.')
-                +Ztring::ToZtring(Minor)+__T('.')
-                +Ztring::ToZtring(Patch)+__T('.')
-                +Ztring::ToZtring(Build)+__T('.')
-                +Ztring::ToZtring(Release)      );
+    int16u Major, Minor, Patch, Build, Release;
+    Get_B2 (Major,                                              "Major");
+    Get_B2 (Minor,                                              "Minor");
+    Get_B2 (Patch,                                              "Patch");
+    Get_B2 (Build,                                              "Build");
+    Get_B2 (Release,                                            "Release");
+    Ztring Version=Ztring::ToZtring(Major)+__T('.')
+                  +Ztring::ToZtring(Minor)+__T('.')
+                  +Ztring::ToZtring(Patch)+__T('.')
+                  +Ztring::ToZtring(Build)+__T('.')
+                  +Ztring::ToZtring(Release)      ;
+    Element_Info1(Version);
+
+    FILLING_BEGIN();
+        if (Major || Minor || Patch || Build || Release)
+            Identifications[InstanceUID].ToolkitVersion=Version;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -9082,7 +9092,13 @@ void File_Mxf::Identification_ToolkitVersion()
 void File_Mxf::Identification_Platform()
 {
     //Parsing
-    Info_UTF16B(Length2, Data,                                  "Data"); Element_Info1(Data);
+    Ztring Data;
+    Get_UTF16B(Length2, Data,                                  "Data"); Element_Info1(Data);
+
+    FILLING_BEGIN();
+        if (Data!=__T("Unknown"))
+            Identifications[InstanceUID].Platform=Data;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
