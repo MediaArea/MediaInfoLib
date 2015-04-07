@@ -1919,9 +1919,6 @@ File_Mxf::File_Mxf()
     IdIsAlwaysSame_Offset=0;
     PartitionMetadata_PreviousPartition=(int64u)-1;
     PartitionMetadata_FooterPartition=(int64u)-1;
-    TimeCode_StartTimecode=(int64u)-1;
-    TimeCode_RoundedTimecodeBase=0;
-    TimeCode_DropFrame=false;
     DTS_Delay=0;
     StreamPos_StartAtOne=true;
     SDTI_TimeCode_StartTimecode_ms=(int64u)-1;
@@ -2469,19 +2466,19 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
 
     for (std::map<std::string, Ztring>::iterator Info=Essence->second.Infos.begin(); Info!=Essence->second.Infos.end(); ++Info)
         Fill(StreamKind_Last, StreamPos_Last, Info->first.c_str(), Info->second, true);
-    if (TimeCode_RoundedTimecodeBase && TimeCode_StartTimecode!=(int64u)-1)
+    if (MxfTimeCodeForDelay.RoundedTimecodeBase && MxfTimeCodeForDelay.StartTimecode!=(int64u)-1)
     {
-        float64 TimeCode_StartTimecode_Temp=((float64)(TimeCode_StartTimecode+Config->File_IgnoreEditsBefore))/TimeCode_RoundedTimecodeBase;
-        if (TimeCode_DropFrame)
+        float64 TimeCode_StartTimecode_Temp=((float64)(MxfTimeCodeForDelay.StartTimecode+Config->File_IgnoreEditsBefore))/MxfTimeCodeForDelay.RoundedTimecodeBase;
+        if (MxfTimeCodeForDelay.DropFrame)
         {
             TimeCode_StartTimecode_Temp*=1001;
             TimeCode_StartTimecode_Temp/=1000;
         }
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay), TimeCode_StartTimecode_Temp*1000, 0, true);
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
-        Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_DropFrame), TimeCode_DropFrame?"Yes":"No");
+        Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_DropFrame), MxfTimeCodeForDelay.DropFrame?"Yes":"No");
 
-        //TimeCode TC(TimeCode_StartTimecode, TimeCode_RoundedTimecodeBase, TimeCode_DropFrame);
+        //TimeCode TC(MxfTimeCodeForDelay.StartTimecode, MxfTimeCodeForDelay.RoundedTimecodeBase, MxfTimeCodeForDelay.DropFrame);
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_FirstFrame), TC.ToString().c_str());
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_Source), "Time code track (stripped)");
     }
@@ -2693,10 +2690,10 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
                 Stream_Prepare(Stream_Audio);
                 size_t Pos=Count_Get(Stream_Audio)-1;
                 (*Parser)->Finish();
-                if (TimeCode_RoundedTimecodeBase && TimeCode_StartTimecode!=(int64u)-1)
+                if (MxfTimeCodeForDelay.RoundedTimecodeBase && MxfTimeCodeForDelay.StartTimecode!=(int64u)-1)
                 {
-                    float64 TimeCode_StartTimecode_Temp=((float64)(TimeCode_StartTimecode+Config->File_IgnoreEditsBefore))/TimeCode_RoundedTimecodeBase;
-                    if (TimeCode_DropFrame)
+                    float64 TimeCode_StartTimecode_Temp=((float64)(MxfTimeCodeForDelay.StartTimecode+Config->File_IgnoreEditsBefore))/MxfTimeCodeForDelay.RoundedTimecodeBase;
+                    if (MxfTimeCodeForDelay.DropFrame)
                     {
                         TimeCode_StartTimecode_Temp*=1001;
                         TimeCode_StartTimecode_Temp/=1000;
@@ -2733,10 +2730,10 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             Fill_Flush();
             Stream_Prepare(Stream_Text);
             (*Parser)->Finish();
-            if (TimeCode_RoundedTimecodeBase && TimeCode_StartTimecode!=(int64u)-1)
+            if (MxfTimeCodeForDelay.RoundedTimecodeBase && MxfTimeCodeForDelay.StartTimecode!=(int64u)-1)
             {
-                float64 TimeCode_StartTimecode_Temp=((float64)(TimeCode_StartTimecode+Config->File_IgnoreEditsBefore))/TimeCode_RoundedTimecodeBase;
-                if (TimeCode_DropFrame)
+                float64 TimeCode_StartTimecode_Temp=((float64)(MxfTimeCodeForDelay.StartTimecode+Config->File_IgnoreEditsBefore))/MxfTimeCodeForDelay.RoundedTimecodeBase;
+                if (MxfTimeCodeForDelay.DropFrame)
                 {
                     TimeCode_StartTimecode_Temp*=1001;
                     TimeCode_StartTimecode_Temp/=1000;
@@ -3427,10 +3424,10 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
     for (size_t Pos=0; Pos<Component->second.StructuralComponents.size(); Pos++)
     {
         components::iterator Component2=Components.find(Component->second.StructuralComponents[Pos]);
-        if (Component2!=Components.end() && Component2->second.TimeCode_StartTimecode!=(int64u)-1 && !Config->File_IsReferenced_Get())
+        if (Component2!=Components.end() && Component2->second.MxfTimeCode.StartTimecode!=(int64u)-1 && !Config->File_IsReferenced_Get())
         {
             //Note: Origin is not part of the StartTimecode for the first frame in the source package. From specs: "For a Timecode Track with a single Timecode Component and with origin N, where N greater than 0, the timecode value at the Zero Point of the Track equals the start timecode of the Timecode Component incremented by N units."
-            TimeCode TC(Component2->second.TimeCode_StartTimecode+Config->File_IgnoreEditsBefore, (int8u)Component2->second.TimeCode_RoundedTimecodeBase, Component2->second.TimeCode_DropFrame);
+            TimeCode TC(Component2->second.MxfTimeCode.StartTimecode+Config->File_IgnoreEditsBefore, (int8u)Component2->second.MxfTimeCode.RoundedTimecodeBase, Component2->second.MxfTimeCode.DropFrame);
             Stream_Prepare(Stream_Other);
             Fill(Stream_Other, StreamPos_Last, Other_ID, Ztring::ToZtring(TrackID)+(IsSourcePackage?__T("-Source"):__T("-Material")));
             Fill(Stream_Other, StreamPos_Last, Other_Type, "Time code");
@@ -3441,12 +3438,10 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
 
             if ((!TimeCodeFromMaterialPackage && IsSourcePackage) || (TimeCodeFromMaterialPackage && !IsSourcePackage))
             {
-                TimeCode_RoundedTimecodeBase=Component2->second.TimeCode_RoundedTimecodeBase;
-                TimeCode_StartTimecode=Component2->second.TimeCode_StartTimecode;
-                TimeCode_DropFrame=Component2->second.TimeCode_DropFrame;
+                MxfTimeCodeForDelay=Component2->second.MxfTimeCode;
 
-                DTS_Delay=((float64)TimeCode_StartTimecode)/TimeCode_RoundedTimecodeBase;
-                if (TimeCode_DropFrame)
+                DTS_Delay=((float64)MxfTimeCodeForDelay.StartTimecode)/MxfTimeCodeForDelay.RoundedTimecodeBase;
+                if (MxfTimeCodeForDelay.DropFrame)
                 {
                     DTS_Delay*=1001;
                     DTS_Delay/=1000;
@@ -3471,11 +3466,11 @@ void File_Mxf::Streams_Finish_Component_ForAS11(const int128u ComponentUID, floa
     int64u TC_Temp=0;
     int8u FrameRate_TempI;
     bool DropFrame_Temp;
-    if (TimeCode_RoundedTimecodeBase && TimeCode_StartTimecode!=(int64u)-1 && TimeCode_RoundedTimecodeBase<256)
+    if (MxfTimeCodeForDelay.RoundedTimecodeBase && MxfTimeCodeForDelay.StartTimecode!=(int64u)-1 && MxfTimeCodeForDelay.RoundedTimecodeBase<256)
     {
-        TC_Temp=TimeCode_StartTimecode;
-        FrameRate_TempI=(int8u)TimeCode_RoundedTimecodeBase;
-        DropFrame_Temp=TimeCode_DropFrame;
+        TC_Temp=MxfTimeCodeForDelay.StartTimecode;
+        FrameRate_TempI=(int8u)MxfTimeCodeForDelay.RoundedTimecodeBase;
+        DropFrame_Temp=MxfTimeCodeForDelay.DropFrame;
     }
     else
     {
@@ -4306,7 +4301,7 @@ size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
                         if (Descriptor==Descriptors.end())
                             return (size_t)-1; //Not supported
 
-                        else if (TimeCode_StartTimecode!=(int64u)-1)
+                        else if (MxfTimeCodeForDelay.StartTimecode!=(int64u)-1)
                         {
                             int64u Delay=float64_int64s(DTS_Delay*1000000000);
                             if (Value<Delay)
@@ -6911,9 +6906,7 @@ void File_Mxf::TimecodeComponent()
 {
     if (Element_Offset==4)
     {
-        TimeCode_StartTimecode=(int64u)-1;
-        TimeCode_RoundedTimecodeBase=0;
-        TimeCode_DropFrame=false;
+        MxfTimeCodeForDelay=mxftimecode();
         DTS_Delay=0;
         FrameInfo.DTS=0;
     }
@@ -10241,11 +10234,11 @@ void File_Mxf::TimecodeComponent_StartTimecode()
     FILLING_BEGIN();
         if (Data!=(int64u)-1)
         {
-            TimeCode_StartTimecode=Data;
-            if (TimeCode_RoundedTimecodeBase)
+            MxfTimeCodeForDelay.StartTimecode=Data;
+            if (MxfTimeCodeForDelay.RoundedTimecodeBase)
             {
-                DTS_Delay=((float64)TimeCode_StartTimecode)/TimeCode_RoundedTimecodeBase;
-                if (TimeCode_DropFrame)
+                DTS_Delay=((float64)MxfTimeCodeForDelay.StartTimecode)/MxfTimeCodeForDelay.RoundedTimecodeBase;
+                if (MxfTimeCodeForDelay.DropFrame)
                 {
                     DTS_Delay*=1001;
                     DTS_Delay/=1000;
@@ -10257,7 +10250,7 @@ void File_Mxf::TimecodeComponent_StartTimecode()
             }
         }
 
-        Components[InstanceUID].TimeCode_StartTimecode=Data;
+        Components[InstanceUID].MxfTimeCode.StartTimecode=Data;
     FILLING_END();
 }
 
@@ -10272,11 +10265,11 @@ void File_Mxf::TimecodeComponent_RoundedTimecodeBase()
     FILLING_BEGIN();
         if (Data && Data!=(int16u)-1)
         {
-            TimeCode_RoundedTimecodeBase=Data;
-            if (TimeCode_StartTimecode!=(int64u)-1)
+            MxfTimeCodeForDelay.RoundedTimecodeBase=Data;
+            if (MxfTimeCodeForDelay.StartTimecode!=(int64u)-1)
             {
-                DTS_Delay=((float64)TimeCode_StartTimecode)/TimeCode_RoundedTimecodeBase;
-                if (TimeCode_DropFrame)
+                DTS_Delay=((float64)MxfTimeCodeForDelay.StartTimecode)/MxfTimeCodeForDelay.RoundedTimecodeBase;
+                if (MxfTimeCodeForDelay.DropFrame)
                 {
                     DTS_Delay*=1001;
                     DTS_Delay/=1000;
@@ -10288,7 +10281,7 @@ void File_Mxf::TimecodeComponent_RoundedTimecodeBase()
             }
         }
 
-        Components[InstanceUID].TimeCode_RoundedTimecodeBase=Data;
+        Components[InstanceUID].MxfTimeCode.RoundedTimecodeBase=Data;
     FILLING_END();
 }
 
@@ -10303,7 +10296,7 @@ void File_Mxf::TimecodeComponent_DropFrame()
     FILLING_BEGIN();
         if (Data!=(int8u)-1 && Data)
         {
-            TimeCode_DropFrame=true;
+            MxfTimeCodeForDelay.DropFrame=true;
             if (DTS_Delay)
             {
                 DTS_Delay*=1001;
@@ -10315,7 +10308,7 @@ void File_Mxf::TimecodeComponent_DropFrame()
             #endif //MEDIAINFO_DEMUX
         }
 
-        Components[InstanceUID].TimeCode_DropFrame=Data?true:false;
+        Components[InstanceUID].MxfTimeCode.DropFrame=Data?true:false;
     FILLING_END();
 }
 
