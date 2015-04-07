@@ -7,6 +7,7 @@ No break in binary compatibily (no crash), but some details.
 - Clean aperture size is move from width/height to its own field
 - HEVC: format_Profile field changed from Profile@Level to Profile@Level@Tier
 - MXF: writing library and writing application fields are cleaned up, you may face some incompatibility or different values
+- AVC and HEVC: Level x.0 are replaced by Level x, because specs have no .0
 
 0.7.71 --> 0.7.72
 -----------------
