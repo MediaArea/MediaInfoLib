@@ -49,7 +49,7 @@ const char* Avc_profile_idc(int8u profile_idc)
         case 138 : return "Multiview Depth High";
         case 144 : return "High 4:4:4";
         case 244 : return "High 4:4:4 Predictive";
-        default  : return "Unknown";
+        default  : return "";
     }
 }
 

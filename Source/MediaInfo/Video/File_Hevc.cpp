@@ -68,8 +68,8 @@ const char* Hevc_tier_flag(bool tier_flag)
 {
     switch (tier_flag)
     {
-        case   false : return "Main";
         case   true  : return "High";
+        default      : return "Main";
     }
 }
 
@@ -82,7 +82,7 @@ const char* Hevc_profile_idc(int32u profile_idc)
         case   1 : return "Main";
         case   2 : return "Main 10";
         case   3 : return "Main Still";
-        default  : return "Unknown";
+        default  : return "";
     }
 }
 

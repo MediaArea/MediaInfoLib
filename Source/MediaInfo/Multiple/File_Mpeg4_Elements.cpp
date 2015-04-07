@@ -131,7 +131,7 @@ const char* Mpeg4_Meta_Kind(int32u Kind)
         case 0x15 : return "Signed Integer"; //the size of the integer is derived from the container size
         case 0x16 : return "Float 32";
         case 0x17 : return "Float 64";
-        default   : return "Unknown";
+        default   : return "";
     }
 }
 
@@ -148,7 +148,7 @@ const char* Mpeg4_TypeModifierName(int32u TypeModifierName)
         case 0x06 : return "Matrix object";
         case 0x07 : return "Graphics mode object";
         case 0x76696465 : return "Image type";
-        default   : return "Unknown";
+        default   : return "";
     }
 }
 
@@ -846,7 +846,7 @@ const char* Mpeg4_Description(int32u Description)
         case Elements::moov_trak_mdia_minf_stbl_stsd_xxxx_idfm_priv : return "Private";
         case Elements::moov_trak_mdia_minf_stbl_stsd_xxxx_idfm_subs : return "Substitute if main codec not available";
         case Elements::moov_trak_mdia_minf_stbl_stsd_xxxx_idfm_cspc : return "Native pixel format";
-        default                                                     : return "Unknown";
+        default                                                     : return "";
     }
 }
 
