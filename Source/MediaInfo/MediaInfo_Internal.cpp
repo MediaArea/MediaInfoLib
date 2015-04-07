@@ -472,6 +472,12 @@ void MediaInfo_Internal::Entry()
                     Ztring FileExtension=Test.Extension_Get();
                     FileExtension.MakeLowerCase();
 
+                    if (FileExtension!=__T("cap"))
+                    {
+                        Test.Extension_Set(__T("cap"));
+                        if (File::Exists(Test))
+                            Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".cap\" />\r\n";
+                    }
                     if (FileExtension!=__T("dfxp"))
                     {
                         Test.Extension_Set(__T("dfxp"));
