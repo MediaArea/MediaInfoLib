@@ -8,7 +8,7 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
-Version 0.7.73, 2015-01-
+Version 0.7.73, 2015-04-09
 --------------
 + BPG: basic support, thanks to Kurtnoise
 + CAF: basic support of Apple Core Audio Format, sponsored by FlavorSys
