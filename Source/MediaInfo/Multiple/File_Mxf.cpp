@@ -9939,6 +9939,8 @@ void File_Mxf::RGBAEssenceDescriptor_AlphaMinRef()
 // 0x1001
 void File_Mxf::Sequence_StructuralComponents()
 {
+    Components[InstanceUID].StructuralComponents.clear();
+    
     //Parsing
     //Vector
     int32u Count, Length;
