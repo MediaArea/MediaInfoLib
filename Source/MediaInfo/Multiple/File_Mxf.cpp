@@ -3451,6 +3451,11 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
                     Config->Demux_Offset_DTS_FromStream=FrameInfo.DTS;
                 #endif //MEDIAINFO_DEMUX
             }
+
+            if (!IsSourcePackage)
+            {
+                MxfTimeCodeMaterial=Component2->second.MxfTimeCode;
+            }
         }
     }
 }
@@ -3466,11 +3471,11 @@ void File_Mxf::Streams_Finish_Component_ForAS11(const int128u ComponentUID, floa
     int64u TC_Temp=0;
     int8u FrameRate_TempI;
     bool DropFrame_Temp;
-    if (MxfTimeCodeForDelay.RoundedTimecodeBase && MxfTimeCodeForDelay.StartTimecode!=(int64u)-1 && MxfTimeCodeForDelay.RoundedTimecodeBase<256)
+    if (MxfTimeCodeMaterial.RoundedTimecodeBase && MxfTimeCodeMaterial.StartTimecode!=(int64u)-1 && MxfTimeCodeMaterial.RoundedTimecodeBase)
     {
-        TC_Temp=MxfTimeCodeForDelay.StartTimecode;
-        FrameRate_TempI=(int8u)MxfTimeCodeForDelay.RoundedTimecodeBase;
-        DropFrame_Temp=MxfTimeCodeForDelay.DropFrame;
+        TC_Temp=MxfTimeCodeMaterial.StartTimecode;
+        FrameRate_TempI=(int8u)MxfTimeCodeMaterial.RoundedTimecodeBase;
+        DropFrame_Temp=MxfTimeCodeMaterial.DropFrame;
     }
     else
     {

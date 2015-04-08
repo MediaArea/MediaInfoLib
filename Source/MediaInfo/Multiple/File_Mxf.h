@@ -1077,6 +1077,7 @@ protected :
     int64u PartitionMetadata_PreviousPartition;
     int64u PartitionMetadata_FooterPartition;
     mxftimecode MxfTimeCodeForDelay;
+    mxftimecode MxfTimeCodeMaterial;
     float64 DTS_Delay; //In seconds
     bool   StreamPos_StartAtOne; //information about the base of StreamPos (0 or 1, 1 is found in 1 file)
     string SDTI_TimeCode_StartTimecode;
