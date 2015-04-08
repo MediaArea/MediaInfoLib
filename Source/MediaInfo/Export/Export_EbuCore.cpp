@@ -736,7 +736,7 @@ Ztring EbuCore_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
             AspectRatioString_Pos=AspectRatioString.find(__T('.'));
             if (AspectRatioString_Pos!=(size_t)-1)
             {
-                int64s Denominator=float64_int64s(pow(10, AspectRatioString.size()-AspectRatioString_Pos+1)); //Computing the right denomintor compared to the count of decimals in the value e.g. 1.778 will have a denominator of 1000 (3 digits after the comma)
+                int64s Denominator=float64_int64s(pow((double)10, (int)(AspectRatioString.size()-AspectRatioString_Pos+1))); //Computing the right denomintor compared to the count of decimals in the value e.g. 1.778 will have a denominator of 1000 (3 digits after the comma)
                 factorNumerator=Ztring::ToZtring(AspectRatioString.To_float32()*Denominator, 0);
                 factorDenominator=Ztring::ToZtring(Denominator);
             }
