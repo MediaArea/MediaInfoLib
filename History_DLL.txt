@@ -10,6 +10,10 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 
 Version 0.7.73, 2015-04-09
 --------------
+x #B908, AC-3: bit depth removed
+
+Version 0.7.73, 2015-04-09
+--------------
 + BPG: basic support, thanks to Kurtnoise
 + CAF: basic support of Apple Core Audio Format, sponsored by FlavorSys
 + JPEG-2000: Display of profile (Rsiz)
