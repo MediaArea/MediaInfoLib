@@ -281,6 +281,11 @@ MEDIAINFO_EXP size_t            __stdcall MediaInfo_Count_Get (void* Handle, Med
     #define MediaInfo_Delete            MediaInfoA_Delete
     #define MediaInfo_Open              MediaInfoA_Open
     #define MediaInfo_Open_Buffer       MediaInfoA_Open_Buffer
+    #define MediaInfo_Open_Buffer_Init              MediaInfoA_Open_Buffer_Init
+    #define MediaInfo_Open_Buffer_Continue          MediaInfoA_Open_Buffer_Continue
+    #define MediaInfo_Open_Buffer_Continue_GoTo_Get MediaInfoA_Open_Buffer_Continue_GoTo_Get
+    #define MediaInfo_Open_Buffer_Finalize          MediaInfoA_Open_Buffer_Finalize
+    #define MediaInfo_Open_NextPacket               MediaInfoA_Open_NextPacket
     #define MediaInfo_Save              MediaInfoA_Save
     #define MediaInfo_Close             MediaInfoA_Close
     #define MediaInfo_Inform            MediaInfoA_Inform
