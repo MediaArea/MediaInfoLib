@@ -3471,7 +3471,7 @@ void File_Mxf::Streams_Finish_Component_ForAS11(const int128u ComponentUID, floa
     int64u TC_Temp=0;
     int8u FrameRate_TempI;
     bool DropFrame_Temp;
-    if (MxfTimeCodeMaterial.RoundedTimecodeBase && MxfTimeCodeMaterial.StartTimecode!=(int64u)-1 && MxfTimeCodeMaterial.RoundedTimecodeBase)
+    if (MxfTimeCodeMaterial.RoundedTimecodeBase && MxfTimeCodeMaterial.StartTimecode!=(int64u)-1)
     {
         TC_Temp=MxfTimeCodeMaterial.StartTimecode;
         FrameRate_TempI=(int8u)MxfTimeCodeMaterial.RoundedTimecodeBase;
