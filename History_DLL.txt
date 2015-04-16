@@ -8,8 +8,9 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
-Version 0.7.73, 2015-04-09
+Version 0.7.73
 --------------
+x #B906, Matroska: duration was missing if Info block is at the end of the file
 x #B908, AC-3: bit depth removed
 
 Version 0.7.73, 2015-04-09

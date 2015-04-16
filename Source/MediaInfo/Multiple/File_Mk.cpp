@@ -184,6 +184,8 @@ File_Mk::File_Mk()
     Format_Version=0;
     TimecodeScale=1000000; //Default value
     Duration=0;
+    Info_AlreadyParsed=false;
+    Tracks_AlreadyParsed=false;
     Cluster_AlreadyParsed=false;
 
     //Helpers
@@ -1850,8 +1852,10 @@ void File_Mk::Segment_Info()
 {
     Element_Name("Info");
 
-    if (Cluster_AlreadyParsed)
+    if (Info_AlreadyParsed)
         Skip_XX(Element_TotalSize_Get(),                        "Alreadys parsed, skipping");
+    else
+        Info_AlreadyParsed=true;
 }
 
 //---------------------------------------------------------------------------
@@ -2235,8 +2239,10 @@ void File_Mk::Segment_Tracks()
 {
     Element_Name("Tracks");
 
-    if (Cluster_AlreadyParsed)
+    if (Tracks_AlreadyParsed)
         Skip_XX(Element_TotalSize_Get(),                        "Alreadys parsed, skipping");
+    else
+        Tracks_AlreadyParsed=true;
 }
 
 //---------------------------------------------------------------------------
