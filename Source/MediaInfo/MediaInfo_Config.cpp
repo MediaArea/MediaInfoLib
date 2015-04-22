@@ -1937,6 +1937,10 @@ Ztring MediaInfo_Config::Info_Parameters_Get (bool Complete)
             }
         ToReturn_Pos++;
     }
+
+    //Reset of language file
+    Language_Set(Ztring()); //TODO: it is reseted to English, it should actually not modify the language config (MediaInfo_Config_xxx() modifies the language config)
+
     return ToReturn.Read();
 }
 
