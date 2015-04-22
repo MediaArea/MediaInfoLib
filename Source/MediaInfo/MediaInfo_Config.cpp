@@ -1904,7 +1904,7 @@ const ZtringListList &MediaInfo_Config::Info_Get(stream_t KindOfStream)
 //---------------------------------------------------------------------------
 Ztring MediaInfo_Config::Info_Parameters_Get (bool Complete)
 {
-    CriticalSectionLocker CSL(CS);
+    CS.Enter();
 
     //Loading all
     MediaInfo_Config_General(Info[Stream_General]);
@@ -1937,6 +1937,11 @@ Ztring MediaInfo_Config::Info_Parameters_Get (bool Complete)
             }
         ToReturn_Pos++;
     }
+    CS.Leave();
+
+    //Reset of language file
+    Language_Set(Ztring()); //TODO: it is reseted to English, it should actually not modify the language config (MediaInfo_Config_xxx() modifies the language config)
+
     return ToReturn.Read();
 }
 
