@@ -12,6 +12,7 @@ Version 0.7.73
 --------------
 x #B906, Matroska: duration was missing if Info block is at the end of the file
 x #B908, AC-3: bit depth removed
+x #P86, MPEG-4: moov_trak_edts_elst Atom was ignoring version of the atom
 
 Version 0.7.73, 2015-04-09
 --------------

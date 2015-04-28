@@ -2843,8 +2843,8 @@ void File_Mpeg4::moov_trak_edts_elst()
     {
         stream::edts_struct edts;
         Element_Begin1("Entry");
-        Get_B4 (edts.Duration,                                  "Track duration"); Param_Info2C(moov_mvhd_TimeScale, (int64u)edts.Duration*1000/moov_mvhd_TimeScale, " ms");
-        Get_B4 (edts.Delay,                                     "Media time"); Param_Info2C(moov_mvhd_TimeScale && (edts.Delay!=(int32u)-1), (int64u)edts.Delay*1000/moov_mvhd_TimeScale, " ms");
+        Get_B_DEPENDOFVERSION(edts.Duration,                    "Track duration"); Param_Info2C(moov_mvhd_TimeScale, (int64u)edts.Duration*1000/moov_mvhd_TimeScale, " ms");
+        Get_B_DEPENDOFVERSION(edts.Delay,                       "Media time"); Param_Info2C(moov_mvhd_TimeScale && (edts.Delay!=(int32u)-1), (int64u)edts.Delay*1000/moov_mvhd_TimeScale, " ms");
         Get_B4 (edts.Rate,                                      "Media rate"); Param_Info1(((float)edts.Rate)/0x10000);
         Element_End0();
 
