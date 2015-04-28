@@ -1542,7 +1542,7 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI, version Version)
         if (Version==Version_1_5 && durationDone)
             ToReturn+=__T("\t\t\t<!-- Not valid in XSD\n");
         ToReturn+=__T("\t\t\t<ebucore:duration typeLabel=\"TotalProgrammeDuration\">\n");
-        ToReturn+=__T("\t\t\t\t<ebucore:timecode>")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("IdentClockStart"))+__T("</ebucore:timecode>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:timecode>")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("TotalProgrammeDuration"))+__T("</ebucore:timecode>\n");
         ToReturn+=__T("\t\t\t</ebucore:duration>\n");
         if (Version==Version_1_5 && durationDone)
             ToReturn+=__T("\t\t\t-->\n");
