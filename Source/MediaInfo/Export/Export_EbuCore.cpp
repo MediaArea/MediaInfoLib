@@ -1173,12 +1173,7 @@ Ztring EbuCore_Transform_TimeCode(Ztring &ToReturn, MediaInfo_Internal &MI, size
 
     //start
     {
-        if (MI.Get(Stream_Other, StreamPos, Other_ID).find(__T("-Material"))!=string::npos)
-            ToReturn+=__T("\t\t\t\t<ebucore:timecodeStart typeLabel=\"Material\">\n");
-        else if (MI.Get(Stream_Other, StreamPos, Other_ID).find(__T("-Source"))!=string::npos)
-            ToReturn+=__T("\t\t\t\t<ebucore:timecodeStart typeLabel=\"Source\">\n");
-        else
-            ToReturn+=__T("\t\t\t\t<ebucore:timecodeStart>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:timecodeStart>\n");
         ToReturn+=__T("\t\t\t\t\t<ebucore:timecode>")+MI.Get(Stream_Other, StreamPos, Other_TimeCode_FirstFrame)+__T("</ebucore:timecode>\n");
         ToReturn+=__T("\t\t\t\t</ebucore:timecodeStart>\n");
     }
@@ -1189,9 +1184,18 @@ Ztring EbuCore_Transform_TimeCode(Ztring &ToReturn, MediaInfo_Internal &MI, size
         if (!MI.Get(Stream_Other, StreamPos, Other_ID).empty())
         {
             Ztring ID=MI.Get(Stream_Other, StreamPos, Other_ID);
-            ID.FindAndReplace(__T("-Material"), Ztring());
-            ID.FindAndReplace(__T("-Source"), Ztring());
-            ToReturn+=__T(" trackId=\"")+ID+__T("\"");
+            if (MI.Get(Stream_Other, StreamPos, Other_ID).find(__T("-Material"))!=string::npos)
+            {
+                ID.FindAndReplace(__T("-Material"), Ztring());
+                ToReturn+=__T(" trackId=\"")+ID+__T("\"")+__T(" typeLabel=\"Material\"");
+            }
+            else if (MI.Get(Stream_Other, StreamPos, Other_ID).find(__T("-Source"))!=string::npos)
+            {
+                ID.FindAndReplace(__T("-Source"), Ztring());
+                ToReturn+=__T(" trackId=\"")+ID+__T("\"")+__T(" typeLabel=\"Source\"");
+            }
+            else
+                ToReturn+=__T(" trackId=\"")+ID+__T("\"");
         }
         if (!MI.Get(Stream_Other, StreamPos, Other_Title).empty())
             ToReturn+=__T(" trackName=\"")+MI.Get(Stream_Other, StreamPos, Other_Title)+__T("\"");
