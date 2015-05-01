@@ -1522,6 +1522,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\..\Source\MediaInfo\Export\Export_Fims.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\..\Source\MediaInfo\Export\Export_Mpeg7.cpp"
 					>
 				</File>
@@ -2353,6 +2357,10 @@
 				>
 				<File
 					RelativePath="..\..\..\Source\MediaInfo\Export\Export_EbuCore.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\Source\MediaInfo\Export\Export_Fims.h"
 					>
 				</File>
 				<File

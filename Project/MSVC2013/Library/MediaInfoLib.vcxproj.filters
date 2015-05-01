@@ -728,6 +728,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Caf.cpp">
       <Filter>Source Files\Audio</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Fims.cpp">
+      <Filter>Source Files\Export</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1371,6 +1374,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Caf.h">
       <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Fims.h">
+      <Filter>Header Files\Export</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

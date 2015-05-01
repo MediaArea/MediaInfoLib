@@ -27,6 +27,9 @@
 #if defined(MEDIAINFO_EBUCORE_YES)
     #include "MediaInfo/Export/Export_EbuCore.h"
 #endif //defined(MEDIAINFO_EBUCORE_YES)
+#if defined(MEDIAINFO_FIMS_YES)
+    #include "MediaInfo/Export/Export_Fims.h"
+#endif //defined(MEDIAINFO_EBUCORE_YES)
 #if defined(MEDIAINFO_MPEG7_YES)
     #include "MediaInfo/Export/Export_Mpeg7.h"
 #endif //defined(MEDIAINFO_MPEG7_YES)
@@ -77,6 +80,14 @@ Ztring MediaInfo_Internal::Inform()
         if (MediaInfoLib::Config.Inform_Get()==__T("EBUCore") || MediaInfoLib::Config.Inform_Get()==__T("EBUCore_1.5"))
             return Export_EbuCore().Transform(*this);
     #endif //defined(MEDIAINFO_EBUCORE_YES)
+    #if defined(MEDIAINFO_EBUCORE_YES)
+        if (MediaInfoLib::Config.Inform_Get()==__T("FIMS_1.1"))
+            return Export_Fims().Transform(*this, Export_Fims::Version_1_1);
+        if (MediaInfoLib::Config.Inform_Get()==__T("FIMS_1.2") || MediaInfoLib::Config.Inform_Get()==__T("FIMS"))
+            return Export_Fims().Transform(*this, Export_Fims::Version_1_2);
+        if (MediaInfoLib::Config.Inform_Get()==__T("FIMS_1.3"))
+            return Export_Fims().Transform(*this, Export_Fims::Version_1_3);
+    #endif //defined(MEDIAINFO_FIMS_YES)
     #if defined(MEDIAINFO_MPEG7_YES)
         if (MediaInfoLib::Config.Inform_Get()==__T("MPEG-7"))
             return Export_Mpeg7().Transform(*this);

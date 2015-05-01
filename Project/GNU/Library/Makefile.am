@@ -82,6 +82,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Duplicate/File__Duplicate__Writer.cpp \
                        ../../../Source/MediaInfo/Duplicate/File__Duplicate_MpegTs.cpp \
                        ../../../Source/MediaInfo/Export/Export_EbuCore.cpp \
+                       ../../../Source/MediaInfo/Export/Export_Fims.cpp \
                        ../../../Source/MediaInfo/Export/Export_Mpeg7.cpp \
                        ../../../Source/MediaInfo/Export/Export_PBCore.cpp \
                        ../../../Source/MediaInfo/Export/Export_PBCore2.cpp \

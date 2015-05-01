@@ -181,6 +181,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Duplicate/File__Duplicate__Writer.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Duplicate/File__Duplicate_MpegTs.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_EbuCore.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_Fims.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_Mpeg7.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_PBCore.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_PBCore2.cpp
