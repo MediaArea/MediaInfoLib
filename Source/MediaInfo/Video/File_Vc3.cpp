@@ -492,6 +492,8 @@ void File_Vc3::Data_Parse()
         CodingControlB();
         Skip_XX( 3,                                             "Reserved");
         TimeCode();
+        Skip_XX(38,                                             "Reserved");
+        UserData();
 
         Skip_XX(640-Element_Offset,                             "ToDo");
     }
@@ -697,6 +699,37 @@ void File_Vc3::TimeCode()
         Skip_B8(                                                "Junk");
 
     Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Vc3::UserData()
+{
+    //Parsing
+    Element_Begin1("User Data");
+    int8u UserDataLabel;
+
+    BS_Begin();
+    Get_S1 (4, UserDataLabel,                                   "User Data Label");
+    Mark_0();
+    Mark_0();
+    Mark_0();
+    Mark_1();
+    BS_End();
+
+    switch (UserDataLabel)
+    {
+        case 0x00: Skip_XX(260,                                 "Reserved"); break;
+        case 0x08: UserData_8(); break;
+        default  : Skip_XX(260,                                 "Reserved for future use");
+    }
+
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Vc3::UserData_8()
+{
+    Skip_XX(260,                                                "Nexio private data?");
 }
 
 //***************************************************************************

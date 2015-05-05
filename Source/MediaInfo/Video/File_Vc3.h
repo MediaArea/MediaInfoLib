@@ -63,6 +63,7 @@ private :
     void CodingControlB();
     void TimeCode();
     void UserData();
+    void UserData_8();
     void MacroblockScanIndices();
 
     //Temp
