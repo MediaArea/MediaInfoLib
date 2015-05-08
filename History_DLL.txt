@@ -11,6 +11,7 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 Version 0.7.74
 --------------
 + FIMS: Preliminary version (not for production)
++ D-10 audio: display of real bitrate beside the encoded bitrate
 x #B906, Matroska: duration was missing if Info block is at the end of the file
 x #B908, AC-3: bit depth removed
 x #P86, MPEG-4: moov_trak_edts_elst Atom was ignoring version of the atom
