@@ -1500,6 +1500,12 @@ void File_Mpeg4::Header_Parse()
     int32u Size_32, Name;
     if (Element_Size==2)
     {
+        if (!Element_IsComplete_Get())
+        {
+            Element_WaitForMoreData();
+            return;
+        }
+
         int16u Size_16;
         Peek_B2(Size_16);
         if (!Size_16)
@@ -1515,6 +1521,12 @@ void File_Mpeg4::Header_Parse()
     Get_B4 (Size_32,                                            "Size");
     if (Size_32==0 && (Element_Size==4 || Element_Size==8))
     {
+        if (!Element_IsComplete_Get())
+        {
+            Element_WaitForMoreData();
+            return;
+        }
+
         //Filling
         Header_Fill_Code(0, "Junk");
         Header_Fill_Size(4);

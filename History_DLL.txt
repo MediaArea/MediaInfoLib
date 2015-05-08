@@ -18,6 +18,7 @@ x #P86, MPEG-4: moov_trak_edts_elst Atom was ignoring version of the atom
 x VorbisComment: WAVEFORMATEXTENSIBLE_CHANNEL_MASK "0X" ("x" in uppercase) is accepted now
 x EBUCore: TotalProgrammeDuration was wrongly filled with IdentClockStart value
 x EBUCore: Source/Material moved from timecodeStart to timecodeTrack
+x MPEG-4: info is missing for some streams in some specific cases
 
 Version 0.7.73, 2015-04-09
 --------------
