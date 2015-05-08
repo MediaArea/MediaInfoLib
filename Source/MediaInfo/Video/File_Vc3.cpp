@@ -22,6 +22,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Video/File_Vc3.h"
+#if defined(MEDIAINFO_CDP_YES)
+    #include "MediaInfo/Text/File_Cdp.h"
+#endif
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -295,8 +298,21 @@ File_Vc3::File_Vc3()
     Frame_Count_Valid=2;
     FrameRate=0;
 
+    //Parsers
+    #if defined(MEDIAINFO_CDP_YES)
+        Cdp_Parser=NULL;
+    #endif //defined(MEDIAINFO_CDP_YES)
+    
     //Temp
     FFC_FirstFrame=(int8u)-1;
+}
+
+//---------------------------------------------------------------------------
+File_Vc3::~File_Vc3()
+{
+    #if defined(MEDIAINFO_CDP_YES)
+        delete Cdp_Parser; //Cdp_Parser=NULL;
+    #endif //defined(MEDIAINFO_CDP_YES)
 }
 
 //***************************************************************************
@@ -336,6 +352,30 @@ void File_Vc3::Streams_Fill()
     }
     if (FFC_FirstFrame!=(int8u)-1)
         Fill(Stream_Video, 0, Video_ScanOrder, Vc3_FFC_ScanOrder[FFC_FirstFrame]);
+}
+
+//---------------------------------------------------------------------------
+void File_Vc3::Streams_Finish()
+{
+    #if defined(MEDIAINFO_CDP_YES)
+        if (Cdp_Parser && !Cdp_Parser->Status[IsFinished] && Cdp_Parser->Status[IsAccepted])
+        {
+            Finish(Cdp_Parser);
+            for (size_t StreamPos=0; StreamPos<Cdp_Parser->Count_Get(Stream_Text); StreamPos++)
+            {
+                Merge(*Cdp_Parser, Stream_Text, StreamPos, StreamPos);
+                Ztring MuxingMode=Cdp_Parser->Retrieve(Stream_Text, StreamPos, "MuxingMode");
+                Fill(Stream_Text, StreamPos, "MuxingMode", __T("VC-3 / Nexio user data / ")+MuxingMode, true);
+            }
+
+            Ztring LawRating=Cdp_Parser->Retrieve(Stream_General, 0, General_LawRating);
+            if (!LawRating.empty())
+                Fill(Stream_General, 0, General_LawRating, LawRating, true);
+            Ztring Title=Cdp_Parser->Retrieve(Stream_General, 0, General_Title);
+            if (!Title.empty() && Retrieve(Stream_General, 0, General_Title).empty())
+                Fill(Stream_General, 0, General_Title, Title);
+        }
+    #endif //defined(MEDIAINFO_CDP_YES)
 }
 
 //***************************************************************************
@@ -437,6 +477,19 @@ bool File_Vc3::Demux_UnpacketizeContainer_Test()
     return true;
 }
 #endif //MEDIAINFO_DEMUX
+
+//***************************************************************************
+// Buffer - Global
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Vc3::Read_Buffer_Unsynched()
+{
+    #if defined(MEDIAINFO_CDP_YES)
+        if (Cdp_Parser)
+            Cdp_Parser->Open_Buffer_Unsynch();
+    #endif //defined(MEDIAINFO_CDP_YES)
+}
 
 //***************************************************************************
 // Buffer - Per element
@@ -729,7 +782,32 @@ void File_Vc3::UserData()
 //---------------------------------------------------------------------------
 void File_Vc3::UserData_8()
 {
-    Skip_XX(260,                                                "Nexio private data?");
+    if (Element_Offset + 0x104 < Element_Size
+        && Buffer[Buffer_Offset + (size_t)Element_Offset + 0xBA] == 0x96
+        && Buffer[Buffer_Offset + (size_t)Element_Offset + 0xBB] == 0x69)
+    {
+        Skip_XX(0xBA,                                           "Nexio private data?");
+        #if defined(MEDIAINFO_CDP_YES)
+            if (Cdp_Parser==NULL)
+            {
+                Cdp_Parser=new File_Cdp;
+                Open_Buffer_Init(Cdp_Parser);
+                Frame_Count_Valid=300;
+            }
+            if (!Cdp_Parser->Status[IsFinished])
+            {
+                ((File_Cdp*)Cdp_Parser)->AspectRatio=16.0/9.0;
+                Open_Buffer_Continue(Cdp_Parser, Buffer + Buffer_Offset + (size_t)Element_Offset, 0x49);
+            }
+            Element_Offset+=0x49;
+            Skip_B1(                                            "Nexio private data?");
+        #else //MEDIAINFO_CDP_YES
+            Skip_XX(0x4A                                        "CDP data");
+        #endif //MEDIAINFO_CDP_YES
+    }
+    else
+        Skip_XX(260,                                            "Nexio private data?");
+
 }
 
 //***************************************************************************
