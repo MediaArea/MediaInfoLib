@@ -16,6 +16,7 @@ Version 0.7.74
 x #B906, Matroska: duration was missing if Info block is at the end of the file
 x #B908, AC-3: bit depth removed
 x #P86, MPEG-4: moov_trak_edts_elst Atom was ignoring version of the atom
+x Dolby E: the MXF channel count value was sometimes reported instead of the real channel count
 x VorbisComment: WAVEFORMATEXTENSIBLE_CHANNEL_MASK "0X" ("x" in uppercase) is accepted now
 x EBUCore: TotalProgrammeDuration was wrongly filled with IdentClockStart value
 x EBUCore: Source/Material moved from timecodeStart to timecodeTrack
