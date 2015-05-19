@@ -4798,8 +4798,8 @@ File__Analyze* File_MpegPs::ChooseParser_SmpteSt0302()
         File__Analyze* Parser=new File_Unknown();
         Open_Buffer_Init(Parser);
         Parser->Stream_Prepare(Stream_Audio);
-        Parser->Fill(Stream_Audio, 0, Audio_Format, "AES3");
-        Parser->Fill(Stream_Audio, 0, Audio_Codec,  "AES3");
+        Parser->Fill(Stream_Audio, 0, Audio_Format, "SMPTE ST 302");
+        Parser->Fill(Stream_Audio, 0, Audio_Codec,  "SMPTE ST 302");
     #endif
     return Parser;
 }

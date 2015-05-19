@@ -203,7 +203,7 @@ void File_SmpteSt0331::Read_Buffer_Continue()
     FILLING_BEGIN();
     if (!Status[IsAccepted])
     {
-        Accept("AES3");
+        Accept("SMPTE ST 331");
 
         int8u Channels=0;
         for (int8u Pos=0; Pos<8; Pos++)
