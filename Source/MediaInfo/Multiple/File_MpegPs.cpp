@@ -288,7 +288,7 @@ void File_MpegPs::Streams_Fill()
         Streams_Fill_PerStream(StreamID, Streams_Extension[StreamID], KindOfStream_Extension);
 
         //Special cases
-        if ((StreamID==0x71 || StreamID==0x76) && !Streams_Extension[StreamID].Parsers.empty() && Streams_Extension[0x72].StreamIsRegistred) //DTS-HD and TrueHD
+        if ((StreamID==0x71 || StreamID==0x76) && !Streams_Extension[StreamID].Parsers.empty() && Streams_Extension[0x72].StreamRegistration_Count) //DTS-HD and TrueHD
         {
             Fill(Stream_Audio, StreamPos_Last, Audio_MuxingMode, "Stream extension");
             if (!IsSub)
@@ -388,10 +388,10 @@ void File_MpegPs::Streams_Fill_PerStream(size_t StreamID, ps_stream &Temp, kindo
         }
     }
 
-    //By StreamIsRegistred
+    //By StreamRegistration_Count
     if (StreamKind_Last==Stream_Max)
     {
-        if (Temp.StreamIsRegistred>16)
+        if (Temp.StreamRegistration_Count>16)
         {
             if (StreamID>=0xC0 && StreamID<=0xDF)
             {
@@ -1301,9 +1301,9 @@ void File_MpegPs::Read_Buffer_AfterParsing()
             video_stream_Count=0;
             audio_stream_Count=0;
             private_stream_1_Count=0;
-            private_stream_2_Count=false;
+            private_stream_2_Count=0;
             extension_stream_Count=0;
-            SL_packetized_stream_Count=false;
+            SL_packetized_stream_Count=0;
         }
 
         //Jumping only if needed
@@ -2118,13 +2118,13 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
                 {
                     //Should not happen, this is only in case the previous packet was without CCIS
                     Streams_Private1[private_stream_1_ID].Parsers.clear();
-                    Streams_Private1[private_stream_1_ID].StreamIsRegistred=false;
+                    Streams_Private1[private_stream_1_ID].StreamRegistration_Count=0;
                 }
-                if (!Streams_Private1[private_stream_1_ID].StreamIsRegistred)
+                if (!Streams_Private1[private_stream_1_ID].StreamRegistration_Count)
                 {
                     Streams_Private1[private_stream_1_ID].Parsers.push_back(ChooseParser_AribStdB24B37(true));
                     Open_Buffer_Init(Streams_Private1[private_stream_1_ID].Parsers[0]);
-                    Streams_Private1[private_stream_1_ID].StreamIsRegistred=true;
+                    Streams_Private1[private_stream_1_ID].StreamRegistration_Count++;
                 }
 
                 if (Streams_Private1[private_stream_1_ID].Parsers.size()==1)
@@ -2654,7 +2654,7 @@ void File_MpegPs::private_stream_1()
         Element_Info1C(private_stream_1_ID, Ztring::ToZtring(private_stream_1_ID, 16));
     }
 
-    if (!Streams_Private1[private_stream_1_ID].StreamIsRegistred)
+    if (!Streams_Private1[private_stream_1_ID].StreamRegistration_Count)
     {
         //For TS streams, which does not have Start chunk
         if (FromTS)
@@ -2691,8 +2691,8 @@ void File_MpegPs::private_stream_1()
             if (!IsSub)
                 Fill(Stream_General, 0, General_Format, "MPEG-PS");
         }
-        Streams[stream_id].StreamIsRegistred++;
-        Streams_Private1[private_stream_1_ID].StreamIsRegistred++;
+        Streams[stream_id].StreamRegistration_Count++;
+        Streams_Private1[private_stream_1_ID].StreamRegistration_Count++;
         Streams_Private1[private_stream_1_ID].Searching_Payload=true;
         Streams_Private1[private_stream_1_ID].Searching_TimeStamp_Start=true;
         Streams_Private1[private_stream_1_ID].Searching_TimeStamp_End=true;
@@ -3237,7 +3237,7 @@ void File_MpegPs::audio_stream()
 {
     Element_Name("Audio");
 
-    if (!Streams[stream_id].StreamIsRegistred)
+    if (!Streams[stream_id].StreamRegistration_Count)
     {
         //For TS streams, which does not have Start chunk
         if (FromTS)
@@ -3281,7 +3281,7 @@ void File_MpegPs::audio_stream()
             if (!IsSub)
                 Fill(Stream_General, 0, General_Format, "MPEG-PS");
         }
-        Streams[stream_id].StreamIsRegistred++;
+        Streams[stream_id].StreamRegistration_Count++;
         Streams[stream_id].FirstPacketOrder=FirstPacketOrder_Last;
         FirstPacketOrder_Last++;
 
@@ -3338,7 +3338,7 @@ void File_MpegPs::video_stream()
 {
     Element_Name("Video");
 
-    if (!Streams[stream_id].StreamIsRegistred)
+    if (!Streams[stream_id].StreamRegistration_Count)
     {
         //For TS streams, which does not have Start chunk
         if (FromTS)
@@ -3373,7 +3373,7 @@ void File_MpegPs::video_stream()
             if (!IsSub)
                 Fill(Stream_General, 0, General_Format, "MPEG-PS");
         }
-        Streams[stream_id].StreamIsRegistred++;
+        Streams[stream_id].StreamRegistration_Count++;
         Streams[stream_id].FirstPacketOrder=FirstPacketOrder_Last;
         FirstPacketOrder_Last++;
 
@@ -3459,7 +3459,7 @@ void File_MpegPs::SL_packetized_stream()
 {
     Element_Name("SL-packetized_stream");
 
-    if (!Streams[stream_id].StreamIsRegistred)
+    if (!Streams[stream_id].StreamRegistration_Count)
     {
         //For TS streams, which does not have Start chunk
         if (FromTS)
@@ -3488,7 +3488,7 @@ void File_MpegPs::SL_packetized_stream()
         }
 
         //Registering
-        Streams[stream_id].StreamIsRegistred++;
+        Streams[stream_id].StreamRegistration_Count++;
         Streams[stream_id].FirstPacketOrder=FirstPacketOrder_Last;
         FirstPacketOrder_Last++;
         if (!Status[IsAccepted])
@@ -3641,7 +3641,7 @@ void File_MpegPs::extension_stream()
     Element_Name("With Extension");
     Element_Info1(MpegPs_stream_id_extension(stream_id_extension));
 
-    if (!Streams_Extension[stream_id_extension].StreamIsRegistred)
+    if (!Streams_Extension[stream_id_extension].StreamRegistration_Count)
     {
         //For TS streams, which does not have Start chunk
         if (FromTS)
@@ -3672,8 +3672,8 @@ void File_MpegPs::extension_stream()
         //Registering
         if (!Status[IsAccepted])
             Data_Accept("MPEG-PS");
-        Streams[stream_id].StreamIsRegistred++;
-        Streams_Extension[stream_id_extension].StreamIsRegistred++;
+        Streams[stream_id].StreamRegistration_Count++;
+        Streams_Extension[stream_id_extension].StreamRegistration_Count++;
         Streams_Extension[stream_id_extension].Searching_Payload=true;
         Streams_Extension[stream_id_extension].Searching_TimeStamp_Start=true;
         Streams_Extension[stream_id_extension].Searching_TimeStamp_End=true;
@@ -4164,7 +4164,7 @@ bool File_MpegPs::Header_Parser_QuickSearch()
             if (Buffer_Offset+9+Data_Offset>=Buffer_Size)
                 return false; //Need more data
             int8u  private_stream_1_ID=Buffer[Buffer_Offset+9+Data_Offset];
-            if (!Streams_Private1[private_stream_1_ID].StreamIsRegistred || Streams_Private1[private_stream_1_ID].Searching_Payload)
+            if (!Streams_Private1[private_stream_1_ID].StreamRegistration_Count || Streams_Private1[private_stream_1_ID].Searching_Payload)
                 return true;
         }
 
