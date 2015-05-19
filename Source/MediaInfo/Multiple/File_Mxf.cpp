@@ -2233,26 +2233,6 @@ void File_Mxf::Streams_Finish()
         Fill(Stream_General, 0, "PrimaryPackage", "Material Package");
         (*Stream_More)[Stream_General][0](Ztring().From_Local("PrimaryPackage"), Info_Options)=__T("N NT");
     }
-
-    //Tests
-    float IndexEditRate=0;
-    bool  IndexEditRate_IsUnique=true;
-    for (indextables::iterator IndexTable=IndexTables.begin(); IndexTable!=IndexTables.end(); IndexTable++)
-    {
-        if (!IndexEditRate)
-            IndexEditRate=IndexTable->IndexEditRate;
-        else if (IndexTable->IndexEditRate && IndexTable->IndexEditRate!=IndexEditRate)
-            IndexEditRate_IsUnique=false;
-    }
-    if (IndexEditRate)
-    {
-        if (IndexEditRate_IsUnique)
-            Fill(Stream_General, 0, "IndexTables_EditRate", IndexEditRate, 3);
-        else
-            for (indextables::iterator IndexTable=IndexTables.begin(); IndexTable!=IndexTables.end(); IndexTable++) // Provinding all edit rates
-                if (IndexTable->IndexEditRate)
-                    Fill(Stream_General, 0, "IndexTables_EditRate", IndexTable->IndexEditRate, 3);
-    }
 }
 
 //---------------------------------------------------------------------------
