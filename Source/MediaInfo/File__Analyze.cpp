@@ -365,6 +365,58 @@ void File__Analyze::Open_Buffer_Init (File__Analyze* Sub, int64u File_Size_)
     Sub->Open_Buffer_Init(File_Size_);
 }
 
+void File__Analyze::Open_Buffer_OutOfBand (File__Analyze* Sub, const int8u* ToAdd, size_t ToAdd_Size)
+{
+    if (Sub==NULL)
+        return;
+
+    //Sub
+    if (Sub->File_GoTo!=(int64u)-1)
+        Sub->File_GoTo=(int64u)-1;
+    Sub->File_Offset=File_Offset+Buffer_Offset+Element_Offset;
+    if (Sub->File_Size!=File_Size)
+    {
+        for (size_t Pos=0; Pos<=Sub->Element_Level; Pos++)
+            if (Sub->Element[Pos].Next==Sub->File_Size)
+                Sub->Element[Pos].Next=File_Size;
+        Sub->File_Size=File_Size;
+    }
+    #if MEDIAINFO_TRACE
+        Sub->Element_Level_Base=Element_Level_Base+Element_Level;
+    #endif
+
+    #if MEDIAINFO_DEMUX
+        bool Demux_EventWasSent_Save=Config->Demux_EventWasSent;
+        Config->Demux_EventWasSent=false;
+    #endif //MEDIAINFO_DEMUX
+    Sub->Open_Buffer_OutOfBand(ToAdd, ToAdd_Size);
+    #if MEDIAINFO_DEMUX
+        if (Demux_EventWasSent_Save)
+            Config->Demux_EventWasSent=true;
+    #endif //MEDIAINFO_DEMUX
+
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            //Details handling
+            if (!Sub->Element[0].ToShow.Details.empty() && !Trace_DoNotSave)
+            {
+                //Line separator
+                if (!Element[Element_Level].ToShow.Details.empty())
+                    Element[Element_Level].ToShow.Details+=Config_LineSeparator;
+
+                //From Sub
+                while(Sub->Element_Level)
+                    Sub->Element_End0();
+                Element[Element_Level].ToShow.Details+=Sub->Element[0].ToShow.Details;
+                Sub->Element[0].ToShow.Details.clear();
+            }
+            else
+                Element[Element_Level].ToShow.NoShow=true; //We don't want to show this item because there is no info in it
+        }
+    #endif
+}
+
 //---------------------------------------------------------------------------
 void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
 {
