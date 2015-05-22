@@ -16,6 +16,7 @@ Version 0.7.74
 + AES3: generic term AES3 replaced by more precise SMPTE ST numbers (302, 331, 337)
 + NUT: basic detection
 + FFV1: more parsing of the bitstream, support of any version of FFV1 in MOV and Matroska
++ DPX: color space and frame rate
 x #B906, Matroska: duration was missing if Info block is at the end of the file
 x #B908, AC-3: bit depth removed
 x #P86, MPEG-4: moov_trak_edts_elst Atom was ignoring version of the atom
