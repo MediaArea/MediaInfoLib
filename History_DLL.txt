@@ -14,6 +14,7 @@ Version 0.7.74
 + D-10 audio: display of real bitrate beside the encoded bitrate
 + VC-3: detection of CDP packets (608/708 captions), created by Nexio, inside the VC-3 private data
 + AES3: generic term AES3 replaced by more precise SMPTE ST numbers (302, 331, 337)
++ NUT: basic detection
 x #B906, Matroska: duration was missing if Info block is at the end of the file
 x #B908, AC-3: bit depth removed
 x #P86, MPEG-4: moov_trak_edts_elst Atom was ignoring version of the atom
