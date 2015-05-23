@@ -577,6 +577,11 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     else if (Option_Lower==__T("trace_level"))
     {
         Trace_Level_Set(Value);
+        if (Inform_Get()==__T("XML"))
+        {
+            Inform_Set(Ztring());
+            Trace_Format_Set(Trace_Format_XML); // TODO: better coherency in options
+        }
         return Ztring();
     }
     else if (Option_Lower==__T("trace_level_get"))
@@ -608,6 +613,8 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         CriticalSectionLocker CSL(CS);
         if (NewValue_Lower==__T("csv"))
             Trace_Format_Set(Trace_Format_CSV);
+        else if (NewValue_Lower==__T("xml"))
+            Trace_Format_Set(Trace_Format_XML);
         else
             Trace_Format_Set(Trace_Format_Tree);
         return Ztring();
@@ -1546,10 +1553,13 @@ void MediaInfo_Config::Inform_Set (const ZtringListList &NewValue)
 {
     if (NewValue.Read(0, 0)==__T("Details"))
         Trace_Level_Set(NewValue.Read(0, 1));
+    else if (Trace_Level_Get() && NewValue.Read(0, 0)==__T("XML"))
+    {
+        Trace_Format_Set(Trace_Format_XML); // TODO: better coherency in options
+        return;
+    }
     else
     {
-        Trace_Level_Set(__T("0"));
-
         CriticalSectionLocker CSL(CS);
 
         //Inform

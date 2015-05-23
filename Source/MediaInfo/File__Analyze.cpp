@@ -163,6 +163,9 @@ File__Analyze::File__Analyze ()
     //Header
     Header_Size=0;
 
+    //Elements
+    Element_WantNextLevel=false;
+
     //Element
     Element_Offset=0;
     Element_Size=0;
@@ -2148,9 +2151,8 @@ bool File__Analyze::Data_Manage()
     else
         Element[0].ToShow.NoShow=false; //This should never happen, but in case of
     #endif //MEDIAINFO_TRACE
-    Element_End0(); //Element
-    if (Element_WantNextLevel)
-        Element_Level++;
+    if (!Element_WantNextLevel)
+        Element_End0(); //Element
     Element[Element_Level].UnTrusted=false;
 
     //Jumping to the end of the file if needed
@@ -2277,18 +2279,32 @@ void File__Analyze::Data_GoToFromEnd (int64u GoToFromEnd, const char* ParserName
 #if MEDIAINFO_TRACE
 Ztring Log_Offset (int64u OffsetToShow, MediaInfo_Config::trace_Format Config_Trace_Format)
 {
-    if (OffsetToShow==(int64u)-1)
-        return __T("         ");
-    int64u Offset=OffsetToShow%0x100000000ULL; //Only 32 bits
-    Ztring Pos1; Pos1.From_Number(Offset, 16);
     Ztring Pos2;
-    Pos2.resize(8-Pos1.size(), __T('0'));
-    Pos2+=Pos1;
-    Pos2.MakeUpperCase();
+
+    switch (Config_Trace_Format)
+    {
+        case MediaInfo_Config::Trace_Format_XML        : break;
+        default                                         : 
+            if (OffsetToShow==(int64u)-1)
+                return __T("         ");
+            int64u Offset=OffsetToShow%0x100000000ULL; //Only 32 bits
+            Ztring Pos1; Pos1.From_Number(Offset, 16);
+            Pos2.resize(8-Pos1.size(), __T('0'));
+            Pos2+=Pos1;
+            Pos2.MakeUpperCase();
+    }
     switch (Config_Trace_Format)
     {
         case MediaInfo_Config::Trace_Format_Tree        : Pos2+=__T(' '); break;
         case MediaInfo_Config::Trace_Format_CSV         : Pos2+=__T(','); break;
+        case MediaInfo_Config::Trace_Format_XML         : Pos2+=__T("<item");
+                                                          if (OffsetToShow!=(int64u)-1)
+                                                          {
+                                                               Pos2+=__T(" offset=\"");
+                                                               Pos2+=Ztring().From_Number(OffsetToShow);
+                                                               Pos2+=__T("\"");
+                                                          }
+                                                          break;
         default                                         : ;
     }
     return Pos2;
@@ -2298,6 +2314,22 @@ Ztring Log_Offset (int64u OffsetToShow, MediaInfo_Config::trace_Format Config_Tr
 //---------------------------------------------------------------------------
 void File__Analyze::Element_Begin()
 {
+    if (Trace_Activated)
+    {
+        switch (Config_Trace_Format)
+        {
+            case MediaInfo_Config::Trace_Format_XML         :
+                                                                {
+                                                                size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
+                                                                size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
+                                                                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</item> />"
+                                                                    Element[Element_Level].ToShow.Details+=__T(" />");
+                                                                }
+                                                                break;
+            default                                         : ;
+        }
+    }
+
     //Level
     Element_Level++;
 
@@ -2327,6 +2359,22 @@ void File__Analyze::Element_Begin()
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_Begin(const Ztring &Name)
 {
+    if (Trace_Activated)
+    {
+        switch (Config_Trace_Format)
+        {
+            case MediaInfo_Config::Trace_Format_XML         :
+                                                                {
+                                                                size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
+                                                                size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
+                                                                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</item> />"
+                                                                    Element[Element_Level].ToShow.Details+=__T(" />");
+                                                                }
+                                                                break;
+            default                                         : ;
+        }
+    }
+
     //Level
     Element_Level++;
 
@@ -2395,9 +2443,26 @@ void File__Analyze::Element_Info(const Ztring &Parameter)
     {
         case MediaInfo_Config::Trace_Format_Tree        :
         case MediaInfo_Config::Trace_Format_CSV         : Element[Element_Level].ToShow.Info+=__T(" - "); break;
+        case MediaInfo_Config::Trace_Format_XML         : 
+                                                            {
+                                                                if (Element[Element_Level].ToShow.Info.find(__T(" Info3=\""))!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" Info4=\"");
+                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" Info2=\""))!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" Info3=\"");
+                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" Info=\""))!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" Info2=\"");
+                                                                else                
+                                                                    Element[Element_Level].ToShow.Info+=__T(" Info=\"");
+                                                            }
+                                                            break;
         default                                         : ;
     }
     Element[Element_Level].ToShow.Info+=Parameter2;
+    switch (Config_Trace_Format)
+    {
+        case MediaInfo_Config::Trace_Format_XML         : Element[Element_Level].ToShow.Info+=__T("\""); break;
+        default                                         : ;
+    }
 }
 #endif //MEDIAINFO_TRACE
 
@@ -2470,6 +2535,26 @@ void File__Analyze::Element_End_Common_Flush_Details()
                     Element[Element_Level].ToShow.Details+=Config_LineSeparator;
                 Element[Element_Level].ToShow.Details+=Element[Element_Level+1].ToShow.Details;
                 Element[Element_Level+1].ToShow.Details.clear();
+
+                //
+                switch (Config_Trace_Format)
+                {
+                    case MediaInfo_Config::Trace_Format_XML         : 
+                                                                        {
+                                                                        size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
+                                                                        size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
+                                                                        if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</item> />"
+                                                                            Element[Element_Level].ToShow.Details+=__T(" />");
+                                                                        //if (!Element_WantNextLevel)
+                                                                        {
+                                                                            Element[Element_Level].ToShow.Details+=Config_LineSeparator;
+                                                                            Element[Element_Level].ToShow.Details.resize(Element[Element_Level].ToShow.Details.size()+(Element_Level_Base+Element_Level)*4, __T(' '));
+                                                                            Element[Element_Level].ToShow.Details+=__T("</item>");
+                                                                        }
+                                                                        }
+                                                                        break;
+                    default                                         : ;
+                }
             }
         }
     }
@@ -2483,6 +2568,11 @@ Ztring File__Analyze::Element_End_Common_Flush_Build()
     Ztring ToReturn;
 
     //Show Offset
+    switch (Config_Trace_Format)
+    {
+        case MediaInfo_Config::Trace_Format_XML         : ToReturn.resize((ToReturn.size()+Element_Level_Base+Element_Level)*4, __T(' ')); break;
+        default                                         : ;
+    }
     if (Config_Trace_Level>0.7)
     {
         ToReturn+=Log_Offset(Element[Element_Level+1].ToShow.Pos, Config_Trace_Format);
@@ -2497,9 +2587,15 @@ Ztring File__Analyze::Element_End_Common_Flush_Build()
                     ToReturn+=Ztring::ToZtring(Element_Level_Base+Element_Level);
                     ToReturn+=__T(',');
                     break;
+        case MediaInfo_Config::Trace_Format_XML         : ToReturn+=__T( " name=\""); break;
         default                                         : ;
     }
     ToReturn+=Element[Element_Level+1].ToShow.Name;
+    switch (Config_Trace_Format)
+    {
+        case MediaInfo_Config::Trace_Format_XML         : ToReturn+=__T( "\""); break;
+        default                                         : ;
+    }
 
     //Info
     ToReturn+=Element[Element_Level+1].ToShow.Info;
@@ -2516,6 +2612,9 @@ Ztring File__Analyze::Element_End_Common_Flush_Build()
             case MediaInfo_Config::Trace_Format_CSV         :
                     ToReturn+=__T(",(");
                     break;
+            case MediaInfo_Config::Trace_Format_XML         :
+                    ToReturn+=__T(" size=\"");
+                    break;
             default                                         : ;
         }
         ToReturn+=Ztring::ToZtring(Element[Element_Level+1].ToShow.Size);
@@ -2524,7 +2623,14 @@ Ztring File__Analyze::Element_End_Common_Flush_Build()
             ToReturn+=__T("/");
             ToReturn+=Ztring::ToZtring(Element[Element_Level+1].ToShow.Size-Element[Element_Level+1].ToShow.Header_Size);
         }
-        ToReturn+=__T(" bytes)");
+        switch (Config_Trace_Format)
+        {
+            case MediaInfo_Config::Trace_Format_XML         :
+                                                                ToReturn+=__T("\">");
+                                                                break;
+            default                                         :
+                                                                ToReturn+=__T(" bytes)");
+        }
     }
 
     return ToReturn;
@@ -2560,8 +2666,31 @@ void File__Analyze::Param(const Ztring& Parameter, const Ztring& Value)
 
     //Line separator
     if (!Element[Element_Level].ToShow.Details.empty())
+    {
+        switch (Config_Trace_Format)
+        {
+            case MediaInfo_Config::Trace_Format_XML         : 
+                                                                {
+                                                                size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
+                                                                size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
+                                                                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</item> />"
+                                                                    Element[Element_Level].ToShow.Details+=__T(" />");
+                                                                }
+                                                                break;
+            default: ;
+        }
         Element[Element_Level].ToShow.Details+=Config_LineSeparator;
+    }
 
+    //Prefix
+    switch (Config_Trace_Format)
+    {
+        case MediaInfo_Config::Trace_Format_XML         :
+                    Element[Element_Level].ToShow.Details.resize(Element[Element_Level].ToShow.Details.size()+(Element_Level_Base+Element_Level)*4, __T(' '));
+                    break;
+        default                                         : ;
+    }
+                                                          
     //Show Offset
     if (Config_Trace_Level>0.7)
     {
@@ -2601,6 +2730,19 @@ void File__Analyze::Param(const Ztring& Parameter, const Ztring& Value)
                     Element[Element_Level].ToShow.Details+=Parameter;
                     Element[Element_Level].ToShow.Details+=__T(',');
                     Element[Element_Level].ToShow.Details+=Value;
+                    break;
+        case MediaInfo_Config::Trace_Format_XML         :
+                    Element[Element_Level].ToShow.Details+=__T(" name=\"");
+                    Element[Element_Level].ToShow.Details+=Parameter;
+                    Element[Element_Level].ToShow.Details+=__T("\" value=\"");
+                    {
+                        size_t Max = Value.find(__T(" (0x"));
+                        if (Max==string::npos)
+                            Element[Element_Level].ToShow.Details+=Value;
+                        else
+                            Element[Element_Level].ToShow.Details+=Value.substr(0, Max);
+                    }
+                    Element[Element_Level].ToShow.Details+=__T("\"");
                     break;
         default                                         : ;
     }
@@ -2643,6 +2785,11 @@ void File__Analyze::Info(const Ztring& Value, size_t Element_Level_Minus)
         Element[Element_Level_Final].ToShow.Details+=Config_LineSeparator;
 
     //Preparing
+    switch (Config_Trace_Format)
+    {
+        case MediaInfo_Config::Trace_Format_XML         : return;
+        default                                         : ;
+    }
     Ztring ToShow; ToShow.resize(Element_Level_Final, __T(' '));
     ToShow+=__T("---   ");
     ToShow+=Value;
@@ -2683,7 +2830,13 @@ void File__Analyze::Param_Info (const Ztring &Text)
         return;
 
     //Filling
-    Element[Element_Level].ToShow.Details+=__T(" - ")+Text;
+    switch (Config_Trace_Format)
+    {
+        case MediaInfo_Config::Trace_Format_XML         : Element[Element_Level].ToShow.Details+=__T(" moreinfo=\"")+Text+__T("\"");
+                                                            break;
+        default:
+                                                            Element[Element_Level].ToShow.Details+=__T(" - ")+Text;
+    }
 }
 #endif //MEDIAINFO_TRACE
 
