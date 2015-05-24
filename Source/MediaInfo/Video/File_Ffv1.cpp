@@ -549,7 +549,7 @@ void File_Ffv1::FrameHeader()
     {
         Get_RU (States, ec,                                     "ec");
         if (micro_version)
-            Get_RU (States, intra,                              "intra ");
+            Get_RU (States, intra,                              "intra");
     }
 
     FILLING_BEGIN();
@@ -563,9 +563,20 @@ void File_Ffv1::FrameHeader()
                 Version+=__T('.');
                 Version+=Ztring::ToZtring(micro_version);
             }
+            Fill(Stream_Video, 0, "coder_type", Ffv1_coder_type(coder_type));
             Fill(Stream_Video, 0, Video_Format_Version, Version);
             Fill(Stream_Video, 0, Video_BitDepth, bits_per_raw_sample);
-            Fill(Stream_Video, 0, "coder_type", Ffv1_coder_type(coder_type));
+            if (version > 1)
+            {
+                Fill(Stream_Video, 0, "MaxSlicesCount", (num_h_slices_minus1+1)*(num_v_slices_minus1+1));
+            }
+            if (version > 2)
+            {
+                if (ec)
+                    Fill(Stream_Video, 0, "ErrorDetectionType", "Per slice");
+                if (micro_version && intra)
+                    Fill(Stream_Video, 0, Video_Format_Settings_GOP, "N=1");
+            }
             Fill(Stream_Video, 0, Video_ColorSpace, Ffv1_colorspace_type(colorspace_type, chroma_planes, alpha_plane));
             if (colorspace_type==0 && chroma_planes)
             {
