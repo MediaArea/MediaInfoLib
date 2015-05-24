@@ -1201,6 +1201,7 @@ private :
             Ztring Name;            //Name planned for this element
             Ztring Info;            //More info about the element
             Ztring Details;         //The main text
+            Ztring Value;           //The value (currently used only with Trace XML)
             bool   NoShow;          //Don't show this element
         };
 
