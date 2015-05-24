@@ -1560,6 +1560,8 @@ void MediaInfo_Config::Inform_Set (const ZtringListList &NewValue)
     }
     else
     {
+        Trace_Format_Set(Trace_Format_Tree); // TODO: better coherency in options
+
         CriticalSectionLocker CSL(CS);
 
         //Inform
