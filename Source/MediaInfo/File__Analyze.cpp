@@ -2562,7 +2562,20 @@ void File__Analyze::Element_End_Common_Flush_Details()
                                                                         {
                                                                             Element[Element_Level].ToShow.Details+=Config_LineSeparator;
                                                                             Element[Element_Level].ToShow.Details.resize(Element[Element_Level].ToShow.Details.size()+(Element_Level_Base+Element_Level)*4, __T(' '));
-                                                                            Element[Element_Level].ToShow.Details+=__T("</item>");
+                                                                            Element[Element_Level].ToShow.Details+=__T("</items>");
+                                                                            //Retrieving the beginning of the corresponding XML element
+                                                                            Ztring ToFind=Config_LineSeparator;
+                                                                            ToFind.resize(ToFind.size()+(Element_Level_Base+Element_Level)*4, __T(' '));
+                                                                            ToFind+=__T("<item");
+                                                                            size_t item_Pos=Element[Element_Level].ToShow.Details.rfind(ToFind);
+                                                                            if (item_Pos==string::npos)
+                                                                            {
+                                                                                ToFind.erase(ToFind.begin(), ToFind.begin()+1);
+                                                                                if (Element[Element_Level].ToShow.Details.find(ToFind)==0)
+                                                                                    item_Pos=0;
+                                                                            }
+                                                                            if (item_Pos!=string::npos)
+                                                                                Element[Element_Level].ToShow.Details.insert(Element[Element_Level].ToShow.Details.begin()+item_Pos+ToFind.size(), __T('s'));
                                                                         }
                                                                         }
                                                                         break;
