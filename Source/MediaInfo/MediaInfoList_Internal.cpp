@@ -319,6 +319,8 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
         }
         if (XML)
         {
+            if (!Retour.empty() && Retour[Retour.size()-1]!=__T('\r') && Retour[Retour.size()-1]!=__T('\n'))
+                Retour+=MediaInfoLib::Config.LineSeparator_Get();
             Retour+=__T("</");
             if (MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_XML)
                 Retour+=__T("MediaTrace");

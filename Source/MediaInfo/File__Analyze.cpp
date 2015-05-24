@@ -2923,14 +2923,20 @@ void File__Analyze::Accept ()
         if (ParserName.empty())
             ParserName.From_Local(ParserName_Char);
 
-        if (!ParserName.empty())
+        switch (Config_Trace_Format)
         {
-            bool MustElementBegin=Element_Level?true:false;
-            if (Element_Level>0)
-                Element_End0(); //Element
-            Info(ParserName+__T(", accepted"));
-            if (MustElementBegin)
-                Element_Level++;
+            case MediaInfo_Config::Trace_Format_Tree       :
+                                                            if (!ParserName.empty())
+                                                            {
+                                                                bool MustElementBegin=Element_Level?true:false;
+                                                                if (Element_Level>0)
+                                                                    Element_End0(); //Element
+                                                                Info(ParserName+__T(", accepted"));
+                                                                if (MustElementBegin)
+                                                                    Element_Level++;
+                                                            }
+                                                            break;
+            default                                        : ;
         }
     #endif //MEDIAINFO_TRACE
 
@@ -3003,14 +3009,20 @@ void File__Analyze::Fill ()
         if (ParserName.empty())
             ParserName.From_Local(ParserName_Char);
 
-        if (!ParserName.empty())
+        switch (Config_Trace_Format)
         {
-            bool MustElementBegin=Element_Level?true:false;
-            if (Element_Level>0)
-                Element_End0(); //Element
-            Info(ParserName+__T(", filling"));
-            if (MustElementBegin)
-                Element_Level++;
+            case MediaInfo_Config::Trace_Format_Tree       :
+                                                            if (!ParserName.empty())
+                                                            {
+                                                                bool MustElementBegin=Element_Level?true:false;
+                                                                if (Element_Level>0)
+                                                                    Element_End0(); //Element
+                                                                Info(ParserName+__T(", filling"));
+                                                                if (MustElementBegin)
+                                                                    Element_Level++;
+                                                            }
+                                                            break;
+            default                                        : ;
         }
     #endif //MEDIAINFO_TRACE
 
@@ -3050,15 +3062,21 @@ void File__Analyze::Finish ()
     if (ShouldContinueParsing || Config->ParseSpeed==1)
     {
         #if MEDIAINFO_TRACE
-            if (!ParserName.empty())
-            {
-                bool MustElementBegin=Element_Level?true:false;
-                if (Element_Level>0)
-                    Element_End0(); //Element
-                //Info(Ztring(ParserName)+__T(", wants to finish, but should continue parsing"));
-                if (MustElementBegin)
-                    Element_Level++;
-            }
+        switch (Config_Trace_Format)
+        {
+            case MediaInfo_Config::Trace_Format_Tree       :
+                                                            if (!ParserName.empty())
+                                                            {
+                                                                bool MustElementBegin=Element_Level?true:false;
+                                                                if (Element_Level>0)
+                                                                    Element_End0(); //Element
+                                                                //Info(Ztring(ParserName)+__T(", wants to finish, but should continue parsing"));
+                                                                if (MustElementBegin)
+                                                                    Element_Level++;
+                                                            }
+                                                            break;
+            default                                        : ;
+        }
         #endif //MEDIAINFO_TRACE
 
         return;
@@ -3086,14 +3104,20 @@ void File__Analyze::ForceFinish ()
         if (ParserName.empty())
             ParserName.From_Local(ParserName_Char);
 
-        if (!ParserName.empty())
+        switch (Config_Trace_Format)
         {
-            bool MustElementBegin=Element_Level?true:false;
-            if (Element_Level>0)
-                Element_End0(); //Element
-            Info(ParserName+__T(", finished"));
-            if (MustElementBegin)
-                Element_Level++;
+            case MediaInfo_Config::Trace_Format_Tree       :
+                                                            if (!ParserName.empty())
+                                                            {
+                                                                bool MustElementBegin=Element_Level?true:false;
+                                                                if (Element_Level>0)
+                                                                    Element_End0(); //Element
+                                                                Info(ParserName+__T(", finished"));
+                                                                if (MustElementBegin)
+                                                                    Element_Level++;
+                                                            }
+                                                            break;
+            default                                        : ;
         }
     #endif //MEDIAINFO_TRACE
 
