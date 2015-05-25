@@ -2320,6 +2320,7 @@ Ztring Log_Offset (int64u OffsetToShow, MediaInfo_Config::trace_Format Config_Tr
 //---------------------------------------------------------------------------
 void File__Analyze::Element_Begin()
 {
+    #if MEDIAINFO_TRACE
     if (Trace_Activated)
     {
         switch (Config_Trace_Format)
@@ -2336,6 +2337,7 @@ void File__Analyze::Element_Begin()
             default                                         : ;
         }
     }
+    #endif //MEDIAINFO_TRACE
 
     //Level
     Element_Level++;
