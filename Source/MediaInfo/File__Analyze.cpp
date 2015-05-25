@@ -2455,14 +2455,14 @@ void File__Analyze::Element_Info(const Ztring &Parameter)
         case MediaInfo_Config::Trace_Format_CSV         : Element[Element_Level].ToShow.Info+=__T(" - "); break;
         case MediaInfo_Config::Trace_Format_XML         : 
                                                             {
-                                                                if (Element[Element_Level].ToShow.Info.find(__T(" Info3=\""))!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" Info4=\"");
-                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" Info2=\""))!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" Info3=\"");
-                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" Info=\""))!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" Info2=\"");
+                                                                if (Element[Element_Level].ToShow.Info.find(__T(" info3=\""))!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info4=\"");
+                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" info2=\""))!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info3=\"");
+                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" info=\""))!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info2=\"");
                                                                 else                
-                                                                    Element[Element_Level].ToShow.Info+=__T(" Info=\"");
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info=\"");
                                                             }
                                                             break;
         default                                         : ;
