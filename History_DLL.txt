@@ -8,7 +8,7 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
-Version 0.7.74
+Version 0.7.74, 2015-05-25
 --------------
 + FIMS: Preliminary version (not for production)
 + D-10 audio: display of real bitrate beside the encoded bitrate
