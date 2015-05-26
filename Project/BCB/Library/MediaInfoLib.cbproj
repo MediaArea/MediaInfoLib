@@ -258,6 +258,10 @@
 				<DependentOn>..\..\..\Source\MediaInfo\Export\Export_EbuCore.h</DependentOn>
 				<BuildOrder>40</BuildOrder>
 			</CppCompile>
+			<CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Fims.cpp">
+				<DependentOn>..\..\..\Source\MediaInfo\Export\Export_Fims.h</DependentOn>
+				<BuildOrder>207</BuildOrder>
+			</CppCompile>
 			<CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Mpeg7.cpp">
 				<DependentOn>..\..\..\Source\MediaInfo\Export\Export_Mpeg7.h</DependentOn>
 				<BuildOrder>41</BuildOrder>
