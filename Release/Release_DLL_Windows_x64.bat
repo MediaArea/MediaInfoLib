@@ -83,9 +83,9 @@ xcopy "..\Project\MSVB\Example\My Project\*.*" "MediaInfoDLL_Windows_x64\Develop
 xcopy "..\Project\MSVB\Example VB6\*.*" "MediaInfoDLL_Windows_x64\Developers\Project\MSVB\Example VB6\"
 xcopy ..\Project\MSVC2008\*.sln MediaInfoDLL_Windows_x64\Developers\Project\MSVC2008\
 xcopy ..\Project\MSVC2008\Example\HowToUse_Dll.vcproj MediaInfoDLL_Windows_x64\Developers\Project\MSVC2008\Example\
-xcopy ..\Project\MSVC2010\*.sln MediaInfoDLL_Windows_x64\Developers\Project\MSVC2010\
-xcopy ..\Project\MSVC2010\Example\HowToUse_Dll.vcxproj MediaInfoDLL_Windows_x64\Developers\Project\MSVC2010\Example\
-xcopy ..\Project\MSVC2010\Example\HowToUse_Dll.vcxproj.filters MediaInfoDLL_Windows_x64\Developers\Project\MSVC2010\Example\
+xcopy ..\Project\MSVC2013\*.sln MediaInfoDLL_Windows_x64\Developers\Project\MSVC2013\
+xcopy ..\Project\MSVC2013\Example\HowToUse_Dll.vcxproj MediaInfoDLL_Windows_x64\Developers\Project\MSVC2013\Example\
+xcopy ..\Project\MSVC2013\Example\HowToUse_Dll.vcxproj.filters MediaInfoDLL_Windows_x64\Developers\Project\MSVC2013\Example\
 xcopy ..\Project\GCC\Example\Make* MediaInfoDLL_Windows_x64\Developers\Project\GCC\Example\
 xcopy ..\Project\Java\Example.JNA\*.java MediaInfoDLL_Windows_x64\Developers\Project\Java\Example.JNA\
 xcopy ..\Project\Java\Example.JNA\*.txt MediaInfoDLL_Windows_x64\Developers\Project\Java\Example.JNA\
@@ -107,8 +107,8 @@ xcopy ..\Project\NetBeans\Example.JNative\*.txt MediaInfoDLL_Windows_x64\Develop
 xcopy ..\Project\NetBeans\Example.JNative\src\*.java MediaInfoDLL_Windows_x64\Developers\Project\NetBeans\Example.JNative\src\
 
 rem --- Copying : Libs ---
-xcopy ..\Project\MSVC2010\Example\x64\Release\MediaInfo.lib MediaInfoDLL_Windows_x64\Developers\Project\MSVC2010\Example\x64\Release\
-xcopy ..\Project\MSVC2010\Example\x64\Debug\MediaInfo.lib MediaInfoDLL_Windows_x64\Developers\Project\MSVC2010\Example\x64\Debug\
+xcopy ..\Project\MSVC2013\Example\x64\Release\MediaInfo.lib MediaInfoDLL_Windows_x64\Developers\Project\MSVC2013\Example\x64\Release\
+xcopy ..\Project\MSVC2013\Example\x64\Debug\MediaInfo.lib MediaInfoDLL_Windows_x64\Developers\Project\MSVC2013\Example\x64\Debug\
 
 rem --- Copying : Examples ---
 xcopy ..\Source\Example\HowToUse_Dll*.* MediaInfoDLL_Windows_x64\Developers\Source\Example\

@@ -83,9 +83,9 @@ xcopy "..\Project\MSVB\Example\My Project\*.*" "MediaInfoDLL_Windows_i386\Develo
 xcopy "..\Project\MSVB\Example VB6\*.*" "MediaInfoDLL_Windows_i386\Developers\Project\MSVB\Example VB6\"
 xcopy ..\Project\MSVC2008\*.sln MediaInfoDLL_Windows_i386\Developers\Project\MSVC2008\
 xcopy ..\Project\MSVC2008\Example\HowToUse_Dll.vcproj MediaInfoDLL_Windows_i386\Developers\Project\MSVC2008\Example\
-xcopy ..\Project\MSVC2010\*.sln MediaInfoDLL_Windows_i386\Developers\Project\MSVC2010\
-xcopy ..\Project\MSVC2010\Example\HowToUse_Dll.vcxproj MediaInfoDLL_Windows_i386\Developers\Project\MSVC2010\Example\
-xcopy ..\Project\MSVC2010\Example\HowToUse_Dll.vcxproj.filters MediaInfoDLL_Windows_i386\Developers\Project\MSVC2010\Example\
+xcopy ..\Project\MSVC2013\*.sln MediaInfoDLL_Windows_i386\Developers\Project\MSVC2013\
+xcopy ..\Project\MSVC2013\Example\HowToUse_Dll.vcxproj MediaInfoDLL_Windows_i386\Developers\Project\MSVC2013\Example\
+xcopy ..\Project\MSVC2013\Example\HowToUse_Dll.vcxproj.filters MediaInfoDLL_Windows_i386\Developers\Project\MSVC2013\Example\
 xcopy ..\Project\GCC\Example\Make* MediaInfoDLL_Windows_i386\Developers\Project\GCC\Example\
 xcopy ..\Project\Java\Example.JNA\*.java MediaInfoDLL_Windows_i386\Developers\Project\Java\Example.JNA\
 xcopy ..\Project\Java\Example.JNA\*.txt MediaInfoDLL_Windows_i386\Developers\Project\Java\Example.JNA\
