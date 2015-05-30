@@ -375,16 +375,8 @@ void File_Ffv1::Skip_RS_ (states &States)
 void File_Ffv1::Read_Buffer_OutOfBand()
 {
     ConfigurationRecordIsPresent=true;
-    
-    int32u CRC_32=0;
-    const int8u* CRC_32_Buffer=Buffer+Buffer_Offset+(size_t)Element_Offset;
-    const int8u* CRC_32_Buffer_End=CRC_32_Buffer+(size_t)Element_Size;
 
-    while(CRC_32_Buffer<CRC_32_Buffer_End)
-    {
-        CRC_32=(CRC_32<<8) ^ Psi_CRC_32_Table[(CRC_32>>24)^(*CRC_32_Buffer)];
-        CRC_32_Buffer++;
-    }
+    int32u CRC_32=CRC_Compute((size_t)Element_Size);
 
     if (Buffer_Size < 4 || CRC_32)
     {
@@ -437,7 +429,8 @@ void File_Ffv1::Read_Buffer_Continue()
         {
             Element_Begin1("Slice");
             int64u End=Element_Offset+Slices_BufferSizes[Pos];
-        
+            int32u crc_left=CRC_Compute(Slices_BufferSizes[Pos]+8);
+
             if (Pos)
             {
                 delete RC; RC = new RangeCoder(Buffer+Buffer_Offset+(size_t)Element_Offset, Slices_BufferSizes[Pos], custom_state_transitions); //Ffv1_default_state_transition);
@@ -446,18 +439,20 @@ void File_Ffv1::Read_Buffer_Continue()
                 RC->AssignStateTransitions(custom_state_transitions);
 
             //slice(States); // Not yet fully implemented
-        
+
             Skip_XX(End-Element_Offset,                             "Slice data");
             Skip_B3(                                                "slice_size");
             Skip_B1(                                                "error_status");
             Skip_B4(                                                "crc_parity");
+            if (!crc_left)
+			{
+                Param_Info1("OK");
+            } else {
+                Param_Info1("NOK");
+            }
             Element_End0();
-
-            break; //TEMP
         }
     }
-
-    Skip_XX(Element_Size-Element_Offset,                            "Other data"); // Not yet fully implemented
 
     FILLING_BEGIN();
         Frame_Count++;
@@ -891,6 +886,25 @@ void File_Ffv1::read_quant_table(int i, int j, size_t scale)
     len_count[i][j]=v;
 
     Element_End0();
+}
+
+//***************************************************************************
+// Helpers
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+int32u File_Ffv1::CRC_Compute(size_t Size)
+{
+    int32u CRC_32=0;
+    const int8u* CRC_32_Buffer=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    const int8u* CRC_32_Buffer_End=CRC_32_Buffer+Size;
+
+    while(CRC_32_Buffer<CRC_32_Buffer_End)
+    {
+        CRC_32=(CRC_32<<8) ^ Psi_CRC_32_Table[(CRC_32>>24)^(*CRC_32_Buffer)];
+        CRC_32_Buffer++;
+    }
+    return CRC_32;
 }
 
 } //NameSpace
