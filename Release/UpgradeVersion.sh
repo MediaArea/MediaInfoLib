@@ -1,6 +1,6 @@
-# tasks/UpdateMediaInfoLib.sh
+# Upgrade the version number of MediaInfoLib
 
-function btask.UpdateMediaInfoLib.run () {
+function btask.UpgradeVersion.run () {
 
     if [ $(b.opt.get_opt --source-path) ]; then
         MIL_source=$(sanitize_arg $(b.opt.get_opt --source-path))
@@ -71,7 +71,6 @@ function btask.UpdateMediaInfoLib.run () {
         echo "${MIL_source}/${MIL_file}"
         updateFile $Version_old_comma $Version_new_comma "${MIL_source}/${MIL_file}"
     done
-    unset -v MIL_files index
 
     echo
     echo "Replace major/minor/patch in ${MIL_source}/Project/CMake/CMakeLists.txt"
@@ -85,5 +84,5 @@ function btask.UpdateMediaInfoLib.run () {
         "set(MediaInfoLib_PATCH_VERSION $Version_new_patch)" \
         "${MIL_source}/Project/CMake/CMakeLists.txt"
 
-    unset -v MIL_source
+    unset -v MIL_files index MIL_source
 }
