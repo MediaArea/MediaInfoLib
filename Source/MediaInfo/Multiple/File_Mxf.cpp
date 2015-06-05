@@ -1921,7 +1921,7 @@ File_Mxf::File_Mxf()
     PartitionMetadata_FooterPartition=(int64u)-1;
     DTS_Delay=0;
     StreamPos_StartAtOne=true;
-    SDTI_TimeCode_StartTimecode_ms=(int64u)-1;
+    SDTI_TimeCode_RepetitionCount=0;
     SDTI_SizePerFrame=0;
     SDTI_IsPresent=false;
     SDTI_IsInIndexStreamOffset=true;
@@ -2102,7 +2102,7 @@ void File_Mxf::Streams_Finish()
     Fill(Stream_General, 0, General_Format_Profile, Mxf_OperationalPattern(OperationalPattern));
 
     //Time codes
-    if (SDTI_TimeCode_StartTimecode_ms!=(int64u)-1)
+    if (SDTI_TimeCode_StartTimecode.IsValid())
     {
         bool IsDuplicate=false;
         for (size_t Pos2=0; Pos2<Count_Get(Stream_Other); Pos2++)
@@ -2115,7 +2115,7 @@ void File_Mxf::Streams_Finish()
             Fill(Stream_Other, StreamPos_Last, Other_Type, "Time code");
             Fill(Stream_Other, StreamPos_Last, Other_Format, "SMPTE TC");
             Fill(Stream_Other, StreamPos_Last, Other_MuxingMode, "SDTI");
-            Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, SDTI_TimeCode_StartTimecode.c_str());
+            Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, SDTI_TimeCode_StartTimecode.ToString());
         }
     }
     if (SystemScheme1_TimeCodeArray_StartTimecode_ms!=(int64u)-1)
@@ -2482,9 +2482,9 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_FirstFrame), TC.ToString().c_str());
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_Source), "Time code track (stripped)");
     }
-    if (SDTI_TimeCode_StartTimecode_ms!=(int64u)-1)
+    if (SDTI_TimeCode_StartTimecode.IsValid())
     {
-        Fill(StreamKind_Last, StreamPos_Last, "Delay_SDTI", SDTI_TimeCode_StartTimecode_ms);
+        Fill(StreamKind_Last, StreamPos_Last, "Delay_SDTI", SDTI_TimeCode_StartTimecode.ToMilliseconds());
         if (StreamKind_Last!=Stream_Max)
             (*Stream_More)[StreamKind_Last][StreamPos_Last](Ztring().From_Local("Delay_SDTI"), Info_Options)=__T("N NT");
 
@@ -3428,6 +3428,20 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
         {
             //Note: Origin is not part of the StartTimecode for the first frame in the source package. From specs: "For a Timecode Track with a single Timecode Component and with origin N, where N greater than 0, the timecode value at the Zero Point of the Track equals the start timecode of the Timecode Component incremented by N units."
             TimeCode TC(Component2->second.MxfTimeCode.StartTimecode+Config->File_IgnoreEditsBefore, (int8u)Component2->second.MxfTimeCode.RoundedTimecodeBase, Component2->second.MxfTimeCode.DropFrame);
+            bool IsHybridTimeCode=false;
+            if (Component->second.StructuralComponents.size()==2 && !Pos)
+            {
+                components::iterator Component_TC2=Components.find(Component->second.StructuralComponents[1]);
+                if (Component_TC2!=Components.end() && Component_TC2->second.MxfTimeCode.StartTimecode!=(int64u)-1)
+                {
+                    TimeCode TC2(Component_TC2->second.MxfTimeCode.StartTimecode+Config->File_IgnoreEditsBefore, (int8u)Component_TC2->second.MxfTimeCode.RoundedTimecodeBase, Component2->second.MxfTimeCode.DropFrame);
+                    if (TC2.ToFrames()-TC.ToFrames()==2)
+                    {
+                        TC++;
+                        IsHybridTimeCode=true;
+                    }
+                }
+            }
             Stream_Prepare(Stream_Other);
             Fill(Stream_Other, StreamPos_Last, Other_ID, Ztring::ToZtring(TrackID)+(IsSourcePackage?__T("-Source"):__T("-Material")));
             Fill(Stream_Other, StreamPos_Last, Other_Type, "Time code");
@@ -3456,6 +3470,9 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
             {
                 MxfTimeCodeMaterial=Component2->second.MxfTimeCode;
             }
+
+            if (IsHybridTimeCode)
+                break;
         }
     }
 }
@@ -7630,6 +7647,11 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
     {
         if (!Partitions.empty() && File_Offset+Buffer_Offset<Partitions[Partitions_Pos].StreamOffset+Partitions[Partitions_Pos].BodyOffset)
             SDTI_IsInIndexStreamOffset=false;
+
+        //Test
+        Fill(Stream_General, 0, "SDTI_IsPresent", "IsPresent");
+        (*Stream_More)[Stream_General][0](Ztring().From_Local("SDTI_IsPresent"), Info_Options)=__T("N NT");
+
         SDTI_IsPresent=true;
     }
 
@@ -7662,27 +7684,23 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
     Skip_B2(                                                    "continuity count");
 
     //Some computing
-    float64 FrameRate;
+    int8u  FrameRate;
+    int8u  RepetitionMaxCount;
     switch (CPR_Rate) //See SMPTE 326M
     {
-        case 0x01 : FrameRate=24; break;
-        case 0x02 : FrameRate=25; break;
-        case 0x03 : FrameRate=30; break;
-        case 0x04 : FrameRate=48; break;
-        case 0x05 : FrameRate=50; break;
-        case 0x06 : FrameRate=60; break;
-        case 0x07 : FrameRate=72; break;
-        case 0x08 : FrameRate=75; break;
-        case 0x09 : FrameRate=90; break;
-        case 0x0A : FrameRate=96; break;
-        case 0x0B : FrameRate=100; break;
-        case 0x0C : FrameRate=120; break;
-        default   : FrameRate=0; break;
-    }
-    if (CPR_DropFrame)
-    {
-        FrameRate*=1000;
-        FrameRate/=1001;
+        case 0x01 : FrameRate=24;  RepetitionMaxCount=0; break;
+        case 0x02 : FrameRate=25;  RepetitionMaxCount=0; break;
+        case 0x03 : FrameRate=30;  RepetitionMaxCount=0; break;
+        case 0x04 : FrameRate=48;  RepetitionMaxCount=1; break;
+        case 0x05 : FrameRate=50;  RepetitionMaxCount=1; break;
+        case 0x06 : FrameRate=60;  RepetitionMaxCount=1; break;
+        case 0x07 : FrameRate=72;  RepetitionMaxCount=2; break;
+        case 0x08 : FrameRate=75;  RepetitionMaxCount=2; break;
+        case 0x09 : FrameRate=90;  RepetitionMaxCount=2; break;
+        case 0x0A : FrameRate=96;  RepetitionMaxCount=3; break;
+        case 0x0B : FrameRate=100; RepetitionMaxCount=3; break;
+        case 0x0C : FrameRate=120; RepetitionMaxCount=3; break;
+        default   : FrameRate=0;   RepetitionMaxCount=0; break;
     }
 
     //Parsing
@@ -7736,37 +7754,47 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
 
         BS_End();
 
-        int64u TimeCode_ms=(int64u)(Hours_Tens     *10*60*60*1000
-                               + Hours_Units       *60*60*1000
-                               + Minutes_Tens      *10*60*1000
-                               + Minutes_Units        *60*1000
-                               + Seconds_Tens         *10*1000
-                               + Seconds_Units           *1000
-                               + (FrameRate?float64_int32s((Frames_Tens*10+Frames_Units)*1000/FrameRate):0));
+        //TimeCode
+        TimeCode TimeCode_Current(  Hours_Tens  *10+Hours_Units,
+                                    Minutes_Tens*10+Minutes_Units, 
+                                    Seconds_Tens*10+Seconds_Units, 
+                                    Frames_Tens *10+Frames_Units,
+                                    FrameRate/(RepetitionMaxCount+1),
+                                    DropFrame,
+                                    RepetitionMaxCount?true:false);
+        if (RepetitionMaxCount)
+        {
+            if (SDTI_TimeCode_Previous.IsValid() && TimeCode_Current==SDTI_TimeCode_Previous)
+            {
+                SDTI_TimeCode_RepetitionCount++;
+                TimeCode_Current++;
+            }
+            else
+            {
+                if (!SDTI_TimeCode_StartTimecode.IsValid() && SDTI_TimeCode_Previous.IsValid())
+                {
+                    SDTI_TimeCode_StartTimecode=SDTI_TimeCode_Previous;
+                    while(SDTI_TimeCode_RepetitionCount<RepetitionMaxCount)
+                    {
+                        SDTI_TimeCode_StartTimecode++;
+                        SDTI_TimeCode_RepetitionCount++;
+                    }
+                }
+                SDTI_TimeCode_RepetitionCount=0;
+                SDTI_TimeCode_Previous=TimeCode_Current;
+            }
+        }
+        else if (!SDTI_TimeCode_StartTimecode.IsValid())
+            SDTI_TimeCode_StartTimecode=TimeCode_Current;
 
-        Element_Info1(Ztring().Duration_From_Milliseconds(TimeCode_ms));
+        Element_Info1(Ztring().From_UTF8(TimeCode_Current.ToString().c_str()));
+        Element_Level--;
+        Element_Info1(Ztring().From_UTF8(TimeCode_Current.ToString().c_str()));
+        Element_Level++;
 
         Element_End0();
 
         Skip_B8(                                            "Zero");
-
-        //TimeCode
-        if (SDTI_TimeCode_StartTimecode_ms==(int64u)-1)
-        {
-            SDTI_TimeCode_StartTimecode_ms=TimeCode_ms;
-
-            SDTI_TimeCode_StartTimecode+=('0'+Hours_Tens);
-            SDTI_TimeCode_StartTimecode+=('0'+Hours_Units);
-            SDTI_TimeCode_StartTimecode+=':';
-            SDTI_TimeCode_StartTimecode+=('0'+Minutes_Tens);
-            SDTI_TimeCode_StartTimecode+=('0'+Minutes_Units);
-            SDTI_TimeCode_StartTimecode+=':';
-            SDTI_TimeCode_StartTimecode+=('0'+Seconds_Tens);
-            SDTI_TimeCode_StartTimecode+=('0'+Seconds_Units);
-            SDTI_TimeCode_StartTimecode+=DropFrame?';':':';
-            SDTI_TimeCode_StartTimecode+=('0'+Frames_Tens);
-            SDTI_TimeCode_StartTimecode+=('0'+Frames_Units);
-        }
     }
     else
         Skip_XX(17,                                             "Junk");
