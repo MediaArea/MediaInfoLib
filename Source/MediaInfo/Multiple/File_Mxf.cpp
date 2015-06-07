@@ -7648,10 +7648,6 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
         if (!Partitions.empty() && File_Offset+Buffer_Offset<Partitions[Partitions_Pos].StreamOffset+Partitions[Partitions_Pos].BodyOffset)
             SDTI_IsInIndexStreamOffset=false;
 
-        //Test
-        Fill(Stream_General, 0, "SDTI_IsPresent", "IsPresent");
-        (*Stream_More)[Stream_General][0](Ztring().From_Local("SDTI_IsPresent"), Info_Options)=__T("N NT");
-
         SDTI_IsPresent=true;
     }
 
