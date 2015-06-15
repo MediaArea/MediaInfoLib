@@ -35,6 +35,9 @@ const size_t MAX_PLANES=4;
 const size_t MAX_QUANT_TABLES=8;
 const size_t MAX_CONTEXT_INPUTS=5;
 
+const int32u  DEFAULT_WIDTH=320;
+const int32u  DEFAULT_HEIGHT=240;
+
 class RangeCoder
 {
 public :
@@ -123,6 +126,8 @@ private :
     int32u  quant_table_index[MAX_PLANES];
     int32u  version;
     int8u   plane_count;
+    int32u  num_h_slices;
+    int32u  num_v_slices;
     state_transitions state_transitions_table;
 
     struct slice_struct

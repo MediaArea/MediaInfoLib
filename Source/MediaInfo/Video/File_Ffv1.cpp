@@ -245,6 +245,8 @@ File_Ffv1::File_Ffv1()
     ConfigurationRecordIsPresent=false;
     RC=NULL;
     version=0;
+    num_h_slices = 1;
+    num_v_slices = 1;
 }
 
 //---------------------------------------------------------------------------
@@ -514,6 +516,8 @@ void File_Ffv1::FrameHeader()
     {
         Get_RU (States, num_h_slices_minus1,                    "num_h_slices_minus1");
         Get_RU (States, num_v_slices_minus1,                    "num_v_slices_minus1");
+        num_h_slices = num_h_slices_minus1 + 1;
+        num_v_slices = num_v_slices_minus1 + 1;
     }
     int32u quant_table_count;
     if (version>1)
@@ -618,6 +622,9 @@ void File_Ffv1::FrameHeader()
 //---------------------------------------------------------------------------
 void File_Ffv1::slice(states &States)
 {
+    Slice.w=DEFAULT_WIDTH;
+    Slice.h=DEFAULT_HEIGHT;
+
     if (version>2)
     {
         slice_header(States);
@@ -634,8 +641,6 @@ void File_Ffv1::slice(states &States)
         }
     }
 
-    Slice.w=720/2;
-    Slice.h=608/2;
     Slice.sample_buffer=new int16s[(Slice.w + 6) * 3 * MAX_PLANES];
 
     if (true) //colorspace == 0
@@ -657,6 +662,9 @@ void File_Ffv1::slice_header(states &States)
     Get_RU (States, slice_y,                                "slice_y");
     Get_RU (States, slice_width,                            "slice_width_minus1");
     Get_RU (States, slice_height,                           "slice_height_minus1");
+
+    Slice.w=(slice_width + 1) * (DEFAULT_WIDTH / num_h_slices);
+    Slice.h=(slice_height + 1) * (DEFAULT_HEIGHT / num_v_slices);
     for (int8u i = 0; i < plane_count; i++)
     {
         Get_RU (States, quant_table_index[i],               "quant_table_index");
