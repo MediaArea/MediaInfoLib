@@ -126,9 +126,13 @@ private :
     int32u  quant_table_index[MAX_PLANES];
     int32u  version;
     int32u  micro_version;
-    int8u   plane_count;
     int32u  num_h_slices;
     int32u  num_v_slices;
+    bool    chroma_planes;
+    bool    alpha_plane;
+    int8u   coder_type;
+    int8u   colorspace_type;
+    int8u   bits_per_sample;
     state_transitions state_transitions_table;
 
     struct slice_struct

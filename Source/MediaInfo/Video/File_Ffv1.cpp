@@ -477,7 +477,6 @@ void File_Ffv1::FrameHeader()
     states States;
     memset(States, 128, states_size);
     int32u coder_type, colorspace_type, bits_per_raw_sample=8, chroma_h_shift, chroma_v_shift, num_h_slices_minus1=0, num_v_slices_minus1=0, ec, intra;
-    bool chroma_planes, alpha_plane;
 
     micro_version = 0;
     Get_RU (States, version,                                    "version");
@@ -490,6 +489,7 @@ void File_Ffv1::FrameHeader()
     if (version>2)
         Get_RU (States, micro_version,                          "micro_version");
     Get_RU (States, coder_type,                                 "coder_type");
+    this->coder_type = coder_type;
     if (coder_type == 2) //Range coder with custom state transition table
     {
         Element_Begin1("state_transition_deltas");
@@ -503,17 +503,18 @@ void File_Ffv1::FrameHeader()
         Element_End0();
     }
     Get_RU (States, colorspace_type,                            "colorspace_type");
+    this->colorspace_type = colorspace_type;
     if (version)
     {
         Get_RU (States, bits_per_raw_sample,                    "bits_per_raw_sample");
         if (bits_per_raw_sample==0)
             bits_per_raw_sample=8; //I don't know the reason, 8-bit is coded 0 and 10-bit coded 10 (not 2?).
+        this->bits_per_sample = bits_per_raw_sample;
     }
     Get_RB (States, chroma_planes,                              "chroma_planes");
     Get_RU (States, chroma_h_shift,                             "log2(h_chroma_subsample)");
     Get_RU (States, chroma_v_shift,                             "log2(v_chroma_subsample)");
     Get_RB (States, alpha_plane,                                "alpha_plane");
-    plane_count=1+(chroma_planes?0:1)+(alpha_plane?0:1); //Warning: chroma is considered as 1 plane
     if (version>1)
     {
         Get_RU (States, num_h_slices_minus1,                    "num_h_slices_minus1");
@@ -633,7 +634,7 @@ void File_Ffv1::slice(states &States)
 
     }
 
-    if (!true) //fs->ac
+    if (!coder_type)
     {
         if (version == 3 && micro_version > 1 || version > 3)
         {
@@ -645,12 +646,17 @@ void File_Ffv1::slice(states &States)
 
     Slice.sample_buffer=new int16s[(Slice.w + 6) * 3 * MAX_PLANES];
 
-    if (true) //colorspace == 0
+    if (colorspace_type == 0)
     {
+        // YCbCr
         if (true) //bits_per_raw_sample >8
         {
             plane(quant_tables[quant_table_index[0]]); //TODO 0
         }
+    }
+    else if (colorspace_type == 1)
+    {
+        // JPEG 2000
     }
 }
 
@@ -667,6 +673,8 @@ void File_Ffv1::slice_header(states &States)
 
     Slice.w=(slice_width + 1) * (DEFAULT_WIDTH / num_h_slices);
     Slice.h=(slice_height + 1) * (DEFAULT_HEIGHT / num_v_slices);
+
+    int8u plane_count=1+(chroma_planes?0:1)+(alpha_plane?0:1); //Warning: chroma is considered as 1 plane
     for (int8u i = 0; i < plane_count; i++)
     {
         Get_RU (States, quant_table_index[i],               "quant_table_index");
@@ -697,7 +705,7 @@ void File_Ffv1::plane(int16s quant_table[MAX_CONTEXT_INPUTS][256])
     states States[MAX_CONTEXT_INPUTS];
     memset(States, 128, states_size*MAX_CONTEXT_INPUTS);
  
-    for (size_t y = 0; y < 0/*h*/; y++)
+    for (size_t y = 0; y < Slice.h; y++)
     {
         int16s *temp = sample[0]; // FIXME: try a normal buffer
 
@@ -824,7 +832,10 @@ void File_Ffv1::line(states States[MAX_CONTEXT_INPUTS], int16s quant_table[MAX_C
             int b=0;
         
         int32s diff;
-        Get_RS(States[context], diff, "diff"); Element_Info1(diff);
+        if (coder_type) {
+            Get_RS(States[context], diff, "diff");
+            Element_Info1(diff);
+        }
         if (sign)
             diff = -diff;
 
