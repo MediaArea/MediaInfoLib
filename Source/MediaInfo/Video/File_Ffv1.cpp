@@ -448,7 +448,7 @@ void File_Ffv1::Read_Buffer_Continue()
             Skip_B1(                                                "error_status");
             Skip_B4(                                                "crc_parity");
             if (!crc_left)
-			{
+            {
                 Param_Info1("OK");
             } else {
                 Param_Info1("NOK");
