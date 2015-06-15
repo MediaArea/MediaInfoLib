@@ -438,7 +438,7 @@ void File_Ffv1::Read_Buffer_Continue()
             else // ac=2
                 RC->AssignStateTransitions(custom_state_transitions);
 
-            //slice(States); // Not yet fully implemented
+            slice(States); // Not yet fully implemented
 
             Skip_XX(End-Element_Offset,                             "Slice data");
             Skip_B3(                                                "slice_size");
