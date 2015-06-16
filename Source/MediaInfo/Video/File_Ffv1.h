@@ -125,6 +125,7 @@ private :
     int16s  quant_tables[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS][256];
     int32u  quant_table_index[MAX_PLANES];
     int32u  version;
+    int32u  micro_version;
     int8u   plane_count;
     int32u  num_h_slices;
     int32u  num_v_slices;
