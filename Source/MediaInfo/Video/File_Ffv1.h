@@ -83,6 +83,7 @@ private :
     void slice(states &States);
     void slice_header(states &States);
     int32u CRC_Compute(size_t Size);
+    void rgb();
     void plane(int16s quant_table[MAX_CONTEXT_INPUTS][256]);
     void line(states States[MAX_CONTEXT_INPUTS], int16s quant_table[MAX_CONTEXT_INPUTS][256], int16s *sample[2]);
     void read_quant_tables(int i);

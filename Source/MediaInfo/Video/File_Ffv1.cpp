@@ -649,14 +649,20 @@ void File_Ffv1::slice(states &States)
     if (colorspace_type == 0)
     {
         // YCbCr
-        if (true) //bits_per_raw_sample >8
+        plane(quant_tables[quant_table_index[0]]); //TODO 0
+        if (chroma_planes)
         {
-            plane(quant_tables[quant_table_index[0]]); //TODO 0
+            plane(quant_tables[quant_table_index[1]]); //TODO 1
+            plane(quant_tables[quant_table_index[2]]); //TODO 2
+        }
+        if (alpha_plane)
+        {
+            plane(quant_tables[quant_table_index[3]]); //TODO 3
         }
     }
     else if (colorspace_type == 1)
     {
-        // JPEG 2000
+        rgb();
     }
 }
 
@@ -715,39 +721,49 @@ void File_Ffv1::plane(int16s quant_table[MAX_CONTEXT_INPUTS][256])
         sample[1][-1] = sample[0][0];
         sample[0][Slice.w]  = sample[0][Slice.w - 1];
 
-        //if (s->avctx->bits_per_raw_sample <= 8)
+        if (bits_per_sample <= 8)
         {
-            /*
-            decode_line(s, w, sample, plane_index, 8);
-            for (x = 0; x < w; x++)
-                src[x + stride * y] = sample[1][x];
-                */
+            line(States, quant_table, sample);
         }
-        //else
+        else
         {
             Element_Begin1("Line");
             Element_Info1(y);
 
-            //decode_line(s, w, sample, plane_index, s->avctx->bits_per_raw_sample);
             line(States, quant_table, sample);
-            
-            /*
-            if (s->packed_at_lsb)
-            {
-                for (x = 0; x < w; x++) {
-                    ((uint16s*)(src + stride*y))[x] = sample[1][x];
-                }
-            }
-            else
-            {
-                for (x = 0; x < w; x++) {
-                    ((uint16s*)(src + stride*y))[x] = sample[1][x] << (16 - s->avctx->bits_per_raw_sample);
-                }
-            }
-            */
 
             Element_End0();
         }
+    }
+
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Ffv1::rgb()
+{
+    Element_Begin1("rgb");
+
+    states States[MAX_CONTEXT_INPUTS];
+    memset(States, 128, states_size*MAX_CONTEXT_INPUTS);
+    int16s *sample[4][2];
+
+    for (int x = 0; x < 4; x++) {
+        sample[x][0] = Slice.sample_buffer +  x * 2      * (Slice.w + 6) + 3;
+        sample[x][1] = Slice.sample_buffer + (x * 2 + 1) * (Slice.w + 6) + 3;
+    }
+
+    for (size_t y = 0; y < Slice.h; y++)
+    {
+        Element_Begin1("Line");
+        Element_Info1(y);
+
+        for (size_t c = 0; c < 3 + alpha_plane; c++)
+        {
+            line(States, quant_tables[quant_table_index[(c+1)/2]], sample[c]);
+        }
+
+        Element_End0();
     }
 
     Element_End0();
