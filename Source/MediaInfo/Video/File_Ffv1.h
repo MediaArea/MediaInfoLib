@@ -30,11 +30,14 @@ const size_t states_size=32;
 const size_t state_transitions_size=256;
 typedef int8u states[states_size];
 typedef int8u state_transitions[state_transitions_size];
+typedef int8u **states_context_plane;
 
 const size_t MAX_PLANES=4;
 const size_t MAX_QUANT_TABLES=8;
 const size_t MAX_CONTEXT_INPUTS=5;
 
+/* const int32u  DEFAULT_WIDTH=320; */
+/* const int32u  DEFAULT_HEIGHT=240; */
 const int32u  DEFAULT_WIDTH=320;
 const int32u  DEFAULT_HEIGHT=240;
 
@@ -57,6 +60,55 @@ public : //Temp
     const int8u* Buffer_Cur;
     const int8u* Buffer_End;
 
+};
+
+//***************************************************************************
+// Class Slice
+//***************************************************************************
+
+const int32u RUN_MODE_STOP = 0;
+const int32u RUN_MODE_PROCESSING = 1;
+const int32u RUN_MODE_INTERRUPTED = 2;
+
+class Slice
+{
+public:
+
+    Slice() : w(DEFAULT_WIDTH), h(DEFAULT_HEIGHT), run_index(0), run_mode(RUN_MODE_STOP),
+        sample_buffer(NULL) {}
+
+    ~Slice()
+    {
+        if (sample_buffer)
+        {
+            delete [] sample_buffer;
+            sample_buffer = NULL;
+        }
+    }
+
+    void    sample_buffer_new(size_t size)
+    {
+        if (sample_buffer)
+        {
+            delete [] sample_buffer;
+            sample_buffer = NULL;
+        }
+        sample_buffer=new int16s[size];
+    }
+
+    void    run_index_init() { run_index=0; }
+    void    run_mode_init() { run_mode=RUN_MODE_STOP; }
+
+    //TEMP
+    int32u  x;
+    int32u  y;
+    int32u  w;
+    int32u  h;
+    int32u  run_index;
+    int32u  run_mode;
+    int32s  run_segment_length;
+    int16s* sample_buffer;
+    states_context_plane plane_states[MAX_QUANT_TABLES];
 };
 
 //***************************************************************************
@@ -93,14 +145,19 @@ private :
     void FrameHeader();
     void slice(states &States);
     void slice_header(states &States);
+    void plane_states_clean();
     void contexts_init();
     void contexts_clean();
     int32u CRC_Compute(size_t Size);
+    int32s get_symbol_with_bias_correlation(Context* context);
     void rgb();
-    void plane(int16s quant_table[MAX_CONTEXT_INPUTS][256]);
-    void line(states States[MAX_CONTEXT_INPUTS], int16s quant_table[MAX_CONTEXT_INPUTS][256], int16s *sample[2]);
+    void plane(int32u pos);
+    void line(states States[MAX_CONTEXT_INPUTS], int pos, int16s *sample[2]);
+    int32s line_range_coder(int32s pos, int32s context);
+    int32s line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s context);
     void read_quant_tables(int i);
     void read_quant_table(int i, int j, size_t scale);
+    void copy_plane_states_to_slice();
 
     //Range coder
     #if MEDIAINFO_TRACE
@@ -133,11 +190,12 @@ private :
         #define Info_RS(_STATE, _INFO, _NAME) Skip_RS_(_STATE)
     #endif //MEDIAINFO_TRACE
     RangeCoder* RC;
+    Slice S;
 
     //Temp
     bool    ConfigurationRecordIsPresent;
-    int     context_count[MAX_QUANT_TABLES];
-    int     len_count[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS];
+    int32u  context_count[MAX_QUANT_TABLES];
+    int32u  len_count[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS];
     int16s  quant_tables[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS][256];
     int32u  quant_table_index[MAX_PLANES];
     int32u  quant_table_count;
@@ -145,21 +203,30 @@ private :
     int32u  micro_version;
     int32u  num_h_slices;
     int32u  num_v_slices;
-    bool    chroma_planes;
-    bool    alpha_plane;
+    int32u  chroma_h_shift;
+    int32u  chroma_v_shift;
     int8u   coder_type;
     int8u   colorspace_type;
     int8u   bits_per_sample;
+    bool    keyframe;
+    bool    chroma_planes;
+    bool    alpha_plane;
     state_transitions state_transitions_table;
+    BitStream_Fast bsf;
+
     Context **contexts;
 
-    struct slice_struct
-    {
-        int32u  w;
-        int32u  h;
-        int16s* sample_buffer;
-    };
-    slice_struct Slice;
+    //TEMP
+    static const int32u PREFIX_MAX = 12; //limit
+    int8u bits_max;
+
+    states_context_plane plane_states[MAX_QUANT_TABLES];
+
+    int32s get_median_number(int32s one, int32s two, int32s three);
+    int32s predict(int16s *current, int16s *current_top);
+    void update_context_state(Context* v, int32s error);
+    void update_correlation_value_and_shift(Context *c);
+    int32s golomb_rice_decode(int k);
 };
 
 } //NameSpace
