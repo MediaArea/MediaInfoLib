@@ -1926,9 +1926,30 @@ void File_MpegTs::Read_Buffer_AfterParsing()
             //
             if (!(Buffer_TotalBytes-Buffer_TotalBytes_FirstSynched>=MpegTs_JumpTo_Begin && Config->ParseSpeed<0.8))
             {
-                //We are already parsing 16 seconds (for all PCRs), we don't hope to have more info
                 MpegTs_JumpTo_Begin=File_Offset+Buffer_Offset-Buffer_TotalBytes_FirstSynched;
                 MpegTs_JumpTo_End=MpegTs_JumpTo_Begin;
+
+                //Avoid too short duration of the end. e.g. with quick pass, MpegTs_JumpTo_End may have content only for 2 frames which is not enough for catching an I-frame at the end of the file. Forcing to 2 seconds
+                if (Config->ParseSpeed < 0.5)
+                {
+                    complete_stream::streams::iterator It_End=Complete_Stream->Streams.end();
+                    for (complete_stream::streams::iterator It=Complete_Stream->Streams.begin(); It!=It_End; It++)
+                    {
+                        complete_stream::stream* &Stream=*It;
+
+                        if (Stream && Stream->Kind==complete_stream::stream::pes && Stream->TimeStamp_Start!=(int64u)-1 && Stream->TimeStamp_End!=(int64u)-1)
+                        {
+                            int64u Duration=Stream->TimeStamp_End-Stream->TimeStamp_Start;
+                            if (Duration<27000000*2) // 2 seconds
+                            {
+                                int64u Ratio=(27000000*2)/Duration;
+                                MpegTs_JumpTo_End*=Ratio;
+                                break; //Using the first PES found
+                            }
+                        }
+                    }
+                }
+
                 if (MpegTs_JumpTo_Begin+MpegTs_JumpTo_End>=File_Size)
                 {
                     if (MpegTs_JumpTo_Begin+MpegTs_JumpTo_End>File_Size)
