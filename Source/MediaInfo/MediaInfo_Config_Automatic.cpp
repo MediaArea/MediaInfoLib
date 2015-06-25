@@ -1411,7 +1411,7 @@ void MediaInfo_Config_CodecID_Video_Mpeg4 (InfoMap &Info)
     "acBG;YUV;;;;;;YUV;4:2:2\n"
     "apch;ProRes;;;http://www.apple.com/quicktime/download/standalone.html;422 HQ;;YUV;4:2:2\n"
     "apcn;ProRes;;;http://www.apple.com/quicktime/download/standalone.html;422;;YUV;4:2:2\n"
-    "apcs;ProRes;;;http://www.apple.com/quicktime/download/standalone.html;422 LT;;YUV;4:2:2\\n"
+    "apcs;ProRes;;;http://www.apple.com/quicktime/download/standalone.html;422 LT;;YUV;4:2:2\n"
     "apco;ProRes;;;http://www.apple.com/quicktime/download/standalone.html;422 Proxy;;YUV;4:2:2\n"
     "ap4c;ProRes;;;http://www.apple.com/quicktime/download/standalone.html;4444;;;4:4:4\n"
     "ap4h;ProRes;;;http://www.apple.com/quicktime/download/standalone.html;4444;;;4:4:4\n"
