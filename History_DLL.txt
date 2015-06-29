@@ -8,7 +8,7 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
-Version 0.7.74, 2015-05-25
+Version 0.7.75, 2015-06-30
 --------------
 + MXF: consideraing 60 fps timecode tracks with 2 components having a difference of 2 frames as a single timecode
 + EBUCore 1.6: switch to the link of the final XSD
