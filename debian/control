@@ -8,10 +8,11 @@ Homepage: http://MediaArea.net/MediaInfo
 Vcs-Svn: https://mediainfo.svn.sourceforge.net/svnroot/mediainfo/MediaInfoLib/
 Vcs-Browser: http://mediainfo.svn.sourceforge.net/viewvc/mediainfo/MediaInfoLib/
 
-Package: libmediainfo0
+Package: libmediainfo
 Section: libs
 Architecture: any
 Depends: libzen0 (>= 0.4.31), zlib1g
+Replaces: libmediainfo0
 Description: MediaInfo is a convenient unified display of the most relevant technical
  and tag data for video and audio files.
  .
