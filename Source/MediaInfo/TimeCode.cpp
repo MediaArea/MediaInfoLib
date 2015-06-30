@@ -62,6 +62,16 @@ TimeCode::TimeCode (int64s Frames_, int8u FramesPerSecond_, bool DropFrame_, boo
     MustUseSecondField(MustUseSecondField_),
     IsSecondField(IsSecondField_)
 {
+    if (!FramesPerSecond_)
+    {
+        Frames  = 0;
+        Seconds = 0;
+        Minutes = 0;
+        Hours   = 0;
+        IsNegative = true; //Forcing a weird display
+        return;
+    }
+
     if (Frames_<0)
     {
         IsNegative=true;
@@ -183,6 +193,9 @@ void TimeCode::MinusOne()
 //---------------------------------------------------------------------------
 string TimeCode::ToString()
 {
+    if (!FramesPerSecond)
+        return string();
+
     string TC;
     if (IsNegative)
         TC+='-';
