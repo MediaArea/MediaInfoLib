@@ -1636,7 +1636,36 @@ void File_Mpeg4::mdat_xxxx()
             if (Stream_Temp.stts_Durations_Pos<Stream_Temp.stts_Durations.size())
             {
                 stream::stts_durations::iterator stts_Duration=Stream_Temp.stts_Durations.begin()+Stream_Temp.stts_Durations_Pos;
-                FrameInfo.DTS=TimeCode_DtsOffset+(stts_Duration->DTS_Begin+(((int64u)stts_Duration->SampleDuration)*(Frame_Count_NotParsedIncluded-stts_Duration->Pos_Begin)))*1000000000/Stream_Temp.mdhd_TimeScale;
+                int64u stts_Offset=stts_Duration->DTS_Begin+(((int64u)stts_Duration->SampleDuration)*(Frame_Count_NotParsedIncluded-stts_Duration->Pos_Begin));
+                if (!Stream_Temp.edts.empty())
+                {
+                    int64s Delay=0;
+                    switch (Stream_Temp.edts.size())
+                    {
+                        case 0 :
+                                break;
+                        case 1 :
+                                if (Stream_Temp.edts[0].Duration==Stream_Temp.tkhd_Duration && Stream_Temp.edts[0].Rate==0x00010000 && moov_mvhd_TimeScale)
+                                {
+                                    Delay=-((int64s)Stream_Temp.edts[0].Delay);
+                                }
+                                break;
+                        case 2 :
+                                if (Stream_Temp.edts[0].Delay==(int32u)-1 && Stream_Temp.edts[0].Duration+Stream_Temp.edts[1].Duration==Stream_Temp.tkhd_Duration && Stream_Temp.edts[0].Rate==0x00010000 && Stream_Temp.edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
+                                {
+                                    Delay=((int64s)Stream_Temp.edts[0].Duration)-Stream_Temp.edts[1].Delay;
+                                }
+                                break;
+                        default:
+                                break; //TODO: handle more complex Edit Lists
+                    }
+
+                    if (-Delay<(int64s)stts_Offset)
+                        stts_Offset+=Delay;
+                    else
+                        stts_Offset=0;
+                }
+                FrameInfo.DTS=TimeCode_DtsOffset+stts_Offset*1000000000/Stream_Temp.mdhd_TimeScale;
                 FrameInfo.PTS=Stream_Temp.PtsDtsAreSame?FrameInfo.DTS:(int64u)-1;
                 FrameInfo.DUR=((int64u)stts_Duration->SampleDuration)*1000000000/Stream_Temp.mdhd_TimeScale;
                 Stream_Temp.stts_FramePos++;
