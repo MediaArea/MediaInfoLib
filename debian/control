@@ -1,71 +1,158 @@
 Source: libmediainfo
 Priority: optional
 Maintainer: MediaArea.net SARL <info@mediaarea.net>
-Build-Depends: debhelper (>= 5), doxygen, tofrodos, libzen-dev (>= 0.4.31), zlib1g-dev, pkg-config, automake, autoconf, libtool
-Standards-Version: 3.7.3
+Build-Depends: debhelper (>= 9),
+               dpkg-dev (>= 1.16.1),
+               python-all (>= 2.6.6-3~),
+               python3-all,
+               dh-autoreconf,
+               doxygen,
+               tofrodos,
+               libzen-dev (>= 0.4.25),
+               libtinyxml2-dev,
+               libcurl4-gnutls-dev,
+               libmms-dev,
+               libglib2.0-dev,
+               zlib1g-dev,
+               pkg-config
+Standards-Version: 3.9.6
 Section: libs
 Homepage: http://MediaArea.net/MediaInfo
-Vcs-Svn: https://mediainfo.svn.sourceforge.net/svnroot/mediainfo/MediaInfoLib/
-Vcs-Browser: http://mediainfo.svn.sourceforge.net/viewvc/mediainfo/MediaInfoLib/
-
-Package: libmediainfo0
-Section: libs
-Architecture: any
-Depends: libzen0 (>= 0.4.31), zlib1g
-Description: MediaInfo is a convenient unified display of the most relevant technical
- and tag data for video and audio files.
- .
- The MediaInfo data display includes:
- - Container: format, profile, commercial name of the format, duration,
-   overall bit rate, writing application and library, title, author,
-   director, album, track number, date, duration...
- - Video: format, codec id, aspect, frame rate, bit rate, color space,
-   chroma subsampling, bit depth, scan type, scan order...
- - Audio: format, codec id, sample rate, channels, bit depth, language,
-   bit rate...
- - Text: format, codec id, language of subtitle...
- - Chapters: count of chapters, list of chapters...
- .
- MediaInfo analyticals include:
- - Container: MPEG-4, QuickTime, Matroska, AVI, MPEG-PS (including DVD),
-   MPEG-TS (including Blu-ray), MXF, GXF, LXF, WMV, FLV, Real...
- - Tags: Id3v1, Id3v2, Vorbis comments, APE tags...
- - Video: MPEG-1/2 Video, H.263, MPEG-4 Visual (including DivX, XviD),
-   H.264/AVC, Dirac...
- - Audio: MPEG Audio (including MP3), AC3, DTS, AAC, Dolby E, AES3, FLAC...
- - Subtitles: CEA-608, CEA-708, DTVCC, SCTE-20, SCTE-128, ATSC/53, CDP, 
-   DVB Subtitle, Teletext, SRT, SSA, ASS, SAMI...
- .
- This package contains the shared library for MediaInfo.
+Vcs-Git: https://github.com/MediaArea/MediaInfoLib.git
+Vcs-Browser: https://github.com/MediaArea/MediaInfoLib
 
 Package: libmediainfo-dev
 Section: libdevel
 Architecture: any
-Depends: libmediainfo0 (= 0.7.75), libzen-dev (>= 0.4.31)
-Replaces: libmediainfo0-dev
-Description: MediaInfo is a convenient unified display of the most relevant technical
- and tag data for video and audio files.
+Pre-Depends: ${misc:Pre-Depends}
+Depends: libzen-dev,
+         libmediainfo0 (= ${binary:Version}),
+         ${misc:Depends}
+Description: library reading metadata from media files -- headers
+ MediaInfo is a library used for retrieving technical information and other
+ metadata about audio or video files.
  .
- The MediaInfo data display includes:
- - Container: format, profile, commercial name of the format, duration,
-   overall bit rate, writing application and library, title, author,
-   director, album, track number, date, duration...
- - Video: format, codec id, aspect, frame rate, bit rate, color space,
-   chroma subsampling, bit depth, scan type, scan order...
- - Audio: format, codec id, sample rate, channels, bit depth, language,
-   bit rate...
- - Text: format, codec id, language of subtitle...
- - Chapters: count of chapters, list of chapters...
+ A non-exhaustive list of the information MediaInfo can retrieve from media
+ files include:
+  - General: title, author, director, album, track number, date, duration...
+  - Video: codec, aspect, fps, bitrate...
+  - Audio: codec, sample rate, channels, language, bitrate...
+  - Text: language of subtitle
+  - Chapters: number of chapters, list of chapters
  .
- MediaInfo analyticals include:
- - Container: MPEG-4, QuickTime, Matroska, AVI, MPEG-PS (including DVD),
-   MPEG-TS (including Blu-ray), MXF, GXF, LXF, WMV, FLV, Real...
- - Tags: Id3v1, Id3v2, Vorbis comments, APE tags...
- - Video: MPEG-1/2 Video, H.263, MPEG-4 Visual (including DivX, XviD),
-   H.264/AVC, Dirac...
- - Audio: MPEG Audio (including MP3), AC3, DTS, AAC, Dolby E, AES3, FLAC...
- - Subtitles: CEA-608, CEA-708, DTVCC, SCTE-20, SCTE-128, ATSC/53, CDP, 
-   DVB Subtitle, Teletext, SRT, SSA, ASS, SAMI...
+ MediaInfo supports the following formats:
+  - Video: MKV, OGM, AVI, DivX, WMV, QuickTime, Real, MPEG-1, MPEG-2,
+           MPEG-4, DVD (VOB)...
+  - Video Codecs: DivX, XviD, MSMPEG4, ASP, H.264, AVC...)
+  - Audio: OGG, MP3, WAV, RA, AC3, DTS, AAC, M4A, AU, AIFF...
+  - Subtitles: SRT, SSA, ASS, SAMI...
  .
- This package contains the development support files needed for compiling
- and linking applications and libraries which use MediaInfo shared library.
+ This package contains the headers and other development support files needed
+ for compiling and linking applications and libraries which use this library.
+
+Package: libmediainfo0
+Architecture: any
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: library for reading metadata from media files -- shared library
+ MediaInfo is a library used for retrieving technical information and other
+ metadata about audio or video files.
+ .
+ A non-exhaustive list of the information MediaInfo can retrieve from media
+ files include:
+  - General: title, author, director, album, track number, date, duration...
+  - Video: codec, aspect, fps, bitrate...
+  - Audio: codec, sample rate, channels, language, bitrate...
+  - Text: language of subtitle
+  - Chapters: number of chapters, list of chapters
+ .
+ MediaInfo supports the following formats:
+  - Video: MKV, OGM, AVI, DivX, WMV, QuickTime, Real, MPEG-1, MPEG-2,
+           MPEG-4, DVD (VOB)...
+  - Video Codecs: DivX, XviD, MSMPEG4, ASP, H.264, AVC...)
+  - Audio: OGG, MP3, WAV, RA, AC3, DTS, AAC, M4A, AU, AIFF...
+  - Subtitles: SRT, SSA, ASS, SAMI...
+ .
+ This package contains the shared library needed for running applications which
+ use this library.
+
+Package: python-mediainfodll
+Section: python
+Architecture: all
+Depends: ${python:Depends}, libmediainfo0 (>= ${source:Version}),
+         ${misc:Depends}
+Description: library for reading metadata from media files -- shared library
+ MediaInfo is a library used for retrieving technical information and other
+ metadata about audio or video files.
+ .
+ A non-exhaustive list of the information MediaInfo can retrieve from media
+ files include:
+  - General: title, author, director, album, track number, date, duration...
+  - Video: codec, aspect, fps, bitrate...
+  - Audio: codec, sample rate, channels, language, bitrate...
+  - Text: language of subtitle
+  - Chapters: number of chapters, list of chapters
+ .
+ MediaInfo supports the following formats:
+  - Video: MKV, OGM, AVI, DivX, WMV, QuickTime, Real, MPEG-1, MPEG-2,
+           MPEG-4, DVD (VOB)...
+  - Video Codecs: DivX, XviD, MSMPEG4, ASP, H.264, AVC...)
+  - Audio: OGG, MP3, WAV, RA, AC3, DTS, AAC, M4A, AU, AIFF...
+  - Subtitles: SRT, SSA, ASS, SAMI...
+ .
+ This package contains the Python 2.x module required for using this library
+ from Python 2.x applications.
+
+Package: python3-mediainfodll
+Section: python
+Architecture: all
+Depends: ${python3:Depends}, libmediainfo0 (>= ${source:Version}),
+         ${misc:Depends}
+Description: library for reading metadata from media files -- shared library
+ MediaInfo is a library used for retrieving technical information and other
+ metadata about audio or video files.
+ .
+ A non-exhaustive list of the information MediaInfo can retrieve from media
+ files include:
+  - General: title, author, director, album, track number, date, duration...
+  - Video: codec, aspect, fps, bitrate...
+  - Audio: codec, sample rate, channels, language, bitrate...
+  - Text: language of subtitle
+  - Chapters: number of chapters, list of chapters
+ .
+ MediaInfo supports the following formats:
+  - Video: MKV, OGM, AVI, DivX, WMV, QuickTime, Real, MPEG-1, MPEG-2,
+           MPEG-4, DVD (VOB)...
+  - Video Codecs: DivX, XviD, MSMPEG4, ASP, H.264, AVC...)
+  - Audio: OGG, MP3, WAV, RA, AC3, DTS, AAC, M4A, AU, AIFF...
+  - Subtitles: SRT, SSA, ASS, SAMI...
+ .
+ This package contains the Python 3.x module required for using this library
+ from Python 3.x applications.
+
+Package: libmediainfo-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}
+Description: library for reading metadata from media files -- documentation
+ MediaInfo is a library used for retrieving technical information and other
+ metadata about audio or video files.
+ .
+ A non-exhaustive list of the information MediaInfo can retrieve from media
+ files include:
+  - General: title, author, director, album, track number, date, duration...
+  - Video: codec, aspect, fps, bitrate...
+  - Audio: codec, sample rate, channels, language, bitrate...
+  - Text: language of subtitle
+  - Chapters: number of chapters, list of chapters
+ .
+ MediaInfo supports the following formats:
+  - Video: MKV, OGM, AVI, DivX, WMV, QuickTime, Real, MPEG-1, MPEG-2,
+           MPEG-4, DVD (VOB)...
+  - Video Codecs: DivX, XviD, MSMPEG4, ASP, H.264, AVC...)
+  - Audio: OGG, MP3, WAV, RA, AC3, DTS, AAC, M4A, AU, AIFF...
+  - Subtitles: SRT, SSA, ASS, SAMI...
+ .
+ This package contains the Doxygen generated API reference for developing
+ applications/libraries using this library.
