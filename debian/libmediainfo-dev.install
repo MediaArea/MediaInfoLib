@@ -1,8 +1,9 @@
-usr/lib/lib*.so
-usr/lib/*.la
-usr/lib/pkgconfig/*
-usr/include/MediaInfo/*
-usr/include/MediaInfoDLL/*
-usr/share/doc/libmediainfo-dev/Documentation.html
-usr/share/doc/libmediainfo-dev/Doc/*
-usr/share/doc/libmediainfo-dev/Examples/*
+/usr/lib/*/lib*.so
+/usr/lib/*/pkgconfig
+
+Source/MediaInfo/MediaInfo.h        /usr/include/MediaInfo
+Source/MediaInfo/MediaInfoList.h    /usr/include/MediaInfo
+Source/MediaInfo/MediaInfo_Const.h  /usr/include/MediaInfo
+Source/MediaInfo/MediaInfo_Events.h /usr/include/MediaInfo
+
+Source/MediaInfoDLL/MediaInfoDLL.h  /usr/include/MediaInfoDLL

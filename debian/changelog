@@ -1,6 +1,267 @@
-libmediainfo (0.7.75-1) unstable; urgency=low
+libmediainfo (0.7.75) unstable; urgency=medium
 
-  * See History.txt for more info and real dates
+  * New upstream release
 
- -- MediaArea.net SARL <info@mediaarea.net>  Sat, 01 Jan 2011 00:07:23 +0000
+ -- Guillaume Roques <guillaume@mediaarea.net>  Tue, 30 Jun 2015 12:37:49 +0200
+
+libmediainfo (0.7.70-1) unstable; urgency=medium
+
+  * [eff1e51] Imported Upstream version 0.7.70
+  * [3253f5d] Update copyright file to include aes-gladman bits
+  * [0fb5774] Refresh patches
+
+ -- Chow Loong Jin <hyperair@debian.org>  Thu, 18 Sep 2014 19:01:31 +0800
+
+libmediainfo (0.7.69-1) unstable; urgency=medium
+
+  * [6b3a5a1] Imported Upstream version 0.7.69
+
+ -- Chow Loong Jin <hyperair@debian.org>  Mon, 05 May 2014 03:26:31 +0800
+
+libmediainfo (0.7.68-1) unstable; urgency=medium
+
+  * [eb215b4] Imported Upstream version 0.7.68
+
+ -- Chow Loong Jin <hyperair@debian.org>  Wed, 09 Apr 2014 02:13:18 +0800
+
+libmediainfo (0.7.67-2) unstable; urgency=low
+
+  * [6756a05] Re-add pkgconfig path to libmediainfo-dev.install
+
+ -- Chow Loong Jin <hyperair@debian.org>  Wed, 15 Jan 2014 20:39:24 +0800
+
+libmediainfo (0.7.67-1) unstable; urgency=low
+
+  * [40db143] Imported Upstream version 0.7.67
+  * [e6819b5] No-change bump of Standards-Version to 3.9.5
+  * [eda1a64] Fix pc file location not respecting multiarch paths
+
+ -- Chow Loong Jin <hyperair@debian.org>  Mon, 13 Jan 2014 03:02:39 +0800
+
+libmediainfo (0.7.65-1) unstable; urgency=low
+
+  * [a5f5c7f] Imported Upstream version 0.7.65
+  * [e715bca] Drop fromdos command after dh_installdocs.
+    The .txt files we used to install seem to have vanished.
+
+ -- Chow Loong Jin <hyperair@debian.org>  Tue, 26 Nov 2013 01:34:04 +0800
+
+libmediainfo (0.7.64-3) unstable; urgency=low
+
+  * [3ff3203] Install MediaInfoDLL.h for C bindings (Closes: #702993)
+  * [551fb07] Add packages for python bindings
+  * [29bf174] Use dh_python{2,3}
+  * [7eda431] Install python modules
+
+ -- Chow Loong Jin <hyperair@debian.org>  Sun, 18 Aug 2013 03:49:45 +0800
+
+libmediainfo (0.7.64-2) unstable; urgency=low
+
+  * [40791b4] Update Homepage
+  * [f9eb35b] Relicense debian/* under BSD-2-clause
+  * [b9c78ab] Make libmediainfo-dev depend on libzen-dev.
+    Its headers have some ZenLib includes, so libzen-dev is necessary.
+    (LP: #1212569)
+  * [62135a3] Add use of Requires: libzen into .pc
+
+ -- Chow Loong Jin <hyperair@debian.org>  Sat, 17 Aug 2013 03:13:53 +0800
+
+libmediainfo (0.7.64-1) unstable; urgency=low
+
+  * [3d2c4db] Imported Upstream version 0.7.64
+  * [b7f14a1] Update copyright file
+
+ -- Chow Loong Jin <hyperair@debian.org>  Tue, 09 Jul 2013 23:05:18 +0800
+
+libmediainfo (0.7.63-1) unstable; urgency=low
+
+  * [cd628ff] Imported Upstream version 0.7.63
+  * [4d8e014] Enable some additional dependencies
+  * [c1efa4c] Refresh patch
+  * [702fe1a] Add patch to fix pkg-config missing error
+  * [1f67600] Build-depend on libglib2.0-dev
+    mms.pc depends on glib-2.0.pc, but libmms-dev doesn't depend on
+    libglib2.0-dev. This can be dropped once libmms-dev is fixed.
+
+ -- Chow Loong Jin <hyperair@debian.org>  Thu, 16 May 2013 23:30:01 +0800
+
+libmediainfo (0.7.62-1) experimental; urgency=low
+
+  * [d63ebce] Imported Upstream version 0.7.62
+  * [bf20076] No-change bump of Standards-Version to 3.9.4
+
+ -- Chow Loong Jin <hyperair@debian.org>  Mon, 11 Mar 2013 22:11:12 +0800
+
+libmediainfo (0.7.61-1) experimental; urgency=low
+
+  * [94f6dbd] Imported Upstream version 0.7.61
+  * [360e5da] Refresh Drop-direct-linkage-of-libzen-in-.pc.patch
+
+ -- Chow Loong Jin <hyperair@debian.org>  Sun, 28 Oct 2012 04:58:26 +0800
+
+libmediainfo (0.7.60-1) experimental; urgency=low
+
+  * [4068ade] Imported Upstream version 0.7.60
+
+ -- Chow Loong Jin <hyperair@debian.org>  Tue, 04 Sep 2012 01:25:51 +0800
+
+libmediainfo (0.7.59-1) experimental; urgency=low
+
+  * [5c6d445] Bump libzen-dev build-dep version
+  * [f80f420] Imported Upstream version 0.7.59
+
+ -- Chow Loong Jin <hyperair@debian.org>  Sun, 19 Aug 2012 20:12:33 +0800
+
+libmediainfo (0.7.58-1) unstable; urgency=low
+
+  * [7821ed5] Imported Upstream version 0.7.58
+
+ -- Chow Loong Jin <hyperair@debian.org>  Sun, 03 Jun 2012 14:44:10 +0800
+
+libmediainfo (0.7.57-1) unstable; urgency=low
+
+  * [253bc4c] Imported Upstream version 0.7.57:
+    - New features:
+      + #3513490, Vorbis comment (Flac, Ogg): more tags are supported
+      + XML-based formats (P2, XDCAM, DCP, ISM, HLS...): support of UTF-16
+        encoding
+      + MPEG-4: for buggy PCM, prioritizing the codec ID "in24" = 24-bit against
+        the bit depth field
+    - Upstream Bug fixes:
+      + #3516900, Vorbis comment (Flac, Ogg): trying to do better mapping of
+        PERFORMER and ARTIST tags
+      + MXF: wrong video frame count in some cases
+      + #3517374, GCC 4.7: compilation issues removal, thanks to SpepS
+      + MPEG-PS: some files were not well demuxed so analysis was sometimes
+        wrong (especially macroblock parsing)
+  * [77978a5] Build-depend on libtinyxml2-dev
+  * [41b551c] Update configure flag to --with-libtinyxml2
+  * [22ad4d4] Update regex for ignored symbols
+  * [1636c13] Call dpkg-gensymbols with -c4.
+    We want to be as strict as possible to ensure that the symbols file is
+    always up to date.
+
+ -- Chow Loong Jin <hyperair@debian.org>  Thu, 24 May 2012 21:16:58 +0800
+
+libmediainfo (0.7.56-1) unstable; urgency=low
+
+  * [49afb28] Imported Upstream version 0.7.56:
+    - New features:
+      + Better support of machines lacking of std::stringstream
+      + Better support of machines requesting explicit stdc++ library link
+        option (e.g. some ARM embedded devices)
+      + AC-3: support of little endian streams
+      + LXF: support of format version 0
+      + HLS: support of .m3u8 index and sequence referencing a bunch of MPEG-TS
+        files
+      + MPEG-4: Added support of glbl atom and corresponding 4CC (ai12, ai15,
+        ai1q, ai5q)
+      + MPEG-4: Added detection of files with mx5p files wrongly filled with raw
+        MPEG Video instead of MXF
+      + MPEG-TS: Detection of 20-bit Dolby E even if the SMPTE 302 M header is
+        set to 24-bit
+    - Upstream bug fixes:
+      + Correction
+      + sf#3515515, MPEG-4: crash with MPEG-4 container + H264/AVC video stream
+      + sf#3515393, MPEG Audio: infinite loop (freeze) with some files
+      + sf#3514677, Video: Well known 1.85:1 display aspect ratio was
+        incorrectly displayed as 16:9
+      + sf#3513908, File interface: No output if filename contain a colon
+      + AVI: infinite loop (freeze) with some files (having index containing
+        0-sized chunk)
+      + AVC: memory leaks
+      + libcurl support: libcurl config from MediaInfo is compatible with
+        libcurl+gnutls
+      + sf#3513490, Id3v2: mapping of "Encoded by" and "Encoding library" is
+        conform to the specs now
+      + MXF: hang up with some clip-wrapped files
+      + MPEG-4: AVC-100 bit rate was not coherent depending of the container
+        (MPEG-4 or MXF)
+      + reVTMD output is disabled due to its non-free (point of view of FSF and
+        DFSG) licensing.
+  * [2527bf2] Drop 0001-Don-t-expose-tinyxml-dependency.patch (applied upstream)
+  * [7a2e4d4] Refresh Drop-direct-linkage-of-libzen-in-.pc.patch
+  * [6435829] Bump Standards-Version to 3.9.3
+    - Update debian/copyright Format URL
+  * [4b620bd] Bump debhelper build-dep version to 9
+
+ -- Chow Loong Jin <hyperair@debian.org>  Sun, 22 Apr 2012 18:56:27 +0800
+
+libmediainfo (0.7.54-1) UNRELEASED; urgency=low
+
+  * [3e0843e] Update watch url
+  * [6aab287] Imported Upstream version 0.7.54:
+    - New features:
+      + #3480111, Matroska: parsing of WebM-style frame rate info
+      + #3499859, ALAC: parsing of the alac atom, for real bit depth / sample
+        rate
+      + #3487601, DV: fields order (TFF/BFF)
+      + MPEG-4: more video 4CCs binded to MPEG Video
+      + H.263: raw stream parsing (width, height, aspect ratio), comparison with
+        container data
+      + Speed improvements
+      + MPEG-PS: supporting parsing of some non-conform files
+      + Full support of CEA-608 (separation of CC1-CC4, T1-T4)
+      + #3494722, MPEG-4: trying to detect wrong duration in track header
+      + MPEG-4 with embedded MXF track (XDCAM...): separation of video bitrate
+        and padding bitrate
+      + Compound streams (e.g. DV): separation of video bitrate and audio
+        bitrate
+      + Blu-ray: LPCM mono real bit rate is separated from the encoded (stereo)
+        bit rate
+      + Support of https, sftp scp protocols (custom builds only)
+      + AVI: vprp (OpenDML) display aspect ratio support
+
+    - Upstream bug fixes:
+      + sf#3480111, Matroska: some frame rates are incorrect in the file, trying
+        to detect this kind of malformed file
+      + sf#3479494, AVC: segmentation fault
+      + sf#3440638, AAC: wrong detection for some malformed AAC streams
+      + sf#3440638, MPEG-4: wrong analysis of some files having track header
+        after media information
+      + sf#3480111, MXF: Height was wrong for MXF with FrameLayout = Mixed
+        fields
+      + sf#3468235, Blu-ray: displaying PGS in all cases (even if PES is not
+        detected, they are too much rare)
+      + sf#3498846, MPEG-4: delay between audio and video was no more detected
+      + sf#3495573, MPEG-4: crash with some files having fragments
+      + MPEG-4: channel position in case of channel atom is configured with
+        ChannelBitmap
+      + MPEG-TS: crash with some buggy files (a PID indicated as PSI and PES at
+        the same time)
+      + AES3: not detecting Dolby E stream if there is guard band before the
+        Dolby E frame, in MPEG-TS
+      + DPX: some files with some invalid fields were not detected
+      + DTVCC Captions: crash with some buggy streams
+
+ -- Chow Loong Jin <hyperair@debian.org>  Sat, 31 Mar 2012 06:01:01 +0800
+
+libmediainfo (0.7.53-2) unstable; urgency=low
+
+  * [c68e5bb] Clean up doxygen generated files.
+    This fixes issues with double-building. (Closes: #656918)
+  * [3e7e828] Drop public dependency of libzen in .pc file
+  * [e8b4cce] Drop libzen-dev dependency in libmediainfo-dev
+
+ -- Chow Loong Jin <hyperair@debian.org>  Sun, 29 Jan 2012 06:15:32 +0800
+
+libmediainfo (0.7.53-1) unstable; urgency=low
+
+  * [c09c8a3] Add watchfile
+  * [d01eaa2] Imported Upstream version 0.7.53
+    - Fixes issue with missing -DUNICODE flag (Closes: #656929)
+  * [1f9257f] Drop gbp.conf.
+    We use gz tarballs which are pristine-tar-able now
+  * [4fa4d5a] Add --with-tinyxml (use system tinyxml)
+  * [2515c8e] Enable parallel builds
+  * [739b1ec] Don't expose tinyxml dependency
+  * [1a43861] Add libzen to Requires of .pc file
+
+ -- Chow Loong Jin <hyperair@debian.org>  Thu, 26 Jan 2012 10:26:36 +0800
+
+libmediainfo (0.7.52-1) unstable; urgency=low
+
+  *  Initial release (Closes: #654235)
+
+ -- Chow Loong Jin <hyperair@debian.org>  Mon, 02 Jan 2012 19:29:00 +0800
 
