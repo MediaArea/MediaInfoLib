@@ -11,8 +11,6 @@ override_dh_auto_configure:
 		--enable-shared				\
 		--enable-visibility			\
 		--with-libcurl				\
-		--with-libmms				\
-		--with-libtinyxml2			\
 		--without-libmd5
 
 override_dh_auto_build:
