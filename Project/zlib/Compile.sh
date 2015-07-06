@@ -15,7 +15,7 @@ else
     echo Downloading zlib...
     echo
     rm -fr $zlib_source
-    git clone -b "v1.2.8" https://github.com/madler/zlib
+    git clone -b "v1.2.8" https://github.com/madler/zlib $zlib_source
     if test -e $zlib_source/configure; then
         echo
         echo zlib downloaded, compiling it
