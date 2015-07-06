@@ -26,7 +26,6 @@ else
         echo
         exit 1
     fi
-    exit
 fi
 
 ##########################################################################
@@ -40,7 +39,6 @@ fi
 ##########################################################################
 # Compile
 cd $zlib_source
-test -e Makefile && make clean
 echo
 echo Compiling zlib...
 echo

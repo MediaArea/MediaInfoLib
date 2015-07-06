@@ -114,4 +114,4 @@ echo "MediaInfo shared object is in MediaInfoLib/Project/GNU/Library/.libs"
 echo "For installing ZenLib, cd ZenLib/Project/GNU/Library && make install"
 echo "For installing MediaInfoLib, cd MediaInfoLib/Project/GNU/Library && make install"
 
-unset -v Home ZenLib_Options OS
+unset -v Home ZenLib_Options MacOptions OS
