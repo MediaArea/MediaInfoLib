@@ -238,6 +238,9 @@ File_Ffv1::File_Ffv1()
     ParserName=__T("FFV1");
     IsRawStream=true;
 
+    //use Ffv1_default_state_transition by default
+    memcpy(state_transitions_table, Ffv1_default_state_transition,
+           sizeof(Ffv1_default_state_transition));
     //Temp
     ConfigurationRecordIsPresent=false;
     RC=NULL;
@@ -433,10 +436,10 @@ void File_Ffv1::Read_Buffer_Continue()
 
             if (Pos)
             {
-                delete RC; RC = new RangeCoder(Buffer+Buffer_Offset+(size_t)Element_Offset, Slices_BufferSizes[Pos], custom_state_transitions); //Ffv1_default_state_transition);
+                delete RC; RC = new RangeCoder(Buffer+Buffer_Offset+(size_t)Element_Offset, Slices_BufferSizes[Pos], state_transitions_table);
             }
             else // ac=2
-                RC->AssignStateTransitions(custom_state_transitions);
+                RC->AssignStateTransitions(state_transitions_table);
 
             slice(States); // Not yet fully implemented
 
@@ -490,8 +493,8 @@ void File_Ffv1::FrameHeader()
         {
             int32s state_transition_delta;
             Get_RS (States, state_transition_delta,             "state_transition_delta");
-            custom_state_transitions[i]=state_transition_delta+RC->one_state[i];
-            Param_Info1(custom_state_transitions[i]);
+            state_transitions_table[i]=state_transition_delta+RC->one_state[i];
+            Param_Info1(state_transitions_table[i]);
         }
         Element_End0();
     }
@@ -666,7 +669,7 @@ void File_Ffv1::slice_header(states &States)
         //TODO
     }
 
-    RC->AssignStateTransitions(custom_state_transitions);
+    RC->AssignStateTransitions(state_transitions_table);
 }
 
 //---------------------------------------------------------------------------
