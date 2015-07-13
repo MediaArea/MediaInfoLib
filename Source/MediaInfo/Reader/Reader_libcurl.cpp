@@ -38,6 +38,11 @@
 #endif
 #include <ctime>
 #include <algorithm> //For Url
+#define MEDIAINFO_HMAC 1
+#if MEDIAINFO_HMAC
+    #include "hmac.h"
+    #include "base64.h"
+#endif //MEDIAINFO_HMAC
 #include "ZenLib/File.h"
 using namespace ZenLib;
 using namespace std;
@@ -489,6 +494,60 @@ size_t Reader_libcurl::Format_Test_PerParser(MediaInfo_Internal* MI, const Strin
     Http::Url File_URL=Http::Url(Ztring(File_Name).To_UTF8());
     if (!File_URL.Protocol.empty())
     {
+        // Amazon S3 specific credentials
+        if (File_URL.Protocol=="http" || File_URL.Protocol=="https")
+        {
+            //Exploding the path
+            const string Amazon_AWS_Host(".amazonaws.com");
+            const size_t Amazon_AWS_Host_Size=14;
+            size_t Amazon_Host_Pos=File_URL.Host.find(Amazon_AWS_Host);
+            if (Amazon_Host_Pos+Amazon_AWS_Host_Size==File_URL.Host.size())
+            {
+                string Amazon_S3_Bucket;
+                string Amazon_S3_CanonicalizedResource;
+                
+                string Amazon_S3_Host(File_URL.Host, 0, File_URL.Host.size()-Amazon_AWS_Host_Size);
+                size_t Amazon_S3_Host_Pos=Amazon_S3_Host.find('.');
+                if (Amazon_S3_Host_Pos!=(size_t)-1)
+                {
+                    //Virtual-hosted–style URL
+                    Amazon_S3_Bucket=Amazon_S3_Host.substr(0, Amazon_S3_Host_Pos);
+                    Amazon_S3_Host.erase(0, Amazon_S3_Host_Pos+1);
+                    Amazon_S3_CanonicalizedResource=File_URL.Path.substr(1);
+                }
+                else
+                {
+                    //Path-style URL
+                    size_t Bucket_Size=File_URL.Path.find('/', 1);
+                    if (Bucket_Size!=(size_t)-1)
+                    {
+                        Amazon_S3_Bucket=File_URL.Path.substr(1, Bucket_Size-1);
+                        Amazon_S3_CanonicalizedResource=File_URL.Path.substr(Bucket_Size+1);
+                    }
+                }
+                size_t Region_Pos=Amazon_S3_Host.find('-');
+                if (Region_Pos!=(size_t)-1)
+                    Amazon_S3_Host.erase(Region_Pos);
+                if (Amazon_S3_Host=="s3")
+                {
+                    // Amazon S3, computing the Authorization value
+                    // See http://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html
+                    Ztring File_Name2(Curl_Data->File_Name);
+                    File_Name2.FindAndReplace(Ztring().From_UTF8(File_URL.User+':'+File_URL.Password+'@'), Ztring());
+                    Curl_Data->File_Name=File_Name2;
+                    char Amazon_S3_Date_Buffer[100];
+                    time_t Amazon_S3_Date_Time=time(0);
+                    strftime(Amazon_S3_Date_Buffer, sizeof(Amazon_S3_Date_Buffer), "%a, %d %b %Y %H:%M:%S +0000", gmtime(&Amazon_S3_Date_Time));
+                    string Amazon_S3_Date(Amazon_S3_Date_Buffer);
+                    string Amazon_S3_ToSign = "GET\n\n\n"+Amazon_S3_Date+"\n/"+Amazon_S3_Bucket+"/"+Amazon_S3_CanonicalizedResource;
+                    string Hmac_Result; Hmac_Result.resize(HASH_OUTPUT_SIZE);
+                    hmac_sha((int8u*)File_URL.Password.c_str(), (unsigned long)File_URL.Password.size(), (int8u*)Amazon_S3_ToSign.c_str(), (unsigned long)Amazon_S3_ToSign.size(), (int8u*)Hmac_Result.c_str(), HASH_OUTPUT_SIZE);
+                    string Amazon_S3_Authorization="AWS "+File_URL.User+":"+Base64::encode(Hmac_Result);
+                    Curl_Data->HttpHeader=curl_slist_append(Curl_Data->HttpHeader, ("Date: "+Amazon_S3_Date).c_str());
+                    Curl_Data->HttpHeader=curl_slist_append(Curl_Data->HttpHeader, ("Authorization: "+Amazon_S3_Authorization).c_str());
+                }
+            }
+        }
 
         if (File_URL.Protocol=="sftp" || File_URL.Protocol=="scp")
         {

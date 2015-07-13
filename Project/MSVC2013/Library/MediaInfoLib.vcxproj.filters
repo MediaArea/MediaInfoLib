@@ -84,6 +84,15 @@
     <Filter Include="ThirdParty\aes">
       <UniqueIdentifier>{d2da3f33-e2a1-4463-b9a3-42535f4ab93e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ThirdParty\hmac">
+      <UniqueIdentifier>{d6292b30-f170-46be-8b0b-2b29f12bc35b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\sha1">
+      <UniqueIdentifier>{23e90e0c-de45-48ec-bc1e-63f6ef107f35}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\sha2">
+      <UniqueIdentifier>{2b174bb5-6f3b-48d7-939c-8a87bc394aa2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\MediaInfo\File__Analyze.cpp">
@@ -731,6 +740,18 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Fims.cpp">
       <Filter>Source Files\Export</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\ThirdParty\hmac-gladman\hmac.c">
+      <Filter>ThirdParty\hmac</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ThirdParty\hmac-gladman\pwd2key.c">
+      <Filter>ThirdParty\hmac</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ThirdParty\sha1-gladman\sha1.c">
+      <Filter>ThirdParty\sha1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ThirdParty\sha2-gladman\sha2.c">
+      <Filter>ThirdParty\sha2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1377,6 +1398,18 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Fims.h">
       <Filter>Header Files\Export</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\ThirdParty\hmac-gladman\hmac.h">
+      <Filter>ThirdParty\hmac</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\ThirdParty\hmac-gladman\pwd2key.h">
+      <Filter>ThirdParty\hmac</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\ThirdParty\sha1-gladman\sha1.h">
+      <Filter>ThirdParty\sha1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\ThirdParty\sha2-gladman\sha2.h">
+      <Filter>ThirdParty\sha2</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

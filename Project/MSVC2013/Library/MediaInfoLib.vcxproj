@@ -151,7 +151,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;MEDIAINFO_LIBCURL_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -172,7 +172,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>Level4</WarningLevel>
       <DisableSpecificWarnings>4100;4996;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;NDEBUG;MEDIAINFO_DVDIF_ANALYZE_NO;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_TRACE_NO;MEDIAINFO_LIBMMS_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;MEDIAINFO_DVDIF_ANALYZE_NO;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_TRACE_NOx;MEDIAINFO_LIBMMS_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
@@ -205,8 +205,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;MEDIAINFO_TRACE_NO;MEDIAINFO_EVENTS_NO;MEDIAINFO_DEMUX_NO;MEDIAINFO_DVDIF_ANALYZE_NO;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_SEEK_NO;MEDIAINFO_NEXTPACKET_NO;MEDIAINFO_IBI_NO;MEDIAINFO_LIBCURL_NO;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;MEDIAINFO_LIBCURL_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>Level4</WarningLevel>
       <DisableSpecificWarnings>4100;4996;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -475,12 +475,24 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\ThirdParty\hmac-gladman\hmac.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ThirdParty\hmac-gladman\pwd2key.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\ThirdParty\md5\md5.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ThirdParty\sha1-gladman\sha1.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ThirdParty\sha2-gladman\sha2.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.cpp">
@@ -705,7 +717,11 @@
     <ClInclude Include="..\..\..\Source\ThirdParty\aes-gladman\brg_endian.h" />
     <ClInclude Include="..\..\..\Source\ThirdParty\aes-gladman\brg_types.h" />
     <ClInclude Include="..\..\..\Source\ThirdParty\base64\base64.h" />
+    <ClInclude Include="..\..\..\Source\ThirdParty\hmac-gladman\hmac.h" />
+    <ClInclude Include="..\..\..\Source\ThirdParty\hmac-gladman\pwd2key.h" />
     <ClInclude Include="..\..\..\Source\ThirdParty\md5\md5.h" />
+    <ClInclude Include="..\..\..\Source\ThirdParty\sha1-gladman\sha1.h" />
+    <ClInclude Include="..\..\..\Source\ThirdParty\sha2-gladman\sha2.h" />
     <ClInclude Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.h" />
   </ItemGroup>
   <ItemGroup>
