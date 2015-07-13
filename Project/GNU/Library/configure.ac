@@ -384,7 +384,9 @@ if test "$have_libz" != "yes"; then
 		if test -e ../../../../Shared/Project/zlib/Compile.sh; then
 			cd ../../../../Shared/Project/zlib
 			chmod u+x Compile.sh
-			./Compile.sh --build=$build_alias
+			# Since zlib configure answer :unknown option: --build=
+			#./Compile.sh --build=$build_alias
+			./Compile.sh
 			cd $Home
 			if test -e ../../../../Shared/Source/zlib/libz.a || test -e ../../../../Shared/Source/zlib/libz.la; then
 				with_zlib="builtin"

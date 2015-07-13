@@ -123,7 +123,7 @@ private :
     int32u  quant_table_index[MAX_PLANES];
     int32u  version;
     int8u   plane_count;
-    state_transitions custom_state_transitions;
+    state_transitions state_transitions_table;
 
     struct slice_struct
     {
