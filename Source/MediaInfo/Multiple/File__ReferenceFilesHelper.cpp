@@ -1700,28 +1700,42 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
         case 1  :
                     #if MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
                     {
-                        //Time percentage
-                        int64u Duration=MI->Get(Stream_General, 0, General_Duration).To_int64u();
-                        Ztring DurationS;
-                        if (Duration)
+                        //Init
+                        if (!Duration)
                         {
-                            Duration*=Value;
-                            Duration/=10000;
-                            DurationS+=L'0'+(Char)(Duration/(10*60*60*1000)); Duration%=10*60*60*1000;
-                            DurationS+=L'0'+(Char)(Duration/(   60*60*1000)); Duration%=   60*60*1000;
-                            DurationS+=L':';
-                            DurationS+=L'0'+(Char)(Duration/(   10*60*1000)); Duration%=   10*60*1000;
-                            DurationS+=L'0'+(Char)(Duration/(      60*1000)); Duration%=      60*1000;
-                            DurationS+=L':';
-                            DurationS+=L'0'+(Char)(Duration/(      10*1000)); Duration%=      10*1000;
-                            DurationS+=L'0'+(Char)(Duration/(         1000)); Duration%=         1000;
-                            DurationS+=L'.';
-                            DurationS+=L'0'+(Char)(Duration/(          100)); Duration%=          100;
-                            DurationS+=L'0'+(Char)(Duration/(           10)); Duration%=           10;
-                            DurationS+=L'0'+(Char)(Duration);
+                            MediaInfo_Internal MI2;
+                            MI2.Option(__T("File_KeepInfo"), __T("1"));
+                            Ztring ParseSpeed_Save=MI2.Option(__T("ParseSpeed_Get"), __T(""));
+                            Ztring Demux_Save=MI2.Option(__T("Demux_Get"), __T(""));
+                            MI2.Option(__T("ParseSpeed"), __T("0"));
+                            MI2.Option(__T("Demux"), Ztring());
+                            size_t MiOpenResult=MI2.Open(MI->File_Name);
+                            MI2.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
+                            MI2.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
+                            if (!MiOpenResult)
+                                return (size_t)-1;
+                            Ztring A = MI2.Inform();
+                            Duration=MI2.Get(Stream_General, 0, General_Duration).To_float64()/1000;
                         }
-                        else
-                            DurationS=Ztring::ToZtring(((float64)Value)/100)+__T('%');
+
+                        //Time percentage
+                        float64 DurationF=Duration;
+                        DurationF*=Value;
+                        DurationF/=10000;
+                        size_t DurationM=(size_t)(DurationF*1000);
+                        Ztring DurationS;
+                        DurationS+=L'0'+(Char)(DurationM/(10*60*60*1000)); DurationM%=10*60*60*1000;
+                        DurationS+=L'0'+(Char)(DurationM/(   60*60*1000)); DurationM%=   60*60*1000;
+                        DurationS+=L':';
+                        DurationS+=L'0'+(Char)(DurationM/(   10*60*1000)); DurationM%=   10*60*1000;
+                        DurationS+=L'0'+(Char)(DurationM/(      60*1000)); DurationM%=      60*1000;
+                        DurationS+=L':';
+                        DurationS+=L'0'+(Char)(DurationM/(      10*1000)); DurationM%=      10*1000;
+                        DurationS+=L'0'+(Char)(DurationM/(         1000)); DurationM%=         1000;
+                        DurationS+=L'.';
+                        DurationS+=L'0'+(Char)(DurationM/(          100)); DurationM%=          100;
+                        DurationS+=L'0'+(Char)(DurationM/(           10)); DurationM%=           10;
+                        DurationS+=L'0'+(Char)(DurationM);
 
                         CountOfReferencesToParse=Sequences.size();
                         bool HasProblem=false;
@@ -1730,7 +1744,7 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                             if (Sequences[Sequences_Current]->MI)
                             {
                                 Ztring Result;
-                                if (Sequences[Sequences_Current]->Resources.empty() || Duration<Sequences[Sequences_Current]->Resources[1]->Demux_Offset_DTS)
+                                if (Sequences[Sequences_Current]->Resources.size()<2 || Duration<Sequences[Sequences_Current]->Resources[1]->Demux_Offset_DTS)
                                 {
                                     Sequences[Sequences_Current]->Resources_Current=0;
                                     Result=Sequences[Sequences_Current]->MI->Option(__T("File_Seek"), DurationS);
