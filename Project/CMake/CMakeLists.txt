@@ -88,6 +88,10 @@ find_package(CURL)
 include_directories(${MediaInfoLib_SOURCES_PATH})
 include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/md5/)
 include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/base64/)
+include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/)
+include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha1-gladman/)
+include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha2-gladman/)
+include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/hmac-gladman/)
 include_directories(${ZLIB_INCLUDE_DIRS})
 
 set(MediaInfoLib_PUBLIC_HDRS
@@ -101,6 +105,14 @@ set(MediaInfoLib_PUBLIC_HDRS
 
 set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/md5/md5.c
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/aes_modes.c
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/aescrypt.c
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/aeskey.c
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/aestab.c
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha1-gladman/sha1.c
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha2-gladman/sha2.c
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/hmac-gladman/hmac.c
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/hmac-gladman/pwd2key.c
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze_Buffer.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze_Buffer_MinimizeSize.cpp
@@ -326,7 +338,7 @@ if(BUILD_ZLIB)
 endif()
 
 # disable some features. Maybe it should be enabled.
-target_compile_definitions(mediainfo PRIVATE MEDIAINFO_AES_NO MEDIAINFO_LIBMMS_NO)
+target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBMMS_NO)
 if(NOT CURL_FOUND)
   target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBCURL_NO)
 else()
@@ -338,7 +350,11 @@ target_include_directories(mediainfo PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/../../../ZenLib/Source
   ${MediaInfoLib_SOURCES_PATH}
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/md5/
-  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/base64/)
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/base64/
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha1-gladman/
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha2-gladman/
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/hmac-gladman/)
 
 if(NOT TinyXML_FOUND)
   target_include_directories(mediainfo PRIVATE ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/)

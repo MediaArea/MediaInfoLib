@@ -237,6 +237,22 @@ lib@MediaInfoLib_LibName@_la_SOURCES += \
                        ../../../Source/ThirdParty/md5/md5.c
 endif
 
+if COMPILE_SHA1
+lib@MediaInfoLib_LibName@_la_SOURCES += \
+                       ../../../Source/ThirdParty/sha1-gladman/sha1.c
+endif
+
+if COMPILE_SHA2
+lib@MediaInfoLib_LibName@_la_SOURCES += \
+                       ../../../Source/ThirdParty/sha2-gladman/sha2.c
+endif
+
+if COMPILE_HMAC
+lib@MediaInfoLib_LibName@_la_SOURCES += \
+                       ../../../Source/ThirdParty/hmac-gladman/hmac.c \
+                       ../../../Source/ThirdParty/hmac-gladman/pwd2key.c
+endif
+
 if COMPILE_TINYXML2
 lib@MediaInfoLib_LibName@_la_SOURCES += \
                        ../../../Source/ThirdParty/tinyxml2/tinyxml2.cpp

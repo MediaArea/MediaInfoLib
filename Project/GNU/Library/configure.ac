@@ -200,6 +200,9 @@ AC_ARG_WITH(libcurl,            AC_HELP_STRING([--with-libcurl],            [Use
 AC_ARG_WITH(libmms,             AC_HELP_STRING([--with-libmms],             [Use libmms (specific directory)]),           , with_libmms=no)
 AC_ARG_WITH(libaes,             AC_HELP_STRING([--with-libaes],             [Use libaes (system)]),                       , with_libaes=depend)
 AC_ARG_WITH(libmd5,             AC_HELP_STRING([--with-libmd5],             [Use libmd5 (system)]),                       , with_libmd5=depend)
+AC_ARG_WITH(libsha1,             AC_HELP_STRING([--with-libsha1],             [Use libsha1 (system)]),                       , with_libsha1=depend)
+AC_ARG_WITH(libsha2,             AC_HELP_STRING([--with-libsha2],             [Use libsha2 (system)]),                       , with_libsha2=depend)
+AC_ARG_WITH(libhmac,             AC_HELP_STRING([--with-libhmac],             [Use libhmac (system)]),                       , with_libhmac=depend)
 AC_ARG_WITH(libtinyxml2,        AC_HELP_STRING([--with-libtinyxml2],        [Use libtinyxml2 (system)]),                  , with_libtinyxml2=depend)
 AC_ARG_WITH(libmediainfo-name,  AC_HELP_STRING([--with-libmediainfo-name],  [Force libmediainfo filename]),               , with_libmediainfo_name=mediainfo)
 
@@ -624,6 +627,63 @@ else
 fi
 
 dnl -------------------------------------------------------------------------
+dnl libsha1
+dnl
+if test "$with_libsha1" = "yes"; then
+	PKG_CHECK_MODULES([SHA1_GLADMAN], [sha1_gladman])
+	CXXFLAGS="$CXXFLAGS $SHA1_CXXFLAGS"
+	CFLAGS="$CFLAGS $SHA1_CFLAGS"
+	MediaInfoLib_CFLAGS="$MediaInfoLib_CFLAGS $SHA1_CFLAGS"
+	LIBS="$LIBS $SHA1_LIBS"
+	MediaInfoLib_LIBS="$MediaInfoLib_LIBS $SHA1_LIBS"
+	AM_CONDITIONAL(COMPILE_SHA1, false)
+	using_libsha1="system"
+else
+	CXXFLAGS="$CXXFLAGS -I../../../Source/ThirdParty/sha1-gladman"
+	CFLAGS="$CFLAGS -I../../../Source/ThirdParty/sha1-gladman"
+	using_libsha1="internal"
+	AM_CONDITIONAL(COMPILE_SHA1, true)
+fi
+
+dnl -------------------------------------------------------------------------
+dnl libsha2
+dnl
+if test "$with_libsha2" = "yes"; then
+	PKG_CHECK_MODULES([SHA2_GLADMAN], [sha2_gladman])
+	CXXFLAGS="$CXXFLAGS $SHA2_CXXFLAGS"
+	CFLAGS="$CFLAGS $SHA2_CFLAGS"
+	MediaInfoLib_CFLAGS="$MediaInfoLib_CFLAGS $SHA2_CFLAGS"
+	LIBS="$LIBS $SHA2_LIBS"
+	MediaInfoLib_LIBS="$MediaInfoLib_LIBS $SHA2_LIBS"
+	AM_CONDITIONAL(COMPILE_SHA2, false)
+	using_libsha2="system"
+else
+	CXXFLAGS="$CXXFLAGS -I../../../Source/ThirdParty/sha2-gladman"
+	CFLAGS="$CFLAGS -I../../../Source/ThirdParty/sha2-gladman"
+	using_libsha2="internal"
+	AM_CONDITIONAL(COMPILE_SHA2, true)
+fi
+
+dnl -------------------------------------------------------------------------
+dnl libhmac
+dnl
+if test "$with_libhmac" = "yes"; then
+	PKG_CHECK_MODULES([HMAC_GLADMAN], [hmac_gladman])
+	CXXFLAGS="$CXXFLAGS $HMAC_CXXFLAGS"
+	CFLAGS="$CFLAGS $HMAC_CFLAGS"
+	MediaInfoLib_CFLAGS="$MediaInfoLib_CFLAGS $HMAC_CFLAGS"
+	LIBS="$LIBS $HMAC_LIBS"
+	MediaInfoLib_LIBS="$MediaInfoLib_LIBS $HMAC_LIBS"
+	AM_CONDITIONAL(COMPILE_HMAC, false)
+	using_libhmac="system"
+else
+	CXXFLAGS="$CXXFLAGS -I../../../Source/ThirdParty/hmac-gladman"
+	CFLAGS="$CFLAGS -I../../../Source/ThirdParty/hmac-gladman"
+	using_libhmac="internal"
+	AM_CONDITIONAL(COMPILE_HMAC, true)
+fi
+
+dnl -------------------------------------------------------------------------
 dnl libtinyxml2
 dnl
 if test "$with_libtinyxml2" = "yes"; then
@@ -810,6 +870,9 @@ echo "  Using libmms?                                           $using_libmms"
 echo "  Using zlib?                                             $with_zlib"
 echo "  Using aes?                                              $using_libaes"
 echo "  Using md5?                                              $using_libmd5"
+echo "  Using sha1?                                             $using_libsha1"
+echo "  Using sha2?                                             $using_libsha2"
+echo "  Using hmac?                                             $using_libhmac"
 echo "  Using tinyxml2?                                         $using_libtinyxml2"
 echo ""
 echo "  Create static lib?                                      $enable_static"
