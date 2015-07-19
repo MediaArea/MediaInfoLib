@@ -1929,6 +1929,7 @@ File_Mxf::File_Mxf()
     SystemScheme1_TimeCodeArray_StartTimecode_ms=(int64u)-1;
     SystemScheme1_FrameRateFromDescriptor=0;
     Essences_FirstEssence_Parsed=false;
+    MayHaveCaptionsInStream=false;
     StereoscopicPictureSubDescriptor_IsPresent=false;
     UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony=false;
     Essences_UsedForFrameCount=(int32u)-1;
@@ -14851,7 +14852,10 @@ void File_Mxf::ChooseParser__Aaf_GC_Data(const essences::iterator &Essence, cons
         case 0x02 : //Ancillary
                     #if defined(MEDIAINFO_ANCILLARY_YES)
                         if (!Ancillary)
+                        {
                             Ancillary=new File_Ancillary();
+                            MayHaveCaptionsInStream=true;
+                        }
                         Essence->second.Parsers.push_back(Ancillary);
                         Ancillary_IsBinded=true;
                     #endif //defined(MEDIAINFO_ANCILLARY_YES)
@@ -14937,6 +14941,7 @@ void File_Mxf::ChooseParser_Avc(const essences::iterator &Essence, const descrip
     //Filling
     #if defined(MEDIAINFO_AVC_YES)
         File_Avc* Parser=new File_Avc;
+        MayHaveCaptionsInStream=true;
     #else
         //Filling
         File__Analyze* Parser=new File_Unknown();
@@ -14993,6 +14998,7 @@ void File_Mxf::ChooseParser_Mpegv(const essences::iterator &Essence, const descr
     #if defined(MEDIAINFO_MPEGV_YES)
         File_Mpegv* Parser=new File_Mpegv();
         Parser->Ancillary=&Ancillary;
+        MayHaveCaptionsInStream=true;
         #if MEDIAINFO_ADVANCED
             Parser->InitDataNotRepeated_Optional=true;
         #endif // MEDIAINFO_ADVANCED
@@ -15542,7 +15548,7 @@ void File_Mxf::TryToFinish()
 {
     Frame_Count_NotParsedIncluded=(int64u)-1;
 
-    if (!IsSub && IsParsingEnd && File_Size!=(int64u)-1 && Config->ParseSpeed && Config->ParseSpeed<1 && IsParsingMiddle_MaxOffset==(int64u)-1 && File_Size/2>0x4000000) //TODO: 64 MB by default; // Do not search in the middle of the file if quick pass or full pass
+    if (MayHaveCaptionsInStream && !IsSub && IsParsingEnd && File_Size!=(int64u)-1 && Config->ParseSpeed && Config->ParseSpeed<1 && IsParsingMiddle_MaxOffset==(int64u)-1 && File_Size/2>0x4000000) //TODO: 64 MB by default; // Do not search in the middle of the file if quick pass or full pass
     {
         IsParsingMiddle_MaxOffset=File_Size/2+0x4000000; //TODO: 64 MB by default;
         GoTo(File_Size/2);

@@ -1093,6 +1093,7 @@ protected :
     int64u SystemScheme1_TimeCodeArray_StartTimecode_ms;
     int64u SystemScheme1_FrameRateFromDescriptor;
     bool   Essences_FirstEssence_Parsed;
+    bool   MayHaveCaptionsInStream;
     bool   StereoscopicPictureSubDescriptor_IsPresent;
     bool   UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony;
     int32u Essences_UsedForFrameCount;
