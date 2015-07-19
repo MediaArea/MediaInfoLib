@@ -1071,12 +1071,14 @@ protected :
         inline void Locators_CleanUp() {}
         inline void Locators_Test() {}
     #endif //defined(MEDIAINFO_REFERENCES_YES)
+    void NextRandomIndexMetadata();
     void TryToFinish();
 
     //Temp
     int128u EssenceContainer_FromPartitionMetadata;
     int64u PartitionMetadata_PreviousPartition;
     int64u PartitionMetadata_FooterPartition;
+    int64u RandomIndexMetadatas_MaxOffset;
     mxftimecode MxfTimeCodeForDelay;
     mxftimecode MxfTimeCodeMaterial;
     float64 DTS_Delay; //In seconds

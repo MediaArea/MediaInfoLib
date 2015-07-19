@@ -1919,6 +1919,7 @@ File_Mxf::File_Mxf()
     IdIsAlwaysSame_Offset=0;
     PartitionMetadata_PreviousPartition=(int64u)-1;
     PartitionMetadata_FooterPartition=(int64u)-1;
+    RandomIndexMetadatas_MaxOffset=(int64u)-1;
     DTS_Delay=0;
     StreamPos_StartAtOne=true;
     SDTI_TimeCode_RepetitionCount=0;
@@ -4970,29 +4971,7 @@ void File_Mxf::Header_Parse()
         if (IsParsingEnd && PartitionPack_Parsed && !Partitions.empty() && Partitions[Partitions.size()-1].StreamOffset+Partitions[Partitions.size()-1].PartitionPackByteCount+Partitions[Partitions.size()-1].HeaderByteCount+Partitions[Partitions.size()-1].IndexByteCount==File_Offset+Buffer_Offset
          && !(Code_Compare1==Elements::RandomIndexMetadata1 && Code_Compare2==Elements::RandomIndexMetadata2 && Code_Compare3==Elements::RandomIndexMetadata3 && Code_Compare4==Elements::RandomIndexMetadata4))
         {
-            if (RandomIndexMetadatas.empty())
-            {
-                if (!RandomIndexMetadatas_AlreadyParsed)
-                {
-                    Partitions_Pos=0;
-                    while (Partitions_Pos<Partitions.size() && Partitions[Partitions_Pos].StreamOffset!=PartitionMetadata_PreviousPartition)
-                        Partitions_Pos++;
-                    if (Partitions_Pos==Partitions.size())
-                    {
-                        GoTo(PartitionMetadata_PreviousPartition);
-                        Open_Buffer_Unsynch();
-                    }
-                    else
-                        TryToFinish();
-                }
-            }
-            else
-            {
-                GoTo(RandomIndexMetadatas[0].ByteOffset);
-                RandomIndexMetadatas.erase(RandomIndexMetadatas.begin());
-                PartitionPack_Parsed=false;
-                Open_Buffer_Unsynch();
-            }
+            NextRandomIndexMetadata();
             return;
         }
     #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
@@ -5291,30 +5270,7 @@ void File_Mxf::Data_Parse()
 
         if (IsParsingEnd)
         {
-            //We have the necessary for indexes, jumping to next index
-            Skip_XX(Element_Size,                               "Data");
-            if (RandomIndexMetadatas.empty())
-            {
-                if (!RandomIndexMetadatas_AlreadyParsed)
-                {
-                    Partitions_Pos=0;
-                    while (Partitions_Pos<Partitions.size() && Partitions[Partitions_Pos].StreamOffset!=PartitionMetadata_PreviousPartition)
-                        Partitions_Pos++;
-                    if (Partitions_Pos==Partitions.size())
-                    {
-                        GoTo(PartitionMetadata_PreviousPartition);
-                        Open_Buffer_Unsynch();
-                    }
-                    else
-                        TryToFinish();
-                }
-            }
-            else
-            {
-                GoTo(RandomIndexMetadatas[0].ByteOffset);
-                RandomIndexMetadatas.erase(RandomIndexMetadatas.begin());
-                Open_Buffer_Unsynch();
-            }
+            NextRandomIndexMetadata();
             return;
         }
 
@@ -5805,6 +5761,9 @@ void File_Mxf::Data_Parse()
         }
         Open_Buffer_Unsynch();
     }
+
+    if (File_Offset+Buffer_Offset+Element_Size>=RandomIndexMetadatas_MaxOffset)
+        NextRandomIndexMetadata();
 }
 
 //***************************************************************************
@@ -6611,6 +6570,10 @@ void File_Mxf::RandomIndexMetadata()
             GoTo(RandomIndexMetadatas[0].ByteOffset);
             RandomIndexMetadatas.erase(RandomIndexMetadatas.begin());
             Open_Buffer_Unsynch();
+
+            //Hints
+            if (File_Buffer_Size_Hint_Pointer)
+                (*File_Buffer_Size_Hint_Pointer)=64*1024;
         }
         RandomIndexMetadatas_AlreadyParsed=true;
     FILLING_END();
@@ -9764,6 +9727,25 @@ void File_Mxf::PartitionMetadata()
                         break;
             default   : ;
         }
+
+    if ((Code.lo&0xFF0000)==0x030000) //If Body Partition Pack
+    {
+        if (IsParsingEnd)
+        {
+            //Parsing only index
+            RandomIndexMetadatas_MaxOffset=File_Offset+Buffer_Offset+Element_Size+HeaderByteCount+IndexByteCount;
+
+            //Hints
+            if (File_Buffer_Size_Hint_Pointer && Buffer_Offset+Element_Size+HeaderByteCount+IndexByteCount>=Buffer_Size)
+            {
+                size_t Buffer_Size_Target=(size_t)(Buffer_Offset+Element_Size+HeaderByteCount+IndexByteCount-Buffer_Size);
+                if (Buffer_Size_Target<128*1024)
+                    Buffer_Size_Target=128*1024;
+                //if ((*File_Buffer_Size_Hint_Pointer)<Buffer_Size_Target)
+                    (*File_Buffer_Size_Hint_Pointer)=Buffer_Size_Target;
+            }
+        }
+    }
 
     if ((Code.lo&0xFF0000)==0x040000) //If Footer Partition Pack
     {
@@ -15523,11 +15505,44 @@ void File_Mxf::Locators_Test()
 #endif //defined(MEDIAINFO_REFERENCES_YES)
 
 //---------------------------------------------------------------------------
+void File_Mxf::NextRandomIndexMetadata()
+{
+    //We have the necessary for indexes, jumping to next index
+    Skip_XX(Element_Size,                               "Data");
+    if (RandomIndexMetadatas.empty())
+    {
+        if (!RandomIndexMetadatas_AlreadyParsed)
+        {
+            Partitions_Pos=0;
+            while (Partitions_Pos<Partitions.size() && Partitions[Partitions_Pos].StreamOffset!=PartitionMetadata_PreviousPartition)
+                Partitions_Pos++;
+            if (Partitions_Pos==Partitions.size())
+            {
+                GoTo(PartitionMetadata_PreviousPartition);
+                Open_Buffer_Unsynch();
+            }
+            else
+                TryToFinish();
+        }
+        else
+            TryToFinish();
+    }
+    else
+    {
+        GoTo(RandomIndexMetadatas[0].ByteOffset);
+        RandomIndexMetadatas.erase(RandomIndexMetadatas.begin());
+        Open_Buffer_Unsynch();
+    }
+
+    RandomIndexMetadatas_MaxOffset=(int64u)-1;
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::TryToFinish()
 {
     Frame_Count_NotParsedIncluded=(int64u)-1;
 
-    if (!IsSub && IsParsingEnd && File_Size!=(int64u)-1 && Config->ParseSpeed<1 && IsParsingMiddle_MaxOffset==(int64u)-1 && File_Size/2>0x4000000) //TODO: 64 MB by default;
+    if (!IsSub && IsParsingEnd && File_Size!=(int64u)-1 && Config->ParseSpeed && Config->ParseSpeed<1 && IsParsingMiddle_MaxOffset==(int64u)-1 && File_Size/2>0x4000000) //TODO: 64 MB by default; // Do not search in the middle of the file if quick pass or full pass
     {
         IsParsingMiddle_MaxOffset=File_Size/2+0x4000000; //TODO: 64 MB by default;
         GoTo(File_Size/2);
@@ -15536,6 +15551,8 @@ void File_Mxf::TryToFinish()
         Streams_Count=(size_t)-1;
         return;
     }
+
+    Finish();
 }
 
 } //NameSpace
