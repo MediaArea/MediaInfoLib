@@ -5431,9 +5431,6 @@ void File_Mxf::Data_Parse()
             //Check of Essence used as a reference for frame count
             if (Essences_UsedForFrameCount==(int32u)-1)
                 Essences_UsedForFrameCount=Essence->first;
-            else if ((Essence->second.StreamKind==Stream_Audio && Essences[Essences_UsedForFrameCount].StreamKind>Stream_Audio)
-                  || (Essence->second.StreamKind==Stream_Video && Essences[Essences_UsedForFrameCount].StreamKind>Stream_Video))
-                    Essences_UsedForFrameCount=Essence->first;
 
             //Demux
             #if MEDIAINFO_DEMUX
