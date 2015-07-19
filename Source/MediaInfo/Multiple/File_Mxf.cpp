@@ -6564,7 +6564,7 @@ void File_Mxf::RandomIndexMetadata()
     Skip_B4(                                                    "Length");
 
     FILLING_BEGIN();
-        if (MediaInfoLib::Config.ParseSpeed_Get()<1.0 && !RandomIndexMetadatas_AlreadyParsed && !RandomIndexMetadatas.empty())
+        if (MediaInfoLib::Config.ParseSpeed_Get()<1.0 && !RandomIndexMetadatas_AlreadyParsed && !RandomIndexMetadatas.empty() && Config->File_Mxf_ParseIndex_Get())
         {
             IsParsingEnd=true;
             IsCheckingRandomAccessTable=true;
