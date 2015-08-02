@@ -255,6 +255,11 @@ File_Ffv1::File_Ffv1()
     //use Ffv1_default_state_transition by default
     memcpy(state_transitions_table, Ffv1_default_state_transition,
            sizeof(Ffv1_default_state_transition));
+    
+    //Input
+    Width = (int32u)-1;
+    Height = (int32u)-1;
+
     //Temp
     ConfigurationRecordIsPresent=false;
     RC=NULL;
@@ -751,8 +756,8 @@ void File_Ffv1::slice_header(states &States)
     Get_RU (States, slice_width,                            "slice_width_minus1");
     Get_RU (States, slice_height,                           "slice_height_minus1");
 
-    S.w = (slice_width + 1) * (DEFAULT_WIDTH / num_h_slices);
-    S.h = (slice_height + 1) * (DEFAULT_HEIGHT / num_v_slices);
+    S.w = (slice_width + 1) * (Width / num_h_slices);
+    S.h = (slice_height + 1) * (Height / num_v_slices);
     S.x = slice_x * S.w;
     S.y = slice_y * S.y;
 

@@ -36,11 +36,6 @@ const size_t MAX_PLANES=4;
 const size_t MAX_QUANT_TABLES=8;
 const size_t MAX_CONTEXT_INPUTS=5;
 
-/* const int32u  DEFAULT_WIDTH=320; */
-/* const int32u  DEFAULT_HEIGHT=240; */
-const int32u  DEFAULT_WIDTH=320;
-const int32u  DEFAULT_HEIGHT=240;
-
 class RangeCoder
 {
 public :
@@ -74,7 +69,7 @@ class Slice
 {
 public:
 
-    Slice() : w(DEFAULT_WIDTH), h(DEFAULT_HEIGHT), run_index(0), run_mode(RUN_MODE_STOP),
+    Slice() : run_index(0), run_mode(RUN_MODE_STOP),
         sample_buffer(NULL) {}
 
     ~Slice()
@@ -132,6 +127,10 @@ public :
     //Constructor/Destructor
     File_Ffv1();
     ~File_Ffv1();
+
+    //Input
+    int32u Width;
+    int32u Height;
 
 private :
     //Streams management
