@@ -65,6 +65,17 @@ public : //Temp
 
 class File_Ffv1 : public File__Analyze
 {
+    struct Context
+    {
+        static const int32u N0; // Determined threshold to divide N and B
+        static const int32s Cmax; // Storage limitation, C never upper than 127
+        static const int32s Cmin; // Storage limitation, C never below than -128
+        int32s N; // Count where the context was encountred
+        int32s B; // Accumulated sum of corrected prediction residuals
+        int32s A; // Accumulated sum of the absolute corrected prediction residuals (St + Nt)
+        int32s C; // Correction value
+    };
+
 public :
     //Constructor/Destructor
     File_Ffv1();
@@ -82,6 +93,8 @@ private :
     void FrameHeader();
     void slice(states &States);
     void slice_header(states &States);
+    void contexts_init();
+    void contexts_clean();
     int32u CRC_Compute(size_t Size);
     void rgb();
     void plane(int16s quant_table[MAX_CONTEXT_INPUTS][256]);
@@ -136,6 +149,7 @@ private :
     int8u   colorspace_type;
     int8u   bits_per_sample;
     state_transitions state_transitions_table;
+    Context **contexts;
 
     struct slice_struct
     {

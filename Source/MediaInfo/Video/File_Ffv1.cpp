@@ -43,6 +43,9 @@ namespace MediaInfoLib
 //***************************************************************************
 
 extern int32u Psi_CRC_32_Table[256];
+const int32u File_Ffv1::Context::N0 = 128;
+const int32s File_Ffv1::Context::Cmax = 127;
+const int32s File_Ffv1::Context::Cmin = -128;
 
 //***************************************************************************
 // RangeCoder
@@ -247,6 +250,7 @@ File_Ffv1::File_Ffv1()
     version=0;
     num_h_slices = 1;
     num_v_slices = 1;
+    contexts = NULL;
 }
 
 //---------------------------------------------------------------------------
@@ -943,6 +947,47 @@ int32u File_Ffv1::CRC_Compute(size_t Size)
         CRC_32_Buffer++;
     }
     return CRC_32;
+}
+
+//---------------------------------------------------------------------------
+void File_Ffv1::contexts_clean()
+{
+    if (!contexts)
+        return;
+
+    for (size_t i = 0; contexts[i]; i++)
+    {
+        delete[] contexts[i];
+    }
+    delete[] contexts;
+    contexts = NULL;
+}
+
+//---------------------------------------------------------------------------
+void File_Ffv1::contexts_init()
+{
+    if (contexts)
+        contexts_clean();
+
+    contexts = new Context* [quant_table_count + 1];
+    size_t i = 0;
+    for (; i < quant_table_count; i++)
+    {
+        contexts[i] = new Context [context_count[i]];
+        for (size_t j = 0; j < context_count[i]; j++)
+        {
+            Context *c = &contexts[i][j];
+
+            c->N = 1;
+            //c->A = (alpha + 32) / 64; // alpha == alphabet size (256)
+            //if (c->A < 2)
+            //    c->A = 2;
+            c->A = 4;
+            c->C = 0;
+            c->B = c->C;
+        }
+    }
+    contexts[i] = NULL;
 }
 
 } //NameSpace
