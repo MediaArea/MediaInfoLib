@@ -521,10 +521,8 @@ void File_Ffv1::FrameHeader()
         Get_RU (States, num_v_slices_minus1,                    "num_v_slices_minus1");
         num_h_slices = num_h_slices_minus1 + 1;
         num_v_slices = num_v_slices_minus1 + 1;
-    }
-    int32u quant_table_count;
-    if (version>1)
         Get_RU (States, quant_table_count,                      "quant_table_count");
+    }
     else
         quant_table_count=1;
     for (size_t i = 0; i < quant_table_count; i++)
