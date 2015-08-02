@@ -471,7 +471,8 @@ void File_Ffv1::Read_Buffer_Continue()
 
             slice(States); // Not yet fully implemented
 
-            Skip_XX(End-Element_Offset,                             "Slice data");
+            if (Element_Offset!=End)
+                Skip_XX(End-Element_Offset,                         "Other data");
             Skip_B3(                                                "slice_size");
             Skip_B1(                                                "error_status");
             Skip_B4(                                                "crc_parity");
@@ -683,10 +684,17 @@ void File_Ffv1::slice(states &States)
             memset(States, 129, states_size);
             Skip_RC(States,                                     "?");
 
+            /*
             int32u byte_coder_type = (version > 2 || (!S.x && !S.y)) ? Element_Offset - 1 : 0;
 
             // TODO: correct the size of bits put
             bsf.Attach(Buffer + Buffer_Offset + byte_coder_type, RC->Buffer_End - Buffer - Buffer_Offset - byte_coder_type);
+            */
+            if ((version > 2 || (!S.x && !S.y)))
+                Element_Offset--;
+            else
+                Element_Offset=0;
+            BS_Begin();
         }
     }
     else
@@ -718,6 +726,14 @@ void File_Ffv1::slice(states &States)
     else if (colorspace_type == 1)
     {
         rgb();
+    }
+
+    if (!coder_type)
+    {
+        if ((version == 3 && micro_version > 1) || version > 3)
+        {
+            BS_End();
+        }
     }
 }
 
@@ -888,7 +904,10 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s co
 
     if (S.run_segment_length == 0 && S.run_mode == RUN_MODE_PROCESSING) // Same symbol length
     {
-        if (bsf.GetB()) // "hits"
+        bool hits;
+        Get_SB (hits,                                           "hits/miss");
+        //if (bsf.GetB()) // "hits"
+        if (hits) // "hits"
         {
             S.run_segment_length = 1 << log2_run[S.run_index];
             if (x + S.run_segment_length <= S.w) //Do not go further as the end of line
@@ -896,7 +915,10 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s co
         }
         else // "miss"
         {
-            S.run_segment_length = bsf.Get4(log2_run[S.run_index]);
+            //S.run_segment_length = bsf.Get4(log2_run[S.run_index]);
+            int32u run_segment_length;
+            Get_S4 (log2_run[S.run_index], run_segment_length,  "run_segment_length");
+            S.run_segment_length=(int32s)run_segment_length;
             if (S.run_index)
                 --S.run_index;
             S.run_mode = RUN_MODE_INTERRUPTED;
@@ -1126,14 +1148,28 @@ int32s File_Ffv1::golomb_rice_decode(int k)
     int32u q = 0;
     int32u v;
 
-    while (bsf.Remain() > 0 && q < PREFIX_MAX && !bsf.GetB())
+    //while (bsf.Remain() > 0 && q < PREFIX_MAX && !bsf.GetB())
+    while (Data_BS_Remain() > 0 && q < PREFIX_MAX)
+    {
+        bool Temp;
+        Get_SB(Temp,                                            "golomb_rice_decode ?");
+        if (Temp)
+            break;
+
         ++q;
+    }
 
     if (q == PREFIX_MAX) // ESC
-        v = bsf.Get4(bits_max) + 11;
+    {
+        //v = bsf.Get4(bits_max) + 11;
+        Get_S4(bits_max, v,                                     "v?");
+        v+=11;
+    }
     else
     {
-        int32u remain = bsf.Get8(k); // Read k bits
+        //int32u remain = bsf.Get8(k); // Read k bits
+        int32u remain;
+        Get_S4(k, remain,                                       "remain");
         int32u mul = q << k; // q * pow(2, k)
 
         v = mul | remain;

@@ -212,7 +212,6 @@ private :
     bool    chroma_planes;
     bool    alpha_plane;
     state_transitions state_transitions_table;
-    BitStream_Fast bsf;
 
     Context **contexts;
 
