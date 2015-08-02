@@ -45,9 +45,9 @@ public :
 
     void AssignStateTransitions (const state_transitions new_state_transition);
 
-    bool    get_rac(int8u States[]);
-    int32u  get_symbol_u(states &States);
-    int32s  get_symbol_s(states &States);
+    bool    get_rac(int8u* States);
+    int32u  get_symbol_u(int8u* States);
+    int32s  get_symbol_s(int8u* States);
 
     int16u Current;
     int16u Mask;
@@ -107,6 +107,7 @@ private :
         void Get_RB (states &States, bool  &Info, const char* Name);
         void Get_RU (states &States, int32u &Info, const char* Name);
         void Get_RS (states &States, int32s &Info, const char* Name);
+        void Get_RS (int8u* &States, int32s &Info, const char* Name);
         void Skip_RC(states &States,              const char* Name);
         void Skip_RU(states &States,              const char* Name);
         void Skip_RS(states &States,              const char* Name);
@@ -117,6 +118,7 @@ private :
         void Get_RB_ (states &States, bool  &Info);
         void Get_RU_ (states &States, int32u &Info);
         void Get_RS_ (states &States, int32s &Info);
+        void Get_RS_ (int8u* &States, int32s &Info);
         #define Get_RB(Bits, Info, Name) Get_RB_(Bits, Info)
         #define Get_RU(Bits, Info, Name) Get_RU_(Bits, Info)
         #define Get_RS(Bits, Info, Name) Get_RS_(Bits, Info)

@@ -84,7 +84,7 @@ void RangeCoder::AssignStateTransitions (const state_transitions new_state_trans
 }
 
 //---------------------------------------------------------------------------
-bool RangeCoder::get_rac(int8u States[])
+bool RangeCoder::get_rac(int8u* States)
 {
     //Here is some black magic... But it works. TODO: better understanding of the algorithm and maybe optimization
     int16u Mask2=(int16u)((((int32u)Mask) * (*States)) >> 8);
@@ -119,7 +119,7 @@ bool RangeCoder::get_rac(int8u States[])
 }
 
 //---------------------------------------------------------------------------
-int32u RangeCoder::get_symbol_u(states &States)
+int32u RangeCoder::get_symbol_u(int8u* States)
 {
     if (get_rac(States))
         return 0;
@@ -144,7 +144,7 @@ int32u RangeCoder::get_symbol_u(states &States)
 }
 
 //---------------------------------------------------------------------------
-int32s RangeCoder::get_symbol_s(states &States)
+int32s RangeCoder::get_symbol_s(int8u* States)
 {
     if (get_rac(States))
         return 0;
@@ -153,7 +153,7 @@ int32s RangeCoder::get_symbol_s(states &States)
     while (get_rac(States+1+min(e, (int8u)9))) // 1..10
         e++;
 
-    int8u a=1;
+    int32u a=1;
     if (e)
     {
         int8u i = e;
@@ -281,11 +281,9 @@ void File_Ffv1::Get_RB (states &States, bool &Info, const char* Name)
 {
     Info=RC->get_rac(States);
 
+    Element_Offset=RC->Buffer_Cur-Buffer;
     if (Trace_Activated)
-    {
-        Element_Offset=RC->Buffer_Cur-Buffer;
         Param(Name, Info);
-    }
 }
 
 //---------------------------------------------------------------------------
@@ -307,16 +305,22 @@ void File_Ffv1::Get_RS (states &States, int32s &Info, const char* Name)
 }
 
 //---------------------------------------------------------------------------
+void File_Ffv1::Get_RS (int8u* &States, int32s &Info, const char* Name)
+{
+    Info=RC->get_symbol_s(States);
+
+    if (Trace_Activated)
+        Param(Name, Info);
+}
+
+//---------------------------------------------------------------------------
 void File_Ffv1::Skip_RC (states &States, const char* Name)
 {
+    int8u Info=RC->get_rac(States);
+
+    Element_Offset=RC->Buffer_Cur-Buffer;
     if (Trace_Activated)
-    {
-        int8u Info=RC->get_rac(States);
-        Element_Offset=RC->Buffer_Cur-Buffer;
         Param(Name, Info);
-    }
-    else
-        RC->get_rac(States);
 }
 
 //---------------------------------------------------------------------------
@@ -352,6 +356,12 @@ void File_Ffv1::Get_RU_ (states &States, int32u &Info)
 
 //---------------------------------------------------------------------------
 void File_Ffv1::Get_RS_ (states &States, int32s &Info)
+{
+    Info=RC->get_symbol_s(States);
+}
+
+//---------------------------------------------------------------------------
+void File_Ffv1::Get_RS_ (int8u* &States, int32s &Info)
 {
     Info=RC->get_symbol_s(States);
 }
