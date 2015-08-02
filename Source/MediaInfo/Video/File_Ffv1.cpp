@@ -469,7 +469,10 @@ void File_Ffv1::Read_Buffer_Continue()
             else // ac=2
                 RC->AssignStateTransitions(state_transitions_table);
 
-            slice(States); // Not yet fully implemented
+            #if MEDIAINFO_TRACE
+                if (Trace_Activated) // Parse slice only if trace feature is activated
+                    slice(States); // Not yet fully implemented
+            #endif //MEDIAINFO_TRACE
 
             if (Element_Offset!=End)
                 Skip_XX(End-Element_Offset,                         "Other data");
