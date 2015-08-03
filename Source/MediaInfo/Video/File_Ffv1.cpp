@@ -693,12 +693,6 @@ void File_Ffv1::slice(states &States)
             memset(States, 129, states_size);
             Skip_RC(States,                                     "?");
 
-            /*
-            int32u byte_coder_type = (version > 2 || (!S.x && !S.y)) ? Element_Offset - 1 : 0;
-
-            // TODO: correct the size of bits put
-            bsf.Attach(Buffer + Buffer_Offset + byte_coder_type, RC->Buffer_End - Buffer - Buffer_Offset - byte_coder_type);
-            */
             if ((version > 2 || (!S.x && !S.y)))
                 Element_Offset--;
             else
@@ -733,17 +727,10 @@ void File_Ffv1::slice(states &States)
             plane(2); // Alpha
     }
     else if (colorspace_type == 1)
-    {
         rgb();
-    }
 
-    if (!coder_type)
-    {
-        if ((version == 3 && micro_version > 1) || version > 3)
-        {
-            BS_End();
-        }
-    }
+    if (!coder_type && ((version == 3 && micro_version > 1) || version > 3))
+        BS_End();
 }
 
 //---------------------------------------------------------------------------
@@ -989,7 +976,6 @@ void File_Ffv1::line(states States[MAX_CONTEXT_INPUTS], int pos, int16s *sample[
         if (negative)
             u = -u;
 
-        //printf("x[%lu]ctx[%d]sym[%d]\n", x, context, u);
         sample[1][x] = (predict(sample[1] + x, sample[0] + x) + u) & ((1 << bits_max) -1);
     }
 }
