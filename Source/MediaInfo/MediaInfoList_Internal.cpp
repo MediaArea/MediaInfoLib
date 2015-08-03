@@ -299,10 +299,22 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
             Retour+=__T("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")+MediaInfoLib::Config.LineSeparator_Get();
             Retour+=__T('<');
             if (MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_XML)
-                Retour+=__T("MediaTrace xmlns=\"http://www.mediaarea.net/mediatrace\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.mediaarea.net/mediatrace http://www.mediaarea.net/mediatrace/mediatrace.xsd\"");
+            {
+                Retour+=__T("MediaTrace");
+                Retour+=MediaInfoLib::Config.LineSeparator_Get();
+                Retour+=__T("    xmlns=\"http://www.mediaarea.net/mediatrace\"");
+                Retour+=MediaInfoLib::Config.LineSeparator_Get();
+                Retour+=__T("    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
+                Retour+=MediaInfoLib::Config.LineSeparator_Get();
+                Retour+=__T("    xsi:schemaLocation=\"http://www.mediaarea.net/mediatrace http://www.mediaarea.net/mediatrace/mediatrace.xsd\"");
+            }
             else
                 Retour+=__T("Mediainfo");
-            Retour+=__T(" version=\"")+MediaInfoLib::Config.Info_Version_Get().SubString(__T(" v"), Ztring())+__T("\" ref=\"")+Info[FilePos]->Get(Stream_General, 0, General_CompleteName)+__T("\">")+MediaInfoLib::Config.LineSeparator_Get();
+            Retour+=MediaInfoLib::Config.LineSeparator_Get();
+            Retour+=__T("    version=\"")+MediaInfoLib::Config.Info_Version_Get().SubString(__T(" v"), Ztring())+__T("\"");
+            Retour+=MediaInfoLib::Config.LineSeparator_Get();
+            Retour+=__T("    ref=\"")+Info[FilePos]->Get(Stream_General, 0, General_CompleteName)+__T("\"");
+            Retour+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
         }
         else
         Retour+=MediaInfo_Custom_View("Page_Begin");
