@@ -327,6 +327,7 @@ void File_Ffv1::Get_RS (int8u* &States, int32s &Info, const char* Name)
 {
     Info=RC->get_symbol_s(States);
 
+    Element_Offset=RC->Buffer_Cur-Buffer;
     if (Trace_Activated)
         Param(Name, Info);
 }
