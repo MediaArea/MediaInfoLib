@@ -297,8 +297,6 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
         if (XML)
         {
             Retour+=__T("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")+MediaInfoLib::Config.LineSeparator_Get();
-            if (MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_XML)
-                Retour+=+__T("<!-- Work in progress, not for production -->")+MediaInfoLib::Config.LineSeparator_Get();
             Retour+=__T('<');
             if (MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_XML)
                 Retour+=__T("MediaTrace xmlns=\"http://www.mediaarea.net/mediatrace\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.mediaarea.net/mediatrace http://www.mediaarea.net/mediatrace/mediatrace.xsd\"");
