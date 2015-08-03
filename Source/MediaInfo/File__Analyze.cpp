@@ -2303,7 +2303,7 @@ Ztring Log_Offset (int64u OffsetToShow, MediaInfo_Config::trace_Format Config_Tr
     {
         case MediaInfo_Config::Trace_Format_Tree        : Pos2+=__T(' '); break;
         case MediaInfo_Config::Trace_Format_CSV         : Pos2+=__T(','); break;
-        case MediaInfo_Config::Trace_Format_XML         : Pos2+=__T("<item");
+        case MediaInfo_Config::Trace_Format_XML         : Pos2+=__T("<data");
                                                           if (OffsetToShow!=(int64u)-1)
                                                           {
                                                                Pos2+=__T(" offset=\"");
@@ -2329,8 +2329,8 @@ void File__Analyze::Element_Begin()
                                                                 {
                                                                 size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
                                                                 size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
-                                                                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</item> />"
-                                                                    Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</item>");
+                                                                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</data> />"
+                                                                    Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</data>");
                                                                 }
                                                                 Element[Element_Level].ToShow.Value.clear();
                                                                 break;
@@ -2377,8 +2377,8 @@ void File__Analyze::Element_Begin(const Ztring &Name)
                                                                 {
                                                                 size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
                                                                 size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
-                                                                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</item> />"
-                                                                    Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</item>");
+                                                                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</data> />"
+                                                                    Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</data>");
                                                                 }
                                                                 Element[Element_Level].ToShow.Value.clear();
                                                                 break;
@@ -2557,18 +2557,18 @@ void File__Analyze::Element_End_Common_Flush_Details()
                                                                         {
                                                                         size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
                                                                         size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
-                                                                        if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</item> />"
-                                                                            Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</item>");
+                                                                        if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</data> />"
+                                                                            Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</data>");
                                                                         Element[Element_Level].ToShow.Value.clear();
                                                                         //if (!Element_WantNextLevel)
                                                                         {
                                                                             Element[Element_Level].ToShow.Details+=Config_LineSeparator;
                                                                             Element[Element_Level].ToShow.Details.resize(Element[Element_Level].ToShow.Details.size()+(Element_Level_Base+Element_Level)*4, __T(' '));
-                                                                            Element[Element_Level].ToShow.Details+=__T("</items>");
+                                                                            Element[Element_Level].ToShow.Details+=__T("</block>");
                                                                             //Retrieving the beginning of the corresponding XML element
                                                                             Ztring ToFind=Config_LineSeparator;
                                                                             ToFind.resize(ToFind.size()+(Element_Level_Base+Element_Level)*4, __T(' '));
-                                                                            ToFind+=__T("<item");
+                                                                            ToFind+=__T("<data");
                                                                             size_t item_Pos=Element[Element_Level].ToShow.Details.rfind(ToFind);
                                                                             if (item_Pos==string::npos)
                                                                             {
@@ -2577,7 +2577,10 @@ void File__Analyze::Element_End_Common_Flush_Details()
                                                                                     item_Pos=0;
                                                                             }
                                                                             if (item_Pos!=string::npos)
-                                                                                Element[Element_Level].ToShow.Details.insert(Element[Element_Level].ToShow.Details.begin()+item_Pos+ToFind.size(), __T('s'));
+                                                                                {
+                                                                                    Element[Element_Level].ToShow.Details.erase(item_Pos+ToFind.size()-4, 4);
+                                                                                    Element[Element_Level].ToShow.Details.insert(item_Pos+ToFind.size()-4, __T("block"));
+                                                                                }
                                                                         }
                                                                         }
                                                                         break;
@@ -2701,8 +2704,8 @@ void File__Analyze::Param(const Ztring& Parameter, const Ztring& Value)
                                                                 {
                                                                 size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
                                                                 size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
-                                                                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</item> />"
-                                                                    Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</item>");
+                                                                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</data> />"
+                                                                    Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</data>");
                                                                 Element[Element_Level].ToShow.Value=Value;
                                                                 }
                                                                 break;
