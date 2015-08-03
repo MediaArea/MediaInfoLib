@@ -760,7 +760,7 @@ void File_Ffv1::slice_header(states &States)
     S.w = (slice_width + 1) * (Width / num_h_slices);
     S.h = (slice_height + 1) * (Height / num_v_slices);
     S.x = slice_x * S.w;
-    S.y = slice_y * S.y;
+    S.y = slice_y * S.h;
 
     int8u plane_count=1+(chroma_planes?0:1)+(alpha_plane?0:1); //Warning: chroma is considered as 1 plane
     for (int8u i = 0; i < plane_count; i++)
