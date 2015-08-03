@@ -1165,7 +1165,7 @@ int32s File_Ffv1::golomb_rice_decode(int k)
     while (Data_BS_Remain() > 0 && q < PREFIX_MAX)
     {
         bool Temp;
-        Get_SB(Temp,                                            "golomb_rice_decode ?");
+        Get_SB(Temp,                                            "golomb_rice_prefix_0");
         if (Temp)
             break;
 
@@ -1175,14 +1175,14 @@ int32s File_Ffv1::golomb_rice_decode(int k)
     if (q == PREFIX_MAX) // ESC
     {
         //v = bsf.Get4(bits_max) + 11;
-        Get_S4(bits_max, v,                                     "v?");
+        Get_S4(bits_max, v,                                     "escaped_value_minus_11");
         v+=11;
     }
     else
     {
         //int32u remain = bsf.Get8(k); // Read k bits
         int32u remain;
-        Get_S4(k, remain,                                       "remain");
+        Get_S4(k, remain,                                       "golomb_rice_remain");
         int32u mul = q << k; // q * pow(2, k)
 
         v = mul | remain;
