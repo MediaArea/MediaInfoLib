@@ -4655,6 +4655,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                 if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("FFV1"))
                 {
                     File_Ffv1* Parser=new File_Ffv1;
+                    Parser->Width=moov_trak_tkhd_Width;
+                    Parser->Height=moov_trak_tkhd_Height;
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
                 }
             #endif
