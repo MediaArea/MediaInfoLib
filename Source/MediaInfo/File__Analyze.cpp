@@ -2577,7 +2577,10 @@ void File__Analyze::Element_End_Common_Flush_Details()
                                                                                     item_Pos=0;
                                                                             }
                                                                             if (item_Pos!=string::npos)
-                                                                                Element[Element_Level].ToShow.Details.insert(Element[Element_Level].ToShow.Details.begin()+item_Pos+ToFind.size(), __T('s'));
+                                                                                {
+                                                                                    Element[Element_Level].ToShow.Details.erase(item_Pos+ToFind.size()-4, 4);
+                                                                                    Element[Element_Level].ToShow.Details.insert(item_Pos+ToFind.size()-4, __T("block"));
+                                                                                }
                                                                         }
                                                                         }
                                                                         break;
