@@ -1,8 +1,8 @@
 #! /bin/sh
 
-##########################################################################
-# Setup for parallel builds
-Parallel_Build () {
+##################################################################
+
+Parallel_Make () {
     local numprocs=1
     case $OS in
     'linux')
@@ -26,69 +26,8 @@ Parallel_Build () {
     make -s -j$numprocs
 }
 
-##########################################################################
-ZenLib () {
-    if test -e ZenLib/Project/GNU/Library/configure; then
-        cd ZenLib/Project/GNU/Library/
-        test -e Makefile && rm Makefile
-        chmod u+x configure
-        if [ "$OS" = "mac" ]; then
-            ./configure $MacOptions $ZenLib_Options --libdir=/usr/lib $*
-        else
-            ./configure $ZenLib_Options --libdir=/usr/lib $*
-        fi
-        if test -e Makefile; then
-            make clean
-            Parallel_Build
-            if test -e libzen.la; then
-                echo ZenLib compiled
-            else
-                echo Problem while compiling ZenLib
-                exit
-            fi
-        else
-            echo Problem while configuring ZenLib
-            exit
-        fi
-    else
-        echo ZenLib directory is not found
-        exit
-    fi
-    cd $Home
-}
-
-##########################################################################
-MediaInfoLib () {
-    if test -e MediaInfoLib/Project/GNU/Library/configure; then
-        cd MediaInfoLib/Project/GNU/Library/
-        test -e Makefile && rm Makefile
-        chmod u+x configure
-        if [ "$OS" = "mac" ]; then
-            ./configure $MacOptions --enable-shared --disable-static --libdir=/usr/lib $*
-        else
-            ./configure --enable-shared --disable-static --libdir=/usr/lib $*
-        fi
-        if test -e Makefile; then
-            make clean
-            Parallel_Build
-            if test -e libmediainfo.la; then
-                echo MediaInfoLib compiled
-            else
-                echo Problem while compiling MediaInfoLib
-                exit
-            fi
-        else
-            echo Problem while configuring MediaInfoLib
-            exit
-        fi
-    else
-        echo MediaInfoLib directory is not found
-        exit
-    fi
-    cd $Home
-}
-
-##########################################################################
+##################################################################
+# Init
 
 Home=`pwd`
 ZenLib_Options=""
@@ -102,13 +41,74 @@ if [ "$OS" = "Darwin" ]; then
 elif [ "$(expr substr $OS 1 5)" = "Linux" ]; then
     OS="linux"
 #elif [ "$(expr substr $OS 1 5)" = "SunOS" ]; then
-#   OS="solaris"
+#    OS="solaris"
 #elif [ "$(expr substr $OS 1 7)" = "FreeBSD" ]; then
-#   OS="freebsd"
+#    OS="freebsd"
 fi
 
-ZenLib
-MediaInfoLib
+##################################################################
+# ZenLib
+
+if test -e ZenLib/Project/GNU/Library/configure; then
+    cd ZenLib/Project/GNU/Library/
+    test -e Makefile && rm Makefile
+    chmod +x configure
+    if [ "$OS" = "mac" ]; then
+        ./configure $MacOptions $ZenLib_Options $*
+    else
+        ./configure $ZenLib_Options $*
+    fi
+    if test -e Makefile; then
+        make clean
+        Parallel_Make
+        if test -e libzen.la; then
+            echo ZenLib compiled
+        else
+            echo Problem while compiling ZenLib
+            exit
+        fi
+    else
+        echo Problem while configuring ZenLib
+        exit
+    fi
+else
+    echo ZenLib directory is not found
+    exit
+fi
+cd $Home
+
+##################################################################
+# MediaInfoLib
+
+if test -e MediaInfoLib/Project/GNU/Library/configure; then
+    cd MediaInfoLib/Project/GNU/Library/
+    test -e Makefile && rm Makefile
+    chmod +x configure
+    if [ "$OS" = "mac" ]; then
+        ./configure $MacOptions --enable-shared --disable-static $*
+    else
+        ./configure --enable-shared --disable-static $*
+    fi
+    if test -e Makefile; then
+        make clean
+        Parallel_Make
+        if test -e libmediainfo.la; then
+            echo MediaInfoLib compiled
+        else
+            echo Problem while compiling MediaInfoLib
+            exit
+        fi
+    else
+        echo Problem while configuring MediaInfoLib
+        exit
+    fi
+else
+    echo MediaInfoLib directory is not found
+    exit
+fi
+cd $Home
+
+##################################################################
 
 echo "MediaInfo shared object is in MediaInfoLib/Project/GNU/Library/.libs"
 echo "For installing ZenLib, cd ZenLib/Project/GNU/Library && make install"
