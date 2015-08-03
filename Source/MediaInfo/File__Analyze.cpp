@@ -2572,7 +2572,11 @@ void File__Analyze::Element_End_Common_Flush_Details()
                                                                             size_t item_Pos=Element[Element_Level].ToShow.Details.rfind(ToFind);
                                                                             if (item_Pos==string::npos)
                                                                             {
-                                                                                ToFind.erase(ToFind.begin(), ToFind.begin()+1);
+                                                                                #ifdef WINDOWS
+                                                                                    ToFind.erase(ToFind.begin(), ToFind.begin()+2);
+                                                                                #else //WINDOWS
+                                                                                    ToFind.erase(ToFind.begin(), ToFind.begin()+1);
+                                                                                #endif //WINDOWS
                                                                                 if (Element[Element_Level].ToShow.Details.find(ToFind)==0)
                                                                                     item_Pos=0;
                                                                             }
