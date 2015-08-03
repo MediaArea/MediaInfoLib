@@ -762,11 +762,11 @@ void File_Ffv1::slice_header(states &States)
     S.x = slice_x * S.w;
     S.y = slice_y * S.h;
 
-    int8u plane_count=1+(chroma_planes?0:1)+(alpha_plane?0:1); //Warning: chroma is considered as 1 plane
+    int8u plane_count=1+(alpha_plane?1:0);
+    if (version < 4 || chroma_planes) // Warning: chroma is considered as 1 plane
+        plane_count += 1;
     for (int8u i = 0; i < plane_count; i++)
-    {
         Get_RU (States, quant_table_index[i],               "quant_table_index");
-    }
     Skip_RU(States,                                         "picture_structure");
     Skip_RU(States,                                         "sample_aspect_ratio num");
     Skip_RU(States,                                         "sample_aspect_ratio den");
