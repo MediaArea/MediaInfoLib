@@ -851,7 +851,7 @@ void File_Ffv1::rgb()
 
             sample[c][1][-1]= sample[c][0][0  ];
             sample[c][0][S.w]= sample[c][0][S.w - 1];
-            bits_max = 9;
+            bits_max = bits_per_sample + 1;
             line(States, (c + 1) / 2, sample[c]);
         }
 
