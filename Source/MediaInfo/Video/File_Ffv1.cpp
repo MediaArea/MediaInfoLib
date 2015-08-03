@@ -843,7 +843,7 @@ void File_Ffv1::rgb()
         for (size_t c = 0; c < (unsigned)(3 + alpha_plane); c++)
         {
             // Copy for next lines: 4.3 context
-            int16_t *temp = sample[c][0];
+            int16s *temp = sample[c][0];
 
             sample[c][0] = sample[c][1];
             sample[c][1] = temp;
@@ -906,7 +906,9 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s co
     if (S.run_mode == RUN_MODE_STOP)
     {
         u = get_symbol_with_bias_correlation(&contexts[pos][context]);
+        #if MEDIAINFO_TRACE
         Param("symbol", u);
+        #endif //MEDIAINFO_TRACE
         return u;
     }
 
@@ -937,7 +939,9 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s co
     if (S.run_segment_length < 0) // we passed the length of same symbol, time to get the new symbol
     {
         u = get_symbol_with_bias_correlation(&contexts[pos][context]);
+        #if MEDIAINFO_TRACE
         Param("symbol", u);
+        #endif //MEDIAINFO_TRACE
         if (u >= 0) // GR(u - 1, ...)
             u++;
 
