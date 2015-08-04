@@ -693,12 +693,6 @@ void File_Ffv1::slice(states &States)
             memset(States, 129, states_size);
             Skip_RC(States,                                     "?");
 
-            /*
-            int32u byte_coder_type = (version > 2 || (!S.x && !S.y)) ? Element_Offset - 1 : 0;
-
-            // TODO: correct the size of bits put
-            bsf.Attach(Buffer + Buffer_Offset + byte_coder_type, RC->Buffer_End - Buffer - Buffer_Offset - byte_coder_type);
-            */
             if ((version > 2 || (!S.x && !S.y)))
                 Element_Offset--;
             else
@@ -733,17 +727,10 @@ void File_Ffv1::slice(states &States)
             plane(2); // Alpha
     }
     else if (colorspace_type == 1)
-    {
         rgb();
-    }
 
-    if (!coder_type)
-    {
-        if ((version == 3 && micro_version > 1) || version > 3)
-        {
-            BS_End();
-        }
-    }
+    if (!coder_type && ((version == 3 && micro_version > 1) || version > 3))
+        BS_End();
 }
 
 //---------------------------------------------------------------------------
@@ -760,13 +747,13 @@ void File_Ffv1::slice_header(states &States)
     S.w = (slice_width + 1) * (Width / num_h_slices);
     S.h = (slice_height + 1) * (Height / num_v_slices);
     S.x = slice_x * S.w;
-    S.y = slice_y * S.y;
+    S.y = slice_y * S.h;
 
-    int8u plane_count=1+(chroma_planes?0:1)+(alpha_plane?0:1); //Warning: chroma is considered as 1 plane
+    int8u plane_count=1+(alpha_plane?1:0);
+    if (version < 4 || chroma_planes) // Warning: chroma is considered as 1 plane
+        plane_count += 1;
     for (int8u i = 0; i < plane_count; i++)
-    {
         Get_RU (States, quant_table_index[i],               "quant_table_index");
-    }
     Skip_RU(States,                                         "picture_structure");
     Skip_RU(States,                                         "sample_aspect_ratio num");
     Skip_RU(States,                                         "sample_aspect_ratio den");
@@ -851,7 +838,7 @@ void File_Ffv1::rgb()
 
             sample[c][1][-1]= sample[c][0][0  ];
             sample[c][0][S.w]= sample[c][0][S.w - 1];
-            bits_max = 9;
+            bits_max = bits_per_sample + 1;
             line(States, (c + 1) / 2, sample[c]);
         }
 
@@ -989,7 +976,6 @@ void File_Ffv1::line(states States[MAX_CONTEXT_INPUTS], int pos, int16s *sample[
         if (negative)
             u = -u;
 
-        //printf("x[%lu]ctx[%d]sym[%d]\n", x, context, u);
         sample[1][x] = (predict(sample[1] + x, sample[0] + x) + u) & ((1 << bits_max) -1);
     }
 }
@@ -1165,7 +1151,7 @@ int32s File_Ffv1::golomb_rice_decode(int k)
     while (Data_BS_Remain() > 0 && q < PREFIX_MAX)
     {
         bool Temp;
-        Get_SB(Temp,                                            "golomb_rice_decode ?");
+        Get_SB(Temp,                                            "golomb_rice_prefix_0");
         if (Temp)
             break;
 
@@ -1175,14 +1161,14 @@ int32s File_Ffv1::golomb_rice_decode(int k)
     if (q == PREFIX_MAX) // ESC
     {
         //v = bsf.Get4(bits_max) + 11;
-        Get_S4(bits_max, v,                                     "v?");
+        Get_S4(bits_max, v,                                     "escaped_value_minus_11");
         v+=11;
     }
     else
     {
         //int32u remain = bsf.Get8(k); // Read k bits
         int32u remain;
-        Get_S4(k, remain,                                       "remain");
+        Get_S4(k, remain,                                       "golomb_rice_remain");
         int32u mul = q << k; // q * pow(2, k)
 
         v = mul | remain;
