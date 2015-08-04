@@ -206,11 +206,15 @@ size_t libcurl_WriteData_CallBack(void *ptr, size_t size, size_t nmemb, void *da
     //Init
     if (!((Reader_libcurl::curl_data*)data)->Init_AlreadyDone)
     {
-        long http_code = 0;
-        if (curl_easy_getinfo (((Reader_libcurl::curl_data*)data)->Curl, CURLINFO_RESPONSE_CODE, &http_code)!=CURLE_OK || http_code != 200)
+        Http::Url File_URL=Http::Url(Ztring(((Reader_libcurl::curl_data*)data)->File_Name).To_UTF8());
+        if (File_URL.Protocol=="http" || File_URL.Protocol=="https")
         {
-            MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, Reader_libcurl_FileNameWithoutPassword(((Reader_libcurl::curl_data*)data)->File_Name)+__T(", ")+Ztring().From_UTF8(string((char*)ptr, size*nmemb)));
-            return size*nmemb;
+            long http_code = 0;
+            if (curl_easy_getinfo (((Reader_libcurl::curl_data*)data)->Curl, CURLINFO_RESPONSE_CODE, &http_code)!=CURLE_OK || http_code != 200)
+            {
+                MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, Reader_libcurl_FileNameWithoutPassword(((Reader_libcurl::curl_data*)data)->File_Name)+__T(", ")+Ztring().From_UTF8(string((char*)ptr, size*nmemb)));
+                return size*nmemb;
+            }
         }
         double File_SizeD;
         CURLcode Result=curl_easy_getinfo(((Reader_libcurl::curl_data*)data)->Curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &File_SizeD);
