@@ -17,6 +17,7 @@ x MXF: SDTI 60 fps times were wrong
 x #B927, DPX: date/time specific DPX format was used instead of the ISO-like one
 x #B927, EBUCore: invalid content in attribute startDate 
 x ProRes: streams with apcs CodecID were displayed with an incoherent bit depth instead of no bit depth
+x IMX: streams claiming that they are IMX are actually pure MPEG Video, probing both IMX and MPEG Video
 
 Version 0.7.74, 2015-05-25
 --------------
