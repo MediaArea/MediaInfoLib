@@ -70,7 +70,11 @@ class Slice
 public:
 
     Slice() : run_index(0), run_mode(RUN_MODE_STOP),
-        sample_buffer(NULL) {}
+        sample_buffer(NULL)
+    {
+        for (size_t i = 0; i < MAX_QUANT_TABLES; ++i)
+            plane_states[i] = NULL;
+    }
 
     ~Slice()
     {
@@ -88,7 +92,7 @@ public:
             delete [] sample_buffer;
             sample_buffer = NULL;
         }
-        sample_buffer=new int16s[size];
+        sample_buffer = new int16s[size];
     }
 
     void    run_index_init() { run_index=0; }
@@ -144,7 +148,6 @@ private :
     void FrameHeader();
     void slice(states &States);
     void slice_header(states &States);
-    void plane_states_clean();
     void contexts_init();
     void contexts_clean();
     int32u CRC_Compute(size_t Size);
@@ -189,7 +192,8 @@ private :
         #define Info_RS(_STATE, _INFO, _NAME) Skip_RS_(_STATE)
     #endif //MEDIAINFO_TRACE
     RangeCoder* RC;
-    Slice S;
+    Slice *slices;
+    Slice *current_slice;
 
     //Temp
     bool    ConfigurationRecordIsPresent;
@@ -225,6 +229,7 @@ private :
     void update_context_state(Context* v, int32s error);
     void update_correlation_value_and_shift(Context *c);
     int32s golomb_rice_decode(int k);
+    void plane_states_clean(states_context_plane states[MAX_QUANT_TABLES]);
 };
 
 } //NameSpace
