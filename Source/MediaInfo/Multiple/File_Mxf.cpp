@@ -4122,6 +4122,7 @@ bool File_Mxf::DetectDuration ()
     Ztring Demux_Save=MI.Option(__T("Demux_Get"), __T(""));
     MI.Option(__T("ParseSpeed"), __T("0"));
     MI.Option(__T("Demux"), Ztring());
+    MI.Option(__T("File_Mxf_ParseIndex"), __T("1"));
     size_t MiOpenResult=MI.Open(File_Name);
     MI.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
     MI.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
@@ -4920,6 +4921,10 @@ void File_Mxf::Header_Parse()
     int32u Code_Compare2=(int32u)Code.hi;
     int32u Code_Compare3=Code.lo>>32;
     int32u Code_Compare4=(int32u)Code.lo;
+    if (Code_Compare1==Elements::Filler011
+     && (Code_Compare2&0xFFFFFF00)==(Elements::Filler012&0xFFFFFF00)
+     && Code_Compare3==Elements::Filler013)
+        DataMustAlwaysBeComplete=false;
     if (Partitions_IsCalculatingHeaderByteCount)
     {
         if (!(Code_Compare1==Elements::Filler011
@@ -4955,7 +4960,7 @@ void File_Mxf::Header_Parse()
             //Testing locators
             Locators_CleanUp();
 
-            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get())
+            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get() && Config->Event_CallBackFunction_IsSet()) //Only if demux packet may be requested
                 Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
             if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
             {
@@ -5355,9 +5360,12 @@ void File_Mxf::Data_Parse()
                 StreamPos_StartAtOne=false;
 
             //Searching the corresponding Descriptor
+            bool DescriptorFound=false;
             for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
                 if (Descriptor==SingleDescriptor || (Descriptor->second.LinkedTrackID==Essence->second.TrackID && Descriptor->second.LinkedTrackID!=(int32u)-1))
                 {
+                    DescriptorFound=true;
+                    
                     Essence->second.StreamPos_Initial=Essence->second.StreamPos=Code_Compare4&0x000000FF;
 
                     if (Descriptor->second.StreamKind==Stream_Audio && Descriptor->second.Infos.find("Format_Settings_Endianness")==Descriptor->second.Infos.end())
@@ -5380,6 +5388,8 @@ void File_Mxf::Data_Parse()
                     #endif //MEDIAINFO_VC3_YES
                     break;
                 }
+            if (!DescriptorFound)
+                Streams_Count++; //This stream was not yet counted
 
             //Searching by the track identifier
             if (Essence->second.Parsers.empty())
@@ -5744,7 +5754,7 @@ void File_Mxf::Data_Parse()
     }
 
     if ((!IsParsingEnd && IsParsingMiddle_MaxOffset==(int64u)-1 && MediaInfoLib::Config.ParseSpeed_Get()<1.0)
-     && ((!IsSub && File_Offset>=0x4000000) //TODO: 64 MB by default (security), should be changed
+     && ((!IsSub && File_Offset>=Buffer_PaddingBytes+0x4000000) //TODO: 64 MB by default (security), should be changed
       || (Streams_Count==0 && !Descriptors.empty())))
     {
         Fill();
@@ -5889,7 +5899,7 @@ void File_Mxf::OpenIncompleteBodyPartition()
             //Testing locators
             Locators_CleanUp();
 
-            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get())
+            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get() && Config->Event_CallBackFunction_IsSet()) //Only if demux packet may be requested
                 Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
             if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
             {
@@ -5917,7 +5927,7 @@ void File_Mxf::ClosedIncompleteBodyPartition()
             //Testing locators
             Locators_CleanUp();
 
-            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get())
+            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get() && Config->Event_CallBackFunction_IsSet()) //Only if demux packet may be requested
                 Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
             if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
             {
@@ -5945,7 +5955,7 @@ void File_Mxf::OpenCompleteBodyPartition()
             //Testing locators
             Locators_CleanUp();
 
-            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get())
+            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get() && Config->Event_CallBackFunction_IsSet()) //Only if demux packet may be requested
                 Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
             if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
             {
@@ -5973,7 +5983,7 @@ void File_Mxf::ClosedCompleteBodyPartition()
             //Testing locators
             Locators_CleanUp();
 
-            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get())
+            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get() && Config->Event_CallBackFunction_IsSet()) //Only if demux packet may be requested
                 Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
             if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
             {
@@ -6575,6 +6585,10 @@ void File_Mxf::RandomIndexMetadata()
             //Hints
             if (File_Buffer_Size_Hint_Pointer)
                 (*File_Buffer_Size_Hint_Pointer)=64*1024;
+        }
+        else if (!RandomIndexMetadatas_AlreadyParsed && !Partitions_IsFooter && !RandomIndexMetadatas.empty() && (!RandomIndexMetadatas[RandomIndexMetadatas.size()-1].BodySID || File_Offset+Buffer_Offset-Header_Size-RandomIndexMetadatas[RandomIndexMetadatas.size()-1].ByteOffset<16*1024*1024)) // If footer was not parsed but is available
+        {
+            GoTo(RandomIndexMetadatas[RandomIndexMetadatas.size()-1].ByteOffset);
         }
         RandomIndexMetadatas_AlreadyParsed=true;
     FILLING_END();
@@ -7498,6 +7512,7 @@ void File_Mxf::Filler()
     Skip_XX(Element_Size,                                       "Junk");
 
     Buffer_PaddingBytes+=Element_Size;
+    DataMustAlwaysBeComplete=true;
 }
 
 //---------------------------------------------------------------------------
