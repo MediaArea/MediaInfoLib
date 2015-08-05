@@ -505,6 +505,9 @@ void File_Ffv1::Read_Buffer_Continue()
         Frame_Count++;
     FILLING_END();
 
+    delete RC;
+    RC = NULL;
+
     Finish();
 }
 
