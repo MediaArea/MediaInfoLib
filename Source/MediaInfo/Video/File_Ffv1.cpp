@@ -752,11 +752,14 @@ void File_Ffv1::slice(states &States)
             BS_Begin();
         }
     }
-    else
-        copy_plane_states_to_slice();
 
     if (keyframe)
-        current_slice->contexts_init(quant_table_count, context_count);
+    {
+        if (!coder_type)
+            current_slice->contexts_init(quant_table_count, context_count);
+        else
+            copy_plane_states_to_slice();
+    }
     current_slice->sample_buffer_new((current_slice->w + 6) * 3 * MAX_PLANES);
 
     if (colorspace_type == 0)
