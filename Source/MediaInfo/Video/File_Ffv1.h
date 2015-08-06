@@ -74,6 +74,9 @@ public:
     {
         for (size_t i = 0; i < MAX_QUANT_TABLES; ++i)
             plane_states[i] = NULL;
+
+        for (size_t i = 0; i < MAX_PLANES; ++i)
+            contexts[i] = NULL;
     }
 
     ~Slice()
@@ -83,6 +86,7 @@ public:
             delete [] sample_buffer;
             sample_buffer = NULL;
         }
+        contexts_clean();
     }
 
     void    sample_buffer_new(size_t size)
@@ -107,15 +111,7 @@ public:
     int32u  run_mode;
     int32s  run_segment_length;
     int16s* sample_buffer;
-    states_context_plane plane_states[MAX_QUANT_TABLES];
-};
 
-//***************************************************************************
-// Class File_Ffv1
-//***************************************************************************
-
-class File_Ffv1 : public File__Analyze
-{
     struct Context
     {
         static const int32u N0; // Determined threshold to divide N and B
@@ -127,6 +123,22 @@ class File_Ffv1 : public File__Analyze
         int32s C; // Correction value
     };
 
+    typedef Context* ContextPtr;
+
+    ContextPtr contexts[MAX_PLANES];
+    states_context_plane plane_states[MAX_QUANT_TABLES];
+
+    // HELPER
+    void contexts_init(int32u quant_table_count, int32u context_count[MAX_QUANT_TABLES]);
+    void contexts_clean();
+};
+
+//***************************************************************************
+// Class File_Ffv1
+//***************************************************************************
+
+class File_Ffv1 : public File__Analyze
+{
 public :
     //Constructor/Destructor
     File_Ffv1();
@@ -148,10 +160,8 @@ private :
     void FrameHeader();
     void slice(states &States);
     void slice_header(states &States);
-    void contexts_init();
-    void contexts_clean();
     int32u CRC_Compute(size_t Size);
-    int32s get_symbol_with_bias_correlation(Context* context);
+    int32s get_symbol_with_bias_correlation(Slice::Context* context);
     void rgb();
     void plane(int32u pos);
     void line(states States[MAX_CONTEXT_INPUTS], int pos, int16s *sample[2]);
@@ -216,8 +226,6 @@ private :
     bool    alpha_plane;
     state_transitions state_transitions_table;
 
-    Context **contexts;
-
     //TEMP
     static const int32u PREFIX_MAX = 12; //limit
     int8u bits_max;
@@ -226,8 +234,7 @@ private :
 
     int32s get_median_number(int32s one, int32s two, int32s three);
     int32s predict(int16s *current, int16s *current_top);
-    void update_context_state(Context* v, int32s error);
-    void update_correlation_value_and_shift(Context *c);
+    void update_correlation_value_and_shift(Slice::Context *c);
     int32s golomb_rice_decode(int k);
     void plane_states_clean(states_context_plane states[MAX_QUANT_TABLES]);
 };

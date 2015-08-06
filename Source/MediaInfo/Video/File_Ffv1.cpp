@@ -44,9 +44,9 @@ namespace MediaInfoLib
 //***************************************************************************
 
 extern int32u Psi_CRC_32_Table[256];
-const int32u File_Ffv1::Context::N0 = 128;
-const int32s File_Ffv1::Context::Cmax = 127;
-const int32s File_Ffv1::Context::Cmin = -128;
+const int32u Slice::Context::N0 = 128;
+const int32s Slice::Context::Cmax = 127;
+const int32s Slice::Context::Cmin = -128;
 
 //***************************************************************************
 // RangeCoder
@@ -241,6 +241,48 @@ const int8u log2_run[41]={
 };
 
 //***************************************************************************
+// Slice
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void Slice::contexts_clean()
+{
+    for (size_t i = 0; i < MAX_PLANES; i++)
+    {
+        if (contexts[i])
+            delete[] contexts[i];
+    }
+}
+
+//---------------------------------------------------------------------------
+void Slice::contexts_init(int32u quant_table_count, int32u context_count[MAX_QUANT_TABLES])
+{
+    contexts_clean();
+
+    for (size_t i = 0; i < MAX_PLANES; ++i)
+    {
+        if (i >= quant_table_count)
+        {
+            contexts[i] = NULL;
+            continue;
+        }
+        contexts[i] = new Context [context_count[i]];
+        for (size_t j = 0; j < context_count[i]; j++)
+        {
+            Context *c = &contexts[i][j];
+
+            c->N = 1;
+            //c->A = (alpha + 32) / 64; // alpha == alphabet size (256)
+            //if (c->A < 2)
+            //    c->A = 2;
+            c->A = 4;
+            c->C = 0;
+            c->B = c->C;
+        }
+    }
+}
+
+//***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
 
@@ -267,14 +309,12 @@ File_Ffv1::File_Ffv1()
     num_h_slices = 1;
     num_v_slices = 1;
     slices = NULL;
-    contexts = NULL;
 }
 
 //---------------------------------------------------------------------------
 File_Ffv1::~File_Ffv1()
 {
     //Temp
-    contexts_clean();
     for (size_t y = 0; y < num_v_slices; ++y)
         for (size_t x = 0; x < num_h_slices; ++x)
             plane_states_clean(slices[x + y * num_h_slices].plane_states);
@@ -716,7 +756,7 @@ void File_Ffv1::slice(states &States)
         copy_plane_states_to_slice();
 
     if (keyframe)
-        contexts_init();
+        current_slice->contexts_init(quant_table_count, context_count);
     current_slice->sample_buffer_new((current_slice->w + 6) * 3 * MAX_PLANES);
 
     if (colorspace_type == 0)
@@ -908,7 +948,7 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s co
     // If not running, get the symbol
     if (current_slice->run_mode == RUN_MODE_STOP)
     {
-        u = get_symbol_with_bias_correlation(&contexts[pos][context]);
+        u = get_symbol_with_bias_correlation(&current_slice->contexts[pos][context]);
         #if MEDIAINFO_TRACE
         Param("symbol", u);
         #endif //MEDIAINFO_TRACE
@@ -941,7 +981,7 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s co
     current_slice->run_segment_length--;
     if (current_slice->run_segment_length < 0) // we passed the length of same symbol, time to get the new symbol
     {
-        u = get_symbol_with_bias_correlation(&contexts[pos][context]);
+        u = get_symbol_with_bias_correlation(&current_slice->contexts[pos][context]);
         #if MEDIAINFO_TRACE
         Param("symbol", u);
         #endif //MEDIAINFO_TRACE
@@ -1116,47 +1156,6 @@ int32s File_Ffv1::predict(int16s *current, int16s *current_top)
 }
 
 //---------------------------------------------------------------------------
-void File_Ffv1::contexts_clean()
-{
-    if (!contexts)
-        return;
-
-    for (size_t i = 0; contexts[i]; i++)
-    {
-        delete[] contexts[i];
-    }
-    delete[] contexts;
-    contexts = NULL;
-}
-
-//---------------------------------------------------------------------------
-void File_Ffv1::contexts_init()
-{
-    if (contexts)
-        contexts_clean();
-
-    contexts = new Context* [quant_table_count + 1];
-    size_t i = 0;
-    for (; i < quant_table_count; i++)
-    {
-        contexts[i] = new Context [context_count[i]];
-        for (size_t j = 0; j < context_count[i]; j++)
-        {
-            Context *c = &contexts[i][j];
-
-            c->N = 1;
-            //c->A = (alpha + 32) / 64; // alpha == alphabet size (256)
-            //if (c->A < 2)
-            //    c->A = 2;
-            c->A = 4;
-            c->C = 0;
-            c->B = c->C;
-        }
-    }
-    contexts[i] = NULL;
-}
-
-//---------------------------------------------------------------------------
 int32s File_Ffv1::golomb_rice_decode(int k)
 {
     int32u q = 0;
@@ -1195,7 +1194,7 @@ int32s File_Ffv1::golomb_rice_decode(int k)
 }
 
 //---------------------------------------------------------------------------
-int32s File_Ffv1::get_symbol_with_bias_correlation(Context *context)
+int32s File_Ffv1::get_symbol_with_bias_correlation(Slice::Context *context)
 {
     int k = 0;
     // Step 8: compute the Golomb parameter k
@@ -1225,7 +1224,8 @@ int32s File_Ffv1::get_symbol_with_bias_correlation(Context *context)
     return code;
 }
 
-void File_Ffv1::update_correlation_value_and_shift(Context *c)
+//---------------------------------------------------------------------------
+void File_Ffv1::update_correlation_value_and_shift(Slice::Context *c)
 {
     if (!c)
         return;
@@ -1262,6 +1262,9 @@ void File_Ffv1::update_correlation_value_and_shift(Context *c)
 //---------------------------------------------------------------------------
 void File_Ffv1::copy_plane_states_to_slice()
 {
+    if (!coder_type)
+        return;
+
     for (size_t i = 0; i < quant_table_count; i++)
     {
         if (!current_slice->plane_states[i])
