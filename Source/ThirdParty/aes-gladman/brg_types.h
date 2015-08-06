@@ -95,6 +95,11 @@ extern "C" {
 #      define BRG_UI64
 #      define li_64(h) 0x##h##ull
 #    endif
+#  elif defined( UINT64_MAX ) && UINT64_MAX > 4294967295u
+#    if UINT64_MAX == __UINT64_C(18446744073709551615)
+#      define BRG_UI64
+#      define li_64(h) __UINT64_C(0x##h)
+#    endif
 #  endif
 #endif
 
