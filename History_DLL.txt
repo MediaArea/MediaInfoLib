@@ -8,7 +8,7 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
-Version 0.7.76, 2015-
+Version 0.7.76, 2015-08-06
 --------------
 + XML output: line breaks and indents in between attributes for readability
 + Trace feature: XML trace update, only if compiled with trace feature
