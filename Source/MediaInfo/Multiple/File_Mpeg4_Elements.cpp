@@ -4619,7 +4619,6 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
             #if defined(MEDIAINFO_MXF_YES)
                 if (Element_Code==0x6D78336E || Element_Code==0x6D783370 || Element_Code==0x6D78356E || Element_Code==0x6D783570) //mx3n, mx3p, mx5n, mx5p
                 {
-                    Fill(Stream_Video, StreamPos_Last, Video_MuxingMode, "MXF");
                     File_Mxf* Parser=new File_Mxf;
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser); // Note: MXF parser is set first but MPEG Video parser is still active because some IMX files have no MXF header
 

@@ -2431,7 +2431,11 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
     Finish(*Parser);
     StreamKind_Last=Stream_Max;
     if ((*Parser)->Count_Get(Stream_Video))
+    {
         Stream_Prepare(Stream_Video);
+        if (IsSub)
+            Fill(Stream_Video, StreamPos_Last, Video_MuxingMode, "MXF");
+    }
     else if ((*Parser)->Count_Get(Stream_Audio))
         Stream_Prepare(Stream_Audio);
     else if ((*Parser)->Count_Get(Stream_Text))
