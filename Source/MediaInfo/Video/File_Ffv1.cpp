@@ -830,9 +830,6 @@ void File_Ffv1::plane(int32u pos)
     sample[1] = current_slice->sample_buffer + current_slice->w + 6 + 3;
 
     memset(current_slice->sample_buffer, 0, 2 * (current_slice->w + 6) * sizeof(*current_slice->sample_buffer));
-
-    states States[MAX_CONTEXT_INPUTS];
-    // memset(States, 128, states_size*MAX_CONTEXT_INPUTS);
  
     current_slice->run_index = 0;
 
@@ -854,7 +851,7 @@ void File_Ffv1::plane(int32u pos)
         else
             bits_max = bits_per_sample;
 
-        line(States, pos, sample);
+        line(pos, sample);
         Element_End0();
     }
 
@@ -866,8 +863,6 @@ void File_Ffv1::rgb()
 {
     Element_Begin1("rgb");
 
-    states States[MAX_CONTEXT_INPUTS];
-    memset(States, 128, states_size*MAX_CONTEXT_INPUTS);
     int16s *sample[4][2];
 
     current_slice->run_index = 0;
@@ -894,7 +889,7 @@ void File_Ffv1::rgb()
             sample[c][1][-1]= sample[c][0][0  ];
             sample[c][0][current_slice->w]= sample[c][0][current_slice->w - 1];
             bits_max = bits_per_sample + 1;
-            line(States, (c + 1) / 2, sample[c]);
+            line((c + 1) / 2, sample[c]);
         }
 
         Element_End0();
@@ -997,7 +992,7 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s co
 }
 
 //---------------------------------------------------------------------------
-void File_Ffv1::line(states States[MAX_CONTEXT_INPUTS], int pos, int16s *sample[2])
+void File_Ffv1::line(int pos, int16s *sample[2])
 {
     // TODO: slice_coding_mode (version 4)
 

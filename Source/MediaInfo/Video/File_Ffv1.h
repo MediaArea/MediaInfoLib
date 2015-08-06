@@ -164,7 +164,7 @@ private :
     int32s get_symbol_with_bias_correlation(Slice::Context* context);
     void rgb();
     void plane(int32u pos);
-    void line(states States[MAX_CONTEXT_INPUTS], int pos, int16s *sample[2]);
+    void line(int pos, int16s *sample[2]);
     int32s line_range_coder(int32s pos, int32s context);
     int32s line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s context);
     void read_quant_tables(int i);
