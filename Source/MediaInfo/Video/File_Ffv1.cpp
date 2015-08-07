@@ -498,21 +498,32 @@ void File_Ffv1::Read_Buffer_Continue()
 
     if (version>2)
     {
+        int32u tail = 3;
+        tail += error_correction == 1 ? 5 : 0;
+
         int64u Slices_BufferPos=Element_Size;
         vector<int32u> Slices_BufferSizes;
         while (Slices_BufferPos)
         {
-            int32u Size = BigEndian2int24u(Buffer + Buffer_Offset + (size_t)Slices_BufferPos - 8);
+            int32u Size = BigEndian2int24u(Buffer + Buffer_Offset + (size_t)Slices_BufferPos - tail);
+            Size += tail;
+
+            if (Slices_BufferPos < Size)
+                Slices_BufferPos = Size;
+            Slices_BufferPos-=Size;
+
             Slices_BufferSizes.insert(Slices_BufferSizes.begin(), Size);
-            Slices_BufferPos-=8+Size;
         }
 
         Element_Offset=0;
         for (size_t Pos = 0; Pos < Slices_BufferSizes.size(); Pos++)
         {
             Element_Begin1("Slice");
-            int64u End=Element_Offset+Slices_BufferSizes[Pos];
-            int32u crc_left=CRC_Compute(Slices_BufferSizes[Pos]+8);
+            int64u End=Element_Offset+Slices_BufferSizes[Pos]-tail;
+            int32u crc_left=0;
+
+            if (error_correction == 1)
+                crc_left=CRC_Compute(Slices_BufferSizes[Pos]);
 
             if (Pos)
             {
@@ -529,13 +540,14 @@ void File_Ffv1::Read_Buffer_Continue()
             if (Element_Offset!=End)
                 Skip_XX(End-Element_Offset,                         "Other data");
             Skip_B3(                                                "slice_size");
-            Skip_B1(                                                "error_status");
-            Skip_B4(                                                "crc_parity");
-            if (!crc_left)
+            if (error_correction == 1)
             {
-                Param_Info1("OK");
-            } else {
-                Param_Info1("NOK");
+                Skip_B1(                                                "error_status");
+                Skip_B4(                                                "crc_parity");
+                if (!crc_left)
+                    Param_Info1("OK");
+                else
+                    Param_Info1("NOK");
             }
             Element_End0();
         }
@@ -561,7 +573,7 @@ void File_Ffv1::FrameHeader()
     //Parsing
     states States;
     memset(States, 128, states_size);
-    int32u coder_type, colorspace_type, bits_per_raw_sample=8, num_h_slices_minus1=0, num_v_slices_minus1=0, ec, intra;
+    int32u coder_type, colorspace_type, bits_per_raw_sample=8, num_h_slices_minus1=0, num_v_slices_minus1=0, intra;
 
     micro_version = 0;
     Get_RU (States, version,                                    "version");
@@ -658,7 +670,7 @@ void File_Ffv1::FrameHeader()
 
     if (version > 2)
     {
-        Get_RU (States, ec,                                     "ec");
+        Get_RU (States, error_correction,                       "ec");
         if (micro_version)
             Get_RU (States, intra,                              "intra");
     }
@@ -683,7 +695,7 @@ void File_Ffv1::FrameHeader()
             }
             if (version > 2)
             {
-                if (ec)
+                if (error_correction)
                     Fill(Stream_Video, 0, "ErrorDetectionType", "Per slice");
                 if (micro_version && intra)
                     Fill(Stream_Video, 0, Video_Format_Settings_GOP, "N=1");

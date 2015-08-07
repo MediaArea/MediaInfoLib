@@ -214,6 +214,7 @@ private :
     int32u  quant_table_count;
     int32u  version;
     int32u  micro_version;
+    int32u  error_correction;
     int32u  num_h_slices;
     int32u  num_v_slices;
     int32u  chroma_h_shift;
