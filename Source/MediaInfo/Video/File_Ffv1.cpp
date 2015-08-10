@@ -815,6 +815,14 @@ void File_Ffv1::slice(states &States)
 
     if (!coder_type && ((version == 3 && micro_version > 1) || version > 3))
         BS_End();
+
+    if (coder_type && version > 2)
+    {
+        int8u s = 129;
+        RC->get_rac(&s);
+        Element_Offset=RC->Buffer_Cur-Buffer;
+        Element_Offset--;
+    }
 }
 
 //---------------------------------------------------------------------------
