@@ -70,7 +70,14 @@ class Slice
 public:
 
     Slice() : run_index(0), run_mode(RUN_MODE_STOP),
-        sample_buffer(NULL) {}
+        sample_buffer(NULL)
+    {
+        for (size_t i = 0; i < MAX_QUANT_TABLES; ++i)
+            plane_states[i] = NULL;
+
+        for (size_t i = 0; i < MAX_PLANES; ++i)
+            contexts[i] = NULL;
+    }
 
     ~Slice()
     {
@@ -79,6 +86,7 @@ public:
             delete [] sample_buffer;
             sample_buffer = NULL;
         }
+        contexts_clean();
     }
 
     void    sample_buffer_new(size_t size)
@@ -88,7 +96,7 @@ public:
             delete [] sample_buffer;
             sample_buffer = NULL;
         }
-        sample_buffer=new int16s[size];
+        sample_buffer = new int16s[size];
     }
 
     void    run_index_init() { run_index=0; }
@@ -103,15 +111,7 @@ public:
     int32u  run_mode;
     int32s  run_segment_length;
     int16s* sample_buffer;
-    states_context_plane plane_states[MAX_QUANT_TABLES];
-};
 
-//***************************************************************************
-// Class File_Ffv1
-//***************************************************************************
-
-class File_Ffv1 : public File__Analyze
-{
     struct Context
     {
         static const int32u N0; // Determined threshold to divide N and B
@@ -123,6 +123,22 @@ class File_Ffv1 : public File__Analyze
         int32s C; // Correction value
     };
 
+    typedef Context* ContextPtr;
+
+    ContextPtr contexts[MAX_PLANES];
+    states_context_plane plane_states[MAX_QUANT_TABLES];
+
+    // HELPER
+    void contexts_init(int32u quant_table_count, int32u context_count[MAX_QUANT_TABLES]);
+    void contexts_clean();
+};
+
+//***************************************************************************
+// Class File_Ffv1
+//***************************************************************************
+
+class File_Ffv1 : public File__Analyze
+{
 public :
     //Constructor/Destructor
     File_Ffv1();
@@ -144,14 +160,11 @@ private :
     void FrameHeader();
     void slice(states &States);
     void slice_header(states &States);
-    void plane_states_clean();
-    void contexts_init();
-    void contexts_clean();
     int32u CRC_Compute(size_t Size);
-    int32s get_symbol_with_bias_correlation(Context* context);
+    int32s get_symbol_with_bias_correlation(Slice::Context* context);
     void rgb();
     void plane(int32u pos);
-    void line(states States[MAX_CONTEXT_INPUTS], int pos, int16s *sample[2]);
+    void line(int pos, int16s *sample[2]);
     int32s line_range_coder(int32s pos, int32s context);
     int32s line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s context);
     void read_quant_tables(int i);
@@ -189,7 +202,8 @@ private :
         #define Info_RS(_STATE, _INFO, _NAME) Skip_RS_(_STATE)
     #endif //MEDIAINFO_TRACE
     RangeCoder* RC;
-    Slice S;
+    Slice *slices;
+    Slice *current_slice;
 
     //Temp
     bool    ConfigurationRecordIsPresent;
@@ -200,6 +214,7 @@ private :
     int32u  quant_table_count;
     int32u  version;
     int32u  micro_version;
+    int32u  error_correction;
     int32u  num_h_slices;
     int32u  num_v_slices;
     int32u  chroma_h_shift;
@@ -212,8 +227,6 @@ private :
     bool    alpha_plane;
     state_transitions state_transitions_table;
 
-    Context **contexts;
-
     //TEMP
     static const int32u PREFIX_MAX = 12; //limit
     int8u bits_max;
@@ -222,9 +235,9 @@ private :
 
     int32s get_median_number(int32s one, int32s two, int32s three);
     int32s predict(int16s *current, int16s *current_top);
-    void update_context_state(Context* v, int32s error);
-    void update_correlation_value_and_shift(Context *c);
+    void update_correlation_value_and_shift(Slice::Context *c);
     int32s golomb_rice_decode(int k);
+    void plane_states_clean(states_context_plane states[MAX_QUANT_TABLES]);
 };
 
 } //NameSpace
