@@ -8,6 +8,8 @@
 # can be found in the License.html file in the root of the source
 # tree.
 
+# $1 : version of the archive
+
 echo
 echo ========== Create the folder ==========
 echo
@@ -19,7 +21,7 @@ mkdir MediaInfoLib
 cp ../GNU/Library/.libs/libmediainfo.0.dylib MediaInfoLib
 cd MediaInfoLib
 ln -s libmediainfo.0.dylib libmediainfo.dylib
-codesign -f -s \"Developer ID Application: MediaArea.net\" --verbose libmediainfo.dylib
+codesign -f -s "Developer ID Application: MediaArea.net" --verbose libmediainfo.dylib
 cd ..
 
 cp ../../License.html MediaInfoLib
@@ -50,8 +52,8 @@ echo
 echo ========== Create the archive ==========
 echo
 
-(BZIP=-9 tar -cjf MediaInfo_DLL_${Version_new}_Mac_i386+x86_64.tar.bz2 MediaInfoLib)
-(XZ_OPT=-9e tar -cJf MediaInfo_DLL_${Version_new}_Mac_i386+x86_64.tar.xz MediaInfoLib)
+(BZIP=-9 tar -cjf MediaInfo_DLL_$1_Mac_i386+x86_64.tar.bz2 MediaInfoLib)
+(XZ_OPT=-9e tar -cJf MediaInfo_DLL_$1_Mac_i386+x86_64.tar.xz MediaInfoLib)
 
 # Clean up
 #rm -fr MediaInfoLib
