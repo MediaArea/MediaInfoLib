@@ -256,19 +256,20 @@ void Slice::contexts_clean()
 }
 
 //---------------------------------------------------------------------------
-void Slice::contexts_init(int32u quant_table_count, int32u context_count[MAX_QUANT_TABLES])
+void Slice::contexts_init(int32u plane_count, int32u quant_table_index[MAX_PLANES], int32u context_count[MAX_QUANT_TABLES])
 {
     contexts_clean();
 
     for (size_t i = 0; i < MAX_PLANES; ++i)
     {
-        if (i >= quant_table_count)
+        if (i >= plane_count)
         {
             contexts[i] = NULL;
             continue;
         }
-        contexts[i] = new Context [context_count[i]];
-        for (size_t j = 0; j < context_count[i]; j++)
+        int32u idx = quant_table_index[i];
+        contexts[i] = new Context [context_count[idx]];
+        for (size_t j = 0; j < context_count[idx]; j++)
         {
             Context *c = &contexts[i][j];
 
@@ -304,6 +305,8 @@ File_Ffv1::File_Ffv1()
     Height = (int32u)-1;
 
     //Temp
+    for (size_t i=0; i < MAX_QUANT_TABLES; ++i)
+        plane_states[i] = NULL;
     ConfigurationRecordIsPresent=false;
     RC=NULL;
     version=0;
@@ -321,7 +324,15 @@ File_Ffv1::~File_Ffv1()
             plane_states_clean(slices[x + y * num_h_slices].plane_states);
     if (slices)
         delete[] slices;
-    plane_states_clean(plane_states);
+    for (size_t i = 0; i < MAX_QUANT_TABLES; ++i)
+    {
+        if (!plane_states[i])
+            continue;
+        for (size_t j = 0; j < context_count[i]; ++j)
+            delete[] plane_states[i][j];
+        delete[] plane_states[i];
+        plane_states[i] = NULL;
+    }
     delete RC; //RC=NULL
 }
 
@@ -770,10 +781,13 @@ void File_Ffv1::slice(states &States)
 
     if (keyframe)
     {
+        int8u plane_count=1+(alpha_plane?1:0);
+        if (version < 4 || chroma_planes) // Warning: chroma is considered as 1 plane
+            plane_count+=1;
         if (!coder_type)
-            current_slice->contexts_init(quant_table_count, context_count);
+            current_slice->contexts_init(plane_count, quant_table_index, context_count);
         else
-            copy_plane_states_to_slice();
+            copy_plane_states_to_slice(plane_count);
     }
     current_slice->sample_buffer_new((current_slice->w + 6) * 3 * MAX_PLANES);
 
@@ -1273,25 +1287,26 @@ void File_Ffv1::update_correlation_value_and_shift(Slice::Context *c)
 }
 
 //---------------------------------------------------------------------------
-void File_Ffv1::copy_plane_states_to_slice()
+void File_Ffv1::copy_plane_states_to_slice(int8u plane_count)
 {
     if (!coder_type)
         return;
 
-    for (size_t i = 0; i < quant_table_count; i++)
+    for (size_t i = 0; i < plane_count; i++)
     {
+        int32u idx = quant_table_index[i];
         if (!current_slice->plane_states[i])
         {
-            current_slice->plane_states[i] = new int8u* [context_count[i]];
-            memset(current_slice->plane_states[i], 0, context_count[i] * sizeof(int8u*));
+            current_slice->plane_states[i] = new int8u* [context_count[idx] + 1];
+            memset(current_slice->plane_states[i], 0, (context_count[idx] + 1) * sizeof(int8u*));
         }
-        for (size_t j = 0; j < context_count[i]; j++)
+        for (size_t j = 0; j < context_count[idx]; j++)
         {
             if (!current_slice->plane_states[i][j])
                 current_slice->plane_states[i][j] = new int8u [states_size];
             for (size_t k = 0; k < states_size; k++)
             {
-                current_slice->plane_states[i][j][k] = plane_states[i][j][k];
+                current_slice->plane_states[i][j][k] = plane_states[idx][j][k];
             }
         }
     }
@@ -1303,12 +1318,9 @@ void File_Ffv1::plane_states_clean(states_context_plane states[MAX_QUANT_TABLES]
     if (!coder_type)
         return;
 
-    for (size_t i = 0; i < quant_table_count; ++i)
+    for (size_t i = 0; states[i] && i < MAX_QUANT_TABLES; ++i)
     {
-        if (!states[i])
-            continue;
-
-        for (size_t j = 0; j < context_count[i]; ++j)
+        for (size_t j = 0; states[i][j]; ++j)
             delete[] states[i][j];
 
         delete[] states[i];
