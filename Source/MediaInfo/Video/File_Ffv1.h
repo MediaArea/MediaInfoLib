@@ -129,7 +129,7 @@ public:
     states_context_plane plane_states[MAX_QUANT_TABLES];
 
     // HELPER
-    void contexts_init(int32u quant_table_count, int32u context_count[MAX_QUANT_TABLES]);
+    void contexts_init(int32u plane_count, int32u quant_table_index[MAX_PLANES], int32u context_count[MAX_QUANT_TABLES]);
     void contexts_clean();
 };
 
@@ -169,7 +169,7 @@ private :
     int32s line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s context);
     void read_quant_tables(int i);
     void read_quant_table(int i, int j, size_t scale);
-    void copy_plane_states_to_slice();
+    void copy_plane_states_to_slice(int8u plane_count);
 
     //Range coder
     #if MEDIAINFO_TRACE
