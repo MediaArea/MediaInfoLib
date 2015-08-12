@@ -28,6 +28,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Video/File_Ffv1.h"
+#include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "ZenLib/BitStream.h"
 //---------------------------------------------------------------------------
 
@@ -560,7 +561,9 @@ void File_Ffv1::Read_Buffer_Continue()
     delete RC;
     RC = NULL;
 
-    Finish();
+    Fill();
+    if (Config->ParseSpeed<1.0)
+        Finish();
 }
 
 //***************************************************************************
