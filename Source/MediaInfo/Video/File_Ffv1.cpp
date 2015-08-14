@@ -319,11 +319,13 @@ File_Ffv1::File_Ffv1()
 File_Ffv1::~File_Ffv1()
 {
     //Temp
-    for (size_t y = 0; y < num_v_slices; ++y)
-        for (size_t x = 0; x < num_h_slices; ++x)
-            plane_states_clean(slices[x + y * num_h_slices].plane_states);
     if (slices)
+    {
+        for (size_t y = 0; y < num_v_slices; ++y)
+            for (size_t x = 0; x < num_h_slices; ++x)
+                plane_states_clean(slices[x + y * num_h_slices].plane_states);
         delete[] slices;
+    }
     for (size_t i = 0; i < MAX_QUANT_TABLES; ++i)
     {
         if (!plane_states[i])
