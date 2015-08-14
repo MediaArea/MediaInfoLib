@@ -5293,7 +5293,7 @@ void File_Mxf::Data_Parse()
             //Searching single descriptor if it is the only valid descriptor
             descriptors::iterator SingleDescriptor=Descriptors.end();
             for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); ++SingleDescriptor_Temp)
-                if (SingleDescriptor_Temp->second.StreamKind!=Stream_Max)
+                if (SingleDescriptor_Temp->second.StreamKind!=Stream_Max || SingleDescriptor_Temp->second.LinkedTrackID!=(int32u)-1)
                 {
                     if (SingleDescriptor!=Descriptors.end())
                     {
