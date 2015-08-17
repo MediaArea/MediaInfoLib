@@ -380,21 +380,21 @@ bool File_Ancillary::Synched_Test()
 //---------------------------------------------------------------------------
 void File_Ancillary::Read_Buffer_Continue()
 {
-    if (!Cdp_Data.empty() && AspectRatio && FrameRate)
-    {
-        ((File_Cdp*)Cdp_Parser)->AspectRatio=AspectRatio;
-        for (size_t Pos=0; Pos<Cdp_Data.size(); Pos++)
-        {
-            if (Cdp_Parser->PTS_DTS_Needed)
-                Cdp_Parser->FrameInfo.DTS=FrameInfo.DTS-(Cdp_Data.size()-Pos)*FrameInfo.DUR;
-            Open_Buffer_Continue(Cdp_Parser, Cdp_Data[Pos]->Data, Cdp_Data[Pos]->Size);
-            delete Cdp_Data[Pos]; //Cdp_Data[0]=NULL;
-        }
-        Cdp_Data.clear();
-    }
-
     if (Element_Size==0)
     {
+        if (!Cdp_Data.empty() && AspectRatio && FrameRate)
+        {
+            ((File_Cdp*)Cdp_Parser)->AspectRatio=AspectRatio;
+            for (size_t Pos=0; Pos<Cdp_Data.size(); Pos++)
+            {
+                if (Cdp_Parser->PTS_DTS_Needed)
+                    Cdp_Parser->FrameInfo.DTS=FrameInfo.DTS-(Cdp_Data.size()-Pos)*FrameInfo.DUR;
+                Open_Buffer_Continue(Cdp_Parser, Cdp_Data[Pos]->Data, Cdp_Data[Pos]->Size);
+                delete Cdp_Data[Pos]; //Cdp_Data[0]=NULL;
+            }
+            Cdp_Data.clear();
+        }
+
         #if defined(MEDIAINFO_AFDBARDATA_YES)
             //Keeping only one, TODO: parse it without video stream
             for (size_t Pos=1; Pos<AfdBarData_Data.size(); Pos++)
@@ -1021,4 +1021,3 @@ void File_Ancillary::Data_Parse()
 } //NameSpace
 
 #endif //MEDIAINFO_ANCILLARY_YES
-
