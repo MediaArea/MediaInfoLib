@@ -11,6 +11,7 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 Version 0.7.77, 2015-
 --------------
 + #B941, MXF: files having only a video stream and an ancillary data stream were having incorrect second video stream
++ MOV: detection of r210 CodecID as raw RGB
 
 Version 0.7.76, 2015-08-06
 --------------

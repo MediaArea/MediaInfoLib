@@ -1521,6 +1521,8 @@ void MediaInfo_Config_CodecID_Video_Mpeg4 (InfoMap &Info)
     "PIM1;MPEG Video;;;;;;YUV\n"
     "PIM2;MPEG Video;;;;;;YUV\n"
     "PNTG;MacPaint;;Apple MacPaint image format;http://www.apple.com/quicktime/download/standalone.html;;;\n"
+    "r210;RGB;Blackmagic Design;;;;;RGB;\n"
+    "R210;RGB;Blackmagic Design;;;;;RGB;\n"
     "raw ;RGB;;;http://www.apple.com/quicktime/download/standalone.html;;;RGB\n"
     "rle ;RLE;;;http://www.apple.com/quicktime/download/standalone.html;;;RGB\n"
     "rpza;Road Pizza;;;http://www.apple.com/quicktime/download/standalone.html;;;\n"
