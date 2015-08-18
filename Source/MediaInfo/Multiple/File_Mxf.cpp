@@ -5522,7 +5522,7 @@ void File_Mxf::Data_Parse()
                 {
                     parsers::iterator Parser=Essence->second.Parsers.begin();
 
-                    //Ancillary with
+                    //Ancillary, SMPTE ST 436
                     int16u Count;
                     Get_B2 (Count,                                  "Number of Lines");
                     if (Count*14>Element_Size)
@@ -5533,15 +5533,15 @@ void File_Mxf::Data_Parse()
                     }
                     for (int16u Pos=0; Pos<Count; Pos++)
                     {
-                        Element_Begin1("Packet");
-                        int32u Size2, Count2;
-                        int16u LineNumber, Size;
-                        Get_B2 (LineNumber,                         "Line Number");
+                        Element_Begin1("Line");
+                        int32u ArrayCount, ArrayLength;
+                        int16u LineNumber, SampleCount;
+                        Get_B2 (LineNumber,                         "Line Number"); Element_Info1(LineNumber);
                         Skip_B1(                                    "Wrapping Type");
                         Skip_B1(                                    "Payload Sample Coding");
-                        Get_B2 (Size,                               "Payload Sample Count");
-                        Get_B4 (Size2,                              "Size?");
-                        Get_B4 (Count2,                             "Count?");
+                        Get_B2 (SampleCount,                        "Payload Sample Count");
+                        Get_B4 (ArrayCount,                         "Payload Array Count");
+                        Get_B4 (ArrayLength,                        "Payload Array Length");
 
                         if (Essence->second.Frame_Count_NotParsedIncluded!=(int64u)-1)
                             (*Parser)->Frame_Count_NotParsedIncluded=Essence->second.Frame_Count_NotParsedIncluded;
@@ -5567,9 +5567,13 @@ void File_Mxf::Data_Parse()
                                     }
                             }
                         #endif //defined(MEDIAINFO_ANCILLARY_YES)
-                        if (Element_Offset+Size>Element_Size)
-                            Size=(int16u)(Element_Size-Element_Offset);
-                        Open_Buffer_Continue((*Parser), Buffer+Buffer_Offset+(size_t)(Element_Offset), Size);
+                        int64u Parsing_Size=SampleCount;
+                        int64u Array_Size=ArrayCount*ArrayLength;
+                        if (Element_Offset+Parsing_Size>Element_Size)
+                            Parsing_Size=Element_Size-Element_Offset; // There is a problem
+                        if (Parsing_Size>Array_Size)
+                            Parsing_Size=Array_Size; // There is a problem
+                        Open_Buffer_Continue((*Parser), Buffer+Buffer_Offset+(size_t)(Element_Offset), Parsing_Size);
                         if ((Code_Compare4&0xFF00FF00)==0x17000100 && LineNumber==21 && (*Parser)->Count_Get(Stream_Text)==0)
                         {
                             (*Parser)->Accept();
@@ -5577,9 +5581,9 @@ void File_Mxf::Data_Parse()
                             (*Parser)->Fill(Stream_Text, StreamPos_Last, Text_Format, "EIA-608");
                             (*Parser)->Fill(Stream_Text, StreamPos_Last, Text_MuxingMode, "VBI / Line 21");
                         }
-                        Element_Offset+=Size;
-                        if (Size<Size2*Count2)
-                            Skip_XX(Size2*Count2-Size,              "Padding");
+                        Element_Offset+=Parsing_Size;
+                        if (Parsing_Size<Array_Size)
+                            Skip_XX(Array_Size-Parsing_Size,    "Padding");
                         Element_End0();
                     }
                 }
