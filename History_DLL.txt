@@ -13,6 +13,7 @@ Version 0.7.77, 2015-
 + #B941, MXF: files having only a video stream and an ancillary data stream were having incorrect second video stream
 + MOV: detection of r210 CodecID as raw RGB
 + Ancillary data: detection of all metadata blocks (previously: only the first one was detected)
+x MPEG-TS: Wrong demux of TSP (188+16 TS) files having PES with only padding
 
 Version 0.7.76, 2015-08-06
 --------------

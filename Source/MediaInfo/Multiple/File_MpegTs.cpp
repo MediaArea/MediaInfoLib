@@ -2271,8 +2271,8 @@ void File_MpegTs::Header_Parse()
             if (transport_scrambling_control>0)
                 Complete_Stream->Streams[pid]->Scrambled_Count++;
         }
-        else if (Element_Offset<TS_Size)
-            Skip_XX(TS_Size-Element_Offset,                         "Junk");
+        else if (Element_Offset+TSP_Size<TS_Size)
+            Skip_XX(TS_Size-Element_Offset-TSP_Size,            "Junk");
 
         //Filling
         Header_Fill_Code(pid, __T("0x")+Ztring().From_CC2(pid));
@@ -2779,7 +2779,7 @@ void File_MpegTs::Data_Parse()
     Frame_Count++;
 
     //TSP specific
-    if (TSP_Size && Element_Size>TSP_Size)
+    if (TSP_Size)
         Element_Size-=TSP_Size;
 
     #if MEDIAINFO_DUPLICATE
@@ -2805,10 +2805,14 @@ void File_MpegTs::Data_Parse()
         }
 
     //TSP specific
-    if (TSP_Size && Element_Size>TSP_Size)
+    if (TSP_Size)
     {
         Element_Size+=TSP_Size;
-        Skip_B4(                                                "TSP"); //TSP supplement
+        switch(TSP_Size)
+        {
+            case 16: Skip_B16(                                  "TSP"); break; //TSP supplement
+            default: Skip_XX(TSP_Size,                          "TSP");
+        }
     }
 }
 
