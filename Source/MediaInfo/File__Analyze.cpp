@@ -2462,7 +2462,15 @@ void File__Analyze::Element_Info(const Ztring &Parameter)
         case MediaInfo_Config::Trace_Format_CSV         : Element[Element_Level].ToShow.Info+=__T(" - "); break;
         case MediaInfo_Config::Trace_Format_XML         : 
                                                             {
-                                                                if (Element[Element_Level].ToShow.Info.find(__T(" info3=\""))!=string::npos)
+                                                                     if (Element[Element_Level].ToShow.Info.find(__T(" info7=\""))!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info8=\"");
+                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" info6=\""))!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info7=\"");
+                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" info5=\""))!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info6=\"");
+                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" info4=\""))!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info5=\"");
+                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" info3=\""))!=string::npos)
                                                                     Element[Element_Level].ToShow.Info+=__T(" info4=\"");
                                                                 else if (Element[Element_Level].ToShow.Info.find(__T(" info2=\""))!=string::npos)
                                                                     Element[Element_Level].ToShow.Info+=__T(" info3=\"");
@@ -2900,8 +2908,29 @@ void File__Analyze::Param_Info (const Ztring &Text)
         case MediaInfo_Config::Trace_Format_Tree        :
         case MediaInfo_Config::Trace_Format_CSV         : Element[Element_Level].ToShow.Details+=__T(" - "); break;
         case MediaInfo_Config::Trace_Format_XML         : 
-                                                          Element[Element_Level].ToShow.Details+=__T(" moreinfo=\"");
-                                                          break;
+                                                            {
+                                                                size_t Start=Element[Element_Level].ToShow.Details.rfind(EOL);
+                                                                if (Start==(size_t)-1)
+                                                                    Start=0;
+                                                                
+                                                                     if (Element[Element_Level].ToShow.Details.find(__T(" info7=\""), Start)!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info8=\"");
+                                                                else if (Element[Element_Level].ToShow.Details.find(__T(" info6=\""), Start)!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info7=\"");
+                                                                else if (Element[Element_Level].ToShow.Details.find(__T(" info5=\""), Start)!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info6=\"");
+                                                                else if (Element[Element_Level].ToShow.Details.find(__T(" info4=\""), Start)!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info5=\"");
+                                                                else if (Element[Element_Level].ToShow.Details.find(__T(" info3=\""), Start)!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info4=\"");
+                                                                else if (Element[Element_Level].ToShow.Details.find(__T(" info2=\""), Start)!=string::npos)
+                                                                    Element[Element_Level].ToShow.Info+=__T(" info3=\"");
+                                                                else if (Element[Element_Level].ToShow.Details.find(__T(" info=\""), Start)!=string::npos)
+                                                                    Element[Element_Level].ToShow.Details+=__T(" info2=\"");
+                                                                else                
+                                                                    Element[Element_Level].ToShow.Details+=__T(" info=\"");
+                                                            }
+                                                            break;
         default                                         : ;
     }
     Element[Element_Level].ToShow.Details+=Text;
