@@ -2591,6 +2591,31 @@ void File__Analyze::Element_End_Common_Flush_Details()
                     default                                         : ;
                 }
             }
+            else
+            {
+                switch (Config_Trace_Format)
+                {
+                    case MediaInfo_Config::Trace_Format_XML         : 
+                                                                        {
+                                                                        size_t Start=Element[Element_Level].ToShow.Details.rfind(EOL);
+                                                                        if (Start==(size_t)-1)
+                                                                            Start=0;
+
+                                                                        //Looking for not closed element (=actually no data in it)
+                                                                        size_t DataPos=Element[Element_Level].ToShow.Details.find(__T("</data>"), Start);
+                                                                        if (DataPos==(size_t)-1)
+                                                                        {
+                                                                            #ifdef WINDOWS
+                                                                                Element[Element_Level].ToShow.Details.resize(Start);
+                                                                            #else //WINDOWS
+                                                                                Element[Element_Level].ToShow.Details.resize(Start);
+                                                                            #endif //WINDOWS
+                                                                        }
+                                                                        }
+                                                                        break;
+                    default                                         : ;
+                }
+            }
         }
     }
 }
