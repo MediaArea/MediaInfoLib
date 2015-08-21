@@ -965,6 +965,12 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
             //Details handling
             if (!Sub->Element[0].ToShow.Details.empty() && !Trace_DoNotSave)
             {
+                //Previous item
+                size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
+                size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
+                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</data> />"
+                    Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</data>");
+                
                 //Line separator
                 if (!Element[Element_Level].ToShow.Details.empty())
                     Element[Element_Level].ToShow.Details+=Config_LineSeparator;
@@ -2254,7 +2260,6 @@ void File__Analyze::Data_GoTo (int64u GoTo_, const char* ParserName)
 
     Info(Ztring(ParserName)+__T(", jumping to offset ")+Ztring::ToZtring(GoTo_, 16));
     GoTo(GoTo_);
-    Element_End0();
 }
 #endif //MEDIAINFO_TRACE
 
@@ -2892,10 +2897,18 @@ void File__Analyze::Param_Info (const Ztring &Text)
     //Filling
     switch (Config_Trace_Format)
     {
-        case MediaInfo_Config::Trace_Format_XML         : Element[Element_Level].ToShow.Details+=__T(" moreinfo=\"")+Text+__T("\"");
-                                                            break;
-        default:
-                                                            Element[Element_Level].ToShow.Details+=__T(" - ")+Text;
+        case MediaInfo_Config::Trace_Format_Tree        :
+        case MediaInfo_Config::Trace_Format_CSV         : Element[Element_Level].ToShow.Details+=__T(" - "); break;
+        case MediaInfo_Config::Trace_Format_XML         : 
+                                                          Element[Element_Level].ToShow.Details+=__T(" moreinfo=\"");
+                                                          break;
+        default                                         : ;
+    }
+    Element[Element_Level].ToShow.Details+=Text;
+    switch (Config_Trace_Format)
+    {
+        case MediaInfo_Config::Trace_Format_XML         : Element[Element_Level].ToShow.Details+=__T("\""); break;
+        default                                         : ;
     }
 }
 #endif //MEDIAINFO_TRACE
