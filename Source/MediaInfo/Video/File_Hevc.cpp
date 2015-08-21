@@ -581,16 +581,55 @@ bool File_Hevc::Demux_UnpacketizeContainer_Test()
                 }
 
                 zero_byte=Buffer[Demux_Offset+2]==0x00;
-                if (Demux_IntermediateItemFound)
+                int8u nal_unit_type=Buffer[Demux_Offset+(zero_byte?4:3)]>>1;
+                bool Next;
+                switch (nal_unit_type)
                 {
-                    if (!(((Buffer[Demux_Offset+(zero_byte?4:3)]&0x40)==0 && (Buffer[Demux_Offset+(zero_byte?6:5)]&0x80)!=0x80)
-                        || (Buffer[Demux_Offset+(zero_byte?4:3)]&0x7E)==(38<<1)))
-                        break;
+                    case  0 :
+                    case  1 :
+                    case  2 :
+                    case  3 :
+                    case  4 :
+                    case  5 :
+                    case  6 :
+                    case  7 :
+                    case  8 :
+                    case  9 :
+                    case 16 :
+                    case 17 :
+                    case 18 :
+                    case 19 :
+                    case 20 :
+                    case 21 :
+                                if (Demux_IntermediateItemFound)
+                                {
+                                    if (Buffer[Demux_Offset+(zero_byte?6:5)]&0x80)
+                                        Next=true;
+                                    else
+                                        Next=false;
+                                }
+                                else
+                                {
+                                    Next=false;
+                                    Demux_IntermediateItemFound=true;
+                                }
+                              break;
+                    case 32 :
+                    case 33 :
+                    case 34 :
+                    case 35 :
+                              if (Demux_IntermediateItemFound)
+                                  Next=true;
+                              else
+                                  Next=false;
+                              break;
+                    default : Next=false;
                 }
-                else
+
+                if (Next)
                 {
-                    if ((Buffer[Demux_Offset+(zero_byte?4:3)]&0x40)==0 && (Buffer[Demux_Offset+(zero_byte?6:5)]&0x80)==0x80)
-                        Demux_IntermediateItemFound=true;
+                    Demux_IntermediateItemFound=false;
+                    break;
                 }
 
                 Demux_Offset++;
