@@ -2036,7 +2036,7 @@ void File__Analyze::Get_Flags (int64u Flags, size_t Order, bool &Info, const cha
         Info=false;
 
     Element_Begin0();
-    if (Trace_Activated) Param(Name, Info?"Yes":"No");
+    if (Trace_Activated && MediaInfoLib::Config.Trace_Format_Get()!=MediaInfoLib::Config.Trace_Format_XML) Param(Name, Info?"Yes":"No");
     Element_End0();
 }
 
@@ -2046,7 +2046,7 @@ void File__Analyze::Get_Flags (int64u ValueToPut, int8u &Info, const char* Name)
     Info=(int8u)ValueToPut;
 
     Element_Begin0();
-    if (Trace_Activated) Param(Name, Info);
+    if (Trace_Activated && MediaInfoLib::Config.Trace_Format_Get()!=MediaInfoLib::Config.Trace_Format_XML) Param(Name, Info);
     Element_End0();
 }
 
@@ -2062,7 +2062,7 @@ void File__Analyze::Skip_Flags(int64u Flags, size_t Order, const char* Name)
 void File__Analyze::Skip_Flags(int64u ValueToPut, const char* Name)
 {
     Element_Begin0();
-    if (Trace_Activated) Param(Name, ValueToPut);
+    if (Trace_Activated && MediaInfoLib::Config.Trace_Format_Get()!=MediaInfoLib::Config.Trace_Format_XML) Param(Name, ValueToPut);
     Element_End0();
 }
 
