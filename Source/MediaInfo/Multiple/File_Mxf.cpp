@@ -270,7 +270,7 @@ namespace Elements
     UUID(060E2B34, 02530101, 0D010101, 01010300, 0000, "SMPTE ST 377-1", Segment, "Segment")
     UUID(060E2B34, 02530101, 0D010101, 01010600, 0000, "SMPTE ST 377-1", Event, "Event")
     UUID(060E2B34, 02530101, 0D010101, 01010800, 0000, "SMPTE ST 377-1", CommentMarker, "Comment Marker")
-    UUID(060E2B34, 02530101, 0D010101, 01010900, 0000, "SMPTE ST 377-1", Filler53, "")
+    UUID(060E2B34, 02530101, 0D010101, 01010900, 0000, "SMPTE ST 377-1", DMFiller, "")
     UUID(060E2B34, 02530101, 0D010101, 01010F00, 0000, "SMPTE ST 377-1", Sequence, "")
     UUID(060E2B34, 02530101, 0D010101, 01011100, 0000, "SMPTE ST 377-1", SourceClip, "")
     UUID(060E2B34, 02530101, 0D010101, 01011400, 0000, "SMPTE ST 377-1", TimecodeComponent, "")
@@ -5150,7 +5150,7 @@ void File_Mxf::Data_Parse()
     ELEMENT(LensUnitMetadata,                                   "Lens Unit Metadata")
     ELEMENT(CameraUnitMetadata,                                 "Camera Unit Metadata")
     ELEMENT(UserDefinedAcquisitionMetadata,                     "User Defined Acquisition Metadata")
-    ELEMENT(Filler53,                                           "Filler")
+    ELEMENT(DMFiller,                                           "Descriptive Metadata Filler")
     ELEMENT(Sequence,                                           "Sequence")
     ELEMENT(SourceClip,                                         "Source Clip")
     ELEMENT(TimecodeComponent,                                  "Timecode Component")
@@ -6629,7 +6629,7 @@ void File_Mxf::RandomIndexMetadata()
 }
 
 //---------------------------------------------------------------------------
-void File_Mxf::Filler53()
+void File_Mxf::DMFiller()
 {
     switch(Code2)
     {
