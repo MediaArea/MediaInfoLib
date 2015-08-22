@@ -2629,57 +2629,23 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             Stream_Prepare(StreamKind_Last);
             Merge(*(*Parser), StreamKind_Last, StreamPos, StreamPos_Last);
         }
+
+        if (StreamKind_Last!=Stream_Other && (*Parser)->Count_Get(Stream_Other))
+        {
+            stream_t StreamKind_Last_Main=StreamKind_Last;
+            size_t StreamPos_Last_Main=StreamPos_Last;
+            for (size_t StreamPos=0; StreamPos<(*Parser)->Count_Get(Stream_Other); StreamPos++)
+            {
+                Stream_Prepare(Stream_Other);
+                Merge(*(*Parser), Stream_Other, StreamPos, StreamPos_Last);
+            }
+            Streams_Finish_Essence_FillID(EssenceUID, TrackUID);
+            StreamKind_Last=StreamKind_Last_Main;
+            StreamPos_Last=StreamPos_Last_Main;
+        }
     }
 
-    if (Retrieve(StreamKind_Last, StreamPos_Last, General_ID).empty() || StreamKind_Last==Stream_Text || StreamKind_Last==Stream_Other) //TODO: better way to do detect subID
-    {
-        //Looking for Material package TrackID
-        int32u TrackID=(int32u)-1;
-        for (packages::iterator SourcePackage=Packages.begin(); SourcePackage!=Packages.end(); ++SourcePackage)
-            if (SourcePackage->second.PackageUID.hi.hi) //Looking fo a SourcePackage with PackageUID only
-            {
-                //Testing if the Track is in this SourcePackage
-                for (size_t Tracks_Pos=0; Tracks_Pos<SourcePackage->second.Tracks.size(); Tracks_Pos++)
-                    if (SourcePackage->second.Tracks[Tracks_Pos]==TrackUID)
-                    {
-                        tracks::iterator Track=Tracks.find(SourcePackage->second.Tracks[Tracks_Pos]);
-                        if (Track!=Tracks.end())
-                            TrackID=Track->second.TrackID;
-                    }
-            }
-
-        Ztring ID;
-        Ztring ID_String;
-        if (TrackID!=(int32u)-1)
-            ID=Ztring::ToZtring(TrackID);
-        else if (Tracks[TrackUID].TrackID!=(int32u)-1)
-            ID=Ztring::ToZtring(Tracks[TrackUID].TrackID);
-        else
-        {
-            ID=Ztring::ToZtring(Essence->first);
-            ID_String=Ztring::ToZtring(Essence->first, 16);
-        }
-        if (!ID.empty())
-        {
-            for (size_t StreamPos=StreamPos_Last-((*Parser)->Count_Get(StreamKind_Last)?((*Parser)->Count_Get(StreamKind_Last)-1):0); StreamPos<=StreamPos_Last; StreamPos++) //If more than 1 stream
-            {
-                Ztring ID_Temp(ID);
-                if (!Retrieve(StreamKind_Last, StreamPos, General_ID).empty())
-                {
-                    ID_Temp+=__T("-");
-                    ID_Temp+=Retrieve(StreamKind_Last, StreamPos, General_ID);
-                }
-                Fill(StreamKind_Last, StreamPos, General_ID, ID_Temp, true);
-                if (!ID_String.empty())
-                    Fill(StreamKind_Last, StreamPos, General_ID_String, ID_String, true);
-            }
-        }
-        if (!Tracks[TrackUID].TrackName.empty())
-        {
-            for (size_t StreamPos=StreamPos_Last-((*Parser)->Count_Get(StreamKind_Last)?((*Parser)->Count_Get(StreamKind_Last)-1):0); StreamPos<=StreamPos_Last; StreamPos++) //If more than 1 stream
-                Fill(StreamKind_Last, StreamPos, "Title", Tracks[TrackUID].TrackName);
-        }
-    }
+    Streams_Finish_Essence_FillID(EssenceUID, TrackUID);
 
     //Special case - DV
     #if defined(MEDIAINFO_DVDIF_YES)
@@ -2831,6 +2797,66 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
 
     //Done
     Essence->second.Stream_Finish_Done=true;
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Streams_Finish_Essence_FillID(int32u EssenceUID, int128u TrackUID)
+{
+    essences::iterator Essence=Essences.find(EssenceUID);
+    if (Essence==Essences.end() || Essence->second.Stream_Finish_Done)
+        return;
+
+   parsers::iterator Parser=Essence->second.Parsers.begin();
+
+   if (Retrieve(StreamKind_Last, StreamPos_Last, General_ID).empty() || StreamKind_Last==Stream_Text || StreamKind_Last==Stream_Other) //TODO: better way to do detect subID
+    {
+        //Looking for Material package TrackID
+        int32u TrackID=(int32u)-1;
+        for (packages::iterator SourcePackage=Packages.begin(); SourcePackage!=Packages.end(); ++SourcePackage)
+            if (SourcePackage->second.PackageUID.hi.hi) //Looking fo a SourcePackage with PackageUID only
+            {
+                //Testing if the Track is in this SourcePackage
+                for (size_t Tracks_Pos=0; Tracks_Pos<SourcePackage->second.Tracks.size(); Tracks_Pos++)
+                    if (SourcePackage->second.Tracks[Tracks_Pos]==TrackUID)
+                    {
+                        tracks::iterator Track=Tracks.find(SourcePackage->second.Tracks[Tracks_Pos]);
+                        if (Track!=Tracks.end())
+                            TrackID=Track->second.TrackID;
+                    }
+            }
+
+        Ztring ID;
+        Ztring ID_String;
+        if (TrackID!=(int32u)-1)
+            ID=Ztring::ToZtring(TrackID);
+        else if (Tracks[TrackUID].TrackID!=(int32u)-1)
+            ID=Ztring::ToZtring(Tracks[TrackUID].TrackID);
+        else
+        {
+            ID=Ztring::ToZtring(Essence->first);
+            ID_String=Ztring::ToZtring(Essence->first, 16);
+        }
+        if (!ID.empty())
+        {
+            for (size_t StreamPos=StreamPos_Last-((*Parser)->Count_Get(StreamKind_Last)?((*Parser)->Count_Get(StreamKind_Last)-1):0); StreamPos<=StreamPos_Last; StreamPos++) //If more than 1 stream
+            {
+                Ztring ID_Temp(ID);
+                if (!Retrieve(StreamKind_Last, StreamPos, General_ID).empty())
+                {
+                    ID_Temp+=__T("-");
+                    ID_Temp+=Retrieve(StreamKind_Last, StreamPos, General_ID);
+                }
+                Fill(StreamKind_Last, StreamPos, General_ID, ID_Temp, true);
+                if (!ID_String.empty())
+                    Fill(StreamKind_Last, StreamPos, General_ID_String, ID_String, true);
+            }
+        }
+        if (!Tracks[TrackUID].TrackName.empty())
+        {
+            for (size_t StreamPos=StreamPos_Last-((*Parser)->Count_Get(StreamKind_Last)?((*Parser)->Count_Get(StreamKind_Last)-1):0); StreamPos<=StreamPos_Last; StreamPos++) //If more than 1 stream
+                Fill(StreamKind_Last, StreamPos, "Title", Tracks[TrackUID].TrackName);
+        }
+    }
 }
 
 //---------------------------------------------------------------------------
