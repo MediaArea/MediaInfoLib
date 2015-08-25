@@ -306,7 +306,7 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
                 Retour+=MediaInfoLib::Config.LineSeparator_Get();
                 Retour+=__T("    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
                 Retour+=MediaInfoLib::Config.LineSeparator_Get();
-                Retour+=__T("    xsi:schemaLocation=\"http://www.mediaarea.net/mediatrace http://www.mediaarea.net/mediatrace/mediatrace.xsd\"");
+                Retour+=__T("    xsi:schemaLocation=\"http://www.mediaarea.net/mediatrace http://www.mediaarea.net/mediatrace/mediatrace_0_1.xsd\"");
             }
             else
                 Retour+=__T("Mediainfo");
