@@ -302,11 +302,11 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
             {
                 Retour+=__T("MediaTrace");
                 Retour+=MediaInfoLib::Config.LineSeparator_Get();
-                Retour+=__T("    xmlns=\"http://mediaarea.net/mediatrace\"");
+                Retour+=__T("    xmlns=\"https://mediaarea.net/mediatrace\"");
                 Retour+=MediaInfoLib::Config.LineSeparator_Get();
                 Retour+=__T("    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
                 Retour+=MediaInfoLib::Config.LineSeparator_Get();
-                Retour+=__T("    xsi:schemaLocation=\"http://mediaarea.net/mediatrace http://mediaarea.net/mediatrace/mediatrace_0_1.xsd\"");
+                Retour+=__T("    xsi:schemaLocation=\"https://mediaarea.net/mediatrace https://mediaarea.net/mediatrace/mediatrace_0_1.xsd\"");
             }
             else
                 Retour+=__T("Mediainfo");
