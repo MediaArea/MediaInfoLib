@@ -10,7 +10,7 @@ Group:          System/Libraries
 License:        BSD-2-Clause
 URL:            http://MediaArea.net/MediaInfo
 Packager:       MediaArea.net SARL <info@mediaarea.net>
-Source0:        %{name}_%{version}.tar.gz
+Source0:        %{name}_%{version}-1.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires:  gcc-c++
