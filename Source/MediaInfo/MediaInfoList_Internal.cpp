@@ -31,6 +31,7 @@ namespace MediaInfoLib
 
 //---------------------------------------------------------------------------
 extern MediaInfo_Config Config;
+extern const Char* MediaInfo_Version;
 //---------------------------------------------------------------------------
 
 //***************************************************************************
@@ -311,10 +312,15 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
             else
                 Retour+=__T("Mediainfo");
             Retour+=MediaInfoLib::Config.LineSeparator_Get();
-            Retour+=__T("    version=\"")+MediaInfoLib::Config.Info_Version_Get().SubString(__T(" v"), Ztring())+__T("\"");
+            Retour+=__T("    version=\"0.1\"");
             Retour+=MediaInfoLib::Config.LineSeparator_Get();
             Retour+=__T("    ref=\"")+Info[FilePos]->Get(Stream_General, 0, General_CompleteName)+__T("\"");
             Retour+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
+            if (MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_XML)
+            {
+                Retour+=__T("    <creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"https://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
+                Retour+=MediaInfoLib::Config.LineSeparator_Get();
+            }
         }
         else
         Retour+=MediaInfo_Custom_View("Page_Begin");
