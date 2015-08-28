@@ -95,8 +95,8 @@ namespace Http
         {
             CutHead (Host,  Protocol,   "://"   );
             CutTail (Host,  Search,     "?"     );
-            CutTail (Host,  Path,       "/",    true);
             CutHead (Host,  User,       "@"     );
+            CutTail (Host,  Path,       "/",    true);
             CutTail (User,  Password,   ":"     );
             CutTail (Host,  Port,       ":"     );
 
