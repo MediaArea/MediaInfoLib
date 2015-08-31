@@ -6,7 +6,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 set(MediaInfoLib_MAJOR_VERSION 0)
 set(MediaInfoLib_MINOR_VERSION 7)
-set(MediaInfoLib_PATCH_VERSION 76)
+set(MediaInfoLib_PATCH_VERSION 77)
 set(MediaInfoLib_VERSION ${MediaInfoLib_MAJOR_VERSION}.${MediaInfoLib_MINOR_VERSION}.${MediaInfoLib_PATCH_VERSION})
 
 if (NOT WIN32)

@@ -2,7 +2,7 @@ Format: 3.0 (native)
 Source: libmediainfo
 Binary: libmediainfo-dev, libmediainfo0, python-mediainfodll, python3-mediainfodll, libmediainfo-doc
 Architecture: any all
-Version: 0.7.76
+Version: 0.7.77
 Maintainer: MediaArea.net SARL <info@mediaarea.net>
 Homepage: http://MediaArea.net/MediaInfo
 Standards-Version: 3.9.6
@@ -16,8 +16,8 @@ Package-List:
  python-mediainfodll deb python optional arch=all
  python3-mediainfodll deb python optional arch=all
 Checksums-Sha1:
- 0000000000000000000000000000000000000000 0000000 libmediainfo_0.7.76.tar.xz
+ 0000000000000000000000000000000000000000 0000000 libmediainfo_0.7.77.tar.xz
 Checksums-Sha256:
- 0000000000000000000000000000000000000000000000000000000000000000 0000000 libmediainfo_0.7.76.tar.xz
+ 0000000000000000000000000000000000000000000000000000000000000000 0000000 libmediainfo_0.7.77.tar.xz
 Files:
- 00000000000000000000000000000000 0000000 libmediainfo_0.7.76.tar.xz
+ 00000000000000000000000000000000 0000000 libmediainfo_0.7.77.tar.xz
