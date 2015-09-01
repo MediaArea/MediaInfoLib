@@ -2854,7 +2854,7 @@ void File__Analyze::Info(const Ztring& Value, size_t Element_Level_Minus)
         return;
 
     //Line separator
-    if (!Element[Element_Level_Final].ToShow.Details.empty())
+    if (!Element[Element_Level_Final].ToShow.Details.empty() && Element[Element_Level_Final].ToShow.Value.empty())
         Element[Element_Level_Final].ToShow.Details+=Config_LineSeparator;
 
     //Preparing
@@ -2914,17 +2914,17 @@ void File__Analyze::Param_Info (const Ztring &Text)
                                                                     Start=0;
                                                                 
                                                                      if (Element[Element_Level].ToShow.Details.find(__T(" info7=\""), Start)!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info8=\"");
+                                                                    Element[Element_Level].ToShow.Details+=__T(" info8=\"");
                                                                 else if (Element[Element_Level].ToShow.Details.find(__T(" info6=\""), Start)!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info7=\"");
+                                                                    Element[Element_Level].ToShow.Details+=__T(" info7=\"");
                                                                 else if (Element[Element_Level].ToShow.Details.find(__T(" info5=\""), Start)!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info6=\"");
+                                                                    Element[Element_Level].ToShow.Details+=__T(" info6=\"");
                                                                 else if (Element[Element_Level].ToShow.Details.find(__T(" info4=\""), Start)!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info5=\"");
+                                                                    Element[Element_Level].ToShow.Details+=__T(" info5=\"");
                                                                 else if (Element[Element_Level].ToShow.Details.find(__T(" info3=\""), Start)!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info4=\"");
+                                                                    Element[Element_Level].ToShow.Details+=__T(" info4=\"");
                                                                 else if (Element[Element_Level].ToShow.Details.find(__T(" info2=\""), Start)!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info3=\"");
+                                                                    Element[Element_Level].ToShow.Details+=__T(" info3=\"");
                                                                 else if (Element[Element_Level].ToShow.Details.find(__T(" info=\""), Start)!=string::npos)
                                                                     Element[Element_Level].ToShow.Details+=__T(" info2=\"");
                                                                 else                
