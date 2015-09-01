@@ -2484,7 +2484,7 @@ void File__Analyze::Element_Info(const Ztring &Parameter)
         default                                         : ;
     }
     size_t Modified;
-    Element[Element_Level].ToShow.Info+=MediaInfo_Internal::Xml_Content_Escape_Modifying(Parameter2, Modified);
+    Element[Element_Level].ToShow.Info+=MediaInfo_Internal::Xml_Content_Escape(Parameter2, Modified);
     switch (Config_Trace_Format)
     {
         case MediaInfo_Config::Trace_Format_XML         : Element[Element_Level].ToShow.Info+=__T("\""); break;
@@ -2813,10 +2813,15 @@ void File__Analyze::Param(const Ztring& Parameter, const Ztring& Value)
                     Element[Element_Level].ToShow.Details+=__T("\"");
                     {
                         size_t Max = Value.find(__T(" (0x"));
+                        size_t Modified;
                         if (Max==string::npos)
-                            Element[Element_Level].ToShow.Value=Value;
+                            Element[Element_Level].ToShow.Value=MediaInfo_Internal::Xml_Content_Escape(Value, Modified);
                         else
-                            Element[Element_Level].ToShow.Value=Value.substr(0, Max);
+                            Element[Element_Level].ToShow.Value=MediaInfo_Internal::Xml_Content_Escape(Value.substr(0, Max), Modified);
+                        if (Modified==1 && !MediaInfoLib::Config.SkipBinaryData_Get()) //Base64
+                            Element[Element_Level].ToShow.Details+=__T(" dt=\"binary.base64\"");
+                        if (Modified==1 && MediaInfoLib::Config.SkipBinaryData_Get())
+                            Element[Element_Level].ToShow.Value=__T("(Binary data)");
                     }
                     break;
         default                                         : ;

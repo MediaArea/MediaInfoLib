@@ -684,6 +684,9 @@ Ztring &MediaInfo_Internal::Xml_Content_Escape_Modifying (Ztring &Content, size_
                             Content.insert(Pos+1, __T("gt;"));
                             Pos+=3;
                             break;
+            case __T('\r'):
+            case __T('\n'):
+                            break;
             default:
                         if (Content[Pos]<0x20)
                         {
