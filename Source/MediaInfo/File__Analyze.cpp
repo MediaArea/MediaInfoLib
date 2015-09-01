@@ -20,6 +20,7 @@
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/MediaInfo_Config.h"
+#include "MediaInfo/MediaInfo_Internal.h" //Only for XML escape. TODO: move XML escape function somewhere more generic
 #if MEDIAINFO_IBIUSAGE && MEDIAINFO_SEEK
     #include "MediaInfo/Multiple/File_Ibi.h"
 #endif //MEDIAINFO_IBIUSAGE && MEDIAINFO_SEEK
@@ -2482,7 +2483,8 @@ void File__Analyze::Element_Info(const Ztring &Parameter)
                                                             break;
         default                                         : ;
     }
-    Element[Element_Level].ToShow.Info+=Parameter2;
+    size_t Modified;
+    Element[Element_Level].ToShow.Info+=MediaInfo_Internal::Xml_Content_Escape_Modifying(Parameter2, Modified);
     switch (Config_Trace_Format)
     {
         case MediaInfo_Config::Trace_Format_XML         : Element[Element_Level].ToShow.Info+=__T("\""); break;
