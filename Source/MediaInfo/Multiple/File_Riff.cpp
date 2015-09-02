@@ -724,8 +724,10 @@ bool File_Riff::Header_Begin()
             return false;
 
         // Fake header
-        Element_Begin0();
-        Element_Begin0();
+        Element_Begin1("...Continued"); //TODO: better method
+        Element_ThisIsAList();
+        Element_Begin1("...Continued");
+        Element_ThisIsAList();
         if (Buffer_DataToParse_End)
             Header_Fill_Size(Buffer_DataToParse_End-(File_Offset+Buffer_Offset));
         else

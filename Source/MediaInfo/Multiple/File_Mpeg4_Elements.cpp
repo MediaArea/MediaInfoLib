@@ -2233,8 +2233,8 @@ void File_Mpeg4::moov_cmov_cmvd_zlib()
         Element_Level--;
         while(Element_Level<Element_Level_Sav)
         {
-            Element_Begin0();
-            Element_Begin0();
+            Element_Begin1(__T("...Continued")); //TODO: better method
+            Element_Begin1(__T("...Continued"));
             Header_Fill_Size(Element_Sizes_Sav[0]);
             Element_End0();
         }

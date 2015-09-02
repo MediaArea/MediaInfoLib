@@ -2093,8 +2093,8 @@ void File__Analyze::Get_S1(int8u Bits, int8u &Info, const char* Name)
     Info=BS->Get1(Bits);
     if (Trace_Activated)
     {
-        Param(Name, Info);
         Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+        Param(Name, Info);
     }
 }
 
@@ -2258,8 +2258,8 @@ void File__Analyze::Skip_S1(int8u Bits, const char* Name)
     INTEGRITY(Bits<=BS->Remain(), "Size is wrong", BS->Offset_Get())
     if (Trace_Activated)
     {
-        Param(Name, BS->Get1(Bits));
         Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+        Param(Name, BS->Get1(Bits));
     }
     else
         BS->Skip(Bits);
@@ -2410,8 +2410,8 @@ void File__Analyze::Get_T1(size_t Bits, int8u &Info, const char* Name)
     Info=BT->Get1(Bits);
     if (Trace_Activated)
     {
-        Param(Name, Info);
         Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+        Param(Name, Info);
     }
 }
 
@@ -2515,8 +2515,8 @@ void File__Analyze::Skip_T1(size_t Bits, const char* Name)
     INTEGRITY(Bits<=BT->Remain(), "Size is wrong", BT->Offset_Get())
     if (Trace_Activated)
     {
-        Param(Name, BT->Get1(Bits));
         Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+        Param(Name, BT->Get1(Bits));
     }
     else
         BT->Skip1(Bits);

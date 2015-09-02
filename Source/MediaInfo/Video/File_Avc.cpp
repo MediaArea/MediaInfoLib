@@ -2452,7 +2452,7 @@ void File_Avc::sei_message_pic_timing(int32u /*payloadSize*/, int32u seq_paramet
                     TimeStamp+=__T('.');
                     TimeStamp+=Ztring::ToZtring(Milliseconds);
                 }
-                Param_Info1(TimeStamp);
+                Element_Info1(TimeStamp);
             TEST_SB_END();
             Element_End0();
         }

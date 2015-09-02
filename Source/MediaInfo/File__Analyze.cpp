@@ -2693,11 +2693,13 @@ Ztring File__Analyze::Element_End_Common_Flush_Build()
             default                                         : ;
         }
         ToReturn+=Ztring::ToZtring(Element[Element_Level+1].ToShow.Size);
+        /*
         if (Element[Element_Level+1].ToShow.Header_Size>0)
         {
             ToReturn+=__T("/");
             ToReturn+=Ztring::ToZtring(Element[Element_Level+1].ToShow.Size-Element[Element_Level+1].ToShow.Header_Size);
         }
+        */
         switch (Config_Trace_Format)
         {
             case MediaInfo_Config::Trace_Format_XML         :
@@ -2823,6 +2825,11 @@ void File__Analyze::Param(const Ztring& Parameter, const Ztring& Value)
                         if (Modified==1 && MediaInfoLib::Config.SkipBinaryData_Get())
                             Element[Element_Level].ToShow.Value=__T("(Binary data)");
                     }
+                    if (!Element_Level) //Close function will not be called. TODO: find a better method
+                    {
+                        Element_Begin();
+                        Element_End();
+                    }
                     break;
         default                                         : ;
     }
@@ -2940,7 +2947,8 @@ void File__Analyze::Param_Info (const Ztring &Text)
                                                             break;
         default                                         : ;
     }
-    Element[Element_Level].ToShow.Details+=Text;
+    size_t Modified;
+    Element[Element_Level].ToShow.Details+=MediaInfo_Internal::Xml_Content_Escape(Text, Modified);
     switch (Config_Trace_Format)
     {
         case MediaInfo_Config::Trace_Format_XML         : Element[Element_Level].ToShow.Details+=__T("\""); break;
@@ -3385,11 +3393,16 @@ void File__Analyze::GoTo (int64u GoTo, const char* ParserName)
     if (ParserName)
     {
         bool MustElementBegin=Element_Level?true:false;
+        switch (Config_Trace_Format)
+        {
+            case MediaInfo_Config::Trace_Format_XML         : break;
+            default                                         : //TODO: find a better way to display jumps, both XML and Text
         if (Element_Level>0)
             Element_End0(); //Element
         Info(Ztring(ParserName)+__T(", jumping to offset ")+Ztring::ToZtring(GoTo, 16));
         if (MustElementBegin)
             Element_Level++; //Element
+        }
     }
 
     File_GoTo=GoTo;

@@ -314,7 +314,8 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
             Retour+=MediaInfoLib::Config.LineSeparator_Get();
             Retour+=__T("    version=\"0.1\"");
             Retour+=MediaInfoLib::Config.LineSeparator_Get();
-            Retour+=__T("    ref=\"")+Info[FilePos]->Get(Stream_General, 0, General_CompleteName)+__T("\"");
+            size_t Modified;
+            Retour+=__T("    ref=\"")+MediaInfo_Internal::Xml_Content_Escape(Info[FilePos]->Get(Stream_General, 0, General_CompleteName), Modified)+__T("\"");
             Retour+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
             if (MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_XML)
             {

@@ -64,13 +64,11 @@ Ztring MediaInfo_Internal::Inform()
         if (MediaInfoLib::Config.Trace_Level_Get() || MediaInfoLib::Config.Inform_Get()==__T("Details"))
         {
             if (!Details.empty())
-            {
-                Ztring Content=Details;
-
                 return Details;
-            }
             else if (Info)
                 return Info->Details_Get();
+            else
+                return Ztring();
         }
     #endif //MEDIAINFO_TRACE
 
