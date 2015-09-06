@@ -224,6 +224,9 @@ public :
           void     Event_Send(const int8u* Data_Content, size_t Data_Size, const Ztring &File_Name);
           void     Log_Send(int8u Type, int8u Severity, int32u MessageCode, const Ztring &Message);
           void     Log_Send(int8u Type, int8u Severity, int32u MessageCode, const char* Message) {return Log_Send(Type, Severity, MessageCode, Ztring().From_Local(Message));}
+    #else //MEDIAINFO_EVENTS
+          inline void Log_Send(int8u Type, int8u Severity, int32u MessageCode, const Ztring &Message) {}
+          inline void Log_Send(int8u Type, int8u Severity, int32u MessageCode, const char* Message) {}
     #endif //MEDIAINFO_EVENTS
 
     #if defined(MEDIAINFO_LIBCURL_YES)
