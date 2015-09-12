@@ -4,14 +4,30 @@
 			<ProjectType>CppVCLApplication</ProjectType>
 			<MainSource>PreRelease.cpp</MainSource>
 			<Config Condition="'$(Config)'==''">Debug</Config>
-			<ProjectVersion>12.0</ProjectVersion>
+			<ProjectVersion>13.4</ProjectVersion>
+			<FrameworkType>VCL</FrameworkType>
+			<Base>True</Base>
+			<Platform Condition="'$(Platform)'==''">Win32</Platform>
+			<TargetedPlatforms>1</TargetedPlatforms>
+			<AppType>Application</AppType>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+			<Base_Win32>true</Base_Win32>
+			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
 			<Cfg_1>true</Cfg_1>
 			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
+			<Cfg_1_Win32>true</Cfg_1_Win32>
+			<CfgParent>Cfg_1</CfgParent>
+			<Cfg_1>true</Cfg_1>
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
@@ -20,11 +36,16 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<Icon_MainIcon>PreRelease_Icon1.ico</Icon_MainIcon>
+			<Manifest_File>None</Manifest_File>
+			<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+			<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
+			<VerInfo_Locale>1036</VerInfo_Locale>
 			<LinkPackageStatics>rtl.lib;vcl.lib</LinkPackageStatics>
-			<IncludePath>..\..\..\Source\PreRelease\VCL\;..\..\..\Source\PreRelease\;..\..\..\..\ZenLib\Source\ZenLib\;..\..\..\Source\PreRelease\VCL;..\..\..\Source\PreRelease;..\..\..\..\ZenLib\Source\ZenLib;..\..\..\..\wx\include;..\..\..\..\wx\lib\bcc_lib\;..\..\..\..\wx\lib\bcc_lib\msu;..\..\..\..\wx\lib\bcc_lib\mswu;$(IncludePath)</IncludePath>
+			<IncludePath>..\..\..\Source\PreRelease\VCL\;..\..\..\Source\PreRelease\;..\..\..\..\ZenLib\Source\ZenLib\;..\..\..\Source\PreRelease\VCL;..\..\..\Source\PreRelease;..\..\..\..\ZenLib\Source\ZenLib;$(IncludePath)</IncludePath>
 			<TASM_Defines>_RTLDLL;USEPACKAGES;NO_STRICT;UNICODE;$(TASM_Defines)</TASM_Defines>
 			<BRCC_Defines>_RTLDLL;USEPACKAGES;NO_STRICT;UNICODE;$(BRCC_Defines)</BRCC_Defines>
-			<PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;xmlrtl.bpi;vclie.bpi;inet.bpi;inetdbbde.bpi;inetdbxpress.bpi;soaprtl.bpi;dbrtl.bpi;dsnap.bpi;bcbie.bpi;vcldb.bpi;websnap.bpi;webdsnap.bpi;vclactnband.bpi</PackageImports>
+			<PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;xmlrtl.bpi;vclie.bpi;inet.bpi;inetdbbde.bpi;inetdbxpress.bpi;soaprtl.bpi;dbrtl.bpi;dsnap.bpi;bcbie.bpi;vcldb.bpi;websnap.bpi;webdsnap.bpi;vclactnband.bpi;$(PackageImports)</PackageImports>
 			<DCC_UnitSearchPath>..\..\..\..\ZenLib\Source\ZenLib;..\..\..\Source\PreRelease\VCL;..\..\..\Source\PreRelease\WxWidgets;..\..\..\Source\PreRelease;E:\Programmation\MediaInfoLib\Project\BCB\PreRelease;C:\Documents and Settings\Jerome\Mes documents\Borland Studio Projects;$(BDS)\lib;$(BDS)\lib\obj;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_ResourcePath>..\..\..\..\ZenLib\Source\ZenLib;..\..\..\Source\PreRelease\VCL;..\..\..\Source\PreRelease\WxWidgets;..\..\..\Source\PreRelease;E:\Programmation\MediaInfoLib\Project\BCB\PreRelease;$(DCC_ResourcePath)</DCC_ResourcePath>
 			<ILINK_AppType>Windows</ILINK_AppType>
@@ -45,6 +66,15 @@
 			<Multithreaded>true</Multithreaded>
 			<ILINK_LibraryPath>..\..\..\..\ZenLib\Project\BCB\Library\Release_Build\;..\..\..\Source\PreRelease\VCL\;..\..\..\Source\PreRelease\;..\..\..\..\zlib\projects\BCB\Release_Build\;..\..\..\..\ZenLib\Source\ZenLib\;..\..\..\..\wx\lib\bcc_lib\;..\..\..\..\ZenLib\Project\BCB\Library\Release_Build;..\..\..\..\zlib\projects\BCB\Release_Build;..\..\..\..\ZenLib\Source\ZenLib;..\..\..\Source\PreRelease\VCL;..\..\..\Source\PreRelease\WxWidgets;..\..\..\Source\PreRelease;E:\Programmation\MediaInfoLib\Project\BCB\PreRelease;$(BDS)\lib\obj;..\..\..\..\zlib\projects\BCB\Debug_Build\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 		</PropertyGroup>
+		<PropertyGroup Condition="'$(Base_Win32)'!=''">
+			<ILINK_LibraryPath>D:\Programmation\zlib\projects\BCB\Win32\Release\;D:\Programmation\ZenLib\Project\BCB\Library\Win32\Release\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<Icon_MainIcon>PreRelease_Icon1.ico</Icon_MainIcon>
+			<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+			<IncludePath>$(BDSINCLUDE)\windows\vcl;$(IncludePath)</IncludePath>
+			<VerInfo_Locale>1033</VerInfo_Locale>
+			<Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
+			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<BCC_Defines>_DEBUG;$(BCC_Defines);$(BCC_Defines)</BCC_Defines>
 			<BCC_UserSuppliedOptions> -k</BCC_UserSuppliedOptions>
@@ -61,6 +91,11 @@
 			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
 			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
 			<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+			<Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
+			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+			<VerInfo_Locale>1033</VerInfo_Locale>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
 			<BCC_Defines>NDEBUG;$(BCC_Defines);$(BCC_Defines)</BCC_Defines>
@@ -80,56 +115,48 @@
 				<BuildOrder>-1</BuildOrder>
 				<BuildOrder>1</BuildOrder>
 			</ResFiles>
+			<CppCompile Include="..\..\..\Source\PreRelease\Enums.cpp">
+				<BuildOrder>5</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="..\..\..\Source\PreRelease\OldFiles.cpp">
+				<BuildOrder>9</BuildOrder>
+				<BuildOrder>4</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="..\..\..\Source\PreRelease\Resources.cpp">
+				<BuildOrder>10</BuildOrder>
+			</CppCompile>
 			<CppCompile Include="..\..\..\Source\PreRelease\VCL\PreRelease_.cpp">
 				<BuildOrder>8</BuildOrder>
 				<Form>Form1</Form>
 				<DependentOn>..\..\..\Source\PreRelease\VCL\PreRelease_.h</DependentOn>
 				<BuildOrder>2</BuildOrder>
 			</CppCompile>
-			<CppCompile Include="..\..\..\Source\PreRelease\OldFiles.cpp">
+			<LibFiles Condition="'$(Platform)'=='Win32'" Include="..\..\..\..\ZenLib\Project\BCB\Library\Win32\Release\ZenLib.lib">
 				<BuildOrder>9</BuildOrder>
-				<BuildOrder>4</BuildOrder>
-			</CppCompile>
-			<CppCompile Include="..\..\..\Source\PreRelease\Enums.cpp">
-				<BuildOrder>5</BuildOrder>
-			</CppCompile>
-			<LibFiles Include="..\..\..\..\zlib\projects\BCB\Release_Build\zlib.lib">
-				<BuildOrder>6</BuildOrder>
-				<BuildOrder>1</BuildOrder>
-			</LibFiles>
-			<LibFiles Include="..\..\..\..\ZenLib\Project\BCB\Library\Release_Build\ZenLib.lib">
-				<BuildOrder>7</BuildOrder>
-				<BuildOrder>0</BuildOrder>
-			</LibFiles>
-			<LibFiles Include="..\..\..\..\wxMSW\lib\bcc_lib\wxbase28ud.lib">
-				<BuildOrder>8</BuildOrder>
-				<BuildOrder>2</BuildOrder>
-			</LibFiles>
-			<LibFiles Include="..\..\..\..\wxMSW\lib\bcc_lib\wxmsw28ud_core.lib">
-				<BuildOrder>9</BuildOrder>
-				<BuildOrder>4</BuildOrder>
+				<IgnorePath>true</IgnorePath>
 			</LibFiles>
 			<CppCompile Include="..\..\..\..\ZenLib\Source\ZenLib\Ztring.cpp">
 				<BuildOrder>3</BuildOrder>
 				<BuildOrder>10</BuildOrder>
 			</CppCompile>
-			<CppCompile Include="..\..\..\Source\PreRelease\Resources.cpp">
-				<BuildOrder>10</BuildOrder>
-			</CppCompile>
+			<LibFiles Condition="'$(Platform)'=='Win32'" Include="..\..\..\..\zlib\projects\BCB\Win32\Release\zlib.lib">
+				<BuildOrder>8</BuildOrder>
+				<IgnorePath>true</IgnorePath>
+			</LibFiles>
 			<FormResources Include="..\..\..\Source\PreRelease\VCL\PreRelease_.dfm"/>
-			<BuildConfiguration Include="Base">
-				<Key>Base</Key>
-			</BuildConfiguration>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Base">
+				<Key>Base</Key>
 			</BuildConfiguration>
 			<BuildConfiguration Include="Debug">
 				<Key>Cfg_1</Key>
 				<CfgParent>Base</CfgParent>
 			</BuildConfiguration>
 		</ItemGroup>
-		<Import Project="$(BDS)\Bin\CodeGear.Cpp.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')"/>
+		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
 		<ProjectExtensions>
 			<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
 			<Borland.ProjectType>CppVCLApplication</Borland.ProjectType>
@@ -190,8 +217,18 @@
 						<ProjectProperties Name="ManagePaths">True</ProjectProperties>
 						<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
 					</ProjectProperties>
+					<Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\bcboffice2k160.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\bcbofficexp160.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\dcloffice2k160.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\dclofficexp160.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+					</Excluded_Packages>
 				</CPlusPlusBuilder.Personality>
+				<Platforms>
+					<Platform value="Win32">True</Platform>
+				</Platforms>
 			</BorlandProject>
 			<ProjectFileVersion>12</ProjectFileVersion>
 		</ProjectExtensions>
+		<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
 	</Project>

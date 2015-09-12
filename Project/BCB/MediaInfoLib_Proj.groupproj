@@ -9,6 +9,9 @@
 			<Projects Include="Dll\MediaInfo_i386.cbproj">
 				<Dependencies>Library\MediaInfoLib.cbproj</Dependencies>
 			</Projects>
+			<Projects Include="PreRelease\PreRelease.cbproj">
+				<Dependencies/>
+			</Projects>
 		</ItemGroup>
 		<ProjectExtensions>
 			<Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -35,14 +38,23 @@
 		<Target Name="MediaInfo_i386:Make" DependsOnTargets="MediaInfoLib:Make">
 			<MSBuild Projects="Dll\MediaInfo_i386.cbproj" Targets="Make"/>
 		</Target>
+		<Target Name="PreRelease">
+			<MSBuild Projects="PreRelease\PreRelease.cbproj"/>
+		</Target>
+		<Target Name="PreRelease:Clean">
+			<MSBuild Projects="PreRelease\PreRelease.cbproj" Targets="Clean"/>
+		</Target>
+		<Target Name="PreRelease:Make">
+			<MSBuild Projects="PreRelease\PreRelease.cbproj" Targets="Make"/>
+		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="MediaInfoLib;MediaInfo_i386"/>
+			<CallTarget Targets="MediaInfoLib;MediaInfo_i386;PreRelease"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="MediaInfoLib:Clean;MediaInfo_i386:Clean"/>
+			<CallTarget Targets="MediaInfoLib:Clean;MediaInfo_i386:Clean;PreRelease:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="MediaInfoLib:Make;MediaInfo_i386:Make"/>
+			<CallTarget Targets="MediaInfoLib:Make;MediaInfo_i386:Make;PreRelease:Make"/>
 		</Target>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
 	</Project>
