@@ -27,6 +27,7 @@ AVd1;DV;;Avid;http://www.apple.com/quicktime/download/standalone.html;;;
 AVdn;VC-3;DNxHD;Avid;http://www.apple.com/quicktime/download/standalone.html;;;;
 AVmp;MPEG Video;Avid IMX;;;;Version 2;;;
 avr ;JPEG;;;;;;;
+AVrp;RGB;Avid;;;;;RGB;
 b16g;Gray;;;;;;Y;16
 b32a;Gray/Alpha;;;;;;YA;16:16
 b48r;RGB;;;;;;RGB;16:16:16

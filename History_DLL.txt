@@ -10,6 +10,10 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 
 Version 0.7.77, 2015-09-02
 --------------
++ MOV: AVrp CodecID support
+
+Version 0.7.77, 2015-09-02
+--------------
 + #B941, MXF: files having only a video stream and an ancillary data stream were having incorrect second video stream
 + MOV: detection of r210 CodecID as raw RGB
 + Ancillary data: detection of all metadata blocks (previously: only the first one was detected)

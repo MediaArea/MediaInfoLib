@@ -4781,6 +4781,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
             else
                 Fill(Stream_Video, StreamPos_Last, Video_BitDepth, Depth/3);
         }
+        else if (Codec=="AVrp")
+            Fill(Stream_Video, StreamPos_Last, Video_BitDepth, 10);
 
         //Descriptors or a list (we can see both!)
         if (Element_Offset+8<=Element_Size
