@@ -461,6 +461,39 @@ void File_MpegTs::Streams_Update_Programs()
                     int16u elementary_PID=Program->second.elementary_PIDs[Pos];
                     if (PerStream_AlwaysParse || Complete_Stream->Streams[elementary_PID]->IsRegistered)
                     {
+                        if (!Complete_Stream->Streams[elementary_PID]->Teletexts.empty())
+                        {
+                            for (std::map<int16u, complete_stream::stream::teletext>::iterator Teletext=Complete_Stream->Streams[elementary_PID]->Teletexts.begin(); Teletext!=Complete_Stream->Streams[elementary_PID]->Teletexts.end(); ++Teletext)
+                            {
+                                Ztring Format;
+                                Ztring Language;
+                                if (Teletext->second.StreamKind!=Stream_Max)
+                                {
+                                    StreamKinds+=Ztring::ToZtring(Teletext->second.StreamKind);
+                                    StreamPoss+=Ztring::ToZtring(Teletext->second.StreamPos);
+                                    Format=Retrieve(Teletext->second.StreamKind, Teletext->second.StreamPos, "Format");
+                                    Language=Retrieve(Teletext->second.StreamKind, Teletext->second.StreamPos, "Language");
+                                }
+                                Formats+=Format+__T(" / ");
+                                Codecs+=Format+__T(" / ");
+                                StreamKinds+=__T(" / ");
+                                StreamPoss+=__T(" / ");
+                                elementary_PIDs+=Ztring::ToZtring(elementary_PID)+__T('-')+Ztring::ToZtring(Teletext->first)+__T(" / ");
+                                Languages+=Language+__T(" / ");
+                                Ztring List_String=Decimal_Hexa(elementary_PID)+__T('-')+Ztring::ToZtring(Teletext->first);
+                                List_String+=__T(" (");
+                                List_String+=Format;
+                                if (!Language.empty())
+                                {
+                                    List_String+=__T(", ");
+                                    List_String+=Language;
+                                }
+                                List_String+=__T(")");
+                                elementary_PIDs_String+=List_String+__T(" / ");
+                            }
+                        }
+                        else
+                        {
                         Ztring Format=Retrieve(Complete_Stream->Streams[elementary_PID]->StreamKind, Complete_Stream->Streams[elementary_PID]->StreamPos, Fill_Parameter(Complete_Stream->Streams[elementary_PID]->StreamKind, Generic_Format));
                         if (Format.empty())
                             Format=Mpeg_Psi_stream_type_Format(Complete_Stream->Streams[elementary_PID]->stream_type, Program->second.registration_format_identifier);
@@ -494,6 +527,7 @@ void File_MpegTs::Streams_Update_Programs()
                         }
                         List_String+=__T(")");
                         elementary_PIDs_String+=List_String+__T(" / ");
+                        }
 
                         if (Complete_Stream->Streams[elementary_PID]->IsPCR)
                         {
@@ -912,6 +946,8 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
                     Fill(StreamKind_Last, StreamPos_Last, Info->first.c_str(), Info->second);
             }
             Teletext->second.Infos.clear();
+            Teletext->second.StreamKind=StreamKind_Last;
+            Teletext->second.StreamPos=StreamPos_Last;
         }
     }
 

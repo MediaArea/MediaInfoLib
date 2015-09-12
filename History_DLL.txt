@@ -11,6 +11,7 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 Version 0.7.77, 2015-09-02
 --------------
 + MOV: AVrp CodecID support
+x MPEG-TS: Teletext and Teletext Subtitle were missing in the menu list
 
 Version 0.7.77, 2015-09-02
 --------------
