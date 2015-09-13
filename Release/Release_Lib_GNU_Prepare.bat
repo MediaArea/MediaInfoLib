@@ -12,7 +12,7 @@ rmdir MediaInfo_Lib_GNU_Prepare /S /Q
 mkdir MediaInfo_Lib_GNU_Prepare
 
 rem --- Copying : Projects ---
-xcopy ..\Project\GNU\Library\autogen MediaInfo_Lib_GNU_Prepare\Project\GNU\Library\ /S
+xcopy ..\Project\GNU\Library\autogen.sh MediaInfo_Lib_GNU_Prepare\Project\GNU\Library\ /S
 xcopy ..\Project\GNU\Library\configure.ac MediaInfo_Lib_GNU_Prepare\Project\GNU\Library\ /S
 xcopy ..\Project\GNU\Library\Makefile.am MediaInfo_Lib_GNU_Prepare\Project\GNU\Library\ /S
 xcopy ..\Project\GNU\Library\libmediainfo.pc.in MediaInfo_Lib_GNU_Prepare\Project\GNU\Library\ /S
