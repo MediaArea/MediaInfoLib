@@ -442,6 +442,11 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
       || Retrieve(Stream_Video, Pos, Video_Format)==__T("EXR")))
             Fill(Stream_Video, Pos, Video_ScanType, "Progressive");
 
+    //Useless chroma subsampling
+    if (Retrieve(Stream_Video, Pos, Video_ColorSpace)==__T("RGB")
+     && Retrieve(Stream_Video, Pos, Video_ChromaSubsampling)==__T("4:4:4"))
+        Clear(Stream_Video, Pos, Video_ChromaSubsampling);
+
     //Commercial name
     #if defined(MEDIAINFO_VC3_YES)
         if (Retrieve(Stream_Video, Pos, Video_Format_Commercial_IfAny).empty() && Retrieve(Stream_Video, Pos, Video_Format)==__T("VC-3"))
