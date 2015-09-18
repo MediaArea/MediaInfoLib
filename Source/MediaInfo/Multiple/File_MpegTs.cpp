@@ -3251,7 +3251,7 @@ void File_MpegTs::PSI()
 
                         //Moving other StreamPos
                         for (size_t Pos2=Pos+1; Pos2<Complete_Stream->StreamPos_ToRemove[StreamKind].size(); Pos2++)
-                            Complete_Stream->StreamPos_ToRemove[StreamKind][Pos]--;
+                            Complete_Stream->StreamPos_ToRemove[StreamKind][Pos2]--;
 
                         //Informing that the menu must be recalculated - TODO: only the related programs
                         if (StreamKind!=Stream_Menu)
