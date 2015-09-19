@@ -79,6 +79,9 @@ public :
           void      ReadByHuman_Set (bool NewValue);
           bool      ReadByHuman_Get ();
 
+          void      Legacy_Set (bool NewValue);
+          bool      Legacy_Get ();
+
           void      LegacyStreamDisplay_Set (bool Value);
           bool      LegacyStreamDisplay_Get ();
 
@@ -290,6 +293,7 @@ private :
     std::map<Ztring, bool> Trace_Modificators; //If we want to add/remove some details
     bool            Language_Raw;
     bool            ReadByHuman;
+    bool            Legacy;
     bool            LegacyStreamDisplay;
     bool            SkipBinaryData;
     int8u           Demux;

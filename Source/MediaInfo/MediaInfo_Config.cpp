@@ -220,6 +220,7 @@ void MediaInfo_Config::Init()
     Trace_Format=Trace_Format_Tree;
     Language_Raw=false;
     ReadByHuman=true;
+    Legacy=true;
     LegacyStreamDisplay=true;
     SkipBinaryData=false;
     Demux=0;
@@ -411,6 +412,15 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     else if (Option_Lower==__T("readbyhuman_get"))
     {
         return ReadByHuman_Get()?__T("1"):__T("0");
+    }
+    else if (Option_Lower==__T("legacy"))
+    {
+        Legacy_Set(Value.To_int8u()?true:false);
+        return Ztring();
+    }
+    else if (Option_Lower==__T("legacy_get"))
+    {
+        return Legacy_Get()?__T("1"):__T("0");
     }
     else if (Option_Lower==__T("legacystreamdisplay"))
     {
@@ -1108,6 +1118,19 @@ bool MediaInfo_Config::ReadByHuman_Get ()
 {
     CriticalSectionLocker CSL(CS);
     return ReadByHuman;
+}
+
+//---------------------------------------------------------------------------
+void MediaInfo_Config::Legacy_Set (bool NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    Legacy=NewValue;
+}
+
+bool MediaInfo_Config::Legacy_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return Legacy;
 }
 
 //---------------------------------------------------------------------------

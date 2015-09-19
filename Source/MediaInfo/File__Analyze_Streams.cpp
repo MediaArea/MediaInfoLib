@@ -420,7 +420,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
             (*Stream)[Stream_General][0](General_Codec_Settings)=Value;
 
         //Codec
-        if (Parameter==Fill_Parameter(StreamKind, Generic_Codec))
+        if (Parameter==Fill_Parameter(StreamKind, Generic_Codec) && MediaInfoLib::Config.Legacy_Get())
         {
             const Ztring &C1=MediaInfoLib::Config.Codec_Get(Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Codec)), InfoCodec_Name, (stream_t)StreamKind);
             if (C1.empty())
