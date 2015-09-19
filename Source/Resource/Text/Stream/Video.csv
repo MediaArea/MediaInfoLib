@@ -140,6 +140,10 @@ Height_Original;; pixel;N YI;;;Original (in the raw stream) height in pixel
 Height_Original/String;;;Y NT;;;Original (in the raw stream) height with measurement (pixel)
 Height_CleanAperture;; pixel;N YI;;;Clean Aperture height in pixel
 Height_CleanAperture/String;;;Y NT;;;Clean Aperture height with measurement (pixel)
+Stored_Width;;;N YI;;;Stored width
+Stored_Height;;;N YI;;;Stored height
+Sampled_Width;;;N YI;;;Sampled width
+Sampled_Height;;;N YI;;;Sampled height
 PixelAspectRatio;;;N YF;;;Pixel Aspect ratio
 PixelAspectRatio/String;;;N NT;;;Pixel Aspect ratio
 PixelAspectRatio_Original;;;N YF;;;Original (in the raw stream) Pixel Aspect ratio

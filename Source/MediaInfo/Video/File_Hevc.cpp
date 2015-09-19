@@ -233,6 +233,10 @@ void File_Hevc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator se
     Fill(Stream_Video, 0, Video_Codec_Profile, Profile);
     Fill(Stream_Video, StreamPos_Last, Video_Width, Width);
     Fill(Stream_Video, StreamPos_Last, Video_Height, Height);
+    if ((*seq_parameter_set_Item)->conf_win_left_offset || (*seq_parameter_set_Item)->conf_win_right_offset)
+        Fill(Stream_Video, StreamPos_Last, Video_Stored_Width, (*seq_parameter_set_Item)->pic_width_in_luma_samples);
+    if ((*seq_parameter_set_Item)->conf_win_top_offset || (*seq_parameter_set_Item)->conf_win_bottom_offset)
+        Fill(Stream_Video, StreamPos_Last, Video_Stored_Height, (*seq_parameter_set_Item)->pic_height_in_luma_samples);
 
     Fill(Stream_Video, 0, Video_ColorSpace, "YUV");
     Fill(Stream_Video, 0, Video_Colorimetry, Hevc_chroma_format_idc((*seq_parameter_set_Item)->chroma_format_idc));
