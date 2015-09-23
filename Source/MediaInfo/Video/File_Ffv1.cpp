@@ -548,7 +548,21 @@ void File_Ffv1::Read_Buffer_Continue()
 
             #if MEDIAINFO_TRACE
                 if (Trace_Activated) // Parse slice only if trace feature is activated
-                    slice(States); // Not yet fully implemented
+                {
+                    int64u Start=Element_Offset;
+                    Trace_Activated=false;
+
+                    slice(States);
+
+                    Trace_Activated=true;
+                    int64u SliceRealSize=Element_Offset-Start;
+                    Element_Offset=Start;
+                    Skip_XX(SliceRealSize,                          "slice_data");
+                    if (Trusted_Get())
+                        Param_Info1("OK");
+                    else
+                        Param_Info1("NOK");
+                }
             #endif //MEDIAINFO_TRACE
 
             if (Element_Offset!=End)

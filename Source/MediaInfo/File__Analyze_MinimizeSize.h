@@ -963,6 +963,7 @@ public :
 
     void Trusted_IsNot (const char*)                                            {Trusted_IsNot();}
     void Trusted_IsNot ();
+    bool Trusted_Get   () {return !Element[Element_Level].UnTrusted;}
 
     //***************************************************************************
     // Stream filling
