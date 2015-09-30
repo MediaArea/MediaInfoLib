@@ -21,6 +21,16 @@ BuildRequires:  doxygen
 BuildRequires:  libtool
 BuildRequires:  automake
 BuildRequires:  autoconf
+%if 0%{?rhel_version} || 0%{?centos_version}
+%if 0%{?rhel_version} > 599
+BuildRequires:  libcurl-devel
+%endif
+%if 0%{?centos_version} > 599
+BuildRequires:  libcurl-devel
+%endif
+%else
+BuildRequires:  libcurl-devel
+%endif
 
 %description
 MediaInfo is a convenient unified display of the most relevant technical
@@ -160,9 +170,21 @@ popd
 cp Source/Doc/*.html ./
 
 pushd Project/GNU/Library
-    %configure --enable-shared --disable-static --enable-visibility
-
-    make %{?_smp_mflags}
+%if 0%{?rhel_version} || 0%{?centos_version}
+%if 0%{?rhel_version} < 599
+%configure --enable-shared --disable-static --enable-visibility
+%else
+%configure --enable-shared --disable-static --enable-visibility --with-libcurl
+%endif
+%if 0%{?centos_version} < 599
+%configure --enable-shared --disable-static --enable-visibility
+%else
+%configure --enable-shared --disable-static --enable-visibility --with-libcurl
+%endif
+%else
+%configure --enable-shared --disable-static --enable-visibility --with-libcurl
+%endif
+make %{?_smp_mflags}
 popd
 
 %install
