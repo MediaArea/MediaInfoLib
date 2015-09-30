@@ -1,11 +1,11 @@
 //---------------------------------------------------------------------------
-#include <wx/wxprec.h>
+//#include <wx/wxprec.h>
 #ifdef __BORLANDC__
     #pragma hdrstop
 #endif
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-#include <wx/file.h>
+//#include <wx/file.h>
 #include <ZenLib/File.h>
 #include <ZenLib/ZtringListListF.h>
 #include "PreRelease/Resources.h"
@@ -18,8 +18,8 @@ using namespace std;
 // Open a file
 ZenLib::Ztring Resources_Create_Load(Ztring FileName, Ztring &Contents)
 {
-    wxFile F;
-    if (F.Open(FileName.c_str(), wxFile::read)==false)
+	File F;
+	if (F.Open(FileName.c_str())==false)
     {
         Ztring ToReturn=L"Problems to open ";
         ToReturn+=FileName;

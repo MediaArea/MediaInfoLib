@@ -1,13 +1,15 @@
 //---------------------------------------------------------------------------
-#include <wx/wxprec.h>
+//#include <wx/wxprec.h>
 #ifdef __BORLANDC__
     #pragma hdrstop
 #endif
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+/*
 #include <wx/filename.h>
 #include <wx/datetime.h>
 #include <wx/file.h>
+*/
 #include <ZenLib/Ztring.h>
 #include "PreRelease/OldFiles.h"
 using namespace ZenLib;
@@ -17,15 +19,18 @@ Ztring Version; //X.X.X.X
 Ztring Version_Short; //X.X
 Ztring ToShow; //What to show to the user
 char C[1000000];
+/*
 wxFile F;
 wxFileName FN;
 int I;
 Ztring Z;
 wxDateTime Access;
+*/
 
 int Test_Version(char* FileName_, char* Begin, char* End)
 {
-    wxString FileName=Ztring().From_Local(FileName_).c_str();
+/*
+	wxString FileName=Ztring().From_Local(FileName_).c_str();
     //Opening File
     F.Open(FileName);
     I=F.Read(C, 1000000);
@@ -63,13 +68,15 @@ int Test_Version(char* FileName_, char* Begin, char* End)
         ToShow+=Z;
         ToShow+=__T("\r\n");
     }
-    return 0;
+*/
+	return 0;
 }
 //---------------------------------------------------------------------------
 
+/*
 int Test_Date(wxString FileName)
 {
-    FN.Assign(FileName);
+	FN.Assign(FileName);
     if (!FN.FileExists())
     {
         ToShow+=FileName;
@@ -90,13 +97,15 @@ int Test_Date(wxString FileName)
         ToShow+=TS.Format().c_str();
         ToShow+=__T(" ago\r\n");
     }
-    return 0;
+	return 0;
 }
+*/
 //---------------------------------------------------------------------------
 
 Ztring OldFiles_Test ()
 {
-    //Checking version in Info_Version
+/*
+	//Checking version in Info_Version
     ToShow+=__T("Version checked : ");
     F.Open(__T("../Source/MediaInfo/MediaInfo_Config.cpp"));
     I=F.Read(C, 1000000);
@@ -126,7 +135,7 @@ Ztring OldFiles_Test ()
     if (Test_Version("../History.txt", "Version ", " ")) return ToShow;
     if (Test_Date(__T("MSVC/Library/MediaInfo.lib"))) return ToShow;
     if (Test_Date(__T("MSVC/Dll/MediaInfo.dll"))) return ToShow;
-
+*/
     return ToShow;
 }
 //---------------------------------------------------------------------------
