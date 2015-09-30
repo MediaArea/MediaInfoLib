@@ -216,6 +216,7 @@ void MediaInfo_Config::Init()
     ParseSpeed=(float32)0.5;
     Verbosity=(float32)0.5;
     Trace_Level=(float32)0.0;
+    Compat=70778;
     Trace_TimeSection_OnlyFirstOccurrence=false;
     Trace_Format=Trace_Format_Tree;
     Language_Raw=false;
@@ -587,7 +588,9 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     else if (Option_Lower==__T("trace_level"))
     {
         Trace_Level_Set(Value);
-        if (Inform_Get()==__T("XML"))
+        if (Inform_Get()==__T("MAXML"))
+            Trace_Format_Set(Trace_Format_XML); // All must be XML
+        if (Inform_Get()==__T("XML") || Inform_Get()==__T("MAXML"))
         {
             Inform_Set(Ztring());
             Trace_Format_Set(Trace_Format_XML); // TODO: better coherency in options
@@ -623,7 +626,7 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         CriticalSectionLocker CSL(CS);
         if (NewValue_Lower==__T("csv"))
             Trace_Format_Set(Trace_Format_CSV);
-        else if (NewValue_Lower==__T("xml"))
+        else if (NewValue_Lower==__T("xml") || NewValue_Lower==__T("MAXML"))
             Trace_Format_Set(Trace_Format_XML);
         else
             Trace_Format_Set(Trace_Format_Tree);
@@ -1194,6 +1197,19 @@ float32 MediaInfo_Config::Trace_Level_Get ()
     return Trace_Level;
 }
 
+//---------------------------------------------------------------------------
+void MediaInfo_Config::Compat_Set (int64u NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    Compat=NewValue;
+}
+
+int64u MediaInfo_Config::Compat_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return Compat;
+}
+
 std::bitset<32> MediaInfo_Config::Trace_Layers_Get ()
 {
     CriticalSectionLocker CSL(CS);
@@ -1583,7 +1599,10 @@ void MediaInfo_Config::Inform_Set (const ZtringListList &NewValue)
     }
     else
     {
-        Trace_Format_Set(Trace_Format_Tree); // TODO: better coherency in options
+        if (NewValue.Read(0, 0)==__T("MAXML"))
+            Trace_Format_Set(Trace_Format_XML); //All must be XML
+        else
+            Trace_Format_Set(Trace_Format_Tree); // TODO: better coherency in options
 
         CriticalSectionLocker CSL(CS);
 

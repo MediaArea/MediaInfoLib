@@ -14,6 +14,7 @@ Version 0.7.77, 2015-09-02
 + Video Stored_Width/Stored_Height and Sampled_Width/Sampled_Height added (hidden by default)
 + Speed optimization for the parsing of tiny files e.g. JPEG files
 + Option (command line / DLL) --Legacy=0 for disabling some legacy fields
++ Option (command line / DLL) --Output=MAXML, XML with MediaInfo and MediaTrace output together, technology preview (not for production)
 x MPEG-TS: Teletext and Teletext Subtitle were missing in the menu list
 x Chroma subsampling "4:4:4" was sometimes indicated for RGB, which is not useful
 
