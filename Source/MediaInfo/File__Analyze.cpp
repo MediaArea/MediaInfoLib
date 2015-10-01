@@ -2587,11 +2587,7 @@ void File__Analyze::Element_End_Common_Flush_Details()
                                                                             size_t item_Pos=Element[Element_Level].ToShow.Details.rfind(ToFind);
                                                                             if (item_Pos==string::npos)
                                                                             {
-                                                                                #ifdef WINDOWS
-                                                                                    ToFind.erase(ToFind.begin(), ToFind.begin()+2);
-                                                                                #else //WINDOWS
-                                                                                    ToFind.erase(ToFind.begin(), ToFind.begin()+1);
-                                                                                #endif //WINDOWS
+                                                                                ToFind.erase(ToFind.begin(), ToFind.begin()+MediaInfoLib::Config.LineSeparator_Get().size());
                                                                                 if (Element[Element_Level].ToShow.Details.find(ToFind)==0)
                                                                                     item_Pos=0;
                                                                             }
@@ -2619,13 +2615,7 @@ void File__Analyze::Element_End_Common_Flush_Details()
                                                                         //Looking for not closed element (=actually no data in it)
                                                                         size_t DataPos=Element[Element_Level].ToShow.Details.find(__T("</data>"), Start);
                                                                         if (DataPos==(size_t)-1)
-                                                                        {
-                                                                            #ifdef WINDOWS
-                                                                                Element[Element_Level].ToShow.Details.resize(Start);
-                                                                            #else //WINDOWS
-                                                                                Element[Element_Level].ToShow.Details.resize(Start);
-                                                                            #endif //WINDOWS
-                                                                        }
+                                                                            Element[Element_Level].ToShow.Details.resize(Start);
                                                                         }
                                                                         break;
                     default                                         : ;
