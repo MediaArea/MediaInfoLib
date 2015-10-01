@@ -273,7 +273,7 @@ Ztring MediaInfo_Internal::Inform()
     }
 
     if (HTML) Retour+=__T("\n</body>\n</html>\n");
-    if (XML)  Retour+=__T("</MediaInfo>\n");
+    if (XML_0_7_78)  Retour+=__T("</MediaInfo>\n");
 
     Retour.FindAndReplace(__T("\\r\\n"), __T("\n"), 0, Ztring_Recursive);
     Retour.FindAndReplace(__T("\\r"), __T("\n"), 0, Ztring_Recursive);
