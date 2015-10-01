@@ -667,6 +667,7 @@ bool File_Hevc::Demux_UnpacketizeContainer_Test()
         if (Config->Demux_EventWasSent)
             return false;
         File_Hevc* MI=new File_Hevc;
+        Element_Code=(int64u)-1;
         Open_Buffer_Init(MI);
         Open_Buffer_Continue(MI, Buffer, Buffer_Size);
         bool IsOk=MI->Status[IsAccepted];
