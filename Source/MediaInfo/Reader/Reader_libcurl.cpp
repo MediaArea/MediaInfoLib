@@ -499,7 +499,7 @@ size_t Reader_libcurl::Format_Test_PerParser(MediaInfo_Internal* MI, const Strin
     if (!File_URL.Protocol.empty())
     {
         // Amazon S3 specific credentials
-        if (File_URL.Protocol=="http" || File_URL.Protocol=="https")
+        if ((File_URL.Protocol=="http" || File_URL.Protocol=="https") && !File_URL.User.empty() && !File_URL.Password.empty())
         {
             //Exploding the path
             const string Amazon_AWS_Host(".amazonaws.com");

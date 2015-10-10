@@ -8,6 +8,10 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
+Version 0.7.78
+--------------
+x #B951, Amazon S3 support (REST API v2), CLI/DLL only and if compiled with libcurl support: URL without credential were badly interpreted
+
 Version 0.7.78, 2015-10-02
 --------------
 + MOV: AVrp CodecID support
