@@ -12,7 +12,7 @@ ID;;;N YIY;;;The ID for this stream in this file
 ID/String;;;Y NT;;;The ID for this stream in this file
 UniqueID;;;N YIY;;;The unique ID for this stream, should be copied with stream copy
 UniqueID/String;;;Y NT;;;The unique ID for this stream, should be copied with stream copy
-MenuID;;;N YI;;;The menu ID for this stream in this file
+MenuID;;;N YIY;;;The menu ID for this stream in this file
 MenuID/String;;;Y NT;;;The menu ID for this stream in this file
 GeneralCount;1;;N NI;;;Number of general streams
 VideoCount;;;N NI;;;Number of video streams
@@ -114,11 +114,11 @@ Delay/String2;;;N NT;;;Delay with measurement
 Delay/String3;;;N NT;;;format : HH:MM:SS.MMM
 Delay/String4;;;N NT;;;Delay in format : HH:MM:SS:FF, last colon replaced by semicolon for drop frame if available
 Delay/String5;;;N NT;;;Delay in format : HH:MM:SS.mmm (HH:MM:SS:FF)
-Delay_Settings;;;N NT;;;Delay settings (in case of timecode for example);
-Delay_DropFrame;;;N NT;;;Delay drop frame;
-Delay_Source;;;N NT;;;Delay source (Container or Stream or empty);
+Delay_Settings;;;N NTY;;;Delay settings (in case of timecode for example);
+Delay_DropFrame;;;N NTY;;;Delay drop frame;
+Delay_Source;;;N NTY;;;Delay source (Container or Stream or empty);
 Delay_Source/String;;;N NT;;;Delay source (Container or Stream or empty);
-StreamSize;; byte;N YI;;;Stream size in bytes
+StreamSize;; byte;N YIY;;;Stream size in bytes
 StreamSize/String;;;N NT;;;
 StreamSize/String1;;;N NT;;;
 StreamSize/String2;;;N NT;;;
@@ -126,22 +126,22 @@ StreamSize/String3;;;N NT;;;
 StreamSize/String4;;;N NT;;;
 StreamSize/String5;;;N NT;;;With proportion
 StreamSize_Proportion;;;N NT;;;Stream size divided by file size
-HeaderSize;;;N YI;;;
-DataSize;;;N YI;;;
-FooterSize;;;N YI;;;
-IsStreamable;;;N YT;;;
-Album_ReplayGain_Gain;; dB;N YT;;;The gain to apply to reach 89dB SPL on playback
+HeaderSize;;;N YIY;;;
+DataSize;;;N YIY;;;
+FooterSize;;;N YIY;;;
+IsStreamable;;;N YTY;;;
+Album_ReplayGain_Gain;; dB;N YTY;;;The gain to apply to reach 89dB SPL on playback
 Album_ReplayGain_Gain/String;;;Y YT;;;
-Album_ReplayGain_Peak;;;Y YT;;;The maximum absolute peak value of the item;;
+Album_ReplayGain_Peak;;;Y YTY;;;The maximum absolute peak value of the item;;
 Encryption;;;Y YT;;;;;
-Encryption_Format;;;N YT;;;;;
-Encryption_Length;;;N YT;;;;;
-Encryption_Method;;;N YT;;;;;
-Encryption_Mode;;;N YT;;;;;
-Encryption_Padding;;;N YT;;;;;
-Encryption_InitializationVector;;;N YT;;;;;
-Title;;;N NT;;;(Generic)Title of file;;Title
-Title/More;;;N NT;;;(Generic)More info about the title of file;;Title
+Encryption_Format;;;N YTY;;;;;
+Encryption_Length;;;N YTY;;;;;
+Encryption_Method;;;N YTY;;;;;
+Encryption_Mode;;;N YTY;;;;;
+Encryption_Padding;;;N YTY;;;;;
+Encryption_InitializationVector;;;N YTY;;;;;
+Title;;;N NTY;;;(Generic)Title of file;;Title
+Title/More;;;N NTY;;;(Generic)More info about the title of file;;Title
 Title/Url;;;N NT;;;(Generic)Url;;Title
 Domain;;;Y YT;;;Univers movies belong to, e.g. Starwars, Stargate, Buffy, Dragonballs;;Title
 Collection;;;Y YT;;;Name of the series, e.g. Starwars movies, Stargate SG-1, Stargate Atlantis, Buffy, Angel;;Title
@@ -282,20 +282,20 @@ Copyright;;;Y YT;;;Copyright attribution.;;Legal
 Copyright/Url;;;Y YT;;;Link to a site with copyright/legal information.;;Legal
 Producer_Copyright;;;Y YT;;;The copyright information as per the productioncopyright holder.;;Legal
 TermsOfUse;;;Y YT;;;License information, e.g., All Rights Reserved,Any Use Permitted.;;Legal
-ServiceName;;;Y YT;;;;;Legal
-ServiceChannel;;;Y YT;;;;;Legal
+ServiceName;;;Y YTY;;;;;Legal
+ServiceChannel;;;Y YTY;;;;;Legal
 Service/Url;;;Y YT;;;;;Legal
-ServiceProvider;;;Y YT;;;;;Legal
+ServiceProvider;;;Y YTY;;;;;Legal
 ServiceProviderr/Url;;;Y YT;;;;;Legal
-ServiceType;;;Y YT;;;;;Legal
-NetworkName;;;Y YT;;;;;Legal
-OriginalNetworkName;;;Y YT;;;;;Legal
-Country;;;Y YT;;;;;Legal
-TimeZone;;;Y YT;;;;;Legal
-Cover;;;Y YT;;;Is there a cover;;Info
-Cover_Description;;;Y YT;;;short descriptio, e.g. Earth in space;;Info
-Cover_Type;;;Y YT;;;;;Info
-Cover_Mime;;;Y YT;;;;;Info
+ServiceType;;;Y YTY;;;;;Legal
+NetworkName;;;Y YTY;;;;;Legal
+OriginalNetworkName;;;Y YTY;;;;;Legal
+Country;;;Y YTY;;;;;Legal
+TimeZone;;;Y YTY;;;;;Legal
+Cover;;;Y YTY;;;Is there a cover;;Info
+Cover_Description;;;Y YTY;;;short descriptio, e.g. Earth in space;;Info
+Cover_Type;;;Y YTY;;;;;Info
+Cover_Mime;;;Y YTY;;;;;Info
 Cover_Data;;;N YT;;;Cover, in binary format encoded BASE64;;Info
 Lyrics;;;Y YT;;;Text of a song;;Info
 Comment;;;Y YT;;;Any comment related to the content.;;Personal
