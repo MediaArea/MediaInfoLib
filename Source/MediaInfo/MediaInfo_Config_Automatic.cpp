@@ -4500,7 +4500,7 @@ void MediaInfo_Config_Video (ZtringListList &Info)
     "Compression_Mode;;;N YTY;;;Compression mode (Lossy or Lossless)\n"
     "Compression_Mode/String;;;Y NT;;;Compression mode (Lossy or Lossless)\n"
     "Compression_Ratio;;;Y YFY;;;Current stream size divided by uncompressed stream size;\n"
-    "Bits-(Pixel*Frame);;;Y NFY;;;bits/(Pixel*Frame) (like Gordian Knot)\n"
+    "Bits-(Pixel*Frame);;;Y NFN;;;bits/(Pixel*Frame) (like Gordian Knot)\n"
     "Delay;; ms;N NIY;;;Delay fixed in the stream (relative) IN MS\n"
     "Delay/String;;;N NT;;;Delay with measurement\n"
     "Delay/String1;;;N NT;;;Delay with measurement\n"

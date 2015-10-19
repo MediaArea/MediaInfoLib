@@ -49,6 +49,40 @@ namespace MediaInfoLib
 {
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_XML_YES)
+Ztring Xml_Name_Escape_0_7_78 (const Ztring &Name)
+{
+    Ztring ToReturn(Name);
+
+    if (ToReturn.operator()(0)>='0' && ToReturn.operator()(0)<='9')
+        ToReturn.insert(0, 1, __T('_'));
+    ToReturn.FindAndReplace(__T(" "), __T("_"), 0, Ztring_Recursive);
+    ToReturn.FindAndReplace(__T("/"), __T("_"), 0, Ztring_Recursive);
+    ToReturn.FindAndReplace(__T("("), Ztring(), 0, Ztring_Recursive);
+    ToReturn.FindAndReplace(__T(")"), Ztring(), 0, Ztring_Recursive);
+    ToReturn.FindAndReplace(__T("*"), __T("_"), 0, Ztring_Recursive);
+    ToReturn.FindAndReplace(__T(","), __T("_"), 0, Ztring_Recursive);
+    ToReturn.FindAndReplace(__T(":"), __T("_"), 0, Ztring_Recursive);
+    ToReturn.FindAndReplace(__T("@"), __T("_"), 0, Ztring_Recursive);
+    size_t ToReturn_Pos=0;
+    while (ToReturn_Pos<ToReturn.size())
+    {
+        if (!(ToReturn[ToReturn_Pos]>=__T('A') && ToReturn[ToReturn_Pos]<=__T('Z'))
+         && !(ToReturn[ToReturn_Pos]>=__T('a') && ToReturn[ToReturn_Pos]<=__T('z'))
+         && !(ToReturn[ToReturn_Pos]>=__T('0') && ToReturn[ToReturn_Pos]<=__T('9'))
+         && !(ToReturn[ToReturn_Pos]==__T('_')))
+            ToReturn.erase(ToReturn_Pos, 1);
+        else
+            ToReturn_Pos++;
+    }
+    if (ToReturn.empty())
+        ToReturn="Unknown";
+
+    return ToReturn;
+}
+#endif //defined(MEDIAINFO_XML_YES)
+
+//---------------------------------------------------------------------------
 extern MediaInfo_Config Config;
 //---------------------------------------------------------------------------
 
@@ -409,9 +443,14 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                 #if defined(MEDIAINFO_XML_YES)
                 if (XML)
                 {
-                    Nom=Xml_Name_Escape(Nom);
+                    if (XML_0_7_78)
+                        Nom=Xml_Name_Escape_0_7_78(Nom);
+                    else
+                        Nom=Xml_Name_Escape(Nom);
                     size_t Modified;
                     Xml_Content_Escape_Modifying(Valeur, Modified);
+                    if (XML_0_7_78 && Nom.size()>8 && Nom.rfind(__T("_Version"))==Nom.size()-8 && Valeur.size()>8 && Valeur.rfind(__T("Version "), 0)==0)
+                        Valeur.erase(0, 8); // Remove useless "Version "
 
                     Retour+=__T("<");
                     Retour+=Nom;

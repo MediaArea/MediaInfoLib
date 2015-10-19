@@ -2237,6 +2237,7 @@ Ztring MediaInfo_Config::MAXML_StreamKinds_Get ()
 #endif // MEDIAINFO_ADVANCED
 
 #if MEDIAINFO_ADVANCED
+extern Ztring Xml_Name_Escape_0_7_78 (const Ztring &Name);
 Ztring MediaInfo_Config::MAXML_Fields_Get (const Ztring &StreamKind_String)
 {
     CriticalSectionLocker CSL(CS);
@@ -2270,7 +2271,7 @@ Ztring MediaInfo_Config::MAXML_Fields_Get (const Ztring &StreamKind_String)
         if (Info_Options < Info[StreamKind][FieldPos].size()
          && InfoOption_ShowInXml < Info[StreamKind][FieldPos][Info_Options].size()
          && Info[StreamKind][FieldPos][Info_Options][InfoOption_ShowInXml]==__T('Y'))
-            List.push_back(Info[StreamKind][FieldPos][Info_Name]);
+            List.push_back(Xml_Name_Escape_0_7_78(Info[StreamKind][FieldPos][Info_Name]));
 
     List.Separator_Set(0, __T(","));
     return List.Read();
