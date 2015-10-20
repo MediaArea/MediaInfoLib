@@ -333,7 +333,7 @@ Ztring MediaInfo_Internal::Inform()
         {
             if (MediaInfoLib::Config.Trace_Level_Get() || MediaInfoLib::Config.Inform_Get()==__T("Details"))
             {
-                Retour+=__T("<MediaTrace version=\"0.1\">\n");
+                Retour+=__T("<MediaTrace xmlns=\"https://mediaarea.net/mediatrace\" version=\"0.1\">\n");
                 if (!Details.empty())
                     Retour+=Details;
                 else if (Info)
