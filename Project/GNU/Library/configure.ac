@@ -480,6 +480,9 @@ if test -d $with_libcurl; then
 elif test "$with_libcurl" = "no"; then
 	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_LIBCURL_NO"
 	using_libcurl="no"
+elif test "$with_libcurl" = "runtime"; then
+	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_LIBCURL_DLL_RUNTIME"
+	using_libcurl="system (runtime)"
 elif test -e ../../../../curl/libcurl.pc; then
 	CXXFLAGS="$CXXFLAGS -I../../../../curl/include"
 	if test "$enable_staticlibs" = "yes"; then
