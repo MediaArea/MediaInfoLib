@@ -443,6 +443,17 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                      Nom.resize(Nom_Size, ' ');
                 }
                 Ztring Valeur=Get((stream_t)StreamKind, StreamPos, Champ_Pos, Info_Text);
+                #if defined(MEDIAINFO_XML_YES)
+                    if (XML_0_7_78 && MediaInfoLib::Config.Info_Get(StreamKind).Read(Champ_Pos, Info_Measure)==__T(" ms"))
+                    {
+                        size_t Decimal = Valeur.find(__T('.'));
+                        size_t Precision=3;
+                        if (Decimal != (size_t)-1)
+                            Precision+=Valeur.size()-Decimal-1;
+                        float64 Ms=Valeur.To_float64();
+                        Valeur.From_Number(Ms/1000, Precision);
+                    }
+                #endif // defined(MEDIAINFO_XML_YES)
                 Valeur.FindAndReplace(__T("\\"), __T("|SC1|"), 0, Ztring_Recursive);
                 #if defined(MEDIAINFO_HTML_YES)
                 if (HTML)
