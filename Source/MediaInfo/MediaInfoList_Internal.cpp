@@ -329,7 +329,7 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
         {
             Retour+=__T("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")+MediaInfoLib::Config.LineSeparator_Get();
             Retour+=__T('<');
-            if (MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_XML)
+            if (MediaInfoLib::Config.Trace_Level_Get() && MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_XML)
             {
                 Retour+=__T("MediaTrace");
                 Retour+=MediaInfoLib::Config.LineSeparator_Get();
