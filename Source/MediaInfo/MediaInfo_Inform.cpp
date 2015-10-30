@@ -262,7 +262,7 @@ Ztring MediaInfo_Internal::Inform()
     {
         size_t Modified;
         Retour+=__T("<media ref=\"")+MediaInfo_Internal::Xml_Content_Escape(Get(Stream_General, 0, General_CompleteName), Modified)+__T("\">\n");
-        Retour+=__T("<MediaInfo xmlns=\"https://mediaarea.net/mediainfo\" version=\"2.0alpha1\">\n");
+        Retour+=__T("<MediaInfo xmlns=\"https://mediaarea.net/mediainfo\" version=\"2.0beta1\">\n");
     }
     else
     if (XML)  Retour+=__T("<File>\n");
