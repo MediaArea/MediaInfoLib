@@ -571,6 +571,8 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     }
     else if (Option_Lower==__T("details")) //Legacy for trace_level
     {
+        if (Value == __T("0"))
+            Trace_Level=0;
         return MediaInfo_Config::Option(__T("Trace_Level"), Value);
     }
     else if (Option_Lower==__T("details_get")) //Legacy for trace_level
