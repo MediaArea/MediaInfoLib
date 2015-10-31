@@ -277,7 +277,6 @@ Ztring MediaInfo_Internal::Inform()
             if (XML) Retour+=__T("<track type=\"");
             Ztring A=Get((stream_t)StreamKind, StreamPos, __T("StreamKind/String"));
             Ztring B=Get((stream_t)StreamKind, StreamPos, __T("StreamKindPos"));
-            Ztring C=Get((stream_t)StreamKind, StreamPos, __T("ID"));
             if (!XML && !B.empty())
             {
                 if (CSV)
@@ -294,12 +293,6 @@ Ztring MediaInfo_Internal::Inform()
                 {
                     Retour+=__T(" streamid=\"");
                     Retour+=B;
-                    Retour+=__T("\"");
-                }
-                if (!C.empty())
-                {
-                    Retour+=__T(" id=\"");
-                    Retour+=C;
                     Retour+=__T("\"");
                 }
             }
