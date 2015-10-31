@@ -291,7 +291,7 @@ Ztring MediaInfo_Internal::Inform()
                 Retour+=__T("\"");
                 if (!B.empty())
                 {
-                    Retour+=__T(" streamid=\"");
+                    Retour+=__T(" typeorder=\"");
                     Retour+=B;
                     Retour+=__T("\"");
                 }
