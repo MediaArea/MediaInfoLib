@@ -338,11 +338,15 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
                 Retour+=__T("    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
                 Retour+=MediaInfoLib::Config.LineSeparator_Get();
                 Retour+=__T("    xsi:schemaLocation=\"https://mediaarea.net/mediatrace https://mediaarea.net/mediatrace/mediatrace_0_1.xsd\"");
+                Retour+=MediaInfoLib::Config.LineSeparator_Get();
+                Retour+=__T("    version=\"0.1\"");
             }
             else
+            {
                 Retour+=__T("Mediainfo");
-            Retour+=MediaInfoLib::Config.LineSeparator_Get();
-            Retour+=__T("    version=\"0.1\"");
+                Retour+=MediaInfoLib::Config.LineSeparator_Get();
+                Retour+=__T("    version=\"0.1\"");
+            }
             Retour+=MediaInfoLib::Config.LineSeparator_Get();
             size_t Modified;
             Retour+=__T("    ref=\"")+MediaInfo_Internal::Xml_Content_Escape(Info[FilePos]->Get(Stream_General, 0, General_CompleteName), Modified)+__T("\"");
