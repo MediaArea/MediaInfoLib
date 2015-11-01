@@ -251,31 +251,23 @@ Ztring MediaInfo_Internal::Inform()
     if (MediaInfoLib::Config.Inform_Get()==__T("XML"))
         XML=true;
     if (MediaInfoLib::Config.Inform_Get()==__T("MAXML"))
-    {
-        XML=true;
         XML_0_7_78_MA=true;
-    }
-    if (MediaInfoLib::Config.Inform_Get()==__T("MAXML"))
-    {
-        XML=true;
-        XML_0_7_78_MA=true;
-    }
     if (MediaInfoLib::Config.Inform_Get()==__T("MIXML"))
-    {
         XML_0_7_78_MI=true;
-    }
     if (MediaInfoLib::Config.Inform_Get()==__T("CSV"))
         CSV=true;
 
-    if (HTML) Retour+=__T("<html>\n\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /></head>\n<body>\n");
-    if (XML_0_7_78_MA)
+    if (HTML)
+        Retour+=__T("<html>\n\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /></head>\n<body>\n");
+    if (XML_0_7_78_MA || XML_0_7_78_MI)
     {
         size_t Modified;
         Retour+=__T("<media ref=\"")+MediaInfo_Internal::Xml_Content_Escape(Get(Stream_General, 0, General_CompleteName), Modified)+__T("\">\n");
-        Retour+=__T("<MediaInfo xmlns=\"https://mediaarea.net/mediainfo\" version=\"2.0beta1\">\n");
     }
-    else
-    if (XML)  Retour+=__T("<File>\n");
+    if (XML_0_7_78_MA)
+        Retour+=__T("<MediaInfo xmlns=\"https://mediaarea.net/mediainfo\" version=\"2.0beta1\">\n");
+    if (XML)
+        Retour+=__T("<File>\n");
 
     for (size_t StreamKind=(size_t)Stream_General; StreamKind<Stream_Max; StreamKind++)
     {
@@ -284,10 +276,10 @@ Ztring MediaInfo_Internal::Inform()
         {
             //Pour chaque stream
             if (HTML) Retour+=__T("<table width=\"100%\" border=\"0\" cellpadding=\"1\" cellspacing=\"2\" style=\"border:1px solid Navy\">\n<tr>\n    <td width=\"150\"><h2>");
-            if (XML || XML_0_7_78_MI) Retour+=__T("<track type=\"");
+            if (XML || XML_0_7_78_MA || XML_0_7_78_MI) Retour+=__T("<track type=\"");
             Ztring A=Get((stream_t)StreamKind, StreamPos, __T("StreamKind/String"));
             Ztring B=Get((stream_t)StreamKind, StreamPos, __T("StreamKindPos"));
-            if (!XML && !XML_0_7_78_MI && !B.empty())
+            if (!XML && !XML_0_7_78_MA && !XML_0_7_78_MI && !B.empty())
             {
                 if (CSV)
                     A+=__T(",");
@@ -296,7 +288,7 @@ Ztring MediaInfo_Internal::Inform()
                 A+=B;
             }
             Retour+=A;
-            if (XML || XML_0_7_78_MI)
+            if (XML || XML_0_7_78_MA || XML_0_7_78_MI)
             {
                 Retour+=__T("\"");
                 if (!B.empty())
@@ -307,12 +299,12 @@ Ztring MediaInfo_Internal::Inform()
                 }
             }
             if (HTML) Retour+=__T("</h2></td>\n  </tr>");
-            if (XML || XML_0_7_78_MI) Retour+=__T(">");
+            if (XML || XML_0_7_78_MA || XML_0_7_78_MI) Retour+=__T(">");
             Retour+=MediaInfoLib::Config.LineSeparator_Get();
             Retour+=Inform((stream_t)StreamKind, StreamPos, false);
             Retour.FindAndReplace(__T("\\"), __T("|SC1|"), 0, Ztring_Recursive);
             if (HTML) Retour+=__T("</table>\n<br />");
-            if (XML || XML_0_7_78_MI) Retour+=__T("</track>\n");
+            if (XML || XML_0_7_78_MA || XML_0_7_78_MI) Retour+=__T("</track>\n");
             Retour+=MediaInfoLib::Config.LineSeparator_Get();
         }
     }
@@ -354,8 +346,10 @@ Ztring MediaInfo_Internal::Inform()
         }
     #endif //MEDIAINFO_TRACE
 
-    if (XML_0_7_78_MA)  Retour+=__T("</media>\n");
-    else if (XML)  Retour+=__T("</File>\n");
+    if (XML_0_7_78_MA || XML_0_7_78_MI)
+        Retour+=__T("</media>\n");
+    if (XML)
+        Retour+=__T("</File>\n");
 
     return Retour;
 
