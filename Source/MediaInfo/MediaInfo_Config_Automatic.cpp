@@ -4024,7 +4024,7 @@ void MediaInfo_Config_General (ZtringListList &Info)
     "Menu_Format_WithHint_List;;;N NT;;;Menu Codecs in this file with popular name (hint),separated by /\n"
     "Menu_Codec_List;;;N NT;;;Deprecated, do not use in new projects\n"
     "Menu_Language_List;;;N NT;;;Menu languages in this file, separated by /\n"
-    "CompleteName;;;Y YTY;;;Complete name (Folder+Name+Extension)\n"
+    "CompleteName;;;Y YT;;;Complete name (Folder+Name+Extension)\n"
     "FolderName;;;N NT;;;Folder name only\n"
     "FileName;;;N NT;;;File name only\n"
     "FileExtension;;;N NT;;;File extension only\n"

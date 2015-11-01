@@ -45,7 +45,7 @@ Menu_Format_List;;;N NT;;;Menu Codecsin this file, separated by /
 Menu_Format_WithHint_List;;;N NT;;;Menu Codecs in this file with popular name (hint),separated by /
 Menu_Codec_List;;;N NT;;;Deprecated, do not use in new projects
 Menu_Language_List;;;N NT;;;Menu languages in this file, separated by /
-CompleteName;;;Y YTY;;;Complete name (Folder+Name+Extension)
+CompleteName;;;Y YT;;;Complete name (Folder+Name+Extension)
 FolderName;;;N NT;;;Folder name only
 FileName;;;N NT;;;File name only
 FileExtension;;;N NT;;;File extension only
