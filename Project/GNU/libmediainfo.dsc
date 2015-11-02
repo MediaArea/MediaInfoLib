@@ -8,7 +8,7 @@ Homepage: http://MediaArea.net/MediaInfo
 Standards-Version: 3.9.6
 Vcs-Browser: https://github.com/MediaArea/MediaInfoLib
 Vcs-Git: https://github.com/MediaArea/MediaInfoLib.git
-Build-Depends: debhelper (>= 9), dpkg-dev (>= 1.16.1), python-all (>= 2.6.6-3~), python3-all, dh-autoreconf, doxygen, tofrodos, libzen-dev (>= 0.4.25), libcurl4-gnutls-dev, libglib2.0-dev, zlib1g-dev, pkg-config
+Build-Depends: debhelper (>= 9), dpkg-dev (>= 1.16.1), python-all (>= 2.6.6-3~), python3-all, dh-autoreconf, doxygen, tofrodos, libzen-dev (>= 0.4.32), libcurl4-gnutls-dev, libglib2.0-dev, zlib1g-dev, pkg-config
 Package-List:
  libmediainfo-dev deb libdevel optional arch=any
  libmediainfo-doc deb doc optional arch=all
