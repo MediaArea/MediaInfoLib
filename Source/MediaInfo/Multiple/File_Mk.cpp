@@ -252,7 +252,7 @@ void File_Mk::Streams_Finish()
 			}
 		}
 
-		Ztring Duration_Temp;
+		//Ztring Duration_Temp;
 		if (Tags_Verified)
 		{
 			Ztring Tag_Temp = Retrieve(Temp->second.StreamKind, Temp->second.StreamPos, "*Track Duration/(HH:MM:SS.NNNNNNNNN)", Info_Text);
@@ -309,6 +309,8 @@ void File_Mk::Streams_Finish()
 				Clear(Temp->second.StreamKind, Temp->second.StreamPos, "*Track Size/(Bytes)");
 			}
 		}
+		//else
+		//	Duration_Temp=Retrieve(StreamKind_Last, Temp->second.StreamPos, Fill_Parameter(StreamKind_Last, Generic_Duration)); //Duration from stream is sometimes false
 
         if (Temp->second.DisplayAspectRatio!=0)
         {
@@ -437,7 +439,6 @@ void File_Mk::Streams_Finish()
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
             }
 
-            //Ztring Duration_Temp;
             Ztring Codec_Temp;
             //Duration_Temp=Retrieve(StreamKind_Last, Temp->second.StreamPos, Fill_Parameter(StreamKind_Last, Generic_Duration)); //Duration from stream is sometimes false
             Codec_Temp=Retrieve(StreamKind_Last, Temp->second.StreamPos, Fill_Parameter(StreamKind_Last, Generic_Codec)); //We want to keep the 4CC
