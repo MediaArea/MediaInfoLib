@@ -221,6 +221,9 @@ File_Ancillary::File_Ancillary()
 {
     //Configuration
     ParserName=__T("Ancillary");
+    #if MEDIAINFO_EVENTS
+        StreamIDs_Width[0]=4;
+    #endif //MEDIAINFO_EVENTS
     PTS_DTS_Needed=true;
 
     //In
@@ -666,6 +669,7 @@ void File_Ancillary::Data_Parse()
                                         {
                                             if (Sdp_Parser->PTS_DTS_Needed)
                                                 Sdp_Parser->FrameInfo=FrameInfo;
+                                            Demux(Payload, (size_t)DataCount, ContentType_MainStream);
                                             Open_Buffer_Continue(Sdp_Parser, Payload, (size_t)DataCount);
                                         }
                                         #endif //defined(MEDIAINFO_SDP_YES)
