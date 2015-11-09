@@ -215,29 +215,29 @@ void File_Mk::Streams_Finish()
 	//Tags
 	//Ztring Duration_Temp;
 	bool Tags_Verified=false; 
-	Ztring TagsList=Retrieve(Temp->second.StreamKind, Temp->second.StreamPos, "_STATISTICS_TAGS", Info_Text);
+	Ztring TagsList=Retrieve(StreamKind, StreamPos_Last, "_STATISTICS_TAGS", Info_Text);
 	if (!TagsList.empty())
 	{
-		Clear(Temp->second.StreamKind, Temp->second.StreamPos, "_STATISTICS_TAGS");
-		Ztring WritingApp=Retrieve(Temp->second.StreamKind, Temp->second.StreamPos, "_STATISTICS_WRITING_APP", Info_Text);
-		Ztring WritingDate=Retrieve(Temp->second.StreamKind, Temp->second.StreamPos, "_STATISTICS_WRITING_DATE_UTC", Info_Text);
+		Clear(StreamKind, StreamPos_Last, "_STATISTICS_TAGS");
+		Ztring WritingApp=Retrieve(StreamKind, StreamPos_Last, "_STATISTICS_WRITING_APP", Info_Text);
+		Ztring WritingDate=Retrieve(StreamKind, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC", Info_Text);
 		WritingDate.insert(0, __T("UTC "));
 		if ((!WritingApp.compare(Retrieve(Stream_General, 0, "Encoded_Application", Info_Text))) && (!WritingDate.compare(Retrieve(Stream_General, 0, "Encoded_Date", Info_Text))))
-			{ Fill(Temp->second.StreamKind, Temp->second.StreamPos, "*Statistics Tags Verified", "True");  Tags_Verified=true; }
+			{ Fill(StreamKind, StreamPos_Last, "*Statistics Tags Verified", "Yes");  Tags_Verified=true; }
 		else
-			Fill(Temp->second.StreamKind, Temp->second.StreamPos, "*Statistics Tags Verified", "False");
-		Clear(Temp->second.StreamKind, Temp->second.StreamPos, "_STATISTICS_WRITING_APP");
-		Clear(Temp->second.StreamKind, Temp->second.StreamPos, "_STATISTICS_WRITING_DATE_UTC");
+			Fill(StreamKind, StreamPos_Last, "*Statistics Tags Verified", "No");
+		Clear(StreamKind, StreamPos_Last, "_STATISTICS_WRITING_APP");
+		Clear(StreamKind, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC");
 		Ztring::iterator Back = TagsList.begin();
 		Ztring TempTag;
 		while (true)
 		{
 			if ((Back == TagsList.end()) || (*Back == ' ') || (*Back == '\0'))
 			{
-				Ztring TagValue = Retrieve(Temp->second.StreamKind, Temp->second.StreamPos, TempTag.To_Local().c_str(), Info_Text);
+				Ztring TagValue = Retrieve(StreamKind, StreamPos_Last, TempTag.To_Local().c_str(), Info_Text);
 				if (!TagValue.empty())
 				{
-					Clear(Temp->second.StreamKind, Temp->second.StreamPos, TempTag.To_Local().c_str());
+					Clear(StreamKind, StreamPos_Last, TempTag.To_Local().c_str());
 					if (!TempTag.compare(__T("BPS")))
 					{
 						if (Tags_Verified)
@@ -261,6 +261,7 @@ void File_Mk::Streams_Finish()
 								}
 								else if (isdigit(*Front))
 									Parts[CountParts]+=*Front;
+								else { CountParts=-1; break; }
 								Front++;
 							}
 							if (CountParts == 4)
@@ -276,7 +277,7 @@ void File_Mk::Streams_Finish()
 							}
 						}
 						else
-							Fill(StreamKind_Last, StreamPos_Last, "Track Duration/(HH:MM:SS.NNNNNNNNN)", TagValue.To_Local().c_str());
+							Fill(StreamKind_Last, StreamPos_Last, "*Track Duration/(HH:MM:SS.NNNNNNNNN)", TagValue.To_Local().c_str());
 					}
 					else if (!TempTag.compare(__T("NUMBER_OF_FRAMES")))
 					{
@@ -295,7 +296,7 @@ void File_Mk::Streams_Finish()
 					else
 					{
 						TempTag.insert(0, __T("*"));
-						Fill(Temp->second.StreamKind, Temp->second.StreamPos, TempTag.To_Local().c_str(), TagValue.To_Local().c_str());
+						Fill(StreamKind, StreamPos_Last, TempTag.To_Local().c_str(), TagValue.To_Local().c_str());
 					}
 				}
 				if (Back == TagsList.end()) break;
