@@ -2238,16 +2238,6 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagString()
     if (Segment_Tag_SimpleTag_TagNames.empty())
         return;
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("BITSPS")) return; //Useless
-
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("BPS")) { Segment_Tag_SimpleTag_TagNames[0]=__T("Bit rate/(bps)"); }
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("DURATION")) { Segment_Tag_SimpleTag_TagNames[0]=__T("Track Duration/(HH:MM:SS.NNNNNNNNN)"); }
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("NUMBER_OF_FRAMES")) { Segment_Tag_SimpleTag_TagNames[0]=__T("Track Size/(Frames)"); }
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("NUMBER_OF_BYTES")) { Segment_Tag_SimpleTag_TagNames[0]=__T("Track Size/(Bytes)"); }
-
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("_STATISTICS_WRITING_APP")) { Segment_Tag_SimpleTag_TagNames[0]=__T("Security Writing Application"); }
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("_STATISTICS_WRITING_DATE_UTC")) { Segment_Tag_SimpleTag_TagNames[0]=__T("Security Writing Date"); TagString.insert(0, __T("UTC ")); }
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("_STATISTICS_TAGS")) { Segment_Tag_SimpleTag_TagNames[0]=__T("Security Tags List"); }
-
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("COMPATIBLE_BRANDS")) return; //QuickTime techinical info, useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("CREATION_TIME")) {Segment_Tag_SimpleTag_TagNames[0]=__T("Encoded_Date"); TagString.insert(0, __T("UTC "));}
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("DATE_DIGITIZED")) {Segment_Tag_SimpleTag_TagNames[0]=__T("Mastered_Date"); TagString.insert(0, __T("UTC "));}
