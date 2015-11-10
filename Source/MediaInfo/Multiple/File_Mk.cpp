@@ -250,16 +250,17 @@ void File_Mk::Streams_Finish()
 							Ztring::iterator Front = TagValue.begin();
 							Ztring Parts [4];
 							int CountParts = 0;
+							Char *t = __T("::.");
 							while (true)
 							{
-								if (Front == TagValue.end() || *Front == __T(':') || *Front == __T('.'))
+								if (Front == TagValue.end() || *Front == t[CountParts])
 								{
 									CountParts++;
 									if (Front==TagValue.end() || CountParts == 4) break;
 								}
 								else if (isdigit(*Front))
 									Parts[CountParts]+=*Front;
-								else { CountParts=-1; break; }
+								else { break; }
 								Front++;
 							}
 							if (CountParts == 4 && Front == TagValue.end())
