@@ -219,10 +219,8 @@ void File_Mk::Streams_Finish()
 	if (!TagsList.empty())
 	{
 		Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
-		Ztring WritingApp=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP");
-		Ztring WritingDate=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC");
-		WritingDate.insert(0, __T("UTC "));
-		if ((!WritingApp.compare(Retrieve(Stream_General, 0, "Encoded_Application"))) && (!WritingDate.compare(Retrieve(Stream_General, 0, "Encoded_Date"))))
+		if (!Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP").compare(Retrieve(Stream_General, 0, "Encoded_Application")) &&
+			!Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC").compare(Retrieve(Stream_General, 0, "Encoded_Date").substr(4)))
 			{ Fill(StreamKind_Last, StreamPos_Last, "*Statistics Tags Verified", "Yes");  Tags_Verified=true; }
 		else
 			Fill(StreamKind_Last, StreamPos_Last, "*Statistics Tags Verified", "No");
