@@ -216,7 +216,7 @@ void File_Mk::Streams_Finish()
 	//Ztring Duration_Temp;
 	bool Tags_Verified=false; 
 	Ztring TagsList=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
-	if (!TagsList.empty())
+	if (TagsList.size())
 	{
 		Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
 		if (Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP")==(Retrieve(Stream_General, 0, "Encoded_Application")) &&
