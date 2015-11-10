@@ -265,14 +265,17 @@ void File_Mk::Streams_Finish()
 							}
 							if (CountParts == 4 && Front == TagValue.end())
 							{
-								int64u Hours = Parts[0].To_int64u(10);
 								int64u Minutes = Parts[1].To_int64u(10);
 								int64u Seconds = Parts[2].To_int64u(10);
-								Parts[3] = Parts[3].substr(0, 3);
-								int64u Milliseconds = Parts[3].To_int64u(10);							
-								TagValue.From_Number((((Hours * 3600) + (Minutes * 60) + Seconds) * 1000) + Milliseconds, 10);
-								Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), TagValue, true);
-								//Duration_Temp = TagValue;
+								if (Minutes < 60 && Seconds < 60)
+								{
+									if (Parts[3].size() > 3) Parts[3] = Parts[3].substr(0, 3);
+									int64u Milliseconds = Parts[3].To_int64u(10);
+									TagValue.From_Number((((Parts[0].To_int64u(10) * 3600) + (Minutes * 60) + Seconds) * 1000) + Milliseconds, 10);
+									if (TagValue.To_int64u(10) <= Retrieve(Stream_General, 0, Generic_Duration).To_int64u(10))
+										Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), TagValue, true);
+									//Duration_Temp = TagValue;
+								}
 							}
 						}
 						else
