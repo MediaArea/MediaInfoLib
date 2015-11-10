@@ -219,8 +219,8 @@ void File_Mk::Streams_Finish()
 	if (!TagsList.empty())
 	{
 		Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
-		if (!Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP").compare(Retrieve(Stream_General, 0, "Encoded_Application")) &&
-			!Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC").compare(Retrieve(Stream_General, 0, "Encoded_Date").substr(4)))
+		if (Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP")==(Retrieve(Stream_General, 0, "Encoded_Application")) &&
+			Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC")==(Retrieve(Stream_General, 0, "Encoded_Date").substr(4)))
 			{ Fill(StreamKind_Last, StreamPos_Last, "*Statistics Tags Verified", "Yes");  Tags_Verified=true; }
 		else
 			Fill(StreamKind_Last, StreamPos_Last, "*Statistics Tags Verified", "No");
@@ -232,77 +232,80 @@ void File_Mk::Streams_Finish()
 		{
 			if ((Back == TagsList.end()) || (*Back == ' ') || (*Back == '\0'))
 			{
-				Ztring TagValue = Retrieve(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str());
-				if (!TagValue.empty())
+				if (TempTag.size());
 				{
-					Clear(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str());
-					if (!TempTag.compare(__T("BPS")))
+					Ztring TagValue = Retrieve(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str());
+					if (TagValue.size())
 					{
-						if (Tags_Verified)
-							Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate), TagValue, true);
-						else
-							Fill(StreamKind_Last, StreamPos_Last, "*Bit Rate/(bps)", TagValue.To_Local().c_str());
-					}
-					else if (!TempTag.compare(__T("DURATION")))
-					{
-						if (Tags_Verified)
+						Clear(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str());
+						if (TempTag==__T("BPS"))
 						{
-							Ztring::iterator Front = TagValue.begin();
-							Ztring Parts [4];
-							int CountParts = 0;
-							Char *t = __T("::.");
-							while (true)
+							if (Tags_Verified)
+								Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate), TagValue, true);
+							else
+								Fill(StreamKind_Last, StreamPos_Last, "*Bit Rate/(bps)", TagValue.To_Local().c_str());
+						}
+						else if (TempTag==__T("DURATION"))
+						{
+							if (Tags_Verified)
 							{
-								if (Front == TagValue.end() || *Front == t[CountParts])
+								Ztring::iterator Front = TagValue.begin();
+								Ztring Parts [4];
+								int CountParts = 0;
+								Char *t = __T("::.");
+								while (true)
 								{
-									CountParts++;
-									if (Front==TagValue.end() || CountParts == 4) break;
+									if (Front == TagValue.end() || *Front == t[CountParts])
+									{
+										CountParts++;
+										if (Front==TagValue.end() || CountParts == 4) break;
+									}
+									else if (isdigit(*Front))
+										Parts[CountParts]+=*Front;
+									else { break; }
+									Front++;
 								}
-								else if (isdigit(*Front))
-									Parts[CountParts]+=*Front;
-								else { break; }
-								Front++;
-							}
-							if (CountParts == 4 && Front == TagValue.end())
-							{
-								int64u Minutes = Parts[1].To_int64u(10);
-								int64u Seconds = Parts[2].To_int64u(10);
-								if (Minutes < 60 && Seconds < 60)
+								if (CountParts == 4 && Front == TagValue.end())
 								{
-									if (Parts[3].size() > 3) Parts[3] = Parts[3].substr(0, 3);
-									int64u Milliseconds = Parts[3].To_int64u(10);
-									TagValue.From_Number((((Parts[0].To_int64u(10) * 3600) + (Minutes * 60) + Seconds) * 1000) + Milliseconds, 10);
-									if (TagValue.To_int64u(10) <= Retrieve(Stream_General, 0, Generic_Duration).To_int64u(10))
-										Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), TagValue, true);
-									//Duration_Temp = TagValue;
+									int64u Minutes = Parts[1].To_int64u(10);
+									int64u Seconds = Parts[2].To_int64u(10);
+									if (Minutes < 60 && Seconds < 60)
+									{
+										if (Parts[3].size() > 3) Parts[3] = Parts[3].substr(0, 3);
+										int64u Milliseconds = Parts[3].To_int64u(10);
+										TagValue.From_Number((((Parts[0].To_int64u(10) * 3600) + (Minutes * 60) + Seconds) * 1000) + Milliseconds, 10);
+										if (TagValue.To_int64u(10) <= Retrieve(Stream_General, 0, Generic_Duration).To_int64u(10))
+											Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), TagValue, true);
+										//Duration_Temp = TagValue;
+									}
 								}
 							}
+							else
+								Fill(StreamKind_Last, StreamPos_Last, "*Track Duration/(HH:MM:SS.NNNNNNNNN)", TagValue.To_Local().c_str());
+						}
+						else if (TempTag==__T("NUMBER_OF_FRAMES"))
+						{
+							if (Tags_Verified)
+								Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), TagValue, true);
+							else
+								Fill(StreamKind_Last, StreamPos_Last, "*Track Size/(Frames)", TagValue.To_Local().c_str());
+						}
+						else if (TempTag==__T("NUMBER_OF_BYTES"))
+						{
+							if (Tags_Verified)
+								Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), TagValue, true);
+							else
+								Fill(StreamKind_Last, StreamPos_Last, "*Track Size/(Bytes)", TagValue.To_Local().c_str());
 						}
 						else
-							Fill(StreamKind_Last, StreamPos_Last, "*Track Duration/(HH:MM:SS.NNNNNNNNN)", TagValue.To_Local().c_str());
+						{
+							TempTag.insert(0, __T("*"));
+							Fill(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str(), TagValue.To_Local().c_str());
+						}
 					}
-					else if (!TempTag.compare(__T("NUMBER_OF_FRAMES")))
-					{
-						if (Tags_Verified)
-							Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), TagValue, true);
-						else
-							Fill(StreamKind_Last, StreamPos_Last, "*Track Size/(Frames)", TagValue.To_Local().c_str());
-					}
-					else if (!TempTag.compare(__T("NUMBER_OF_BYTES")))
-					{
-						if (Tags_Verified)
-							Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), TagValue, true);
-						else
-							Fill(StreamKind_Last, StreamPos_Last, "*Track Size/(Bytes)", TagValue.To_Local().c_str());
-					}
-					else
-					{
-						TempTag.insert(0, __T("*"));
-						Fill(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str(), TagValue.To_Local().c_str());
-					}
+					if (Back == TagsList.end()) break;
+					TempTag.clear();
 				}
-				if (Back == TagsList.end()) break;
-				TempTag.clear();
 			}
 			else
 				TempTag+=*Back;
@@ -3686,5 +3689,6 @@ void File_Mk::CodecPrivate_Manage()
 } //NameSpace
 
 #endif //MEDIAINFO_MK_YES
+
 
 
