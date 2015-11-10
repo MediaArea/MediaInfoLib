@@ -215,14 +215,14 @@ void File_Mk::Streams_Finish()
 	//Tags
 	//Ztring Duration_Temp;
 	bool Tags_Verified=false; 
-	Ztring TagsList=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS", Info_Text);
+	Ztring TagsList=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
 	if (!TagsList.empty())
 	{
 		Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
-		Ztring WritingApp=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP", Info_Text);
-		Ztring WritingDate=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC", Info_Text);
+		Ztring WritingApp=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP");
+		Ztring WritingDate=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC");
 		WritingDate.insert(0, __T("UTC "));
-		if ((!WritingApp.compare(Retrieve(Stream_General, 0, "Encoded_Application", Info_Text))) && (!WritingDate.compare(Retrieve(Stream_General, 0, "Encoded_Date", Info_Text))))
+		if ((!WritingApp.compare(Retrieve(Stream_General, 0, "Encoded_Application"))) && (!WritingDate.compare(Retrieve(Stream_General, 0, "Encoded_Date"))))
 			{ Fill(StreamKind_Last, StreamPos_Last, "*Statistics Tags Verified", "Yes");  Tags_Verified=true; }
 		else
 			Fill(StreamKind_Last, StreamPos_Last, "*Statistics Tags Verified", "No");
@@ -234,7 +234,7 @@ void File_Mk::Streams_Finish()
 		{
 			if ((Back == TagsList.end()) || (*Back == ' ') || (*Back == '\0'))
 			{
-				Ztring TagValue = Retrieve(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str(), Info_Text);
+				Ztring TagValue = Retrieve(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str());
 				if (!TagValue.empty())
 				{
 					Clear(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str());
