@@ -212,6 +212,107 @@ void File_Mk::Streams_Finish()
         StreamKind_Last=Temp->second.StreamKind;
         StreamPos_Last=Temp->second.StreamPos;
 
+	//Tags
+	//Ztring Duration_Temp;
+	bool Tags_Verified=false; 
+	Ztring TagsList=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
+	if (TagsList.size())
+	{
+		Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
+		if (Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP")==(Retrieve(Stream_General, 0, "Encoded_Application")) &&
+			Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC")==(Retrieve(Stream_General, 0, "Encoded_Date").substr(4)))
+			{ Fill(StreamKind_Last, StreamPos_Last, "*Statistics Tags Verified", "Yes");  Tags_Verified=true; }
+		else
+			Fill(StreamKind_Last, StreamPos_Last, "*Statistics Tags Verified", "No");
+		Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP");
+		Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC");
+		Ztring::iterator Back = TagsList.begin();
+		Ztring TempTag;
+		while (true)
+		{
+			if ((Back == TagsList.end()) || (*Back == ' ') || (*Back == '\0'))
+			{
+				if (TempTag.size());
+				{
+					Ztring TagValue = Retrieve(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str());
+					if (TagValue.size())
+					{
+						Clear(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str());
+						if (TempTag==__T("BPS"))
+						{
+							if (Tags_Verified)
+								Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate), TagValue, true);
+							else
+								Fill(StreamKind_Last, StreamPos_Last, "*Bit Rate/(bps)", TagValue.To_Local().c_str());
+						}
+						else if (TempTag==__T("DURATION"))
+						{
+							if (Tags_Verified)
+							{
+								Ztring::iterator Front = TagValue.begin();
+								Ztring Parts [4];
+								int CountParts = 0;
+								Char *t = __T("::.");
+								while (true)
+								{
+									if (Front == TagValue.end() || *Front == t[CountParts])
+									{
+										CountParts++;
+										if (Front==TagValue.end() || CountParts == 4) break;
+									}
+									else if (isdigit(*Front))
+										Parts[CountParts]+=*Front;
+									else { break; }
+									Front++;
+								}
+								if (CountParts == 4 && Front == TagValue.end())
+								{
+									int64u Minutes = Parts[1].To_int64u(10);
+									int64u Seconds = Parts[2].To_int64u(10);
+									if (Minutes < 60 && Seconds < 60)
+									{
+										if (Parts[3].size() > 3) Parts[3] = Parts[3].substr(0, 3);
+										int64u Milliseconds = Parts[3].To_int64u(10);
+										TagValue.From_Number((((Parts[0].To_int64u(10) * 3600) + (Minutes * 60) + Seconds) * 1000) + Milliseconds, 10);
+										if (TagValue.To_int64u(10) <= Retrieve(Stream_General, 0, Generic_Duration).To_int64u(10))
+											Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), TagValue, true);
+										//Duration_Temp = TagValue;
+									}
+								}
+							}
+							else
+								Fill(StreamKind_Last, StreamPos_Last, "*Track Duration/(HH:MM:SS.NNNNNNNNN)", TagValue.To_Local().c_str());
+						}
+						else if (TempTag==__T("NUMBER_OF_FRAMES"))
+						{
+							if (Tags_Verified)
+								Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), TagValue, true);
+							else
+								Fill(StreamKind_Last, StreamPos_Last, "*Track Size/(Frames)", TagValue.To_Local().c_str());
+						}
+						else if (TempTag==__T("NUMBER_OF_BYTES"))
+						{
+							if (Tags_Verified)
+								Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), TagValue, true);
+							else
+								Fill(StreamKind_Last, StreamPos_Last, "*Track Size/(Bytes)", TagValue.To_Local().c_str());
+						}
+						else
+						{
+							TempTag.insert(0, __T("*"));
+							Fill(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str(), TagValue.To_Local().c_str());
+						}
+					}
+					if (Back == TagsList.end()) break;
+					TempTag.clear();
+				}
+			}
+			else
+				TempTag+=*Back;
+			Back++;
+		}
+	}
+
         if (Temp->second.DisplayAspectRatio!=0)
         {
             //Corrections
@@ -219,11 +320,11 @@ void File_Mk::Streams_Finish()
                 Temp->second.DisplayAspectRatio=((float32)16)/9;
             if (Temp->second.DisplayAspectRatio>=1.333 && Temp->second.DisplayAspectRatio<=1.334)
                 Temp->second.DisplayAspectRatio=((float32)4)/3;
-            Fill(Stream_Video, Temp->second.StreamPos, Video_DisplayAspectRatio, Temp->second.DisplayAspectRatio, 3, true);
-            int64u Width=Retrieve(Stream_Video, Temp->second.StreamPos, Video_Width).To_int64u();
-            int64u Height=Retrieve(Stream_Video, Temp->second.StreamPos, Video_Height).To_int64u();
+            Fill(Stream_Video, StreamPos_Last, Video_DisplayAspectRatio, Temp->second.DisplayAspectRatio, 3, true);
+            int64u Width=Retrieve(Stream_Video, StreamPos_Last, Video_Width).To_int64u();
+            int64u Height=Retrieve(Stream_Video, StreamPos_Last, Video_Height).To_int64u();
             if (Width)
-                Fill(Stream_Video, Temp->second.StreamPos, Video_PixelAspectRatio, Temp->second.DisplayAspectRatio*Height/Width, 3, true);
+                Fill(Stream_Video, StreamPos_Last, Video_PixelAspectRatio, Temp->second.DisplayAspectRatio*Height/Width, 3, true);
         }
 
         if (Temp->second.Parser)
@@ -339,13 +440,13 @@ void File_Mk::Streams_Finish()
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
             }
 
-            Ztring Duration_Temp, Codec_Temp;
-            Duration_Temp=Retrieve(StreamKind_Last, Temp->second.StreamPos, Fill_Parameter(StreamKind_Last, Generic_Duration)); //Duration from stream is sometimes false
-            Codec_Temp=Retrieve(StreamKind_Last, Temp->second.StreamPos, Fill_Parameter(StreamKind_Last, Generic_Codec)); //We want to keep the 4CC
+            Ztring Codec_Temp=Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Codec)); //We want to keep the 4CC;
+  	    //if (Duration_Temp.empty()) Duration_Temp=Retrieve(StreamKind_Last, Temp->second.StreamPos, Fill_Parameter(StreamKind_Last, Generic_Duration)); //Duration from stream is sometimes false
+	    //else Duration_Temp.clear();
 
             Finish(Temp->second.Parser);
-            Merge(*Temp->second.Parser, Temp->second.StreamKind, 0, Temp->second.StreamPos);
-            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration_Temp, true);
+            Merge(*Temp->second.Parser, StreamKind_Last, 0, StreamPos_Last);
+            //if (!Duration_Temp.empty()) Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration_Temp, true);
             if (Temp->second.StreamKind==Stream_Video && !Codec_Temp.empty())
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Codec), Codec_Temp, true);
 
@@ -376,12 +477,12 @@ void File_Mk::Streams_Finish()
             }
         }
 
-        if (Temp->second.FrameRate!=0 && Retrieve(Stream_Video, Temp->second.StreamPos, Video_FrameRate).empty())
-            Fill(Stream_Video, Temp->second.StreamPos, Video_FrameRate, Temp->second.FrameRate, 3);
+        if (Temp->second.FrameRate!=0 && Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).empty())
+            Fill(Stream_Video, StreamPos_Last, Video_FrameRate, Temp->second.FrameRate, 3);
 
         //Flags
-        Fill(Temp->second.StreamKind, Temp->second.StreamPos, "Default", Temp->second.Default?"Yes":"No");
-        Fill(Temp->second.StreamKind, Temp->second.StreamPos, "Forced", Temp->second.Forced?"Yes":"No");
+        Fill(StreamKind_Last, StreamPos_Last, "Default", Temp->second.Default?"Yes":"No");
+        Fill(StreamKind_Last, StreamPos_Last, "Forced", Temp->second.Forced?"Yes":"No");
     }
 
     //Chapters
@@ -2143,7 +2244,6 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagString()
     if (Segment_Tag_SimpleTag_TagNames.empty())
         return;
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("BITSPS")) return; //Useless
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("BPS")) return; //Useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("COMPATIBLE_BRANDS")) return; //QuickTime techinical info, useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("CREATION_TIME")) {Segment_Tag_SimpleTag_TagNames[0]=__T("Encoded_Date"); TagString.insert(0, __T("UTC "));}
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("DATE_DIGITIZED")) {Segment_Tag_SimpleTag_TagNames[0]=__T("Mastered_Date"); TagString.insert(0, __T("UTC "));}
@@ -2178,7 +2278,7 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagString()
         Ztring ID=Ztring::ToZtring(Segment_Tag_TrackUID);
         for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
             for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
-                if (Retrieve((stream_t)StreamKind, StreamPos, General_ID)==ID)
+                if (Retrieve((stream_t)StreamKind, StreamPos, General_UniqueID)==ID)
                 {
                     StreamKind_Last=(stream_t)StreamKind;
                     StreamPos_Last=StreamPos;
@@ -3389,8 +3489,8 @@ void File_Mk::CodecID_Manage()
     else if (Format==__T("FFV1"))
     {
         Stream[TrackNumber].Parser=new File_Ffv1;
-        ((File_Ffv1*)Stream[TrackNumber].Parser)->Width=Retrieve(Stream_Video, StreamPos_Last, Video_Width).To_int64u();
-        ((File_Ffv1*)Stream[TrackNumber].Parser)->Height=Retrieve(Stream_Video, StreamPos_Last, Video_Height).To_int64u();
+        ((File_Ffv1*)Stream[TrackNumber].Parser)->Width=Retrieve(Stream_Video, StreamPos_Last, Video_Width).To_int32u();
+        ((File_Ffv1*)Stream[TrackNumber].Parser)->Height=Retrieve(Stream_Video, StreamPos_Last, Video_Height).To_int32u();
     }
     #endif
     #if defined(MEDIAINFO_HUFFYUV_YES)
@@ -3589,4 +3689,6 @@ void File_Mk::CodecPrivate_Manage()
 } //NameSpace
 
 #endif //MEDIAINFO_MK_YES
+
+
 
