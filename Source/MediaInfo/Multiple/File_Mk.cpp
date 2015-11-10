@@ -264,7 +264,7 @@ void File_Mk::Streams_Finish()
 								else { CountParts=-1; break; }
 								Front++;
 							}
-							if (CountParts == 4)
+							if (CountParts == 4 && Front == TagValue.end())
 							{
 								int64u Hours = Parts[0].To_int64u(10);
 								int64u Minutes = Parts[1].To_int64u(10);
@@ -315,11 +315,11 @@ void File_Mk::Streams_Finish()
                 Temp->second.DisplayAspectRatio=((float32)16)/9;
             if (Temp->second.DisplayAspectRatio>=1.333 && Temp->second.DisplayAspectRatio<=1.334)
                 Temp->second.DisplayAspectRatio=((float32)4)/3;
-            Fill(Stream_Video, Temp->second.StreamPos, Video_DisplayAspectRatio, Temp->second.DisplayAspectRatio, 3, true);
-            int64u Width=Retrieve(Stream_Video, Temp->second.StreamPos, Video_Width).To_int64u();
-            int64u Height=Retrieve(Stream_Video, Temp->second.StreamPos, Video_Height).To_int64u();
+            Fill(Stream_Video, StreamPos_Last, Video_DisplayAspectRatio, Temp->second.DisplayAspectRatio, 3, true);
+            int64u Width=Retrieve(Stream_Video, StreamPos_Last, Video_Width).To_int64u();
+            int64u Height=Retrieve(Stream_Video, StreamPos_Last, Video_Height).To_int64u();
             if (Width)
-                Fill(Stream_Video, Temp->second.StreamPos, Video_PixelAspectRatio, Temp->second.DisplayAspectRatio*Height/Width, 3, true);
+                Fill(Stream_Video, StreamPos_Last, Video_PixelAspectRatio, Temp->second.DisplayAspectRatio*Height/Width, 3, true);
         }
 
         if (Temp->second.Parser)
@@ -435,12 +435,12 @@ void File_Mk::Streams_Finish()
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
             }
 
-            Ztring Codec_Temp=Retrieve(StreamKind_Last, Temp->second.StreamPos, Fill_Parameter(StreamKind_Last, Generic_Codec)); //We want to keep the 4CC;
+            Ztring Codec_Temp=Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Codec)); //We want to keep the 4CC;
   	    //if (Duration_Temp.empty()) Duration_Temp=Retrieve(StreamKind_Last, Temp->second.StreamPos, Fill_Parameter(StreamKind_Last, Generic_Duration)); //Duration from stream is sometimes false
 	    //else Duration_Temp.clear();
 
             Finish(Temp->second.Parser);
-            Merge(*Temp->second.Parser, Temp->second.StreamKind, 0, Temp->second.StreamPos);
+            Merge(*Temp->second.Parser, StreamKind_Last, 0, StreamPos_Last);
             //if (!Duration_Temp.empty()) Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration_Temp, true);
             if (Temp->second.StreamKind==Stream_Video && !Codec_Temp.empty())
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Codec), Codec_Temp, true);
@@ -472,12 +472,12 @@ void File_Mk::Streams_Finish()
             }
         }
 
-        if (Temp->second.FrameRate!=0 && Retrieve(Stream_Video, Temp->second.StreamPos, Video_FrameRate).empty())
-            Fill(Stream_Video, Temp->second.StreamPos, Video_FrameRate, Temp->second.FrameRate, 3);
+        if (Temp->second.FrameRate!=0 && Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).empty())
+            Fill(Stream_Video, StreamPos_Last, Video_FrameRate, Temp->second.FrameRate, 3);
 
         //Flags
-        Fill(Temp->second.StreamKind, Temp->second.StreamPos, "Default", Temp->second.Default?"Yes":"No");
-        Fill(Temp->second.StreamKind, Temp->second.StreamPos, "Forced", Temp->second.Forced?"Yes":"No");
+        Fill(StreamKind_Last, StreamPos_Last, "Default", Temp->second.Default?"Yes":"No");
+        Fill(StreamKind_Last, StreamPos_Last, "Forced", Temp->second.Forced?"Yes":"No");
     }
 
     //Chapters
