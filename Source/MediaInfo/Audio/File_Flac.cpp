@@ -186,7 +186,7 @@ void File_Flac::STREAMINFO()
         Fill(Stream_Audio, 0, Audio_Channel_s_, Channels+1);
 		if (Retrieve(Stream_Audio, 0, Audio_ChannelPositions).empty() && Retrieve(Stream_Audio, 0, Audio_ChannelPositions_String2).empty())
 		{
-			int32u t;
+			int32u t = 0;
 			if (Channels==0) t=4;
 			else if (Channels==1) t=3;
 			else if (Channels==2) t=7;
@@ -195,8 +195,10 @@ void File_Flac::STREAMINFO()
 			else if (Channels==5) t=1551;
 			else if (Channels==6) t=1807;
 			else if (Channels==7) t=1599;
-            Fill(Stream_Audio, 0, Audio_ChannelPositions, ExtensibleWave_ChannelMask(t));
-            Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ExtensibleWave_ChannelMask2(t));
+			if (t) {
+				Fill(Stream_Audio, 0, Audio_ChannelPositions, ExtensibleWave_ChannelMask(t));
+				Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ExtensibleWave_ChannelMask2(t));
+			}
 		}
         Fill(Stream_Audio, 0, Audio_BitDepth, BitPerSample+1);
         if (!IsSub)
