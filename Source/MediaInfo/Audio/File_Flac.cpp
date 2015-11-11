@@ -140,6 +140,24 @@ void File_Flac::Data_Parse()
         if (!IsSub)
             Fill(Stream_Audio, 0, Audio_StreamSize, File_Size-(File_Offset+Buffer_Offset+Element_Size));
 
+	if (Retrieve(Stream_Audio, 0, Audio_ChannelPositions).empty() && Retrieve(Stream_Audio, 0, Audio_ChannelPositions_String2).empty())
+	{
+		int32u t = 0;
+		int32s c = Retrieve(Stream_Audio, 0, Audio_Channel_s_).To_int32s();
+		if (c==1) t=4;
+		else if (c==2) t=3;
+		else if (c==3) t=7;
+		else if (c==4) t=1539;
+		else if (c==5) t=1543;
+		else if (c==6) t=1551;
+		else if (c==7) t=1807;
+		else if (c==8) t=1599;
+		if (t) {
+			Fill(Stream_Audio, 0, Audio_ChannelPositions, ExtensibleWave_ChannelMask(t));
+			Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ExtensibleWave_ChannelMask2(t));
+		}
+	}
+
         //No more need data
         File__Tags_Helper::Finish("Flac");
     }
@@ -184,22 +202,6 @@ void File_Flac::STREAMINFO()
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
         Fill(Stream_Audio, 0, Audio_SamplingRate, SampleRate);
         Fill(Stream_Audio, 0, Audio_Channel_s_, Channels+1);
-		if (Retrieve(Stream_Audio, 0, Audio_ChannelPositions).empty() && Retrieve(Stream_Audio, 0, Audio_ChannelPositions_String2).empty())
-		{
-			int32u t = 0;
-			if (Channels==0) t=4;
-			else if (Channels==1) t=3;
-			else if (Channels==2) t=7;
-			else if (Channels==3) t=1539;
-			else if (Channels==4) t=1543;
-			else if (Channels==5) t=1551;
-			else if (Channels==6) t=1807;
-			else if (Channels==7) t=1599;
-			if (t) {
-				Fill(Stream_Audio, 0, Audio_ChannelPositions, ExtensibleWave_ChannelMask(t));
-				Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ExtensibleWave_ChannelMask2(t));
-			}
-		}
         Fill(Stream_Audio, 0, Audio_BitDepth, BitPerSample+1);
         if (!IsSub)
             Fill(Stream_Audio, 0, Audio_Duration, Samples*1000/SampleRate);
