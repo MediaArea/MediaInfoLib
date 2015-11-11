@@ -232,7 +232,7 @@ void File_Mk::Streams_Finish()
 		{
 			if ((Back == TagsList.end()) || (*Back == ' ') || (*Back == '\0'))
 			{
-				if (TempTag.size());
+				if (TempTag.size())
 				{
 					Ztring TagValue = Retrieve(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str());
 					if (TagValue.size())
