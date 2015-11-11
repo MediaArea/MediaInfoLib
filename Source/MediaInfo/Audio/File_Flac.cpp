@@ -227,6 +227,16 @@ void File_Flac::VORBIS_COMMENT()
         Open_Buffer_Init(&VorbisCom);
         Open_Buffer_Continue(&VorbisCom);
         File__Analyze::Finish(&VorbisCom);
+
+        //Specific case: bit depth
+        if (!VorbisCom.Retrieve(Stream_Audio, 0, Audio_BitDepth).empty() && VorbisCom.Retrieve(Stream_Audio, 0, Audio_BitDepth).To_int64u()<Retrieve(Stream_Audio, 0, Audio_BitDepth).To_int64u())
+        {
+            //Bit depth information from tags is the real value, the one from Flac is the count of bits stored
+            Fill(Stream_Audio, 0, Audio_BitDepth_Stored, Retrieve(Stream_Audio, 0, Audio_BitDepth));
+            Fill(Stream_Audio, 0, Audio_BitDepth, VorbisCom.Retrieve(Stream_Audio, 0, Audio_BitDepth), true);
+            VorbisCom.Clear(Stream_Audio, 0, Audio_BitDepth);
+        }
+
         Merge(VorbisCom, Stream_General,  0, 0);
         Merge(VorbisCom, Stream_Audio,    0, 0);
         Merge(VorbisCom, Stream_Menu,     0, 0);
