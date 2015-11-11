@@ -2,6 +2,10 @@ I changed some elements in the interface.
 No break in binary compatibily (no crash), but some details.
 
 
+0.7.79 --> 0.7.80
+-----------------
+- Visual Basic binding: StreamKind.Visual changed to StreamKind.Video for more coherency with other bindings (StreamKind.Visual is still available but it is deprecated)
+
 0.7.73 --> 0.7.74
 -----------------
 - EBUCore: Source/Material moved from timecodeStart to timecodeTrack

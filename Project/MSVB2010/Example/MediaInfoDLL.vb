@@ -18,7 +18,8 @@ Imports System.Runtime.InteropServices
 
 Public Enum StreamKind As UInteger
     General
-    Visual
+    Video
+    Visual = Video 'Deprecated
     Audio
     Text
     Chapters
