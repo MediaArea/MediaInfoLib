@@ -290,8 +290,8 @@ void File_VorbisCom::Data_Parse()
                     else
                         break;
                 }
-                Fill(Stream_Audio, 0, Audio_ChannelPositions, ExtensibleWave_ChannelMask(ValueI));
-                Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ExtensibleWave_ChannelMask2(ValueI));
+                Fill(Stream_Audio, 0, Audio_ChannelPositions, ExtensibleWave_ChannelMask(ValueI), true);
+                Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ExtensibleWave_ChannelMask2(ValueI), true);
             }
         }
         else if (Key==__T("YEAR"))                   {if (Value!=Retrieve(StreamKind_Common,   0, "Recorded_Date")) Fill(StreamKind_Common,   0, "Recorded_Date", Value);}
