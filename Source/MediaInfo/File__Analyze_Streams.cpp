@@ -1185,6 +1185,7 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
     Source_Temp=Retrieve(StreamKind, StreamPos_To, "Source");
     Source_Kind_Temp=Retrieve(StreamKind, StreamPos_To, "Source_Kind");
     Source_Info_Temp=Retrieve(StreamKind, StreamPos_To, "Source_Info");
+    Ztring BitRate_Temp=Retrieve(StreamKind, StreamPos_To, "BitRate");
 
     //Merging
     size_t Count=0;
@@ -1327,6 +1328,13 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         Fill(StreamKind, StreamPos_To, "Source_Kind", Source_Info_Temp, true);
         Fill(StreamKind, StreamPos_To, "Source_Original_Info", Retrieve(StreamKind, StreamPos_To, "Source_Info"), true);
         Fill(StreamKind, StreamPos_To, "Source_Info", Source_Info_Temp, true);
+    }
+    if (!BitRate_Temp.empty() && Retrieve(StreamKind, StreamPos_To, "BitRate").rfind(__T("Unknown"), 0) == 0)
+    {
+        Ztring Temp=Retrieve(StreamKind, StreamPos_To, "BitRate");
+        Temp.erase(0, 7);
+        Temp.insert(0, BitRate_Temp);
+        Fill(StreamKind, StreamPos_To, "BitRate", Temp, true);
     }
 
     Fill(StreamKind, StreamPos_To, (size_t)General_Count, Count_Get(StreamKind, StreamPos_To), 10, true);
