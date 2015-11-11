@@ -294,6 +294,8 @@ void File_VorbisCom::Data_Parse()
                 Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ExtensibleWave_ChannelMask2(ValueI));
             }
         }
+        else if (Key==__T("VALID_BITS"))             { Fill(Stream_Audio, 0, "Valid bits", Value); }
+        else if (Key==__T("HDCD"))                   { if (Value != __T("0")) { Fill(Stream_Audio, 0, "High Definition Compatible Digital", "Yes"); } }
         else if (Key==__T("YEAR"))                   {if (Value!=Retrieve(StreamKind_Common,   0, "Recorded_Date")) Fill(StreamKind_Common,   0, "Recorded_Date", Value);}
         else if (Key.find(__T("COVERART"))==0)
         {
