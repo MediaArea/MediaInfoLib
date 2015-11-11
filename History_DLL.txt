@@ -8,6 +8,10 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
+Version 0.7.80
+--------------
++ Matroska: support of MKVMerge statistics tags (duration frame count, stream size, bit rate) per track
+
 Version 0.7.79, 2015-11-02
 --------------
 + CLI/DLL only, XML: new option --Output=MIXML, with XML v2.0beta1 status, not for production, see https://github.com/MediaArea/MediaAreaXml for more details
