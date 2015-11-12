@@ -207,11 +207,34 @@ void File_Mk::Streams_Finish()
 {
     if (Duration!=0 && TimecodeScale!=0)
         Fill(Stream_General, 0, General_Duration, Duration*int64u_float64(TimecodeScale)/1000000.0, 0);
+
+    //Tags (General)
+    for (tags::iterator Item=Segment_Tags_Tag_Items.begin(); Item!=Segment_Tags_Tag_Items.end(); ++Item)
+        if (!Item->first || Item->first == (int64u)-1)
+        {
+            for (tagspertrack::iterator Tag=Item->second.begin(); Tag!=Item->second.end(); ++Tag)
+                if ((Tag->first!=__T("Encoded_Library") || Retrieve(StreamKind_Last, StreamPos_Last, "Encoded_Library").empty()) // Prioritize Info block over tags
+                 && (Tag->first!=__T("Encoded_Date") || Retrieve(StreamKind_Last, StreamPos_Last, "Encoded_Date").empty()))
+                    Fill(Stream_General, 0, Tag->first.To_UTF8().c_str(), Tag->second);
+        }
+
     for (std::map<int64u, stream>::iterator Temp=Stream.begin(); Temp!=Stream.end(); ++Temp)
     {
         StreamKind_Last=Temp->second.StreamKind;
         StreamPos_Last=Temp->second.StreamPos;
 
+        //Tags (per track)
+        if (Temp->second.TrackUID && Temp->second.TrackUID!=(int64u)-1)
+        {
+            tags::iterator Item=Segment_Tags_Tag_Items.find(Temp->second.TrackUID);
+            if (Item != Segment_Tags_Tag_Items.end())
+            {
+                for (tagspertrack::iterator Tag=Item->second.begin(); Tag!=Item->second.end(); ++Tag)
+                    if ((Tag->first!=__T("Language") || Retrieve(StreamKind_Last, StreamPos_Last, "Language").empty())) // Prioritize Tracks block over tags
+                        Fill(StreamKind_Last, StreamPos_Last, Tag->first.To_UTF8().c_str(), Tag->second);
+            }
+        }
+    
         //Tags
         //Ztring Duration_Temp;
         bool Tags_Verified=false; 
@@ -2195,7 +2218,20 @@ void File_Mk::Segment_Tags_Tag()
 {
     Element_Name("Tag");
 
-    Segment_Tag_TrackUID=(int64u)-1;
+    //Previous tags
+    tags::iterator Items0 = Segment_Tags_Tag_Items.find((int64u)-1);
+    if (Items0 != Segment_Tags_Tag_Items.end())
+    {
+        tagspertrack &Items = Segment_Tags_Tag_Items[0]; // Creates it if not yet present, else take the previous one
+            
+        //Change the key of the current tag
+        for (tagspertrack::iterator Item=Items0->second.begin(); Item!=Items0->second.end(); ++Item)
+            Items[Item->first] = Item->second;
+        Segment_Tags_Tag_Items.erase(Items0);
+    }
+
+    //Init
+    Segment_Tags_Tag_Targets_TrackUID_Value=0; // Default is all tracks
 }
 
 //---------------------------------------------------------------------------
@@ -2281,21 +2317,7 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagString()
             TagName+=__T('/');
     }
 
-    StreamKind_Last=Stream_General;
-    StreamPos_Last=0;
-    if (Segment_Tag_TrackUID!=(int64u)-1 && Segment_Tag_TrackUID!=0)//0: Specs say this is for all tracks, but I prefer to wait for a sample in order to see how it is used in the reality
-    {
-        Ztring ID=Ztring::ToZtring(Segment_Tag_TrackUID);
-        for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
-            for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
-                if (Retrieve((stream_t)StreamKind, StreamPos, General_UniqueID)==ID)
-                {
-                    StreamKind_Last=(stream_t)StreamKind;
-                    StreamPos_Last=StreamPos;
-                }
-    }
-
-    Fill(StreamKind_Last, StreamPos_Last, TagName.To_Local().c_str(), TagString, true);
+    Segment_Tags_Tag_Items[Segment_Tags_Tag_Targets_TrackUID_Value][TagName]=TagString;
 }
 
 //---------------------------------------------------------------------------
@@ -2340,7 +2362,20 @@ void File_Mk::Segment_Tags_Tag_Targets_TrackUID()
     Element_Name("TrackUID");
 
     //Parsing
-    Segment_Tag_TrackUID=UInteger_Get();
+    Segment_Tags_Tag_Targets_TrackUID_Value=UInteger_Get();
+
+    FILLING_BEGIN();
+        tags::iterator Items0 = Segment_Tags_Tag_Items.find((int64u)-1);
+        if (Items0 != Segment_Tags_Tag_Items.end())
+        {
+            tagspertrack &Items = Segment_Tags_Tag_Items[Segment_Tags_Tag_Targets_TrackUID_Value]; // Creates it if not yet present, else take the previous one
+            
+            //Change the key of the current tag
+            for (tagspertrack::iterator Item=Items0->second.begin(); Item!=Items0->second.end(); ++Item)
+                Items[Item->first] = Item->second;
+            Segment_Tags_Tag_Items.erase(Items0);
+        }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -2965,6 +3000,7 @@ void File_Mk::Segment_Tracks_TrackEntry_TrackUID()
 
     //Filling
     FILLING_BEGIN();
+        Stream[TrackNumber].TrackUID=UInteger;
         Fill(StreamKind_Last, StreamPos_Last, General_UniqueID, UInteger);
     FILLING_END();
 }
