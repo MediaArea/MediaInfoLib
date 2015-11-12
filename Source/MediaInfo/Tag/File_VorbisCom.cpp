@@ -294,7 +294,15 @@ void File_VorbisCom::Data_Parse()
                 Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ExtensibleWave_ChannelMask2(ValueI));
             }
         }
-        else if (Key==__T("VALID_BITS"))             { if (Value.To_int64u()) Fill(Stream_Audio, 0, Audio_BitDepth, Value); }
+        else if (Key==__T("VALID_BITS"))
+        {
+            if (Value.To_int64u())
+            {
+                // Not related to bit depth, only a detected value, see http://forum.doom9.org/showthread.php?t=125966&page=680 // Fill(Stream_Audio, 0, Audio_BitDepth, Value);
+                Fill(Stream_Audio, 0, "BitDepth_Detected", "8");
+                (*Stream_More)[Stream_Audio][0](Ztring().From_Local("BitDepth_Detected"), Info_Options)=__T("N NT");
+            }
+        }
         else if (Key==__T("HDCD"))                   { if (Value != __T("0")) { Fill(Stream_Audio, 0, "HDCD", "Yes"); } }
         else if (Key==__T("YEAR"))                   {if (Value!=Retrieve(StreamKind_Common,   0, "Recorded_Date")) Fill(StreamKind_Common,   0, "Recorded_Date", Value);}
         else if (Key.find(__T("COVERART"))==0)
