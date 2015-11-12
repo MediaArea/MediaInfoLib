@@ -1329,7 +1329,7 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         Fill(StreamKind, StreamPos_To, "Source_Original_Info", Retrieve(StreamKind, StreamPos_To, "Source_Info"), true);
         Fill(StreamKind, StreamPos_To, "Source_Info", Source_Info_Temp, true);
     }
-    if (!BitRate_Temp.empty() && Retrieve(StreamKind, StreamPos_To, "BitRate").rfind(__T("Unknown"), 0) == 0)
+    if (!BitRate_Temp.empty() && BitRate_Temp.find(__T(" / ")) == string::npos && Retrieve(StreamKind, StreamPos_To, "BitRate").rfind(__T("Unknown"), 0) == 0)
     {
         Ztring Temp=Retrieve(StreamKind, StreamPos_To, "BitRate");
         Temp.erase(0, 7);
