@@ -160,6 +160,15 @@ void File_DtvccTransport::Streams_Finish()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+void File_DtvccTransport::Read_Buffer_Init()
+{
+    //Global information
+    #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
+    Config->File_DtvccTransport_Stream_IsPresent=true;
+    #endif //defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
+}
+
+//---------------------------------------------------------------------------
 void File_DtvccTransport::Read_Buffer_Unsynched()
 {
     //Parsing

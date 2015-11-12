@@ -13,6 +13,7 @@ Version 0.7.80
 + Matroska: support of MKVMerge statistics tags (duration frame count, stream size, bit rate) per track, thanks to ndjamena
 + FLAC: Channel positions, thanks to ndjamena
 + FLAC: difference between real Bit depth (quantization) and stored bit depth
++ MPEG-TS: if DTVCC transport stream is present and no DTVCC service descriptor, scan also in the middle of the file in order to detect more caption services
 
 Version 0.7.79, 2015-11-02
 --------------
