@@ -226,7 +226,9 @@ void File_Mk::Streams_Finish()
             }
             else
             {
-                Fill(StreamKind_Last, StreamPos_Last, "Statistics Tags Issue", Retrieve(Stream_General, 0, "Encoded_Application")+__T(' ')+Retrieve(Stream_General, 0, "Encoded_Date"));
+                Ztring Encoded_Date=Retrieve(Stream_General, 0, "Encoded_Date");
+                Encoded_Date.FindAndReplace(__T("UTC "), Ztring());
+                Fill(StreamKind_Last, StreamPos_Last, "Statistics Tags Issue", Retrieve(Stream_General, 0, "Encoded_Application")+__T(' ')+Encoded_Date);
                 Fill(StreamKind_Last, StreamPos_Last, "Statistics Tags Issue", Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP")+__T(' ')+Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC"));
             }
             Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP");
