@@ -678,24 +678,6 @@ void File_Teletext::Data_Parse()
 //---------------------------------------------------------------------------
 void File_Teletext::HasChanged()
 {
-        /*
-        wstring Content;
-        stream &Stream=Streams[Stream_HasChanged];
-        const wchar_t* Row_Values[26];
-        Content+=__T("*********************************************************\r\n");
-        for (size_t PosY=0; PosY<26; ++PosY)
-        {
-            if (PosY)
-                Content+=EOL;
-            Content+=Stream.CC_Displayed_Values[PosY];
-            Row_Values[PosY]=Stream.CC_Displayed_Values[PosY].c_str();
-        }
-        Content+=__T("\r\n*********************************************************\r\n\r\n\r\n");
-
-        File F;
-        F.Open(L"E:\\a.txt", File::Access_Write_Append);
-        F.Write((const int8u*)Content.c_str(), Content.size()*2);
-        */
 }
 
 //***************************************************************************
