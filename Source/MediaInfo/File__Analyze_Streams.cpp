@@ -1557,9 +1557,9 @@ void File__Analyze::Tags()
     if (!Retrieve(Stream_General, 0, General_Title_More).empty() && Retrieve(Stream_General, 0, General_Movie_More).empty() && Retrieve(Stream_General, 0, General_Track_More).empty())
     {
         if (Count_Get(Stream_Video) && Retrieve(Stream_General, 0, General_Collection).empty())
-            Fill(Stream_General, 0, "Movie/More", Retrieve(Stream_General, 0, General_Title_More));
+            Fill(Stream_General, 0, "Movie_More", Retrieve(Stream_General, 0, General_Title_More));
         else
-            Fill(Stream_General, 0, "Track/More", Retrieve(Stream_General, 0, General_Title_More));
+            Fill(Stream_General, 0, "Track_More", Retrieve(Stream_General, 0, General_Title_More));
     }
     if (!Retrieve(Stream_General, 0, General_Title_Url).empty() && Retrieve(Stream_General, 0, General_Movie_Url).empty() && Retrieve(Stream_General, 0, General_Track_Url).empty())
     {
@@ -1574,9 +1574,9 @@ void File__Analyze::Tags()
     if (Retrieve(Stream_General, 0, General_Title).empty() && !Retrieve(Stream_General, 0, General_Track).empty())
         Fill(Stream_General, 0, "Title", Retrieve(Stream_General, 0, General_Track));
     if (Retrieve(Stream_General, 0, General_Title_More).empty() && !Retrieve(Stream_General, 0, General_Movie_More).empty())
-        Fill(Stream_General, 0, "Title/More", Retrieve(Stream_General, 0, General_Movie_More));
+        Fill(Stream_General, 0, "Title_More", Retrieve(Stream_General, 0, General_Movie_More));
     if (Retrieve(Stream_General, 0, General_Title_More).empty() && !Retrieve(Stream_General, 0, General_Track_More).empty())
-        Fill(Stream_General, 0, "Title/More", Retrieve(Stream_General, 0, General_Track_More));
+        Fill(Stream_General, 0, "Title_More", Retrieve(Stream_General, 0, General_Track_More));
     if (Retrieve(Stream_General, 0, General_Title_Url).empty() && !Retrieve(Stream_General, 0, General_Movie_Url).empty())
         Fill(Stream_General, 0, "Title/Url", Retrieve(Stream_General, 0, General_Movie_Url));
     if (Retrieve(Stream_General, 0, General_Title_Url).empty() && !Retrieve(Stream_General, 0, General_Track_Url).empty())

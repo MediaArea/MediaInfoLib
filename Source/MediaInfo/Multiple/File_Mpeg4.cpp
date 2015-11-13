@@ -1940,7 +1940,7 @@ File_Mpeg4::method File_Mpeg4::Metadata_Get(std::string &Parameter, int64u Meta)
         case Elements::moov_meta___cmt : Parameter="Comment"; Method=Method_String; break;
         case Elements::moov_meta___cpy : Parameter="Copyright"; Method=Method_String; break;
         case Elements::moov_meta___day : Parameter="Recorded_Date"; Method=Method_String; break;
-        case Elements::moov_meta___des : Parameter="Title/More"; Method=Method_String; break;
+        case Elements::moov_meta___des : Parameter="Title_More"; Method=Method_String; break;
         case Elements::moov_meta___dir : Parameter="Director"; Method=Method_String; break;
         case Elements::moov_meta___dis : Parameter="TermsOfUse"; Method=Method_String; break;
         case Elements::moov_meta___edl : Parameter="Tagged_Date"; Method=Method_String; break;
@@ -1949,7 +1949,7 @@ File_Mpeg4::method File_Mpeg4::Metadata_Get(std::string &Parameter, int64u Meta)
         case Elements::moov_meta___gen : Parameter="Genre"; Method=Method_String; break;
         case Elements::moov_meta___grp : Parameter="Grouping"; Method=Method_String; break;
         case Elements::moov_meta___hos : Parameter="HostComputer"; Method=Method_String; break;
-        case Elements::moov_meta___inf : Parameter="Title/More"; Method=Method_String; break;
+        case Elements::moov_meta___inf : Parameter="Title_More"; Method=Method_String; break;
         case Elements::moov_meta___key : Parameter="Keywords"; Method=Method_String; break;
         case Elements::moov_meta___lyr : Parameter="Lyrics"; Method=Method_String; break;
         case Elements::moov_meta___mak : Parameter="Make"; Method=Method_String; break;
@@ -1982,7 +1982,7 @@ File_Mpeg4::method File_Mpeg4::Metadata_Get(std::string &Parameter, int64u Meta)
         case Elements::moov_meta__cprt : Parameter="Copyright"; Method=Method_String2; break;
         case Elements::moov_meta__desc : Parameter="Description"; Method=Method_String; break;
         case Elements::moov_meta__disk : Parameter="Part"; Method=Method_Binary; break;
-        case Elements::moov_meta__dscp : Parameter="Title/More"; Method=Method_String2; break;
+        case Elements::moov_meta__dscp : Parameter="Title_More"; Method=Method_String2; break;
         case Elements::moov_meta__egid : Parameter="EpisodeGlobalUniqueID"; Method=Method_Binary; break;
         case Elements::moov_meta__flvr : Parameter="Flavour"; Method=Method_Binary; break;
         case Elements::moov_meta__gnre : Parameter="Genre"; Method=Method_String2; break;

@@ -270,7 +270,7 @@ void File_VorbisCom::Data_Parse()
         else if (Key==__T("TRACK_COMMENT"))          Fill(StreamKind_Multiple, 0, "Comment", Value);
         else if (Key==__T("TRACKNUMBER"))            Fill(StreamKind_Multiple, 0, "Track/Position", Value);
         else if (Key==__T("TRACKTOTAL"))             Fill(StreamKind_Multiple, 0, "Track/Position_Total", Value);
-        else if (Key==__T("VERSION"))                Fill(StreamKind_Common,   0, "Track/More", Value);
+        else if (Key==__T("VERSION"))                Fill(StreamKind_Common,   0, "Track_More", Value);
         else if (Key==__T("BPM"))                    Fill(StreamKind_Common,   0, "BPM", Value);
         else if (Key==__T("WAVEFORMATEXTENSIBLE_CHANNEL_MASK"))
         {

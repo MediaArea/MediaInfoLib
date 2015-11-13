@@ -141,7 +141,7 @@ Encryption_Mode;;;N YTY;;;;;
 Encryption_Padding;;;N YTY;;;;;
 Encryption_InitializationVector;;;N YTY;;;;;
 Title;;;N NTY;;;(Generic)Title of file;;Title
-Title/More;;;N NTY;;;(Generic)More info about the title of file;;Title
+Title_More;;;N NTY;;;(Generic)More info about the title of file;;Title
 Title/Url;;;N NT;;;(Generic)Url;;Title
 Domain;;;Y YT;;;Univers movies belong to, e.g. Starwars, Stargate, Buffy, Dragonballs;;Title
 Collection;;;Y YT;;;Name of the series, e.g. Starwars movies, Stargate SG-1, Stargate Atlantis, Buffy, Angel;;Title
@@ -149,23 +149,23 @@ Season;;;Y YT;;;Name of the season, e.g. Strawars first Trilogy, Season 1;;Title
 Season_Position;;;Y YI;;;Number of the Season;;Title
 Season_Position_Total;;;Y YI;;;Place of the season e.g. 2 of 7;;Title
 Movie;;;Y YT;;;Name of the movie. Eg : Starwars, a new hope;;Title
-Movie/More;;;Y YT;;;More infos about the movie;;Title
+Movie_More;;;Y YT;;;More infos about the movie;;Title
 Movie/Country;;;Y YT;;;Country, where the movie was procuced;;Title
 Movie/Url;;;Y YT;;;Homepage for the movie;;Title
 Album;;;Y YT;;;Name of an audio-album. Eg : The joshua tree;;Title
-Album/More;;;Y YT;;;More infos about the album;;Title
+Album_More;;;Y YT;;;More infos about the album;;Title
 Album/Sort;;;Y YT;;;;;Title
 Album/Performer;;;Y YT;;;Album performer/artist of this file;;Entity
 Album/Performer/Sort;;;Y YT;;;;;Entity
 Album/Performer/Url;;;Y YT;;;Homepage of the album performer/artist;;Entity
 Comic;;;Y YT;;;Name of the comic.;;Title
-Comic/More;;;Y YT;;;;;Title
+Comic_More;;;Y YT;;;;;Title
 Comic/Position_Total;;;Y YI;;;;;Title
 Part;;;Y YT;;;Name of the part. e.g. CD1, CD2;;Title
 Part/Position;;;Y YI;;;Number of the part;;Title
 Part/Position_Total;;;Y YI;;;Place of the part e.g. 2 of 3;;Title
 Track;;;Y YT;;;Name of the track. e.g. track1, track 2;;Title
-Track/More;;;Y YT;;;More infos about the track;;Title
+Track_More;;;Y YT;;;More infos about the track;;Title
 Track/Url;;;Y YT;;;Link to a site about this track;;Title
 Track/Sort;;;Y YT;;;;;Title
 Track/Position;;;Y YI;;;Number of this track;;Title
