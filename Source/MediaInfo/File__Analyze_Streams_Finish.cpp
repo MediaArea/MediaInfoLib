@@ -623,8 +623,16 @@ void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
 }
 
 //---------------------------------------------------------------------------
-void File__Analyze::Streams_Finish_StreamOnly_Text(size_t UNUSED(Pos))
+void File__Analyze::Streams_Finish_StreamOnly_Text(size_t Pos)
 {
+    //FrameRate from FrameCount and Duration
+    if (Retrieve(Stream_Text, Pos, Text_FrameRate).empty())
+    {
+        int64u FrameCount=Retrieve(Stream_Text, Pos, Text_FrameCount).To_int64u();
+        float64 Duration=Retrieve(Stream_Text, Pos, Text_Duration).To_float64()/1000;
+        if (FrameCount && Duration)
+           Fill(Stream_Text, Pos, Text_FrameRate, FrameCount/Duration, 3);
+    }
 }
 
 //---------------------------------------------------------------------------
