@@ -927,7 +927,7 @@ void File__Analyze::Streams_Finish_InterStreams()
     }
 
     //FrameCount if General not filled
-    if (Retrieve(Stream_General, 0, General_FrameCount).empty() && Count_Get(Stream_Video))
+    if (Retrieve(Stream_General, 0, General_FrameCount).empty() && Count_Get(Stream_Video) && Retrieve(Stream_General, 0, "IsTruncated").empty())
     {
         Ztring FrameCount=Retrieve(Stream_Video, 0, Video_FrameCount);
         bool IsOk=true;

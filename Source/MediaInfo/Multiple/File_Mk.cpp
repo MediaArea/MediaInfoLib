@@ -595,6 +595,10 @@ void File_Mk::Header_Parse()
     //Filling
     Header_Fill_Code(Name, Ztring().From_Number(Name, 16));
     Header_Fill_Size(Element_Offset+Size);
+
+    //Incoherencies
+    if (Element_Level<=2 && File_Offset+Buffer_Offset+Element_Offset+Size>File_Size)
+        Fill(Stream_General, 0, "IsTruncated", "Yes");
 }
 
 //---------------------------------------------------------------------------
