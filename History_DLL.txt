@@ -15,7 +15,7 @@ Version 0.7.80
 + FLAC: difference between real Bit depth (quantization) and stored bit depth
 + MPEG-TS: if DTVCC transport stream is present and no DTVCC service descriptor, scan also in the middle of the file in order to detect more caption services
 + Subtitle frame rate computing if frame count and duration are available
-+ Mattroska and MP4/MOV: detection of truncated files
++ Matroska and MP4/MOV: detection of truncated files
 x SDP/Teletext: some pages were sometimes (when present in 2 different SDP lines) displayed several times
 
 Version 0.7.79, 2015-11-02
