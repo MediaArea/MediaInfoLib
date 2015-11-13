@@ -304,6 +304,7 @@ Duration_End;End time
 Duration_Start;Start time
 Edit;Edit
 EditedBy;Edited by
+ElementCount;Count of elements
 EMail;E-Mail
 Encoded_Application;Writing application
 Encoded_Date;Encoded date

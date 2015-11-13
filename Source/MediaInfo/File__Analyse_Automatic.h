@@ -1152,6 +1152,7 @@ enum text
     Text_FrameRate_Original,
     Text_FrameRate_Original_String,
     Text_FrameCount,
+    Text_ElementCount,
     Text_Source_FrameCount,
     Text_ColorSpace,
     Text_ChromaSubsampling,

@@ -319,7 +319,15 @@ void File_Mk::Streams_Finish()
                             else if (TempTag==__T("NUMBER_OF_FRAMES"))
                             {
                                 if (Tags_Verified)
+                                {
                                     Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), TagValue, true);
+                                    if (StreamKind_Last==Stream_Text)
+                                    {
+                                        const Ztring &Format=Retrieve(Stream_Text, StreamPos_Last, "Format");
+                                        if (Format.find(__T("608"))==string::npos && Format.find(__T("708"))==string::npos)
+                                            Fill(Stream_Text, StreamPos_Last, Text_ElementCount, TagValue, true); // if not 608 or 708, this is used to be also the count of elements
+                                    }
+                                }
                                 else
                                     Fill(StreamKind_Last, StreamPos_Last, "FromStats_FrameCount", TagValue.To_Local().c_str());
                             }
