@@ -2032,6 +2032,10 @@ void File__Analyze::Value_Value123(stream_t StreamKind, size_t StreamPos, size_t
     if (Retrieve(StreamKind, StreamPos, Parameter, Info_Measure).empty())
         return;
 
+    //Special cases
+    if (StreamKind==Stream_Audio && Parameter==Audio_BitDepth_Detected && Retrieve(Stream_Audio, StreamPos, Audio_BitDepth)==Retrieve(Stream_Audio, StreamPos, Audio_BitDepth_Detected))
+        return;
+
     //Clearing old data
     Clear(StreamKind, StreamPos, Parameter+1);
 
