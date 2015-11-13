@@ -300,7 +300,7 @@ void File_VorbisCom::Data_Parse()
             {
                 // Not related to bit depth, only a detected value, see http://forum.doom9.org/showthread.php?t=125966&page=680 // Fill(Stream_Audio, 0, Audio_BitDepth, Value);
                 Fill(Stream_Audio, 0, "BitDepth_Detected", Value);
-                (*Stream_More)[Stream_Audio][0](Ztring().From_Local("BitDepth_Detected"), Info_Options)=__T("N NT");
+                //(*Stream_More)[Stream_Audio][0](Ztring().From_Local("BitDepth_Detected"), Info_Options)=__T("N NT");
             }
         }
         else if (Key==__T("HDCD"))                   { if (Value != __T("0")) { Fill(Stream_Audio, 0, "HDCD", "Yes"); } }
