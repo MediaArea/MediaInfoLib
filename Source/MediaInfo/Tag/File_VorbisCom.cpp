@@ -299,7 +299,7 @@ void File_VorbisCom::Data_Parse()
             if (Value.To_int64u())
             {
                 // Not related to bit depth, only a detected value, see http://forum.doom9.org/showthread.php?t=125966&page=680 // Fill(Stream_Audio, 0, Audio_BitDepth, Value);
-                Fill(Stream_Audio, 0, "BitDepth_Detected", "8");
+                Fill(Stream_Audio, 0, "BitDepth_Detected", Value);
                 (*Stream_More)[Stream_Audio][0](Ztring().From_Local("BitDepth_Detected"), Info_Options)=__T("N NT");
             }
         }
