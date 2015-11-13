@@ -575,7 +575,7 @@ void File_Teletext::Data_Parse()
                     case 0x00:  //English
                                 switch(byte)
                                 {
-                                    case 0x23: Uni = __T('£'); break;
+                                    case 0x23: Uni = __T('\0xA3'); break;
                                     case 0x24: Uni = __T('$'); break;
                                     case 0x40: Uni = __T('@'); break;
                                     case 0x5B: Uni = __T('\x2190'); break;
