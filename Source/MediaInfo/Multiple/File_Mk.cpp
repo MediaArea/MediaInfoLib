@@ -238,28 +238,24 @@ void File_Mk::Streams_Finish()
     
         //Tags
         //Ztring Duration_Temp;
-        bool Tags_Verified=false; 
         Ztring TagsList=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
         if (TagsList.size())
         {
-            Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
-            if (Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP")==(Retrieve(Stream_General, 0, "Encoded_Application")) &&
-                Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC")==(Retrieve(Stream_General, 0, "Encoded_Date").substr(4)))
+            bool Tags_Verified=false; 
             {
-                Tags_Verified=true;
+                Ztring Happ = Retrieve(Stream_General, 0, "Encoded_Application");
+                Ztring Hutc = Retrieve(Stream_General, 0, "Encoded_Date");
+                Ztring App = Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP");
+                Ztring Utc = Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC");
+                Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP");
+                Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC");
+                Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
+                Hutc.FindAndReplace(__T("UTC "), Ztring());
+                if (App==Happ && Utc==Hutc) Tags_Verified=true;
+                else Fill(StreamKind_Last, StreamPos_Last, "Statistics Tags Issue", App + __T(' ') + Utc + __T(" / ") + Happ + __T(' ') + Hutc);
             }
-            else
-            {
-                Ztring Encoded_Date=Retrieve(Stream_General, 0, "Encoded_Date");
-                Encoded_Date.FindAndReplace(__T("UTC "), Ztring());
-                Fill(StreamKind_Last, StreamPos_Last, "Statistics Tags Issue", Retrieve(Stream_General, 0, "Encoded_Application")+__T(' ')+Encoded_Date);
-                Fill(StreamKind_Last, StreamPos_Last, "Statistics Tags Issue", Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP")+__T(' ')+Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC"));
-            }
-            Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP");
-            Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC");
-            Ztring::iterator Back = TagsList.begin();
             Ztring TempTag;
-            for (;;)
+            for (Ztring::iterator Back = TagsList.begin();;Back++)
             {
                 if ((Back == TagsList.end()) || (*Back == ' ') || (*Back == '\0'))
                 {
@@ -269,52 +265,54 @@ void File_Mk::Streams_Finish()
                         if (TagValue.size())
                         {
                             Clear(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str());
+                            bool Set=false;
                             if (TempTag==__T("BPS"))
                             {
                                 if (Tags_Verified)
-                                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate), TagValue, true);
+                                { Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate), TagValue, true); Set=true; }
                                 else
-                                    Fill(StreamKind_Last, StreamPos_Last, "FromStats_BitRate", TagValue.To_Local().c_str());
+                                    TempTag="BitRate";
                             }
                             else if (TempTag==__T("DURATION"))
                             {
                                 if (Tags_Verified)
                                 {
-                                    Ztring::iterator Front = TagValue.begin();
                                     Ztring Parts [4];
                                     int CountParts = 0;
                                     Char *t = __T("::.");
-                                    for (;;)
+                                    Ztring::iterator Front;
+                                    for (Front = TagValue.begin();Front!=TagValue.end();Front++)
                                     {
-                                        if (Front == TagValue.end() || *Front == t[CountParts])
-                                        {
-                                            CountParts++;
-                                            if (Front==TagValue.end() || CountParts == 4)
-                                                break;
-                                        }
-                                        else if (isdigit(*Front))
+                                        if (isdigit(*Front))
                                             Parts[CountParts]+=*Front;
+                                        else if (*Front == t[CountParts])
+                                        {
+                                            if (CountParts == 3) break;
+                                            CountParts++;
+                                        }
                                         else
                                             break;
-                                        Front++;
                                     }
-                                    if (CountParts == 4 && Front == TagValue.end())
+                                    if (CountParts == 3 && (Front == TagValue.end() || !*Front))
                                     {
-                                        int64u Minutes = Parts[1].To_int64u(10);
-                                        int64u Seconds = Parts[2].To_int64u(10);
+                                        int64u Minutes = Parts[1].To_int64u();
+                                        int64u Seconds = Parts[2].To_int64u();
                                         if (Minutes < 60 && Seconds < 60)
                                         {
                                             if (Parts[3].size() > 3) Parts[3] = Parts[3].substr(0, 3);
-                                            int64u Milliseconds = Parts[3].To_int64u(10);
-                                            TagValue.From_Number((((Parts[0].To_int64u(10) * 3600) + (Minutes * 60) + Seconds) * 1000) + Milliseconds, 10);
-                                            if (TagValue.To_int64u(10) <= Retrieve(Stream_General, 0, Generic_Duration).To_int64u(10))
-                                                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), TagValue, true);
-                                            //Duration_Temp = TagValue;
+                                            int64u Milliseconds = Parts[3].To_int64u();
+                                            Ztring NewValue;
+                                            NewValue.From_Number((((((Parts[0].To_int64u() * 60) + Minutes) * 60) + Seconds) * 1000) + Milliseconds);
+                                            if (NewValue.To_int64u() <= Retrieve(Stream_General, 0, General_Duration).To_int64u())
+                                            {
+                                                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), NewValue, true);
+                                                Set=true;
+                                                //Duration_Temp = TagValue;
+                                            }
                                         }
                                     }
                                 }
-                                else
-                                    Fill(StreamKind_Last, StreamPos_Last, "FromStats_Duration", TagValue.To_Local().c_str());
+                                if (!Set) TempTag="Duration";
                             }
                             else if (TempTag==__T("NUMBER_OF_FRAMES"))
                             {
@@ -327,18 +325,19 @@ void File_Mk::Streams_Finish()
                                         if (Format.find(__T("608"))==string::npos && Format.find(__T("708"))==string::npos)
                                             Fill(Stream_Text, StreamPos_Last, Text_ElementCount, TagValue, true); // if not 608 or 708, this is used to be also the count of elements
                                     }
+                                    Set=true;
                                 }
                                 else
-                                    Fill(StreamKind_Last, StreamPos_Last, "FromStats_FrameCount", TagValue.To_Local().c_str());
+                                    TempTag="FrameCount";
                             }
                             else if (TempTag==__T("NUMBER_OF_BYTES"))
                             {
                                 if (Tags_Verified)
-                                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), TagValue, true);
+                                    { Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), TagValue, true); Set=true; }
                                 else
-                                    Fill(StreamKind_Last, StreamPos_Last, "FromStats_StreamSize", TagValue.To_Local().c_str());
+                                    TempTag="StreamSize";
                             }
-                            else
+                            if (!Set)
                             {
                                 TempTag.insert(0, __T("FromStats_"));
                                 Fill(StreamKind_Last, StreamPos_Last, TempTag.To_Local().c_str(), TagValue.To_Local().c_str());
@@ -351,7 +350,6 @@ void File_Mk::Streams_Finish()
                 }
                 else
                     TempTag+=*Back;
-                Back++;
             }
         }
 
