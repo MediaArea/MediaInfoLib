@@ -537,6 +537,22 @@ void File_Dts::Streams_Fill()
     Stream_Prepare(Stream_Audio);
     Fill(Stream_Audio, 0, Audio_Format, "DTS");
 
+    // DTS:X
+    if (Presence[presence_Extended_XLL_X])
+    {
+        Data[Profiles].push_back(__T("X"));
+
+        Data[Channels].push_back(Ztring());
+        Data[ChannelPositions].push_back(Ztring());
+        Data[ChannelPositions2].push_back(Ztring());
+        Data[ChannelLayout].push_back(Ztring());
+        Data[BitDepth].push_back(Ztring());
+        Data[SamplingRate].push_back(Ztring());
+        Data[BitRate].push_back(__T("Unknown"));
+        Data[BitRate_Mode].push_back(__T("VBR"));
+        Data[Compression_Mode].push_back(Ztring());
+    }
+
     // DTS-HD MA
     if (Presence[presence_Extended_XLL])
     {
@@ -1366,6 +1382,36 @@ void File_Dts::HD_X96k(int64u Size)
 void File_Dts::HD_XLL(int64u Size)
 {
     Element_Name("XLL (LossLess)");
+
+    // Quick and dirty search of DTS:X pattern
+    if (!Presence[presence_Extended_XLL])
+    {
+        Extension_XLL_X_No=0;
+        Extension_XLL_X_Yes=0;
+    }
+    if (!Presence[presence_Extended_XLL_X] && (!Extension_XLL_X_No || !Extension_XLL_X_Yes) && (Extension_XLL_X_No<8 || Extension_XLL_X_Yes<8)) //Limiting the parsing to a couple of frames for performance reasons and stop if there is a risk of false positive
+    {
+        bool IsX=false;
+        const int8u* cur = Buffer + Buffer_Offset + (size_t)Element_Offset;
+        const int8u* end = cur + (size_t)Size-3;
+        for (; cur<end; ++cur)
+            if (*cur == 0x02 && !*(cur + 1) && *(cur + 2) == 0x08 && *(cur + 3) == 0x50)
+            {
+                IsX=true;
+                break;
+            }
+
+        if (IsX)
+        {
+            Extension_XLL_X_Yes++;
+            if (Extension_XLL_X_Yes>=8 && !Extension_XLL_X_No)
+                Presence.set(presence_Extended_XLL_X);
+        }
+        else
+            Extension_XLL_X_No++;
+    }
+
+    // Parsing
     Skip_XX(Size,                                               "Data");
 
     FILLING_BEGIN();

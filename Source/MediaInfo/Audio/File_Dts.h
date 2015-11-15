@@ -110,8 +110,10 @@ private :
         presence_Extended_X96,
         presence_Extended_LBR,
         presence_Extended_XLL,
+        presence_Extended_XLL_X,
+        presence_Max
     };
-    std::bitset<12> Presence;
+    std::bitset<presence_Max> Presence;
     enum   data
     {
         Profiles,
@@ -131,6 +133,8 @@ private :
     int8u  Core_Core_LFF;
     int8u  Core_XCh_AMODE;
     int8u  Core_XXCh_nuNumChSetsInXXCh;
+    size_t Extension_XLL_X_No;
+    size_t Extension_XLL_X_Yes;
 
     //Helpers
     float64 BitRate_Get(bool WithHD=false);

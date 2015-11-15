@@ -20,6 +20,7 @@ Version 0.7.80
 + DTS: difference between ES Matrix and ES Discrete
 + DTS: display ES Matrix or ES Discrete even if HRA or MA is present
 + DTS: difference between DTS-HRA with 96k option and pure DTS-96/24
++ DTS: detection of DTS:X
 x SDP/Teletext: some pages were sometimes (when present in 2 different SDP lines) displayed several times
 
 Version 0.7.79, 2015-11-02
