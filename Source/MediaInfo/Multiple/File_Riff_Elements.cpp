@@ -24,6 +24,94 @@
 #include "MediaInfo/Setup.h"
 //---------------------------------------------------------------------------
 
+//***************************************************************************
+// Infos
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+#if defined(MEDIAINFO_RIFF_YES) || defined(MEDIAINFO_MK_YES)
+//---------------------------------------------------------------------------
+
+namespace MediaInfoLib
+{
+
+//---------------------------------------------------------------------------
+std::string ExtensibleWave_ChannelMask (int32u ChannelMask)
+{
+    std::string Text;
+    if ((ChannelMask&0x0007)!=0x0000)
+        Text+="Front:";
+    if (ChannelMask&0x0001)
+        Text+=" L";
+    if (ChannelMask&0x0004)
+        Text+=" C";
+    if (ChannelMask&0x0002)
+        Text+=" R";
+
+    if ((ChannelMask&0x0600)!=0x0000)
+        Text+=", Side:";
+    if (ChannelMask&0x0200)
+        Text+=" L";
+    if (ChannelMask&0x0400)
+        Text+=" R";
+
+    if ((ChannelMask&0x0130)!=0x0000)
+        Text+=", Back:";
+    if (ChannelMask&0x0010)
+        Text+=" L";
+    if (ChannelMask&0x0100)
+        Text+=" C";
+    if (ChannelMask&0x0020)
+        Text+=" R";
+
+    if ((ChannelMask&0x0008)!=0x0000)
+        Text+=", LFE";
+
+    return Text;
+}
+
+//---------------------------------------------------------------------------
+std::string ExtensibleWave_ChannelMask2 (int32u ChannelMask)
+{
+    std::string Text;
+    int8u Count=0;
+    if (ChannelMask&0x0001)
+        Count++;
+    if (ChannelMask&0x0004)
+        Count++;
+    if (ChannelMask&0x0002)
+        Count++;
+    Text+=Ztring::ToZtring(Count).To_UTF8();
+    Count=0;
+
+    if (ChannelMask&0x0200)
+        Count++;
+    if (ChannelMask&0x0400)
+        Count++;
+    Text+="/"+Ztring::ToZtring(Count).To_UTF8();
+    Count=0;
+
+    if (ChannelMask&0x0010)
+        Count++;
+    if (ChannelMask&0x0100)
+        Count++;
+    if (ChannelMask&0x0020)
+        Count++;
+    Text+="/"+Ztring::ToZtring(Count).To_UTF8();
+    Count=0;
+
+    if (ChannelMask&0x0008)
+        Text+=".1";
+
+    return Text;
+}
+
+}
+
+//---------------------------------------------------------------------------
+#endif
+//---------------------------------------------------------------------------
+
 //---------------------------------------------------------------------------
 #ifdef MEDIAINFO_RIFF_YES
 //---------------------------------------------------------------------------
@@ -112,81 +200,6 @@ using namespace std;
 
 namespace MediaInfoLib
 {
-
-//***************************************************************************
-// Infos
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-std::string ExtensibleWave_ChannelMask (int32u ChannelMask)
-{
-    std::string Text;
-    if ((ChannelMask&0x0007)!=0x0000)
-        Text+="Front:";
-    if (ChannelMask&0x0001)
-        Text+=" L";
-    if (ChannelMask&0x0004)
-        Text+=" C";
-    if (ChannelMask&0x0002)
-        Text+=" R";
-
-    if ((ChannelMask&0x0600)!=0x0000)
-        Text+=", Side:";
-    if (ChannelMask&0x0200)
-        Text+=" L";
-    if (ChannelMask&0x0400)
-        Text+=" R";
-
-    if ((ChannelMask&0x0130)!=0x0000)
-        Text+=", Back:";
-    if (ChannelMask&0x0010)
-        Text+=" L";
-    if (ChannelMask&0x0100)
-        Text+=" C";
-    if (ChannelMask&0x0020)
-        Text+=" R";
-
-    if ((ChannelMask&0x0008)!=0x0000)
-        Text+=", LFE";
-
-    return Text;
-}
-
-//---------------------------------------------------------------------------
-std::string ExtensibleWave_ChannelMask2 (int32u ChannelMask)
-{
-    std::string Text;
-    int8u Count=0;
-    if (ChannelMask&0x0001)
-        Count++;
-    if (ChannelMask&0x0004)
-        Count++;
-    if (ChannelMask&0x0002)
-        Count++;
-    Text+=Ztring::ToZtring(Count).To_UTF8();
-    Count=0;
-
-    if (ChannelMask&0x0200)
-        Count++;
-    if (ChannelMask&0x0400)
-        Count++;
-    Text+="/"+Ztring::ToZtring(Count).To_UTF8();
-    Count=0;
-
-    if (ChannelMask&0x0010)
-        Count++;
-    if (ChannelMask&0x0100)
-        Count++;
-    if (ChannelMask&0x0020)
-        Count++;
-    Text+="/"+Ztring::ToZtring(Count).To_UTF8();
-    Count=0;
-
-    if (ChannelMask&0x0008)
-        Text+=".1";
-
-    return Text;
-}
 
 //***************************************************************************
 // Const
