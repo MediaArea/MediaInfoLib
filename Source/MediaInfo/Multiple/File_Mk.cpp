@@ -241,19 +241,19 @@ void File_Mk::Streams_Finish()
         Ztring TagsList=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
         if (TagsList.size())
         {
-	        bool Tags_Verified=false; 
-            Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
+            bool Tags_Verified=false; 
             {
-                Ztring App = Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP");
-                Ztring Utc = Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC");
                 Ztring Happ = Retrieve(Stream_General, 0, "Encoded_Application");
                 Ztring Hutc = Retrieve(Stream_General, 0, "Encoded_Date");
+                Ztring App = Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP");
+                Ztring Utc = Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC");
+                Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP");
+                Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC");
+                Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
                 Hutc.FindAndReplace(__T("UTC "), Ztring());
                 if (App==Happ && Utc==Hutc) Tags_Verified=true;
                 else Fill(StreamKind_Last, StreamPos_Last, "Statistics Tags Issue", App + __T(' ') + Utc + __T(" / ") + Happ + __T(' ') + Hutc);
             }
-            Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_APP");
-            Clear(StreamKind_Last, StreamPos_Last, "_STATISTICS_WRITING_DATE_UTC");
             Ztring TempTag;
             for (Ztring::iterator Back = TagsList.begin();;Back++)
             {
