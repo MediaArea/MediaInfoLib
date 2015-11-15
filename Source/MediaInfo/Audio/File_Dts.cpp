@@ -388,8 +388,8 @@ File_Dts::File_Dts()
 void File_Dts::Streams_Fill_Extension()
 {
     bool AddCs=false;
-    bool AddLrsRrs=false;
-    bool AddX=false;
+    //bool AddLrsRrs=false;
+    //bool AddX=false;
 
     if (HD_TotalNumberChannels!=(int8u)-1)
     {
@@ -428,10 +428,10 @@ void File_Dts::Streams_Fill_Extension()
     {
         Data[Channels].push_back(Ztring());
     }
-    if (HD_SpeakerActivityMask!=(int16u)-1 && !AddX)
+    if (HD_SpeakerActivityMask!=(int16u)-1) // && !AddX)
     {
-        Data[ChannelPositions].push_back(DTS_HD_SpeakerActivityMask(HD_SpeakerActivityMask, AddCs, AddLrsRrs).c_str());
-        Data[ChannelPositions2].push_back(DTS_HD_SpeakerActivityMask2(HD_SpeakerActivityMask, AddCs, AddLrsRrs).c_str());
+        Data[ChannelPositions].push_back(DTS_HD_SpeakerActivityMask(HD_SpeakerActivityMask, AddCs).c_str()); //AddLrsRrs
+        Data[ChannelPositions2].push_back(DTS_HD_SpeakerActivityMask2(HD_SpeakerActivityMask, AddCs).c_str()); //AddLrsRrs
         Data[ChannelLayout].push_back(Ztring());
     }
     else
