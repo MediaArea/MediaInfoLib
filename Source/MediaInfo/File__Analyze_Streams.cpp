@@ -1329,11 +1329,10 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         Fill(StreamKind, StreamPos_To, "Source_Original_Info", Retrieve(StreamKind, StreamPos_To, "Source_Info"), true);
         Fill(StreamKind, StreamPos_To, "Source_Info", Source_Info_Temp, true);
     }
-    if (!BitRate_Temp.empty() && BitRate_Temp.find(__T(" / ")) == string::npos && Retrieve(StreamKind, StreamPos_To, "BitRate").rfind(__T("Unknown"), 0) == 0)
+    if (!BitRate_Temp.empty() && BitRate_Temp.find(__T(" / ")) == string::npos && Retrieve(StreamKind, StreamPos_To, "BitRate").find(__T("Unknown")) != string::npos)
     {
         Ztring Temp=Retrieve(StreamKind, StreamPos_To, "BitRate");
-        Temp.erase(0, 7);
-        Temp.insert(0, BitRate_Temp);
+        Temp.FindAndReplace(__T("Unknown"), BitRate_Temp, 0, Ztring_Recursive);
         Fill(StreamKind, StreamPos_To, "BitRate", Temp, true);
     }
 
@@ -1946,6 +1945,8 @@ void File__Analyze::Kilo_Kilo123(stream_t StreamKind, size_t StreamPos, size_t P
     ZtringList List;
     List.Separator_Set(0, __T(" / "));
     List.Write(Retrieve(StreamKind, StreamPos, Parameter));
+    ZtringList List2;
+    List2.Separator_Set(0, __T(" / "));
 
     //Per value
     for (size_t Pos=0; Pos<List.size(); Pos++)
@@ -1955,7 +1956,7 @@ void File__Analyze::Kilo_Kilo123(stream_t StreamKind, size_t StreamPos, size_t P
         //Text
         if (BitRate==0 && (List[Pos].empty() || List[Pos][0]>__T('9')))
         {
-            Fill(StreamKind, StreamPos, Parameter+1, MediaInfoLib::Config.Language_Get(List[Pos]));
+            List2.push_back(MediaInfoLib::Config.Language_Get(List[Pos]));
         }
         else
         {
@@ -1995,7 +1996,7 @@ void File__Analyze::Kilo_Kilo123(stream_t StreamKind, size_t StreamPos, size_t P
             {
                 Ztring Measure=MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Measure);
                 Measure.insert(1, __T("K"));
-                Fill(StreamKind, StreamPos, Parameter+1, MediaInfoLib::Config.Language_Get(BitRateS, Measure, true));
+                List2.push_back(MediaInfoLib::Config.Language_Get(BitRateS, Measure, true));
             }
             else
             {
@@ -2004,25 +2005,27 @@ void File__Analyze::Kilo_Kilo123(stream_t StreamKind, size_t StreamPos, size_t P
                 {
                     Ztring Measure=MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Measure);
                     Measure.insert(1, __T("G"));
-                    Fill(StreamKind, StreamPos, Parameter+1, MediaInfoLib::Config.Language_Get(Ztring::ToZtring(((float)BitRate)/1000000000, BitRate>100000000000LL?0:1), Measure, true));
+                    List2.push_back(MediaInfoLib::Config.Language_Get(Ztring::ToZtring(((float)BitRate)/1000000000, BitRate>100000000000LL?0:1), Measure, true));
                 }
                 else if (BitRate>10000000)
                 {
                     Ztring Measure=MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Measure);
                     Measure.insert(1, __T("M"));
-                    Fill(StreamKind, StreamPos, Parameter+1, MediaInfoLib::Config.Language_Get(Ztring::ToZtring(((float)BitRate)/1000000, BitRate>100000000?0:1), Measure, true));
+                    List2.push_back(MediaInfoLib::Config.Language_Get(Ztring::ToZtring(((float)BitRate)/1000000, BitRate>100000000?0:1), Measure, true));
                 }
                 else if (BitRate>10000)
                 {
                     Ztring Measure=MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Measure);
                     Measure.insert(1, __T("K"));
-                    Fill(StreamKind, StreamPos, Parameter+1, MediaInfoLib::Config.Language_Get(Ztring::ToZtring(((float)BitRate)/1000, BitRate>100000?0:1), Measure, true));
+                    List2.push_back(MediaInfoLib::Config.Language_Get(Ztring::ToZtring(((float)BitRate)/1000, BitRate>100000?0:1), Measure, true));
                 }
                 else
-                    Fill(StreamKind, StreamPos, Parameter+1, MediaInfoLib::Config.Language_Get(Ztring::ToZtring(BitRate), MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Measure), true));
+                    List2.push_back(MediaInfoLib::Config.Language_Get(Ztring::ToZtring(BitRate), MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Measure), true));
             }
         }
     }
+
+    Fill(StreamKind, StreamPos, Parameter+1, List2.Read());
 }
 
 //---------------------------------------------------------------------------
@@ -2043,14 +2046,16 @@ void File__Analyze::Value_Value123(stream_t StreamKind, size_t StreamPos, size_t
     ZtringList List;
     List.Separator_Set(0, __T(" / "));
     List.Write(Retrieve(StreamKind, StreamPos, Parameter));
+    ZtringList List2;
+    List2.Separator_Set(0, __T(" / "));
 
     //Per value
     for (size_t Pos=0; Pos<List.size(); Pos++)
     {
         //Filling
-        Fill(StreamKind, StreamPos, Parameter+1, MediaInfoLib::Config.Language_Get(List[Pos], MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Measure)));
+        List2.push_back(MediaInfoLib::Config.Language_Get(List[Pos], MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Measure)));
     }
-
+    Fill(StreamKind, StreamPos, Parameter+1, List2.Read());
 }
 
 //---------------------------------------------------------------------------
