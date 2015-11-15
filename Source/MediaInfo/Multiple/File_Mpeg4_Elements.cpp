@@ -546,8 +546,8 @@ const char* Mpegv_matrix_coefficients(int8u matrix_coefficients);
 #if defined(MEDIAINFO_DTS_YES)
     extern const char*  DTS_ChannelPositions[16];
     extern const char*  DTS_ChannelPositions2[16];
-    extern std::string DTS_HD_SpeakerActivityMask (int16u SpeakerActivityMask);
-    extern std::string DTS_HD_SpeakerActivityMask2 (int16u SpeakerActivityMask);
+    extern std::string DTS_HD_SpeakerActivityMask (int16u SpeakerActivityMask, bool AddCs=false, bool AddLrsRrs=false);
+    extern std::string DTS_HD_SpeakerActivityMask2 (int16u SpeakerActivityMask, bool AddCs=false, bool AddLrsRrs=false);
 #endif //defined(MEDIAINFO_DTS_YES)
 
 //***************************************************************************
