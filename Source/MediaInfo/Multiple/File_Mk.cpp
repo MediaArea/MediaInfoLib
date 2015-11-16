@@ -3578,14 +3578,12 @@ void File_Mk::CodecID_Manage()
     {
         Stream[TrackNumber].Parser=new File_Vc1;
         ((File_Vc1*)Stream[TrackNumber].Parser)->FrameIsAlwaysComplete=true;
-        ((File_Vc1*)Stream[TrackNumber].Parser)->Frame_Count_Valid=1;
     }
     #endif
     #if defined(MEDIAINFO_DIRAC_YES)
     else if (Format==__T("Dirac"))
     {
         Stream[TrackNumber].Parser=new File_Dirac;
-        ((File_Dirac*)Stream[TrackNumber].Parser)->Frame_Count_Valid=1;
     }
     #endif
     #if defined(MEDIAINFO_MPEGV_YES)
@@ -3626,14 +3624,12 @@ void File_Mk::CodecID_Manage()
     else if (Format==__T("AC-3") || Format==__T("E-AC-3") || Format==__T("TrueHD"))
     {
         Stream[TrackNumber].Parser=new File_Ac3;
-        ((File_Ac3*)Stream[TrackNumber].Parser)->Frame_Count_Valid=2;
     }
     #endif
     #if defined(MEDIAINFO_DTS_YES)
     else if (Format==__T("DTS"))
     {
         Stream[TrackNumber].Parser=new File_Dts;
-        ((File_Dts*)Stream[TrackNumber].Parser)->Frame_Count_Valid=2;
     }
     #endif
     #if defined(MEDIAINFO_AAC_YES)
