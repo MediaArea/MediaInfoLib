@@ -538,6 +538,8 @@ void File_Dts::Streams_Fill()
     Fill(Stream_Audio, 0, Audio_Format, "DTS");
 
     // DTS:X
+    if (Presence[presence_Extended_XLL] && Extension_XLL_X_Yes && !Extension_XLL_X_No)
+        Presence.set(presence_Extended_XLL_X);
     if (Presence[presence_Extended_XLL_X])
     {
         Data[Profiles].push_back(__T("X"));
@@ -1194,9 +1196,10 @@ void File_Dts::Core()
 
     //Filling
     FILLING_BEGIN();
-        if (Count_Get(Stream_Audio)==0 && Frame_Count>=Frame_Count_Valid)
-        {
+        if (!Status[IsAccepted] && Frame_Count>=2) //TODO: find a better way to accept stream in short files so with only few frames
             Accept("DTS");
+        if (!Status[IsFilled] && Frame_Count>=Frame_Count_Valid)
+        {
             Fill("DTS");
 
             //No more need data
