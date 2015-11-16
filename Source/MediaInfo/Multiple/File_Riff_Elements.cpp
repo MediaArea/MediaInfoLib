@@ -22,6 +22,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Setup.h"
+#include <ZenLib/Ztring.h>
 #include <string>
 using namespace std;
 using namespace ZenLib;
