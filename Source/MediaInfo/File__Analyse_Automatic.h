@@ -913,6 +913,7 @@ enum audio
     Audio_Matrix_ChannelPositions_String2,
     Audio_ChannelLayout,
     Audio_ChannelLayoutID,
+    Audio_SamplesPerFrame,
     Audio_SamplingRate,
     Audio_SamplingRate_String,
     Audio_SamplingCount,

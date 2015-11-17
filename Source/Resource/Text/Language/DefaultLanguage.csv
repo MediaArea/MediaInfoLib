@@ -185,6 +185,7 @@ AudioLoudnessStandard;Audio Loudness Standard
 AudioTrackLayout;Audio Track Layout
 Author;Author
 BarCode;BarCode
+BarCode;BarCode
 Basic;Basic
 Basic_Note;Note : for more information about this file, you must select a different view (Sheet, Tree...)
 BitDepth;Bit depth
@@ -963,6 +964,7 @@ ReplayGain_Gain;Replay gain
 ReplayGain_Peak;Replay gain peak
 Resolution;Resolution
 s;s
+SamplesPerFrame;Samples per frame
 SamplingCount;Samples count
 SamplingRate;Sampling rate
 Save;Save

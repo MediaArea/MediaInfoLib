@@ -637,6 +637,9 @@ void File_Dts::Streams_Fill()
     {
         Data[Profiles].push_back(__T("Core"));
         Streams_Fill_Core();
+
+        //Samples per frame
+        Fill(Stream_Audio, 0, Audio_SamplesPerFrame, Number_Of_PCM_Sample_Blocks*32); // Samples per Core frames. TODO: samples per HD frames (interesting?)
     }
 
     // Cleanup up

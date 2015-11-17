@@ -963,6 +963,18 @@ void File_Ac3::Streams_Fill()
         if (TimeStamp_DropFrame_IsValid)
             Fill(Stream_Audio, 0, Audio_Delay_Settings, TimeStamp_DropFrame_Content?"drop_frame_flag=1":"drop_frame_flag=0");
     }
+
+    //Samples per frame
+    float64 SamplesPerFrame;
+    if (bsid_Max<=0x08)
+        SamplesPerFrame=1536;
+    else if (bsid_Max<=0x09)
+        SamplesPerFrame=768; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
+    else if (bsid_Max>0x0A && bsid_Max<=0x10)
+        SamplesPerFrame=256;
+    else
+        SamplesPerFrame=0;
+    Fill(Stream_Audio, 0, Audio_SamplesPerFrame, SamplesPerFrame);
 }
 
 //---------------------------------------------------------------------------

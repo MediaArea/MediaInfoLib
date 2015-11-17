@@ -596,6 +596,25 @@ void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
             Fill(Stream_Audio, 0, Audio_FrameCount, Frame_Count_NotParsedIncluded);
     }
 
+    //SamplesPerFrames
+    if (Retrieve(Stream_Audio, Pos, Audio_SamplesPerFrame).empty())
+    {
+        float64 FrameRate=Retrieve(Stream_Audio, Pos, Audio_FrameRate).To_float64();
+        float64 SamplingRate=Retrieve(Stream_Audio, Pos, Audio_SamplingRate).To_float64();
+        if (FrameRate && SamplingRate && FrameRate!=SamplingRate)
+        {
+            float64 SamplesPerFrameF=SamplingRate/FrameRate;
+            Ztring SamplesPerFrame;
+            if (SamplesPerFrameF>1601 && SamplesPerFrameF<1602)
+                SamplesPerFrame = __T("1601.6"); // Usually this is 29.970 fps PCM. TODO: check if it is OK in all cases
+            else if (SamplesPerFrameF>800 && SamplesPerFrameF<801)
+                SamplesPerFrame = __T("800.8"); // Usually this is 59.940 fps PCM. TODO: check if it is OK in all cases
+            else
+                SamplesPerFrame.From_Number(SamplesPerFrameF, 0);
+            Fill(Stream_Audio, Pos, Audio_SamplesPerFrame, SamplesPerFrame);
+        }
+    }
+
     //Duration
     if (Retrieve(Stream_Audio, Pos, Audio_Duration).empty() && Retrieve(Stream_Audio, Pos, Audio_SamplingRate).To_int64u()!=0)
     {
