@@ -544,10 +544,10 @@ void File_Dts::Streams_Fill()
     {
         Data[Profiles].push_back(__T("X"));
 
-        Data[Channels].push_back(__T("Object Orientated"));
-        Data[ChannelPositions].push_back(__T("Object Orientated"));
-        Data[ChannelPositions2].push_back(__T("Object Orientated"));
-        Data[ChannelLayout].push_back(__T("Object Orientated"));
+        Data[Channels].push_back(__T("Object Based"));
+        Data[ChannelPositions].push_back(__T("Object Based"));
+        Data[ChannelPositions2].push_back(__T("Object Based"));
+        Data[ChannelLayout].push_back(__T("Object Based"));
         Data[BitDepth].push_back(Ztring());
         Data[SamplingRate].push_back(Ztring());
         Data[BitRate].push_back(__T("Unknown"));
