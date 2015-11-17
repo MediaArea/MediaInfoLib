@@ -368,7 +368,7 @@ void File_Mk::Streams_Finish()
         }
 
         //Video specific
-        if (StreamKind_Last==Stream_Video && Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).empty())
+        if (StreamKind_Last==Stream_Video)
         {
             //FrameRate
             bool IsVfr=false;
@@ -428,7 +428,8 @@ void File_Mk::Streams_Finish()
                              && FrameRate_FromParser*2<FrameRate_FromCluster*1.1) //TODO: awfull method to detect interlaced content with one field per block
                                 FrameRate_FromCluster/=2;
                         }
-                        Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate_FromCluster);
+                        if (Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).empty())
+                            Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate_FromCluster);
                     }
                 }
                 else if (!FrameRate_Between.empty())
@@ -437,7 +438,8 @@ void File_Mk::Streams_Finish()
             else if (Temp->second.TrackDefaultDuration)
             {
                 float32 FrameRate_FromCluster=1000000000/(float32)Temp->second.TrackDefaultDuration;
-                Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate_FromCluster);
+                if (Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).empty())
+                    Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate_FromCluster);
             }
 
             Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode, IsVfr?"VFR":"CFR");
