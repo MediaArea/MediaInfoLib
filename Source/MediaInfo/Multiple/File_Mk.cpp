@@ -256,6 +256,9 @@ void File_Mk::Streams_Finish()
                 else Fill(StreamKind_Last, StreamPos_Last, "Statistics Tags Issue", App + __T(' ') + Utc + __T(" / ") + Happ + __T(' ') + Hutc);
             }
             Ztring TempTag;
+
+            float64 Statistics_Duration=0;
+            float64 Statistics_FrameCount=0;
             for (Ztring::iterator Back = TagsList.begin();;Back++)
             {
                 if ((Back == TagsList.end()) || (*Back == ' ') || (*Back == '\0'))
@@ -281,19 +284,19 @@ void File_Mk::Streams_Finish()
                                     ZtringList Parts;
                                     Parts.Separator_Set(0, ":");
                                     Parts.Write(TagValue);
-                                    float64 Duration=0;
+                                    Statistics_Duration=0;
                                     if (Parts.size()>=1)
-                                        Duration += Parts[0].To_float64()*60*60;
+                                        Statistics_Duration += Parts[0].To_float64()*60*60;
                                     if (Parts.size()>=2)
-                                        Duration += Parts[1].To_float64()*60;
-                                    size_t Rounding=0; //Default is rounding to milliseconds, TODO: rounding to less than millisecond when "Duration" field is changed to seconds.
+                                        Statistics_Duration += Parts[1].To_float64()*60;
+                                    int8u Rounding=0; //Default is rounding to milliseconds, TODO: rounding to less than millisecond when "Duration" field is changed to seconds.
                                     if (Parts.size()>=3)
                                     {
-                                        Duration += Parts[2].To_float64();
+                                        Statistics_Duration += Parts[2].To_float64();
                                         if (Parts[2].size()>6) //More than milliseconds
                                             Rounding=Parts[2].size()-6;
                                     }
-                                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration*1000, Rounding, true);
+                                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Statistics_Duration*1000, Rounding, true);
                                     Set=true;
                                     //Duration_Temp = TagValue;
                                 }
@@ -303,6 +306,7 @@ void File_Mk::Streams_Finish()
                             {
                                 if (Tags_Verified)
                                 {
+                                    Statistics_FrameCount=TagValue.To_float64();
                                     Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), TagValue, true);
                                     if (StreamKind_Last==Stream_Text)
                                     {
@@ -336,6 +340,10 @@ void File_Mk::Streams_Finish()
                 else
                     TempTag+=*Back;
             }
+            if (Statistics_Duration && Statistics_FrameCount)
+            {
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate), Statistics_FrameCount/Statistics_Duration, 3, true);
+            }
         }
 
         if (Temp->second.DisplayAspectRatio!=0)
@@ -360,7 +368,7 @@ void File_Mk::Streams_Finish()
         }
 
         //Video specific
-        if (StreamKind_Last==Stream_Video)
+        if (StreamKind_Last==Stream_Video && Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).empty())
         {
             //FrameRate
             bool IsVfr=false;
