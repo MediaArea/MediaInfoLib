@@ -278,40 +278,24 @@ void File_Mk::Streams_Finish()
                             {
                                 if (Tags_Verified)
                                 {
-                                    Ztring Parts [4];
-                                    int CountParts = 0;
-                                    Char *t = __T("::.");
-                                    Ztring::iterator Front;
-                                    for (Front = TagValue.begin();Front!=TagValue.end();Front++)
+                                    ZtringList Parts;
+                                    Parts.Separator_Set(0, ":");
+                                    Parts.Write(TagValue);
+                                    float64 Duration=0;
+                                    if (Parts.size()>=1)
+                                        Duration += Parts[0].To_float64()*60*60;
+                                    if (Parts.size()>=2)
+                                        Duration += Parts[1].To_float64()*60;
+                                    size_t Rounding=0; //Default is rounding to milliseconds, TODO: rounding to less than millisecond when "Duration" field is changed to seconds.
+                                    if (Parts.size()>=3)
                                     {
-                                        if (isdigit(*Front))
-                                            Parts[CountParts]+=*Front;
-                                        else if (*Front == t[CountParts])
-                                        {
-                                            if (CountParts == 3) break;
-                                            CountParts++;
-                                        }
-                                        else
-                                            break;
+                                        Duration += Parts[2].To_float64();
+                                        if (Parts[2].size()>6) //More than milliseconds
+                                            Rounding=Parts[2].size()-6;
                                     }
-                                    if (CountParts == 3 && (Front == TagValue.end() || !*Front))
-                                    {
-                                        int64u Minutes = Parts[1].To_int64u();
-                                        int64u Seconds = Parts[2].To_int64u();
-                                        if (Minutes < 60 && Seconds < 60)
-                                        {
-                                            if (Parts[3].size() > 3) Parts[3] = Parts[3].substr(0, 3);
-                                            int64u Milliseconds = Parts[3].To_int64u();
-                                            Ztring NewValue;
-                                            NewValue.From_Number((((((Parts[0].To_int64u() * 60) + Minutes) * 60) + Seconds) * 1000) + Milliseconds);
-                                            if (NewValue.To_int64u() <= Retrieve(Stream_General, 0, General_Duration).To_int64u())
-                                            {
-                                                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), NewValue, true);
-                                                Set=true;
-                                                //Duration_Temp = TagValue;
-                                            }
-                                        }
-                                    }
+                                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration*1000, Rounding, true);
+                                    Set=true;
+                                    //Duration_Temp = TagValue;
                                 }
                                 if (!Set) TempTag="Duration";
                             }
