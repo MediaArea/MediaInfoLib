@@ -2967,7 +2967,7 @@ void File_Riff::CDDA_fmt_()
         Fill(Stream_Audio, 0, Audio_BitDepth, 16);
         Fill(Stream_Audio, 0, Audio_Channel_s_, 2);
         Fill(Stream_Audio, 0, Audio_SamplingRate, 44100);
-        Fill(Stream_Audio, 0, Audio_FrameRate, 75);
+        Fill(Stream_Audio, 0, Audio_FrameRate, (float)75);
         Fill(Stream_Audio, 0, Audio_BitRate, 1411200);
         Fill(Stream_Audio, 0, Audio_Compression_Mode, "Lossless");
         Fill(Stream_Audio, 0, Audio_FrameCount, TDuration);

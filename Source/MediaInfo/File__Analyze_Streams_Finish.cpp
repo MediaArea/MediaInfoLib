@@ -596,11 +596,24 @@ void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
             Fill(Stream_Audio, 0, Audio_FrameCount, Frame_Count_NotParsedIncluded);
     }
 
+    //FrameRate same as SampleRate
+    if (Retrieve(Stream_Audio, Pos, Audio_SamplingRate).To_float64() == Retrieve(Stream_Audio, Pos, Audio_FrameRate).To_float64())
+        Clear(Stream_Audio, Pos, Audio_FrameRate);
+
     //SamplesPerFrames
     if (Retrieve(Stream_Audio, Pos, Audio_SamplesPerFrame).empty())
     {
         float64 FrameRate=Retrieve(Stream_Audio, Pos, Audio_FrameRate).To_float64();
-        float64 SamplingRate=Retrieve(Stream_Audio, Pos, Audio_SamplingRate).To_float64();
+        float64 SamplingRate=0;
+        ZtringList SamplingRates;
+        SamplingRates.Separator_Set(0, " / ");
+        SamplingRates.Write(Retrieve(Stream_Audio, Pos, Audio_SamplingRate));
+        for (size_t i=0; i<SamplingRates.size(); ++i)
+        {
+            SamplingRate = SamplingRates[i].To_float64();
+            if (SamplingRate)
+                break; // Using the first valid one
+        }
         if (FrameRate && SamplingRate && FrameRate!=SamplingRate)
         {
             float64 SamplesPerFrameF=SamplingRate/FrameRate;
@@ -612,6 +625,27 @@ void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
             else
                 SamplesPerFrame.From_Number(SamplesPerFrameF, 0);
             Fill(Stream_Audio, Pos, Audio_SamplesPerFrame, SamplesPerFrame);
+        }
+    }
+
+    //FrameRate
+    if (Retrieve(Stream_Audio, Pos, Audio_FrameRate).empty())
+    {
+        float64 SamplesPerFrame=Retrieve(Stream_Audio, Pos, Audio_SamplesPerFrame).To_float64();
+        float64 SamplingRate=0;
+        ZtringList SamplingRates;
+        SamplingRates.Separator_Set(0, " / ");
+        SamplingRates.Write(Retrieve(Stream_Audio, Pos, Audio_SamplingRate));
+        for (size_t i=0; i<SamplingRates.size(); ++i)
+        {
+            SamplingRate = SamplingRates[i].To_float64();
+            if (SamplingRate)
+                break; // Using the first valid one
+        }
+        if (SamplesPerFrame && SamplingRate && SamplesPerFrame!=SamplingRate)
+        {
+            float64 FrameRate=SamplingRate/SamplesPerFrame;
+            Fill(Stream_Audio, Pos, Audio_FrameRate, FrameRate);
         }
     }
 
