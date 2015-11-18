@@ -1508,7 +1508,7 @@ Ztring MediaInfo_Config::Language_Get (const Ztring &Value)
 Ztring MediaInfo_Config::Language_Get (const Ztring &Count, const Ztring &Value, bool ValueIsAlwaysSame)
 {
     //Integrity
-    if (Count.empty() || Count.find_first_not_of(__T("0123456789.+-"))!=string::npos)
+    if (Count.empty() || Count.find_first_not_of(__T("0123456789.+-/*() "))!=string::npos)
         return Count;
 
     //Different Plurals are available or not?
