@@ -2055,6 +2055,19 @@ void File__Analyze::Value_Value123(stream_t StreamKind, size_t StreamPos, size_t
         //Filling
         List2.push_back(MediaInfoLib::Config.Language_Get(List[Pos], MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Measure)));
     }
+
+    //Special case : audio with samples per frames
+    if (StreamKind == Stream_Audio && List2.size() == 1 && Parameter == Audio_FrameRate)
+    {
+        const Ztring &SamplesPerFrame = Retrieve(Stream_Audio, StreamPos, Audio_SamplesPerFrame);
+        if (!SamplesPerFrame.empty())
+        {
+            List2[0] += __T(" (");
+            List2[0] += SamplesPerFrame;
+            List2[0] += __T(" spf)");
+        }
+    }
+
     Fill(StreamKind, StreamPos, Parameter+1, List2.Read());
 }
 
