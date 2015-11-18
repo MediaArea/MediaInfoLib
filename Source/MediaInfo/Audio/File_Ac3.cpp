@@ -965,16 +965,19 @@ void File_Ac3::Streams_Fill()
     }
 
     //Samples per frame
-    float64 SamplesPerFrame;
+    int16u SamplesPerFrame;
     if (bsid_Max<=0x08)
         SamplesPerFrame=1536;
     else if (bsid_Max<=0x09)
         SamplesPerFrame=768; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
     else if (bsid_Max>0x0A && bsid_Max<=0x10)
         SamplesPerFrame=256;
+    else if (HD_MajorSync_Parsed && (HD_StreamType==0xBA || HD_StreamType==0xBB)) // TrueHD or MLP
+        SamplesPerFrame=40;
     else
         SamplesPerFrame=0;
-    Fill(Stream_Audio, 0, Audio_SamplesPerFrame, SamplesPerFrame);
+    if (SamplesPerFrame)
+        Fill(Stream_Audio, 0, Audio_SamplesPerFrame, SamplesPerFrame);
 }
 
 //---------------------------------------------------------------------------
