@@ -239,6 +239,7 @@ void File_Mk::Streams_Finish()
     
         //Tags
         //Ztring Duration_Temp;
+        float32 FrameRate_FromTags = 0.0;
         Ztring TagsList=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
         if (TagsList.size())
         {
@@ -342,7 +343,8 @@ void File_Mk::Streams_Finish()
             }
             if (Statistics_Duration && Statistics_FrameCount)
             {
-                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate), Statistics_FrameCount/Statistics_Duration, 3, true);
+                FrameRate_FromTags = Statistics_FrameCount/Statistics_Duration;
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate), FrameRate_FromTags, 3, true);
             }
         }
 
@@ -428,7 +430,12 @@ void File_Mk::Streams_Finish()
                              && FrameRate_FromParser*2<FrameRate_FromCluster*1.1) //TODO: awfull method to detect interlaced content with one field per block
                                 FrameRate_FromCluster/=2;
                         }
-                        if (Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).empty())
+                        if (FrameRate_FromTags)
+                        {
+                                if (FrameRate_FromCluster < FrameRate_FromTags - (FrameRate_FromTags*(TimecodeScale*0.0000000010021)) || FrameRate_FromCluster > FrameRate_FromTags + (FrameRate_FromTags*(TimecodeScale*0.0000000010021)))
+                                    IsVfr=true;
+                        }
+                        else
                             Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate_FromCluster);
                     }
                 }
