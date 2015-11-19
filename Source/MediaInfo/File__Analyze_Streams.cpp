@@ -25,6 +25,7 @@
 #include "ZenLib/FileName.h"
 #include "ZenLib/BitStream_LE.h"
 #include <cmath>
+#include <cfloat>
 using namespace std;
 //---------------------------------------------------------------------------
 
@@ -314,6 +315,37 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                                 case Video_PixelAspectRatio_CleanAperture:    PixelAspectRatio_Fill(Value, Stream_Video, StreamPos, Video_Width_CleanAperture, Video_Height_CleanAperture, Video_PixelAspectRatio_CleanAperture, Video_DisplayAspectRatio_CleanAperture);   break;
                                 case Video_DisplayAspectRatio_Original:  DisplayAspectRatio_Fill(Value, Stream_Video, StreamPos, Video_Width_Original, Video_Height_Original, Video_PixelAspectRatio_Original, Video_DisplayAspectRatio_Original); break;
                                 case Video_PixelAspectRatio_Original:    PixelAspectRatio_Fill(Value, Stream_Video, StreamPos, Video_Width_Original, Video_Height_Original, Video_PixelAspectRatio_Original, Video_DisplayAspectRatio_Original);   break;
+                            }
+                            break;
+        case Stream_Audio:
+                            switch (Parameter)
+                            {
+                                case Audio_SamplesPerFrame:
+                                    if (Retrieve(Stream_Audio, StreamPos, Audio_FrameRate).empty())
+                                    {
+                                        float64 SamplesPerFrame=Value.To_float64();
+                                        float64 SamplingRate=DBL_MAX;
+                                        ZtringList SamplingRates;
+                                        SamplingRates.Separator_Set(0, " / ");
+                                        SamplingRates.Write(Retrieve(Stream_Audio, StreamPos, Audio_SamplingRate));
+                                        if (!SamplingRates.empty())
+                                        {
+                                            size_t i=SamplingRates.size();
+                                            do
+                                            {
+                                                --i;
+                                                float64 SamplingRateTemp = SamplingRates[i].To_float64();
+                                                if (SamplingRateTemp && SamplingRateTemp<SamplingRate)
+                                                    SamplingRate=SamplingRateTemp; // Using the lowest valid one (e.g. AAC doubles sampling rate but the legacy sampling rate is the real frame)
+                                            }
+                                            while (i);
+                                        }
+                                        if (SamplesPerFrame && SamplingRate && SamplingRate!=DBL_MAX && SamplesPerFrame!=SamplingRate)
+                                        {
+                                            float64 FrameRate=SamplingRate/SamplesPerFrame;
+                                            Fill(Stream_Audio, StreamPos, Audio_FrameRate, FrameRate);
+                                        }
+                                    }
                             }
                             break;
         case Stream_Image:

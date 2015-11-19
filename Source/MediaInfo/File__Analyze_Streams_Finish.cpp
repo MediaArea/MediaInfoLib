@@ -600,6 +600,16 @@ void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
     if (Retrieve(Stream_Audio, Pos, Audio_SamplingRate).To_float64() == Retrieve(Stream_Audio, Pos, Audio_FrameRate).To_float64())
         Clear(Stream_Audio, Pos, Audio_FrameRate);
 
+    //SamplingRate
+    if (Retrieve(Stream_Audio, Pos, Audio_SamplingRate).empty())
+    {
+        float64 BitDepth=Retrieve(Stream_Audio, Pos, Audio_BitDepth).To_float64();
+        float64 Channels=Retrieve(Stream_Audio, Pos, Audio_Channel_s_).To_float64();
+        float64 BitRate=Retrieve(Stream_Audio, Pos, Audio_BitRate).To_float64();
+        if (BitDepth && Channels && BitRate)
+            Fill(Stream_Audio, Pos, Audio_SamplingRate, BitRate/Channels/BitDepth, 0);
+    }
+
     //SamplesPerFrames
     if (Retrieve(Stream_Audio, Pos, Audio_SamplesPerFrame).empty())
     {
@@ -625,27 +635,6 @@ void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
             else
                 SamplesPerFrame.From_Number(SamplesPerFrameF, 0);
             Fill(Stream_Audio, Pos, Audio_SamplesPerFrame, SamplesPerFrame);
-        }
-    }
-
-    //FrameRate
-    if (Retrieve(Stream_Audio, Pos, Audio_FrameRate).empty())
-    {
-        float64 SamplesPerFrame=Retrieve(Stream_Audio, Pos, Audio_SamplesPerFrame).To_float64();
-        float64 SamplingRate=0;
-        ZtringList SamplingRates;
-        SamplingRates.Separator_Set(0, " / ");
-        SamplingRates.Write(Retrieve(Stream_Audio, Pos, Audio_SamplingRate));
-        for (size_t i=0; i<SamplingRates.size(); ++i)
-        {
-            SamplingRate = SamplingRates[i].To_float64();
-            if (SamplingRate)
-                break; // Using the first valid one
-        }
-        if (SamplesPerFrame && SamplingRate && SamplesPerFrame!=SamplingRate)
-        {
-            float64 FrameRate=SamplingRate/SamplesPerFrame;
-            Fill(Stream_Audio, Pos, Audio_FrameRate, FrameRate);
         }
     }
 
