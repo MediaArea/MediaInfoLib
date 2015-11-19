@@ -637,9 +637,6 @@ void File_Dts::Streams_Fill()
     {
         Data[Profiles].push_back(__T("Core"));
         Streams_Fill_Core();
-
-        //Samples per frame
-        Fill(Stream_Audio, 0, Audio_SamplesPerFrame, Number_Of_PCM_Sample_Blocks*32); // Samples per Core frames. TODO: samples per HD frames (interesting?)
     }
 
     // Cleanup up
@@ -678,7 +675,9 @@ void File_Dts::Streams_Fill()
     for (size_t Pos=0; Pos<10; ++Pos)
         Data[Pos].clear();
 
-    //Legacy
+    //Samples per frame (to be done after SamplingRate filling because it is used during Fill())
+    if (Presence[presence_Core_Core])
+        Fill(Stream_Audio, 0, Audio_SamplesPerFrame, Number_Of_PCM_Sample_Blocks*32); // Samples per Core frames. TODO: samples per HD frames (interesting?)
 }
 
 //---------------------------------------------------------------------------
