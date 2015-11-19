@@ -344,6 +344,15 @@ void File_Mk::Streams_Finish()
             if (Statistics_Duration && Statistics_FrameCount)
             {
                 FrameRate_FromTags = Statistics_FrameCount/Statistics_Duration;
+                
+                //Checking coherency with raw stream
+                if (Temp->second.Parser)
+                {
+                    float64 FrameRate_RawStream = Temp->second.Parser->Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate)).To_float64();
+                    if (FrameRate_RawStream && FrameRate_RawStream>=FrameRate_FromTags*0.99 && FrameRate_RawStream<=FrameRate_FromTags*1.01)
+                        FrameRate_FromTags=FrameRate_RawStream; //Raw stream value is more precise
+                }
+
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate), FrameRate_FromTags, 3, true);
             }
         }
@@ -390,35 +399,43 @@ void File_Mk::Streams_Finish()
                     else
                         FramesToAdd++;
                 }
-                if (FrameRate_Between.size()>1)
-                {
-                    int64s FrameRate_Between_Last=FrameRate_Between[FrameRate_Between.size()-1];
-                    size_t Pos=FrameRate_Between.size()-2;
-                    while (Pos)
-                    {
-                        if (!(FrameRate_Between[Pos]*0.9<FrameRate_Between_Last
-                           && FrameRate_Between[Pos]*1.1>FrameRate_Between_Last))
-                            break;
-                        Pos--;
-                    }
-                    if (Pos)
-                        FrameRate_Between.resize(Pos+1); //We peek 40 frames, and remove the last ones, because this is PTS, no DTS --> Some frames are out of order
-                }
-                if (FrameRate_Between.size()>=30+1+FramesToAdd)
-                    FrameRate_Between.resize((FrameRate_Between.size()-4>30+1+FramesToAdd)?(FrameRate_Between.size()-4):(30+1+FramesToAdd)); //We peek 40 frames, and remove the last ones, because this is PTS, no DTS --> Some frames are out of order
+                if (FrameRate_Between.size()>=60+32) //Minimal 1 seconds (@60 fps)
+                    FrameRate_Between.resize(FrameRate_Between.size()-16); //We remove the last ones, because this is PTS, no DTS --> Some frames are out of order
                 std::sort(FrameRate_Between.begin(), FrameRate_Between.end());
-                if (!FrameRate_Between.empty()
+                if (FrameRate_Between.size()>2)
+                {
+                    //Looking for 3 consecutive same values, in order to remove some missing frames from stats
+                    size_t i=FrameRate_Between.size()-1;
+                    int64s Previous = FrameRate_Between[i];
+                    do
+                    {
+                        i--;
+                        if (FrameRate_Between[i]==Previous && FrameRate_Between[i-1]==Previous)
+                            break;
+                        Previous=FrameRate_Between[i];
+                    }
+                    while (i>2);
+                    if (i>FrameRate_Between.size()/2)
+                        FrameRate_Between.resize(i+2);
+                }
+
+                if (FrameRate_Between.size()>=40)
+                    FrameRate_Between.resize(FrameRate_Between.size()-FrameRate_Between.size()/10); //We remove the last ones, in order to ignore skipped frames (bug of the muxer?)
+                else if (FrameRate_Between.size()>=7)
+                    FrameRate_Between.resize(FrameRate_Between.size()-4); //We remove the last ones, in order to ignore skipped frames (bug of the muxer?)
+                if (FrameRate_Between.size()>2
                  && FrameRate_Between[0]*0.9<FrameRate_Between[FrameRate_Between.size()-1]
                  && FrameRate_Between[0]*1.1>FrameRate_Between[FrameRate_Between.size()-1]
                  && TimecodeScale)
                 {
                     float Time=0;
-                    if (Temp->second.TimeCodes.size()>30+FramesToAdd)
-                        Time=(float)(Temp->second.TimeCodes[30+FramesToAdd]-Temp->second.TimeCodes[0])/30; //30 frames for handling 30 fps rounding problems
-                    else if (Temp->second.TrackDefaultDuration)
+                    for (size_t i=0; i<FrameRate_Between.size(); i++)
+                        Time += FrameRate_Between[i];
+                    Time /= FrameRate_Between.size();
+
+                    if (Temp->second.TrackDefaultDuration && Time>=Temp->second.TrackDefaultDuration/TimecodeScale*0.95 && Time<=Temp->second.TrackDefaultDuration/TimecodeScale*1.05)
                         Time=(float)Temp->second.TrackDefaultDuration/TimecodeScale; //TrackDefaultDuration is maybe more precise than the time code
-                    else
-                        Time=(float)(Temp->second.TimeCodes[Temp->second.TimeCodes.size()-1]-Temp->second.TimeCodes[0])/(Temp->second.TimeCodes.size()-1);
+
                     if (Time)
                     {
                         float32 FrameRate_FromCluster=1000000000/Time/TimecodeScale;
@@ -439,7 +456,7 @@ void File_Mk::Streams_Finish()
                             Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate_FromCluster);
                     }
                 }
-                else if (!FrameRate_Between.empty())
+                else if (FrameRate_Between.size()>2)
                     IsVfr=true;
             }
             else if (Temp->second.TrackDefaultDuration)
@@ -1642,7 +1659,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
             if (Stream[TrackNumber].Searching_TimeStamps)
             {
                 Stream[TrackNumber].TimeCodes.push_back(Segment_Cluster_TimeCode_Value+TimeCode);
-                if (Stream[TrackNumber].TimeCodes.size()>40)
+                if (Stream[TrackNumber].TimeCodes.size()>128)
                     Stream[TrackNumber].Searching_TimeStamps=false;
             }
 
