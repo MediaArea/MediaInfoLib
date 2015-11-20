@@ -724,9 +724,17 @@ void File_Ac3::Streams_Fill()
 
         if (HD_StreamType==0xBA) //TrueHD
         {
+            if (HD_SubStreams_Count == 4)
+            {
+                Fill(Stream_General, 0, General_Format, "ATMOS");
+                Fill(Stream_Audio, 0, Audio_Format, "ATMOS");
+                Fill(Stream_Audio, 0, Audio_Codec, "ATMOS");
+                Fill(Stream_Audio, 0, Audio_Channel_s_, "Object Based");
+                Fill(Stream_Audio, 0, Audio_ChannelPositions, "Object Based");
+                Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, "Object Based");
+            }
             Fill(Stream_General, 0, General_Format, "TrueHD");
             Fill(Stream_Audio, 0, Audio_Format, "TrueHD");
-
             Fill(Stream_Audio, 0, Audio_Codec, "TrueHD");
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
             Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate1));
