@@ -1,0 +1,14 @@
+*.user
+*.tlog
+*.res
+*.log
+*.lastbuildstate
+*.obj
+*.cache
+*.pdb
+*.dll
+*.exp
+*.lib
+*.pch
+*.sdf
+*.suo

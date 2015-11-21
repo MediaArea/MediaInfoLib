@@ -2029,7 +2029,10 @@ void File_Ac3::HD()
         Skip_B1(                                                "Unknown");
         Skip_B1(                                                "Unknown");
         Skip_B1(                                                "Unknown");
-        Skip_B1(                                                "Unknown");
+        BS_Begin();
+        Skip_S1( 7,                                             "Unknown");
+        Get_SB (    HD_HasAtmos,                                "Has Atmos");
+        BS_End();
         Skip_B1(                                                "Unknown");
         Skip_B1(                                                "Unknown");
         Element_End0();
@@ -2037,8 +2040,9 @@ void File_Ac3::HD()
         FILLING_BEGIN();
             HD_MajorSync_Parsed=true;
 
-            if (HD_SubStreams_Count>3 && HD_StreamType==0xBA) HD_HasAtmos=true;
-            else if (HD_SubStreams_Count==1 && HD_StreamType==0xBB) //MLP with only 1 stream
+            if (HD_StreamType!=0xBA && HD_HasAtmos) HD_HasAtmos = false;
+            //if (HD_SubStreams_Count>3 && HD_StreamType==0xBA) HD_HasAtmos=true;
+            if (HD_SubStreams_Count==1 && HD_StreamType==0xBB) //MLP with only 1 stream
             {
                 HD_Resolution2=HD_Resolution1;
                 HD_SamplingRate2=HD_SamplingRate1;
