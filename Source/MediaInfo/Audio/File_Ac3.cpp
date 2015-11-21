@@ -700,7 +700,7 @@ File_Ac3::File_Ac3()
     HD_MajorSync_Parsed=false;
     Core_IsPresent=false;
     HD_IsPresent=false;
-    HD_IsAtmos=false;
+    HD_HasAtmos=false;
     dynrnge_Exists=false;
     TimeStamp_IsPresent=false;
     TimeStamp_IsParsing=false;
@@ -725,7 +725,7 @@ void File_Ac3::Streams_Fill()
 
         if (HD_StreamType==0xBA) //TrueHD
         {
-            if (HD_IsAtmos)
+            if (HD_HasAtmos)
             {
 
                 Fill(Stream_General, 0, General_Format, "Atmos");
@@ -741,7 +741,7 @@ void File_Ac3::Streams_Fill()
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
             Ztring Sampling;
             Sampling.From_Number(AC3_HD_SamplingRate(HD_SamplingRate1));
-            if (HD_IsAtmos) Sampling.insert(0, __T(" / "));
+            if (HD_HasAtmos) Sampling.insert(0, __T(" / "));
             Fill(Stream_Audio, 0, Audio_SamplingRate, Sampling);
             Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_TrueHD_Channels(HD_Channels2));
             Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_TrueHD_Channels_Positions(HD_Channels2));
@@ -2037,7 +2037,7 @@ void File_Ac3::HD()
         FILLING_BEGIN();
             HD_MajorSync_Parsed=true;
 
-            if (HD_SubStreams_Count>3 && HD_StreamType==0xBA) HD_IsAtmos=true;
+            if (HD_SubStreams_Count>3 && HD_StreamType==0xBA) HD_HasAtmos=true;
             else if (HD_SubStreams_Count==1 && HD_StreamType==0xBB) //MLP with only 1 stream
             {
                 HD_Resolution2=HD_Resolution1;
