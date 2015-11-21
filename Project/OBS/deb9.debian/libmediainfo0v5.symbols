@@ -1,0 +1,121 @@
+libmediainfo.so.0 libmediainfo0v5 #MINVER#
+ MediaInfoA_Close@Base 0.7.52
+ MediaInfoA_Count_Get@Base 0.7.52
+ MediaInfoA_Delete@Base 0.7.52
+ MediaInfoA_Get@Base 0.7.52
+ MediaInfoA_GetI@Base 0.7.52
+ MediaInfoA_Inform@Base 0.7.52
+ MediaInfoA_New@Base 0.7.52
+ MediaInfoA_New_Quick@Base 0.7.52
+ MediaInfoA_Open@Base 0.7.52
+ MediaInfoA_Open_Buffer@Base 0.7.52
+ MediaInfoA_Open_Buffer_Continue@Base 0.7.52
+ MediaInfoA_Open_Buffer_Continue_GoTo_Get@Base 0.7.52
+ MediaInfoA_Open_Buffer_Finalize@Base 0.7.52
+ MediaInfoA_Open_Buffer_Init@Base 0.7.52
+ MediaInfoA_Open_NextPacket@Base 0.7.52
+ MediaInfoA_Option@Base 0.7.52
+ MediaInfoA_Output_Buffer_Get@Base 0.7.52
+ MediaInfoA_Output_Buffer_GetI@Base 0.7.52
+ MediaInfoA_Save@Base 0.7.52
+ MediaInfoA_Set@Base 0.7.52
+ MediaInfoA_SetI@Base 0.7.52
+ MediaInfoA_State_Get@Base 0.7.52
+ MediaInfoListA_Close@Base 0.7.52
+ MediaInfoListA_Count_Get@Base 0.7.52
+ MediaInfoListA_Count_Get_Files@Base 0.7.52
+ MediaInfoListA_Delete@Base 0.7.52
+ MediaInfoListA_Get@Base 0.7.52
+ MediaInfoListA_GetI@Base 0.7.52
+ MediaInfoListA_Inform@Base 0.7.52
+ MediaInfoListA_New@Base 0.7.52
+ MediaInfoListA_New_Quick@Base 0.7.52
+ MediaInfoListA_Open@Base 0.7.52
+ MediaInfoListA_Open_Buffer@Base 0.7.52
+ MediaInfoListA_Option@Base 0.7.52
+ MediaInfoListA_Save@Base 0.7.52
+ MediaInfoListA_Set@Base 0.7.52
+ MediaInfoListA_SetI@Base 0.7.52
+ MediaInfoListA_State_Get@Base 0.7.52
+ MediaInfoList_Close@Base 0.7.52
+ MediaInfoList_Count_Get@Base 0.7.52
+ MediaInfoList_Count_Get_Files@Base 0.7.52
+ MediaInfoList_Delete@Base 0.7.52
+ MediaInfoList_Get@Base 0.7.52
+ MediaInfoList_GetI@Base 0.7.52
+ MediaInfoList_Inform@Base 0.7.52
+ MediaInfoList_New@Base 0.7.52
+ MediaInfoList_New_Quick@Base 0.7.52
+ MediaInfoList_Open@Base 0.7.52
+ MediaInfoList_Open_Buffer@Base 0.7.52
+ MediaInfoList_Option@Base 0.7.52
+ MediaInfoList_Save@Base 0.7.52
+ MediaInfoList_Set@Base 0.7.52
+ MediaInfoList_SetI@Base 0.7.52
+ MediaInfoList_State_Get@Base 0.7.52
+ MediaInfo_Close@Base 0.7.52
+ MediaInfo_Count_Get@Base 0.7.52
+ MediaInfo_Delete@Base 0.7.52
+ MediaInfo_Get@Base 0.7.52
+ MediaInfo_GetI@Base 0.7.52
+ MediaInfo_Info_Version@Base 0.7.52
+ MediaInfo_Inform@Base 0.7.52
+ MediaInfo_New@Base 0.7.52
+ MediaInfo_New_Quick@Base 0.7.52
+ MediaInfo_Open@Base 0.7.52
+ MediaInfo_Open_Buffer@Base 0.7.52
+ MediaInfo_Open_Buffer_Continue@Base 0.7.52
+ MediaInfo_Open_Buffer_Continue_GoTo_Get@Base 0.7.52
+ MediaInfo_Open_Buffer_Finalize@Base 0.7.52
+ MediaInfo_Open_Buffer_Init@Base 0.7.52
+ MediaInfo_Open_NextPacket@Base 0.7.52
+ MediaInfo_Option@Base 0.7.52
+ MediaInfo_Output_Buffer_Get@Base 0.7.52
+ MediaInfo_Output_Buffer_GetI@Base 0.7.52
+ MediaInfo_Save@Base 0.7.52
+ MediaInfo_Set@Base 0.7.52
+ MediaInfo_SetI@Base 0.7.52
+ MediaInfo_State_Get@Base 0.7.52
+ (c++)"MediaInfoLib::MediaInfoList::Option_Static(std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&)@Base" 0.7.56
+ (c++)"MediaInfoLib::MediaInfoList::Open_Buffer_Init(unsigned long long, unsigned long long)@Base" 0.7.52
+ (c++|regex)"MediaInfoLib::MediaInfoList::Open_Buffer_Continue\(unsigned (int|long), unsigned char const\*, unsigned (int|long)\)@Base" 0.7.52
+ (c++|regex)"MediaInfoLib::MediaInfoList::Open_Buffer_Finalize\(unsigned (int|long)\)@Base" 0.7.52
+ (c++|regex)"MediaInfoLib::MediaInfoList::Open_Buffer_Continue_GoTo_Get\(unsigned (int|long)\)@Base" 0.7.52
+ (c++|regex)"MediaInfoLib::MediaInfoList::Get\(unsigned (int|long), MediaInfoLib::stream_t, unsigned (int|long), std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, MediaInfoLib::info_t, MediaInfoLib::info_t\)@Base" 0.7.56
+ (c++|regex)"MediaInfoLib::MediaInfoList::Get\[abi:cxx11\]\(unsigned (int|long), MediaInfoLib::stream_t, unsigned (int|long), unsigned (int|long), MediaInfoLib::info_t\)@Base" 0.7.56
+ (c++|regex)"MediaInfoLib::MediaInfoList::Set\(std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, unsigned (int|long), MediaInfoLib::stream_t, unsigned (int|long), std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&\)@Base" 0.7.56
+ (c++|regex)"MediaInfoLib::MediaInfoList::Set\(std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, unsigned (int|long), MediaInfoLib::stream_t, unsigned (int|long), unsigned (int|long), std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&\)@Base" 0.7.56
+ (c++)"MediaInfoLib::MediaInfoList::Open(std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, MediaInfoLib::fileoptions_t)@Base" 0.7.56
+ (c++|regex)"MediaInfoLib::MediaInfoList::Save\(unsigned (int|long)\)@Base" 0.7.52
+ (c++|regex)"MediaInfoLib::MediaInfoList::Close\(unsigned (int|long)\)@Base" 0.7.52
+ (c++|regex)"MediaInfoLib::MediaInfoList::Inform\[abi:cxx11\]\(unsigned (int|long), unsigned (int|long)\)@Base" 0.7.56
+ (c++)"MediaInfoLib::MediaInfoList::Option(std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&)@Base" 0.7.56
+ (c++|regex)"MediaInfoLib::MediaInfoList::Count_Get\(unsigned (int|long), MediaInfoLib::stream_t, unsigned (int|long)\)@Base" 0.7.52
+ (c++)"MediaInfoLib::MediaInfoList::Count_Get()@Base" 0.7.52
+ (c++)"MediaInfoLib::MediaInfoList::State_Get()@Base" 0.7.52
+ (c++|regex)"MediaInfoLib::MediaInfoList::MediaInfoList\(unsigned (int|long)\)@Base" 0.7.52
+ (c++)"MediaInfoLib::MediaInfoList::~MediaInfoList()@Base" 0.7.52
+ (c++)"MediaInfoLib::MediaInfo::Option_Static(std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&)@Base" 0.7.56
+ (c++)"MediaInfoLib::MediaInfo::Open_NextPacket()@Base" 0.7.52
+ (c++)"MediaInfoLib::MediaInfo::Open_Buffer_Init(unsigned long long, unsigned long long)@Base" 0.7.52
+ (c++)"MediaInfoLib::MediaInfo::Output_Buffer_Get(std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&)@Base" 0.7.56
+ (c++|regex)"MediaInfoLib::MediaInfo::Output_Buffer_Get\(unsigned (int|long)\)@Base" 0.7.52
+ (c++|regex)"MediaInfoLib::MediaInfo::Open_Buffer_Continue\(unsigned char const\*, unsigned (int|long)\)@Base" 0.7.52
+ (c++)"MediaInfoLib::MediaInfo::Open_Buffer_Finalize()@Base" 0.7.52
+ (c++)"MediaInfoLib::MediaInfo::Open_Buffer_Continue_GoTo_Get()@Base" 0.7.52
+ (c++|regex)"MediaInfoLib::MediaInfo::Get\(MediaInfoLib::stream_t, unsigned (int|long), std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, MediaInfoLib::info_t, MediaInfoLib::info_t\)@Base" 0.7.56
+ (c++|regex)"MediaInfoLib::MediaInfo::Get\[abi:cxx11\]\(MediaInfoLib::stream_t, unsigned (int|long), unsigned (int|long), MediaInfoLib::info_t\)@Base" 0.7.56
+ (c++|regex)"MediaInfoLib::MediaInfo::Set\(std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, MediaInfoLib::stream_t, unsigned (int|long), std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&\)@Base" 0.7.56
+ (c++|regex)"MediaInfoLib::MediaInfo::Set\(std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, MediaInfoLib::stream_t, unsigned (int|long), unsigned (int|long), std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&\)@Base" 0.7.56
+ (c++|regex)"MediaInfoLib::MediaInfo::Open\(unsigned char const\*, unsigned (int|long), unsigned char const\*, unsigned (int|long), unsigned (int|long) long\)@Base" 0.7.52
+ (c++)"MediaInfoLib::MediaInfo::Open(std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&)@Base" 0.7.56
+ (c++)"MediaInfoLib::MediaInfo::Save()@Base" 0.7.52
+ (c++)"MediaInfoLib::MediaInfo::Close()@Base" 0.7.52
+ (c++|regex)"MediaInfoLib::MediaInfo::Inform\[abi:cxx11\]\(unsigned (int|long)\)@Base" 0.7.56
+ (c++)"MediaInfoLib::MediaInfo::Option(std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&)@Base" 0.7.56
+ (c++|regex)"MediaInfoLib::MediaInfo::Count_Get\(MediaInfoLib::stream_t, unsigned (int|long)\)@Base" 0.7.52
+ (c++)"MediaInfoLib::MediaInfo::State_Get()@Base" 0.7.52
+ (c++)"MediaInfoLib::MediaInfo::MediaInfo()@Base" 0.7.52
+ (c++)"MediaInfoLib::MediaInfo::~MediaInfo()@Base" 0.7.52
+ (optional|c++|regex)"^(std|__gnu_cxx)::" 0.7.52
+ (optional|c++|regex)"^(bool|void|MediaInfoLib::File_Mxf::indextable\*|(unsigned )?(int|short|(long )?long)\*) (std|__gnu_cxx)::" 0.7.52
