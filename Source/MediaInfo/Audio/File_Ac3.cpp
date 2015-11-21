@@ -700,6 +700,7 @@ File_Ac3::File_Ac3()
     HD_MajorSync_Parsed=false;
     Core_IsPresent=false;
     HD_IsPresent=false;
+    HD_IsAtmos=false;
     dynrnge_Exists=false;
     TimeStamp_IsPresent=false;
     TimeStamp_IsParsing=false;
@@ -724,11 +725,12 @@ void File_Ac3::Streams_Fill()
 
         if (HD_StreamType==0xBA) //TrueHD
         {
-            if (HD_SubStreams_Count == 4)
+            if (HD_IsAtmos)
             {
-                Fill(Stream_General, 0, General_Format, "ATMOS");
-                Fill(Stream_Audio, 0, Audio_Format, "ATMOS");
-                Fill(Stream_Audio, 0, Audio_Codec, "ATMOS");
+
+                Fill(Stream_General, 0, General_Format, "Atmos");
+                Fill(Stream_Audio, 0, Audio_Format, "Atmos");
+                Fill(Stream_Audio, 0, Audio_Codec, "Atmos");
                 Fill(Stream_Audio, 0, Audio_Channel_s_, "Object Based");
                 Fill(Stream_Audio, 0, Audio_ChannelPositions, "Object Based");
                 Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, "Object Based");
@@ -737,7 +739,10 @@ void File_Ac3::Streams_Fill()
             Fill(Stream_Audio, 0, Audio_Format, "TrueHD");
             Fill(Stream_Audio, 0, Audio_Codec, "TrueHD");
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
-            Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate1));
+            Ztring Sampling;
+            Sampling.From_Number(AC3_HD_SamplingRate(HD_SamplingRate1));
+            if (HD_IsAtmos) Sampling.insert(0, __T(" / "));
+            Fill(Stream_Audio, 0, Audio_SamplingRate, Sampling);
             Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_TrueHD_Channels(HD_Channels2));
             Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_TrueHD_Channels_Positions(HD_Channels2));
             Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, AC3_TrueHD_Channels_Positions2(HD_Channels2));
@@ -2032,7 +2037,8 @@ void File_Ac3::HD()
         FILLING_BEGIN();
             HD_MajorSync_Parsed=true;
 
-            if (HD_SubStreams_Count==1 && HD_StreamType==0xBB) //MLP with only 1 stream
+            if (HD_SubStreams_Count>3 && HD_StreamType==0xBA) HD_IsAtmos=true;
+            else if (HD_SubStreams_Count==1 && HD_StreamType==0xBB) //MLP with only 1 stream
             {
                 HD_Resolution2=HD_Resolution1;
                 HD_SamplingRate2=HD_SamplingRate1;
