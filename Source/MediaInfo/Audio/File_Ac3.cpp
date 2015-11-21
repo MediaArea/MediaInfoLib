@@ -2033,6 +2033,15 @@ void File_Ac3::HD()
         Skip_S1( 7,                                             "Unknown");
         Get_SB (    HD_HasAtmos,                                "Has Atmos");
         BS_End();
+/*
+        unsigned char Extend = 0;
+        if (HD_HasAtmos)
+        {
+            Get_B1( Extend,                                     "Extend Header");
+            Extend = ((Extend>>4) * 2) - 2;
+        }
+        Extend+=30;
+*/
         Skip_B1(                                                "Unknown");
         Skip_B1(                                                "Unknown");
         Element_End0();
