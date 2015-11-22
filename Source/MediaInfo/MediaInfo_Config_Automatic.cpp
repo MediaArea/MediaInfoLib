@@ -4055,6 +4055,8 @@ void MediaInfo_Config_General (ZtringListList &Info)
     "CodecID/Hint;;;Y NT;;;A hint/popular name for this codec\n"
     "CodecID/Url;;;N NT;;;A link to more details about this codec ID\n"
     "CodecID_Description;;;Y YT;;;Manual description given by the container\n"
+    "CodecID_Version;;;N YT;;;Version of the CodecID\n"
+    "CodecID_Compatible;;;N YT;;;Compatible CodecIDs\n"
     "Interleaved;;;N YTY;;;If Audio and video are muxed\n"
     "Codec;;;N NT;;;Deprecated, do not use in new projects\n"
     "Codec/String;;;N NT;;;Deprecated, do not use in new projects\n"

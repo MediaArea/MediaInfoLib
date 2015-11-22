@@ -224,6 +224,8 @@ enum general
     General_CodecID_Hint,
     General_CodecID_Url,
     General_CodecID_Description,
+    General_CodecID_Version,
+    General_CodecID_Compatible,
     General_Interleaved,
     General_Codec,
     General_Codec_String,

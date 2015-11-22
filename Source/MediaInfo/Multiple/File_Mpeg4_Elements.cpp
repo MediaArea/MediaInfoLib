@@ -1369,9 +1369,10 @@ void File_Mpeg4::ftyp()
 
     //Parsing
     std::vector<int32u> ftyps;
+    int32u MajorBrandVersion;
     Get_C4 (MajorBrand,                                         "MajorBrand");
     ftyps.push_back(MajorBrand);
-    Skip_B4(                                                    "MajorBrandVersion");
+    Get_B4 (MajorBrandVersion,                                  "MajorBrandVersion");
     while (Element_Offset<Element_Size)
     {
         int32u CompatibleBrand;
@@ -1391,6 +1392,32 @@ void File_Mpeg4::ftyp()
                 default : ;
             }
         CodecID_Fill(Ztring().From_CC4(MajorBrand), Stream_General, 0, InfoCodecID_Format_Mpeg4);
+        Ztring CodecID_String=Ztring().From_CC4(MajorBrand);
+        if (MajorBrand==Elements::ftyp_qt)
+        {
+            ZtringList Version;
+            Version.Separator_Set(0, __T("."));
+            Version.push_back(Ztring().From_CC2(MajorBrandVersion>>16));
+            Version.push_back(Ztring().From_CC1((int8u)(MajorBrandVersion>>8)));
+            if (MajorBrandVersion&0xFF)
+                Version.push_back(Ztring().From_CC1((int8u)MajorBrandVersion));
+            Fill(Stream_General, 0, General_CodecID_Version, Version.Read());
+            CodecID_String += __T(' ');
+            CodecID_String += Version.Read();
+        }
+        if (ftyps.size()>1)
+        {
+            ZtringList Compat;
+            Compat.Separator_Set(0, __T("/"));
+            for (size_t i=1; i<ftyps.size(); i++)
+                if (ftyps[i])
+                    Compat.push_back(Ztring().From_CC4(ftyps[i]));
+            Fill(Stream_General, 0, General_CodecID_Compatible, Compat.Read());
+            CodecID_String += __T(" (");
+            CodecID_String += Compat.Read();
+            CodecID_String += __T(')');
+        }
+        Fill(Stream_General, 0, General_CodecID_String, CodecID_String, true);
     FILLING_END();
 }
 
