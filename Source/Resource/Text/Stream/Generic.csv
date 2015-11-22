@@ -46,6 +46,8 @@ BitRate_Encoded
 BitRate_Encoded/String
 FrameRate;
 FrameRate/String
+FrameRate_Num
+FrameRate_Den
 FrameCount
 Source_FrameCount
 ColorSpace

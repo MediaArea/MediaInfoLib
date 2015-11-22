@@ -136,6 +136,8 @@ SamplingCount;;;N NIY;;;Sample count (based on sampling rate);;
 Source_SamplingCount;;;N NIY;;;Source Sample count (based on sampling rate);;
 FrameRate;; fps;N YFY;;;Frames per second
 FrameRate/String;;;Y NT;;;Frames per second (with measurement)
+FrameRate_Num;;;N NFN;;;Frames per second, numerator
+FrameRate_Den;;;N NFN;;;Frames per second, denominator
 FrameCount;;;N NIY;;;Frame count (a frame contains a count of samples depends of the format);;
 Source_FrameCount;;;N NIY;;;Source Frame count (a frame contains a count of samples depends of the format);;
 Resolution;; bit;N NI;;;Deprecated, do not use in new projects;;

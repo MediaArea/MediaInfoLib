@@ -167,14 +167,18 @@ FrameRate_Mode_Original;;;N YTY;;;Original frame rate mode (CFR, VFR)
 FrameRate_Mode_Original/String;;;Y NT;;;Original frame rate mode (Constant, Variable)
 FrameRate;; fps;N YFY;;;Frames per second
 FrameRate/String;;;Y NT;;;Frames per second (with measurement)
-FrameRate_Original;; fps;N YFY;;;Original (in the raw stream) frames per second
-FrameRate_Original/String;;;Y NT;;;Original (in the raw stream) frames per second (with measurement)
+FrameRate_Num;;;N NFN;;;Frames per second, numerator
+FrameRate_Den;;;N NFN;;;Frames per second, denominator
 FrameRate_Minimum;; fps;N YFY;;;Minimum Frames per second
 FrameRate_Minimum/String;;;Y NT;;;Minimum Frames per second (with measurement)
 FrameRate_Nominal;; fps;N YFY;;;Nominal Frames per second
 FrameRate_Nominal/String;;;Y NT;;;Nominal Frames per second (with measurement)
 FrameRate_Maximum;; fps;N YFY;;;Maximum Frames per second
 FrameRate_Maximum/String;;;Y NT;;;Maximum Frames per second (with measurement)
+FrameRate_Original;; fps;N YFY;;;Original (in the raw stream) frames per second
+FrameRate_Original/String;;;Y NT;;;Original (in the raw stream) frames per second (with measurement)
+FrameRate_Original_Num;;;N NFN;;;Frames per second, numerator
+FrameRate_Original_Den;;;N NFN;;;Frames per second, denominator
 FrameCount;;;N NIY;;;Number of frames
 Source_FrameCount;;;N NI;;;Source Number of frames
 Standard;;;Y NTY;;;NTSC or PAL

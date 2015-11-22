@@ -23,6 +23,7 @@ Version 0.7.80
 + DTS: detection of DTS:X
 + Samples per frame info
 + AC-3: detection of Atmos inside TrueHD
++ Video frame rate: showing precision of 1/1.001 frame rates (e.g. "23.976 (24000/1001) fps" and "23.976 (23976/1000) fps")
 x Matroska: frame rate detection algorithm revisited, less wrong numbers are expected
 x SDP/Teletext: some pages were sometimes (when present in 2 different SDP lines) displayed several times
 

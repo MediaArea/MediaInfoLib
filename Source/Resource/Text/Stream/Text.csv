@@ -100,6 +100,8 @@ FrameRate_Mode;;;N YTY;;;Frame rate mode (CFR, VFR)
 FrameRate_Mode/String;;;N NT;;;Frame rate mode (Constant, Variable)
 FrameRate;; fps;N YFY;;;Frames per second
 FrameRate/String;;;N NT;;;Frames per second (with measurement)
+FrameRate_Num;;;N NFN;;;Frames per second, numerator
+FrameRate_Den;;;N NFN;;;Frames per second, denominator
 FrameRate_Minimum;; fps;N YFY;;;Minimum Frames per second
 FrameRate_Minimum/String;;;N NT;;;Minimum Frames per second (with measurement)
 FrameRate_Nominal;; fps;N YFY;;;Nominal Frames per second

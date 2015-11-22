@@ -65,7 +65,7 @@ Format_Profile;;;Y YTY;;;Profile of the Format
 Format_Compression;;;Y YTY;;;Compression method used;;
 Format_Settings;;;Y YTY;;;Settings needed for decoder used
 InternetMediaType;;;N YT;;;Internet Media Type (aka MIME Type, Content-Type)
-CodecID;;;Y YTY;;;Codec ID (found in some containers);;
+CodecID;;;N YTY;;;Codec ID (found in some containers);;
 CodecID/String;;;Y NT;;;Codec ID (found in some containers);;
 CodecID/Info;;;Y NT;;;Info about this codec
 CodecID/Hint;;;Y NT;;;A hint/popular name for this codec
@@ -106,6 +106,8 @@ OverallBitRate_Maximum;; bps;N YFY;;;Maximum Bit rate in bps
 OverallBitRate_Maximum/String;;;Y NT;;;Maximum Bit rate (with measurement)
 FrameRate;; fps;N YFY;;;Frames per second
 FrameRate/String;;;N NT;;;Frames per second (with measurement)
+FrameRate_Num;;;N NFN;;;Frames per second, numerator
+FrameRate_Den;;;N NFN;;;Frames per second, denominator
 FrameCount;;;N NIY;;;Frame count (a frame contains a count of samples depends of the format);;
 Delay;; ms;N YI;;;Delay fixed in the stream (relative) IN MS
 Delay/String;;;N NT;;;Delay with measurement
