@@ -2029,7 +2029,20 @@ void File_Ac3::HD()
         Skip_B1(                                                "Unknown");
         Skip_B1(                                                "Unknown");
         Skip_B1(                                                "Unknown");
-        Skip_B1(                                                "Unknown");
+        BS_Begin();
+        Skip_S1( 7,                                             "Unknown");
+        Get_SB (    HD_HasAtmos,                                "Has Atmos");
+        BS_End();
+        if (HD_HasAtmos)
+        {
+            unsigned char Extend = 0;
+            BS_Begin();
+            Get_S1( 4, Extend,                                  "Extend Header");
+            Skip_S1( 4,                                         "Unknown");
+            BS_End();
+            for (Extend = (Extend * 2) + 1; Extend > 0; Extend--)
+                Skip_B1(                                        "Unknown");
+        }
         Skip_B1(                                                "Unknown");
         Skip_B1(                                                "Unknown");
         Element_End0();
@@ -2037,8 +2050,7 @@ void File_Ac3::HD()
         FILLING_BEGIN();
             HD_MajorSync_Parsed=true;
 
-            if (HD_SubStreams_Count>3 && HD_StreamType==0xBA) HD_HasAtmos=true;
-            else if (HD_SubStreams_Count==1 && HD_StreamType==0xBB) //MLP with only 1 stream
+            if (HD_SubStreams_Count==1 && HD_StreamType==0xBB) //MLP with only 1 stream
             {
                 HD_Resolution2=HD_Resolution1;
                 HD_SamplingRate2=HD_SamplingRate1;
@@ -2519,3 +2531,4 @@ size_t File_Ac3::HD_Size_Get()
 } //NameSpace
 
 #endif //MEDIAINFO_AC3_YES
+
