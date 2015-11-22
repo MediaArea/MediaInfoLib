@@ -22,6 +22,7 @@ Version 0.7.80
 + DTS: difference between DTS-HRA with 96k option and pure DTS-96/24
 + DTS: detection of DTS:X
 + Samples per frame info
++ AC-3: detection of Atmos inside TrueHD
 x Matroska: frame rate detection algorithm revisited, less wrong numbers are expected
 x SDP/Teletext: some pages were sometimes (when present in 2 different SDP lines) displayed several times
 
