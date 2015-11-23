@@ -34,3 +34,4 @@ Release_Build
 Thumbs.db
 Win32
 x64
+*.ipch
