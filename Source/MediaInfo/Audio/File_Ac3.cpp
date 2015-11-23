@@ -2031,20 +2031,30 @@ void File_Ac3::HD()
         Skip_B1(                                                "Unknown");
         BS_Begin();
         Skip_S1( 7,                                             "Unknown");
-        Get_SB (    HD_HasAtmos,                                "Has Atmos");
+        bool HasExtend;
+        Get_SB (    HasExtend,                                  "Has Extend");
         BS_End();
-        if (HD_HasAtmos)
+        if (HasExtend)
         {
             unsigned char Extend = 0;
+            unsigned char Unknown = 0;
+            bool HasContent = false;
             BS_Begin();
             Get_S1( 4, Extend,                                  "Extend Header");
-            Skip_S1( 4,                                         "Unknown");
+            Get_S1( 4, Unknown,                                 "Unknown");
+            if (Unknown)
+                HasContent = true;
             BS_End();
             for (Extend = (Extend * 2) + 1; Extend > 0; Extend--)
-                Skip_B1(                                        "Unknown");
+            {
+                Get_B1(Unknown,                                 "Unknown");
+                if (Unknown)
+                    HasContent = true;
+            }
+            if (HasContent)
+                HD_HasAtmos=true; //Currently only Atmos is known as having data here
         }
-        Skip_B1(                                                "Unknown");
-        Skip_B1(                                                "Unknown");
+        
         Element_End0();
 
         FILLING_BEGIN();
@@ -2531,4 +2541,3 @@ size_t File_Ac3::HD_Size_Get()
 } //NameSpace
 
 #endif //MEDIAINFO_AC3_YES
-

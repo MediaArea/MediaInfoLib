@@ -800,6 +800,59 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
 }
 
 //---------------------------------------------------------------------------
+void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Parameter, float32 Value, int8u AfterComma, bool Replace)
+{
+    if (StreamKind==Stream_Video && Parameter==Video_FrameRate)
+    {
+        Clear(StreamKind, StreamPos, Video_FrameRate_Num);
+        Clear(StreamKind, StreamPos, Video_FrameRate_Den);
+        
+        if (Value==(float32)23976/(float32)1000)
+        {
+            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  23976, 10, Replace);
+            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
+        }
+        if (Value==(float32)24000/(float32)1001)
+        {
+            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  24000, 10, Replace);
+            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
+        }
+        if (Value==(float32)29970/(float32)1000)
+        {
+            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  29970, 10, Replace);
+            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
+        }
+        if (Value==(float32)30000/(float32)1001)
+        {
+            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  30000, 10, Replace);
+            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
+        }
+        if (Value==(float32)47952/(float32)1000)
+        {
+            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  47952, 10, Replace);
+            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
+        }
+        if (Value==(float32)48000/(float32)1001)
+        {
+            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  48000, 10, Replace);
+            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
+        }
+        if (Value==(float32)59940/(float32)1000)
+        {
+            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  59940, 10, Replace);
+            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
+        }
+        if (Value==(float32)60000/(float32)1001)
+        {
+            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  60000, 10, Replace);
+            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
+        }
+    }
+        
+    Fill(StreamKind, StreamPos, Parameter, Ztring::ToZtring(Value, AfterComma), Replace);
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Parameter, const Ztring &Value, bool Replace)
 {
     //Integrity
@@ -1165,7 +1218,7 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         Stream_Prepare(StreamKind);
 
     //Specific stuff
-    Ztring Width_Temp, Height_Temp, PixelAspectRatio_Temp, DisplayAspectRatio_Temp, FrameRate_Temp, FrameRate_Mode_Temp, ScanType_Temp, ScanOrder_Temp, Channels_Temp, Delay_Temp, Delay_DropFrame_Temp, Delay_Source_Temp, Delay_Settings_Temp, Source_Temp, Source_Kind_Temp, Source_Info_Temp;
+    Ztring Width_Temp, Height_Temp, PixelAspectRatio_Temp, DisplayAspectRatio_Temp, FrameRate_Temp, FrameRate_Num_Temp, FrameRate_Den_Temp, FrameRate_Mode_Temp, ScanType_Temp, ScanOrder_Temp, Channels_Temp, Delay_Temp, Delay_DropFrame_Temp, Delay_Source_Temp, Delay_Settings_Temp, Source_Temp, Source_Kind_Temp, Source_Info_Temp;
     Ztring colour_description_present_Temp, colour_primaries_Temp, transfer_characteristics_Temp, matrix_coefficients_Temp;
     if (StreamKind==Stream_Video)
     {
@@ -1174,6 +1227,8 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         PixelAspectRatio_Temp=Retrieve(Stream_Video, StreamPos_To, Video_PixelAspectRatio); //We want to keep the PixelAspectRatio_Temp of the video stream
         DisplayAspectRatio_Temp=Retrieve(Stream_Video, StreamPos_To, Video_DisplayAspectRatio); //We want to keep the DisplayAspectRatio_Temp of the video stream
         FrameRate_Temp=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate); //We want to keep the FrameRate of AVI 120 fps
+        FrameRate_Num_Temp=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Num);
+        FrameRate_Den_Temp=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Den);
         FrameRate_Mode_Temp=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Mode); //We want to keep the FrameRate_Mode of AVI 120 fps
         ScanType_Temp=Retrieve(Stream_Video, StreamPos_To, Video_ScanType);
         ScanOrder_Temp=Retrieve(Stream_Video, StreamPos_To, Video_ScanOrder);
@@ -1264,10 +1319,16 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
             Fill(Stream_Video, StreamPos_To, Video_DisplayAspectRatio_Original, DisplayAspectRatio_Original, true);
             Fill(Stream_Video, StreamPos_To, Video_DisplayAspectRatio, DisplayAspectRatio_Temp, true);
         }
-        if (!FrameRate_Temp.empty() && FrameRate_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate))
+        if ((!FrameRate_Temp.empty() && FrameRate_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate))
+         || (!FrameRate_Num_Temp.empty() && FrameRate_Num_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Num))
+         || (!FrameRate_Den_Temp.empty() && FrameRate_Den_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Den)))
         {
             Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original, (*Stream)[Stream_Video][StreamPos_To][Video_FrameRate], true);
+            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original_Num, (*Stream)[Stream_Video][StreamPos_To][Video_FrameRate_Num], true);
+            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original_Den, (*Stream)[Stream_Video][StreamPos_To][Video_FrameRate_Den], true);
             Fill(Stream_Video, StreamPos_To, Video_FrameRate, FrameRate_Temp, true);
+            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Num, FrameRate_Num_Temp, true);
+            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Den, FrameRate_Den_Temp, true);
         }
         if (!FrameRate_Mode_Temp.empty() && FrameRate_Mode_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Mode))
         {

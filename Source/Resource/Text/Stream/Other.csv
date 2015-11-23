@@ -42,6 +42,8 @@ Duration_Start;;;Y YTY;;;
 Duration_End;;;Y YTY;;;
 FrameRate;; fps;N YFY;;;Frames per second
 FrameRate/String;;;Y NT;;;Frames per second (with measurement)
+FrameRate_Num;;;N NFN;;;Frames per second, numerator
+FrameRate_Den;;;N NFN;;;Frames per second, denominator
 FrameCount;;;N NIY;;;Number of frames
 TimeStamp_FirstFrame;; ms;N YIY;;;TimeStamp fixed in the stream (relative) IN MS;
 TimeStamp_FirstFrame/String;;;Y NT;;;TimeStamp with measurement;
