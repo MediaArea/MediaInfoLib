@@ -378,14 +378,6 @@ void File_Mk::Streams_Finish()
                         }
                     }
                 }
-                
-                //Checking coherency with raw stream
-                if (Temp->second.Parser)
-                {
-                    float64 FrameRate_RawStream = Temp->second.Parser->Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate)).To_float64();
-                    if (FrameRate_RawStream && FrameRate_RawStream>=FrameRate_FromTags*0.99 && FrameRate_RawStream<=FrameRate_FromTags*1.01)
-                        FrameRate_FromTags=FrameRate_RawStream; //Raw stream value is more precise
-                }
 
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate), FrameRate_FromTags, 3, true);
             }
@@ -493,6 +485,7 @@ void File_Mk::Streams_Finish()
                 else if (FrameRate_Between.size()>2)
                     IsVfr=true;
             }
+
             else if (Temp->second.TrackDefaultDuration)
             {
                 float32 FrameRate_FromCluster=1000000000/(float32)Temp->second.TrackDefaultDuration;
