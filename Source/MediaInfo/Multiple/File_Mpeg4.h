@@ -314,7 +314,9 @@ private :
     int32u                                  moov_meta_hdlr_Type;
     std::string                             moov_meta_ilst_xxxx_name_Name;
     size_t                                  moov_trak_mdia_minf_stbl_stsd_Pos;
+    bool                                    moov_trak_tkhd_Flags_Track_enabled;
     int32u                                  moov_trak_tkhd_TrackID;
+    int16u                                  moov_trak_tkhd_Alternate_group;
     float32                                 moov_trak_tkhd_Width;
     float32                                 moov_trak_tkhd_Height;
     float32                                 moov_trak_tkhd_DisplayAspectRatio;
