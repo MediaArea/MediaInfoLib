@@ -361,6 +361,22 @@ void File_Mk::Streams_Finish()
                         FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001;
                     if (CanBe1000 && !CanBe1001)
                         FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001001;
+
+                    // Duration from tags not reliable, checking TrackDefaultDuration
+                    if (!CanBe1000 && !CanBe1001)
+                    {
+                        float64 Duration_Default=((float64)1000000000)/Temp->second.TrackDefaultDuration;
+                        if (float64_int64s(Duration_Default) - Duration_Default*1.001000 > -0.000002
+                         && float64_int64s(Duration_Default) - Duration_Default*1.001000 < +0.000002) // Detection of precise 1.001 (e.g. 24000/1001) taking into account precision of 32-bit float 
+                        {
+                            FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001;
+                        }
+                        if (float64_int64s(Duration_Default) - Duration_Default*1.001001 > -0.000002
+                         && float64_int64s(Duration_Default) - Duration_Default*1.001001 < +0.000002) // Detection of rounded 1.001 (e.g. 23976/1000) taking into account precision of 32-bit float 
+                        {
+                            FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001001;
+                        }
+                    }
                 }
                 
                 //Checking coherency with raw stream
