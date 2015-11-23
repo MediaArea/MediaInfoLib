@@ -761,7 +761,8 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         }
 
         //Well known framerate values
-        if (StreamKind==Stream_Video && (Parameter==Video_FrameRate || Parameter==Video_FrameRate_Nominal || Parameter==Video_FrameRate_Original))
+        if (StreamKind==Stream_Video && (Parameter==Video_FrameRate || Parameter==Video_FrameRate_Nominal || Parameter==Video_FrameRate_Original)
+         && Retrieve(Stream_Video, StreamPos, Video_FrameRate_Original_Num).empty()) // Ignoring when there is a num/den with discrepency between container and raw stream
         {
             Video_FrameRate_Rounding(StreamPos, (video)Parameter);
             if (Retrieve(Stream_Video, StreamPos, Video_FrameRate_Nominal)==Retrieve(Stream_Video, StreamPos, Video_FrameRate))
@@ -1323,9 +1324,9 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
          || (!FrameRate_Num_Temp.empty() && FrameRate_Num_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Num))
          || (!FrameRate_Den_Temp.empty() && FrameRate_Den_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Den)))
         {
-            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original, (*Stream)[Stream_Video][StreamPos_To][Video_FrameRate], true);
-            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original_Num, (*Stream)[Stream_Video][StreamPos_To][Video_FrameRate_Num], true);
-            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original_Den, (*Stream)[Stream_Video][StreamPos_To][Video_FrameRate_Den], true);
+            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original, ToAdd.Retrieve(Stream_Video, StreamPos_To, Video_FrameRate), true);
+            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original_Num, ToAdd.Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Num), true);
+            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original_Den, ToAdd.Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Den), true);
             Fill(Stream_Video, StreamPos_To, Video_FrameRate, FrameRate_Temp, true);
             Fill(Stream_Video, StreamPos_To, Video_FrameRate_Num, FrameRate_Num_Temp, true);
             Fill(Stream_Video, StreamPos_To, Video_FrameRate_Den, FrameRate_Den_Temp, true);

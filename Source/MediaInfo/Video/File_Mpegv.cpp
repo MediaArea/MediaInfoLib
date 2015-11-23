@@ -1256,7 +1256,8 @@ void File_Mpegv::Streams_Fill()
     }
 
     //FrameRate
-    Fill(Stream_Video, StreamPos_Last, Video_FrameRate, Mpegv_frame_rate[frame_rate_code] * (frame_rate_extension_n + 1) / (frame_rate_extension_d + 1));
+    if (Mpegv_frame_rate[frame_rate_code])
+        Fill(Stream_Video, StreamPos_Last, Video_FrameRate, Mpegv_frame_rate[frame_rate_code] * (frame_rate_extension_n + 1) / (frame_rate_extension_d + 1));
 
     //BitRate
     if (vbv_delay==0xFFFF || (MPEG_Version==1 && bit_rate_value==0x3FFFF))
