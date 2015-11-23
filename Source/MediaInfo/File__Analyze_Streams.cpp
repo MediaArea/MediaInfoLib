@@ -807,46 +807,21 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     {
         Clear(StreamKind, StreamPos, Video_FrameRate_Num);
         Clear(StreamKind, StreamPos, Video_FrameRate_Den);
-        
-        if (Value==(float32)23976/(float32)1000)
+
+        if (Value)
         {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  23976, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
-        }
-        if (Value==(float32)24000/(float32)1001)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  24000, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
-        }
-        if (Value==(float32)29970/(float32)1000)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  29970, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
-        }
-        if (Value==(float32)30000/(float32)1001)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  30000, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
-        }
-        if (Value==(float32)47952/(float32)1000)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  47952, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
-        }
-        if (Value==(float32)48000/(float32)1001)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  48000, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
-        }
-        if (Value==(float32)59940/(float32)1000)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  59940, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
-        }
-        if (Value==(float32)60000/(float32)1001)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  60000, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
+            if (float32_int32s(Value) - Value*1.001000 > -0.000002
+             && float32_int32s(Value) - Value*1.001000 < +0.000002) // Detection of precise 1.001 (e.g. 24000/1001) taking into account precision of 32-bit float 
+            {
+                Fill(StreamKind, StreamPos, Video_FrameRate_Num,  Value*1001, 0, Replace);
+                Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
+            }
+            if (float32_int32s(Value) - Value*1.001001 > -0.000002
+             && float32_int32s(Value) - Value*1.001001 < +0.000002) // Detection of rounded 1.001 (e.g. 23976/1000) taking into account precision of 32-bit float 
+            {
+                Fill(StreamKind, StreamPos, Video_FrameRate_Num,  Value*1000, 0, Replace);
+                Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
+            }
         }
     }
         
