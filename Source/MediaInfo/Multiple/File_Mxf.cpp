@@ -11559,7 +11559,7 @@ void File_Mxf::Get_Rational(float64 &Value)
     Get_B4 (N,                                                  "Numerator");
     Get_B4 (D,                                                  "Denominator");
     if (D)
-        Value=((float32)N)/D;
+        Value=((float64)N)/D;
     else
         Value=0; //Error
 }

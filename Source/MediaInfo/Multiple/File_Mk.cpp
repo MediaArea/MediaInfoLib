@@ -239,7 +239,7 @@ void File_Mk::Streams_Finish()
     
         //Tags
         //Ztring Duration_Temp;
-        float32 FrameRate_FromTags = 0.0;
+        float64 FrameRate_FromTags = 0.0;
         Ztring TagsList=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
         if (TagsList.size())
         {
@@ -344,33 +344,39 @@ void File_Mk::Streams_Finish()
             if (Statistics_Duration && Statistics_FrameCount)
             {
                 FrameRate_FromTags = Statistics_FrameCount/Statistics_Duration;
-
-                //Checking 1.001 frame rates, Statistics_Duration is has often only a 1 ms precision so we test between -1ms and +1ms
-                float64 FrameRate_FromTags_p1=Statistics_FrameCount/(Statistics_Duration+0.001);
-                float64 FrameRate_FromTags_m1=Statistics_FrameCount/(Statistics_Duration-0.001);
-                if (FrameRate_FromTags_p1<=(float64)23976/(float64)1000 && FrameRate_FromTags_m1>=(float64)23976/(float64)1000)
-                    FrameRate_FromTags=(float32)23976/(float32)1000;
-                if (FrameRate_FromTags_p1<=(float64)24000/(float64)1001 && FrameRate_FromTags_m1>=(float64)24000/(float64)1001)
-                    FrameRate_FromTags=(float32)24000/(float32)1001;
-                if (FrameRate_FromTags_p1<=(float64)29970/(float64)1000 && FrameRate_FromTags_m1>=(float64)29970/(float64)1000)
-                    FrameRate_FromTags=(float32)29970/(float32)1000;
-                if (FrameRate_FromTags_p1<=(float64)30000/(float64)1001 && FrameRate_FromTags_m1>=(float64)30000/(float64)1001)
-                    FrameRate_FromTags=(float32)30000/(float32)1001;
-                if (FrameRate_FromTags_p1<=(float64)47952/(float64)1000 && FrameRate_FromTags_m1>=(float64)47952/(float64)1000)
-                    FrameRate_FromTags=(float32)47952/(float32)1000;
-                if (FrameRate_FromTags_p1<=(float64)48000/(float64)1001 && FrameRate_FromTags_m1>=(float64)48000/(float64)1001)
-                    FrameRate_FromTags=(float32)48000/(float32)1001;
-                if (FrameRate_FromTags_p1<=(float64)59940/(float64)1000 && FrameRate_FromTags_m1>=(float64)59940/(float64)1000)
-                    FrameRate_FromTags=(float32)59940/(float32)1000;
-                if (FrameRate_FromTags_p1<=(float64)60000/(float64)1001 && FrameRate_FromTags_m1>=(float64)60000/(float64)1001)
-                    FrameRate_FromTags=(float32)60000/(float32)1001;
-                
-                //Checking coherency with raw stream
-                if (Temp->second.Parser)
+                if (float64_int64s(FrameRate_FromTags) - FrameRate_FromTags*1.001 > -0.0001
+                 && float64_int64s(FrameRate_FromTags) - FrameRate_FromTags*1.001 < +0.0001)
                 {
-                    float64 FrameRate_RawStream = Temp->second.Parser->Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate)).To_float64();
-                    if (FrameRate_RawStream && FrameRate_RawStream>=FrameRate_FromTags*0.99 && FrameRate_RawStream<=FrameRate_FromTags*1.01)
-                        FrameRate_FromTags=FrameRate_RawStream; //Raw stream value is more precise
+                    // Checking 1.001 frame rates, Statistics_Duration is has often only a 1 ms precision so we test between -1ms and +1ms
+                    float64 Duration_1001 = Statistics_FrameCount / float64_int64s(FrameRate_FromTags) * 1.001000;
+                    float64 Duration_1000 = Statistics_FrameCount / float64_int64s(FrameRate_FromTags) * 1.001001;
+
+                    Ztring DurationS; DurationS.From_Number(Statistics_Duration, 3);
+                    Ztring DurationS_1001; DurationS_1001.From_Number(Duration_1001, 3);
+                    Ztring DurationS_1000; DurationS_1000.From_Number(Duration_1000, 3);
+
+                    bool CanBe1001=DurationS==DurationS_1001?true:false;
+                    bool CanBe1000=DurationS==DurationS_1000?true:false;
+                    if (CanBe1001 && !CanBe1000)
+                        FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001;
+                    if (CanBe1000 && !CanBe1001)
+                        FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001001;
+
+                    // Duration from tags not reliable, checking TrackDefaultDuration
+                    if (!CanBe1000 && !CanBe1001)
+                    {
+                        float64 Duration_Default=((float64)1000000000)/Temp->second.TrackDefaultDuration;
+                        if (float64_int64s(Duration_Default) - Duration_Default*1.001000 > -0.000002
+                         && float64_int64s(Duration_Default) - Duration_Default*1.001000 < +0.000002) // Detection of precise 1.001 (e.g. 24000/1001) taking into account precision of 32-bit float 
+                        {
+                            FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001;
+                        }
+                        if (float64_int64s(Duration_Default) - Duration_Default*1.001001 > -0.000002
+                         && float64_int64s(Duration_Default) - Duration_Default*1.001001 < +0.000002) // Detection of rounded 1.001 (e.g. 23976/1000) taking into account precision of 32-bit float 
+                        {
+                            FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001001;
+                        }
+                    }
                 }
 
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate), FrameRate_FromTags, 3, true);
@@ -479,6 +485,7 @@ void File_Mk::Streams_Finish()
                 else if (FrameRate_Between.size()>2)
                     IsVfr=true;
             }
+
             else if (Temp->second.TrackDefaultDuration)
             {
                 float32 FrameRate_FromCluster=1000000000/(float32)Temp->second.TrackDefaultDuration;

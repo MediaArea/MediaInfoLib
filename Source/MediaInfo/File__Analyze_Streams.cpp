@@ -761,7 +761,8 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         }
 
         //Well known framerate values
-        if (StreamKind==Stream_Video && (Parameter==Video_FrameRate || Parameter==Video_FrameRate_Nominal || Parameter==Video_FrameRate_Original))
+        if (StreamKind==Stream_Video && (Parameter==Video_FrameRate || Parameter==Video_FrameRate_Nominal || Parameter==Video_FrameRate_Original)
+         && Retrieve(Stream_Video, StreamPos, Video_FrameRate_Original_Num).empty()) // Ignoring when there is a num/den with discrepency between container and raw stream
         {
             Video_FrameRate_Rounding(StreamPos, (video)Parameter);
             if (Retrieve(Stream_Video, StreamPos, Video_FrameRate_Nominal)==Retrieve(Stream_Video, StreamPos, Video_FrameRate))
@@ -806,46 +807,21 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     {
         Clear(StreamKind, StreamPos, Video_FrameRate_Num);
         Clear(StreamKind, StreamPos, Video_FrameRate_Den);
-        
-        if (Value==(float32)23976/(float32)1000)
+
+        if (Value)
         {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  23976, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
-        }
-        if (Value==(float32)24000/(float32)1001)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  24000, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
-        }
-        if (Value==(float32)29970/(float32)1000)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  29970, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
-        }
-        if (Value==(float32)30000/(float32)1001)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  30000, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
-        }
-        if (Value==(float32)47952/(float32)1000)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  47952, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
-        }
-        if (Value==(float32)48000/(float32)1001)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  48000, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
-        }
-        if (Value==(float32)59940/(float32)1000)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  59940, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
-        }
-        if (Value==(float32)60000/(float32)1001)
-        {
-            Fill(StreamKind, StreamPos, Video_FrameRate_Num,  60000, 10, Replace);
-            Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
+            if (float32_int32s(Value) - Value*1.001000 > -0.000002
+             && float32_int32s(Value) - Value*1.001000 < +0.000002) // Detection of precise 1.001 (e.g. 24000/1001) taking into account precision of 32-bit float 
+            {
+                Fill(StreamKind, StreamPos, Video_FrameRate_Num,  Value*1001, 0, Replace);
+                Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
+            }
+            if (float32_int32s(Value) - Value*1.001001 > -0.000002
+             && float32_int32s(Value) - Value*1.001001 < +0.000002) // Detection of rounded 1.001 (e.g. 23976/1000) taking into account precision of 32-bit float 
+            {
+                Fill(StreamKind, StreamPos, Video_FrameRate_Num,  Value*1000, 0, Replace);
+                Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
+            }
         }
     }
         
@@ -1323,9 +1299,9 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
          || (!FrameRate_Num_Temp.empty() && FrameRate_Num_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Num))
          || (!FrameRate_Den_Temp.empty() && FrameRate_Den_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Den)))
         {
-            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original, (*Stream)[Stream_Video][StreamPos_To][Video_FrameRate], true);
-            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original_Num, (*Stream)[Stream_Video][StreamPos_To][Video_FrameRate_Num], true);
-            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original_Den, (*Stream)[Stream_Video][StreamPos_To][Video_FrameRate_Den], true);
+            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original, ToAdd.Retrieve(Stream_Video, StreamPos_To, Video_FrameRate), true);
+            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original_Num, ToAdd.Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Num), true);
+            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original_Den, ToAdd.Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Den), true);
             Fill(Stream_Video, StreamPos_To, Video_FrameRate, FrameRate_Temp, true);
             Fill(Stream_Video, StreamPos_To, Video_FrameRate_Num, FrameRate_Num_Temp, true);
             Fill(Stream_Video, StreamPos_To, Video_FrameRate_Den, FrameRate_Den_Temp, true);
