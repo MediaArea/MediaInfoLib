@@ -1,5 +1,6 @@
 %define libmediainfo_version      0.7.79
 %define libzen_version            0.4.32
+%define debug_package %{nil}
 
 Name:           libmediainfo
 Version:        %{libmediainfo_version}
@@ -235,7 +236,7 @@ rm -f %{buildroot}%{_libdir}/%{name}.la
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
-* Tue Jan 01 2012 MediaArea.net SARL <info@mediaarea.net> - 0.7.79-0
+* Sun Jan 01 2012 MediaArea.net SARL <info@mediaarea.net> - 0.7.79-0
 - See History.txt for more info and real dates
 - Previous packages made by Toni Graffy <toni@links2linux.de>
 - Fedora style made by Vasiliy N. Glazov <vascom2@gmail.com>
