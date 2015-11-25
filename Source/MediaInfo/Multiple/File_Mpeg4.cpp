@@ -391,6 +391,15 @@ void File_Mpeg4::Streams_Finish()
                             TempString.append(Ztring().From_Number(*TrackID));
                         }
                     }
+                    for (TrackID = Temp->second.FallBackFrom.begin(); TrackID != Temp->second.FallBackFrom.end(); TrackID++)
+                    {
+                        if (Streams[*TrackID].IsEnabled)
+                        {
+                            if (TempString.size()) TempString.append(__T(" ,"));
+                            else TempString=__T("Inherited From: ");
+                            TempString.append(Ztring().From_Number(*TrackID));
+                        }
+                    }
                     Fill(StreamKind_Last, StreamPos_Last, "Default", TempString.size()?TempString.To_Local().c_str():"No");
                     TempString.clear();
                 }
@@ -470,7 +479,22 @@ void File_Mpeg4::Streams_Finish()
                 }
                 if (Temp->second.Subtitle.size())
                 {
+                    std::vector<int32u> TrackIDs = Temp->second.Subtitle;
                     for (TrackID = Temp->second.Subtitle.begin(); TrackID != Temp->second.Subtitle.end(); TrackID++)
+                    {
+                        std::vector<int32u>::iterator TrackID2;
+                        for (TrackID2 = Streams[*TrackID].Forced.begin(); TrackID2 != Streams[*TrackID].Forced.end(); TrackID2++)
+                        {
+                            TrackIDs.push_back(*TrackID2);
+                        }
+                        for (TrackID2 = Streams[*TrackID].ForcedFor.begin(); TrackID2 != Streams[*TrackID].ForcedFor.end(); TrackID2++)
+                        {
+                            TrackIDs.push_back(*TrackID2);
+                        }
+                    }
+                    sort (TrackIDs.begin(), TrackIDs.end());
+                    TrackIDs.erase( unique(TrackIDs.begin(), TrackIDs.end()), TrackIDs.end());
+                    for (std::vector<int32u>::iterator TrackID = TrackIDs.begin(); TrackID != TrackIDs.end(); TrackID++)
                     {
                         if (TempString.size()) TempString.append(__T(","));
                         TempString.append(Ztring().From_Number(*TrackID));

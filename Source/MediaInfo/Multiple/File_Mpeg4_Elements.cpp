@@ -3996,8 +3996,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tmcd_name()
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tx3g()
 {
     Element_Name("Text");
-    bool tx3gallforced, tx3ghasforced;
     //Parsing
+    bool tx3gallforced, tx3ghasforced;
     Skip_B4(                                                    "Reserved");
     Skip_B2(                                                    "Reserved");
     Skip_B2(                                                    "Data reference index");
