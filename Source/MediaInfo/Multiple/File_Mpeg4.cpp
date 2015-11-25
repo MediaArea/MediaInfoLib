@@ -436,19 +436,6 @@ void File_Mpeg4::Streams_Finish()
                     TempString.clear();
                 }
             }
-            if (Temp->second.Chapters.size())
-            {
-                for (TrackID = Temp->second.Chapters.begin(); TrackID != Temp->second.Chapters.end(); TrackID++)
-                {
-                    if (TempString.size()) TempString.append(__T(","));
-                    TempString.append(Ztring().From_Number(*TrackID));
-                }
-                if (TempString.size())
-                {
-                    Fill(StreamKind_Last, StreamPos_Last, "Menus", TempString.To_Local().c_str());
-                    TempString.clear();
-                }
-            }
             if (StreamKind_Last == Stream_Audio)
             {
                 if (Temp->second.FallBackTo.size())
@@ -531,6 +518,19 @@ void File_Mpeg4::Streams_Finish()
                         Fill(StreamKind_Last, StreamPos_Last, "Closed Captions For", TempString.To_Local().c_str());
                         TempString.clear();
                     }
+            }
+            if (Temp->second.Chapters.size())
+            {
+                for (TrackID = Temp->second.Chapters.begin(); TrackID != Temp->second.Chapters.end(); TrackID++)
+                {
+                    if (TempString.size()) TempString.append(__T(","));
+                    TempString.append(Ztring().From_Number(*TrackID));
+                }
+                if (TempString.size())
+                {
+                    Fill(StreamKind_Last, StreamPos_Last, "Menus", TempString.To_Local().c_str());
+                    TempString.clear();
+                }
             }
         }
         else
