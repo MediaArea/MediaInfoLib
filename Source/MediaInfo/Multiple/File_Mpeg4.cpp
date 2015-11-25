@@ -339,6 +339,194 @@ void File_Mpeg4::Streams_Finish()
         //if (Temp->second.stsz_StreamSize)
         //    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), Temp->second.stsz_StreamSize);
 
+        //flags and references
+        if (StreamKind_Last != Stream_Menu)
+        {
+            Ztring TempString;
+            std::vector<int32u>::iterator TrackID;
+            if (StreamKind_Last == Stream_Text)
+            {
+                std::vector<int32u> TrackIDs = Temp->second.SubtitleFor;
+                for (TrackID = Temp->second.Forced.begin(); TrackID != Temp->second.Forced.end(); TrackID++)
+                {
+                    for (std::vector<int32u>::iterator TrackID2 = Streams[*TrackID].SubtitleFor.begin(); TrackID2 != Streams[*TrackID].SubtitleFor.end(); TrackID2++)
+                    {
+                        TrackIDs.push_back(*TrackID2);
+                    }
+                }
+                for (TrackID = Temp->second.ForcedFor.begin(); TrackID != Temp->second.ForcedFor.end(); TrackID++)
+                {
+                    for (std::vector<int32u>::iterator TrackID2 = Streams[*TrackID].SubtitleFor.begin(); TrackID2 != Streams[*TrackID].SubtitleFor.end(); TrackID2++)
+                    {
+                        TrackIDs.push_back(*TrackID2);
+                    }
+                }
+                sort (TrackIDs.begin(), TrackIDs.end());
+                TrackIDs.erase( unique(TrackIDs.begin(), TrackIDs.end()), TrackIDs.end());
+                for (std::vector<int32u>::iterator TrackID = TrackIDs.begin(); TrackID != TrackIDs.end(); TrackID++)
+                {
+                    if (TempString.size()) TempString.append(__T(","));
+                    TempString.append(Ztring().From_Number(*TrackID));
+                }
+                if (TempString.size())
+                {
+                    Fill(StreamKind_Last, StreamPos_Last, "Subtitles For", TempString.To_Local().c_str());
+                    TempString.clear();
+                }
+            }
+            if (Temp->second.IsExcluded)
+                Fill(StreamKind_Last, StreamPos_Last, "Default", "Excluded");
+            else
+            {
+                if (Temp->second.IsEnabled)
+                    Fill(StreamKind_Last, StreamPos_Last, "Default", "Yes");
+                else
+                {
+                    for (TrackID = Temp->second.FallBackTo.begin(); TrackID != Temp->second.FallBackTo.end(); TrackID++)
+                    {
+                        if (Streams[*TrackID].IsEnabled)
+                        {
+                            if (TempString.size()) TempString.append(__T(" ,"));
+                            else TempString=__T("Inherited From: ");
+                            TempString.append(Ztring().From_Number(*TrackID));
+                        }
+                    }
+                    Fill(StreamKind_Last, StreamPos_Last, "Default", TempString.size()?TempString.To_Local().c_str():"No");
+                    TempString.clear();
+                }
+            }
+            if (StreamKind_Last == Stream_Text)
+            {
+                if (Temp->second.HasForcedSamples)
+                {
+                    if (Temp->second.AllForcedSamples)
+                        Fill(StreamKind_Last, StreamPos_Last, "Forced", "Yes");
+                    else
+                        Fill(StreamKind_Last, StreamPos_Last, "Forced", "Mixed");
+                    if (Temp->second.ForcedFor.size())
+                    {
+                        for (TrackID = Temp->second.ForcedFor.begin(); TrackID != Temp->second.ForcedFor.end(); TrackID++)
+                        {
+                            if (TempString.size()) TempString.append(__T(","));
+                            TempString.append(Ztring().From_Number(*TrackID));
+                        }
+                        Fill(StreamKind_Last, StreamPos_Last, "Full Alternative", TempString.To_Local().c_str());
+                        TempString.clear();
+                    }
+                }
+                else
+                    Fill(StreamKind_Last, StreamPos_Last, "Forced", "No");
+                if (Temp->second.Forced.size())
+                {
+                    for (TrackID = Temp->second.Forced.begin(); TrackID != Temp->second.Forced.end(); TrackID++)
+                    {
+                        if (TempString.size()) TempString.append(__T(","));
+                        TempString.append(Ztring().From_Number(*TrackID));
+                    }
+                    if (TempString.size()) Fill(StreamKind_Last, StreamPos_Last, "Forced Alternative", TempString.To_Local().c_str());
+                    TempString.clear();
+                }
+            }
+            if (Temp->second.Chapters.size())
+            {
+                for (TrackID = Temp->second.Chapters.begin(); TrackID != Temp->second.Chapters.end(); TrackID++)
+                {
+                    if (TempString.size()) TempString.append(__T(","));
+                    TempString.append(Ztring().From_Number(*TrackID));
+                }
+                if (TempString.size())
+                {
+                    Fill(StreamKind_Last, StreamPos_Last, "Menus", TempString.To_Local().c_str());
+                    TempString.clear();
+                }
+            }
+            if (StreamKind_Last == Stream_Audio)
+            {
+                if (Temp->second.FallBackTo.size())
+                {
+                    for (TrackID = Temp->second.FallBackTo.begin(); TrackID != Temp->second.FallBackTo.end(); TrackID++)
+                    {
+                        if (TempString.size()) TempString.append(__T(","));
+                        TempString.append(Ztring().From_Number(*TrackID));
+                    }
+                    if (TempString.size())
+                    {
+                        Fill(StreamKind_Last, StreamPos_Last, "Fallback To", TempString.To_Local().c_str());
+                        TempString.clear();
+                    }
+                }
+                if (Temp->second.FallBackFrom.size())
+                {
+                    for (TrackID = Temp->second.FallBackFrom.begin(); TrackID != Temp->second.FallBackFrom.end(); TrackID++)
+                    {
+                        if (TempString.size()) TempString.append(__T(","));
+                        TempString.append(Ztring().From_Number(*TrackID));
+                    }
+                    if (TempString.size())
+                    {
+                        Fill(StreamKind_Last, StreamPos_Last, "Fallback From", TempString.To_Local().c_str());
+                        TempString.clear();
+                    }
+                }
+                if (Temp->second.Subtitle.size())
+                {
+                    for (TrackID = Temp->second.Subtitle.begin(); TrackID != Temp->second.Subtitle.end(); TrackID++)
+                    {
+                        if (TempString.size()) TempString.append(__T(","));
+                        TempString.append(Ztring().From_Number(*TrackID));
+                    }
+                    if (TempString.size())
+                    {
+                        Fill(StreamKind_Last, StreamPos_Last, "Subtitles", TempString.To_Local().c_str());
+                        TempString.clear();
+                    }
+                }
+            }
+            if (Temp->second.CC.size())
+            {
+                    for (TrackID = Temp->second.CC.begin(); TrackID != Temp->second.CC.end(); TrackID++)
+                    {
+                        if (TempString.size()) TempString.append(__T(","));
+                        TempString.append(Ztring().From_Number(*TrackID));
+                    }
+                    if (TempString.size())
+                    {
+                        Fill(StreamKind_Last, StreamPos_Last, "Closed Captions", TempString.To_Local().c_str());
+                        TempString.clear();
+                    }
+            }
+            else if (Temp->second.CCFor.size())
+            {
+                    for (TrackID = Temp->second.CCFor.begin(); TrackID != Temp->second.CCFor.end(); TrackID++)
+                    {
+                        if (TempString.size()) TempString.append(__T(","));
+                        TempString.append(Ztring().From_Number(*TrackID));
+                    }
+                    if (TempString.size())
+                    {
+                        Fill(StreamKind_Last, StreamPos_Last, "Closed Captions For", TempString.To_Local().c_str());
+                        TempString.clear();
+                    }
+            }
+        }
+        else
+        {
+            if (Temp->second.ChaptersFor.size())
+            {
+                Ztring TempString;
+                std::vector<int32u>::iterator TrackID;
+                for (TrackID = Temp->second.ChaptersFor.begin(); TrackID != Temp->second.ChaptersFor.end(); TrackID++)
+                {
+                    if (TempString.size()) TempString.append(__T(","));
+                    TempString.append(Ztring().From_Number(*TrackID));
+                }
+                if (TempString.size())
+                {
+                    Fill(StreamKind_Last, StreamPos_Last, "Menu For", TempString.To_Local().c_str());
+                    TempString.clear();
+                }
+            }
+        }
         //Edit lists coherencies
         if (Temp->second.edts.size()>1 && Temp->second.edts[0].Duration==Temp->second.tkhd_Duration)
         {
