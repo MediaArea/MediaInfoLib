@@ -1914,6 +1914,7 @@ File_Mxf::File_Mxf()
     IsParsingEnd=false;
     IsCheckingRandomAccessTable=false;
     IsCheckingFooterPartitionAddress=false;
+    IsSearchingFooterPartitionAddress=false;
     FooterPartitionAddress_Jumped=false;
     PartitionPack_Parsed=false;
     IdIsAlwaysSame_Offset=0;
@@ -2151,6 +2152,8 @@ void File_Mxf::Streams_Finish()
     #if MEDIAINFO_ADVANCED
         if (Footer_Position!=(int64u)-1)
             Fill(Stream_General, 0, General_FooterSize, File_Size-Footer_Position);
+        else
+            Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
     #endif //MEDIAINFO_ADVANCED
 
     //Commercial names
@@ -3868,27 +3871,128 @@ void File_Mxf::Read_Buffer_Continue()
         }
     }
 
-    if ((IsCheckingRandomAccessTable || IsCheckingFooterPartitionAddress) && File_Offset+Buffer_Offset+16<File_Size)
+    if (IsSearchingFooterPartitionAddress)
     {
-        if (Buffer_Offset+16>Buffer_Size)
+        if (File_Offset+Buffer_Size<File_Size)
         {
             Element_WaitForMoreData();
             return;
         }
-        if (CC4(Buffer+Buffer_Offset)!=0x060E2B34 || CC3(Buffer+Buffer_Offset+4)!=0x020501 || CC3(Buffer+Buffer_Offset+8)!=0x0D0102 || CC1(Buffer+Buffer_Offset+12)!=0x01)
+
+        IsSearchingFooterPartitionAddress=false;
+        Buffer_Offset=Buffer_Size; //Default is end of file (not found)
+
+        const int8u* B_Cur06=Buffer+Buffer_Size-16;
+        while (B_Cur06>=Buffer)
         {
-            if (IsCheckingRandomAccessTable || (IsCheckingFooterPartitionAddress && FooterPartitionAddress_Jumped))
-                TryToFinish(); //No footer
-            else if (IsCheckingFooterPartitionAddress)
+            while (B_Cur06>=Buffer)
             {
-                IsParsingEnd=true;
-                GoToFromEnd(4); //For random access table
-                FooterPartitionAddress_Jumped=true;
-                Open_Buffer_Unsynch();
+                if (*B_Cur06==0x06)
+                    break;
+                B_Cur06--;
+            }
+            if (B_Cur06<Buffer)
+                break;
+
+            const int8u* B_Cur=B_Cur06;
+            if (*(B_Cur++)==0x06
+             && *(B_Cur++)==0x0E
+             && *(B_Cur++)==0x2B
+             && *(B_Cur++)==0x34
+             && *(B_Cur++)==0x02
+             && *(B_Cur++)==0x05
+             && *(B_Cur++)==0x01
+             && *(B_Cur++)==0x01
+             && *(B_Cur++)==0x0D
+             && *(B_Cur++)==0x01
+             && *(B_Cur++)==0x02
+             && *(B_Cur++)==0x01
+             && *(B_Cur++)==0x01
+             && *(B_Cur++)==0x04)
+            {
+                IsCheckingFooterPartitionAddress=true;
+                Buffer_Offset=B_Cur06-Buffer;
+                break;
+            }
+
+            B_Cur06--;
+        }
+
+        if (B_Cur06<Buffer)
+        {
+            TryToFinish();
+            return;
+        }
+    }
+
+    if (IsCheckingFooterPartitionAddress)
+    {
+        if (Buffer_Offset+17>Buffer_Size)
+        {
+            Element_WaitForMoreData();
+            return;
+        }
+
+        IsCheckingFooterPartitionAddress=false;
+
+        const int8u* B_Cur=Buffer+Buffer_Offset;
+        if (*(B_Cur++)==0x06
+         && *(B_Cur++)==0x0E
+         && *(B_Cur++)==0x2B
+         && *(B_Cur++)==0x34
+         && *(B_Cur++)==0x02
+         && *(B_Cur++)==0x05
+         && *(B_Cur++)==0x01
+         && *(B_Cur++)==0x01
+         && *(B_Cur++)==0x0D
+         && *(B_Cur++)==0x01
+         && *(B_Cur++)==0x02
+         && *(B_Cur++)==0x01
+         && *(B_Cur++)==0x01
+         && *(B_Cur++)==0x04)
+        {
+            int64u Size=*(B_Cur++);
+            if (Size >= 0x80)
+            {
+                Size&=0x7F;
+                if (17+Size>Buffer_Size)
+                {
+                    if (File_Offset+17+Size<File_Size)
+                    {
+                        Element_WaitForMoreData();
+                        return;
+                    }
+
+                    Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
+                }
             }
         }
+        else
+        {
+            GoToFromEnd(4); //For random access table because it is invalid footer
+            return;
+        }
+    }
+
+    if (IsCheckingRandomAccessTable)
+    {
+        if (17>Buffer_Size)
+        {
+            Element_WaitForMoreData();
+            return;
+        }
         IsCheckingRandomAccessTable=false;
-        IsCheckingFooterPartitionAddress=false;
+        if (CC4(Buffer+Buffer_Offset)!=0x060E2B34 || CC3(Buffer+Buffer_Offset+4)!=0x020501 || CC3(Buffer+Buffer_Offset+8)!=0x0D0102 || CC1(Buffer+Buffer_Offset+12)!=0x01) // Checker if it is a Partition
+        {
+            if (File_Size>=64*1024)
+            {
+                IsSearchingFooterPartitionAddress=true;
+                GoToFromEnd(64*1024); // Wrong offset, searching from end of file
+            }
+            else
+                TryToFinish();
+            return;
+        }
     }
 
     if (Config->ParseSpeed<1.0 && File_Offset+Buffer_Offset+4==File_Size)
@@ -3898,7 +4002,19 @@ void File_Mxf::Read_Buffer_Continue()
         if (Length>=16+4 && Length<File_Size/2)
         {
             GoToFromEnd(Length); //For random access table
+            IsCheckingRandomAccessTable=true;
             Open_Buffer_Unsynch();
+        }
+        else
+        {
+            if (File_Size>=64*1024)
+            {
+                IsSearchingFooterPartitionAddress=true;
+                GoToFromEnd(64*1024); // Wrong offset, searching from end of file
+            }
+            else
+                TryToFinish();
+            return;
         }
     }
 }
@@ -5003,15 +5119,6 @@ void File_Mxf::Header_Parse()
         }
     #endif //MEDIAINFO_NEXTPACKET && MEDIAINFO_DEMUX
 
-    #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
-        if (IsParsingEnd && PartitionPack_Parsed && !Partitions.empty() && Partitions[Partitions.size()-1].StreamOffset+Partitions[Partitions.size()-1].PartitionPackByteCount+Partitions[Partitions.size()-1].HeaderByteCount+Partitions[Partitions.size()-1].IndexByteCount==File_Offset+Buffer_Offset
-         && !(Code_Compare1==Elements::RandomIndexMetadata1 && Code_Compare2==Elements::RandomIndexMetadata2 && Code_Compare3==Elements::RandomIndexMetadata3 && Code_Compare4==Elements::RandomIndexMetadata4))
-        {
-            NextRandomIndexMetadata();
-            return;
-        }
-    #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
-
     if (Buffer_Offset+Element_Offset+Length>(size_t)-1 || Buffer_Offset+(size_t)(Element_Offset+Length)>Buffer_Size) //Not complete
     {
         if (Length>File_Size/2) //Divided by 2 for testing if this is a big chunk = Clip based and not frames.
@@ -5794,10 +5901,18 @@ void File_Mxf::Data_Parse()
         Fill();
 
         IsParsingEnd=true;
-        if (PartitionMetadata_FooterPartition!=(int64u)-1)
+        if (PartitionMetadata_FooterPartition!=(int64u)-1 && PartitionMetadata_FooterPartition>File_Offset+Buffer_Offset+(size_t)Element_Size)
         {
-            GoTo(PartitionMetadata_FooterPartition);
-            IsCheckingFooterPartitionAddress=true;
+            if (PartitionMetadata_FooterPartition+17<=File_Size)
+            {
+                GoTo(PartitionMetadata_FooterPartition);
+                IsCheckingFooterPartitionAddress=true;
+            }
+            else
+            {
+                GoToFromEnd(4); //For random access table
+                FooterPartitionAddress_Jumped=true;
+            }
         }
         else
         {
@@ -6591,6 +6706,12 @@ void File_Mxf::RGBAEssenceDescriptor()
 //---------------------------------------------------------------------------
 void File_Mxf::RandomIndexMetadata()
 {
+    if (RandomIndexMetadatas_AlreadyParsed)
+    {
+        Skip_XX(Element_Size,                                   "(Already parsed)");
+        return;
+    }
+
     //Parsing
     while (Element_Offset+4<Element_Size)
     {
@@ -6611,7 +6732,6 @@ void File_Mxf::RandomIndexMetadata()
         if (MediaInfoLib::Config.ParseSpeed_Get()<1.0 && !RandomIndexMetadatas_AlreadyParsed && !RandomIndexMetadatas.empty() && Config->File_Mxf_ParseIndex_Get())
         {
             IsParsingEnd=true;
-            IsCheckingRandomAccessTable=true;
             GoTo(RandomIndexMetadatas[0].ByteOffset);
             RandomIndexMetadatas.erase(RandomIndexMetadatas.begin());
             Open_Buffer_Unsynch();
@@ -9811,6 +9931,32 @@ void File_Mxf::PartitionMetadata()
         #if MEDIAINFO_ADVANCED
             if (Footer_Position==(int64u)-1)
                 Footer_Position=File_Offset+Buffer_Offset-Header_Size;
+        #endif //MEDIAINFO_ADVANCED
+
+        #if MEDIAINFO_ADVANCED
+            //IsTruncated
+            bool IsTruncated;
+            if (!Trusted_Get())
+                IsTruncated=true;
+            else
+            {
+                int32u KAGSize_Corrected=KAGSize;
+                if (!KAGSize || KAGSize>=File_Size) // Checking incoherent behaviors
+                    KAGSize_Corrected=1;
+                int64u Element_Size_WithPadding=Element_Offset;
+                if (Element_Size_WithPadding%KAGSize_Corrected)
+                {
+                    Element_Size_WithPadding-=Element_Size_WithPadding%KAGSize_Corrected;
+                    Element_Size_WithPadding+=KAGSize_Corrected;
+                }
+
+                if (File_Offset+Buffer_Offset+Element_Size_WithPadding+HeaderByteCount+IndexByteCount > File_Size)
+                    IsTruncated=true;
+                else
+                    IsTruncated=false;
+            }
+            if (IsTruncated)
+                Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
         #endif //MEDIAINFO_ADVANCED
     }
 
@@ -15563,7 +15709,7 @@ void File_Mxf::Locators_Test()
 void File_Mxf::NextRandomIndexMetadata()
 {
     //We have the necessary for indexes, jumping to next index
-    Skip_XX(Element_Size,                               "Data");
+    Skip_XX(Element_Size-Element_Offset,                        "Data");
     if (RandomIndexMetadatas.empty())
     {
         if (!RandomIndexMetadatas_AlreadyParsed)

@@ -561,6 +561,7 @@ protected :
     bool   IsParsingEnd;
     bool   IsCheckingRandomAccessTable;
     bool   IsCheckingFooterPartitionAddress;
+    bool   IsSearchingFooterPartitionAddress;
     bool   FooterPartitionAddress_Jumped;
     bool   PartitionPack_Parsed;
     size_t IdIsAlwaysSame_Offset;
