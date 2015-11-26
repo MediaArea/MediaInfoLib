@@ -3998,10 +3998,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tx3g()
     Element_Name("Text");
     //Parsing
     bool tx3gallforced, tx3ghasforced;
+    int32u Flags;
     Skip_B4(                                                    "Reserved");
     Skip_B2(                                                    "Reserved");
     Skip_B2(                                                    "Data reference index");
-    Info_B4(Flags,                                              "displayFlags");
+    Get_B4(Flags,                                               "displayFlags");
         Skip_Flags(Flags,  5,                                   "Scroll in");
         Skip_Flags(Flags,  6,                                   "Scroll out");
         Skip_Flags(Flags,  7,                                   "Horizontal scroll");
