@@ -5,6 +5,53 @@ libmediainfo (0.7.79-1) experimental; urgency=medium
 
  -- MediaArea <info@mediaarea.net>  Mon, 02 Nov 2015 10:30:00 +0100
 
+libmediainfo (0.7.78-1) unstable; urgency=medium
+
+  * [7f97128] Imported Upstream version 0.7.78
+
+ -- Chow Loong Jin <hyperair@debian.org>  Mon, 05 Oct 2015 02:45:38 +0800
+
+libmediainfo (0.7.77-1) unstable; urgency=medium
+
+  * [0808a61] Imported Upstream version 0.7.77
+
+ -- Chow Loong Jin <hyperair@debian.org>  Sat, 19 Sep 2015 22:07:33 +0800
+
+libmediainfo (0.7.76-2) unstable; urgency=medium
+
+  * [e480a9e] Update Vcs-*
+
+ -- Chow Loong Jin <hyperair@debian.org>  Tue, 25 Aug 2015 15:19:01 +0800
+
+libmediainfo (0.7.76-1) experimental; urgency=medium
+
+  * [7532c81] Imported Upstream version 0.7.76
+  * [65c179b] Rename package to libmediainfo0v5 for GCC migration
+    (Closes: #792496, #791139)
+  * [dc1eaf1] Update symbols
+
+ -- Chow Loong Jin <hyperair@debian.org>  Tue, 18 Aug 2015 11:33:46 +0800
+
+libmediainfo (0.7.75-1) unstable; urgency=medium
+
+  * [54b9166] Imported Upstream version 0.7.75
+  * [3533a6e] Refresh patches and drop upstreamed ones
+
+ -- Chow Loong Jin <hyperair@debian.org>  Fri, 03 Jul 2015 17:53:47 +0800
+
+libmediainfo (0.7.73-1) experimental; urgency=medium
+
+  * [1e716cb] Imported Upstream version 0.7.73
+
+ -- Chow Loong Jin <hyperair@debian.org>  Sun, 19 Apr 2015 20:27:33 +0800
+
+libmediainfo (0.7.71-1) experimental; urgency=medium
+
+  * [9216dfe] Imported Upstream version 0.7.71
+  * [6a04eea] No-change bump of Standards-Version to 3.9.6
+
+ -- Chow Loong Jin <hyperair@debian.org>  Sat, 22 Nov 2014 17:04:33 +0800
+
 libmediainfo (0.7.70-1) unstable; urgency=medium
 
   * [eff1e51] Imported Upstream version 0.7.70

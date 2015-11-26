@@ -1,6 +1,6 @@
 Format: 3.0 (quilt)
 Source: libmediainfo
-Binary: libmediainfo-dev, libmediainfo0, python-mediainfodll, python3-mediainfodll, libmediainfo-doc
+Binary: libmediainfo-dev, libmediainfo0v5, python-mediainfodll, python3-mediainfodll, libmediainfo-doc
 Architecture: any all
 Version: 0.7.79-1
 Maintainer: MediaArea.net SARL <info@mediaarea.net>
@@ -12,7 +12,7 @@ Build-Depends: debhelper (>= 9), dpkg-dev (>= 1.16.1), python-all (>= 2.6.6-3~),
 Package-List:
  libmediainfo-dev deb libdevel optional arch=any
  libmediainfo-doc deb doc optional arch=all
- libmediainfo0 deb libs optional arch=any
+ libmediainfo0v5 deb libs optional arch=any
  python-mediainfodll deb python optional arch=all
  python3-mediainfodll deb python optional arch=all
 Checksums-Sha1:
