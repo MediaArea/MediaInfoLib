@@ -27,6 +27,7 @@ Version 0.7.80
 + MPEG-4/MOV: showing the complete list of compatible brands in the CodecID field
 x Matroska: frame rate detection algorithm revisited, less wrong numbers are expected
 x SDP/Teletext: some pages were sometimes (when present in 2 different SDP lines) displayed several times
+x MPEG-4/MOV: some hint tracks were not displayed
 
 Version 0.7.79, 2015-11-02
 --------------
