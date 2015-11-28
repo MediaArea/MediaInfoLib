@@ -215,6 +215,7 @@ private :
     void moov_trak_tapt_prof();
     void moov_trak_tapt_enof();
     void moov_trak_tkhd();
+    void moov_trak_txas();
     void moov_trak_tref();
     void moov_trak_tref_chap();
     void moov_trak_tref_clcp();
@@ -314,9 +315,7 @@ private :
     int32u                                  moov_meta_hdlr_Type;
     std::string                             moov_meta_ilst_xxxx_name_Name;
     size_t                                  moov_trak_mdia_minf_stbl_stsd_Pos;
-    bool                                    moov_trak_tkhd_Flags_Track_enabled;
     int32u                                  moov_trak_tkhd_TrackID;
-    int16u                                  moov_trak_tkhd_Alternate_group;
     float32                                 moov_trak_tkhd_Width;
     float32                                 moov_trak_tkhd_Height;
     float32                                 moov_trak_tkhd_DisplayAspectRatio;
@@ -408,6 +407,20 @@ private :
         bool                    IsPriorityStream;
         bool                    IsFilled;
         bool                    IsChapter;
+        bool                    IsEnabled;
+        bool                    IsExcluded;
+        bool                    HasForcedSamples;
+        bool                    AllForcedSamples;
+        std::vector<int32u>     CC;
+        std::vector<int32u>     CCFor;
+        std::vector<int32u>     FallBackTo;
+        std::vector<int32u>     FallBackFrom;
+        std::vector<int32u>     Subtitle;
+        std::vector<int32u>     SubtitleFor;
+        std::vector<int32u>     Forced;
+        std::vector<int32u>     ForcedFor;
+        std::vector<int32u>     Chapters;
+        std::vector<int32u>     ChaptersFor;
         float32                 CleanAperture_Width;
         float32                 CleanAperture_Height;
         float32                 CleanAperture_PixelAspectRatio;
@@ -465,6 +478,9 @@ private :
             IsPriorityStream=false;
             IsFilled=false;
             IsChapter=false;
+            IsExcluded=false;
+            HasForcedSamples=false;
+            AllForcedSamples=false;
             CleanAperture_Width=0;
             CleanAperture_Height=0;
             CleanAperture_PixelAspectRatio=0;
