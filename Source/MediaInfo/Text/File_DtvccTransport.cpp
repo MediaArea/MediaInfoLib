@@ -28,9 +28,9 @@
 #if defined(MEDIAINFO_EIA708_YES)
     #include "MediaInfo/Text/File_Eia708.h"
 #endif
-#if MEDIAINFO_ADVANCED
+#if MEDIAINFO_ADVANCED || defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
     #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
-#endif //MEDIAINFO_ADVANCED
+#endif
 #if MEDIAINFO_EVENTS
     #include "MediaInfo/MediaInfo_Events.h"
 #endif //MEDIAINFO_EVENTS

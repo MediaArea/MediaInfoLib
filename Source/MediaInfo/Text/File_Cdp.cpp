@@ -22,12 +22,10 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Text/File_Cdp.h"
+#include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #if defined(MEDIAINFO_EIA608_YES)
     #include "MediaInfo/Text/File_Eia608.h"
 #endif
-#if MEDIAINFO_ADVANCED
-    #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
-#endif //MEDIAINFO_ADVANCED
 #if MEDIAINFO_EVENTS
     #include "MediaInfo/MediaInfo_Events.h"
 #endif //MEDIAINFO_EVENTS
