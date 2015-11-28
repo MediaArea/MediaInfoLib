@@ -537,24 +537,23 @@ void File_Mpeg4::Streams_Finish()
                 }
             }
         }
-        else
+
+        if (Temp->second.ChaptersFor.size())
         {
-            if (Temp->second.ChaptersFor.size())
+            Ztring TempString;
+            std::vector<int32u>::iterator TrackID;
+            for (TrackID = Temp->second.ChaptersFor.begin(); TrackID != Temp->second.ChaptersFor.end(); TrackID++)
             {
-                Ztring TempString;
-                std::vector<int32u>::iterator TrackID;
-                for (TrackID = Temp->second.ChaptersFor.begin(); TrackID != Temp->second.ChaptersFor.end(); TrackID++)
-                {
-                    if (TempString.size()) TempString.append(__T(","));
-                    TempString.append(Ztring().From_Number(*TrackID));
-                }
-                if (TempString.size())
-                {
-                    Fill(StreamKind_Last, StreamPos_Last, "Menu For", TempString.To_Local().c_str());
-                    TempString.clear();
-                }
+                if (TempString.size()) TempString.append(__T(","));
+                TempString.append(Ztring().From_Number(*TrackID));
+            }
+            if (TempString.size())
+            {
+                Fill(StreamKind_Last, StreamPos_Last, "Menu For", TempString.To_Local().c_str());
+                TempString.clear();
             }
         }
+
         //Edit lists coherencies
         if (Temp->second.edts.size()>1 && Temp->second.edts[0].Duration==Temp->second.tkhd_Duration)
         {
