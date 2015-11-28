@@ -1491,7 +1491,13 @@ Ztring MediaInfo_Config::Language_Get (const Ztring &Value)
     CriticalSectionLocker CSL(CS);
 
     if (Value.find(__T(" / "))==string::npos)
-        return Language.Get(Value);
+    {
+        if (Value.size()<7 || Value.find(__T("/String"))+7!=Value.size())
+            return Language.Get(Value);
+        Ztring Temp(Value);
+        Temp.resize(Value.size()-7);
+        return Language.Get(Temp);
+    }
 
     ZtringList List;
     List.Separator_Set(0, __T(" / "));

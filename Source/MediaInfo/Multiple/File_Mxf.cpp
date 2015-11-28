@@ -1875,6 +1875,10 @@ string Mxf_AcquisitionMetadata_ElementName(int16u Value, bool IsSony=false)
             case 0xE103: return "CameraProcessDiscriminationCode";
             case 0xE104: return "RotaryShutterMode";
             case 0xE109: return "MonitoringDescriptions";
+            case 0xE10B: return "MonitoringBaseCurve";
+          //case 0xE201: return "CookeProtocol_BinaryMetadata"; //Not used
+            case 0xE202: return "CookeProtocol_UserMetadata";
+            case 0xE203: return "CookeProtocol_CalibrationType";
             default:     ;   
         }
 
@@ -1896,6 +1900,23 @@ string Mxf_AcquisitionMetadata_ElementName(int16u Value, bool IsSony=false)
     }
 }
 
+//---------------------------------------------------------------------------
+// CameraUnitMetadata - Sony E201 (Values are internal MI)
+const size_t Mxf_AcquisitionMetadata_Sony_E201_ElementCount = 11;
+const char* Mxf_AcquisitionMetadata_Sony_E201_ElementName[Mxf_AcquisitionMetadata_Sony_E201_ElementCount]
+{
+    "FocusDistance",
+    "ApertureValue",
+    "ApertureScale",
+    "EffectiveFocaleLength",
+    "HyperfocalDistance",
+    "NearFocusDistance",
+    "FarFocusDistance",
+    "HorizontalFieldOfView",
+    "EntrancePupilPosition",
+    "NormalizedZoomValue",
+    "LensSerialNumber",
+};
 
 //---------------------------------------------------------------------------
 extern const char* Mpegv_profile_and_level_indication_profile[];
@@ -2276,13 +2297,56 @@ void File_Mxf::Streams_Finish()
     //CameraUnitMetadata
     if (!AcquisitionMetadataLists.empty())
         for (size_t Pos = 0; Pos < AcquisitionMetadataLists.size(); Pos++)
-            if (AcquisitionMetadataLists[Pos] && !AcquisitionMetadataLists[Pos]->empty())
+        {
+            if (UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony && Pos==0xE201 && !AcquisitionMetadata_Sony_E201_Lists.empty())
+            {
+                for (size_t i=0; i<Mxf_AcquisitionMetadata_Sony_E201_ElementCount; ++i)
+                    if (AcquisitionMetadata_Sony_E201_Lists[i] && !AcquisitionMetadata_Sony_E201_Lists[i]->empty())
+                    {
+                        string ElementName(Mxf_AcquisitionMetadata_Sony_E201_ElementName[i]);
+                        string ElementName_FirstFrame(ElementName+"_FirstFrame");
+                        string ElementName_Values(ElementName+"_Values");
+                        string ElementName_FrameCounts(ElementName+"_FrameCounts");
+                        Fill(Stream_Other, 0, ElementName_FirstFrame.c_str(), (*AcquisitionMetadata_Sony_E201_Lists[i])[0].Value);
+                        switch (i)
+                        {
+                            case  0 : //FocusDistance
+                            case  4 : //HyperfocalDistance
+                            case  5 : //NearFocusDistance
+                            case  6 : //FarFocusDistance
+                            case  8 : //EntrancePupilPosition
+                                (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                                if (AcquisitionMetadataLists[0xE203] && !AcquisitionMetadataLists[0xE203]->empty()) //Calibration Type
+                                    Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadata_Sony_E201_Lists[i])[0].Value+' '+(*AcquisitionMetadataLists[0xE203])[0].Value);
+                                break;
+                            case  3 : //EffectiveFocaleLength
+                                (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                                Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadata_Sony_E201_Lists[i])[0].Value+" mm");
+                                break;
+                            case  7 : //HorizontalFieldOfView
+                                (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                                Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadata_Sony_E201_Lists[i])[0].Value+"°");
+                                break;
+                            default : ;
+                        }
+                        for (size_t List_Pos=0; List_Pos<AcquisitionMetadata_Sony_E201_Lists[i]->size(); List_Pos++)
+                        {
+                            Fill(Stream_Other, 0, ElementName_Values.c_str(), (*AcquisitionMetadata_Sony_E201_Lists[i])[List_Pos].Value);
+                            Fill(Stream_Other, 0, ElementName_FrameCounts.c_str(), (*AcquisitionMetadata_Sony_E201_Lists[i])[List_Pos].FrameCount);
+                        }
+                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_Values.c_str()), Info_Options)=__T("N NT");
+                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FrameCounts.c_str()), Info_Options)=__T("N NT");
+                    }
+            }
+            else if (AcquisitionMetadataLists[Pos] && !AcquisitionMetadataLists[Pos]->empty())
             {
                 string ElementName(Mxf_AcquisitionMetadata_ElementName((int16u)Pos, UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony));
                 string ElementName_FirstFrame(ElementName+"_FirstFrame");
                 string ElementName_Values(ElementName+"_Values");
                 string ElementName_FrameCounts(ElementName+"_FrameCounts");
                 Fill(Stream_Other, 0, ElementName_FirstFrame.c_str(), (*AcquisitionMetadataLists[Pos])[0].Value);
+                if (UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony && Pos==0xE203) // Calibration Type, not for display
+                    (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
                 for (size_t List_Pos=0; List_Pos<AcquisitionMetadataLists[Pos]->size(); List_Pos++)
                 {
                     Fill(Stream_Other, 0, ElementName_Values.c_str(), (*AcquisitionMetadataLists[Pos])[List_Pos].Value);
@@ -2291,6 +2355,7 @@ void File_Mxf::Streams_Finish()
                 (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_Values.c_str()), Info_Options)=__T("N NT");
                 (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FrameCounts.c_str()), Info_Options)=__T("N NT");
             }
+        }
 }
 
 //---------------------------------------------------------------------------
@@ -7778,9 +7843,7 @@ void File_Mxf::CameraUnitMetadata()
     {
         Stream_Prepare(Stream_Other);
 
-        #if MEDIAINFO_ADVANCED
-            AcquisitionMetadataLists.resize(0x10000);
-        #endif //MEDIAINFO_ADVANCED
+        AcquisitionMetadataLists.resize(0x10000);
     }
 
     switch(Code2)
@@ -7805,7 +7868,14 @@ void File_Mxf::CameraUnitMetadata()
 void File_Mxf::UserDefinedAcquisitionMetadata()
 {
     if (Count_Get(Stream_Other)==0)
+    {
         Stream_Prepare(Stream_Other);
+
+        AcquisitionMetadataLists.resize(0x10000);
+    }
+
+    //Init
+    AcquisitionMetadata_Sony_CalibrationType = (int8u)-1;
 
     switch(Code2)
     {
@@ -7820,10 +7890,10 @@ void File_Mxf::UserDefinedAcquisitionMetadata()
                         ELEMENT(E103, UserDefinedAcquisitionMetadata_Sony_E103, "Camera Process Discrimination Code")
                         ELEMENT(E104, UserDefinedAcquisitionMetadata_Sony_E104, "Rotary Shutter Mode")
                         ELEMENT(E109, UserDefinedAcquisitionMetadata_Sony_E109, "Monitoring Descriptions")
-                        ELEMENT(E10B, UserDefinedAcquisitionMetadata_Sony_E10B, "E10B")
-                        ELEMENT(E201, UserDefinedAcquisitionMetadata_Sony_E201, "E201")
-                        ELEMENT(E202, UserDefinedAcquisitionMetadata_Sony_E202, "E202")
-                        ELEMENT(E203, UserDefinedAcquisitionMetadata_Sony_E203, "E203")
+                        ELEMENT(E10B, UserDefinedAcquisitionMetadata_Sony_E10B, "Monitoring Base Curve")
+                        ELEMENT(E201, UserDefinedAcquisitionMetadata_Sony_E201, "Cooke Protocol Binary Metadata")
+                        ELEMENT(E202, UserDefinedAcquisitionMetadata_Sony_E202, "Cooke Protocol User Metadata")
+                        ELEMENT(E203, UserDefinedAcquisitionMetadata_Sony_E203, "Cooke Protocol Calibration Type")
                         default:
                                     GenerationInterchangeObject();
                     }
@@ -11007,8 +11077,244 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E10B()
 //
 void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E201()
 {
+    if (AcquisitionMetadata_Sony_E201_Lists.empty())
+        AcquisitionMetadata_Sony_E201_Lists.resize(Mxf_AcquisitionMetadata_Sony_E201_ElementCount);
+    
     //Parsing
-    Skip_XX(Length2,                                            "Value");
+    Ztring  FocusDistance, ApertureValue, ApertureScale, HyperfocalDistance, NearFocusDistance, FarFocusDistance, EntrancePupilPosition;
+    string  LensSerialNumber;
+    int16u  EffectiveFocaleLength, HorizontalFieldOfView, NormalizedZoomValue;
+    if (Length2<27)
+    {
+        Skip_XX(Length2,                                        "Unknown");
+        return;
+    }
+    int64u End=Element_Offset+Length2;
+    Skip_C1(                                                    "Tag");
+    BS_Begin();
+    Element_Begin1("Focus Distance");
+    {
+        int8u B1, B2, B3, B4;
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B1,                                          "1");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B2,                                          "2");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B3,                                          "3");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B4,                                          "4");
+        int32u Value=(B1<<18)|(B2<<12)|(B3<<6)|B4;
+        if (Value==0xFFFFFF)
+            FocusDistance=__T("Infinite");
+        else
+            switch (AcquisitionMetadata_Sony_CalibrationType)
+            {
+                case 1 : FocusDistance=Ztring::ToZtring(((float)Value)/10, 1); break;
+                default: FocusDistance=Ztring::ToZtring(Value); break;
+            }
+        Element_Info1(FocusDistance);
+    }
+    Element_End0();
+    Element_Begin1("Aperture Value");
+    {
+        int8u B1, B2;
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B1,                                          "1");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B2,                                          "2");
+        int16u Value=(B1<<6)|B2;
+        ApertureValue.From_Number(((float)Value)/100, 2);
+        Element_Info1(ApertureValue);
+    }
+    Element_End0();
+    Element_Begin1("Aperture Scale");
+    {
+        int8u B1, B2, Fraction;
+        Mark_1();
+        Get_S1 (7, B2,                                          "Integer 2");
+        Mark_1();
+        Get_S1 (1, B1,                                          "Integer 1");
+        Mark_0();
+        Mark_0();
+        Get_S1 (4, Fraction,                                    "Fraction");
+        int8u Value=((B1<<7)|B2);
+        ApertureScale=__T("T ")+Ztring::ToZtring(((float)Value)/10, 2)+__T(" + ")+Ztring::ToZtring(Fraction)+__T("/10");
+        Element_Info1(ApertureScale);
+    }
+    Element_End0();
+    Element_Begin1("Effective Focale Length");
+    {
+        int8u B1, B2;
+        Mark_0();
+        Mark_1();
+        Mark_0();
+        Mark_0();
+        Get_S1 (4, B1,                                          "1");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B2,                                          "2");
+        EffectiveFocaleLength=(B1<<6)|B2;
+        Element_Info2(EffectiveFocaleLength, "mm");
+    }
+    Element_End0();
+    Element_Begin1("Hyperfocal Distance");
+    {
+        int8u B1, B2, B3, B4;
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B1,                                          "1");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B2,                                          "2");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B3,                                          "3");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B4,                                          "4");
+        int32u Value=(B1<<18)|(B2<<12)|(B3<<6)|B4;
+        if (Value==0xFFFFFF)
+            HyperfocalDistance=__T("Infinite");
+        else
+            switch (AcquisitionMetadata_Sony_CalibrationType)
+            {
+                case 1 : HyperfocalDistance=Ztring::ToZtring(((float)Value)/10, 1); break;
+                default: HyperfocalDistance=Ztring::ToZtring(Value);
+            }
+        Element_Info1(HyperfocalDistance);
+    }
+    Element_End0();
+    Element_Begin1("Near Focus Distance");
+    {
+        int8u B1, B2, B3, B4;
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B1,                                          "1");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B2,                                          "2");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B3,                                          "3");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B4,                                          "4");
+        int32u Value=(B1<<18)|(B2<<12)|(B3<<6)|B4;
+        if (Value==0xFFFFFF)
+            NearFocusDistance=__T("Infinite");
+        else
+            switch (AcquisitionMetadata_Sony_CalibrationType)
+            {
+                case 1 : NearFocusDistance=Ztring::ToZtring(((float)Value)/10, 1); break;
+                default: NearFocusDistance=Ztring::ToZtring(Value);
+            }
+        Element_Info1(NearFocusDistance);
+    }
+    Element_End0();
+    Element_Begin1("Far Focus Distance");
+    {
+        int8u B1, B2, B3, B4;
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B1,                                          "1");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B2,                                          "2");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B3,                                          "3");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B4,                                          "4");
+        int32u Value=(B1<<18)|(B2<<12)|(B3<<6)|B4;
+        if (Value==0xFFFFFF)
+            FarFocusDistance=__T("Infinite");
+        else
+            switch (AcquisitionMetadata_Sony_CalibrationType)
+            {
+                case 1 : FarFocusDistance=Ztring::ToZtring(((float)Value)/10, 1); break;
+                default: FarFocusDistance=Ztring::ToZtring(Value);
+            }
+        Element_Info1(FarFocusDistance);
+    }
+    Element_End0();
+    Element_Begin1("Horizontal Field of View");
+    {
+        int8u B1, B2;
+        Mark_0();
+        Mark_1();
+        Mark_0();
+        Get_S1 (5, B1,                                          "1");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B2,                                          "2");
+        HorizontalFieldOfView=(B1<<6)|B2;
+        Element_Info1(Ztring::ToZtring(((float)HorizontalFieldOfView)/10, 1));
+    }
+    Element_End0();
+    Element_Begin1("Entrance Pupil Position");
+    {
+        int8u   B1, B2;
+        bool    Minus;
+        Mark_0();
+        Mark_1();
+        Get_SB (Minus,                                          "Minus");
+        Mark_0();
+        Get_S1 (4, B1,                                          "1");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B2,                                          "2");
+        int32u Value=(B1<<6)|B2;
+        switch (AcquisitionMetadata_Sony_CalibrationType)
+        {
+            case 1 : EntrancePupilPosition=Ztring::ToZtring(((float)Value)/10, 1); break;
+            default: EntrancePupilPosition=Ztring::ToZtring(Value);
+        }
+        Element_Info1(EntrancePupilPosition);
+    }
+    Element_End0();
+    Element_Begin1("Normalized Zoom Value");
+    {
+        int8u B1, B2;
+        Mark_0();
+        Mark_1();
+        Mark_0();
+        Mark_0();
+        Get_S1 (4, B1,                                          "1");
+        Mark_0();
+        Mark_1();
+        Get_S1 (6, B2,                                          "2");
+        NormalizedZoomValue=(B1<<6)|B2;
+        Element_Info1(Ztring::ToZtring(((float)NormalizedZoomValue)/1000, 3));
+    }
+    Element_End0();
+    BS_End();
+    Skip_C1(                                                    "S");
+    Get_String(9, LensSerialNumber,                             "Lens Serial Number");
+    if (Element_Offset+2<End)
+        Skip_XX(End-2-Element_Offset,                           "Unknown");
+    Skip_C2(                                                    "Termination");
+
+    FILLING_BEGIN();
+        // Values are internal MI
+        AcquisitionMetadata_Sony_E201_Add(0, FocusDistance.To_UTF8());
+        AcquisitionMetadata_Sony_E201_Add(1, ApertureValue.To_UTF8());
+        AcquisitionMetadata_Sony_E201_Add(2, ApertureScale.To_UTF8());
+        AcquisitionMetadata_Sony_E201_Add(3, Ztring::ToZtring(EffectiveFocaleLength).To_UTF8());
+        AcquisitionMetadata_Sony_E201_Add(4, HyperfocalDistance.To_UTF8());
+        AcquisitionMetadata_Sony_E201_Add(5, NearFocusDistance.To_UTF8());
+        AcquisitionMetadata_Sony_E201_Add(6, FarFocusDistance.To_UTF8());
+        AcquisitionMetadata_Sony_E201_Add(7, Ztring::ToZtring(((float)HorizontalFieldOfView)/10, 1).To_UTF8());
+        AcquisitionMetadata_Sony_E201_Add(8, EntrancePupilPosition.To_UTF8());
+        AcquisitionMetadata_Sony_E201_Add(9, Ztring::ToZtring(((float)NormalizedZoomValue)/1000, 3).To_UTF8());
+        AcquisitionMetadata_Sony_E201_Add(10, LensSerialNumber);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -11018,6 +11324,10 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E202()
     //Parsing
     Ztring Value;
     Get_UTF8(Length2, Value,                                    "Value");
+
+    FILLING_BEGIN();
+        AcquisitionMetadata_Add(Code2, Value.To_UTF8());
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -11025,7 +11335,16 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E202()
 void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E203()
 {
     //Parsing
-    Skip_B1(                                                    "Value");
+    Get_B1(AcquisitionMetadata_Sony_CalibrationType,            "Value");
+
+    FILLING_BEGIN();
+        switch(AcquisitionMetadata_Sony_CalibrationType)
+        {
+            case 0 : AcquisitionMetadata_Add(Code2, "mm"); break;
+            case 1 : AcquisitionMetadata_Add(Code2, "in"); break;
+            default : AcquisitionMetadata_Add(Code2, Ztring::ToZtring(AcquisitionMetadata_Sony_CalibrationType).To_UTF8());
+        }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
