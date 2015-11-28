@@ -6354,7 +6354,7 @@ void File_Mpeg4::moov_trak_tkhd()
             Streams.erase(Temp);
         }
         Streams[moov_trak_tkhd_TrackID].IsEnabled = Enabled;
-        if (Alternate_Group) Fill(StreamKind_Last, StreamPos_Last, "Alternate Group", Alternate_Group);
+        if (Alternate_Group) Fill(StreamKind_Last, StreamPos_Last, "AlternateGroup", Alternate_Group);
         if (moov_mvhd_TimeScale)
             Fill(StreamKind_Last, StreamPos_Last, "Duration", float64_int64s(((float64)Duration)*1000/moov_mvhd_TimeScale));
         Fill(StreamKind_Last, StreamPos_Last, "Encoded_Date", Date_Created);

@@ -250,10 +250,14 @@ Language/String2;;;N NT;;;Language (2-letter ISO 639-1 if exists, else empty);;
 Language/String3;;;N NT;;;Language (3-letter ISO 639-2 if exists, else empty);;
 Language/String4;;;N NT;;;Language (2-letter ISO 639-1 if exists with optional ISO 3166-1 country separated by a dash if available, e.g. en, en-us, zh-cn, else empty);;
 Language_More;;;Y YTY;;;More info about Language (e.g. Director's Comment);;
+Disabled;;Yes;N YTY;;;Set if that track should not be used
+Disabled/String;;;Y NT;;;Set if that track should not be used
 Default;;Yes;N YTY;;;Set if that track should be used if no language found matches the user preference.
 Default/String;;;Y NT;;;Set if that track should be used if no language found matches the user preference.
 Forced;;Yes;N YTY;;;Set if that track should be used if no language found matches the user preference.
 Forced/String;;;Y NT;;;Set if that track should be used if no language found matches the user preference.
+AlternateGroup;;Yes;N YTY;;;Number of a group in order to provide versions of the same track
+AlternateGroup/String;;;Y NT;;;Number of a group in order to provide versions of the same track
 Encoded_Date;;;Y YTY;;;UTC time that the encoding of this item was completed began.;;Temporal
 Tagged_Date;;;Y YTY;;;UTC time that the tags were done for this item.;;Temporal
 Encryption;;;Y YTY;;;;;

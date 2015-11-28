@@ -76,5 +76,13 @@ Countries;;;Y YTY;;;;;Legal
 TimeZones;;;Y YTY;;;;;Legal
 LawRating;;;Y YTY;;;Depending on the country it's the format of the rating of a movie (P, R, X in the USA, an age in other countries or a URI defining a logo).;;Classification
 LawRating_Reason;;;Y YTY;;;Reason for the law rating;;Classification
+Disabled;;Yes;N YTY;;;Set if that track should not be used
+Disabled/String;;;Y NT;;;Set if that track should not be used
+Default;;Yes;N YTY;;;Set if that track should be used if no language found matches the user preference.
+Default/String;;;Y NT;;;Set if that track should be used if no language found matches the user preference.
+Forced;;Yes;N YTY;;;Set if that track should be used if no language found matches the user preference.
+Forced/String;;;Y NT;;;Set if that track should be used if no language found matches the user preference.
+AlternateGroup;;Yes;N YTY;;;Number of a group in order to provide versions of the same track
+AlternateGroup/String;;;Y NT;;;Number of a group in order to provide versions of the same track
 Chapters_Pos_Begin;;;N NI;;;Used by third-party developers to know about the beginning of the chapters list, to be used by Get(Stream_Menu, x, Pos), where Pos is an Integer between Chapters_Pos_Begin and Chapters_Pos_End;;
 Chapters_Pos_End;;;N NI;;;Used by third-party developers to know about the end of the chapters list (this position excluded)
