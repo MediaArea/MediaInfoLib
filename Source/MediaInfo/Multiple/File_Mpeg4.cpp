@@ -380,7 +380,10 @@ void File_Mpeg4::Streams_Finish()
             else
             {
                 if (Temp->second.IsEnabled)
-                    Fill(StreamKind_Last, StreamPos_Last, "Default", "Yes");
+                {
+                    if (!Retrieve(StreamKind_Last, StreamPos_Last, "AlternateGroup").empty()) // Redundant information if there is not alternate group
+                        Fill(StreamKind_Last, StreamPos_Last, "Default", "Yes");
+                }
                 else
                 {
                     for (TrackID = Temp->second.FallBackTo.begin(); TrackID != Temp->second.FallBackTo.end(); TrackID++)
