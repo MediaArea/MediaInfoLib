@@ -419,18 +419,20 @@ void File_Ancillary::Read_Buffer_Continue()
 {
     if (Element_Size==0)
     {
-        if (!Cdp_Data.empty() && AspectRatio && FrameRate)
-        {
-            ((File_Cdp*)Cdp_Parser)->AspectRatio=AspectRatio;
-            for (size_t Pos=0; Pos<Cdp_Data.size(); Pos++)
+        #if defined(MEDIAINFO_CDP_YES)
+            if (!Cdp_Data.empty() && AspectRatio && FrameRate)
             {
-                if (Cdp_Parser->PTS_DTS_Needed)
-                    Cdp_Parser->FrameInfo.DTS=FrameInfo.DTS-(Cdp_Data.size()-Pos)*FrameInfo.DUR;
-                Open_Buffer_Continue(Cdp_Parser, Cdp_Data[Pos]->Data, Cdp_Data[Pos]->Size);
-                delete Cdp_Data[Pos]; //Cdp_Data[0]=NULL;
+                ((File_Cdp*)Cdp_Parser)->AspectRatio=AspectRatio;
+                for (size_t Pos=0; Pos<Cdp_Data.size(); Pos++)
+                {
+                    if (Cdp_Parser->PTS_DTS_Needed)
+                        Cdp_Parser->FrameInfo.DTS=FrameInfo.DTS-(Cdp_Data.size()-Pos)*FrameInfo.DUR;
+                    Open_Buffer_Continue(Cdp_Parser, Cdp_Data[Pos]->Data, Cdp_Data[Pos]->Size);
+                    delete Cdp_Data[Pos]; //Cdp_Data[0]=NULL;
+                }
+                Cdp_Data.clear();
             }
-            Cdp_Data.clear();
-        }
+        #endif //defined(MEDIAINFO_CDP_YES)
 
         #if defined(MEDIAINFO_AFDBARDATA_YES)
             //Keeping only one, TODO: parse it without video stream

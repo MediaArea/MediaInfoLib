@@ -292,24 +292,25 @@ void File_Mpeg4::Streams_Finish()
     if (Retrieve(Stream_General, 0, General_Format)==__T("Final Cut EIA-608"))
     {
         for (streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); ++Stream)
-        {
-            Stream->second.Parsers[0]->Finish();
-            if (Stream->second.Parsers[0]->Count_Get(Stream_Text))
+            for (size_t Pos=0; Pos<Streams[(int32u)Element_Code].Parsers.size(); Pos++)
             {
-                Stream_Prepare(Stream_Text);
-                Fill(Stream_Text, StreamPos_Last, Text_ID, Stream->first==1?"608-1":"608-2");
-                Fill(Stream_Text, StreamPos_Last, "MuxingMode", __T("Final Cut"), Unlimited);
-                Merge(*Stream->second.Parsers[0], Stream_Text, 0, StreamPos_Last);
-            }
+                Stream->second.Parsers[Pos]->Finish();
+                if (Stream->second.Parsers[Pos]->Count_Get(Stream_Text))
+                {
+                    Stream_Prepare(Stream_Text);
+                    Fill(Stream_Text, StreamPos_Last, Text_ID, Stream->first==1?"608-1":"608-2");
+                    Fill(Stream_Text, StreamPos_Last, "MuxingMode", __T("Final Cut"), Unlimited);
+                    Merge(*Stream->second.Parsers[Pos], Stream_Text, 0, StreamPos_Last);
+                }
 
-            //Law rating
-            Ztring LawRating=Stream->second.Parsers[0]->Retrieve(Stream_General, 0, General_LawRating);
-            if (!LawRating.empty())
-                Fill(Stream_General, 0, General_LawRating, LawRating, true);
-            Ztring Title=Stream->second.Parsers[0]->Retrieve(Stream_General, 0, General_Title);
-            if (!Title.empty() && Retrieve(Stream_General, 0, General_Title).empty())
-                Fill(Stream_General, 0, General_Title, Title);
-        }
+                //Law rating
+                Ztring LawRating=Stream->second.Parsers[Pos]->Retrieve(Stream_General, 0, General_LawRating);
+                if (!LawRating.empty())
+                    Fill(Stream_General, 0, General_LawRating, LawRating, true);
+                Ztring Title=Stream->second.Parsers[Pos]->Retrieve(Stream_General, 0, General_Title);
+                if (!Title.empty() && Retrieve(Stream_General, 0, General_Title).empty())
+                    Fill(Stream_General, 0, General_Title, Title);
+            }
 
         return;
     }

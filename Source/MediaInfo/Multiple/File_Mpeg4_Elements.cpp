@@ -1324,12 +1324,16 @@ void File_Mpeg4::cdat()
 
     #if MEDIAINFO_DEMUX
         Demux(Buffer+Buffer_Offset, (size_t)Element_Size, ContentType_MainStream);
-        Streams[(int32u)Element_Code].Parsers[0]->FrameInfo.DTS=FrameInfo.DTS;
-        Streams[(int32u)Element_Code].Parsers[0]->FrameInfo.DUR=FrameInfo.DUR/(Element_Size/2);
+        for (size_t Pos=0; Pos<Streams[(int32u)Element_Code].Parsers.size(); Pos++)
+        {
+            Streams[(int32u)Element_Code].Parsers[Pos]->FrameInfo.DTS=FrameInfo.DTS;
+            Streams[(int32u)Element_Code].Parsers[Pos]->FrameInfo.DUR=FrameInfo.DUR/(Element_Size/2);
+        }
     #endif //MEDIAINFO_DEMUX
     while (Element_Offset+2<=Element_Size)
     {
-        Open_Buffer_Continue(Streams[(int32u)Element_Code].Parsers[0], Buffer+Buffer_Offset+(size_t)Element_Offset, 2);
+        for (size_t Pos=0; Pos<Streams[(int32u)Element_Code].Parsers.size(); Pos++)
+            Open_Buffer_Continue(Streams[(int32u)Element_Code].Parsers[Pos], Buffer+Buffer_Offset+(size_t)Element_Offset, 2);
         Element_Offset+=2;
     }
 }
@@ -2581,11 +2585,13 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                     {
                         if (moov_meta_ilst_xxxx_name_Name=="iTunMOVI" && Element_Size>8)
                         {
-                            File_PropertyList MI;
-                            Open_Buffer_Init(&MI);
-                            Open_Buffer_Continue(&MI, Buffer+Buffer_Offset+8, (size_t)(Element_Size-8));
-                            Open_Buffer_Finalize(&MI);
-                            Merge(MI, Stream_General, 0, 0);
+                            #if defined(MEDIAINFO_PROPERTYLIST_YES)
+                                File_PropertyList MI;
+                                Open_Buffer_Init(&MI);
+                                Open_Buffer_Continue(&MI, Buffer+Buffer_Offset+8, (size_t)(Element_Size-8));
+                                Open_Buffer_Finalize(&MI);
+                                Merge(MI, Stream_General, 0, 0);
+                            #endif //defined(MEDIAINFO_PROPERTYLIST_YES)
                         }
                         else
                             Metadata_Get(Parameter, moov_meta_ilst_xxxx_name_Name);
@@ -5469,13 +5475,17 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_dvc1()
                 BS_End();
                 Get_B4 (framerate,                              "FrameRate");
                 Element_Begin1("Sequence HDR");
-                    File_Vc1* Parser=new File_Vc1;
-                    Parser->FrameIsAlwaysComplete=true;
-                    Open_Buffer_Init(Parser);
-                    Open_Buffer_Continue(Parser);
-                    Element_Offset=Element_Size;
-                    Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
-                    mdat_MustParse=true; //Data is in MDAT*/
+                    #if defined(MEDIAINFO_VC1_YES)
+                        File_Vc1* Parser=new File_Vc1;
+                        Parser->FrameIsAlwaysComplete=true;
+                        Open_Buffer_Init(Parser);
+                        Open_Buffer_Continue(Parser);
+                        Element_Offset=Element_Size;
+                        Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                        mdat_MustParse=true; //Data is in MDAT*/
+                    #else //defined(MEDIAINFO_VC1_YES)
+                        Skip_XX(Element_Size - Element_Offset,  "VC-1 data");
+                    #endif //defined(MEDIAINFO_VC1_YES)
                 Element_End0();
         break;
     }
@@ -5826,16 +5836,18 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_wave_enda()
         return; //Handling only the first description
 
     FILLING_BEGIN();
-        if (Streams[moov_trak_tkhd_TrackID].IsPcm)
-        {
-            if (Streams[moov_trak_tkhd_TrackID].Parsers.size()==1)
-                ((File_Pcm*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Endianness=Endianness?'L':'B';
-            if (Streams[moov_trak_tkhd_TrackID].Parsers.size()==2)
+        #if defined(MEDIAINFO_PCM_YES)
+            if (Streams[moov_trak_tkhd_TrackID].IsPcm)
             {
-                ((File_ChannelGrouping*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Endianness=Endianness?'L':'B';
-                ((File_Pcm*)Streams[moov_trak_tkhd_TrackID].Parsers[1])->Endianness=Endianness?'L':'B';
+                if (Streams[moov_trak_tkhd_TrackID].Parsers.size()==1)
+                    ((File_Pcm*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Endianness=Endianness?'L':'B';
+                if (Streams[moov_trak_tkhd_TrackID].Parsers.size()==2)
+                {
+                    ((File_ChannelGrouping*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Endianness=Endianness?'L':'B';
+                    ((File_Pcm*)Streams[moov_trak_tkhd_TrackID].Parsers[1])->Endianness=Endianness?'L':'B';
+                }
             }
-        }
+        #endif //defined(MEDIAINFO_PCM_YES)
     FILLING_END();
 }
 
