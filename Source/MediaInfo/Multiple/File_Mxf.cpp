@@ -1838,7 +1838,7 @@ string Mxf_CameraUnitMetadata_ImageSensorReadoutMode(int8u Value)
     {
         case 0x00 : return "Interlaced field";
         case 0x01 : return "Interlaced frame";
-        case 0x02 : return "Progressive frame ";
+        case 0x02 : return "Progressive frame";
         case 0xFF : return "Undefined";
         default   : return Ztring::ToZtring(Value).To_UTF8();
     }
