@@ -1864,6 +1864,40 @@ string Mxf_CameraUnitMetadata_CaptureGammaEquation(int128u Value)
 };
 
 //---------------------------------------------------------------------------
+// CameraUnitMetadata
+string Mxf_AcquisitionMetadata_ElementName(int16u Value, bool IsSony=false)
+{
+    if (IsSony)
+        switch (Value)
+        {
+            case 0xE101: return "EffectiveMarkerCoverage";
+            case 0xE102: return "EffectiveMarkerAspectRatio";
+            case 0xE103: return "CameraProcessDiscriminationCode";
+            case 0xE104: return "RotaryShutterMode";
+            case 0xE109: return "MonitoringDescriptions";
+            default:     ;   
+        }
+
+    switch (Value)
+    {
+        case 0x3210: return "CaptureGammaEquation";
+        case 0x8007: return "LensAttributes";
+        case 0x8103: return "NeutralDensityFilterWheelSetting";
+        case 0x8106: return "CaptureFrameRate";
+        case 0x8107: return "ImageSensorReadoutMode";
+        case 0x8108: return "ShutterSpeed_Angle";
+        case 0x810B: return "ISOSensitivity";
+        case 0x810E: return "WhiteBalance";
+        case 0x8114: return "CameraAttributes";
+        case 0x8115: return "ExposureIndexofPhotoMeter";
+        case 0x8116: return "GammaforCDL";
+        case 0x8117: return "ASCCDLV1_2";
+        default:     return Ztring(Ztring::ToZtring(Value, 16)).To_UTF8();
+    }
+}
+
+
+//---------------------------------------------------------------------------
 extern const char* Mpegv_profile_and_level_indication_profile[];
 extern const char* Mpegv_profile_and_level_indication_level[];
 extern const char* Mpeg4v_Profile_Level(int32u Profile_Level);
@@ -2238,6 +2272,25 @@ void File_Mxf::Streams_Finish()
         Fill(Stream_General, 0, "PrimaryPackage", "Material Package");
         (*Stream_More)[Stream_General][0](Ztring().From_Local("PrimaryPackage"), Info_Options)=__T("N NT");
     }
+
+    //CameraUnitMetadata
+    if (!AcquisitionMetadataLists.empty())
+        for (size_t Pos = 0; Pos < AcquisitionMetadataLists.size(); Pos++)
+            if (AcquisitionMetadataLists[Pos] && !AcquisitionMetadataLists[Pos]->empty())
+            {
+                string ElementName(Mxf_AcquisitionMetadata_ElementName((int16u)Pos, UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony));
+                string ElementName_FirstFrame(ElementName+"_FirstFrame");
+                string ElementName_Values(ElementName+"_Values");
+                string ElementName_FrameCounts(ElementName+"_FrameCounts");
+                Fill(Stream_Other, 0, ElementName_FirstFrame.c_str(), (*AcquisitionMetadataLists[Pos])[0].Value);
+                for (size_t List_Pos=0; List_Pos<AcquisitionMetadataLists[Pos]->size(); List_Pos++)
+                {
+                    Fill(Stream_Other, 0, ElementName_Values.c_str(), (*AcquisitionMetadataLists[Pos])[List_Pos].Value);
+                    Fill(Stream_Other, 0, ElementName_FrameCounts.c_str(), (*AcquisitionMetadataLists[Pos])[List_Pos].FrameCount);
+                }
+                (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_Values.c_str()), Info_Options)=__T("N NT");
+                (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FrameCounts.c_str()), Info_Options)=__T("N NT");
+            }
 }
 
 //---------------------------------------------------------------------------
@@ -5706,6 +5759,8 @@ void File_Mxf::Data_Parse()
                             Parsing_Size=Element_Size-Element_Offset; // There is a problem
                         if (Parsing_Size>Array_Size)
                             Parsing_Size=Array_Size; // There is a problem
+                        (*Parser)->Frame_Count=Frame_Count;
+                        (*Parser)->Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded;
                         Open_Buffer_Continue((*Parser), Buffer+Buffer_Offset+(size_t)(Element_Offset), Parsing_Size);
                         if ((Code_Compare4&0xFF00FF00)==0x17000100 && LineNumber==21 && (*Parser)->Count_Get(Stream_Text)==0)
                         {
@@ -5719,6 +5774,8 @@ void File_Mxf::Data_Parse()
                             Skip_XX(Array_Size-Parsing_Size,    "Padding");
                         Element_End0();
                     }
+                    if (IsSub)
+                        Frame_Count++;
                 }
             }
             else
@@ -7718,7 +7775,13 @@ void File_Mxf::LensUnitMetadata()
 void File_Mxf::CameraUnitMetadata()
 {
     if (Count_Get(Stream_Other)==0)
+    {
         Stream_Prepare(Stream_Other);
+
+        #if MEDIAINFO_ADVANCED
+            AcquisitionMetadataLists.resize(0x10000);
+        #endif //MEDIAINFO_ADVANCED
+    }
 
     switch(Code2)
     {
@@ -10685,8 +10748,7 @@ void File_Mxf::CameraUnitMetadata_CaptureGammaEquation()
     Get_UUID(Value,                                             "Value");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "CaptureGammaEquation").empty())
-            Fill(Stream_Other, 0, "CaptureGammaEquation", Mxf_CameraUnitMetadata_CaptureGammaEquation(Value));
+        AcquisitionMetadata_Add(Code2, Mxf_CameraUnitMetadata_CaptureGammaEquation(Value));
     FILLING_END();
 }
 
@@ -10699,8 +10761,7 @@ void File_Mxf::CameraUnitMetadata_NeutralDensityFilterWheelSetting()
     Get_B2(Value,                                               "Value");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "NeutralDensityFilterWheelSetting").empty())
-            Fill(Stream_Other, 0, "NeutralDensityFilterWheelSetting", Value);
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value).To_UTF8());
     FILLING_END();
 }
 
@@ -10713,8 +10774,7 @@ void File_Mxf::CameraUnitMetadata_CaptureFrameRate()
     Get_Rational(Value);
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "CaptureFrameRate").empty())
-            Fill(Stream_Other, 0, "CaptureFrameRate", Value);
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value).To_UTF8());
     FILLING_END();
 }
 
@@ -10727,8 +10787,7 @@ void File_Mxf::CameraUnitMetadata_ImageSensorReadoutMode()
     Get_B1(Value,                                               "Value");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "ImageSensorReadoutMode").empty())
-            Fill(Stream_Other, 0, "ImageSensorReadoutMode", Mxf_CameraUnitMetadata_ImageSensorReadoutMode(Value));
+        AcquisitionMetadata_Add(Code2, Mxf_CameraUnitMetadata_ImageSensorReadoutMode(Value));
     FILLING_END();
 }
 
@@ -10741,8 +10800,7 @@ void File_Mxf::CameraUnitMetadata_ShutterSpeed_Angle()
     Get_B4(Value,                                               "Value");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "ShutterSpeed_Angle").empty())
-            Fill(Stream_Other, 0, "ShutterSpeed_Angle", ((float)Value)/60, 1);
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(((float)Value) / 60, 1).To_UTF8());
     FILLING_END();
 }
 
@@ -10755,8 +10813,7 @@ void File_Mxf::CameraUnitMetadata_ISOSensitivity()
     Get_B2(Value,                                               "Value");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "ISOSensitivity").empty())
-            Fill(Stream_Other, 0, "ISOSensitivity", Value);
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value).To_UTF8());
     FILLING_END();
 }
 
@@ -10769,8 +10826,7 @@ void File_Mxf::CameraUnitMetadata_WhiteBalance()
     Get_B2(Value,                                               "Value");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "WhiteBalance").empty())
-            Fill(Stream_Other, 0, "WhiteBalance", Value);
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value).To_UTF8());
     FILLING_END();
 }
 
@@ -10783,8 +10839,7 @@ void File_Mxf::CameraUnitMetadata_CameraAttributes()
     Get_UTF8(Length2, Value,                                    "Value");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "CameraAttributes").empty())
-            Fill(Stream_Other, 0, "CameraAttributes", Value);
+        AcquisitionMetadata_Add(Code2, Value.To_UTF8());
     FILLING_END();
 }
 
@@ -10797,8 +10852,7 @@ void File_Mxf::CameraUnitMetadata_ExposureIndexofPhotoMeter()
     Get_B2(Value,                                               "Value");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "ExposureIndexofPhotoMeter").empty())
-            Fill(Stream_Other, 0, "ExposureIndexofPhotoMeter", Value);
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value).To_UTF8());
     FILLING_END();
 }
 
@@ -10811,8 +10865,7 @@ void File_Mxf::CameraUnitMetadata_GammaforCDL()
     Get_B1(Value,                                               "Value");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "GammaforCDL").empty())
-            Fill(Stream_Other, 0, "GammaforCDL", Mxf_CameraUnitMetadata_GammaforCDL(Value));
+        AcquisitionMetadata_Add(Code2, Mxf_CameraUnitMetadata_GammaforCDL(Value));
     FILLING_END();
 }
 
@@ -10843,11 +10896,8 @@ void File_Mxf::CameraUnitMetadata_ASCCDLV1_2()
     Get_BF2(sat,                                                "sat");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "ASCCDLV1_2").empty())
-        {
-            Ztring ValueS=__T("sR=")+Ztring::ToZtring(sR, 1)+__T(" sG=")+Ztring::ToZtring(sG, 1)+__T(" sB=")+Ztring::ToZtring(sB, 1)+__T(" oR=")+Ztring::ToZtring(oR, 1)+__T(" oG=")+Ztring::ToZtring(oG, 1)+__T(" oB=")+Ztring::ToZtring(oB, 1)+__T(" pR=")+Ztring::ToZtring(pR, 1)+__T(" pG=")+Ztring::ToZtring(pG, 1)+__T(" pB=")+Ztring::ToZtring(pB, 1)+__T(" sat=")+Ztring::ToZtring(sat, 1);
-            Fill(Stream_Other, 0, "ASCCDLV1_2", ValueS);
-        }
+        Ztring ValueS=__T("sR=")+Ztring::ToZtring(sR, 1)+__T(" sG=")+Ztring::ToZtring(sG, 1)+__T(" sB=")+Ztring::ToZtring(sB, 1)+__T(" oR=")+Ztring::ToZtring(oR, 1)+__T(" oG=")+Ztring::ToZtring(oG, 1)+__T(" oB=")+Ztring::ToZtring(oB, 1)+__T(" pR=")+Ztring::ToZtring(pR, 1)+__T(" pG=")+Ztring::ToZtring(pG, 1)+__T(" pB=")+Ztring::ToZtring(pB, 1)+__T(" sat=")+Ztring::ToZtring(sat, 1);
+        AcquisitionMetadata_Add(Code2, ValueS.To_UTF8());
     FILLING_END();
 }
 
@@ -10874,8 +10924,7 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_8007()
     Get_UTF8(Length2, Value,                                    "Value");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "LensAttributes").empty())
-            Fill(Stream_Other, 0, "LensAttributes", Value);
+        AcquisitionMetadata_Add(Code2, Value.To_UTF8());
     FILLING_END();
 }
 
@@ -10889,8 +10938,7 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E101()
     Get_B4 (Height,                                             "Height");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "EffectiveMarkerCoverage").empty())
-            Fill(Stream_Other, 0, "EffectiveMarkerCoverage", Ztring::ToZtring(Width)+__T("x")+Ztring::ToZtring(Height));
+        AcquisitionMetadata_Add(Code2, Ztring(Ztring::ToZtring(Width)+__T("x")+Ztring::ToZtring(Height)).To_UTF8());
     FILLING_END();
 }
 
@@ -10904,8 +10952,7 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E102()
     Get_B4 (Height,                                             "Height");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "EffectiveMarkerAspectRatio").empty())
-            Fill(Stream_Other, 0, "EffectiveMarkerAspectRatio", Ztring::ToZtring(Width)+__T(":")+Ztring::ToZtring(Height));
+        AcquisitionMetadata_Add(Code2, Ztring(Ztring::ToZtring(Width)+__T("x")+Ztring::ToZtring(Height)).To_UTF8());
     FILLING_END();
 }
 
@@ -10918,8 +10965,7 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E103()
     Get_B2(Value,                                               "Value");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "CameraProcessDiscriminationCode").empty())
-            Fill(Stream_Other, 0, "CameraProcessDiscriminationCode", Value, 16);
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value, 16).To_UTF8());
     FILLING_END();
 }
 
@@ -10932,8 +10978,7 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E104()
     Get_B1(Value,                                               "Value");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "RotaryShutterMode").empty())
-            Fill(Stream_Other, 0, "RotaryShutterMode", Value?"Yes":"No");
+        AcquisitionMetadata_Add(Code2, Value?"Yes":"No");
     FILLING_END();
 }
 
@@ -10946,8 +10991,7 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E109()
     Get_UTF8(Length2, Value,                                    "Value");
 
     FILLING_BEGIN();
-        if (Retrieve(Stream_Other, 0, "MonitoringDescriptions").empty())
-            Fill(Stream_Other, 0, "MonitoringDescriptions", Value);
+        AcquisitionMetadata_Add(Code2, Value.To_UTF8());
     FILLING_END();
 }
 

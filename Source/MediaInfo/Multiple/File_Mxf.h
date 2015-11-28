@@ -1158,6 +1158,37 @@ protected :
     //Config
     bool                            TimeCodeFromMaterialPackage;
 
+    //CameraUnitMetadata
+    #if MEDIAINFO_ADVANCED
+        struct acquisitionmetadata
+        {
+            string Value;
+            size_t FrameCount;
+
+            acquisitionmetadata(const string &Value_)
+                : Value(Value_)
+                , FrameCount(1)
+            {}
+        };
+        typedef std::vector<acquisitionmetadata> acquisitionmetadatalist;
+        vector<acquisitionmetadatalist*> AcquisitionMetadataLists;
+        void AcquisitionMetadata_Add(size_t Id, string Value)
+        {
+            if (!AcquisitionMetadataLists[Id])
+            {
+                AcquisitionMetadataLists[Id]=new acquisitionmetadatalist;
+                AcquisitionMetadataLists[Id]->push_back(acquisitionmetadata(Value));
+                return;
+            }
+            if ((*AcquisitionMetadataLists[Id])[AcquisitionMetadataLists[Id]->size()-1].Value == Value)
+            {
+                (*AcquisitionMetadataLists[Id])[AcquisitionMetadataLists[Id]->size()-1].FrameCount++;
+                return;
+            }
+            AcquisitionMetadataLists[Id]->push_back(acquisitionmetadata(Value));
+        }
+    #endif //MEDIAINFO_ADVANCED
+
     //Demux
     #if MEDIAINFO_DEMUX
         bool Demux_HeaderParsed;
