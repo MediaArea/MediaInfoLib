@@ -11070,7 +11070,16 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E109()
 void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E10B()
 {
     //Parsing
-    Skip_UUID(                                                  "Value");
+    int128u Value;
+    Get_UUID(Value,                                             "Value");
+
+    FILLING_BEGIN();
+        Ztring ValueS;
+        ValueS.From_Number(Value.lo, 16);
+        if (ValueS.size()<16)
+            ValueS.insert(0, 16-ValueS.size(), __T('0'));
+        AcquisitionMetadata_Add(Code2, ValueS.To_UTF8());
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
