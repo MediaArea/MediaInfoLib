@@ -121,6 +121,7 @@ File__Analyze::File__Analyze ()
     MustUseAlternativeParser=false;
     MustSynchronize=false;
     CA_system_ID_MustSkipSlices=false;
+    FillAllMergedStreams=false;
 
     //Buffer
     #if MEDIAINFO_SEEK

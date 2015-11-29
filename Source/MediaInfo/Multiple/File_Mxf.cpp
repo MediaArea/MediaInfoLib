@@ -2761,7 +2761,10 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
                     break;
                 }
 
+        MergedStreams_Last.clear(); //TODO: better way to do this
+
         Merge(*(*Parser), StreamKind_Last, 0, StreamPos_Last);
+        MergedStreams_Last.push_back(streamidentity(StreamKind_Last, StreamPos_Last));
 
         Ztring LawRating=(*Parser)->Retrieve(Stream_General, 0, General_LawRating);
         if (!LawRating.empty())
@@ -2783,6 +2786,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
         {
             Stream_Prepare(StreamKind_Last);
             Merge(*(*Parser), StreamKind_Last, StreamPos, StreamPos_Last);
+            MergedStreams_Last.push_back(streamidentity(StreamKind_Last, StreamPos_Last));
         }
 
         if (StreamKind_Last!=Stream_Other && (*Parser)->Count_Get(Stream_Other))
@@ -3592,11 +3596,15 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
                     break;
                 }
 
+        FillAllMergedStreams=true;
+        
         if (Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount)).empty())
             Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), FrameCount);
 
         if (Retrieve(StreamKind_Last, StreamPos_Last, "FrameRate").empty())
             Fill(StreamKind_Last, StreamPos_Last, "FrameRate", EditRate);
+
+        FillAllMergedStreams=false;
     }
 }
 

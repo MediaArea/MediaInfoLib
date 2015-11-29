@@ -245,6 +245,17 @@ size_t File__Analyze::Stream_Erase (stream_t KindOfStream, size_t StreamPos)
 //---------------------------------------------------------------------------
 void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Parameter, const Ztring &Value, bool Replace)
 {
+    //MergedStreams
+    if (FillAllMergedStreams)
+    {
+        FillAllMergedStreams=false;
+        size_t s = MergedStreams_Last.size();
+        for (size_t i=0; i<s; ++i)
+            Fill(MergedStreams_Last[i].StreamKind, MergedStreams_Last[i].StreamPos, Parameter, Value, Replace);
+        FillAllMergedStreams=true;
+        return;
+    }
+    
     //Integrity
     if (!Status[IsAccepted] || StreamKind>Stream_Max || Parameter==(size_t)-1)
         return;
@@ -1167,12 +1178,15 @@ size_t File__Analyze::Merge(MediaInfo_Internal &ToAdd, stream_t StreamKind, size
 //---------------------------------------------------------------------------
 size_t File__Analyze::Merge(File__Analyze &ToAdd, bool Erase)
 {
+    MergedStreams_Last.clear();
+    
     size_t Count=0;
     for (size_t StreamKind=(size_t)Stream_General+1; StreamKind<(size_t)Stream_Max; StreamKind++)
         for (size_t StreamPos=0; StreamPos<(*ToAdd.Stream)[StreamKind].size(); StreamPos++)
         {
             //Prepare a new stream
             Stream_Prepare((stream_t)StreamKind);
+            MergedStreams_Last.push_back(streamidentity(StreamKind_Last, StreamPos_Last));
 
             //Merge
             Merge(ToAdd, (stream_t)StreamKind, StreamPos, StreamPos_Last, Erase);
