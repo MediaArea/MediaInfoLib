@@ -32,6 +32,7 @@ Version 0.7.80
 + MXF: handling of more acquisition metadata items
 + MXF: Package name
 + AVC: Store method of interlaced content (Interleaved Fields or Separated Fields)
++ EBUCore: acquisition metadata (Proof of concept, for feedback only)
 x Matroska: frame rate detection algorithm revisited, less wrong numbers are expected
 x SDP/Teletext: some pages were sometimes (when present in 2 different SDP lines) displayed several times
 x MPEG-4/MOV: some hint tracks were not displayed
