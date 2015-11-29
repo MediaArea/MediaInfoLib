@@ -1063,7 +1063,7 @@ void File_Eia708::DLW()
         if (IsSet && WindowID==1 && Streams[service_number]->Windows[0]!=NULL && Streams[service_number]->Windows[1]==NULL) //Mix between Windows 0 and 1
         {
             Bug_WindowOffset=true;
-            Fill(Stream_Text, 0, "Bug", "WindowID_Bug", Unlimited, true, true);
+            //Fill(Stream_Text, 0, "Bug", "WindowID_Bug", Unlimited, true, true);
         }
         if (!IsSet && WindowID==0 && Bug_WindowOffset)
             IsSet=true;
