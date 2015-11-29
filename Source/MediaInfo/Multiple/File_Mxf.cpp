@@ -1832,6 +1832,17 @@ string Mxf_CameraUnitMetadata_GammaforCDL(int8u Value)
 
 //---------------------------------------------------------------------------
 // EBU Tech 3349
+string Mxf_CameraUnitMetadata_NeutralDensityFilterWheelSetting(int16u Value)
+{
+    switch(Value)
+    {
+        case 0x01 : return "Clear";
+        default   : return Ztring::ToZtring(Value).To_UTF8();
+    }
+};
+
+//---------------------------------------------------------------------------
+// EBU Tech 3349
 string Mxf_CameraUnitMetadata_ImageSensorReadoutMode(int8u Value)
 {
     switch(Value)
@@ -1916,6 +1927,17 @@ const char* Mxf_AcquisitionMetadata_Sony_E201_ElementName[Mxf_AcquisitionMetadat
     "EntrancePupilPosition",
     "NormalizedZoomValue",
     "LensSerialNumber",
+};
+
+//---------------------------------------------------------------------------
+// EBU Tech 3349
+string Mxf_AcquisitionMetadata_Sony_CameraProcessDiscriminationCode(int16u Value)
+{
+    switch (Value)
+    {
+        case 0x0102: return "F65 HD Mode released in April 2012";
+        default:     return Ztring(Ztring::ToZtring(Value, 16)).To_UTF8();
+    }
 };
 
 //---------------------------------------------------------------------------
@@ -2325,7 +2347,7 @@ void File_Mxf::Streams_Finish()
                                 break;
                             case  7 : //HorizontalFieldOfView
                                 (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
-                                Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadata_Sony_E201_Lists[i])[0].Value+"°");
+                                Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadata_Sony_E201_Lists[i])[0].Value+"\xc2\xB0");
                                 break;
                             default : ;
                         }
@@ -2345,6 +2367,18 @@ void File_Mxf::Streams_Finish()
                 string ElementName_Values(ElementName+"_Values");
                 string ElementName_FrameCounts(ElementName+"_FrameCounts");
                 Fill(Stream_Other, 0, ElementName_FirstFrame.c_str(), (*AcquisitionMetadataLists[Pos])[0].Value);
+                switch (Pos)
+                {
+                    case 0x8108 : //ShutterSpeed_Angle
+                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                        Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+"\xc2\xB0");
+                        break;
+                    case 0x810E : //WhiteBalance
+                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                        Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+" K");
+                        break;
+                    default : ;
+                }
                 if (UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony && Pos==0xE203) // Calibration Type, not for display
                     (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
                 for (size_t List_Pos=0; List_Pos<AcquisitionMetadataLists[Pos]->size(); List_Pos++)
@@ -7872,10 +7906,8 @@ void File_Mxf::UserDefinedAcquisitionMetadata()
         Stream_Prepare(Stream_Other);
 
         AcquisitionMetadataLists.resize(0x10000);
+        AcquisitionMetadata_Sony_CalibrationType = (int8u)-1;
     }
-
-    //Init
-    AcquisitionMetadata_Sony_CalibrationType = (int8u)-1;
 
     switch(Code2)
     {
@@ -10828,10 +10860,10 @@ void File_Mxf::CameraUnitMetadata_NeutralDensityFilterWheelSetting()
 {
     //Parsing
     int16u Value;
-    Get_B2(Value,                                               "Value");
+    Get_B2(Value,                                               "Value"); Element_Info(Mxf_CameraUnitMetadata_NeutralDensityFilterWheelSetting(Value).c_str());
 
     FILLING_BEGIN();
-        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value).To_UTF8());
+        AcquisitionMetadata_Add(Code2, Mxf_CameraUnitMetadata_NeutralDensityFilterWheelSetting(Value));
     FILLING_END();
 }
 
@@ -11035,7 +11067,7 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E103()
     Get_B2(Value,                                               "Value");
 
     FILLING_BEGIN();
-        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value, 16).To_UTF8());
+        AcquisitionMetadata_Add(Code2, Mxf_AcquisitionMetadata_Sony_CameraProcessDiscriminationCode(Value));
     FILLING_END();
 }
 
@@ -11048,7 +11080,7 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E104()
     Get_B1(Value,                                               "Value");
 
     FILLING_BEGIN();
-        AcquisitionMetadata_Add(Code2, Value?"Yes":"No");
+        AcquisitionMetadata_Add(Code2, Value?"On":"Off");
     FILLING_END();
 }
 
