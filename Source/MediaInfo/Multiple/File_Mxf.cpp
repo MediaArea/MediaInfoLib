@@ -1903,7 +1903,7 @@ string Mxf_AcquisitionMetadata_ElementName(int16u Value, bool IsSony=false)
 //---------------------------------------------------------------------------
 // CameraUnitMetadata - Sony E201 (Values are internal MI)
 const size_t Mxf_AcquisitionMetadata_Sony_E201_ElementCount = 11;
-const char* Mxf_AcquisitionMetadata_Sony_E201_ElementName[Mxf_AcquisitionMetadata_Sony_E201_ElementCount]
+const char* Mxf_AcquisitionMetadata_Sony_E201_ElementName[Mxf_AcquisitionMetadata_Sony_E201_ElementCount] =
 {
     "FocusDistance",
     "ApertureValue",
