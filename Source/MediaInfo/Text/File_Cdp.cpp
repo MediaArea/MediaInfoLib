@@ -327,8 +327,10 @@ void File_Cdp::Data_Parse()
         if (!IsSub)
             Element_Begin1("CDP");
 
-        int64u End=Element_Offset+cdp_length;
         cdp_header();
+        int64u End=cdp_length;
+        if (End>Element_Size)
+            End=Element_Size;
         while(Element_Offset<End)
         {
             int8u section_id;
