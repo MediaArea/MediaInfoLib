@@ -30,6 +30,7 @@ Version 0.7.80
 + MPEG-4/MOV: "Forced" tag
 + MPEG-4/MOV: showing links between tracks (chapters for, subtitles for, fallback for)
 + MXF: handling of more acquisition metadata items
++ MXF: Package name
 + AVC: Store method of interlaced content (Interleaved Fields or Separated Fields)
 x Matroska: frame rate detection algorithm revisited, less wrong numbers are expected
 x SDP/Teletext: some pages were sometimes (when present in 2 different SDP lines) displayed several times

@@ -8726,7 +8726,13 @@ void File_Mxf::GenericPackage_PackageUID()
 void File_Mxf::GenericPackage_Name()
 {
     //Parsing
-    Info_UTF16B(Length2, Data,                                  "Data"); Element_Info1(Data);
+    Ztring Data;
+    Get_UTF16B(Length2, Data,                                   "Data"); Element_Info1(Data);
+
+    FILLING_BEGIN();
+        if (!Partitions_IsFooter && Data!=Retrieve(Stream_General, 0, General_PackageName))
+            Fill(Stream_General, 0, General_PackageName, Data);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------

@@ -925,6 +925,7 @@ OverallBitRate_Maximum;Maximum Overall bit rate
 OverallBitRate_Minimum;Minimum Overall bit rate
 OverallBitRate_Mode;Overall bit rate mode
 OverallBitRate_Nominal;Nominal Overall bit rate
+PackageName;Package name
 Part;Part
 Part_Count;Total count
 PartNumber;Part Number

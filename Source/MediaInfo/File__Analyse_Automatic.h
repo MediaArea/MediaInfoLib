@@ -327,6 +327,7 @@ enum general
     General_Track_Sort,
     General_Track_Position,
     General_Track_Position_Total,
+    General_PackageName,
     General_Grouping,
     General_Chapter,
     General_SubTrack,
