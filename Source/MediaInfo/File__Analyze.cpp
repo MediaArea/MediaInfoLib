@@ -1160,7 +1160,7 @@ void File__Analyze::Open_Buffer_Unsynch ()
     }
 
     //if (Synched)
-    if (!MustSynchronize || (MustSynchronize && File_Offset_FirstSynched!=(int64u)-1)) //Synched at least once
+    if (!MustSynchronize || File_Offset_FirstSynched!=(int64u)-1) //Synched at least once
     {
         Synched=false;
         UnSynched_IsNotJunk=true;
