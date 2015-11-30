@@ -236,14 +236,14 @@ void File_Mk::Streams_Finish()
                         Fill(StreamKind_Last, StreamPos_Last, Tag->first.To_UTF8().c_str(), Tag->second);
             }
         }
-    
+
         //Tags
         //Ztring Duration_Temp;
         float64 FrameRate_FromTags = 0.0;
         Ztring TagsList=Retrieve(StreamKind_Last, StreamPos_Last, "_STATISTICS_TAGS");
         if (TagsList.size())
         {
-            bool Tags_Verified=false; 
+            bool Tags_Verified=false;
             {
                 Ztring Happ = Retrieve(Stream_General, 0, "Encoded_Application");
                 Ztring Hutc = Retrieve(Stream_General, 0, "Encoded_Date");
@@ -367,12 +367,12 @@ void File_Mk::Streams_Finish()
                     {
                         float64 Duration_Default=((float64)1000000000)/Temp->second.TrackDefaultDuration;
                         if (float64_int64s(Duration_Default) - Duration_Default*1.001000 > -0.000002
-                         && float64_int64s(Duration_Default) - Duration_Default*1.001000 < +0.000002) // Detection of precise 1.001 (e.g. 24000/1001) taking into account precision of 32-bit float 
+                         && float64_int64s(Duration_Default) - Duration_Default*1.001000 < +0.000002) // Detection of precise 1.001 (e.g. 24000/1001) taking into account precision of 32-bit float
                         {
                             FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001;
                         }
                         if (float64_int64s(Duration_Default) - Duration_Default*1.001001 > -0.000002
-                         && float64_int64s(Duration_Default) - Duration_Default*1.001001 < +0.000002) // Detection of rounded 1.001 (e.g. 23976/1000) taking into account precision of 32-bit float 
+                         && float64_int64s(Duration_Default) - Duration_Default*1.001001 < +0.000002) // Detection of rounded 1.001 (e.g. 23976/1000) taking into account precision of 32-bit float
                         {
                             FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001001;
                         }
@@ -2282,7 +2282,7 @@ void File_Mk::Segment_Tags_Tag()
     if (Items0 != Segment_Tags_Tag_Items.end())
     {
         tagspertrack &Items = Segment_Tags_Tag_Items[0]; // Creates it if not yet present, else take the previous one
-            
+
         //Change the key of the current tag
         for (tagspertrack::iterator Item=Items0->second.begin(); Item!=Items0->second.end(); ++Item)
             Items[Item->first] = Item->second;
@@ -2440,7 +2440,7 @@ void File_Mk::Segment_Tags_Tag_Targets_TrackUID()
         if (Items0 != Segment_Tags_Tag_Items.end())
         {
             tagspertrack &Items = Segment_Tags_Tag_Items[Segment_Tags_Tag_Targets_TrackUID_Value]; // Creates it if not yet present, else take the previous one
-            
+
             //Change the key of the current tag
             for (tagspertrack::iterator Item=Items0->second.begin(); Item!=Items0->second.end(); ++Item)
                 Items[Item->first] = Item->second;

@@ -1890,7 +1890,7 @@ string Mxf_AcquisitionMetadata_ElementName(int16u Value, bool IsSony=false)
           //case 0xE201: return "CookeProtocol_BinaryMetadata"; //Not used
             case 0xE202: return "CookeProtocol_UserMetadata";
             case 0xE203: return "CookeProtocol_CalibrationType";
-            default:     ;   
+            default:     ;
         }
 
     switch (Value)
@@ -3597,7 +3597,7 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
                 }
 
         FillAllMergedStreams=true;
-        
+
         if (Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount)).empty())
             Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), FrameCount);
 
@@ -5662,7 +5662,7 @@ void File_Mxf::Data_Parse()
                 if (Descriptor==SingleDescriptor || (Descriptor->second.LinkedTrackID==Essence->second.TrackID && Descriptor->second.LinkedTrackID!=(int32u)-1))
                 {
                     DescriptorFound=true;
-                    
+
                     Essence->second.StreamPos_Initial=Essence->second.StreamPos=Code_Compare4&0x000000FF;
 
                     if (Descriptor->second.StreamKind==Stream_Audio && Descriptor->second.Infos.find("Format_Settings_Endianness")==Descriptor->second.Infos.end())
@@ -8055,8 +8055,8 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
 
         //TimeCode
         TimeCode TimeCode_Current(  Hours_Tens  *10+Hours_Units,
-                                    Minutes_Tens*10+Minutes_Units, 
-                                    Seconds_Tens*10+Seconds_Units, 
+                                    Minutes_Tens*10+Minutes_Units,
+                                    Seconds_Tens*10+Seconds_Units,
                                     Frames_Tens *10+Frames_Units,
                                     FrameRate/(RepetitionMaxCount+1),
                                     DropFrame,
@@ -10318,7 +10318,7 @@ void File_Mxf::RGBAEssenceDescriptor_AlphaMinRef()
 void File_Mxf::Sequence_StructuralComponents()
 {
     Components[InstanceUID].StructuralComponents.clear();
-    
+
     //Parsing
     //Vector
     int32u Count, Length;
@@ -11134,7 +11134,7 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E201()
 {
     if (AcquisitionMetadata_Sony_E201_Lists.empty())
         AcquisitionMetadata_Sony_E201_Lists.resize(Mxf_AcquisitionMetadata_Sony_E201_ElementCount);
-    
+
     //Parsing
     Ztring  FocusDistance, ApertureValue, ApertureScale, HyperfocalDistance, NearFocusDistance, FarFocusDistance, EntrancePupilPosition;
     string  LensSerialNumber;

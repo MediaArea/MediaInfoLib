@@ -446,7 +446,7 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                      IsExtra=true;
                 }
                 #endif //defined(MEDIAINFO_XML_YES
-                    
+
                 Ztring Nom=Get((stream_t)StreamKind, StreamPos, Champ_Pos, Info_Name_Text);
                 #if defined(MEDIAINFO_XML_YES)
                 if (Nom.empty() || XML_0_7_78)

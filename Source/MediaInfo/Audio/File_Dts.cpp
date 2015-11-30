@@ -412,16 +412,16 @@ void File_Dts::Streams_Fill_Extension()
         if (Presence[presence_Core_XCh] && i<Core_Core_Channels+Core_XCh_AMODE)
         {
             //AddCs=true;
-            
+
             //i=Core_Core_Channels+Core_XCh_AMODE;
         }
         if (!Presence[presence_Core_XCh] && ES && i<Core_Core_Channels+1)
         {
             AddCs=true;
-            
+
             i=Core_Core_Channels+1; // Must count the Matrixed additional channels
         }
-            
+
         Data[Channels].push_back(Ztring::ToZtring(i));
     }
     else
@@ -468,13 +468,13 @@ void File_Dts::Streams_Fill_Core_ES()
 
     if (!ES && !Presence[presence_Core_XCh])
         return;
-        
+
     int8u Channels_Before=Data[Channels][Data[Channels].size()-1].To_int8u();
     Data[Channels].pop_back();
     Data[ChannelPositions].pop_back();
     Data[ChannelPositions2].pop_back();
     Data[ChannelLayout].pop_back();
-    
+
     Data[Channels].push_back(Ztring::ToZtring(Channels_Before+(Presence[presence_Core_XCh]?Core_XCh_AMODE:1)));
     if (Core_Core_AMODE == 9 && (!Presence[presence_Core_XCh] || Core_XCh_AMODE == 1))
     {
@@ -588,7 +588,7 @@ void File_Dts::Streams_Fill()
 
         if (Presence[presence_Extended_XBR]
          || Presence[presence_Extended_X96]
-         || Presence[presence_Extended_XXCh])   
+         || Presence[presence_Extended_XXCh])
             Streams_Fill_Extension();
         else
         {
@@ -609,7 +609,7 @@ void File_Dts::Streams_Fill()
     {
         Data[Profiles].push_back(__T("96/24"));
 
-        if (Presence[presence_Extended_X96])   
+        if (Presence[presence_Extended_X96])
             Streams_Fill_Extension();
         else
         {
@@ -655,7 +655,7 @@ void File_Dts::Streams_Fill()
     }
     if (Data[Profiles].size()==1 && Data[Profiles][0]==__T("Core"))
         Data[Profiles].clear(); //Core is the default one
-    
+
     // Filling
     Fill(Stream_Audio, 0, Audio_Format_Profile, Data[Profiles].Read());
     Fill(Stream_Audio, 0, Audio_Codec, (Data[Profiles].Find(__T("MA"))!=string::npos || Data[Profiles].Find(__T("HRA"))!=string::npos)?"DTS-HD":"DTS");

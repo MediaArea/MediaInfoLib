@@ -1508,7 +1508,7 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
     {
         if (Version<Version_1_2)
             ToReturn+=__T("\t\t\t<!-- Not valid in XSD\n");
-        
+
         //format - technicalAttribute formatLabel=\"string\" - AudioLoudnessStandard
         if (!MI.Get(Stream_Other, As11_UkDpp_Pos, __T("AudioLoudnessStandard")).empty())
         {

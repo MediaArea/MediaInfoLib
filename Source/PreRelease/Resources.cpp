@@ -18,8 +18,8 @@ using namespace std;
 // Open a file
 ZenLib::Ztring Resources_Create_Load(Ztring FileName, Ztring &Contents)
 {
-	File F;
-	if (F.Open(FileName.c_str())==false)
+    File F;
+    if (F.Open(FileName.c_str())==false)
     {
         Ztring ToReturn=L"Problems to open ";
         ToReturn+=FileName;

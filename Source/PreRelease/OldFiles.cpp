@@ -30,7 +30,7 @@ wxDateTime Access;
 int Test_Version(char* FileName_, char* Begin, char* End)
 {
 /*
-	wxString FileName=Ztring().From_Local(FileName_).c_str();
+    wxString FileName=Ztring().From_Local(FileName_).c_str();
     //Opening File
     F.Open(FileName);
     I=F.Read(C, 1000000);
@@ -69,14 +69,14 @@ int Test_Version(char* FileName_, char* Begin, char* End)
         ToShow+=__T("\r\n");
     }
 */
-	return 0;
+    return 0;
 }
 //---------------------------------------------------------------------------
 
 /*
 int Test_Date(wxString FileName)
 {
-	FN.Assign(FileName);
+    FN.Assign(FileName);
     if (!FN.FileExists())
     {
         ToShow+=FileName;
@@ -97,7 +97,7 @@ int Test_Date(wxString FileName)
         ToShow+=TS.Format().c_str();
         ToShow+=__T(" ago\r\n");
     }
-	return 0;
+    return 0;
 }
 */
 //---------------------------------------------------------------------------
@@ -105,7 +105,7 @@ int Test_Date(wxString FileName)
 Ztring OldFiles_Test ()
 {
 /*
-	//Checking version in Info_Version
+    //Checking version in Info_Version
     ToShow+=__T("Version checked : ");
     F.Open(__T("../Source/MediaInfo/MediaInfo_Config.cpp"));
     I=F.Read(C, 1000000);

@@ -255,7 +255,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         FillAllMergedStreams=true;
         return;
     }
-    
+
     //Integrity
     if (!Status[IsAccepted] || StreamKind>Stream_Max || Parameter==(size_t)-1)
         return;
@@ -822,20 +822,20 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         if (Value)
         {
             if (float32_int32s(Value) - Value*1.001000 > -0.000002
-             && float32_int32s(Value) - Value*1.001000 < +0.000002) // Detection of precise 1.001 (e.g. 24000/1001) taking into account precision of 32-bit float 
+             && float32_int32s(Value) - Value*1.001000 < +0.000002) // Detection of precise 1.001 (e.g. 24000/1001) taking into account precision of 32-bit float
             {
                 Fill(StreamKind, StreamPos, Video_FrameRate_Num,  Value*1001, 0, Replace);
                 Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
             }
             if (float32_int32s(Value) - Value*1.001001 > -0.000002
-             && float32_int32s(Value) - Value*1.001001 < +0.000002) // Detection of rounded 1.001 (e.g. 23976/1000) taking into account precision of 32-bit float 
+             && float32_int32s(Value) - Value*1.001001 < +0.000002) // Detection of rounded 1.001 (e.g. 23976/1000) taking into account precision of 32-bit float
             {
                 Fill(StreamKind, StreamPos, Video_FrameRate_Num,  Value*1000, 0, Replace);
                 Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
             }
         }
     }
-        
+
     Fill(StreamKind, StreamPos, Parameter, Ztring::ToZtring(Value, AfterComma), Replace);
 }
 
@@ -1179,7 +1179,7 @@ size_t File__Analyze::Merge(MediaInfo_Internal &ToAdd, stream_t StreamKind, size
 size_t File__Analyze::Merge(File__Analyze &ToAdd, bool Erase)
 {
     MergedStreams_Last.clear();
-    
+
     size_t Count=0;
     for (size_t StreamKind=(size_t)Stream_General+1; StreamKind<(size_t)Stream_Max; StreamKind++)
         for (size_t StreamPos=0; StreamPos<(*ToAdd.Stream)[StreamKind].size(); StreamPos++)
