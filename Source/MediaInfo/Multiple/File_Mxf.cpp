@@ -10874,7 +10874,7 @@ void File_Mxf::CameraUnitMetadata_NeutralDensityFilterWheelSetting()
 {
     //Parsing
     int16u Value;
-    Get_B2(Value,                                               "Value"); Element_Info(Mxf_CameraUnitMetadata_NeutralDensityFilterWheelSetting(Value).c_str());
+    Get_B2(Value,                                               "Value"); Element_Info1(Mxf_CameraUnitMetadata_NeutralDensityFilterWheelSetting(Value).c_str());
 
     FILLING_BEGIN();
         AcquisitionMetadata_Add(Code2, Mxf_CameraUnitMetadata_NeutralDensityFilterWheelSetting(Value));
