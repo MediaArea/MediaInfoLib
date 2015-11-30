@@ -1342,7 +1342,7 @@ void File_Ffv1::plane_states_clean(states_context_plane states[MAX_QUANT_TABLES]
     if (!coder_type)
         return;
 
-    for (size_t i = 0; states[i] && i < MAX_QUANT_TABLES; ++i)
+    for (size_t i = 0; i < MAX_QUANT_TABLES && states[i]; ++i)
     {
         for (size_t j = 0; states[i][j]; ++j)
             delete[] states[i][j];
