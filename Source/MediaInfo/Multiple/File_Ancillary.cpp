@@ -345,10 +345,10 @@ void File_Ancillary::Streams_Finish()
     //Unsupported streams
     for (DataID = 0; DataID<Unknown.size(); DataID++)
         for (SecondaryDataID = 0; SecondaryDataID<Unknown[DataID].size(); SecondaryDataID++)
-            for (perid::iterator Stream = Unknown[DataID][SecondaryDataID].begin(); Stream!=Unknown[DataID][SecondaryDataID].end(); Stream++)
+            for (perid::iterator Stream = Unknown[DataID][SecondaryDataID].begin(); Stream!=Unknown[DataID][SecondaryDataID].end(); ++Stream)
             {
                 Stream_Prepare(Stream->second.StreamKind);
-                for (std::map<string, Ztring>::iterator Info=Stream->second.Infos.begin(); Info!=Stream->second.Infos.end(); Info++)
+                for (std::map<string, Ztring>::iterator Info=Stream->second.Infos.begin(); Info!=Stream->second.Infos.end(); ++Info)
                     Fill(Stream->second.StreamKind, StreamPos_Last, Info->first.c_str(), Info->second);
             }
 }

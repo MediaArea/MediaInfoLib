@@ -1970,7 +1970,7 @@ void File_MpegTs::Read_Buffer_AfterParsing()
                 if (Config->ParseSpeed < 0.5)
                 {
                     complete_stream::streams::iterator It_End=Complete_Stream->Streams.end();
-                    for (complete_stream::streams::iterator It=Complete_Stream->Streams.begin(); It!=It_End; It++)
+                    for (complete_stream::streams::iterator It=Complete_Stream->Streams.begin(); It!=It_End; ++It)
                     {
                         complete_stream::stream* &Stream=*It;
 

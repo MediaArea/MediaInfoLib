@@ -260,7 +260,7 @@ void File_Mk::Streams_Finish()
 
             float64 Statistics_Duration=0;
             float64 Statistics_FrameCount=0;
-            for (Ztring::iterator Back = TagsList.begin();;Back++)
+            for (Ztring::iterator Back = TagsList.begin();;++Back)
             {
                 if ((Back == TagsList.end()) || (*Back == ' ') || (*Back == '\0'))
                 {

@@ -348,23 +348,23 @@ void File_Mpeg4::Streams_Finish()
             if (StreamKind_Last == Stream_Text)
             {
                 std::vector<int32u> TrackIDs = Temp->second.SubtitleFor;
-                for (TrackID = Temp->second.Forced.begin(); TrackID != Temp->second.Forced.end(); TrackID++)
+                for (TrackID = Temp->second.Forced.begin(); TrackID != Temp->second.Forced.end(); ++TrackID)
                 {
-                    for (std::vector<int32u>::iterator TrackID2 = Streams[*TrackID].SubtitleFor.begin(); TrackID2 != Streams[*TrackID].SubtitleFor.end(); TrackID2++)
+                    for (std::vector<int32u>::iterator TrackID2 = Streams[*TrackID].SubtitleFor.begin(); TrackID2 != Streams[*TrackID].SubtitleFor.end(); ++TrackID2)
                     {
                         TrackIDs.push_back(*TrackID2);
                     }
                 }
-                for (TrackID = Temp->second.ForcedFor.begin(); TrackID != Temp->second.ForcedFor.end(); TrackID++)
+                for (TrackID = Temp->second.ForcedFor.begin(); TrackID != Temp->second.ForcedFor.end(); ++TrackID)
                 {
-                    for (std::vector<int32u>::iterator TrackID2 = Streams[*TrackID].SubtitleFor.begin(); TrackID2 != Streams[*TrackID].SubtitleFor.end(); TrackID2++)
+                    for (std::vector<int32u>::iterator TrackID2 = Streams[*TrackID].SubtitleFor.begin(); TrackID2 != Streams[*TrackID].SubtitleFor.end(); ++TrackID2)
                     {
                         TrackIDs.push_back(*TrackID2);
                     }
                 }
                 sort (TrackIDs.begin(), TrackIDs.end());
                 TrackIDs.erase( unique(TrackIDs.begin(), TrackIDs.end()), TrackIDs.end());
-                for (std::vector<int32u>::iterator TrackID = TrackIDs.begin(); TrackID != TrackIDs.end(); TrackID++)
+                for (std::vector<int32u>::iterator TrackID = TrackIDs.begin(); TrackID != TrackIDs.end(); ++TrackID)
                 {
                     if (TempString.size()) TempString.append(__T(","));
                     TempString.append(Ztring().From_Number(*TrackID));
@@ -386,7 +386,7 @@ void File_Mpeg4::Streams_Finish()
                 }
                 else
                 {
-                    for (TrackID = Temp->second.FallBackTo.begin(); TrackID != Temp->second.FallBackTo.end(); TrackID++)
+                    for (TrackID = Temp->second.FallBackTo.begin(); TrackID != Temp->second.FallBackTo.end(); ++TrackID)
                     {
                         if (Streams[*TrackID].IsEnabled)
                         {
@@ -395,7 +395,7 @@ void File_Mpeg4::Streams_Finish()
                             TempString.append(Ztring().From_Number(*TrackID));
                         }
                     }
-                    for (TrackID = Temp->second.FallBackFrom.begin(); TrackID != Temp->second.FallBackFrom.end(); TrackID++)
+                    for (TrackID = Temp->second.FallBackFrom.begin(); TrackID != Temp->second.FallBackFrom.end(); ++TrackID)
                     {
                         if (Streams[*TrackID].IsEnabled)
                         {
@@ -418,7 +418,7 @@ void File_Mpeg4::Streams_Finish()
                         Fill(StreamKind_Last, StreamPos_Last, "Forced", "Mixed");
                     if (Temp->second.ForcedFor.size())
                     {
-                        for (TrackID = Temp->second.ForcedFor.begin(); TrackID != Temp->second.ForcedFor.end(); TrackID++)
+                        for (TrackID = Temp->second.ForcedFor.begin(); TrackID != Temp->second.ForcedFor.end(); ++TrackID)
                         {
                             if (TempString.size()) TempString.append(__T(","));
                             TempString.append(Ztring().From_Number(*TrackID));
@@ -431,7 +431,7 @@ void File_Mpeg4::Streams_Finish()
                     Fill(StreamKind_Last, StreamPos_Last, "Forced", "No");
                 if (Temp->second.Forced.size())
                 {
-                    for (TrackID = Temp->second.Forced.begin(); TrackID != Temp->second.Forced.end(); TrackID++)
+                    for (TrackID = Temp->second.Forced.begin(); TrackID != Temp->second.Forced.end(); ++TrackID)
                     {
                         if (TempString.size()) TempString.append(__T(","));
                         TempString.append(Ztring().From_Number(*TrackID));
@@ -444,7 +444,7 @@ void File_Mpeg4::Streams_Finish()
             {
                 if (Temp->second.FallBackTo.size())
                 {
-                    for (TrackID = Temp->second.FallBackTo.begin(); TrackID != Temp->second.FallBackTo.end(); TrackID++)
+                    for (TrackID = Temp->second.FallBackTo.begin(); TrackID != Temp->second.FallBackTo.end(); ++TrackID)
                     {
                         if (TempString.size()) TempString.append(__T(","));
                         TempString.append(Ztring().From_Number(*TrackID));
@@ -457,7 +457,7 @@ void File_Mpeg4::Streams_Finish()
                 }
                 if (Temp->second.FallBackFrom.size())
                 {
-                    for (TrackID = Temp->second.FallBackFrom.begin(); TrackID != Temp->second.FallBackFrom.end(); TrackID++)
+                    for (TrackID = Temp->second.FallBackFrom.begin(); TrackID != Temp->second.FallBackFrom.end(); ++TrackID)
                     {
                         if (TempString.size()) TempString.append(__T(","));
                         TempString.append(Ztring().From_Number(*TrackID));
@@ -471,21 +471,21 @@ void File_Mpeg4::Streams_Finish()
                 if (Temp->second.Subtitle.size())
                 {
                     std::vector<int32u> TrackIDs = Temp->second.Subtitle;
-                    for (TrackID = Temp->second.Subtitle.begin(); TrackID != Temp->second.Subtitle.end(); TrackID++)
+                    for (TrackID = Temp->second.Subtitle.begin(); TrackID != Temp->second.Subtitle.end(); ++TrackID)
                     {
                         std::vector<int32u>::iterator TrackID2;
-                        for (TrackID2 = Streams[*TrackID].Forced.begin(); TrackID2 != Streams[*TrackID].Forced.end(); TrackID2++)
+                        for (TrackID2 = Streams[*TrackID].Forced.begin(); TrackID2 != Streams[*TrackID].Forced.end(); ++TrackID2)
                         {
                             TrackIDs.push_back(*TrackID2);
                         }
-                        for (TrackID2 = Streams[*TrackID].ForcedFor.begin(); TrackID2 != Streams[*TrackID].ForcedFor.end(); TrackID2++)
+                        for (TrackID2 = Streams[*TrackID].ForcedFor.begin(); TrackID2 != Streams[*TrackID].ForcedFor.end(); ++TrackID2)
                         {
                             TrackIDs.push_back(*TrackID2);
                         }
                     }
                     sort (TrackIDs.begin(), TrackIDs.end());
                     TrackIDs.erase( unique(TrackIDs.begin(), TrackIDs.end()), TrackIDs.end());
-                    for (std::vector<int32u>::iterator TrackID = TrackIDs.begin(); TrackID != TrackIDs.end(); TrackID++)
+                    for (std::vector<int32u>::iterator TrackID = TrackIDs.begin(); TrackID != TrackIDs.end(); ++TrackID)
                     {
                         if (TempString.size()) TempString.append(__T(","));
                         TempString.append(Ztring().From_Number(*TrackID));
@@ -499,7 +499,7 @@ void File_Mpeg4::Streams_Finish()
             }
             if (Temp->second.CC.size())
             {
-                    for (TrackID = Temp->second.CC.begin(); TrackID != Temp->second.CC.end(); TrackID++)
+                    for (TrackID = Temp->second.CC.begin(); TrackID != Temp->second.CC.end(); ++TrackID)
                     {
                         if (TempString.size()) TempString.append(__T(","));
                         TempString.append(Ztring().From_Number(*TrackID));
@@ -512,7 +512,7 @@ void File_Mpeg4::Streams_Finish()
             }
             else if (Temp->second.CCFor.size())
             {
-                    for (TrackID = Temp->second.CCFor.begin(); TrackID != Temp->second.CCFor.end(); TrackID++)
+                    for (TrackID = Temp->second.CCFor.begin(); TrackID != Temp->second.CCFor.end(); ++TrackID)
                     {
                         if (TempString.size()) TempString.append(__T(","));
                         TempString.append(Ztring().From_Number(*TrackID));
@@ -525,7 +525,7 @@ void File_Mpeg4::Streams_Finish()
             }
             if (Temp->second.Chapters.size())
             {
-                for (TrackID = Temp->second.Chapters.begin(); TrackID != Temp->second.Chapters.end(); TrackID++)
+                for (TrackID = Temp->second.Chapters.begin(); TrackID != Temp->second.Chapters.end(); ++TrackID)
                 {
                     if (TempString.size()) TempString.append(__T(","));
                     TempString.append(Ztring().From_Number(*TrackID));
@@ -542,7 +542,7 @@ void File_Mpeg4::Streams_Finish()
         {
             Ztring TempString;
             std::vector<int32u>::iterator TrackID;
-            for (TrackID = Temp->second.ChaptersFor.begin(); TrackID != Temp->second.ChaptersFor.end(); TrackID++)
+            for (TrackID = Temp->second.ChaptersFor.begin(); TrackID != Temp->second.ChaptersFor.end(); ++TrackID)
             {
                 if (TempString.size()) TempString.append(__T(","));
                 TempString.append(Ztring().From_Number(*TrackID));
