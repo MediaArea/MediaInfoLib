@@ -1326,8 +1326,8 @@ void File_Mk::Segment_Attachements_AttachedFile_FileData()
         Fill(Stream_General, 0, General_Cover, "Yes");
         CoverIsSetFromAttachment=true;
     }
-    else
-        Skip_XX(Element_TotalSize_Get(),                            "Data");
+    
+    Skip_XX(Element_TotalSize_Get(),                            "Data");
 }
 
 //---------------------------------------------------------------------------
