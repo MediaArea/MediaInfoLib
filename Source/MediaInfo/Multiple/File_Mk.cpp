@@ -91,8 +91,8 @@
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include <cstring>
 #include <algorithm>
+#include "base64.h"
 #if MEDIAINFO_DEMUX
-    #include "base64.h"
 #endif //MEDIAINFO_DEMUX
 //---------------------------------------------------------------------------
 
@@ -188,6 +188,8 @@ File_Mk::File_Mk()
     Info_AlreadyParsed=false;
     Tracks_AlreadyParsed=false;
     Cluster_AlreadyParsed=false;
+    CurrentAttachmentIsCover=false;
+    CoverIsSetFromAttachment=false;
 
     //Helpers
     CodecPrivate=NULL;
@@ -903,7 +905,7 @@ void File_Mk::Data_Parse()
             ATOM_BEGIN
             LIST(Segment_Attachements_AttachedFile)
                 ATOM_BEGIN
-                LIST_SKIP(Segment_Attachements_AttachedFile_FileData) //This is ATOM, but some ATOMs are too big
+                ATOM(Segment_Attachements_AttachedFile_FileData) //This is ATOM, but some ATOMs are too big
                 ATOM(Segment_Attachements_AttachedFile_FileDescription)
                 ATOM(Segment_Attachements_AttachedFile_FileName)
                 ATOM(Segment_Attachements_AttachedFile_FileMimeType)
@@ -1313,7 +1315,19 @@ void File_Mk::Segment_Attachements_AttachedFile_FileData()
     Element_Name("FileData");
 
     //Parsing
-    Skip_XX(Element_TotalSize_Get(),                            "Data");
+    if (!CoverIsSetFromAttachment && CurrentAttachmentIsCover)
+    {
+        std::string Data_Raw;
+        Peek_String(Element_TotalSize_Get(), Data_Raw);
+        std::string Data_Base64(Base64::encode(Data_Raw));
+
+        //Filling
+        Fill(Stream_General, 0, General_Cover_Data, Data_Base64);
+        Fill(Stream_General, 0, General_Cover, "Yes");
+        CoverIsSetFromAttachment=true;
+    }
+    else
+        Skip_XX(Element_TotalSize_Get(),                            "Data");
 }
 
 //---------------------------------------------------------------------------
@@ -1333,7 +1347,11 @@ void File_Mk::Segment_Attachements_AttachedFile_FileName()
     //Parsing
     Ztring Data=UTF8_Get();
 
-    Fill(Stream_General, 0, "Attachements", Data);
+    Fill(Stream_General, 0, "Attachments", Data);
+    
+    //Cover is in the first file which name contains "cover"
+    if (!CoverIsSetFromAttachment && Data.MakeLowerCase().find(__T("cover")) != string::npos)
+        CurrentAttachmentIsCover=true;
 }
 
 //---------------------------------------------------------------------------
