@@ -2390,6 +2390,7 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagString()
     {
         if (Segment_Tag_SimpleTag_TagNames[Pos]==__T("BARCODE")) Segment_Tag_SimpleTag_TagNames[Pos]=__T("BarCode");
         if (Segment_Tag_SimpleTag_TagNames[Pos]==__T("COMMENT")) Segment_Tag_SimpleTag_TagNames[Pos]=__T("Comment");
+        if (Segment_Tag_SimpleTag_TagNames[Pos]==__T("ORIGINAL")) Segment_Tag_SimpleTag_TagNames[Pos]=__T("Original");
         if (Segment_Tag_SimpleTag_TagNames[Pos]==__T("URL")) Segment_Tag_SimpleTag_TagNames[Pos]=__T("Url");
     }
 
