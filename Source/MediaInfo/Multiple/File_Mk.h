@@ -321,6 +321,8 @@ private :
     typedef std::map<int64u, tagspertrack> tags;
     tags    Segment_Tags_Tag_Items;
     int64u  Segment_Tags_Tag_Targets_TrackUID_Value;
+    bool    CurrentAttachmentIsCover;
+    bool    CoverIsSetFromAttachment;
 
     //Chapters
     struct chapterdisplay
