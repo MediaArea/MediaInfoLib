@@ -2365,7 +2365,6 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagString()
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("MAJOR_BRAND")) return; //QuickTime techinical info, useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("MINOR_VERSION")) return; //QuickTime techinical info, useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("PART_NUMBER")) Segment_Tag_SimpleTag_TagNames[0]=__T("Track/Position");
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("ORIGINAL") && Segment_Tag_SimpleTag_TagNames.size()==2 && Segment_Tag_SimpleTag_TagNames[1]==__T("URL")) return; //Useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("ORIGINAL_MEDIA_TYPE")) Segment_Tag_SimpleTag_TagNames[0]=__T("OriginalSourceForm");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("SAMPLE") && Segment_Tag_SimpleTag_TagNames.size()==2 && Segment_Tag_SimpleTag_TagNames[1]==__T("PART_NUMBER")) return; //Useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("SAMPLE") && Segment_Tag_SimpleTag_TagNames.size()==2 && Segment_Tag_SimpleTag_TagNames[1]==__T("TITLE")) {Segment_Tag_SimpleTag_TagNames.resize(1); Segment_Tag_SimpleTag_TagNames[0]=__T("Title_More");}
@@ -3176,7 +3175,12 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelCropBottom()
     Element_Name("PixelCropBottom");
 
     //Parsing
-    UInteger_Info();
+    int64u UInteger=UInteger_Get();
+    
+    //Filling
+    FILLING_BEGIN();
+        Fill(Stream_Video, StreamPos_Last, "PixelCropBottom", UInteger, 10, true);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -3185,7 +3189,12 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelCropLeft()
     Element_Name("PixelCropLeft");
 
     //Parsing
-    UInteger_Info();
+    int64u UInteger=UInteger_Get();
+    
+    //Filling
+    FILLING_BEGIN();
+        Fill(Stream_Video, StreamPos_Last, "PixelCropLeft", UInteger, 10, true);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -3194,7 +3203,12 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelCropRight()
     Element_Name("PixelCropRight");
 
     //Parsing
-    UInteger_Info();
+    int64u UInteger=UInteger_Get();
+    
+    //Filling
+    FILLING_BEGIN();
+        Fill(Stream_Video, StreamPos_Last, "PixelCropRight", UInteger, 10, true);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -3203,7 +3217,12 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelCropTop()
     Element_Name("PixelCropTop");
 
     //Parsing
-    UInteger_Info();
+    int64u UInteger=UInteger_Get();
+    
+    //Filling
+    FILLING_BEGIN();
+        Fill(Stream_Video, StreamPos_Last, "PixelCropTop", UInteger, 10, true);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
