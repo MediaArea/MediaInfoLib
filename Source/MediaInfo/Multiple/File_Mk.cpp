@@ -561,6 +561,20 @@ void File_Mk::Streams_Finish()
                 Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Original, Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate));
                 Clear(Stream_Video, StreamPos_Last, Video_FrameRate);
             }
+
+            //Crop
+            if (Temp->second.PixelCropLeft || Temp->second.PixelCropRight)
+            {
+                Fill(Stream_Video, StreamPos_Last, Video_Width_Original, Retrieve(Stream_Video, StreamPos_Last, Video_Width), true);
+                Fill(Stream_Video, StreamPos_Last, Video_Width, Retrieve(Stream_Video, StreamPos_Last, Video_Width).To_int64u()-Temp->second.PixelCropLeft-Temp->second.PixelCropRight, 10, true);
+                Fill(Stream_Video, StreamPos_Last, Video_Width_Offset, Temp->second.PixelCropLeft, 10, true);
+            }
+            if (Temp->second.PixelCropTop || Temp->second.PixelCropBottom)
+            {
+                Fill(Stream_Video, StreamPos_Last, Video_Height_Original, Retrieve(Stream_Video, StreamPos_Last, Video_Height), true);
+                Fill(Stream_Video, StreamPos_Last, Video_Height, Retrieve(Stream_Video, StreamPos_Last, Video_Height).To_int64u()-Temp->second.PixelCropTop-Temp->second.PixelCropBottom, 10, true);
+                Fill(Stream_Video, StreamPos_Last, Video_Height_Offset, Temp->second.PixelCropTop, 10, true);
+            }
         }
 
         if (Temp->second.FrameRate!=0 && Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).empty())
@@ -3179,7 +3193,7 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelCropBottom()
     
     //Filling
     FILLING_BEGIN();
-        Fill(Stream_Video, StreamPos_Last, "PixelCropBottom", UInteger, 10, true);
+        Stream[TrackNumber].PixelCropBottom=UInteger;
     FILLING_END();
 }
 
@@ -3193,7 +3207,7 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelCropLeft()
     
     //Filling
     FILLING_BEGIN();
-        Fill(Stream_Video, StreamPos_Last, "PixelCropLeft", UInteger, 10, true);
+        Stream[TrackNumber].PixelCropLeft=UInteger;
     FILLING_END();
 }
 
@@ -3207,7 +3221,7 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelCropRight()
     
     //Filling
     FILLING_BEGIN();
-        Fill(Stream_Video, StreamPos_Last, "PixelCropRight", UInteger, 10, true);
+        Stream[TrackNumber].PixelCropRight=UInteger;
     FILLING_END();
 }
 
@@ -3221,7 +3235,7 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelCropTop()
     
     //Filling
     FILLING_BEGIN();
-        Fill(Stream_Video, StreamPos_Last, "PixelCropTop", UInteger, 10, true);
+        Stream[TrackNumber].PixelCropTop=UInteger;
     FILLING_END();
 }
 
