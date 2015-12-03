@@ -215,11 +215,11 @@ File__Analyze::File__Analyze ()
         AES_Decrypted_Size=0;
     #endif //MEDIAINFO_AES
 
-    //MD5
-    #if MEDIAINFO_MD5
-        MD5=NULL;
-        Md5_ParseUpTo=0;
-    #endif //MEDIAINFO_MD5
+    //Hash
+    #if MEDIAINFO_HASH
+        Hash=NULL;
+        Hash_ParseUpTo=0;
+    #endif //MEDIAINFO_HASH
 
     Unsynch_Frame_Count=(int64u)-1;
     #if MEDIAINFO_IBIUSAGE
@@ -250,10 +250,10 @@ File__Analyze::~File__Analyze ()
         delete AES_Decrypted; //AES_Decrypted=NULL;
     #endif //MEDIAINFO_AES
 
-    //MD5
-    #if MEDIAINFO_MD5
-        delete MD5; //MD5=NULL;
-    #endif //MEDIAINFO_MD5
+    //Hash
+    #if MEDIAINFO_HASH
+        delete Hash; //Hash=NULL;
+    #endif //MEDIAINFO_HASH
 
     #if MEDIAINFO_IBIUSAGE
         if (!IsSub)
@@ -446,19 +446,19 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
         Field_Count_InThisBlock=0;
     }
 
-    //MD5
-    #if MEDIAINFO_MD5
+    //Hash
+    #if MEDIAINFO_HASH
         if (ToAdd_Size)
         {
             if (!IsSub && !Buffer_Temp_Size && File_Offset==Config->File_Current_Offset && Config->File_Md5_Get())
             {
-                delete MD5; MD5=new struct MD5Context;
-                MD5Init(MD5);
+                delete Hash; Hash=new struct MD5Context;
+                MD5Init(Hash);
             }
-            if (MD5)
-                MD5Update(MD5, ToAdd, (unsigned int)ToAdd_Size);
+            if (Hash)
+                MD5Update(Hash, ToAdd, (unsigned int)ToAdd_Size);
         }
-    #endif //MEDIAINFO_MD5
+    #endif //MEDIAINFO_HASH
 
     //AES
     #if MEDIAINFO_AES
@@ -515,19 +515,19 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
         }
     }
 
-    #if MEDIAINFO_MD5
-        //MD5 parsing only
-        if (Md5_ParseUpTo>File_Offset+Buffer_Size+ToAdd_Size)
+    #if MEDIAINFO_HASH
+        //Hash parsing only
+        if (Hash_ParseUpTo>File_Offset+Buffer_Size+ToAdd_Size)
         {
             File_Offset+=ToAdd_Size;
             return; //No need of this piece of data
         }
-        if (Md5_ParseUpTo>File_Offset && Md5_ParseUpTo<=File_Offset+ToAdd_Size)
+        if (Hash_ParseUpTo>File_Offset && Hash_ParseUpTo<=File_Offset+ToAdd_Size)
         {
-            Buffer_Offset+=(size_t)(Md5_ParseUpTo-File_Offset);
-            Md5_ParseUpTo=0;
+            Buffer_Offset+=(size_t)(Hash_ParseUpTo-File_Offset);
+            Hash_ParseUpTo=0;
         }
-    #endif //MEDIAINFO_MD5
+    #endif //MEDIAINFO_HASH
 
     if (Buffer_Temp_Size) //There is buffered data from before
     {
@@ -582,16 +582,17 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
     if (Buffer_Size>=Buffer_MinimumSize || File_Offset+Buffer_Size==File_Size) //Parsing only if we have enough buffer
         while (Open_Buffer_Continue_Loop());
 
-    //MD5
-    #if MEDIAINFO_MD5
-        if (Md5_ParseUpTo>File_Size)
-            Md5_ParseUpTo=File_Size;
+    //Hash
+    #if MEDIAINFO_HASH
+        if (Hash_ParseUpTo>File_Size)
+            Hash_ParseUpTo=File_Size;
 
-        if (MD5 && File_Offset+Buffer_Size>=Config->File_Current_Size && Status[IsAccepted])
+        if (Hash && File_Offset+Buffer_Size>=Config->File_Current_Size && Status[IsAccepted])
         {
-            unsigned char Digest[16];
-            MD5Final(Digest, MD5);
+            string Hash_Name("MD5");
             Ztring Temp;
+            unsigned char Digest[16];
+            MD5Final(Digest, Hash);
             Temp+=Ztring().From_CC2(BigEndian2int16u(Digest+ 0));
             Temp+=Ztring().From_CC2(BigEndian2int16u(Digest+ 2));
             Temp+=Ztring().From_CC2(BigEndian2int16u(Digest+ 4));
@@ -601,28 +602,28 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
             Temp+=Ztring().From_CC2(BigEndian2int16u(Digest+12));
             Temp+=Ztring().From_CC2(BigEndian2int16u(Digest+14));
             Temp.MakeLowerCase();
-            const char* MD5Pos=Config->File_Names.size()>1?"Source_List_MD5_Generated":"MD5_Generated";
-            if (Config->File_Names_Pos<=1 && !Retrieve(Stream_General, 0, MD5Pos).empty() && Retrieve(Stream_General, 0, MD5Pos)==Temp)
-                Clear(Stream_General, 0, MD5Pos);
-            Fill(Stream_General, 0, MD5Pos, Temp);
+            string HashPos=Config->File_Names.size()>1?("Source_List_"+Hash_Name+"_Generated"):(Hash_Name+"_Generated");
+            if (Config->File_Names_Pos<=1 && !Retrieve(Stream_General, 0, HashPos.c_str()).empty() && Retrieve(Stream_General, 0, HashPos.c_str())==Temp)
+                Clear(Stream_General, 0, HashPos.c_str());
+            Fill(Stream_General, 0, HashPos.c_str(), Temp);
             if (Config->File_Names_Pos<=1)
-                (*Stream_More)[Stream_General][0](Ztring().From_Local(MD5Pos), Info_Options)=__T("N NT");
+                (*Stream_More)[Stream_General][0](Ztring().From_Local(HashPos), Info_Options)=__T("N NT");
 
-            delete MD5; MD5=NULL;
+            delete Hash; Hash=NULL;
         }
 
-        if (MD5 && File_GoTo!=(int64u)-1)
+        if (Hash && File_GoTo!=(int64u)-1)
         {
-            delete MD5; MD5=NULL; //MD5 not possible with a seek
+            delete Hash; Hash=NULL; //Hash not possible with a seek
         }
 
-        if (MD5 && Buffer_Offset>Buffer_Size)
+        if (Hash && Buffer_Offset>Buffer_Size)
         {
             //We need the next data
-            Md5_ParseUpTo=File_Offset+Buffer_Offset;
+            Hash_ParseUpTo=File_Offset+Buffer_Offset;
             Buffer_Offset=Buffer_Size;
         }
-    #endif //MEDIAINFO_MD5
+    #endif //MEDIAINFO_HASH
 
     //Should parse again?
     if (((File_GoTo==File_Size && File_Size!=(int64u)-1) || File_Offset+Buffer_Offset>=File_Size)
@@ -666,17 +667,17 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
 
         return;
     }
-    #if MEDIAINFO_MD5
-        if (Md5_ParseUpTo)
+    #if MEDIAINFO_HASH
+        if (Hash_ParseUpTo)
         {
             Buffer_Clear();
             return;
         }
-    #endif //MEDIAINFO_MD5
+    #endif //MEDIAINFO_HASH
     if (Buffer_Offset>=Buffer_Size
-        #if MEDIAINFO_MD5
-            && MD5==NULL
-        #endif //MEDIAINFO_MD5
+        #if MEDIAINFO_HASH
+            && Hash==NULL
+        #endif //MEDIAINFO_HASH
             )
     {
         if (Buffer_Offset>Buffer_Size)
@@ -835,14 +836,14 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
     //Is it OK?
     if (Buffer_Size>Buffer_MaximumSize)
     {
-        #if MEDIAINFO_MD5
-            if (Config->File_Md5_Get() && MD5 && Status[IsAccepted])
+        #if MEDIAINFO_HASH
+            if (Config->File_Md5_Get() && Hash && Status[IsAccepted])
             {
                 Buffer_Clear();
-                Md5_ParseUpTo=File_Size;
+                Hash_ParseUpTo=File_Size;
             }
             else
-        #endif //MEDIAINFO_MD5
+        #endif //MEDIAINFO_HASH
                 ForceFinish();
         return;
     }
@@ -1028,13 +1029,13 @@ bool File__Analyze::Open_Buffer_Continue_Loop ()
     Buffer_TotalBytes+=Buffer_Offset;
 
     //Handling of File_GoTo with already buffered data
-    #if MEDIAINFO_MD5
-        if (File_GoTo==(int64u)-1 && Md5_ParseUpTo && Md5_ParseUpTo>=File_Offset && Md5_ParseUpTo<File_Offset+Buffer_Size)
+    #if MEDIAINFO_HASH
+        if (File_GoTo==(int64u)-1 && Hash_ParseUpTo && Hash_ParseUpTo>=File_Offset && Hash_ParseUpTo<File_Offset+Buffer_Size)
         {
-            File_GoTo=Md5_ParseUpTo;
-            Md5_ParseUpTo=0;
+            File_GoTo=Hash_ParseUpTo;
+            Hash_ParseUpTo=0;
         }
-    #endif //MEDIAINFO_MD5
+    #endif //MEDIAINFO_HASH
     if (File_GoTo!=(int64u)-1 && File_GoTo>=File_Offset && File_GoTo<File_Offset+Buffer_Size)
     {
         if (Buffer_Temp_Size==0) //If there was no copy
@@ -2094,9 +2095,9 @@ bool File__Analyze::Data_Manage()
 
     //If no need of more
     if (File_GoTo!=(int64u)-1 || (Status[IsFinished] && !ShouldContinueParsing)
-        #if MEDIAINFO_MD5
-            || Md5_ParseUpTo
-        #endif //MEDIAINFO_MD5
+        #if MEDIAINFO_HASH
+            || Hash_ParseUpTo
+        #endif //MEDIAINFO_HASH
         )
     {
         if (!Element_WantNextLevel)
@@ -2118,9 +2119,9 @@ bool File__Analyze::Data_Manage()
 
     //Next element
     if (!Element_WantNextLevel
-        #if MEDIAINFO_MD5
-            && MD5==NULL
-        #endif //MEDIAINFO_MD5
+        #if MEDIAINFO_HASH
+            && Hash==NULL
+        #endif //MEDIAINFO_HASH
             )
     {
         if (Element[Element_Level].Next<=File_Offset+Buffer_Size)
@@ -3698,9 +3699,9 @@ void File__Analyze::BookMark_Get ()
     }
     if (File_GoTo==(int64u)-1)
     {
-        #if MEDIAINFO_MD5
-            delete MD5; MD5=NULL;
-        #endif //MEDIAINFO_MD5
+        #if MEDIAINFO_HASH
+            delete Hash; Hash=NULL;
+        #endif //MEDIAINFO_HASH
         File_GoTo=BookMark_GoTo;
     }
 }

@@ -229,8 +229,10 @@
     #endif
     #if defined(MEDIAINFO_MD5_NO)
         #define MEDIAINFO_MD5 0
+        #define MEDIAINFO_HASH 0
     #else
         #define MEDIAINFO_MD5 1
+        #define MEDIAINFO_HASH 1
     #endif
 #endif
 #if !defined(MEDIAINFO_DEMUX)

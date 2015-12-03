@@ -1328,11 +1328,11 @@ public :
         size_t      AES_Decrypted_Size;
     #endif //MEDIAINFO_AES
 
-    //MD5
-    #if MEDIAINFO_MD5
-        struct MD5Context*  MD5;
-        int64u              Md5_ParseUpTo;
-    #endif //MEDIAINFO_MD5
+    //Hash
+    #if MEDIAINFO_HASH
+        struct MD5Context*  Hash;
+        int64u              Hash_ParseUpTo;
+    #endif //MEDIAINFO_HASH
 
     #if MEDIAINFO_SEEK
     private:
