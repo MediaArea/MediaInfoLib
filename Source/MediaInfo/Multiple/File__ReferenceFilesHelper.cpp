@@ -1379,7 +1379,7 @@ void File__ReferenceFilesHelper::List_Compute()
     #if MEDIAINFO_HASH
         if (!HasMainFile && Config->File_Md5_Get())
         {
-            string Hash_Name("MD5");
+            string Hash_Name(HashWrapper::Name(HashWrapper::MD5));
             Ztring Hash_NameU; Hash_NameU.From_UTF8(Hash_Name.c_str());
             if (!Sequences[Sequences_Current]->MI->Get(Stream_General, 0, Hash_NameU+__T("_Generated")).empty())
             {

@@ -452,11 +452,10 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
         {
             if (!IsSub && !Buffer_Temp_Size && File_Offset==Config->File_Current_Offset && Config->File_Md5_Get())
             {
-                delete Hash; Hash=new struct MD5Context;
-                MD5Init(Hash);
+                delete Hash; Hash=new HashWrapper(1<<HashWrapper::MD5);
             }
             if (Hash)
-                MD5Update(Hash, ToAdd, (unsigned int)ToAdd_Size);
+                Hash->Update(ToAdd, ToAdd_Size);
         }
     #endif //MEDIAINFO_HASH
 
@@ -589,19 +588,9 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
 
         if (Hash && File_Offset+Buffer_Size>=Config->File_Current_Size && Status[IsAccepted])
         {
-            string Hash_Name("MD5");
+            string Hash_Name(HashWrapper::Name(HashWrapper::MD5));
             Ztring Temp;
-            unsigned char Digest[16];
-            MD5Final(Digest, Hash);
-            Temp+=Ztring().From_CC2(BigEndian2int16u(Digest+ 0));
-            Temp+=Ztring().From_CC2(BigEndian2int16u(Digest+ 2));
-            Temp+=Ztring().From_CC2(BigEndian2int16u(Digest+ 4));
-            Temp+=Ztring().From_CC2(BigEndian2int16u(Digest+ 6));
-            Temp+=Ztring().From_CC2(BigEndian2int16u(Digest+ 8));
-            Temp+=Ztring().From_CC2(BigEndian2int16u(Digest+10));
-            Temp+=Ztring().From_CC2(BigEndian2int16u(Digest+12));
-            Temp+=Ztring().From_CC2(BigEndian2int16u(Digest+14));
-            Temp.MakeLowerCase();
+            Temp.From_UTF8(Hash->Generate(HashWrapper::MD5));
             string HashPos=Config->File_Names.size()>1?("Source_List_"+Hash_Name+"_Generated"):(Hash_Name+"_Generated");
             if (Config->File_Names_Pos<=1 && !Retrieve(Stream_General, 0, HashPos.c_str()).empty() && Retrieve(Stream_General, 0, HashPos.c_str())==Temp)
                 Clear(Stream_General, 0, HashPos.c_str());

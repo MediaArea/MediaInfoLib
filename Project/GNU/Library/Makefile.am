@@ -13,6 +13,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/File_Dummy.cpp \
                        ../../../Source/MediaInfo/File_Other.cpp \
                        ../../../Source/MediaInfo/File_Unknown.cpp \
+                       ../../../Source/MediaInfo/HashWrapper.cpp \
                        ../../../Source/MediaInfo/MediaInfo.cpp \
                        ../../../Source/MediaInfo/MediaInfo_Config.cpp \
                        ../../../Source/MediaInfo/MediaInfo_Config_Automatic.cpp \

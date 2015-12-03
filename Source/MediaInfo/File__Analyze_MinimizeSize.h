@@ -1330,7 +1330,7 @@ public :
 
     //Hash
     #if MEDIAINFO_HASH
-        struct MD5Context*  Hash;
+        HashWrapper*        Hash;
         int64u              Hash_ParseUpTo;
     #endif //MEDIAINFO_HASH
 

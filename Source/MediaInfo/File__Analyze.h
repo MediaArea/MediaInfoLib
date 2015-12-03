@@ -21,12 +21,7 @@
 #if MEDIAINFO_AES
     #include <aescpp.h>
 #endif //MEDIAINFO_AES
-#if MEDIAINFO_HASH
-    extern "C"
-    {
-        #include <md5.h>
-    }
-#endif //MEDIAINFO_HASH
+#include "MediaInfo/HashWrapper.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -1320,7 +1315,7 @@ public :
 
     //Hash
     #if MEDIAINFO_HASH
-        struct MD5Context*  Hash;
+        HashWrapper*        Hash;
         int64u              Hash_ParseUpTo;
     #endif //MEDIAINFO_HASH
 
