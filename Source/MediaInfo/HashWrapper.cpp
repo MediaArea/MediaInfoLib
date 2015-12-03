@@ -31,10 +31,22 @@ using namespace ZenLib;
         #include <md5.h>
     }
 #endif //MEDIAINFO_MD5
+#if MEDIAINFO_SHA1
+    extern "C"
+    {
+        #include <sha1.h>
+    }
+#endif //MEDIAINFO_SHA1
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
 {
+
+//***************************************************************************
+// info
+//***************************************************************************
+
+const char* HashWrapper_Hex = "0123456789abcdef";
 
 //***************************************************************************
 // Constructor/Destructor
@@ -54,6 +66,16 @@ HashWrapper::HashWrapper (const HashFunctions &Functions)
         else
             ((void**)m)[MD5]=NULL;
     #endif //MEDIAINFO_MD5
+
+    #if MEDIAINFO_SHA1
+        if (Functions[SHA1])
+        {
+            ((void**)m)[SHA1]=new sha1_ctx;
+            sha1_begin((sha1_ctx*)((void**)m)[SHA1]);
+        }
+        else
+            ((void**)m)[SHA1]=NULL;
+    #endif //MEDIAINFO_SHA1
 }
 
 HashWrapper::~HashWrapper ()
@@ -61,6 +83,10 @@ HashWrapper::~HashWrapper ()
     #if MEDIAINFO_MD5
         delete (struct MD5Context*)((void**)m)[MD5];
     #endif //MEDIAINFO_MD5
+
+    #if MEDIAINFO_SHA1
+        delete (sha1_ctx*)((void**)m)[SHA1];
+    #endif //MEDIAINFO_SHA1
 
     delete[] m;
 }
@@ -71,6 +97,11 @@ void HashWrapper::Update (const int8u* Buffer, const size_t Buffer_Size)
         if (((void**)m)[MD5])
             MD5Update((struct MD5Context*)((void**)m)[MD5], Buffer, (unsigned int)Buffer_Size);
     #endif //MEDIAINFO_MD5
+
+    #if MEDIAINFO_SHA1
+        if (((void**)m)[SHA1])
+            sha1_hash(Buffer, (unsigned long)Buffer_Size, (sha1_ctx*)((void**)m)[SHA1]);
+    #endif //MEDIAINFO_SHA1
 }
 
 string HashWrapper::Generate (const HashFunction Function)
@@ -93,6 +124,23 @@ string HashWrapper::Generate (const HashFunction Function)
             return Temp.To_UTF8();
         }
     #endif //MEDIAINFO_MD5
+
+    #if MEDIAINFO_SHA1
+        if (Function==SHA1 && ((void**)m)[SHA1])
+        {
+            unsigned char Digest[20];
+            sha1_end(Digest, (sha1_ctx*)((void**)m)[SHA1]);
+            string DigestS;
+            DigestS.reserve(40);
+            for (size_t i=0; i<20; ++i)
+            {
+                DigestS.append(1, HashWrapper_Hex[Digest[i] >> 4]);
+                DigestS.append(1, HashWrapper_Hex[Digest[i] & 0xF]);
+            }
+            return DigestS;
+        }
+    #endif //MEDIAINFO_SHA1
+
     return string();
 }
 
@@ -102,6 +150,12 @@ string HashWrapper::Name (const HashFunction Function)
         if (Function==MD5)
             return "MD5";
     #endif //MEDIAINFO_MD5
+
+    #if MEDIAINFO_SHA1
+        if (Function==SHA1)
+            return "SHA-1";
+    #endif //MEDIAINFO_SHA1
+
     return string();
 }
 

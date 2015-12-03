@@ -11,11 +11,11 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Setup.h"
-#if MEDIAINFO_MD5
+#if MEDIAINFO_MD5 || MEDIAINFO_SHA1
     #define MEDIAINFO_HASH 1
-#else //MEDIAINFO_MD5
+#else //MEDIAINFO_MD5 || MEDIAINFO_SHA1
     #define MEDIAINFO_HASH 0
-#endif //MEDIAINFO_MD5
+#endif //MEDIAINFO_MD5 || MEDIAINFO_SHA1
 //---------------------------------------------------------------------------
 
 #if MEDIAINFO_HASH
@@ -40,6 +40,7 @@ public:
     enum HashFunction
     {
         MD5,
+        SHA1,
         HashFunction_Max,
     };
     typedef bitset<HashFunction_Max> HashFunctions;
