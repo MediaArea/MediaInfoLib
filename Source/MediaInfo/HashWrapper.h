@@ -11,11 +11,11 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Setup.h"
-#if MEDIAINFO_MD5 || MEDIAINFO_SHA1
+#if MEDIAINFO_MD5 || MEDIAINFO_SHA1 || MEDIAINFO_SHA2
     #define MEDIAINFO_HASH 1
-#else //MEDIAINFO_MD5 || MEDIAINFO_SHA1
+#else //MEDIAINFO_MD5 || MEDIAINFO_SHA1 || MEDIAINFO_SHA2
     #define MEDIAINFO_HASH 0
-#endif //MEDIAINFO_MD5 || MEDIAINFO_SHA1
+#endif //MEDIAINFO_MD5 || MEDIAINFO_SHA1 || MEDIAINFO_SHA2
 //---------------------------------------------------------------------------
 
 #if MEDIAINFO_HASH
@@ -41,6 +41,10 @@ public:
     {
         MD5,
         SHA1,
+        SHA224,
+        SHA256,
+        SHA384,
+        SHA512,
         HashFunction_Max,
     };
     typedef bitset<HashFunction_Max> HashFunctions;

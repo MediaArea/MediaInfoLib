@@ -37,6 +37,12 @@ using namespace ZenLib;
         #include <sha1.h>
     }
 #endif //MEDIAINFO_SHA1
+#if MEDIAINFO_SHA2
+    extern "C"
+    {
+        #include <sha2.h>
+    }
+#endif //MEDIAINFO_SHA2
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -76,6 +82,37 @@ HashWrapper::HashWrapper (const HashFunctions &Functions)
         else
             ((void**)m)[SHA1]=NULL;
     #endif //MEDIAINFO_SHA1
+
+    #if MEDIAINFO_SHA2
+        if (Functions[SHA224])
+        {
+            ((void**)m)[SHA224]=new sha224_ctx;
+            sha224_begin((sha224_ctx*)((void**)m)[SHA224]);
+        }
+        else
+            ((void**)m)[SHA224]=NULL;
+        if (Functions[SHA256])
+        {
+            ((void**)m)[SHA256]=new sha256_ctx;
+            sha256_begin((sha256_ctx*)((void**)m)[SHA256]);
+        }
+        else
+            ((void**)m)[SHA256]=NULL;
+        if (Functions[SHA384])
+        {
+            ((void**)m)[SHA384]=new sha384_ctx;
+            sha384_begin((sha384_ctx*)((void**)m)[SHA384]);
+        }
+        else
+            ((void**)m)[SHA384]=NULL;
+        if (Functions[SHA512])
+        {
+            ((void**)m)[SHA512]=new sha512_ctx;
+            sha512_begin((sha512_ctx*)((void**)m)[SHA512]);
+        }
+        else
+            ((void**)m)[SHA512]=NULL;
+    #endif //MEDIAINFO_SHA2
 }
 
 HashWrapper::~HashWrapper ()
@@ -87,6 +124,13 @@ HashWrapper::~HashWrapper ()
     #if MEDIAINFO_SHA1
         delete (sha1_ctx*)((void**)m)[SHA1];
     #endif //MEDIAINFO_SHA1
+
+    #if MEDIAINFO_SHA2
+        delete (sha224_ctx*)((void**)m)[SHA224];
+        delete (sha256_ctx*)((void**)m)[SHA256];
+        delete (sha384_ctx*)((void**)m)[SHA384];
+        delete (sha512_ctx*)((void**)m)[SHA512];
+    #endif //MEDIAINFO_SHA2
 
     delete[] m;
 }
@@ -102,6 +146,17 @@ void HashWrapper::Update (const int8u* Buffer, const size_t Buffer_Size)
         if (((void**)m)[SHA1])
             sha1_hash(Buffer, (unsigned long)Buffer_Size, (sha1_ctx*)((void**)m)[SHA1]);
     #endif //MEDIAINFO_SHA1
+
+    #if MEDIAINFO_SHA2
+        if (((void**)m)[SHA224])
+            sha224_hash(Buffer, (unsigned long)Buffer_Size, (sha224_ctx*)((void**)m)[SHA224]);
+        if (((void**)m)[SHA256])
+            sha256_hash(Buffer, (unsigned long)Buffer_Size, (sha256_ctx*)((void**)m)[SHA256]);
+        if (((void**)m)[SHA384])
+            sha384_hash(Buffer, (unsigned long)Buffer_Size, (sha384_ctx*)((void**)m)[SHA384]);
+        if (((void**)m)[SHA512])
+            sha512_hash(Buffer, (unsigned long)Buffer_Size, (sha512_ctx*)((void**)m)[SHA512]);
+    #endif //MEDIAINFO_SHA2
 }
 
 string HashWrapper::Generate (const HashFunction Function)
@@ -141,6 +196,61 @@ string HashWrapper::Generate (const HashFunction Function)
         }
     #endif //MEDIAINFO_SHA1
 
+    #if MEDIAINFO_SHA2
+        if (Function==SHA224 && ((void**)m)[SHA224])
+        {
+            unsigned char Digest[28];
+            sha224_end(Digest, (sha224_ctx*)((void**)m)[SHA224]);
+            string DigestS;
+            DigestS.reserve(28*2);
+            for (size_t i=0; i<28; ++i)
+            {
+                DigestS.append(1, HashWrapper_Hex[Digest[i] >> 4]);
+                DigestS.append(1, HashWrapper_Hex[Digest[i] & 0xF]);
+            }
+            return DigestS;
+        }
+        if (Function==SHA256 && ((void**)m)[SHA256])
+        {
+            unsigned char Digest[32];
+            sha256_end(Digest, (sha256_ctx*)((void**)m)[SHA256]);
+            string DigestS;
+            DigestS.reserve(32*2);
+            for (size_t i=0; i<32; ++i)
+            {
+                DigestS.append(1, HashWrapper_Hex[Digest[i] >> 4]);
+                DigestS.append(1, HashWrapper_Hex[Digest[i] & 0xF]);
+            }
+            return DigestS;
+        }
+        if (Function==SHA384 && ((void**)m)[SHA384])
+        {
+            unsigned char Digest[48];
+            sha384_end(Digest, (sha384_ctx*)((void**)m)[SHA384]);
+            string DigestS;
+            DigestS.reserve(48*2);
+            for (size_t i=0; i<48; ++i)
+            {
+                DigestS.append(1, HashWrapper_Hex[Digest[i] >> 4]);
+                DigestS.append(1, HashWrapper_Hex[Digest[i] & 0xF]);
+            }
+            return DigestS;
+        }
+        if (Function==SHA512 && ((void**)m)[SHA512])
+        {
+            unsigned char Digest[64];
+            sha512_end(Digest, (sha512_ctx*)((void**)m)[SHA512]);
+            string DigestS;
+            DigestS.reserve(64*2);
+            for (size_t i=0; i<64; ++i)
+            {
+                DigestS.append(1, HashWrapper_Hex[Digest[i] >> 4]);
+                DigestS.append(1, HashWrapper_Hex[Digest[i] & 0xF]);
+            }
+            return DigestS;
+        }
+    #endif //MEDIAINFO_SHA2
+
     return string();
 }
 
@@ -155,6 +265,17 @@ string HashWrapper::Name (const HashFunction Function)
         if (Function==SHA1)
             return "SHA-1";
     #endif //MEDIAINFO_SHA1
+
+    #if MEDIAINFO_SHA2
+        if (Function==SHA224)
+            return "SHA-224";
+        if (Function==SHA256)
+            return "SHA-256";
+        if (Function==SHA384)
+            return "SHA-384";
+        if (Function==SHA512)
+            return "SHA-512";
+    #endif //MEDIAINFO_SHA2
 
     return string();
 }
