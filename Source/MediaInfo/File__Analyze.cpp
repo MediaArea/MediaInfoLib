@@ -450,9 +450,9 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
     #if MEDIAINFO_HASH
         if (ToAdd_Size)
         {
-            if (!IsSub && !Buffer_Temp_Size && File_Offset==Config->File_Current_Offset && Config->File_Md5_Get())
+            if (!IsSub && !Buffer_Temp_Size && File_Offset==Config->File_Current_Offset && Config->File_Hash_Get().to_ullong())
             {
-                delete Hash; Hash=new HashWrapper(1<<HashWrapper::MD5);
+                delete Hash; Hash=new HashWrapper(Config->File_Hash_Get().to_ullong());
             }
             if (Hash)
                 Hash->Update(ToAdd, ToAdd_Size);
@@ -588,15 +588,18 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
 
         if (Hash && File_Offset+Buffer_Size>=Config->File_Current_Size && Status[IsAccepted])
         {
-            string Hash_Name(HashWrapper::Name(HashWrapper::MD5));
+        for (size_t Hash_Pos=0; Hash_Pos<HashWrapper::HashFunction_Max; ++Hash_Pos)
+        {
+            string Hash_Name(HashWrapper::Name((HashWrapper::HashFunction)Hash_Pos));
             Ztring Temp;
-            Temp.From_UTF8(Hash->Generate(HashWrapper::MD5));
+            Temp.From_UTF8(Hash->Generate((HashWrapper::HashFunction)Hash_Pos));
             string HashPos=Config->File_Names.size()>1?("Source_List_"+Hash_Name+"_Generated"):(Hash_Name+"_Generated");
             if (Config->File_Names_Pos<=1 && !Retrieve(Stream_General, 0, HashPos.c_str()).empty() && Retrieve(Stream_General, 0, HashPos.c_str())==Temp)
                 Clear(Stream_General, 0, HashPos.c_str());
             Fill(Stream_General, 0, HashPos.c_str(), Temp);
             if (Config->File_Names_Pos<=1)
                 (*Stream_More)[Stream_General][0](Ztring().From_Local(HashPos), Info_Options)=__T("N NT");
+        }
 
             delete Hash; Hash=NULL;
         }
@@ -826,7 +829,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
     if (Buffer_Size>Buffer_MaximumSize)
     {
         #if MEDIAINFO_HASH
-            if (Config->File_Md5_Get() && Hash && Status[IsAccepted])
+            if (Config->File_Hash_Get().to_ullong() && Hash && Status[IsAccepted])
             {
                 Buffer_Clear();
                 Hash_ParseUpTo=File_Size;

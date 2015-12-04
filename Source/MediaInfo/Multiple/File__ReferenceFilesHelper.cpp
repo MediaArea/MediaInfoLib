@@ -1377,9 +1377,11 @@ void File__ReferenceFilesHelper::List_Compute()
 
     //Hash
     #if MEDIAINFO_HASH
-        if (!HasMainFile && Config->File_Md5_Get())
+        if (!HasMainFile && Config->File_Hash_Get().to_ullong())
         {
-            string Hash_Name(HashWrapper::Name(HashWrapper::MD5));
+            for (size_t Hash_Pos=0; Hash_Pos<HashWrapper::HashFunction_Max; ++Hash_Pos)
+            {
+            string Hash_Name(HashWrapper::Name((HashWrapper::HashFunction)Hash_Pos));
             Ztring Hash_NameU; Hash_NameU.From_UTF8(Hash_Name.c_str());
             if (!Sequences[Sequences_Current]->MI->Get(Stream_General, 0, Hash_NameU+__T("_Generated")).empty())
             {
@@ -1418,6 +1420,7 @@ void File__ReferenceFilesHelper::List_Compute()
             {
                 MI->Fill(StreamKind_Target, StreamPos_Target, ("Source_List_"+Hash_Name+"_Generated").c_str(), Sequences[Sequences_Current]->MI->Get(StreamKind, StreamPos, __T("Source_List_")+Hash_NameU+__T("_Generated")));
                 (*MI->Stream_More)[StreamKind_Target][StreamPos_Target](Ztring().From_Local("Source_List_"+Hash_Name+"_Generated"), Info_Options)=__T("N NT");
+            }
             }
         }
     #endif //MEDIAINFO_HASH
@@ -1498,8 +1501,8 @@ MediaInfo_Internal* File__ReferenceFilesHelper::MI_Create()
             MI_Temp->Option(__T("File_Source_List"), __T("1"));
     #endif //MEDIAINFO_ADVANCED
     #if MEDIAINFO_HASH
-        if (Config->File_Md5_Get())
-            MI_Temp->Option(__T("File_MD5"), __T("1"));
+        if (Config->File_Hash_Get().to_ulong())
+            MI_Temp->Option(__T("File_Hash"), Config->Option(__T("File_Hash_Get"), Ztring()));
     #endif //MEDIAINFO_HASH
     #if MEDIAINFO_EVENTS
         MI_Temp->Config.Config_PerPackage=Config->Config_PerPackage;

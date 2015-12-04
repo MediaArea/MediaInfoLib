@@ -1827,7 +1827,7 @@ struct Mpeg4_muxing
 bool File_Mpeg4::BookMark_Needed()
 {
     #if MEDIAINFO_HASH
-        if (!mdat_MustParse && !mdat_Pos_NormalParsing && Config->File_Md5_Get() && FirstMdatPos<FirstMoovPos)
+        if (!mdat_MustParse && !mdat_Pos_NormalParsing && Config->File_Hash_Get().to_ullong() && FirstMdatPos<FirstMoovPos)
         {
             Element_Show();
             while (Element_Level>0)
@@ -2108,7 +2108,7 @@ bool File_Mpeg4::BookMark_Needed()
 
         mdat_Pos_Temp=&mdat_Pos[0];
         #if MEDIAINFO_HASH
-            if (Config->File_Md5_Get())
+            if (Config->File_Hash_Get().to_ullong())
             {
                 GoTo(0);
                 Hash_ParseUpTo=mdat_Pos_Temp->Offset;

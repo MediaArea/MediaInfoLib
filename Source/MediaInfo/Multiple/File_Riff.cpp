@@ -990,7 +990,7 @@ bool File_Riff::BookMark_Needed()
     if (!Stream_Structure.empty())
     {
         #if MEDIAINFO_HASH
-            if (Config->File_Md5_Get())
+            if (Config->File_Hash_Get().to_ullong())
             {
                 GoTo(0);
                 Hash_ParseUpTo=Stream_Structure_Temp->first;

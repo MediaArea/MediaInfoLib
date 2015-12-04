@@ -1349,7 +1349,7 @@ void File_Mpeg4::free()
             Param("Data", Ztring("(")+Ztring::ToZtring(Element_TotalSize_Get())+Ztring(" bytes)"));
     #endif //MEDIAINFO_TRACE
     #if MEDIAINFO_HASH
-        if (Hash==NULL || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
+        if (!Hash || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
     #endif //MEDIAINFO_HASH
             GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Not using Skip_XX() because we want to skip data we don't have, and Skip_XX() does a test on size of buffer
     #if MEDIAINFO_HASH
@@ -1626,7 +1626,7 @@ void File_Mpeg4::mdat()
             Param("Data", Ztring("(")+Ztring::ToZtring(Element_TotalSize_Get())+Ztring(" bytes)"));
     #endif //MEDIAINFO_TRACE
     #if MEDIAINFO_HASH
-        if (Hash==NULL || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
+        if (!Hash || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
     #endif //MEDIAINFO_HASH
             GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Not using Skip_XX() because we want to skip data we don't have, and Skip_XX() does a test on size of buffer
     #if MEDIAINFO_HASH
@@ -1861,7 +1861,7 @@ void File_Mpeg4::mdat_StreamJump()
         if (!Status[IsAccepted])
             Data_Accept("MPEG-4");
         #if MEDIAINFO_HASH
-            if (Config->File_Md5_Get() && ((IsSecondPass && mdat_Pos_NormalParsing) || FirstMoovPos<FirstMdatPos))
+            if (Config->File_Hash_Get().to_ullong() && ((IsSecondPass && mdat_Pos_NormalParsing) || FirstMoovPos<FirstMdatPos))
                 Hash_ParseUpTo=ToJump;
             else
         #endif //MEDIAINFO_HASH
@@ -1946,7 +1946,7 @@ void File_Mpeg4::moof()
                 Param("Data", Ztring("(")+Ztring::ToZtring(Element_TotalSize_Get())+Ztring(" bytes)"));
         #endif //MEDIAINFO_TRACE
         #if MEDIAINFO_HASH
-            if (Hash==NULL || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
+            if (!Hash || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
         #endif //MEDIAINFO_HASH
                 GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Not using Skip_XX() because we want to skip data we don't have, and Skip_XX() does a test on size of buffer
         #if MEDIAINFO_HASH
@@ -2127,7 +2127,7 @@ void File_Mpeg4::moov()
                 Param("Data", Ztring("(")+Ztring::ToZtring(Element_TotalSize_Get())+Ztring(" bytes)"));
         #endif //MEDIAINFO_TRACE
         #if MEDIAINFO_HASH
-            if (Hash==NULL || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
+            if (!Hash || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
         #endif //MEDIAINFO_HASH
                 GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Not using Skip_XX() because we want to skip data we don't have, and Skip_XX() does a test on size of buffer
         #if MEDIAINFO_HASH
