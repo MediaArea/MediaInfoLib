@@ -124,6 +124,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File_Dummy.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File_Other.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File_Unknown.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/HashWrapper.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/MediaInfo.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/MediaInfo_Config.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/MediaInfo_Config_Automatic.cpp

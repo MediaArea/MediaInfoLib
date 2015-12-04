@@ -2667,20 +2667,20 @@ void File_Riff::AVI__movi_StreamJump()
             ToJump=File_Size;
         if (ToJump>=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2)) //We want always Element movi
         {
-            #if MEDIAINFO_MD5
-                if (Config->File_Md5_Get() && SecondPass)
-                    Md5_ParseUpTo=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2);
+            #if MEDIAINFO_HASH
+                if (Config->File_Hash_Get().to_ullong() && SecondPass)
+                    Hash_ParseUpTo=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2);
                 else
-            #endif //MEDIAINFO_MD5
+            #endif //MEDIAINFO_HASH
                     GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2), "AVI"); //Not in this chunk
         }
         else if (ToJump!=File_Offset+Buffer_Offset+(Element_Code==Elements::AVI__movi?0:Element_Size))
         {
-            #if MEDIAINFO_MD5
-                if (Config->File_Md5_Get() && SecondPass)
-                    Md5_ParseUpTo=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2);
+            #if MEDIAINFO_HASH
+                if (Config->File_Hash_Get().to_ullong() && SecondPass)
+                    Hash_ParseUpTo=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2);
                 else
-            #endif //MEDIAINFO_MD5
+            #endif //MEDIAINFO_HASH
                     GoTo(ToJump, "AVI"); //Not just after
         }
     }
@@ -2718,20 +2718,20 @@ void File_Riff::AVI__movi_StreamJump()
             int64u ToJump=Stream_Structure_Temp->first;
             if (ToJump>=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2))
             {
-                #if MEDIAINFO_MD5
-                    if (Config->File_Md5_Get() && SecondPass)
-                        Md5_ParseUpTo=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2);
+                #if MEDIAINFO_HASH
+                    if (Config->File_Hash_Get().to_ullong() && SecondPass)
+                        Hash_ParseUpTo=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2);
                     else
-                #endif //MEDIAINFO_MD5
+                #endif //MEDIAINFO_HASH
                         GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2), "AVI"); //Not in this chunk
             }
             else if (ToJump!=File_Offset+Buffer_Offset+Element_Size)
             {
-                #if MEDIAINFO_MD5
-                    if (Config->File_Md5_Get() && SecondPass)
-                        Md5_ParseUpTo=ToJump;
+                #if MEDIAINFO_HASH
+                    if (Config->File_Hash_Get().to_ullong() && SecondPass)
+                        Hash_ParseUpTo=ToJump;
                     else
-                #endif //MEDIAINFO_MD5
+                #endif //MEDIAINFO_HASH
                         GoTo(ToJump, "AVI"); //Not just after
             }
         }
@@ -3478,10 +3478,10 @@ void File_Riff::SMV0_xxxx()
     Skip_XX(Element_Size-Element_Offset,                        "Padding");
 
     //Filling
-    #if MEDIAINFO_MD5
-        if (Config->File_Md5_Get())
+    #if MEDIAINFO_HASH
+        if (Config->File_Hash_Get().to_ullong())
             Element_Offset=Element_Size+(SMV_FrameCount-1)*SMV_BlockSize;
-    #endif //MEDIAINFO_MD5
+    #endif //MEDIAINFO_HASH
             Data_GoTo(File_Offset+Buffer_Offset+(size_t)Element_Size+(SMV_FrameCount-1)*SMV_BlockSize, "SMV");
     SMV_BlockSize=0;
 }

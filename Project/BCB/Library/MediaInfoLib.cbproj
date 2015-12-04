@@ -311,6 +311,13 @@
 			<CppCompile Include="..\..\..\Source\MediaInfo\File__MultipleParsing.cpp">
 				<BuildOrder>31</BuildOrder>
 			</CppCompile>
+			<CppCompile Include="..\..\..\Source\MediaInfo\HashWrapper.cpp">
+				<DependentOn>..\..\..\Source\MediaInfo\HashWrapper.h</DependentOn>
+				<BuildOrder>208</BuildOrder>
+			</CppCompile>
+			<None Include="..\..\..\Source\MediaInfo\HashWrapper.h">
+				<BuildOrder>209</BuildOrder>
+			</None>
 			<CppCompile Include="..\..\..\Source\MediaInfo\Image\File_ArriRaw.cpp">
 				<BuildOrder>71</BuildOrder>
 			</CppCompile>
