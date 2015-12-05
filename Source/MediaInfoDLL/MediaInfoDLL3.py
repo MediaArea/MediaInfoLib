@@ -13,9 +13,16 @@
 # Converted to python module by Petr Kaderabek
 # Modifications by Jerome Martinez
 # Python 3 update by Jerome Martinez
-# Mac OSX support, Python 2 support and ctypes fixes by Miguel Grinberg
+# Mac OSX support, Python 2/3 merge and ctypes fixes by Miguel Grinberg
 #
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+# MediaInfoDLL.py and MediaInfoDLL3.py are same
+# but all files are kept in order to not break programs calling them.
+#
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 import os
 import sys

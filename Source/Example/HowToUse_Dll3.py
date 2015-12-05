@@ -6,21 +6,15 @@
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
-# Python (Windows)  example
+# Python example
 #
-# To make this example working, you must put MediaInfo.Dll and test.avi
-# in the same folder
+# To make this example working, you must put MediaInfo.Dll, MediaInfoDLL.py
+# and example.ogg in the same folder
 #
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# HowToUse_Dll.py and HowToUse_Dll3.py are same
+# MediaInfoDLL.py and MediaInfoDLL3.py are same
+# but all files are kept in order to not break programs calling them.
 #
-# Should be "import MediaInfoDLL" but does not work, why?
-# How to import MediaInfoDLL.py correctly?
-# Example following
-#
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 from MediaInfoDLL3 import *
