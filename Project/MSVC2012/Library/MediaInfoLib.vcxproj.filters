@@ -752,6 +752,9 @@
     <ClCompile Include="..\..\..\Source\ThirdParty\sha2-gladman\sha2.c">
       <Filter>ThirdParty\sha2</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\HashWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\ThirdParty\sha2-gladman\shasum.c">
       <Filter>ThirdParty\sha2</Filter>
     </ClCompile>
@@ -1413,6 +1416,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\ThirdParty\sha2-gladman\sha2.h">
       <Filter>ThirdParty\sha2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\HashWrapper.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

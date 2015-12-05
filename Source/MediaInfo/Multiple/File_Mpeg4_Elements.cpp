@@ -1348,14 +1348,14 @@ void File_Mpeg4::free()
         if (Trace_Activated)
             Param("Data", Ztring("(")+Ztring::ToZtring(Element_TotalSize_Get())+Ztring(" bytes)"));
     #endif //MEDIAINFO_TRACE
-    #if MEDIAINFO_MD5
-        if (MD5==NULL || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
-    #endif //MEDIAINFO_MD5
+    #if MEDIAINFO_HASH
+        if (!Hash || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
+    #endif //MEDIAINFO_HASH
             GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Not using Skip_XX() because we want to skip data we don't have, and Skip_XX() does a test on size of buffer
-    #if MEDIAINFO_MD5
+    #if MEDIAINFO_HASH
         else
             Element_Offset=Element_TotalSize_Get();
-    #endif //MEDIAINFO_MD5
+    #endif //MEDIAINFO_HASH
 
     //ISM
     if (moof_traf_base_data_offset==(int64u)-1 && !data_offset_present)
@@ -1625,14 +1625,14 @@ void File_Mpeg4::mdat()
         if (Trace_Activated)
             Param("Data", Ztring("(")+Ztring::ToZtring(Element_TotalSize_Get())+Ztring(" bytes)"));
     #endif //MEDIAINFO_TRACE
-    #if MEDIAINFO_MD5
-        if (MD5==NULL || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
-    #endif //MEDIAINFO_MD5
+    #if MEDIAINFO_HASH
+        if (!Hash || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
+    #endif //MEDIAINFO_HASH
             GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Not using Skip_XX() because we want to skip data we don't have, and Skip_XX() does a test on size of buffer
-    #if MEDIAINFO_MD5
+    #if MEDIAINFO_HASH
         else
             Element_Offset=Element_TotalSize_Get();
-    #endif //MEDIAINFO_MD5
+    #endif //MEDIAINFO_HASH
 
     //ISM
     if (moof_traf_base_data_offset==(int64u)-1 && !data_offset_present)
@@ -1860,11 +1860,11 @@ void File_Mpeg4::mdat_StreamJump()
     {
         if (!Status[IsAccepted])
             Data_Accept("MPEG-4");
-        #if MEDIAINFO_MD5
-            if (Config->File_Md5_Get() && ((IsSecondPass && mdat_Pos_NormalParsing) || FirstMoovPos<FirstMdatPos))
-                Md5_ParseUpTo=ToJump;
+        #if MEDIAINFO_HASH
+            if (Config->File_Hash_Get().to_ullong() && ((IsSecondPass && mdat_Pos_NormalParsing) || FirstMoovPos<FirstMdatPos))
+                Hash_ParseUpTo=ToJump;
             else
-        #endif //MEDIAINFO_MD5
+        #endif //MEDIAINFO_HASH
                 Data_GoTo(ToJump, "MPEG-4"); //Not just after
     }
 }
@@ -1945,14 +1945,14 @@ void File_Mpeg4::moof()
             if (Trace_Activated)
                 Param("Data", Ztring("(")+Ztring::ToZtring(Element_TotalSize_Get())+Ztring(" bytes)"));
         #endif //MEDIAINFO_TRACE
-        #if MEDIAINFO_MD5
-            if (MD5==NULL || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
-        #endif //MEDIAINFO_MD5
+        #if MEDIAINFO_HASH
+            if (!Hash || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
+        #endif //MEDIAINFO_HASH
                 GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Not using Skip_XX() because we want to skip data we don't have, and Skip_XX() does a test on size of buffer
-        #if MEDIAINFO_MD5
+        #if MEDIAINFO_HASH
             else
                 Element_Offset=Element_TotalSize_Get();
-        #endif //MEDIAINFO_MD5
+        #endif //MEDIAINFO_HASH
         return;
     }
 
@@ -2126,14 +2126,14 @@ void File_Mpeg4::moov()
             if (Trace_Activated)
                 Param("Data", Ztring("(")+Ztring::ToZtring(Element_TotalSize_Get())+Ztring(" bytes)"));
         #endif //MEDIAINFO_TRACE
-        #if MEDIAINFO_MD5
-            if (MD5==NULL || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
-        #endif //MEDIAINFO_MD5
+        #if MEDIAINFO_HASH
+            if (!Hash || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
+        #endif //MEDIAINFO_HASH
                 GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Not using Skip_XX() because we want to skip data we don't have, and Skip_XX() does a test on size of buffer
-        #if MEDIAINFO_MD5
+        #if MEDIAINFO_HASH
             else
                 Element_Offset=Element_TotalSize_Get();
-        #endif //MEDIAINFO_MD5
+        #endif //MEDIAINFO_HASH
         return;
     }
 

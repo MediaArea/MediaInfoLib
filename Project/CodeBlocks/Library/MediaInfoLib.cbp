@@ -85,6 +85,8 @@
 		<Unit filename="..\..\..\Source\MediaInfo\File_Other.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\File_Unknown.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\File_Unknown.h" />
+		<Unit filename="..\..\..\Source\MediaInfo\HashWrapper.cpp" />
+		<Unit filename="..\..\..\Source\MediaInfo\HashWrapper.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\File__Analyze.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\File__Analyze.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\File__Base.cpp" />
