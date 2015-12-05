@@ -6,21 +6,15 @@
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
-# Python (Windows)  example
+# Python example
 #
-# To make this example working, you must put MediaInfo.Dll and test.avi
-# in the same folder
+# To make this example working, you must put MediaInfo.Dll, MediaInfoDLL.py
+# and example.ogg in the same folder
 #
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# HowToUse_Dll.py and HowToUse_Dll3.py are same
+# MediaInfoDLL.py and MediaInfoDLL3.py are same
+# but all files are kept in order to not break programs calling them.
 #
-# Should be "import MediaInfoDLL" but does not work, why?
-# How to import MediaInfoDLL.py correctly?
-# Example following
-#
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 from MediaInfoDLL import *
@@ -29,63 +23,63 @@ MI = MediaInfo()
 
 Version=MI.Option_Static("Info_Version", "0.7.7.0;MediaInfoDLL_Example_Python;0.7.7.0")
 if Version=="":
-    print "MediaInfo.Dll: this version of the DLL is not compatible"
+    print("MediaInfo.Dll: this version of the DLL is not compatible")
     exit
 
 
 #Information about MediaInfo
-print "Info_Parameters"
-print MI.Option_Static(u"Info_Parameters")
+print("Info_Parameters")
+MI.Option_Static("Info_Parameters")
 
-print
-print "Info_Capacities"
-print MI.Option_Static(u"Info_Capacities")
+print("")
+print("Info_Capacities")
+print(MI.Option_Static("Info_Capacities"))
 
-print
-print "Info_Codecs"
-print MI.Option_Static(u"Info_Codecs")
+print("")
+print("Info_Codecs")
+print(MI.Option_Static("Info_Codecs"))
 
 
 #An example of how to use the library
-print
-print "Open"
-MI.Open(u"Example.ogg")
+print("")
+print("Open")
+MI.Open("Example.ogg")
 
-print
-print "Inform with Complete=false"
+print("")
+print("Inform with Complete=false")
 MI.Option_Static("Complete")
-print MI.Inform()
+print(MI.Inform())
 
-print
-print "Inform with Complete=true"
-MI.Option_Static(u"Complete", u"1")
-print MI.Inform()
+print("")
+print("Inform with Complete=true")
+MI.Option_Static("Complete", "1")
+print(MI.Inform())
 
-print
-print "Custom Inform"
-MI.Option_Static(u"Inform", u"General;Example : FileSize=%FileSize%")
-print MI.Inform()
+print("")
+print("Custom Inform")
+MI.Option_Static("Inform", "General;Example : FileSize=%FileSize%")
+print(MI.Inform())
 
-print
-print "Get with Stream=General and Parameter='FileSize'"
-print MI.Get(Stream.General, 0, u"FileSize")
+print("")
+print("Get with Stream=General and Parameter='FileSize'")
+print(MI.Get(Stream.General, 0, "FileSize"))
 
-print
-print "GetI with Stream=General and Parameter=46"
-print MI.GetI(Stream.General, 0, 46)
+print("")
+print("GetI with Stream=General and Parameter=46")
+print(MI.GetI(Stream.General, 0, 46))
 
-print
-print "Count_Get with StreamKind=Stream_Audio"
-print MI.Count_Get(Stream.Audio)
+print("")
+print("Count_Get with StreamKind=Stream_Audio")
+print(MI.Count_Get(Stream.Audio))
 
-print
-print "Get with Stream=General and Parameter='AudioCount'"
-print MI.Get(Stream.General, 0, u"AudioCount")
+print("")
+print("Get with Stream=General and Parameter='AudioCount'")
+print(MI.Get(Stream.General, 0, "AudioCount"))
 
-print
-print "Get with Stream=Audio and Parameter='StreamCount'"
-print MI.Get(Stream.Audio, 0, u"StreamCount")
+print("")
+print("Get with Stream=Audio and Parameter='StreamCount'")
+print(MI.Get(Stream.Audio, 0, "StreamCount"))
 
-print
-print "Close"
+print("")
+print("Close")
 MI.Close()
