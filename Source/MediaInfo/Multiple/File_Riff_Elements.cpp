@@ -2668,7 +2668,7 @@ void File_Riff::AVI__movi_StreamJump()
         if (ToJump>=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2)) //We want always Element movi
         {
             #if MEDIAINFO_HASH
-                if (Config->File_Hash_Get().to_ullong() && SecondPass)
+                if (Config->File_Hash_Get().to_ulong() && SecondPass)
                     Hash_ParseUpTo=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2);
                 else
             #endif //MEDIAINFO_HASH
@@ -2677,7 +2677,7 @@ void File_Riff::AVI__movi_StreamJump()
         else if (ToJump!=File_Offset+Buffer_Offset+(Element_Code==Elements::AVI__movi?0:Element_Size))
         {
             #if MEDIAINFO_HASH
-                if (Config->File_Hash_Get().to_ullong() && SecondPass)
+                if (Config->File_Hash_Get().to_ulong() && SecondPass)
                     Hash_ParseUpTo=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2);
                 else
             #endif //MEDIAINFO_HASH
@@ -2719,7 +2719,7 @@ void File_Riff::AVI__movi_StreamJump()
             if (ToJump>=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2))
             {
                 #if MEDIAINFO_HASH
-                    if (Config->File_Hash_Get().to_ullong() && SecondPass)
+                    if (Config->File_Hash_Get().to_ulong() && SecondPass)
                         Hash_ParseUpTo=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2);
                     else
                 #endif //MEDIAINFO_HASH
@@ -2728,7 +2728,7 @@ void File_Riff::AVI__movi_StreamJump()
             else if (ToJump!=File_Offset+Buffer_Offset+Element_Size)
             {
                 #if MEDIAINFO_HASH
-                    if (Config->File_Hash_Get().to_ullong() && SecondPass)
+                    if (Config->File_Hash_Get().to_ulong() && SecondPass)
                         Hash_ParseUpTo=ToJump;
                     else
                 #endif //MEDIAINFO_HASH
@@ -3479,7 +3479,7 @@ void File_Riff::SMV0_xxxx()
 
     //Filling
     #if MEDIAINFO_HASH
-        if (Config->File_Hash_Get().to_ullong())
+        if (Config->File_Hash_Get().to_ulong())
             Element_Offset=Element_Size+(SMV_FrameCount-1)*SMV_BlockSize;
     #endif //MEDIAINFO_HASH
             Data_GoTo(File_Offset+Buffer_Offset+(size_t)Element_Size+(SMV_FrameCount-1)*SMV_BlockSize, "SMV");

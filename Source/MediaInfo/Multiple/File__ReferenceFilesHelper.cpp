@@ -1377,7 +1377,7 @@ void File__ReferenceFilesHelper::List_Compute()
 
     //Hash
     #if MEDIAINFO_HASH
-        if (!HasMainFile && Config->File_Hash_Get().to_ullong())
+        if (!HasMainFile && Config->File_Hash_Get().to_ulong())
         {
             for (size_t Hash_Pos=0; Hash_Pos<HashWrapper::HashFunction_Max; ++Hash_Pos)
             {
