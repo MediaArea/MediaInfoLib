@@ -18,7 +18,6 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/MediaInfo_Config.h"
-#include "MediaInfo/HashWrapper.h"
 #include "ZenLib/ZtringListListF.h"
 #if MEDIAINFO_EVENTS
     #include "ZenLib/FileName.h"

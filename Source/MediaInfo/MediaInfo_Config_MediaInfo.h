@@ -21,6 +21,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/MediaInfo_Internal_Const.h"
+#include "MediaInfo/HashWrapper.h" //For MEDIAINFO_HASH
 #if MEDIAINFO_EVENTS
     #include "MediaInfo/MediaInfo_Config.h"
     #include "MediaInfo/MediaInfo_Events.h"
