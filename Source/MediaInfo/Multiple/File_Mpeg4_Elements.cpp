@@ -1861,7 +1861,7 @@ void File_Mpeg4::mdat_StreamJump()
         if (!Status[IsAccepted])
             Data_Accept("MPEG-4");
         #if MEDIAINFO_HASH
-            if (Config->File_Hash_Get().to_ullong() && ((IsSecondPass && mdat_Pos_NormalParsing) || FirstMoovPos<FirstMdatPos))
+            if (Config->File_Hash_Get().to_ulong() && ((IsSecondPass && mdat_Pos_NormalParsing) || FirstMoovPos<FirstMdatPos))
                 Hash_ParseUpTo=ToJump;
             else
         #endif //MEDIAINFO_HASH

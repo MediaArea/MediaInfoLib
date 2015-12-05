@@ -450,9 +450,9 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
     #if MEDIAINFO_HASH
         if (ToAdd_Size)
         {
-            if (!IsSub && !Buffer_Temp_Size && File_Offset==Config->File_Current_Offset && Config->File_Hash_Get().to_ullong())
+            if (!IsSub && !Buffer_Temp_Size && File_Offset==Config->File_Current_Offset && Config->File_Hash_Get().to_ulong())
             {
-                delete Hash; Hash=new HashWrapper(Config->File_Hash_Get().to_ullong());
+                delete Hash; Hash=new HashWrapper(Config->File_Hash_Get().to_ulong());
             }
             if (Hash)
                 Hash->Update(ToAdd, ToAdd_Size);
@@ -829,7 +829,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
     if (Buffer_Size>Buffer_MaximumSize)
     {
         #if MEDIAINFO_HASH
-            if (Config->File_Hash_Get().to_ullong() && Hash && Status[IsAccepted])
+            if (Config->File_Hash_Get().to_ulong() && Hash && Status[IsAccepted])
             {
                 Buffer_Clear();
                 Hash_ParseUpTo=File_Size;
