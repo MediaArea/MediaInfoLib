@@ -10,6 +10,7 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 
 Version 0.7.81
 --------------
++ Acquisition Metadata: support of all SMPTE RDD18 elements
 + #F446, Matroska: Handling of cropping values, thanks to Max Pozdeev
 x #B914, Matroska: Undefined number of chapters in some M4V with Timed Text, thanks to Max Pozdeev
 
