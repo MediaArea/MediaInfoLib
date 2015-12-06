@@ -410,27 +410,27 @@ protected :
     void WaveAudioDescriptor_PeakEnvelopeTimestamp();           //3D30
     void WaveAudioDescriptor_PeakEnvelopeData();                //3D31
     void WaveAudioDescriptor_ChannelAssignment();               //3D31
-    void LensUnitMetadata_Iris();                               //8000
-    void LensUnitMetadata_FocusPosition_ImagePlane();           //8001
-    void LensUnitMetadata_FocusPosition_FrontLensVertex();      //8002
+    void LensUnitMetadata_IrisFNumber();                        //8000
+    void LensUnitMetadata_FocusPositionFromImagePlane();        //8001
+    void LensUnitMetadata_FocusPositionFromFrontLensVertex();   //8002
     void LensUnitMetadata_MacroSetting();                       //8003
-    void LensUnitMetadata_LensZoom_35mmStillCameraEquivalent(); //8004
-    void LensUnitMetadata_LensZoom_ActualFocalLength();         //8005
+    void LensUnitMetadata_LensZoom35mmStillCameraEquivalent();  //8004
+    void LensUnitMetadata_LensZoomActualFocalLength();          //8005
     void LensUnitMetadata_OpticalExtenderMagnification();       //8006
-    void LensUnitMetadata_LensDescription();                    //8007
+    void LensUnitMetadata_LensAttributes();                     //8007
     void CameraUnitMetadata_CaptureGammaEquation();             //3210
     void CameraUnitMetadata_AutoExposureMode();                 //8100
     void CameraUnitMetadata_AutoFocusSensingAreaSetting();      //8101
     void CameraUnitMetadata_ColorCorrectionFilterWheelSetting();//8102
     void CameraUnitMetadata_NeutralDensityFilterWheelSetting(); //8103
-    void CameraUnitMetadata_ImagerDimension_EffectiveWidth();   //8104
-    void CameraUnitMetadata_ImagerDimension_EffectiveHeight();  //8105
+    void CameraUnitMetadata_ImageSensorDimensionEffectiveWidth();//8104
+    void CameraUnitMetadata_ImageSensorDimensionEffectiveHeight();//8105
     void CameraUnitMetadata_CaptureFrameRate();                 //8106
-    void CameraUnitMetadata_ImagerReadoutMode();                //8107
+    void CameraUnitMetadata_ImageSensorReadoutMode();           //8107
     void CameraUnitMetadata_ShutterSpeed_Angle();               //8108
     void CameraUnitMetadata_ShutterSpeed_Time();                //8109
     void CameraUnitMetadata_CameraMasterGainAdjustment();       //810A
-    void CameraUnitMetadata_ISOSpeed();                         //810B
+    void CameraUnitMetadata_ISOSensitivity();                   //810B
     void CameraUnitMetadata_ElectricalExtenderMagnification();  //810C
     void CameraUnitMetadata_AutoWhiteBalanceMode();             //810D
     void CameraUnitMetadata_WhiteBalance();                     //800E
@@ -439,10 +439,10 @@ protected :
     void CameraUnitMetadata_CameraKneeSlope();                  //8111
     void CameraUnitMetadata_CameraLuminanceDynamicRange();      //8112
     void CameraUnitMetadata_CameraSettingFileURI();             //8113
-    void CameraUnitMetadata_CameraDescription();                //8114
+    void CameraUnitMetadata_CameraAttributes();                 //8114
     void CameraUnitMetadata_ExposureIndexofPhotoMeter();        //8115
-    void CameraUnitMetadata_GammaforCDL();                      //8116
-    void CameraUnitMetadata_ASCCDLV1_2();                       //8117
+    void CameraUnitMetadata_GammaForCDL();                      //8116
+    void CameraUnitMetadata_ASC_CDL_V12();                      //8117
     void UserDefinedAcquisitionMetadata_UdamSetIdentifier();    //E000
     void UserDefinedAcquisitionMetadata_Sony_8007();
     void UserDefinedAcquisitionMetadata_Sony_E101();
