@@ -1862,8 +1862,53 @@ string Mxf_CameraUnitMetadata_CaptureGammaEquation(int128u Value)
 {
     switch(Value.lo)
     {
+        case 0x0401010101010000LL : return "BT.470";                            // Directly from SMPTE registry
         case 0x0401010101020000LL : return "BT.709";
         case 0x0401010101030000LL : return "SMPTE ST 240";
+        case 0x0401010101040000LL : return "SMPTE ST 274";                      // Directly from SMPTE registry
+        case 0x0401010101050000LL : return "BT.1361";                           // Directly from SMPTE registry
+        case 0x0401010101060000LL : return "SceneLinear";                       // Directly from SMPTE registry
+        case 0x0E06040101010101LL : return "DVW-709 Like";                      // 0x0E06x values are read from SR Viewer program
+        case 0x0E06040101010102LL : return "E10/E30STD for J EK";
+        case 0x0E06040101010103LL : return "E10/E30STD for UC";
+        case 0x0E06040101010106LL : return "BBC Initial50";
+        case 0x0E06040101010107LL : return "SD CamCorder STD";
+        case 0x0E06040101010108LL : return "BVW-400 Like";
+        case 0x0E06040101010109LL : return "Ikegami";
+        case 0x0E0604010101017FLL : return "reproduced unknown label";
+        case 0x0E06040101010201LL : return "HG3250G36";
+        case 0x0E06040101010202LL : return "HG4600G30";
+        case 0x0E06040101010203LL : return "HG3259G40";
+        case 0x0E06040101010204LL : return "HG4609G33";
+        case 0x0E06040101010205LL : return "HG8000G36";
+        case 0x0E06040101010206LL : return "HG8000G30";
+        case 0x0E06040101010207LL : return "HG8009G40";
+        case 0x0E06040101010208LL : return "HG8009G33";
+        case 0x0E06040101010301LL : return "CINE1 of EX1/EX3";
+        case 0x0E06040101010302LL : return "CINE2 of EX1/EX3";
+        case 0x0E06040101010303LL : return "CINE3 of EX1/EX3";
+        case 0x0E06040101010304LL : return "CINE4 of EX1/EX3";
+        case 0x0E06040101010305LL : return "Kodak 5248 film like";
+        case 0x0E06040101010306LL : return "Kodak 5245 film like";
+        case 0x0E06040101010307LL : return "Kodak 5293 film like";
+        case 0x0E06040101010308LL : return "Kodak 5296 film like";
+        case 0x0E06040101010309LL : return "Average of Film of MSW-900";
+        case 0x0E06040101010401LL : return "User defined curve1";
+        case 0x0E06040101010402LL : return "User defined curve2";
+        case 0x0E06040101010403LL : return "User defined curve3";
+        case 0x0E06040101010404LL : return "User defined curve4";
+        case 0x0E06040101010405LL : return "User defined curve5";
+        case 0x0E06040101010406LL : return "User defined curve6";
+        case 0x0E06040101010407LL : return "User defined curve7";
+        case 0x0E06040101010408LL : return "User defined curve8";
+        case 0x0E06040101010501LL : return "S-Log";
+        case 0x0E06040101010502LL : return "FS-Log";
+        case 0x0E06040101010503LL : return "R709 180%";
+        case 0x0E06040101010504LL : return "R709 800%";
+        case 0x0E06040101010506LL : return "Cine-Log";
+        case 0x0E06040101010507LL : return "ASC-CDL";
+                                            
+
         default   :
                     {
                     Ztring ValueS;
@@ -2021,18 +2066,20 @@ const char* Mxf_AcquisitionMetadata_Sony_E201_ElementName[Mxf_AcquisitionMetadat
 };
 
 //---------------------------------------------------------------------------
-// EBU Tech 3349
+// Read from SR Viewer program
 string Mxf_AcquisitionMetadata_Sony_CameraProcessDiscriminationCode(int16u Value)
 {
     switch (Value)
     {
+        case 0x0101: return "F65 RAW Mode released in December 2011";
         case 0x0102: return "F65 HD Mode released in April 2012";
+        case 0x0103: return "F65 RAW High Frame Rate Mode released in July 2012";
         default:     return Ztring(Ztring::ToZtring(Value, 16)).To_UTF8();
     }
 };
 
 //---------------------------------------------------------------------------
-//
+// Read from SR Viewer program
 string Mxf_AcquisitionMetadata_Sony_MonitoringBaseCurve(int128u Value)
 {
     switch(Value.lo)
