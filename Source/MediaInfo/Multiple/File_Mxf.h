@@ -449,6 +449,9 @@ protected :
     void UserDefinedAcquisitionMetadata_Sony_E102();
     void UserDefinedAcquisitionMetadata_Sony_E103();
     void UserDefinedAcquisitionMetadata_Sony_E104();
+    void UserDefinedAcquisitionMetadata_Sony_E105();
+    void UserDefinedAcquisitionMetadata_Sony_E106();
+    void UserDefinedAcquisitionMetadata_Sony_E107();
     void UserDefinedAcquisitionMetadata_Sony_E109();
     void UserDefinedAcquisitionMetadata_Sony_E10B();
     void UserDefinedAcquisitionMetadata_Sony_E201();
