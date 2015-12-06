@@ -1396,7 +1396,7 @@ void EbuCore_Transform_AcquisitionMetadata(Ztring &ToReturn, MediaInfo_Internal 
                                 ToReturn += Values[Pos];
                                 ToReturn+=__T(' ');
                             }
-                            ToReturn.pop_back();
+                            ToReturn.resize(ToReturn.size()-1);
 
                             ToReturn+=__T("</acquisitionParameter>\n");
 
