@@ -2155,7 +2155,6 @@ File_Mxf::File_Mxf()
     PartitionMetadata_FooterPartition=(int64u)-1;
     RandomIndexMetadatas_MaxOffset=(int64u)-1;
     DTS_Delay=0;
-    StreamPos_StartAtOne=true;
     SDTI_TimeCode_RepetitionCount=0;
     SDTI_SizePerFrame=0;
     SDTI_IsPresent=false;
@@ -3022,10 +3021,10 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
                 }
                 Merge(*(*Parser), Stream_Audio, Audio_Pos, StreamPos_Last);
                 if (Retrieve(Stream_Audio, Pos, Audio_MuxingMode).empty())
-                    Fill(Stream_Audio, Pos, Audio_MuxingMode, Retrieve(Stream_Video, Essence->second.StreamPos-(StreamPos_StartAtOne?1:0), Video_Format), true);
+                    Fill(Stream_Audio, Pos, Audio_MuxingMode, Retrieve(Stream_Video, Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1), Video_Format), true);
                 else
-                    Fill(Stream_Audio, Pos, Audio_MuxingMode, Retrieve(Stream_Video, Essence->second.StreamPos-(StreamPos_StartAtOne?1:0), Video_Format)+__T(" / ")+Retrieve(Stream_Audio, Pos, Audio_MuxingMode), true);
-                Fill(Stream_Audio, Pos, Audio_Duration, Retrieve(Stream_Video, Essence->second.StreamPos-(StreamPos_StartAtOne?1:0), Video_Duration));
+                    Fill(Stream_Audio, Pos, Audio_MuxingMode, Retrieve(Stream_Video, Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1), Video_Format)+__T(" / ")+Retrieve(Stream_Audio, Pos, Audio_MuxingMode), true);
+                Fill(Stream_Audio, Pos, Audio_Duration, Retrieve(Stream_Video, Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1), Video_Duration));
                 Fill(Stream_Audio, Pos, Audio_StreamSize_Encoded, 0); //Included in the DV stream size
                 Ztring ID=Retrieve(Stream_Audio, Pos, Audio_ID);
                 Fill(Stream_Audio, Pos, Audio_ID, Retrieve(Stream_Video, Count_Get(Stream_Video)-1, Video_ID)+__T("-")+ID, true);
@@ -3034,7 +3033,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             }
 
             StreamKind_Last=Stream_Video;
-            StreamPos_Last=Essence->second.StreamPos-(StreamPos_StartAtOne?1:0);
+            StreamPos_Last=Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1);
         }
     #endif
 
@@ -3099,7 +3098,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             Fill(Stream_General, 0, General_Title, Title);
 
         StreamKind_Last=Stream_Video;
-        StreamPos_Last=Essence->second.StreamPos-(StreamPos_StartAtOne?1:0);
+        StreamPos_Last=Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1);
     }
 
     //Stream size
@@ -3398,7 +3397,7 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
                 Fill(Stream_Video, StreamPos_Last, Video_MultiView_Count, 2, 10, true);
             }
             for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
-                if (Essence->second.StreamKind==Stream_Video && Essence->second.StreamPos-(StreamPos_StartAtOne?1:0)==StreamPos_Last)
+                if (Essence->second.StreamKind==Stream_Video && Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1)==StreamPos_Last)
                 {
                     if (Essence->second.Field_Count_InThisBlock_1 && !Essence->second.Field_Count_InThisBlock_2)
                         SampleRate/=2;
@@ -3777,7 +3776,7 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
         // Hack, TODO: find a correct method for detecting fiel/frame differene
         if (StreamKind_Last==Stream_Video)
             for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
-                if (Essence->second.StreamKind==Stream_Video && Essence->second.StreamPos-(StreamPos_StartAtOne?1:0)==StreamPos_Last)
+                if (Essence->second.StreamKind==Stream_Video && Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1)==StreamPos_Last)
                 {
                     if (Essence->second.Field_Count_InThisBlock_1 && !Essence->second.Field_Count_InThisBlock_2)
                         FrameCount/=2;
@@ -5841,9 +5840,6 @@ void File_Mxf::Data_Parse()
                 Essence->second.TrackID_WasLookedFor=true;
             }
 
-            if ((Code_Compare4&0x000000FF)==0x00000000)
-                StreamPos_StartAtOne=false;
-
             //Searching the corresponding Descriptor
             bool DescriptorFound=false;
             for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
@@ -5930,6 +5926,9 @@ void File_Mxf::Data_Parse()
                             Streams_Count--;
                 }
             }
+
+            if ((Code_Compare4&0x000000FF)==0x00000000)
+                StreamPos_StartAtZero.set(Essence->second.StreamKind);
 
             //Stream size is sometime easy to find
             if ((Buffer_End?(Buffer_End-Buffer_Begin):Element_TotalSize_Get())>=File_Size*0.98) //let imagine: if element size is 98% of file size, this is the only one element in the file
@@ -16287,14 +16286,16 @@ void File_Mxf::ChooseParser_Alaw(const essences::iterator &Essence, const descri
 void File_Mxf::ChooseParser_ChannelGrouping(const essences::iterator &Essence, const descriptors::iterator &Descriptor)
 {
     Essence->second.StreamKind=Stream_Audio;
+    if ((Essence->first&0x000000FF)==0x00000000)
+        StreamPos_StartAtZero.set(Essence->second.StreamKind); // Need to do it here because we use StreamPos_StartAtZero immediately
 
     #if defined(MEDIAINFO_SMPTEST0337_YES)
 
     //Creating the parser
-    if (!((Essence->second.StreamPos-(StreamPos_StartAtOne?1:0))%2 && Essences[Essence->first-1].Parsers.size()<=1))
+    if (!((Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1))%2 && Essences[Essence->first-1].Parsers.size()<=1))
     {
         File_ChannelGrouping* Parser;
-        if ((Essence->second.StreamPos-(StreamPos_StartAtOne?1:0))%2) //If the first half-stream was already rejected, don't try this one
+        if ((Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1))%2) //If the first half-stream was already rejected, don't try this one
         {
             essences::iterator FirstChannel=Essences.find(Essence->first-1);
             if (FirstChannel==Essences.end() || !FirstChannel->second.IsChannelGrouping)
