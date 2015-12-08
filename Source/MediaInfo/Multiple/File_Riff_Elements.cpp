@@ -198,6 +198,7 @@ std::string ExtensibleWave_ChannelMask2 (int32u ChannelMask)
         #include <cstring>
     #endif
 #endif //MEDIAINFO_GXF_YES
+#include <vector>
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 using namespace std;
 //---------------------------------------------------------------------------
@@ -2073,8 +2074,11 @@ void File_Riff::AVI__hdlr_strl_vprp()
     Skip_L4(                                                    "FrameWidthInPixels");
     Skip_L4(                                                    "FrameHeightInLines");
     Get_L4 (FieldPerFrame,                                      "FieldPerFrame");
+    vector<int32u> VideoYValidStartLines;
     for (int32u Pos=0; Pos<FieldPerFrame; Pos++)
     {
+        Element_Begin1("Field");
+        int32u VideoYValidStartLine;
         Skip_L4(                                                "CompressedBMHeight");
         Skip_L4(                                                "CompressedBMWidth");
         Skip_L4(                                                "ValidBMHeight");
@@ -2082,7 +2086,9 @@ void File_Riff::AVI__hdlr_strl_vprp()
         Skip_L4(                                                "ValidBMXOffset");
         Skip_L4(                                                "ValidBMYOffset");
         Skip_L4(                                                "VideoXOffsetInT");
-        Skip_L4(                                                "VideoYValidStartLine");
+        Get_L4 (VideoYValidStartLine,                           "VideoYValidStartLine");
+        VideoYValidStartLines.push_back(VideoYValidStartLine);
+        Element_End0();
     }
     if(Element_Offset<Element_Size)
         Skip_XX(Element_Size-Element_Offset,                    "Unknown");
@@ -2090,6 +2096,19 @@ void File_Riff::AVI__hdlr_strl_vprp()
     FILLING_BEGIN();
         if (FrameAspectRatio_H && FrameAspectRatio_W)
             Fill(Stream_Video, 0, Video_DisplayAspectRatio, ((float32)FrameAspectRatio_W)/FrameAspectRatio_H, 3);
+        switch (FieldPerFrame)
+        {
+            case 1 :
+                        Fill(Stream_Video, 0, Video_ScanType, "Progressive");
+                        break;
+            case 2 :
+                        Fill(Stream_Video, 0, Video_ScanType, "Interlaced");
+                        if (VideoYValidStartLines.size()==2 && VideoYValidStartLines[0]<VideoYValidStartLines[1])
+                            Fill(Stream_Video, 0, Video_ScanOrder, "TFF");
+                        if (VideoYValidStartLines.size()==2 && VideoYValidStartLines[0]>VideoYValidStartLines[1])
+                            Fill(Stream_Video, 0, Video_ScanOrder, "BFF");
+            default: ;
+        }
     FILLING_END();
 }
 
