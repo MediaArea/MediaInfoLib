@@ -3356,7 +3356,8 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
 
         if (Descriptor->second.Width!=(int32u)-1 && Retrieve(Stream_Video, StreamPos_Last, Video_Width).empty())
             Fill(Stream_Video, StreamPos_Last, Video_Width, Descriptor->second.Width, 10, true);
-        if (Descriptor->second.Width_Display!=(int32u)-1 && Descriptor->second.Width_Display!=Retrieve(Stream_Video, StreamPos_Last, Video_Width).To_int32u())
+        if (Descriptor->second.Width_Display!=(int32u)-1 && Descriptor->second.Width_Display!=Retrieve(Stream_Video, StreamPos_Last, Video_Width).To_int32u()
+         && !(Retrieve(Stream_Video, StreamPos_Last, Video_Format) == __T("DV") && Descriptor->second.Width_Display == 1920 && (Retrieve(Stream_Video, StreamPos_Last, Video_Width) == __T("1280") || Retrieve(Stream_Video, StreamPos_Last, Video_Width) == __T("1440")))) // Exception: DVCPRO HD is really 1440 but lot of containers fill the width value with the marketing width 1920, we ignore it
         {
             Fill(Stream_Video, StreamPos_Last, Video_Width_Original, Retrieve(Stream_Video, StreamPos_Last, Video_Width), true);
             if (Retrieve(Stream_Video, StreamPos_Last, Video_PixelAspectRatio_Original).empty())
