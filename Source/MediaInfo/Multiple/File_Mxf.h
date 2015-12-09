@@ -24,6 +24,8 @@
 #include "MediaInfo/TimeCode.h"
 #include <vector>
 #include <set>
+#include <bitset>
+using namespace std;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib

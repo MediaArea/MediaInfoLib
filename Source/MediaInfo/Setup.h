@@ -116,6 +116,9 @@
     #if !defined (MEDIAINFO_SHA1_NO) && !defined (MEDIAINFO_SHA1_YES)
         #define MEDIAINFO_SHA1_NO
     #endif
+    #if !defined (MEDIAINFO_SHA2_NO) && !defined (MEDIAINFO_SHA2_YES)
+        #define MEDIAINFO_SHA2_NO
+    #endif
     #if !defined (MEDIAINFO_AES_NO) && !defined (MEDIAINFO_AES_YES)
         #define MEDIAINFO_AES_NO
     #endif
