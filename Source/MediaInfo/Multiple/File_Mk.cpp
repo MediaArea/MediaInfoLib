@@ -1708,8 +1708,10 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
     if (Stream[TrackNumber].Searching_Payload || Stream[TrackNumber].Searching_TimeStamps || Stream[TrackNumber].Searching_TimeStamp_Start)
     {
         //Parsing
-        int16u TimeCode;
-        Get_B2 (TimeCode,                                       "TimeCode");
+        int16u TimeCodeU;
+        Get_B2 (TimeCodeU,                                      "TimeCode"); // Should be signed, but we don't have signed integer reader
+        int16s TimeCode = (int16s)TimeCodeU;
+        Element_Info1(TimeCodeU);
 
         FILLING_BEGIN();
             if (Segment_Cluster_TimeCode_Value+TimeCode<Stream[TrackNumber].TimeCode_Start) //Does not work well: Stream[TrackNumber].Searching_TimeStamp_Start)
