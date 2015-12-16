@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 
 lib_LTLIBRARIES = lib@MediaInfoLib_LibName@.la
 lib@MediaInfoLib_LibName@_la_SOURCES = \
