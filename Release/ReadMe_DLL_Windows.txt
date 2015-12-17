@@ -1,8 +1,7 @@
 MediaInfo.Dll - http://MediaArea.net/MediaInfo
-Copyright (c) MediaArea.net SARL, Info@MediaArea.net
+Copyright (c) MediaArea.net SARL. All Rights Reserved
 
-This program is freeware (BSD-style license).
-See License.html for more information.
+Use of this source code is governed by a BSD-style license that can be found in the License.html file in the root of the source tree.
 
 
 For software developers
