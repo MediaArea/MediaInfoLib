@@ -879,7 +879,7 @@ void File_Flv::Data_Parse()
         else
             GoTo(File_Offset+Buffer_Offset-Header_Size-PreviousTagSize-4);
     }
-    else if (!video_stream_Count && !audio_stream_Count && video_stream_FrameRate_Detected && File_Offset+1024*1024*2<File_Size && MediaInfoLib::Config.ParseSpeed_Get()<1) //All streams are parsed
+    else if (!Status[IsFilled] && !video_stream_Count && !audio_stream_Count && video_stream_FrameRate_Detected && File_Offset+1024*1024*2<File_Size && MediaInfoLib::Config.ParseSpeed_Get()<1) //All streams are parsed
     {
         Fill();
 
