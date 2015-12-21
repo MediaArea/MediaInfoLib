@@ -914,6 +914,7 @@ Original;Original
 OriginalNetworkName;Original network name
 OriginalSourceForm;Original source form
 OriginalSourceMedium;Original source medium
+OriginalSourceMedium_ID;ID in the original source medium
 Originator;Originator
 Other;Other
 OtherIdentifier;Other Identifier
@@ -1027,6 +1028,7 @@ StreamKind;Kind of stream
 StreamKindID;Stream identifier
 StreamKindPos;Stream identifier
 StreamSize;Stream size
+StreamSize_Demuxed;Stream size when demuxed
 StreamSize_Encoded;Encoded stream size
 StreamSize_Proportion;Proportion of this stream
 Subject;Subject
