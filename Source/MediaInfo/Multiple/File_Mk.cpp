@@ -323,9 +323,32 @@ void File_Mk::Streams_Finish()
                             else if (TempTag==__T("NUMBER_OF_BYTES"))
                             {
                                 if (Tags_Verified)
-                                    { Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), TagValue, true); Set=true; }
+                                {
+                                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), TagValue, true);
+                                    Set=true;
+                                }
                                 else
                                     TempTag="StreamSize";
+                            }
+                            else if (TempTag==__T("NUMBER_OF_BYTES_UNCOMPRESSED"))
+                            {
+                                if (Tags_Verified)
+                                {
+                                    Fill(StreamKind_Last, StreamPos_Last, "Stream Size (Uncompressed)", TagValue, true);
+                                    Set=true;
+                                }
+                                else
+                                    TempTag="Stream Size (Uncompressed)";
+                            }
+                            else if (TempTag==__T("SOURCE_ID"))
+                            {
+                                if (Tags_Verified)
+                                {
+                                    Fill(StreamKind_Last, StreamPos_Last, "Source ID", TagValue, true);
+                                    Set=true;
+                                }
+                                else
+                                    TempTag="Source ID";
                             }
                             if (!Set)
                             {
@@ -350,20 +373,24 @@ void File_Mk::Streams_Finish()
                     // Checking 1.001 frame rates, Statistics_Duration is has often only a 1 ms precision so we test between -1ms and +1ms
                     float64 Duration_1001 = Statistics_FrameCount / float64_int64s(FrameRate_FromTags) * 1.001000;
                     float64 Duration_1000 = Statistics_FrameCount / float64_int64s(FrameRate_FromTags) * 1.001001;
+                    bool CanBe1001 = false;
+                    bool CanBe1000 = false;
+                    if (abs((Duration_1000 - Duration_1001) * 10000) >= 15)
+                    {
+                        Ztring DurationS; DurationS.From_Number(Statistics_Duration, 3);
+                        Ztring DurationS_1001; DurationS_1001.From_Number(Duration_1001, 3);
+                        Ztring DurationS_1000; DurationS_1000.From_Number(Duration_1000, 3);
 
-                    Ztring DurationS; DurationS.From_Number(Statistics_Duration, 3);
-                    Ztring DurationS_1001; DurationS_1001.From_Number(Duration_1001, 3);
-                    Ztring DurationS_1000; DurationS_1000.From_Number(Duration_1000, 3);
-
-                    bool CanBe1001=DurationS==DurationS_1001?true:false;
-                    bool CanBe1000=DurationS==DurationS_1000?true:false;
-                    if (CanBe1001 && !CanBe1000)
-                        FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001;
-                    if (CanBe1000 && !CanBe1001)
-                        FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001001;
+                        CanBe1001=DurationS==DurationS_1001?true:false;
+                        CanBe1000=DurationS==DurationS_1000?true:false;
+                        if (CanBe1001 && !CanBe1000)
+                            FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001;
+                        if (CanBe1000 && !CanBe1001)
+                            FrameRate_FromTags = float64_int64s(FrameRate_FromTags) / 1.001001;
+                    }
 
                     // Duration from tags not reliable, checking TrackDefaultDuration
-                    if (!CanBe1000 && !CanBe1001)
+                    if (CanBe1000 == CanBe1001)
                     {
                         float64 Duration_Default=((float64)1000000000)/Temp->second.TrackDefaultDuration;
                         if (float64_int64s(Duration_Default) - Duration_Default*1.001000 > -0.000002
