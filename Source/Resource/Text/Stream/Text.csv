@@ -168,7 +168,7 @@ StreamSize/String4;;;N NT;;;;;
 StreamSize/String5;;;N NT;;;Streamsize in with percentage value;;
 StreamSize_Proportion;;;N NT;;;Stream size divided by file size;;
 StreamSize_Demuxed;; byte;N YIN;;;StreamSize in bytes of hte stream after demux;;
-StreamSize_Demuxed/String;;;Y NT;;;StreamSize_Demuxed in with percentage value;;
+StreamSize_Demuxed/String;;;N NT;;;StreamSize_Demuxed in with percentage value;;
 StreamSize_Demuxed/String1;;;N NT;;;;;
 StreamSize_Demuxed/String2;;;N NT;;;;;
 StreamSize_Demuxed/String3;;;N NT;;;;;
