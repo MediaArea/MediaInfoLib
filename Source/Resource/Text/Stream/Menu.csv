@@ -10,6 +10,8 @@ FirstPacketOrder;;;N YIY;;;Order of the first fully decodable packet met in the 
 Inform;;;N NT;;;Last **Inform** call
 ID;;;N YIY;;;The ID for this stream in this file
 ID/String;;;Y NT;;;The ID for this stream in this file
+OriginalSourceMedium_ID;;;N YIY;;;The ID for this stream in the original medium of the material
+OriginalSourceMedium_ID/String;;;Y NT;;;The ID for this stream in the original medium of the material
 UniqueID;;;N YIY;;;The unique ID for this stream, should be copied with stream copy
 UniqueID/String;;;Y NT;;;The unique ID for this stream, should be copied with stream copy
 MenuID;;;N YIY;;;The menu ID for this stream in this file

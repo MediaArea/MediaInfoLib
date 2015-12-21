@@ -10,6 +10,8 @@ FirstPacketOrder;;;N YIY;;;Order of the first fully decodable packet met in the 
 Inform;;;N NT;;;Last **Inform** call
 ID;;;N YIY;;;The ID for this stream in this file
 ID/String;;;Y NT;;;The ID for this stream in this file
+OriginalSourceMedium_ID;;;N YIY;;;The ID for this stream in the original medium of the material
+OriginalSourceMedium_ID/String;;;Y NT;;;The ID for this stream in the original medium of the material
 UniqueID;;;N YIY;;;The unique ID for this stream, should be copied with stream copy
 UniqueID/String;;;Y NT;;;The unique ID for this stream, should be copied with stream copy
 MenuID;;;N YIY;;;The menu ID for this stream in this file
@@ -197,6 +199,13 @@ StreamSize/String3;;;N NT;;;;;
 StreamSize/String4;;;N NT;;;;;
 StreamSize/String5;;;N NT;;;Streamsize in with percentage value;;
 StreamSize_Proportion;;;N NTY;;;Stream size divided by file size;;
+StreamSize_Demuxed;; byte;N YIN;;;StreamSize in bytes of hte stream after demux;;
+StreamSize_Demuxed/String;;;Y NT;;;StreamSize_Demuxed in with percentage value;;
+StreamSize_Demuxed/String1;;;N NT;;;;;
+StreamSize_Demuxed/String2;;;N NT;;;;;
+StreamSize_Demuxed/String3;;;N NT;;;;;
+StreamSize_Demuxed/String4;;;N NT;;;;;
+StreamSize_Demuxed/String5;;;N NT;;;StreamSize_Demuxed in with percentage value (note: theoritical value, not for real use);;
 Source_StreamSize;; byte;N YIY;;;Source Streamsize in bytes;;
 Source_StreamSize/String;;;Y NT;;;Source Streamsize in with percentage value;;
 Source_StreamSize/String1;;;N NT;;;;;

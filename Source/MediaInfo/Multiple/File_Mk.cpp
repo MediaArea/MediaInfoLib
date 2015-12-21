@@ -151,6 +151,117 @@ const char* Mk_StereoMode_v2(int64u StereoMode)
     }
 }
 
+//---------------------------------------------------------------------------
+const char* Mk_OriginalSourceMedium_From_Source_ID (const Ztring &Value)
+{
+    if (Value.size()==6 && Value[0] == __T('0') && Value[1] == __T('0'))
+        return "Blu-ray";
+    if (Value.size()==6 && Value[0] == __T('0') && Value[1] == __T('1'))
+        return "DVD-Video";
+    return "";
+}
+
+//---------------------------------------------------------------------------
+Ztring Mk_ID_From_Source_ID (const Ztring &Value)
+{
+    if (Value.size()==6 && Value[0] == __T('0') && Value[1] == __T('0'))
+    {
+        // Blu-ray
+        int16u ValueI=0;
+        for (size_t Pos=2; Pos<Value.size(); Pos++)
+        {
+            ValueI*=16;
+            if (Value[Pos]>=__T('0') && Value[Pos]<=__T('9'))
+                ValueI+=Value[Pos]-__T('0');
+            else if (Value[Pos]>=__T('A') && Value[Pos]<=__T('F'))
+                ValueI+=10+Value[Pos]-__T('A');
+            else if (Value[Pos]>=__T('a') && Value[Pos]<=__T('f'))
+                ValueI+=10+Value[Pos]-__T('a');
+            else
+                return Value;
+        }
+        return Ztring::ToZtring(ValueI);
+    }
+
+    if (Value.size()==6 && Value[0] == __T('0') && Value[1] == __T('1'))
+    {
+        // DVD-Video
+        int16u ValueI=0;
+        for (size_t Pos=2; Pos<Value.size(); Pos++)
+        {
+            ValueI*=16;
+            if (Value[Pos]>=__T('0') && Value[Pos]<=__T('9'))
+                ValueI+=Value[Pos]-__T('0');
+            else if (Value[Pos]>=__T('A') && Value[Pos]<=__T('F'))
+                ValueI+=10+Value[Pos]-__T('A');
+            else if (Value[Pos]>=__T('a') && Value[Pos]<=__T('f'))
+                ValueI+=10+Value[Pos]-__T('a');
+            else
+                return Value;
+        }
+        int8u ID1 = ValueI&0xFF;
+        int8u ID2 = 0;
+        ValueI-=ID1;
+        if (ValueI)
+            ID2=ValueI>>8;
+
+        return Ztring::ToZtring(ID1) + (ID2?(__T('-') + Ztring::ToZtring(ID2)):Ztring());
+    }
+
+    return Value;
+}
+
+//---------------------------------------------------------------------------
+Ztring Mk_ID_String_From_Source_ID (const Ztring &Value)
+{
+    if (Value.size()==6 && Value[0] == __T('0') && Value[1] == __T('0'))
+    {
+        // Blu-ray
+        int16u ValueI=0;
+        for (size_t Pos=2; Pos<Value.size(); Pos++)
+        {
+            ValueI*=16;
+            if (Value[Pos]>=__T('0') && Value[Pos]<=__T('9'))
+                ValueI+=Value[Pos]-__T('0');
+            else if (Value[Pos]>=__T('A') && Value[Pos]<=__T('F'))
+                ValueI+=10+Value[Pos]-__T('A');
+            else if (Value[Pos]>=__T('a') && Value[Pos]<=__T('f'))
+                ValueI+=10+Value[Pos]-__T('a');
+            else
+                return Value;
+        }
+
+        return Ztring::ToZtring(ValueI) + __T(" (0x") + Ztring::ToZtring(ValueI, 16) + __T(")");
+    }
+
+    if (Value.size()==6 && Value[0] == __T('0') && Value[1] == __T('1'))
+    {
+        // DVD-Video
+        int16u ValueI=0;
+        for (size_t Pos=2; Pos<Value.size(); Pos++)
+        {
+            ValueI*=16;
+            if (Value[Pos]>=__T('0') && Value[Pos]<=__T('9'))
+                ValueI+=Value[Pos]-__T('0');
+            else if (Value[Pos]>=__T('A') && Value[Pos]<=__T('F'))
+                ValueI+=10+Value[Pos]-__T('A');
+            else if (Value[Pos]>=__T('a') && Value[Pos]<=__T('f'))
+                ValueI+=10+Value[Pos]-__T('a');
+            else
+                return Value;
+        }
+        int8u ID1 = ValueI&0xFF;
+        int8u ID2 = 0;
+        ValueI-=ID1;
+        if (ValueI)
+            ID2=ValueI>>8;
+
+        return Ztring::ToZtring(ID1) + __T(" (0x") + Ztring::ToZtring(ID1, 16) + __T(")") + (ID2?(__T('-') + Ztring::ToZtring(ID2) + __T(" (0x") + Ztring::ToZtring(ID2, 16) + __T(")")):Ztring());
+    }
+
+    return Value;
+}
+
 //***************************************************************************
 // Infos
 //***************************************************************************
@@ -334,7 +445,7 @@ void File_Mk::Streams_Finish()
                             {
                                 if (Tags_Verified)
                                 {
-                                    Fill(StreamKind_Last, StreamPos_Last, "Stream Size (Uncompressed)", TagValue, true);
+                                    Fill(StreamKind_Last, StreamPos_Last, "StreamSize_Demuxed", TagValue, true);
                                     Set=true;
                                 }
                                 else
@@ -344,11 +455,13 @@ void File_Mk::Streams_Finish()
                             {
                                 if (Tags_Verified)
                                 {
-                                    Fill(StreamKind_Last, StreamPos_Last, "Source ID", TagValue, true);
+                                    Fill(StreamKind_Last, StreamPos_Last, "OriginalSourceMedium_ID", Mk_ID_From_Source_ID(TagValue), true);
+                                    Fill(StreamKind_Last, StreamPos_Last, "OriginalSourceMedium_ID/String", Mk_ID_String_From_Source_ID(TagValue), true);
+                                    Fill(Stream_General, 0, General_OriginalSourceMedium, Mk_OriginalSourceMedium_From_Source_ID(TagValue), Unlimited, true, true);
                                     Set=true;
                                 }
                                 else
-                                    TempTag="Source ID";
+                                    TempTag="OriginalSourceMedium_ID";
                             }
                             if (!Set)
                             {
