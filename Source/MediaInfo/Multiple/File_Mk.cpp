@@ -1959,6 +1959,9 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
 
                     if (Stream[TrackNumber].Searching_Payload)
                     {
+                        Element_Begin1("Data");
+                        Element_Parser(Stream[TrackNumber].Parser->ParserName.To_UTF8().c_str());
+
                         Element_Code=TrackNumber;
 
                         //Content compression
@@ -1982,6 +1985,8 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
                         if (Stream[TrackNumber].Parser->Status[IsFinished]
                          || (Stream[TrackNumber].PacketCount>=300 && MediaInfoLib::Config.ParseSpeed_Get()<1))
                             Stream[TrackNumber].Searching_Payload=false;
+
+                        Element_End0();
                     }
                     else
                         Skip_XX(Laces[Pos],                         "Data");

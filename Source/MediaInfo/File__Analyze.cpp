@@ -2489,6 +2489,34 @@ void File__Analyze::Element_Info(const Ztring &Parameter)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_TRACE
+void File__Analyze::Element_Parser(const Ztring &Parameter)
+{
+    //Coherancy
+    if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()) || Element[Element_Level].ToShow.Details.size()>64*1024*1024)
+        return;
+
+    //Needed?
+    if (Config_Trace_Level<=0.7)
+        return;
+
+    //ToShow
+    switch (Config_Trace_Format)
+    {
+        case MediaInfo_Config::Trace_Format_XML         :
+                                                            {
+                                                            Element[Element_Level].ToShow.Info+=__T(" parser=\"");
+                                                            size_t Modified;
+                                                            Element[Element_Level].ToShow.Info+=MediaInfo_Internal::Xml_Content_Escape(Parameter, Modified);
+                                                            Element[Element_Level].ToShow.Info+=__T("\"");
+                                                            }
+                                                            break;
+        default                                         : ;
+    }
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
 void File__Analyze::Element_End(const Ztring &Name)
 {
     //ToShow
