@@ -314,6 +314,7 @@ protected :
     #define Element_Info3(_A,_B,_C) Element_Info(_A, _B, _C)
     #define Element_Info1C(_CONDITION,_A) if (_CONDITION) Element_Info(_A)
     inline void Element_Info_From_Milliseconds (int64u Parameter)                  {if (Config_Trace_Level<1) return; Element_Info(Ztring().Duration_From_Milliseconds(Parameter));}
+    void Element_Parser (const Ztring &Name);
 
     //Elements - End
     inline void Element_End () {Element_End_Common_Flush();}
