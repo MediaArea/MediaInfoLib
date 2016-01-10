@@ -1,0 +1,53 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+include /usr/share/dpkg/default.mk
+
+# shared library versions
+version = $(DEB_VERSION_UPSTREAM)
+
+override_dh_auto_configure:
+	dh_auto_configure -DProject/GNU/Library --	\
+		--enable-shared				\
+		--enable-visibility			\
+		--with-libcurl				\
+		--with-libmms				\
+		--without-libmd5
+
+override_dh_auto_build:
+	cd Source/Doc && doxygen Doxyfile
+	cp Source/Doc/*.html ./
+	dh_auto_build -DProject/GNU/Library
+
+override_dh_auto_install:
+	dh_auto_install -DProject/GNU/Library
+	for py in $(shell pyversions -vr); do												\
+		install -D -m644 Source/MediaInfoDLL/MediaInfoDLL.py debian/tmp/usr/lib/python$$py/dist-packages/MediaInfoDLL.py;	\
+	done
+	for py3 in $(shell py3versions -vr); do												\
+		install -D -m644 Source/MediaInfoDLL/MediaInfoDLL3.py debian/tmp/usr/lib/python$$py3/dist-packages/MediaInfoDLL3.py;	\
+	done
+	mkdir -p debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/
+	sed -e 's|Version: |Version: $(version)|g' Project/GNU/Library/libmediainfo.pc > debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/libmediainfo.pc
+
+override_dh_auto_clean:
+	dh_auto_clean -DProject/GNU/Library
+
+	rm -rf Doc/
+	(cd Source/Doc && find -maxdepth 1 -name '*.html' -print0) | xargs -0 rm -f
+
+override_dh_installchangelogs:
+	dh_installchangelogs Changes.txt
+	fromdos debian/*/usr/share/doc/*/changelog
+
+override_dh_installexamples:
+	dh_installexamples
+	if dh_listpackages | grep -q libmediainfo-doc; then					\
+		chmod 0644 debian/libmediainfo-doc/usr/share/doc/libmediainfo-doc/examples/*;	\
+	fi
+
+override_dh_makeshlibs:
+	dh_makeshlibs -- -c4
+
+%:
+	dh $@ --with=autoreconf,python2,python3 --parallel
