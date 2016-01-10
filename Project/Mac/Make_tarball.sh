@@ -56,4 +56,4 @@ echo
 (XZ_OPT=-9e tar -cJf MediaInfo_DLL_$1_Mac_i386+x86_64.tar.xz MediaInfoLib)
 
 # Clean up
-#rm -fr MediaInfoLib
+rm -fr MediaInfoLib
