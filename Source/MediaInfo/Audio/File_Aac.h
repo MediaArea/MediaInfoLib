@@ -181,7 +181,6 @@ protected :
     int8u   channelConfiguration;
     int16u  frame_length;
     int8u   sampling_frequency_index;
-    int64s  Frequency_b;
     int8u   extension_sampling_frequency_index;
     int32u  extension_sampling_frequency;
     bool    aacScalefactorDataResilienceFlag;
