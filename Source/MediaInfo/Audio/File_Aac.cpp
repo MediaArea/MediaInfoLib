@@ -59,7 +59,7 @@ File_Aac::File_Aac()
     channelConfiguration=(int8u)-1;
     frame_length=1024;
     sampling_frequency_index=(int8u)-1;
-    sampling_frequency=(int32u)-1;
+    Frequency_b=0;
     extension_sampling_frequency_index=(int8u)-1;
     extension_sampling_frequency=(int32u)-1;
     aacSpectralDataResilienceFlag=false;
@@ -145,7 +145,7 @@ void File_Aac::Streams_Update()
                 case Mode_ADTS    :
                 case Mode_LATM    : if (Config->File_RiskyBitRateEstimation_Get() && !adts_buffer_fullness_Is7FF)
                                     {
-                                        int64u BitRate=(sampling_frequency/1024);
+                                        int64u BitRate=(Frequency_b/1024);
                                         BitRate*=aac_frame_length_Total*8;
                                         BitRate/=Frame_Count;
 
@@ -685,7 +685,7 @@ void File_Aac::Data_Parse()
     if (Frame_Count>Frame_Count_Valid)
     {
         Skip_XX(Element_Size,                                   "Data");
-        FrameInfo.DTS+=float64_int64s(((float64)frame_length)*1000000000/sampling_frequency);
+        FrameInfo.DTS+=float64_int64s(((float64)frame_length)*1000000000/Frequency_b);
         FrameInfo.PTS=FrameInfo.DTS;
         return; //Parsing completely only the 1st frame
     }
