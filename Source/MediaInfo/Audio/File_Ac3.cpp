@@ -856,7 +856,7 @@ void File_Ac3::Streams_Fill()
 
                 }
 
-                if (fscod!=2)
+                if (fscod!=3)
                     Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_SamplingRate[fscod]);
                 else
                     Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_SamplingRate2[fscod2]);
