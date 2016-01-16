@@ -1385,7 +1385,7 @@ void File_Mk::Zero()
 //---------------------------------------------------------------------------
 void File_Mk::CRC32()
 {
-    Element_Name("CRC32");
+    Element_Name("CRC-32");
 
     //Parsing
     if (Element_Size!=4)
