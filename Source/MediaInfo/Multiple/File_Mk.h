@@ -314,9 +314,9 @@ private :
     int64u  TrackVideoDisplayHeight;
     int32u  AvgBytesPerSec;
     int64u  Segment_Cluster_TimeCode_Value;
-    bool    Info_AlreadyParsed;
-    bool    Tracks_AlreadyParsed;
-    bool    Cluster_AlreadyParsed;
+    size_t  Segment_Info_Count;
+    size_t  Segment_Tracks_Count;
+    size_t  Segment_Cluster_Count;
     typedef std::map<Ztring, Ztring> tagspertrack;
     typedef std::map<int64u, tagspertrack> tags;
     tags    Segment_Tags_Tag_Items;
@@ -355,6 +355,10 @@ private :
     std::vector<Ztring> Segment_Tag_SimpleTag_TagNames;
     int64u Segment_Cluster_BlockGroup_BlockDuration_Value;
     int64u Segment_Cluster_BlockGroup_BlockDuration_TrackNumber;
+
+    //Helpers
+    void JumpTo(int64u GoTo);
+    void TestMultipleInstances(size_t* Instances=NULL);
 };
 
 } //NameSpace

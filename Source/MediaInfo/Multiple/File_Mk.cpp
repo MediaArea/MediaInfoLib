@@ -294,9 +294,9 @@ File_Mk::File_Mk()
     Format_Version=0;
     TimecodeScale=1000000; //Default value
     Duration=0;
-    Info_AlreadyParsed=false;
-    Tracks_AlreadyParsed=false;
-    Cluster_AlreadyParsed=false;
+    Segment_Info_Count=0;
+    Segment_Tracks_Count=0;
+    Segment_Cluster_Count=0;
     CurrentAttachmentIsCover=false;
     CoverIsSetFromAttachment=false;
 
@@ -1780,7 +1780,7 @@ void File_Mk::Segment_Cluster()
 
     //For each stream
     std::map<int64u, stream>::iterator Temp=Stream.begin();
-    if (!Cluster_AlreadyParsed)
+    if (!Segment_Cluster_Count)
     {
         Stream_Count=0;
         while (Temp!=Stream.end())
@@ -1813,15 +1813,15 @@ void File_Mk::Segment_Cluster()
             for (size_t Pos=0; Pos<Segment_Seeks.size(); Pos++)
                 if (Segment_Seeks[Pos]>File_Offset+Buffer_Offset+Element_Size)
                 {
-                    GoTo(Segment_Seeks[Pos]);
+                    JumpTo(Segment_Seeks[Pos]);
                     break;
                 }
             if (File_GoTo==(int64u)-1)
-                GoTo(Segment_Offset_End);
+                JumpTo(Segment_Offset_End);
             return;
         }
     }
-    Cluster_AlreadyParsed=true;
+    Segment_Cluster_Count++;
     Segment_Cluster_TimeCode_Value=0; //Default
 }
 
@@ -2021,11 +2021,11 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
             for (size_t Pos=0; Pos<Segment_Seeks.size(); Pos++)
                 if (Segment_Seeks[Pos]>File_Offset+Buffer_Offset+Element_Size)
                 {
-                    GoTo(Segment_Seeks[Pos]);
+                    JumpTo(Segment_Seeks[Pos]);
                     break;
                 }
             if (File_GoTo==(int64u)-1)
-                GoTo(Segment_Offset_End);
+                JumpTo(Segment_Offset_End);
         }
     }
 
@@ -2174,7 +2174,7 @@ void File_Mk::Segment_Cues()
     Element_Name("Cues");
 
     //Skipping Cues, we don't need of them
-    Skip_XX(Element_TotalSize_Get(),                            "Cues data, skipping");
+    TestMultipleInstances();
 }
 
 //---------------------------------------------------------------------------
@@ -2227,10 +2227,7 @@ void File_Mk::Segment_Info()
 {
     Element_Name("Info");
 
-    if (Info_AlreadyParsed)
-        Skip_XX(Element_TotalSize_Get(),                        "Alreadys parsed, skipping");
-    else
-        Info_AlreadyParsed=true;
+    TestMultipleInstances(&Segment_Info_Count);
 }
 
 //---------------------------------------------------------------------------
@@ -2637,10 +2634,7 @@ void File_Mk::Segment_Tracks()
 {
     Element_Name("Tracks");
 
-    if (Tracks_AlreadyParsed)
-        Skip_XX(Element_TotalSize_Get(),                        "Alreadys parsed, skipping");
-    else
-        Tracks_AlreadyParsed=true;
+    TestMultipleInstances(&Segment_Tracks_Count);
 }
 
 //---------------------------------------------------------------------------
@@ -4002,6 +3996,29 @@ void File_Mk::CodecPrivate_Manage()
     delete[] CodecPrivate; CodecPrivate=NULL;
     CodecPrivate_Size=0;
     Element_Name("(Multiple info)");
+}
+
+//***************************************************************************
+// Helpers
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Mk::JumpTo (int64u GoToValue)
+{
+    //GoTo
+    GoTo(GoToValue);
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::TestMultipleInstances (size_t* Instances)
+{
+    bool ParseAll=false;
+
+    if ((!Instances || *Instances) && !ParseAll)
+        Skip_XX(Element_TotalSize_Get(),                    "No need, skipping");
+
+    if (Instances)
+        (*Instances)++;
 }
 
 } //NameSpace
