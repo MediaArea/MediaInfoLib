@@ -2270,6 +2270,8 @@ void File_Mk::Segment_Info_DateUTC()
     Get_B8(Data,                                                "Data"); Element_Info1(Data/1000000000+978307200); //From Beginning of the millenium, in nanoseconds
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(Stream_General, 0, "Encoded_Date", Ztring().Date_From_Seconds_1970((int32u)(Data/1000000000+978307200))); //978307200s between beginning of the millenium and 1970
     FILLING_END();
 }
@@ -2283,6 +2285,8 @@ void File_Mk::Segment_Info_Duration()
     float64 Float=Float_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Duration=Float;
     FILLING_END();
 }
@@ -2296,6 +2300,8 @@ void File_Mk::Segment_Info_MuxingApp()
     Ztring Data=UTF8_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(Stream_General, 0, "Encoded_Library", Data);
     FILLING_END();
 }
@@ -2364,6 +2370,8 @@ void File_Mk::Segment_Info_SegmentUID()
     Data=UInteger16_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(Stream_General, 0, General_UniqueID, Ztring().From_Local(Data.toString(10)));
         Fill(Stream_General, 0, General_UniqueID_String, Ztring().From_Local(Data.toString(10))+__T(" (0x")+Ztring().From_Local(Data.toString(16))+__T(')'));
     FILLING_END();
@@ -2378,6 +2386,8 @@ void File_Mk::Segment_Info_TimecodeScale()
     int64u UInteger=UInteger_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         TimecodeScale=UInteger;
     FILLING_END();
 }
@@ -2391,6 +2401,8 @@ void File_Mk::Segment_Info_Title()
     Ztring Data=UTF8_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(Stream_General, 0, "Title", Data);
     FILLING_END();
 }
@@ -2404,6 +2416,8 @@ void File_Mk::Segment_Info_WritingApp()
     Ztring Data=UTF8_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(Stream_General, 0, "Encoded_Application", Data);
     FILLING_END();
 }
@@ -2642,6 +2656,9 @@ void File_Mk::Segment_Tracks_TrackEntry()
 {
     Element_Name("TrackEntry");
 
+    if (Segment_Info_Count>1)
+        return; //First element has the priority
+
     //Clearing
     CodecID.clear();
     InfoCodecID_Format_Type=InfoCodecID_Format_Matroska;
@@ -2684,6 +2701,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Audio_BitDepth()
     int64u UInteger=UInteger_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(StreamKind_Last, StreamPos_Last, "BitDepth", UInteger, 10, true);
     FILLING_END();
 }
@@ -2697,6 +2716,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Audio_Channels()
     int64u UInteger=UInteger_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, UInteger, 10, true);
     FILLING_END();
 }
@@ -2710,6 +2731,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Audio_OutputSamplingFrequency()
     float64 Float=Float_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, Float, 0, true);
     FILLING_END();
 }
@@ -2723,6 +2746,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Audio_SamplingFrequency()
     float64 Float=Float_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, Float, 0, true);
         #ifdef MEDIAINFO_AAC_YES
             if (Retrieve(Stream_Audio, StreamPos_Last, Audio_CodecID).find(__T("A_AAC/"))==0)
@@ -2750,6 +2775,8 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecID()
     Get_Local(Element_Size, Data,                               "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         CodecID=Data;
         CodecID_Manage();
         CodecPrivate_Manage();
@@ -2760,6 +2787,8 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecID()
 void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression()
 {
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Stream[TrackNumber].ContentCompAlgo=0; //0 is default
         Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", Mk_ContentCompAlgo(0), Unlimited, true, true);
     FILLING_END();
@@ -2772,6 +2801,8 @@ void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compres
     int64u Algo=UInteger_Get(); Param_Info1(Mk_ContentCompAlgo(Algo));
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Stream[TrackNumber].ContentCompAlgo=Algo;
         Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", Mk_ContentCompAlgo(Algo), Unlimited, true, true);
     FILLING_END();
@@ -2784,6 +2815,8 @@ void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compres
     Skip_XX(Element_Size,                                       "Data");
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Stream[TrackNumber].ContentCompSettings_Buffer=new int8u[(size_t)Element_Size];
         std::memcpy(Stream[TrackNumber].ContentCompSettings_Buffer, Buffer+Buffer_Offset, (size_t)Element_Size);
         Stream[TrackNumber].ContentCompSettings_Buffer_Size=(size_t)Element_Size;
@@ -2803,6 +2836,12 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecName()
 void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate()
 {
     Element_Name("CodecPrivate");
+
+    if (Segment_Info_Count>1)
+    {
+        Skip_XX(Element_Size,                                   "Data (not parsed)");  
+        return; //First element has the priority
+    }
 
     //Creating the parser
     if (Stream.find(TrackNumber)==Stream.end() || Stream[TrackNumber].Parser==NULL)
@@ -3068,6 +3107,8 @@ void File_Mk::Segment_Tracks_TrackEntry_DefaultDuration()
     int64u UInteger=UInteger_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Stream[TrackNumber].TrackDefaultDuration=UInteger;
     FILLING_END();
 }
@@ -3081,6 +3122,8 @@ void File_Mk::Segment_Tracks_TrackEntry_FlagDefault()
     int64u UInteger=UInteger_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Stream[TrackNumber].Default=UInteger?true:false;
     FILLING_END();
 }
@@ -3103,6 +3146,8 @@ void File_Mk::Segment_Tracks_TrackEntry_FlagForced()
     int64u UInteger=UInteger_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Stream[TrackNumber].Forced=UInteger?true:false;
     FILLING_END();
 }
@@ -3126,6 +3171,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Language()
     Get_Local(Element_Size, Data,                               "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(StreamKind_Last, StreamPos_Last, "Language", Data, true);
     FILLING_END();
 }
@@ -3167,6 +3214,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Name()
     Get_UTF8(Element_Size, Data,                               "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(StreamKind_Last, StreamPos_Last, "Title", Data);
     FILLING_END();
 }
@@ -3180,6 +3229,8 @@ void File_Mk::Segment_Tracks_TrackEntry_TrackNumber()
     TrackNumber=UInteger_Get();
 
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(StreamKind_Last, StreamPos_Last, General_ID, TrackNumber);
         if (StreamKind_Last!=Stream_Max)
         {
@@ -3214,6 +3265,8 @@ void File_Mk::Segment_Tracks_TrackEntry_TrackType()
 
     //Filling
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         TrackType=UInteger;
         switch(UInteger)
         {
@@ -3250,6 +3303,8 @@ void File_Mk::Segment_Tracks_TrackEntry_TrackUID()
 
     //Filling
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Stream[TrackNumber].TrackUID=UInteger;
         Fill(StreamKind_Last, StreamPos_Last, General_UniqueID, UInteger);
     FILLING_END();
@@ -3261,6 +3316,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Video()
     Element_Name("Video");
 
     //Preparing
+    if (Segment_Info_Count>1)
+        return; //First element has the priority
     TrackVideoDisplayWidth=0;
     TrackVideoDisplayHeight=0;
 }
@@ -3293,6 +3350,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_DisplayHeight()
 
     //Filling
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         TrackVideoDisplayHeight=UInteger;
         if (TrackNumber!=(int64u)-1 && TrackVideoDisplayWidth && TrackVideoDisplayHeight)
             Stream[TrackNumber].DisplayAspectRatio=((float)TrackVideoDisplayWidth)/(float)TrackVideoDisplayHeight;
@@ -3318,6 +3377,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_DisplayWidth()
 
     //Filling
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         TrackVideoDisplayWidth=UInteger;
         if (TrackNumber!=(int64u)-1 && TrackVideoDisplayWidth && TrackVideoDisplayHeight)
             Stream[TrackNumber].DisplayAspectRatio=((float)TrackVideoDisplayWidth)/(float)TrackVideoDisplayHeight;
@@ -3343,6 +3404,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_FrameRate()
 
     //Filling
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Stream[TrackNumber].FrameRate=Value;
     FILLING_END();
 }
@@ -3357,6 +3420,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelCropBottom()
     
     //Filling
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Stream[TrackNumber].PixelCropBottom=UInteger;
     FILLING_END();
 }
@@ -3371,6 +3436,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelCropLeft()
     
     //Filling
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Stream[TrackNumber].PixelCropLeft=UInteger;
     FILLING_END();
 }
@@ -3385,6 +3452,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelCropRight()
     
     //Filling
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Stream[TrackNumber].PixelCropRight=UInteger;
     FILLING_END();
 }
@@ -3399,6 +3468,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelCropTop()
     
     //Filling
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Stream[TrackNumber].PixelCropTop=UInteger;
     FILLING_END();
 }
@@ -3413,6 +3484,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelHeight()
 
     //Filling
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(Stream_Video, StreamPos_Last, Video_Height, UInteger, 10, true);
         if (!TrackVideoDisplayHeight)
             TrackVideoDisplayHeight=UInteger; //Default value of DisplayHeight is PixelHeight
@@ -3429,6 +3502,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelWidth()
 
     //Filling
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(Stream_Video, StreamPos_Last, Video_Width, UInteger, 10, true);
         if (!TrackVideoDisplayWidth)
             TrackVideoDisplayWidth=UInteger; //Default value of DisplayWidth is PixelWidth
@@ -3445,6 +3520,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_StereoMode()
 
     //Filling
     FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
         Fill(Stream_Video, StreamPos_Last, Video_MultiView_Count, 2); //Matroska seems to be limited to 2 views
         Fill(Stream_Video, StreamPos_Last, Video_MultiView_Layout, Format_Version==2?Mk_StereoMode_v2(UInteger):Mk_StereoMode(UInteger));
     FILLING_END();
@@ -4010,9 +4087,13 @@ void File_Mk::JumpTo (int64u GoToValue)
 }
 
 //---------------------------------------------------------------------------
+//We want to parse more than the 1st element only if one of the following:
+//-trace is activated
 void File_Mk::TestMultipleInstances (size_t* Instances)
 {
     bool ParseAll=false;
+    if (Trace_Activated)
+        ParseAll=true;
 
     if ((!Instances || *Instances) && !ParseAll)
         Skip_XX(Element_TotalSize_Get(),                    "No need, skipping");
