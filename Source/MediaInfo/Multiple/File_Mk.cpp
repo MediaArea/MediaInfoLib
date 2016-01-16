@@ -1388,10 +1388,13 @@ void File_Mk::CRC32()
     Element_Name("CRC32");
 
     //Parsing
-    if (!Trace_Activated || Element_Size!=4)
-        UInteger_Info();
+    if (Element_Size!=4)
+        UInteger_Info(); //Something is wrong, 4-byte integer is expected
     else
     {
+        if (CRC32Compute.empty())
+            Fill(Stream_General, 0, "ErrorDetectionType", Element_Level==3?"Per level 1":"Custom", Unlimited, true, true);
+
         if (CRC32Compute.size()<Element_Level)
             CRC32Compute.resize(Element_Level);
         
@@ -1400,6 +1403,7 @@ void File_Mk::CRC32()
         {
             Param_Info(__T("Not tested ")+Ztring::ToZtring(Element_Level-1)+__T(' ')+Ztring::ToZtring(CRC32Compute[Element_Level-1].Expected));
             CRC32Compute[Element_Level-1].Computed=0xFFFFFFFF;
+            CRC32Compute[Element_Level-1].Pos = File_Offset + Buffer_Offset;
             CRC32Compute[Element_Level-1].UpTo = File_Offset + Buffer_Offset + Element_TotalSize_Get(1);
         }
     }
@@ -4201,11 +4205,24 @@ void File_Mk::JumpTo (int64u GoToValue)
 //---------------------------------------------------------------------------
 //We want to parse more than the 1st element only if one of the following:
 //-trace is activated
+//-request for parsing all and CRC-32 is present
+//TODO: if trace is not activated and CRC-32 is present, we don't need to parse all elements, we only need to do the CRC-32 check
 void File_Mk::TestMultipleInstances (size_t* Instances)
 {
     bool ParseAll=false;
     if (Trace_Activated)
         ParseAll=true;
+    if (!ParseAll && Config->ParseSpeed >= 1.0)
+    {
+        //Probing, checking if CRC-32 is present
+        if (Element_Size < 1)
+        {
+            Element_WaitForMoreData();
+            return;
+        }
+        if (Buffer[Buffer_Offset] == 0xBF) //CRC-32 element
+            ParseAll=true;
+    }
 
     if ((!Instances || *Instances) && !ParseAll)
         Skip_XX(Element_TotalSize_Get(),                    "No need, skipping");
@@ -4246,6 +4263,11 @@ void File_Mk::CRC32_Check ()
                         //Element_Level=Element_Level_Save;
                     }
                 #endif //MEDIAINFO_TRACE
+
+                if (CRC32Compute[i].Computed != CRC32Compute[i].Expected)
+                {
+                    Fill(Stream_General, 0, "CRC_Error_Pos", CRC32Compute[i].Pos);
+                }
 
                 CRC32Compute[i].UpTo=0;
             }
