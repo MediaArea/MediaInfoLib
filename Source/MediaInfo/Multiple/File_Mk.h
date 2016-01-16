@@ -323,6 +323,13 @@ private :
     int64u  Segment_Tags_Tag_Targets_TrackUID_Value;
     bool    CurrentAttachmentIsCover;
     bool    CoverIsSetFromAttachment;
+    struct crc32
+    {
+        int64u  UpTo;
+        int32u  Computed;
+        int32u  Expected;
+    };
+    std::vector<crc32> CRC32Compute;
 
     //Chapters
     struct chapterdisplay
@@ -359,6 +366,9 @@ private :
     //Helpers
     void JumpTo(int64u GoTo);
     void TestMultipleInstances(size_t* Instances=NULL);
+    void CRC32_Check();
+    void CRC32_Compute(int32u &CRC32, int32u Init, const int8u* Buffer_Begin, const int8u* Buffer_End);
+    void CRC32_Compute(int32u &CRC32, const int8u* Buffer_Begin, const int8u* Buffer_End);
 };
 
 } //NameSpace
