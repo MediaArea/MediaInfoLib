@@ -291,6 +291,7 @@ File_Mk::File_Mk()
     DataMustAlwaysBeComplete=false;
 
     //Temp
+    InvalidByteMax=(1<<(8-4))-1; //Default is max size of 4 bytes
     Format_Version=0;
     TimecodeScale=1000000; //Default value
     Duration=0;
@@ -769,14 +770,14 @@ void File_Mk::Header_Parse()
     //Test of zero padding
     int8u Null;
     Peek_B1(Null);
-    if (Null==0x00)
+    if (Null<=InvalidByteMax)
     {
         if (Buffer_Offset_Temp==0)
             Buffer_Offset_Temp=Buffer_Offset+1;
 
         while (Buffer_Offset_Temp<Buffer_Size)
         {
-            if (Buffer[Buffer_Offset_Temp])
+            if (Buffer[Buffer_Offset_Temp]>InvalidByteMax)
                 break;
             Buffer_Offset_Temp++;
         }
@@ -1298,9 +1299,9 @@ void File_Mk::Data_Parse()
 //---------------------------------------------------------------------------
 void File_Mk::Zero()
 {
-    Element_Name("ZeroPadding");
+    Element_Name("Junk");
 
-    Skip_XX(Element_Size,                                       "Padding");
+    Skip_XX(Element_Size,                                       "Junk");
 }
 
 //---------------------------------------------------------------------------
@@ -1360,7 +1361,18 @@ void File_Mk::Ebml_MaxSizeLength()
     Element_Name("EBMLMaxSizeLength");
 
     //Parsing
-    UInteger_Info();
+    int64u Value = UInteger_Get();
+
+    //Filling
+    FILLING_BEGIN();
+        if (Value > 8)
+        {
+            //Not expected, rejecting the file
+            Reject();
+            return;
+        }
+        InvalidByteMax = (int8u)((1 << (8-Value))-1);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------

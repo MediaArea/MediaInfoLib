@@ -306,6 +306,7 @@ private :
     int64u   TrackType;
 
     //Temp
+    int8u   InvalidByteMax;
     int64u  Format_Version;
     int64u  TimecodeScale;
     float64 Duration;
