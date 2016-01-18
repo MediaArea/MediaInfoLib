@@ -326,6 +326,7 @@ private :
     struct crc32
     {
         int64u  Pos;
+        int64u  From;
         int64u  UpTo;
         int32u  Computed;
         int32u  Expected;
