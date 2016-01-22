@@ -44,7 +44,7 @@
 			<VerInfo_Locale>1036</VerInfo_Locale>
 			<AllPackageLibs>rtl.lib</AllPackageLibs>
 			<Manifest_File>None</Manifest_File>
-			<IncludePath>..\..\..\Source\MediaInfo\Archive\;..\..\..\Source\MediaInfo\Video\;..\..\..\Source\MediaInfo\Text\;..\..\..\Source\MediaInfo\Audio\;..\..\..\Source\MediaInfo\Duplicate\;..\..\..\Source\;..\..\..\Source\MediaInfo\;..\..\..\Source\MediaInfo\Reader\;..\..\..\Source\MediaInfo\Tag\;..\..\..\Source\MediaInfo\Export\;..\..\..\Source\MediaInfo\Image\;..\..\..\Source\MediaInfo\Multiple\;..\..\..\Source\ThirdParty\aes-gladman\;..\..\..\Source\ThirdParty\base64\;..\..\..\Source\ThirdParty\md5\;..\..\..\Source\ThirdParty\tinyxml2\;..\..\..\..\ZenLib\Source\;..\..\..\..\zlib\;$(IncludePath)</IncludePath>
+			<IncludePath>..\..\..\Source\ThirdParty\hmac-gladman\;..\..\..\Source\ThirdParty\sha1-gladman\;..\..\..\Source\ThirdParty\sha2-gladman\;..\..\..\Source\MediaInfo\Archive\;..\..\..\Source\MediaInfo\Video\;..\..\..\Source\MediaInfo\Text\;..\..\..\Source\MediaInfo\Audio\;..\..\..\Source\MediaInfo\Duplicate\;..\..\..\Source\;..\..\..\Source\MediaInfo\;..\..\..\Source\MediaInfo\Reader\;..\..\..\Source\MediaInfo\Tag\;..\..\..\Source\MediaInfo\Export\;..\..\..\Source\MediaInfo\Image\;..\..\..\Source\MediaInfo\Multiple\;..\..\..\Source\ThirdParty\aes-gladman\;..\..\..\Source\ThirdParty\base64\;..\..\..\Source\ThirdParty\md5\;..\..\..\Source\ThirdParty\tinyxml2\;..\..\..\..\ZenLib\Source\;..\..\..\..\zlib\;$(IncludePath)</IncludePath>
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 			<IntermediateOutputDir>.\$(Platform)\$(Config)</IntermediateOutputDir>
 			<FinalOutputDir>.\$(Platform)\$(Config)</FinalOutputDir>
@@ -731,11 +731,41 @@
 			<CppCompile Include="..\..\..\Source\MediaInfo\Video\File_Y4m.cpp">
 				<BuildOrder>190</BuildOrder>
 			</CppCompile>
+			<CppCompile Include="..\..\..\Source\ThirdParty\aes-gladman\aescrypt.c">
+				<BuildOrder>212</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="..\..\..\Source\ThirdParty\aes-gladman\aeskey.c">
+				<BuildOrder>211</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="..\..\..\Source\ThirdParty\aes-gladman\aestab.c">
+				<BuildOrder>210</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="..\..\..\Source\ThirdParty\aes-gladman\aes_modes.c">
+				<BuildOrder>214</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="..\..\..\Source\ThirdParty\aes-gladman\tablegen.c">
+				<BuildOrder>219</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="..\..\..\Source\ThirdParty\hmac-gladman\hmac.c">
+				<BuildOrder>219</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="..\..\..\Source\ThirdParty\hmac-gladman\pwd2key.c">
+				<BuildOrder>218</BuildOrder>
+			</CppCompile>
 			<CppCompile Include="..\..\..\Source\ThirdParty\md5\md5.c">
-				<BuildOrder>204</BuildOrder>
+				<BuildOrder>209</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="..\..\..\Source\ThirdParty\sha1-gladman\sha1.c">
+				<BuildOrder>217</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="..\..\..\Source\ThirdParty\sha2-gladman\sha2.c">
+				<BuildOrder>216</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="..\..\..\Source\ThirdParty\sha2-gladman\shasum.c">
+				<BuildOrder>215</BuildOrder>
 			</CppCompile>
 			<CppCompile Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.cpp">
-				<BuildOrder>203</BuildOrder>
+				<BuildOrder>209</BuildOrder>
 			</CppCompile>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>

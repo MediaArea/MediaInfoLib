@@ -36,7 +36,6 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<Icon_MainIcon>PreRelease_Icon1.ico</Icon_MainIcon>
 			<Manifest_File>None</Manifest_File>
 			<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 			<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
@@ -67,8 +66,7 @@
 			<ILINK_LibraryPath>..\..\..\..\ZenLib\Project\BCB\Library\Release_Build\;..\..\..\Source\PreRelease\VCL\;..\..\..\Source\PreRelease\;..\..\..\..\zlib\projects\BCB\Release_Build\;..\..\..\..\ZenLib\Source\ZenLib\;..\..\..\..\wx\lib\bcc_lib\;..\..\..\..\ZenLib\Project\BCB\Library\Release_Build;..\..\..\..\zlib\projects\BCB\Release_Build;..\..\..\..\ZenLib\Source\ZenLib;..\..\..\Source\PreRelease\VCL;..\..\..\Source\PreRelease\WxWidgets;..\..\..\Source\PreRelease;E:\Programmation\MediaInfoLib\Project\BCB\PreRelease;$(BDS)\lib\obj;..\..\..\..\zlib\projects\BCB\Debug_Build\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base_Win32)'!=''">
-			<ILINK_LibraryPath>D:\Programmation\zlib\projects\BCB\Win32\Release\;D:\Programmation\ZenLib\Project\BCB\Library\Win32\Release\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<Icon_MainIcon>PreRelease_Icon1.ico</Icon_MainIcon>
+			<ILINK_LibraryPath>C:\Programmation\zlib\contrib\BCB\Win32\Release\;C:\Programmation\ZenLib\Project\BCB\Library\Win32\Release\;D:\Programmation\zlib\projects\BCB\Win32\Release\;D:\Programmation\ZenLib\Project\BCB\Library\Win32\Release\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
 			<IncludePath>$(BDSINCLUDE)\windows\vcl;$(IncludePath)</IncludePath>
 			<VerInfo_Locale>1033</VerInfo_Locale>
@@ -132,14 +130,14 @@
 				<BuildOrder>2</BuildOrder>
 			</CppCompile>
 			<LibFiles Condition="'$(Platform)'=='Win32'" Include="..\..\..\..\ZenLib\Project\BCB\Library\Win32\Release\ZenLib.lib">
-				<BuildOrder>9</BuildOrder>
+				<BuildOrder>7</BuildOrder>
 				<IgnorePath>true</IgnorePath>
 			</LibFiles>
 			<CppCompile Include="..\..\..\..\ZenLib\Source\ZenLib\Ztring.cpp">
 				<BuildOrder>3</BuildOrder>
 				<BuildOrder>10</BuildOrder>
 			</CppCompile>
-			<LibFiles Condition="'$(Platform)'=='Win32'" Include="..\..\..\..\zlib\projects\BCB\Win32\Release\zlib.lib">
+			<LibFiles Condition="'$(Platform)'=='Win32'" Include="..\..\..\..\zlib\contrib\BCB\Win32\Release\zlib.lib">
 				<BuildOrder>8</BuildOrder>
 				<IgnorePath>true</IgnorePath>
 			</LibFiles>
