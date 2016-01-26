@@ -18,6 +18,7 @@ x FLV: potential infinite loop fixed
 x #B966, DTS: DTS-HD HR 3840 not detected anymore
 x AC-3: wrong sample rate with 32 kHz streams
 x #B948, EBUCore 1.6: invalid output due to position of containerEncoding element
+x #B957, MPEG-7 output: No XML encoded value output
 
 Version 0.7.81, 2015-12-31
 --------------
