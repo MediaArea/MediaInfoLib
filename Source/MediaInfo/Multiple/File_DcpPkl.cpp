@@ -191,7 +191,10 @@ bool File_DcpPkl::FileHeader_Begin()
     if (!Config->File_IsReferenced_Get())
     {
         FileName Directory(File_Name);
-        Ztring Assetmap_FileName=Directory.Path_Get()+PathSeparator+__T("ASSETMAP.xml");
+        Ztring DirPath = Directory.Path_Get();
+        if (!DirPath.empty())
+            DirPath += PathSeparator;
+        Ztring Assetmap_FileName=DirPath+__T("ASSETMAP.xml");
         bool IsOk=false;
         if (File::Exists(Assetmap_FileName))
             IsOk=true;
