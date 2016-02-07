@@ -8,6 +8,10 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
+Version 0.7.83, 2016-
+--------------
++ MPEG-TS: ATSC Modulation Mode (Analog, SCTE_mode_1 aka 64-QAM, SCTE_mode_2 aka 256-QAM, 8-VSB, 16-VSB)
+
 Version 0.7.82, 2016-01-27
 --------------
 + Matroska: CRC-32 validation
