@@ -1402,7 +1402,7 @@ void File_Mk::CRC32()
         Get_L4(CRC32Compute[Element_Level-1].Expected,          "Value");
 
         {
-            Param_Info(__T("Not tested ")+Ztring::ToZtring(Element_Level-1)+__T(' ')+Ztring::ToZtring(CRC32Compute[Element_Level-1].Expected));
+            Param_Info1(__T("Not tested ")+Ztring::ToZtring(Element_Level-1)+__T(' ')+Ztring::ToZtring(CRC32Compute[Element_Level-1].Expected));
             CRC32Compute[Element_Level-1].Computed=0xFFFFFFFF;
             CRC32Compute[Element_Level-1].Pos = File_Offset + Buffer_Offset;
             CRC32Compute[Element_Level-1].From = File_Offset + Buffer_Offset + Element_Size;
@@ -4198,6 +4198,7 @@ void File_Mk::JumpTo (int64u GoToValue)
         {
             //Searching and replacing CRC-32 information
             //TODO: better implementation without this ugly hack
+            #if MEDIAINFO_TRACE
             Ztring &TraceData = Details_Get(i);
             Ztring ToSearch=__T("Not tested ")+Ztring::ToZtring(i)+__T(' ')+Ztring::ToZtring(CRC32Compute[i].Expected);
             size_t Pos = TraceData.find(ToSearch);
@@ -4206,6 +4207,7 @@ void File_Mk::JumpTo (int64u GoToValue)
                 TraceData.erase(Pos, ToSearch.size());
                 TraceData.insert(Pos, __T("Not tested"));
             }
+            #endif //MEDIAINFO_TRACE
 
             CRC32Compute[i].UpTo=0;
         }
@@ -4222,9 +4224,13 @@ void File_Mk::JumpTo (int64u GoToValue)
 //TODO: if trace is not activated and CRC-32 is present, we don't need to parse all elements, we only need to do the CRC-32 check
 void File_Mk::TestMultipleInstances (size_t* Instances)
 {
+    #if MEDIAINFO_TRACE
     bool ParseAll=false;
     if (Trace_Activated)
         ParseAll=true;
+    #else //MEDIAINFO_TRACE
+    static bool ParseAll = false;
+    #endif //MEDIAINFO_TRACE
     if (!ParseAll && Config->ParseSpeed >= 1.0)
     {
         //Probing, checking if CRC-32 is present
@@ -4233,8 +4239,10 @@ void File_Mk::TestMultipleInstances (size_t* Instances)
             Element_WaitForMoreData();
             return;
         }
+        #if MEDIAINFO_TRACE
         if (Buffer[Buffer_Offset] == 0xBF) //CRC-32 element
             ParseAll=true;
+        #endif //MEDIAINFO_TRACE
     }
 
     if ((!Instances || *Instances) && !ParseAll)
