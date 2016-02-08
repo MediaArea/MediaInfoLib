@@ -5086,7 +5086,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_chan()
                 if (ChannelBitmap&(1<<Bit))
                 {
                     Channels++;
-                    ChannelDescription_Layout+=Mpeg4_chan_ChannelBitmap_Layout((int32u)(Bit+1));
+                    ChannelDescription_Layout+=Mpeg4_chan_ChannelBitmap_Layout((int32u)(Bit));
                     ChannelDescription_Layout+=__T(' ');
                 }
             if (Channels)
