@@ -189,7 +189,8 @@ bool File_DcpAm::FileHeader_Begin()
                             Stream.Id=Asset_Item->GetText();
 
                         //PackingList
-                        if (!strcmp(Asset_Item->Value(), (NameSpace+"PackingList").c_str()))
+                        if (!strcmp(Asset_Item->Value(), (NameSpace+"PackingList").c_str()) &&
+                            !strcmp(Asset_Item->GetText(), "true"))
                         {
                             PKL_Pos=Streams.size();
                             Stream.StreamKind=(stream_t)(Stream_Max+2); // Means PKL
