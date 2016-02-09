@@ -154,26 +154,29 @@ bool File_DcpPkl::FileHeader_Begin()
 
                     for (XMLElement* File_Item=AssetList_Item->FirstChildElement(); File_Item; File_Item=File_Item->NextSiblingElement())
                     {
+                        const char* Text=File_Item->GetText();
                         //AnnotationText
-                        if (!strcmp(File_Item->Value(), "AnnotationText"))
-                            Stream.AnnotationText=File_Item->GetText();
+                        if (Text && !strcmp(File_Item->Value(), "AnnotationText"))
+                            Stream.AnnotationText=Text;
 
                         //Id
-                        if (!strcmp(File_Item->Value(), "Id"))
-                            Stream.Id=File_Item->GetText();
+                        if (Text && !strcmp(File_Item->Value(), "Id"))
+                            Stream.Id=Text;
 
                         //OriginalFileName
-                        if (!strcmp(File_Item->Value(), "OriginalFileName"))
-                            Stream.OriginalFileName=File_Item->GetText();
+                        if (Text && !strcmp(File_Item->Value(), "OriginalFileName"))
+                            Stream.OriginalFileName=Text;
 
                         //Type
                         if (!strcmp(File_Item->Value(), "Type"))
                         {
-                                 if (!strcmp(File_Item->GetText(), "application/x-smpte-mxf;asdcpKind=Picture"))
+                            if (!Text)
+                                Stream.StreamKind=Stream_Other;
+                            else if (!strcmp(Text, "application/x-smpte-mxf;asdcpKind=Picture"))
                                 Stream.StreamKind=Stream_Video;
-                            else if (!strcmp(File_Item->GetText(), "application/x-smpte-mxf;asdcpKind=Sound"))
+                            else if (!strcmp(Text, "application/x-smpte-mxf;asdcpKind=Sound"))
                                 Stream.StreamKind=Stream_Audio;
-                            else if (!strcmp(File_Item->GetText(), "text/xml") || !strcmp(File_Item->GetText(), "text/xml;asdcpKind=CPL"))
+                            else if (!strcmp(Text, "text/xml") || !strcmp(Text, "text/xml;asdcpKind=CPL"))
                                 Stream.StreamKind=(stream_t)(Stream_Max+1); // Means CPL
                             else
                                 Stream.StreamKind=Stream_Other;

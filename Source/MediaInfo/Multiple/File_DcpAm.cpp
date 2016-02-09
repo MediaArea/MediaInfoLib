@@ -176,7 +176,8 @@ bool File_DcpAm::FileHeader_Begin()
                                     {
                                         //Path
                                         if (!strcmp(Chunk_Item->Value(), (NameSpace+"Path").c_str()))
-                                            Chunk.Path=Chunk_Item->GetText();
+                                            if (const char* Text=Chunk_Item->GetText())
+                                                Chunk.Path=Text;
                                     }
 
                                     Stream.ChunkList.push_back(Chunk);
@@ -186,11 +187,12 @@ bool File_DcpAm::FileHeader_Begin()
 
                         //Id
                         if (!strcmp(Asset_Item->Value(), (NameSpace+"Id").c_str()))
-                            Stream.Id=Asset_Item->GetText();
+                            if (const char* Text=Asset_Item->GetText())
+                                Stream.Id=Text;
 
                         //PackingList
                         if (!strcmp(Asset_Item->Value(), (NameSpace+"PackingList").c_str()) &&
-                            !strcmp(Asset_Item->GetText(), "true"))
+                            Asset_Item->GetText() && !strcmp(Asset_Item->GetText(), "true"))
                         {
                             PKL_Pos=Streams.size();
                             Stream.StreamKind=(stream_t)(Stream_Max+2); // Means PKL

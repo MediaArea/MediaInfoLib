@@ -152,20 +152,23 @@ bool File_DcpCpl::FileHeader_Begin()
 
             for (XMLElement* CompositionTimecode_Item=CompositionPlaylist_Item->FirstChildElement(); CompositionTimecode_Item; CompositionTimecode_Item=CompositionTimecode_Item->NextSiblingElement())
             {
+                const char* Text=CompositionTimecode_Item->GetText();
+                if (!Text)
+                    continue;
                 //TimecodeDropFrame
                 if (!strcmp(CompositionTimecode_Item->Value(), "TimecodeDropFrame") || !strcmp(CompositionTimecode_Item->Value(), "cpl:TimecodeDropFrame"))
                 {
-                    if (strcmp(CompositionTimecode_Item->GetText(), "") && strcmp(CompositionTimecode_Item->GetText(), "0"))
+                    if (strcmp(Text, "") && strcmp(Text, "0"))
                         IsDropFrame=true;
                 }
 
                 //TimecodeRate
                 if (!strcmp(CompositionTimecode_Item->Value(), "TimecodeRate") || !strcmp(CompositionTimecode_Item->Value(), "cpl:TimecodeRate"))
-                    Sequence->Infos["FrameRate"].From_UTF8(CompositionTimecode_Item->GetText());
+                    Sequence->Infos["FrameRate"].From_UTF8(Text);
 
                 //TimecodeStartAddress
                 if (!strcmp(CompositionTimecode_Item->Value(), "TimecodeStartAddress") || !strcmp(CompositionTimecode_Item->Value(), "cpl:TimecodeStartAddress"))
-                    Sequence->Infos["TimeCode_FirstFrame"].From_UTF8(CompositionTimecode_Item->GetText());
+                    Sequence->Infos["TimeCode_FirstFrame"].From_UTF8(Text);
             }
 
             //Adaptation
@@ -236,12 +239,14 @@ bool File_DcpCpl::FileHeader_Begin()
                                                     resource* Resource=new resource;
                                                     for (XMLElement* Resource_Item=ResourceList_Item->FirstChildElement(); Resource_Item; Resource_Item=Resource_Item->NextSiblingElement())
                                                     {
+                                                        const char* ResText=Resource_Item->GetText();
+                                                        if (!ResText)
+                                                            continue;
                                                         //EditRate
                                                         if (!strcmp(Resource_Item->Value(), "EditRate"))
                                                         {
-                                                            const char* EditRate=Resource_Item->GetText();
-                                                            Resource->EditRate=atof(EditRate);
-                                                            const char* EditRate2=strchr(EditRate, ' ');
+                                                            Resource->EditRate=atof(ResText);
+                                                            const char* EditRate2=strchr(ResText, ' ');
                                                             if (EditRate2!=NULL)
                                                             {
                                                                 float64 EditRate2f=atof(EditRate2);
@@ -253,22 +258,22 @@ bool File_DcpCpl::FileHeader_Begin()
                                                         //EntryPoint
                                                         if (!strcmp(Resource_Item->Value(), "EntryPoint"))
                                                         {
-                                                            Resource->IgnoreEditsBefore=atoi(Resource_Item->GetText());
+                                                            Resource->IgnoreEditsBefore=atoi(ResText);
                                                             if (Resource->IgnoreEditsAfter!=(int64u)-1)
                                                                 Resource->IgnoreEditsAfter+=Resource->IgnoreEditsBefore;
                                                         }
 
                                                         //Id
                                                         if (!strcmp(Resource_Item->Value(), "Id") && Resource_Id.empty())
-                                                            Resource_Id.From_UTF8(Resource_Item->GetText());
+                                                            Resource_Id.From_UTF8(ResText);
 
                                                         //SourceDuration
                                                         if (!strcmp(Resource_Item->Value(), "SourceDuration"))
-                                                            Resource->IgnoreEditsAfter=Resource->IgnoreEditsBefore+atoi(Resource_Item->GetText());
+                                                            Resource->IgnoreEditsAfter=Resource->IgnoreEditsBefore+atoi(ResText);
 
                                                         //TrackFileId
                                                         if (!strcmp(Resource_Item->Value(), "TrackFileId"))
-                                                            Resource->FileNames.push_back(Ztring().From_UTF8(Resource_Item->GetText()));
+                                                            Resource->FileNames.push_back(Ztring().From_UTF8(ResText));
                                                     }
 
                                                     if (Resource->FileNames.empty())
