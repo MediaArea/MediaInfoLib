@@ -27,6 +27,7 @@
 #include "MediaInfo/MediaInfo.h"
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
+#include "MediaInfo/XmlUtils.h"
 #include "ZenLib/Dir.h"
 #include "ZenLib/File.h"
 #include "ZenLib/FileName.h"
@@ -114,22 +115,15 @@ bool File_DcpPkl::FileHeader_Begin()
     if (!FileHeader_Begin_XML(document))
        return false;
 
-    XMLElement* PackingList=document.FirstChildElement("PackingList");
-    if (!PackingList)
+    XMLElement* PackingList=document.FirstChildElement();
+    const char *NameSpace;
+    if (!PackingList || strcmp(LocalName(PackingList, NameSpace), "PackingList") || !NameSpace)
     {
         Reject("DcpPkl");
         return false;
     }
-
-    const char* Attribute=PackingList->Attribute("xmlns");
-    if (!Attribute)
-    {
-        Reject("DcpPkl");
-        return false;
-    }
-
-    if (strcmp(Attribute, "http://www.digicine.com/PROTO-ASDCP-PKL-20040311#")
-     && strcmp(Attribute, "http://www.smpte-ra.org/schemas/429-8/2007/PKL"))
+    if (strcmp(NameSpace, "http://www.digicine.com/PROTO-ASDCP-PKL-20040311#") &&
+        strcmp(NameSpace, "http://www.smpte-ra.org/schemas/429-8/2007/PKL"))
     {
         Reject("DcpPkl");
         return false;
@@ -143,32 +137,35 @@ bool File_DcpPkl::FileHeader_Begin()
     for (XMLElement* PackingList_Item=PackingList->FirstChildElement(); PackingList_Item; PackingList_Item=PackingList_Item->NextSiblingElement())
     {
         //AssetList
-        if (!strcmp(PackingList_Item->Value(), "AssetList"))
+        if (MatchQName(PackingList_Item, "AssetList", NameSpace))
         {
             for (XMLElement* AssetList_Item=PackingList_Item->FirstChildElement(); AssetList_Item; AssetList_Item=AssetList_Item->NextSiblingElement())
             {
                 //Asset
-                if (!strcmp(AssetList_Item->Value(), "Asset"))
+                if (MatchQName(AssetList_Item, "Asset", NameSpace))
                 {
                     stream Stream;
 
                     for (XMLElement* File_Item=AssetList_Item->FirstChildElement(); File_Item; File_Item=File_Item->NextSiblingElement())
                     {
                         const char* Text=File_Item->GetText();
+                        const char *FileItemNs, *FileItemName = LocalName(File_Item, FileItemNs);
+                        if (!FileItemNs || strcmp(FileItemNs, NameSpace))
+                            continue; // item has wrong namespace
                         //AnnotationText
-                        if (Text && !strcmp(File_Item->Value(), "AnnotationText"))
+                        if (Text && !strcmp(FileItemName, "AnnotationText"))
                             Stream.AnnotationText=Text;
 
                         //Id
-                        if (Text && !strcmp(File_Item->Value(), "Id"))
+                        if (Text && !strcmp(FileItemName, "Id"))
                             Stream.Id=Text;
 
                         //OriginalFileName
-                        if (Text && !strcmp(File_Item->Value(), "OriginalFileName"))
+                        if (Text && !strcmp(FileItemName, "OriginalFileName"))
                             Stream.OriginalFileName=Text;
 
                         //Type
-                        if (!strcmp(File_Item->Value(), "Type"))
+                        if (!strcmp(FileItemName, "Type"))
                         {
                             if (!Text)
                                 Stream.StreamKind=Stream_Other;
