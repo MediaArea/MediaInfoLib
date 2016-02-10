@@ -575,6 +575,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\TimeCode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\XmlUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\PreComp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1208,6 +1211,9 @@
       <Filter>Header Files\Multiple</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\TimeCode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\XmlUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Reader\Reader_libcurl_Include.h">
