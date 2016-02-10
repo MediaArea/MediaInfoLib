@@ -259,8 +259,8 @@ bool File_DcpCpl::FileHeader_Begin()
                                                         }
 
                                                         //Id
-                                                        if (!strcmp(File_Item->Value(), "Id") && Resource_Id.empty())
-                                                            Resource_Id.From_UTF8(File_Item->GetText());
+                                                        if (!strcmp(Resource_Item->Value(), "Id") && Resource_Id.empty())
+                                                            Resource_Id.From_UTF8(Resource_Item->GetText());
 
                                                         //SourceDuration
                                                         if (!strcmp(Resource_Item->Value(), "SourceDuration"))
