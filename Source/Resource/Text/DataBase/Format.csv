@@ -14,7 +14,7 @@ DV;;;M;DvdDif;;dv dif;video/DV;;Lossy
 DivX;;;M;Riff;Hack of AVI;divx;video/vnd.avi;http://www.divx.com;
 DPG;;;M;Dpg;Nintendo DS;dpg;;;
 DVD Video;;;M;Dvdv;;ifo;;;
-Flash Video;;;M;Flv;;flv;application/x-shockwave-flash;http://www.macromedia.com/go/getflashplayer;
+Flash Video;;;M;Flv;;flv;video/x-flv;http://www.macromedia.com/go/getflashplayer;
 GXF;;;M;Gxf;SMPTE 360M;gxf;;;
 HDS F4M;Flash Media Manifest;;M;HdsF4m;;f4m;
 HLS;;;M;Hls;;m3u8;;
