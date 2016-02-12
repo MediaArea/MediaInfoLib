@@ -1167,7 +1167,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "DivX;;;M;Riff;Hack of AVI;divx;video/vnd.avi;http://www.divx.com\n"
     "DPG;;;M;Dpg;Nintendo DS;dpg;;\n"
     "DVD Video;;;M;Dvdv;;ifo;;\n"
-    "Flash Video;;;M;Flv;;flv;application/x-shockwave-flash;http://www.macromedia.com/go/getflashplayer\n"
+    "Flash Video;;;M;Flv;;flv;video/x-flv;http://www.macromedia.com/go/getflashplayer\n"
     "GXF;;;M;Gxf;SMPTE 360M;gxf;;\n"
     "HDS F4M;Flash Media Manifest;;M;HdsF4m;;f4m\n"
     "HLS;;;M;Hls;;m3u8;\n"
