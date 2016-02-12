@@ -92,6 +92,26 @@ size_t File_DcpCpl::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
 }
 #endif //MEDIAINFO_SEEK
 
+//---------------------------------------------------------------------------
+
+static bool IsSmpteSt2067_2(const char* Ns)
+{
+    return Ns &&
+           (!strcmp(Ns, "http://www.smpte-ra.org/schemas/2067-2/2013") ||
+            !strcmp(Ns, "http://www.smpte-ra.org/schemas/2067-2/XXXX")); //Some muxers use XXXX instead of year
+
+}
+
+//---------------------------------------------------------------------------
+
+static bool IsSmpteSt2067_3(const char* Ns)
+{
+    return Ns &&
+           (!strcmp(Ns, "http://www.smpte-ra.org/schemas/2067-3/2013") ||
+            !strcmp(Ns, "http://www.smpte-ra.org/schemas/2067-3/XXXX")); //Some muxers use XXXX instead of year
+
+}
+
 //***************************************************************************
 // Buffer - File header
 //***************************************************************************
@@ -105,7 +125,6 @@ bool File_DcpCpl::FileHeader_Begin()
 
     XMLElement* Root=document.FirstChildElement();
     const char *NameSpace;
-    const char *ccNs="http://www.smpte-ra.org/schemas/2067-2/2013";
     if (!Root || strcmp(LocalName(Root, NameSpace), "CompositionPlaylist"))
     {
         Reject("DcpCpl");
@@ -118,8 +137,7 @@ bool File_DcpCpl::FileHeader_Begin()
     {
         IsDcp=true;
     }
-    else if (!strcmp(NameSpace, "http://www.smpte-ra.org/schemas/2067-3/XXXX") || //Some muxers use XXXX instead of year
-             !strcmp(NameSpace, "http://www.smpte-ra.org/schemas/2067-3/2013"))
+    else if (IsSmpteSt2067_3(NameSpace))
     {
         IsImf=true;
     }
@@ -205,6 +223,9 @@ bool File_DcpCpl::FileHeader_Begin()
                         {
                             for (XMLElement* AssetList_Item=Reel_Item->FirstChildElement(); AssetList_Item; AssetList_Item=AssetList_Item->NextSiblingElement())
                             {
+                                const char *AlItemNs, *AlItemName = LocalName(AssetList_Item, AlItemNs);
+                                if (!AlItemNs)
+                                    continue;
                                 //File
                                 //if ((IsDcp && (!strcmp(AssetList_Item->Value(), "MainPicture") || !strcmp(AssetList_Item->Value(), "MainSound")))
                                 // || (IsImf && (!strcmp(AssetList_Item->Value(), "cc:MainImageSequence") || !strcmp(AssetList_Item->Value(), "cc:MainImage"))))
@@ -212,12 +233,20 @@ bool File_DcpCpl::FileHeader_Begin()
                                     sequence* Sequence=new sequence;
                                     Ztring Asset_Id;
 
-                                    if ((IsDcp && MatchQName(AssetList_Item, "MainPicture", NameSpace))
-                                     || (IsImf && MatchQName(AssetList_Item, "MainImageSequence", ccNs)))
-                                        Sequence->StreamKind=Stream_Video;
-                                    if ((IsDcp && MatchQName(AssetList_Item, "MainSound", NameSpace))
-                                     || (IsImf && MatchQName(AssetList_Item, "MainAudioSequence", ccNs)))
-                                        Sequence->StreamKind=Stream_Audio;
+                                    if (IsDcp && !strcmp(NameSpace, AlItemNs))
+                                    {
+                                        if (!strcmp(AlItemName, "MainPicture"))
+                                            Sequence->StreamKind=Stream_Video;
+                                        else if (!strcmp(AlItemName, "MainSound"))
+                                            Sequence->StreamKind=Stream_Audio;
+                                    }
+                                    else if (IsImf && IsSmpteSt2067_2(AlItemNs))
+                                    {
+                                        if (!strcmp(AlItemName, "MainImageSequence"))
+                                            Sequence->StreamKind=Stream_Video;
+                                        else if (!strcmp(AlItemName, "MainAudioSequence"))
+                                            Sequence->StreamKind=Stream_Audio;
+                                    }
 
                                     for (XMLElement* File_Item=AssetList_Item->FirstChildElement(); File_Item; File_Item=File_Item->NextSiblingElement())
                                     {
