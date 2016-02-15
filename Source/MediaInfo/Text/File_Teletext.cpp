@@ -224,6 +224,8 @@ void File_Teletext::Read_Buffer_Continue()
                 int8u data_unit_id, data_unit_length;
                 Get_B1 (data_unit_id,                           "data_unit_id");
                 Get_B1 (data_unit_length,                       "data_unit_length");
+                if (data_unit_length)
+                {
                 Skip_B1(                                        "field/line");
                 if (data_unit_id==0x03 && data_unit_length==0x2C)
                 {
@@ -248,6 +250,7 @@ void File_Teletext::Read_Buffer_Continue()
                 }
                 else
                     Skip_XX(data_unit_length-1,                 "Data");
+                }
             }
         }
     #endif
