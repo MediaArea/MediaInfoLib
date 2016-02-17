@@ -4110,6 +4110,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx()
         Stream_Prepare(Stream_Video);
         Streams[moov_trak_tkhd_TrackID].StreamKind=StreamKind_Last;
         Streams[moov_trak_tkhd_TrackID].StreamPos=StreamPos_Last;
+        Fill(Stream_Video, StreamPos_Last, "WrongSubType", "Yes");
     }
 
     FILLING_BEGIN()
