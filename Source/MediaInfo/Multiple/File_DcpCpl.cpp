@@ -229,6 +229,7 @@ bool File_DcpCpl::FileHeader_Begin()
                                 //File
                                 //if ((IsDcp && (!strcmp(AssetList_Item->Value(), "MainPicture") || !strcmp(AssetList_Item->Value(), "MainSound")))
                                 // || (IsImf && (!strcmp(AssetList_Item->Value(), "cc:MainImageSequence") || !strcmp(AssetList_Item->Value(), "cc:MainImage"))))
+                                if (strcmp(AssetList_Item->Value(), "cc:MarkerSequence")) //Ignoring MarkerSequence for the moment. TODO: check what to do with MarkerSequence
                                 {
                                     sequence* Sequence=new sequence;
                                     Ztring Asset_Id;
