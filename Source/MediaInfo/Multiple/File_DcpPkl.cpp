@@ -258,7 +258,11 @@ void File_DcpPkl::MergeFromAm (File_DcpPkl::streams &StreamsToMerge)
     {
         for (File_DcpPkl::streams::iterator StreamToMerge=StreamsToMerge.begin(); StreamToMerge!=StreamsToMerge.end(); ++StreamToMerge)
             if (StreamToMerge->Id==Stream->Id)
+            {
+                stream_t StreamKind=Stream->StreamKind; //Keeping StreamKind from PKL
                 *Stream=*StreamToMerge;
+                Stream->StreamKind=StreamKind; //Keeping StreamKind from PKL
+            }
     }
 }
 
