@@ -2,10 +2,10 @@
 # in order to build with qmake just copy this file to the sources
 # then open with QtCreator and build
 TEMPLATE = lib
-CONFIG += staticlib
+CONFIG += staticlib c++11
 TARGET = MediaInfo
 
-DISTDIR = ../Library
+DESTDIR = ../Library
 
 ZENLIB_DIR = /Users/rkrause/src/cpp/MediaInfo/ZenLib
 THIRD_PARTY_DIR = ../ThirdParty
@@ -34,7 +34,7 @@ QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter \
 -Wno-pointer-sign \
 -Wno-invalid-source-encoding \
 -Wno-pointer-sign \
--Wno-parantheses
+-Wno-parentheses
 
 
 
