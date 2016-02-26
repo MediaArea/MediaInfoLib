@@ -19,6 +19,7 @@ Version 0.7.83, 2016-02-29
 x HLS: better handling of media playlists having EXT-X-BYTERANGE
 x #I122, MPEG-4/MOV: Crash if mdhd timescale is 0
 x MPEG-4/MOV: Infinite loop if malformed stsc / stsz (detected by fuzzing)
+x MPEG-TS: some DVB Subtitles were not detected
 
 Version 0.7.82, 2016-01-27
 --------------
