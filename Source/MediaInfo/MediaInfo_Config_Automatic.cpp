@@ -868,6 +868,8 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "Matrix_ChannelPositions;Matrix encoding, channel positions\n"
     "matrix_coefficients;Matrix coefficients\n"
     "Matrix_Format;Matrix encoding, format\n"
+    "MaxCLL;Maximum Content Light Level\n"
+    "MaxFALL;Maximum Frame-Average Light Level\n"
     "MediaInfo_About;MediaInfo provides easy access to technical and tag information about video and audio files.\r\nExcept the Mac App Store graphical user interface, it is open-source software, which means that it is free of charge to the end user and developers have freedom to study, to improve and to redistribute the program (BSD license)\n"
     "Menu;Menu\n"
     "Menu stream(s);Menu streams\n"

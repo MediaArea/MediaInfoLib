@@ -204,6 +204,10 @@ void File_Hevc::Streams_Fill()
         Fill(Stream_Video, 0, "MasteringDisplay_ColorPrimaries", MasteringDisplay_ColorPrimaries);
         Fill(Stream_Video, 0, "MasteringDisplay_Luminance", MasteringDisplay_Luminance);
     }
+    if (maximum_content_light_level)
+        Fill(Stream_Video, 0, "MaxCLL", Ztring::ToZtring(maximum_content_light_level) + __T(" cd/m2"));
+    if (maximum_frame_average_light_level)
+        Fill(Stream_Video, 0, "MaxFALL", Ztring::ToZtring(maximum_frame_average_light_level) + __T(" cd/m2"));
 }
 
 //---------------------------------------------------------------------------
@@ -716,6 +720,8 @@ void File_Hevc::Synched_Init()
     IFrame_Count=0;
 
     //Temp
+    maximum_content_light_level=0;
+    maximum_frame_average_light_level=0;
 
     //Default values
     Streams.resize(0x100);
@@ -1792,6 +1798,7 @@ void File_Hevc::sei_message(int32u &seq_parameter_set_id)
         case 129 :   sei_message_active_parameter_sets(); break;
         case 132 :   sei_message_decoded_picture_hash(payloadSize); break;
         case 137 :   sei_message_mastering_display_colour_volume(); break;
+        case 144 :   sei_message_light_level(); break;
         default :
                     Element_Info1("unknown");
                     Skip_XX(payloadSize,                        "data");
@@ -2125,6 +2132,16 @@ void File_Hevc::sei_message_mastering_display_colour_volume()
                           +__T(" cd/m2, max: ")+Ztring::ToZtring(((float64)max)/10000, 4)
                           +__T(" cd/m2");
     }
+}
+
+//---------------------------------------------------------------------------
+void File_Hevc::sei_message_light_level()
+{
+    Element_Info1("light_level");
+
+    //Parsing
+    Get_B2(maximum_content_light_level,                         "maximum_content_light_level");
+    Get_B2(maximum_frame_average_light_level,                   "maximum_frame_average_light_level");
 }
 
 //***************************************************************************
