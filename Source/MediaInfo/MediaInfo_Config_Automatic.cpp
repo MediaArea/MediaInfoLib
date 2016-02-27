@@ -862,6 +862,8 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "Lyrics;Lyrics\n"
     "Mastered_Date;Mastered date\n"
     "MasteredBy;Mastered by\n"
+    "MasteringDisplay_ColorPrimaries;Mastering display color primaries\n"
+    "MasteringDisplay_Luminance;Mastering display luminance\n"
     "Matrix_Channel(s);Matrix encoding, Channel(s)\n"
     "Matrix_ChannelPositions;Matrix encoding, channel positions\n"
     "matrix_coefficients;Matrix coefficients\n"

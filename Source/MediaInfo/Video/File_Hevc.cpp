@@ -199,6 +199,11 @@ void File_Hevc::Streams_Fill()
     Fill(Stream_Video, 0, Video_Encoded_Library_Name, Encoded_Library_Name);
     Fill(Stream_Video, 0, Video_Encoded_Library_Version, Encoded_Library_Version);
     Fill(Stream_Video, 0, Video_Encoded_Library_Settings, Encoded_Library_Settings);
+    if (!MasteringDisplay_ColorPrimaries.empty())
+    {
+        Fill(Stream_Video, 0, "MasteringDisplay_ColorPrimaries", MasteringDisplay_ColorPrimaries);
+        Fill(Stream_Video, 0, "MasteringDisplay_Luminance", MasteringDisplay_Luminance);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -1786,6 +1791,7 @@ void File_Hevc::sei_message(int32u &seq_parameter_set_id)
         //case  32 :   sei_message_mainconcept(payloadSize); break;
         case 129 :   sei_message_active_parameter_sets(); break;
         case 132 :   sei_message_decoded_picture_hash(payloadSize); break;
+        case 137 :   sei_message_mastering_display_colour_volume(); break;
         default :
                     Element_Info1("unknown");
                     Skip_XX(payloadSize,                        "data");
@@ -2084,6 +2090,41 @@ void File_Hevc::sei_message_decoded_picture_hash(int32u payloadSize)
                         Skip_XX((Element_Size-1)/(chroma_format_idc?1:3), "unknown");
                         break;
         }
+}
+
+//---------------------------------------------------------------------------
+void File_Hevc::sei_message_mastering_display_colour_volume()
+{
+    Element_Info1("mastering_display_colour_volume");
+
+    //Parsing
+    int32u max, min;
+    int16u x[4];
+    int16u y[4];
+    for (size_t c = 0; c < 3; c++)
+    {
+        Get_B2(x[c],                                            "display_primaries_x");
+        Get_B2(y[c],                                            "display_primaries_y");
+    }
+    Get_B2(x[3],                                                "white_point_x");
+    Get_B2(y[3],                                                "white_point_y");
+    Get_B4(max,                                                 "max_display_mastering_luminance");
+    Get_B4(min,                                                 "min_display_mastering_luminance");
+
+    if (MasteringDisplay_ColorPrimaries.empty())
+    {
+        MasteringDisplay_ColorPrimaries=__T("R: x=")+Ztring::ToZtring(((float64)x[2])/50000, 6)
+                                       +__T(  " y=")+Ztring::ToZtring(((float64)y[2])/50000, 6)
+                                     +__T(", G: x=")+Ztring::ToZtring(((float64)x[0])/50000, 6)
+                                       +__T(  " y=")+Ztring::ToZtring(((float64)y[0])/50000, 6)
+                                     +__T(", B: x=")+Ztring::ToZtring(((float64)x[1])/50000, 6)
+                                       +__T(  " y=")+Ztring::ToZtring(((float64)y[1])/50000, 6)
+                           +__T(", White point: x=")+Ztring::ToZtring(((float64)x[3])/50000, 6)
+                                       +__T(  " y=")+Ztring::ToZtring(((float64)y[3])/50000, 6);
+        MasteringDisplay_Luminance=__T("min: ")+Ztring::ToZtring(((float64)min)/10000, 4)
+                          +__T(" cd/m2, max: ")+Ztring::ToZtring(((float64)max)/10000, 4)
+                          +__T(" cd/m2");
+    }
 }
 
 //***************************************************************************
