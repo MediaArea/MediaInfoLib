@@ -438,6 +438,8 @@ private :
     int32u  chroma_format_idc;
     int32u  slice_pic_parameter_set_id;
     int32u  slice_type;
+    int32u  chroma_sample_loc_type_top_field;
+    int32u  chroma_sample_loc_type_bottom_field;
     int16u  maximum_content_light_level;
     int16u  maximum_frame_average_light_level;
     int8u   nuh_layer_id;

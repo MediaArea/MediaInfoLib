@@ -208,6 +208,10 @@ void File_Hevc::Streams_Fill()
         Fill(Stream_Video, 0, "MaxCLL", Ztring::ToZtring(maximum_content_light_level) + __T(" cd/m2"));
     if (maximum_frame_average_light_level)
         Fill(Stream_Video, 0, "MaxFALL", Ztring::ToZtring(maximum_frame_average_light_level) + __T(" cd/m2"));
+    if (chroma_sample_loc_type_top_field!=(int32u)-1)
+        Fill(Stream_Video, 0, "ChromaSubsampling_Position", __T("Type ") + Ztring::ToZtring(chroma_sample_loc_type_top_field));
+    if (chroma_sample_loc_type_bottom_field!=(int32u)-1 && chroma_sample_loc_type_bottom_field!=chroma_sample_loc_type_bottom_field)
+        Fill(Stream_Video, 0, "ChromaSubsampling_Position", __T("Type ") + Ztring::ToZtring(chroma_sample_loc_type_bottom_field));
 }
 
 //---------------------------------------------------------------------------
@@ -720,6 +724,8 @@ void File_Hevc::Synched_Init()
     IFrame_Count=0;
 
     //Temp
+    chroma_sample_loc_type_top_field=(int32u)-1;
+    chroma_sample_loc_type_bottom_field=(int32u)-1;
     maximum_content_light_level=0;
     maximum_frame_average_light_level=0;
 
@@ -2352,8 +2358,8 @@ void File_Hevc::vui_parameters(std::vector<video_parameter_set_struct*>::iterato
         TEST_SB_END();
     TEST_SB_END();
     TEST_SB_SKIP(                                               "chroma_loc_info_present_flag");
-        Skip_UE(                                                "chroma_sample_loc_type_top_field");
-        Skip_UE(                                                "chroma_sample_loc_type_bottom_field");
+        Get_UE (chroma_sample_loc_type_top_field,               "chroma_sample_loc_type_top_field");
+        Get_UE (chroma_sample_loc_type_bottom_field,            "chroma_sample_loc_type_bottom_field");
     TEST_SB_END();
     Skip_SB(                                                    "neutral_chroma_indication_flag");
     Skip_SB(                                                    "field_seq_flag");
