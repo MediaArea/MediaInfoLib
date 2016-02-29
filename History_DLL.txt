@@ -8,7 +8,7 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
-Version 0.7.83, 2016-
+Version 0.7.83, 2016-02-29
 --------------
 + HEVC: Maximum Content Light Level (MaxCLL) and Maximum Frame-Average Light Level (MaxFALL), metadata mandated by CEA-861.3 for HDR support
 + HEVC: Mastering display color primaries and luminance (based on SMPTE ST 2084), metadata mandated by CEA-861.3 for HDR support
