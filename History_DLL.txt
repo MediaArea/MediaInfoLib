@@ -3,10 +3,17 @@
 + Added
 - Deleted
 x Correction
-#number is the identifier of bug report (B), requested feature (F) or patch (P)
+#number is the identifier of SourceForge bug report (B), requested feature (F) or patch (P), or GitHub issue (I)
 bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
+
+Version 0.7.84, 2016-
+--------------
+x #I122, MPEG-4/MOV: Crash if mdhd timescale is 0
+x MPEG-4/MOV: Infinite loop if malformed stsc / stsz (detected by fuzzing)
+x MPEG-TS: some DVB Subtitles were not detected
+x HLS: better handling of media playlists having EXT-X-BYTERANGE
 
 Version 0.7.83, 2016-02-29
 --------------
