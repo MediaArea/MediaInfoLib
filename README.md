@@ -6,14 +6,15 @@ MediaInfo(Lib) is a convenient unified display of the most relevant technical an
 
 In order to build with qmake:
 
-# in MediaInfoLib
+in MediaInfoLib
+<pre>
 cp Contrib/MediaInfo.pro Source/MediaInfo
 cd Source
 mkdir MediaInfo.build
 cd MediaInfo.build
 qmake ../MediaInfo/MediaInfo.pro 
 make
-
+</pre>
 This will create Library/libMediaInfoLib.a
 
 MediaInfoLib - https://github.com/MediaArea/MediaInfoLib  
