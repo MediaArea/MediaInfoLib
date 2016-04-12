@@ -294,6 +294,9 @@ File_Ffv1::File_Ffv1()
 {
     //Configuration
     ParserName=__T("FFV1");
+    #if MEDIAINFO_TRACE
+        Trace_Layers_Update(8); //Stream
+    #endif //MEDIAINFO_TRACE
     IsRawStream=true;
 
     //use Ffv1_default_state_transition by default
