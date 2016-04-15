@@ -3463,10 +3463,17 @@ void File_Mpegv::user_data_start_GA94_03()
             Ref=new temporalreference;
         if (Ref->GA94_03==NULL)
             Ref->GA94_03=new temporalreference::buffer_data;
-        Ref->GA94_03->Size=(size_t)(Element_Size-Element_Offset);
-        delete[] Ref->GA94_03->Data;
-        Ref->GA94_03->Data=new int8u[(size_t)(Element_Size-Element_Offset)];
-        std::memcpy(Ref->GA94_03->Data, Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset));
+        temporalreference::buffer_data* NewBuffer=Ref->GA94_03;
+        int8u* NewData=new int8u[NewBuffer->Size+(size_t)(Element_Size-Element_Offset)];
+        if (NewBuffer->Size)
+        {
+            //Data already present, copying in the new buffer
+            std::memcpy(NewData, NewBuffer->Data, NewBuffer->Size);
+            delete[] NewBuffer->Data; //Reassignement done below
+        }
+        NewBuffer->Data=NewData;
+        std::memcpy(NewBuffer->Data+ NewBuffer->Size, Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset));
+        NewBuffer->Size+=(size_t)(Element_Size-Element_Offset);
 
         //Parsing
         Skip_XX(Element_Size-Element_Offset,                    "CC data");

@@ -14,6 +14,7 @@ Version 0.7.85
 + Detection of Omneon VBI and move of the VBI track from Video part to Others part
 + N19/STL: Support of etection of less standard frame rates (23.976 and 29.970)
 x QuickTime: default of raw audio to Signed in case of stsd atom version <2
+x MPEG Video: some CEA-608/708 captions were not correctly detected due to some packets discarded by the parser with interlaced content
 
 Version 0.7.84, 2016-03-31
 --------------
