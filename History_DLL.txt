@@ -12,6 +12,7 @@ Version 0.7.85
 --------------
 + FFV1: ScanType and ScanOrder
 + Detection of Omneon VBI and move of the VBI track from Video part to Others part
+x QuickTime: default of raw audio to Signed in case of stsd atom version <2
 
 Version 0.7.84, 2016-03-31
 --------------

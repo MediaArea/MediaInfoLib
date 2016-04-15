@@ -4368,6 +4368,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
             Parser->Channels=(int8u)Channels;
             Parser->SamplingRate=(int32u)SampleRate;
             Parser->BitDepth=(int8u)SampleSize;
+            Parser->Sign='S'; //Default is "Signed" with QuickTime (to be confirmed), may be changed by flags
             #if MEDIAINFO_DEMUX
                 if (Config->Demux_Unpacketize_Get())
                 {
