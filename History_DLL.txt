@@ -8,6 +8,11 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
+Version 0.7.85
+--------------
++ FFV1: ScanType and ScanOrder
++ Detection of Omneon VBI and move of the VBI track from Video part to Others part
+
 Version 0.7.84, 2016-03-31
 --------------
 x #I122, MPEG-4/MOV: Crash if mdhd timescale is 0
