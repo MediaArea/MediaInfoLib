@@ -15,6 +15,7 @@ Version 0.7.85
 + N19/STL: Support of etection of less standard frame rates (23.976 and 29.970)
 + Teletext in MPEG-TS: Teletext not subtitle moved to "Other" part
 + Teletext in MPEG-TS: display of CodecID and timestamp of first frame
+x Teletext in MXF: some IDs were wrong (when there are more than one Teletext service)
 x MPEG-4/MOV: default of raw audio to Signed in case of stsd atom version <2
 x MPEG Video: some CEA-608/708 captions were not correctly detected due to some packets discarded by the parser with interlaced content
 x MPEG-4/MOV: Dolby E with 2 or more audio services were not correctly reported

@@ -573,7 +573,7 @@ void File_Teletext::Header_Parse()
             Stream_HasChanged=0;
         }
 
-        if (C[4])
+		if (C[4] && PageNumber!=0xFF)
         {
             stream &Stream=Streams[(X<<8)|PageNumber];
             for (size_t PosY=0; PosY<26; ++PosY)
