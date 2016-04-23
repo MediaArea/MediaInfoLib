@@ -227,6 +227,10 @@ void File_Teletext::Read_Buffer_Unsynched()
                 Stream_HasChanged=0;
             }
         }
+
+    //Unsynching when it is from MpegPs
+    if (Parser)
+        Parser->Open_Buffer_Unsynch();
 }
 
 static inline int8u ReverseBits(int8u c)
@@ -246,7 +250,10 @@ void File_Teletext::Read_Buffer_Continue()
         if (FromMpegPs)
         {
             if (!Status[IsAccepted])
+            {
                 Accept();
+                MustSynchronize=false;
+            }
 
             Skip_B1(                                            "data_identifier");
             while (Element_Offset<Element_Size)
