@@ -2457,11 +2457,11 @@ void MediaInfo_Config_MediaInfo::Event_Send (File__Analyze* Source, const int8u*
                 }
 
                 //Shift of the PTS if difference is too huge
-                if (Event->PTS>Events_TimestampShift_Reference_PTS+60000000000) // difference more than 60 seconds
+                if (Event->PTS>Events_TimestampShift_Reference_PTS+60000000000LL) // difference more than 60 seconds
                 {
                     int64u Shift= Event->PTS -Events_TimestampShift_Reference_PTS;
-                    if (Shift>=55555555555555-10000000000 && Shift<=55555555555555+10000000000) //+/- 10 second
-                        Shift=55555555555555;
+                    if (Shift>=55555555555555LL-10000000000LL && Shift<=55555555555555LL+10000000000LL) //+/- 10 second
+                        Shift=55555555555555LL;
                     if (Event->PTS!=(int64u)-1)
                         Event->PTS-=Shift;
                     if (Event->DTS!=(int64u)-1)
