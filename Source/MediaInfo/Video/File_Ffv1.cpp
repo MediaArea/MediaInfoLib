@@ -553,11 +553,9 @@ void File_Ffv1::Read_Buffer_Continue()
                 if (Trace_Activated) // Parse slice only if trace feature is activated
                 {
                     int64u Start=Element_Offset;
-                    Trace_Activated=false;
 
                     slice(States);
 
-                    Trace_Activated=true;
                     int64u SliceRealSize=Element_Offset-Start;
                     Element_Offset=Start;
                     Skip_XX(SliceRealSize,                          "slice_data");
@@ -782,6 +780,8 @@ void File_Ffv1::slice(states &States)
 
     }
 
+    Trace_Activated = false; // Trace is too huge, deactivating it during pixel decoding
+
     if (!coder_type)
     {
         if ((version == 3 && micro_version > 1) || version > 3)
@@ -842,11 +842,15 @@ void File_Ffv1::slice(states &States)
         Element_Offset=RC->Buffer_Cur-Buffer;
         Element_Offset--;
     }
+
+    Trace_Activated = true; // Trace is too huge, reactivating after during pixel decoding
 }
 
 //---------------------------------------------------------------------------
 void File_Ffv1::slice_header(states &States)
 {
+    Element_Begin1("SliceHeader");
+    
     memset(States, 128, states_size);
 
     int32u slice_x, slice_y, slice_width, slice_height;
@@ -877,6 +881,8 @@ void File_Ffv1::slice_header(states &States)
     }
 
     RC->AssignStateTransitions(state_transitions_table);
+
+    Element_End0();
 }
 
 //---------------------------------------------------------------------------
