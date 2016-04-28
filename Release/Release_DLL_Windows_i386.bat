@@ -135,12 +135,11 @@ xcopy ..\Project\MSVC2015\ShellExtension\*.bat MediaInfoDLL_Windows_i386\
 
 rem --- Compressing Archive ---
 cd MediaInfoDLL_Windows_i386\
-..\..\..\Shared\Binary\Windows_i386\7-Zip\7z a -r -t7z -mx9 ..\MediaInfo_DLL_Windows_i386_WithoutInstaller.7z *
+..\..\..\..\MediaArea-Utils-Binaries\Windows\7-Zip\7z a -r -t7z -mx9 ..\MediaInfo_DLL_Windows_i386_WithoutInstaller.7z *
 cd ..
 
 rem --- Installer ---
-..\..\Shared\Binary\Windows_i386\NSIS\makensis ..\Source\Install\MediaInfo_DLL_Windows_i386.nsi
-
+..\..\..\MediaArea-Utils-Binaries\Windows\NSIS\makensis ..\Source\Install\MediaInfo_DLL_Windows_i386.nsi
 
 rem --- Clean up ---
 if "%1"=="SkipCleanUp" goto SkipCleanUp
