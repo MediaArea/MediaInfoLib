@@ -83,7 +83,6 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>MediaInfo.lib;ZenLib.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\MediaInfoLib\Project\MSVC2013\Library\$(Platform)\$(Configuration);..\..\..\..\ZenLib\Project\MSVC2013\Library\$(Platform)\$(Configuration);..\..\..\..\zlib\projects\MSVC2013\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -122,10 +121,9 @@
       <PrecompiledHeader>
       </PrecompiledHeader>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>MediaInfo.lib;ZenLib.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\..\MediaInfoLib\Project\MSVC2013\Library\$(Platform)\$(Configuration);..\..\..\..\ZenLib\Project\MSVC2013\Library\$(Platform)\$(Configuration);..\..\..\..\zlib\projects\MSVC2013\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -148,7 +146,6 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>

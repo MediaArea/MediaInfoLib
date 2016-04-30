@@ -7,7 +7,7 @@ TARGET = MediaInfo
 
 DESTDIR = ../Library
 
-ZENLIB_DIR = /Users/rkrause/src/cpp/MediaInfo/ZenLib
+ZENLIB_DIR = ../../../ZenLib
 THIRD_PARTY_DIR = ../ThirdParty
 
 INCLUDEPATH += . .. $${ZENLIB_DIR}/Source \
@@ -26,6 +26,14 @@ QMAKE_CXXFLAGS +=  -D_UNICODE -DMEDIAINFO_LIBMMS_NO -DMEDIAINFO_LIBCURL_NO
 # these should be looked at one group at a time
 QMAKE_CFLAGS_WARN_ON -= -Wall
 QMAKE_CXXFLAGS_WARN_ON -= -Wall
+
+win32 {
+# ATTENTION! Change line bellow according local machine configuration for zlib path location.
+ZLIB_PATH = c:/zlib/include
+INCLUDEPATH += $${ZLIB_PATH}
+}
+
+!win32-msvc* {
 QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter \
 -Wno-unused-private-field \
 -Wno-unused-const-variable \
@@ -35,7 +43,7 @@ QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter \
 -Wno-invalid-source-encoding \
 -Wno-pointer-sign \
 -Wno-parentheses
-
+}
 
 
 HEADERS += \

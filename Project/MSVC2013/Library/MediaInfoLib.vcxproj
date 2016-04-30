@@ -101,6 +101,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
       <OmitFramePointers>true</OmitFramePointers>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -556,7 +557,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_TimedText.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Ttml.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\TimeCode.h" />
-    <ClCompile Include="..\..\..\Source\MediaInfo\XmlUtils.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\XmlUtils.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Aic.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Avc.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_AvsV.h" />

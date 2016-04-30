@@ -280,6 +280,7 @@ public :
     int64u        Demux_FirstFrameNumber_Get ();
     void          Demux_InitData_Set (int8u NewValue);
     int8u         Demux_InitData_Get ();
+    std::map<Ztring, File> Demux_Files;
     #endif //MEDIAINFO_DEMUX
 
     #if MEDIAINFO_IBIUSAGE
@@ -375,6 +376,7 @@ public :
     float32       ParseSpeed;
     #if MEDIAINFO_EVENTS
     MediaInfo_Config_PerPackage* Config_PerPackage;
+    bool          Events_TimestampShift_Disabled;
     Ztring        File_Names_RootDirectory;
     #endif //MEDIAINFO_EVENTS
     #if MEDIAINFO_DEMUX
@@ -487,6 +489,9 @@ private :
     int64u                  SubFile_StreamID;
     bool                    ParseUndecodableFrames;
     Ztring                  SubFile_IDs;
+    int64u                      Events_TimestampShift_Reference_PTS;
+    int64u                      Events_TimestampShift_Reference_ID;
+    std::vector<event_delayed*> Events_TimestampShift_Delayed;
     #endif //MEDIAINFO_EVENTS
 
     #if MEDIAINFO_DEMUX

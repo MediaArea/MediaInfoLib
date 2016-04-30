@@ -1700,9 +1700,9 @@ void File_Mpeg4::mdat_xxxx()
                     else
                         stts_Offset=0;
                 }
-                FrameInfo.DTS=TimeCode_DtsOffset+stts_Offset*1000000000/Stream_Temp.mdhd_TimeScale;
+                FrameInfo.DTS=Stream_Temp.mdhd_TimeScale?(TimeCode_DtsOffset+stts_Offset*1000000000/Stream_Temp.mdhd_TimeScale):((int64u)-1);
                 FrameInfo.PTS=Stream_Temp.PtsDtsAreSame?FrameInfo.DTS:(int64u)-1;
-                FrameInfo.DUR=((int64u)stts_Duration->SampleDuration)*1000000000/Stream_Temp.mdhd_TimeScale;
+                FrameInfo.DUR=Stream_Temp.mdhd_TimeScale?(((int64u)stts_Duration->SampleDuration)*1000000000/Stream_Temp.mdhd_TimeScale):((int64u)-1);
                 Stream_Temp.stts_FramePos++;
                 if (Stream_Temp.stts_FramePos>=stts_Duration->Pos_End)
                     Stream_Temp.stts_Durations_Pos++;
@@ -4113,6 +4113,15 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx()
         Fill(Stream_Video, StreamPos_Last, "WrongSubType", "Yes");
     }
 
+    //Test of VBI
+    if (StreamKind_Last == Stream_Video && Element_Code == 0x4F766269) //"Ovbi"
+    {
+        Stream_Erase(Stream_Video, StreamPos_Last);
+        Stream_Prepare(Stream_Other);
+        Streams[moov_trak_tkhd_TrackID].StreamKind = StreamKind_Last;
+        Streams[moov_trak_tkhd_TrackID].StreamPos = StreamPos_Last;
+    }
+
     FILLING_BEGIN()
         if (StreamKind_Last==Stream_Max)
         {
@@ -4359,6 +4368,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
             Parser->Channels=(int8u)Channels;
             Parser->SamplingRate=(int32u)SampleRate;
             Parser->BitDepth=(int8u)SampleSize;
+            Parser->Sign='S'; //Default is "Signed" with QuickTime (to be confirmed), may be changed by flags
             #if MEDIAINFO_DEMUX
                 if (Config->Demux_Unpacketize_Get())
                 {

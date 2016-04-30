@@ -118,10 +118,10 @@
     <ClCompile>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <AdditionalIncludeDirectories>..\..\..\Source;..\..\..\Source\ThirdParty\md5;..\..\..\..\ZenLib\Source</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

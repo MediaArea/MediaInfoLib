@@ -104,6 +104,7 @@
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
       <OmitFramePointers>true</OmitFramePointers>
       <DebugInformationFormat>None</DebugInformationFormat>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -623,7 +624,7 @@
     <ClInclude Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\ZenLib\Project\MSVC2013\Library\ZenLib.vcxproj">
+    <ProjectReference Include="..\..\..\..\ZenLib\Project\MSVC2015\Library\ZenLib.vcxproj">
       <Project>{0da1da7d-f393-4e7c-a7ce-cb5c6a67bc94}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\..\..\zlib\contrib\vstudio\vc14\zlibstat.vcxproj">

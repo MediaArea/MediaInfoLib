@@ -86,6 +86,9 @@ xcopy ..\Project\MSVC2008\Example\HowToUse_Dll.vcproj MediaInfoDLL_Windows_i386\
 xcopy ..\Project\MSVC2013\*.sln MediaInfoDLL_Windows_i386\Developers\Project\MSVC2013\
 xcopy ..\Project\MSVC2013\Example\HowToUse_Dll.vcxproj MediaInfoDLL_Windows_i386\Developers\Project\MSVC2013\Example\
 xcopy ..\Project\MSVC2013\Example\HowToUse_Dll.vcxproj.filters MediaInfoDLL_Windows_i386\Developers\Project\MSVC2013\Example\
+xcopy ..\Project\MSVC2015\*.sln MediaInfoDLL_Windows_i386\Developers\Project\MSVC2015\
+xcopy ..\Project\MSVC2015\Example\HowToUse_Dll.vcxproj MediaInfoDLL_Windows_i386\Developers\Project\MSVC2015\Example\
+xcopy ..\Project\MSVC2015\Example\HowToUse_Dll.vcxproj.filters MediaInfoDLL_Windows_i386\Developers\Project\MSVC2015\Example\
 xcopy ..\Project\GCC\Example\Make* MediaInfoDLL_Windows_i386\Developers\Project\GCC\Example\
 xcopy ..\Project\Java\Example.JNA\*.java MediaInfoDLL_Windows_i386\Developers\Project\Java\Example.JNA\
 xcopy ..\Project\Java\Example.JNA\*.txt MediaInfoDLL_Windows_i386\Developers\Project\Java\Example.JNA\
@@ -108,8 +111,8 @@ xcopy ..\Project\NetBeans\Example.JNative\src\*.java MediaInfoDLL_Windows_i386\D
 
 rem --- Copying : Libs ---
 xcopy ..\Release\BCB\DLL\MediaInfo.lib MediaInfoDLL_Windows_i386\Developers\Release\BCB\DLL\
-xcopy ..\Release\MSVC\DLL\MediaInfo.lib MediaInfoDLL_Windows_i386\Developers\Release\MSVC\DLL\
-xcopy ..\Release\MSVC\DLL\MediaInfod.lib MediaInfoDLL_Windows_i386\Developers\Release\MSVC\DLL\
+xcopy ..\Project\MSVC2015\Win32\Release\MediaInfo.lib MediaInfoDLL_Windows_x64\Developers\Project\MSVC2015\Win32\Release\
+xcopy ..\Project\MSVC2015\Win32\Debug\MediaInfo.lib MediaInfoDLL_Windows_x64\Developers\Project\MSVC2015\x64\Debug\
 
 rem --- Copying : Examples ---
 xcopy ..\Source\Example\HowToUse_Dll*.* MediaInfoDLL_Windows_i386\Developers\Source\Example\
@@ -125,19 +128,18 @@ rem --- Copying : Contrib ---
 xcopy ..\Contrib\*.* MediaInfoDLL_Windows_i386\Developers\Contrib\ /S
 
 rem --- Copying : DLL ---
-xcopy ..\Project\MSVC2013\DLL\Win32\Release\MediaInfo.dll MediaInfoDLL_Windows_i386\
-xcopy ..\Project\MSVC\ShellExtension\Win32\Release\MediaInfo_InfoTip.dll MediaInfoDLL_Windows_i386\
-xcopy ..\Project\MSVC\ShellExtension\*.bat MediaInfoDLL_Windows_i386\
+xcopy ..\Project\MSVC2015\Win32\Release\MediaInfo.dll MediaInfoDLL_Windows_i386\
+xcopy ..\Project\MSVC2015\Win32\Release\MediaInfo_InfoTip.dll MediaInfoDLL_Windows_i386\
+xcopy ..\Project\MSVC2015\ShellExtension\*.bat MediaInfoDLL_Windows_i386\
 
 
 rem --- Compressing Archive ---
 cd MediaInfoDLL_Windows_i386\
-..\..\..\Shared\Binary\Windows_i386\7-Zip\7z a -r -t7z -mx9 ..\MediaInfo_DLL_Windows_i386_WithoutInstaller.7z *
+..\..\..\..\MediaArea-Utils-Binaries\Windows\7-Zip\7z a -r -t7z -mx9 ..\MediaInfo_DLL_Windows_i386_WithoutInstaller.7z *
 cd ..
 
 rem --- Installer ---
-..\..\Shared\Binary\Windows_i386\NSIS\makensis ..\Source\Install\MediaInfo_DLL_Windows_i386.nsi
-
+..\..\..\MediaArea-Utils-Binaries\Windows\NSIS\makensis ..\Source\Install\MediaInfo_DLL_Windows_i386.nsi
 
 rem --- Clean up ---
 if "%1"=="SkipCleanUp" goto SkipCleanUp
