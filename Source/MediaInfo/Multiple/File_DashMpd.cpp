@@ -162,7 +162,7 @@ struct template_generic
         initialization=ToCopy.initialization;
         media=ToCopy.media;
         duration=ToCopy.duration;
-        startNumber=ToCopy.duration;
+        startNumber=ToCopy.startNumber;
         duration_Max=ToCopy.duration_Max;
         startNumber_Max=ToCopy.startNumber_Max;
     }
