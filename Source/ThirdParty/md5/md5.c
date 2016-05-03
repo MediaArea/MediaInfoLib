@@ -15,7 +15,7 @@
  * will fill a supplied 16-byte array with the digest.
  */
 
-#include <md5.h>
+#include "md5.h"
 #include <string.h>
 
 #if defined(__sparc__) || defined(_BIG_ENDIAN) || defined(__BIG_ENDIAN__)

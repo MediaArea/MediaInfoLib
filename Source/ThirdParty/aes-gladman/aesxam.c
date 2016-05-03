@@ -115,7 +115,7 @@ Issue Date: 20/12/2007
 #include <ctype.h>
 
 #include "aes.h"
-#include "rdtsc.h"
+//#include "rdtsc.h"
 
 #define BLOCK_LEN   16
 

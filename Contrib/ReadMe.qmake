@@ -1,0 +1,11 @@
+In order to build with qmake:
+
+# in MediaInfoLib
+cp Contrib/MediaInfo.pro Source/MediaInfo
+cd Source
+mkdir MediaInfo.build
+cd MediaInfo.build
+qmake ../MediaInfo/MediaInfo.pro 
+make
+
+This will create Library/libMediaInfoLib.a

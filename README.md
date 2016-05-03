@@ -4,6 +4,21 @@ MediaInfo(Lib) is a convenient unified display of the most relevant technical an
 
 [![Build Status](https://travis-ci.org/MediaArea/MediaInfoLib.svg?branch=master)](https://travis-ci.org/MediaArea/MediaInfoLib)
 
+Clone and Build https://github.com/rokrau/ZenLib first!
+
+In order to build with qmake:
+
+in MediaInfoLib
+<pre>
+cp Contrib/MediaInfo.pro Source/MediaInfo
+cd Source
+mkdir MediaInfo.build
+cd MediaInfo.build
+qmake ../MediaInfo/MediaInfo.pro 
+make
+</pre>
+This will create Library/libMediaInfoLib.a
+
 MediaInfoLib - https://github.com/MediaArea/MediaInfoLib  
 Copyright (c) MediaArea.net SARL. All Rights Reserved.
 
