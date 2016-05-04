@@ -26,6 +26,7 @@
 
 import os
 import sys
+import locale
 from ctypes import *
 if os.name == "nt" or os.name == "dos" or os.name == "os2" or os.name == "ce":
     MediaInfoDLL_Handler = windll.MediaInfo
@@ -185,6 +186,8 @@ class MediaInfo:
     def __init__(self):
         self.Handle=self.MediaInfo_New()
         self.MediaInfo_Option(self.Handle, "CharSet", "UTF-8")
+        if sys.version_info.major < 3 and os.name != "nt" and os.name != "dos" and os.name != "os2" and os.name != "ce" and sys.platform != "darwin" and locale.getlocale() == (None, None):
+            locale.setlocale(locale.LC_CTYPE, locale.getdefaultlocale())
     def __del__(self):
         self.MediaInfo_Delete(self.Handle)
     def Open(self, File):
@@ -343,6 +346,9 @@ class MediaInfoList:
     #Handling
     def __init__(self):
         self.Handle=MediaInfoList_New()
+        self.MediaInfo_Option(self.Handle, "CharSet", "UTF-8")
+        if sys.version_info.major < 3 and os.name != "nt" and os.name != "dos" and os.name != "os2" and os.name != "ce" and sys.platform != "darwin" and locale.getlocale() == (None, None):
+            locale.setlocale(locale.LC_CTYPE, locale.getdefaultlocale())
     def __del__(self):
         MediaInfoList_Delete(self.Handle)
     def Open(self, Files, Options=FileOptions.Nothing):

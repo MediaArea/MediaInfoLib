@@ -8,6 +8,10 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
+Version 0.7.86
+--------------
+x #I144, Python binding: Python 2 on Linux does not automatically provide the locale to the shared object
+
 Version 0.7.85, 2016-04-29
 --------------
 + FFV1: ScanType and ScanOrder
