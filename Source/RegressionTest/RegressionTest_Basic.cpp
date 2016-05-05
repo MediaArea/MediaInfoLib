@@ -312,7 +312,18 @@ void RegressionTest_Basic(Ztring Files, Ztring DataBaseDirectory, int32u Scenari
                 New.push_back(ZtringList());
                 New.at(New.size()-1).push_back(MIL.Get(FilePos, Stream_General, 0, __T("CompleteName")));
                 for (size_t LinePos=0; LinePos<MIL.Count_Get(FilePos, (stream_t)StreamKind, StreamPos); LinePos++)
-                    New.at(New.size()-1).push_back(MIL.Get(FilePos, (stream_t)StreamKind, StreamPos, LinePos));
+                {
+                    Ztring Value=MIL.Get(FilePos, (stream_t)StreamKind, StreamPos, LinePos);
+                    if (Value.find(__T('\r')) != string::npos || Value.find(__T('\n')) != string::npos)
+                    {
+                        Value.FindAndReplace(__T("\r\n"), __T(" / "), 0, Ztring_Recursive);
+                        Value.FindAndReplace(__T("\r"), __T(" / "), 0, Ztring_Recursive);
+                        Value.FindAndReplace(__T("\n"), __T(" / "), 0, Ztring_Recursive);
+                        if (Value.size()>=3 && Value.rfind(__T(" / "))== Value.size()-3)
+                            Value.resize(Value.size()-3);
+                    }
+                    New.at(New.size()-1).push_back(Value);
+                }
             }
 
         if (!Dir::Exists(DataBaseDirectory+__T("\\Basic\\New")))
