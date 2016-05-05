@@ -186,7 +186,7 @@ class MediaInfo:
     def __init__(self):
         self.Handle=self.MediaInfo_New()
         self.MediaInfo_Option(self.Handle, "CharSet", "UTF-8")
-        if sys.version_info.major < 3 and os.name != "nt" and os.name != "dos" and os.name != "os2" and os.name != "ce" and sys.platform != "darwin" and locale.getlocale() == (None, None):
+        if sys.version_info.major < 3 and os.name != "nt" and os.name != "dos" and os.name != "os2" and os.name != "ce" and locale.getlocale() == (None, None):
             locale.setlocale(locale.LC_CTYPE, locale.getdefaultlocale())
     def __del__(self):
         self.MediaInfo_Delete(self.Handle)
