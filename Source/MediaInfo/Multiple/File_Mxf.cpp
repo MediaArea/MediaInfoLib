@@ -5061,24 +5061,47 @@ bool File_Mxf::FileHeader_Begin()
 bool File_Mxf::Synchronize()
 {
     //Synchronizing
-    while (Buffer_Offset+4<=Buffer_Size && (Buffer[Buffer_Offset  ]!=0x06
-                                         || Buffer[Buffer_Offset+1]!=0x0E
-                                         || Buffer[Buffer_Offset+2]!=0x2B
-                                         || Buffer[Buffer_Offset+3]!=0x34))
+    //MXF magic number is 11 bytes: 06 0E 2B 34 02 05 01 01 0D 01 02
+    while (Buffer_Offset+11<=Buffer_Size && (Buffer[Buffer_Offset  ]!=0x06
+                                          || Buffer[Buffer_Offset+1]!=0x0E
+                                          || Buffer[Buffer_Offset+2]!=0x2B
+                                          || Buffer[Buffer_Offset+3]!=0x34
+                                          || Buffer[Buffer_Offset+4]!=0x02
+                                          || Buffer[Buffer_Offset+5]!=0x05
+                                          || Buffer[Buffer_Offset+6]!=0x01
+                                          || Buffer[Buffer_Offset+7]!=0x01
+                                          || Buffer[Buffer_Offset+8]!=0x0D
+                                          || Buffer[Buffer_Offset+9]!=0x01
+                                          || Buffer[Buffer_Offset+10]!=0x02))
     {
         Buffer_Offset++;
         while (Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset]!=0x06)
             Buffer_Offset++;
     }
 
-
-    while (Buffer_Offset+4<=Buffer_Size
-        && CC4(Buffer+Buffer_Offset)!=0x060E2B34)
+    while (Buffer_Offset+11<=Buffer_Size
+        && CC4(Buffer+Buffer_Offset)!=0x060E2B34
+        && CC4(Buffer+Buffer_Offset+4)!=0x02050101
+        && CC3(Buffer+Buffer_Offset+8)!=0x0D0102)
         Buffer_Offset++;
 
     //Parsing last bytes if needed
-    if (Buffer_Offset+4>Buffer_Size)
+    if (Buffer_Offset+11>Buffer_Size)
     {
+        if (Buffer_Offset+10==Buffer_Size && CC4(Buffer+Buffer_Offset)!=0x060E2B34)
+            Buffer_Offset++;
+        if (Buffer_Offset+9==Buffer_Size && CC4(Buffer+Buffer_Offset)!=0x060E2B34)
+            Buffer_Offset++;
+        if (Buffer_Offset+8==Buffer_Size && CC4(Buffer+Buffer_Offset)!=0x060E2B34)
+            Buffer_Offset++;
+        if (Buffer_Offset+7==Buffer_Size && CC4(Buffer+Buffer_Offset)!=0x060E2B34)
+            Buffer_Offset++;
+        if (Buffer_Offset+6==Buffer_Size && CC4(Buffer+Buffer_Offset)!=0x060E2B34)
+            Buffer_Offset++;
+        if (Buffer_Offset+5==Buffer_Size && CC4(Buffer+Buffer_Offset)!=0x060E2B34)
+            Buffer_Offset++;
+        if (Buffer_Offset+4==Buffer_Size && CC4(Buffer+Buffer_Offset)!=0x060E2B34)
+            Buffer_Offset++;
         if (Buffer_Offset+3==Buffer_Size && CC3(Buffer+Buffer_Offset)!=0x060E2B)
             Buffer_Offset++;
         if (Buffer_Offset+2==Buffer_Size && CC2(Buffer+Buffer_Offset)!=0x060E)
