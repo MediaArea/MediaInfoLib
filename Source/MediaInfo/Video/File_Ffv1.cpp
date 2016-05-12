@@ -578,15 +578,16 @@ void File_Ffv1::Read_Buffer_Continue()
                 {
                     int64u Start=Element_Offset;
 
-                    slice(States);
-
-                    int64u SliceRealSize=Element_Offset-Start;
-                    Element_Offset=Start;
-                    Skip_XX(SliceRealSize,                          "slice_data");
-                    if (Trusted_Get())
-                        Param_Info1("OK");
-                    else
-                        Param_Info1("NOK");
+                    if (!slice(States))
+                    {
+                        int64u SliceRealSize=Element_Offset-Start;
+                        Element_Offset=Start;
+                        Skip_XX(SliceRealSize,                          "slice_data");
+                        if (Trusted_Get())
+                            Param_Info1("OK");
+                        else
+                            Param_Info1("NOK");
+                    }
                 }
             #endif //MEDIAINFO_TRACE
 
@@ -804,13 +805,11 @@ void File_Ffv1::FrameHeader()
 }
 
 //---------------------------------------------------------------------------
-void File_Ffv1::slice(states &States)
+int File_Ffv1::slice(states &States)
 {
     if (version>2)
-    {
-        slice_header(States);
-
-    }
+        if (slice_header(States) < 0)
+            return -1;
 
     Trace_Activated = false; // Trace is too huge, deactivating it during pixel decoding
 
@@ -876,10 +875,11 @@ void File_Ffv1::slice(states &States)
     }
 
     Trace_Activated = true; // Trace is too huge, reactivating after during pixel decoding
+    return 0;
 }
 
 //---------------------------------------------------------------------------
-void File_Ffv1::slice_header(states &States)
+int File_Ffv1::slice_header(states &States)
 {
     Element_Begin1("SliceHeader");
     
@@ -887,7 +887,21 @@ void File_Ffv1::slice_header(states &States)
 
     int32u slice_x, slice_y, slice_width, slice_height;
     Get_RU (States, slice_x,                                "slice_x");
+    if (slice_x >= num_v_slices)
+    {
+        Param_Info1("NOK");
+        Element_End();
+        return -1;
+    }
+
     Get_RU (States, slice_y,                                "slice_y");
+    if (slice_y >= num_h_slices)
+    {
+        Param_Info1("NOK");
+        Element_End();
+        return -1;
+    }
+
     Get_RU (States, slice_width,                            "slice_width_minus1");
     Get_RU (States, slice_height,                           "slice_height_minus1");
 
@@ -915,6 +929,7 @@ void File_Ffv1::slice_header(states &States)
     RC->AssignStateTransitions(state_transitions_table);
 
     Element_End0();
+    return 0;
 }
 
 //---------------------------------------------------------------------------
