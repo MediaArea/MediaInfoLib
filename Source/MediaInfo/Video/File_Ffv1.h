@@ -157,9 +157,9 @@ private :
     void Read_Buffer_Continue();
 
     //Elements
-    void FrameHeader();
-    void slice(states &States);
-    void slice_header(states &States);
+    void   FrameHeader();
+    int    slice(states &States);
+    int    slice_header(states &States);
     int32u CRC_Compute(size_t Size);
     int32s get_symbol_with_bias_correlation(Slice::Context* context);
     void rgb();
