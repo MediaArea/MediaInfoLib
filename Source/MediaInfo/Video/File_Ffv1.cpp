@@ -560,7 +560,8 @@ void File_Ffv1::Read_Buffer_Continue()
         for (size_t Pos = 0; Pos < Slices_BufferSizes.size(); Pos++)
         {
             Element_Begin1("Slice");
-            int64u End=Element_Offset+Slices_BufferSizes[Pos]-tail;
+            int64u Element_Size_Save=Element_Size;
+            Element_Size=Element_Offset+Slices_BufferSizes[Pos]-tail;
             int32u crc_left=0;
 
             if (error_correction == 1)
@@ -591,9 +592,10 @@ void File_Ffv1::Read_Buffer_Continue()
                 }
             #endif //MEDIAINFO_TRACE
 
-            if (Element_Offset!=End)
-                Skip_XX(End-Element_Offset,                         "Other data");
-            Skip_B3(                                                "slice_size");
+            if (Element_Offset<Element_Size)
+                Skip_XX(Element_Size-Element_Offset,                    "Other data");
+            Element_Size=Element_Size_Save;
+            Skip_B3(                                                    "slice_size");
             if (error_correction == 1)
             {
                 Skip_B1(                                                "error_status");
@@ -850,8 +852,12 @@ int File_Ffv1::slice(states &States)
             int32u w = current_slice->w;
             int32u h = current_slice->h;
 
-            current_slice->w = current_slice->w >> chroma_h_shift;
-            current_slice->h = current_slice->h >> chroma_v_shift;
+            current_slice->w = w >> chroma_h_shift;
+            if (w & ((1 << chroma_h_shift) - 1))
+                current_slice->w++; //Is ceil
+            current_slice->h = h >> chroma_v_shift;
+            if (h & ((1 << chroma_v_shift) - 1))
+                current_slice->h++; //Is ceil
             plane(1); // Cb
             plane(1); // Cr
             current_slice->w = w;
@@ -885,12 +891,12 @@ int File_Ffv1::slice_header(states &States)
     
     memset(States, 128, states_size);
 
-    int32u slice_x, slice_y, slice_width, slice_height;
+    int32u slice_x, slice_y, slice_width_minus1, slice_height_minus1;
     Get_RU (States, slice_x,                                "slice_x");
     if (slice_x >= num_v_slices)
     {
         Param_Info1("NOK");
-        Element_End();
+        Element_End0();
         return -1;
     }
 
@@ -898,19 +904,35 @@ int File_Ffv1::slice_header(states &States)
     if (slice_y >= num_h_slices)
     {
         Param_Info1("NOK");
-        Element_End();
+        Element_End0();
         return -1;
     }
 
-    Get_RU (States, slice_width,                            "slice_width_minus1");
-    Get_RU (States, slice_height,                           "slice_height_minus1");
+    Get_RU (States, slice_width_minus1,                     "slice_width_minus1");
+    int32u slice_x2 = slice_x + slice_width_minus1 + 1; //right boundary
+    if (slice_x2 > num_h_slices)
+    {
+        Param_Info1("NOK");
+        Element_End0();
+        return -1;
+    }
+
+    Get_RU (States, slice_height_minus1,                    "slice_height_minus1");
+    int32u slice_y2 = slice_y + slice_height_minus1 + 1; //bottom boundary
+    if (slice_y2 > num_v_slices)
+    {
+        Param_Info1("NOK");
+        Element_End0();
+        return -1;
+    }
 
     current_slice = &slices[slice_x + slice_y * num_h_slices];
 
-    current_slice->w = (slice_width + 1) * (Width / num_h_slices);
-    current_slice->h = (slice_height + 1) * (Height / num_v_slices);
-    current_slice->x = slice_x * current_slice->w;
-    current_slice->y = slice_y * current_slice->h;
+    //Computing boundaries, being careful about how are computed boundaries when there is not an integral number for Width  / num_h_slices or Height / num_v_slices (the last slice has more pixels)
+    current_slice->x = slice_x  * Width  / num_h_slices;
+    current_slice->y = slice_y  * Height / num_v_slices;
+    current_slice->w = slice_x2 * Width  / num_h_slices - current_slice->x;
+    current_slice->h = slice_y2 * Height / num_v_slices - current_slice->y;
 
 
     int8u plane_count=1+(alpha_plane?1:0);

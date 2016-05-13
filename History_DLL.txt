@@ -12,6 +12,7 @@ Version 0.7.86
 --------------
 x #I144, Python binding: Python 2 on Linux does not automatically provide the locale to the shared object
 x HTML output: don't escape carriage returns from the input file
+x FFV1: some streams were rejected despite the fact they are valid
 
 Version 0.7.85, 2016-04-29
 --------------
