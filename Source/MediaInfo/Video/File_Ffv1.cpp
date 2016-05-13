@@ -850,8 +850,12 @@ int File_Ffv1::slice(states &States)
             int32u w = current_slice->w;
             int32u h = current_slice->h;
 
-            current_slice->w = current_slice->w >> chroma_h_shift;
-            current_slice->h = current_slice->h >> chroma_v_shift;
+            current_slice->w = w >> chroma_h_shift;
+            if (w & ((1 << chroma_h_shift) - 1))
+                current_slice->w++; //Is ceil
+            current_slice->h = h >> chroma_v_shift;
+            if (h & ((1 << chroma_v_shift) - 1))
+                current_slice->h++; //Is ceil
             plane(1); // Cb
             plane(1); // Cr
             current_slice->w = w;
@@ -885,12 +889,12 @@ int File_Ffv1::slice_header(states &States)
     
     memset(States, 128, states_size);
 
-    int32u slice_x, slice_y, slice_width, slice_height;
+    int32u slice_x, slice_y, slice_width_minus1, slice_height_minus1;
     Get_RU (States, slice_x,                                "slice_x");
     if (slice_x >= num_v_slices)
     {
         Param_Info1("NOK");
-        Element_End();
+        Element_End0();
         return -1;
     }
 
@@ -898,17 +902,32 @@ int File_Ffv1::slice_header(states &States)
     if (slice_y >= num_h_slices)
     {
         Param_Info1("NOK");
-        Element_End();
+        Element_End0();
         return -1;
     }
 
-    Get_RU (States, slice_width,                            "slice_width_minus1");
-    Get_RU (States, slice_height,                           "slice_height_minus1");
+    Get_RU (States, slice_width_minus1,                     "slice_width_minus1");
+    int32u slice_x2 = slice_x + slice_width_minus1 + 1; //right boundary
+    if (slice_x2 > num_h_slices)
+    {
+        Param_Info1("NOK");
+        Element_End0();
+        return -1;
+    }
+
+    Get_RU (States, slice_height_minus1,                    "slice_height_minus1");
+    int32u slice_y2 = slice_y + slice_height_minus1 + 1; //bottom boundary
+    if (slice_y2 > num_v_slices)
+    {
+        Param_Info1("NOK");
+        Element_End0();
+        return -1;
+    }
 
     current_slice = &slices[slice_x + slice_y * num_h_slices];
 
-    current_slice->w = (slice_width + 1) * (Width / num_h_slices);
-    current_slice->h = (slice_height + 1) * (Height / num_v_slices);
+    current_slice->w = (slice_width_minus1 + 1) * (Width / num_h_slices);
+    current_slice->h = (slice_height_minus1 + 1) * (Height / num_v_slices);
     current_slice->x = slice_x * current_slice->w;
     current_slice->y = slice_y * current_slice->h;
 
