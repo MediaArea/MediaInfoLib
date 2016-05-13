@@ -926,10 +926,11 @@ int File_Ffv1::slice_header(states &States)
 
     current_slice = &slices[slice_x + slice_y * num_h_slices];
 
-    current_slice->w = (slice_width_minus1 + 1) * (Width / num_h_slices);
-    current_slice->h = (slice_height_minus1 + 1) * (Height / num_v_slices);
-    current_slice->x = slice_x * current_slice->w;
-    current_slice->y = slice_y * current_slice->h;
+    //Computing boundaries, being careful about how are computed boundaries when there is not an integral number for Width  / num_h_slices or Height / num_v_slices (the last slice has more pixels)
+    current_slice->x = slice_x  * Width  / num_h_slices;
+    current_slice->y = slice_y  * Height / num_v_slices;
+    current_slice->w = slice_x2 * Width  / num_h_slices - current_slice->x;
+    current_slice->h = slice_y2 * Height / num_v_slices - current_slice->y;
 
 
     int8u plane_count=1+(alpha_plane?1:0);
