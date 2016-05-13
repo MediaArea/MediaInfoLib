@@ -560,7 +560,8 @@ void File_Ffv1::Read_Buffer_Continue()
         for (size_t Pos = 0; Pos < Slices_BufferSizes.size(); Pos++)
         {
             Element_Begin1("Slice");
-            int64u End=Element_Offset+Slices_BufferSizes[Pos]-tail;
+            int64u Element_Size_Save=Element_Size;
+            Element_Size=Element_Offset+Slices_BufferSizes[Pos]-tail;
             int32u crc_left=0;
 
             if (error_correction == 1)
@@ -591,9 +592,10 @@ void File_Ffv1::Read_Buffer_Continue()
                 }
             #endif //MEDIAINFO_TRACE
 
-            if (Element_Offset!=End)
-                Skip_XX(End-Element_Offset,                         "Other data");
-            Skip_B3(                                                "slice_size");
+            if (Element_Offset<Element_Size)
+                Skip_XX(Element_Size-Element_Offset,                    "Other data");
+            Element_Size=Element_Size_Save;
+            Skip_B3(                                                    "slice_size");
             if (error_correction == 1)
             {
                 Skip_B1(                                                "error_status");
