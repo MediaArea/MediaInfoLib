@@ -36,7 +36,7 @@ elif sys.platform == "darwin":
     MustUseAnsi = 1
 else:
     MediaInfoDLL_Handler = CDLL("libmediainfo.so.0")
-    MustUseAnsi = 1
+    MustUseAnsi = 0
 
 
 # types --> C Python:
