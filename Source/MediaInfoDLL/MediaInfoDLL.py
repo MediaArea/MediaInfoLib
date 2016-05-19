@@ -180,7 +180,6 @@ class MediaInfo:
     MediaInfo_Count_Get.restype = c_size_t
 
     Handle = c_void_p(0)
-    MustUseAnsi = 0
 
     #Handling
     def __init__(self):
