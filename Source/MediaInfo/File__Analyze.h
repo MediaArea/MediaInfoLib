@@ -12,6 +12,7 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Base.h"
 #include "MediaInfo/File__Analyse_Automatic.h"
+#include "MediaInfo/File__Analyze_Element.h"
 #include "ZenLib/BitStream_Fast.h"
 #include "ZenLib/BitStream_LE.h"
 #if MEDIAINFO_IBIUSAGE
@@ -394,31 +395,40 @@ public :
         Ztring::ToZtring(Value).MakeUpperCase()+__T(" (0x")+Ztring::ToZtring(Value, 16).MakeUpperCase()+__T(")")
 
     //Param - Main
-    void Param      (const Ztring &Parameter, const Ztring& Value);
-    inline void Param      (const char*   Parameter, const Ztring& Value) {if (Trace_Activated) Param(Ztring().From_Local(Parameter), Value);};
-    inline void Param      (const char*   Parameter, const std::string& Value) { if (Trace_Activated) Param(Parameter, Ztring().From_Local(Value.c_str()));}
-    inline void Param      (const char*   Parameter, const char*   Value, size_t Value_Size=Unlimited, bool Utf8=true) {if (Trace_Activated) Param(Parameter, ToZtring(Value, Value_Size, Utf8));}
-    inline void Param      (const char*   Parameter, const int8u*  Value, size_t Value_Size=Unlimited, bool Utf8=true) {if (Trace_Activated) Param(Parameter, (const char*)Value, Value_Size, Utf8);}
-    inline void Param      (const char*   Parameter, bool   Value) {if (Trace_Activated) {if (Value) Param(Parameter, "Yes"); else Param(Parameter, "No");}}
-    inline void Param      (const char*   Parameter, int8u  Value) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value)+__T(" (0x")+Ztring().From_CC1(Value)+__T(")"));}
-    inline void Param      (const char*   Parameter, int8s  Value) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value)+__T(" (0x")+Ztring().From_CC1(Value)+__T(")"));}
-    inline void Param      (const char*   Parameter, int16u Value) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value)+__T(" (0x")+Ztring().From_CC2(Value)+__T(")"));}
-    inline void Param      (const char*   Parameter, int16s Value) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value)+__T(" (0x")+Ztring().From_CC2(Value)+__T(")"));}
-    inline void Param      (const char*   Parameter, int32u Value) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value)+__T(" (0x")+Ztring::ToZtring(Value, 16)+__T(")"));}
-    inline void Param      (const char*   Parameter, int32s Value) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value)+__T(" (0x")+Ztring::ToZtring(Value, 16)+__T(")"));}
-    inline void Param      (const char*   Parameter, int64u Value) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value)+__T(" (0x")+Ztring::ToZtring(Value, 16)+__T(")"));}
-    inline void Param      (const char*   Parameter, int64s Value) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value)+__T(" (0x")+Ztring::ToZtring(Value, 16)+__T(")"));}
-    inline void Param      (const char*   Parameter, int128u Value){if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value)+__T(" (0x")+Ztring::ToZtring(Value, 16)+__T(")"));}
-    inline void Param_GUID (const char*   Parameter, int128u Value){if (Trace_Activated) Param(Parameter, Ztring().From_GUID(Value));}
-    inline void Param_UUID (const char*   Parameter, int128u Value){if (Trace_Activated) Param(Parameter, Ztring().From_UUID(Value));}
+    template<typename T>
+    inline void Param(const std::string &Parameter, T Value, int8u AfterComma=3)
+    {
+        if (!Trace_Activated)
+            return;
+
+        if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()))
+            return ;
+
+        //Coherancy
+        if (Element[Element_Level].UnTrusted)
+            return ;
+
+        //Position
+        int64u Pos=Element_Offset+BS->OffsetBeforeLastCall_Get();
+
+        element_details::Element_Node *node = new element_details::Element_Node;
+        node->Name = Parameter;
+        node->Pos = Pos==(int64u)-1 ? Pos : (File_Offset+Buffer_Offset+Pos);
+        node->Value = Value;
+        node->Value.set_AfterComma(AfterComma);
+        Element[Element_Level].TraceNode.Current_Child = Element[Element_Level].TraceNode.Children.size();
+        Element[Element_Level].TraceNode.Children.push_back(node);
+    }
+
+    inline void Param      (const char*   Parameter, const char*   Value, size_t Value_Size, bool Utf8=true) {Param(Parameter, ToZtring(Value, Value_Size, Utf8));}
+    inline void Param      (const char*   Parameter, const int8u*  Value, size_t Value_Size, bool Utf8=true) {Param(Parameter, (const char*)Value, Value_Size, Utf8);}
+    inline void Param_GUID (const char*   Parameter, int128u Value){Param(Parameter, Ztring().From_GUID(Value));}
+    inline void Param_UUID (const char*   Parameter, int128u Value){Param(Parameter, Ztring().From_UUID(Value));}
     #ifdef SIZE_T_IS_LONG
-    inline void Param      (const char*   Parameter, size_t Value, intu Radix=16) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value, Radix).MakeUpperCase()+__T(" (")+Ztring::ToZtring(Value, 10).MakeUpperCase()+__T(")"));}
+    inline void Param      (const char*   Parameter, size_t Value, intu Radix) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value, Radix).MakeUpperCase()+__T(" (")+Ztring::ToZtring(Value, 10).MakeUpperCase()+__T(")"));}
     #endif //SIZE_T_IS_LONG
-    inline void Param      (const char*   Parameter, float32 Value, int8u AfterComma=3) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value, AfterComma));}
-    inline void Param      (const char*   Parameter, float64 Value, int8u AfterComma=3) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value, AfterComma));}
-    inline void Param      (const char*   Parameter, float80 Value, int8u AfterComma=3) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value, AfterComma));}
-    inline void Param      (const int32u  Parameter, const Ztring& Value) {if (Trace_Activated) Param(Ztring().From_CC4(Parameter), Value);};
-    inline void Param      (const int16u  Parameter, const Ztring& Value) {if (Trace_Activated) Param(Ztring().From_CC2(Parameter), Value);};
+    inline void Param      (const int32u  Parameter, const Ztring& Value) {if (Trace_Activated) Param(Ztring().From_CC4(Parameter).To_UTF8(), Value.To_UTF8());};
+    inline void Param      (const int16u  Parameter, const Ztring& Value) {if (Trace_Activated) Param(Ztring().From_CC2(Parameter).To_UTF8(), Value.To_UTF8());};
     #define Param1(_A) Param_(_A)
     #define Param2(_A,_B) Param(_A, _B)
     #define Param3(_A,_B,_C) Param(_A, _B, _C)
@@ -450,10 +460,15 @@ public :
     inline void Param_Info_From_Milliseconds (int64u Parameter)                  {if (Trace_Activated) Param_Info(Ztring().Duration_From_Milliseconds(Parameter));}
 
     //***************************************************************************
+    // Element Node
+    //***************************************************************************
+    element_details::Element_Node *Get_Trace_Node(size_t level = 0);
+
+    //***************************************************************************
     // Information
     //***************************************************************************
 
-    void Info (const Ztring& Value, size_t Element_Level_Minus=0);
+    void Info (const std::string& Value, size_t Element_Level_Minus=0);
 
     //***************************************************************************
     // Big Endian (Integer, Float, Fixed-Point)
@@ -1220,7 +1235,7 @@ public: //TO CHANGE
     BitStream*      BT;             //For conversion from bytes to bitstream
 public : //TO CHANGE
     int64u Header_Size;             //Size of the header of the current element
-    Ztring &Details_Get(size_t Level=0) {return Element[Level].ToShow.Details;} //Direct access to details
+    Ztring Details_Get(size_t Level=0) { std::string str; if (Element[Level].TraceNode.Print(Config_Trace_Format, str) < 0) return Ztring(); return Ztring().From_UTF8(str);}
     void   Details_Clear();
 protected :
     bool Trace_DoNotSave;
@@ -1231,28 +1246,6 @@ private :
 
     //Elements
     size_t Element_Level_Base;      //From other parsers
-
-    struct element_details
-    {
-        struct to_show
-        {
-            int64u Pos;             //Position of the element in the file
-            int64u Size;            //Size of the element (including header and sub-elements)
-            int64u Header_Size;     //Size of the header of the element
-            Ztring Name;            //Name planned for this element
-            Ztring Info;            //More info about the element
-            Ztring Details;         //The main text
-            Ztring Value;           //The value (currently used only with Trace XML)
-            bool   NoShow;          //Don't show this element
-        };
-
-        int64u  Code;               //Code filled in the file
-        int64u  Next;               //
-        bool    WaitForMoreData;    //This element is not complete, we need more data
-        bool    UnTrusted;          //This element has a problem
-        bool    IsComplete;         //This element is fully buffered, no need of more
-        to_show ToShow;
-    };
     std::vector<element_details> Element;
 
     //NextCode

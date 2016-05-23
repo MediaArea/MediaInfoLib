@@ -189,15 +189,9 @@ File__Analyze::File__Analyze ()
     Element[0].UnTrusted=false;
     Element[0].IsComplete=false;
     #if MEDIAINFO_TRACE
+    //TraceNode part
     if (Config_Trace_Level!=0)
-    {
-        //ToShow part
-        Element[0].ToShow.Name.clear();
-        Element[0].ToShow.Info.clear();
-        Element[0].ToShow.Details.clear();
-        Element[0].ToShow.Value.clear();
-        Element[0].ToShow.NoShow=false;
-    }
+        Element[0].TraceNode.Init();
     #endif //MEDIAINFO_TRACE
     Element_Level_Base=0;
     Element_Level=0;
@@ -414,22 +408,18 @@ void File__Analyze::Open_Buffer_OutOfBand (File__Analyze* Sub, const int8u* ToAd
         if (Trace_Activated)
         {
             //Details handling
-            if (!Sub->Element[0].ToShow.Details.empty() && !Trace_DoNotSave)
+            if ((!Sub->Element[0].TraceNode.Name.empty() || Sub->Element[0].TraceNode.Children.size()) && !Trace_DoNotSave)
             {
-                //Line separator
-                if (!Element[Element_Level].ToShow.Details.empty())
-                    Element[Element_Level].ToShow.Details+=Config_LineSeparator;
-
                 //From Sub
                 while(Sub->Element_Level)
                     Sub->Element_End0();
-                Element[Element_Level].ToShow.Details+=Sub->Element[0].ToShow.Details;
-                Element[Element_Level].ToShow.Value=Sub->Element[0].ToShow.Value;
-                Sub->Element[0].ToShow.Details.clear();
-                Sub->Element[0].ToShow.Value.clear();
+
+                //Add Sub to this node
+                Element[Element_Level].TraceNode.Add_Child(&Sub->Element[0].TraceNode);
+                Sub->Element[0].TraceNode.Init();
             }
             else
-                Element[Element_Level].ToShow.NoShow=true; //We don't want to show this item because there is no info in it
+                Element[Element_Level].TraceNode.NoShow=true; //We don't want to show this item because there is no info in it
         }
     #endif
 }
@@ -971,28 +961,16 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
         if (Trace_Activated)
         {
             //Details handling
-            if (!Sub->Element[0].ToShow.Details.empty() && !Trace_DoNotSave)
+            if ((!Sub->Element[0].TraceNode.Name.empty() || Sub->Element[0].TraceNode.Children.size()) && !Trace_DoNotSave)
             {
-                //Previous item
-                size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
-                size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
-                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</data> />"
-                    Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</data>");
-
-                //Line separator
-                if (!Element[Element_Level].ToShow.Details.empty())
-                    Element[Element_Level].ToShow.Details+=Config_LineSeparator;
-
                 //From Sub
                 while(Sub->Element_Level)
                     Sub->Element_End0();
-                Element[Element_Level].ToShow.Details+=Sub->Element[0].ToShow.Details;
-                Element[Element_Level].ToShow.Value=Sub->Element[0].ToShow.Value;
-                Sub->Element[0].ToShow.Details.clear();
-                Sub->Element[0].ToShow.Value.clear();
+                Element[Element_Level].TraceNode.Add_Child(&Sub->Element[0].TraceNode);
+                Sub->Element[0].TraceNode.Init();
             }
             else
-                Element[Element_Level].ToShow.NoShow=true; //We don't want to show this item because there is no info in it
+                Element[Element_Level].TraceNode.NoShow=true; //We don't want to show this item because there is no info in it
         }
     #endif
 }
@@ -1227,7 +1205,11 @@ void File__Analyze::Open_Buffer_Finalize (bool NoBufferModification)
 
     #if MEDIAINFO_TRACE
     if (Details && Details->empty())
-        Details->assign(Element[0].ToShow.Details);
+    {
+        std::string str;
+        Element[0].TraceNode.Print(Config_Trace_Format, str);
+        Details->assign(Ztring().From_UTF8(str));
+    }
     #endif //MEDIAINFO_TRACE
 
     #if MEDIAINFO_EVENTS
@@ -2062,8 +2044,7 @@ bool File__Analyze::FileHeader_Manage()
     {
         //The header is not complete, need more data
         #if MEDIAINFO_TRACE
-        Element[Element_Level].ToShow.Details.clear();
-        Element[Element_Level].ToShow.Value.clear();
+        Element[Element_Level].TraceNode.Init();
         #endif //MEDIAINFO_TRACE
         return false;
     }
@@ -2170,15 +2151,15 @@ bool File__Analyze::Header_Manage()
     Element[Element_Level].WaitForMoreData=false;
     Element[Element_Level].IsComplete=true;
 
-    //ToShow
+    //TraceNode
     #if MEDIAINFO_TRACE
     if (Trace_Activated)
     {
-        if (Element[Element_Level-1].ToShow.Name.empty())
-            Element[Element_Level-1].ToShow.Name=__T("Unknown");
-        Element[Element_Level].ToShow.Size=Element_Offset;
-        Element[Element_Level].ToShow.Header_Size=0;
-        Element[Element_Level-1].ToShow.Header_Size=Header_Size;
+        if (Element[Element_Level-1].TraceNode.Name.empty())
+            Element[Element_Level-1].TraceNode.Name="Unknown";
+        Element[Element_Level].TraceNode.Size=Element_Offset;
+        Element[Element_Level].TraceNode.Header_Size=0;
+        Element[Element_Level-1].TraceNode.Header_Size=Header_Size;
         if (Element_Offset==0)
             Element_DoNotShow();
     }
@@ -2221,7 +2202,7 @@ void File__Analyze::Header_Fill_Code(int64u Code, const Ztring &Name)
     //Filling
     Element[Element_Level-1].Code=Code;
 
-    //ToShow
+    //TraceNode
     if (Config_Trace_Level!=0)
     {
         Element_Level--;
@@ -2265,12 +2246,12 @@ void File__Analyze::Header_Fill_Size(int64u Size)
         Element[Element_Level-1].Next=File_Offset+Buffer_Offset+Size;
     Element[Element_Level-1].IsComplete=true;
 
-    //ToShow
+    //TraceNode
     #if MEDIAINFO_TRACE
     if (Trace_Activated)
     {
-        Element[Element_Level-1].ToShow.Pos=File_Offset+Buffer_Offset;
-        Element[Element_Level-1].ToShow.Size=Element[Element_Level-1].Next-(File_Offset+Buffer_Offset);
+        Element[Element_Level-1].TraceNode.Pos=File_Offset+Buffer_Offset;
+        Element[Element_Level-1].TraceNode.Size=Element[Element_Level-1].Next-(File_Offset+Buffer_Offset);
     }
     #endif //MEDIAINFO_TRACE
 }
@@ -2389,9 +2370,9 @@ bool File__Analyze::Data_Manage()
 
     #if MEDIAINFO_TRACE
     if (Element_Level>0)
-        Element[Element_Level-1].ToShow.NoShow=Element[Element_Level].ToShow.NoShow; //If data must not be shown, we hide the header too
+        Element[Element_Level-1].TraceNode.NoShow=Element[Element_Level].TraceNode.NoShow; //If data must not be shown, we hide the header too
     else
-        Element[0].ToShow.NoShow=false; //This should never happen, but in case of
+        Element[0].TraceNode.NoShow=false; //This should never happen, but in case of
     #endif //MEDIAINFO_TRACE
     if (!Element_WantNextLevel)
         Element_End0(); //Element
@@ -2431,7 +2412,7 @@ void File__Analyze::Data_Accept (const char* ParserName)
         return;
 
     if (ParserName)
-        Info(Ztring(ParserName)+__T(", accepted"));
+        Info(Ztring(ParserName).To_UTF8()+", accepted");
 
     Accept(ParserName);
 }
@@ -2443,13 +2424,13 @@ void File__Analyze::Data_Finish (const char* ParserName)
 {
     if (ShouldContinueParsing)
     {
-        //if (ParserName)
-        //    Info(Ztring(ParserName)+__T(", wants to finish, but should continue parsing"));
+        if (ParserName)
+            Info(Ztring(ParserName).To_UTF8()+", wants to finish, but should continue parsing");
         return;
     }
 
     if (ParserName)
-        Info(Ztring(ParserName)+__T(", finished"));
+        Info(Ztring(ParserName).To_UTF8()+", finished");
 
     Finish();
 }
@@ -2464,7 +2445,7 @@ void File__Analyze::Data_Reject (const char* ParserName)
     Clear();
 
     if (ParserName)// && File_Offset+Buffer_Offset+Element_Size<File_Size)
-        Info(Ztring(ParserName)+__T(", rejected"));
+        Info(Ztring(ParserName).To_UTF8()+", rejected");
 }
 #endif //MEDIAINFO_TRACE
 
@@ -2477,18 +2458,18 @@ void File__Analyze::Data_GoTo (int64u GoTo_, const char* ParserName)
     if (ShouldContinueParsing)
     {
         if (ParserName)
-            Info(Ztring(ParserName)+__T(", wants to go to somewhere, but should continue parsing"));
+            Info(Ztring(ParserName).To_UTF8()+", wants to go to somewhere, but should continue parsing");
         return;
     }
 
     if (IsSub)
     {
         if (ParserName)
-            Info(Ztring(ParserName)+__T(", wants to go to somewhere, but is sub, waiting data"));
+            Info(Ztring(ParserName).To_UTF8()+", wants to go to somewhere, but is sub, waiting data");
         return;
     }
 
-    Info(Ztring(ParserName)+__T(", jumping to offset ")+Ztring::ToZtring(GoTo_, 16));
+    Info(Ztring(ParserName).To_UTF8()+", jumping to offset "+Ztring::ToZtring(GoTo_, 16).To_UTF8());
     GoTo(GoTo_);
 }
 #endif //MEDIAINFO_TRACE
@@ -2503,7 +2484,7 @@ void File__Analyze::Data_GoToFromEnd (int64u GoToFromEnd, const char* ParserName
     if (GoToFromEnd>File_Size)
     {
         if (ParserName)
-            Info(Ztring(ParserName)+__T(", wants to go to somewhere, but not valid"));
+            Info(Ztring(ParserName).To_UTF8()+", wants to go to somewhere, but not valid");
         return;
     }
 
@@ -2555,25 +2536,6 @@ Ztring Log_Offset (int64u OffsetToShow, MediaInfo_Config::trace_Format Config_Tr
 //---------------------------------------------------------------------------
 void File__Analyze::Element_Begin()
 {
-    #if MEDIAINFO_TRACE
-    if (Trace_Activated)
-    {
-        switch (Config_Trace_Format)
-        {
-            case MediaInfo_Config::Trace_Format_XML         :
-                                                                {
-                                                                size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
-                                                                size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
-                                                                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</data> />"
-                                                                    Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</data>");
-                                                                }
-                                                                Element[Element_Level].ToShow.Value.clear();
-                                                                break;
-            default                                         : ;
-        }
-    }
-    #endif //MEDIAINFO_TRACE
-
     //Level
     Element_Level++;
 
@@ -2584,19 +2546,12 @@ void File__Analyze::Element_Begin()
     Element[Element_Level].UnTrusted=Element[Element_Level-1].UnTrusted;
     Element[Element_Level].IsComplete=Element[Element_Level-1].IsComplete;
 
-    //ToShow
+    //TraceNode
     #if MEDIAINFO_TRACE
-    Element[Element_Level].ToShow.Pos=File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get(); //TODO: change this, used in Element_End0()
+    Element[Element_Level].TraceNode.Init();
+    Element[Element_Level].TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get(); //TODO: change this, used in Element_End0()
     if (Trace_Activated)
-    {
-        Element[Element_Level].ToShow.Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
-        Element[Element_Level].ToShow.Header_Size=0;
-        Element[Element_Level].ToShow.Name.clear();
-        Element[Element_Level].ToShow.Info.clear();
-        Element[Element_Level].ToShow.Details.clear();
-        Element[Element_Level].ToShow.Value.clear();
-        Element[Element_Level].ToShow.NoShow=false;
-    }
+        Element[Element_Level].TraceNode.Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
     #endif //MEDIAINFO_TRACE
 }
 
@@ -2604,23 +2559,6 @@ void File__Analyze::Element_Begin()
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_Begin(const Ztring &Name)
 {
-    if (Trace_Activated)
-    {
-        switch (Config_Trace_Format)
-        {
-            case MediaInfo_Config::Trace_Format_XML         :
-                                                                {
-                                                                size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
-                                                                size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
-                                                                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</data> />"
-                                                                    Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</data>");
-                                                                }
-                                                                Element[Element_Level].ToShow.Value.clear();
-                                                                break;
-            default                                         : ;
-        }
-    }
-
     //Level
     Element_Level++;
 
@@ -2631,17 +2569,13 @@ void File__Analyze::Element_Begin(const Ztring &Name)
     Element[Element_Level].UnTrusted=Element[Element_Level-1].UnTrusted;
     Element[Element_Level].IsComplete=Element[Element_Level-1].IsComplete;
 
-    //ToShow
-    Element[Element_Level].ToShow.Pos=File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get(); //TODO: change this, used in Element_End0()
+    //TraceNode
+    Element[Element_Level].TraceNode.Init();
+    Element[Element_Level].TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get(); //TODO: change this, used in Element_End0()
     if (Trace_Activated)
     {
-        Element[Element_Level].ToShow.Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
-        Element[Element_Level].ToShow.Header_Size=0;
+        Element[Element_Level].TraceNode.Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
         Element_Name(Name);
-        Element[Element_Level].ToShow.Info.clear();
-        Element[Element_Level].ToShow.Details.clear();
-        Element[Element_Level].ToShow.Value.clear();
-        Element[Element_Level].ToShow.NoShow=false;
     }
 }
 #endif //MEDIAINFO_TRACE
@@ -2650,23 +2584,6 @@ void File__Analyze::Element_Begin(const Ztring &Name)
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_Begin(const char* Name)
 {
-    if (Trace_Activated)
-    {
-        switch (Config_Trace_Format)
-        {
-            case MediaInfo_Config::Trace_Format_XML         :
-                                                                {
-                                                                size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
-                                                                size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
-                                                                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</data> />"
-                                                                    Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</data>");
-                                                                }
-                                                                Element[Element_Level].ToShow.Value.clear();
-                                                                break;
-            default                                         : ;
-        }
-    }
-
     //Level
     Element_Level++;
 
@@ -2677,17 +2594,13 @@ void File__Analyze::Element_Begin(const char* Name)
     Element[Element_Level].UnTrusted=Element[Element_Level-1].UnTrusted;
     Element[Element_Level].IsComplete=Element[Element_Level-1].IsComplete;
 
-    //ToShow
-    Element[Element_Level].ToShow.Pos=File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get(); //TODO: change this, used in Element_End0()
+    //TraceNode
+    Element[Element_Level].TraceNode.Init();
+    Element[Element_Level].TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get(); //TODO: change this, used in Element_End0()
     if (Trace_Activated)
     {
-        Element[Element_Level].ToShow.Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
-        Element[Element_Level].ToShow.Header_Size=0;
+        Element[Element_Level].TraceNode.Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
         Element_Name(Name);
-        Element[Element_Level].ToShow.Info.clear();
-        Element[Element_Level].ToShow.Details.clear();
-        Element[Element_Level].ToShow.Value.clear();
-        Element[Element_Level].ToShow.NoShow=false;
     }
 }
 #endif //MEDIAINFO_TRACE
@@ -2696,7 +2609,7 @@ void File__Analyze::Element_Begin(const char* Name)
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_Name(const Ztring &Name)
 {
-    //ToShow
+    //TraceNode
     if (Trace_Activated)
     {
         if (!Name.empty())
@@ -2707,10 +2620,10 @@ void File__Analyze::Element_Name(const Ztring &Name)
             Name2.FindAndReplace(__T("\n"), __T("_"), 0, Ztring_Recursive);
             if (Name2[0]==__T(' '))
                 Name2[0]=__T('_');
-            Element[Element_Level].ToShow.Name=Name2;
+            Element[Element_Level].TraceNode.Name=Name2.To_UTF8();
         }
         else
-            Element[Element_Level].ToShow.Name=__T("(Empty)");
+            Element[Element_Level].TraceNode.Name="(Empty)";
     }
 }
 #endif //MEDIAINFO_TRACE
@@ -2719,52 +2632,12 @@ void File__Analyze::Element_Name(const Ztring &Name)
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_Info(const Ztring &Parameter)
 {
-    //Coherancy
-    if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()) || Element[Element_Level].ToShow.Details.size()>64*1024*1024)
-        return;
-
     //Needed?
     if (Config_Trace_Level<=0.7)
         return;
 
-    //ToShow
-    Ztring Parameter2(Parameter);
-    Parameter2.FindAndReplace(__T("\r\n"), __T(" / "));
-    Parameter2.FindAndReplace(__T("\r"), __T(" / "));
-    Parameter2.FindAndReplace(__T("\n"), __T(" / "));
-    switch (Config_Trace_Format)
-    {
-        case MediaInfo_Config::Trace_Format_Tree        :
-        case MediaInfo_Config::Trace_Format_CSV         : Element[Element_Level].ToShow.Info+=__T(" - "); break;
-        case MediaInfo_Config::Trace_Format_XML         :
-                                                            {
-                                                                     if (Element[Element_Level].ToShow.Info.find(__T(" info7=\""))!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info8=\"");
-                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" info6=\""))!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info7=\"");
-                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" info5=\""))!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info6=\"");
-                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" info4=\""))!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info5=\"");
-                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" info3=\""))!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info4=\"");
-                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" info2=\""))!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info3=\"");
-                                                                else if (Element[Element_Level].ToShow.Info.find(__T(" info=\""))!=string::npos)
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info2=\"");
-                                                                else
-                                                                    Element[Element_Level].ToShow.Info+=__T(" info=\"");
-                                                            }
-                                                            break;
-        default                                         : ;
-    }
     size_t Modified;
-    Element[Element_Level].ToShow.Info+=MediaInfo_Internal::Xml_Content_Escape(Parameter2, Modified);
-    switch (Config_Trace_Format)
-    {
-        case MediaInfo_Config::Trace_Format_XML         : Element[Element_Level].ToShow.Info+=__T("\""); break;
-        default                                         : ;
-    }
+    Element[Element_Level].TraceNode.Infos.push_back(MediaInfo_Internal::Xml_Content_Escape(Parameter, Modified).To_UTF8());
 }
 #endif //MEDIAINFO_TRACE
 
@@ -2772,27 +2645,22 @@ void File__Analyze::Element_Info(const Ztring &Parameter)
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_Parser(const Ztring &Parameter)
 {
-    //Coherancy
-    if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()) || Element[Element_Level].ToShow.Details.size()>64*1024*1024)
-        return;
-
     //Needed?
     if (Config_Trace_Level<=0.7)
         return;
 
-    //ToShow
-    switch (Config_Trace_Format)
-    {
-        case MediaInfo_Config::Trace_Format_XML         :
-                                                            {
-                                                            Element[Element_Level].ToShow.Info+=__T(" parser=\"");
-                                                            size_t Modified;
-                                                            Element[Element_Level].ToShow.Info+=MediaInfo_Internal::Xml_Content_Escape(Parameter, Modified);
-                                                            Element[Element_Level].ToShow.Info+=__T("\"");
-                                                            }
-                                                            break;
-        default                                         : ;
-    }
+    Element[Element_Level].TraceNode.Parser = Parameter.To_UTF8();
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+element_details::Element_Node *File__Analyze::Get_Trace_Node(size_t level)
+{
+    if (level > Element_Level)
+        return NULL;
+
+    return &Element[level].TraceNode;
 }
 #endif //MEDIAINFO_TRACE
 
@@ -2800,12 +2668,12 @@ void File__Analyze::Element_Parser(const Ztring &Parameter)
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_End(const Ztring &Name)
 {
-    //ToShow
+    //TraceNode
     if (Trace_Activated)
     {
-        Element[Element_Level].ToShow.Size=Element[Element_Level].Next-Element[Element_Level].ToShow.Pos;
+        Element[Element_Level].TraceNode.Size=Element[Element_Level].Next-Element[Element_Level].TraceNode.Pos;
         if (!Name.empty())
-            Element[Element_Level].ToShow.Name=Name;
+            Element[Element_Level].TraceNode.Name=Name.To_UTF8();
     }
 
     Element_End_Common_Flush();
@@ -2822,7 +2690,7 @@ void File__Analyze::Element_End_Common_Flush()
     #if MEDIAINFO_TRACE
     //Size if not filled
     if (File_Offset+Buffer_Offset+Element_Offset+BS->Offset_Get()<Element[Element_Level].Next)
-        Element[Element_Level].ToShow.Size=File_Offset+Buffer_Offset+Element_Offset+BS->Offset_Get()-Element[Element_Level].ToShow.Pos;
+        Element[Element_Level].TraceNode.Size=File_Offset+Buffer_Offset+Element_Offset+BS->Offset_Get()-Element[Element_Level].TraceNode.Pos;
     #endif //MEDIAINFO_TRACE
 
     //Level
@@ -2845,85 +2713,17 @@ void File__Analyze::Element_End_Common_Flush()
 //---------------------------------------------------------------------------
 void File__Analyze::Element_End_Common_Flush_Details()
 {
-    if (Trace_Activated)
+    if (Trace_Activated)// && Config_Trace_Level!=0)
     {
-        if (!Element[Element_Level+1].WaitForMoreData && (Element[Element_Level+1].IsComplete || !Element[Element_Level+1].UnTrusted) && !Element[Element_Level+1].ToShow.NoShow)// && Config_Trace_Level!=0 && Element[Element_Level].ToShow.Details.size()<=64*1024*1024)
+        if (!Element[Element_Level+1].WaitForMoreData && (Element[Element_Level+1].IsComplete || !Element[Element_Level+1].UnTrusted) && !Element[Element_Level+1].TraceNode.NoShow)
         {
             //Element
-            if (!Element[Element_Level+1].ToShow.Name.empty())
-            {
-                if (!Element[Element_Level].ToShow.Details.empty())
-                    Element[Element_Level].ToShow.Details+=Config_LineSeparator;
-                Element[Element_Level].ToShow.Details+=Element_End_Common_Flush_Build();
-                Element[Element_Level+1].ToShow.Name.clear();
-            }
+            Element[Element_Level].TraceNode.Add_Child(&Element[Element_Level+1].TraceNode);
 
             //Info
-            if (!Element[Element_Level+1].ToShow.Details.empty())
-            {
-                if (!Element[Element_Level].ToShow.Details.empty())
-                    Element[Element_Level].ToShow.Details+=Config_LineSeparator;
-                Element[Element_Level].ToShow.Details+=Element[Element_Level+1].ToShow.Details;
-                Element[Element_Level].ToShow.Value=Element[Element_Level+1].ToShow.Value;
-                Element[Element_Level+1].ToShow.Details.clear();
-                Element[Element_Level+1].ToShow.Value.clear();
-
-                //
-                switch (Config_Trace_Format)
-                {
-                    case MediaInfo_Config::Trace_Format_XML         :
-                                                                        {
-                                                                        size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
-                                                                        size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
-                                                                        if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</data> />"
-                                                                            Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</data>");
-                                                                        Element[Element_Level].ToShow.Value.clear();
-                                                                        //if (!Element_WantNextLevel)
-                                                                        {
-                                                                            Element[Element_Level].ToShow.Details+=Config_LineSeparator;
-                                                                            Element[Element_Level].ToShow.Details.resize(Element[Element_Level].ToShow.Details.size()+(Element_Level_Base+Element_Level+1)*4, __T(' '));
-                                                                            Element[Element_Level].ToShow.Details+=__T("</block>");
-                                                                            //Retrieving the beginning of the corresponding XML element
-                                                                            Ztring ToFind=Config_LineSeparator;
-                                                                            ToFind.resize(ToFind.size()+(Element_Level_Base+Element_Level+1)*4, __T(' '));
-                                                                            ToFind+=__T("<data");
-                                                                            size_t item_Pos=Element[Element_Level].ToShow.Details.rfind(ToFind);
-                                                                            if (item_Pos==string::npos)
-                                                                            {
-                                                                                ToFind.erase(ToFind.begin(), ToFind.begin()+MediaInfoLib::Config.LineSeparator_Get().size());
-                                                                                if (Element[Element_Level].ToShow.Details.find(ToFind)==0)
-                                                                                    item_Pos=0;
-                                                                            }
-                                                                            if (item_Pos!=string::npos)
-                                                                                {
-                                                                                    Element[Element_Level].ToShow.Details.erase(item_Pos+ToFind.size()-4, 4);
-                                                                                    Element[Element_Level].ToShow.Details.insert(item_Pos+ToFind.size()-4, __T("block"));
-                                                                                }
-                                                                        }
-                                                                        }
-                                                                        break;
-                    default                                         : ;
-                }
-            }
-            else
-            {
-                switch (Config_Trace_Format)
-                {
-                    case MediaInfo_Config::Trace_Format_XML         :
-                                                                        {
-                                                                        size_t Start=Element[Element_Level].ToShow.Details.rfind(Config_LineSeparator);
-                                                                        if (Start==(size_t)-1)
-                                                                            Start=0;
-
-                                                                        //Looking for not closed element (=actually no data in it)
-                                                                        size_t DataPos=Element[Element_Level].ToShow.Details.find(__T("</data>"), Start);
-                                                                        if (DataPos==(size_t)-1)
-                                                                            Element[Element_Level].ToShow.Details.resize(Start);
-                                                                        }
-                                                                        break;
-                    default                                         : ;
-                }
-            }
+            if (!Element[Element_Level+1].TraceNode.Value.empty())
+                Element[Element_Level].TraceNode.Value=Element[Element_Level+1].TraceNode.Value;
+            Element[Element_Level+1].TraceNode.Init();
         }
     }
 }
@@ -2943,7 +2743,7 @@ Ztring File__Analyze::Element_End_Common_Flush_Build()
     }
     if (Config_Trace_Level>0.7)
     {
-        ToReturn+=Log_Offset(Element[Element_Level+1].ToShow.Pos, Config_Trace_Format);
+        ToReturn+=Log_Offset(Element[Element_Level+1].TraceNode.Pos, Config_Trace_Format);
     }
 
     //Name
@@ -2958,7 +2758,7 @@ Ztring File__Analyze::Element_End_Common_Flush_Build()
         case MediaInfo_Config::Trace_Format_XML         : ToReturn+=__T( " name=\""); break;
         default                                         : ;
     }
-    ToReturn+=Element[Element_Level+1].ToShow.Name;
+    ToReturn+=Ztring().From_UTF8(Element[Element_Level+1].TraceNode.Name);
     switch (Config_Trace_Format)
     {
         case MediaInfo_Config::Trace_Format_XML         : ToReturn+=__T( "\""); break;
@@ -2966,8 +2766,8 @@ Ztring File__Analyze::Element_End_Common_Flush_Build()
     }
 
     //Info
-    ToReturn+=Element[Element_Level+1].ToShow.Info;
-    Element[Element_Level+1].ToShow.Info.clear();
+    // ToReturn+=Element[Element_Level+1].TraceNode.Infos;
+    // Element[Element_Level+1].TraceNode.Infos.clear();
 
     //Size
     if (Config_Trace_Level>0.3)
@@ -2985,12 +2785,12 @@ Ztring File__Analyze::Element_End_Common_Flush_Build()
                     break;
             default                                         : ;
         }
-        ToReturn+=Ztring::ToZtring(Element[Element_Level+1].ToShow.Size);
+        ToReturn+=Ztring::ToZtring(Element[Element_Level+1].TraceNode.Size);
         /*
-        if (Element[Element_Level+1].ToShow.Header_Size>0)
+        if (Element[Element_Level+1].TraceNode.Header_Size>0)
         {
             ToReturn+=__T("/");
-            ToReturn+=Ztring::ToZtring(Element[Element_Level+1].ToShow.Size-Element[Element_Level+1].ToShow.Header_Size);
+            ToReturn+=Ztring::ToZtring(Element[Element_Level+1].TraceNode.Size-Element[Element_Level+1].TraceNode.Header_Size);
         }
         */
         switch (Config_Trace_Format)
@@ -3013,7 +2813,7 @@ void File__Analyze::Element_Prepare (int64u Size)
     Element_Offset=0;
     Element_Size=Size;
     #if MEDIAINFO_TRACE
-    Element[Element_Level].ToShow.Size=Size;
+    Element[Element_Level].TraceNode.Size=Size;
     #endif //MEDIAINFO_TRACE
 }
 //***************************************************************************
@@ -3022,111 +2822,7 @@ void File__Analyze::Element_Prepare (int64u Size)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_TRACE
-void File__Analyze::Param(const Ztring& Parameter, const Ztring& Value)
-{
-    if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()))
-        return;
 
-    //Position
-    int64u Pos=Element_Offset+BS->OffsetBeforeLastCall_Get();
-
-    //Coherancy
-    if (Element[Element_Level].UnTrusted)
-        return;
-
-    //Line separator
-    if (!Element[Element_Level].ToShow.Details.empty())
-    {
-        switch (Config_Trace_Format)
-        {
-            case MediaInfo_Config::Trace_Format_XML         :
-                                                                {
-                                                                size_t Details_lt_Pos=Element[Element_Level].ToShow.Details.rfind(__T("<"));
-                                                                size_t Details_gt_Pos=Element[Element_Level].ToShow.Details.rfind(__T(">"));
-                                                                if (Details_lt_Pos!=string::npos && (Details_lt_Pos+1>=Element[Element_Level].ToShow.Details.size() || Details_gt_Pos==string::npos || (Details_lt_Pos>Details_gt_Pos && Element[Element_Level].ToShow.Details[Details_lt_Pos+1]!=__T('/')))) //else there is content like "</data> />"
-                                                                    Element[Element_Level].ToShow.Details+=__T(">")+Element[Element_Level].ToShow.Value+__T("</data>");
-                                                                Element[Element_Level].ToShow.Value=Value;
-                                                                }
-                                                                break;
-            default: ;
-        }
-        Element[Element_Level].ToShow.Details+=Config_LineSeparator;
-    }
-
-    //Prefix
-    switch (Config_Trace_Format)
-    {
-        case MediaInfo_Config::Trace_Format_XML         :
-                    Element[Element_Level].ToShow.Details.resize(Element[Element_Level].ToShow.Details.size()+(Element_Level_Base+Element_Level+1)*4, __T(' '));
-                    break;
-        default                                         : ;
-    }
-
-    //Show Offset
-    if (Config_Trace_Level>0.7)
-    {
-        Element[Element_Level].ToShow.Details+=Log_Offset(Pos==(int64u)-1?Pos:(File_Offset+Buffer_Offset+Pos), Config_Trace_Format);
-    }
-
-    //Show Parameter+Value
-    switch (Config_Trace_Format)
-    {
-        case MediaInfo_Config::Trace_Format_Tree        :
-                    {
-                    const size_t Padding_Value=40;
-
-                    //Show Parameter
-                    Ztring Param; Param=Parameter;
-                    if (Param.size()>Padding_Value) Param.resize(Padding_Value);
-                    Element[Element_Level].ToShow.Details.resize(Element[Element_Level].ToShow.Details.size()+Element_Level_Base+Element_Level, __T(' '));
-                    Element[Element_Level].ToShow.Details+=Param;
-
-                    //Show Value
-                    if (!Value.empty())
-                    {
-                        Element[Element_Level].ToShow.Details+=__T(": ");
-                        Element[Element_Level].ToShow.Details.resize(Element[Element_Level].ToShow.Details.size()+Padding_Value-Param.size()-Element_Level+1, __T(' '));
-                        Ztring Value2(Value);
-                        Value2.FindAndReplace(__T("\r\n"), __T(" / "), 0, Ztring_Recursive);
-                        Value2.FindAndReplace(__T("\r"), __T(" / "), 0, Ztring_Recursive);
-                        Value2.FindAndReplace(__T("\n"), __T(" / "), 0, Ztring_Recursive);
-                        Element[Element_Level].ToShow.Details+=Value2;
-                    }
-                    }
-                    break;
-        case MediaInfo_Config::Trace_Format_CSV         :
-                    Element[Element_Level].ToShow.Details+=__T("T,");
-                    Element[Element_Level].ToShow.Details+=Ztring::ToZtring(Element_Level_Base+Element_Level);
-                    Element[Element_Level].ToShow.Details+=__T(',');
-                    Element[Element_Level].ToShow.Details+=Parameter;
-                    Element[Element_Level].ToShow.Details+=__T(',');
-                    Element[Element_Level].ToShow.Details+=Value;
-                    break;
-        case MediaInfo_Config::Trace_Format_XML         :
-                    Element[Element_Level].ToShow.Details+=__T(" name=\"");
-                    Element[Element_Level].ToShow.Details+=Parameter;
-                    Element[Element_Level].ToShow.Details+=__T("\"");
-                    {
-                        size_t Max = Value.find(__T(" (0x"));
-                        size_t Modified;
-                        if (Max==string::npos)
-                            Element[Element_Level].ToShow.Value=MediaInfo_Internal::Xml_Content_Escape(Value, Modified);
-                        else
-                            Element[Element_Level].ToShow.Value=MediaInfo_Internal::Xml_Content_Escape(Value.substr(0, Max), Modified);
-                        if (Modified==1 && !MediaInfoLib::Config.SkipBinaryData_Get()) //Base64
-                            Element[Element_Level].ToShow.Details+=__T(" dt=\"binary.base64\"");
-                        if (Modified==1 && MediaInfoLib::Config.SkipBinaryData_Get())
-                            Element[Element_Level].ToShow.Value=__T("(Binary data)");
-                    }
-                    if (!Element_Level) //Close function will not be called. TODO: find a better method
-                    {
-                        Element_Begin();
-                        Element_End();
-                    }
-                    break;
-        default                                         : ;
-    }
-}
 #endif //MEDIAINFO_TRACE
 
 //***************************************************************************
@@ -3135,7 +2831,7 @@ void File__Analyze::Param(const Ztring& Parameter, const Ztring& Value)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_TRACE
-void File__Analyze::Info(const Ztring& Value, size_t Element_Level_Minus)
+void File__Analyze::Info(const std::string& Value, size_t Element_Level_Minus)
 {
     if (Config_Trace_Format==MediaInfo_Config::Trace_Format_CSV)
         return; //Do not display info
@@ -3143,55 +2839,17 @@ void File__Analyze::Info(const Ztring& Value, size_t Element_Level_Minus)
     //Handling a different level (only Element_Level_Minus to 1 is currently well supported)
     size_t Element_Level_Final=Element_Level;
     if (Element_Level_Minus<=Element_Level)
-    {
-        if (Element_Level_Minus==1)
-        {
-            Element_Level--;
-            Element_End_Common_Flush_Details();
-            Element_Level++;
-        }
         Element_Level_Final-=Element_Level_Minus;
-    }
 
     if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()))
         return;
 
-    //Coherancy
-    if (Element[Element_Level_Final].UnTrusted)
-        return;
-
-    //Line separator
-    if (!Element[Element_Level_Final].ToShow.Details.empty() && Element[Element_Level_Final].ToShow.Value.empty())
-        Element[Element_Level_Final].ToShow.Details+=Config_LineSeparator;
-
-    //Preparing
-    switch (Config_Trace_Format)
-    {
-        case MediaInfo_Config::Trace_Format_XML         : return;
-        default                                         : ;
-    }
-    Ztring ToShow; ToShow.resize(Element_Level_Final, __T(' '));
-    ToShow+=__T("---   ");
-    ToShow+=Value;
-    ToShow+=__T("   ---");
-    Ztring Separator; Separator.resize(Element_Level_Final, __T(' '));
-    Separator.resize(ToShow.size(), __T('-'));
-
-    //Show Offset
-    Ztring Offset;
-    if (Config_Trace_Level>0.7)
-        Offset=Log_Offset(File_Offset+Buffer_Offset+Element_Offset+BS->Offset_Get(), Config_Trace_Format);
-    Offset.resize(Offset.size()+Element_Level_Base, __T(' '));
-
-    //Show Value
-    Element[Element_Level_Final].ToShow.Details+=Offset;
-    Element[Element_Level_Final].ToShow.Details+=Separator;
-    Element[Element_Level_Final].ToShow.Details+=Config_LineSeparator;
-    Element[Element_Level_Final].ToShow.Details+=Offset;
-    Element[Element_Level_Final].ToShow.Details+=ToShow;
-    Element[Element_Level_Final].ToShow.Details+=Config_LineSeparator;
-    Element[Element_Level_Final].ToShow.Details+=Offset;
-    Element[Element_Level_Final].ToShow.Details+=Separator;
+    element_details::Element_Node node;
+    node.Init();
+    node.Name = Value;
+    node.IsCat = true;
+    node.Pos = File_Offset+Buffer_Offset+Element_Offset+BS->Offset_Get();
+    Element[Element_Level].TraceNode.Add_Child(&node);
 }
 #endif //MEDIAINFO_TRACE
 
@@ -3202,69 +2860,75 @@ void File__Analyze::Param_Info (const Ztring &Text)
     //Coherancy
     if (Element[Element_Level].UnTrusted)
         return;
-    if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()) || Element[Element_Level].ToShow.Details.size()>64*1024*1024)
-        return;
+    // if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()) || Element[Element_Level].TraceNode.Details.size()>64*1024*1024)
+    //     return;
 
     //Needed?
     if (Config_Trace_Level<=0.7)
         return;
 
     //Filling
-    size_t End=Element[Element_Level].ToShow.Details.size();
-    switch (Config_Trace_Format)
-    {
-        case MediaInfo_Config::Trace_Format_Tree        :
-        case MediaInfo_Config::Trace_Format_CSV         : Element[Element_Level].ToShow.Details+=__T(" - "); break;
-        case MediaInfo_Config::Trace_Format_XML         :
-                                                            {
-                                                                size_t Start=Element[Element_Level].ToShow.Details.rfind(Config_LineSeparator);
-                                                                if (Start==(size_t)-1)
-                                                                    Start=0;
-                                                                End=Element[Element_Level].ToShow.Details.find(__T('>'), Start);
-                                                                if (End==(size_t)-1)
-                                                                    End=Element[Element_Level].ToShow.Details.size();
+    // size_t End=Element[Element_Level].TraceNode.Details.size();
+    // switch (Config_Trace_Format)
+    // {
+    //     case MediaInfo_Config::Trace_Format_Tree        :
+    //     case MediaInfo_Config::Trace_Format_CSV         : Element[Element_Level].TraceNode.Details+=__T(" - "); break;
+    //     case MediaInfo_Config::Trace_Format_XML         :
+    //                                                         {
+    //                                                             size_t Start=Element[Element_Level].TraceNode.Details.rfind(Config_LineSeparator);
+    //                                                             if (Start==(size_t)-1)
+    //                                                                 Start=0;
+    //                                                             End=Element[Element_Level].TraceNode.Details.find(__T('>'), Start);
+    //                                                             if (End==(size_t)-1)
+    //                                                                 End=Element[Element_Level].TraceNode.Details.size();
 
-                                                                     if (Element[Element_Level].ToShow.Details.find(__T(" info7=\""), Start)!=string::npos)
-                                                                    Element[Element_Level].ToShow.Details.insert(End, __T(" info8=\""));
-                                                                else if (Element[Element_Level].ToShow.Details.find(__T(" info6=\""), Start)!=string::npos)
-                                                                    Element[Element_Level].ToShow.Details.insert(End, __T(" info7=\""));
-                                                                else if (Element[Element_Level].ToShow.Details.find(__T(" info5=\""), Start)!=string::npos)
-                                                                    Element[Element_Level].ToShow.Details.insert(End, __T(" info6=\""));
-                                                                else if (Element[Element_Level].ToShow.Details.find(__T(" info4=\""), Start)!=string::npos)
-                                                                    Element[Element_Level].ToShow.Details.insert(End, __T(" info5=\""));
-                                                                else if (Element[Element_Level].ToShow.Details.find(__T(" info3=\""), Start)!=string::npos)
-                                                                    Element[Element_Level].ToShow.Details.insert(End, __T(" info4=\""));
-                                                                else if (Element[Element_Level].ToShow.Details.find(__T(" info2=\""), Start)!=string::npos)
-                                                                    Element[Element_Level].ToShow.Details.insert(End, __T(" info3=\""));
-                                                                else if (Element[Element_Level].ToShow.Details.find(__T(" info=\""), Start)!=string::npos)
-                                                                    Element[Element_Level].ToShow.Details.insert(End, __T(" info2=\""));
-                                                                else
-                                                                    Element[Element_Level].ToShow.Details.insert(End, __T(" info=\""));
-                                                                End=Element[Element_Level].ToShow.Details.find(__T('>'), Start);
-                                                                if (End==(size_t)-1)
-                                                                    End=Element[Element_Level].ToShow.Details.size();
-                                                            }
-                                                            break;
-        default                                         : ;
-    }
+    //                                                                  if (Element[Element_Level].TraceNode.Details.find(__T(" info7=\""), Start)!=string::npos)
+    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info8=\""));
+    //                                                             else if (Element[Element_Level].TraceNode.Details.find(__T(" info6=\""), Start)!=string::npos)
+    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info7=\""));
+    //                                                             else if (Element[Element_Level].TraceNode.Details.find(__T(" info5=\""), Start)!=string::npos)
+    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info6=\""));
+    //                                                             else if (Element[Element_Level].TraceNode.Details.find(__T(" info4=\""), Start)!=string::npos)
+    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info5=\""));
+    //                                                             else if (Element[Element_Level].TraceNode.Details.find(__T(" info3=\""), Start)!=string::npos)
+    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info4=\""));
+    //                                                             else if (Element[Element_Level].TraceNode.Details.find(__T(" info2=\""), Start)!=string::npos)
+    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info3=\""));
+    //                                                             else if (Element[Element_Level].TraceNode.Details.find(__T(" info=\""), Start)!=string::npos)
+    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info2=\""));
+    //                                                             else
+    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info=\""));
+    //                                                             End=Element[Element_Level].TraceNode.Details.find(__T('>'), Start);
+    //                                                             if (End==(size_t)-1)
+    //                                                                 End=Element[Element_Level].TraceNode.Details.size();
+    //                                                         }
+    //                                                         break;
+    //     default                                         : ;
+    // }
     size_t Modified;
-    Element[Element_Level].ToShow.Details.insert(End, MediaInfo_Internal::Xml_Content_Escape(Text, Modified));
-    switch (Config_Trace_Format)
-    {
-        case MediaInfo_Config::Trace_Format_XML         :
-                                                            {
-                                                                size_t Start=Element[Element_Level].ToShow.Details.rfind(Config_LineSeparator);
-                                                                if (Start==(size_t)-1)
-                                                                    Start=0;
-                                                                End=Element[Element_Level].ToShow.Details.find(__T('>'), Start);
-                                                                if (End==(size_t)-1)
-                                                                    End=Element[Element_Level].ToShow.Details.size();
+    std::string info;
+    info.assign(MediaInfo_Internal::Xml_Content_Escape(Text, Modified).To_UTF8());
+    int32s child = Element[Element_Level].TraceNode.Current_Child;
+    if (child >= 0 && Element[Element_Level].TraceNode.Children[child])
+        Element[Element_Level].TraceNode.Children[child]->Infos.push_back(info);
+    else
+        Element[Element_Level].TraceNode.Infos.push_back(info);
+    // switch (Config_Trace_Format)
+    // {
+    //     case MediaInfo_Config::Trace_Format_XML         :
+    //                                                         {
+    //                                                             size_t Start=Element[Element_Level].TraceNode.Details.rfind(Config_LineSeparator);
+    //                                                             if (Start==(size_t)-1)
+    //                                                                 Start=0;
+    //                                                             End=Element[Element_Level].TraceNode.Details.find(__T('>'), Start);
+    //                                                             if (End==(size_t)-1)
+    //                                                                 End=Element[Element_Level].TraceNode.Details.size();
 
-                                                                Element[Element_Level].ToShow.Details.insert(End, __T("\"")); break;
-                                                            }
-                                                            break;
-        default                                         : ;
-    }
+    //                                                             Element[Element_Level].TraceNode.Details.insert(End, __T("\"")); break;
+    //                                                         }
+    //                                                         break;
+    //     default                                         : ;
+    // }
 }
 #endif //MEDIAINFO_TRACE
 
@@ -3359,7 +3023,7 @@ void File__Analyze::Accept ()
                                                                 bool MustElementBegin=Element_Level?true:false;
                                                                 if (Element_Level>0)
                                                                     Element_End0(); //Element
-                                                                Info(ParserName+__T(", accepted"));
+                                                                Info(ParserName.To_UTF8()+", accepted");
                                                                 if (MustElementBegin)
                                                                     Element_Level++;
                                                             }
@@ -3445,7 +3109,7 @@ void File__Analyze::Fill ()
                                                                 bool MustElementBegin=Element_Level?true:false;
                                                                 if (Element_Level>0)
                                                                     Element_End0(); //Element
-                                                                Info(ParserName+__T(", filling"));
+                                                                Info(ParserName.To_UTF8()+", filling");
                                                                 if (MustElementBegin)
                                                                     Element_Level++;
                                                             }
@@ -3490,20 +3154,14 @@ void File__Analyze::Finish ()
     if (ShouldContinueParsing || Config->ParseSpeed==1)
     {
         #if MEDIAINFO_TRACE
-        switch (Config_Trace_Format)
+        if (!ParserName.empty())
         {
-            case MediaInfo_Config::Trace_Format_Tree       :
-                                                            if (!ParserName.empty())
-                                                            {
-                                                                bool MustElementBegin=Element_Level?true:false;
-                                                                if (Element_Level>0)
-                                                                    Element_End0(); //Element
-                                                                //Info(Ztring(ParserName)+__T(", wants to finish, but should continue parsing"));
-                                                                if (MustElementBegin)
-                                                                    Element_Level++;
-                                                            }
-                                                            break;
-            default                                        : ;
+            bool MustElementBegin=Element_Level?true:false;
+            if (Element_Level>0)
+                Element_End0(); //Element
+            Info(Ztring(ParserName).To_UTF8()+", wants to finish, but should continue parsing");
+            if (MustElementBegin)
+                Element_Level++;
         }
         #endif //MEDIAINFO_TRACE
 
@@ -3540,7 +3198,7 @@ void File__Analyze::ForceFinish ()
                                                                 bool MustElementBegin=Element_Level?true:false;
                                                                 if (Element_Level>0)
                                                                     Element_End0(); //Element
-                                                                Info(ParserName+__T(", finished"));
+                                                                Info(ParserName.To_UTF8()+", finished");
                                                                 if (MustElementBegin)
                                                                     Element_Level++;
                                                             }
@@ -3635,7 +3293,7 @@ void File__Analyze::Reject ()
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(Ztring(ParserName)+__T(", rejected"));
+            Info(Ztring(ParserName).To_UTF8()+", rejected");
             if (MustElementBegin)
                 Element_Level++;
         }
@@ -3680,7 +3338,7 @@ void File__Analyze::GoTo (int64u GoTo, const char* ParserName)
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(Ztring(ParserName)+__T(", wants to go to somewhere, but should continue parsing"));
+            Info(Ztring(ParserName).To_UTF8()+", wants to go to somewhere, but should continue parsing");
             if (MustElementBegin)
                 Element_Level++;
         }
@@ -3694,7 +3352,7 @@ void File__Analyze::GoTo (int64u GoTo, const char* ParserName)
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(Ztring(ParserName)+__T(", wants to go to somewhere, but is sub, waiting data"));
+            Info(Ztring(ParserName).To_UTF8()+", wants to go to somewhere, but is sub, waiting data");
             if (MustElementBegin)
                 Element_Level++;
         }
@@ -3710,7 +3368,7 @@ void File__Analyze::GoTo (int64u GoTo, const char* ParserName)
             default                                         : //TODO: find a better way to display jumps, both XML and Text
         if (Element_Level>0)
             Element_End0(); //Element
-        Info(Ztring(ParserName)+__T(", jumping to offset ")+Ztring::ToZtring(GoTo, 16));
+        Info(Ztring(ParserName).To_UTF8()+", jumping to offset "+Ztring::ToZtring(GoTo, 16).To_UTF8());
         if (MustElementBegin)
             Element_Level++; //Element
         }
@@ -3769,7 +3427,7 @@ void File__Analyze::GoToFromEnd (int64u GoToFromEnd, const char* ParserName)
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(Ztring(ParserName)+__T(", wants to go to somewhere, but not valid"));
+            Info(Ztring(ParserName).To_UTF8()+", wants to go to somewhere, but not valid");
             if (MustElementBegin)
                 Element_Level++;
         }
@@ -3875,7 +3533,7 @@ void File__Analyze::Element_DoNotTrust ()
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_DoNotShow ()
 {
-    Element[Element_Level].ToShow.NoShow=true;
+    Element[Element_Level].TraceNode.NoShow=true;
 }
 #endif //MEDIAINFO_TRACE
 
@@ -3883,7 +3541,7 @@ void File__Analyze::Element_DoNotShow ()
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_Show ()
 {
-    Element[Element_Level].ToShow.NoShow=false;
+    Element[Element_Level].TraceNode.NoShow=false;
 }
 #endif //MEDIAINFO_TRACE
 
@@ -3891,7 +3549,7 @@ void File__Analyze::Element_Show ()
 #if MEDIAINFO_TRACE
 bool File__Analyze::Element_Show_Get ()
 {
-    return !Element[Element_Level].ToShow.NoShow;
+    return !Element[Element_Level].TraceNode.NoShow;
 }
 #endif //MEDIAINFO_TRACE
 
@@ -3902,12 +3560,7 @@ void File__Analyze::Element_Show_Add (const Ztring &ToShow)
     if (ToShow.empty())
         return;
 
-    //Line separator
-    if (!Element[Element_Level].ToShow.Details.empty())
-        Element[Element_Level].ToShow.Details+=Config_LineSeparator;
-
     //From Sub
-    Element[Element_Level].ToShow.Details+=ToShow;
 }
 #endif //MEDIAINFO_TRACE
 
@@ -4012,8 +3665,7 @@ void File__Analyze::BookMark_Get ()
 void File__Analyze::Details_Clear()
 {
     Details->clear();
-    Element[0].ToShow.Details.clear();
-    Element[0].ToShow.Value.clear();
+    Element[0].TraceNode.Init();
 }
 #endif //MEDIAINFO_TRACE
 
