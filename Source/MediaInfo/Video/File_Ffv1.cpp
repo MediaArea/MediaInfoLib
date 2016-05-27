@@ -1023,7 +1023,7 @@ void File_Ffv1::plane(int32u pos)
 
     int16s *sample[2];
     sample[0] = current_slice->sample_buffer + 3;
-    sample[1] = current_slice->sample_buffer + current_slice->w + 6 + 3;
+    sample[1] = sample[0] + current_slice->w + 6;
 
     memset(current_slice->sample_buffer, 0, 2 * (current_slice->w + 6) * sizeof(*current_slice->sample_buffer));
 
@@ -1036,18 +1036,10 @@ void File_Ffv1::plane(int32u pos)
             Element_Info1(y);
         #endif //MEDIAINFO_TRACE_FFV1CONTENT
 
-        int16s *temp = sample[0];
-
-        sample[0] = sample[1];
-        sample[1] = temp;
+        swap(sample[0], sample[1]);
 
         sample[1][-1] = sample[0][0];
         sample[0][current_slice->w]  = sample[0][current_slice->w - 1];
-
-        if (bits_per_sample <= 8)
-            bits_max = 8;
-        else
-            bits_max = bits_per_sample;
 
         line(pos, sample);
 
@@ -1081,7 +1073,7 @@ void File_Ffv1::rgb()
 
     for (int x = 0; x < c_max; x++) {
         sample[x][0] = current_slice->sample_buffer +  x * 2      * (current_slice->w + 6) + 3;
-        sample[x][1] = current_slice->sample_buffer + (x * 2 + 1) * (current_slice->w + 6) + 3;
+        sample[x][1] = sample[x][0] + current_slice->w + 6;
     }
     memset(current_slice->sample_buffer, 0, 8 * (current_slice->w + 6) * sizeof(*current_slice->sample_buffer));
 
@@ -1095,14 +1087,11 @@ void File_Ffv1::rgb()
         for (size_t c = 0; c < c_max; c++)
         {
             // Copy for next lines: 4.3 context
-            int16s *temp = sample[c][0];
-
-            sample[c][0] = sample[c][1];
-            sample[c][1] = temp;
+            swap(sample[c][0], sample[c][1]);
 
             sample[c][1][-1]= sample[c][0][0  ];
             sample[c][0][current_slice->w]= sample[c][0][current_slice->w - 1];
-            bits_max = bits_per_sample + 1;
+
             line((c + 1) / 2, sample[c]);
         }
 
@@ -1307,7 +1296,6 @@ void File_Ffv1::line(int pos, int16s *sample[2])
 {
     // TODO: slice_coding_mode (version 4)
 
-    states_context_plane States_Context = current_slice->plane_states[pos];
     quant_table_struct& quant_table = quant_tables[quant_table_index[pos]];
     bool Is5 = quant_table[3][127] ? true : false;
     int16s* s0c = sample[0];
