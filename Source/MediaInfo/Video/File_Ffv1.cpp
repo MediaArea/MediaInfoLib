@@ -1116,27 +1116,69 @@ void File_Ffv1::rgb()
     #endif //MEDIAINFO_TRACE_FFV1CONTENT
 }
 
-static inline int get_context(int16s quant_table[MAX_CONTEXT_INPUTS][256], int16s *src, int16s *last)
+//---------------------------------------------------------------------------
+static inline int32s get_median_number(int32s one, int32s two, int32s three)
+{
+    if (one > two)
+    {
+        // one > two > three
+        if (two > three)
+            return two;
+
+        // three > one > two
+        if (three > one)
+            return one;
+        // one > three > two
+        return three;
+    }
+
+    // three > two > one
+    if (three > two)
+        return two;
+
+    // two > one && two > three
+
+    // two > three > one
+    if (three > one)
+        return three;
+    return one;
+}
+
+//---------------------------------------------------------------------------
+static inline int32s predict(int16s *current, int16s *current_top)
+{
+    int32s LeftTop = current_top[-1];
+    int32s Top = current_top[0];
+    int32s Left = current[-1];
+
+    return get_median_number(Left, Left + Top - LeftTop, Top);
+}
+
+//---------------------------------------------------------------------------
+static inline int get_context_3(int16s quant_table[MAX_CONTEXT_INPUTS][256], int16s *src, int16s *last)
 {
     const int LT = last[-1];
     const int T  = last[0];
     const int RT = last[1];
     const int L  = src[-1];
 
-    if (quant_table[3][127])
-    {
-        const int TT = src[0];
-        const int LL = src[-2];
-        return quant_table[0][(L - LT) & 0xFF]
-             + quant_table[1][(LT - T) & 0xFF]
-             + quant_table[2][(T - RT) & 0xFF]
-             + quant_table[3][(LL - L) & 0xFF]
-             + quant_table[4][(TT - T) & 0xFF];
-    }
-    else
-        return quant_table[0][(L - LT) & 0xFF]
-             + quant_table[1][(LT - T) & 0xFF]
-             + quant_table[2][(T - RT) & 0xFF];
+    return quant_table[0][(L - LT) & 0xFF]
+        + quant_table[1][(LT - T) & 0xFF]
+        + quant_table[2][(T - RT) & 0xFF];
+}
+static inline int get_context_5(int16s quant_table[MAX_CONTEXT_INPUTS][256], int16s *src, int16s *last)
+{
+    const int LT = last[-1];
+    const int T  = last[0];
+    const int RT = last[1];
+    const int L  = src[-1];
+    const int TT = src[0];
+    const int LL = src[-2];
+    return quant_table[0][(L - LT) & 0xFF]
+        + quant_table[1][(LT - T) & 0xFF]
+        + quant_table[2][(T - RT) & 0xFF]
+        + quant_table[3][(LL - L) & 0xFF]
+        + quant_table[4][(TT - T) & 0xFF];
 }
 
 //---------------------------------------------------------------------------
@@ -1267,6 +1309,7 @@ void File_Ffv1::line(int pos, int16s *sample[2])
 
     states_context_plane States_Context = current_slice->plane_states[pos];
     quant_table_struct& quant_table = quant_tables[quant_table_index[pos]];
+    bool Is5 = quant_table[3][127] ? true : false;
     int16s* s0c = sample[0];
     int16s* s0e = s0c + current_slice->w;
     int16s* s1c = sample[1];
@@ -1277,7 +1320,7 @@ void File_Ffv1::line(int pos, int16s *sample[2])
 
         while (s0c<s0e)
         {
-            int32s context = get_context(quant_table, s1c, s0c);
+            int32s context = Is5 ? get_context_5(quant_table, s1c, s0c) : get_context_3(quant_table, s1c, s0c);
 
             *s1c = (predict(s1c, s0c) + (context >= 0 ? line_range_coder(context) : -line_range_coder(-context))) & bits_mask1;
 
@@ -1294,7 +1337,7 @@ void File_Ffv1::line(int pos, int16s *sample[2])
 
         while (s0c < s0e)
         {
-            int32s context = get_context(quant_table, s1c, s0c);
+            int32s context = Is5 ? get_context_5(quant_table, s1c, s0c) : get_context_3(quant_table, s1c, s0c);
 
             *s1c = (predict(s1c, s0c) + (context >= 0 ? line_adaptive_symbol_by_symbol(context) : -line_adaptive_symbol_by_symbol(-context))) & bits_mask1;
 
@@ -1391,44 +1434,6 @@ int32u File_Ffv1::CRC_Compute(size_t Size)
         CRC_32_Buffer++;
     }
     return CRC_32;
-}
-
-//---------------------------------------------------------------------------
-int32s File_Ffv1::get_median_number(int32s one, int32s two, int32s three)
-{
-    if (one > two)
-    {
-        // one > two > three
-        if (two > three)
-            return two;
-
-        // three > one > two
-        if (three > one)
-            return one;
-        // one > three > two
-        return three;
-    }
-
-    // three > two > one
-    if (three > two)
-        return two;
-
-    // two > one && two > three
-
-    // two > three > one
-    if (three > one)
-        return three;
-    return one;
-}
-
-//---------------------------------------------------------------------------
-int32s File_Ffv1::predict(int16s *current, int16s *current_top)
-{
-    int32s LeftTop = current_top[-1];
-    int32s Top = current_top[0];
-    int32s Left = current[-1];
-
-    return get_median_number(Left, Left + Top - LeftTop, Top);
 }
 
 //---------------------------------------------------------------------------

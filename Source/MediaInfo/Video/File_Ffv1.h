@@ -246,8 +246,6 @@ private :
 
     states_context_plane plane_states[MAX_QUANT_TABLES];
 
-    int32s get_median_number(int32s one, int32s two, int32s three);
-    int32s predict(int16s *current, int16s *current_top);
     void update_correlation_value_and_shift(Slice::Context *c);
     int32s golomb_rice_decode(int k);
     void plane_states_clean(states_context_plane states[MAX_QUANT_TABLES]);
