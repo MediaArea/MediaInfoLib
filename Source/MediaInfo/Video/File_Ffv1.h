@@ -113,8 +113,9 @@ public:
     int32s  run_segment_length;
     int16s* sample_buffer;
 
-    struct Context
+    class Context
     {
+    public:
         static const int32u N0; // Determined threshold to divide N and B
         static const int32s Cmax; // Storage limitation, C never upper than 127
         static const int32s Cmin; // Storage limitation, C never below than -128
@@ -122,6 +123,55 @@ public:
         int32s B; // Accumulated sum of corrected prediction residuals
         int32s A; // Accumulated sum of the absolute corrected prediction residuals (St + Nt)
         int32s C; // Correction value
+
+        Context() :
+            N(1),
+            B(0),
+            A(4),
+            C(0)
+        {}
+
+        inline void update_correlation_value_and_shift()
+        {
+            // Step 11: Resets
+            if (N == N0)
+            {
+                // divide by 2, if >= 0 : ROUND, otherwise, CEIL
+                N >>= 1;
+                A >>= 1;
+                B >>= 1;
+            }
+            ++N; // context meets
+
+                 // Step 12: Bias computation procedure
+                 // Keep B in (-N;0]
+            if (B <= -N)
+            {
+                if (C > Cmin)
+                    --C;
+
+                B += N;
+                if (B <= -N)
+                    B = -N + 1;
+            }
+            else if (B > 0)
+            {
+                if (C < Cmax)
+                    ++C;
+
+                if (B > N)
+                    B = 0;
+                else
+                    B -= N;
+            }
+        }
+        inline int compute_k()
+        {
+            int k = 0;
+            while ((N << k) < A)
+                ++k;
+            return k;
+        }
     };
 
     typedef Context* ContextPtr;
@@ -246,7 +296,6 @@ private :
 
     states_context_plane plane_states[MAX_QUANT_TABLES];
 
-    void update_correlation_value_and_shift(Slice::Context *c);
     int32s golomb_rice_decode(int k);
     void plane_states_clean(states_context_plane states[MAX_QUANT_TABLES]);
 };

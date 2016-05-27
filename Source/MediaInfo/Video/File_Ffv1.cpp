@@ -336,18 +336,6 @@ void Slice::contexts_init(int32u plane_count, int32u quant_table_index[MAX_PLANE
         }
         int32u idx = quant_table_index[i];
         contexts[i] = new Context [context_count[idx]];
-        for (size_t j = 0; j < context_count[idx]; j++)
-        {
-            Context *c = &contexts[i][j];
-
-            c->N = 1;
-            //c->A = (alpha + 32) / 64; // alpha == alphabet size (256)
-            //if (c->A < 2)
-            //    c->A = 2;
-            c->A = 4;
-            c->C = 0;
-            c->B = c->C;
-        }
     }
 }
 
@@ -1499,7 +1487,7 @@ int32s File_Ffv1::get_symbol_with_bias_correlation(Slice::ContextPtr context)
 
     code += context->C;
 
-    update_correlation_value_and_shift(context);
+    context->update_correlation_value_and_shift();
 
     // Step 7 (TODO better way)
     bool neg = code & bits_mask2; // check if the number is negative
@@ -1508,41 +1496,6 @@ int32s File_Ffv1::get_symbol_with_bias_correlation(Slice::ContextPtr context)
         code = - 1 - (~code & bits_mask3); // 0xFFFFFFFF - positive value on n bits
 
     return code;
-}
-
-//---------------------------------------------------------------------------
-void File_Ffv1::update_correlation_value_and_shift(Slice::Context *c)
-{
-    if (!c)
-        return;
-
-    // Step 11: Resets
-    if (c->N == c->N0)
-    {
-         // divide by 2, if >= 0 : ROUND, otherwise, CEIL
-        c->N >>= 1;
-        c->A >>= 1;
-        c->B >>= 1;
-    }
-    ++c->N; // context meets
-
-    // Step 12: Bias computation procedure
-    // Keep B in (-N;0]
-    if (c->B <= -c->N) {
-        if (c->C > c->Cmin)
-            --c->C;
-
-        c->B = c->B + c->N;
-        if (c->B <= -c->N)
-            c->B = -c->N + 1;
-    } else if (c->B > 0) {
-        if (c->C < c->Cmax)
-            ++c->C;
-
-        c->B = c->B - c->N;
-        if (c->B > 0)
-            c->B = 0;
-    }
 }
 
 //---------------------------------------------------------------------------
