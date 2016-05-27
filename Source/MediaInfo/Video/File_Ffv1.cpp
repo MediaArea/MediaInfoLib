@@ -1116,7 +1116,7 @@ void File_Ffv1::rgb()
     #endif //MEDIAINFO_TRACE_FFV1CONTENT
 }
 
-static inline int get_context(int16s quant_table[MAX_CONTEXT_INPUTS][256], int16s *src, int16s *last, int16s *last2)
+static inline int get_context(int16s quant_table[MAX_CONTEXT_INPUTS][256], int16s *src, int16s *last)
 {
     const int LT = last[-1];
     const int T  = last[0];
@@ -1125,7 +1125,7 @@ static inline int get_context(int16s quant_table[MAX_CONTEXT_INPUTS][256], int16
 
     if (quant_table[3][127])
     {
-        const int TT = last2[0];
+        const int TT = src[0];
         const int LL = src[-2];
         return quant_table[0][(L - LT) & 0xFF]
              + quant_table[1][(LT - T) & 0xFF]
@@ -1140,17 +1140,17 @@ static inline int get_context(int16s quant_table[MAX_CONTEXT_INPUTS][256], int16
 }
 
 //---------------------------------------------------------------------------
-int32s File_Ffv1::line_range_coder(int32s pos, int32s context)
+int32s File_Ffv1::line_range_coder(int32s context)
 {
     int32s u;
 
-    Get_RS(current_slice->plane_states[pos][context], u, "symbol");
+    Get_RS(Context_RC[context], u, "symbol");
     return u;
 }
 
 
 //---------------------------------------------------------------------------
-int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s context)
+int32s File_Ffv1::line_adaptive_symbol_by_symbol(int32s context)
 {
 #if MEDIAINFO_TRACE_FFV1CONTENT
     int32s u;
@@ -1162,7 +1162,7 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s co
     // If not running, get the symbol
     if (current_slice->run_mode == RUN_MODE_STOP)
     {
-        u = get_symbol_with_bias_correlation(&current_slice->contexts[pos][context]);
+        u = get_symbol_with_bias_correlation(&Context_GR[context]);
         #if MEDIAINFO_TRACE
         Param("symbol", u);
         #endif //MEDIAINFO_TRACE
@@ -1195,7 +1195,7 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s co
     current_slice->run_segment_length--;
     if (current_slice->run_segment_length < 0) // we passed the length of same symbol, time to get the new symbol
     {
-        u = get_symbol_with_bias_correlation(&current_slice->contexts[pos][context]);
+        u = get_symbol_with_bias_correlation(&Context_GR[context]);
         #if MEDIAINFO_TRACE
         Param("symbol", u);
         #endif //MEDIAINFO_TRACE
@@ -1218,7 +1218,7 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s co
     // If not running, get the symbol
     if (current_slice->run_mode == RUN_MODE_STOP)
     {
-        u = get_symbol_with_bias_correlation(&current_slice->contexts[pos][context]);
+        u = get_symbol_with_bias_correlation(&Context_GR[context]);
         return u;
     }
 
@@ -1242,7 +1242,7 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s co
     current_slice->run_segment_length--;
     if (current_slice->run_segment_length < 0) // we passed the length of same symbol, time to get the new symbol
     {
-        u = get_symbol_with_bias_correlation(&current_slice->contexts[pos][context]);
+        u = get_symbol_with_bias_correlation(&Context_GR[context]);
         if (u >= 0) // GR(u - 1, ...)
             u++;
 
@@ -1260,37 +1260,43 @@ void File_Ffv1::line(int pos, int16s *sample[2])
 {
     // TODO: slice_coding_mode (version 4)
 
-    if (!coder_type)
+    states_context_plane States_Context = current_slice->plane_states[pos];
+    quant_table_struct& quant_table = quant_tables[quant_table_index[pos]];
+    int16s* s0c = sample[0];
+    int16s* s0e = s0c + current_slice->w;
+    int16s* s1c = sample[1];
+
+    if (coder_type)
     {
-        current_slice->run_segment_length = 0;
-        current_slice->run_mode_init();
-    }
+        Context_RC = current_slice->plane_states[pos];
 
-    for (size_t x = 0; x < current_slice->w; x++)
-    {
-        int32s context;
-
-        context = get_context(quant_tables[quant_table_index[pos]], sample[1] + x, sample[0] + x, sample[1] + x);
-
-        bool negative = false;
-        // Step 7
-        if (context < 0)
+        while (s0c<s0e)
         {
-            context = -context;
-            negative = true;
+            int32s context = get_context(quant_table, s1c, s0c);
+
+            *s1c = (predict(s1c, s0c) + (context >= 0 ? line_range_coder(context) : -line_range_coder(-context))) & bits_mask1;
+
+            s0c++;
+            s1c++;
         }
+    }
+    else
+    {
+        current_slice->run_mode_init();
 
-        int32s u;
-        if (coder_type)
-            u = line_range_coder(pos, context);
-        else
-            u = line_adaptive_symbol_by_symbol(x, pos, context);
+        Context_GR = current_slice->contexts[pos];
+        x = 0;
 
-        // Step 7
-        if (negative)
-            u = -u;
+        while (s0c < s0e)
+        {
+            int32s context = get_context(quant_table, s1c, s0c);
 
-        sample[1][x] = (predict(sample[1] + x, sample[0] + x) + u) & bits_mask1;
+            *s1c = (predict(s1c, s0c) + (context >= 0 ? line_adaptive_symbol_by_symbol(context) : -line_adaptive_symbol_by_symbol(-context))) & bits_mask1;
+
+            s0c++;
+            s1c++;
+            x++;
+        }
     }
 }
 
@@ -1476,7 +1482,7 @@ int32s File_Ffv1::golomb_rice_decode(int k)
 }
 
 //---------------------------------------------------------------------------
-int32s File_Ffv1::get_symbol_with_bias_correlation(Slice::Context *context)
+int32s File_Ffv1::get_symbol_with_bias_correlation(Slice::ContextPtr context)
 {
     int k = 0;
     // Step 8: compute the Golomb parameter k

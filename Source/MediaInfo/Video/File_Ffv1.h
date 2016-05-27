@@ -101,7 +101,7 @@ public:
     }
 
     void    run_index_init() { run_index=0; }
-    void    run_mode_init() { run_mode=RUN_MODE_STOP; }
+    void    run_mode_init() { run_segment_length = 0; run_mode=RUN_MODE_STOP; }
 
     //TEMP
     int32u  x;
@@ -138,6 +138,9 @@ public:
 // Class File_Ffv1
 //***************************************************************************
 
+typedef int16s quant_table_struct2[256];
+typedef quant_table_struct2 quant_table_struct[MAX_CONTEXT_INPUTS];
+
 class File_Ffv1 : public File__Analyze
 {
 public :
@@ -162,12 +165,12 @@ private :
     int    slice(states &States);
     int    slice_header(states &States);
     int32u CRC_Compute(size_t Size);
-    int32s get_symbol_with_bias_correlation(Slice::Context* context);
+    int32s get_symbol_with_bias_correlation(Slice::ContextPtr context);
     void rgb();
     void plane(int32u pos);
     void line(int pos, int16s *sample[2]);
-    int32s line_range_coder(int32s pos, int32s context);
-    int32s line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s context);
+    int32s line_range_coder(int32s context);
+    int32s line_adaptive_symbol_by_symbol(int32s context);
     void read_quant_tables(int i);
     void read_quant_table(int i, int j, size_t scale);
     void copy_plane_states_to_slice(int8u plane_count);
@@ -210,7 +213,7 @@ private :
     bool    ConfigurationRecordIsPresent;
     int32u  context_count[MAX_QUANT_TABLES];
     int32u  len_count[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS];
-    int16s  quant_tables[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS][256];
+    quant_table_struct quant_tables[MAX_QUANT_TABLES];
     int32u  quant_table_index[MAX_PLANES];
     int32u  quant_table_count;
     int32u  version;
@@ -237,6 +240,9 @@ private :
     int16u bits_mask1;
     int32s bits_mask2;
     int32s bits_mask3;
+    states_context_plane Context_RC; // Range Coder context
+    Slice::ContextPtr    Context_GR; // Rice Golomb context
+    size_t x;
 
     states_context_plane plane_states[MAX_QUANT_TABLES];
 
