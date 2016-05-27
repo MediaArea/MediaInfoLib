@@ -964,7 +964,9 @@ int File_Ffv1::slice_header(states &States)
 //---------------------------------------------------------------------------
 void File_Ffv1::plane(int32u pos)
 {
-    Element_Begin1("Plane");
+    #if MEDIAINFO_TRACE_FFV1CONTENT
+        Element_Begin1("Plane");
+    #endif //MEDIAINFO_TRACE_FFV1CONTENT
 
     int16s *sample[2];
     sample[0] = current_slice->sample_buffer + 3;
@@ -976,8 +978,10 @@ void File_Ffv1::plane(int32u pos)
 
     for (size_t y = 0; y < current_slice->h; y++)
     {
-        Element_Begin1("Line");
-        Element_Info1(y);
+        #if MEDIAINFO_TRACE_FFV1CONTENT
+            Element_Begin1("Line");
+            Element_Info1(y);
+        #endif //MEDIAINFO_TRACE_FFV1CONTENT
 
         int16s *temp = sample[0];
 
@@ -993,16 +997,23 @@ void File_Ffv1::plane(int32u pos)
             bits_max = bits_per_sample;
 
         line(pos, sample);
-        Element_End0();
+
+        #if MEDIAINFO_TRACE_FFV1CONTENT
+            Element_End0();
+        #endif //MEDIAINFO_TRACE_FFV1CONTENT
     }
 
-    Element_End0();
+    #if MEDIAINFO_TRACE_FFV1CONTENT
+        Element_End0();
+    #endif //MEDIAINFO_TRACE_FFV1CONTENT
 }
 
 //---------------------------------------------------------------------------
 void File_Ffv1::rgb()
 {
-    Element_Begin1("rgb");
+    #if MEDIAINFO_TRACE_FFV1CONTENT
+        Element_Begin1("rgb");
+    #endif //MEDIAINFO_TRACE_FFV1CONTENT
 
     int16s *sample[4][2];
 
@@ -1016,8 +1027,10 @@ void File_Ffv1::rgb()
 
     for (size_t y = 0; y < current_slice->h; y++)
     {
-        Element_Begin1("Line");
-        Element_Info1(y);
+        #if MEDIAINFO_TRACE_FFV1CONTENT
+            Element_Begin1("Line");
+            Element_Info1(y);
+        #endif //MEDIAINFO_TRACE_FFV1CONTENT
 
         for (size_t c = 0; c < (unsigned)(3 + alpha_plane); c++)
         {
@@ -1033,10 +1046,14 @@ void File_Ffv1::rgb()
             line((c + 1) / 2, sample[c]);
         }
 
-        Element_End0();
+        #if MEDIAINFO_TRACE_FFV1CONTENT
+            Element_End0();
+        #endif //MEDIAINFO_TRACE_FFV1CONTENT
     }
 
-    Element_End0();
+    #if MEDIAINFO_TRACE_FFV1CONTENT
+        Element_End0();
+    #endif //MEDIAINFO_TRACE_FFV1CONTENT
 }
 
 static inline int get_context(int16s quant_table[MAX_CONTEXT_INPUTS][256], int16s *src, int16s *last, int16s *last2)
@@ -1075,6 +1092,7 @@ int32s File_Ffv1::line_range_coder(int32s pos, int32s context)
 //---------------------------------------------------------------------------
 int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s context)
 {
+#if MEDIAINFO_TRACE_FFV1CONTENT
     int32s u;
 
     // New symbol, go to "run mode"
@@ -1130,6 +1148,51 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s co
     } else // same symbol as previous pixel, no difference, waiting
         u = 0;
     return u;
+#else //MEDIAINFO_TRACE_FFV1CONTENT
+    int32s u;
+
+    // New symbol, go to "run mode"
+    if (context == 0 && current_slice->run_mode == RUN_MODE_STOP)
+        current_slice->run_mode = RUN_MODE_PROCESSING;
+
+    // If not running, get the symbol
+    if (current_slice->run_mode == RUN_MODE_STOP)
+    {
+        u = get_symbol_with_bias_correlation(&current_slice->contexts[pos][context]);
+        return u;
+    }
+
+    if (current_slice->run_segment_length == 0 && current_slice->run_mode == RUN_MODE_PROCESSING) // Same symbol length
+    {
+        if (BS->GetB()) // "hits"
+        {
+            current_slice->run_segment_length = run[current_slice->run_index];
+            if (x + current_slice->run_segment_length <= current_slice->w) //Do not go further as the end of line
+                ++current_slice->run_index;
+        }
+        else // "miss"
+        {
+            current_slice->run_segment_length=(int32s)BS->Get4(log2_run[current_slice->run_index]);
+            if (current_slice->run_index)
+                --current_slice->run_index;
+            current_slice->run_mode = RUN_MODE_INTERRUPTED;
+        }
+    }
+
+    current_slice->run_segment_length--;
+    if (current_slice->run_segment_length < 0) // we passed the length of same symbol, time to get the new symbol
+    {
+        u = get_symbol_with_bias_correlation(&current_slice->contexts[pos][context]);
+        if (u >= 0) // GR(u - 1, ...)
+            u++;
+
+        // Time for the new symbol length run
+        current_slice->run_mode_init();
+        current_slice->run_segment_length = 0;
+    } else // same symbol as previous pixel, no difference, waiting
+        u = 0;
+    return u;
+#endif //MEDIAINFO_TRACE_FFV1CONTENT
 }
 
 //---------------------------------------------------------------------------
@@ -1174,7 +1237,9 @@ void File_Ffv1::line(int pos, int16s *sample[2])
 //---------------------------------------------------------------------------
 void File_Ffv1::read_quant_tables(int i)
 {
-    Element_Begin1("quant_table");
+    #if MEDIAINFO_TRACE_FFV1CONTENT
+        Element_Begin1("quant_table");
+    #endif //MEDIAINFO_TRACE_FFV1CONTENT
 
     int32u scale = 1;
 
@@ -1191,15 +1256,17 @@ void File_Ffv1::read_quant_tables(int i)
         context_count[i] = (scale + 1) / 2;
     }
 
-    Element_End0();
+    #if MEDIAINFO_TRACE_FFV1CONTENT
+        Element_End0();
+    #endif //MEDIAINFO_TRACE_FFV1CONTENT
 }
 
 //---------------------------------------------------------------------------
 void File_Ffv1::read_quant_table(int i, int j, size_t scale)
 {
-    Element_Begin1("per context");
-
-    ;
+    #if MEDIAINFO_TRACE_FFV1CONTENT
+        Element_Begin1("per context");
+    #endif //MEDIAINFO_TRACE_FFV1CONTENT
 
     int8u States[states_size];
     memset(States, 128, sizeof(States));
@@ -1231,7 +1298,9 @@ void File_Ffv1::read_quant_table(int i, int j, size_t scale)
 
     len_count[i][j]=v;
 
-    Element_End0();
+    #if MEDIAINFO_TRACE_FFV1CONTENT
+        Element_End0();
+    #endif //MEDIAINFO_TRACE_FFV1CONTENT
 }
 
 //***************************************************************************
@@ -1294,6 +1363,7 @@ int32s File_Ffv1::predict(int16s *current, int16s *current_top)
 //---------------------------------------------------------------------------
 int32s File_Ffv1::golomb_rice_decode(int k)
 {
+#if MEDIAINFO_TRACE_FFV1CONTENT
     int32u q = 0;
     int32u v;
 
@@ -1327,6 +1397,22 @@ int32s File_Ffv1::golomb_rice_decode(int k)
     // unsigned to signed
     int32s code = (v >> 1) ^ -(v & 1);
     return code;
+#else //MEDIAINFO_TRACE_FFV1CONTENT
+    int8u q = 0;
+    while (BS->Remain() && !BS->GetB())
+        if (++q >= PREFIX_MAX)
+        {
+            int32s v = 11 + BS->Get4(bits_max);
+
+            // unsigned to signed
+            return (v >> 1) ^ -(v & 1);
+        }
+
+    int32s v = (q << k) | BS->Get4(k);
+
+    // unsigned to signed
+    return (v >> 1) ^ -(v & 1);
+#endif //MEDIAINFO_TRACE_FFV1CONTENT
 }
 
 //---------------------------------------------------------------------------
