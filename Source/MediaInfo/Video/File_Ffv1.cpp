@@ -263,6 +263,51 @@ const int8u log2_run[41]={
     24,
 };
 
+const int32u run[41] =
+{
+    1 << 0,
+    1 << 0,
+    1 << 0,
+    1 << 0,
+    1 << 1,
+    1 << 1,
+    1 << 1,
+    1 << 1,
+    1 << 2,
+    1 << 2,
+    1 << 2,
+    1 << 2,
+    1 << 3,
+    1 << 3,
+    1 << 3,
+    1 << 3,
+    1 << 4,
+    1 << 4,
+    1 << 5,
+    1 << 5,
+    1 << 6,
+    1 << 6,
+    1 << 7,
+    1 << 7,
+    1 << 8,
+    1 << 9,
+    1 << 10,
+    1 << 11,
+    1 << 12,
+    1 << 13,
+    1 << 14,
+    1 << 15,
+    1 << 16,
+    1 << 17,
+    1 << 18,
+    1 << 19,
+    1 << 20,
+    1 << 21,
+    1 << 22,
+    1 << 23,
+    1 << 24,
+};
+
 //***************************************************************************
 // Slice
 //***************************************************************************
@@ -1116,7 +1161,7 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(size_t x, int32s pos, int32s co
         //if (bsf.GetB()) // "hits"
         if (hits) // "hits"
         {
-            current_slice->run_segment_length = 1 << log2_run[current_slice->run_index];
+            current_slice->run_segment_length = run[current_slice->run_index];
             if (x + current_slice->run_segment_length <= current_slice->w) //Do not go further as the end of line
                 ++current_slice->run_index;
         }
