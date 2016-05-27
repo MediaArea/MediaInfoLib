@@ -90,7 +90,7 @@ void RangeCoder::AssignStateTransitions (const state_transitions new_state_trans
 bool RangeCoder::get_rac(int8u* States)
 {
     //Here is some black magic... But it works. TODO: better understanding of the algorithm and maybe optimization
-    int16u Mask2=(int16u)((((int32u)Mask) * (*States)) >> 8);
+    int32u Mask2=(Mask*(*States))>>8;
     Mask-=Mask2;
     bool Value;
     if (Current<Mask)

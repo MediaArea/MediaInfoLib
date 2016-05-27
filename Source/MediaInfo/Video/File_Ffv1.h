@@ -47,8 +47,8 @@ public :
     int32u  get_symbol_u(int8u* States);
     int32s  get_symbol_s(int8u* States);
 
-    int16u Current;
-    int16u Mask;
+    int32u Current;
+    int32u Mask;
     state_transitions zero_state;
 public : //Temp
     state_transitions one_state;
