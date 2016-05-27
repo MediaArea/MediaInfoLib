@@ -366,6 +366,9 @@ private :
     int64u Segment_Cluster_BlockGroup_BlockDuration_Value;
     int64u Segment_Cluster_BlockGroup_BlockDuration_TrackNumber;
 
+    //Hints
+    size_t*                 File_Buffer_Size_Hint_Pointer;
+
     //Helpers
     void JumpTo(int64u GoTo);
     void TestMultipleInstances(size_t* Instances=NULL);
