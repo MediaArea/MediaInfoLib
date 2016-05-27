@@ -57,6 +57,7 @@ const int32s Slice::Context::Cmin = -128;
 RangeCoder::RangeCoder (const int8u* Buffer, size_t Buffer_Size, const state_transitions default_state_transition)
 {
     //Assign buffer
+    Buffer_Beg=Buffer;
     Buffer_Cur=Buffer;
     Buffer_End=Buffer+Buffer_Size;
 
@@ -386,7 +387,6 @@ void File_Ffv1::Get_RB (states &States, bool &Info, const char* Name)
 {
     Info=RC->get_rac(States);
 
-    Element_Offset=RC->Buffer_Cur-Buffer;
     if (Trace_Activated)
         Param(Name, Info);
 }
@@ -414,7 +414,6 @@ void File_Ffv1::Get_RS (int8u* &States, int32s &Info, const char* Name)
 {
     Info=RC->get_symbol_s(States);
 
-    Element_Offset=RC->Buffer_Cur-Buffer;
     if (Trace_Activated)
         Param(Name, Info);
 }
@@ -424,7 +423,6 @@ void File_Ffv1::Skip_RC (states &States, const char* Name)
 {
     int8u Info=RC->get_rac(States);
 
-    Element_Offset=RC->Buffer_Cur-Buffer;
     if (Trace_Activated)
         Param(Name, Info);
 }
@@ -826,13 +824,15 @@ int File_Ffv1::slice(states &States)
             states States;
             memset(States, 129, states_size);
             Skip_RC(States,                                     "?");
-
-            if ((version > 2 || (!current_slice->x && !current_slice->y)))
-                Element_Offset--;
-            else
-                Element_Offset=0;
-            BS_Begin();
         }
+        if ((version > 2 || (!current_slice->x && !current_slice->y)))
+        {
+            Element_Offset+=RC->Buffer_Cur-RC->Buffer_Beg; // Computing how many bytes where consumed by the range coder
+            Element_Offset--; // The range coder takes always one additional byte
+        }
+        else
+            Element_Offset=0;
+        BS_Begin();
     }
 
     if (keyframe)

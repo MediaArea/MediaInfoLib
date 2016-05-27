@@ -52,6 +52,7 @@ public :
     state_transitions zero_state;
 public : //Temp
     state_transitions one_state;
+    const int8u* Buffer_Beg;
     const int8u* Buffer_Cur;
     const int8u* Buffer_End;
 
