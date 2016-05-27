@@ -10,6 +10,7 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 
 Version 0.7.86
 --------------
++ FFV1 parsing optimization, avoiding by default a too verbose trace
 x Matroska: better support (including speed improvement) of huge lossless frames (e.g. 20 MB FFV1 4K)
 x #I144, Python binding: Python 2 on Linux does not automatically provide the locale to the shared object
 x HTML output: don't escape carriage returns from the input file
