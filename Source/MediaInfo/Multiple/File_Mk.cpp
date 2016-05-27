@@ -102,6 +102,189 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+namespace Elements
+{
+    //Common
+    const int64u Zero=(int32u)-1; //Should be (int64u)-1 but Borland C++ does not like this
+    const int64u CRC32=0x3F;
+    const int64u Void=0x6C;
+
+    //EBML
+    const int64u Ebml=0xA45DFA3;
+    const int64u Ebml_Version=0x286;
+    const int64u Ebml_ReadVersion=0x2F7;
+    const int64u Ebml_MaxIDLength=0x2F2;
+    const int64u Ebml_MaxSizeLength=0x2F3;
+    const int64u Ebml_DocType=0x282;
+    const int64u Ebml_DocTypeVersion=0x287;
+    const int64u Ebml_DocTypeReadVersion=0x285;
+
+    //Segment
+    const int64u Segment=0x8538067;
+    const int64u Segment_Attachements=0x0941A469;
+    const int64u Segment_Attachements_AttachedFile=0x21A7;
+    const int64u Segment_Attachements_AttachedFile_FileData=0x065C;
+    const int64u Segment_Attachements_AttachedFile_FileDescription=0x067E;
+    const int64u Segment_Attachements_AttachedFile_FileName=0x066E;
+    const int64u Segment_Attachements_AttachedFile_FileMimeType=0x0660;
+    const int64u Segment_Attachements_AttachedFile_FileReferral=0x0675;
+    const int64u Segment_Attachements_AttachedFile_FileUID=0x06AE;
+    const int64u Segment_Chapters=0x43A770;
+    const int64u Segment_Chapters_EditionEntry=0x05B9;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom=0x36;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess=0x2944;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessCodecID=0x2955;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessCommand=0x2911;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessCommand_ChapProcessData=0x2933;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessCommand_ChapProcessTime=0x2922;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessPrivate=0x050D;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay=0x00;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapCountry=0x037E;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapLanguage=0x037C;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapString=0x05;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterFlagEnabled=0x0598;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterFlagHidden=0x18;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterPhysicalEquiv=0x23C3;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterSegmentEditionUID=0x2EBC;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterSegmentUID=0x2E67;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterTimeStart=0x11;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterTimeEnd=0x12;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterTrack=0x0F;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterTrack_ChapterTrackNumber=0x09;
+    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterUID=0x33C4;
+    const int64u Segment_Chapters_EditionEntry_EditionFlagDefault=0x05DB;
+    const int64u Segment_Chapters_EditionEntry_EditionFlagHidden=0x05BD;
+    const int64u Segment_Chapters_EditionEntry_EditionFlagOrdered=0x05DD;
+    const int64u Segment_Chapters_EditionEntry_EditionUID=0x05BC;
+    const int64u Segment_Cluster=0xF43B675;
+    const int64u Segment_Cluster_BlockGroup=0x20;
+    const int64u Segment_Cluster_BlockGroup_Block=0x21;
+    const int64u Segment_Cluster_BlockGroup_BlockAdditions=0x35A1;
+    const int64u Segment_Cluster_BlockGroup_BlockAdditions_BlockMore=0x26;
+    const int64u Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAddID=0x6E;
+    const int64u Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditional=0x25;
+    const int64u Segment_Cluster_BlockGroup_BlockDuration=0x1B;
+    const int64u Segment_Cluster_BlockGroup_ReferenceBlock=0x7B;
+    const int64u Segment_Cluster_BlockGroup_ReferencePriority=0x7A;
+    const int64u Segment_Cluster_BlockGroup_Slices=0xE;
+    const int64u Segment_Cluster_BlockGroup_Slices_TimeSlice=0x68;
+    const int64u Segment_Cluster_BlockGroup_Slices_TimeSlice_Duration=0x4F;
+    const int64u Segment_Cluster_BlockGroup_Slices_TimeSlice_LaceNumber=0x4C;
+    const int64u Segment_Cluster_Position=0x27;
+    const int64u Segment_Cluster_PrevSize=0x2B;
+    const int64u Segment_Cluster_SilentTracks=0x1854;
+    const int64u Segment_Cluster_SilentTracks_SilentTrackNumber=0x18D7;
+    const int64u Segment_Cluster_SimpleBlock=0x23;
+    const int64u Segment_Cluster_Timecode=0x67;
+    const int64u Segment_Cues=0xC53BB6B;
+    const int64u Segment_Cues_CuePoint=0x3B;
+    const int64u Segment_Cues_CuePoint_CueTime=0x33;
+    const int64u Segment_Cues_CuePoint_CueTrackPositions=0x37;
+    const int64u Segment_Cues_CuePoint_CueTrackPositions_CueTrack=0x77;
+    const int64u Segment_Cues_CuePoint_CueTrackPositions_CueClusterPosition=0x71;
+    const int64u Segment_Cues_CuePoint_CueTrackPositions_CueBlockNumber=0x1378;
+    const int64u Segment_Info=0x549A966;
+    const int64u Segment_Info_ChapterTranslate=0x2924;
+    const int64u Segment_Info_ChapterTranslate_ChapterTranslateCodec=0x29BF;
+    const int64u Segment_Info_ChapterTranslate_ChapterTranslateEditionUID=0x29FC;
+    const int64u Segment_Info_ChapterTranslate_ChapterTranslateID=0x29A5;
+    const int64u Segment_Info_DateUTC=0x461;
+    const int64u Segment_Info_Duration=0x489;
+    const int64u Segment_Info_MuxingApp=0xD80;
+    const int64u Segment_Info_NextFilename=0x1E83BB;
+    const int64u Segment_Info_NextUID=0x1EB923;
+    const int64u Segment_Info_PrevFilename=0x1C83AB;
+    const int64u Segment_Info_PrevUID=0x1CB923;
+    const int64u Segment_Info_SegmentFamily=0x444;
+    const int64u Segment_Info_SegmentFilename=0x3384;
+    const int64u Segment_Info_SegmentUID=0x33A4;
+    const int64u Segment_Info_TimecodeScale=0xAD7B1;
+    const int64u Segment_Info_Title=0x3BA9;
+    const int64u Segment_Info_WritingApp=0x1741;
+    const int64u Segment_SeekHead=0x14D9B74;
+    const int64u Segment_SeekHead_Seek=0xDBB;
+    const int64u Segment_SeekHead_Seek_SeekID=0x13AB;
+    const int64u Segment_SeekHead_Seek_SeekPosition=0x13AC;
+    const int64u Segment_Tags=0x0254C367;
+    const int64u Segment_Tags_Tag=0x3373;
+    const int64u Segment_Tags_Tag_SimpleTag=0x27C8;
+    const int64u Segment_Tags_Tag_SimpleTag_TagBinary=0x485;
+    const int64u Segment_Tags_Tag_SimpleTag_TagDefault=0x484;
+    const int64u Segment_Tags_Tag_SimpleTag_TagLanguage=0x47A;
+    const int64u Segment_Tags_Tag_SimpleTag_TagName=0x5A3;
+    const int64u Segment_Tags_Tag_SimpleTag_TagString=0x487;
+    const int64u Segment_Tags_Tag_Targets=0x23C0;
+    const int64u Segment_Tags_Tag_Targets_AttachmentUID=0x23C6;
+    const int64u Segment_Tags_Tag_Targets_ChapterUID=0x23C4;
+    const int64u Segment_Tags_Tag_Targets_EditionUID=0x23C9;
+    const int64u Segment_Tags_Tag_Targets_TargetType=0x23CA;
+    const int64u Segment_Tags_Tag_Targets_TargetTypeValue=0x28CA;
+    const int64u Segment_Tags_Tag_Targets_TrackUID=0x23C5;
+    const int64u Segment_Tracks=0x654AE6B;
+    const int64u Segment_Tracks_TrackEntry=0x2E;
+    const int64u Segment_Tracks_TrackEntry_AttachmentLink=0x3446;
+    const int64u Segment_Tracks_TrackEntry_Audio=0x61;
+    const int64u Segment_Tracks_TrackEntry_Audio_BitDepth=0x2264;
+    const int64u Segment_Tracks_TrackEntry_Audio_Channels=0x1F;
+    const int64u Segment_Tracks_TrackEntry_Audio_OutputSamplingFrequency=0x38B5;
+    const int64u Segment_Tracks_TrackEntry_Audio_SamplingFrequency=0x35;
+    const int64u Segment_Tracks_TrackEntry_CodecDecodeAll=0x2A;
+    const int64u Segment_Tracks_TrackEntry_CodecID=0x6;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings=0x2D80;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding=0x2240;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Order=0x1031;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Scope=0x1032;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Type=0x1033;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression=0x1034;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression_ContentCompAlgo=0x0254;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression_ContentCompSettings=0x0255;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption=0x1035;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentEncAlgo=0x07E1;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentEncKeyID=0x07E2;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSignature=0x07E3;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSigKeyID=0x07E4;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSigAlgo=0x07E5;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSigHashAlgo=0x07E6;
+    const int64u Segment_Tracks_TrackEntry_CodecName=0x58688;
+    const int64u Segment_Tracks_TrackEntry_CodecPrivate=0x23A2;
+    const int64u Segment_Tracks_TrackEntry_DefaultDuration=0x3E383;
+    const int64u Segment_Tracks_TrackEntry_FlagDefault=0x8;
+    const int64u Segment_Tracks_TrackEntry_FlagEnabled=0x39;
+    const int64u Segment_Tracks_TrackEntry_FlagForced=0x15AA;
+    const int64u Segment_Tracks_TrackEntry_FlagLacing=0x1C;
+    const int64u Segment_Tracks_TrackEntry_Language=0x2B59C;
+    const int64u Segment_Tracks_TrackEntry_MaxBlockAdditionID=0x15EE;
+    const int64u Segment_Tracks_TrackEntry_MaxCache=0x2DF8;
+    const int64u Segment_Tracks_TrackEntry_MinCache=0x2DE7;
+    const int64u Segment_Tracks_TrackEntry_Name=0x136E;
+    const int64u Segment_Tracks_TrackEntry_TrackNumber=0x57;
+    const int64u Segment_Tracks_TrackEntry_TrackTimecodeScale=0x3314F;
+    const int64u Segment_Tracks_TrackEntry_TrackType=0x3;
+    const int64u Segment_Tracks_TrackEntry_TrackUID=0x33C5;
+    const int64u Segment_Tracks_TrackEntry_Video=0x60;
+    const int64u Segment_Tracks_TrackEntry_Video_AspectRatioType=0x14B3;
+    const int64u Segment_Tracks_TrackEntry_Video_ColourSpace=0xEB524;
+    const int64u Segment_Tracks_TrackEntry_Video_DisplayHeight=0x14BA;
+    const int64u Segment_Tracks_TrackEntry_Video_DisplayUnit=0x14B2;
+    const int64u Segment_Tracks_TrackEntry_Video_DisplayWidth=0x14B0;
+    const int64u Segment_Tracks_TrackEntry_Video_FlagInterlaced=0x1A;
+    const int64u Segment_Tracks_TrackEntry_Video_FrameRate=0x383E3;
+    const int64u Segment_Tracks_TrackEntry_Video_PixelCropBottom=0x14AA;
+    const int64u Segment_Tracks_TrackEntry_Video_PixelCropLeft=0x14CC;
+    const int64u Segment_Tracks_TrackEntry_Video_PixelCropRight=0x14DD;
+    const int64u Segment_Tracks_TrackEntry_Video_PixelCropTop=0x14BB;
+    const int64u Segment_Tracks_TrackEntry_Video_PixelHeight=0x3A;
+    const int64u Segment_Tracks_TrackEntry_Video_PixelWidth=0x30;
+    const int64u Segment_Tracks_TrackEntry_Video_StereoMode=0x13B8;
+    const int64u Segment_Tracks_TrackEntry_Video_StereoModeBuggy=0x13B9;
+    const int64u Segment_Tracks_TrackEntry_TrackOverlay=0x2FAB;
+    const int64u Segment_Tracks_TrackEntry_TrackTranslate=0x2624;
+    const int64u Segment_Tracks_TrackEntry_TrackTranslate_Codec=0x26BF;
+    const int64u Segment_Tracks_TrackEntry_TrackTranslate_EditionUID=0x26FC;
+    const int64u Segment_Tracks_TrackEntry_TrackTranslate_TrackID=0x26A5;
+}
+
+//---------------------------------------------------------------------------
 // CRC_32_Table (Little Endian bitstream, )
 // The CRC in use is the IEEE-CRC-32 algorithm as used in the ISO 3309 standard and in section 8.1.1.6.2 of ITU-T recommendation V.42, with initial value of 0xFFFFFFFF. The CRC value MUST be computed on a little endian bitstream and MUST use little endian storage.
 // A CRC is computed like this:
@@ -379,6 +562,9 @@ File_Mk::File_Mk()
     Segment_Cluster_Count=0;
     CurrentAttachmentIsCover=false;
     CoverIsSetFromAttachment=false;
+
+    //Hints
+    File_Buffer_Size_Hint_Pointer=NULL;
 
     //Helpers
     CodecPrivate=NULL;
@@ -882,192 +1068,21 @@ void File_Mk::Header_Parse()
     Header_Fill_Code(Name, Ztring().From_Number(Name, 16));
     Header_Fill_Size(Element_Offset+Size);
 
+    if ((Name==Elements::Segment_Cluster_BlockGroup_Block || Name==Elements::Segment_Cluster_SimpleBlock) && Buffer_Offset+Element_Offset+Size>Buffer_Size && File_Buffer_Size_Hint_Pointer)
+    {
+        int64u Buffer_Size_Target = (size_t)(Buffer_Offset + Element_Offset + Size - Buffer_Size + Element_Offset); //+Element_Offset for next packet header
+
+        if (Buffer_Size_Target<128 * 1024)
+            Buffer_Size_Target = 128 * 1024;
+        (*File_Buffer_Size_Hint_Pointer) = (size_t)Buffer_Size_Target;
+
+        Element_WaitForMoreData();
+        return;
+    }
+
     //Incoherencies
     if (Element_Level<=2 && File_Offset+Buffer_Offset+Element_Offset+Size>File_Size)
         Fill(Stream_General, 0, "IsTruncated", "Yes");
-}
-
-//---------------------------------------------------------------------------
-namespace Elements
-{
-    //Common
-    const int64u Zero=(int32u)-1; //Should be (int64u)-1 but Borland C++ does not like this
-    const int64u CRC32=0x3F;
-    const int64u Void=0x6C;
-
-    //EBML
-    const int64u Ebml=0xA45DFA3;
-    const int64u Ebml_Version=0x286;
-    const int64u Ebml_ReadVersion=0x2F7;
-    const int64u Ebml_MaxIDLength=0x2F2;
-    const int64u Ebml_MaxSizeLength=0x2F3;
-    const int64u Ebml_DocType=0x282;
-    const int64u Ebml_DocTypeVersion=0x287;
-    const int64u Ebml_DocTypeReadVersion=0x285;
-
-    //Segment
-    const int64u Segment=0x8538067;
-    const int64u Segment_Attachements=0x0941A469;
-    const int64u Segment_Attachements_AttachedFile=0x21A7;
-    const int64u Segment_Attachements_AttachedFile_FileData=0x065C;
-    const int64u Segment_Attachements_AttachedFile_FileDescription=0x067E;
-    const int64u Segment_Attachements_AttachedFile_FileName=0x066E;
-    const int64u Segment_Attachements_AttachedFile_FileMimeType=0x0660;
-    const int64u Segment_Attachements_AttachedFile_FileReferral=0x0675;
-    const int64u Segment_Attachements_AttachedFile_FileUID=0x06AE;
-    const int64u Segment_Chapters=0x43A770;
-    const int64u Segment_Chapters_EditionEntry=0x05B9;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom=0x36;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess=0x2944;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessCodecID=0x2955;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessCommand=0x2911;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessCommand_ChapProcessData=0x2933;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessCommand_ChapProcessTime=0x2922;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessPrivate=0x050D;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay=0x00;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapCountry=0x037E;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapLanguage=0x037C;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapString=0x05;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterFlagEnabled=0x0598;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterFlagHidden=0x18;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterPhysicalEquiv=0x23C3;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterSegmentEditionUID=0x2EBC;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterSegmentUID=0x2E67;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterTimeStart=0x11;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterTimeEnd=0x12;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterTrack=0x0F;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterTrack_ChapterTrackNumber=0x09;
-    const int64u Segment_Chapters_EditionEntry_ChapterAtom_ChapterUID=0x33C4;
-    const int64u Segment_Chapters_EditionEntry_EditionFlagDefault=0x05DB;
-    const int64u Segment_Chapters_EditionEntry_EditionFlagHidden=0x05BD;
-    const int64u Segment_Chapters_EditionEntry_EditionFlagOrdered=0x05DD;
-    const int64u Segment_Chapters_EditionEntry_EditionUID=0x05BC;
-    const int64u Segment_Cluster=0xF43B675;
-    const int64u Segment_Cluster_BlockGroup=0x20;
-    const int64u Segment_Cluster_BlockGroup_Block=0x21;
-    const int64u Segment_Cluster_BlockGroup_BlockAdditions=0x35A1;
-    const int64u Segment_Cluster_BlockGroup_BlockAdditions_BlockMore=0x26;
-    const int64u Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAddID=0x6E;
-    const int64u Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditional=0x25;
-    const int64u Segment_Cluster_BlockGroup_BlockDuration=0x1B;
-    const int64u Segment_Cluster_BlockGroup_ReferenceBlock=0x7B;
-    const int64u Segment_Cluster_BlockGroup_ReferencePriority=0x7A;
-    const int64u Segment_Cluster_BlockGroup_Slices=0xE;
-    const int64u Segment_Cluster_BlockGroup_Slices_TimeSlice=0x68;
-    const int64u Segment_Cluster_BlockGroup_Slices_TimeSlice_Duration=0x4F;
-    const int64u Segment_Cluster_BlockGroup_Slices_TimeSlice_LaceNumber=0x4C;
-    const int64u Segment_Cluster_Position=0x27;
-    const int64u Segment_Cluster_PrevSize=0x2B;
-    const int64u Segment_Cluster_SilentTracks=0x1854;
-    const int64u Segment_Cluster_SilentTracks_SilentTrackNumber=0x18D7;
-    const int64u Segment_Cluster_SimpleBlock=0x23;
-    const int64u Segment_Cluster_Timecode=0x67;
-    const int64u Segment_Cues=0xC53BB6B;
-    const int64u Segment_Cues_CuePoint=0x3B;
-    const int64u Segment_Cues_CuePoint_CueTime=0x33;
-    const int64u Segment_Cues_CuePoint_CueTrackPositions=0x37;
-    const int64u Segment_Cues_CuePoint_CueTrackPositions_CueTrack=0x77;
-    const int64u Segment_Cues_CuePoint_CueTrackPositions_CueClusterPosition=0x71;
-    const int64u Segment_Cues_CuePoint_CueTrackPositions_CueBlockNumber=0x1378;
-    const int64u Segment_Info=0x549A966;
-    const int64u Segment_Info_ChapterTranslate=0x2924;
-    const int64u Segment_Info_ChapterTranslate_ChapterTranslateCodec=0x29BF;
-    const int64u Segment_Info_ChapterTranslate_ChapterTranslateEditionUID=0x29FC;
-    const int64u Segment_Info_ChapterTranslate_ChapterTranslateID=0x29A5;
-    const int64u Segment_Info_DateUTC=0x461;
-    const int64u Segment_Info_Duration=0x489;
-    const int64u Segment_Info_MuxingApp=0xD80;
-    const int64u Segment_Info_NextFilename=0x1E83BB;
-    const int64u Segment_Info_NextUID=0x1EB923;
-    const int64u Segment_Info_PrevFilename=0x1C83AB;
-    const int64u Segment_Info_PrevUID=0x1CB923;
-    const int64u Segment_Info_SegmentFamily=0x444;
-    const int64u Segment_Info_SegmentFilename=0x3384;
-    const int64u Segment_Info_SegmentUID=0x33A4;
-    const int64u Segment_Info_TimecodeScale=0xAD7B1;
-    const int64u Segment_Info_Title=0x3BA9;
-    const int64u Segment_Info_WritingApp=0x1741;
-    const int64u Segment_SeekHead=0x14D9B74;
-    const int64u Segment_SeekHead_Seek=0xDBB;
-    const int64u Segment_SeekHead_Seek_SeekID=0x13AB;
-    const int64u Segment_SeekHead_Seek_SeekPosition=0x13AC;
-    const int64u Segment_Tags=0x0254C367;
-    const int64u Segment_Tags_Tag=0x3373;
-    const int64u Segment_Tags_Tag_SimpleTag=0x27C8;
-    const int64u Segment_Tags_Tag_SimpleTag_TagBinary=0x485;
-    const int64u Segment_Tags_Tag_SimpleTag_TagDefault=0x484;
-    const int64u Segment_Tags_Tag_SimpleTag_TagLanguage=0x47A;
-    const int64u Segment_Tags_Tag_SimpleTag_TagName=0x5A3;
-    const int64u Segment_Tags_Tag_SimpleTag_TagString=0x487;
-    const int64u Segment_Tags_Tag_Targets=0x23C0;
-    const int64u Segment_Tags_Tag_Targets_AttachmentUID=0x23C6;
-    const int64u Segment_Tags_Tag_Targets_ChapterUID=0x23C4;
-    const int64u Segment_Tags_Tag_Targets_EditionUID=0x23C9;
-    const int64u Segment_Tags_Tag_Targets_TargetType=0x23CA;
-    const int64u Segment_Tags_Tag_Targets_TargetTypeValue=0x28CA;
-    const int64u Segment_Tags_Tag_Targets_TrackUID=0x23C5;
-    const int64u Segment_Tracks=0x654AE6B;
-    const int64u Segment_Tracks_TrackEntry=0x2E;
-    const int64u Segment_Tracks_TrackEntry_AttachmentLink=0x3446;
-    const int64u Segment_Tracks_TrackEntry_Audio=0x61;
-    const int64u Segment_Tracks_TrackEntry_Audio_BitDepth=0x2264;
-    const int64u Segment_Tracks_TrackEntry_Audio_Channels=0x1F;
-    const int64u Segment_Tracks_TrackEntry_Audio_OutputSamplingFrequency=0x38B5;
-    const int64u Segment_Tracks_TrackEntry_Audio_SamplingFrequency=0x35;
-    const int64u Segment_Tracks_TrackEntry_CodecDecodeAll=0x2A;
-    const int64u Segment_Tracks_TrackEntry_CodecID=0x6;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings=0x2D80;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding=0x2240;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Order=0x1031;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Scope=0x1032;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Type=0x1033;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression=0x1034;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression_ContentCompAlgo=0x0254;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression_ContentCompSettings=0x0255;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption=0x1035;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentEncAlgo=0x07E1;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentEncKeyID=0x07E2;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSignature=0x07E3;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSigKeyID=0x07E4;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSigAlgo=0x07E5;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSigHashAlgo=0x07E6;
-    const int64u Segment_Tracks_TrackEntry_CodecName=0x58688;
-    const int64u Segment_Tracks_TrackEntry_CodecPrivate=0x23A2;
-    const int64u Segment_Tracks_TrackEntry_DefaultDuration=0x3E383;
-    const int64u Segment_Tracks_TrackEntry_FlagDefault=0x8;
-    const int64u Segment_Tracks_TrackEntry_FlagEnabled=0x39;
-    const int64u Segment_Tracks_TrackEntry_FlagForced=0x15AA;
-    const int64u Segment_Tracks_TrackEntry_FlagLacing=0x1C;
-    const int64u Segment_Tracks_TrackEntry_Language=0x2B59C;
-    const int64u Segment_Tracks_TrackEntry_MaxBlockAdditionID=0x15EE;
-    const int64u Segment_Tracks_TrackEntry_MaxCache=0x2DF8;
-    const int64u Segment_Tracks_TrackEntry_MinCache=0x2DE7;
-    const int64u Segment_Tracks_TrackEntry_Name=0x136E;
-    const int64u Segment_Tracks_TrackEntry_TrackNumber=0x57;
-    const int64u Segment_Tracks_TrackEntry_TrackTimecodeScale=0x3314F;
-    const int64u Segment_Tracks_TrackEntry_TrackType=0x3;
-    const int64u Segment_Tracks_TrackEntry_TrackUID=0x33C5;
-    const int64u Segment_Tracks_TrackEntry_Video=0x60;
-    const int64u Segment_Tracks_TrackEntry_Video_AspectRatioType=0x14B3;
-    const int64u Segment_Tracks_TrackEntry_Video_ColourSpace=0xEB524;
-    const int64u Segment_Tracks_TrackEntry_Video_DisplayHeight=0x14BA;
-    const int64u Segment_Tracks_TrackEntry_Video_DisplayUnit=0x14B2;
-    const int64u Segment_Tracks_TrackEntry_Video_DisplayWidth=0x14B0;
-    const int64u Segment_Tracks_TrackEntry_Video_FlagInterlaced=0x1A;
-    const int64u Segment_Tracks_TrackEntry_Video_FrameRate=0x383E3;
-    const int64u Segment_Tracks_TrackEntry_Video_PixelCropBottom=0x14AA;
-    const int64u Segment_Tracks_TrackEntry_Video_PixelCropLeft=0x14CC;
-    const int64u Segment_Tracks_TrackEntry_Video_PixelCropRight=0x14DD;
-    const int64u Segment_Tracks_TrackEntry_Video_PixelCropTop=0x14BB;
-    const int64u Segment_Tracks_TrackEntry_Video_PixelHeight=0x3A;
-    const int64u Segment_Tracks_TrackEntry_Video_PixelWidth=0x30;
-    const int64u Segment_Tracks_TrackEntry_Video_StereoMode=0x13B8;
-    const int64u Segment_Tracks_TrackEntry_Video_StereoModeBuggy=0x13B9;
-    const int64u Segment_Tracks_TrackEntry_TrackOverlay=0x2FAB;
-    const int64u Segment_Tracks_TrackEntry_TrackTranslate=0x2624;
-    const int64u Segment_Tracks_TrackEntry_TrackTranslate_Codec=0x26BF;
-    const int64u Segment_Tracks_TrackEntry_TrackTranslate_EditionUID=0x26FC;
-    const int64u Segment_Tracks_TrackEntry_TrackTranslate_TrackID=0x26A5;
 }
 
 //---------------------------------------------------------------------------
@@ -1491,6 +1506,8 @@ void File_Mk::Ebml_DocType()
         {
             Accept("Matroska");
             Fill(Stream_General, 0, General_Format, "Matroska");
+            Buffer_MaximumSize = 64 * 1024 * 1024; //Testing with huge lossless 4K frames
+            File_Buffer_Size_Hint_Pointer = Config->File_Buffer_Size_Hint_Pointer_Get();
         }
         else if (Data==__T("webm"))
         {
