@@ -1209,17 +1209,12 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(int32s context)
         u = 0;
     return u;
 #else //MEDIAINFO_TRACE_FFV1CONTENT
-    int32s u;
-
-    // New symbol, go to "run mode"
-    if (context == 0 && current_slice->run_mode == RUN_MODE_STOP)
-        current_slice->run_mode = RUN_MODE_PROCESSING;
-
-    // If not running, get the symbol
     if (current_slice->run_mode == RUN_MODE_STOP)
     {
-        u = get_symbol_with_bias_correlation(&Context_GR[context]);
-        return u;
+        if (context)
+            return get_symbol_with_bias_correlation(&Context_GR[context]); // If not running, get the symbol
+
+        current_slice->run_mode = RUN_MODE_PROCESSING; // New symbol, go to "run mode"
     }
 
     if (current_slice->run_segment_length == 0 && current_slice->run_mode == RUN_MODE_PROCESSING) // Same symbol length
@@ -1229,28 +1224,38 @@ int32s File_Ffv1::line_adaptive_symbol_by_symbol(int32s context)
             current_slice->run_segment_length = run[current_slice->run_index];
             if (x + current_slice->run_segment_length <= current_slice->w) //Do not go further as the end of line
                 ++current_slice->run_index;
+            if (--current_slice->run_segment_length >= 0)
+                return 0;
         }
         else // "miss"
         {
-            current_slice->run_segment_length=(int32s)BS->Get4(log2_run[current_slice->run_index]);
-            if (current_slice->run_index)
-                --current_slice->run_index;
             current_slice->run_mode = RUN_MODE_INTERRUPTED;
+
+            if (current_slice->run_index)
+            {
+                int8u count = log2_run[current_slice->run_index--];
+                if (count)
+                {
+                    current_slice->run_segment_length = ((int32s)BS->Get4(count)) - 1;
+                    if (current_slice->run_segment_length >= 0)
+                        return 0;
+                }
+                else
+                    current_slice->run_segment_length = -1;
+            }
+            else
+                current_slice->run_segment_length = -1;
         }
     }
+    else if (--current_slice->run_segment_length >= 0)
+        return 0;
 
-    current_slice->run_segment_length--;
-    if (current_slice->run_segment_length < 0) // we passed the length of same symbol, time to get the new symbol
-    {
-        u = get_symbol_with_bias_correlation(&Context_GR[context]);
-        if (u >= 0) // GR(u - 1, ...)
-            u++;
+    // Time for the new symbol length run
+    current_slice->run_mode_init();
 
-        // Time for the new symbol length run
-        current_slice->run_mode_init();
-        current_slice->run_segment_length = 0;
-    } else // same symbol as previous pixel, no difference, waiting
-        u = 0;
+    int32s u = get_symbol_with_bias_correlation(&Context_GR[context]);
+    if (u >= 0) // GR(u - 1, ...)
+        u++;
     return u;
 #endif //MEDIAINFO_TRACE_FFV1CONTENT
 }
