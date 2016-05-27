@@ -813,7 +813,11 @@ int File_Ffv1::slice(states &States)
         if (slice_header(States) < 0)
             return -1;
 
-    Trace_Activated = false; // Trace is too huge, deactivating it during pixel decoding
+    #ifdef MEDIAINFO_TRACE
+        bool Trace_Activated_Save=Trace_Activated;
+        if (Trace_Activated)
+            Trace_Activated=false; // Trace is too huge, deactivating it during pixel decoding
+    #endif //MEDIAINFO_TRACE
 
     if (!coder_type)
     {
@@ -880,7 +884,10 @@ int File_Ffv1::slice(states &States)
         Element_Offset--;
     }
 
-    Trace_Activated = true; // Trace is too huge, reactivating after during pixel decoding
+    #ifdef MEDIAINFO_TRACE
+        Trace_Activated=Trace_Activated_Save; // Trace is too huge, reactivating after during pixel decoding
+    #endif //MEDIAINFO_TRACE
+
     return 0;
 }
 
