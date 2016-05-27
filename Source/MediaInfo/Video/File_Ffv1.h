@@ -169,8 +169,8 @@ private :
     void rgb();
     void plane(int32u pos);
     void line(int pos, int16s *sample[2]);
-    int32s line_range_coder(int32s context);
-    int32s line_adaptive_symbol_by_symbol(int32s context);
+    int32s pixel_GR(int32s context);
+    int32s pixel_RC(int32s context);
     void read_quant_tables(int i);
     void read_quant_table(int i, int j, size_t scale);
     void copy_plane_states_to_slice(int8u plane_count);

@@ -1182,7 +1182,7 @@ static inline int get_context_5(int16s quant_table[MAX_CONTEXT_INPUTS][256], int
 }
 
 //---------------------------------------------------------------------------
-int32s File_Ffv1::line_range_coder(int32s context)
+int32s File_Ffv1::pixel_RC(int32s context)
 {
     int32s u;
 
@@ -1192,7 +1192,7 @@ int32s File_Ffv1::line_range_coder(int32s context)
 
 
 //---------------------------------------------------------------------------
-int32s File_Ffv1::line_adaptive_symbol_by_symbol(int32s context)
+int32s File_Ffv1::pixel_GR(int32s context)
 {
 #if MEDIAINFO_TRACE_FFV1CONTENT
     int32s u;
@@ -1322,7 +1322,7 @@ void File_Ffv1::line(int pos, int16s *sample[2])
         {
             int32s context = Is5 ? get_context_5(quant_table, s1c, s0c) : get_context_3(quant_table, s1c, s0c);
 
-            *s1c = (predict(s1c, s0c) + (context >= 0 ? line_range_coder(context) : -line_range_coder(-context))) & bits_mask1;
+            *s1c = (predict(s1c, s0c) + (context >= 0 ? pixel_RC(context) : -pixel_RC(-context))) & bits_mask1;
 
             s0c++;
             s1c++;
@@ -1339,7 +1339,7 @@ void File_Ffv1::line(int pos, int16s *sample[2])
         {
             int32s context = Is5 ? get_context_5(quant_table, s1c, s0c) : get_context_3(quant_table, s1c, s0c);
 
-            *s1c = (predict(s1c, s0c) + (context >= 0 ? line_adaptive_symbol_by_symbol(context) : -line_adaptive_symbol_by_symbol(-context))) & bits_mask1;
+            *s1c = (predict(s1c, s0c) + (context >= 0 ? pixel_GR(context) : -pixel_GR(-context))) & bits_mask1;
 
             s0c++;
             s1c++;
