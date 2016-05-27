@@ -1013,6 +1013,14 @@ void File_Ffv1::plane(int32u pos)
         Element_Begin1("Plane");
     #endif //MEDIAINFO_TRACE_FFV1CONTENT
 
+    if (bits_per_sample <= 8)
+        bits_max = 8;
+    else
+        bits_max = bits_per_sample;
+    bits_mask1 = ((1 << bits_max) - 1);
+    bits_mask2 = 1 << (bits_max - 1);
+    bits_mask3 = bits_mask2 - 1;
+
     int16s *sample[2];
     sample[0] = current_slice->sample_buffer + 3;
     sample[1] = current_slice->sample_buffer + current_slice->w + 6 + 3;
@@ -1060,11 +1068,18 @@ void File_Ffv1::rgb()
         Element_Begin1("rgb");
     #endif //MEDIAINFO_TRACE_FFV1CONTENT
 
+    bits_max = bits_per_sample + 1;
+    bits_mask1 = (1 << bits_max) - 1;
+    bits_mask2 = 1 << (bits_max - 1);
+    bits_mask3 = bits_mask2-1;
+
+    size_t c_max = alpha_plane ? 4 : 3;
+
     int16s *sample[4][2];
 
     current_slice->run_index = 0;
 
-    for (int x = 0; x < 4; x++) {
+    for (int x = 0; x < c_max; x++) {
         sample[x][0] = current_slice->sample_buffer +  x * 2      * (current_slice->w + 6) + 3;
         sample[x][1] = current_slice->sample_buffer + (x * 2 + 1) * (current_slice->w + 6) + 3;
     }
@@ -1077,7 +1092,7 @@ void File_Ffv1::rgb()
             Element_Info1(y);
         #endif //MEDIAINFO_TRACE_FFV1CONTENT
 
-        for (size_t c = 0; c < (unsigned)(3 + alpha_plane); c++)
+        for (size_t c = 0; c < c_max; c++)
         {
             // Copy for next lines: 4.3 context
             int16s *temp = sample[c][0];
@@ -1275,7 +1290,7 @@ void File_Ffv1::line(int pos, int16s *sample[2])
         if (negative)
             u = -u;
 
-        sample[1][x] = (predict(sample[1] + x, sample[0] + x) + u) & ((1 << bits_max) -1);
+        sample[1][x] = (predict(sample[1] + x, sample[0] + x) + u) & bits_mask1;
     }
 }
 
@@ -1483,10 +1498,10 @@ int32s File_Ffv1::get_symbol_with_bias_correlation(Slice::Context *context)
     update_correlation_value_and_shift(context);
 
     // Step 7 (TODO better way)
-    bool neg = code & (1 << (bits_max - 1)); // check if the number is negative
-    code = code & ((1 << (bits_max - 1)) - 1); // Keep only the n bits
+    bool neg = code & bits_mask2; // check if the number is negative
+    code = code & bits_mask3; // Keep only the n bits
     if (neg)
-        code = - 1 - (~code & ((1 << (bits_max - 1)) - 1)); // 0xFFFFFFFF - positive value on n bits
+        code = - 1 - (~code & bits_mask3); // 0xFFFFFFFF - positive value on n bits
 
     return code;
 }

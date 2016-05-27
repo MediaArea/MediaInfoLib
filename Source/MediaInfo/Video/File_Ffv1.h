@@ -234,6 +234,9 @@ private :
     //TEMP
     static const int32u PREFIX_MAX = 12; //limit
     int8u bits_max;
+    int16u bits_mask1;
+    int32s bits_mask2;
+    int32s bits_mask3;
 
     states_context_plane plane_states[MAX_QUANT_TABLES];
 
