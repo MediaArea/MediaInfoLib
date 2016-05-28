@@ -182,6 +182,8 @@ namespace Elements
     const int64u Segment_Cues_CuePoint_CueTrackPositions=0x37;
     const int64u Segment_Cues_CuePoint_CueTrackPositions_CueTrack=0x77;
     const int64u Segment_Cues_CuePoint_CueTrackPositions_CueClusterPosition=0x71;
+    const int64u Segment_Cues_CuePoint_CueTrackPositions_CueRelativePosition=0x70;
+    const int64u Segment_Cues_CuePoint_CueTrackPositions_CueDuration=0x32;
     const int64u Segment_Cues_CuePoint_CueTrackPositions_CueBlockNumber=0x1378;
     const int64u Segment_Info=0x549A966;
     const int64u Segment_Info_ChapterTranslate=0x2924;
@@ -1230,6 +1232,8 @@ void File_Mk::Data_Parse()
                     ATOM_BEGIN
                     ATOM(Segment_Cues_CuePoint_CueTrackPositions_CueTrack)
                     ATOM(Segment_Cues_CuePoint_CueTrackPositions_CueClusterPosition)
+                    ATOM(Segment_Cues_CuePoint_CueTrackPositions_CueRelativePosition)
+                    ATOM(Segment_Cues_CuePoint_CueTrackPositions_CueDuration)
                     ATOM(Segment_Cues_CuePoint_CueTrackPositions_CueBlockNumber)
                     ATOM_END_MK
                 ATOM_END_MK
@@ -2341,6 +2345,24 @@ void File_Mk::Segment_Cues_CuePoint_CueTrackPositions_CueTrack()
 void File_Mk::Segment_Cues_CuePoint_CueTrackPositions_CueClusterPosition()
 {
     Element_Name("CueClusterPosition");
+
+    //Parsing
+    UInteger_Info();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Cues_CuePoint_CueTrackPositions_CueRelativePosition()
+{
+    Element_Name("CueRelativePosition");
+
+    //Parsing
+    UInteger_Info();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Cues_CuePoint_CueTrackPositions_CueDuration()
+{
+    Element_Name("CueDuration");
 
     //Parsing
     UInteger_Info();

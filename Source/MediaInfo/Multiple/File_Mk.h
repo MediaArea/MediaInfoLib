@@ -115,6 +115,8 @@ private :
     void Segment_Cues_CuePoint_CueTrackPositions();
     void Segment_Cues_CuePoint_CueTrackPositions_CueTrack();
     void Segment_Cues_CuePoint_CueTrackPositions_CueClusterPosition();
+    void Segment_Cues_CuePoint_CueTrackPositions_CueRelativePosition();
+    void Segment_Cues_CuePoint_CueTrackPositions_CueDuration();
     void Segment_Cues_CuePoint_CueTrackPositions_CueBlockNumber();
     void Segment_Info();
     void Segment_Info_ChapterTranslate();
