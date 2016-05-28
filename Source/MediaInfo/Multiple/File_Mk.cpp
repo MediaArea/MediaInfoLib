@@ -1971,7 +1971,7 @@ void File_Mk::Segment_Cluster_BlockGroup()
 //---------------------------------------------------------------------------
 void File_Mk::Segment_Cluster_BlockGroup_Block()
 {
-    Element_Name("Block");
+    Element_Name(Element_Level==3?"SimpleBlock":"Block");
 
     //Parsing
     int64u TrackNumber;
