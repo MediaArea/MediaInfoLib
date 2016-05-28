@@ -273,7 +273,10 @@ Ztring MediaInfo_Internal::Inform()
     if (XML_0_7_78_MA || XML_0_7_78_MI)
     {
         size_t Modified;
-        Retour+=__T("<media ref=\"")+MediaInfo_Internal::Xml_Content_Escape(Get(Stream_General, 0, General_CompleteName), Modified)+__T("\">\n");
+        Retour+=__T("<media ref=\"")+MediaInfo_Internal::Xml_Content_Escape(Get(Stream_General, 0, General_CompleteName), Modified)+= __T("\"");
+        if (Info && !Info->ParserName.empty())
+            Retour+=__T(" parser=\"")+ Info->ParserName+=__T("\"");
+        Retour+= __T(">\n");
     }
     if (XML_0_7_78_MA)
         Retour+=__T("<MediaInfo xmlns=\"https://mediaarea.net/mediainfo\" version=\"2.0beta1\">\n");
