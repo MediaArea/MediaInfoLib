@@ -340,7 +340,10 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
             for (size_t FilePos=0; FilePos<Info.size(); FilePos++)
             {
                 size_t Modified;
-                Result+=__T("<media ref=\"")+MediaInfo_Internal::Xml_Content_Escape(Info[FilePos]->Get(Stream_General, 0, General_CompleteName), Modified)+__T("\">");
+                Result+=__T("<media ref=\"")+MediaInfo_Internal::Xml_Content_Escape(Info[FilePos]->Get(Stream_General, 0, General_CompleteName), Modified)+__T("\"");
+                if (Info[FilePos] && !Info[FilePos]->ParserName.empty())
+                    Result+=__T(" parser=\"")+Info[FilePos]->ParserName+=__T("\"");
+                Result+= __T('>');
                 Result+=MediaInfoLib::Config.LineSeparator_Get();
                 Result+=Inform(FilePos);
                 if (!Result.empty() && Result[Result.size()-1]!=__T('\r') && Result[Result.size()-1]!=__T('\n'))

@@ -115,6 +115,8 @@ private :
     void Segment_Cues_CuePoint_CueTrackPositions();
     void Segment_Cues_CuePoint_CueTrackPositions_CueTrack();
     void Segment_Cues_CuePoint_CueTrackPositions_CueClusterPosition();
+    void Segment_Cues_CuePoint_CueTrackPositions_CueRelativePosition();
+    void Segment_Cues_CuePoint_CueTrackPositions_CueDuration();
     void Segment_Cues_CuePoint_CueTrackPositions_CueBlockNumber();
     void Segment_Info();
     void Segment_Info_ChapterTranslate();
@@ -152,7 +154,7 @@ private :
     void Segment_Tags_Tag_Targets_EditionUID();
     void Segment_Tags_Tag_Targets_TargetType();
     void Segment_Tags_Tag_Targets_TargetTypeValue();
-    void Segment_Tags_Tag_Targets_TrackUID();
+    void Segment_Tags_Tag_Targets_TagTrackUID();
     void Segment_Tracks();
     void Segment_Tracks_TrackEntry();
     void Segment_Tracks_TrackEntry_AttachmentLink();
@@ -321,7 +323,7 @@ private :
     typedef std::map<Ztring, Ztring> tagspertrack;
     typedef std::map<int64u, tagspertrack> tags;
     tags    Segment_Tags_Tag_Items;
-    int64u  Segment_Tags_Tag_Targets_TrackUID_Value;
+    int64u  Segment_Tags_Tag_Targets_TagTrackUID_Value;
     bool    CurrentAttachmentIsCover;
     bool    CoverIsSetFromAttachment;
     struct crc32
