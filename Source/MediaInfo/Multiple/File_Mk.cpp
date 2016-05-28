@@ -221,7 +221,7 @@ namespace Elements
     const int64u Segment_Tags_Tag_Targets_EditionUID=0x23C9;
     const int64u Segment_Tags_Tag_Targets_TargetType=0x23CA;
     const int64u Segment_Tags_Tag_Targets_TargetTypeValue=0x28CA;
-    const int64u Segment_Tags_Tag_Targets_TrackUID=0x23C5;
+    const int64u Segment_Tags_Tag_Targets_TagTrackUID=0x23C5;
     const int64u Segment_Tracks=0x654AE6B;
     const int64u Segment_Tracks_TrackEntry=0x2E;
     const int64u Segment_Tracks_TrackEntry_AttachmentLink=0x3446;
@@ -1303,7 +1303,7 @@ void File_Mk::Data_Parse()
                     ATOM(Segment_Tags_Tag_Targets_EditionUID)
                     ATOM(Segment_Tags_Tag_Targets_TargetType)
                     ATOM(Segment_Tags_Tag_Targets_TargetTypeValue)
-                    ATOM(Segment_Tags_Tag_Targets_TrackUID)
+                    ATOM(Segment_Tags_Tag_Targets_TagTrackUID)
                     ATOM_END_MK
                 ATOM_END_MK
             ATOM_END_MK
@@ -2636,7 +2636,7 @@ void File_Mk::Segment_Tags_Tag()
     }
 
     //Init
-    Segment_Tags_Tag_Targets_TrackUID_Value=0; // Default is all tracks
+    Segment_Tags_Tag_Targets_TagTrackUID_Value=0; // Default is all tracks
 }
 
 //---------------------------------------------------------------------------
@@ -2734,7 +2734,7 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagString()
             TagName+=__T('/');
     }
 
-    Segment_Tags_Tag_Items[Segment_Tags_Tag_Targets_TrackUID_Value][TagName]=TagString;
+    Segment_Tags_Tag_Items[Segment_Tags_Tag_Targets_TagTrackUID_Value][TagName]=TagString;
 }
 
 //---------------------------------------------------------------------------
@@ -2774,18 +2774,18 @@ void File_Mk::Segment_Tags_Tag_Targets_TargetTypeValue()
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Tags_Tag_Targets_TrackUID()
+void File_Mk::Segment_Tags_Tag_Targets_TagTrackUID()
 {
-    Element_Name("TrackUID");
+    Element_Name("TagTrackUID");
 
     //Parsing
-    Segment_Tags_Tag_Targets_TrackUID_Value=UInteger_Get();
+    Segment_Tags_Tag_Targets_TagTrackUID_Value=UInteger_Get();
 
     FILLING_BEGIN();
         tags::iterator Items0 = Segment_Tags_Tag_Items.find((int64u)-1);
         if (Items0 != Segment_Tags_Tag_Items.end())
         {
-            tagspertrack &Items = Segment_Tags_Tag_Items[Segment_Tags_Tag_Targets_TrackUID_Value]; // Creates it if not yet present, else take the previous one
+            tagspertrack &Items = Segment_Tags_Tag_Items[Segment_Tags_Tag_Targets_TagTrackUID_Value]; // Creates it if not yet present, else take the previous one
 
             //Change the key of the current tag
             for (tagspertrack::iterator Item=Items0->second.begin(); Item!=Items0->second.end(); ++Item)
