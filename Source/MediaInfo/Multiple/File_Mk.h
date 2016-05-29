@@ -35,7 +35,6 @@ protected :
 public :
     File_Mk();
     ~File_Mk();
-    void Segment_Attachements_AttachedFile_FileName();
 
 private :
     //Buffer
@@ -55,13 +54,16 @@ private :
     void Ebml_DocTypeVersion();
     void Ebml_DocTypeReadVersion();
     void Segment();
-    void Segment_Attachements();
-    void Segment_Attachements_AttachedFile();
-    void Segment_Attachements_AttachedFile_FileData();
-    void Segment_Attachements_AttachedFile_FileDescription();
-    void Segment_Attachements_AttachedFile_FileMimeType();
-    void Segment_Attachements_AttachedFile_FileReferral();
-    void Segment_Attachements_AttachedFile_FileUID();
+    void Segment_Attachments();
+    void Segment_Attachments_AttachedFile();
+    void Segment_Attachments_AttachedFile_FileDescription();
+    void Segment_Attachments_AttachedFile_FileName();
+    void Segment_Attachments_AttachedFile_FileMimeType();
+    void Segment_Attachments_AttachedFile_FileData();
+    void Segment_Attachments_AttachedFile_FileUID();
+    void Segment_Attachments_AttachedFile_FileReferral();
+    void Segment_Attachments_AttachedFile_FileUsedStartTime();
+    void Segment_Attachments_AttachedFile_FileUsedEndTime();
     void Segment_Chapters();
     void Segment_Chapters_EditionEntry();
     void Segment_Chapters_EditionEntry_ChapterAtom();
@@ -97,8 +99,10 @@ private :
     void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAddID();
     void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditional();
     void Segment_Cluster_BlockGroup_BlockDuration();
-    void Segment_Cluster_BlockGroup_ReferenceBlock();
     void Segment_Cluster_BlockGroup_ReferencePriority();
+    void Segment_Cluster_BlockGroup_ReferenceBlock();
+    void Segment_Cluster_BlockGroup_ReferenceVirtual();
+    void Segment_Cluster_BlockGroup_CodecState();
     void Segment_Cluster_BlockGroup_Slices();
     void Segment_Cluster_BlockGroup_Slices_TimeSlice();
     void Segment_Cluster_BlockGroup_Slices_TimeSlice_Duration();
@@ -149,12 +153,12 @@ private :
     void Segment_Tags_Tag_SimpleTag_TagName();
     void Segment_Tags_Tag_SimpleTag_TagString();
     void Segment_Tags_Tag_Targets();
-    void Segment_Tags_Tag_Targets_AttachmentUID();
-    void Segment_Tags_Tag_Targets_ChapterUID();
-    void Segment_Tags_Tag_Targets_EditionUID();
-    void Segment_Tags_Tag_Targets_TargetType();
     void Segment_Tags_Tag_Targets_TargetTypeValue();
+    void Segment_Tags_Tag_Targets_TargetType();
     void Segment_Tags_Tag_Targets_TagTrackUID();
+    void Segment_Tags_Tag_Targets_TagEditionUID();
+    void Segment_Tags_Tag_Targets_TagChapterUID();
+    void Segment_Tags_Tag_Targets_TagAttachmentUID();
     void Segment_Tracks();
     void Segment_Tracks_TrackEntry();
     void Segment_Tracks_TrackEntry_AttachmentLink();
@@ -163,6 +167,9 @@ private :
     void Segment_Tracks_TrackEntry_Audio_Channels();
     void Segment_Tracks_TrackEntry_Audio_OutputSamplingFrequency();
     void Segment_Tracks_TrackEntry_Audio_SamplingFrequency();
+    void Segment_Tracks_TrackEntry_CodecSettings();
+    void Segment_Tracks_TrackEntry_CodecInfoURL();
+    void Segment_Tracks_TrackEntry_CodecDownloadURL();
     void Segment_Tracks_TrackEntry_CodecDecodeAll();
     void Segment_Tracks_TrackEntry_CodecID();
     void Segment_Tracks_TrackEntry_ContentEncodings() {};
@@ -197,6 +204,7 @@ private :
     void Segment_Tracks_TrackEntry_Name();
     void Segment_Tracks_TrackEntry_TrackNumber();
     void Segment_Tracks_TrackEntry_TrackTimecodeScale();
+    void Segment_Tracks_TrackEntry_TrackOffset();
     void Segment_Tracks_TrackEntry_TrackType();
     void Segment_Tracks_TrackEntry_TrackUID();
     void Segment_Tracks_TrackEntry_Video();

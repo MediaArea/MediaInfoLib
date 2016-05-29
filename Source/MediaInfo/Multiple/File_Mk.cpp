@@ -121,14 +121,16 @@ namespace Elements
 
     //Segment
     const int64u Segment=0x8538067;
-    const int64u Segment_Attachements=0x0941A469;
-    const int64u Segment_Attachements_AttachedFile=0x21A7;
-    const int64u Segment_Attachements_AttachedFile_FileData=0x065C;
-    const int64u Segment_Attachements_AttachedFile_FileDescription=0x067E;
-    const int64u Segment_Attachements_AttachedFile_FileName=0x066E;
-    const int64u Segment_Attachements_AttachedFile_FileMimeType=0x0660;
-    const int64u Segment_Attachements_AttachedFile_FileReferral=0x0675;
-    const int64u Segment_Attachements_AttachedFile_FileUID=0x06AE;
+    const int64u Segment_Attachments=0x0941A469;
+    const int64u Segment_Attachments_AttachedFile=0x21A7;
+    const int64u Segment_Attachments_AttachedFile_FileDescription=0x067E;
+    const int64u Segment_Attachments_AttachedFile_FileName=0x066E;
+    const int64u Segment_Attachments_AttachedFile_FileMimeType=0x0660;
+    const int64u Segment_Attachments_AttachedFile_FileData=0x065C;
+    const int64u Segment_Attachments_AttachedFile_FileUID=0x06AE;
+    const int64u Segment_Attachments_AttachedFile_FileReferral=0x0675;
+    const int64u Segment_Attachments_AttachedFile_FileUsedStartTime=0x0661;
+    const int64u Segment_Attachments_AttachedFile_FileUsedEndTime=0x0662;
     const int64u Segment_Chapters=0x43A770;
     const int64u Segment_Chapters_EditionEntry=0x05B9;
     const int64u Segment_Chapters_EditionEntry_ChapterAtom=0x36;
@@ -159,13 +161,17 @@ namespace Elements
     const int64u Segment_Cluster=0xF43B675;
     const int64u Segment_Cluster_BlockGroup=0x20;
     const int64u Segment_Cluster_BlockGroup_Block=0x21;
+    const int64u Segment_Cluster_BlockGroup_BlockVirtual=0x22;
     const int64u Segment_Cluster_BlockGroup_BlockAdditions=0x35A1;
     const int64u Segment_Cluster_BlockGroup_BlockAdditions_BlockMore=0x26;
     const int64u Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAddID=0x6E;
     const int64u Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditional=0x25;
     const int64u Segment_Cluster_BlockGroup_BlockDuration=0x1B;
-    const int64u Segment_Cluster_BlockGroup_ReferenceBlock=0x7B;
     const int64u Segment_Cluster_BlockGroup_ReferencePriority=0x7A;
+    const int64u Segment_Cluster_BlockGroup_ReferenceBlock=0x7B;
+    const int64u Segment_Cluster_BlockGroup_ReferenceVirtual=0x7D;
+    const int64u Segment_Cluster_BlockGroup_CodecState=0x24;
+    const int64u Segment_Cluster_BlockGroup_DiscardPadding=0x35A2;
     const int64u Segment_Cluster_BlockGroup_Slices=0xE;
     const int64u Segment_Cluster_BlockGroup_Slices_TimeSlice=0x68;
     const int64u Segment_Cluster_BlockGroup_Slices_TimeSlice_Duration=0x4F;
@@ -216,12 +222,12 @@ namespace Elements
     const int64u Segment_Tags_Tag_SimpleTag_TagName=0x5A3;
     const int64u Segment_Tags_Tag_SimpleTag_TagString=0x487;
     const int64u Segment_Tags_Tag_Targets=0x23C0;
-    const int64u Segment_Tags_Tag_Targets_AttachmentUID=0x23C6;
-    const int64u Segment_Tags_Tag_Targets_ChapterUID=0x23C4;
-    const int64u Segment_Tags_Tag_Targets_EditionUID=0x23C9;
-    const int64u Segment_Tags_Tag_Targets_TargetType=0x23CA;
     const int64u Segment_Tags_Tag_Targets_TargetTypeValue=0x28CA;
+    const int64u Segment_Tags_Tag_Targets_TargetType=0x23CA;
     const int64u Segment_Tags_Tag_Targets_TagTrackUID=0x23C5;
+    const int64u Segment_Tags_Tag_Targets_TagEditionUID=0x23C9;
+    const int64u Segment_Tags_Tag_Targets_TagChapterUID=0x23C4;
+    const int64u Segment_Tags_Tag_Targets_TagAttachmentUID=0x23C6;
     const int64u Segment_Tracks=0x654AE6B;
     const int64u Segment_Tracks_TrackEntry=0x2E;
     const int64u Segment_Tracks_TrackEntry_AttachmentLink=0x3446;
@@ -230,6 +236,9 @@ namespace Elements
     const int64u Segment_Tracks_TrackEntry_Audio_Channels=0x1F;
     const int64u Segment_Tracks_TrackEntry_Audio_OutputSamplingFrequency=0x38B5;
     const int64u Segment_Tracks_TrackEntry_Audio_SamplingFrequency=0x35;
+    const int64u Segment_Tracks_TrackEntry_CodecSettings=0x1A9697;
+    const int64u Segment_Tracks_TrackEntry_CodecInfoURL=0x1B4040;
+    const int64u Segment_Tracks_TrackEntry_CodecDownloadURL=0x06B240;
     const int64u Segment_Tracks_TrackEntry_CodecDecodeAll=0x2A;
     const int64u Segment_Tracks_TrackEntry_CodecID=0x6;
     const int64u Segment_Tracks_TrackEntry_ContentEncodings=0x2D80;
@@ -261,6 +270,7 @@ namespace Elements
     const int64u Segment_Tracks_TrackEntry_Name=0x136E;
     const int64u Segment_Tracks_TrackEntry_TrackNumber=0x57;
     const int64u Segment_Tracks_TrackEntry_TrackTimecodeScale=0x3314F;
+    const int64u Segment_Tracks_TrackEntry_TrackOffset=0x137F;
     const int64u Segment_Tracks_TrackEntry_TrackType=0x3;
     const int64u Segment_Tracks_TrackEntry_TrackUID=0x33C5;
     const int64u Segment_Tracks_TrackEntry_Video=0x60;
@@ -1063,12 +1073,34 @@ void File_Mk::Header_Parse()
 
     //Parsing
     int64u Name, Size;
+    bool NameIsValid=true;
+    if (Element_Offset+1<Element_Size)
+    {
+        int8u NamePeek;
+        Peek_B1(NamePeek);
+        if (NamePeek<0x10)
+        {
+            Skip_B1(                                            "Invalid");
+            #if MEDIAINFO_TRACE
+            Element_Level--;
+            Element_Info("NOK");
+            Element_Level++;
+            #endif //MEDIAINFO_TRACE
+            NameIsValid=false;
+
+            Header_Fill_Code(0, "Junk");
+            Header_Fill_Size(1);
+        }
+    }
+    if (NameIsValid)
+    {
     Get_EB (Name,                                               "Name");
     Get_EB (Size,                                               "Size");
 
     //Filling
     Header_Fill_Code(Name, Ztring().From_Number(Name, 16));
     Header_Fill_Size(Element_Offset+Size);
+    }
 
     if ((Name==Elements::Segment_Cluster_BlockGroup_Block || Name==Elements::Segment_Cluster_SimpleBlock) && Buffer_Offset+Element_Offset+Size>Buffer_Size && File_Buffer_Size_Hint_Pointer)
     {
@@ -1136,16 +1168,18 @@ void File_Mk::Data_Parse()
         ATOM_END_MK
     LIST(Segment)
         ATOM_BEGIN
-        LIST(Segment_Attachements)
+        LIST(Segment_Attachments)
             ATOM_BEGIN
-            LIST(Segment_Attachements_AttachedFile)
+            LIST(Segment_Attachments_AttachedFile)
                 ATOM_BEGIN
-                LIST_SKIP(Segment_Attachements_AttachedFile_FileData) //This is ATOM, but some ATOMs are too big
-                ATOM(Segment_Attachements_AttachedFile_FileDescription)
-                ATOM(Segment_Attachements_AttachedFile_FileName)
-                ATOM(Segment_Attachements_AttachedFile_FileMimeType)
-                ATOM(Segment_Attachements_AttachedFile_FileReferral)
-                ATOM(Segment_Attachements_AttachedFile_FileUID)
+                ATOM(Segment_Attachments_AttachedFile_FileDescription)
+                ATOM(Segment_Attachments_AttachedFile_FileName)
+                ATOM(Segment_Attachments_AttachedFile_FileMimeType)
+                LIST_SKIP(Segment_Attachments_AttachedFile_FileData) //This is ATOM, but some ATOMs are too big
+                ATOM(Segment_Attachments_AttachedFile_FileUID)
+                ATOM(Segment_Attachments_AttachedFile_FileReferral)
+                ATOM(Segment_Attachments_AttachedFile_FileUsedStartTime)
+                ATOM(Segment_Attachments_AttachedFile_FileUsedEndTime)
                 ATOM_END_MK
             ATOM_END_MK
         LIST(Segment_Chapters)
@@ -1203,8 +1237,10 @@ void File_Mk::Data_Parse()
                         ATOM_END_MK
                     ATOM_END_MK
                 ATOM(Segment_Cluster_BlockGroup_BlockDuration)
-                ATOM(Segment_Cluster_BlockGroup_ReferenceBlock)
                 ATOM(Segment_Cluster_BlockGroup_ReferencePriority)
+                ATOM(Segment_Cluster_BlockGroup_ReferenceBlock)
+                ATOM(Segment_Cluster_BlockGroup_ReferenceVirtual)
+                ATOM(Segment_Cluster_BlockGroup_CodecState)
                 LIST(Segment_Cluster_BlockGroup_Slices)
                     ATOM_BEGIN
                     LIST(Segment_Cluster_BlockGroup_Slices_TimeSlice)
@@ -1298,12 +1334,12 @@ void File_Mk::Data_Parse()
                     ATOM_END_MK
                 LIST(Segment_Tags_Tag_Targets)
                     ATOM_BEGIN
-                    ATOM(Segment_Tags_Tag_Targets_AttachmentUID)
-                    ATOM(Segment_Tags_Tag_Targets_ChapterUID)
-                    ATOM(Segment_Tags_Tag_Targets_EditionUID)
-                    ATOM(Segment_Tags_Tag_Targets_TargetType)
                     ATOM(Segment_Tags_Tag_Targets_TargetTypeValue)
+                    ATOM(Segment_Tags_Tag_Targets_TargetType)
                     ATOM(Segment_Tags_Tag_Targets_TagTrackUID)
+                    ATOM(Segment_Tags_Tag_Targets_TagEditionUID)
+                    ATOM(Segment_Tags_Tag_Targets_TagChapterUID)
+                    ATOM(Segment_Tags_Tag_Targets_TagAttachmentUID)
                     ATOM_END_MK
                 ATOM_END_MK
             ATOM_END_MK
@@ -1319,6 +1355,9 @@ void File_Mk::Data_Parse()
                     ATOM(Segment_Tracks_TrackEntry_Audio_OutputSamplingFrequency)
                     ATOM(Segment_Tracks_TrackEntry_Audio_SamplingFrequency)
                     ATOM_END_MK
+                ATOM(Segment_Tracks_TrackEntry_CodecSettings)
+                ATOM(Segment_Tracks_TrackEntry_CodecInfoURL)
+                ATOM(Segment_Tracks_TrackEntry_CodecDownloadURL)
                 ATOM(Segment_Tracks_TrackEntry_CodecDecodeAll)
                 ATOM(Segment_Tracks_TrackEntry_CodecID)
                 LIS2(Segment_Tracks_TrackEntry_ContentEncodings, "ContentEncodings")
@@ -1358,6 +1397,7 @@ void File_Mk::Data_Parse()
                 ATOM(Segment_Tracks_TrackEntry_Name)
                 ATOM(Segment_Tracks_TrackEntry_TrackNumber)
                 ATOM(Segment_Tracks_TrackEntry_TrackTimecodeScale)
+                ATOM(Segment_Tracks_TrackEntry_TrackOffset)
                 ATOM(Segment_Tracks_TrackEntry_TrackType)
                 ATOM(Segment_Tracks_TrackEntry_TrackUID)
                 LIST(Segment_Tracks_TrackEntry_Video)
@@ -1570,19 +1610,52 @@ void File_Mk::Segment()
     Segment_Offset_End=File_Offset+Buffer_Offset+Element_TotalSize_Get();
 }
 
-void File_Mk::Segment_Attachements()
+void File_Mk::Segment_Attachments()
 {
-    Element_Name("Attachements");
+    Element_Name("Attachments");
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile()
+void File_Mk::Segment_Attachments_AttachedFile()
 {
     Element_Name("AttachedFile");
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile_FileData()
+void File_Mk::Segment_Attachments_AttachedFile_FileDescription()
+{
+    Element_Name("FileDescription");
+
+    //Parsing
+    UTF8_Info();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Attachments_AttachedFile_FileName()
+{
+    Element_Name("FileName");
+
+    //Parsing
+    Ztring Data=UTF8_Get();
+
+    Fill(Stream_General, 0, "Attachments", Data);
+    
+    //Cover is in the first file which name contains "cover"
+    if (!CoverIsSetFromAttachment && Data.MakeLowerCase().find(__T("cover")) != string::npos)
+        CurrentAttachmentIsCover=true;
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Attachments_AttachedFile_FileMimeType()
+{
+    Element_Name("FileMimeType");
+
+    //Parsing
+    Local_Info();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Attachments_AttachedFile_FileData()
 {
     Element_Name("FileData");
 
@@ -1609,40 +1682,16 @@ void File_Mk::Segment_Attachements_AttachedFile_FileData()
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile_FileDescription()
+void File_Mk::Segment_Attachments_AttachedFile_FileUID()
 {
-    Element_Name("FileDescription");
+    Element_Name("FileUID");
 
     //Parsing
-    Local_Info();
+    UInteger_Info();
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile_FileName()
-{
-    Element_Name("FileName");
-
-    //Parsing
-    Ztring Data=UTF8_Get();
-
-    Fill(Stream_General, 0, "Attachments", Data);
-    
-    //Cover is in the first file which name contains "cover"
-    if (!CoverIsSetFromAttachment && Data.MakeLowerCase().find(__T("cover")) != string::npos)
-        CurrentAttachmentIsCover=true;
-}
-
-//---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile_FileMimeType()
-{
-    Element_Name("FileMimeType");
-
-    //Parsing
-    Local_Info();
-}
-
-//---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile_FileReferral()
+void File_Mk::Segment_Attachments_AttachedFile_FileReferral()
 {
     Element_Name("FileReferral");
 
@@ -1651,9 +1700,18 @@ void File_Mk::Segment_Attachements_AttachedFile_FileReferral()
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile_FileUID()
+void File_Mk::Segment_Attachments_AttachedFile_FileUsedStartTime()
 {
-    Element_Name("FileUID");
+    Element_Name("FileUsedStartTime");
+
+    //Parsing
+    UInteger_Info();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Attachments_AttachedFile_FileUsedEndTime()
+{
+    Element_Name("FileUsedEndTime");
 
     //Parsing
     UInteger_Info();
@@ -2213,6 +2271,15 @@ void File_Mk::Segment_Cluster_BlockGroup_BlockDuration()
 }
 
 //---------------------------------------------------------------------------
+void File_Mk::Segment_Cluster_BlockGroup_ReferencePriority()
+{
+    Element_Name("ReferencePriority");
+
+    //Parsing
+    UInteger_Info();
+}
+
+//---------------------------------------------------------------------------
 void File_Mk::Segment_Cluster_BlockGroup_ReferenceBlock()
 {
     Element_Name("ReferenceBlock");
@@ -2222,12 +2289,21 @@ void File_Mk::Segment_Cluster_BlockGroup_ReferenceBlock()
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Cluster_BlockGroup_ReferencePriority()
+void File_Mk::Segment_Cluster_BlockGroup_ReferenceVirtual()
 {
-    Element_Name("ReferencePriority");
+    Element_Name("ReferenceVirtual");
 
     //Parsing
     UInteger_Info();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Cluster_BlockGroup_CodecState()
+{
+    Element_Name("CodecState");
+
+    //Parsing
+    Skip_XX(Element_Size,                                       "Data");
 }
 
 //---------------------------------------------------------------------------
@@ -2649,12 +2725,18 @@ void File_Mk::Segment_Tags_Tag_SimpleTag()
 void File_Mk::Segment_Tags_Tag_SimpleTag_TagBinary()
 {
     Element_Name("TagBinary");
+
+    //Parsing
+    Skip_XX(Element_Size,                                       "Data");
 }
 
 //---------------------------------------------------------------------------
 void File_Mk::Segment_Tags_Tag_SimpleTag_TagDefault()
 {
     Element_Name("TagDefault");
+
+    //Parsing
+    UInteger_Get();
 }
 
 //---------------------------------------------------------------------------
@@ -2744,33 +2826,19 @@ void File_Mk::Segment_Tags_Tag_Targets()
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Tags_Tag_Targets_AttachmentUID()
+void File_Mk::Segment_Tags_Tag_Targets_TargetTypeValue()
 {
-    Element_Name("AttachmentUID");
-}
+    Element_Name("TargetTypeValue");
 
-//---------------------------------------------------------------------------
-void File_Mk::Segment_Tags_Tag_Targets_ChapterUID()
-{
-    Element_Name("ChapterUID");
-}
-
-//---------------------------------------------------------------------------
-void File_Mk::Segment_Tags_Tag_Targets_EditionUID()
-{
-    Element_Name("EditionUID");
+    UInteger_Info();
 }
 
 //---------------------------------------------------------------------------
 void File_Mk::Segment_Tags_Tag_Targets_TargetType()
 {
     Element_Name("TargetType");
-}
 
-//---------------------------------------------------------------------------
-void File_Mk::Segment_Tags_Tag_Targets_TargetTypeValue()
-{
-    Element_Name("TargetTypeValue");
+    UTF8_Info();
 }
 
 //---------------------------------------------------------------------------
@@ -2793,6 +2861,30 @@ void File_Mk::Segment_Tags_Tag_Targets_TagTrackUID()
             Segment_Tags_Tag_Items.erase(Items0);
         }
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tags_Tag_Targets_TagEditionUID()
+{
+    Element_Name("TagEditionUID");
+
+    UInteger_Info();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tags_Tag_Targets_TagChapterUID()
+{
+    Element_Name("TagChapterUID");
+
+    UInteger_Info();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tags_Tag_Targets_TagAttachmentUID()
+{
+    Element_Name("TagAttachmentUID");
+
+    UInteger_Info();
 }
 
 //---------------------------------------------------------------------------
@@ -2906,6 +2998,33 @@ void File_Mk::Segment_Tracks_TrackEntry_Audio_SamplingFrequency()
                 ((File_Aac*)Stream[TrackNumber].Parser)->AudioSpecificConfig_OutOfBand(float64_int64s(Float));
         #endif //MEDIAINFO_AAC_YES
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_CodecSettings()
+{
+    Element_Name("CodecSettings");
+
+    //Parsing
+    UTF8_Info();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_CodecInfoURL()
+{
+    Element_Name("CodecInfoURL");
+
+    //Parsing
+    Local_Info();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_CodecDownloadURL()
+{
+    Element_Name("CodecDecodeAll");
+
+    //Parsing
+    Local_Info();
 }
 
 //---------------------------------------------------------------------------
@@ -3405,6 +3524,14 @@ void File_Mk::Segment_Tracks_TrackEntry_TrackTimecodeScale()
     Element_Name("TrackTimecodeScale");
 
     Float_Info();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_TrackOffset()
+{
+    Element_Name("TrackOffset");
+
+    UInteger_Info();
 }
 
 //---------------------------------------------------------------------------
