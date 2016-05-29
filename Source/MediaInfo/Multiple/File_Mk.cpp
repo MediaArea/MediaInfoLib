@@ -121,14 +121,14 @@ namespace Elements
 
     //Segment
     const int64u Segment=0x8538067;
-    const int64u Segment_Attachements=0x0941A469;
-    const int64u Segment_Attachements_AttachedFile=0x21A7;
-    const int64u Segment_Attachements_AttachedFile_FileData=0x065C;
-    const int64u Segment_Attachements_AttachedFile_FileDescription=0x067E;
-    const int64u Segment_Attachements_AttachedFile_FileName=0x066E;
-    const int64u Segment_Attachements_AttachedFile_FileMimeType=0x0660;
-    const int64u Segment_Attachements_AttachedFile_FileReferral=0x0675;
-    const int64u Segment_Attachements_AttachedFile_FileUID=0x06AE;
+    const int64u Segment_Attachments=0x0941A469;
+    const int64u Segment_Attachments_AttachedFile=0x21A7;
+    const int64u Segment_Attachments_AttachedFile_FileData=0x065C;
+    const int64u Segment_Attachments_AttachedFile_FileDescription=0x067E;
+    const int64u Segment_Attachments_AttachedFile_FileName=0x066E;
+    const int64u Segment_Attachments_AttachedFile_FileMimeType=0x0660;
+    const int64u Segment_Attachments_AttachedFile_FileReferral=0x0675;
+    const int64u Segment_Attachments_AttachedFile_FileUID=0x06AE;
     const int64u Segment_Chapters=0x43A770;
     const int64u Segment_Chapters_EditionEntry=0x05B9;
     const int64u Segment_Chapters_EditionEntry_ChapterAtom=0x36;
@@ -1136,16 +1136,16 @@ void File_Mk::Data_Parse()
         ATOM_END_MK
     LIST(Segment)
         ATOM_BEGIN
-        LIST(Segment_Attachements)
+        LIST(Segment_Attachments)
             ATOM_BEGIN
-            LIST(Segment_Attachements_AttachedFile)
+            LIST(Segment_Attachments_AttachedFile)
                 ATOM_BEGIN
-                LIST_SKIP(Segment_Attachements_AttachedFile_FileData) //This is ATOM, but some ATOMs are too big
-                ATOM(Segment_Attachements_AttachedFile_FileDescription)
-                ATOM(Segment_Attachements_AttachedFile_FileName)
-                ATOM(Segment_Attachements_AttachedFile_FileMimeType)
-                ATOM(Segment_Attachements_AttachedFile_FileReferral)
-                ATOM(Segment_Attachements_AttachedFile_FileUID)
+                LIST_SKIP(Segment_Attachments_AttachedFile_FileData) //This is ATOM, but some ATOMs are too big
+                ATOM(Segment_Attachments_AttachedFile_FileDescription)
+                ATOM(Segment_Attachments_AttachedFile_FileName)
+                ATOM(Segment_Attachments_AttachedFile_FileMimeType)
+                ATOM(Segment_Attachments_AttachedFile_FileReferral)
+                ATOM(Segment_Attachments_AttachedFile_FileUID)
                 ATOM_END_MK
             ATOM_END_MK
         LIST(Segment_Chapters)
@@ -1570,19 +1570,19 @@ void File_Mk::Segment()
     Segment_Offset_End=File_Offset+Buffer_Offset+Element_TotalSize_Get();
 }
 
-void File_Mk::Segment_Attachements()
+void File_Mk::Segment_Attachments()
 {
-    Element_Name("Attachements");
+    Element_Name("Attachments");
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile()
+void File_Mk::Segment_Attachments_AttachedFile()
 {
     Element_Name("AttachedFile");
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile_FileData()
+void File_Mk::Segment_Attachments_AttachedFile_FileData()
 {
     Element_Name("FileData");
 
@@ -1609,7 +1609,7 @@ void File_Mk::Segment_Attachements_AttachedFile_FileData()
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile_FileDescription()
+void File_Mk::Segment_Attachments_AttachedFile_FileDescription()
 {
     Element_Name("FileDescription");
 
@@ -1618,7 +1618,7 @@ void File_Mk::Segment_Attachements_AttachedFile_FileDescription()
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile_FileName()
+void File_Mk::Segment_Attachments_AttachedFile_FileName()
 {
     Element_Name("FileName");
 
@@ -1633,7 +1633,7 @@ void File_Mk::Segment_Attachements_AttachedFile_FileName()
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile_FileMimeType()
+void File_Mk::Segment_Attachments_AttachedFile_FileMimeType()
 {
     Element_Name("FileMimeType");
 
@@ -1642,7 +1642,7 @@ void File_Mk::Segment_Attachements_AttachedFile_FileMimeType()
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile_FileReferral()
+void File_Mk::Segment_Attachments_AttachedFile_FileReferral()
 {
     Element_Name("FileReferral");
 
@@ -1651,7 +1651,7 @@ void File_Mk::Segment_Attachements_AttachedFile_FileReferral()
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Attachements_AttachedFile_FileUID()
+void File_Mk::Segment_Attachments_AttachedFile_FileUID()
 {
     Element_Name("FileUID");
 
