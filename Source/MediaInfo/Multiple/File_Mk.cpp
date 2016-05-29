@@ -1073,12 +1073,34 @@ void File_Mk::Header_Parse()
 
     //Parsing
     int64u Name, Size;
+    bool NameIsValid=true;
+    if (Element_Offset+1<Element_Size)
+    {
+        int8u NamePeek;
+        Peek_B1(NamePeek);
+        if (NamePeek<0x10)
+        {
+            Skip_B1(                                            "Invalid");
+            #if MEDIAINFO_TRACE
+            Element_Level--;
+            Element_Info("NOK");
+            Element_Level++;
+            #endif //MEDIAINFO_TRACE
+            NameIsValid=false;
+
+            Header_Fill_Code(0, "Junk");
+            Header_Fill_Size(1);
+        }
+    }
+    if (NameIsValid)
+    {
     Get_EB (Name,                                               "Name");
     Get_EB (Size,                                               "Size");
 
     //Filling
     Header_Fill_Code(Name, Ztring().From_Number(Name, 16));
     Header_Fill_Size(Element_Offset+Size);
+    }
 
     if ((Name==Elements::Segment_Cluster_BlockGroup_Block || Name==Elements::Segment_Cluster_SimpleBlock) && Buffer_Offset+Element_Offset+Size>Buffer_Size && File_Buffer_Size_Hint_Pointer)
     {
