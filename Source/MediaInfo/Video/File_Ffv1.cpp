@@ -1327,9 +1327,7 @@ void File_Ffv1::line(int pos, int16s *sample[2])
 //---------------------------------------------------------------------------
 void File_Ffv1::read_quant_tables(int i)
 {
-    #if MEDIAINFO_TRACE_FFV1CONTENT
-        Element_Begin1("quant_table");
-    #endif //MEDIAINFO_TRACE_FFV1CONTENT
+    Element_Begin1("quant_table");
 
     int32u scale = 1;
 
@@ -1339,26 +1337,20 @@ void File_Ffv1::read_quant_tables(int i)
         scale *= 2 * len_count[i][j] - 1;
         if (scale > 32768U)
         {
-            #if MEDIAINFO_TRACE_FFV1CONTENT
-                Element_End0();
-            #endif //MEDIAINFO_TRACE_FFV1CONTENT
+            Element_End0();
             return;
         }
 
         context_count[i] = (scale + 1) / 2;
     }
 
-    #if MEDIAINFO_TRACE_FFV1CONTENT
-        Element_End0();
-    #endif //MEDIAINFO_TRACE_FFV1CONTENT
+    Element_End0();
 }
 
 //---------------------------------------------------------------------------
 void File_Ffv1::read_quant_table(int i, int j, size_t scale)
 {
-    #if MEDIAINFO_TRACE_FFV1CONTENT
-        Element_Begin1("per context");
-    #endif //MEDIAINFO_TRACE_FFV1CONTENT
+    Element_Begin1("per context");
 
     int8u States[states_size];
     memset(States, 128, sizeof(States));
@@ -1371,9 +1363,7 @@ void File_Ffv1::read_quant_table(int i, int j, size_t scale)
 
         if (k+len_minus1 >= 128)
         {
-            #if MEDIAINFO_TRACE_FFV1CONTENT
-                Element_End0();
-            #endif //MEDIAINFO_TRACE_FFV1CONTENT
+            Element_End0();
             return;
         }
 
@@ -1392,9 +1382,7 @@ void File_Ffv1::read_quant_table(int i, int j, size_t scale)
 
     len_count[i][j]=v;
 
-    #if MEDIAINFO_TRACE_FFV1CONTENT
-        Element_End0();
-    #endif //MEDIAINFO_TRACE_FFV1CONTENT
+    Element_End0();
 }
 
 //***************************************************************************
