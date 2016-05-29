@@ -844,7 +844,7 @@ int File_Ffv1::slice(states &States)
         if (slice_header(States) < 0)
             return -1;
 
-    #ifdef MEDIAINFO_TRACE
+    #if MEDIAINFO_TRACE
         bool Trace_Activated_Save=Trace_Activated;
         if (Trace_Activated)
             Trace_Activated=false; // Trace is too huge, deactivating it during pixel decoding
@@ -917,7 +917,7 @@ int File_Ffv1::slice(states &States)
         Element_Offset--;
     }
 
-    #ifdef MEDIAINFO_TRACE
+    #if MEDIAINFO_TRACE
         Trace_Activated=Trace_Activated_Save; // Trace is too huge, reactivating after during pixel decoding
     #endif //MEDIAINFO_TRACE
 
@@ -1327,9 +1327,7 @@ void File_Ffv1::line(int pos, int16s *sample[2])
 //---------------------------------------------------------------------------
 void File_Ffv1::read_quant_tables(int i)
 {
-    #if MEDIAINFO_TRACE_FFV1CONTENT
-        Element_Begin1("quant_table");
-    #endif //MEDIAINFO_TRACE_FFV1CONTENT
+    Element_Begin1("quant_table");
 
     int32u scale = 1;
 
@@ -1346,17 +1344,13 @@ void File_Ffv1::read_quant_tables(int i)
         context_count[i] = (scale + 1) / 2;
     }
 
-    #if MEDIAINFO_TRACE_FFV1CONTENT
-        Element_End0();
-    #endif //MEDIAINFO_TRACE_FFV1CONTENT
+    Element_End0();
 }
 
 //---------------------------------------------------------------------------
 void File_Ffv1::read_quant_table(int i, int j, size_t scale)
 {
-    #if MEDIAINFO_TRACE_FFV1CONTENT
-        Element_Begin1("per context");
-    #endif //MEDIAINFO_TRACE_FFV1CONTENT
+    Element_Begin1("per context");
 
     int8u States[states_size];
     memset(States, 128, sizeof(States));
@@ -1388,9 +1382,7 @@ void File_Ffv1::read_quant_table(int i, int j, size_t scale)
 
     len_count[i][j]=v;
 
-    #if MEDIAINFO_TRACE_FFV1CONTENT
-        Element_End0();
-    #endif //MEDIAINFO_TRACE_FFV1CONTENT
+    Element_End0();
 }
 
 //***************************************************************************
