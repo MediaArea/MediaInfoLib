@@ -4351,7 +4351,6 @@ void File_Mk::CodecPrivate_Manage()
     Element_Offset=Element_Size_Save;
     delete[] CodecPrivate; CodecPrivate=NULL;
     CodecPrivate_Size=0;
-    Element_Name("(Multiple info)");
 }
 
 //***************************************************************************
