@@ -296,16 +296,16 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
             Result+=__T('<');
             Result+=__T("MediaArea");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("    xmlns=\"https://mediaarea.net/mediaarea\"");
+            Result+=__T("    xmlns=\"http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/mediaarea\"");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
             Result+=__T("    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("    xsi:schemaLocation=\"https://mediaarea.net/mediaarea https://mediaarea.net/mediaarea/mediaarea_0_1.xsd\"");
+            Result+=__T("    xsi:schemaLocation=\"http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/mediaarea http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/mediaarea/mediaarea_0_1.xsd\"");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
             Result+=__T("    version=\"0.1\"");
             Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
             Result+=__T("<!-- Work in progress, not for production -->")+MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"https://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
+            Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
 
             for (size_t FilePos=0; FilePos<Info.size(); FilePos++)
@@ -326,15 +326,15 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
             Result+=__T('<');
             Result+=__T("MediaTrace");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("    xmlns=\"https://mediaarea.net/mediatrace\"");
+            Result+=__T("    xmlns=\"http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/mediatrace\"");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
             Result+=__T("    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("    xsi:schemaLocation=\"https://mediaarea.net/mediatrace https://mediaarea.net/mediatrace/mediatrace_0_1.xsd\"");
+            Result+=__T("    xsi:schemaLocation=\"http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/mediatrace http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/mediatrace/mediatrace_0_1.xsd\"");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
             Result+=__T("    version=\"0.1\"");
             Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"https://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
+            Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
 
             for (size_t FilePos=0; FilePos<Info.size(); FilePos++)
@@ -367,16 +367,16 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
             Result+=__T('<');
             Result+=__T("MediaInfo");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("    xmlns=\"https://mediaarea.net/mediainfo\"");
+            Result+=__T("    xmlns=\"http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/mediainfo\"");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
             Result+=__T("    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("    xsi:schemaLocation=\"https://mediaarea.net/mediainfo https://mediaarea.net/mediainfo/mediainfo_2_0.xsd\"");
+            Result+=__T("    xsi:schemaLocation=\"http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/mediainfo http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/mediainfo/mediainfo_2_0.xsd\"");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
             Result+=__T("    version=\"2.0beta1\"");
             Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
             Result+=__T("<!-- Work in progress, not for production -->")+MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"https://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
+            Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
 
             for (size_t FilePos=0; FilePos<Info.size(); FilePos++)
@@ -410,7 +410,7 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
             Retour+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
             if (MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_XML)
             {
-                Retour+=__T("    <creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"https://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
+                Retour+=__T("    <creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
                 Retour+=MediaInfoLib::Config.LineSeparator_Get();
             }
         }

@@ -14,6 +14,7 @@ Version 0.7.86, 2016-05-31
 + Matroska: more elements support and typo fixes in the trace
 + #I172, Trace feature: provide the name of the main parser in the media element
 + Matroska: consider all values below 0x10 EBML names as 1-byte junk
++ --HTTPS=0 option for using HTTP in XML outputs
 x Matroska: better support (including speed improvement) of huge lossless frames (e.g. 20 MB FFV1 4K)
 x #I144, Python binding: Python 2 on Linux does not automatically provide the locale to the shared object
 x HTML output: don't escape carriage returns from the input file
