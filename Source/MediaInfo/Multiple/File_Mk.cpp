@@ -243,19 +243,19 @@ namespace Elements
     const int64u Segment_Tracks_TrackEntry_CodecID=0x6;
     const int64u Segment_Tracks_TrackEntry_ContentEncodings=0x2D80;
     const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding=0x2240;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Order=0x1031;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Scope=0x1032;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Type=0x1033;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression=0x1034;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression_ContentCompAlgo=0x0254;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression_ContentCompSettings=0x0255;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption=0x1035;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentEncAlgo=0x07E1;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentEncKeyID=0x07E2;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSignature=0x07E3;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSigKeyID=0x07E4;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSigAlgo=0x07E5;
-    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSigHashAlgo=0x07E6;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncodingOrder=0x1031;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncodingScope=0x1032;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncodingType=0x1033;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentCompression=0x1034;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentCompression_ContentCompAlgo=0x0254;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentCompression_ContentCompSettings=0x0255;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption=0x1035;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentEncAlgo=0x07E1;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentEncKeyID=0x07E2;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentSignature=0x07E3;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentSigKeyID=0x07E4;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentSigAlgo=0x07E5;
+    const int64u Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentSigHashAlgo=0x07E6;
     const int64u Segment_Tracks_TrackEntry_CodecName=0x58688;
     const int64u Segment_Tracks_TrackEntry_CodecPrivate=0x23A2;
     const int64u Segment_Tracks_TrackEntry_DefaultDuration=0x3E383;
@@ -1364,22 +1364,22 @@ void File_Mk::Data_Parse()
                     ATOM_BEGIN
                     LIS2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding, "ContentEncoding")
                     ATOM_BEGIN
-                        ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Order, "Order")
-                        ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Scope, "Scope")
-                        ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Type, "Type")
-                        LIS2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression, "Compression")
+                        ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncodingOrder, "ContentEncodingOrder")
+                        ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncodingScope, "ContentEncodingScope")
+                        ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncodingType, "ContentEncodingType")
+                        LIS2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentCompression, "ContentCompression")
                             ATOM_BEGIN
-                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression_ContentCompAlgo, "Algo")
-                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression_ContentCompSettings, "Settings")
+                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentCompression_ContentCompAlgo, "ContentCompAlgo")
+                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentCompression_ContentCompSettings, "ContentCompSettings")
                             ATOM_END_MK
-                        LIS2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption, "Encryption")
+                        LIS2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption, "ContentEncryption")
                             ATOM_BEGIN
-                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentEncAlgo, "Algo")
-                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentEncKeyID, "KeyID")
-                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSignature, "Signature")
-                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSigKeyID, "SigKeyID")
-                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSigAlgo, "SigAlgo")
-                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Encryption_ContentSigHashAlgo, "SigHashAlgo")
+                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentEncAlgo, "ContentAlgo")
+                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentEncKeyID, "ContentKeyID")
+                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentSignature, "ContentSignature")
+                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentSigKeyID, "ContentSigKeyID")
+                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentSigAlgo, "ContentSigAlgo")
+                            ATO2(Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentSigHashAlgo, "ContentSigHashAlgo")
                             ATOM_END_MK
                         ATOM_END_MK
                     ATOM_END_MK
@@ -3055,7 +3055,7 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecID()
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression()
+void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentCompression()
 {
     FILLING_BEGIN();
         if (Segment_Info_Count>1)
@@ -3066,7 +3066,7 @@ void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compres
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression_ContentCompAlgo()
+void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentCompression_ContentCompAlgo()
 {
     //Parsing
     int64u Algo=UInteger_Get(); Param_Info1(Mk_ContentCompAlgo(Algo));
@@ -3080,7 +3080,7 @@ void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compres
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Compression_ContentCompSettings()
+void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentCompression_ContentCompSettings()
 {
     //Parsing
     Skip_XX(Element_Size,                                       "Data");
@@ -4351,7 +4351,6 @@ void File_Mk::CodecPrivate_Manage()
     Element_Offset=Element_Size_Save;
     delete[] CodecPrivate; CodecPrivate=NULL;
     CodecPrivate_Size=0;
-    Element_Name("(Multiple info)");
 }
 
 //***************************************************************************
