@@ -279,7 +279,7 @@ Ztring MediaInfo_Internal::Inform()
         Retour+= __T(">\n");
     }
     if (XML_0_7_78_MA)
-        Retour+=__T("<MediaInfo xmlns=\"http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/mediainfo\" version=\"2.0beta1\">\n");
+        Retour+=__T("<MediaInfo xmlns=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/mediainfo\" version=\"2.0beta1\">\n");
     if (XML)
         Retour+=__T("<File>\n");
     #endif //defined(MEDIAINFO_XML_YES)
@@ -350,7 +350,7 @@ Ztring MediaInfo_Internal::Inform()
         {
             if (MediaInfoLib::Config.Trace_Level_Get() || MediaInfoLib::Config.Inform_Get()==__T("Details"))
             {
-                Retour+=__T("<MediaTrace xmlns=\"http")+(MediaInfoLib::Config.Https_Get()?__T("s"):Ztring())+__T("://mediaarea.net/mediatrace\" version=\"0.1\">\n");
+                Retour+=__T("<MediaTrace xmlns=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/mediatrace\" version=\"0.1\">\n");
                 if (!Details.empty())
                     Retour+=Details;
                 else if (Info)
