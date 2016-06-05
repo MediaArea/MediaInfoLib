@@ -399,20 +399,8 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
         if (XML)
         {
             Retour+=__T("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")+MediaInfoLib::Config.LineSeparator_Get();
-            Retour+=__T('<');
-            Retour+=__T("Mediainfo");
+            Retour+=__T("<Mediainfo version=\"")+MediaInfoLib::Config.Info_Version_Get().SubString(__T(" v"), Ztring())+__T("\">");
             Retour+=MediaInfoLib::Config.LineSeparator_Get();
-            Retour+=__T("    version=\"0.1\"");
-            Retour+=MediaInfoLib::Config.LineSeparator_Get();
-            size_t Modified;
-            if (FilePos < Info.size())
-                Retour+=__T("    ref=\"")+MediaInfo_Internal::Xml_Content_Escape(Info[FilePos]->Get(Stream_General, 0, General_CompleteName), Modified)+__T("\"");
-            Retour+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
-            if (MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_XML)
-            {
-                Retour+=__T("    <creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
-                Retour+=MediaInfoLib::Config.LineSeparator_Get();
-            }
         }
         else
         Retour+=MediaInfo_Custom_View("Page_Begin");

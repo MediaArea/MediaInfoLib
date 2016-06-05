@@ -8,6 +8,10 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
+Version 0.7.87
+--------------
+x XML output: revert to old versioning method (version is MediaInfo software version)
+
 Version 0.7.86, 2016-05-31
 --------------
 + FFV1 parsing optimization, avoiding by default a too verbose trace
