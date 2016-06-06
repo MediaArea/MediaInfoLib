@@ -568,7 +568,7 @@ void File_Ffv1::Read_Buffer_Continue()
 
     Get_RB (States, keyframe,                                   "keyframe");
 
-    if (!ConfigurationRecordIsPresent)
+    if (keyframe && !ConfigurationRecordIsPresent)
         FrameHeader();
 
     if (version>2)
