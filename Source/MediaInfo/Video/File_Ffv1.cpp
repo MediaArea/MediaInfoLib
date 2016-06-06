@@ -364,7 +364,10 @@ File_Ffv1::File_Ffv1()
 
     //Temp
     for (size_t i=0; i < MAX_QUANT_TABLES; ++i)
+    {
         plane_states[i] = NULL;
+        plane_states_maxsizes[i] = 0;
+    }
     ConfigurationRecordIsPresent=false;
     RC=NULL;
     version=0;
@@ -737,13 +740,22 @@ void File_Ffv1::FrameHeader()
         bool present;
         Get_RB (States, present,                                "present");
 
-        if (coder_type)
-            plane_states[i] = new int8u* [context_count[i]];
+        if (coder_type && context_count[i]>plane_states_maxsizes[i])
+        {
+            states_context_plane plane_state_old = plane_states[i];
+            plane_states[i] = new int8u*[context_count[i]];
+            if (plane_state_old)
+            {
+                memcpy(plane_states[i], plane_state_old, plane_states_maxsizes[i] * sizeof(int8u*));
+                delete[] plane_state_old;
+            }
+            for (size_t j = plane_states_maxsizes[i]; j < context_count[i]; j++)
+                plane_states[i][j] = new int8u[states_size];
+            plane_states_maxsizes[i] = context_count[i];
+        }
 
         for (size_t j = 0; j < context_count[i]; j++)
         {
-            if (coder_type)
-                plane_states[i][j] = new int8u [states_size];
             if (present)
             {
                 Element_Begin1("initial_state");
@@ -1501,7 +1513,8 @@ void File_Ffv1::copy_plane_states_to_slice(int8u plane_count)
         int32u idx = quant_table_index[i];
         if (!current_slice->plane_states[i])
         {
-            current_slice->plane_states[i] = new int8u* [context_count[idx] + 1];
+            current_slice->plane_states[i] = new int8u*[context_count[idx] + 1];
+            current_slice->plane_states_maxsizes[i] = context_count[idx] + 1;
             memset(current_slice->plane_states[i], 0, (context_count[idx] + 1) * sizeof(int8u*));
         }
         for (size_t j = 0; j < context_count[idx]; j++)
