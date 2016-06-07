@@ -178,6 +178,7 @@ public:
 
     ContextPtr contexts[MAX_PLANES];
     states_context_plane plane_states[MAX_QUANT_TABLES];
+    size_t               plane_states_maxsizes[MAX_QUANT_TABLES];
 
     // HELPER
     void contexts_init(int32u plane_count, int32u quant_table_index[MAX_PLANES], int32u context_count[MAX_QUANT_TABLES]);
@@ -295,6 +296,7 @@ private :
     size_t x;
 
     states_context_plane plane_states[MAX_QUANT_TABLES];
+    size_t               plane_states_maxsizes[MAX_QUANT_TABLES];
 
     int32s golomb_rice_decode(int k);
     void plane_states_clean(states_context_plane states[MAX_QUANT_TABLES]);
