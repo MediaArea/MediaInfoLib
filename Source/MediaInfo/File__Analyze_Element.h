@@ -64,6 +64,7 @@ struct element_details
             float32      f32;
             float64      f64;
             float80      f80;
+            int128u     *i128u;
         };
 
         Element_Node_Data() : format_out(Format_Tree), is_empty(true) {}
@@ -93,8 +94,6 @@ struct element_details
         friend std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_Data& v);
 
     private:
-        //special case, uint128u has constructor, cannot be put in union
-        int128u i128u;
         Value               val;
         Value_Type          type;
         Value_Output_Format format_out;

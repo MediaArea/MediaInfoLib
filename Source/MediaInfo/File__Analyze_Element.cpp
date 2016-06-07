@@ -30,7 +30,8 @@ element_details::Element_Node_Data& element_details::Element_Node_Data::operator
               break;
           }
           case element_details::Element_Node_Data::ELEMENT_NODE_INT128U:
-              i128u = v.i128u;
+              val.i128u = new int128u;
+              *val.i128u = *v.val.i128u;
               break;
           default:
               val = v.val;
@@ -138,7 +139,8 @@ void element_details::Element_Node_Data::operator=(int128u v)
 {
     is_empty = false;
     type = element_details::Element_Node_Data::ELEMENT_NODE_INT128U;
-    i128u = v;
+    val.i128u = new int128u;
+    *val.i128u = v;
 }
 
 //---------------------------------------------------------------------------
@@ -176,6 +178,10 @@ void element_details::Element_Node_Data::clear()
       case element_details::Element_Node_Data::ELEMENT_NODE_STR:
           if (!is_empty)
               delete [] val.Str;
+          break;
+      case element_details::Element_Node_Data::ELEMENT_NODE_INT128U:
+          if (!is_empty)
+              delete val.i128u;
           break;
       default:
           break;
@@ -244,9 +250,9 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
               os << " (0x" << Ztring::ToZtring(v.val.i64s, 16).To_UTF8() << ")";
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT128U:
-          os << Ztring::ToZtring(v.i128u).To_UTF8();
+          os << Ztring::ToZtring(*v.val.i128u).To_UTF8();
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-              os << " (0x" << Ztring::ToZtring(v.i128u, 16).To_UTF8() << ")";
+              os << " (0x" << Ztring::ToZtring(*v.val.i128u, 16).To_UTF8() << ")";
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_FLOAT32:
           os << Ztring::ToZtring(v.val.f32, v.AfterComma).To_UTF8();
