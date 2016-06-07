@@ -136,16 +136,19 @@ void MediaInfoList_Internal::Entry()
         CS.Enter();
         if (!ToParse.empty())
         {
+            Ztring FileName=ToParse.front();
+            ToParse.pop();
             MediaInfo_Internal* MI=new MediaInfo_Internal();
             for (std::map<String, String>::iterator Config_MediaInfo_Item=Config_MediaInfo_Items.begin(); Config_MediaInfo_Item!=Config_MediaInfo_Items.end(); ++Config_MediaInfo_Item)
                 MI->Option(Config_MediaInfo_Item->first, Config_MediaInfo_Item->second);
             if (BlockMethod==1)
                 MI->Option(__T("Thread"), __T("1"));
-            MI->Open(ToParse.front());
+            Info.push_back(MI);
+            CS.Leave();
+            MI->Open(FileName);
 
             if (BlockMethod==1)
             {
-                CS.Leave();
                 while (MI->State_Get()<10000)
                 {
                     size_t A=MI->State_Get();
@@ -158,10 +161,8 @@ void MediaInfoList_Internal::Entry()
                     }
                     Yield();
                 }
-                CS.Enter();
             }
-            Info.push_back(MI);
-            ToParse.pop();
+            CS.Enter();
             ToParse_AlreadyDone++;
 
             //Removing sequences of files from the list
@@ -562,6 +563,15 @@ size_t MediaInfoList_Internal::State_Get()
         //Pause();
         IsInThread=false;
     }
+
+    if (!Info.empty())
+    {
+        State=0;
+        for (size_t Pos=0; Pos<Info.size(); Pos++)
+            State+=Info[Pos]->State_Get();
+        State/=Info.size()+ToParse.size();
+    }
+
     return State;
 }
 
