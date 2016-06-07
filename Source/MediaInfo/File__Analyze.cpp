@@ -2840,31 +2840,6 @@ void File__Analyze::Info(const std::string& Value, size_t Element_Level_Minus)
 }
 #endif //MEDIAINFO_TRACE
 
-//---------------------------------------------------------------------------
-#if MEDIAINFO_TRACE
-void File__Analyze::Param_Info (const Ztring &Text)
-{
-    //Coherancy
-    if (Element[Element_Level].UnTrusted)
-        return;
-    // if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()) || Element[Element_Level].TraceNode.Details.size()>64*1024*1024)
-    //     return;
-
-    //Needed?
-    if (Config_Trace_Level<=0.7)
-        return;
-
-    size_t Modified;
-    std::string info;
-    info.assign(MediaInfo_Internal::Xml_Content_Escape(Text, Modified).To_UTF8());
-    int32s child = Element[Element_Level].TraceNode.Current_Child;
-    if (child >= 0 && Element[Element_Level].TraceNode.Children[child])
-        Element[Element_Level].TraceNode.Children[child]->Infos.push_back(new element_details::Element_Node_Info(info));
-    else
-        Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(info));
-}
-#endif //MEDIAINFO_TRACE
-
 //***************************************************************************
 // Next code planning
 //***************************************************************************

@@ -436,20 +436,28 @@ public :
     #define Param3(_A,_B,_C) Param(_A, _B, _C)
 
     //Param - Info
-    void Param_Info (const Ztring &Parameter);
-    inline void Param_Info (const char*   Parameter) {if (Trace_Activated) Param_Info(Ztring().From_UTF8(Parameter));}
-    inline void Param_Info (const char*   Parameter, const char*   Measure)      {if (Trace_Activated) Param_Info(Ztring().From_UTF8(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Param_Info (int64u        Parameter, const char*   Measure=NULL) {if (Trace_Activated) Param_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Param_Info (int64s        Parameter, const char*   Measure=NULL) {if (Trace_Activated) Param_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Param_Info (int32u        Parameter, const char*   Measure=NULL) {if (Trace_Activated) Param_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Param_Info (int32s        Parameter, const char*   Measure=NULL) {if (Trace_Activated) Param_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Param_Info (int16u        Parameter, const char*   Measure=NULL) {if (Trace_Activated) Param_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Param_Info (int16s        Parameter, const char*   Measure=NULL) {if (Trace_Activated) Param_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Param_Info (int8u         Parameter, const char*   Measure=NULL) {if (Trace_Activated) Param_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Param_Info (int8s         Parameter, const char*   Measure=NULL) {if (Trace_Activated) Param_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Param_Info (float32       Parameter, int8u AfterComma=3, const char*   Measure=NULL) {if (Trace_Activated) Param_Info(Ztring::ToZtring(Parameter, AfterComma)+Ztring().From_UTF8(Measure));}
-    inline void Param_Info (float64       Parameter, int8u AfterComma=3, const char*   Measure=NULL) {if (Trace_Activated) Param_Info(Ztring::ToZtring(Parameter, AfterComma)+Ztring().From_UTF8(Measure));}
-    inline void Param_Info (float80       Parameter, int8u AfterComma=3, const char*   Measure=NULL) {if (Trace_Activated) Param_Info(Ztring::ToZtring(Parameter, AfterComma)+Ztring().From_UTF8(Measure));}
+#if MEDIAINFO_TRACE
+    template<typename T>
+    void Param_Info(T Parameter, const char* Measure=NULL, int8u AfterComma=3)
+    {
+        //Coherancy
+        if (!Trace_Activated)
+            return;
+        if (Element[Element_Level].UnTrusted)
+            return;
+        if (Config_Trace_Level<=0.7)
+            return;
+
+        // if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()) || Element[Element_Level].TraceNode.Details.size()>64*1024*1024)
+        //     return;
+        int32s child = Element[Element_Level].TraceNode.Current_Child;
+        if (child >= 0 && Element[Element_Level].TraceNode.Children[child])
+            Element[Element_Level].TraceNode.Children[child]->Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
+        else
+            Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
+    }
+#endif //MEDIAINFO_TRACE
+
     #ifdef SIZE_T_IS_LONG
     inline void Param_Info (size_t        Parameter, const char*   Measure=NULL) {if (Trace_Activated) Param_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
     #endif //SIZE_T_IS_LONG
