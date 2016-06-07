@@ -569,7 +569,19 @@ void File_Ffv1::Read_Buffer_Continue()
     Get_RB (States, keyframe,                                   "keyframe");
 
     if (keyframe && !ConfigurationRecordIsPresent)
+    {
+        #if MEDIAINFO_TRACE
+            bool Trace_Activated_Save=Trace_Activated;
+            if (Trace_Activated && Frame_Count)
+                Trace_Activated=false; // Trace is relatively huge, temporarary deactivating it. TODO: an option for it
+        #endif //MEDIAINFO_TRACE
+
         FrameHeader();
+
+        #if MEDIAINFO_TRACE
+            Trace_Activated=Trace_Activated_Save; // Trace is too huge, reactivating it.
+        #endif //MEDIAINFO_TRACE
+    }
 
     if (version>2)
     {
