@@ -336,28 +336,30 @@ protected :
     inline void Element_Name (const char*   Name) {Element_Name(Ztring().From_UTF8(Name));}
 
     //Elements - Info
-    void Element_Info (const Ztring &Parameter);
-    inline void Element_Info (const char*   Parameter) {if (Config_Trace_Level<1) return; Element_Info(Ztring().From_UTF8(Parameter));}
-    inline void Element_Info (const char*   Parameter, const char*   Measure)      {if (Config_Trace_Level<1) return; Element_Info(Ztring().From_UTF8(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Element_Info (int8s         Parameter, const char*   Measure=NULL) {if (Config_Trace_Level<1) return; Element_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Element_Info (int8u         Parameter, const char*   Measure=NULL) {if (Config_Trace_Level<1) return; Element_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Element_Info (int16s        Parameter, const char*   Measure=NULL) {if (Config_Trace_Level<1) return; Element_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Element_Info (int16u        Parameter, const char*   Measure=NULL) {if (Config_Trace_Level<1) return; Element_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Element_Info (int32s        Parameter, const char*   Measure=NULL) {if (Config_Trace_Level<1) return; Element_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Element_Info (int32u        Parameter, const char*   Measure=NULL) {if (Config_Trace_Level<1) return; Element_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Element_Info (int64s        Parameter, const char*   Measure=NULL) {if (Config_Trace_Level<1) return; Element_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Element_Info (int64u        Parameter, const char*   Measure=NULL) {if (Config_Trace_Level<1) return; Element_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
-    inline void Element_Info (int128u       Parameter, const char*   Measure=NULL) {if (Config_Trace_Level<1) return; Element_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
+#if MEDIAINFO_TRACE
+    template<typename T>
+    void Element_Info (T Parameter, const char* Measure=NULL, int8u AfterComma=3)
+    {
+        if (Config_Trace_Level<1)
+            return;
+
+        //Needed?
+        if (Config_Trace_Level<=0.7)
+            return;
+
+        Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
+    }
+#endif //MEDIAINFO_TRACE
+
     #ifdef SIZE_T_IS_LONG
-    inline void Element_Info (size_t        Parameter, const char*   Measure=NULL) {Element_Info(Ztring::ToZtring(Parameter)+Ztring().From_UTF8(Measure));}
+    inline void Element_Info (size_t        Parameter, const char*   Measure=NULL) {Element_Info(Ztring::ToZtring(Parameter), Measure);}
     #endif //SIZE_T_IS_LONG
-    inline void Element_Info (float32       Parameter, int8u AfterComma=3, const char*   Measure=NULL) {if (Config_Trace_Level<1) return; Element_Info(Ztring::ToZtring(Parameter, AfterComma)+Ztring().From_UTF8(Measure));}
-    inline void Element_Info (float64       Parameter, int8u AfterComma=3, const char*   Measure=NULL) {if (Config_Trace_Level<1) return; Element_Info(Ztring::ToZtring(Parameter, AfterComma)+Ztring().From_UTF8(Measure));}
     #define Element_Info1(_A) Element_Info(_A)
     #define Element_Info2(_A,_B) Element_Info(_A, _B)
     #define Element_Info3(_A,_B,_C) Element_Info(_A, _B, _C)
     #define Element_Info1C(_CONDITION,_A) if (_CONDITION) Element_Info(_A)
     inline void Element_Info_From_Milliseconds (int64u Parameter)                  {if (Config_Trace_Level<1) return; Element_Info(Ztring().Duration_From_Milliseconds(Parameter));}
+
     void Element_Parser (const Ztring &Name);
 
     //Elements - End

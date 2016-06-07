@@ -2630,19 +2630,6 @@ void File__Analyze::Element_Name(const Ztring &Name)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_TRACE
-void File__Analyze::Element_Info(const Ztring &Parameter)
-{
-    //Needed?
-    if (Config_Trace_Level<=0.7)
-        return;
-
-    size_t Modified;
-    Element[Element_Level].TraceNode.Infos.push_back(MediaInfo_Internal::Xml_Content_Escape(Parameter, Modified).To_UTF8());
-}
-#endif //MEDIAINFO_TRACE
-
-//---------------------------------------------------------------------------
-#if MEDIAINFO_TRACE
 void File__Analyze::Element_Parser(const Ztring &Parameter)
 {
     //Needed?
@@ -2867,68 +2854,14 @@ void File__Analyze::Param_Info (const Ztring &Text)
     if (Config_Trace_Level<=0.7)
         return;
 
-    //Filling
-    // size_t End=Element[Element_Level].TraceNode.Details.size();
-    // switch (Config_Trace_Format)
-    // {
-    //     case MediaInfo_Config::Trace_Format_Tree        :
-    //     case MediaInfo_Config::Trace_Format_CSV         : Element[Element_Level].TraceNode.Details+=__T(" - "); break;
-    //     case MediaInfo_Config::Trace_Format_XML         :
-    //                                                         {
-    //                                                             size_t Start=Element[Element_Level].TraceNode.Details.rfind(Config_LineSeparator);
-    //                                                             if (Start==(size_t)-1)
-    //                                                                 Start=0;
-    //                                                             End=Element[Element_Level].TraceNode.Details.find(__T('>'), Start);
-    //                                                             if (End==(size_t)-1)
-    //                                                                 End=Element[Element_Level].TraceNode.Details.size();
-
-    //                                                                  if (Element[Element_Level].TraceNode.Details.find(__T(" info7=\""), Start)!=string::npos)
-    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info8=\""));
-    //                                                             else if (Element[Element_Level].TraceNode.Details.find(__T(" info6=\""), Start)!=string::npos)
-    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info7=\""));
-    //                                                             else if (Element[Element_Level].TraceNode.Details.find(__T(" info5=\""), Start)!=string::npos)
-    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info6=\""));
-    //                                                             else if (Element[Element_Level].TraceNode.Details.find(__T(" info4=\""), Start)!=string::npos)
-    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info5=\""));
-    //                                                             else if (Element[Element_Level].TraceNode.Details.find(__T(" info3=\""), Start)!=string::npos)
-    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info4=\""));
-    //                                                             else if (Element[Element_Level].TraceNode.Details.find(__T(" info2=\""), Start)!=string::npos)
-    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info3=\""));
-    //                                                             else if (Element[Element_Level].TraceNode.Details.find(__T(" info=\""), Start)!=string::npos)
-    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info2=\""));
-    //                                                             else
-    //                                                                 Element[Element_Level].TraceNode.Details.insert(End, __T(" info=\""));
-    //                                                             End=Element[Element_Level].TraceNode.Details.find(__T('>'), Start);
-    //                                                             if (End==(size_t)-1)
-    //                                                                 End=Element[Element_Level].TraceNode.Details.size();
-    //                                                         }
-    //                                                         break;
-    //     default                                         : ;
-    // }
     size_t Modified;
     std::string info;
     info.assign(MediaInfo_Internal::Xml_Content_Escape(Text, Modified).To_UTF8());
     int32s child = Element[Element_Level].TraceNode.Current_Child;
     if (child >= 0 && Element[Element_Level].TraceNode.Children[child])
-        Element[Element_Level].TraceNode.Children[child]->Infos.push_back(info);
+        Element[Element_Level].TraceNode.Children[child]->Infos.push_back(new element_details::Element_Node_Info(info));
     else
-        Element[Element_Level].TraceNode.Infos.push_back(info);
-    // switch (Config_Trace_Format)
-    // {
-    //     case MediaInfo_Config::Trace_Format_XML         :
-    //                                                         {
-    //                                                             size_t Start=Element[Element_Level].TraceNode.Details.rfind(Config_LineSeparator);
-    //                                                             if (Start==(size_t)-1)
-    //                                                                 Start=0;
-    //                                                             End=Element[Element_Level].TraceNode.Details.find(__T('>'), Start);
-    //                                                             if (End==(size_t)-1)
-    //                                                                 End=Element[Element_Level].TraceNode.Details.size();
-
-    //                                                             Element[Element_Level].TraceNode.Details.insert(End, __T("\"")); break;
-    //                                                         }
-    //                                                         break;
-    //     default                                         : ;
-    // }
+        Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(info));
 }
 #endif //MEDIAINFO_TRACE
 

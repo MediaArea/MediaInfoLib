@@ -168,6 +168,14 @@ void element_details::Element_Node_Data::operator=(float80 v)
 }
 
 //---------------------------------------------------------------------------
+bool element_details::Element_Node_Data::operator==(const std::string& v)
+{
+    if (type != element_details::Element_Node_Data::ELEMENT_NODE_STR)
+        return false;
+    return v == val.Str;
+}
+
+//---------------------------------------------------------------------------
 void element_details::Element_Node_Data::clear()
 {
     if (is_empty)
@@ -267,6 +275,21 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
     return os;
 }
 
+//***************************************************************************
+// Element_Node_Info
+//***************************************************************************
+//---------------------------------------------------------------------------
+std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v)
+{
+    if (!v)
+        return os;
+
+    os << v->data;
+    if (v->Measure)
+        os << v->Measure;
+
+    return os;
+}
 
 //***************************************************************************
 // Element_Node
@@ -317,11 +340,14 @@ void element_details::Element_Node::Init()
     Header_Size = 0;
     Name.clear();
     Value.clear();
-    Infos.clear();
     if (Children.size() && OwnChildren)
         for (size_t i = 0; i < Children.size(); ++i)
             delete Children[i];
     Children.clear();
+    if (OwnChildren && Infos.size())
+        for (size_t i = 0; i < Infos.size(); ++i)
+            delete Infos[i];
+    Infos.clear();
     Parser.clear();
     Current_Child = -1;
     NoShow = false;

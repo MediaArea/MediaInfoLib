@@ -1050,7 +1050,7 @@ void File_Lxf::Header_Meta()
                                             FrameRate=Mpegv_frame_rate[frameRateCode+1];
                                             if (Version==0)
                                                 TimeStamp_Rate=FrameRate*2; //Time stamp is in fields
-                                            Element_Info3(FrameRate, 3, " fps");
+                                            Element_Info3(FrameRate, " fps", 3);
                                         }
                                     }
                                     Element_End0();

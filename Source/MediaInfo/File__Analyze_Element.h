@@ -67,7 +67,7 @@ struct element_details
             int128u     *i128u;
         };
 
-        Element_Node_Data() : format_out(Format_Tree), is_empty(true) {}
+        Element_Node_Data() : format_out(Format_Xml), is_empty(true) {}
         ~Element_Node_Data() { clear(); }
 
         Element_Node_Data& operator=(const Element_Node_Data&);
@@ -87,6 +87,8 @@ struct element_details
         void operator=(float64 v);
         void operator=(float80 v);
 
+        bool operator==(const std::string& str);
+
         void clear();
         bool empty();
         void set_AfterComma(int8u c) {AfterComma = c;}
@@ -104,6 +106,27 @@ struct element_details
         Element_Node_Data(const Element_Node_Data&);
     };
 
+    struct Element_Node_Info
+    {
+        template<typename T>
+        Element_Node_Info(T parameter, const char* _Measure=NULL, int8u AfterComma=3) : Measure(_Measure)
+        {
+            data = parameter;
+            data.set_AfterComma(AfterComma);
+        }
+
+        ~Element_Node_Info()
+        {
+            if (Measure)
+                delete Measure;
+        }
+
+        friend std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v);
+
+        Element_Node_Data data;
+        const char* Measure;
+    };
+
     class Element_Node
     {
     public:
@@ -111,29 +134,29 @@ struct element_details
         Element_Node(const Element_Node& node);
         ~Element_Node();
 
-        int64u                     Pos;             // Position of the element in the file
-        int64u                     Size;            // Size of the element (including header and sub-elements)
-        int64u                     Header_Size;     // Size of the header of the element
-        std::string                Name;            // Name planned for this element
-        Element_Node_Data          Value;           // The value (currently used only with Trace XML)
-        std::vector<std::string>   Infos;           // More info about the element
-        std::vector<Element_Node*> Children;        // Elements depending on this element
-        std::string                Parser;          // Name of the parser for this element
-        int32s                     Current_Child;   // Current child selected, used for param
-        bool                       NoShow;          // Don't show this element
-        bool                       OwnChildren;     // Child is owned by this node
-        bool                       IsCat;
+        int64u                           Pos;             // Position of the element in the file
+        int64u                           Size;            // Size of the element (including header and sub-elements)
+        int64u                           Header_Size;     // Size of the header of the element
+        std::string                      Name;            // Name planned for this element
+        Element_Node_Data                Value;           // The value (currently used only with Trace XML)
+        std::vector<Element_Node_Info*>  Infos;           // More info about the element
+        std::vector<Element_Node*>       Children;        // Elements depending on this element
+        std::string                      Parser;          // Name of the parser for this element
+        int32s                           Current_Child;   // Current child selected, used for param
+        bool                             NoShow;          // Don't show this element
+        bool                             OwnChildren;     // Child is owned by this node
+        bool                             IsCat;           // Node is a category
 
-        void                       Init();          //Initialize with common values
-        void Add_Child(Element_Node* node);         //Add a subchild to the current node
+        void                             Init();          //Initialize with common values
+        void Add_Child(Element_Node* node);              //Add a subchild to the current node
 
         // Print
-        int Print(MediaInfo_Config::trace_Format Format, std::string& str);  //Print the node into str
+        int  Print(MediaInfo_Config::trace_Format Format, std::string& str);  //Print the node into str
 
     private:
-        int Print_Xml(std::string& Str, size_t level);                       //Print the node in XML into str
-        int Print_Tree(std::string& str, size_t level=1);                    //Print the node into str
-        int Print_Tree_Cat(std::string& str, size_t level=1);
+        int  Print_Xml(std::string& Str, size_t level);                       //Print the node in XML into str
+        int  Print_Tree(std::string& str, size_t level=1);                    //Print the node into str
+        int  Print_Tree_Cat(std::string& str, size_t level=1);
     };
 #endif //MEDIAINFO_TRACE
 
