@@ -1094,7 +1094,7 @@ public :
     void Element_DoNotShow ();
     void Element_Show ();
     bool Element_Show_Get ();
-    void Element_Show_Add (const Ztring &ToShow);
+    void Element_Show_Add (File__Analyze* node);
 
     //Status
     bool Element_IsOK ();

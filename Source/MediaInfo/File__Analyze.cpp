@@ -3446,12 +3446,13 @@ bool File__Analyze::Element_Show_Get ()
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_TRACE
-void File__Analyze::Element_Show_Add (const Ztring &ToShow)
+void File__Analyze::Element_Show_Add (File__Analyze* node)
 {
-    if (ToShow.empty())
+    if (!node)
         return;
 
     //From Sub
+    Element[Element_Level].TraceNode.Add_Child(&node->Element[0].TraceNode);
 }
 #endif //MEDIAINFO_TRACE
 

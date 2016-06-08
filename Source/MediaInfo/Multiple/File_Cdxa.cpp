@@ -295,7 +295,7 @@ void File_Cdxa::Data_Parse()
     if (Config_Trace_Level)
     {
         if (!MI->Inform().empty())
-            Element_Show_Add(MI->Inform());
+            Element_Show_Add(MI->Info);
     }
     #endif //MEDIAINFO_TRACE
 
