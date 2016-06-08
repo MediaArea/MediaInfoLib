@@ -115,7 +115,7 @@ File_Lxf::File_Lxf()
 :File__Analyze()
 {
     //Configuration
-    ParserName=__T("LXF");
+    ParserName="LXF";
     #if MEDIAINFO_EVENTS
         ParserIDs[0]=MediaInfo_Parser_Lxf;
         StreamIDs_Width[0]=4; //2 numbers for Code, 2 numbers for subcode

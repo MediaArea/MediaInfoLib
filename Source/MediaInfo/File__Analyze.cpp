@@ -2412,7 +2412,7 @@ void File__Analyze::Data_Accept (const char* ParserName)
         return;
 
     if (ParserName)
-        Info(Ztring(ParserName).To_UTF8()+", accepted");
+        Info(std::string(ParserName)+", accepted");
 
     Accept(ParserName);
 }
@@ -2425,12 +2425,12 @@ void File__Analyze::Data_Finish (const char* ParserName)
     if (ShouldContinueParsing)
     {
         if (ParserName)
-            Info(Ztring(ParserName).To_UTF8()+", wants to finish, but should continue parsing");
+            Info(std::string(ParserName)+", wants to finish, but should continue parsing");
         return;
     }
 
     if (ParserName)
-        Info(Ztring(ParserName).To_UTF8()+", finished");
+        Info(std::string(ParserName)+", finished");
 
     Finish();
 }
@@ -2445,7 +2445,7 @@ void File__Analyze::Data_Reject (const char* ParserName)
     Clear();
 
     if (ParserName)// && File_Offset+Buffer_Offset+Element_Size<File_Size)
-        Info(Ztring(ParserName).To_UTF8()+", rejected");
+        Info(std::string(ParserName)+", rejected");
 }
 #endif //MEDIAINFO_TRACE
 
@@ -2458,18 +2458,19 @@ void File__Analyze::Data_GoTo (int64u GoTo_, const char* ParserName)
     if (ShouldContinueParsing)
     {
         if (ParserName)
-            Info(Ztring(ParserName).To_UTF8()+", wants to go to somewhere, but should continue parsing");
+            Info(std::string(ParserName)+", wants to go to somewhere, but should continue parsing");
         return;
     }
 
     if (IsSub)
     {
         if (ParserName)
-            Info(Ztring(ParserName).To_UTF8()+", wants to go to somewhere, but is sub, waiting data");
+            Info(std::string(ParserName)+", wants to go to somewhere, but is sub, waiting data");
         return;
     }
 
-    Info(Ztring(ParserName).To_UTF8()+", jumping to offset "+Ztring::ToZtring(GoTo_, 16).To_UTF8());
+    if (ParserName)
+        Info(std::string(ParserName)+", jumping to offset "+Ztring::ToZtring(GoTo_, 16).To_UTF8());
     GoTo(GoTo_);
 }
 #endif //MEDIAINFO_TRACE
@@ -2484,7 +2485,7 @@ void File__Analyze::Data_GoToFromEnd (int64u GoToFromEnd, const char* ParserName
     if (GoToFromEnd>File_Size)
     {
         if (ParserName)
-            Info(Ztring(ParserName).To_UTF8()+", wants to go to somewhere, but not valid");
+            Info(std::string(ParserName)+", wants to go to somewhere, but not valid");
         return;
     }
 
@@ -2630,13 +2631,13 @@ void File__Analyze::Element_Name(const Ztring &Name)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_TRACE
-void File__Analyze::Element_Parser(const Ztring &Parameter)
+void File__Analyze::Element_Parser(const std::string &Parameter)
 {
     //Needed?
     if (Config_Trace_Level<=0.7)
         return;
 
-    Element[Element_Level].TraceNode.Parser = Parameter.To_UTF8();
+    Element[Element_Level].TraceNode.Parser = Parameter;
 }
 #endif //MEDIAINFO_TRACE
 
@@ -2920,23 +2921,17 @@ void File__Analyze::Accept ()
         return;
 
     #if MEDIAINFO_TRACE
-        if (ParserName.empty())
-            ParserName.From_Local(ParserName_Char);
+        if (ParserName.empty() && ParserName_Char)
+            ParserName = ParserName_Char;
 
-        switch (Config_Trace_Format)
+        if (!ParserName.empty())
         {
-            case MediaInfo_Config::Trace_Format_Tree       :
-                                                            if (!ParserName.empty())
-                                                            {
-                                                                bool MustElementBegin=Element_Level?true:false;
-                                                                if (Element_Level>0)
-                                                                    Element_End0(); //Element
-                                                                Info(ParserName.To_UTF8()+", accepted");
-                                                                if (MustElementBegin)
-                                                                    Element_Level++;
-                                                            }
-                                                            break;
-            default                                        : ;
+            bool MustElementBegin=Element_Level?true:false;
+            if (Element_Level>0)
+                Element_End0(); //Element
+            Info(ParserName+", accepted");
+            if (MustElementBegin)
+                Element_Level++;
         }
     #endif //MEDIAINFO_TRACE
 
@@ -2953,7 +2948,7 @@ void File__Analyze::Accept ()
             EVENT_BEGIN (General, Parser_Selected, 0)
                 std::memset(Event.Name, 0, 16);
                 if (!ParserName.empty())
-                    strncpy(Event.Name, ParserName.To_Local().c_str(), 15);
+                    strncpy(Event.Name, Ztring().From_UTF8(ParserName).To_Local().c_str(), 15);
             EVENT_END   ()
 
             #if MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
@@ -3006,23 +3001,17 @@ void File__Analyze::Fill ()
         return;
 
     #if MEDIAINFO_TRACE
-        if (ParserName.empty())
-            ParserName.From_Local(ParserName_Char);
+        if (ParserName.empty() && ParserName_Char)
+            ParserName = ParserName_Char;
 
-        switch (Config_Trace_Format)
+        if (!ParserName.empty())
         {
-            case MediaInfo_Config::Trace_Format_Tree       :
-                                                            if (!ParserName.empty())
-                                                            {
-                                                                bool MustElementBegin=Element_Level?true:false;
-                                                                if (Element_Level>0)
-                                                                    Element_End0(); //Element
-                                                                Info(ParserName.To_UTF8()+", filling");
-                                                                if (MustElementBegin)
-                                                                    Element_Level++;
-                                                            }
-                                                            break;
-            default                                        : ;
+            bool MustElementBegin=Element_Level?true:false;
+            if (Element_Level>0)
+                Element_End0(); //Element
+            Info(ParserName+", filling");
+            if (MustElementBegin)
+                Element_Level++;
         }
     #endif //MEDIAINFO_TRACE
 
@@ -3067,7 +3056,7 @@ void File__Analyze::Finish ()
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(Ztring(ParserName).To_UTF8()+", wants to finish, but should continue parsing");
+            Info(std::string(ParserName)+", wants to finish, but should continue parsing");
             if (MustElementBegin)
                 Element_Level++;
         }
@@ -3095,23 +3084,17 @@ void File__Analyze::ForceFinish ()
         return;
 
     #if MEDIAINFO_TRACE
-        if (ParserName.empty())
-            ParserName.From_Local(ParserName_Char);
+        if (ParserName.empty() && ParserName_Char)
+            ParserName = ParserName_Char;
 
-        switch (Config_Trace_Format)
+        if (!ParserName.empty())
         {
-            case MediaInfo_Config::Trace_Format_Tree       :
-                                                            if (!ParserName.empty())
-                                                            {
-                                                                bool MustElementBegin=Element_Level?true:false;
-                                                                if (Element_Level>0)
-                                                                    Element_End0(); //Element
-                                                                Info(ParserName.To_UTF8()+", finished");
-                                                                if (MustElementBegin)
-                                                                    Element_Level++;
-                                                            }
-                                                            break;
-            default                                        : ;
+            bool MustElementBegin=Element_Level?true:false;
+            if (Element_Level>0)
+                Element_End0(); //Element
+            Info(ParserName+", finished");
+            if (MustElementBegin)
+                Element_Level++;
         }
     #endif //MEDIAINFO_TRACE
 
@@ -3201,7 +3184,7 @@ void File__Analyze::Reject ()
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(Ztring(ParserName).To_UTF8()+", rejected");
+            Info(std::string(ParserName)+", rejected");
             if (MustElementBegin)
                 Element_Level++;
         }
@@ -3246,7 +3229,7 @@ void File__Analyze::GoTo (int64u GoTo, const char* ParserName)
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(Ztring(ParserName).To_UTF8()+", wants to go to somewhere, but should continue parsing");
+            Info(std::string(ParserName)+", wants to go to somewhere, but should continue parsing");
             if (MustElementBegin)
                 Element_Level++;
         }
@@ -3260,7 +3243,7 @@ void File__Analyze::GoTo (int64u GoTo, const char* ParserName)
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(Ztring(ParserName).To_UTF8()+", wants to go to somewhere, but is sub, waiting data");
+            Info(std::string(ParserName)+", wants to go to somewhere, but is sub, waiting data");
             if (MustElementBegin)
                 Element_Level++;
         }
@@ -3276,7 +3259,7 @@ void File__Analyze::GoTo (int64u GoTo, const char* ParserName)
             default                                         : //TODO: find a better way to display jumps, both XML and Text
         if (Element_Level>0)
             Element_End0(); //Element
-        Info(Ztring(ParserName).To_UTF8()+", jumping to offset "+Ztring::ToZtring(GoTo, 16).To_UTF8());
+        Info(std::string(ParserName)+", jumping to offset "+Ztring::ToZtring(GoTo, 16).To_UTF8());
         if (MustElementBegin)
             Element_Level++; //Element
         }
@@ -3335,7 +3318,7 @@ void File__Analyze::GoToFromEnd (int64u GoToFromEnd, const char* ParserName)
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(Ztring(ParserName).To_UTF8()+", wants to go to somewhere, but not valid");
+            Info(std::string(ParserName)+", wants to go to somewhere, but not valid");
             if (MustElementBegin)
                 Element_Level++;
         }

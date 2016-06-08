@@ -2152,7 +2152,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
                     if (Stream[TrackNumber].Searching_Payload)
                     {
                         Element_Begin1("Data");
-                        Element_Parser(Stream[TrackNumber].Parser->ParserName.To_UTF8().c_str());
+                        Element_Parser(Stream[TrackNumber].Parser->ParserName.c_str());
 
                         Element_Code=TrackNumber;
 
