@@ -398,7 +398,7 @@ public :
 
     //Param - Main
     template<typename T>
-    inline void Param(const std::string &Parameter, T Value, int8u AfterComma=3)
+    inline void Param(const std::string &Parameter, T Value, int8u GenericOption=(int8u)-1)
     {
         if (!Trace_Activated)
             return;
@@ -417,7 +417,7 @@ public :
         node->Name = Parameter;
         node->Pos = Pos==(int64u)-1 ? Pos : (File_Offset+Buffer_Offset+Pos);
         node->Value = Value;
-        node->Value.set_AfterComma(AfterComma);
+        node->Value.set_Option(GenericOption);
         Element[Element_Level].TraceNode.Current_Child = Element[Element_Level].TraceNode.Children.size();
         Element[Element_Level].TraceNode.Children.push_back(node);
     }
@@ -426,9 +426,9 @@ public :
     inline void Param      (const char*   Parameter, const int8u*  Value, size_t Value_Size, bool Utf8=true) {Param(Parameter, (const char*)Value, Value_Size, Utf8);}
     inline void Param_GUID (const char*   Parameter, int128u Value){Param(Parameter, Ztring().From_GUID(Value));}
     inline void Param_UUID (const char*   Parameter, int128u Value){Param(Parameter, Ztring().From_UUID(Value));}
-    #ifdef SIZE_T_IS_LONG
-    inline void Param      (const char*   Parameter, size_t Value, intu Radix) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value, Radix).MakeUpperCase()+__T(" (")+Ztring::ToZtring(Value, 10).MakeUpperCase()+__T(")"));}
-    #endif //SIZE_T_IS_LONG
+    /* #ifdef SIZE_T_IS_LONG */
+    /* inline void Param      (const char*   Parameter, size_t Value, intu Radix) {if (Trace_Activated) Param(Parameter, Ztring::ToZtring(Value, Radix).MakeUpperCase()+__T(" (")+Ztring::ToZtring(Value, 10).MakeUpperCase()+__T(")"));} */
+    /* #endif //SIZE_T_IS_LONG */
     inline void Param      (const int32u  Parameter, const Ztring& Value) {if (Trace_Activated) Param(Ztring().From_CC4(Parameter).To_UTF8(), Value.To_UTF8());};
     inline void Param      (const int16u  Parameter, const Ztring& Value) {if (Trace_Activated) Param(Ztring().From_CC2(Parameter).To_UTF8(), Value.To_UTF8());};
     #define Param1(_A) Param_(_A)
@@ -448,7 +448,7 @@ public :
         if (Config_Trace_Level<=0.7)
             return;
 
-        // if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()) || Element[Element_Level].TraceNode.Details.size()>64*1024*1024)
+        // if (!(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()) || Element[Element_Level].TraceNode.Details.size()>64*1024*1024)
         //     return;
         int32s child = Element[Element_Level].TraceNode.Current_Child;
         if (child >= 0 && Element[Element_Level].TraceNode.Children[child])

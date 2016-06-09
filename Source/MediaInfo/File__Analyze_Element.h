@@ -91,17 +91,19 @@ struct element_details
 
         void clear();
         bool empty();
-        void set_AfterComma(int8u c) {AfterComma = c;}
+        void set_Option(int8u c) {Option = c;}
         void Set_Output_Format(Value_Output_Format v) {format_out = v;}
         friend std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_Data& v);
+
+        static void get_hexa_from_deci_limited_by_bits(std::string& val, int8u bits, int8u default_bits);
 
     private:
         Value               val;
         Value_Type          type;
         Value_Output_Format format_out;
         bool                is_empty;
-        // Use by float type
-        int8u               AfterComma;
+        // Use by float and int types
+        int8u               Option;
 
         Element_Node_Data(const Element_Node_Data&);
     };
@@ -109,10 +111,10 @@ struct element_details
     struct Element_Node_Info
     {
         template<typename T>
-        Element_Node_Info(T parameter, const char* _Measure=NULL, int8u AfterComma=3) : Measure(_Measure)
+        Element_Node_Info(T parameter, const char* _Measure=NULL, int8u Option=(int8u)-1) : Measure(_Measure)
         {
             data = parameter;
-            data.set_AfterComma(AfterComma);
+            data.set_Option(Option);
         }
 
         ~Element_Node_Info()

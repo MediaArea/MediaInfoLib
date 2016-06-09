@@ -204,6 +204,21 @@ bool element_details::Element_Node_Data::empty()
 }
 
 //---------------------------------------------------------------------------
+void element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(std::string& val, int8u bits, int8u default_bits)
+{
+    if (bits == (int8u)-1)
+        bits = default_bits;
+
+    std::string zeros;
+    bool full = (bits % 4 == 0);
+    int nb_zero = (bits / 4) + (full?0:1);
+    nb_zero -= val.size();
+    if (nb_zero > 0)
+        zeros.resize(nb_zero, '0');
+    val = zeros + val;
+}
+
+//---------------------------------------------------------------------------
 std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_Data& v)
 {
     switch (v.type)
@@ -220,56 +235,92 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
       case element_details::Element_Node_Data::ELEMENT_NODE_INT8U:
           os << Ztring::ToZtring(v.val.i8u).To_UTF8();
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-              os << " (0x" << Ztring().From_CC1(v.val.i8u).To_UTF8() << ")";
+          {
+              std::string str = Ztring().From_CC1(v.val.i8u).To_UTF8();
+              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 8);
+              os << " (0x" << str << ")";
+          }
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT8S:
           os << Ztring::ToZtring(v.val.i8s).To_UTF8();
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-              os << " (0x" << Ztring().From_CC1(v.val.i8s).To_UTF8() << ")";
+          {
+              std::string str = Ztring().From_CC1(v.val.i8s).To_UTF8();
+              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 8);
+              os << " (0x" << str << ")";
+          }
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT16U:
           os << Ztring::ToZtring(v.val.i16u).To_UTF8();
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-              os << " (0x" << Ztring().From_CC2(v.val.i16u).To_UTF8() << ")";
+          {
+              std::string str = Ztring().From_CC2(v.val.i16u).To_UTF8();
+              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 16);
+              os << " (0x" << str << ")";
+          }
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT16S:
           os << Ztring::ToZtring(v.val.i16s).To_UTF8();
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-              os << " (0x" << Ztring().From_CC2(v.val.i16s).To_UTF8() << ")";
+          {
+              std::string str = Ztring().From_CC2(v.val.i16s).To_UTF8();
+              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 16);
+              os << " (0x" << str << ")";
+          }
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT32U:
           os << Ztring::ToZtring(v.val.i32u).To_UTF8();
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-              os << " (0x" << Ztring::ToZtring(v.val.i32u, 16).To_UTF8() << ")";
+          {
+              std::string str = Ztring::ToZtring(v.val.i32u, 16).To_UTF8();
+              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 32);
+              os << " (0x" << str << ")";
+          }
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT32S:
           os << Ztring::ToZtring(v.val.i32s).To_UTF8();
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-              os << " (0x" << Ztring::ToZtring(v.val.i32s, 16).To_UTF8() << ")";
+          {
+              std::string str = Ztring::ToZtring(v.val.i32s, 16).To_UTF8();
+              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 32);
+              os << " (0x" << str << ")";
+          }
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT64U:
           os << Ztring::ToZtring(v.val.i64u).To_UTF8();
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-              os << " (0x" << Ztring::ToZtring(v.val.i64u, 16).To_UTF8() << ")";
+          {
+              std::string str = Ztring::ToZtring(v.val.i64u, 16).To_UTF8();
+              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 64);
+              os << " (0x" << str << ")";
+          }
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT64S:
           os << Ztring::ToZtring(v.val.i64s).To_UTF8();
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-              os << " (0x" << Ztring::ToZtring(v.val.i64s, 16).To_UTF8() << ")";
+          {
+              std::string str = Ztring::ToZtring(v.val.i64s, 16).To_UTF8();
+              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 64);
+              os << " (0x" << str << ")";
+          }
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT128U:
           os << Ztring::ToZtring(*v.val.i128u).To_UTF8();
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-              os << " (0x" << Ztring::ToZtring(*v.val.i128u, 16).To_UTF8() << ")";
+          {
+              std::string str = Ztring::ToZtring(*v.val.i128u, 16).To_UTF8();
+              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 128);
+              os << " (0x" << str << ")";
+          }
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_FLOAT32:
-          os << Ztring::ToZtring(v.val.f32, v.AfterComma).To_UTF8();
+          os << Ztring::ToZtring(v.val.f32, v.Option == (int8u)-1 ? 3 : v.Option).To_UTF8();
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_FLOAT64:
-          os << Ztring::ToZtring(v.val.f64, v.AfterComma).To_UTF8();
+          os << Ztring::ToZtring(v.val.f64, v.Option == (int8u)-1 ? 3 : v.Option).To_UTF8();
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_FLOAT80:
-          os << Ztring::ToZtring(v.val.f80, v.AfterComma).To_UTF8();
+          os << Ztring::ToZtring(v.val.f80, v.Option == (int8u)-1 ? 3 : v.Option).To_UTF8();
           break;
     }
     return os;
