@@ -72,6 +72,7 @@ struct element_details
 
         Element_Node_Data& operator=(const Element_Node_Data&);
         void operator=(const std::string& v);
+        void operator=(const char* v);
         void operator=(const Ztring& v);
         void operator=(bool v);
         void operator=(int8u v);
@@ -111,22 +112,22 @@ struct element_details
     struct Element_Node_Info
     {
         template<typename T>
-        Element_Node_Info(T parameter, const char* _Measure=NULL, int8u Option=(int8u)-1) : Measure(_Measure)
+        Element_Node_Info(T parameter, const char* _Measure=NULL, int8u Option=(int8u)-1)
         {
             data = parameter;
+            if (_Measure)
+                Measure = std::string(_Measure);
             data.set_Option(Option);
         }
 
         ~Element_Node_Info()
         {
-            if (Measure)
-                delete Measure;
         }
 
         friend std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v);
 
         Element_Node_Data data;
-        const char* Measure;
+        std::string       Measure;
     };
 
     class Element_Node

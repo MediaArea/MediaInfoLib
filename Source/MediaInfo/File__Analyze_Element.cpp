@@ -70,6 +70,20 @@ void element_details::Element_Node_Data::operator=(const std::string& v)
 }
 
 //---------------------------------------------------------------------------
+void element_details::Element_Node_Data::operator=(const char* v)
+{
+    if (!v)
+        return;
+
+    is_empty = false;
+    type = element_details::Element_Node_Data::ELEMENT_NODE_STR;
+    int len = strlen(v);
+    val.Str = new char[len + 1];
+    std::memcpy(val.Str, v, len);
+    val.Str[len] = '\0';
+}
+
+//---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(bool v)
 {
     is_empty = false;
@@ -343,7 +357,7 @@ std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v
         return os;
 
     os << v->data;
-    if (v->Measure)
+    if (!v->Measure.empty())
         os << v->Measure;
 
     return os;
