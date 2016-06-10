@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/File__Analyze_Element.h"
+#include "MediaInfo/MediaInfo_Internal.h"
 #include <iostream>
 #include <iomanip>
 
@@ -245,8 +246,13 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
     switch (v.type)
     {
       case element_details::Element_Node_Data::ELEMENT_NODE_STR:
-          os << v.val.Str;
+      {
+          Ztring str = Ztring().From_UTF8(v.val.Str);
+          size_t Modified = 0;
+          MediaInfo_Internal::Xml_Content_Escape_Modifying(str, Modified);
+          os << str.To_UTF8();
           break;
+      }
       case element_details::Element_Node_Data::ELEMENT_NODE_BOOL:
           if (v.val.b)
               os << "Yes";
@@ -432,6 +438,7 @@ int element_details::Element_Node::Print_Xml(std::string& Str, size_t level)
 {
     std::stringstream ss;
     std::string spaces;
+    Ztring Name_Escaped;
 
     if (IsCat || !Name.length())
         goto print_children;
@@ -444,7 +451,9 @@ int element_details::Element_Node::Print_Xml(std::string& Str, size_t level)
     else
         ss << "<data";
 
-    ss << " offset=\"" << Pos << "\" name=\"" << Name << "\"";
+    Name_Escaped = MediaInfo_Internal::Xml_Name_Escape(Ztring().From_UTF8(Name));
+    ss << " offset=\"" << Pos << "\" name=\"" << Name_Escaped.To_UTF8() << "\"";
+    Name_Escaped.clear();
 
     if (!Parser.empty())
         ss << " parser=\"" << Parser << "\"";
@@ -453,7 +462,7 @@ int element_details::Element_Node::Print_Xml(std::string& Str, size_t level)
     {
         ss << " info";
         if (i)
-            ss << i;
+            ss << (i + 1);
         ss << "=\"" << Infos[i] << "\"";
     }
 
@@ -468,6 +477,7 @@ int element_details::Element_Node::Print_Xml(std::string& Str, size_t level)
     ss << std::endl;
 
     Str += ss.str();
+    ss.str(std::string());
 
 print_children:
     for (size_t i = 0; i < Children.size(); ++i)
@@ -479,7 +489,6 @@ print_children:
         if (Value.empty())
         {
             //block
-            ss.str(std::string());
             ss << spaces << "</block>" << std::endl;
             Str += ss.str();
         }
