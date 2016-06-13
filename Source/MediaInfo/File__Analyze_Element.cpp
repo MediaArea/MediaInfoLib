@@ -434,9 +434,8 @@ void element_details::Element_Node::Init()
 }
 
 //---------------------------------------------------------------------------
-int element_details::Element_Node::Print_Xml(std::string& Str, size_t level)
+int element_details::Element_Node::Print_Xml(std::stringstream& ss, size_t level)
 {
-    std::stringstream ss;
     std::string spaces;
     Ztring Name_Escaped;
 
@@ -476,12 +475,9 @@ int element_details::Element_Node::Print_Xml(std::string& Str, size_t level)
 
     ss << std::endl;
 
-    Str += ss.str();
-    ss.str(std::string());
-
 print_children:
     for (size_t i = 0; i < Children.size(); ++i)
-        Children[i]->Print_Xml(Str, level + 4);
+        Children[i]->Print_Xml(ss, level + 4);
 
     if (!IsCat && Name.length())
     {
@@ -490,7 +486,6 @@ print_children:
         {
             //block
             ss << spaces << "</block>" << std::endl;
-            Str += ss.str();
         }
     }
 
@@ -498,10 +493,8 @@ print_children:
 }
 
 //---------------------------------------------------------------------------
-int element_details::Element_Node::Print_Tree_Cat(std::string& Str, size_t level)
+int element_details::Element_Node::Print_Tree_Cat(std::stringstream& ss, size_t level)
 {
-    std::stringstream ss;
-
     std::string offset;
     ss << std::setfill('0') << std::setw(8) << std::hex << std::uppercase << Pos << std::nouppercase << std::dec;
     offset = ss.str();
@@ -520,19 +513,16 @@ int element_details::Element_Node::Print_Tree_Cat(std::string& Str, size_t level
     ss << spaces << minuses << std::endl;
     ss << offset << spaces << ToShow << std::endl;
     ss << offset << spaces << minuses << std::endl;
-
-    Str += ss.str();
     return 0;
 }
 
 //---------------------------------------------------------------------------
-int element_details::Element_Node::Print_Tree(std::string& Str, size_t level)
+int element_details::Element_Node::Print_Tree(std::stringstream& ss, size_t level)
 {
-    std::stringstream ss;
     std::string spaces;
 
     if (IsCat)
-        return Print_Tree_Cat(Str, level);
+        return Print_Tree_Cat(ss, level);
     else if (!Name.length())
         goto print_children;
 
@@ -564,11 +554,9 @@ int element_details::Element_Node::Print_Tree(std::string& Str, size_t level)
 
     ss << std::endl;
 
-    Str += ss.str();
-
 print_children:
     for (size_t i = 0; i < Children.size(); ++i)
-        Children[i]->Print_Tree(Str, level + 1);
+        Children[i]->Print_Tree(ss, level + 1);
 
     return 0;
 }
@@ -576,14 +564,23 @@ print_children:
 //---------------------------------------------------------------------------
 int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, std::string& Str)
 {
+    std::stringstream ss;
+    int ret = -1;
     switch (Format)
     {
-        case MediaInfo_Config::Trace_Format_Tree        : return Print_Tree(Str, 0);
-        case MediaInfo_Config::Trace_Format_CSV         : break;
-        case MediaInfo_Config::Trace_Format_XML         : return Print_Xml(Str, 0);
-        default                                         : break;
+        case MediaInfo_Config::Trace_Format_Tree:
+            ret = Print_Tree(ss, 0);
+            break;
+        case MediaInfo_Config::Trace_Format_CSV:
+            break;
+        case MediaInfo_Config::Trace_Format_XML:
+            ret = Print_Xml(ss, 0);
+            break;
+        default:
+            break;
     }
-    return -1;
+    Str = ss.str();
+    return ret;
 }
 
 //---------------------------------------------------------------------------
