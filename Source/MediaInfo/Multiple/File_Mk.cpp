@@ -2152,7 +2152,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
                     if (Stream[TrackNumber].Searching_Payload)
                     {
                         Element_Begin1("Data");
-                        Element_Parser(Stream[TrackNumber].Parser->ParserName.To_UTF8().c_str());
+                        Element_Parser(Stream[TrackNumber].Parser->ParserName.c_str());
 
                         Element_Code=TrackNumber;
 
@@ -4367,13 +4367,11 @@ void File_Mk::JumpTo (int64u GoToValue)
             //Searching and replacing CRC-32 information
             //TODO: better implementation without this ugly hack
             #if MEDIAINFO_TRACE
-            Ztring &TraceData = Details_Get(i);
-            Ztring ToSearch=__T("Not tested ")+Ztring::ToZtring(i)+__T(' ')+Ztring::ToZtring(CRC32Compute[i].Expected);
-            size_t Pos = TraceData.find(ToSearch);
-            if (Pos != string::npos)
+            element_details::Element_Node *node = Get_Trace_Node(i);
+            if (node)
             {
-                TraceData.erase(Pos, ToSearch.size());
-                TraceData.insert(Pos, __T("Not tested"));
+                std::string ToSearchInInfo=std::string("Not tested ")+Ztring::ToZtring(i).To_UTF8()+' '+Ztring::ToZtring(CRC32Compute[i].Expected).To_UTF8();
+                CRC32_Check_In_Node(ToSearchInInfo, "Not tested", node);
             }
             #endif //MEDIAINFO_TRACE
 
@@ -4421,6 +4419,31 @@ void File_Mk::TestMultipleInstances (size_t* Instances)
 }
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+bool File_Mk::CRC32_Check_In_Node(const std::string& ToSearchInInfo, const std::string& info, element_details::Element_Node *node)
+{
+    //Check in the current node
+    for (size_t i = 0; i < node->Infos.size(); ++i)
+    {
+        if (node->Infos[i]->data == ToSearchInInfo)
+        {
+            *node->Infos[i] = info;
+            return true;
+        }
+    }
+
+    //Check in the children of the current node
+    for (size_t i = 0; i < node->Children.size(); ++i)
+    {
+        if (CRC32_Check_In_Node(ToSearchInInfo, info, node->Children[i]))
+            return true;
+    }
+
+    return false;
+}
+#endif // MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
 void File_Mk::CRC32_Check ()
 {
     for (size_t i = 0; i<CRC32Compute.size(); i++)
@@ -4436,13 +4459,12 @@ void File_Mk::CRC32_Check ()
                     {
                         //Searching and replacing CRC-32 information
                         //TODO: better implementation without this ugly hack
-                        Ztring &TraceData = Details_Get(i);
-                        Ztring ToSearch=__T("Not tested ")+Ztring::ToZtring(i)+__T(' ')+Ztring::ToZtring(CRC32Compute[i].Expected);
-                        size_t Pos = TraceData.find(ToSearch);
-                        if (Pos != string::npos)
+
+                        element_details::Element_Node *node = Get_Trace_Node(i);
+                        if (node)
                         {
-                            TraceData.erase(Pos, ToSearch.size());
-                            TraceData.insert(Pos, CRC32Compute[i].Computed == CRC32Compute[i].Expected?__T("OK"):__T("NOK"));
+                            std::string ToSearchInInfo=std::string("Not tested ")+Ztring::ToZtring(i).To_UTF8()+' '+Ztring::ToZtring(CRC32Compute[i].Expected).To_UTF8();
+                            CRC32_Check_In_Node(ToSearchInInfo, CRC32Compute[i].Computed == CRC32Compute[i].Expected?"OK":"NOK", node);
                         }
 
                         //Debug

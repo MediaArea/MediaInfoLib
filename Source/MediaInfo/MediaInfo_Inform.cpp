@@ -275,7 +275,7 @@ Ztring MediaInfo_Internal::Inform()
         size_t Modified;
         Retour+=__T("<media ref=\"")+MediaInfo_Internal::Xml_Content_Escape(Get(Stream_General, 0, General_CompleteName), Modified)+= __T("\"");
         if (Info && !Info->ParserName.empty())
-            Retour+=__T(" parser=\"")+ Info->ParserName+=__T("\"");
+            Retour+=__T(" parser=\"")+ Ztring().From_UTF8(Info->ParserName)+=__T("\"");
         Retour+= __T(">\n");
     }
     if (XML_0_7_78_MA)
