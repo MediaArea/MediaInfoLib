@@ -500,9 +500,8 @@ print_children:
 //---------------------------------------------------------------------------
 int element_details::Element_Node::Print_Tree_Cat(std::stringstream& ss, size_t level)
 {
-    std::string offset;
-    ss << std::setfill('0') << std::setw(8) << std::hex << std::uppercase << Pos << std::nouppercase << std::dec;
-    offset = ss.str();
+    std::stringstream offset;
+    offset << std::setfill('0') << std::setw(8) << std::hex << std::uppercase << Pos << std::nouppercase << std::dec;
 
     std::string spaces;
     spaces.resize(level, ' ');
@@ -515,9 +514,9 @@ int element_details::Element_Node::Print_Tree_Cat(std::stringstream& ss, size_t 
     std::string minuses;
     minuses.resize(ToShow.size(), '-');
 
-    ss << spaces << minuses << "\n";
-    ss << offset << spaces << ToShow << "\n";
-    ss << offset << spaces << minuses << "\n";
+    ss << offset.str() << spaces << minuses << "\n";
+    ss << offset.str() << spaces << ToShow << "\n";
+    ss << offset.str() << spaces << minuses << "\n";
     return 0;
 }
 
