@@ -473,7 +473,7 @@ int element_details::Element_Node::Print_Xml(std::stringstream& ss, size_t level
     else
         ss << " size=\"" << Size << "\">";
 
-    ss << std::endl;
+    ss << "\n";
 
 print_children:
     for (size_t i = 0; i < Children.size(); ++i)
@@ -485,7 +485,7 @@ print_children:
         if (Value.empty())
         {
             //block
-            ss << spaces << "</block>" << std::endl;
+            ss << spaces << "</block>" << "\n";
         }
     }
 
@@ -510,9 +510,9 @@ int element_details::Element_Node::Print_Tree_Cat(std::stringstream& ss, size_t 
     std::string minuses;
     minuses.resize(ToShow.size(), '-');
 
-    ss << spaces << minuses << std::endl;
-    ss << offset << spaces << ToShow << std::endl;
-    ss << offset << spaces << minuses << std::endl;
+    ss << spaces << minuses << "\n";
+    ss << offset << spaces << ToShow << "\n";
+    ss << offset << spaces << minuses << "\n";
     return 0;
 }
 
@@ -552,7 +552,7 @@ int element_details::Element_Node::Print_Tree(std::stringstream& ss, size_t leve
     if (Value.empty())
         ss << " (" << Size << " bytes)";
 
-    ss << std::endl;
+    ss << "\n";
 
 print_children:
     for (size_t i = 0; i < Children.size(); ++i)
