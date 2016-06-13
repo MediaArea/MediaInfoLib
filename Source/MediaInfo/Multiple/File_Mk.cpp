@@ -4419,6 +4419,7 @@ void File_Mk::TestMultipleInstances (size_t* Instances)
 }
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
 bool File_Mk::CRC32_Check_In_Node(const std::string& ToSearchInInfo, const std::string& info, element_details::Element_Node *node)
 {
     //Check in the current node
@@ -4440,6 +4441,7 @@ bool File_Mk::CRC32_Check_In_Node(const std::string& ToSearchInInfo, const std::
 
     return false;
 }
+#endif // MEDIAINFO_TRACE
 
 //---------------------------------------------------------------------------
 void File_Mk::CRC32_Check ()

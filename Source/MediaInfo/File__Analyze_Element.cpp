@@ -13,6 +13,7 @@
 
 namespace MediaInfoLib
 {
+#if MEDIAINFO_TRACE
 //***************************************************************************
 // Element_Node_Data
 //***************************************************************************
@@ -595,5 +596,6 @@ void element_details::Element_Node::Add_Child(Element_Node* node)
     node->OwnChildren = false;
     Children.push_back(new_node);
 }
+#endif
 
 }
