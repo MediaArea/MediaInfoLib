@@ -479,9 +479,10 @@ int element_details::Element_Node::Print_Xml(std::stringstream& ss, size_t level
 
     ss << "\n";
 
+	level += 4;
 print_children:
     for (size_t i = 0; i < Children.size(); ++i)
-        Children[i]->Print_Xml(ss, level + 4);
+        Children[i]->Print_Xml(ss, level);
 
     if (!IsCat && Name.length())
     {
@@ -558,9 +559,10 @@ int element_details::Element_Node::Print_Tree(std::stringstream& ss, size_t leve
 
     ss << "\n";
 
+	level += 1;
 print_children:
     for (size_t i = 0; i < Children.size(); ++i)
-        Children[i]->Print_Tree(ss, level + 1);
+        Children[i]->Print_Tree(ss, level);
 
     return 0;
 }
@@ -573,7 +575,7 @@ int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, 
     switch (Format)
     {
         case MediaInfo_Config::Trace_Format_Tree:
-            ret = Print_Tree(ss, 0);
+            ret = Print_Tree(ss, 1);
             break;
         case MediaInfo_Config::Trace_Format_CSV:
             break;
