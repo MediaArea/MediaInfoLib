@@ -1209,6 +1209,8 @@ void File__Analyze::Open_Buffer_Finalize (bool NoBufferModification)
         std::string str;
         Element[0].TraceNode.Print(Config_Trace_Format, str);
         Details->assign(Ztring().From_UTF8(str));
+        if (Config_LineSeparator != __T("\n"))
+            Details->FindAndReplace(__T("\n"), Config_LineSeparator, 0, Ztring_Recursive);
     }
     #endif //MEDIAINFO_TRACE
 
