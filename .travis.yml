@@ -8,4 +8,4 @@ before_install:
   - sudo dpkg -i libzen0_0.4.32-1_amd64.xUbuntu_12.04.deb
   - wget http://mediaarea.net/download/binary/libzen0/0.4.32/libzen-dev_0.4.32-1_amd64.xUbuntu_12.04.deb
   - sudo dpkg -i libzen-dev_0.4.32-1_amd64.xUbuntu_12.04.deb
-script: cd Project/GNU/Library/ && ./autogen.sh && ./configure && make
+script: cd Project/GNU/Library/ && ./autogen.sh && ./configure && make && make clone_regression_files && make check
