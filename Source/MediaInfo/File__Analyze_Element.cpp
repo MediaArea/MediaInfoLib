@@ -408,6 +408,10 @@ element_details::Element_Node::~Element_Node()
     for (size_t i = 0; i < Children.size(); ++i)
         delete Children[i];
     Children.clear();
+
+    for (size_t i = 0; i < Infos.size(); ++i)
+        delete Infos[i];
+    Infos.clear();
 }
 
 //---------------------------------------------------------------------------

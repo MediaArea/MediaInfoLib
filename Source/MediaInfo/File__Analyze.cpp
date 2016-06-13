@@ -3447,6 +3447,7 @@ void File__Analyze::Element_Show_Add (File__Analyze* node)
 
     //From Sub
     Element[Element_Level].TraceNode.Add_Child(&node->Element[0].TraceNode);
+    node->Element[0].TraceNode.Init();
 }
 #endif //MEDIAINFO_TRACE
 
