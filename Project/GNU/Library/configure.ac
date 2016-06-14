@@ -851,7 +851,7 @@ AC_SUBST(MediaInfoLib_LibName)
 AC_CONFIG_FILES(libmediainfo-config, [chmod u+x libmediainfo-config])
 AC_CONFIG_FILES(libmediainfo.pc)
 
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile test/Makefile)
 
 dnl #########################################################################
 dnl ### Report how we have been configured

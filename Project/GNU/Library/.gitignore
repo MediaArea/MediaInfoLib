@@ -26,3 +26,7 @@ test/mediatrace.xsd
 test/trace.sh.log
 test/trace.sh.trs
 test/Files
+test/mil_analyze
+test/Source/mil_analyze-analyze.o
+test/Source/.deps
+test/Source/.dirstamp

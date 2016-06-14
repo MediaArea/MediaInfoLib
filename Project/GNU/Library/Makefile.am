@@ -265,12 +265,13 @@ lib@MediaInfoLib_LibName@_la_LDFLAGS     = -no-undefined -version-info 0:0:0
 
 AM_CPPFLAGS = -I../../../Source -I../../../../ZenLib/Source
 
-TESTS = \
-    test/trace.sh
+TESTS_DIR = test
 
-REGRESSION_FILES = test/Files
+SUBDIRS = . $(TESTS_DIR)
 
+REGRESSION_FILES = $(TESTS_DIR)/Files
 clone_regression_files: $(REGRESSION_FILES)
 
 $(REGRESSION_FILES):
-	git clone https://github.com/MediaArea/MediaArea-RegressionTestingFiles test/Files
+	git clone https://github.com/MediaArea/MediaArea-RegressionTestingFiles $(TESTS_DIR)/Files
+
