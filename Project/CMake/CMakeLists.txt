@@ -116,6 +116,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze_Buffer.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze_Buffer_MinimizeSize.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze_Element.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze_Streams.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze_Streams_Finish.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Base.cpp
