@@ -157,8 +157,9 @@ struct element_details
         int  Print(MediaInfo_Config::trace_Format Format, std::string& str);  //Print the node into str
 
     private:
-        int  Print_Xml(std::stringstream& ss, size_t level);                       //Print the node in XML into str
-        int  Print_Tree(std::stringstream& ss, size_t level=1);                    //Print the node into str
+        int  Print_Xml(std::stringstream& ss, size_t level);                       //Print the node in XML into ss
+        int  Print_Micro_Xml(std::stringstream& ss, size_t level);                 //Print the node in micro XML into ss
+        int  Print_Tree(std::stringstream& ss, size_t level=1);                    //Print the node into ss
         int  Print_Tree_Cat(std::stringstream& ss, size_t level=1);
     };
 #endif //MEDIAINFO_TRACE
