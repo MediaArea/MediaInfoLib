@@ -6,7 +6,7 @@ PATH_FILES=$PATH_SCRIPT/Files
 
 unset args
 while IFS= read -r i; do
-    FILE_NAME=$(basename $i)
+    FILE_NAME=$(basename "$i")
     OUTPUT_NAME="/tmp/$FILE_NAME.xml"
     `$PATH_SCRIPT/mil_analyze "$PATH_FILES/$i" "$OUTPUT_NAME"`
     cmd_is_ok
