@@ -2509,6 +2509,7 @@ Ztring Log_Offset (int64u OffsetToShow, MediaInfo_Config::trace_Format Config_Tr
     switch (Config_Trace_Format)
     {
         case MediaInfo_Config::Trace_Format_XML        : break;
+        case MediaInfo_Config::Trace_Format_MICRO_XML  : break;
         default                                         :
             if (OffsetToShow==(int64u)-1)
                 return __T("         ");
@@ -2526,6 +2527,14 @@ Ztring Log_Offset (int64u OffsetToShow, MediaInfo_Config::trace_Format Config_Tr
                                                           if (OffsetToShow!=(int64u)-1)
                                                           {
                                                                Pos2+=__T(" offset=\"");
+                                                               Pos2+=Ztring().From_Number(OffsetToShow);
+                                                               Pos2+=__T("\"");
+                                                          }
+                                                          break;
+        case MediaInfo_Config::Trace_Format_MICRO_XML   : Pos2+=__T("<");
+                                                          if (OffsetToShow!=(int64u)-1)
+                                                          {
+                                                               Pos2+=__T(" o=\"");
                                                                Pos2+=Ztring().From_Number(OffsetToShow);
                                                                Pos2+=__T("\"");
                                                           }
@@ -2716,84 +2725,6 @@ void File__Analyze::Element_End_Common_Flush_Details()
             Element[Element_Level+1].TraceNode.Init();
         }
     }
-}
-#endif //MEDIAINFO_TRACE
-
-#if MEDIAINFO_TRACE
-//---------------------------------------------------------------------------
-Ztring File__Analyze::Element_End_Common_Flush_Build()
-{
-    Ztring ToReturn;
-
-    //Show Offset
-    switch (Config_Trace_Format)
-    {
-        case MediaInfo_Config::Trace_Format_XML         : ToReturn.resize((ToReturn.size()+Element_Level_Base+Element_Level+1)*4, __T(' ')); break;
-        default                                         : ;
-    }
-    if (Config_Trace_Level>0.7)
-    {
-        ToReturn+=Log_Offset(Element[Element_Level+1].TraceNode.Pos, Config_Trace_Format);
-    }
-
-    //Name
-    switch (Config_Trace_Format)
-    {
-        case MediaInfo_Config::Trace_Format_Tree        : ToReturn.resize(ToReturn.size()+Element_Level_Base+Element_Level, __T(' ')); break;
-        case MediaInfo_Config::Trace_Format_CSV         :
-                    ToReturn+=__T("G,");
-                    ToReturn+=Ztring::ToZtring(Element_Level_Base+Element_Level);
-                    ToReturn+=__T(',');
-                    break;
-        case MediaInfo_Config::Trace_Format_XML         : ToReturn+=__T( " name=\""); break;
-        default                                         : ;
-    }
-    ToReturn+=Ztring().From_UTF8(Element[Element_Level+1].TraceNode.Name);
-    switch (Config_Trace_Format)
-    {
-        case MediaInfo_Config::Trace_Format_XML         : ToReturn+=__T( "\""); break;
-        default                                         : ;
-    }
-
-    //Info
-    // ToReturn+=Element[Element_Level+1].TraceNode.Infos;
-    // Element[Element_Level+1].TraceNode.Infos.clear();
-
-    //Size
-    if (Config_Trace_Level>0.3)
-    {
-        switch (Config_Trace_Format)
-        {
-            case MediaInfo_Config::Trace_Format_Tree        :
-                    ToReturn+=__T(" (");
-                    break;
-            case MediaInfo_Config::Trace_Format_CSV         :
-                    ToReturn+=__T(",(");
-                    break;
-            case MediaInfo_Config::Trace_Format_XML         :
-                    ToReturn+=__T(" size=\"");
-                    break;
-            default                                         : ;
-        }
-        ToReturn+=Ztring::ToZtring(Element[Element_Level+1].TraceNode.Size);
-        /*
-        if (Element[Element_Level+1].TraceNode.Header_Size>0)
-        {
-            ToReturn+=__T("/");
-            ToReturn+=Ztring::ToZtring(Element[Element_Level+1].TraceNode.Size-Element[Element_Level+1].TraceNode.Header_Size);
-        }
-        */
-        switch (Config_Trace_Format)
-        {
-            case MediaInfo_Config::Trace_Format_XML         :
-                                                                ToReturn+=__T("\">");
-                                                                break;
-            default                                         :
-                                                                ToReturn+=__T(" bytes)");
-        }
-    }
-
-    return ToReturn;
 }
 #endif //MEDIAINFO_TRACE
 
@@ -3250,6 +3181,7 @@ void File__Analyze::GoTo (int64u GoTo, const char* ParserName)
         switch (Config_Trace_Format)
         {
             case MediaInfo_Config::Trace_Format_XML         : break;
+            case MediaInfo_Config::Trace_Format_MICRO_XML   : break;
             default                                         : //TODO: find a better way to display jumps, both XML and Text
         if (Element_Level>0)
             Element_End0(); //Element

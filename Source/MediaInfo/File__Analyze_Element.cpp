@@ -439,6 +439,64 @@ void element_details::Element_Node::Init()
 }
 
 //---------------------------------------------------------------------------
+int element_details::Element_Node::Print_Micro_Xml(std::stringstream& ss, size_t level)
+{
+    std::string spaces;
+    Ztring Name_Escaped;
+
+    if (IsCat || !Name.length())
+        goto print_children;
+
+    spaces.resize(level, ' ');
+    ss << spaces;
+
+    if (Value.empty())
+        ss << "<b";
+    else
+        ss << "<d";
+
+    Name_Escaped = MediaInfo_Internal::Xml_Name_Escape(Ztring().From_UTF8(Name));
+    ss << " o=\"" << Pos << "\" n=\"" << Name_Escaped.To_UTF8() << "\"";
+    Name_Escaped.clear();
+
+    if (!Parser.empty())
+        ss << " parser=\"" << Parser << "\"";
+
+    for (size_t i = 0; i < Infos.size(); ++i)
+    {
+        ss << " i";
+        if (i)
+            ss << (i + 1);
+        ss << "=\"" << Infos[i] << "\"";
+    }
+
+    if (!Value.empty())
+    {
+        Value.Set_Output_Format(Element_Node_Data::Format_Xml);
+        ss << ">" << Value << "</d>";
+    }
+    else
+        ss << " s=\"" << Size << "\">";
+
+	level += 4;
+print_children:
+    for (size_t i = 0; i < Children.size(); ++i)
+        Children[i]->Print_Micro_Xml(ss, level);
+
+    if (!IsCat && Name.length())
+    {
+        //end tag
+        if (Value.empty())
+        {
+            //block
+            ss << spaces << "</b>";
+        }
+    }
+
+    return 0;
+}
+
+//---------------------------------------------------------------------------
 int element_details::Element_Node::Print_Xml(std::stringstream& ss, size_t level)
 {
     std::string spaces;
@@ -581,6 +639,9 @@ int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, 
             break;
         case MediaInfo_Config::Trace_Format_XML:
             ret = Print_Xml(ss, 0);
+            break;
+        case MediaInfo_Config::Trace_Format_MICRO_XML:
+            ret = Print_Micro_Xml(ss, 0);
             break;
         default:
             break;

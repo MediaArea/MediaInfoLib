@@ -333,7 +333,6 @@ protected :
 protected :
     //Element - Common
     void   Element_End_Common_Flush();
-    Ztring Element_End_Common_Flush_Build();
 public :
 
     //***************************************************************************
