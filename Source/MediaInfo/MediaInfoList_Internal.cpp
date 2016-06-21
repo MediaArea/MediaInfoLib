@@ -290,6 +290,7 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
 {
     if (FilePos==Error)
     {
+        #if defined(MEDIAINFO_XML_YES)
         if (MediaInfoLib::Config.Inform_Get()==__T("MAXML"))
         {
             Ztring Result;
@@ -390,10 +391,12 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
 
             return Result;
         }
+        #endif //defined(MEDIAINFO_XML_YES)
 
         Ztring Retour;
         FilePos=0;
         ZtringListList MediaInfo_Custom_View; MediaInfo_Custom_View.Write(Option(__T("Inform_Get")));
+        #if defined(MEDIAINFO_XML_YES)
         bool XML=false;
         if (MediaInfoLib::Config.Inform_Get()==__T("XML"))
             XML=true;
@@ -404,6 +407,7 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
             Retour+=MediaInfoLib::Config.LineSeparator_Get();
         }
         else
+        #endif //defined(MEDIAINFO_XML_YES)
         Retour+=MediaInfo_Custom_View("Page_Begin");
         while (FilePos<Info.size())
         {
@@ -414,6 +418,7 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
             }
             FilePos++;
         }
+        #if defined(MEDIAINFO_XML_YES)
         if (XML)
         {
             if (!Retour.empty() && Retour[Retour.size()-1]!=__T('\r') && Retour[Retour.size()-1]!=__T('\n'))
@@ -425,7 +430,9 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
                 Retour+=__T("Mediainfo");
             Retour+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
         }
-        else Retour+=MediaInfo_Custom_View("Page_End");//
+        else
+        #endif //defined(MEDIAINFO_XML_YES)
+            Retour+=MediaInfo_Custom_View("Page_End");//
         return Retour.c_str();
     }
 

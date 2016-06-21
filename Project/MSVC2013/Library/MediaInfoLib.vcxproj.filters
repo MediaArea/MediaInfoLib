@@ -758,6 +758,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\HashWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\File__Analyze_Element.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1421,6 +1424,9 @@
       <Filter>ThirdParty\sha2</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\HashWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyze_Element.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -474,7 +474,9 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                 Ztring Valeur=Get((stream_t)StreamKind, StreamPos, Champ_Pos, Info_Text);
 
                 //Handling values with \r\n inside
+                #if defined(MEDIAINFO_TEXT_YES) && (defined(MEDIAINFO_HTML_YES) || defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_CSV_YES))
                 if (Text)
+                #endif //defined(MEDIAINFO_TEXT_YES) && (defined(MEDIAINFO_HTML_YES) || defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_CSV_YES))
                 {
                     if (Valeur.find(__T('\r'))!=string::npos || Valeur.find(__T('\n'))!=string::npos)
                     {
