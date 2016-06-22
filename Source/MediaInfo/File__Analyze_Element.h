@@ -98,6 +98,13 @@ struct element_details
 
         static void get_hexa_from_deci_limited_by_bits(std::string& val, int8u bits, int8u default_bits);
 
+        //Copy from MediaInfo_Internal
+        static void         Xml_Name_Escape(const std::string &Name, bool &Modified, std::string &ToReturn);
+        static size_t       Xml_Name_Escape_MustChange(const std::string &Content);
+
+        static void         Xml_Content_Escape(const std::string &Content, bool &Modified, std::string &ToReturn);
+        static size_t       Xml_Content_Escape_MustEscape(const std::string &Content);
+
     private:
         Value               val;
         Value_Type          type;

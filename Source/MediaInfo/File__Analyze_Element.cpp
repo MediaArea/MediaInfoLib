@@ -22,6 +22,7 @@
 #include "MediaInfo/MediaInfo_Internal.h"
 #include <iostream>
 #include <iomanip>
+#include "base64.h"
 
 namespace MediaInfoLib
 {
@@ -254,16 +255,173 @@ void element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(std:
 }
 
 //---------------------------------------------------------------------------
+size_t element_details::Element_Node_Data::Xml_Name_Escape_MustChange(const std::string &Content)
+{
+    size_t Pos=0;
+    size_t Size=Content.size();
+    for (; Pos<Size; Pos++)
+    {
+        switch (Content[Pos])
+        {
+            case ' ':
+            case '/':
+            case '(':
+            case ')':
+            case '*':
+            case ',':
+            case ':':
+            case '@':
+                            return Pos;
+            default      :
+                if (!(Content[Pos]>='A' && Content[Pos]<='Z')
+                    && !(Content[Pos]>='a' && Content[Pos]<='z')
+                    && !(Content[Pos]>='0' && Content[Pos]<='9')
+                    && !(Content[Pos]=='_'))
+                            return Pos;
+        }
+    }
+
+    return Pos;
+}
+
+//---------------------------------------------------------------------------
+void element_details::Element_Node_Data::Xml_Name_Escape (const std::string &Name, bool &Modified, std::string& ToReturn)
+{
+    Modified = false;
+    if (Name[0]>='0' && Name[0]<='9')
+    {
+        ToReturn = Name;
+        ToReturn.insert(0, 1, '_');
+        Modified = true;
+    }
+
+    size_t Pos=Xml_Name_Escape_MustChange(Name);
+    if (Name.size() && Pos>=Name.size())
+        return;
+
+    ToReturn = Name;
+    Modified = true;
+    while (Pos<ToReturn.size())
+    {
+        switch (ToReturn[Pos])
+        {
+            case ' ':
+            case '/':
+            case '(':
+            case ')':
+            case '*':
+            case ',':
+            case ':':
+            case '@':
+                ToReturn[Pos] = '_';
+                break;
+            default:
+                break;
+        }
+
+        if (!(ToReturn[Pos]>='A' && ToReturn[Pos]<='Z')
+         && !(ToReturn[Pos]>='a' && ToReturn[Pos]<='z')
+         && !(ToReturn[Pos]>='0' && ToReturn[Pos]<='9')
+         && !(ToReturn[Pos]=='_'))
+            ToReturn.erase(Pos, 1);
+        else
+            Pos++;
+    }
+
+    if (ToReturn.empty())
+        ToReturn="Unknown";
+}
+
+//---------------------------------------------------------------------------
+size_t element_details::Element_Node_Data::Xml_Content_Escape_MustEscape(const std::string &Content)
+{
+    size_t Pos=0;
+    size_t Size=Content.size();
+    for (; Pos<Size; Pos++)
+    {
+        switch (Content[Pos])
+        {
+            case '\"':
+            case '&' :
+            case '\'':
+            case '<' :
+            case '>' :
+                            return Pos;
+            default      :
+                            if (Content[Pos]<0x20)
+                                return Pos;
+        }
+    }
+
+    return Pos;
+}
+
+//---------------------------------------------------------------------------
+void element_details::Element_Node_Data::Xml_Content_Escape (const std::string &Content, bool &Modified, std::string& ToReturn)
+{
+    Modified=false;
+    size_t Pos=Xml_Content_Escape_MustEscape(ToReturn);
+    if (Pos>=Content.size())
+        return;
+
+    ToReturn=Content;
+    Modified=true;
+    for (; Pos<ToReturn.size(); Pos++)
+    {
+        switch (ToReturn[Pos])
+        {
+            case '\"':
+                            ToReturn[Pos]='&';
+                            ToReturn.insert(Pos+1, "quot;");
+                            Pos+=5;
+                            break;
+            case '&':
+                            ToReturn[Pos]='&';
+                            ToReturn.insert(Pos+1, "amp;");
+                            Pos+=4;
+                            break;
+            case '\'':
+                            ToReturn[Pos]='&';
+                            ToReturn.insert(Pos+1, "apos;");
+                            Pos+=5;
+                            break;
+            case '<':
+                            ToReturn[Pos]='&';
+                            ToReturn.insert(Pos+1, "lt;");
+                            Pos+=3;
+                            break;
+            case '>':
+                            ToReturn[Pos]='&';
+                            ToReturn.insert(Pos+1, "gt;");
+                            Pos+=3;
+                            break;
+            case '\r':
+            case '\n':
+                            break;
+            default:
+                        if (ToReturn[Pos]<0x20)
+                        {
+                            ToReturn = Base64::encode(Content);
+                            Pos=ToReturn.size(); //End
+                        }
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
 std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_Data& v)
 {
     switch (v.type)
     {
       case element_details::Element_Node_Data::ELEMENT_NODE_STR:
       {
-          Ztring str = Ztring().From_UTF8(v.val.Str);
-          size_t Modified = 0;
-          MediaInfo_Internal::Xml_Content_Escape_Modifying(str, Modified);
-          os << str.To_UTF8();
+          bool Modified = false;
+          std::string str;
+          element_details::Element_Node_Data::Xml_Content_Escape(v.val.Str, Modified, str);
+          if (Modified)
+              os << str;
+          else
+              os << v.val.Str;
           break;
       }
       case element_details::Element_Node_Data::ELEMENT_NODE_BOOL:
@@ -309,7 +467,7 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
           }
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT32U:
-          os << Ztring::ToZtring(v.val.i32u).To_UTF8();
+          os << v.val.i32u;
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
           {
               std::string str = Ztring::ToZtring(v.val.i32u, 16).To_UTF8();
@@ -318,7 +476,7 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
           }
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT32S:
-          os << Ztring::ToZtring(v.val.i32s).To_UTF8();
+          os << v.val.i32s;
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
           {
               std::string str = Ztring::ToZtring(v.val.i32s, 16).To_UTF8();
@@ -327,7 +485,7 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
           }
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT64U:
-          os << Ztring::ToZtring(v.val.i64u).To_UTF8();
+          os << v.val.i64u;
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
           {
               std::string str = Ztring::ToZtring(v.val.i64u, 16).To_UTF8();
@@ -336,7 +494,7 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
           }
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT64S:
-          os << Ztring::ToZtring(v.val.i64s).To_UTF8();
+          os << v.val.i64s;
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
           {
               std::string str = Ztring::ToZtring(v.val.i64s, 16).To_UTF8();
@@ -391,7 +549,7 @@ element_details::Element_Node::Element_Node()
   Current_Child(-1), NoShow(false), OwnChildren(true), IsCat(false)
 {
 }
- 
+
 //---------------------------------------------------------------------------
 element_details::Element_Node::Element_Node(const Element_Node& node)
 {
@@ -512,7 +670,8 @@ print_children:
 int element_details::Element_Node::Print_Xml(std::stringstream& ss, size_t level)
 {
     std::string spaces;
-    Ztring Name_Escaped;
+    std::string Name_Escaped;
+    bool Modified = false;
 
     if (IsCat || !Name.length())
         goto print_children;
@@ -525,9 +684,14 @@ int element_details::Element_Node::Print_Xml(std::stringstream& ss, size_t level
     else
         ss << "<data";
 
-    Name_Escaped = MediaInfo_Internal::Xml_Name_Escape(Ztring().From_UTF8(Name));
-    ss << " offset=\"" << Pos << "\" name=\"" << Name_Escaped.To_UTF8() << "\"";
-    Name_Escaped.clear();
+    element_details::Element_Node_Data::Xml_Name_Escape(Name, Modified, Name_Escaped);
+    if (Modified)
+    {
+        ss << " offset=\"" << Pos << "\" name=\"" << Name_Escaped << "\"";
+        Name_Escaped.clear();
+    }
+    else
+        ss << " offset=\"" << Pos << "\" name=\"" << Name << "\"";
 
     if (!Parser.empty())
         ss << " parser=\"" << Parser << "\"";
