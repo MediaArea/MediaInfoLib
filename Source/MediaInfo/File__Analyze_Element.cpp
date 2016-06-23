@@ -408,6 +408,22 @@ void element_details::Element_Node_Data::Xml_Content_Escape (const std::string &
     }
 }
 
+#define VALUE_INTEGER_FORMATED(_val, _type, _length)                                                       \
+    do                                                                                                      \
+    {                                                                                                       \
+        os << std::dec << (_type)_val;                                                                      \
+        if (v.format_out == element_details::Element_Node_Data::Format_Tree)                                \
+        {                                                                                                   \
+            std::stringstream ss;                                                                           \
+            ss << std::hex << std::uppercase << (_type)_val;                                                                  \
+            std::string str = ss.str();                                                                     \
+            element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, _length); \
+            os << " (0x" << str << ")";                                                                     \
+        }                                                                                                   \
+    }                                                                                                       \
+    while(0);
+
+
 //---------------------------------------------------------------------------
 std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_Data& v)
 {
@@ -431,77 +447,33 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
               os << "No";
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT8U:
-          os << Ztring::ToZtring(v.val.i8u).To_UTF8();
-          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-          {
-              std::string str = Ztring().From_CC1(v.val.i8u).To_UTF8();
-              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 8);
-              os << " (0x" << str << ")";
-          }
+          VALUE_INTEGER_FORMATED(v.val.i8u, unsigned, 8); //use unsigned for stringstream
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT8S:
-          os << Ztring::ToZtring(v.val.i8s).To_UTF8();
-          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-          {
-              std::string str = Ztring().From_CC1(v.val.i8s).To_UTF8();
-              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 8);
-              os << " (0x" << str << ")";
-          }
+          VALUE_INTEGER_FORMATED(v.val.i8s, int, 8); //use int for stringstream
           break;
+
       case element_details::Element_Node_Data::ELEMENT_NODE_INT16U:
-          os << Ztring::ToZtring(v.val.i16u).To_UTF8();
-          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-          {
-              std::string str = Ztring().From_CC2(v.val.i16u).To_UTF8();
-              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 16);
-              os << " (0x" << str << ")";
-          }
+          VALUE_INTEGER_FORMATED(v.val.i16u, unsigned, 16); //use unsigned for stringstream
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT16S:
-          os << Ztring::ToZtring(v.val.i16s).To_UTF8();
-          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-          {
-              std::string str = Ztring().From_CC2(v.val.i16s).To_UTF8();
-              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 16);
-              os << " (0x" << str << ")";
-          }
+          VALUE_INTEGER_FORMATED(v.val.i16s, int, 16); //use int for stringstream
           break;
+
       case element_details::Element_Node_Data::ELEMENT_NODE_INT32U:
-          os << v.val.i32u;
-          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-          {
-              std::string str = Ztring::ToZtring(v.val.i32u, 16).To_UTF8();
-              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 32);
-              os << " (0x" << str << ")";
-          }
+          VALUE_INTEGER_FORMATED(v.val.i32u, int32u, 32); //use unsigned for stringstream
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT32S:
-          os << v.val.i32s;
-          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-          {
-              std::string str = Ztring::ToZtring(v.val.i32s, 16).To_UTF8();
-              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 32);
-              os << " (0x" << str << ")";
-          }
+          VALUE_INTEGER_FORMATED(v.val.i32s, int32s, 32); //use int for stringstream
           break;
+
       case element_details::Element_Node_Data::ELEMENT_NODE_INT64U:
-          os << v.val.i64u;
-          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-          {
-              std::string str = Ztring::ToZtring(v.val.i64u, 16).To_UTF8();
-              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 64);
-              os << " (0x" << str << ")";
-          }
+          VALUE_INTEGER_FORMATED(v.val.i64u, int64u, 64);
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT64S:
-          os << v.val.i64s;
-          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
-          {
-              std::string str = Ztring::ToZtring(v.val.i64s, 16).To_UTF8();
-              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 64);
-              os << " (0x" << str << ")";
-          }
+          VALUE_INTEGER_FORMATED(v.val.i64s, int64s, 64); //use int for stringstream
           break;
+
       case element_details::Element_Node_Data::ELEMENT_NODE_INT128U:
           os << Ztring::ToZtring(*v.val.i128u).To_UTF8();
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
@@ -523,6 +495,9 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
     }
     return os;
 }
+
+#undef VALUE_INTEGER_FORMATED
+
 
 //***************************************************************************
 // Element_Node_Info
@@ -770,15 +745,17 @@ int element_details::Element_Node::Print_Tree(std::stringstream& ss, size_t leve
     ss << spaces;
     ss << Name;
 
+    spaces.clear();
+
 #define NB_SPACES 40
     if (!Value.empty())
     {
         ss << ":";
-        spaces.clear();
-        int nb_free = NB_SPACES - ss.str().length();
+        int nb_free = NB_SPACES - level - Name.length(); // 40 - len(Name) - len(spaces)
         spaces.resize(nb_free > 0 ? nb_free : 1, ' ');
         Value.Set_Output_Format(Element_Node_Data::Format_Tree);
         ss << spaces << Value;
+        spaces.clear();
     }
 #undef NB_SPACES
 
