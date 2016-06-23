@@ -584,7 +584,7 @@ void element_details::Element_Node::Init()
 }
 
 //---------------------------------------------------------------------------
-int element_details::Element_Node::Print_Micro_Xml(std::stringstream& ss, size_t level)
+int element_details::Element_Node::Print_Micro_Xml(std::ostringstream& ss, size_t level)
 {
     std::string spaces;
     Ztring Name_Escaped;
@@ -642,7 +642,7 @@ print_children:
 }
 
 //---------------------------------------------------------------------------
-int element_details::Element_Node::Print_Xml(std::stringstream& ss, size_t level)
+int element_details::Element_Node::Print_Xml(std::ostringstream& ss, size_t level)
 {
     std::string spaces;
     std::string Name_Escaped;
@@ -708,9 +708,9 @@ print_children:
 }
 
 //---------------------------------------------------------------------------
-int element_details::Element_Node::Print_Tree_Cat(std::stringstream& ss, size_t level)
+int element_details::Element_Node::Print_Tree_Cat(std::ostringstream& ss, size_t level)
 {
-    std::stringstream offset;
+    std::ostringstream offset;
     offset << std::setfill('0') << std::setw(8) << std::hex << std::uppercase << Pos << std::nouppercase << std::dec;
 
     std::string spaces;
@@ -731,7 +731,7 @@ int element_details::Element_Node::Print_Tree_Cat(std::stringstream& ss, size_t 
 }
 
 //---------------------------------------------------------------------------
-int element_details::Element_Node::Print_Tree(std::stringstream& ss, size_t level)
+int element_details::Element_Node::Print_Tree(std::ostringstream& ss, size_t level)
 {
     std::string spaces;
 
@@ -781,7 +781,7 @@ print_children:
 //---------------------------------------------------------------------------
 int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, std::string& Str)
 {
-    std::stringstream ss;
+    std::ostringstream ss;
     int ret = -1;
     switch (Format)
     {
