@@ -145,7 +145,6 @@ struct element_details
 
         int64u                           Pos;             // Position of the element in the file
         int64u                           Size;            // Size of the element (including header and sub-elements)
-        int64u                           Header_Size;     // Size of the header of the element
         std::string                      Name;            // Name planned for this element
         Element_Node_Data                Value;           // The value (currently used only with Trace XML)
         std::vector<Element_Node_Info*>  Infos;           // More info about the element

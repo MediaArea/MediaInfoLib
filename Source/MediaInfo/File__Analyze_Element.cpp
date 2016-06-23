@@ -534,7 +534,7 @@ std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v
 //***************************************************************************
 //---------------------------------------------------------------------------
 element_details::Element_Node::Element_Node()
-: Pos(0), Size(0), Header_Size(0),
+: Pos(0), Size(0),
   Current_Child(-1), NoShow(false), OwnChildren(true), IsCat(false)
 {
 }
@@ -547,7 +547,6 @@ element_details::Element_Node::Element_Node(const Element_Node& node)
 
     Pos = node.Pos;
     Size = node.Size;
-    Header_Size = node.Header_Size;
     Name = node.Name;
     Value = node.Value;
     Infos = node.Infos;
@@ -579,7 +578,6 @@ void element_details::Element_Node::Init()
 {
     Pos = 0;
     Size = 0;
-    Header_Size = 0;
     Name.clear();
     Value.clear();
     if (Children.size() && OwnChildren)

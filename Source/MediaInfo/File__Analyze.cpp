@@ -2160,8 +2160,6 @@ bool File__Analyze::Header_Manage()
         if (Element[Element_Level-1].TraceNode.Name.empty())
             Element[Element_Level-1].TraceNode.Name="Unknown";
         Element[Element_Level].TraceNode.Size=Element_Offset;
-        Element[Element_Level].TraceNode.Header_Size=0;
-        Element[Element_Level-1].TraceNode.Header_Size=Header_Size;
         if (Element_Offset==0)
             Element_DoNotShow();
     }
