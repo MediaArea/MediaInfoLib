@@ -189,6 +189,7 @@ private :
     void Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentSigHashAlgo() {UInteger_Info();};
     void Segment_Tracks_TrackEntry_CodecName();
     void Segment_Tracks_TrackEntry_CodecPrivate();
+    void Segment_Tracks_TrackEntry_CodecPrivate__Parse();
     void Segment_Tracks_TrackEntry_CodecPrivate_auds();
     void Segment_Tracks_TrackEntry_CodecPrivate_auds_ExtensibleWave();
     void Segment_Tracks_TrackEntry_CodecPrivate_vids();

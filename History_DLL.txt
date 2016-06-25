@@ -14,6 +14,8 @@ Version 0.7.87
 - Visual C++ 2012 project files removed
 x XML output: revert to old versioning method (version is MediaInfo software version)
 x I63, EBUCore/FIMS outputs: typo correction about WritingLibrary and WritingApplication
+x Matroska: files with CodecPrivate element before CodecID element where not always correctly parsed
+x OGG: crash/incoherent behavior with some buggy OGG streams having invalid chunk sizes
 
 Version 0.7.86, 2016-05-31
 --------------

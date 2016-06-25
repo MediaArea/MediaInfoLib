@@ -3114,20 +3114,26 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate()
         return; //First element has the priority
     }
 
-    //Creating the parser
-    if (Stream.find(TrackNumber)==Stream.end() || Stream[TrackNumber].Parser==NULL)
+    if (TrackNumber==(int64u)-1 || TrackType==(int64u)-1 || Retrieve(Stream[TrackNumber].StreamKind, Stream[TrackNumber].StreamPos, "CodecID").empty())
     {
-        if (Stream.find(TrackNumber)==Stream.end() || Retrieve(Stream[TrackNumber].StreamKind, Stream[TrackNumber].StreamPos, "CodecID").empty())
-        {
-            //Codec not already known, saving CodecPrivate
-            if (CodecPrivate)
-                delete[] CodecPrivate; //CodecPrivate=NULL.
-            CodecPrivate_Size=(size_t)Element_Size;
-            CodecPrivate=new int8u[(size_t)Element_Size];
-            std::memcpy(CodecPrivate, Buffer+Buffer_Offset, (size_t)Element_Size);
-            return;
-        }
+        //Codec not already known, saving CodecPrivate
+        if (CodecPrivate)
+            delete[] CodecPrivate; //CodecPrivate=NULL.
+        CodecPrivate_Size=(size_t)Element_Size;
+        CodecPrivate=new int8u[CodecPrivate_Size];
+        std::memcpy(CodecPrivate, Buffer+Buffer_Offset, CodecPrivate_Size);
+        return;
+    }
 
+    Segment_Tracks_TrackEntry_CodecPrivate__Parse();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate__Parse()
+{
+    //Creating the parser
+    if (Stream[TrackNumber].Parser==NULL)
+    {
         if (Stream[TrackNumber].StreamKind==Stream_Audio && Retrieve(Stream_Audio, Stream[TrackNumber].StreamPos, Audio_CodecID)==__T("A_MS/ACM"))
             Segment_Tracks_TrackEntry_CodecPrivate_auds();
         else if (Stream[TrackNumber].StreamKind==Stream_Video && Retrieve(Stream_Video, Stream[TrackNumber].StreamPos, Video_CodecID)==__T("V_MS/VFW/FOURCC"))
@@ -4330,7 +4336,7 @@ void File_Mk::CodecID_Manage()
 //---------------------------------------------------------------------------
 void File_Mk::CodecPrivate_Manage()
 {
-    if (CodecPrivate==NULL || TrackNumber==(int64u)-1 || TrackType==(int64u)-1)
+    if (CodecPrivate==NULL || TrackNumber==(int64u)-1 || TrackType==(int64u)-1 || Retrieve(Stream[TrackNumber].StreamKind, Stream[TrackNumber].StreamPos, "CodecID").empty())
         return; //Not ready (or not needed)
 
     //Codec Private is already here, so we can parse it now
@@ -4343,7 +4349,7 @@ void File_Mk::CodecPrivate_Manage()
     Buffer_Size=CodecPrivate_Size;
     Element_Offset=0;
     Element_Size=Buffer_Size;
-    Segment_Tracks_TrackEntry_CodecPrivate();
+    Segment_Tracks_TrackEntry_CodecPrivate__Parse();
     Buffer=Buffer_Save;
     Buffer_Offset=Buffer_Offset_Save;
     Buffer_Size=Buffer_Size_Save;
