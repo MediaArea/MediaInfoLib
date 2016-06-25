@@ -46,7 +46,7 @@ element_details::Element_Node_Data& element_details::Element_Node_Data::operator
           case element_details::Element_Node_Data::ELEMENT_NODE_STR:
           {
               size_t len = strlen(v.val.Str);
-              val.Str = new char[len];
+              val.Str = new char[len + 1];
               std::memcpy(val.Str, v.val.Str, len);
               val.Str[len] = '\0';
               break;
@@ -220,12 +220,10 @@ void element_details::Element_Node_Data::clear()
     switch (type)
     {
       case element_details::Element_Node_Data::ELEMENT_NODE_STR:
-          if (!is_empty)
-              delete [] val.Str;
+          delete [] val.Str;
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_INT128U:
-          if (!is_empty)
-              delete val.i128u;
+          delete val.i128u;
           break;
       default:
           break;
