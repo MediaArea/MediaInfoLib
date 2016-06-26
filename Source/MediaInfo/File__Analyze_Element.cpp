@@ -523,7 +523,7 @@ std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v
         return os;
 
     os << v->data;
-    if (!v->Measure.empty())
+    if (v->Measure)
         os << v->Measure;
 
     return os;

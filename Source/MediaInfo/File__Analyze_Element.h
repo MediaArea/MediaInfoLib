@@ -122,18 +122,29 @@ struct element_details
         {
             data = parameter;
             if (_Measure)
-                Measure = std::string(_Measure);
+            {
+                size_t len = strlen(_Measure);
+                Measure = new char[len + 1];
+                std::memcpy(Measure, _Measure, len);
+                Measure[len] = '\0';
+            }
+            else
+                Measure = NULL;
             data.set_Option(Option);
         }
 
         ~Element_Node_Info()
         {
+            delete[] Measure;
         }
 
         friend std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v);
 
         Element_Node_Data data;
-        std::string       Measure;
+        char*             Measure;
+
+    private:
+        Element_Node_Info(const Element_Node_Info&);
     };
 
     class Element_Node
