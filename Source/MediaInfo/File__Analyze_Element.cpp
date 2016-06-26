@@ -50,6 +50,10 @@ element_details::Element_Node_Data& element_details::Element_Node_Data::operator
             val.Str[len] = '\0';
             break;
         }
+        case element_details::Element_Node_Data::ELEMENT_NODE_FLOAT80:
+              val.f80 = new float80;
+              *val.f80 = *v.val.f80;
+              break;
         case ELEMENT_NODE_INT128U:
             val.i128u = new int128u;
             *val.i128u = *v.val.i128u;
@@ -215,7 +219,8 @@ void element_details::Element_Node_Data::operator=(float80 v)
     clear();
 
     type = ELEMENT_NODE_FLOAT80;
-    val.f80 = v;
+    val.f80 = new float80;
+    *val.f80 = v;
 }
 
 //---------------------------------------------------------------------------
@@ -234,6 +239,9 @@ void element_details::Element_Node_Data::clear()
     {
       case ELEMENT_NODE_STR:
           delete [] val.Str;
+          break;
+      case ELEMENT_NODE_FLOAT80:
+          delete val.f80;
           break;
       case ELEMENT_NODE_INT128U:
           delete val.i128u;
@@ -496,7 +504,7 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
           os << Ztring::ToZtring(v.val.f64, v.Option == (int8u)-1 ? 3 : v.Option).To_UTF8();
           break;
       case element_details::Element_Node_Data::ELEMENT_NODE_FLOAT80:
-          os << Ztring::ToZtring(v.val.f80, v.Option == (int8u)-1 ? 3 : v.Option).To_UTF8();
+          os << Ztring::ToZtring(*v.val.f80, v.Option == (int8u)-1 ? 3 : v.Option).To_UTF8();
           break;
     }
     return os;

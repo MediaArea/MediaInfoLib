@@ -64,7 +64,7 @@ struct element_details
             int64s       i64s;
             float32      f32;
             float64      f64;
-            float80      f80;
+            float80     *f80;
             int128u     *i128u;
         };
 
