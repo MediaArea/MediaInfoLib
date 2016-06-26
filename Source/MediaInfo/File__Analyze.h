@@ -23,6 +23,7 @@
     #include <aescpp.h>
 #endif //MEDIAINFO_AES
 #include "MediaInfo/HashWrapper.h"
+#include <cstring>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -360,7 +361,7 @@ protected :
     #define Element_Info1C(_CONDITION,_A) if (_CONDITION) Element_Info(_A)
     inline void Element_Info_From_Milliseconds (int64u Parameter)                  {if (Config_Trace_Level<1) return; Element_Info(Ztring().Duration_From_Milliseconds(Parameter));}
 
-    void Element_Parser (const std::string& Name);
+    void Element_Parser (const char* Name);
 
     //Elements - End
     inline void Element_End () {Element_End_Common_Flush();}
@@ -413,7 +414,7 @@ public :
         int64u Pos=Element_Offset+BS->OffsetBeforeLastCall_Get();
 
         element_details::Element_Node *node = new element_details::Element_Node;
-        node->Name = Parameter;
+        node->Set_Name(Parameter.c_str());
         node->Pos = Pos==(int64u)-1 ? Pos : (File_Offset+Buffer_Offset+Pos);
         node->Value = Value;
         node->Value.set_Option(GenericOption);

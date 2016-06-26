@@ -534,7 +534,7 @@ std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v
 //***************************************************************************
 //---------------------------------------------------------------------------
 element_details::Element_Node::Element_Node()
-: Pos(0), Size(0),
+: Pos(0), Size(0), Name(NULL), Parser(NULL),
   Current_Child(-1), NoShow(false), OwnChildren(true), IsCat(false)
 {
 }
@@ -547,11 +547,29 @@ element_details::Element_Node::Element_Node(const Element_Node& node)
 
     Pos = node.Pos;
     Size = node.Size;
-    Name = node.Name;
+    if (node.Name)
+    {
+        size_t len = strlen(node.Name);
+        if (len)
+        {
+            len++;
+            Name = new char[len];
+            std::memcpy(Name, node.Name, len);
+        }
+    }
+    else
+        Name = NULL;
     Value = node.Value;
     Infos = node.Infos;
     Children = node.Children;
-    Parser = node.Parser;
+    if (node.Parser)
+    {
+        size_t len = strlen(node.Parser) + 1;
+        Parser = new char[len];
+        std::memcpy(Parser, node.Parser, len);
+    }
+    else
+        Parser = NULL;
     Current_Child = node.Current_Child;
     NoShow = node.NoShow;
     OwnChildren = node.OwnChildren;
@@ -561,6 +579,9 @@ element_details::Element_Node::Element_Node(const Element_Node& node)
 //---------------------------------------------------------------------------
 element_details::Element_Node::~Element_Node()
 {
+    delete[] Name;
+    delete[] Parser;
+
     if (!OwnChildren)
         return;
 
@@ -578,7 +599,11 @@ void element_details::Element_Node::Init()
 {
     Pos = 0;
     Size = 0;
-    Name.clear();
+    if (Name)
+    {
+        delete[] Name;
+        Name = NULL;
+    }
     Value.clear();
     if (Children.size() && OwnChildren)
         for (size_t i = 0; i < Children.size(); ++i)
@@ -588,7 +613,11 @@ void element_details::Element_Node::Init()
         for (size_t i = 0; i < Infos.size(); ++i)
             delete Infos[i];
     Infos.clear();
-    Parser.clear();
+    if (Parser)
+    {
+        delete[] Parser;
+        Parser = NULL;
+    }
     Current_Child = -1;
     NoShow = false;
     OwnChildren = true;
@@ -601,7 +630,7 @@ int element_details::Element_Node::Print_Micro_Xml(std::ostringstream& ss, size_
     std::string spaces;
     Ztring Name_Escaped;
 
-    if (IsCat || !Name.length())
+    if (IsCat || !Name)
         goto print_children;
 
     spaces.resize(level, ' ');
@@ -616,7 +645,7 @@ int element_details::Element_Node::Print_Micro_Xml(std::ostringstream& ss, size_
     ss << " o=\"" << Pos << "\" n=\"" << Name_Escaped.To_UTF8() << "\"";
     Name_Escaped.clear();
 
-    if (!Parser.empty())
+    if (Parser)
         ss << " parser=\"" << Parser << "\"";
 
     for (size_t i = 0; i < Infos.size(); ++i)
@@ -640,7 +669,7 @@ print_children:
     for (size_t i = 0; i < Children.size(); ++i)
         Children[i]->Print_Micro_Xml(ss, level);
 
-    if (!IsCat && Name.length())
+    if (!IsCat && Name)
     {
         //end tag
         if (Value.empty())
@@ -660,7 +689,7 @@ int element_details::Element_Node::Print_Xml(std::ostringstream& ss, size_t leve
     std::string Name_Escaped;
     bool Modified = false;
 
-    if (IsCat || !Name.length())
+    if (IsCat || !Name)
         goto print_children;
 
     spaces.resize(level, ' ');
@@ -680,7 +709,7 @@ int element_details::Element_Node::Print_Xml(std::ostringstream& ss, size_t leve
     else
         ss << " offset=\"" << Pos << "\" name=\"" << Name << "\"";
 
-    if (!Parser.empty())
+    if (Parser)
         ss << " parser=\"" << Parser << "\"";
 
     for (size_t i = 0; i < Infos.size(); ++i)
@@ -706,7 +735,7 @@ print_children:
     for (size_t i = 0; i < Children.size(); ++i)
         Children[i]->Print_Xml(ss, level);
 
-    if (!IsCat && Name.length())
+    if (!IsCat && Name)
     {
         //end tag
         if (Value.empty())
@@ -749,7 +778,7 @@ int element_details::Element_Node::Print_Tree(std::ostringstream& ss, size_t lev
 
     if (IsCat)
         return Print_Tree_Cat(ss, level);
-    else if (!Name.length())
+    else if (!Name)
         goto print_children;
 
     ss << std::setfill('0') << std::setw(8) << std::hex << std::uppercase << Pos << std::nouppercase << std::dec;
@@ -763,7 +792,7 @@ int element_details::Element_Node::Print_Tree(std::ostringstream& ss, size_t lev
     if (!Value.empty())
     {
         ss << ":";
-        int nb_free = NB_SPACES - level - Name.length(); // 40 - len(Name) - len(spaces)
+        int nb_free = NB_SPACES - level - (Name ? 0 : strlen(Name)); // 40 - len(Name) - len(spaces)
         spaces.resize(nb_free > 0 ? nb_free : 1, ' ');
         Value.Set_Output_Format(Element_Node_Data::Format_Tree);
         ss << spaces << Value;
@@ -771,7 +800,7 @@ int element_details::Element_Node::Print_Tree(std::ostringstream& ss, size_t lev
     }
 #undef NB_SPACES
 
-    if (!Parser.empty())
+    if (Parser)
         ss << " - parser=\"" << Parser << "\"";
 
     for (size_t i = 0; i < Infos.size(); ++i)
@@ -821,6 +850,70 @@ void element_details::Element_Node::Add_Child(Element_Node* node)
     Element_Node *new_node = new Element_Node(*node);
     node->OwnChildren = false;
     Children.push_back(new_node);
+}
+
+//---------------------------------------------------------------------------
+void element_details::Element_Node::Set_Name(const char* Name_)
+{
+    delete[] Name;
+
+    if (!Name_)
+    {
+        Name = NULL;
+        return;
+    }
+
+    size_t len = strlen(Name_);
+    if (!len)
+    {
+        Name = NULL;
+        return;
+    }
+
+    len++;
+    Name = new char[len];
+    std::memcpy(Name, Name_, len);
+}
+
+//---------------------------------------------------------------------------
+void element_details::Element_Node::Set_Name(const string &Name_)
+{
+    delete[] Name;
+
+
+    size_t len = Name_.length();;
+    if (!len)
+    {
+        Name = NULL;
+        return;
+    }
+
+    Name = new char[len + 1];
+    std::memcpy(Name, Name_.c_str(), len);
+    Name[len] = '\0';
+}
+
+//---------------------------------------------------------------------------
+void element_details::Element_Node::Set_Parser(const char* Parser_)
+{
+    delete[] Parser;
+
+    if (!Parser_)
+    {
+        Parser = NULL;
+        return;
+    }
+
+    size_t len = strlen(Parser_);
+    if (!len)
+    {
+        Parser = NULL;
+        return;
+    }
+
+    len++;
+    Parser = new char[len];
+    std::memcpy(Parser, Parser_, len);
 }
 #endif
 

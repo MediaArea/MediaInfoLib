@@ -408,7 +408,7 @@ void File__Analyze::Open_Buffer_OutOfBand (File__Analyze* Sub, const int8u* ToAd
         if (Trace_Activated)
         {
             //Details handling
-            if ((!Sub->Element[0].TraceNode.Name.empty() || Sub->Element[0].TraceNode.Children.size()) && !Trace_DoNotSave)
+            if ((Sub->Element[0].TraceNode.Get_Name() || Sub->Element[0].TraceNode.Children.size()) && !Trace_DoNotSave)
             {
                 //From Sub
                 while(Sub->Element_Level)
@@ -961,7 +961,7 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
         if (Trace_Activated)
         {
             //Details handling
-            if ((!Sub->Element[0].TraceNode.Name.empty() || Sub->Element[0].TraceNode.Children.size()) && !Trace_DoNotSave)
+            if ((Sub->Element[0].TraceNode.Get_Name() || Sub->Element[0].TraceNode.Children.size()) && !Trace_DoNotSave)
             {
                 //From Sub
                 while(Sub->Element_Level)
@@ -2157,8 +2157,8 @@ bool File__Analyze::Header_Manage()
     #if MEDIAINFO_TRACE
     if (Trace_Activated)
     {
-        if (Element[Element_Level-1].TraceNode.Name.empty())
-            Element[Element_Level-1].TraceNode.Name="Unknown";
+        if (!Element[Element_Level-1].TraceNode.Get_Name())
+            Element[Element_Level-1].TraceNode.Set_Name("Unknown");
         Element[Element_Level].TraceNode.Size=Element_Offset;
         if (Element_Offset==0)
             Element_DoNotShow();
@@ -2630,23 +2630,23 @@ void File__Analyze::Element_Name(const Ztring &Name)
             Name2.FindAndReplace(__T("\n"), __T("_"), 0, Ztring_Recursive);
             if (Name2[0]==__T(' '))
                 Name2[0]=__T('_');
-            Element[Element_Level].TraceNode.Name=Name2.To_UTF8();
+            Element[Element_Level].TraceNode.Set_Name(Name2.To_UTF8());
         }
         else
-            Element[Element_Level].TraceNode.Name="(Empty)";
+            Element[Element_Level].TraceNode.Set_Name("(Empty)");
     }
 }
 #endif //MEDIAINFO_TRACE
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_TRACE
-void File__Analyze::Element_Parser(const std::string &Parameter)
+void File__Analyze::Element_Parser(const char* Parser)
 {
     //Needed?
     if (Config_Trace_Level<=0.7)
         return;
 
-    Element[Element_Level].TraceNode.Parser = Parameter;
+    Element[Element_Level].TraceNode.Set_Parser(Parser);
 }
 #endif //MEDIAINFO_TRACE
 
@@ -2670,7 +2670,7 @@ void File__Analyze::Element_End(const Ztring &Name)
     {
         Element[Element_Level].TraceNode.Size=Element[Element_Level].Next-Element[Element_Level].TraceNode.Pos;
         if (!Name.empty())
-            Element[Element_Level].TraceNode.Name=Name.To_UTF8();
+            Element[Element_Level].TraceNode.Set_Name(Name.To_UTF8());
     }
 
     Element_End_Common_Flush();
@@ -2757,7 +2757,7 @@ void File__Analyze::Info(const std::string& Value, size_t Element_Level_Minus)
 
     element_details::Element_Node node;
     node.Init();
-    node.Name = Value;
+    node.Set_Name(Value);
     node.IsCat = true;
     node.Pos = File_Offset+Buffer_Offset+Element_Offset+BS->Offset_Get();
     Element[Element_Level].TraceNode.Add_Child(&node);
