@@ -37,38 +37,38 @@ element_details::Element_Node_Data& element_details::Element_Node_Data::operator
     if (this == &v)
         return *this;
 
-    is_empty = v.is_empty;
+    clear();
+
     type = v.type;
-    if (!is_empty)
+    switch (type)
     {
-        switch (type)
+        case ELEMENT_NODE_STR:
         {
-          case element_details::Element_Node_Data::ELEMENT_NODE_STR:
-          {
-              size_t len = strlen(v.val.Str);
-              val.Str = new char[len + 1];
-              std::memcpy(val.Str, v.val.Str, len);
-              val.Str[len] = '\0';
-              break;
-          }
-          case element_details::Element_Node_Data::ELEMENT_NODE_INT128U:
-              val.i128u = new int128u;
-              *val.i128u = *v.val.i128u;
-              break;
-          default:
-              val = v.val;
-              break;
+            size_t len = strlen(v.val.Str);
+            val.Str = new char[len + 1];
+            std::memcpy(val.Str, v.val.Str, len);
+            val.Str[len] = '\0';
+            break;
         }
+        case ELEMENT_NODE_INT128U:
+            val.i128u = new int128u;
+            *val.i128u = *v.val.i128u;
+            break;
+        default:
+            val = v.val;
+            break;
     }
+
     return *this;
 }
 
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(const Ztring& v)
 {
+    clear();
+
     std::string tmp = v.To_UTF8();
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_STR;
+    type = ELEMENT_NODE_STR;
     val.Str = new char[tmp.length() + 1];
     std::memcpy(val.Str, tmp.c_str(), tmp.length());
     val.Str[tmp.length()] = '\0';
@@ -77,8 +77,9 @@ void element_details::Element_Node_Data::operator=(const Ztring& v)
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(const std::string& v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_STR;
+    clear();
+
+    type = ELEMENT_NODE_STR;
     val.Str = new char[v.length() + 1];
     std::memcpy(val.Str, v.c_str(), v.length());
     val.Str[v.length()] = '\0';
@@ -87,11 +88,12 @@ void element_details::Element_Node_Data::operator=(const std::string& v)
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(const char* v)
 {
+    clear();
+
     if (!v)
         return;
 
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_STR;
+    type = ELEMENT_NODE_STR;
     int len = strlen(v);
     val.Str = new char[len + 1];
     std::memcpy(val.Str, v, len);
@@ -101,80 +103,90 @@ void element_details::Element_Node_Data::operator=(const char* v)
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(bool v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_BOOL;
+    clear();
+
+    type = ELEMENT_NODE_BOOL;
     val.b = v;
 }
 
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(int8u v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_INT8U;
+    clear();
+
+    type = ELEMENT_NODE_INT8U;
     val.i8u = v;
 }
 
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(int8s v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_INT8S;
+    clear();
+
+    type = ELEMENT_NODE_INT8S;
     val.i8s = v;
 }
 
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(int16u v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_INT16U;
+    clear();
+
+    type = ELEMENT_NODE_INT16U;
     val.i16u = v;
 }
 
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(int16s v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_INT16S;
+    clear();
+
+    type = ELEMENT_NODE_INT16S;
     val.i16s = v;
 }
 
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(int32u v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_INT32U;
+    clear();
+
+    type = ELEMENT_NODE_INT32U;
     val.i32u = v;
 }
 
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(int32s v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_INT32S;
+    clear();
+
+    type = ELEMENT_NODE_INT32S;
     val.i32s = v;
 }
 
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(int64u v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_INT64U;
+    clear();
+
+    type = ELEMENT_NODE_INT64U;
     val.i64u = v;
 }
 
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(int64s v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_INT64S;
+    clear();
+
+    type = ELEMENT_NODE_INT64S;
     val.i64s = v;
 }
 
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(int128u v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_INT128U;
+    clear();
+
+    type = ELEMENT_NODE_INT128U;
     val.i128u = new int128u;
     *val.i128u = v;
 }
@@ -182,59 +194,55 @@ void element_details::Element_Node_Data::operator=(int128u v)
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(float32 v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_FLOAT32;
+    clear();
+
+    type = ELEMENT_NODE_FLOAT32;
     val.f32 = v;
 }
 
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(float64 v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_FLOAT64;
+    clear();
+
+    type = ELEMENT_NODE_FLOAT64;
     val.f64 = v;
 }
 
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::operator=(float80 v)
 {
-    is_empty = false;
-    type = element_details::Element_Node_Data::ELEMENT_NODE_FLOAT80;
+    clear();
+
+    type = ELEMENT_NODE_FLOAT80;
     val.f80 = v;
 }
 
 //---------------------------------------------------------------------------
 bool element_details::Element_Node_Data::operator==(const std::string& v)
 {
-    if (type != element_details::Element_Node_Data::ELEMENT_NODE_STR)
-        return false;
-    return v == val.Str;
+    if (type == ELEMENT_NODE_STR)
+        return v == val.Str;
+
+    return false;
 }
 
 //---------------------------------------------------------------------------
 void element_details::Element_Node_Data::clear()
 {
-    if (is_empty)
-        return;
-
     switch (type)
     {
-      case element_details::Element_Node_Data::ELEMENT_NODE_STR:
+      case ELEMENT_NODE_STR:
           delete [] val.Str;
           break;
-      case element_details::Element_Node_Data::ELEMENT_NODE_INT128U:
+      case ELEMENT_NODE_INT128U:
           delete val.i128u;
           break;
       default:
           break;
     }
-    is_empty = true;
-}
 
-//---------------------------------------------------------------------------
-bool element_details::Element_Node_Data::empty()
-{
-    return is_empty;
+    type = ELEMENT_NODE_NONE;
 }
 
 //---------------------------------------------------------------------------

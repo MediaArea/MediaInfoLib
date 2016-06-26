@@ -33,6 +33,7 @@ struct element_details
 
         enum Value_Type
         {
+            ELEMENT_NODE_NONE,
             ELEMENT_NODE_STR,
             ELEMENT_NODE_BOOL,
             ELEMENT_NODE_INT8U,
@@ -67,7 +68,7 @@ struct element_details
             int128u     *i128u;
         };
 
-        Element_Node_Data() : format_out(Format_Xml), is_empty(true) {}
+        Element_Node_Data() : format_out(Format_Xml), type(ELEMENT_NODE_NONE){}
         ~Element_Node_Data() { clear(); }
 
         Element_Node_Data& operator=(const Element_Node_Data&);
@@ -91,7 +92,7 @@ struct element_details
         bool operator==(const std::string& str);
 
         void clear();
-        bool empty();
+        bool empty() {return type == ELEMENT_NODE_NONE;}
         void set_Option(int8u c) {Option = c;}
         void Set_Output_Format(Value_Output_Format v) {format_out = v;}
         friend std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_Data& v);
@@ -109,7 +110,6 @@ struct element_details
         Value               val;
         Value_Type          type;
         Value_Output_Format format_out;
-        bool                is_empty;
         // Use by float and int types
         int8u               Option;
 
