@@ -34,6 +34,7 @@ struct element_details
         enum Value_Type
         {
             ELEMENT_NODE_NONE,
+            ELEMENT_NODE_CHAR8,
             ELEMENT_NODE_STR,
             ELEMENT_NODE_BOOL,
             ELEMENT_NODE_INT8U,
@@ -53,6 +54,7 @@ struct element_details
         union Value
         {
             char*        Str;
+            char         Chars[8];
             bool         b;
             int8u        i8u;
             int8s        i8s;
@@ -110,7 +112,7 @@ struct element_details
         Value               val;
         int8u               type; //Value_Type
         int8u               format_out; //Value_Output_Format
-        int8u               Option; // Use by float and int types
+        int8u               Option; // float: count of valid digits after comma; int: count of valid bits; chars: count of valid chars
 
         Element_Node_Data(const Element_Node_Data&);
     };
@@ -120,6 +122,7 @@ struct element_details
         template<typename T>
         Element_Node_Info(T parameter, const char* _Measure=NULL, int8u Option=(int8u)-1)
         {
+            data.set_Option(Option);
             data = parameter;
             if (_Measure)
             {
@@ -130,7 +133,6 @@ struct element_details
             }
             else
                 Measure = NULL;
-            data.set_Option(Option);
         }
 
         ~Element_Node_Info()

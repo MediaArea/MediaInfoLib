@@ -72,10 +72,20 @@ void element_details::Element_Node_Data::operator=(const Ztring& v)
     clear();
 
     std::string tmp = v.To_UTF8();
-    type = ELEMENT_NODE_STR;
-    val.Str = new char[tmp.length() + 1];
-    std::memcpy(val.Str, tmp.c_str(), tmp.length());
-    val.Str[tmp.length()] = '\0';
+    size_t len = tmp.length();
+    if (len <= 8)
+    {
+        type = ELEMENT_NODE_CHAR8;
+        std::memcpy(val.Chars, tmp.c_str(), len);
+        set_Option(len);
+    }
+    else
+    {
+        type = ELEMENT_NODE_STR;
+        val.Str = new char[len + 1];
+        std::memcpy(val.Str, tmp.c_str(), len);
+        val.Str[len] = '\0';
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -83,10 +93,20 @@ void element_details::Element_Node_Data::operator=(const std::string& v)
 {
     clear();
 
-    type = ELEMENT_NODE_STR;
-    val.Str = new char[v.length() + 1];
-    std::memcpy(val.Str, v.c_str(), v.length());
-    val.Str[v.length()] = '\0';
+    size_t len =v.length();
+    if (len <= 8)
+    {
+        type = ELEMENT_NODE_CHAR8;
+        std::memcpy(val.Chars, v.c_str(), len);
+        set_Option(len);
+    }
+    else
+    {
+        type = ELEMENT_NODE_STR;
+        val.Str = new char[len + 1];
+        std::memcpy(val.Str, v.c_str(), len);
+        val.Str[len] = '\0';
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -99,9 +119,18 @@ void element_details::Element_Node_Data::operator=(const char* v)
 
     type = ELEMENT_NODE_STR;
     int len = strlen(v);
-    val.Str = new char[len + 1];
-    std::memcpy(val.Str, v, len);
-    val.Str[len] = '\0';
+    if (len <= 8)
+    {
+        type = ELEMENT_NODE_CHAR8;
+        std::memcpy(val.Chars, v, len);
+        set_Option(len);
+    }
+    else
+    {
+        val.Str = new char[len + 1];
+        std::memcpy(val.Str, v, len);
+        val.Str[len] = '\0';
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -226,6 +255,8 @@ void element_details::Element_Node_Data::operator=(float80 v)
 //---------------------------------------------------------------------------
 bool element_details::Element_Node_Data::operator==(const std::string& v)
 {
+    if (type == ELEMENT_NODE_CHAR8)
+        return v == string(val.Chars, Option);
     if (type == ELEMENT_NODE_STR)
         return v == val.Str;
 
@@ -443,6 +474,18 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
 {
     switch (v.type)
     {
+      case element_details::Element_Node_Data::ELEMENT_NODE_CHAR8:
+      {
+          bool Modified = false;
+          std::string str;
+          std::string value(v.val.Chars, v.Option);
+          element_details::Element_Node_Data::Xml_Content_Escape(value, Modified, str);
+          if (Modified)
+              os << str;
+          else
+              os << value;
+          break;
+      }
       case element_details::Element_Node_Data::ELEMENT_NODE_STR:
       {
           bool Modified = false;

@@ -416,8 +416,8 @@ public :
         element_details::Element_Node *node = new element_details::Element_Node;
         node->Set_Name(Parameter.c_str());
         node->Pos = Pos==(int64u)-1 ? Pos : (File_Offset+Buffer_Offset+Pos);
-        node->Value = Value;
         node->Value.set_Option(GenericOption);
+        node->Value = Value;
         Element[Element_Level].TraceNode.Current_Child = Element[Element_Level].TraceNode.Children.size();
         Element[Element_Level].TraceNode.Children.push_back(node);
     }
