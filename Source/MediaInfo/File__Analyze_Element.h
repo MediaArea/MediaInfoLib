@@ -68,7 +68,7 @@ struct element_details
             int128u     *i128u;
         };
 
-        Element_Node_Data() : format_out(Format_Xml), type(ELEMENT_NODE_NONE){}
+        Element_Node_Data() : type(ELEMENT_NODE_NONE), format_out(Format_Xml) {}
         ~Element_Node_Data() { clear(); }
 
         Element_Node_Data& operator=(const Element_Node_Data&);
@@ -108,10 +108,9 @@ struct element_details
 
     private:
         Value               val;
-        Value_Type          type;
-        Value_Output_Format format_out;
-        // Use by float and int types
-        int8u               Option;
+        int8u               type; //Value_Type
+        int8u               format_out; //Value_Output_Format
+        int8u               Option; // Use by float and int types
 
         Element_Node_Data(const Element_Node_Data&);
     };
