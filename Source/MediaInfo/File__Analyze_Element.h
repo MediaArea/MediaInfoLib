@@ -33,6 +33,8 @@ struct element_details
 
         enum Value_Type
         {
+            ELEMENT_NODE_NONE,
+            ELEMENT_NODE_CHAR8,
             ELEMENT_NODE_STR,
             ELEMENT_NODE_BOOL,
             ELEMENT_NODE_INT8U,
@@ -52,6 +54,7 @@ struct element_details
         union Value
         {
             char*        Str;
+            char         Chars[8];
             bool         b;
             int8u        i8u;
             int8s        i8s;
@@ -63,11 +66,11 @@ struct element_details
             int64s       i64s;
             float32      f32;
             float64      f64;
-            float80      f80;
+            float80     *f80;
             int128u     *i128u;
         };
 
-        Element_Node_Data() : format_out(Format_Xml), is_empty(true) {}
+        Element_Node_Data() : type(ELEMENT_NODE_NONE), format_out(Format_Xml) {}
         ~Element_Node_Data() { clear(); }
 
         Element_Node_Data& operator=(const Element_Node_Data&);
@@ -91,27 +94,18 @@ struct element_details
         bool operator==(const std::string& str);
 
         void clear();
-        bool empty();
+        bool empty() {return type == ELEMENT_NODE_NONE;}
         void set_Option(int8u c) {Option = c;}
         void Set_Output_Format(Value_Output_Format v) {format_out = v;}
         friend std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_Data& v);
 
         static void get_hexa_from_deci_limited_by_bits(std::string& val, int8u bits, int8u default_bits);
 
-        //Copy from MediaInfo_Internal
-        static void         Xml_Name_Escape(const std::string &Name, bool &Modified, std::string &ToReturn);
-        static size_t       Xml_Name_Escape_MustChange(const std::string &Content);
-
-        static void         Xml_Content_Escape(const std::string &Content, bool &Modified, std::string &ToReturn);
-        static size_t       Xml_Content_Escape_MustEscape(const std::string &Content);
-
     private:
         Value               val;
-        Value_Type          type;
-        Value_Output_Format format_out;
-        bool                is_empty;
-        // Use by float and int types
-        int8u               Option;
+        int8u               type; //Value_Type
+        int8u               format_out; //Value_Output_Format
+        int8u               Option; // float: count of valid digits after comma; int: count of valid bits; chars: count of valid chars
 
         Element_Node_Data(const Element_Node_Data&);
     };
@@ -121,20 +115,33 @@ struct element_details
         template<typename T>
         Element_Node_Info(T parameter, const char* _Measure=NULL, int8u Option=(int8u)-1)
         {
+            data.set_Option(Option);
             data = parameter;
             if (_Measure)
-                Measure = std::string(_Measure);
-            data.set_Option(Option);
+            {
+                size_t len = strlen(_Measure);
+                Measure = new char[len + 1];
+                std::memcpy(Measure, _Measure, len);
+                Measure[len] = '\0';
+            }
+            else
+                Measure = NULL;
         }
 
         ~Element_Node_Info()
         {
+            delete[] Measure;
         }
 
         friend std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v);
 
         Element_Node_Data data;
-        std::string       Measure;
+        char*             Measure;
+
+        Element_Node_Info& operator=(const Element_Node_Info&);
+
+    private:
+        Element_Node_Info(const Element_Node_Info&);
     };
 
     class Element_Node
@@ -146,12 +153,12 @@ struct element_details
 
         int64u                           Pos;             // Position of the element in the file
         int64u                           Size;            // Size of the element (including header and sub-elements)
-        int64u                           Header_Size;     // Size of the header of the element
-        std::string                      Name;            // Name planned for this element
+    private:
+        char*                            Name;            // Name planned for this element
+    public:
         Element_Node_Data                Value;           // The value (currently used only with Trace XML)
         std::vector<Element_Node_Info*>  Infos;           // More info about the element
         std::vector<Element_Node*>       Children;        // Elements depending on this element
-        std::string                      Parser;          // Name of the parser for this element
         int32s                           Current_Child;   // Current child selected, used for param
         bool                             NoShow;          // Don't show this element
         bool                             OwnChildren;     // Child is owned by this node
@@ -159,6 +166,9 @@ struct element_details
 
         void                             Init();          //Initialize with common values
         void Add_Child(Element_Node* node);              //Add a subchild to the current node
+        void Set_Name(const char* Name_);
+        void Set_Name(const string &Name_);
+        const char* Get_Name() {return Name;}
 
         // Print
         int  Print(MediaInfo_Config::trace_Format Format, std::string& str);  //Print the node into str
