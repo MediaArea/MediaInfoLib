@@ -22,6 +22,7 @@
 #include "MediaInfo/MediaInfo_Internal.h"
 #include <iostream>
 #include <iomanip>
+#include <cstring>
 #include "base64.h"
 
 namespace MediaInfoLib
@@ -577,7 +578,7 @@ std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v
 //***************************************************************************
 //---------------------------------------------------------------------------
 element_details::Element_Node::Element_Node()
-: Pos(0), Size(0), Name(NULL), Parser(NULL),
+: Pos(0), Size(0), Name(NULL),
   Current_Child(-1), NoShow(false), OwnChildren(true), IsCat(false)
 {
 }
@@ -605,14 +606,6 @@ element_details::Element_Node::Element_Node(const Element_Node& node)
     Value = node.Value;
     Infos = node.Infos;
     Children = node.Children;
-    if (node.Parser)
-    {
-        size_t len = strlen(node.Parser) + 1;
-        Parser = new char[len];
-        std::memcpy(Parser, node.Parser, len);
-    }
-    else
-        Parser = NULL;
     Current_Child = node.Current_Child;
     NoShow = node.NoShow;
     OwnChildren = node.OwnChildren;
@@ -623,7 +616,6 @@ element_details::Element_Node::Element_Node(const Element_Node& node)
 element_details::Element_Node::~Element_Node()
 {
     delete[] Name;
-    delete[] Parser;
 
     if (!OwnChildren)
         return;
@@ -656,11 +648,6 @@ void element_details::Element_Node::Init()
         for (size_t i = 0; i < Infos.size(); ++i)
             delete Infos[i];
     Infos.clear();
-    if (Parser)
-    {
-        delete[] Parser;
-        Parser = NULL;
-    }
     Current_Child = -1;
     NoShow = false;
     OwnChildren = true;
@@ -688,14 +675,22 @@ int element_details::Element_Node::Print_Micro_Xml(std::ostringstream& ss, size_
     ss << " o=\"" << Pos << "\" n=\"" << Name_Escaped.To_UTF8() << "\"";
     Name_Escaped.clear();
 
-    if (Parser)
-        ss << " parser=\"" << Parser << "\"";
-
-    for (size_t i = 0; i < Infos.size(); ++i)
+    for (size_t i = 0, info_nb = 0; i < Infos.size(); ++i)
     {
+        Element_Node_Info* Info = Infos[i];
+
+        if (Info->Measure && !std::strcmp(Info->Measure, "Parser"))
+        {
+            if (!(Info->data == string()))
+                ss << " parser=\"" << Info->data << "\"";
+            continue;
+        }
+        else
+            info_nb++;
+
         ss << " i";
-        if (i)
-            ss << (i + 1);
+        if (info_nb > 1)
+            ss << info_nb;
         ss << "=\"" << Infos[i] << "\"";
     }
 
@@ -752,14 +747,22 @@ int element_details::Element_Node::Print_Xml(std::ostringstream& ss, size_t leve
     else
         ss << " offset=\"" << Pos << "\" name=\"" << Name << "\"";
 
-    if (Parser)
-        ss << " parser=\"" << Parser << "\"";
-
-    for (size_t i = 0; i < Infos.size(); ++i)
+    for (size_t i = 0, info_nb = 0; i < Infos.size(); ++i)
     {
+        Element_Node_Info* Info = Infos[i];
+
+        if (Info->Measure && !std::strcmp(Info->Measure, "Parser"))
+        {
+            if (!(Info->data == string()))
+                ss << " parser=\"" << Info->data << "\"";
+            continue;
+        }
+        else
+            info_nb++;
+
         ss << " info";
-        if (i)
-            ss << (i + 1);
+        if (info_nb > 1)
+            ss << info_nb;
         ss << "=\"" << Infos[i] << "\"";
     }
 
@@ -843,11 +846,19 @@ int element_details::Element_Node::Print_Tree(std::ostringstream& ss, size_t lev
     }
 #undef NB_SPACES
 
-    if (Parser)
-        ss << " - parser=\"" << Parser << "\"";
-
     for (size_t i = 0; i < Infos.size(); ++i)
-        ss << " - " << Infos[i];
+    {
+        Element_Node_Info* Info = Infos[i];
+
+        if (Info->Measure && !std::strcmp(Info->Measure, "Parser"))
+        {
+            if (!(Info->data == string()))
+                ss << " - Parser=" << Info->data;
+            continue;
+        }
+
+        ss << " - " << Info;
+    }
 
     if (Value.empty())
         ss << " (" << Size << " bytes)";
@@ -934,29 +945,6 @@ void element_details::Element_Node::Set_Name(const string &Name_)
     Name = new char[len + 1];
     std::memcpy(Name, Name_.c_str(), len);
     Name[len] = '\0';
-}
-
-//---------------------------------------------------------------------------
-void element_details::Element_Node::Set_Parser(const char* Parser_)
-{
-    delete[] Parser;
-
-    if (!Parser_)
-    {
-        Parser = NULL;
-        return;
-    }
-
-    size_t len = strlen(Parser_);
-    if (!len)
-    {
-        Parser = NULL;
-        return;
-    }
-
-    len++;
-    Parser = new char[len];
-    std::memcpy(Parser, Parser_, len);
 }
 #endif
 

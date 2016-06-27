@@ -2646,7 +2646,7 @@ void File__Analyze::Element_Parser(const char* Parser)
     if (Config_Trace_Level<=0.7)
         return;
 
-    Element[Element_Level].TraceNode.Set_Parser(Parser);
+    Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Parser, "Parser"));
 }
 #endif //MEDIAINFO_TRACE
 

@@ -164,9 +164,6 @@ struct element_details
         Element_Node_Data                Value;           // The value (currently used only with Trace XML)
         std::vector<Element_Node_Info*>  Infos;           // More info about the element
         std::vector<Element_Node*>       Children;        // Elements depending on this element
-    private:
-        char*                            Parser;          // Name of the parser for this element
-    public:
         int32s                           Current_Child;   // Current child selected, used for param
         bool                             NoShow;          // Don't show this element
         bool                             OwnChildren;     // Child is owned by this node
@@ -177,8 +174,6 @@ struct element_details
         void Set_Name(const char* Name_);
         void Set_Name(const string &Name_);
         const char* Get_Name() {return Name;}
-        void Set_Parser(const char* Parser_);
-        const char* Get_Parser() {return Parser;}
 
         // Print
         int  Print(MediaInfo_Config::trace_Format Format, std::string& str);  //Print the node into str
