@@ -384,7 +384,7 @@ static void Xml_Name_Escape(const char* Name, size_t Size, std::string& ToReturn
                 }
                 else
                     Pos++;
-            }
+        }
     }
 
     if (ToReturn.empty())
@@ -727,11 +727,11 @@ int element_details::Element_Node::Print_Micro_Xml(std::ostringstream& ss, size_
         ss << "<d";
 
     {
-    size_t MustEscape = Xml_Name_Escape_MustEscape(Name);
+    size_t MustEscape = Xml_Content_Escape_MustEscape(Name);
     if (MustEscape != (size_t)-1)
     {
         std::string str;
-        Xml_Name_Escape(Name, str, MustEscape);
+        Xml_Content_Escape(Name, str, MustEscape);
         ss << " o=\"" << Pos << "\" n=\"" << str << "\"";
     }
     else
@@ -801,11 +801,11 @@ int element_details::Element_Node::Print_Xml(std::ostringstream& ss, size_t leve
         ss << "<data";
 
     {
-    size_t MustEscape = Xml_Name_Escape_MustEscape(Name);
+    size_t MustEscape = Xml_Content_Escape_MustEscape(Name);
     if (MustEscape != (size_t)-1)
     {
         std::string str;
-        Xml_Name_Escape(Name, str, MustEscape);
+        Xml_Content_Escape(Name, str, MustEscape);
         ss << " offset=\"" << Pos << "\" name=\"" << str << "\"";
     }
     else
