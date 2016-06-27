@@ -4433,7 +4433,7 @@ bool File_Mk::CRC32_Check_In_Node(const std::string& ToSearchInInfo, const std::
     {
         if (node->Infos[i]->data == ToSearchInInfo)
         {
-            *node->Infos[i] = info;
+            node->Infos[i]->data = info;
             return true;
         }
     }
