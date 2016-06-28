@@ -368,17 +368,11 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
             Result+=__T("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")+MediaInfoLib::Config.LineSeparator_Get();
             Result+=__T('<');
             Result+=__T("MicroMediaTrace");
-            Result+=MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("    xmlns=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/micromediatrace\"");
-            Result+=MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
-            Result+=MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("    mtsl=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/micromediatrace http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/micromediatrace/micromediatrace.xsd\"");
-            Result+=MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("    version=\"0.1\"");
-            Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
+            Result+=__T(" xmlns=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/micromediatrace\"");
+            Result+=__T(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
+            Result+=__T(" mtsl=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/micromediatrace http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/micromediatrace/micromediatrace.xsd\"");
+            Result+=__T(" version=\"0.1\">");
             Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
-            Result+=MediaInfoLib::Config.LineSeparator_Get();
 
             for (size_t FilePos=0; FilePos<Info.size(); FilePos++)
             {
@@ -387,18 +381,11 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
                 if (Info[FilePos] && !Info[FilePos]->ParserName.empty())
                     Result+=__T(" parser=\"")+Info[FilePos]->ParserName+=__T("\"");
                 Result+= __T('>');
-                Result+=MediaInfoLib::Config.LineSeparator_Get();
                 Result+=Inform(FilePos);
-                if (!Result.empty() && Result[Result.size()-1]!=__T('\r') && Result[Result.size()-1]!=__T('\n'))
-                    Result+=MediaInfoLib::Config.LineSeparator_Get();
                 Result+=__T("</media>");
-                Result+=MediaInfoLib::Config.LineSeparator_Get();
             }
 
-            if (!Result.empty() && Result[Result.size()-1]!=__T('\r') && Result[Result.size()-1]!=__T('\n'))
-                Result+=MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("</MicroMediaTrace");
-            Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
+            Result+=__T("</MicroMediaTrace>");
 
             return Result;
         }
