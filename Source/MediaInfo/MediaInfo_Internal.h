@@ -137,7 +137,7 @@ private :
     //Config
     std::vector<std::vector<ZtringList> > Stream;
     std::vector<std::vector<ZtringListList> > Stream_More;
-    Ztring Details;
+    string Details;
     Ztring ParserName;
     void Traiter(Ztring &C); //enleve les $if...
 

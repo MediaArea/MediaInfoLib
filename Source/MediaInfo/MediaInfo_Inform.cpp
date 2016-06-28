@@ -99,7 +99,7 @@ Ztring MediaInfo_Internal::Inform()
         if (MediaInfoLib::Config.Inform_Get()!=__T("MAXML") && (MediaInfoLib::Config.Trace_Level_Get() || MediaInfoLib::Config.Inform_Get()==__T("Details")))
         {
             if (!Details.empty())
-                return Details;
+                return Ztring().From_UTF8(Details);
             else if (Info)
                 return Info->Details_Get();
             else
@@ -352,7 +352,7 @@ Ztring MediaInfo_Internal::Inform()
             {
                 Retour+=__T("<MediaTrace xmlns=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/mediatrace\" version=\"0.1\">\n");
                 if (!Details.empty())
-                    Retour+=Details;
+                    Retour+=Ztring().From_UTF8(Details);
                 else if (Info)
                     Retour+=Info->Details_Get();
                 Retour+=__T("\n");
