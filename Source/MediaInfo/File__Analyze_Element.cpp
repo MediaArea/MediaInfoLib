@@ -713,13 +713,8 @@ void element_details::Element_Node::Init()
 //---------------------------------------------------------------------------
 int element_details::Element_Node::Print_Micro_Xml(std::ostringstream& ss, size_t level)
 {
-    std::string spaces;
-
     if (IsCat || !Name)
         goto print_children;
-
-    spaces.resize(level, ' ');
-    ss << spaces;
 
     if (Value.empty())
         ss << "<b";
@@ -776,7 +771,7 @@ print_children:
         if (Value.empty())
         {
             //block
-            ss << spaces << "</b>";
+            ss << "</b>";
         }
     }
 
