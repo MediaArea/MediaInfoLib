@@ -619,7 +619,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "Gop_OpenClosed_Closed;Closed\n"
     "Gop_OpenClosed_FirstFrame;GOP, Open/Closed of first frame\n"
     "Grouping;Grouping\n"
-    "h;h\n"
+    "h; h\n"
     "Header file;Create a header file\n"
     "Height;Height\n"
     "Height_CleanAperture;Clean aperture height\n"
