@@ -8,7 +8,7 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
-Version 0.7.87
+Version 0.7.87, 2016-06-30
 --------------
 + Refactoring of the trace feature, for better performance and some bug fixes
 - Visual C++ 2012 project files removed
