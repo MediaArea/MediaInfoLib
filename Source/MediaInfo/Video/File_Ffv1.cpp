@@ -583,13 +583,15 @@ void File_Ffv1::Read_Buffer_Continue()
         #endif //MEDIAINFO_TRACE
     }
 
-    if (version>2)
-    {
-        int32u tail = 3;
-        tail += error_correction == 1 ? 5 : 0;
+    int32u tail = (version >= 3) ? 3 : 0;
+    tail += error_correction == 1 ? 5 : 0;
 
-        int64u Slices_BufferPos=Element_Size;
-        vector<int32u> Slices_BufferSizes;
+    int64u Slices_BufferPos=Element_Size;
+    vector<int32u> Slices_BufferSizes;
+    if (version < 2)
+        Slices_BufferSizes.push_back(Element_Size);
+    else
+    {
         while (Slices_BufferPos)
         {
             int32u Size = BigEndian2int24u(Buffer + Buffer_Offset + (size_t)Slices_BufferPos - tail);
@@ -601,58 +603,59 @@ void File_Ffv1::Read_Buffer_Continue()
 
             Slices_BufferSizes.insert(Slices_BufferSizes.begin(), Size);
         }
+    }
 
-        Element_Offset=0;
-        for (size_t Pos = 0; Pos < Slices_BufferSizes.size(); Pos++)
+    Element_Offset=0;
+    for (size_t Pos = 0; Pos < Slices_BufferSizes.size(); Pos++)
+    {
+        Element_Begin1("Slice");
+        int64u Element_Size_Save=Element_Size;
+        Element_Size=Element_Offset+Slices_BufferSizes[Pos]-tail;
+        int32u crc_left=0;
+
+        if (error_correction == 1)
+            crc_left=CRC_Compute(Slices_BufferSizes[Pos]);
+
+        if (Pos)
         {
-            Element_Begin1("Slice");
-            int64u Element_Size_Save=Element_Size;
-            Element_Size=Element_Offset+Slices_BufferSizes[Pos]-tail;
-            int32u crc_left=0;
+            delete RC; RC = new RangeCoder(Buffer+Buffer_Offset+(size_t)Element_Offset, Slices_BufferSizes[Pos], state_transitions_table);
+        }
+        else // ac=2
+            RC->AssignStateTransitions(state_transitions_table);
 
-            if (error_correction == 1)
-                crc_left=CRC_Compute(Slices_BufferSizes[Pos]);
+#if MEDIAINFO_TRACE
+        if (!Frame_Count || Trace_Activated) // Parse slice only if trace feature is activated
+        {
+            int64u Start=Element_Offset;
 
-            if (Pos)
+            if (!slice(States))
             {
-                delete RC; RC = new RangeCoder(Buffer+Buffer_Offset+(size_t)Element_Offset, Slices_BufferSizes[Pos], state_transitions_table);
-            }
-            else // ac=2
-                RC->AssignStateTransitions(state_transitions_table);
-
-            #if MEDIAINFO_TRACE
-                if (!Frame_Count || Trace_Activated) // Parse slice only if trace feature is activated
-                {
-                    int64u Start=Element_Offset;
-
-                    if (!slice(States))
-                    {
-                        int64u SliceRealSize=Element_Offset-Start;
-                        Element_Offset=Start;
-                        Skip_XX(SliceRealSize,                          "slice_data");
-                        if (Trusted_Get())
-                            Param_Info1("OK");
-                        else
-                            Param_Info1("NOK");
-                    }
-                }
-            #endif //MEDIAINFO_TRACE
-
-            if (Element_Offset<Element_Size)
-                Skip_XX(Element_Size-Element_Offset,                    "Other data");
-            Element_Size=Element_Size_Save;
-            Skip_B3(                                                    "slice_size");
-            if (error_correction == 1)
-            {
-                Skip_B1(                                                "error_status");
-                Skip_B4(                                                "crc_parity");
-                if (!crc_left)
+                int64u SliceRealSize=Element_Offset-Start;
+                Element_Offset=Start;
+                Skip_XX(SliceRealSize,                          "slice_data");
+                if (Trusted_Get())
                     Param_Info1("OK");
                 else
                     Param_Info1("NOK");
             }
-            Element_End0();
         }
+#endif //MEDIAINFO_TRACE
+
+        if (Element_Offset<Element_Size)
+            Skip_XX(Element_Size-Element_Offset,                    "Other data");
+        Element_Size=Element_Size_Save;
+        if (version > 2)
+            Skip_B3(                                                    "slice_size");
+        if (error_correction == 1)
+        {
+            Skip_B1(                                                "error_status");
+            Skip_B4(                                                "crc_parity");
+            if (!crc_left)
+                Param_Info1("OK");
+            else
+                Param_Info1("NOK");
+        }
+        Element_End0();
     }
 
     FILLING_BEGIN();
@@ -695,6 +698,12 @@ void File_Ffv1::FrameHeader()
         Trusted_IsNot("Invalid version in global header");
         return;
     }
+    else if (version == 2)
+    {
+        Trusted_IsNot("Version 2 is not supported");
+        return;
+    }
+
     if (version>2)
         Get_RU (States, micro_version,                          "micro_version");
     Get_RU (States, coder_type,                                 "coder_type");
@@ -718,8 +727,8 @@ void File_Ffv1::FrameHeader()
         Get_RU (States, bits_per_raw_sample,                    "bits_per_raw_sample");
         if (bits_per_raw_sample==0)
             bits_per_raw_sample=8; //I don't know the reason, 8-bit is coded 0 and 10-bit coded 10 (not 2?).
-        this->bits_per_sample = bits_per_raw_sample;
     }
+    this->bits_per_sample = bits_per_raw_sample;
     Get_RB (States, chroma_planes,                              "chroma_planes");
     Get_RU (States, chroma_h_shift,                             "log2(h_chroma_subsample)");
     Get_RU (States, chroma_v_shift,                             "log2(v_chroma_subsample)");
@@ -733,7 +742,7 @@ void File_Ffv1::FrameHeader()
         Get_RU (States, quant_table_count,                      "quant_table_count");
     }
     else
-        quant_table_count=1;
+        quant_table_count = 2 + alpha_plane;
 
     if (!slices)
     {
@@ -742,15 +751,31 @@ void File_Ffv1::FrameHeader()
         current_slice = &slices[0];
     }
 
-    for (size_t i = 0; i < quant_table_count; i++)
-        read_quant_tables(i);
+    if (version > 1)
+        for (size_t i = 0; i < quant_table_count; i++)
+            read_quant_tables(i);
+    else
+    {
+        current_slice->x = 0;
+        current_slice->y = 0;
+        current_slice->w = Width;
+        current_slice->h = Height;
+        read_quant_tables(0);
+        quant_table_index[0] = 0;
+        for (size_t i = 1; i < quant_table_count; i++)
+        {
+            quant_table_index[i] = 0;
+            context_count[i] = context_count[0];
+        }
+    }
     memset(quant_tables+quant_table_count, 0x00, (MAX_QUANT_TABLES-quant_table_count)*MAX_CONTEXT_INPUTS*256*sizeof(int16s));
 
     for (size_t i = 0; i < quant_table_count; i++)
     {
         Element_Begin1("initial_state");
-        bool present;
-        Get_RB (States, present,                                "present");
+        bool present = false;
+        if (version > 1)
+            Get_RB (States, present,                                "present");
 
         if (coder_type && context_count[i]>plane_states_maxsizes[i])
         {
@@ -952,7 +977,7 @@ int File_Ffv1::slice(states &States)
 int File_Ffv1::slice_header(states &States)
 {
     Element_Begin1("SliceHeader");
-    
+
     memset(States, 128, states_size);
 
     int32u slice_x, slice_y, slice_width_minus1, slice_height_minus1;
@@ -1361,12 +1386,13 @@ void File_Ffv1::read_quant_tables(int i)
         scale *= 2 * len_count[i][j] - 1;
         if (scale > 32768U)
         {
+            //TODO Error
+            context_count[i] = (scale + 1) / 2;
             Element_End0();
             return;
         }
-
-        context_count[i] = (scale + 1) / 2;
     }
+    context_count[i] = (scale + 1) / 2;
 
     Element_End0();
 }
@@ -1529,6 +1555,7 @@ void File_Ffv1::copy_plane_states_to_slice(int8u plane_count)
             current_slice->plane_states_maxsizes[i] = context_count[idx] + 1;
             memset(current_slice->plane_states[i], 0, (context_count[idx] + 1) * sizeof(int8u*));
         }
+
         for (size_t j = 0; j < context_count[idx]; j++)
         {
             if (!current_slice->plane_states[i][j])
