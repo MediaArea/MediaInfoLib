@@ -295,6 +295,12 @@
 			<CppCompile Include="..\..\..\Source\MediaInfo\File__Analyze_Buffer_MinimizeSize.cpp">
 				<BuildOrder>45</BuildOrder>
 			</CppCompile>
+			<CppCompile Include="..\..\..\Source\MediaInfo\File__Analyze_Element.cpp">
+				<BuildOrder>220</BuildOrder>
+			</CppCompile>
+			<None Include="..\..\..\Source\MediaInfo\File__Analyze_Element.h">
+				<BuildOrder>221</BuildOrder>
+			</None>
 			<CppCompile Include="..\..\..\Source\MediaInfo\File__Analyze_Streams.cpp">
 				<BuildOrder>202</BuildOrder>
 			</CppCompile>
