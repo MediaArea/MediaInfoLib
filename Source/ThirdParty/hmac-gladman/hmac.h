@@ -42,7 +42,7 @@ extern "C"
 {
 #endif
 
-#define USE_SHA1
+#define USE_SHA256
 
 #if !defined(USE_SHA1) && !defined(USE_SHA256)
 #error define USE_SHA1 or USE_SHA256 to set the HMAC hash algorithm
