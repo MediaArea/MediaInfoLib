@@ -8,6 +8,10 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
+Version 0.7.88
+--------------
++ MediaInfo distributed with HTTP/HTTPS support: support of Amazon S3 with Signature Version 4
+
 Version 0.7.87, 2016-06-30
 --------------
 + Refactoring of the trace feature, for better performance and some bug fixes
