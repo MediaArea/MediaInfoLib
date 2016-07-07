@@ -41,7 +41,8 @@ class RangeCoder
 public :
     RangeCoder(const int8u* Buffer, size_t Buffer_Size, const state_transitions default_state_transition);
 
-    void AssignStateTransitions (const state_transitions new_state_transition);
+    void AssignStateTransitions(const state_transitions new_state_transition);
+    size_t BytesUsed();
 
     bool    get_rac(int8u* States);
     int32u  get_symbol_u(int8u* States);
@@ -50,12 +51,12 @@ public :
     int32u Current;
     int32u Mask;
     state_transitions zero_state;
-public : //Temp
     state_transitions one_state;
+
+private :
     const int8u* Buffer_Beg;
     const int8u* Buffer_Cur;
     const int8u* Buffer_End;
-
 };
 
 //***************************************************************************

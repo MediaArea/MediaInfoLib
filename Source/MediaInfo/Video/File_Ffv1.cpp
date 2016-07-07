@@ -62,11 +62,10 @@ RangeCoder::RangeCoder (const int8u* Buffer, size_t Buffer_Size, const state_tra
     Buffer_End=Buffer+Buffer_Size;
 
     //Init
-    if (Buffer_Size>=2)
+    if (Buffer_Size)
     {
-        Current=BigEndian2int16u(Buffer_Cur);
-        Buffer_Cur+=2;
-        Mask=0xFF00;
+        Current=*Buffer_Cur++;
+        Mask=0xFF;
     }
     else
     {
@@ -87,8 +86,23 @@ void RangeCoder::AssignStateTransitions (const state_transitions new_state_trans
 }
 
 //---------------------------------------------------------------------------
+size_t RangeCoder::BytesUsed()
+{
+    return Buffer_Cur-Buffer_Beg-(Mask<0x100?0:1);
+}
+
+//---------------------------------------------------------------------------
 bool RangeCoder::get_rac(int8u* States)
 {
+    // Next byte
+    if (Mask<0x100)
+    {
+        Mask<<=8;
+        Current<<=8;
+        if (Buffer_Cur<Buffer_End)
+            Current|=*Buffer_Cur++;
+    }
+
     //Here is some black magic... But it works. TODO: better understanding of the algorithm and maybe optimization
     int32u Mask2=(Mask*(*States))>>8;
     Mask-=Mask2;
@@ -106,17 +120,6 @@ bool RangeCoder::get_rac(int8u* States)
         Value=true;
     }
 
-    // Next byte
-    if (Mask<0x100)
-    {
-        Mask<<=8;
-        Current<<=8;
-        if (Buffer_Cur < Buffer_End) // Set to 0 if end of stream. TODO: Find a way to detect buffer underrun
-        {
-            Current|=*Buffer_Cur;
-            Buffer_Cur++;
-        }
-    }
 
     return Value;
 }
@@ -548,8 +551,9 @@ void File_Ffv1::Read_Buffer_OutOfBand()
         RC = new RangeCoder(Buffer, Buffer_Size-4, Ffv1_default_state_transition);
 
     FrameHeader();
-    if (RC->Buffer_End!=RC->Buffer_Cur)
-        Skip_XX(RC->Buffer_Cur - RC->Buffer_End,                "Reserved");
+    Element_Offset+=RC->BytesUsed();
+    if (Element_Offset<Element_Size)
+        Skip_XX(Element_Size-Element_Offset,                    "Reserved");
     Skip_B4(                                                    "CRC-32");
 
     delete RC; RC=NULL;
@@ -944,10 +948,7 @@ int File_Ffv1::slice(states &States)
             Skip_RC(States,                                     "?");
         }
         if ((version > 2 || (!current_slice->x && !current_slice->y)))
-        {
-            Element_Offset+=RC->Buffer_Cur-RC->Buffer_Beg; // Computing how many bytes where consumed by the range coder
-            Element_Offset--; // The range coder takes always one additional byte
-        }
+            Element_Offset+=RC->BytesUsed(); // Computing how many bytes where consumed by the range coder
         else
             Element_Offset=0;
         BS_Begin();
@@ -998,8 +999,7 @@ int File_Ffv1::slice(states &States)
     {
         int8u s = 129;
         RC->get_rac(&s);
-        Element_Offset=RC->Buffer_Cur-Buffer;
-        Element_Offset--;
+        Element_Offset+=RC->BytesUsed();
     }
 
     #if MEDIAINFO_TRACE
