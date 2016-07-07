@@ -590,6 +590,20 @@ void File_Ffv1::Read_Buffer_Continue()
     vector<int32u> Slices_BufferSizes;
     if (version < 2)
         Slices_BufferSizes.push_back(Element_Size);
+    else if (version == 2)
+    {
+        Skip_XX(Element_Size-Element_Offset, "Other data");
+
+        Frame_Count++;
+
+        delete RC;
+        RC = NULL;
+
+        Fill();
+        if (Config->ParseSpeed<1.0)
+            Finish();
+        return;
+    }
     else
     {
         while (Slices_BufferPos)
@@ -700,7 +714,15 @@ void File_Ffv1::FrameHeader()
     }
     else if (version == 2)
     {
-        Trusted_IsNot("Version 2 is not supported");
+        FILLING_BEGIN();
+            if (Frame_Count==0)
+            {
+                Accept();
+
+                Ztring Version=__T("Version ")+Ztring::ToZtring(version);
+                Fill(Stream_Video, 0, Video_Format_Version, Version);
+            }
+        FILLING_END();
         return;
     }
 

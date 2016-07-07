@@ -213,6 +213,7 @@ private :
 
     //Elements
     void   FrameHeader();
+    void   Filling_FrameHeader(int32u intra);
     int    slice(states &States);
     int    slice_header(states &States);
     int32u CRC_Compute(size_t Size);
