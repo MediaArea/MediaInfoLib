@@ -210,9 +210,11 @@ private :
     //Buffer - Global
     void Read_Buffer_OutOfBand();
     void Read_Buffer_Continue();
+    void Skip_Frame();
 
     //Elements
     void   FrameHeader();
+    void   Filling_FrameHeader(int32u intra);
     int    slice(states &States);
     int    slice_header(states &States);
     int32u CRC_Compute(size_t Size);
@@ -262,6 +264,7 @@ private :
 
     //Temp
     bool    ConfigurationRecordIsPresent;
+    bool    KeyFramePassed;
     int32u  context_count[MAX_QUANT_TABLES];
     int32u  len_count[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS];
     quant_table_struct quant_tables[MAX_QUANT_TABLES];

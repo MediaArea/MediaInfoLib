@@ -377,6 +377,7 @@ File_Ffv1::File_Ffv1()
     picture_structure = (int32u)-1;
     sample_aspect_ratio_num = 0;
     sample_aspect_ratio_den = 0;
+    KeyFramePassed = false;
 }
 
 //---------------------------------------------------------------------------
@@ -555,6 +556,21 @@ void File_Ffv1::Read_Buffer_OutOfBand()
 }
 
 //---------------------------------------------------------------------------
+void File_Ffv1::Skip_Frame()
+{
+    Skip_XX(Element_Size-Element_Offset, "Other data");
+
+    Frame_Count++;
+
+    delete RC;
+    RC = NULL;
+
+    Fill();
+    if (Config->ParseSpeed<1.0)
+        Finish();
+}
+
+//---------------------------------------------------------------------------
 void File_Ffv1::Read_Buffer_Continue()
 {
     if (!Status[IsAccepted])
@@ -582,6 +598,12 @@ void File_Ffv1::Read_Buffer_Continue()
             Trace_Activated=Trace_Activated_Save; // Trace is too huge, reactivating it.
         #endif //MEDIAINFO_TRACE
     }
+    else if (!KeyFramePassed)
+    {
+        // If stream does not start with a key frame
+        Skip_Frame();
+        return;
+    }
 
     int32u tail = (version >= 3) ? 3 : 0;
     tail += error_correction == 1 ? 5 : 0;
@@ -590,6 +612,11 @@ void File_Ffv1::Read_Buffer_Continue()
     vector<int32u> Slices_BufferSizes;
     if (version < 2)
         Slices_BufferSizes.push_back(Element_Size);
+    else if (version == 2)
+    {
+        Skip_Frame();
+        return;
+    }
     else
     {
         while (Slices_BufferPos)
@@ -690,6 +717,7 @@ void File_Ffv1::FrameHeader()
     memset(States, 128, states_size);
     int32u coder_type, colorspace_type, bits_per_raw_sample=8, num_h_slices_minus1=0, num_v_slices_minus1=0, intra;
 
+    KeyFramePassed = true;
     micro_version = 0;
     Get_RU (States, version,                                    "version");
     if (( ConfigurationRecordIsPresent && version<=1)
@@ -700,7 +728,15 @@ void File_Ffv1::FrameHeader()
     }
     else if (version == 2)
     {
-        Trusted_IsNot("Version 2 is not supported");
+        FILLING_BEGIN();
+            if (Frame_Count==0)
+            {
+                Accept();
+
+                Ztring Version=__T("Version ")+Ztring::ToZtring(version);
+                Fill(Stream_Video, 0, Video_Format_Version, Version);
+            }
+        FILLING_END();
         return;
     }
 
