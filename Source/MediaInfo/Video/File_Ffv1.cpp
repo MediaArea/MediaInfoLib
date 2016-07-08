@@ -63,15 +63,9 @@ RangeCoder::RangeCoder (const int8u* Buffer, size_t Buffer_Size, const state_tra
 
     //Init
     if (Buffer_Size)
-    {
-        Current=*Buffer_Cur++;
-        Mask=0xFF;
-    }
-    else
-    {
-        Current=0;
-        Mask=0;
-    }
+        Current=*Buffer_Cur;
+    Mask=0xFF;
+    Buffer_Cur++;
 
     AssignStateTransitions(default_state_transition);
 }
@@ -86,9 +80,21 @@ void RangeCoder::AssignStateTransitions (const state_transitions new_state_trans
 }
 
 //---------------------------------------------------------------------------
+void RangeCoder::ResizeBuffer(size_t Buffer_Size)
+{
+    Buffer_End=Buffer_Beg+Buffer_Size;
+}
+
+//---------------------------------------------------------------------------
 size_t RangeCoder::BytesUsed()
 {
     return Buffer_Cur-Buffer_Beg-(Mask<0x100?0:1);
+}
+
+//---------------------------------------------------------------------------
+bool RangeCoder::Underrun()
+{
+    return (Buffer_Cur-(Mask<0x100?0:1)>Buffer_End)?true:false;
 }
 
 //---------------------------------------------------------------------------
@@ -97,10 +103,24 @@ bool RangeCoder::get_rac(int8u* States)
     // Next byte
     if (Mask<0x100)
     {
-        Mask<<=8;
-        Current<<=8;
+        // If less, consume the next byte
+        // If equal, last byte assumed to be 0x00
+        // If more, underrun, we return 0
         if (Buffer_Cur<Buffer_End)
-            Current|=*Buffer_Cur++;
+        {
+            Mask<<=8;
+            Current=(Current<<8)|(*(Buffer_Cur++));
+        }
+        else if (Buffer_Cur==Buffer_End)
+        {
+            Mask<<=8;
+            Current<<=8;
+            Buffer_Cur++;
+        }
+        else // if (Buffer_Cur>Buffer_End)
+        {
+            return false;
+        }
     }
 
     //Here is some black magic... But it works. TODO: better understanding of the algorithm and maybe optimization
@@ -649,10 +669,13 @@ void File_Ffv1::Read_Buffer_Continue()
 
         if (Pos)
         {
-            delete RC; RC = new RangeCoder(Buffer+Buffer_Offset+(size_t)Element_Offset, Slices_BufferSizes[Pos], state_transitions_table);
+            delete RC; RC = new RangeCoder(Buffer+Buffer_Offset+(size_t)Element_Offset, Slices_BufferSizes[Pos]-tail, state_transitions_table);
         }
-        else // ac=2
+        else
+        {
+            RC->ResizeBuffer(Slices_BufferSizes[0]-tail);
             RC->AssignStateTransitions(state_transitions_table);
+        }
 
 #if MEDIAINFO_TRACE
         if (!Frame_Count || Trace_Activated) // Parse slice only if trace feature is activated
@@ -664,7 +687,7 @@ void File_Ffv1::Read_Buffer_Continue()
                 int64u SliceRealSize=Element_Offset-Start;
                 Element_Offset=Start;
                 Skip_XX(SliceRealSize,                          "slice_data");
-                if (Trusted_Get())
+                if (Trusted_Get() && !RC->Underrun() && Element_Offset==Element_Size)
                     Param_Info1("OK");
                 else
                     Param_Info1("NOK");

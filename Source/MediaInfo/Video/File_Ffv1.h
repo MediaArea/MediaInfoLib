@@ -42,7 +42,9 @@ public :
     RangeCoder(const int8u* Buffer, size_t Buffer_Size, const state_transitions default_state_transition);
 
     void AssignStateTransitions(const state_transitions new_state_transition);
+    void   ResizeBuffer(size_t Buffer_Size); //Adapt the buffer limit
     size_t BytesUsed();
+    bool   Underrun();
 
     bool    get_rac(int8u* States);
     int32u  get_symbol_u(int8u* States);
