@@ -128,24 +128,22 @@ bool RangeCoder::get_rac(int8u* States)
     // Next byte
     if (Mask<0x100)
     {
+        Current<<=8;
+
         // If less, consume the next byte
         // If equal, last byte assumed to be 0x00
         // If more, underrun, we return 0
         if (Buffer_Cur<Buffer_End)
         {
-            Mask<<=8;
-            Current=(Current<<8)|(*(Buffer_Cur++));
+            Current|=*Buffer_Cur;
         }
-        else if (Buffer_Cur==Buffer_End)
-        {
-            Mask<<=8;
-            Current<<=8;
-            Buffer_Cur++;
-        }
-        else // if (Buffer_Cur>Buffer_End)
+        else if (Buffer_Cur>Buffer_End)
         {
             return false;
         }
+
+        Buffer_Cur++;
+        Mask<<=8;
     }
 
     //Range Coder boolean value computing
