@@ -6,6 +6,15 @@
 
 @echo off
 
+rem --- Search binaries ---
+set BPATH=
+if exist "%~dp0\..\..\..\MediaArea-Utils-Binaries" set BPATH="%~dp0\..\..\..\MediaArea-Utils-Binaries"
+if exist "%~dp0\..\..\MediaArea-Utils-Binaries" set BPATH="%~dp0\..\..\MediaArea-Utils-Binaries"
+if "%BPATH%"=="" (
+    echo "ERROR: binaries path not found"
+    exit /b 1
+)
+
 rem --- Clean up ---
 del MediaInfoDLL_Windows_x64.7z
 del MediaInfoDLL_Windows_x64.zip
@@ -16,7 +25,7 @@ mkdir MediaInfoDLL_Windows_x64\
 rem --- Copying : Documentation ---
 mkdir Doc
 cd ..\Source\Doc
-..\..\..\Shared\Binary\Windows_i386\Doxygen\doxygen
+%BPATH%\Windows\Doxygen\doxygen
 cd ..\..\Release
 mkdir MediaInfoDLL_Windows_x64\Developers\Doc\
 copy ..\Doc\*.* MediaInfoDLL_Windows_x64\Developers\Doc\
@@ -131,11 +140,11 @@ xcopy ..\Project\MSVC2015\ShellExtension\*.bat MediaInfoDLL_Windows_x64\
 
 rem --- Compressing Archive ---
 cd MediaInfoDLL_Windows_x64\
-..\..\..\..\MediaArea-Utils-Binaries\Windows\7-Zip\7z a -r -t7z -mx9 ..\MediaInfo_DLL_Windows_x64_WithoutInstaller.7z *
+%BPATH%\Windows\7-Zip\7z a -r -t7z -mx9 ..\MediaInfo_DLL_Windows_x64_WithoutInstaller.7z *
 cd ..
 
 rem --- Installer ---
-..\..\..\MediaArea-Utils-Binaries\Windows\NSIS\makensis ..\Source\Install\MediaInfo_DLL_Windows_x64.nsi
+%BPATH%\Windows\NSIS\makensis ..\Source\Install\MediaInfo_DLL_Windows_x64.nsi
 
 rem --- Clean up ---
 if "%1"=="SkipCleanUp" goto SkipCleanUp
