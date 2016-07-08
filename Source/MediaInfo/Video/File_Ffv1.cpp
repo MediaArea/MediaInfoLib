@@ -123,25 +123,18 @@ bool RangeCoder::get_rac(int8u* States)
         }
     }
 
-    //Here is some black magic... But it works. TODO: better understanding of the algorithm and maybe optimization
+    //Range Coder boolean value computing
     int32u Mask2=(Mask*(*States))>>8;
     Mask-=Mask2;
-    bool Value;
     if (Current<Mask)
     {
         *States=zero_state[*States];
-        Value=false;
+        return false;
     }
-    else
-    {
-        Current-=Mask;
-        Mask=Mask2;
-        *States=one_state[*States];
-        Value=true;
-    }
-
-
-    return Value;
+    Current-=Mask;
+    Mask=Mask2;
+    *States=one_state[*States];
+    return true;
 }
 
 //---------------------------------------------------------------------------
