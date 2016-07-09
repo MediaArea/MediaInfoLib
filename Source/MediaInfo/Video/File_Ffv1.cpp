@@ -166,22 +166,20 @@ int32u RangeCoder::get_symbol_u(int8u* States)
     if (get_rac(States))
         return 0;
 
-    int8u e=0;
-    while (get_rac((States+1+min(e, (int8u)9)))) // 1..10
+    int e = 0;
+    while (get_rac(States + 1 + min(e, 9))) // 1..10
         e++;
 
-    int8u a=1;
-    if (e)
+    int32u a = 1;
+    int i = e - 1;
+    while (i >= 0)
     {
-        do
-        {
-            --e;
-            a<<=1;
-            if (get_rac((States+22+min(e, (int8u)9))))  // 22..31
-                ++a;
-        }
-        while (e);
+        a <<= 1;
+        if (get_rac(States + 22 + min(i, 9)))  // 22..31
+            ++a;
+        i--;
     }
+
     return a;
 }
 
@@ -191,26 +189,22 @@ int32s RangeCoder::get_symbol_s(int8u* States)
     if (get_rac(States))
         return 0;
 
-    int8u e=0;
-    while (get_rac(States+1+min(e, (int8u)9))) // 1..10
+    int e = 0;
+    while (get_rac(States + 1 + min(e, 9))) // 1..10
         e++;
 
-    int32u a=1;
-    if (e)
+    int32s a = 1;
+    int i = e - 1;
+    while (i >= 0)
     {
-        int8u i = e;
-        do
-        {
-            --i;
-            a<<=1;
-            if (get_rac((States+22+min(i, (int8u)9))))  // 22..31
-                ++a;
-        }
-        while (i);
+        a <<= 1;
+        if (get_rac(States + 22 + min(i, 9)))  // 22..31
+            ++a;
+        i--;
     }
 
-    if (get_rac((States+11+min(e, (int8u)10)))) // 11..21
-        return -((int32s)a);
+    if (get_rac(States + 11 + min(e, 10))) // 11..21
+        return -a;
     else
         return a;
 }
