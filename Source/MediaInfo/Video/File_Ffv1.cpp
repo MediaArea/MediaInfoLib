@@ -1422,7 +1422,7 @@ void File_Ffv1::line(int pos, int16s *sample[2])
         {
             int32s context = Is5 ? get_context_5(quant_table, s1c, s0c) : get_context_3(quant_table, s1c, s0c);
 
-            int16s Value = predict(s1c, s0c);
+            int32s Value = predict(s1c, s0c);
             #if MEDIAINFO_TRACE_FFV1CONTENT
                 if (context >= 0)
                     Value += pixel_RC(context);
