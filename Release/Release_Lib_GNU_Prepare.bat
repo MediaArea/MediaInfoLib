@@ -6,6 +6,15 @@
 
 @echo off
 
+rem --- Search binaries ---
+set BPATH=
+if exist "%~dp0\..\..\..\MediaArea-Utils-Binaries" set BPATH="%~dp0\..\..\..\MediaArea-Utils-Binaries"
+if exist "%~dp0\..\..\MediaArea-Utils-Binaries" set BPATH="%~dp0\..\..\MediaArea-Utils-Binaries"
+if "%BPATH%"=="" (
+    echo "ERROR: binaries path not found"
+    exit /b 1
+)
+
 rem --- Clean up ---
 del MediaInfo_Lib_GNU_Prepare.7z
 rmdir MediaInfo_Lib_GNU_Prepare /S /Q
@@ -42,7 +51,7 @@ copy ReadMe_DLL_Mac.txt MediaInfo_Lib_GNU_Prepare\Release\
 rem --- Compressing Archive ---
 if "%2"=="SkipCompression" goto SkipCompression
 move MediaInfo_Lib_GNU_Prepare MediaInfoLib
-..\..\Shared\Binary\Windows_i386\7-Zip\7z a -r -t7z -mx9 MediaInfo_Lib_GNU_Prepare.7z MediaInfoLib\*
+%BPATH%\Windows\7-Zip\7z a -r -t7z -mx9 MediaInfo_Lib_GNU_Prepare.7z MediaInfoLib\*
 move MediaInfoLib MediaInfo_Lib_GNU_Prepare
 :SkipCompression
 
