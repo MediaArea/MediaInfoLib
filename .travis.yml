@@ -9,4 +9,9 @@ before_install:
   - sudo dpkg -i libzen0_0.4.32-1_amd64.xUbuntu_14.04.deb
   - wget http://mediaarea.net/download/binary/libzen0/0.4.32/libzen-dev_0.4.32-1_amd64.xUbuntu_14.04.deb
   - sudo dpkg -i libzen-dev_0.4.32-1_amd64.xUbuntu_14.04.deb
-script: cd Project/GNU/Library/ && ./autogen.sh && ./configure && make && make clone_regression_files && make check
+env:
+  global:
+    - secure: NP+/jWbhIDs0JH+FOfElZnywkm/d9K+WAkuDp8STeSpTbWqBIQhEWfixVPlFMZWMaXTpCIEDcZ85+COdUTitLfF/XuTE5tmUD7MnVrqPLDtOTQSbhrC1ag7uiII9U2Usz/q8GMbuU+ZE3/0K4zrm531kWaBj8Ot0yIJlw6yXPQM=
+    - secure: dV7qxDJxBGnMryijofYbkZjAWSpXrD16ZfGZ16m8ZGt4QQIKq/uavagOVaJlvQopeD5soUk4gbdlPcrl+RnPLoOpFUK6/znu1rWGwzAO3zzNqoFKOuzSeG3c1518ZaURCVZbBB77zJcPYkaeftFK5fEe7Yz9i0SeS1dXG6C/Vss=
+script: 
+  - cd Project/GNU/Library/ && ./autogen.sh && ./configure --with-libcurl && make && make clone_regression_files && make check && ./test/s3.sh
