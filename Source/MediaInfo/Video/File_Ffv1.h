@@ -36,27 +36,7 @@ const size_t MAX_PLANES=4;
 const size_t MAX_QUANT_TABLES=8;
 const size_t MAX_CONTEXT_INPUTS=5;
 
-class RangeCoder
-{
-public :
-    RangeCoder(const int8u* Buffer, size_t Buffer_Size, const state_transitions default_state_transition);
-
-    void AssignStateTransitions (const state_transitions new_state_transition);
-
-    bool    get_rac(int8u* States);
-    int32u  get_symbol_u(int8u* States);
-    int32s  get_symbol_s(int8u* States);
-
-    int32u Current;
-    int32u Mask;
-    state_transitions zero_state;
-public : //Temp
-    state_transitions one_state;
-    const int8u* Buffer_Beg;
-    const int8u* Buffer_Cur;
-    const int8u* Buffer_End;
-
-};
+class RangeCoder;
 
 //***************************************************************************
 // Class Slice
