@@ -62,6 +62,7 @@ public:
     void   ResizeBuffer(size_t Buffer_Size); //Adapt the buffer limit
     size_t BytesUsed();
     bool   Underrun();
+    void   ForceUnderrun();
 
     bool    get_rac(int8u* States);
     int32u  get_symbol_u(int8u* States);
@@ -123,6 +124,13 @@ bool RangeCoder::Underrun()
 }
 
 //---------------------------------------------------------------------------
+void RangeCoder::ForceUnderrun()
+{
+    Mask=0;
+    Buffer_Cur=Buffer_End+1;
+}
+
+//---------------------------------------------------------------------------
 bool RangeCoder::get_rac(int8u* States)
 {
     // Next byte
@@ -168,7 +176,14 @@ int32u RangeCoder::get_symbol_u(int8u* States)
 
     int e = 0;
     while (get_rac(States + 1 + min(e, 9))) // 1..10
+    {
         e++;
+        if (e > 31)
+        {
+            ForceUnderrun(); // stream is buggy or unsupported, we disable it completely and we indicate that it is NOK
+            return 0;
+        }
+    }
 
     int32u a = 1;
     int i = e - 1;
@@ -191,7 +206,14 @@ int32s RangeCoder::get_symbol_s(int8u* States)
 
     int e = 0;
     while (get_rac(States + 1 + min(e, 9))) // 1..10
+    {
         e++;
+        if (e > 31)
+        {
+            ForceUnderrun(); // stream is buggy or unsupported, we disable it completely and we indicate that it is NOK
+            return 0;
+        }
+    }
 
     int32s a = 1;
     int i = e - 1;
