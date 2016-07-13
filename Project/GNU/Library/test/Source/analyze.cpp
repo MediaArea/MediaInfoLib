@@ -15,12 +15,15 @@ struct Option
 {
     ZenLib::Ztring media_filename;
     ZenLib::Ztring out_filename;
+    ZenLib::Ztring details;
+    ZenLib::Ztring read_by_human;
+    ZenLib::Ztring language;
     ZenLib::Ztring out_format;
 };
 
 static int usage()
 {
-    fprintf(stderr, "tool [--format|-f output_format] media_filename output_filename\n");
+    fprintf(stderr, "tool [--details|-d] [--human-readable|-h] [--format|-f output_format] [--language|-l output_language] media_filename output_filename\n");
     return 1;
 }
 
@@ -30,17 +33,37 @@ static int parse_options(int ac, char *av[], Option& opts)
         return usage();
 
     opts.out_format = __T("XML");
+    opts.details = __T("0");
+    opts.read_by_human = __T("0");
+    opts.language = __T("raw");
+
     int nb_arguments = 0;
 
     for (int i = 1; i < ac; ++i)
     {
-        if (std::string("--format") == av[i] || std::string("-f") == av[i])
+        if (std::string("--details") == av[i] || std::string("-d") == av[i])
+        {
+            opts.details = __T("1");
+        }
+        else if (std::string("--human-readable") == av[i] || std::string("-h") == av[i])
+        {
+            opts.read_by_human = __T("1");
+        }
+        else if (std::string("--format") == av[i] || std::string("-f") == av[i])
         {
             ++i;
             if (i == ac)
                 return usage();
 
             opts.out_format = ZenLib::Ztring().From_Local(av[i]);
+        }
+        else if (std::string("--language") == av[i] || std::string("-l") == av[i])
+        {
+            ++i;
+            if (i == ac)
+                return usage();
+
+            opts.language = ZenLib::Ztring().From_Local(av[i]);
         }
         else
         {
@@ -56,7 +79,7 @@ static int parse_options(int ac, char *av[], Option& opts)
     }
 
     if (nb_arguments != 2)
-        return 1;
+        return usage();
 
     return 0;
 }
@@ -81,9 +104,9 @@ int main(int ac, char *av[])
 
     MediaInfoLib::MediaInfoList mi;
 
-    mi.Option(__T("Details"), __T("1"));
-    mi.Option(__T("ReadByHuman"), __T("1"));
-    mi.Option(__T("Language"), __T("raw"));
+    mi.Option(__T("Details"), opts.details);
+    mi.Option(__T("ReadByHuman"), opts.read_by_human);
+    mi.Option(__T("Language"), opts.language);
     mi.Option(__T("Inform"), opts.out_format);
 
     if (mi.Open(opts.media_filename) == 0)
