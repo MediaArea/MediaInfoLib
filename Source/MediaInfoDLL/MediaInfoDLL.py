@@ -101,6 +101,30 @@ class MediaInfo:
     MediaInfo_Open_Buffer.argtypes = [c_void_p, c_void_p, c_size_t, c_void_p, c_size_t]
     MediaInfo_Open_Buffer.restype = c_size_t
 
+    #/** @brief Wrapper for MediaInfoLib::MediaInfo::Open (with a buffer, Init) */
+    #MEDIAINFO_EXP size_t            __stdcall MediaInfo_Open_Buffer_Init (void* Handle, MediaInfo_int64u File_Size, MediaInfo_int64u File_Offset);
+    MediaInfo_Open_Buffer_Init = MediaInfoDLL_Handler.MediaInfo_Open_Buffer_Init
+    MediaInfo_Open_Buffer_Init.argtypes = [c_void_p, c_uint64, c_uint64]
+    MediaInfo_Open_Buffer_Init.restype = c_size_t
+
+    #/** @brief Wrapper for MediaInfoLib::MediaInfo::Open (with a buffer, Continue) */
+    #MEDIAINFO_EXP size_t            __stdcall MediaInfo_Open_Buffer_Continue (void* Handle, MediaInfo_int8u* Buffer, size_t Buffer_Size);
+    MediaInfo_Open_Buffer_Continue = MediaInfoDLL_Handler.MediaInfo_Open_Buffer_Continue
+    MediaInfo_Open_Buffer_Continue.argtypes = [c_void_p, c_char_p, c_size_t]
+    MediaInfo_Open_Buffer_Continue.restype = c_size_t
+
+    #/** @brief Wrapper for MediaInfoLib::MediaInfo::Open (with a buffer, Continue_GoTo_Get) */
+    #MEDIAINFO_EXP MediaInfo_int64u  __stdcall MediaInfo_Open_Buffer_Continue_GoTo_Get (void* Handle);
+    MediaInfo_Open_Buffer_Continue_GoTo_Get = MediaInfoDLL_Handler.MediaInfo_Open_Buffer_Continue_GoTo_Get
+    MediaInfo_Open_Buffer_Continue_GoTo_Get.argtypes = [c_void_p]
+    MediaInfo_Open_Buffer_Continue_GoTo_Get.restype = c_uint64
+
+    #/** @brief Wrapper for MediaInfoLib::MediaInfo::Open (with a buffer, Finalize) */
+    #MEDIAINFO_EXP size_t            __stdcall MediaInfo_Open_Buffer_Finalize (void* Handle);
+    MediaInfo_Open_Buffer_Finalize = MediaInfoDLL_Handler.MediaInfo_Open_Buffer_Finalize
+    MediaInfo_Open_Buffer_Finalize.argtypes = [c_void_p]
+    MediaInfo_Open_Buffer_Finalize.restype = c_size_t
+
     #/** @brief Wrapper for MediaInfoLib::MediaInfo::Save */
     #MEDIAINFO_EXP size_t       __stdcall MediaInfo_Save (void* Handle);
     MediaInfo_Save = MediaInfoDLL_Handler.MediaInfo_Save
@@ -196,6 +220,14 @@ class MediaInfo:
             return self.MediaInfo_Open (self.Handle, File);
     def Open_Buffer(self, Begin, Begin_Size, End=None, End_Size=0):
         return self.MediaInfo_Open_Buffer(self.Handle, Begin, Begin_Size, End, End_Size)
+    def Open_Buffer_Init(self, File_Size, File_Offset=0):
+        return self.MediaInfo_Open_Buffer_Init(self.Handle, File_Size, File_Offset)
+    def Open_Buffer_Continue(self, Buffer, Buffer_Size):
+        return self.MediaInfo_Open_Buffer_Continue(self.Handle, Buffer, Buffer_Size)
+    def Open_Buffer_Continue_GoTo_Get(self):
+        return self.MediaInfo_Open_Buffer_Continue_GoTo_Get(self.Handle)
+    def Open_Buffer_Finalize(self):
+        return self.MediaInfo_Open_Buffer_Finalize(self.Handle)
     def Save(self):
         return self.MediaInfo_Save(self.Handle)
     def Close(self):
