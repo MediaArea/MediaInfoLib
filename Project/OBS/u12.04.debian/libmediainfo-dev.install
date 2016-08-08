@@ -1,9 +1,0 @@
-/usr/lib/*/lib*.so
-/usr/lib/*/pkgconfig
-
-Source/MediaInfo/MediaInfo.h        /usr/include/MediaInfo
-Source/MediaInfo/MediaInfoList.h    /usr/include/MediaInfo
-Source/MediaInfo/MediaInfo_Const.h  /usr/include/MediaInfo
-Source/MediaInfo/MediaInfo_Events.h /usr/include/MediaInfo
-
-Source/MediaInfoDLL/MediaInfoDLL.h  /usr/include/MediaInfoDLL
