@@ -1,6 +1,6 @@
 Format: 3.0 (quilt)
 Source: libmediainfo
-Binary: libmediainfo-dev, libmediainfo0, python-mediainfodll, python3-mediainfodll, libmediainfo-doc
+Binary: libmediainfo-dev, libmediainfo0, python-mediainfodll, python3-mediainfodll, libmediainfo-doc libmediainfo0-dbg
 Architecture: any all
 Version: 0.7.87-1
 Maintainer: MediaArea.net SARL <info@mediaarea.net>

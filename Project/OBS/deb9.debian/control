@@ -157,3 +157,32 @@ Description: library for reading metadata from media files -- documentation
  .
  This package contains the Doxygen generated API reference for developing
  applications/libraries using this library.
+
+Package: libmediainfo0v5-dbg
+Architecture: any
+Multi-Arch: same
+Section: debug
+Priority: extra
+Depends: libmediainfo0v5 (= ${binary:Version}), ${misc:Depends}
+Replaces: libmediainfo0-dbg
+Conflicts: libmediainfo0-dbg
+Description: library for reading metadata from media files -- shared library
+ MediaInfo is a library used for retrieving technical information and other
+ metadata about audio or video files.
+ .
+ A non-exhaustive list of the information MediaInfo can retrieve from media
+ files include:
+  - General: title, author, director, album, track number, date, duration...
+  - Video: codec, aspect, fps, bitrate...
+  - Audio: codec, sample rate, channels, language, bitrate...
+  - Text: language of subtitle
+  - Chapters: number of chapters, list of chapters
+ .
+ MediaInfo supports the following formats:
+  - Video: MKV, OGM, AVI, DivX, WMV, QuickTime, Real, MPEG-1, MPEG-2,
+           MPEG-4, DVD (VOB)...
+  - Video Codecs: DivX, XviD, MSMPEG4, ASP, H.264, AVC...)
+  - Audio: OGG, MP3, WAV, RA, AC3, DTS, AAC, M4A, AU, AIFF...
+  - Subtitles: SRT, SSA, ASS, SAMI...
+ .
+ This package contains the debugging symbols of this library.
