@@ -1,6 +1,6 @@
 Format: 1.0
 Source: libmediainfo
-Binary: libmediainfo-dev, libmediainfo0
+Binary: libmediainfo-dev, libmediainfo0 libmediainfo0-dbg
 Architecture: any
 Version: 0.7.87-1deb6
 Maintainer: MediaArea.net SARL <info@mediaarea.net>

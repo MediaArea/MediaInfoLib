@@ -1,7 +1,5 @@
 %define libmediainfo_version      0.7.87
 %define libzen_version            0.4.33
-%define debug_package %{nil}
-
 
 %if 0%{?fedora} || 0%{?centos_version} >= 600 || 0%{?rhel_version} >= 600
 %define package_with_0_ending 0
@@ -181,7 +179,7 @@ popd
 
 %install
 pushd Project/GNU/Library/
-    make install-strip DESTDIR=%{buildroot}
+    make install DESTDIR=%{buildroot}
 popd
 
 # MediaInfoDLL headers and MediaInfo-config
@@ -219,6 +217,11 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 %doc License.html
 %endif
 %{_libdir}/%{name_without_0_ending}.so.*
+
+%if 0%{?rhel} == 5
+%exclude %{_usr}/lib/debug
+%exclude %{_usr}/src/debug
+%endif
 
 %files     -n %{name_without_0_ending}-doc
 %defattr(-,root,root,-)
