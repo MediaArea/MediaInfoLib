@@ -101,6 +101,7 @@ HEADERS += \
         ../../Source/MediaInfo/Export/Export_reVTMD.h \
         ../../Source/MediaInfo/File__Analyse_Automatic.h \
         ../../Source/MediaInfo/File__Analyze.h \
+        ../../Source/MediaInfo/File__Analyze_Element.h \
         ../../Source/MediaInfo/File__Analyze_MinimizeSize.h \
         ../../Source/MediaInfo/File__Base.h \
         ../../Source/MediaInfo/File__Duplicate.h \
@@ -312,6 +313,7 @@ SOURCES += \
         ../../Source/MediaInfo/File__Analyze.cpp \
         ../../Source/MediaInfo/File__Analyze_Buffer.cpp \
         ../../Source/MediaInfo/File__Analyze_Buffer_MinimizeSize.cpp \
+        ../../Source/MediaInfo/File__Analyze_Element.cpp \
         ../../Source/MediaInfo/File__Analyze_Streams.cpp \
         ../../Source/MediaInfo/File__Analyze_Streams_Finish.cpp \
         ../../Source/MediaInfo/File__Base.cpp \
