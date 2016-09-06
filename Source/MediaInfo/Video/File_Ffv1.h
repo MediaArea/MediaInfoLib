@@ -48,7 +48,7 @@ const int32u RUN_MODE_INTERRUPTED = 2;
 
 namespace FFV1
 {
-    typedef int16s pixel_t;
+    typedef int32s pixel_t;
 }
 
 class Slice
@@ -271,6 +271,7 @@ private :
     bool    keyframe;
     bool    chroma_planes;
     bool    alpha_plane;
+    bool    is_overflow_16bit;
     state_transitions state_transitions_table;
 
     //TEMP

@@ -8,6 +8,10 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
+Version 0.7.89, 2016-
+--------------
++ FFV1: change 16-bit pixel type to 32-bit, while handling buggy <=version 3 YUV 16-bit stream
+
 Version 0.7.88, 2016-08-31
 --------------
 + MediaInfo distributed with HTTP/HTTPS support: support of Amazon S3 with Signature Version 4
