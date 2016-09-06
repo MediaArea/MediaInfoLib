@@ -918,6 +918,9 @@ void File_Ffv1::FrameHeader()
             Get_RU (States, intra,                              "intra");
     }
 
+    //Marking handling of 16-bit overflow computing
+    is_overflow_16bit=(colorspace_type==0 && bits_per_raw_sample==16 && (coder_type==1 || coder_type==2))?true:false; //TODO: check in FFmpeg the version when the stream is fixed. Note: only with YUV colorspace
+
     FILLING_BEGIN();
         if (Frame_Count==0)
         {
@@ -1264,11 +1267,21 @@ static inline int32s get_median_number(int32s one, int32s two, int32s three)
 }
 
 //---------------------------------------------------------------------------
-static inline int32s predict(pixel_t *current, pixel_t *current_top)
+static inline int32s predict(pixel_t *current, pixel_t *current_top, bool is_overflow_16bit)
 {
-    int32s LeftTop = current_top[-1];
-    int32s Top = current_top[0];
-    int32s Left = current[-1];
+    int32s LeftTop, Top, Left;
+    if (is_overflow_16bit)
+    {
+        LeftTop = (int16s)current_top[-1];
+        Top = (int16s)current_top[0];
+        Left = (int16s)current[-1];
+    }
+    else
+    {
+        LeftTop = current_top[-1];
+        Top = current_top[0];
+        Left = current[-1];
+    }
 
     return get_median_number(Left, Left + Top - LeftTop, Top);
 }
@@ -1440,7 +1453,7 @@ void File_Ffv1::line(int pos, pixel_t *sample[2])
         {
             int32s context = Is5 ? get_context_5(quant_table, s1c, s0c) : get_context_3(quant_table, s1c, s0c);
 
-            int32s Value = predict(s1c, s0c);
+            int32s Value = predict(s1c, s0c, is_overflow_16bit);
             #if MEDIAINFO_TRACE_FFV1CONTENT
                 if (context >= 0)
                     Value += pixel_RC(context);
@@ -1469,7 +1482,7 @@ void File_Ffv1::line(int pos, pixel_t *sample[2])
         {
             int32s context = Is5 ? get_context_5(quant_table, s1c, s0c) : get_context_3(quant_table, s1c, s0c);
 
-            *s1c = (predict(s1c, s0c) + (context >= 0 ? pixel_GR(context) : -pixel_GR(-context))) & bits_mask1;
+            *s1c = (predict(s1c, s0c, is_overflow_16bit) + (context >= 0 ? pixel_GR(context) : -pixel_GR(-context))) & bits_mask1;
 
             s0c++;
             s1c++;
