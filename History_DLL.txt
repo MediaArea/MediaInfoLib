@@ -8,6 +8,10 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
+Version 0.7.89, 2016
+--------------
++ QuickTime: support of Panasonic AVC-Intra 50/100/200 without SPS/PPS ("aixx" CodecID)
+
 Version 0.7.88, 2016-08-31
 --------------
 + MediaInfo distributed with HTTP/HTTPS support: support of Amazon S3 with Signature Version 4

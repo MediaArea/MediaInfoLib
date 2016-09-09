@@ -1726,8 +1726,49 @@ void File_Mpeg4::mdat_xxxx()
                 Stream_Temp.stts_FramePos++;
             }
 
-            Demux_Level=Stream_Temp.Demux_Level;
-            Demux(Buffer+Buffer_Offset+Stream_Temp.Demux_Offset, (size_t)(Element_Size-Stream_Temp.Demux_Offset), ContentType_MainStream);
+
+            bool ShouldDemux=true;
+            if (Stream_Temp.Demux_Level&(1<<7) && Element_Size-Stream_Temp.Demux_Offset)
+            {
+                if (Stream_Temp.Parsers[0]->Status[IsAccepted])
+                    ShouldDemux=false;
+                else
+                {
+                    //Checking if we need to add SPS/PPS
+                    size_t CheckMax=Stream_Temp.Demux_Offset+0x10; //SPS uses to be in the first bytes only
+                    if (CheckMax>Element_Size-4)
+                        CheckMax=Element_Size-4;
+                    ShouldDemux=false;
+                    for (size_t i=Stream_Temp.Demux_Offset; i<CheckMax; i++)
+                        if (Buffer[i]==0x00 && Buffer[i+1]==0x00 && Buffer[i+2]==0x01 && Buffer[i+3]==0x67)
+                        {
+                            Stream_Temp.Demux_Level&=~((1<<7)|(1<<6)); //Remove the flag, SPS/PPS detected
+                            ShouldDemux=true;
+                            break;
+                        }
+                }
+
+                if (!ShouldDemux)
+                {
+                    //Stream_Temp.Demux_Level|= (1<<6); //In case of seek, we need to send again SPS/PPS //Deactivated because Hydra does not decode after a seek + 1 SPS/PPS only.
+                    //Stream_Temp.Demux_Level&=~(1<<7); //Remove the flag, SPS/PPS sent
+                    Demux_Level=Stream_Temp.Demux_Level;
+                    File_Avc::avcintra_header AvcIntraHeader=File_Avc::AVC_Intra_Headers_Data(Stream_Temp.CodecID);
+                    size_t Buffer_Temp_Size=AvcIntraHeader.Size+(size_t)(Element_Size-Stream_Temp.Demux_Offset);
+                    int8u* Buffer_Temp_Data=new int8u[Buffer_Temp_Size];
+                    if (AvcIntraHeader.Data)
+                        memcpy(Buffer_Temp_Data, AvcIntraHeader.Data, AvcIntraHeader.Size);
+                    memcpy(Buffer_Temp_Data+AvcIntraHeader.Size, Buffer+Buffer_Offset+Stream_Temp.Demux_Offset, (size_t)(Element_Size-Stream_Temp.Demux_Offset));
+                    Demux(Buffer_Temp_Data, Buffer_Temp_Size, ContentType_MainStream);
+                    Open_Buffer_Continue(Stream_Temp.Parsers[0], AvcIntraHeader.Data, AvcIntraHeader.Size);
+                    ShouldDemux = false;
+                }
+            }
+            if (ShouldDemux)
+            {
+                Demux_Level=Stream_Temp.Demux_Level;
+                Demux(Buffer+Buffer_Offset+Stream_Temp.Demux_Offset, (size_t)(Element_Size-Stream_Temp.Demux_Offset), ContentType_MainStream);
+            }
         }
     #endif //MEDIAINFO_DEMUX
 
@@ -4702,11 +4743,42 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                     File_Avc* Parser=new File_Avc;
                     Parser->FrameIsAlwaysComplete=true;
                     #if MEDIAINFO_DEMUX
-                        if (Config->Demux_Avc_Transcode_Iso14496_15_to_Iso14496_10_Get())
+                        switch ((int32u)Element_Code)
                         {
-                            Streams[moov_trak_tkhd_TrackID].Demux_Level=4; //Intermediate
-                            Parser->Demux_Level=2; //Container
-                            Parser->Demux_UnpacketizeContainer=true;
+                            case  0x61693132: //ai12
+                            case  0x61693232: //ai22
+                            case  0x61693133: //ai13
+                            case  0x61693233: //ai23
+                            case  0x61693135: //ai15
+                            case  0x61693235: //ai25
+                            case  0x61693236: //ai26
+                            case  0x61693136: //ai16
+                            case  0x61693270: //ai2p
+                            case  0x61693170: //ai1p
+                            case  0x61693171: //ai1q
+                            case  0x61693271: //ai2q
+                            case  0x61693532: //ai52
+                            case  0x61693533: //ai53
+                            case  0x61693535: //ai55
+                            case  0x61693536: //ai56
+                            case  0x61693570: //ai5p
+                            case  0x61693571: //ai5q
+                                                Streams[moov_trak_tkhd_TrackID].Demux_Level|=(1<<7); //Add the flag, SPS/PPS must be sent
+                                                Streams[moov_trak_tkhd_TrackID].CodecID=((int32u)Element_Code);
+                                                switch ((Element_Code>>8)&0xF)
+                                                {
+                                                    case 1 : Fill(Stream_Video, StreamPos_Last, Video_Format_Commercial_IfAny, "AVC-Intra 100"); break;
+                                                    case 2 : Fill(Stream_Video, StreamPos_Last, Video_Format_Commercial_IfAny, "AVC-Intra 200"); break;
+                                                    case 5 : Fill(Stream_Video, StreamPos_Last, Video_Format_Commercial_IfAny, "AVC-Intra 50"); break;
+                                                }
+                                                break;
+                            default       :
+                                                if (Config->Demux_Avc_Transcode_Iso14496_15_to_Iso14496_10_Get())
+                                                {
+                                                    Streams[moov_trak_tkhd_TrackID].Demux_Level=4; //Intermediate
+                                                    Parser->Demux_Level=2; //Container
+                                                    Parser->Demux_UnpacketizeContainer=true;
+                                                }
                         }
                     #endif //MEDIAINFO_DEMUX
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);

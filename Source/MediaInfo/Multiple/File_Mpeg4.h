@@ -445,6 +445,7 @@ private :
         #if MEDIAINFO_DEMUX
             bool            PtsDtsAreSame;
             bool            Demux_EventWasSent;
+            int32u          CodecID;
         #endif //MEDIAINFO_DEMUX
 
         stream()
@@ -494,6 +495,7 @@ private :
             #if MEDIAINFO_DEMUX
                 PtsDtsAreSame=false;
                 Demux_EventWasSent=false;
+                CodecID=0x00000000;
             #endif //MEDIAINFO_DEMUX
         }
 
