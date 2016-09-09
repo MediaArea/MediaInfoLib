@@ -477,6 +477,95 @@ File_Avc::avcintra_header File_Avc::AVC_Intra_Headers_Data(int32u CodecID)
     }
 }
 
+//---------------------------------------------------------------------------
+int32u File_Avc::AVC_Intra_CodecID_FromMeta(int32u Height, int32u Fields, int32u SampleDuration, int32u TimeScale, int32u SizePerFrame)
+{
+    // Computing bitrate
+    int64u BitRate=((int64u)SizePerFrame)*8*TimeScale/SampleDuration;
+    int64u SampleRate=float64_int64s(((float64)TimeScale)/SampleDuration);
+    int32u Class=BitRate<=75000000?50:100; //Arbitrary choosen. TODO: check real maximumm bitrate, check class 200
+    switch (Class)
+    {
+        case 100 : 
+                    switch (Height)
+                    {
+                        case 1080 :
+                                    switch (Fields)
+                                    {
+                                        case 1: 
+                                                    switch (SampleRate)
+                                                    {
+                                                        case 50: return 0x61693132; //ai12
+                                                        case 60: return 0x61693133; //ai13
+                                                        default: return 0x4156696E; //AVin (neutral)
+                                                    }
+                                        case 2: 
+                                                    switch (SampleRate)
+                                                    {
+                                                        case 25: return 0x61693135; //ai15 //TODO: check more files in order to know if it should be 1 or 2 fields per sample
+                                                        case 30: return 0x61693136; //ai16 //TODO: check more files in order to know if it should be 1 or 2 fields per sample
+                                                        case 50: return 0x61693135; //ai15 //TODO: check more files in order to know if it should be 1 or 2 fields per sample
+                                                        case 60: return 0x61693136; //ai16 //TODO: check more files in order to know if it should be 1 or 2 fields per sample
+                                                        default: return 0x4156696E; //AVin (neutral)
+                                                    }
+                                        default:    return 0x4156696E; //AVin (neutral)
+                                    }
+                        case  720 :
+                                    switch (Fields)
+                                    {
+                                        case 1: 
+                                                    switch (SampleRate)
+                                                    {
+                                                        case 50: return 0x61693170; //ai1p
+                                                        case 60: return 0x61693171; //ai1q
+                                                        default: return 0x4156696E; //AVin (neutral)
+                                                    }
+                                        default:    return 0x4156696E; //AVin (neutral)
+                                    }
+                        default   : return 0x4156696E; //AVin (neutral)
+                    }
+        case  50 : 
+                    switch (Height)
+                    {
+                        case 1080 :
+                                    switch (Fields)
+                                    {
+                                        case 1: 
+                                                    switch (SampleRate)
+                                                    {
+                                                        case 25: return 0x61693532; //ai52
+                                                        case 30: return 0x61693533; //ai53
+                                                        default: return 0x4156696E; //AVin (neutral)
+                                                    }
+                                        case 2: 
+                                                    switch (SampleRate)
+                                                    {
+                                                        case 25: return 0x61693535; //ai55 //TODO: check more files in order to know if it should be 1 or 2 fields per sample
+                                                        case 30: return 0x61693536; //ai56 //TODO: check more files in order to know if it should be 1 or 2 fields per sample
+                                                        case 50: return 0x61693535; //ai55 //TODO: check more files in order to know if it should be 1 or 2 fields per sample
+                                                        case 60: return 0x61693536; //ai56 //TODO: check more files in order to know if it should be 1 or 2 fields per sample
+                                                        default: return 0x4156696E; //AVin (neutral)
+                                                    }
+                                        default:    return 0x4156696E; //AVin (neutral)
+                                    }
+                        case  720 :
+                                    switch (Fields)
+                                    {
+                                        case 1: 
+                                                    switch (SampleRate)
+                                                    {
+                                                        case 50: return 0x61693570; //ai5p
+                                                        case 60: return 0x61693571; //ai5q
+                                                        default: return 0x4156696E; //AVin (neutral)
+                                                    }
+                                        default:    return 0x4156696E; //AVin (neutral)
+                                    }
+                        default   : return 0x4156696E; //AVin (neutral)
+                    }
+        default: return 0x4156696E; //AVin (neutral)
+    }
+}
+
 //***************************************************************************
 // Streams management
 //***************************************************************************

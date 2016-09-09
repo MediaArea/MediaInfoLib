@@ -155,9 +155,11 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxxText();
     void moov_trak_mdia_minf_stbl_stsd_xxxxVideo();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_alac();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_AALP();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_ACLR();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_APRG();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_ARES();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_AORD();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_avcC();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_bitr();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_btrt();
