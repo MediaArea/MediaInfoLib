@@ -2019,6 +2019,10 @@ string Mxf_AcquisitionMetadata_ElementName(int16u Value, bool IsSony=false)
         case 0x8005: return "LensZoomActualFocalLength";
         case 0x8006: return "OpticalExtenderMagnification";
         case 0x8007: return "LensAttributes";
+        case 0x8008: return "IrisTNumber";
+        case 0x8009: return "IrisRingPosition";
+        case 0x800A: return "FocusRingPosition";
+        case 0x800B: return "ZoomRingPosition";
         case 0x8100: return "AutoExposureMode";
         case 0x8101: return "AutoFocusSensingAreaSetting";
         case 0x8102: return "ColorCorrectionFilterWheelSetting";
@@ -2043,6 +2047,7 @@ string Mxf_AcquisitionMetadata_ElementName(int16u Value, bool IsSony=false)
         case 0x8115: return "ExposureIndexofPhotoMeter";
         case 0x8116: return "GammaForCDL";
         case 0x8117: return "ASC_CDL_V12";
+        case 0x8118: return "ColorMatrix";
         default:     return Ztring(Ztring::ToZtring(Value, 16)).To_UTF8();
     }
 }
@@ -2535,12 +2540,18 @@ void File_Mxf::Streams_Finish()
                 {
                     case 0x8001 : //FocusPosition_ImagePlane
                     case 0x8002 : //FocusPosition_FrontLensVertex
-                    case 0x8004 : //LensZoom_35mmStillCameraEquivalent
-                    case 0x8005 : //LensZoom_ActualFocalLength
                         (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
                         Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+" m");
                         break;
+                    case 0x8004 : //LensZoom35mmStillCameraEquivalent
+                    case 0x8005 : //LensZoomActualFocalLength
+                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                        Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+" mm");
+                        break;
                     case 0x8006 : //OpticalExtenderMagnification
+                    case 0x8009 : //IrisRingPosition
+                    case 0x800A : //FocusRingPosition
+                    case 0x800B : //ZoomRingPosition
                     case 0x810C : //ElectricalExtenderMagnification
                     case 0x810F : //CameraMasterBlackLevel
                     case 0x8110 : //CameraKneePoint
@@ -8082,6 +8093,10 @@ void File_Mxf::LensUnitMetadata()
         ELEMENT(8005, LensUnitMetadata_LensZoomActualFocalLength,           "LensZoom (Actual Focal Length)")
         ELEMENT(8006, LensUnitMetadata_OpticalExtenderMagnification,        "Optical Extender Magnification")
         ELEMENT(8007, LensUnitMetadata_LensAttributes,                      "Lens Attributes")
+        ELEMENT(8008, LensUnitMetadata_IrisTNumber,                         "Iris (T)")
+        ELEMENT(8009, LensUnitMetadata_IrisRingPosition,                    "Iris Ring Position")
+        ELEMENT(800A, LensUnitMetadata_FocusRingPosition,                   "Focus Ring Position")
+        ELEMENT(800B, LensUnitMetadata_ZoomRingPosition,                    "Zoom Ring Position")
         default:
                     GenerationInterchangeObject();
     }
@@ -8119,7 +8134,8 @@ void File_Mxf::CameraUnitMetadata()
         ELEMENT(8114, CameraUnitMetadata_CameraAttributes,                  "Camera Attributes")
         ELEMENT(8115, CameraUnitMetadata_ExposureIndexofPhotoMeter,         "Exposure Index of Photo Meter")
         ELEMENT(8116, CameraUnitMetadata_GammaForCDL,                       "Gamma for CDL")
-        ELEMENT(8117, CameraUnitMetadata_ASC_CDL_V12,                        "ASC CDL V1.2")
+        ELEMENT(8117, CameraUnitMetadata_ASC_CDL_V12,                       "ASC CDL V1.2")
+        ELEMENT(8118, CameraUnitMetadata_ColorMatrix,                       "ColorMatrix")
         default:
                     GenerationInterchangeObject();
     }
@@ -11084,9 +11100,33 @@ void File_Mxf::LensUnitMetadata_IrisFNumber()
     Get_B2(Value,                                               "Value");
 
     FILLING_BEGIN();
-        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(0x100000*(1-(log(float(Value))-log(2.0))/8), 0).To_UTF8());
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(std::pow(2, 8*(1-(float(Value)/0x10000))), 6).To_UTF8());
     FILLING_END();
 }
+
+//---------------------------------------------------------------------------
+// Big Endian - float 16 bits
+// TODO: remove it when Linux version of ZenLib is updated
+float32 BigEndian2float16lens(const char* Liste)
+{
+    //exponent      4 bit
+    //significand  12 bit
+
+    //Retrieving data
+    int16u Integer=BigEndian2int16s(Liste);
+
+    //Retrieving elements
+    int Exponent=(Integer>>12)&0x0F;
+    if (Exponent>=8)
+        Exponent=-(((~Exponent)&0x7)+1);
+    int32u Mantissa= Integer&0x0FFF;
+
+    //Some computing
+    float64 Answer=((float64)Mantissa)*std::pow((float64)10, Exponent);
+
+    return (float32)Answer;
+}
+inline float32 BigEndian2float16lens(const int8u* List) {return BigEndian2float16lens((const char*)List);}
 
 //---------------------------------------------------------------------------
 //
@@ -11094,7 +11134,8 @@ void File_Mxf::LensUnitMetadata_FocusPositionFromImagePlane()
 {
     //Parsing
     float32 Value;
-    Get_BF2(Value,                                              "Value");
+    Value=BigEndian2float16lens(Buffer+Buffer_Offset+(size_t)Element_Offset);
+    Skip_B2(                                                    "Value");
 
     FILLING_BEGIN();
         AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value, 3).To_UTF8());
@@ -11107,7 +11148,8 @@ void File_Mxf::LensUnitMetadata_FocusPositionFromFrontLensVertex()
 {
     //Parsing
     float32 Value;
-    Get_BF2(Value,                                              "Value");
+    Value=BigEndian2float16lens(Buffer+Buffer_Offset+(size_t)Element_Offset);
+    Skip_B2(                                                    "Value");
 
     FILLING_BEGIN();
         AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value, 3).To_UTF8());
@@ -11133,10 +11175,11 @@ void File_Mxf::LensUnitMetadata_LensZoom35mmStillCameraEquivalent()
 {
     //Parsing
     float32 Value;
-    Get_BF2(Value,                                              "Value");
+    Value=BigEndian2float16lens(Buffer+Buffer_Offset+(size_t)Element_Offset);
+    Skip_B2(                                                    "Value");
 
     FILLING_BEGIN();
-        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value, 3).To_UTF8());
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value*1000, 3).To_UTF8());
     FILLING_END();
 }
 
@@ -11146,10 +11189,11 @@ void File_Mxf::LensUnitMetadata_LensZoomActualFocalLength()
 {
     //Parsing
     float32 Value;
-    Get_BF2(Value,                                              "Value");
+    Value=BigEndian2float16lens(Buffer+Buffer_Offset+(size_t)Element_Offset);
+    Skip_B2(                                                    "Value");
 
     FILLING_BEGIN();
-        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value, 3).To_UTF8());
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value * 1000, 3).To_UTF8());
     FILLING_END();
 }
 
@@ -11176,6 +11220,58 @@ void File_Mxf::LensUnitMetadata_LensAttributes()
 
     FILLING_BEGIN();
         AcquisitionMetadata_Add(Code2, Value.To_UTF8());
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::LensUnitMetadata_IrisTNumber()
+{
+    //Parsing
+    int16u Value;
+    Get_B2(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(std::pow(2, 8*(1-(float(Value)/0x10000))), 6).To_UTF8());
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::LensUnitMetadata_IrisRingPosition()
+{
+    //Parsing
+    int16u Value;
+    Get_B2(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(((float)Value)/65536*100, 4).To_UTF8());
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::LensUnitMetadata_FocusRingPosition()
+{
+    //Parsing
+    int16u Value;
+    Get_B2(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(((float)Value)/65536*100, 4).To_UTF8());
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::LensUnitMetadata_ZoomRingPosition()
+{
+    //Parsing
+    int16u Value;
+    Get_B2(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        AcquisitionMetadata_Add(Code2, Ztring::ToZtring(((float)Value)/65536*100, 4).To_UTF8());
     FILLING_END();
 }
 
@@ -11264,7 +11360,6 @@ void File_Mxf::CameraUnitMetadata_ImageSensorDimensionEffectiveWidth()
 //
 void File_Mxf::CameraUnitMetadata_ImageSensorDimensionEffectiveHeight()
 {
-    //Parsing
     //Parsing
     int16u Value;
     Get_B2(Value,                                               "Value");
@@ -11524,6 +11619,48 @@ void File_Mxf::CameraUnitMetadata_ASC_CDL_V12()
 
     FILLING_BEGIN();
         Ztring ValueS=__T("sR=")+Ztring::ToZtring(sR, 1)+__T(" sG=")+Ztring::ToZtring(sG, 1)+__T(" sB=")+Ztring::ToZtring(sB, 1)+__T(" oR=")+Ztring::ToZtring(oR, 1)+__T(" oG=")+Ztring::ToZtring(oG, 1)+__T(" oB=")+Ztring::ToZtring(oB, 1)+__T(" pR=")+Ztring::ToZtring(pR, 1)+__T(" pG=")+Ztring::ToZtring(pG, 1)+__T(" pB=")+Ztring::ToZtring(pB, 1)+__T(" sat=")+Ztring::ToZtring(sat, 1);
+        AcquisitionMetadata_Add(Code2, ValueS.To_UTF8());
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::CameraUnitMetadata_ColorMatrix()
+{
+    //Parsing
+    //Vector
+    int32u Count, Length;
+    Get_B4 (Count,                                              "Count");
+    Get_B4 (Length,                                             "Length");
+    if (Count!=9 || Length!=8)
+    {
+        Skip_XX (Length2-8,                                     "Data");
+        return;
+    }
+    int32u RR_N, RR_D, GR_N, GR_D, BR_N, BR_D, RG_N, RG_D, GG_N, GG_D, BG_N, BG_D, RB_N, RB_D, GB_N, GB_D, BB_N, BB_D;
+    Get_B4 (RR_N,                                               "RR Num");
+    Get_B4 (RR_D,                                               "RR Den");
+    Get_B4 (GR_N,                                               "GR Num");
+    Get_B4 (GR_D,                                               "GR Den");
+    Get_B4 (BR_N,                                               "BR Num");
+    Get_B4 (BR_D,                                               "BR Den");
+    Get_B4 (RG_N,                                               "RG Num");
+    Get_B4 (RG_D,                                               "RG Den");
+    Get_B4 (GG_N,                                               "GG Num");
+    Get_B4 (GG_D,                                               "GG Den");
+    Get_B4 (BG_N,                                               "BG Num");
+    Get_B4 (BG_D,                                               "BG Den");
+    Get_B4 (RB_N,                                               "RB Num");
+    Get_B4 (RB_D,                                               "RB Den");
+    Get_B4 (GB_N,                                               "GB Num");
+    Get_B4 (GB_D,                                               "GB Den");
+    Get_B4 (BB_N,                                               "BB Num");
+    Get_B4 (BB_D,                                               "BB Den");
+
+    FILLING_BEGIN();
+        Ztring ValueS=__T("RR=")+Ztring::ToZtring(((float)RR_N)/RR_D, 3)+__T(" GR=")+Ztring::ToZtring(((float)GR_N)/GR_D, 3)+__T(" BR=")+Ztring::ToZtring(((float)BR_N)/BR_D, 3)
+                   + __T(" RG=")+Ztring::ToZtring(((float)RG_N)/RG_D, 3)+__T(" GG=")+Ztring::ToZtring(((float)GG_N)/GG_D, 3)+__T(" BG=")+Ztring::ToZtring(((float)BG_N)/BG_D, 3)
+                   + __T(" RB=")+Ztring::ToZtring(((float)RB_N)/RB_D, 3)+__T(" GB=")+Ztring::ToZtring(((float)GB_N)/GB_D, 3)+__T(" BB=")+Ztring::ToZtring(((float)BB_N)/BB_D, 3);
         AcquisitionMetadata_Add(Code2, ValueS.To_UTF8());
     FILLING_END();
 }
