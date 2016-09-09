@@ -11,21 +11,38 @@ apco;ProRes;;;http://www.apple.com/quicktime/download/standalone.html;422 Proxy;
 ap4c;ProRes;;;http://www.apple.com/quicktime/download/standalone.html;4444;;;4:4:4
 ap4h;ProRes;;;http://www.apple.com/quicktime/download/standalone.html;4444;;;4:4:4
 ap4x;ProRes;;;http://www.apple.com/quicktime/download/standalone.html;4444 XQ;;;4:4:4
-ai11;AVC;;Advanced Video Coding;http://ffdshow-tryout.sourceforge.net;;;
-ai12;AVC;;Advanced Video Coding;http://ffdshow-tryout.sourceforge.net;;;
-ai13;AVC;;Advanced Video Coding;http://ffdshow-tryout.sourceforge.net;;;
-ai14;AVC;;Advanced Video Coding;http://ffdshow-tryout.sourceforge.net;;;
-ai15;AVC;;Advanced Video Coding;http://ffdshow-tryout.sourceforge.net;;;
-ai1q;AVC;;Advanced Video Coding;http://ffdshow-tryout.sourceforge.net;;;
-ai5q;AVC;;Advanced Video Coding;http://ffdshow-tryout.sourceforge.net;;;
+ai12;AVC;;Advanced Video Coding;;;;
+ai13;AVC;;Advanced Video Coding;;;;
+ai15;AVC;;Advanced Video Coding;;;;
+ai16;AVC;;Advanced Video Coding;;;;
+ai1p;AVC;;Advanced Video Coding;;;;
+ai1q;AVC;;Advanced Video Coding;;;;
+ai22;AVC;;Advanced Video Coding;;;;
+ai23;AVC;;Advanced Video Coding;;;;
+ai25;AVC;;Advanced Video Coding;;;;
+ai26;AVC;;Advanced Video Coding;;;;
+ai2p;AVC;;Advanced Video Coding;;;;
+ai2q;AVC;;Advanced Video Coding;;;;
+ai52;AVC;;Advanced Video Coding;;;;
+ai53;AVC;;Advanced Video Coding;;;;
+ai55;AVC;;Advanced Video Coding;;;;
+ai56;AVC;;Advanced Video Coding;;;;
+ai5p;AVC;;Advanced Video Coding;;;;
+ai5q;AVC;;Advanced Video Coding;;;;
 AV1x;YUV;;;;;;YUV;4:2:2
-avc1;AVC;;Advanced Video Coding;http://www.apple.com/quicktime/download/standalone.html;;;;
-avcp;AVC;;Advanced Video Coding Parameters;http://www.apple.com/quicktime/download/standalone.html;;;;
+avc1;AVC;;Advanced Video Coding;;;;;
+avc2;AVC;;Advanced Video Coding;;;;;
+avc3;AVC;;Advanced Video Coding;;;;;
+avc4;AVC;;Advanced Video Coding;;;;;
+avcp;AVC;;Advanced Video Coding Parameters;;;;
 AVDJ;JPEG;;Avid
 AVdv;DV;;Avid;http://www.apple.com/quicktime/download/standalone.html;;;YUV;4:2:2
 AVd1;DV;;Avid;http://www.apple.com/quicktime/download/standalone.html;;;
-AVdn;VC-3;DNxHD;Avid;http://www.apple.com/quicktime/download/standalone.html;;;;
+AVdn;VC-3;DNxHD;Avid;http://www.apple.com/quicktime/download/standalone.html;;;YUV;4:2:2
+AVin;AVC;;Advanced Video Coding;;;;;
+AVJI;Avid Meridien Compressed;;;;;;
 AVmp;MPEG Video;Avid IMX;;;;Version 2;;;
+AVUI;Avid Meridien Uncompressed;;;;;;
 avr ;JPEG;;;;;;;
 AVrp;RGB;Avid;;;;;RGB;
 b16g;Gray;;;;;;Y;16
@@ -128,6 +145,8 @@ Shr1;SheerVideo;;SheerVideo RGB;http://www.bitjazz.com/;;;;
 Shr2;SheerVideo;;SheerVideo Y'CbCr[A] 4:4:4;http://www.bitjazz.com/;;;;
 Shr3;SheerVideo;;SheerVideo Y'CbCr 4:2:2;http://www.bitjazz.com/;;;;
 Shr4;SheerVideo;;SheerVideo Y'CbCr 4:2:2;http://www.bitjazz.com/;;;;
+SJDS;SoftImage DS Compressed;;;;;;
+SUDS;SoftImage DS Uncompressed;;;;;;
 SV10;Sorenson;;Sorenson Media Video R1;http://www.apple.com/quicktime/download/standalone.html;;;;
 SVQ1;Sorenson 1;;Sorenson Media Video 1 (Apple QuickTime 3);http://www.apple.com/quicktime/download/standalone.html;;;;
 SVQ2;Sorenson 2;;Sorenson Media Video 2 (Apple QuickTime 4);http://www.apple.com/quicktime/download/standalone.html;;;;
