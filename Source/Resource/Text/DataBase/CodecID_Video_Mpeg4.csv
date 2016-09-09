@@ -38,9 +38,11 @@ avcp;AVC;;Advanced Video Coding Parameters;;;;
 AVDJ;JPEG;;Avid
 AVdv;DV;;Avid;http://www.apple.com/quicktime/download/standalone.html;;;YUV;4:2:2
 AVd1;DV;;Avid;http://www.apple.com/quicktime/download/standalone.html;;;
-AVdn;VC-3;DNxHD;Avid;http://www.apple.com/quicktime/download/standalone.html;;;;
+AVdn;VC-3;DNxHD;Avid;http://www.apple.com/quicktime/download/standalone.html;;;YUV;4:2:2
 AVin;AVC;;Advanced Video Coding;;;;;
+AVJI;Avid Meridien Compressed;;;;;;
 AVmp;MPEG Video;Avid IMX;;;;Version 2;;;
+AVUI;Avid Meridien Uncompressed;;;;;;
 avr ;JPEG;;;;;;;
 AVrp;RGB;Avid;;;;;RGB;
 b16g;Gray;;;;;;Y;16
@@ -143,6 +145,8 @@ Shr1;SheerVideo;;SheerVideo RGB;http://www.bitjazz.com/;;;;
 Shr2;SheerVideo;;SheerVideo Y'CbCr[A] 4:4:4;http://www.bitjazz.com/;;;;
 Shr3;SheerVideo;;SheerVideo Y'CbCr 4:2:2;http://www.bitjazz.com/;;;;
 Shr4;SheerVideo;;SheerVideo Y'CbCr 4:2:2;http://www.bitjazz.com/;;;;
+SJDS;SoftImage DS Compressed;;;;;;
+SUDS;SoftImage DS Uncompressed;;;;;;
 SV10;Sorenson;;Sorenson Media Video R1;http://www.apple.com/quicktime/download/standalone.html;;;;
 SVQ1;Sorenson 1;;Sorenson Media Video 1 (Apple QuickTime 3);http://www.apple.com/quicktime/download/standalone.html;;;;
 SVQ2;Sorenson 2;;Sorenson Media Video 2 (Apple QuickTime 4);http://www.apple.com/quicktime/download/standalone.html;;;;
