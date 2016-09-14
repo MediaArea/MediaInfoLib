@@ -20,6 +20,6 @@ env:
 script:
     - cd Project/GNU/Library/ && ./autogen.sh && ./configure --with-libcurl && make &&
       if [ -z "$NO_CHECKS" ] ; then
-         make clone_regression_files && make check && ./test/s3.sh ;
+         make clone_regression_files && make check ;
       fi &&
       mkdir ../../CMake/Build && cd ../../CMake/Build && cmake -DBUILD_ZENLIB=1 .. && make
