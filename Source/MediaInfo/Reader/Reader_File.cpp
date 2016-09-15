@@ -654,26 +654,22 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
             {
                 for (size_t CountOfSeconds=0; CountOfSeconds<(size_t)MI->Config.File_GrowingFile_Delay_Get(); CountOfSeconds++)
                 {
-                    if (MI->Config.File_Names.size()==1)
+                    int64u LastFile_Size_Old=MI->Config.File_Sizes[MI->Config.File_Sizes.size()-1];
+                    size_t Files_Count_Old=MI->Config.File_Names.size();
+                    MI->TestContinuousFileNames();
+                    int64u LastFile_Size_New=F.Size_Get();
+                    size_t Files_Count_New=MI->Config.File_Names.size();
+
+                    if (LastFile_Size_New!=LastFile_Size_Old || Files_Count_New!=Files_Count_Old)
                     {
-                        Growing_Temp=F.Size_Get();
-                        if (MI->Config.File_Size!=Growing_Temp)
+                        if (MI->Config.File_Names.size()==1) //if more than 1 file, file size config is already done in TestContinuousFileNames()
                         {
-                            MI->Config.File_Current_Size=MI->Config.File_Size=Growing_Temp;
+                            MI->Config.File_Current_Size=MI->Config.File_Size=LastFile_Size_New;
                             MI->Open_Buffer_Init(MI->Config.File_Size, MI->Config.File_Current_Offset+F.Position_Get()-MI->Config.File_Buffer_Size);
-                            break;
                         }
+                        break;
                     }
-                    else
-                    {
-                        Growing_Temp=MI->Config.File_Names.size();
-                        MI->TestContinuousFileNames();
-                        if (MI->Config.File_Names.size()!=Growing_Temp)
-                        {
-                            MI->Open_Buffer_Init(MI->Config.File_Size, MI->Config.File_Current_Offset+F.Position_Get()-MI->Config.File_Buffer_Size);
-                            break;
-                        }
-                    }
+
                     #ifdef WINDOWS
                         Sleep(1000);
                     #endif //WINDOWS
