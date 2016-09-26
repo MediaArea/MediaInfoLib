@@ -14,6 +14,7 @@ Version 0.7.89, 2016
 + More QuickTime/MP4/AVC/HEVC color descriptions based on future ISO 23001-8:201x/PDAM1
 + FFV1: handling 16+ bitdepth (YUV and RGB) while handling buggy version <= 3 YUV 16-bit streams
 + Improved growing file detection, option for forcing the growing file test
++ Matroska: support of video FieldOrder, MatrixCoefficients, BitsPerChannel, Range, TransferCharacteristics, Primaries
 + Acquisition Metadata: support of more elements (IrisTNumber, IrisRingPosition, FocusRingPosition, ZoomRingPosition, ColorMatrix)
 x Acquisition Metadata: IrisFNumber, FocusPosition, LensZoom were not correctly reported
 
