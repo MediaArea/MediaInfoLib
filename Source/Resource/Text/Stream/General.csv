@@ -16,13 +16,13 @@ UniqueID;;;N YIY;;;The unique ID for this stream, should be copied with stream c
 UniqueID/String;;;Y NT;;;The unique ID for this stream, should be copied with stream copy
 MenuID;;;N YIY;;;The menu ID for this stream in this file
 MenuID/String;;;Y NT;;;The menu ID for this stream in this file
-GeneralCount;1;;N NI;;;Number of general streams
-VideoCount;;;N NI;;;Number of video streams
-AudioCount;;;N NI;;;Number of audio streams
-TextCount;;;N NI;;;Number of text streams
-OtherCount;;;N NI;;;Number of other streams
-ImageCount;;;N NI;;;Number of image streams
-MenuCount;;;N NI;;;Number of menu streams
+GeneralCount;1;;N NIY;;;Number of general streams
+VideoCount;;;N NIY;;;Number of video streams
+AudioCount;;;N NIY;;;Number of audio streams
+TextCount;;;N NIY;;;Number of text streams
+OtherCount;;;N NIY;;;Number of other streams
+ImageCount;;;N NIY;;;Number of image streams
+MenuCount;;;N NIY;;;Number of menu streams
 Video_Format_List;;;N NT;;;Video Codecs in this file, separated by /
 Video_Format_WithHint_List;;;N NT;;;Video Codecs in this file with popular name (hint), separated by /
 Video_Codec_List;;;N NT;;;Deprecated, do not use in new projects
