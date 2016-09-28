@@ -1980,6 +1980,7 @@ void MediaInfo_Config_CodecID_Video_Riff (InfoMap &Info)
     "MHFY;YUV;;A.M.Paredes mhuffyYUV (LossLess);http://mirror01.iptelecom.net.ua/~video/codecs/Pinnacle.ReelTime.v2.5.software.only.codec.exe;;;YUV\n"
     "MJ2C;JPEG 2000;;Morgan Multimedia JPEG 2000 Compression;http://mirror01.iptelecom.net.ua/~video/codecs/Pinnacle.ReelTime.v2.5.software.only.codec.exe;;;\n"
     "MJPA;JPEG;Pinacle;Pinnacle ReelTime MJPG hardware;http://mediaxw.sourceforge.net;;;YUV\n"
+    "mjp2;JPEG 2000;;;;;;\n"
     "MJPB;JPEG;Pinacle B;;;;;YUV\n"
     "MJPG;JPEG;;;;;;YUV\n"
     "mJPG;JPEG;IBM;Including Huffman Tables;;;;YUV\n"

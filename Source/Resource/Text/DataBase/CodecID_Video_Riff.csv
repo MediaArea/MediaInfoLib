@@ -343,6 +343,7 @@ MDVF;DV;Pinnacle;Pinnacle DV/DV50/DVHD100;;;;YUV;
 MHFY;YUV;;A.M.Paredes mhuffyYUV (LossLess);http://mirror01.iptelecom.net.ua/~video/codecs/Pinnacle.ReelTime.v2.5.software.only.codec.exe;;;YUV;
 MJ2C;JPEG 2000;;Morgan Multimedia JPEG 2000 Compression;http://mirror01.iptelecom.net.ua/~video/codecs/Pinnacle.ReelTime.v2.5.software.only.codec.exe;;;;
 MJPA;JPEG;Pinacle;Pinnacle ReelTime MJPG hardware;http://mediaxw.sourceforge.net;;;YUV
+mjp2;JPEG 2000;;;;;;
 MJPB;JPEG;Pinacle B;;;;;YUV
 MJPG;JPEG;;;;;;YUV
 mJPG;JPEG;IBM;Including Huffman Tables;;;;YUV

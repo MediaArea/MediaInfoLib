@@ -17,6 +17,7 @@ Version 0.7.89, 2016
 + Matroska: support of video FieldOrder, MatrixCoefficients, BitsPerChannel, Range, TransferCharacteristics, Primaries
 + Acquisition Metadata: support of more elements (IrisTNumber, IrisRingPosition, FocusRingPosition, ZoomRingPosition, ColorMatrix)
 + Add stream counts to MIXML output
++ I242, AVI/Matroska: mapping of mjp2 to JPEG 2000 format name
 x Acquisition Metadata: IrisFNumber, FocusPosition, LensZoom were not correctly reported
 
 Version 0.7.88, 2016-08-31
