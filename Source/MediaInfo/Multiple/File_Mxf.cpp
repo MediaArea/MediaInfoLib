@@ -10190,7 +10190,13 @@ void File_Mxf::MPEG2VideoDescriptor_IdenticalGOP()
 void File_Mxf::MPEG2VideoDescriptor_MaxGOP()
 {
     //Parsing
-    Info_B2(Data,                                               "Data"); Element_Info1(Data);
+    int16u Data;
+    Get_B2 (Data,                                               "Data"); Element_Info1(Data);
+
+    FILLING_BEGIN();
+        if (Data==1)
+            Descriptors[InstanceUID].Infos["Format_Settings_GOP"]=__T("N=1");
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
