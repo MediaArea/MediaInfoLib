@@ -437,6 +437,16 @@ namespace Elements
 }
 
 //---------------------------------------------------------------------------
+extern const char* Mpegv_profile_and_level_indication_profile[];
+extern const char* Mpegv_profile_and_level_indication_level[];
+extern const char* Mpeg4v_Profile_Level(int32u Profile_Level);
+
+//---------------------------------------------------------------------------
+extern const char* AfdBarData_active_format[];
+extern const char* AfdBarData_active_format_4_3[];
+extern const char* AfdBarData_active_format_16_9[];
+
+//---------------------------------------------------------------------------
 const char* Mxf_Category(int8u Category)
 {
     switch(Category)
@@ -1023,6 +1033,60 @@ const char* Mxf_EssenceCompression(const int128u EssenceCompression)
     }
 }
 
+//---------------------------------------------------------------------------
+const char* Mxf_EssenceCompression_Profile(const int128u EssenceCompression)
+{
+    int8u Code2=(int8u)((EssenceCompression.lo&0x00FF000000000000LL)>>48);
+    int8u Code3=(int8u)((EssenceCompression.lo&0x0000FF0000000000LL)>>40);
+    int8u Code4=(int8u)((EssenceCompression.lo&0x000000FF00000000LL)>>32);
+    int8u Code5=(int8u)((EssenceCompression.lo&0x00000000FF000000LL)>>24);
+    int8u Code6=(int8u)((EssenceCompression.lo&0x0000000000FF0000LL)>>16);
+    int8u Code7=(int8u)((EssenceCompression.lo&0x000000000000FF00LL)>> 8);
+    int8u Code8=(int8u)((EssenceCompression.lo&0x00000000000000FFLL)    );
+
+    switch (Code2)
+    {
+        case 0x01 : //Picture
+                    switch (Code3)
+                    {
+                        case 0x02 : //Coding characteristics
+                                    switch (Code4)
+                                    {
+                                        case 0x02 : //Compressed coding
+                                                    switch (Code5)
+                                                    {
+                                                        case 0x01 : //MPEG Compression
+                                                                    switch (Code6)
+                                                                    {
+                                                                        case 0x20 : //MPEG-4 Visual
+                                                                                    switch (Code7)
+                                                                                    {
+                                                                                        case 0x10 : //
+                                                                                                    switch (Code8)
+                                                                                                    {
+                                                                                                        case 0x01 :
+                                                                                                        case 0x02 :
+                                                                                                        case 0x03 :
+                                                                                                        case 0x04 :
+                                                                                                                    return Mpeg4v_Profile_Level(B8(11100000)+Code8);
+                                                                                                        case 0x05 :
+                                                                                                        case 0x06 :
+                                                                                                                    return Mpeg4v_Profile_Level(B8(11101011)-5+Code8);
+                                                                                                        default   : return "";
+                                                                                                    }
+                                                                                        default   : return "";
+                                                                                    }
+                                                                        default   : return "";
+                                                                    }
+                                                        default   : return "";
+                                                    }
+                                         default   : return "";
+                                    }
+                         default   : return "";
+                    }
+        default   : return "";
+    }
+}
 //---------------------------------------------------------------------------
 const char* Mxf_EssenceCompression_Version(const int128u EssenceCompression)
 {
@@ -2100,16 +2164,6 @@ string Mxf_AcquisitionMetadata_Sony_MonitoringBaseCurve(int128u Value)
                     }
     }
 }
-
-//---------------------------------------------------------------------------
-extern const char* Mpegv_profile_and_level_indication_profile[];
-extern const char* Mpegv_profile_and_level_indication_level[];
-extern const char* Mpeg4v_Profile_Level(int32u Profile_Level);
-
-//---------------------------------------------------------------------------
-extern const char* AfdBarData_active_format[];
-extern const char* AfdBarData_active_format_4_3[];
-extern const char* AfdBarData_active_format_16_9[];
 
 //***************************************************************************
 // Constructor/Destructor
@@ -3648,6 +3702,15 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
                                                 break;
                         default:                ;
                     }
+
+                    for (std::map<std::string, Ztring>::iterator Info=SubDescriptor->second.Infos.begin(); Info!=SubDescriptor->second.Infos.end(); ++Info)
+                        if (Retrieve(StreamKind_Last, StreamPos_Last, Info->first.c_str()).empty())
+                            Fill(StreamKind_Last, StreamPos_Last, Info->first.c_str(), Info->second);
+                        else if (Retrieve(StreamKind_Last, StreamPos_Last, Info->first.c_str()) != Info->second)
+                        {
+                            Fill(StreamKind_Last, StreamPos_Last, (Info->first+"_Original").c_str(), Retrieve(StreamKind_Last, StreamPos_Last, Info->first.c_str()));
+                            Fill(StreamKind_Last, StreamPos_Last, Info->first.c_str(), Info->second, true);
+                        }
                 }
             }
 
@@ -9019,6 +9082,7 @@ void File_Mxf::GenericPictureEssenceDescriptor_PictureEssenceCoding()
         Descriptors[InstanceUID].EssenceCompression=Data;
         Descriptors[InstanceUID].StreamKind=Stream_Video;
         Descriptors[InstanceUID].Infos["Format"]=Mxf_EssenceCompression(Data);
+        Descriptors[InstanceUID].Infos["Format_Profile"]=Mxf_EssenceCompression_Profile(Data);
         Descriptors[InstanceUID].Infos["Format_Version"]=Mxf_EssenceCompression_Version(Data);
     FILLING_END();
 }
@@ -10166,7 +10230,7 @@ void File_Mxf::Mpeg4VisualDescriptor_ProfileAndLevel()
 {
     //Parsing
     int8u profile_and_level_indication;
-    Get_B1 (profile_and_level_indication,                       "profile_and_level_indication"); Param_Info1(Mpeg4v_Profile_Level(profile_and_level_indication));
+    Get_B1 (profile_and_level_indication,                       "profile_and_level_indication"); Param_Info1(Mpeg4v_Profile_Level(profile_and_level_indication)); Element_Info1(Mpeg4v_Profile_Level(profile_and_level_indication));
 
     FILLING_BEGIN();
         if (profile_and_level_indication)

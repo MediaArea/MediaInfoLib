@@ -18,6 +18,8 @@ Version 0.7.89, 2016
 + Acquisition Metadata: support of more elements (IrisTNumber, IrisRingPosition, FocusRingPosition, ZoomRingPosition, ColorMatrix)
 + Add stream counts to MIXML output
 + I242, AVI/Matroska: mapping of mjp2 to JPEG 2000 format name
++ MPEG-4 Visual: parsing of Studio profiles, providing width/height/frame rate...
++ MXF: reading MPEG-4 Visual profile from MXF sub-descriptor and/or EssenceCompression
 x Acquisition Metadata: IrisFNumber, FocusPosition, LensZoom were not correctly reported
 
 Version 0.7.88, 2016-08-31
