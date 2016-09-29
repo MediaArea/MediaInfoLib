@@ -22,6 +22,7 @@ Version 0.7.89, 2016
 + MXF: reading MPEG-4 Visual profile from MXF sub-descriptor and/or EssenceCompression
 + Sequence of images: detection of sequence even if the provided path separator is the Unix one (Windows only)
 x Acquisition Metadata: IrisFNumber, FocusPosition, LensZoom were not correctly reported
+x LXF: fixed crash in case of some malformed files
 
 Version 0.7.88, 2016-08-31
 --------------
