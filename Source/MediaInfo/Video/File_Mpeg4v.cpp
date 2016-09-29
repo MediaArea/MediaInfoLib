@@ -1525,7 +1525,7 @@ void File_Mpeg4v::visual_object_start()
     //Integrity
     if (profile_and_level_indication>=B8(11100001) && profile_and_level_indication<=B8(11101000) && visual_object_type!=1)
     {
-        Param_Info("Not in specs"); 
+        Param_Info1("Not in specs"); 
         Trusted_IsNot("Not in specs");
     }
 
