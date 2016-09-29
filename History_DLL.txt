@@ -20,6 +20,7 @@ Version 0.7.89, 2016
 + I242, AVI/Matroska: mapping of mjp2 to JPEG 2000 format name
 + MPEG-4 Visual: parsing of Studio profiles, providing width/height/frame rate...
 + MXF: reading MPEG-4 Visual profile from MXF sub-descriptor and/or EssenceCompression
++ Sequence of images: detection of sequence even if the provided path separator is the Unix one (Windows only)
 x Acquisition Metadata: IrisFNumber, FocusPosition, LensZoom were not correctly reported
 
 Version 0.7.88, 2016-08-31
