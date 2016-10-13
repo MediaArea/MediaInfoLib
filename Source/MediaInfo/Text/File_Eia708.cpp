@@ -1047,7 +1047,7 @@ void File_Eia708::DLW()
     StandAloneCommand=false;
 
     //Bug in some files
-    bool Bug_WindowOffset=false;
+    //bool Bug_WindowOffset=false;
 
     Element_Begin1("DeleteWindows");
     BS_Begin();
@@ -1060,13 +1060,13 @@ void File_Eia708::DLW()
         Get_SB (   IsSet,                                       Ztring(__T("window ")+Ztring::ToZtring(WindowID)).To_Local().c_str());
 
         //Bug in some files
-        if (IsSet && WindowID==1 && Streams[service_number]->Windows[0]!=NULL && Streams[service_number]->Windows[1]==NULL) //Mix between Windows 0 and 1
-        {
-            Bug_WindowOffset=true;
-            //Fill(Stream_Text, 0, "Bug", "WindowID_Bug", Unlimited, true, true);
-        }
-        if (!IsSet && WindowID==0 && Bug_WindowOffset)
-            IsSet=true;
+        //if (IsSet && WindowID==1 && Streams[service_number]->Windows[0]!=NULL && Streams[service_number]->Windows[1]==NULL) //Mix between Windows 0 and 1
+        //{
+        //    Bug_WindowOffset=true;
+        //    //Fill(Stream_Text, 0, "Bug", "WindowID_Bug", Unlimited, true, true);
+        //}
+        //if (!IsSet && WindowID==0 && Bug_WindowOffset)
+        //    IsSet=true;
 
         if (IsSet)
         {
