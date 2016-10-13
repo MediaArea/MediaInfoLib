@@ -1730,7 +1730,6 @@ void File_Mpeg4::mdat_xxxx()
                 Stream_Temp.stts_FramePos++;
             }
 
-
             bool ShouldDemux=true;
             if (Stream_Temp.Demux_Level&(1<<7) && Element_Size-Stream_Temp.Demux_Offset)
             {
@@ -4062,6 +4061,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tmcd_name()
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tx3g()
 {
     Element_Name("Text");
+
     //Parsing
     bool tx3gallforced, tx3ghasforced;
     int32u Flags;
@@ -4119,6 +4119,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tx3g()
         Streams[moov_trak_tkhd_TrackID].AllForcedSamples = tx3gallforced;
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Codec), "tx3g", Unlimited, true, true);
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format), "Timed Text", Unlimited, true, true);
+
         #ifdef MEDIAINFO_TIMEDTEXT_YES
             File_TimedText* Parser=new File_TimedText;
             int64u Elemen_Code_Save=Element_Code;
@@ -4213,6 +4214,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx()
                                     default                                           : Skip_XX(Element_TotalSize_Get()-Element_Offset, "Unknown");
                                 }
         }
+
         if (Element_IsWaitingForMoreData())
             return;
 
