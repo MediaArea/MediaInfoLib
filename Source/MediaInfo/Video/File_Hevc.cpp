@@ -413,6 +413,7 @@ bool File_Hevc::Demux_UnpacketizeContainer_Test()
 
         //Computing final size
         size_t TranscodedBuffer_Size=0;
+        size_t Buffer_Offset_Save=Buffer_Offset;
         while (Buffer_Offset+lengthSizeMinusOne+1+1<=Buffer_Size)
         {
             size_t Size;
@@ -480,7 +481,7 @@ bool File_Hevc::Demux_UnpacketizeContainer_Test()
             TranscodedBuffer_Size+=Size;
             Buffer_Offset+=Size;
         }
-        Buffer_Offset=0;
+        Buffer_Offset=Buffer_Offset_Save;
 
         //Adding VPS/SPS/PPS sizes
         if (RandomAccess)

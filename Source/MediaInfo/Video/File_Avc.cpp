@@ -375,6 +375,7 @@ namespace AVC_Intra_Headers
                                                             0x1E, 0x30, 0x10, 0x10, 0x14, 0x00, 0x00, 0x0F, 0xA4, 0x00, 0x07, 0x53, 0x02, 0x10, 0x00, 0x00,
                                                             0x00, 0x00, 0x01, 0x68, 0xCE, 0x33, 0x48, 0xD0 };
 };
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -1018,6 +1019,7 @@ bool File_Avc::Demux_UnpacketizeContainer_Test()
 
         //Computing final size
         size_t TranscodedBuffer_Size=0;
+        size_t Buffer_Offset_Save=Buffer_Offset;
         while (Buffer_Offset+SizeOfNALU_Minus1+1+1<=Buffer_Size)
         {
             size_t Size;
@@ -1065,7 +1067,7 @@ bool File_Avc::Demux_UnpacketizeContainer_Test()
             TranscodedBuffer_Size+=Size;
             Buffer_Offset+=Size;
         }
-        Buffer_Offset=0;
+        Buffer_Offset=Buffer_Offset_Save;
 
         //Adding SPS/PPS sizes
         if (RandomAccess)
