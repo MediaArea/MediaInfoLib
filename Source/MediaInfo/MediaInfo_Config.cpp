@@ -2433,7 +2433,15 @@ void MediaInfo_Config::Event_Send (const int8u* Data_Content, size_t Data_Size)
     CriticalSectionLocker CSL(CS);
 
     if (Event_CallBackFunction)
+    {
+        MEDIAINFO_DEBUG1(   "Event",
+                            Debug+=", EventID=";Debug+=Ztring::ToZtring(LittleEndian2int32u(Data_Content), 16).To_UTF8();)
+
         Event_CallBackFunction ((unsigned char*)Data_Content, Data_Size, Event_UserHandler);
+ 
+        MEDIAINFO_DEBUG2(   "Event",
+                            )
+    }
 }
 #endif //MEDIAINFO_EVENTS
 
