@@ -333,10 +333,11 @@ void File_N19::FileHeader_Parse()
                 Frames+=(((int8u)TCP[7])-'0');
                 Delay+=float64_int64s(Frames*1000/N19_DiskFormatCode_FrameRate(DFC));
                 //Fill(Stream_Text, 0, Text_Delay, Delay); //TODO is 0???
-                /*TCP.insert(':', 2);
-                TCP.insert(':', 5);
-                TCP.insert(':', 8);
-                Fill(Stream_Text, 0, "Delay/String4", TCP);*/
+                TCP.insert(TCP.begin()+2, ':');
+                TCP.insert(TCP.begin()+5, ':');
+                TCP.insert(TCP.begin()+8, ':');
+                //Fill(Stream_Text, 0, "Delay/String4", TCP);
+                Fill(Stream_Text, 0, "TimeCode_First", TCP);
             }
         }
         Fill(Stream_Text, 0, Text_Width, MNC.To_int32u());
