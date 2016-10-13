@@ -1053,6 +1053,7 @@ void File_Gxf::map()
                         case 22 :
                         case 23 :   //MPEG Video
                                      {
+                                        #ifdef MEDIAINFO_MPEGV_YES
                                         File__Analyze* Parser=new File_Mpegv();
                                         ((File_Mpegv*)Parser)->FrameIsAlwaysComplete=true;
                                         ((File_Mpegv*)Parser)->Ancillary=&Ancillary;
@@ -1061,6 +1062,7 @@ void File_Gxf::map()
 
                                         Parsers_Count++;
                                         Streams[TrackID].Searching_Payload=true;
+                                        #endif //MEDIAINFO_MPEGV_YES
                                      }
                                     break;
                         case 13 :
@@ -1095,6 +1097,7 @@ void File_Gxf::map()
                                     break;
                         case 21 :   //Ancillary Metadata
                                     {
+                                        #ifdef MEDIAINFO_RIFF_YES
                                         File__Analyze* Parser=new File_Riff();
                                         ((File_Riff*)Parser)->Ancillary=&Ancillary;
                                         Open_Buffer_Init(Parser);
@@ -1110,6 +1113,7 @@ void File_Gxf::map()
                                         AncillaryData_StreamID=TrackID;
                                         if (SizeToAnalyze<8*16*1024*1024)
                                             SizeToAnalyze*=8; //10x more, to be sure to find captions
+                                        #endif //MEDIAINFO_RIFF_YES
                                     }
                                     break;
                         default :   ;
