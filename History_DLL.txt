@@ -12,6 +12,7 @@ Version 0.7.90
 --------------
 + N19/STL: support of 48/50/60 fps content
 + N19/STL: display of time code of first frame
++ AC-3: bit depth
 x PDF: fixed crash with some files with full analysis set
 
 Version 0.7.89, 2016-09-30
