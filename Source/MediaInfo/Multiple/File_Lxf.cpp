@@ -677,8 +677,8 @@ void File_Lxf::Header_Parse()
                     }
                     break;
         case 1 :
-            Get_L8 (TimeStamp,                          "TimeStamp"); Param_Info3(((float64)TimeStamp)/720000, " s", 3); FrameInfo.DTS=FrameInfo.PTS=float64_int64s(((float64)TimeStamp)*1000000/720);
-            Get_L8 (Duration,                           "Duration"); Param_Info3(((float64)Duration)/720000, " s", 3); FrameInfo.DUR=float64_int64s(((float64)Duration)*1000000/720);
+                    Get_L8 (TimeStamp,                          "TimeStamp"); Param_Info3(((float64)TimeStamp)/720000, " s", 3); FrameInfo.DTS=FrameInfo.PTS=float64_int64s(((float64)TimeStamp)*1000000/720);
+                    Get_L8 (Duration,                           "Duration"); Param_Info3(((float64)Duration)/720000, " s", 3); FrameInfo.DUR=float64_int64s(((float64)Duration)*1000000/720);
                     break;
         default:    ;
     }
