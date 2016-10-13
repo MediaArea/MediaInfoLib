@@ -8,6 +8,10 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
+Version 0.7.90
+--------------
++ N19/STL: support of 48/50/60 fps content
+
 Version 0.7.89, 2016-09-30
 --------------
 + QuickTime: support of Panasonic AVC-Intra 50/100/200 without SPS/PPS ("aixx" and "AVin" CodecID)
