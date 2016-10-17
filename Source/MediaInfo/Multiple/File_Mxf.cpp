@@ -5281,6 +5281,8 @@ bool File_Mxf::Header_Begin()
                             DemuxedSampleCount_Current=Config->File_IgnoreEditsAfter-DemuxedSampleCount_Total;
                             Element_Size=DemuxedSampleCount_Current*SingleDescriptor->second.BlockAlign;
                         }
+                        if (DemuxedSampleCount_Total+DemuxedSampleCount_Current+1==IgnoreSamplesAfter)
+                            DemuxedSampleCount_Current++; //Avoid rounding issues (sometimes it remains only 1 sample)
                     }
                 #endif //MEDIAINFO_DEMUX
             }
