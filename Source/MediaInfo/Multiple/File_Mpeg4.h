@@ -482,6 +482,7 @@ private :
             IsPriorityStream=false;
             IsFilled=false;
             IsChapter=false;
+            IsEnabled=false;
             IsExcluded=false;
             HasForcedSamples=false;
             AllForcedSamples=false;
