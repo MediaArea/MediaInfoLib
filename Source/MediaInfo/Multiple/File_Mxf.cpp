@@ -6438,8 +6438,8 @@ void File_Mxf::CDCIEssenceDescriptor()
         default: GenericPictureEssenceDescriptor();
     }
 
-    if (Descriptors[InstanceUID].Infos["ColorSpace"].empty())
-        Descriptors[InstanceUID].Infos["ColorSpace"]="YUV";
+    if (Descriptors[InstanceUID].Infos.find("ColorSpace")==Descriptors[InstanceUID].Infos.end())
+        Descriptor_Fill("ColorSpace", "YUV");
 }
 
 //---------------------------------------------------------------------------
@@ -7135,8 +7135,8 @@ void File_Mxf::RGBAEssenceDescriptor()
         default: GenericPictureEssenceDescriptor();
     }
 
-    if (Descriptors[InstanceUID].Infos["ColorSpace"].empty())
-        Descriptors[InstanceUID].Infos["ColorSpace"]="RGB";
+    if (Descriptors[InstanceUID].Infos.find("ColorSpace")==Descriptors[InstanceUID].Infos.end())
+        Descriptor_Fill("ColorSpace", "RGB");
 }
 
 //---------------------------------------------------------------------------
@@ -8618,11 +8618,7 @@ void File_Mxf::CDCIEssenceDescriptor_ComponentDepth()
     Get_B4 (Data,                                                "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
-        if (!Partitions_IsFooter || Descriptors[InstanceUID].Infos["BitDepth"].empty())
-        {
-            if (Data)
-                Descriptors[InstanceUID].Infos["BitDepth"].From_Number(Data);
-        }
+        Descriptor_Fill("BitDepth", Ztring().From_Number(Data));
     FILLING_END();
 }
 
@@ -8843,7 +8839,7 @@ void File_Mxf::FileDescriptor_SampleRate()
 
     FILLING_BEGIN();
         if (Descriptors[InstanceUID].SampleRate && Descriptors[InstanceUID].Duration!=(int64u)-1)
-            Descriptors[InstanceUID].Infos["Duration"].From_Number(Descriptors[InstanceUID].Duration/Descriptors[InstanceUID].SampleRate*1000, 0);
+            Descriptor_Fill("Duration", Ztring().From_Number(Descriptors[InstanceUID].Duration/Descriptors[InstanceUID].SampleRate*1000, 0));
     FILLING_END();
 }
 
@@ -8879,7 +8875,7 @@ void File_Mxf::FileDescriptor_EssenceContainer()
         int8u Code8=(int8u)((EssenceContainer.lo&0x00000000000000FFLL)    );
 
         Descriptors[InstanceUID].EssenceContainer=EssenceContainer;
-        Descriptors[InstanceUID].Infos["Format_Settings_Wrapping"].From_UTF8(Mxf_EssenceContainer_Mapping(Code6, Code7, Code8));
+        Descriptor_Fill("Format_Settings_Wrapping", Mxf_EssenceContainer_Mapping(Code6, Code7, Code8));
 
         if (!DataMustAlwaysBeComplete && Descriptors[InstanceUID].Infos["Format_Settings_Wrapping"].find(__T("Frame"))!=string::npos)
             DataMustAlwaysBeComplete=true;
@@ -8956,7 +8952,11 @@ void File_Mxf::InterchangeObject_InstanceUID()
                 //Merging
                 Descriptor->second.Infos.insert(Descriptor_Previous->second.Infos.begin(), Descriptor_Previous->second.Infos.end()); //TODO: better implementation
             }
+            for (std::map<std::string, Ztring>::iterator Info = Descriptor->second.Infos.begin(); Info != Descriptor->second.Infos.end(); ++Info) //Note: can not be mapped directly because there are some tests done in Descriptor_Fill
+                Descriptor_Fill(Info->first.c_str(), Info->second);
+            std::map<std::string, Ztring> Infos_Temp=Descriptors[InstanceUID].Infos; //Quick method for copying the whole descriptor without erasing the modifications made by Descriptor_Fill(). TODO: a better method in order to be more generic
             Descriptors[InstanceUID]=Descriptor->second;
+            Descriptors[InstanceUID].Infos=Infos_Temp;
             Descriptors.erase(Descriptor);
         }
         locators::iterator Locator=Locators.find(0);
@@ -9081,9 +9081,9 @@ void File_Mxf::GenericPictureEssenceDescriptor_PictureEssenceCoding()
     FILLING_BEGIN();
         Descriptors[InstanceUID].EssenceCompression=Data;
         Descriptors[InstanceUID].StreamKind=Stream_Video;
-        Descriptors[InstanceUID].Infos["Format"]=Mxf_EssenceCompression(Data);
-        Descriptors[InstanceUID].Infos["Format_Profile"]=Mxf_EssenceCompression_Profile(Data);
-        Descriptors[InstanceUID].Infos["Format_Version"]=Mxf_EssenceCompression_Version(Data);
+        Descriptor_Fill("Format", Mxf_EssenceCompression(Data));
+        Descriptor_Fill("Format_Version", Mxf_EssenceCompression_Version(Data));
+        Descriptor_Fill("Format_Profile", Mxf_EssenceCompression_Profile(Data));
     FILLING_END();
 }
 
@@ -9299,7 +9299,7 @@ void File_Mxf::GenericPictureEssenceDescriptor_AspectRatio()
         if (Data)
         {
             Descriptors[InstanceUID].DisplayAspectRatio=Data;
-            Descriptors[InstanceUID].Infos["DisplayAspectRatio"].From_Number(Data, 3);
+            Descriptor_Fill("DisplayAspectRatio", Ztring().From_Number(Data, 3));
         }
     FILLING_END();
 }
@@ -9321,7 +9321,7 @@ void File_Mxf::GenericPictureEssenceDescriptor_TransferCharacteristic()
     Get_UL(Data,                                                "Data", Mxf_TransferCharacteristic);  Element_Info1(Mxf_TransferCharacteristic(Data));
 
     FILLING_BEGIN();
-        Descriptors[InstanceUID].Infos["transfer_characteristics"]=Mxf_TransferCharacteristic(Data);
+        Descriptor_Fill("transfer_characteristics", Mxf_TransferCharacteristic(Data));
     FILLING_END();
 }
 
@@ -9440,7 +9440,7 @@ void File_Mxf::GenericPictureEssenceDescriptor_CodingEquations()
     Get_UL(Data,                                                "Data", Mxf_CodingEquations);  Element_Info1(Mxf_CodingEquations(Data));
 
     FILLING_BEGIN();
-        Descriptors[InstanceUID].Infos["matrix_coefficients"]=Mxf_CodingEquations(Data);
+        Descriptor_Fill("matrix_coefficients", Mxf_CodingEquations(Data));
     FILLING_END();
 }
 
@@ -9455,7 +9455,7 @@ void File_Mxf::GenericSoundEssenceDescriptor_QuantizationBits()
     FILLING_BEGIN();
         if (Data)
         {
-            Descriptors[InstanceUID].Infos["BitDepth"].From_Number(Data);
+            Descriptor_Fill("BitDepth", Ztring().From_Number(Data));
             Descriptors[InstanceUID].QuantizationBits=Data;
         }
     FILLING_END();
@@ -9478,7 +9478,7 @@ void File_Mxf::GenericSoundEssenceDescriptor_AudioSamplingRate()
     Get_Rational(Data); Element_Info1(Data);
 
     FILLING_BEGIN();
-        Descriptors[InstanceUID].Infos["SamplingRate"].From_Number(Data, 0);
+        Descriptor_Fill("SamplingRate", Ztring().From_Number(Data, 0));
     FILLING_END();
 }
 
@@ -9509,10 +9509,10 @@ void File_Mxf::GenericSoundEssenceDescriptor_SoundEssenceCompression()
     FILLING_BEGIN();
         Descriptors[InstanceUID].EssenceCompression=Data;
         Descriptors[InstanceUID].StreamKind=Stream_Audio;
-        Descriptors[InstanceUID].Infos["Format"]=Mxf_EssenceCompression(Data);
-        Descriptors[InstanceUID].Infos["Format_Version"]=Mxf_EssenceCompression_Version(Data);
+        Descriptor_Fill("Format", Mxf_EssenceCompression(Data));
+        Descriptor_Fill("Format_Version", Mxf_EssenceCompression_Version(Data));
         if ((Data.lo&0xFFFFFFFFFF000000LL)==0x040202017e000000LL)
-            Descriptors[InstanceUID].Infos["Format_Settings_Endianness"]=__T("Big");
+            Descriptor_Fill("Format_Settings_Endianness", "Big");
     FILLING_END();
 }
 
@@ -9526,7 +9526,7 @@ void File_Mxf::GenericSoundEssenceDescriptor_ChannelCount()
 
     FILLING_BEGIN();
         Descriptors[InstanceUID].ChannelCount=Value;
-        Descriptors[InstanceUID].Infos["Channel(s)"].From_Number(Value);
+        Descriptor_Fill("Channel(s)", Ztring().From_Number(Value));
 
         //if (Descriptors[InstanceUID].ChannelAssignment.lo!=(int64u)-1)
         //{
@@ -10119,7 +10119,7 @@ void File_Mxf::RFC5646AudioLanguageCode()
     Get_Local (Length2-(SizeIsPresent?4:0), Value,              "Value"); Element_Info1(Value);
 
     FILLING_BEGIN();
-        Descriptors[InstanceUID].Infos["Language"]=Value;
+        Descriptor_Fill("Language", Value);
     FILLING_END();
 }
 
@@ -10226,7 +10226,7 @@ void File_Mxf::MPEG2VideoDescriptor_ProfileAndLevel()
 
     FILLING_BEGIN();
         if (profile_and_level_indication_profile && profile_and_level_indication_level)
-            Descriptors[InstanceUID].Infos["Format_Profile"]=Ztring().From_Local(Mpegv_profile_and_level_indication_profile[profile_and_level_indication_profile])+__T("@")+Ztring().From_Local(Mpegv_profile_and_level_indication_level[profile_and_level_indication_level]);
+            Descriptor_Fill("Format_Profile", Ztring().From_UTF8(Mpegv_profile_and_level_indication_profile[profile_and_level_indication_profile])+__T("@")+Ztring().From_UTF8(Mpegv_profile_and_level_indication_level[profile_and_level_indication_level]));
     FILLING_END();
 }
 
@@ -10240,7 +10240,7 @@ void File_Mxf::Mpeg4VisualDescriptor_ProfileAndLevel()
 
     FILLING_BEGIN();
         if (profile_and_level_indication)
-            Descriptors[InstanceUID].Infos["Format_Profile"]=Ztring().From_Local(Mpeg4v_Profile_Level(profile_and_level_indication));
+            Descriptor_Fill("Format_Profile", Mpeg4v_Profile_Level(profile_and_level_indication));
     FILLING_END();
 }
 
@@ -10253,7 +10253,7 @@ void File_Mxf::MPEG2VideoDescriptor_BitRate()
     Get_B4 (Data,                                               "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
-        Descriptors[InstanceUID].Infos["BitRate"].From_Number(Data);
+        Descriptor_Fill("BitRate", Ztring().From_Number(Data));
     FILLING_END();
 }
 
@@ -11038,7 +11038,7 @@ void File_Mxf::WaveAudioDescriptor_AvgBps()
     Get_B4 (Data,                                               "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
-        Descriptors[InstanceUID].Infos["BitRate"].From_Number(Data*8);
+        Descriptor_Fill("BitRate", Ztring().From_Number(Data*8));
         Descriptors[InstanceUID].ByteRate=Data;
     FILLING_END();
 }
@@ -16918,6 +16918,28 @@ void File_Mxf::TryToFinish()
     }
 
     Finish();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Descriptor_Fill(const char* Name, const Ztring& Value)
+{
+    descriptor& Descriptor = Descriptors[InstanceUID];
+    std::map<std::string, Ztring>::iterator Info = Descriptor.Infos.find(Name);
+
+    //Ignore value if header partition has aleady a value
+    if (Partitions_IsFooter && InstanceUID != int128u() && Info != Descriptor.Infos.end())
+    {
+        //Test
+        if (Value != Info->second)
+            Descriptor.Infos[string(Name)+"_Footer"] = Value;
+
+        return;
+    }
+
+    if (Info == Descriptor.Infos.end())
+        Descriptor.Infos[Name] = Value;
+    else
+        Info->second = Value;
 }
 
 } //NameSpace

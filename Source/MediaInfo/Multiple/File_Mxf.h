@@ -855,6 +855,7 @@ protected :
     };
     typedef std::map<int128u, descriptor> descriptors; //Key is InstanceUID of Descriptor
     descriptors Descriptors;
+    void Descriptor_Fill(const char* Name, const Ztring& Value);
 
     //Locator
     struct locator

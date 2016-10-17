@@ -10,6 +10,7 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 
 Version 0.7.90
 --------------
++ MXF: detection of some incoherences between header and footer
 + N19/STL: support of 48/50/60 fps content
 + N19/STL: display of time code of first frame
 + AC-3: bit depth
