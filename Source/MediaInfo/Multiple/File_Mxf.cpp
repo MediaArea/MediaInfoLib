@@ -9885,8 +9885,9 @@ void File_Mxf::IndexTableSegment_IndexStartPosition()
                         IndexTables.erase(IndexTables.begin()+Pos);
                     else
                     {
-                        IndexTables.erase(IndexTables.begin()+IndexTables.size()-1);
-                        Element_Offset=Element_Size;
+                        //Removed in order to get all indexes, even the duplicated ones (in order to check duplicated index in the footer)
+                        //IndexTables.erase(IndexTables.begin()+IndexTables.size()-1);
+                        //Element_Offset=Element_Size;
                     }
 
                     return;
