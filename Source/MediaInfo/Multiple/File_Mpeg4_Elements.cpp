@@ -1606,7 +1606,7 @@ void File_Mpeg4::mdat()
     {
         //Next piece of data
         mdat_Pos_Temp=&mdat_Pos[0];
-        IsParsing_mdat=true;
+        IsParsing_mdat_Set();
         mdat_StreamJump();
 
         return; //Only if have something in this mdat

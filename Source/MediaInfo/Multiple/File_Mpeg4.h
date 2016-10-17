@@ -533,6 +533,7 @@ private :
     };
     typedef std::vector<mdat_Pos_Type> mdat_pos;
     static bool mdat_pos_sort (const File_Mpeg4::mdat_Pos_Type &i,const File_Mpeg4::mdat_Pos_Type &j) { return (i.Offset<j.Offset); }
+    void IsParsing_mdat_Set();
     mdat_pos mdat_Pos;
     mdat_Pos_Type* mdat_Pos_Temp;
     mdat_Pos_Type* mdat_Pos_Max;

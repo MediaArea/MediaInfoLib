@@ -1310,7 +1310,7 @@ void File_Mpeg4::Read_Buffer_Unsynched()
         IsParsing_mdat=false;
         return;
     }
-    IsParsing_mdat=true;
+    IsParsing_mdat_Set();
 
     #if MEDIAINFO_SEEK
         //Searching the ID of the first stream to be demuxed
@@ -1627,7 +1627,7 @@ size_t File_Mpeg4::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
                             {
                                 int64u CountOfChunks=(Value-SamplePos)/Stsc->SamplesPerChunk;
                                 size_t stco_Pos=(size_t)(Stsc->FirstChunk-1+CountOfChunks); //-1 because first chunk is number 1
-                                if (stco_Pos>Stream->second.stco.size())
+                                if (stco_Pos>=Stream->second.stco.size())
                                     return 2; //Invalid value
                                 int64u Offset=Stream->second.stco[stco_Pos];
 
@@ -1873,6 +1873,27 @@ struct Mpeg4_muxing
         MaximalOffset=0;
     }
 };
+struct stream_temp
+{
+    size_t stco_Pos; //Chunk Offset
+    size_t stsc_Pos; //Sample to Chunk
+    size_t stsc_SampleNumber;
+    int64u stsc_SampleSizeOffset;
+    size_t stts_Durations_Pos; //Time to Sample
+    int64u stts_Current;
+    size_t stsz_Pos;
+
+    stream_temp()
+    {
+        stco_Pos=0;
+        stsc_Pos=0;
+        stsc_SampleNumber=0;
+        stsc_SampleSizeOffset=0;
+        stts_Durations_Pos=0;
+        stts_Current=0;
+        stsz_Pos=0;
+    }
+};
 bool File_Mpeg4::BookMark_Needed()
 {
     #if MEDIAINFO_HASH
@@ -1952,6 +1973,10 @@ bool File_Mpeg4::BookMark_Needed()
                 #endif // MEDIAINFO_DEMUX
                        continue;
              }
+
+            // TODO: correctly demux timecodes spanned accross the file
+            if (Temp->second.TimeCode && Temp->second.stco.size()>1)
+                Temp->second.stco.resize(1);
 
             if (!Temp->second.stsz.empty() || Temp->second.stsz_Sample_Size)
             {
@@ -2117,6 +2142,130 @@ bool File_Mpeg4::BookMark_Needed()
                     StreamOffset_Jump[Streams[Muxing_2->first].stco[0]]=Streams[Muxing_2->first].stco[stco_Count-1];
                 }
             }
+            else if (!mdat_Pos.empty() && Config->ParseSpeed>=1)
+            {
+                //Trying to see if we must interleave manually
+                int64u stco_Video_First=(int64u)-1;
+                int64u stco_Video_Last=0;
+                int64u stco_Audio_First=(int64u)-1;
+                int64u stco_Audio_Last=0;
+                int64u stco_Audio_Last4=0;
+                std::vector<int32u> Videos;
+                std::vector<int32u> Audios;
+                for (streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); Stream++)
+                {
+                    if (!Stream->second.stco.empty())
+                    {
+                        if (Stream->second.StreamKind==Stream_Video)
+                        {
+                            if (Stream->second.stco[0]<stco_Audio_First)
+                                stco_Video_First=Stream->second.stco[0];
+                            if (Stream->second.stco[Stream->second.stco.size()-1]>stco_Video_Last)
+                                stco_Video_Last=Stream->second.stco[Stream->second.stco.size()-1];
+                            Videos.push_back(Stream->first);
+                        }
+                        if (Stream->second.StreamKind==Stream_Audio)
+                        {
+                            if (Stream->second.stco[0]<stco_Audio_First)
+                                stco_Audio_First=Stream->second.stco[0];
+                            if (Stream->second.stco[Stream->second.stco.size()-1]>stco_Video_Last)
+                                stco_Audio_Last=Stream->second.stco[Stream->second.stco.size()-1];
+                            float32 DurationPerStco=((float32)Stream->second.mdhd_Duration)/Stream->second.mdhd_TimeScale/Stream->second.stco.size();
+                            size_t MaxCountOfStcoPerInterleave=2/DurationPerStco; //2 seconds, arbitrary chosen
+                            if (MaxCountOfStcoPerInterleave<4)
+                                MaxCountOfStcoPerInterleave=4;
+                            if (Stream->second.stco.size()>MaxCountOfStcoPerInterleave && Stream->second.stco[Stream->second.stco.size()-MaxCountOfStcoPerInterleave]>stco_Audio_Last4)
+                                stco_Audio_Last4=Stream->second.stco[Stream->second.stco.size()-MaxCountOfStcoPerInterleave];
+                            Audios.push_back(Stream->first);
+                        }
+                    }
+                }
+
+                if (stco_Video_Last!=(int64u)-1 && stco_Audio_Last!=0 && (stco_Video_Last<stco_Audio_First || stco_Video_Last<stco_Audio_Last4) && !Videos.empty() && !Audios.empty())
+                {
+                    //We need to interleave
+                    std::map<int32u, stream_temp> StreamsTemp;
+
+                    int64u CurrentPos=mdat_Pos.begin()->Offset;
+                    for (;;)
+                    {
+                        bool IsInterleaving=false;
+                        for (std::vector<int32u>::iterator Temp=Audios.begin(); Temp!=Audios.end(); Temp++)
+                        {
+                            if (StreamsTemp[*Temp].stco_Pos<Streams[*Temp].stco.size() && ((float64)StreamsTemp[*Temp].stts_Current)/Streams[*Temp].mdhd_TimeScale<=((float64)StreamsTemp[Videos[0]].stts_Current+Streams[Videos[0]].stts_Durations[StreamsTemp[Videos[0]].stts_Durations_Pos].SampleDuration)/Streams[Videos[0]].mdhd_TimeScale)
+                            {
+                                int64u NextPos=Streams[*Temp].stco[StreamsTemp[*Temp].stco_Pos];
+                                if (CurrentPos!=NextPos)
+                                {
+                                    StreamOffset_Jump[CurrentPos]=NextPos;
+                                    CurrentPos=NextPos;
+                                }
+                                for (size_t Pos=0; Pos<mdat_Pos.size(); ++Pos)
+                                    if (mdat_Pos[Pos].Offset==CurrentPos)
+                                    {
+                                        ++Pos;
+                                        if (Pos<mdat_Pos.size())
+                                            CurrentPos=mdat_Pos[Pos].Offset;
+                                        else
+                                            CurrentPos=File_Size;
+                                        break;
+                                    }
+                                ++StreamsTemp[*Temp].stco_Pos;
+                                StreamsTemp[*Temp].stts_Current+=Streams[*Temp].stts_Durations[StreamsTemp[*Temp].stts_Durations_Pos].SampleDuration;
+                                IsInterleaving=true;
+                            }
+                        }
+                        for (std::vector<int32u>::iterator Temp=Videos.begin(); Temp!=Videos.end(); Temp++)
+                        {
+                            if (StreamsTemp[*Temp].stco_Pos<Streams[*Temp].stco.size())
+                            {
+                                int64u NextPos=Streams[*Temp].stco[StreamsTemp[*Temp].stco_Pos]+StreamsTemp[*Temp].stsc_SampleSizeOffset;
+                                if (CurrentPos!=NextPos)
+                                {
+                                    StreamOffset_Jump[CurrentPos]=NextPos;
+                                    CurrentPos=NextPos;
+                                }
+                                for (size_t Pos=0; Pos<mdat_Pos.size(); ++Pos)
+                                    if (mdat_Pos[Pos].Offset==CurrentPos)
+                                    {
+                                        ++Pos;
+                                        if (Pos<mdat_Pos.size())
+                                            CurrentPos=mdat_Pos[Pos].Offset;
+                                        else
+                                            CurrentPos=File_Size;
+                                        break;
+                                    }
+                                ++StreamsTemp[*Temp].stsc_SampleNumber;
+                                if (Streams[*Temp].stsz.empty())
+                                    StreamsTemp[*Temp].stsc_SampleSizeOffset+=Streams[*Temp].stsz_Sample_Size;
+                                else
+                                {
+                                    StreamsTemp[*Temp].stsc_SampleSizeOffset+=Streams[*Temp].stsz[StreamsTemp[*Temp].stsz_Pos];
+                                    ++StreamsTemp[*Temp].stsz_Pos;
+                                }
+                                if (StreamsTemp[*Temp].stsc_SampleNumber>=Streams[*Temp].stsc[StreamsTemp[*Temp].stsc_Pos].SamplesPerChunk)
+                                {
+                                    StreamsTemp[*Temp].stsc_SampleNumber=0;
+                                    StreamsTemp[*Temp].stsc_SampleSizeOffset=0;
+                                    ++StreamsTemp[*Temp].stco_Pos;
+                                    if (StreamsTemp[*Temp].stsc_Pos+1<Streams[*Temp].stsc.size() && StreamsTemp[*Temp].stco_Pos+1>=Streams[*Temp].stsc[StreamsTemp[*Temp].stsc_Pos+1].FirstChunk)
+                                        StreamsTemp[*Temp].stsc_Pos++;
+                                }
+                                StreamsTemp[*Temp].stts_Current+=Streams[*Temp].stts_Durations[StreamsTemp[*Temp].stts_Durations_Pos].SampleDuration;
+                                IsInterleaving=true;
+                            }
+                        }
+
+                        if (!IsInterleaving)
+                        {
+                            //The last one, in order not to loop
+                            StreamOffset_Jump[CurrentPos]=File_Size;
+
+                            break;
+                        }
+                    }
+                }
+            }
         #endif //MEDIAINFO_DEMUX
     }
     if (mdat_Pos.empty())
@@ -2141,7 +2290,7 @@ bool File_Mpeg4::BookMark_Needed()
 
                 mdat_Pos_Temp=Temp;
                 GoTo(Temp->Offset);
-                IsParsing_mdat=true;
+                IsParsing_mdat_Set();
             }
         }
         mdat_Pos_ToParseInPriority_StreamIDs.erase(mdat_Pos_ToParseInPriority_StreamIDs.begin());
@@ -2153,9 +2302,29 @@ bool File_Mpeg4::BookMark_Needed()
         while (Element_Level>0)
             Element_End0();
         Element_Begin1("Second pass");
-        Element_ThisIsAList();
 
         mdat_Pos_Temp=&mdat_Pos[0];
+        int64u ToJump=mdat_Pos_Temp->Offset;
+        #if MEDIAINFO_DEMUX
+            if (Config->ParseSpeed==1)
+            {
+                std::map<int64u, int64u>::iterator StreamOffset_Jump_Temp=StreamOffset_Jump.find(ToJump);
+                if (StreamOffset_Jump_Temp!=StreamOffset_Jump.end())
+                {
+                    ToJump=StreamOffset_Jump_Temp->second;
+                    while (mdat_Pos_Temp<mdat_Pos_Max && mdat_Pos_Temp->Offset!=ToJump)
+                        mdat_Pos_Temp++;
+
+                    #if MEDIAINFO_HASH
+                        if (Config->File_Hash_Get().to_ulong())
+                        {
+                            // Hash can not be computed with jumps.
+                            delete Hash; Hash=NULL;
+                        }
+                    #endif MEDIAINFO_HASH
+                }
+            }
+        #endif // MEDIAINFO_DEMUX
         #if MEDIAINFO_HASH
             if (Config->File_Hash_Get().to_ulong())
             {
@@ -2164,8 +2333,8 @@ bool File_Mpeg4::BookMark_Needed()
             }
             else
         #endif //MEDIAINFO_HASH
-                GoTo(mdat_Pos_Temp->Offset);
-        IsParsing_mdat=true;
+                GoTo(ToJump);
+        IsParsing_mdat_Set();
         mdat_Pos_NormalParsing=true;
     }
 
@@ -2415,6 +2584,12 @@ void File_Mpeg4::TimeCode_Associate(int32u TrackID)
             //Fill(Strea->second.StreamKind, Strea->second.StreamPos, "TimeCode_Source", Streams[TrackID].Parsers[0]->Get(Stream_General, 0, "TimeCode_Source"));
         }
  }
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::IsParsing_mdat_Set()
+{
+    IsParsing_mdat=true;
+}
 
 //***************************************************************************
 // C++
