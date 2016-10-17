@@ -3567,6 +3567,16 @@ void File_Mpeg4::moov_trak_mdia_minf_hmhd()
     Skip_B4(                                                    "maxbitrate");
     Skip_B4(                                                    "avgbitrate");
     Skip_B4(                                                    "reserved");
+
+    FILLING_BEGIN();
+        if (StreamKind_Last==Stream_Max) //Note: some files have both vmhd and hmhd, I don't know the meaning of such header, so skipping hmhd for the moment
+        {
+            Stream_Prepare(Stream_Other);
+            Fill(Stream_Other, StreamPos_Last, Other_Type, "Hint");
+            Streams[moov_trak_tkhd_TrackID].StreamKind=Stream_Other;
+            Streams[moov_trak_tkhd_TrackID].StreamPos=StreamPos_Last;
+        }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
