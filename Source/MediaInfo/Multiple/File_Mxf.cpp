@@ -9468,7 +9468,12 @@ void File_Mxf::GenericSoundEssenceDescriptor_QuantizationBits()
 void File_Mxf::GenericSoundEssenceDescriptor_Locked()
 {
     //Parsing
-    Info_B1(Data,                                               "Data"); Element_Info1(Data?"Yes":"No");
+    int8u Data;
+    Get_B1 (Data,                                               "Data"); Element_Info1(Data?"Yes":"No");
+
+    FILLING_BEGIN();
+        Descriptor_Fill("Locked", Data?"Yes":"No");
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
