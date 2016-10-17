@@ -337,7 +337,7 @@ namespace Elements
     UUID(060E2B34, 02050101, 0D010201, 01040400, 0000, "SMPTE ST 377-1", ClosedCompleteFooterPartition, "")
     UUID(060E2B34, 02050101, 0D010201, 01050100, 0000, "SMPTE ST 377-1", Primer, "")
     UUID(060E2B34, 02530101, 0D010201, 01100100, 0000, "SMPTE ST 377-1", IndexTableSegment, "")
-    UUID(060E2B34, 02050101, 0D010201, 01110100, 0000, "SMPTE ST 377-1", RandomIndexMetadata, "")
+    UUID(060E2B34, 02050101, 0D010201, 01110100, 0000, "SMPTE ST 377-1", RandomIndexPack, "")
 
     //                           03 - ?
     //                             01 - ?
@@ -2192,7 +2192,7 @@ File_Mxf::File_Mxf()
     #endif //MEDIAINFO_DEMUX
 
     //Temp
-    RandomIndexMetadatas_AlreadyParsed=false;
+    RandomIndexPacks_AlreadyParsed=false;
     Streams_Count=(size_t)-1;
     OperationalPattern=0;
     Buffer_Begin=(int64u)-1;
@@ -2212,7 +2212,7 @@ File_Mxf::File_Mxf()
     IdIsAlwaysSame_Offset=0;
     PartitionMetadata_PreviousPartition=(int64u)-1;
     PartitionMetadata_FooterPartition=(int64u)-1;
-    RandomIndexMetadatas_MaxOffset=(int64u)-1;
+    RandomIndexPacks_MaxOffset=(int64u)-1;
     DTS_Delay=0;
     SDTI_TimeCode_RepetitionCount=0;
     SDTI_SizePerFrame=0;
@@ -3006,7 +3006,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
 
         //Positioning other streams
         for (essences::iterator Essence_Temp=Essence; Essence_Temp!=Essences.end(); ++Essence_Temp)
-            if (*(Essence_Temp->second.Parsers.begin()) && (*(Essence_Temp->second.Parsers.begin()))->Count_Get(Stream_Audio))
+            if (!Essence_Temp->second.Parsers.empty() && Essence_Temp->second.Parsers[0]->Count_Get(Stream_Audio))
             {
                 Essence_Temp->second.StreamPos-=2; //ChannelGrouping
                 Essence_Temp->second.StreamPos+=(*(Essence_Temp->second.Parsers.begin()))->Count_Get(Stream_Audio);
@@ -4473,7 +4473,7 @@ void File_Mxf::Read_Buffer_AfterParsing()
 
         if (IsParsingEnd)
         {
-            if (PartitionMetadata_PreviousPartition && RandomIndexMetadatas.empty() && !RandomIndexMetadatas_AlreadyParsed)
+            if (PartitionMetadata_PreviousPartition && RandomIndexPacks.empty() && !RandomIndexPacks_AlreadyParsed)
             {
                 Partitions_Pos=0;
                 while (Partitions_Pos<Partitions.size() && Partitions[Partitions_Pos].StreamOffset!=PartitionMetadata_PreviousPartition)
@@ -5745,7 +5745,7 @@ void File_Mxf::Data_Parse()
     ELEMENT(ClosedCompleteFooterPartition,                      "Closed and Complete Footer Partition Pack")
     ELEMENT(Primer,                                             "Primer")
     ELEMENT(IndexTableSegment,                                  "Index Table (Segment)")
-    ELEMENT(RandomIndexMetadata,                                "Random Index Metadata")
+    ELEMENT(RandomIndexPack,                                "Random Index Metadata")
     ELEMENT(SDTI_SystemMetadataPack,                            "SDTI System Metadata Pack")
     else if (Code_Compare1==Elements::SDTI_SystemMetadataPack1
           && ((Code_Compare2)&0xFF00FFFF)==(Elements::SDTI_SystemMetadataPack2&0xFF00FFFF)
@@ -5845,7 +5845,7 @@ void File_Mxf::Data_Parse()
 
         if (IsParsingEnd)
         {
-            NextRandomIndexMetadata();
+            NextRandomIndexPack();
             return;
         }
 
@@ -6358,8 +6358,8 @@ void File_Mxf::Data_Parse()
         Open_Buffer_Unsynch();
     }
 
-    if (File_Offset+Buffer_Offset+Element_Size>=RandomIndexMetadatas_MaxOffset)
-        NextRandomIndexMetadata();
+    if (File_Offset+Buffer_Offset+Element_Size>=RandomIndexPacks_MaxOffset)
+        NextRandomIndexPack();
 }
 
 //***************************************************************************
@@ -7140,9 +7140,9 @@ void File_Mxf::RGBAEssenceDescriptor()
 }
 
 //---------------------------------------------------------------------------
-void File_Mxf::RandomIndexMetadata()
+void File_Mxf::RandomIndexPack()
 {
-    if (RandomIndexMetadatas_AlreadyParsed)
+    if (RandomIndexPacks_AlreadyParsed)
     {
         Skip_XX(Element_Size,                                   "(Already parsed)");
         return;
@@ -7152,35 +7152,35 @@ void File_Mxf::RandomIndexMetadata()
     while (Element_Offset+4<Element_Size)
     {
         Element_Begin1("PartitionArray");
-        randomindexmetadata RandomIndexMetadata;
-        Get_B4 (RandomIndexMetadata.BodySID,                    "BodySID"); Element_Info1(RandomIndexMetadata.BodySID);
-        Get_B8 (RandomIndexMetadata.ByteOffset,                 "ByteOffset"); Element_Info1(Ztring::ToZtring(RandomIndexMetadata.ByteOffset, 16));
+        randomindexpack RandomIndexPack;
+        Get_B4 (RandomIndexPack.BodySID,                        "BodySID"); Element_Info1(RandomIndexPack.BodySID);
+        Get_B8 (RandomIndexPack.ByteOffset,                     "ByteOffset"); Element_Info1(Ztring::ToZtring(RandomIndexPack.ByteOffset, 16));
         Element_End0();
 
         FILLING_BEGIN();
-            if (!RandomIndexMetadatas_AlreadyParsed && PartitionPack_AlreadyParsed.find(RandomIndexMetadata.ByteOffset)==PartitionPack_AlreadyParsed.end())
-                RandomIndexMetadatas.push_back(RandomIndexMetadata);
+            if (!RandomIndexPacks_AlreadyParsed && PartitionPack_AlreadyParsed.find(RandomIndexPack.ByteOffset)==PartitionPack_AlreadyParsed.end())
+                RandomIndexPacks.push_back(RandomIndexPack);
         FILLING_END();
     }
     Skip_B4(                                                    "Length");
 
     FILLING_BEGIN();
-        if (MediaInfoLib::Config.ParseSpeed_Get()<1.0 && !RandomIndexMetadatas_AlreadyParsed && !RandomIndexMetadatas.empty() && Config->File_Mxf_ParseIndex_Get())
+        if (MediaInfoLib::Config.ParseSpeed_Get()<1.0 && !RandomIndexPacks_AlreadyParsed && !RandomIndexPacks.empty() && Config->File_Mxf_ParseIndex_Get())
         {
             IsParsingEnd=true;
-            GoTo(RandomIndexMetadatas[0].ByteOffset);
-            RandomIndexMetadatas.erase(RandomIndexMetadatas.begin());
+            GoTo(RandomIndexPacks[0].ByteOffset);
+            RandomIndexPacks.erase(RandomIndexPacks.begin());
             Open_Buffer_Unsynch();
 
             //Hints
             if (File_Buffer_Size_Hint_Pointer)
                 (*File_Buffer_Size_Hint_Pointer)=64*1024;
         }
-        else if (!RandomIndexMetadatas_AlreadyParsed && !Partitions_IsFooter && !RandomIndexMetadatas.empty() && (!RandomIndexMetadatas[RandomIndexMetadatas.size()-1].BodySID || File_Offset+Buffer_Offset-Header_Size-RandomIndexMetadatas[RandomIndexMetadatas.size()-1].ByteOffset<16*1024*1024)) // If footer was not parsed but is available
+        else if (!RandomIndexPacks_AlreadyParsed && !Partitions_IsFooter && !RandomIndexPacks.empty() && (!RandomIndexPacks[RandomIndexPacks.size()-1].BodySID || File_Offset+Buffer_Offset-Header_Size-RandomIndexPacks[RandomIndexPacks.size()-1].ByteOffset<16*1024*1024)) // If footer was not parsed but is available
         {
-            GoTo(RandomIndexMetadatas[RandomIndexMetadatas.size()-1].ByteOffset);
+            GoTo(RandomIndexPacks[RandomIndexPacks.size()-1].ByteOffset);
         }
-        RandomIndexMetadatas_AlreadyParsed=true;
+        RandomIndexPacks_AlreadyParsed=true;
     FILLING_END();
 }
 
@@ -10388,7 +10388,7 @@ void File_Mxf::PartitionMetadata()
         if (IsParsingEnd)
         {
             //Parsing only index
-            RandomIndexMetadatas_MaxOffset=File_Offset+Buffer_Offset+Element_Size+HeaderByteCount+IndexByteCount;
+            RandomIndexPacks_MaxOffset=File_Offset+Buffer_Offset+Element_Size+HeaderByteCount+IndexByteCount;
 
             //Hints
             if (File_Buffer_Size_Hint_Pointer && Buffer_Offset+Element_Size+HeaderByteCount+IndexByteCount>=Buffer_Size)
@@ -16870,13 +16870,13 @@ void File_Mxf::Locators_Test()
 #endif //defined(MEDIAINFO_REFERENCES_YES)
 
 //---------------------------------------------------------------------------
-void File_Mxf::NextRandomIndexMetadata()
+void File_Mxf::NextRandomIndexPack()
 {
     //We have the necessary for indexes, jumping to next index
     Skip_XX(Element_Size-Element_Offset,                        "Data");
-    if (RandomIndexMetadatas.empty())
+    if (RandomIndexPacks.empty())
     {
-        if (!RandomIndexMetadatas_AlreadyParsed)
+        if (!RandomIndexPacks_AlreadyParsed)
         {
             Partitions_Pos=0;
             while (Partitions_Pos<Partitions.size() && Partitions[Partitions_Pos].StreamOffset!=PartitionMetadata_PreviousPartition)
@@ -16894,12 +16894,12 @@ void File_Mxf::NextRandomIndexMetadata()
     }
     else
     {
-        GoTo(RandomIndexMetadatas[0].ByteOffset);
-        RandomIndexMetadatas.erase(RandomIndexMetadatas.begin());
+        GoTo(RandomIndexPacks[0].ByteOffset);
+        RandomIndexPacks.erase(RandomIndexPacks.begin());
         Open_Buffer_Unsynch();
     }
 
-    RandomIndexMetadatas_MaxOffset=(int64u)-1;
+    RandomIndexPacks_MaxOffset=(int64u)-1;
 }
 
 //---------------------------------------------------------------------------

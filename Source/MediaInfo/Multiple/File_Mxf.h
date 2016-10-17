@@ -192,7 +192,7 @@ protected :
     void ClosedCompleteFooterPartition();
     void Primer();
     void IndexTableSegment();
-    void RandomIndexMetadata();
+    void RandomIndexPack();
     void SDTI_SystemMetadataPack();
     void SDTI_PackageMetadataSet();
     void SDTI_PictureMetadataSet();
@@ -569,13 +569,13 @@ protected :
     };
 
     // Temp
-    struct randomindexmetadata
+    struct randomindexpack
     {
         int64u ByteOffset;
         int32u BodySID;
     };
-    std::vector<randomindexmetadata> RandomIndexMetadatas;
-    bool                             RandomIndexMetadatas_AlreadyParsed;
+    std::vector<randomindexpack>     RandomIndexPacks;
+    bool                             RandomIndexPacks_AlreadyParsed;
     std::set<int64u>                 PartitionPack_AlreadyParsed;
     size_t Streams_Count;
     int128u Code;
@@ -1106,14 +1106,14 @@ protected :
         inline void Locators_CleanUp() {}
         inline void Locators_Test() {}
     #endif //defined(MEDIAINFO_REFERENCES_YES)
-    void NextRandomIndexMetadata();
+    void NextRandomIndexPack();
     void TryToFinish();
 
     //Temp
     int128u EssenceContainer_FromPartitionMetadata;
     int64u PartitionMetadata_PreviousPartition;
     int64u PartitionMetadata_FooterPartition;
-    int64u RandomIndexMetadatas_MaxOffset;
+    int64u RandomIndexPacks_MaxOffset;
     mxftimecode MxfTimeCodeForDelay;
     mxftimecode MxfTimeCodeMaterial;
     float64 DTS_Delay; //In seconds
