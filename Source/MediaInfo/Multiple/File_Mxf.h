@@ -82,9 +82,9 @@ protected :
     void Streams_Finish_Essence_FillID (int32u EssenceUID, int128u TrackUID);
     void Streams_Finish_Descriptor (const int128u DescriptorUID, const int128u PackageUID);
     void Streams_Finish_Locator (const int128u DescriptorUID, const int128u LocatorUID);
-    void Streams_Finish_Component (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64u Origin);
-    void Streams_Finish_Component_ForTimeCode (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64u Origin, bool IsSourcePackage);
-    void Streams_Finish_Component_ForAS11 (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64u Origin);
+    void Streams_Finish_Component (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin);
+    void Streams_Finish_Component_ForTimeCode (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin, bool IsSourcePackage);
+    void Streams_Finish_Component_ForAS11 (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin);
     void Streams_Finish_Identification (const int128u IdentificationUID);
     void Streams_Finish_CommercialNames ();
 
@@ -668,7 +668,7 @@ protected :
         int32u TrackNumber;
         float64 EditRate_Real; //Before demux adaptation
         float64 EditRate;
-        int64u  Origin;
+        int64s  Origin;
         bool   Stream_Finish_Done;
 
         track()

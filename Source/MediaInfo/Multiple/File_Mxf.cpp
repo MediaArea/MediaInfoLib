@@ -3818,7 +3818,7 @@ void File_Mxf::Streams_Finish_CommercialNames ()
 }
 
 //---------------------------------------------------------------------------
-void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64u Origin)
+void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin)
 {
     components::iterator Component=Components.find(ComponentUID);
     if (Component==Components.end())
@@ -3881,7 +3881,7 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
 }
 
 //---------------------------------------------------------------------------
-void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64u Origin, bool IsSourcePackage)
+void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin, bool IsSourcePackage)
 {
     components::iterator Component=Components.find(ComponentUID);
     if (Component==Components.end())
@@ -3945,7 +3945,7 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
 }
 
 //---------------------------------------------------------------------------
-void File_Mxf::Streams_Finish_Component_ForAS11(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64u Origin)
+void File_Mxf::Streams_Finish_Component_ForAS11(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin)
 {
     components::iterator Component=Components.find(ComponentUID);
     if (Component==Components.end())
@@ -11022,11 +11022,10 @@ void File_Mxf::Track_Origin()
 {
     //Parsing
     int64u Data;
-    Get_B8 (Data,                                                "Data"); Element_Info1(Data);
+    Get_B8 (Data,                                                "Data"); Element_Info1(Data); //Note: Origin is signed but there is no signed Get_* in MediaInfo
 
     FILLING_BEGIN();
-        if (Data!=(int64u)-1)
-            Tracks[InstanceUID].Origin=Data;
+        Tracks[InstanceUID].Origin=(int64s)Data; //Origin is signed
     FILLING_END();
 }
 
