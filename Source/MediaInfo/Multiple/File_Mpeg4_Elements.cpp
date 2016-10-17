@@ -1894,30 +1894,32 @@ void File_Mpeg4::mdat_xxxx()
 //---------------------------------------------------------------------------
 void File_Mpeg4::mdat_StreamJump()
 {
+    #if MEDIAINFO_DEMUX
+        if (Config->ParseSpeed==1 && !mdat_Pos.empty())
+        {
+            int64u ToJump=File_Offset+Buffer_Offset+Element_Size;
+            if (mdat_Pos_Temp!=mdat_Pos_Max)
+                ToJump=mdat_Pos_Temp->Offset;
+            std::map<int64u, int64u>::iterator StreamOffset_Jump_Temp=StreamOffset_Jump.find(ToJump);
+            if (StreamOffset_Jump_Temp!=StreamOffset_Jump.end())
+            {
+                ToJump=StreamOffset_Jump_Temp->second;
+                if (!mdat_Pos.empty())
+                {
+                    mdat_Pos_Temp=&mdat_Pos[0];
+                    while (mdat_Pos_Temp<mdat_Pos_Max && mdat_Pos_Temp->Offset!=ToJump)
+                        mdat_Pos_Temp++;
+                }
+                else
+                    mdat_Pos_Temp=NULL;
+            }
+        }
+    #endif // MEDIAINFO_DEMUX
+
     //Finding right file offset
     int64u ToJump=File_Size;
     if (!mdat_Pos.empty() && mdat_Pos_Temp!=mdat_Pos_Max)
-    {
         ToJump=mdat_Pos_Temp->Offset;
-        #if MEDIAINFO_DEMUX
-            if (Config->ParseSpeed==1)
-            {
-                std::map<int64u, int64u>::iterator StreamOffset_Jump_Temp=StreamOffset_Jump.find(ToJump);
-                if (StreamOffset_Jump_Temp!=StreamOffset_Jump.end())
-                {
-                    ToJump=StreamOffset_Jump_Temp->second;
-                    if (!mdat_Pos.empty())
-                    {
-                        mdat_Pos_Temp=&mdat_Pos[0];
-                        while (mdat_Pos_Temp<mdat_Pos_Max && mdat_Pos_Temp->Offset!=ToJump)
-                            mdat_Pos_Temp++;
-                    }
-                    else
-                        mdat_Pos_Temp=NULL;
-                }
-            }
-        #endif // MEDIAINFO_DEMUX
-    }
     if (ToJump>File_Size)
         ToJump=File_Size;
     if (ToJump!=File_Offset+Buffer_Offset+Element_Size)
