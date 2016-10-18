@@ -29,8 +29,5 @@ package() {
     install -dm 755 $pkgdir/usr/include/$i
     install -m 644 $srcdir/MediaInfoLib/Source/$i/*.h $pkgdir/usr/include/$i
   done
-  install -dm 755 $pkgdir/usr/lib/pkgconfig
-  install -m 644 $srcdir/MediaInfoLib/Project/GNU/Library/libmediainfo.pc $pkgdir/usr/lib/pkgconfig
-  sed -i -e 's|Version: |Version: '$pkgver'|g' $pkgdir/usr/lib/pkgconfig/libmediainfo.pc
 }
 
