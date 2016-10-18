@@ -1471,6 +1471,8 @@ MediaInfo_Internal* File__ReferenceFilesHelper::MI_Create()
 {
     //Configuration
     MediaInfo_Internal* MI_Temp=new MediaInfo_Internal();
+    for (std::map<string, Ztring>::iterator Config_Item=Sequences[Sequences_Current]->Config.begin(); Config_Item!=Sequences[Sequences_Current]->Config.end(); ++Config_Item)
+        MI_Temp->Option(Ztring().From_UTF8(Config_Item->first.c_str()), Config_Item->second);
     MI_Temp->Option(__T("File_IsReferenced"), __T("1"));
     MI_Temp->Option(__T("File_FileNameFormat"), __T("CSV"));
     MI_Temp->Option(__T("File_KeepInfo"), __T("1"));

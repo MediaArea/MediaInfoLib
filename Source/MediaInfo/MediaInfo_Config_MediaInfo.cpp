@@ -433,6 +433,15 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
             return __T("File_DefaultFrameRate is disabled due to compilation options");
         #endif //MEDIAINFO_ADVANCED
     }
+    else if (Option_Lower==__T("file_defaulttimecode"))
+    {
+        #if MEDIAINFO_ADVANCED
+            File_DefaultTimeCode_Set(Ztring(Value).To_UTF8());
+            return Ztring();
+        #else //MEDIAINFO_ADVANCED
+            return __T("File_DefaultTimeCode is disabled due to compilation options");
+        #endif //MEDIAINFO_ADVANCED
+    }
     else if (Option_Lower==__T("file_source_list"))
     {
         #if MEDIAINFO_ADVANCED
@@ -1433,6 +1442,21 @@ float64 MediaInfo_Config_MediaInfo::File_DefaultFrameRate_Get ()
 {
     CriticalSectionLocker CSL(CS);
     return File_DefaultFrameRate;
+}
+#endif //MEDIAINFO_ADVANCED
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_ADVANCED
+void MediaInfo_Config_MediaInfo::File_DefaultTimeCode_Set(string NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    File_DefaultTimeCode = NewValue;
+}
+
+string MediaInfo_Config_MediaInfo::File_DefaultTimeCode_Get()
+{
+    CriticalSectionLocker CSL(CS);
+    return File_DefaultTimeCode;
 }
 #endif //MEDIAINFO_ADVANCED
 

@@ -43,6 +43,7 @@ public:
     size_t                          MenuPos;
     bool                            Enabled;
     bool                            IsMain;
+    std::map<std::string, Ztring>   Config;
     std::map<std::string, Ztring>   Infos;
     void                            FrameRate_Set(float64 NewFrameRate);
 

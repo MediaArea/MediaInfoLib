@@ -41,6 +41,7 @@
     #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
 #endif //MEDIAINFO_REFERENCES_YES
 #include "MediaInfo/Multiple/File_Mpeg4_TimeCode.h"
+#include "MediaInfo/TimeCode.h"
 #include "ZenLib/Format/Http/Http_Utils.h"
 #include <algorithm>    // std::sort
 //---------------------------------------------------------------------------
@@ -2590,6 +2591,109 @@ void File_Mpeg4::TimeCode_Associate(int32u TrackID)
 void File_Mpeg4::IsParsing_mdat_Set()
 {
     IsParsing_mdat=true;
+
+    //Checking if we need a fake time code track
+    string TimeCode_String = Config->File_DefaultTimeCode_Get();
+    if (TimeCode_String.size()==11
+     &&  TimeCode_String[ 0] >= '0' && TimeCode_String[ 0] <= '9'
+     &&  TimeCode_String[ 1] >= '0' && TimeCode_String[ 1] <= '9'
+     &&  TimeCode_String[ 2] == ':'
+     &&  TimeCode_String[ 3] >= '0' && TimeCode_String[ 3] <= '9'
+     &&  TimeCode_String[ 4] >= '0' && TimeCode_String[ 4] <= '9'
+     &&  TimeCode_String[ 5] >= ':'
+     &&  TimeCode_String[ 6] >= '0' && TimeCode_String[ 6] <= '9'
+     &&  TimeCode_String[ 7] >= '0' && TimeCode_String[ 7] <= '9'
+     && (TimeCode_String[ 8] >= ':' || TimeCode_String[ 8] == ';')
+     &&  TimeCode_String[ 9] >= '0' && TimeCode_String[ 9] <= '9'
+     &&  TimeCode_String[10] >= '0' && TimeCode_String[10] <= '9' )
+    {
+        bool TimeCode_IsPresent = false;
+        int32u TimeCode_ID = 0;
+        for (std::map<int32u, stream>::iterator StreamTemp = Streams.begin(); StreamTemp != Streams.end(); ++StreamTemp)
+        {
+            if (StreamTemp->second.TimeCode)
+                TimeCode_IsPresent = true;
+            else if (StreamTemp->first >= TimeCode_ID)
+                TimeCode_ID = StreamTemp->first + 1;
+        }
+
+        if (!TimeCode_IsPresent && TimeCode_ID)
+        {
+            stream::timecode *tc = new stream::timecode();
+            tc->DropFrame = false;
+            tc->H24 = false;
+            tc->NegativeTimes = false;
+            for (std::map<int32u, stream>::iterator StreamTemp = Streams.begin(); StreamTemp != Streams.end(); ++StreamTemp)
+                if (StreamTemp->second.StreamKind = Stream_Video)
+                {
+                    tc->TimeScale = StreamTemp->second.mdhd_TimeScale;
+                    tc->FrameDuration = StreamTemp->second.stts_Min;
+                    tc->NumberOfFrames = (int8u)float64_int64s(((float64)StreamTemp->second.mdhd_TimeScale) / StreamTemp->second.stts_Min);
+                    break;
+                }
+
+            Stream_Prepare(Stream_Other);
+            Fill(Stream_Other, StreamPos_Last, Other_Type, "Time code");
+            Fill(Stream_Other, StreamPos_Last, Other_Format, "QuickTime TC");
+            Fill(Stream_Other, StreamPos_Last, Other_Title, "Fake");
+            Streams[TimeCode_ID].StreamKind = Stream_Other;
+            Streams[TimeCode_ID].StreamPos = StreamPos_Last;
+
+            //Filling
+            Streams[TimeCode_ID].TimeCode = tc;
+
+            //Preparing TimeCode parser
+            File_Mpeg4_TimeCode* Parser = new File_Mpeg4_TimeCode;
+            Open_Buffer_Init(Parser);
+
+            ((File_Mpeg4_TimeCode*)Parser)->NumberOfFrames = tc->NumberOfFrames;
+            ((File_Mpeg4_TimeCode*)Parser)->DropFrame = tc->DropFrame;
+            ((File_Mpeg4_TimeCode*)Parser)->NegativeTimes = tc->NegativeTimes;
+
+            int32u TimeCode_Value = TimeCode((TimeCode_String[ 0]-'0') * 10 + (TimeCode_String[ 1]-'0'),
+                                             (TimeCode_String[ 3]-'0') * 10 + (TimeCode_String[ 4]-'0'),
+                                             (TimeCode_String[ 6]-'0') * 10 + (TimeCode_String[ 7]-'0'),
+                                             (TimeCode_String[ 9]-'0') * 10 + (TimeCode_String[10]-'0'),
+                                             tc->NumberOfFrames,
+                                              TimeCode_String[ 8]==';').ToFrames();
+
+            
+            int8u Buffer[4];
+            int32u2BigEndian(Buffer, TimeCode_Value);
+            Open_Buffer_Continue(Parser, Buffer, 4);
+            Open_Buffer_Finalize(Parser);
+            Merge(*Parser, Stream_Other, StreamPos_Last, 0);
+
+            Streams[TimeCode_ID].Parsers.push_back(Parser);
+            for (std::map<int32u, stream>::iterator Strea=Streams.begin(); Strea!=Streams.end(); ++Strea)
+                Strea->second.TimeCode_TrackID=TimeCode_ID; //For all tracks actually
+
+            TimeCodeTrack_Check(Streams[TimeCode_ID], 0, TimeCode_ID);
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::TimeCodeTrack_Check(stream &Stream_Temp, size_t Pos, int32u StreamID)
+{
+    if (Stream_Temp.TimeCode) //If this is a TimeCode track
+    {
+        if (((File_Mpeg4_TimeCode*)Stream_Temp.Parsers[Pos])->Pos!=(int32u)-1)
+        {
+            for (std::map<int32u, stream>::iterator StreamTemp=Streams.begin(); StreamTemp!=Streams.end(); ++StreamTemp)
+                if (StreamTemp->second.TimeCode_TrackID==StreamID)
+                {
+                    TimeCode_FrameOffset=((File_Mpeg4_TimeCode*)Stream_Temp.Parsers[Pos])->Pos;
+                    float64 FrameRate_WithDF=Stream_Temp.TimeCode->NumberOfFrames;
+                    if (Stream_Temp.TimeCode->DropFrame)
+                    {
+                        float64 FramesPerHour_NDF=FrameRate_WithDF*60*60;
+                        FrameRate_WithDF*=(FramesPerHour_NDF-108)/FramesPerHour_NDF;
+                    }
+                    TimeCode_DtsOffset=float64_int64s(((float64)TimeCode_FrameOffset)*1000000000/FrameRate_WithDF);
+                }
+        }
+    }
 }
 
 //***************************************************************************
