@@ -174,6 +174,7 @@ pushd Project/GNU/Library
 %else
 %configure --enable-shared --disable-static --enable-visibility --with-libcurl
 %endif
+
 make %{?_smp_mflags}
 popd
 
@@ -182,7 +183,7 @@ pushd Project/GNU/Library/
     make install DESTDIR=%{buildroot}
 popd
 
-# MediaInfoDLL headers and MediaInfo-config
+# MediaInfoDLL headers
 install -dm 755 %{buildroot}%{_includedir}/MediaInfo
 install -m 644 Source/MediaInfo/MediaInfo.h %{buildroot}%{_includedir}/MediaInfo
 install -m 644 Source/MediaInfo/MediaInfoList.h %{buildroot}%{_includedir}/MediaInfo
@@ -196,10 +197,6 @@ install -m 644 Source/MediaInfoDLL/MediaInfoDLL.JNA.java %{buildroot}%{_included
 install -m 644 Source/MediaInfoDLL/MediaInfoDLL.JNative.java %{buildroot}%{_includedir}/MediaInfoDLL
 install -m 644 Source/MediaInfoDLL/MediaInfoDLL.py %{buildroot}%{_includedir}/MediaInfoDLL
 install -m 644 Source/MediaInfoDLL/MediaInfoDLL3.py %{buildroot}%{_includedir}/MediaInfoDLL
-
-sed -i -e 's|Version: |Version: %{version}|g' Project/GNU/Library/%{name_without_0_ending}.pc
-install -dm 755 %{buildroot}%{_libdir}/pkgconfig
-install -m 644 Project/GNU/Library/%{name_without_0_ending}.pc %{buildroot}%{_libdir}/pkgconfig
 
 rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 
@@ -229,6 +226,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 
 %files     -n %{name_without_0_ending}-devel
 %defattr(-,root,root,-)
+%{_bindir}/%{name_without_0_ending}-config
 %{_includedir}/MediaInfo
 %{_includedir}/MediaInfoDLL
 %{_libdir}/%{name_without_0_ending}.so

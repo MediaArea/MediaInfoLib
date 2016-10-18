@@ -226,7 +226,6 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
  ../../../Source/MediaInfoDLL/MediaInfoDLL.h \
  ../../../Source/MediaInfoDLL/MediaInfoDLL_Static.h
 
-
 if COMPILE_AES
 lib@MediaInfoLib_LibName@_la_SOURCES += \
                        ../../../Source/ThirdParty/aes-gladman/aes_modes.c \
@@ -262,6 +261,11 @@ lib@MediaInfoLib_LibName@_la_SOURCES += \
 endif
 
 lib@MediaInfoLib_LibName@_la_LDFLAGS     = -no-undefined -version-info 0:0:0
+
+bin_SCRIPTS = libmediainfo-config
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libmediainfo.pc
 
 AM_CPPFLAGS = -I../../../Source -I../../../../ZenLib/Source
 

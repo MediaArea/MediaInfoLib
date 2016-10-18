@@ -20,6 +20,7 @@ override_dh_auto_build:
 	dh_auto_build -DProject/GNU/Library
 
 override_dh_auto_install:
+
 	dh_auto_install -DProject/GNU/Library
 	for py in $(shell pyversions -vr); do												\
 		install -D -m644 Source/MediaInfoDLL/MediaInfoDLL.py debian/tmp/usr/lib/python$$py/dist-packages/MediaInfoDLL.py;	\
@@ -27,8 +28,6 @@ override_dh_auto_install:
 	for py3 in $(shell py3versions -vr); do												\
 		install -D -m644 Source/MediaInfoDLL/MediaInfoDLL3.py debian/tmp/usr/lib/python$$py3/dist-packages/MediaInfoDLL3.py;	\
 	done
-	mkdir -p debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/
-	sed -e 's|Version: |Version: $(version)|g' Project/GNU/Library/libmediainfo.pc > debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/libmediainfo.pc
 
 override_dh_auto_clean:
 	dh_auto_clean -DProject/GNU/Library
