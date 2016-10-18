@@ -483,6 +483,10 @@ private :
             IsPriorityStream=false;
             IsFilled=false;
             IsChapter=false;
+            IsEnabled=false;
+            IsExcluded=false;
+            HasForcedSamples=false;
+            AllForcedSamples=false;
             CleanAperture_Width=0;
             CleanAperture_Height=0;
             CleanAperture_PixelAspectRatio=0;
