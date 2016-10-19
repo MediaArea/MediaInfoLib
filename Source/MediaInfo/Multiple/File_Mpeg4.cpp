@@ -1910,7 +1910,7 @@ bool File_Mpeg4::BookMark_Needed()
         }
     #endif //MEDIAINFO_HASH
 
-    if (!mdat_MustParse)
+    if (!mdat_MustParse || File_GoTo!=(int64u)-1)
         return false;
 
     //Handling of some wrong stsz and stsc atoms (ADPCM)
@@ -2331,7 +2331,7 @@ bool File_Mpeg4::BookMark_Needed()
             if (Config->File_Hash_Get().to_ulong())
             {
                 GoTo(0);
-                Hash_ParseUpTo=mdat_Pos_Temp->Offset;
+                Hash_ParseUpTo=ToJump;
             }
             else
         #endif //MEDIAINFO_HASH

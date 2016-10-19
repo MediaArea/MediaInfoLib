@@ -1350,17 +1350,10 @@ void File_Mpeg4::free()
     Element_Name("Free space");
 
     //Parsing
-    #if MEDIAINFO_TRACE
-        if (Trace_Activated)
-            Param("Data", Ztring("(")+Ztring::ToZtring(Element_TotalSize_Get())+Ztring(" bytes)"));
-    #endif //MEDIAINFO_TRACE
+    Skip_XX(Element_TotalSize_Get(),                            "Data");
     #if MEDIAINFO_HASH
-        if (!Hash || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
-    #endif //MEDIAINFO_HASH
-            GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Not using Skip_XX() because we want to skip data we don't have, and Skip_XX() does a test on size of buffer
-    #if MEDIAINFO_HASH
-        else
-            Element_Offset=Element_TotalSize_Get();
+        if (Hash && !IsSecondPass)
+            GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Hash will be done during second pass
     #endif //MEDIAINFO_HASH
 
     //ISM
@@ -1627,17 +1620,10 @@ void File_Mpeg4::mdat()
         LastMdatPos=File_Offset+Buffer_Offset+Element_TotalSize_Get();
 
     //Parsing
-    #if MEDIAINFO_TRACE
-        if (Trace_Activated)
-            Param("Data", Ztring("(")+Ztring::ToZtring(Element_TotalSize_Get())+Ztring(" bytes)"));
-    #endif //MEDIAINFO_TRACE
+    Skip_XX(Element_TotalSize_Get(),                            "Data");
     #if MEDIAINFO_HASH
-        if (!Hash || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
-    #endif //MEDIAINFO_HASH
-            GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Not using Skip_XX() because we want to skip data we don't have, and Skip_XX() does a test on size of buffer
-    #if MEDIAINFO_HASH
-        else
-            Element_Offset=Element_TotalSize_Get();
+        if (Hash && !IsSecondPass)
+            GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Hash will be done during second pass
     #endif //MEDIAINFO_HASH
 
     //ISM
@@ -1927,7 +1913,7 @@ void File_Mpeg4::mdat_StreamJump()
         if (!Status[IsAccepted])
             Data_Accept("MPEG-4");
         #if MEDIAINFO_HASH
-            if (Config->File_Hash_Get().to_ulong() && ((IsSecondPass && mdat_Pos_NormalParsing) || FirstMoovPos<FirstMdatPos))
+            if (Config->File_Hash_Get().to_ulong() && (IsSecondPass && mdat_Pos_NormalParsing))
                 Hash_ParseUpTo=ToJump;
             else
         #endif //MEDIAINFO_HASH
@@ -2007,17 +1993,10 @@ void File_Mpeg4::moof()
 
     if (IsSecondPass)
     {
-        #if MEDIAINFO_TRACE
-            if (Trace_Activated)
-                Param("Data", Ztring("(")+Ztring::ToZtring(Element_TotalSize_Get())+Ztring(" bytes)"));
-        #endif //MEDIAINFO_TRACE
+        Skip_XX(Element_TotalSize_Get(),                        "Data");
         #if MEDIAINFO_HASH
-            if (!Hash || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
-        #endif //MEDIAINFO_HASH
-                GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Not using Skip_XX() because we want to skip data we don't have, and Skip_XX() does a test on size of buffer
-        #if MEDIAINFO_HASH
-            else
-                Element_Offset=Element_TotalSize_Get();
+            if (Hash && !IsSecondPass)
+                GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Hash will be done during second pass
         #endif //MEDIAINFO_HASH
         return;
     }
@@ -2188,17 +2167,10 @@ void File_Mpeg4::moov()
 
     if (IsSecondPass || FirstMoovPos!=(int64u)-1) //Currently, the 1 moov atom is used
     {
-        #if MEDIAINFO_TRACE
-            if (Trace_Activated)
-                Param("Data", Ztring("(")+Ztring::ToZtring(Element_TotalSize_Get())+Ztring(" bytes)"));
-        #endif //MEDIAINFO_TRACE
+        Skip_XX(Element_TotalSize_Get(),                        "Data");
         #if MEDIAINFO_HASH
-            if (!Hash || (!IsSecondPass && FirstMdatPos<FirstMoovPos))
-        #endif //MEDIAINFO_HASH
-                GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Not using Skip_XX() because we want to skip data we don't have, and Skip_XX() does a test on size of buffer
-        #if MEDIAINFO_HASH
-            else
-                Element_Offset=Element_TotalSize_Get();
+            if (Hash && !IsSecondPass)
+                GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Hash will be done during second pass
         #endif //MEDIAINFO_HASH
         return;
     }
