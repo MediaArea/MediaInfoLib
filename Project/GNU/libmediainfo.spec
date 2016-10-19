@@ -199,7 +199,7 @@ install -m 644 Source/MediaInfoDLL/MediaInfoDLL.py %{buildroot}%{_includedir}/Me
 install -m 644 Source/MediaInfoDLL/MediaInfoDLL3.py %{buildroot}%{_includedir}/MediaInfoDLL
 
 rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
-
+rm -f %{buildroot}%{_bindir}/libmediainfo-config
 
 %post
 
@@ -226,7 +226,6 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 
 %files     -n %{name_without_0_ending}-devel
 %defattr(-,root,root,-)
-%{_bindir}/%{name_without_0_ending}-config
 %{_includedir}/MediaInfo
 %{_includedir}/MediaInfoDLL
 %{_libdir}/%{name_without_0_ending}.so
