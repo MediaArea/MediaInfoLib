@@ -1636,13 +1636,21 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                             //Init
                             if (!Duration)
                             {
+                                Ztring FileName;
+                                if (HasMainFile)
+                                    for (size_t Sequences_Pos = 0; Sequences_Pos < Sequences.size(); Sequences_Pos++)
+                                        if (Sequences[Sequences_Pos]->IsMain && !Sequences[Sequences_Pos]->FileNames.empty())
+                                            FileName=Sequences[Sequences_Pos]->FileNames[0];
+                                if (FileName.empty())
+                                    FileName=MI->File_Name;
+
                                 MediaInfo_Internal MI2;
                                 MI2.Option(__T("File_KeepInfo"), __T("1"));
                                 Ztring ParseSpeed_Save=MI2.Option(__T("ParseSpeed_Get"), __T(""));
                                 Ztring Demux_Save=MI2.Option(__T("Demux_Get"), __T(""));
                                 MI2.Option(__T("ParseSpeed"), __T("0"));
                                 MI2.Option(__T("Demux"), Ztring());
-                                size_t MiOpenResult=MI2.Open(MI->File_Name);
+                                size_t MiOpenResult=MI2.Open(FileName);
                                 MI2.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
                                 MI2.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
                                 if (!MiOpenResult)
@@ -1723,13 +1731,21 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                         //Init
                         if (!Duration)
                         {
+                            Ztring FileName;
+                            if (HasMainFile)
+                                for (size_t Sequences_Pos = 0; Sequences_Pos < Sequences.size(); Sequences_Pos++)
+                                    if (Sequences[Sequences_Pos]->IsMain && !Sequences[Sequences_Pos]->FileNames.empty())
+                                        FileName=Sequences[Sequences_Pos]->FileNames[0];
+                            if (FileName.empty())
+                                FileName=MI->File_Name;
+
                             MediaInfo_Internal MI2;
                             MI2.Option(__T("File_KeepInfo"), __T("1"));
                             Ztring ParseSpeed_Save=MI2.Option(__T("ParseSpeed_Get"), __T(""));
                             Ztring Demux_Save=MI2.Option(__T("Demux_Get"), __T(""));
                             MI2.Option(__T("ParseSpeed"), __T("0"));
                             MI2.Option(__T("Demux"), Ztring());
-                            size_t MiOpenResult=MI2.Open(MI->File_Name);
+                            size_t MiOpenResult=MI2.Open(FileName);
                             MI2.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
                             MI2.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
                             if (!MiOpenResult)
