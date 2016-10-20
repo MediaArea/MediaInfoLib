@@ -857,7 +857,7 @@ const char* Mpeg_Descriptors_MPEG_4_audio_profile_and_level(int8u MPEG_4_audio_p
 }
 
 //---------------------------------------------------------------------------
-extern const float64 Mpegv_frame_rate[]; //In Video/File_Mpegv.cpp
+extern const float64 Mpegv_frame_rate[16]; //In Video/File_Mpegv.cpp
 extern const char*  Mpegv_Colorimetry_format[]; //In Video/File_Mpegv.cpp
 extern const char*  Mpegv_profile_and_level_indication_profile[]; //In Video/File_Mpegv.cpp
 extern const char*  Mpegv_profile_and_level_indication_level[]; //In Video/File_Mpegv.cpp
