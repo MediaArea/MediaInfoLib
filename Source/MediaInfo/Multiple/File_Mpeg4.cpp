@@ -2592,6 +2592,7 @@ void File_Mpeg4::IsParsing_mdat_Set()
 {
     IsParsing_mdat=true;
 
+#if MEDIAINFO_ADVANCED
     //Checking if we need a fake time code track
     string TimeCode_String = Config->File_DefaultTimeCode_Get();
     if (TimeCode_String.size()==11
@@ -2671,6 +2672,7 @@ void File_Mpeg4::IsParsing_mdat_Set()
             TimeCodeTrack_Check(Streams[TimeCode_ID], 0, TimeCode_ID);
         }
     }
+#endif //MEDIAINFO_ADVANCED
 }
 
 //---------------------------------------------------------------------------
