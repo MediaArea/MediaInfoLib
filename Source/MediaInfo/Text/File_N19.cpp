@@ -69,10 +69,16 @@ float64 N19_DiskFormatCode_FrameRate(int64u DFC)
 {
     switch (DFC)
     {
-        case 0x53544C32332E3031LL : return (float64)24000 / (float64)1001; 
+        case 0x53544C32332E3031LL : return (float64)24000/(float64)1001;
+        case 0x53544C32342E3031LL : return (float64)24;
         case 0x53544C32352E3031LL : return (float64)25;
-        case 0x53544C32392E3031LL : return (float64)30000 / (float64)1001;
+        case 0x53544C32392E3031LL : return (float64)30000/(float64)1001;
         case 0x53544C33302E3031LL : return (float64)30;
+        case 0x53544C34372E3031LL : return (float64)48000/(float64)1001;
+        case 0x53544C34382E3031LL : return (float64)48;
+        case 0x53544C35350E3031LL : return (float64)50;
+        case 0x53544C35392E3031LL : return (float64)60000/(float64)1001;
+        case 0x53544C36302E3031LL : return (float64)60;
         default                   : return (float64) 0;
     }
 }
@@ -327,10 +333,11 @@ void File_N19::FileHeader_Parse()
                 Frames+=(((int8u)TCP[7])-'0');
                 Delay+=float64_int64s(Frames*1000/N19_DiskFormatCode_FrameRate(DFC));
                 //Fill(Stream_Text, 0, Text_Delay, Delay); //TODO is 0???
-                /*TCP.insert(':', 2);
-                TCP.insert(':', 5);
-                TCP.insert(':', 8);
-                Fill(Stream_Text, 0, "Delay/String4", TCP);*/
+                TCP.insert(TCP.begin()+2, ':');
+                TCP.insert(TCP.begin()+5, ':');
+                TCP.insert(TCP.begin()+8, ':');
+                //Fill(Stream_Text, 0, "Delay/String4", TCP);
+                Fill(Stream_Text, 0, "TimeCode_First", TCP);
             }
         }
         Fill(Stream_Text, 0, Text_Width, MNC.To_int32u());
@@ -390,13 +397,13 @@ void File_N19::Data_Parse()
     TCI=((TCI>>24)&0xFF)*60*60*1000
       + ((TCI>>16)&0xFF)   *60*1000
       + ((TCI>>8 )&0xFF)      *1000
-      +  float64_int64s((TCI     &0xFF)      *1000/N19_DiskFormatCode_FrameRate(DFC));
+      +  (int32u)float64_int64s((TCI     &0xFF)      *1000/N19_DiskFormatCode_FrameRate(DFC));
     Param_Info1(Ztring().Duration_From_Milliseconds((int64u)TCI));
     Get_B4    (TCO,                                             "TCO - Time Code Out");
     TCO=((TCO>>24)&0xFF)*60*60*1000
       + ((TCO>>16)&0xFF)   *60*1000
       + ((TCO>>8 )&0xFF)      *1000
-      +  float64_int64s((TCO     &0xFF)      *1000/N19_DiskFormatCode_FrameRate(DFC));
+      +  (int32u)float64_int64s((TCO     &0xFF)      *1000/N19_DiskFormatCode_FrameRate(DFC));
     Param_Info1(Ztring().Duration_From_Milliseconds((int64u)TCO));
     Skip_B1   (                                                 "VP - Vertical Position");
     Skip_B1   (                                                 "JC - Justification Code");

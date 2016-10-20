@@ -1272,6 +1272,8 @@ void File_Mpegv::Streams_Fill()
     //BitRate
     if (vbv_delay==0xFFFF || (MPEG_Version==1 && bit_rate_value==0x3FFFF))
         Fill(Stream_Video, 0, Video_BitRate_Mode, "VBR");
+    else
+        Fill(Stream_Video, 0, Video_BitRate_Mode, "CBR");
     if (bit_rate_value_IsValid && (bit_rate_extension>0 || bit_rate_value!=0x3FFFF))
         Fill(Stream_Video, 0, Video_BitRate_Maximum, ((((int32u)bit_rate_extension<<12))+bit_rate_value)*400);
 
@@ -3673,6 +3675,7 @@ void File_Mpegv::sequence_header()
 
         //Setting as OK
         sequence_header_IsParsed=true;
+        FirstFieldFound=false;
         if (Frame_Count==0 && FrameInfo.DTS==(int64u)-1)
             FrameInfo.DTS=0; //No DTS in container
 

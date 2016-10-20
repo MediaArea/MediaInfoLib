@@ -130,6 +130,8 @@ public :
     #if MEDIAINFO_ADVANCED
         void          File_DefaultFrameRate_Set (float64 NewValue);
         float64       File_DefaultFrameRate_Get ();
+        void          File_DefaultTimeCode_Set (string NewValue);
+        string        File_DefaultTimeCode_Get ();
     #endif //MEDIAINFO_ADVANCED
 
     #if MEDIAINFO_ADVANCED
@@ -411,6 +413,7 @@ private :
         bool                File_IgnoreSequenceFilesCount;
         int64u              File_SequenceFilesSkipFrames;
         float64             File_DefaultFrameRate;
+        string              File_DefaultTimeCode;
         bool                File_Source_List;
         bool                File_RiskyBitRateEstimation;
         bool                File_MergeBitRateInfo;

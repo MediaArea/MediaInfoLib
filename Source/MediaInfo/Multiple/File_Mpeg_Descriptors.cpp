@@ -857,7 +857,7 @@ const char* Mpeg_Descriptors_MPEG_4_audio_profile_and_level(int8u MPEG_4_audio_p
 }
 
 //---------------------------------------------------------------------------
-extern const float64 Mpegv_frame_rate[]; //In Video/File_Mpegv.cpp
+extern const float64 Mpegv_frame_rate[16]; //In Video/File_Mpegv.cpp
 extern const char*  Mpegv_Colorimetry_format[]; //In Video/File_Mpegv.cpp
 extern const char*  Mpegv_profile_and_level_indication_profile[]; //In Video/File_Mpegv.cpp
 extern const char*  Mpegv_profile_and_level_indication_level[]; //In Video/File_Mpegv.cpp
@@ -1652,7 +1652,9 @@ void File_Mpeg_Descriptors::Descriptor_05()
                             //Coherency
                             if (stream_type==0x81 && Complete_Stream->Streams[elementary_PID]->registration_format_identifier==Elements::BSSD)
                                 Complete_Stream->Streams[elementary_PID]->registration_format_identifier=0x00000000; //Reseting it, this combinaision is not possible but a stream has it
-                        } else {
+                        }
+                        else
+                        {
                             //Per program
                             Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[table_id_extension].registration_format_identifier=format_identifier;
                         }

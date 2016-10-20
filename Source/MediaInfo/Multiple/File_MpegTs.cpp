@@ -926,9 +926,10 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
     }
 
     //Teletext
-    if (StreamKind_Last==Stream_Max)
+    bool RelyOnTsInfo=(StreamKind_Last==Stream_Max);
+    for (std::map<int16u, teletext>::iterator Teletext=Temp->Teletexts.begin(); Teletext!=Temp->Teletexts.end(); ++Teletext)
     {
-        for (std::map<int16u, teletext>::iterator Teletext=Temp->Teletexts.begin(); Teletext!=Temp->Teletexts.end(); ++Teletext)
+        if (RelyOnTsInfo)
         {
             std::map<std::string, Ztring>::iterator Info_Format=Teletext->second.Infos.find("Format");
             Stream_Prepare((Info_Format!=Teletext->second.Infos.end() && Info_Format->second==__T("Teletext"))?Stream_Other:Stream_Text);
@@ -940,17 +941,33 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
                 Fill(StreamKind_Last, StreamPos_Last, General_MenuID, Temp->program_numbers[Pos], 10, Pos==0);
                 Fill(StreamKind_Last, StreamPos_Last, General_MenuID_String, Decimal_Hexa(Temp->program_numbers[Pos]), Pos==0);
             }
+        }
+        else
+        {
+            StreamKind_Last=Stream_Max;
+            StreamPos_Last=(size_t)-1;
+            Ztring ID=Ztring::ToZtring(StreamID)+__T('-')+Ztring::ToZtring(Teletext->first);
+            for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+                for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
+                    if (Retrieve((stream_t)StreamKind, StreamPos, General_ID) == ID)
+                    {
+                        StreamKind_Last=(stream_t)StreamKind;
+                        StreamPos_Last=StreamPos;
+                    }
+        }
 
-            //TS info
+        //TS info
+        if (StreamKind_Last!=Stream_Max)
+        {
             for (std::map<std::string, ZenLib::Ztring>::iterator Info=Teletext->second.Infos.begin(); Info!=Teletext->second.Infos.end(); ++Info)
             {
                 if (Retrieve(StreamKind_Last, StreamPos_Last, Info->first.c_str()).empty())
                     Fill(StreamKind_Last, StreamPos_Last, Info->first.c_str(), Info->second);
             }
             Teletext->second.Infos.clear();
-            Teletext->second.StreamKind=StreamKind_Last;
-            Teletext->second.StreamPos=StreamPos_Last;
         }
+        Teletext->second.StreamKind=StreamKind_Last;
+        Teletext->second.StreamPos=StreamPos_Last;
     }
 
     //Law rating
