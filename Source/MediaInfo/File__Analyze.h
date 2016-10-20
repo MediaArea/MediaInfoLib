@@ -1051,7 +1051,12 @@ public :
     #ifdef SIZE_T_IS_LONG
     inline void Fill (stream_t StreamKind, size_t StreamPos, const char* Parameter, size_t         Value, int8u Radix=10, bool Replace=false) {Fill(StreamKind, StreamPos, Parameter, Ztring::ToZtring(Value, Radix).MakeUpperCase(), Replace);}
     #endif //SIZE_T_IS_LONG
-    ZtringListList Fill_Temp;
+    struct fill_temp_item
+    {
+        Ztring Parameter;
+        Ztring Value;
+    };
+    vector<fill_temp_item> Fill_Temp[Stream_Max+1]; // +1 because Fill_Temp[Stream_Max] is used when StreamKind is unknown
     void Fill_Flush ();
     static size_t Fill_Parameter(stream_t StreamKind, generic StreamPos);
 
