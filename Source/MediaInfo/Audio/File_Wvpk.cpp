@@ -576,7 +576,7 @@ void File_Wvpk::id_07()
 
     FILLING_BEGIN();
         if (Retrieve(Stream_Audio, 0, Audio_Compression_Mode).empty())
-            Fill(Stream_Audio, 0, Audio_Compression_Mode, "Lossless");
+            Fill(Stream_Audio, 0, Audio_Compression_Mode, "Lossless", Unlimited, true, true);
     FILLING_END();
 }
 
