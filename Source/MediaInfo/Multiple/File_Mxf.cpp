@@ -440,6 +440,7 @@ namespace Elements
 extern const char* Mpegv_profile_and_level_indication_profile[];
 extern const char* Mpegv_profile_and_level_indication_level[];
 extern const char* Mpeg4v_Profile_Level(int32u Profile_Level);
+extern string Jpeg2000_Rsiz(int16u Rsiz);
 
 //---------------------------------------------------------------------------
 extern const char* AfdBarData_active_format[];
@@ -3701,6 +3702,13 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
                                                     Fill(Stream_Audio, StreamPos_Last, Info->first.c_str(), Info->second, true);
                                                 break;
                         default:                ;
+                                                #if MEDIAINFO_ADVANCED
+                                                    if (SubDescriptor->second.Jpeg2000_Rsiz!=(int16u)-1 && !Retrieve(StreamKind_Last, StreamPos_Last, "Format_Profile").empty() && Jpeg2000_Rsiz(SubDescriptor->second.Jpeg2000_Rsiz)!=Retrieve(StreamKind_Last, StreamPos_Last, "Format_Profile").To_UTF8())
+                                                    {
+                                                        Fill(StreamKind_Last, StreamPos_Last, "Format_Profile_FromStream", Retrieve(StreamKind_Last, StreamPos_Last, "Format_Profile"));
+                                                        Fill(StreamKind_Last, StreamPos_Last, "Format_Profile_FromContainer", Jpeg2000_Rsiz(SubDescriptor->second.Jpeg2000_Rsiz));
+                                                    }
+                                                #endif //MEDIAINFO_ADVANCED
                     }
 
                     for (std::map<std::string, Ztring>::iterator Info=SubDescriptor->second.Infos.begin(); Info!=SubDescriptor->second.Infos.end(); ++Info)
@@ -9941,8 +9949,17 @@ void File_Mxf::IndexTableSegment_8002()
 // 0x8001
 void File_Mxf::JPEG2000PictureSubDescriptor_Rsiz()
 {
-    //Parsing
-    Info_B2(Data,                                                "Data"); Element_Info1(Data);
+    #if MEDIAINFO_ADVANCED
+        //Parsing
+        int16u Data;
+        Get_B2 (Data,                                            "Data"); Element_Info1(Data);
+
+        FILLING_BEGIN();
+            Descriptors[InstanceUID].Jpeg2000_Rsiz=Data;
+        FILLING_END();
+    #else //MEDIAINFO_ADVANCED
+        Info_B2(Data,                                            "Data"); Element_Info1(Data);
+    #endif //MEDIAINFO_ADVANCED
 }
 
 //---------------------------------------------------------------------------

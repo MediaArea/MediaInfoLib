@@ -787,6 +787,9 @@ protected :
         bool HasMPEG2VideoDescriptor;
         bool IsAes3Descriptor;
         int32u ByteRate;
+        #if MEDIAINFO_ADVANCED
+            int16u Jpeg2000_Rsiz;
+        #endif //MEDIAINFO_ADVANCED
 
 
         //MCALabelSubDescriptor specific (including SoundfieldGroupLabelSubDescriptor...)
@@ -841,6 +844,9 @@ protected :
             HasMPEG2VideoDescriptor=false;
             IsAes3Descriptor=false;
             ByteRate=(int32u)-1;
+            #if MEDIAINFO_ADVANCED
+                Jpeg2000_Rsiz=(int16u)-1;
+            #endif //MEDIAINFO_ADVANCED
 
             //MCALabelSubDescriptor specific (including SoundfieldGroupLabelSubDescriptor...)
             MCALabelDictionaryID.hi=(int64u)-1;

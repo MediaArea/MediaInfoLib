@@ -37,6 +37,9 @@ public:
     void                            AddFileName(const Ztring& FileName, size_t Pos=(size_t)-1);
     void                            AddResource(resource* NewResource, size_t Pos=(size_t)-1);
     void                            UpdateFileName(const Ztring& OldFileName, const Ztring& NewFileName);
+    #if MEDIAINFO_ADVANCED
+    void                            UpdateMetaDataFromSourceEncoding(const string& SourceEncoding, const string& Name, const string& Value);
+    #endif //MEDIAINFO_ADVANCED
     stream_t                        StreamKind;
     size_t                          StreamPos;
     int64u                          StreamID;

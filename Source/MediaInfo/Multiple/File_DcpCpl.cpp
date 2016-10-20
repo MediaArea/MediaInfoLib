@@ -38,6 +38,10 @@ using namespace std;
 namespace MediaInfoLib
 {
 
+//---------------------------------------------------------------------------
+extern string Jpeg2000_Rsiz(int16u Rsiz);
+//---------------------------------------------------------------------------
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -208,6 +212,65 @@ bool File_DcpCpl::FileHeader_Begin()
                 Fill(Stream_Other, StreamPos_Last, Info->first.c_str(), Info->second);
         }
 
+        #if MEDIAINFO_ADVANCED
+            //EssenceDescriptorList
+            if (IsImf && !strcmp(CompositionPlaylist_Item->Value(), "EssenceDescriptorList"))
+            {
+                for (XMLElement* EssenceDescriptorList_Item=CompositionPlaylist_Item->FirstChildElement(); EssenceDescriptorList_Item; EssenceDescriptorList_Item=EssenceDescriptorList_Item->NextSiblingElement())
+                {
+                    //TimecodeDropFrame
+                    if (!strcmp(EssenceDescriptorList_Item->Value(), "EssenceDescriptor"))
+                    {
+                        string Id;
+                        descriptor* Descriptor=new descriptor;
+
+                        for (XMLElement* EssenceDescriptor_Item=EssenceDescriptorList_Item->FirstChildElement(); EssenceDescriptor_Item; EssenceDescriptor_Item=EssenceDescriptor_Item->NextSiblingElement())
+                        {
+                            //Id
+                            if (!strcmp(EssenceDescriptor_Item->Value(), "Id"))
+                                Id=EssenceDescriptor_Item->GetText();
+
+                            //CDCIDescriptor
+                            if (!strcmp(EssenceDescriptor_Item->Value(), "m:RGBADescriptor") || !strcmp(EssenceDescriptor_Item->Value(), "m:CDCIDescriptor"))
+                            {
+                                for (XMLElement* Descriptor_Item=EssenceDescriptor_Item->FirstChildElement(); Descriptor_Item; Descriptor_Item=Descriptor_Item->NextSiblingElement())
+                                {
+                                    //SubDescriptors
+                                    if (!strcmp(Descriptor_Item->Value(), "m:SubDescriptors"))
+                                    {
+                                        for (XMLElement* SubDescriptors_Item=Descriptor_Item->FirstChildElement(); SubDescriptors_Item; SubDescriptors_Item=SubDescriptors_Item->NextSiblingElement())
+                                        {
+                                            descriptor* SubDescriptor=new descriptor;
+
+                                            //JPEG2000PictureSubDescriptor
+                                            if (!strcmp(SubDescriptors_Item->Value(), "m:JPEG2000PictureSubDescriptor"))
+                                            {
+                                                for (XMLElement* JPEG2000PictureSubDescriptor_Item=SubDescriptors_Item->FirstChildElement(); JPEG2000PictureSubDescriptor_Item; JPEG2000PictureSubDescriptor_Item=JPEG2000PictureSubDescriptor_Item->NextSiblingElement())
+                                                {
+                                                    //Xsiz
+                                                    if (!strcmp(JPEG2000PictureSubDescriptor_Item->Value(), "m:Rsiz"))
+                                                    {
+                                                        SubDescriptor->Jpeg2000_Rsiz = (int16u)atoi(JPEG2000PictureSubDescriptor_Item->GetText());
+                                                    }
+                                                }
+                                            }
+
+                                            Descriptor->SubDescriptors.push_back(SubDescriptor);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!Id.empty())
+                            EssenceDescriptorList[Id]=Descriptor;
+                        else
+                            delete Descriptor; // Can not be associated
+                    }
+                }
+            }
+        #endif //MEDIAINFO_ADVANCED
+
         //ReelList / SegmentList
         if (MatchQName(CompositionPlaylist_Item, IsDcp?"ReelList":"SegmentList", NameSpace))
         {
@@ -304,6 +367,12 @@ bool File_DcpCpl::FileHeader_Begin()
                                                         if (!strcmp(ResItemName, "SourceDuration"))
                                                             Resource->IgnoreEditsAfter=Resource->IgnoreEditsBefore+atoi(ResText);
 
+                                                        #if MEDIAINFO_ADVANCED
+                                                            //SourceEncoding
+                                                            if (!strcmp(ResItemName, "SourceEncoding"))
+                                                                Resource->SourceEncodings.push_back(ResText);
+                                                        #endif //MEDIAINFO_ADVANCED
+
                                                         //TrackFileId
                                                         if (!strcmp(ResItemName, "TrackFileId"))
                                                             Resource->FileNames.push_back(Ztring().From_UTF8(ResText));
@@ -372,6 +441,12 @@ bool File_DcpCpl::FileHeader_Begin()
     }
 
     ReferenceFiles->FilesForStorage=true;
+
+    #if MEDIAINFO_ADVANCED
+        for (std::map<string, descriptor*>::iterator EssenceDescriptor = EssenceDescriptorList.begin(); EssenceDescriptor != EssenceDescriptorList.end(); ++EssenceDescriptor)
+            for (std::vector<descriptor*>::iterator SubDescriptor = EssenceDescriptor->second->SubDescriptors.begin(); SubDescriptor != EssenceDescriptor->second->SubDescriptors.end(); ++SubDescriptor)
+                ReferenceFiles->UpdateMetaDataFromSourceEncoding(EssenceDescriptor->first, "Format_Profile", Jpeg2000_Rsiz((*SubDescriptor)->Jpeg2000_Rsiz));
+    #endif //MEDIAINFO_ADVANCED
 
     //All should be OK...
     return true;
