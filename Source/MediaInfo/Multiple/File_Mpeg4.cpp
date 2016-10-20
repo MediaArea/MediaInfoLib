@@ -2669,13 +2669,16 @@ void File_Mpeg4::IsParsing_mdat_Set()
             for (std::map<int32u, stream>::iterator Strea=Streams.begin(); Strea!=Streams.end(); ++Strea)
                 Strea->second.TimeCode_TrackID=TimeCode_ID; //For all tracks actually
 
+            #if MEDIAINFO_DEMUX
             TimeCodeTrack_Check(Streams[TimeCode_ID], 0, TimeCode_ID);
+            #endif //MEDIAINFO_DEMUX
         }
     }
 #endif //MEDIAINFO_ADVANCED
 }
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_DEMUX
 void File_Mpeg4::TimeCodeTrack_Check(stream &Stream_Temp, size_t Pos, int32u StreamID)
 {
     if (Stream_Temp.TimeCode) //If this is a TimeCode track
@@ -2697,6 +2700,7 @@ void File_Mpeg4::TimeCodeTrack_Check(stream &Stream_Temp, size_t Pos, int32u Str
         }
     }
 }
+#endif //MEDIAINFO_DEMUX
 
 //***************************************************************************
 // C++
