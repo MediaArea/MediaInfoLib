@@ -89,6 +89,7 @@ void File_Teletext::Streams_Finish()
     //TODO: filter subtitles and non subtitles, some files have normal teletext in subtitles block.
     if (Parser)
     {
+        Parser->Finish();
         for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
             for (size_t StreamPos=0; StreamPos<Parser->Count_Get((stream_t)StreamKind); StreamPos++)
             {

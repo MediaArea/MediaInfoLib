@@ -16,6 +16,8 @@ Version 0.7.90
 + N19/STL: display of time code of first frame
 + AC-3: bit depth
 + MPEG Video: CBR bitrate mode information based on vbv_delay
++ DXW: support of fake time code attribute
+x Teletext in MPEG-TS: CodecID, format (classic teletext or subtitle), video delay were sometimes not displayed
 x PDF: fixed crash with some files with full analysis set
 
 Version 0.7.89, 2016-09-30
