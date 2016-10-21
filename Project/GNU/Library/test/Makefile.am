@@ -1,7 +1,10 @@
 AUTOMAKE_OPTIONS = foreign subdir-objects
 
+AM_TESTS_FD_REDIRECT = 9>&2
+
 TESTS = \
-    trace.sh
+    trace.sh \
+    s3.sh
 
 check_PROGRAMS = mil_analyze
 mil_analyze_SOURCES = \

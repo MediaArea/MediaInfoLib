@@ -4,7 +4,8 @@ PATH_SCRIPT=$(dirname "$0")
 RCODE=0
 
 if [ -z $S3_KEY ] || [ -z $S3_PASS ] ; then
-    exit 0
+    # Skip test
+    exit 77
 fi
 
 SERVERS="travis-standard.s3.amazonaws.com"
@@ -21,12 +22,11 @@ for SERVER in $SERVERS; do
     FILE=$(mktemp)
 
     "$PATH_SCRIPT"/mil_analyze -f "General;%Format%" -l raw  "https://$S3_KEY:$S3_PASS@$SERVER/Example.ogg" $FILE
-    # '=' this is not an error, this is POSIX
     if [ "$(cat $FILE)" = "Ogg" ] ; then
-        echo "OK: $SERVER"
+        echo "OK: $SERVER" >&9
     else
         RCODE=1
-        echo "NOK: $SERVER"
+        echo "NOK: $SERVER" >&9
     fi
 
     rm $FILE
