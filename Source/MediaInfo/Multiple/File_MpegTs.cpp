@@ -315,7 +315,7 @@ void File_MpegTs::Streams_Accept()
             Config->Demux_EventWasSent=true;
     #endif //MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
 
-    if (!IsSub)
+    if (!IsSub && !Config->File_IsReferenced_Get())
     {
         #if MEDIAINFO_ADVANCED
             // TODO: temporary disabling theses options for MPEG-TS, because it does not work as expected
@@ -1755,7 +1755,12 @@ bool File_MpegTs::Synched_Test()
                                 && (File_Offset+Buffer_Offset-Buffer_TotalBytes_FirstSynched)*2<File_Size)
                                 {
                                     if (program_clock_reference<Complete_Stream->Streams[pid]->TimeStamp_Start)
-                                        program_clock_reference+=0x200000000LL*300; //33 bits, cyclic
+                                    {
+                                        if (Complete_Stream->Streams[pid]->TimeStamp_Start-program_clock_reference<10LL*90000*300) //Testing if difference is less that 10 seconds (value arbitrary choosen)
+                                            Complete_Stream->Streams[pid]->TimeStamp_Start=program_clock_reference; //Looks like we have a small jump in the past in a buggy file, accepting it.
+                                        else
+                                            program_clock_reference+=0x200000000LL*300; //33 bits, cyclic
+                                    }
                                     if ((program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_Start)>Begin_MaxDuration)
                                     {
                                         Complete_Stream->Streams[pid]->EndTimeStampMoreThanxSeconds=true;
@@ -2009,7 +2014,7 @@ void File_MpegTs::Read_Buffer_AfterParsing()
                     {
                         complete_stream::stream* &Stream=*It;
 
-                        if (Stream && Stream->Kind==complete_stream::stream::pes && Stream->TimeStamp_Start!=(int64u)-1)
+                        if (Stream && Stream->Kind==complete_stream::stream::pes && Stream->TimeStamp_Start!=(int64u)-1 && Stream->TimeStamp_End!=(int64u)-1 && Stream->TimeStamp_Start!=Stream->TimeStamp_End)
                         {
                             int64u Duration=Stream->TimeStamp_End-Stream->TimeStamp_Start;
                             if (Duration<27000000*2) // 2 seconds
@@ -2018,6 +2023,8 @@ void File_MpegTs::Read_Buffer_AfterParsing()
 								if (Duration) 
 									Ratio = (27000000 * 2) / Duration; 
                                 MpegTs_JumpTo_End*=Ratio;
+                                if (MpegTs_JumpTo_End>MediaInfoLib::Config.MpegTs_MaximumOffset_Get()/4)
+                                    MpegTs_JumpTo_End=MediaInfoLib::Config.MpegTs_MaximumOffset_Get()/4;
                                 break; //Using the first PES found
                             }
                         }
@@ -2556,7 +2563,12 @@ void File_MpegTs::Header_Parse_AdaptationField()
                     && (File_Offset+Buffer_Offset-Buffer_TotalBytes_FirstSynched)*2<File_Size)
                     {
                         if (program_clock_reference<Complete_Stream->Streams[pid]->TimeStamp_Start)
-                            program_clock_reference+=0x200000000LL*300; //33 bits, cyclic
+                        {
+                            if (Complete_Stream->Streams[pid]->TimeStamp_Start-program_clock_reference<10LL*90000*300) //Testing if difference is less that 10 seconds (value arbitrary choosen)
+                                Complete_Stream->Streams[pid]->TimeStamp_Start=program_clock_reference; //Looks like we have a small jump in the past in a buggy file, accepting it.
+                            else
+                                program_clock_reference+=0x200000000LL*300; //33 bits, cyclic
+                        }
                         if ((program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_Start)>Begin_MaxDuration)
                         {
                             Complete_Stream->Streams[pid]->EndTimeStampMoreThanxSeconds=true;
@@ -2794,7 +2806,12 @@ void File_MpegTs::Header_Parse_AdaptationField()
                     && (File_Offset+Buffer_Offset-Buffer_TotalBytes_FirstSynched)*2<File_Size)
                     {
                         if (program_clock_reference<Complete_Stream->Streams[pid]->TimeStamp_Start)
-                            program_clock_reference+=0x200000000LL*300; //33 bits, cyclic
+                        {
+                            if (Complete_Stream->Streams[pid]->TimeStamp_Start-program_clock_reference<10LL*90000*300) //Testing if difference is less that 10 seconds (value arbitrary choosen)
+                                Complete_Stream->Streams[pid]->TimeStamp_Start=program_clock_reference; //Looks like we have a small jump in the past in a buggy file, accepting it.
+                            else
+                                program_clock_reference+=0x200000000LL*300; //33 bits, cyclic
+                        }
                         if ((program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_Start)>Begin_MaxDuration)
                         {
                             Complete_Stream->Streams[pid]->EndTimeStampMoreThanxSeconds=true;
@@ -3230,6 +3247,9 @@ void File_MpegTs::PSI()
     //Initializing
     if (payload_unit_start_indicator)
     {
+        #if MEDIAINFO_EVENTS
+            StreamIDs[StreamIDs_Size-1]=pid;
+        #endif //MEDIAINFO_EVENTS
         delete ((File_Mpeg_Psi*)Complete_Stream->Streams[pid]->Parser); Complete_Stream->Streams[pid]->Parser=new File_Mpeg_Psi;
         Open_Buffer_Init(Complete_Stream->Streams[pid]->Parser);
         ((File_Mpeg_Psi*)Complete_Stream->Streams[pid]->Parser)->Complete_Stream=Complete_Stream;

@@ -55,15 +55,10 @@ public :
     Ztring Option (const String &Option, const String &Value=Ztring());
 
     #if MEDIAINFO_EVENTS
-    void          IsClosedGOP (File__Analyze* Source);
-    #endif //MEDIAINFO_EVENTS
-
-    #if MEDIAINFO_EVENTS
     bool          Event_CallBackFunction_IsSet ();
     Ztring        Event_CallBackFunction_Set (const Ztring &Value);
     Ztring        Event_CallBackFunction_Get ();
     void          Event_Send(File__Analyze* Source, const int8u* Data_Content, size_t Data_Size, const Ztring &File_Name=Ztring());
-    void          Event_SubFile_Start(const Ztring &FileName_Absolute);
     #endif //MEDIAINFO_EVENTS
 
     //Internal
