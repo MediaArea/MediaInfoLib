@@ -3,10 +3,10 @@
 if test "$1" = "CXXFLAGS"; then
 echo @MediaInfoLib_CXXFLAGS@
 fi
-if test "$1" = "LIBS"; then
+if test "$1" = "LIBS" -a -n "@MediaInfoLib_LIBS@"; then
 echo @MediaInfoLib_LIBS@
 fi
-if test "$1" = "LIBS_Static"; then
+if test "$1" = "LIBS_Static" -a -n "@MediaInfoLib_LIBS_Static@"; then
 echo @MediaInfoLib_LIBS_Static@
 fi
 if test "$1" = "Unicode"; then
