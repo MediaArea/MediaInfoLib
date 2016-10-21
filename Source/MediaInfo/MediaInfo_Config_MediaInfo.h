@@ -370,6 +370,9 @@ public :
     bool          File_DtvccTransport_Stream_IsPresent;
     bool          File_DtvccTransport_Descriptor_IsPresent;
     #endif //defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
+    #if defined(MEDIAINFO_MPEGPS_YES)
+    bool          File_MpegPs_PTS_Begin_IsNearZero;
+    #endif //defined(MEDIAINFO_MPEGPS_YES)
     int64u        File_Current_Offset;
     int64u        File_Current_Size;
     int64u        File_IgnoreEditsBefore;

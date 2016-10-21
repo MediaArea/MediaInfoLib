@@ -254,6 +254,9 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     File_DtvccTransport_Stream_IsPresent=false;
     File_DtvccTransport_Descriptor_IsPresent=false;
     #endif //defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
+    #if defined(MEDIAINFO_MPEGPS_YES)
+    File_MpegPs_PTS_Begin_IsNearZero=false;
+    #endif //defined(MEDIAINFO_MPEGPS_YES)
     File_Current_Offset=0;
     File_Current_Size=(int64u)-1;
     File_IgnoreEditsBefore=0;
