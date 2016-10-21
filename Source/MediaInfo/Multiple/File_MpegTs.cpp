@@ -3247,6 +3247,9 @@ void File_MpegTs::PSI()
     //Initializing
     if (payload_unit_start_indicator)
     {
+        #if MEDIAINFO_EVENTS
+            StreamIDs[StreamIDs_Size-1]=pid;
+        #endif //MEDIAINFO_EVENTS
         delete ((File_Mpeg_Psi*)Complete_Stream->Streams[pid]->Parser); Complete_Stream->Streams[pid]->Parser=new File_Mpeg_Psi;
         Open_Buffer_Init(Complete_Stream->Streams[pid]->Parser);
         ((File_Mpeg_Psi*)Complete_Stream->Streams[pid]->Parser)->Complete_Stream=Complete_Stream;
