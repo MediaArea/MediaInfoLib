@@ -315,7 +315,7 @@ void File_MpegTs::Streams_Accept()
             Config->Demux_EventWasSent=true;
     #endif //MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
 
-    if (!IsSub)
+    if (!IsSub && !Config->File_IsReferenced_Get())
     {
         #if MEDIAINFO_ADVANCED
             // TODO: temporary disabling theses options for MPEG-TS, because it does not work as expected
