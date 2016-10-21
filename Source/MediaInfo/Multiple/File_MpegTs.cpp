@@ -540,7 +540,7 @@ void File_MpegTs::Streams_Update_Programs()
                         {
                             Ztring LawRating_Temp=Complete_Stream->Streams[elementary_PID]->Parser->Retrieve(Stream_General, 0, General_LawRating);
                             if (!LawRating_Temp.empty())
-                                LawRating+=LawRating_Temp+__T(" / ");;
+                                LawRating+=LawRating_Temp+__T(" / ");
                             Ztring Title_Temp=Complete_Stream->Streams[elementary_PID]->Parser->Retrieve(Stream_General, 0, General_Title);
                             if (!Title_Temp.empty())
                                 Title+=Title_Temp+__T(" / ");
@@ -2014,7 +2014,9 @@ void File_MpegTs::Read_Buffer_AfterParsing()
                             int64u Duration=Stream->TimeStamp_End-Stream->TimeStamp_Start;
                             if (Duration<27000000*2) // 2 seconds
                             {
-                                int64u Ratio=(27000000*2)/Duration;
+								int64u Ratio = 0;
+								if (Duration) 
+									Ratio = (27000000 * 2) / Duration; 
                                 MpegTs_JumpTo_End*=Ratio;
                                 break; //Using the first PES found
                             }
