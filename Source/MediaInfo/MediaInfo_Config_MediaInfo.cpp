@@ -120,8 +120,8 @@ using namespace std;
         _TOAPPEND; \
         Debug_Close();
 #else // MEDIAINFO_DEBUG
-    #define MEDIAINFO_DEBUG1(_NAME,__TOAPPEND)
-    #define MEDIAINFO_DEBUG2(_NAME,__TOAPPEND)
+    #define MEDIAINFO_DEBUG1(_NAME,_TOAPPEND)
+    #define MEDIAINFO_DEBUG2(_NAME,_TOAPPEND)
 #endif // MEDIAINFO_DEBUG
 
 namespace MediaInfoLib
@@ -405,6 +405,15 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     else if (Option_Lower==__T("file_id_onlyroot_get"))
     {
         return File_ID_OnlyRoot_Get()?"1":"0";
+    }
+    else if (Option_Lower==__T("file_ignoresequencefilesize"))
+    {
+        #if MEDIAINFO_ADVANCED
+            File_IgnoreSequenceFileSize_Set(!(Value==__T("0") || Value.empty()));
+            return Ztring();
+        #else //MEDIAINFO_ADVANCED
+            return __T("Disabled due to compilation options");
+        #endif //MEDIAINFO_ADVANCED
     }
     else if (Option_Lower==__T("file_ignoresequencefilescount"))
     {
