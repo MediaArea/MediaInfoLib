@@ -1318,7 +1318,7 @@ void File_Eia708::DFx(int8u WindowID)
     if (relative_positioning)
     {
         Window->Minimal.Window_y=(int8u)(((float)15)*anchor_vertical/100);
-        Window->Minimal.Window_x=(int8u)(24*AspectRatio*anchor_horizontal/100);;
+        Window->Minimal.Window_x=(int8u)(24*AspectRatio*anchor_horizontal/100);
     }
     else
     {
