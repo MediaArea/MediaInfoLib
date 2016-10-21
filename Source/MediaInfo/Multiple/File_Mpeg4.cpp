@@ -2492,9 +2492,9 @@ File_Mpeg4::method File_Mpeg4::Metadata_Get(std::string &Parameter, const std::s
     else if (Meta=="DATE") Parameter="Encoded_Date";
     else if (Meta=="iTunEXTC") Parameter="ContentRating";
     else if (Meta=="iTunMOVI") Parameter="iTunMOVI";
-    else if (Meta=="iTunNORM") Parameter="";
-    else if (Meta=="iTunes_CDDB_IDs") Parameter="";
-    else if (Meta=="iTunSMPB") Parameter="";
+    else if (Meta=="iTunNORM") Parameter.clear();
+    else if (Meta=="iTunes_CDDB_IDs") Parameter.clear();
+    else if (Meta=="iTunSMPB") Parameter.clear();
     else if (Meta=="PERFORMER") Parameter="Performer";
     else if (Meta=="PUBLISHER") Parameter="Publisher";
     else Parameter=Meta;
