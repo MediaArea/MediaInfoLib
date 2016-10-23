@@ -2024,9 +2024,9 @@ void File_MpegTs::Read_Buffer_AfterParsing()
                             int64u Duration=Stream->TimeStamp_End-Stream->TimeStamp_Start;
                             if (Duration<27000000*2) // 2 seconds
                             {
-								int64u Ratio = 0;
-								if (Duration) 
-									Ratio = (27000000 * 2) / Duration; 
+                                int64u Ratio = 0;
+                                if (Duration) 
+                                    Ratio = (27000000 * 2) / Duration; 
                                 MpegTs_JumpTo_End*=Ratio;
                                 if (MpegTs_JumpTo_End>MediaInfoLib::Config.MpegTs_MaximumOffset_Get()/4)
                                     MpegTs_JumpTo_End=MediaInfoLib::Config.MpegTs_MaximumOffset_Get()/4;
