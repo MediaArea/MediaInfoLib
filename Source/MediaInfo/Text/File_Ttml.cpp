@@ -242,7 +242,8 @@ void File_Ttml::Read_Buffer_Continue()
                 ContentUtf8+=printer.CStr();
                 while (!ContentUtf8.empty() && (ContentUtf8[ContentUtf8.size()-1]=='\r' || ContentUtf8[ContentUtf8.size()-1]=='\n'))
                     ContentUtf8.resize(ContentUtf8.size()-1);
-                Ztring Content; if (p->FirstChild()) Content.From_UTF8(p->FirstChild()->Value());
+                Ztring Content; Content.From_UTF8(ContentUtf8.c_str());
+
                 Frame_Count++;
             }
         }
