@@ -791,7 +791,6 @@ protected :
             int16u Jpeg2000_Rsiz;
         #endif //MEDIAINFO_ADVANCED
 
-
         //MCALabelSubDescriptor specific (including SoundfieldGroupLabelSubDescriptor...)
         int128u     MCALabelDictionaryID;
         int128u     MCALinkID;

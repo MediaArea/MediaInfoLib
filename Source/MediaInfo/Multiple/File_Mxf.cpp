@@ -5755,7 +5755,7 @@ void File_Mxf::Data_Parse()
     ELEMENT(ClosedCompleteFooterPartition,                      "Closed and Complete Footer Partition Pack")
     ELEMENT(Primer,                                             "Primer")
     ELEMENT(IndexTableSegment,                                  "Index Table (Segment)")
-    ELEMENT(RandomIndexPack,                                "Random Index Metadata")
+    ELEMENT(RandomIndexPack,                                    "Random Index Metadata")
     ELEMENT(SDTI_SystemMetadataPack,                            "SDTI System Metadata Pack")
     else if (Code_Compare1==Elements::SDTI_SystemMetadataPack1
           && ((Code_Compare2)&0xFF00FFFF)==(Elements::SDTI_SystemMetadataPack2&0xFF00FFFF)
@@ -7152,12 +7152,6 @@ void File_Mxf::RGBAEssenceDescriptor()
 //---------------------------------------------------------------------------
 void File_Mxf::RandomIndexPack()
 {
-    if (RandomIndexPacks_AlreadyParsed)
-    {
-        Skip_XX(Element_Size,                                   "(Already parsed)");
-        return;
-    }
-
     //Parsing
     while (Element_Offset+4<Element_Size)
     {
@@ -9437,7 +9431,7 @@ void File_Mxf::GenericPictureEssenceDescriptor_ColorPrimaries()
     Get_UL(Data,                                                "Data", Mxf_ColorPrimaries);  Element_Info1(Mxf_ColorPrimaries(Data));
 
     FILLING_BEGIN();
-        Descriptors[InstanceUID].Infos["colour_primaries"]=Mxf_ColorPrimaries(Data);
+        Descriptor_Fill("colour_primaries", Mxf_ColorPrimaries(Data));
     FILLING_END();
 }
 

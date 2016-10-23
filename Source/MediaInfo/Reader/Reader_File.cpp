@@ -535,6 +535,9 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                     F.Open(MI->Config.File_Names[MI->Config.File_Names_Pos]);
                     while (!F.Opened_Get())
                     {
+                        #if MEDIAINFO_EVENTS
+                            MI->Config.Event_SubFile_Missing_Absolute(MI->Config.File_Names[MI->Config.File_Names_Pos]);
+                        #endif //MEDIAINFO_EVENTS
                         if (MI->Config.File_Names_Pos+1<MI->Config.File_Names.size())
                         {
                             MI->Config.File_Names_Pos++;

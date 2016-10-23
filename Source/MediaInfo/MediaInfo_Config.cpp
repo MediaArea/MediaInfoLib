@@ -105,8 +105,8 @@
         _TOAPPEND; \
         Debug_Close();
 #else // MEDIAINFO_DEBUG
-    #define MEDIAINFO_DEBUG1(_NAME,__TOAPPEND)
-    #define MEDIAINFO_DEBUG2(_NAME,__TOAPPEND)
+    #define MEDIAINFO_DEBUG1(_NAME,_TOAPPEND)
+    #define MEDIAINFO_DEBUG2(_NAME,_TOAPPEND)
 #endif // MEDIAINFO_DEBUG
 
 //---------------------------------------------------------------------------

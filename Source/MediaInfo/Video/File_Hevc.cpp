@@ -32,6 +32,7 @@
 #include <algorithm>
 #if MEDIAINFO_EVENTS
     #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
+    #include "MediaInfo/MediaInfo_Config_PerPackage.h"
     #include "MediaInfo/MediaInfo_Events.h"
     #include "MediaInfo/MediaInfo_Events_Internal.h"
 #endif //MEDIAINFO_EVENTS
@@ -679,7 +680,14 @@ bool File_Hevc::Demux_UnpacketizeContainer_Test()
         File_Hevc* MI=new File_Hevc;
         Element_Code=(int64u)-1;
         Open_Buffer_Init(MI);
+        #ifdef MEDIAINFO_EVENTS
+            MediaInfo_Config_PerPackage* Config_PerPackage_Temp=MI->Config->Config_PerPackage;
+            MI->Config->Config_PerPackage=NULL;
+        #endif //MEDIAINFO_EVENTS
         Open_Buffer_Continue(MI, Buffer, Buffer_Size);
+        #ifdef MEDIAINFO_EVENTS
+            MI->Config->Config_PerPackage=Config_PerPackage_Temp;
+        #endif //MEDIAINFO_EVENTS
         bool IsOk=MI->Status[IsAccepted];
         delete MI;
         if (!IsOk)
@@ -2196,6 +2204,25 @@ void File_Hevc::slice_segment_header()
     Skip_BS(Data_BS_Remain(),                                   "(ToDo)");
 
     Element_End0();
+
+    #if MEDIAINFO_EVENTS
+        if (first_slice_segment_in_pic_flag)
+        {
+            switch(Element_Code)
+            {
+                case 19 :
+                case 20 :   // This is an IDR frame
+                            if (Config->Config_PerPackage && Element_Code==0x05) // First slice of an IDR frame
+                            {
+                                // IDR
+                                Config->Config_PerPackage->FrameForAlignment(this, true);
+                                Config->Config_PerPackage->IsClosedGOP(this);
+                            }
+                            break;
+                default:    ; // This is not an IDR frame
+            }
+        }
+    #endif //MEDIAINFO_EVENTS
 }
 
 //---------------------------------------------------------------------------
