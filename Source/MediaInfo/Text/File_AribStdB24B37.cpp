@@ -30,6 +30,11 @@
     #undef __TEXT
     #include "windows.h"
 #endif // __WINDOWS__
+
+#if MEDIAINFO_EVENTS
+    #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
+    #include "MediaInfo/MediaInfo_Events_Internal.h"
+#endif //MEDIAINFO_EVENTS
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -335,6 +340,9 @@ File_AribStdB24B37::File_AribStdB24B37()
     HasCcis=false;
     ParseCcis=false;
     IsAncillaryData=false;
+    #if MEDIAINFO_EVENTS
+        MuxingMode=(int8u)-1;
+    #endif MEDIAINFO_EVENTS
 
     //Config
     Caption_conversion_type=(int8u)-1;
@@ -721,6 +729,28 @@ void File_AribStdB24B37::caption_statement() //caption_data()
         }
         Element_End0();
     }
+
+    // Output
+    #if MEDIAINFO_EVENTS
+            if (MuxingMode==(int8u)-1)
+            {
+                if (StreamIDs_Size>=6 && ParserIDs[StreamIDs_Size-6]==MediaInfo_Parser_Mxf && ParserIDs[StreamIDs_Size-3]==MediaInfo_Parser_MpegTs)
+                    MuxingMode=HasCcis?9:8; // "Ancillary data / CCIS" or "Ancillary data"
+                else
+                    MuxingMode=HasCcis?7:(int8u)-1; // "CCIS" or nothing
+            }
+        Frame_Count_NotParsedIncluded=Frame_Count;
+        EVENT_BEGIN (Global, SimpleText, 0)
+            Event.Content=Streams[(size_t)(Element_Code-1)].Line.c_str();
+            Event.Flags=0;
+            Event.MuxingMode=MuxingMode;
+            Event.Service=(int8u)Element_Code;
+            Event.Row_Max=0;
+            Event.Column_Max=0;
+            Event.Row_Values=NULL;
+            Event.Row_Attributes=NULL;
+        EVENT_END   ()
+    #endif MEDIAINFO_EVENTS
 
     Frame_Count++;
     Frame_Count_NotParsedIncluded++;

@@ -698,6 +698,19 @@ struct MediaInfo_Event_DvDif_Analysis_Frame_0
 
 #define MediaInfo_Parser_Eia608         0xF0
 
+/*-------------------------------------------------------------------------*/
+/* MediaInfo_Event_Eia608_Content                                          */
+#define MediaInfo_Event_Eia608_CC_Content 0xA000
+struct MediaInfo_Event_Eia608_CC_Content_0
+{
+    MEDIAINFO_EVENT_GENERIC
+    MediaInfo_int8u     Field;
+    MediaInfo_int8u     MuxingMode;
+    MediaInfo_int8u     Service;
+    wchar_t             Row_Values[15][33]; /*offset 32 is for \0*/
+    MediaInfo_int8u     Row_Attributes[15][32];
+};
+
 /***************************************************************************/
 /* DTVCC Transport (CEA-708, formely IEA-708)                              */
 /***************************************************************************/
@@ -710,6 +723,31 @@ struct MediaInfo_Event_DvDif_Analysis_Frame_0
 /***************************************************************************/
 
 #define MediaInfo_Parser_DtvccCaption   0xF2
+
+/*-------------------------------------------------------------------------*/
+/* MediaInfo_Event_DtvccCaption_Content_Minimal                            */
+#define MediaInfo_Event_DtvccCaption_Content_Minimal 0xA000
+struct MediaInfo_Event_DtvccCaption_Content_Minimal_0
+{
+    MEDIAINFO_EVENT_GENERIC
+    MediaInfo_int8u     MuxingMode;
+    MediaInfo_int8u     Service;
+    wchar_t             Row_Values[15][65]; /*offset 32 (4:3) or 42 (16:9) is for \0, reserving data after 42 for future extensions*/
+    MediaInfo_int8u     Row_Attributes[15][64];
+};
+
+/*-------------------------------------------------------------------------*/
+/* MediaInfo_Event_DtvccCaption_Window_Content_Minimal                     */
+#define MediaInfo_Event_DtvccCaption_Window_Content_Minimal 0xA001
+struct MediaInfo_Event_DtvccCaption_Window_Content_Minimal_0
+{
+    MEDIAINFO_EVENT_GENERIC
+    MediaInfo_int8u     MuxingMode;
+    MediaInfo_int8u     Service;
+    MediaInfo_int8u     Window;
+    wchar_t             Row_Values[15][33]; /*offset 32 is for \0*/
+    MediaInfo_int8u     Row_Attributes[15][32];
+};
 
 /***************************************************************************/
 /* CDP                                                                     */
