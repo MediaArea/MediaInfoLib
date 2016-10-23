@@ -259,6 +259,8 @@ public :
     void          Event_Send(File__Analyze* Source, const int8u* Data_Content, size_t Data_Size, const Ztring &File_Name=Ztring());
     void          Event_Accepted(File__Analyze* Source);
     void          Event_SubFile_Start(const Ztring &FileName_Absolute);
+    void          Event_SubFile_Missing(const Ztring &FileName_Relative);
+    void          Event_SubFile_Missing_Absolute(const Ztring &FileName_Absolute);
     #endif //MEDIAINFO_EVENTS
 
     #if MEDIAINFO_DEMUX

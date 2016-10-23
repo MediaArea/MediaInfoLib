@@ -620,6 +620,9 @@ void File__ReferenceFilesHelper::ParseReferences()
             else
             {
                 Sequences[Sequences_Current]->Status.set(File__Analyze::IsFinished);
+                #if MEDIAINFO_EVENTS
+                    Config->Event_SubFile_Missing(Sequences[Sequences_Current]->Source);
+                #endif //MEDIAINFO_EVENTS
                 if (Sequences[Sequences_Current]->StreamKind!=Stream_Max && !Sequences[Sequences_Current]->Source.empty())
                 {
                     MI->Fill(Sequences[Sequences_Current]->StreamKind, Sequences[Sequences_Current]->StreamPos, "Source_Info", "Missing");
@@ -941,6 +944,9 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
         #endif //MEDIAINFO_EVENTS
         if (!Sequences[Sequences_Current]->MI->Open(Sequences[Sequences_Current]->FileNames.Read()))
         {
+            #if MEDIAINFO_EVENTS
+                Config->Event_SubFile_Missing(Sequences[Sequences_Current]->Source);
+            #endif //MEDIAINFO_EVENTS
             if (Sequences[Sequences_Current]->StreamKind!=Stream_Max)
                 MI->Fill(Sequences[Sequences_Current]->StreamKind, Sequences[Sequences_Current]->StreamPos, "Source_Info", "Missing", Unlimited, true, true);
             if (!Config->File_KeepInfo_Get())

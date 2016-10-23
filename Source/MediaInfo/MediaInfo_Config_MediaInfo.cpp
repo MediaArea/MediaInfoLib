@@ -2696,6 +2696,65 @@ void MediaInfo_Config_MediaInfo::Event_SubFile_Start(const Ztring &FileName_Abso
 
     Event_Send(NULL, (const int8u*)&Event, Event.EventSize);
 }
+
+//---------------------------------------------------------------------------
+void MediaInfo_Config_MediaInfo::Event_SubFile_Missing(const Ztring &FileName_Relative)
+{
+    struct MediaInfo_Event_General_SubFile_Missing_0 Event;
+    memset(&Event, 0xFF, sizeof(struct MediaInfo_Event_Generic));
+    Event.EventCode=MediaInfo_EventCode_Create(0, MediaInfo_Event_General_SubFile_Missing, 0);
+    Event.EventSize=sizeof(struct MediaInfo_Event_General_SubFile_Start_0);
+    Event.StreamIDs_Size=0;
+
+    std::string FileName_Relative_Ansi=FileName_Relative.To_UTF8();
+    std::wstring FileName_Relative_Unicode=FileName_Relative.To_Unicode();
+    Event.FileName_Relative=FileName_Relative_Ansi.c_str();
+    Event.FileName_Relative_Unicode=FileName_Relative_Unicode.c_str();
+    Event.FileName_Absolute=NULL;
+    Event.FileName_Absolute_Unicode=NULL;
+
+    Event_Send(NULL, (const int8u*)&Event, Event.EventSize);
+}
+
+//---------------------------------------------------------------------------
+void MediaInfo_Config_MediaInfo::Event_SubFile_Missing_Absolute(const Ztring &FileName_Absolute)
+{
+    Ztring FileName_Relative;
+    if (File_Names_RootDirectory.empty())
+    {
+        FileName FN(FileName_Absolute);
+        FileName_Relative=FN.Name_Get();
+        if (!FN.Extension_Get().empty())
+        {
+            FileName_Relative+=__T('.');
+            FileName_Relative+=FN.Extension_Get();
+        }
+    }
+    else
+    {
+        Ztring Root=File_Names_RootDirectory+PathSeparator;
+        FileName_Relative=FileName_Absolute;
+        if (FileName_Relative.find(Root)==0)
+            FileName_Relative.erase(0, Root.size());
+    }
+
+    struct MediaInfo_Event_General_SubFile_Missing_0 Event;
+    memset(&Event, 0xFF, sizeof(struct MediaInfo_Event_Generic));
+    Event.EventCode=MediaInfo_EventCode_Create(0, MediaInfo_Event_General_SubFile_Missing, 0);
+    Event.EventSize=sizeof(struct MediaInfo_Event_General_SubFile_Missing_0);
+    Event.StreamIDs_Size=0;
+
+    std::string FileName_Relative_Ansi=FileName_Relative.To_UTF8();
+    std::wstring FileName_Relative_Unicode=FileName_Relative.To_Unicode();
+    std::string FileName_Absolute_Ansi=FileName_Absolute.To_UTF8();
+    std::wstring FileName_Absolute_Unicode=FileName_Absolute.To_Unicode();
+    Event.FileName_Relative=FileName_Relative_Ansi.c_str();
+    Event.FileName_Relative_Unicode=FileName_Relative_Unicode.c_str();
+    Event.FileName_Absolute=FileName_Absolute_Ansi.c_str();
+    Event.FileName_Absolute_Unicode=FileName_Absolute_Unicode.c_str();
+
+    Event_Send(NULL, (const int8u*)&Event, Event.EventSize);
+}
 #endif //MEDIAINFO_EVENTS
 
 //***************************************************************************
