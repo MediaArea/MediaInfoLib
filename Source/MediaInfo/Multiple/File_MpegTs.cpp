@@ -33,6 +33,7 @@
 #if MEDIAINFO_EVENTS
     #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
     #include "MediaInfo/MediaInfo_Events_Internal.h"
+    #include "MediaInfo/MediaInfo_Config_PerPackage.h"
 #endif //MEDIAINFO_EVENTS
 #if MEDIAINFO_IBIUSAGE && MEDIAINFO_SEEK
     #include "MediaInfo/Multiple/File_Ibi.h"
@@ -1920,6 +1921,10 @@ void File_MpegTs::Read_Buffer_Unsynched()
     Clear(Stream_General, 0, General_Duration_End);
     for (size_t StreamPos=0; StreamPos<Count_Get(Stream_Menu); StreamPos++)
         Clear(Stream_Menu, StreamPos, Menu_Duration);
+    #if MEDIAINFO_EVENTS
+        if (Config->Config_PerPackage)
+            Config->Config_PerPackage->Unsynch();
+    #endif //MEDIAINFO_EVENTS
 }
 
 //---------------------------------------------------------------------------

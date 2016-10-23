@@ -1676,6 +1676,11 @@ void File__ReferenceFilesHelper::Read_Buffer_Unsynched()
         DTS_Minimal=(int64u)-1;
         Config->Demux_EventWasSent=true; //We want not try to read new data from the file
     #endif //MEDIAINFO_DEMUX
+
+    #if MEDIAINFO_EVENTS
+        if (Config->Config_PerPackage)
+            Config->Config_PerPackage->Unsynch();
+    #endif //MEDIAINFO_EVENTS
 }
 
 //---------------------------------------------------------------------------

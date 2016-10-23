@@ -53,6 +53,14 @@ public :
 
     //General
     Ztring Option (const String &Option, const String &Value=Ztring());
+    #if MEDIAINFO_EVENTS
+    void   Unsynch();
+    #endif //MEDIAINFO_EVENTS
+
+    #if MEDIAINFO_EVENTS
+    void          FrameForAlignment (File__Analyze* Source, bool IsClosedGop);
+    void          IsClosedGOP (File__Analyze* Source);
+    #endif //MEDIAINFO_EVENTS
 
     #if MEDIAINFO_EVENTS
     bool          Event_CallBackFunction_IsSet ();

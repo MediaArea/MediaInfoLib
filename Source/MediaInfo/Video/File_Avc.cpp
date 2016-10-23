@@ -78,6 +78,7 @@ const char* Avc_profile_idc(int8u profile_idc)
 #endif //MEDIAINFO_ADVANCED2
 #if MEDIAINFO_EVENTS
     #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
+    #include "MediaInfo/MediaInfo_Config_PerPackage.h"
     #include "MediaInfo/MediaInfo_Events.h"
     #include "MediaInfo/MediaInfo_Events_Internal.h"
 #endif //MEDIAINFO_EVENTS
@@ -1226,7 +1227,14 @@ bool File_Avc::Demux_UnpacketizeContainer_Test()
         File_Avc* MI=new File_Avc;
         Element_Code=(int64u)-1;
         Open_Buffer_Init(MI);
+        #ifdef MEDIAINFO_EVENTS
+            MediaInfo_Config_PerPackage* Config_PerPackage_Temp=MI->Config->Config_PerPackage;
+            MI->Config->Config_PerPackage=NULL;
+        #endif //MEDIAINFO_EVENTS
         Open_Buffer_Continue(MI, Buffer, Buffer_Size);
+        #ifdef MEDIAINFO_EVENTS
+            MI->Config->Config_PerPackage=Config_PerPackage_Temp;
+        #endif //MEDIAINFO_EVENTS
         bool IsOk=MI->Status[IsAccepted];
         delete MI;
         if (!IsOk)
@@ -1845,7 +1853,21 @@ void File_Avc::slice_header()
     Get_UE (first_mb_in_slice,                                  "first_mb_in_slice");
     Get_UE (slice_type,                                         "slice_type"); Param_Info1C((slice_type<10), Avc_slice_type[slice_type]);
     #if MEDIAINFO_EVENTS
+        if (!first_mb_in_slice)
         {
+            switch(Element_Code)
+            {
+                case 5 :    // This is an IDR frame
+                            if (Config->Config_PerPackage && Element_Code==0x05) // First slice of an IDR frame
+                            {
+                                // IDR
+                                Config->Config_PerPackage->FrameForAlignment(this, true);
+                                Config->Config_PerPackage->IsClosedGOP(this);
+                            }
+                            break;
+                default :   ; // This is not an IDR frame
+            }
+
             EVENT_BEGIN (Video, SliceInfo, 0)
                 Event.FieldPosition=Field_Count;
                 Event.SlicePosition=Element_IsOK()?first_mb_in_slice:(int64u)-1;
