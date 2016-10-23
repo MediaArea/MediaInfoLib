@@ -3484,13 +3484,13 @@ void File_MpegTs::transport_private_data(int8u transport_private_data_length)
                                             if (EBP_time_flag)
                                             {
                                                 Element_Begin1("EBP_acquisition_time");
-                                                if (Complete_Stream->Streams[pid] && !Complete_Stream->Streams[pid]->EBP_IsPresent)
+                                                if (Complete_Stream->Streams[pid] && !Complete_Stream->Streams[pid]->EBP_Marker_Detected)
                                                 {
                                                     int32u Seconds, Fraction;
                                                     Get_B4 (Seconds, "Seconds");  Param_Info1(Ztring().Date_From_Seconds_1970((int32u)(Seconds-2208988800))); //Param_Info1(Ztring().Date_From_Seconds_1900(Seconds)); //Temp for old ZenLib
                                                     Get_B4 (Fraction, "Fraction"); Param_Info1(Ztring::ToZtring(((float64)Fraction)/0x100000000LL, 9));
                                                     Complete_Stream->Streams[pid]->Infos["EBP_AcquisitionTime"]=Ztring().Date_From_Seconds_1970((int32u)(Seconds-2208988800))+__T('.')+Ztring::ToZtring(((float64)Fraction)/0x100000000LL, 9).substr(2); //.Date_From_Seconds_1900(Seconds)); //Temp for old ZenLib
-                                                    Complete_Stream->Streams[pid]->EBP_IsPresent=true;
+                                                    Complete_Stream->Streams[pid]->EBP_Marker_Detected=true;
                                                 }
                                                 else
                                                 {
