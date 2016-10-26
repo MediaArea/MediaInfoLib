@@ -35,7 +35,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const char* Smpte_St0302_ChannelsPositions(int8u Channels)
+static const char* Smpte_St0302_ChannelsPositions(int8u Channels)
 {
     switch (Channels)
     {
@@ -48,7 +48,7 @@ const char* Smpte_St0302_ChannelsPositions(int8u Channels)
 }
 
 //---------------------------------------------------------------------------
-const char* Smpte_St0302_ChannelsPositions2(int8u Channels)
+static const char* Smpte_St0302_ChannelsPositions2(int8u Channels)
 {
     switch (Channels)
     {

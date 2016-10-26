@@ -74,7 +74,7 @@ namespace MediaInfoLib
 {
 
 //---------------------------------------------------------------------------
-const char* Lxf_Format_Video[16]=
+static const char* Lxf_Format_Video[16]=
 {
     "JPEG",
     "MPEG Video", //Version 1
@@ -95,7 +95,7 @@ const char* Lxf_Format_Video[16]=
 };
 
 //---------------------------------------------------------------------------
-const char* Lxf_PictureType[4]=
+static const char* Lxf_PictureType[4]=
 {
     "I", //Closed
     "I", //Open

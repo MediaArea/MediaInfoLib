@@ -253,7 +253,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const float32 Mpegv_aspect_ratio1[]=
+static const float32 Mpegv_aspect_ratio1[]=
 {
     (float32)0,
     (float32)1,
@@ -274,7 +274,7 @@ const float32 Mpegv_aspect_ratio1[]=
 };
 
 //---------------------------------------------------------------------------
-const float32 Mpegv_aspect_ratio2[]=
+static const float32 Mpegv_aspect_ratio2[]=
 {
     (float32)0,
     (float32)1,
@@ -295,7 +295,7 @@ const float32 Mpegv_aspect_ratio2[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Mpegv_video_format[]=
+static const char* Mpegv_video_format[]=
 {
     "Component",
     "PAL",
@@ -308,7 +308,7 @@ const char* Mpegv_video_format[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Mpegv_picture_structure[]=
+static const char* Mpegv_picture_structure[]=
 {
     "",
     "T", //Top Field
@@ -316,7 +316,7 @@ const char* Mpegv_picture_structure[]=
     "F", //Frame
 };
 
-const char* Mpegv_picture_coding_type[]=
+static const char* Mpegv_picture_coding_type[]=
 {
     "",
     "I",
@@ -328,7 +328,7 @@ const char* Mpegv_picture_coding_type[]=
     "",
 };
 
-const char* Mpegv_extension_start_code_identifier[]=
+static const char* Mpegv_extension_start_code_identifier[]=
 {
     "",
     "Sequence",
@@ -350,7 +350,7 @@ const char* Mpegv_extension_start_code_identifier[]=
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_MACROBLOCKS
-const int8u Mpegv_block_count[4]=
+static const int8u Mpegv_block_count[4]=
 {
     0,
     6,

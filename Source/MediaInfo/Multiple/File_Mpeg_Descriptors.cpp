@@ -876,7 +876,7 @@ extern const int8u  AC3_Channels[]; //In Audio/File_Ac3.cpp
 extern const char*  AC3_Mode[]; //In Audio/File_Ac3.cpp
 extern const char*  AC3_Surround[]; //In Audio/File_Ac3.cpp
 
-const char* Mpeg_Descriptors_AC3_Channels[]=
+static const char* Mpeg_Descriptors_AC3_Channels[]=
 {
     "1",
     "2",
@@ -888,7 +888,7 @@ const char* Mpeg_Descriptors_AC3_Channels[]=
     "",
 };
 
-const char* Mpeg_Descriptors_AC3_Priority[]=
+static const char* Mpeg_Descriptors_AC3_Priority[]=
 {
     "",
     "Primary Audio",
@@ -897,7 +897,7 @@ const char* Mpeg_Descriptors_AC3_Priority[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Mpeg_Descriptors_bandwidth[]=
+static const char* Mpeg_Descriptors_bandwidth[]=
 {
     "8 MHz",
     "7 MHz",
@@ -910,7 +910,7 @@ const char* Mpeg_Descriptors_bandwidth[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Mpeg_Descriptors_constellation[]=
+static const char* Mpeg_Descriptors_constellation[]=
 {
     "QPSK",
     "16-QAM",
@@ -919,7 +919,7 @@ const char* Mpeg_Descriptors_constellation[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Mpeg_Descriptors_hierarchy_information[]=
+static const char* Mpeg_Descriptors_hierarchy_information[]=
 {
     "non-hierarchical, native interleaver",
     "1, native interleaver",
@@ -932,7 +932,7 @@ const char* Mpeg_Descriptors_hierarchy_information[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Mpeg_Descriptors_code_rate[]=
+static const char* Mpeg_Descriptors_code_rate[]=
 {
     "1/2",
     "2/3",
@@ -945,7 +945,7 @@ const char* Mpeg_Descriptors_code_rate[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Mpeg_Descriptors_guard_interval[]=
+static const char* Mpeg_Descriptors_guard_interval[]=
 {
     "1/32",
     "1/16",
@@ -954,7 +954,7 @@ const char* Mpeg_Descriptors_guard_interval[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Mpeg_Descriptors_transmission_mode[]=
+static const char* Mpeg_Descriptors_transmission_mode[]=
 {
     "2k mode",
     "8k mode",
@@ -1172,7 +1172,7 @@ const char* Mpeg_Descriptors_CA_system_ID(int16u CA_system_ID)
 }
 
 //---------------------------------------------------------------------------
-bool Mpeg_Descriptors_CA_system_ID_MustSkipSlices(int16u CA_system_ID)
+static bool Mpeg_Descriptors_CA_system_ID_MustSkipSlices(int16u CA_system_ID)
 {
     switch (CA_system_ID)
     {

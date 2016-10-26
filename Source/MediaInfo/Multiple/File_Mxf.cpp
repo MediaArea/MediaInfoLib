@@ -448,7 +448,7 @@ extern const char* AfdBarData_active_format_4_3[];
 extern const char* AfdBarData_active_format_16_9[];
 
 //---------------------------------------------------------------------------
-const char* Mxf_Category(int8u Category)
+static const char* Mxf_Category(int8u Category)
 {
     switch(Category)
     {
@@ -461,7 +461,7 @@ const char* Mxf_Category(int8u Category)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_Registry(int8u Category, int8u Registry)
+static const char* Mxf_Registry(int8u Category, int8u Registry)
 {
     switch(Category)
     {
@@ -492,7 +492,7 @@ const char* Mxf_Registry(int8u Category, int8u Registry)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_Structure(int8u Category, int8u Registry, int8u Structure)
+static const char* Mxf_Structure(int8u Category, int8u Registry, int8u Structure)
 {
     switch(Category)
     {
@@ -512,7 +512,7 @@ const char* Mxf_Structure(int8u Category, int8u Registry, int8u Structure)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_MPEG2_CodedContentType(int8u CodedContentType)
+static const char* Mxf_MPEG2_CodedContentType(int8u CodedContentType)
 {
     switch(CodedContentType)
     {
@@ -524,7 +524,7 @@ const char* Mxf_MPEG2_CodedContentType(int8u CodedContentType)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_OperationalPattern(const int128u OperationalPattern)
+static const char* Mxf_OperationalPattern(const int128u OperationalPattern)
 {
     //Item and Package Complexity
     int32u Code_Compare4=(int32u)OperationalPattern.lo;
@@ -557,7 +557,7 @@ const char* Mxf_OperationalPattern(const int128u OperationalPattern)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_EssenceElement(const int128u EssenceElement)
+static const char* Mxf_EssenceElement(const int128u EssenceElement)
 {
     if ((EssenceElement.hi&0xFFFFFFFFFFFFFF00LL)!=0x060E2B3401020100LL)
         return "";
@@ -647,7 +647,7 @@ const char* Mxf_EssenceElement(const int128u EssenceElement)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_EssenceContainer(const int128u EssenceContainer)
+static const char* Mxf_EssenceContainer(const int128u EssenceContainer)
 {
     if ((EssenceContainer.hi&0xFFFFFFFFFFFFFF00LL)!=0x060E2B3404010100LL)
         return "";
@@ -754,7 +754,7 @@ const char* Mxf_EssenceContainer(const int128u EssenceContainer)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_EssenceContainer_Mapping(int8u Code6, int8u Code7, int8u Code8)
+static const char* Mxf_EssenceContainer_Mapping(int8u Code6, int8u Code7, int8u Code8)
 {
     switch (Code6)
     {
@@ -835,7 +835,7 @@ const char* Mxf_EssenceContainer_Mapping(int8u Code6, int8u Code7, int8u Code8)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_EssenceCompression(const int128u EssenceCompression)
+static const char* Mxf_EssenceCompression(const int128u EssenceCompression)
 {
     if ((EssenceCompression.hi&0xFFFFFFFFFFFFFF00LL)!=0x060E2B3404010100LL || !((EssenceCompression.lo&0xFF00000000000000LL)==0x0400000000000000LL || (EssenceCompression.lo&0xFF00000000000000LL)==0x0E00000000000000LL))
         return "";
@@ -1035,7 +1035,7 @@ const char* Mxf_EssenceCompression(const int128u EssenceCompression)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_EssenceCompression_Profile(const int128u EssenceCompression)
+static const char* Mxf_EssenceCompression_Profile(const int128u EssenceCompression)
 {
     int8u Code2=(int8u)((EssenceCompression.lo&0x00FF000000000000LL)>>48);
     int8u Code3=(int8u)((EssenceCompression.lo&0x0000FF0000000000LL)>>40);
@@ -1089,7 +1089,7 @@ const char* Mxf_EssenceCompression_Profile(const int128u EssenceCompression)
     }
 }
 //---------------------------------------------------------------------------
-const char* Mxf_EssenceCompression_Version(const int128u EssenceCompression)
+static const char* Mxf_EssenceCompression_Version(const int128u EssenceCompression)
 {
     int8u Code2=(int8u)((EssenceCompression.lo&0x00FF000000000000LL)>>48);
     int8u Code3=(int8u)((EssenceCompression.lo&0x0000FF0000000000LL)>>40);
@@ -1158,7 +1158,7 @@ const char* Mxf_EssenceCompression_Version(const int128u EssenceCompression)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_Sequence_DataDefinition(const int128u DataDefinition)
+static const char* Mxf_Sequence_DataDefinition(const int128u DataDefinition)
 {
     int8u Code4=(int8u)((DataDefinition.lo&0x000000FF00000000LL)>>32);
     int8u Code5=(int8u)((DataDefinition.lo&0x00000000FF000000LL)>>24);
@@ -1187,7 +1187,7 @@ const char* Mxf_Sequence_DataDefinition(const int128u DataDefinition)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_FrameLayout(int8u FrameLayout)
+static const char* Mxf_FrameLayout(int8u FrameLayout)
 {
     switch (FrameLayout)
     {
@@ -1201,7 +1201,7 @@ const char* Mxf_FrameLayout(int8u FrameLayout)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_FrameLayout_ScanType(int8u FrameLayout)
+static const char* Mxf_FrameLayout_ScanType(int8u FrameLayout)
 {
     switch (FrameLayout)
     {
@@ -1215,7 +1215,7 @@ const char* Mxf_FrameLayout_ScanType(int8u FrameLayout)
 }
 
 //---------------------------------------------------------------------------
-int8u Mxf_FrameLayout_Multiplier(int8u FrameLayout)
+static int8u Mxf_FrameLayout_Multiplier(int8u FrameLayout)
 {
     switch (FrameLayout)
     {
@@ -1229,7 +1229,7 @@ int8u Mxf_FrameLayout_Multiplier(int8u FrameLayout)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_ColorPrimaries(const int128u ColorPrimaries)
+static const char* Mxf_ColorPrimaries(const int128u ColorPrimaries)
 {
     int32u Code_Compare4=(int32u)ColorPrimaries.lo;
     switch ((int8u)(Code_Compare4>>16))
@@ -1242,7 +1242,7 @@ const char* Mxf_ColorPrimaries(const int128u ColorPrimaries)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_TransferCharacteristic(const int128u TransferCharacteristic)
+static const char* Mxf_TransferCharacteristic(const int128u TransferCharacteristic)
 {
     int32u Code_Compare4=(int32u)TransferCharacteristic.lo;
     switch ((int8u)(Code_Compare4>>16))
@@ -1259,7 +1259,7 @@ const char* Mxf_TransferCharacteristic(const int128u TransferCharacteristic)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_CodingEquations(const int128u CodingEquations)
+static const char* Mxf_CodingEquations(const int128u CodingEquations)
 {
     int32u Code_Compare4=(int32u)CodingEquations.lo;
     switch ((int8u)(Code_Compare4>>16))
@@ -1272,7 +1272,7 @@ const char* Mxf_CodingEquations(const int128u CodingEquations)
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_ChannelAssignment_ChannelPositions(const int128u ChannelLayout, int32u ChannelsCount)
+static const char* Mxf_ChannelAssignment_ChannelPositions(const int128u ChannelLayout, int32u ChannelsCount)
 {
     //Sound Channel Labeling
     if ((ChannelLayout.hi&0xFFFFFFFFFFFFFF00LL)!=0x060E2B3404010100LL && (ChannelLayout.lo&0xFFFFFFFF00000000LL)!=0x0402021000000000LL)
@@ -1319,7 +1319,7 @@ const char* Mxf_ChannelAssignment_ChannelPositions(const int128u ChannelLayout, 
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_ChannelAssignment_ChannelPositions2(const int128u ChannelLayout, int32u ChannelsCount=(int32u)-1)
+static const char* Mxf_ChannelAssignment_ChannelPositions2(const int128u ChannelLayout, int32u ChannelsCount=(int32u)-1)
 {
     //Sound Channel Labeling
     if ((ChannelLayout.hi&0xFFFFFFFFFFFFFF00LL)!=0x060E2B3404010100LL && (ChannelLayout.lo&0xFFFFFFFF00000000LL)!=0x0402021000000000LL)
@@ -1366,7 +1366,7 @@ const char* Mxf_ChannelAssignment_ChannelPositions2(const int128u ChannelLayout,
 }
 
 //---------------------------------------------------------------------------
-const char* Mxf_ChannelAssignment_ChannelLayout(const int128u ChannelLayout, int32u ChannelsCount=(int32u)-1)
+static const char* Mxf_ChannelAssignment_ChannelLayout(const int128u ChannelLayout, int32u ChannelsCount=(int32u)-1)
 {
     //Sound Channel Labeling
     if ((ChannelLayout.hi&0xFFFFFFFFFFFFFF00LL)!=0x060E2B3404010100LL && (ChannelLayout.lo&0xFFFFFFFF00000000LL)!=0x0402021000000000LL)
@@ -1411,12 +1411,12 @@ const char* Mxf_ChannelAssignment_ChannelLayout(const int128u ChannelLayout, int
         default   : return "";
     }
 }
-const char* Mxf_ChannelAssignment_ChannelLayout(const int128u ChannelLayout)
+static const char* Mxf_ChannelAssignment_ChannelLayout(const int128u ChannelLayout)
 {
     return Mxf_ChannelAssignment_ChannelLayout(ChannelLayout, (int32u)-1);
 }
 
-string MXF_MCALabelDictionaryID_ChannelPositions(const std::vector<int128u> &MCALabelDictionaryIDs)
+static string MXF_MCALabelDictionaryID_ChannelPositions(const std::vector<int128u> &MCALabelDictionaryIDs)
 {
     string ToReturn;
     bitset<8> Front, Side, Back, Lfe;
@@ -1555,7 +1555,7 @@ string MXF_MCALabelDictionaryID_ChannelPositions(const std::vector<int128u> &MCA
     return ToReturn;
 }
 
-string MXF_MCALabelDictionaryID_ChannelLayout(const std::vector<int128u> &MCALabelDictionaryIDs)
+static string MXF_MCALabelDictionaryID_ChannelLayout(const std::vector<int128u> &MCALabelDictionaryIDs)
 {
     string ToReturn;
 
@@ -1637,7 +1637,7 @@ string MXF_MCALabelDictionaryID_ChannelLayout(const std::vector<int128u> &MCALab
 
 //---------------------------------------------------------------------------
 const size_t Mxf_AS11_ClosedCaptionType_Count=2;
-const char* Mxf_AS11_ClosedCaptionType[Mxf_AS11_ClosedCaptionType_Count]=
+static const char* Mxf_AS11_ClosedCaptionType[Mxf_AS11_ClosedCaptionType_Count]=
 {
     "Hard of Hearing",
     "Translation",
@@ -1645,7 +1645,7 @@ const char* Mxf_AS11_ClosedCaptionType[Mxf_AS11_ClosedCaptionType_Count]=
 
 //---------------------------------------------------------------------------
 const size_t Mxf_AS11_AudioTrackLayout_Count=0x35;
-const char* Mxf_AS11_AudioTrackLayout[Mxf_AS11_AudioTrackLayout_Count]=
+static const char* Mxf_AS11_AudioTrackLayout[Mxf_AS11_AudioTrackLayout_Count]=
 {
     "EBU R 48: 1a",
     "EBU R 48: 1b",
@@ -1706,7 +1706,7 @@ struct mxf_as11_audiotracklayout_assignment
     size_t Count;
     const char* Assign[16];
 };
-const mxf_as11_audiotracklayout_assignment Mxf_AS11_AudioTrackLayout_ChannelPositions[Mxf_AS11_AudioTrackLayout_Count]=
+static const mxf_as11_audiotracklayout_assignment Mxf_AS11_AudioTrackLayout_ChannelPositions[Mxf_AS11_AudioTrackLayout_Count]=
 {
     {  2, "Front: C", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, }, //48 1a
     {  4, "Front: C", NULL, "Front: C", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, }, //48 1b
@@ -1762,7 +1762,7 @@ const mxf_as11_audiotracklayout_assignment Mxf_AS11_AudioTrackLayout_ChannelPosi
     { 16, "Front: L", "Front: R", "Front: C", "LFE", "Side: L", "Side: R", "Front: L", "Front: R", "Front: C", "LFE", "Side: L", "Side: R", "Side: L", "Side: R", "Side: L", "Side: R", }, //123 16e
     { 16, "Front: L", "Front: R", NULL, NULL, "Front: L", "Front: R", NULL, NULL, "Front: L", "Front: R", NULL, NULL, "Front: L", "Front: R", "Front: L", "Front: R", }, //123 16f
 };
-const mxf_as11_audiotracklayout_assignment Mxf_AS11_AudioTrackLayout_ChannelLayout[Mxf_AS11_AudioTrackLayout_Count]=
+static const mxf_as11_audiotracklayout_assignment Mxf_AS11_AudioTrackLayout_ChannelLayout[Mxf_AS11_AudioTrackLayout_Count]=
 {
     {  2, "C", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, }, //48 1a
     {  4, "C", NULL, "C", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, }, //48 1b
@@ -1822,7 +1822,7 @@ const mxf_as11_audiotracklayout_assignment Mxf_AS11_AudioTrackLayout_ChannelLayo
 
 //---------------------------------------------------------------------------
 const size_t Mxf_AS11_FpaPass_Count=3;
-const char* Mxf_AS11_FpaPass[Mxf_AS11_FpaPass_Count]=
+static const char* Mxf_AS11_FpaPass[Mxf_AS11_FpaPass_Count]=
 {
     "Yes",
     "No",
@@ -1831,7 +1831,7 @@ const char* Mxf_AS11_FpaPass[Mxf_AS11_FpaPass_Count]=
 
 //---------------------------------------------------------------------------
 const size_t Mxf_AS11_SigningPresent_Count=3;
-const char* Mxf_AS11_SigningPresent[Mxf_AS11_SigningPresent_Count]=
+static const char* Mxf_AS11_SigningPresent[Mxf_AS11_SigningPresent_Count]=
 {
     "Yes",
     "No",
@@ -1840,7 +1840,7 @@ const char* Mxf_AS11_SigningPresent[Mxf_AS11_SigningPresent_Count]=
 
 //---------------------------------------------------------------------------
 const size_t Mxf_AS11_3D_Type_Count=4;
-const char* Mxf_AS11_3D_Type[Mxf_AS11_3D_Type_Count]=
+static const char* Mxf_AS11_3D_Type[Mxf_AS11_3D_Type_Count]=
 {
     "Side by side",
     "Dual",
@@ -1850,7 +1850,7 @@ const char* Mxf_AS11_3D_Type[Mxf_AS11_3D_Type_Count]=
 
 //---------------------------------------------------------------------------
 const size_t Mxf_AS11_AudioLoudnessStandard_Count=2;
-const char* Mxf_AS11_AudioLoudnessStandard[Mxf_AS11_AudioLoudnessStandard_Count]=
+static const char* Mxf_AS11_AudioLoudnessStandard[Mxf_AS11_AudioLoudnessStandard_Count]=
 {
     "",
     "EBU R 128",
@@ -1858,7 +1858,7 @@ const char* Mxf_AS11_AudioLoudnessStandard[Mxf_AS11_AudioLoudnessStandard_Count]
 
 //---------------------------------------------------------------------------
 const size_t Mxf_AS11_AudioDescriptionType_Count=2;
-const char* Mxf_AS11_AudioDescriptionType[Mxf_AS11_AudioDescriptionType_Count]=
+static const char* Mxf_AS11_AudioDescriptionType[Mxf_AS11_AudioDescriptionType_Count]=
 {
     "Control data / Narration",
     "AD Mix",
@@ -1866,7 +1866,7 @@ const char* Mxf_AS11_AudioDescriptionType[Mxf_AS11_AudioDescriptionType_Count]=
 
 //---------------------------------------------------------------------------
 const size_t Mxf_AS11_OpenCaptionsType_Count=2;
-const char* Mxf_AS11_OpenCaptionsType[Mxf_AS11_OpenCaptionsType_Count]=
+static const char* Mxf_AS11_OpenCaptionsType[Mxf_AS11_OpenCaptionsType_Count]=
 {
     "Hard of Hearing",
     "Translation",
@@ -1874,7 +1874,7 @@ const char* Mxf_AS11_OpenCaptionsType[Mxf_AS11_OpenCaptionsType_Count]=
 
 //---------------------------------------------------------------------------
 const size_t Mxf_AS11_SignLanguage_Count=2;
-const char* Mxf_AS11_SignLanguage[Mxf_AS11_SignLanguage_Count]=
+static const char* Mxf_AS11_SignLanguage[Mxf_AS11_SignLanguage_Count]=
 {
     "BSL (British Sign Language)",
     "BSL (Makaton)",
@@ -1883,7 +1883,7 @@ const char* Mxf_AS11_SignLanguage[Mxf_AS11_SignLanguage_Count]=
 
 //---------------------------------------------------------------------------
 // EBU Tech 3349
-string Mxf_CameraUnitMetadata_GammaforCDL(int8u Value)
+static string Mxf_CameraUnitMetadata_GammaforCDL(int8u Value)
 {
     switch(Value)
     {
@@ -1898,7 +1898,7 @@ string Mxf_CameraUnitMetadata_GammaforCDL(int8u Value)
 
 //---------------------------------------------------------------------------
 // EBU Tech 3349
-string Mxf_CameraUnitMetadata_NeutralDensityFilterWheelSetting(int16u Value)
+static string Mxf_CameraUnitMetadata_NeutralDensityFilterWheelSetting(int16u Value)
 {
     switch(Value)
     {
@@ -1909,7 +1909,7 @@ string Mxf_CameraUnitMetadata_NeutralDensityFilterWheelSetting(int16u Value)
 
 //---------------------------------------------------------------------------
 // EBU Tech 3349
-string Mxf_CameraUnitMetadata_ImageSensorReadoutMode(int8u Value)
+static string Mxf_CameraUnitMetadata_ImageSensorReadoutMode(int8u Value)
 {
     switch(Value)
     {
@@ -1923,7 +1923,7 @@ string Mxf_CameraUnitMetadata_ImageSensorReadoutMode(int8u Value)
 
 //---------------------------------------------------------------------------
 // EBU Tech 3349
-string Mxf_CameraUnitMetadata_CaptureGammaEquation(int128u Value)
+static string Mxf_CameraUnitMetadata_CaptureGammaEquation(int128u Value)
 {
     switch(Value.lo)
     {
@@ -1987,7 +1987,7 @@ string Mxf_CameraUnitMetadata_CaptureGammaEquation(int128u Value)
 
 //---------------------------------------------------------------------------
 // RDD 18
-string Mxf_CameraUnitMetadata_AutoExposureMode(int128u Value)
+static string Mxf_CameraUnitMetadata_AutoExposureMode(int128u Value)
 {
     switch(Value.lo)
     {
@@ -2009,7 +2009,7 @@ string Mxf_CameraUnitMetadata_AutoExposureMode(int128u Value)
 
 //---------------------------------------------------------------------------
 // RDD 18
-string Mxf_CameraUnitMetadata_AutoFocusSensingAreaSetting(int8u Value)
+static string Mxf_CameraUnitMetadata_AutoFocusSensingAreaSetting(int8u Value)
 {
     switch(Value)
     {
@@ -2024,7 +2024,7 @@ string Mxf_CameraUnitMetadata_AutoFocusSensingAreaSetting(int8u Value)
 
 //---------------------------------------------------------------------------
 // RDD 18
-string Mxf_CameraUnitMetadata_ColorCorrectionFilterWheelSetting(int8u Value)
+static string Mxf_CameraUnitMetadata_ColorCorrectionFilterWheelSetting(int8u Value)
 {
     switch(Value)
     {
@@ -2039,7 +2039,7 @@ string Mxf_CameraUnitMetadata_ColorCorrectionFilterWheelSetting(int8u Value)
 
 //---------------------------------------------------------------------------
 // RDD 18
-string Mxf_CameraUnitMetadata_AutoWhiteBalanceMode(int8u Value)
+static string Mxf_CameraUnitMetadata_AutoWhiteBalanceMode(int8u Value)
 {
     switch(Value)
     {
@@ -2053,7 +2053,7 @@ string Mxf_CameraUnitMetadata_AutoWhiteBalanceMode(int8u Value)
 
 //---------------------------------------------------------------------------
 // CameraUnitMetadata
-string Mxf_AcquisitionMetadata_ElementName(int16u Value, bool IsSony=false)
+static string Mxf_AcquisitionMetadata_ElementName(int16u Value, bool IsSony=false)
 {
     if (IsSony)
         switch (Value)
@@ -2120,7 +2120,7 @@ string Mxf_AcquisitionMetadata_ElementName(int16u Value, bool IsSony=false)
 //---------------------------------------------------------------------------
 // CameraUnitMetadata - Sony E201 (Values are internal MI)
 const size_t Mxf_AcquisitionMetadata_Sony_E201_ElementCount = 11;
-const char* Mxf_AcquisitionMetadata_Sony_E201_ElementName[Mxf_AcquisitionMetadata_Sony_E201_ElementCount] =
+static const char* Mxf_AcquisitionMetadata_Sony_E201_ElementName[Mxf_AcquisitionMetadata_Sony_E201_ElementCount] =
 {
     "FocusDistance",
     "ApertureValue",
@@ -2137,7 +2137,7 @@ const char* Mxf_AcquisitionMetadata_Sony_E201_ElementName[Mxf_AcquisitionMetadat
 
 //---------------------------------------------------------------------------
 // Read from SR Viewer program
-string Mxf_AcquisitionMetadata_Sony_CameraProcessDiscriminationCode(int16u Value)
+static string Mxf_AcquisitionMetadata_Sony_CameraProcessDiscriminationCode(int16u Value)
 {
     switch (Value)
     {
@@ -2150,7 +2150,7 @@ string Mxf_AcquisitionMetadata_Sony_CameraProcessDiscriminationCode(int16u Value
 
 //---------------------------------------------------------------------------
 // Read from SR Viewer program
-string Mxf_AcquisitionMetadata_Sony_MonitoringBaseCurve(int128u Value)
+static string Mxf_AcquisitionMetadata_Sony_MonitoringBaseCurve(int128u Value)
 {
     switch(Value.lo)
     {

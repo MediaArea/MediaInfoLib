@@ -59,7 +59,7 @@ namespace Elements
     const int64u    Config_VbrDetection_Occurences=4;
 #endif // MEDIAINFO_ADVANCED
 
-const char* Scte128_tag (int8u tag)
+static const char* Scte128_tag (int8u tag)
 {
     switch (tag)
     {
@@ -111,7 +111,7 @@ extern const char* Mpeg_Descriptors_CA_system_ID(int16u CA_system_ID);
 const size_t MpegTs_DtsNeural_2_Count=9;
 const size_t MpegTs_DtsNeural_6_Count=4;
 
-const int8u MpegTs_DtsNeural_Channels_2[MpegTs_DtsNeural_2_Count]=
+static const int8u MpegTs_DtsNeural_Channels_2[MpegTs_DtsNeural_2_Count]=
 {
     0,
     3,
@@ -124,7 +124,7 @@ const int8u MpegTs_DtsNeural_Channels_2[MpegTs_DtsNeural_2_Count]=
     7,
 };
 
-const int8u MpegTs_DtsNeural_Channels_6[MpegTs_DtsNeural_6_Count]=
+static const int8u MpegTs_DtsNeural_Channels_6[MpegTs_DtsNeural_6_Count]=
 {
     0,
     6,
@@ -132,7 +132,7 @@ const int8u MpegTs_DtsNeural_Channels_6[MpegTs_DtsNeural_6_Count]=
     8,
 };
 
-const int8u MpegTs_DtsNeural_Channels(int8u Channels, int8u config_id)
+static const int8u MpegTs_DtsNeural_Channels(int8u Channels, int8u config_id)
 {
     if (config_id==0)
         return 0;
@@ -151,7 +151,7 @@ const int8u MpegTs_DtsNeural_Channels(int8u Channels, int8u config_id)
     }
 }
 
-const char* MpegTs_DtsNeural_ChannelPositions_2[MpegTs_DtsNeural_2_Count]=
+static const char* MpegTs_DtsNeural_ChannelPositions_2[MpegTs_DtsNeural_2_Count]=
 {
     "",
     "Front: L R, LFE",
@@ -164,7 +164,7 @@ const char* MpegTs_DtsNeural_ChannelPositions_2[MpegTs_DtsNeural_2_Count]=
     "Front: L R, Side: L R, Back: L R, LFE",
 };
 
-const char* MpegTs_DtsNeural_ChannelPositions_6[MpegTs_DtsNeural_6_Count]=
+static const char* MpegTs_DtsNeural_ChannelPositions_6[MpegTs_DtsNeural_6_Count]=
 {
     "",
     "Front: L C R, Side: L R",
@@ -172,7 +172,7 @@ const char* MpegTs_DtsNeural_ChannelPositions_6[MpegTs_DtsNeural_6_Count]=
     "Front: L C R, Side: L R, Back: L R",
 };
 
-const char* MpegTs_DtsNeural_ChannelPositions(int8u Channels, int8u config_id)
+static const char* MpegTs_DtsNeural_ChannelPositions(int8u Channels, int8u config_id)
 {
     if (config_id==0)
         return "";
@@ -191,7 +191,7 @@ const char* MpegTs_DtsNeural_ChannelPositions(int8u Channels, int8u config_id)
     }
 }
 
-const char* MpegTs_DtsNeural_ChannelPositions2_2[MpegTs_DtsNeural_2_Count]=
+static const char* MpegTs_DtsNeural_ChannelPositions2_2[MpegTs_DtsNeural_2_Count]=
 {
     "",
     "2/0/0.1",
@@ -204,7 +204,7 @@ const char* MpegTs_DtsNeural_ChannelPositions2_2[MpegTs_DtsNeural_2_Count]=
     "2/2/2.1",
 };
 
-const char* MpegTs_DtsNeural_ChannelPositions2_6[MpegTs_DtsNeural_6_Count]=
+static const char* MpegTs_DtsNeural_ChannelPositions2_6[MpegTs_DtsNeural_6_Count]=
 {
     "",
     "3/2/0.1",
@@ -212,7 +212,7 @@ const char* MpegTs_DtsNeural_ChannelPositions2_6[MpegTs_DtsNeural_6_Count]=
     "3/2/2.1",
 };
 
-const char* MpegTs_DtsNeural_ChannelPositions2(int8u Channels, int8u config_id)
+static const char* MpegTs_DtsNeural_ChannelPositions2(int8u Channels, int8u config_id)
 {
     if (config_id==0)
         return "";
@@ -232,7 +232,7 @@ const char* MpegTs_DtsNeural_ChannelPositions2(int8u Channels, int8u config_id)
 }
 
 //---------------------------------------------------------------------------
-Ztring Decimal_Hexa(int64u Number)
+static Ztring Decimal_Hexa(int64u Number)
 {
     Ztring Temp;
     Temp.From_Number(Number);

@@ -51,7 +51,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const char* Smpte_St0337_data_type[32]= // SMPTE ST 338
+static const char* Smpte_St0337_data_type[32]= // SMPTE ST 338
 {
     "",
     "AC-3",
@@ -88,7 +88,7 @@ const char* Smpte_St0337_data_type[32]= // SMPTE ST 338
 };
 
 //---------------------------------------------------------------------------
-stream_t Smpte_St0337_data_type_StreamKind[32]= // SMPTE 338M
+static stream_t Smpte_St0337_data_type_StreamKind[32]= // SMPTE 338M
 {
     Stream_Max,
     Stream_Audio,

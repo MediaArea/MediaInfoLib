@@ -37,7 +37,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const char* N19_CodePageNumber(int32u CPN)
+static const char* N19_CodePageNumber(int32u CPN)
 {
     switch (CPN)
     {
@@ -51,7 +51,7 @@ const char* N19_CodePageNumber(int32u CPN)
 }
 
 //---------------------------------------------------------------------------
-const char* N19_CharacterCodeTable(int16u CCT)
+static const char* N19_CharacterCodeTable(int16u CCT)
 {
     switch (CCT)
     {
@@ -65,7 +65,7 @@ const char* N19_CharacterCodeTable(int16u CCT)
 }
 
 //---------------------------------------------------------------------------
-float64 N19_DiskFormatCode_FrameRate(int64u DFC)
+static float64 N19_DiskFormatCode_FrameRate(int64u DFC)
 {
     switch (DFC)
     {
@@ -84,7 +84,7 @@ float64 N19_DiskFormatCode_FrameRate(int64u DFC)
 }
 
 //---------------------------------------------------------------------------
-const char* N19_DisplayStandardCode(int8u DSC)
+static const char* N19_DisplayStandardCode(int8u DSC)
 {
     switch (DSC)
     {
@@ -96,7 +96,7 @@ const char* N19_DisplayStandardCode(int8u DSC)
 }
 
 //---------------------------------------------------------------------------
-const char* N19_LanguageCode(int16u LC)
+static const char* N19_LanguageCode(int16u LC)
 {
     switch (LC)
     {

@@ -142,7 +142,7 @@ const char* Avc_video_full_range[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Avc_primary_pic_type[]=
+static const char* Avc_primary_pic_type[]=
 {
     "I",
     "I, P",
@@ -155,7 +155,7 @@ const char* Avc_primary_pic_type[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Avc_slice_type[]=
+static const char* Avc_slice_type[]=
 {
     "P",
     "B",
@@ -171,7 +171,7 @@ const char* Avc_slice_type[]=
 
 //---------------------------------------------------------------------------
 const int8u Avc_pic_struct_Size=9;
-const char* Avc_pic_struct[]=
+static const char* Avc_pic_struct[]=
 {
     "frame",
     "top field",
@@ -185,7 +185,7 @@ const char* Avc_pic_struct[]=
 };
 
 //---------------------------------------------------------------------------
-const int8u Avc_NumClockTS[]=
+static const int8u Avc_NumClockTS[]=
 {
     1,
     1,
@@ -199,7 +199,7 @@ const int8u Avc_NumClockTS[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Avc_ct_type[]=
+static const char* Avc_ct_type[]=
 {
     "Progressive",
     "Interlaced",
@@ -208,7 +208,7 @@ const char* Avc_ct_type[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Avc_Colorimetry_format_idc[]=
+static const char* Avc_Colorimetry_format_idc[]=
 {
     "monochrome",
     "4:2:0",
@@ -217,7 +217,7 @@ const char* Avc_Colorimetry_format_idc[]=
 };
 
 //---------------------------------------------------------------------------
-const int8u Avc_SubWidthC[]=
+static const int8u Avc_SubWidthC[]=
 {
     1,
     2,
