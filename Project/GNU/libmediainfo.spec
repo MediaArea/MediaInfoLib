@@ -199,7 +199,6 @@ install -m 644 Source/MediaInfoDLL/MediaInfoDLL.py %{buildroot}%{_includedir}/Me
 install -m 644 Source/MediaInfoDLL/MediaInfoDLL3.py %{buildroot}%{_includedir}/MediaInfoDLL
 
 rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
-rm -f %{buildroot}%{_bindir}/libmediainfo-config
 
 %post
 
@@ -228,8 +227,8 @@ rm -f %{buildroot}%{_bindir}/libmediainfo-config
 %defattr(-,root,root,-)
 %{_includedir}/MediaInfo
 %{_includedir}/MediaInfoDLL
-%{_libdir}/%{name_without_0_ending}.so
 %{_libdir}/pkgconfig/*.pc
+%{_libdir}/%{name_without_0_ending}.so
 
 %changelog
 * Sun Jan 01 2012 MediaArea.net SARL <info@mediaarea.net> - 0.7.89-0

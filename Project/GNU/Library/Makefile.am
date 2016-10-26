@@ -262,8 +262,6 @@ endif
 
 lib@MediaInfoLib_LibName@_la_LDFLAGS     = -no-undefined -version-info 0:0:0
 
-bin_SCRIPTS = libmediainfo-config
-
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libmediainfo.pc
 
