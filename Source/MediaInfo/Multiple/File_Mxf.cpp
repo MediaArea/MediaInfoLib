@@ -5128,7 +5128,7 @@ bool File_Mxf::FileHeader_Begin()
         return false;
     }
 
-    //DCA uses buffer interface without filename
+    //In case of buffer interface without filename
     if (File_Name.empty())
         File_Name=Config->File_FileName_Get();
 
@@ -5755,7 +5755,7 @@ void File_Mxf::Data_Parse()
     ELEMENT(ClosedCompleteFooterPartition,                      "Closed and Complete Footer Partition Pack")
     ELEMENT(Primer,                                             "Primer")
     ELEMENT(IndexTableSegment,                                  "Index Table (Segment)")
-    ELEMENT(RandomIndexPack,                                    "Random Index Metadata")
+    ELEMENT(RandomIndexPack,                                    "Random Index Pack")
     ELEMENT(SDTI_SystemMetadataPack,                            "SDTI System Metadata Pack")
     else if (Code_Compare1==Elements::SDTI_SystemMetadataPack1
           && ((Code_Compare2)&0xFF00FFFF)==(Elements::SDTI_SystemMetadataPack2&0xFF00FFFF)

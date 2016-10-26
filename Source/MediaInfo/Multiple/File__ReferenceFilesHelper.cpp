@@ -767,7 +767,8 @@ void File__ReferenceFilesHelper::ParseReferences()
                             else
                                 DTS_Temp=0;
                         }
-                        DTS_Temp+=(*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Current]->Demux_Offset_DTS;
+                        if ((*ReferenceTemp)->Resources_Current<(*ReferenceTemp)->Resources.size())
+                            DTS_Temp+=(*ReferenceTemp)->Resources[(*ReferenceTemp)->Resources_Current]->Demux_Offset_DTS;
                         if (DTS_Minimal>DTS_Temp)
                             DTS_Minimal=DTS_Temp;
                     }
