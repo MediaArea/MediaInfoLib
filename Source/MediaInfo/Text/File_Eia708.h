@@ -36,7 +36,7 @@ public :
     float64 AspectRatio;
     #if MEDIAINFO_EVENTS
         int8u   MuxingMode;
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 
     //Constructor/Destructor
     File_Eia708();

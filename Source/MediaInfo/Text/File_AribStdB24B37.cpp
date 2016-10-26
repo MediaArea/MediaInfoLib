@@ -342,7 +342,7 @@ File_AribStdB24B37::File_AribStdB24B37()
     IsAncillaryData=false;
     #if MEDIAINFO_EVENTS
         MuxingMode=(int8u)-1;
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 
     //Config
     Caption_conversion_type=(int8u)-1;
@@ -750,7 +750,7 @@ void File_AribStdB24B37::caption_statement() //caption_data()
             Event.Row_Values=NULL;
             Event.Row_Attributes=NULL;
         EVENT_END   ()
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 
     Frame_Count++;
     Frame_Count_NotParsedIncluded++;

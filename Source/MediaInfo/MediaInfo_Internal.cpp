@@ -935,7 +935,7 @@ size_t MediaInfo_Internal::Open_Buffer_Finalize ()
         {
             delete Config.Config_PerPackage; Config.Config_PerPackage=NULL;
         }
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 
     EXECUTE_SIZE_T(1, Debug+=__T("Open_Buffer_Finalize, will return 1"))
 }

@@ -2323,7 +2323,7 @@ bool File_Mpeg4::BookMark_Needed()
                             // Hash can not be computed with jumps.
                             delete Hash; Hash=NULL;
                         }
-                    #endif MEDIAINFO_HASH
+                    #endif //MEDIAINFO_HASH
                 }
             }
         #endif // MEDIAINFO_DEMUX

@@ -37,7 +37,7 @@ public :
     int8u   cc_type;
     #if MEDIAINFO_EVENTS
         int8u   MuxingMode;
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 
     //Constructor/Destructor
     File_Eia608();

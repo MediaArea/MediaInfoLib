@@ -288,7 +288,7 @@ void File_SubRip::Read_Buffer_Continue()
 
             Frame_Count++;
         }
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 
     Buffer_Offset=Buffer_Size;
 }

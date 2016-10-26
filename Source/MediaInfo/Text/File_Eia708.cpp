@@ -50,7 +50,7 @@ File_Eia708::File_Eia708()
     AspectRatio=((float32)4)/3; //Default to 4:3
     #if MEDIAINFO_EVENTS
         MuxingMode=(int8u)-1;
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
     ParserName="EIA-708";
 
     //Stream
@@ -181,7 +181,7 @@ void File_Eia708::Read_Buffer_Init()
             if (StreamIDs_Size>=2 && ParserIDs[StreamIDs_Size-2]==MediaInfo_Parser_Scc)
                 MuxingMode=7; //SCC
         }
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 }
 
 //---------------------------------------------------------------------------
@@ -1502,7 +1502,7 @@ void File_Eia708::Window_HasChanged()
             for (size_t Pos_Y=Window->Minimal.CC.size(); Pos_Y<15; Pos_Y++)
                 Event.Row_Values[Pos_Y][0]=L'\0';
         EVENT_END   ()
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 }
 
 //---------------------------------------------------------------------------
@@ -1522,7 +1522,7 @@ void File_Eia708::HasChanged()
                 Event.Row_Values[Pos_Y][(size_t)(24*AspectRatio)]=L'\0';
             }
         EVENT_END   ()
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 }
 
 //---------------------------------------------------------------------------

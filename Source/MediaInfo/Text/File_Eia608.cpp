@@ -76,7 +76,7 @@ File_Eia608::File_Eia608()
     cc_type=(int8u)-1;
     #if MEDIAINFO_EVENTS
         MuxingMode=(int8u)-1;
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 
     //Temp
     XDS_Level=(size_t)-1;
@@ -242,7 +242,7 @@ void File_Eia608::Read_Buffer_Init()
             if (StreamIDs_Size>=3 && ParserIDs[StreamIDs_Size-3]==MediaInfo_Parser_Mpeg4 && ParserIDs[StreamIDs_Size-2]==MediaInfo_Parser_Mpeg4)
                 MuxingMode=14; //Final Cut / cdat
         }
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 }
 
 //---------------------------------------------------------------------------
@@ -1137,7 +1137,7 @@ void File_Eia608::HasChanged()
                     Event.Row_Values[Pos_Y][32]=L'\0';
                 }
             EVENT_END   ()
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 }
 
 //---------------------------------------------------------------------------
