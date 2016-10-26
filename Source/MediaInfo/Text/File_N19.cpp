@@ -357,7 +357,9 @@ void File_N19::FileHeader_Parse()
                 //Fill(Stream_Text, 0, "Delay/String4", TCP);
                 Fill(Stream_Text, 0, "TimeCode_First", TCP);
 
-                TCP_Offset=Delay;
+#if MEDIAINFO_DEMUX
+				TCP_Offset=Delay;
+#endif
             }
         }
         Fill(Stream_Text, 0, Text_Width, MNC.To_int32u());
@@ -442,7 +444,11 @@ void File_N19::Data_Parse()
       +  (int32u)float64_int64s((TCO     &0xFF)      *1000/N19_DiskFormatCode_FrameRate(DFC));
     Param_Info1(Ztring().Duration_From_Milliseconds((int64u)TCO));
     Get_B1    (VP,                                              "VP - Vertical Position");
-    if (VP && IsTeletext)
+    if (VP 
+#if MEDIAINFO_DEMUX
+		&& IsTeletext
+#endif
+		)
         VP--; //1-Based
     Get_B1    (JC,                                              "JC - Justification Code");
     Skip_B1   (                                                 "CF - Comment Flag");
