@@ -26,6 +26,7 @@
 #include "ZenLib/Conf.h"
 using namespace ZenLib;
 using std::bitset;
+using std::string;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
