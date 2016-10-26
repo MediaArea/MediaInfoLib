@@ -35,3 +35,9 @@ Thumbs.db
 Win32
 x64
 *.ipch
+MediaInfoLib.VC.db
+*.opendb
+/Project/MSCS2008/ShellExtension/MediaInfoShellExt.h
+/Project/MSCS2010/ShellExtension/MediaInfoShellExt.h
+/Project/MSVC2013/ShellExtension/MediaInfoShellExt.h
+/Project/MSVC2015/ShellExtension/MediaInfoShellExt.h
