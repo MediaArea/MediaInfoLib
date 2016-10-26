@@ -36,6 +36,8 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Audio/File_DolbyE.h"
+#include <cmath>
+using namespace std;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -578,6 +580,8 @@ File_DolbyE::File_DolbyE()
 
     //In
     GuardBand_Before=0;
+
+    //Out
     GuardBand_After=0;
 
     //Temp
@@ -623,9 +627,7 @@ void File_DolbyE::Streams_Fill()
                 Fill(Stream_Audio, StreamPos_Last, "GuardBand_Before/String", Ztring::ToZtring(GuardBand_Before_Initial_Duration*1000000, 0)+Ztring().From_UTF8(" \xC2xB5s")); //0xC2 0xB5 = micro sign
                 (*Stream_More)[Stream_Audio][StreamPos_Last](Ztring().From_Local("GuardBand_Before"), Info_Options)=__T("N NT");
                 (*Stream_More)[Stream_Audio][StreamPos_Last](Ztring().From_Local("GuardBand_Before/String"), Info_Options)=__T("N NT");
-            }
-            if (GuardBand_Before_Initial)
-            {
+
                 float GuardBand_After_Initial_Duration=GuardBand_After_Initial*8/BitRate;
                 Fill(Stream_Audio, StreamPos_Last, "GuardBand_After", GuardBand_After_Initial_Duration, 9);
                 Fill(Stream_Audio, StreamPos_Last, "GuardBand_After/String", Ztring::ToZtring(GuardBand_After_Initial_Duration*1000000, 0)+Ztring().From_UTF8(" \xC2xB5s")); //0xC2 0xB5 = micro sign
@@ -645,7 +647,7 @@ void File_DolbyE::Streams_Fill()
 bool File_DolbyE::Synchronize()
 {
     //Synchronizing
-    while (Buffer_Offset+32<=Buffer_Size)
+    while (Buffer_Offset+3<=Buffer_Size)
     {
         if ((CC2(Buffer+Buffer_Offset_Temp)&0xFFFE)==0x078E) //16-bit
         {
@@ -669,7 +671,7 @@ bool File_DolbyE::Synchronize()
     }
 
     //Parsing last bytes if needed
-    if (Buffer_Offset+8>Buffer_Size)
+    if (Buffer_Offset+3>Buffer_Size)
         return false;
 
     //Synched
@@ -680,7 +682,7 @@ bool File_DolbyE::Synchronize()
 bool File_DolbyE::Synched_Test()
 {
     //Must have enough buffer for having header
-    if (Buffer_Offset+32>Buffer_Size)
+    if (Buffer_Offset+3>Buffer_Size)
         return false;
 
     //Quick test of synchro
@@ -774,6 +776,9 @@ void File_DolbyE::Data_Parse()
     Block();
     BS_End();
 
+    if (Element_Offset<Element_Size)
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
+
     //In case of scrambling
     if (ScrambledBitStream)
     {
@@ -783,6 +788,46 @@ void File_DolbyE::Data_Parse()
     }
 
     FILLING_BEGIN();
+        {
+            //Guard band
+            if (Mpegv_frame_rate[FrameRate])
+            {
+            int64u BytesPerSecond=96000*BitDepth/8;
+            float64 BytesPerFrame=BytesPerSecond/Mpegv_frame_rate[FrameRate];
+            int64u BytesUpToLastFrame;
+            int64u BytesUpToNextFrame;
+            for (;;)
+            {
+                BytesUpToLastFrame=(int64u)(BytesPerFrame*Frame_Count);
+                BytesUpToLastFrame/=BitDepth/4;
+                BytesUpToLastFrame*=BitDepth/4;
+                BytesUpToNextFrame=(int64u)(BytesPerFrame*(Frame_Count+1));
+                BytesUpToNextFrame/=BitDepth/4;
+                BytesUpToNextFrame*=BitDepth/4;
+
+                if (BytesUpToLastFrame+GuardBand_Before<BytesUpToNextFrame)
+                    break;
+
+                // In case previous frame was PCM
+                Frame_Count++;
+                GuardBand_Before-=BytesUpToNextFrame-BytesUpToLastFrame;
+            }
+            GuardBand_After=BytesUpToNextFrame-BytesUpToLastFrame;
+            int64u ToRemove=GuardBand_Before+(BitDepth>>1)+Element_Size; // Guardband + AES3 header + Dolby E frame
+            if (ToRemove<GuardBand_After)
+                GuardBand_After-=ToRemove;
+            else
+                GuardBand_After=0;
+            GuardBand_After/=BitDepth/4;
+            GuardBand_After*=BitDepth/4;
+
+            Element_Info1(GuardBand_Before);
+            float64 GuardBand_Before_Duration=((float64)GuardBand_Before)/BytesPerSecond;
+            Ztring GuardBand_Before_String=__T("GuardBand_Begin ")+Ztring::ToZtring(GuardBand_Before)+__T(" (")+Ztring::ToZtring(GuardBand_Before_Duration*1000000, 0)+Ztring().From_UTF8(" \0xC20xB5s"); //0xC20xB5 = micro sign
+            Element_Info1(GuardBand_Before_String);
+            }
+        }
+
         if (!Status[IsAccepted])
         {
             Accept("Dolby E");
@@ -820,16 +865,44 @@ void File_DolbyE::Block()
         switch (BitDepth)
         {
             case 16 :
-                        if (!Descramble_16bit())
-                            return;
+                        {
+                        int16u ScrambleMask;
+                        Get_S2 (16, ScrambleMask, "Scramble Mask");
+                        int16u metadata_segment_size=((BigEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Size-Data_BS_Remain()/8)^ScrambleMask)>>2)&0x3FF;
+
+                        if (Data_BS_Remain()<((size_t)metadata_segment_size+1)*(size_t)BitDepth) //+1 for CRC
+                            return; //There is a problem
+
+                        int8u* Temp=Descrambled_Buffer+(size_t)Element_Size-Data_BS_Remain()/8;
+                        for (int16u Pos=0; Pos<metadata_segment_size+1; Pos++)
+                            int16u2BigEndian(Temp+Pos*2, BigEndian2int16u(Temp+Pos*2)^ScrambleMask);
+                        }
                         break;
             case 20 :
-                        if (!Descramble_20bit())
-                            return;
+                        {
+                        int32u ScrambleMask;
+                        Get_S3 (20, ScrambleMask, "Scramble Mask");
+                        int16u metadata_segment_size=((BigEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Size-Data_BS_Remain()/8)^(ScrambleMask>>4))>>2)&0x3FF;
+
+                        if (Data_BS_Remain()<((size_t)metadata_segment_size+1)*(size_t)BitDepth) //+1 for CRC
+                            return; //There is a problem
+
+                        Descramble_20bit(ScrambleMask, metadata_segment_size);
+                        }
                         break;
             case 24 :
-                        if (!Descramble_24bit())
-                            return;
+                        {
+                        int32u ScrambleMask;
+                        Get_S3 (24, ScrambleMask, "Scramble Mask");
+                        int32u metadata_segment_size=((BigEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Size-Data_BS_Remain()/8)^ScrambleMask)>>2)&0x3FF;
+
+                        if (Data_BS_Remain()<((size_t)metadata_segment_size+1)*BitDepth) //+1 for CRC
+                            return; //There is a problem
+
+                        int8u* Temp=Descrambled_Buffer+(size_t)Element_Size-Data_BS_Remain()/8;
+                        for (int16u Pos=0; Pos<metadata_segment_size+1; Pos++)
+                            int24u2BigEndian(Temp+Pos*2, BigEndian2int24u(Temp+Pos*2)^ScrambleMask);
+                        }
                         break;
             default :   ;
         }
@@ -873,8 +946,6 @@ void File_DolbyE::Block()
     Get_S1 (2, Frames_Tens,                                     "Frames (Tens)");
     Get_S1 (4, Frames_Units,                                    "Frames (Units)");
 
-    Skip_BS(Data_BS_Remain(),                                   "Unknown");
-
     if (Hours_Tens<3)
     {
         int64u TimeCode=(int64u)(Hours_Tens     *10*60*60*1000
@@ -898,66 +969,23 @@ void File_DolbyE::Block()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-bool File_DolbyE::Descramble_16bit ()
+void File_DolbyE::Descramble_20bit (int32u key, int16u size)
 {
-    int16u ScrambleMask;
-    Get_S2 (16, ScrambleMask, "Scramble mask");
-    int16u Size=((BigEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Size-Data_BS_Remain()/8)^ScrambleMask)>>2)&0x3FF;
-
-    if (Data_BS_Remain()<(size_t)((Size+1)*BitDepth)) //+1 for additional unknown word
-        return false; //There is a problem
-
     int8u* Temp=Descrambled_Buffer+(size_t)Element_Size-Data_BS_Remain()/8;
-    for (int16u Pos=0; Pos<Size; Pos++)
-        int16u2BigEndian(Temp+Pos*2, BigEndian2int16u(Temp+Pos*2)^ScrambleMask);
-
-    return true;
-}
-
-//---------------------------------------------------------------------------
-bool File_DolbyE::Descramble_20bit ()
-{
-    int32u ScrambleMask;
-    Get_S3 (20, ScrambleMask, "Scramble mask");
-    int16u Size=((BigEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Size-Data_BS_Remain()/8)^(ScrambleMask>>4))>>2)&0x3FF;
-
-    if (Data_BS_Remain()<(size_t)((Size+1)*BitDepth)) //+1 for additional unknown word
-        return false; //There is a problem
-
-    int8u* Temp=Descrambled_Buffer+(size_t)Element_Size-Data_BS_Remain()/8;
-    int64u ScrambleMasks=(((int64u)ScrambleMask)<<20)|ScrambleMask;
+    int64u keys=(((int64u)key)<<20)|key;
     bool Half;
     if (Data_BS_Remain()%8)
     {
         Temp--;
-        int24u2BigEndian(Temp, BigEndian2int24u(Temp)^(ScrambleMask));
+        int24u2BigEndian(Temp, BigEndian2int24u(Temp)^(key));
         Half=true;
     }
     else
         Half=false;
-    for (int16u Pos=0; Pos<Size-(Half?1:0); Pos+=2)
-        int40u2BigEndian(Temp+(Half?3:0)+Pos*5/2, BigEndian2int40u(Temp+(Half?3:0)+Pos*5/2)^ScrambleMasks);
-    if ((Size-((Size && Half)?1:0))%2==0)
-        int24u2BigEndian(Temp+(Half?3:0)+(Size-((Size && Half)?1:0))*5/2, BigEndian2int24u(Temp+(Half?3:0)+(Size-((Size && Half)?1:0))*5/2)^(((int32u)ScrambleMasks)<<4));
-
-    return true;
-}
-
-//---------------------------------------------------------------------------
-bool File_DolbyE::Descramble_24bit ()
-{
-    int32u ScrambleMask;
-    Get_S3 (24, ScrambleMask, "Scramble mask");
-    int32u Size=((BigEndian2int24u(Buffer+Buffer_Offset+(size_t)Element_Size-Data_BS_Remain()/8)^ScrambleMask)>>2)&0x3FF;
-
-    if (Data_BS_Remain()<(size_t)((Size+1)*BitDepth)) //+1 for additional unknown word
-        return false; //There is a problem
-
-    int8u* Temp=Descrambled_Buffer+(size_t)Element_Size-Data_BS_Remain()/8;
-    for (int16u Pos=0; Pos<Size; Pos++)
-        int24u2BigEndian(Temp+Pos*2, BigEndian2int24u(Temp+Pos*2)^ScrambleMask);
-
-    return true;
+    for (int16u Pos=0; Pos<size-(Half?1:0); Pos+=2)
+        int40u2BigEndian(Temp+(Half?3:0)+Pos*5/2, BigEndian2int40u(Temp+(Half?3:0)+Pos*5/2)^keys);
+    if ((size-((size && Half)?1:0))%2==0)
+        int24u2BigEndian(Temp+(Half?3:0)+(size-((size && Half)?1:0))*5/2, BigEndian2int24u(Temp+(Half?3:0)+(size-((size && Half)?1:0))*5/2)^(key<<4));
 }
 
 //***************************************************************************

@@ -31,6 +31,8 @@ class File_DolbyE : public File__Analyze
 public :
     //In
     int64u GuardBand_Before;
+    
+    //Out
     int64u GuardBand_After;
 
     //Constructor/Destructor
@@ -52,9 +54,7 @@ private :
     void Block();
 
     //Helpers
-    bool Descramble_16bit();
-    bool Descramble_20bit();
-    bool Descramble_24bit();
+    void Descramble_20bit(int32u key, int16u size);
 
     //Temp
     int64u  SMPTE_time_code_StartTimecode;
