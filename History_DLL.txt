@@ -20,6 +20,7 @@ Version 0.7.90
 + DXW: support of fake time code attribute
 x Teletext in MPEG-TS: CodecID, format (classic teletext or subtitle), video delay were sometimes not displayed
 x PDF: fixed crash with some files with full analysis set
+x #B485, BMP height is negative
 
 Version 0.7.89, 2016-09-30
 --------------
