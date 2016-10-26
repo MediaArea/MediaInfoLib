@@ -56,16 +56,16 @@ const int8u DolbyE_Channels[64]=
 {8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 6, 6, 6, 6, 6, 6, 6, 4, 4, 4, 4, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 //---------------------------------------------------------------------------
-const int8u DolbyE_Channels_PerProgram(int8u program_config, int8u program)
+const int8u DolbyE_Channels_PerProgram(int8u ProgramConfiguration, int8u ProgramNumber)
 {
-    switch (program_config)
+    switch (ProgramConfiguration)
     {
-        case  0 :   switch (program)
+        case  0 :   switch (ProgramNumber)
                     {
                         case  0 :   return 6;
                         default :   return 2;
                     }
-        case  1 :   switch (program)
+        case  1 :   switch (ProgramNumber)
                     {
                         case  0 :   return 6;
                         default :   return 1;
@@ -73,19 +73,19 @@ const int8u DolbyE_Channels_PerProgram(int8u program_config, int8u program)
         case  2 :
         case 18 :   return 4;
         case  3 :
-        case 12 :   switch (program)
+        case 12 :   switch (ProgramNumber)
                     {
                         case  0 :   return 4;
                         default :   return 2;
                     }
-        case  4 :   switch (program)
+        case  4 :   switch (ProgramNumber)
                     {
                         case  0 :   return 4;
                         case  1 :   return 2;
                         default :   return 1;
                     }
         case  5 :
-        case 13 :   switch (program)
+        case 13 :   switch (ProgramNumber)
                     {
                         case  0 :   return 4;
                         default :   return 1;
@@ -93,7 +93,7 @@ const int8u DolbyE_Channels_PerProgram(int8u program_config, int8u program)
         case  6 :
         case 14 :
         case 19 :   return 2;
-        case  7 :   switch (program)
+        case  7 :   switch (ProgramNumber)
                     {
                         case  0 :
                         case  1 :
@@ -101,7 +101,7 @@ const int8u DolbyE_Channels_PerProgram(int8u program_config, int8u program)
                         default :   return 1;
                     }
         case  8 :
-        case 15 :   switch (program)
+        case 15 :   switch (ProgramNumber)
                     {
                         case  0 :
                         case  1 :   return 2;
@@ -109,7 +109,7 @@ const int8u DolbyE_Channels_PerProgram(int8u program_config, int8u program)
                     }
         case  9 :
         case 16 :
-        case 20 :   switch (program)
+        case 20 :   switch (ProgramNumber)
                     {
                         case  0 :   return 2;
                         default :   return 1;
@@ -194,16 +194,16 @@ const char*  DolbyE_ChannelPositions[64]=
 };
 
 //---------------------------------------------------------------------------
-const char*  DolbyE_ChannelPositions_PerProgram(int8u program_config, int8u program)
+const char*  DolbyE_ChannelPositions_PerProgram(int8u ProgramConfiguration, int8u ProgramNumber)
 {
-    switch (program_config)
+    switch (ProgramConfiguration)
     {
-        case  0 :   switch (program)
+        case  0 :   switch (ProgramNumber)
                     {
                         case  0 :   return "Front: L C R, Side: L R, LFE";
                         default :   return "Front: L R";
                     }
-        case  1 :   switch (program)
+        case  1 :   switch (ProgramNumber)
                     {
                         case  0 :   return "Front: L C R, Side: L R, LFE";
                         default :   return "Front: C";
@@ -211,19 +211,19 @@ const char*  DolbyE_ChannelPositions_PerProgram(int8u program_config, int8u prog
         case  2 :
         case 18 :   return "Front: L C R, LFE";
         case  3 :
-        case 12 :   switch (program)
+        case 12 :   switch (ProgramNumber)
                     {
                         case  0 :   return "Front: L C R, LFE";
                         default :   return "Front: L R";
                     }
-        case  4 :   switch (program)
+        case  4 :   switch (ProgramNumber)
                     {
                         case  0 :   return "Front: L C R, LFE";
                         case  1 :   return "Front: L R";
                         default :   return "Front: C";
                     }
         case  5 :
-        case 13 :   switch (program)
+        case 13 :   switch (ProgramNumber)
                     {
                         case  0 :   return "Front: L C R, LFE";
                         default :   return "Front: C";
@@ -231,7 +231,7 @@ const char*  DolbyE_ChannelPositions_PerProgram(int8u program_config, int8u prog
         case  6 :
         case 14 :
         case 19 :   return "Front: L R";
-        case  7 :   switch (program)
+        case  7 :   switch (ProgramNumber)
                     {
                         case  0 :
                         case  1 :
@@ -239,7 +239,7 @@ const char*  DolbyE_ChannelPositions_PerProgram(int8u program_config, int8u prog
                         default :   return "Front: C";
                     }
         case  8 :
-        case 15 :   switch (program)
+        case 15 :   switch (ProgramNumber)
                     {
                         case  0 :
                         case  1 :   return "Front: L R";
@@ -247,7 +247,7 @@ const char*  DolbyE_ChannelPositions_PerProgram(int8u program_config, int8u prog
                     }
         case  9 :
         case 16 :
-        case 20 :   switch (program)
+        case 20 :   switch (ProgramNumber)
                     {
                         case  0 :   return "Front: L R";
                         default :   return "Front: C";
@@ -332,16 +332,16 @@ const char*  DolbyE_ChannelPositions2[64]=
 };
 
 //---------------------------------------------------------------------------
-const char*  DolbyE_ChannelPositions2_PerProgram(int8u program_config, int8u program)
+const char*  DolbyE_ChannelPositions2_PerProgram(int8u ProgramConfiguration, int8u ProgramNumber)
 {
-    switch (program_config)
+    switch (ProgramConfiguration)
     {
-        case  0 :   switch (program)
+        case  0 :   switch (ProgramNumber)
                     {
                         case  0 :   return "3/2/0.1";
                         default :   return "2/0/0";
                     }
-        case  1 :   switch (program)
+        case  1 :   switch (ProgramNumber)
                     {
                         case  0 :   return "3/2/0.1";
                         default :   return "1/0/0";
@@ -349,19 +349,19 @@ const char*  DolbyE_ChannelPositions2_PerProgram(int8u program_config, int8u pro
         case  2 :
         case 18 :   return "3/0/0.1";
         case  3 :
-        case 12 :   switch (program)
+        case 12 :   switch (ProgramNumber)
                     {
                         case  0 :   return "3/0/0.1";
                         default :   return "2/0/0";
                     }
-        case  4 :   switch (program)
+        case  4 :   switch (ProgramNumber)
                     {
                         case  0 :   return "3/0/0.1";
                         case  1 :   return "2/0/0";
                         default :   return "1/0/0";
                     }
         case  5 :
-        case 13 :   switch (program)
+        case 13 :   switch (ProgramNumber)
                     {
                         case  0 :   return "3/0/0.1";
                         default :   return "1/0/0";
@@ -369,7 +369,7 @@ const char*  DolbyE_ChannelPositions2_PerProgram(int8u program_config, int8u pro
         case  6 :
         case 14 :
         case 19 :   return "Front: L R";
-        case  7 :   switch (program)
+        case  7 :   switch (ProgramNumber)
                     {
                         case  0 :
                         case  1 :
@@ -377,7 +377,7 @@ const char*  DolbyE_ChannelPositions2_PerProgram(int8u program_config, int8u pro
                         default :   return "1/0/0";
                     }
         case  8 :
-        case 15 :   switch (program)
+        case 15 :   switch (ProgramNumber)
                     {
                         case  0 :
                         case  1 :   return "2/0/0";
@@ -385,7 +385,7 @@ const char*  DolbyE_ChannelPositions2_PerProgram(int8u program_config, int8u pro
                     }
         case  9 :
         case 16 :
-        case 20 :   switch (program)
+        case 20 :   switch (ProgramNumber)
                     {
                         case  0 :   return "2/0/0";
                         default :   return "1/0/0";
@@ -597,16 +597,16 @@ File_DolbyE::File_DolbyE()
 void File_DolbyE::Streams_Fill()
 {
     Fill(Stream_General, 0, General_Format, "Dolby E");
-    for (int8u program=0; program<DolbyE_Programs[ProgramConfiguration]; program++)
+    for (int8u ProgramNumber=0; ProgramNumber<DolbyE_Programs[ProgramConfiguration]; ProgramNumber++)
     {
         Stream_Prepare(Stream_Audio);
         Fill(Stream_Audio, StreamPos_Last, Audio_Format, "Dolby E");
         if (DolbyE_Programs[ProgramConfiguration]>1)
             Fill(Stream_Audio, StreamPos_Last, Audio_ID, Count_Get(Stream_Audio));
-        Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, DolbyE_Channels_PerProgram(ProgramConfiguration, program));
-        Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, DolbyE_ChannelPositions_PerProgram(ProgramConfiguration, program));
-        Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions_String2, DolbyE_ChannelPositions2_PerProgram(ProgramConfiguration, program));
-        Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, DolbyE_ChannelLayout_PerProgram(ProgramConfiguration, program));
+        Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, DolbyE_Channels_PerProgram(ProgramConfiguration, ProgramNumber));
+        Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, DolbyE_ChannelPositions_PerProgram(ProgramConfiguration, ProgramNumber));
+        Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions_String2, DolbyE_ChannelPositions2_PerProgram(ProgramConfiguration, ProgramNumber));
+        Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, DolbyE_ChannelLayout_PerProgram(ProgramConfiguration, ProgramNumber));
         Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, 48000);
         Fill(Stream_Audio, StreamPos_Last, Audio_BitDepth, BitDepth);
         if (SMPTE_time_code_StartTimecode!=(int64u)-1)

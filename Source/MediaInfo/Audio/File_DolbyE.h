@@ -30,10 +30,10 @@ class File_DolbyE : public File__Analyze
 {
 public :
     //In
-    int64u GuardBand_Before;
+    int64s GuardBand_Before;
     
     //Out
-    int64u GuardBand_After;
+    int64s GuardBand_After;
 
     //Constructor/Destructor
     File_DolbyE();
