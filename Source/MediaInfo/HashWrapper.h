@@ -50,7 +50,7 @@ public:
         SHA512,
         HashFunction_Max,
     };
-    typedef bitset<HashFunction_Max> HashFunctions;
+    typedef std::bitset<HashFunction_Max> HashFunctions;
 
     HashWrapper                 (const HashFunctions &Functions)                                                {Init(Functions);}
     HashWrapper                 (const HashFunctions &Functions, const int8u* Buffer, const size_t Buffer_Size) {Init(Functions); Update(Buffer, Buffer_Size);}

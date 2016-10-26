@@ -1419,7 +1419,7 @@ const char* Mxf_ChannelAssignment_ChannelLayout(const int128u ChannelLayout)
 string MXF_MCALabelDictionaryID_ChannelPositions(const std::vector<int128u> &MCALabelDictionaryIDs)
 {
     string ToReturn;
-    bitset<8> Front, Side, Back, Lfe;
+    std::bitset<8> Front, Side, Back, Lfe;
     bool IsOk=true;
 
     for (size_t Pos=0; Pos<MCALabelDictionaryIDs.size(); Pos++)
