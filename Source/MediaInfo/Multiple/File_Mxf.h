@@ -25,7 +25,6 @@
 #include <vector>
 #include <set>
 #include <bitset>
-using namespace std;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -732,7 +731,7 @@ protected :
     };
     typedef std::map<int32u, essence> essences; //Key is TrackNumber
     essences Essences;
-    bitset<Stream_Max+1> StreamPos_StartAtZero; //information about the base of StreamPos (0 or 1, 1 is found in 1 file) TODO: per Essence code (last 4 bytes of the Essence header 0xTTXXTTXX)
+    std::bitset<Stream_Max+1> StreamPos_StartAtZero; //information about the base of StreamPos (0 or 1, 1 is found in 1 file) TODO: per Essence code (last 4 bytes of the Essence header 0xTTXXTTXX)
 
     //Descriptor
     struct descriptor

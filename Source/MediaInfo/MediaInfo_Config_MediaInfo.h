@@ -31,7 +31,6 @@
 #include "ZenLib/Translation.h"
 #include "ZenLib/InfoMap.h"
 using namespace ZenLib;
-using namespace std;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib

@@ -11,7 +11,6 @@
 #include "MediaInfo/TimeCode.h"
 #include <cstring>
 using namespace MediaInfoLib;
-using namespace std;
 
 //---------------------------------------------------------------------------
 // Generic
