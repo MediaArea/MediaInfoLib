@@ -39,7 +39,7 @@ public :
     bool    IsAncillaryData;
     #if MEDIAINFO_EVENTS
         int8u   MuxingMode;
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 
     //enums
     enum graphic_set
