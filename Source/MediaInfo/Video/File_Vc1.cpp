@@ -550,7 +550,7 @@ bool File_Vc1::Demux_UnpacketizeContainer_Test()
                     if (Buffer[Header_End  ]==0x00
                      && Buffer[Header_End+1]==0x00
                      && Buffer[Header_End+2]==0x01
-                     && Buffer[Header_End+2]==0x0D)
+                     && Buffer[Header_End+3]==0x0D)
                     break;
 
                 switch (Config->Demux_InitData_Get())
