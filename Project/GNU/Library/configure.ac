@@ -837,7 +837,7 @@ dnl ### MediaInfoLib flags
 dnl #########################################################################
 
 if test "$enable_shared" = yes ; then
-    MediaInfoLib_LIBS=" -L$(pwd) -l$with_libmediainfo_name $MediaInfoLib_LIBS"
+    MediaInfoLib_LIBS=" -L$(pwd)/.libs -l$with_libmediainfo_name $MediaInfoLib_LIBS"
 else
     MediaInfoLib_LIBS=""
 fi
