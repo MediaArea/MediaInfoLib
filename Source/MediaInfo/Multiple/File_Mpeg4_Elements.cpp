@@ -119,7 +119,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const char* Mpeg4_Meta_Kind(int32u Kind)
+static const char* Mpeg4_Meta_Kind(int32u Kind)
 {
     switch (Kind)
     {
@@ -136,7 +136,7 @@ const char* Mpeg4_Meta_Kind(int32u Kind)
 }
 
 //---------------------------------------------------------------------------
-const char* Mpeg4_TypeModifierName(int32u TypeModifierName)
+static const char* Mpeg4_TypeModifierName(int32u TypeModifierName)
 {
     switch (TypeModifierName)
     {
@@ -153,7 +153,7 @@ const char* Mpeg4_TypeModifierName(int32u TypeModifierName)
 }
 
 //---------------------------------------------------------------------------
-const char* Mpeg4_sample_depends_on[]=
+static const char* Mpeg4_sample_depends_on[]=
 {
     "",
     "this sample does depend on others (not an I picture)",
@@ -162,7 +162,7 @@ const char* Mpeg4_sample_depends_on[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Mpeg4_sample_is_depended_on[]=
+static const char* Mpeg4_sample_is_depended_on[]=
 {
     "",
     "other samples depend on this one (not disposable)",
@@ -171,7 +171,7 @@ const char* Mpeg4_sample_is_depended_on[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Mpeg4_sample_has_redundancy[]=
+static const char* Mpeg4_sample_has_redundancy[]=
 {
     "",
     "there is redundant coding in this sample",
@@ -180,7 +180,7 @@ const char* Mpeg4_sample_has_redundancy[]=
 };
 
 //---------------------------------------------------------------------------
-Ztring Mpeg4_Vendor(int32u Vendor)
+static Ztring Mpeg4_Vendor(int32u Vendor)
 {
     switch (Vendor)
     {
@@ -334,7 +334,7 @@ const char* Mpeg4_chan_Layout(int16u Ordering)
 }
 
 //---------------------------------------------------------------------------
-std::string Mpeg4_chan_ChannelDescription (int64u ChannelLabels)
+static std::string Mpeg4_chan_ChannelDescription (int64u ChannelLabels)
 {
     std::string Text;
     if ((ChannelLabels&0x000E)!=0x0000)
@@ -394,7 +394,7 @@ std::string Mpeg4_chan_ChannelDescription (int64u ChannelLabels)
 }
 
 //---------------------------------------------------------------------------
-const char* Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
+static const char* Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
 {
     switch(ChannelLabel)
     {
@@ -452,7 +452,7 @@ const char* Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
 }
 
 //---------------------------------------------------------------------------
-std::string Mpeg4_chan_ChannelBitmap (int32u ChannelBitmap)
+static std::string Mpeg4_chan_ChannelBitmap (int32u ChannelBitmap)
 {
     std::string Text;
     if ((ChannelBitmap&0x0007)!=0x0000)
@@ -487,7 +487,7 @@ std::string Mpeg4_chan_ChannelBitmap (int32u ChannelBitmap)
 }
 
 //---------------------------------------------------------------------------
-const char* Mpeg4_chan_ChannelBitmap_Layout (int32u ChannelBitmap)
+static const char* Mpeg4_chan_ChannelBitmap_Layout (int32u ChannelBitmap)
 {
     switch(ChannelBitmap)
     {
@@ -514,7 +514,7 @@ const char* Mpeg4_chan_ChannelBitmap_Layout (int32u ChannelBitmap)
 }
 
 //---------------------------------------------------------------------------
-const char* Mpeg4_jp2h_METH(int8u METH)
+static const char* Mpeg4_jp2h_METH(int8u METH)
 {
     switch (METH)
     {
@@ -525,7 +525,7 @@ const char* Mpeg4_jp2h_METH(int8u METH)
 }
 
 //---------------------------------------------------------------------------
-const char* Mpeg4_jp2h_EnumCS(int32u EnumCS)
+static const char* Mpeg4_jp2h_EnumCS(int32u EnumCS)
 {
     switch (EnumCS)
     {
@@ -840,7 +840,7 @@ namespace Elements
 }
 
 //---------------------------------------------------------------------------
-const char* Mpeg4_Description(int32u Description)
+static const char* Mpeg4_Description(int32u Description)
 {
     switch (Description)
     {

@@ -54,7 +54,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const char* Vc1_Profile[]=
+static const char* Vc1_Profile[]=
 {
     "Simple",
     "Main",
@@ -63,7 +63,7 @@ const char* Vc1_Profile[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Vc1_ColorimetryFormat[]=
+static const char* Vc1_ColorimetryFormat[]=
 {
     "",
     "4:2:0",
@@ -72,7 +72,7 @@ const char* Vc1_ColorimetryFormat[]=
 };
 
 //---------------------------------------------------------------------------
-const float32 Vc1_PixelAspectRatio[]=
+static const float32 Vc1_PixelAspectRatio[]=
 {
     (float32)1, //Reserved
     (float32)1,
@@ -93,7 +93,7 @@ const float32 Vc1_PixelAspectRatio[]=
 };
 
 //---------------------------------------------------------------------------
-int32u Vc1_FrameRate_enr(int8u Code)
+static int32u Vc1_FrameRate_enr(int8u Code)
 {
     switch (Code)
     {
@@ -109,7 +109,7 @@ int32u Vc1_FrameRate_enr(int8u Code)
 }
 
 //---------------------------------------------------------------------------
-int16u Vc1_FrameRate_dr(int8u Code)
+static int16u Vc1_FrameRate_dr(int8u Code)
 {
     switch (Code)
     {
@@ -120,7 +120,7 @@ int16u Vc1_FrameRate_dr(int8u Code)
 }
 
 //---------------------------------------------------------------------------
-const char* Vc1_Type[]=
+static const char* Vc1_Type[]=
 {
     "I",
     "P",
@@ -130,7 +130,7 @@ const char* Vc1_Type[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Vc1_PictureFormat[]=
+static const char* Vc1_PictureFormat[]=
 {
     "Progressive frame",
     "Interlaced frame",
@@ -139,7 +139,7 @@ const char* Vc1_PictureFormat[]=
 };
 
 //---------------------------------------------------------------------------
-const int8u Vc1_FieldTypeTable[][2]=
+static const int8u Vc1_FieldTypeTable[][2]=
 {
     {0, 0},
     {0, 1},
@@ -164,7 +164,7 @@ const File__Analyze::vlc Vc1_ptype[]=
 };
 
 //---------------------------------------------------------------------------
-int32u Vc1_bfraction(int8u Size, int32u Value)
+static int32u Vc1_bfraction(int8u Size, int32u Value)
 {
     switch (Size)
     {

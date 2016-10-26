@@ -159,7 +159,7 @@ namespace Elements
 }
 
 //---------------------------------------------------------------------------
-Ztring Mpeg4_Encoded_Library(int32u Vendor)
+static Ztring Mpeg4_Encoded_Library(int32u Vendor)
 {
     switch (Vendor)
     {
@@ -173,7 +173,7 @@ Ztring Mpeg4_Encoded_Library(int32u Vendor)
 }
 
 //---------------------------------------------------------------------------
-Ztring Mpeg4_Language_Apple(int16u Language)
+static Ztring Mpeg4_Language_Apple(int16u Language)
 {
     switch (Language)
     {

@@ -105,14 +105,14 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const char* MpegPs_System_Fixed[]=
+static const char* MpegPs_System_Fixed[]=
 {
     "CBR",
     "VBR",
 };
 
 //---------------------------------------------------------------------------
-const char* MpegPs_stream_id(int8u Element_Name)
+static const char* MpegPs_stream_id(int8u Element_Name)
 {
          if (Element_Name>=0xC0
           && Element_Name<=0xDF) return "MPEG Audio";
@@ -127,7 +127,7 @@ const char* MpegPs_stream_id(int8u Element_Name)
 }
 
 //---------------------------------------------------------------------------
-const char* MpegPs_Codec(int8u Element_Name)
+static const char* MpegPs_Codec(int8u Element_Name)
 {
          if (Element_Name>=0xC0
           && Element_Name<=0xDF) return "MPEG-A";
@@ -137,7 +137,7 @@ const char* MpegPs_Codec(int8u Element_Name)
 }
 
 //---------------------------------------------------------------------------
-int32u MpegPs_Default_stream_type(int8u Element_Name, int8u Mpeg_Version)
+static int32u MpegPs_Default_stream_type(int8u Element_Name, int8u Mpeg_Version)
 {
          if (Element_Name>=0xC0
           && Element_Name<=0xDF) return Mpeg_Version==0x02?0x04:0x03;
@@ -147,7 +147,7 @@ int32u MpegPs_Default_stream_type(int8u Element_Name, int8u Mpeg_Version)
 }
 
 //---------------------------------------------------------------------------
-const char* MpegPs_trick_mode_control_values[8]=
+static const char* MpegPs_trick_mode_control_values[8]=
 {
     "Fast forward",
     "Slow motion",
@@ -160,7 +160,7 @@ const char* MpegPs_trick_mode_control_values[8]=
 };
 
 //---------------------------------------------------------------------------
-const char* MpegPs_stream_id_extension(int8u stream_id_extension)
+static const char* MpegPs_stream_id_extension(int8u stream_id_extension)
 {
     switch (stream_id_extension)
     {

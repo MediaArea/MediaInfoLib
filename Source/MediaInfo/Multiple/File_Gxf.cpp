@@ -59,7 +59,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const char* Gxf_Tag_Name(int8u Tag)
+static const char* Gxf_Tag_Name(int8u Tag)
 {
     switch (Tag)
     {
@@ -87,7 +87,7 @@ const char* Gxf_Tag_Name(int8u Tag)
 }
 
 //---------------------------------------------------------------------------
-const char* Gxf_MediaTypes(int8u Type)
+static const char* Gxf_MediaTypes(int8u Type)
 {
     switch (Type)
     {
@@ -117,7 +117,7 @@ const char* Gxf_MediaTypes(int8u Type)
 }
 
 //---------------------------------------------------------------------------
-stream_t Gxf_MediaTypes_StreamKind(int8u Type)
+static stream_t Gxf_MediaTypes_StreamKind(int8u Type)
 {
     switch (Type)
     {
@@ -147,7 +147,7 @@ stream_t Gxf_MediaTypes_StreamKind(int8u Type)
 }
 
 //---------------------------------------------------------------------------
-const char* Gxf_MediaTypes_Format(int8u Type)
+static const char* Gxf_MediaTypes_Format(int8u Type)
 {
     switch (Type)
     {
@@ -189,7 +189,7 @@ double Gxf_FrameRate(int32u Content)
 }
 
 //---------------------------------------------------------------------------
-int32u Gxf_LinesPerFrame_Height(int32u Content)
+static int32u Gxf_LinesPerFrame_Height(int32u Content)
 {
     switch (Content)
     {
@@ -202,7 +202,7 @@ int32u Gxf_LinesPerFrame_Height(int32u Content)
 }
 
 //---------------------------------------------------------------------------
-int32u Gxf_LinesPerFrame_Width(int32u Content)
+static int32u Gxf_LinesPerFrame_Width(int32u Content)
 {
     switch (Content)
     {
@@ -215,7 +215,7 @@ int32u Gxf_LinesPerFrame_Width(int32u Content)
 }
 
 //---------------------------------------------------------------------------
-const char* Gxf_FieldsPerFrame(int32u Tag)
+static const char* Gxf_FieldsPerFrame(int32u Tag)
 {
     switch (Tag)
     {

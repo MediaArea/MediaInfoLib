@@ -41,7 +41,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const char* Bmp_CompressionMethod(int32u CompressionMethod)
+static const char* Bmp_CompressionMethod(int32u CompressionMethod)
 {
     switch(CompressionMethod)
     {

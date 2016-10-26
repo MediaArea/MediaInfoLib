@@ -38,7 +38,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const int16u Wvpk_Resolution[]=
+static const int16u Wvpk_Resolution[]=
 {
      8,
     16,
@@ -47,7 +47,7 @@ const int16u Wvpk_Resolution[]=
 };
 
 //---------------------------------------------------------------------------
-const int32u Wvpk_SamplingRate[]=
+static const int32u Wvpk_SamplingRate[]=
 {
       6000,
       8000,
@@ -68,7 +68,7 @@ const int32u Wvpk_SamplingRate[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Wvpk_id(int8u ID)
+static const char* Wvpk_id(int8u ID)
 {
     switch (ID)
     {

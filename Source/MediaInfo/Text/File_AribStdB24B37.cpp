@@ -45,7 +45,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const char* AribStdB24B37_Caption_conversion_type(int8u Caption_conversion_type)
+static const char* AribStdB24B37_Caption_conversion_type(int8u Caption_conversion_type)
 {
     switch (Caption_conversion_type)
     {
@@ -59,7 +59,7 @@ const char* AribStdB24B37_Caption_conversion_type(int8u Caption_conversion_type)
 }
 
 //---------------------------------------------------------------------------
-const char* AribStdB24B37_Caption_DataIdentifier(int8u DataIdentifier)
+static const char* AribStdB24B37_Caption_DataIdentifier(int8u DataIdentifier)
 {
     switch (DataIdentifier)
     {
@@ -76,7 +76,7 @@ const char* AribStdB24B37_Caption_DataIdentifier(int8u DataIdentifier)
 }
 
 //---------------------------------------------------------------------------
-const char* AribStdB24B37_DRCS_conversion_type(int8u DRCS_conversion_type)
+static const char* AribStdB24B37_DRCS_conversion_type(int8u DRCS_conversion_type)
 {
     switch (DRCS_conversion_type)
     {
@@ -89,7 +89,7 @@ const char* AribStdB24B37_DRCS_conversion_type(int8u DRCS_conversion_type)
 }
 
 //---------------------------------------------------------------------------
-const char* AribStdB24B37_data_group_id(int8u data_group_id)
+static const char* AribStdB24B37_data_group_id(int8u data_group_id)
 {
     switch (data_group_id)
     {
@@ -107,7 +107,7 @@ const char* AribStdB24B37_data_group_id(int8u data_group_id)
 }
 
 //---------------------------------------------------------------------------
-const char* AribStdB24B37_TMD(int8u TMD)
+static const char* AribStdB24B37_TMD(int8u TMD)
 {
     switch (TMD)
     {
@@ -119,7 +119,7 @@ const char* AribStdB24B37_TMD(int8u TMD)
 }
 
 //---------------------------------------------------------------------------
-const char* AribStdB24B37_DMF_reception(int8u DMF_reception)
+static const char* AribStdB24B37_DMF_reception(int8u DMF_reception)
 {
     switch (DMF_reception)
     {
@@ -132,7 +132,7 @@ const char* AribStdB24B37_DMF_reception(int8u DMF_reception)
 }
 
 //---------------------------------------------------------------------------
-const char* AribStdB24B37_DMF_recording(int8u DMF_recording)
+static const char* AribStdB24B37_DMF_recording(int8u DMF_recording)
 {
     switch (DMF_recording)
     {
@@ -144,7 +144,7 @@ const char* AribStdB24B37_DMF_recording(int8u DMF_recording)
 }
 
 //---------------------------------------------------------------------------
-const char* AribStdB24B37_format(int8u format)
+static const char* AribStdB24B37_format(int8u format)
 {
     switch (format)
     {
@@ -166,7 +166,7 @@ const char* AribStdB24B37_format(int8u format)
 }
 
 //---------------------------------------------------------------------------
-const char* AribStdB24B37_TCS(int8u TCS)
+static const char* AribStdB24B37_TCS(int8u TCS)
 {
     switch (TCS)
     {
@@ -177,7 +177,7 @@ const char* AribStdB24B37_TCS(int8u TCS)
 }
 
 //---------------------------------------------------------------------------
-const char* AribStdB24B37_rollup_mode(int8u rollup_mode)
+static const char* AribStdB24B37_rollup_mode(int8u rollup_mode)
 {
     switch (rollup_mode)
     {
@@ -188,7 +188,7 @@ const char* AribStdB24B37_rollup_mode(int8u rollup_mode)
 }
 
 //---------------------------------------------------------------------------
-const char* AribStdB24B37_data_unit_parameter(int8u data_unit_parameter)
+static const char* AribStdB24B37_data_unit_parameter(int8u data_unit_parameter)
 {
     switch (data_unit_parameter)
     {
@@ -253,7 +253,7 @@ static const int8u AribStdB24B37_DefaultMacros_size[] =
 // for each data byte do
 //     CRC_CCIT_Xmodem=(CRC_CCIT_Xmodem<<8) ^ CRC_CCIT_Xmodem_Table[(CRC_CCIT_Xmodem>>8)^(data_byte)];
 // Array built with the help of http://www.sanity-free.com/133/crc_16_ccitt_in_csharp.html
-int16u AribStdB24B37_CRC_CCIT_Xmodem_Table[256] =
+static int16u AribStdB24B37_CRC_CCIT_Xmodem_Table[256] =
 {
     0x0000, 0x1021, 0x2042, 0x3063,
     0x4084, 0x50A5, 0x60C6, 0x70E7,
