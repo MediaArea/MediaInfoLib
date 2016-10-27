@@ -1111,6 +1111,22 @@ void File_Mk::Header_Parse()
         Param_Info1("Incoherent, changed to unlimited");
         Size=0xFFFFFFFFFFFFFFLL; //Unlimited
         Fill(Stream_General, 0, "SegmentSizeIsZero", "Yes");
+
+        #if MEDIAINFO_FIXITY
+            if (Config->TryToFix_Get())
+            {
+                size_t Pos=(size_t)(Element_Offset-1);
+                while (!Buffer[Buffer_Offset+Pos])
+                    Pos--;
+                size_t ToWrite_Size=Element_Offset-Pos; 
+                if (ToWrite_Size<=8)
+                {
+                    int8u ToWrite[8];
+                    int64u2BigEndian(ToWrite, ((int64u)-1)>>(ToWrite_Size-1));
+                    FixFile(File_Offset+Buffer_Offset+Pos, ToWrite, ToWrite_Size)?Param_Info("Fixed"):Param_Info("Not fixed");
+                }
+            }
+        #endif //MEDIAINFO_FIXITY
     }
 
     //Filling
