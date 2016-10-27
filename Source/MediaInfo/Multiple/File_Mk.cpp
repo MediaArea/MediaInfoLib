@@ -90,6 +90,7 @@
 #endif //MEDIAINFO_EVENTS
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include <cstring>
+#include <cmath>
 #include <algorithm>
 #include "base64.h"
 //---------------------------------------------------------------------------
