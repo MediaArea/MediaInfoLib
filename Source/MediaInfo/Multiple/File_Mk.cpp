@@ -1105,6 +1105,14 @@ void File_Mk::Header_Parse()
     Get_EB (Name,                                               "Name");
     Get_EB (Size,                                               "Size");
 
+    //Detection of 0-sized Segment expected to be -1-sized (unlimited)
+    if (Name==Elements::Segment && Size==0)
+    {
+        Param_Info1("Incoherent, changed to unlimited");
+        Size=0xFFFFFFFFFFFFFFLL; //Unlimited
+        Fill(Stream_General, 0, "SegmentSizeIsZero", "Yes");
+    }
+
     //Filling
     Header_Fill_Code(Name, Ztring().From_Number(Name, 16));
     Header_Fill_Size(Element_Offset+Size);

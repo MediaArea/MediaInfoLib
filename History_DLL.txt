@@ -11,6 +11,7 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 Version 0.7.90
 --------------
 + #M94, WAV: support of file with a buggy RIFF header
++ Matroska: detection of segment size of zero (compatibility risks e.g. Windows 10 Media Player does not play such file)
 + MXF: detection of some incoherences between header and footer
 + MXF: display of Locked information
 + N19/STL: support of 48/50/60 fps content
