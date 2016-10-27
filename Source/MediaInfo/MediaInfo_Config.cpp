@@ -240,6 +240,9 @@ void MediaInfo_Config::Init()
         Ssh_IgnoreSecurity=false;
         Ssl_IgnoreSecurity=false;
     #endif //defined(MEDIAINFO_LIBCURL_YES)
+    #if MEDIAINFO_FIXITY
+        TryToFix=false;
+    #endif //MEDIAINFO_SEEK
 
     CS.Leave();
 
@@ -1000,6 +1003,15 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         #else // defined(MEDIAINFO_LIBCURL_YES)
             return __T("Libcurl support is disabled due to compilation options");
         #endif // defined(MEDIAINFO_LIBCURL_YES)
+    }
+    else if (Option_Lower==__T("trytofix"))
+    {
+        #if MEDIAINFO_FIXITY
+            TryToFix_Set(!(Value==__T("0") || Value.empty()));
+            return Ztring();
+        #else //MEDIAINFO_FIXITY
+            return __T("Fixity support is disabled due to compilation options");
+        #endif //MEDIAINFO_FIXITY
     }
     else
         return __T("Option not known");
@@ -2635,6 +2647,21 @@ bool MediaInfo_Config::Ssl_IgnoreSecurity_Get ()
     CriticalSectionLocker CSL(CS);
     return Ssl_IgnoreSecurity;
 }
+
+#if MEDIAINFO_FIXITY
+//---------------------------------------------------------------------------
+void MediaInfo_Config::TryToFix_Set (bool NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    TryToFix=NewValue;
+}
+
+bool MediaInfo_Config::TryToFix_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return TryToFix;
+}
+#endif //MEDIAINFO_FIXITY
 
 #endif //defined(MEDIAINFO_LIBCURL_YES)
 

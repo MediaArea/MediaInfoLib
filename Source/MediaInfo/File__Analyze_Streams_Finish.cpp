@@ -290,6 +290,25 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
 }
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_FIXITY
+bool File__Analyze::FixFile(int64u FileOffsetForWriting, const int8u* ToWrite, const size_t ToWrite_Size)
+{
+    File::Copy(File_Name, File_Name+__T(".Fixed"));
+    
+    File F;
+    if (!F.Open(File_Name+__T(".Fixed"), File::Access_Write))
+        return false;
+
+    if (!F.GoTo(FileOffsetForWriting))
+        return false;
+
+    F.Write(ToWrite, ToWrite_Size);
+
+    return true;
+}
+#endif //MEDIAINFO_FIXITY
+
+//---------------------------------------------------------------------------
 void File__Analyze::Streams_Finish_StreamOnly()
 {
     //Generic
