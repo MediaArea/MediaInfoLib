@@ -1238,6 +1238,9 @@ protected :
     bool Synchronize_0x000001();
 public:
     void TestContinuousFileNames(size_t CountOfFiles=24, Ztring FileExtension=Ztring(), bool SkipComputeDelay=false);
+    #if MEDIAINFO_FIXITY
+    bool FixFile(int64u FileOffsetForWriting, const int8u* ToWrite, const size_t ToWrite_Size);
+    #endif// MEDIAINFO_FIXITY
 
 private :
 

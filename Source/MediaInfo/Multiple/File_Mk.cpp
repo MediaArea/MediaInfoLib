@@ -1105,6 +1105,30 @@ void File_Mk::Header_Parse()
     Get_EB (Name,                                               "Name");
     Get_EB (Size,                                               "Size");
 
+    //Detection of 0-sized Segment expected to be -1-sized (unlimited)
+    if (Name==Elements::Segment && Size==0)
+    {
+        Param_Info1("Incoherent, changed to unlimited");
+        Size=0xFFFFFFFFFFFFFFLL; //Unlimited
+        Fill(Stream_General, 0, "SegmentSizeIsZero", "Yes");
+
+        #if MEDIAINFO_FIXITY
+            if (Config->TryToFix_Get())
+            {
+                size_t Pos=(size_t)(Element_Offset-1);
+                while (!Buffer[Buffer_Offset+Pos])
+                    Pos--;
+                size_t ToWrite_Size=Element_Offset-Pos; 
+                if (ToWrite_Size<=8)
+                {
+                    int8u ToWrite[8];
+                    int64u2BigEndian(ToWrite, ((int64u)-1)>>(ToWrite_Size-1));
+                    FixFile(File_Offset+Buffer_Offset+Pos, ToWrite, ToWrite_Size)?Param_Info("Fixed"):Param_Info("Not fixed");
+                }
+            }
+        #endif //MEDIAINFO_FIXITY
+    }
+
     //Filling
     Header_Fill_Code(Name, Ztring().From_Number(Name, 16));
     Header_Fill_Size(Element_Offset+Size);
