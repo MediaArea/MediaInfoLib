@@ -799,7 +799,7 @@ void File_Ffv1::Read_Buffer_Continue()
                             size_t BitInBytePosition=BitPosition&0x7;
                             int8u Modified=Buffer[Buffer_Offset+(size_t)Element_Offset_Begin+BytePosition];
                             Modified^=1<<BitInBytePosition;
-                            FixFile(File_Offset+Buffer_Offset+(size_t)Element_Offset_Begin+BytePosition, &Modified, 1)?Param_Info("Fixed"):Param_Info("Not fixed");
+                            FixFile(File_Offset+Buffer_Offset+(size_t)Element_Offset_Begin+BytePosition, &Modified, 1)?Param_Info1("Fixed"):Param_Info1("Not fixed");
                         }
                     }
                 #endif //MEDIAINFO_FIXITY

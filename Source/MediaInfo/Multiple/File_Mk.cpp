@@ -1123,7 +1123,7 @@ void File_Mk::Header_Parse()
                 {
                     int8u ToWrite[8];
                     int64u2BigEndian(ToWrite, ((int64u)-1)>>(ToWrite_Size-1));
-                    FixFile(File_Offset+Buffer_Offset+Pos, ToWrite, ToWrite_Size)?Param_Info("Fixed"):Param_Info("Not fixed");
+                    FixFile(File_Offset+Buffer_Offset+Pos, ToWrite, ToWrite_Size)?Param_Info1("Fixed"):Param_Info1("Not fixed");
                 }
             }
         #endif //MEDIAINFO_FIXITY
