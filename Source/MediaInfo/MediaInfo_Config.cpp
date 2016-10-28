@@ -242,7 +242,7 @@ void MediaInfo_Config::Init()
     #endif //defined(MEDIAINFO_LIBCURL_YES)
     #if MEDIAINFO_FIXITY
         TryToFix=false;
-    #endif //MEDIAINFO_SEEK
+    #endif //MEDIAINFO_FIXITY
 
     CS.Leave();
 
@@ -2450,7 +2450,7 @@ void MediaInfo_Config::Event_Send (const int8u* Data_Content, size_t Data_Size)
                             Debug+=", EventID=";Debug+=Ztring::ToZtring(LittleEndian2int32u(Data_Content), 16).To_UTF8();)
 
         Event_CallBackFunction ((unsigned char*)Data_Content, Data_Size, Event_UserHandler);
- 
+
         MEDIAINFO_DEBUG2(   "Event",
                             )
     }
@@ -2647,6 +2647,8 @@ bool MediaInfo_Config::Ssl_IgnoreSecurity_Get ()
     CriticalSectionLocker CSL(CS);
     return Ssl_IgnoreSecurity;
 }
+#endif //defined(MEDIAINFO_LIBCURL_YES)
+
 
 #if MEDIAINFO_FIXITY
 //---------------------------------------------------------------------------
@@ -2662,7 +2664,5 @@ bool MediaInfo_Config::TryToFix_Get ()
     return TryToFix;
 }
 #endif //MEDIAINFO_FIXITY
-
-#endif //defined(MEDIAINFO_LIBCURL_YES)
 
 } //NameSpace
