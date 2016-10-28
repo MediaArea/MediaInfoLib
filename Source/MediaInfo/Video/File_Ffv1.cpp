@@ -70,6 +70,33 @@ static int32u FFv1_CRC_Compute(const int8u* Buffer, size_t Start, size_t Size)
     return CRC_32;
 }
 
+//---------------------------------------------------------------------------
+#if MEDIAINFO_FIXITY
+static size_t Ffv1_TryToFixCRC(const int8u* Buffer, size_t Buffer_Size)
+{
+    //looking for a bit flip
+    int8u* Buffer2=new int8u[Buffer_Size];
+    memcpy(Buffer2, Buffer, Buffer_Size);
+    vector<size_t> BitPositions;
+    size_t BitPosition_Max=Buffer_Size;
+    for (size_t BitPosition=0; BitPosition<BitPosition_Max; BitPosition++)
+    {
+        size_t BytePosition=BitPosition>>3;
+        size_t BitInBytePosition=BitPosition&0x7;
+        Buffer2[BytePosition]^=1<<BitInBytePosition;
+        int32u crc_left_New=FFv1_CRC_Compute(Buffer2, 0, Buffer_Size);
+        if (!crc_left_New)
+        {
+            BitPositions.push_back(BitPosition);
+        }
+        Buffer2[BytePosition]^=1<<BitInBytePosition;
+    }
+    delete[] Buffer2; //Buffer2=NULL
+
+    return BitPositions.size()==1?BitPositions[0]:(size_t)-1;
+}
+#endif //MEDIAINFO_FIXITY
+
 //***************************************************************************
 // RangeCoder
 //***************************************************************************
@@ -713,6 +740,7 @@ void File_Ffv1::Read_Buffer_Continue()
     for (size_t Pos = 0; Pos < Slices_BufferSizes.size(); Pos++)
     {
         Element_Begin1("Slice");
+        int64u Element_Offset_Begin=Element_Offset;
         int64u Element_Size_Save=Element_Size;
         Element_Size=Element_Offset+Slices_BufferSizes[Pos]-tail;
         int32u crc_left=0;
@@ -733,12 +761,10 @@ void File_Ffv1::Read_Buffer_Continue()
 #if MEDIAINFO_TRACE
         if (!Frame_Count || Trace_Activated) // Parse slice only if trace feature is activated
         {
-            int64u Start=Element_Offset;
-
             if (!slice(States))
             {
-                int64u SliceRealSize=Element_Offset-Start;
-                Element_Offset=Start;
+                int64u SliceRealSize=Element_Offset-Element_Offset_Begin;
+                Element_Offset=Element_Offset_Begin;
                 Skip_XX(SliceRealSize,                          "slice_data");
                 if (Trusted_Get() && !RC->Underrun() && Element_Offset==Element_Size)
                     Param_Info1("OK");
@@ -760,7 +786,24 @@ void File_Ffv1::Read_Buffer_Continue()
             if (!crc_left)
                 Param_Info1("OK");
             else
+            {
                 Param_Info1("NOK");
+
+                #if MEDIAINFO_FIXITY
+                    if (Config->TryToFix_Get())
+                    {
+                        size_t BitPosition=Ffv1_TryToFixCRC(Buffer+Buffer_Offset+(size_t)Element_Offset_Begin, Element_Offset-Element_Offset_Begin);
+                        if (BitPosition!=(size_t)-1)
+                        {
+                            size_t BytePosition=BitPosition>>3;
+                            size_t BitInBytePosition=BitPosition&0x7;
+                            int8u Modified=Buffer[Buffer_Offset+(size_t)Element_Offset_Begin+BytePosition];
+                            Modified^=1<<BitInBytePosition;
+                            FixFile(File_Offset+Buffer_Offset+(size_t)Element_Offset_Begin+BytePosition, &Modified, 1)?Param_Info("Fixed"):Param_Info("Not fixed");
+                        }
+                    }
+                #endif //MEDIAINFO_FIXITY
+            }
         }
         Element_End0();
     }
