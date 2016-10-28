@@ -31,6 +31,12 @@
 #if MEDIAINFO_IBI
     #include "MediaInfo/Multiple/File_Ibi.h"
 #endif //MEDIAINFO_IBI
+#if MEDIAINFO_FIXITY
+    #ifndef WINDOWS
+    //ZenLib has File::Copy only for Windows for the moment. //TODO: support correctly (including meta)
+    #include <fstream>
+    #endif //WINDOWS
+#endif //MEDIAINFO_FIXITY
 using namespace ZenLib;
 //---------------------------------------------------------------------------
 
@@ -293,10 +299,29 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
 #if MEDIAINFO_FIXITY
 bool File__Analyze::FixFile(int64u FileOffsetForWriting, const int8u* ToWrite, const size_t ToWrite_Size)
 {
-    File::Copy(File_Name, File_Name+__T(".Fixed"));
-    
+    if (Config->File_Names.empty())
+        return false; //Streams without file names are not supported
+        
+    #ifdef WINDOWS
+    File::Copy(Config->File_Names[0], Config->File_Names[0]+__T(".Fixed"));
+    #else //WINDOWS
+    //ZenLib has File::Copy only for Windows for the moment. //TODO: support correctly (including meta)
+    if (!File::Exists(Config->File_Names[0]+__T(".Fixed")))
+    {
+        std::ofstream  Dest(Ztring(Config->File_Names[0]+__T(".Fixed")).To_Local().c_str(), std::ios::binary);
+        if (Dest.fail())
+            return false;
+        std::ifstream  Source(Config->File_Names[0].To_Local().c_str(), std::ios::binary);
+        if (Source.fail())
+            return false;
+        Dest << Source.rdbuf();
+        if (Dest.fail())
+            return false;
+    }
+    #endif //WINDOWS
+
     File F;
-    if (!F.Open(File_Name+__T(".Fixed"), File::Access_Write))
+    if (!F.Open(Config->File_Names[0]+__T(".Fixed"), File::Access_Write))
         return false;
 
     if (!F.GoTo(FileOffsetForWriting))
