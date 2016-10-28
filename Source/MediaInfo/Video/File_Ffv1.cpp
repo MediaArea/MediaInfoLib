@@ -52,6 +52,25 @@ const int32s Slice::Context::Cmax = 127;
 const int32s Slice::Context::Cmin = -128;
 
 //***************************************************************************
+// Helpers
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+static int32u FFv1_CRC_Compute(const int8u* Buffer, size_t Start, size_t Size)
+{
+    int32u CRC_32 = 0;
+    const int8u* CRC_32_Buffer=Buffer+Start;
+    const int8u* CRC_32_Buffer_End=CRC_32_Buffer+Size;
+
+    while(CRC_32_Buffer<CRC_32_Buffer_End)
+    {
+        CRC_32=(CRC_32<<8) ^ Psi_CRC_32_Table[(CRC_32>>24)^(*CRC_32_Buffer)];
+        CRC_32_Buffer++;
+    }
+    return CRC_32;
+}
+
+//***************************************************************************
 // RangeCoder
 //***************************************************************************
 
@@ -593,7 +612,7 @@ void File_Ffv1::Read_Buffer_OutOfBand()
 {
     ConfigurationRecordIsPresent=true;
 
-    int32u CRC_32=CRC_Compute((size_t)Element_Size);
+    int32u CRC_32=FFv1_CRC_Compute(Buffer+Buffer_Offset, (size_t)Element_Offset, (size_t)Element_Size);
 
     if (Buffer_Size < 4 || CRC_32)
     {
@@ -699,7 +718,7 @@ void File_Ffv1::Read_Buffer_Continue()
         int32u crc_left=0;
 
         if (error_correction == 1)
-            crc_left=CRC_Compute(Slices_BufferSizes[Pos]);
+            crc_left=FFv1_CRC_Compute(Buffer+Buffer_Offset, (size_t)Element_Offset, Slices_BufferSizes[Pos]);
 
         if (Pos)
         {
@@ -1556,21 +1575,6 @@ void File_Ffv1::read_quant_table(int i, int j, size_t scale)
 //***************************************************************************
 // Helpers
 //***************************************************************************
-
-//---------------------------------------------------------------------------
-int32u File_Ffv1::CRC_Compute(size_t Size)
-{
-    int32u CRC_32=0;
-    const int8u* CRC_32_Buffer=Buffer+Buffer_Offset+(size_t)Element_Offset;
-    const int8u* CRC_32_Buffer_End=CRC_32_Buffer+Size;
-
-    while(CRC_32_Buffer<CRC_32_Buffer_End)
-    {
-        CRC_32=(CRC_32<<8) ^ Psi_CRC_32_Table[(CRC_32>>24)^(*CRC_32_Buffer)];
-        CRC_32_Buffer++;
-    }
-    return CRC_32;
-}
 
 //---------------------------------------------------------------------------
 int32s File_Ffv1::golomb_rice_decode(int k)
