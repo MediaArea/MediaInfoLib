@@ -420,7 +420,7 @@ static size_t Matroska_TryToFixCRC(int8u* Buffer, size_t Buffer_Size, int32u CRC
     }
 
     if (BitPositions.size()!=1)
-        return false;
+        return (size_t)-1;
         
     Modified=Buffer[BitPositions[0]>>3]; //Save the byte here as we already have the content
     return BitPositions[0];
