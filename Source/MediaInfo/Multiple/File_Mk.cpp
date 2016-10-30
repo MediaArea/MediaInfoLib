@@ -398,6 +398,36 @@ static void Matroska_CRC32_Compute(int32u &CRC32, int32u Init, const int8u* Buff
 }
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_FIXITY
+static size_t Matroska_TryToFixCRC(int8u* Buffer, size_t Buffer_Size, int32u CRCExpected, int8u& Modified)
+{
+    //looking for a bit flip
+    vector<size_t> BitPositions;
+    size_t BitPosition_Max=Buffer_Size*8;
+    for (size_t BitPosition=0; BitPosition<BitPosition_Max; BitPosition++)
+    {
+        size_t BytePosition=BitPosition>>3;
+        size_t BitInBytePosition=BitPosition&0x7;
+        Buffer[BytePosition]^=1<<BitInBytePosition;
+        int32u CRC32Computed=0xFFFFFFFF;
+        Matroska_CRC32_Compute(CRC32Computed, Buffer, Buffer+Buffer_Size);
+        CRC32Computed ^= 0xFFFFFFFF;
+        if (CRC32Computed==CRCExpected)
+        {
+            BitPositions.push_back(BitPosition);
+        }
+        Buffer[BytePosition]^=1<<BitInBytePosition;
+    }
+
+    if (BitPositions.size()!=1)
+        return false;
+        
+    Modified=Buffer[BitPositions[0]>>3]; //Save the byte here as we already have the content
+    return BitPositions[0];
+}
+#endif //MEDIAINFO_FIXITY
+
+//---------------------------------------------------------------------------
 static const char* Mk_ContentCompAlgo(int64u Algo)
 {
     switch (Algo)
@@ -4589,6 +4619,31 @@ void File_Mk::CRC32_Check ()
                         {
                             std::string ToSearchInInfo=std::string("Not tested ")+Ztring::ToZtring(i).To_UTF8()+' '+Ztring::ToZtring(CRC32Compute[i].Expected).To_UTF8();
                             CRC32_Check_In_Node(ToSearchInInfo, CRC32Compute[i].Computed == CRC32Compute[i].Expected?"OK":"NOK", node);
+
+                            #if MEDIAINFO_FIXITY
+                                if (Config->TryToFix_Get() && CRC32Compute[i].Computed!=CRC32Compute[i].Expected)
+                                {
+                                    size_t NewBuffer_Size=(size_t)(CRC32Compute[i].UpTo-CRC32Compute[i].From);
+                                    int8u* NewBuffer=new int8u[NewBuffer_Size];
+                                    File F;
+                                    if (F.Open(File_Name))
+                                    {
+                                        F.GoTo(CRC32Compute[i].From);
+                                        F.Read(NewBuffer, NewBuffer_Size);
+                                        int8u Modified=0;
+                                        size_t BitPosition=Matroska_TryToFixCRC(NewBuffer, NewBuffer_Size, CRC32Compute[i].Expected, Modified);
+                                        if (BitPosition!=(size_t)-1)
+                                        {
+                                            size_t BytePosition=BitPosition>>3;
+                                            size_t BitInBytePosition=BitPosition&0x7;
+                                            Modified^=1<<BitInBytePosition;
+                                            FixFile(CRC32Compute[i].From+BytePosition, &Modified, 1)?Param_Info1("Fixed"):Param_Info1("Not fixed");
+                                        }
+                                    }
+                                    delete[] NewBuffer; //NewBuffer=NULL;
+                                }
+                            #endif //MEDIAINFO_FIXITY
+
                         }
 
                         //Debug
