@@ -381,6 +381,23 @@ static const int32u Mk_CRC32_Table[256] =
 };
 
 //---------------------------------------------------------------------------
+static void Matroska_CRC32_Compute(int32u &CRC32, const int8u* Buffer_Current, const int8u* Buffer_End)
+{
+    while (Buffer_Current<Buffer_End)
+        CRC32 = (CRC32 >> 8) ^ Mk_CRC32_Table[(CRC32 & 0xFF) ^ *Buffer_Current++];
+}
+
+//---------------------------------------------------------------------------
+static void Matroska_CRC32_Compute(int32u &CRC32, int32u Init, const int8u* Buffer_Current, const int8u* Buffer_End)
+{
+    CRC32 ^= Init;
+
+    Matroska_CRC32_Compute(CRC32, Buffer_Current, Buffer_End);
+
+    CRC32 ^= Init;
+}
+
+//---------------------------------------------------------------------------
 static const char* Mk_ContentCompAlgo(int64u Algo)
 {
     switch (Algo)
@@ -4556,7 +4573,7 @@ void File_Mk::CRC32_Check ()
     for (size_t i = 0; i<CRC32Compute.size(); i++)
         if (CRC32Compute[i].UpTo && File_Offset + Buffer_Offset - (size_t)Header_Size >= CRC32Compute[i].From)
         {
-            CRC32_Compute(CRC32Compute[i].Computed, Buffer + Buffer_Offset - (size_t)Header_Size, Buffer + Buffer_Offset + (size_t)(Element_WantNextLevel?Element_Offset:Element_Size));
+            Matroska_CRC32_Compute(CRC32Compute[i].Computed, Buffer + Buffer_Offset - (size_t)Header_Size, Buffer + Buffer_Offset + (size_t)(Element_WantNextLevel?Element_Offset:Element_Size));
             if (File_Offset + Buffer_Offset + (Element_WantNextLevel?Element_Offset:Element_Size) >= CRC32Compute[i].UpTo)
             {
                 CRC32Compute[i].Computed ^= 0xFFFFFFFF;
@@ -4590,23 +4607,6 @@ void File_Mk::CRC32_Check ()
                 CRC32Compute[i].UpTo=0;
             }
         }
-}
-
-//---------------------------------------------------------------------------
-void File_Mk::CRC32_Compute(int32u &CRC32, int32u Init, const int8u* Buffer_Current, const int8u* Buffer_End)
-{
-    CRC32 ^= Init;
-
-    CRC32_Compute(CRC32, Buffer_Current, Buffer_End);
-
-    CRC32 ^= Init;
-}
-
-//---------------------------------------------------------------------------
-void File_Mk::CRC32_Compute(int32u &CRC32, const int8u* Buffer_Current, const int8u* Buffer_End)
-{
-    while(Buffer_Current<Buffer_End)
-        CRC32=(CRC32>>8) ^ Mk_CRC32_Table[(CRC32&0xFF)^*Buffer_Current++];
 }
 
 } //NameSpace
