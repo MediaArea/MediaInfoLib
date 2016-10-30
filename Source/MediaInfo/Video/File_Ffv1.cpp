@@ -78,7 +78,7 @@ static size_t Ffv1_TryToFixCRC(const int8u* Buffer, size_t Buffer_Size)
     int8u* Buffer2=new int8u[Buffer_Size];
     memcpy(Buffer2, Buffer, Buffer_Size);
     vector<size_t> BitPositions;
-    size_t BitPosition_Max=Buffer_Size;
+    size_t BitPosition_Max=Buffer_Size*8;
     for (size_t BitPosition=0; BitPosition<BitPosition_Max; BitPosition++)
     {
         size_t BytePosition=BitPosition>>3;
