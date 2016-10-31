@@ -78,7 +78,7 @@ static size_t Ffv1_TryToFixCRC(const int8u* Buffer, size_t Buffer_Size)
     int8u* Buffer2=new int8u[Buffer_Size];
     memcpy(Buffer2, Buffer, Buffer_Size);
     vector<size_t> BitPositions;
-    size_t BitPosition_Max=Buffer_Size;
+    size_t BitPosition_Max=Buffer_Size*8;
     for (size_t BitPosition=0; BitPosition<BitPosition_Max; BitPosition++)
     {
         size_t BytePosition=BitPosition>>3;
@@ -799,7 +799,7 @@ void File_Ffv1::Read_Buffer_Continue()
                             size_t BitInBytePosition=BitPosition&0x7;
                             int8u Modified=Buffer[Buffer_Offset+(size_t)Element_Offset_Begin+BytePosition];
                             Modified^=1<<BitInBytePosition;
-                            FixFile(File_Offset+Buffer_Offset+(size_t)Element_Offset_Begin+BytePosition, &Modified, 1)?Param_Info("Fixed"):Param_Info("Not fixed");
+                            FixFile(File_Offset+Buffer_Offset+(size_t)Element_Offset_Begin+BytePosition, &Modified, 1)?Param_Info1("Fixed"):Param_Info1("Not fixed");
                         }
                     }
                 #endif //MEDIAINFO_FIXITY

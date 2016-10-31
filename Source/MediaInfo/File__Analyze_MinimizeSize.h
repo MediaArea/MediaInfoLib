@@ -340,18 +340,19 @@ public :
     //***************************************************************************
 
     //Param - Main
-    #define Param1(_A)
-    #define Param2(_A,_B)
-    #define Param3(_A,_B,_C)
+    inline void noop() {}
+    #define Param1(_A) noop()
+    #define Param2(_A,_B) noop()
+    #define Param3(_A,_B,_C) noop()
 
     //Param - Info
-    #define Param_Info1(_A)
-    #define Param_Info2(_A,_B)
-    #define Param_Info3(_A,_B,_C)
-    #define Param_Info1C(_CONDITION,_A)
-    #define Param_Info2C(_CONDITION,_A,_B)
-    #define Param_Info3C(_CONDITION,_A,_B,_C)
-    #define Param_Info_From_Milliseconds(A)
+    #define Param_Info1(_A) noop()
+    #define Param_Info2(_A,_B) noop()
+    #define Param_Info3(_A,_B,_C) noop()
+    #define Param_Info1C(_CONDITION,_A) noop()
+    #define Param_Info2C(_CONDITION,_A,_B) noop()
+    #define Param_Info3C(_CONDITION,_A,_B,_C) noop()
+    #define Param_Info_From_Milliseconds(A) noop()
 
     //***************************************************************************
     // Information
