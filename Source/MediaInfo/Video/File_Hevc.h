@@ -112,15 +112,8 @@ private :
                     SchedSel(SchedSel_)
                 {
                 }
-
-                xxl &operator=(const xxl &x)
-                {
-                    SchedSel = x.SchedSel;
-
-                    return *this;
-                }
-
             private:
+                xxl &operator=(const xxl &x);
                 xxl();
             };
             struct xxl_common
