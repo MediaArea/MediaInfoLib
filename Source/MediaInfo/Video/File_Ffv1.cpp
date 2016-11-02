@@ -1597,7 +1597,7 @@ void File_Ffv1::read_quant_table(int i, int j, size_t scale)
             return;
         }
 
-        for (size_t a=0; a<=len_minus1; a++)
+        for (int32u a=0; a<=len_minus1; a++)
         {
             quant_tables[i][j][k] = scale * v;
             k++;

@@ -1428,7 +1428,7 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         }
         if (!colour_description_present_Temp.empty())
         {
-            if (!colour_description_present_Temp.empty() && !Retrieve(Stream_Video, StreamPos_To, Video_colour_description_present).empty()
+            if (!Retrieve(Stream_Video, StreamPos_To, Video_colour_description_present).empty()
              && (colour_primaries_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_colour_primaries)
               || transfer_characteristics_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_transfer_characteristics)
               || matrix_coefficients_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_matrix_coefficients)))
