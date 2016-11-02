@@ -118,29 +118,16 @@ struct element_details
             data.set_Option(Option);
             data = parameter;
             if (_Measure)
-            {
-                size_t len = strlen(_Measure);
-                Measure = new char[len + 1];
-                std::memcpy(Measure, _Measure, len);
-                Measure[len] = '\0';
-            }
-            else
-                Measure = NULL;
-        }
-
-        ~Element_Node_Info()
-        {
-            delete[] Measure;
+                Measure = _Measure;
         }
 
         friend std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v);
 
         Element_Node_Data data;
-        char*             Measure;
-
-        Element_Node_Info& operator=(const Element_Node_Info&);
+        std::string       Measure;
 
     private:
+        Element_Node_Info& operator=(const Element_Node_Info&);
         Element_Node_Info(const Element_Node_Info&);
     };
 
@@ -180,7 +167,6 @@ struct element_details
         int  Print_Micro_Xml(std::ostringstream& ss, size_t level);                 //Print the node in micro XML into ss
         int  Print_Tree(std::ostringstream& ss, size_t level=1);                    //Print the node into ss
         int  Print_Tree_Cat(std::ostringstream& ss, size_t level=1);
-        Element_Node &operator =(const Element_Node &);
     };
 #endif //MEDIAINFO_TRACE
 

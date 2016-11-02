@@ -598,32 +598,13 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
 //***************************************************************************
 // Element_Node_Info
 //***************************************************************************
-
-//---------------------------------------------------------------------------
-element_details::Element_Node_Info& element_details::Element_Node_Info::operator=(const Element_Node_Info& v)
-{
-    if (this == &v)
-        return *this;
-
-    data = v.data;
-    if (v.Measure)
-    {
-        size_t len = strlen(v.Measure) + 1;
-        Measure = new char[len];
-        std::memcpy(Measure, v.Measure, len);
-    }
-
-    return *this;
-}
-
-//---------------------------------------------------------------------------
 std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v)
 {
     if (!v)
         return os;
 
     os << v->data;
-    if (v->Measure)
+    if (!v->Measure.empty())
         os << v->Measure;
 
     return os;
@@ -634,7 +615,7 @@ std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v
 //***************************************************************************
 //---------------------------------------------------------------------------
 element_details::Element_Node::Element_Node()
-: Pos(0), Size(0), Name(NULL),
+: Pos(0), Size(0), 
   Current_Child(-1), NoShow(false), OwnChildren(true), IsCat(false)
 {
 }
@@ -720,7 +701,7 @@ int element_details::Element_Node::Print_Micro_Xml(std::ostringstream& ss, size_
     {
         Element_Node_Info* Info = Infos[i];
 
-        if (Info->Measure && !std::strcmp(Info->Measure, "Parser"))
+        if (Info->Measure == "Parser")
         {
             if (!(Info->data == string()))
                 ss << " parser=\"" << Info->data << "\"";
@@ -794,7 +775,7 @@ int element_details::Element_Node::Print_Xml(std::ostringstream& ss, size_t leve
     {
         Element_Node_Info* Info = Infos[i];
 
-        if (Info->Measure && !std::strcmp(Info->Measure, "Parser"))
+        if (Info->Measure == "Parser")
         {
             if (!(Info->data == string()))
                 ss << " parser=\"" << Info->data << "\"";
@@ -893,7 +874,7 @@ int element_details::Element_Node::Print_Tree(std::ostringstream& ss, size_t lev
     {
         Element_Node_Info* Info = Infos[i];
 
-        if (Info->Measure && !std::strcmp(Info->Measure, "Parser"))
+        if (Info->Measure == "Parser")
         {
             if (!(Info->data == string()))
                 ss << " - Parser=" << Info->data;
