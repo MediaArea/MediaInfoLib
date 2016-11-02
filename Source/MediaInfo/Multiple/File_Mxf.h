@@ -1058,6 +1058,7 @@ protected :
             CompletionDate=(int64u)-1;
             TextlessElementsExist=(int8u)-1;
             ProgrammeHasText=(int8u)-1;
+            FpaPass=(int8u)-1;
         }
 
         ~as11()
