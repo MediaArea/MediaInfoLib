@@ -1035,7 +1035,7 @@ static const char* Mxf_EssenceCompression(const int128u EssenceCompression)
 }
 
 //---------------------------------------------------------------------------
-static const char* Mxf_EssenceCompression_Profile(const int128u EssenceCompression)
+static const char* Mxf_EssenceCompression_Profile(const int128u& EssenceCompression)
 {
     int8u Code2=(int8u)((EssenceCompression.lo&0x00FF000000000000LL)>>48);
     int8u Code3=(int8u)((EssenceCompression.lo&0x0000FF0000000000LL)>>40);
@@ -1089,7 +1089,7 @@ static const char* Mxf_EssenceCompression_Profile(const int128u EssenceCompressi
     }
 }
 //---------------------------------------------------------------------------
-static const char* Mxf_EssenceCompression_Version(const int128u EssenceCompression)
+static const char* Mxf_EssenceCompression_Version(const int128u& EssenceCompression)
 {
     int8u Code2=(int8u)((EssenceCompression.lo&0x00FF000000000000LL)>>48);
     int8u Code3=(int8u)((EssenceCompression.lo&0x0000FF0000000000LL)>>40);
@@ -1319,7 +1319,7 @@ static const char* Mxf_ChannelAssignment_ChannelPositions(const int128u ChannelL
 }
 
 //---------------------------------------------------------------------------
-static const char* Mxf_ChannelAssignment_ChannelPositions2(const int128u ChannelLayout, int32u ChannelsCount=(int32u)-1)
+static const char* Mxf_ChannelAssignment_ChannelPositions2(const int128u& ChannelLayout, int32u ChannelsCount=(int32u)-1)
 {
     //Sound Channel Labeling
     if ((ChannelLayout.hi&0xFFFFFFFFFFFFFF00LL)!=0x060E2B3404010100LL && (ChannelLayout.lo&0xFFFFFFFF00000000LL)!=0x0402021000000000LL)
@@ -1366,7 +1366,7 @@ static const char* Mxf_ChannelAssignment_ChannelPositions2(const int128u Channel
 }
 
 //---------------------------------------------------------------------------
-static const char* Mxf_ChannelAssignment_ChannelLayout(const int128u ChannelLayout, int32u ChannelsCount=(int32u)-1)
+static const char* Mxf_ChannelAssignment_ChannelLayout(const int128u& ChannelLayout, int32u ChannelsCount=(int32u)-1)
 {
     //Sound Channel Labeling
     if ((ChannelLayout.hi&0xFFFFFFFFFFFFFF00LL)!=0x060E2B3404010100LL && (ChannelLayout.lo&0xFFFFFFFF00000000LL)!=0x0402021000000000LL)
