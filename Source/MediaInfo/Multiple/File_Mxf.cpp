@@ -2890,14 +2890,9 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
 
     for (std::map<std::string, Ztring>::iterator Info=Essence->second.Infos.begin(); Info!=Essence->second.Infos.end(); ++Info)
         Fill(StreamKind_Last, StreamPos_Last, Info->first.c_str(), Info->second, true);
-    if (MxfTimeCodeForDelay.RoundedTimecodeBase && MxfTimeCodeForDelay.StartTimecode!=(int64u)-1)
+    if (MxfTimeCodeForDelay.IsInit())
     {
-        float64 TimeCode_StartTimecode_Temp=((float64)(MxfTimeCodeForDelay.StartTimecode+Config->File_IgnoreEditsBefore))/MxfTimeCodeForDelay.RoundedTimecodeBase;
-        if (MxfTimeCodeForDelay.DropFrame)
-        {
-            TimeCode_StartTimecode_Temp*=1001;
-            TimeCode_StartTimecode_Temp/=1000;
-        }
+        const float64 TimeCode_StartTimecode_Temp = MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore);
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay), TimeCode_StartTimecode_Temp*1000, 0, true);
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_DropFrame), MxfTimeCodeForDelay.DropFrame?"Yes":"No");
@@ -3084,14 +3079,9 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
                 Stream_Prepare(Stream_Audio);
                 size_t Pos=Count_Get(Stream_Audio)-1;
                 (*Parser)->Finish();
-                if (MxfTimeCodeForDelay.RoundedTimecodeBase && MxfTimeCodeForDelay.StartTimecode!=(int64u)-1)
+                if (MxfTimeCodeForDelay.IsInit())
                 {
-                    float64 TimeCode_StartTimecode_Temp=((float64)(MxfTimeCodeForDelay.StartTimecode+Config->File_IgnoreEditsBefore))/MxfTimeCodeForDelay.RoundedTimecodeBase;
-                    if (MxfTimeCodeForDelay.DropFrame)
-                    {
-                        TimeCode_StartTimecode_Temp*=1001;
-                        TimeCode_StartTimecode_Temp/=1000;
-                    }
+                    const float64 TimeCode_StartTimecode_Temp = MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore);
                     Fill(Stream_Audio, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay), TimeCode_StartTimecode_Temp*1000, 0, true);
                     Fill(Stream_Audio, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
                 }
@@ -3124,14 +3114,9 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             Fill_Flush();
             Stream_Prepare(Stream_Text);
             (*Parser)->Finish();
-            if (MxfTimeCodeForDelay.RoundedTimecodeBase && MxfTimeCodeForDelay.StartTimecode!=(int64u)-1)
+            if (MxfTimeCodeForDelay.IsInit())
             {
-                float64 TimeCode_StartTimecode_Temp=((float64)(MxfTimeCodeForDelay.StartTimecode+Config->File_IgnoreEditsBefore))/MxfTimeCodeForDelay.RoundedTimecodeBase;
-                if (MxfTimeCodeForDelay.DropFrame)
-                {
-                    TimeCode_StartTimecode_Temp*=1001;
-                    TimeCode_StartTimecode_Temp/=1000;
-                }
+                const float64 TimeCode_StartTimecode_Temp= MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore);
                 Fill(Stream_Text, Parser_Text_Pos, Fill_Parameter(StreamKind_Last, Generic_Delay), TimeCode_StartTimecode_Temp*1000, 0, true);
                 Fill(Stream_Text, Parser_Text_Pos, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
             }
@@ -3963,7 +3948,7 @@ void File_Mxf::Streams_Finish_Component_ForAS11(const int128u ComponentUID, floa
     int64u TC_Temp=0;
     int8u FrameRate_TempI;
     bool DropFrame_Temp;
-    if (MxfTimeCodeMaterial.RoundedTimecodeBase && MxfTimeCodeMaterial.StartTimecode!=(int64u)-1)
+    if (MxfTimeCodeMaterial.IsInit())
     {
         TC_Temp=MxfTimeCodeMaterial.StartTimecode;
         FrameRate_TempI=(int8u)MxfTimeCodeMaterial.RoundedTimecodeBase;
