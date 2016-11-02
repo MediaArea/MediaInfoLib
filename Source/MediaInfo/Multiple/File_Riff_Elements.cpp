@@ -1390,7 +1390,7 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
     }
     #endif
     stream& StreamItem = Stream[Stream_ID];
-    for (size_t Pos=0; StreamItem.Parsers.size(); Pos++)
+    for (size_t Pos=0; Pos<StreamItem.Parsers.size(); Pos++)
         Open_Buffer_Init(StreamItem.Parsers[Pos]);
 
     //Options
