@@ -722,6 +722,7 @@ void File_Riff::AIFF_COMM()
     }
     #endif
 
+    stream& StreamItem = Stream[Stream_ID];
     #if defined(MEDIAINFO_PCM_YES)
         File_Pcm* Parser=new File_Pcm;
         Parser->Codec=Retrieve(Stream_Audio, StreamPos_Last, Audio_CodecID);
@@ -740,7 +741,6 @@ void File_Riff::AIFF_COMM()
         #else //MEDIAINFO_DEMUX
             Parser->Frame_Count_Valid=(int64u)-1; //Disabling it, waiting for SMPTE ST 337 parser reject
         #endif //MEDIAINFO_DEMUX
-        stream& StreamItem = Stream[Stream_ID];
         StreamItem.Parsers.push_back(Parser);
         StreamItem.IsPcm=true;
         StreamItem.StreamKind=Stream_Audio;
