@@ -178,6 +178,7 @@ struct element_details
         int  Print_Micro_Xml(std::ostringstream& ss, size_t level);                 //Print the node in micro XML into ss
         int  Print_Tree(std::ostringstream& ss, size_t level=1);                    //Print the node into ss
         int  Print_Tree_Cat(std::ostringstream& ss, size_t level=1);
+        Element_Node &operator =(const Element_Node &);
     };
 #endif //MEDIAINFO_TRACE
 
