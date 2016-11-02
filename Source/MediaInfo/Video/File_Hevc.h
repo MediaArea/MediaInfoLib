@@ -114,6 +114,7 @@ private :
                 }
             private:
                 xxl &operator=(const xxl &x);
+                xxl(const xxl &);
                 xxl();
             };
             struct xxl_common

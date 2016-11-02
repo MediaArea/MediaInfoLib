@@ -106,6 +106,7 @@ private :
             private:
                 xxl();
                 xxl &operator =(const xxl &);
+                xxl(const xxl &);
             };
             struct bitstream_restriction_struct
             {
@@ -269,6 +270,7 @@ private :
 
     private:
         seq_parameter_set_struct &operator=(const seq_parameter_set_struct &v);
+        seq_parameter_set_struct(const seq_parameter_set_struct &);
         seq_parameter_set_struct();
     };
     typedef vector<seq_parameter_set_struct*> seq_parameter_set_structs;
