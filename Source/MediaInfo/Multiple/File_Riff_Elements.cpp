@@ -751,8 +751,7 @@ void File_Riff::AIFF_COMM()
     #endif //MEDIAINFO_DEMUX
 
     Element_Code=(int64u)-1;
-    for (size_t Pos=0; Pos<StreamItem.Parsers.size(); Pos++)
-        Open_Buffer_Init(StreamItem.Parsers[Pos]);
+    Open_Buffer_Init_All();
 }
 
 //---------------------------------------------------------------------------
@@ -1149,6 +1148,7 @@ void File_Riff::AVI__hdlr_strl_indx_SuperIndex(int32u Entry_Count, int32u ChunkI
     Skip_L4(                                                    "Reserved0");
     Skip_L4(                                                    "Reserved1");
     Skip_L4(                                                    "Reserved2");
+    stream& StreamItem = Stream[Stream_ID];
     for (int32u Pos=0; Pos<Entry_Count; Pos++)
     {
         int32u Duration;
@@ -1157,7 +1157,7 @@ void File_Riff::AVI__hdlr_strl_indx_SuperIndex(int32u Entry_Count, int32u ChunkI
         Skip_L4(                                                "Size"); //Size of index chunk at this offset
         Get_L4 (Duration,                                       "Duration"); //time span in stream ticks
         Index_Pos[Offset]=ChunkId;
-        Stream[Stream_ID].indx_Duration+=Duration;
+        StreamItem.indx_Duration+=Duration;
         Element_End0();
     }
 
@@ -1238,7 +1238,8 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
 
     //Filling
     Stream_Prepare(Stream_Audio);
-    Stream[Stream_ID].Compression=FormatTag;
+    stream& StreamItem = Stream[Stream_ID];
+    StreamItem.Compression=FormatTag;
     Ztring Codec; Codec.From_Number(FormatTag, 16);
     Codec.MakeUpperCase();
     CodecID_Fill(Codec, Stream_Audio, StreamPos_Last, InfoCodecID_Format_Riff);
@@ -1252,7 +1253,7 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
         Fill(Stream_Audio, StreamPos_Last, Audio_BitRate, AvgBytesPerSec*8);
     if (BitsPerSample)
         Fill(Stream_Audio, StreamPos_Last, Audio_BitDepth, BitsPerSample);
-    Stream[Stream_ID].AvgBytesPerSec=AvgBytesPerSec; //Saving bitrate for each stream
+    StreamItem.AvgBytesPerSec=AvgBytesPerSec; //Saving bitrate for each stream
     if (SamplesPerSec && TimeReference!=(int64u)-1)
     {
         Fill(Stream_Audio, 0, Audio_Delay, float64_int64s(((float64)TimeReference)*1000/SamplesPerSec));
@@ -1276,7 +1277,7 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
                     Demux_Level=4; //Intermediate
                 }
             #endif //MEDIAINFO_DEMUX
-            Stream[Stream_ID].Parsers.push_back(Parser);
+            StreamItem.Parsers.push_back(Parser);
         }
         #endif
 
@@ -1294,7 +1295,7 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
                     Demux_Level=4; //Intermediate
                 }
             #endif //MEDIAINFO_DEMUX
-            Stream[Stream_ID].Parsers.push_back(Parser);
+            StreamItem.Parsers.push_back(Parser);
         }
         #endif
     }
@@ -1308,7 +1309,7 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
         File_Mpega* Parser=new File_Mpega;
         Parser->CalculateDelay=true;
         Parser->ShouldContinueParsing=true;
-        Stream[Stream_ID].Parsers.push_back(Parser);
+        StreamItem.Parsers.push_back(Parser);
     }
     #endif
     #if defined(MEDIAINFO_AC3_YES)
@@ -1318,7 +1319,7 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
         Parser->Frame_Count_Valid=2;
         Parser->CalculateDelay=true;
         Parser->ShouldContinueParsing=true;
-        Stream[Stream_ID].Parsers.push_back(Parser);
+        StreamItem.Parsers.push_back(Parser);
     }
     #endif
     #if defined(MEDIAINFO_DTS_YES)
@@ -1327,7 +1328,7 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
         File_Dts* Parser=new File_Dts;
         Parser->Frame_Count_Valid=2;
         Parser->ShouldContinueParsing=true;
-        Stream[Stream_ID].Parsers.push_back(Parser);
+        StreamItem.Parsers.push_back(Parser);
     }
     #endif
     #if defined(MEDIAINFO_AAC_YES)
@@ -1337,7 +1338,7 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
         Parser->Mode=File_Aac::Mode_ADTS;
         Parser->Frame_Count_Valid=1;
         Parser->ShouldContinueParsing=true;
-        Stream[Stream_ID].Parsers.push_back(Parser);
+        StreamItem.Parsers.push_back(Parser);
     }
     #endif
     #if defined(MEDIAINFO_PCM_YES)
@@ -1386,12 +1387,10 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
     {
         File_Ogg* Parser=new File_Ogg;
         Parser->ShouldContinueParsing=true;
-        Stream[Stream_ID].Parsers.push_back(Parser);
+        StreamItem.Parsers.push_back(Parser);
     }
     #endif
-    stream& StreamItem = Stream[Stream_ID];
-    for (size_t Pos=0; Pos<StreamItem.Parsers.size(); Pos++)
-        Open_Buffer_Init(StreamItem.Parsers[Pos]);
+    Open_Buffer_Init_All();
 
     //Options
     if (Element_Offset+2>Element_Size)
@@ -1565,9 +1564,7 @@ void File_Riff::AVI__hdlr_strl_strf_auds_ExtensibleWave()
                 StreamItem.IsPcm=true;
             }
             #endif
-            stream& StreamItem = Stream[Stream_ID];
-            for (size_t Pos=0; Pos<StreamItem.Parsers.size(); Pos++)
-                Open_Buffer_Init(StreamItem.Parsers[Pos]);
+            Open_Buffer_Init_All();
         }
         else
         {
@@ -1707,8 +1704,7 @@ void File_Riff::AVI__hdlr_strl_strf_txts()
             StreamItem.Parsers.push_back(new File_OtherText); //For SSA
             #endif
 
-            for (size_t Pos=0; Pos<StreamItem.Parsers.size(); Pos++)
-                Open_Buffer_Init(StreamItem.Parsers[Pos]);
+            Open_Buffer_Init_All();
         }
         else
         {
@@ -1882,9 +1878,7 @@ void File_Riff::AVI__hdlr_strl_strf_vids()
         Stream[Stream_ID].Parsers.push_back(Parser);
     }
     #endif
-    stream& StreamItem = Stream[Stream_ID];
-    for (size_t Pos=0; Pos<StreamItem.Parsers.size(); Pos++)
-        Open_Buffer_Init(StreamItem.Parsers[Pos]);
+    Open_Buffer_Init_All();
 
     //Options
     if (Element_Offset>=Element_Size)
@@ -3828,7 +3822,12 @@ void File_Riff::W3DI()
     Fill(Stream_General, 0, General_Comment, Comment);
     Fill(Stream_General, 0, General_Track_Position, TrackPos);
 }
-
+void File_Riff::Open_Buffer_Init_All()
+{
+    stream& StreamItem = Stream[Stream_ID];
+    for (size_t Pos = 0; Pos<StreamItem.Parsers.size(); Pos++)
+        Open_Buffer_Init(StreamItem.Parsers[Pos]);
+}
 //***************************************************************************
 // C++
 //***************************************************************************
