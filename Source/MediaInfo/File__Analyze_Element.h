@@ -154,7 +154,7 @@ struct element_details
         int64u                           Pos;             // Position of the element in the file
         int64u                           Size;            // Size of the element (including header and sub-elements)
     private:
-        char*                            Name;            // Name planned for this element
+        std::string                      Name;            // Name planned for this element
     public:
         Element_Node_Data                Value;           // The value (currently used only with Trace XML)
         std::vector<Element_Node_Info*>  Infos;           // More info about the element
@@ -165,10 +165,12 @@ struct element_details
         bool                             IsCat;           // Node is a category
 
         void                             Init();          //Initialize with common values
-        void Add_Child(Element_Node* node);              //Add a subchild to the current node
-        void Set_Name(const char* Name_);
-        void Set_Name(const string &Name_);
-        const char* Get_Name() {return Name;}
+        void Add_Child(Element_Node* node);               //Add a subchild to the current node
+        void Set_Name(const string &Name_)
+        {
+            Name = Name_;
+        }
+        bool Is_Empty() const {return Name.empty();}
 
         // Print
         int  Print(MediaInfo_Config::trace_Format Format, std::string& str);  //Print the node into str
