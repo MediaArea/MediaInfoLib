@@ -1907,7 +1907,8 @@ void File_Mpeg_Descriptors::Descriptor_1D()
     Get_B1 (IOD_label,                                          "IOD_label");
 
     #ifdef MEDIAINFO_MPEG4_YES
-        if (Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].IOD_ESs.find(IOD_label)==Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].IOD_ESs.end())
+        complete_stream::transport_stream & transportStream =  Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id];
+        if (transportStream.IOD_ESs.find(IOD_label)== transportStream.IOD_ESs.end())
         {
             File_Mpeg4_Descriptors MI;
             MI.Parser_DoNotFreeIt=true;
@@ -1915,8 +1916,8 @@ void File_Mpeg_Descriptors::Descriptor_1D()
             Open_Buffer_Init(&MI);
             Open_Buffer_Continue(&MI);
             Finish(&MI);
-            Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].IOD_ESs[MI.ES_ID].Parser=MI.Parser;
-            Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].IOD_ESs[MI.ES_ID].SLConfig=MI.SLConfig;
+            transportStream.IOD_ESs[MI.ES_ID].Parser=MI.Parser;
+            transportStream.IOD_ESs[MI.ES_ID].SLConfig=MI.SLConfig;
         }
     #else
         Skip_XX(Element_Size-Element_Offset,                    "MPEG-4 Descriptor");
