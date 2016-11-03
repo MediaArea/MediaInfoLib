@@ -2124,8 +2124,9 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
     Get_EB (TrackNumber,                                        "TrackNumber");
 
     //Finished?
-    Stream[TrackNumber].PacketCount++;
-    if (Stream[TrackNumber].Searching_Payload || Stream[TrackNumber].Searching_TimeStamps || Stream[TrackNumber].Searching_TimeStamp_Start)
+    stream& streamItem = Stream[TrackNumber];
+    streamItem.PacketCount++;
+    if (streamItem.Searching_Payload || streamItem.Searching_TimeStamps || streamItem.Searching_TimeStamp_Start)
     {
         //Parsing
         int16u TimeCodeU;
@@ -2134,28 +2135,28 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
         Element_Info1(TimeCodeU);
 
         FILLING_BEGIN();
-            if (Segment_Cluster_TimeCode_Value+TimeCode<Stream[TrackNumber].TimeCode_Start) //Does not work well: Stream[TrackNumber].Searching_TimeStamp_Start)
+            if (Segment_Cluster_TimeCode_Value+TimeCode<streamItem.TimeCode_Start) //Does not work well: streamItem.Searching_TimeStamp_Start)
             {
                 FILLING_BEGIN();
-                    Stream[TrackNumber].TimeCode_Start=Segment_Cluster_TimeCode_Value+TimeCode;
-                    //Stream[TrackNumber].Searching_TimeStamp_Start=false;
+                      streamItem.TimeCode_Start=Segment_Cluster_TimeCode_Value+TimeCode;
+                    //streamItem.Searching_TimeStamp_Start=false;
                 FILLING_END();
             }
-            if (Stream[TrackNumber].Searching_TimeStamps)
+            if (streamItem.Searching_TimeStamps)
             {
-                Stream[TrackNumber].TimeCodes.push_back(Segment_Cluster_TimeCode_Value+TimeCode);
-                if (Stream[TrackNumber].TimeCodes.size()>128)
-                    Stream[TrackNumber].Searching_TimeStamps=false;
+                streamItem.TimeCodes.push_back(Segment_Cluster_TimeCode_Value+TimeCode);
+                if (streamItem.TimeCodes.size()>128)
+                    streamItem.Searching_TimeStamps=false;
             }
 
             if (Segment_Cluster_BlockGroup_BlockDuration_Value!=(int64u)-1)
             {
-                Stream[TrackNumber].Segment_Cluster_BlockGroup_BlockDuration_Counts[Segment_Cluster_BlockGroup_BlockDuration_Value]++;
+                streamItem.Segment_Cluster_BlockGroup_BlockDuration_Counts[Segment_Cluster_BlockGroup_BlockDuration_Value]++;
                 Segment_Cluster_BlockGroup_BlockDuration_Value=(int64u)-1;
             }
         FILLING_END();
 
-        if (Stream[TrackNumber].Searching_Payload)
+        if (streamItem.Searching_Payload)
         {
             std::vector<int64u> Laces;
             int32u Lacing;
@@ -2230,41 +2231,41 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
                 for (size_t Pos=0; Pos<Laces.size(); Pos++)
                 {
                     //Content compression
-                    if (Stream[TrackNumber].ContentCompAlgo!=(int32u)-1 && Stream[TrackNumber].ContentCompAlgo!=3)
-                        Stream[TrackNumber].Searching_Payload=false; //Unsupported
+                    if (streamItem.ContentCompAlgo!=(int32u)-1 && streamItem.ContentCompAlgo!=3)
+                        streamItem.Searching_Payload=false; //Unsupported
 
                     //Integrity test
                     if (Element_Offset+Laces[Pos]>Element_Size)
-                        Stream[TrackNumber].Searching_Payload=false; //There is a problem
+                        streamItem.Searching_Payload=false; //There is a problem
 
-                    if (Stream[TrackNumber].Searching_Payload)
+                    if (streamItem.Searching_Payload)
                     {
                         Element_Begin1("Data");
-                        Element_Parser(Stream[TrackNumber].Parser->ParserName.c_str());
+                        Element_Parser(streamItem.Parser->ParserName.c_str());
 
                         Element_Code=TrackNumber;
 
                         //Content compression
-                        if (Stream[TrackNumber].ContentCompAlgo==3) //Header Stripping
+                        if (streamItem.ContentCompAlgo==3) //Header Stripping
                         {
-                            Element_Offset-=(size_t)Stream[TrackNumber].ContentCompSettings_Buffer_Size; //This is an extra array, not in the stream
-                            Open_Buffer_Continue(Stream[TrackNumber].Parser, Stream[TrackNumber].ContentCompSettings_Buffer, (size_t)Stream[TrackNumber].ContentCompSettings_Buffer_Size);
-                            Element_Offset+=(size_t)Stream[TrackNumber].ContentCompSettings_Buffer_Size;
-                            Demux(Stream[TrackNumber].ContentCompSettings_Buffer, (size_t)Stream[TrackNumber].ContentCompSettings_Buffer_Size, ContentType_MainStream);
+                            Element_Offset-=(size_t)streamItem.ContentCompSettings_Buffer_Size; //This is an extra array, not in the stream
+                            Open_Buffer_Continue(streamItem.Parser, streamItem.ContentCompSettings_Buffer, (size_t)streamItem.ContentCompSettings_Buffer_Size);
+                            Element_Offset+=(size_t)streamItem.ContentCompSettings_Buffer_Size;
+                            Demux(streamItem.ContentCompSettings_Buffer, (size_t)streamItem.ContentCompSettings_Buffer_Size, ContentType_MainStream);
                         }
 
                         //Parsing
                         #if MEDIAINFO_DEMUX
                             int8u Demux_Level_old=Demux_Level;
-                            if (Stream[TrackNumber].Parser && Stream[TrackNumber].Parser->Demux_Level==2)
+                            if (streamItem.Parser && streamItem.Parser->Demux_Level==2)
                                 Demux_Level=4;
                             Demux(Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset), ContentType_MainStream);
                             Demux_Level=Demux_Level_old;
                         #endif //MEDIAINFO_DEMUX
-                        Open_Buffer_Continue(Stream[TrackNumber].Parser, (size_t)Laces[Pos]);
-                        if (Stream[TrackNumber].Parser->Status[IsFinished]
-                         || (Stream[TrackNumber].PacketCount>=300 && MediaInfoLib::Config.ParseSpeed_Get()<1))
-                            Stream[TrackNumber].Searching_Payload=false;
+                        Open_Buffer_Continue(streamItem.Parser, (size_t)Laces[Pos]);
+                        if (streamItem.Parser->Status[IsFinished]
+                         || (streamItem.PacketCount>=300 && MediaInfoLib::Config.ParseSpeed_Get()<1))
+                            streamItem.Searching_Payload=false;
 
                         Element_End0();
                     }
@@ -2281,7 +2282,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
             Skip_XX(Element_Size-Element_Offset,                    "Data");
         }
 
-        if (!Stream[TrackNumber].Searching_Payload && !Stream[TrackNumber].Searching_TimeStamps && !Stream[TrackNumber].Searching_TimeStamp_Start)
+        if (!streamItem.Searching_Payload && !streamItem.Searching_TimeStamps && !streamItem.Searching_TimeStamp_Start)
             Stream_Count--;
     }
     else
@@ -3176,9 +3177,10 @@ void File_Mk::Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_Content
     FILLING_BEGIN();
         if (Segment_Info_Count>1)
             return; //First element has the priority
-        Stream[TrackNumber].ContentCompSettings_Buffer=new int8u[(size_t)Element_Size];
-        std::memcpy(Stream[TrackNumber].ContentCompSettings_Buffer, Buffer+Buffer_Offset, (size_t)Element_Size);
-        Stream[TrackNumber].ContentCompSettings_Buffer_Size=(size_t)Element_Size;
+        stream& streamItem = Stream[TrackNumber];
+        streamItem.ContentCompSettings_Buffer=new int8u[(size_t)Element_Size];
+        std::memcpy(streamItem.ContentCompSettings_Buffer, Buffer+Buffer_Offset, (size_t)Element_Size);
+        streamItem.ContentCompSettings_Buffer_Size=(size_t)Element_Size;
     FILLING_END();
 }
 
@@ -3201,8 +3203,8 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate()
         Skip_XX(Element_Size,                                   "Data (not parsed)");  
         return; //First element has the priority
     }
-
-    if (TrackNumber==(int64u)-1 || TrackType==(int64u)-1 || Retrieve(Stream[TrackNumber].StreamKind, Stream[TrackNumber].StreamPos, "CodecID").empty())
+    stream& streamItem = Stream[TrackNumber];
+    if (TrackNumber==(int64u)-1 || TrackType==(int64u)-1 || Retrieve(streamItem.StreamKind, streamItem.StreamPos, "CodecID").empty())
     {
         //Codec not already known, saving CodecPrivate
         if (CodecPrivate)
@@ -3220,11 +3222,12 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate()
 void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate__Parse()
 {
     //Creating the parser
-    if (Stream[TrackNumber].Parser==NULL)
+    stream& streamItem = Stream[TrackNumber];
+    if (streamItem.Parser==NULL)
     {
-        if (Stream[TrackNumber].StreamKind==Stream_Audio && Retrieve(Stream_Audio, Stream[TrackNumber].StreamPos, Audio_CodecID)==__T("A_MS/ACM"))
+        if (streamItem.StreamKind==Stream_Audio && Retrieve(Stream_Audio, streamItem.StreamPos, Audio_CodecID)==__T("A_MS/ACM"))
             Segment_Tracks_TrackEntry_CodecPrivate_auds();
-        else if (Stream[TrackNumber].StreamKind==Stream_Video && Retrieve(Stream_Video, Stream[TrackNumber].StreamPos, Video_CodecID)==__T("V_MS/VFW/FOURCC"))
+        else if (streamItem.StreamKind==Stream_Video && Retrieve(Stream_Video, streamItem.StreamPos, Video_CodecID)==__T("V_MS/VFW/FOURCC"))
             Segment_Tracks_TrackEntry_CodecPrivate_vids();
         else if (Element_Size>0)
             Skip_XX(Element_Size,                 "Unknown");
@@ -3256,12 +3259,12 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate__Parse()
     #endif // MEDIAINFO_DEMUX
 
     //Parsing
-    Open_Buffer_Continue(Stream[TrackNumber].Parser);
+    Open_Buffer_Continue(streamItem.Parser);
 
     //Filling
-    if (Stream[TrackNumber].Parser->Status[IsFinished]) //Can be finnished here...
+    if (streamItem.Parser->Status[IsFinished]) //Can be finnished here...
     {
-        Stream[TrackNumber].Searching_Payload=false;
+        streamItem.Searching_Payload=false;
         Stream_Count--;
     }
 
@@ -3442,17 +3445,18 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_vids()
     if (Data_Remain())
     {
         Element_Begin1("Private data");
-        if (Stream[TrackNumber].Parser)
+        stream& streamItem = Stream[TrackNumber];
+        if (streamItem.Parser)
         {
             #if defined(MEDIAINFO_FFV1_YES)
                 if (Compression==0x46465631) //FFV1
-                    Open_Buffer_OutOfBand(Stream[TrackNumber].Parser);
+                    Open_Buffer_OutOfBand(streamItem.Parser);
             #endif
             #if defined(MEDIAINFO_FFV1_YES)
                 if (Compression==0x46465648) //FFVH
                 {
-                    ((File_HuffYuv*)Stream[TrackNumber].Parser)->IsOutOfBandData=true; //TODO: implement ISOutOfBandData in a generic maner
-                    Open_Buffer_Continue(Stream[TrackNumber].Parser);
+                    ((File_HuffYuv*)streamItem.Parser)->IsOutOfBandData=true; //TODO: implement ISOutOfBandData in a generic maner
+                    Open_Buffer_Continue(streamItem.Parser);
                     Element_Offset=Element_Size;
                 }
             #endif
@@ -3597,15 +3601,16 @@ void File_Mk::Segment_Tracks_TrackEntry_TrackNumber()
         if (Segment_Info_Count>1)
             return; //First element has the priority
         Fill(StreamKind_Last, StreamPos_Last, General_ID, TrackNumber);
+        stream& streamItem = Stream[TrackNumber];
         if (StreamKind_Last!=Stream_Max)
         {
-            Stream[TrackNumber].StreamKind=StreamKind_Last;
-            Stream[TrackNumber].StreamPos=StreamPos_Last;
+            streamItem.StreamKind=StreamKind_Last;
+            streamItem.StreamPos=StreamPos_Last;
         }
         if (TrackVideoDisplayWidth && TrackVideoDisplayHeight)
-            Stream[TrackNumber].DisplayAspectRatio=((float)TrackVideoDisplayWidth)/(float)TrackVideoDisplayHeight;
+            streamItem.DisplayAspectRatio=((float)TrackVideoDisplayWidth)/(float)TrackVideoDisplayHeight;
         if (AvgBytesPerSec)
-            Stream[TrackNumber].AvgBytesPerSec=AvgBytesPerSec;
+            streamItem.AvgBytesPerSec=AvgBytesPerSec;
 
         CodecID_Manage();
         CodecPrivate_Manage();
@@ -3657,8 +3662,9 @@ void File_Mk::Segment_Tracks_TrackEntry_TrackType()
 
         if (TrackNumber!=(int64u)-1 && StreamKind_Last!=Stream_Max)
         {
-            Stream[TrackNumber].StreamKind=StreamKind_Last;
-            Stream[TrackNumber].StreamPos=StreamPos_Last;
+            stream& streamItem = Stream[TrackNumber];
+            streamItem.StreamKind=StreamKind_Last;
+            streamItem.StreamPos=StreamPos_Last;
         }
 
         CodecID_Manage();
@@ -4264,6 +4270,7 @@ void File_Mk::CodecID_Manage()
         CodecID_Fill(CodecID, StreamKind_Last, StreamPos_Last, InfoCodecID_Format_Matroska);
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Codec), CodecID);
     }
+    stream& streamItem = Stream[TrackNumber];
 
     //Creating the parser
     #if defined(MEDIAINFO_MPEG4V_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_VC1_YES) || defined(MEDIAINFO_DIRAC_YES) || defined(MEDIAINFO_MPEGV_YES) || defined(MEDIAINFO_VP8_YES) || defined(MEDIAINFO_OGG_YES) || defined(MEDIAINFO_DTS_YES)
@@ -4273,39 +4280,39 @@ void File_Mk::CodecID_Manage()
     #if defined(MEDIAINFO_MPEG4V_YES)
     else if (Format==__T("MPEG-4 Visual"))
     {
-        Stream[TrackNumber].Parser=new File_Mpeg4v;
-        ((File_Mpeg4v*)Stream[TrackNumber].Parser)->FrameIsAlwaysComplete=true;
+        streamItem.Parser=new File_Mpeg4v;
+        ((File_Mpeg4v*)streamItem.Parser)->FrameIsAlwaysComplete=true;
     }
     #endif
     #if defined(MEDIAINFO_AVC_YES)
     else if (Format==__T("AVC"))
     {
-        Stream[TrackNumber].Parser=new File_Avc;
-        ((File_Avc*)Stream[TrackNumber].Parser)->FrameIsAlwaysComplete=true;
+        streamItem.Parser=new File_Avc;
+        ((File_Avc*)streamItem.Parser)->FrameIsAlwaysComplete=true;
         if (InfoCodecID_Format_Type==InfoCodecID_Format_Matroska)
         {
-            ((File_Avc*)Stream[TrackNumber].Parser)->MustSynchronize=false;
-            ((File_Avc*)Stream[TrackNumber].Parser)->MustParse_SPS_PPS=true;
-            ((File_Avc*)Stream[TrackNumber].Parser)->SizedBlocks=true;
+            ((File_Avc*)streamItem.Parser)->MustSynchronize=false;
+            ((File_Avc*)streamItem.Parser)->MustParse_SPS_PPS=true;
+            ((File_Avc*)streamItem.Parser)->SizedBlocks=true;
         }
     }
     #endif
     #if defined(MEDIAINFO_HEVC_YES)
     else if (Format==__T("HEVC"))
     {
-        Stream[TrackNumber].Parser=new File_Hevc;
-        ((File_Hevc*)Stream[TrackNumber].Parser)->FrameIsAlwaysComplete=true;
+        streamItem.Parser=new File_Hevc;
+        ((File_Hevc*)streamItem.Parser)->FrameIsAlwaysComplete=true;
         if (InfoCodecID_Format_Type==InfoCodecID_Format_Matroska)
         {
-            ((File_Hevc*)Stream[TrackNumber].Parser)->MustSynchronize=false;
-            ((File_Hevc*)Stream[TrackNumber].Parser)->MustParse_VPS_SPS_PPS=true;
-            ((File_Hevc*)Stream[TrackNumber].Parser)->MustParse_VPS_SPS_PPS_FromMatroska=true;
-            ((File_Hevc*)Stream[TrackNumber].Parser)->SizedBlocks=true;
+            ((File_Hevc*)streamItem.Parser)->MustSynchronize=false;
+            ((File_Hevc*)streamItem.Parser)->MustParse_VPS_SPS_PPS=true;
+            ((File_Hevc*)streamItem.Parser)->MustParse_VPS_SPS_PPS_FromMatroska=true;
+            ((File_Hevc*)streamItem.Parser)->SizedBlocks=true;
             #if MEDIAINFO_DEMUX
                 if (Config->Demux_Hevc_Transcode_Iso14496_15_to_AnnexB_Get())
                 {
-                    Stream[TrackNumber].Parser->Demux_Level=2; //Container
-                    Stream[TrackNumber].Parser->Demux_UnpacketizeContainer=true;
+                    streamItem.Parser->Demux_Level=2; //Container
+                    streamItem.Parser->Demux_UnpacketizeContainer=true;
                 }
             #endif //MEDIAINFO_DEMUX
         }
@@ -4314,81 +4321,81 @@ void File_Mk::CodecID_Manage()
     #if defined(MEDIAINFO_FFV1_YES)
     else if (Format==__T("FFV1"))
     {
-        Stream[TrackNumber].Parser=new File_Ffv1;
-        ((File_Ffv1*)Stream[TrackNumber].Parser)->Width=Retrieve(Stream_Video, StreamPos_Last, Video_Width).To_int32u();
-        ((File_Ffv1*)Stream[TrackNumber].Parser)->Height=Retrieve(Stream_Video, StreamPos_Last, Video_Height).To_int32u();
+        streamItem.Parser=new File_Ffv1;
+        ((File_Ffv1*)streamItem.Parser)->Width=Retrieve(Stream_Video, StreamPos_Last, Video_Width).To_int32u();
+        ((File_Ffv1*)streamItem.Parser)->Height=Retrieve(Stream_Video, StreamPos_Last, Video_Height).To_int32u();
     }
     #endif
     #if defined(MEDIAINFO_HUFFYUV_YES)
     else if (Format==__T("HuffYUV"))
     {
-        Stream[TrackNumber].Parser=new File_HuffYuv;
+        streamItem.Parser=new File_HuffYuv;
     }
     #endif
     #if defined(MEDIAINFO_VC1_YES)
     else if (Format==__T("VC-1"))
     {
-        Stream[TrackNumber].Parser=new File_Vc1;
-        ((File_Vc1*)Stream[TrackNumber].Parser)->FrameIsAlwaysComplete=true;
+        streamItem.Parser=new File_Vc1;
+        ((File_Vc1*)streamItem.Parser)->FrameIsAlwaysComplete=true;
     }
     #endif
     #if defined(MEDIAINFO_DIRAC_YES)
     else if (Format==__T("Dirac"))
     {
-        Stream[TrackNumber].Parser=new File_Dirac;
+        streamItem.Parser=new File_Dirac;
     }
     #endif
     #if defined(MEDIAINFO_MPEGV_YES)
     else if (Format==__T("MPEG Video"))
     {
-        Stream[TrackNumber].Parser=new File_Mpegv;
-        ((File_Mpegv*)Stream[TrackNumber].Parser)->FrameIsAlwaysComplete=true;
+        streamItem.Parser=new File_Mpegv;
+        ((File_Mpegv*)streamItem.Parser)->FrameIsAlwaysComplete=true;
     }
     #endif
     #if defined(MEDIAINFO_PRORES_YES)
     else if (Format==__T("ProRes"))
     {
-        Stream[TrackNumber].Parser=new File_ProRes;
+        streamItem.Parser=new File_ProRes;
     }
     #endif
     #if defined(MEDIAINFO_VP8_YES)
     else if (Format==__T("VP8"))
     {
-        Stream[TrackNumber].Parser=new File_Vp8;
+        streamItem.Parser=new File_Vp8;
     }
     #endif
     #if defined(MEDIAINFO_OGG_YES)
     else if (Format==__T("Theora")  || Format==__T("Vorbis"))
     {
-        Stream[TrackNumber].Parser=new File_Ogg;
-        Stream[TrackNumber].Parser->MustSynchronize=false;
-        ((File_Ogg*)Stream[TrackNumber].Parser)->XiphLacing=true;
+        streamItem.Parser=new File_Ogg;
+        streamItem.Parser->MustSynchronize=false;
+        ((File_Ogg*)streamItem.Parser)->XiphLacing=true;
     }
     #endif
     #if defined(MEDIAINFO_RM_YES)
     else if (CodecID.find(__T("V_REAL/"))==0)
     {
-        Stream[TrackNumber].Parser=new File_Rm;
-        ((File_Rm*)Stream[TrackNumber].Parser)->FromMKV_StreamType=Stream_Video;
+        streamItem.Parser=new File_Rm;
+        ((File_Rm*)streamItem.Parser)->FromMKV_StreamType=Stream_Video;
     }
     #endif
     #if defined(MEDIAINFO_AC3_YES)
     else if (Format==__T("AC-3") || Format==__T("E-AC-3") || Format==__T("TrueHD"))
     {
-        Stream[TrackNumber].Parser=new File_Ac3;
+        streamItem.Parser=new File_Ac3;
     }
     #endif
     #if defined(MEDIAINFO_DTS_YES)
     else if (Format==__T("DTS"))
     {
-        Stream[TrackNumber].Parser=new File_Dts;
+        streamItem.Parser=new File_Dts;
     }
     #endif
     #if defined(MEDIAINFO_AAC_YES)
     else if (CodecID==(__T("A_AAC")))
     {
-        Stream[TrackNumber].Parser=new File_Aac;
-        ((File_Aac*)Stream[TrackNumber].Parser)->Mode=File_Aac::Mode_AudioSpecificConfig;
+        streamItem.Parser=new File_Aac;
+        ((File_Aac*)streamItem.Parser)->Mode=File_Aac::Mode_AudioSpecificConfig;
     }
     #endif
     #if defined(MEDIAINFO_AAC_YES)
@@ -4418,65 +4425,65 @@ void File_Mk::CodecID_Manage()
             Fill(Stream_Audio, StreamPos_Last, Audio_Format_Settings_PS, PS?"Yes":"No");
         int64s sampling_frequency=Retrieve(Stream_Audio, StreamPos_Last, Audio_SamplingRate).To_int64s();
 
-        Stream[TrackNumber].Parser=new File_Aac;
-        ((File_Aac*)Stream[TrackNumber].Parser)->Mode=File_Aac::Mode_AudioSpecificConfig;
-        ((File_Aac*)Stream[TrackNumber].Parser)->AudioSpecificConfig_OutOfBand(sampling_frequency, audioObjectType, SBR==1?true:false, PS==1?true:false, SBR==1?true:false, PS==1?true:false);
+        streamItem.Parser=new File_Aac;
+        ((File_Aac*)streamItem.Parser)->Mode=File_Aac::Mode_AudioSpecificConfig;
+        ((File_Aac*)streamItem.Parser)->AudioSpecificConfig_OutOfBand(sampling_frequency, audioObjectType, SBR==1?true:false, PS==1?true:false, SBR==1?true:false, PS==1?true:false);
     }
     #endif
     #if defined(MEDIAINFO_AAC_YES)
     else if (Format==(__T("AAC")))
     {
-        Stream[TrackNumber].Parser=new File_Aac;
-        ((File_Aac*)Stream[TrackNumber].Parser)->Mode=File_Aac::Mode_ADTS;
+        streamItem.Parser=new File_Aac;
+        ((File_Aac*)streamItem.Parser)->Mode=File_Aac::Mode_ADTS;
     }
     #endif
     #if defined(MEDIAINFO_MPEGA_YES)
     else if (Format==__T("MPEG Audio"))
     {
-        Stream[TrackNumber].Parser=new File_Mpega;
+        streamItem.Parser=new File_Mpega;
     }
     #endif
     #if defined(MEDIAINFO_FLAC_YES)
     else if (Format==__T("Flac"))
     {
-        Stream[TrackNumber].Parser=new File_Flac;
+        streamItem.Parser=new File_Flac;
     }
     #endif
     #if defined(MEDIAINFO_OPUS_YES)
     else if (CodecID.find(__T("A_OPUS"))==0) //http://wiki.xiph.org/MatroskaOpus
     {
-        Stream[TrackNumber].Parser=new File_Opus;
+        streamItem.Parser=new File_Opus;
     }
     #endif
     #if defined(MEDIAINFO_WVPK_YES)
     else if (Format==__T("WavPack"))
     {
-        Stream[TrackNumber].Parser=new File_Wvpk;
-        ((File_Wvpk*)Stream[TrackNumber].Parser)->FromMKV=true;
+        streamItem.Parser=new File_Wvpk;
+        ((File_Wvpk*)streamItem.Parser)->FromMKV=true;
     }
     #endif
     #if defined(MEDIAINFO_TTA_YES)
     else if (Format==__T("TTA"))
     {
-        //Stream[TrackNumber].Parser=new File_Tta; //Parser is not needed, because header is useless and dropped (the parser analyses only the header)
+        //streamItem.Parser=new File_Tta; //Parser is not needed, because header is useless and dropped (the parser analyses only the header)
     }
     #endif
     #if defined(MEDIAINFO_PCM_YES)
     else if (Format==__T("PCM"))
     {
-        Stream[TrackNumber].Parser=new File_Pcm;
-        ((File_Pcm*)Stream[TrackNumber].Parser)->Codec=CodecID;
+        streamItem.Parser=new File_Pcm;
+        ((File_Pcm*)streamItem.Parser)->Codec=CodecID;
     }
     #endif
     #if defined(MEDIAINFO_RM_YES)
     else if (CodecID.find(__T("A_REAL/"))==0)
     {
-        Stream[TrackNumber].Parser=new File_Rm;
-        ((File_Rm*)Stream[TrackNumber].Parser)->FromMKV_StreamType=Stream_Audio;
+        streamItem.Parser=new File_Rm;
+        ((File_Rm*)streamItem.Parser)->FromMKV_StreamType=Stream_Audio;
     }
     #endif
     Element_Code=TrackNumber;
-    Open_Buffer_Init(Stream[TrackNumber].Parser);
+    Open_Buffer_Init(streamItem.Parser);
 
     CodecID.clear();
 }
