@@ -3203,8 +3203,7 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate()
         Skip_XX(Element_Size,                                   "Data (not parsed)");  
         return; //First element has the priority
     }
-    stream& streamItem = Stream[TrackNumber];
-    if (TrackNumber==(int64u)-1 || TrackType==(int64u)-1 || Retrieve(streamItem.StreamKind, streamItem.StreamPos, "CodecID").empty())
+    if (TrackNumber==(int64u)-1 || TrackType==(int64u)-1 || Retrieve(Stream[TrackNumber].StreamKind, Stream[TrackNumber].StreamPos, "CodecID").empty())
     {
         //Codec not already known, saving CodecPrivate
         if (CodecPrivate)

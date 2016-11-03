@@ -41,3 +41,6 @@ MediaInfoLib.VC.db
 /Project/MSCS2010/ShellExtension/MediaInfoShellExt.h
 /Project/MSVC2013/ShellExtension/MediaInfoShellExt.h
 /Project/MSVC2015/ShellExtension/MediaInfoShellExt.h
+*.psess
+*.vsp
+*.diagsession
