@@ -2146,8 +2146,9 @@ void File_Mpeg_Descriptors::Descriptor_4D()
                 Ztring ISO_639_2; ISO_639_2.From_CC3(ISO_639_language_code);
                 const Ztring& ISO_639_1=MediaInfoLib::Config.Iso639_1_Get(ISO_639_2);
                 complete_stream::transport_stream::program& progItem = Complete_Stream->Transport_Streams[transport_stream_id].Programs[table_id_extension];
-                progItem.DVB_EPG_Blocks[table_id].Events[event_id].short_event.event_name=(ISO_639_1.empty()?ISO_639_2:ISO_639_1)+__T(':')+event_name;
-                progItem.DVB_EPG_Blocks[table_id].Events[event_id].short_event.text=(ISO_639_1.empty()?ISO_639_2:ISO_639_1)+__T(':')+text;
+                complete_stream::transport_stream::program::dvb_epg_block::event& eventItem = progItem.DVB_EPG_Blocks[table_id].Events[event_id];
+                eventItem.short_event.event_name=(ISO_639_1.empty()?ISO_639_2:ISO_639_1)+__T(':')+event_name;
+                eventItem.short_event.text=(ISO_639_1.empty()?ISO_639_2:ISO_639_1)+__T(':')+text;
                 progItem.DVB_EPG_Blocks_IsUpdated=true;
                 Complete_Stream->Programs_IsUpdated=true;
             }
@@ -2222,9 +2223,10 @@ void File_Mpeg_Descriptors::Descriptor_54()
         if (event_id_IsValid)
         {
             complete_stream::transport_stream::program& progItem = Complete_Stream->Transport_Streams[transport_stream_id].Programs[table_id_extension];
-            if (!progItem.DVB_EPG_Blocks[table_id].Events[event_id].content.empty())
+            complete_stream::transport_stream::program::dvb_epg_block::event& eventItem = progItem.DVB_EPG_Blocks[table_id].Events[event_id];
+            if (!eventItem.content.empty())
             {
-                progItem.DVB_EPG_Blocks[table_id].Events[event_id].content.resize(Complete_Stream->Transport_Streams[transport_stream_id].Programs[table_id_extension].DVB_EPG_Blocks[table_id].Events[event_id].content.size()-2);
+                eventItem.content.resize(Complete_Stream->Transport_Streams[transport_stream_id].Programs[table_id_extension].DVB_EPG_Blocks[table_id].Events[event_id].content.size()-2);
                 progItem.DVB_EPG_Blocks_IsUpdated=true;
                 Complete_Stream->Programs_IsUpdated=true;
             }

@@ -1574,10 +1574,11 @@ void File_Mpeg_Psi::Table_4E()
 
         FILLING_BEGIN();
             complete_stream::transport_stream::program& progItem = Complete_Stream->Transport_Streams[transport_stream_id].Programs[table_id_extension];
-            progItem.DVB_EPG_Blocks[table_id].Events[event_id].start_time=__T("UTC ")+Date_MJD(date)+__T(" ")+Time_BCD(time);
-            progItem.DVB_EPG_Blocks[table_id].Events[event_id].duration=Time_BCD(duration);
+            complete_stream::transport_stream::program::dvb_epg_block::event& eventItem = progItem.DVB_EPG_Blocks[table_id].Events[event_id];
+            eventItem.start_time=__T("UTC ")+Date_MJD(date)+__T(" ")+Time_BCD(time);
+            eventItem.duration=Time_BCD(duration);
             if (running_status)
-                progItem.DVB_EPG_Blocks[table_id].Events[event_id].running_status=Mpeg_Psi_running_status[running_status];
+                eventItem.running_status=Mpeg_Psi_running_status[running_status];
         FILLING_END();
     }
 }
