@@ -1532,8 +1532,9 @@ void File_Mpeg_Psi::Table_46()
 void File_Mpeg_Psi::Table_4E()
 {
     //Clearing
-    Complete_Stream->Transport_Streams[transport_stream_id].Programs[table_id_extension].DVB_EPG_Blocks[table_id].Events.clear();
-    Complete_Stream->Transport_Streams[transport_stream_id].Programs[table_id_extension].DVB_EPG_Blocks_IsUpdated=true;
+    complete_stream::transport_stream::program& progItem = Complete_Stream->Transport_Streams[transport_stream_id].Programs[table_id_extension];
+    progItem.DVB_EPG_Blocks[table_id].Events.clear();
+    progItem.DVB_EPG_Blocks_IsUpdated=true;
     Complete_Stream->Programs_IsUpdated=true;
 
     //Parsing
@@ -1572,10 +1573,11 @@ void File_Mpeg_Psi::Table_4E()
         Element_End1(Ztring::ToZtring_From_CC2(event_id));
 
         FILLING_BEGIN();
-            Complete_Stream->Transport_Streams[transport_stream_id].Programs[table_id_extension].DVB_EPG_Blocks[table_id].Events[event_id].start_time=__T("UTC ")+Date_MJD(date)+__T(" ")+Time_BCD(time);
-            Complete_Stream->Transport_Streams[transport_stream_id].Programs[table_id_extension].DVB_EPG_Blocks[table_id].Events[event_id].duration=Time_BCD(duration);
+            complete_stream::transport_stream::program& progItem = Complete_Stream->Transport_Streams[transport_stream_id].Programs[table_id_extension];
+            progItem.DVB_EPG_Blocks[table_id].Events[event_id].start_time=__T("UTC ")+Date_MJD(date)+__T(" ")+Time_BCD(time);
+            progItem.DVB_EPG_Blocks[table_id].Events[event_id].duration=Time_BCD(duration);
             if (running_status)
-                Complete_Stream->Transport_Streams[transport_stream_id].Programs[table_id_extension].DVB_EPG_Blocks[table_id].Events[event_id].running_status=Mpeg_Psi_running_status[running_status];
+                progItem.DVB_EPG_Blocks[table_id].Events[event_id].running_status=Mpeg_Psi_running_status[running_status];
         FILLING_END();
     }
 }
