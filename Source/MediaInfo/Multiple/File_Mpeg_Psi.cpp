@@ -1186,14 +1186,15 @@ void File_Mpeg_Psi::Table_01()
 void File_Mpeg_Psi::Table_02()
 {
     //Informing PSI is parsed
-    if (!Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[table_id_extension].IsParsed && Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs_NotParsedCount)
+    complete_stream::transport_stream::program& progItem = Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[table_id_extension];
+    if (!progItem.IsParsed && Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs_NotParsedCount)
     {
         Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs_NotParsedCount--;
-        Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[table_id_extension].IsParsed=true;
+        progItem.IsParsed=true;
     }
 
     //Saving previous status
-    std::vector<int16u> elementary_PIDs_Previous=Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[table_id_extension].elementary_PIDs;
+    std::vector<int16u> elementary_PIDs_Previous= progItem.elementary_PIDs;
 
     //Parsing
     int16u PCR_PID;
@@ -2566,16 +2567,17 @@ void File_Mpeg_Psi::elementary_PID_Update(int16u PCR_PID)
         if (Complete_Stream->Streams_NotParsedCount==(size_t)-1)
             Complete_Stream->Streams_NotParsedCount=0;
         Complete_Stream->Streams_NotParsedCount++;
-        if (stream_type==0x86 && Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[table_id_extension].registration_format_identifier==Elements::CUEI)
+        complete_stream::transport_stream::program& progItem = Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[table_id_extension];
+        if (stream_type==0x86 && progItem.registration_format_identifier==Elements::CUEI)
         {
-            Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[table_id_extension].HasNotDisplayableStreams=true;
+            progItem.HasNotDisplayableStreams=true;
             Complete_Stream->Streams[elementary_PID]->Kind=complete_stream::stream::psi;
             Complete_Stream->Streams[elementary_PID]->Table_IDs.resize(0x100);
             Complete_Stream->Streams[elementary_PID]->Table_IDs[0xFC]=new complete_stream::stream::table_id; //Splice
-            if (Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[table_id_extension].Scte35==NULL)
+            if (progItem.Scte35==NULL)
             {
-                Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[table_id_extension].Scte35=new complete_stream::transport_stream::program::scte35;
-                Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[table_id_extension].Scte35->pid=elementary_PID;
+                progItem.Scte35=new complete_stream::transport_stream::program::scte35;
+                progItem.Scte35->pid=elementary_PID;
             }
             #if MEDIAINFO_TRACE
                 Complete_Stream->Streams[elementary_PID]->Element_Info1="PSI";
