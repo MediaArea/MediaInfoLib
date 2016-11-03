@@ -1635,13 +1635,14 @@ void File_Mpeg_Descriptors::Descriptor_05()
                         {
                             //Per PES
                             Complete_Stream->Streams[elementary_PID]->registration_format_identifier=format_identifier;
-                            Complete_Stream->Streams[elementary_PID]->Infos["format_identifier"]=Ztring().From_CC4(format_identifier);
-                            if (Complete_Stream->Streams[elementary_PID]->Infos["format_identifier"].size()!=4)
+                            Ztring& infosItem = Complete_Stream->Streams[elementary_PID]->Infos["format_identifier"];
+                            infosItem =Ztring().From_CC4(format_identifier);
+                            if (infosItem.size()!=4)
                             {
                                 Ztring Temp; Temp.From_Number(format_identifier, 16);
                                 if (Temp.size()<8)
                                     Temp.insert(0, 8-Temp.size(), __T('0'));
-                                Complete_Stream->Streams[elementary_PID]->Infos["format_identifier"]=__T("0x")+Temp;
+                                infosItem =__T("0x")+Temp;
                             }
                             Complete_Stream->Streams[elementary_PID]->Infos_Option["format_identifier"]=__T("N NT");
                             if (format_identifier==Elements::KLVA)
