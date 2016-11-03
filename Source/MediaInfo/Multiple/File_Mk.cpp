@@ -4287,27 +4287,29 @@ void File_Mk::CodecID_Manage()
     #if defined(MEDIAINFO_AVC_YES)
     else if (Format==__T("AVC"))
     {
-        streamItem.Parser=new File_Avc;
+        File_Avc* parser = new File_Avc;
+        streamItem.Parser= parser;
         ((File_Avc*)streamItem.Parser)->FrameIsAlwaysComplete=true;
         if (InfoCodecID_Format_Type==InfoCodecID_Format_Matroska)
         {
-            ((File_Avc*)streamItem.Parser)->MustSynchronize=false;
-            ((File_Avc*)streamItem.Parser)->MustParse_SPS_PPS=true;
-            ((File_Avc*)streamItem.Parser)->SizedBlocks=true;
+            parser->MustSynchronize=false;
+            parser->MustParse_SPS_PPS=true;
+            parser->SizedBlocks=true;
         }
     }
     #endif
     #if defined(MEDIAINFO_HEVC_YES)
     else if (Format==__T("HEVC"))
     {
-        streamItem.Parser=new File_Hevc;
-        ((File_Hevc*)streamItem.Parser)->FrameIsAlwaysComplete=true;
+        File_Hevc* parser = new File_Hevc;
+        streamItem.Parser = parser;
+        parser->FrameIsAlwaysComplete=true;
         if (InfoCodecID_Format_Type==InfoCodecID_Format_Matroska)
         {
-            ((File_Hevc*)streamItem.Parser)->MustSynchronize=false;
-            ((File_Hevc*)streamItem.Parser)->MustParse_VPS_SPS_PPS=true;
-            ((File_Hevc*)streamItem.Parser)->MustParse_VPS_SPS_PPS_FromMatroska=true;
-            ((File_Hevc*)streamItem.Parser)->SizedBlocks=true;
+            parser->MustSynchronize=false;
+            parser->MustParse_VPS_SPS_PPS=true;
+            parser->MustParse_VPS_SPS_PPS_FromMatroska=true;
+            parser->SizedBlocks=true;
             #if MEDIAINFO_DEMUX
                 if (Config->Demux_Hevc_Transcode_Iso14496_15_to_AnnexB_Get())
                 {
@@ -4321,9 +4323,10 @@ void File_Mk::CodecID_Manage()
     #if defined(MEDIAINFO_FFV1_YES)
     else if (Format==__T("FFV1"))
     {
-        streamItem.Parser=new File_Ffv1;
-        ((File_Ffv1*)streamItem.Parser)->Width=Retrieve(Stream_Video, StreamPos_Last, Video_Width).To_int32u();
-        ((File_Ffv1*)streamItem.Parser)->Height=Retrieve(Stream_Video, StreamPos_Last, Video_Height).To_int32u();
+        File_Ffv1* parser = new File_Ffv1;
+        streamItem.Parser = parser;
+        parser->Width=Retrieve(Stream_Video, StreamPos_Last, Video_Width).To_int32u();
+        parser->Height=Retrieve(Stream_Video, StreamPos_Last, Video_Height).To_int32u();
     }
     #endif
     #if defined(MEDIAINFO_HUFFYUV_YES)
@@ -4335,8 +4338,9 @@ void File_Mk::CodecID_Manage()
     #if defined(MEDIAINFO_VC1_YES)
     else if (Format==__T("VC-1"))
     {
-        streamItem.Parser=new File_Vc1;
-        ((File_Vc1*)streamItem.Parser)->FrameIsAlwaysComplete=true;
+        File_Vc1* parser = new File_Vc1;
+        streamItem.Parser= parser;
+        parser->FrameIsAlwaysComplete=true;
     }
     #endif
     #if defined(MEDIAINFO_DIRAC_YES)
@@ -4348,8 +4352,9 @@ void File_Mk::CodecID_Manage()
     #if defined(MEDIAINFO_MPEGV_YES)
     else if (Format==__T("MPEG Video"))
     {
-        streamItem.Parser=new File_Mpegv;
-        ((File_Mpegv*)streamItem.Parser)->FrameIsAlwaysComplete=true;
+        File_Mpegv* parser = new File_Mpegv;
+        streamItem.Parser = parser;
+        parser->FrameIsAlwaysComplete=true;
     }
     #endif
     #if defined(MEDIAINFO_PRORES_YES)
@@ -4367,16 +4372,18 @@ void File_Mk::CodecID_Manage()
     #if defined(MEDIAINFO_OGG_YES)
     else if (Format==__T("Theora")  || Format==__T("Vorbis"))
     {
-        streamItem.Parser=new File_Ogg;
+        File_Ogg* parser = new File_Ogg;
+        streamItem.Parser = parser;
         streamItem.Parser->MustSynchronize=false;
-        ((File_Ogg*)streamItem.Parser)->XiphLacing=true;
+        parser->XiphLacing=true;
     }
     #endif
     #if defined(MEDIAINFO_RM_YES)
     else if (CodecID.find(__T("V_REAL/"))==0)
     {
-        streamItem.Parser=new File_Rm;
-        ((File_Rm*)streamItem.Parser)->FromMKV_StreamType=Stream_Video;
+        File_Rm* parser = new File_Rm;
+        streamItem.Parser = parser;
+        parser->FromMKV_StreamType=Stream_Video;
     }
     #endif
     #if defined(MEDIAINFO_AC3_YES)
@@ -4394,8 +4401,9 @@ void File_Mk::CodecID_Manage()
     #if defined(MEDIAINFO_AAC_YES)
     else if (CodecID==(__T("A_AAC")))
     {
-        streamItem.Parser=new File_Aac;
-        ((File_Aac*)streamItem.Parser)->Mode=File_Aac::Mode_AudioSpecificConfig;
+        File_Aac* parser = new File_Aac;
+        streamItem.Parser = parser;
+        parser->Mode=File_Aac::Mode_AudioSpecificConfig;
     }
     #endif
     #if defined(MEDIAINFO_AAC_YES)
@@ -4425,16 +4433,18 @@ void File_Mk::CodecID_Manage()
             Fill(Stream_Audio, StreamPos_Last, Audio_Format_Settings_PS, PS?"Yes":"No");
         int64s sampling_frequency=Retrieve(Stream_Audio, StreamPos_Last, Audio_SamplingRate).To_int64s();
 
-        streamItem.Parser=new File_Aac;
-        ((File_Aac*)streamItem.Parser)->Mode=File_Aac::Mode_AudioSpecificConfig;
-        ((File_Aac*)streamItem.Parser)->AudioSpecificConfig_OutOfBand(sampling_frequency, audioObjectType, SBR==1?true:false, PS==1?true:false, SBR==1?true:false, PS==1?true:false);
+        File_Aac* parser = new File_Aac;
+        streamItem.Parser = parser;
+        parser->Mode=File_Aac::Mode_AudioSpecificConfig;
+        parser->AudioSpecificConfig_OutOfBand(sampling_frequency, audioObjectType, SBR==1?true:false, PS==1?true:false, SBR==1?true:false, PS==1?true:false);
     }
     #endif
     #if defined(MEDIAINFO_AAC_YES)
     else if (Format==(__T("AAC")))
     {
-        streamItem.Parser=new File_Aac;
-        ((File_Aac*)streamItem.Parser)->Mode=File_Aac::Mode_ADTS;
+        File_Aac* parser = new File_Aac;
+        streamItem.Parser = parser;
+        parser->Mode=File_Aac::Mode_ADTS;
     }
     #endif
     #if defined(MEDIAINFO_MPEGA_YES)
@@ -4458,8 +4468,9 @@ void File_Mk::CodecID_Manage()
     #if defined(MEDIAINFO_WVPK_YES)
     else if (Format==__T("WavPack"))
     {
-        streamItem.Parser=new File_Wvpk;
-        ((File_Wvpk*)streamItem.Parser)->FromMKV=true;
+        File_Wvpk* parser = new File_Wvpk;
+        streamItem.Parser = parser;
+        parser->FromMKV=true;
     }
     #endif
     #if defined(MEDIAINFO_TTA_YES)
@@ -4471,15 +4482,17 @@ void File_Mk::CodecID_Manage()
     #if defined(MEDIAINFO_PCM_YES)
     else if (Format==__T("PCM"))
     {
-        streamItem.Parser=new File_Pcm;
-        ((File_Pcm*)streamItem.Parser)->Codec=CodecID;
+        File_Pcm* parser = new File_Pcm;
+        streamItem.Parser = parser;
+        parser->Codec=CodecID;
     }
     #endif
     #if defined(MEDIAINFO_RM_YES)
     else if (CodecID.find(__T("A_REAL/"))==0)
     {
-        streamItem.Parser=new File_Rm;
-        ((File_Rm*)streamItem.Parser)->FromMKV_StreamType=Stream_Audio;
+        File_Rm* parser = new File_Rm;
+        streamItem.Parser = parser;
+        parser->FromMKV_StreamType=Stream_Audio;
     }
     #endif
     Element_Code=TrackNumber;
