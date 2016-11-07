@@ -8,6 +8,10 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
+Version 0.7.91
+--------------
++ MXF: Support of color primaries, transfer characteristic, coding equations defined in SMPTE ST 2067-21:2016 e.g. xvYCC or BT.2020
+
 Version 0.7.90, 2016-10-31
 --------------
 + #M94, WAV: support of file with a buggy RIFF header

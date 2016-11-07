@@ -1237,6 +1237,8 @@ static const char* Mxf_ColorPrimaries(const int128u ColorPrimaries)
         case 0x01 : return "BT.601 NTSC";
         case 0x02 : return "BT.470 System B";
         case 0x03 : return "BT.709";
+        case 0x04 : return "BT.2020";
+        case 0x06 : return "P3D65";
         default   : return "";
     }
 }
@@ -1254,6 +1256,9 @@ static const char* Mxf_TransferCharacteristic(const int128u TransferCharacterist
         case 0x05 : return "BT.1361 extended colour gamut system";
         case 0x06 : return "Linear";
         case 0x07 : return "SMPTE 428M";
+        case 0x08 : return "xvYCC";
+        case 0x09 : return "BT.2020";
+        case 0x0A : return "SMPTE ST 2084";
         default   : return "";
     }
 }
@@ -1267,6 +1272,7 @@ static const char* Mxf_CodingEquations(const int128u CodingEquations)
         case 0x01 : return "BT.601";
         case 0x02 : return "BT.709";
         case 0x03 : return "SMPTE 240M";
+        case 0x06 : return "BT.2020";
         default   : return "";
     }
 }
