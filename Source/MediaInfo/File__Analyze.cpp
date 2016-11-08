@@ -494,25 +494,30 @@ void File__Analyze::Open_Buffer_OutOfBand (File__Analyze* Sub, const int8u* ToAd
     #endif //MEDIAINFO_DEMUX
 
     #if MEDIAINFO_TRACE
-        if (Trace_Activated)
-        {
-            //Details handling
-            if ((!Sub->Element[0].TraceNode.Name_Is_Empty() || Sub->Element[0].TraceNode.Children.size()) && !Trace_DoNotSave)
-            {
-                //From Sub
-                while(Sub->Element_Level)
-                    Sub->Element_End0();
-
-                //Add Sub to this node
-                Element[Element_Level].TraceNode.Add_Child(&Sub->Element[0].TraceNode);
-                Sub->Element[0].TraceNode.Init();
-            }
-            else
-                Element[Element_Level].TraceNode.NoShow=true; //We don't want to show this item because there is no info in it
-        }
-    #endif
+        Trace_Details_Handling(Sub);
+    #endif // MEDIAINFO_TRACE
 }
+#if MEDIAINFO_TRACE
+void File__Analyze::Trace_Details_Handling(File__Analyze* Sub)
+{
+    if (Trace_Activated)
+    {
+        //Details handling
+        if ((!Sub->Element[0].TraceNode.Name_Is_Empty() || Sub->Element[0].TraceNode.Children.size()) && !Trace_DoNotSave)
+        {
+            //From Sub
+            while (Sub->Element_Level)
+                Sub->Element_End0();
 
+            //Add Sub to this node
+            Element[Element_Level].TraceNode.Add_Child(&Sub->Element[0].TraceNode);
+            Sub->Element[0].TraceNode.Init();
+        }
+        else
+            Element[Element_Level].TraceNode.NoShow = true; //We don't want to show this item because there is no info in it
+    }
+}
+#endif // MEDIAINFO_TRACE
 //---------------------------------------------------------------------------
 void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
 {
@@ -1047,21 +1052,8 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
     }
 
     #if MEDIAINFO_TRACE
-        if (Trace_Activated)
-        {
-            //Details handling
-            if ((!Sub->Element[0].TraceNode.Name_Is_Empty() || Sub->Element[0].TraceNode.Children.size()) && !Trace_DoNotSave)
-            {
-                //From Sub
-                while(Sub->Element_Level)
-                    Sub->Element_End0();
-                Element[Element_Level].TraceNode.Add_Child(&Sub->Element[0].TraceNode);
-                Sub->Element[0].TraceNode.Init();
-            }
-            else
-                Element[Element_Level].TraceNode.NoShow=true; //We don't want to show this item because there is no info in it
-        }
-    #endif
+        Trace_Details_Handling(Sub);
+    #endif //MEDIAINFO_TRACE
 }
 
 //---------------------------------------------------------------------------

@@ -1265,7 +1265,9 @@ protected :
     std::bitset<32> Trace_Layers;
     void Trace_Layers_Update (size_t Layer=(size_t)-1);
 private :
-
+#if MEDIAINFO_TRACE
+    void Trace_Details_Handling(File__Analyze* Sub);
+#endif // MEDIAINFO_TRACE
     //Elements
     size_t Element_Level_Base;      //From other parsers
     std::vector<element_details> Element;
