@@ -677,7 +677,7 @@ void element_details::Element_Node::Init()
 //---------------------------------------------------------------------------
 int element_details::Element_Node::Print_Micro_Xml(std::ostringstream& ss, size_t level)
 {
-    if (IsCat || Is_Empty())
+    if (IsCat || Name_Is_Empty())
         goto print_children;
 
     if (Value.empty())
@@ -729,7 +729,7 @@ print_children:
     for (size_t i = 0; i < Children.size(); ++i)
         Children[i]->Print_Micro_Xml(ss, level);
 
-    if (!IsCat && !Is_Empty())
+    if (!IsCat && !Name_Is_Empty())
     {
         //end tag
         if (Value.empty())
@@ -748,7 +748,7 @@ int element_details::Element_Node::Print_Xml(std::ostringstream& ss, size_t leve
     std::string spaces;
     bool Modified = false;
 
-    if (IsCat || Is_Empty())
+    if (IsCat || Name_Is_Empty())
         goto print_children;
 
     spaces.resize(level, ' ');
@@ -805,7 +805,7 @@ print_children:
     for (size_t i = 0; i < Children.size(); ++i)
         Children[i]->Print_Xml(ss, level);
 
-    if (!IsCat && !Is_Empty())
+    if (!IsCat && !Name_Is_Empty())
     {
         //end tag
         if (Value.empty())
@@ -848,7 +848,7 @@ int element_details::Element_Node::Print_Tree(std::ostringstream& ss, size_t lev
 
     if (IsCat)
         return Print_Tree_Cat(ss, level);
-    else if (Is_Empty())
+    else if (Name_Is_Empty())
         goto print_children;
 
     ss << std::setfill('0') << std::setw(8) << std::hex << std::uppercase << Pos << std::nouppercase << std::dec;
@@ -862,7 +862,7 @@ int element_details::Element_Node::Print_Tree(std::ostringstream& ss, size_t lev
     if (!Value.empty())
     {
         ss << ":";
-        int nb_free = NB_SPACES - level - (Is_Empty() ? 0 : Name.length()); // 40 - len(Name) - len(spaces)
+        int nb_free = NB_SPACES - level - (Name_Is_Empty() ? 0 : Name.length()); // 40 - len(Name) - len(spaces)
         spaces.resize(nb_free > 0 ? nb_free : 1, ' ');
         Value.Set_Output_Format(Element_Node_Data::Format_Tree);
         ss << spaces << Value;

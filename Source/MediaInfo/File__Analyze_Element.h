@@ -157,7 +157,7 @@ struct element_details
         {
             Name = Name_;
         }
-        bool Is_Empty() const {return Name.empty();}
+        bool Name_Is_Empty() const {return Name.empty();}
 
         // Print
         int  Print(MediaInfo_Config::trace_Format Format, std::string& str);  //Print the node into str

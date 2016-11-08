@@ -497,7 +497,7 @@ void File__Analyze::Open_Buffer_OutOfBand (File__Analyze* Sub, const int8u* ToAd
         if (Trace_Activated)
         {
             //Details handling
-            if ((!Sub->Element[0].TraceNode.Is_Empty() || Sub->Element[0].TraceNode.Children.size()) && !Trace_DoNotSave)
+            if ((!Sub->Element[0].TraceNode.Name_Is_Empty() || Sub->Element[0].TraceNode.Children.size()) && !Trace_DoNotSave)
             {
                 //From Sub
                 while(Sub->Element_Level)
@@ -1050,7 +1050,7 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
         if (Trace_Activated)
         {
             //Details handling
-            if ((!Sub->Element[0].TraceNode.Is_Empty() || Sub->Element[0].TraceNode.Children.size()) && !Trace_DoNotSave)
+            if ((!Sub->Element[0].TraceNode.Name_Is_Empty() || Sub->Element[0].TraceNode.Children.size()) && !Trace_DoNotSave)
             {
                 //From Sub
                 while(Sub->Element_Level)
@@ -2249,7 +2249,7 @@ bool File__Analyze::Header_Manage()
     #if MEDIAINFO_TRACE
     if (Trace_Activated)
     {
-        if (Element[Element_Level-1].TraceNode.Is_Empty())
+        if (Element[Element_Level-1].TraceNode.Name_Is_Empty())
             Element[Element_Level-1].TraceNode.Set_Name("Unknown");
         Element[Element_Level].TraceNode.Size=Element_Offset;
         if (Element_Offset==0)
