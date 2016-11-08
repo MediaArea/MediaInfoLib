@@ -155,6 +155,8 @@ struct template_generic
 
     template_generic(const template_generic &ToCopy)
     {
+        if (this == &ToCopy)
+            return;
         Sequence=new sequence;
         *Sequence=*ToCopy.Sequence;
         template_generic::BaseURL=ToCopy.BaseURL;
@@ -173,6 +175,8 @@ struct template_generic
     void Representation_Attributes_Parse    (XMLElement* Item);
 
     void Decode ();
+private:
+    template_generic &operator =(const template_generic &);
 };
 
 void template_generic::AdaptationSet_Attributes_Parse (XMLElement* Item)

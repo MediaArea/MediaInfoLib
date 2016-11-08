@@ -414,7 +414,7 @@ public :
         int64u Pos=Element_Offset+BS->OffsetBeforeLastCall_Get();
 
         element_details::Element_Node *node = new element_details::Element_Node;
-        node->Set_Name(Parameter.c_str());
+        node->Set_Name(Parameter);
         node->Pos = Pos==(int64u)-1 ? Pos : (File_Offset+Buffer_Offset+Pos);
         node->Value.set_Option(GenericOption);
         node->Value = Value;
