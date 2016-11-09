@@ -29,11 +29,8 @@ namespace Base64 {
     @return Base64 encoded string
 */
 inline std::string Base64::encode(const std::string &sString) {
-  static const std::string sBase64Table(
-  // 0000000000111111111122222222223333333333444444444455555555556666
-  // 0123456789012345678901234567890123456789012345678901234567890123
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-  );
+  static const char* sBase64Table =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   static const char cFillChar = '=';
   std::string::size_type   nLength = sString.length();
   std::string              sResult;
