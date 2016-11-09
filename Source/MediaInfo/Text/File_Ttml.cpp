@@ -96,6 +96,7 @@ File_Ttml::File_Ttml()
     #if MEDIAINFO_EVENTS
         ParserIDs[0]=MediaInfo_Parser_Ttml;
         StreamIDs_Width[0]=0;
+        MuxingMode=0;
     #endif //MEDIAINFO_EVENTS
 
     //Init

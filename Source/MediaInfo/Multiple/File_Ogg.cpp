@@ -53,6 +53,7 @@ File_Ogg::File_Ogg()
     packet_type=0;
     continued=false;
     eos=false;
+    continued_NextFrame= false;
 }
 
 //***************************************************************************

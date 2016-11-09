@@ -62,6 +62,7 @@ File_Rm::File_Rm()
 {
     //In
     FromMKV_StreamType=Stream_Max;
+    MDPR_IsStream=false;
 }
 
 //***************************************************************************

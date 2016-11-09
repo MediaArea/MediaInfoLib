@@ -69,6 +69,7 @@ File__Tags_Helper::File__Tags_Helper()
     SearchingForEndTags=false;
     Duration=0;
     UncompressedSize=0;
+    Parser_Buffer_Size=0;
 }
 
 //---------------------------------------------------------------------------
