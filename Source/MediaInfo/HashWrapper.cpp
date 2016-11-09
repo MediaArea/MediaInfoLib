@@ -52,7 +52,7 @@ namespace MediaInfoLib
 // info
 //***************************************************************************
 
-const char* HashWrapper_Hex = "0123456789abcdef";
+static const char* HashWrapper_Hex = "0123456789abcdef";
 
 //***************************************************************************
 // Constructor/Destructor
