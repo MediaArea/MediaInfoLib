@@ -79,6 +79,7 @@ File_Scte20::File_Scte20()
     //Temp
     Streams.resize(2); //CEA-608 Field 1, CEA-608 Field 2
     Streams_Count=0;
+    Eia608_DisplayEmptyStream=0;
 }
 
 //---------------------------------------------------------------------------

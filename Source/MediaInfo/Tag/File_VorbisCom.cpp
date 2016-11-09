@@ -48,6 +48,7 @@ File_VorbisCom::File_VorbisCom()
     StreamKind_Specific=Stream_General;
     StreamKind_Multiple=Stream_General;
     StreamKind_Common  =Stream_General;
+    user_comment_list_length=0;
 }
 
 //***************************************************************************

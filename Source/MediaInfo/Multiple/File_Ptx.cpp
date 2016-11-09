@@ -44,6 +44,7 @@ File_Ptx::File_Ptx()
 
     //Temp
     ReferenceFiles=NULL;
+    HasCpl=false;
 }
 
 //---------------------------------------------------------------------------

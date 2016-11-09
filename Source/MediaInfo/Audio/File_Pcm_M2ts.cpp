@@ -100,6 +100,9 @@ File_Pcm_M2ts::File_Pcm_M2ts()
     ParserName="PCM M2TS";
     IsRawStream=true;
     PTS_DTS_Needed=true;
+    channel_assignment=0;
+    sampling_frequency=0;
+    bits_per_sample=0;
 }
 
 //***************************************************************************

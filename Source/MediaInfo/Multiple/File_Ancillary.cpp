@@ -247,6 +247,9 @@ File_Ancillary::File_Ancillary()
     #if defined(MEDIAINFO_MXF_YES)
         Rdd18_Parser=NULL;
     #endif //defined(MEDIAINFO_MXF_YES)
+    DataID=0;
+    SecondaryDataID = 0;
+    DataCount=0;
 }
 
 //---------------------------------------------------------------------------

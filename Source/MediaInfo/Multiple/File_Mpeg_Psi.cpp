@@ -736,6 +736,12 @@ File_Mpeg_Psi::File_Mpeg_Psi()
     current_next_indicator=false;
     IsATSC=false;
     ForceStreamDisplay=MediaInfoLib::Config.MpegTs_ForceStreamDisplay_Get();
+    Descriptors_Size=0;
+    table_id_extension=0;
+    table_id=0;
+    pointer_field=0;
+    version_number=0;
+    section_syntax_indicator=false;
 }
 
 //---------------------------------------------------------------------------

@@ -272,6 +272,10 @@ File_Gxf::File_Gxf()
         Flt_FieldPerEntry=(int32u)-1;
         IFrame_IsParsed=false;
     #endif //MEDIAINFO_SEEK
+    Material_Fields_First=0;
+    Material_Fields_Last=0;
+    Material_File_Size=0;
+    TrackNumber=0;
 }
 
 //---------------------------------------------------------------------------

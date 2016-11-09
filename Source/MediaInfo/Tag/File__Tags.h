@@ -67,7 +67,9 @@ public :
     void Accept         (const char* ParserName=NULL);
     void Reject         (const char* ParserName=NULL);
     void Finish         (const char* ParserName=NULL);
-
+protected:
+    int64u Duration;
+    int64u UncompressedSize;
 private :
     //Temp
     File__Analyze* Parser;
@@ -75,7 +77,7 @@ private :
     #ifdef MEDIAINFO_ID3V2_YES
         vector<bool> Parser_Streams_Fill_Priority; //Parser to merge when filling
     #endif
-    size_t         Parser_Buffer_Size;
+    size_t Parser_Buffer_Size;
     int64u Id3v1_Offset;
     int64u Lyrics3_Offset;
     int64u Lyrics3v2_Offset;

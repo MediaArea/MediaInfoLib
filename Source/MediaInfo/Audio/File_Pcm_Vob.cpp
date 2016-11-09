@@ -101,6 +101,9 @@ File_Pcm_Vob::File_Pcm_Vob()
     ParserName="PCM VOB";
     IsRawStream=true;
     PTS_DTS_Needed=true;
+    BitDepth=0;
+    Frequency=0;
+    NumberOfChannelsMinusOne=0;
 }
 
 //***************************************************************************

@@ -65,6 +65,8 @@ File_Amr::File_Amr()
     Header_Size=(int64u)-1;
     Frame_Number=0;
     FrameType=(int8u)-1;
+    IsWB=false;
+    Channels=0;
 }
 
 //***************************************************************************

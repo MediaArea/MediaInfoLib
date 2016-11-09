@@ -110,6 +110,7 @@ File_Cdp::File_Cdp()
     //cdp_length
     cdp_length_Min=(int8u)-1;
     cdp_length_Max=0;
+    cdp_length=0;
 }
 
 //---------------------------------------------------------------------------

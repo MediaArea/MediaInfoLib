@@ -70,7 +70,7 @@ struct element_details
             int128u     *i128u;
         };
 
-        Element_Node_Data() : type(ELEMENT_NODE_NONE), format_out(Format_Xml) {}
+        Element_Node_Data() : type(ELEMENT_NODE_NONE), format_out(Format_Xml), Option(0) {}
         ~Element_Node_Data() { clear(); }
 
         Element_Node_Data& operator=(const Element_Node_Data&);

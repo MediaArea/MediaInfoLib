@@ -76,6 +76,7 @@ File_Tak::File_Tak()
 {
     //File__Tags_Helper
     Base=this;
+    VorbisHeader=false;
 }
 
 //***************************************************************************

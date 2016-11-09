@@ -50,6 +50,8 @@ namespace MediaInfoLib
 //---------------------------------------------------------------------------
 File__ReferenceFilesHelper::File__ReferenceFilesHelper(File__Analyze* MI_, MediaInfo_Config_MediaInfo* Config_)
 {
+    CountOfReferencesToParse=0;
+    CountOfReferences_ForReadSize=0;
     //In
     TestContinuousFileNames=false;
     ContainerHasNoId=false;
@@ -92,6 +94,9 @@ File__ReferenceFilesHelper::File__ReferenceFilesHelper(File__Analyze* MI_, Media
     #if MEDIAINFO_NEXTPACKET
         DTS_Interval=(int64u)-1;
     #endif //MEDIAINFO_NEXTPACKET
+    StreamKind_Last=Stream_General;
+    StreamPos_From=0;
+    StreamPos_To=0;
 }
 
 //---------------------------------------------------------------------------

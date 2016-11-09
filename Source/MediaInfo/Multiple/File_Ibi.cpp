@@ -42,7 +42,7 @@ File_Ibi::File_Ibi()
         Demux_Level=2; //Container
     #endif //MEDIAINFO_DEMUX
     DataMustAlwaysBeComplete=false;
-
+    ID_Current=0;
     #if MEDIAINFO_IBIUSAGE
         //In
         Ibi=NULL;
