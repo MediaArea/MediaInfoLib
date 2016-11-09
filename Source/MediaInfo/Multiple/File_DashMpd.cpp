@@ -181,10 +181,8 @@ private:
 
 void template_generic::AdaptationSet_Attributes_Parse (XMLElement* Item)
 {
-    const char* Attribute;
-
     //Attributes - mineType
-    Attribute=Item->Attribute("mimeType");
+    const char* Attribute=Item->Attribute("mimeType");
     if (Attribute)
         Sequence->StreamKind=DashMpd_mimeType_StreamKind(Attribute);
 
@@ -201,10 +199,8 @@ void template_generic::AdaptationSet_Attributes_Parse (XMLElement* Item)
 
 void template_generic::SegmentTemplate_Attributes_Parse (XMLElement* Item)
 {
-    const char* Attribute;
-
     //Attributes - initialization
-    Attribute=Item->Attribute("initialization");
+    const char* Attribute=Item->Attribute("initialization");
     if (Attribute)
     {
         initialization.From_UTF8(Attribute);
@@ -234,11 +230,10 @@ void template_generic::SegmentTemplate_Attributes_Parse (XMLElement* Item)
 
 void template_generic::SegmentTimeline_Attributes_Parse (XMLElement* Item)
 {
-    const char* Attribute;
     segmenttimeline SegmentTimeLine;
 
     //Attributes - t (start time)
-    Attribute=Item->Attribute("t");
+    const char* Attribute=Item->Attribute("t");
     if (Attribute)
     {
         SegmentTimeLine.t=Ztring().From_UTF8(Attribute).To_int64u();
@@ -269,10 +264,8 @@ void template_generic::SegmentTimeline_Attributes_Parse (XMLElement* Item)
 
 void template_generic::Representation_Attributes_Parse (XMLElement* Item)
 {
-    const char* Attribute;
-
     //Attributes - id
-    Attribute=Item->Attribute("id");
+    const char* Attribute=Item->Attribute("id");
     if (Attribute)
     {
         Sequence->StreamID=Ztring().From_UTF8(Attribute).To_int64u(16);
