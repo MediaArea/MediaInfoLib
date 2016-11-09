@@ -149,6 +149,7 @@ File_Lxf::File_Lxf()
     //Seek
     #if MEDIAINFO_SEEK
         SeekRequest=(int64u)-1;
+        SeekRequest_Divider = 0;
     #endif //MEDIAINFO_SEEK
     FrameRate=0;
     TimeStamp_Rate=720000;
@@ -157,7 +158,6 @@ File_Lxf::File_Lxf()
     SampleSize=0;
     Version=0;
     File_Buffer_Size_Hint_Pointer=NULL;
-    SeekRequest_Divider=0;
 }
 
 //---------------------------------------------------------------------------
