@@ -57,6 +57,9 @@ File_SmpteSt0302::File_SmpteSt0302()
         pid=(int16u)-1;
         stream_id=(int8u)-1;
     #endif MEDIAINFO_EVENTS
+    audio_packet_size=0;
+    number_channels=0;
+    bits_per_sample=0;
 }
 
 //---------------------------------------------------------------------------

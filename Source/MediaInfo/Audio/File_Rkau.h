@@ -45,9 +45,6 @@ private :
     //Buffer - Global
     void Read_Buffer_Continue()                                                 {File__Tags_Helper::Read_Buffer_Continue();}
 
-    //Temp
-    int64u Duration;
-    int64u UncompressedSize;
 };
 
 } //NameSpace

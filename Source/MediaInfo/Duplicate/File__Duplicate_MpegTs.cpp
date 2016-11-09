@@ -59,6 +59,7 @@ File__Duplicate_MpegTs::File__Duplicate_MpegTs (const Ztring &Target)
     program_map_PIDs.resize(0x2000, 0);
     elementary_PIDs.resize(0x2000, 0);
     elementary_PIDs_program_map_PIDs.resize(0x2000, 0);
+    StreamID=0;
 }
 
 //***************************************************************************

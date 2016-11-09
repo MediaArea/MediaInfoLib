@@ -33,6 +33,7 @@ public:
     #endif //MEDIAINFO_DEMUX
         MI(NULL),
         Config(NULL),
+        ReferenceFilesHelper(NULL),
         FileSize((int64u)-1),
         HasMultipleSequences(false),
         HasMainFile(false),

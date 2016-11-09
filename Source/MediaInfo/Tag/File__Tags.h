@@ -67,7 +67,9 @@ public :
     void Accept         (const char* ParserName=NULL);
     void Reject         (const char* ParserName=NULL);
     void Finish         (const char* ParserName=NULL);
-
+protected:
+    int64u Duration;
+    int64u UncompressedSize;
 private :
     //Temp
     File__Analyze* Parser;

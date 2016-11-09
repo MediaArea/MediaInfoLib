@@ -50,6 +50,8 @@ namespace MediaInfoLib
 //---------------------------------------------------------------------------
 File__ReferenceFilesHelper::File__ReferenceFilesHelper(File__Analyze* MI_, MediaInfo_Config_MediaInfo* Config_)
 {
+    CountOfReferencesToParse=0;
+    CountOfReferences_ForReadSize=0;
     //In
     TestContinuousFileNames=false;
     ContainerHasNoId=false;
