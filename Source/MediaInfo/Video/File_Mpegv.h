@@ -169,6 +169,9 @@ private :
             picture_structure=(int8u)-1;
             IsValid=false;
             HasPictureCoding=false;
+            progressive_frame=false;
+            top_field_first=false;
+            repeat_first_field=false;
         }
 
         ~temporalreference()
