@@ -2104,7 +2104,7 @@ void File_Mpeg_Descriptors::Descriptor_48()
     FILLING_BEGIN();
         if (program_number_IsValid)
         {
-            complete_stream::transport_stream::program& progItem = Complete_Stream->Transport_Streams[transport_stream_id].Programs[program_number];
+            complete_stream::transport_stream::program& progItem = Complete_Stream->Transport_Streams[table_id_extension].Programs[program_number];
             progItem.Infos["ServiceName"]=service_name;
             progItem.Infos["ServiceProvider"]=service_provider_name;
             progItem.Infos["ServiceType"]=Mpeg_Descriptors_dvb_service_type(service_type);
