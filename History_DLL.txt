@@ -10,7 +10,10 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 
 Version 0.7.91
 --------------
++ IMF and PTX: more languages detected from file names (but the full list of common languages tags still need to be added)
++ IMF and PTX: support of non-standard but common "LAS" = "Spanish (Latin America)" language code
 + MXF: Support of color primaries, transfer characteristic, coding equations defined in SMPTE ST 2067-21:2016 e.g. xvYCC or BT.2020
+x PTX: fix crash due to bad parsing of some file names while looking for track language
 
 Version 0.7.90, 2016-10-31
 --------------

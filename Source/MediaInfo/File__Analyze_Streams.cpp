@@ -750,7 +750,14 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                 {
                     if (Languages[Pos].size()>=1)
                     {
-                        Ztring Language_Translated=MediaInfoLib::Config.Language_Get(__T("Language_")+Languages[Pos][0]);
+                        Ztring Language_Translated;
+                        if (Languages[Pos].size()==2)
+                            Language_Translated=MediaInfoLib::Config.Language_Get(__T("Language_")+Languages[Pos].Read()); //Testing in case the langauge file has the complex form
+                        if (Language_Translated.find(__T("Language_"))==0)
+                            Language_Translated.clear(); //No translation found
+                        if (Language_Translated.empty())
+                        {
+                        Language_Translated=MediaInfoLib::Config.Language_Get(__T("Language_")+Languages[Pos][0]);
                         if (Language_Translated.find(__T("Language_"))==0)
                             Language_Translated=Languages[Pos][0]; //No translation found
                         if (Languages[Pos].size()>=2)
@@ -767,6 +774,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                                     Language_Translated+=__T('-'); //As the original string
                                     Language_Translated+=Languages[Pos][Pos2];
                                 }
+                        }
                         }
                         Language1.push_back(Language_Translated);
                         if (Languages[Pos][0].size()==2)

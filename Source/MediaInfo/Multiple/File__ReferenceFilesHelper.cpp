@@ -115,6 +115,7 @@ void File__ReferenceFilesHelper_InfoFromFileName (sequences &Sequences)
     ZtringListList List;
     vector<size_t> Iterators;
 
+    size_t ItemsValid=0;
     for (size_t Sequences_Pos=0; Sequences_Pos<Sequences.size(); Sequences_Pos++)
     {
         ZtringList List2;
@@ -139,10 +140,13 @@ void File__ReferenceFilesHelper_InfoFromFileName (sequences &Sequences)
                 List2[Pos].MakeLowerCase();
             List.push_back(List2);
             Iterators.push_back(Sequences_Pos);
+            ItemsValid++;
         }
+        else
+            List.push_back(Ztring());
     }
 
-    if (List.size()<2)
+    if (ItemsValid<2)
         return;
 
     for (size_t Pos2=0; Pos2<List.size(); Pos2++)
@@ -184,8 +188,10 @@ void File__ReferenceFilesHelper_InfoFromFileName (sequences &Sequences)
              || Test==__T("eng")
              || Test==__T("fra")
              || Test==__T("fre")
+             || Test==__T("ger")
              || Test==__T("ita")
              || Test==__T("jpn")
+             || Test==__T("las") //Latin America Spanish
              || Test==__T("rus")
              || Test==__T("spa")))
             {
@@ -279,7 +285,7 @@ void File__ReferenceFilesHelper_InfoFromFileName (sequences &Sequences)
                 Ztring Language;
                 if (List[Pos2][List[Pos2].size()-1-Language_Pos]==__T("ara"))
                     Language=__T("ar");
-                else if (List[Pos2][List[Pos2].size()-1-Language_Pos]==__T("deu"))
+                else if (List[Pos2][List[Pos2].size()-1-Language_Pos]==__T("deu") || List[Pos2][List[Pos2].size()-1-Language_Pos]==__T("ger"))
                     Language=__T("de");
                 else if (List[Pos2][List[Pos2].size()-1-Language_Pos]==__T("eng"))
                     Language=__T("en");
@@ -289,13 +295,14 @@ void File__ReferenceFilesHelper_InfoFromFileName (sequences &Sequences)
                     Language=__T("it");
                 else if (List[Pos2][List[Pos2].size()-1-Language_Pos]==__T("jpn"))
                     Language=__T("ja");
+                else if (List[Pos2][List[Pos2].size()-1-Language_Pos]==__T("las")) //Latin America Spanish
+                    Language=__T("es-419");
                 else if (List[Pos2][List[Pos2].size()-1-Language_Pos]==__T("rus"))
                     Language=__T("ru");
                 else if (List[Pos2][List[Pos2].size()-1-Language_Pos]==__T("spa"))
                     Language=__T("es");
 
-                if (!Language.empty())
-                    Sequences[Pos2]->Infos["Language"]=Language;
+                Sequences[Pos2]->Infos["Language"]=Language.empty()?List[Pos2][List[Pos2].size()-1-Language_Pos]:Language;
             }
     }
 }
