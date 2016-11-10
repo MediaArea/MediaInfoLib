@@ -84,9 +84,6 @@ void File_SmpteSt0302::Streams_Accept()
                 SmpteSt0337->Demux_UnpacketizeContainer=true;
             }
         #endif //MEDIAINFO_DEMUX
-        #if MEDIAINFO_EVENTS
-            SmpteSt0337->IgnoreGuardBandTest=true;
-        #endif //MEDIAINFO_EVENTS
         Parsers.push_back(SmpteSt0337);
     }
 #endif // MEDIAINFO_SMPTEST0337_YES

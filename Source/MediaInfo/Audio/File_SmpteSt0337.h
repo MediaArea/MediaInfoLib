@@ -34,11 +34,6 @@ public :
     int8u   Endianness;
     bool    Aligned;
 
-    #if MEDIAINFO_EVENTS
-        // TODO Unused File_StreamID Stream;
-        bool   IgnoreGuardBandTest;
-    #endif // MEDIAINFO_EVENTS
-
     // Constructor/Destructor
     File_SmpteSt0337();
     ~File_SmpteSt0337();

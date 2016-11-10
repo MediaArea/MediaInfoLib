@@ -34,20 +34,7 @@ class MediaInfo_Internal;
 #if !MEDIAINFO_TRACE
     #include "MediaInfo/File__Analyze_MinimizeSize.h"
 #else
-//***************************************************************************
-// Class File_StreamID
-//***************************************************************************
-class File_StreamID
-{
-public:
-#if MEDIAINFO_EVENTS
-    int16u pid;
-    int8u  stream_id;
-    File_StreamID():pid(int16u(-1)), stream_id(int8u(-1))
-    {
-    }
-#endif // MEDIAINFO_EVENTS
-};
+
 //***************************************************************************
 // Class File__Base
 //***************************************************************************

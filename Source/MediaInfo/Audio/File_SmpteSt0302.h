@@ -33,10 +33,6 @@ public :
     File_SmpteSt0302();
     ~File_SmpteSt0302();
 
-    #if MEDIAINFO_EVENTS
-        // TODO Unused File_StreamID Stream;
-    #endif // MEDIAINFO_EVENTS
-
 private :
     //Streams management
     void Streams_Accept();

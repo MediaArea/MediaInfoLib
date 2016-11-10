@@ -153,10 +153,6 @@ File_SmpteSt0337::File_SmpteSt0337()
     GuardBand_After=0;
     NullPadding_Size=0;
 
-    #if MEDIAINFO_EVENTS
-        IgnoreGuardBandTest=false;
-    #endif // MEDIAINFO_EVENTS
-
     // Parser
     Parser=NULL;
 
