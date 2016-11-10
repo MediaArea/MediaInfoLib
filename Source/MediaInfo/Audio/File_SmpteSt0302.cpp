@@ -53,10 +53,6 @@ File_SmpteSt0302::File_SmpteSt0302()
     #endif //MEDIAINFO_EVENTS
     PTS_DTS_Needed=true;
     IsRawStream=true;
-    #if MEDIAINFO_EVENTS
-        pid=(int16u)-1;
-        stream_id=(int8u)-1;
-    #endif MEDIAINFO_EVENTS
 }
 
 //---------------------------------------------------------------------------

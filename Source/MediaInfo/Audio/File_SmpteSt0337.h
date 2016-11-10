@@ -35,10 +35,9 @@ public :
     bool    Aligned;
 
     #if MEDIAINFO_EVENTS
-        int16u pid;
-        int8u  stream_id;
+        // TODO Unused File_StreamID Stream;
         bool   IgnoreGuardBandTest;
-    #endif MEDIAINFO_EVENTS
+    #endif // MEDIAINFO_EVENTS
 
     // Constructor/Destructor
     File_SmpteSt0337();

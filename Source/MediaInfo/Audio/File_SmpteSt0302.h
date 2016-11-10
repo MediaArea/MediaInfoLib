@@ -34,9 +34,8 @@ public :
     ~File_SmpteSt0302();
 
     #if MEDIAINFO_EVENTS
-        int16u pid;
-        int8u  stream_id;
-    #endif MEDIAINFO_EVENTS
+        // TODO Unused File_StreamID Stream;
+    #endif // MEDIAINFO_EVENTS
 
 private :
     //Streams management
