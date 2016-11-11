@@ -175,10 +175,9 @@ bool File__Duplicate_MpegTs::Manage_PAT (const int8u* ToAdd, size_t ToAdd_Size)
     while (FromTS.Offset+4<=FromTS.End)
     {
         //For each program
-        int16u program_number =CC2(FromTS.Buffer+FromTS.Offset+0);
-        int16u program_map_PID=CC2(FromTS.Buffer+FromTS.Offset+2)&0x1FFF;
-        if (Wanted_program_numbers.find(program_number)  !=Wanted_program_numbers.end()
-         || Wanted_program_map_PIDs.find(program_map_PID)!=Wanted_program_map_PIDs.end())
+        const int16u program_number =CC2(FromTS.Buffer+FromTS.Offset+0);
+        const int16u program_map_PID=CC2(FromTS.Buffer+FromTS.Offset+2)&0x1FFF;
+        if (Is_Wanted(program_number, program_map_PID))
         {
             //Integrating it
             program_map_PIDs[program_map_PID]=1;
@@ -220,8 +219,7 @@ bool File__Duplicate_MpegTs::Manage_PMT (const int8u* ToAdd, size_t ToAdd_Size)
         return false;
 
     //Testing program_number
-    if (Wanted_program_numbers.find(StreamID)==Wanted_program_numbers.end()
-     && Wanted_program_map_PIDs.find(elementary_PIDs_program_map_PIDs[StreamID]) == Wanted_program_map_PIDs.end())
+    if (!Is_Wanted(StreamID, elementary_PIDs_program_map_PIDs[StreamID]))
     {
         delete[] PMT[StreamID].Buffer; PMT[StreamID].Buffer=NULL;
         return false;
