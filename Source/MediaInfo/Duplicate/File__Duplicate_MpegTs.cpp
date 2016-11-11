@@ -224,6 +224,18 @@ bool File__Duplicate_MpegTs::Manage_PAT (const int8u* ToAdd, size_t ToAdd_Size)
     return true;
 }
 
+
+bool File__Duplicate_MpegTs::Is_Wanted(int16u ProgNum, int16u PID) const
+{
+    bool Wanted = false;
+    if (Wanted_program_numbers.find(ProgNum) != Wanted_program_numbers.end())
+        Wanted = true;
+    else
+    if (Wanted_program_map_PIDs.find(PID) != Wanted_program_map_PIDs.end())
+        Wanted = true;
+    return Wanted;
+}
+
 bool File__Duplicate_MpegTs::Manage_PMT (const int8u* ToAdd, size_t ToAdd_Size)
 {
     if (!Parsing_Begin(ToAdd, ToAdd_Size, PMT))

@@ -87,11 +87,9 @@ void File_MpegTs::Option_Manage()
                     bool Wanted=false;
                     for (std::map<const String, File__Duplicate_MpegTs*>::const_iterator Duplicate=Complete_Stream->Duplicates.begin(); Duplicate!=Complete_Stream->Duplicates.end(); ++Duplicate)
                     {
-                        if (Duplicate->second->Wanted_program_numbers.find(Program->first)!=Duplicate->second->Wanted_program_numbers.end())
-                            Wanted=true;
-                        else
-                        if (Duplicate->second->Wanted_program_map_PIDs.find(Program->second.pid)!=Duplicate->second->Wanted_program_map_PIDs.end())
-                            Wanted=true;
+                        Wanted = Duplicate->second->Is_Wanted(Program->first, Program->second.pid);
+                        if (Wanted)
+                            break;
                     }
 
                     //Enabling it if wanted
