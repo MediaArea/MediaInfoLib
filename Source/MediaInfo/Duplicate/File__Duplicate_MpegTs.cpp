@@ -70,17 +70,13 @@ void File__Duplicate_MpegTs::Internal_Remove_Wanted_Program(int16u Program_numbe
 {
     if (ToRemove)
     {
-        if (Wanted_program_numbers.find(Program_number) != Wanted_program_numbers.end())
-            Wanted_program_numbers.erase(Program_number);
-        else if (Remove_program_numbers.find(Program_number) == Remove_program_numbers.end())
-            Remove_program_numbers.insert(Program_number);
+        if(Wanted_program_numbers.erase(Program_number) == 0)
+           Remove_program_numbers.insert(Program_number);
     }
     else
     {
-        if (Remove_program_numbers.find(Program_number) != Remove_program_numbers.end())
-            Remove_program_numbers.erase(Program_number);
-        if (Wanted_program_numbers.find(Program_number) == Wanted_program_numbers.end())
-            Wanted_program_numbers.insert(Program_number);
+        if(Remove_program_numbers.erase(Program_number) == 0)
+           Wanted_program_numbers.insert(Program_number);
     }
     if (!PAT.empty())
         PAT.begin()->second.ConfigurationHasChanged = true;
@@ -100,17 +96,13 @@ bool File__Duplicate_MpegTs::Configure (const Ztring &Value, bool ToRemove)
         const int16u program_map_PID=Ztring(Value.substr(16, std::string::npos)).To_int16u();
         if (ToRemove)
         {
-            if (Wanted_program_map_PIDs.find(program_map_PID)!=Wanted_program_map_PIDs.end())
-                Wanted_program_map_PIDs.erase(program_map_PID);
-            else if (Remove_program_map_PIDs.find(program_map_PID)==Remove_program_map_PIDs.end())
-                Remove_program_map_PIDs.insert(program_map_PID);
+            if(Wanted_program_map_PIDs.erase(program_map_PID) == 0)
+               Remove_program_map_PIDs.insert(program_map_PID);
         }
         else
         {
-            if (Remove_program_map_PIDs.find(program_map_PID)!=Remove_program_map_PIDs.end())
-                Remove_program_map_PIDs.erase(program_map_PID);
-            if (Wanted_program_map_PIDs.find(program_map_PID)==Wanted_program_map_PIDs.end())
-                Wanted_program_map_PIDs.insert(program_map_PID);
+             Remove_program_map_PIDs.erase(program_map_PID);
+             Wanted_program_map_PIDs.insert(program_map_PID);
         }
         if (PMT.find(program_map_PID)!=PMT.end())
             PMT[program_map_PID].ConfigurationHasChanged=true;
@@ -121,16 +113,12 @@ bool File__Duplicate_MpegTs::Configure (const Ztring &Value, bool ToRemove)
         const int16u elementary_PID=Ztring(Value.substr(15, std::string::npos)).To_int16u();
         if (ToRemove)
         {
-            if (Wanted_elementary_PIDs.find(elementary_PID)!=Wanted_elementary_PIDs.end())
-                Wanted_elementary_PIDs.erase(elementary_PID);
-            else if (Remove_elementary_PIDs.find(elementary_PID)==Remove_elementary_PIDs.end())
-                Remove_elementary_PIDs.insert(elementary_PID);
+            if(Wanted_elementary_PIDs.erase(elementary_PID) == 0)
+               Remove_elementary_PIDs.insert(elementary_PID);
         }
         else
         {
-            if (Remove_elementary_PIDs.find(elementary_PID)!=Remove_elementary_PIDs.end())
                 Remove_elementary_PIDs.erase(elementary_PID);
-            if (Wanted_elementary_PIDs.find(elementary_PID)==Wanted_elementary_PIDs.end())
                 Wanted_elementary_PIDs.insert(elementary_PID);
         }
         if (PMT.find(elementary_PIDs_program_map_PIDs[elementary_PID])!=PMT.end())
