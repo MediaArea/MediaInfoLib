@@ -66,33 +66,38 @@ File__Duplicate_MpegTs::File__Duplicate_MpegTs (const Ztring &Target)
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+void File__Duplicate_MpegTs::Internal_Remove_Wanted_Program(int16u Program_number, bool ToRemove)
+{
+    if (ToRemove)
+    {
+        if (Wanted_program_numbers.find(Program_number) != Wanted_program_numbers.end())
+            Wanted_program_numbers.erase(Program_number);
+        else if (Remove_program_numbers.find(Program_number) == Remove_program_numbers.end())
+            Remove_program_numbers.insert(Program_number);
+    }
+    else
+    {
+        if (Remove_program_numbers.find(Program_number) != Remove_program_numbers.end())
+            Remove_program_numbers.erase(Program_number);
+        if (Wanted_program_numbers.find(Program_number) == Wanted_program_numbers.end())
+            Wanted_program_numbers.insert(Program_number);
+    }
+    if (!PAT.empty())
+        PAT.begin()->second.ConfigurationHasChanged = true;
+}
+//---------------------------------------------------------------------------
 bool File__Duplicate_MpegTs::Configure (const Ztring &Value, bool ToRemove)
 {
     //Form: "program_number"
     if (Value.find(__T("program_number="))==0)
     {
-        int16u program_number=Ztring(Value.substr(15, std::string::npos)).To_int16u();
-        if (ToRemove)
-        {
-            if (Wanted_program_numbers.find(program_number)!=Wanted_program_numbers.end())
-                Wanted_program_numbers.erase(program_number);
-            else if (Remove_program_numbers.find(program_number)==Remove_program_numbers.end())
-                Remove_program_numbers.insert(program_number);
-        }
-        else
-        {
-            if (Remove_program_numbers.find(program_number)!=Remove_program_numbers.end())
-                Remove_program_numbers.erase(program_number);
-            if (Wanted_program_numbers.find(program_number)==Wanted_program_numbers.end())
-                Wanted_program_numbers.insert(program_number);
-        }
-        if (!PAT.empty())
-            PAT.begin()->second.ConfigurationHasChanged=true;
+        const int16u program_number=Ztring(Value.substr(15, std::string::npos)).To_int16u();
+        Internal_Remove_Wanted_Program(program_number, ToRemove);
     }
     //Form: "program_map_PID"
     else if (Value.find(__T("program_map_PID="))==0)
     {
-        int16u program_map_PID=Ztring(Value.substr(16, std::string::npos)).To_int16u();
+        const int16u program_map_PID=Ztring(Value.substr(16, std::string::npos)).To_int16u();
         if (ToRemove)
         {
             if (Wanted_program_map_PIDs.find(program_map_PID)!=Wanted_program_map_PIDs.end())
@@ -113,7 +118,7 @@ bool File__Duplicate_MpegTs::Configure (const Ztring &Value, bool ToRemove)
     //Form: "elementary_PID"
     else if (Value.find(__T("elementary_PID="))==0)
     {
-        int16u elementary_PID=Ztring(Value.substr(15, std::string::npos)).To_int16u();
+        const int16u elementary_PID=Ztring(Value.substr(15, std::string::npos)).To_int16u();
         if (ToRemove)
         {
             if (Wanted_elementary_PIDs.find(elementary_PID)!=Wanted_elementary_PIDs.end())
@@ -134,23 +139,8 @@ bool File__Duplicate_MpegTs::Configure (const Ztring &Value, bool ToRemove)
     //Old
     else
     {
-        int16u program_number=Ztring(Value).To_int16u();
-        if (ToRemove)
-        {
-            if (Wanted_program_numbers.find(program_number)!=Wanted_program_numbers.end())
-                Wanted_program_numbers.erase(program_number);
-            else if (Remove_program_numbers.find(program_number)==Remove_program_numbers.end())
-                Remove_program_numbers.insert(program_number);
-        }
-        else
-        {
-            if (Remove_program_numbers.find(program_number)!=Remove_program_numbers.end())
-                Remove_program_numbers.erase(program_number);
-            if (Wanted_program_numbers.find(program_number)==Wanted_program_numbers.end())
-                Wanted_program_numbers.insert(program_number);
-        }
-        if (!PAT.empty())
-            PAT.begin()->second.ConfigurationHasChanged=true;
+        const int16u program_number=Ztring(Value).To_int16u();
+        Internal_Remove_Wanted_Program(program_number, ToRemove);
     }
 
     //Can be disabled?

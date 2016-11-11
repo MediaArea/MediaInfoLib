@@ -39,7 +39,7 @@ public :
     bool Is_Wanted(int16u ProgNum, int16u PID) const;
 private :
     File__Duplicate__Writer Writer;
-
+    void Internal_Remove_Wanted_Program(int16u Program_number, bool ToRemove);
     //Configuration
     std::set<int16u> Wanted_program_numbers;
     std::set<int16u> Wanted_program_map_PIDs;
