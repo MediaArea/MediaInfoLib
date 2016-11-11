@@ -226,7 +226,7 @@ bool File__Duplicate_MpegTs::Manage_PMT (const int8u* ToAdd, size_t ToAdd_Size)
     }
 
     //program_info_length
-    int16u program_info_length=CC2(FromTS.Buffer+FromTS.Offset+2)&0x0FFF;
+    const int16u program_info_length=CC2(FromTS.Buffer+FromTS.Offset+2)&0x0FFF;
     std::memcpy(PMT[StreamID].Buffer+PMT[StreamID].Offset, FromTS.Buffer+FromTS.Offset, 4+program_info_length);
     FromTS.Offset+=4+program_info_length;
     PMT[StreamID].Offset+=4+program_info_length;
@@ -235,8 +235,8 @@ bool File__Duplicate_MpegTs::Manage_PMT (const int8u* ToAdd, size_t ToAdd_Size)
     while (FromTS.Offset+5<=FromTS.End)
     {
         //For each elementary_PID
-        int16u elementary_PID=CC2(FromTS.Buffer+FromTS.Offset+1)&0x1FFF;
-        int16u ES_info_length=CC2(FromTS.Buffer+FromTS.Offset+3)&0x0FFF;
+        const int16u elementary_PID=CC2(FromTS.Buffer+FromTS.Offset+1)&0x1FFF;
+        const int16u ES_info_length=CC2(FromTS.Buffer+FromTS.Offset+3)&0x0FFF;
         if (Wanted_elementary_PIDs.empty() || Wanted_elementary_PIDs.find(elementary_PID)!=Wanted_elementary_PIDs.end())
         {
             //Integrating it
@@ -345,8 +345,7 @@ bool File__Duplicate_MpegTs::Parsing_Begin (const int8u* ToAdd, size_t ToAdd_Siz
         }
 
         //Managing big chunks
-        if (BigBuffers.find(PID)!=BigBuffers.end())
-            BigBuffers.erase(BigBuffers.find(PID));
+        BigBuffers.erase(PID);
 
         Writer.Write(ToModify.Buffer, ToModify.Size);
         return false;
@@ -449,8 +448,7 @@ void File__Duplicate_MpegTs::Parsing_End (std::map<int16u, buffer> &ToModify_)
 
     //Managing big chunks
     int16u PID=((ToModify.Buffer[1]&0x1F)<<8)|ToModify.Buffer[2]; //BigEndian2int16u(ToAdd+1)&0x1FFF;
-    if (BigBuffers.find(PID)!=BigBuffers.end())
-        BigBuffers.erase(BigBuffers.find(PID));
+    BigBuffers.erase(PID);
 }
 
 //***************************************************************************
