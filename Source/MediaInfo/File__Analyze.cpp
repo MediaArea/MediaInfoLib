@@ -3438,9 +3438,64 @@ void File__Analyze::Element_DoNotShow ()
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_TRACE
+void File__Analyze::Element_DoNotShow_Children ()
+{
+    for (size_t i = 0; i < Element[Element_Level].TraceNode.Children.size(); ++i)
+    {
+        if (!Element[Element_Level].TraceNode.Children[i])
+            continue;
+        Element[Element_Level].TraceNode.Children[i]->NoShow=true;
+    }
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+void File__Analyze::Element_Remove_Children_IfNoErrors ()
+{
+    for (size_t i = 0; i < Element[Element_Level].TraceNode.Children.size(); ++i)
+    {
+        if (!Element[Element_Level].TraceNode.Children[i])
+            continue;
+        delete Element[Element_Level].TraceNode.Children[i];
+        Element[Element_Level].TraceNode.Children[i] = NULL;
+    }
+
+    Element[Element_Level].TraceNode.Children.clear();
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+void File__Analyze::Element_Children_IfNoErrors ()
+{
+    if (Element[Element_Level].TraceNode.HasError)
+        return;
+
+    //TODO: option to keep the nodes
+    // Element_DoNotShow_Children();
+    Element_Remove_Children_IfNoErrors();
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
 void File__Analyze::Element_Show ()
 {
     Element[Element_Level].TraceNode.NoShow=false;
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+void File__Analyze::Element_Show_Children ()
+{
+    for (size_t i = 0; i < Element[Element_Level].TraceNode.Children.size(); ++i)
+    {
+        if (!Element[Element_Level].TraceNode.Children[i])
+            continue;
+        Element[Element_Level].TraceNode.Children[i]->NoShow=false;
+    }
 }
 #endif //MEDIAINFO_TRACE
 
