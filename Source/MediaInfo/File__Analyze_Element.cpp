@@ -615,8 +615,8 @@ std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v
 //***************************************************************************
 //---------------------------------------------------------------------------
 element_details::Element_Node::Element_Node()
-: Pos(0), Size(0), 
-  Current_Child(-1), NoShow(false), OwnChildren(true), IsCat(false)
+: Pos(0), Size(0),
+  Current_Child(-1), NoShow(false), OwnChildren(true), IsCat(false), HasError(false)
 {
 }
 
@@ -636,6 +636,7 @@ element_details::Element_Node::Element_Node(const Element_Node& node)
     NoShow = node.NoShow;
     OwnChildren = node.OwnChildren;
     IsCat = node.IsCat;
+    HasError = node.HasError;
 }
 
 //---------------------------------------------------------------------------
@@ -672,11 +673,15 @@ void element_details::Element_Node::Init()
     NoShow = false;
     OwnChildren = true;
     IsCat = false;
+    HasError = false;
 }
 
 //---------------------------------------------------------------------------
 int element_details::Element_Node::Print_Micro_Xml(std::ostringstream& ss, size_t level)
 {
+    if (NoShow)
+        return 0;
+
     if (IsCat || Name_Is_Empty())
         goto print_children;
 
@@ -745,6 +750,9 @@ print_children:
 //---------------------------------------------------------------------------
 int element_details::Element_Node::Print_Xml(std::ostringstream& ss, size_t level)
 {
+    if (NoShow)
+        return 0;
+
     std::string spaces;
     bool Modified = false;
 
@@ -846,6 +854,9 @@ int element_details::Element_Node::Print_Tree(std::ostringstream& ss, size_t lev
 {
     std::string spaces;
 
+    if (NoShow)
+        return 0;
+
     if (IsCat)
         return Print_Tree_Cat(ss, level);
     else if (Name_Is_Empty())
@@ -927,6 +938,8 @@ void element_details::Element_Node::Add_Child(Element_Node* node)
 {
     Element_Node *new_node = new Element_Node(*node);
     node->OwnChildren = false;
+    if (node->HasError)
+        HasError = node->HasError;
     Children.push_back(new_node);
 }
 

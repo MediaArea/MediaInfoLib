@@ -350,6 +350,21 @@ protected :
 
         Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
     }
+
+    void Element_Info (const char* Parameter, const char* Measure=NULL, int8u AfterComma=3)
+    {
+        if (Config_Trace_Level<1)
+            return;
+
+        //Needed?
+        if (Config_Trace_Level<=0.7)
+            return;
+
+        if (Parameter && std::string(Parameter) == "NOK")
+            Element[Element_Level].TraceNode.HasError = true;
+
+        Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
+    }
 #endif //MEDIAINFO_TRACE
 
     #ifdef SIZE_T_IS_LONG
@@ -450,6 +465,26 @@ public :
 
         // if (!(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()) || Element[Element_Level].TraceNode.Details.size()>64*1024*1024)
         //     return;
+        int32s child = Element[Element_Level].TraceNode.Current_Child;
+        if (child >= 0 && Element[Element_Level].TraceNode.Children[child])
+            Element[Element_Level].TraceNode.Children[child]->Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
+        else
+            Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
+    }
+
+    void Param_Info(const char* Parameter, const char* Measure=NULL, int8u AfterComma=3)
+    {
+        //Coherancy
+        if (!Trace_Activated)
+            return;
+        if (Element[Element_Level].UnTrusted)
+            return;
+        if (Config_Trace_Level<=0.7)
+            return;
+
+        if (Parameter && std::string(Parameter) == "NOK")
+            Element[Element_Level].TraceNode.HasError = true;
+
         int32s child = Element[Element_Level].TraceNode.Current_Child;
         if (child >= 0 && Element[Element_Level].TraceNode.Children[child])
             Element[Element_Level].TraceNode.Children[child]->Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
@@ -1098,6 +1133,10 @@ public :
     void Element_DoNotTrust (const char* Reason);
     void Element_DoNotShow ();
     void Element_Show ();
+    void Element_Remove_Children_IfNoErrors ();
+    void Element_Children_IfNoErrors ();
+    void Element_DoNotShow_Children ();
+    void Element_Show_Children ();
     bool Element_Show_Get ();
     void Element_Show_Add (File__Analyze* node);
 
