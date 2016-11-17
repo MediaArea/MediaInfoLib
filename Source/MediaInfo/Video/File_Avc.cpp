@@ -3804,7 +3804,6 @@ void File_Avc::vui_parameters(seq_parameter_set_struct::vui_parameters_struct* &
 {
     //Parsing
     seq_parameter_set_struct::vui_parameters_struct::xxl *NAL=NULL, *VCL=NULL;
-    seq_parameter_set_struct::vui_parameters_struct::bitstream_restriction_struct* bitstream_restriction=NULL;
     int32u  num_units_in_tick=(int32u)-1, time_scale=(int32u)-1;
     int16u  sar_width=(int16u)-1, sar_height=(int16u)-1;
     int8u   aspect_ratio_idc=0, video_format=5, video_full_range_flag = 0, colour_primaries=2, transfer_characteristics=2, matrix_coefficients=2;
@@ -3856,17 +3855,12 @@ void File_Avc::vui_parameters(seq_parameter_set_struct::vui_parameters_struct* &
         Skip_UE(                                                "log2_max_mv_length_vertical");
         Get_UE (max_num_reorder_frames,                         "max_num_reorder_frames");
         Skip_UE(                                                "max_dec_frame_buffering");
-        if (max_num_reorder_frames<256)
-            bitstream_restriction=new seq_parameter_set_struct::vui_parameters_struct::bitstream_restriction_struct(
-                                                                                                                    (int8u)max_num_reorder_frames
-                                                                                                                   );
     TEST_SB_END();
 
     FILLING_BEGIN();
         vui_parameters_Item_=new seq_parameter_set_struct::vui_parameters_struct(
                                                                                     NAL,
                                                                                     VCL,
-                                                                                    bitstream_restriction,
                                                                                     num_units_in_tick,
                                                                                     time_scale,
                                                                                     sar_width,
@@ -3887,7 +3881,6 @@ void File_Avc::vui_parameters(seq_parameter_set_struct::vui_parameters_struct* &
     FILLING_ELSE();
         delete NAL;
         delete VCL;
-        delete bitstream_restriction;
     FILLING_END();
 }
 
