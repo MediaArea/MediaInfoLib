@@ -3480,6 +3480,14 @@ void File__Analyze::Element_Children_IfNoErrors ()
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_TRACE
+void File__Analyze::Element_Set_Remove_Children_IfNoErrors ()
+{
+    Element[Element_Level].TraceNode.RemoveIfNoErrors = true;
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
 void File__Analyze::Element_Show ()
 {
     Element[Element_Level].TraceNode.NoShow=false;

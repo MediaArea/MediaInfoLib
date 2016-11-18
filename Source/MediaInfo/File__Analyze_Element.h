@@ -151,6 +151,7 @@ struct element_details
         bool                             OwnChildren;     // Child is owned by this node
         bool                             IsCat;           // Node is a category
         bool                             HasError;        // Node or sub-nodes has Nok
+        bool                             RemoveIfNoErrors;// Remove Children Node if no NOK appears
 
         void                             Init();          //Initialize with common values
         void Add_Child(Element_Node* node);               //Add a subchild to the current node

@@ -1133,6 +1133,7 @@ public :
     void Element_DoNotTrust (const char* Reason);
     void Element_DoNotShow ();
     void Element_Show ();
+    void Element_Set_Remove_Children_IfNoErrors ();
     void Element_Remove_Children_IfNoErrors ();
     void Element_Children_IfNoErrors ();
     void Element_DoNotShow_Children ();
