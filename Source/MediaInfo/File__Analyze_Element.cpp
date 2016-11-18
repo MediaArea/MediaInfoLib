@@ -616,7 +616,7 @@ std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v
 //---------------------------------------------------------------------------
 element_details::Element_Node::Element_Node()
 : Pos(0), Size(0),
-  Current_Child(-1), NoShow(false), OwnChildren(true), IsCat(false), HasError(false)
+  Current_Child(-1), NoShow(false), OwnChildren(true), IsCat(false), HasError(false), RemoveIfNoErrors(false)
 {
 }
 
@@ -637,6 +637,7 @@ element_details::Element_Node::Element_Node(const Element_Node& node)
     OwnChildren = node.OwnChildren;
     IsCat = node.IsCat;
     HasError = node.HasError;
+    RemoveIfNoErrors = node.RemoveIfNoErrors;
 }
 
 //---------------------------------------------------------------------------
@@ -674,6 +675,7 @@ void element_details::Element_Node::Init()
     OwnChildren = true;
     IsCat = false;
     HasError = false;
+    RemoveIfNoErrors = false;
 }
 
 //---------------------------------------------------------------------------
@@ -936,6 +938,9 @@ int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, 
 //---------------------------------------------------------------------------
 void element_details::Element_Node::Add_Child(Element_Node* node)
 {
+    if (RemoveIfNoErrors && !HasError)
+        return;
+
     Element_Node *new_node = new Element_Node(*node);
     node->OwnChildren = false;
     if (node->HasError)

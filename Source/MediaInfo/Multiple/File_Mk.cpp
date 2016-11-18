@@ -2058,6 +2058,10 @@ void File_Mk::Segment_Cluster()
 {
     Element_Name("Cluster");
 
+#if MEDIAINFO_TRACE
+    Element_Set_Remove_Children_IfNoErrors();
+#endif // MEDIAINFO_TRACE
+
     //For each stream
     std::map<int64u, stream>::iterator Temp=Stream.begin();
     if (!Segment_Cluster_Count)
