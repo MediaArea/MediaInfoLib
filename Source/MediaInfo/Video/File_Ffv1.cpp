@@ -1269,7 +1269,7 @@ void File_Ffv1::rgb()
 
     current_slice->run_index = 0;
 
-    for (int x = 0; x < c_max; x++) {
+    for (size_t x = 0; x < c_max; x++) {
         sample[x][0] = current_slice->sample_buffer +  x * 2      * (current_slice->w + 6) + 3;
         sample[x][1] = sample[x][0] + current_slice->w + 6;
     }
