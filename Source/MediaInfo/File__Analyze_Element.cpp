@@ -939,10 +939,17 @@ int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, 
 void element_details::Element_Node::Add_Child(Element_Node* node)
 {
     if (node->HasError)
+    {
         HasError = node->HasError;
+        NoShow = false;
+    }
 
-    if (RemoveIfNoErrors && !HasError)
+    if (RemoveIfNoErrors && !node->HasError)
+    {
+        if (!HasError)
+            NoShow = true;
         return;
+    }
 
     Element_Node *new_node = new Element_Node(*node);
     node->OwnChildren = false;
