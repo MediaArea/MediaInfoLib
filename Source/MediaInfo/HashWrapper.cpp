@@ -62,8 +62,7 @@ static const char HashWrapper_Hex[16] = {'0','1','2','3','4','5','6','7','8','9'
 //---------------------------------------------------------------------------
 void HashWrapper::Init (const HashFunctions &Functions)
 {
-    m = new void*[HashFunction_Max];
-
+    memset(m,0,sizeof(m));
     #if MEDIAINFO_MD5
         if (Functions[MD5])
         {
@@ -132,8 +131,6 @@ HashWrapper::~HashWrapper ()
         delete (sha384_ctx*)((void**)m)[SHA384];
         delete (sha512_ctx*)((void**)m)[SHA512];
     #endif //MEDIAINFO_SHA2
-
-    delete[] m;
 }
 
 void HashWrapper::Update (const int8u* Buffer, const size_t Buffer_Size)

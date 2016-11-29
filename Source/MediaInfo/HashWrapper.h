@@ -65,7 +65,7 @@ public:
 
 private:
     void    Init(const HashFunctions &Functions);
-    void*   m;
+    void*   m[HashFunction_Max];
 };
 
 } //NameSpace
