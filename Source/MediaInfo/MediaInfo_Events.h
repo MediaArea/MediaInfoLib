@@ -931,14 +931,14 @@ inline MediaInfo_int64u MediaInfo_ID_FromGet_intA (const char* ID, const char* C
     const char* SubID;
 
     ToReturn=(MediaInfo_int64u)atoi(ID);
-    SubID=strstr(ID, "-");
+    SubID= strchr(ID, '-');
     if (SubID)
     {
         MediaInfo_int64u ToReturn2;
 
         ToReturn2=atoi(SubID+1);
 
-        SubID=strstr(SubID+1, "-");
+        SubID= strchr(SubID+1, '-');
         if (SubID)
         {
             MediaInfo_int64u ToReturn3;

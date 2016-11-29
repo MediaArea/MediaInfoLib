@@ -1509,7 +1509,7 @@ void MediaInfo_Config::Language_Set (stream_t StreamKind)
             ToReplace.FindAndReplace(__T("/String9"), Ztring());
             ToReplace.FindAndReplace(__T("/String"),  Ztring());
         }
-        if (!Language_Raw && ToReplace.find(__T("/"))!=Error) //Complex values, like XXX/YYY --> We translate both XXX and YYY
+        if (!Language_Raw && ToReplace.find(__T('/'))!=Error) //Complex values, like XXX/YYY --> We translate both XXX and YYY
         {
             Ztring ToReplace1=ToReplace.SubString(Ztring(), __T("/"));
             Ztring ToReplace2=ToReplace.SubString(__T("/"), Ztring());
