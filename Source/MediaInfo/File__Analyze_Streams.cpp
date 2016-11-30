@@ -815,10 +815,10 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         if (Parameter==Fill_Parameter(StreamKind, Generic_ServiceName)
          || Parameter==Fill_Parameter(StreamKind, Generic_ServiceProvider))
         {
-            if (Retrieve(StreamKind, StreamPos, Parameter).find(__T(" - "))==string::npos && (Retrieve(StreamKind, StreamPos, Parameter).find(__T(":"))==2 || Retrieve(StreamKind, StreamPos, Parameter).find(__T(":"))==3))
+            if (Retrieve(StreamKind, StreamPos, Parameter).find(__T(" - "))==string::npos && (Retrieve(StreamKind, StreamPos, Parameter).find(__T(':'))==2 || Retrieve(StreamKind, StreamPos, Parameter).find(__T(':'))==3))
             {
                 Ztring Temp=Retrieve(StreamKind, StreamPos, Parameter);
-                Temp.erase(0, Retrieve(StreamKind, StreamPos, Parameter).find(__T(":"))+1);
+                Temp.erase(0, Retrieve(StreamKind, StreamPos, Parameter).find(__T(':'))+1);
                 (*Stream)[StreamKind][StreamPos](Parameter)=Temp;
             }
         }

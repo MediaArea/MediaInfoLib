@@ -3084,7 +3084,7 @@ void File_Avc::sei_message_user_data_unregistered_x264(int32u payloadSize)
             Encoded_Library_Settings.clear();
             do
             {
-                size_t Options_Pos=Data.find(__T(" "), Options_Pos_Before);
+                size_t Options_Pos=Data.find(__T(' '), Options_Pos_Before);
                 if (Options_Pos==std::string::npos)
                     Options_Pos=Data.size();
                 Ztring option;
