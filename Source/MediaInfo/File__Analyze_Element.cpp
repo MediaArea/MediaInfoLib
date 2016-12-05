@@ -348,56 +348,6 @@ static inline size_t Xml_Name_Escape_MustEscape(const std::string &Name)
 }
 
 //---------------------------------------------------------------------------
-static void Xml_Name_Escape(const char* Name, size_t Size, std::string& ToReturn, size_t Pos)
-{
-    ToReturn = Name;
-
-    // Case first char is a digit
-    if (Pos == 0 && Name[0] >= '0' && Name[0] <= '9')
-        ToReturn.insert(0, 1, '_');
-
-    while (Pos < Size)
-    {
-        const char C = ToReturn[Pos];
-
-        switch (C)
-        {
-            case ' ':
-            case '/':
-            case '(':
-            case ')':
-            case '*':
-            case ',':
-            case ':':
-            case '@':
-                ToReturn[Pos] = '_';
-                Pos++;
-                break;
-            default:
-                if (!(C >= 'A' && C <= 'Z')
-                 && !(C >= 'a' && C <= 'z')
-                 && !(C >= '0' && C <= '9')
-                 && !(C == '_'))
-                {
-                    ToReturn.erase(Pos, 1);
-                    Size--;
-                }
-                else
-                    Pos++;
-        }
-    }
-
-    if (ToReturn.empty())
-        ToReturn = "Unknown";
-}
-
-//---------------------------------------------------------------------------
-static void Xml_Name_Escape(const std::string &Name, std::string& ToReturn, size_t Pos)
-{
-    Xml_Name_Escape(Name.c_str(), Name.size(), ToReturn, Pos);
-}
-
-//---------------------------------------------------------------------------
 static size_t Xml_Content_Escape_MustEscape(const char* Content, size_t Size)
 {
     // Cheking all chars

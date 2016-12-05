@@ -164,6 +164,7 @@ const File__Analyze::vlc Vc1_ptype[]=
 };
 
 //---------------------------------------------------------------------------
+/*
 static int32u Vc1_bfraction(int8u Size, int32u Value)
 {
     switch (Size)
@@ -204,6 +205,7 @@ static int32u Vc1_bfraction(int8u Size, int32u Value)
         default: return (int32u)-1;
     }
 };
+*/
 
 //***************************************************************************
 // Constructor/Destructor
