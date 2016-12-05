@@ -756,7 +756,6 @@ int element_details::Element_Node::Print_Xml(std::ostringstream& ss, size_t leve
         return 0;
 
     std::string spaces;
-    bool Modified = false;
 
     if (IsCat || Name_Is_Empty())
         goto print_children;

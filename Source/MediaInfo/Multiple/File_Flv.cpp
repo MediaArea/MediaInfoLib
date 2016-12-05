@@ -285,50 +285,6 @@ static const char* Flv_VP6_Marker[]=
     "VP6.0",
 };
 
-static const char* Flv_VP6_Version[]=
-{
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "VP6.0/6.1",
-    "VP6.0 (Electronic Arts)",
-    "VP6.2",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-};
-
-static const char* Flv_VP6_Version2[]=
-{
-    "VP6.0",
-    "",
-    "",
-    "VP6.1/6.2",
-};
-
 static const char* Flv_FrameType[]=
 {
     "",
