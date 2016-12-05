@@ -1317,7 +1317,7 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, bool Erase)
 size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t StreamPos_From, size_t StreamPos_To, bool Erase)
 {
     //Integrity
-    if (&ToAdd==NULL || StreamKind>=Stream_Max || !ToAdd.Stream || StreamPos_From>=(*ToAdd.Stream)[StreamKind].size())
+    if (StreamKind>=Stream_Max || !ToAdd.Stream || StreamPos_From>=(*ToAdd.Stream)[StreamKind].size())
         return 0;
 
     //Destination
