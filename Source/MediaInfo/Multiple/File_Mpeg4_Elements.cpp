@@ -3491,7 +3491,7 @@ void File_Mpeg4::moov_trak_mdia_minf_gmhd_tmcd_tcmi()
         Skip_Flags(TextFace, 4,                                 "Shadow");
         Skip_Flags(TextFace, 5,                                 "Condense");
         Skip_Flags(TextFace, 6,                                 "Extend");
-    if (Element_Size>=25 && 25+Buffer[Buffer_Offset+24]==Element_Size)
+    if (Element_Size>=25 && 25+(int64u)Buffer[Buffer_Offset+24]==Element_Size)
         Skip_BFP4(16,                                           "Text size"); //Non-Standard, but found in several files
     else
         Skip_B2(                                                "Text size");
