@@ -8,6 +8,10 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
+Version 0.7.92
+--------------
++ MP4: more AppleStoreCountry values mapped to countries, show the country number if unknown
+
 Version 0.7.91, 2016-11-30
 --------------
 + IMF and PTX: more languages detected from file names (but the full list of common languages tags still need to be added)

@@ -2726,7 +2726,9 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         else if (Value==__T("143460")) Value=__T("Australia");
                         else if (Value==__T("143461")) Value=__T("New Zealand");
                         else if (Value==__T("143462")) Value=__T("Japan");
-                        else Value=__T("Unknown Country");
+                        else if (Value==__T("143463")) Value=__T("Hong Kong");
+                        else if (Value==__T("143469")) Value=__T("Russia");
+                        else if (Value==__T("143470")) Value=__T("Taiwan");
                     }
                     if (!Parameter.empty())
                     {
