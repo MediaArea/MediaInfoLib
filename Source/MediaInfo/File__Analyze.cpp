@@ -2832,9 +2832,6 @@ void File__Analyze::Info(const std::string& Value, size_t Element_Level_Minus)
         return; //Do not display info
 
     //Handling a different level (only Element_Level_Minus to 1 is currently well supported)
-    size_t Element_Level_Final=Element_Level;
-    if (Element_Level_Minus<=Element_Level)
-        Element_Level_Final-=Element_Level_Minus;
 
     if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()))
         return;
