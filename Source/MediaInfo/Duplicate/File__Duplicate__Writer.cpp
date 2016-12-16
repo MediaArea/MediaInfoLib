@@ -24,7 +24,6 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/Duplicate/File__Duplicate__Writer.h"
 #include "MediaInfo/MediaInfo_Config.h"
-#include "ZenLib/ZtringList.h"
 #include "ZenLib/File.h"
 #include <cstring>
 using namespace ZenLib;

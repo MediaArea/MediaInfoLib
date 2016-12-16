@@ -23,7 +23,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cstring>
-#include "base64.h"
+#include "ThirdParty/base64/base64.h"
 
 namespace MediaInfoLib
 {

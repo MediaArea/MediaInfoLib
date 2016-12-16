@@ -42,7 +42,7 @@
 #endif //defined(MEDIAINFO_PBCORE_YES)
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/File__Analyze.h"
-#include "base64.h"
+#include "ThirdParty/base64/base64.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
