@@ -35,7 +35,7 @@
     #include "MediaInfo/MediaInfo_Config_PerPackage.h"
 #endif //MEDIAINFO_EVENTS
 #if MEDIAINFO_AES
-    #include "base64.h"
+    #include "ThirdParty/base64/base64.h"
 #endif //MEDIAINFO_AES
 using namespace std;
 //---------------------------------------------------------------------------

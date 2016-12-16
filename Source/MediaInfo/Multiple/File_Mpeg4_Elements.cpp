@@ -105,7 +105,7 @@
 #endif
 #include "MediaInfo/Multiple/File_Mpeg4_TimeCode.h"
 #include "ZenLib/FileName.h"
-#include "base64.h"
+#include "ThirdParty/base64/base64.h"
 #include <cmath>
 #include <zlib.h>
 #include <algorithm>

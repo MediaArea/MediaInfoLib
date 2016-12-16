@@ -41,7 +41,7 @@
 #define MEDIAINFO_HMAC 1
 #if MEDIAINFO_HMAC
     #include "hmac.h"
-    #include "base64.h"
+    #include "ThirdParty/base64/base64.h"
 #endif //MEDIAINFO_HMAC
 #include "MediaInfo/HashWrapper.h"
 #include "ZenLib/File.h"
