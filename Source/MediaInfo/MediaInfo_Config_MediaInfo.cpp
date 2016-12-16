@@ -23,7 +23,7 @@
     #include "ZenLib/FileName.h"
 #endif //MEDIAINFO_EVENTS
 #if MEDIAINFO_IBI || MEDIAINFO_AES
-    #include "base64.h"
+    #include "ThirdParty/base64/base64.h"
 #endif //MEDIAINFO_IBI || MEDIAINFO_AES
 #include <algorithm>
 #if MEDIAINFO_DEMUX
