@@ -20,10 +20,6 @@ must not be misrepresented as being the original software.
 3. This notice may not be removed or altered from any source
 distribution.
 */
-#include "MediaInfo/PreComp.h"
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #include "tinyxml2.h"
 
