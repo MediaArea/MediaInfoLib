@@ -53,11 +53,11 @@ Height_Original;; pixel;N YIY;;;Original (in the raw stream) height in pixel
 Height_Original/String;;;Y NT;;;Original (in the raw stream) height with measurement (pixel)
 PixelAspectRatio;;;N YFY;;;Pixel Aspect ratio
 PixelAspectRatio/String;;;N NT;;;Pixel Aspect ratio
-PixelAspectRatio_Original;;;N YF;;;Original (in the raw stream) Pixel Aspect ratio
+PixelAspectRatio_Original;;;N YFY;;;Original (in the raw stream) Pixel Aspect ratio
 PixelAspectRatio_Original/String;;;N NT;;;Original (in the raw stream) Pixel Aspect ratio
 DisplayAspectRatio;;;N YFY;;;Display Aspect ratio
 DisplayAspectRatio/String;;;Y NT;;;Display Aspect ratio
-DisplayAspectRatio_Original;;;N YF;;;Original (in the raw stream) Display Aspect ratio
+DisplayAspectRatio_Original;;;N YFY;;;Original (in the raw stream) Display Aspect ratio
 DisplayAspectRatio_Original/String;;;Y NT;;;Original (in the raw stream) Display Aspect ratio
 ColorSpace;;;Y YTY;;;
 ChromaSubsampling;;;Y YTY;;;

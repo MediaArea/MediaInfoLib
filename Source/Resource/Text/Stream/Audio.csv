@@ -121,7 +121,7 @@ BitRate_Encoded;; bps;N YFY;;;Encoded (with forced padding) bit rate in bps, if 
 BitRate_Encoded/String;;;Y NT;;;Encoded (with forced padding) bit rate (with measurement), if some container padding is present
 Channel(s);; channel;N YIY;;;Number of channels;;
 Channel(s)/String;;;Y NT;;;Number of channels (with measurement);;
-Channel(s)_Original;; channel;N YI;;;Number of channels;;
+Channel(s)_Original;; channel;N YIY;;;Number of channels;;
 Channel(s)_Original/String;;;Y NT;;;Number of channels (with measurement);;
 Matrix_Channel(s);; channel;N YIY;;;Number of channels after matrix decoding;;
 Matrix_Channel(s)/String;;;Y NT;;;Number of channels after matrix decoding (with measurement);;

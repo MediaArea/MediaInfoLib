@@ -135,7 +135,7 @@ Delay_Settings;;;N NT;;;Delay settings (in case of timecode for example);
 Delay_DropFrame;;;N NTY;;;Delay drop frame;
 Delay_Source;;;N NTY;;;Delay source (Container or Stream or empty);
 Delay_Source/String;;;N NT;;;Delay source (Container or Stream or empty);
-Delay_Original;; ms;N NI;;;Delay fixed in the raw stream (relative) IN MS;
+Delay_Original;; ms;N NIY;;;Delay fixed in the raw stream (relative) IN MS;
 Delay_Original/String;;;N NT;;;Delay with measurement;
 Delay_Original/String1;;;N NT;;;Delay with measurement;
 Delay_Original/String2;;;N NT;;;Delay with measurement;
