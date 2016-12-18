@@ -5718,7 +5718,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_fiel()
     // 6 – B is displayed earliest, B is stored first in the file.
     // 9 – B is displayed earliest, T is stored first in the file.
     //14 – T is displayed earliest, B is stored first in the file.
-    Element_Name("Field/Frame Information");
+    Element_Name("Field handling");
 
     //Parsing
     int8u  fields, detail;
