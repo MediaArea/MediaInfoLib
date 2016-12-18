@@ -4066,7 +4066,7 @@ void MediaInfo_Config_General (ZtringListList &Info)
     "CompleteName;;;Y YT;;;Complete name (Folder+Name+Extension)\n"
     "FolderName;;;N NT;;;Folder name only\n"
     "FileName;;;N NT;;;File name only\n"
-    "FileExtension;;;N NT;;;File extension only\n"
+    "FileExtension;;;N NTY;;;File extension only\n"
     "CompleteName_Last;;;Y YTY;;;Complete name (Folder+Name+Extension) of the last file (in the case of a sequence of files)\n"
     "FolderName_Last;;;N NT;;;Folder name only of the last file (in the case of a sequence of files)\n"
     "FileName_Last;;;N NT;;;File name only of the last file (in the case of a sequence of files)\n"
