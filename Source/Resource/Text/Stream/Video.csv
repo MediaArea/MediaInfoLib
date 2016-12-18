@@ -148,13 +148,13 @@ Sampled_Width;;;N YIY;;;Sampled width
 Sampled_Height;;;N YIY;;;Sampled height
 PixelAspectRatio;;;N YFY;;;Pixel Aspect ratio
 PixelAspectRatio/String;;;N NT;;;Pixel Aspect ratio
-PixelAspectRatio_Original;;;N YF;;;Original (in the raw stream) Pixel Aspect ratio
+PixelAspectRatio_Original;;;N YFY;;;Original (in the raw stream) Pixel Aspect ratio
 PixelAspectRatio_Original/String;;;N NT;;;Original (in the raw stream) Pixel Aspect ratio
 PixelAspectRatio_CleanAperture;;;N YF;;;Clean Aperture Pixel Aspect ratio
 PixelAspectRatio_CleanAperture/String;;;N NT;;;Clean Aperture Pixel Aspect ratio
 DisplayAspectRatio;;;N YFY;;;Display Aspect ratio
 DisplayAspectRatio/String;;;Y NT;;;Display Aspect ratio
-DisplayAspectRatio_Original;;;N YF;;;Original (in the raw stream) Display Aspect ratio
+DisplayAspectRatio_Original;;;N YFY;;;Original (in the raw stream) Display Aspect ratio
 DisplayAspectRatio_Original/String;;;Y NT;;;Original (in the raw stream) Display Aspect ratio
 DisplayAspectRatio_CleanAperture;;;N YF;;;Clean Aperture Display Aspect ratio
 DisplayAspectRatio_CleanAperture/String;;;Y NT;;;Clean Aperture Display Aspect ratio
@@ -195,7 +195,7 @@ BitDepth;; bit;N YIY;;;16/24/32
 BitDepth/String;;;Y NT;;;16/24/32 bits
 ScanType;;;N YTY;;;
 ScanType/String;;;Y NT;;;
-ScanType_Original;;;N YT;;;
+ScanType_Original;;;N YTY;;;
 ScanType_Original/String;;;Y NT;;;
 ScanType_StoreMethod;;;N YT;;;;Separated fields or Interleaved fields
 ScanType_StoreMethod_FieldsPerBlock;;;N YT;;;;Count of fields per container block
