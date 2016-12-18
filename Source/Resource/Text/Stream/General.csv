@@ -50,7 +50,7 @@ Menu_Language_List;;;N NT;;;Menu languages in this file, separated by /
 CompleteName;;;Y YT;;;Complete name (Folder+Name+Extension)
 FolderName;;;N NT;;;Folder name only
 FileName;;;N NT;;;File name only
-FileExtension;;;N NT;;;File extension only
+FileExtension;;;N NTY;;;File extension only
 CompleteName_Last;;;Y YTY;;;Complete name (Folder+Name+Extension) of the last file (in the case of a sequence of files)
 FolderName_Last;;;N NT;;;Folder name only of the last file (in the case of a sequence of files)
 FileName_Last;;;N NT;;;File name only of the last file (in the case of a sequence of files)
