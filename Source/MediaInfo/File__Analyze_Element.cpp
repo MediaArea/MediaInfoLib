@@ -542,7 +542,7 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
               break;
           }
 
-          size_t MustEscape = Xml_Content_Escape_MustEscape(v.val.Chars, v.Option);
+          size_t MustEscape = Xml_Content_Escape_MustEscape(v.val.Str);
           if (MustEscape != (size_t)-1)
           {
               std::string str;
