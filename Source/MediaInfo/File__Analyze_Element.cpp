@@ -512,7 +512,15 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
     {
       case element_details::Element_Node_Data::ELEMENT_NODE_CHAR8:
       {
+          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
+          {
+              for (int8u i = 0; i < v.Option; ++i)
+                  os.rdbuf()->sputc(v.val.Chars[i]);
+              break;
+          }
+
           size_t MustEscape = Xml_Content_Escape_MustEscape(v.val.Chars, v.Option);
+
           if (MustEscape != (size_t)-1)
           {
               std::string str;
@@ -528,6 +536,12 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
       }
       case element_details::Element_Node_Data::ELEMENT_NODE_STR:
       {
+          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
+          {
+              os << v.val.Str;
+              break;
+          }
+
           size_t MustEscape = Xml_Content_Escape_MustEscape(v.val.Chars, v.Option);
           if (MustEscape != (size_t)-1)
           {
@@ -890,6 +904,9 @@ int element_details::Element_Node::Print_Tree(std::ostringstream& ss, size_t lev
     {
         Element_Node_Info* Info = Infos[i];
 
+        if (!Info)
+            continue;
+
         if (Info->Measure == "Parser")
         {
             if (!(Info->data == string()))
@@ -897,6 +914,7 @@ int element_details::Element_Node::Print_Tree(std::ostringstream& ss, size_t lev
             continue;
         }
 
+        Info->data.Set_Output_Format(Element_Node_Data::Format_Tree);
         ss << " - " << Info;
     }
 
