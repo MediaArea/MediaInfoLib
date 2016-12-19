@@ -260,7 +260,7 @@ void element_details::Element_Node_Data::operator=(float80 v)
 bool element_details::Element_Node_Data::operator==(const std::string& v)
 {
     if (type == ELEMENT_NODE_CHAR8)
-        return v == string(val.Chars, Option);
+        return v == std::string(val.Chars, Option);
     if (type == ELEMENT_NODE_STR)
         return v == val.Str;
 
@@ -430,7 +430,10 @@ static inline size_t Xml_Content_Escape_MustEscape(const std::string &Content)
 //---------------------------------------------------------------------------
 static void Xml_Content_Escape(const char* Content, size_t Size, std::string& ToReturn, size_t Pos)
 {
-    ToReturn = Content;
+    if (Size)
+        ToReturn = std::string(Content, Size);
+    else
+        ToReturn = std::string();
 
     for (; Pos<Size; Pos++)
     {
