@@ -85,6 +85,17 @@ private :
                         //initial_cpb_removal_delay_offset(initial_cpb_removal_delay_offset_)
                     {
                     }
+
+                    xxl_data &operator=(const xxl_data &x)
+                    {
+                        bit_rate_value=x.bit_rate_value;
+                        cpb_size_value=x.cpb_size_value;
+                        cbr_flag=x.cbr_flag;
+                        //initial_cpb_removal_delay=x.initial_cpb_removal_delay;
+                        //initial_cpb_removal_delay_offset=x.initial_cpb_removal_delay_offset;
+                        return *this;
+                    }
+
                 private:
                     xxl_data();
                 };
@@ -103,10 +114,29 @@ private :
                     time_offset_length(time_offset_length_)
                 {
                 }
+
+                xxl(const xxl &x)
+                {
+                    SchedSel=x.SchedSel;
+                    initial_cpb_removal_delay_length_minus1=x.initial_cpb_removal_delay_length_minus1;
+                    cpb_removal_delay_length_minus1=x.cpb_removal_delay_length_minus1;
+                    dpb_output_delay_length_minus1=x.dpb_output_delay_length_minus1;
+                    time_offset_length=x.time_offset_length;
+                }
+
+                xxl &operator=(const xxl &x)
+                {
+                    SchedSel=x.SchedSel;
+                    initial_cpb_removal_delay_length_minus1=x.initial_cpb_removal_delay_length_minus1;
+                    cpb_removal_delay_length_minus1=x.cpb_removal_delay_length_minus1;
+                    dpb_output_delay_length_minus1=x.dpb_output_delay_length_minus1;
+                    time_offset_length=x.time_offset_length;
+
+                    return *this;
+                }
+
             private:
                 xxl();
-                xxl &operator =(const xxl &);
-                xxl(const xxl &);
             };
             struct bitstream_restriction_struct
             {
