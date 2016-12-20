@@ -544,6 +544,9 @@
 			<CppCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Umf.cpp">
 				<BuildOrder>180</BuildOrder>
 			</CppCompile>
+			<CppCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Vbi.cpp">
+				<BuildOrder>222</BuildOrder>
+			</CppCompile>
 			<CppCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Wm.cpp">
 				<BuildOrder>0</BuildOrder>
 			</CppCompile>
