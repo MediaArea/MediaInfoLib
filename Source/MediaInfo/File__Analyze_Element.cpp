@@ -260,7 +260,7 @@ void element_details::Element_Node_Data::operator=(float80 v)
 bool element_details::Element_Node_Data::operator==(const std::string& v)
 {
     if (type == ELEMENT_NODE_CHAR8)
-        return v == string(val.Chars, Option);
+        return v == std::string(val.Chars, Option);
     if (type == ELEMENT_NODE_STR)
         return v == val.Str;
 
@@ -430,7 +430,10 @@ static inline size_t Xml_Content_Escape_MustEscape(const std::string &Content)
 //---------------------------------------------------------------------------
 static void Xml_Content_Escape(const char* Content, size_t Size, std::string& ToReturn, size_t Pos)
 {
-    ToReturn = Content;
+    if (Size)
+        ToReturn = std::string(Content, Size);
+    else
+        ToReturn = std::string();
 
     for (; Pos<Size; Pos++)
     {
@@ -509,7 +512,15 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
     {
       case element_details::Element_Node_Data::ELEMENT_NODE_CHAR8:
       {
+          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
+          {
+              for (int8u i = 0; i < v.Option; ++i)
+                  os.rdbuf()->sputc(v.val.Chars[i]);
+              break;
+          }
+
           size_t MustEscape = Xml_Content_Escape_MustEscape(v.val.Chars, v.Option);
+
           if (MustEscape != (size_t)-1)
           {
               std::string str;
@@ -525,7 +536,13 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
       }
       case element_details::Element_Node_Data::ELEMENT_NODE_STR:
       {
-          size_t MustEscape = Xml_Content_Escape_MustEscape(v.val.Chars, v.Option);
+          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
+          {
+              os << v.val.Str;
+              break;
+          }
+
+          size_t MustEscape = Xml_Content_Escape_MustEscape(v.val.Str);
           if (MustEscape != (size_t)-1)
           {
               std::string str;
@@ -756,7 +773,6 @@ int element_details::Element_Node::Print_Xml(std::ostringstream& ss, size_t leve
         return 0;
 
     std::string spaces;
-    bool Modified = false;
 
     if (IsCat || Name_Is_Empty())
         goto print_children;
@@ -887,6 +903,9 @@ int element_details::Element_Node::Print_Tree(std::ostringstream& ss, size_t lev
     {
         Element_Node_Info* Info = Infos[i];
 
+        if (!Info)
+            continue;
+
         if (Info->Measure == "Parser")
         {
             if (!(Info->data == string()))
@@ -894,6 +913,7 @@ int element_details::Element_Node::Print_Tree(std::ostringstream& ss, size_t lev
             continue;
         }
 
+        Info->data.Set_Output_Format(Element_Node_Data::Format_Tree);
         ss << " - " << Info;
     }
 
