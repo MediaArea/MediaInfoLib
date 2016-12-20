@@ -227,6 +227,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Pmp.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Ptx.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_SequenceInfo.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Vbi.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Xdcam_Clip.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Resource.cpp" />
@@ -472,6 +473,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Pmp.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Ptx.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_SequenceInfo.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Vbi.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Xdcam_Clip.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Common.h" />

@@ -184,6 +184,7 @@ HEADERS += \
         ../../Source/MediaInfo/Multiple/File_Skm.h \
         ../../Source/MediaInfo/Multiple/File_Swf.h \
         ../../Source/MediaInfo/Multiple/File_Umf.h \
+        ../../Source/MediaInfo/Multiple/File_Vbi.h \
         ../../Source/MediaInfo/Multiple/File_Wm.h \
         ../../Source/MediaInfo/Multiple/File_Xdcam_Clip.h \
         ../../Source/MediaInfo/PreComp.h \
@@ -398,6 +399,7 @@ SOURCES += \
         ../../Source/MediaInfo/Multiple/File_Skm.cpp \
         ../../Source/MediaInfo/Multiple/File_Swf.cpp \
         ../../Source/MediaInfo/Multiple/File_Umf.cpp \
+        ../../Source/MediaInfo/Multiple/File_Vbi.cpp \
         ../../Source/MediaInfo/Multiple/File_Wm.cpp \
         ../../Source/MediaInfo/Multiple/File_Wm_Elements.cpp \
         ../../Source/MediaInfo/Multiple/File_Xdcam_Clip.cpp \

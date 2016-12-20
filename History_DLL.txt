@@ -13,6 +13,7 @@ Version 0.7.92
 + MP4: more AppleStoreCountry values mapped to countries, show the country number if unknown
 + File extension: test if the file extension correspond to the container format
 x MIXML output: some *_Original values were missing
+x MXF/Teletext: was not correctly detecting non subtitle streams
 
 Version 0.7.91, 2016-11-30
 --------------

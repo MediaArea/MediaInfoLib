@@ -28,6 +28,9 @@
 #if defined(MEDIAINFO_DVDIF_YES)
     #include "MediaInfo/Multiple/File_DvDif.h"
 #endif
+#if defined(MEDIAINFO_VBI_YES)
+    #include "MediaInfo/Multiple/File_Vbi.h"
+#endif
 #if defined(MEDIAINFO_AVC_YES)
     #include "MediaInfo/Video/File_Avc.h"
 #endif
@@ -16214,7 +16217,12 @@ void File_Mxf::ChooseParser__Aaf_GC_Data(const essences::iterator &Essence, cons
     switch (Code_Compare4_3)
     {
         case 0x01 : //VBI, SMPTE ST 436
-                    Essence->second.Parsers.push_back(new File__Analyze());
+                    #if defined(MEDIAINFO_VBI_YES)
+                        MayHaveCaptionsInStream=true;
+                        Essence->second.Parsers.push_back(new File_Vbi());
+                    #else
+                        Essence->second.Parsers.push_back(new File__Analyze());
+                    #endif //defined(MEDIAINFO_VBI_YES)
                     break;
         case 0x02 : //Ancillary
                     #if defined(MEDIAINFO_ANCILLARY_YES)

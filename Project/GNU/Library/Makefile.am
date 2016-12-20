@@ -154,6 +154,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Multiple/File_Skm.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Swf.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Umf.cpp \
+                       ../../../Source/MediaInfo/Multiple/File_Vbi.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Wm.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Wm_Elements.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Xdcam_Clip.cpp \
