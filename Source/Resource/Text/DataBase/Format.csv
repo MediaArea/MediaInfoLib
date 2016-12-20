@@ -2,10 +2,10 @@ AAF;;;M;Aaf;;aaf;;;
 AIFF;;;M;Riff;Apple/SGI;aiff aifc aif;audio/x-aiff;;
 AMV;;;M;Riff;Chinese hack of AVI;amv;;http://en.wikipedia.org/wiki/AMV_video_format;
 AVI;;;M;Riff;Audio Video Interleave;avi;video/vnd.avi;;
-BDAV;;;M;Bdav;Blu-ray Video;m2ts;;;
+BDAV;;;M;Bdav;Blu-ray Video;m2ts ssif;;;
 Blu-ray Clip info;;;M;Bdmv;;clpi;;;
-Blu-ray Index;;;M;Bdmv;;bdmv;;;
-Blu-ray Movie object;;;M;Bdmv;;bdmv;;;
+Blu-ray Index;;;M;Bdmv;;bdmv bdm;;;
+Blu-ray Movie object;;;M;Bdmv;;bdmv bdm;;;
 Blu-ray Playlist;;;M;Bdmv;;mpls;;;
 CDDA;;;M;Riff;;cda;;;
 CDXA;;;M;Cdxa;;dat;;;
@@ -23,9 +23,9 @@ ISM;Internet Streaming Media;;M;Ism;;ism;;;
 IVF;;;M;Ivf;;ivf;;;
 LXF;;;M;Lxf;;lxf;video/lxf;;
 Matroska;;;M;Mk;;mkv mk3d mka mks;;http://packs.matroska.org/;
-MPEG-PS;;;M;MpegPs;;mpeg mpg m2p vob pss;video/MP2P;;
+MPEG-PS;;;M;MpegPs;;mpeg mpg m2p vob pss evo;video/MP2P;;
 MPEG-TS;;;M;MpegTs;;ts m2t m2s m2ts m4t m4s ts tp trp;video/MP2T;;
-MPEG-4;;;M;Mpeg4;;mov mp4 m4v m4a m4b m4p 3gpp 3gp 3gpp2 3g2 k3g jpm jpx mqv ismv isma f4v;video/mp4;;
+MPEG-4;;;M;Mpeg4;;mov mp4 m4v m4a m4b m4p 3gpp 3gp 3gpp2 3g2 k3g jpm jpx mqv ismv isma ismt f4v;video/mp4;;
 MTV;;;M;Other;Chinese hack of MPEG-1 layer 3;mtv;;http://en.wikipedia.org/wiki/Chinese_MP4/MTV_Player;
 MXF;;;M;Mxf;;mxf;application/mxf;;
 NSV;;;M;Nsv;Nullsoft Streaming Video;nsv;;http://winamp.com;
@@ -40,7 +40,7 @@ ShockWave;;;M;Swf;;swf;application/x-shockwave;http://www.macromedia.com/go/getf
 SKM;;;M;Skm;Sky Korean Mobilephone;skm;;http://www.isky.co.kr/html/cs/download.jsp;
 Windows Media;;;M;Wm;;asf wmv wma;video/x-ms-wmv;;
 WebM;;;M;Mkv;;webm;video/webm;http://www.webmproject.org/;
-AVC;;;V;Avc;Advanced Video Codec;avc h264;video/H264;http://developers.videolan.org/x264.html
+AVC;;;V;Avc;Advanced Video Codec;avc h264 264;video/H264;http://developers.videolan.org/x264.html
 AVS Video;;;V;AvsV;Audio Video Standard, Video part;;;http://www.avs.org.cn/;Lossy
 Dirac;;;V;Dirac;;drc;;http://diracvideo.org/;Lossy
 FFV1;;;V;;;;;;Lossless
@@ -50,7 +50,7 @@ FLI;;;V;Flic;;fli flc;;http://www.chem.nott.ac.uk/flc.html;Lossy
 FLIC;;;V;Flic;;fli flc;;http://www.chem.nott.ac.uk/flc.html;Lossy
 H.261;;;V;;;h261;video/H261;;Lossy
 H.263;;;V;;;h263;video/H263;;Lossy
-HEVC;;;V;Hevc;High Efficiency Video Coding;avc h264;video/H265;http://www.itu.int
+HEVC;;;V;Hevc;High Efficiency Video Coding;hevc h265 265;video/H265;http://www.itu.int
 MPEG Video;;;V;Mpegv;;mpgv mpv mp1v m1v mp2v m2v;video/MPV;;Lossy
 MPEG-4 Visual;;;V;Mpeg4;;m4v mp4v;video/MP4V-ES;;Lossy
 Theora;;;V;;;;;http://www.theora.org/;Lossy
@@ -68,9 +68,9 @@ Atrac;;;A;;;;audio/ATRAC;;Lossy
 Atrac3;;;A;;;;audio/ATRAC3;;Lossy
 AU;;;A;Au;uLaw/AU Audio File;au;audio/basic;;
 DolbyE;;;A;Aes3;;dde
-DTS;;;A;Dts;Digital Theater Systems;dts;;;Lossy
-DTS-HD;;;A;Dts;Digital Theater Systems;dts;;;Lossy
-E-AC-3;;;A;Ac3;Enhanced Audio Coding 3;dd+ ec3;audio/eac3;;Lossy
+DTS;;;A;Dts;Digital Theater Systems;dts dtshd;;;Lossy
+DTS-HD;;;A;Dts;Digital Theater Systems;dts dtshd;;;Lossy
+E-AC-3;;;A;Ac3;Enhanced Audio Coding 3;dd+ ec3 eac3;audio/eac3;;Lossy
 Extended Module;;;A;ExtendedModule;;xm;;;
 FLAC;;;A;Flac;Free Lossless Audio Codec;flac;;http://flac.sourceforge.net/;
 G.719;;;A;;;;audio/G719;;Lossy
@@ -97,7 +97,7 @@ SLS;;;A;;MPEG-4 Scalable Lossless Coding;sls;;http://www.chiariglione.org/mpeg/t
 Speex;;;A;;;;audio/speex;http://www.speex.org/;Lossy
 Opus;;;A;;;;audio/opus;http://opus-codec.org/;Lossy
 TAK;;;A;;;tak;;http://thbeck.de/Tak/Tak.html;Lossless
-TrueHD;;;A;Ac3;;dts;;;Lossless
+TrueHD;;;A;Ac3;;;;;Lossless
 TwinVQ;;;A;TwinVQ;Transform domain Weighted INterleave Vector Quantization;vqf;;http://www.twinvq.org/english/index_en.html;
 Vorbis;;;A;;;;audio/vorbis;http://www.vorbis.com/;Lossy
 Wave;;;A;Riff;;wav;audio/vnd.wave;;
