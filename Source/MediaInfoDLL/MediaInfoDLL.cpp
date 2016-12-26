@@ -37,7 +37,6 @@
 #include <clocale>
 using namespace MediaInfoLib;
 using namespace ZenLib;
-using namespace std;
 //---------------------------------------------------------------------------
 
 //***************************************************************************
@@ -54,7 +53,7 @@ typedef std::map<void*, mi_output*> mi_outputs;
 
 struct mi_input
 {
-    Ztring Unicode[8];  //Unicode characters multiple times
+    Ztring Unicode[3];  //Unicode characters multiple times
 };
 typedef std::map<void*, mi_input*> mi_inputs;
 
@@ -65,7 +64,7 @@ static CriticalSection Critical;
 static bool utf8=false;
 
 //---------------------------------------------------------------------------
-const char* WC2MB(void* Handle, const wchar_t* Text)
+static const char* WC2MB(void* Handle, const wchar_t* Text)
 {
     //Coherancy
     Critical.Enter();
@@ -86,7 +85,7 @@ const char* WC2MB(void* Handle, const wchar_t* Text)
 }
 
 //---------------------------------------------------------------------------
-const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
+static const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
 {
     //Coherancy
     Critical.Enter();
