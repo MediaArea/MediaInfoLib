@@ -383,7 +383,10 @@ static void Xml_Content_Escape(const char* Content, size_t Size, std::string& To
     if (Size)
         ToReturn = std::string(Content, Size);
     else
-        ToReturn = std::string();
+    {
+        ToReturn.clear();
+        return;
+    }
 
     for (; Pos<Size; Pos++)
     {
