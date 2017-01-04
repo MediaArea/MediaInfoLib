@@ -691,8 +691,8 @@ void File_Mpeg4::Streams_Finish()
             }
             Fill(StreamKind_Last, StreamPos_Last, "Source_Delay", Delay*1000, 0, true);
             Fill(StreamKind_Last, StreamPos_Last, "Source_Delay_Source", "Container", Unlimited, true, true);
-            (*Stream_More)[StreamKind_Last][StreamPos_Last](Ztring().From_Local("Source_Delay"), Info_Options)=__T("N NT");
-            (*Stream_More)[StreamKind_Last][StreamPos_Last](Ztring().From_Local("Source_Delay_Source"), Info_Options)=__T("N NT");
+            Fill_SetOptions(StreamKind_Last, StreamPos_Last, "Source_Delay", "N NT");
+            Fill_SetOptions(StreamKind_Last, StreamPos_Last, "Source_Delay_Source", "N NT");
         }
 
         if (StreamKind_Last==Stream_Video && Temp->second.TimeCode==NULL)

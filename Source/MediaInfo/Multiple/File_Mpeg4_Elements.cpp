@@ -4524,7 +4524,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
                                     std::string Data_Raw((const char*)(Buffer+Buffer_Offset+Element_Offset-(18+Data_Size)), (size_t)(18+Data_Size));
                                     std::string Data_Base64(Base64::encode(Data_Raw));
                                     Fill(Stream_Audio, StreamPos_Last, "Demux_InitBytes", Data_Base64);
-                                    (*Stream_More)[Stream_Audio][StreamPos_Last](Ztring().From_Local("Demux_InitBytes"), Info_Options)=__T("N NT");
+                                    Fill_SetOptions(Stream_Audio, StreamPos_Last, "Demux_InitBytes", "N NT");
                                     }
                                     break;
                         default :   ;
@@ -5113,7 +5113,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_avcC()
                                     std::string Data_Raw((const char*)(Buffer+Buffer_Offset), (size_t)Element_Size);
                                     std::string Data_Base64(Base64::encode(Data_Raw));
                                     Fill(Stream_Video, StreamPos_Last, "Demux_InitBytes", Data_Base64);
-                                    (*Stream_More)[Stream_Video][StreamPos_Last](Ztring().From_Local("Demux_InitBytes"), Info_Options)=__T("N NT");
+                                    Fill_SetOptions(Stream_Video, StreamPos_Last, "Demux_InitBytes", "N NT");
                                     }
                                     break;
                         default :   ;
@@ -5859,7 +5859,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
                                 std::string Data_Raw((const char*)(Buffer+Buffer_Offset), (size_t)Element_Size);
                                 std::string Data_Base64(Base64::encode(Data_Raw));
                                 Fill(Stream_Video, StreamPos_Last, "Demux_InitBytes", Data_Base64);
-                                (*Stream_More)[Stream_Video][StreamPos_Last](Ztring().From_Local("Demux_InitBytes"), Info_Options)=__T("N NT");
+                                Fill_SetOptions(Stream_Video, StreamPos_Last, "Demux_InitBytes", "N NT");
                                 }
                                 break;
                     default :   ;

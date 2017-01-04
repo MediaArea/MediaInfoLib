@@ -691,7 +691,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
                 Clear(Stream_General, 0, HashPos.c_str());
             Fill(Stream_General, 0, HashPos.c_str(), Temp);
             if (Config->File_Names_Pos<=1)
-                (*Stream_More)[Stream_General][0](Ztring().From_Local(HashPos), Info_Options)=__T("N NT");
+                Fill_SetOptions(Stream_General, 0, HashPos.c_str(), "N NT");
         }
 
             delete Hash; Hash=NULL;
@@ -3030,7 +3030,7 @@ void File__Analyze::Fill ()
     if (File_Size==(int64u)-1 && FrameInfo.PTS!=(int64u)-1 && PTS_Begin!=(int64u)-1 && FrameInfo.PTS-PTS_Begin && StreamKind_Last!=Stream_General && StreamKind_Last!=Stream_Max)
     {
         Fill(StreamKind_Last, 0, "BitRate_Instantaneous", Buffer_TotalBytes*8*1000000000/(FrameInfo.PTS-PTS_Begin));
-        (*Stream_More)[StreamKind_Last][0](Ztring().From_Local("BitRate_Instantaneous"), Info_Options)=__T("N NI");
+        Fill_SetOptions(StreamKind_Last, 0, "BitRate_Instantaneous", "N NI");
     }
 }
 
@@ -4084,7 +4084,7 @@ void File__Analyze::Ibi_Stream_Finish ()
         if (!IbiText.empty())
         {
             Fill(Stream_General, 0, "IBI", IbiText);
-            (*Stream_More)[Stream_General][0]("IBI", Info_Options)=__T("N NT");
+            Fill_SetOptions(Stream_General, 0, "IBI", Info_Options, "N NT");
         }
     }
 }
