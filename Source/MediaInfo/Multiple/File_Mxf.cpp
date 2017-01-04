@@ -1262,6 +1262,7 @@ static const char* Mxf_TransferCharacteristic(const int128u TransferCharacterist
         case 0x08 : return "xvYCC";
         case 0x09 : return "BT.2020";
         case 0x0A : return "SMPTE ST 2084";
+        case 0x0B : return "HLG";
         default   : return "";
     }
 }

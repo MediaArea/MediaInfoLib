@@ -10,6 +10,7 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 
 Version 0.7.92
 --------------
++ MXF and MPEG video streams: detection of HLG Transfer Characteristic
 + MP4: more AppleStoreCountry values mapped to countries, show the country number if unknown
 + File extension: test if the file extension correspond to the container format
 x MIXML output: some *_Original values were missing
@@ -24,8 +25,6 @@ Version 0.7.91, 2016-11-30
 + MediaTrace optimization for Matroska
 x Fixed parsing of FFV1 v0/v1
 x PTX: fix crash due to bad parsing of some file names while looking for track language
-
-
 
 Version 0.7.90, 2016-10-31
 --------------
