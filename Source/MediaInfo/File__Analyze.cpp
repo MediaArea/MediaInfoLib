@@ -4095,7 +4095,7 @@ void File__Analyze::Ibi_Stream_Finish ()
         if (!IbiText.empty())
         {
             Fill(Stream_General, 0, "IBI", IbiText);
-            Fill_SetOptions(Stream_General, 0, "IBI", Info_Options, "N NT");
+            Fill_SetOptions(Stream_General, 0, "IBI", "N NT");
         }
     }
 }
