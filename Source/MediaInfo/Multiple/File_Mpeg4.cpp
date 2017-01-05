@@ -1876,12 +1876,12 @@ struct Mpeg4_muxing
 };
 struct stream_temp
 {
+    int64u stsc_SampleSizeOffset;
+    int64u stts_Current;
     size_t stco_Pos; //Chunk Offset
     size_t stsc_Pos; //Sample to Chunk
     size_t stsc_SampleNumber;
-    int64u stsc_SampleSizeOffset;
     size_t stts_Durations_Pos; //Time to Sample
-    int64u stts_Current;
     size_t stsz_Pos;
 
     stream_temp()
