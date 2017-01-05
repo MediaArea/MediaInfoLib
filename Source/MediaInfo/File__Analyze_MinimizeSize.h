@@ -1388,6 +1388,7 @@ public :
     //Hash
     #if MEDIAINFO_HASH
         HashWrapper*        Hash;
+        int64u              Hash_Offset;
         int64u              Hash_ParseUpTo;
     #endif //MEDIAINFO_HASH
 
