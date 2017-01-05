@@ -450,7 +450,7 @@ private :
             bool            Demux_EventWasSent;
             int32u          CodecID;
             void            moov_trak_mdia_minf_stbl_stts_Common(int32u SampleCount, int32u SampleDuration, int32u Pos=0, int32u NumberOfEntries=1);
-            void            SplitAudio(File_Mpeg4::stream& Video);
+            void            SplitAudio(File_Mpeg4::stream& Video, int32u moov_mvhd_TimeScale);
         #endif //MEDIAINFO_DEMUX
 
         stream()

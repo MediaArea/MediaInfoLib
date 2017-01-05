@@ -1903,14 +1903,18 @@ struct stream_temp
 };
 
 //---------------------------------------------------------------------------
-void File_Mpeg4::stream::SplitAudio(File_Mpeg4::stream& Video)
+void File_Mpeg4::stream::SplitAudio(File_Mpeg4::stream& Video, int32u moov_mvhd_TimeScale)
 {
+    //Complex audio edit lists are not supported, but detect fake complex edit lists
+    bool ComplexAudioEditList = edts.size() != 1 || edts[0].Delay != 0;
+    if (ComplexAudioEditList && edts.size() == 2 && ((int64u)edts[1].Delay) * moov_mvhd_TimeScale / mdhd_TimeScale == edts[0].Duration)
+        ComplexAudioEditList = false;
+
     //Check if we need to split
     if (Video.stts.size() != 1          //Complex video frame durations not supported
         || Video.edts.size() != 1       //Complex video edit lists are not supported
         || Video.edts[0].Delay != 0     //Complex video edit lists are not supported
-        || edts.size() != 1             //Complex audio edit lists are not supported
-        || edts[0].Delay != 0           //Complex audio edit lists are not supported
+        || ComplexAudioEditList         //Complex audio edit lists are not supported
         || stco.empty()                 //At least 1 audio stco must be present
         || stsc.empty()                 //At least 1 audio stsc must be present
         || !stsz.empty()                //Audio stsz must be empty
@@ -1918,7 +1922,7 @@ void File_Mpeg4::stream::SplitAudio(File_Mpeg4::stream& Video)
         || mdhd_TimeScale == 0          //mdhd_TimeScale must be valid
         || stsz_Sample_Multiplier == 0) //stsz_Sample_Multiplier must be valid
         return;
-    
+
     int32u FirstChunk_Offset = Video.stsc[0].FirstChunk;
 
     int64u AudioTicks_Total = 0;
@@ -2131,7 +2135,7 @@ bool File_Mpeg4::BookMark_Needed()
                 for (std::map<int32u, stream>::iterator Temp2 = Streams.begin(); Temp2 != Streams.end(); ++Temp2) //Looking for the first video stream available
                     if (Temp2->second.StreamKind==Stream_Video)
                     {
-                        Temp->second.SplitAudio(Temp2->second);
+                        Temp->second.SplitAudio(Temp2->second, moov_mvhd_TimeScale);
                         break;
                     }
 
