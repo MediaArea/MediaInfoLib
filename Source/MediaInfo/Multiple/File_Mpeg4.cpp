@@ -595,7 +595,7 @@ void File_Mpeg4::Streams_Finish()
                 Fill(StreamKind_Last, StreamPos_Last, "Source_Duration", Duration_stts*1000, 0);
                 Fill(StreamKind_Last, StreamPos_Last, "Source_Duration_FirstFrame", Duration_stts_FirstFrame);
                 Fill(StreamKind_Last, StreamPos_Last, "Source_Duration_LastFrame", Duration_stts_LastFrame);
-                if (Temp->second.stts.size()!=1 || Temp->second.mdhd_TimeScale<100 || Temp->second.stts[0].SampleDuration!=1) //TODO: test PCM
+                if ((Temp->second.stts.size()!=1 || Temp->second.mdhd_TimeScale<100 || Temp->second.stts[0].SampleDuration!=1) && !Temp->second.IsPcm)
                     if (Temp->second.stts_FrameCount)
                         Fill(StreamKind_Last, StreamPos_Last, "Source_FrameCount", Temp->second.stts_FrameCount);
                 if (Temp->second.stsz_StreamSize)
@@ -627,7 +627,7 @@ void File_Mpeg4::Streams_Finish()
                         FrameCount+=Temp->second.stts[stts_Pos].SampleCount;
                     }
                 }
-                if (Temp->second.stts.size()!=1 || Temp->second.mdhd_TimeScale<100 || Temp->second.stts[0].SampleDuration!=1) //TODO: test PCM
+                if ((Temp->second.stts.size()!=1 || Temp->second.mdhd_TimeScale<100 || Temp->second.stts[0].SampleDuration!=1) && !Temp->second.IsPcm)
                     Fill(StreamKind_Last, StreamPos_Last, "FrameCount", FrameCount, 10, true);
 
                 if (Temp->second.stsz_Total.empty())
@@ -648,7 +648,7 @@ void File_Mpeg4::Streams_Finish()
                     Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration_stts*1000, 0);
                 Fill(StreamKind_Last, StreamPos_Last, "Duration_FirstFrame", Duration_stts_FirstFrame);
                 Fill(StreamKind_Last, StreamPos_Last, "Duration_LastFrame", Duration_stts_LastFrame);
-                if (Temp->second.stts.size()!=1 || Temp->second.mdhd_TimeScale<100 || Temp->second.stts[0].SampleDuration!=1) //TODO: test PCM
+                if ((Temp->second.stts.size()!=1 || Temp->second.mdhd_TimeScale<100 || Temp->second.stts[0].SampleDuration!=1) && !Temp->second.IsPcm)
                     if (Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount)).empty() && Temp->second.stts_FrameCount)
                         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), Temp->second.stts_FrameCount);
                 bool HasPadding=(Temp->second.Parsers.size()==1 && !Temp->second.Parsers[0]->Retrieve(StreamKind_Last, StreamPos_Last, "BitRate_Encoded").empty()) || (Temp->second.Parsers.size()==1 && Temp->second.Parsers[0]->Buffer_TotalBytes && ((float32)Temp->second.Parsers[0]->Buffer_PaddingBytes)/Temp->second.Parsers[0]->Buffer_TotalBytes>0.02);
@@ -1901,6 +1901,163 @@ struct stream_temp
         DTS_Offset=0;
     }
 };
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::stream::SplitAudio(File_Mpeg4::stream& Video)
+{
+    //Check if we need to split
+    if (Video.stts.size() != 1          //Complex video frame durations not supported
+        || Video.edts.size() != 1       //Complex video edit lists are not supported
+        || Video.edts[0].Delay != 0     //Complex video edit lists are not supported
+        || edts.size() != 1             //Complex audio edit lists are not supported
+        || edts[0].Delay != 0           //Complex audio edit lists are not supported
+        || stco.empty()                 //At least 1 audio stco must be present
+        || stsc.empty()                 //At least 1 audio stsc must be present
+        || !stsz.empty()                //Audio stsz must be empty
+        || Video.mdhd_TimeScale == 0    //mdhd_TimeScale must be valid
+        || mdhd_TimeScale == 0          //mdhd_TimeScale must be valid
+        || stsz_Sample_Multiplier == 0) //stsz_Sample_Multiplier must be valid
+        return;
+    
+    int32u FirstChunk_Offset = Video.stsc[0].FirstChunk;
+
+    int64u AudioTicks_Total = 0;
+    int64u VideoTicks_Total = 0;
+    int64u AudioTicks_PerChunk = stsc[0].SamplesPerChunk;
+    int32u VideoTicks_PerSample = Video.stts[0].SampleDuration;
+    int32u SamplesInChunk = 0;
+    int64u AudioTicks_Chunk = AudioTicks_PerChunk * Video.mdhd_TimeScale;
+
+    int32u stco_Pos = 0;
+    size_t stco_Size = stco.size();
+    int32u stsc_Pos = 0;
+
+    //Testing if it is usefull (at least 1 audio sample is 2x longer than video sample)
+    bool ShouldSplit = false;
+    size_t stsc_size = stsc.size();
+    for (size_t i = 0; i<stsc_size; i++)
+        if (stsc[i].SamplesPerChunk * Video.mdhd_TimeScale > VideoTicks_PerSample * mdhd_TimeScale * 2)
+        {
+            ShouldSplit = true;
+            break;
+        }
+    if (!ShouldSplit)
+        return;
+
+    std::vector<stsc_struct> NewStsc;
+    std::vector<int64u> NewStsz;
+    std::vector<stts_struct> NewStts;
+
+    for (;;)
+    {
+        //Add new sample for both video and audio
+        VideoTicks_Total += VideoTicks_PerSample * mdhd_TimeScale;
+        SamplesInChunk++;
+        bool IsLastSampleInChunk = AudioTicks_Chunk < VideoTicks_PerSample * mdhd_TimeScale * 3 / 2;
+
+        //Compute sample duration
+        int64u SampleDuration;
+        if (IsLastSampleInChunk)
+            SampleDuration = AudioTicks_Chunk / Video.mdhd_TimeScale;
+        else
+        {
+            //Compute sample size (with rounding)
+            SampleDuration = VideoTicks_Total - AudioTicks_Total;
+            if (SampleDuration > VideoTicks_PerSample * mdhd_TimeScale * 2)
+            {
+                //Handle case there is a big difference between video and audio time due to previous small audio packets
+                SampleDuration = VideoTicks_PerSample * mdhd_TimeScale * 2;
+                if (SampleDuration < AudioTicks_Chunk && AudioTicks_Chunk - SampleDuration < VideoTicks_PerSample * mdhd_TimeScale / 2)
+                    SampleDuration -= (AudioTicks_Chunk - SampleDuration) / 2; //Trying to avoid next small audio packet
+            }
+            if (SampleDuration > AudioTicks_Chunk)
+            {
+                //Handle case the requested samples are more than the current packet
+                IsLastSampleInChunk = true;
+                SampleDuration = AudioTicks_Chunk / Video.mdhd_TimeScale;
+            }
+            else if (SampleDuration % Video.mdhd_TimeScale >= Video.mdhd_TimeScale / 2)
+            {
+                SampleDuration /= Video.mdhd_TimeScale;
+                SampleDuration++;
+            }
+            else
+                SampleDuration /= Video.mdhd_TimeScale;
+        }
+
+        //Add sample size
+        NewStsz.push_back(SampleDuration * stsz_Sample_Size * stsz_Sample_Multiplier);
+
+        //Add sample duration
+        size_t stts_pos = NewStts.size();
+        if (stts_pos && NewStts[stts_pos - 1].SampleDuration == SampleDuration)
+            NewStts[stts_pos - 1].SampleCount++;
+        else
+        {
+            NewStts.resize(stts_pos + 1);
+            NewStts[stts_pos].SampleCount = 1;
+            NewStts[stts_pos].SampleDuration = (int32u)SampleDuration;
+        }
+
+        if (IsLastSampleInChunk)
+        {
+            //Add samples per chunk
+            size_t stsc_pos = NewStsc.size();
+            NewStsc.resize(stsc_pos + 1);
+            NewStsc[stsc_pos].FirstChunk = stco_Pos + FirstChunk_Offset;
+            NewStsc[stsc_pos].SamplesPerChunk = SamplesInChunk;
+
+            //Next chunk
+            stco_Pos++;
+            SamplesInChunk = 0;
+            if (stco_Pos >= stco_Size)
+            {
+                AudioTicks_PerChunk = stts_Duration - (AudioTicks_Total + AudioTicks_Chunk) / Video.mdhd_TimeScale; //In case there is not all stco (e.g. partial parsing), we create a fake last stco with all remaining stts
+                if (!AudioTicks_PerChunk)
+                    break; //No more content
+            }
+            else if (stsc_Pos + 1<stsc.size() && stco_Pos + FirstChunk_Offset >= stsc[stsc_Pos + 1].FirstChunk)
+            {
+                stsc_Pos++;
+                AudioTicks_PerChunk = stsc[stsc_Pos].SamplesPerChunk;
+            }
+            AudioTicks_Total += AudioTicks_Chunk;
+            AudioTicks_Chunk = AudioTicks_PerChunk * Video.mdhd_TimeScale;
+
+            continue;
+        }
+
+        //Next
+        SampleDuration *= Video.mdhd_TimeScale;
+        AudioTicks_Chunk -= SampleDuration;
+        AudioTicks_Total += SampleDuration;
+    }
+
+    //Assigning new data (except stts)
+    stsc = NewStsc;
+    stsz = NewStsz;
+    stsz_Total = NewStsz;
+    stsz_Sample_Size = 0;
+
+    //Replaying moov_trak_mdia_minf_stbl_stts()
+    stts.clear();
+    stts_Min=(int32u)-1;
+    stts_Max=0;
+    stts_FrameCount=0;
+    stts_Duration=0;
+    #if MEDIAINFO_DEMUX
+        stts_Durations.clear();
+    #endif //MEDIAINFO_DEMUX
+    int32u NewStts_Size=(int32u)NewStts.size();
+    int64u stts_Duration_Firstrame_Temp=stts_Duration_FirstFrame; //This items ill be not correct with default algo, as we create new scheme
+    int64u stts_Duration_LastFrame_Temp=stts_Duration_LastFrame;
+    for (int32u Pos = 0; Pos < NewStts_Size; Pos++)
+        moov_trak_mdia_minf_stbl_stts_Common(NewStts[Pos].SampleCount, NewStts[Pos].SampleDuration, Pos, NewStts_Size);
+    stts_Duration_FirstFrame=stts_Duration_Firstrame_Temp;
+    stts_Duration_LastFrame=stts_Duration_LastFrame_Temp;
+}
+
+//---------------------------------------------------------------------------
 bool File_Mpeg4::BookMark_Needed()
 {
     #if MEDIAINFO_HASH
@@ -1969,6 +2126,15 @@ bool File_Mpeg4::BookMark_Needed()
         for (std::map<int32u, stream>::iterator Temp=Streams.begin(); Temp!=Streams.end(); ++Temp)
             if (!Temp->second.Parsers.empty())
         {
+            //PCM split
+            if (Temp->second.IsPcm)
+                for (std::map<int32u, stream>::iterator Temp2 = Streams.begin(); Temp2 != Streams.end(); ++Temp2) //Looking for the first video stream available
+                    if (Temp2->second.StreamKind==Stream_Video)
+                    {
+                        Temp->second.SplitAudio(Temp2->second);
+                        break;
+                    }
+
             if (!Temp->second.File_Name.empty())
             {
                 #if MEDIAINFO_DEMUX

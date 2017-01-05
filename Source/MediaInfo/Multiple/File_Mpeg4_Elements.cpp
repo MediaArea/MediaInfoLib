@@ -2117,8 +2117,10 @@ void File_Mpeg4::moof_traf_trun()
         Stsc.FirstChunk=Stream->second.stsc[Stream->second.stsc.size()-1].FirstChunk+1;
     Stsc.SamplesPerChunk=sample_count;
     Stream->second.stsc.push_back(Stsc);
-    if (!sample_duration_present)
-        moov_trak_mdia_minf_stbl_stts_Common(sample_count, moof_traf_default_sample_duration);
+    FILLING_BEGIN();
+        if (!sample_duration_present)
+            Stream->second.moov_trak_mdia_minf_stbl_stts_Common(sample_count, moof_traf_default_sample_duration);
+    FILLING_END();
     if (!sample_size_present)
         Stream->second.stsz.resize(Stream->second.stsz.size()+sample_count, moof_traf_default_sample_size);
 
@@ -2132,7 +2134,9 @@ void File_Mpeg4::moof_traf_trun()
             int32u sample_duration;
             Get_B4 (sample_duration,                            "sample_duration");
 
-            moov_trak_mdia_minf_stbl_stts_Common(1, sample_duration);
+            FILLING_BEGIN(); 
+                Stream->second.moov_trak_mdia_minf_stbl_stts_Common(1, sample_duration);
+            FILLING_END();
         }
         if (sample_size_present)
         {
@@ -6324,7 +6328,9 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stts()
         Get_B4(SampleCount,                                     "Sample Count");
         Get_B4(SampleDuration,                                  "Sample Duration");
 
-        moov_trak_mdia_minf_stbl_stts_Common(SampleCount, SampleDuration, Pos, NumberOfEntries);
+        FILLING_BEGIN();
+            Streams[moov_trak_tkhd_TrackID].moov_trak_mdia_minf_stbl_stts_Common(SampleCount, SampleDuration, Pos, NumberOfEntries);
+        FILLING_END();
 
         #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
             if (StreamKind_Last==Stream_Video && Retrieve(Stream_Video, StreamPos_Last, "Format")==__T("DV"))
@@ -6371,50 +6377,48 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stts()
     FILLING_END();
 }
 
-void File_Mpeg4::moov_trak_mdia_minf_stbl_stts_Common(int32u SampleCount, int32u SampleDuration, int32u Pos, int32u NumberOfEntries)
+void File_Mpeg4::stream::moov_trak_mdia_minf_stbl_stts_Common(int32u SampleCount, int32u SampleDuration, int32u Pos, int32u NumberOfEntries)
 {
-    FILLING_BEGIN();
-        stream::stts_struct Stts;
-        Stts.SampleCount=SampleCount;
-        Stts.SampleDuration=SampleDuration;
-        Stream->second.stts.push_back(Stts);
-        if (Pos==1 && NumberOfEntries>=2 && NumberOfEntries<=3 && Stream->second.stts_FrameCount==1 && Stts.SampleDuration!=Stream->second.stts_Max && Stream->second.mdhd_TimeScale)
-        {
-            Stream->second.stts_Duration_FirstFrame=Stream->second.stts[0].SampleDuration;
-            Stream->second.stts_Min=Stts.SampleDuration;
-            Stream->second.stts_Max=Stts.SampleDuration;
-        }
-        if (NumberOfEntries>=2 && NumberOfEntries<=3 && Pos+1==NumberOfEntries && Stts.SampleCount==1 && Stream->second.stts_Min==Stream->second.stts_Max && Stts.SampleDuration!=Stream->second.stts_Max && Stream->second.mdhd_TimeScale)
-        {
-            Stream->second.stts_Duration_LastFrame=Stts.SampleDuration;
-        }
-        else
-        {
-            if (Stts.SampleDuration<Stream->second.stts_Min) Stream->second.stts_Min=Stts.SampleDuration;
-            if (Stts.SampleDuration>Stream->second.stts_Max) Stream->second.stts_Max=Stts.SampleDuration;
-        }
-        Stream->second.stts_FrameCount+=Stts.SampleCount;
-        if (Stts.SampleDuration<0x80000000)
-            Stream->second.stts_Duration+=Stts.SampleCount*Stts.SampleDuration;
-        else
-            Stream->second.stts_Duration-=Stts.SampleCount*(((int32u)-1)-Stts.SampleDuration+1); //Negative value
+    stream::stts_struct Stts;
+    Stts.SampleCount=SampleCount;
+    Stts.SampleDuration=SampleDuration;
+    stts.push_back(Stts);
+    if (Pos==1 && NumberOfEntries>=2 && NumberOfEntries<=3 && stts_FrameCount==1 && Stts.SampleDuration!=stts_Max && mdhd_TimeScale)
+    {
+        stts_Duration_FirstFrame=stts[0].SampleDuration;
+        stts_Min=Stts.SampleDuration;
+        stts_Max=Stts.SampleDuration;
+    }
+    if (NumberOfEntries>=2 && NumberOfEntries<=3 && Pos+1==NumberOfEntries && Stts.SampleCount==1 && stts_Min==stts_Max && Stts.SampleDuration!=stts_Max && mdhd_TimeScale)
+    {
+        stts_Duration_LastFrame=Stts.SampleDuration;
+    }
+    else
+    {
+        if (Stts.SampleDuration<stts_Min) stts_Min=Stts.SampleDuration;
+        if (Stts.SampleDuration>stts_Max) stts_Max=Stts.SampleDuration;
+    }
+    stts_FrameCount+=Stts.SampleCount;
+    if (Stts.SampleDuration<0x80000000)
+        stts_Duration+=Stts.SampleCount*Stts.SampleDuration;
+    else
+        stts_Duration-=Stts.SampleCount*(((int32u)-1)-Stts.SampleDuration+1); //Negative value
 
-        #if MEDIAINFO_DEMUX
-            stream::stts_duration stts_Duration;
-            stts_Duration.Pos_Begin=Stream->second.stts_FrameCount-Stts.SampleCount;
-            stts_Duration.Pos_End=Stream->second.stts_FrameCount;
-            stts_Duration.SampleDuration=Stts.SampleDuration;
-            if (Streams[moov_trak_tkhd_TrackID].stts_Durations.empty())
-                stts_Duration.DTS_Begin=0;
-            else
-            {
-                stream::stts_durations::iterator Previous=Streams[moov_trak_tkhd_TrackID].stts_Durations.end(); --Previous;
-                stts_Duration.DTS_Begin=Previous->DTS_End;
-            }
-            stts_Duration.DTS_End=stts_Duration.DTS_Begin+Stts.SampleCount*Stts.SampleDuration;
-            Streams[moov_trak_tkhd_TrackID].stts_Durations.push_back(stts_Duration);
-        #endif //MEDIAINFO_DEMUX
-    FILLING_END();
+    #if MEDIAINFO_DEMUX
+        stream::stts_duration stts_Duration_Item;
+        stts_Duration_Item.Pos_Begin=stts_FrameCount-Stts.SampleCount;
+        stts_Duration_Item.Pos_End=stts_FrameCount;
+        stts_Duration_Item.SampleDuration=Stts.SampleDuration;
+        if (stts_Durations.empty())
+            stts_Duration_Item.DTS_Begin=0;
+        else
+        {
+            stream::stts_durations::iterator Previous=stts_Durations.end(); --Previous;
+            stts_Duration_Item.DTS_Begin=Previous->DTS_End;
+        }
+        stts_Duration_Item.DTS_End= stts_Duration_Item.DTS_Begin+Stts.SampleCount*Stts.SampleDuration;
+        stts_Durations.push_back(stts_Duration_Item);
+    #endif //MEDIAINFO_DEMUX
 }
 
 //---------------------------------------------------------------------------
