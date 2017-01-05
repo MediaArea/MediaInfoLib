@@ -532,6 +532,10 @@ private :
         int32u StreamID;
         int32u Reserved1;
         int64u Reserved2;
+        friend bool operator<(const mdat_Pos_Type& l, const mdat_Pos_Type& r)
+        {
+            return l.Offset<r.Offset;
+        }
     };
     typedef std::vector<mdat_Pos_Type> mdat_pos;
     static bool mdat_pos_sort (const File_Mpeg4::mdat_Pos_Type &i,const File_Mpeg4::mdat_Pos_Type &j) { return (i.Offset<j.Offset); }
@@ -541,6 +545,7 @@ private :
     #endif //MEDIAINFO_DEMUX
     mdat_pos mdat_Pos;
     mdat_Pos_Type* mdat_Pos_Temp;
+    mdat_Pos_Type* mdat_Pos_Temp_ToJump;
     mdat_Pos_Type* mdat_Pos_Max;
     std::vector<int32u> mdat_Pos_ToParseInPriority_StreamIDs;
     bool                mdat_Pos_NormalParsing;

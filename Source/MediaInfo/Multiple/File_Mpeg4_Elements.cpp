@@ -1880,19 +1880,15 @@ void File_Mpeg4::mdat_xxxx()
 void File_Mpeg4::mdat_StreamJump()
 {
     #if MEDIAINFO_DEMUX
-        if (Config->ParseSpeed==1 && !mdat_Pos.empty())
+        if (Config->ParseSpeed==1 && !mdat_Pos.empty() && !StreamOffset_Jump.empty())
         {
-            int64u ToJump=File_Offset+Buffer_Offset+Element_Size;
-            if (mdat_Pos_Temp!=mdat_Pos_Max)
-                ToJump=mdat_Pos_Temp->Offset;
-            std::map<int64u, int64u>::iterator StreamOffset_Jump_Temp=StreamOffset_Jump.find(ToJump);
+            std::map<int64u, int64u>::iterator StreamOffset_Jump_Temp=StreamOffset_Jump.find(File_Offset+Buffer_Offset+Element_Size);
             if (StreamOffset_Jump_Temp!=StreamOffset_Jump.end())
             {
-                ToJump=StreamOffset_Jump_Temp->second;
                 if (!mdat_Pos.empty())
                 {
                     mdat_Pos_Temp=&mdat_Pos[0];
-                    while (mdat_Pos_Temp<mdat_Pos_Max && mdat_Pos_Temp->Offset!=ToJump)
+                    while (mdat_Pos_Temp<mdat_Pos_Max && mdat_Pos_Temp->Offset!=StreamOffset_Jump_Temp->second)
                         mdat_Pos_Temp++;
                 }
                 else
