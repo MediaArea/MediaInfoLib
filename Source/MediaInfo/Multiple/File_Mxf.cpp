@@ -2539,12 +2539,12 @@ void File_Mxf::Streams_Finish()
     if (PrimaryPackageIsSourcePackage && !PrimaryPackageIsMaterialPackage)
     {
         Fill(Stream_General, 0, "PrimaryPackage", "Source Package");
-        (*Stream_More)[Stream_General][0](Ztring().From_Local("PrimaryPackage"), Info_Options)=__T("N NT");
+        Fill_SetOptions(Stream_General, 0, "PrimaryPackage", "N NT");
     }
     if (!PrimaryPackageIsSourcePackage && PrimaryPackageIsMaterialPackage)
     {
         Fill(Stream_General, 0, "PrimaryPackage", "Material Package");
-        (*Stream_More)[Stream_General][0](Ztring().From_Local("PrimaryPackage"), Info_Options)=__T("N NT");
+        Fill_SetOptions(Stream_General, 0, "PrimaryPackage", "N NT");
     }
 
     //CameraUnitMetadata
@@ -2571,16 +2571,16 @@ void File_Mxf::Streams_Finish()
                             case  5 : //NearFocusDistance
                             case  6 : //FarFocusDistance
                             case  8 : //EntrancePupilPosition
-                                (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                                Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                                 if (AcquisitionMetadataLists[0xE203] && !AcquisitionMetadataLists[0xE203]->empty()) //Calibration Type
                                     Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadata_Sony_E201_Lists[i])[0].Value+' '+(*AcquisitionMetadataLists[0xE203])[0].Value);
                                 break;
                             case  3 : //EffectiveFocaleLength
-                                (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                                Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                                 Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadata_Sony_E201_Lists[i])[0].Value+" mm");
                                 break;
                             case  7 : //HorizontalFieldOfView
-                                (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                                Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                                 Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadata_Sony_E201_Lists[i])[0].Value+"\xc2\xB0");
                                 break;
                             default : ;
@@ -2590,8 +2590,8 @@ void File_Mxf::Streams_Finish()
                             Fill(Stream_Other, 0, ElementName_Values.c_str(), (*AcquisitionMetadata_Sony_E201_Lists[i])[List_Pos].Value);
                             Fill(Stream_Other, 0, ElementName_FrameCounts.c_str(), (*AcquisitionMetadata_Sony_E201_Lists[i])[List_Pos].FrameCount);
                         }
-                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_Values.c_str()), Info_Options)=__T("N NT");
-                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FrameCounts.c_str()), Info_Options)=__T("N NT");
+                        Fill_SetOptions(Stream_Other, 0, ElementName_Values.c_str(), "N NT");
+                        Fill_SetOptions(Stream_Other, 0, ElementName_FrameCounts.c_str(), "N NT");
                     }
             }
             else if (AcquisitionMetadataLists[Pos] && !AcquisitionMetadataLists[Pos]->empty())
@@ -2605,12 +2605,12 @@ void File_Mxf::Streams_Finish()
                 {
                     case 0x8001 : //FocusPosition_ImagePlane
                     case 0x8002 : //FocusPosition_FrontLensVertex
-                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                        Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                         Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+" m");
                         break;
                     case 0x8004 : //LensZoom35mmStillCameraEquivalent
                     case 0x8005 : //LensZoomActualFocalLength
-                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                        Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                         Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+" mm");
                         break;
                     case 0x8006 : //OpticalExtenderMagnification
@@ -2621,45 +2621,45 @@ void File_Mxf::Streams_Finish()
                     case 0x810F : //CameraMasterBlackLevel
                     case 0x8110 : //CameraKneePoint
                     case 0x8112 : //CameraLuminanceDynamicRange
-                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                        Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                         Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+"%");
                         break;
                     case 0x8104 : //ImagerDimension_EffectiveWidth
                     case 0x8105 : //ImagerDimension_EffectiveHeight
-                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                        Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                         Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+" mm");
                         break;
                     case 0x8106 : //CaptureFrameRate
-                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                        Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                         Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+" fps");
                         break;
                     case 0x8108 : //ShutterSpeed_Angle
-                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                        Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                         Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+"\xc2\xB0");
                         break;
                     case 0x8109 : //ShutterSpeed_Time
-                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                        Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                         Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+" s");
                         break;
                     case 0x810A : //CameraMasterGainAdjustment
-                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                        Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                         Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+" dB");
                         break;
                     case 0x810E : //WhiteBalance
-                        (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                        Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                         Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+" K");
                         break;
                     default : ;
                 }
                 if (UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony && Pos==0xE203) // Calibration Type, not for display
-                    (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FirstFrame.c_str()), Info_Options)=__T("N NT");
+                    Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                 for (size_t List_Pos=0; List_Pos<AcquisitionMetadataLists[Pos]->size(); List_Pos++)
                 {
                     Fill(Stream_Other, 0, ElementName_Values.c_str(), (*AcquisitionMetadataLists[Pos])[List_Pos].Value);
                     Fill(Stream_Other, 0, ElementName_FrameCounts.c_str(), (*AcquisitionMetadataLists[Pos])[List_Pos].FrameCount);
                 }
-                (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_Values.c_str()), Info_Options)=__T("N NT");
-                (*Stream_More)[Stream_Other][0](Ztring().From_UTF8(ElementName_FrameCounts.c_str()), Info_Options)=__T("N NT");
+                Fill_SetOptions(Stream_Other, 0, ElementName_Values.c_str(), "N NT");
+                Fill_SetOptions(Stream_Other, 0, ElementName_FrameCounts.c_str(), "N NT");
             }
         }
     }
@@ -2915,7 +2915,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
     {
         Fill(StreamKind_Last, StreamPos_Last, "Delay_SDTI", SDTI_TimeCode_StartTimecode.ToMilliseconds());
         if (StreamKind_Last!=Stream_Max)
-            (*Stream_More)[StreamKind_Last][StreamPos_Last](Ztring().From_Local("Delay_SDTI"), Info_Options)=__T("N NT");
+            Fill_SetOptions(StreamKind_Last, StreamPos_Last, "Delay_SDTI", "N NT");
 
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_FirstFrame), SDTI_TimeCode_StartTimecode.c_str());
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_Source), "SDTI");
@@ -2924,7 +2924,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
     {
         Fill(StreamKind_Last, StreamPos_Last, "Delay_SystemScheme1", SystemScheme1_TimeCodeArray_StartTimecode_ms);
         if (StreamKind_Last!=Stream_Max)
-            (*Stream_More)[StreamKind_Last][StreamPos_Last](Ztring().From_Local("Delay_SystemScheme1"), Info_Options)=__T("N NT");
+            Fill_SetOptions(StreamKind_Last, StreamPos_Last, "Delay_SystemScheme1", "N NT");
 
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_FirstFrame), SystemScheme1_TimeCodeArray_StartTimecode.c_str());
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_Source), "System scheme 1");
@@ -2995,9 +2995,9 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             {
                 Fill(StreamKind_Last, StreamPos_Last, StreamMoreSave(Pos, 0).To_Local().c_str(), StreamMoreSave(Pos, 1));
                 if (StreamMoreSave(Pos, Info_Name)==__T("Delay_SDTI"))
-                    (*Stream_More)[StreamKind_Last][StreamPos_Last](Ztring().From_Local("Delay_SDTI"), Info_Options)=__T("N NT");
+                    Fill_SetOptions(StreamKind_Last, StreamPos_Last, "Delay_SDTI", "N NT");
                 if (StreamMoreSave(Pos, Info_Name)==__T("Delay_SystemScheme1"))
-                    (*Stream_More)[StreamKind_Last][StreamPos_Last](Ztring().From_Local("Delay_SystemScheme1"), Info_Options)=__T("N NT");
+                    Fill_SetOptions(StreamKind_Last, StreamPos_Last, "Delay_SystemScheme1", "N NT");
             }
 
             for (size_t Pos=0; Pos<DMScheme1s_List.size(); Pos++)
@@ -3647,9 +3647,10 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
         if (StreamKind_Last==Stream_Audio && Descriptor->second.BlockAlign!=(int16u)-1)
         {
             if (Retrieve(Stream_Audio, StreamPos_Last, "BlockAlignment").empty()) //TODO: check the reason it is sometimes call several times.
+            {
                 Fill(Stream_Audio, StreamPos_Last, "BlockAlignment", Descriptor->second.BlockAlign);
-            if (StreamPos_Last<Count_Get(Stream_Audio))
-                (*Stream_More)[Stream_Audio][StreamPos_Last](Ztring().From_Local("BlockAlignment"), Info_Options)=__T("N NT");
+                Fill_SetOptions(Stream_Audio, StreamPos_Last, "BlockAlignment", "N NT");
+            }
         }
 
         //Subs and ChannelAssignment
@@ -4047,7 +4048,7 @@ void File_Mxf::Streams_Finish_Component_ForAS11(const int128u ComponentUID, floa
                                                             }
                                                     }
                                                     Fill(Stream_Other, StreamPos_Last, "PrimaryAudioLanguage", AS11->second.PrimaryAudioLanguage);
-                                                    //(*Stream_More)[Stream_Other][StreamPos_Last](Ztring().From_Local("PrimaryAudioLanguage"), Info_Options)=__T("N NT");
+                                                    //Fill_SetOptions(Stream_Other][StreamPos_Last](Ztring().From_Local("PrimaryAudioLanguage", "N NT");
                                                     //if (MediaInfoLib::Config.Iso639_Find(AS11->second.PrimaryAudioLanguage).empty())
                                                     //    Fill(Stream_Other, StreamPos_Last, "PrimaryAudioLanguage/String", MediaInfoLib::Config.Iso639_Translate(AS11->second.PrimaryAudioLanguage));
                                                     if (AS11->second.ClosedCaptionsPresent<2)
@@ -16880,7 +16881,7 @@ void File_Mxf::Locators_Test()
             else
             {
                 Fill(Stream_General, 0, "UnsupportedSources", Locator->second.EssenceLocator);
-                (*Stream_More)[Stream_General][0](Ztring().From_Local("UnsupportedSources"), Info_Options)=__T("N NT");
+                Fill_SetOptions(Stream_General, 0, "UnsupportedSources", "N NT");
             }
 
         ReferenceFiles->ParseReferences();
