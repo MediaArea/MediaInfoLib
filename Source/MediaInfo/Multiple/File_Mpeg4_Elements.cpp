@@ -1661,6 +1661,7 @@ void File_Mpeg4::mdat_xxxx()
             {
                 stream::stts_durations::iterator stts_Duration=Stream_Temp.stts_Durations.begin()+Stream_Temp.stts_Durations_Pos;
                 int64u stts_Offset=stts_Duration->DTS_Begin+(((int64u)stts_Duration->SampleDuration)*(Frame_Count_NotParsedIncluded-stts_Duration->Pos_Begin));
+                FrameInfo.DTS=Stream_Temp.mdhd_TimeScale?(TimeCode_DtsOffset+stts_Offset*1000000000/Stream_Temp.mdhd_TimeScale):((int64u)-1);
                 if (!Stream_Temp.edts.empty())
                 {
                     int64s Delay=0;
@@ -1684,12 +1685,11 @@ void File_Mpeg4::mdat_xxxx()
                                 break; //TODO: handle more complex Edit Lists
                     }
 
-                    if (-Delay<(int64s)stts_Offset)
-                        stts_Offset+=Delay;
+                    if (FrameInfo.DTS!=(int64u)-1 && -Delay<(int64s)stts_Offset) //TODO: check potential incoherency between movie timescale and track timescale
+                        FrameInfo.DTS+=Delay*1000000000/moov_mvhd_TimeScale;
                     else
-                        stts_Offset=0;
+                        FrameInfo.DTS=TimeCode_DtsOffset;
                 }
-                FrameInfo.DTS=Stream_Temp.mdhd_TimeScale?(TimeCode_DtsOffset+stts_Offset*1000000000/Stream_Temp.mdhd_TimeScale):((int64u)-1);
                 FrameInfo.PTS=Stream_Temp.PtsDtsAreSame?FrameInfo.DTS:(int64u)-1;
                 FrameInfo.DUR=Stream_Temp.mdhd_TimeScale?(((int64u)stts_Duration->SampleDuration)*1000000000/Stream_Temp.mdhd_TimeScale):((int64u)-1);
                 Stream_Temp.stts_FramePos++;
