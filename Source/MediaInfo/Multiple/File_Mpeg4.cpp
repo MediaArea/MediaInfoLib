@@ -2146,7 +2146,6 @@ bool File_Mpeg4::BookMark_Needed()
             else if (!mdat_Pos.empty() && Config->ParseSpeed>=1)
             {
                 //Trying to see if we must interleave manually
-                int64u stco_Video_First=(int64u)-1;
                 int64u stco_Video_Last=0;
                 int64u stco_Audio_First=(int64u)-1;
                 int64u stco_Audio_Last=0;
@@ -2159,8 +2158,6 @@ bool File_Mpeg4::BookMark_Needed()
                     {
                         if (Stream->second.StreamKind==Stream_Video)
                         {
-                            if (Stream->second.stco[0]<stco_Audio_First)
-                                stco_Video_First=Stream->second.stco[0];
                             if (Stream->second.stco[Stream->second.stco.size()-1]>stco_Video_Last)
                                 stco_Video_Last=Stream->second.stco[Stream->second.stco.size()-1];
                             Videos.push_back(Stream->first);
