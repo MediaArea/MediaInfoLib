@@ -199,7 +199,6 @@ private :
     void moov_trak_mdia_minf_stbl_stss();
     void moov_trak_mdia_minf_stbl_stsz();
     void moov_trak_mdia_minf_stbl_stts();
-    void moov_trak_mdia_minf_stbl_stts_Common(int32u SampleCount, int32u SampleDuration, int32u Pos=0, int32u NumberOfEntries=1);
     void moov_trak_mdia_minf_stbl_stz2() {moov_trak_mdia_minf_stbl_stsz();}
     void moov_trak_meta() {moov_meta();}
     void moov_trak_meta_hdlr() {moov_meta_hdlr();}
@@ -445,11 +444,11 @@ private :
             size_t          stts_Durations_Pos;
             int64u          stts_FramePos;
         #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+        void                moov_trak_mdia_minf_stbl_stts_Common(int32u SampleCount, int32u SampleDuration, int32u Pos=0, int32u NumberOfEntries=1);
         #if MEDIAINFO_DEMUX
             bool            PtsDtsAreSame;
             bool            Demux_EventWasSent;
             int32u          CodecID;
-            void            moov_trak_mdia_minf_stbl_stts_Common(int32u SampleCount, int32u SampleDuration, int32u Pos=0, int32u NumberOfEntries=1);
             void            SplitAudio(File_Mpeg4::stream& Video, int32u moov_mvhd_TimeScale);
         #endif //MEDIAINFO_DEMUX
 

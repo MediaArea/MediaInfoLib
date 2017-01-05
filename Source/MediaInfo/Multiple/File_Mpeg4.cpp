@@ -1903,6 +1903,7 @@ struct stream_temp
 };
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_DEMUX
 void File_Mpeg4::stream::SplitAudio(File_Mpeg4::stream& Video, int32u moov_mvhd_TimeScale)
 {
     //Complex audio edit lists are not supported, but detect fake complex edit lists
@@ -2049,9 +2050,7 @@ void File_Mpeg4::stream::SplitAudio(File_Mpeg4::stream& Video, int32u moov_mvhd_
     stts_Max=0;
     stts_FrameCount=0;
     stts_Duration=0;
-    #if MEDIAINFO_DEMUX
-        stts_Durations.clear();
-    #endif //MEDIAINFO_DEMUX
+    stts_Durations.clear();
     int32u NewStts_Size=(int32u)NewStts.size();
     int64u stts_Duration_Firstrame_Temp=stts_Duration_FirstFrame; //This items ill be not correct with default algo, as we create new scheme
     int64u stts_Duration_LastFrame_Temp=stts_Duration_LastFrame;
@@ -2060,6 +2059,7 @@ void File_Mpeg4::stream::SplitAudio(File_Mpeg4::stream& Video, int32u moov_mvhd_
     stts_Duration_FirstFrame=stts_Duration_Firstrame_Temp;
     stts_Duration_LastFrame=stts_Duration_LastFrame_Temp;
 }
+#endif //MEDIAINFO_DEMUX
 
 //---------------------------------------------------------------------------
 bool File_Mpeg4::BookMark_Needed()
@@ -2131,13 +2131,15 @@ bool File_Mpeg4::BookMark_Needed()
             if (!Temp->second.Parsers.empty())
         {
             //PCM split
-            if (Temp->second.IsPcm)
+            #if MEDIAINFO_DEMUX
+            if (Temp->second.IsPcm && Config->Demux_SplitAudioBlocks_Get())
                 for (std::map<int32u, stream>::iterator Temp2 = Streams.begin(); Temp2 != Streams.end(); ++Temp2) //Looking for the first video stream available
                     if (Temp2->second.StreamKind==Stream_Video)
                     {
                         Temp->second.SplitAudio(Temp2->second, moov_mvhd_TimeScale);
                         break;
                     }
+            #endif //#if MEDIAINFO_DEMUX
 
             if (!Temp->second.File_Name.empty())
             {
