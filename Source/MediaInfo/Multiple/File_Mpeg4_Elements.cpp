@@ -1912,8 +1912,12 @@ void File_Mpeg4::mdat_StreamJump()
         if (!Status[IsAccepted])
             Data_Accept("MPEG-4");
         #if MEDIAINFO_HASH
-            if (Config->File_Hash_Get().to_ulong() && (IsSecondPass && mdat_Pos_NormalParsing))
-                Hash_ParseUpTo=ToJump;
+            if (ToJump==File_Size && Config->File_Hash_Get().to_ulong() && (IsSecondPass && mdat_Pos_NormalParsing))
+            {
+                //This is the end of the parsing, jump to the hash position, for hash only up to the end of the file)
+                Hash_ParseUpTo=File_Size;
+                Data_GoTo(Hash_Offset, "MPEG-4"); 
+            }
             else
         #endif //MEDIAINFO_HASH
                 Data_GoTo(ToJump, "MPEG-4"); //Not just after

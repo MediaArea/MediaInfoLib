@@ -310,6 +310,7 @@ File__Analyze::File__Analyze ()
     //Hash
     #if MEDIAINFO_HASH
         Hash=NULL;
+        Hash_Offset=0;
         Hash_ParseUpTo=0;
     #endif //MEDIAINFO_HASH
 
@@ -548,7 +549,19 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
                 delete Hash; Hash=new HashWrapper(Config->File_Hash_Get().to_ulong());
             }
             if (Hash)
-                Hash->Update(ToAdd, ToAdd_Size);
+            {
+                if (File_Offset+Buffer_Size==Hash_Offset)
+                {
+                    Hash->Update(ToAdd, ToAdd_Size);
+                    Hash_Offset+=ToAdd_Size;
+                }
+                else if (Hash_Offset>File_Offset+Buffer_Size && Hash_Offset<File_Offset+Buffer_Size+ToAdd_Size)
+                {
+                    size_t ToAdd_ToHashSize=(size_t)(File_Offset+Buffer_Size+ToAdd_Size-Hash_Offset);
+                    Hash->Update(ToAdd+ToAdd_Size-ToAdd_ToHashSize, ToAdd_ToHashSize);
+                    Hash_Offset+=ToAdd_ToHashSize;
+                }
+            }
         }
     #endif //MEDIAINFO_HASH
 
@@ -590,6 +603,20 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
         }
     #endif //MEDIAINFO_AES
 
+    #if MEDIAINFO_HASH
+        //Hash parsing only
+        if (Hash_ParseUpTo>File_Offset+Buffer_Size+ToAdd_Size)
+        {
+            File_Offset+=ToAdd_Size;
+            return; //No need of this piece of data
+        }
+        if (Hash_ParseUpTo>=File_Offset && Hash_ParseUpTo<=File_Offset+ToAdd_Size)
+        {
+            Buffer_Offset+=(size_t)(Hash_ParseUpTo-File_Offset);
+            Hash_ParseUpTo=0;
+        }
+    #endif //MEDIAINFO_HASH
+
     //Integrity
     if (Status[IsFinished])
         return;
@@ -606,20 +633,6 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
             return; //No need of this piece of data
         }
     }
-
-    #if MEDIAINFO_HASH
-        //Hash parsing only
-        if (Hash_ParseUpTo>File_Offset+Buffer_Size+ToAdd_Size)
-        {
-            File_Offset+=ToAdd_Size;
-            return; //No need of this piece of data
-        }
-        if (Hash_ParseUpTo>File_Offset && Hash_ParseUpTo<=File_Offset+ToAdd_Size)
-        {
-            Buffer_Offset+=(size_t)(Hash_ParseUpTo-File_Offset);
-            Hash_ParseUpTo=0;
-        }
-    #endif //MEDIAINFO_HASH
 
     if (Buffer_Temp_Size) //There is buffered data from before
     {
@@ -679,7 +692,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
         if (Hash_ParseUpTo>File_Size)
             Hash_ParseUpTo=File_Size;
 
-        if (Hash && File_Offset+Buffer_Size>=Config->File_Current_Size && Status[IsAccepted])
+        if (Hash && Hash_Offset>=Config->File_Current_Size && Status[IsAccepted])
         {
         for (size_t Hash_Pos=0; Hash_Pos<HashWrapper::HashFunction_Max; ++Hash_Pos)
         {
@@ -697,16 +710,17 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
             delete Hash; Hash=NULL;
         }
 
-        if (Hash && File_GoTo!=(int64u)-1)
-        {
-            delete Hash; Hash=NULL; //Hash not possible with a seek
-        }
-
-        if (Hash && Buffer_Offset>Buffer_Size)
+        if (Hash && Buffer_Offset>=Buffer_Size && Hash_Offset>File_Offset+Buffer_Size && Buffer_Offset<Buffer_Size+16*1024*1024)
         {
             //We need the next data
             Hash_ParseUpTo=File_Offset+Buffer_Offset;
             Buffer_Offset=Buffer_Size;
+        }
+        else if (Hash && File_GoTo>Hash_Offset && File_GoTo<Hash_Offset + 16 * 1024 * 1024)
+        {
+            //We need the next data
+            Hash_ParseUpTo=File_GoTo;
+            File_GoTo=Hash_Offset;
         }
     #endif //MEDIAINFO_HASH
 
@@ -3617,9 +3631,6 @@ void File__Analyze::BookMark_Get ()
     }
     if (File_GoTo==(int64u)-1)
     {
-        #if MEDIAINFO_HASH
-            delete Hash; Hash=NULL;
-        #endif //MEDIAINFO_HASH
         File_GoTo=BookMark_GoTo;
     }
 }

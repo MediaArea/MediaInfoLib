@@ -2307,35 +2307,7 @@ bool File_Mpeg4::BookMark_Needed()
 
         mdat_Pos_Temp=&mdat_Pos[0];
         int64u ToJump=mdat_Pos_Temp->Offset;
-        #if MEDIAINFO_DEMUX
-            if (Config->ParseSpeed==1)
-            {
-                std::map<int64u, int64u>::iterator StreamOffset_Jump_Temp=StreamOffset_Jump.find(ToJump);
-                if (StreamOffset_Jump_Temp!=StreamOffset_Jump.end())
-                {
-                    ToJump=StreamOffset_Jump_Temp->second;
-                    while (mdat_Pos_Temp<mdat_Pos_Max && mdat_Pos_Temp->Offset!=ToJump)
-                        mdat_Pos_Temp++;
-
-                    #if MEDIAINFO_HASH
-                        if (Config->File_Hash_Get().to_ulong())
-                        {
-                            // Hash can not be computed with jumps.
-                            delete Hash; Hash=NULL;
-                        }
-                    #endif //MEDIAINFO_HASH
-                }
-            }
-        #endif // MEDIAINFO_DEMUX
-        #if MEDIAINFO_HASH
-            if (Config->File_Hash_Get().to_ulong())
-            {
-                GoTo(0);
-                Hash_ParseUpTo=ToJump;
-            }
-            else
-        #endif //MEDIAINFO_HASH
-                GoTo(ToJump);
+        GoTo(ToJump);
         IsParsing_mdat_Set();
         mdat_Pos_NormalParsing=true;
     }
