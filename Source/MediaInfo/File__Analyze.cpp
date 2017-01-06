@@ -2597,51 +2597,6 @@ void File__Analyze::Data_GoToFromEnd (int64u GoToFromEnd, const char* ParserName
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-#if MEDIAINFO_TRACE
-Ztring Log_Offset (int64u OffsetToShow, MediaInfo_Config::trace_Format Config_Trace_Format)
-{
-    Ztring Pos2;
-
-    switch (Config_Trace_Format)
-    {
-        case MediaInfo_Config::Trace_Format_XML        : break;
-        case MediaInfo_Config::Trace_Format_MICRO_XML  : break;
-        default                                         :
-            if (OffsetToShow==(int64u)-1)
-                return __T("         ");
-            int64u Offset=OffsetToShow%0x100000000ULL; //Only 32 bits
-            Ztring Pos1; Pos1.From_Number(Offset, 16);
-            Pos2.resize(8-Pos1.size(), __T('0'));
-            Pos2+=Pos1;
-            Pos2.MakeUpperCase();
-    }
-    switch (Config_Trace_Format)
-    {
-        case MediaInfo_Config::Trace_Format_Tree        : Pos2+=__T(' '); break;
-        case MediaInfo_Config::Trace_Format_CSV         : Pos2+=__T(','); break;
-        case MediaInfo_Config::Trace_Format_XML         : Pos2+=__T("<data");
-                                                          if (OffsetToShow!=(int64u)-1)
-                                                          {
-                                                               Pos2+=__T(" offset=\"");
-                                                               Pos2+=Ztring().From_Number(OffsetToShow);
-                                                               Pos2+=__T("\"");
-                                                          }
-                                                          break;
-        case MediaInfo_Config::Trace_Format_MICRO_XML   : Pos2+=__T("<");
-                                                          if (OffsetToShow!=(int64u)-1)
-                                                          {
-                                                               Pos2+=__T(" o=\"");
-                                                               Pos2+=Ztring().From_Number(OffsetToShow);
-                                                               Pos2+=__T("\"");
-                                                          }
-                                                          break;
-        default                                         : ;
-    }
-    return Pos2;
-}
-#endif //MEDIAINFO_TRACE
-
-//---------------------------------------------------------------------------
 void File__Analyze::Element_Begin()
 {
     //Level
@@ -2846,9 +2801,6 @@ void File__Analyze::Info(const std::string& Value, size_t Element_Level_Minus)
         return; //Do not display info
 
     //Handling a different level (only Element_Level_Minus to 1 is currently well supported)
-    size_t Element_Level_Final=Element_Level;
-    if (Element_Level_Minus<=Element_Level)
-        Element_Level_Final-=Element_Level_Minus;
 
     if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()))
         return;
