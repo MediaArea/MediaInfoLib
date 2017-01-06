@@ -388,16 +388,6 @@ static void Matroska_CRC32_Compute(int32u &CRC32, const int8u* Buffer_Current, c
 }
 
 //---------------------------------------------------------------------------
-static void Matroska_CRC32_Compute(int32u &CRC32, int32u Init, const int8u* Buffer_Current, const int8u* Buffer_End)
-{
-    CRC32 ^= Init;
-
-    Matroska_CRC32_Compute(CRC32, Buffer_Current, Buffer_End);
-
-    CRC32 ^= Init;
-}
-
-//---------------------------------------------------------------------------
 #if MEDIAINFO_FIXITY
 static size_t Matroska_TryToFixCRC(int8u* Buffer, size_t Buffer_Size, int32u CRCExpected, int8u& Modified)
 {
@@ -4632,8 +4622,16 @@ void File_Mk::CRC32_Check ()
     for (size_t i = 0; i<CRC32Compute.size(); i++)
         if (CRC32Compute[i].UpTo && File_Offset + Buffer_Offset - (size_t)Header_Size >= CRC32Compute[i].From)
         {
-            Matroska_CRC32_Compute(CRC32Compute[i].Computed, Buffer + Buffer_Offset - (size_t)Header_Size, Buffer + Buffer_Offset + (size_t)(Element_WantNextLevel?Element_Offset:Element_Size));
-            if (File_Offset + Buffer_Offset + (Element_WantNextLevel?Element_Offset:Element_Size) >= CRC32Compute[i].UpTo)
+            const size_t Offset=Buffer_Offset + (size_t)(Element_WantNextLevel?Element_Offset:Element_Size);
+            if (Offset>=Buffer_Size)
+            {
+                Fill(Stream_General, 0, "CRC_Buffer_Overrun", CRC32Compute[i].Pos);
+                continue;
+            }
+            Matroska_CRC32_Compute(CRC32Compute[i].Computed,
+                Buffer + Buffer_Offset-(size_t)Header_Size,
+                Buffer + Offset);
+            if (File_Offset + Offset >= CRC32Compute[i].UpTo)
             {
                 CRC32Compute[i].Computed ^= 0xFFFFFFFF;
 
