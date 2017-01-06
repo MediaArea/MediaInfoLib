@@ -493,6 +493,7 @@ private :
     };
     typedef vector<temporal_reference*> temporal_references;
     temporal_references                 TemporalReferences; //per pic_order_cnt_lsb
+    void Clean_Temp_References();
     temporal_reference*                 TemporalReferences_DelayedElement;
     size_t                              TemporalReferences_Min;
     size_t                              TemporalReferences_Max;
@@ -515,6 +516,7 @@ private :
     seq_parameter_set_structs           seq_parameter_sets;
     seq_parameter_set_structs           subset_seq_parameter_sets;
     pic_parameter_set_structs           pic_parameter_sets;
+    void Clean_Seq_Parameter();
 
     //File specific
     int8u                               SizeOfNALU_Minus1;

@@ -170,6 +170,21 @@ File_Hevc::File_Hevc()
 //---------------------------------------------------------------------------
 File_Hevc::~File_Hevc()
 {
+    Clean_Seq_Parameter();
+}
+//---------------------------------------------------------------------------
+void File_Hevc::Clean_Seq_Parameter()
+{
+    for (size_t Pos = 0; Pos < seq_parameter_sets.size(); Pos++)
+        delete seq_parameter_sets[Pos]; //seq_parameter_sets[Pos]=NULL;
+    seq_parameter_sets.clear();
+    for (size_t Pos = 0; Pos<pic_parameter_sets.size(); Pos++)
+        delete pic_parameter_sets[Pos]; //pic_parameter_sets[Pos]=NULL;
+    pic_parameter_sets.clear();
+    for (size_t Pos = 0; Pos<video_parameter_sets.size(); Pos++)
+        delete video_parameter_sets[Pos]; //video_parameter_sets[Pos]=NULL;
+    video_parameter_sets.clear();
+    
 }
 
 //***************************************************************************

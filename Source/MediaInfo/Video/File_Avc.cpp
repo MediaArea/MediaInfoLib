@@ -419,22 +419,33 @@ File_Avc::File_Avc()
 //---------------------------------------------------------------------------
 File_Avc::~File_Avc()
 {
-    for (size_t Pos=0; Pos<TemporalReferences.size(); Pos++)
-        delete TemporalReferences[Pos]; //TemporalReferences[Pos]=NULL;
+    Clean_Temp_References();
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
         delete GA94_03_Parser; //GA94_03_Parser=NULL;
     #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
-
-    for (size_t Pos=0; Pos<seq_parameter_sets.size(); Pos++)
-        delete seq_parameter_sets[Pos]; //TemporalReferences[Pos]=NULL;
-
-    for (size_t Pos=0; Pos<subset_seq_parameter_sets.size(); Pos++)
-        delete subset_seq_parameter_sets[Pos]; //TemporalReferences[Pos]=NULL;
-
-    for (size_t Pos=0; Pos<pic_parameter_sets.size(); Pos++)
-        delete pic_parameter_sets[Pos]; //TemporalReferences[Pos]=NULL;
+     Clean_Seq_Parameter();
 }
 
+//---------------------------------------------------------------------------
+void File_Avc::Clean_Temp_References()
+{
+    for (size_t Pos = 0; Pos<TemporalReferences.size(); Pos++)
+        delete TemporalReferences[Pos]; //TemporalReferences[Pos]=NULL;
+    TemporalReferences.clear();
+}
+//---------------------------------------------------------------------------
+void File_Avc::Clean_Seq_Parameter()
+{
+    for (size_t Pos = 0; Pos<seq_parameter_sets.size(); Pos++)
+        delete seq_parameter_sets[Pos]; //TemporalReferences[Pos]=NULL;
+    seq_parameter_sets.clear();
+    for (size_t Pos = 0; Pos<subset_seq_parameter_sets.size(); Pos++)
+        delete subset_seq_parameter_sets[Pos]; //subset_seq_parameter_sets[Pos]=NULL;
+    subset_seq_parameter_sets.clear();
+    for (size_t Pos = 0; Pos<pic_parameter_sets.size(); Pos++)
+        delete pic_parameter_sets[Pos]; //pic_parameter_sets[Pos]=NULL;
+    pic_parameter_sets.clear();
+}
 //***************************************************************************
 // AVC-Intra hardcoded headers
 //***************************************************************************
@@ -1362,9 +1373,7 @@ void File_Avc::Read_Buffer_SegmentChange()
 void File_Avc::Read_Buffer_Unsynched()
 {
     //Temporal references
-    for (size_t Pos=0; Pos<TemporalReferences.size(); Pos++)
-        delete TemporalReferences[Pos]; //TemporalReferences[Pos]=NULL;
-    TemporalReferences.clear();
+    Clean_Temp_References();
     delete TemporalReferences_DelayedElement; TemporalReferences_DelayedElement=NULL;
     TemporalReferences_Min=0;
     TemporalReferences_Max=0;
@@ -1400,9 +1409,7 @@ void File_Avc::Read_Buffer_Unsynched()
     }
     else
     {
-        seq_parameter_sets.clear();
-        subset_seq_parameter_sets.clear();
-        pic_parameter_sets.clear();
+        Clean_Seq_Parameter();
     }
 
     //Status
@@ -2259,13 +2266,14 @@ void File_Avc::slice_header()
                         {
                             if ((Pos%2)==0)
                                 PictureTypes_PreviousFrames+=Avc_slice_type[TemporalReferences[Pos]->slice_type];
+                            delete TemporalReferences[Pos];
+                            TemporalReferences[Pos] = NULL;
                         }
                         else if (!PictureTypes_PreviousFrames.empty()) //Only if stream already started
                         {
                             if ((Pos%2)==0)
                                 PictureTypes_PreviousFrames+=' ';
                         }
-                        delete TemporalReferences[Pos];
                     }
                     if (PictureTypes_PreviousFrames.size()>=8*TemporalReferences.size())
                         PictureTypes_PreviousFrames.erase(PictureTypes_PreviousFrames.begin(), PictureTypes_PreviousFrames.begin()+PictureTypes_PreviousFrames.size()-TemporalReferences.size());

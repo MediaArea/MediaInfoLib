@@ -399,6 +399,8 @@ private :
     seq_parameter_set_structs           seq_parameter_sets;
     pic_parameter_set_structs           pic_parameter_sets;
 
+    void Clean_Seq_Parameter();
+
     //File specific
     int8u                               lengthSizeMinusOne;
 
