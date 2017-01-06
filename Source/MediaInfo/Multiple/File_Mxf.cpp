@@ -1282,100 +1282,6 @@ static const char* Mxf_CodingEquations(const int128u CodingEquations)
 }
 
 //---------------------------------------------------------------------------
-static const char* Mxf_ChannelAssignment_ChannelPositions(const int128u ChannelLayout, int32u ChannelsCount)
-{
-    //Sound Channel Labeling
-    if ((ChannelLayout.hi&0xFFFFFFFFFFFFFF00LL)!=0x060E2B3404010100LL && (ChannelLayout.lo&0xFFFFFFFF00000000LL)!=0x0402021000000000LL)
-        return "";
-
-    int8u Code5=(int8u)((ChannelLayout.lo&0x00000000FF000000LL)>>24);
-    int8u Code6=(int8u)((ChannelLayout.lo&0x0000000000FF0000LL)>>16);
-    int8u Code7=(int8u)((ChannelLayout.lo&0x000000000000FF00LL)>> 8);
-
-    switch (Code5)
-    {
-        case 0x03 : //SMPTE 429-2
-                    switch (Code6)
-                    {
-                        case 0x01 : //Sets
-                                    switch (Code7)
-                                    {
-                                        case 0x01 : //Config 1
-                                                    switch (ChannelsCount)
-                                                    {
-                                                        case  6 : return "Front: L C R, Side: L R, LFE";
-                                                        default : return "Front: L C R, Side: L R, LFE, HI, VI-N";
-                                                    }
-                                        case 0x02 : //Config 2
-                                                    switch (ChannelsCount)
-                                                    {
-                                                        case  6 : return "Front: L C R, Side: L R, LFE";
-                                                        case  8 : return "Front: L C R, Side: L R, Back: C, LFE";
-                                                        default : return "Front: L C R, Side: L R, Back: C, LFE, HI, VI-N";
-                                                    }
-                                        case 0x03 : //Config 3
-                                                    switch (ChannelsCount)
-                                                    {
-                                                        case  6 : return "Front: L C R, Side: L R, LFE";
-                                                        case  8 : return "Front: L C R, Side: L R, Back: L R, LFE";
-                                                        default : return "Front: L C R, Side: L R, Back: L R, LFE, HI, VI-N";
-                                                    }
-                                        default   : return "";
-                                    }
-                        default   : return "";
-                    }
-        default   : return "";
-    }
-}
-
-//---------------------------------------------------------------------------
-static const char* Mxf_ChannelAssignment_ChannelPositions2(const int128u& ChannelLayout, int32u ChannelsCount=(int32u)-1)
-{
-    //Sound Channel Labeling
-    if ((ChannelLayout.hi&0xFFFFFFFFFFFFFF00LL)!=0x060E2B3404010100LL && (ChannelLayout.lo&0xFFFFFFFF00000000LL)!=0x0402021000000000LL)
-        return "";
-
-    int8u Code5=(int8u)((ChannelLayout.lo&0x00000000FF000000LL)>>24);
-    int8u Code6=(int8u)((ChannelLayout.lo&0x0000000000FF0000LL)>>16);
-    int8u Code7=(int8u)((ChannelLayout.lo&0x000000000000FF00LL)>> 8);
-
-    switch (Code5)
-    {
-        case 0x03 : //SMPTE 429-2
-                    switch (Code6)
-                    {
-                        case 0x01 : //Sets
-                                    switch (Code7)
-                                    {
-                                        case 0x01 : //Config 1
-                                                    switch (ChannelsCount)
-                                                    {
-                                                        case  6 : return "3/2/0.1";
-                                                        default : return "3/2/0.1+2";
-                                                    }
-                                        case 0x02 : //Config 2
-                                                    switch (ChannelsCount)
-                                                    {
-                                                        case  6 : return "3/2/0.1";
-                                                        case  8 : return "3/2/1.1";
-                                                        default : return "3/2/1.1+2";
-                                                    }
-                                        case 0x03 : //Config 3
-                                                    switch (ChannelsCount)
-                                                    {
-                                                        case  6 : return "3/2/0.1";
-                                                        case  8 : return "3/2/2.1";
-                                                        default : return "3/2/2.1+2";
-                                                    }
-                                        default   : return "";
-                                    }
-                        default   : return "";
-                    }
-        default   : return "";
-    }
-}
-
-//---------------------------------------------------------------------------
 static const char* Mxf_ChannelAssignment_ChannelLayout(const int128u& ChannelLayout, int32u ChannelsCount=(int32u)-1)
 {
     //Sound Channel Labeling
@@ -9550,20 +9456,6 @@ void File_Mxf::GenericSoundEssenceDescriptor_ChannelCount()
     FILLING_BEGIN();
         Descriptors[InstanceUID].ChannelCount=Value;
         Descriptor_Fill("Channel(s)", Ztring().From_Number(Value));
-
-        //if (Descriptors[InstanceUID].ChannelAssignment.lo!=(int64u)-1)
-        //{
-            //Descriptors[InstanceUID].Infos["ChannelLayout"]=Mxf_ChannelAssignment_ChannelLayout(Descriptors[InstanceUID].ChannelAssignment, Value);
-            //Ztring ChannelLayoutID;
-            //ChannelLayoutID.From_Number(Descriptors[InstanceUID].ChannelAssignment.lo, 16);
-            //if (ChannelLayoutID.size()<16)
-            //    ChannelLayoutID.insert(0, 16-ChannelLayoutID.size(), __T('0'));
-            //Descriptors[InstanceUID].Infos["ChannelLayoutID"]=ChannelLayoutID;
-            //Descriptors[InstanceUID].Infos["ChannelPositions"]=Mxf_ChannelAssignment_ChannelPositions(Descriptors[InstanceUID].ChannelAssignment, Value);
-            //if (Descriptors[InstanceUID].Infos["ChannelPositions"].empty())
-            //    Descriptors[InstanceUID].Infos["ChannelPositions"]=ChannelLayoutID;
-            //Descriptors[InstanceUID].Infos["ChannelPositions/String2"]=Mxf_ChannelAssignment_ChannelPositions2(Descriptors[InstanceUID].ChannelAssignment, Value);
-        //}
     FILLING_END();
 }
 

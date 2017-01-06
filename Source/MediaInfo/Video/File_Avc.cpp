@@ -1906,7 +1906,8 @@ void File_Avc::slice_header()
 
     //Parsing
     int32u  slice_type, pic_order_cnt_lsb=(int32u)-1;
-    int32u  first_mb_in_slice, pic_parameter_set_id, frame_num, num_ref_idx_l0_active_minus1, num_ref_idx_l1_active_minus1, disable_deblocking_filter_idc, num_slice_groups_minus1, slice_group_map_type;
+    int32u  first_mb_in_slice, pic_parameter_set_id, frame_num, num_ref_idx_l0_active_minus1, num_ref_idx_l1_active_minus1, disable_deblocking_filter_idc;
+
     int32s  delta_pic_order_cnt_bottom=0;
     bool    field_pic_flag=false, bottom_field_flag=false;
     Get_UE (first_mb_in_slice,                                  "first_mb_in_slice");
@@ -2069,10 +2070,6 @@ void File_Avc::slice_header()
             Skip_SE(                                           "slice_beta_offset_div2");
         }
     }
-    num_slice_groups_minus1=(*pic_parameter_set_Item)->num_slice_groups_minus1; //Default
-    slice_group_map_type=(*pic_parameter_set_Item)->slice_group_map_type; //Default
-    //if (num_slice_groups_minus1 > 0 && slice_group_map_type >=3 && slice_group_map_type <=5)
-    //    Get_BS ((*seq_parameter_set_Item)->log2_max_slice_group_change_cycle_minus4+4, slice_group_change_cycle, "slice_group_change_cycle");
 
     Element_End0();
 

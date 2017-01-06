@@ -1078,8 +1078,8 @@ void File_Flv::video_VP6(bool WithAlpha)
     {
         int8u Version, Version2, Width, Height;
         BS_Begin();
-        Get_S1 ( 5, Version,                                    "Version");
-        Get_S1 ( 2, Version2,                                   "Version2");
+        Get_S1 ( 5, Version,                                    "Version"); Param_Info1(Flv_VP6_Version[Version]);
+        Get_S1 ( 2, Version2,                                   "Version2"); Param_Info1(Flv_VP6_Version2[Version2]);
         Skip_SB(                                                "Interlace");
         BS_End();
         if (Marker || Version2==0)

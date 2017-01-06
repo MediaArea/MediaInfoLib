@@ -1863,7 +1863,6 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                         float64 DurationF=Duration;
                         DurationF*=Value;
                         DurationF/=10; // divided by 10000 for 0.01 percentage then x1000 for milliseconds
-                        int64u DurationM=(int64u)DurationF;
 
                         CountOfReferencesToParse=Sequences.size();
                         bool HasProblem=false;
