@@ -83,3 +83,46 @@ print(MI.Get(Stream.Audio, 0, "StreamCount"))
 print("")
 print("Close")
 MI.Close()
+
+#By buffer example
+
+#Open example file for reading
+try:
+    File=open('Example.ogg', 'rb')
+except IOError:
+    exit(1)
+
+#Get file size
+File.seek(0,2)
+Size=File.tell()
+File.seek(0)
+
+print("")
+print("Open_Buffer_Init")
+MI.Open_Buffer_Init(Size, 0)
+
+print("")
+print("Parsing loop")
+while True:
+    Buffer=File.read(7*188)
+    if Buffer:
+        #Send the buffer to MediaInfo
+        Status=c_size_t(MI.Open_Buffer_Continue(Buffer, len(Buffer))).value
+        if Status & 0x08: #Bit3=Finished
+            break
+
+        #Test if there is a MediaInfo request to go elsewhere
+        Seek = c_longlong(MI.Open_Buffer_Continue_GoTo_Get()).value
+        if  Seek != -1:
+            File.seek(Seek) #Seek the file
+            MI.Open_Buffer_Init(Size, File.tell()) #Inform MediaInfo we have seek
+    else:
+        break
+
+print("")
+print("Open_Buffer_Finalize")
+MI.Open_Buffer_Finalize()
+
+print("")
+print("Get with Stream=General and Parameter='Format'")
+print(MI.Get(Stream.General, 0, "Format"))
