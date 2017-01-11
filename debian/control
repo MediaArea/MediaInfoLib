@@ -53,7 +53,7 @@ Package: libmediainfo0
 Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, libzen0 (>= 0.4.34)
 Description: library for reading metadata from media files -- shared library
  MediaInfo is a library used for retrieving technical information and other
  metadata about audio or video files.
