@@ -1340,10 +1340,11 @@ void File_Ac3::Synched_Init()
 {
     //FrameInfo
     PTS_End=0;
-    if (FrameInfo.DTS==(int64u)-1)
+    if (!IsSub)
+    {
         FrameInfo.DTS=0; //No DTS in container
-    if (FrameInfo.PTS==(int64u)-1)
         FrameInfo.PTS=0; //No PTS in container
+    }
     DTS_Begin=FrameInfo.DTS;
     DTS_End=FrameInfo.DTS;
     if (Frame_Count_NotParsedIncluded==(int64u)-1)
@@ -2142,7 +2143,7 @@ void File_Ac3::HD()
         if (FrameInfo.DTS!=(int64u)-1)
             FrameInfo.DTS+=FrameInfo.DUR;
         if (FrameInfo.PTS!=(int64u)-1)
-            FrameInfo.PTS=FrameInfo.DTS;
+            FrameInfo.PTS+=FrameInfo.DUR;
 
         //Filling
         if (!Status[IsAccepted])

@@ -1034,9 +1034,9 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
         if (Frequency_c)
             Sub->Frequency_c=Frequency_c;
     #endif //MEDIAINFO_ADVANCED2
-    if (Sub->FrameInfo.DTS!=(int64u)-1)
+    if (Sub->FrameInfo.DTS!=(int64u)-1 || Sub->FrameInfo.PTS!=(int64u)-1)
         Sub->FrameInfo.Buffer_Offset_End=Sub->Buffer_Offset+Sub->Buffer_Size+ToAdd_Size;
-    else if (Sub->FrameInfo_Previous.DTS!=(int64u)-1)
+    else if (Sub->FrameInfo_Previous.DTS!=(int64u)-1 || Sub->FrameInfo_Previous.PTS!=(int64u)-1)
         Sub->FrameInfo_Previous.Buffer_Offset_End=Sub->Buffer_Offset+Sub->Buffer_Size+ToAdd_Size;
     if (Sub->FrameInfo_Previous.DTS!=(int64u)-1)
     {
