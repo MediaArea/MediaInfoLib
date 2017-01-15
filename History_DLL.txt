@@ -14,6 +14,7 @@ Version 0.7.92
 + MP4: more AppleStoreCountry values mapped to countries, show the country number if unknown
 + File extension: test if the file extension correspond to the container format
 + AVI/WAV: test of truncated file
++ MIXML output: Format_Profile divided in Format_Profile, Format_Level, Format_Tier
 x MIXML output: some *_Original values were missing
 x MXF/Teletext: was not correctly detecting non subtitle streams
 
