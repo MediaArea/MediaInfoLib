@@ -5870,7 +5870,7 @@ void File_Mxf::Data_Parse()
                             if (Format.empty())
                                 Format.From_Local(Mxf_EssenceContainer(Descriptor->second.EssenceContainer));
                             if (Format.find(__T("PCM"))==0)
-                                i->second=__T("Little");
+                                Descriptor->second.Infos["Format_Settings_Endianness"]=__T("Little");
                         }
                     }
 
