@@ -1533,6 +1533,8 @@ void MediaInfo_Config_CodecID_Video_Mpeg4 (InfoMap &Info)
     "kpcd;Photo CD;;;;;;\n"
     "LMP2;MPEG Video;;;;;;YUV\n"
     "M105;Matrox;;;http://www.matrox.com/;;;\n"
+    "m1v ;MPEG Video;;;;;;\n"
+    "m2v1;MPEG Video;;;;;;\n"
     "MMES;MPEG Video;;;;;;YUV\n"
     "mmes;MPEG Video;;;;;;YUV\n"
     "mjp2;JPEG 2000;;;;;;\n"
