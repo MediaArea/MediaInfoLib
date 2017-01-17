@@ -1300,16 +1300,7 @@ void File__Analyze::Open_Buffer_Finalize (bool NoBufferModification)
 
     #if MEDIAINFO_TRACE
     if (Details && Details->empty())
-    {
-        Element[0].TraceNode.Print(Config_Trace_Format, *Details);
-        if (Config_LineSeparator != __T("\n"))
-        {
-            Ztring Temp;
-            Temp.From_UTF8(*Details);
-            Temp.FindAndReplace(__T("\n"), Config_LineSeparator, 0, Ztring_Recursive);
-            *Details=Temp.To_UTF8();
-        }
-    }
+        Element[0].TraceNode.Print(Config_Trace_Format, *Details, Config_LineSeparator.To_UTF8());
     #endif //MEDIAINFO_TRACE
 
     #if MEDIAINFO_EVENTS

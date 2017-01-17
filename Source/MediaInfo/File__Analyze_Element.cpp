@@ -779,7 +779,7 @@ int element_details::Element_Node::Print_Xml(print_struc& s)
     else
         s.ss << " size=\"" << Size << "\">";
 
-    s.ss << "\n";
+    s.ss << s.eol;
 
     s.level += 4;
 print_children:
@@ -794,7 +794,7 @@ print_children:
         if (Value.empty())
         {
             //block
-            s.ss << spaces << "</block>" << "\n";
+            s.ss << spaces << "</block>" << s.eol;
         }
     }
 
@@ -818,9 +818,9 @@ int element_details::Element_Node::Print_Tree_Cat(print_struc& s)
     std::string minuses;
     minuses.resize(ToShow.size(), '-');
 
-    s.ss << offset.str() << spaces << minuses << "\n";
-    s.ss << offset.str() << spaces << ToShow << "\n";
-    s.ss << offset.str() << spaces << minuses << "\n";
+    s.ss << offset.str() << spaces << minuses << s.eol;
+    s.ss << offset.str() << spaces << ToShow << s.eol;
+    s.ss << offset.str() << spaces << minuses << s.eol;
     return 0;
 }
 
@@ -877,7 +877,7 @@ int element_details::Element_Node::Print_Tree(print_struc& s)
     if (Value.empty())
         s.ss << " (" << Size << " bytes)";
 
-    s.ss << "\n";
+    s.ss << s.eol;
 
     s.level++;
 print_children:
@@ -891,11 +891,11 @@ print_children:
 }
 
 //---------------------------------------------------------------------------
-int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, std::string& Str)
+int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, std::string& Str, const string& eol)
 {
     std::ostringstream ss;
     int ret = -1;
-    print_struc s(ss);
+    print_struc s(ss, eol);
     switch (Format)
     {
         case MediaInfo_Config::Trace_Format_Tree:
