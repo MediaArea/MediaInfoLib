@@ -37,7 +37,14 @@ public :
     ~File_Mk();
 
 private :
+    //Buffer - Global
+    void Read_Buffer_Unsynched();
+    #if MEDIAINFO_SEEK
+    size_t Read_Buffer_Seek (size_t Method, int64u Value, int64u ID);
+    #endif //MEDIAINFO_SEEK
+
     //Buffer
+    bool Header_Begin();
     void Header_Parse();
     void Data_Parse();
 
@@ -94,6 +101,7 @@ private :
     void Segment_Cluster();
     void Segment_Cluster_BlockGroup();
     void Segment_Cluster_BlockGroup_Block();
+    void Segment_Cluster_BlockGroup_Block_Lace();
     void Segment_Cluster_BlockGroup_BlockAdditions();
     void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore();
     void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAddID();
@@ -383,6 +391,11 @@ private :
     std::vector<Ztring> Segment_Tag_SimpleTag_TagNames;
     int64u Segment_Cluster_BlockGroup_BlockDuration_Value;
     int64u Segment_Cluster_BlockGroup_BlockDuration_TrackNumber;
+    std::vector<int64u> Laces;
+    size_t              Laces_Pos;
+    #if MEDIAINFO_DEMUX
+        int64u              Demux_EventWasSent;
+    #endif //MEDIAINFO_DEMUX
 
     //Hints
     size_t*                 File_Buffer_Size_Hint_Pointer;
