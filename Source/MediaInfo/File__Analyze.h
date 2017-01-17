@@ -1298,7 +1298,7 @@ public: //TO CHANGE
     BitStream*      BT;             //For conversion from bytes to bitstream
 public : //TO CHANGE
     int64u Header_Size;             //Size of the header of the current element
-    Ztring Details_Get(size_t Level=0) { std::string str; if (Element[Level].TraceNode.Print(Config_Trace_Format, str) < 0) return Ztring(); return Ztring().From_UTF8(str);}
+    Ztring Details_Get(size_t Level=0) { std::string str; if (Element[Level].TraceNode.Print(Config_Trace_Format, str, Config_LineSeparator.To_UTF8(), File_Size) < 0) return Ztring(); return Ztring().From_UTF8(str);}
     void   Details_Clear();
 protected :
     bool Trace_DoNotSave;
