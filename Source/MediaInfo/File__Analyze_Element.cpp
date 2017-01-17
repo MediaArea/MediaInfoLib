@@ -805,7 +805,7 @@ print_children:
 int element_details::Element_Node::Print_Tree_Cat(print_struc& s)
 {
     std::ostringstream offset;
-    offset << std::setfill('0') << std::setw(8) << std::hex << std::uppercase << Pos << std::nouppercase << std::dec;
+    offset << std::setfill('0') << std::setw(s.offset_size) << std::hex << std::uppercase << Pos << std::nouppercase << std::dec;
 
     std::string spaces;
     spaces.resize(s.level, ' ');
@@ -837,7 +837,7 @@ int element_details::Element_Node::Print_Tree(print_struc& s)
     else if (Name_Is_Empty())
         goto print_children;
 
-    s.ss << std::setfill('0') << std::setw(8) << std::hex << std::uppercase << Pos << std::nouppercase << std::dec;
+    s.ss << std::setfill('0') << std::setw(s.offset_size) << std::hex << std::uppercase << Pos << std::nouppercase << std::dec;
     spaces.resize(s.level, ' ');
     s.ss << spaces;
     s.ss << Name;
@@ -891,11 +891,18 @@ print_children:
 }
 
 //---------------------------------------------------------------------------
-int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, std::string& Str, const string& eol)
+int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, std::string& Str, const string& eol, int64u File_Size)
 {
+    //Computing how many characters are needed for displaying maximum file size
+    size_t offset_size = sizeof(File_Size)*8-1;
+    while ((((int64u)1) << offset_size) - 1 >= File_Size)
+        offset_size--;
+    offset_size++;
+    offset_size = (offset_size / 4) + ((offset_size % 4) ? 1 : 0); //4 bits per offset char
+
     std::ostringstream ss;
     int ret = -1;
-    print_struc s(ss, eol);
+    print_struc s(ss, eol, offset_size);
     switch (Format)
     {
         case MediaInfo_Config::Trace_Format_Tree:

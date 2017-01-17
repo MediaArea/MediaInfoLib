@@ -162,19 +162,21 @@ struct element_details
         bool Name_Is_Empty() const {return Name.empty();}
 
         // Print
-        int  Print(MediaInfo_Config::trace_Format Format, std::string& str, const string& eol);  //Print the node into str
+        int  Print(MediaInfo_Config::trace_Format Format, std::string& str, const string& eol, int64u File_Size);  //Print the node into str
 
     private:
         struct print_struc
         {
             std::ostringstream& ss;
             const string eol;
+            const size_t offset_size;
             size_t level;
 
-            print_struc(std::ostringstream& ss_, const string& eol_)
+            print_struc(std::ostringstream& ss_, const string& eol_, size_t offset_size_)
                 :
                 ss(ss_),
                 eol(eol_),
+                offset_size(offset_size_),
                 level(0)
             {
             }

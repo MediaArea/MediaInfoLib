@@ -1300,7 +1300,7 @@ void File__Analyze::Open_Buffer_Finalize (bool NoBufferModification)
 
     #if MEDIAINFO_TRACE
     if (Details && Details->empty())
-        Element[0].TraceNode.Print(Config_Trace_Format, *Details, Config_LineSeparator.To_UTF8());
+        Element[0].TraceNode.Print(Config_Trace_Format, *Details, Config_LineSeparator.To_UTF8(), File_Size);
     #endif //MEDIAINFO_TRACE
 
     #if MEDIAINFO_EVENTS
