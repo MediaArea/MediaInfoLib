@@ -271,7 +271,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                 Ztring Value2(Value);
                 Ztring Format_Profile_More=Value2.substr(SeparatorPos+1);
                 Value2.erase(SeparatorPos);
-                if (Format_Profile_More[0] == __T('L'))
+                if (Format_Profile_More.size()>=2 && Format_Profile_More[0]==__T('L') && Format_Profile_More[1]>=__T('0') && Format_Profile_More[1]<=__T('9'))
                     Format_Profile_More.erase(0, 1);
                 size_t SeparatorPos=Format_Profile_More.find(__T('@'));
                 Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format_Profile), Value2, Replace);
