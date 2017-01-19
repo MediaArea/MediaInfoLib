@@ -1834,7 +1834,7 @@ void File_Hevc::sei_message(int32u &seq_parameter_set_id)
         case   1 :   sei_message_pic_timing(seq_parameter_set_id, payloadSize); break;
         //case   4 :   sei_message_user_data_registered_itu_t_t35(); break;
         case   5 :   sei_message_user_data_unregistered(payloadSize); break;
-        //case   6 :   sei_message_recovery_point(); break;
+        case   6 :   sei_message_recovery_point(); break;
         //case  32 :   sei_message_mainconcept(payloadSize); break;
         case 129 :   sei_message_active_parameter_sets(); break;
         case 132 :   sei_message_decoded_picture_hash(payloadSize); break;
@@ -2094,6 +2094,20 @@ void File_Hevc::sei_message_user_data_unregistered_x265(int32u payloadSize)
     }
     else
         Encoded_Library_Name=Encoded_Library;
+}
+
+//---------------------------------------------------------------------------
+// SEI - 6
+void File_Hevc::sei_message_recovery_point()
+{
+    Element_Info1("recovery_point");
+
+    //Parsing
+    BS_Begin();
+    Skip_SE(                                                    "recovery_poc_cnt");
+    Skip_SB(                                                    "exact_match_flag");
+    Skip_SB(                                                    "broken_link_flag");
+    BS_End();
 }
 
 //---------------------------------------------------------------------------
