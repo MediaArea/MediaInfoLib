@@ -12,6 +12,7 @@ Version 0.7.92
 --------------
 + #F507, MXF: detection of HLG Transfer Characteristic
 + #F508, HEVC: support of preferred_transfer_characteristics SEI (from HEVC/H.265 draft, preferred method for HLG in DVB)
++ MXF: parsing of AVC descriptors and crosscheck with the essence content
 + MP4: more AppleStoreCountry values mapped to countries, show the country number if unknown
 + File extension: test if the file extension correspond to the container format
 + AVI/WAV: test of truncated file
