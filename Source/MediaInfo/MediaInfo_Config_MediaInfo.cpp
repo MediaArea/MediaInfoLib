@@ -1741,55 +1741,56 @@ bool MediaInfo_Config_MediaInfo::File_Filter_HasChanged ()
 Ztring MediaInfo_Config_MediaInfo::File_Duplicate_Set (const Ztring &Value_In)
 {
     //Preparing for File__Duplicate...
-    CS.Enter();
-    File__Duplicate_List.push_back(Value_In);
-
-    //Handling Memory index
     Ztring ToReturn;
-    ZtringList List=Value_In;
-    for (size_t Pos=0; Pos<List.size(); Pos++)
     {
-        //Form= "(-)Data", if "-" the value will be removed
-        Ztring &Value=List[Pos];
-        bool ToRemove=false;
-        if (Value.find(__T('-'))==0)
-        {
-            Value.erase(Value.begin());
-            ToRemove=true;
-        }
+        CriticalSectionLocker CSL(CS);
+        File__Duplicate_List.push_back(Value_In);
 
-        //Testing if this is information about a target
-        if (List[Pos].find(__T("memory:"))==0 || List[Pos].find(__T("file:"))==0)
+        //Handling Memory index
+        ZtringList List = Value_In;
+        for (size_t Pos = 0; Pos < List.size(); Pos++)
         {
-            //Searching if already exist
-            size_t Memory_Pos=File__Duplicate_Memory_Indexes.Find(List[Pos]);
-            if (!ToRemove && Memory_Pos==Error)
+            //Form= "(-)Data", if "-" the value will be removed
+            Ztring &Value = List[Pos];
+            bool ToRemove = false;
+            if (Value.find(__T('-')) == 0)
             {
-                //Does not exist yet (and adding is wanted)
-                Memory_Pos=File__Duplicate_Memory_Indexes.Find(__T(""));
-                if (Memory_Pos!=Error)
-                    File__Duplicate_Memory_Indexes[Memory_Pos]=List[Pos]; //A free place is found
-                else
+                Value.erase(Value.begin());
+                ToRemove = true;
+            }
+
+            //Testing if this is information about a target
+            if (List[Pos].find(__T("memory:")) == 0 || List[Pos].find(__T("file:")) == 0)
+            {
+                //Searching if already exist
+                size_t Memory_Pos = File__Duplicate_Memory_Indexes.Find(List[Pos]);
+                if (!ToRemove && Memory_Pos == Error)
                 {
-                    //Adding the place at the end
-                    Memory_Pos=File__Duplicate_Memory_Indexes.size();
-                    File__Duplicate_Memory_Indexes.push_back(List[Pos]);
+                    //Does not exist yet (and adding is wanted)
+                    Memory_Pos = File__Duplicate_Memory_Indexes.Find(__T(""));
+                    if (Memory_Pos != Error)
+                        File__Duplicate_Memory_Indexes[Memory_Pos] = List[Pos]; //A free place is found
+                    else
+                    {
+                        //Adding the place at the end
+                        Memory_Pos = File__Duplicate_Memory_Indexes.size();
+                        File__Duplicate_Memory_Indexes.push_back(List[Pos]);
+                    }
                 }
-            }
-            else if (ToRemove)
-            {
-                //Exists yet but Removal is wanted
-                File__Duplicate_Memory_Indexes[Memory_Pos].clear();
-                Memory_Pos=(size_t)-1;
-            }
+                else if (ToRemove)
+                {
+                    //Exists yet but Removal is wanted
+                    File__Duplicate_Memory_Indexes[Memory_Pos].clear();
+                    Memory_Pos = (size_t)-1;
+                }
 
-            ToReturn+=__T(";")+Ztring().From_Number(Memory_Pos);
+                ToReturn += __T(";") + Ztring().From_Number(Memory_Pos);
+            }
         }
-    }
-    if (!ToReturn.empty())
-        ToReturn.erase(ToReturn.begin()); //Remove first ";"
+        if (!ToReturn.empty())
+            ToReturn.erase(ToReturn.begin()); //Remove first ";"
 
-    CS.Leave();
+    }
     File_IsSeekable_Set(false); //If duplication, we can not seek anymore
 
     return ToReturn;
@@ -2836,9 +2837,8 @@ void MediaInfo_Config_MediaInfo::File_MpegTs_stream_type_Trust_Set (bool NewValu
 
 bool MediaInfo_Config_MediaInfo::File_MpegTs_stream_type_Trust_Get ()
 {
-    CS.Enter();
-    bool Temp=File_MpegTs_stream_type_Trust;
-    CS.Leave();
+    CriticalSectionLocker CSL(CS);
+    const bool Temp=File_MpegTs_stream_type_Trust;    
     return Temp;
 }
 
@@ -2851,9 +2851,8 @@ void MediaInfo_Config_MediaInfo::File_MpegTs_Atsc_transport_stream_id_Trust_Set 
 
 bool MediaInfo_Config_MediaInfo::File_MpegTs_Atsc_transport_stream_id_Trust_Get ()
 {
-    CS.Enter();
-    bool Temp=File_MpegTs_Atsc_transport_stream_id_Trust;
-    CS.Leave();
+    CriticalSectionLocker CSL(CS);
+    const bool Temp=File_MpegTs_Atsc_transport_stream_id_Trust;
     return Temp;
 }
 
@@ -2866,9 +2865,8 @@ void MediaInfo_Config_MediaInfo::File_MpegTs_RealTime_Set (bool NewValue)
 
 bool MediaInfo_Config_MediaInfo::File_MpegTs_RealTime_Get ()
 {
-    CS.Enter();
-    bool Temp=File_MpegTs_RealTime;
-    CS.Leave();
+    CriticalSectionLocker CSL(CS);
+    const bool Temp=File_MpegTs_RealTime;
     return Temp;
 }
 
@@ -2881,9 +2879,8 @@ void MediaInfo_Config_MediaInfo::File_Mxf_TimeCodeFromMaterialPackage_Set (bool 
 
 bool MediaInfo_Config_MediaInfo::File_Mxf_TimeCodeFromMaterialPackage_Get ()
 {
-    CS.Enter();
-    bool Temp=File_Mxf_TimeCodeFromMaterialPackage;
-    CS.Leave();
+    CriticalSectionLocker CSL(CS);
+    const bool Temp=File_Mxf_TimeCodeFromMaterialPackage;
     return Temp;
 }
 
@@ -2896,9 +2893,8 @@ void MediaInfo_Config_MediaInfo::File_Mxf_ParseIndex_Set (bool NewValue)
 
 bool MediaInfo_Config_MediaInfo::File_Mxf_ParseIndex_Get ()
 {
-    CS.Enter();
-    bool Temp=File_Mxf_ParseIndex;
-    CS.Leave();
+    CriticalSectionLocker CSL(CS);
+    const bool Temp=File_Mxf_ParseIndex;
     return Temp;
 }
 

@@ -52,29 +52,29 @@ void Reader_File_Thread::Entry()
 
     for (;;)
     {
-        Base->CS.Enter();
-        if (Base->Buffer_Begin==Base->Buffer_Max)
-        {
-            Base->IsLooping=false;
-            Base->Buffer_End=Base->Buffer_End2;
-            Base->Buffer_End2=0;
-            Base->Buffer_Begin=0;
-        }
+		size_t ToRead;
+		size_t Buffer_ToReadOffset;
+		{
+			CriticalSectionLocker CSL(Base->CS);
+			if (Base->Buffer_Begin == Base->Buffer_Max)
+			{
+				Base->IsLooping = false;
+				Base->Buffer_End = Base->Buffer_End2;
+				Base->Buffer_End2 = 0;
+				Base->Buffer_Begin = 0;
+			}
 
-        size_t ToRead;
-        size_t Buffer_ToReadOffset;
-        if (Base->IsLooping)
-        {
-            ToRead=Base->Buffer_Begin-Base->Buffer_End2;
-            Buffer_ToReadOffset=Base->Buffer_End2;
-        }
-        else
-        {
-            ToRead=Base->Buffer_Max-Base->Buffer_End;
-            Buffer_ToReadOffset=Base->Buffer_End;
-        }
-        Base->CS.Leave();
-
+			if (Base->IsLooping)
+			{
+				ToRead = Base->Buffer_Begin - Base->Buffer_End2;
+				Buffer_ToReadOffset = Base->Buffer_End2;
+			}
+			else
+			{
+				ToRead = Base->Buffer_Max - Base->Buffer_End;
+				Buffer_ToReadOffset = Base->Buffer_End;
+			}
+		}
         if (ToRead)
         {
             if (ToRead>ReadSize_Max)
@@ -83,21 +83,21 @@ void Reader_File_Thread::Entry()
             if (!BytesRead)
                 break;
 
-            Base->CS.Enter();
-            if (Base->IsLooping)
-            {
-                Base->Buffer_End2+=BytesRead;
-            }
-            else
-            {
-                Base->Buffer_End+=BytesRead;
-                if (Base->Buffer_End==Base->Buffer_Max)
-                {
-                    Base->IsLooping=true;
-                }
-            }
-            Base->CS.Leave();
-
+			{
+				CriticalSectionLocker CSL(Base->CS);
+				if (Base->IsLooping)
+				{
+					Base->Buffer_End2 += BytesRead;
+				}
+				else
+				{
+					Base->Buffer_End += BytesRead;
+					if (Base->Buffer_End == Base->Buffer_Max)
+					{
+						Base->IsLooping = true;
+					}
+				}
+			}
             #ifdef WINDOWS
                 SetEvent(Base->Condition_WaitingForMoreData);
             #endif //WINDOWS
