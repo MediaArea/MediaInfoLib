@@ -22,7 +22,8 @@ Format/Url;;;N NT;;;Homepage of this format;;
 Format_Commercial;;;N YT;;;Commercial name used by vendor for theses setings or Format field if there is no difference;;
 Format_Commercial_IfAny;;;Y YTY;;;Commercial name used by vendor for theses setings if there is one;;
 Format_Version;;;Y YTY;;;Version of this format;;
-Format_Profile;;;Y YTY;;;Profile of this Format;;
+Format_Profile;;;Y YTY;;;Profile of the Format (old XML: 'Profile@Level' format; MIXML: 'Profile' only)
+Format_Level;;;Y YTY;;;Level of the Format (only MIXML)
 Format_Compression;;;Y YTY;;;Compression method used;;
 Format_Settings;;;N YT;;;Settings needed for decoder used, summary;;
 Format_Settings_SBR;;Yes;N YTY;;;;;

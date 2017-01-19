@@ -203,6 +203,9 @@ void MediaInfo_Config::Init()
         MpegTs_VbrDetection_Occurences=4;
         MpegTs_VbrDetection_GiveUp=false;
     #endif //MEDIAINFO_ADVANCED
+    #if MEDIAINFO_ADVANCED
+        Format_Profile_Split=false;
+    #endif //MEDIAINFO_ADVANCED
     Complete=0;
     BlockMethod=0;
     Internet=0;
@@ -887,6 +890,23 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     {
         CustomMapping_Set(Value);
         return Ztring();
+    }
+    else if (Option_Lower==__T("format_profile_split"))
+    {
+        #if MEDIAINFO_ADVANCED
+            Format_Profile_Split_Set(Value.To_int8u()?true:false);
+            return Ztring();
+        #else // MEDIAINFO_ADVANCED
+            return __T("advanced features are disabled due to compilation options");
+        #endif // MEDIAINFO_ADVANCED
+    }
+    else if (Option_Lower==__T("format_profile_split_get"))
+    {
+        #if MEDIAINFO_ADVANCED
+            return Format_Profile_Split_Get()?__T("1"):__T("0");;
+        #else // MEDIAINFO_ADVANCED
+            return __T("advanced features are disabled due to compilation options");
+        #endif // MEDIAINFO_ADVANCED
     }
     else if (Option_Lower==__T("event_callbackfunction"))
     {
@@ -2383,6 +2403,24 @@ bool MediaInfo_Config::CustomMapping_IsPresent(const Ztring &Format, const Ztrin
         return false;
     return true;
 }
+
+//***************************************************************************
+// Report changes
+//***************************************************************************
+
+#if MEDIAINFO_ADVANCED
+void MediaInfo_Config::Format_Profile_Split_Set(bool Value)
+{
+    CriticalSectionLocker CSL(CS);
+    Format_Profile_Split=Value;
+}
+
+bool MediaInfo_Config::Format_Profile_Split_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return Format_Profile_Split;
+}
+#endif // MEDIAINFO_ADVANCED
 
 //***************************************************************************
 // Event

@@ -552,7 +552,7 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
 
                     if (!Format_Profile_More.empty())
                     {
-                        if (Format_Profile_More[0] == __T('L'))
+                        if (Format_Profile_More.size()>=2 && Format_Profile_More[0]==__T('L') && Format_Profile_More[1]>=__T('0') && Format_Profile_More[1]<=__T('9'))
                             Format_Profile_More.erase(0, 1);
                         size_t SeparatorPos=Format_Profile_More.find(__T('@'));
                         if (SeparatorPos!=string::npos)
