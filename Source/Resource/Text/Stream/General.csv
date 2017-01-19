@@ -63,7 +63,8 @@ Format/Extensions;;;N NT;;;Known extensions of this format
 Format_Commercial;;;N NT;;;Commercial name used by vendor for theses setings or Format field if there is no difference
 Format_Commercial_IfAny;;;Y YTY;;;Commercial name used by vendor for theses setings if there is one
 Format_Version;;;Y YTY;;;Version of this format
-Format_Profile;;;Y YTY;;;Profile of the Format
+Format_Profile;;;Y YTY;;;Profile of the Format (old XML: 'Profile@Level' format; MIXML: 'Profile' only)
+Format_Level;;;Y YTY;;;Level of the Format (only MIXML)
 Format_Compression;;;Y YTY;;;Compression method used;;
 Format_Settings;;;Y YTY;;;Settings needed for decoder used
 InternetMediaType;;;N YT;;;Internet Media Type (aka MIME Type, Content-Type)

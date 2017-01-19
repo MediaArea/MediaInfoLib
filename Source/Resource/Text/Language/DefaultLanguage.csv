@@ -350,6 +350,8 @@ Format_Commercial_IfAny;Commercial name
 Format_Description;Format description
 Format_Info;Details for format
 Format_Profile;Format profile
+Format_Level;Format level
+Format_Tier;Format tier
 Format_Settings;Format settings
 Format_Settings_BVOP;Format settings, BVOP
 Format_Settings_CABAC;Format settings, CABAC

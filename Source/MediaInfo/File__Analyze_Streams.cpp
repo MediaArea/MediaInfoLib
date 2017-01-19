@@ -2415,6 +2415,7 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Format_Commercial : return General_Format_Commercial;
                                     case Generic_Format_Commercial_IfAny : return General_Format_Commercial_IfAny;
                                     case Generic_Format_Profile : return General_Format_Profile;
+                                    case Generic_Format_Level: return General_Format_Level;
                                     case Generic_Format_Settings : return General_Format_Settings;
                                     case Generic_InternetMediaType : return General_InternetMediaType;
                                     case Generic_CodecID : return General_CodecID;
@@ -2468,6 +2469,8 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Format_Commercial_IfAny : return Video_Format_Commercial_IfAny;
                                     case Generic_Format_Version : return Video_Format_Version;
                                     case Generic_Format_Profile : return Video_Format_Profile;
+                                    case Generic_Format_Level: return Video_Format_Level;
+                                    case Generic_Format_Tier: return Video_Format_Tier;
                                     case Generic_Format_Settings : return Video_Format_Settings;
                                     case Generic_InternetMediaType : return Video_InternetMediaType;
                                     case Generic_CodecID : return Video_CodecID;
@@ -2583,6 +2586,7 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Format_Commercial_IfAny : return Audio_Format_Commercial_IfAny;
                                     case Generic_Format_Version : return Audio_Format_Version;
                                     case Generic_Format_Profile : return Audio_Format_Profile;
+                                    case Generic_Format_Level: return Audio_Format_Level;
                                     case Generic_Format_Settings : return Audio_Format_Settings;
                                     case Generic_InternetMediaType : return Audio_InternetMediaType;
                                     case Generic_CodecID : return Audio_CodecID;
