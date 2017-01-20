@@ -867,6 +867,15 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     {
         return MpegTs_ForceStreamDisplay_Get()?__T("1"):__T("0");
     }
+    else if (Option_Lower == __T("mpegts_forcetextstreamdisplay"))
+    {
+        MpegTs_ForceTextStreamDisplay_Set(Value.To_int8u() ? true : false);
+        return Ztring();
+    }
+    else if (Option_Lower == __T("mpegts_forcetextstreamdisplay_get"))
+    {
+        return MpegTs_ForceTextStreamDisplay_Get() ? __T("1") : __T("0");
+    }
     else if (Option_Lower==__T("maxml_streamkinds"))
     {
         #if MEDIAINFO_ADVANCED
@@ -2266,6 +2275,18 @@ bool MediaInfo_Config::MpegTs_ForceStreamDisplay_Get ()
 {
     CriticalSectionLocker CSL(CS);
     return MpegTs_ForceStreamDisplay;
+}
+
+void MediaInfo_Config::MpegTs_ForceTextStreamDisplay_Set(bool Value)
+{
+    CriticalSectionLocker CSL(CS);
+    MpegTs_ForceTextStreamDisplay = Value;
+}
+
+bool MediaInfo_Config::MpegTs_ForceTextStreamDisplay_Get()
+{
+    CriticalSectionLocker CSL(CS);
+    return MpegTs_ForceTextStreamDisplay;
 }
 
 #if MEDIAINFO_ADVANCED
