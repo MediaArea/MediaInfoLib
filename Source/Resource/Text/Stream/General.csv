@@ -192,8 +192,8 @@ Original/Album;;;Y YT;;;Original name of album, serie...;;Title
 Original/Movie;;;Y YT;;;Original name of the movie;;Title
 Original/Part;;;Y YT;;;Original name of the part in the original support;;Title
 Original/Track;;;Y YT;;;Original name of the track in the original support;;Title
-Compilation;;Yes;Y YT;;;iTunes compilation;;Title
-Compilation/String;;;Y YT;;;iTunes compilation;;Title
+Compilation;;Yes;N YT;;;iTunes compilation;;Title
+Compilation/String;;;Y NT;;;iTunes compilation;;Title
 Performer;;;Y YT;;;Main performer/artist of this file;;Entity
 Performer/Sort;;;Y YT;;;;;Entity
 Performer/Url;;;Y YT;;;Homepage of the performer/artist;;Entity
