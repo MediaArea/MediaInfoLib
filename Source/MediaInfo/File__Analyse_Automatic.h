@@ -390,6 +390,7 @@ enum general
     General_Publisher_URL,
     General_Label,
     General_Genre,
+    General_PodcastCategory,
     General_Mood,
     General_ContentType,
     General_Subject,

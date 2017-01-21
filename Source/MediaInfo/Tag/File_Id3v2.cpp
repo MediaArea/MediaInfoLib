@@ -159,6 +159,7 @@ namespace Elements
     const int32u SYTC=0x53595443;
     const int32u TALB=0x54414C42;
     const int32u TBPM=0x5442504D;
+    const int32u TCAT=0x54434154;
     const int32u TCMP=0x54434D50;
     const int32u TCOM=0x54434F4D;
     const int32u TCON=0x54434F4E;
@@ -623,6 +624,7 @@ void File_Id3v2::Data_Parse()
         CASE_INFO(SYTC,                                         "Synchronised tempo codes");
         CASE_INFO(TALB,                                         "Album/Movie/Show title");
         CASE_INFO(TBPM,                                         "BPM (beats per minute)");
+        CASE_INFO(TCAT,                                         "iTunes Podcast category");
         CASE_INFO(TCMP,                                         "iTunes Compilation Flag");
         CASE_INFO(TCOM,                                         "Composer");
         CASE_INFO(TCON,                                         "Content type");
@@ -1184,6 +1186,7 @@ void File_Id3v2::Fill_Name()
         case Elements::SYTC : break;
         case Elements::TALB : Fill(Stream_General, 0, General_Album, Element_Value); break;
         case Elements::TBPM : Fill(Stream_General, 0, General_BPM, Element_Value); break;
+        case Elements::TCAT : Fill(Stream_General, 0, General_PodcastCategory, Element_Value); break;
         case Elements::TCMP : Fill(Stream_General, 0, General_Compilation, Element_Value); break;
         case Elements::TCOM : Fill(Stream_General, 0, General_Composer, Element_Value); break;
         case Elements::TCON :
