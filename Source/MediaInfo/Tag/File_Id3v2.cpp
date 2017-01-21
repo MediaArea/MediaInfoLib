@@ -1352,7 +1352,7 @@ void File_Id3v2::Fill_Name()
         case Elements::TOR  : Normalize_Date(Element_Value); Fill(Stream_General, 0, "Original/Released_Date", Element_Value); break;
         case Elements::TOT  : Fill(Stream_General, 0, "Original/Album", Element_Value); break;
         case Elements::TP1  : Fill(Stream_General, 0, "Performer", Element_Value); break;
-        case Elements::TP2  : Fill(Stream_General, 0, "Accompaniment", Element_Value); break;
+        case Elements::TP2  : Fill(Stream_General, 0, General_Album_Performer, Element_Value); break;
         case Elements::TP3  : Fill(Stream_General, 0, "Conductor", Element_Value); break;
         case Elements::TP4  : Fill(Stream_General, 0, "RemixedBy", Element_Value); break;
         case Elements::TPA  :

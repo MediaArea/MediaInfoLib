@@ -19,6 +19,7 @@ Version 0.7.92
 + MIXML output: Format_Profile divided in Format_Profile, Format_Level, Format_Tier
 x MIXML output: some *_Original values were missing
 x MXF/Teletext: was not correctly detecting non subtitle streams
+x ID3v2: TP2 tag was incorrectly mapped to "Accompaniment", now mapped to "Album_Performer"
 
 Version 0.7.91, 2016-11-30
 --------------
