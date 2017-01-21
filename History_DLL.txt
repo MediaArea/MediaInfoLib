@@ -20,6 +20,7 @@ Version 0.7.92
 x MIXML output: some *_Original values were missing
 x MXF/Teletext: was not correctly detecting non subtitle streams
 x ID3v2: TP2 tag was incorrectly mapped to "Accompaniment", now mapped to "Album_Performer"
+x ID3v2: TSO2 tag was incorrectly mapped to "Performer_Sort", now mapped to "Album_Performer_Sort"
 
 Version 0.7.91, 2016-11-30
 --------------

@@ -1261,7 +1261,7 @@ void File_Id3v2::Fill_Name()
         case Elements::TRSN : Fill(Stream_General, 0, General_ServiceName, Element_Value); break;
         case Elements::TRSO : Fill(Stream_General, 0, General_ServiceProvider, Element_Value); break;
         case Elements::TSIZ : Fill(Stream_General, 0, "Size", Element_Value); break;
-        case Elements::TSO2 : Fill(Stream_General, 0, General_Performer_Sort, Element_Value); break;
+        case Elements::TSO2 : Fill(Stream_General, 0, General_Album_Performer_Sort, Element_Value); break;
         case Elements::TSOA : Fill(Stream_General, 0, General_Album_Sort, Element_Value); break;
         case Elements::TSOC : Fill(Stream_General, 0, "Composer/Sort", Element_Value); break;
         case Elements::TSOP : Fill(Stream_General, 0, General_Performer_Sort, Element_Value); break;
