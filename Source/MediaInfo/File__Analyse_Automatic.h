@@ -356,6 +356,7 @@ enum general
     General_Accompaniment,
     General_Composer,
     General_Composer_Nationality,
+    General_Composer_Sort,
     General_Arranger,
     General_Lyricist,
     General_Original_Lyricist,

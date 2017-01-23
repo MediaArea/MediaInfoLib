@@ -4224,6 +4224,7 @@ void MediaInfo_Config_General (ZtringListList &Info)
     "Accompaniment;;;Y YT;;;Band/orchestra/accompaniment/musician.;;Entity\n"
     "Composer;;;Y YT;;;Name of the original composer.;;Entity\n"
     "Composer/Nationality;;;Y YT;;;Nationality of the main composer of the item, mostly for classical music.;;Entity\n"
+    "Composer/Sort;;;Y YT;;;;;Entity\n"
     "Arranger;;;Y YT;;;The person who arranged the piece. e.g. Ravel.;;Entity\n"
     "Lyricist;;;Y YT;;;The person who wrote the lyrics for a musical item.;;Entity\n"
     "Original/Lyricist;;;Y YT;;;Original lyricist(s)/text writer(s).;;Entity\n"

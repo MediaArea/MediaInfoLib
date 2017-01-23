@@ -201,6 +201,7 @@ Original/Performer;;;Y YT;;;Original artist(s)/performer(s).;;Entity
 Accompaniment;;;Y YT;;;Band/orchestra/accompaniment/musician.;;Entity
 Composer;;;Y YT;;;Name of the original composer.;;Entity
 Composer/Nationality;;;Y YT;;;Nationality of the main composer of the item, mostly for classical music.;;Entity
+Composer/Sort;;;Y YT;;;;;Entity
 Arranger;;;Y YT;;;The person who arranged the piece. e.g. Ravel.;;Entity
 Lyricist;;;Y YT;;;The person who wrote the lyrics for a musical item.;;Entity
 Original/Lyricist;;;Y YT;;;Original lyricist(s)/text writer(s).;;Entity
