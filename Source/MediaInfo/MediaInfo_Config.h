@@ -250,6 +250,7 @@ public :
     #endif //MEDIAINFO_EVENTS
 
     #if defined(MEDIAINFO_LIBCURL_YES)
+          bool      CanHandleUrls();
           void      Ssh_PublicKeyFileName_Set (const Ztring &NewValue);
           Ztring    Ssh_PublicKeyFileName_Get ();
           void      Ssh_PrivateKeyFileName_Set (const Ztring &NewValue);
