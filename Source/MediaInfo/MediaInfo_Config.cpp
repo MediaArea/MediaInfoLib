@@ -117,6 +117,9 @@
 #include "ZenLib/ZtringListListF.h"
 #include "ZenLib/File.h"
 #include <algorithm>
+#if defined(MEDIAINFO_LIBCURL_YES)
+    #include "MediaInfo/Reader/Reader_libcurl.h"
+#endif //defined(MEDIAINFO_LIBCURL_YES)
 using namespace ZenLib;
 using namespace std;
 //---------------------------------------------------------------------------
@@ -921,6 +924,14 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         #if defined(MEDIAINFO_LIBCURL_YES)
             Ssh_KnownHostsFileName_Set(Value);
             return Ztring();
+        #else // defined(MEDIAINFO_LIBCURL_YES)
+            return __T("Libcurl support is disabled due to compilation options");
+        #endif // defined(MEDIAINFO_LIBCURL_YES)
+    }
+    else if (Option_Lower==__T("info_canhandleurls"))
+    {
+        #if defined(MEDIAINFO_LIBCURL_YES)
+            return CanHandleUrls()?__T("1"):__T("0");;
         #else // defined(MEDIAINFO_LIBCURL_YES)
             return __T("Libcurl support is disabled due to compilation options");
         #endif // defined(MEDIAINFO_LIBCURL_YES)
@@ -2539,6 +2550,12 @@ void MediaInfo_Config::Log_Send (int8u Type, int8u Severity, int32u MessageCode,
 //***************************************************************************
 
 #if defined(MEDIAINFO_LIBCURL_YES)
+bool MediaInfo_Config::CanHandleUrls()
+{
+    CriticalSectionLocker CSL(CS);
+    return Reader_libcurl::Load();
+}
+
 void MediaInfo_Config::Ssh_PublicKeyFileName_Set (const Ztring &Value)
 {
     CriticalSectionLocker CSL(CS);
