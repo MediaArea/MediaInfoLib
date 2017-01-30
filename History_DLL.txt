@@ -8,7 +8,7 @@ bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
 
-Version 0.7.92
+Version 0.7.92, 2017-01-31
 --------------
 + #F507, MXF: detection of HLG Transfer Characteristic
 + #F508, HEVC: support of preferred_transfer_characteristics SEI (from HEVC/H.265 draft, preferred method for HLG in DVB)
