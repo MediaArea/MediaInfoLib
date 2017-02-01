@@ -759,6 +759,34 @@ bool Ac3_EMDF_Test(const BitStream_Fast &Search)
     return Search2.Remain()>=17?true:false;
 }
 
+//---------------------------------------------------------------------------
+static const int8u ecplsubbndtab[]
+{
+    13,
+    19,
+    25,
+    31,
+    37,
+    49,
+    61,
+    73,
+    85,
+    97,
+    109,
+    121,
+    133,
+    145,
+    157,
+    169,
+    181,
+    193,
+    205,
+    217,
+    229,
+    241,
+    253,
+};
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -1965,6 +1993,49 @@ void File_Ac3::Core_Frame()
     }
     else if (bsid>0x0A && bsid<=0x10)
     {
+        /* Not finished, for reference only
+        static const size_t MAX_AUD_BLK = 6;
+        static const size_t MAX_CHANNELS = 5;
+        struct Aud_Blk
+        {
+            bool  cplstre;
+            bool  cplinu;
+            bool  lfeexpstr;
+            int8u blkmixcfginfo;
+            int8u cplexpstr;
+
+            int8u chexpstr[MAX_CHANNELS];
+        };
+        Aud_Blk aud_blks[MAX_AUD_BLK];
+
+        struct Aud_Chan_Blk
+        {
+            bool  blksw;
+            bool  chahtinu;
+            bool  chincpl;
+            bool  chinspx;
+            bool  cplcoe;
+            bool  dithflag;
+            bool  ecplparam1e;
+            bool  firstspxcos;
+            bool  firstcplcos;
+            bool  rsvdfieldse;
+            bool  spxcoe;
+
+            int8u chactivegaqbins; //todo
+            int8u chbwcod;
+            int8u convexpstr;
+            int8u deltbae;
+            int8u endmant;
+            int8u frmchexpstr;
+            int8u mstrspxco;
+            int8u spxblnd;
+            int8u strtmant;
+        };
+        Aud_Chan_Blk aud_chan_blk[MAX_CHANNELS];
+        bool firstcplleak = false;
+        //*/
+
         Element_Begin1("synchinfo");
             Skip_B2(                                               "syncword");
         Element_End0();
@@ -2002,6 +2073,1276 @@ void File_Ac3::Core_Frame()
                     Get_S2(16, chanmap,                             "chanmap"); Param_Info1(AC3_chanmap_ChannelPositions(chanmap));
                 TEST_SB_END();
             }
+            /* Not finished, for reference only
+            TEST_SB_SKIP(                                           "mixmdate");
+                int8u dmixmod, ltrtcmixlev, lorocmixlev, ltrtsurmixlev, lorosurmixlev, mixdef;
+                if(acmod > 0x2)
+                    Get_S1 (2, dmixmod,                             "dmixmod");
+                if((acmod&0x1) && (acmod>0x2))
+                {
+                    Get_S1 (3, ltrtcmixlev,                         "ltrtcmixlev");
+                    Get_S1 (3, lorocmixlev,                         "lorocmixlev");
+                }
+                if(acmod>0x4)
+                {
+                    Get_S1 (3, ltrtsurmixlev,                       "ltrtsurmixlev");
+                    Get_S1 (3, lorosurmixlev,                       "lorosurmixlev");
+                }
+                if(lfeon)
+                {
+                    TEST_SB_SKIP(                                   "lfemixlevcode");
+                        Skip_S1 (5,                                 "lfemixlevcod");
+                    TEST_SB_END();
+                }
+                if(strmtyp == 0x0)
+                {
+                    TEST_SB_SKIP(                                   "pgmscle");
+                        Skip_S1 (6,                                 "pgmscl");
+                    TEST_SB_END();
+                    if (acmod == 0x0)
+                    {
+                        TEST_SB_SKIP(                               "pgmscle12e");
+                            Skip_S1 (6,                             "pgmscl12e");
+                        TEST_SB_END();
+                    }
+                    TEST_SB_SKIP(                                   "extpgmscle");
+                        Skip_S1 (6,                                 "extpgmscl");
+                    TEST_SB_END();
+                    Get_S1 (2, mixdef,                              "mixdef");
+                    if(mixdef == 0x1)
+                    {
+                        Skip_S1 (1,                                 "premixcmpsel");
+                        Skip_S1 (1,                                 "drcsrc");
+                        Skip_S1 (3,                                 "premixcmpscl");
+                    }
+                    else if(mixdef == 0x2) Skip_S2 (12,             "mixdata");
+                    else if(mixdef == 0x3)
+                    {
+                        int8u mixdeflen;
+                        Get_S1 (5, mixdeflen,                       "mixdeflen");
+                        TEST_SB_SKIP(                               "mixdata2e");
+                            Skip_S1 (6,                             "premixcmpsel");
+                            Skip_S1 (1,                             "drcsrc");
+                            Skip_S1 (3,                             "premixcmpscl");
+                            TEST_SB_SKIP(                           "extpgmlscle");
+                                Skip_S1 (4,                         "extpgmlscl");
+                            TEST_SB_END();
+                            TEST_SB_SKIP(                           "extpgmcscle");
+                                Skip_S1 (4,                         "extpgmcscl");
+                            TEST_SB_END();
+                            TEST_SB_SKIP(                           "extpgmrscle");
+                                Skip_S1 (4,                         "extpgmrscl");
+                            TEST_SB_END();
+                            TEST_SB_SKIP(                           "extpgmlssle");
+                                Skip_S1 (4,                         "extpgmlssl");
+                            TEST_SB_END();
+                            TEST_SB_SKIP(                           "extpgmrssle");
+                                Skip_S1 (4,                         "extpgmrssl");
+                            TEST_SB_END();
+                            TEST_SB_SKIP(                           "extpgmlfescle");
+                                Skip_S1 (4,                         "extpgmlfescl");
+                            TEST_SB_END();
+                            TEST_SB_SKIP(                           "dmixscle");
+                                Skip_S1 (4,                         "dmixscl");
+                            TEST_SB_END();
+                            TEST_SB_SKIP(                           "addche");
+                                TEST_SB_SKIP(                       "extpgmaux1scle");
+                                    Skip_S1 (4,                     "extpgmaux1scl");
+                                TEST_SB_END();
+                                TEST_SB_SKIP(                       "extpgmaux2scle");
+                                    Skip_S1 (4,                     "extpgmaux2scl");
+                                TEST_SB_END();
+                            TEST_SB_END();
+                        TEST_SB_END();
+                        TEST_SB_SKIP(                               "mixdata3e");
+                            Skip_S1 (5,                             "spchdat");
+                            TEST_SB_SKIP(                           "addspchdate");
+                                Skip_S1 (5,                         "spchdat1");
+                                Skip_S1 (2,                         "spchan1att");
+                                TEST_SB_SKIP(                       "addspdat1e");
+                                    Skip_S1 (5,                     "spchdat2");
+                                    Skip_S1 (2,                     "spchan2att");
+                                TEST_SB_END();
+                            TEST_SB_END();
+                        TEST_SB_END();
+                        Skip_S2 (8*(mixdeflen+2),                   "mixdata");
+                        //Skip_S1 (,                                 "mixdatafill");
+                    }
+                    if(acmod<0x2)
+                    {
+                        TEST_SB_SKIP(                               "paninfoe");
+                            Skip_S1 (6,                             "panmean");
+                            Skip_S1 (8,                             "paninfo");
+                        TEST_SB_END();
+                        if(acmod==0x0)
+                        {
+                            TEST_SB_SKIP(                           "paninfo2e");
+                               Skip_S1 (6,                          "panmean2");
+                               Skip_S1 (8,                          "paninfo2");
+                            TEST_SB_END();
+                        }
+                    }
+                    TEST_SB_SKIP(                                   "frmmixcfginfoe");
+                        if(numblkscod==0x0)
+                        {
+                            int8u blkmixcfginfo;
+                            Get_S1 (5, blkmixcfginfo,               "blkmixcfginfo[0]");
+                            aud_blks[0].blkmixcfginfo = blkmixcfginfo;
+                        }
+                        else
+                        {
+                            int8u nb_blocks_per_syncframe = numblkscod == 3 ? 6 : (numblkscod + 1);
+                            for (int8u blk = 0; blk < nb_blocks_per_syncframe; ++blk)
+                            {
+                                TEST_SB_SKIP(                       "blkmixcfginfoe");
+                                    int8u blkmixcfginfo;
+                                    Get_S1 (5, blkmixcfginfo,       "blkmixcfginfo[x]");
+                                    aud_blks[blk].blkmixcfginfo = blkmixcfginfo;
+                                TEST_SB_END();
+                            }
+                        }
+                    TEST_SB_END();
+                }
+            TEST_SB_END();
+
+            TEST_SB_SKIP(                                           "infomdate");
+                Skip_S1(3,                                          "bsmod");
+                Skip_SB(                                            "copyrightb - Copyright Bit");
+                Skip_SB(                                            "origbs - Original Bit Stream");
+                if (acmod==0x2)
+                {
+                    Skip_S1(2,                                      "dsurmod");
+                    Skip_S1(2,                                      "dheadphonmod");
+                }
+                if (acmod>=0x6)
+                    Skip_S1(2,                                      "dsurexmod");
+                TEST_SB_SKIP(                                       "audprodie");
+                    Skip_S1(5,                                      "mixlevel");
+                    Skip_S1(2,                                      "roomtyp");
+                    Skip_S1(1,                                      "adconvtyp");
+                TEST_SB_END();
+                if (acmod==0x0)
+                {
+                    TEST_SB_SKIP(                                   "audprodi2e");
+                        Skip_S1(5,                                  "mixlevel2");
+                        Skip_S1(2,                                  "roomtyp2");
+                        Skip_S1(1,                                  "adconvtyp2");
+                    TEST_SB_END();
+                }
+                if (fscod < 0x3)
+                    Skip_S1(1,                                      "sourcefscod");
+            TEST_SB_END();
+
+            if (strmtyp==0x0 && numblkscod!=0x3)
+                Skip_S1(1,                                          "convsync");
+
+            if (strmtyp == 0x2)
+            {
+                int8u blkid = 0;
+                if (numblkscod==0x3)
+                    blkid = 1;
+                else
+                    Get_S1(1, blkid,                                "blkid");
+                if (blkid)
+                    Get_S1(6, frmsizecod,                           "frmsizecod");
+            }
+
+            TEST_SB_SKIP(                                           "addbsie");
+                int8u addbsil;
+                Get_S1 (6, addbsil,                                 "addbsil");
+                size_t addbsilen = (addbsil + 1) * 8;
+                Skip_BS(addbsilen,                                  "addbsi");
+            TEST_SB_END();
+        Element_End0();
+
+        int8u numblks = numblkscod == 3 ? 6 : (numblkscod + 1);
+
+        Element_Begin1("audfrm");
+        int8u snroffststr, ncplblks = 0;
+        bool expstre = true, ahte = false;
+        bool transproce, blkswe, dithflage, bamode, frmfgaincode, dbaflde, skipflde, spxattene;
+        if (numblkscod==0x3)
+        {
+            Get_SB(expstre,                                         "expstre");
+            Get_SB(ahte,                                            "ahte");
+        }
+        Get_S1 (2, snroffststr,                                     "snroffststr");
+        Get_SB (transproce,                                         "transproce");
+        Get_SB (blkswe,                                             "blkswe");
+        Get_SB (dithflage,                                          "dithflage");
+        Get_SB (bamode,                                             "bamode");
+        Get_SB (frmfgaincode,                                       "frmfgaincode");
+        Get_SB (dbaflde,                                            "dbaflde");
+        Get_SB (skipflde,                                           "skipflde");
+        Get_SB (spxattene,                                          "spxattene");
+
+        if (acmod>0x1)
+        {
+            aud_blks[0].cplstre = 1;
+            aud_blks[0].cplinu = 0;
+            for (int8u blk = 1; blk < numblks; ++blk)
+            {
+                Get_SB (aud_blks[blk].cplstre,                      "cplstre[x]");
+                if (aud_blks[blk].cplstre==1)
+                    Get_SB (aud_blks[blk].cplinu,                   "cplinu[x]");
+                else
+                    aud_blks[blk].cplinu = aud_blks[blk - 1].cplinu;
+            }
+        }
+        else
+        {
+            for(int8u blk = 0; blk < numblks; ++blk)
+                aud_blks[blk].cplinu = 0;
+        }
+
+        if (expstre)
+        {
+            for(int8u blk = 0; blk < numblks; ++blk)
+            {
+                if (aud_blks[blk].cplinu==1)
+                    Get_S1 (2, aud_blks[blk].cplexpstr,             "cplexpstr[x]");
+                for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                    Get_S1(2, aud_blks[blk].chexpstr[Pos],          "chexpstr[blk][ch]");
+            }
+        }
+        else
+        {
+            int8u frmcplexpstr = 0;
+            ncplblks = 0;
+            for (int8u blk = 0; blk < numblks; ++blk)
+                ncplblks += aud_blks[blk].cplinu;
+            if (acmod > 0x1 && ncplblks > 0)
+                Get_S1(5, frmcplexpstr,                             "frmcplexpstr");
+            for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                Get_S1(5, aud_chan_blk[Pos].frmchexpstr,            "frmchexpstr[ch]");
+        }
+        if (lfeon)
+            for (int8u blk = 0; blk < numblks; ++blk)
+                Get_SB(aud_blks[blk].lfeexpstr,                     "lfeexpstr[blk]");
+
+        if (strmtyp == 0x0)
+        {
+            bool convexpstre = true;
+            if (numblkscod!=0x3)
+                Get_SB (convexpstre,                                "convexpstre");
+            if (convexpstre)
+                for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                    Get_S1(5, aud_chan_blk[Pos].convexpstr,         "convexpstr[ch]");
+        }
+
+        int8u cplahtinu = 0;
+        int8u lfeahtinu = 0;
+        int8u *hebap = NULL; //TODO in ahte
+        if (ahte)
+        {
+            ncplblks = 0;
+
+            int8u ncplregs = 0;
+            for (int8u blk = 0; blk < numblks; ++blk)
+            {
+                //reuse corresponds to 0
+                if (aud_blks[blk].cplstre == 1 || aud_blks[blk].cplexpstr != 0)
+                    ++ncplregs;
+            }
+
+            if (ncplblks==6 && ncplregs==1)
+            {
+                bool tmp;
+                Get_SB (tmp,                                        "cplahtinu");
+                if (tmp)
+                    cplahtinu = 1;
+            }
+
+            for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+            {
+                int8u nchregs = 0;
+                for (int8u blk = 0; blk < numblks; ++blk)
+                {
+                    if (aud_blks[blk].chexpstr[Pos]!=0)
+                        ++nchregs;
+                }
+
+                aud_chan_blk[Pos].chahtinu = 0;
+                if (nchregs==1)
+                {
+                    bool tmp;
+                    Get_SB (tmp,                                    "chahtinu[ch]");
+                    if (tmp)
+                        aud_chan_blk[Pos].chahtinu = 1;
+                }
+            }
+
+            if (lfeon)
+            {
+                int8u nlferegs = 0;
+                for (int8u blk = 0; blk < numblks; ++blk)
+                {
+                    if (aud_blks[blk].lfeexpstr!=false)
+                        ++nlferegs;
+                }
+
+                if (nlferegs==1)
+                {
+                    bool tmp = false;
+                    Get_SB (tmp,                                    "lfeahtinu");
+                    if (tmp)
+                        lfeahtinu = 1;
+                }
+            }
+        }
+
+        if (snroffststr)
+        {
+            Skip_S1 (6,                                             "frmcsnroffst");
+            Skip_S1 (4,                                             "frmfsnroffst");
+        }
+
+        if (transproce)
+        {
+            for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+            {
+                TEST_SB_SKIP(                                       "chintransproc[ch]");
+                    Skip_S2(10,                                     "transprocloc[ch]");
+                    Skip_S1(8,                                      "transproclen[ch]");
+                TEST_SB_END();
+            }
+        }
+
+        if (spxattene)
+        {
+            for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+            {
+                TEST_SB_SKIP(                                       "chinspxatten[ch]");
+                    Skip_S1(5,                                      "spxattencod[ch]");
+                TEST_SB_END();
+            }
+        }
+
+        bool blkstrtinfoe = false;
+        int8u blkstrtinfo = 0;
+        if (numblkscod != 0x0)
+            Get_SB (blkstrtinfoe,                                   "blkstrtinfoe");
+        if (blkstrtinfoe)
+            blkstrtinfo = (numblks - 1) * (4 + ceil(log2(frmsiz + 1)));
+
+        // These fields for syntax state initialization
+        for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+        {
+            aud_chan_blk[Pos].firstspxcos = true;
+            aud_chan_blk[Pos].firstcplcos = true;
+        }
+        firstcplleak = true;
+        Element_End0();
+
+        Element_Begin1("audblks");
+            for (int8u blk = 0; blk < numblks; ++blk)
+            {
+                Element_Begin1("audblk");
+                    if (blkswe)
+                        for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                            Get_SB (aud_chan_blk[Pos].blksw,        "blksw[ch]");
+                    else
+                        for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                            aud_chan_blk[Pos].blksw = false;
+
+                    if (dithflage)
+                        for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                            Get_SB (aud_chan_blk[Pos].dithflag,     "dithflag[ch]");
+                    else
+                        for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                            aud_chan_blk[Pos].dithflag = true;
+
+                    int8u dynrng = 0;
+                    int8u dynrng2 = 0;
+                    TEST_SB_SKIP(                                   "dynrnge");
+                        Get_S1 (8, dynrng,                          "dynrng");
+                    TEST_SB_END();
+
+                    if (acmod==0x0)
+                    {
+                        TEST_SB_SKIP(                               "dynrng2e");
+                            Get_S1 (8, dynrng,                      "dynrng2");
+                        TEST_SB_END();
+                    }
+
+                    int8u spx_begin_subbnd, spx_end_subbnd;
+                    int8u spxbegf = 0;
+                    bool spxbndstrc[256];
+                    bool spxstre = true;
+                    bool spxinu = false;
+                    if (blk!=0)
+                        Peek_SB(spxstre);
+
+                    if (spxstre)
+                    {
+                        Element_Begin1("spxstr");
+                        Skip_SB(                                    "spxstre");
+                        Get_SB (spxinu,                             "spxinu");
+                        if (spxinu)
+                        {
+                            if (acmod==0x1)
+                                aud_chan_blk[0].chinspx = true;
+                            else
+                            {
+                                for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                                    Get_SB (aud_chan_blk[Pos].chinspx,"chinspx[ch]");
+                            }
+
+                            int8u spxstrtf, spxendf;
+
+                            Get_S1 (2, spxstrtf,                    "spxstrtf");
+                            Get_S1 (3, spxbegf,                     "spxbegf");
+                            Get_S1 (3, spxendf,                     "spxendf");
+
+                            if (spxbegf<6)
+                                spx_begin_subbnd = spxbegf + 2;
+                            else
+                                spx_begin_subbnd = spxbegf * 2 - 3;
+
+                            if (spxendf < 3)
+                                spx_end_subbnd = spxendf + 5;
+                            else
+                                spx_end_subbnd = spxendf * 2 + 3;
+
+                            TEST_SB_SKIP(                           "spxbndstrce");
+                            for (int8u bnd = spx_begin_subbnd+1; bnd < spx_end_subbnd; ++bnd)
+                                Get_SB (spxbndstrc[bnd],            "spxbndstrc[bnd]");
+                            TEST_SB_END();
+                        }
+                        else
+                        {
+                            for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                            {
+                                aud_chan_blk[Pos].chinspx = false;
+                                aud_chan_blk[Pos].firstspxcos = true;
+                            }
+                        }
+                        Element_End0();
+                    }
+
+                    if (spxinu)
+                    {
+                        Element_Begin1("spxin"); 
+                        for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                        {
+                            Element_Begin1("Channel"); 
+                            if (aud_chan_blk[Pos].chinspx)
+                            {
+                                if (aud_chan_blk[Pos].firstspxcos)
+                                {
+                                    aud_chan_blk[Pos].spxcoe = true;
+                                    aud_chan_blk[Pos].firstspxcos = false;
+                                }
+                                else
+                                    Get_SB (aud_chan_blk[Pos].spxcoe,   "spxcoe[ch]");
+
+                                if (aud_chan_blk[Pos].spxcoe)
+                                {
+                                    Get_S1 (5, aud_chan_blk[Pos].spxblnd,"spxblnd[ch]");
+                                    Get_S1 (2, aud_chan_blk[Pos].mstrspxco,"mstrspxco[ch]");
+
+                                    int8u nspxbnds = 1;
+                                    int8u spxbndsztab[256] = {0};
+                                    spxbndsztab[0] = 12;
+                                    for (int8u bnd = spx_begin_subbnd+1; bnd < spx_end_subbnd; ++bnd)
+                                    {
+                                        if (spxbndstrc[bnd] == false)
+                                        {
+                                            spxbndsztab[nspxbnds] = 12;
+                                            ++nspxbnds;
+                                        }
+                                        else
+                                            spxbndsztab[nspxbnds - 1] += 12;
+                                    }
+
+                                    for (int8u bnd = 0; bnd < nspxbnds; ++bnd)
+                                    {
+                                        Element_Begin1("Bnd"); 
+                                        Skip_S1 (4,                     "spxcoexp[ch][bnd]");
+                                        Skip_S1 (2,                     "spxcomant[ch][bnd]");
+                                        Element_End0();
+                                    }
+                                }
+                            }
+                            else
+                                aud_chan_blk[Pos].firstspxcos = true;
+                            Element_End0();
+                        }
+                        Element_End0();
+                    }
+
+                    bool  ecplinu = false;
+                    bool  phsflginu = false;
+                    bool  cplbndstrce = false;
+                    int8u ncplsubnd = 0;
+                    bool *cplbndstrc = NULL;
+                    int16u necplbnd = 0;
+                    int8u ecplbegf, ecplendf = 0;
+                    int8u cplbegf, cplendf = 0;
+                    int16u ecpl_begin_subbnd = 0, ecpl_end_subbnd = 0;
+                    size_t cplstrtmant = 0;
+                    size_t lfeactivegaqbins = 0;
+                    size_t cplendmant = 0;
+
+                    if (aud_blks[blk].cplstre)
+                    {
+                        Element_Begin1("cplstr");
+                        if (aud_blks[blk].cplinu)
+                        {
+                            Element_Begin1("cplin"); 
+                            Get_SB (ecplinu,                            "ecplinu");
+
+                            if (acmod==0x2)
+                            {
+                                aud_chan_blk[0].chincpl = true;
+                                aud_chan_blk[1].chincpl = true;
+                            }
+                            else
+                            {
+                                for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                                    Get_SB (aud_chan_blk[1].chincpl,    "chincpl[ch]");
+                            }
+
+                            if (!ecplinu)
+                            {
+                                if (acmod==0x2)
+                                    Get_SB (phsflginu,                  "phsflginu");
+                                Get_S1 (4, cplbegf,                     "cplbegf");
+                                cplstrtmant = (cplbegf * 12) + 37;;
+
+                                if (!spxinu)
+                                    Get_S1 (4, cplendf,                 "cplendf");
+                                else
+                                {
+                                    if (spxbegf < 6)
+                                        cplendf = spxbegf - 2;
+                                    else
+                                        cplendf = (spxbegf * 2) - 7;
+                                }
+
+                                ncplsubnd = 3 + cplendf - cplbegf;
+                                Get_SB (cplbndstrce,                    "cplbndstrce");
+                                if (cplbndstrce)
+                                {
+                                    cplbndstrc = new bool [ncplsubnd];
+                                    cplbndstrc[0] = false;
+                                    for (int8u bnd = 1; bnd < ncplsubnd; ++bnd)
+                                        Get_SB (cplbndstrc[bnd],        "cplbndstrc[bnd]");
+                                }
+                            }
+                            else
+                            {
+                                Get_S1 (4, ecplbegf,                    "ecplbegf");
+                                cplstrtmant = (cplbegf * 12) + 37;;
+
+                                if (ecplbegf<3)
+                                    ecpl_begin_subbnd = ecplbegf * 2;
+                                else if (ecplbegf<13)
+                                    ecpl_begin_subbnd = ecplbegf + 2;
+                                else
+                                    ecpl_begin_subbnd = ecplbegf * 2 - 10;
+
+                                if (!spxinu)
+                                {
+                                    Get_S1 (4, ecplendf,                "ecplendf");
+                                    ecpl_end_subbnd = ecplendf + 7;
+                                }
+                                else
+                                {
+                                    if (spxbegf < 6)
+                                        ecpl_end_subbnd = spxbegf + 5;
+                                    else
+                                        ecpl_end_subbnd = spxbegf * 2;
+                                }
+
+                                necplbnd = ecpl_end_subbnd - ecpl_begin_subbnd;
+                                TEST_SB_SKIP(                           "ecplbndstrce");
+                                int16u max = 9;
+                                if (max < ecpl_begin_subbnd+1)
+                                    max = ecpl_begin_subbnd+1;
+                                ncplsubnd = ecpl_end_subbnd;
+
+                                cplbndstrc = new bool [ecpl_end_subbnd];
+                                for (size_t i = 0; i < max; ++i)
+                                    cplbndstrc[i] = false;
+
+                                for (int16u sbnd = max; sbnd < ecpl_end_subbnd; ++sbnd)
+                                    Get_SB (cplbndstrc[sbnd],           "cplbndstrc[bnd]");
+
+                                necplbnd = 0;
+                                for (int16u i = ecpl_begin_subbnd; i < ecpl_end_subbnd; ++i)
+                                    necplbnd += cplbndstrc[i];
+                                TEST_SB_END();
+                            }
+                            Element_End0();
+                        }
+                        else
+                        {
+                            for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                            {
+                                aud_chan_blk[Pos].chincpl = false;
+                                aud_chan_blk[Pos].firstcplcos = true;
+                            }
+                            firstcplleak = true;
+                        }
+                        Element_End0();
+                    }
+
+                    if (aud_blks[blk].cplinu)
+                    {
+                        if (!ecplinu)
+                        {
+                            int16u ncplbnd = ncplsubnd;
+                            for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                            {
+                                if (aud_chan_blk[Pos].chincpl)
+                                {
+                                    if (aud_chan_blk[Pos].firstcplcos)
+                                    {
+                                        aud_chan_blk[Pos].cplcoe = true;
+                                        aud_chan_blk[Pos].firstcplcos = false;
+                                    }
+                                    else
+                                        Get_SB(aud_chan_blk[Pos].cplcoe,"cplcoe[ch]");
+
+                                    if (aud_chan_blk[Pos].cplcoe)
+                                    {
+                                        Skip_S1 (2,                     "mstrcplco[ch]");
+                                        ncplbnd = ncplsubnd;
+                                        for (size_t i = 1; i < ncplsubnd; ++i)
+                                            ncplbnd += cplbndstrc[i];
+                                        for (int16u bnd = 0; bnd < ncplbnd; bnd++)
+                                        {
+                                            Skip_S1(4,                  "cplcoexp[ch][bnd]");
+                                            Skip_S1(4,                  "cplcomant[ch][bnd]");
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    aud_chan_blk[Pos].firstcplcos = true;
+                                }
+                            }
+
+                            if (acmod==0x2 && phsflginu && (aud_chan_blk[0].cplcoe || aud_chan_blk[1].cplcoe))
+                            {
+                                for (size_t bnd = 0; bnd < ncplbnd; ++bnd)
+                                    Skip_SB(                            "phsflg[bnd]}");
+                            }
+                        }
+                        else
+                        {
+                            int firstchincpl = -1;
+                            Skip_SB(                                    "reserved");
+                            for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                            {
+                                if (aud_chan_blk[Pos].chincpl)
+                                {
+                                    if (firstchincpl == -1)
+                                        firstchincpl = Pos;
+
+                                    if (aud_chan_blk[Pos].firstcplcos)
+                                    {
+                                        aud_chan_blk[Pos].ecplparam1e = true;
+                                        if (Pos > firstchincpl)
+                                            aud_chan_blk[Pos].rsvdfieldse = true;
+                                        else
+                                            aud_chan_blk[Pos].rsvdfieldse = false;
+                                        aud_chan_blk[Pos].firstcplcos = false;
+                                    }
+                                    else
+                                    {
+                                        Get_SB (aud_chan_blk[Pos].ecplparam1e, "ecplparam1e");
+                                        if (Pos > firstchincpl)
+                                            Get_SB (aud_chan_blk[Pos].rsvdfieldse, "rsvdfieldse");
+                                        else
+                                            aud_chan_blk[Pos].rsvdfieldse = false;
+                                    }
+
+                                    if (aud_chan_blk[Pos].ecplparam1e)
+                                    {
+                                        if (aud_chan_blk[Pos].ecplparam1e)
+                                        {
+                                            for (size_t bnd = 0; bnd < necplbnd; bnd++)
+                                                Skip_S1(5,                  "ecplamp[ch][bnd]");
+                                        }
+
+                                        if (aud_chan_blk[Pos].rsvdfieldse)
+                                            Skip_BS(9 * (necplbnd - 1),     "reserved");
+                                        if (Pos > firstchincpl)
+                                            Skip_SB(                        "reserved");
+                                    }
+                                }
+                                else
+                                    aud_chan_blk[Pos].firstcplcos = true;
+                            }
+                        }
+                    }
+
+                    //aud_chan_blk_init(acmod, cplbegf);
+                    for (int8u Pos = 0; Pos<AC3_Channels[acmod]; ++Pos)
+                    {
+                        aud_chan_blk[Pos].strtmant = 0;
+                        if (aud_chan_blk[Pos].chincpl)
+                            aud_chan_blk[Pos].endmant = 37 + (12 * cplbegf);
+                        else
+                            aud_chan_blk[Pos].endmant = 37 + (3 * (aud_chan_blk[Pos].chbwcod + 12));
+                    }
+
+                    if (acmod==0x2)
+                    {
+                        bool rematstr = true;
+                        if (blk!=0)
+                            Get_SB(rematstr,                                "rematstr");
+
+                        if (rematstr)
+                        {
+                            size_t nrematbd = 0;
+                            if (aud_blks[blk].cplinu)
+                            {
+                                if (ecplinu)
+                                {
+                                    if (ecplbegf == 0)
+                                        nrematbd = 0;
+                                    else if (ecplbegf == 1)
+                                        nrematbd = 1;
+                                    else if (ecplbegf == 2)
+                                        nrematbd = 2;
+                                    else if (ecplbegf < 5)
+                                        nrematbd = 3;
+                                    else
+                                        nrematbd = 4;
+                                }
+                                else
+                                {
+                                    if (cplbegf == 0)
+                                        nrematbd = 2;
+                                    else if (cplbegf < 3)
+                                        nrematbd = 3;
+                                    else
+                                        nrematbd = 4;
+                                }
+                            }
+                            else if (spxinu)
+                            {
+                                if (spxbegf < 2)
+                                    nrematbd = 3;
+                                else
+                                    nrematbd = 4;
+                            }
+                            else
+                            {
+                                nrematbd = 4;
+                            }
+
+                            for (size_t bnd = 0; bnd < nrematbd; ++bnd)
+                                Skip_SB(                                    "rematflg[bnd]");
+                        }
+                    }
+
+                    for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                    {
+                        if (aud_blks[blk].chexpstr[Pos])
+                        {
+                            if (!aud_chan_blk[Pos].chincpl && !aud_chan_blk[Pos].chinspx)
+                                Get_S1 (6, aud_chan_blk[Pos].chbwcod,       "chbwcod[ch]");
+                        }
+                    }
+
+                    if (aud_blks[blk].cplinu)
+                    {
+                        if (aud_blks[blk].cplexpstr!=0)
+                        {
+                            Skip_S1(4,                                      "cplabsexp");
+
+                            size_t ncplgrps = 0;
+                            if (ecplinu)
+                            {
+                                int8u ecplstartmant = ecplsubbndtab[ecpl_begin_subbnd];
+                                int8u ecplendmant = ecplsubbndtab[ecpl_end_subbnd];
+                                if (aud_blks[blk].cplexpstr == 0x01)
+                                    ncplgrps = (ecplendmant - ecplstartmant) / 3;
+                                else if (aud_blks[blk].cplexpstr == 0x02)
+                                    ncplgrps = (ecplendmant - ecplstartmant) / 6;
+                                else if (aud_blks[blk].cplexpstr == 0x03)
+                                    ncplgrps = (ecplendmant - ecplstartmant) / 12;
+                            }
+                            else
+                            {
+                                cplendmant = ((cplendf + 3) * 12) + 37;
+                                if (aud_blks[blk].cplexpstr == 0x01)
+                                    ncplgrps = (cplendmant - cplstrtmant) / 3;
+                                else if (aud_blks[blk].cplexpstr == 0x02)
+                                    ncplgrps = (cplendmant - cplstrtmant) / 6;
+                                else if (aud_blks[blk].cplexpstr == 0x03)
+                                    ncplgrps = (cplendmant - cplstrtmant) / 12;
+                            }
+
+                            for(size_t grp = 0; grp < ncplgrps; grp++)
+                                Skip_S1(7,                                  "cplexps[grp]");
+                        }
+                    }
+
+                    for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                    {
+                        if (aud_blks[blk].chexpstr[Pos]!=0)
+                        {
+                            Skip_S1(4,                                      "exps[ch][0]");
+                            size_t nchgrps = 0;
+                            if (!aud_chan_blk[Pos].chincpl)
+                                aud_chan_blk[Pos].endmant = ((aud_chan_blk[Pos].chbwcod + 12) * 3) + 37;
+                            else
+                                aud_chan_blk[Pos].endmant = cplstrtmant;
+
+                            if (aud_blks[blk].cplexpstr==0x01)
+                                nchgrps = (aud_chan_blk[Pos].endmant - 1) / 3;
+                            else if (aud_blks[blk].cplexpstr==0x02)
+                                nchgrps = (aud_chan_blk[Pos].endmant - 1) / 3;
+                            else if (aud_blks[blk].cplexpstr==0x03)
+                                nchgrps = (aud_chan_blk[Pos].endmant - 1) / 3;
+
+                            for (size_t grp = 1; grp <= nchgrps; grp++)
+                                Skip_S1(7,                                  "exps[ch][grp]");
+                            Skip_S1(2,                                      "gainrng[ch]");
+                        }
+                    }
+
+                    if (lfeon)
+                    {
+                        if (aud_blks[blk].lfeexpstr!=0)
+                        {
+                            Skip_S1(4,                                      "lfeexps[0]");
+                            size_t nlfegrps = 2;
+                            for (size_t grp = 1; grp <= nlfegrps; ++grp)
+                                Skip_S1(7,                                  "lfeexps[grp]");
+                        }
+                    }
+
+                    int8u sdcycod = 0x2;
+                    int8u fdcycod = 0x1;
+                    int8u sgaincod = 0x1;
+                    int8u dbpbcod = 0x2;
+                    int8u floorcod = 0x7;
+                    if (bamode)
+                    {
+                        bool baie = false;
+                        Get_SB(baie,                                        "baie");
+                        if (baie)
+                        {
+                            Get_S1(2, sdcycod,                              "sdcycod");
+                            Get_S1(2, fdcycod,                              "fdcycod");
+                            Get_S1(2, sgaincod,                             "sgaincod");
+                            Get_S1(2, dbpbcod,                              "dbpbcod");
+                            Get_S1(3, floorcod,                             "floorcod");
+                        }
+                    }
+
+                    if (snroffststr!=0x0)
+                    {
+                        bool snroffste = true;
+                        if (blk!=0)
+                            Get_SB (snroffste,                              "snroffste");
+
+                        if (snroffste)
+                        {
+                            Skip_S1(6,                                      "csnroffst");
+                            if (snroffststr==0x1)
+                                Skip_S1(4,                                  "blkfsnroffst");
+                            else if (snroffststr == 0x2)
+                            {
+                                if (aud_blks[blk].cplinu)
+                                    Skip_S1(4,                              "cplfsnroffst");
+                                for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                                    Skip_S1(4,                              "fsnroffst[ch]");
+                                if (lfeon)
+                                    Skip_S1(4,                              "lfefsnroffst");
+                            }
+                        }
+                    }
+
+                    bool fgaincode = false;
+                    if (frmfgaincode)
+                        Get_SB(fgaincode,                                   "fgaincode");
+
+                    if (fgaincode)
+                    {
+                        if (aud_blks[blk].cplinu)
+                            Skip_S1(3, "cplfgaincod");
+                        for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                            Skip_S1(3,                                      "fgaincod[ch]");
+                        if (lfeon)
+                            Skip_S1(3,                                      "lfefgaincod");
+                    }
+
+                    if (strmtyp == 0x0)
+                    {
+                        TEST_SB_SKIP(                                       "convsnroffste");
+                        Skip_S2(10,                                         "convsnroffst");
+                        TEST_SB_END();
+                    }
+
+                    if (aud_blks[blk].cplinu)
+                    {
+                        bool cplleake = true;
+                        if (firstcplleak)
+                            firstcplleak = false;
+                        else
+                            Get_SB (cplleake,                               "cplleake");
+
+                        if (cplleake)
+                        {
+                            Skip_S1(3,                                      "cplfleak");
+                            Skip_S1(3,                                      "cplsleak");
+                        }
+                    }
+
+                    if (dbaflde)
+                    {
+                        TEST_SB_SKIP(                                       "deltbaie");
+                        int8u cpldeltbae = 0;
+                        if (aud_blks[blk].cplinu)
+                            Get_S1 (2, cpldeltbae,                          "cpldeltbae");
+                        for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                            Get_S1 (2, aud_chan_blk[Pos].deltbae,        "deltbae[ch]");
+
+                        if (aud_blks[blk].cplinu)
+                        {
+                            if (cpldeltbae==0x01)
+                            {
+                                int8u cpldeltnseg;
+                                Get_S1 (3, cpldeltnseg,                 "cpldeltnseg");
+                                for (int8u seg = 0; seg <= cpldeltnseg; ++seg)
+                                {
+                                    Skip_S1(5,                          "cpldeltoffst[seg]");
+                                    Skip_S1(4,                          "cpldeltlen[seg]");
+                                    Skip_S1(3,                          "cpldeltba[seg]");
+                                }
+                            }
+                        }
+
+                        for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                        {
+                            if (aud_chan_blk[Pos].deltbae==0x01)
+                            {
+                                int8u deltnseg;
+                                Get_S1 (3, deltnseg,                    "deltnseg[ch]");
+                                for (int8u seg = 0; seg <= deltnseg; ++seg)
+                                {
+                                    Skip_S1(5,                          "deltoffst[ch][seg]");
+                                    Skip_S1(4,                          "deltlen[ch][seg]");
+                                    Skip_S1(3,                          "deltba[ch][seg]");
+                                }
+                            }
+                        }
+                        TEST_SB_END();
+                    }
+
+                    if (skipflde)
+                    {
+                        TEST_SB_SKIP(                                   "skiple");
+                        int16u skipl;
+                        Get_S2 (9, skipl,                               "skipl");
+                        Skip_BS(skipl * 8,                              "skipfld");
+                        //TODO: EMDF();
+                        TEST_SB_END();
+                    }
+
+                    bool   got_cplchan = false;
+                    size_t cplactivegaqbins = 0;
+                    int8u  lfegaqmod = 0;
+                    int8u* lfegaqbin = NULL;
+                    size_t lfeendmant = 7;
+                    int8u  cplgaqmod = 0;
+                    lfegaqbin = new int8u[lfeendmant];
+
+                    int8u *cplgaqbin = NULL;
+                    cplgaqbin = new int8u[cplendmant];
+                    for (size_t bin = 0; bin < lfeendmant; ++bin)
+                        lfegaqbin[bin] = 0;
+
+                    for (int8u Pos=0; Pos<AC3_Channels[acmod]; ++Pos)
+                    {
+                        if (!aud_chan_blk[Pos].chahtinu)
+                        {
+                            aud_chan_blk[Pos].endmant = ((aud_chan_blk[Pos].chbwcod + 12) * 3) + 37;
+                            for (size_t bin = 0; bin < aud_chan_blk[Pos].endmant; ++bin)
+                            {
+                                //TODO
+                                // chmant[ch][bin];
+                                // (0-16);
+                            }
+                        }
+
+                        else if (aud_chan_blk[Pos].chahtinu)
+                        {
+                            int8u chgaqmod = 0;
+                            size_t chgaqsections = 0;
+                            Get_S1 (2, chgaqmod,                        "chgaqmod[ch]");
+                            switch (chgaqmod)
+                            {
+                                case 0:
+                                {
+                                    chgaqsections = 0;
+                                    break;
+                                }
+                                case 1:
+                                case 2:
+                                {
+                                    chgaqsections = aud_chan_blk[Pos].chactivegaqbins;
+                                    break;
+                                }
+                                case 3:
+                                {
+                                    chgaqsections = aud_chan_blk[Pos].chactivegaqbins / 3;
+                                    if (aud_chan_blk[Pos].chactivegaqbins % 3)
+                                        ++chgaqsections;
+                                    break;
+                                }
+                            };
+
+                            if (chgaqmod>0x0 && chgaqmod<0x3)
+                            {
+                                for (size_t n = 0; n < chgaqsections; ++n)
+                                    Skip_SB(                        "chgaqgain[ch][n]");
+                            }
+                            else if (chgaqmod==0x3)
+                            {
+                                for (size_t n = 0; n < chgaqsections; ++n)
+                                    Skip_S1(5,                          "chgaqgain[ch][n]");
+                            }
+
+                            aud_chan_blk[Pos].endmant = cplstrtmant;
+                            int8u* chgaqbin = new int8u [aud_chan_blk[Pos].endmant];
+                            if (aud_chan_blk[Pos].chahtinu == 0)
+                            {
+                                for (size_t i = 0; i < aud_chan_blk[Pos].endmant; ++i)
+                                    chgaqbin[i] = 0;
+                            }
+                            else
+                            {
+                                int8u endbap = 17;
+                                if (chgaqmod < 2)
+                                    endbap = 12;
+
+                                aud_chan_blk[Pos].chactivegaqbins = 0;
+                                for (size_t i = 0; i < aud_chan_blk[Pos].endmant; ++i)
+                                {
+                                    if (hebap[i] > 7 && hebap[i] < endbap)
+                                    {
+                                        chgaqbin[i] = 1;
+                                        ++aud_chan_blk[Pos].chactivegaqbins;
+                                    }
+                                    else if (hebap[i] >= endbap)
+                                        chgaqbin[i] = -1;
+                                    else
+                                        chgaqbin[i] = 0;
+                                }
+                            }
+
+                            for (size_t bin = 0; bin < aud_chan_blk[Pos].endmant; ++bin)
+                            {
+
+                                if (!cplahtinu)
+                                {
+                                    for (size_t i = cplstrtmant; i < cplendmant; ++i)
+                                        cplgaqbin[i] = 0;
+                                }
+                                else
+                                {
+                                    int8u endbap = 17;
+                                    if (cplgaqmod < 2)
+                                        endbap = 12;
+
+                                    cplactivegaqbins = 0;
+                                }
+
+                                if (chgaqbin[bin])
+                                {
+                                    for (size_t n = 0; n < 6; n++)
+                                    {
+                                        //TODO
+                                        // {pre_chmant[n][ch][bin]} ...........................
+                                        //     (0-16);
+                                    }
+                                }
+                                else
+                                {
+                                    //TODO
+                                    // pre_chmant[0][ch][bin] .................................................;
+                                    // (0-9);
+                                }
+                            }
+                            aud_chan_blk[Pos].chahtinu = -1;
+                        }
+
+                        if (aud_blks[blk].cplinu && aud_chan_blk[Pos].chincpl && !got_cplchan)
+                        {
+                            size_t ncplmant = 12 * ncplsubnd;
+                            if (cplahtinu==0)
+                            {
+                                for (size_t bin = 0; bin < ncplmant; ++bin)
+                                {
+                                    //TODO
+                                    // cplmant[bin] ...........................;
+                                    // (0-16);
+                                }
+                                got_cplchan = true;
+                            }
+                            else if (cplahtinu==1)
+                            {
+                                Get_S1 (2, cplgaqmod,                   "cplgaqmod");
+
+                                if (lfeahtinu == 0)
+                                {
+                                    for (size_t bin = 0; bin < lfeendmant; bin++)
+                                        lfegaqbin[bin] = 0;
+                                }
+                                else
+                                {
+                                    int8u endbap = 17;
+                                    if (lfegaqmod<2)
+                                        endbap = 12;
+
+                                    for (size_t bin = 0; bin < lfeendmant; bin++)
+                                    {
+                                        if (hebap[bin] > 7 && hebap[bin] < endbap)
+                                        {
+                                            lfegaqbin[bin] = 1;
+                                            ++lfeactivegaqbins;
+                                        }
+                                        else if (hebap[bin] >= endbap)
+                                            lfegaqbin[bin] = -1;
+                                        else
+                                            lfegaqbin[bin] = 0;
+                                    }
+                                }
+
+                                if (cplgaqmod>0x0 && cplgaqmod<0x3)
+                                {
+                                    size_t cplgaqsections = cplactivegaqbins;
+                                    for (size_t n = 0; n < cplgaqsections; n++)
+                                        Skip_SB(                        "cplgaqgain[n]");
+                                }
+                                else if (cplgaqmod == 0x3)
+                                {
+                                    size_t cplgaqsections = cplactivegaqbins / 3;
+                                    if (cplactivegaqbins % 3)
+                                        ++cplgaqsections;
+
+                                    for (size_t n = 0; n < cplgaqsections; n++)
+                                        Skip_S1(5,                      "cplgaqgain[n]");
+                                }
+
+                                for (size_t bin = 0; bin < ncplmant; ++bin)
+                                {
+                                    if (cplgaqbin[bin])
+                                    {
+                                        for (size_t n = 0; n < 6; ++n)
+                                        {
+                                            //TODO
+                                            // pre_cplmant[n][bin] ...........................;
+                                            // (0-16);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        //TODO
+                                        // pre_cplmant[0][bin] .................................................;
+                                        // (0-9);
+                                    }
+                                }
+                                got_cplchan = true;
+                                cplahtinu = -1;
+                            }
+                            else
+                                got_cplchan = true;
+                        }
+                    }
+
+                    if (lfeon)
+                    {
+                        int8u nlfemant = 7;
+                        if (lfeahtinu == 0)
+                        {
+                            for (size_t bin = 0; bin < nlfemant; ++bin)
+                            {
+                                //TODO
+                                // lfemant[bin]..............................;
+                                // (0-16);
+                            }
+                        }
+                        else if (lfeahtinu == 1)
+                        {
+                            size_t lfegaqsections = 0;
+                            Get_S1 (2, lfegaqmod,                        "lfegaqmod");
+
+                            if (lfeahtinu!=0)
+                            {
+                                size_t sumgaqbins = 0;
+                                for (size_t bin = 0; bin < lfeendmant; bin++)
+                                    sumgaqbins += lfegaqbin[bin];
+
+                                switch (lfegaqmod)
+                                {
+                                    case 0:
+                                    {
+                                        lfegaqsections = 0;
+                                        break;
+                                    }
+                                    case 1:
+                                    case 2:
+                                    {
+                                        lfegaqsections = lfeactivegaqbins;
+                                        break;
+                                    }
+                                    case 3:
+                                    {
+                                        lfegaqsections = lfeactivegaqbins / 3;
+                                        if (lfeactivegaqbins % 3)
+                                            lfegaqsections++;
+                                        break;
+                                    }
+                                };
+                            }
+
+                            if (lfegaqmod>0x0 && lfegaqmod<0x3)
+                            {
+                                for (size_t n = 0; n < lfegaqsections; ++n)
+                                    Skip_SB(                             "lfegaqgain[n]");
+                            }
+                            else if (lfegaqmod==0x3)
+                            {
+                                for (size_t n = 0; n < lfegaqsections; ++n)
+                                    Skip_S1(5,                           "lfegaqgain[n]");
+                            }
+
+                            for (size_t bin = 0; bin < nlfemant; ++bin)
+                            {
+                                if (lfegaqbin[bin])
+                                {
+                                    for (size_t n = 0; n < 6; ++n)
+                                    {
+                                        //TODO
+                                        // pre_lfemant[n][bin] ..............................;
+                                        // (0-16);
+                                    }
+                                }
+                                else
+                                {
+                                    //TODO
+                                    // pre_lfemant[0][bin] ....................................................;
+                                    // (0-9);
+                                }
+                            }
+
+                            lfeahtinu = (int8u)-1;
+                        }
+                    }
+
+                Element_End0();
+            }
+            //*/
+
         Element_End0();
     }
     else
