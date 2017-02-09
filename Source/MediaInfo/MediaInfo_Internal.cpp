@@ -683,7 +683,8 @@ size_t MediaInfo_Internal::Open_Buffer_Init (int64u File_Size_, const String &Fi
         if (File_Size_!=(int64u)-1)
         {
             Config.File_Size=Config.File_Current_Size=File_Size_;
-            Config.File_Sizes[Config.File_Sizes.size()-1]=File_Size_;
+            if (!Config.File_Sizes.empty())
+                Config.File_Sizes[Config.File_Sizes.size()-1]=File_Size_;
         }
     }
 
@@ -751,7 +752,9 @@ size_t MediaInfo_Internal::Open_Buffer_Init (int64u File_Size_, int64u File_Offs
         if (File_Size_!=(int64u)-1)
         {
             Config.File_Size=Config.File_Current_Size=File_Size_;
-            Config.File_Sizes[Config.File_Sizes.size()-1]=File_Size_;
+            if (!Config.File_Sizes.empty())
+                Config.File_Sizes[Config.File_Sizes.size()-1]=File_Size_;
+
             if (Info && !Info->Retrieve(Stream_General, 0, General_FileSize).empty())
                 Info->Fill(Stream_General, 0, General_FileSize, File_Size_, 10, true); //TODO: avoid multiple tests of file size field, refactor it in order to have a single place for file size info
         }
