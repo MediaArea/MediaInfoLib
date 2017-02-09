@@ -726,6 +726,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
 
     //Should parse again?
     if (((File_GoTo==File_Size && File_Size!=(int64u)-1) || File_Offset+Buffer_Offset>=File_Size)
+        && !Config->File_IsGrowing
        #if MEDIAINFO_DEMUX
          && !Config->Demux_EventWasSent
         #endif //MEDIAINFO_DEMUX
@@ -789,6 +790,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
     if (Buffer_Size && Buffer_Offset<=Buffer_Size) //all is not used
     {
         if (File_Offset+Buffer_Size>=File_Size //No more data will come
+         && !Config->File_IsGrowing
         #if MEDIAINFO_DEMUX
          && !Config->Demux_EventWasSent
         #endif //MEDIAINFO_DEMUX
