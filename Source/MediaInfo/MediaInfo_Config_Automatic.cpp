@@ -2747,6 +2747,7 @@ void MediaInfo_Config_CodecID_Text_Matroska (InfoMap &Info)
     "S_VOBSUB;VobSub;;Picture based subtitle format used on DVDs\n"
     "S_HDMV/PGS;PGS;;Picture based subtitle format used on BDs/HD-DVDs\n"
     "S_HDMV/TEXTST;TEXTST;;Text based subtitle format used on BDs\n"
+    "S_KATE;KATE;;Karaoke And Text Encapsulation\n"
     ));
     Info.Separator_Set(0, ZenLib::EOL);
 }
@@ -3877,6 +3878,7 @@ void MediaInfo_Config_Codec (InfoMap &Info)
     "S_VOBSUB;VobSub;Mk;T;;;Picture based subtitle format used on DVDs\n"
     "S_HDMV/PGS;PGS;Mk;T;;;Picture based subtitle format used on BDs/HD-DVDs\n"
     "S_HDMV/TEXTST;TEXTST;Mk;T;;;Text based subtitle format used on BDs\n"
+    "S_KATE;KATE;Mk;T;;;Karaoke And Text Encapsulation\n"
     ));
     Info.Separator_Set(0, ZenLib::EOL);
 }
