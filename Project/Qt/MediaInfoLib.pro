@@ -186,6 +186,7 @@ HEADERS += \
         ../../Source/MediaInfo/Multiple/File_Umf.h \
         ../../Source/MediaInfo/Multiple/File_Vbi.h \
         ../../Source/MediaInfo/Multiple/File_Wm.h \
+        ../../Source/MediaInfo/Multiple/File_Wtv.h \
         ../../Source/MediaInfo/Multiple/File_Xdcam_Clip.h \
         ../../Source/MediaInfo/PreComp.h \
         ../../Source/MediaInfo/Reader/Reader__Base.h \
@@ -402,6 +403,7 @@ SOURCES += \
         ../../Source/MediaInfo/Multiple/File_Vbi.cpp \
         ../../Source/MediaInfo/Multiple/File_Wm.cpp \
         ../../Source/MediaInfo/Multiple/File_Wm_Elements.cpp \
+        ../../Source/MediaInfo/Multiple/File_Wtv.cpp \
         ../../Source/MediaInfo/Multiple/File_Xdcam_Clip.cpp \
         ../../Source/MediaInfo/PreComp.cpp \
         ../../Source/MediaInfo/Reader/Reader_Directory.cpp \

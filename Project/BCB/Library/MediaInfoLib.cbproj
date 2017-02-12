@@ -553,6 +553,12 @@
 			<CppCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Wm_Elements.cpp">
 				<BuildOrder>1</BuildOrder>
 			</CppCompile>
+			<CppCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Wtv.cpp">
+				<BuildOrder>223</BuildOrder>
+			</CppCompile>
+			<None Include="..\..\..\Source\MediaInfo\Multiple\File_Wtv.h">
+				<BuildOrder>224</BuildOrder>
+			</None>
 			<CppCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Xdcam_Clip.cpp">
 				<BuildOrder>188</BuildOrder>
 			</CppCompile>

@@ -1311,6 +1311,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "Blender;;;O;Other;;blenders;;http://www.blender3d.com\n"
     "AutoCAD;;;O;Other;;;;http://www.autodesk.com\n"
     "PlayLater Video;;;V;Other;;;;http://www.playon.tv/playlater\n"
+    "WTV;;;M;WTV;Windows Recorded TV Show;wtv;video/wtv;\n"
     ));
     Info.Separator_Set(0, ZenLib::EOL);
 }
