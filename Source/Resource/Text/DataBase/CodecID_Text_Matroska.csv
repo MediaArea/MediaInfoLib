@@ -1,4 +1,5 @@
 S_ASS;ASS;;Advanced Sub Station Alpha
+S_DVBSUB;DVB Subtitle;;Picture based subtitle format used on DVBs
 S_KATE;KATE;;Karaoke And Text Encapsulation
 S_IMAGE/BMP;Bitmap;;Basic image based subtitle format
 S_SSA;SSA;;Sub Station Alpha
