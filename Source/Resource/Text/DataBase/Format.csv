@@ -24,8 +24,8 @@ IVF;;;M;Ivf;;ivf;;;
 LXF;;;M;Lxf;;lxf;video/lxf;;
 Matroska;;;M;Mk;;mkv mk3d mka mks;;http://packs.matroska.org/;
 MPEG-PS;;;M;MpegPs;;mpeg mpg m2p vob pss evo;video/MP2P;;
-MPEG-TS;;;M;MpegTs;;ts m2t m2s m2ts m4t m4s ts tp trp;video/MP2T;;
-MPEG-4;;;M;Mpeg4;;mov mp4 m4v m4a m4b m4p 3gpp 3gp 3gpp2 3g2 k3g jpm jpx mqv ismv isma ismt f4v;video/mp4;;
+MPEG-TS;;;M;MpegTs;;ts m2t m2s m2ts m4t m4s tmf ts tp trp ty;video/MP2T;;
+MPEG-4;;;M;Mpeg4;;mov mp4 m4v m4a m4b m4p 3ga 3gpa 3gpp 3gp 3gpp2 3g2 k3g jpm jpx mqv ismv isma ismt f4a f4b f4v;video/mp4;;
 MTV;;;M;Other;Chinese hack of MPEG-1 layer 3;mtv;;http://en.wikipedia.org/wiki/Chinese_MP4/MTV_Player;
 MXF;;;M;Mxf;;mxf;application/mxf;;
 NSV;;;M;Nsv;Nullsoft Streaming Video;nsv;;http://winamp.com;
@@ -85,7 +85,7 @@ MIDI;;;A;Riff;RIFF Musical Instrument Digital Interface;midi mid kar;audio/midi;
 Module;;;A;Module;;mod;;;
 Monkey's Audio;;;A;Ape;;ape mac;;http://www.monkeysaudio.com/;Lossless
 MPEG Audio;;;A;Mpega;;m1a mpa1 mp1 m2a mpa2 mp2 mp3;audio/mpeg;;Lossy
-OpenMG;;;A;OpenMG;;oma omg aa3;;;Lossy
+OpenMG;;;A;OpenMG;;oma omg aa3 at3;;;Lossy
 Musepack SV7;;;A;Mpc;;mpc;;http://www.musepack.net;Lossy
 Musepack SV8;;;A;Mpc;;mp+;;http://www.musepack.net;Lossy
 QCELP;;;A;;;;audio/QCELP;;
@@ -94,31 +94,31 @@ RKAU;RK Audio;;A;Rkau;;rka;;http://www.msoftware.co.nz;
 Scream Tracker 3;;;A;S3m;;s3m;;;
 Shorten;;;A;;;shn;;http://etree.org/shnutils/shorten/;Lossless
 SLS;;;A;;MPEG-4 Scalable Lossless Coding;sls;;http://www.chiariglione.org/mpeg/technologies/mp04-sls/index.htm;Lossless
-Speex;;;A;;;;audio/speex;http://www.speex.org/;Lossy
+Speex;;;A;;;spx;audio/speex;http://www.speex.org/;Lossy
 Opus;;;A;;;;audio/opus;http://opus-codec.org/;Lossy
 TAK;;;A;;;tak;;http://thbeck.de/Tak/Tak.html;Lossless
 TrueHD;;;A;Ac3;;;;;Lossless
 TwinVQ;;;A;TwinVQ;Transform domain Weighted INterleave Vector Quantization;vqf;;http://www.twinvq.org/english/index_en.html;
 Vorbis;;;A;;;;audio/vorbis;http://www.vorbis.com/;Lossy
-Wave;;;A;Riff;;wav;audio/vnd.wave;;
+Wave;;;A;Riff;;act wav;audio/vnd.wave;;
 Wave64;;;A;Riff;;w64;;;
 WavPack;;;A;Wvpk;;wv wvc;;http://www.wavpack.com;
 Arri Raw;;;I;ArriRaw;;ari;;;
-Bitmap;;;I;Bmp;;bmp;image/bmp;;Lossless
+Bitmap;;;I;Bmp;;bmp bms;image/bmp;;Lossless
 BPG;;;I;Bpg;Better Portable Graphics;bpg;image/bpg;http://bellard.org/bpg/;
 DDS;;;I;Dds;DirectDraw Surface;dds;;;
 DPX;;;I;Dpx;;dpx cin;;;Lossless
 EXR;;;I;Exr;;exr;;;Lossless
 DIB;;;I;Riff;RIFF Device Independent Bitmap;;;;Lossless
-GIF;;;I;Gif;Graphics Interchange Format;gif;image/gif;;Lossless
+GIF;;;I;Gif;Graphics Interchange Format;gif gis;image/gif;;Lossless
 ICO;;;I;Ico;;ico;image/vnd.microsoft.icon;;Lossless
 JNG;;;I;Jng;JPEG Network Graphic;jng;;;Lossy
-JPEG;;;I;Jpeg;;jpeg jpg jpe;image/jpeg;;Lossy
+JPEG;;;I;Jpeg;;h3d jpeg jpg jpe jps mpo;image/jpeg;;Lossy
 JPEG 2000;;;I;Jpeg;;jp2;image/jp2;http://www.morgan-multimedia.com/JPEG 2000/;
 LZ77;;;I;;;;;;
 MNG;;;I;Mng;Multiple-Image Network Graphic;mng;;;Lossless
 PCX;;;I;pcx;Personal Computer eXchange;pcx;image/pcx;;Lossless
-PNG;;;I;Png;Portable Network Graphic;png;image/png;;Lossless
+PNG;;;I;Png;Portable Network Graphic;png pns;image/png;;Lossless
 PSD;;;I;Psd;Photoshop File Format;psd;image/psd;http://www.adobe.com/;Lossless
 RIFF Palette;;;I;Riff;RIFF Palette;;;;
 RLE;;;I;;Run-length encoding;rle;;;
@@ -149,3 +149,4 @@ WebVTT;;;T;WebVTT;;vtt;;;Lossless
 Blender;;;O;Other;;blenders;;http://www.blender3d.com;
 AutoCAD;;;O;Other;;;;http://www.autodesk.com;
 PlayLater Video;;;V;Other;;;;http://www.playon.tv/playlater;
+WTV;;;M;WTV;Windows Recorded TV Show;wtv;video/wtv;;
