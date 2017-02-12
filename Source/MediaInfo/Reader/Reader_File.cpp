@@ -661,7 +661,8 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
             }
             if (MI->Config.File_IsGrowing && (Growing_Temp!=(int64u)-1 || MI->Config.File_Current_Offset+F.Position_Get()>=MI->Config.File_Size))
             {
-                for (size_t CountOfSeconds=0; CountOfSeconds<(size_t)MI->Config.File_GrowingFile_Delay_Get(); CountOfSeconds++)
+                size_t CountOfSeconds=0;
+                for (; CountOfSeconds<(size_t)MI->Config.File_GrowingFile_Delay_Get(); CountOfSeconds++)
                 {
                     int64u LastFile_Size_Old=MI->Config.File_Sizes[MI->Config.File_Sizes.size()-1];
                     size_t Files_Count_Old=MI->Config.File_Names.size();
@@ -683,6 +684,9 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                         Sleep(1000);
                     #endif //WINDOWS
                 }
+
+                if (CountOfSeconds>=(size_t)MI->Config.File_GrowingFile_Delay_Get())
+                    MI->Config.File_IsGrowing=false;
             }
 
             #ifdef MEDIAINFO_DEBUG
@@ -710,7 +714,7 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                 }
             #endif //MEDIAINFO_READTHREAD
 
-            if (MI->Config.File_Buffer_Size==0)
+            if (!MI->Config.File_IsGrowing && MI->Config.File_Buffer_Size==0)
             {
                 #if MEDIAINFO_EVENTS
                     MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0xF0F00101, "File read error");
