@@ -1642,6 +1642,13 @@ bool File__Analyze::FileHeader_Begin_0x000001()
         default         :   break;
     }
 
+    //WTV
+    if (Magic8==0xB7D800203749DA11LL && CC8(Buffer+8)==0xA64E0007E95EAD8DLL)
+    {
+        Reject();
+        return false;
+    }
+
     //Detect TS files, and the parser is not enough precise to detect them later
     size_t Buffer_Offset=0;
     while (Buffer_Offset<188 && Buffer[Buffer_Offset]!=0x47) //Look for first Sync word

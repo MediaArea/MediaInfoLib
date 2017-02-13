@@ -269,6 +269,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Vbi.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Wm.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Wm_Elements.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Wtv.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Xdcam_Clip.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Reader/Reader_Directory.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Reader/Reader_File.cpp

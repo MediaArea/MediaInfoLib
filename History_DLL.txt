@@ -7,6 +7,10 @@ x Correction
 bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
+Version 0.7.93
+--------------
++ WTV: basic detection
+
 Version 0.7.92.1, 2017-02-02
 --------------
 x Fix a performance regression in the matroska parser

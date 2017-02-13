@@ -157,6 +157,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Multiple/File_Vbi.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Wm.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Wm_Elements.cpp \
+                       ../../../Source/MediaInfo/Multiple/File_Wtv.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Xdcam_Clip.cpp \
                        ../../../Source/MediaInfo/Reader/Reader_Directory.cpp \
                        ../../../Source/MediaInfo/Reader/Reader_File.cpp \
