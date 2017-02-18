@@ -97,8 +97,8 @@ CSCD;CamStudio;4CC;V;;;RenderSoft CamStudio lossless (LZO & GZIP compression);
 CT10;TalkingShow;4CC;V;;;CyberLink Corporation;http://www.cyberlink.com
 CTRX;Citrix;4CC;V;;;Citrix Scalable Video;
 CUVC;Canopus HQ;4CC;V;;;Canopus HQ;
-CVID;Cinepack;4CC;V;;;Cinepak by CTi (ex. Radius) Vector Quantization;http://www.cinepak.com/text.html
-cvid;Cinepack;4CC;V;;;Cinepak by CTi (ex. Radius) Vector Quantization;http://www.apple.com/quicktime/download/standalone.html
+CVID;Cinepak;4CC;V;;;Cinepak by CTi (ex. Radius) Vector Quantization;http://www.cinepak.com/text.html
+cvid;Cinepak;4CC;V;;;Cinepak by CTi (ex. Radius) Vector Quantization;http://www.apple.com/quicktime/download/standalone.html
 CWLT;WLT;4CC;V;;;Microsoft Color WLT DIB;
 CYUV;YUV;4CC;V;YUV;;Creative Labs YUV 4:2:2;http://www.fourcc.org/indexyuv.htm
 CYUY;YUV;4CC;V;YUV;;ATI Technologies YUV;http://www.fourcc.org/indexyuv.htm
