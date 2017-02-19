@@ -1728,6 +1728,21 @@ void File_Ac3::Core()
 //---------------------------------------------------------------------------
 void File_Ac3::Core_Frame()
 {
+    //Save true Element_Size (if Core+substreams, Element_Size is for all elements, and we want to limit to core)
+    int64u Element_Size_Save=Element_Size;
+    if (bsid>0x0A && bsid<=0x10) //E-AC-3 only
+    {
+        int16u frmsiz=CC2(Buffer+Buffer_Offset+(size_t)Element_Offset+2)&0x07FF;
+        Element_Size=Element_Offset+2+frmsiz*2;
+    }
+
+    //Pre-parsing, finding some elements presence
+    if (Buffer[Buffer_Offset+(Element_Size)-3]&0x02) //auxdatae
+        auxdatal=(((int16u)Buffer[Buffer_Offset+(Element_Size)-4])<<6)
+                |(         Buffer[Buffer_Offset+(Element_Size)-3] >>2);
+    else
+        auxdatal=(int16u)-1; //auxdata is empty
+
     //Parsing
     int16u frmsiz=0, chanmap=0;
     int8u  dialnorm=(int8u)-1, dialnorm2=(int8u)-1, compr=(int8u)-1, compr2=(int8u)-1, dynrng=(int8u)-1, dynrng2=(int8u)-1;
@@ -1808,9 +1823,7 @@ void File_Ac3::Core_Frame()
                 if (dynrng2e)
                     Get_S1 (8, dynrng2,                             "dynrng2 - Dynamic Range Gain Word");
             }
-            BS_End();
         Element_End0();
-        Skip_XX(Element_Size-Element_Offset,                        "audblk(continue)+5*audblk+auxdata+errorcheck");
     }
     else if (bsid>0x0A && bsid<=0x10)
     {
@@ -1852,24 +1865,32 @@ void File_Ac3::Core_Frame()
                 TEST_SB_END();
             }
         Element_End0();
-        if (Data_BS_Remain()<17)
-        {
-            BS_End();
-            Trusted_IsNot("Not enough data");
-        }
-        else
-        {
-            Element_Begin1("errorcheck");
-            size_t BitsUpToEndOfFrame=(frmsiz*2)*8-(Bits_Begin-Data_BS_Remain());
-            Skip_BS(BitsUpToEndOfFrame-17,                          "bsi(continue)+audfrm+x*audblk+auxdata+errorcheck");
-            Skip_SB(                                                "encinfo");
-            BS_End();
-            Skip_B2(                                                "crc2");
-            Element_End0();
-        }
     }
     else
         Skip_XX(Element_Size-Element_Offset,                        "Unknown");
+
+    //true Element_Size is back
+    Element_Size=Element_Size_Save;
+
+    if (bsid<=0x10)
+    {
+        size_t BitsAtEnd=18; //auxdatae+errorcheck
+        if (auxdatal!=(int16u)-1)
+            BitsAtEnd+=auxdatal+14; //auxbits+auxdatal
+        if (Data_BS_Remain()>=BitsAtEnd)
+        {
+            if (Data_BS_Remain()>BitsAtEnd)
+                Skip_BS(Data_BS_Remain()-BitsAtEnd,                 bsid<=0x0A?"(Unparsed audblk(continue)+5*audblk+padding)":"(Unparsed bsi+6*audblk+padding)");
+            Element_Begin1("auxdata");
+                Skip_SB(                                            "auxdatae");
+            Element_End0();
+            Element_Begin1("errorcheck");
+                Skip_SB(                                            "encinfo");
+                BS_End();
+                Skip_B2(                                            "crc2");
+            Element_End0();
+        }
+    }
 
     FILLING_BEGIN();
         if (bsid>0x10)
