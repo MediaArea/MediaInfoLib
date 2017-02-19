@@ -70,6 +70,14 @@ private :
     void emdf_container();
     void emdf_payload_config();
     void emdf_protection();
+    void object_audio_metadata_payload();
+    void program_assignment();
+    void joc();
+    void joc_header();
+    void joc_info();
+    void joc_data_point_info();
+    void joc_data();
+    void joc_ext_data();
 
     void TimeStamp();
     void dac3();
@@ -94,6 +102,10 @@ private :
     //Temp EMDF
     size_t EMDF_RemainPos;
     size_t RemainAfterEMDF;
+
+    //Temp JOC
+    int8u joc_num_objects;
+    int8u joc_ext_config_idx;
     
     //Temp
     struct dolby
