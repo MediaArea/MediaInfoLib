@@ -1143,7 +1143,7 @@ void File__Analyze::Clear (stream_t StreamKind, size_t StreamPos, const char* Pa
             if (Fill_Temp[StreamKind][Pos].Parameter==Parameter_String)
             {
                 Fill_Temp[StreamKind].erase(Fill_Temp[StreamKind].begin() + Pos);
-                return;
+                Pos--;
             }
         return;
     }
