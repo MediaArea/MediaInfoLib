@@ -288,6 +288,9 @@ File__Analyze::File__Analyze ()
     //BitStream
     BS=new BitStream_Fast;
     BT=new BitStream_LE;
+    #if MEDIAINFO_TRACE
+        BS_Size=0;
+    #endif //MEDIAINFO_TRACE
 
     //Temp
     Status[IsAccepted]=false;
@@ -2659,9 +2662,14 @@ void File__Analyze::Element_Begin(const char* Name)
 
     //TraceNode
     Element[Element_Level].TraceNode.Init();
-    Element[Element_Level].TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get(); //TODO: change this, used in Element_End0()
     if (Trace_Activated)
     {
+        Element[Element_Level].TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset; //TODO: change this, used in Element_End0()
+        if (BS_Size)
+        {
+            int64u BS_BitOffset=BS_Size-BS->Remain();
+            Element[Element_Level].TraceNode.Pos+=BS_BitOffset>>3; //Including Bits to Bytes
+        }
         Element[Element_Level].TraceNode.Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
         Element_Name(Name);
     }

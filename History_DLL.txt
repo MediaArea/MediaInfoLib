@@ -10,6 +10,7 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 Version 0.7.93
 --------------
 + WTV: basic detection
+x MediaTrace: for bitstreams (not bytestreams), bit offset was wrong
 
 Version 0.7.92.1, 2017-02-02
 --------------
