@@ -47,7 +47,7 @@ void Basic_General_Start_0 (struct MediaInfo_Event_General_Start_0* Event, struc
     if (Event->FileName_Unicode)
     {
         UserHandle->Name=Event->FileName_Unicode;
-        UserHandle->Time_File.Write(Event->FileName_Unicode+__T(';'));
+        UserHandle->Time_File.Write(Ztring(Event->FileName_Unicode)+__T(';'));
     }
     UserHandle->Size=Event->Stream_Size;
     UserHandle->Time_Start=time(NULL);
