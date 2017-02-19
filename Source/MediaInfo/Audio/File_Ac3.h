@@ -65,6 +65,12 @@ private :
     void Core();
     void Core_Frame();
     void HD();
+    void emdf();
+    void emdf_sync();
+    void emdf_container();
+    void emdf_payload_config();
+    void emdf_protection();
+
     void TimeStamp();
     void dac3();
     void dec3();
@@ -72,6 +78,10 @@ private :
     bool CRC_Compute(size_t Size);
     size_t Core_Size_Get();
     size_t HD_Size_Get();
+
+    //Parsing
+    void Get_V4(int8u  Bits, int32u  &Info, const char* Name);
+    void Skip_V4(int8u  Bits, const char* Name);
 
     //Buffer
     const int8u* Save_Buffer;
@@ -81,6 +91,10 @@ private :
     //Temp auxdata
     int16u  auxdatal;
 
+    //Temp EMDF
+    size_t EMDF_RemainPos;
+    size_t RemainAfterEMDF;
+    
     //Temp
     struct dolby
     {

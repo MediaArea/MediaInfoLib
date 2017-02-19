@@ -644,6 +644,108 @@ static const int32u AC3_MLP_Resolution[16]=
     0,
 };
 
+//---------------------------------------------------------------------------
+const char* Ac3_emdf_payload_id[16]
+{
+    "Container End",
+    "Programme loudness data",
+    "Programme information",
+    "E-AC-3 substream structure",
+    "Dynamic range compression data for portable devices",
+    "Programme Language",
+    "External Data",
+    "Headphone rendering data",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+};
+
+//---------------------------------------------------------------------------
+int32u Ac3_variable_bits(BitStream_Fast &Search2, int8u Bits)
+{
+    int32u ToReturn = 0;
+
+    do
+    {
+        ToReturn += Search2.Get4(Bits);
+    }
+    while (Search2.GetB());
+
+    return ToReturn;
+}
+
+//---------------------------------------------------------------------------
+bool Ac3_EMDF_Test(const BitStream_Fast &Search)
+{
+    BitStream_Fast Search2(Search);
+    Search2.Skip(16); //syncword
+    size_t Size=((size_t)Search2.Get2(16))*8+17; //emdf_container_length
+    if (Size>Search2.Remain())
+        return false;
+    size_t End=Search2.Remain()-Size;
+    if (Search2.Get1(2)) //emdf_version
+        return false;
+    if (Search2.Get1(3) == 0x7) //key_id
+        Ac3_variable_bits(Search2, 3);
+    for (;;)
+    {
+        int8u emdf_payload_id=Search2.Get1(5);
+        if (!emdf_payload_id)
+            break;
+        if (emdf_payload_id == 0x1F)
+            Ac3_variable_bits(Search2, 5);
+        bool smploffste=Search2.GetB();
+        if (smploffste)
+            Search2.Skip(12);
+        if (Search2.GetB()) //duratione
+            Ac3_variable_bits(Search2, 11); //duration
+        if (Search2.GetB()) //groupide
+            Ac3_variable_bits(Search2, 2); //groupid
+        if (Search2.GetB()) //codecdatae
+            return false; //must be 0
+        if (!Search2.GetB()) //discard_unknown_payload
+        {
+            bool payload_frame_aligned=false;
+            if (!smploffste)
+            {
+                payload_frame_aligned=Search2.GetB();
+                if (payload_frame_aligned)
+                    Search2.Skip(2);
+            }
+            if (smploffste || payload_frame_aligned)
+                Search2.Skip(7);
+        }
+        size_t emdf_payload_size=((size_t)Ac3_variable_bits(Search2, 8))*8;
+        Search2.Skip(emdf_payload_size);
+    }
+    int8u protection_length_primary=Search2.Get1(2);
+    switch (protection_length_primary)
+    {
+        case 0: return false;
+        case 1: protection_length_primary=8; break;
+        case 2: protection_length_primary=32; break;
+        case 3: protection_length_primary=128; break;
+        default: ;
+    }
+    int8u protection_bits_secondary=Search2.Get1(2);
+    switch (protection_bits_secondary)
+    {
+        case 0: protection_bits_secondary=0; break;
+        case 1: protection_bits_secondary=8; break;
+        case 2: protection_bits_secondary=32; break;
+        case 3: protection_bits_secondary=128; break;
+        default: ;
+    }
+    Search2.Skip(protection_length_primary);
+    Search2.Skip(protection_bits_secondary);
+    return Search2.Remain()>=17?true:false;
+}
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -1742,6 +1844,17 @@ void File_Ac3::Core_Frame()
                 |(         Buffer[Buffer_Offset+(Element_Size)-3] >>2);
     else
         auxdatal=(int16u)-1; //auxdata is empty
+    BitStream_Fast Search(Buffer+Buffer_Offset, Element_Size);
+    while(Search.Remain()>18)
+    {
+        if (Search.Peek2(16)==0x5838 && Ac3_EMDF_Test(Search))
+            break;
+        Search.Skip(1);
+    }
+    if (Search.Remain()>18)
+        EMDF_RemainPos=Search.Remain();
+    else
+        EMDF_RemainPos=(size_t)-1;
 
     //Parsing
     int16u frmsiz=0, chanmap=0;
@@ -1879,7 +1992,13 @@ void File_Ac3::Core_Frame()
             BitsAtEnd+=auxdatal+14; //auxbits+auxdatal
         if (Data_BS_Remain()>=BitsAtEnd)
         {
-            if (Data_BS_Remain()>BitsAtEnd)
+            if (EMDF_RemainPos!=(size_t)-1 && BitsAtEnd<EMDF_RemainPos)
+            {
+                Skip_BS(Data_BS_Remain()-EMDF_RemainPos,            bsid<=0x0A?"(Unparsed audblk(continue)+5*audblk+padding)":"(Unparsed bsi+6*audblk+padding)");
+                emdf();
+                Skip_BS(Data_BS_Remain()-BitsAtEnd,                 bsid<=0x0A?"(Unparsed audblk(continue)+5*audblk+padding)":"(Unparsed bsi+6*audblk+padding)");
+            }
+            else if (Data_BS_Remain()>BitsAtEnd)
                 Skip_BS(Data_BS_Remain()-BitsAtEnd,                 bsid<=0x0A?"(Unparsed audblk(continue)+5*audblk+padding)":"(Unparsed bsi+6*audblk+padding)");
             Element_Begin1("auxdata");
                 Skip_SB(                                            "auxdatae");
@@ -1962,6 +2081,195 @@ void File_Ac3::Core_Frame()
             dialnorm2s[dialnorm2]++;
         }
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Ac3::emdf()
+{
+    Element_Begin1("emdf");
+    emdf_sync();
+    emdf_container();
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Ac3::emdf_sync()
+{
+    int16u emdf_container_length;
+    Element_Begin1("emdf_sync");
+    Skip_S2(16,                                                 "syncword");
+    Get_S2 (16, emdf_container_length,                          "emdf_container_length");
+    Element_End0();
+
+    RemainAfterEMDF=Data_BS_Remain()-emdf_container_length*8; //emdf_container_length coherency was already tested in sync layer
+}
+
+//---------------------------------------------------------------------------
+void File_Ac3::emdf_container()
+{
+    size_t Start = Data_BS_Remain();
+    int32u version, key_id;
+    Element_Begin1("emdf_container");
+    Get_S4 (2, version,                                         "emdf_version");
+    if (version == 3)
+    {
+        int32u add;
+        Get_V4(2, add,                                          "emdf_version addition");
+        version += add;
+    }
+    if (version)
+    {
+        Skip_BS(Data_BS_Remain()-RemainAfterEMDF,               "(Unparsed emdf_container data)");
+        Element_End0(); 
+        return;
+    }
+
+    Get_S4 (3, key_id,                                          "key_id");
+    if (key_id == 7)
+    {
+        int32u add;
+        Get_V4 (2, add,                                         "key_id addition");
+        key_id += add;
+    }
+
+    int32u emdf_payload_id = 0;
+        
+    for(;;)
+    {
+        Element_Begin1("emdf_payload");
+        Get_S4 (5, emdf_payload_id,                             "emdf_payload_id");
+        if (emdf_payload_id==0x1F)
+        {
+            int32u add;
+            Get_V4 (5, add,                                     "emdf_payload_id addition");
+            emdf_payload_id += add;
+        }
+
+        if (emdf_payload_id<16)
+            Element_Info(Ac3_emdf_payload_id[emdf_payload_id]);
+        if (emdf_payload_id == 0x00)
+        {
+            Element_End0();
+            break;
+        }
+
+        emdf_payload_config();
+
+        int32u emdf_payload_size = 0;
+        Get_V4 (8, emdf_payload_size,                           "emdf_payload_size");
+        size_t emdf_payload_End=Data_BS_Remain()-emdf_payload_size*8; //emdf_payload_size coherency was already tested in sync layer
+
+        Element_Begin1("emdf_payload_bytes");
+            switch (emdf_payload_id)
+            {
+                default: Skip_BS(emdf_payload_size*8,           "(Unknown)");
+            }
+            if (Data_BS_Remain() - emdf_payload_End < 8)
+            {
+                int8u padding;
+                Peek_S1(Data_BS_Remain() - emdf_payload_End, padding);
+                if (!padding)
+                    Skip_S1(Data_BS_Remain() - emdf_payload_End, "padding");
+            }
+            if (Data_BS_Remain() > emdf_payload_End)
+            {
+                Skip_BS(Data_BS_Remain() - emdf_payload_End,    "(Unparsed emdf_payload bytes)");
+            }
+            else if (Data_BS_Remain() < emdf_payload_End)
+            {
+                //There is a problem, too many bits were consumed by the parser. //TODO: prevent the parser to consume more bits than count of bits in this element
+                if (Data_BS_Remain() >= RemainAfterEMDF)
+                    Skip_BS(Data_BS_Remain() - RemainAfterEMDF, "(Problem during emdf_payload parsing)");
+                else
+                    Skip_BS(Data_BS_Remain(),                   "(Problem during emdf_payload parsing, going to end directly)");
+                Element_End0();
+                Element_End0();
+                break;
+            }
+        Element_End0();
+
+        Element_End0();
+    }
+
+    emdf_protection();
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Ac3::emdf_payload_config()
+{
+    Element_Begin1("emdf_payload_config");
+    bool smploffste = false;
+    Get_SB (smploffste,                                         "smploffste");
+    if (smploffste)
+    {
+        Skip_S2(11,                                             "smploffst");
+        Skip_SB(                                                "reserved");
+    }
+
+    TEST_SB_SKIP(                                               "duratione");
+        Skip_V4(11,                                             "duration");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "groupide");
+        Skip_V4(2,                                              "groupid");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "codecdatae");
+        Skip_S1(8,                                              "reserved");
+    TEST_SB_END();
+
+    bool discard_unknown_payload = false;
+    Get_SB(discard_unknown_payload,                             "discard_unknown_payload");
+    if (!discard_unknown_payload)
+    {
+        bool payload_frame_aligned = false;
+        if (!smploffste)
+        {
+            Get_SB (payload_frame_aligned,                      "payload_frame_aligned");
+            if (payload_frame_aligned)
+            {
+                Skip_SB(                                        "create_duplicate");
+                Skip_SB(                                        "remove_duplicate");
+            }
+        }
+
+        if (smploffste || payload_frame_aligned)
+        {
+            Skip_S1(5,                                          "priority");
+            Skip_S1(2,                                          "proc_allowed");
+        }
+    }
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Ac3::emdf_protection()
+{
+    int8u len_primary = 0, len_second = 0;
+    Element_Begin1("emdf_protection");
+    Get_S1(2, len_primary,                                      "protection_length_primary");
+    Get_S1(2, len_second,                                       "protection_length_secondary");
+
+    switch (len_primary)
+    {
+        //case 0: break; //protection_length_primary coherency was already tested in sync layer
+        case 1: len_primary = 8; break;
+        case 2: len_primary = 32; break;
+        case 3: len_primary = 128; break;
+        default:; //Cannot append, read only 2 bits
+    };
+    switch (len_second)
+    {
+        case 0: len_second = 0; break;
+        case 1: len_second = 8; break;
+        case 2: len_second = 32; break;
+        case 3: len_second = 128; break;
+        default:; //Cannot append, read only 2 bits
+    };
+    Skip_BS(len_primary,                                        "protection_bits_primary");
+    if (len_second)
+        Skip_BS(len_primary,                                    "protection_bits_secondary");
+
+    Element_End0();
 }
 
 //---------------------------------------------------------------------------
@@ -2549,6 +2857,59 @@ size_t File_Ac3::HD_Size_Get()
     Size*=2;
 
     return Size;
+}
+
+//---------------------------------------------------------------------------
+void File_Ac3::Get_V4(int8u  Bits, int32u  &Info, const char* Name)
+{
+    Info = 0;
+
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            int8u Count = 0;
+            do
+            {
+                Info += BS->Get1(Bits);
+                Count += Bits;
+            }
+            while (BS->GetB());
+            Param(Name, Info, Count);
+            Param_Info(__T("(")+Ztring::ToZtring(Count)+__T(" bits)"));
+        }
+        else
+    #endif //MEDIAINFO_TRACE
+        {
+            do
+                Info += BS->Get1(Bits);
+            while (BS->GetB());
+        }
+}
+
+//---------------------------------------------------------------------------
+void File_Ac3::Skip_V4(int8u  Bits, const char* Name)
+{
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            int8u Info = 0;
+            int8u Count = 0;
+            do
+            {
+                Info += BS->Get1(Bits);
+                Count += Bits;
+            }
+            while (BS->GetB());
+            Param(Name, Info, Count);
+            Param_Info(__T("(")+Ztring::ToZtring(Count)+__T(" bits)"));
+        }
+        else
+    #endif //MEDIAINFO_TRACE
+        {
+            do
+                BS->Skip(Bits);
+            while (BS->GetB());
+        }
 }
 
 } //NameSpace
