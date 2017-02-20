@@ -777,9 +777,6 @@ File_Ac3::File_Ac3()
 
     //Buffer
     Save_Buffer=NULL;
-
-    //Temp JOC
-    joc_num_objects=0;
     
     //Temp
     Frame_Count_HD=0;
@@ -876,8 +873,9 @@ void File_Ac3::Streams_Fill()
         }
     }
 
-    if (joc_num_objects)
+    if (joc_num_objects_map.size()==1 && (joc_num_objects_map.begin()->second >= Frame_Count_Valid / 2 || joc_num_objects_map.begin()->second >= Frame_Count / 2)) //Accepting that some frames do not contain JOC
     {
+        joc_num_objects = joc_num_objects_map.begin()->first;
         Fill(Stream_General, 0, General_Format, "Atmos");
         Fill(Stream_Audio, 0, Audio_Format, "Atmos");
         Fill(Stream_Audio, 0, Audio_Codec, "Atmos");
@@ -2409,8 +2407,8 @@ void File_Ac3::joc_header()
         Skip_S1(3,                                              "joc_dmx_config_idx");
         int8u joc_num_objects_bits = 0;
         Get_S1 (6, joc_num_objects_bits,                        "joc_num_objects_bits");
-        if (!joc_num_objects) //uing only the first one
-            joc_num_objects = joc_num_objects_bits + 1;
+        joc_num_objects = joc_num_objects_bits + 1;
+        joc_num_objects_map[joc_num_objects] ++;
         Get_S1 (3, joc_ext_config_idx,                          "joc_ext_config_idx");
     Element_End0();
 }

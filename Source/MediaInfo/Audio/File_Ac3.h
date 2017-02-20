@@ -105,6 +105,7 @@ private :
 
     //Temp JOC
     int8u joc_num_objects;
+    std::map<int8u, size_t> joc_num_objects_map;
     int8u joc_ext_config_idx;
     
     //Temp
