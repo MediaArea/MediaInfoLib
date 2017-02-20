@@ -895,7 +895,7 @@ int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, 
 {
     //Computing how many characters are needed for displaying maximum file size
     size_t offset_size = sizeof(File_Size)*8-1;
-    while ((((int64u)1) << offset_size) - 1 >= File_Size)
+    while (offset_size>1 && (((int64u)1) << offset_size) - 1 >= File_Size)
         offset_size--;
     offset_size++;
     offset_size = (offset_size / 4) + ((offset_size % 4) ? 1 : 0); //4 bits per offset char
