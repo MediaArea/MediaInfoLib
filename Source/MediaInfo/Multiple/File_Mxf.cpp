@@ -3657,7 +3657,7 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
                     //Special cases
                     std::map<std::string, Ztring>::iterator Info_Level=SubDescriptor->second.Infos.find("Temp_AVC_Format_Level");
                     std::map<std::string, Ztring>::iterator Info_constraint=SubDescriptor->second.Infos.find("Temp_AVC_constraint_set3_flag");
-                    if (Info_Level!=SubDescriptor->second.Infos.end() || Info_Level!=SubDescriptor->second.Infos.end())
+                    if (Info_Level!=SubDescriptor->second.Infos.end() || Info_constraint!=SubDescriptor->second.Infos.end())
                     {
                         //AVC Descriptor creates that, adapting
                         std::map<std::string, Ztring>::iterator Info_Profile=SubDescriptor->second.Infos.find("Format_Profile");
