@@ -186,15 +186,11 @@ size_t Reader_File::Format_Test(MediaInfo_Internal* MI, String File_Name)
         Format=FormatList.begin();
         while (Format!=FormatList.end())
         {
-            const Ztring &Extensions=FormatList.Get(Format->first, InfoFormat_Extensions);
-            if (Extensions.find(Extension)!=Error)
-            {
-                if(Extension.size()==Extensions.size())
-                    break; //Only one extenion in the list
-                if(Extensions.find(Extension+__T(" "))!=Error
-                || Extensions.find(__T(" ")+Extension)!=Error)
-                    break;
-            }
+            ZtringList Extensions;
+            Extensions.Separator_Set(0, __T(" "));
+            Extensions.Write(FormatList.Get(Format->first, InfoFormat_Extensions));
+            if (Extensions.Find(Extension)!=Error)
+                break;
             ++Format;
         }
     }
