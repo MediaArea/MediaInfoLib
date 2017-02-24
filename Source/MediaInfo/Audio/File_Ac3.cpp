@@ -35,16 +35,29 @@ extern const int32u AC3_SamplingRate[]=
 { 48000,  44100,  32000,      0,};
 
 //---------------------------------------------------------------------------
-const char*  AC3_Mode[]=
+const char*  AC3_Mode[] =
 {
-    "CM (complete main)",
-    "ME (music and effects)",
-    "VI (visually impaired)",
-    "HI (hearing impaired)",
-    "D (dialogue)",
-    "C (commentary)",
-    "E (emergency)",
-    "VO (voice over)",
+    "CM",
+    "ME",
+    "VI",
+    "HI",
+    "D",
+    "C",
+    "E",
+    "VO",
+};
+
+//---------------------------------------------------------------------------
+const char*  AC3_Mode_String[] =
+{
+    "Complete Main",
+    "Music and Effects",
+    "Visually Impaired",
+    "Hearing Impaired",
+    "Dialogue",
+    "Commentary",
+    "Emergency",
+    "Voice Over",
 };
 
 //---------------------------------------------------------------------------
@@ -848,8 +861,6 @@ void File_Ac3::Streams_Fill()
             Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_TrueHD_Channels(HD_Channels2));
             Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_TrueHD_Channels_Positions(HD_Channels2));
             Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, AC3_TrueHD_Channels_Positions2(HD_Channels2));
-            if (Core_IsPresent && !IsSub)
-                Fill(Stream_Audio, 0, Audio_MuxingMode, "After core data");
         }
 
         if (HD_StreamType==0xBB) //TrueHD
@@ -911,9 +922,8 @@ void File_Ac3::Streams_Fill()
             }
         }
 
-        Fill(Stream_Audio, 0, Audio_Format_Settings_ModeExtension, AC3_Mode[bsmod_Max[0][0]]);
-        if (acmod_Max[0][0]==0)
-            Fill(Stream_Audio, 0, Audio_Format_Settings_Mode, "Dual Mono");
+        Fill(Stream_Audio, 0, Audio_ServiceKind, AC3_Mode[bsmod_Max[0][0]]);
+        Fill(Stream_Audio, 0, Audio_ServiceKind_String, AC3_Mode_String[bsmod_Max[0][0]]);
         if (acmod_Max[0][0]!=(int8u)-1)
         {
             int8u Channels=AC3_Channels[acmod_Max[0][0]];
@@ -936,10 +946,11 @@ void File_Ac3::Streams_Fill()
                 Fill(Stream_Audio, 0, Audio_ChannelLayout, ChannelLayout);
         }
         if (dsurmod_Max[0][0]==2)
-        {
-            Fill(Stream_Audio, 0, Audio_Format_Profile, "Dolby Digital");
-            Fill(Stream_Audio, 0, Audio_Codec_Profile, "Dolby Digital");
-        }
+            Fill(Stream_Audio, 0, Audio_Format_Settings_Mode, "Dolby Digital");
+        if (!Retrieve(Stream_Audio, 0, Audio_Format_Profile).empty())
+            Fill(Stream_Audio, 0, Audio_Format_Profile, "AC-3");
+        if (!Retrieve(Stream_Audio, 0, Audio_Codec_Profile).empty())
+            Fill(Stream_Audio, 0, Audio_Codec_Profile, "AC-3");
         if (__T("CBR")!=Retrieve(Stream_Audio, 0, Audio_BitRate_Mode))
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "CBR");
     }
@@ -996,12 +1007,9 @@ void File_Ac3::Streams_Fill()
                     Ztring ChannelLayout; ChannelLayout.From_Local(lfeon_Max[0][0]?AC3_ChannelLayout_lfeon[acmod_Max[0][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[0][0]]);
                     Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_chanmap_ChannelLayout(chanmap_Final, ChannelLayout));
                 }
-                if (acmod_Max[Pos][0]==0)
-                {
-                    Fill(Stream_Audio, 0, Audio_Format_Profile, "Dual Mono");
-                    Fill(Stream_Audio, 0, Audio_Codec_Profile, "Dual Mono");
-                }
-                else if (acmod_Max[Pos][0]!=(int8u)-1)
+                Fill(Stream_Audio, 0, Audio_ServiceKind, AC3_Mode[bsmod_Max[0][0]]);
+                Fill(Stream_Audio, 0, Audio_ServiceKind_String, AC3_Mode_String[bsmod_Max[0][0]]);
+                if (acmod_Max[Pos][0]!=(int8u)-1)
                 {
                     int8u Channels=AC3_Channels[acmod_Max[Pos][0]];
                     Ztring ChannelPositions; ChannelPositions.From_Local(AC3_ChannelPositions[acmod_Max[Pos][0]]);

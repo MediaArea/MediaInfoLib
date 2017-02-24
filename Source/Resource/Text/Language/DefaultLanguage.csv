@@ -997,6 +997,7 @@ Separator_Columns;columns separator
 Separator_Lines;lines separator
 SeriesTitle;Series Title
 ServiceChannel;Service channel number
+ServiceKind;Service kind
 ServiceName;Service name
 ServiceProvider;Service provider
 ServiceType;Service type
