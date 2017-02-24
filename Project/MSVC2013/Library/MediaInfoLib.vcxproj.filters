@@ -764,6 +764,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Vbi.cpp">
       <Filter>Source Files\Multiple</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Wtv.cpp">
+      <Filter>Source Files\Multiple</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1433,6 +1436,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Vbi.h">
+      <Filter>Header Files\Multiple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Wtv.h">
       <Filter>Header Files\Multiple</Filter>
     </ClInclude>
   </ItemGroup>
