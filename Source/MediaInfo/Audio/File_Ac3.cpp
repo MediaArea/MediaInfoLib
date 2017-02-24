@@ -840,19 +840,18 @@ void File_Ac3::Streams_Fill()
 
         if (HD_StreamType==0xBA) //TrueHD
         {
+            Fill(Stream_General, 0, General_Format, "TrueHD");
+            Fill(Stream_Audio, 0, Audio_Format, "TrueHD");
+            Fill(Stream_Audio, 0, Audio_Codec, "TrueHD");
             if (HD_HasAtmos)
             {
 
-                Fill(Stream_General, 0, General_Format, "Atmos");
-                Fill(Stream_Audio, 0, Audio_Format, "Atmos");
-                Fill(Stream_Audio, 0, Audio_Codec, "Atmos");
+                Fill(Stream_Audio, 0, Audio_Format_Profile, "TrueHD+Atmos / TrueHD");
+                Fill(Stream_Audio, 0, Audio_Codec_Profile, "TrueHD+Atmos / TrueHD");
                 Fill(Stream_Audio, 0, Audio_Channel_s_, "Object Based");
                 Fill(Stream_Audio, 0, Audio_ChannelPositions, "Object Based");
                 Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, "Object Based");
             }
-            Fill(Stream_General, 0, General_Format, "TrueHD");
-            Fill(Stream_Audio, 0, Audio_Format, "TrueHD");
-            Fill(Stream_Audio, 0, Audio_Codec, "TrueHD");
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
             Ztring Sampling;
             Sampling.From_Number(AC3_HD_SamplingRate(HD_SamplingRate1));
@@ -887,9 +886,8 @@ void File_Ac3::Streams_Fill()
     if (joc_num_objects_map.size()==1 && (joc_num_objects_map.begin()->second >= Frame_Count_Valid / 2 || joc_num_objects_map.begin()->second >= Frame_Count / 2)) //Accepting that some frames do not contain JOC
     {
         joc_num_objects = joc_num_objects_map.begin()->first;
-        Fill(Stream_General, 0, General_Format, "Atmos");
-        Fill(Stream_Audio, 0, Audio_Format, "Atmos");
-        Fill(Stream_Audio, 0, Audio_Codec, "Atmos");
+        Fill(Stream_Audio, 0, Audio_Format_Profile, bsid_Max<=0x09?"AC-3+Atmos":"E-AC-3+Atmos");
+        Fill(Stream_Audio, 0, Audio_Codec_Profile, bsid_Max<=0x09?"AC-3+Atmos":"E-AC-3+Atmos");
         Fill(Stream_Audio, 0, Audio_Channel_s_, Ztring::ToZtring(joc_num_objects)+__T(" objects"));
         Fill(Stream_Audio, 0, Audio_ChannelPositions, Ztring::ToZtring(joc_num_objects) + __T(" objects"));
         Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, Ztring::ToZtring(joc_num_objects) + __T(" objects"));
@@ -1002,11 +1000,17 @@ void File_Ac3::Streams_Fill()
                             }
                         }
 
+                    Fill(Stream_Audio, 0, Audio_Format_Profile, "E-AC-3+Dep");
+                    Fill(Stream_Audio, 0, Audio_Codec_Profile, "E-AC-3+Dep");
                     Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_chanmap_Channels(chanmap_Final));
                     Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_chanmap_ChannelPositions(chanmap_Final));
                     Ztring ChannelLayout; ChannelLayout.From_Local(lfeon_Max[0][0]?AC3_ChannelLayout_lfeon[acmod_Max[0][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[0][0]]);
                     Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_chanmap_ChannelLayout(chanmap_Final, ChannelLayout));
                 }
+                if (!Retrieve(Stream_Audio, 0, Audio_Format_Profile).empty())
+                    Fill(Stream_Audio, 0, Audio_Format_Profile, "E-AC-3");
+                if (!Retrieve(Stream_Audio, 0, Audio_Codec_Profile).empty())
+                    Fill(Stream_Audio, 0, Audio_Codec_Profile, "E-AC-3");
                 Fill(Stream_Audio, 0, Audio_ServiceKind, AC3_Mode[bsmod_Max[0][0]]);
                 Fill(Stream_Audio, 0, Audio_ServiceKind_String, AC3_Mode_String[bsmod_Max[0][0]]);
                 if (acmod_Max[Pos][0]!=(int8u)-1)
