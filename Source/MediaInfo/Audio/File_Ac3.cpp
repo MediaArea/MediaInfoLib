@@ -790,7 +790,7 @@ File_Ac3::File_Ac3()
 
     //Buffer
     Save_Buffer=NULL;
-    
+
     //Temp
     Frame_Count_HD=0;
     fscod=0;
@@ -1885,6 +1885,7 @@ void File_Ac3::Core_Frame()
     int8u  strmtyp=0, substreamid=0, acmod=0, bsmod=0, dsurmod=0;
     bool   compre=false, compr2e=false, dynrnge=false, dynrng2e=false;
     bool   lfeon=false, chanmape=false;
+
     if (bsid<=0x09)
     {
         Element_Begin1("synchinfo");
@@ -1894,6 +1895,7 @@ void File_Ac3::Core_Frame()
             Get_S1 (2, fscod,                                       "fscod - Sample Rate Code"); Param_Info2(AC3_SamplingRate[fscod], " Hz");
             Get_S1 (6, frmsizecod,                                  "frmsizecod - Frame Size Code"); if (frmsizecod/2<19) {Param_Info2(AC3_BitRate[frmsizecod/2]*1000, " bps");}
         Element_End0();
+
         Element_Begin1("bsi");
             Get_S1 (5, bsid,                                        "bsid - Bit Stream Identification");
             Get_S1 (3, bsmod,                                       "bsmod - Bit Stream Mode"); Param_Info1(AC3_Mode[bsmod]);
@@ -1989,7 +1991,7 @@ void File_Ac3::Core_Frame()
             TEST_SB_END();
             if (acmod==0) //1+1 mode
             {
-                Get_S1 (5, dialnorm2,                              "dialnorm2");
+                Get_S1 (5, dialnorm2,                               "dialnorm2");
                 TEST_SB_GET(compr2e,                                "compr2e");
                     Get_S1 (8, compr2,                              "compr2");
                 TEST_SB_END();
@@ -2169,7 +2171,7 @@ void File_Ac3::emdf_container()
         }
 
         if (emdf_payload_id<16)
-            Element_Info(Ac3_emdf_payload_id[emdf_payload_id]);
+            Element_Info1(Ac3_emdf_payload_id[emdf_payload_id]);
         if (emdf_payload_id == 0x00)
         {
             Element_End0();
