@@ -423,9 +423,6 @@ static void Xml_Content_Escape(const char* Content, size_t Size, std::string& To
                 Pos += 3;
                 Size += 3;
                 break;
-            case '\r':
-            case '\n':
-                break;
             default:
                 if (C<0x20)
                 {
