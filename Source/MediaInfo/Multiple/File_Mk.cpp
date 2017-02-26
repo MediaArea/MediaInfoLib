@@ -3258,7 +3258,7 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate__Parse()
     #endif // MEDIAINFO_DEMUX
 
     //Parsing
-    Open_Buffer_Continue(streamItem.Parser);
+    Open_Buffer_OutOfBand(streamItem.Parser);
 
     //Filling
     if (streamItem.Parser->Status[IsFinished]) //Can be finnished here...
@@ -3444,24 +3444,7 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_vids()
     if (Data_Remain())
     {
         Element_Begin1("Private data");
-        stream& streamItem = Stream[TrackNumber];
-        if (streamItem.Parser)
-        {
-            #if defined(MEDIAINFO_FFV1_YES)
-                if (Compression==0x46465631) //FFV1
-                    Open_Buffer_OutOfBand(streamItem.Parser);
-            #endif
-            #if defined(MEDIAINFO_FFV1_YES)
-                if (Compression==0x46465648) //FFVH
-                {
-                    ((File_HuffYuv*)streamItem.Parser)->IsOutOfBandData=true; //TODO: implement ISOutOfBandData in a generic maner
-                    Open_Buffer_Continue(streamItem.Parser);
-                    Element_Offset=Element_Size;
-                }
-            #endif
-        }
-        else
-            Skip_XX(Element_Size-Element_Offset,                "Unknown");
+        Open_Buffer_OutOfBand(Stream[TrackNumber].Parser);
         Element_End0();
     }
 }
