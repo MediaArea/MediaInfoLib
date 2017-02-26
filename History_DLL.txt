@@ -9,6 +9,10 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 
 Version 0.7.93
 --------------
++ AC-3/E-AC-3: detection of Atmos inside core streams
++ AC-3/E-AC-3: slight reorganization of metadata display for dual mono and surround
++ AC-3/E-AC-3: "complete main" and similar info moved to "Service kind" dedicated line
++ AC-3/E-AC-3: more precision about how is built a stream (e.g. "E-AC-3+Atmos / E-AC-3" or "TrueHD+Atmos / TrueHD / AC-3")
 + WTV: basic detection
 + MPEG-TS: Detection of Opus
 x MediaTrace: for bitstreams (not bytestreams), bit offset was wrong
