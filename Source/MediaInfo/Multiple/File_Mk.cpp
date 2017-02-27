@@ -619,6 +619,7 @@ File_Mk::File_Mk()
     Segment_Cluster_Count=0;
     CurrentAttachmentIsCover=false;
     CoverIsSetFromAttachment=false;
+    CRC32Compute_SkipUpTo=0;
 
     //Hints
     File_Buffer_Size_Hint_Pointer=NULL;
@@ -1083,6 +1084,24 @@ void File_Mk::Streams_Finish()
 }
 
 //***************************************************************************
+// Buffer - Global
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Mk::Read_Buffer_Continue()
+{
+    //Handling CRC32 computing when there is no need of the data (data not parsed, only needed for CRC32)
+    if (CRC32Compute_SkipUpTo>File_Offset)
+    {
+        int64u Size=CRC32Compute_SkipUpTo-File_Offset;
+        if (Element_Size>Size)
+            Element_Size=Size;
+        Element_Offset=Element_Size;
+        CRC32_Check();
+    }
+}
+
+//***************************************************************************
 // Buffer
 //***************************************************************************
 
@@ -1507,7 +1526,7 @@ void File_Mk::Data_Parse()
         ATOM_END_MK
     DATA_END
 
-    if (!CRC32Compute.empty())
+    if (!Element_IsWaitingForMoreData() && !CRC32Compute.empty())
         CRC32_Check();
 }
 
@@ -4633,8 +4652,16 @@ void File_Mk::CRC32_Check ()
     for (size_t i = 0; i<CRC32Compute.size(); i++)
         if (CRC32Compute[i].UpTo && File_Offset + Buffer_Offset - (size_t)Header_Size >= CRC32Compute[i].From)
         {
-            Matroska_CRC32_Compute(CRC32Compute[i].Computed, Buffer + Buffer_Offset - (size_t)Header_Size, Buffer + Buffer_Offset + (size_t)(Element_WantNextLevel?Element_Offset:Element_Size));
-            if (File_Offset + Buffer_Offset + (Element_WantNextLevel?Element_Offset:Element_Size) >= CRC32Compute[i].UpTo)
+            //Handling of case when data is not completetely loaded because it is not needed by the parser
+            const size_t Offset = Buffer_Offset + (size_t)((Element_WantNextLevel && Element_Offset <= Element_Size) ? Element_Offset : Element_Size);
+            if (Element_Offset > Element_Size)
+            {
+                CRC32Compute_SkipUpTo = File_Offset + Element_Offset;
+                Element_Offset = Element_Size;
+            }
+            
+            Matroska_CRC32_Compute(CRC32Compute[i].Computed, Buffer + Buffer_Offset - (size_t)Header_Size, Buffer + Offset);
+            if (File_Offset + Offset >= CRC32Compute[i].UpTo)
             {
                 CRC32Compute[i].Computed ^= 0xFFFFFFFF;
 
