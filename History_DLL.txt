@@ -19,6 +19,7 @@ x MediaTrace: for bitstreams (not bytestreams), bit offset was wrong
 x HLS: duration was sometimes wrong, reading only the first TS file duration. Now full duration is displayed
 x MPEG-TS: if stream is encrypted or invalid, level was sometimes not the expected one for AVC (e.g. "BaseLine@3.0" instead of "Baseline@3")
 x Matroska: FFV1 stream width/height was not initialized when Matroska track header width/height is after CodecID
+x FFV1: fix potential crash with some buggy slice headers
 
 Version 0.7.92.1, 2017-02-02
 --------------
