@@ -9,6 +9,7 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 
 Version 0.7.93
 --------------
++ Matroska: detection of native FFV1 CodecID ("V_FFV1")
 + AC-3/E-AC-3: detection of Atmos inside core streams
 + AC-3/E-AC-3: slight reorganization of metadata display for dual mono and surround
 + AC-3/E-AC-3: "complete main" and similar info moved to "Service kind" dedicated line
