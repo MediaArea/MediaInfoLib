@@ -760,7 +760,8 @@ bool Ac3_EMDF_Test(const BitStream_Fast &Search)
 }
 
 //---------------------------------------------------------------------------
-static const int8u ecplsubbndtab[]
+/*
+static const int8u ecplsubbndtab[]=
 {
     13,
     19,
@@ -786,6 +787,7 @@ static const int8u ecplsubbndtab[]
     241,
     253,
 };
+*/
 
 //***************************************************************************
 // Constructor/Destructor
