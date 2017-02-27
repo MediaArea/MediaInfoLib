@@ -1393,6 +1393,7 @@ void MediaInfo_Config_CodecID_Video_Matroska (InfoMap &Info)
     Info.Write(Ztring().From_UTF8(
     "V_UNCOMPRESSED;RGB;;Raw uncompressed video frames\n"
     "V_DIRAC;Dirac;;;http://diracvideo.org/\n"
+    "V_FFV1;FFV1;;\n"
     "V_MPEG4/IS0/SP;MPEG-4 Visual;;There is a zero instead of a O, may be a problem;http://www.divx.com\n"
     "V_MPEG4/IS0/ASP;MPEG-4 Visual;;There is a zero instead of a O, may be a problem;http://www.xvid.org/Downloads.15.0.html\n"
     "V_MPEG4/IS0/AP;MPEG-4 Visual;;There is a zero instead of a O, may be a problem;http://ffdshow-tryout.sourceforge.net/\n"

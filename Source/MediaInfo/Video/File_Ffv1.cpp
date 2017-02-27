@@ -726,11 +726,18 @@ void File_Ffv1::Read_Buffer_Continue()
     {
         while (Slices_BufferPos)
         {
+            if (Slices_BufferPos < tail)
+            {
+                //There is a problem
+                Slices_BufferSizes.insert(Slices_BufferSizes.begin(), Slices_BufferPos);
+                break;
+            }
+
             int32u Size = BigEndian2int24u(Buffer + Buffer_Offset + (size_t)Slices_BufferPos - tail);
             Size += tail;
 
-            if (Slices_BufferPos < Size)
-                Slices_BufferPos = Size;
+            if (Size > Slices_BufferPos)
+                Size = Slices_BufferPos; //There is a problem
             Slices_BufferPos-=Size;
 
             Slices_BufferSizes.insert(Slices_BufferSizes.begin(), Size);
