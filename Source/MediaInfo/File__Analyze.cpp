@@ -467,10 +467,13 @@ void File__Analyze::Open_Buffer_Init (File__Analyze* Sub, int64u File_Size_)
     Sub->Open_Buffer_Init(File_Size_);
 }
 
-void File__Analyze::Open_Buffer_OutOfBand (File__Analyze* Sub, const int8u* ToAdd, size_t ToAdd_Size)
+void File__Analyze::Open_Buffer_OutOfBand (File__Analyze* Sub)
 {
     if (Sub==NULL)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
         return;
+    }
 
     //Sub
     if (Sub->File_GoTo!=(int64u)-1)
@@ -491,7 +494,8 @@ void File__Analyze::Open_Buffer_OutOfBand (File__Analyze* Sub, const int8u* ToAd
         bool Demux_EventWasSent_Save=Config->Demux_EventWasSent;
         Config->Demux_EventWasSent=false;
     #endif //MEDIAINFO_DEMUX
-    Sub->Open_Buffer_OutOfBand(ToAdd, ToAdd_Size);
+    Sub->Open_Buffer_OutOfBand(Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset));
+    Element_Offset=Element_Size;
     #if MEDIAINFO_DEMUX
         if (Demux_EventWasSent_Save)
             Config->Demux_EventWasSent=true;
