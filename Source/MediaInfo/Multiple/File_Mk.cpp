@@ -3910,6 +3910,20 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelHeight()
         Fill(Stream_Video, StreamPos_Last, Video_Height, UInteger, 10, true);
         if (!TrackVideoDisplayHeight)
             TrackVideoDisplayHeight=UInteger; //Default value of DisplayHeight is PixelHeight
+
+        //In case CodecID was defined before this item, some decoders are not initialized with the correct values, filling it now
+        #if defined(MEDIAINFO_FFV1_YES)
+            const Ztring &Format=Retrieve(Stream_Video, StreamPos_Last, Video_Format);
+            stream& streamItem = Stream[TrackNumber];
+            if (0);
+        #endif
+        #if defined(MEDIAINFO_FFV1_YES)
+        else if (Format==__T("FFV1"))
+        {
+            File_Ffv1* parser = (File_Ffv1*)streamItem.Parser;
+            parser->Height=UInteger;
+        }
+        #endif
     FILLING_END();
 }
 
@@ -3928,6 +3942,20 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelWidth()
         Fill(Stream_Video, StreamPos_Last, Video_Width, UInteger, 10, true);
         if (!TrackVideoDisplayWidth)
             TrackVideoDisplayWidth=UInteger; //Default value of DisplayWidth is PixelWidth
+
+        //In case CodecID was defined before this item, some decoders are not initialized with the correct values, filling it now
+        #if defined(MEDIAINFO_FFV1_YES)
+            const Ztring &Format=Retrieve(Stream_Video, StreamPos_Last, Video_Format);
+            stream& streamItem = Stream[TrackNumber];
+            if (0);
+        #endif
+        #if defined(MEDIAINFO_FFV1_YES)
+        else if (Format==__T("FFV1"))
+        {
+            File_Ffv1* parser = (File_Ffv1*)streamItem.Parser;
+            parser->Width=UInteger;
+        }
+        #endif
     FILLING_END();
 }
 
