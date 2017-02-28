@@ -16,6 +16,7 @@ Version 0.7.93
 + AC-3/E-AC-3: more precision about how is built a stream (e.g. "E-AC-3+Atmos / E-AC-3" or "TrueHD+Atmos / TrueHD / AC-3")
 + WTV: basic detection
 + MPEG-TS: Detection of Opus
++ URL: "URLEncode" option for saying if the input should be URL encoded or not (default is guess = no change except if it contains spaces)
 x MediaTrace: for bitstreams (not bytestreams), bit offset was wrong
 x HLS: duration was sometimes wrong, reading only the first TS file duration. Now full duration is displayed
 x MPEG-TS: if stream is encrypted or invalid, level was sometimes not the expected one for AVC (e.g. "BaseLine@3.0" instead of "Baseline@3")
