@@ -679,8 +679,6 @@ size_t Reader_libcurl::Format_Test_PerParser(MediaInfo_Internal* MI, const Strin
     Http::Url File_URL=Http::Url(Ztring(File_Name).To_UTF8());
     if (!File_URL.Protocol.empty())
     {
-        curl_easy_setopt(Curl_Data->Curl, CURLOPT_VERBOSE, 1);
-
         // URL encoding
         MediaInfo_Config::urlencode ShouldUrlEncode=Config.URLEncode_Get();
         if (ShouldUrlEncode==MediaInfo_Config::URLEncode_Guess)
