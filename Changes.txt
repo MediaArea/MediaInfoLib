@@ -2,6 +2,12 @@ I changed some elements in the interface.
 No break in binary compatibily (no crash), but some details.
 
 
+0.7.92 --> 0.7.93
+-----------------
+- AC-3: "Dolby Digital" moved from "Format_Profile" to "Format_Settings_Mode"
+- AC-3/E-AC-3: "Dual Mono" removed from "Format_Profile" (already in "Channel positions" line)
+- AC-3/E-AC-3: "complete main" and similar info moved to "Service kind" dedicated line
+
 0.7.91 --> 0.7.92
 -----------------
 - MIXML output: Format_Profile divided in Format_Profile, Format_Level, Format_Tier
@@ -14,7 +20,6 @@ No break in binary compatibily (no crash), but some details.
 -----------------
 - EBUCore: Source/Material moved from timecodeStart to timecodeTrack
 - AES3: generic term AES3 replaced by more precise SMPTE ST numbers (302, 331, 337)
-
 
 0.7.72 --> 0.7.73
 -----------------
