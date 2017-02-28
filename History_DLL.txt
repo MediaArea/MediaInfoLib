@@ -7,7 +7,7 @@ x Correction
 bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
-Version 0.7.93
+Version 0.7.93, 2017-02-28
 --------------
 + Matroska: detection of native FFV1 CodecID ("V_FFV1")
 + AC-3/E-AC-3: detection of Atmos inside core streams
