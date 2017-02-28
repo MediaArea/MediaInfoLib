@@ -658,7 +658,7 @@ static const int32u AC3_MLP_Resolution[16]=
 };
 
 //---------------------------------------------------------------------------
-const char* Ac3_emdf_payload_id[16]
+const char* Ac3_emdf_payload_id[16]=
 {
     "Container End",
     "Programme loudness data",
