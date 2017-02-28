@@ -239,11 +239,11 @@ void MediaInfo_Config::Init()
     DecimalPoint=__T(".");
     ThousandsPoint=Ztring();
     #if MEDIAINFO_EVENTS
-        URLEncode=URLEncode_Guess;
         Event_CallBackFunction=NULL;
         Event_UserHandler=NULL;
     #endif //MEDIAINFO_EVENTS
     #if defined(MEDIAINFO_LIBCURL_YES)
+        URLEncode=URLEncode_Guess;
         Ssh_IgnoreSecurity=false;
         Ssl_IgnoreSecurity=false;
     #endif //defined(MEDIAINFO_LIBCURL_YES)
@@ -2572,7 +2572,7 @@ bool MediaInfo_Config::CanHandleUrls()
     return Reader_libcurl::Load();
 }
 
-void MediaInfo_Config::URLEncode_Set (urlencode Value)
+void MediaInfo_Config::URLEncode_Set (MediaInfo_Config::urlencode Value)
 {
     CriticalSectionLocker CSL(CS);
     URLEncode=Value;
