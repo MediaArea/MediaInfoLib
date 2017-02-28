@@ -1122,7 +1122,7 @@ int File_Ffv1::slice(states &States)
     else if (colorspace_type == 1)
         rgb();
 
-    if (!coder_type && ((version == 3 && micro_version > 1) || version > 3))
+    if (!coder_type)
         BS_End();
 
     if (coder_type)
