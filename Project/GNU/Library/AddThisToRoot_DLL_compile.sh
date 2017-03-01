@@ -86,10 +86,10 @@ if test -e MediaInfoLib/Project/GNU/Library/configure; then
     chmod +x configure
     if [ "$OS" = "mac" ]; then
         #./configure $MacOptions --enable-shared --disable-static --with-libcurl $*
-        ./configure $MacOptions --enable-staticlibs --enable-shared --disable-static $*
+        ./configure $MacOptions --enable-staticlibs --enable-shared --disable-static --with-libcurl=runtime $*
     else
         #./configure --enable-shared --disable-static --with-libcurl $*
-        ./configure --enable-staticlibs --enable-shared --disable-static $*
+        ./configure --enable-staticlibs --enable-shared --disable-static --with-libcurl=runtime $*
     fi
     if test -e Makefile; then
         make clean

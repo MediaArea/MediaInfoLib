@@ -128,7 +128,7 @@ namespace MediaInfoLib
 {
 
 //---------------------------------------------------------------------------
-const Char*  MediaInfo_Version=__T("MediaInfoLib - v0.7.92");
+const Char*  MediaInfo_Version=__T("MediaInfoLib - v0.7.93");
 const Char*  MediaInfo_Url=__T("http://MediaArea.net/MediaInfo");
       Ztring EmptyZtring;       //Use it when we can't return a reference to a true Ztring
 const Ztring EmptyZtring_Const; //Use it when we can't return a reference to a true Ztring, const version
@@ -243,6 +243,7 @@ void MediaInfo_Config::Init()
         Event_UserHandler=NULL;
     #endif //MEDIAINFO_EVENTS
     #if defined(MEDIAINFO_LIBCURL_YES)
+        URLEncode=URLEncode_Guess;
         Ssh_IgnoreSecurity=false;
         Ssl_IgnoreSecurity=false;
     #endif //defined(MEDIAINFO_LIBCURL_YES)
@@ -1058,6 +1059,21 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         #else //MEDIAINFO_EVENTS
             return __T("Event manager is disabled due to compilation options");
         #endif //MEDIAINFO_EVENTS
+    }
+    else if (Option_Lower==__T("urlencode"))
+    {
+        #if defined(MEDIAINFO_LIBCURL_YES)
+            String Value_Lower(Value);
+            transform(Value_Lower.begin(), Value_Lower.end(), Value_Lower.begin(), (int(*)(int))tolower); //(int(*)(int)) is a patch for unix
+
+                 if (Value_Lower==__T("guess"))
+                URLEncode_Set(URLEncode_Guess);
+            else
+                URLEncode_Set(Value.To_int8u()?URLEncode_Yes:URLEncode_No);
+            return Ztring();
+        #else // defined(MEDIAINFO_LIBCURL_YES)
+            return __T("Libcurl support is disabled due to compilation options");
+        #endif // defined(MEDIAINFO_LIBCURL_YES)
     }
     else if (Option_Lower==__T("ssh_knownhostsfilename"))
     {
@@ -2694,6 +2710,18 @@ bool MediaInfo_Config::CanHandleUrls()
 {
     CriticalSectionLocker CSL(CS);
     return Reader_libcurl::Load();
+}
+
+void MediaInfo_Config::URLEncode_Set (MediaInfo_Config::urlencode Value)
+{
+    CriticalSectionLocker CSL(CS);
+    URLEncode=Value;
+}
+
+MediaInfo_Config::urlencode MediaInfo_Config::URLEncode_Get()
+{
+    CriticalSectionLocker CSL(CS);
+    return URLEncode;
 }
 
 void MediaInfo_Config::Ssh_PublicKeyFileName_Set (const Ztring &Value)
