@@ -1135,6 +1135,10 @@ int File_Ffv1::slice(states &States)
         Element_Offset+=RC->BytesUsed();
     }
 
+    #if MEDIAINFO_DECODE
+        //Decode(Buffer, Buffer_Size);
+    #endif //MEDIAINFO_DECODE
+
     #if MEDIAINFO_TRACE
         Trace_Activated=Trace_Activated_Save; // Trace is too huge, reactivating after during pixel decoding
     #endif //MEDIAINFO_TRACE
