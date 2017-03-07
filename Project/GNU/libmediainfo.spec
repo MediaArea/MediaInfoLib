@@ -160,17 +160,8 @@ popd
 cp Source/Doc/*.html ./
 
 pushd Project/GNU/Library
-%if 0%{?rhel_version} || 0%{?centos_version}
-%if 0%{?rhel_version} < 599
+%if 0%{?rhel} && 0%{?rhel} < 6
 %configure --enable-shared --disable-static --enable-visibility
-%else
-%configure --enable-shared --disable-static --enable-visibility --with-libcurl
-%endif
-%if 0%{?centos_version} < 599
-%configure --enable-shared --disable-static --enable-visibility
-%else
-%configure --enable-shared --disable-static --enable-visibility --with-libcurl
-%endif
 %else
 %configure --enable-shared --disable-static --enable-visibility --with-libcurl
 %endif

@@ -1,14 +1,19 @@
+language: cpp
+
 sudo: required
 dist: trusty
-language: cpp
-compiler: gcc
+
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+    - os: osx
+      compiler: clang
+
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y libcurl4-gnutls-dev libmms-dev libglib2.0-dev zlib1g-dev pkg-config libxml2-utils
-  - wget http://mediaarea.net/download/binary/libzen0/0.4.32/libzen0_0.4.32-1_amd64.xUbuntu_14.04.deb
-  - sudo dpkg -i libzen0_0.4.32-1_amd64.xUbuntu_14.04.deb
-  - wget http://mediaarea.net/download/binary/libzen0/0.4.32/libzen-dev_0.4.32-1_amd64.xUbuntu_14.04.deb
-  - sudo dpkg -i libzen-dev_0.4.32-1_amd64.xUbuntu_14.04.deb
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then sudo apt-get update -qq ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then sudo apt-get install -y libcurl4-gnutls-dev libmms-dev libglib2.0-dev zlib1g-dev pkg-config libxml2-utils ; fi
+
 before_script: git -C .. clone https://github.com/MediaArea/ZenLib.git
 env:
   global:
@@ -18,7 +23,8 @@ env:
     -
     - CXXFLAGS="-DMEDIAINFO_ADVANCED_NO -DMEDIAINFO_ARCHIVE_NO -DMEDIAINFO_DEMUX_NO -DMEDIAINFO_DVDIF_ANALYZE_NO -DMEDIAINFO_EVENTS_NO -DMEDIAINFO_LIBCURL_NO -DMEDIAINFO_LIBMMS_NO -DMEDIAINFO_MD5_NO -DMEDIAINFO_MINIMAL_YES -DMEDIAINFO_MPEGTS_DUPLICATE_NO -DMEDIAINFO_N19_NO -DMEDIAINFO_OTHERTEXT_NO -DMEDIAINFO_TRACE_NO -DMEDIAINFO_READTHREAD_NO -DMEDIAINFO_EXPORT_NO -DMEDIAINFO_TEXT_YES" NO_CHECKS="true"
 script:
-    - cd Project/GNU/Library/ && ./autogen.sh && ./configure --with-libcurl && make &&
+    - (cd ../ZenLib/Project/GNU/Library && ./autogen.sh && ./configure && make) &&
+      cd Project/GNU/Library/ && ./autogen.sh && ./configure --with-libcurl && make &&
       if [ -z "$NO_CHECKS" ] ; then
          make clone_regression_files && make check ;
       fi &&
