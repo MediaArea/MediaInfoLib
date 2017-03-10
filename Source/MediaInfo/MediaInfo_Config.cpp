@@ -260,9 +260,7 @@ void MediaInfo_Config::Init()
 // Info
 //***************************************************************************
 
-namespace {
-
-inline int _OctDigitValue(const String::value_type &ch)
+static inline int _OctDigitValue(const String::value_type &ch)
 {
     switch (ch)
     {
@@ -278,7 +276,7 @@ inline int _OctDigitValue(const String::value_type &ch)
     return -1;
 }
 
-inline int _HexDigitValue(const String::value_type &ch)
+static inline int _HexDigitValue(const String::value_type &ch)
 {
     switch (ch)
     {
@@ -302,7 +300,7 @@ inline int _HexDigitValue(const String::value_type &ch)
     return -1;
 }
 
-String _DecodeEscapeC(String::const_iterator first, String::const_iterator last)
+static String _DecodeEscapeC(String::const_iterator first, String::const_iterator last)
 {
     String decoded;
     for (String::const_iterator it = first; it != last; ++it)
@@ -394,8 +392,6 @@ String _DecodeEscapeC(String::const_iterator first, String::const_iterator last)
     return decoded;
 }
 
-} // namespace
-
 Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
 {
     CS.Enter();
@@ -432,7 +428,7 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         //Merge
         Value=FromFile;
     }
-    else if (Value_Raw.find(__T("cstr://"))==0)
+    else if (Value_Raw.substr(0, 7)==__T("cstr://"))
     {
         Value=_DecodeEscapeC(Value_Raw.begin() + 7, Value_Raw.end());
     }
