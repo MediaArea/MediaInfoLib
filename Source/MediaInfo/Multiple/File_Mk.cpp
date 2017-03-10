@@ -93,6 +93,9 @@
 #include <cmath>
 #include <algorithm>
 #include "ThirdParty/base64/base64.h"
+#if MEDIAINFO_EVENTS
+    #include "MediaInfo/MediaInfo_Events_Internal.h"
+#endif //MEDIAINFO_EVENTS
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -1716,6 +1719,10 @@ void File_Mk::Segment_Attachments()
 void File_Mk::Segment_Attachments_AttachedFile()
 {
     Element_Name("AttachedFile");
+
+    AttachedFile_FileName.clear();
+    AttachedFile_FileMimeType.clear();
+    AttachedFile_FileDescription.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -1724,7 +1731,9 @@ void File_Mk::Segment_Attachments_AttachedFile_FileDescription()
     Element_Name("FileDescription");
 
     //Parsing
-    UTF8_Info();
+    Ztring Data=UTF8_Get();
+
+    AttachedFile_FileDescription=Data.To_UTF8();
 }
 
 //---------------------------------------------------------------------------
@@ -1740,6 +1749,8 @@ void File_Mk::Segment_Attachments_AttachedFile_FileName()
     //Cover is in the first file which name contains "cover"
     if (!CoverIsSetFromAttachment && Data.MakeLowerCase().find(__T("cover")) != string::npos)
         CurrentAttachmentIsCover=true;
+
+    AttachedFile_FileName=Data.To_UTF8();
 }
 
 //---------------------------------------------------------------------------
@@ -1748,7 +1759,9 @@ void File_Mk::Segment_Attachments_AttachedFile_FileMimeType()
     Element_Name("FileMimeType");
 
     //Parsing
-    Local_Info();
+    Ztring Data=Local_Get();
+
+    AttachedFile_FileMimeType=Data.To_UTF8();
 }
 
 //---------------------------------------------------------------------------
@@ -1756,8 +1769,10 @@ void File_Mk::Segment_Attachments_AttachedFile_FileData()
 {
     Element_Name("FileData");
 
+    bool Attachments_Demux=true;
+
     //Parsing
-    if (!CoverIsSetFromAttachment && CurrentAttachmentIsCover && Element_Size<=8*1024*1024) //TODO: option for setting the acceptable maximum size of the attachment
+    if ((Attachments_Demux || !CoverIsSetFromAttachment && CurrentAttachmentIsCover) && Element_Size<=16*1024*1024) //TODO: option for setting the acceptable maximum size of the attachment
     {
         if (!Element_IsComplete_Get())
         {
@@ -1767,12 +1782,30 @@ void File_Mk::Segment_Attachments_AttachedFile_FileData()
 
         std::string Data_Raw;
         Peek_String(Element_TotalSize_Get(), Data_Raw);
-        std::string Data_Base64(Base64::encode(Data_Raw));
 
-        //Filling
-        Fill(Stream_General, 0, General_Cover_Data, Data_Base64);
-        Fill(Stream_General, 0, General_Cover, "Yes");
-        CoverIsSetFromAttachment=true;
+        if (!CoverIsSetFromAttachment && CurrentAttachmentIsCover)
+        {
+            std::string Data_Base64(Base64::encode(Data_Raw));
+
+            //Filling
+            Fill(Stream_General, 0, General_Cover_Data, Data_Base64);
+            Fill(Stream_General, 0, General_Cover, "Yes");
+            CoverIsSetFromAttachment=true;
+        }
+
+        #if MEDIAINFO_EVENTS
+            if (Attachments_Demux)
+            {
+                EVENT_BEGIN(Global, AttachedFile, 0)
+                    Event.Content_Size=Data_Raw.size();
+                    Event.Content=(const int8u*)Data_Raw.c_str();
+                    Event.Flags=0;
+                    Event.Name=AttachedFile_FileName.c_str();
+                    Event.MimeType=AttachedFile_FileMimeType.c_str();
+                    Event.Description=AttachedFile_FileDescription.c_str();
+                EVENT_END()
+            }
+        #endif MEDIAINFO_EVENTS
     }
     
     Skip_XX(Element_TotalSize_Get(),                            "Data");
