@@ -345,6 +345,9 @@ private :
     int64u  Segment_Tags_Tag_Targets_TagTrackUID_Value;
     bool    CurrentAttachmentIsCover;
     bool    CoverIsSetFromAttachment;
+    string  AttachedFile_FileName;
+    string  AttachedFile_FileMimeType;
+    string  AttachedFile_FileDescription;
     struct crc32
     {
         int64u  Pos;

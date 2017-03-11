@@ -1405,6 +1405,9 @@ public :
     #else //MEDIAINFO_DEMUX
         #define Demux(_A, _B, _C)
     #endif //MEDIAINFO_DEMUX
+    #if MEDIAINFO_DECODE
+        void Decoded(const int8u* Buffer, size_t Buffer_Size);
+    #endif //MEDIAINFO_DECODE
 
     //Events data
     bool    PES_FirstByte_IsAvailable;
