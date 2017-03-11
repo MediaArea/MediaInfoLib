@@ -259,6 +259,138 @@ void MediaInfo_Config::Init()
 // Info
 //***************************************************************************
 
+static inline int _OctDigitValue(const String::value_type &ch)
+{
+    switch (ch)
+    {
+    case __T('0'): return 0;
+    case __T('1'): return 1;
+    case __T('2'): return 2;
+    case __T('3'): return 3;
+    case __T('4'): return 4;
+    case __T('5'): return 5;
+    case __T('6'): return 6;
+    case __T('7'): return 7;
+    }
+    return -1;
+}
+
+static inline int _HexDigitValue(const String::value_type &ch)
+{
+    switch (ch)
+    {
+    case __T('0'): return 0;
+    case __T('1'): return 1;
+    case __T('2'): return 2;
+    case __T('3'): return 3;
+    case __T('4'): return 4;
+    case __T('5'): return 5;
+    case __T('6'): return 6;
+    case __T('7'): return 7;
+    case __T('8'): return 8;
+    case __T('9'): return 9;
+    case __T('a'): case __T('A'): return 10;
+    case __T('b'): case __T('B'): return 11;
+    case __T('c'): case __T('C'): return 12;
+    case __T('d'): case __T('D'): return 13;
+    case __T('e'): case __T('E'): return 14;
+    case __T('f'): case __T('F'): return 15;
+    }
+    return -1;
+}
+
+static String _DecodeEscapeC(String::const_iterator first, String::const_iterator last)
+{
+    String decoded;
+    for (String::const_iterator it = first; it != last; ++it)
+    {
+        String::value_type ch = 0;
+        int inc = 0;
+        if (*it == __T('\\') && (it+1) != last)
+        {
+            switch (*(it+1))
+            {
+            case __T('a'):   ch = __T('\a'); inc = 1; break;
+            case __T('b'):   ch = __T('\b'); inc = 1; break;
+            case __T('f'):   ch = __T('\f'); inc = 1; break;
+            case __T('n'):   ch = __T('\n'); inc = 1; break;
+            case __T('r'):   ch = __T('\r'); inc = 1; break;
+            case __T('t'):   ch = __T('\t'); inc = 1; break;
+            case __T('v'):   ch = __T('\v'); inc = 1; break;
+            case __T('\''):  ch = __T('\''); inc = 1; break;
+            case __T('\"'):  ch = __T('\"'); inc = 1; break;
+            case __T('\\'):  ch = __T('\\'); inc = 1; break;
+            case __T('?'):   ch = __T('?');  inc = 1; break;
+            case __T('x'): // Hex
+                {
+                    int d;
+                    if ((it+2) != last && (d = _HexDigitValue(*(it+2))) >= 0)
+                    {
+                        ch = String::value_type(d);
+                        inc = 2;
+                        if ((it+3) != last && (d = _HexDigitValue(*(it+3))) >= 0)
+                        {
+                            ch = (ch << 4) | String::value_type(d);
+                            ++inc;
+                        }
+                    }
+                }
+                break;
+#if defined(__UNICODE__)
+            case __T('u'): case __T('U'): // Unicode
+                {
+                    int d;
+                    if ((it+2) != last && (d = _HexDigitValue(*(it+2))) >= 0)
+                    {
+                        ch = String::value_type(d);
+                        inc = 2;
+                        for (int i = 0; i < 3; ++i)
+                        {
+                            if ((it+3+i) != last && (d = _HexDigitValue(*(it+3+i))) >= 0)
+                            {
+                                ch = (ch << 4) | String::value_type(d);
+                                ++inc;
+                            }
+                        }
+                    }
+                }
+                break;
+#endif
+            default:
+                {
+                    int d;
+                    if ((d = _OctDigitValue(*(it+1))) >= 0) // Oct
+                    {
+                        ch = String::value_type(d);
+                        inc = 1;
+                        if ((it+2) != last && (d = _OctDigitValue(*(it+2))) >= 0)
+                        {
+                            ch = (ch << 3) | String::value_type(d);
+                            ++inc;
+                            if ((it+3) != last && (d = _OctDigitValue(*(it+3))) >= 0)
+                            {
+                                ch = (ch << 3) | String::value_type(d);
+                                ++inc;
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+        }
+        if (inc > 0)
+        {
+            decoded += ch;
+            it += inc;
+        }
+        else
+        {
+            decoded += *it;
+        }
+    }
+    return decoded;
+}
+
 Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
 {
     CS.Enter();
@@ -294,6 +426,10 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
 
         //Merge
         Value=FromFile;
+    }
+    else if (Value_Raw.substr(0, 7)==__T("cstr://"))
+    {
+        Value=_DecodeEscapeC(Value_Raw.begin() + 7, Value_Raw.end());
     }
     else
         Value=Value_Raw;
