@@ -542,43 +542,15 @@ struct complete_stream
                     start_time((int32u)-1)
                 {}
 
-                event(const event& e)
-                :
-                    start_time(e.start_time)
-                {
-                    #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
-                        if (e.ServiceDescriptors)
-                        {
-                            ServiceDescriptors=new File__Analyze::servicedescriptors;
-                            *ServiceDescriptors=*e.ServiceDescriptors;
-                        }
-                        else
-                            ServiceDescriptors=NULL;
-                    #endif
-                }
-
-                event& operator=(const event& e)
-                {
-                    #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
-                        if (e.ServiceDescriptors)
-                        {
-                            ServiceDescriptors=new File__Analyze::servicedescriptors;
-                            *ServiceDescriptors=*e.ServiceDescriptors;
-                        }
-                        else
-                            ServiceDescriptors=NULL;
-                    #endif
-                    start_time=e.start_time;
-
-                    return *this;
-                }
-
                 ~event()
                 {
                     #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
                         delete ServiceDescriptors;
                     #endif
                 }
+                private:
+                event(const event& e);
+                event& operator=(const event& e);
             };
 
             typedef std::map<int16u, event> events; //Key is event_id
