@@ -811,7 +811,7 @@ void File_Mk::Streams_Finish()
                     float64 Duration_1000 = Statistics_FrameCount / float64_int64s(FrameRate_FromTags) * 1.001001;
                     bool CanBe1001 = false;
                     bool CanBe1000 = false;
-                    if (fabs((Duration_1000 - Duration_1001) * 10000) >= 15)
+                    if (std::fabs((Duration_1000 - Duration_1001) * 10000) >= 15)
                     {
                         Ztring DurationS; DurationS.From_Number(Statistics_Duration, 3);
                         Ztring DurationS_1001; DurationS_1001.From_Number(Duration_1001, 3);
