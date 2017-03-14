@@ -2301,7 +2301,10 @@ bool File_Mpeg4::BookMark_Needed()
                         Muxing[Temp->first].MaximalOffset=MaximalOffset;
                     #endif //MEDIAINFO_DEMUX
                     for (size_t Pos=0; Pos<Temp->second.Parsers.size(); Pos++)
-                        Temp->second.Parsers[Pos]->Stream_BitRateFromContainer=Temp->second.stsz_StreamSize*8/(((float64)Temp->second.stts_Duration)/Temp->second.mdhd_TimeScale);
+						{
+						if(Temp->second.stts_Duration && Temp->second.mdhd_TimeScale)
+						   Temp->second.Parsers[Pos]->Stream_BitRateFromContainer=Temp->second.stsz_StreamSize*8/(((float64)Temp->second.stts_Duration)/Temp->second.mdhd_TimeScale);
+						}
                     #if MEDIAINFO_DEMUX
                         if (FrameCount_MaxPerStream==(int32u)-1 && !Temp_stts_Durations.empty())
                         {
