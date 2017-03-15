@@ -2943,7 +2943,7 @@ void File__Analyze::Accept ()
             EVENT_END   ()
 
             #if MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
-                if (!Demux_EventWasSent_Accept_Specific && Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
+                if (!Demux_EventWasSent_Accept_Specific && Config->NextPacket_Get())
                     Config->Demux_EventWasSent=true;
             #endif //MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
         }
