@@ -635,17 +635,19 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
             int64u Growing_Temp=(int64u)-1;
             if (MI->Config.ParseSpeed>=1.0 && !MI->Config.File_IsGrowing && MI->Config.File_Current_Offset+F.Position_Get()>=MI->Config.File_Size)
             {
+                if (MI->Config.File_TestContinuousFileNames_Get())
+                {
+                    Growing_Temp=MI->Config.File_Names.size();
+                    MI->TestContinuousFileNames();
+                    /* TODO: fix about sequences of files
+                    if (MI->Config.File_Names.size()!=Growing_Temp)
+                        MI->Config.File_IsGrowing=true;
+                    */
+                }
                 if (MI->Config.File_Names.size()==1)
                 {
                     Growing_Temp=F.Size_Get();
                     if (MI->Config.File_Size!=Growing_Temp)
-                        MI->Config.File_IsGrowing=true;
-                }
-                else if (MI->Config.File_TestContinuousFileNames_Get())
-                {
-                    Growing_Temp=MI->Config.File_Names.size();
-                    MI->TestContinuousFileNames();
-                    if (MI->Config.File_Names.size()!=Growing_Temp)
                         MI->Config.File_IsGrowing=true;
                 }
             }
@@ -654,19 +656,19 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                 MI->Config.File_Current_Size=MI->Config.File_Size=F.Size_Get();
                 MI->Open_Buffer_Init(MI->Config.File_Size, F.Position_Get()-MI->Config.File_Buffer_Size);
                 MI->Config.File_IsGrowing=false;
-                MI->Config.File_IsNotGrowingAnymore=false;
             }
-            if (MI->Config.File_IsGrowing && (Growing_Temp!=(int64u)-1 || MI->Config.File_Current_Offset+F.Position_Get()>=MI->Config.File_Size))
+            if (((MI->Config.File_GrowingFile_Force_Get() && !MI->Config.File_IsNotGrowingAnymore) || MI->Config.File_IsGrowing) && (Growing_Temp!=(int64u)-1 || MI->Config.File_Current_Offset+F.Position_Get()>=MI->Config.File_Size)
+             && MI->Config.File_Names.size()==1) //TODO: fix about sequences of files
             {
                 #if MEDIAINFO_EVENTS
                     {
                         struct MediaInfo_Event_General_WaitForMoreData_Start_0 Event;
                         memset(&Event, 0xFF, sizeof(struct MediaInfo_Event_Generic));
                         Event.EventCode=MediaInfo_EventCode_Create(MediaInfo_Parser_None, MediaInfo_Event_General_WaitForMoreData_Start, 0);
-                        Event.EventSize=sizeof(struct MediaInfo_Event_General_Start_0);
+                        Event.EventSize=sizeof(struct MediaInfo_Event_General_WaitForMoreData_Start_0);
                         Event.StreamIDs_Size=0;
                         Event.Duration_Max=(double)MI->Config.File_GrowingFile_Delay_Get();
-                        MI->Config.Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_General_Start_0));
+                        MI->Config.Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_General_WaitForMoreData_Start_0));
                     }
                 #endif //MEDIAINFO_EVENTS
 
@@ -675,11 +677,12 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                 {
                     int64u LastFile_Size_Old=MI->Config.File_Sizes[MI->Config.File_Sizes.size()-1];
                     size_t Files_Count_Old=MI->Config.File_Names.size();
-                    MI->TestContinuousFileNames();
+                    //MI->TestContinuousFileNames(); //TODO: fix about sequences of files, "MI->Config.File_Names.size()==1 && " was added "else if (MI->Config.File_TestContinuousFileNames_Get())" commented
                     int64u LastFile_Size_New=F.Size_Get();
                     size_t Files_Count_New=MI->Config.File_Names.size();
+                    MI->Open_Buffer_CheckFileModifications();
 
-                    if (LastFile_Size_New!=LastFile_Size_Old || Files_Count_New!=Files_Count_Old)
+                    if (LastFile_Size_New != LastFile_Size_Old || Files_Count_New != Files_Count_Old || MI->Config.File_IsNotGrowingAnymore)
                     {
                         #if MEDIAINFO_EVENTS
                             {
@@ -691,14 +694,14 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                                 Event.Duration_Max=(double)MI->Config.File_GrowingFile_Delay_Get();
                                 Event.Duration_Actual=(double)CountOfSeconds;
                                 Event.Flags=0; //Countinuing
-                                MI->Config.Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_General_End_0));
+                                MI->Config.Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_General_WaitForMoreData_End_0));
                             }
                         #endif //MEDIAINFO_EVENTS
+                        MI->Config.File_Current_Size=MI->Config.File_Size=LastFile_Size_New; //TODO: check if it is not doable in Open_Buffer_Init() also when MI->Config.File_Names.size() > 1
+                        if (!MI->Config.File_Sizes.empty())
+                            MI->Config.File_Sizes[MI->Config.File_Sizes.size()-1]=LastFile_Size_New;
                         if (MI->Config.File_Names.size()==1) //if more than 1 file, file size config is already done in TestContinuousFileNames()
-                        {
-                            MI->Config.File_Current_Size=MI->Config.File_Size=LastFile_Size_New;
                             MI->Open_Buffer_Init(MI->Config.File_Size, MI->Config.File_Current_Offset+F.Position_Get()-MI->Config.File_Buffer_Size);
-                        }
                         break;
                     }
 
@@ -719,7 +722,7 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                             Event.Duration_Max=(double)MI->Config.File_GrowingFile_Delay_Get();
                             Event.Duration_Actual=(double)CountOfSeconds;
                             Event.Flags=1; //Giving up
-                            MI->Config.Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_General_End_0));
+                            MI->Config.Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_General_WaitForMoreData_End_0));
                         }
                     #endif //MEDIAINFO_EVENTS
 

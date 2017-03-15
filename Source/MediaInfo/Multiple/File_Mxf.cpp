@@ -4201,81 +4201,7 @@ void File_Mxf::Read_Buffer_Continue()
         }
     #endif //MEDIAINFO_DEMUX
 
-    if (!IsSub)
-    {
-        if (Config->ParseSpeed>=1.0)
-        {
-            bool Buffer_End_IsUpdated=false;
-            if (Config->File_IsGrowing && !Config->File_IsNotGrowingAnymore)
-            {
-                File F;
-                F.Open(File_Name);
-                std::vector<int8u> SearchingPartitionPack(65536);
-                size_t SearchingPartitionPack_Size=F.Read(&SearchingPartitionPack[0], SearchingPartitionPack.size());
-                for (size_t Pos=0; Pos+16<SearchingPartitionPack_Size; Pos++)
-                    if (SearchingPartitionPack[Pos   ]==0x06
-                     && SearchingPartitionPack[Pos+ 1]==0x0E
-                     && SearchingPartitionPack[Pos+ 2]==0x2B
-                     && SearchingPartitionPack[Pos+ 3]==0x34
-                     && SearchingPartitionPack[Pos+ 4]==0x02
-                     && SearchingPartitionPack[Pos+ 5]==0x05
-                     && SearchingPartitionPack[Pos+ 6]==0x01
-                     && SearchingPartitionPack[Pos+ 7]==0x01
-                     && SearchingPartitionPack[Pos+ 8]==0x0D
-                     && SearchingPartitionPack[Pos+ 9]==0x01
-                     && SearchingPartitionPack[Pos+10]==0x02
-                     && SearchingPartitionPack[Pos+11]==0x01
-                     && SearchingPartitionPack[Pos+12]==0x01
-                     && SearchingPartitionPack[Pos+13]==0x02) //Header Partition Pack
-                    {
-                        switch (SearchingPartitionPack[Pos+14])
-                        {
-                            case 0x02 :
-                            case 0x04 :
-                                        {
-                                        //Filling duration
-                                        F.Close();
-                                        Config->File_IsNotGrowingAnymore=true;
-                                        MediaInfo_Internal MI;
-                                        Ztring ParseSpeed_Save=MI.Option(__T("ParseSpeed_Get"), __T(""));
-                                        Ztring Demux_Save=MI.Option(__T("Demux_Get"), __T(""));
-                                        MI.Option(__T("ParseSpeed"), __T("0"));
-                                        MI.Option(__T("Demux"), Ztring());
-                                        size_t MiOpenResult=MI.Open(File_Name);
-                                        MI.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
-                                        MI.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
-                                        if (MiOpenResult)
-                                        {
-                                            Fill(Stream_General, 0, General_Format_Settings, MI.Get(Stream_General, 0, General_Format_Settings), true);
-                                            Fill(Stream_General, 0, General_Duration, MI.Get(Stream_General, 0, General_Duration), true);
-                                            Fill(Stream_General, 0, General_FileSize, MI.Get(Stream_General, 0, General_FileSize), true);
-                                            Fill(Stream_General, 0, General_StreamSize, MI.Get(Stream_General, 0, General_StreamSize), true);
-                                            if (Buffer_End_Unlimited)
-                                            {
-                                                Buffer_End=MI.Get(Stream_General, 0, General_FileSize).To_int64u()-MI.Get(Stream_General, 0, General_FooterSize).To_int64u();
-                                                Buffer_End_IsUpdated=true;
-                                            }
-                                            if (!Config->File_IsReferenced_Get() && ReferenceFiles && Retrieve(Stream_General, 0, General_StreamSize).To_int64u())
-                                            {
-                                                //Playlist file size is not correctly modified
-                                                Config->File_Size-=File_Size;
-                                                File_Size=Retrieve(Stream_General, 0, General_StreamSize).To_int64u();
-                                                Config->File_Size+=File_Size;
-                                            }
-                                        }
-                                        }
-                                        break;
-                            default   : ;
-                        }
-                    }
-
-                if (Buffer_End && Buffer_End_Unlimited && !Buffer_End_IsUpdated)
-                    Buffer_End=Config->File_Size; //Updating Clip end in case the
-            }
-
-            Config->State_Set(((float)Buffer_TotalBytes)/Config->File_Size);
-        }
-    }
+    Read_Buffer_CheckFileModifications();
 
     if (IsSearchingFooterPartitionAddress)
     {
@@ -4421,6 +4347,86 @@ void File_Mxf::Read_Buffer_Continue()
             else
                 TryToFinish();
             return;
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Read_Buffer_CheckFileModifications()
+{
+    if (!IsSub)
+    {
+        if (Config->ParseSpeed>=1.0)
+        {
+            bool Buffer_End_IsUpdated=false;
+            if (Config->File_IsGrowing && !Config->File_IsNotGrowingAnymore)
+            {
+                File F;
+                F.Open(File_Name);
+                std::vector<int8u> SearchingPartitionPack(65536);
+                size_t SearchingPartitionPack_Size=F.Read(&SearchingPartitionPack[0], SearchingPartitionPack.size());
+                for (size_t Pos=0; Pos+16<SearchingPartitionPack_Size; Pos++)
+                    if (SearchingPartitionPack[Pos   ]==0x06
+                     && SearchingPartitionPack[Pos+ 1]==0x0E
+                     && SearchingPartitionPack[Pos+ 2]==0x2B
+                     && SearchingPartitionPack[Pos+ 3]==0x34
+                     && SearchingPartitionPack[Pos+ 4]==0x02
+                     && SearchingPartitionPack[Pos+ 5]==0x05
+                     && SearchingPartitionPack[Pos+ 6]==0x01
+                     && SearchingPartitionPack[Pos+ 7]==0x01
+                     && SearchingPartitionPack[Pos+ 8]==0x0D
+                     && SearchingPartitionPack[Pos+ 9]==0x01
+                     && SearchingPartitionPack[Pos+10]==0x02
+                     && SearchingPartitionPack[Pos+11]==0x01
+                     && SearchingPartitionPack[Pos+12]==0x01
+                     && SearchingPartitionPack[Pos+13]==0x02) //Header Partition Pack
+                    {
+                        switch (SearchingPartitionPack[Pos+14])
+                        {
+                            case 0x02 :
+                            case 0x04 :
+                                        {
+                                        //Filling duration
+                                        F.Close();
+                                        Config->File_IsNotGrowingAnymore=true;
+                                        MediaInfo_Internal MI;
+                                        Ztring ParseSpeed_Save=MI.Option(__T("ParseSpeed_Get"), __T(""));
+                                        Ztring Demux_Save=MI.Option(__T("Demux_Get"), __T(""));
+                                        MI.Option(__T("ParseSpeed"), __T("0"));
+                                        MI.Option(__T("Demux"), Ztring());
+                                        size_t MiOpenResult=MI.Open(File_Name);
+                                        MI.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
+                                        MI.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
+                                        if (MiOpenResult)
+                                        {
+                                            Fill(Stream_General, 0, General_Format_Settings, MI.Get(Stream_General, 0, General_Format_Settings), true);
+                                            Fill(Stream_General, 0, General_Duration, MI.Get(Stream_General, 0, General_Duration), true);
+                                            Fill(Stream_General, 0, General_FileSize, MI.Get(Stream_General, 0, General_FileSize), true);
+                                            Fill(Stream_General, 0, General_StreamSize, MI.Get(Stream_General, 0, General_StreamSize), true);
+                                            if (Buffer_End_Unlimited)
+                                            {
+                                                Buffer_End=MI.Get(Stream_General, 0, General_FileSize).To_int64u()-MI.Get(Stream_General, 0, General_FooterSize).To_int64u();
+                                                Buffer_End_IsUpdated=true;
+                                            }
+                                            if (!Config->File_IsReferenced_Get() && ReferenceFiles && Retrieve(Stream_General, 0, General_StreamSize).To_int64u())
+                                            {
+                                                //Playlist file size is not correctly modified
+                                                Config->File_Size-=File_Size;
+                                                File_Size=Retrieve(Stream_General, 0, General_StreamSize).To_int64u();
+                                                Config->File_Size+=File_Size;
+                                            }
+                                        }
+                                        }
+                                        break;
+                            default   : ;
+                        }
+                    }
+
+                if (Buffer_End && Buffer_End_Unlimited && !Buffer_End_IsUpdated)
+                    Buffer_End=Config->File_Size; //Updating Clip end in case the
+            }
+
+            Config->State_Set(((float)Buffer_TotalBytes)/Config->File_Size);
         }
     }
 }

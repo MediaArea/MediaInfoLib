@@ -878,6 +878,16 @@ int64u MediaInfo_Internal::Open_Buffer_Continue_GoTo_Get ()
 }
 
 //---------------------------------------------------------------------------
+void MediaInfo_Internal::Open_Buffer_CheckFileModifications()
+{
+    CriticalSectionLocker CSL(CS);
+    if (Info == NULL)
+        return;
+
+    Info->Open_Buffer_CheckFileModifications();
+}
+
+//---------------------------------------------------------------------------
 bool MediaInfo_Internal::Open_Buffer_Position_Set(int64u File_Offset)
 {
     CriticalSectionLocker CSL(CS);

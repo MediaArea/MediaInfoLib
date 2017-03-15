@@ -1211,6 +1211,12 @@ void File__Analyze::Open_Buffer_Position_Set (int64u File_Offset_)
 }
 
 //---------------------------------------------------------------------------
+void File__Analyze::Open_Buffer_CheckFileModifications()
+{
+    Read_Buffer_CheckFileModifications();
+}
+
+//---------------------------------------------------------------------------
 #if MEDIAINFO_ADVANCED2
 void File__Analyze::Open_Buffer_SegmentChange ()
 {
