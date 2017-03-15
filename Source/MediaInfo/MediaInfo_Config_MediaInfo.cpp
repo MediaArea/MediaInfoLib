@@ -1741,7 +1741,8 @@ bool MediaInfo_Config_MediaInfo::File_Filter_HasChanged ()
 Ztring MediaInfo_Config_MediaInfo::File_Duplicate_Set (const Ztring &Value_In)
 {
     //Preparing for File__Duplicate...
-    CS.Enter();
+    {
+    CriticalSectionLocker CSL(CS);
     File__Duplicate_List.push_back(Value_In);
 
     //Handling Memory index
@@ -1788,8 +1789,7 @@ Ztring MediaInfo_Config_MediaInfo::File_Duplicate_Set (const Ztring &Value_In)
     }
     if (!ToReturn.empty())
         ToReturn.erase(ToReturn.begin()); //Remove first ";"
-
-    CS.Leave();
+    }
     File_IsSeekable_Set(false); //If duplication, we can not seek anymore
 
     return ToReturn;
@@ -1800,7 +1800,7 @@ Ztring MediaInfo_Config_MediaInfo::File_Duplicate_Get (size_t AlreadyRead_Pos)
     CriticalSectionLocker CSL(CS);
     if (AlreadyRead_Pos>=File__Duplicate_List.size())
         return Ztring(); //Nothing or not more than the last time
-    Ztring Temp=File__Duplicate_List[AlreadyRead_Pos];
+    const Ztring Temp=File__Duplicate_List[AlreadyRead_Pos];
     return Temp;
 }
 
@@ -2823,8 +2823,7 @@ void MediaInfo_Config_MediaInfo::File_MpegTs_ForceMenu_Set (bool NewValue)
 bool MediaInfo_Config_MediaInfo::File_MpegTs_ForceMenu_Get ()
 {
     CriticalSectionLocker CSL(CS);
-    bool Temp=File_MpegTs_ForceMenu;
-    return Temp;
+    return File_MpegTs_ForceMenu;
 }
 
 //---------------------------------------------------------------------------
@@ -2836,10 +2835,8 @@ void MediaInfo_Config_MediaInfo::File_MpegTs_stream_type_Trust_Set (bool NewValu
 
 bool MediaInfo_Config_MediaInfo::File_MpegTs_stream_type_Trust_Get ()
 {
-    CS.Enter();
-    bool Temp=File_MpegTs_stream_type_Trust;
-    CS.Leave();
-    return Temp;
+    CriticalSectionLocker CSL(CS);
+    return File_MpegTs_stream_type_Trust;
 }
 
 //---------------------------------------------------------------------------
@@ -2851,10 +2848,8 @@ void MediaInfo_Config_MediaInfo::File_MpegTs_Atsc_transport_stream_id_Trust_Set 
 
 bool MediaInfo_Config_MediaInfo::File_MpegTs_Atsc_transport_stream_id_Trust_Get ()
 {
-    CS.Enter();
-    bool Temp=File_MpegTs_Atsc_transport_stream_id_Trust;
-    CS.Leave();
-    return Temp;
+    CriticalSectionLocker CSL(CS);
+    return File_MpegTs_Atsc_transport_stream_id_Trust;
 }
 
 //---------------------------------------------------------------------------
@@ -2866,10 +2861,8 @@ void MediaInfo_Config_MediaInfo::File_MpegTs_RealTime_Set (bool NewValue)
 
 bool MediaInfo_Config_MediaInfo::File_MpegTs_RealTime_Get ()
 {
-    CS.Enter();
-    bool Temp=File_MpegTs_RealTime;
-    CS.Leave();
-    return Temp;
+    CriticalSectionLocker CSL(CS);
+    return File_MpegTs_RealTime;
 }
 
 //---------------------------------------------------------------------------
@@ -2881,10 +2874,8 @@ void MediaInfo_Config_MediaInfo::File_Mxf_TimeCodeFromMaterialPackage_Set (bool 
 
 bool MediaInfo_Config_MediaInfo::File_Mxf_TimeCodeFromMaterialPackage_Get ()
 {
-    CS.Enter();
-    bool Temp=File_Mxf_TimeCodeFromMaterialPackage;
-    CS.Leave();
-    return Temp;
+    CriticalSectionLocker CSL(CS);
+    return File_Mxf_TimeCodeFromMaterialPackage;
 }
 
 //---------------------------------------------------------------------------
@@ -2896,10 +2887,8 @@ void MediaInfo_Config_MediaInfo::File_Mxf_ParseIndex_Set (bool NewValue)
 
 bool MediaInfo_Config_MediaInfo::File_Mxf_ParseIndex_Get ()
 {
-    CS.Enter();
-    bool Temp=File_Mxf_ParseIndex;
-    CS.Leave();
-    return Temp;
+    CriticalSectionLocker CSL(CS);
+    return File_Mxf_ParseIndex;
 }
 
 //---------------------------------------------------------------------------
@@ -2912,8 +2901,7 @@ void MediaInfo_Config_MediaInfo::File_Bdmv_ParseTargetedFile_Set (bool NewValue)
 bool MediaInfo_Config_MediaInfo::File_Bdmv_ParseTargetedFile_Get ()
 {
     CriticalSectionLocker CSL(CS);
-    bool Temp=File_Bdmv_ParseTargetedFile;
-    return Temp;
+    return File_Bdmv_ParseTargetedFile;
 }
 
 //---------------------------------------------------------------------------
@@ -2943,8 +2931,7 @@ void MediaInfo_Config_MediaInfo::File_DvDif_IgnoreTransmittingFlags_Set (bool Ne
 bool MediaInfo_Config_MediaInfo::File_DvDif_IgnoreTransmittingFlags_Get ()
 {
     CriticalSectionLocker CSL(CS);
-    bool Temp=File_DvDif_IgnoreTransmittingFlags;
-    return Temp;
+    return File_DvDif_IgnoreTransmittingFlags;
 }
 #endif //defined(MEDIAINFO_DVDIF_YES)
 
@@ -2959,8 +2946,7 @@ void MediaInfo_Config_MediaInfo::File_DvDif_Analysis_Set (bool NewValue)
 bool MediaInfo_Config_MediaInfo::File_DvDif_Analysis_Get ()
 {
     CriticalSectionLocker CSL(CS);
-    bool Temp=File_DvDif_Analysis;
-    return Temp;
+    return File_DvDif_Analysis;
 }
 #endif //defined(MEDIAINFO_DVDIF_ANALYZE_YES)
 
@@ -2975,8 +2961,7 @@ void MediaInfo_Config_MediaInfo::File_Macroblocks_Parse_Set (bool NewValue)
 bool MediaInfo_Config_MediaInfo::File_Macroblocks_Parse_Get ()
 {
     CriticalSectionLocker CSL(CS);
-    bool Temp=File_Macroblocks_Parse;
-    return Temp;
+    return File_Macroblocks_Parse;
 }
 #endif //MEDIAINFO_MACROBLOCKS
 
@@ -2990,8 +2975,7 @@ void MediaInfo_Config_MediaInfo::File_GrowingFile_Delay_Set (float64 NewValue)
 float64 MediaInfo_Config_MediaInfo::File_GrowingFile_Delay_Get ()
 {
     CriticalSectionLocker CSL(CS);
-    float64 Temp=File_GrowingFile_Delay;
-    return Temp;
+    return File_GrowingFile_Delay;
 }
 
 //---------------------------------------------------------------------------
@@ -3056,8 +3040,7 @@ void MediaInfo_Config_MediaInfo::File_Mmsh_Describe_Only_Set (bool NewValue)
 bool MediaInfo_Config_MediaInfo::File_Mmsh_Describe_Only_Get ()
 {
     CriticalSectionLocker CSL(CS);
-    bool Temp=File_Mmsh_Describe_Only;
-    return Temp;
+    return File_Mmsh_Describe_Only;
 }
 #endif //defined(MEDIAINFO_LIBMMS_YES)
 
@@ -3071,8 +3054,7 @@ void MediaInfo_Config_MediaInfo::File_Eia608_DisplayEmptyStream_Set (bool NewVal
 bool MediaInfo_Config_MediaInfo::File_Eia608_DisplayEmptyStream_Get ()
 {
     CriticalSectionLocker CSL(CS);
-    bool Temp=File_Eia608_DisplayEmptyStream;
-    return Temp;
+    return File_Eia608_DisplayEmptyStream;
 }
 
 //---------------------------------------------------------------------------
@@ -3085,8 +3067,7 @@ void MediaInfo_Config_MediaInfo::File_Eia708_DisplayEmptyStream_Set (bool NewVal
 bool MediaInfo_Config_MediaInfo::File_Eia708_DisplayEmptyStream_Get ()
 {
     CriticalSectionLocker CSL(CS);
-    bool Temp=File_Eia708_DisplayEmptyStream;
-    return Temp;
+    return File_Eia708_DisplayEmptyStream;
 }
 
 //---------------------------------------------------------------------------
@@ -3100,8 +3081,7 @@ void MediaInfo_Config_MediaInfo::File_Ac3_IgnoreCrc_Set (bool NewValue)
 bool MediaInfo_Config_MediaInfo::File_Ac3_IgnoreCrc_Get ()
 {
     CriticalSectionLocker CSL(CS);
-    bool Temp=File_Ac3_IgnoreCrc;
-    return Temp;
+    return File_Ac3_IgnoreCrc;
 }
 #endif //defined(MEDIAINFO_AC3_YES)
 
@@ -3119,8 +3099,7 @@ void MediaInfo_Config_MediaInfo::State_Set (float NewValue)
 float MediaInfo_Config_MediaInfo::State_Get ()
 {
     CriticalSectionLocker CSL(CS);
-    float Temp=State;
-    return Temp;
+    return State;
 }
 
 } //NameSpace
