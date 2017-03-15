@@ -1800,8 +1800,7 @@ Ztring MediaInfo_Config_MediaInfo::File_Duplicate_Get (size_t AlreadyRead_Pos)
     CriticalSectionLocker CSL(CS);
     if (AlreadyRead_Pos>=File__Duplicate_List.size())
         return Ztring(); //Nothing or not more than the last time
-    const Ztring Temp=File__Duplicate_List[AlreadyRead_Pos];
-    return Temp;
+    return File__Duplicate_List[AlreadyRead_Pos];
 }
 
 bool MediaInfo_Config_MediaInfo::File_Duplicate_Get_AlwaysNeeded (size_t AlreadyRead_Pos)
