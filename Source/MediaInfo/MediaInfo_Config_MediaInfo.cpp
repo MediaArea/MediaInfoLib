@@ -1741,12 +1741,12 @@ bool MediaInfo_Config_MediaInfo::File_Filter_HasChanged ()
 Ztring MediaInfo_Config_MediaInfo::File_Duplicate_Set (const Ztring &Value_In)
 {
     //Preparing for File__Duplicate...
+    Ztring ToReturn;
     {
     CriticalSectionLocker CSL(CS);
     File__Duplicate_List.push_back(Value_In);
 
     //Handling Memory index
-    Ztring ToReturn;
     ZtringList List=Value_In;
     for (size_t Pos=0; Pos<List.size(); Pos++)
     {
