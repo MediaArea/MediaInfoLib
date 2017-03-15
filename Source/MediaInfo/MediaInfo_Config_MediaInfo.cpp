@@ -227,6 +227,7 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
         File_Macroblocks_Parse=false;
     #endif //MEDIAINFO_MACROBLOCKS
     File_GrowingFile_Delay=10;
+    File_GrowingFile_Force=false;
     #if defined(MEDIAINFO_LIBMMS_YES)
         File_Mmsh_Describe_Only=false;
     #endif //defined(MEDIAINFO_LIBMMS_YES)
@@ -2995,19 +2996,17 @@ float64 MediaInfo_Config_MediaInfo::File_GrowingFile_Delay_Get ()
 }
 
 //---------------------------------------------------------------------------
-void MediaInfo_Config_MediaInfo::File_GrowingFile_Force_Set (float64 NewValue)
+void MediaInfo_Config_MediaInfo::File_GrowingFile_Force_Set (bool NewValue)
 {
     CriticalSectionLocker CSL(CS);
-    if (NewValue)
-    {
-        File_IsGrowing=true;
-        File_IsNotGrowingAnymore=false;
-    }
-    else
-    {
-        File_IsGrowing=false;
-        File_IsNotGrowingAnymore=true;
-    }
+    File_GrowingFile_Force=NewValue;
+}
+
+//---------------------------------------------------------------------------
+bool MediaInfo_Config_MediaInfo::File_GrowingFile_Force_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return File_GrowingFile_Force;
 }
 
 //---------------------------------------------------------------------------
