@@ -3006,8 +3006,7 @@ void MediaInfo_Config_MediaInfo::File_GrowingFile_Force_Set (bool NewValue)
 bool MediaInfo_Config_MediaInfo::File_GrowingFile_Force_Get ()
 {
     CriticalSectionLocker CSL(CS);
-    float64 Temp=File_GrowingFile_Force;
-    return Temp;
+    return File_GrowingFile_Force;
 }
 
 //---------------------------------------------------------------------------
