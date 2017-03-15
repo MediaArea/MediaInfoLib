@@ -1326,6 +1326,7 @@ void MediaInfo_Config_CodecID_General_Mpeg4 (InfoMap &Info)
     "isom;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Base Media\n"
     "iso2;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Base Media\n"
     "iso4;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Base Media\n"
+    "iso5;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Base Media\n"
     "mp41;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Base Media / Version 1\n"
     "mp42;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Base Media / Version 2\n"
     "avc1;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;JVT\n"

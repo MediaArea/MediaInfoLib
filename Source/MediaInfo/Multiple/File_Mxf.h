@@ -90,6 +90,7 @@ protected :
     //Buffer - Global
     void Read_Buffer_Init ();
     void Read_Buffer_Continue ();
+    void Read_Buffer_CheckFileModifications();
     void Read_Buffer_AfterParsing ();
     void Read_Buffer_Unsynched();
     #if MEDIAINFO_SEEK
