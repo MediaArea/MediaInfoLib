@@ -2810,11 +2810,14 @@ void File_Mpeg4::IsParsing_mdat_Set()
             tc->H24 = false;
             tc->NegativeTimes = false;
             for (std::map<int32u, stream>::iterator StreamTemp = Streams.begin(); StreamTemp != Streams.end(); ++StreamTemp)
-                if ((StreamTemp->second.StreamKind = Stream_Video))
+                if (StreamTemp->second.StreamKind == Stream_Video)
                 {
                     tc->TimeScale = StreamTemp->second.mdhd_TimeScale;
                     tc->FrameDuration = StreamTemp->second.stts_Min;
-                    tc->NumberOfFrames = (int8u)float64_int64s(((float64)StreamTemp->second.mdhd_TimeScale) / StreamTemp->second.stts_Min);
+                    if(tc->FrameDuration)
+                       tc->NumberOfFrames = (int8u)float64_int64s(((float64)StreamTemp->second.mdhd_TimeScale) / StreamTemp->second.stts_Min);
+                    else
+                       tc->NumberOfFrames = 0; 
                     break;
                 }
 
