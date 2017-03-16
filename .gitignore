@@ -43,3 +43,7 @@ MediaInfoLib.VC.db
 *.psess
 *.vsp
 *.diagsession
+*.VC.db
+*.VC.db-shm
+*.VC.db-wal
+

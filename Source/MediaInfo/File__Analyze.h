@@ -40,6 +40,30 @@ template <class T> inline Ztring Get_Hex_ID(const T& Value)
     ID_String += __T(")");
     return ID_String;
 }
+
+struct buffer_data
+{
+    size_t Size;
+    int8u* Data;
+
+    buffer_data()
+    {
+        Size = 0;
+        Data = NULL;
+    }
+    buffer_data(const int8u* aData, size_t aSize)
+    {
+        Size = aSize;
+        Data = new int8u[aSize];
+        std::memcpy(Data, aData, aSize);
+    }
+
+    ~buffer_data()
+    {
+        delete[] Data; //Data=NULL;
+    }
+};
+
 #if !MEDIAINFO_TRACE
     #include "MediaInfo/File__Analyze_MinimizeSize.h"
 #else
