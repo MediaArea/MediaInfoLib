@@ -830,9 +830,9 @@ void File_Mk::Streams_Finish()
                     }
 
                     // Duration from tags not reliable, checking TrackDefaultDuration
-                    if (CanBe1000 == CanBe1001)
+                    if (CanBe1000 == CanBe1001 && Temp->second.TrackDefaultDuration)
                     {
-                        float64 Duration_Default=((float64)1000000000)/Temp->second.TrackDefaultDuration;
+                        const float64 Duration_Default=((float64)1000000000)/Temp->second.TrackDefaultDuration;
                         if (float64_int64s(Duration_Default) - Duration_Default*1.001000 > -0.000002
                          && float64_int64s(Duration_Default) - Duration_Default*1.001000 < +0.000002) // Detection of precise 1.001 (e.g. 24000/1001) taking into account precision of 32-bit float
                         {
