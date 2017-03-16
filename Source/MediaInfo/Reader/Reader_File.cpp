@@ -52,7 +52,10 @@ void Reader_File_Thread::Entry()
 
     for (;;)
     {
-        Base->CS.Enter();
+        size_t ToRead;
+        size_t Buffer_ToReadOffset;
+        {
+        CriticalSectionLocker CSL(Base->CS);
         if (Base->Buffer_Begin==Base->Buffer_Max)
         {
             Base->IsLooping=false;
@@ -61,8 +64,6 @@ void Reader_File_Thread::Entry()
             Base->Buffer_Begin=0;
         }
 
-        size_t ToRead;
-        size_t Buffer_ToReadOffset;
         if (Base->IsLooping)
         {
             ToRead=Base->Buffer_Begin-Base->Buffer_End2;
@@ -73,8 +74,7 @@ void Reader_File_Thread::Entry()
             ToRead=Base->Buffer_Max-Base->Buffer_End;
             Buffer_ToReadOffset=Base->Buffer_End;
         }
-        Base->CS.Leave();
-
+		}
         if (ToRead)
         {
             if (ToRead>ReadSize_Max)
@@ -83,7 +83,8 @@ void Reader_File_Thread::Entry()
             if (!BytesRead)
                 break;
 
-            Base->CS.Enter();
+            {
+            CriticalSectionLocker CSL(Base->CS);
             if (Base->IsLooping)
             {
                 Base->Buffer_End2+=BytesRead;
@@ -96,8 +97,7 @@ void Reader_File_Thread::Entry()
                     Base->IsLooping=true;
                 }
             }
-            Base->CS.Leave();
-
+			}
             #ifdef WINDOWS
                 SetEvent(Base->Condition_WaitingForMoreData);
             #endif //WINDOWS

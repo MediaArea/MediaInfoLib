@@ -180,13 +180,13 @@ MediaInfo_Config Config;
 
 void MediaInfo_Config::Init()
 {
-    CS.Enter();
+    {
+        CriticalSectionLocker CSL(CS);
     //We use Init() instead of COnstructor because for some backends (like WxWidgets...) does NOT like constructor of static object with Unicode conversion
 
     //Test
     if (!LineSeparator.empty())
     {
-        CS.Leave();
         return; //Already done
     }
 
@@ -251,7 +251,7 @@ void MediaInfo_Config::Init()
         TryToFix=false;
     #endif //MEDIAINFO_FIXITY
 
-    CS.Leave();
+    }
 
     ZtringListList ZLL1; Language_Set(ZLL1);
 }
@@ -394,9 +394,10 @@ static String _DecodeEscapeC(String::const_iterator first, String::const_iterato
 
 Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
 {
-    CS.Enter();
+    {
+    CriticalSectionLocker CSL(CS);
     SubFile_Config(Option)=Value_Raw;
-    CS.Leave();
+    }
 
     String Option_Lower(Option);
     size_t Egal_Pos=Option_Lower.find(__T('='));
@@ -1941,10 +1942,11 @@ ZtringListList MediaInfo_Config::Inform_Replace_Get_All ()
 const Ztring &MediaInfo_Config::Format_Get (const Ztring &Value, infoformat_t KindOfFormatInfo)
 {
     //Loading codec table if not yet done
-    CS.Enter();
+    {
+        CriticalSectionLocker CSL(CS);
     if (Format.empty())
         MediaInfo_Config_Format(Format);
-    CS.Leave();
+    }
 
     return Format.Get(Value, KindOfFormatInfo);
 }
@@ -1953,10 +1955,11 @@ const Ztring &MediaInfo_Config::Format_Get (const Ztring &Value, infoformat_t Ki
 InfoMap &MediaInfo_Config::Format_Get ()
 {
     //Loading codec table if not yet done
-    CS.Enter();
+    {
+        CriticalSectionLocker CSL(CS);
     if (Format.empty())
         MediaInfo_Config_Format(Format);
-    CS.Leave();
+    }
 
     return Format;
 }
@@ -1965,10 +1968,11 @@ InfoMap &MediaInfo_Config::Format_Get ()
 const Ztring &MediaInfo_Config::Codec_Get (const Ztring &Value, infocodec_t KindOfCodecInfo)
 {
     //Loading codec table if not yet done
-    CS.Enter();
+    {
+        CriticalSectionLocker CSL(CS);
     if (Codec.empty())
         MediaInfo_Config_Codec(Codec);
-    CS.Leave();
+    }
 
     return Codec.Get(Value, KindOfCodecInfo);
 }
@@ -1977,10 +1981,11 @@ const Ztring &MediaInfo_Config::Codec_Get (const Ztring &Value, infocodec_t Kind
 const Ztring &MediaInfo_Config::Codec_Get (const Ztring &Value, infocodec_t KindOfCodecInfo, stream_t KindOfStream)
 {
     //Loading codec table if not yet done
-    CS.Enter();
+    {
+    CriticalSectionLocker CSL(CS);
     if (Codec.empty())
         MediaInfo_Config_Codec(Codec);
-    CS.Leave();
+    }
 
     //Transform to text
     Ztring KindOfStreamS;
@@ -2004,8 +2009,8 @@ const Ztring &MediaInfo_Config::CodecID_Get (stream_t KindOfStream, infocodecid_
 {
     if (Format>=InfoCodecID_Format_Max || KindOfStream>=Stream_Max)
         return EmptyString_Get();
-
-    CS.Enter();
+    {
+    CriticalSectionLocker CSL(CS);
     if (CodecID[Format][KindOfStream].empty())
     {
         switch (KindOfStream)
@@ -2056,7 +2061,7 @@ const Ztring &MediaInfo_Config::CodecID_Get (stream_t KindOfStream, infocodecid_
             default: ;
         }
     }
-    CS.Leave();
+    }
     return CodecID[Format][KindOfStream].Get(Value, KindOfCodecIDInfo);
 }
 
@@ -2065,8 +2070,8 @@ const Ztring &MediaInfo_Config::Library_Get (infolibrary_format_t Format, const 
 {
     if (Format>=InfoLibrary_Format_Max)
         return EmptyString_Get();
-
-    CS.Enter();
+    {
+    CriticalSectionLocker CSL(CS);
     if (Library[Format].empty())
     {
         switch (Format)
@@ -2078,7 +2083,7 @@ const Ztring &MediaInfo_Config::Library_Get (infolibrary_format_t Format, const 
             default: ;
         }
     }
-    CS.Leave();
+    }
     return Library[Format].Get(Value, KindOfLibraryInfo);
 }
 
@@ -2086,10 +2091,11 @@ const Ztring &MediaInfo_Config::Library_Get (infolibrary_format_t Format, const 
 const Ztring &MediaInfo_Config::Iso639_1_Get (const Ztring &Value)
 {
     //Loading codec table if not yet done
-    CS.Enter();
+    {
+        CriticalSectionLocker CSL(CS);
     if (Iso639_1.empty())
         MediaInfo_Config_Iso639_1(Iso639_1);
-    CS.Leave();
+    }
 
     return Iso639_1.Get(Ztring(Value).MakeLowerCase(), 1);
 }
@@ -2098,10 +2104,11 @@ const Ztring &MediaInfo_Config::Iso639_1_Get (const Ztring &Value)
 const Ztring &MediaInfo_Config::Iso639_2_Get (const Ztring &Value)
 {
     //Loading codec table if not yet done
-    CS.Enter();
+    {
+        CriticalSectionLocker CSL(CS);
     if (Iso639_2.empty())
         MediaInfo_Config_Iso639_2(Iso639_2);
-    CS.Leave();
+    }
 
     return Iso639_2.Get(Ztring(Value).MakeLowerCase(), 1);
 }
@@ -2143,7 +2150,8 @@ const Ztring MediaInfo_Config::Iso639_Translate (const Ztring Value)
 const Ztring &MediaInfo_Config::Info_Get (stream_t KindOfStream, const Ztring &Value, info_t KindOfInfo)
 {
     //Loading codec table if not yet done
-    CS.Enter();
+    {
+    CriticalSectionLocker CSL(CS);
     if (Info[KindOfStream].empty())
         switch (KindOfStream)
         {
@@ -2156,8 +2164,7 @@ const Ztring &MediaInfo_Config::Info_Get (stream_t KindOfStream, const Ztring &V
             case Stream_Menu :      MediaInfo_Config_Menu(Info[Stream_Menu]);         Language_Set(Stream_Menu); break;
             default:;
         }
-    CS.Leave();
-
+    }
     if (KindOfStream>=Stream_Max)
         return EmptyString_Get();
     size_t Pos=Info[KindOfStream].Find(Value);
@@ -2169,7 +2176,8 @@ const Ztring &MediaInfo_Config::Info_Get (stream_t KindOfStream, const Ztring &V
 const Ztring &MediaInfo_Config::Info_Get (stream_t KindOfStream, size_t Pos, info_t KindOfInfo)
 {
     //Loading codec table if not yet done
-    CS.Enter();
+    {
+    CriticalSectionLocker CSL(CS);
     if (Info[KindOfStream].empty())
         switch (KindOfStream)
         {
@@ -2182,8 +2190,7 @@ const Ztring &MediaInfo_Config::Info_Get (stream_t KindOfStream, size_t Pos, inf
             case Stream_Menu :      MediaInfo_Config_Menu(Info[Stream_Menu]);         Language_Set(Stream_Menu); break;
             default:;
         }
-    CS.Leave();
-
+     }
     if (KindOfStream>=Stream_Max)
         return EmptyString_Get();
     if (Pos>=Info[KindOfStream].size() || (size_t)KindOfInfo>=Info[KindOfStream][Pos].size())
@@ -2197,7 +2204,8 @@ const ZtringListList &MediaInfo_Config::Info_Get(stream_t KindOfStream)
         return EmptyStringListList_Get();
 
     //Loading codec table if not yet done
-    CS.Enter();
+    {
+    CriticalSectionLocker CSL(CS);
     if (Info[KindOfStream].empty())
         switch (KindOfStream)
         {
@@ -2210,15 +2218,16 @@ const ZtringListList &MediaInfo_Config::Info_Get(stream_t KindOfStream)
             case Stream_Menu :      MediaInfo_Config_Menu(Info[Stream_Menu]);         Language_Set(Stream_Menu); break;
             default:;
         }
-    CS.Leave();
-
+    }
     return Info[KindOfStream];
 }
 
 //---------------------------------------------------------------------------
 Ztring MediaInfo_Config::Info_Parameters_Get (bool Complete)
 {
-    CS.Enter();
+    ZtringListList ToReturn;
+    {
+    CriticalSectionLocker CSL(CS);
 
     //Loading all
     MediaInfo_Config_General(Info[Stream_General]);
@@ -2230,7 +2239,6 @@ Ztring MediaInfo_Config::Info_Parameters_Get (bool Complete)
     MediaInfo_Config_Menu(Info[Stream_Menu]);
 
     //Building
-    ZtringListList ToReturn;
     size_t ToReturn_Pos=0;
 
     for (size_t StreamKind=0; StreamKind<Stream_Max; StreamKind++)
@@ -2251,7 +2259,7 @@ Ztring MediaInfo_Config::Info_Parameters_Get (bool Complete)
             }
         ToReturn_Pos++;
     }
-    CS.Leave();
+    }
 
     //Reset of language file
     Language_Set(Ztring()); //TODO: it is reseted to English, it should actually not modify the language config (MediaInfo_Config_xxx() modifies the language config)
