@@ -550,7 +550,7 @@ static Ztring Mk_ID_String_From_Source_ID (const Ztring &Value)
                 return Value;
         }
 
-        return Ztring::ToZtring(ValueI) + __T(" (0x") + Ztring::ToZtring(ValueI, 16) + __T(")");
+        return Get_Hex_ID(ValueI);
     }
 
     if (Value.size()==6 && Value[0] == __T('0') && Value[1] == __T('1'))
@@ -575,7 +575,7 @@ static Ztring Mk_ID_String_From_Source_ID (const Ztring &Value)
         if (ValueI)
             ID2=ValueI>>8;
 
-        return Ztring::ToZtring(ID1) + __T(" (0x") + Ztring::ToZtring(ID1, 16) + __T(")") + (ID2?(__T('-') + Ztring::ToZtring(ID2) + __T(" (0x") + Ztring::ToZtring(ID2, 16) + __T(")")):Ztring());
+        return Get_Hex_ID(ID1) + (ID2? Get_Hex_ID(ID2):Ztring());
     }
 
     return Value;
