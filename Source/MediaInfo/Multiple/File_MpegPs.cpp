@@ -425,11 +425,11 @@ void File_MpegPs::Streams_Fill_PerStream_PerKind(size_t StreamID, ps_stream &Tem
         if (KindOfStream==KindOfStream_Main)
         {
             Ztring ID; ID.From_Number(StreamID);
-            Ztring ID_String; ID_String.From_Number(StreamID); ID_String+=__T(" (0x"); ID_String+=Ztring::ToZtring(StreamID, 16); ID_String+=__T(")");
+            Ztring ID_String = Get_Hex_ID(StreamID);
             if (!Retrieve(StreamKind_Last, StreamPos, General_ID).empty())
             {
                 Fill(StreamKind_Last, StreamPos, General_ID, StreamID);
-                Ztring ID_String; ID_String.From_Number(StreamID); ID_String+=__T(" (0x"); ID_String+=Ztring::ToZtring(StreamID, 16); ID_String+=__T(")");
+                Ztring ID_String = Get_Hex_ID(StreamID);
                 Fill(StreamKind_Last, StreamPos, General_ID_String, ID_String, true); //TODO: merge with Decimal_Hexa in file_MpegTs
             }
             Fill(StreamKind_Last, StreamPos, General_ID, ID, true);
@@ -445,7 +445,7 @@ void File_MpegPs::Streams_Fill_PerStream_PerKind(size_t StreamID, ps_stream &Tem
             Fill(StreamKind_Last, StreamPos, General_ID, ID, true);
             Ztring ID_String=__T("189 (0xBD)");
             if (StreamID)
-                ID_String+=__T("-")+Ztring::ToZtring(StreamID)+__T(" (0x")+Ztring::ToZtring(StreamID, 16)+__T(")");
+                ID_String+=__T("-")+ Get_Hex_ID(StreamID);
             if (!Temp.Parsers[0]->Retrieve(StreamKind_Last, StreamPos, General_ID_String).empty())
                 ID_String+=__T("-")+Temp.Parsers[0]->Retrieve(StreamKind_Last, StreamPos, General_ID_String);
             else if (!Temp.Parsers[0]->Retrieve(StreamKind_Last, StreamPos, General_ID).empty())
@@ -464,7 +464,7 @@ void File_MpegPs::Streams_Fill_PerStream_PerKind(size_t StreamID, ps_stream &Tem
             Fill(StreamKind_Last, StreamPos, General_ID, ID, true);
             Ztring ID_String=__T("253 (0xFD)");
             if (StreamID)
-                ID_String+=__T("-")+Ztring::ToZtring(StreamID)+__T(" (0x")+Ztring::ToZtring(StreamID, 16)+__T(")");
+                ID_String+=__T("-")+ Get_Hex_ID(StreamID);
             Fill(StreamKind_Last, StreamPos, General_ID_String, ID_String, true); //TODO: merge with Decimal_Hexa in file_MpegTs
             }
         }

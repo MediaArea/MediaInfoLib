@@ -31,6 +31,15 @@ namespace MediaInfoLib
 
 class MediaInfo_Internal;
 
+template <class T> inline Ztring Get_Hex_ID(const T& Value)
+{
+    Ztring ID_String;
+    ID_String.From_Number(Value); 
+    ID_String += __T(" (0x"); 
+    ID_String += Ztring::ToZtring(Value, 16); 
+    ID_String += __T(")");
+    return ID_String;
+}
 #if !MEDIAINFO_TRACE
     #include "MediaInfo/File__Analyze_MinimizeSize.h"
 #else
@@ -409,8 +418,6 @@ public :
         else
             return Ztring().From_Local(Value, Value_Size);
     }
-    #define VALUE(Value) \
-        Ztring::ToZtring(Value).MakeUpperCase()+__T(" (0x")+Ztring::ToZtring(Value, 16).MakeUpperCase()+__T(")")
 
     //Param - Main
     template<typename T>

@@ -234,12 +234,7 @@ static const char* MpegTs_DtsNeural_ChannelPositions2(int8u Channels, int8u conf
 //---------------------------------------------------------------------------
 static Ztring Decimal_Hexa(int64u Number)
 {
-    Ztring Temp;
-    Temp.From_Number(Number);
-    Temp+=__T(" (0x");
-    Temp+=Ztring::ToZtring(Number, 16);
-    Temp+=__T(")");
-    return Temp;
+    return Get_Hex_ID(Number);
 }
 
 //***************************************************************************
