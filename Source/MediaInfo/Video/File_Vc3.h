@@ -73,6 +73,7 @@ private :
     #endif //defined(MEDIAINFO_CDP_YES)
 
     //Temp
+    string  TimeCode_FirstFrame;
     int32u  HS;
     int32u  CID;
     int16u  ALPF;

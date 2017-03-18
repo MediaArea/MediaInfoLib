@@ -25,6 +25,7 @@
 #if defined(MEDIAINFO_CDP_YES)
     #include "MediaInfo/Text/File_Cdp.h"
 #endif
+#include <sstream>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -310,6 +311,8 @@ void File_Vc3::Streams_Fill()
         Fill(Stream_Video, 0, Video_PixelAspectRatio, 1.0);
     }
 
+    if (!TimeCode_FirstFrame.empty())
+        Fill(Stream_Video, 0, Video_TimeCode_FirstFrame, TimeCode_FirstFrame);
 }
 
 //---------------------------------------------------------------------------
@@ -638,10 +641,47 @@ void File_Vc3::TimeCode()
 
     if (TCP)
     {
-        Skip_B8(                                                "Time Code");
+        Element_Begin1("Time Code");
+            int8u HHT, HHU, MMT, MMU, SST, SSU, FFT, FFU;
+            bool DF;
+            Skip_S1(4,                                          "Binary Group 1");
+            Get_S1 (4, FFU,                                     "Units of Frames");
+            Skip_S1(4,                                          "Binary Group 2");
+            Skip_SB(                                            "Color Frame");
+            Get_SB (   DF,                                      "Drop Frame");
+            Get_S1 (2, FFT,                                     "Tens of Frames");
+            Skip_S1(4,                                          "Binary Group 3");
+            Get_S1 (4, SSU,                                     "Units of Seconds");
+            Skip_S1(4,                                          "Binary Group 4");
+            Skip_SB(                                            "Field ID");
+            Get_S1 (3, SST,                                     "Tens of Seconds");
+            Skip_S1(4,                                          "Binary Group 5");
+            Get_S1 (4, MMU,                                     "Units of Minutes");
+            Skip_S1(4,                                          "Binary Group 6");
+            Skip_SB(                                            "X");
+            Get_S1 (3, MMT,                                     "Tens of Minutes");
+            Skip_S1(4,                                          "Binary Group 7");
+            Get_S1 (4, HHU,                                     "Units of Hours");
+            Skip_S1(4,                                          "Binary Group 8");
+            Skip_SB(                                            "X");
+            Skip_SB(                                            "X");
+            Get_S1 (2, HHT,                                     "Tens of Hours");
+            FILLING_BEGIN();
+                if (TimeCode_FirstFrame.empty() && FFU<10 && SSU<10 && SST<6 && MMU<10 && MMT<6 && HHU<10)
+                {
+                    std::ostringstream S;
+                    S<<(size_t)HHT<<(size_t)HHU<<':'<<(size_t)MMT<<(size_t)MMU<<':'<<(size_t)SST<<(size_t)SSU<<(DF?';':':')<<(size_t)FFT<<(size_t)FFU;
+                    TimeCode_FirstFrame=S.str();
+                }
+            FILLING_END();
+        Element_End0();
+        BS_End();
     }
     else
+    {
+        BS_End();
         Skip_B8(                                                "Junk");
+    }
 
     Element_End0();
 }
