@@ -49,10 +49,6 @@ static const bool Vc3_FromCID_IsSupported (int32u CompressionID)
         case 1251 :
         case 1252 :
         case 1253 :
-        case 1256 :
-        case 1258 :
-        case 1259 :
-        case 1260 :
                     return true;
         default   : return false;
     }
@@ -61,25 +57,29 @@ static const bool Vc3_FromCID_IsSupported (int32u CompressionID)
 //---------------------------------------------------------------------------
 static const int32u Vc3_CompressedFrameSize(int32u CompressionID)
 {
+    int32u Size;
     switch (CompressionID)
     {
-        case 1235 : return 917504;
-        case 1237 : return 606208;
-        case 1238 : return 917504;
-        case 1241 : return 917504;
-        case 1242 : return 606208;
-        case 1243 : return 917504;
-        case 1244 : return 606208;
-        case 1250 : return 458752;
-        case 1251 : return 458752;
-        case 1252 : return 303104;
-        case 1253 : return 188416;
-        case 1256 : return 1835008;
-        case 1258 : return 212992;
-        case 1259 : return 417792;
-        case 1260 : return 417792;
+        case 1253 : 
+                    Size= 188416; break;
+        case 1252 :
+                    Size= 303104; break;
+        case 1250 : 
+        case 1251 :
+                    Size= 458752; break;
+        case 1237 : 
+        case 1242 : 
+        case 1244 :
+                    Size= 606208; break;
+        case 1235 :
+        case 1238 : 
+        case 1241 : 
+        case 1243 :
+                    Size= 917504; break;
         default   : return 0;
     }
+
+    return Size;
 };
 
 //---------------------------------------------------------------------------
@@ -105,14 +105,10 @@ static const int8u Vc3_SBD_FromCID (int32u CompressionID)
         case 1251 :
         case 1252 :
         case 1253 :
-        case 1258 :
-        case 1259 :
-        case 1260 :
                     return 8;
         case 1235 :
         case 1241 :
         case 1250 :
-        case 1256 :
                     return 10;
         default   : return 0;
     }
@@ -214,44 +210,6 @@ static const int16u Vc3_ALPF_PerFrame_FromCID (int32u CompressionID)
 }
 
 //---------------------------------------------------------------------------
-static const char* Vc3_CLR[8]=
-{
-    "YUV",
-    "RGB",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-};
-
-//---------------------------------------------------------------------------
-static const char* Vc3_CLR_FromCID (int32u CompressionID)
-{
-    switch (CompressionID)
-    {
-        case 1235 :
-        case 1237 :
-        case 1238 :
-        case 1241 :
-        case 1242 :
-        case 1243 :
-        case 1250 :
-        case 1251 :
-        case 1252 :
-        case 1253 :
-        case 1258 :
-        case 1259 :
-        case 1260 :
-                    return Vc3_CLR[0];
-        case 1256 :
-                    return Vc3_CLR[1];
-        default   : return "";
-    }
-};
-
-//---------------------------------------------------------------------------
 static const char* Vc3_SSC[2]=
 {
     "4:2:2",
@@ -291,9 +249,6 @@ static const char* Vc3_SSC_FromCID (int32u CompressionID)
 File_Vc3::File_Vc3()
 :File__Analyze()
 {
-    //Configuration
-    MustSynchronize=true;
-
     //In
     Frame_Count_Valid=2;
     FrameRate=0;
@@ -329,6 +284,8 @@ void File_Vc3::Streams_Fill()
     if (FrameRate && Vc3_CompressedFrameSize(CID))
         Fill(Stream_Video, 0, Video_BitRate, Vc3_CompressedFrameSize(CID)*8*FrameRate, 0);
     Fill(Stream_Video, 0, Video_Format_Version, __T("Version ")+Ztring::ToZtring(HVN));
+    if (FFC_FirstFrame!=(int8u)-1)
+        Fill(Stream_Video, 0, Video_ScanOrder, Vc3_FFC_ScanOrder[FFC_FirstFrame]);
     if (Vc3_FromCID_IsSupported(CID))
     {
         if (Vc3_SPL_FromCID(CID))
@@ -338,9 +295,9 @@ void File_Vc3::Streams_Fill()
         if (Vc3_SBD_FromCID(CID))
             Fill(Stream_Video, 0, Video_BitDepth, Vc3_SBD_FromCID(CID));
         Fill(Stream_Video, 0, Video_ScanType, Vc3_SST_FromCID(CID));
-        Fill(Stream_Video, 0, Video_ColorSpace, Vc3_CLR_FromCID(CID));
-        if (!strcmp(Vc3_CLR_FromCID(CID), "YUV")) // YUV
-            Fill(Stream_Video, 0, Video_ChromaSubsampling, Vc3_SSC_FromCID(CID));
+        Fill(Stream_Video, 0, Video_ColorSpace, "YUV");
+        Fill(Stream_Video, 0, Video_ChromaSubsampling, "4:2:2");
+        Fill(Stream_Video, 0, Video_PixelAspectRatio, 1.0);
     }
     else
     {
@@ -348,12 +305,11 @@ void File_Vc3::Streams_Fill()
         Fill(Stream_Video, 0, Video_Height, ALPF*(SST?2:1));
         Fill(Stream_Video, 0, Video_BitDepth, Vc3_SBD(SBD));
         Fill(Stream_Video, 0, Video_ScanType, Vc3_SST[SST]);
-        Fill(Stream_Video, 0, Video_ColorSpace, Vc3_CLR[CLR]);
-        if (CLR==0) // YUV
-            Fill(Stream_Video, 0, Video_ChromaSubsampling, Vc3_SSC[SSC]);
+        Fill(Stream_Video, 0, Video_ColorSpace, "YUV");
+        Fill(Stream_Video, 0, Video_ChromaSubsampling, "4:2:2");
+        Fill(Stream_Video, 0, Video_PixelAspectRatio, 1.0);
     }
-    if (FFC_FirstFrame!=(int8u)-1)
-        Fill(Stream_Video, 0, Video_ScanOrder, Vc3_FFC_ScanOrder[FFC_FirstFrame]);
+
 }
 
 //---------------------------------------------------------------------------
@@ -381,73 +337,6 @@ void File_Vc3::Streams_Finish()
 }
 
 //***************************************************************************
-// Buffer - Per element
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-bool File_Vc3::Synchronize()
-{
-    //Synchronizing
-    while (Buffer_Offset+5<=Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                         || Buffer[Buffer_Offset+1]!=0x00
-                                         || Buffer[Buffer_Offset+2]!=0x02
-                                         || Buffer[Buffer_Offset+3]!=0x80
-                                         || Buffer[Buffer_Offset+4]==0x00))
-    {
-        Buffer_Offset+=2;
-        while (Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset]!=0x00)
-            Buffer_Offset+=2;
-        if (Buffer_Offset>=Buffer_Size || Buffer[Buffer_Offset-1]==0x00)
-            Buffer_Offset--;
-    }
-
-    //Parsing last bytes if needed
-    if (Buffer_Offset+4==Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                      || Buffer[Buffer_Offset+1]!=0x00
-                                      || Buffer[Buffer_Offset+2]!=0x02
-                                      || Buffer[Buffer_Offset+3]!=0x80))
-        Buffer_Offset++;
-    if (Buffer_Offset+3==Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                      || Buffer[Buffer_Offset+1]!=0x00
-                                      || Buffer[Buffer_Offset+2]!=0x02))
-        Buffer_Offset++;
-    if (Buffer_Offset+2==Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                      || Buffer[Buffer_Offset+1]!=0x00))
-        Buffer_Offset++;
-    if (Buffer_Offset+1==Buffer_Size &&  Buffer[Buffer_Offset  ]!=0x00)
-        Buffer_Offset++;
-
-    if (Buffer_Offset+5>Buffer_Size)
-        return false;
-
-    //Synched is OK
-    Synched=true;
-    return true;
-}
-
-//---------------------------------------------------------------------------
-bool File_Vc3::Synched_Test()
-{
-    //Must have enough buffer for having header
-    if (Buffer_Offset+5>Buffer_Size)
-        return false;
-
-    //Quick test of synchro
-    if (Buffer[Buffer_Offset  ]!=0x00
-     || Buffer[Buffer_Offset+1]!=0x00
-     || Buffer[Buffer_Offset+2]!=0x02
-     || Buffer[Buffer_Offset+3]!=0x80
-     || Buffer[Buffer_Offset+4]==0x00)
-    {
-        Synched=false;
-        return true;
-    }
-
-    //We continue
-    return true;
-}
-
-//***************************************************************************
 // Buffer - Demux
 //***************************************************************************
 
@@ -458,8 +347,8 @@ bool File_Vc3::Demux_UnpacketizeContainer_Test()
     if (Buffer_Offset+0x2C>Buffer_Size)
         return false;
 
-    int32u CompressionID=BigEndian2int32u(Buffer+Buffer_Offset+0x28);
-    size_t Size=Vc3_CompressedFrameSize(CompressionID);
+    CID = BigEndian2int32u(Buffer+Buffer_Offset+0x28);
+    size_t Size=Vc3_CompressedFrameSize(CID);
     if (!Size)
     {
         if (!IsSub)
@@ -500,7 +389,7 @@ void File_Vc3::Read_Buffer_Unsynched()
 //---------------------------------------------------------------------------
 bool File_Vc3::Header_Begin()
 {
-    if (Buffer_Offset+0x2C>Buffer_Size)
+    if (Buffer_Offset+0x00000280>Buffer_Size)
         return false;
 
     return true;
@@ -509,10 +398,10 @@ bool File_Vc3::Header_Begin()
 //---------------------------------------------------------------------------
 void File_Vc3::Header_Parse()
 {
-    int32u CompressionID=BigEndian2int32u(Buffer+Buffer_Offset+0x28);
+    CID = BigEndian2int32u(Buffer+Buffer_Offset+0x28);
 
     Header_Fill_Code(0, "Frame");
-    size_t Size=Vc3_CompressedFrameSize(CompressionID);
+    size_t Size=Vc3_CompressedFrameSize(CID);
     if (!Size)
     {
         if (!IsSub)
@@ -535,9 +424,10 @@ void File_Vc3::Data_Parse()
     }
     else
     {
-    Element_Info1(Frame_Count+1);
+    Element_Info1(Frame_Count);
+    Element_Begin1("Header");
     HeaderPrefix();
-    if (HVN <= 2)
+    if (HVN <= 1)
     {
         CodingControlA();
         Skip_XX(16,                                             "Reserved");
@@ -549,10 +439,21 @@ void File_Vc3::Data_Parse()
         TimeCode();
         Skip_XX(38,                                             "Reserved");
         UserData();
-
-        Skip_XX(640-Element_Offset,                             "ToDo");
+        Skip_XX( 3,                                             "Reserved");
+        MacroblockScanIndices();
+        Element_End0();
+        Element_Begin1("Payload");
+        Skip_XX(Element_Size-Element_Offset-4,                  "Data");
+        Element_End0();
+        Element_Begin1("EOF");
+        Skip_B4(                                                CRCF?"CRC":"Signature");
+        Element_End0();
     }
-    Skip_XX(Element_Size-Element_Offset,                        "Data");
+    else
+    {
+        Element_End0();
+        Skip_XX(Element_Size-Element_Offset,                    "Data");
+    }
     }
 
     FILLING_BEGIN();
@@ -568,11 +469,14 @@ void File_Vc3::Data_Parse()
         {
             FrameInfo.PTS=FrameInfo.DTS=FrameInfo.DUR=(int64u)-1;
         }
+        if (!Status[IsAccepted])
+            Accept("VC-3");
         if (!Status[IsFilled] && Frame_Count>=Frame_Count_Valid)
-        {    Fill("VC-3");
+        {
+            Fill("VC-3");
 
             if (!IsSub && Config->ParseSpeed<1)
-                Finish("VC-1");
+                Finish("VC-3");
         }
     FILLING_END();
 }
@@ -586,15 +490,12 @@ void File_Vc3::HeaderPrefix()
 {
     //Parsing
     Element_Begin1("Header Prefix");
-    int32u Data;
-    Get_B4 (Data,                                               "Magic number");
-    Get_B1 (HVN,                                                "HVN: Header Version Number");
+    Get_B4 (HS,                                                 "HS, Header Size");
+    Get_B1 (HVN,                                                "HVN, Header Version Number");
     Element_End0();
 
     FILLING_BEGIN();
-        if (Data==0x00000280LL)
-            Accept("VC-3");
-        else
+        if (HS<0x00000280)
             Reject("VC-3");
     FILLING_END();
 }
@@ -613,15 +514,12 @@ void File_Vc3::CodingControlA()
     Mark_0();
     Mark_0();
     Mark_0();
-    Get_S1 (2, FFC,                                             "Field/Frame Count"); Param_Info1(Vc3_FFC[FFC]);
+    Get_S1 (2, FFC,                                             "FFC, Field/Frame Count"); Param_Info1(Vc3_FFC[FFC]);
 
     Mark_1();
     Mark_0();
-    if (HVN==1)
-        Mark_0();
-    else
-        Skip_SB(                                                "MACF: Macroblock Adaptive Control Flag");
-    Get_SB (   CRCF,                                            "CRC flag");
+    Mark_0();
+    Get_SB (   CRCF,                                            "CRCF, CRC flag");
     Mark_0();
     Mark_0();
     Mark_0();
@@ -700,29 +598,13 @@ void File_Vc3::CodingControlB()
     BS_Begin();
 
     Info_S1(1, FFE,                                             "Field/Frame Count"); Param_Info1(Vc3_FFE[FFE]);
-    if (HVN==1)
-    {
-        Mark_0();
-        SSC=false;
-    }
-    else
-    {
-        Get_SB (SSC,                                            "SSC: Sub Sampling Control"); Param_Info1(Vc3_SSC[SSC]);
-    }
     Mark_0();
     Mark_0();
     Mark_0();
-    if (HVN==1)
-    {
-        Mark_0();
-        Mark_0();
-        Mark_0();
-        CLR=0;
-    }
-    else
-    {
-        Get_S1 (3, CLR,                                         "CLR: Color"); Param_Info1(Vc3_CLR[CLR]);
-    }
+    Mark_0();
+    Mark_0();
+    Mark_0();
+    Mark_0();
 
     BS_End();
     Element_End0();
@@ -736,15 +618,23 @@ void File_Vc3::TimeCode()
     bool TCP;
 
     BS_Begin();
-    Get_SB (   TCP,                                             "TCP: Time Code Present");
+    Get_SB (   TCP,                                             "TCP, Time Code Present");
     Mark_0();
     Mark_0();
     Mark_0();
     Mark_0();
     Mark_0();
     Mark_0();
-    Mark_0();
-    BS_End();
+    if (TCP)
+        Mark_0();
+    else
+    {
+        TCP=Peek_SB();
+        if (TCP)
+            Skip_SB(                                            "TCP, Time Code Present (wrong order)");
+        else
+            Mark_0();
+    }
 
     if (TCP)
     {
@@ -760,9 +650,9 @@ void File_Vc3::TimeCode()
 void File_Vc3::UserData()
 {
     //Parsing
-    Element_Begin1("User Data");
     int8u UserDataLabel;
 
+    Element_Begin1("User Data Control");
     BS_Begin();
     Get_S1 (4, UserDataLabel,                                   "User Data Label");
     Mark_0();
@@ -770,14 +660,26 @@ void File_Vc3::UserData()
     Mark_0();
     Mark_1();
     BS_End();
+    Element_End0();
 
+    Element_Begin1("User Data Payload");
     switch (UserDataLabel)
     {
         case 0x00: Skip_XX(260,                                 "Reserved"); break;
         case 0x08: UserData_8(); break;
         default  : Skip_XX(260,                                 "Reserved for future use");
     }
+    Element_End0();
+}
 
+//---------------------------------------------------------------------------
+void File_Vc3::MacroblockScanIndices()
+{
+    Element_Begin1("Macroblock Scan Indices Control");
+        Skip_XX(9,                                              "ToDo");
+    Element_End0();
+    Element_Begin1("Macroblock Scan Indices Payload");
+        Skip_XX(HS-Element_Offset,                              "ToDo");
     Element_End0();
 }
 
