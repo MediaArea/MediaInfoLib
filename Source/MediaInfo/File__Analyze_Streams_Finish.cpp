@@ -524,7 +524,7 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
 
     //Commercial name
     #if defined(MEDIAINFO_VC3_YES)
-        if (Retrieve(Stream_Video, Pos, Video_Format_Commercial_IfAny).empty() && Retrieve(Stream_Video, Pos, Video_Format)==__T("VC-3"))
+        if (Retrieve(Stream_Video, Pos, Video_Format_Commercial_IfAny).empty() && Retrieve(Stream_Video, Pos, Video_Format)==__T("VC-3") && Retrieve(Stream_Video, Pos, Video_Format_Profile).find(__T("HD"))==0)
         {
             //http://www.avid.com/static/resources/US/documents/dnxhd.pdf
             int64u Height=Retrieve(Stream_Video, Pos, Video_Height).To_int64u();
@@ -646,6 +646,10 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
                 if (BitDepth==8 || BitDepth==10)
                     Fill(Stream_Video, Pos, Video_Format_Commercial_IfAny, __T("DNxHD ")+Ztring::ToZtring(BitRate_Final)+(BitDepth==10?__T("x"):__T(""))); //"x"=10-bit
             }
+        }
+        if (Retrieve(Stream_Video, Pos, Video_Format_Commercial_IfAny).empty() && Retrieve(Stream_Video, Pos, Video_Format)==__T("VC-3") && Retrieve(Stream_Video, Pos, Video_Format_Profile).find(__T("RI@"))==0)
+        {
+            Fill(Stream_Video, Pos, Video_Format_Commercial_IfAny, __T("DNxHR ")+Retrieve(Stream_Video, Pos, Video_Format_Profile).substr(3));
         }
     #endif //defined(MEDIAINFO_VC3_YES)
 }

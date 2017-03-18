@@ -78,13 +78,20 @@ private :
     int32u  CID;
     int16u  ALPF;
     int16u  SPL;
+    int16u  PARC;
+    int16u  PARN;
     int8u   SBD;
     int8u   FFC_FirstFrame;
     int8u   HVN;
-    int8u   CLR;
+    int8u   CLV;
+    bool    CLF;
     bool    SSC;
     bool    CRCF;
     bool    SST;
+    bool    VBR;
+    bool    PMA;
+    bool    LLA;
+    bool    ALP;
 };
 
 } //NameSpace

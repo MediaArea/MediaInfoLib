@@ -36,6 +36,68 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+static const char* Vc3_Profile[2]=
+{
+    "HD",
+    "RI",
+};
+
+//---------------------------------------------------------------------------
+static const char* Vc3_FromCID_Profile(int32u CompressionID)
+{
+    if (CompressionID>=1235 && CompressionID<=1260)
+        return Vc3_Profile[0];
+    if (CompressionID>=1270 && CompressionID<=1275)
+        return Vc3_Profile[1];
+    return "";
+}
+
+//---------------------------------------------------------------------------
+static const char* Vc3_Level[6]=
+{
+    "444",
+    "HQX",
+    "HQ",
+    "SQ",
+    "LB",
+    "TR",
+};
+
+//---------------------------------------------------------------------------
+static const char* Vc3_FromCID_Level(int32u CompressionID)
+{
+    switch (CompressionID)
+    {
+        case 1256 :
+        case 1270 :
+                    return Vc3_Level[0];
+        case 1235 :
+        case 1241 :
+        case 1250 :
+        case 1271 :
+                    return Vc3_Level[1];
+        case 1238 :
+        case 1243 :
+        case 1251 :
+        case 1272 :
+                    return Vc3_Level[2];
+        case 1237 :
+        case 1242 :
+        case 1252 :
+        case 1273 :
+                    return Vc3_Level[3];
+        case 1253 :
+        case 1274 :
+                    return Vc3_Level[4];
+        case 1244 :
+        case 1258 :
+        case 1259 :
+        case 1260 :
+        default   : return "";
+    }
+}
+
+//---------------------------------------------------------------------------
 static const bool Vc3_FromCID_IsSupported (int32u CompressionID)
 {
     switch (CompressionID)
@@ -60,12 +122,39 @@ static const bool Vc3_FromCID_IsSupported (int32u CompressionID)
 }
 
 //---------------------------------------------------------------------------
-static const int32u Vc3_CompressedFrameSize(int32u CompressionID)
+static const int32u Vc3_CompressedFrameSize_RI(int64u Size, int16u Width, int16u Height)
+{
+    int32u WidthBlock = Width / 16;
+    if (Width % 16)
+        WidthBlock++; // Additional block with padding
+    int32u HeightBlock = Height / 16;
+    if (Height % 16)
+        HeightBlock++; // Additional block with padding
+    Size *= WidthBlock * HeightBlock;
+    if (false) //TODO: Alpha
+        Size /= 12240;
+    else
+        Size /= 8160;
+
+    int32u Remaining = Size % 4096;
+    if (Remaining >= 2048) // Round-up limit
+        Size += 4096 - Remaining; // Round up
+    else
+        Size -= Remaining; // Round down
+    if (Size < 8192) // Lower size limit
+        Size = 8192;
+
+    return (int32u)Size;
+}
+
+//---------------------------------------------------------------------------
+static const int32u Vc3_CompressedFrameSize(int32u CompressionID, int16u Width, int16u Height)
 {
     int32u Size;
     switch (CompressionID)
     {
         case 1253 : 
+        case 1274 :
                     Size= 188416; break;
         case 1258 : 
                     Size= 212992; break;
@@ -80,17 +169,24 @@ static const int32u Vc3_CompressedFrameSize(int32u CompressionID)
         case 1237 : 
         case 1242 : 
         case 1244 :
+        case 1273 :
                     Size= 606208; break;
         case 1235 :
         case 1238 : 
         case 1241 : 
         case 1243 :
+        case 1271 :
+        case 1272 :
                     Size= 917504; break;
         case 1256 : 
+        case 1270 :
                     Size=1835008; break;
         default   : return 0;
     }
 
+    if (CompressionID >= 1270)
+        return Vc3_CompressedFrameSize_RI(Size, Width, Height); // Adaptative
+    
     return Size;
 };
 
@@ -101,6 +197,7 @@ static const int8u Vc3_SBD(int32u SBD) //Sample Bit Depth
     {
         case 1 : return  8;
         case 2 : return 10;
+        case 3 : return 12;
         default: return  0;
     }
 };
@@ -177,6 +274,11 @@ static const char* Vc3_SST_FromCID (int32u CompressionID)
         case 1256 :
         case 1258 :
         case 1259 :
+        case 1270:
+        case 1271:
+        case 1272:
+        case 1273:
+        case 1274:
                     return Vc3_SST[0];
         case 1241 :
         case 1242 :
@@ -240,16 +342,19 @@ static const int16u Vc3_ALPF_PerFrame_FromCID (int32u CompressionID)
 }
 
 //---------------------------------------------------------------------------
-static const char* Vc3_CLR[8]=
+static const char* Vc3_CLV[4]=
+{
+    "BT.709",
+    "BT.2020 non-constant",
+    "BT.2020 constant",
+    "",                         //Out of band
+};
+
+//---------------------------------------------------------------------------
+static const char* Vc3_CLF[2]=
 {
     "YUV",
     "RGB",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
 };
 
 //---------------------------------------------------------------------------
@@ -270,18 +375,25 @@ static const char* Vc3_CLR_FromCID (int32u CompressionID)
         case 1258 :
         case 1259 :
         case 1260 :
-                    return Vc3_CLR[0];
+        case 1271:
+        case 1272:
+        case 1273:
+        case 1274:
+                    return Vc3_CLF[0];
         case 1256 :
-                    return Vc3_CLR[1];
+        case 1270 :
+                    return Vc3_CLF[1];
         default   : return "";
     }
 };
 
 //---------------------------------------------------------------------------
-static const char* Vc3_SSC[2]=
+static const char* Vc3_SSC[4]=
 {
     "4:2:2",
+    "4:2:0",
     "4:4:4",
+    "",
 };
 
 //---------------------------------------------------------------------------
@@ -302,9 +414,14 @@ static const char* Vc3_SSC_FromCID (int32u CompressionID)
         case 1258 :
         case 1259 :
         case 1260 :
+        case 1271:
+        case 1272:
+        case 1273:
+        case 1274:
                     return Vc3_SSC[0];
         case 1256 :
-                    return Vc3_SSC[1];
+        case 1270:
+                    return Vc3_SSC[2];
         default   : return "";
     }
 };
@@ -348,10 +465,11 @@ void File_Vc3::Streams_Fill()
     //Filling
     Stream_Prepare(Stream_Video);
     Fill(Stream_Video, 0, Video_Format, "VC-3");
-    Fill(Stream_Video, 0, Video_BitRate_Mode, "CBR");
-    if (FrameRate && Vc3_CompressedFrameSize(CID))
-        Fill(Stream_Video, 0, Video_BitRate, Vc3_CompressedFrameSize(CID)*8*FrameRate, 0);
+    Fill(Stream_Video, 0, Video_BitRate_Mode, VBR?"VBR":"CBR");
+    if (!VBR && FrameRate && Vc3_CompressedFrameSize(CID, SPL, ALPF*(SST?2:1)))
+        Fill(Stream_Video, 0, Video_BitRate, Vc3_CompressedFrameSize(CID, SPL, ALPF*(SST?2:1))*8*FrameRate, 0);
     Fill(Stream_Video, 0, Video_Format_Version, __T("Version ")+Ztring::ToZtring(HVN));
+    Fill(Stream_Video, 0, Video_Format_Profile, string(Vc3_FromCID_Profile(CID))+'@'+Vc3_FromCID_Level(CID));
     if (FFC_FirstFrame!=(int8u)-1)
         Fill(Stream_Video, 0, Video_ScanOrder, Vc3_FFC_ScanOrder[FFC_FirstFrame]);
     if (Vc3_FromCID_IsSupported(CID))
@@ -374,9 +492,11 @@ void File_Vc3::Streams_Fill()
         Fill(Stream_Video, 0, Video_Height, ALPF*(SST?2:1));
         Fill(Stream_Video, 0, Video_BitDepth, Vc3_SBD(SBD));
         Fill(Stream_Video, 0, Video_ScanType, Vc3_SST[SST]);
-        Fill(Stream_Video, 0, Video_ColorSpace, Vc3_CLR[CLR]);
-        if (CLR==0) // YUV
-            Fill(Stream_Video, 0, Video_ChromaSubsampling, Vc3_SSC[SSC]);
+        Fill(Stream_Video, 0, Video_ColorSpace, (string(Vc3_CLF[CLF])+(ALP?"A":"")));
+        if (!CLF) // YUV
+            Fill(Stream_Video, 0, Video_ChromaSubsampling, (string(Vc3_SSC[SSC])+(ALP?"4":"")));
+        if (PARC && PARN)
+            Fill(Stream_Video, 0, Video_PixelAspectRatio, ((float64)PARC)/PARN);
     }
 
     if (!TimeCode_FirstFrame.empty())
@@ -418,8 +538,11 @@ bool File_Vc3::Demux_UnpacketizeContainer_Test()
     if (Buffer_Offset+0x2C>Buffer_Size)
         return false;
 
+    ALPF= BigEndian2int16u(Buffer+Buffer_Offset+0x18);
+    SPL = BigEndian2int16u(Buffer+Buffer_Offset+0x1A);
+    SST =(BigEndian2int16u(Buffer+Buffer_Offset+0x22)&(1<<2)?true:false);
     CID = BigEndian2int32u(Buffer+Buffer_Offset+0x28);
-    size_t Size=Vc3_CompressedFrameSize(CID);
+    size_t Size=Vc3_CompressedFrameSize(CID, SPL, ALPF*(SST?2:1));
     if (!Size)
     {
         if (!IsSub)
@@ -469,10 +592,13 @@ bool File_Vc3::Header_Begin()
 //---------------------------------------------------------------------------
 void File_Vc3::Header_Parse()
 {
+    ALPF= BigEndian2int16u(Buffer+Buffer_Offset+0x18);
+    SPL = BigEndian2int16u(Buffer+Buffer_Offset+0x1A);
+    SST =(BigEndian2int16u(Buffer+Buffer_Offset+0x22)&(1<<2)?true:false);
     CID = BigEndian2int32u(Buffer+Buffer_Offset+0x28);
 
     Header_Fill_Code(0, "Frame");
-    size_t Size=Vc3_CompressedFrameSize(CID);
+    size_t Size=Vc3_CompressedFrameSize(CID, SPL, ALPF*(SST?2:1));
     if (!Size)
     {
         if (!IsSub)
@@ -498,7 +624,7 @@ void File_Vc3::Data_Parse()
     Element_Info1(Frame_Count);
     Element_Begin1("Header");
     HeaderPrefix();
-    if (HVN <= 2)
+    if (HVN <= 3)
     {
         CodingControlA();
         Skip_XX(16,                                             "Reserved");
@@ -582,7 +708,7 @@ void File_Vc3::CodingControlA()
     Mark_0();
     Mark_0();
     Mark_0();
-    Mark_0();
+    Get_SB (   VBR,                                             "VBR, Variable Bitrate Encoding");
     Mark_0();
     Mark_0();
     Get_S1 (2, FFC,                                             "FFC, Field/Frame Count"); Param_Info1(Vc3_FFC[FFC]);
@@ -601,9 +727,9 @@ void File_Vc3::CodingControlA()
     Mark_1();
     Mark_0();
     Mark_0();
-    Mark_0();
-    Mark_0();
-    Mark_0();
+    Get_SB (   PMA,                                             "PMA, Pre-multiplied Alpha");
+    Get_SB (   LLA,                                             "LLA, Lossless Alpha flag");
+    Get_SB (   ALP,                                             "ALP, Alpha flag");
 
     BS_End();
     Element_End0();
@@ -618,16 +744,27 @@ void File_Vc3::CodingControlA()
 void File_Vc3::ImageGeometry()
 {
     //Parsing
+    int8u PARC0, PARC1, PARN0, PARN1;
     Element_Begin1("Image Geometry");
     Get_B2 (ALPF,                                               "Active lines-per-frame");
     Get_B2 (SPL,                                                "Samples-per-line");
-    Skip_B1(                                                    "Zero");
+    BS_Begin();
+    Mark_0();
+    Mark_0();
+    Mark_0();
+    Mark_0();
+    Get_S1 (2, PARC1,                                           "PARC1, Pixel Aspect Ratio C1");
+    Get_S1 (2, PARN1,                                           "PARN1, Pixel Aspect Ratio N1");
+    BS_End();
     Skip_B2(                                                    "Number of active lines");
-    Skip_B2(                                                    "Zero");
+    Get_B1 (PARC0,                                              "PARC0, Pixel Aspect Ratio C0");
+    Get_B1 (PARN0,                                              "PARN0, Pixel Aspect Ratio N0");
+    PARC=(((int16u)PARC1)<<8)|PARC0;
+    PARN=(((int16u)PARN1)<<8)|PARN0;
 
     BS_Begin();
 
-    Get_S1 (3, SBD,                                             "Sample bit depth");
+    Get_S1 (3, SBD,                                             "Sample bit depth"); Param_Info1(Vc3_SBD(SBD));
     Mark_1();
     Mark_1();
     Mark_0();
@@ -668,13 +805,12 @@ void File_Vc3::CodingControlB()
     Element_Begin1("Coding Control B");
     BS_Begin();
 
-    Info_S1(1, FFE,                                             "FFE, Field/Frame Count"); Param_Info1(Vc3_FFE[FFE]);
+    Info_SB(   FFE,                                             "FFE, Field/Frame Count"); Param_Info1(Vc3_FFE[FFE]);
     Get_SB (   SSC,                                             "SSC, Sub Sampling Control"); Param_Info1(Vc3_SSC[SSC]);
     Mark_0();
     Mark_0();
-    Mark_0();
-    Mark_0();
-    Get_S1 (3, CLR,                                             "CLR, Color"); Param_Info1(Vc3_CLR[CLR]);
+    Get_S1 (2, CLV,                                             "CLR, Color Volume"); Param_Info1(Vc3_CLV[CLV]);
+    Get_SB (   CLF,                                             "CLF, Color Format"); Param_Info1(Vc3_CLF[CLF]);
 
     BS_End();
     Element_End0();
