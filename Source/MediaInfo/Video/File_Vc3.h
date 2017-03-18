@@ -81,6 +81,8 @@ private :
     int8u   SBD;
     int8u   FFC_FirstFrame;
     int8u   HVN;
+    int8u   CLR;
+    bool    SSC;
     bool    CRCF;
     bool    SST;
 };

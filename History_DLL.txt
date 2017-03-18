@@ -10,6 +10,7 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 Version 0.7.93, 2017-02-28
 --------------
 + VC-3: detection of embedded time code
++ VC-3: better support of stream with width 960 or 1440
 
 Version 0.7.93, 2017-02-28
 --------------

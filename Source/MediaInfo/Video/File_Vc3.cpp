@@ -50,6 +50,10 @@ static const bool Vc3_FromCID_IsSupported (int32u CompressionID)
         case 1251 :
         case 1252 :
         case 1253 :
+        case 1256 :
+        case 1258 :
+        case 1259 :
+        case 1260 :
                     return true;
         default   : return false;
     }
@@ -63,8 +67,13 @@ static const int32u Vc3_CompressedFrameSize(int32u CompressionID)
     {
         case 1253 : 
                     Size= 188416; break;
+        case 1258 : 
+                    Size= 212992; break;
         case 1252 :
                     Size= 303104; break;
+        case 1259 : 
+        case 1260 :
+                    Size= 417792; break;
         case 1250 : 
         case 1251 :
                     Size= 458752; break;
@@ -77,6 +86,8 @@ static const int32u Vc3_CompressedFrameSize(int32u CompressionID)
         case 1241 : 
         case 1243 :
                     Size= 917504; break;
+        case 1256 : 
+                    Size=1835008; break;
         default   : return 0;
     }
 
@@ -106,10 +117,14 @@ static const int8u Vc3_SBD_FromCID (int32u CompressionID)
         case 1251 :
         case 1252 :
         case 1253 :
+        case 1258 :
+        case 1259 :
+        case 1260 :
                     return 8;
         case 1235 :
         case 1241 :
         case 1250 :
+        case 1256 :
                     return 10;
         default   : return 0;
     }
@@ -159,10 +174,14 @@ static const char* Vc3_SST_FromCID (int32u CompressionID)
         case 1251 :
         case 1252 :
         case 1253 :
+        case 1256 :
+        case 1258 :
+        case 1259 :
                     return Vc3_SST[0];
         case 1241 :
         case 1242 :
         case 1243 :
+        case 1260 :
                     return Vc3_SST[1];
         default   : return "";
     }
@@ -173,10 +192,16 @@ static const int16u Vc3_SPL_FromCID (int32u CompressionID)
 {
     switch (CompressionID)
     {
+        case 1258 :
+                    return 960;
         case 1250 :
         case 1251 :
         case 1252 :
                     return 1280;
+        case 1259:
+        case 1260:
+        case 1244:
+                    return 1440;
         case 1235 :
         case 1237 :
         case 1238 :
@@ -197,6 +222,7 @@ static const int16u Vc3_ALPF_PerFrame_FromCID (int32u CompressionID)
         case 1250 :
         case 1251 :
         case 1252 :
+        case 1258 :
                     return 720;
         case 1235 :
         case 1237 :
@@ -205,10 +231,51 @@ static const int16u Vc3_ALPF_PerFrame_FromCID (int32u CompressionID)
         case 1242 :
         case 1243 :
         case 1253 :
+        case 1256 :
+        case 1259 :
+        case 1260 :
                     return 1080;
         default   : return 0;
     }
 }
+
+//---------------------------------------------------------------------------
+static const char* Vc3_CLR[8]=
+{
+    "YUV",
+    "RGB",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+};
+
+//---------------------------------------------------------------------------
+static const char* Vc3_CLR_FromCID (int32u CompressionID)
+{
+    switch (CompressionID)
+    {
+        case 1235 :
+        case 1237 :
+        case 1238 :
+        case 1241 :
+        case 1242 :
+        case 1243 :
+        case 1250 :
+        case 1251 :
+        case 1252 :
+        case 1253 :
+        case 1258 :
+        case 1259 :
+        case 1260 :
+                    return Vc3_CLR[0];
+        case 1256 :
+                    return Vc3_CLR[1];
+        default   : return "";
+    }
+};
 
 //---------------------------------------------------------------------------
 static const char* Vc3_SSC[2]=
@@ -296,9 +363,10 @@ void File_Vc3::Streams_Fill()
         if (Vc3_SBD_FromCID(CID))
             Fill(Stream_Video, 0, Video_BitDepth, Vc3_SBD_FromCID(CID));
         Fill(Stream_Video, 0, Video_ScanType, Vc3_SST_FromCID(CID));
-        Fill(Stream_Video, 0, Video_ColorSpace, "YUV");
-        Fill(Stream_Video, 0, Video_ChromaSubsampling, "4:2:2");
-        Fill(Stream_Video, 0, Video_PixelAspectRatio, 1.0);
+        Fill(Stream_Video, 0, Video_ColorSpace, Vc3_CLR_FromCID(CID));
+        if (!strcmp(Vc3_CLR_FromCID(CID), "YUV")) // YUV
+            Fill(Stream_Video, 0, Video_ChromaSubsampling, Vc3_SSC_FromCID(CID));
+        Fill(Stream_Video, 0, Video_PixelAspectRatio, Video_Width==1440?1.333:1.0);
     }
     else
     {
@@ -306,9 +374,9 @@ void File_Vc3::Streams_Fill()
         Fill(Stream_Video, 0, Video_Height, ALPF*(SST?2:1));
         Fill(Stream_Video, 0, Video_BitDepth, Vc3_SBD(SBD));
         Fill(Stream_Video, 0, Video_ScanType, Vc3_SST[SST]);
-        Fill(Stream_Video, 0, Video_ColorSpace, "YUV");
-        Fill(Stream_Video, 0, Video_ChromaSubsampling, "4:2:2");
-        Fill(Stream_Video, 0, Video_PixelAspectRatio, 1.0);
+        Fill(Stream_Video, 0, Video_ColorSpace, Vc3_CLR[CLR]);
+        if (CLR==0) // YUV
+            Fill(Stream_Video, 0, Video_ChromaSubsampling, Vc3_SSC[SSC]);
     }
 
     if (!TimeCode_FirstFrame.empty())
@@ -430,7 +498,7 @@ void File_Vc3::Data_Parse()
     Element_Info1(Frame_Count);
     Element_Begin1("Header");
     HeaderPrefix();
-    if (HVN <= 1)
+    if (HVN <= 2)
     {
         CodingControlA();
         Skip_XX(16,                                             "Reserved");
@@ -521,7 +589,7 @@ void File_Vc3::CodingControlA()
 
     Mark_1();
     Mark_0();
-    Mark_0();
+    Skip_SB(                                                    "MACF, Macroblock Adaptive Control flag");
     Get_SB (   CRCF,                                            "CRCF, CRC flag");
     Mark_0();
     Mark_0();
@@ -600,14 +668,13 @@ void File_Vc3::CodingControlB()
     Element_Begin1("Coding Control B");
     BS_Begin();
 
-    Info_S1(1, FFE,                                             "Field/Frame Count"); Param_Info1(Vc3_FFE[FFE]);
+    Info_S1(1, FFE,                                             "FFE, Field/Frame Count"); Param_Info1(Vc3_FFE[FFE]);
+    Get_SB (   SSC,                                             "SSC, Sub Sampling Control"); Param_Info1(Vc3_SSC[SSC]);
     Mark_0();
     Mark_0();
     Mark_0();
     Mark_0();
-    Mark_0();
-    Mark_0();
-    Mark_0();
+    Get_S1 (3, CLR,                                             "CLR, Color"); Param_Info1(Vc3_CLR[CLR]);
 
     BS_End();
     Element_End0();
