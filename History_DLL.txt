@@ -9,6 +9,12 @@ https://sourceforge.net/p/mediainfo/_list/tickets
 
 Version 0.7.93, 2017-02-28
 --------------
++ VC-3: detection of embedded time code
++ VC-3: better support of stream with width 960 or 1440
++ VC-3: support of version 3 (a.k.a. DNxHR), including profile and level for version 1/2 (a.k.a. DNxHD)
+
+Version 0.7.93, 2017-02-28
+--------------
 + Matroska: detection of native FFV1 CodecID ("V_FFV1")
 + AC-3/E-AC-3: detection of Atmos inside core streams
 + AC-3/E-AC-3: slight reorganization of metadata display for dual mono and surround
