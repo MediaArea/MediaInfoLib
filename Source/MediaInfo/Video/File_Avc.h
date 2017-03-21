@@ -535,6 +535,7 @@ private :
     int8u                               nal_ref_idc;
     int8u                               FrameRate_Divider;
     bool                                FirstPFrameInGop_IsParsed;
+    bool                                Config_IsRepeated;
     #if MEDIAINFO_ADVANCED2
         std::vector<std::string>        Dump_SPS;
         std::vector<std::string>        Dump_PPS;

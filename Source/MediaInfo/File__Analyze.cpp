@@ -3208,9 +3208,8 @@ void File__Analyze::GoTo (int64u GoTo, const char* ParserName)
     if (GoTo==File_Size)
     {
         BookMark_Get();
-        if (File_GoTo==(int64u)-1)
-            ForceFinish();
-        return;
+        if (File_GoTo!=(int64u)-1)
+            return;
     }
 
     if (ShouldContinueParsing)

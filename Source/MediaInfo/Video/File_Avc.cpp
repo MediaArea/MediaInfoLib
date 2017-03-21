@@ -1336,6 +1336,7 @@ void File_Avc::Synched_Init()
     //Temp
     FrameRate_Divider=1;
     FirstPFrameInGop_IsParsed=false;
+    Config_IsRepeated=false;
     tc=0;
 
     //Default values
@@ -1395,7 +1396,7 @@ void File_Avc::Read_Buffer_Unsynched()
     #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
 
     //parameter_sets
-    if (SizedBlocks) //If sized blocks, it is not a broadcasted stream so SPS/PPS are only in container header, we must not disable them.
+    if (SizedBlocks || !Config_IsRepeated) //If sized blocks, it is not a broadcasted stream so SPS/PPS are only in container header, we must not disable them.
     {
         //Rebuilding immediatly TemporalReferences
         for (std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item=seq_parameter_sets.begin(); seq_parameter_set_Item!=seq_parameter_sets.end(); ++seq_parameter_set_Item)
@@ -3302,6 +3303,8 @@ void File_Avc::seq_parameter_set_data_Add(std::vector<seq_parameter_set_struct*>
     //Creating Data
     if (Data_id>=Data.size())
         Data.resize(Data_id+1);
+    else
+        FirstPFrameInGop_IsParsed=true;
     std::vector<seq_parameter_set_struct*>::iterator Data_Item=Data.begin()+Data_id;
     delete *Data_Item; *Data_Item=Data_Item_New;
 
