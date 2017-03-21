@@ -3811,7 +3811,7 @@ void File__Analyze::Decoded (const int8u* Buffer, size_t Buffer_Size)
             Event.Content=Buffer;
             Event.Flags=0;
         EVENT_END()
-    #endif MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS
 }
 
 #endif //MEDIAINFO_DECODE

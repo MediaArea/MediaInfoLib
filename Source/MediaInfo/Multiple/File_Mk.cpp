@@ -1876,7 +1876,7 @@ void File_Mk::Segment_Attachments_AttachedFile_FileData()
                     Event.Description=AttachedFile_FileDescription.c_str();
                 EVENT_END()
             }
-        #endif MEDIAINFO_EVENTS
+        #endif //MEDIAINFO_EVENTS
     }
     
     Skip_XX(Element_TotalSize_Get(),                            "Data");
