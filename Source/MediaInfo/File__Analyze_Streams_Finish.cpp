@@ -657,6 +657,17 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
 //---------------------------------------------------------------------------
 void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
 {
+    //Channels
+    if (Retrieve(Stream_Audio, Pos, Audio_Channel_s_).empty())
+    {
+        const Ztring& CodecID=Retrieve(Stream_Audio, Pos, Audio_CodecID);
+        if (CodecID==__T("samr")
+         || CodecID==__T("sawb")
+         || CodecID==__T("7A21")
+         || CodecID==__T("7A22"))
+        Fill(Stream_Audio, Pos, Audio_Channel_s_, 1); //AMR is always with 1 channel
+    }
+
     //SamplingCount
     if (Retrieve(Stream_Audio, Pos, Audio_SamplingCount).empty())
     {
