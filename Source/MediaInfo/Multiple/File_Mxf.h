@@ -624,6 +624,7 @@ protected :
     bool   IsSearchingFooterPartitionAddress;
     bool   FooterPartitionAddress_Jumped;
     bool   PartitionPack_Parsed;
+    bool   HeaderPartition_IsOpen;
     size_t IdIsAlwaysSame_Offset;
 
     //Primer

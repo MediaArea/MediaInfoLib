@@ -740,24 +740,6 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
          )
     {
         BookMark_Get();
-
-        if (File_GoTo>=File_Size)
-        {
-            Element_Show(); //If Element_Level is >0, we must show what is in the details buffer
-            while (Element_Level>0)
-                Element_End0(); //This is Finish, must flush
-            Buffer_Clear();
-            File_Offset=File_Size;
-            if (!IsSub && !Config->File_Names.empty())
-            {
-                if (Config->File_Sizes.size()>=Config->File_Names.size())
-                    Config->File_Current_Size=Config->File_Sizes[Config->File_Names.size()-1];
-                Config->File_Current_Offset=Config->File_Current_Size;
-                Config->File_Names_Pos=Config->File_Names.size()-1;
-            }
-            ForceFinish();
-            return;
-        }
     }
 
     //Demand to go elsewhere
@@ -796,20 +778,6 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
     //Buffer handling
     if (Buffer_Size && Buffer_Offset<=Buffer_Size) //all is not used
     {
-        if (File_Offset+Buffer_Size>=File_Size //No more data will come
-         && !Config->File_IsGrowing
-        #if MEDIAINFO_DEMUX
-         && !Config->Demux_EventWasSent
-        #endif //MEDIAINFO_DEMUX
-           )
-        {
-                ForceFinish();
-                #if MEDIAINFO_DEMUX
-                    if (Config->Demux_EventWasSent)
-                        return;
-                #endif //MEDIAINFO_DEMUX
-        }
-
         if (Buffer_Temp_Size==0) //If there was no copy
         {
             #if MEDIAINFO_DEMUX
@@ -3075,6 +3043,10 @@ void File__Analyze::ForceFinish ()
         return;
 
     #if MEDIAINFO_TRACE
+        Element_Show(); //If Element_Level is >0, we must show what is in the details buffer
+        while (Element_Level>0)
+            Element_End0(); //This is Finish, must flush
+
         if (ParserName.empty() && ParserName_Char)
             ParserName = ParserName_Char;
 

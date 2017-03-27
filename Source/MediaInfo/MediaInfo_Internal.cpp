@@ -916,13 +916,6 @@ size_t MediaInfo_Internal::Open_Buffer_Seek (size_t Method, int64u Value, int64u
 size_t MediaInfo_Internal::Open_Buffer_Finalize ()
 {
     CriticalSectionLocker CSL(CS);
-    if (Info && Info->Status[File__Analyze::IsUpdated])
-    {
-        Info->Open_Buffer_Update();
-        Info->Status[File__Analyze::IsUpdated]=false;
-        for (size_t Pos=File__Analyze::User_16; Pos<File__Analyze::User_16+16; Pos++)
-            Info->Status[Pos]=false;
-    }
     MEDIAINFO_DEBUG_CONFIG_TEXT(Debug+=__T("Open_Buffer_Finalize");)
     if (Info==NULL)
         return 0;
