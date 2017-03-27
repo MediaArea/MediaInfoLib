@@ -2167,6 +2167,7 @@ File_Mxf::File_Mxf()
     IsSearchingFooterPartitionAddress=false;
     FooterPartitionAddress_Jumped=false;
     PartitionPack_Parsed=false;
+    HeaderPartition_IsOpen=false;
     IdIsAlwaysSame_Offset=0;
     PartitionMetadata_PreviousPartition=(int64u)-1;
     PartitionMetadata_FooterPartition=(int64u)-1;
@@ -4359,7 +4360,7 @@ void File_Mxf::Read_Buffer_CheckFileModifications()
         if (Config->ParseSpeed>=1.0)
         {
             bool Buffer_End_IsUpdated=false;
-            if (Config->File_IsGrowing && !Config->File_IsNotGrowingAnymore)
+            if (HeaderPartition_IsOpen && !Config->File_IsNotGrowingAnymore)
             {
                 File F;
                 F.Open(File_Name);
@@ -10522,6 +10523,7 @@ void File_Mxf::PartitionMetadata()
                         if (Config->ParseSpeed>=1.0)
                         {
                             Config->File_IsGrowing=true;
+                            HeaderPartition_IsOpen=true;
                             #if MEDIAINFO_HASH
                                 delete Hash; Hash=NULL;
                             #endif //MEDIAINFO_HASH
@@ -10533,6 +10535,7 @@ void File_Mxf::PartitionMetadata()
                         if (Config->ParseSpeed>=1.0)
                         {
                             Config->File_IsGrowing=true;
+                            HeaderPartition_IsOpen=true;
                             #if MEDIAINFO_HASH
                                 delete Hash; Hash=NULL;
                             #endif //MEDIAINFO_HASH
