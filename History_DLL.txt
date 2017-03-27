@@ -43,6 +43,7 @@ Version 0.7.92, 2017-01-31
 + MP4: more AppleStoreCountry values mapped to countries, show the country number if unknown
 + File extension: test if the file extension correspond to the container format
 + AVI/WAV: test of truncated file
++ MPEG-TS: MpegTs_ForceTextStreamDisplay option for showing e.g. DVB streams detected in PMT even if there is no PES at the beginning of the file
 + MIXML output: Format_Profile divided in Format_Profile, Format_Level, Format_Tier
 + ID3v2: TCAP tag is mapped to new field "PodcastCategory"
 x MIXML output: some *_Original values were missing
