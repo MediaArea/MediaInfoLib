@@ -278,6 +278,7 @@ size_t Reader_File::Format_Test_PerParser(MediaInfo_Internal* MI, const String &
         Partial_Begin=0; //Wrong value
     if (Partial_Begin>Partial_End)
         Partial_Begin=0; //Wrong value
+    CountOfSeconds=0;
 
     //Parser
     MI->Open_Buffer_Init((Partial_End<=MI->Config.File_Size?Partial_End:MI->Config.File_Size)-Partial_Begin, File_Name);
@@ -358,7 +359,7 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
         if (MI->IsTerminating())
             return 1; //Termination is requested
 
-        if (Status[File__Analyze::IsFinished] || (StopAfterFilled && Status[File__Analyze::IsFilled]))
+        if (Status[File__Analyze::IsFinished] || CountOfSeconds>=(size_t)MI->Config.File_GrowingFile_Delay_Get() || (StopAfterFilled && Status[File__Analyze::IsFilled]))
             ShouldContinue=false;
     }
     #endif //MEDIAINFO_DEMUX
@@ -676,7 +677,6 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                     }
                 #endif //MEDIAINFO_EVENTS
 
-                size_t CountOfSeconds=0;
                 for (; CountOfSeconds<(size_t)MI->Config.File_GrowingFile_Delay_Get(); CountOfSeconds++)
                 {
                     int64u LastFile_Size_Old=MI->Config.File_Sizes[MI->Config.File_Sizes.size()-1];
@@ -701,6 +701,7 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                                 MI->Config.Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_General_WaitForMoreData_End_0));
                             }
                         #endif //MEDIAINFO_EVENTS
+                        CountOfSeconds=0;
                         MI->Config.File_Current_Size=MI->Config.File_Size=LastFile_Size_New; //TODO: check if it is not doable in Open_Buffer_Init() also when MI->Config.File_Names.size() > 1
                         if (!MI->Config.File_Sizes.empty())
                             MI->Config.File_Sizes[MI->Config.File_Sizes.size()-1]=LastFile_Size_New;
