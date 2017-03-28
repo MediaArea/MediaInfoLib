@@ -241,7 +241,7 @@ private :
     void Segment_Tracks_TrackEntry_Video_PixelHeight();
     void Segment_Tracks_TrackEntry_Video_PixelWidth();
     void Segment_Tracks_TrackEntry_Video_StereoMode();
-    void Segment_Tracks_TrackEntry_Video_StereoModeBuggy() {Segment_Tracks_TrackEntry_Video_StereoMode();}
+    void Segment_Tracks_TrackEntry_Video_OldStereoMode();
     void Segment_Tracks_TrackEntry_TrackOverlay();
     void Segment_Tracks_TrackEntry_TrackTranslate();
     void Segment_Tracks_TrackEntry_TrackTranslate_Codec();

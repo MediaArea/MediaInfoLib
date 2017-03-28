@@ -305,7 +305,7 @@ namespace Elements
     const int64u Segment_Tracks_TrackEntry_Video_PixelHeight=0x3A;
     const int64u Segment_Tracks_TrackEntry_Video_PixelWidth=0x30;
     const int64u Segment_Tracks_TrackEntry_Video_StereoMode=0x13B8;
-    const int64u Segment_Tracks_TrackEntry_Video_StereoModeBuggy=0x13B9;
+    const int64u Segment_Tracks_TrackEntry_Video_OldStereoMode=0x13B9;
     const int64u Segment_Tracks_TrackEntry_TrackOverlay=0x2FAB;
     const int64u Segment_Tracks_TrackEntry_TrackTranslate=0x2624;
     const int64u Segment_Tracks_TrackEntry_TrackTranslate_Codec=0x26BF;
@@ -464,7 +464,7 @@ static const char* Mk_StereoMode(int64u StereoMode)
 }
 
 //---------------------------------------------------------------------------
-static const char* Mk_StereoMode_v2(int64u StereoMode)
+static const char* Mk_OldStereoMode(int64u StereoMode)
 {
     switch (StereoMode)
     {
@@ -2255,7 +2255,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
     Element_Name((Element_Level==3)?"SimpleBlock":"Block");
 
     //Parsing
-    Get_EB (TrackNumber,                                        "TrackNumber");
+    Get_EB (TrackNumber,                                        "TrackNumber"); Element_Info1(TrackNumber);
 
     //Finished?
     stream& streamItem = Stream[TrackNumber];
@@ -2492,7 +2492,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
         }
     }
     else
-        Skip_XX(Element_Size,                                   "Data");
+        Skip_XX(Element_Size-Element_Offset,                    "Data");
 
     //Filling
     Frame_Count++;
@@ -4215,14 +4215,31 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_StereoMode()
     Element_Name("StereoMode");
 
     //Parsing
-    int64u UInteger=UInteger_Get(); Element_Info1(Format_Version==2?Mk_StereoMode_v2(UInteger):Mk_StereoMode(UInteger));
+    int64u UInteger=UInteger_Get(); Element_Info1(Mk_StereoMode(UInteger));
 
     //Filling
     FILLING_BEGIN();
         if (Segment_Info_Count>1)
             return; //First element has the priority
         Fill(Stream_Video, StreamPos_Last, Video_MultiView_Count, 2); //Matroska seems to be limited to 2 views
-        Fill(Stream_Video, StreamPos_Last, Video_MultiView_Layout, Format_Version==2?Mk_StereoMode_v2(UInteger):Mk_StereoMode(UInteger));
+        Fill(Stream_Video, StreamPos_Last, Video_MultiView_Layout, Mk_StereoMode(UInteger));
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_Video_OldStereoMode()
+{
+    Element_Name("StereoMode");
+
+    //Parsing
+    int64u UInteger=UInteger_Get(); Element_Info1(Mk_StereoMode(UInteger));
+
+    //Filling
+    FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
+        Fill(Stream_Video, StreamPos_Last, Video_MultiView_Count, 2); //Matroska seems to be limited to 2 views
+        Fill(Stream_Video, StreamPos_Last, Video_MultiView_Layout, Mk_StereoMode(UInteger));
     FILLING_END();
 }
 
