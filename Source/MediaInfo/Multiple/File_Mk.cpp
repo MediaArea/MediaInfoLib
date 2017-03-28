@@ -106,6 +106,11 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+    static const size_t MaxCountSameElementInTrace=10;
+#endif // MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
 namespace Elements
 {
     //Common
@@ -1779,6 +1784,10 @@ void File_Mk::Segment()
 
     Segment_Offset_Begin=File_Offset+Buffer_Offset;
     Segment_Offset_End=File_Offset+Buffer_Offset+Element_TotalSize_Get();
+
+    #if MEDIAINFO_TRACE
+        Trace_Segment_Cluster_Count=0;
+    #endif // MEDIAINFO_TRACE
 }
 
 void File_Mk::Segment_Attachments()
@@ -2171,9 +2180,15 @@ void File_Mk::Segment_Cluster()
 {
     Element_Name("Cluster");
 
-#if MEDIAINFO_TRACE
-    Element_Set_Remove_Children_IfNoErrors();
-#endif // MEDIAINFO_TRACE
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            if (Trace_Segment_Cluster_Count<MaxCountSameElementInTrace)
+                Trace_Segment_Cluster_Count++;
+            else
+                Element_Set_Remove_Children_IfNoErrors();
+        }
+    #endif // MEDIAINFO_TRACE
 
     //For each stream
     std::map<int64u, stream>::iterator Temp=Stream.begin();
@@ -2244,6 +2259,15 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
 
     //Finished?
     stream& streamItem = Stream[TrackNumber];
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            if (streamItem.Trace_Segment_Cluster_Block_Count<=MaxCountSameElementInTrace)
+                streamItem.Trace_Segment_Cluster_Block_Count++;
+            //else
+            //    Element_Set_Remove_Children_IfNoErrors();
+        }
+    #endif // MEDIAINFO_TRACE
     streamItem.PacketCount++;
     if (streamItem.Searching_Payload || streamItem.Searching_TimeStamps || streamItem.Searching_TimeStamp_Start)
     {
@@ -2377,6 +2401,11 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
         Segment_Cluster_BlockGroup_Block_Lace();
         Element_End0();
     }
+
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated && (Trace_Segment_Cluster_Count>MaxCountSameElementInTrace || streamItem.Trace_Segment_Cluster_Block_Count>MaxCountSameElementInTrace))
+            Element_Children_IfNoErrors();
+    #endif // MEDIAINFO_TRACE
 }
 
 //---------------------------------------------------------------------------
@@ -2500,9 +2529,10 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
 
     Element_Show();
 
-#if MEDIAINFO_TRACE
-    Element_Children_IfNoErrors();
-#endif // MEDIAINFO_TRACE
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated && (Trace_Segment_Cluster_Count>MaxCountSameElementInTrace || streamItem.Trace_Segment_Cluster_Block_Count>MaxCountSameElementInTrace))
+            Element_Children_IfNoErrors();
+    #endif // MEDIAINFO_TRACE
 }
 
 //---------------------------------------------------------------------------
@@ -2666,12 +2696,26 @@ void File_Mk::Segment_Cues()
 
     //Skipping Cues, we don't need of them
     TestMultipleInstances();
+
+    #if MEDIAINFO_TRACE
+        Trace_Segment_Cues_CuePoint_Count=0;
+    #endif // MEDIAINFO_TRACE
 }
 
 //---------------------------------------------------------------------------
 void File_Mk::Segment_Cues_CuePoint()
 {
     Element_Name("CuePoint");
+
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            if (Trace_Segment_Cues_CuePoint_Count<MaxCountSameElementInTrace)
+                Trace_Segment_Cues_CuePoint_Count++;
+            else
+                Element_Set_Remove_Children_IfNoErrors();
+        }
+    #endif // MEDIAINFO_TRACE
 }
 
 //---------------------------------------------------------------------------
@@ -2937,12 +2981,26 @@ void File_Mk::Segment_SeekHead()
     Element_Name("SeekHead");
 
     Segment_Seeks.clear();
+
+    #if MEDIAINFO_TRACE
+        Trace_Segment_SeekHead_Seek_Count=0;
+    #endif // MEDIAINFO_TRACE
 }
 
 //---------------------------------------------------------------------------
 void File_Mk::Segment_SeekHead_Seek()
 {
     Element_Name("Seek");
+
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            if (Trace_Segment_SeekHead_Seek_Count<MaxCountSameElementInTrace)
+                Trace_Segment_SeekHead_Seek_Count++;
+            else
+                Element_Set_Remove_Children_IfNoErrors();
+        }
+    #endif // MEDIAINFO_TRACE
 }
 
 //---------------------------------------------------------------------------

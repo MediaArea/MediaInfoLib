@@ -275,6 +275,9 @@ private :
         int64u                  PixelCropLeft;
         int64u                  PixelCropRight;
         int64u                  PixelCropTop;
+        #if MEDIAINFO_TRACE
+            size_t Trace_Segment_Cluster_Block_Count;
+        #endif // MEDIAINFO_TRACE
 
         stream()
         {
@@ -300,6 +303,9 @@ private :
             PixelCropLeft=0;
             PixelCropRight=0;
             PixelCropTop=0;
+            #if MEDIAINFO_TRACE
+                Trace_Segment_Cluster_Block_Count=0;
+            #endif // MEDIAINFO_TRACE
         }
 
         ~stream()
@@ -411,9 +417,12 @@ private :
     void JumpTo(int64u GoTo);
     void TestMultipleInstances(size_t* Instances=NULL);
     void CRC32_Check();
-#if MEDIAINFO_TRACE
-    bool CRC32_Check_In_Node(const std::string& ToSearchInInfo, const std::string& info, element_details::Element_Node *node);
-#endif // MEDIAINFO_TRACE
+    #if MEDIAINFO_TRACE
+        bool CRC32_Check_In_Node(const std::string& ToSearchInInfo, const std::string& info, element_details::Element_Node *node);
+        size_t Trace_Segment_Cluster_Count;
+        size_t Trace_Segment_Cues_CuePoint_Count;
+        size_t Trace_Segment_SeekHead_Seek_Count;
+    #endif // MEDIAINFO_TRACE
 };
 
 } //NameSpace
