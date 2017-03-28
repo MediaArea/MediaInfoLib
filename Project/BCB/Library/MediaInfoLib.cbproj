@@ -758,9 +758,6 @@
 			<CppCompile Include="..\..\..\Source\ThirdParty\aes-gladman\aes_modes.c">
 				<BuildOrder>214</BuildOrder>
 			</CppCompile>
-			<CppCompile Include="..\..\..\Source\ThirdParty\aes-gladman\tablegen.c">
-				<BuildOrder>219</BuildOrder>
-			</CppCompile>
 			<CppCompile Include="..\..\..\Source\ThirdParty\hmac-gladman\hmac.c">
 				<BuildOrder>219</BuildOrder>
 			</CppCompile>
