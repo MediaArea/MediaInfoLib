@@ -253,8 +253,7 @@ endif
 
 if COMPILE_HMAC
 lib@MediaInfoLib_LibName@_la_SOURCES += \
-                       ../../../Source/ThirdParty/hmac-gladman/hmac.c \
-                       ../../../Source/ThirdParty/hmac-gladman/pwd2key.c
+                       ../../../Source/ThirdParty/hmac-gladman/hmac.c
 endif
 
 if COMPILE_TINYXML2

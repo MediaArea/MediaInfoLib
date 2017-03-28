@@ -764,9 +764,6 @@
 			<CppCompile Include="..\..\..\Source\ThirdParty\hmac-gladman\hmac.c">
 				<BuildOrder>219</BuildOrder>
 			</CppCompile>
-			<CppCompile Include="..\..\..\Source\ThirdParty\hmac-gladman\pwd2key.c">
-				<BuildOrder>218</BuildOrder>
-			</CppCompile>
 			<CppCompile Include="..\..\..\Source\ThirdParty\md5\md5.c">
 				<BuildOrder>209</BuildOrder>
 			</CppCompile>
