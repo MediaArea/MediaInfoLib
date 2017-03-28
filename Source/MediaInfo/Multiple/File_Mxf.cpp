@@ -112,6 +112,12 @@ namespace MediaInfoLib
 // Constants
 //***************************************************************************
 
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+    static const size_t MaxCountSameElementInTrace=10;
+#endif // MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
 #define UUID(PART1, PART2, PART3, PART4, LOCAL, NORM, NAME, DESCRIPTION) \
     const int32u NAME##1=0x##PART1; \
     const int32u NAME##2=0x##PART2; \
@@ -2177,6 +2183,11 @@ File_Mxf::File_Mxf()
     SDTI_SizePerFrame=0;
     SDTI_IsPresent=false;
     SDTI_IsInIndexStreamOffset=true;
+    #if MEDIAINFO_TRACE
+        SDTI_SystemMetadataPack_Trace_Count=0;
+        SDTI_PackageMetadataSet_Trace_Count=0;
+        Padding_Trace_Count=0;
+    #endif // MEDIAINFO_TRACE
     SystemScheme1_TimeCodeArray_StartTimecode_ms=(int64u)-1;
     SystemScheme1_FrameRateFromDescriptor=0;
     Essences_FirstEssence_Parsed=false;
@@ -5845,6 +5856,16 @@ void File_Mxf::Data_Parse()
         if (Essence==Essences.end())
             Essence=Essences.insert(make_pair(Code_Compare4,essence())).first;
 
+        #if MEDIAINFO_TRACE
+            if (Trace_Activated)
+            {
+                if (Essence->second.Trace_Count<MaxCountSameElementInTrace)
+                    Essence->second.Trace_Count++;
+                else
+                    Element_Set_Remove_Children_IfNoErrors();
+            }
+        #endif // MEDIAINFO_TRACE
+
         if (Essence->second.Parsers.empty())
         {
             //Searching single descriptor if it is the only valid descriptor
@@ -8141,6 +8162,23 @@ void File_Mxf::MCAAudioElementKind()
 //---------------------------------------------------------------------------
 void File_Mxf::Filler()
 {
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            if (Padding_Trace_Count<MaxCountSameElementInTrace || (IsParsingMiddle_MaxOffset==(int64u)-1 && Partitions_IsFooter))
+            {
+                if (!Essences.empty()) //Only after first essence data or in footer
+                    Padding_Trace_Count++;
+            }
+            else
+            {
+                Element_Set_Remove_Children_IfNoErrors();
+                Element_Begin0(); //TODO: Element_Set_Remove_Children_IfNoErrors does not work if there is not sub-element
+                Element_End0();
+            }
+        }
+    #endif // MEDIAINFO_TRACE
+
     Skip_XX(Element_Size,                                       "Junk");
 
     Buffer_PaddingBytes+=Element_Size;
@@ -8150,6 +8188,23 @@ void File_Mxf::Filler()
 //---------------------------------------------------------------------------
 void File_Mxf::TerminatingFiller()
 {
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            if (Padding_Trace_Count<MaxCountSameElementInTrace || Partitions_IsFooter)
+            {
+                if (!Essences.empty()) //Only after first essence data or in footer
+                    Padding_Trace_Count++;
+            }
+            else
+            {
+                Element_Set_Remove_Children_IfNoErrors();
+                Element_Begin0(); //TODO: Element_Set_Remove_Children_IfNoErrors does not work if there is not sub-element
+                Element_End0();
+            }
+        }
+    #endif // MEDIAINFO_TRACE
+
     Skip_XX(Element_Size,                                       "Junk");
 
     Buffer_PaddingBytes+=Element_Size;
@@ -8286,6 +8341,16 @@ void File_Mxf::UserDefinedAcquisitionMetadata()
 //---------------------------------------------------------------------------
 void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
 {
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            if (SDTI_SystemMetadataPack_Trace_Count<MaxCountSameElementInTrace)
+                SDTI_SystemMetadataPack_Trace_Count++;
+            else
+                Element_Set_Remove_Children_IfNoErrors();
+        }
+    #endif // MEDIAINFO_TRACE
+
     //Info for SDTI in Index StreamOffset
     if (!SDTI_IsPresent)
     {
@@ -8447,6 +8512,16 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
 //---------------------------------------------------------------------------
 void File_Mxf::SDTI_PackageMetadataSet()
 {
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            if (SDTI_PackageMetadataSet_Trace_Count<MaxCountSameElementInTrace)
+                SDTI_PackageMetadataSet_Trace_Count++;
+            else
+                Element_Set_Remove_Children_IfNoErrors();
+        }
+    #endif // MEDIAINFO_TRACE
+
     while (Element_Offset<Element_Size)
     {
         //Parsing
