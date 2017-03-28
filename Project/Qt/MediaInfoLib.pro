@@ -474,7 +474,6 @@ SOURCES += \
         ../../Source/ThirdParty/md5/md5.c \
         ../../Source/ThirdParty/sha1-gladman/sha1.c \
         ../../Source/ThirdParty/sha2-gladman/sha2.c \
-        ../../Source/ThirdParty/sha2-gladman/shasum.c \
         ../../Source/ThirdParty/tinyxml2/tinyxml2.cpp
 
 HEADERS += \

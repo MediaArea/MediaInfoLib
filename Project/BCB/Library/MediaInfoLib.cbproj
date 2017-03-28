@@ -776,9 +776,6 @@
 			<CppCompile Include="..\..\..\Source\ThirdParty\sha2-gladman\sha2.c">
 				<BuildOrder>216</BuildOrder>
 			</CppCompile>
-			<CppCompile Include="..\..\..\Source\ThirdParty\sha2-gladman\shasum.c">
-				<BuildOrder>215</BuildOrder>
-			</CppCompile>
 			<CppCompile Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.cpp">
 				<BuildOrder>209</BuildOrder>
 			</CppCompile>
