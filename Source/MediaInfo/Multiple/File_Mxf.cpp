@@ -8185,7 +8185,7 @@ void File_Mxf::SubDescriptors()
 //---------------------------------------------------------------------------
 void File_Mxf::LensUnitMetadata()
 {
-    if (Count_Get(Stream_Other)==0)
+    if (AcquisitionMetadataLists.empty())
         AcquisitionMetadataLists.resize(0x10000);
 
     switch(Code2)
@@ -8210,7 +8210,7 @@ void File_Mxf::LensUnitMetadata()
 //---------------------------------------------------------------------------
 void File_Mxf::CameraUnitMetadata()
 {
-    if (Count_Get(Stream_Other)==0)
+    if (AcquisitionMetadataLists.empty())
         AcquisitionMetadataLists.resize(0x10000);
 
     switch(Code2)
@@ -8249,7 +8249,7 @@ void File_Mxf::CameraUnitMetadata()
 //---------------------------------------------------------------------------
 void File_Mxf::UserDefinedAcquisitionMetadata()
 {
-    if (Count_Get(Stream_Other)==0)
+    if (AcquisitionMetadataLists.empty())
     {
         AcquisitionMetadataLists.resize(0x10000);
         AcquisitionMetadata_Sony_CalibrationType = (int8u)-1;
