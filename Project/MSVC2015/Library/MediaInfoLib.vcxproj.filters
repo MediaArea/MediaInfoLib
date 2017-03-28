@@ -746,9 +746,6 @@
     <ClCompile Include="..\..\..\Source\ThirdParty\hmac-gladman\hmac.c">
       <Filter>ThirdParty\hmac</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\ThirdParty\hmac-gladman\pwd2key.c">
-      <Filter>ThirdParty\hmac</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\Source\ThirdParty\sha1-gladman\sha1.c">
       <Filter>ThirdParty\sha1</Filter>
     </ClCompile>
@@ -1418,9 +1415,6 @@
       <Filter>Header Files\Export</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\ThirdParty\hmac-gladman\hmac.h">
-      <Filter>ThirdParty\hmac</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\Source\ThirdParty\hmac-gladman\pwd2key.h">
       <Filter>ThirdParty\hmac</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\ThirdParty\sha1-gladman\sha1.h">
