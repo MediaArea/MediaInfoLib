@@ -655,8 +655,8 @@ void File_Ffv1::Read_Buffer_OutOfBand()
 
     FrameHeader();
     Element_Offset+=RC->BytesUsed();
-    if (Element_Offset<Element_Size)
-        Skip_XX(Element_Size-Element_Offset,                    "Reserved");
+    if (Element_Offset+4<Element_Size)
+        Skip_XX(Element_Size-Element_Offset-4,                  "Reserved");
     Skip_B4(                                                    "CRC-32");
 
     delete RC; RC=NULL;
