@@ -1129,7 +1129,7 @@ int File_Ffv1::slice(states &States)
 
     if (coder_type)
     {
-        if (version > 2)
+        //if (version > 2)
         {
             int8u s = 129;
             RC->get_rac(&s);
