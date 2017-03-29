@@ -162,6 +162,8 @@ void RangeCoder::ResizeBuffer(size_t Buffer_Size)
 //---------------------------------------------------------------------------
 size_t RangeCoder::BytesUsed()
 {
+    if (Buffer_Cur>Buffer_End)
+        return Buffer_End-Buffer_Beg;
     return Buffer_Cur-Buffer_Beg-(Mask<0x100?0:1);
 }
 
