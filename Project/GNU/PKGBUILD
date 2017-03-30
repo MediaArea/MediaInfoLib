@@ -3,13 +3,13 @@
 # Contributor: hydro <hydro@freenet.de>
 
 pkgname=libmediainfo
-pkgver=0.7.93
+pkgver=0.7.94
 pkgrel=1
 pkgdesc="shared library for mediainfo"
 arch=('i686' 'x86_64')
 url="http://mediaarea.net"
 license=('GPL')
-depends=( 'curl' 'libmms' 'libzen>=0.4.34')
+depends=( 'curl' 'libmms' 'libzen>=0.4.35')
 makedepends=('libtool' 'automake' 'autoconf')
 source=(${pkgname}_${pkgver}.orig.tar.xz)
 md5sums=('00000000000000000000000000000000')

@@ -1,5 +1,5 @@
-%define libmediainfo_version      0.7.93
-%define libzen_version            0.4.34
+%define libmediainfo_version      0.7.94
+%define libzen_version            0.4.35
 
 %if 0%{?fedora} || 0%{?centos_version} >= 600 || 0%{?rhel_version} >= 600
 %define package_with_0_ending 0
@@ -222,7 +222,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 %{_libdir}/%{name_without_0_ending}.so
 
 %changelog
-* Sun Jan 01 2012 MediaArea.net SARL <info@mediaarea.net> - 0.7.93-0
+* Sun Jan 01 2012 MediaArea.net SARL <info@mediaarea.net> - 0.7.94-0
 - See History.txt for more info and real dates
 - Previous packages made by Toni Graffy <toni@links2linux.de>
 - Fedora style made by Vasiliy N. Glazov <vascom2@gmail.com>
