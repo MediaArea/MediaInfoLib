@@ -638,7 +638,8 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                 if (MI->Config.File_TestContinuousFileNames_Get())
                 {
                     //int64u Growing_Temp=MI->Config.File_Names.size();
-                    MI->TestContinuousFileNames();
+                    if (MI->Config.File_Names.size()>=24) // only if already a sequence of files
+                        MI->TestContinuousFileNames();
                     /* TODO: fix about sequences of files
                     if (MI->Config.File_Names.size()!=Growing_Temp)
                         MI->Config.File_IsGrowing=true;
@@ -738,6 +739,11 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                     MI->Config.File_IsGrowing=false;
                 }
             }
+
+            if (!MI->Config.File_Buffer_Size
+             && (MI->Config.File_Current_Offset + F.Position_Get()>=MI->Config.File_Size
+              || (MI->Config.File_Size==(int64u)-1 && MI->Config.File_Names_Pos>=MI->Config.File_Names.size() && F.Position_Get()>=F.Size_Get())))
+                break; //Finished, and no other data
 
             #ifdef MEDIAINFO_DEBUG
                 Reader_File_BytesRead_Total+=MI->Config.File_Buffer_Size;

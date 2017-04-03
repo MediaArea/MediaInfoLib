@@ -83,11 +83,11 @@
 #if defined(MEDIAINFO_TELETEXT_YES)
     #include "MediaInfo/Text/File_Teletext.h"
 #endif
+#include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/File_Unknown.h"
 #include <ZenLib/Utils.h>
 #include <algorithm>
 #if MEDIAINFO_EVENTS
-    #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
     #include "MediaInfo/MediaInfo_Events_Internal.h"
 #endif //MEDIAINFO_EVENTS
 #if MEDIAINFO_IBIUSAGE && MEDIAINFO_SEEK
@@ -1428,7 +1428,7 @@ bool File_MpegPs::Header_Parse_Fill_Size()
 
     if (Buffer_Offset_Temp+4>Buffer_Size)
     {
-        if (File_Offset+Buffer_Size>=File_Size)
+        if (Config->IsFinishing)
             Buffer_Offset_Temp=Buffer_Size; //We are sure that the next bytes are a start
         else
             return false;
@@ -1450,8 +1450,8 @@ bool File_MpegPs::Header_Parse_PES_packet(int8u stream_id)
         if (Demux_UnpacketizeContainer && Buffer_Offset+6+PES_packet_length>Buffer_Size)
             return false;
     #endif //MEDIAINFO_DEMUX
-    if (PES_packet_length && File_Offset+Buffer_Offset+6+PES_packet_length>=File_Size)
-        PES_packet_length=(int16u)(File_Size-(File_Offset+Buffer_Offset+6));
+    if (PES_packet_length && Buffer_Offset+6+PES_packet_length>=Buffer_Size && Config->IsFinishing)
+        PES_packet_length=(int16u)(Buffer_Size-(Buffer_Offset+6));
 
     //Parsing
     switch (stream_id)

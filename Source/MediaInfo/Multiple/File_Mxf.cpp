@@ -70,6 +70,7 @@
 #if defined(MEDIAINFO_TTML_YES)
     #include "MediaInfo/Text/File_Ttml.h"
 #endif
+#include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/TimeCode.h"
 #include "MediaInfo/File_Unknown.h"
 #include "ZenLib/File.h"
@@ -4454,7 +4455,7 @@ void File_Mxf::Read_Buffer_AfterParsing()
         return;
     }
 
-    if (File_Offset+Buffer_Size>=File_Size)
+    if (Config->IsFinishing)
     {
         if (Partitions_IsCalculatingHeaderByteCount)
         {
