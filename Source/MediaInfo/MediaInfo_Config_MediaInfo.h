@@ -388,6 +388,7 @@ public :
     float64       File_EditRate;
     int64u        File_Size;
     float32       ParseSpeed;
+    bool          IsFinishing;
     #if MEDIAINFO_EVENTS
     MediaInfo_Config_PerPackage* Config_PerPackage;
     bool          Events_TimestampShift_Disabled;

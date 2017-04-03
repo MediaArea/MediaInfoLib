@@ -21,6 +21,7 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
+#include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/Video/File_Vc3.h"
 #if defined(MEDIAINFO_CDP_YES)
     #include "MediaInfo/Text/File_Cdp.h"
@@ -554,7 +555,7 @@ bool File_Vc3::Demux_UnpacketizeContainer_Test()
     }
     Demux_Offset=Buffer_Offset+Size;
 
-    if (Demux_Offset>Buffer_Size && File_Offset+Buffer_Size!=File_Size)
+    if (Demux_Offset>Buffer_Size && !Config->IsFinishing)
         return false; //No complete frame
 
     Demux_UnpacketizeContainer_Demux();
