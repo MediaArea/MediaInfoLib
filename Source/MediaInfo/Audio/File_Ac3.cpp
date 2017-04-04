@@ -3437,7 +3437,6 @@ void File_Ac3::Core_Frame()
         {
             //Saving new value
             dynrnge_Exists=true;
-            dynrng_Old=dynrng;
         }
         if (!dynrnge)
             dynrng=0;

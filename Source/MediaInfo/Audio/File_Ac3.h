@@ -158,7 +158,6 @@ private :
     int8u  HD_Channels1;
     int8u  HD_Resolution1;
     int8u  HD_Resolution2;
-    int8u  dynrng_Old;
     int8u  substreamid_Independant_Current;
     int8u  substreams_Count;
     bool   lfeon_Max[8][9];
