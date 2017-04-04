@@ -128,13 +128,9 @@ private :
         }
     };
     dolby  FirstFrame_Dolby;
-    dolby  FirstFrame_Dolby2;
     std::vector<int64u> dialnorms;
-    std::vector<int64u> dialnorm2s;
     std::vector<int64u> comprs;
-    std::vector<int64u> compr2s;
     std::vector<int64u> dynrngs;
-    std::vector<int64u> dynrng2s;
     std::map<int8u, int64u> fscods;
     std::map<int8u, int64u> frmsizecods;
     int64u Frame_Count_HD;
