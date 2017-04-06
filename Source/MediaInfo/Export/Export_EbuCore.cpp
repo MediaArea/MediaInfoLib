@@ -1714,7 +1714,7 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI, version Version)
     //format - containerFormat - technicalAttributeString - Encoded_Library
     if (!MI.Get(Stream_General, 0, __T("Encoded_Library/String")).empty())
     {
-        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"WritingLibrary\">")+XML_Encode(MI.Get(Stream_General, 0, __T("Encoded_Library/String"))+__T("</ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(">\n"));
+        ToReturn+=__T("\t\t\t\t<ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(" typeLabel=\"WritingLibrary\">")+XML_Encode(MI.Get(Stream_General, 0, __T("Encoded_Library/String")))+__T("</ebucore:")+Ztring(Version>=Version_1_6?__T("technicalAttributeString"):__T("comment"))+__T(">\n");
     }
 
     ToReturn+=__T("\t\t\t</ebucore:containerFormat>\n");
