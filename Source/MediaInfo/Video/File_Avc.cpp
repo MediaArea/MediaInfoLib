@@ -3276,7 +3276,7 @@ void File_Avc::seq_parameter_set()
         if (Null)
             Trusted_IsNot("Should be NULL byte");
     }
-
+    bool use_Data_Item_New = false;
     FILLING_BEGIN_PRECISE();
         //NextCode
         NextCode_Clear();
@@ -3284,6 +3284,7 @@ void File_Avc::seq_parameter_set()
 
         //Add
         seq_parameter_set_data_Add(seq_parameter_sets, seq_parameter_set_id, Data_Item_New);
+        use_Data_Item_New = true;
 
         //Autorisation of other streams
         Streams[0x08].Searching_Payload=true; //pic_parameter_set
@@ -3296,6 +3297,8 @@ void File_Avc::seq_parameter_set()
         if (Streams[0x07].ShouldDuplicate)
             Streams[0x0B].ShouldDuplicate=true; //end_of_stream
     FILLING_END();
+    if (use_Data_Item_New==false)
+        delete Data_Item_New;
 }
 
 void File_Avc::seq_parameter_set_data_Add(std::vector<seq_parameter_set_struct*> &Data, const int32u Data_id, seq_parameter_set_struct* Data_Item_New)
