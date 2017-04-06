@@ -3295,6 +3295,8 @@ void File_Avc::seq_parameter_set()
         Streams[0x0B].Searching_Payload=true; //end_of_stream
         if (Streams[0x07].ShouldDuplicate)
             Streams[0x0B].ShouldDuplicate=true; //end_of_stream
+    FILLING_ELSE();
+        delete Data_Item_New;
     FILLING_END();
 }
 
