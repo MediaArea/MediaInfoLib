@@ -73,6 +73,7 @@ sequence::sequence()
 sequence::~sequence()
 {
         delete MI;
+        delete Common;
 }
 
 //***************************************************************************
