@@ -1196,6 +1196,7 @@ void File__Analyze::Open_Buffer_SegmentChange ()
 void File__Analyze::Open_Buffer_Unsynch ()
 {
     Status[IsFinished]=false;
+    Config->IsFinishing=false;
     FrameInfo=frame_info();
     FrameInfo_Previous=frame_info();
     FrameInfo_Next=frame_info();
