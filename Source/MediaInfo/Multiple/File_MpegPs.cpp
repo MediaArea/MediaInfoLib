@@ -389,6 +389,7 @@ void File_MpegPs::Streams_Fill_PerStream(size_t StreamID, ps_stream &Temp, kindo
             }
         }
     }
+    Temp.Count=Count;
 
     #ifdef MEDIAINFO_MPEG4_YES
         if (StreamKind_Last==Stream_Audio && SLConfig)
@@ -618,11 +619,14 @@ void File_MpegPs::Streams_Finish_PerStream(size_t StreamID, ps_stream &Temp, kin
                     return;
             #endif //MEDIAINFO_DEMUX
         }
-        Ztring ID=Retrieve(StreamKind_Last, StreamPos_Last, General_ID);
-        Ztring ID_String=Retrieve(StreamKind_Last, StreamPos_Last, General_ID_String);
-        Merge(*Temp.Parsers[0], StreamKind_Last, 0, StreamPos_Last);
-        Fill(StreamKind_Last, StreamPos_Last, General_ID, ID, true);
-        Fill(StreamKind_Last, StreamPos_Last, General_ID_String, ID_String, true);
+        for (size_t Pos=0; Pos<Temp.Count; Pos++)
+        {
+            Ztring ID=Retrieve(StreamKind_Last, Temp.StreamPos+Pos, General_ID);
+            Ztring ID_String=Retrieve(StreamKind_Last, Temp.StreamPos+Pos, General_ID_String);
+            Merge(*Temp.Parsers[0], StreamKind_Last, Pos, Temp.StreamPos+Pos);
+            Fill(StreamKind_Last, Temp.StreamPos+Pos, General_ID, ID, true);
+            Fill(StreamKind_Last, Temp.StreamPos+Pos, General_ID_String, ID_String, true);
+        }
         if (!IsSub)
         {
             switch (KindOfStream)
