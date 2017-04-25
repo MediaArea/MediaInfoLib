@@ -745,7 +745,7 @@ void File_MpegPs::Streams_Finish_PerStream(size_t StreamID, ps_stream &Temp, kin
 
                     //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration/90, 10, true); //TODO: refactor in order to have a more optimal way to manage several streams
                     for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
-                        for (size_t StreamPos=0; StreamPos<Count_Get(StreamKind_Last); StreamPos++)
+                        for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
                             if (Retrieve((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_Duration)).empty())
                                 Fill((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_Duration), Duration/90, 10);
                 }
@@ -3233,6 +3233,8 @@ void File_MpegPs::private_stream_2()
         Stream_Prepare(Stream_Menu);
         Fill(Stream_Menu, StreamPos_Last, Menu_Format, "DVD-Video");
         Fill(Stream_Menu, StreamPos_Last, Menu_Codec, "DVD-Video");
+        Streams[0xBF].StreamKind=StreamKind_Last;
+        Streams[0xBF].StreamPos=StreamPos_Last;
 
         //Disabling this Stream
         Streams[0xBF].Searching_Payload=false;
