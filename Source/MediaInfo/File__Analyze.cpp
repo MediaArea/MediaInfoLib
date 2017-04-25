@@ -3085,6 +3085,8 @@ void File__Analyze::ForceFinish ()
             if (Config->Demux_EventWasSent)
                 return;
         #endif //MEDIAINFO_DEMUX
+        if (FrameInfo.DTS==(int64u)-1 && FrameInfo_Previous.DTS!=(int64u)-1)
+            FrameInfo=FrameInfo_Previous;
         Streams_Finish();
         #if MEDIAINFO_DEMUX
             if (Config->Demux_EventWasSent)
