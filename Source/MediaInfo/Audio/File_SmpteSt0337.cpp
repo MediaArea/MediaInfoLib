@@ -41,6 +41,7 @@
     #include "MediaInfo/MediaInfo_Internal.h"
 #endif // MEDIAINFO_SEEK
 #include "MediaInfo/File_Unknown.h"
+#include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
