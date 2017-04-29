@@ -2638,7 +2638,7 @@ bool MediaInfo_Config::Format_Profile_Split_Get ()
 }
 #endif // MEDIAINFO_ADVANCED
 
-#if MEDIAINFO_ADVANCED
+#if defined(MEDIAINFO_EBUCORE_YES)
 void MediaInfo_Config::AcquisitionDataOutputMode_Set(size_t Value)
 {
     CriticalSectionLocker CSL(CS);
@@ -2650,7 +2650,7 @@ size_t MediaInfo_Config::AcquisitionDataOutputMode_Get ()
     CriticalSectionLocker CSL(CS);
     return AcquisitionDataOutputMode;
 }
-#endif // MEDIAINFO_ADVANCED
+#endif // MEDIAINFO_EBUCORE_YES
 
 //***************************************************************************
 // Event
