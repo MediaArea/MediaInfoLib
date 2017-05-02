@@ -619,7 +619,7 @@ File_Mk::File_Mk()
     DataMustAlwaysBeComplete=false;
 
     //Temp
-    InvalidByteMax=(1<<(8-4))-1; //Default is max size of 4 bytes
+    InvalidByteMax=0; //Default is max size of 8 bytes
     Format_Version=0;
     TimecodeScale=1000000; //Default value
     Duration=0;
@@ -1702,11 +1702,7 @@ void File_Mk::Ebml_MaxSizeLength()
     //Filling
     FILLING_BEGIN();
         if (Value > 8)
-        {
-            //Not expected, rejecting the file
-            Reject();
-            return;
-        }
+            Value = 8; //Not expected, considerating it as if it is 8 for the moment
         InvalidByteMax = (int8u)((1 << (8-Value))-1);
     FILLING_END();
 }
