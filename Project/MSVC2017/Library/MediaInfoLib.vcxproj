@@ -472,10 +472,8 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Wtv.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Xdcam_Clip.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper.h" />
-    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Common.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Resource.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Sequence.h" />
-    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Sequence_Common.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\PreComp.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Reader\Reader_libcurl_Include.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Reader\Reader__Base.h" />

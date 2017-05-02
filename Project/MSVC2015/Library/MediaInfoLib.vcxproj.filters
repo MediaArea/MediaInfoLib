@@ -1393,16 +1393,10 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_PBCore2.h">
       <Filter>Header Files\Export</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Common.h">
-      <Filter>Header Files\Multiple</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Resource.h">
       <Filter>Header Files\Multiple</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Sequence.h">
-      <Filter>Header Files\Multiple</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Sequence_Common.h">
       <Filter>Header Files\Multiple</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Bpg.h">

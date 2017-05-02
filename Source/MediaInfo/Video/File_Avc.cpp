@@ -2733,7 +2733,7 @@ void File_Avc::sei_message_pic_timing(int32u /*payloadSize*/, int32u seq_paramet
             case  3 :
             case  4 :
             case  5 :
-            case  6 : break;
+            case  6 : FrameRate_Divider=1; break;
             case  7 : FrameRate_Divider=2; break;
             case  8 : FrameRate_Divider=3; break;
             default : Param_Info1("Reserved"); return; //NumClockTS is unknown
@@ -3295,6 +3295,8 @@ void File_Avc::seq_parameter_set()
         Streams[0x0B].Searching_Payload=true; //end_of_stream
         if (Streams[0x07].ShouldDuplicate)
             Streams[0x0B].ShouldDuplicate=true; //end_of_stream
+    FILLING_ELSE();
+        delete Data_Item_New;
     FILLING_END();
 }
 
