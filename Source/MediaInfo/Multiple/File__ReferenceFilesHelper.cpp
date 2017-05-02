@@ -100,6 +100,7 @@ File__ReferenceFilesHelper::~File__ReferenceFilesHelper()
     size_t Sequences_Size=Sequences.size();
     for (size_t Sequences_Pos=0; Sequences_Pos<Sequences_Size; ++Sequences_Pos)
         delete Sequences[Sequences_Pos];
+    delete Common;
 }
 
 //***************************************************************************
