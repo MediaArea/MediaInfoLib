@@ -25,7 +25,7 @@ Format_Version;;;Y YTY;;;Version of this format
 Format_Profile;;;Y YTY;;;Profile of the Format (old XML: 'Profile@Level@Tier' format; MIXML: 'Profile' only)
 Format_Level;;;Y YTY;;;Level of the Format (only MIXML)
 Format_Tier;;;Y YTY;;;Tier of the Format (only MIXML)
-Format_Compression;;;N YTY;;;Compression mode of the Format
+Format_Compression;;;Y YTY;;;Compression method used
 MultiView_BaseProfile;;;Y YTY;;;Multiview, profile of the base stream
 MultiView_Count;;;Y YTY;;;Multiview, count of views
 MultiView_Layout;;;Y YTY;;;Multiview, how views are muxed in the container in case of it is not muxing in the stream
