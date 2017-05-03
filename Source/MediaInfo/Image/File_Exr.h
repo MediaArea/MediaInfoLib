@@ -70,6 +70,7 @@ private :
     size_t              name_End;
     size_t              type_End;
     int64u              ImageData_End;
+    bool                LongName;
 };
 
 } //NameSpace

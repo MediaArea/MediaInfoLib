@@ -126,13 +126,13 @@ bool File_Exr::Header_Begin()
     {
         if (Buffer[Buffer_Offset+name_End]=='\0')
             break;
-        if (name_End>31)
+        if (name_End>(LongName?255:31))
             break;
         name_End++;
     }
     if (Buffer_Offset+name_End>=Buffer_Size)
         return false;
-    if (name_End>31)
+    if (name_End>(LongName?255:31))
     {
         Reject();
         return false;
@@ -146,14 +146,14 @@ bool File_Exr::Header_Begin()
     {
         if (Buffer[Buffer_Offset+name_End+1+type_End]=='\0')
             break;
-        if (type_End>31)
+        if (type_End>(LongName?255:31))
             break;
         type_End++;
     }
 
     if (Buffer_Offset+name_End+1+type_End>=Buffer_Size)
         return false;
-    if (type_End>31)
+    if (type_End>(LongName?255:31))
     {
         Reject();
         return false;
@@ -228,6 +228,7 @@ void File_Exr::Header()
     Skip_L4(                                                    "Magic number");
     Get_L1 (Version,                                            "Version field");
     Get_L3 (Flags,                                              "Flags");
+        Get_Flags (Flags, 1, LongName,                          "Long name");
 
     //Filling
     if (Frame_Count==0)
