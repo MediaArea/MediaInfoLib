@@ -43,6 +43,7 @@ private :
 
     //Buffer - File header
     bool FileHeader_Begin();
+    void FileHeader_Parse();
 
     //Buffer - Global
     void Read_Buffer_Unsynched() {Read_Buffer_Unsynched_OneFramePerFile();}
@@ -56,7 +57,6 @@ private :
     void Data_Parse();
 
     //Elements
-    void Header();
     void ImageData();
     void comments();
     void compression();
