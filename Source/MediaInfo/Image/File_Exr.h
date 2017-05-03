@@ -58,6 +58,7 @@ private :
 
     //Elements
     void ImageData();
+    void channels();
     void comments();
     void compression();
     void dataWindow();

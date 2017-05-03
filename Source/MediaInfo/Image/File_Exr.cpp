@@ -221,6 +221,8 @@ void File_Exr::Data_Parse()
 {
          if (name_End==0)
         ImageData();
+    else if (name=="channels" && type=="chlist")
+        channels();
     else if (name=="comments" && type=="string")
         comments();
     else if (name=="compression" && type=="compression" && Element_Size==1)
@@ -244,6 +246,112 @@ void File_Exr::ImageData()
         Fill();
     if (Config->ParseSpeed<1.0)
         Finish();
+}
+
+//---------------------------------------------------------------------------
+struct Exr_channel
+{
+    string name;
+    int32u xSampling;
+    int32u ySampling;
+};
+void File_Exr::channels()
+{
+    //Parsing
+    std::vector<Exr_channel> ChannelList;
+    while (Element_Offset+1<Element_Size)
+    {
+        Element_Begin1("channel");
+
+        //Name
+        size_t name_Size=0;
+        while (Element_Offset+name_Size<Element_Size)
+        {
+            if (!Buffer[Buffer_Offset+(size_t)Element_Offset+name_Size])
+                break;
+            name_Size++;
+        }
+        name_End++;
+
+        Exr_channel Channel;
+        Get_String(name_Size, Channel.name,                 "name"); Element_Info1(Channel.name);
+        Element_Offset++; //Null byte
+        Skip_L4(                                            "pixel type");
+        Skip_L1(                                            "pLinear");
+        Skip_B3(                                            "reserved");
+        Get_L4 (Channel.xSampling,                          "xSampling");
+        Get_L4 (Channel.ySampling,                          "ySampling");
+        ChannelList.push_back(Channel);
+
+        Element_End0();
+    }
+
+    //Color space
+    /* TODO: not finished
+    bool HasAlpha=false;
+    string ColorSpace, ChromaSubsampling;
+    if (!ChannelList.empty() && ChannelList[0].name=="A")
+    {
+        HasAlpha=true;
+        ChannelList.erase(ChannelList.begin());
+    }
+    if (ChannelList.size()==1 && ChannelList[0].name=="Y")
+    {
+        ColorSpace="Y";
+    }
+    else if (ChannelList.size()==3 && ChannelList[0].name=="V" && ChannelList[1].name=="U" && ChannelList[2].name=="Y")
+    {
+        ColorSpace="YUV";
+
+        //Chroma subsampling
+        if (ChannelList[2].xSampling==1 && ChannelList[2].xSampling==1 && ChannelList[0].xSampling==ChannelList[1].xSampling && ChannelList[0].ySampling==ChannelList[1].ySampling)
+        {
+            switch (ChannelList[0].xSampling)
+            {
+                case 1 :
+                        switch (ChannelList[0].ySampling)
+                        {
+                            case 1 : ChromaSubsampling="4:4:4"; break;
+                            default: ;
+                        }
+                        break;
+                case 2 :
+                        switch (ChannelList[0].ySampling)
+                        {
+                            case 1 : ChromaSubsampling="4:2:2"; break;
+                            case 2 : ChromaSubsampling="4:2:0"; break;
+                            default: ;
+                        }
+                        break;
+                case 4 :
+                        switch (ChannelList[0].ySampling)
+                        {
+                            case 1 : ChromaSubsampling="4:1:1"; break;
+                            case 2 : ChromaSubsampling="4:1:0"; break;
+                            default: ;
+                        }
+                        break;
+                default: ;
+            }
+        }
+    }
+    else if (ChannelList.size()==3 && ChannelList[0].name=="B" && ChannelList[1].name=="G" && ChannelList[2].name=="R")
+    {
+        ColorSpace="RGB";
+    }
+    else
+    {
+        //TODO
+    }
+    if (!ColorSpace.empty())
+    {
+        if (HasAlpha)
+            ColorSpace+='A';
+        Fill(StreamKind_Last, 0, "ColorSpace", ColorSpace);
+    }
+    if (!ChromaSubsampling.empty())
+        Fill(StreamKind_Last, 0, "ChromaSubsampling", ChromaSubsampling);
+    */
 }
 
 //---------------------------------------------------------------------------
