@@ -1263,8 +1263,10 @@ void File__Analyze::Open_Buffer_Finalize (bool NoBufferModification)
     if (!NoBufferModification && !Config->IsFinishing)
     {
         Config->IsFinishing=true;
+        int64u FileSize_Real=File_Size;
         File_Size=File_Offset+Buffer_Size;
         Open_Buffer_Continue((const int8u*)NULL, 0);
+        File_Size=FileSize_Real;
         #if MEDIAINFO_DEMUX
             if (Config->Demux_EventWasSent)
             {
