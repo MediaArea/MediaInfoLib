@@ -98,7 +98,7 @@ SLS;;;A;;MPEG-4 Scalable Lossless Coding;sls;;http://www.chiariglione.org/mpeg/t
 Speex;;;A;;;spx;audio/speex;http://www.speex.org/;Lossy
 Opus;;;A;;;;audio/opus;http://opus-codec.org/;Lossy
 TAK;;;A;;;tak;;http://thbeck.de/Tak/Tak.html;Lossless
-TrueHD;;;A;Ac3;;thd;;;Lossless
+TrueHD;;;A;Ac3;;mlp thd vr;;;Lossless
 TwinVQ;;;A;TwinVQ;Transform domain Weighted INterleave Vector Quantization;vqf;;http://www.twinvq.org/english/index_en.html;
 Vorbis;;;A;;;;audio/vorbis;http://www.vorbis.com/;Lossy
 Wave;;;A;Riff;;act wav;audio/vnd.wave;;
