@@ -225,10 +225,14 @@ void File_Exr::Header()
     //Parsing
     int32u Flags;
     int8u Version;
+    bool Deep, Multipart;
     Skip_L4(                                                    "Magic number");
     Get_L1 (Version,                                            "Version field");
     Get_L3 (Flags,                                              "Flags");
+        Skip_Flags(Flags, 0,                                    "Single tile");
         Get_Flags (Flags, 1, LongName,                          "Long name");
+        Get_Flags (Flags, 2, Deep,                              "Non-image");
+        Get_Flags (Flags, 3, Multipart,                         "Multipart");
 
     //Filling
     if (Frame_Count==0)
@@ -237,6 +241,10 @@ void File_Exr::Header()
         Fill(StreamKind_Last, 0, "Format", "EXR");
         Fill(StreamKind_Last, 0, "Format_Version", __T("Version ")+Ztring::ToZtring(Version));
         Fill(StreamKind_Last, 0, "Format_Profile", (Flags&0x02)?"Tile":"Line");
+        if (Deep)
+            Fill(Stream_General, 0, "Deep", "Yes");
+        if (Deep)
+            Fill(Stream_General, 0, "Multipart", "Yes");
     }
     Frame_Count++;
     if (Frame_Count_NotParsedIncluded!=(int64u)-1)
