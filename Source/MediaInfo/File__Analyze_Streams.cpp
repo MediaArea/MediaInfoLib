@@ -321,9 +321,9 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                     break;
         }
 
+        const Ztring Parameter_String = Ztring::ToZtring(Parameter);
         if (Replace)
         {
-            Ztring Parameter_String=Ztring::ToZtring(Parameter);
             for (size_t Pos=0; Pos<Fill_Temp[StreamKindS].size(); Pos++)
                 if (Fill_Temp[StreamKindS][Pos].Parameter==Parameter_String)
                 {
@@ -332,7 +332,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                 }
         }
         fill_temp_item NewList;
-        NewList.Parameter=Ztring::ToZtring(Parameter);
+        NewList.Parameter=Parameter_String;
         NewList.Value=Value;
         Fill_Temp[StreamKindS].push_back(NewList);
         return; //No streams
