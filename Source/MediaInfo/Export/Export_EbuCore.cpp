@@ -658,7 +658,7 @@ Ztring EbuCore_WithFactor(size_t TabCount, const Ztring& Name, const Ztring& Rat
         }
         else
         {
-            den=(int64u)float64_int64s(pow((float64)10, Num.size()-(Dot+1)));
+            den=(int64u)float64_int64s(pow((float64)10, (int)(Num.size()-(Dot+1))));
             num=(int64u)float64_int64s(Num.To_float64()*den*Den.To_int64u());
         }
     }
@@ -679,7 +679,7 @@ Ztring EbuCore_WithFactor(size_t TabCount, const Ztring& Name, const Ztring& Rat
         else
         {
             //this is a float, converting it to num/den
-            den=(int64u)float64_int64s(pow((float64)10, Rational.size()-(Dot+1)));
+            den=(int64u)float64_int64s(pow((float64)10, (int)(Rational.size()-(Dot+1))));
             num=(int64u)float64_int64s(Rational.To_float64()*den);
         }
     }
