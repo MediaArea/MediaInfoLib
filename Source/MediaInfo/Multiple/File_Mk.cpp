@@ -1245,7 +1245,7 @@ void File_Mk::Header_Parse()
     }
 
     //Parsing
-    int64u Name, Size = 0;
+    int64u Name = 0, Size = 0;
     bool NameIsValid=true;
     if (Element_Offset+1<Element_Size)
     {
