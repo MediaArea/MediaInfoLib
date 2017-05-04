@@ -306,7 +306,7 @@ enum Elements
 //
 string DPX_DateTime2Iso(const string &FromDpx)
 {
-    if (FromDpx.size()<20
+    if (FromDpx.size()<19
      || FromDpx[ 0]<'0' || FromDpx[ 0]>'9'
      || FromDpx[ 1]<'0' || FromDpx[ 1]>'9'
      || FromDpx[ 2]<'0' || FromDpx[ 2]>'9'
