@@ -3689,7 +3689,7 @@ File_Avc::seq_parameter_set_struct* File_Avc::seq_parameter_set_data(int32u &Dat
         case 128 :  //High profiles
         case 138 :
                     Element_Begin1("high profile specific");
-                    Get_UE (chroma_format_idc,                  "chroma_format_idc"); Param_Info1C((chroma_format_idc<3), Avc_Colorimetry_format_idc[chroma_format_idc]);
+                    Get_UE (chroma_format_idc,                  "chroma_format_idc"); Param_Info1C((chroma_format_idc<3), Avc_Colorimetry_format_idc(chroma_format_idc));
                     if (chroma_format_idc==3)
                         Get_SB (separate_colour_plane_flag,     "separate_colour_plane_flag");
                     Get_UE (bit_depth_luma_minus8,              "bit_depth_luma_minus8");
