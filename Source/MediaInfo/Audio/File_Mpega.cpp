@@ -1116,6 +1116,8 @@ void File_Mpega::audio_data_Layer3()
     if (ID==3) //MPEG-1
     {
     Element_Begin1("scfsi");
+        if (mode >= 4)
+            return;
         for(int8u ch=0; ch<Mpega_Channels[mode]; ch++)
             for(int8u scfsi_band=0; scfsi_band<4; scfsi_band++)
             {
