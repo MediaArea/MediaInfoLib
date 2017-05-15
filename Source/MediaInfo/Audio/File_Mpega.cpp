@@ -1090,6 +1090,8 @@ void File_Mpega::Data_Parse()
 //---------------------------------------------------------------------------
 void File_Mpega::audio_data_Layer3()
 {
+    if (mode>=4)
+        return;
     int16u main_data_end;
     BS_Begin();
     if (ID==3) //MPEG-1
@@ -1115,9 +1117,7 @@ void File_Mpega::audio_data_Layer3()
     }
     if (ID==3) //MPEG-1
     {
-    Element_Begin1("scfsi");
-        if (mode >= 4)
-            return;
+        Element_Begin1("scfsi");
         for(int8u ch=0; ch<Mpega_Channels[mode]; ch++)
             for(int8u scfsi_band=0; scfsi_band<4; scfsi_band++)
             {
@@ -1131,8 +1131,6 @@ void File_Mpega::audio_data_Layer3()
     for(int8u gr=0; gr<(ID==3?2:1); gr++)
     {
         Element_Begin1("granule");
-        if (mode>=4)
-            return;
         for(int8u ch=0; ch<Mpega_Channels[mode]; ch++)
         {
             Element_Begin1("channel");
