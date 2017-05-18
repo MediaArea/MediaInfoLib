@@ -732,7 +732,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
     #endif //MEDIAINFO_HASH
 
     //Should parse again?
-    if (((File_GoTo==File_Size && File_Size!=(int64u)-1) || File_Offset+Buffer_Offset>=File_Size)
+    if (((File_GoTo==File_Size && File_Size!=(int64u)-1) || (File_GoTo==(int64u)-1 && File_Offset+Buffer_Offset>=File_Size))
         && !Config->File_IsGrowing
        #if MEDIAINFO_DEMUX
          && !Config->Demux_EventWasSent

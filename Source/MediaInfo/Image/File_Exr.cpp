@@ -56,6 +56,7 @@ File_Exr::File_Exr()
 {
     //Configuration
     ParserName="EXR";
+    IsRawStream=true;
 }
 
 //***************************************************************************
