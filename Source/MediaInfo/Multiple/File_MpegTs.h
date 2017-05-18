@@ -45,6 +45,7 @@ public :
     #ifdef MEDIAINFO_ARIBSTDB24B37_YES
         bool FromAribStdB24B37;
     #endif
+    bool NoPatPmt;
 
     //Constructor/Destructor
     File_MpegTs();
