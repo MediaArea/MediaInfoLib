@@ -369,6 +369,7 @@ File_Dpx::File_Dpx()
 {
     //Configuration
     ParserName="DPX";
+    IsRawStream=true;
 }
 
 //***************************************************************************
