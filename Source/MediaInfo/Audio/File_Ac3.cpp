@@ -1892,9 +1892,16 @@ void File_Ac3::Core_Frame()
     }
 
     //Pre-parsing, finding some elements presence
-    if (Buffer[Buffer_Offset+(Element_Size)-3]&0x02) //auxdatae
-        auxdatal=(((int16u)Buffer[Buffer_Offset+(Element_Size)-4])<<6)
-                |(         Buffer[Buffer_Offset+(Element_Size)-3] >>2);
+    const int BufferIndex=Buffer_Offset+Element_Size;
+    if (BufferIndex>Buffer_Size)
+    {
+        auxdatal=(int16u)-1;
+        Element_Size=Element_Size_Save;
+        return;
+    }
+    if (Buffer[BufferIndex-3]&0x02) //auxdatae
+        auxdatal=(((int16u)Buffer[BufferIndex-4])<<6)
+                |(         Buffer[BufferIndex-3] >>2);
     else
         auxdatal=(int16u)-1; //auxdata is empty
     BitStream_Fast Search(Buffer+Buffer_Offset, Element_Size);
