@@ -1974,6 +1974,13 @@ void File_MpegTs::Read_Buffer_AfterParsing()
     if (Complete_Stream==NULL)
         return; //No synchronization yet
 
+    //Stop parsing if sream is not coherent
+    if (!Status[IsAccepted] && Buffer_TotalBytes-Buffer_TotalBytes_FirstSynched>=MpegTs_JumpTo_Begin/4)
+    {
+        Reject();
+        return;
+    }
+
     if (!Status[IsFilled])
     {
         //Test if parsing of headers is OK
@@ -1981,20 +1988,6 @@ void File_MpegTs::Read_Buffer_AfterParsing()
          || (Buffer_TotalBytes-Buffer_TotalBytes_FirstSynched>=MpegTs_JumpTo_Begin && Config->ParseSpeed<0.8)
          || File_Offset+Buffer_Size==File_Size)
         {
-            //Test if PAT/PMT are missing (often in .trp files)
-            if (!Complete_Stream->transport_stream_id_IsValid
-             && NoPatPmt)
-            {
-                for (size_t StreamID=0; StreamID<0x2000; StreamID++)
-                {
-                    if (Complete_Stream->Streams[StreamID]->Parser && Complete_Stream->Streams[StreamID]->Parser->Status[IsAccepted])
-                    {
-                        Accept("MPEG-TS");
-                        break;
-                    }
-                }
-            }
-
             //Filling
             for (std::set<int16u>::iterator StreamID=Complete_Stream->PES_PIDs.begin(); StreamID!=Complete_Stream->PES_PIDs.end(); ++StreamID)
             {
@@ -3189,6 +3182,10 @@ void File_MpegTs::PES()
 //---------------------------------------------------------------------------
 void File_MpegTs::PES_Parse_Finish()
 {
+    //Test if parsing of headers is OK
+    if (NoPatPmt && !Status[IsAccepted])
+        Accept("MPEG-TS");
+
     if (Complete_Stream->Streams[pid]->Parser->Status[IsUpdated])
     {
         Complete_Stream->Streams[pid]->Parser->Status[IsUpdated]=false;
