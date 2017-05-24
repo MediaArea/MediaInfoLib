@@ -331,7 +331,6 @@ void File_MpegTs::Streams_Accept()
     //Temp
     MpegTs_JumpTo_Begin=(File_Offset_FirstSynched==(int64u)-1?0:Buffer_TotalBytes_LastSynched)+MediaInfoLib::Config.MpegTs_MaximumOffset_Get();
     MpegTs_JumpTo_End=MediaInfoLib::Config.MpegTs_MaximumOffset_Get()/4;
-    Buffer_TotalBytes_LastSynched=Buffer_TotalBytes_FirstSynched;
     if (MpegTs_JumpTo_Begin==(int64u)-1 || MpegTs_JumpTo_Begin+MpegTs_JumpTo_End>=File_Size)
     {
         if (MpegTs_JumpTo_Begin+MpegTs_JumpTo_End>File_Size)
@@ -3317,7 +3316,6 @@ void File_MpegTs::PSI()
         //Program change
         if (pid==0x0000)
         {
-            Buffer_TotalBytes_LastSynched=Buffer_TotalBytes+Buffer_Offset-Header_Size;
             Status[IsFilled]=false;
 
             Status[IsUpdated]=true;
@@ -3325,7 +3323,6 @@ void File_MpegTs::PSI()
         }
         if (!Complete_Stream->Streams[pid]->Table_IDs.empty() && Complete_Stream->Streams[pid]->Table_IDs[0x02])
         {
-            Buffer_TotalBytes_LastSynched=Buffer_TotalBytes+Buffer_Offset-Header_Size;
             Status[IsFilled]=false;
 
             //Status[IsUpdated]=true;
