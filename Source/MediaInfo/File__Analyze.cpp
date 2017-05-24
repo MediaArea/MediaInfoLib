@@ -388,7 +388,7 @@ void File__Analyze::Open_Buffer_Init (int64u File_Size_)
     //Configuring
     if (MediaInfoLib::Config.FormatDetection_MaximumOffset_Get())
         Buffer_TotalBytes_FirstSynched_Max=MediaInfoLib::Config.FormatDetection_MaximumOffset_Get();
-    Config->ParseSpeed=MediaInfoLib::Config.ParseSpeed_Get();
+    Config->File_ParseSpeed_Set(MediaInfoLib::Config.ParseSpeed_Get(), true);
     if (Config->File_IsSub_Get())
         IsSub=true;
     #if MEDIAINFO_DEMUX
