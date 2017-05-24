@@ -2801,7 +2801,7 @@ void File_Avc::sei_message_pic_timing(int32u /*payloadSize*/, int32u seq_paramet
     }
     BS_End();
 
-    FILLING_BEGIN();
+    FILLING_BEGIN_PRECISE();
         if ((*seq_parameter_set_Item)->pic_struct_FirstDetected==(int8u)-1 && (*seq_parameter_set_Item)->vui_parameters && (*seq_parameter_set_Item)->vui_parameters->pic_struct_present_flag)
             (*seq_parameter_set_Item)->pic_struct_FirstDetected=pic_struct;
     FILLING_END();
