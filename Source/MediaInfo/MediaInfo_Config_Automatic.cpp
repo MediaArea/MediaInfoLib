@@ -3756,7 +3756,7 @@ void MediaInfo_Config_Codec (InfoMap &Info)
     "121;Grundig;2CC;A;;;Philips Speech Processing\n"
     "123;G723;2CC;A;;;Digital Equipment Corporation (DEC) G723\n"
     "125;ADPCM;2CC;A;ADPCM;;\n"
-    "130;ACEPL;2CC;A;;;Sipro ACEPL.net;http://dividix.host.sk\n"
+    "130;ACELP;2CC;A;;;Sipro ACELP.net;http://dividix.host.sk\n"
     "131;ACELP4800;2CC;A;;;Sipro ACELP4800\n"
     "132;ACELP8V3;2CC;A;;;Sipro ACELP8V3\n"
     "133;G729;2CC;A;;;Sipro G729\n"
