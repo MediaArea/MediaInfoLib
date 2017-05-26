@@ -1406,7 +1406,8 @@ void File_Avc::Read_Buffer_Unsynched()
     if (SizedBlocks || !Config_IsRepeated) //If sized blocks, it is not a broadcasted stream so SPS/PPS are only in container header, we must not disable them.
     {
         //Rebuilding immediatly TemporalReferences
-        for (std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item=seq_parameter_sets.begin(); seq_parameter_set_Item!=seq_parameter_sets.end(); ++seq_parameter_set_Item)
+        seq_parameter_set_structs* _seq_parameter_sets=!seq_parameter_sets.empty()?&seq_parameter_sets:&subset_seq_parameter_sets; //Some MVC streams have no seq_parameter_sets. TODO: better management of temporal references
+        for (std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item=(*_seq_parameter_sets).begin(); seq_parameter_set_Item!=(*_seq_parameter_sets).end(); ++seq_parameter_set_Item)
             if ((*seq_parameter_set_Item))
             {
                 size_t MaxNumber;
