@@ -642,13 +642,14 @@ void File_Ffv1::Read_Buffer_OutOfBand()
 {
     ConfigurationRecordIsPresent=true;
 
-    int32u CRC_32=FFv1_CRC_Compute(Buffer+Buffer_Offset, (size_t)Element_Offset, (size_t)Element_Size);
-
-    if (Buffer_Size < 4 || CRC_32)
+    if (Buffer_Size < 4)
     {
+        Skip_XX(Element_Size,                                   "ConfigurationRecord size issue");
         Reject();
         return;
     }
+
+    int32u CRC_32=FFv1_CRC_Compute(Buffer+Buffer_Offset, (size_t)Element_Offset, (size_t)Element_Size);
 
     if (!RC)
         RC = new RangeCoder(Buffer, Buffer_Size-4, Ffv1_default_state_transition);
@@ -657,9 +658,12 @@ void File_Ffv1::Read_Buffer_OutOfBand()
     Element_Offset+=RC->BytesUsed();
     if (Element_Offset+4<Element_Size)
         Skip_XX(Element_Size-Element_Offset-4,                  "Reserved");
-    Skip_B4(                                                    "CRC-32");
+    Skip_B4(                                                    "CRC-32"); Param_Info1(CRC_32?"NOK":"OK");
 
     delete RC; RC=NULL;
+
+    if (CRC_32 && !Status[IsAccepted]) // If the parsing of the ConfigurationRecord was fine, let's try to decode with what we have instead of disabling completely the parsing.
+        Reject();
 }
 
 //---------------------------------------------------------------------------
