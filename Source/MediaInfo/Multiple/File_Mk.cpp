@@ -308,9 +308,9 @@ namespace Elements
     const int64u Segment_Tracks_TrackEntry_Video_OldStereoMode=0x13B9;
     const int64u Segment_Tracks_TrackEntry_TrackOverlay=0x2FAB;
     const int64u Segment_Tracks_TrackEntry_TrackTranslate=0x2624;
-    const int64u Segment_Tracks_TrackEntry_TrackTranslate_Codec=0x26BF;
-    const int64u Segment_Tracks_TrackEntry_TrackTranslate_EditionUID=0x26FC;
-    const int64u Segment_Tracks_TrackEntry_TrackTranslate_TrackID=0x26A5;
+    const int64u Segment_Tracks_TrackEntry_TrackTranslate_TrackTranslateCodec=0x26BF;
+    const int64u Segment_Tracks_TrackEntry_TrackTranslate_TrackTranslateEditionUID=0x26FC;
+    const int64u Segment_Tracks_TrackEntry_TrackTranslate_TrackTranslateTrackID=0x26A5;
 }
 
 //---------------------------------------------------------------------------
@@ -1632,9 +1632,9 @@ void File_Mk::Data_Parse()
                 ATOM(Segment_Tracks_TrackEntry_TrackOverlay)
                 LIST(Segment_Tracks_TrackEntry_TrackTranslate)
                     ATOM_BEGIN
-                    ATOM(Segment_Tracks_TrackEntry_TrackTranslate_Codec)
-                    ATOM(Segment_Tracks_TrackEntry_TrackTranslate_EditionUID)
-                    ATOM(Segment_Tracks_TrackEntry_TrackTranslate_TrackID)
+                    ATOM(Segment_Tracks_TrackEntry_TrackTranslate_TrackTranslateCodec)
+                    ATOM(Segment_Tracks_TrackEntry_TrackTranslate_TrackTranslateEditionUID)
+                    ATOM(Segment_Tracks_TrackEntry_TrackTranslate_TrackTranslateTrackID)
                     ATOM_END_MK
                 ATOM_END_MK
             ATOM_END_MK
@@ -4292,13 +4292,13 @@ void File_Mk::Segment_Tracks_TrackEntry_TrackTranslate()
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Tracks_TrackEntry_TrackTranslate_Codec()
+void File_Mk::Segment_Tracks_TrackEntry_TrackTranslate_TrackTranslateCodec()
 {
     Element_Name("Codec");
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Tracks_TrackEntry_TrackTranslate_EditionUID()
+void File_Mk::Segment_Tracks_TrackEntry_TrackTranslate_TrackTranslateEditionUID()
 {
     Element_Name("EditionUID");
 
@@ -4307,7 +4307,7 @@ void File_Mk::Segment_Tracks_TrackEntry_TrackTranslate_EditionUID()
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Tracks_TrackEntry_TrackTranslate_TrackID()
+void File_Mk::Segment_Tracks_TrackEntry_TrackTranslate_TrackTranslateTrackID()
 {
     Element_Name("TrackID");
 
