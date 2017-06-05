@@ -203,10 +203,6 @@ private :
     void Segment_Tracks_TrackEntry_ContentEncodings_ContentEncoding_ContentEncryption_ContentSigHashAlgo() {UInteger_Info();};
     void Segment_Tracks_TrackEntry_CodecName();
     void Segment_Tracks_TrackEntry_CodecPrivate();
-    void Segment_Tracks_TrackEntry_CodecPrivate__Parse();
-    void Segment_Tracks_TrackEntry_CodecPrivate_auds();
-    void Segment_Tracks_TrackEntry_CodecPrivate_auds_ExtensibleWave();
-    void Segment_Tracks_TrackEntry_CodecPrivate_vids();
     void Segment_Tracks_TrackEntry_DefaultDuration();
     void Segment_Tracks_TrackEntry_FlagDefault();
     void Segment_Tracks_TrackEntry_FlagEnabled();
@@ -417,6 +413,10 @@ private :
     size_t*                 File_Buffer_Size_Hint_Pointer;
 
     //Helpers
+    void Segment_Tracks_TrackEntry_CodecPrivate__Parse();
+    void Segment_Tracks_TrackEntry_CodecPrivate_auds();
+    void Segment_Tracks_TrackEntry_CodecPrivate_auds_ExtensibleWave();
+    void Segment_Tracks_TrackEntry_CodecPrivate_vids();
     void JumpTo(int64u GoTo);
     void TestMultipleInstances(size_t* Instances=NULL);
     void CRC32_Check();
