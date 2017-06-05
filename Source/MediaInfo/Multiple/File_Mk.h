@@ -247,9 +247,9 @@ private :
     void Segment_Tracks_TrackEntry_Video_OldStereoMode();
     void Segment_Tracks_TrackEntry_TrackOverlay();
     void Segment_Tracks_TrackEntry_TrackTranslate();
-    void Segment_Tracks_TrackEntry_TrackTranslate_Codec();
-    void Segment_Tracks_TrackEntry_TrackTranslate_EditionUID();
-    void Segment_Tracks_TrackEntry_TrackTranslate_TrackID();
+    void Segment_Tracks_TrackEntry_TrackTranslate_TrackTranslateCodec();
+    void Segment_Tracks_TrackEntry_TrackTranslate_TrackTranslateEditionUID();
+    void Segment_Tracks_TrackEntry_TrackTranslate_TrackTranslateTrackID();
 
     struct stream
     {
