@@ -2167,7 +2167,10 @@ void File_Mk::Segment_Cluster_BlockGroup()
 void File_Mk::Segment_Cluster_BlockGroup_Block()
 {
     if (!Element_IsComplete_Get())
+    {
+        Element_WaitForMoreData();
         return;
+    }
 
     //Parsing
     Get_EB (TrackNumber,                                        "TrackNumber"); Element_Info1(TrackNumber);
