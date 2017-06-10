@@ -1995,6 +1995,8 @@ void File_Mk::Segment_Attachments_AttachedFile_FileMimeType()
 //---------------------------------------------------------------------------
 void File_Mk::Segment_Attachments_AttachedFile_FileData()
 {
+    Element_Name("FileData");
+
     bool Attachments_Demux=true;
 
     //Parsing
@@ -3196,8 +3198,6 @@ void File_Mk::Segment_Tracks_TrackEntry_FlagDefault()
 //---------------------------------------------------------------------------
 void File_Mk::Segment_Tracks_TrackEntry_FlagForced()
 {
-    Element_Name("FlagForced");
-
     //Parsing
     int64u UInteger=UInteger_Get();
 
@@ -3359,8 +3359,6 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_DisplayWidth()
 //---------------------------------------------------------------------------
 void File_Mk::Segment_Tracks_TrackEntry_Video_FrameRate()
 {
-    Element_Name("FrameRate");
-
     //Parsing
    float64 Value=Float_Get();
 
