@@ -1310,14 +1310,21 @@ void File_Hevc::video_parameter_set()
         }
         for (int32u HrdPos=0; HrdPos<vps_num_hrd_parameters; HrdPos++)
         {
+            seq_parameter_set_struct::vui_parameters_struct::xxl_common *xxL_Common=NULL;
+            seq_parameter_set_struct::vui_parameters_struct::xxl *NAL=NULL, *VCL=NULL;
             int32u hrd_layer_set_idx;
+            bool   cprms_present_flag;
             Get_UE (   hrd_layer_set_idx,                       "hrd_layer_set_idx");
             if (hrd_layer_set_idx>=1024)
                 Trusted_IsNot("hrd_layer_set_idx not valid");
             if (HrdPos)
-                Skip_SB(                                        "cprms_present_flag");
-            Trusted_IsNot("hrd_parameters not supported");
-            //hrd_parameters
+                Get_SB (cprms_present_flag,                     "cprms_present_flag");
+            else
+                cprms_present_flag=true;
+            hrd_parameters(cprms_present_flag, vps_max_sub_layers_minus1, xxL_Common, NAL, VCL);
+            delete xxL_Common; //TODO: keep VPS hrd_parameters
+            delete NAL;
+            delete VCL;
         }
     TEST_SB_END();
     TESTELSE_SB_SKIP(                                           "vps_extension_flag");
