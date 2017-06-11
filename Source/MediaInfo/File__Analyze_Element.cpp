@@ -509,7 +509,21 @@ std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_D
       {
           if (v.format_out == element_details::Element_Node_Data::Format_Tree)
           {
-              os << v.val.Str;
+              const char* a=v.val.Str;
+              for (;;)
+              {
+                  const char* b=strchr(a, '\n');
+                  if (!b)
+                      break;
+                  std::streamsize c=b-a;
+                  if (c && a[c-1]=='\r')
+                      c--;
+                  os.write(a, c);
+                  a=b+1;
+                  if (*a) // If it is not the last character
+                      os << " / ";
+              }
+              os << a;
               break;
           }
 
