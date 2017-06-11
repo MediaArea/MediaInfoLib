@@ -388,6 +388,7 @@ namespace Elements
     const int32u WAVE_id3_=0x69643320;
     const int32u WAVE_INFO=0x494E464F;
     const int32u WAVE_iXML=0x69584D4C;
+    const int32u WAVE_mext=0x6D657874;
     const int32u wave=0x77617665;
     const int32u wave_data=0x64617461;
     const int32u wave_fmt_=0x666D7420;
@@ -576,6 +577,7 @@ void File_Riff::Data_Parse()
         LIST(WAVE_INFO)
             ATOM_DEFAULT_ALONE(WAVE_INFO_xxxx)
         ATOM(WAVE_iXML)
+        ATOM(WAVE_mext)
         ATOM_END
     LIST(wave)
         ATOM_BEGIN
@@ -3752,6 +3754,26 @@ void File_Riff::WAVE_iXML()
 
     //Parsing
     Skip_Local(Element_Size,                                    "XML data");
+}
+
+//---------------------------------------------------------------------------
+void File_Riff::WAVE_mext()
+{
+    Element_Name("MPEG Audio extension");
+
+    //Parsing
+    Info_L2(       SoundInformation,                            "SoundInformation");
+        Skip_Flags(SoundInformation,  0,                        "Homogeneous sound data");
+        Skip_Flags(SoundInformation,  1,                        "Padding bit is used");
+        Skip_Flags(SoundInformation,  2,                        "File contains a sequence of frames with padding bit set to 0");
+        Skip_Flags(SoundInformation,  3,                        "Free format is used");
+    Skip_L2(                                                    "FrameSize");
+    Skip_L2(                                                    "AncillaryDataLength");
+    Info_L2(       AncillaryDataDef,                            "AncillaryDataDef");
+        Skip_Flags(AncillaryDataDef,  0,                        "Energy of left channel present");
+        Skip_Flags(AncillaryDataDef,  1,                        "A private byte is free for internal use");
+        Skip_Flags(AncillaryDataDef,  2,                        "Energy of right channel present ");
+    Skip_L4(                                                    "Reserved");
 }
 
 //---------------------------------------------------------------------------
