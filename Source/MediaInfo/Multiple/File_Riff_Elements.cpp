@@ -3706,7 +3706,7 @@ void File_Riff::WAVE_fact()
                 if (BitRate)
                 {
                     int64u Duration_FromBitRate = File_Size * 8 * 1000 / BitRate;
-                    if (Duration_FromBitRate > Duration*1.10 || Duration_FromBitRate < Duration*0.9)
+                    if (Duration_FromBitRate > Duration*1.02 || Duration_FromBitRate < Duration*0.98)
                         IsOK = false;
                 }
             }
