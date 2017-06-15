@@ -2156,6 +2156,10 @@ File_Mxf::File_Mxf()
         Demux_EventWasSent_Accept_Specific=true;
     #endif //MEDIAINFO_DEMUX
 
+    //Hints
+    File_Buffer_Size_Hint_Pointer=NULL;
+    Synched_Count=0;
+
     //Temp
     RandomIndexPacks_AlreadyParsed=false;
     Streams_Count=(size_t)-1;
@@ -2252,8 +2256,11 @@ File_Mxf::~File_Mxf()
 //---------------------------------------------------------------------------
 void File_Mxf::Streams_Accept()
 {
+    Fill(Stream_General, 0, General_Format, "MXF");
+
     //Configuration
     Buffer_MaximumSize=64*1024*1024; //Some big frames are possible (e.g YUV 4:2:2 10 bits 1080p, 4K)
+    File_Buffer_Size_Hint_Pointer=Config->File_Buffer_Size_Hint_Pointer_Get();
 }
 
 //---------------------------------------------------------------------------
@@ -5159,14 +5166,8 @@ bool File_Mxf::Synchronize()
         return false;
     }
 
-    if (!Status[IsAccepted])
-    {
+    if (IsSub && !Status[IsAccepted])
         Accept();
-
-        Fill(Stream_General, 0, General_Format, "MXF");
-
-        File_Buffer_Size_Hint_Pointer=Config->File_Buffer_Size_Hint_Pointer_Get();
-    }
 
     //Synched is OK
     return true;
@@ -5181,7 +5182,18 @@ bool File_Mxf::Synched_Test()
 
     //Quick test of synchro
     if (CC4(Buffer+Buffer_Offset)!=0x060E2B34)
+    {
         Synched=false;
+        if (!Status[IsAccepted])
+            Trusted_IsNot("Sync"); //If there is an unsynch before the parser accepts the stream, very high risk the that the file is not MXF
+    }
+    else if (!Status[IsAccepted])
+    {
+        if (Synched_Count>=8)
+            Accept();
+        else
+            Synched_Count++;
+    }
 
     //Trace config
     #if MEDIAINFO_TRACE
@@ -6244,6 +6256,9 @@ void File_Mxf::Data_Parse()
                             Essence->second.Parsers.push_back(Parser);
                         }
                     }
+
+                    if (!Status[IsAccepted] && !Essence->second.Parsers.empty() && Essence->second.Parsers[0]->Status[IsAccepted])
+                        Accept();
                 }
 
                 Element_Offset=Element_Size;
@@ -8508,6 +8523,11 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
     //Filling
     if (SDTI_SizePerFrame==0)
         Partitions_IsCalculatingSdtiByteCount=true;
+
+    FILLING_BEGIN_PRECISE();
+        if (!Status[IsAccepted])
+            Accept();
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -8566,6 +8586,11 @@ void File_Mxf::SDTI_PackageMetadataSet()
     //Filling
     if (SDTI_SizePerFrame==0)
         Partitions_IsCalculatingSdtiByteCount=true;
+
+    FILLING_BEGIN_PRECISE();
+        if (!Status[IsAccepted])
+            Accept();
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -10564,6 +10589,11 @@ void File_Mxf::PartitionMetadata()
                 EssenceContainer_FromPartitionMetadata=EssenceContainer;
         }
     Element_End0();
+
+    FILLING_BEGIN_PRECISE();
+        if (!Status[IsAccepted])
+            Accept();
+    FILLING_END();
 
     PartitionPack_Parsed=true;
     Partitions_IsFooter=(Code.lo&0x00FF0000)==0x00040000;
