@@ -573,6 +573,18 @@ bool File_Mpega::Synchronize()
     if (Tag_Found_Begin)
         return true;
 
+    //Synchro
+    if (Buffer_Offset+3>Buffer_Size)
+        return false;
+    if (!Status[IsAccepted]
+     && Buffer[Buffer_Offset+0]==0x46 //"FLV"
+     && Buffer[Buffer_Offset+1]==0x4C
+     && Buffer[Buffer_Offset+2]==0x56)
+    {
+        File__Tags_Helper::Reject(); //Parser accepts too easily FLV files with MPEG Audio (synchronization lost due to FLV header is  not enough), rejecting if FLV magic value is found before the first synchro 
+        return false;
+    }
+
     //Synchronizing
     while (Buffer_Offset+4<=Buffer_Size)
     {
