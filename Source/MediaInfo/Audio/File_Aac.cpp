@@ -151,13 +151,14 @@ void File_Aac::Streams_Update()
             switch(Mode)
             {
                 case Mode_ADTS    :
-                case Mode_LATM    : if (Config->File_RiskyBitRateEstimation_Get() && !adts_buffer_fullness_Is7FF)
+                case Mode_LATM    : if (Config->File_RiskyBitRateEstimation_Get() && !adts_buffer_fullness_Is7FF && (Config->ParseSpeed<1.0 || File_Offset+Buffer_Offset<File_Size))
                                     {
-                                        int64u BitRate=(Frequency_b/1024);
+                                        float64 BitRate=((float64)Frequency_b)/frame_length;
                                         BitRate*=aac_frame_length_Total*8;
                                         BitRate/=Frame_Count;
 
                                         Fill(Stream_Audio, 0, Audio_BitRate, BitRate, 10, true);
+                                        Fill(Stream_Audio, 0, Audio_Duration, (File_Size-Buffer_TotalBytes_FirstSynched)/BitRate*8*1000, 0, true);
                                     }
                                     break;
                 default           : ;
@@ -183,8 +184,10 @@ void File_Aac::Streams_Finish()
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR", Unlimited, true, true);
             if (Config->ParseSpeed>=1.0)
             {
-                Fill(Stream_Audio, 0, Audio_BitRate_Minimum, ((float64)FrameSize_Min)/1024*48000*8, 0);
-                Fill(Stream_Audio, 0, Audio_BitRate_Maximum, ((float64)FrameSize_Max)/1024*48000*8, 0);
+                Fill(Stream_Audio, 0, Audio_BitRate_Minimum, ((float64)FrameSize_Min)/frame_length*Frequency_b*8, 0);
+                Fill(Stream_Audio, 0, Audio_BitRate_Maximum, ((float64)FrameSize_Max)/frame_length*Frequency_b*8, 0);
+                Fill(Stream_Audio, 0, Audio_SamplingCount, Frame_Count*frame_length);
+                Fill(Stream_Audio, 0, Audio_Duration, ((float64)Frame_Count)*frame_length/Frequency_b*1000, 0);
             }
         }
         else if (Config->ParseSpeed>=1.0)
