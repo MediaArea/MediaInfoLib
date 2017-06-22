@@ -517,7 +517,7 @@ void File_Ffv1::Streams_Accept()
     Stream_Prepare(Stream_Video);
     Fill(Stream_Video, 0, Video_Format, "FFV1");
     Ztring Version=__T("Version ")+Ztring::ToZtring(version);
-    if (version==3)
+    if (version>=3 && version<=4)
     {
         Version+=__T('.');
         Version+=Ztring::ToZtring(micro_version);
@@ -891,15 +891,24 @@ void File_Ffv1::Parameters()
     if (version==2 || version>3)
     {
         Param_Error(version==2?"FFV1-HEADER-version-EXPERIMENTAL:1":"FFV1-HEADER-version-LATERVERSION:1");
-        Accept();
-        Element_End0();
-        return;
+        if (version==2 || version>4)
+        {
+            Accept();
+            Element_End0();
+            return;
+        }
     }
     if (version>=3)
         Get_RU (States, micro_version,                          "micro_version");
     if ((version==3 && micro_version<4))
     {
         Param_Error("FFV1-HEADER-micro_version-EXPERIMENTAL:1");
+        Accept();
+        Element_End0();
+        return;
+    }
+    if (version==4) // Version 4 is still experimental at the time of writing but contains micro_version so we show it
+    {
         Accept();
         Element_End0();
         return;
