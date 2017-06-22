@@ -2702,6 +2702,26 @@ void File__Analyze::Element_Parser(const char* Parser)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_TRACE
+void File__Analyze::Element_Error(const char* Message)
+{
+    //Needed?
+    if (Config_Trace_Level<=0.7)
+        return;
+
+    Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Message, "Error"));
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+void File__Analyze::Param_Error(const char* Message)
+{
+    Param_Info(Message, "Error");
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
 element_details::Element_Node *File__Analyze::Get_Trace_Node(size_t level)
 {
     if (level > Element_Level)

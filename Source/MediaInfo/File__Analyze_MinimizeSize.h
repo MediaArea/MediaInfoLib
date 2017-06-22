@@ -319,7 +319,9 @@ protected :
     #define Element_Info3(_A,_B,_C)
     #define Element_Info1C(_CONDITION,_A)
     #define Element_Info_From_Milliseconds(_A)
-    #define Element_Parser(_A)
+    #define Element_Parser(_A) {}
+    #define Element_Error(_A) {}
+    #define Param_Error(_A) {}
 
     //Elements - End
     inline void Element_End () {Element_End_Common_Flush();}

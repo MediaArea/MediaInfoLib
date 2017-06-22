@@ -716,9 +716,14 @@ int element_details::Element_Node::Print_Micro_Xml(print_struc& s)
                 s.ss << " parser=\"" << Info->data << "\"";
             continue;
         }
-        else
-            info_nb++;
+        if (Info->Measure == "Error")
+        {
+            if (!(Info->data == string()))
+                s.ss << " e=\"" << Info->data << "\"";
+            continue;
+        }
 
+        info_nb++;
         s.ss << " i";
         if (info_nb > 1)
             s.ss << info_nb;
@@ -794,13 +799,18 @@ int element_details::Element_Node::Print_Xml(print_struc& s)
                 s.ss << " parser=\"" << Info->data << "\"";
             continue;
         }
-        else
-            info_nb++;
+        if (Info->Measure == "Error")
+        {
+            if (!(Info->data == string()))
+                s.ss << " error=\"" << Info->data << "\"";
+            continue;
+        }
 
+        info_nb++;
         s.ss << " info";
         if (info_nb > 1)
             s.ss << info_nb;
-        s.ss << "=\"" << Infos[i] << "\"";
+        s.ss << "=\"" << Info << "\"";
     }
 
     if (!Value.empty())
@@ -899,6 +909,12 @@ int element_details::Element_Node::Print_Tree(print_struc& s)
         {
             if (!(Info->data == string()))
                 s.ss << " - Parser=" << Info->data;
+            continue;
+        }
+        if (Info->Measure == "Error")
+        {
+            if (!(Info->data == string()))
+                s.ss << " - Error=" << Info->data;
             continue;
         }
 
