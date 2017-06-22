@@ -411,6 +411,8 @@ protected :
     inline void Element_Info_From_Milliseconds (int64u Parameter)                  {if (Config_Trace_Level<1) return; Element_Info(Ztring().Duration_From_Milliseconds(Parameter));}
 
     void Element_Parser (const char* Name);
+    void Element_Error (const char* Name);
+    void Param_Error (const char* Name);
 
     //Elements - End
     inline void Element_End () {Element_End_Common_Flush();}
