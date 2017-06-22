@@ -1694,14 +1694,6 @@ bool File_Ffv1::QuantizationTable(size_t i)
     {
         if (!QuantizationTablePerContext(i, j, scale))
         {
-            Param_Error("FFV1-HEADER-QUANTIZATION_TABLES:1");
-            Element_End0();
-            return false;
-        }
-        scale *= 2 * len_count[i][j] - 1;
-        if (scale > 32768U)
-        {
-            Param_Error("FFV1-HEADER-QUANTIZATION_TABLES:1");
             Element_End0();
             return false;
         }
@@ -1713,7 +1705,7 @@ bool File_Ffv1::QuantizationTable(size_t i)
 }
 
 //---------------------------------------------------------------------------
-bool File_Ffv1::QuantizationTablePerContext(size_t i, size_t j, FFV1::pixel_t scale)
+bool File_Ffv1::QuantizationTablePerContext(size_t i, size_t j, FFV1::pixel_t &scale)
 {
     Element_Begin1("QuantizationTable");
 
@@ -1728,6 +1720,7 @@ bool File_Ffv1::QuantizationTablePerContext(size_t i, size_t j, FFV1::pixel_t sc
 
         if (k+len_minus1 >= 128)
         {
+            Param_Error("FFV1-HEADER-QuantizationTable-len:1");
             Element_End0();
             return false;
         }
@@ -1745,7 +1738,13 @@ bool File_Ffv1::QuantizationTablePerContext(size_t i, size_t j, FFV1::pixel_t sc
         quant_tables[i][j][256 - k] = -quant_tables[i][j][k];
     quant_tables[i][j][128] = -quant_tables[i][j][127];
 
-    len_count[i][j]=v;
+    scale *= 2 * v - 1;
+    if (scale > 32768U)
+    {
+        Element_Error("FFV1-HEADER-QuantizationTable-scale:1");
+        Element_End0();
+        return false;
+    }
 
     Element_End0();
     return true;

@@ -208,7 +208,7 @@ private :
     int32s pixel_GR(int32s context);
     int32s pixel_RC(int32s context);
     bool QuantizationTable(size_t i);
-    bool QuantizationTablePerContext(size_t i, size_t j, FFV1::pixel_t scale);
+    bool QuantizationTablePerContext(size_t i, size_t j, FFV1::pixel_t &scale);
     void copy_plane_states_to_slice(int8u plane_count);
 
     //Range coder
@@ -265,7 +265,6 @@ private :
     bool    KeyFramePassed;
     bool    is_overflow_16bit;
     int32u  context_count[MAX_QUANT_TABLES];
-    int32u  len_count[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS];
     quant_table_struct quant_tables[MAX_QUANT_TABLES];
     int32u  quant_table_index[MAX_PLANES];
     int32u  quant_table_count;
