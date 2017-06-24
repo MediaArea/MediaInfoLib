@@ -353,7 +353,7 @@ static size_t Xml_Content_Escape_MustEscape(const char* Content, size_t Size)
     // Cheking all chars
     for (size_t Pos = 0; Pos < Size; Pos++)
     {
-        const char C = Content[Pos];
+        const unsigned char C = Content[Pos];
         switch (C)
         {
             case '\"':

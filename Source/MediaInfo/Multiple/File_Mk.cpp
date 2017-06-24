@@ -1884,8 +1884,7 @@ void File_Mk::Ebml_MaxSizeLength()
 void File_Mk::Ebml_DocType()
 {
     //Parsing
-    Ztring Data;
-    Get_Local(Element_Size, Data,                               "Data"); Element_Info1(Data);
+    Ztring Data=String_Get();
 
     //Filling
     FILLING_BEGIN();
@@ -1987,7 +1986,7 @@ void File_Mk::Segment_Attachments_AttachedFile_FileName()
 void File_Mk::Segment_Attachments_AttachedFile_FileMimeType()
 {
     //Parsing
-    Ztring Data=Local_Get();
+    Ztring Data=String_Get();
 
     AttachedFile_FileMimeType=Data.To_UTF8();
 }
@@ -2067,7 +2066,7 @@ void File_Mk::Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay()
 void File_Mk::Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapLanguage()
 {
     //Parsing
-    Ztring Data=Local_Get();
+    Ztring Data=String_Get();
 
     FILLING_BEGIN();
         EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterDisplays[ChapterDisplays_Pos].ChapLanguage=Data;
@@ -2684,8 +2683,7 @@ void File_Mk::Segment_Tags_Tag()
 void File_Mk::Segment_Tags_Tag_SimpleTag_TagLanguage()
 {
     //Parsing
-    Ztring Data;
-    Get_Local(Element_Size, Data,                              "Data"); Element_Info1(Data);
+    Ztring Data=String_Get();
 
     FILLING_BEGIN();
         //Fill(StreamKind_Last, StreamPos_Last, "Language", Data);
@@ -2865,8 +2863,7 @@ void File_Mk::Segment_Tracks_TrackEntry_Audio_SamplingFrequency()
 void File_Mk::Segment_Tracks_TrackEntry_CodecID()
 {
     //Parsing
-    Ztring Data;
-    Get_Local(Element_Size, Data,                               "Data"); Element_Info1(Data);
+    Ztring Data=String_Get();
 
     FILLING_BEGIN();
         if (Segment_Info_Count>1)
@@ -3215,8 +3212,7 @@ void File_Mk::Segment_Tracks_TrackEntry_FlagForced()
 void File_Mk::Segment_Tracks_TrackEntry_Language()
 {
     //Parsing
-    Ztring Data;
-    Get_Local(Element_Size, Data,                               "Data"); Element_Info1(Data);
+    Ztring Data=String_Get();
 
     FILLING_BEGIN();
         if (Segment_Info_Count>1)
@@ -3791,17 +3787,34 @@ void File_Mk::UTF8_Info()
 }
 
 //---------------------------------------------------------------------------
-Ztring File_Mk::Local_Get()
+Ztring File_Mk::String_Get()
 {
     Ztring Data;
-    Get_Local(Element_Size, Data,                               "Data"); Element_Info1(Data);
+    Get_UTF8(Element_Size, Data,                                "Data"); Element_Info1(Data);
+    if (Trace_Activated)
+    {
+        //Check that this is printable ASCII (0x20-0x7F) content only, accepting trailing NULL bytes
+        size_t s=Data.size();
+        while (s && !Data[s-1])
+            s--;
+        for (size_t i=0; i<s; i++)
+            if (Data[i]<0x20 || Data[i]>=0x80)
+            {
+                Param_Error("EBML-ASCII-ONLY-IN-STRING:1");
+                break;
+            }
+    }
     return Data;
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Local_Info()
+void File_Mk::String_Info()
 {
-    Info_Local(Element_Size, Data,                              "Data"); Element_Info1(Data);
+    #if MEDIAINFO_TRACE
+        String_Get(); //TODO: optimize by removal useless string copies
+    #else //MEDIAINFO_TRACE
+        Info_UTF8(Element_Size, Data,                               "Data"); Element_Info1(Data);
+    #endif //MEDIAINFO_TRACE
 }
 
 //***************************************************************************
