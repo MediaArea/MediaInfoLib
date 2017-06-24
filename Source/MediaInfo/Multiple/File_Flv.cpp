@@ -1514,6 +1514,11 @@ void File_Flv::meta_SCRIPTDATAVALUE(const std::string &StringData)
                         ValueS.From_Number(Value, 0);
                     Element_Info1(ValueS);
                 #endif //MEDIAINFO_TRACE
+                if (StreamKind==Stream_Video && ToFill=="FrameRate")
+                {
+                    if (Retrieve(Stream_Video, 0, Video_FrameRate).To_float32()<1000 && Value>=1000)
+                        ToFill.clear(); //Such incoherency was found in 1 file (e.g. 30 then 30000)
+                }
                 if (!ToFill.empty())
                 {
                     Fill(StreamKind, 0, ToFill.c_str(), ValueS, true);
@@ -1558,6 +1563,7 @@ void File_Flv::meta_SCRIPTDATAVALUE(const std::string &StringData)
                     else if (StringDataModified=="Encoded_With") {ToFill=General_Encoded_Application;}
                     else if (StringDataModified=="Encoded_By") {ToFill=General_Encoded_Application;}
                     else if (StringDataModified=="metadatacreator") {ToFill=General_Tagged_Application;}
+                    else if (StringDataModified=="title") {ToFill=General_Title;}
                     else if (StringDataModified=="creation_time") {ToFill=General_Encoded_Date; Value.insert(0, __T("UTC "));}
                     else if (StringDataModified=="sourcedata") {}
                     else if (StringDataModified=="audiocodecid") {}
