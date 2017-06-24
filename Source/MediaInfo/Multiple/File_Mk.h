@@ -285,7 +285,7 @@ private :
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapString();
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapLanguage();
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapLanguageIETF(){String_Info();};
-    void Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapCountry(){UTF8_Info();};
+    void Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapCountry(){String_Info();};
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess(){};
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessCodecID(){UInteger_Info();};
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessPrivate(){Skip_XX(Element_Size, "Data");};

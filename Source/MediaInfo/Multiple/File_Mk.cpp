@@ -1372,8 +1372,12 @@ void File_Mk::Header_Parse()
     }
 
     //Incoherencies
-    if (Element_Level<=2 && File_Offset+Buffer_Offset+Element_Offset+Size>File_Size)
-        Fill(Stream_General, 0, "IsTruncated", "Yes");
+    if (Element_Offset+Size>Element_TotalSize_Get())
+    {
+        Param_Error("TRUNCATED-ELEMENT:1");
+        if (Element_Level<=2)
+            Fill(Stream_General, 0, "IsTruncated", "Yes");
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -3791,19 +3795,21 @@ Ztring File_Mk::String_Get()
 {
     Ztring Data;
     Get_UTF8(Element_Size, Data,                                "Data"); Element_Info1(Data);
-    if (Trace_Activated)
-    {
-        //Check that this is printable ASCII (0x20-0x7F) content only, accepting trailing NULL bytes
-        size_t s=Data.size();
-        while (s && !Data[s-1])
-            s--;
-        for (size_t i=0; i<s; i++)
-            if (Data[i]<0x20 || Data[i]>=0x80)
-            {
-                Param_Error("EBML-ASCII-ONLY-IN-STRING:1");
-                break;
-            }
-    }
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            //Check that this is printable ASCII (0x20-0x7F) content only, accepting trailing NULL bytes
+            size_t s=Data.size();
+            while (s && !Data[s-1])
+                s--;
+            for (size_t i=0; i<s; i++)
+                if (Data[i]<0x20 || Data[i]>=0x80)
+                {
+                    Param_Error("EBML-ASCII-ONLY-IN-STRING:1");
+                    break;
+                }
+        }
+    #endif //MEDIAINFO_TRACE
     return Data;
 }
 
