@@ -536,7 +536,11 @@ void File_Ffv1::Get_RB (states &States, bool &Info, const char* Name)
     Info=RC->get_rac(States);
 
     if (Trace_Activated)
+    {
+        Element_Offset+=RC->BytesUsed();
         Param(Name, Info);
+        Element_Offset-=RC->BytesUsed();
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -545,7 +549,11 @@ void File_Ffv1::Get_RU (states &States, int32u &Info, const char* Name)
     Info=RC->get_symbol_u(States);
 
     if (Trace_Activated)
+    {
+        Element_Offset+=RC->BytesUsed();
         Param(Name, Info);
+        Element_Offset-=RC->BytesUsed();
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -554,7 +562,11 @@ void File_Ffv1::Get_RS (states &States, int32s &Info, const char* Name)
     Info=RC->get_symbol_s(States);
 
     if (Trace_Activated)
+    {
+        Element_Offset+=RC->BytesUsed();
         Param(Name, Info);
+        Element_Offset-=RC->BytesUsed();
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -563,7 +575,11 @@ void File_Ffv1::Get_RS (int8u* &States, int32s &Info, const char* Name)
     Info=RC->get_symbol_s(States);
 
     if (Trace_Activated)
+    {
+        Element_Offset+=RC->BytesUsed();
         Param(Name, Info);
+        Element_Offset-=RC->BytesUsed();
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -572,14 +588,22 @@ void File_Ffv1::Skip_RC (states &States, const char* Name)
     int8u Info=RC->get_rac(States);
 
     if (Trace_Activated)
+    {
+        Element_Offset+=RC->BytesUsed();
         Param(Name, Info);
+        Element_Offset-=RC->BytesUsed();
+    }
 }
 
 //---------------------------------------------------------------------------
 void File_Ffv1::Skip_RU (states &States, const char* Name)
 {
     if (Trace_Activated)
+    {
+        Element_Offset+=RC->BytesUsed();
         Param(Name, RC->get_symbol_u(States));
+        Element_Offset-=RC->BytesUsed();
+    }
     else
         RC->get_symbol_u(States);
 }
@@ -588,7 +612,11 @@ void File_Ffv1::Skip_RU (states &States, const char* Name)
 void File_Ffv1::Skip_RS (states &States, const char* Name)
 {
     if (Trace_Activated)
+    {
+        Element_Offset+=RC->BytesUsed();
         Param(Name, RC->get_symbol_s(States));
+        Element_Offset-=RC->BytesUsed();
+    }
     else
         RC->get_symbol_s(States);
 }
@@ -650,8 +678,8 @@ void File_Ffv1::Read_Buffer_OutOfBand()
     //Coherency tests
     if (Buffer_Size<4)
     {
-        Skip_XX(Element_Size,                                   "ConfigurationRecord size issue");
-        Reject();
+        Skip_XX(Element_Size,                                   "ConfigurationRecord");
+        Param_Error("FFV1-HEADER-END:1");
         return;
     }
     int32u CRC_32=FFv1_CRC_Compute(Buffer+Buffer_Offset, (size_t)Element_Size);
@@ -659,7 +687,6 @@ void File_Ffv1::Read_Buffer_OutOfBand()
     Element_Begin1("ConfigurationRecord");
     delete RC; RC=new RangeCoder(Buffer, Buffer_Size-4, Ffv1_default_state_transition);
     Parameters();
-    Element_Offset+=RC->BytesUsed();
     delete RC; RC=NULL;
     if (Element_Offset+4<Element_Size)
         Skip_XX(Element_Size-Element_Offset-4,                  "Reserved");
@@ -687,6 +714,9 @@ void File_Ffv1::Skip_Frame()
 //---------------------------------------------------------------------------
 void File_Ffv1::Read_Buffer_Continue()
 {
+    if (Frame_Count==0)
+        Accept(); //TODO: better check without removing error info in trace
+
     if (ConfigurationRecord_IsPresent && !Parameters_IsValid)
     {
         Skip_Frame();
@@ -731,84 +761,92 @@ void File_Ffv1::Read_Buffer_Continue()
     int32u tail = (version >= 3) ? 3 : 0;
     tail += ec == 1 ? 5 : 0;
 
-    int64u Slices_BufferPos=Element_Size;
     vector<int32u> Slices_BufferSizes;
-    if (version < 2)
-        Slices_BufferSizes.push_back(Element_Size);
-    else if (version == 2)
+    if (version>=3)
     {
-        Skip_Frame();
-        return;
-    }
-    else
-    {
+        int64u Slices_BufferPos=Element_Size;
         while (Slices_BufferPos)
         {
-            if (Slices_BufferPos < tail)
+            if (Slices_BufferPos<tail)
             {
                 //There is a problem
-                Slices_BufferSizes.insert(Slices_BufferSizes.begin(), Slices_BufferPos);
+                Slices_BufferSizes.clear();
                 break;
             }
 
-            int32u Size = BigEndian2int24u(Buffer + Buffer_Offset + (size_t)Slices_BufferPos - tail);
-            Size += tail;
+            int32u Size=BigEndian2int24u(Buffer+Buffer_Offset+(size_t)Slices_BufferPos-tail);
+            Size+=tail;
 
-            if (Size > Slices_BufferPos)
-                Size = Slices_BufferPos; //There is a problem
+            if (Size>Slices_BufferPos)
+            {
+                //There is a problem
+                Slices_BufferSizes.clear();
+                break;
+            }
             Slices_BufferPos-=Size;
 
             Slices_BufferSizes.insert(Slices_BufferSizes.begin(), Size);
         }
     }
 
-    Element_Offset=0;
-    for (size_t Pos = 0; Pos < Slices_BufferSizes.size(); Pos++)
+    size_t Pos=0;
+    BuggySlices=false;
+    while (Element_Offset<Element_Size || (!Pos && coder_type)) // With some v0 RC, content may be in the last byte of the RC which is also in the Parameter() part
     {
         Element_Begin1("Slice");
         int64u Element_Offset_Begin=Element_Offset;
         int64u Element_Size_Save=Element_Size;
-        Element_Size=Element_Offset+Slices_BufferSizes[Pos]-tail;
+        if (Pos<Slices_BufferSizes.size())
+            Element_Size=Element_Offset+Slices_BufferSizes[Pos];
         int32u crc_left=0;
-
         if (ec == 1)
-            crc_left=FFv1_CRC_Compute(Buffer+Buffer_Offset+(size_t)Element_Offset, Slices_BufferSizes[Pos]);
+            crc_left=FFv1_CRC_Compute(Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset));
+        Element_Size-=tail;
 
         if (Pos)
         {
-            delete RC; RC = new RangeCoder(Buffer+Buffer_Offset+(size_t)Element_Offset, Slices_BufferSizes[Pos]-tail, state_transitions_table);
+            delete RC; RC = new RangeCoder(Buffer+Buffer_Offset+(size_t)Element_Offset, Element_Size-Element_Offset, state_transitions_table);
         }
         else
         {
-            RC->ResizeBuffer(Slices_BufferSizes[0]-tail);
+            RC->ResizeBuffer(Element_Size);
             RC->AssignStateTransitions(state_transitions_table);
         }
 
-#if MEDIAINFO_TRACE
-        if (!Frame_Count || Trace_Activated) // Parse slice only if trace feature is activated
+        //SliceHeader
+        bool ParseContent;
+        if (version>=3)
         {
-            if (!slice(States))
-            {
-                int64u SliceRealSize=Element_Offset-Element_Offset_Begin;
-                Element_Offset=Element_Offset_Begin;
-                Skip_XX(SliceRealSize,                          "slice_data");
-                if (!Trusted_Get() || RC->Underrun() || Element_Offset != Element_Size)
-                {
-                    Element_Error("FFV1-SLICE-SliceContent:1");
-                }
-                Element_End0();
-            }
+            ParseContent=SliceHeader(States);
+            if (!ParseContent)
+                BuggySlices=true;
         }
-#endif //MEDIAINFO_TRACE
+        else
+            ParseContent=true;
 
+        //SliceContent
+        #if MEDIAINFO_TRACE
+        if (ParseContent && (!Frame_Count || Trace_Activated)) // Parse slice only if trace feature is activated
+        {
+            SliceContent(States);
+        }
+        else
+        #endif //MEDIAINFO_TRACE
+            Skip_XX(Element_Size-Element_Offset,                "SliceContent");
         if (Element_Offset<Element_Size)
-            Skip_XX(Element_Size-Element_Offset,                "Junk?");
+        {
+            Skip_XX(Element_Size-Element_Offset,                "Junk");
+            Param_Error("FFV1-SLICE-JUNK:1");
+        }
+
+        //SliceFooter
         Element_Size=Element_Size_Save;
-        if (version >= 3)
+        if (version>=3)
         {
             Element_Begin1("SliceFooter");
-            Skip_B3(                                            "slice_size");
-            if (false) //TODO
+            int32u slice_size;
+            Get_B3 (slice_size,                                 "slice_size");
+            if (Element_Offset_Begin+slice_size+3!=Element_Offset)
                 Param_Error("FFV1-SLICE-slice_size:1");
             if (ec == 1)
             {
@@ -839,7 +877,34 @@ void File_Ffv1::Read_Buffer_Continue()
                 Element_End0();
             }
         }
+
+        Element_End0();
+        Pos++;
     }
+
+    //Integrity test
+    if (!BuggySlices && version>=3 && slices)
+    {
+        vector<size_t> SlicesPlaces;
+        size_t SlicesPlaces_Size=num_h_slices*num_v_slices;
+        SlicesPlaces.resize(num_h_slices*num_v_slices);
+        Slice* Slice_Max=slices+SlicesPlaces_Size;
+        current_slice=slices;
+        while (current_slice<Slice_Max)
+        {
+            if (current_slice->sample_buffer)
+                SlicesPlaces[current_slice->slice_y*num_v_slices+current_slice->slice_x]++;
+
+            current_slice++;
+        }
+        for (size_t i=0; i<SlicesPlaces_Size; i++)
+            if (SlicesPlaces[i]!=1)
+            {
+                Element_Error("FFV1-FRAME-END:1");
+                break;
+            }
+    }
+
     Element_End0();
 
     FILLING_BEGIN();
@@ -1009,7 +1074,8 @@ void File_Ffv1::Parameters()
         }
     for (size_t i=0; i<quant_table_count; i++)
     {
-        Element_Begin1("initial_state");
+        if (version>=2)
+            Element_Begin1("initial_state");
         bool present=false;
         if (version>=2)
             Get_RB (States, present,                                "states_coded");
@@ -1048,7 +1114,8 @@ void File_Ffv1::Parameters()
                     plane_states[i][j][k] = 128;
             }
         }
-        Element_End0();
+        if (version>=2)
+            Element_End0();
     }
 
     if (version>=3)
@@ -1070,7 +1137,22 @@ void File_Ffv1::Parameters()
                 return;
             }
         }
+        else
+            intra=0;
     }
+    else
+    {
+        ec=0;
+        intra=0;
+    }
+
+    if (!coder_type && version<=1)
+    {
+        states States;
+        memset(States, 129, states_size);
+        Skip_RC(States,                                         "end");
+    }
+
     Element_End0();
 
     FILLING_BEGIN();
@@ -1161,12 +1243,8 @@ void File_Ffv1::Parameters()
 }
 
 //---------------------------------------------------------------------------
-int File_Ffv1::slice(states &States)
+void File_Ffv1::SliceContent(states &States)
 {
-    if (version>2)
-        if (slice_header(States) < 0)
-            return -1;
-
     Element_Begin1("SliceContent");
 
     #if MEDIAINFO_TRACE
@@ -1228,6 +1306,9 @@ int File_Ffv1::slice(states &States)
     else if (colorspace_type == 1)
         rgb();
 
+    if (BS->BufferUnderRun || RC->Underrun())
+        Element_Error("FFV1-SLICE-SliceContent:1");
+
     if (!coder_type)
         BS_End();
 
@@ -1238,7 +1319,7 @@ int File_Ffv1::slice(states &States)
             int8u s = 129;
             RC->get_rac(&s);
         }
-        Element_Offset+=RC->BytesUsed();
+        Skip_XX(RC->BytesUsed(),                                "slice_data");
     }
 
     #if MEDIAINFO_DECODE
@@ -1248,12 +1329,11 @@ int File_Ffv1::slice(states &States)
     #if MEDIAINFO_TRACE
         Trace_Activated=Trace_Activated_Save; // Trace is too huge, reactivating after during pixel decoding
     #endif //MEDIAINFO_TRACE
-
-    return 0;
+    Element_End0();
 }
 
 //---------------------------------------------------------------------------
-int File_Ffv1::slice_header(states &States)
+bool File_Ffv1::SliceHeader(states &States)
 {
     Element_Begin1("SliceHeader");
 
@@ -1265,7 +1345,7 @@ int File_Ffv1::slice_header(states &States)
     {
         Param_Error("FFV1-SLICE-slice_xywh:1");
         Element_End0();
-        return -1;
+        return false;
     }
 
     Get_RU (States, slice_y,                                "slice_y");
@@ -1273,7 +1353,7 @@ int File_Ffv1::slice_header(states &States)
     {
         Param_Error("FFV1-SLICE-slice_xywh:1");
         Element_End0();
-        return -1;
+        return false;
     }
 
     Get_RU (States, slice_width_minus1,                     "slice_width_minus1");
@@ -1282,7 +1362,7 @@ int File_Ffv1::slice_header(states &States)
     {
         Param_Error("FFV1-SLICE-slice_xywh:1");
         Element_End0();
-        return -1;
+        return false;
     }
 
     Get_RU (States, slice_height_minus1,                    "slice_height_minus1");
@@ -1291,10 +1371,14 @@ int File_Ffv1::slice_header(states &States)
     {
         Param_Error("FFV1-SLICE-slice_xywh:1");
         Element_End0();
-        return -1;
+        return false;
     }
 
     current_slice = &slices[slice_x + slice_y * num_h_slices];
+    current_slice->slice_x = slice_x;
+    current_slice->slice_y = slice_y;
+    current_slice->slice_w = slice_x2;
+    current_slice->slice_h = slice_y2;
 
     //Computing boundaries, being careful about how are computed boundaries when there is not an integral number for Width  / num_h_slices or Height / num_v_slices (the last slice has more pixels)
     current_slice->x = slice_x  * Width  / num_h_slices;
@@ -1310,7 +1394,7 @@ int File_Ffv1::slice_header(states &States)
         {
             Param_Error("FFV1-SLICE-quant_table_index:1");
             Element_End0();
-            return -1;
+            return false;
         }
     }
     Get_RU (States, picture_structure,                      "picture_structure");
@@ -1327,8 +1411,16 @@ int File_Ffv1::slice_header(states &States)
 
     RC->AssignStateTransitions(state_transitions_table);
 
+    if (!coder_type)
+    {
+        states States;
+        memset(States, 129, states_size);
+        Skip_RC(States,                                     "end");
+    }
+    //Element_Offset+=RC->BytesUsed(); // Computing how many bytes where consumed by the range coder
+
     Element_End0();
-    return 0;
+    return true;
 }
 
 //---------------------------------------------------------------------------

@@ -89,6 +89,10 @@ public:
     void    run_mode_init() { run_segment_length = 0; run_mode=RUN_MODE_STOP; }
 
     //TEMP
+    int32u  slice_x;
+    int32u  slice_y;
+    int32u  slice_w;
+    int32u  slice_h;
     int32u  x;
     int32u  y;
     int32u  w;
@@ -199,8 +203,8 @@ private :
 
     //Elements
     void   Parameters();
-    int    slice(states &States);
-    int    slice_header(states &States);
+    bool   SliceHeader(states &States);
+    void   SliceContent(states &States);
     int32s get_symbol_with_bias_correlation(Slice::ContextPtr context);
     void rgb();
     void plane(int32u pos);
@@ -273,6 +277,7 @@ private :
     int32u  sample_aspect_ratio_den;
     bool    keyframe;
     bool    chroma_planes;
+    bool    BuggySlices;
     state_transitions state_transitions_table;
     size_t  quant_table_index_count;
 
