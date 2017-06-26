@@ -3096,9 +3096,9 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_vids()
     Element_Info1("Copy of vids");
 
     //Parsing
-    int32u Width, Height, Compression;
+    int32u Size, Width, Height, Compression;
     int16u Resolution;
-    Skip_L4(                                                    "Size");
+    Get_L4 (Size,                                               "Size");
     Get_L4 (Width,                                              "Width");
     Get_L4 (Height,                                             "Height");
     Skip_L2(                                                    "Planes");
@@ -3168,8 +3168,13 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_vids()
     if (Data_Remain())
     {
         Element_Begin1("Private data");
-        Open_Buffer_OutOfBand(Stream[TrackNumber].Parser);
+        if (Size>Element_Size)
+            Size=Element_Size;
+        Open_Buffer_OutOfBand(Stream[TrackNumber].Parser, Size-Element_Offset);
         Element_End0();
+
+        if (Element_Offset<Element_Size)
+            Skip_XX(Element_Size-Element_Offset,                "Padding");
     }
 }
 
