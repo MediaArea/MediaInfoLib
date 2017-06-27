@@ -22,7 +22,7 @@ Google Video;;;M;Riff;Hack of AVI;gvi;;http://video.google.com/playerdownload.ht
 ISM;Internet Streaming Media;;M;Ism;;ism;;;
 IVF;;;M;Ivf;;ivf;;;
 LXF;;;M;Lxf;;lxf;video/lxf;;
-Matroska;;;M;Mk;;mkv mk3d mka mks;;http://packs.matroska.org/;
+Matroska;;;M;Mk;;mkv mk3d mka mks;;https://matroska.org/downloads/windows.html;
 MPEG-PS;;;M;MpegPs;;mpeg mpg m2p vob pss evo;video/MP2P;;
 MPEG-TS;;;M;MpegTs;;ts m2t m2s m4t m4s tmf ts tp trp ty;video/MP2T;;
 MPEG-4;;;M;Mpeg4;;mov mp4 m4v m4a m4b m4p 3ga 3gpa 3gpp 3gp 3gpp2 3g2 k3g jpm jpx mqv ismv isma ismt f4a f4b f4v;video/mp4;;
@@ -62,12 +62,13 @@ YUV;;;V;;;;;;Lossless
 AAC;;;A;;Advanced Audio Codec;;;;Lossy
 AC-3;;;A;Ac3;Audio Coding 3;ac3;;;Lossy
 ADIF;;;A;Adif;Audio Data Interchange Format;;;;
-ADTS;;;A;Adts;Audio Data Transport Stream;aac;;;
+ADTS;;;A;Adts;Audio Data Transport Stream;aac aacp adts;;;
 ALS;;;A;Als;MPEG-4 Audio Lossless Coding;als;;http://www.nue.tu-berlin.de/forschung/projekte/lossless/mp4als.html#downloads;Lossless
 AMR;;;A;Amr;Adaptive Multi-Rate;amr;audio/AMR;http://www.apple.com/quicktime/download/standalone.html;
 Atrac;;;A;;;;audio/ATRAC;;Lossy
 Atrac3;;;A;;;;audio/ATRAC3;;Lossy
 AU;;;A;Au;uLaw/AU Audio File;au;audio/basic;;
+CAF;;;A;Caf;Core Audio Format;caf;audio/x-caf;https://developer.apple.com/library/content/documentation/MusicAudio/Reference/CAFSpec/CAF_overview/CAF_overview.html;
 DolbyE;;;A;Aes3;;dde
 DTS;;;A;Dts;Digital Theater Systems;dts dtshd;;;Lossy
 DTS-HD;;;A;Dts;Digital Theater Systems;dts dtshd;;;Lossy
@@ -90,6 +91,7 @@ OpenMG;;;A;OpenMG;;oma omg aa3 at3;;;Lossy
 Musepack SV7;;;A;Mpc;;mpc;;http://www.musepack.net;Lossy
 Musepack SV8;;;A;Mpc;;mp+;;http://www.musepack.net;Lossy
 QCELP;;;A;;;;audio/QCELP;;
+QLCM;;;A;Riff;;qcp;;https://tools.ietf.org/html/rfc3625;Lossy
 RIFF-MIDI;;;A;Riff;RIFF Musical Instrument Digital Interface;;;;
 RKAU;RK Audio;;A;Rkau;;rka;;http://www.msoftware.co.nz;
 Scream Tracker 3;;;A;S3m;;s3m;;;
