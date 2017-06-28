@@ -939,15 +939,15 @@ void File_Ffv1::Parameters()
     Get_RU (States, version,                                    "version");
     if ( ConfigurationRecord_IsPresent && version<=1)
     {
-        Accept(); //TODO: better check without removing error info in trace
         Param_Error("FFV1-HEADER-version-OUTOFBAND:1");
+        Accept(); //TODO: better check without removing error info in trace
         Element_End0();
         return;
     }
     if (!ConfigurationRecord_IsPresent && version> 1)
     {
-        Accept(); //TODO: better check without removing error info in trace
         Param_Error("FFV1-HEADER-version-OUTOFBAND:1");
+        Accept(); //TODO: better check without removing error info in trace
         Element_End0();
         return;
     }
