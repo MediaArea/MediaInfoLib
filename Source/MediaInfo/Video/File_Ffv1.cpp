@@ -714,9 +714,6 @@ void File_Ffv1::Skip_Frame()
 //---------------------------------------------------------------------------
 void File_Ffv1::Read_Buffer_Continue()
 {
-    if (Frame_Count==0)
-        Accept(); //TODO: better check without removing error info in trace
-
     if (ConfigurationRecord_IsPresent && !Parameters_IsValid)
     {
         Skip_Frame();
@@ -914,7 +911,6 @@ void File_Ffv1::Read_Buffer_Continue()
             Fill(Stream_Video, 0, Video_ScanOrder, Ffv1_picture_structure_ScanOrder(picture_structure));
             if (sample_aspect_ratio_num && sample_aspect_ratio_den)
                 Fill(Stream_Video, 0, Video_PixelAspectRatio, ((float64)sample_aspect_ratio_num)/sample_aspect_ratio_den);
-            Accept();
         }
 
         Frame_Count++;
@@ -943,12 +939,14 @@ void File_Ffv1::Parameters()
     Get_RU (States, version,                                    "version");
     if ( ConfigurationRecord_IsPresent && version<=1)
     {
+        Accept(); //TODO: better check without removing error info in trace
         Param_Error("FFV1-HEADER-version-OUTOFBAND:1");
         Element_End0();
         return;
     }
     if (!ConfigurationRecord_IsPresent && version> 1)
     {
+        Accept(); //TODO: better check without removing error info in trace
         Param_Error("FFV1-HEADER-version-OUTOFBAND:1");
         Element_End0();
         return;
@@ -978,6 +976,8 @@ void File_Ffv1::Parameters()
         Element_End0();
         return;
     }
+    if (Frame_Count==0)
+        Accept(); //TODO: better check without removing error info in trace
     Get_RU (States, coder_type,                                 "coder_type");
     if (coder_type>2)
     {
