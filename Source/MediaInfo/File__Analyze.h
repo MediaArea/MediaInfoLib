@@ -395,7 +395,7 @@ protected :
         if (Config_Trace_Level<=0.7)
             return;
 
-        if (Parameter && std::string(Parameter) == "NOK")
+        if ((Parameter && std::string(Parameter) == "NOK") || (Measure && std::string(Measure) == "Error"))
             Element[Element_Level].TraceNode.HasError = true;
 
         Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
@@ -521,7 +521,7 @@ public :
         if (Config_Trace_Level<=0.7)
             return;
 
-        if (Parameter && std::string(Parameter) == "NOK")
+        if ((Parameter && std::string(Parameter) == "NOK") || (Measure && std::string(Measure) == "Error"))
             Element[Element_Level].TraceNode.HasError = true;
 
         int32s child = Element[Element_Level].TraceNode.Current_Child;
