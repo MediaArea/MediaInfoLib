@@ -59,7 +59,7 @@ File_Aac::File_Aac()
     IsRawStream=true;
 
     //In
-    Frame_Count_Valid=MediaInfoLib::Config.ParseSpeed_Get()>=0.5?128:(MediaInfoLib::Config.ParseSpeed_Get()>=0.3?32:8);
+    Frame_Count_Valid=0;
     FrameIsAlwaysComplete=false;
     Mode=Mode_Unknown;
 
@@ -204,6 +204,9 @@ void File_Aac::Streams_Finish()
 //---------------------------------------------------------------------------
 bool File_Aac::FileHeader_Begin()
 {
+    if (!Frame_Count_Valid)
+        Frame_Count_Valid=Config->ParseSpeed>=0.5?128:(Config->ParseSpeed>=0.3?32:8);
+
     switch(Mode)
     {
         case Mode_AudioSpecificConfig :

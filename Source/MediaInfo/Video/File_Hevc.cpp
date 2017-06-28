@@ -156,7 +156,7 @@ File_Hevc::File_Hevc()
     Frame_Count_NotParsedIncluded=0;
 
     //In
-    Frame_Count_Valid=MediaInfoLib::Config.ParseSpeed_Get()>=0.3?16:16; //Note: should be replaced by "512:2" when I-frame/GOP detection is OK
+    Frame_Count_Valid=0;
     FrameIsAlwaysComplete=false;
     MustParse_VPS_SPS_PPS=false;
     MustParse_VPS_SPS_PPS_FromMatroska=false;
@@ -750,6 +750,9 @@ bool File_Hevc::Demux_UnpacketizeContainer_Test()
 //---------------------------------------------------------------------------
 void File_Hevc::Synched_Init()
 {
+    if (!Frame_Count_Valid)
+        Frame_Count_Valid=Config->ParseSpeed>=0.3?16:16; //Note: should be replaced by "512:2" when I-frame/GOP detection is OK
+
     //FrameInfo
     PTS_End=0;
     if (!IsSub)
@@ -1183,7 +1186,7 @@ void File_Hevc::slice_segment_layer()
                 if (Frame_Count>=Frame_Count_Valid)
                 {
                     Fill("HEVC");
-                    if (!IsSub && MediaInfoLib::Config.ParseSpeed_Get()<1.0)
+                    if (!IsSub && Config->ParseSpeed<1.0)
                         Finish("HEVC");
                 }
             }

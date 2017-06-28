@@ -2390,7 +2390,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
         #endif //MEDIAINFO_DEMUX
             Open_Buffer_Continue(streamItem.Parser, (size_t)(Element_Size-Element_Offset));
         if (streamItem.Parser->Status[IsFinished]
-            || (streamItem.PacketCount>=300 && MediaInfoLib::Config.ParseSpeed_Get()<1))
+            || (streamItem.PacketCount>=300 && Config->ParseSpeed<1.0))
         {
             streamItem.Searching_Payload=false;
             if (!streamItem.Searching_TimeStamps && !streamItem.Searching_TimeStamp_Start)
@@ -2422,7 +2422,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
     if (!Status[IsFilled] && ((Frame_Count>6 && (Stream_Count==0 ||Config->ParseSpeed==0.0)) || Frame_Count>512*Stream.size()))
     {
         Fill();
-        if (MediaInfoLib::Config.ParseSpeed_Get()<1)
+        if (Config->ParseSpeed<1.0)
         {
             //Jumping
             std::sort(Segment_Seeks.begin(), Segment_Seeks.end());

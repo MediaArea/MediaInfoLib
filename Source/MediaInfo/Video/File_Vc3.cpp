@@ -691,7 +691,7 @@ void File_Vc3::Data_Parse()
         {
             Fill("VC-3");
 
-            if (!IsSub && Config->ParseSpeed<1)
+            if (!IsSub && Config->ParseSpeed<1.0)
                 Finish("VC-3");
         }
     FILLING_END();
