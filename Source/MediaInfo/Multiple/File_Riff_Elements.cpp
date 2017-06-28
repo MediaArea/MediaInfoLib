@@ -1099,7 +1099,7 @@ void File_Riff::AVI__hdlr_strl_indx_StandardIndex(int32u Entry_Count, int32u Chu
         Element_Offset+=8;
 
         //Stream Position and size
-        if (Pos<300 || MediaInfoLib::Config.ParseSpeed_Get()==1.00)
+        if (Pos<300 || Config->ParseSpeed>=1.0)
         {
             Stream_Structure[BaseOffset+Offset-8].Name=ChunkId&0xFFFF0000;
             Stream_Structure[BaseOffset+Offset-8].Size=Size;
@@ -1813,7 +1813,7 @@ void File_Riff::AVI__hdlr_strl_strf_vids()
         File_Mpeg4v* Parser=new File_Mpeg4v;
         Stream[Stream_ID].Specific_IsMpeg4v=true;
         Parser->FrameIsAlwaysComplete=true;
-        if (MediaInfoLib::Config.ParseSpeed_Get()>=0.5)
+        if (Config->ParseSpeed>=0.5)
             Parser->ShouldContinueParsing=true;
         Stream[Stream_ID].Parsers.push_back(Parser);
     }
@@ -2632,7 +2632,7 @@ void File_Riff::AVI__movi_xxxx___dc()
     stream& StreamItem = Stream[Stream_ID];
     if (StreamItem.Parsers.empty()
      || StreamItem.Parsers[0]->Status[IsFinished]
-     || (StreamItem.PacketPos>=300 && MediaInfoLib::Config.ParseSpeed_Get()<1.00))
+     || (StreamItem.PacketPos>=300 && Config->ParseSpeed<1.00))
     {
         StreamItem.SearchingPayload=false;
         stream_Count--;
@@ -2675,7 +2675,7 @@ void File_Riff::AVI__movi_xxxx___wb()
     if (StreamItem.PacketPos>=4 //For having the chunk alignement
      && (StreamItem.Parsers.empty()
       || StreamItem.Parsers[0]->Status[IsFinished]
-      || (StreamItem.PacketPos>=300 && MediaInfoLib::Config.ParseSpeed_Get()<1.00)))
+      || (StreamItem.PacketPos>=300 && Config->ParseSpeed<1.00)))
     {
         StreamItem.SearchingPayload=false;
         stream_Count--;

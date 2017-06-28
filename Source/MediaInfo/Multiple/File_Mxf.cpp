@@ -6369,7 +6369,7 @@ void File_Mxf::Data_Parse()
         MustSynchronize=true;
     }
 
-    if ((!IsParsingEnd && IsParsingMiddle_MaxOffset==(int64u)-1 && MediaInfoLib::Config.ParseSpeed_Get()<1.0)
+    if ((!IsParsingEnd && IsParsingMiddle_MaxOffset==(int64u)-1 && Config->ParseSpeed<1.0)
      && ((!IsSub && File_Offset>=Buffer_PaddingBytes+0x4000000) //TODO: 64 MB by default (security), should be changed
       || (Streams_Count==0 && !Descriptors.empty())))
     {
@@ -7198,7 +7198,7 @@ void File_Mxf::RandomIndexPack()
     Skip_B4(                                                    "Length");
 
     FILLING_BEGIN();
-        if (MediaInfoLib::Config.ParseSpeed_Get()<1.0 && !RandomIndexPacks_AlreadyParsed && !RandomIndexPacks.empty() && Config->File_Mxf_ParseIndex_Get())
+        if (Config->ParseSpeed<1.0 && !RandomIndexPacks_AlreadyParsed && !RandomIndexPacks.empty() && Config->File_Mxf_ParseIndex_Get())
         {
             IsParsingEnd=true;
             GoTo(RandomIndexPacks[0].ByteOffset);
@@ -16609,6 +16609,7 @@ void File_Mxf::ChooseParser_Mpeg4v(const essences::iterator &Essence, const desc
     //Filling
     #if defined(MEDIAINFO_MPEG4V_YES)
         File_Mpeg4v* Parser=new File_Mpeg4v;
+        Open_Buffer_Init(Parser);
         Parser->OnlyVOP();
     #else
         //Filling

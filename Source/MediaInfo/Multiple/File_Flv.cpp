@@ -881,7 +881,7 @@ void File_Flv::Data_Parse()
         if ((((Count_Get(Stream_Video)==0 || Stream[Stream_Video].TimeStamp!=(int32u)-1)
            && (Count_Get(Stream_Audio)==0 || Stream[Stream_Audio].TimeStamp!=(int32u)-1))
           || (File_Size>1024*1024*2 && File_Offset+Buffer_Offset-Header_Size-PreviousTagSize-4<File_Size-1024*1024))
-         && Config->ParseSpeed<1)
+         && Config->ParseSpeed<1.0)
             File__Analyze::Finish();
         else if (Element_Code==0xFA) //RM metadata have a malformed PreviousTagSize, always
         {
@@ -894,7 +894,7 @@ void File_Flv::Data_Parse()
         else
             File__Analyze::GoTo(File_Offset+Buffer_Offset-Header_Size-PreviousTagSize-4);
     }
-    else if (!Status[IsFilled] && !video_stream_Count && !audio_stream_Count && video_stream_FrameRate_Detected && File_Offset+1024*1024*2<File_Size && MediaInfoLib::Config.ParseSpeed_Get()<1) //All streams are parsed
+    else if (!Status[IsFilled] && !video_stream_Count && !audio_stream_Count && video_stream_FrameRate_Detected && File_Offset+1024*1024*2<File_Size && Config->ParseSpeed<1.0) //All streams are parsed
     {
         Fill();
 
@@ -932,7 +932,7 @@ void File_Flv::video()
     }
 
     //Needed?
-    if (!video_stream_Count && Config->ParseSpeed<1)
+    if (!video_stream_Count && Config->ParseSpeed<1.0)
         return; //No more need of Video stream
 
     //Parsing
@@ -1258,7 +1258,7 @@ void File_Flv::audio()
     }
 
     //Needed?
-    if (!audio_stream_Count && Config->ParseSpeed<1)
+    if (!audio_stream_Count && Config->ParseSpeed<1.0)
         return; //No more need of Audio stream
 
     //Parsing
