@@ -402,7 +402,8 @@ foreach(HEADER ${MediaInfoLib_PUBLIC_HDRS})
 endforeach(HEADER ${MediaInfoLib_PUBLIC_HDRS})
 
 # pkg-config
-if(NOT WIN32)
+find_package(PkgConfig)
+if(PKG_CONFIG_FOUND)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libmediainfo.pc.in
                  ${CMAKE_CURRENT_BINARY_DIR}/libmediainfo.pc
                  @ONLY)
