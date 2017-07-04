@@ -348,6 +348,7 @@ if(NOT CURL_FOUND)
 else()
   include_directories(${CURL_INCLUDE_DIRS})
   target_link_libraries(mediainfo "${CURL_LIBRARIES}")
+  set(CURL_PC "libcurl")
 endif()
 
 target_include_directories(mediainfo PRIVATE
