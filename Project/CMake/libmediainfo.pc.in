@@ -8,4 +8,4 @@ Version: @MediaInfoLib_VERSION@
 Description: MediaInfoLib
 Libs: -L${libdir} -lmediainfo
 Cflags: -I${includedir}
-Requires: libzen
+Requires: libzen @CURL_PC@
