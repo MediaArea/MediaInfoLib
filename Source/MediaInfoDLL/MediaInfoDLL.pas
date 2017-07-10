@@ -7,6 +7,8 @@ unit MediaInfoDll;
     http://MediaArea.net/MediaInfo
 }
 
+// Defines how the DLL is called (dynamic or static)
+//{$DEFINE STATIC}
 
 interface
 uses
@@ -67,12 +69,12 @@ type TMIInfoOption =
   // Ansi methods
   function  MediaInfoA_New(): Cardinal cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll';
   procedure MediaInfoA_Delete(Handle: Cardinal) cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll';
-  function  MediaInfoA_Open(Handle: Cardinal; File__: PChar): Cardinal cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll';
+  function  MediaInfoA_Open(Handle: Cardinal; File__: PAnsiChar): Cardinal cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll';
   procedure MediaInfoA_Close(Handle: Cardinal) cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll';
-  function  MediaInfoA_Inform(Handle: Cardinal; Reserved: Integer): PChar cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll';
-  function  MediaInfoA_GetI(Handle: Cardinal; StreamKind: TMIStreamKind; StreamNumber: Integer; Parameter: Integer; KindOfInfo: TMIInfo): PChar cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll'; //Default: KindOfInfo=Info_Text
-  function  MediaInfoA_Get(Handle: Cardinal; StreamKind: TMIStreamKind; StreamNumber: Integer; Parameter: PChar; KindOfInfo: TMIInfo; KindOfSearch: TMIInfo): PChar cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll'; //Default: KindOfInfo=Info_Text, KindOfSearch=Info_Name
-  function  MediaInfoA_Option(Handle: Cardinal; Option: PChar; Value: PChar): PChar cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll';
+  function  MediaInfoA_Inform(Handle: Cardinal; Reserved: Integer): PAnsiChar cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll';
+  function  MediaInfoA_GetI(Handle: Cardinal; StreamKind: TMIStreamKind; StreamNumber: Integer; Parameter: Integer; KindOfInfo: TMIInfo): PAnsiChar cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll'; //Default: KindOfInfo=Info_Text
+  function  MediaInfoA_Get(Handle: Cardinal; StreamKind: TMIStreamKind; StreamNumber: Integer; Parameter: PAnsiChar; KindOfInfo: TMIInfo; KindOfSearch: TMIInfo): PAnsiChar cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll'; //Default: KindOfInfo=Info_Text, KindOfSearch=Info_Name
+  function  MediaInfoA_Option(Handle: Cardinal; Option: PAnsiChar; Value: PAnsiChar): PAnsiChar cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll';
   function  MediaInfoA_State_Get(Handle: Cardinal): Integer cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll';
   function  MediaInfoA_Count_Get(Handle: Cardinal; StreamKind: TMIStreamKind; StreamNumber: Integer): Integer cdecl  {$IFDEF WIN32} stdcall {$ENDIF};external 'MediaInfo.Dll';
 {$ELSE}
@@ -81,28 +83,28 @@ var
   LibHandle: THandle = 0;
 
   // Unicode methods
-  MediaInfo_New:        function  (): Cardinal cdecl stdcall;
-  MediaInfo_Delete:     procedure (Handle: Cardinal) cdecl stdcall;
-  MediaInfo_Open:       function  (Handle: Cardinal; File__: PWideChar): Cardinal cdecl stdcall;
-  MediaInfo_Close:      procedure (Handle: Cardinal) cdecl stdcall;
-  MediaInfo_Inform:     function  (Handle: Cardinal; Reserved: Integer): PWideChar cdecl stdcall;
-  MediaInfo_GetI:       function  (Handle: Cardinal; StreamKind: TMIStreamKind; StreamNumber: Integer; Parameter: Integer;   KindOfInfo: TMIInfo): PWideChar cdecl stdcall; //Default: KindOfInfo=Info_Text,
-  MediaInfo_Get:        function  (Handle: Cardinal; StreamKind: TMIStreamKind; StreamNumber: Integer; Parameter: PWideChar; KindOfInfo: TMIInfo; KindOfSearch: TMIInfo): PWideChar cdecl stdcall; //Default: KindOfInfo=Info_Text, KindOfSearch=Info_Name
-  MediaInfo_Option:     function  (Handle: Cardinal; Option: PWideChar; Value: PWideChar): PWideChar cdecl stdcall;
-  MediaInfo_State_Get:  function  (Handle: Cardinal): Integer cdecl stdcall;
-  MediaInfo_Count_Get:  function  (Handle: Cardinal; StreamKind: TMIStreamKind; StreamNumber: Integer): Integer cdecl stdcall;
+  MediaInfo_New:        function  (): THandle cdecl stdcall;
+  MediaInfo_Delete:     procedure (Handle: THandle) cdecl stdcall;
+  MediaInfo_Open:       function  (Handle: THandle; File__: PWideChar): Cardinal cdecl stdcall;
+  MediaInfo_Close:      procedure (Handle: THandle) cdecl stdcall;
+  MediaInfo_Inform:     function  (Handle: THandle; Reserved: Integer): PWideChar cdecl stdcall;
+  MediaInfo_GetI:       function  (Handle: THandle; StreamKind: TMIStreamKind; StreamNumber: Integer; Parameter: Integer;   KindOfInfo: TMIInfo): PWideChar cdecl stdcall; //Default: KindOfInfo=Info_Text,
+  MediaInfo_Get:        function  (Handle: THandle; StreamKind: TMIStreamKind; StreamNumber: Integer; Parameter: PWideChar; KindOfInfo: TMIInfo; KindOfSearch: TMIInfo): PWideChar cdecl stdcall; //Default: KindOfInfo=Info_Text, KindOfSearch=Info_Name
+  MediaInfo_Option:     function  (Handle: THandle; Option: PWideChar; Value: PWideChar): PWideChar cdecl stdcall;
+  MediaInfo_State_Get:  function  (Handle: THandle): Integer cdecl stdcall;
+  MediaInfo_Count_Get:  function  (Handle: THandle; StreamKind: TMIStreamKind; StreamNumber: Integer): Integer cdecl stdcall;
 
   // Ansi methods
-  MediaInfoA_New:       function  (): Cardinal cdecl stdcall;
-  MediaInfoA_Delete:    procedure (Handle: Cardinal) cdecl stdcall;
-  MediaInfoA_Open:      function  (Handle: Cardinal; File__: PChar): Cardinal cdecl stdcall;
-  MediaInfoA_Close:     procedure (Handle: Cardinal) cdecl stdcall;
-  MediaInfoA_Inform:    function  (Handle: Cardinal; Reserved: Integer): PChar cdecl stdcall;
-  MediaInfoA_GetI:      function  (Handle: Cardinal; StreamKind: TMIStreamKind; StreamNumber: Integer; Parameter: Integer; KindOfInfo: TMIInfo): PChar cdecl stdcall; //Default: KindOfInfo=Info_Text
-  MediaInfoA_Get:       function  (Handle: Cardinal; StreamKind: TMIStreamKind; StreamNumber: Integer; Parameter: PChar;   KindOfInfo: TMIInfo; KindOfSearch: TMIInfo): PChar cdecl stdcall; //Default: KindOfInfo=Info_Text, KindOfSearch=Info_Name
-  MediaInfoA_Option:    function  (Handle: Cardinal; Option: PChar; Value: PChar): PChar cdecl stdcall;
-  MediaInfoA_State_Get: function  (Handle: Cardinal): Integer cdecl stdcall;
-  MediaInfoA_Count_Get: function  (Handle: Cardinal; StreamKind: TMIStreamKind; StreamNumber: Integer): Integer cdecl stdcall;
+  MediaInfoA_New:       function  (): THandle cdecl stdcall;
+  MediaInfoA_Delete:    procedure (Handle: THandle) cdecl stdcall;
+  MediaInfoA_Open:      function  (Handle: THandle; File__: PAnsiChar): Cardinal cdecl stdcall;
+  MediaInfoA_Close:     procedure (Handle: THandle) cdecl stdcall;
+  MediaInfoA_Inform:    function  (Handle: THandle; Reserved: Integer): PAnsiChar cdecl stdcall;
+  MediaInfoA_GetI:      function  (Handle: THandle; StreamKind: TMIStreamKind; StreamNumber: Integer; Parameter: Integer; KindOfInfo: TMIInfo): PAnsiChar cdecl stdcall; //Default: KindOfInfo=Info_Text
+  MediaInfoA_Get:       function  (Handle: THandle; StreamKind: TMIStreamKind; StreamNumber: Integer; Parameter: PAnsiChar;   KindOfInfo: TMIInfo; KindOfSearch: TMIInfo): PAnsiChar cdecl stdcall; //Default: KindOfInfo=Info_Text, KindOfSearch=Info_Name
+  MediaInfoA_Option:    function  (Handle: THandle; Option: PAnsiChar; Value: PAnsiChar): PAnsiChar cdecl stdcall;
+  MediaInfoA_State_Get: function  (Handle: THandle): Integer cdecl stdcall;
+  MediaInfoA_Count_Get: function  (Handle: THandle; StreamKind: TMIStreamKind; StreamNumber: Integer): Integer cdecl stdcall;
 
 function MediaInfoDLL_Load(LibPath: string): boolean;
 
