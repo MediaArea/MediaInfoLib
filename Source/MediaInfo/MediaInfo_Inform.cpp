@@ -774,11 +774,10 @@ void MediaInfo_Internal::Traiter(Ztring &C)
             //$if(%a%==%b%,zezeze%a%,rrere)
             size_t Subposition = Total1(0).find("==");
             if (Subposition != string::npos) { // Substring found
-              if (!Total1(0).substr(0,Subposition).compare(Total1(0).substr(Subposition+2))){ // !0(differences) means they are equal
+              if (!Total1(0).substr(0,Subposition).compare(Total1(0).substr(Subposition+2))) // !0(differences) means they are equal
                 C.FindAndReplace(ARemplacer, Total1(1), Position);
               else 
                 C.FindAndReplace(ARemplacer, Total1(2), Position);
-              }
             } else
             C.FindAndReplace(ARemplacer, Total1(1), Position);
         }
