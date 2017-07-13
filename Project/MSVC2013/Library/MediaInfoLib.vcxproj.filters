@@ -578,6 +578,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\XmlUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\OutputHelpers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\PreComp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1220,6 +1223,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\XmlUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\OutputHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Reader\Reader_libcurl_Include.h">

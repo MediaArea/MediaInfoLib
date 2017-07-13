@@ -247,6 +247,7 @@ HEADERS += \
         ../../Source/MediaInfo/Video/File_Vp8.h \
         ../../Source/MediaInfo/Video/File_Y4m.h \
         ../../Source/MediaInfo/XmlUtils.h \
+        ../../Source/MediaInfo/OutputHelpers.h
 
 SOURCES += \
         ../../Source/MediaInfo/Archive/File_7z.cpp \
@@ -462,7 +463,7 @@ SOURCES += \
         ../../Source/MediaInfo/Video/File_Vp8.cpp \
         ../../Source/MediaInfo/Video/File_Y4m.cpp \
         ../../Source/MediaInfo/XmlUtils.cpp \
-
+        ../../Source/MediaInfo/OutputHelpers.cpp
 
 SOURCES += \
         ../../Source/ThirdParty/aes-gladman/aes_modes.c \
