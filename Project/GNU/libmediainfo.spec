@@ -109,6 +109,16 @@ Summary:        Most relevant technical and tag data for video and audio files -
 Group:          Development/Libraries
 Requires:       %{name}%{?_isa} = %{version}
 Requires:       libzen-devel%{?_isa} >= %{libzen_version}
+%if 0%{?rhel_version} || 0%{?centos_version}
+%if 0%{?rhel_version} > 599
+Requires:  libcurl-devel
+%endif
+%if 0%{?centos_version} > 599
+Requires:  libcurl-devel
+%endif
+%else
+Requires:  libcurl-devel
+%endif
 
 %description    -n %{name_without_0_ending}-devel
 MediaInfo is a convenient unified display of the most relevant technical

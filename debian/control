@@ -24,8 +24,9 @@ Package: libmediainfo-dev
 Section: libdevel
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
-Depends: libzen-dev,
-         libmediainfo0 (= ${binary:Version}),
+Depends: libmediainfo0 (= ${binary:Version}),
+         libzen-dev,
+         libcurl4-gnutls-dev,
          ${misc:Depends}
 Description: library reading metadata from media files -- headers
  MediaInfo is a library used for retrieving technical information and other

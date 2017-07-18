@@ -2,11 +2,12 @@ prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=${prefix}
 libdir=@LIB_INSTALL_DIR@
 includedir=@INCLUDE_INSTALL_DIR@
-Libs_Static=${libdir}/libmediainfo.a ${libdir}/libzen.a -lpthread -lz
+Libs_Static=${libdir}/libmediainfo.a ${libdir}/libzen.a -lpthread -lz@CURL_LIB@
 
 Name: libmediainfo
 Version: @MediaInfoLib_VERSION@
 Description: MediaInfoLib
-Requires: libzen zlib @CURL_PC@
-Libs: -L${libdir} -lmediainfo
+Requires: libzen
+Requires.private:@CURL_PC@
+Libs: -L${libdir} -lmediainfo -lz
 Cflags: -I${includedir}
