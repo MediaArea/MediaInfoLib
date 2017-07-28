@@ -1095,8 +1095,8 @@ void File__Analyze::Streams_Finish_HumanReadable()
 //---------------------------------------------------------------------------
 void File__Analyze::Streams_Finish_HumanReadable_PerStream(stream_t StreamKind, size_t StreamPos, size_t Parameter)
 {
-    Ztring ParameterName=Retrieve(StreamKind, StreamPos, Parameter, Info_Name);
-    Ztring Value=Retrieve(StreamKind, StreamPos, Parameter, Info_Text);
+    const Ztring ParameterName=Retrieve(StreamKind, StreamPos, Parameter, Info_Name);
+    const Ztring Value=Retrieve(StreamKind, StreamPos, Parameter, Info_Text);
 
     //Strings
     const Ztring &List_Measure_Value=MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Measure);
@@ -1148,7 +1148,7 @@ void File__Analyze::Streams_Finish_HumanReadable_PerStream(stream_t StreamKind, 
         for (size_t Pos=0; Pos<List.size(); Pos++)
             List[Pos]=MediaInfoLib::Config.Language_Get(Ztring(__T("BitRate_Mode_"))+List[Pos]);
 
-        Ztring Translated=List.Read();
+        const Ztring Translated=List.Read();
         Fill(StreamKind, StreamPos, StreamKind==Stream_General?"OverallBitRate_Mode/String":"BitRate_Mode/String", Translated.find(__T("BitRate_Mode_"))?Translated:Value);
     }
 
@@ -1231,20 +1231,17 @@ void File__Analyze::Streams_Finish_HumanReadable_PerStream(stream_t StreamKind, 
     //Format_Settings_Matrix
     if (StreamKind==Stream_Video && Parameter==Video_Format_Settings_Matrix)
     {
-        Ztring Translated=MediaInfoLib::Config.Language_Get(Ztring(__T("Format_Settings_Matrix_"))+Value);
-        Fill(Stream_Video, StreamPos, Video_Format_Settings_Matrix_String, Translated.find(__T("Format_Settings_Matrix_"))?Translated:Value);
+        Fill(Stream_Video, StreamPos, Video_Format_Settings_Matrix_String, MediaInfoLib::Config.Language_Get_Translate(__T("Format_Settings_Matrix_"), Value));
     }
 
     //Scan type
     if (StreamKind==Stream_Video && Parameter==Video_ScanType)
     {
-        Ztring Translated=MediaInfoLib::Config.Language_Get(Ztring(__T("Interlaced_"))+Value);
-        Fill(Stream_Video, StreamPos, Video_ScanType_String, Translated.find(__T("Interlaced_"))?Translated:Value);
+        Fill(Stream_Video, StreamPos, Video_ScanType_String, MediaInfoLib::Config.Language_Get_Translate(__T("Interlaced_"), Value));
     }
     if (StreamKind==Stream_Video && Parameter==Video_ScanType_Original)
     {
-        Ztring Translated=MediaInfoLib::Config.Language_Get(Ztring(__T("Interlaced_"))+Value);
-        Fill(Stream_Video, StreamPos, Video_ScanType_Original_String, Translated.find(__T("Interlaced_"))?Translated:Value);
+        Fill(Stream_Video, StreamPos, Video_ScanType_Original_String, MediaInfoLib::Config.Language_Get_Translate(__T("Interlaced_"), Value));
     }
     if (StreamKind==Stream_Video && Parameter==Video_ScanType_StoreMethod)
     {
@@ -1258,18 +1255,15 @@ void File__Analyze::Streams_Finish_HumanReadable_PerStream(stream_t StreamKind, 
     //Scan order
     if (StreamKind==Stream_Video && Parameter==Video_ScanOrder)
     {
-        Ztring Translated=MediaInfoLib::Config.Language_Get(Ztring(__T("Interlaced_"))+Value);
-        Fill(Stream_Video, StreamPos, Video_ScanOrder_String, Translated.find(__T("Interlaced_"))?Translated:Value);
+        Fill(Stream_Video, StreamPos, Video_ScanOrder_String, MediaInfoLib::Config.Language_Get_Translate(__T("Interlaced_"), Value));
     }
     if (StreamKind==Stream_Video && Parameter==Video_ScanOrder_Stored)
     {
-        Ztring Translated=MediaInfoLib::Config.Language_Get(Ztring(__T("Interlaced_"))+Value);
-        Fill(Stream_Video, StreamPos, Video_ScanOrder_Stored_String, Translated.find(__T("Interlaced_"))?Translated:Value);
+        Fill(Stream_Video, StreamPos, Video_ScanOrder_Stored_String, MediaInfoLib::Config.Language_Get_Translate(__T("Interlaced_"), Value));
     }
     if (StreamKind==Stream_Video && Parameter==Video_ScanOrder_Original)
     {
-        Ztring Translated=MediaInfoLib::Config.Language_Get(Ztring(__T("Interlaced_"))+Value);
-        Fill(Stream_Video, StreamPos, Video_ScanOrder_Original_String, Translated.find(__T("Interlaced_"))?Translated:Value);
+        Fill(Stream_Video, StreamPos, Video_ScanOrder_Original_String, MediaInfoLib::Config.Language_Get_Translate(__T("Interlaced_"), Value));
     }
 
     //Interlacement
@@ -1287,29 +1281,25 @@ void File__Analyze::Streams_Finish_HumanReadable_PerStream(stream_t StreamKind, 
     //FrameRate_Mode
     if (StreamKind==Stream_Video && Parameter==Video_FrameRate_Mode)
     {
-        Ztring Translated=MediaInfoLib::Config.Language_Get(Ztring(__T("FrameRate_Mode_"))+Value);
-        Fill(Stream_Video, StreamPos, Video_FrameRate_Mode_String, Translated.find(__T("FrameRate_Mode_"))?Translated:Value);
+        Fill(Stream_Video, StreamPos, Video_FrameRate_Mode_String, MediaInfoLib::Config.Language_Get_Translate(__T("FrameRate_Mode_"), Value));
     }
 
     //Compression_Mode
     if (Parameter==Fill_Parameter(StreamKind, Generic_Compression_Mode))
     {
-        Ztring Translated=MediaInfoLib::Config.Language_Get(Ztring(__T("Compression_Mode_"))+Value);
-        Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Compression_Mode_String), Translated.find(__T("Compression_Mode_"))?Translated:Value);
+        Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Compression_Mode_String), MediaInfoLib::Config.Language_Get_Translate(__T("Compression_Mode_"), Value));
     }
 
     //Delay_Source
     if (Parameter==Fill_Parameter(StreamKind, Generic_Delay_Source))
     {
-        Ztring Translated=MediaInfoLib::Config.Language_Get(Ztring(__T("Delay_Source_"))+Value);
-        Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Delay_Source_String), Translated.find(__T("Delay_Source_"))?Translated:Value);
+        Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Delay_Source_String), MediaInfoLib::Config.Language_Get_Translate(__T("Delay_Source_"), Value));
     }
 
     //Gop_OpenClosed
     if (StreamKind==Stream_Video && (Parameter==Video_Gop_OpenClosed || Parameter==Video_Gop_OpenClosed_FirstFrame))
     {
-        Ztring Translated=MediaInfoLib::Config.Language_Get(Ztring(__T("Gop_OpenClosed_"))+Value);
-        Fill(Stream_Video, StreamPos, Parameter+1, Translated.find(__T("Gop_OpenClosed_"))?Translated:Value, true);
+        Fill(Stream_Video, StreamPos, Parameter+1, MediaInfoLib::Config.Language_Get_Translate(__T("Gop_OpenClosed_"), Value), true);
     }
 }
 
