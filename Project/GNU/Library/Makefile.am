@@ -214,6 +214,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Video/File_Vp8.cpp \
                        ../../../Source/MediaInfo/Video/File_Y4m.cpp \
                        ../../../Source/MediaInfo/XmlUtils.cpp \
+                       ../../../Source/MediaInfo/OutputHelpers.cpp \
                        ../../../Source/MediaInfoDLL/MediaInfoDLL.cpp
 
 @MediaInfoLib_LibName@includedir = $(includedir)/MediaInfo

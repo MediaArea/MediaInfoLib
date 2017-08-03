@@ -253,6 +253,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Ttml.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\TimeCode.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\XmlUtils.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\OutputHelpers.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Aic.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Avc.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Avc_Duplicate.cpp" />
@@ -560,6 +561,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Ttml.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\TimeCode.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\XmlUtils.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\OutputHelpers.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Aic.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Avc.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_AvsV.h" />
