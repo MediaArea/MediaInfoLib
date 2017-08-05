@@ -720,6 +720,9 @@ void File_Mk::Streams_Finish()
     if (Duration!=0 && TimecodeScale!=0)
         Fill(Stream_General, 0, General_Duration, Duration*int64u_float64(TimecodeScale)/1000000.0, 0);
 
+    if (Retrieve(Stream_General, 0, General_IsStreamable).empty())
+        Fill(Stream_General, 0, General_IsStreamable, "Yes");
+
     //Tags (General)
     for (tags::iterator Item=Segment_Tags_Tag_Items.begin(); Item!=Segment_Tags_Tag_Items.end(); ++Item)
         if (!Item->first || Item->first == (int64u)-1)
@@ -1388,6 +1391,7 @@ void File_Mk::Header_Parse()
         for (size_t Pos=0; Pos<Segment_Seeks.size(); Pos++)
             if (Segment_Seeks[Pos].SeekID==Elements::Segment_Tracks)
             {
+                Fill(Stream_General, 0, General_IsStreamable, "No");
 				Element_DoNotShow();
                 IsParsingSegmentTrack_SeekBackTo=File_Offset+Buffer_Offset;
 
