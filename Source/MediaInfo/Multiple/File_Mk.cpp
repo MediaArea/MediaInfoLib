@@ -690,6 +690,8 @@ File_Mk::File_Mk()
     CurrentAttachmentIsCover=false;
     CoverIsSetFromAttachment=false;
     Laces_Pos=0;
+    IsParsingSegmentTrack_SeekBackTo=0;
+    SegmentTrack_Offset_End=0;
     #if MEDIAINFO_DEMUX
         Demux_EventWasSent=(int64u)-1;
     #endif //MEDIAINFO_DEMUX
@@ -717,6 +719,9 @@ void File_Mk::Streams_Finish()
 {
     if (Duration!=0 && TimecodeScale!=0)
         Fill(Stream_General, 0, General_Duration, Duration*int64u_float64(TimecodeScale)/1000000.0, 0);
+
+    if (Retrieve(Stream_General, 0, General_IsStreamable).empty())
+        Fill(Stream_General, 0, General_IsStreamable, "Yes");
 
     //Tags (General)
     for (tags::iterator Item=Segment_Tags_Tag_Items.begin(); Item!=Segment_Tags_Tag_Items.end(); ++Item)
@@ -1378,6 +1383,35 @@ void File_Mk::Header_Parse()
         if (Element_Level<=2)
             Fill(Stream_General, 0, "IsTruncated", "Yes");
     }
+
+	//Should we parse Cluster?
+	if (Element_Level==3 && Name==Elements::Segment_Cluster && !Segment_Tracks_Count)
+    {
+        //Jumping
+        for (size_t Pos=0; Pos<Segment_Seeks.size(); Pos++)
+            if (Segment_Seeks[Pos].SeekID==Elements::Segment_Tracks)
+            {
+                Fill(Stream_General, 0, General_IsStreamable, "No");
+				Element_DoNotShow();
+                IsParsingSegmentTrack_SeekBackTo=File_Offset+Buffer_Offset;
+
+                JumpTo(Segment_Seeks[Pos].SeekPosition);
+                break;
+            }
+        if (File_GoTo==(int64u)-1)
+            JumpTo(Segment_Offset_End);
+        return;
+    }
+
+    //Is Tracks already parsed?
+    if (Element_Level==3 && Name==Elements::Segment_Tracks && SegmentTrack_Offset_End==File_Offset+Buffer_Offset+Element_Offset+Size)
+    {
+        //This element was already parsed, skipping it
+        JumpTo(SegmentTrack_Offset_End);
+        Element_DoNotShow();
+        SegmentTrack_Offset_End=0;
+        return;
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -1812,6 +1846,14 @@ void File_Mk::Data_Parse()
 
     if (!Element_IsWaitingForMoreData() && !CRC32Compute.empty())
         CRC32_Check();
+
+    if (IsParsingSegmentTrack_SeekBackTo && File_Offset+Buffer_Offset+Element_Offset==SegmentTrack_Offset_End) //TODO: implement check at end of an element
+    {
+        while (Element_Level>(Element_Offset==Element_Size?2:1))
+            Element_End0();
+        GoTo(IsParsingSegmentTrack_SeekBackTo);
+        IsParsingSegmentTrack_SeekBackTo=0;
+    }
 }
 
 //***************************************************************************
@@ -2115,11 +2157,10 @@ void File_Mk::Segment_Cluster()
     #endif // MEDIAINFO_TRACE
 
     //For each stream
-    std::map<int64u, stream>::iterator Temp=Stream.begin();
     if (!Segment_Cluster_Count)
     {
-        Stream_Count=0;
-        while (Temp!=Stream.end())
+        
+        for (std::map<int64u, stream>::iterator Temp=Stream.begin(); Temp!=Stream.end(); ++Temp)
         {
             if (Temp->second.Parser)
                 Temp->second.Searching_Payload=true;
@@ -2137,24 +2178,6 @@ void File_Mk::Segment_Cluster()
                 if (Retrieve(Temp->second.StreamKind, Temp->second.StreamPos, Audio_CodecID).find(__T("A_AAC/"))==0)
                     ((File_Aac*)Stream[Temp->first].Parser)->Mode=File_Aac::Mode_raw_data_block; //In case AudioSpecificConfig is not present
             #endif //MEDIAINFO_AAC_YES
-
-            ++Temp;
-        }
-
-        //We must parse moov?
-        if (Stream_Count==0)
-        {
-            //Jumping
-            std::sort(Segment_Seeks.begin(), Segment_Seeks.end());
-            for (size_t Pos=0; Pos<Segment_Seeks.size(); Pos++)
-                if (Segment_Seeks[Pos]>File_Offset+Buffer_Offset+Element_Size)
-                {
-                    JumpTo(Segment_Seeks[Pos]);
-                    break;
-                }
-            if (File_GoTo==(int64u)-1)
-                JumpTo(Segment_Offset_End);
-            return;
         }
     }
     Segment_Cluster_Count++;
@@ -2427,9 +2450,9 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
             //Jumping
             std::sort(Segment_Seeks.begin(), Segment_Seeks.end());
             for (size_t Pos=0; Pos<Segment_Seeks.size(); Pos++)
-                if (Segment_Seeks[Pos]>File_Offset+Buffer_Offset+Element_Size)
+                if (Segment_Seeks[Pos].SeekPosition>File_Offset+Buffer_Offset+Element_Size)
                 {
-                    JumpTo(Segment_Seeks[Pos]);
+                    JumpTo(Segment_Seeks[Pos].SeekPosition);
                     Open_Buffer_Unsynch();
                     break;
                 }
@@ -2638,6 +2661,8 @@ void File_Mk::Segment_SeekHead_Seek()
                 Element_Set_Remove_Children_IfNoErrors();
         }
     #endif // MEDIAINFO_TRACE
+
+    Segment_Seeks.resize(Segment_Seeks.size()+1);
 }
 
 //---------------------------------------------------------------------------
@@ -2646,6 +2671,10 @@ void File_Mk::Segment_SeekHead_Seek_SeekID()
     //Parsing
     int64u Data;
     Get_EB (Data,                                               "Data");
+
+    FILLING_BEGIN();
+        Segment_Seeks.back().SeekID=Data;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -2654,7 +2683,9 @@ void File_Mk::Segment_SeekHead_Seek_SeekPosition()
     //Parsing
     int64u Data=UInteger_Get();
 
-    Segment_Seeks.push_back(Segment_Offset_Begin+Data);
+    FILLING_BEGIN();
+        Segment_Seeks.back().SeekPosition=Segment_Offset_Begin+Data;
+    FILLING_END();
     Element_Info1(Ztring::ToZtring(Segment_Offset_Begin+Data, 16));
 }
 
@@ -2780,6 +2811,8 @@ void File_Mk::Segment_Tags_Tag_Targets_TagTrackUID()
 void File_Mk::Segment_Tracks()
 {
     TestMultipleInstances(&Segment_Tracks_Count);
+
+    SegmentTrack_Offset_End=File_Offset+Buffer_Offset+Element_TotalSize_Get();
 }
 
 //---------------------------------------------------------------------------
