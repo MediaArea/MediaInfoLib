@@ -45,8 +45,6 @@ else()
   if(UNIX AND BUILD_SHARED_LIBS)
     target_compile_options(zen PRIVATE -fPIC)
   endif()
-else()
-
 endif()
 
 if (NOT BUILD_ZLIB)
