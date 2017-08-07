@@ -2822,6 +2822,13 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagString()
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("SAMPLE") && Segment_Tag_SimpleTag_TagNames.size()==2 && Segment_Tag_SimpleTag_TagNames[1]==__T("TITLE")) {Segment_Tag_SimpleTag_TagNames.resize(1); Segment_Tag_SimpleTag_TagNames[0]=__T("Title_More");}
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("STEREO_MODE")) return; //Useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("TERMS_OF_USE")) Segment_Tag_SimpleTag_TagNames[0]=__T("TermsOfUse");
+    if (Segment_Tag_SimpleTag_TagNames[0]==__T("TIMECODE"))
+    {
+        if (TagString.find(__T("Handler"))!=std::string::npos || TagString.find(__T("handler"))!=std::string::npos || TagString.find(__T("vide"))!=std::string::npos || TagString.find(__T("soun"))!=std::string::npos)
+            return; //This is not a Title
+        Segment_Tag_SimpleTag_TagNames[0]=__T("TimeCode_FirstFrame");
+        Segment_Tags_Tag_Items[Segment_Tags_Tag_Targets_TagTrackUID_Value]["TimeCode_Source"]="Matroska tags";
+    }
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("TITLE")) Segment_Tag_SimpleTag_TagNames[0]=__T("Title");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("TOTAL_PARTS")) Segment_Tag_SimpleTag_TagNames[0]=__T("Track/Position_Total");
     for (size_t Pos=0; Pos<Segment_Tag_SimpleTag_TagNames.size(); Pos++)
