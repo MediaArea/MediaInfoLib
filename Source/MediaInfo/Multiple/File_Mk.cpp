@@ -739,6 +739,7 @@ void File_Mk::Streams_Finish()
         StreamKind_Last=Temp->second.StreamKind;
         StreamPos_Last=Temp->second.StreamPos;
         float64 FrameRate_FromTags = 0.0;
+        bool HasStats=false;
 
         //Tags (per track)
         if (Temp->second.TrackUID && Temp->second.TrackUID!=(int64u)-1)
@@ -748,7 +749,7 @@ void File_Mk::Streams_Finish()
             {
                 //Statistic Tags
                 tagspertrack::iterator Item2=Item->second.find(__T("_STATISTICS_TAGS"));
-                bool HasStats=Item2!=Item->second.end();
+                HasStats=Item2!=Item->second.end();
                 if (HasStats)
                 {
                     Ztring TagsList=Item2->second;
@@ -1117,6 +1118,19 @@ void File_Mk::Streams_Finish()
                 //Filling
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay), Delay, 0, true);
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
+
+                const Ztring &DurationS=Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration));
+                float64 Duration=DurationS.To_float64();
+                if (!HasStats && Duration && Duration>=Delay) //Not sure about when tats are present, so for the moment we remove delay from duration only if there is no stats, Duration looks like more lie timestamp of the end of the last frame with the example we got
+                {
+                    Duration-=Delay;
+                    size_t DotPos=DurationS.find(__T('.'));
+                    if (DotPos == (size_t)-1)
+                        DotPos = DurationS.size();
+                    else
+                        DotPos++;
+                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration, DurationS.size()-DotPos, true);
+                }
             }
 
             Ztring Codec_Temp=Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Codec)); //We want to keep the 4CC;
