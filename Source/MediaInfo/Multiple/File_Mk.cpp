@@ -748,7 +748,8 @@ void File_Mk::Streams_Finish()
             {
                 //Statistic Tags
                 tagspertrack::iterator Item2=Item->second.find(__T("_STATISTICS_TAGS"));
-                if (Item2!=Item->second.end())
+                bool HasStats=Item2!=Item->second.end();
+                if (HasStats)
                 {
                     Ztring TagsList=Item2->second;
                     Item->second.erase(Item2);
@@ -934,6 +935,41 @@ void File_Mk::Streams_Finish()
                 //Filling
                 for (tagspertrack::iterator Tag=Item->second.begin(); Tag!=Item->second.end(); ++Tag)
                 {
+                    if (!HasStats && Tag->first==__T("DURATION"))
+                    {
+                        //If this field is present but there is no stats tag, let's hope that the field was not copied as is after an edit of the file...
+                        const string& s=Tag->second.To_UTF8();
+                        if ( s.size()>=12
+                         &&  s[ 0]>='0' && s[ 0]<='9'
+                         &&  s[ 1]>='0' && s[ 1]<='9'
+                         &&  s[ 2]==':'
+                         &&  s[ 3]>='0' && s[ 3]<='9'
+                         &&  s[ 4]>='0' && s[ 4]<='9'
+                         &&  s[ 5]==':'
+                         &&  s[ 6]>='0' && s[ 6]<='9'
+                         &&  s[ 7]>='0' && s[ 7]<='9'
+                         &&  s[ 8]=='.')
+                        {
+                            bool IsNok=false;
+                            size_t s_size=s.size();
+                            for (size_t i=9; i<s_size; i++)
+                                if (s[i]<'0' || s[i]>'9')
+                                    IsNok=true;
+                            if (!IsNok)
+                            {
+                                float64 d=(s[ 0]-'0')*10*60*60
+                                        + (s[ 1]-'0')   *60*60
+                                        + (s[ 3]-'0')   *10*60
+                                        + (s[ 4]-'0')      *60
+                                        + (s[ 6]-'0')      *10
+                                        + (s[ 7]-'0')         ;
+                                for (size_t i=9; i<s_size; i++)
+                                    d+=(s[i]-'0')/pow(10.0, i-8);
+                                Fill(StreamKind_Last, StreamPos_Last, "Duration", d*1000, s.size()-12);
+                                continue;
+                            }
+                        }
+                    }
                     if ((Tag->first!=__T("Language") || Retrieve(StreamKind_Last, StreamPos_Last, "Language").empty())) // Prioritize Tracks block over tags
                         Fill(StreamKind_Last, StreamPos_Last, Tag->first.To_UTF8().c_str(), Tag->second);
                 }
