@@ -264,7 +264,7 @@ Ztring Export_PBCore::Transform(MediaInfo_Internal &MI)
     }
 
     //formatMediaType
-    Node_Instantiation->Add_Child("formatMediaType", PBCore_MediaType(MI).empty()?"application/octet-stream":PBCore_MediaType(MI), "version", "PBCoreXSD_Ver_1.2_D1");
+    Node_Instantiation->Add_Child("formatMediaType", PBCore_MediaType(MI).empty()?Ztring(__T("application/octet-stream")):PBCore_MediaType(MI), "version", "PBCoreXSD_Ver_1.2_D1");
 
     //formatGenerations
     Node_Instantiation->Add_Child("formatGenerations", "","version", "PBCoreXSD_Ver_1.2_D1");
