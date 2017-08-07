@@ -574,6 +574,9 @@
 				<DependentOn>..\..\..\Source\MediaInfo\Multiple\File__ReferenceFilesHelper_Sequence.h</DependentOn>
 				<BuildOrder>206</BuildOrder>
 			</CppCompile>
+			<CppCompile Include="..\..\..\Source\MediaInfo\OutputHelpers.cpp">
+				<BuildOrder>222</BuildOrder>
+			</CppCompile>
 			<CppCompile Include="..\..\..\Source\MediaInfo\PreComp.cpp">
 				<BuildOrder>196</BuildOrder>
 			</CppCompile>
@@ -745,6 +748,9 @@
 			</CppCompile>
 			<CppCompile Include="..\..\..\Source\MediaInfo\Video\File_Y4m.cpp">
 				<BuildOrder>190</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="..\..\..\Source\MediaInfo\XmlUtils.cpp">
+				<BuildOrder>223</BuildOrder>
 			</CppCompile>
 			<CppCompile Include="..\..\..\Source\ThirdParty\aes-gladman\aescrypt.c">
 				<BuildOrder>212</BuildOrder>
