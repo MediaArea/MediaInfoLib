@@ -414,6 +414,9 @@ File_Avc::File_Avc()
     //Temporal references
     TemporalReferences_DelayedElement=NULL;
 
+    //Temp
+    preferred_transfer_characteristics=2;
+
     //Text
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
         GA94_03_Parser=NULL;
@@ -645,6 +648,8 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         }
 
         //Colour description
+        if (preferred_transfer_characteristics!=2)
+            Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(preferred_transfer_characteristics));
         if ((*seq_parameter_set_Item)->vui_parameters->video_signal_type_present_flag)
         {
             Fill(Stream_Video, 0, Video_Standard, Avc_video_format[(*seq_parameter_set_Item)->vui_parameters->video_format]);
@@ -2659,6 +2664,7 @@ void File_Avc::sei_message(int32u &seq_parameter_set_id)
         case  5 :   sei_message_user_data_unregistered(payloadSize); break;
         case  6 :   sei_message_recovery_point(); break;
         case 32 :   sei_message_mainconcept(payloadSize); break;
+        case 147:   sei_alternative_transfer_characteristics(); break;
         default :
                     Element_Info1("unknown");
                     Skip_XX(payloadSize,                        "data");
@@ -3238,6 +3244,15 @@ void File_Avc::sei_message_mainconcept(int32u payloadSize)
         Encoded_Library_Version=Text.SubString(__T("produced by MainConcept H.264/AVC Codec v"), __T(" (c) "));
         Encoded_Library_Date=MediaInfoLib::Config.Library_Get(InfoLibrary_Format_MainConcept_Avc, Encoded_Library_Version, InfoLibrary_Date);
     }
+}
+
+//---------------------------------------------------------------------------
+void File_Avc::sei_alternative_transfer_characteristics()
+{
+    Element_Info1("alternative_transfer_characteristics");
+
+    //Parsing
+    Get_B1(preferred_transfer_characteristics, "preferred_transfer_characteristics"); Param_Info1(Mpegv_transfer_characteristics(preferred_transfer_characteristics));
 }
 
 //---------------------------------------------------------------------------
