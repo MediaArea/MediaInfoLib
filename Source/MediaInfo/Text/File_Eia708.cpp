@@ -1512,6 +1512,7 @@ void File_Eia708::HasChanged()
         EVENT_BEGIN (DtvccCaption, Content_Minimal, 0)
             Event.MuxingMode=MuxingMode;
             Event.Service=service_number;
+            Event.StreamIDs[Event.StreamIDs_Size-1]=Event.Service;
             for (size_t Pos_Y=0; Pos_Y<Streams[service_number]->Minimal.CC.size(); Pos_Y++)
             {
                 for (size_t Pos_X=0; Pos_X<Streams[service_number]->Minimal.CC[Pos_Y].size(); Pos_X++)
