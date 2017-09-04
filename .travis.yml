@@ -13,6 +13,7 @@ matrix:
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then sudo apt-get update -qq ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then sudo apt-get install -y libcurl4-gnutls-dev libmms-dev libglib2.0-dev zlib1g-dev pkg-config libxml2-utils ; fi
+  - npm install -g jsonlint
 
 before_script: git -C .. clone https://github.com/MediaArea/ZenLib.git
 env:

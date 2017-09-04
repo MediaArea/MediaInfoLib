@@ -29,6 +29,15 @@ xml_is_correct()
     fi
 }
 
+json_is_correct()
+{
+    $(jsonlint -q "$1" 2> /dev/null)
+    if test $? -ne 0
+    then
+        exit 1;
+    fi
+}
+
 output_xml_is_a_valid_mt()
 {
     $(xmllint --noout --schema "$UTILS_PATH/mediatrace.xsd" "$1" 2> /dev/null)

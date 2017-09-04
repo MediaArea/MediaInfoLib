@@ -20,6 +20,7 @@ namespace MediaInfoLib
 
 ZenLib::Ztring XML_Encode (const ZenLib::Ztring& Data);
 std::string XML_Encode (const std::string& Data);
+std::string JSON_Encode (const std::string& Data);
 
 typedef std::pair<std::string, std::string> Attribute;
 typedef std::vector<Attribute> Attributes;
@@ -195,6 +196,7 @@ struct Node
 };
 
 std::string To_XML (Node& Cur_Node, const int& Level);
+std::string To_JSON (Node& Cur_Node, const int& Level);
 
 } //NameSpace
 
