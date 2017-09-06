@@ -18,3 +18,6 @@ while IFS= read -r i; do
         json_is_correct "$OUTPUT_JSON_NAME"
     done
 done < "$PATH_FILES/files.txt"
+
+grep -q 'writingLibraryVersion=\"\([0-9]\+\.\)\{1,3\}[0-9]\+\"' "$OUTPUT_XML_NAME"
+cmd_is_ok
