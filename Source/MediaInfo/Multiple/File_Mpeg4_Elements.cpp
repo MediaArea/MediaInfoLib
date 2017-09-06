@@ -3082,8 +3082,8 @@ void File_Mpeg4::moov_trak_mdia_hdlr()
                 if (StreamKind_Last!=Stream_Text)
                 {
                     Stream_Prepare(Stream_Text);
-                    CodecID_Fill(__T("subp"), Stream_Text, StreamPos_Last, InfoCodecID_Format_Mpeg4);
-                    Fill(StreamKind_Last, StreamPos_Last, Text_Codec, "subp");
+                    //CodecID_Fill(__T("subp"), Stream_Text, StreamPos_Last, InfoCodecID_Format_Mpeg4); //Prioritizing ObjectTypeIndication over SubType
+                    //Fill(StreamKind_Last, StreamPos_Last, Text_Codec, "subp");
                 }
                 break;
             case Elements::moov_trak_mdia_hdlr_subt :
