@@ -4305,7 +4305,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
         {
             Codec.append(1, (char)((Element_Code&0x0000FF00)>> 8));
             Codec.append(1, (char)((Element_Code&0x000000FF)>> 0));
-            if (Codec!="mp4a") //mp4a is for Mpeg4 system
+            //if (Codec!="mp4a") //mp4a is for Mpeg4 system
                 CodecID_Fill(Ztring(Codec.c_str()), Stream_Audio, StreamPos_Last, InfoCodecID_Format_Mpeg4);
             if (Codec!="raw ")
                 Fill(Stream_Audio, StreamPos_Last, Audio_Codec, Codec, false, true);
@@ -4705,7 +4705,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
         Codec.append(1, (char)((Element_Code&0x00FF0000)>>16));
         Codec.append(1, (char)((Element_Code&0x0000FF00)>> 8));
         Codec.append(1, (char)((Element_Code&0x000000FF)>> 0));
-        if (Codec!="mp4v") //mp4v is for Mpeg4 system
+        //if (Codec!="mp4v") //mp4v is for Mpeg4 system
             CodecID_Fill(Ztring(Codec.c_str()), Stream_Video, StreamPos_Last, InfoCodecID_Format_Mpeg4);
         Fill(Stream_Video, StreamPos_Last, Video_Codec, Codec, false, true);
         Fill(Stream_Video, StreamPos_Last, Video_Codec_CC, Codec, false, true);
