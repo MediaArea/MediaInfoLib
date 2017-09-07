@@ -278,6 +278,7 @@ void File_Aac::program_config_element()
 
         Infos_General["Comment"]=comment_field_data;
 
+        Infos["CodecID"].From_Number(audioObjectType);
         Infos["Format"].From_Local("AAC");
         Infos["Format_Profile"].From_Local(Aac_Format_Profile(audioObjectType));
         Infos["Codec"].From_Local(Aac_audioObjectType(audioObjectType));

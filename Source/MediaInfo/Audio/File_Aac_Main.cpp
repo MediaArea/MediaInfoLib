@@ -254,6 +254,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
     bool    sbrData=false, sbrPresentFlag=false, psData=false, psPresentFlag=false;
     Element_Begin1("AudioSpecificConfig");
     GetAudioObjectType(audioObjectType,                         "audioObjectType");
+    Infos["CodecID"].From_Number(audioObjectType);
     Get_S1 (4, sampling_frequency_index,                        "samplingFrequencyIndex"); Param_Info1(Aac_sampling_frequency[sampling_frequency_index]);
     if (sampling_frequency_index==0xF)
     {
@@ -1099,6 +1100,7 @@ void File_Aac::adts_fixed_header()
         {
             Infos_General["Format"].From_Local("ADTS");
 
+            Infos["CodecID"].From_Number(audioObjectType);
             Infos["Format"].From_Local("AAC");
             Infos["Format_Version"].From_Local(id?"Version 2":"Version 4");
             Infos["Format_Profile"].From_Local(Aac_Format_Profile(audioObjectType));
