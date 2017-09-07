@@ -446,7 +446,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
                     }
                 }
             }
-            if ( extensionAudioObjectType == 22 )
+            if ( extensionAudioObjectType == 29 )
             {
                 Get_SB(sbrPresentFlag,                          "sbrPresentFlag");
                 if (sbrPresentFlag)
@@ -544,7 +544,8 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
                 Infos["SamplingRate"]+=__T(" / ")+SamplingRate_Previous;
             }
         }
-        Infos["Format_Settings_SBR"]=__T("Yes (Implicit)");
+        Infos["Format_Settings"]=sbrData?__T("Explicit"):__T("NBC"); // "Not Backward Compatible"
+        Infos["Format_Settings_SBR"]=sbrData?__T("Yes (Explicit)"):__T("Yes (NBC)"); // "Not Backward Compatible"
         Infos["Codec"]=Ztring().From_Local(Aac_audioObjectType(audioObjectType))+__T("-SBR");
     }
     else if (sbrData)
@@ -567,7 +568,13 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
             if (SamplingRate)
                 Infos["SamplingRate"]=Ztring().From_Number(SamplingRate, 10)+__T(" / ")+SamplingRate_Previous;
         }
-        Infos["Format_Settings_PS"]=__T("Yes (Implicit)");
+        if (Infos["Format_Settings"]!=(psData?__T("Explicit"):__T("NBC")))
+        {
+            if (!Infos["Format_Settings"].empty())
+                Infos["Format_Settings"].insert(0, __T(" / "));
+            Infos["Format_Settings"].insert(0, psData?__T("Explicit"):__T("NBC")); // "Not Backward Compatible"
+        }
+        Infos["Format_Settings_PS"]=psData?__T("Yes (Explicit)"):__T("Yes (NBC)"); // "Not Backward Compatible"
         if (StreamPos_Last!=(size_t)-1)
         {
             Ztring Codec=Retrieve(Stream_Audio, StreamPos_Last, Audio_Codec);
@@ -1100,7 +1107,6 @@ void File_Aac::adts_fixed_header()
         {
             Infos_General["Format"].From_Local("ADTS");
 
-            Infos["CodecID"].From_Number(audioObjectType);
             Infos["Format"].From_Local("AAC");
             Infos["Format_Version"].From_Local(id?"Version 2":"Version 4");
             Infos["Format_Profile"].From_Local(Aac_Format_Profile(audioObjectType));
