@@ -96,6 +96,29 @@ extern const char* Mpegv_matrix_coefficients(int8u matrix_coefficients)
     }
 }
 
+//---------------------------------------------------------------------------
+extern const char* Mpegv_matrix_coefficients_ColorSpace(int8u matrix_coefficients)
+{
+    switch (matrix_coefficients)
+    {
+        case  0 :
+                  return "RGB";
+        case  1 :
+        case  4 :
+        case  5 :
+        case  6 :
+        case  7 :
+        case  8 :
+        case  9 :
+        case 10 :
+        case 11 :
+        case 12 :
+        case 14 :
+                  return "YUV";
+        default : return "";
+    }
+}
+
 } //NameSpace
 
 //---------------------------------------------------------------------------
@@ -144,6 +167,15 @@ const char* Mpegv_Colorimetry_format[4]=
     "4:2:0",
     "4:2:2",
     "4:4:4",
+};
+
+//---------------------------------------------------------------------------
+const char* Mpegv_Colorimetry_format_Colorspace[4] =
+{
+    "",
+    "YUV",
+    "YUV",
+    "",
 };
 
 //---------------------------------------------------------------------------
@@ -1241,7 +1273,7 @@ void File_Mpegv::Streams_Fill()
     Fill(Stream_Video, 0, Video_Width, 0x1000*horizontal_size_extension+horizontal_size_value);
     Fill(Stream_Video, 0, Video_Height, 0x1000*vertical_size_extension+vertical_size_value);
     Fill(Stream_Video, 0, Video_Colorimetry, Mpegv_Colorimetry_format[chroma_format]);
-    Fill(Stream_Video, 0, Video_ColorSpace, "YUV");
+    Fill(Stream_Video, 0, Video_ColorSpace, Mpegv_Colorimetry_format_Colorspace[chroma_format]);
     Fill(Stream_Video, 0, Video_BitDepth, 8);
 
     //AspectRatio
@@ -1358,6 +1390,8 @@ void File_Mpegv::Streams_Fill()
         Fill(Stream_Video, 0, Video_colour_primaries, Mpegv_colour_primaries(colour_primaries));
         Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(transfer_characteristics));
         Fill(Stream_Video, 0, Video_matrix_coefficients, Mpegv_matrix_coefficients(matrix_coefficients));
+        if (matrix_coefficients!=2)
+            Fill(Stream_Video, 0, Video_ColorSpace, Mpegv_matrix_coefficients_ColorSpace(matrix_coefficients), Unlimited, true, true);
     }
 
     //Matrix

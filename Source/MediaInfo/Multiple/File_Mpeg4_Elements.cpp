@@ -539,6 +539,7 @@ static const char* Mpeg4_jp2h_EnumCS(int32u EnumCS)
 const char* Mpegv_colour_primaries(int8u colour_primaries);
 const char* Mpegv_transfer_characteristics(int8u transfer_characteristics);
 const char* Mpegv_matrix_coefficients(int8u matrix_coefficients);
+const char* Mpegv_matrix_coefficients_ColorSpace(int8u matrix_coefficients);
 
 //---------------------------------------------------------------------------
 // DTS
@@ -5335,6 +5336,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc(bool LittleEndian)
             Fill(Stream_Video, StreamPos_Last, Video_colour_primaries, Mpegv_colour_primaries((int8u)colour_primaries));
             Fill(Stream_Video, StreamPos_Last, Video_transfer_characteristics, Mpegv_transfer_characteristics((int8u)transfer_characteristics));
             Fill(Stream_Video, StreamPos_Last, Video_matrix_coefficients, Mpegv_matrix_coefficients((int8u)matrix_coefficients));
+            if (matrix_coefficients!=2)
+                Fill(Stream_Video, StreamPos_Last, Video_ColorSpace, Mpegv_matrix_coefficients_ColorSpace((int8u)matrix_coefficients), Unlimited, true, true);
         }
     FILLING_END();
 }
