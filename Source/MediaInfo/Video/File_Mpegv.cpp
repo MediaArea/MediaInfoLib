@@ -68,7 +68,7 @@ extern const char* Mpegv_transfer_characteristics(int8u transfer_characteristics
         case 13 : return "sYCC";                                        //Added in HEVC
         case 14 : return "BT.2020 non-constant";                        //Added in HEVC
         case 15 : return "BT.2020 constant";                            //Added in HEVC
-        case 16 : return "SMPTE ST 2084";                               //Added in HEVC 2015
+        case 16 : return "PQ";                                          //Added in HEVC 2015
         case 17 : return "SMPTE ST 428-1";                              //Added in HEVC 2015
         case 18 : return "HLG";                                         //Added in ISO 23001-8:201x/PDAM1
         default : return "";
