@@ -43,9 +43,9 @@ extern const char* Mpegv_colour_primaries(int8u colour_primaries)
         case  8 : return "Generic film";
         case  9 : return "BT.2020";                                     //Added in HEVC
         case 10 : return "XYZ";                                         //Added in HEVC 2014
-        case 11 : return "SMPTE RP 431-2";                              //Added in ISO 23001-8:201x/PDAM1
-        case 12 : return "SMPTE EG 432-1";                              //Added in ISO 23001-8:201x/PDAM1
-        case 22 : return "EBU Tech 3213";                               //Added in ISO 23001-8:201x/PDAM1
+        case 11 : return "SMPTE RP 431-2";                              //Added in HEVC 2016
+        case 12 : return "SMPTE EG 432-1";                              //Added in HEVC 2016
+        case 22 : return "EBU Tech 3213";                               //Added in HEVC 2016
         default : return "";
     }
 }
@@ -70,7 +70,7 @@ extern const char* Mpegv_transfer_characteristics(int8u transfer_characteristics
         case 15 : return "BT.2020 constant";                            //Added in HEVC
         case 16 : return "PQ";                                          //Added in HEVC 2015
         case 17 : return "SMPTE ST 428-1";                              //Added in HEVC 2015
-        case 18 : return "HLG";                                         //Added in ISO 23001-8:201x/PDAM1
+        case 18 : return "HLG";                                         //Added in HEVC 2016
         default : return "";
     }
 }
@@ -89,8 +89,9 @@ extern const char* Mpegv_matrix_coefficients(int8u matrix_coefficients)
         case  8 : return "YCgCo";                                       //Added in AVC
         case  9 : return "BT.2020 non-constant";                        //Added in HEVC
         case 10 : return "BT.2020 constant";                            //Added in HEVC
-        case 11 : return "Chromaticity-derived non-constant";           //Added in ISO 23001-8:201x/PDAM1
-        case 12 : return "Chromaticity-derived constant";               //Added in ISO 23001-8:201x/PDAM1
+        case 11 : return "Y'D'zD'x";                                    //Added in HEVC 2016
+        case 12 : return "Chromaticity-derived non-constant";           //Added in HEVC 2016
+        case 13 : return "Chromaticity-derived constant";               //Added in HEVC 2016
         case 14 : return "ICtCp";                                       //Added in HEVC 2016
         default : return "";
     }
