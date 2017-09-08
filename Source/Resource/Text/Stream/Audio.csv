@@ -25,7 +25,7 @@ Format_Version;;;Y YTY;;;Version of this format;;
 Format_Profile;;;Y YTY;;;Profile of the Format (old XML: 'Profile@Level' format; MIXML: 'Profile' only)
 Format_Level;;;Y YTY;;;Level of the Format (only MIXML)
 Format_Compression;;;Y YTY;;;Compression method used;;
-Format_Settings;;;N YT;;;Settings needed for decoder used, summary;;
+Format_Settings;;;Y NT;;;Settings needed for decoder used, summary;;
 Format_Settings_SBR;;Yes;N YTY;;;;;
 Format_Settings_SBR/String;;;N NT;;;;;
 Format_Settings_PS;;Yes;N YTY;;;;;

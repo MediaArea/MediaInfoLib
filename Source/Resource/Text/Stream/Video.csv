@@ -29,7 +29,7 @@ Format_Compression;;;Y YTY;;;Compression method used
 MultiView_BaseProfile;;;Y YTY;;;Multiview, profile of the base stream
 MultiView_Count;;;Y YTY;;;Multiview, count of views
 MultiView_Layout;;;Y YTY;;;Multiview, how views are muxed in the container in case of it is not muxing in the stream
-Format_Settings;;;N YT;;;Settings needed for decoder used, summary
+Format_Settings;;;Y NT;;;Settings needed for decoder used, summary
 Format_Settings_BVOP;;Yes;N YTY;;;Settings needed for decoder used, detailled
 Format_Settings_BVOP/String;;;Y NT;;;Settings needed for decoder used, detailled
 Format_Settings_QPel;;Yes;N YTY;;;Settings needed for decoder used, detailled
