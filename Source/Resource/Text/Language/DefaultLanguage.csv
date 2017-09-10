@@ -153,6 +153,7 @@ ActiveFormatDescription;Active Format Description
 ActiveFormatDescription_MuxingMode;Active Format Description, Muxing mode
 Actor;Actor
 Actor_Character;Character played
+AdID;Ad-ID identifier
 Added_Date;Added date
 Address;Address
 Advanced;Advanced

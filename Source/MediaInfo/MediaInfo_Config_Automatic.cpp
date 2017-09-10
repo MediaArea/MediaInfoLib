@@ -182,6 +182,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "ActiveFormatDescription_MuxingMode;Active Format Description, Muxing mode\n"
     "Actor;Actor\n"
     "Actor_Character;Character played\n"
+    "AdID;Ad-ID identifier\n"
     "Added_Date;Added date\n"
     "Address;Address\n"
     "Advanced;Advanced\n"
