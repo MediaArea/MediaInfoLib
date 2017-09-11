@@ -2764,6 +2764,26 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         Fill(Stream_General, 0, "Media/UUID", Value);
                     else if (Parameter=="com.apple.finalcutstudio.media.history.uuid")
                         Fill(Stream_General, 0, "Media/History/UUID", Value);
+                    else if (Parameter=="com.apple.proapps.logNote")
+                    {
+                        Fill(Stream_General, 0, "AdID_Registry", Value);
+                        Fill_SetOptions(Stream_General, 0, "AdID_Registry", "N NTY");
+                        if (!Retrieve(Stream_General, 0, "AdID_Value").empty())
+                        {
+                            Fill(Stream_General, 0, "AdID/String", Value+__T(" (")+Retrieve(Stream_General, 0, "AdID_Registry")+__T(")"), true);
+                            Fill_SetOptions(Stream_General, 0, "AdID/String", "Y NTN");
+                        }
+                    }
+                    else if (Parameter=="com.apple.proapps.reel")
+                    {
+                        Fill(Stream_General, 0, "AdID_Value", Value);
+                        Fill_SetOptions(Stream_General, 0, "AdID_Value", "N NTY");
+                        if (!Retrieve(Stream_General, 0, "AdID_Registry").empty())
+                        {
+                            Fill(Stream_General, 0, "AdID/String", Value+__T(" (")+Retrieve(Stream_General, 0, "AdID_Registry")+__T(")"), true);
+                            Fill_SetOptions(Stream_General, 0, "AdID/String", "Y NTN");
+                        }
+                    }
                     else if (!Parameter.empty())
                         Fill(Stream_General, 0, Parameter.c_str(), Value, true);
                 FILLING_END();

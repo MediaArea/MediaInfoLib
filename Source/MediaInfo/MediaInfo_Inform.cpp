@@ -447,13 +447,16 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
             #if defined(MEDIAINFO_XML_YES)
             if (XML_0_7_78)
             {
+                Ztring Options=Get((stream_t)StreamKind, StreamPos, Champ_Pos, Info_Options);
                 if (Champ_Pos>=Stream[StreamKind][StreamPos].size())
-                    Shouldshow=true;
+                {
+                    if (InfoOption_ShowInXml>=Options.size() || Options[InfoOption_ShowInXml]==__T('Y'))
+                        Shouldshow=true;
+                }
                 else
                 {
-                Ztring Options=Get((stream_t)StreamKind, StreamPos, Champ_Pos, Info_Options);
-                if (InfoOption_ShowInXml<Options.size() && Options[InfoOption_ShowInXml]==__T('Y'))
-                    Shouldshow=true;
+                    if (InfoOption_ShowInXml<Options.size() && Options[InfoOption_ShowInXml]==__T('Y'))
+                        Shouldshow=true;
                 }
             }
             else
