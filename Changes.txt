@@ -1,6 +1,12 @@
 I changed some elements in the interface.
 No break in binary compatibily (no crash), but some details.
 
+0.7.98 --> 0.7.99
+-----------------
+- AAC: CodecID includes audioObjectType (decimal)
+- MP4/MOV: CodecID includes ObjectTypeId (hexadecimal) when it is present (e.g. for mp4a, mp4v, mp4s)
+- transfer_characteristics: "SMPTE ST 2084" replaced by "PQ"
+
 0.7.97 --> 0.7.98
 -----------------
 - transfer_characteristics and matrix_coefficients slight change in order to have them unique per ISO integer value
