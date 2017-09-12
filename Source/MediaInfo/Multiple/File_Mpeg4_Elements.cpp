@@ -2764,7 +2764,7 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         Fill(Stream_General, 0, "Media/UUID", Value);
                     else if (Parameter=="com.apple.finalcutstudio.media.history.uuid")
                         Fill(Stream_General, 0, "Media/History/UUID", Value);
-                    else if (Parameter=="com.apple.proapps.logNote")
+                    else if (Parameter=="com.universaladid.idregistry")
                     {
                         Fill(Stream_General, 0, "AdID_Registry", Value);
                         Fill_SetOptions(Stream_General, 0, "AdID_Registry", "N NTY");
@@ -2774,7 +2774,7 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                             Fill_SetOptions(Stream_General, 0, "AdID/String", "Y NTN");
                         }
                     }
-                    else if (Parameter=="com.apple.proapps.reel")
+                    else if (Parameter=="com.universaladid.idvalue")
                     {
                         Fill(Stream_General, 0, "AdID_Value", Value);
                         Fill_SetOptions(Stream_General, 0, "AdID_Value", "N NTY");
