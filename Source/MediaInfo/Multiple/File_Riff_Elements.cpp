@@ -3560,7 +3560,8 @@ void File_Riff::WAVE_bext()
 
     //Parsing
     Ztring Description, Originator, OriginatorReference, OriginationDate, OriginationTime, History;
-    int16u Version;
+    int128u UMID1, UMID2, UMID3, UMID4;
+    int16u Version, LoudnessValue=0x7FFF, LoudnessRange=0x7FFF, MaxTruePeakLevel=0x7FFF, MaxMomentaryLoudness=0x7FFF, MaxShortTermLoudness=0x7FFF;
     Get_Local(256, Description,                                 "Description");
     Get_Local( 32, Originator,                                  "Originator");
     Get_Local( 32, OriginatorReference,                         "OriginatorReference");
@@ -3568,8 +3569,21 @@ void File_Riff::WAVE_bext()
     Get_Local(  8, OriginationTime,                             "OriginationTime");
     Get_L8   (     TimeReference,                               "TimeReference"); //To be divided by SamplesPerSec
     Get_L2   (     Version,                                     "Version");
-    if (Version==1)
-        Skip_UUID(                                              "UMID");
+    if (Version>=1)
+    {
+        Get_UUID (UMID1,                                        "UMID");
+        Get_UUID (UMID2,                                        "UMID");
+        Get_UUID (UMID3,                                        "UMID");
+        Get_UUID (UMID4,                                        "UMID");
+    }
+    if (Version>=2)
+    {
+        Get_L2 (LoudnessValue,                                  "LoudnessValue");
+        Get_L2 (LoudnessRange,                                  "LoudnessRange");
+        Get_L2 (MaxTruePeakLevel,                               "MaxTruePeakLevel");
+        Get_L2 (MaxMomentaryLoudness,                           "MaxMomentaryLoudness");
+        Get_L2 (MaxShortTermLoudness,                           "MaxShortTermLoudness");
+    }
     Skip_XX  (602-Element_Offset,                               "Reserved");
     if (Element_Offset<Element_Size)
         Get_Local(Element_Size-Element_Offset, History,         "History");
@@ -3584,6 +3598,26 @@ void File_Riff::WAVE_bext()
         {
             Fill(Stream_Audio, 0, Audio_Delay, float64_int64s(((float64)TimeReference)*1000/SamplesPerSec));
             Fill(Stream_Audio, 0, Audio_Delay_Source, "Container (bext)");
+        }
+        if (Version>=1 && UMID1 && UMID2)
+        {
+            Ztring UMID=__T("0x")+Ztring().From_Number(UMID1, 16)+Ztring().From_Number(UMID2, 16);
+            if ((UMID1.lo&0xFF000000)==0x33000000)
+                UMID+=Ztring().From_Number(UMID3, 16)+Ztring().From_Number(UMID4, 16);
+            Fill(Stream_General, 0, "UMID", UMID);
+        }
+        if (Version>=2)
+        {
+            if (LoudnessValue!=0x7FFF)
+                Fill(Stream_Audio, 0, "LoudnessValue", (float)((int16s)LoudnessValue)/100, 2);
+            if (LoudnessRange!=0x7FFF)
+                Fill(Stream_Audio, 0, "LoudnessRange", (float)((int16s)LoudnessRange)/100, 2);
+            if (MaxTruePeakLevel!=0x7FFF)
+                Fill(Stream_Audio, 0, "MaxTruePeakLevel", (float)((int16s)MaxTruePeakLevel)/100, 2);
+            if (MaxMomentaryLoudness!=0x7FFF)
+                Fill(Stream_Audio, 0, "MaxMomentaryLoudness", (float)((int16s)MaxMomentaryLoudness)/100, 2);
+            if (MaxShortTermLoudness!=0x7FFF)
+                Fill(Stream_Audio, 0, "MaxShortTermLoudness", (float)((int16s)MaxShortTermLoudness)/100, 2);
         }
     FILLING_END();
 }
