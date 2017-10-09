@@ -2751,7 +2751,9 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
             {
                 FILLING_BEGIN();
                     std::string Parameter;
-                    Metadata_Get(Parameter, moov_udta_meta_keys_List[moov_udta_meta_keys_ilst_Pos<moov_udta_meta_keys_List.size()?moov_udta_meta_keys_ilst_Pos:moov_udta_meta_keys_List.size()-1]);
+                    int32u keys_Pos=Element_Code_Get(Element_Level-1);
+                    if (keys_Pos && keys_Pos<=moov_udta_meta_keys_List.size())
+                        Metadata_Get(Parameter, moov_udta_meta_keys_List[keys_Pos-1]);
                     if (Parameter=="com.apple.quicktime.version")
                         Vendor_Version=Value.SubString(__T(""), __T(" "));
                     else if (Parameter=="com.apple.quicktime.player.version")
@@ -2766,22 +2768,22 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         Fill(Stream_General, 0, "Media/History/UUID", Value);
                     else if (Parameter=="com.universaladid.idregistry")
                     {
-                        Fill(Stream_General, 0, "AdID_Registry", Value);
-                        Fill_SetOptions(Stream_General, 0, "AdID_Registry", "N NTY");
-                        if (!Retrieve(Stream_General, 0, "AdID_Value").empty())
+                        Fill(Stream_General, 0, "UniversalAdID_Registry", Value);
+                        Fill_SetOptions(Stream_General, 0, "UniversalAdID_Registry", "N NTY");
+                        if (!Retrieve(Stream_General, 0, "UniversalAdID_Value").empty())
                         {
-                            Fill(Stream_General, 0, "AdID/String", Value+__T(" (")+Retrieve(Stream_General, 0, "AdID_Registry")+__T(")"), true);
-                            Fill_SetOptions(Stream_General, 0, "AdID/String", "Y NTN");
+                            Fill(Stream_General, 0, "UniversalAdID/String", Value+__T(" (")+Retrieve(Stream_General, 0, "UniversalAdID_Registry")+__T(")"), true);
+                            Fill_SetOptions(Stream_General, 0, "UniversalAdID/String", "Y NTN");
                         }
                     }
                     else if (Parameter=="com.universaladid.idvalue")
                     {
-                        Fill(Stream_General, 0, "AdID_Value", Value);
-                        Fill_SetOptions(Stream_General, 0, "AdID_Value", "N NTY");
-                        if (!Retrieve(Stream_General, 0, "AdID_Registry").empty())
+                        Fill(Stream_General, 0, "UniversalAdID_Value", Value);
+                        Fill_SetOptions(Stream_General, 0, "UniversalAdID_Value", "N NTY");
+                        if (!Retrieve(Stream_General, 0, "UniversalAdID_Registry").empty())
                         {
-                            Fill(Stream_General, 0, "AdID/String", Value+__T(" (")+Retrieve(Stream_General, 0, "AdID_Registry")+__T(")"), true);
-                            Fill_SetOptions(Stream_General, 0, "AdID/String", "Y NTN");
+                            Fill(Stream_General, 0, "UniversalAdID/String", Value+__T(" (")+Retrieve(Stream_General, 0, "UniversalAdID_Registry")+__T(")"), true);
+                            Fill_SetOptions(Stream_General, 0, "UniversalAdID/String", "Y NTN");
                         }
                     }
                     else if (!Parameter.empty())
