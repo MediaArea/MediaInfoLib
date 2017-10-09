@@ -1087,6 +1087,9 @@ Tree;Tree
 Tree & Text;Tree & Text
 Type;Type
 UniqueID;Unique ID
+UniversalAdID;Universal Ad ID
+UniversalAdID_Registry;Universal Ad ID registry
+UniversalAdID_Value;Universal Ad ID value
 Unknown;Unknown
 Url;Url
 Video;Video

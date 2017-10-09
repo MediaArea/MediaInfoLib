@@ -154,6 +154,9 @@ Encryption_Method;;;N YTY;;;;;
 Encryption_Mode;;;N YTY;;;;;
 Encryption_Padding;;;N YTY;;;;;
 Encryption_InitializationVector;;;N YTY;;;;;
+UniversalAdID/String;;;Y NT;;;Universal Ad ID, see https://ad-id.org
+UniversalAdID_Registry;;;N YT;;;Universal Ad ID registry
+UniversalAdID_Value;;;N YT;;;Universal Ad ID value
 Title;;;N NTY;;;(Generic)Title of file;;Title
 Title_More;;;N NTY;;;(Generic)More info about the title of file;;Title
 Title/Url;;;N NT;;;(Generic)Url;;Title
