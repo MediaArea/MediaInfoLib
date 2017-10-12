@@ -74,7 +74,7 @@ DTS;;;A;Dts;Digital Theater Systems;dts dtshd;;;Lossy
 DTS-HD;;;A;Dts;Digital Theater Systems;dts dtshd;;;Lossy
 E-AC-3;;;A;Ac3;Enhanced Audio Coding 3;dd+ ec3 eac3;audio/eac3;;Lossy
 Extended Module;;;A;ExtendedModule;;xm;;;
-FLAC;;;A;Flac;Free Lossless Audio Codec;flac;;http://flac.sourceforge.net/;
+FLAC;;;A;Flac;Free Lossless Audio Codec;flac;;https://xiph.org/flac/;
 G.719;;;A;;;;audio/G719;;Lossy
 G.722;;;A;;;;audio/G722;;Lossy
 G.722.1;;;A;;;;audio/G7221;;Lossy
