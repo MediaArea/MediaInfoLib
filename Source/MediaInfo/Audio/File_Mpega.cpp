@@ -527,6 +527,8 @@ void File_Mpega::Streams_Finish()
             Samples=1152;
         Fill(Stream_Audio, 0, Audio_FrameCount, FrameCount, 10, true);
         Fill(Stream_Audio, 0, Audio_SamplingCount, FrameCount*Samples, 10, true);
+        float64 audio_fps = (float64)((float64)Mpega_SamplingRate[ID][sampling_frequency] / (float64)Samples);
+        Fill(Stream_Audio, 0, Audio_FrameRate, audio_fps, 3, true);
     }
 
     File__Tags_Helper::Streams_Finish();
