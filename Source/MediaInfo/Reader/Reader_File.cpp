@@ -74,7 +74,7 @@ void Reader_File_Thread::Entry()
             ToRead=Base->Buffer_Max-Base->Buffer_End;
             Buffer_ToReadOffset=Base->Buffer_End;
         }
-		}
+        }
         if (ToRead)
         {
             if (ToRead>ReadSize_Max)
@@ -97,7 +97,7 @@ void Reader_File_Thread::Entry()
                     Base->IsLooping=true;
                 }
             }
-			}
+            }
             #ifdef WINDOWS
                 SetEvent(Base->Condition_WaitingForMoreData);
             #endif //WINDOWS

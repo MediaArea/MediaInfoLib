@@ -1459,15 +1459,15 @@ void File_Mk::Header_Parse()
             Fill(Stream_General, 0, "IsTruncated", "Yes");
     }
 
-	//Should we parse Cluster?
-	if (Element_Level==3 && Name==Elements::Segment_Cluster && !Segment_Tracks_Count)
+    //Should we parse Cluster?
+    if (Element_Level==3 && Name==Elements::Segment_Cluster && !Segment_Tracks_Count)
     {
         //Jumping
         for (size_t Pos=0; Pos<Segment_Seeks.size(); Pos++)
             if (Segment_Seeks[Pos].SeekID==Elements::Segment_Tracks)
             {
                 Fill(Stream_General, 0, General_IsStreamable, "No");
-				Element_DoNotShow();
+                Element_DoNotShow();
                 IsParsingSegmentTrack_SeekBackTo=File_Offset+Buffer_Offset;
 
                 JumpTo(Segment_Seeks[Pos].SeekPosition);
