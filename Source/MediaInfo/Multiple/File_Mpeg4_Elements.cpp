@@ -4900,6 +4900,14 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                 if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("VC-3"))
                 {
                     File_Vc3* Parser=new File_Vc3;
+                    #if MEDIAINFO_DEMUX
+                        if (Config->Demux_Unpacketize_Get())
+                        {
+                            Streams[moov_trak_tkhd_TrackID].Demux_Level=4; //Intermediate
+                            Parser->Demux_Level=2; //Container
+                            Parser->Demux_UnpacketizeContainer=true;
+                        }
+                    #endif //MEDIAINFO_DEMUX
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
                 }
             #endif
