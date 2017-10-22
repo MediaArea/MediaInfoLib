@@ -809,6 +809,8 @@ size_t MediaInfo_Internal::Open_Buffer_SegmentChange ()
 {
     MEDIAINFO_DEBUG_CONFIG_TEXT(Debug+=__T("Open_Buffer_SegmentChange"))
 
+    if (Info == NULL)
+        return 0;
     Info->Open_Buffer_SegmentChange();
 
     return 1;
