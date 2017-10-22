@@ -367,6 +367,9 @@ size_t MediaInfo_Internal::Open(const String &File_Name_)
     Config.File_Names_Pos=1;
     }
 
+    Config.IsFinishing=false;
+    CS.Leave();
+
     //Parsing
     if (BlockMethod==1)
     {
