@@ -533,10 +533,10 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
     if (sbrPresentFlag || !Infos["Format_Settings_SBR"].empty())
     {
         Infos["Format_Profile"]=__T("HE-AAC");
-        Ztring SamplingRate_Previous=Infos["SamplingRate"];
         int32u SamplingRate=(extension_sampling_frequency_index==(int8u)-1)?(((int32u)Frequency_b)*2):extension_sampling_frequency;
         if (SamplingRate)
         {
+            const Ztring SamplingRate_Previous = Infos["SamplingRate"];
             Infos["SamplingRate"].From_Number(SamplingRate, 10);
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
             {
@@ -554,13 +554,13 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
     if (psPresentFlag || !Infos["Format_Settings_PS"].empty())
     {
         Infos["Format_Profile"]=__T("HE-AACv2");
-        Ztring Channels=Infos["Channel(s)"];
-        Ztring ChannelPositions=Infos["ChannelPositions"];
-        Ztring SamplingRate_Previous=Infos["SamplingRate"];
         Infos["Channel(s)"]=__T("2");
         Infos["ChannelPositions"]=__T("Front: L R");
         if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
         {
+            const Ztring Channels = Infos["Channel(s)"];
+            const Ztring ChannelPositions = Infos["ChannelPositions"];
+            const Ztring SamplingRate_Previous = Infos["SamplingRate"];
             Infos["Format_Profile"]+=__T(" / HE-AAC / LC");
             Infos["Channel(s)"]+=__T(" / ")+Channels+__T(" / ")+Channels;
             Infos["ChannelPositions"]+=__T(" / ")+ChannelPositions+__T(" / ")+ChannelPositions;

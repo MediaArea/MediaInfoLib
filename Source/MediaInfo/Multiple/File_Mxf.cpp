@@ -6095,7 +6095,7 @@ void File_Mxf::Data_Parse()
         }
 
         //Frame info is specific to the container, and it is not updated
-        frame_info FrameInfo_Temp=FrameInfo;
+        const frame_info FrameInfo_Temp=FrameInfo;
         int64u Frame_Count_NotParsedIncluded_Temp=Frame_Count_NotParsedIncluded;
         if (!IsSub) //Updating for MXF only if MXF is not embedded in another container
         {
