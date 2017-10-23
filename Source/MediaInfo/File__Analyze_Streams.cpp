@@ -1009,7 +1009,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
         if (Target.empty() || Replace)
         {
             Target=Value; //First value
-			Stream_More_Item(Parameter_ISO, Info_Name_Text)=MediaInfoLib::Config.Language_Get(Parameter_Local);
+            Stream_More_Item(Parameter_ISO, Info_Name_Text)=MediaInfoLib::Config.Language_Get(Parameter_Local);
             Fill_SetOptions(StreamKind, StreamPos, Parameter, "Y NT");
         }
         else

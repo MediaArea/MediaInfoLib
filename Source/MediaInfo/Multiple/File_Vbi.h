@@ -32,12 +32,12 @@ class File_Vbi : public File__Analyze
 public :
 
     #if defined(MEDIAINFO_TELETEXT_YES)
-		File__Analyze*  Teletext_Parser;
+        File__Analyze*  Teletext_Parser;
     #endif //defined(MEDIAINFO_TELETEXT_YES)
-	
+    
     //Constructor/Destructor
-	File_Vbi();
-	~File_Vbi();
+    File_Vbi();
+    ~File_Vbi();
 
 private :
     //Streams management
