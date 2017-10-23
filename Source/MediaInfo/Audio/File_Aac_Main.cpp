@@ -553,33 +553,7 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
 
     if (psPresentFlag || !Infos["Format_Settings_PS"].empty())
     {
-        Infos["Format_Profile"]=__T("HE-AACv2");
-        Ztring Channels=Infos["Channel(s)"];
-        Ztring ChannelPositions=Infos["ChannelPositions"];
-        Ztring SamplingRate_Previous=Infos["SamplingRate"];
-        Infos["Channel(s)"]=__T("2");
-        Infos["ChannelPositions"]=__T("Front: L R");
-        if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
-        {
-            Infos["Format_Profile"]+=__T(" / HE-AAC / LC");
-            Infos["Channel(s)"]+=__T(" / ")+Channels+__T(" / ")+Channels;
-            Infos["ChannelPositions"]+=__T(" / ")+ChannelPositions+__T(" / ")+ChannelPositions;
-            int32u SamplingRate=(extension_sampling_frequency_index==(int8u)-1)?(((int32u)Frequency_b)*2):extension_sampling_frequency;
-            if (SamplingRate)
-                Infos["SamplingRate"]=Ztring().From_Number(SamplingRate, 10)+__T(" / ")+SamplingRate_Previous;
-        }
-        if (Infos["Format_Settings"]!=(psData?__T("Explicit"):__T("NBC")))
-        {
-            if (!Infos["Format_Settings"].empty())
-                Infos["Format_Settings"].insert(0, __T(" / "));
-            Infos["Format_Settings"].insert(0, psData?__T("Explicit"):__T("NBC")); // "Not Backward Compatible"
-        }
-        Infos["Format_Settings_PS"]=psData?__T("Yes (Explicit)"):__T("Yes (NBC)"); // "Not Backward Compatible"
-        if (StreamPos_Last!=(size_t)-1)
-        {
-            Ztring Codec=Retrieve(Stream_Audio, StreamPos_Last, Audio_Codec);
-            Infos["Codec"]=Ztring().From_Local(Aac_audioObjectType(audioObjectType))+__T("-SBR-PS");
-        }
+        FillInfosHEAACv2(psData ? __T("Explicit") : __T("NBC"));
     }
     else if (psData)
         Infos["Format_Settings_PS"]=__T("No (Explicit)");
