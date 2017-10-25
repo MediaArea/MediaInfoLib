@@ -976,7 +976,7 @@ void File_Mk::Streams_Finish()
                                         + (s[ 6]-'0')      *10
                                         + (s[ 7]-'0')         ;
                                 for (size_t i=9; i<s_size; i++)
-                                    d+=(s[i]-'0')/pow(10.0, i-8);
+                                    d+=(s[i]-'0')/std::pow(10.0, double(i)-8);
                                 Fill(StreamKind_Last, StreamPos_Last, "Duration", d*1000, s.size()-12);
                                 continue;
                             }
