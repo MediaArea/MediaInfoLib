@@ -3599,7 +3599,7 @@ void File_Riff::WAVE_bext()
             Fill(Stream_Audio, 0, Audio_Delay, float64_int64s(((float64)TimeReference)*1000/SamplesPerSec));
             Fill(Stream_Audio, 0, Audio_Delay_Source, "Container (bext)");
         }
-        if (Version>=1 && UMID1 && UMID2)
+        if (Version>=1 && UMID1 != 0 && UMID2 != 0)
         {
             Ztring UMID=__T("0x")+Ztring().From_Number(UMID1, 16)+Ztring().From_Number(UMID2, 16);
             if ((UMID1.lo&0xFF000000)==0x33000000)
