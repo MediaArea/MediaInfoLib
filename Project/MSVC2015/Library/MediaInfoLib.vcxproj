@@ -223,6 +223,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Ism.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Ivf.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Lxf.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_MiXml.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_P2_Clip.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Pmp.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Ptx.cpp" />
