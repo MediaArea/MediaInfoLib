@@ -131,6 +131,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Multiple/File_Ivf.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Lxf.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Mk.cpp \
+                       ../../../Source/MediaInfo/Multiple/File_MiXml.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Mpeg4.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Mpeg4_Descriptors.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Mpeg4_Elements.cpp \
