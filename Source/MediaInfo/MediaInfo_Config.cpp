@@ -174,6 +174,36 @@ void MediaInfo_Config_Library_VorbisCom       (InfoMap &Info);
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
+// Output formats
+
+static const size_t output_formats_item_size = 3;
+static const char* OutputFormats_JSONFields[output_formats_item_size] =
+{
+    "name",
+    "desc",
+    "mime",
+};
+typedef const char* output_formats_item[output_formats_item_size];
+static const size_t output_formats_size = 12;
+static output_formats_item OutputFormats[output_formats_size] =
+{
+    { "Text",                   "Text",                                                         "text/plain",       },
+    { "HTML",                   "HTML",                                                         "text/html",        },
+    { "XML",                    "MediaInfo XML",                                                "text/xml",         },
+    { "EBUCore_1.8_ps",         "EBUCore 1.8 (XML; acq. metadata: parameter then segment)",     "text/xml",         },
+    { "EBUCore_1.8_sp",         "EBUCore 1.8 (XML; acq. metadata: segment then parameter)",     "text/xml",         },
+    { "EBUCore_1.8_ps_JSON",    "EBUCore 1.8 (JSON; acq. metadata: parameter then segment)",    "text/json",        },
+    { "EBUCore_1.8_sp_JSON",    "EBUCore 1.8 (JSON; acq. metadata: segment then parameter)",    "text/json",        },
+    { "EBUCore_1.6",            "EBUCore 1.6",                                                  "text/xml",         },
+    { "FIMS_1.3",               "FIMS 1.3",                                                     "text/xml",         },
+    { "MPEG-7",                 "MPEG-7",                                                       "text/xml",         },
+    { "PBCore_2.0",             "PBCore 2.0",                                                   "text/xml",         },
+    { "PBCore_1.2",             "PBCore 1.2",                                                   "text/xml",         },
+};
+
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
 MediaInfo_Config Config;
 //---------------------------------------------------------------------------
 
@@ -845,6 +875,18 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         ToReturn.Separator_Set(1, __T(" "));
         ToReturn.Quote_Set(Ztring());
         return ToReturn.Read();
+    }
+    if (Option_Lower==__T("info_outputformats"))
+    {
+        return Info_OutputFormats_Get(BasicFormat_Text);
+    }
+    if (Option_Lower==__T("info_outputformats_csv"))
+    {
+        return Info_OutputFormats_Get(BasicFormat_CSV);
+    }
+    if (Option_Lower==__T("info_outputformats_json"))
+    {
+        return Info_OutputFormats_Get(BasicFormat_JSON);
     }
     if (Option_Lower==__T("info_parameters_csv"))
     {
@@ -2297,6 +2339,70 @@ Ztring MediaInfo_Config::Info_Parameters_Get (bool Complete)
     Language_Set(Ztring()); //TODO: it is reseted to English, it should actually not modify the language config (MediaInfo_Config_xxx() modifies the language config)
 
     return ToReturn.Read();
+}
+
+//---------------------------------------------------------------------------
+Ztring MediaInfo_Config::Info_OutputFormats_Get(basicformat Format)
+{
+    switch (Format)
+    {
+        case BasicFormat_Text:
+                                {
+                                ZtringListList ToReturn;
+                                for (size_t i = 0; i < output_formats_size; i++)
+                                    for (size_t j = 0; j < output_formats_item_size; j++)
+                                        ToReturn(i, j).From_UTF8(OutputFormats[i][j]);
+
+                                size_t max_len = 0;
+                                for (size_t i = 0; i < ToReturn.size(); i++)
+                                    max_len = std::max(max_len, ToReturn(i, 0).size());
+                                //Adapt first column
+                                for (size_t Pos = 0; Pos<ToReturn.size(); Pos++)
+                                {
+                                    Ztring &C1 = ToReturn(Pos, 0);
+                                    if (!ToReturn(Pos, 1).empty())
+                                    {
+                                        C1.resize(max_len + 1, ' ');
+                                        C1 += __T(':');
+                                    }
+                                }
+                                ToReturn.Separator_Set(0, LineSeparator_Get());
+                                ToReturn.Separator_Set(1, __T(" "));
+                                ToReturn.Quote_Set(Ztring());
+                                return ToReturn.Read();
+                                }
+        case BasicFormat_CSV:
+                                {
+                                ZtringListList ToReturn;
+                                for (size_t i = 0; i < output_formats_size; i++)
+                                    for (size_t j = 0; j < output_formats_item_size; j++)
+                                        ToReturn(i, j).From_UTF8(OutputFormats[i][j]);
+
+                                ToReturn.Separator_Set(0, EOL);
+                                ToReturn.Separator_Set(1, ",");
+                                return ToReturn.Read();
+                                }
+        case BasicFormat_JSON:
+                                {
+                                string ToReturn("{\"output\":[");
+                                for (size_t i = 0; i < output_formats_size; i++)
+                                {
+                                    ToReturn += "{";
+                                    for (size_t j = 0; j < output_formats_item_size; j++)
+                                    {
+                                        ToReturn += "\"";
+                                        ToReturn += OutputFormats_JSONFields[j];
+                                        ToReturn += "\":\"";
+                                        ToReturn += OutputFormats[i][j];
+                                        ToReturn += (j + 1 < output_formats_item_size)?"\",":"\"";
+                                    }
+                                    ToReturn += (i + 1 < output_formats_size)?"},":"}";
+                                }
+                                ToReturn += "]}";
+                                return Ztring().From_UTF8(ToReturn.c_str());
+                                }
+        default: return String();
+    }
 }
 
 //---------------------------------------------------------------------------
