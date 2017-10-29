@@ -8,13 +8,13 @@ StreamKindPos;;;N NI;;;When multiple streams, number of the stream (base=1)
 StreamOrder;;;N YI;;;Stream order in the file, whatever is the kind of stream (base=0)
 FirstPacketOrder;;;N YI;;;Order of the first fully decodable packet met in the file, whatever is the kind of stream (base=0)
 Inform;;;N NT;;;Last **Inform** call
-ID;;;N YIY;;;The ID for this stream in this file
+ID;;;N YTY;;;The ID for this stream in this file
 ID/String;;;Y NT;;;The ID for this stream in this file
-OriginalSourceMedium_ID;;;N YIY;;;The ID for this stream in the original medium of the material
+OriginalSourceMedium_ID;;;N YTY;;;The ID for this stream in the original medium of the material
 OriginalSourceMedium_ID/String;;;Y NT;;;The ID for this stream in the original medium of the material
-UniqueID;;;N YIY;;;The unique ID for this stream, should be copied with stream copy
+UniqueID;;;N YTY;;;The unique ID for this stream, should be copied with stream copy
 UniqueID/String;;;Y NT;;;The unique ID for this stream, should be copied with stream copy
-MenuID;;;N YIY;;;The menu ID for this stream in this file
+MenuID;;;N YTY;;;The menu ID for this stream in this file
 MenuID/String;;;Y NT;;;The menu ID for this stream in this file
 GeneralCount;1;;N NIY;;;Number of general streams
 VideoCount;;;N NIY;;;Number of video streams
@@ -90,7 +90,7 @@ FileSize/String1;;;N NT;;;File size (with measure, 1 digit mini)
 FileSize/String2;;;N NT;;;File size (with measure, 2 digit mini)
 FileSize/String3;;;N NT;;;File size (with measure, 3 digit mini)
 FileSize/String4;;;N NT;;;File size (with measure, 4 digit mini)
-Duration;; ms;N YIY;;;Play time of the stream in ms
+Duration;; ms;N YFY;;;Play time of the stream in ms
 Duration/String;;;Y NT;;;Play time in format : XXx YYy only, YYy omited if zero
 Duration/String1;;;N NT;;;Play time in format : HHh MMmn SSs MMMms, XX omited if zero
 Duration/String2;;;N NT;;;Play time in format : XXx YYy only, YYy omited if zero
@@ -306,7 +306,7 @@ ServiceName;;;Y YTY;;;;;Legal
 ServiceChannel;;;Y YTY;;;;;Legal
 Service/Url;;;Y YTY;;;;;Legal
 ServiceProvider;;;Y YTY;;;;;Legal
-ServiceProviderr/Url;;;Y YTY;;;;;Legal
+ServiceProvider/Url;;;Y YTN;;;;;Legal
 ServiceType;;;Y YTY;;;;;Legal
 NetworkName;;;Y YTY;;;;;Legal
 OriginalNetworkName;;;Y YTY;;;;;Legal
