@@ -395,7 +395,7 @@ namespace Elements
     const int32u W3DI=0x57334449;
 
     #define UUID(NAME, PART1, PART2, PART3, PART4, PART5) \
-        const int64u NAME   =0x##PART3##PART2##PART1##ULL; \
+        const int64u NAME   =((int64u(0x##PART1))&0xFF)<<56 | ((int64u(0x##PART1)>>8)&0xFF)<<48 | ((int64u(0x##PART1)>>16)&0xFF)<<40 | ((int64u(0x##PART1)>>24)&0xFF)<<32 | ((int64u(0x##PART2))&0xFF)<<24 | ((int64u(0x##PART2)>>8)&0xFF)<<16 | ((int64u(0x##PART3))&0xFF)<<8 | ((int64u(0x##PART3)>>8)&0xFF); \
         const int64u NAME##2=0x##PART4##PART5##ULL; \
 
     UUID(QLCM_QCELP1,                                           5E7F6D41, B115, 11D0, BA91, 00805FB4B97E)
@@ -1540,16 +1540,17 @@ void File_Riff::AVI__hdlr_strl_strf_auds_ExtensibleWave()
     Get_GUID(SubFormat,                                         "SubFormat");
 
     FILLING_BEGIN();
-        if ((SubFormat.hi&0xFFFFFFFFFFFF0000LL)==0x0010000000000000LL && SubFormat.lo==0x800000AA00389B71LL)
+        if ((SubFormat.hi&0x0000FFFFFFFFFFFFLL)==0x0000000000001000LL && SubFormat.lo==0x800000AA00389B71LL)
         {
-            CodecID_Fill(Ztring().From_Number((int16u)SubFormat.hi, 16), Stream_Audio, StreamPos_Last, InfoCodecID_Format_Riff);
+            int16u LegacyCodecID=(int16u)((((SubFormat.hi>>48)&0xFF)<<8) | (SubFormat.hi>>56)); // It is Little Endian
+            CodecID_Fill(Ztring().From_Number(LegacyCodecID, 16), Stream_Audio, StreamPos_Last, InfoCodecID_Format_Riff);
             Fill(Stream_Audio, StreamPos_Last, Audio_CodecID, Ztring().From_GUID(SubFormat), true);
-            Fill(Stream_Audio, StreamPos_Last, Audio_Codec, MediaInfoLib::Config.Codec_Get(Ztring().From_Number((int16u)SubFormat.hi, 16)), true);
+            Fill(Stream_Audio, StreamPos_Last, Audio_Codec, MediaInfoLib::Config.Codec_Get(Ztring().From_Number(LegacyCodecID, 16)), true);
 
             //Creating the parser
                  if (0);
             #if defined(MEDIAINFO_PCM_YES)
-            else if (MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Riff, Ztring().From_Number((int16u)SubFormat.hi, 16))==__T("PCM"))
+            else if (MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Riff, Ztring().From_Number(LegacyCodecID, 16))==__T("PCM"))
             {
                 //Creating the parser
                 File_Pcm* Parser=new File_Pcm;
