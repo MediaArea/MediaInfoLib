@@ -3279,7 +3279,12 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
     if (StreamPos_Last==(size_t)-1)
     {
         if (Descriptors.size()==1)
-            StreamPos_Last=0;
+        {
+            if (Count_Get(Descriptor->second.StreamKind)==0)
+                Stream_Prepare(Descriptor->second.StreamKind);
+            else
+                StreamPos_Last=0;
+        }
         else if (Descriptor->second.LinkedTrackID!=(int32u)-1)
         {
             //Workaround for a specific file with same ID
@@ -17077,8 +17082,8 @@ void File_Mxf::Subsampling_Compute(descriptors::iterator Descriptor)
 #if defined(MEDIAINFO_REFERENCES_YES)
 void File_Mxf::Locators_CleanUp()
 {
-    //Testing locators (TODO: check if this is still useful)
-    if (Locators.size()==1)
+    //Testing locators (TODO: check if this is still useful after refactoring, with MXF having essence and locators)
+    if (Locators.size()==1 && !Essences.empty())
     {
         Locators.clear();
         return;
