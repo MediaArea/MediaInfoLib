@@ -698,6 +698,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_btrt=0x62747274;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_clap=0x636C6170;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_chan=0x6368616E;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_clli=0x636C6C69;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr=0x636F6C72;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_clcn=0x636C636E;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc=0x6E636C63;
@@ -722,6 +723,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h=0x6A703268;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_colr=0x636F6C72;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_ihdr=0x69686472;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv=0x6D646376;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_pasp=0x70617370;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf=0x73696E66;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_frma=0x66726D61;
@@ -1034,6 +1036,8 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_btrt)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_chan)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_clap)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_clli)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_colr)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_d263)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dac3)
@@ -5322,6 +5326,22 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_clap()
 }
 
 //---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_clli()
+{
+    Element_Name("Content Light Level Info");
+
+    //Parsing
+    int16u  maximum_content_light_level, maximum_frame_average_light_level;
+    Get_B2(maximum_content_light_level,                         "maximum_content_light_level");
+    Get_B2(maximum_frame_average_light_level,                   "maximum_frame_average_light_level");
+
+    FILLING_BEGIN();
+        Fill(Stream_Video, 0, "MaxCLL", Ztring::ToZtring(maximum_content_light_level) + __T(" cd/m2"));
+        Fill(Stream_Video, 0, "MaxFALL", Ztring::ToZtring(maximum_frame_average_light_level) + __T(" cd/m2"));
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr()
 {
     Element_Name("Color Parameter");
@@ -5921,6 +5941,21 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_idfm()
     Element_Name("Description");
 
     Info_C4(Description,                                        "Description"); Param_Info1(Mpeg4_Description(Description));
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv()
+{
+    Element_Name("Mastering Display Color Volume");
+
+    Ztring MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance;
+
+    Get_MasteringDisplayColorVolume(MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance);
+
+    FILLING_BEGIN();
+        Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_ColorPrimaries", MasteringDisplay_ColorPrimaries);
+        Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_Luminance", MasteringDisplay_Luminance);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
