@@ -35,8 +35,8 @@ Format_Settings_ModeExtension;;;Y YTY;;;;;
 Format_Settings_Emphasis;;;Y YTY;;;;;
 Format_Settings_Floor;;;Y YTY;;;;;
 Format_Settings_Firm;;;Y YTY;;;;;
-Format_Settings_Endianness;;;Y YTY;;;;;
-Format_Settings_Sign;;;Y YTY;;;;;
+Format_Settings_Endianness;;;N YTY;;;;;
+Format_Settings_Sign;;;N YTY;;;;;
 Format_Settings_Law;;;Y YTY;;;;;
 Format_Settings_ITU;;;Y YTY;;;;;
 Format_Settings_Wrapping;;;Y YTY;;;Wrapping mode (Frame wrapped or Clip wrapped)
