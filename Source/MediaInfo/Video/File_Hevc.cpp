@@ -1986,13 +1986,13 @@ void File_Hevc::sei_message_user_data_unregistered(int32u payloadSize)
 
     //Parsing
     int128u uuid_iso_iec_11578;
-    Get_GUID(uuid_iso_iec_11578,                                "uuid_iso_iec_11578");
+    Get_UUID(uuid_iso_iec_11578,                                "uuid_iso_iec_11578");
 
     switch (uuid_iso_iec_11578.hi)
     {
-        case 0x214892b89bCC7f42LL : Element_Info1("Ateme");
+        case 0x427FCC9BB8924821LL : Element_Info1("Ateme");
                                      sei_message_user_data_unregistered_Ateme(payloadSize-16); break;
-        case 0xDB4717b509DEA22CLL : Element_Info1("x265");
+        case 0x2CA2DE09B51747DBLL : Element_Info1("x265");
                                      sei_message_user_data_unregistered_x265(payloadSize-16); break;
         default :
                     Element_Info1("unknown");
