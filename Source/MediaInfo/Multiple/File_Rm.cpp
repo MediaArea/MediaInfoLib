@@ -369,7 +369,7 @@ void File_Rm::MDPR()
         CodecID_Fill(Ztring(mime_type.c_str()), Stream_Audio, StreamPos_Last, InfoCodecID_Format_Real);
         Fill(Stream_Audio, StreamPos_Last, Audio_Codec, "ralf");
     }
-    else if (mime_type.find("audio/")==0)
+    else if (mime_type.compare("audio/")==0)
         Stream_Prepare(Stream_Audio);
     else if (mime_type=="video/text")
         Stream_Prepare(Stream_Text);
@@ -382,17 +382,17 @@ void File_Rm::MDPR()
         MDPR_realvideo();
         Fill(Stream_Video, StreamPos_Last, Video_Encryption, "Y");
     }
-    else if (mime_type.find("video/")==0)
+    else if (mime_type.compare("video/")==0)
         Stream_Prepare(Stream_Video);
     else if (mime_type=="logical-audio/x-pn-multirate-realaudio")
         MDPR_IsStream=false; //What do we with this?
-    else if (mime_type.find("logical-audio/")==0)
+    else if (mime_type.compare("logical-audio/")==0)
         MDPR_IsStream=false; //What do we with this?
     else if (mime_type=="logical-fileinfo")
         MDPR_fileinfo();
     //else if (mime_type=="logical-video/x-pn-multirate-realvideo")
     //    MDPR_IsStream=false; //What do we with this?
-    //else if (mime_type.find("logical-video/")==0)
+    //else if (mime_type.compare("logical-video/")==0)
     //    MDPR_IsStream=false; //What do we with this?
     else
         MDPR_IsStream=false;
