@@ -1352,7 +1352,6 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
     {
         File_Pcm* Parser=new File_Pcm;
         Parser->Codec=Codec;
-        Parser->Endianness='L';
         Parser->BitDepth=(int8u)BitsPerSample;
         #if MEDIAINFO_DEMUX
             if (Demux_Rate)
