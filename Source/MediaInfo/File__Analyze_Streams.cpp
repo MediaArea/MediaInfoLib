@@ -1870,7 +1870,8 @@ void File__Analyze::Tags()
 //Duration
 void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, size_t Parameter)
 {
-    if (Retrieve(StreamKind, StreamPos, Parameter).empty())
+    if (Retrieve(StreamKind, StreamPos, Parameter).empty()
+     || (StreamKind==Stream_Audio && (Parameter==Audio_Interleave_Duration || Parameter==Audio_Interleave_Preload))) //Exception: string is built also from frame rate, already computed. TODO: check behavior with MIXML input
         return;
 
     //Clearing old data
