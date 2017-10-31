@@ -1424,7 +1424,7 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
         else if (FormatTag==0x6750) //Vorbis with Config in this chunk
             AVI__hdlr_strl_strf_auds_Vorbis2();
         else if (FormatTag==0xFFFE) //Extensible Wave
-            AVI__hdlr_strl_strf_auds_ExtensibleWave();
+            AVI__hdlr_strl_strf_auds_ExtensibleWave(BitsPerSample);
         else if (Element_Offset+Option_Size<=Element_Size)
             Skip_XX(Option_Size,                               "Unknown");
         else if (Element_Offset!=Element_Size)
@@ -1530,12 +1530,13 @@ void File_Riff::AVI__hdlr_strl_strf_auds_Vorbis2()
 }
 
 //---------------------------------------------------------------------------
-void File_Riff::AVI__hdlr_strl_strf_auds_ExtensibleWave()
+void File_Riff::AVI__hdlr_strl_strf_auds_ExtensibleWave(int16u BitsPerSample)
 {
     //Parsing
     int128u SubFormat;
     int32u ChannelMask;
-    Skip_L2(                                                    "ValidBitsPerSample / SamplesPerBlock");
+    int16u ValidBitsPerSample;
+    Get_L2 (ValidBitsPerSample,                                 "ValidBitsPerSample / SamplesPerBlock");
     Get_L4 (ChannelMask,                                        "ChannelMask");
     Get_GUID(SubFormat,                                         "SubFormat");
 
@@ -1555,9 +1556,9 @@ void File_Riff::AVI__hdlr_strl_strf_auds_ExtensibleWave()
                 //Creating the parser
                 File_Pcm* Parser=new File_Pcm;
                 Parser->Codec=Ztring().From_GUID(SubFormat);
-                Parser->Endianness='L';
-                Parser->Sign='S';
                 Parser->BitDepth=(int8u)BitsPerSample;
+                if (ValidBitsPerSample!=BitsPerSample)
+                    Parser->BitDepth_Significant=(int8u)ValidBitsPerSample;
                 #if MEDIAINFO_DEMUX
                     if (Config->Demux_Unpacketize_Get() && Retrieve(Stream_General, 0, General_Format)==__T("Wave"))
                     {

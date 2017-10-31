@@ -3161,18 +3161,19 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_auds()
     if (Option_Size>0)
     {
              if (FormatTag==0xFFFE) //Extensible Wave
-            Segment_Tracks_TrackEntry_CodecPrivate_auds_ExtensibleWave();
+            Segment_Tracks_TrackEntry_CodecPrivate_auds_ExtensibleWave(BitsPerSample);
         else Skip_XX(Option_Size,                               "Unknown");
     }
 }
 
 //---------------------------------------------------------------------------
-void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_auds_ExtensibleWave()
+void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_auds_ExtensibleWave(int16u BitsPerSample)
 {
     //Parsing
     int128u SubFormat;
     int32u ChannelMask;
-    Skip_L2(                                                    "ValidBitsPerSample / SamplesPerBlock");
+    int16u ValidBitsPerSample;
+    Get_L2 (ValidBitsPerSample,                                 "ValidBitsPerSample / SamplesPerBlock");
     Get_L4 (ChannelMask,                                        "ChannelMask");
     Get_GUID(SubFormat,                                         "SubFormat");
 
@@ -3192,6 +3193,9 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_auds_ExtensibleWave()
                 File_Pcm MI;
                 MI.Frame_Count_Valid=0;
                 MI.Codec=Ztring().From_GUID(SubFormat);
+                MI.BitDepth=(int8u)BitsPerSample;
+                if (ValidBitsPerSample!=BitsPerSample)
+                    MI.BitDepth_Significant=(int8u)ValidBitsPerSample;
 
                 //Parsing
                 Open_Buffer_Init(&MI);

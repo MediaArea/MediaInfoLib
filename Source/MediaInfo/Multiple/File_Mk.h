@@ -494,7 +494,7 @@ private :
     //Helpers
     void Segment_Tracks_TrackEntry_CodecPrivate__Parse();
     void Segment_Tracks_TrackEntry_CodecPrivate_auds();
-    void Segment_Tracks_TrackEntry_CodecPrivate_auds_ExtensibleWave();
+    void Segment_Tracks_TrackEntry_CodecPrivate_auds_ExtensibleWave(int16u BitsPerSample);
     void Segment_Tracks_TrackEntry_CodecPrivate_vids();
     void JumpTo(int64u GoTo);
     void TestMultipleInstances(size_t* Instances=NULL);
