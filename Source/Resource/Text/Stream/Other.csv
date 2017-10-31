@@ -8,13 +8,13 @@ StreamKindPos;;;N NI;;;When multiple streams, number of the stream (base=1)
 StreamOrder;;;N YIY;;;Stream order in the file, whatever is the kind of stream (base=0)
 FirstPacketOrder;;;N YIY;;;Order of the first fully decodable packet met in the file, whatever is the kind of stream (base=0)
 Inform;;;N NT;;;Last **Inform** call
-ID;;;N YIY;;;The ID for this stream in this file
+ID;;;N YTY;;;The ID for this stream in this file
 ID/String;;;Y NT;;;The ID for this stream in this file
-OriginalSourceMedium_ID;;;N YIY;;;The ID for this stream in the original medium of the material
+OriginalSourceMedium_ID;;;N YTY;;;The ID for this stream in the original medium of the material
 OriginalSourceMedium_ID/String;;;Y NT;;;The ID for this stream in the original medium of the material
-UniqueID;;;N YIY;;;The unique ID for this stream, should be copied with stream copy
+UniqueID;;;N YTY;;;The unique ID for this stream, should be copied with stream copy
 UniqueID/String;;;Y NT;;;The unique ID for this stream, should be copied with stream copy
-MenuID;;;N YIY;;;The menu ID for this stream in this file
+MenuID;;;N YTY;;;The menu ID for this stream in this file
 MenuID/String;;;Y NT;;;The menu ID for this stream in this file
 Type;;;Y YTY;;;Type
 Format;;;Y YTY;;;Format used
@@ -33,7 +33,7 @@ CodecID/Info;;;Y NT;;;Info about this codec
 CodecID/Hint;;;Y NT;;;A hint/popular name for this codec
 CodecID/Url;;;N NT;;;A link to more details about this codec ID
 CodecID_Description;;;Y YT;;;Manual description given by the container
-Duration;; ms;N YIY;;;Play time of the stream in ms
+Duration;; ms;N YFY;;;Play time of the stream in ms
 Duration/String;;;Y NT;;;Play time in format : XXx YYy only, YYy omited if zero
 Duration/String1;;;N NT;;;Play time in format : HHh MMmn SSs MMMms, XX omited if zero
 Duration/String2;;;N NT;;;Play time in format : XXx YYy only, YYy omited if zero
@@ -47,7 +47,7 @@ FrameRate/String;;;Y NT;;;Frames per second (with measurement)
 FrameRate_Num;;;N NFN;;;Frames per second, numerator
 FrameRate_Den;;;N NFN;;;Frames per second, denominator
 FrameCount;;;N NIY;;;Number of frames
-Delay;; ms;N NIY;;;Delay fixed in the stream (relative) IN MS;
+Delay;; ms;N NFY;;;Delay fixed in the stream (relative) IN MS;
 Delay/String;;;N NT;;;Delay with measurement;
 Delay/String1;;;N NT;;;Delay with measurement;
 Delay/String2;;;N NT;;;Delay with measurement;
@@ -82,7 +82,7 @@ Video0_Delay/String2;;;N NT;;;Deprecated, do not use in new projects
 Video0_Delay/String3;;;N NT;;;Deprecated, do not use in new projects
 Video0_Delay/String4;;;N NT;;;Deprecated, do not use in new projects
 Video0_Delay/String5;;;N NT;;;Deprecated, do not use in new projects
-TimeStamp_FirstFrame;; ms;N YIY;;;TimeStamp fixed in the stream (relative) IN MS;
+TimeStamp_FirstFrame;; ms;N YFY;;;TimeStamp fixed in the stream (relative) IN MS;
 TimeStamp_FirstFrame/String;;;Y NT;;;TimeStamp with measurement;
 TimeStamp_FirstFrame/String1;;;N NT;;;TimeStamp with measurement;
 TimeStamp_FirstFrame/String2;;;N NT;;;TimeStamp with measurement;
@@ -93,7 +93,7 @@ TimeCode_FirstFrame;;;Y YCY;;;Time code in HH:MM:SS:FF, last colon replaced by s
 TimeCode_Settings;;;Y YTY;;;Time code settings
 TimeCode_Striped;;Yes;N YTY;;;Time code is striped (only 1st time code, no discontinuity)
 TimeCode_Striped/String;;;Y NT;;;Time code is striped (only 1st time code, no discontinuity)
-Title;;;Y YIY;;;Name of this menu
+Title;;;Y YTY;;;Name of this menu
 Language;;;N YTY;;;Language (2-letter ISO 639-1 if exists, else 3-letter ISO 639-2, and with optional ISO 3166-1 country separated by a dash if available, e.g. en, en-us, zh-cn)
 Language/String;;;Y NT;;;Language (full)
 Language/String1;;;N NT;;;Language (full);;

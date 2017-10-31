@@ -8,15 +8,15 @@ StreamKindPos;;;N NI;;;When multiple streams, number of the stream (base=1)
 StreamOrder;;;N YIY;;;Stream order in the file, whatever is the kind of stream (base=0)
 FirstPacketOrder;;;N YIY;;;Order of the first fully decodable packet met in the file, whatever is the kind of stream (base=0)
 Inform;;;N NT;;;Last **Inform** call
-ID;;;N YIY;;;The ID for this stream in this file
+ID;;;N YTY;;;The ID for this stream in this file
 ID/String;;;Y NT;;;The ID for this stream in this file
-OriginalSourceMedium_ID;;;N YIY;;;The ID for this stream in the original medium of the material
+OriginalSourceMedium_ID;;;N YTY;;;The ID for this stream in the original medium of the material
 OriginalSourceMedium_ID/String;;;Y NT;;;The ID for this stream in the original medium of the material
-UniqueID;;;N YIY;;;The unique ID for this stream, should be copied with stream copy
+UniqueID;;;N YTY;;;The unique ID for this stream, should be copied with stream copy
 UniqueID/String;;;Y NT;;;The unique ID for this stream, should be copied with stream copy
-MenuID;;;N YIY;;;The menu ID for this stream in this file
+MenuID;;;N YTY;;;The menu ID for this stream in this file
 MenuID/String;;;Y NT;;;The menu ID for this stream in this file
-Title;;;Y YI;;;Name of the track
+Title;;;Y YTY;;;Name of the track
 Format;;;Y YTY;;;Format used
 Format/Info;;;Y NT;;;Info about Format
 Format/Url;;;N NT;;;Link
