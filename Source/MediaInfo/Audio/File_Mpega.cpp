@@ -1413,10 +1413,25 @@ bool File_Mpega::Header_Encoders()
 
 void File_Mpega::Header_Encoders_Lame()
 {
-    Peek_Local(8, Encoded_Library);
-    if (Encoded_Library.find(__T("L3.99"))==0)
-        Encoded_Library.insert(1, __T("AME")); //Ugly version string in Lame 3.99.1 "L3.99r1\0"
-    if ((Encoded_Library>=__T("LAME3.90")) && Element_IsNotFinished())
+    bool HasInfoTag=false;
+    if (Element_Offset+9<=Element_Size)
+    {
+        const int8u* Tag=Buffer+Buffer_Offset+(size_t)Element_Offset;
+        int32u Name=BigEndian2int32u(Tag);
+        if (Name==0x4C414D45   // "LAME"
+         && Tag[5]=='.')
+        {
+            //Needs addtional tests, as v3.89 and less have no Lame Info tag, but v3.100 exists too
+            if ( Tag[4]> '3'                                                                                    // v4 or more
+             || (Tag[4]=='3' && Tag[6]=='9')                                                                    // v3.9yz-v3.9yz
+             ||  Tag[4]=='3' && Tag[8]>='0' && Tag[8]<='9')                                                     // v3.xy0-v3.xy9
+                HasInfoTag=true;
+        }
+        if (Name==0x4C332E39   // "L3.9"
+         && Tag[4]=='9')
+            HasInfoTag=true; //Form old code, to be confirmed: Ugly version string in Lame 3.99.1 "L3.99r1\0".
+    }
+    if (HasInfoTag)
     {
         int8u Flags, lowpass, EncodingFlags, BitRate, StereoMode;
         Param_Info1(Ztring(__T("V "))+Ztring::ToZtring((100-Xing_Scale)/10));
