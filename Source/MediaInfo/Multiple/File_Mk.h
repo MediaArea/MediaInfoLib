@@ -351,7 +351,7 @@ private :
             AvgBytesPerSec=0;
             DisplayAspectRatio=0;
             FrameRate=0;
-            Searching_Payload=false;
+            Searching_Payload=true;
             Searching_TimeStamps=false;
             Searching_TimeStamp_Start=false;
             Default=true;
