@@ -1014,6 +1014,7 @@ void File_Mk::Streams_Finish()
         {
             //FrameRate
             bool IsVfr=false;
+            bool RelyOnParser=false;
             if (Temp->second.Segment_Cluster_BlockGroup_BlockDuration_Counts.size()>2)
                 IsVfr=true;
             else if (Temp->second.TimeCodes.size()>1)
@@ -1077,13 +1078,17 @@ void File_Mk::Streams_Finish()
                              && FrameRate_FromParser*2>FrameRate_FromCluster*0.9
                              && FrameRate_FromParser*2<FrameRate_FromCluster*1.1) //TODO: awfull method to detect interlaced content with one field per block
                                 FrameRate_FromCluster/=2;
+                            if (FrameRate_FromParser
+                             && FrameRate_FromParser>FrameRate_FromCluster*0.99
+                             && FrameRate_FromParser<FrameRate_FromCluster*1.01)
+                                RelyOnParser=true; //Disabling frame rate guess, relying on parser precision
                         }
                         if (FrameRate_FromTags)
                         {
                                 if (FrameRate_FromCluster < FrameRate_FromTags - (FrameRate_FromTags*(TimecodeScale*0.0000000010021)) || FrameRate_FromCluster > FrameRate_FromTags + (FrameRate_FromTags*(TimecodeScale*0.0000000010021)))
                                     IsVfr=true;
                         }
-                        else
+                        else if (!RelyOnParser)
                             Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate_FromCluster);
                     }
                 }
@@ -1091,7 +1096,12 @@ void File_Mk::Streams_Finish()
                     IsVfr=true;
             }
 
-            else if (Temp->second.TrackDefaultDuration)
+            // In case there are not enough frames for computing frame rate, trying to rely on TrackDefaultDuration as a fallback
+            if (!IsVfr && !RelyOnParser && Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).empty() && Temp->second.TrackDefaultDuration
+             && Temp->second.TrackDefaultDuration!=32999999 // Seen in some 30 fps stream, not the one for all frames
+             && Temp->second.TrackDefaultDuration!=41999998 // Seen in some 24 fps stream, not the one for all frames
+             && Temp->second.TrackDefaultDuration!=41999999 // Seen in some 24 fps stream, not the one for all frames
+                )
             {
                 float32 FrameRate_FromCluster=1000000000/(float32)Temp->second.TrackDefaultDuration;
                 if (Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).empty())
