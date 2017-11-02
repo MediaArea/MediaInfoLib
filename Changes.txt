@@ -1,6 +1,12 @@
 I changed some elements in the interface.
 No break in binary compatibily (no crash), but some details.
 
+0.7.99 --> 17.10
+-----------------
+- Version scheme is now YY.MM (year dot month, 2 digits each)
+- New MediaInfo XML output, with XSD, more suitable for automatic parsing. Use Option("Inform", "OLDXML") for keeping previous behavior
+- WAV: GUID display was with first 8 bytes in wrong order, they are in correct order now
+
 0.7.98 --> 0.7.99
 -----------------
 - AAC: CodecID includes audioObjectType (decimal)
