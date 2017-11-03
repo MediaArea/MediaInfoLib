@@ -1584,14 +1584,15 @@ void File_Mpegv::Streams_Finish()
     else if (!TimeCodeIsNotTrustable && Time_End_Seconds!=Error && FrameRate)
     {
         TimeCode Time_Begin_TC;
-        Time_Begin_TC.FramesPerSecond=(int8u)ceil(FrameRate);
-        Time_Begin_TC.DropFrame=group_start_IsParsed?group_start_drop_frame_flag:((FrameRate-ceil(FrameRate))?true:false);
+        const int8u ceilFrameRate=(int8u)ceil(FrameRate);
+        Time_Begin_TC.FramesPerSecond=ceilFrameRate;
+        Time_Begin_TC.DropFrame=group_start_IsParsed?group_start_drop_frame_flag:((FrameRate-ceilFrameRate)?true:false);
         Time_Begin_TC.Hours=(int8u)(Time_Begin_Seconds/3600);
         Time_Begin_TC.Minutes=(int8u)((Time_Begin_Seconds%3600)/60);
         Time_Begin_TC.Seconds=(int8u)(Time_Begin_Seconds%60);
         Time_Begin_TC.Frames=(int8u)Time_Begin_Frames;
         TimeCode Time_End_TC;
-        Time_End_TC.FramesPerSecond=(int8u)ceil(FrameRate);
+        Time_End_TC.FramesPerSecond=ceilFrameRate;
         Time_End_TC.DropFrame=Time_Begin_TC.DropFrame;
         Time_End_TC.Hours=(int8u)(Time_End_Seconds/3600);
         Time_End_TC.Minutes=(int8u)((Time_End_Seconds%3600)/60);
