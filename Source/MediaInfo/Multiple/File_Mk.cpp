@@ -662,7 +662,16 @@ const char* Mpegv_colour_primaries(int8u colour_primaries);
 const char* Mpegv_transfer_characteristics(int8u transfer_characteristics);
 const char* Mpegv_matrix_coefficients(int8u matrix_coefficients);
 const char* Mpegv_matrix_coefficients_ColorSpace(int8u matrix_coefficients);
-extern const char* Avc_video_full_range[];
+
+const char* Mk_Video_Colour_Range(int8u range)
+{
+    switch (range)
+    {
+        case 1: return "Limited";
+        case 2: return "Full";
+        default: return "";
+    }
+}
 
 //***************************************************************************
 // Constructor/Destructor
@@ -3542,15 +3551,14 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_Colour_BitsPerChannel()
 void File_Mk::Segment_Tracks_TrackEntry_Video_Colour_Range()
 {
     //Parsing
-    int64u UInteger=UInteger_Get(); Element_Info1C(UInteger<2, Avc_video_full_range[UInteger]);
+    int64u UInteger=UInteger_Get(); Element_Info1(Mk_Video_Colour_Range(UInteger));
 
     //Filling
     FILLING_BEGIN();
         if (Segment_Info_Count>1)
             return; //First element has the priority
         Stream[TrackNumber].Infos["colour_description_present"]="Yes";
-        if (UInteger<2)
-            Stream[TrackNumber].Infos["colour_range"]=Avc_video_full_range[UInteger];
+        Stream[TrackNumber].Infos["colour_range"]=Mk_Video_Colour_Range(UInteger);
     FILLING_END();
 }
 
