@@ -133,6 +133,8 @@ private :
     MediaInfo_Internal(const MediaInfo_Internal&); // Copy Constructor
     MediaInfo_Internal &operator =(const MediaInfo_Internal &);
 
+    static void ConvertRetour(Ztring& Retour);
+
     //Open Buffer
     bool Info_IsMultipleParsing;
 
