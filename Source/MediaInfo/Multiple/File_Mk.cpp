@@ -2458,7 +2458,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
     if (streamItem.ContentCompAlgo!=(int32u)-1 && streamItem.ContentCompAlgo!=3)
         streamItem.Searching_Payload=false; //Unsupported
 
-    if (streamItem.Searching_Payload)
+    if (streamItem.Searching_Payload && streamItem.Parser)
     {
         Element_Parser(streamItem.Parser->ParserName.c_str());
 
