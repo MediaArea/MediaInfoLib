@@ -892,6 +892,10 @@ protected :
             SoundfieldGroupLinkID.hi=(int64u)-1;
             SoundfieldGroupLinkID.lo=(int64u)-1;
         }
+		bool Is_Interlaced() const
+        {
+            return ScanType==__T("Interlaced");
+        }
     };
     typedef std::map<int128u, descriptor> descriptors; //Key is InstanceUID of Descriptor
     descriptors Descriptors;
