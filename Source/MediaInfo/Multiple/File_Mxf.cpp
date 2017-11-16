@@ -9244,7 +9244,7 @@ void File_Mxf::GenericPictureEssenceDescriptor_StoredHeight()
     Get_B4 (Data,                                                "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
-        if (!Partitions_IsFooter || Descriptors[InstanceUID].Height==(int32u)-1)
+        if (Descriptors[InstanceUID].Height==(int32u)-1)
         {
             if (Descriptors[InstanceUID].ScanType==__T("Interlaced"))
                 Data*=2; //This is per field
@@ -9263,7 +9263,7 @@ void File_Mxf::GenericPictureEssenceDescriptor_StoredWidth()
     Get_B4 (Data,                                                "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
-        if (!Partitions_IsFooter || Descriptors[InstanceUID].Width==(int32u)-1)
+        if (Descriptors[InstanceUID].Width==(int32u)-1)
         {
             if (Descriptors[InstanceUID].Width==(int32u)-1)
                 Descriptors[InstanceUID].Width=Data;
@@ -9280,12 +9280,9 @@ void File_Mxf::GenericPictureEssenceDescriptor_SampledHeight()
     Get_B4 (Data,                                                "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
-        if (!Partitions_IsFooter || Descriptors[InstanceUID].Height==(int32u)-1)
-        {
-            if (Descriptors[InstanceUID].ScanType==__T("Interlaced"))
-                Data*=2; //This is per field
-            Descriptors[InstanceUID].Height=Data;
-        }
+        if (Descriptors[InstanceUID].ScanType==__T("Interlaced"))
+            Data*=2; //This is per field
+        Descriptors[InstanceUID].Height=Data;
     FILLING_END();
 }
 
@@ -9327,12 +9324,9 @@ void File_Mxf::GenericPictureEssenceDescriptor_DisplayHeight()
     Get_B4 (Data,                                                "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
-        if (!Partitions_IsFooter || Descriptors[InstanceUID].Height_Display!=(int32u)-1)
-        {
-            if (Descriptors[InstanceUID].ScanType==__T("Interlaced"))
-                Data*=2; //This is per field
-            Descriptors[InstanceUID].Height_Display=Data;
-        }
+        if (Descriptors[InstanceUID].ScanType==__T("Interlaced"))
+            Data*=2; //This is per field
+        Descriptors[InstanceUID].Height_Display=Data;
     FILLING_END();
 }
 
@@ -9371,12 +9365,9 @@ void File_Mxf::GenericPictureEssenceDescriptor_DisplayYOffset()
     Get_B4 (Data,                                               "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
-        if (!Partitions_IsFooter || Descriptors[InstanceUID].Height_Display_Offset==(int32u)-1)
-        {
-            if (Descriptors[InstanceUID].ScanType==__T("Interlaced"))
-                Data*=2; //This is per field
-            Descriptors[InstanceUID].Height_Display_Offset=Data;
-        }
+        if (Descriptors[InstanceUID].ScanType==__T("Interlaced"))
+            Data*=2; //This is per field
+        Descriptors[InstanceUID].Height_Display_Offset=Data;
     FILLING_END();
 }
 
@@ -9389,16 +9380,13 @@ void File_Mxf::GenericPictureEssenceDescriptor_FrameLayout()
     Get_B1 (Data,                                               "Data"); Element_Info1(Data); Param_Info1(Mxf_FrameLayout(Data)); Element_Info1(Mxf_FrameLayout(Data));
 
     FILLING_BEGIN();
-        if (!Partitions_IsFooter || Descriptors[InstanceUID].ScanType.empty())
+        if (Descriptors[InstanceUID].ScanType.empty())
         {
-            if (Descriptors[InstanceUID].ScanType.empty())
-            {
-                if (Descriptors[InstanceUID].Height!=(int32u)-1) Descriptors[InstanceUID].Height*=Mxf_FrameLayout_Multiplier(Data);
-                if (Descriptors[InstanceUID].Height_Display!=(int32u)-1) Descriptors[InstanceUID].Height_Display*=Mxf_FrameLayout_Multiplier(Data);
-                if (Descriptors[InstanceUID].Height_Display_Offset!=(int32u)-1) Descriptors[InstanceUID].Height_Display_Offset*=Mxf_FrameLayout_Multiplier(Data);
-            }
-            Descriptors[InstanceUID].ScanType.From_UTF8(Mxf_FrameLayout_ScanType(Data));
+            if (Descriptors[InstanceUID].Height!=(int32u)-1) Descriptors[InstanceUID].Height*=Mxf_FrameLayout_Multiplier(Data);
+            if (Descriptors[InstanceUID].Height_Display!=(int32u)-1) Descriptors[InstanceUID].Height_Display*=Mxf_FrameLayout_Multiplier(Data);
+            if (Descriptors[InstanceUID].Height_Display_Offset!=(int32u)-1) Descriptors[InstanceUID].Height_Display_Offset*=Mxf_FrameLayout_Multiplier(Data);
         }
+        Descriptors[InstanceUID].ScanType.From_UTF8(Mxf_FrameLayout_ScanType(Data));
     FILLING_END();
 }
 
@@ -10302,7 +10290,7 @@ void File_Mxf::MPEG2VideoDescriptor_CodedContentType()
     Get_B1 (Data,                                               "Data"); Element_Info1(Mxf_MPEG2_CodedContentType(Data));
 
     FILLING_BEGIN();
-        if (!Partitions_IsFooter || Descriptors[InstanceUID].ScanType.empty())
+        if (Descriptors[InstanceUID].ScanType.empty())
         {
             if (Data==2 && Descriptors[InstanceUID].ScanType.empty())
             {
