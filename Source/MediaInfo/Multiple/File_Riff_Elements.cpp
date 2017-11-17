@@ -782,6 +782,9 @@ void File_Riff::AIFF_COMT()
 //---------------------------------------------------------------------------
 void File_Riff::AIFF_SSND()
 {
+    Skip_B4(                                                    "offset"); //TODO: support offset
+    Skip_B4(                                                    "blockSize");
+    Buffer_DataToParse_Begin+=Element_Offset;
     WAVE_data();
 }
 
