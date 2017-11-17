@@ -388,11 +388,8 @@ size_t MediaInfo_Internal::Open(const String &File_Name_)
 //---------------------------------------------------------------------------
 void MediaInfo_Internal::Entry()
 {
-    {
-    CriticalSectionLocker CSL(CS);
     MEDIAINFO_DEBUG_CONFIG_TEXT(Debug+=__T("Entry");)
     Config.State_Set(0);
-    }
 
     if ((Config.File_Names[0].size()>=6
         && Config.File_Names[0][0]==__T('m')
@@ -656,10 +653,7 @@ void MediaInfo_Internal::Entry()
         }
     #endif //MEDIAINFO_FILE_YES
 
-    {
-    CriticalSectionLocker CSL(CS);
     Config.State_Set(1);
-    }
 }
 
 //---------------------------------------------------------------------------
@@ -1412,7 +1406,6 @@ size_t MediaInfo_Internal::Count_Get (stream_t StreamKind, size_t StreamPos)
 //---------------------------------------------------------------------------
 size_t MediaInfo_Internal::State_Get ()
 {
-    CriticalSectionLocker CSL(CS);
     return (size_t)(Config.State_Get()*10000);
 }
 
