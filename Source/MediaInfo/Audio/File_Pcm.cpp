@@ -116,7 +116,9 @@ void File_Pcm::Streams_Fill()
     else if (Codec==__T("VOB"))              {Firm=__T("");      Endianness='B';            Sign='S';}                        //PCM Signed 16 bits Big Endian, Interleavement is for 2 samples*2 channels L0-1/L0-0/R0-1/R0-0/L1-1/L1-0/R1-1/R1-0/L0-2/R0-2/L1-2/R1-2, http://wiki.multimedia.cx/index.php?title=PCM
     else if (Codec==__T("M2TS"))             {Firm=__T("");      Endianness='B';            Sign='S';}                        //PCM Signed         Big Endian
     else if (Codec==__T("A_PCM/INT/BIG"))    {Firm=__T("");      Endianness='B';}
+    else if (Codec==__T("A_PCM/INT/LIT"))    {Firm=__T("");      Endianness='L';} // Matroska https://github.com/Matroska-Org/matroska-specification/blob/master/codec_specs.md#a_pcmintlit
     else if (Codec==__T("A_PCM/INT/LITTLE")) {Firm=__T("");      Endianness='L';}
+    else if (Codec==__T("A_PCM/FLOAT/IEEE")) {Firm=__T("");      Endianness='L';            Sign='F';} // Matrsoka https://github.com/Matroska-Org/matroska-specification/blob/master/codec_specs.md#a_pcmfloatieee
     else if (Codec==__T("A_PCM/INT/FLOAT"))  {Firm=__T("");      Endianness='B';            Sign='F';}
     else if (Codec==__T("fl32"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='F'; BitDepth=32;}
     else if (Codec==__T("fl64"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='F'; BitDepth=64;}
