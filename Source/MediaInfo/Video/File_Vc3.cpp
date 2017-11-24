@@ -606,6 +606,19 @@ bool File_Vc3::Header_Begin()
         {
             Skip_B4(                                                "Frame size?");
             Buffer_Offset+=4;
+
+            if (Frame_Count_InThisBlock==Frame_Count)
+            {
+                Fill(Stream_Video, 0, "FramesPerContainerBlock", Frame_Count_InThisBlock);
+            }
+
+            if (!Status[IsFilled] && Frame_Count>=Frame_Count_Valid && Buffer_Offset+Element_Size>=Buffer_Size)
+            {
+                Fill("VC-3");
+
+                if (!IsSub && Config->ParseSpeed<1.0)
+                    Finish("VC-3");
+            }
         }
     }
 
@@ -701,7 +714,7 @@ void File_Vc3::Data_Parse()
         }
         if (!Status[IsAccepted])
             Accept("VC-3");
-        if (!Status[IsFilled] && Frame_Count>=Frame_Count_Valid)
+        if (!Status[IsFilled] && Frame_Count>=Frame_Count_Valid && Buffer_Offset+Element_Size>=Buffer_Size)
         {
             Fill("VC-3");
 
