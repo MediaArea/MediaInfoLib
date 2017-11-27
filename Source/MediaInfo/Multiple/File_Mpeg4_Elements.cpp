@@ -1872,7 +1872,7 @@ void File_Mpeg4::mdat_xxxx()
                     if (Pos2!=Pos)
                         delete *(Stream_Temp.Parsers.begin()+Pos2);
                 }
-                Stream_Temp.Parsers.clear();
+                Stream_Temp.Parsers_Clear();
                 Stream_Temp.Parsers.push_back(Parser);
             }
         }
@@ -4761,6 +4761,9 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                 {
                     File_DvDif* Parser=new File_DvDif;
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                    #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
+                        Streams[moov_trak_tkhd_TrackID].IsDvDif=true;
+                    #endif //MEDIAINFO_DVDIF_ANALYZE_YES
                 }
             #endif
             #if defined(MEDIAINFO_MXF_YES)
@@ -5122,7 +5125,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_avcC()
         #ifdef MEDIAINFO_AVC_YES
             for (size_t Pos=0; Pos<Streams[moov_trak_tkhd_TrackID].Parsers.size(); Pos++) //Removing any previous parser (in case of multiple streams in one track, or dummy parser for demux)
                 delete Streams[moov_trak_tkhd_TrackID].Parsers[Pos];
-            Streams[moov_trak_tkhd_TrackID].Parsers.clear();
+            Streams[moov_trak_tkhd_TrackID].Parsers_Clear();
 
             File_Avc* Parser=new File_Avc;
             Parser->FrameIsAlwaysComplete=true;
@@ -5886,7 +5889,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
     #ifdef MEDIAINFO_HEVC_YES
         for (size_t Pos=0; Pos<Streams[moov_trak_tkhd_TrackID].Parsers.size(); Pos++) //Removing any previous parser (in case of multiple streams in one track, or dummy parser for demux)
             delete Streams[moov_trak_tkhd_TrackID].Parsers[Pos];
-        Streams[moov_trak_tkhd_TrackID].Parsers.clear();
+        Streams[moov_trak_tkhd_TrackID].Parsers_Clear();
 
         File_Hevc* Parser=new File_Hevc;
         Parser->FrameIsAlwaysComplete=true;
@@ -6385,7 +6388,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stts()
         std::map<int32u, int64u> Duration_FrameCount; //key is duration
         int64u Duration_FrameCount_Max=0;
         int32u Duration_FrameCount_Max_Duration=0;
-        if (StreamKind_Last==Stream_Video && Retrieve(Stream_Video, StreamPos_Last, "Format")==__T("DV") && Streams[moov_trak_tkhd_TrackID].Parsers[0] && ((File_DvDif*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Mpeg4_stts==NULL)
+        if (Streams[moov_trak_tkhd_TrackID].IsDvDif && ((File_DvDif*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Mpeg4_stts==NULL)
             ((File_DvDif*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Mpeg4_stts=new File_DvDif::stts;
     #endif //MEDIAINFO_DVDIF_ANALYZE_YES
 
@@ -6404,7 +6407,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stts()
         FILLING_END();
 
         #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
-            if (StreamKind_Last==Stream_Video && Retrieve(Stream_Video, StreamPos_Last, "Format")==__T("DV"))
+            if (Streams[moov_trak_tkhd_TrackID].IsDvDif)
             {
                 File_DvDif::stts_part DV_stts_Part;
                 DV_stts_Part.Pos_Begin=Stream->second.stts_FrameCount-SampleCount;
@@ -6428,7 +6431,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stts()
             Fill(Stream_Video, StreamPos_Last, Video_FrameCount, Stream->second.stts_FrameCount);
 
             #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
-                if (StreamKind_Last==Stream_Video && Retrieve(Stream_Video, StreamPos_Last, "Format")==__T("DV"))
+                if (Streams[moov_trak_tkhd_TrackID].IsDvDif)
                 {
                     //Clean up the "normal" value
                     for (size_t Pos=0; Pos<((File_DvDif*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Mpeg4_stts->size(); Pos++)
@@ -6574,7 +6577,7 @@ void File_Mpeg4::moov_trak_tkhd()
         if (Temp!=Streams.end())
         {
             Streams[moov_trak_tkhd_TrackID]=Temp->second;
-            Temp->second.Parsers.clear(); //They are a copy, we don't want that the destructor deletes the Parser
+            Temp->second.Parsers_Clear(); //They are a copy, we don't want that the destructor deletes the Parser
             Streams.erase(Temp);
         }
         Streams[moov_trak_tkhd_TrackID].IsEnabled = Enabled;

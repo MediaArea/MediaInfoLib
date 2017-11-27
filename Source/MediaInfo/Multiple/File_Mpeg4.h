@@ -409,6 +409,9 @@ private :
         bool                    TimeCode_IsVisual;
         bool                    IsPcm;
         bool                    IsPcmMono;
+        #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
+            bool                IsDvDif;
+        #endif //MEDIAINFO_DVDIF_ANALYZE_YES
         bool                    IsPriorityStream;
         bool                    IsFilled;
         bool                    IsChapter;
@@ -483,6 +486,9 @@ private :
             TimeCode_IsVisual=false;
             IsPcm=false;
             IsPcmMono=false;
+            #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
+                IsDvDif=false;
+            #endif //MEDIAINFO_DVDIF_ANALYZE_YES
             IsPriorityStream=false;
             IsFilled=false;
             IsChapter=false;
@@ -512,6 +518,14 @@ private :
                 delete Parsers[Pos];
             delete MI; //MI=NULL;
             delete TimeCode; //TimeCode=NULL;
+        }
+
+        void Parsers_Clear()
+        {
+            Parsers.clear();
+            #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
+                IsDvDif=false;
+            #endif //MEDIAINFO_DVDIF_ANALYZE_YES
         }
     };
     typedef std::map<int32u, stream> streams;
