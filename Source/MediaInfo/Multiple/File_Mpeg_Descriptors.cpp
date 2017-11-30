@@ -1318,10 +1318,8 @@ void File_Mpeg_Descriptors::Data_Parse()
             ELEMENT_CASE(34, "MPEG2_stereoscopic_video_format");
             ELEMENT_CASE(35, "Stereoscopic_program_info");
             ELEMENT_CASE(36, "Stereoscopic_video_info");
-            ELEMENT_CASE(37, "ODUpdate");
-            ELEMENT_CASE(38, "Transport_profile");
-            ELEMENT_CASE(39, "HEVC video");
-            ELEMENT_CASE(3A, "HEVC timing and HRD");
+            ELEMENT_CASE(37, "Transport_profile");
+            ELEMENT_CASE(38, "HEVC video");
             ELEMENT_CASE(3F, "Extension");
 
             //Following is in private sections, in case there is not network type detected
@@ -2031,6 +2029,42 @@ void File_Mpeg_Descriptors::Descriptor_2F()
     Skip_B1(                                                    "aux_video_type"); //ISO/IEC 23002-3
     Get_B1 (aux_video_params_length,                            "aux_video_params_length");
     Skip_XX(aux_video_params_length,                            "aux_video_params");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg_Descriptors::Descriptor_3F()
+{
+    //Parsing
+    int8u extension_descriptor_tag;
+    Get_B1(extension_descriptor_tag,                             "extension_descriptor_tag");
+
+    #undef ELEMENT_CASE
+    #define ELEMENT_CASE(_NAME, _DETAIL) \
+        case 0x##_NAME : Element_Name(_DETAIL); Descriptor_3F_##_NAME(); break;
+
+    //Parsing
+    switch (extension_descriptor_tag)
+    {
+            ELEMENT_CASE(00, "Reserved");
+            ELEMENT_CASE(01, "Forbidden");
+            ELEMENT_CASE(02, "ODUpdate");
+            ELEMENT_CASE(03, "HEVC_timing_and_HRD");
+            ELEMENT_CASE(04, "af_extensions");
+            ELEMENT_CASE(05, "HEVC_operation_point");
+            ELEMENT_CASE(06, "HEVC_hierarchy_extension");
+            ELEMENT_CASE(07, "Green_extension");
+            ELEMENT_CASE(08, "MPEG-H_3dAudio");
+            ELEMENT_CASE(09, "MPEG-H_3dAudio_config");
+            ELEMENT_CASE(0A, "MPEG-H_3dAudio_scene");
+            ELEMENT_CASE(0B, "MPEG-H_3dAudio_text_label");
+            ELEMENT_CASE(0C, "MPEG-H_3dAudio_multi-stream");
+            ELEMENT_CASE(0D, "MPEG-H_3dAudio_drc_loudness");
+            ELEMENT_CASE(0E, "MPEG-H_3dAudio_command");
+            ELEMENT_CASE(0F, "Quality_extension");
+            ELEMENT_CASE(10, "Virtual_segmentation");
+            default: Element_Info1("Unknown");
+                     Skip_XX(Element_Size,                          "Data");
+    }
 }
 
 //---------------------------------------------------------------------------
