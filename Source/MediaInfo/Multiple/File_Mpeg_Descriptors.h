@@ -744,12 +744,12 @@ private :
     void Descriptor_35() {Skip_XX(Element_Size, "Data");};
     void Descriptor_36() {Skip_XX(Element_Size, "Data");};
     void Descriptor_37() {Skip_XX(Element_Size, "Data");};
-    void Descriptor_38() {Skip_XX(Element_Size, "Data");};
+    void Descriptor_38();
     void Descriptor_3F();
     void Descriptor_3F_00() {Skip_XX(Element_Size-Element_Offset, "Data");};
     void Descriptor_3F_01() {Skip_XX(Element_Size-Element_Offset, "Data");};
     void Descriptor_3F_02() {Skip_XX(Element_Size-Element_Offset, "Data");};
-    void Descriptor_3F_03() {Skip_XX(Element_Size-Element_Offset, "Data");};
+    void Descriptor_3F_03();
     void Descriptor_3F_04() {Skip_XX(Element_Size-Element_Offset, "Data");};
     void Descriptor_3F_05() {Skip_XX(Element_Size-Element_Offset, "Data");};
     void Descriptor_3F_06() {Skip_XX(Element_Size-Element_Offset, "Data");};
