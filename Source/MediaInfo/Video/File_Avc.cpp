@@ -3929,8 +3929,8 @@ void File_Avc::vui_parameters(seq_parameter_set_struct::vui_parameters_struct* &
                                                                                     pic_struct_present_flag
                                                                                 );
     FILLING_ELSE();
-        delete NAL;
-        delete VCL;
+        delete NAL; NAL=NULL;
+        delete VCL; VCL=NULL;
     FILLING_END();
 }
 

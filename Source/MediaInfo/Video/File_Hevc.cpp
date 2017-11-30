@@ -1339,9 +1339,9 @@ void File_Hevc::video_parameter_set()
             else
                 cprms_present_flag=true;
             hrd_parameters(cprms_present_flag, vps_max_sub_layers_minus1, xxL_Common, NAL, VCL);
-            delete xxL_Common; //TODO: keep VPS hrd_parameters
-            delete NAL;
-            delete VCL;
+            delete xxL_Common; xxL_Common=NULL; //TODO: keep VPS hrd_parameters
+            delete NAL; NAL=NULL;
+            delete VCL; VCL=NULL;
         }
     TEST_SB_END();
     TESTELSE_SB_SKIP(                                           "vps_extension_flag");
@@ -2491,9 +2491,9 @@ void File_Hevc::vui_parameters(std::vector<video_parameter_set_struct*>::iterato
                                                                                     timing_info_present_flag
                                                                                   );
     FILLING_ELSE();
-    delete xxL_Common;
-    delete NAL;
-    delete VCL;
+    delete xxL_Common; xxL_Common=NULL;
+    delete NAL; NAL=NULL;
+    delete VCL; VCL=NULL;
     FILLING_END();
 }
 
