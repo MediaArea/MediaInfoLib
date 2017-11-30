@@ -4411,10 +4411,10 @@ void File_Mk::CRC32_Check ()
                                 if (Config->TryToFix_Get() && CRC32Compute[i].Computed!=CRC32Compute[i].Expected)
                                 {
                                     size_t NewBuffer_Size=(size_t)(CRC32Compute[i].UpTo-CRC32Compute[i].From);
-                                    int8u* NewBuffer=new int8u[NewBuffer_Size];
                                     File F;
                                     if (F.Open(File_Name))
                                     {
+                                        int8u* NewBuffer = new int8u[NewBuffer_Size];
                                         F.GoTo(CRC32Compute[i].From);
                                         F.Read(NewBuffer, NewBuffer_Size);
                                         int8u Modified=0;
@@ -4426,8 +4426,8 @@ void File_Mk::CRC32_Check ()
                                             Modified^=1<<BitInBytePosition;
                                             FixFile(CRC32Compute[i].From+BytePosition, &Modified, 1)?Param_Info1("Fixed"):Param_Info1("Not fixed");
                                         }
+                                        delete[] NewBuffer; //NewBuffer=NULL;
                                     }
-                                    delete[] NewBuffer; //NewBuffer=NULL;
                                 }
                             #endif //MEDIAINFO_FIXITY
 

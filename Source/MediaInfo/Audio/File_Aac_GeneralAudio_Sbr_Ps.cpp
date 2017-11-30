@@ -37,13 +37,13 @@ void File_Aac::ps_data(size_t End)
         if (Infos["Format_Settings_PS"].empty())
         {
             Infos["Format_Profile"]=__T("HE-AACv2");
-            Ztring Channels=Infos["Channel(s)"];
-            Ztring ChannelPositions=Infos["ChannelPositions"];
-            Ztring SamplingRate=Infos["SamplingRate"];
             Infos["Channel(s)"]=__T("2");
             Infos["ChannelPositions"]=__T("Front: L R");
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
             {
+                const Ztring Channels = Infos["Channel(s)"];
+                const Ztring ChannelPositions = Infos["ChannelPositions"];
+                const Ztring SamplingRate = Infos["SamplingRate"];
                 Infos["Format_Profile"]+=__T(" / HE-AAC / LC");
                 Infos["Channel(s)"]+=__T(" / ")+Channels+__T(" / ")+Channels;
                 Infos["ChannelPositions"]+=__T(" / ")+ChannelPositions+__T(" / ")+ChannelPositions;

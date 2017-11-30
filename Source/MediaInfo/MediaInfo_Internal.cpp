@@ -1149,7 +1149,7 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, const Stri
     if (Parameter==__T("Inform"))
     {
         CS.Leave();
-        Ztring InformZtring=Inform(StreamKind, StreamPos, true);
+        const Ztring InformZtring=Inform(StreamKind, StreamPos, true);
         CS.Enter();
         size_t Pos=MediaInfoLib::Config.Info_Get(StreamKind).Find(__T("Inform"));
         if (Pos!=Error)
