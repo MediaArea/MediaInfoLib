@@ -302,6 +302,10 @@ DisplayAspectRatio_CleanAperture;Clean aperture display aspect ratio
 DisplayAspectRatio_Original;Original display aspect ratio
 DistributedBy;Distributed by
 Distributor;Distributor
+DolbyVision;Dolby Vision
+DolbyVision_Profile;Dolby Vision profile
+DolbyVision_Version;Dolby Vision version
+DolbyVision_Layer;Dolby Vision layer
 Donate;Donate
 DotsPerInch;Dots per inch
 Duration;Duration

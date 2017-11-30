@@ -825,6 +825,7 @@ private :
     void Descriptor_A9() {Skip_XX(Element_Size, "Data");};
     void Descriptor_AA();
     void Descriptor_AB() {Skip_XX(Element_Size, "Data");};
+    void Descriptor_B0();
     void Descriptor_C1();
     void Descriptor_C4() {Skip_XX(Element_Size, "Data");};
     void Descriptor_C8();
