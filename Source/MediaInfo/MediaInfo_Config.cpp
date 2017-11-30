@@ -1792,6 +1792,12 @@ Ztring MediaInfo_Config::Language_Get ()
     return ToReturn;
 }
 
+Ztring MediaInfo_Config::Language_Get_Translate(const Ztring &Par, const Ztring &Value)
+{
+    const Ztring Translated = Language_Get(Par + Value);
+    return Translated.find(Par.c_str()) ? Translated : Value;
+}
+
 Ztring MediaInfo_Config::Language_Get (const Ztring &Value)
 {
     CriticalSectionLocker CSL(CS);
