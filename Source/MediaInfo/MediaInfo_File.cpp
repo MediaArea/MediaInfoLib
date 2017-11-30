@@ -512,7 +512,7 @@ bool MediaInfo_Internal::SelectFromExtension (const String &Parser)
     #if defined(MEDIAINFO_WM_YES)
         else if (Parser==__T("Wm"))          Info=new File_Wm();
     #endif
-    #if defined(MEDIAINFO_WM_YES)
+    #if defined(MEDIAINFO_WTV_YES)
         else if (Parser==__T("Wtv"))         Info=new File_Wtv();
     #endif
     #if defined(MEDIAINFO_XDCAM_YES)
