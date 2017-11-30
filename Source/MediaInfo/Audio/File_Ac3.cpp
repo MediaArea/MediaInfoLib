@@ -1047,13 +1047,16 @@ void File_Ac3::Streams_Fill()
                 {
                     int8u Channels=AC3_Channels[acmod_Max[Pos][0]];
                     Ztring ChannelPositions; ChannelPositions.From_Local(AC3_ChannelPositions[acmod_Max[Pos][0]]);
+                    Ztring ChannelPositions2; ChannelPositions2.From_Local(AC3_ChannelPositions2[acmod_Max[0][0]]);
                     if (lfeon_Max[Pos][0])
                     {
                         Channels+=1;
                         ChannelPositions+=__T(", LFE");
+                        ChannelPositions2+=__T(".1");
                     }
                     Fill(Stream_Audio, 0, Audio_Channel_s_, Channels);
                     Fill(Stream_Audio, 0, Audio_ChannelPositions, ChannelPositions);
+                    Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ChannelPositions2);
                     Fill(Stream_Audio, 0, Audio_ChannelLayout, lfeon_Max[0][0]?AC3_ChannelLayout_lfeon[acmod_Max[0][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[0][0]]);
                 }
             }
