@@ -291,10 +291,10 @@ void File_Aac::program_config_element()
         if (!Infos["Format_Settings_SBR"].empty())
         {
             Infos["Format_Profile"]=__T("HE-AAC");
-            Ztring SamplingRate=Infos["SamplingRate"];
             Infos["SamplingRate"].From_Number((extension_sampling_frequency_index==(int8u)-1)?(Frequency_b*2):extension_sampling_frequency, 10);
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
             {
+                const Ztring SamplingRate = Infos["SamplingRate"];
                 Infos["Format_Profile"]+=__T(" / LC");
                 Infos["SamplingRate"]+=__T(" / ")+SamplingRate;
             }
@@ -304,9 +304,7 @@ void File_Aac::program_config_element()
         }
 
         if (!Infos["Format_Settings_PS"].empty())
-        {
             FillInfosHEAACv2(__T("NBC"));
-        }
     FILLING_END();
 }
 

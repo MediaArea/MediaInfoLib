@@ -698,6 +698,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_btrt=0x62747274;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_clap=0x636C6170;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_chan=0x6368616E;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_clli=0x636C6C69;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr=0x636F6C72;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_clcn=0x636C636E;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc=0x6E636C63;
@@ -722,6 +723,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h=0x6A703268;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_colr=0x636F6C72;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_ihdr=0x69686472;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv=0x6D646376;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_pasp=0x70617370;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf=0x73696E66;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_frma=0x66726D61;
@@ -1034,6 +1036,8 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_btrt)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_chan)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_clap)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_clli)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_colr)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_d263)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dac3)
@@ -1868,7 +1872,7 @@ void File_Mpeg4::mdat_xxxx()
                     if (Pos2!=Pos)
                         delete *(Stream_Temp.Parsers.begin()+Pos2);
                 }
-                Stream_Temp.Parsers.clear();
+                Stream_Temp.Parsers_Clear();
                 Stream_Temp.Parsers.push_back(Parser);
             }
         }
@@ -4757,6 +4761,9 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                 {
                     File_DvDif* Parser=new File_DvDif;
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                    #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
+                        Streams[moov_trak_tkhd_TrackID].IsDvDif=true;
+                    #endif //MEDIAINFO_DVDIF_ANALYZE_YES
                 }
             #endif
             #if defined(MEDIAINFO_MXF_YES)
@@ -5118,7 +5125,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_avcC()
         #ifdef MEDIAINFO_AVC_YES
             for (size_t Pos=0; Pos<Streams[moov_trak_tkhd_TrackID].Parsers.size(); Pos++) //Removing any previous parser (in case of multiple streams in one track, or dummy parser for demux)
                 delete Streams[moov_trak_tkhd_TrackID].Parsers[Pos];
-            Streams[moov_trak_tkhd_TrackID].Parsers.clear();
+            Streams[moov_trak_tkhd_TrackID].Parsers_Clear();
 
             File_Avc* Parser=new File_Avc;
             Parser->FrameIsAlwaysComplete=true;
@@ -5318,6 +5325,22 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_clap()
             Streams[moov_trak_tkhd_TrackID].CleanAperture_Width=((float)apertureWidth_N)/apertureWidth_D;
             Streams[moov_trak_tkhd_TrackID].CleanAperture_Height=((float)apertureHeight_N)/apertureHeight_D;
         }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_clli()
+{
+    Element_Name("Content Light Level Info");
+
+    //Parsing
+    int16u  maximum_content_light_level, maximum_frame_average_light_level;
+    Get_B2(maximum_content_light_level,                         "maximum_content_light_level");
+    Get_B2(maximum_frame_average_light_level,                   "maximum_frame_average_light_level");
+
+    FILLING_BEGIN();
+        Fill(Stream_Video, 0, "MaxCLL", Ztring::ToZtring(maximum_content_light_level) + __T(" cd/m2"));
+        Fill(Stream_Video, 0, "MaxFALL", Ztring::ToZtring(maximum_frame_average_light_level) + __T(" cd/m2"));
     FILLING_END();
 }
 
@@ -5866,7 +5889,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
     #ifdef MEDIAINFO_HEVC_YES
         for (size_t Pos=0; Pos<Streams[moov_trak_tkhd_TrackID].Parsers.size(); Pos++) //Removing any previous parser (in case of multiple streams in one track, or dummy parser for demux)
             delete Streams[moov_trak_tkhd_TrackID].Parsers[Pos];
-        Streams[moov_trak_tkhd_TrackID].Parsers.clear();
+        Streams[moov_trak_tkhd_TrackID].Parsers_Clear();
 
         File_Hevc* Parser=new File_Hevc;
         Parser->FrameIsAlwaysComplete=true;
@@ -5921,6 +5944,21 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_idfm()
     Element_Name("Description");
 
     Info_C4(Description,                                        "Description"); Param_Info1(Mpeg4_Description(Description));
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv()
+{
+    Element_Name("Mastering Display Color Volume");
+
+    Ztring MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance;
+
+    Get_MasteringDisplayColorVolume(MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance);
+
+    FILLING_BEGIN();
+        Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_ColorPrimaries", MasteringDisplay_ColorPrimaries);
+        Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_Luminance", MasteringDisplay_Luminance);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -6350,7 +6388,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stts()
         std::map<int32u, int64u> Duration_FrameCount; //key is duration
         int64u Duration_FrameCount_Max=0;
         int32u Duration_FrameCount_Max_Duration=0;
-        if (StreamKind_Last==Stream_Video && Retrieve(Stream_Video, StreamPos_Last, "Format")==__T("DV") && Streams[moov_trak_tkhd_TrackID].Parsers[0] && ((File_DvDif*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Mpeg4_stts==NULL)
+        if (Streams[moov_trak_tkhd_TrackID].IsDvDif && ((File_DvDif*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Mpeg4_stts==NULL)
             ((File_DvDif*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Mpeg4_stts=new File_DvDif::stts;
     #endif //MEDIAINFO_DVDIF_ANALYZE_YES
 
@@ -6369,7 +6407,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stts()
         FILLING_END();
 
         #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
-            if (StreamKind_Last==Stream_Video && Retrieve(Stream_Video, StreamPos_Last, "Format")==__T("DV"))
+            if (Streams[moov_trak_tkhd_TrackID].IsDvDif)
             {
                 File_DvDif::stts_part DV_stts_Part;
                 DV_stts_Part.Pos_Begin=Stream->second.stts_FrameCount-SampleCount;
@@ -6393,7 +6431,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stts()
             Fill(Stream_Video, StreamPos_Last, Video_FrameCount, Stream->second.stts_FrameCount);
 
             #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
-                if (StreamKind_Last==Stream_Video && Retrieve(Stream_Video, StreamPos_Last, "Format")==__T("DV"))
+                if (Streams[moov_trak_tkhd_TrackID].IsDvDif)
                 {
                     //Clean up the "normal" value
                     for (size_t Pos=0; Pos<((File_DvDif*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Mpeg4_stts->size(); Pos++)
@@ -6539,7 +6577,7 @@ void File_Mpeg4::moov_trak_tkhd()
         if (Temp!=Streams.end())
         {
             Streams[moov_trak_tkhd_TrackID]=Temp->second;
-            Temp->second.Parsers.clear(); //They are a copy, we don't want that the destructor deletes the Parser
+            Temp->second.Parsers_Clear(); //They are a copy, we don't want that the destructor deletes the Parser
             Streams.erase(Temp);
         }
         Streams[moov_trak_tkhd_TrackID].IsEnabled = Enabled;

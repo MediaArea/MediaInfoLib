@@ -1046,8 +1046,7 @@ void File_Mpeg4::Streams_Finish()
 
             //Hacks - Before
             Ztring CodecID=Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_CodecID));
-            Ztring Source=Retrieve(StreamKind_Last, StreamPos_Last, "Source");
-            Ztring Source_Info=Retrieve(StreamKind_Last, StreamPos_Last, "Source_Info");
+            const Ztring Source=Retrieve(StreamKind_Last, StreamPos_Last, "Source");
 
             Merge(*Temp->second.MI->Info, Temp->second.StreamKind, 0, Temp->second.StreamPos);
             File_Size_Total+=Ztring(Temp->second.MI->Get(Stream_General, 0, General_FileSize)).To_int64u();
@@ -1062,8 +1061,9 @@ void File_Mpeg4::Streams_Finish()
             }
             if (Source!=Retrieve(StreamKind_Last, StreamPos_Last, "Source"))
             {
-                Ztring Source_Original=Retrieve(StreamKind_Last, StreamPos_Last, "Source");
-                Ztring Source_Original_Info=Retrieve(StreamKind_Last, StreamPos_Last, "Source_Info");
+                const Ztring Source_Original=Retrieve(StreamKind_Last, StreamPos_Last, "Source");
+                const Ztring Source_Original_Info=Retrieve(StreamKind_Last, StreamPos_Last, "Source_Info");
+                const Ztring Source_Info = Retrieve(StreamKind_Last, StreamPos_Last, "Source_Info");
                 Fill(StreamKind_Last, StreamPos_Last, "Source", Source, true);
                 Fill(StreamKind_Last, StreamPos_Last, "Source_Info", Source_Info, true);
                 Fill(StreamKind_Last, StreamPos_Last, "Source_Original", Source_Original, true);
@@ -2744,7 +2744,7 @@ void File_Mpeg4::Descriptors()
     {
         for (size_t Pos=0; Pos<Streams[moov_trak_tkhd_TrackID].Parsers.size(); Pos++)
             delete Streams[moov_trak_tkhd_TrackID].Parsers[Pos];
-        Streams[moov_trak_tkhd_TrackID].Parsers.clear();
+        Streams[moov_trak_tkhd_TrackID].Parsers_Clear();
         Streams[moov_trak_tkhd_TrackID].Parsers.push_back(MI.Parser);
         mdat_MustParse=true;
     }

@@ -165,6 +165,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_btrt();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_chan();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_clap();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_clli();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_colr();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc(bool LittleEndian=false);
     void moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof();
@@ -182,6 +183,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h() {jp2h();}
     void moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_colr() {jp2h_colr();}
     void moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_ihdr() {jp2h_ihdr();}
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_pasp();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_frma();
@@ -407,6 +409,9 @@ private :
         bool                    TimeCode_IsVisual;
         bool                    IsPcm;
         bool                    IsPcmMono;
+        #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
+            bool                IsDvDif;
+        #endif //MEDIAINFO_DVDIF_ANALYZE_YES
         bool                    IsPriorityStream;
         bool                    IsFilled;
         bool                    IsChapter;
@@ -481,6 +486,9 @@ private :
             TimeCode_IsVisual=false;
             IsPcm=false;
             IsPcmMono=false;
+            #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
+                IsDvDif=false;
+            #endif //MEDIAINFO_DVDIF_ANALYZE_YES
             IsPriorityStream=false;
             IsFilled=false;
             IsChapter=false;
@@ -510,6 +518,14 @@ private :
                 delete Parsers[Pos];
             delete MI; //MI=NULL;
             delete TimeCode; //TimeCode=NULL;
+        }
+
+        void Parsers_Clear()
+        {
+            Parsers.clear();
+            #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
+                IsDvDif=false;
+            #endif //MEDIAINFO_DVDIF_ANALYZE_YES
         }
     };
     typedef std::map<int32u, stream> streams;

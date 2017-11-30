@@ -89,6 +89,9 @@
 #if defined(MEDIAINFO_MK_YES)
     #include "MediaInfo/Multiple/File_Mk.h"
 #endif
+#if defined(MEDIAINFO_MIXML_YES)
+    #include "MediaInfo/Multiple/File_MiXml.h"
+#endif
 #if defined(MEDIAINFO_MPEG4_YES)
     #include "MediaInfo/Multiple/File_Mpeg4.h"
 #endif
@@ -509,7 +512,7 @@ bool MediaInfo_Internal::SelectFromExtension (const String &Parser)
     #if defined(MEDIAINFO_WM_YES)
         else if (Parser==__T("Wm"))          Info=new File_Wm();
     #endif
-    #if defined(MEDIAINFO_WM_YES)
+    #if defined(MEDIAINFO_WTV_YES)
         else if (Parser==__T("Wtv"))         Info=new File_Wtv();
     #endif
     #if defined(MEDIAINFO_XDCAM_YES)
@@ -818,6 +821,9 @@ int MediaInfo_Internal::ListFormats(const String &File_Name)
     #endif
     #if defined(MEDIAINFO_MK_YES)
         delete Info; Info=new File_Mk();                 if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
+    #endif
+    #if defined(MEDIAINFO_MIXML_YES)
+        delete Info; Info=new File_MiXml();              if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     #endif
     #if defined(MEDIAINFO_MPEG4_YES)
         delete Info; Info=new File_Mpeg4();              if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;

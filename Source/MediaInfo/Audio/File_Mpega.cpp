@@ -511,9 +511,9 @@ void File_Mpega::Streams_Finish()
 
     if (FrameCount==0 && VBR_FileSize && Retrieve(Stream_Audio, 0, Audio_BitRate_Mode)==__T("CBR") && ID<4 && layer<4 && sampling_frequency<4 && bitrate_index<16 && Mpega_SamplingRate[ID][sampling_frequency])
     {
-        size_t Size=(Mpega_Coefficient[ID][layer]*Mpega_BitRate[ID][layer][bitrate_index]*1000/Mpega_SamplingRate[ID][sampling_frequency])*Mpega_SlotSize[layer];
+        float64 Size=((float64)Mpega_Coefficient[ID][layer]*Mpega_BitRate[ID][layer][bitrate_index]*1000/Mpega_SamplingRate[ID][sampling_frequency])*Mpega_SlotSize[layer];
         if (Size)
-            FrameCount=float64_int64s(((float64)VBR_FileSize)/Size);
+            FrameCount=float64_int64s(VBR_FileSize/Size);
     }
 
     if (FrameCount)
@@ -1104,32 +1104,27 @@ void File_Mpega::Data_Parse()
 //---------------------------------------------------------------------------
 void File_Mpega::audio_data_Layer3()
 {
+    if (mode>=4)
+        return;
+    const bool mono=(mode==3);
+    const bool mpeg1=(ID==3);
     int16u main_data_end;
     BS_Begin();
-    if (ID==3) //MPEG-1
-        Get_S2 (9, main_data_end,                               "main_data_end");
-    else
-        Get_S2 (8, main_data_end,                               "main_data_end");
+    Get_S2 (mpeg1?9:8, main_data_end,                               "main_data_end");
     if ((int32u)main_data_end>Reservoir_Max)
         Reservoir_Max=main_data_end;
     Reservoir+=main_data_end;
-    if (ID==3) //MPEG-1
+    if (mpeg1) //MPEG-1
     {
-        if (mode==3) //Mono
-            Skip_S1(5,                                          "private_bits");
-        else
-            Skip_S1(3,                                          "private_bits");
+            Skip_S1(mono?5:3,                                          "private_bits");
     }
     else
     {
-        if (mode==3) //Mono
-            Skip_S1(1,                                          "private_bits");
-        else
-            Skip_S1(2,                                          "private_bits");
+            Skip_S1(mono?1:2,                                          "private_bits");
     }
-    if (ID==3) //MPEG-1
+    if (mpeg1) //MPEG-1
     {
-    Element_Begin1("scfsi");
+        Element_Begin1("scfsi");
         for(int8u ch=0; ch<Mpega_Channels[mode]; ch++)
             for(int8u scfsi_band=0; scfsi_band<4; scfsi_band++)
             {
@@ -1143,15 +1138,13 @@ void File_Mpega::audio_data_Layer3()
     for(int8u gr=0; gr<(ID==3?2:1); gr++)
     {
         Element_Begin1("granule");
-        if (mode>=4)
-            return;
         for(int8u ch=0; ch<Mpega_Channels[mode]; ch++)
         {
             Element_Begin1("channel");
             Skip_S2(12,                                         "part2_3_length");
             Skip_S2(9,                                          "big_values");
             Skip_S1(8,                                          "global_gain");
-            if (ID==3) //MPEG-1
+            if (mpeg1) //MPEG-1
                 Skip_S1(4,                                      "scalefac_compress");
             else
                 Skip_S2(9,                                      "scalefac_compress");
@@ -1195,7 +1188,7 @@ void File_Mpega::audio_data_Layer3()
                 Param_Info1("Long");
                 Block_Count[0]++; //Long
             }
-            if (ID==3) //MPEG-1
+            if (mpeg1) //MPEG-1
                 Skip_SB(                                        "preflag");
             bool scalefac;
             Get_SB (   scalefac,                                "scalefac_scale");
@@ -1413,10 +1406,25 @@ bool File_Mpega::Header_Encoders()
 
 void File_Mpega::Header_Encoders_Lame()
 {
-    Peek_Local(8, Encoded_Library);
-    if (Encoded_Library.find(__T("L3.99"))==0)
-        Encoded_Library.insert(1, __T("AME")); //Ugly version string in Lame 3.99.1 "L3.99r1\0"
-    if ((Encoded_Library>=__T("LAME3.90")) && Element_IsNotFinished())
+    bool HasInfoTag=false;
+    if (Element_Offset+9<=Element_Size)
+    {
+        const int8u* Tag=Buffer+Buffer_Offset+(size_t)Element_Offset;
+        int32u Name=BigEndian2int32u(Tag);
+        if (Name==0x4C414D45   // "LAME"
+         && Tag[5]=='.')
+        {
+            //Needs addtional tests, as v3.89 and less have no Lame Info tag, but v3.100 exists too
+            if ( Tag[4]> '3'                                                                                    // v4 or more
+             || (Tag[4]=='3' && Tag[6]=='9')                                                                    // v3.9yz-v3.9yz
+             ||  Tag[4]=='3' && Tag[8]>='0' && Tag[8]<='9')                                                     // v3.xy0-v3.xy9
+                HasInfoTag=true;
+        }
+        if (Name==0x4C332E39   // "L3.9"
+         && Tag[4]=='9')
+            HasInfoTag=true; //Form old code, to be confirmed: Ugly version string in Lame 3.99.1 "L3.99r1\0".
+    }
+    if (HasInfoTag)
     {
         int8u Flags, lowpass, EncodingFlags, BitRate, StereoMode;
         Param_Info1(Ztring(__T("V "))+Ztring::ToZtring((100-Xing_Scale)/10));

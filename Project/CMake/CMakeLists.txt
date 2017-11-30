@@ -4,10 +4,9 @@ cmake_minimum_required(VERSION 2.8.11)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
-set(MediaInfoLib_MAJOR_VERSION 0)
-set(MediaInfoLib_MINOR_VERSION 7)
-set(MediaInfoLib_PATCH_VERSION 99)
-set(MediaInfoLib_VERSION ${MediaInfoLib_MAJOR_VERSION}.${MediaInfoLib_MINOR_VERSION}.${MediaInfoLib_PATCH_VERSION})
+set(MediaInfoLib_MAJOR_VERSION 17)
+set(MediaInfoLib_MINOR_VERSION 10)
+set(MediaInfoLib_VERSION ${MediaInfoLib_MAJOR_VERSION}.${MediaInfoLib_MINOR_VERSION})
 
 if (NOT WIN32)
   option(BUILD_ZLIB "Build bundled zlib" OFF)
@@ -240,6 +239,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Ivf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Lxf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Mk.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_MiXml.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Mpeg4.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Mpeg4_Descriptors.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Mpeg4_Elements.cpp

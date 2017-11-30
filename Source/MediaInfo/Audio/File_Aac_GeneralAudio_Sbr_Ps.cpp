@@ -35,9 +35,7 @@ void File_Aac::ps_data(size_t End)
 {
     FILLING_BEGIN();
         if (Infos["Format_Settings_PS"].empty())
-        {
             FillInfosHEAACv2(__T("Implicit"));
-        }
     FILLING_END();
 
     //Parsing

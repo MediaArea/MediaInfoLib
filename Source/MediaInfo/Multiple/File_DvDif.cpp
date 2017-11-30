@@ -1626,9 +1626,8 @@ void File_DvDif::video_recdate()
 
     Element_Name("video_recdate");
 
-    Ztring Date=recdate();
     if (Recorded_Date_Date.empty())
-        Recorded_Date_Date=Date;
+        Recorded_Date_Date= recdate();
 }
 
 //---------------------------------------------------------------------------
@@ -1642,9 +1641,8 @@ void File_DvDif::video_rectime()
 
     Element_Name("video_rectime");
 
-    Ztring Date=rectime();
     if (Recorded_Date_Time.empty())
-        Recorded_Date_Time=Date;
+        Recorded_Date_Time=rectime();
 }
 
 //---------------------------------------------------------------------------

@@ -8,13 +8,13 @@ StreamKindPos;;;N NI;;;When multiple streams, number of the stream (base=1)
 StreamOrder;;;N YI;;;Stream order in the file, whatever is the kind of stream (base=0)
 FirstPacketOrder;;;N YI;;;Order of the first fully decodable packet met in the file, whatever is the kind of stream (base=0)
 Inform;;;N NT;;;Last **Inform** call
-ID;;;N YIY;;;The ID for this stream in this file
+ID;;;N YTY;;;The ID for this stream in this file
 ID/String;;;Y NT;;;The ID for this stream in this file
-OriginalSourceMedium_ID;;;N YIY;;;The ID for this stream in the original medium of the material
+OriginalSourceMedium_ID;;;N YTY;;;The ID for this stream in the original medium of the material
 OriginalSourceMedium_ID/String;;;Y NT;;;The ID for this stream in the original medium of the material
-UniqueID;;;N YIY;;;The unique ID for this stream, should be copied with stream copy
+UniqueID;;;N YTY;;;The unique ID for this stream, should be copied with stream copy
 UniqueID/String;;;Y NT;;;The unique ID for this stream, should be copied with stream copy
-MenuID;;;N YIY;;;The menu ID for this stream in this file
+MenuID;;;N YTY;;;The menu ID for this stream in this file
 MenuID/String;;;Y NT;;;The menu ID for this stream in this file
 GeneralCount;1;;N NIY;;;Number of general streams
 VideoCount;;;N NIY;;;Number of video streams
@@ -90,7 +90,7 @@ FileSize/String1;;;N NT;;;File size (with measure, 1 digit mini)
 FileSize/String2;;;N NT;;;File size (with measure, 2 digit mini)
 FileSize/String3;;;N NT;;;File size (with measure, 3 digit mini)
 FileSize/String4;;;N NT;;;File size (with measure, 4 digit mini)
-Duration;; ms;N YIY;;;Play time of the stream in ms
+Duration;; ms;N YFY;;;Play time of the stream in ms
 Duration/String;;;Y NT;;;Play time in format : XXx YYy only, YYy omited if zero
 Duration/String1;;;N NT;;;Play time in format : HHh MMmn SSs MMMms, XX omited if zero
 Duration/String2;;;N NT;;;Play time in format : XXx YYy only, YYy omited if zero
@@ -160,153 +160,153 @@ UniversalAdID_Value;;;N YTY;;;Universal Ad ID value
 Title;;;N NTY;;;(Generic)Title of file;;Title
 Title_More;;;N NTY;;;(Generic)More info about the title of file;;Title
 Title/Url;;;N NT;;;(Generic)Url;;Title
-Domain;;;Y YT;;;Univers movies belong to, e.g. Starwars, Stargate, Buffy, Dragonballs;;Title
-Collection;;;Y YT;;;Name of the series, e.g. Starwars movies, Stargate SG-1, Stargate Atlantis, Buffy, Angel;;Title
-Season;;;Y YT;;;Name of the season, e.g. Strawars first Trilogy, Season 1;;Title
-Season_Position;;;Y YI;;;Number of the Season;;Title
-Season_Position_Total;;;Y YI;;;Place of the season e.g. 2 of 7;;Title
-Movie;;;Y YT;;;Name of the movie. Eg : Starwars, a new hope;;Title
-Movie_More;;;Y YT;;;More infos about the movie;;Title
-Movie/Country;;;Y YT;;;Country, where the movie was procuced;;Title
+Domain;;;Y YTY;;;Univers movies belong to, e.g. Starwars, Stargate, Buffy, Dragonballs;;Title
+Collection;;;Y YTY;;;Name of the series, e.g. Starwars movies, Stargate SG-1, Stargate Atlantis, Buffy, Angel;;Title
+Season;;;Y YTY;;;Name of the season, e.g. Strawars first Trilogy, Season 1;;Title
+Season_Position;;;Y YIY;;;Number of the Season;;Title
+Season_Position_Total;;;Y YIY;;;Place of the season e.g. 2 of 7;;Title
+Movie;;;Y YTY;;;Name of the movie. Eg : Starwars, a new hope;;Title
+Movie_More;;;Y YTY;;;More infos about the movie;;Title
+Movie/Country;;;Y YTY;;;Country, where the movie was procuced;;Title
 Movie/Url;;;Y YT;;;Homepage for the movie;;Title
-Album;;;Y YT;;;Name of an audio-album. Eg : The joshua tree;;Title
-Album_More;;;Y YT;;;More infos about the album;;Title
-Album/Sort;;;Y YT;;;;;Title
-Album/Performer;;;Y YT;;;Album performer/artist of this file;;Entity
-Album/Performer/Sort;;;Y YT;;;;;Entity
+Album;;;Y YTY;;;Name of an audio-album. Eg : The joshua tree;;Title
+Album_More;;;Y YTY;;;More infos about the album;;Title
+Album/Sort;;;Y YTY;;;;;Title
+Album/Performer;;;Y YTY;;;Album performer/artist of this file;;Entity
+Album/Performer/Sort;;;Y YTY;;;;;Entity
 Album/Performer/Url;;;Y YT;;;Homepage of the album performer/artist;;Entity
-Comic;;;Y YT;;;Name of the comic.;;Title
-Comic_More;;;Y YT;;;;;Title
-Comic/Position_Total;;;Y YI;;;;;Title
-Part;;;Y YT;;;Name of the part. e.g. CD1, CD2;;Title
-Part/Position;;;Y YI;;;Number of the part;;Title
-Part/Position_Total;;;Y YI;;;Place of the part e.g. 2 of 3;;Title
-Track;;;Y YT;;;Name of the track. e.g. track1, track 2;;Title
-Track_More;;;Y YT;;;More infos about the track;;Title
+Comic;;;Y YTY;;;Name of the comic.;;Title
+Comic_More;;;Y YTY;;;;;Title
+Comic/Position_Total;;;Y YIY;;;;;Title
+Part;;;Y YTY;;;Name of the part. e.g. CD1, CD2;;Title
+Part/Position;;;Y YIY;;;Number of the part;;Title
+Part/Position_Total;;;Y YIY;;;Place of the part e.g. 2 of 3;;Title
+Track;;;Y YTY;;;Name of the track. e.g. track1, track 2;;Title
+Track_More;;;Y YTY;;;More infos about the track;;Title
 Track/Url;;;Y YT;;;Link to a site about this track;;Title
-Track/Sort;;;Y YT;;;;;Title
-Track/Position;;;Y YI;;;Number of this track;;Title
-Track/Position_Total;;;Y YI;;;Place of this track, e.g. 3 of 15;;Title
+Track/Sort;;;Y YTY;;;;;Title
+Track/Position;;;Y YIY;;;Number of this track;;Title
+Track/Position_Total;;;Y YIY;;;Place of this track, e.g. 3 of 15;;Title
 PackageName;;;Y YTY;;;Package name i.e. technical flavor of the content
-Grouping;;;Y YT;;;iTunes grouping;;Title
-Chapter;;;Y YT;;;Name of the chapter.;;Title
-SubTrack;;;Y YT;;;Name of the subtrack.;;Title
-Original/Album;;;Y YT;;;Original name of album, serie...;;Title
-Original/Movie;;;Y YT;;;Original name of the movie;;Title
-Original/Part;;;Y YT;;;Original name of the part in the original support;;Title
-Original/Track;;;Y YT;;;Original name of the track in the original support;;Title
-Compilation;;Yes;N YT;;;iTunes compilation;;Title
+Grouping;;;Y YTY;;;iTunes grouping;;Title
+Chapter;;;Y YTY;;;Name of the chapter.;;Title
+SubTrack;;;Y YTY;;;Name of the subtrack.;;Title
+Original/Album;;;Y YTY;;;Original name of album, serie...;;Title
+Original/Movie;;;Y YTY;;;Original name of the movie;;Title
+Original/Part;;;Y YTY;;;Original name of the part in the original support;;Title
+Original/Track;;;Y YTY;;;Original name of the track in the original support;;Title
+Compilation;;Yes;N YTY;;;iTunes compilation;;Title
 Compilation/String;;;Y NT;;;iTunes compilation;;Title
-Performer;;;Y YT;;;Main performer/artist of this file;;Entity
-Performer/Sort;;;Y YT;;;;;Entity
+Performer;;;Y YTY;;;Main performer/artist of this file;;Entity
+Performer/Sort;;;Y YTY;;;;;Entity
 Performer/Url;;;Y YT;;;Homepage of the performer/artist;;Entity
-Original/Performer;;;Y YT;;;Original artist(s)/performer(s).;;Entity
-Accompaniment;;;Y YT;;;Band/orchestra/accompaniment/musician.;;Entity
-Composer;;;Y YT;;;Name of the original composer.;;Entity
-Composer/Nationality;;;Y YT;;;Nationality of the main composer of the item, mostly for classical music.;;Entity
-Composer/Sort;;;Y YT;;;;;Entity
-Arranger;;;Y YT;;;The person who arranged the piece. e.g. Ravel.;;Entity
-Lyricist;;;Y YT;;;The person who wrote the lyrics for a musical item.;;Entity
-Original/Lyricist;;;Y YT;;;Original lyricist(s)/text writer(s).;;Entity
-Conductor;;;Y YT;;;The artist(s) who performed the work. In classical music this would be the conductor, orchestra, soloists.;;Entity
-Director;;;Y YT;;;Name of the director.;;Entity
-CoDirector;;;Y YT;;;Name of the codirector.;;Entity
-AssistantDirector;;;Y YT;;;Name of the assistant director.;;Entity
-DirectorOfPhotography;;;Y YT;;;The name of the director of photography, also known as cinematographer.;;Entity
-SoundEngineer;;;Y YT;;;The name of the sound engineer or sound recordist.;;Entity
-ArtDirector;;;Y YT;;;The person who oversees the artists and craftspeople who build the sets.;;Entity
-ProductionDesigner;;;Y YT;;;The person responsible for designing the Overall visual appearance of a movie.;;Entity
-Choregrapher;;;Y YT;;;The name of the choregrapher.;;Entity
-CostumeDesigner;;;Y YT;;;The name of the costume designer.;;Entity
-Actor;;;Y YT;;;Real name of an actor or actress playing a role in the movie.;;Entity
-Actor_Character;;;Y YT;;;Name of the character an actor or actress plays in this movie.;;Entity
-WrittenBy;;;Y YT;;;The author of the story or script.;;Entity
-ScreenplayBy;;;Y YT;;;The author of the screenplay or scenario (used for movies and TV shows).;;Entity
-EditedBy;;;Y YT;;;Editors name;;Entity
-CommissionedBy;;;Y YT;;;name of the person or organization that commissioned the subject of the file;;Entity
-Producer;;;Y YT;;;Name of the producer of the movie.;;Entity
-CoProducer;;;Y YT;;;The name of a co-producer.;;Entity
-ExecutiveProducer;;;Y YT;;;The name of an executive producer.;;Entity
-MusicBy;;;Y YT;;;Main music-artist for a movie;;Entity
-DistributedBy;;;Y YT;;;Company the item is mainly distributed by ;;Entity
-OriginalSourceForm/DistributedBy;;;Y YT;;;Name of the person or organization who supplied the original subject;;Entity
-MasteredBy;;;Y YT;;;The engineer who mastered the content for a physical medium or for digital distribution.;;Entity
-EncodedBy;;;Y YT;;;Name of the person or organisation that encoded/ripped the audio file.;;Entity
-RemixedBy;;;Y YT;;;Name of the artist(s), that interpreted, remixed, or otherwise modified the item.;;Entity
-ProductionStudio;;;Y YT;;;Main production studio ;;Entity
-ThanksTo;;;Y YT;;;A very general tag for everyone else that wants to be listed.;;Entity
-Publisher;;;Y YT;;;Name of the organization publishing the album (i.e. the 'record label') or movie.;;Entity
-Publisher/URL;;;Y YT;;;Publishers official webpage.;;Entity
-Label;;;Y YT;;;Brand or trademark associated with the marketing of music recordings and music videos.;;Entity
-Genre;;;Y YT;;;The main genre of the audio or video. e.g. classical, ambient-house, synthpop, sci-fi, drama, etc.;;Classification
-PodcastCategory;;;Y YT;;;Podcast category;;Classification
-Mood;;;Y YT;;;Intended to reflect the mood of the item with a few keywords, e.g. Romantic, Sad, Uplifting, etc.;;Classification
-ContentType;;;Y YT;;;The type of the item. e.g. Documentary, Feature Film, Cartoon, Music Video, Music, Sound FX, etc.;;Classification
-Subject;;;Y YT;;;Describes the topic of the file, such as Aerial view of Seattle..;;Classification
-Description;;;Y YT;;;A short description of the contents, such as Two birds flying.;;Classification
-Keywords;;;Y YT;;;Keywords to the item separated by a comma, used for searching.;;Classification
-Summary;;;Y YT;;;A plot outline or a summary of the story.;;Classification
-Synopsis;;;Y YT;;;A description of the story line of the item.;;Classification
-Period;;;Y YT;;;Describes the period that the piece is from or about. e.g. Renaissance.;;Classification
-LawRating;;;Y YT;;;Depending on the country it's the format of the rating of a movie (P, R, X in the USA, an age in other countries or a URI defining a logo).;;Classification
-LawRating_Reason;;;Y YT;;;Reason for the law rating;;Classification
-ICRA;;;Y YT;;;The ICRA rating. (Previously RSACi);;Classification
-Released_Date;;;Y YT;;;The date/year that the item was released.;;Temporal
-Original/Released_Date;;;Y YT;;;The date/year that the item was originaly released.;;Temporal
-Recorded_Date;;;Y YT;;;The time/date/year that the recording began.;;Temporal
-Encoded_Date;;;Y YT;;;The time/date/year that the encoding of this item was completed began.;;Temporal
-Tagged_Date;;;Y YT;;;The time/date/year that the tags were done for this item.;;Temporal
-Written_Date;;;Y YT;;;The time/date/year that the composition of the music/script began.;;Temporal
-Mastered_Date;;;Y YT;;;The time/date/year that the item was tranfered to a digitalmedium.;;Temporal
-File_Created_Date;;;N NT;;;The time that the file was created on the file system;;Temporal
-File_Created_Date_Local;;;N NT;;;The time that the file was created on the file system (Warning: this field depends of local configuration, do not use it in an international database);;Temporal
-File_Modified_Date;;;N NT;;;The time that the file was modified on the file system;;Temporal
-File_Modified_Date_Local;;;N NT;;;The time that the file was modified on the file system (Warning: this field depends of local configuration, do not use it in an international database);;Temporal
-Recorded_Location;;;Y YT;;;Location where track was recorded. (See COMPOSITION_LOCATION for format);;Spatial
-Written_Location;;;Y YT;;;Location that the item was originaly designed/written. Information should be stored in the following format: country code, state/province, city where the coutry code is the same 2 octets as in Internet domains, or possibly ISO-3166. e.g. US, Texas, Austin or US, , Austin.;;Spatial
-Archival_Location;;;Y YT;;;Location, where an item is archived, e.eg. Louvre,Paris,France;;Spatial
-Encoded_Application;;;N YT;;;Name of the software package used to create the file, such as Microsoft WaveEdit;;Technical
+Original/Performer;;;Y YTY;;;Original artist(s)/performer(s).;;Entity
+Accompaniment;;;Y YTY;;;Band/orchestra/accompaniment/musician.;;Entity
+Composer;;;Y YTY;;;Name of the original composer.;;Entity
+Composer/Nationality;;;Y YTY;;;Nationality of the main composer of the item, mostly for classical music.;;Entity
+Composer/Sort;;;Y YTY;;;;;Entity
+Arranger;;;Y YTY;;;The person who arranged the piece. e.g. Ravel.;;Entity
+Lyricist;;;Y YTY;;;The person who wrote the lyrics for a musical item.;;Entity
+Original/Lyricist;;;Y YTY;;;Original lyricist(s)/text writer(s).;;Entity
+Conductor;;;Y YTY;;;The artist(s) who performed the work. In classical music this would be the conductor, orchestra, soloists.;;Entity
+Director;;;Y YTY;;;Name of the director.;;Entity
+CoDirector;;;Y YTY;;;Name of the codirector.;;Entity
+AssistantDirector;;;Y YTY;;;Name of the assistant director.;;Entity
+DirectorOfPhotography;;;Y YTY;;;The name of the director of photography, also known as cinematographer.;;Entity
+SoundEngineer;;;Y YTY;;;The name of the sound engineer or sound recordist.;;Entity
+ArtDirector;;;Y YTY;;;The person who oversees the artists and craftspeople who build the sets.;;Entity
+ProductionDesigner;;;Y YTY;;;The person responsible for designing the Overall visual appearance of a movie.;;Entity
+Choregrapher;;;Y YTY;;;The name of the choregrapher.;;Entity
+CostumeDesigner;;;Y YTY;;;The name of the costume designer.;;Entity
+Actor;;;Y YTY;;;Real name of an actor or actress playing a role in the movie.;;Entity
+Actor_Character;;;Y YTY;;;Name of the character an actor or actress plays in this movie.;;Entity
+WrittenBy;;;Y YTY;;;The author of the story or script.;;Entity
+ScreenplayBy;;;Y YTY;;;The author of the screenplay or scenario (used for movies and TV shows).;;Entity
+EditedBy;;;Y YTY;;;Editors name;;Entity
+CommissionedBy;;;Y YTY;;;name of the person or organization that commissioned the subject of the file;;Entity
+Producer;;;Y YTY;;;Name of the producer of the movie.;;Entity
+CoProducer;;;Y YTY;;;The name of a co-producer.;;Entity
+ExecutiveProducer;;;Y YTY;;;The name of an executive producer.;;Entity
+MusicBy;;;Y YTY;;;Main music-artist for a movie;;Entity
+DistributedBy;;;Y YTY;;;Company the item is mainly distributed by ;;Entity
+OriginalSourceForm/DistributedBy;;;Y YTY;;;Name of the person or organization who supplied the original subjecTY;;Entity
+MasteredBy;;;Y YTY;;;The engineer who mastered the content for a physical medium or for digital distribution.;;Entity
+EncodedBy;;;Y YTY;;;Name of the person or organisation that encoded/ripped the audio file.;;Entity
+RemixedBy;;;Y YTY;;;Name of the artist(s), that interpreted, remixed, or otherwise modified the item.;;Entity
+ProductionStudio;;;Y YTY;;;Main production studio ;;Entity
+ThanksTo;;;Y YTY;;;A very general tag for everyone else that wants to be listed.;;Entity
+Publisher;;;Y YTY;;;Name of the organization publishing the album (i.e. the 'record label') or movie.;;Entity
+Publisher/URL;;;Y YTY;;;Publishers official webpage.;;Entity
+Label;;;Y YTY;;;Brand or trademark associated with the marketing of music recordings and music videos.;;Entity
+Genre;;;Y YTY;;;The main genre of the audio or video. e.g. classical, ambient-house, synthpop, sci-fi, drama, etc.;;Classification
+PodcastCategory;;;Y YTY;;;Podcast category;;Classification
+Mood;;;Y YTY;;;Intended to reflect the mood of the item with a few keywords, e.g. Romantic, Sad, Uplifting, etc.;;Classification
+ContentType;;;Y YTY;;;The type of the item. e.g. Documentary, Feature Film, Cartoon, Music Video, Music, Sound FX, etc.;;Classification
+Subject;;;Y YTY;;;Describes the topic of the file, such as Aerial view of Seattle..;;Classification
+Description;;;Y YTY;;;A short description of the contents, such as Two birds flying.;;Classification
+Keywords;;;Y YTY;;;Keywords to the item separated by a comma, used for searching.;;Classification
+Summary;;;Y YTY;;;A plot outline or a summary of the story.;;Classification
+Synopsis;;;Y YTY;;;A description of the story line of the item.;;Classification
+Period;;;Y YTY;;;Describes the period that the piece is from or about. e.g. Renaissance.;;Classification
+LawRating;;;Y YTY;;;Depending on the country it's the format of the rating of a movie (P, R, X in the USA, an age in other countries or a URI defining a logo).;;Classification
+LawRating_Reason;;;Y YTY;;;Reason for the law rating;;Classification
+ICRA;;;Y YTY;;;The ICRA rating. (Previously RSACi);;Classification
+Released_Date;;;Y YTY;;;The date/year that the item was released.;;Temporal
+Original/Released_Date;;;Y YTY;;;The date/year that the item was originaly released.;;Temporal
+Recorded_Date;;;Y YTY;;;The time/date/year that the recording began.;;Temporal
+Encoded_Date;;;Y YTY;;;The time/date/year that the encoding of this item was completed began.;;Temporal
+Tagged_Date;;;Y YTY;;;The time/date/year that the tags were done for this item.;;Temporal
+Written_Date;;;Y YTY;;;The time/date/year that the composition of the music/script began.;;Temporal
+Mastered_Date;;;Y YTY;;;The time/date/year that the item was tranfered to a digitalmedium.;;Temporal
+File_Created_Date;;;N NTY;;;The time that the file was created on the file system;;Temporal
+File_Created_Date_Local;;;N NTY;;;The time that the file was created on the file system (Warning: this field depends of local configuration, do not use it in an international database);;Temporal
+File_Modified_Date;;;N NTY;;;The time that the file was modified on the file system;;Temporal
+File_Modified_Date_Local;;;N NTY;;;The time that the file was modified on the file system (Warning: this field depends of local configuration, do not use it in an international database);;Temporal
+Recorded_Location;;;Y YTY;;;Location where track was recorded. (See COMPOSITION_LOCATION for format);;Spatial
+Written_Location;;;Y YTY;;;Location that the item was originaly designed/written. Information should be stored in the following format: country code, state/province, city where the coutry code is the same 2 octets as in Internet domains, or possibly ISO-3166. e.g. US, Texas, Austin or US, , Austin.;;Spatial
+Archival_Location;;;Y YTY;;;Location, where an item is archived, e.eg. Louvre,Paris,France;;Spatial
+Encoded_Application;;;N YTY;;;Name of the software package used to create the file, such as Microsoft WaveEdiTY;;Technical
 Encoded_Application/String;;;Y NT;;;Name of the software package used to create the file, such as Microsoft WaveEdit, trying to have the format 'CompanyName ProductName (OperatingSystem) Version (Date)';;Technical
-Encoded_Application_CompanyName;;;N YT;;;Name of the company;;Technical
-Encoded_Application_Name;;;N YT;;;Name of the product;;Technical
-Encoded_Application_Version;;;N YT;;;Version of the product;;Technical
-Encoded_Application_Url;;;N YT;;;Name of the software package used to create the file, such as Microsoft WaveEdit.;;Technical
-Encoded_Library;;;N YT;;;Software used to create the file;;Technical
+Encoded_Application_CompanyName;;;N YTY;;;Name of the company;;Technical
+Encoded_Application_Name;;;N YTY;;;Name of the product;;Technical
+Encoded_Application_Version;;;N YTY;;;Version of the product;;Technical
+Encoded_Application_Url;;;N YTY;;;Name of the software package used to create the file, such as Microsoft WaveEdit.;;Technical
+Encoded_Library;;;N YTY;;;Software used to create the file;;Technical
 Encoded_Library/String;;;Y NT;;;Software used to create the file, trying to have the format 'CompanyName ProductName (OperatingSystem) Version (Date)';;Technical
-Encoded_Library_CompanyName;;;N YT;;;Name of the company;;Technical
-Encoded_Library_Name;;;N NT;;;Name of the the encoding-software;;Technical
-Encoded_Library_Version;;;N NT;;;Version of encoding-software;;Technical
-Encoded_Library_Date;;;N NT;;;Release date of software;;Technical
-Encoded_Library_Settings;;;Y YT;;;Parameters used by the software;;Technical
-Encoded_OperatingSystem;;;N YT;;;Operating System of encoding-software;;Technical
-Cropped;;;Y YT;;;Describes whether an image has been cropped and, if so, how it was cropped.;;Technical
-Dimensions;;;Y YT;;;Specifies the size of the original subject of the file. eg 8.5 in h, 11 in w;;Technical
-DotsPerInch;;;Y YT;;;Stores dots per inch setting of the digitizer used to produce the file;;Technical
-Lightness;;;Y YT;;;Describes the changes in lightness settings on the digitizer required to produce the file;;Technical
-OriginalSourceMedium;;;Y YT;;;Original medium of the material, e.g. vinyl, Audio-CD, Super8 or BetaMax;;Technical
-OriginalSourceForm;;;Y YT;;;Original form of the material, e.g. slide, paper, map;;Technical
-OriginalSourceForm/NumColors;;;Y YT;;;Number of colors requested when digitizing, e.g. 256 for images or 32 bit RGB for video;;Technical
-OriginalSourceForm/Name;;;Y YT;;;Name of the product the file was originally intended for;;Technical
-OriginalSourceForm/Cropped;;;Y YT;;;Describes whether an image has been cropped and, if so, how it was cropped. e.g. 16:9 to 4:3, top and bottom;;Technical
-OriginalSourceForm/Sharpness;;;Y YT;;;Identifies the changes in sharpness for the digitizer requiered to produce the file;;Technical
-Tagged_Application;;;Y YT;;;Software used to tag this file;;Technical
-BPM;;;Y YT;;;Average number of beats per minute;;Technical
-ISRC;;;Y YT;;;International Standard Recording Code, excluding the ISRC prefix and including hyphens.;;Identifier
-ISBN;;;Y YT;;;International Standard Book Number.;;Identifier
-BarCode;;;Y YT;;;EAN-13 (13-digit European Article Numbering) or UPC-A (12-digit Universal Product Code) bar code identifier.;;Identifier
-LCCN;;;Y YT;;;Library of Congress Control Number.;;Identifier
-CatalogNumber;;;Y YT;;;A label-specific catalogue number used to identify the release. e.g. TIC 01.;;Identifier
-LabelCode;;;Y YT;;;A 4-digit or 5-digit number to identify the record label, typically printed as (LC) xxxx or (LC) 0xxxx on CDs medias or covers, with only the number being stored.;;Identifier
-Owner;;;Y YT;;;Owner of the file;;Legal
-Copyright;;;Y YT;;;Copyright attribution.;;Legal
-Copyright/Url;;;Y YT;;;Link to a site with copyright/legal information.;;Legal
-Producer_Copyright;;;Y YT;;;The copyright information as per the productioncopyright holder.;;Legal
-TermsOfUse;;;Y YT;;;License information, e.g., All Rights Reserved,Any Use Permitted.;;Legal
+Encoded_Library_CompanyName;;;N YTY;;;Name of the company;;Technical
+Encoded_Library_Name;;;N NTY;;;Name of the the encoding-software;;Technical
+Encoded_Library_Version;;;N NTY;;;Version of encoding-software;;Technical
+Encoded_Library_Date;;;N NTY;;;Release date of software;;Technical
+Encoded_Library_Settings;;;Y YTY;;;Parameters used by the software;;Technical
+Encoded_OperatingSystem;;;N YTY;;;Operating System of encoding-software;;Technical
+Cropped;;;Y YTY;;;Describes whether an image has been cropped and, if so, how it was cropped.;;Technical
+Dimensions;;;Y YTY;;;Specifies the size of the original subject of the file. eg 8.5 in h, 11 in w;;Technical
+DotsPerInch;;;Y YTY;;;Stores dots per inch setting of the digitizer used to produce the file;;Technical
+Lightness;;;Y YTY;;;Describes the changes in lightness settings on the digitizer required to produce the file;;Technical
+OriginalSourceMedium;;;Y YTY;;;Original medium of the material, e.g. vinyl, Audio-CD, Super8 or BetaMax;;Technical
+OriginalSourceForm;;;Y YTY;;;Original form of the material, e.g. slide, paper, map;;Technical
+OriginalSourceForm/NumColors;;;Y YTY;;;Number of colors requested when digitizing, e.g. 256 for images or 32 bit RGB for video;;Technical
+OriginalSourceForm/Name;;;Y YTY;;;Name of the product the file was originally intended for;;Technical
+OriginalSourceForm/Cropped;;;Y YTY;;;Describes whether an image has been cropped and, if so, how it was cropped. e.g. 16:9 to 4:3, top and bottom;;Technical
+OriginalSourceForm/Sharpness;;;Y YTY;;;Identifies the changes in sharpness for the digitizer requiered to produce the file;;Technical
+Tagged_Application;;;Y YTY;;;Software used to tag this file;;Technical
+BPM;;;Y YTY;;;Average number of beats per minute;;Technical
+ISRC;;;Y YTY;;;International Standard Recording Code, excluding the ISRC prefix and including hyphens.;;Identifier
+ISBN;;;Y YTY;;;International Standard Book Number.;;Identifier
+BarCode;;;Y YTY;;;EAN-13 (13-digit European Article Numbering) or UPC-A (12-digit Universal Product Code) bar code identifier.;;Identifier
+LCCN;;;Y YTY;;;Library of Congress Control Number.;;Identifier
+CatalogNumber;;;Y YTY;;;A label-specific catalogue number used to identify the release. e.g. TIC 01.;;Identifier
+LabelCode;;;Y YTY;;;A 4-digit or 5-digit number to identify the record label, typically printed as (LC) xxxx or (LC) 0xxxx on CDs medias or covers, with only the number being stored.;;Identifier
+Owner;;;Y YTY;;;Owner of the file;;Legal
+Copyright;;;Y YTY;;;Copyright attribution.;;Legal
+Copyright/Url;;;Y YTY;;;Link to a site with copyright/legal information.;;Legal
+Producer_Copyright;;;Y YTY;;;The copyright information as per the productioncopyright holder.;;Legal
+TermsOfUse;;;Y YTY;;;License information, e.g., All Rights Reserved,Any Use Permitted.;;Legal
 ServiceName;;;Y YTY;;;;;Legal
 ServiceChannel;;;Y YTY;;;;;Legal
-Service/Url;;;Y YT;;;;;Legal
+Service/Url;;;Y YTY;;;;;Legal
 ServiceProvider;;;Y YTY;;;;;Legal
-ServiceProviderr/Url;;;Y YT;;;;;Legal
+ServiceProvider/Url;;;Y YTN;;;;;Legal
 ServiceType;;;Y YTY;;;;;Legal
 NetworkName;;;Y YTY;;;;;Legal
 OriginalNetworkName;;;Y YTY;;;;;Legal
@@ -316,13 +316,13 @@ Cover;;;Y YTY;;;Is there a cover;;Info
 Cover_Description;;;Y YTY;;;short descriptio, e.g. Earth in space;;Info
 Cover_Type;;;Y YTY;;;;;Info
 Cover_Mime;;;Y YTY;;;;;Info
-Cover_Data;;;N YT;;;Cover, in binary format encoded BASE64;;Info
-Lyrics;;;Y YT;;;Text of a song;;Info
-Comment;;;Y YT;;;Any comment related to the content.;;Personal
-Rating;;;Y YT;;;A numeric value defining how much a person likes the song/movie. The number is between 0 and 5 with decimal values possible (e.g. 2.7), 5(.0) being the highest possible rating.;;Personal
-Added_Date;;;Y YT;;;Date/year the item was added to the owners collection;;Personal
-Played_First_Date;;;Y YT;;;The date, the owner first played an item;;Personal
-Played_Last_Date;;;Y YT;;;The date, the owner last played an item;;Personal
-Played_Count;;;Y YI;;;Number of times an item was played;;Personal
-EPG_Positions_Begin;;;N YI;;;;;
-EPG_Positions_End;;;N YI;;;;;
+Cover_Data;;;N YTY;;;Cover, in binary format encoded BASE64;;Info
+Lyrics;;;Y YTY;;;Text of a song;;Info
+Comment;;;Y YTY;;;Any comment related to the content.;;Personal
+Rating;;;Y YTY;;;A numeric value defining how much a person likes the song/movie. The number is between 0 and 5 with decimal values possible (e.g. 2.7), 5(.0) being the highest possible rating.;;Personal
+Added_Date;;;Y YTY;;;Date/year the item was added to the owners collection;;Personal
+Played_First_Date;;;Y YTY;;;The date, the owner first played an item;;Personal
+Played_Last_Date;;;Y YTY;;;The date, the owner last played an item;;Personal
+Played_Count;;;Y YIY;;;Number of times an item was played;;Personal
+EPG_Positions_Begin;;;N YIY;;;;;
+EPG_Positions_End;;;N YIY;;;;;

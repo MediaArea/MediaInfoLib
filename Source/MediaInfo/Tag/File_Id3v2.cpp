@@ -980,7 +980,7 @@ void File_Id3v2::COMM()
     else if (Element_Values(0)==__T("MusicMatch_Mood"))
     {
         if (Retrieve(Stream_General, 0, General_Mood).empty())
-            Element_Values(0)==__T("Mood");
+            Element_Values(0)=__T("Mood");
         else
             return;
     }

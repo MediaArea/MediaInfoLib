@@ -395,7 +395,7 @@ namespace Elements
     const int32u W3DI=0x57334449;
 
     #define UUID(NAME, PART1, PART2, PART3, PART4, PART5) \
-        const int64u NAME   =0x##PART3##PART2##PART1##ULL; \
+        const int64u NAME   =((int64u(0x##PART1))&0xFF)<<56 | ((int64u(0x##PART1)>>8)&0xFF)<<48 | ((int64u(0x##PART1)>>16)&0xFF)<<40 | ((int64u(0x##PART1)>>24)&0xFF)<<32 | ((int64u(0x##PART2))&0xFF)<<24 | ((int64u(0x##PART2)>>8)&0xFF)<<16 | ((int64u(0x##PART3))&0xFF)<<8 | ((int64u(0x##PART3)>>8)&0xFF); \
         const int64u NAME##2=0x##PART4##PART5##ULL; \
 
     UUID(QLCM_QCELP1,                                           5E7F6D41, B115, 11D0, BA91, 00805FB4B97E)
@@ -782,6 +782,9 @@ void File_Riff::AIFF_COMT()
 //---------------------------------------------------------------------------
 void File_Riff::AIFF_SSND()
 {
+    Skip_B4(                                                    "offset"); //TODO: support offset
+    Skip_B4(                                                    "blockSize");
+    Buffer_DataToParse_Begin+=Element_Offset;
     WAVE_data();
 }
 
@@ -1101,8 +1104,9 @@ void File_Riff::AVI__hdlr_strl_indx_StandardIndex(int32u Entry_Count, int32u Chu
         //Stream Position and size
         if (Pos<300 || Config->ParseSpeed>=1.0)
         {
-            Stream_Structure[BaseOffset+Offset-8].Name=ChunkId&0xFFFF0000;
-            Stream_Structure[BaseOffset+Offset-8].Size=Size;
+            stream_structure& Stream_Structure_Item=Stream_Structure[BaseOffset+Offset-8];
+            Stream_Structure_Item.Name=ChunkId&0xFFFF0000;
+            Stream_Structure_Item.Size=Size;
         }
         StreamSize+=(Size&0x7FFFFFFF);
         Stream[ChunkId&0xFFFF0000].PacketCount++;
@@ -1352,7 +1356,6 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
     {
         File_Pcm* Parser=new File_Pcm;
         Parser->Codec=Codec;
-        Parser->Endianness='L';
         Parser->BitDepth=(int8u)BitsPerSample;
         #if MEDIAINFO_DEMUX
             if (Demux_Rate)
@@ -1424,7 +1427,7 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
         else if (FormatTag==0x6750) //Vorbis with Config in this chunk
             AVI__hdlr_strl_strf_auds_Vorbis2();
         else if (FormatTag==0xFFFE) //Extensible Wave
-            AVI__hdlr_strl_strf_auds_ExtensibleWave();
+            AVI__hdlr_strl_strf_auds_ExtensibleWave(BitsPerSample);
         else if (Element_Offset+Option_Size<=Element_Size)
             Skip_XX(Option_Size,                               "Unknown");
         else if (Element_Offset!=Element_Size)
@@ -1530,33 +1533,35 @@ void File_Riff::AVI__hdlr_strl_strf_auds_Vorbis2()
 }
 
 //---------------------------------------------------------------------------
-void File_Riff::AVI__hdlr_strl_strf_auds_ExtensibleWave()
+void File_Riff::AVI__hdlr_strl_strf_auds_ExtensibleWave(int16u BitsPerSample)
 {
     //Parsing
     int128u SubFormat;
     int32u ChannelMask;
-    Skip_L2(                                                    "ValidBitsPerSample / SamplesPerBlock");
+    int16u ValidBitsPerSample;
+    Get_L2 (ValidBitsPerSample,                                 "ValidBitsPerSample / SamplesPerBlock");
     Get_L4 (ChannelMask,                                        "ChannelMask");
     Get_GUID(SubFormat,                                         "SubFormat");
 
     FILLING_BEGIN();
-        if ((SubFormat.hi&0xFFFFFFFFFFFF0000LL)==0x0010000000000000LL && SubFormat.lo==0x800000AA00389B71LL)
+        if ((SubFormat.hi&0x0000FFFFFFFFFFFFLL)==0x0000000000001000LL && SubFormat.lo==0x800000AA00389B71LL)
         {
-            CodecID_Fill(Ztring().From_Number((int16u)SubFormat.hi, 16), Stream_Audio, StreamPos_Last, InfoCodecID_Format_Riff);
+            int16u LegacyCodecID=(int16u)((((SubFormat.hi>>48)&0xFF)<<8) | (SubFormat.hi>>56)); // It is Little Endian
+            CodecID_Fill(Ztring().From_Number(LegacyCodecID, 16), Stream_Audio, StreamPos_Last, InfoCodecID_Format_Riff);
             Fill(Stream_Audio, StreamPos_Last, Audio_CodecID, Ztring().From_GUID(SubFormat), true);
-            Fill(Stream_Audio, StreamPos_Last, Audio_Codec, MediaInfoLib::Config.Codec_Get(Ztring().From_Number((int16u)SubFormat.hi, 16)), true);
+            Fill(Stream_Audio, StreamPos_Last, Audio_Codec, MediaInfoLib::Config.Codec_Get(Ztring().From_Number(LegacyCodecID, 16)), true);
 
             //Creating the parser
                  if (0);
             #if defined(MEDIAINFO_PCM_YES)
-            else if (MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Riff, Ztring().From_Number((int16u)SubFormat.hi, 16))==__T("PCM"))
+            else if (MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Riff, Ztring().From_Number(LegacyCodecID, 16))==__T("PCM"))
             {
                 //Creating the parser
                 File_Pcm* Parser=new File_Pcm;
                 Parser->Codec=Ztring().From_GUID(SubFormat);
-                Parser->Endianness='L';
-                Parser->Sign='S';
                 Parser->BitDepth=(int8u)BitsPerSample;
+                if (ValidBitsPerSample!=BitsPerSample)
+                    Parser->BitDepth_Significant=(int8u)ValidBitsPerSample;
                 #if MEDIAINFO_DEMUX
                     if (Config->Demux_Unpacketize_Get() && Retrieve(Stream_General, 0, General_Format)==__T("Wave"))
                     {
@@ -3599,7 +3604,7 @@ void File_Riff::WAVE_bext()
             Fill(Stream_Audio, 0, Audio_Delay, float64_int64s(((float64)TimeReference)*1000/SamplesPerSec));
             Fill(Stream_Audio, 0, Audio_Delay_Source, "Container (bext)");
         }
-        if (Version>=1 && UMID1 && UMID2)
+        if (Version>=1 && UMID1 != 0 && UMID2 != 0)
         {
             Ztring UMID=__T("0x")+Ztring().From_Number(UMID1, 16)+Ztring().From_Number(UMID2, 16);
             if ((UMID1.lo&0xFF000000)==0x33000000)
