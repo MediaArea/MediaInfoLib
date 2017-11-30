@@ -2149,13 +2149,7 @@ void File_Avc::slice_header()
                             }
                             else
                             {
-                                bool Has5=false;
-                                for (std::vector<int8u>::iterator Temp=memory_management_control_operations.begin(); Temp!=memory_management_control_operations.end(); ++Temp)
-                                    if ((*Temp)==5)
-                                    {
-                                        Has5=true;
-                                        break;
-                                    }
+                                const bool Has5 = std::find(memory_management_control_operations.begin(), memory_management_control_operations.end(), 5) != memory_management_control_operations.end();
                                 if (Has5)
                                 {
                                     prevPicOrderCntMsb=0;
@@ -2195,13 +2189,7 @@ void File_Avc::slice_header()
                             break;
                 case 2 :
                             {
-                            bool Has5=false;
-                            for (std::vector<int8u>::iterator Temp=memory_management_control_operations.begin(); Temp!=memory_management_control_operations.end(); ++Temp)
-                                if ((*Temp)==5)
-                                {
-                                    Has5=true;
-                                    break;
-                                }
+                            const bool Has5 = std::find(memory_management_control_operations.begin(), memory_management_control_operations.end(),5) != memory_management_control_operations.end();
                             if (Has5)
                                 prevFrameNumOffset=0;
                             int32u FrameNumOffset;
