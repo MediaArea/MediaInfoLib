@@ -1399,6 +1399,7 @@ void File_Mpeg_Descriptors::Data_Parse()
             ELEMENT_CASE(A9, "ATSC - DCC Arriving Request");
             ELEMENT_CASE(AA, "ATSC - Redistribution Control");
             ELEMENT_CASE(AB, "ATSC - DCC Location Code");
+            ELEMENT_CASE(B0, "Dolby - DOVI_video_stream");
             ELEMENT_CASE(C1, "ARIB - Digital Copy Control");
             ELEMENT_CASE(C4, "SMPTE - ANC"); //SMPTE ST 2038
             ELEMENT_CASE(C8, "ARIB - Video Decode Control");
@@ -3177,6 +3178,74 @@ void File_Mpeg_Descriptors::Descriptor_AA()
 {
     //Parsing
     Skip_XX(Element_Size,                                       "rc_information");
+}
+
+//---------------------------------------------------------------------------
+extern const size_t DolbyVision_Profiles_Size;
+extern const char* DolbyVision_Profiles[];
+extern const size_t DolbyVision_Levels_Size;
+extern const char* DolbyVision_Levels[];
+void File_Mpeg_Descriptors::Descriptor_B0()
+{
+    //Parsing
+    int8u  dv_version_major, dv_version_minor, dv_profile, dv_level;
+    bool rpu_present_flag, el_present_flag, bl_present_flag;
+    Get_B1 (dv_version_major,                                   "dv_version_major");
+    Get_B1 (dv_version_minor,                                   "dv_version_minor");
+    if (dv_version_major==1) //Spec says nothing, we hope that a minor version change means that the stream is backward compatible
+    {
+        BS_Begin();
+        Get_S1 (7, dv_profile,                                  "dv_profile");
+        Get_S1 (6, dv_level,                                    "dv_level");
+        Get_SB (   rpu_present_flag,                            "rpu_present_flag");
+        Get_SB (   el_present_flag,                             "el_present_flag");
+        Get_SB (   bl_present_flag,                             "bl_present_flag");
+        BS_End();
+    }
+    else
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
+
+    FILLING_BEGIN();
+        Ztring Summary=Ztring::ToZtring(dv_version_major)+__T('.')+Ztring::ToZtring(dv_version_minor);
+        Complete_Stream->Streams[elementary_PID]->Infos["DolbyVision_Version"]=Summary;
+        if (dv_version_major==1)
+        {
+            string Profile;
+            if (dv_profile<DolbyVision_Profiles_Size)
+                Profile+=DolbyVision_Profiles[dv_profile];
+            else
+                Profile+=Ztring().From_Number(dv_profile).To_UTF8();
+            if (dv_level)
+            {
+                Profile+='@';
+                if (dv_level<DolbyVision_Levels_Size)
+                    Profile+=DolbyVision_Levels[dv_level];
+                else
+                    Profile+=Ztring().From_Number(dv_level).To_UTF8();
+            }
+            Complete_Stream->Streams[elementary_PID]->Infos["DolbyVision_Profile"].From_UTF8(Profile);
+            Summary+=__T(',');
+            Summary+=__T(' ');
+            Summary+=Ztring().From_UTF8(Profile);
+
+            string Layers;
+            if (rpu_present_flag|el_present_flag|bl_present_flag)
+            {
+                Summary+=',';
+                Summary+=' ';
+                if (bl_present_flag)
+                    Layers +="BL+";
+                if (el_present_flag)
+                    Layers +="EL+";
+                if (rpu_present_flag)
+                    Layers +="RPU+";
+                Layers.resize(Layers.size()-1);
+                Summary+=Ztring().From_UTF8(Layers);
+            }
+            Complete_Stream->Streams[elementary_PID]->Infos["DolbyVision_Layers"].From_UTF8(Layers);
+            Complete_Stream->Streams[elementary_PID]->Infos["DolbyVision/String"]=Summary;
+        }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
