@@ -554,12 +554,12 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
     if (psPresentFlag || !Infos["Format_Settings_PS"].empty())
     {
         Infos["Format_Profile"]=__T("HE-AACv2");
+        Ztring Channels=Infos["Channel(s)"];
+        Ztring ChannelPositions=Infos["ChannelPositions"];
         Infos["Channel(s)"]=__T("2");
         Infos["ChannelPositions"]=__T("Front: L R");
         if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
         {
-            const Ztring Channels = Infos["Channel(s)"];
-            const Ztring ChannelPositions = Infos["ChannelPositions"];
             const Ztring SamplingRate_Previous = Infos["SamplingRate"];
             Infos["Format_Profile"]+=__T(" / HE-AAC / LC");
             Infos["Channel(s)"]+=__T(" / ")+Channels+__T(" / ")+Channels;
