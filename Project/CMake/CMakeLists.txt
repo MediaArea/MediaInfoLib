@@ -6,7 +6,14 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 set(MediaInfoLib_MAJOR_VERSION 17)
 set(MediaInfoLib_MINOR_VERSION 10)
+set(MediaInfoLib_PATCH_VERSION 0)
 set(MediaInfoLib_VERSION ${MediaInfoLib_MAJOR_VERSION}.${MediaInfoLib_MINOR_VERSION})
+
+if (MediaInfoLib_PATCH_VERSION)
+  set(MediaInfoLib_VERSION ${MediaInfoLib_VERSION}.${MediaInfoLib_PATCH_VERSION})
+endif()
+
+set(MediaInfoLib_SOVERSION 0)
 
 if (NOT WIN32)
   option(BUILD_ZLIB "Build bundled zlib" OFF)
@@ -384,10 +391,15 @@ if(MSVC)
   install(FILES ${LOCATION} DESTINATION ${BIN_INSTALL_DIR} CONFIGURATIONS RelWithDebInfo)
 endif()
 
-set_target_properties(mediainfo PROPERTIES
-	VERSION ${MediaInfoLib_VERSION}
-	SOVERSION ${MediaInfoLib_MAJOR_VERSION}
-)
+if (APPLE)
+  set_target_properties(mediainfo PROPERTIES
+    VERSION "${MediaInfoLib_SOVERSION}.${MediaInfoLib_MAJOR_VERSION}.${MediaInfoLib_MINOR_VERSION}"
+    SOVERSION ${MediaInfoLib_SOVERSION})
+else()
+  set_target_properties(mediainfo PROPERTIES
+    VERSION "${MediaInfoLib_SOVERSION}.${MediaInfoLib_MAJOR_VERSION}${MediaInfoLib_MINOR_VERSION}.${MediaInfoLib_PATCH_VERSION}"
+    SOVERSION ${MediaInfoLib_SOVERSION})
+endif()
 
 install(TARGETS mediainfo EXPORT mediainfo-export
   RUNTIME DESTINATION ${BIN_INSTALL_DIR}
