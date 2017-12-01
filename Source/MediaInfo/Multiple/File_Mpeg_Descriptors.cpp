@@ -1318,10 +1318,8 @@ void File_Mpeg_Descriptors::Data_Parse()
             ELEMENT_CASE(34, "MPEG2_stereoscopic_video_format");
             ELEMENT_CASE(35, "Stereoscopic_program_info");
             ELEMENT_CASE(36, "Stereoscopic_video_info");
-            ELEMENT_CASE(37, "ODUpdate");
-            ELEMENT_CASE(38, "Transport_profile");
-            ELEMENT_CASE(39, "HEVC video");
-            ELEMENT_CASE(3A, "HEVC timing and HRD");
+            ELEMENT_CASE(37, "Transport_profile");
+            ELEMENT_CASE(38, "HEVC video");
             ELEMENT_CASE(3F, "Extension");
 
             //Following is in private sections, in case there is not network type detected
@@ -2031,6 +2029,119 @@ void File_Mpeg_Descriptors::Descriptor_2F()
     Skip_B1(                                                    "aux_video_type"); //ISO/IEC 23002-3
     Get_B1 (aux_video_params_length,                            "aux_video_params_length");
     Skip_XX(aux_video_params_length,                            "aux_video_params");
+}
+
+//---------------------------------------------------------------------------
+extern const char* Hevc_tier_flag(bool tier_flag);
+extern const char* Hevc_profile_idc(int32u profile_idc);
+void File_Mpeg_Descriptors::Descriptor_38()
+{
+    //Parsing
+    int8u  profile_space, profile_idc, level_idc;
+    bool   tier_flag, temporal_layer_subset_flag;
+    BS_Begin();
+    Get_S1 (2, profile_space,                                   "profile_space");
+    Get_SB (   tier_flag,                                       "tier_flag"); Param_Info1(Hevc_tier_flag(tier_flag));
+    Get_S1 (5, profile_idc,                                     "profile_idc"); Param_Info1(Hevc_profile_idc(profile_idc));
+    Skip_S4(32,                                                 "profile_compatibility_flags");
+    Skip_SB(                                                    "progressive_source_flag");
+    Skip_SB(                                                    "interlaced_source_flag");
+    Skip_SB(                                                    "non_packed_constraint_flag");
+    Skip_SB(                                                    "frame_only_constraint_flag");
+    Skip_S6(44,                                                 "reserved");
+    Get_S1 ( 8, level_idc,                                      "level_idc");
+    Get_SB (    temporal_layer_subset_flag,                     "temporal_layer_subset_flag");
+    Skip_SB(                                                    "HEVC_still_present_flag");
+    Skip_SB(                                                    "HEVC_24hr_picture_present_flag");
+    Skip_SB(                                                    "sub_pic_hrd_params_not_present_flag");
+    Skip_S1(4,                                                  "reserved");
+    if (temporal_layer_subset_flag)
+    {
+        Skip_S1(3,                                              "temporal_id_min");
+        Skip_S1(5,                                              "reserved");
+        Skip_S1(3,                                              "temporal_id_max");
+        Skip_S1(5,                                              "reserved");
+    }
+    BS_End();
+
+    FILLING_BEGIN();
+        Ztring Profile;
+        if (profile_space==0)
+        {
+            if (profile_idc)
+                Profile=Ztring().From_Local(Hevc_profile_idc(profile_idc));
+            if (level_idc)
+            {
+                if (profile_idc)
+                    Profile+=__T('@');
+                Profile+=__T('L')+Ztring().From_Number(((float)level_idc)/30, (level_idc%10)?1:0);
+                Profile+=__T('@');
+                Profile+=Ztring().From_Local(Hevc_tier_flag(tier_flag));
+            }
+        }
+
+        Complete_Stream->Streams[elementary_PID]->Infos["Format_Profile"]=Profile;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg_Descriptors::Descriptor_3F()
+{
+    //Parsing
+    int8u extension_descriptor_tag;
+    Get_B1(extension_descriptor_tag,                             "extension_descriptor_tag");
+
+    #undef ELEMENT_CASE
+    #define ELEMENT_CASE(_NAME, _DETAIL) \
+        case 0x##_NAME : Element_Name(_DETAIL); Descriptor_3F_##_NAME(); break;
+
+    //Parsing
+    switch (extension_descriptor_tag)
+    {
+            ELEMENT_CASE(00, "Reserved");
+            ELEMENT_CASE(01, "Forbidden");
+            ELEMENT_CASE(02, "ODUpdate");
+            ELEMENT_CASE(03, "HEVC_timing_and_HRD");
+            ELEMENT_CASE(04, "af_extensions");
+            ELEMENT_CASE(05, "HEVC_operation_point");
+            ELEMENT_CASE(06, "HEVC_hierarchy_extension");
+            ELEMENT_CASE(07, "Green_extension");
+            ELEMENT_CASE(08, "MPEG-H_3dAudio");
+            ELEMENT_CASE(09, "MPEG-H_3dAudio_config");
+            ELEMENT_CASE(0A, "MPEG-H_3dAudio_scene");
+            ELEMENT_CASE(0B, "MPEG-H_3dAudio_text_label");
+            ELEMENT_CASE(0C, "MPEG-H_3dAudio_multi-stream");
+            ELEMENT_CASE(0D, "MPEG-H_3dAudio_drc_loudness");
+            ELEMENT_CASE(0E, "MPEG-H_3dAudio_command");
+            ELEMENT_CASE(0F, "Quality_extension");
+            ELEMENT_CASE(10, "Virtual_segmentation");
+            default: Element_Info1("Unknown");
+                     Skip_XX(Element_Size,                          "Data");
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg_Descriptors::Descriptor_3F_03()
+{
+    //Parsing
+    bool picture_and_timing_info_present_flag, x90kHz_flag=false;
+    BS_Begin();
+    Skip_SB(                                                "hrd_management_valid_flag");
+    Skip_S1(6,                                              "reserved");
+    Get_SB (   picture_and_timing_info_present_flag,        "picture_and_timing_info_present_flag");
+    if (picture_and_timing_info_present_flag)
+    {
+        Get_SB (   x90kHz_flag,                             "90kHz_flag");
+        Skip_S1(7,                                          "reserved");
+        if (x90kHz_flag)
+        {
+            Info_S4(32, N,                                  "N");
+            Info_S4(32, K,                                  "K");
+            Param_Info1(N*27000000.0/K);
+        }
+        Skip_S4(32,                                         "num_units_in_tick");
+    }
+    BS_End();
 }
 
 //---------------------------------------------------------------------------

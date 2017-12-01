@@ -20,6 +20,39 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Setup.h"
+using namespace ZenLib;
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+#if defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_HEVC_YES)
+//---------------------------------------------------------------------------
+
+namespace MediaInfoLib
+{
+
+//---------------------------------------------------------------------------
+extern const char* Hevc_tier_flag(bool tier_flag)
+{
+    return tier_flag ? "High" : "Main";
+}
+
+//---------------------------------------------------------------------------
+extern const char* Hevc_profile_idc(int32u profile_idc)
+{
+    switch (profile_idc)
+    {
+        case   0 : return "No profile";
+        case   1 : return "Main";
+        case   2 : return "Main 10";
+        case   3 : return "Main Still";
+        default  : return "";
+    }
+}
+
+} //NameSpace
+
+//---------------------------------------------------------------------------
+#endif //...
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
@@ -63,25 +96,6 @@ static const int8u Hevc_SubHeightC[]=
     1,
     1,
 };
-
-//---------------------------------------------------------------------------
-static const char* Hevc_tier_flag(bool tier_flag)
-{
-    return tier_flag ? "High" : "Main";
-}
-
-//---------------------------------------------------------------------------
-static const char* Hevc_profile_idc(int32u profile_idc)
-{
-    switch (profile_idc)
-    {
-        case   0 : return "No profile";
-        case   1 : return "Main";
-        case   2 : return "Main 10";
-        case   3 : return "Main Still";
-        default  : return "";
-    }
-}
 
 //---------------------------------------------------------------------------
 static const char* Hevc_chroma_format_idc(int8u chroma_format_idc)
