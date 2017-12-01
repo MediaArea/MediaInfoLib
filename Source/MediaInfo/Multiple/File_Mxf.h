@@ -1253,6 +1253,15 @@ protected :
             : Value(Value_)
             , FrameCount(1)
         {}
+        bool Add(const string& Value_)
+        {
+            if (Value == Value_)
+            {
+                FrameCount++;
+                return true;
+            }
+            return false;
+        }
     };
     typedef std::vector<acquisitionmetadata> acquisitionmetadatalist;
     vector<acquisitionmetadatalist*> AcquisitionMetadataLists;
@@ -1264,9 +1273,8 @@ protected :
             AcquisitionMetadataLists[Id]->push_back(acquisitionmetadata(Value));
             return;
         }
-        if ((*AcquisitionMetadataLists[Id])[AcquisitionMetadataLists[Id]->size()-1].Value == Value)
+        if ((*AcquisitionMetadataLists[Id])[AcquisitionMetadataLists[Id]->size()-1].Add(Value))
         {
-            (*AcquisitionMetadataLists[Id])[AcquisitionMetadataLists[Id]->size()-1].FrameCount++;
             return;
         }
         AcquisitionMetadataLists[Id]->push_back(acquisitionmetadata(Value));
@@ -1280,9 +1288,8 @@ protected :
             AcquisitionMetadata_Sony_E201_Lists[Id]->push_back(acquisitionmetadata(Value));
             return;
         }
-        if ((*AcquisitionMetadata_Sony_E201_Lists[Id])[AcquisitionMetadata_Sony_E201_Lists[Id]->size()-1].Value == Value)
+        if ((*AcquisitionMetadata_Sony_E201_Lists[Id])[AcquisitionMetadata_Sony_E201_Lists[Id]->size()-1].Add(Value))
         {
-            (*AcquisitionMetadata_Sony_E201_Lists[Id])[AcquisitionMetadata_Sony_E201_Lists[Id]->size()-1].FrameCount++;
             return;
         }
         AcquisitionMetadata_Sony_E201_Lists[Id]->push_back(acquisitionmetadata(Value));
