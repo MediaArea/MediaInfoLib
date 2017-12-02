@@ -1495,24 +1495,24 @@ static string MXF_MCALabelDictionaryID_ChannelPositions(const std::vector<int128
                 LfeS+="LFE";
         }
         if (!FrontS.empty())
-            ToReturn+=FrontS.c_str();
+            ToReturn+=FrontS;
         if (!SideS.empty())
         {
             if (!ToReturn.empty())
                 ToReturn+=", ";
-            ToReturn+=SideS.c_str();
+            ToReturn+=SideS;
         }
         if (!BackS.empty())
         {
             if (!ToReturn.empty())
                 ToReturn+=", ";
-            ToReturn+=BackS.c_str();
+            ToReturn+=BackS;
         }
         if (!LfeS.empty())
         {
             if (!ToReturn.empty())
                 ToReturn+=", ";
-            ToReturn+=LfeS.c_str();
+            ToReturn+=LfeS;
         }
     }
 
