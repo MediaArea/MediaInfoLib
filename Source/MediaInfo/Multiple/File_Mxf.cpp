@@ -10485,7 +10485,6 @@ void File_Mxf::AVCDescriptor_SequenceParameterSetFlag()
 {
     //Parsing
     BS_Begin();
-    bool constraint_set3_flag;
     Info_SB(   Constancy,                                       "Constancy");
     Info_BS(3, Location,                                        "In-band location"); Element_Info1(Mxf_AVC_SequenceParameterSetFlag_Constancy(Constancy));
     Skip_BS(4,                                                  "reserved"); Element_Info1(Mxf_AVC_SequenceParameterSetFlag_Constancy(Location));

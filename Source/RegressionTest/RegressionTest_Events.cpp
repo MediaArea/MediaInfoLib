@@ -38,7 +38,6 @@ struct Events_UserHandle_struct
     {
         FILE* F;
         bool  F_MoreThanOnce;
-        bool  Custom_MoreThanOnce;
     };
     map<int32u, perevent> PerEvent;
     int32u Scenario;

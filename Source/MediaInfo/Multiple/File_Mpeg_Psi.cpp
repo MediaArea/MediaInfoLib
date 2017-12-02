@@ -2140,11 +2140,11 @@ void File_Mpeg_Psi::Table_FC()
         case 0x##_NAME : Element_Name(_DETAIL); Table_FC_##_NAME(); break;
     switch (splice_command_type)
     {
-        ELEMENT_CASE (00, "splice_null"); break;
-        ELEMENT_CASE (04, "splice_schedule"); break;
-        ELEMENT_CASE (05, "splice_insert"); break;
-        ELEMENT_CASE (06, "time_signal"); break;
-        ELEMENT_CASE (07, "bandwidth_reservation"); break;
+        ELEMENT_CASE (00, "splice_null");
+        ELEMENT_CASE (04, "splice_schedule");
+        ELEMENT_CASE (05, "splice_insert");
+        ELEMENT_CASE (06, "time_signal");
+        ELEMENT_CASE (07, "bandwidth_reservation");
         default   : Skip_XX(splice_command_length,              "Unknown");
     }
     Element_End0();
