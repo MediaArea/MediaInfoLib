@@ -2950,8 +2950,7 @@ void File_Mpeg_Descriptors::Descriptor_86()
 
         if (event_id_IsValid)
         {
-            delete Complete_Stream->Sources[table_id_extension].ATSC_EPG_Blocks[Complete_Stream->Streams[pid]->table_type].Events[event_id].ServiceDescriptors;
-            Complete_Stream->Sources[table_id_extension].ATSC_EPG_Blocks[Complete_Stream->Streams[pid]->table_type].Events[event_id].ServiceDescriptors=new File__Analyze::servicedescriptors;
+            Complete_Stream->Sources[table_id_extension].ATSC_EPG_Blocks[Complete_Stream->Streams[pid]->table_type].Events[event_id].reset(new File__Analyze::servicedescriptors);
         }
         else if (elementary_PID_IsValid)
         {

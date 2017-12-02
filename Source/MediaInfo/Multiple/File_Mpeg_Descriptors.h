@@ -42,17 +42,51 @@ struct complete_stream
     Ztring Duration_End;
     bool   Duration_End_IsUpdated;
     std::map<Ztring, Ztring> TimeZones; //Key is country code
-
+#if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
+    class service_desc_holder
+    {
+    public:
+        File__Analyze::servicedescriptors* ServiceDescriptors;
+        service_desc_holder() : ServiceDescriptors(NULL)
+        {
+        }
+        ~service_desc_holder()
+        {
+            reset();
+        }
+        void Clone_Desc(File__Analyze::servicedescriptors* src)
+        {
+            if (src)
+            {
+                reset(new File__Analyze::servicedescriptors);
+                *ServiceDescriptors = *src;
+            }
+            else
+            {
+                reset();
+            }
+        }
+        void reset(File__Analyze::servicedescriptors* new_ptr = NULL)
+        {
+            if(ServiceDescriptors)
+               delete ServiceDescriptors;
+            ServiceDescriptors = new_ptr;
+        }
+    };
+#endif
     //Per transport_stream
     struct transport_stream
+#if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
+        : public service_desc_holder
+#endif
     {
         bool HasChanged;
         std::map<std::string, Ztring> Infos;
-        struct program
+        struct program 
+#if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
+            : public service_desc_holder
+#endif
         {
-            #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
-                File__Analyze::servicedescriptors* ServiceDescriptors;
-            #endif
             bool HasChanged;
             std::map<std::string, Ztring> Infos;
             std::map<std::string, Ztring> ExtraInfos_Content;
@@ -131,9 +165,6 @@ struct complete_stream
             //Constructor/Destructor
             program()
             :
-                #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
-                    ServiceDescriptors(NULL),
-                #endif
                 HasChanged(false),
                 StreamPos((size_t)-1),
                 registration_format_identifier(0x00000000),
@@ -177,26 +208,14 @@ struct complete_stream
                 Scte35(p.Scte35)
             {
                 #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
-                    if (p.ServiceDescriptors)
-                    {
-                        ServiceDescriptors=new File__Analyze::servicedescriptors;
-                        *ServiceDescriptors=*p.ServiceDescriptors;
-                    }
-                    else
-                        ServiceDescriptors=NULL;
+                Clone_Desc(p.ServiceDescriptors);
                 #endif
             }
 
             program& operator=(const program& p)
             {
                 #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
-                    if (p.ServiceDescriptors)
-                    {
-                        ServiceDescriptors=new File__Analyze::servicedescriptors;
-                        *ServiceDescriptors=*p.ServiceDescriptors;
-                    }
-                    else
-                        ServiceDescriptors=NULL;
+                Clone_Desc(p.ServiceDescriptors);
                 #endif
                 HasChanged=p.HasChanged;
                 Infos=p.Infos;
@@ -221,13 +240,6 @@ struct complete_stream
                 Scte35=p.Scte35;
 
                 return *this;
-            }
-
-            ~program()
-            {
-                #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
-                    delete ServiceDescriptors;
-                #endif
             }
         };
         typedef std::map<int16u, program> programs; //Key is program_number
@@ -519,27 +531,22 @@ struct complete_stream
 
     //ATSC
     int8u GPS_UTC_offset;
-    struct source
+    struct source 
     {
         std::map<int16u, Ztring> texts;
         struct atsc_epg_block
         {
-            struct event
+            struct event 
+#if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
+                : public service_desc_holder
+#endif
             {
-                #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
-                    File__Analyze::servicedescriptors* ServiceDescriptors;
-                #endif
                 int32u  start_time;
                 Ztring  duration;
                 Ztring  title;
                 std::map<int16u, Ztring> texts;
 
-                event()
-                :
-                    #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
-                        ServiceDescriptors(NULL),
-                    #endif
-                    start_time((int32u)-1)
+                event() : start_time((int32u)-1)
                 {}
 
                 event(const event& e)
@@ -547,37 +554,17 @@ struct complete_stream
                     start_time(e.start_time)
                 {
                     #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
-                        if (e.ServiceDescriptors)
-                        {
-                            ServiceDescriptors=new File__Analyze::servicedescriptors;
-                            *ServiceDescriptors=*e.ServiceDescriptors;
-                        }
-                        else
-                            ServiceDescriptors=NULL;
+                    Clone_Desc(e.ServiceDescriptors);
                     #endif
                 }
-
                 event& operator=(const event& e)
                 {
                     #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
-                        if (e.ServiceDescriptors)
-                        {
-                            ServiceDescriptors=new File__Analyze::servicedescriptors;
-                            *ServiceDescriptors=*e.ServiceDescriptors;
-                        }
-                        else
-                            ServiceDescriptors=NULL;
+                    Clone_Desc(e.ServiceDescriptors);
                     #endif
                     start_time=e.start_time;
 
                     return *this;
-                }
-
-                ~event()
-                {
-                    #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
-                        delete ServiceDescriptors;
-                    #endif
                 }
             };
 
