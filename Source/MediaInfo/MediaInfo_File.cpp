@@ -607,7 +607,7 @@ bool MediaInfo_Internal::SelectFromExtension (const String &Parser)
         else if (Parser==__T("Mpc"))         Info=new File_Mpc();
     #endif
     #if defined(MEDIAINFO_MPCSV8_YES)
-        else if (Parser==__T("Mpc"))         Info=new File_MpcSv8();
+        else if (Parser==__T("MpcSv8"))      Info=new File_MpcSv8();
     #endif
     #if defined(MEDIAINFO_MPEGA_YES)
         else if (Parser==__T("Mpega"))       Info=new File_Mpega();
