@@ -2959,7 +2959,19 @@ void File_Mk::Segment_Tracks_TrackEntry_Audio_BitDepth()
         if (Segment_Info_Count>1)
             return; //First element has the priority
         if (UInteger)
+        {
             Fill(StreamKind_Last, StreamPos_Last, "BitDepth", UInteger, 10, true);
+
+            #ifdef MEDIAINFO_PCM_YES
+                if (Retrieve(Stream_Audio, StreamPos_Last, Audio_CodecID).find(__T("A_PCM/INT/"))==0)
+                {
+                    if (UInteger==8)
+                        ((File_Pcm*)Stream[TrackNumber].Parser)->Sign='U';
+                    else
+                        ((File_Pcm*)Stream[TrackNumber].Parser)->Sign='S';
+                }
+            #endif //MEDIAINFO_PCM_YES
+        }
     FILLING_END();
 }
 
