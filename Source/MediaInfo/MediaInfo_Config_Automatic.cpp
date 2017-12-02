@@ -1356,7 +1356,7 @@ void MediaInfo_Config_CodecID_General_Mpeg4 (InfoMap &Info)
     "3gp8;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html\n"
     "3gp9;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html\n"
     "CAQV;MPEG-4;;;http://world.casio.com/;Casio\n"
-    "dby1;MPEG-4;Dolby Vision extensions;\n"
+    "dby1;MPEG-4;Dolby Extensions;\n"
     "FACE;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Facebook\n"
     "isml;MPEG-4;IIS Smooth Streaming file format;;http://www.apple.com/quicktime/download/standalone.html;ISML\n"
     "JP20;MPEG-4;;;http://gpac.sourceforge.net/;JPEG 2000\n"
