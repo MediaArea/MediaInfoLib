@@ -3823,7 +3823,7 @@ void File_MpegPs::extension_stream()
                                                                 Streams_Extension[stream_id_extension].Parsers.push_back(ChooseParser_DTS());
                                                                 Streams_Extension[stream_id_extension].Parsers.push_back(ChooseParser_AC3());
                                                             }
-                                                            else if (stream_id_extension==0x75 && stream_id_extension<=0x7F)
+                                                            else if (stream_id_extension==0x75)
                                                                  Streams_Extension[stream_id_extension].Parsers.push_back(ChooseParser_VC1());
                                                       }
             }
@@ -3969,7 +3969,7 @@ const ZenLib::Char* File_MpegPs::extension_stream_ChooseExtension()
 {
     //AC3
         if ((stream_id_extension>=0x55 && stream_id_extension<=0x5F)
-         || (stream_id_extension==0x75 && stream_id_extension<=0x7F))
+         || (stream_id_extension==0x75))
         return __T(".vc1");
     //AC3+
     else if (stream_id_extension>=0x60 && stream_id_extension<=0x6F)
