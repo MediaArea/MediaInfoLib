@@ -95,8 +95,8 @@ protected :
     void consumer_camera_2();
 
     //Helpers
-    Ztring recdate();
-    Ztring rectime();
+    void recdate(bool FromVideo=false);
+    void rectime(bool FromVideo=false);
 
     //Streams
     struct stream
