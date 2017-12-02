@@ -517,7 +517,7 @@ void File_Bdmv::Read_Buffer_Continue()
         }
     FILLING_END();
 
-    if (version_numberH==0x3031 || version_numberH==0x3032) //Version 1 or 2
+    if (version_numberH==0x3031 || version_numberH==0x3032 || version_numberH==0x3033) //Version 1, 2 or 3 (3 = UHD Blu-ray)
     {
         Element_Begin1("Offsets");
         Types[0x28]=0; //First object
