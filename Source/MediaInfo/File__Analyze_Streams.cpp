@@ -1443,7 +1443,6 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
     Ztring CodecID_Temp=Retrieve(StreamKind, StreamPos_To, "CodecID");
 
     //Merging
-    size_t Count=0;
     size_t Size=ToAdd.Count_Get(StreamKind, StreamPos_From);
     for (size_t Pos=General_Inform; Pos<Size; Pos++)
     {
@@ -1457,7 +1456,6 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
                 Fill(StreamKind, StreamPos_To, ToAdd.Get(StreamKind, StreamPos_From, Pos, Info_Name).To_UTF8().c_str(), ToFill_Value, true);
                 Fill_SetOptions(StreamKind, StreamPos_To, ToAdd.Get(StreamKind, StreamPos_From, Pos, Info_Name).To_UTF8().c_str(), ToAdd.Get(StreamKind, StreamPos_From, Pos, Info_Options).To_UTF8().c_str());
             }
-            Count++;
         }
     }
 
