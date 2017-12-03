@@ -905,7 +905,7 @@ size_t MediaInfo_Internal::Open_Buffer_Seek (size_t Method, int64u Value, int64u
 {
     CriticalSectionLocker CSL(CS);
     if (Info==NULL)
-        return false;
+        return 0;
 
     return Info->Open_Buffer_Seek(Method, Value, ID);
 }
