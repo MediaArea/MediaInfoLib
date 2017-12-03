@@ -1789,7 +1789,7 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI, version Version, acquis
     if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("OpenCaptionsPresent")).empty())
     {
         Node* Child=Node_Format->Add_Child("ebucore:dataFormat");
-        Node* Child2=Child->Add_Child("ebucore:captioningFormat", "", "captioningPresenceFlag", MI.Get(Stream_Other, As11_Core_Pos, __T("OpenCaptionsPresent"))==__T("Yes")?"true":"false");
+        Node* Child2=Child->Add_Child("ebucore:captioningFormat", "", "captioningPresenceFlag", MI.Get(Stream_Other, As11_UkDpp_Pos, __T("OpenCaptionsPresent"))==__T("Yes")?"true":"false");
         Child2->Add_Attribute("closed", "false");
     }
 
