@@ -2936,6 +2936,7 @@ void File_Mk::Segment_Tracks_TrackEntry()
     InfoCodecID_Format_Type=InfoCodecID_Format_Matroska;
     TrackType=(int64u)-1;
     TrackNumber=(int64u)-1;
+    AudioBitDepth=(int64u)-1;
     TrackVideoDisplayWidth=0;
     TrackVideoDisplayHeight=0;
     AvgBytesPerSec=0;
@@ -2959,7 +2960,14 @@ void File_Mk::Segment_Tracks_TrackEntry_Audio_BitDepth()
         if (Segment_Info_Count>1)
             return; //First element has the priority
         if (UInteger)
+        {
             Fill(StreamKind_Last, StreamPos_Last, "BitDepth", UInteger, 10, true);
+
+            #ifdef MEDIAINFO_PCM_YES
+                if (Stream[TrackNumber].Parser && Retrieve(Stream_Audio, StreamPos_Last, Audio_Format)==__T("PCM"))
+                    ((File_Pcm*)Stream[TrackNumber].Parser)->Sign=(UInteger==8?'U':'S');
+            #endif //MEDIAINFO_PCM_YES
+        }
     FILLING_END();
 }
 
@@ -4242,6 +4250,8 @@ void File_Mk::CodecID_Manage()
     else if (Format==__T("PCM"))
     {
         File_Pcm* parser = new File_Pcm;
+        if (AudioBitDepth!=(int64u)-1)
+            parser->BitDepth=AudioBitDepth;
         streamItem.Parser = parser;
         parser->Codec=CodecID;
     }
