@@ -3107,6 +3107,7 @@ void File_Mpegv::slice_start_macroblock_block(int8u i)
                         }
                         Skip_SB(                                "dct_coefficient sign");
                     }
+                    break;
             default:
                     Element_Info1(Mpegv_dct_coefficients[dct_coefficient].mapped_to2);
                     Element_Info1(Mpegv_dct_coefficients[dct_coefficient].mapped_to3);
