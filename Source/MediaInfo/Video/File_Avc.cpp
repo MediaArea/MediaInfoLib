@@ -1953,7 +1953,7 @@ void File_Avc::slice_header()
             switch(Element_Code)
             {
                 case 5 :    // This is an IDR frame
-                            if (Config->Config_PerPackage && Element_Code==0x05) // First slice of an IDR frame
+                            if (Config->Config_PerPackage) // First slice of an IDR frame
                             {
                                 // IDR
                                 Config->Config_PerPackage->FrameForAlignment(this, true);

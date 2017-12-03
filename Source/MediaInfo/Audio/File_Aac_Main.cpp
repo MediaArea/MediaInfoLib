@@ -434,7 +434,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
                     }
                     else
                         extension_sampling_frequency=Aac_sampling_frequency[extension_sampling_frequency_index];
-                    if (End!=(size_t)-1 && Data_BS_Remain()>=End+12)
+                    if (Data_BS_Remain()>=End+12)
                     {
                         int16u syncExtensionType;
                         Get_S2(11,syncExtensionType,            "syncExtensionType");

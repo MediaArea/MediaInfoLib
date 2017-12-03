@@ -2466,7 +2466,7 @@ void MediaInfo_Config_MediaInfo::Event_Send (File__Analyze* Source, const int8u*
             }
             if (Temp->DTS!=(int64u)-1)
             {
-                if (File_IgnoreEditsBefore && File_EditRate)
+                if (File_EditRate)
                 {
                     int64u TimeOffset=float64_int64s(((float64)File_IgnoreEditsBefore)/File_EditRate*1000000000);
                     if (Temp->DTS>TimeOffset)
