@@ -4559,7 +4559,9 @@ void File_Mxf::Read_Buffer_Unsynched()
                 FrameInfo.DUR=float64_int64s(1000000000/IndexTables[0].IndexEditRate);
             else
                 FrameInfo.DUR=float64_int64s(1000000000/Descriptors.begin()->second.SampleRate);
-            Demux_random_access=true;
+            #if MEDIAINFO_DEMUX
+                Demux_random_access=true;
+            #endif //MEDIAINFO_DEMUX
         }
         else if (!IndexTables.empty() && IndexTables[0].EditUnitByteCount)
         {
@@ -4596,7 +4598,9 @@ void File_Mxf::Read_Buffer_Unsynched()
                     }
                     else
                         FrameInfo.PTS=FrameInfo.DTS=(int64u)-1;
-                    Demux_random_access=true;
+                    #if MEDIAINFO_DEMUX
+                        Demux_random_access=true;
+                    #endif //MEDIAINFO_DEMUX
 
                     break;
                 }
@@ -4642,7 +4646,11 @@ void File_Mxf::Read_Buffer_Unsynched()
                             Frame_Count_NotParsedIncluded=IndexTables[Pos].IndexStartPosition+EntryPos;
                             if (IndexTables[Pos].IndexEditRate)
                                 FrameInfo.DTS=float64_int64s(DTS_Delay*1000000000+((float64)Frame_Count_NotParsedIncluded)/IndexTables[Pos].IndexEditRate*1000000000);
-                            Demux_random_access=IndexTables[Pos].Entries[EntryPos].Type?false:true;
+
+
+                            #if MEDIAINFO_DEMUX
+                                Demux_random_access=IndexTables[Pos].Entries[EntryPos].Type?false:true;
+                            #endif //MEDIAINFO_DEMUX
                             break;
                         }
                     }

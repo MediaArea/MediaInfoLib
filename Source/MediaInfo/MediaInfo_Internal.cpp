@@ -965,17 +965,17 @@ std::bitset<32> MediaInfo_Internal::Open_NextPacket ()
             else
         #endif //defined(MEDIAINFO_READER_NO)
             {
-                #if MEDIAINFO_NEXTPACKET
+                #if MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
                     Config.Demux_EventWasSent=false;
-                #endif //MEDIAINFO_NEXTPACKET
+                #endif //MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
                 Open_Buffer_Continue(NULL, 0);
-                #if MEDIAINFO_NEXTPACKET
+                #if MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
                     if (!Config.Demux_EventWasSent)
-                #endif //MEDIAINFO_NEXTPACKET
+                #endif //MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
                         Open_Buffer_Finalize();
-                #if MEDIAINFO_NEXTPACKET
+                #if MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
                     Demux_EventWasSent=Config.Demux_EventWasSent;
-                #endif //MEDIAINFO_NEXTPACKET
+                #endif //MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
             }
     }
 
@@ -1272,8 +1272,10 @@ String MediaInfo_Internal::Option (const String &Option, const String &Value)
     else if (OptionLower.find(__T("file_seek"))==0)
     {
         #if MEDIAINFO_SEEK
-            if (Reader==NULL && Info==NULL)
-                return __T("Error: Reader pointer is empty");
+            #if !defined(MEDIAINFO_READER_NO)
+                if (Reader==NULL && Info==NULL)
+                    return __T("Error: Reader pointer is empty");
+            #endif //MEDIAINFO_READER_NO
 
             size_t Method=(size_t)-1;
             int64u SeekValue=(int64u)-1;
@@ -1331,10 +1333,12 @@ String MediaInfo_Internal::Option (const String &Option, const String &Value)
 
             CS.Leave();
             size_t Result;
-            if (Reader)
-                Result=Reader->Format_Test_PerParser_Seek(this, Method, SeekValue, ID);
-            else
-                Result=Open_Buffer_Seek(Method, SeekValue, ID);
+            #if !defined(MEDIAINFO_READER_NO)
+                if (Reader)
+                    Result=Reader->Format_Test_PerParser_Seek(this, Method, SeekValue, ID);
+                else
+            #endif //MEDIAINFO_READER_NO
+                    Result=Open_Buffer_Seek(Method, SeekValue, ID);
             CS.Enter();
             switch (Result)
             {
