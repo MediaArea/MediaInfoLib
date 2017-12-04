@@ -640,6 +640,11 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     {
         return File_ForceParser_Get();
     }
+    else if (Option_Lower==__T("file_forceparser_config"))
+    {
+        File_ForceParser_Config_Set(Value);
+        return __T("");
+    }
     else if (Option_Lower==__T("file_buffer_size_hint_pointer"))
     {
         File_Buffer_Size_Hint_Pointer_Set((size_t*)Ztring(Value).To_int64u());
@@ -1690,6 +1695,19 @@ Ztring MediaInfo_Config_MediaInfo::File_ForceParser_Get ()
 {
     CriticalSectionLocker CSL(CS);
     return File_ForceParser;
+}
+
+//---------------------------------------------------------------------------
+void MediaInfo_Config_MediaInfo::File_ForceParser_Config_Set (const Ztring &NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    File_ForceParser_Config=NewValue;
+}
+
+Ztring MediaInfo_Config_MediaInfo::File_ForceParser_Config_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return File_ForceParser_Config;
 }
 
 //---------------------------------------------------------------------------

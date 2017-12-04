@@ -1203,6 +1203,20 @@ void File_Mpeg4::Streams_Finish()
                     ReferenceFiles=new File__ReferenceFilesHelper(this, Config);
 
                 sequence* Sequence=new sequence;
+                const Ztring& Format=Retrieve(Stream->second.StreamKind, Stream->second.StreamPos, Fill_Parameter(Stream->second.StreamKind, Generic_Format));
+                if (Format==__T("QuickTime TC"))
+                {
+                    Sequence->Config["File_ForceParser"]=Format;
+                    if (Stream->second.Parsers.size()==1)
+                    {
+                        File_Mpeg4_TimeCode* Parser=(File_Mpeg4_TimeCode*)Stream->second.Parsers[0];
+                        ZtringListList Parser_Config;
+                        Parser_Config(__T("NumberOfFrames")).From_Number(Parser->NumberOfFrames);
+                        Parser_Config(__T("DropFrame")).From_Number(Parser->DropFrame?1:0);
+                        Parser_Config(__T("NegativeTimes")).From_Number(Parser->NegativeTimes?1:0);
+                        Sequence->Config["File_ForceParser_Config"]=Parser_Config.Read();
+                    }
+                }
                 Sequence->AddFileName(Stream->second.File_Name);
                 Sequence->StreamKind=Stream->second.StreamKind;
                 Sequence->StreamPos=Stream->second.StreamPos;

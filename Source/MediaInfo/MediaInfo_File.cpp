@@ -95,6 +95,9 @@
 #if defined(MEDIAINFO_MPEG4_YES)
     #include "MediaInfo/Multiple/File_Mpeg4.h"
 #endif
+#if defined(MEDIAINFO_MPEG4_YES)
+    #include "MediaInfo/Multiple/File_Mpeg4_TimeCode.h"
+#endif
 #if defined(MEDIAINFO_MPEGPS_YES)
     #include "MediaInfo/Multiple/File_MpegPs.h"
 #endif
@@ -469,6 +472,9 @@ bool MediaInfo_Internal::SelectFromExtension (const String &Parser)
     #endif
     #if defined(MEDIAINFO_MPEG4_YES)
         else if (Parser==__T("Mpeg4"))       Info=new File_Mpeg4();
+    #endif
+    #if defined(MEDIAINFO_MPEG4_YES)
+        else if (Parser==__T("QuickTimeTC")) Info=new File_Mpeg4_TimeCode();
     #endif
     #if defined(MEDIAINFO_MPEGPS_YES)
         else if (Parser==__T("MpegPs"))      Info=new File_MpegPs();

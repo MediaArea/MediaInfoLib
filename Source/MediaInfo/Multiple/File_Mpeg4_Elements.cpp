@@ -3355,6 +3355,26 @@ void File_Mpeg4::moov_trak_mdia_minf_dinf_dref()
 }
 
 //---------------------------------------------------------------------------
+static const size_t MacAlias_Size=16;
+static const char* MacAlias[MacAlias_Size]=
+{
+    "Directory Name",
+    "Directory IDs",
+    "Absolute Path",
+    "AppleShare Zone Name",
+    "AppleShare Server Name",
+    "AppleShare User Name",
+    "Driver Name",
+    NULL,
+    NULL,
+    "Revised AppleShare info",
+    "AppleRemoteAccess dialup info",
+    NULL,
+    NULL,
+    NULL,
+    "file name (Unicode)?",
+    "volume name (Unicode)?",
+};
 void File_Mpeg4::moov_trak_mdia_minf_dinf_dref_alis()
 {
     NAME_VERSION_FLAG("Alias"); //bit 0 = external/internal data
