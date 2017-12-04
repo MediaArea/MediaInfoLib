@@ -750,7 +750,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                 else
                     FileSize_Parsed+=(*ReferenceTemp)->MI->Config.File_Size;
 
-                #if MEDIAINFO_NEXTPACKET
+                #if MEDIAINFO_DEMUX && MEDIAINFO_NEXTPACKET
                     //Minimal DTS
                     if (DTS_Interval!=(int64u)-1 && !Sequences[Sequences_Current]->Status[File__Analyze::IsFinished] && ((*ReferenceTemp)->Resources.empty() || (*ReferenceTemp)->Resources_Current<(*ReferenceTemp)->Resources.size()))
                     {
@@ -774,7 +774,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                         if (DTS_Minimal>DTS_Temp)
                             DTS_Minimal=DTS_Temp;
                     }
-                #endif //MEDIAINFO_NEXTPACKET
+                #endif //MEDIAINFO_DEMUX &&  MEDIAINFO_NEXTPACKET
             }
             else
                 FileSize_Parsed+=(*ReferenceTemp)->FileSize;
@@ -999,21 +999,20 @@ void File__ReferenceFilesHelper::ParseReference()
         #if MEDIAINFO_EVENTS && MEDIAINFO_NEXTPACKET
             if (DTS_Interval!=(int64u)-1 && !Sequences[Sequences_Current]->Status[File__Analyze::IsFinished] && Sequences[Sequences_Current]->MI->Info->FrameInfo.DTS!=(int64u)-1 && DTS_Minimal!=(int64u)-1 && (Sequences[Sequences_Current]->Resources.empty() || Sequences[Sequences_Current]->Resources_Current<Sequences[Sequences_Current]->Resources.size()))
             {
-                int64u DTS_Temp;
-                if (!Sequences[Sequences_Current]->Resources.empty() && Sequences[Sequences_Current]->Resources_Current)
-                {
-                    if (Sequences[Sequences_Current]->Resources[Sequences[Sequences_Current]->Resources_Current]->MI->Info->FrameInfo.DTS!=(int64u)-1)
-                        DTS_Temp=Sequences[Sequences_Current]->Resources[Sequences[Sequences_Current]->Resources_Current]->MI->Info->FrameInfo.DTS-Sequences[Sequences_Current]->Resources[Sequences[Sequences_Current]->Resources_Current]->MI->Info->Config->Demux_Offset_DTS_FromStream;
+                int64u DTS_Temp = 0;
+                #if MEDIAINFO_DEMUX
+                    if (!Sequences[Sequences_Current]->Resources.empty() && Sequences[Sequences_Current]->Resources_Current)
+                    {
+                        if (Sequences[Sequences_Current]->Resources[Sequences[Sequences_Current]->Resources_Current]->MI->Info->FrameInfo.DTS!=(int64u)-1)
+                            DTS_Temp=Sequences[Sequences_Current]->Resources[Sequences[Sequences_Current]->Resources_Current]->MI->Info->FrameInfo.DTS-Sequences[Sequences_Current]->Resources[Sequences[Sequences_Current]->Resources_Current]->MI->Info->Config->Demux_Offset_DTS_FromStream;;
+                    }
                     else
-                        DTS_Temp=0;
-                }
-                else
-                {
-                    if (Sequences[Sequences_Current]->MI->Info->FrameInfo.DTS!=(int64u)-1)
-                        DTS_Temp=Sequences[Sequences_Current]->MI->Info->FrameInfo.DTS-Sequences[Sequences_Current]->MI->Info->Config->Demux_Offset_DTS_FromStream;
-                    else
-                        DTS_Temp=0;
-                }
+                    {
+                        if (Sequences[Sequences_Current]->MI->Info->FrameInfo.DTS!=(int64u)-1)
+                            DTS_Temp=Sequences[Sequences_Current]->MI->Info->FrameInfo.DTS-Sequences[Sequences_Current]->MI->Info->Config->Demux_Offset_DTS_FromStream;
+                    }
+                #endif MEDIAINFO_DEMUX
+
                 DTS_Temp+=Sequences[Sequences_Current]->Resources[Sequences[Sequences_Current]->Resources_Current]->Demux_Offset_DTS;
                 if (!Sequences[Sequences_Current]->Resources.empty() && Sequences[Sequences_Current]->Resources_Current<Sequences[Sequences_Current]->Resources.size() && Sequences[Sequences_Current]->Resources[Sequences[Sequences_Current]->Resources_Current]->EditRate && Sequences[Sequences_Current]->Resources[Sequences[Sequences_Current]->Resources_Current]->IgnoreEditsBefore)
                 {
