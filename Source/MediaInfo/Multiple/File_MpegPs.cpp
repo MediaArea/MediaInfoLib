@@ -228,6 +228,9 @@ File_MpegPs::File_MpegPs()
         Duration_Detected=false;
     #endif //MEDIAINFO_SEEK
 
+    //StreamOrder
+    StreamOrder_CountOfPrivateStreams_Minus1=0;
+
     //From packets
     program_mux_rate=(int32u)-1;
 
@@ -2570,9 +2573,6 @@ void File_MpegPs::system_header_start()
     private_stream_1_Count=0;
     private_stream_2_Count=0;
     SL_packetized_stream_Count=0;
-
-    //StreamOrder
-    StreamOrder_CountOfPrivateStreams_Minus1=0;
 
     //Parsing
     int32u rate_bound;

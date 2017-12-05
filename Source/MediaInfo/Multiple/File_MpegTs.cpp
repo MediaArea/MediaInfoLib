@@ -1922,7 +1922,8 @@ void File_MpegTs::Read_Buffer_Unsynched()
         {
             #ifdef MEDIAINFO_MPEGTS_PESTIMESTAMP_YES
                 Complete_Stream->Streams[StreamID]->Searching_ParserTimeStamp_Start_Set(false); //No more searching start
-                if (((File_MpegPs*)Complete_Stream->Streams[StreamID]->Parser)->HasTimeStamps)
+                if (Complete_Stream->Streams[StreamID]->Kind==complete_stream::stream::pes
+                && ((File_MpegPs*)Complete_Stream->Streams[StreamID]->Parser)->HasTimeStamps)
                     Complete_Stream->Streams[StreamID]->Searching_ParserTimeStamp_End_Set(true); //Searching only for a start found
             #endif //MEDIAINFO_MPEGTS_PESTIMESTAMP_YES
             if (File_GoTo==0)
@@ -3120,7 +3121,7 @@ void File_MpegTs::PES()
     }
 
     //Parsing
-    if (Complete_Stream->Streams[pid]->IsPCR)
+    if (Complete_Stream->Streams[pid]->Kind==complete_stream::stream::pes && Complete_Stream->Streams[pid]->IsPCR)
         ((File_MpegPs*)Complete_Stream->Streams[pid]->Parser)->FrameInfo.PCR=Complete_Stream->Streams[pid]->TimeStamp_End==(int64u)-1?(int64u)-1:Complete_Stream->Streams[pid]->TimeStamp_End*1000/27; //27 MHz
     #if MEDIAINFO_IBIUSAGE
         if (Complete_Stream->transport_stream_id!=(int16u)-1 && !Complete_Stream->Streams[pid]->program_numbers.empty())
@@ -3202,7 +3203,8 @@ void File_MpegTs::PES_Parse_Finish()
     }
 
     #if defined(MEDIAINFO_MPEGPS_YES) && defined(MEDIAINFO_MPEGTS_PESTIMESTAMP_YES)
-        if (MpegTs_JumpTo_Begin+MpegTs_JumpTo_End>File_Size
+        if (Complete_Stream->Streams[pid]->Kind==complete_stream::stream::pes
+         && MpegTs_JumpTo_Begin+MpegTs_JumpTo_End>File_Size
          && !Complete_Stream->Streams[pid]->Searching_ParserTimeStamp_End
          && ((File_MpegPs*)Complete_Stream->Streams[pid]->Parser)->HasTimeStamps)
         {
