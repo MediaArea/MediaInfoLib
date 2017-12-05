@@ -3355,6 +3355,26 @@ void File_Mpeg4::moov_trak_mdia_minf_dinf_dref()
 }
 
 //---------------------------------------------------------------------------
+static const size_t MacAlias_Size=16;
+static const char* MacAlias[MacAlias_Size]=
+{
+    "Directory Name",
+    "Directory IDs",
+    "Absolute Path",
+    "AppleShare Zone Name",
+    "AppleShare Server Name",
+    "AppleShare User Name",
+    "Driver Name",
+    NULL,
+    NULL,
+    "Revised AppleShare info",
+    "AppleRemoteAccess dialup info",
+    NULL,
+    NULL,
+    NULL,
+    "file name (Unicode)?",
+    "volume name (Unicode)?",
+};
 void File_Mpeg4::moov_trak_mdia_minf_dinf_dref_alis()
 {
     NAME_VERSION_FLAG("Alias"); //bit 0 = external/internal data
@@ -3436,26 +3456,69 @@ void File_Mpeg4::moov_trak_mdia_minf_dinf_dref_alis()
         Skip_XX(99-file_name_string_length,                     "file name string padding (hack)");
     while(Element_Offset<End)
     {
+        Element_Begin0();
         Trusted++;
         int16u type, size;
         Get_B2 (type,                                           "type");
+        if (type==0xFFFF)
+        {
+            Skip_XX(End-Element_Offset,                         "Padding");
+            break;
+        }
+        if (type<MacAlias_Size && MacAlias[type])
+        {
+            Param_Info1(MacAlias[type]);
+            Element_Info1(MacAlias[type]);
+        }
+        else
+            Element_Info1(Ztring::ToZtring(type));
         Get_B2 (size,                                           "size");
         switch (type)
         {
             case 0x0000 :
-                        Get_Local(size, Directory_Name,         "Directory Name");
+                        Get_Local(size, Directory_Name,         "Data");
                         break;
-            case 0x0002 :
-                        Skip_Local(size,                        "Absolute Path");
+            case 0x000E :
+                        {
+                        int16u size2;
+                        Peek_B2(size2);
+                        if (2+size2*2==size)
+                        {
+                            Skip_B2(                            "size2");
+                            Get_UTF16B (size2*2, file_name_string, "Data");
+                        }
+                        else
+                        {
+                            Info_Local(size, Data,              "Data"); //We try, for info...
+                            Element_Info1(Data);
+                        }
+                        }
                         break;
-            case 0xFFFF :
-                        Skip_XX(End-Element_Offset,             "Padding");
+            case 0x000F :
+                        {
+                        int16u size2;
+                        Peek_B2(size2);
+                        if (2+size2*2==size)
+                        {
+                            Skip_B2(                            "size2");
+                            Skip_UTF16B(size2*2,                "Data");
+                        }
+                        else
+                        {
+                            Info_Local(size, Data,              "Data"); //We try, for info...
+                            Element_Info1(Data);
+                        }
+                        }
                         break;
             default     :
-                        Skip_Local(size,                        "Unknown");
+                        {
+                        Info_Local(size, Data,                  "Data"); //We try, for info...
+                        Element_Info1(Data);
+                        }
         }
         if (size%2)
             Skip_B1(                                            "Padding");
+        Element_End0();
     }
     Element_End0();
 

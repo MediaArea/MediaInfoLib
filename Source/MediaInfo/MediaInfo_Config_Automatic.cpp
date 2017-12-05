@@ -1196,6 +1196,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "MPEG-PS;;;M;MpegPs;;mpeg mpg m2p vob pss evo;video/MP2P;\n"
     "MPEG-TS;;;M;MpegTs;;ts m2t m2s m4t m4s tmf ts tp trp ty;video/MP2T;\n"
     "MPEG-4;;;M;Mpeg4;;mov mp4 m4v m4a m4b m4p 3ga 3gpa 3gpp 3gp 3gpp2 3g2 k3g jpm jpx mqv ismv isma ismt f4a f4b f4v;video/mp4;\n"
+    "QuickTime TC;;;M;QuickTimeTC;;qtc;;\n"
     "MTV;;;M;Other;Chinese hack of MPEG-1 layer 3;mtv;;http://en.wikipedia.org/wiki/Chinese_MP4/MTV_Player\n"
     "MXF;;;M;Mxf;;mxf;application/mxf;\n"
     "NSV;;;M;Nsv;Nullsoft Streaming Video;nsv;;http://winamp.com\n"
