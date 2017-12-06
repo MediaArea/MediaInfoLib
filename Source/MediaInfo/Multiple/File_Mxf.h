@@ -559,7 +559,7 @@ protected :
     void Info_UL_01xx01_Items () {Element_Offset+=8;};
     void Info_UL_02xx01_Groups () {Element_Offset+=8;};
     void Info_UL_040101_Values () {Element_Offset+=8;};
-    #define Info_UL(_INFO, _NAME, _PARAM) int128u _INFO;
+    #define Info_UL(_INFO, _NAME, _PARAM) Skip_UL(_NAME)
     #endif //MEDIAINFO_TRACE
 
     //TimeCode
