@@ -510,18 +510,15 @@ void File_MpegPs::Streams_Update()
 {
     //For each Streams
     for (size_t StreamID=0; StreamID<0x100; StreamID++)
-        for (size_t Pos=0; Pos<Streams[StreamID].Parsers.size(); Pos++)
-            Streams[StreamID].Parsers[Pos]->Open_Buffer_Update();
+        Streams[StreamID].Streams_Update();
 
     //For each private Streams
     for (size_t StreamID=0; StreamID<0x100; StreamID++)
-        for (size_t Pos=0; Pos<Streams_Private1[StreamID].Parsers.size(); Pos++)
-            Streams_Private1[StreamID].Parsers[Pos]->Open_Buffer_Update();
+            Streams_Private1[StreamID].Streams_Update();
 
     //For each extension Streams
     for (size_t StreamID=0; StreamID<0x100; StreamID++)
-        for (size_t Pos=0; Pos<Streams_Extension[StreamID].Parsers.size(); Pos++)
-            Streams_Extension[StreamID].Parsers[Pos]->Open_Buffer_Update();
+        Streams_Extension[StreamID].Streams_Update();
 }
 
 //---------------------------------------------------------------------------
@@ -969,46 +966,9 @@ void File_MpegPs::Read_Buffer_Unsynched()
     for (size_t StreamID=0; StreamID<0x100; StreamID++)
     {
         //End timestamp is out of date
-        Streams[StreamID].TimeStamp_End.PTS.File_Pos=(int64u)-1;
-        Streams[StreamID].TimeStamp_End.DTS.File_Pos=(int64u)-1;
-        Streams[StreamID].TimeStamp_End.PTS.TimeStamp=(int64u)-1;
-        Streams[StreamID].TimeStamp_End.DTS.TimeStamp=(int64u)-1;
-        Streams[StreamID].Searching_TimeStamp_Start=false;
-        for (size_t Pos=0; Pos<Streams[StreamID].Parsers.size(); Pos++)
-            if (Streams[StreamID].Parsers[Pos])
-            {
-                #if MEDIAINFO_SEEK
-                    if (IsSub)
-                        Streams[StreamID].Parsers[Pos]->Unsynch_Frame_Count=Frame_Count_NotParsedIncluded;
-                #endif //MEDIAINFO_SEEK
-                Streams[StreamID].Parsers[Pos]->Open_Buffer_Unsynch();
-            }
-        Streams_Private1[StreamID].TimeStamp_End.PTS.File_Pos=(int64u)-1;
-        Streams_Private1[StreamID].TimeStamp_End.DTS.File_Pos=(int64u)-1;
-        Streams_Private1[StreamID].TimeStamp_End.PTS.TimeStamp=(int64u)-1;
-        Streams_Private1[StreamID].TimeStamp_End.DTS.TimeStamp=(int64u)-1;
-        Streams_Private1[StreamID].Searching_TimeStamp_Start=false;
-        for (size_t Pos=0; Pos<Streams_Private1[StreamID].Parsers.size(); Pos++)
-            if (Streams_Private1[StreamID].Parsers[Pos])
-            {
-                #if MEDIAINFO_SEEK
-                    Streams_Private1[StreamID].Parsers[Pos]->Unsynch_Frame_Count=Unsynch_Frame_Count;
-                #endif //MEDIAINFO_SEEK
-                Streams_Private1[StreamID].Parsers[Pos]->Open_Buffer_Unsynch();
-            }
-        Streams_Extension[StreamID].TimeStamp_End.PTS.File_Pos=(int64u)-1;
-        Streams_Extension[StreamID].TimeStamp_End.DTS.File_Pos=(int64u)-1;
-        Streams_Extension[StreamID].TimeStamp_End.PTS.TimeStamp=(int64u)-1;
-        Streams_Extension[StreamID].TimeStamp_End.DTS.TimeStamp=(int64u)-1;
-        Streams_Extension[StreamID].Searching_TimeStamp_Start=false;
-        for (size_t Pos=0; Pos<Streams_Extension[StreamID].Parsers.size(); Pos++)
-            if (Streams_Extension[StreamID].Parsers[Pos])
-            {
-                #if MEDIAINFO_SEEK
-                    Streams_Extension[StreamID].Parsers[Pos]->Unsynch_Frame_Count=Unsynch_Frame_Count;
-                #endif //MEDIAINFO_SEEK
-                Streams_Extension[StreamID].Parsers[Pos]->Open_Buffer_Unsynch();
-            }
+        Streams[StreamID].Set_Unsynch_Frame_Count(Frame_Count_NotParsedIncluded, IsSub);
+        Streams_Private1[StreamID].Set_Unsynch_Frame_Count(Unsynch_Frame_Count,true);
+        Streams_Extension[StreamID].Set_Unsynch_Frame_Count(Unsynch_Frame_Count,true);
     }
     #if MEDIAINFO_SEEK
         Unsynch_Frame_Count=(int64u)-1; //We do not use it
