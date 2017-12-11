@@ -298,7 +298,7 @@ void File_Aac::program_config_element()
                 Infos["Format_Profile"]+=__T(" / LC");
                 Infos["SamplingRate"]+=__T(" / ")+SamplingRate;
             }
-            Infos["Format_Settings"]==__T("NBC"); // "Not Backward Compatible"
+            Infos["Format_Settings"]=__T("NBC"); // "Not Backward Compatible"
             Infos["Format_Settings_SBR"]=__T("Yes (NBC)"); // "Not Backward Compatible"
             Infos["Codec"]=Ztring().From_Local(Aac_audioObjectType(audioObjectType))+__T("-SBR");
         }
