@@ -69,10 +69,9 @@ static const char* WC2MB(void* Handle, const wchar_t* Text)
     //Coherancy
     Critical.Enter();
     mi_outputs::iterator MI_Output=MI_Outputs.find(Handle);
-    if (MI_Outputs.find(Handle)==MI_Outputs.end())
+    if (MI_Output==MI_Outputs.end())
     {
-        MI_Outputs[Handle]=new mi_output; //Generic Handle
-        MI_Output=MI_Outputs.find(Handle);
+        MI_Output=MI_Outputs.insert(std::make_pair(Handle,new mi_output)).first; //Generic Handle
     }
     Critical.Leave();
 
@@ -92,8 +91,7 @@ static const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
     mi_inputs::iterator MI_Input=MI_Inputs.find(Handle);
     if (MI_Input==MI_Inputs.end())
     {
-        MI_Inputs[Handle]=new mi_input; //Generic Handle
-        MI_Input=MI_Inputs.find(Handle);
+        MI_Input=MI_Inputs.insert(std::make_pair(Handle, new mi_input)).first;
     }
     Critical.Leave();
 
@@ -224,7 +222,7 @@ static const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
     MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
     Critical.Enter(); \
     mi_outputs::iterator MI_Output=MI_Outputs.find(Handle); \
-    bool MI_Output_IsOk=MI_Outputs.find(Handle)!=MI_Outputs.end(); \
+    const bool MI_Output_IsOk=MI_Output!=MI_Outputs.end(); \
     Critical.Leave(); \
     if (Handle==NULL || !MI_Output_IsOk) \
     { \
@@ -236,7 +234,7 @@ static const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
     MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
     Critical.Enter(); \
     mi_outputs::iterator MI_Output=MI_Outputs.find(Handle); \
-    bool MI_Output_IsOk=MI_Outputs.find(Handle)!=MI_Outputs.end(); \
+    const bool MI_Output_IsOk=MI_Output!=MI_Outputs.end(); \
     Critical.Leave(); \
     if (Handle==NULL || !MI_Output_IsOk) \
     { \
@@ -248,7 +246,7 @@ static const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
     MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
     Critical.Enter(); \
     mi_outputs::iterator MI_Output=MI_Outputs.find(Handle); \
-    bool MI_Output_IsOk=MI_Outputs.find(Handle)!=MI_Outputs.end(); \
+    const bool MI_Output_IsOk=MI_Output!=MI_Outputs.end(); \
     Critical.Leave(); \
     if (Handle==NULL || !MI_Output_IsOk) \
     { \
@@ -260,7 +258,7 @@ static const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
     MEDIAINFO_DEBUG1(_NAME,_DEBUGA) \
     Critical.Enter(); \
     mi_outputs::iterator MI_Output=MI_Outputs.find(Handle); \
-    bool MI_Output_IsOk=MI_Outputs.find(Handle)!=MI_Outputs.end(); \
+    const bool MI_Output_IsOk=MI_Output!=MI_Outputs.end(); \
     Critical.Leave(); \
     if (Handle==NULL || !MI_Output_IsOk) \
     { \
