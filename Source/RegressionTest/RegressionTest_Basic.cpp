@@ -38,7 +38,6 @@ struct UserHandle_struct
     {
         Size=(int64u)-1;
         Time_Start=(time_t)-1;
-        Time_Start=(time_t)-1;
     }
 };
 
