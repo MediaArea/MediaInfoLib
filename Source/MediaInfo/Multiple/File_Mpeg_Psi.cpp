@@ -1360,10 +1360,7 @@ void File_Mpeg_Psi::Table_02()
                 for (size_t pid=0x10; pid<0x1FFF; pid++) //Wanting 0x10-->0x2F (DVB), 0x1ABC (cea_osd), 0x1FF7-->0x1FFF (ATSC)
                     for (size_t Table_ID=0x00; Table_ID<0xFF; Table_ID++)
                     {
-                        Complete_Stream->Streams[pid]->Searching_Payload_Start_Set(true);
-                        Complete_Stream->Streams[pid]->Kind=complete_stream::stream::psi;
-                        Complete_Stream->Streams[pid]->Table_IDs.resize(0x100);
-                        Complete_Stream->Streams[pid]->Table_IDs[Table_ID]=new complete_stream::stream::table_id; //event_information_section - actual_transport_stream, schedule
+                        Complete_Stream->Streams[pid]->init(Table_ID); //event_information_section - actual_transport_stream, schedule
 
                         if (Pos==0x001F)
                             Pos=0x1ABB; //Skipping normal data
@@ -1373,41 +1370,26 @@ void File_Mpeg_Psi::Table_02()
             #else //MEDIAINFO_MPEGTS_ALLSTREAMS_YES
                 if (Complete_Stream->Streams[0x0010]->Kind==complete_stream::stream::unknown)
                 {
-                    Complete_Stream->Streams[0x0010]->Searching_Payload_Start_Set(true);
-                    Complete_Stream->Streams[0x0010]->Kind=complete_stream::stream::psi;
-                    Complete_Stream->Streams[0x0010]->Table_IDs.resize(0x100);
-                    Complete_Stream->Streams[0x0010]->Table_IDs[0x40]=new complete_stream::stream::table_id; //network_information_section - actual_network
+                    Complete_Stream->Streams[0x0010]->init(0x40); //network_information_section - actual_network
                 }
                 if (Complete_Stream->Streams[0x0011]->Kind==complete_stream::stream::unknown)
                 {
-                    Complete_Stream->Streams[0x0011]->Searching_Payload_Start_Set(true);
-                    Complete_Stream->Streams[0x0011]->Kind=complete_stream::stream::psi;
-                    Complete_Stream->Streams[0x0011]->Table_IDs.resize(0x100);
-                    Complete_Stream->Streams[0x0011]->Table_IDs[0x42]=new complete_stream::stream::table_id; //service_description_section - actual_transport_stream
+                    Complete_Stream->Streams[0x0011]->init(0x42); //service_description_section - actual_transport_stream
                 }
                 if (Complete_Stream->Streams[0x0012]->Kind==complete_stream::stream::unknown)
                 {
-                    Complete_Stream->Streams[0x0012]->Searching_Payload_Start_Set(true);
-                    Complete_Stream->Streams[0x0012]->Kind=complete_stream::stream::psi;
-                    Complete_Stream->Streams[0x0012]->Table_IDs.resize(0x100);
-                    Complete_Stream->Streams[0x0012]->Table_IDs[0x4E]=new complete_stream::stream::table_id; //event_information_section - actual_transport_stream, present/following
+                    Complete_Stream->Streams[0x0012]->init(0x4E); //event_information_section - actual_transport_stream, present/following
                     for (size_t Table_ID=0x50; Table_ID<0x60; Table_ID++)
                         Complete_Stream->Streams[0x0012]->Table_IDs[Table_ID]=new complete_stream::stream::table_id; //event_information_section - actual_transport_stream, schedule
                 }
                 if (Complete_Stream->Streams[0x0014]->Kind==complete_stream::stream::unknown)
                 {
-                    Complete_Stream->Streams[0x0014]->Searching_Payload_Start_Set(true);
-                    Complete_Stream->Streams[0x0014]->Kind=complete_stream::stream::psi;
-                    Complete_Stream->Streams[0x0014]->Table_IDs.resize(0x100);
-                    Complete_Stream->Streams[0x0014]->Table_IDs[0x70]=new complete_stream::stream::table_id; //time_date_section
+                    Complete_Stream->Streams[0x0014]->init(0x70); //time_date_section
                     Complete_Stream->Streams[0x0014]->Table_IDs[0x73]=new complete_stream::stream::table_id; //time_offset_section
                 }
                 if (Complete_Stream->Streams[0x1FFB]->Kind==complete_stream::stream::unknown)
                 {
-                    Complete_Stream->Streams[0x1FFB]->Searching_Payload_Start_Set(true);
-                    Complete_Stream->Streams[0x1FFB]->Kind=complete_stream::stream::psi;
-                    Complete_Stream->Streams[0x1FFB]->Table_IDs.resize(0x100);
-                    Complete_Stream->Streams[0x1FFB]->Table_IDs[0xC7]=new complete_stream::stream::table_id; //Master Guide Table
+                    Complete_Stream->Streams[0x1FFB]->init(0xC7); //Master Guide Table
                     Complete_Stream->Streams[0x1FFB]->Table_IDs[0xCD]=new complete_stream::stream::table_id; //System Time Table
                 }
             #endif //MEDIAINFO_MPEGTS_ALLSTREAMS_YES
