@@ -1690,82 +1690,7 @@ bool File_MpegTs::Synched_Test()
                                 #endif //MEDIAINFO_MPEGTS_PESTIMESTAMP_YES
                                 )
                                 {
-                                    Header_Parse_Events_Duration(program_clock_reference);
-                                    if (program_clock_reference!=Complete_Stream->Streams[pid]->TimeStamp_End) //Some PCRs are buggy (low precision), using the first stream offset in the case of duplicate PCR value
-                                    {
-                                        if (Complete_Stream->Streams[pid]->TimeStamp_End_Offset!=(int64u)-1)
-                                        {
-                                            if (program_clock_reference+0x12c00000000LL<Complete_Stream->Streams[pid]->TimeStamp_End)
-                                                program_clock_reference+=0x25800000000LL; //33 bits and *300
-                                            if (!discontinuity_indicator && program_clock_reference>Complete_Stream->Streams[pid]->TimeStamp_End && program_clock_reference<Complete_Stream->Streams[pid]->TimeStamp_End+10*27000000) //Not before, not after 10 seconds, else there is a problem
-                                            {
-                                                float64 Duration_InstantaneousBitRate_Min=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End-(Config_VbrDetection_Delta?0:810));
-                                                float64 Duration_InstantaneousBitRate_Max=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End+(Config_VbrDetection_Delta?0:810));
-                                                float64 Bytes_InstantaneousBitRate=(float64)(File_Offset+Buffer_Offset-Complete_Stream->Streams[pid]->TimeStamp_End_Offset);
-                                                float64 TimeStamp_InstantaneousBitRate_Current_Min=Bytes_InstantaneousBitRate*8/Duration_InstantaneousBitRate_Max*27000000*(1-Config_VbrDetection_Delta);
-                                                float64 TimeStamp_InstantaneousBitRate_Current_Raw=Bytes_InstantaneousBitRate*8/Duration_InstantaneousBitRate_Min*27000000;
-                                                float64 TimeStamp_InstantaneousBitRate_Current_Max=Bytes_InstantaneousBitRate*8/Duration_InstantaneousBitRate_Min*27000000*(1+Config_VbrDetection_Delta);
-                                                if (Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Min)
-                                                {
-                                                    if (TimeStamp_InstantaneousBitRate_Current_Max<Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Min || TimeStamp_InstantaneousBitRate_Current_Min>Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Max)
-                                                    {
-                                                        Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_BitRateMode_IsVbr++;
-                                                        #if MEDIAINFO_ADVANCED
-                                                            if (Config_VbrDetection_GiveUp && Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_BitRateMode_IsVbr>=Config_VbrDetection_Occurences)
-                                                                Config->ParseSpeed=0;
-                                                        #endif // MEDIAINFO_ADVANCED
-                                                    }
-                                                    else
-                                                        Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_BitRateMode_IsCbr++;
-                                                }
-                                                float64 Duration_Min=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End-1);
-                                                float64 Duration_Raw=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End);
-                                                float64 Duration_Max=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End+1);
-                                                float64 Bytes=(float64)(File_Offset+Buffer_Offset-Complete_Stream->Streams[pid]->TimeStamp_End_Offset);
-                                                float64 TimeStamp_Min=Bytes*8/Duration_Max*27000000*(1-Config_VbrDetection_Delta);
-                                                float64 TimeStamp_Raw=Bytes*8/Duration_Raw*27000000;
-                                                float64 TimeStamp_Max=Bytes*8/Duration_Min*27000000*(1+Config_VbrDetection_Delta);
-                                                Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Min=TimeStamp_Min;
-                                                Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Raw=TimeStamp_Raw;
-                                                Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Max=TimeStamp_Max;
-                                                #if MEDIAINFO_ADVANCED
-                                                    if (Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Min_Raw>TimeStamp_InstantaneousBitRate_Current_Raw)
-                                                        Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Min_Raw=TimeStamp_InstantaneousBitRate_Current_Raw;
-                                                    if (Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Max_Raw<TimeStamp_InstantaneousBitRate_Current_Raw)
-                                                        Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Max_Raw=TimeStamp_InstantaneousBitRate_Current_Raw;
-                                                    int64u Distance=program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End;
-                                                    if (Complete_Stream->Streams[pid]->TimeStamp_Distance_Min>Distance)
-                                                        Complete_Stream->Streams[pid]->TimeStamp_Distance_Min=Distance;
-                                                    if (Complete_Stream->Streams[pid]->TimeStamp_Distance_Max<Distance)
-                                                        Complete_Stream->Streams[pid]->TimeStamp_Distance_Max=Distance;
-                                                    Complete_Stream->Streams[pid]->TimeStamp_Distance_Total+=Distance;
-                                                    Complete_Stream->Streams[pid]->TimeStamp_Distance_Count++;
-                                                #endif // MEDIAINFO_ADVANCED
-                                            }
-                                            #if MEDIAINFO_ADVANCED
-                                                else
-                                                {
-                                                   if (!discontinuity_indicator)
-                                                        Complete_Stream->Streams[pid]->TimeStamp_HasProblems++;
-                                                   float64 Bytes=(float64)(File_Offset+Buffer_Offset-Complete_Stream->Streams[pid]->TimeStamp_End_Offset);
-                                                   int64u TimeToAdd;
-                                                   if (Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Raw)
-                                                       TimeToAdd=float64_int64s(Bytes*8/Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Raw*27000000);
-                                                   else
-                                                       TimeToAdd=0;
-                                                   Complete_Stream->Streams[pid]->TimeStamp_Intermediate.push_back(Complete_Stream->Streams[pid]->TimeStamp_End+TimeToAdd);
-                                                   Complete_Stream->Streams[pid]->TimeStamp_Intermediate.push_back(program_clock_reference);
-                                                }
-                                            #endif // MEDIAINFO_ADVANCED
-                                        }
-                                        Complete_Stream->Streams[pid]->TimeStamp_End=program_clock_reference;
-                                        Complete_Stream->Streams[pid]->TimeStamp_End_IsUpdated=true;
-                                        Complete_Stream->Streams[pid]->TimeStamp_End_Offset=File_Offset+Buffer_Offset;
-                                        {
-                                            Status[IsUpdated]=true;
-                                            Status[User_16]=true;
-                                        }
-                                    }
+                                    Header_Parse_Events_Duration_Helper(program_clock_reference,discontinuity_indicator);
                                 }
                                 if (Complete_Stream->Streams[pid]->Searching_TimeStamp_Start)
                                 {
@@ -1845,6 +1770,86 @@ bool File_MpegTs::Synched_Test()
     return false; //Not enough data
 }
 
+//---------------------------------------------------------------------------
+void File_MpegTs::Header_Parse_Events_Duration_Helper(int64u& program_clock_reference, const bool discontinuity_indicator)
+{
+    Header_Parse_Events_Duration(program_clock_reference);
+    if (program_clock_reference!=Complete_Stream->Streams[pid]->TimeStamp_End) //Some PCRs are buggy (low precision), using the first stream offset in the case of duplicate PCR value
+    {
+        if (Complete_Stream->Streams[pid]->TimeStamp_End_Offset!=(int64u)-1)
+        {
+            if (program_clock_reference+0x12c00000000LL<Complete_Stream->Streams[pid]->TimeStamp_End)
+                program_clock_reference+=0x25800000000LL; //33 bits and *300
+            if (!discontinuity_indicator && program_clock_reference>Complete_Stream->Streams[pid]->TimeStamp_End && program_clock_reference<Complete_Stream->Streams[pid]->TimeStamp_End+10*27000000) //Not before, not after 10 seconds, else there is a problem
+            {
+                float64 Duration_InstantaneousBitRate_Min=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End-(Config_VbrDetection_Delta?0:810));
+                float64 Duration_InstantaneousBitRate_Max=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End+(Config_VbrDetection_Delta?0:810));
+                float64 Bytes_InstantaneousBitRate=(float64)(File_Offset+Buffer_Offset-Complete_Stream->Streams[pid]->TimeStamp_End_Offset);
+                float64 TimeStamp_InstantaneousBitRate_Current_Min=Bytes_InstantaneousBitRate*8/Duration_InstantaneousBitRate_Max*27000000*(1-Config_VbrDetection_Delta);
+                float64 TimeStamp_InstantaneousBitRate_Current_Raw=Bytes_InstantaneousBitRate*8/Duration_InstantaneousBitRate_Min*27000000;
+                float64 TimeStamp_InstantaneousBitRate_Current_Max=Bytes_InstantaneousBitRate*8/Duration_InstantaneousBitRate_Min*27000000*(1+Config_VbrDetection_Delta);
+                if (Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Min)
+                {
+                    if (TimeStamp_InstantaneousBitRate_Current_Max<Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Min || TimeStamp_InstantaneousBitRate_Current_Min>Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Max)
+                    {
+                        Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_BitRateMode_IsVbr++;
+                        #if MEDIAINFO_ADVANCED
+                            if (Config_VbrDetection_GiveUp && Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_BitRateMode_IsVbr>=Config_VbrDetection_Occurences)
+                                Config->ParseSpeed=0;
+                        #endif // MEDIAINFO_ADVANCED
+                    }
+                    else
+                        Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_BitRateMode_IsCbr++;
+                }
+                float64 Duration_Min=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End-1);
+                float64 Duration_Raw=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End);
+                float64 Duration_Max=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End+1);
+                float64 Bytes=(float64)(File_Offset+Buffer_Offset-Complete_Stream->Streams[pid]->TimeStamp_End_Offset);
+                float64 TimeStamp_Min=Bytes*8/Duration_Max*27000000*(1-Config_VbrDetection_Delta);
+                float64 TimeStamp_Raw=Bytes*8/Duration_Raw*27000000;
+                float64 TimeStamp_Max=Bytes*8/Duration_Min*27000000*(1+Config_VbrDetection_Delta);
+                Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Min=TimeStamp_Min;
+                Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Raw=TimeStamp_Raw;
+                Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Max=TimeStamp_Max;
+                #if MEDIAINFO_ADVANCED
+                    if (Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Min_Raw>TimeStamp_InstantaneousBitRate_Current_Raw)
+                        Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Min_Raw=TimeStamp_InstantaneousBitRate_Current_Raw;
+                    if (Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Max_Raw<TimeStamp_InstantaneousBitRate_Current_Raw)
+                        Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Max_Raw=TimeStamp_InstantaneousBitRate_Current_Raw;
+                    int64u Distance=program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End;
+                    if (Complete_Stream->Streams[pid]->TimeStamp_Distance_Min>Distance)
+                        Complete_Stream->Streams[pid]->TimeStamp_Distance_Min=Distance;
+                    if (Complete_Stream->Streams[pid]->TimeStamp_Distance_Max<Distance)
+                        Complete_Stream->Streams[pid]->TimeStamp_Distance_Max=Distance;
+                    Complete_Stream->Streams[pid]->TimeStamp_Distance_Total+=Distance;
+                    Complete_Stream->Streams[pid]->TimeStamp_Distance_Count++;
+                #endif // MEDIAINFO_ADVANCED
+            }
+            #if MEDIAINFO_ADVANCED
+                else
+                {
+                   if (!discontinuity_indicator)
+                        Complete_Stream->Streams[pid]->TimeStamp_HasProblems++;
+                   float64 Bytes=(float64)(File_Offset+Buffer_Offset-Complete_Stream->Streams[pid]->TimeStamp_End_Offset);
+                   int64u TimeToAdd;
+                   if (Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Raw)
+                       TimeToAdd=float64_int64s(Bytes*8/Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Raw*27000000);
+                   else
+                       TimeToAdd=0;
+                   Complete_Stream->Streams[pid]->TimeStamp_Intermediate.push_back(Complete_Stream->Streams[pid]->TimeStamp_End+TimeToAdd);
+                   Complete_Stream->Streams[pid]->TimeStamp_Intermediate.push_back(program_clock_reference);
+                }
+            #endif // MEDIAINFO_ADVANCED
+        }
+        Complete_Stream->Streams[pid]->TimeStamp_End=program_clock_reference;
+        Complete_Stream->Streams[pid]->TimeStamp_End_IsUpdated=true;
+        Complete_Stream->Streams[pid]->TimeStamp_End_Offset=File_Offset+Buffer_Offset;
+        {
+            Status[IsUpdated]=true;
+            Status[User_16]=true;
+        }
+    }
+}
 //---------------------------------------------------------------------------
 void File_MpegTs::Synched_Init()
 {
@@ -2486,82 +2491,7 @@ void File_MpegTs::Header_Parse_AdaptationField()
                     #endif //MEDIAINFO_MPEGTS_PESTIMESTAMP_YES
                      )
                     {
-                        Header_Parse_Events_Duration(program_clock_reference);
-                        if (program_clock_reference!=Complete_Stream->Streams[pid]->TimeStamp_End) //Some PCRs are buggy (low precision), using the first stream offset in the case of duplicate PCR value
-                        {
-                            if (Complete_Stream->Streams[pid]->TimeStamp_End_Offset!=(int64u)-1)
-                            {
-                                if (program_clock_reference+0x12c00000000LL<Complete_Stream->Streams[pid]->TimeStamp_End)
-                                    program_clock_reference+=0x25800000000LL; //33 bits and *300
-                                if (!discontinuity_indicator && program_clock_reference>Complete_Stream->Streams[pid]->TimeStamp_End && program_clock_reference<Complete_Stream->Streams[pid]->TimeStamp_End+10*27000000) //Not before, not after 10 seconds, else there is a problem
-                                {
-                                    float64 Duration_InstantaneousBitRate_Min=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End-(Config_VbrDetection_Delta?0:810));
-                                    float64 Duration_InstantaneousBitRate_Max=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End+(Config_VbrDetection_Delta?0:810));
-                                    float64 Bytes_InstantaneousBitRate=(float64)(File_Offset+Buffer_Offset-Complete_Stream->Streams[pid]->TimeStamp_End_Offset);
-                                    float64 TimeStamp_InstantaneousBitRate_Current_Min=Bytes_InstantaneousBitRate*8/Duration_InstantaneousBitRate_Max*27000000*(1-Config_VbrDetection_Delta);
-                                    float64 TimeStamp_InstantaneousBitRate_Current_Raw=Bytes_InstantaneousBitRate*8/Duration_InstantaneousBitRate_Min*27000000;
-                                    float64 TimeStamp_InstantaneousBitRate_Current_Max=Bytes_InstantaneousBitRate*8/Duration_InstantaneousBitRate_Min*27000000*(1+Config_VbrDetection_Delta);
-                                    if (Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Min)
-                                    {
-                                        if (TimeStamp_InstantaneousBitRate_Current_Max<Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Min || TimeStamp_InstantaneousBitRate_Current_Min>Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Max)
-                                        {
-                                            Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_BitRateMode_IsVbr++;
-                                            #if MEDIAINFO_ADVANCED
-                                                if (Config_VbrDetection_GiveUp && Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_BitRateMode_IsVbr>=Config_VbrDetection_Occurences)
-                                                    Config->ParseSpeed=0;
-                                            #endif // MEDIAINFO_ADVANCED
-                                        }
-                                        else
-                                            Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_BitRateMode_IsCbr++;
-                                    }
-                                    float64 Duration_Min=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End-1);
-                                    float64 Duration_Raw=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End);
-                                    float64 Duration_Max=(float64)(program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End+1);
-                                    float64 Bytes=(float64)(File_Offset+Buffer_Offset-Complete_Stream->Streams[pid]->TimeStamp_End_Offset);
-                                    float64 TimeStamp_Min=Bytes*8/Duration_Max*27000000*(1-Config_VbrDetection_Delta);
-                                    float64 TimeStamp_Raw=Bytes*8/Duration_Raw*27000000;
-                                    float64 TimeStamp_Max=Bytes*8/Duration_Min*27000000*(1+Config_VbrDetection_Delta);
-                                    Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Min=TimeStamp_Min;
-                                    Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Raw=TimeStamp_Raw;
-                                    Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Max=TimeStamp_Max;
-                                    #if MEDIAINFO_ADVANCED
-                                        if (Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Min_Raw>TimeStamp_InstantaneousBitRate_Current_Raw)
-                                            Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Min_Raw=TimeStamp_InstantaneousBitRate_Current_Raw;
-                                        if (Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Max_Raw<TimeStamp_InstantaneousBitRate_Current_Raw)
-                                            Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Max_Raw=TimeStamp_InstantaneousBitRate_Current_Raw;
-                                        int64u Distance=program_clock_reference-Complete_Stream->Streams[pid]->TimeStamp_End;
-                                        if (Complete_Stream->Streams[pid]->TimeStamp_Distance_Min>Distance)
-                                            Complete_Stream->Streams[pid]->TimeStamp_Distance_Min=Distance;
-                                        if (Complete_Stream->Streams[pid]->TimeStamp_Distance_Max<Distance)
-                                            Complete_Stream->Streams[pid]->TimeStamp_Distance_Max=Distance;
-                                        Complete_Stream->Streams[pid]->TimeStamp_Distance_Total+=Distance;
-                                        Complete_Stream->Streams[pid]->TimeStamp_Distance_Count++;
-                                    #endif // MEDIAINFO_ADVANCED
-                                }
-                                #if MEDIAINFO_ADVANCED
-                                    else
-                                    {
-                                       if (!discontinuity_indicator)
-                                            Complete_Stream->Streams[pid]->TimeStamp_HasProblems++;
-                                       float64 Bytes=(float64)(File_Offset+Buffer_Offset-Complete_Stream->Streams[pid]->TimeStamp_End_Offset);
-                                       int64u TimeToAdd;
-                                       if (Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Raw)
-                                           TimeToAdd=float64_int64s(Bytes*8/Complete_Stream->Streams[pid]->TimeStamp_InstantaneousBitRate_Current_Raw*27000000);
-                                       else
-                                           TimeToAdd=0;
-                                       Complete_Stream->Streams[pid]->TimeStamp_Intermediate.push_back(Complete_Stream->Streams[pid]->TimeStamp_End+TimeToAdd);
-                                       Complete_Stream->Streams[pid]->TimeStamp_Intermediate.push_back(program_clock_reference);
-                                    }
-                                #endif // MEDIAINFO_ADVANCED
-                            }
-                            Complete_Stream->Streams[pid]->TimeStamp_End=program_clock_reference;
-                            Complete_Stream->Streams[pid]->TimeStamp_End_IsUpdated=true;
-                            Complete_Stream->Streams[pid]->TimeStamp_End_Offset=File_Offset+Buffer_Offset;
-                            {
-                                Status[IsUpdated]=true;
-                                Status[User_16]=true;
-                            }
-                        }
+                        Header_Parse_Events_Duration_Helper(program_clock_reference,discontinuity_indicator);
                     }
                     if (Complete_Stream->Streams[pid]->Searching_TimeStamp_Start)
                     {
