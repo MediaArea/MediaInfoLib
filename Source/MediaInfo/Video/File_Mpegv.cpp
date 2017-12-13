@@ -2057,7 +2057,7 @@ void File_Mpegv::Read_Buffer_Unsynched()
             AfdBarData_Parser->Open_Buffer_Unsynch();
     #endif //defined(MEDIAINFO_AFDBARDATA_YES)
 
-    #if defined(MEDIAINFO_ANCILLARY_YES)
+    #if defined(MEDIAINFO_ANCILLARY_YES) && defined(MEDIAINFO_CDP_YES)
         if (Ancillary && *Ancillary && (*Ancillary)->Cdp_Data.empty())
             (*Ancillary)->AspectRatio=0;
     #endif //defined(MEDIAINFO_ANCILLARY_YES)
@@ -2633,7 +2633,7 @@ void File_Mpegv::slice_start()
         #endif //defined(MEDIAINFO_CDP_YES)
 
         //Active Format Description & Bar Data
-        #if defined(MEDIAINFO_AFDBARDATA_YES)
+        #if defined(MEDIAINFO_AFDBARDATA_YES) && defined(MEDIAINFO_ANCILLARY_YES)
             if (Ancillary && *Ancillary && !(*Ancillary)->AfdBarData_Data.empty())
             {
                 Element_Trace_Begin1("Active Format Description & Bar Data");
