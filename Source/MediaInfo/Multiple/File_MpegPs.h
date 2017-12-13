@@ -104,6 +104,8 @@ private :
     //Buffer - File header
     bool FileHeader_Begin() {return FileHeader_Begin_0x000001();}
 
+    void Bitrate_Calc();
+
     //Buffer - Synchro
     bool Synchronize();
     bool Synched_Test();

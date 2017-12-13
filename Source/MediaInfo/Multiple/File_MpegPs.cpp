@@ -491,17 +491,7 @@ void File_MpegPs::Streams_Fill_PerStream_PerKind(size_t StreamID, ps_stream &Tem
             Fill(StreamKind_Last, StreamPos, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
         }
 
-        //Bitrate calculation
-        if (FrameInfo.PTS!=(int64u)-1 && (StreamKind_Last==Stream_Video || StreamKind_Last==Stream_Audio))
-        {
-            int64u BitRate=Retrieve(StreamKind_Last, StreamPos, "BitRate").To_int64u();
-            if (BitRate==0)
-                BitRate=Retrieve(StreamKind_Last, StreamPos, "BitRate_Nominal").To_int64u();
-            if (BitRate==0)
-                FrameInfo.PTS=(int64u)-1;
-            else
-                FrameInfo.PTS+=BitRate; //Saving global BitRate
-        }
+        Bitrate_Calc();
     }
 }
 
@@ -767,7 +757,12 @@ void File_MpegPs::Streams_Finish_PerStream(size_t StreamID, ps_stream &Temp, kin
                     Fill((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_Duration), Duration);
     }
 
-    //Bitrate calculation
+    Bitrate_Calc();
+}
+
+//---------------------------------------------------------------------------
+void File_MpegPs::Bitrate_Calc()
+{
     if (FrameInfo.PTS!=(int64u)-1 && (StreamKind_Last==Stream_Video || StreamKind_Last==Stream_Audio))
     {
         int64u BitRate=Retrieve(StreamKind_Last, StreamPos_Last, "BitRate").To_int64u();
