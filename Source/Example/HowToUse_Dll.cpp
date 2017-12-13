@@ -34,13 +34,13 @@ int main (int /*argc*/, Char * /*argv[]*/)
 {
     //Information about MediaInfo
     MediaInfo MI;
-    String To_Display=MI.Option(__T("Info_Version"), __T("0.7.13;MediaInfoDLL_Example_MSVC;0.7.13")).c_str();
+    String To_Display=MI.Option(__T("Info_Version"), __T("0.7.13;MediaInfoDLL_Example_MSVC;0.7.13"));
 
     To_Display += __T("\r\n\r\nInfo_Parameters\r\n");
-    To_Display += MI.Option(__T("Info_Parameters")).c_str();
+    To_Display += MI.Option(__T("Info_Parameters"));
 
     To_Display += __T("\r\n\r\nInfo_Codecs\r\n");
-    To_Display += MI.Option(__T("Info_Codecs")).c_str();
+    To_Display += MI.Option(__T("Info_Codecs"));
 
     //An example of how to use the library
     To_Display += __T("\r\n\r\nOpen\r\n");
@@ -48,21 +48,21 @@ int main (int /*argc*/, Char * /*argv[]*/)
 
     To_Display += __T("\r\n\r\nInform with Complete=false\r\n");
     MI.Option(__T("Complete"));
-    To_Display += MI.Inform().c_str();
+    To_Display += MI.Inform();
 
     To_Display += __T("\r\n\r\nInform with Complete=true\r\n");
     MI.Option(__T("Complete"), __T("1"));
-    To_Display += MI.Inform().c_str();
+    To_Display += MI.Inform();
 
     To_Display += __T("\r\n\r\nCustom Inform\r\n");
     MI.Option(__T("Inform"), __T("General;Example : FileSize=%FileSize%"));
-    To_Display += MI.Inform().c_str();
+    To_Display += MI.Inform();
 
     To_Display += __T("\r\n\r\nGet with Stream=General and Parameter=\"FileSize\"\r\n");
-    To_Display += MI.Get(Stream_General, 0, __T("FileSize"), Info_Text, Info_Name).c_str();
+    To_Display += MI.Get(Stream_General, 0, __T("FileSize"), Info_Text, Info_Name);
 
     To_Display += __T("\r\n\r\nGetI with Stream=General and Parameter=46\r\n");
-    To_Display += MI.Get(Stream_General, 0, 46, Info_Text).c_str();
+    To_Display += MI.Get(Stream_General, 0, 46, Info_Text);
 
     To_Display += __T("\r\n\r\nCount_Get with StreamKind=Stream_Audio\r\n");
     #ifdef __MINGW32__
@@ -77,10 +77,10 @@ int main (int /*argc*/, Char * /*argv[]*/)
     #endif
 
     To_Display += __T("\r\n\r\nGet with Stream=General and Parameter=\"AudioCount\"\r\n");
-    To_Display += MI.Get(Stream_General, 0, __T("AudioCount"), Info_Text, Info_Name).c_str();
+    To_Display += MI.Get(Stream_General, 0, __T("AudioCount"), Info_Text, Info_Name);
 
     To_Display += __T("\r\n\r\nGet with Stream=Audio and Parameter=\"StreamCount\"\r\n");
-    To_Display += MI.Get(Stream_Audio, 0, __T("StreamCount"), Info_Text, Info_Name).c_str();
+    To_Display += MI.Get(Stream_Audio, 0, __T("StreamCount"), Info_Text, Info_Name);
 
     To_Display += __T("\r\n\r\nClose\r\n");
     MI.Close();
