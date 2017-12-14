@@ -1563,7 +1563,9 @@ MediaInfo_Internal* File__ReferenceFilesHelper::MI_Create()
     MI_Temp->Option(__T("File_FileNameFormat"), __T("CSV"));
     MI_Temp->Option(__T("File_KeepInfo"), __T("1"));
     MI_Temp->Option(__T("File_ID_OnlyRoot"), Config->File_ID_OnlyRoot_Get()?__T("1"):__T("0"));
+    #if defined(MEDIAINFO_DVDIF_YES)
     MI_Temp->Option(__T("File_DvDif_DisableAudioIfIsInContainer"), Config->File_DvDif_DisableAudioIfIsInContainer_Get()?__T("1"):__T("0"));
+    #endif
     if ((Sequences.size()>1 || Config->File_MpegTs_ForceMenu_Get()) && !Sequences[Sequences_Current]->IsMain && !HasMainFile)
         MI_Temp->Option(__T("File_MpegTs_ForceMenu"), __T("1"));
     #if MEDIAINFO_AES
