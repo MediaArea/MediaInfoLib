@@ -43,8 +43,8 @@ extern const char* Mpegv_colour_primaries(int8u colour_primaries)
         case  8 : return "Generic film";
         case  9 : return "BT.2020";                                     //Added in HEVC
         case 10 : return "XYZ";                                         //Added in HEVC 2014
-        case 11 : return "SMPTE RP 431-2";                              //Added in HEVC 2016
-        case 12 : return "SMPTE EG 432-1";                              //Added in HEVC 2016
+        case 11 : return "DCI P3";                                      //Added in HEVC 2016
+        case 12 : return "Display P3";                                  //Added in HEVC 2016
         case 22 : return "EBU Tech 3213";                               //Added in HEVC 2016
         default : return "";
     }
@@ -63,7 +63,7 @@ extern const char* Mpegv_transfer_characteristics(int8u transfer_characteristics
         case  8 : return "Linear";
         case  9 : return "Logarithmic (100:1)";                         //Added in MPEG-4 Visual
         case 10 : return "Logarithmic (316.22777:1)";                   //Added in MPEG-4 Visual
-        case 11 : return "IEC 61966-2-4";                               //Added in AVC
+        case 11 : return "sRGB";                                        //Added in AVC
         case 12 : return "BT.1361 extended colour gamut system";        //Added in AVC
         case 13 : return "sYCC";                                        //Added in HEVC
         case 14 : return "BT.2020 (10-bit)";                            //Added in HEVC, 10/12-bit difference is in ISO 23001-8
