@@ -17,16 +17,22 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Setup.h"
-class File__ReferenceFilesHelper;
+#include "ZenLib/Conf.h"
+using namespace ZenLib;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
 {
 
+class File__ReferenceFilesHelper;
+class File__Analyze;
+class MediaInfo_Config_MediaInfo;
+
 //***************************************************************************
 // Class File__HasReferences
 //***************************************************************************
 
+#if defined(MEDIAINFO_REFERENCES_YES)
 class File__HasReferences
 {
 public:
@@ -42,10 +48,20 @@ public:
     size_t ReferenceFiles_Seek(size_t Method, int64u Value, int64u ID);
 
     //Temp
-    #if defined(MEDIAINFO_REFERENCES_YES)
     File__ReferenceFilesHelper*     ReferenceFiles;
-    #endif //MEDIAINFO_REFERENCES_YES
 };
+#else //defined(MEDIAINFO_REFERENCES_YES)
+class File__HasReferences
+{
+public:
+    // Streams management
+    void ReferenceFiles_Accept(File__Analyze*, MediaInfo_Config_MediaInfo*) {}
+    void ReferenceFiles_Finish() {}
+
+    // Buffer - Global
+    size_t ReferenceFiles_Seek(size_t Method, int64u Value, int64u ID) {return (size_t)-1;}
+};
+#endif //defined(MEDIAINFO_REFERENCES_YES)
 
 } //NameSpace
 

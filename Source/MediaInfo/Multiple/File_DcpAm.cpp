@@ -116,6 +116,7 @@ bool File_DcpAm::FileHeader_Begin()
     Accept("DcpAm");
     Fill(Stream_General, 0, General_Format, "DCP AM");
     Fill(Stream_General, 0, General_Format_Version, FmtVersion);
+    #if defined(MEDIAINFO_REFERENCES_YES)
     Config->File_ID_OnlyRoot_Set(false);
 
     //Parsing main elements
@@ -191,7 +192,6 @@ bool File_DcpAm::FileHeader_Begin()
         if (!strcmp(AmItemName, "Issuer"))
             Fill(Stream_General, 0, General_EncodedBy, AssetMap_Item->GetText());
     }
-    Element_Offset=File_Size;
 
     //Merging with PKL
     if (PKL_Pos<Streams.size() && Streams[PKL_Pos].ChunkList.size()==1)
@@ -244,8 +244,10 @@ bool File_DcpAm::FileHeader_Begin()
 
         ReferenceFiles->FilesForStorage=true;
     }
+    #endif //MEDIAINFO_REFERENCES_YES
 
     //All should be OK...
+    Element_Offset=File_Size;
     return true;
 }
 

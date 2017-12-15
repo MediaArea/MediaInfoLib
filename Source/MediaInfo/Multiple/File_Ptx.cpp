@@ -458,6 +458,7 @@ void File_Ptx::Read_Buffer_Continue()
         Fill(Stream_General, 0, General_Encoded_Library_Name, LibraryName);
         Fill(Stream_General, 0, General_Encoded_Library_Version, LibraryVersion);
 
+        #if defined(MEDIAINFO_REFERENCES_YES)
         // Role==2 + Purpose==EWAV + listed
         if (Names.size()>1 || FileNames.size()==1)
         {
@@ -601,6 +602,7 @@ void File_Ptx::Read_Buffer_Continue()
                 }
             }
         }
+        #endif //MEDIAINFO_REFERENCES_YES
     FILLING_END();
 }
 

@@ -44,6 +44,7 @@ using namespace tinyxml2;
 namespace MediaInfoLib
 {
 
+#if defined(MEDIAINFO_REFERENCES_YES)
 //---------------------------------------------------------------------------
 static void DashMpd_Transform (Ztring &Value, std::map<Ztring, Ztring> &Attributes)
 {
@@ -424,6 +425,7 @@ void template_generic::Decode()
             Sequence->AddFileName(BaseURL+media);
     }
 }
+#endif //MEDIAINFO_REFERENCES_YES
 
 //***************************************************************************
 // Constructor/Destructor
@@ -470,6 +472,7 @@ bool File_DashMpd::FileHeader_Begin()
 
             ReferenceFiles_Accept(this, Config);
 
+            #if defined(MEDIAINFO_REFERENCES_YES)
             //Parsing main elements
             Ztring BaseURL;
 
@@ -654,6 +657,7 @@ bool File_DashMpd::FileHeader_Begin()
                     }
                 }
             }
+            #endif //MEDIAINFO_REFERENCES_YES
         }
         else
         {

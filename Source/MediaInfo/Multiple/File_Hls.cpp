@@ -23,6 +23,7 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_Hls.h"
 #include "MediaInfo/MediaInfo.h"
+#include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
 #include "ZenLib/File.h"
 #include "ZenLib/Dir.h"
@@ -99,6 +100,8 @@ bool File_Hls::FileHeader_Begin()
     Fill(Stream_General, 0, General_Format, "HLS");
 
     ReferenceFiles_Accept(this, Config);
+
+    #if defined(MEDIAINFO_REFERENCES_YES)
     if (!IsSub)
         ReferenceFiles->ContainerHasNoId=true;
 
@@ -190,6 +193,7 @@ bool File_Hls::FileHeader_Begin()
     {
         Fill(Stream_General, 0, General_Format_Profile, "Master");
     }
+    #endif //MEDIAINFO_REFERENCES_YES
 
     Element_Offset=File_Size;
 

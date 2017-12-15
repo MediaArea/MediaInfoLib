@@ -2411,7 +2411,7 @@ void File_Mxf::Streams_Finish()
 
     //Parsing locators
     Locators_Test();
-    #if MEDIAINFO_NEXTPACKET
+    #if defined(MEDIAINFO_REFERENCES_YES) && MEDIAINFO_NEXTPACKET
         if (Config->NextPacket_Get() && ReferenceFiles)
         {
             ReferenceFiles_IsParsing=true;
@@ -4430,6 +4430,7 @@ void File_Mxf::Read_Buffer_CheckFileModifications()
                                                 Buffer_End=MI.Get(Stream_General, 0, General_FileSize).To_int64u()-MI.Get(Stream_General, 0, General_FooterSize).To_int64u();
                                                 Buffer_End_IsUpdated=true;
                                             }
+                                            #if defined(MEDIAINFO_REFERENCES_YES)
                                             if (!Config->File_IsReferenced_Get() && ReferenceFiles && Retrieve(Stream_General, 0, General_StreamSize).To_int64u())
                                             {
                                                 //Playlist file size is not correctly modified
@@ -4437,6 +4438,7 @@ void File_Mxf::Read_Buffer_CheckFileModifications()
                                                 File_Size=Retrieve(Stream_General, 0, General_StreamSize).To_int64u();
                                                 Config->File_Size+=File_Size;
                                             }
+                                            #endif //MEDIAINFO_REFERENCES_YES
                                         }
                                         }
                                         break;

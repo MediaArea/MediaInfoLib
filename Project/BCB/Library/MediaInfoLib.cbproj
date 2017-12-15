@@ -314,6 +314,10 @@
 				<DependentOn>..\..\..\Source\MediaInfo\File__Duplicate.h</DependentOn>
 				<BuildOrder>47</BuildOrder>
 			</CppCompile>
+			<CppCompile Include="..\..\..\Source\MediaInfo\File__HasReferences.cpp">
+				<DependentOn>..\..\..\Source\MediaInfo\File__HasReferences.h</DependentOn>
+				<BuildOrder>225</BuildOrder>
+			</CppCompile>
 			<CppCompile Include="..\..\..\Source\MediaInfo\File__MultipleParsing.cpp">
 				<BuildOrder>31</BuildOrder>
 			</CppCompile>

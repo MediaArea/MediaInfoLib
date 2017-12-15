@@ -123,6 +123,7 @@ bool File_DcpPkl::FileHeader_Begin()
 
     Accept("DcpPkl");
     Fill(Stream_General, 0, General_Format, "DCP PKL");
+    #if defined(MEDIAINFO_REFERENCES_YES)
     Config->File_ID_OnlyRoot_Set(false);
 
     //Parsing main elements
@@ -177,7 +178,6 @@ bool File_DcpPkl::FileHeader_Begin()
             }
         }
     }
-    Element_Offset=File_Size;
 
     //Merging with Assetmap
     if (!Config->File_IsReferenced_Get())
@@ -234,8 +234,10 @@ bool File_DcpPkl::FileHeader_Begin()
 
         ReferenceFiles->FilesForStorage=true;
     }
+    #endif //MEDIAINFO_REFERENCES_YES
 
     //All should be OK...
+    Element_Offset=File_Size;
     return true;
 }
 

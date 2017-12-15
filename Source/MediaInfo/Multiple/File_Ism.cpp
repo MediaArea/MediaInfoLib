@@ -60,6 +60,7 @@ File_Ism::File_Ism()
 void File_Ism::Streams_Accept()
 {
     Fill(Stream_General, 0, General_Format, "ISM");
+    ReferenceFiles_Accept(this, Config);
 }
 
 //***************************************************************************
@@ -77,9 +78,9 @@ bool File_Ism::FileHeader_Begin()
         XMLElement* Root=document.FirstChildElement("smil");
         if (Root)
         {
-            ReferenceFiles_Accept(this, Config);
-
+            #if defined(MEDIAINFO_REFERENCES_YES)
             std::set<Ztring> FileNames;
+            #endif //MEDIAINFO_REFERENCES_YES
 
             XMLElement* Body=Root->FirstChildElement();
             while (Body)
@@ -93,6 +94,7 @@ bool File_Ism::FileHeader_Begin()
                         {
                             Accept("ISM");
 
+                            #if defined(MEDIAINFO_REFERENCES_YES)
                             XMLElement* Stream=Switch->FirstChildElement();
                             while (Stream)
                             {
@@ -137,6 +139,7 @@ bool File_Ism::FileHeader_Begin()
 
                                 Stream=Stream->NextSiblingElement();
                             }
+                            #endif //MEDIAINFO_REFERENCES_YES
                         }
 
                         Switch=Switch->NextSiblingElement();

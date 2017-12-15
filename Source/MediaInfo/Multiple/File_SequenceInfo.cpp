@@ -69,6 +69,7 @@ bool File_SequenceInfo::FileHeader_Begin()
 
             ReferenceFiles_Accept(this, Config);
 
+            #if defined(MEDIAINFO_REFERENCES_YES)
             sequence* Sequence=new sequence;
             Sequence->StreamKind=Stream_Video;
 
@@ -190,6 +191,7 @@ bool File_SequenceInfo::FileHeader_Begin()
                         ReferenceFiles->AddSequence(Sequence);
                 }
             }
+            #endif //MEDIAINFO_REFERENCES_YES
         }
         else
         {

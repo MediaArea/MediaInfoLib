@@ -88,6 +88,7 @@ bool File_P2_Clip::FileHeader_Begin()
 
             ReferenceFiles_Accept(this, Config);
 
+            #if defined(MEDIAINFO_REFERENCES_YES)
             XMLElement* ClipContent=Root->FirstChildElement("ClipContent");
             if (ClipContent)
             {
@@ -380,6 +381,7 @@ bool File_P2_Clip::FileHeader_Begin()
                     }
                 }
             }
+            #endif //MEDIAINFO_REFERENCES_YES
         }
         else
         {

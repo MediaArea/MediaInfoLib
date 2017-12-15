@@ -611,9 +611,11 @@ void File_Aaf::NetworkLocator()
     Ztring Data;
     Get_UTF16L(xxxSize, Data,                                   "Data");
 
+    #if defined(MEDIAINFO_REFERENCES_YES)
     sequence* Sequence=new sequence;
     Sequence->AddFileName(Data);
     ReferenceFiles->AddSequence(Sequence);
+    #endif //MEDIAINFO_REFERENCES_YES
 
     //Locators[Streams[Streams_Pos]->Directory_Pos].EssenceLocator=Data;
 }

@@ -78,6 +78,7 @@ bool File_Dxw::FileHeader_Begin()
 
             ReferenceFiles_Accept(this, Config);
 
+            #if defined(MEDIAINFO_REFERENCES_YES)
             XMLElement* Track=Root->FirstChildElement();
             while (Track)
             {
@@ -156,6 +157,7 @@ bool File_Dxw::FileHeader_Begin()
 
                 Track=Track->NextSiblingElement();
             }
+            #endif //MEDIAINFO_REFERENCES_YES
         }
         else
         {

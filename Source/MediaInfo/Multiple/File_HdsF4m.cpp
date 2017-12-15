@@ -76,6 +76,7 @@ bool File_HdsF4m::FileHeader_Begin()
 
             ReferenceFiles_Accept(this, Config);
 
+            #if defined(MEDIAINFO_REFERENCES_YES)
             //Parsing main elements
             Ztring BaseURL;
 
@@ -101,6 +102,7 @@ bool File_HdsF4m::FileHeader_Begin()
                     ReferenceFiles->AddSequence(Sequence);
                 }
             }
+            #endif //MEDIAINFO_REFERENCES_YES
         }
         else
         {
