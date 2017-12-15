@@ -995,7 +995,7 @@ void File_Vc3::UserData_8()
             Element_Offset+=0x49;
             Skip_B1(                                            "Nexio private data?");
         #else //MEDIAINFO_CDP_YES
-            Skip_XX(0x4A                                        "CDP data");
+            Skip_XX(0x4A,                                       "CDP data");
         #endif //MEDIAINFO_CDP_YES
     }
     else
