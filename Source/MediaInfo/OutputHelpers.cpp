@@ -14,6 +14,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/OutputHelpers.h"
+#include "MediaInfo/File__Analyse_Automatic.h"
 #include <ctime>
 
 using namespace std;
