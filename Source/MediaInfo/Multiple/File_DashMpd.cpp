@@ -437,44 +437,7 @@ File_DashMpd::File_DashMpd()
         ParserIDs[0]=MediaInfo_Parser_DashMpd;
         StreamIDs_Width[0]=16;
     #endif //MEDIAINFO_EVENTS
-
-    //Temp
-    ReferenceFiles=NULL;
 }
-
-//---------------------------------------------------------------------------
-File_DashMpd::~File_DashMpd()
-{
-    delete ReferenceFiles; //ReferenceFiles=NULL;
-}
-
-//***************************************************************************
-// Streams management
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-void File_DashMpd::Streams_Finish()
-{
-    if (ReferenceFiles==NULL)
-        return;
-
-    ReferenceFiles->ParseReferences();
-}
-
-//***************************************************************************
-// Buffer - Global
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-#if MEDIAINFO_SEEK
-size_t File_DashMpd::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
-{
-    if (ReferenceFiles==NULL)
-        return 0;
-
-    return ReferenceFiles->Seek(Method, Value, ID);
-}
-#endif //MEDIAINFO_SEEK
 
 //***************************************************************************
 // Buffer - File header
@@ -505,7 +468,7 @@ bool File_DashMpd::FileHeader_Begin()
             Fill(Stream_General, 0, General_Format, "DASH MPD");
             Config->File_ID_OnlyRoot_Set(false);
 
-            ReferenceFiles=new File__ReferenceFilesHelper(this, Config);
+            ReferenceFiles_Accept(this, Config);
 
             //Parsing main elements
             Ztring BaseURL;

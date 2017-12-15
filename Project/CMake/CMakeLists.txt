@@ -125,6 +125,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Base.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__MultipleParsing.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Duplicate.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__HasReferences.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File_Dummy.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File_Other.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File_Unknown.cpp

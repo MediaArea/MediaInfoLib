@@ -6,47 +6,47 @@
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// Information about DASH (.mpd) files
+// Helper class for parser having references to external files
 //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 //---------------------------------------------------------------------------
-#ifndef MediaInfo_File_DashMpdH
-#define MediaInfo_File_DashMpdH
+#ifndef MediaInfo_File__HasReferencesH
+#define MediaInfo_File__HasReferencesH
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#include "MediaInfo/File__Analyze.h"
-#include "MediaInfo/File__HasReferences.h"
+#include "MediaInfo/Setup.h"
+class File__ReferenceFilesHelper;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
 {
 
 //***************************************************************************
-// Class File_DashMpd
+// Class File__HasReferences
 //***************************************************************************
 
-class File_DashMpd : public File__Analyze, File__HasReferences
+class File__HasReferences
 {
-public :
+public:
     //Constructor/Destructor
-    File_DashMpd();
+    File__HasReferences();
+    ~File__HasReferences();
 
-private :
-    //Streams management
-    void Streams_Finish () {ReferenceFiles_Finish();}
+    // Streams management
+    void ReferenceFiles_Accept(File__Analyze* MI, MediaInfo_Config_MediaInfo* Config);
+    void ReferenceFiles_Finish();
 
-    //Buffer - Global
-    #if MEDIAINFO_SEEK
-    size_t Read_Buffer_Seek (size_t Method, int64u Value, int64u ID) {return ReferenceFiles_Seek(Method, Value, ID);}
-    #endif //MEDIAINFO_SEEK
+    // Buffer - Global
+    size_t ReferenceFiles_Seek(size_t Method, int64u Value, int64u ID);
 
-    //Buffer - File header
-    bool FileHeader_Begin();
+    //Temp
+    #if defined(MEDIAINFO_REFERENCES_YES)
+    File__ReferenceFilesHelper*     ReferenceFiles;
+    #endif //MEDIAINFO_REFERENCES_YES
 };
 
 } //NameSpace
 
 #endif
-

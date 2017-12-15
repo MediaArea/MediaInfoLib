@@ -11,6 +11,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
+#include "MediaInfo/File__HasReferences.h"
 #include "MediaInfo/MediaInfo_Internal.h"
 class File_MpegPs;
 //---------------------------------------------------------------------------
@@ -18,13 +19,11 @@ class File_MpegPs;
 namespace MediaInfoLib
 {
 
-class File__ReferenceFilesHelper;
-
 //***************************************************************************
 // Class File_Mpeg4
 //***************************************************************************
 
-class File_Mpeg4 : public File__Analyze
+class File_Mpeg4 : public File__Analyze, File__HasReferences
 {
 protected :
     //Streams management
@@ -535,9 +534,6 @@ private :
     typedef std::map<int32u, stream> streams;
     streams             Streams;
     streams::iterator   Stream;
-    #if defined(MEDIAINFO_REFERENCES_YES)
-        File__ReferenceFilesHelper* ReferenceFiles;
-    #endif //defined(MEDIAINFO_REFERENCES_YES)
     #if MEDIAINFO_NEXTPACKET
         bool                    ReferenceFiles_IsParsing;
     #endif //MEDIAINFO_NEXTPACKET

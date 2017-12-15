@@ -40,50 +40,13 @@ namespace MediaInfoLib
 
 //---------------------------------------------------------------------------
 File_HdsF4m::File_HdsF4m()
-:File__Analyze()
+:File__Analyze(), File__HasReferences()
 {
     #if MEDIAINFO_EVENTS
         ParserIDs[0]=MediaInfo_Parser_HdsF4m;
         StreamIDs_Width[0]=16;
     #endif //MEDIAINFO_EVENTS
-
-    //Temp
-    ReferenceFiles=NULL;
 }
-
-//---------------------------------------------------------------------------
-File_HdsF4m::~File_HdsF4m()
-{
-    delete ReferenceFiles; //ReferenceFiles=NULL;
-}
-
-//***************************************************************************
-// Streams management
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-void File_HdsF4m::Streams_Finish()
-{
-    if (ReferenceFiles==NULL)
-        return;
-
-    ReferenceFiles->ParseReferences();
-}
-
-//***************************************************************************
-// Buffer - Global
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-#if MEDIAINFO_SEEK
-size_t File_HdsF4m::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
-{
-    if (ReferenceFiles==NULL)
-        return 0;
-
-    return ReferenceFiles->Seek(Method, Value, ID);
-}
-#endif //MEDIAINFO_SEEK
 
 //***************************************************************************
 // Buffer - File header
@@ -111,7 +74,7 @@ bool File_HdsF4m::FileHeader_Begin()
             Fill(Stream_General, 0, General_Format, "HDS F4M");
             Config->File_ID_OnlyRoot_Set(false);
 
-            ReferenceFiles=new File__ReferenceFilesHelper(this, Config);
+            ReferenceFiles_Accept(this, Config);
 
             //Parsing main elements
             Ztring BaseURL;

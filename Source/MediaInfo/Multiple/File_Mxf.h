@@ -17,6 +17,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
+#include "MediaInfo/File__HasReferences.h"
 #if defined(MEDIAINFO_ANCILLARY_YES)
     #include <MediaInfo/Multiple/File_Ancillary.h>
 #endif //defined(MEDIAINFO_ANCILLARY_YES)
@@ -30,13 +31,11 @@
 namespace MediaInfoLib
 {
 
-class File__ReferenceFilesHelper;
-
 //***************************************************************************
 // Class File_Mxf
 //***************************************************************************
 
-class File_Mxf : public File__Analyze
+class File_Mxf : public File__Analyze, File__HasReferences
 {
 public :
     //Constructor/Destructor
@@ -924,7 +923,6 @@ protected :
     };
     typedef std::map<int128u, locator> locators; //Key is InstanceUID of the locator
     locators Locators;
-    File__ReferenceFilesHelper* ReferenceFiles;
     #if MEDIAINFO_NEXTPACKET
         bool                    ReferenceFiles_IsParsing;
     #endif //MEDIAINFO_NEXTPACKET

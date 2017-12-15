@@ -42,7 +42,7 @@ namespace MediaInfoLib
 
 //---------------------------------------------------------------------------
 File_DcpAm::File_DcpAm()
-:File__Analyze()
+:File__Analyze(), File__HasReferences()
 {
     #if MEDIAINFO_EVENTS
         ParserIDs[0]=MediaInfo_Parser_DcpAm;
@@ -54,15 +54,6 @@ File_DcpAm::File_DcpAm()
 
     //PKL
     PKL_Pos=(size_t)-1;
-
-    //Temp
-    ReferenceFiles=NULL;
-}
-
-//---------------------------------------------------------------------------
-File_DcpAm::~File_DcpAm()
-{
-    delete ReferenceFiles; //ReferenceFiles=NULL;
 }
 
 //***************************************************************************
@@ -72,10 +63,7 @@ File_DcpAm::~File_DcpAm()
 //---------------------------------------------------------------------------
 void File_DcpAm::Streams_Finish()
 {
-    if (ReferenceFiles==NULL)
-        return;
-
-    ReferenceFiles->ParseReferences();
+    ReferenceFiles_Finish();
 
     // Detection of IMF CPL
     bool IsImf=false;
@@ -89,21 +77,6 @@ void File_DcpAm::Streams_Finish()
         Clear(Stream_General, 0, General_Format_Version);
     }
 }
-
-//***************************************************************************
-// Buffer - Global
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-#if MEDIAINFO_SEEK
-size_t File_DcpAm::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
-{
-    if (ReferenceFiles==NULL)
-        return 0;
-
-    return ReferenceFiles->Seek(Method, Value, ID);
-}
-#endif //MEDIAINFO_SEEK
 
 //***************************************************************************
 // Buffer - File header
@@ -257,7 +230,7 @@ bool File_DcpAm::FileHeader_Begin()
     //Creating the playlist
     if (!Config->File_IsReferenced_Get())
     {
-        ReferenceFiles=new File__ReferenceFilesHelper(this, Config);
+        ReferenceFiles_Accept(this, Config);
 
         for (File_DcpPkl::streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); ++Stream)
             if (Stream->StreamKind==(stream_t)(Stream_Max+1) && Stream->ChunkList.size()==1) // Means CPL

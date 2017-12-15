@@ -2136,7 +2136,7 @@ static string Mxf_AcquisitionMetadata_Sony_MonitoringBaseCurve(int128u Value)
 
 //---------------------------------------------------------------------------
 File_Mxf::File_Mxf()
-:File__Analyze()
+:File__Analyze(), File__HasReferences()
 {
     //Configuration
     ParserName="MXF";
@@ -2203,7 +2203,6 @@ File_Mxf::File_Mxf()
     #if MEDIAINFO_ADVANCED
         Footer_Position=(int64u)-1;
     #endif //MEDIAINFO_ADVANCED
-    ReferenceFiles=NULL;
     #if MEDIAINFO_NEXTPACKET
         ReferenceFiles_IsParsing=false;
     #endif //MEDIAINFO_NEXTPACKET
@@ -2240,9 +2239,6 @@ File_Mxf::File_Mxf()
 //---------------------------------------------------------------------------
 File_Mxf::~File_Mxf()
 {
-    #if defined(MEDIAINFO_REFERENCES_YES)
-        delete ReferenceFiles;
-    #endif //defined(MEDIAINFO_REFERENCES_YES)
     #if defined(MEDIAINFO_ANCILLARY_YES)
         if (!Ancillary_IsBinded)
             delete Ancillary;
@@ -17114,7 +17110,7 @@ void File_Mxf::Locators_Test()
 
     if (!Locators.empty() && ReferenceFiles==NULL)
     {
-        ReferenceFiles=new File__ReferenceFilesHelper(this, Config);
+        ReferenceFiles_Accept(this, Config);
 
         for (locators::iterator Locator=Locators.begin(); Locator!=Locators.end(); ++Locator)
             if (!Locator->second.IsTextLocator && !Locator->second.EssenceLocator.empty())
