@@ -133,7 +133,7 @@ cd $Home
 cd MediaInfoLib/Project/GNU/Library/
 if [ "$OS" = "emscripten" ]; then
     em++ $CXXFLAGS $MediaInfoLib_CXXFLAGS --bind -c ../../../Source/MediaInfoDLL/MediaInfoJS.cpp
-    em++ $CXXFLAGS $MediaInfoLib_CXXFLAGS -s TOTAL_MEMORY=1073741824 -s NO_FILESYSTEM=1 -s MODULARIZE=1 \
+    em++ $CXXFLAGS $MediaInfoLib_CXXFLAGS -s TOTAL_MEMORY=134217728 -s NO_FILESYSTEM=1 -s MODULARIZE=1 \
     --llvm-lto 0 --closure 1 --bind ../../../Source/MediaInfoDLL/MediaInfoJS.o .libs/libmediainfo.a \
     ../../../../ZenLib/Project/GNU/Library/.libs/libzen.a -o MediaInfo.js
 
