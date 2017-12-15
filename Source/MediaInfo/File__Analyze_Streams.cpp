@@ -68,7 +68,7 @@ void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_Col
                            +__T(", White point: x=")+Ztring::ToZtring(((float64)x[3])/50000, 6)
                                        +__T(  " y=")+Ztring::ToZtring(((float64)y[3])/50000, 6);
         MasteringDisplay_Luminance=     __T("min: ")+Ztring::ToZtring(((float64)min)/10000, 4)
-                               +__T(" cd/m2, max: ")+Ztring::ToZtring(((float64)max)/10000, 4)
+                               +__T(" cd/m2, max: ")+Ztring::ToZtring(((float64)max)/10000, (max-((int)max)==0)?0:4)
                                +__T(" cd/m2");
     }
 }
