@@ -7,10 +7,11 @@
 @rem echo off
 @rem --- General ---
 cd ..
-del *.~* *.obj *.o *.tds *.dcu *.ddp *.opt *.ncb *.suo *.ilk *.idb *.pdb *.pch *.plg *.aps *.user *.win *.layout *.local *.depend *.identcache *.tgs *.tgw *.sdf /Q /S
-del *.~* *.obj *.o *.tds *.dcu *.ddp *.opt *.ncb *.suo *.ilk *.idb *.pdb *.pch *.plg *.aps *.user *.win *.layout *.local *.depend  *.identcache *.tgs *.tgw *.sdf /AH /Q /S
-del *.ogg *.ogm *.avi *.mkv /Q /S
-del *.ogg *.ogm *.avi *.mkv /AH /Q /S
+del *.~* *.obj *.o *.tds *.dcu *.ddp *.opt *.ncb *.suo *.ilk *.idb *.pdb *.ipch *.pch *.plg *.aps *.user *.win *.layout *.local *.depend *.identcache *.tgs *.tgw *.sdf *.lastbuildstate *.tlog *.log *.VC.db /Q /S
+del *.~* *.obj *.o *.tds *.dcu *.ddp *.opt *.ncb *.suo *.ilk *.idb *.pdb *.ipch *.pch *.plg *.aps *.user *.win *.layout *.local *.depend *.identcache *.tgs *.tgw *.sdf *.lastbuildstate *.tlog *.log *.VC.db /AH /Q /S
+
+del *.ogm *.avi *.mkv /Q /S
+del *.ogm *.avi *.mkv /AH /Q /S
 cd Release
 
 @rem --- In Project files ---
