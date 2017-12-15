@@ -66,8 +66,8 @@ extern const char* Mpegv_transfer_characteristics(int8u transfer_characteristics
         case 11 : return "IEC 61966-2-4";                               //Added in AVC
         case 12 : return "BT.1361 extended colour gamut system";        //Added in AVC
         case 13 : return "sYCC";                                        //Added in HEVC
-        case 14 : return "BT.2020 non-constant";                        //Added in HEVC
-        case 15 : return "BT.2020 constant";                            //Added in HEVC
+        case 14 : return "BT.2020 (10-bit)";                            //Added in HEVC, 10/12-bit difference is in ISO 23001-8
+        case 15 : return "BT.2020 (12-bit)";                            //Added in HEVC, 10/12-bit difference is in ISO 23001-8
         case 16 : return "PQ";                                          //Added in HEVC 2015
         case 17 : return "SMPTE ST 428-1";                              //Added in HEVC 2015
         case 18 : return "HLG";                                         //Added in HEVC 2016
