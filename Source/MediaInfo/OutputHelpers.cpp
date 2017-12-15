@@ -14,7 +14,6 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/OutputHelpers.h"
-#include "MediaInfo/Mediainfo_internal.h"
 #include <ctime>
 
 using namespace std;
@@ -259,7 +258,7 @@ string To_JSON (Node& Cur_Node, const int& Level)
 }
 
 //---------------------------------------------------------------------------
-Ztring VisualCodingFormatCS_Name(int32u termID, MediaInfo_Internal &MI, size_t StreamPos) //xxyyzz: xx=main number, yy=sub-number, zz=sub-sub-number
+Ztring VideoCompressionCodeCS_Name(int32u termID, MediaInfo_Internal &MI, size_t StreamPos) //xxyyzz: xx=main number, yy=sub-number, zz=sub-sub-number
 {
     switch (termID/10000)
     {
