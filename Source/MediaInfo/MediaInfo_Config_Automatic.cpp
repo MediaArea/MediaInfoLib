@@ -1522,6 +1522,7 @@ void MediaInfo_Config_CodecID_Video_Mpeg4 (InfoMap &Info)
     "dvpp;DV;DVCPRO;;http://www.apple.com/quicktime/download/standalone.html;;;YUV;4:2:2\n"
     "DVTV;Digital Voodoo;;Digital Voodoo intermediate 2vuy;http://www.digitalvoodoo.net/;;;\n"
     "DVVT;Digital Voodoo;;Digital Voodoo intermediate v210;http://www.digitalvoodoo.net/;;;\n"
+    "DXD3;DXV;;Resolume;https://resolume.com/software/codec;;Version 3;\n"
     "encv;(Encrypted);;;http://www.apple.com/quicktime/download/standalone.html;;;\n"
     "FFV1;FFV1;;;;;;\n"
     "gif ;M-GIF;;;;;;\n"
