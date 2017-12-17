@@ -763,7 +763,7 @@ bool MediaInfo_Internal::SelectFromExtension (const String &Parser)
 }
 
 //---------------------------------------------------------------------------
-#if !defined(MEDIAINFO_READER_NO)
+#if defined(MEDIAINFO_FILE_YES)
 int MediaInfo_Internal::ListFormats(const String &File_Name)
 {
     // Multiple
@@ -1129,7 +1129,7 @@ int MediaInfo_Internal::ListFormats(const String &File_Name)
         delete Info; Info=new File_Unknown();            if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     return 0;
 }
-#endif //!defined(MEDIAINFO_READER_NO)
+#endif //!defined(MEDIAINFO_FILE_YES)
 
 //---------------------------------------------------------------------------
 bool MediaInfo_Internal::LibraryIsModified ()

@@ -25,8 +25,9 @@
 #include "MediaInfo/MediaInfo.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
+#if defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/File.h"
-#include "ZenLib/Dir.h"
+#endif //defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/FileName.h"
 //---------------------------------------------------------------------------
 

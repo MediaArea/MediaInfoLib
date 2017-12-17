@@ -27,7 +27,6 @@
 #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
 #include "MediaInfo/Multiple/File_DcpCpl.h"
 #include "MediaInfo/XmlUtils.h"
-#include "ZenLib/Dir.h"
 #include "ZenLib/FileName.h"
 #include "tinyxml2.h"
 using namespace tinyxml2;

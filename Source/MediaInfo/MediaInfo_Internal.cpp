@@ -21,8 +21,12 @@
 #include "MediaInfo/MediaInfo_Config.h"
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/File__MultipleParsing.h"
-#include "ZenLib/Dir.h"
+#if defined(MEDIAINFO_FILE_YES)
 #include "ZenLib/File.h"
+#endif //defined(MEDIAINFO_DIRECTORY_YES)
+#if defined(MEDIAINFO_DIRECTORY_YES)
+#include "ZenLib/Dir.h"
+#endif //defined(MEDIAINFO_DIRECTORY_YES)
 #include "ZenLib/FileName.h"
 #if defined(MEDIAINFO_DIRECTORY_YES)
     #include "MediaInfo/Reader/Reader_Directory.h"
@@ -567,6 +571,7 @@ void MediaInfo_Internal::Entry()
                         }
                     }
 
+                    #if defined(MEDIAINFO_DIRECTORY_YES)
                     Ztring Name=Test.Name_Get();
                     Ztring BaseName=Name.SubString(Ztring(), __T("_"));
                     if (!BaseName.empty())
@@ -600,6 +605,7 @@ void MediaInfo_Internal::Entry()
                         for (size_t Pos=0; Pos<List.size(); Pos++)
                             Dxw+=" <clip file=\""+List[Pos].To_UTF8()+"\" />\r\n";
                     }
+                    #endif //defined(MEDIAINFO_DIRECTORY_YES)
 
                     if (!Dxw.empty())
                     {
@@ -1414,12 +1420,14 @@ size_t MediaInfo_Internal::State_Get ()
 }
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_FILE_YES)
 void MediaInfo_Internal::TestContinuousFileNames ()
 {
     CriticalSectionLocker CSL(CS);
     if (Info)
         Info->TestContinuousFileNames();
 }
+#endif //defined(MEDIAINFO_FILE_YES)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_EVENTS

@@ -25,8 +25,10 @@
 #include "MediaInfo/MediaInfo.h"
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
+#if defined(MEDIAINFO_REFERENCES_YES) && defined(MEDIAINFO_FILE_YES) && defined(MEDIAINFO_DIRECTORY_YES)
 #include "ZenLib/File.h"
 #include "ZenLib/Dir.h"
+#endif //defined(MEDIAINFO_REFERENCES_YES) && defined(MEDIAINFO_FILE_YES) && defined(MEDIAINFO_DIRECTORY_YES)
 #include "ZenLib/FileName.h"
 #include "ZenLib/Format/Http/Http_Utils.h"
 #include "tinyxml2.h"
@@ -69,7 +71,7 @@ bool File_SequenceInfo::FileHeader_Begin()
 
             ReferenceFiles_Accept(this, Config);
 
-            #if defined(MEDIAINFO_REFERENCES_YES)
+            #if defined(MEDIAINFO_REFERENCES_YES) && defined(MEDIAINFO_FILE_YES) && defined(MEDIAINFO_DIRECTORY_YES)
             sequence* Sequence=new sequence;
             Sequence->StreamKind=Stream_Video;
 
@@ -191,7 +193,7 @@ bool File_SequenceInfo::FileHeader_Begin()
                         ReferenceFiles->AddSequence(Sequence);
                 }
             }
-            #endif //MEDIAINFO_REFERENCES_YES
+            #endif //defined(MEDIAINFO_REFERENCES_YES) && defined(MEDIAINFO_FILE_YES) && defined(MEDIAINFO_DIRECTORY_YES)
         }
         else
         {

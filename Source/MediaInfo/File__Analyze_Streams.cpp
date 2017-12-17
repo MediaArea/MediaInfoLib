@@ -21,7 +21,9 @@
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/MediaInfo_Config.h"
 #include "MediaInfo/TimeCode.h"
+#if defined(MEDIAINFO_FILE_YES)
 #include "ZenLib/File.h"
+#endif //defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/FileName.h"
 #include "ZenLib/BitStream_LE.h"
 #include <cmath>
@@ -194,11 +196,13 @@ size_t File__Analyze::Stream_Prepare (stream_t KindOfStream, size_t StreamPos)
         }
 
         //File dates
+        #if defined(MEDIAINFO_FILE_YES)
         File F(File_Name);
         Fill (Stream_General, 0, General_File_Created_Date, F.Created_Get());
         Fill (Stream_General, 0, General_File_Created_Date_Local, F.Created_Local_Get());
         Fill (Stream_General, 0, General_File_Modified_Date, F.Modified_Get());
         Fill (Stream_General, 0, General_File_Modified_Date_Local, F.Modified_Local_Get());
+        #endif //defined(MEDIAINFO_FILE_YES)
     }
 
     //File size

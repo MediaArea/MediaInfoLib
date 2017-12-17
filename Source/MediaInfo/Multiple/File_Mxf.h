@@ -89,7 +89,11 @@ protected :
     //Buffer - Global
     void Read_Buffer_Init ();
     void Read_Buffer_Continue ();
+    #if defined(MEDIAINFO_FILE_YES)
     void Read_Buffer_CheckFileModifications();
+    #else //defined(MEDIAINFO_FILE_YES)
+    void Read_Buffer_CheckFileModifications() {}
+    #endif //defined(MEDIAINFO_FILE_YES)
     void Read_Buffer_AfterParsing ();
     void Read_Buffer_Unsynched();
     #if MEDIAINFO_SEEK
@@ -1344,7 +1348,11 @@ protected :
         int128u Clip_Code;
         int64u  OverallBitrate_IsCbrForSure;
         bool    Duration_Detected;
+        #if defined(MEDIAINFO_FILE_YES)
         bool    DetectDuration();
+        #else //defined(MEDIAINFO_FILE_YES)
+        bool    DetectDuration() { return false; }
+        #endif //defined(MEDIAINFO_FILE_YES)
         int64u  DemuxedSampleCount_Total;
         int64u  DemuxedSampleCount_Current;
         int64u  DemuxedSampleCount_AddedToFirstFrame;
