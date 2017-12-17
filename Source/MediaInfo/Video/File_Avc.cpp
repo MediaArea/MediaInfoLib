@@ -1039,6 +1039,60 @@ bool File_Avc::Synched_Test()
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_DEMUX
+void File_Avc::Data_Parse_Iso14496()
+{
+    if (Demux_Avc_Transcode_Iso14496_15_to_Iso14496_10)
+    {
+        if (Element_Code==0x07)
+        {
+            std::vector<seq_parameter_set_struct*>::iterator Data_Item=seq_parameter_sets.begin();
+            if (Data_Item!=seq_parameter_sets.end() && (*Data_Item))
+            {
+                delete[] (*Data_Item)->Iso14496_10_Buffer;
+                (*Data_Item)->Iso14496_10_Buffer_Size=(size_t)(Element_Size+4);
+                (*Data_Item)->Iso14496_10_Buffer=new int8u[(*Data_Item)->Iso14496_10_Buffer_Size];
+                (*Data_Item)->Iso14496_10_Buffer[0]=0x00;
+                (*Data_Item)->Iso14496_10_Buffer[1]=0x00;
+                (*Data_Item)->Iso14496_10_Buffer[2]=0x01;
+                (*Data_Item)->Iso14496_10_Buffer[3]=0x67;
+                std::memcpy((*Data_Item)->Iso14496_10_Buffer+4, Buffer+Buffer_Offset, (size_t)Element_Size);
+            }
+        }
+        if (Element_Code==0x08)
+        {
+            std::vector<pic_parameter_set_struct*>::iterator Data_Item=pic_parameter_sets.begin();
+            if (Data_Item!=pic_parameter_sets.end() && (*Data_Item))
+            {
+                delete[] (*Data_Item)->Iso14496_10_Buffer;
+                (*Data_Item)->Iso14496_10_Buffer_Size=(size_t)(Element_Size+4);
+                (*Data_Item)->Iso14496_10_Buffer=new int8u[(*Data_Item)->Iso14496_10_Buffer_Size];
+                (*Data_Item)->Iso14496_10_Buffer[0]=0x00;
+                (*Data_Item)->Iso14496_10_Buffer[1]=0x00;
+                (*Data_Item)->Iso14496_10_Buffer[2]=0x01;
+                (*Data_Item)->Iso14496_10_Buffer[3]=0x68;
+                std::memcpy((*Data_Item)->Iso14496_10_Buffer+4, Buffer+Buffer_Offset, (size_t)Element_Size);
+            }
+        }
+        if (Element_Code==0x0F)
+        {
+            std::vector<seq_parameter_set_struct*>::iterator Data_Item=subset_seq_parameter_sets.begin();
+            if (Data_Item!=subset_seq_parameter_sets.end() && (*Data_Item))
+            {
+                SizeOfNALU_Minus1=0;
+                delete[] (*Data_Item)->Iso14496_10_Buffer;
+                (*Data_Item)->Iso14496_10_Buffer_Size=(size_t)(Element_Size+4);
+                (*Data_Item)->Iso14496_10_Buffer=new int8u[(*Data_Item)->Iso14496_10_Buffer_Size];
+                (*Data_Item)->Iso14496_10_Buffer[0]=0x00;
+                (*Data_Item)->Iso14496_10_Buffer[1]=0x00;
+                (*Data_Item)->Iso14496_10_Buffer[2]=0x01;
+                (*Data_Item)->Iso14496_10_Buffer[3]=0x6F;
+                std::memcpy((*Data_Item)->Iso14496_10_Buffer+4, Buffer+Buffer_Offset, (size_t)Element_Size);
+            }
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
 bool File_Avc::Demux_UnpacketizeContainer_Test()
 {
     const int8u*    Buffer_Temp=NULL;
@@ -1756,55 +1810,7 @@ void File_Avc::Data_Parse()
     #endif //MEDIAINFO_DUPLICATE
 
     #if MEDIAINFO_DEMUX
-        if (Demux_Avc_Transcode_Iso14496_15_to_Iso14496_10)
-        {
-            if (Element_Code==0x07)
-            {
-                std::vector<seq_parameter_set_struct*>::iterator Data_Item=seq_parameter_sets.begin();
-                if (Data_Item!=seq_parameter_sets.end() && (*Data_Item))
-                {
-                    delete[] (*Data_Item)->Iso14496_10_Buffer;
-                    (*Data_Item)->Iso14496_10_Buffer_Size=(size_t)(Element_Size+4);
-                    (*Data_Item)->Iso14496_10_Buffer=new int8u[(*Data_Item)->Iso14496_10_Buffer_Size];
-                    (*Data_Item)->Iso14496_10_Buffer[0]=0x00;
-                    (*Data_Item)->Iso14496_10_Buffer[1]=0x00;
-                    (*Data_Item)->Iso14496_10_Buffer[2]=0x01;
-                    (*Data_Item)->Iso14496_10_Buffer[3]=0x67;
-                    std::memcpy((*Data_Item)->Iso14496_10_Buffer+4, Buffer+Buffer_Offset, (size_t)Element_Size);
-                }
-            }
-            if (Element_Code==0x08)
-            {
-                std::vector<pic_parameter_set_struct*>::iterator Data_Item=pic_parameter_sets.begin();
-                if (Data_Item!=pic_parameter_sets.end() && (*Data_Item))
-                {
-                    delete[] (*Data_Item)->Iso14496_10_Buffer;
-                    (*Data_Item)->Iso14496_10_Buffer_Size=(size_t)(Element_Size+4);
-                    (*Data_Item)->Iso14496_10_Buffer=new int8u[(*Data_Item)->Iso14496_10_Buffer_Size];
-                    (*Data_Item)->Iso14496_10_Buffer[0]=0x00;
-                    (*Data_Item)->Iso14496_10_Buffer[1]=0x00;
-                    (*Data_Item)->Iso14496_10_Buffer[2]=0x01;
-                    (*Data_Item)->Iso14496_10_Buffer[3]=0x68;
-                    std::memcpy((*Data_Item)->Iso14496_10_Buffer+4, Buffer+Buffer_Offset, (size_t)Element_Size);
-                }
-            }
-            if (Element_Code==0x0F)
-            {
-                std::vector<seq_parameter_set_struct*>::iterator Data_Item=subset_seq_parameter_sets.begin();
-                if (Data_Item!=subset_seq_parameter_sets.end() && (*Data_Item))
-                {
-                    SizeOfNALU_Minus1=0;
-                    delete[] (*Data_Item)->Iso14496_10_Buffer;
-                    (*Data_Item)->Iso14496_10_Buffer_Size=(size_t)(Element_Size+4);
-                    (*Data_Item)->Iso14496_10_Buffer=new int8u[(*Data_Item)->Iso14496_10_Buffer_Size];
-                    (*Data_Item)->Iso14496_10_Buffer[0]=0x00;
-                    (*Data_Item)->Iso14496_10_Buffer[1]=0x00;
-                    (*Data_Item)->Iso14496_10_Buffer[2]=0x01;
-                    (*Data_Item)->Iso14496_10_Buffer[3]=0x6F;
-                    std::memcpy((*Data_Item)->Iso14496_10_Buffer+4, Buffer+Buffer_Offset, (size_t)Element_Size);
-                }
-            }
-        }
+        Data_Parse_Iso14496();
     #endif //MEDIAINFO_DEMUX
 
     //Dump of the SPS/PPS - Fill
@@ -1833,55 +1839,7 @@ void File_Avc::Data_Parse()
     #endif //MEDIAINFO_ADVANCED2
 
     #if MEDIAINFO_DEMUX
-        if (Demux_Avc_Transcode_Iso14496_15_to_Iso14496_10)
-        {
-            if (Element_Code==0x07)
-            {
-                std::vector<seq_parameter_set_struct*>::iterator Data_Item=seq_parameter_sets.begin();
-                if (Data_Item!=seq_parameter_sets.end() && (*Data_Item))
-                {
-                    delete[] (*Data_Item)->Iso14496_10_Buffer;
-                    (*Data_Item)->Iso14496_10_Buffer_Size=(size_t)(Element_Size+4);
-                    (*Data_Item)->Iso14496_10_Buffer=new int8u[(*Data_Item)->Iso14496_10_Buffer_Size];
-                    (*Data_Item)->Iso14496_10_Buffer[0]=0x00;
-                    (*Data_Item)->Iso14496_10_Buffer[1]=0x00;
-                    (*Data_Item)->Iso14496_10_Buffer[2]=0x01;
-                    (*Data_Item)->Iso14496_10_Buffer[3]=0x67;
-                    std::memcpy((*Data_Item)->Iso14496_10_Buffer+4, Buffer+Buffer_Offset, (size_t)Element_Size);
-                }
-            }
-            if (Element_Code==0x08)
-            {
-                std::vector<pic_parameter_set_struct*>::iterator Data_Item=pic_parameter_sets.begin();
-                if (Data_Item!=pic_parameter_sets.end() && (*Data_Item))
-                {
-                    delete[] (*Data_Item)->Iso14496_10_Buffer;
-                    (*Data_Item)->Iso14496_10_Buffer_Size=(size_t)(Element_Size+4);
-                    (*Data_Item)->Iso14496_10_Buffer=new int8u[(*Data_Item)->Iso14496_10_Buffer_Size];
-                    (*Data_Item)->Iso14496_10_Buffer[0]=0x00;
-                    (*Data_Item)->Iso14496_10_Buffer[1]=0x00;
-                    (*Data_Item)->Iso14496_10_Buffer[2]=0x01;
-                    (*Data_Item)->Iso14496_10_Buffer[3]=0x68;
-                    std::memcpy((*Data_Item)->Iso14496_10_Buffer+4, Buffer+Buffer_Offset, (size_t)Element_Size);
-                }
-            }
-            if (Element_Code==0x0F)
-            {
-                std::vector<seq_parameter_set_struct*>::iterator Data_Item=subset_seq_parameter_sets.begin();
-                if (Data_Item!=subset_seq_parameter_sets.end() && (*Data_Item))
-                {
-                    SizeOfNALU_Minus1=0;
-                    delete[] (*Data_Item)->Iso14496_10_Buffer;
-                    (*Data_Item)->Iso14496_10_Buffer_Size=(size_t)(Element_Size+4);
-                    (*Data_Item)->Iso14496_10_Buffer=new int8u[(*Data_Item)->Iso14496_10_Buffer_Size];
-                    (*Data_Item)->Iso14496_10_Buffer[0]=0x00;
-                    (*Data_Item)->Iso14496_10_Buffer[1]=0x00;
-                    (*Data_Item)->Iso14496_10_Buffer[2]=0x01;
-                    (*Data_Item)->Iso14496_10_Buffer[3]=0x6F;
-                    std::memcpy((*Data_Item)->Iso14496_10_Buffer+4, Buffer+Buffer_Offset, (size_t)Element_Size);
-                }
-            }
-        }
+        Data_Parse_Iso14496();
     #endif //MEDIAINFO_DEMUX
 
     //Trailing zeroes
