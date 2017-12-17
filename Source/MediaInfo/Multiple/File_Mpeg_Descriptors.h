@@ -523,6 +523,13 @@ struct complete_stream
                     #endif //MEDIAINFO_MPEGTS_PESTIMESTAMP_YES
                     ;
         }
+        void init(const size_t ID)
+        {
+            Searching_Payload_Start_Set(true);
+            Kind = complete_stream::stream::psi;
+            Table_IDs.resize(0x100);
+            Table_IDs[ID] = new complete_stream::stream::table_id;
+        }
     };
     typedef std::vector<stream*> streams;
     streams Streams; //Key is pid
