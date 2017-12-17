@@ -59,6 +59,7 @@ AC_ARG_ENABLE(trace,    		AC_HELP_STRING([--enable-trace],    		[Enable trace ma
 AC_ARG_ENABLE(events,    		AC_HELP_STRING([--enable-events],    		[Enable events management]),                  MediaInfoEvents=$enableval,  MediaInfoEvents=depend)
 AC_ARG_ENABLE(demux,    		AC_HELP_STRING([--enable-demux],    		[Enable demux management]),                   MediaInfoDemux=$enableval,   MediaInfoDemux=depend)
 AC_ARG_ENABLE(libmms-describe-support, AC_HELP_STRING([--enable-libmms-describe-support], [Enable customized libmms describe support]), MediaInfoLibmmsDescribeSupport=$enableval, MediaInfoLibmmsDescribeSupport=depend)
+AC_ARG_ENABLE(dll,     AC_HELP_STRING([--disable-dll],     [Disable dll iterface]),                                       MediaInfoDll=$enableval,     MediaInfoDll=depend)
 AC_ARG_ENABLE(all,     AC_HELP_STRING([--disable-all],     [Disable all parsers]),                                        MediaInfoAll=$enableval,     MediaInfoAll=depend)
 AC_ARG_ENABLE(archive, AC_HELP_STRING([--disable-archive], [Disable all archive parsers]),                                MediaInfoArchive=$enableval, MediaInfoArchive=depend)
 AC_ARG_ENABLE(audio,   AC_HELP_STRING([--disable-audio],   [Disable all audio parsers]),                                  MediaInfoAudio=$enableval,   MediaInfoAudio=depend)
@@ -348,6 +349,8 @@ if test "$MediaInfoVc1"     = "no";  then AC_DEFINE(MEDIAINFO_VC1_NO)     fi; if
 if test "$MediaInfoVc3"     = "no";  then AC_DEFINE(MEDIAINFO_VC3_NO)     fi; if test "$MediaInfoVc3"     = "yes"; then AC_DEFINE(MEDIAINFO_VC3_YES)     fi
 if test "$MediaInfoVp8"     = "no";  then AC_DEFINE(MEDIAINFO_VP8_NO)     fi; if test "$MediaInfoVp8"     = "yes"; then AC_DEFINE(MEDIAINFO_VP8_YES)     fi
 if test "$MediaInfoY4m"     = "no";  then AC_DEFINE(MEDIAINFO_Y4M_NO)     fi; if test "$MediaInfoY4m"     = "yes"; then AC_DEFINE(MEDIAINFO_Y4M_YES)     fi
+
+AM_CONDITIONAL([COMPILE_DLL], [test "$MediaInfoDll" != "no"])
 
 dnl #########################################################################
 dnl ### Options from elsewhere

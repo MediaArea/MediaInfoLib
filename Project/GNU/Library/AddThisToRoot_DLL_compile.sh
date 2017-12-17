@@ -53,12 +53,13 @@ if [ "$1" = "--emscripten-lib" ]; then
     OS="emscripten"
     Make="emmake make"
     CFLAGS="$CFLAGS -Oz -DUNICODE"
-    CXXFLAGS="$CXXFLAGS -Oz -DUNICODE"
+    CXXFLAGS="$CXXFLAGS -Oz -DUNICODE -fno-exceptions"
     MediaInfoLib_CXXFLAGS="-I ../../../Source -I ../../../../ZenLib/Source -s USE_ZLIB=1 \
-    -DMEDIAINFO_FILTER_NO -DMEDIAINFO_DUPLICATE_NO -DMEDIAINFO_MACROBLOCKS_NO \
-    -DMEDIAINFO_IBI_NO -DMEDIAINFO_DIRECTORY_NO -DMEDIAINFO_LIBCURL_NO -DMEDIAINFO_LIBMMS_NO -DMEDIAINFO_DVDIF_ANALYZE_NO \
-    -DMEDIAINFO_MPEGTS_DUPLICATE_NO -DMEDIAINFO_READTHREAD_NO -DMEDIAINFO_MD5_NO -DMEDIAINFO_SHA1_NO -DMEDIAINFO_SHA2_NO \
-    -DMEDIAINFO_EVENTS_NO -DMEDIAINFO_DEMUX_NO -DMEDIAINFO_AES_NO -DMEDIAINFO_FIXITY_NO -DMEDIAINFO_READER_NO"
+    -DMEDIAINFO_ADVANCED_NO -DMEDIAINFO_REFERENCES_NO -DMEDIAINFO_FILTER_NO -DMEDIAINFO_DUPLICATE_NO -DMEDIAINFO_MACROBLOCKS_NO \
+    -DMEDIAINFO_TRACE_NO -DMEDIAINFO_TRACE_FFV1CONTENT_NO -DMEDIAINFO_IBI_NO -DMEDIAINFO_DIRECTORY_NO \
+    -DMEDIAINFO_LIBCURL_NO -DMEDIAINFO_LIBMMS_NO -DMEDIAINFO_DVDIF_ANALYZE_NO -DMEDIAINFO_MPEGTS_DUPLICATE_NO \
+    -DMEDIAINFO_READTHREAD_NO -DMEDIAINFO_MD5_NO -DMEDIAINFO_SHA1_NO -DMEDIAINFO_SHA2_NO -DMEDIAINFO_EVENTS_NO \
+    -DMEDIAINFO_DEMUX_NO -DMEDIAINFO_AES_NO -DMEDIAINFO_FIXITY_NO -DMEDIAINFO_READER_NO -DMEDIAINFO_NEXTPACKET_NO"
 fi
 
 ##################################################################
@@ -103,7 +104,7 @@ if test -e MediaInfoLib/Project/GNU/Library/configure; then
     test -e Makefile && rm Makefile
     chmod +x configure
     if [ "$OS" = "emscripten" ]; then
-        emconfigure ./configure --enable-static --disable-shared $JsOptions $* CFLAGS="$CFLAGS -s USE_ZLIB=1" CXXFLAGS="$CXXFLAGS $MediaInfoLib_CXXFLAGS"
+        emconfigure ./configure --enable-static --disable-shared --disable-dll $JsOptions $* CFLAGS="$CFLAGS -s USE_ZLIB=1" CXXFLAGS="$CXXFLAGS $MediaInfoLib_CXXFLAGS"
     elif [ "$OS" = "mac" ]; then
         ./configure $MacOptions --enable-staticlibs --enable-shared --disable-static --with-libcurl=runtime $MediaInfoLib_Options $*
     else

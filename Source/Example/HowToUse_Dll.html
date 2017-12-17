@@ -66,6 +66,7 @@
               // Initialise MediaInfo
               MI = new MediaInfoModule.MediaInfo();
 
+              MI.Option('File_FileName', file.name);
               MI.Open_Buffer_Init(file.size, 0);
 
               var loop = function(length) {
