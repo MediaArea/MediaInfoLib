@@ -2381,6 +2381,7 @@ void File_Mpeg_Descriptors::Descriptor_56()
         Get_S1 (4, teletext_page_number_2,                      "teletext_page_number_2");
         BS_End();
 
+        #if defined(MEDIAINFO_TELETEXT_YES)
         FILLING_BEGIN();
             switch (table_id)
             {
@@ -2398,6 +2399,7 @@ void File_Mpeg_Descriptors::Descriptor_56()
                 default    : ;
             }
         FILLING_END();
+        #endif //MEDIAINFO_TELETEXT_YES
 
         Element_End0();
     }

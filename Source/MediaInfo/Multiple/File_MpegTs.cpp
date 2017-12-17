@@ -497,6 +497,7 @@ void File_MpegTs::Streams_Update_Programs()
                     int16u elementary_PID=Program->second.elementary_PIDs[Pos];
                     if (PerStream_AlwaysParse || Complete_Stream->Streams[elementary_PID]->IsRegistered)
                     {
+                        #if defined(MEDIAINFO_TELETEXT_YES)
                         if (!Complete_Stream->Streams[elementary_PID]->Teletexts.empty())
                         {
                             for (std::map<int16u, teletext>::iterator Teletext=Complete_Stream->Streams[elementary_PID]->Teletexts.begin(); Teletext!=Complete_Stream->Streams[elementary_PID]->Teletexts.end(); ++Teletext)
@@ -529,6 +530,7 @@ void File_MpegTs::Streams_Update_Programs()
                             }
                         }
                         else
+                        #endif //MEDIAINFO_TELETEXT_YES
                         {
                         Ztring Format=Retrieve(Complete_Stream->Streams[elementary_PID]->StreamKind, Complete_Stream->Streams[elementary_PID]->StreamPos, Fill_Parameter(Complete_Stream->Streams[elementary_PID]->StreamKind, Generic_Format));
                         if (Format.empty())
@@ -966,6 +968,7 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
     }
 
     //Teletext
+    #if defined(MEDIAINFO_TELETEXT_YES)
     bool RelyOnTsInfo=(StreamKind_Last==Stream_Max);
     for (std::map<int16u, teletext>::iterator Teletext=Temp->Teletexts.begin(); Teletext!=Temp->Teletexts.end(); ++Teletext)
     {
@@ -1009,6 +1012,7 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
         Teletext->second.StreamKind=StreamKind_Last;
         Teletext->second.StreamPos=StreamPos_Last;
     }
+    #endif //MEDIAINFO_TELETEXT_YES
 
     //Law rating
     if (Temp->Parser)
