@@ -40,7 +40,9 @@
 #if MEDIAINFO_EVENTS
     #include "MediaInfo/MediaInfo_Events.h"
 #endif //MEDIAINFO_EVENTS
+#if defined(MEDIAINFO_FILE_YES)
 #include <ZenLib/File.h>
+#endif //defined(MEDIAINFO_FILE_YES)
 #include <ZenLib/Utils.h>
 using namespace ZenLib;
 //---------------------------------------------------------------------------
@@ -869,6 +871,7 @@ void File_Riff::Header_Parse()
         {
             if (File_Offset+Buffer_Offset+8+Size==File_Size)
                 IsNotWordAligned=true;
+            #if defined(MEDIAINFO_FILE_YES) //TODO: seek if file API is not available
             else if (!File_Name.empty())
             {
                 File F(File_Name);
@@ -880,6 +883,7 @@ void File_Riff::Header_Parse()
                         IsNotWordAligned=true;
                 }
             }
+            #endif //defined(MEDIAINFO_FILE_YES)
             IsNotWordAligned_Tested=true;
         }
     }

@@ -27,8 +27,9 @@
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
 #include "MediaInfo/XmlUtils.h"
-#include "ZenLib/Dir.h"
+#if defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/File.h"
+#endif //defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/FileName.h"
 #include "tinyxml2.h"
 #include <list>

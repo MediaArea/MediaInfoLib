@@ -73,9 +73,10 @@
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/TimeCode.h"
 #include "MediaInfo/File_Unknown.h"
+#if defined(MEDIAINFO_FILE_YES)
 #include "ZenLib/File.h"
+#endif //defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/FileName.h"
-#include "ZenLib/Dir.h"
 #include "MediaInfo/MediaInfo_Internal.h"
 #if defined(MEDIAINFO_REFERENCES_YES)
     #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
@@ -4374,6 +4375,7 @@ void File_Mxf::Read_Buffer_Continue()
 }
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_FILE_YES)
 void File_Mxf::Read_Buffer_CheckFileModifications()
 {
     if (!IsSub)
@@ -4454,6 +4456,7 @@ void File_Mxf::Read_Buffer_CheckFileModifications()
         }
     }
 }
+#endif //defined(MEDIAINFO_FILE_YES)
 
 //---------------------------------------------------------------------------
 void File_Mxf::Read_Buffer_AfterParsing()
@@ -4699,7 +4702,7 @@ void File_Mxf::Read_Buffer_Unsynched()
 }
 
 //---------------------------------------------------------------------------
-#if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+#if (MEDIAINFO_DEMUX || MEDIAINFO_SEEK) && defined(MEDIAINFO_FILE_YES)
 bool File_Mxf::DetectDuration ()
 {
     if (Duration_Detected)
@@ -4759,7 +4762,7 @@ bool File_Mxf::DetectDuration ()
 
     return true;
 }
-#endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+#endif //(MEDIAINFO_DEMUX || MEDIAINFO_SEEK) && defined(MEDIAINFO_FILE_YES)
 
 #if MEDIAINFO_SEEK
 size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)

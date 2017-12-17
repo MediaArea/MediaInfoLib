@@ -25,7 +25,9 @@
 #include "MediaInfo/Multiple/File_Mpeg_Descriptors.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/MediaInfo_Internal.h"
+#if defined(MEDIAINFO_DIRECTORY_YES)
 #include "ZenLib/Dir.h"
+#endif //defined(MEDIAINFO_DIRECTORY_YES)
 #include <memory>
 #include <algorithm>
 using namespace std;
@@ -1227,6 +1229,7 @@ void File_Mpeg_Psi::Table_02()
 
         FILLING_BEGIN();
             //Searching for hidden Stereoscopic stream
+            #if defined(MEDIAINFO_DIRECTORY_YES)
             if (stream_type==0x20 && File_Name_WithoutDemux.size()>=4+1+6+1+4+1+10 && Config->File_Bdmv_ParseTargetedFile_Get())
             {
                 //Searching the playlist with the pid
@@ -1294,8 +1297,10 @@ void File_Mpeg_Psi::Table_02()
                             #if MEDIAINFO_TRACE
                                 Complete_Stream->Streams[elementary_PID]->Element_Info1="PES";
                             #endif //MEDIAINFO_TRACE
-                            if (Complete_Stream->File__Duplicate_Get_From_PID(elementary_PID))
+                            #if MEDIAINFO_DUPLICATE
+                                if (Complete_Stream->File__Duplicate_Get_From_PID(elementary_PID))
                                 Complete_Stream->Streams[elementary_PID]->ShouldDuplicate=true;
+                            #endif //MEDIAINFO_DUPLICATE
                         }
                     }
 
@@ -1304,6 +1309,7 @@ void File_Mpeg_Psi::Table_02()
                 for (size_t Pos=0; Pos<MIs.size(); Pos++)
                     delete MIs[Pos]; //MIs[Pos]=NULL;
             }
+            #endif //defined(MEDIAINFO_DIRECTORY_YES)
 
             if (elementary_PID)
             {
@@ -2454,8 +2460,10 @@ void File_Mpeg_Psi::program_number_Update()
         if (program_number)
             Complete_Stream->Streams[elementary_PID]->Table_IDs[0x02]=new complete_stream::stream::table_id; //program_map_section
     }
+    #if MEDIAINFO_DUPLICATE
     if (Complete_Stream->File__Duplicate_Get_From_PID(elementary_PID))
         Complete_Stream->Streams[elementary_PID]->ShouldDuplicate=true;
+    #endif //MEDIAINFO_DUPLICATE
 
     //Handling a program
     if (program_number)
@@ -2606,8 +2614,10 @@ void File_Mpeg_Psi::elementary_PID_Update(int16u PCR_PID)
         #ifdef MEDIAINFO_MPEGTS_PESTIMESTAMP_YES
             //Complete_Stream->Streams[elementary_PID]->Searching_ParserTimeStamp_Start_Set(true);
         #endif //MEDIAINFO_MPEGTS_PESTIMESTAMP_YES
+        #if MEDIAINFO_DUPLICATE
         if (Complete_Stream->File__Duplicate_Get_From_PID(elementary_PID))
             Complete_Stream->Streams[elementary_PID]->ShouldDuplicate=true;
+        #endif //MEDIAINFO_DUPLICATE
     }
 
     //Program information

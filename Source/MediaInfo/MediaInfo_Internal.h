@@ -147,15 +147,17 @@ private :
 
 public :
     bool SelectFromExtension (const String &Parser); //Select File_* from the parser name
+    #if defined(MEDIAINFO_FILE_YES)
     void TestContinuousFileNames();
+    #endif //defined(MEDIAINFO_FILE_YES)
     #if MEDIAINFO_EVENTS
         void Event_Prepare (struct MediaInfo_Event_Generic* Event);
     #endif // MEDIAINFO_EVENTS
-    #if !defined(MEDIAINFO_READER_NO)
+    #if defined(MEDIAINFO_FILE_YES)
         int  ListFormats(const String &File_Name=String());
-    #else //!defined(MEDIAINFO_READER_NO)
+    #else //!defined(MEDIAINFO_FILE_YES)
         int  ListFormats(const String &File_Name=String()) {return 0;}
-    #endif //!defined(MEDIAINFO_READER_NO)
+    #endif //!defined(MEDIAINFO_FILE_YES)
     MediaInfo_Config_MediaInfo Config;
 
     #if defined(MEDIAINFO_XML_YES)

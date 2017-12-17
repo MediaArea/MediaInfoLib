@@ -24,7 +24,9 @@
 
 //---------------------------------------------------------------------------
 #include "ZenLib/Utils.h"
+#if defined(MEDIAINFO_FILE_YES)
 #include "ZenLib/File.h"
+#endif //defined(MEDIAINFO_FILE_YES)
 #include "ZenLib/FileName.h"
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
@@ -135,6 +137,7 @@ void File__Analyze::Streams_Finish_Global()
 }
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_FILE_YES)
 void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExtension, bool SkipComputeDelay)
 {
     if (IsSub || !Config->File_TestContinuousFileNames_Get())
@@ -324,6 +327,7 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
         }
     #endif //MEDIAINFO_ADVANCED
 }
+#endif //defined(MEDIAINFO_FILE_YES)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_FIXITY

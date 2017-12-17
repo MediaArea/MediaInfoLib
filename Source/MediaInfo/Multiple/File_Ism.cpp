@@ -25,7 +25,6 @@
 #include <set>
 #include "MediaInfo/MediaInfo.h"
 #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
-#include "ZenLib/Dir.h"
 #include "ZenLib/FileName.h"
 #include "ZenLib/Format/Http/Http_Utils.h"
 #include "tinyxml2.h"

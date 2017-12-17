@@ -24,7 +24,9 @@
 #include "MediaInfo/Multiple/File_P2_Clip.h"
 #include "MediaInfo/MediaInfo.h"
 #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
+#if defined(MEDIAINFO_REFERENCES_YES) && defined(MEDIAINFO_FILE_YES) && defined(MEDIAINFO_DIRECTORY_YES)
 #include "ZenLib/Dir.h"
+#endif //defined(MEDIAINFO_REFERENCES_YES) && defined(MEDIAINFO_FILE_YES) && defined(MEDIAINFO_DIRECTORY_YES)
 #include "ZenLib/FileName.h"
 #include "tinyxml2.h"
 using namespace tinyxml2;
@@ -88,7 +90,7 @@ bool File_P2_Clip::FileHeader_Begin()
 
             ReferenceFiles_Accept(this, Config);
 
-            #if defined(MEDIAINFO_REFERENCES_YES)
+            #if defined(MEDIAINFO_REFERENCES_YES) && defined(MEDIAINFO_FILE_YES) && defined(MEDIAINFO_DIRECTORY_YES)
             XMLElement* ClipContent=Root->FirstChildElement("ClipContent");
             if (ClipContent)
             {
@@ -381,7 +383,7 @@ bool File_P2_Clip::FileHeader_Begin()
                     }
                 }
             }
-            #endif //MEDIAINFO_REFERENCES_YES
+            #endif //defined(MEDIAINFO_REFERENCES_YES) && defined(MEDIAINFO_FILE_YES) && defined(MEDIAINFO_DIRECTORY_YES)
         }
         else
         {
