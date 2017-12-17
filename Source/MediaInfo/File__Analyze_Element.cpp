@@ -20,7 +20,6 @@
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/File__Analyze_Element.h"
 #include "MediaInfo/MediaInfo_Internal.h"
-#include <iostream>
 #include <iomanip>
 #include <cstring>
 #include "ThirdParty/base64/base64.h"

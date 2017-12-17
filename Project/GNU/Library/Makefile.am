@@ -11,6 +11,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/File__Base.cpp \
                        ../../../Source/MediaInfo/File__MultipleParsing.cpp \
                        ../../../Source/MediaInfo/File__Duplicate.cpp \
+                       ../../../Source/MediaInfo/File__HasReferences.cpp \
                        ../../../Source/MediaInfo/File_Dummy.cpp \
                        ../../../Source/MediaInfo/File_Other.cpp \
                        ../../../Source/MediaInfo/File_Unknown.cpp \

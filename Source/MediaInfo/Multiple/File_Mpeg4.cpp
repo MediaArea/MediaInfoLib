@@ -199,7 +199,7 @@ extern const char* Mpeg4_chan_Layout(int16u Ordering);
 
 //---------------------------------------------------------------------------
 File_Mpeg4::File_Mpeg4()
-:File__Analyze()
+:File__Analyze(), File__HasReferences()
 {
     //Configuration
     ParserName="MPEG-4";
@@ -229,9 +229,6 @@ File_Mpeg4::File_Mpeg4()
     IsFragmented=false;
     StreamOrder=0;
     moov_trak_tkhd_TrackID=(int32u)-1;
-    #if defined(MEDIAINFO_REFERENCES_YES)
-        ReferenceFiles=NULL;
-    #endif //defined(MEDIAINFO_REFERENCES_YES)
     mdat_Pos_NormalParsing=false;
     moof_traf_base_data_offset=(int64u)-1;
     data_offset_present=true;
@@ -1200,7 +1197,7 @@ void File_Mpeg4::Streams_Finish()
             if (!Stream->second.File_Name.empty())
             {
                 if (ReferenceFiles==NULL)
-                    ReferenceFiles=new File__ReferenceFilesHelper(this, Config);
+                    ReferenceFiles_Accept(this, Config);
 
                 sequence* Sequence=new sequence;
                 const Ztring& Format=Retrieve(Stream->second.StreamKind, Stream->second.StreamPos, Fill_Parameter(Stream->second.StreamKind, Generic_Format));

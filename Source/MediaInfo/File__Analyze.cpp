@@ -3350,7 +3350,11 @@ void File__Analyze::GoToFromEnd (int64u GoToFromEnd)
     if (File_Size==(int64u)-1)
     {
         #if MEDIAINFO_SEEK
-            if (Config->File_IgnoreSequenceFileSize_Get() && GoToFromEnd)
+            if (
+                #if MEDIAINFO_ADVANCED
+                Config->File_IgnoreSequenceFileSize_Get() &&
+                #endif //MEDIAINFO_ADVANCED
+                GoToFromEnd)
             {
                 File_GoTo=Config->File_Names.size()-1;
                 File_Offset=(int64u)-1;

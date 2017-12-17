@@ -149,6 +149,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\File__Analyze_Streams_Finish.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\File__Base.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\File__Duplicate.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\File__HasReferences.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\File__MultipleParsing.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\File_Dummy.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\File_Other.cpp" />
@@ -427,6 +428,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyze_MinimizeSize.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Base.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Duplicate.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\File__HasReferences.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\File__MultipleParsing.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\File_Dummy.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\File_Other.h" />
