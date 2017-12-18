@@ -79,6 +79,9 @@ public :
             HANDLE Condition_WaitingForMorePlace;
             HANDLE Condition_WaitingForMoreData;
         #endif //WINDOWS
+private:
+    void Destroy_Thread(MediaInfo_Internal* MI);
+public:
     #endif //MEDIAINFO_READTHREAD
     CriticalSection CS;
     MediaInfo_Internal* MI_Internal;
