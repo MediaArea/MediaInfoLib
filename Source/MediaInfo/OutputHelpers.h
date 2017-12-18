@@ -208,6 +208,7 @@ struct Node
 
 std::string To_XML (Node& Cur_Node, const int& Level);
 std::string To_JSON (Node& Cur_Node, const int& Level);
+Ztring VideoCompressionCodeCS_Name(int32u termID, MediaInfo_Internal &MI, size_t StreamPos);
 
 } //NameSpace
 
