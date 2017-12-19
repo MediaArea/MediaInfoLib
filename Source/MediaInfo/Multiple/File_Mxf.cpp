@@ -5139,10 +5139,6 @@ bool File_Mxf::FileHeader_Begin()
         return false;
     }
 
-    //In case of buffer interface without filename
-    if (File_Name.empty())
-        File_Name=Config->File_FileName_Get();
-
     return true;
 }
 
