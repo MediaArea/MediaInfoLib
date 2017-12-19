@@ -2699,6 +2699,15 @@ File_Mpeg4::method File_Mpeg4::Metadata_Get(std::string &Parameter, int64u Meta)
     Value.append(1, (Char)((Meta&0x000000FF)>> 0));
     if (MediaInfoLib::Config.CustomMapping_IsPresent(__T("MP4"), Value))
         Parameter=MediaInfoLib::Config.CustomMapping_Get(__T("MP4"), Value).To_Local();
+    
+    //Cleanup of the parameter, removing anything not ANSI 7-bit
+    for (size_t i=0; i<Parameter.size();)
+    {
+        if (((int8s)Parameter[i])<0)
+            Parameter.erase(i, 1);
+        else
+            i++;
+    }
 
     return Method;
 }
