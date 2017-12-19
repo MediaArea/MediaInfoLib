@@ -2908,6 +2908,10 @@ void File__Analyze::Accept ()
     if (Status[IsAccepted] || Status[IsFinished])
         return;
 
+    //In case of buffer interface without filename
+    if (!IsSub && File_Name.empty())
+        File_Name=Config->File_FileName_Get();
+
     #if MEDIAINFO_TRACE
         if (ParserName.empty() && ParserName_Char)
             ParserName = ParserName_Char;
