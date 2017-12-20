@@ -79,7 +79,9 @@ public :
 
     //General information
     Ztring  Inform ();
+#if defined(MEDIAINFO_TEXT_YES) || defined(MEDIAINFO_HTML_YES) || defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_CSV_YES) || defined(MEDIAINFO_CUSTOM_YES)
     Ztring  Inform (stream_t StreamKind, size_t StreamNumber, bool IsDirect); //All about only a specific stream
+#endif
 
     //Get
     Ztring Get (stream_t StreamKind, size_t StreamNumber, size_t Parameter, info_t InfoKind=Info_Text);

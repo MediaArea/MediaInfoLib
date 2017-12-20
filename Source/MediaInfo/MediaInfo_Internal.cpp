@@ -1146,6 +1146,7 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, const Stri
 
     //Special cases
     //-Inform for a stream
+#if defined(MEDIAINFO_TEXT_YES) || defined(MEDIAINFO_HTML_YES) || defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_CSV_YES) || defined(MEDIAINFO_CUSTOM_YES)
     if (Parameter==__T("Inform"))
     {
         CS.Leave();
@@ -1155,6 +1156,7 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, const Stri
         if (Pos!=Error)
             Stream[StreamKind][StreamPos](Pos)=InformZtring;
     }
+#endif
 
     //Case of specific info
     size_t ParameterI=MediaInfoLib::Config.Info_Get(StreamKind).Find(Parameter, KindOfSearch);
