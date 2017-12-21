@@ -1,6 +1,12 @@
 I changed some elements in the interface.
 No break in binary compatibily (no crash), but some details.
 
+17.10 --> 17.12
+---------------
+- MasteringDisplayColorVolume: no need to show 4 digits after comma for max luminescence, removed
+- transfer_characteristics: fix BT.2020 difference between values 14 and 15
+- colour_description: some changes in order to have more readable names (DCI P3, Display P3, sRGB)
+
 0.7.99 --> 17.10
 -----------------
 - Version scheme is now YY.MM (year dot month, 2 digits each)

@@ -1,4 +1,4 @@
-%define libmediainfo_version      17.10
+%define libmediainfo_version      17.12
 %define libzen_version            0.4.37
 
 %if 0%{?fedora_version} || 0%{?centos_version} >= 600 || 0%{?rhel_version} >= 600
@@ -236,7 +236,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 %{_libdir}/%{name_without_0_ending}.so
 
 %changelog
-* Sun Jan 01 2012 MediaArea.net SARL <info@mediaarea.net> - 17.10-0
+* Sun Jan 01 2012 MediaArea.net SARL <info@mediaarea.net> - 17.12-0
 - See History.txt for more info and real dates
 - Previous packages made by Toni Graffy <toni@links2linux.de>
 - Fedora style made by Vasiliy N. Glazov <vascom2@gmail.com>
