@@ -379,18 +379,7 @@ private :
     void VPS_SPS_PPS();
     void VPS_SPS_PPS_FromMatroska();
 
-    //Streams
-    struct stream
-    {
-        bool   Searching_Payload;
-
-        stream()
-            :
-            Searching_Payload(false)
-        {
-        }
-    };
-    vector<stream> Streams;
+    vector<stream_payload> Streams;
 
     //Replacement of File__Analyze buffer
     const int8u*                        Buffer_ToSave;

@@ -108,20 +108,7 @@ private :
     void temporal_reference_Adapt();
 
     //Streams
-    struct stream
-    {
-        bool   Searching_Payload;
-        bool   Searching_TimeStamp_Start;
-        bool   Searching_TimeStamp_End;
-
-        stream()
-        {
-            Searching_Payload=false;
-            Searching_TimeStamp_Start=false;
-            Searching_TimeStamp_End=false;
-        }
-    };
-    std::vector<stream> Streams;
+    std::vector<stream_time> Streams;
 
     //Temporal reference
     struct temporalreference

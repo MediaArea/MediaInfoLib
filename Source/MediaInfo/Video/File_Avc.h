@@ -436,14 +436,12 @@ private :
     void SPS_PPS();
 
     //Streams
-    struct stream
+    struct stream : public stream_payload
     {
-        bool   Searching_Payload;
         bool   ShouldDuplicate;
 
         stream()
             :
-            Searching_Payload(false),
             ShouldDuplicate(false)
         {
         }

@@ -2000,9 +2000,7 @@ void File_Mpegv::Read_Buffer_Unsynched()
 {
     for (int8u Pos=0x00; Pos<0xB9; Pos++)
     {
-        Streams[Pos].Searching_Payload=false;
-        Streams[Pos].Searching_TimeStamp_Start=false;
-        Streams[Pos].Searching_TimeStamp_End=false;
+        Streams[Pos].Init_Stream(false);
     }
     Streams[0xB3].Searching_TimeStamp_End=true; //sequence_header
     Streams[0xB8].Searching_TimeStamp_End=true; //group_start
