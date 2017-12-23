@@ -246,31 +246,6 @@ protected :
     // Streams management
     //***************************************************************************
 
-    struct stream_payload
-    {
-        bool   Searching_Payload;
-
-        stream_payload():Searching_Payload(false)
-        {
-        }
-    };
-
-    struct stream_time : public stream_payload
-    {
-        bool   Searching_TimeStamp_Start;
-        bool   Searching_TimeStamp_End;
-
-        stream_time():Searching_TimeStamp_Start(false), Searching_TimeStamp_End(false)
-        {
-        }
-        void Init_Stream(bool v)
-        {
-            Searching_TimeStamp_Start=v;
-            Searching_TimeStamp_End=v;
-            Searching_Payload=v;
-        }
-    };
-
     virtual void Streams_Accept()                                               {};
     virtual void Streams_Fill()                                                 {};
     virtual void Streams_Update()                                               {};
