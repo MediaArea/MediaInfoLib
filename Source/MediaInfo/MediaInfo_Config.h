@@ -242,6 +242,10 @@ public :
     #if defined(MEDIAINFO_EBUCORE_YES)
           void        AcquisitionDataOutputMode_Set (size_t Value);
           size_t      AcquisitionDataOutputMode_Get ();
+          void        ExternalMetadata_Set (Ztring Value);
+          Ztring      ExternalMetadata_Get ();
+          void        ExternalMetaDataConfig_Set (Ztring Value);
+          Ztring      ExternalMetaDataConfig_Get ();
     #endif //MEDIAINFO_EBUCORE_YES
 
     ZtringListList  SubFile_Config_Get ();
@@ -328,6 +332,8 @@ private :
     #endif //MEDIAINFO_ADVANCED
     #if defined(MEDIAINFO_EBUCORE_YES)
         size_t      AcquisitionDataOutputMode;
+        Ztring      ExternalMetadata;
+        Ztring      ExternalMetaDataConfig;
     #endif //defined(MEDIAINFO_EBUCORE_YES)
     size_t          Complete;
     size_t          BlockMethod;
