@@ -1144,6 +1144,7 @@ protected :
     void           ChooseParser_SmpteSt0331(const essences::iterator &Essence, const descriptors::iterator &Descriptor);
     void           ChooseParser_SmpteSt0337(const essences::iterator &Essence, const descriptors::iterator &Descriptor);
     void           ChooseParser_Jpeg2000(const essences::iterator &Essence, const descriptors::iterator &Descriptor);
+    void           ChooseParser_ProRes(const essences::iterator &Essence, const descriptors::iterator &Descriptor);
 
     //Helpers
     int32u Vector(int32u ExpectedLength=(int32u)-1);
