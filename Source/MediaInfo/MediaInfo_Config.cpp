@@ -186,7 +186,7 @@ static const char* OutputFormats_JSONFields[output_formats_item_size] =
     "mime",
 };
 typedef const char* output_formats_item[output_formats_item_size];
-static const size_t output_formats_size = 12;
+static const size_t output_formats_size = 13;
 static output_formats_item OutputFormats[output_formats_size] =
 {
     { "Text",                   "Text",                                                         "text/plain",       },
@@ -199,6 +199,7 @@ static output_formats_item OutputFormats[output_formats_size] =
     { "EBUCore_1.6",            "EBUCore 1.6",                                                  "text/xml",         },
     { "FIMS_1.3",               "FIMS 1.3",                                                     "text/xml",         },
     { "MPEG-7",                 "MPEG-7",                                                       "text/xml",         },
+    { "PBCore_2.1",             "PBCore 2.1",                                                   "text/xml",         },
     { "PBCore_2.0",             "PBCore 2.0",                                                   "text/xml",         },
     { "PBCore_1.2",             "PBCore 1.2",                                                   "text/xml",         },
 };

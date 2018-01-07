@@ -157,9 +157,17 @@ Ztring MediaInfo_Internal::Inform()
             return Export_Mpeg7().Transform(*this);
     #endif //defined(MEDIAINFO_MPEG7_YES)
     #if defined(MEDIAINFO_PBCORE_YES)
-        if (MediaInfoLib::Config.Inform_Get()==__T("PBCore") || MediaInfoLib::Config.Inform_Get()==__T("PBCore_1.2"))
+        if (MediaInfoLib::Config.Inform_Get()==__T("PBCore_1") || MediaInfoLib::Config.Inform_Get()==__T("PBCore1")) // 1.x
             return Export_PBCore().Transform(*this);
-        if (MediaInfoLib::Config.Inform_Get()==__T("PBCore2") || MediaInfoLib::Config.Inform_Get()==__T("PBCore_2.0"))
+        if (MediaInfoLib::Config.Inform_Get()==__T("PBCore_1.2"))
+            return Export_PBCore().Transform(*this);
+        if (MediaInfoLib::Config.Inform_Get()==__T("PBCore_2") ||MediaInfoLib::Config.Inform_Get()==__T("PBCore2")) //2.x
+            return Export_PBCore2().Transform(*this);
+        if (MediaInfoLib::Config.Inform_Get()==__T("PBCore_2.0"))
+            return Export_PBCore2().Transform(*this, Export_PBCore2::Version_2_0);
+        if (MediaInfoLib::Config.Inform_Get()==__T("PBCore_2.1"))
+            return Export_PBCore2().Transform(*this, Export_PBCore2::Version_2_1);
+        if (MediaInfoLib::Config.Inform_Get()==__T("PBCore")) //x.x
             return Export_PBCore2().Transform(*this);
     #endif //defined(MEDIAINFO_PBCORE_YES)
     #if defined(MEDIAINFO_REVTMD_YES)
