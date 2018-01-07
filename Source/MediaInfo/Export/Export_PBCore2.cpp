@@ -420,7 +420,8 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI)
     ToReturn+=Ztring().From_UTF8(To_XML(Node_Main, 0).c_str());
 
     //Carriage return
-    ToReturn.FindAndReplace(__T("\n"), EOL, 0, Ztring_Recursive);
+    if (MediaInfoLib::Config.LineSeparator_Get()!=__T("\n"))
+        ToReturn.FindAndReplace(__T("\n"), MediaInfoLib::Config.LineSeparator_Get(), 0, Ztring_Recursive);
 
     return ToReturn;
 }

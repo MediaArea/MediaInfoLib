@@ -1516,7 +1516,8 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
     ToReturn+=__T("</bms:bmContent>\n");
 
     //Carriage return
-    ToReturn.FindAndReplace(__T("\n"), EOL, 0, Ztring_Recursive);
+    if (MediaInfoLib::Config.LineSeparator_Get()!=__T("\n"))
+        ToReturn.FindAndReplace(__T("\n"), MediaInfoLib::Config.LineSeparator_Get(), 0, Ztring_Recursive);
 
     return ToReturn;
 }
