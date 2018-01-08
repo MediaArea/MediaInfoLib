@@ -1358,7 +1358,8 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     ToReturn+=__T("</mpeg7:Mpeg7>\n");
 
     //Carriage return
-    ToReturn.FindAndReplace(__T("\n"), EOL, 0, Ztring_Recursive);
+    if (MediaInfoLib::Config.LineSeparator_Get()!=__T("\n"))
+        ToReturn.FindAndReplace(__T("\n"), MediaInfoLib::Config.LineSeparator_Get(), 0, Ztring_Recursive);
 
     //Find and replace
     ZtringListList ToReplace=MediaInfoLib::Config.Inform_Replace_Get_All();
