@@ -168,6 +168,15 @@ private :
     };
     std::vector<temporalreference*> TemporalReference; //per temporal_reference
     size_t                          TemporalReference_Offset;
+    temporalreference* GetTemporalReference()
+    {
+        if (TemporalReference_Offset+temporal_reference>=TemporalReference.size())
+            TemporalReference.resize(TemporalReference_Offset+temporal_reference+1);
+        temporalreference* &Ref=TemporalReference[TemporalReference_Offset+temporal_reference];
+        if (Ref==NULL)
+            Ref=new temporalreference;
+        return Ref;
+    }
     struct text_position
     {
         File__Analyze**  Parser;
