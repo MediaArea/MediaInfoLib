@@ -9,130 +9,141 @@
         </p>
         <p><pre id="result"></pre></p>
 
-        <script src="MediaInfo.js"></script>
         <script type="text/javascript">
-            var MediaInfoModule, MI, processing = false, CHUNK_SIZE = 1024 * 1024;
-
-            var finish = function() {
-                MI.Close();
-                MI.delete();
-                processing = false;
+            // Load the WebAssembly MediaInfo module if the browser supports it,
+            // otherwise load the asmjs module
+            var MediaInfoJs = document.createElement('script');
+            if ('WebAssembly' in window) {
+              MediaInfoJs.src = "MediaInfoWasm.js";
+            } else {
+              MediaInfoJs.src = "MediaInfo.js";
             }
+            document.body.appendChild(MediaInfoJs);
 
-            // Examples about how to get results
-            var showResult = function() {
-              document.getElementById('result').innerText = 'Inform with Complete=false:\n';
-              MI.Option('Complete');
-              document.getElementById('result').innerText += MI.Inform();
+            // Continue initialization
+            MediaInfoJs.onload = function () {
+              var MediaInfoModule, MI, processing = false, CHUNK_SIZE = 1024 * 1024;
 
-              document.getElementById('result').innerText += 'Inform with Complete=true:\n';
-              MI.Option('Complete', '1');
-              document.getElementById('result').innerText += MI.Inform();
-
-              document.getElementById('result').innerText += 'Custom Inform:\n';
-              MI.Option('Inform', 'General;Example: FileSize=%FileSize%')
-              document.getElementById('result').innerText += MI.Inform() + '\n\n';
-              MI.Option('Inform'); // Reset custom output
-
-              document.getElementById('result').innerText += 'Get with Stream=General and Parameter=\'FileSize\':\n';
-              document.getElementById('result').innerText += MI.Get(MediaInfoModule.Stream.General, 0, 'FileSize') + '\n\n';
-
-              document.getElementById('result').innerText += 'GetI with Stream=General, Parameter=2, and InfoKind=Name:\n';
-              document.getElementById('result').innerText += MI.GetI(MediaInfoModule.Stream.General, 0, 2, MediaInfoModule.Info.Name) + '\n\n';
-
-              document.getElementById('result').innerText += 'GetI with Stream=General, Parameter=2, and InfoKind=Text:\n';
-              document.getElementById('result').innerText += MI.GetI(MediaInfoModule.Stream.General, 0, 2) + '\n\n';
-
-              document.getElementById('result').innerText += 'Count_Get with StreamKind=Audio:\n';
-              document.getElementById('result').innerText += MI.Count_Get(MediaInfoModule.Stream.Audio) + '\n\n';
-
-              document.getElementById('result').innerText += 'Get with Stream=General and Parameter=\'AudioCount\':\n';
-              document.getElementById('result').innerText += MI.Get(MediaInfoModule.Stream.General, 0, 'AudioCount') + '\n\n';
-
-              document.getElementById('result').innerText += 'Get with Stream=Audio and Parameter=\'StreamCount\':\n';
-              document.getElementById('result').innerText += MI.Get(MediaInfoModule.Stream.Audio, 0, 'StreamCount') + '\n';
-
-              finish();
-            }
-
-            var parseFile = function(file, callback) {
-              if (processing) {
-                return;
+              var finish = function() {
+                  MI.Close();
+                  MI.delete();
+                  processing = false;
               }
-              processing = true;
 
-              var offset = 0;
+              // Examples about how to get results
+              var showResult = function() {
+                document.getElementById('result').innerText = 'Inform with Complete=false:\n';
+                MI.Option('Complete');
+                document.getElementById('result').innerText += MI.Inform();
 
-              // Initialise MediaInfo
-              MI = new MediaInfoModule.MediaInfo();
+                document.getElementById('result').innerText += 'Inform with Complete=true:\n';
+                MI.Option('Complete', '1');
+                document.getElementById('result').innerText += MI.Inform();
 
-              MI.Option('File_FileName', file.name);
-              MI.Open_Buffer_Init(file.size, 0);
+                document.getElementById('result').innerText += 'Custom Inform:\n';
+                MI.Option('Inform', 'General;Example: FileSize=%FileSize%')
+                document.getElementById('result').innerText += MI.Inform() + '\n\n';
+                MI.Option('Inform'); // Reset custom output
 
-              var loop = function(length) {
+                document.getElementById('result').innerText += 'Get with Stream=General and Parameter=\'FileSize\':\n';
+                document.getElementById('result').innerText += MI.Get(MediaInfoModule.Stream.General, 0, 'FileSize') + '\n\n';
+
+                document.getElementById('result').innerText += 'GetI with Stream=General, Parameter=2, and InfoKind=Name:\n';
+                document.getElementById('result').innerText += MI.GetI(MediaInfoModule.Stream.General, 0, 2, MediaInfoModule.Info.Name) + '\n\n';
+
+                document.getElementById('result').innerText += 'GetI with Stream=General, Parameter=2, and InfoKind=Text:\n';
+                document.getElementById('result').innerText += MI.GetI(MediaInfoModule.Stream.General, 0, 2) + '\n\n';
+
+                document.getElementById('result').innerText += 'Count_Get with StreamKind=Audio:\n';
+                document.getElementById('result').innerText += MI.Count_Get(MediaInfoModule.Stream.Audio) + '\n\n';
+
+                document.getElementById('result').innerText += 'Get with Stream=General and Parameter=\'AudioCount\':\n';
+                document.getElementById('result').innerText += MI.Get(MediaInfoModule.Stream.General, 0, 'AudioCount') + '\n\n';
+
+                document.getElementById('result').innerText += 'Get with Stream=Audio and Parameter=\'StreamCount\':\n';
+                document.getElementById('result').innerText += MI.Get(MediaInfoModule.Stream.Audio, 0, 'StreamCount') + '\n';
+
+                finish();
+              }
+
+              var parseFile = function(file, callback) {
                 if (processing) {
-                  var r = new FileReader();
-                  var blob = file.slice(offset, offset + length);
-                  r.onload = processChunk;
-                  r.readAsArrayBuffer(blob);
-                } else {
-                  finish()
+                  return;
                 }
-              };
+                processing = true;
 
-              var processChunk = function(e) {
-                if (e.target.error === null) {
-                  // Send the buffer to MediaInfo
-                  var state = MI.Open_Buffer_Continue(e.target.result);
+                var offset = 0;
 
-                  //Test if there is a MediaInfo request to go elsewhere
-                  var seekTo = MI.Open_Buffer_Continue_Goto_Get();
-                  if(seekTo === -1) {
-                    offset += e.target.result.byteLength;
+                // Initialise MediaInfo
+                MI = new MediaInfoModule.MediaInfo();
+
+                MI.Option('File_FileName', file.name);
+                MI.Open_Buffer_Init(file.size, 0);
+
+                var loop = function(length) {
+                  if (processing) {
+                    var r = new FileReader();
+                    var blob = file.slice(offset, offset + length);
+                    r.onload = processChunk;
+                    r.readAsArrayBuffer(blob);
                   } else {
-                    offset = seekTo;
-                    MI.Open_Buffer_Init(file.size, seekTo); // Inform MediaInfo we have seek
+                    finish()
                   }
-                } else {
-                  finish();
-                  alert('An error happened reading your file!');
-                  return;
-                }
+                };
 
-                // Bit 3 set means finalized
-                if (state&0x08 || e.target.result.byteLength < 1) {
-                  MI.Open_Buffer_Finalize();
-                  callback();
-                  return;
-                }
+                var processChunk = function(e) {
+                  if (e.target.error === null) {
+                    // Send the buffer to MediaInfo
+                    var state = MI.Open_Buffer_Continue(e.target.result);
 
+                    //Test if there is a MediaInfo request to go elsewhere
+                    var seekTo = MI.Open_Buffer_Continue_Goto_Get();
+                    if(seekTo === -1) {
+                      offset += e.target.result.byteLength;
+                    } else {
+                      offset = seekTo;
+                      MI.Open_Buffer_Init(file.size, seekTo); // Inform MediaInfo we have seek
+                    }
+                  } else {
+                    finish();
+                    alert('An error happened reading your file!');
+                    return;
+                  }
+
+                  // Bit 3 set means finalized
+                  if (state&0x08 || e.target.result.byteLength < 1) {
+                    MI.Open_Buffer_Finalize();
+                    callback();
+                    return;
+                  }
+
+                  loop(CHUNK_SIZE);
+                };
+
+                 // Start
                 loop(CHUNK_SIZE);
-              };
-
-               // Start
-              loop(CHUNK_SIZE);
-            }
-
-            // Initialise emscripten module
-            MediaInfoModule = MediaInfoLib({'postRun': function() {
-              console.debug('MediaInfo ready');
-
-              // Information about MediaInfo
-              document.getElementById('result').innerText = 'Info_Parameters:\n';
-              document.getElementById('result').innerText += MediaInfoModule.MediaInfo.Option_Static('Info_Parameters') + '\n\n';
-
-              document.getElementById('result').innerText += 'Info_Codecs:\n';
-              document.getElementById('result').innerText += MediaInfoModule.MediaInfo.Option_Static('Info_Codecs') + '\n';
-
-              // Get selected file
-              var input = document.getElementById('input');
-              input.onchange = function() {
-                if(input.files.length > 0) {
-                  document.getElementById('result').innerText = "Processing...";
-                  parseFile(input.files[0], showResult);
-                }
               }
-            }});
+
+              // Initialise emscripten module
+              MediaInfoModule = MediaInfoLib({'postRun': function() {
+                console.debug('MediaInfo ready');
+
+                // Information about MediaInfo
+                document.getElementById('result').innerText = 'Info_Parameters:\n';
+                document.getElementById('result').innerText += MediaInfoModule.MediaInfo.Option_Static('Info_Parameters') + '\n\n';
+
+                document.getElementById('result').innerText += 'Info_Codecs:\n';
+                document.getElementById('result').innerText += MediaInfoModule.MediaInfo.Option_Static('Info_Codecs') + '\n';
+
+                // Get selected file
+                var input = document.getElementById('input');
+                input.onchange = function() {
+                  if(input.files.length > 0) {
+                    document.getElementById('result').innerText = "Processing...";
+                    parseFile(input.files[0], showResult);
+                  }
+                }
+              }});};
         </script>
     </body>
 </html>
