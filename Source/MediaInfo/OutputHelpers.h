@@ -59,6 +59,13 @@ struct Node
         Add_Attribute(_Atribute_Name, _Atribute_Value);
     }
 
+    //Destructor
+    ~Node()
+    {
+        for (size_t Pos=0; Pos<Childs.size(); Pos++)
+            delete Childs[Pos];
+    }
+
     //Add_Child functions
     Node* Add_Child(const std::string& Name, bool Multiple=false)
     {

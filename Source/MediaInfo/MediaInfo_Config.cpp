@@ -247,6 +247,8 @@ void MediaInfo_Config::Init()
     #endif //MEDIAINFO_ADVANCED
     #if defined(MEDIAINFO_EBUCORE_YES)
         AcquisitionDataOutputMode=Export_EbuCore::AcquisitionDataOutputMode_Default;
+        ExternalMetadata=Ztring();
+        ExternalMetaDataConfig=Ztring();
     #endif //defined(MEDIAINFO_EBUCORE_YES)
     Complete=0;
     BlockMethod=0;
@@ -1125,6 +1127,24 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
                 AcquisitionDataOutputMode_Set(Export_EbuCore::AcquisitionDataOutputMode_segmentParameter);
             else
                 return __T("Invalid value");
+            return Ztring();
+        #else // MEDIAINFO_EBUCORE_YES
+            return __T("EBUCore features are disabled due to compilation options");
+        #endif // MEDIAINFO_EBUCORE_YES
+    }
+    if (Option_Lower==__T("externalmetadata"))
+    {
+        #if defined(MEDIAINFO_EBUCORE_YES)
+            ExternalMetadata_Set(Value);
+            return Ztring();
+        #else // MEDIAINFO_EBUCORE_YES
+            return __T("EBUCore features are disabled due to compilation options");
+        #endif // MEDIAINFO_EBUCORE_YES
+    }
+    if (Option_Lower==__T("externalmetadataconfig"))
+    {
+        #if defined(MEDIAINFO_EBUCORE_YES)
+            ExternalMetaDataConfig_Set(Value);
             return Ztring();
         #else // MEDIAINFO_EBUCORE_YES
             return __T("EBUCore features are disabled due to compilation options");
@@ -2768,6 +2788,30 @@ size_t MediaInfo_Config::AcquisitionDataOutputMode_Get ()
 {
     CriticalSectionLocker CSL(CS);
     return AcquisitionDataOutputMode;
+}
+
+void MediaInfo_Config::ExternalMetadata_Set(Ztring Value)
+{
+    CriticalSectionLocker CSL(CS);
+    ExternalMetadata=Value;
+}
+
+Ztring MediaInfo_Config::ExternalMetadata_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return ExternalMetadata;
+}
+
+void MediaInfo_Config::ExternalMetaDataConfig_Set(Ztring Value)
+{
+    CriticalSectionLocker CSL(CS);
+    ExternalMetaDataConfig=Value;
+}
+
+Ztring MediaInfo_Config::ExternalMetaDataConfig_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return ExternalMetaDataConfig;
 }
 #endif // MEDIAINFO_EBUCORE_YES
 
