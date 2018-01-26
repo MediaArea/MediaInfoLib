@@ -38,7 +38,7 @@ extern MediaInfo_Config Config;
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-bool Parse_XML(const XMLNode* _XmlNode, Node* _Node, Node** _MI_Info, const Ztring& ID, ZtringListList& Values)
+bool Parse_XML(const XMLNode* _XmlNode, Node* _Node, Node** _MI_Info, const Ztring& FileName, ZtringListList& Values)
 {
     bool ToReturn = true;
 
@@ -65,7 +65,7 @@ bool Parse_XML(const XMLNode* _XmlNode, Node* _Node, Node** _MI_Info, const Ztri
             Ztring Value=Ztring(Element->GetText()?Element->GetText():"");
             if (Value.length()>3 && Value.at(0)=='%' && Value.at(1)!='%' && Value.at(Value.length()-1)=='%')
             {
-                Value=Values.FindValue(ID, Values(0).Find(Value.substr(1, Value.length()-2)), 0, 1);
+                Value=Values.FindValue(FileName, Values(0).Find(Value.substr(1, Value.length()-2)), 0, 1);
                 if (Value.empty())
                     return false;
             }
@@ -77,7 +77,7 @@ bool Parse_XML(const XMLNode* _XmlNode, Node* _Node, Node** _MI_Info, const Ztri
                 Ztring Value=Ztring(Attribute->Value());
                 if (Value.length()>3 && Value.at(0)=='%' && Value.at(1)!='%' && Value.at(Value.length()-1)=='%')
                 {
-                    Value=Values.FindValue(ID, Values(0).Find(Value.substr(1, Value.length()-2)), 0, 1);
+                    Value=Values.FindValue(FileName, Values(0).Find(Value.substr(1, Value.length()-2)), 0, 1);
                     if (Value.empty())
                         return false;
                 }
@@ -88,7 +88,7 @@ bool Parse_XML(const XMLNode* _XmlNode, Node* _Node, Node** _MI_Info, const Ztri
     }
 
     for (const XMLNode* El = Element->FirstChild(); El; El = El->NextSibling())
-        ToReturn=Parse_XML(El, Current?Current:_Node, _MI_Info, ID, Values);
+        ToReturn=Parse_XML(El, Current?Current:_Node, _MI_Info, FileName, Values);
 
     if (Current)
     {
@@ -102,7 +102,7 @@ bool Parse_XML(const XMLNode* _XmlNode, Node* _Node, Node** _MI_Info, const Ztri
 }
 
 //---------------------------------------------------------------------------
-bool ExternalMetadata(Ztring ID, Ztring ExternalMetadata, Ztring ExternalMetaDataConfig, Node* Main, Node* MI_Info)
+bool ExternalMetadata(Ztring FileName, Ztring ExternalMetadata, Ztring ExternalMetaDataConfig, Node* Main, Node* MI_Info)
 {
 
     ZtringListList CSV;
@@ -117,10 +117,10 @@ bool ExternalMetadata(Ztring ID, Ztring ExternalMetadata, Ztring ExternalMetaDat
         return false;
     }
 
-    //Check if the file ID is present in the CSV
-    if (CSV.FindValue(ID, 0, 0, 1).empty())
+    //Check if the file is present in the CSV
+    if (CSV.FindValue(FileName, 0, 0, 1).empty())
     {
-        MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, "File ID not found in CSV");
+        MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, "File name not found in external metadata file");
         return false;
     }
 
@@ -132,7 +132,7 @@ bool ExternalMetadata(Ztring ID, Ztring ExternalMetadata, Ztring ExternalMetaDat
         return false;
     }
 
-    Parse_XML(Template.RootElement(), Main, &MI_Info, ID, CSV);
+    Parse_XML(Template.RootElement(), Main, &MI_Info, FileName, CSV);
 
     return true;
 }
@@ -1544,12 +1544,27 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI, version Version, acquis
     Node* Node_Format=new Node("ebucore:format");
 
     //Use external metadata
-    if (UseExternalMetaData && !ExternalMetadata(MI.Get(Stream_General, 0, General_FileName), ExternalMetadataValues, ExternalMetaDataConfig, Node_CoreMetadata, Node_Format))
+    if (UseExternalMetaData)
     {
-        delete Node_CoreMain;
-        delete Node_Format;
+        Ztring FileName;
+        if (!MI.Get(Stream_General, 0, General_FileName).empty())
+            FileName=MI.Get(Stream_General, 0, General_FileName);
+        if (!MI.Get(Stream_General, 0, General_FileExtension).empty())
+            FileName+=__T('.')+MI.Get(Stream_General, 0, General_FileExtension);
+        if (FileName.empty())
+        {
+            MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, "File name not found in external metadata file");
+            delete Node_CoreMain;
+            delete Node_Format;
+            return Ztring();
+        }
 
-        return Ztring();
+        if (!ExternalMetadata(FileName, ExternalMetadataValues, ExternalMetaDataConfig, Node_CoreMetadata, Node_Format))
+        {
+            delete Node_CoreMain;
+            delete Node_Format;
+            return Ztring();
+        }
     }
 
     if (!UseExternalMetaData)
