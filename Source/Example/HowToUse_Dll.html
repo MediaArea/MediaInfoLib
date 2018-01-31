@@ -77,6 +77,10 @@
                 // Initialise MediaInfo
                 MI = new MediaInfoModule.MediaInfo();
 
+                //Open the file
+                MI.Open(file, callback);
+
+                /* By buffer example:
                 MI.Option('File_FileName', file.name);
                 MI.Open_Buffer_Init(file.size, 0);
 
@@ -121,7 +125,7 @@
                 };
 
                  // Start
-                loop(CHUNK_SIZE);
+                loop(CHUNK_SIZE);*/
               }
 
               // Initialise emscripten module
