@@ -63,10 +63,19 @@ string XML_Encode (const string& Data)
 }
 
 //---------------------------------------------------------------------------
-string To_XML (Node& Cur_Node, const int& Level)
+string To_XML (Node& Cur_Node, const int& Level, bool Print_Header, bool Indent)
 {
     string Result;
-    if (!Level)
+
+    if (!Cur_Node.RawContent.empty())
+    {
+      //  if (Level)
+      //      Result+="\n";
+        Result+=Cur_Node.RawContent;
+        return Result;
+    }
+
+    if (Print_Header)
     {
         Result+="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
         //Current date/time is ISO format
@@ -78,21 +87,24 @@ string To_XML (Node& Cur_Node, const int& Level)
 
         Result+=string("<!-- Generated at "+TimeS.To_UTF8()+" by "+MediaInfoLib::Config.Info_Version_Get().To_UTF8()+" -->\n");
     }
-    else
+
+    if (Cur_Node.Name.empty())
+        return Result;
+
+    if (Level)
         Result+="\n";
 
     if (Cur_Node.XmlCommentOut.size())
-        Result+=string(Level, '\t')+"<!-- "+Cur_Node.XmlCommentOut+"\n";
+        Result+=(Indent?string(Level, '\t'):"")+"<!-- "+Cur_Node.XmlCommentOut+"\n";
 
-    Result+=string(Level, '\t')+"<"+Cur_Node.Name;
+    Result+=(Indent?string(Level, '\t'):"")+"<"+Cur_Node.Name;
 
     for (size_t Pos=0; Pos<Cur_Node.Attrs.size(); Pos++)
     {
         if (Cur_Node.Attrs[Pos].first.empty())
             continue;
 
-        Result+=" "+Cur_Node.Attrs[Pos].first+"=\""
-               +XML_Encode(Cur_Node.Attrs[Pos].second)+"\"";
+        Result+=" "+Cur_Node.Attrs[Pos].first+"=\""+XML_Encode(Cur_Node.Attrs[Pos].second)+"\"";
     }
     Cur_Node.Attrs.clear(); //Free memory
 
@@ -100,7 +112,7 @@ string To_XML (Node& Cur_Node, const int& Level)
     {
         Result+=" />";
         if (Cur_Node.XmlCommentOut.size())
-            Result+="\n"+string(Level, '\t')+"-->";
+            Result+="\n"+(Indent?string(Level, '\t'):"")+string(Level, '\t')+"-->";
         return Result;
     }
 
@@ -109,7 +121,7 @@ string To_XML (Node& Cur_Node, const int& Level)
     if (Cur_Node.Value.size())
     {
         if (Cur_Node.Childs.size())
-            Result+="\n"+string(Level+1, '\t');
+            Result+="\n"+(Indent?string(Level+1, '\t'):"");
         Result+=XML_Encode(Cur_Node.Value);
     }
 
@@ -120,17 +132,17 @@ string To_XML (Node& Cur_Node, const int& Level)
             if (!Cur_Node.Childs[Pos])
                 continue;
 
-            Result+=To_XML(*Cur_Node.Childs[Pos],Level+1);
+            Result+=To_XML(*Cur_Node.Childs[Pos], Level+1, false, Indent);
             delete Cur_Node.Childs[Pos];
             Cur_Node.Childs[Pos]=NULL;
         }
         Cur_Node.Childs.clear(); //Free memory
-        Result+="\n"+string(Level, '\t');
+        Result+="\n"+(Indent?string(Level, '\t'):"");
     }
 
     Result+="</"+Cur_Node.Name+">";
     if (Cur_Node.XmlCommentOut.size())
-        Result+="\n"+string(Level, '\t')+"-->";
+        Result+="\n"+(Indent?string(Level, '\t'):"")+"-->";
     if (!Level)
         Result+="\n";
 
@@ -159,7 +171,7 @@ string JSON_Encode (const string& Data)
 }
 
 //---------------------------------------------------------------------------
-string To_JSON_Attributes(Node& Cur_Node, const int& Level)
+string To_JSON_Attributes(Node& Cur_Node, const int& Level, bool Indent)
 {
     string Result;
     for (size_t Pos=0; Pos<Cur_Node.Attrs.size(); Pos++)
@@ -167,7 +179,7 @@ string To_JSON_Attributes(Node& Cur_Node, const int& Level)
         if (Cur_Node.Attrs[Pos].first.empty() || Cur_Node.Attrs[Pos].first.substr(0, 5)=="xmlns" || Cur_Node.Attrs[Pos].first.substr(0, 3)=="xsi")
             continue;
 
-        Result+="\n"+string(Level, '\t')+"\"@"+Cur_Node.Attrs[Pos].first+"\": \""
+        Result+="\n"+(Indent?string(Level, '\t'):"")+"\"@"+Cur_Node.Attrs[Pos].first+"\": \""
                +JSON_Encode(Cur_Node.Attrs[Pos].second)+"\"";
 
         if (Pos<Cur_Node.Attrs.size()-1 || Cur_Node.Value.size() || Cur_Node.Childs.size())
@@ -179,16 +191,31 @@ string To_JSON_Attributes(Node& Cur_Node, const int& Level)
 }
 
 //---------------------------------------------------------------------------
-string To_JSON_Elements(Node& Cur_Node, const int& Level)
+string To_JSON_Elements(Node& Cur_Node, const int& Level, bool Indent)
 {
     string Result;
+
     for (size_t Pos=0; Pos<Cur_Node.Childs.size(); Pos++)
     {
         if (!Cur_Node.Childs[Pos])
             continue;
-        Result+="\n"+string(Level, '\t')+"\""+Cur_Node.Childs[Pos]->Name+"\": ";
 
-        Result+="[\n";
+        if (!Cur_Node.Childs[Pos]->RawContent.empty())
+        {
+            if (Level)
+                Result+="\n";
+            Result+=Cur_Node.Childs[Pos]->RawContent;
+            continue;
+        }
+
+        if (Cur_Node.Name.empty())
+            continue;
+
+        Result+="\n"+(Indent?string(Level, '\t'):"")+"\""+Cur_Node.Childs[Pos]->Name+"\": ";
+
+        bool Multiple=Cur_Node.Childs[Pos]->Multiple;
+        if (Multiple)
+            Result+="[\n";
 
         string Name=Cur_Node.Childs[Pos]->Name;
         for (int Pos2=Pos; Pos2<Cur_Node.Childs.size() && Cur_Node.Childs[Pos2]->Name==Name; Pos2++)
@@ -196,24 +223,27 @@ string To_JSON_Elements(Node& Cur_Node, const int& Level)
             if (!Cur_Node.Childs[Pos2])
                 continue;
 
-            Result+=string(Level+1, '\t')+"{";
-            Result+=To_JSON_Attributes(*Cur_Node.Childs[Pos2], Level+2);
-            Result+=To_JSON_Elements(*Cur_Node.Childs[Pos2], Level+2);
+            Result+=(Indent?string(Level+1, '\t'):"")+"{";
+            Result+=To_JSON_Attributes(*Cur_Node.Childs[Pos2], Level+2, Indent);
+            Result+=To_JSON_Elements(*Cur_Node.Childs[Pos2], Level+2, Indent);
             Result+="\n";
 
             if(!Cur_Node.Childs[Pos2]->Value.empty())
-                Result+=string(Level+2, '\t')+"\"#value\": \""+JSON_Encode(Cur_Node.Childs[Pos2]->Value)+"\"\n";
-            Result+=string(Level+1, '\t')+"}";
+                Result+=(Indent?string(Level+2, '\t'):"")+"\"#value\": \""+JSON_Encode(Cur_Node.Childs[Pos2]->Value)+"\"\n";
+            Result+=(Indent?string(Level+1, '\t'):"")+"}";
 
             if (Pos2<Cur_Node.Childs.size()-1 && Cur_Node.Childs[Pos2]->Name==Cur_Node.Childs[Pos2+1]->Name)
                 Result+=",";
-            Result+="\n";
+
+            if (Multiple)
+                Result+="\n";
 
             delete Cur_Node.Childs[Pos2];
             Cur_Node.Childs[Pos2]=NULL;
             Pos=Pos2;
         }
-        Result+=string(Level, '\t')+"]";
+        if (Multiple)
+            Result+=(Indent?string(Level, '\t'):"")+"]";
 
         if (Pos<Cur_Node.Childs.size()-1 || !Cur_Node.Value.empty())
             Result+=",";
@@ -224,14 +254,25 @@ string To_JSON_Elements(Node& Cur_Node, const int& Level)
 }
 
 //---------------------------------------------------------------------------
-string To_JSON (Node& Cur_Node, const int& Level)
+string To_JSON (Node& Cur_Node, const int& Level, bool Print_Header, bool Indent)
 {
     string Result;
 
-    if (!Level)
+    if (!Cur_Node.RawContent.empty())
+    {
+        if (Level)
+            Result+="\n";
+        Result+=Cur_Node.RawContent;
+        return Result;
+    }
+
+    if (Cur_Node.Name.empty())
+        return Result;
+
+    if (Print_Header)
         Result+="{\n";
 
-    Result+=string(Level+1, '\t')+"\""+Cur_Node.Name+"\": ";
+    Result+=(Indent?string(Level+1, '\t'):"")+"\""+Cur_Node.Name+"\": ";
 
     if (Cur_Node.Attrs.empty() && Cur_Node.Childs.empty() && !Cur_Node.Multiple)
     {
@@ -239,20 +280,20 @@ string To_JSON (Node& Cur_Node, const int& Level)
             Result+="null";
         else
             Result+="\""+JSON_Encode(Cur_Node.Value)+"\"";
-        if (!Level)
+        if (Print_Header)
             Result+="\n}\n";
         return Result;
     }
 
     Result+="{";
-    Result+=To_JSON_Attributes(Cur_Node, Level+2);
-    Result+=To_JSON_Elements(Cur_Node, Level+2);
+    Result+=To_JSON_Attributes(Cur_Node, Level+2, Indent);
+    Result+=To_JSON_Elements(Cur_Node, Level+2, Indent);
     if (!Cur_Node.Value.empty())
-        Result+="\n"+string(Level+2, '\t')+"\"#value\": \""+JSON_Encode(Cur_Node.Value)+"\"";
+        Result+="\n"+(Indent?string(Level+2, '\t'):"")+"\"#value\": \""+JSON_Encode(Cur_Node.Value)+"\"";
 
-    Result+="\n"+string(Level+1, '\t')+"}";
+    Result+="\n"+(Indent?string(Level+1, '\t'):"")+"}";
 
-    if (!Level)
+    if (Print_Header)
         Result+="\n}\n";
 
     return Result;
