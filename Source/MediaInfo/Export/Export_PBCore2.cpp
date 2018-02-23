@@ -353,7 +353,10 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     else
         Format=__T("application/x-")+Ztring(MI.Get(Stream_General, 0, __T("Format"))).MakeLowerCase();
     Node_Main.Add_Child("instantiationDigital", Format);
-
+    
+    //formatStandard
+    Node_Main.Add_Child("instantiationStandard", MI.Get(Stream_General, 0, General_Format));
+    
     //formatLocation
     Node_Main.Add_Child("instantiationLocation", MI.Get(Stream_General, 0, General_CompleteName));
 
