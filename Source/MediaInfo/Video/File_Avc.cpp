@@ -393,6 +393,19 @@ namespace AVC_Intra_Headers
                                                             0x00, 0x00, 0x01, 0x68, 0xCE, 0x33, 0x48, 0xD0 };
 };
 
+
+//---------------------------------------------------------------------------
+// Some DV Metadata info: http://www.freepatentsonline.com/20050076039.pdf
+static const char* MDPM(int8u ID)
+{
+    switch (ID)
+    {
+        case 0x18: return "Date/Time";                          // Is "Text header" in doc?
+        case 0x19: return "Date/Time (continue 1)";             // Is "Text" in doc?
+        default  : return "";
+    }
+}
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -3166,8 +3179,103 @@ void File_Avc::sei_message_user_data_unregistered_bluray(int32u payloadSize)
     switch (Identifier)
     {
         case 0x47413934 :   sei_message_user_data_registered_itu_t_t35_GA94_03(); return;
+        case 0x4D44504D :   sei_message_user_data_unregistered_bluray_MDPM(Element_Size-Element_Offset); return;
         default         :   Skip_XX(Element_Size-Element_Offset, "Unknown");
     }
+}
+
+//---------------------------------------------------------------------------
+// SEI - 5 - bluray - MDPM
+void File_Avc::sei_message_user_data_unregistered_bluray_MDPM(int32u payloadSize)
+{
+    if (payloadSize<1)
+    {
+        Skip_XX(payloadSize, "Unknown");
+        return;
+    }
+
+    Element_Info1("Modified Digital Video Pack Metadata");
+
+    Skip_B1(                                                    "Count?");
+    payloadSize--;
+    string DateTime0, DateTime1, DateTime2, Model0, Model1, Model2;
+    int16u MakeName=(int16u)-1;
+    Ztring IrisFNumber;
+    while (payloadSize >= 5)
+    {
+        Element_Begin0();
+        int8u  ID;
+        Get_B1(ID,                                              "ID"); Element_Name(MDPM(ID));
+        switch (ID)
+        {
+            case 0x18:
+                        {
+                        int16u Year;
+                        int8u  ID, MM, Zone_Hours;
+                        bool   Zone_Sign, Zone_Minutes;
+                        BS_Begin();
+                        Mark_0();
+                        Skip_SB(                                "DST flag");
+                        Get_SB (Zone_Sign,                      "Time zone sign");
+                        Get_S1 (4, Zone_Hours,                  "Time zone hours");
+                        Get_SB (Zone_Minutes,                   "Time zone half-hour flag");
+                        BS_End();
+                        Get_B2 (Year,                           "Year");
+                        Get_B1 (MM,                             "Month");
+                        DateTime0+='0'+(Year>>12);
+                        DateTime0+='0'+((Year&0xF00)>>8);
+                        DateTime0+='0'+((Year&0xF0)>>4);
+                        DateTime0+='0'+(Year&0xF);
+                        DateTime0+='-';
+                        DateTime0+='0'+((MM&0xF0)>>4);
+                        DateTime0+='0'+(MM&0xF);
+                        DateTime0+='-';
+                        Element_Info1(DateTime0);
+                        DateTime2+=Zone_Sign?'-':'+';
+                        DateTime2+='0'+Zone_Hours/10;
+                        DateTime2+='0'+Zone_Hours%10;
+                        DateTime2+=':';
+                        DateTime2+=Zone_Minutes?'3':'0';
+                        DateTime2+='0';
+                        Element_Info1(DateTime2);
+                        }
+                        break;
+            case 0x19:
+                        {
+                        int8u  MM, DD, hh, mm, ss;
+                        Get_B1 (DD,                             "Day");
+                        Get_B1 (hh,                             "Hour");
+                        Get_B1 (mm,                             "Minute");
+                        Get_B1 (ss,                             "Second");
+                        DateTime1+='0'+(DD>>4);
+                        DateTime1+='0'+(DD&0xF);
+                        DateTime1+=' ';
+                        DateTime1+='0'+(hh>>4);
+                        DateTime1+='0'+(hh&0xF);
+                        DateTime1+=':';
+                        DateTime1+='0'+(mm>>4);
+                        DateTime1+='0'+(mm&0xF);
+                        DateTime1+=':';
+                        DateTime1+='0'+(ss>>4);
+                        DateTime1+='0'+(ss&0xF);
+                        Element_Info1(DateTime1);
+                        }
+                        break;
+            default: Skip_B4("Data");
+        }
+        Element_End0();
+        payloadSize -= 5;
+    }
+    if (payloadSize)
+        Skip_XX(payloadSize, "Unknown");
+
+    FILLING_BEGIN();
+        if (!Frame_Count)
+        {
+            if (!DateTime0.empty() && !DateTime1.empty())
+                Fill(Stream_General, 0, General_Recorded_Date, DateTime0+DateTime1+DateTime2);
+        }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
