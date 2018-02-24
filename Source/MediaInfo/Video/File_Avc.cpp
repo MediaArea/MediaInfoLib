@@ -3226,7 +3226,7 @@ void File_Avc::sei_message_user_data_unregistered_bluray_MDPM(int32u payloadSize
 
     Element_Info1("Modified Digital Video Pack Metadata");
 
-    Skip_B1(                                                    "Count?");
+    Skip_B1(                                                    "Count");
     payloadSize--;
     string DateTime0, DateTime1, DateTime2, Model0, Model1, Model2;
     int16u MakeName=(int16u)-1;
@@ -3333,7 +3333,7 @@ void File_Avc::sei_message_user_data_unregistered_bluray_MDPM(int32u payloadSize
         Skip_XX(payloadSize, "Unknown");
 
     FILLING_BEGIN();
-        if (!Frame_Count)
+        if (!Frame_Count && !seq_parameter_sets.empty() && !pic_parameter_sets.empty())
         {
             if (!DateTime0.empty() && !DateTime1.empty())
                 Fill(Stream_General, 0, General_Recorded_Date, DateTime0+DateTime1+DateTime2);
