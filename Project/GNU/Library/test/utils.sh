@@ -12,6 +12,16 @@ then
     wget https://github.com/MediaArea/MediaAreaXml/raw/master/micromediatrace.xsd -O "$UTILS_PATH/micromediatrace.xsd"
 fi
 
+if [ ! -f "$UTILS_PATH/mediainfo_2_0.xsd" ]
+then
+    wget https://mediaarea.net/mediainfo/mediainfo_2_0.xsd -O "$UTILS_PATH/mediainfo.xsd"
+fi
+
+if [ ! -f "$UTILS_PATH/mediaarea.xsd" ]
+then
+    wget https://github.com/MediaArea/MediaAreaXml/raw/master/mediaarea.xsd -O "$UTILS_PATH/mediaarea.xsd"
+fi
+
 cmd_is_ok()
 {
     if test $? -ne 0
@@ -38,6 +48,15 @@ json_is_correct()
     fi
 }
 
+output_xml_is_a_valid_mi()
+{
+    $(xmllint --noout --schema "$UTILS_PATH/mediainfo.xsd" "$1" 2> /dev/null)
+    if test $? -ne 0
+    then
+        exit 1;
+    fi
+}
+
 output_xml_is_a_valid_mt()
 {
     $(xmllint --noout --schema "$UTILS_PATH/mediatrace.xsd" "$1" 2> /dev/null)
@@ -50,6 +69,15 @@ output_xml_is_a_valid_mt()
 output_xml_is_a_valid_mmt()
 {
     $(xmllint --noout --schema "$UTILS_PATH/micromediatrace.xsd" "$1" 2> /dev/null)
+    if test $? -ne 0
+    then
+        exit 1;
+    fi
+}
+
+output_xml_is_a_valid_ma()
+{
+    $(xmllint --noout --schema "$UTILS_PATH/mediaarea.xsd" "$1" 2> /dev/null)
     if test $? -ne 0
     then
         exit 1;
