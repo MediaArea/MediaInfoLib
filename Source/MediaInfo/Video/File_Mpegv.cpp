@@ -1104,6 +1104,7 @@ File_Mpegv::File_Mpegv()
 
     //temporal_reference
     TemporalReference_Offset=0;
+    temporal_reference=0;
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
         GA94_03_Parser=NULL;
         GA94_03_TemporalReference_Offset=0;
