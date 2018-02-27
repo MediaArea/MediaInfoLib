@@ -147,7 +147,9 @@ void MediaInfo::Close()
 //---------------------------------------------------------------------------
 String MediaInfo::Inform(size_t)
 {
-    return Internal->Inform();
+    std::vector<MediaInfo_Internal*> Info;
+    Info.push_back(Internal);
+    return MediaInfo_Internal::Inform(Info);
 }
 
 //---------------------------------------------------------------------------
