@@ -44,10 +44,10 @@
     #include "MediaInfo/Multiple/File_Ibi.h"
 #endif
 #include "MediaInfo/Multiple/File_Dxw.h"
-#ifdef MEDIAINFO_ADVANCED
+#ifdef MEDIAINFO_COMPRESS
     #include "ThirdParty/base64/base64.h"
     #include "zlib.h"
-#endif //MEDIAINFO_ADVANCED
+#endif //MEDIAINFO_COMPRESS
 #include <cmath>
 #ifdef MEDIAINFO_DEBUG_WARNING_GET
     #include <iostream>
@@ -837,6 +837,44 @@ std::bitset<32> MediaInfo_Internal::Open_Buffer_Continue (const int8u* ToAdd, si
     if (Info==NULL)
         return 0;
 
+    //Encoded content
+    #if MEDIAINFO_COMPRESS
+        bool zlib=MediaInfoLib::Config.FlagsX_Get(Flags_Input_zlib);
+        bool base64=MediaInfoLib::Config.FlagsX_Get(Flags_Input_base64);
+        if (zlib || base64)
+        {
+            string Input_Cache; // In case of encoded content, this string must live up to the end of the parsing
+            if (base64)
+            {
+                Input_Cache.assign((const char*)ToAdd, ToAdd_Size); ;
+                Input_Cache=Base64::decode(Input_Cache);
+                ToAdd=(const int8u*)Input_Cache.c_str();
+                ToAdd_Size= Input_Cache.size();
+            }
+            if (zlib)
+            {
+                uLongf Output_Size = ToAdd_Size;
+                uint8_t* Output = new uint8_t[Output_Size];
+
+                while (Output_Size && Output_Size<4*1024*1024)
+                {
+                    Output_Size*=16;
+                    uint8_t* Output = new uint8_t[Output_Size];
+                    if (uncompress((Bytef*)Output, &Output_Size, (const Bytef*)ToAdd, (uLong)ToAdd_Size)>=0)
+                    {
+                        ToAdd=Output;
+                        ToAdd_Size=Output_Size;
+                        break;
+                    }
+                    delete[] Output;
+                }
+            }
+            Info->Open_Buffer_Continue(ToAdd, ToAdd_Size);
+            if (zlib)
+                delete[] ToAdd;
+        }
+        else
+    #endif //MEDIAINFO_COMPRESS
     Info->Open_Buffer_Continue(ToAdd, ToAdd_Size);
 
     if (Info_IsMultipleParsing && Info->Status[File__Analyze::IsAccepted])
@@ -1379,22 +1417,24 @@ String MediaInfo_Internal::Option (const String &Option, const String &Value)
     #if MEDIAINFO_ADVANCED
         if (OptionLower.find(__T("file_inform_stringpointer")) == 0)
         {
-            Inform_Cache = Inform().To_UTF8();
-            if (Value.find(__T("zlib"))==0)
-            {
-                uLongf Compressed_Size=(uLongf)(Inform_Cache.size() + 16);
-                Bytef* Compressed=new Bytef[Inform_Cache.size()+16];
-                if (compress(Compressed, &Compressed_Size, (const Bytef*)Inform_Cache.c_str(), (uLong)Inform_Cache.size()) < 0)
+            Inform_Cache = Inform(this).To_UTF8();
+            #if MEDIAINFO_COMPRESS
+                if (Value.find(__T("zlib"))==0)
                 {
-                    delete[] Compressed;
-                    return __T("Error during zlib compression");
+                    uLongf Compressed_Size=(uLongf)(Inform_Cache.size() + 16);
+                    Bytef* Compressed=new Bytef[Inform_Cache.size()+16];
+                    if (compress(Compressed, &Compressed_Size, (const Bytef*)Inform_Cache.c_str(), (uLong)Inform_Cache.size()) < 0)
+                    {
+                        delete[] Compressed;
+                        return __T("Error during zlib compression");
+                    }
+                    Inform_Cache.assign((char*)Compressed, (size_t)Compressed_Size);
+                    if (Value.find(__T("+base64"))+7==Value.size())
+                    {
+                        Inform_Cache=Base64::encode(Inform_Cache);
+                    }
                 }
-                Inform_Cache.assign((char*)Compressed, (size_t)Compressed_Size);
-                if (Value.find(__T("+base64"))+7==Value.size())
-                {
-                    Inform_Cache=Base64::encode(Inform_Cache);
-                }
-            }
+            #endif //MEDIAINFO_COMPRESS
             return Ztring::ToZtring((int64u)Inform_Cache.data()) + __T(':') + Ztring::ToZtring((int64u)Inform_Cache.size());
         }
     #endif //MEDIAINFO_ADVANCED
@@ -1466,13 +1506,21 @@ void MediaInfo_Internal::Event_Prepare (struct MediaInfo_Event_Generic* Event)
 #endif // MEDIAINFO_EVENTS
 
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-String MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
+Ztring MediaInfo_Internal::Inform(MediaInfo_Internal* Info)
 {
+    std::vector<MediaInfoLib::MediaInfo_Internal*> Info2;
+    Info2.push_back(Info);
+    return MediaInfoLib::MediaInfo_Internal::Inform(Info2);
+}
+
+//---------------------------------------------------------------------------
+Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
+{
+    Ztring Result;
+
     #if defined(MEDIAINFO_XML_YES)
     if (MediaInfoLib::Config.Inform_Get()==__T("MAXML"))
     {
-        Ztring Result;
         Result+=__T("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")+MediaInfoLib::Config.LineSeparator_Get();
         Result+=__T('<');
         Result+=__T("MediaArea");
@@ -1496,13 +1544,10 @@ String MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
             Result+=MediaInfoLib::Config.LineSeparator_Get();
         Result+=__T("</MediaArea");
         Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
-
-        return Result;
     }
 
-    if (MediaInfoLib::Config.Trace_Level_Get() && MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_XML)
+    else if (MediaInfoLib::Config.Trace_Level_Get() && MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_XML)
     {
-        Ztring Result;
         Result+=__T("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")+MediaInfoLib::Config.LineSeparator_Get();
         Result+=__T('<');
         Result+=__T("MediaTrace");
@@ -1537,13 +1582,10 @@ String MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
             Result+=MediaInfoLib::Config.LineSeparator_Get();
         Result+=__T("</MediaTrace");
         Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
-
-        return Result;
     }
 
-    if (MediaInfoLib::Config.Trace_Level_Get() && MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_MICRO_XML)
+    else if (MediaInfoLib::Config.Trace_Level_Get() && MediaInfoLib::Config.Trace_Format_Get()==MediaInfoLib::Config.Trace_Format_MICRO_XML)
     {
-        Ztring Result;
         Result+=__T("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")+MediaInfoLib::Config.LineSeparator_Get();
         Result+=__T('<');
         Result+=__T("MicroMediaTrace");
@@ -1565,13 +1607,10 @@ String MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
         }
 
         Result+=__T("</MicroMediaTrace>");
-
-        return Result;
     }
 
-    if (MediaInfoLib::Config.Inform_Get()==__T("XML") || MediaInfoLib::Config.Inform_Get()==__T("MIXML"))
+    else if (MediaInfoLib::Config.Inform_Get()==__T("XML") || MediaInfoLib::Config.Inform_Get()==__T("MIXML"))
     {
-        Ztring Result;
         Result+=__T("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")+MediaInfoLib::Config.LineSeparator_Get();
         Result+=__T('<');
         Result+=__T("MediaInfo");
@@ -1594,14 +1633,11 @@ String MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
             Result+=MediaInfoLib::Config.LineSeparator_Get();
         Result+=__T("</MediaInfo");
         Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
-
-        return Result;
     }
+    else
     #endif //defined(MEDIAINFO_XML_YES)
 
     {
-        Ztring Result;
-
         size_t FilePos=0;
         ZtringListList MediaInfo_Custom_View; MediaInfo_Custom_View.Write(MediaInfoLib::Config.Option(__T("Inform_Get")));
         #if defined(MEDIAINFO_XML_YES)
@@ -1643,9 +1679,34 @@ String MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
         else
         #endif //defined(MEDIAINFO_XML_YES)
             Result+=MediaInfo_Custom_View("Page_End");//
-
-        return Result.c_str();
     }
+
+    #if MEDIAINFO_COMPRESS
+        bool zlib=MediaInfoLib::Config.FlagsX_Get(Flags_Inform_zlib);
+        bool base64=MediaInfoLib::Config.FlagsX_Get(Flags_Inform_base64);
+        if (zlib || base64)
+        {
+            string Inform_Cache = Result.To_UTF8();
+            if (zlib)
+            {
+                uLongf Compressed_Size=(uLongf)(Inform_Cache.size() + 16);
+                Bytef* Compressed=new Bytef[Inform_Cache.size()+16];
+                if (compress(Compressed, &Compressed_Size, (const Bytef*)Inform_Cache.c_str(), (uLong)Inform_Cache.size()) < 0)
+                {
+                    delete[] Compressed;
+                    return __T("Error during zlib compression");
+                }
+                Inform_Cache.assign((char*)Compressed, (size_t)Compressed_Size);
+            }
+            if (base64)
+            {
+                Inform_Cache=Base64::encode(Inform_Cache);
+            }
+            Result.From_UTF8(Inform_Cache);
+        }
+    #endif //MEDIAINFO_COMPRESS
+
+    return Result.c_str();
 }
 
 } //NameSpace

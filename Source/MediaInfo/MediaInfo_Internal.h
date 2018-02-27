@@ -104,7 +104,8 @@ public :
 
     //Internal
     static bool LibraryIsModified(); //Is the library has been modified? (#defines...)
-    static String Inform (std::vector<MediaInfo_Internal*> &Info); // Central place for XML headers
+    static Ztring Inform (MediaInfo_Internal* Info); // Central place for XML headers
+    static Ztring Inform (std::vector<MediaInfo_Internal*> &Info); // Central place for XML headers
 
 private :
     friend class File_Bdmv;  //Theses classes need access to internal structure for optimization. There is recursivity with theses formats
@@ -143,7 +144,9 @@ private :
     std::vector<std::vector<ZtringList> > Stream;
     std::vector<std::vector<ZtringListList> > Stream_More;
     string Details;
-    string Inform_Cache;
+    #if MEDIAINFO_ADVANCED
+        string Inform_Cache;
+    #endif //MEDIAINFO_ADVANCED
     Ztring ParserName;
     void Traiter(Ztring &C); //enleve les $if...
 

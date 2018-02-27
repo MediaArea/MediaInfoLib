@@ -305,7 +305,7 @@ String MediaInfoList_Internal::Inform(size_t FilePos, size_t)
     if (FilePos>=Info.size() || Info[FilePos]==NULL || Info[FilePos]->Count_Get(Stream_General)==0)
         return MediaInfoLib::Config.EmptyString_Get();
 
-    return Info[FilePos]->Inform();
+    return MediaInfo_Internal::Inform(Info[FilePos]);
 }
 
 //---------------------------------------------------------------------------

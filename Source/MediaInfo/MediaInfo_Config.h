@@ -47,6 +47,19 @@ enum basicformat
     BasicFormat_JSON,
 };
 
+#if MEDIAINFO_COMPRESS
+    #define MEDIAINFO_FLAGX 1
+    enum config_flagsX
+    {
+        Flags_Inform_zlib,
+        Flags_Inform_base64,
+        Flags_Input_zlib,
+        Flags_Input_base64,
+    };
+#else //MEDIAINFO_COMPRESS
+    #define MEDIAINFO_FLAGX 0
+#endif //MEDIAINFO_COMPRESS
+
 //***************************************************************************
 // Class MediaInfo_Config
 //***************************************************************************
@@ -167,6 +180,16 @@ public :
 
           void      Inform_Replace_Set (const ZtringListList &NewInform_Replace);
           ZtringListList Inform_Replace_Get_All ();
+
+          #if MEDIAINFO_COMPRESS
+          Ztring    Inform_Compress_Set (const Ztring &NewInform);
+          Ztring    Inform_Compress_Get ();
+          Ztring    Input_Compressed_Set(const Ztring &NewInform);
+          Ztring    Input_Compressed_Get();
+          #endif //MEDIAINFO_COMPRESS
+          #if MEDIAINFO_FLAGX
+          bool      FlagsX_Get(config_flagsX Flag) { return FlagsX&(1 << Flag); }
+          #endif //MEDIAINFO_FLAGX
 
     const Ztring   &Format_Get (const Ztring &Value, infoformat_t KindOfFormatInfo=InfoFormat_Name);
           InfoMap  &Format_Get(); //Should not be, but too difficult to hide it
@@ -369,6 +392,9 @@ private :
     Translation     Language; //ex. : "KB;Ko"
     ZtringListList  Custom_View; //Definition of "General", "Video", "Audio", "Text", "Other", "Image"
     ZtringListList  Custom_View_Replace; //ToReplace;ReplaceBy
+    #if MEDIAINFO_FLAGX
+        int64u      FlagsX;
+    #endif //MEDIAINFO_FLAGX
     trace_Format    Trace_Format;
 
     InfoMap         Container;

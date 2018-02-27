@@ -291,6 +291,9 @@ void MediaInfo_Config::Init()
     #if MEDIAINFO_FIXITY
         TryToFix=false;
     #endif //MEDIAINFO_FIXITY
+    #if MEDIAINFO_FLAGX
+        FlagsX=0;
+    #endif //MEDIAINFO_FLAGX
 
     }
 
@@ -761,6 +764,24 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     {
         return Inform_Get();
     }
+    #if MEDIAINFO_COMPRESS
+        if (Option_Lower==__T("inform_compress"))
+        {
+            return Inform_Compress_Set(Value.c_str());
+        }
+        if (Option_Lower==__T("inform_compress_get"))
+        {
+            return Inform_Compress_Get();
+        }
+        if (Option_Lower==__T("input_compressed"))
+        {
+            return Input_Compressed_Set(Value.c_str());
+        }
+        if (Option_Lower==__T("input_compressed_get"))
+        {
+            return Input_Compressed_Get();
+        }
+    #endif //MEDIAINFO_COMPRESS
     if (Option_Lower==__T("details")) //Legacy for trace_level
     {
         if (Value == __T("0"))
@@ -2045,6 +2066,88 @@ ZtringListList MediaInfo_Config::Inform_Replace_Get_All ()
     CriticalSectionLocker CSL(CS);
     return Custom_View_Replace;
 }
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_COMPRESS
+Ztring MediaInfo_Config::Inform_Compress_Set (const Ztring &NewValue_)
+{
+    Ztring NewValue(NewValue_);
+    transform(NewValue.begin(), NewValue.end(), NewValue.begin(), (int(*)(int))tolower); //(int(*)(int)) is a patch for unix
+    const int64u Mask=~((1<<Flags_Inform_zlib)|(1<<Flags_Inform_base64));
+    int64u Value;
+    if (NewValue.empty())
+        Value=0;
+    else if (NewValue== __T("base64"))
+        Value=(1<<Flags_Inform_base64);
+    else if (NewValue== __T("zlib+base64"))
+        Value=(1<<Flags_Inform_zlib)|(1<<Flags_Inform_base64);
+    else
+        return __T("Unsupported");
+
+    CriticalSectionLocker CSL(CS);
+    FlagsX&=Mask;
+    FlagsX|=Value;
+    return Ztring();
+}
+
+Ztring MediaInfo_Config::Inform_Compress_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    Ztring ToReturn;
+    if (FlagsX&(1<<Flags_Inform_zlib))
+        ToReturn=__T("zlib");
+    if (FlagsX&(1<<Flags_Inform_base64))
+    {
+        if (!ToReturn.empty())
+            ToReturn+=__T('+');
+        ToReturn+=__T("base64");
+    }
+
+    return ToReturn;
+}
+#endif //MEDIAINFO_COMPRESS
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_COMPRESS
+Ztring MediaInfo_Config::Input_Compressed_Set (const Ztring &NewValue_)
+{
+    Ztring NewValue(NewValue_);
+    transform(NewValue.begin(), NewValue.end(), NewValue.begin(), (int(*)(int))tolower); //(int(*)(int)) is a patch for unix
+    const int64u Mask=~((1<<Flags_Input_zlib)|(1<<Flags_Input_base64));
+    int64u Value;
+    if (NewValue.empty())
+        Value=0;
+    else if (NewValue== __T("zlib"))
+        Value=(1<<Flags_Input_zlib);
+    else if (NewValue== __T("base64"))
+        Value=(1<<Flags_Input_base64);
+    else if (NewValue== __T("zlib+base64"))
+        Value=(1<<Flags_Input_zlib)|(1<<Flags_Input_base64);
+    else
+        return __T("Unsupported");
+
+    CriticalSectionLocker CSL(CS);
+    FlagsX&=Mask;
+    FlagsX|=Value;
+    return Ztring();
+}
+
+Ztring MediaInfo_Config::Input_Compressed_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    Ztring ToReturn;
+    if (FlagsX&(1<<Flags_Input_zlib))
+        ToReturn=__T("zlib");
+    if (FlagsX&(1<<Flags_Input_base64))
+    {
+        if (!ToReturn.empty())
+            ToReturn+=__T('+');
+        ToReturn+=__T("base64");
+    }
+
+    return ToReturn;
+}
+#endif //MEDIAINFO_COMPRESS
 
 //---------------------------------------------------------------------------
 const Ztring &MediaInfo_Config::Format_Get (const Ztring &Value, infoformat_t KindOfFormatInfo)
