@@ -1533,7 +1533,6 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
         Result+=MediaInfoLib::Config.LineSeparator_Get();
         Result+=__T("    version=\"0.1\"");
         Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
-        Result+=__T("<!-- Work in progress, not for production -->")+MediaInfoLib::Config.LineSeparator_Get();
         Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
         Result+=MediaInfoLib::Config.LineSeparator_Get();
 
