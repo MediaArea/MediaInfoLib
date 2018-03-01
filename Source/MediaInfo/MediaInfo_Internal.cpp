@@ -843,6 +843,11 @@ std::bitset<32> MediaInfo_Internal::Open_Buffer_Continue (const int8u* ToAdd, si
         bool base64=MediaInfoLib::Config.FlagsX_Get(Flags_Input_base64);
         if (zlib || base64)
         {
+            if (ToAdd_Size!=Config.File_Size)
+            {
+                Info->ForceFinish(); // File must be complete when this option is used
+                return Info->Status;
+            }
             string Input_Cache; // In case of encoded content, this string must live up to the end of the parsing
             if (base64)
             {
@@ -853,13 +858,12 @@ std::bitset<32> MediaInfo_Internal::Open_Buffer_Continue (const int8u* ToAdd, si
             }
             if (zlib)
             {
-                uLongf Output_Size = ToAdd_Size;
-                uint8_t* Output = new uint8_t[Output_Size];
-
-                while (Output_Size && Output_Size<4*1024*1024)
+                uLongf Output_Size_Max = ToAdd_Size;
+                while (Output_Size_Max)
                 {
-                    Output_Size*=16;
-                    uint8_t* Output = new uint8_t[Output_Size];
+                    Output_Size_Max *=16;
+                    int8u* Output = new int8u[Output_Size_Max];
+                    uLongf Output_Size = Output_Size_Max;
                     if (uncompress((Bytef*)Output, &Output_Size, (const Bytef*)ToAdd, (uLong)ToAdd_Size)>=0)
                     {
                         ToAdd=Output;
@@ -867,6 +871,11 @@ std::bitset<32> MediaInfo_Internal::Open_Buffer_Continue (const int8u* ToAdd, si
                         break;
                     }
                     delete[] Output;
+                    if (Output_Size_Max>=4*1024*1024)
+                    {
+                        Info->ForceFinish();
+                        return Info->Status;
+                    }
                 }
             }
             Info->Open_Buffer_Continue(ToAdd, ToAdd_Size);
