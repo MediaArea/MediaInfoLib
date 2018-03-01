@@ -23,6 +23,7 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
+#include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/Reader/Reader_File.h"
 //---------------------------------------------------------------------------
@@ -466,6 +467,9 @@ bool MediaInfo_Internal::SelectFromExtension (const String &Parser)
     #endif
     #if defined(MEDIAINFO_LXF_YES)
         else if (Parser==__T("Lxf"))         Info=new File_Lxf();
+    #endif
+    #if defined(MEDIAINFO_MIXML_YES)
+        else if (Parser==__T("MiXml"))       Info=new File_MiXml();
     #endif
     #if defined(MEDIAINFO_MK_YES)
         else if (Parser==__T("Mk"))          Info=new File_Mk();

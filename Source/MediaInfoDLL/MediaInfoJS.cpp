@@ -62,7 +62,7 @@ public:
     // General information
     MediaInfoLib::String Inform()
     {
-        return Internal->Inform();
+        return MediaInfoLib::MediaInfo_Internal::Inform(Internal);
     };
 
     MediaInfoLib::String GetI_3(MediaInfoLib::stream_t StreamKind, double StreamNumber, double Parameter)
