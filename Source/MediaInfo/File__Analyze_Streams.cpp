@@ -44,6 +44,7 @@ const char* Mpegv_colour_primaries(int8u colour_primaries);
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES)
 void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_ColorPrimaries, Ztring &MasteringDisplay_Luminance)
 {
     //Parsing
@@ -85,6 +86,7 @@ void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_Col
                                +__T(" cd/m2");
     }
 }
+#endif
 
 //***************************************************************************
 // Preparation des streams
