@@ -6,6 +6,7 @@
 
 #include <string>
 #include "ZenLib/Ztring.h"
+#include "ZenLib/ZtringListList.h"
 #include "ZenLib/File.h"
 #include "MediaInfo/MediaInfo.h"
 #include "MediaInfo/MediaInfoList.h"
@@ -19,11 +20,12 @@ struct Option
     ZenLib::Ztring read_by_human;
     ZenLib::Ztring language;
     ZenLib::Ztring out_format;
+    ZenLib::ZtringListList extra_options;
 };
 
 static int usage()
 {
-    fprintf(stderr, "tool [--details|-d] [--human-readable|-h] [--format|-f output_format] [--language|-l output_language] media_filename output_filename\n");
+    fprintf(stderr, "tool [--details|-d] [--human-readable|-h] [--format|-f output_format] [--language|-l output_language] [--extra-options|-e options] media_filename output_filename\n");
     return 1;
 }
 
@@ -36,6 +38,8 @@ static int parse_options(int ac, char *av[], Option& opts)
     opts.details = __T("0");
     opts.read_by_human = __T("0");
     opts.language = __T("raw");
+    opts.extra_options.Separator_Set(0, __T(","));
+    opts.extra_options.Separator_Set(1, __T(":"));
 
     int nb_arguments = 0;
 
@@ -64,6 +68,14 @@ static int parse_options(int ac, char *av[], Option& opts)
                 return usage();
 
             opts.language = ZenLib::Ztring().From_Local(av[i]);
+        }
+        else if (std::string("--extra-options") == av[i] || std::string("-e") == av[i])
+        {
+            ++i;
+            if (i == ac)
+                return usage();
+
+            opts.extra_options.Write(ZenLib::Ztring().From_Local(av[i]));
         }
         else
         {
@@ -108,6 +120,14 @@ int main(int ac, char *av[])
     mi.Option(__T("ReadByHuman"), opts.read_by_human);
     mi.Option(__T("Language"), opts.language);
     mi.Option(__T("Inform"), opts.out_format);
+
+    for (int i = 0; i < opts.extra_options.size(); ++i)
+    {
+        ZenLib::Ztring option = opts.extra_options.Read(i, 0);
+        ZenLib::Ztring value = opts.extra_options.Read(i, 1);
+
+        mi.Option(option, value);
+    }
 
     if (mi.Open(opts.media_filename) == 0)
     {
