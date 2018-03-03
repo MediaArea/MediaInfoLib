@@ -4,6 +4,10 @@ PATH_SCRIPT=$(dirname "$0")
 PATH_FILES=$PATH_SCRIPT/Files
 . "$PATH_SCRIPT/utils.sh"
 
+if ! enabled ebucore ; then
+    exit 77 # Skip test
+fi
+
 unset args
 while IFS= read -r i; do
     for VERSION in EBUCore_1.5 EBUCore_1.6 EBUCore_1.8_ps EBUCore_1.8_sp; do

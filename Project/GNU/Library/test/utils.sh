@@ -1,5 +1,4 @@
 #!/bin/sh
-
 UTILS_PATH=$(dirname "$0")
 
 if [ ! -f "$UTILS_PATH/mediatrace.xsd" ]
@@ -21,6 +20,25 @@ if [ ! -f "$UTILS_PATH/mediaarea.xsd" ]
 then
     wget https://github.com/MediaArea/MediaAreaXml/raw/master/mediaarea.xsd -O "$UTILS_PATH/mediaarea.xsd"
 fi
+
+enabled()
+{
+    if test -z "${RUN_TESTS+x}" ; then
+        return 0
+    fi
+
+    local test="$1"
+
+    set -- $RUN_TESTS
+    while test $# -gt 0 ; do
+        if test "$1" = "$test" ; then
+            return 0
+        fi
+        shift
+    done
+
+    return 1
+}
 
 cmd_is_ok()
 {
