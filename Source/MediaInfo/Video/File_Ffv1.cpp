@@ -1402,7 +1402,7 @@ bool File_Ffv1::SliceHeader(states &States)
         Param_Error("FFV1-SLICE-picture_structure:1");
     Get_RU (States, sample_aspect_ratio_num,                "sar_num");
     Get_RU (States, sample_aspect_ratio_den,                "sar_den");
-    if ((sample_aspect_ratio_num && !sample_aspect_ratio_den) || (!sample_aspect_ratio_num && sample_aspect_ratio_den))
+    if ((sample_aspect_ratio_num && !sample_aspect_ratio_den)) // || (!sample_aspect_ratio_num && sample_aspect_ratio_den)) // Second part is deactivated because FFmpeg creates such file when SAR is unknown
         Param_Error("FFV1-SLICE-sar_den:1");
     if (version > 3)
     {
