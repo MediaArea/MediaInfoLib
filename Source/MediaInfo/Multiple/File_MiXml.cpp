@@ -84,6 +84,10 @@ bool File_MiXml::FileHeader_Begin()
                         Fill(Stream_General, 0, General_FolderName, FileName::Path_Get(File_Name), true);
                         Fill(Stream_General, 0, General_FileName, FileName::Name_Get(File_Name), true);
                         Fill(Stream_General, 0, General_FileExtension, FileName::Extension_Get(File_Name), true);
+                        if (Retrieve(Stream_General, 0, General_FileExtension).empty())
+                            Fill(Stream_General, 0, General_FileNameExtension, Retrieve(Stream_General, 0, General_FileName), true);
+                        else
+                            Fill(Stream_General, 0, General_FileNameExtension, Retrieve(Stream_General, 0, General_FileName)+__T('.')+Retrieve(Stream_General, 0, General_FileExtension), true);
                     }
 
                     XMLElement* Track = Media->FirstChildElement();

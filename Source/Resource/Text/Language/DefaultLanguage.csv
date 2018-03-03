@@ -342,6 +342,7 @@ File_Modified_Date;File last modification date
 File_Modified_Date_Local;File last modification date (local)
 FileExtension;File extension
 FileName;File name
+FileNameExtension;File name
 FileSize;File size
 Folder;Folder
 Folder (R);Folder (R)

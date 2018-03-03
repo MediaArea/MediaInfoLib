@@ -207,6 +207,10 @@ size_t File__Analyze::Stream_Prepare (stream_t KindOfStream, size_t StreamPos)
                     Fill (Stream_General, 0, General_FileName, FileName_Modified.substr(FileName_Modified_PathSeparatorOffset+1));
             }
         }
+        if (Retrieve(Stream_General, 0, General_FileExtension).empty())
+            Fill(Stream_General, 0, General_FileNameExtension, Retrieve(Stream_General, 0, General_FileName));
+        else
+            Fill(Stream_General, 0, General_FileNameExtension, Retrieve(Stream_General, 0, General_FileName)+__T('.')+Retrieve(Stream_General, 0, General_FileExtension));
 
         //File dates
         #if defined(MEDIAINFO_FILE_YES)
