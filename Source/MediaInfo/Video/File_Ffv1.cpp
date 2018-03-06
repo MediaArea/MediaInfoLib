@@ -830,6 +830,14 @@ void File_Ffv1::Read_Buffer_Continue()
         else
         #endif //MEDIAINFO_TRACE
             Skip_XX(Element_Size-Element_Offset,                "SliceContent");
+        if (version<=1 && Element_Offset+5==Element_Size)
+        {
+            crc_left=FFv1_CRC_Compute(Buffer+Buffer_Offset+(size_t)Element_Offset_Begin, (size_t)(Element_Size-Element_Offset_Begin));
+            Element_Size-=5;
+            ec = 1;
+            if (Frame_Count==0)
+                Fill(Stream_Video, 0, "ErrorDetectionType", "Per slice");
+        }
         if (Element_Offset<Element_Size)
         {
             Skip_XX(Element_Size-Element_Offset,                "Junk");
@@ -838,13 +846,16 @@ void File_Ffv1::Read_Buffer_Continue()
 
         //SliceFooter
         Element_Size=Element_Size_Save;
+        if (version>=3 || ec == 1)
+            Element_Begin1("SliceFooter");
         if (version>=3)
         {
-            Element_Begin1("SliceFooter");
             int32u slice_size;
             Get_B3 (slice_size,                                 "slice_size");
             if (Element_Offset_Begin+slice_size+3!=Element_Offset)
                 Param_Error("FFV1-SLICE-slice_size:1");
+        }
+        {
             if (ec == 1)
             {
                 int8u error_status;
@@ -871,9 +882,10 @@ void File_Ffv1::Read_Buffer_Continue()
                         }
                     #endif //MEDIAINFO_FIXITY
                 }
-                Element_End0();
             }
         }
+        if (version>=3 || ec==1)
+            Element_End0();
 
         Element_End0();
         Pos++;
