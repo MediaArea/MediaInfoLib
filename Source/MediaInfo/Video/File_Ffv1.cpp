@@ -1146,13 +1146,6 @@ void File_Ffv1::Parameters()
         intra=0;
     }
 
-    if (!coder_type && version<=1)
-    {
-        states States;
-        memset(States, 129, states_size);
-        Skip_RC(States,                                         "end");
-    }
-
     Element_End0();
 
     FILLING_BEGIN();
@@ -1192,7 +1185,7 @@ void File_Ffv1::Parameters()
             if (version>1)
             {
                 Fill(Stream_Video, 0, "MaxSlicesCount", num_h_slices*num_v_slices);
-                if (version>2)
+                if (version>=3)
                 {
                     if (ec)
                         Fill(Stream_Video, 0, "ErrorDetectionType", "Per slice");
@@ -1255,16 +1248,12 @@ void File_Ffv1::SliceContent(states &States)
 
     if (!coder_type)
     {
-        if ((version == 3 && micro_version > 1) || version > 3)
+        if (version>=3)
         {
-            states States;
-            memset(States, 129, states_size);
-            Skip_RC(States,                                     "?");
+            int8u s = 129;
+            RC->get_rac(&s);
         }
-        if ((version > 2 || (!current_slice->x && !current_slice->y)))
-            Element_Offset+=RC->BytesUsed(); // Computing how many bytes where consumed by the range coder
-        else
-            Element_Offset=0;
+        Element_Offset+=RC->BytesUsed(); // Computing how many bytes where consumed by the range coder
         BS_Begin();
     }
 
@@ -1306,21 +1295,19 @@ void File_Ffv1::SliceContent(states &States)
     else if (colorspace_type == 1)
         rgb();
 
+    if (coder_type)
+    {
+        int8u s = 129;
+        RC->get_rac(&s);
+    }
+
     if (BS->BufferUnderRun || RC->Underrun())
         Element_Error("FFV1-SLICE-SliceContent:1");
 
-    if (!coder_type)
-        BS_End();
-
     if (coder_type)
-    {
-        //if (version > 2)
-        {
-            int8u s = 129;
-            RC->get_rac(&s);
-        }
         Skip_XX(RC->BytesUsed(),                                "slice_data");
-    }
+    else
+        BS_End();
 
     #if MEDIAINFO_DECODE
         //Decode(Buffer, Buffer_Size);
@@ -1410,14 +1397,6 @@ bool File_Ffv1::SliceHeader(states &States)
     }
 
     RC->AssignStateTransitions(state_transitions_table);
-
-    if (!coder_type)
-    {
-        states States;
-        memset(States, 129, states_size);
-        Skip_RC(States,                                     "end");
-    }
-    //Element_Offset+=RC->BytesUsed(); // Computing how many bytes where consumed by the range coder
 
     Element_End0();
     return true;
