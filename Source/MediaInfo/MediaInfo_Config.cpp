@@ -885,6 +885,14 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     {
         return Trace_Modificator_Get(Value);
     }
+    if (Option_Lower==__T("hideparameter"))
+    {
+        return HideShowParameter(Value, __T('N'));
+    }
+    if (Option_Lower==__T("showparameter"))
+    {
+        return HideShowParameter(Value, __T('Y'));
+    }
     if (Option_Lower==__T("info_parameters"))
     {
         ZtringListList ToReturn=Info_Parameters_Get();
@@ -2476,6 +2484,65 @@ Ztring MediaInfo_Config::Info_Parameters_Get (bool Complete)
     Language_Set(Ztring()); //TODO: it is reseted to English, it should actually not modify the language config (MediaInfo_Config_xxx() modifies the language config)
 
     return ToReturn.Read();
+}
+
+//---------------------------------------------------------------------------
+Ztring MediaInfo_Config::HideShowParameter(const Ztring &Value, Char Show)
+{
+    ZtringList List;
+    List.Separator_Set(0, __T(","));
+    List.Write(Value);
+
+    for (size_t j=0; j<List.size(); j++)
+    {
+        String KindOfStreamS=List[j].substr(0, List[j].find(__T('_')));
+        stream_t StreamKind=Stream_Max;
+        if (KindOfStreamS==__T("General")) StreamKind=Stream_General;
+        if (KindOfStreamS==__T("Video")) StreamKind=Stream_Video;
+        if (KindOfStreamS==__T("Audio")) StreamKind= Stream_Audio;
+        if (KindOfStreamS==__T("Text")) StreamKind= Stream_Text;
+        if (KindOfStreamS==__T("Other")) StreamKind= Stream_Other;
+        if (KindOfStreamS==__T("Image")) StreamKind= Stream_Image;
+        if (KindOfStreamS==__T("Menu")) StreamKind= Stream_Menu;
+        if (StreamKind==Stream_Max)
+            return List[j]+=__T(" is unknown");
+
+        //Loading codec table if not yet done
+        {
+        CriticalSectionLocker CSL(CS);
+        if (Info[StreamKind].empty())
+            switch (StreamKind)
+            {
+                case Stream_General :   MediaInfo_Config_General(Info[Stream_General]);   Language_Set(Stream_General); break;
+                case Stream_Video :     MediaInfo_Config_Video(Info[Stream_Video]);       Language_Set(Stream_Video); break;
+                case Stream_Audio :     MediaInfo_Config_Audio(Info[Stream_Audio]);       Language_Set(Stream_Audio); break;
+                case Stream_Text :      MediaInfo_Config_Text(Info[Stream_Text]);         Language_Set(Stream_Text); break;
+                case Stream_Other :     MediaInfo_Config_Other(Info[Stream_Other]);       Language_Set(Stream_Other); break;
+                case Stream_Image :     MediaInfo_Config_Image(Info[Stream_Image]);       Language_Set(Stream_Image); break;
+                case Stream_Menu :      MediaInfo_Config_Menu(Info[Stream_Menu]);         Language_Set(Stream_Menu); break;
+                default:;
+            }
+        }
+
+        String FieldName=List[j].substr(List[j].find(__T('_'))+1);
+        bool Found=false;
+        for (size_t i=0; i<Info[StreamKind].size(); i++)
+            if (Info[StreamKind][i](Info_Name)==FieldName)
+            {
+                if (Info_Options<Info[StreamKind][i].size())
+                {
+                    Info[StreamKind][i][Info_Options].resize(InfoOption_Max, __T(' '));
+                    Info[StreamKind][i][Info_Options][InfoOption_ShowInInform]=Show;
+                    Info[StreamKind][i][Info_Options][InfoOption_ShowInXml]=Show;
+                }
+                Found=true;
+                break;
+            }
+        if (!Found)
+            return List[j]+=__T(" is unknown");
+    }
+
+    return Ztring();
 }
 
 //---------------------------------------------------------------------------

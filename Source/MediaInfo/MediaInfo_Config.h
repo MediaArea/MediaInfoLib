@@ -211,6 +211,7 @@ public :
     const ZtringListList &Info_Get(stream_t KindOfStream); //Should not be, but too difficult to hide it
 
           Ztring    Info_Parameters_Get (bool Complete=false);
+          Ztring    HideShowParameter   (const Ztring &Value, Char Show);
           Ztring    Info_OutputFormats_Get(basicformat Format);
           Ztring    Info_Tags_Get       () const;
           Ztring    Info_CodecsID_Get   ();
