@@ -3,9 +3,8 @@
 PATH_SCRIPT=$(dirname "$0")
 RCODE=0
 
-if [ -z $S3_KEY ] || [ -z $S3_PASS ] ; then
-    # Skip test
-    exit 77
+if [ -z $S3_KEY ] || [ -z $S3_PASS ] || ! enabled s3 ; then
+    exit 77 # Skip test
 fi
 
 SERVERS="travis-standard.s3.amazonaws.com"

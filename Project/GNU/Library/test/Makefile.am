@@ -6,6 +6,7 @@ TESTS = \
     trace.sh \
     s3.sh \
     xml.sh \
+    mixml.sh \
     ebucore.sh
 
 check_PROGRAMS = mil_analyze

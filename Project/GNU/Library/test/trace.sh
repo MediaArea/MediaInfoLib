@@ -4,6 +4,10 @@ PATH_SCRIPT=$(dirname "$0")
 PATH_FILES=$PATH_SCRIPT/Files
 . "$PATH_SCRIPT/utils.sh"
 
+if ! enabled trace ; then
+    exit 77 # Skip test
+fi
+
 unset args
 while IFS= read -r i; do
     FILE_NAME=$(basename "$i")
