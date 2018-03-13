@@ -292,6 +292,9 @@ void MediaInfo_Config::Init()
     #if MEDIAINFO_FIXITY
         TryToFix=false;
     #endif //MEDIAINFO_FIXITY
+    #if MEDIAINFO_FLAG1
+        Flags1=0;
+    #endif //MEDIAINFO_FLAGX
     #if MEDIAINFO_FLAGX
         FlagsX=0;
     #endif //MEDIAINFO_FLAGX
@@ -765,6 +768,16 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     {
         return Inform_Get();
     }
+    #if MEDIAINFO_ADVANCED
+        if (Option_Lower==__T("cover_data"))
+        {
+            return Cover_Data_Set(Value.c_str());
+        }
+        if (Option_Lower==__T("cover_data_get"))
+        {
+            return Cover_Data_Get();
+        }
+    #endif //MEDIAINFO_COMPRESS
     #if MEDIAINFO_COMPRESS
         if (Option_Lower==__T("inform_compress"))
         {
@@ -2075,6 +2088,38 @@ ZtringListList MediaInfo_Config::Inform_Replace_Get_All ()
     CriticalSectionLocker CSL(CS);
     return Custom_View_Replace;
 }
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_ADVANCED
+Ztring MediaInfo_Config::Cover_Data_Set (const Ztring &NewValue_)
+{
+    Ztring NewValue(NewValue_);
+    transform(NewValue.begin(), NewValue.end(), NewValue.begin(), (int(*)(int))tolower); //(int(*)(int)) is a patch for unix
+    const int64u Mask=~((1<<Flags_Cover_Data_base64));
+    int64u Value;
+    if (NewValue.empty())
+        Value=0;
+    else if (NewValue==__T("base64"))
+        Value=(1<< Flags_Cover_Data_base64);
+    else
+        return __T("Unsupported");
+
+    CriticalSectionLocker CSL(CS);
+    Flags1&=Mask;
+    Flags1|=Value;
+    return Ztring();
+}
+
+Ztring MediaInfo_Config::Cover_Data_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    Ztring ToReturn;
+    if (Flags1&(1<< Flags_Cover_Data_base64))
+        ToReturn=__T("base64");
+
+    return ToReturn;
+}
+#endif //MEDIAINFO_ADVANCED
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_COMPRESS
