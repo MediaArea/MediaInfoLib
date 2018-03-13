@@ -793,9 +793,9 @@ void File_Dpx::GenericSectionHeader_Dpx_ImageElement()
     Get_B1 (BitDephs,                                           "Bit depth");Param_Info1(DPX_ValidBitDephs(BitDephs));
     Info_X2(ComponentDataPackingMethod,                         "Packing");Param_Info1((ComponentDataPackingMethod<8?DPX_ComponentDataPackingMethod[ComponentDataPackingMethod]:"invalid"));
     Info_X2(ComponentDataEncodingMethod,                        "Encoding");Param_Info1((ComponentDataEncodingMethod<8?DPX_ComponentDataEncodingMethod[ComponentDataEncodingMethod]:"invalid"));
-    Skip_B4(                                                    "Offset to data");
-    Skip_B4(                                                    "End-of-line padding");
-    Skip_B4(                                                    "End-of-image padding");
+    Skip_X4(                                                    "Offset to data");
+    Skip_X4(                                                    "End-of-line padding");
+    Skip_X4(                                                    "End-of-image padding");
     Skip_UTF8(32,                                               "Description of image element");
     Element_End0();
 
