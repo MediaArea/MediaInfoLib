@@ -166,10 +166,14 @@ public :
     MediaInfo_Config_MediaInfo Config;
 
     #if defined(MEDIAINFO_XML_YES)
-    static Ztring Xml_Name_Escape(const Ztring &Name);
     static Ztring Xml_Content_Escape(const Ztring &Content, size_t &Modified);
     static Ztring &Xml_Content_Escape_Modifying(Ztring &Content, size_t &Modified);
     #endif //defined(MEDIAINFO_XML_YES)
+
+    #if defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
+    static Ztring Xml_Name_Escape(const Ztring &Name);
+    static Ztring &Content_Encode_Modifying(Ztring &Content, size_t &Modified);
+    #endif //defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
 
 private :
     //Threading

@@ -186,12 +186,13 @@ static const char* OutputFormats_JSONFields[output_formats_item_size] =
     "mime",
 };
 typedef const char* output_formats_item[output_formats_item_size];
-static const size_t output_formats_size = 13;
+static const size_t output_formats_size = 14;
 static output_formats_item OutputFormats[output_formats_size] =
 {
     { "Text",                   "Text",                                                         "text/plain",       },
     { "HTML",                   "HTML",                                                         "text/html",        },
     { "XML",                    "MediaInfo XML",                                                "text/xml",         },
+    { "JSON",                   "MediaInfo JSON",                                               "text/json",        },
     { "EBUCore_1.8_ps",         "EBUCore 1.8 (XML; acq. metadata: parameter then segment)",     "text/xml",         },
     { "EBUCore_1.8_sp",         "EBUCore 1.8 (XML; acq. metadata: segment then parameter)",     "text/xml",         },
     { "EBUCore_1.8_ps_JSON",    "EBUCore 1.8 (JSON; acq. metadata: parameter then segment)",    "text/json",        },

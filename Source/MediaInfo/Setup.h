@@ -392,6 +392,9 @@
 #if !defined(MEDIAINFO_EXPORT_NO) && !defined(MEDIAINFO_XML_NO) && !defined(MEDIAINFO_XML_YES)
     #define MEDIAINFO_XML_YES
 #endif
+#if !defined(MEDIAINFO_EXPORT_NO) && !defined(MEDIAINFO_JSON_NO) && !defined(MEDIAINFO_JSON_YES)
+    #define MEDIAINFO_JSON_YES
+#endif
 #if !defined(MEDIAINFO_EXPORT_NO) && !defined(MEDIAINFO_CSV_NO) && !defined(MEDIAINFO_CSV_YES)
     #define MEDIAINFO_CSV_YES
 #endif
