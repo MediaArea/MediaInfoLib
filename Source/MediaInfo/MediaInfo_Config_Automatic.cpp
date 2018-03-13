@@ -1212,6 +1212,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "WebM;;;M;Mkv;;webm;video/webm;http://www.webmproject.org/\n"
     "Windows Media;;;M;Wm;;asf wmv wma;video/x-ms-wmv;\n"
     "WTV;;;M;Wtv;;wtv;;\n"
+    "AV1;;;V;Av1;AOMedia Video 1;;;http://aomedia.org/\n"
     "AVC;;;V;Avc;Advanced Video Codec;avc h264 264;video/H264;http://developers.videolan.org/x264.html\n"
     "AVS Video;;;V;AvsV;Audio Video Standard, Video part;;;http://www.avs.org.cn/;Lossy\n"
     "Dirac;;;V;Dirac;;drc;;http://diracvideo.org/;Lossy\n"
@@ -1405,6 +1406,7 @@ void MediaInfo_Config_CodecID_Video_Matroska (InfoMap &Info)
     Info.Separator_Set(0, __T("\n"));
     Info.Write(Ztring().From_UTF8(
     "V_UNCOMPRESSED;RGB;;Raw uncompressed video frames\n"
+    "V_AV1;AV1;;;http://aomedia.org/\n"
     "V_DIRAC;Dirac;;;http://diracvideo.org/\n"
     "V_FFV1;FFV1;;\n"
     "V_MPEG4/IS0/SP;MPEG-4 Visual;;There is a zero instead of a O, may be a problem;http://www.divx.com\n"
