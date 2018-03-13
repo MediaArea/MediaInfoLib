@@ -3887,6 +3887,36 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
             Fill(StreamKind_Last, StreamPos_Last, "FrameRate", EditRate);
 
         FillAllMergedStreams=false;
+
+        const Ztring& FrameRate_FromStream=Retrieve(StreamKind_Last, StreamPos_Last, "FrameRate");
+        if (FrameRate_FromStream.empty())
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate), EditRate);
+        else if (StreamKind_Last!=Stream_Audio || (Retrieve(Stream_Audio, StreamPos_Last, Audio_Format)==__T("Dolby E") && EditRate<1000)) //Arbitrary number for detecting frame rate vs sample rate (both are possible with Clip-wrapped MXF PCM e.g. 29.97 or 48000)
+        {
+            Ztring FrameRate_FromContainer; FrameRate_FromContainer.From_Number(EditRate);
+            if (FrameRate_FromStream!=FrameRate_FromContainer)
+            {
+                size_t ID_SubStreamInfo_Pos=Retrieve(StreamKind_Last, StreamPos_Last, General_ID).find(__T('-')); //Filling all tracks with same ID (e.g. Dolby E). TODO: merge code
+                size_t StreamPos_Last_Temp=StreamPos_Last;
+                Ztring ID;
+                if (ID_SubStreamInfo_Pos!=string::npos)
+                {
+                    ID=Retrieve(StreamKind_Last, StreamPos_Last, General_ID);
+                    ID.resize(ID_SubStreamInfo_Pos+1);
+                }
+                for (;;)
+                {
+                    //Merge was already done, we need to do here Container/Stream coherency test. TODO: merge of code
+                    Fill(StreamKind_Last, StreamPos_Last_Temp, "FrameRate_Original", FrameRate_FromStream);
+                    Fill(StreamKind_Last, StreamPos_Last_Temp, Fill_Parameter(StreamKind_Last, Generic_FrameRate), FrameRate_FromContainer, true);
+                    if (ID.empty() || !StreamPos_Last_Temp)
+                        break;
+                    StreamPos_Last_Temp--;
+                    if (Retrieve(StreamKind_Last, StreamPos_Last_Temp, General_ID).find(ID)!=0)
+                        break;
+                }
+            }
+        }
     }
 }
 
