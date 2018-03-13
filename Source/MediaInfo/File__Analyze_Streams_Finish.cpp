@@ -561,6 +561,15 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
     }
 
     //Commercial name
+    if (Retrieve(Stream_Video, Pos, Video_Format_Commercial_IfAny).empty()
+     && Retrieve(Stream_Video, Pos, Video_BitDepth)==__T("10")
+     && Retrieve(Stream_Video, Pos, Video_ChromaSubsampling)==__T("4:2:0")
+     && Retrieve(Stream_Video, Pos, Video_colour_primaries)==__T("BT.2020")
+     && Retrieve(Stream_Video, Pos, Video_transfer_characteristics)==__T("PQ")
+     && Retrieve(Stream_Video, Pos, Video_matrix_coefficients).find(__T("BT.2020"))==0
+     && !Retrieve(Stream_Video, Pos, "MasteringDisplay_ColorPrimaries").empty()
+        )
+        Fill(Stream_Video, Pos, Video_Format_Commercial_IfAny, "HDR10");
     #if defined(MEDIAINFO_VC3_YES)
         if (Retrieve(Stream_Video, Pos, Video_Format_Commercial_IfAny).empty() && Retrieve(Stream_Video, Pos, Video_Format)==__T("VC-3") && Retrieve(Stream_Video, Pos, Video_Format_Profile).find(__T("HD"))==0)
         {
