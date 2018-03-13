@@ -141,40 +141,39 @@ static const char* DPX_Descriptors_ChromaSubsampling(int8u i)
 }
 
 //---------------------------------------------------------------------------
-const char* Mpegv_transfer_characteristics(int8u transfer_characteristics);
 static const char* DPX_TransferCharacteristic(int8u TransferCharacteristic)
 {
     switch (TransferCharacteristic)
     {
         case  1 : return "Printing density";
-        case  2 : return Mpegv_transfer_characteristics(8);             //Linear
+        case  2 : return "Linear";
         case  3 : return "Logarithmic";                                 //Value not specified in specs
-        case  5 :                                                       //SMPTE 274M, for HDTV, mapped to BT.709
-        case  6 : return Mpegv_transfer_characteristics(1);             //BT.709
-        case  7 : return Mpegv_transfer_characteristics(5);             //BT.470 System B, BT.470 System G (typo in specs?)
-        case  8 : return Mpegv_transfer_characteristics(4);             //BT.470 System M (typo in specs?)
-        case  9 :                                                       //BT.601 (NTSC)
-        case 10 : return Mpegv_transfer_characteristics(6);             //BT.601 (PAL)
+        case  5 : return "SMPTE 274M";                                  //Same as BT.709
+        case  6 : return "BT.709";
+        case  7 : return "BT.601 PAL";                                  //BT.470 System B, BT.470 System G, ISO does a difference between B and M
+        case  8 : return "BT.601 NTSC";                                 //BT.470 System M, ISO does a difference between B and M
+        case  9 : return "Composite NTSC";
+        case 10 : return "Composite PAL";
         case 11 : return "Z (depth) - linear";
         case 12 : return "Z (depth) - homogeneous";
+        case 13 : return "ADX";                                         //SMPTE ST 2065-3 Academy Density Exchange Encoding
         default : return "";
     }
 };
 
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-const char* Mpegv_colour_primaries(int8u colour_primaries);
 static const char* DPX_ColorimetricSpecification(int8u ColorimetricSpecification)
 {
     switch (ColorimetricSpecification)
     {
         case  1 : return "Printing density";
-        case  5 :                                                       //SMPTE 274M, for HDTV, mapped to BT.709
-        case  6 : return Mpegv_colour_primaries(1);                     //BT.709
-        case  7 : return Mpegv_colour_primaries(5);                     //BT.470 System B, BT.470 System G (typo in specs?), mapped to BT.601 PAL
-        case  8 : return Mpegv_colour_primaries(6);                     //BT.470 System M (typo in specs?), mapped to BT.601 NTSC
-        case  9 : return Mpegv_colour_primaries(6);                     //BT.601 NTSC
-        case 10 : return Mpegv_colour_primaries(5);                     //BT.601 PAL
+        case  5 : return "SMPTE 274M";                                  //SMPTE 274M, for HDTV, mapped to BT.709
+        case  6 : return "BT.709";
+        case  7 : return "BT.601 PAL";                                  //BT.470 System B, BT.470 System G
+        case  8 : return "BT.601 NTSC";                                 //BT.470 System M
+        case  9 : return "Composite NTSC";
+        case 10 : return "Composite PAL";
+        case 13 : return "ADX";                                         //SMPTE ST 2065-3 Academy Density Exchange Encoding
         default : return "";
     }
 }

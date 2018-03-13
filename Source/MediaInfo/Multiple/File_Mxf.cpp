@@ -1299,10 +1299,11 @@ static const char* Mxf_ColorPrimaries(const int128u ColorPrimaries)
     switch ((int8u)(Code_Compare4>>16))
     {
         case 0x01 : return "BT.601 NTSC";
-        case 0x02 : return "BT.470 System B";
+        case 0x02 : return "BT.601 PAL";
         case 0x03 : return "BT.709";
         case 0x04 : return "BT.2020";
-        case 0x06 : return "P3D65";
+        case 0x05 : return "XYZ";
+        case 0x06 : return "DCI P3";
         default   : return "";
     }
 }
@@ -1313,16 +1314,16 @@ static const char* Mxf_TransferCharacteristic(const int128u TransferCharacterist
     int32u Code_Compare4=(int32u)TransferCharacteristic.lo;
     switch ((int8u)(Code_Compare4>>16))
     {
-        case 0x01 : return "BT.470";
+        case 0x01 : return "BT.601";
         case 0x02 : return "BT.709";
         case 0x03 : return "SMPTE 240M";
         case 0x04 : return "SMPTE 274M";
-        case 0x05 : return "BT.1361 extended colour gamut system";
+        case 0x05 : return "BT.1361";
         case 0x06 : return "Linear";
         case 0x07 : return "SMPTE 428M";
         case 0x08 : return "xvYCC";
-        case 0x09 : return "BT.2020";
-        case 0x0A : return "SMPTE ST 2084";
+        case 0x09 : return "BT.2020"; // ISO does a difference of value between 10 and 12 bit
+        case 0x0A : return "PQ";
         case 0x0B : return "HLG";
         default   : return "";
     }
@@ -1337,7 +1338,7 @@ static const char* Mxf_CodingEquations(const int128u CodingEquations)
         case 0x01 : return "BT.601";
         case 0x02 : return "BT.709";
         case 0x03 : return "SMPTE 240M";
-        case 0x06 : return "BT.2020";
+        case 0x06 : return "BT.2020"; // ISO does a difference between constant and non constant, not SMPTE?
         default   : return "";
     }
 }
@@ -14887,7 +14888,7 @@ void File_Mxf::Info_UL_040101_Values()
                                             switch (Code6)
                                             {
                                                 case 0x01 :
-                                                    Param_Info1("BT.470");
+                                                    Param_Info1("BT.470 System B/G");
                                                     Skip_B2(    "Reserved");
                                                     break;
                                                 case 0x02 :
@@ -14903,7 +14904,7 @@ void File_Mxf::Info_UL_040101_Values()
                                                     Skip_B2(    "Reserved");
                                                     break;
                                                 case 0x05 :
-                                                    Param_Info1("BT.1361 extended colour gamut system");
+                                                    Param_Info1("BT.1361");
                                                     Skip_B2(    "Reserved");
                                                     break;
                                                 case 0x06 :
@@ -14953,7 +14954,7 @@ void File_Mxf::Info_UL_040101_Values()
                                                     Skip_B2(    "Reserved");
                                                     break;
                                                 case 0x02 :
-                                                    Param_Info1("BT.470 System B");
+                                                    Param_Info1("BT.470 System B/G");
                                                     Skip_B2(    "Reserved");
                                                     break;
                                                 case 0x03 :

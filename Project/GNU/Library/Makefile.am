@@ -195,6 +195,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Text/File_Ttml.cpp \
                        ../../../Source/MediaInfo/Video/File_Aic.cpp \
                        ../../../Source/MediaInfo/Video/File_AfdBarData.cpp \
+                       ../../../Source/MediaInfo/Video/File_Av1.cpp \
                        ../../../Source/MediaInfo/Video/File_Avc.cpp \
                        ../../../Source/MediaInfo/Video/File_Avc_Duplicate.cpp \
                        ../../../Source/MediaInfo/Video/File_AvsV.cpp \
