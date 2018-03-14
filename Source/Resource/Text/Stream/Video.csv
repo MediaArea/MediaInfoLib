@@ -48,6 +48,8 @@ Format_Settings_CABAC/String;;;Y NT;;;Settings needed for decoder used, detaille
 Format_Settings_RefFrames;; frame;N YIY;;;Settings needed for decoder used, detailled
 Format_Settings_RefFrames/String;;;Y NT;;;Settings needed for decoder used, detailled
 Format_Settings_Pulldown;;;Y YTY;;;Settings needed for decoder used, detailled
+Format_Settings_Endianness;;;N YTY;;;;;
+Format_Settings_Packing;;;N YTY;;;;;
 Format_Settings_FrameMode;;;Y YTY;;;Settings needed for decoder used, detailled
 Format_Settings_GOP;;;Y YTY;;;Settings needed for decoder used, detailled (M=x N=y)
 Format_Settings_PictureStructure;;;Y YTY;;;Settings needed for decoder used, detailled (Type of frame, and field/frame info)
