@@ -327,7 +327,7 @@ Ztring MediaInfo_Internal::Inform()
     {
         Node_Main=new Node("media");
         Ztring Options=Get(Stream_General, 0, General_CompleteName, Info_Options);
-        if (InfoOption_ShowInXml<Options.size() && Options[InfoOption_ShowInXml]==__T('Y'))
+        if (InfoOption_ShowInInform<Options.size() && Options[InfoOption_ShowInInform]==__T('Y'))
             Node_Main->Add_Attribute("ref", Get(Stream_General, 0, General_CompleteName));
         if (Info && !Info->ParserName.empty())
             Node_Main->Add_Attribute("parser", Info->ParserName);
