@@ -24,6 +24,8 @@ Format_Commercial;;;N NT;;;Commercial name used by vendor for theses setings or 
 Format_Commercial_IfAny;;;Y YTY;;;Commercial name used by vendor for theses setings if there is one
 Format_Version;;;Y NTY;;;Version of this format
 Format_Profile;;;Y NTY;;;Profile of the Format
+Format_Settings_Endianness;;;N YTY;;;;;
+Format_Settings_Packing;;;N YTY;;;;;
 Format_Compression;;;Y YTY;;;Compression method used
 Format_Settings;;;Y NT;;;Settings needed for decoder used
 Format_Settings_Wrapping;;;Y YTY;;;Wrapping mode (Frame wrapped or Clip wrapped)

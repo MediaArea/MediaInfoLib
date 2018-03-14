@@ -158,6 +158,12 @@ bool File_MiXml::FileHeader_Begin()
                                             }
                                         }
 
+                                        // Extra filling (duplicated content) //TODO: better handling of all such fields
+                                             if (Name == "Format_Settings_Endianness")
+                                            Fill(StreamKind_Last, StreamPos_Last, "Format_Settings", Element->GetText());
+                                        else if (Name == "Format_Settings_Packing")
+                                            Fill(StreamKind_Last, StreamPos_Last, "Format_Settings", Element->GetText());
+
                                         Element = Element->NextSiblingElement();
                                     }
                                 }
