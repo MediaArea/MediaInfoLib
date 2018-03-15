@@ -33,11 +33,11 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const char* Mpegv_colour_primaries(int8u colour_primaries);
-const char* Mpegv_transfer_characteristics(int8u transfer_characteristics);
-const char* Mpegv_matrix_coefficients(int8u matrix_coefficients);
-const char* Mpegv_matrix_coefficients_ColorSpace(int8u matrix_coefficients);
-const char* Avc_video_full_range[];
+extern const char* Mpegv_colour_primaries(int8u colour_primaries);
+extern const char* Mpegv_transfer_characteristics(int8u transfer_characteristics);
+extern const char* Mpegv_matrix_coefficients(int8u matrix_coefficients);
+extern const char* Mpegv_matrix_coefficients_ColorSpace(int8u matrix_coefficients);
+extern const char* Avc_video_full_range[];
 
 //---------------------------------------------------------------------------
 const char* Av1_obu_type(int8u obu_type)
@@ -226,7 +226,7 @@ void File_Av1::sequence_header()
     int8u seq_profile, level[4], max_enhancement_layers_cnt, frame_width_bits_minus_1, frame_height_bits_minus_1, seq_force_screen_content_tools, BitDepth, color_primaries, transfer_characteristics, matrix_coefficients;
     bool seq_choose_screen_content_tools, mono_chrome, color_range, color_description_present_flag, subsampling_x, subsampling_y;
     BS_Begin();
-    Get_S1 ( 2, seq_profile,                                    "seq_profile"); Param_Info(Av1_seq_profile(seq_profile));
+    Get_S1 ( 2, seq_profile,                                    "seq_profile"); Param_Info1(Av1_seq_profile(seq_profile));
     Get_S1 ( 4, level[0],                                       "level[0]");
     Get_S1 ( 2, max_enhancement_layers_cnt,                     "max_enhancement_layers_cnt");
     for (int8u i=1; i<=max_enhancement_layers_cnt; i++)
