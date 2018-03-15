@@ -39,23 +39,23 @@ struct Node
     Node()
     {
     }
-    Node(const char* _Name) : Name(_Name), RawContent(std::string()), Multiple(false)
+    Node(const char* _Name) : Name(_Name), Multiple(false)
     {
     }
-    Node(const char* _Name, bool _Multiple) : Name(_Name), RawContent(std::string()), Multiple(_Multiple)
+    Node(const char* _Name, bool _Multiple) : Name(_Name), Multiple(_Multiple)
     {
     }
-    Node(const std::string& _Name, const std::string& _Value=std::string()) : Name(_Name), Value(_Value), RawContent(std::string()), Multiple(false)
+    Node(const std::string& _Name, const std::string& _Value=std::string()) : Name(_Name), Value(_Value), Multiple(false)
     {
     }
-    Node(const std::string& _Name, const std::string& _Value, bool _Multiple) : Name(_Name), Value(_Value), RawContent(std::string()), Multiple(_Multiple)
+    Node(const std::string& _Name, const std::string& _Value, bool _Multiple) : Name(_Name), Value(_Value), Multiple(_Multiple)
     {
     }
-    Node(const std::string& _Name, const std::string& _Value, const std::string& _Atribute_Name, const std::string& _Atribute_Value=std::string()) : Name(_Name), Value(_Value), RawContent(std::string()), Multiple(false)
+    Node(const std::string& _Name, const std::string& _Value, const std::string& _Atribute_Name, const std::string& _Atribute_Value=std::string()) : Name(_Name), Value(_Value), Multiple(false)
     {
         Add_Attribute(_Atribute_Name, _Atribute_Value);
     }
-    Node(const std::string& _Name, const std::string& _Value, const std::string& _Atribute_Name, const std::string& _Atribute_Value, bool _Multiple) : Name(_Name), Value(_Value), RawContent(std::string()), Multiple(_Multiple)
+    Node(const std::string& _Name, const std::string& _Value, const std::string& _Atribute_Name, const std::string& _Atribute_Value, bool _Multiple) : Name(_Name), Value(_Value), Multiple(_Multiple)
     {
         Add_Attribute(_Atribute_Name, _Atribute_Value);
     }
