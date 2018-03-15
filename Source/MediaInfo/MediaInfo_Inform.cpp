@@ -429,12 +429,14 @@ Ztring MediaInfo_Internal::Inform()
 
     #if defined(MEDIAINFO_XML_YES)
         if (XML || XML_0_7_78_MA || XML_0_7_78_MI)
-        return Ztring().From_UTF8(To_XML(*Node_Main, 0, false, false));
+            Retour=Ztring().From_UTF8(To_XML(*Node_Main, 0, false, false));
     #endif //MEDIAINFO_XML_YES
     #if defined(MEDIAINFO_JSON_YES)
         if (JSON)
-            return __T("{\n")+Ztring().From_UTF8(To_JSON(*Node_Main, 0, false, false))+__T("}");
+            Retour=__T("{\n")+Ztring().From_UTF8(To_JSON(*Node_Main, 0, false, false))+__T("\n}");
     #endif //MEDIAINFO_JSON_YES
+
+    ConvertRetour(Retour);
 
     return Retour;
 
