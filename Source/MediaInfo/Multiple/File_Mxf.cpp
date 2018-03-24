@@ -3905,6 +3905,21 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
                 FrameCount=File_IgnoreEditsBefore;
             FrameCount-=File_IgnoreEditsBefore;
         }
+
+        // Hack, TODO: find a correct method for detecting fiel/frame differene
+        if (StreamKind_Last==Stream_Video)
+            for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
+                if (Essence->second.StreamKind==Stream_Video && Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1)==StreamPos_Last)
+                {
+                    if (Essence->second.Field_Count_InThisBlock_1 && !Essence->second.Field_Count_InThisBlock_2)
+                    {
+                        FrameCount/=2;
+                        Origin/=2;
+                        EditRate/=2;
+                    }
+                    break;
+                }
+
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), FrameCount*1000/EditRate, 0, true);
         size_t ID_SubStreamInfo_Pos=Retrieve(StreamKind_Last, StreamPos_Last, General_ID).find(__T('-'));
         if (ID_SubStreamInfo_Pos!=string::npos)
@@ -3920,16 +3935,6 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
                 Fill(StreamKind_Last, StreamPos_Last_Temp, Fill_Parameter(StreamKind_Last, Generic_Duration), FrameCount*1000/EditRate, 0, true);
             }
         }
-
-        // Hack, TODO: find a correct method for detecting fiel/frame differene
-        if (StreamKind_Last==Stream_Video)
-            for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
-                if (Essence->second.StreamKind==Stream_Video && Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1)==StreamPos_Last)
-                {
-                    if (Essence->second.Field_Count_InThisBlock_1 && !Essence->second.Field_Count_InThisBlock_2)
-                        FrameCount/=2;
-                    break;
-                }
 
         FillAllMergedStreams=true;
 
