@@ -7,6 +7,10 @@ x Correction
 bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
+Version 18.03.1, 2018-03-26
+ --------------
+x Fix regression on Windows with directory names beginning by n or r.
+
 Version 18.03, 2018-03-19
 --------------
 + AV1: support of AOmedia AV1 based on latest specifications draft, raw 
