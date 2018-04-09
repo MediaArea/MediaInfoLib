@@ -155,6 +155,9 @@ Ztring MediaInfo_Internal::Inform()
         if (MediaInfoLib::Config.Inform_Get()==__T("EBUCore"))
             return Export_EbuCore().Transform(*this, Export_EbuCore::version(Export_EbuCore::Version_Max-1), (Export_EbuCore::acquisitiondataoutputmode)MediaInfoLib::Config.AcquisitionDataOutputMode_Get(),
             Export_EbuCore::Format_XML, MediaInfoLib::Config.ExternalMetadata_Get(), MediaInfoLib::Config.ExternalMetaDataConfig_Get());
+        if (MediaInfoLib::Config.Inform_Get()==__T("EBUCore_JSON"))
+            return Export_EbuCore().Transform(*this, Export_EbuCore::version(Export_EbuCore::Version_Max-1), (Export_EbuCore::acquisitiondataoutputmode)MediaInfoLib::Config.AcquisitionDataOutputMode_Get(),
+            Export_EbuCore::Format_JSON, MediaInfoLib::Config.ExternalMetadata_Get(), MediaInfoLib::Config.ExternalMetaDataConfig_Get());
     #endif //defined(MEDIAINFO_EBUCORE_YES)
     #if defined(MEDIAINFO_EBUCORE_YES)
         if (MediaInfoLib::Config.Inform_Get()==__T("FIMS_1.1"))
