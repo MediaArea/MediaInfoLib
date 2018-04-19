@@ -2519,8 +2519,6 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                             return;
                         case Elements::moov_meta__covr :
                             {
-                            Skip_XX(Element_Size-Element_Offset, "Data");
-
                             //Filling
                             #if MEDIAINFO_ADVANCED
                                 if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64))
@@ -2531,6 +2529,8 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                                 }
                             #endif //MEDIAINFO_ADVANCED
                             Fill(Stream_General, 0, General_Cover, "Yes");
+
+                            Skip_XX(Element_Size-Element_Offset, "Data");
                             }
                             return;
                         case Elements::moov_meta__gnre :
@@ -2581,8 +2581,6 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                     {
                         case Elements::moov_meta__covr :
                             {
-                            Skip_XX(Element_Size-Element_Offset, "Data");
-
                             //Filling
                             #if MEDIAINFO_ADVANCED
                                 if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64))
@@ -2593,6 +2591,8 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                                 }
                             #endif //MEDIAINFO_ADVANCED
                             Fill(Stream_General, 0, General_Cover, "Yes");
+
+                            Skip_XX(Element_Size-Element_Offset, "Data");
                             }
                             return;
                         default:
@@ -2605,8 +2605,6 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                     {
                         case Elements::moov_meta__covr :
                             {
-                            Skip_XX(Element_Size-Element_Offset, "Data");
-
                             //Filling
                             #if MEDIAINFO_ADVANCED
                                 if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64))
@@ -2617,6 +2615,8 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                                 }
                             #endif //MEDIAINFO_ADVANCED
                             Fill(Stream_General, 0, General_Cover, "Yes");
+
+                            Skip_XX(Element_Size-Element_Offset, "Data");
                             }
                             return;
                         default:
