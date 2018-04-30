@@ -371,7 +371,11 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
         Node_Main.Add_Child("instantiationTimeStart", MI.Get(Stream_General, 0, General_Delay_String3));
 
     //formatDuration
-    Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Duration_String3, "instantiationDuration");
+    //TODO add annotation if duration/source_duration mismatch
+    if (!MI.Get(Stream_General, 0, General_Duration_String4).empty())
+        Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Duration_String4, "instantiationDuration");
+    else
+        Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Duration_String3, "instantiationDuration");
 
     //formatDataRate
     if (!MI.Get(Stream_General, 0, General_OverallBitRate).empty())
