@@ -270,11 +270,18 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
 
     Node_Main.Add_Child("instantiationIdentifier", instantiationIdentifier, "source", "File Name");
 
-    // need to figure out how to get to non-internally-declared-values
-    //if (!MI.Get(Stream_General, 0, General_Media/UUID).empty())
-    //{
-    //    ToReturn+=__T("\t<instantiationIdentifier source=\"Media UUID\">")+MI.Get(Stream_General, 0, General_Media/UUID)+__T("</instantiationIdentifier>\n");
-    //}
+    // call UniqueID as SegmentUID for Matroska, else UniqueID
+    if (MI.Get(Stream_General, 0, General_Format)==__T("Matroska"))
+      Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_UniqueID, "instantiationIdentifier", "source", std::string("SegmentUID"));
+    else if (MI.Get(Stream_General, 0, General_Format)==__T("P2 Clip"))
+      Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_UniqueID, "instantiationIdentifier", "source", std::string("GlobalClipID"));
+    else if (MI.Get(Stream_General, 0, General_Format)==__T("Windows Media"))
+      Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_UniqueID, "instantiationIdentifier", "source", std::string("WM/UniqueFileIdentifier"));
+    else
+      Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_UniqueID, "instantiationIdentifier", "source", std::string("UniqueID"));
+
+    // get final cut uuids as instantiation identifiers
+    Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, "Media/UUID", "instantiationIdentifier", "source", std::string("com.apple.finalcutstudio.media.uuid"));
 
     //instantiationDates
     //dateIssued
