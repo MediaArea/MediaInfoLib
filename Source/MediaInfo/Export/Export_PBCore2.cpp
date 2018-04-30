@@ -307,7 +307,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
         dateIssued.FindAndReplace(__T("UTC"), __T(""));
         dateIssued.FindAndReplace(__T(" "), __T("T"));
         dateIssued+=__T('Z');
-        Node_Main.Add_Child("instantiationDate", dateIssued, "dateType", "issued");
+        Node_Main.Add_Child("instantiationDate", dateIssued, "dateType", "recorded");
     }
 
     //dateFileModified
