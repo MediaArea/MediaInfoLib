@@ -356,13 +356,15 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     else
         Format=__T("application/x-")+Ztring(MI.Get(Stream_General, 0, __T("Format"))).MakeLowerCase();
     Node_Main.Add_Child("instantiationDigital", Format);
-    
+
     //formatStandard
     Ztring formatStandard=MI.Get(Stream_General, 0, General_Format);
     if (!MI.Get(Stream_General, 0, General_Format_Commercial_IfAny).empty())
         formatStandard+=__T(" (")+MI.Get(Stream_General, 0, General_Format_Commercial_IfAny)+__T(")");
-    Node_Main.Add_Child("instantiationStandard", formatStandard);
-    
+    Node* Child=Node_Main.Add_Child("instantiationStandard", formatStandard);
+    Child->Add_Attribute_IfNotEmpty(MI, Stream_General, 0, General_Format_Profile, "profile");
+    Child->Add_Attribute_IfNotEmpty(MI, Stream_General, 0, General_Format_Version, "annotation");
+
     //formatLocation
     Node_Main.Add_Child("instantiationLocation", MI.Get(Stream_General, 0, General_CompleteName));
 
@@ -438,6 +440,8 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Format/Extensions") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Format/Url") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Format_Commercial") &&
+            MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Format_Profile") &&
+            MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Format_Version") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("FrameRate") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("HeaderSize") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("InternetMediaType") &&
