@@ -365,10 +365,10 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_FileSize, "instantiationFileSize", "unitsOfMeasure", std::string("bytes"));
 
     //formatTimeStart
-    if (!MI.Get(Stream_Video, 0, Video_Delay_Original_String3).empty())
-        Node_Main.Add_Child("instantiationTimeStart", MI.Get(Stream_Video, 0, Video_Delay_Original_String3));
-    else if (!MI.Get(Stream_Video, 0, Video_Delay_String3).empty())
-        Node_Main.Add_Child("instantiationTimeStart", MI.Get(Stream_Video, 0, Video_Delay_String3));
+    if (!MI.Get(Stream_General, 0, General_Delay_String4).empty())
+        Node_Main.Add_Child("instantiationTimeStart", MI.Get(Stream_General, 0, General_Delay_String4));
+    else if (!MI.Get(Stream_General, 0, General_Delay_String3).empty())
+        Node_Main.Add_Child("instantiationTimeStart", MI.Get(Stream_General, 0, General_Delay_String3));
 
     //formatDuration
     Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Duration_String3, "instantiationDuration");
