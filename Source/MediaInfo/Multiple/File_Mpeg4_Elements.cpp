@@ -5624,16 +5624,13 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_dec3()
 
     if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
     {
-        return; //Handling only the first description
-    }
-
     #ifdef MEDIAINFO_AC3_YES
-        if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
-        {
             Skip_XX(Element_Size,                               "Data not analyzed");
+    #endif
             return; //Handling only the first description
         }
 
+    #ifdef MEDIAINFO_AC3_YES
         if (Streams[moov_trak_tkhd_TrackID].Parsers.empty())
         {
             File_Ac3* Parser=new File_Ac3;
