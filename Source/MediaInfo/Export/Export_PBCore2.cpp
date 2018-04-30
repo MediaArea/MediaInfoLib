@@ -411,7 +411,6 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Codec") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Codec/Extensions") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Codec/Url") &&
-            MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Codec/Url") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("CodecID") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("CodecID/Url") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("CompleteName") &&
@@ -449,7 +448,6 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Video_Format_WithHint_List") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Video_Language_List") &&
             MI.Get(Stream_General, 0, Pos, Info_Name).find(__T("String"))==std::string::npos
-
             )
                 Node_Main.Add_Child("instantiationAnnotation", MI.Get(Stream_General, 0, Pos),
                     "annotationType", MI.Get(Stream_General, 0, Pos, Info_Name).To_UTF8());
