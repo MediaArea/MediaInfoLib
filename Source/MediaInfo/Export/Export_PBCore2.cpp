@@ -355,7 +355,10 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     Node_Main.Add_Child("instantiationDigital", Format);
     
     //formatStandard
-    Node_Main.Add_Child("instantiationStandard", MI.Get(Stream_General, 0, General_Format));
+    Ztring formatStandard=MI.Get(Stream_General, 0, General_Format);
+    if (!MI.Get(Stream_General, 0, General_Format_Commercial_IfAny).empty())
+        formatStandard+=__T(" (")+MI.Get(Stream_General, 0, General_Format_Commercial_IfAny)+__T(")");
+    Node_Main.Add_Child("instantiationStandard", formatStandard);
     
     //formatLocation
     Node_Main.Add_Child("instantiationLocation", MI.Get(Stream_General, 0, General_CompleteName));
