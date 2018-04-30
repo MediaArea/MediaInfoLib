@@ -193,7 +193,10 @@ Ztring ToReturn;
     }
 
     //essenceTrackDuration
-    Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "Duration_String3", "essenceTrackDuration");
+    if (!MI.Get(StreamKind, StreamPos, __T("Duration_String4")).empty())
+        Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "Duration_String4", "essenceTrackDuration");
+    else
+        Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "Duration_String3", "essenceTrackDuration");
 
     //essenceTrackLanguage
     if (!MI.Get(StreamKind, StreamPos, __T("Language")).empty())
