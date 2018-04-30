@@ -222,8 +222,10 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec_Profile") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec_Settings") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec_Settings_CABAC") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec_Settings_Endianness") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec_Settings_Floor") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec_Settings_RefFrames") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec_Settings_Sign") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Colorimetry") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Count") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("DisplayAspectRatio") &&
@@ -231,6 +233,7 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Encoded_Date") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Encoded_Library") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Settings") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format/Info") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format/Url") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Commercial") &&
