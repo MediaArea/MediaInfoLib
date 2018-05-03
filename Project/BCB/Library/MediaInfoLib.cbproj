@@ -294,6 +294,10 @@
             <DependentOn>..\..\..\Source\MediaInfo\Export\Export_EbuCore.h</DependentOn>
             <BuildOrder>40</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Niso.cpp">
+            <DependentOn>..\..\..\Source\MediaInfo\Export\Export_Niso.h</DependentOn>
+            <BuildOrder>213</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Fims.cpp">
             <DependentOn>..\..\..\Source\MediaInfo\Export\Export_Fims.h</DependentOn>
             <BuildOrder>207</BuildOrder>
