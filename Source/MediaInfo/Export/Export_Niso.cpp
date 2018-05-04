@@ -24,6 +24,7 @@
 #include "MediaInfo/Export/Export_Niso.h"
 #include "MediaInfo/File__Analyse_Automatic.h"
 #include "MediaInfo/OutputHelpers.h"
+#include <ctime>
 
 using namespace std;
 
@@ -92,6 +93,37 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
             }
 
             Node* Node_Extension=Node_Root->Add_Child("mix:Extension");
+
+            if (ExternalMetaDataConfig.find(__T("<ebucore:ebuCoreMain"))<100)
+            {
+                //TODO: merge with EBUCore code
+                //Current date/time is ISO format
+                time_t Seconds = time(NULL);
+                Ztring DateTime; DateTime.Date_From_Seconds_1970((int32u)Seconds);
+                if (DateTime.size() >= 4 && DateTime[0] == __T('U') && DateTime[1] == __T('T') && DateTime[2] == __T('C') && DateTime[3] == __T(' '))
+                {
+                    DateTime.erase(0, 4);
+                    DateTime += __T('Z');
+                }
+                Ztring Date = DateTime.substr(0, 10);
+                Ztring Time = DateTime.substr(11);
+
+                Node* Node_CoreMain = Node_Extension->Add_Child("ebucore:ebuCoreMain");
+                Node_CoreMain->Add_Attribute("xmlns:dc", "http://purl.org/dc/elements/1.1/");
+                {
+                    Node_CoreMain->Add_Attribute("xmlns:ebucore", "urn:ebu:metadata-schema:ebucore");
+                    Node_CoreMain->Add_Attribute("xmlns:xalan", "http://xml.apache.org/xalan");
+                    Node_CoreMain->Add_Attribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+                    Node_CoreMain->Add_Attribute("xsi:schemaLocation", string("urn:ebu:metadata-schema:ebucore http") + string(MediaInfoLib::Config.Https_Get() ? "s" : "") + "://www.ebu.ch/metadata/schemas/EBUCore/20171009/ebucore.xsd");
+                    Node_CoreMain->Add_Attribute("version", "1.8");
+                    Node_CoreMain->Add_Attribute("writingLibraryName", "MediaInfoLib");
+                    Node_CoreMain->Add_Attribute("writingLibraryVersion", MediaInfoLib::Config.Info_Version_Get().SubString(__T(" - v"), Ztring()));
+                }
+                Node_CoreMain->Add_Attribute("dateLastModified", Date);
+                Node_CoreMain->Add_Attribute("timeLastModified", Time);
+
+                Node_Extension = Node_CoreMain;
+            }
 
             if (!ExternalMetadata(FileName, ExternalMetadataValues, ExternalMetaDataConfig, ZtringList(__T("mix:Extension;ebucore:ebuCoreMain")), __T(""), Node_Extension, NULL))
             {
