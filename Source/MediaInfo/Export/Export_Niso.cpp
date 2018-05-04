@@ -91,7 +91,9 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
                 return Ztring();
             }
 
-            if (!ExternalMetadata(FileName, ExternalMetadataValues, ExternalMetaDataConfig, ZtringList(__T("mix:mix")), __T(""), Node_Root, NULL))
+            Node* Node_Extension=Node_Root->Add_Child("mix:Extension");
+
+            if (!ExternalMetadata(FileName, ExternalMetadataValues, ExternalMetaDataConfig, ZtringList(__T("mix:Extension;ebucore:ebuCoreMain")), __T(""), Node_Extension, NULL))
             {
                 delete Node_Root;
                 return Ztring();
