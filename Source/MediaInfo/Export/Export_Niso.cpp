@@ -188,7 +188,7 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
 
         if (!Node_BitsPerSample->Childs.empty())
         {
-            Node_BitsPerSample->Add_Child("mix:bitsPerSampleUnit", std::string("Integer"));
+            Node_BitsPerSample->Add_Child("mix:bitsPerSampleUnit", std::string("integer"));
             Node_ImageColorEncoding->Childs.push_back(Node_BitsPerSample);
         }
         else
