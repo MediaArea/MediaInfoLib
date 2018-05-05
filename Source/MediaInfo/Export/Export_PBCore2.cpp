@@ -153,7 +153,7 @@ Ztring ToReturn;
     if (!MI.Get(StreamKind, StreamPos, __T("BitRate")).empty())
     {
         Node* Child=Node_EssenceTrack->Add_Child("essenceTrackDataRate", MI.Get(StreamKind, StreamPos, __T("BitRate")));
-        Child->Add_Attribute("unitsOfMeasure", "bits/second");
+        Child->Add_Attribute("unitsOfMeasure", "bit/second");
         Child->Add_Attribute_IfNotEmpty(MI, StreamKind, StreamPos, "BitRate_Mode", "annotation");
     }
 
@@ -373,7 +373,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
         Node_Main.Add_Child("instantiationMediaType", PBCore2_MediaType(MI));
 
     //formatFileSize
-    Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_FileSize, "instantiationFileSize", "unitsOfMeasure", std::string("bytes"));
+    Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_FileSize, "instantiationFileSize", "unitsOfMeasure", std::string("byte"));
 
     //formatTimeStart
     if (!MI.Get(Stream_General, 0, General_Delay_String4).empty())
@@ -391,7 +391,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     //formatDataRate
     if (!MI.Get(Stream_General, 0, General_OverallBitRate).empty())
     {
-        Node* Child=Node_Main.Add_Child("instantiationDataRate", MI.Get(Stream_General, 0, General_OverallBitRate), "unitsOfMeasure", "bits/second");
+        Node* Child=Node_Main.Add_Child("instantiationDataRate", MI.Get(Stream_General, 0, General_OverallBitRate), "unitsOfMeasure", "bit/second");
         Child->Add_Attribute_IfNotEmpty(MI, Stream_General, 0, General_OverallBitRate_Mode, "annotation");
     }
 
