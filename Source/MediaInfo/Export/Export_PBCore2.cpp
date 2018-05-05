@@ -124,10 +124,10 @@ Ztring ToReturn;
     Node_EssenceTrack->Add_Child("essenceTrackType", essenceTrackType);
 
     //essenceTrackIdentifier
-    Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "ID", "essenceTrackIdentifier", "source", std::string("ID (Mediainfo)"));
-    Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "UniqueID", "essenceTrackIdentifier", "source", std::string("UniqueID (Mediainfo)"));
-    Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "StreamKindID", "essenceTrackIdentifier", "source", std::string("StreamKindID (Mediainfo)"));
-    Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "StreamOrder", "essenceTrackIdentifier", "source", std::string("StreamOrder (Mediainfo)"));
+    Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "ID", "essenceTrackIdentifier", "source", std::string("ID (MediaInfo)"));
+    Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "UniqueID", "essenceTrackIdentifier", "source", std::string("UniqueID (MediaInfo)"));
+    Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "StreamKindID", "essenceTrackIdentifier", "source", std::string("StreamKindID (MediaInfo)"));
+    Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "StreamOrder", "essenceTrackIdentifier", "source", std::string("StreamOrder (MediaInfo)"));
 
     //essenceTrackStandard
     if (StreamKind==Stream_Video)
