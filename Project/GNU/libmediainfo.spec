@@ -26,6 +26,7 @@ Provides:       %{name_without_0_ending}0 = %{version}
 Obsoletes:      %{name_without_0_ending}0 < %{version}
 %endif
 
+Prefix:         %{_prefix}
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires:  gcc-c++
 BuildRequires:  libzen-devel >= %{libzen_version}
