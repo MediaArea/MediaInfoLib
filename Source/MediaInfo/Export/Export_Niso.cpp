@@ -136,9 +136,13 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
 
         //BasicDigitalObjectInformation
         Node* Node_BasicDigitalObjectInformation = new Node("mix:BasicDigitalObjectInformation");
+        Node_BasicDigitalObjectInformation->Add_Child("mix:ObjectIdentifier")->Add_Child("mix:objectIdentifierType", string("MediaInfo"));
 
-        //TODO: mix:byteOrder
-        std::string CompressionScheme = MI.Get(Stream_Image, Pos, Image_Codec).To_UTF8();
+        std::string byteOrder = MI.Get(Stream_Image, Pos, Image_Format_Settings_Endianness).To_UTF8();
+        if (!byteOrder.empty())
+            Node_BasicDigitalObjectInformation->Add_Child("mix:byteOrder", byteOrder=="Little"?std::string("little endian"):(byteOrder=="Big"?std::string("big endian"): byteOrder));
+
+        std::string CompressionScheme = MI.Get(Stream_Image, Pos, Image_Format).To_UTF8();
         if (!CompressionScheme.empty())
             Node_BasicDigitalObjectInformation->Add_Child("mix:Compression")->Add_Child("mix:compressionScheme", CompressionScheme=="Raw"?std::string("Uncompressed"):CompressionScheme);
 
@@ -157,7 +161,25 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
 
         Node_PhotometricInterpretation->Add_Child_IfNotEmpty(MI, Stream_Image, Pos, Image_ColorSpace, "mix:colorSpace");
 
-        //TODO: mix:ReferenceBlackWhite
+        //ReferenceBlackWhite
+        std::string ColorSpace = MI.Get(Stream_Image, Pos, Image_ColorSpace).To_UTF8();
+        if (!ColorSpace.empty())
+        {
+            Node* ReferenceBlackWhite = Node_PhotometricInterpretation->Add_Child("mix:ReferenceBlackWhite");
+            for (size_t i = 0; i < ColorSpace.size(); i++)
+            {
+                Node* Component = ReferenceBlackWhite->Add_Child("mix:Component");
+                Component->Add_Child("mix:componentPhotometricInterpretation", string(1, ColorSpace[i]));
+                Node* footroom = Component->Add_Child("mix:footroom");
+                footroom->Add_Child("mix:numerator", Ztring::ToZtring(0));
+                int8u BitDepth=MI.Get(Stream_Image, Pos, Image_BitDepth).To_int8u();
+                if (BitDepth)
+                {
+                    Node* headroom = Component->Add_Child("mix:headroom");
+                    headroom->Add_Child("mix:numerator", Ztring::ToZtring((1<<BitDepth)-1));
+                }
+            }
+        }
 
         if (!Node_PhotometricInterpretation->Childs.empty())
             Node_BasicImageCharacteristics->Childs.push_back(Node_PhotometricInterpretation);
@@ -174,10 +196,63 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
         else
             delete Node_BasicImageInformation;
 
-        //TODO: mix:ImageCaptureMetadata
+        //ImageCaptureMetadata
+        std::string Make = MI.Get(Stream_General, 0, General_Encoded_Application_CompanyName).To_UTF8();
+        std::string Model = MI.Get(Stream_General, 0, General_Encoded_Library_Name).To_UTF8();
+        std::string Software = MI.Get(Stream_General, 0, General_Encoded_Application_Name).To_UTF8();
+        std::string Encoded_Date = MI.Get(Stream_Image, Pos, Image_Encoded_Date).To_UTF8();
+        if (!Make.empty() || !Model.empty() || !Software.empty() || !Encoded_Date.empty())
+        {
+            Node* Node_ImageCaptureMetadata = new Node("mix:ImageCaptureMetadata");
+            Node_Root->Childs.insert(Node_Root->Childs.end() - Extension_Size, Node_ImageCaptureMetadata);
+            
+            if (!Encoded_Date.empty())
+            {
+                if (Encoded_Date.size()>4 && Encoded_Date[4]==':')
+                    Encoded_Date[4]='-';
+                if (Encoded_Date.size()>7 && Encoded_Date[7]==':')
+                    Encoded_Date[7]='-';
+                if (Encoded_Date.size()>10 && Encoded_Date[10]==' ')
+                    Encoded_Date[10]='T';
+                Node* Node_GeneralCaptureInformation = Node_ImageCaptureMetadata->Add_Child("mix:GeneralCaptureInformation");
+                Node_GeneralCaptureInformation->Add_Child("mix:dateTimeCreated", Encoded_Date);
+            }
+
+            if (!Make.empty() || !Model.empty() || !Software.empty() )
+            {
+                Node* Node_ScannerCapture = Node_ImageCaptureMetadata->Add_Child("mix:ScannerCapture");
+                if (!Make.empty())
+                    Node_ScannerCapture->Add_Child("mix:scannerManufacturer", Make);
+                if (!Model.empty())
+                    Node_ScannerCapture->Add_Child("mix:ScannerModel")->Add_Child("mix:scannerModelName", Model);
+                if (!Software.empty())
+                    Node_ScannerCapture->Add_Child("mix:ScanningSystemSoftware")->Add_Child("mix:scanningSoftwareName", Software);
+            }
+        }
 
         Node* Node_ImageAssessmentMetadata = new Node("mix:ImageAssessmentMetadata");
-        //TODO: mix:SpatialMetrics
+
+        //SpatialMetrics
+        string samplingFrequencyUnit=MI.Get(Stream_Image, Pos, __T("Density_Unit")).To_UTF8();
+        string xSamplingFrequency=MI.Get(Stream_Image, Pos, __T("Density_X")).To_UTF8();
+        string ySamplingFrequency=MI.Get(Stream_Image, Pos, __T("Density_Y")).To_UTF8();
+        if (!xSamplingFrequency.empty() || !ySamplingFrequency.empty())
+        {
+            Node* Node_SpatialMetrics = Node_ImageAssessmentMetadata->Add_Child("mix:SpatialMetrics");
+
+            if (samplingFrequencyUnit.empty())
+                Node_SpatialMetrics->Add_Child("mix:samplingFrequencyUnit", string("no absolute unit of measurement"));
+            else if (samplingFrequencyUnit=="dpi")
+                Node_SpatialMetrics->Add_Child("mix:samplingFrequencyUnit", string("in."));
+            else if (samplingFrequencyUnit=="dpcm")
+                Node_SpatialMetrics->Add_Child("mix:samplingFrequencyUnit", string("cm"));
+
+            if (!xSamplingFrequency.empty())
+                Node_SpatialMetrics->Add_Child("mix:xSamplingFrequency")->Add_Child("mix:numerator", xSamplingFrequency);
+
+            if (!ySamplingFrequency.empty())
+                Node_SpatialMetrics->Add_Child("mix:ySamplingFrequency")->Add_Child("mix:numerator", ySamplingFrequency);
+        }
 
         Node* Node_ImageColorEncoding = new Node("mix:ImageColorEncoding");
         Node* Node_BitsPerSample = new Node("mix:BitsPerSample");
