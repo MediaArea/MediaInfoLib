@@ -1692,7 +1692,7 @@ static const char* Mxf_AS11_AudioTrackLayout[Mxf_AS11_AudioTrackLayout_Count]=
 };
 struct mxf_as11_audiotracklayout_assignment
 {
-    size_t Count;
+    const int8u Count;
     const char* Assign[16];
 };
 static const mxf_as11_audiotracklayout_assignment Mxf_AS11_AudioTrackLayout_ChannelPositions[Mxf_AS11_AudioTrackLayout_Count]=
@@ -4127,7 +4127,7 @@ void File_Mxf::Streams_Finish_Component_ForAS11(const int128u ComponentUID, floa
                                                         const mxf_as11_audiotracklayout_assignment &ChP=Mxf_AS11_AudioTrackLayout_ChannelPositions[AS11->second.AudioTrackLayout];
                                                         const mxf_as11_audiotracklayout_assignment &ChL=Mxf_AS11_AudioTrackLayout_ChannelLayout[AS11->second.AudioTrackLayout];
                                                         if (Count_Get(Stream_Audio)>=ChP.Count)
-                                                            for (size_t Pos=0; Pos<ChP.Count; ++Pos)
+                                                            for (int8u Pos=0; Pos<ChP.Count; ++Pos)
                                                             {
                                                                 if (ChP.Assign[Pos])
                                                                     Fill(Stream_Audio, Pos, Audio_ChannelPositions, ChP.Assign[Pos]);
