@@ -1057,107 +1057,6 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     Node* Node_Instrument=Node_DescriptionMetadata->Add_Child("mpeg7:Instrument");
     Node_Instrument->Add_Child("mpeg7:Tool")->Add_Child("mpeg7:Name", MediaInfoLib::Config.Info_Version_Get());
 
-    if (!MI.Get(Stream_General, 0, General_Movie).empty()
-     || !MI.Get(Stream_General, 0, General_Track).empty()
-     || !MI.Get(Stream_General, 0, General_Album).empty()
-     || !MI.Get(Stream_General, 0, General_Encoded_Library).empty()
-     || !MI.Get(Stream_General, 0, General_Performer).empty())
-    {
-
-        Node* Node_Description=Node_Mpeg7->Add_Child("mpeg7:Description", "", "xsi:type", "CreationDescriptionType");
-        Node* Node_Creation=Node_Description->Add_Child("mpeg7:CreationInformation")->Add_Child("mpeg7:Creation");
-
-        if (!MI.Get(Stream_General, 0, General_Movie).empty()
-         || !MI.Get(Stream_General, 0, General_Track).empty()
-         || !MI.Get(Stream_General, 0, General_Album).empty())
-        {
-            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Movie, "mpeg7:Title", "type", std::string("songTitle"));
-            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Track, "mpeg7:Title", "type", std::string("songTitle"));
-            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Album, "mpeg7:Title", "type", std::string("albumTitle"));
-        }
-        else
-        {
-              Node_Creation->Add_Child("mpeg7:Title", FileName);
-        }
-
-        if (!MI.Get(Stream_General, 0, General_WrittenBy).empty())
-        {
-            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
-            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:AUTHOR");
-            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
-            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_WrittenBy));
-        }
-
-        if (!MI.Get(Stream_General, 0, General_Performer).empty())
-        {
-            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
-            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:PERFORMER");
-            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
-            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Performer));
-        }
-        if (!MI.Get(Stream_General, 0, General_ExecutiveProducer).empty())
-        {
-            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
-            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:EXECUTIVE-PRODUCER");
-            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
-            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_ExecutiveProducer));
-        }
-       if (!MI.Get(Stream_General, 0, General_Producer).empty())
-        {
-            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
-            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:PRODUCER");
-            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
-            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Producer));
-        }
-         if (!MI.Get(Stream_General, 0, General_Director).empty())
-        {
-            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
-            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:PRODUCER");
-            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
-            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Director));
-        }
-        if (!MI.Get(Stream_General, 0, General_Composer).empty())
-        {
-            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
-            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:COMPOSER");
-            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
-            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Composer));
-        }
-        if (!MI.Get(Stream_General, 0, General_CostumeDesigner).empty())
-        {
-            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
-            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:COSTUME-SUPERVISOR");
-            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
-            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_CostumeDesigner));
-        }
-        if (!MI.Get(Stream_General, 0, General_ProductionDesigner).empty())
-        {
-            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
-            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:PRODUCTION-DESIGNER");
-            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
-            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_ProductionDesigner));
-        }
-        if (!MI.Get(Stream_General, 0, General_Publisher).empty())
-        {
-            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
-            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:PUBLISHER");
-            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
-            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Publisher));
-        }
-        if (!MI.Get(Stream_General, 0, General_DistributedBy).empty())
-        {
-            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
-            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:DISTRIBUTOR");
-            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
-            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_DistributedBy));
-        }
-        if (!MI.Get(Stream_General, 0, General_Encoded_Library).empty())
-        {
-            Node* Node_Tool=Node_Creation->Add_Child("mpeg7:CreationTool")->Add_Child("mpeg7:Tool");
-            Node_Tool->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Encoded_Library));
-        }
-    }
-
     //Description - CreationDescription
     Node* Node_Description=Node_Mpeg7->Add_Child("mpeg7:Description", "", "xsi:type", "ContentEntityType");
 
@@ -1303,6 +1202,105 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
             Node_CodingHints->Add_Attribute("intraFrameDistance", N);
         if (!M.empty())
             Node_CodingHints->Add_Attribute("anchorFrameDistance", M);
+    }
+
+    if (!MI.Get(Stream_General, 0, General_Movie).empty()
+     || !MI.Get(Stream_General, 0, General_Track).empty()
+     || !MI.Get(Stream_General, 0, General_Album).empty()
+     || !MI.Get(Stream_General, 0, General_Encoded_Library).empty()
+     || !MI.Get(Stream_General, 0, General_Performer).empty())
+    {
+        Node* Node_Creation=Node_Type->Add_Child("mpeg7:CreationInformation")->Add_Child("mpeg7:Creation");
+
+        if (!MI.Get(Stream_General, 0, General_Movie).empty()
+         || !MI.Get(Stream_General, 0, General_Track).empty()
+         || !MI.Get(Stream_General, 0, General_Album).empty())
+        {
+            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Movie, "mpeg7:Title", "type", std::string("songTitle"));
+            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Track, "mpeg7:Title", "type", std::string("songTitle"));
+            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Album, "mpeg7:Title", "type", std::string("albumTitle"));
+        }
+        else
+        {
+              Node_Creation->Add_Child("mpeg7:Title", FileName);
+        }
+
+        if (!MI.Get(Stream_General, 0, General_WrittenBy).empty())
+        {
+            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
+            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:AUTHOR");
+            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
+            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_WrittenBy));
+        }
+
+        if (!MI.Get(Stream_General, 0, General_Performer).empty())
+        {
+            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
+            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:PERFORMER");
+            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
+            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Performer));
+        }
+        if (!MI.Get(Stream_General, 0, General_ExecutiveProducer).empty())
+        {
+            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
+            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:EXECUTIVE-PRODUCER");
+            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
+            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_ExecutiveProducer));
+        }
+        if (!MI.Get(Stream_General, 0, General_Producer).empty())
+        {
+            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
+            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:PRODUCER");
+            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
+            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Producer));
+        }
+        if (!MI.Get(Stream_General, 0, General_Director).empty())
+        {
+            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
+            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:PRODUCER");
+            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
+            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Director));
+        }
+        if (!MI.Get(Stream_General, 0, General_Composer).empty())
+        {
+            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
+            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:COMPOSER");
+            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
+            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Composer));
+        }
+        if (!MI.Get(Stream_General, 0, General_CostumeDesigner).empty())
+        {
+            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
+            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:COSTUME-SUPERVISOR");
+            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
+            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_CostumeDesigner));
+        }
+        if (!MI.Get(Stream_General, 0, General_ProductionDesigner).empty())
+        {
+            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
+            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:PRODUCTION-DESIGNER");
+            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
+            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_ProductionDesigner));
+        }
+        if (!MI.Get(Stream_General, 0, General_Publisher).empty())
+        {
+            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
+            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:PUBLISHER");
+            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
+            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Publisher));
+        }
+        if (!MI.Get(Stream_General, 0, General_DistributedBy).empty())
+        {
+            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
+            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:mpeg:mpeg7:cs:RoleCS:2001:DISTRIBUTOR");
+            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
+            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_DistributedBy));
+        }
+        if (!MI.Get(Stream_General, 0, General_Encoded_Library).empty())
+        {
+            Node* Node_Tool=Node_Creation->Add_Child("mpeg7:CreationTool")->Add_Child("mpeg7:Tool");
+            Node_Tool->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Encoded_Library));
+        }
     }
 
     if (MI.Count_Get(Stream_Video)==1 || MI.Count_Get(Stream_Audio)==1)
