@@ -1046,6 +1046,8 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     if (!FileName.empty())
        Node_DescriptionMetadata->Add_Child("mpeg7:PrivateIdentifier", FileName);
 
+    Node_DescriptionMetadata->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_ISRC, "mpeg7:PublicIdentifier", "type", std::string("ISRC"));
+
     //Current date/time is ISO format
     time_t Time=time(NULL);
     Ztring TimeS; TimeS.Date_From_Seconds_1970((int32u)Time);
