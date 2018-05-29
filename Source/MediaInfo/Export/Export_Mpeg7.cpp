@@ -1037,28 +1037,25 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     Node_Mpeg7->Add_Attribute("xsi:schemaLocation", "urn:mpeg:mpeg7:schema:2004 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-7_schema_files/mpeg7-v2.xsd");
 
     //Description - DescriptionMetadata
-    {
-        Node* Node_DescriptionMetadata=Node_Mpeg7->Add_Child("mpeg7:DescriptionMetadata");
+    Node* Node_DescriptionMetadata=Node_Mpeg7->Add_Child("mpeg7:DescriptionMetadata");
 
-        Ztring FileName=MI.Get(Stream_General, 0, General_FileName);
-        Ztring Extension=MI.Get(Stream_General, 0, General_FileExtension);
-        if (!Extension.empty())
-            FileName+=__T('.')+Extension;
-        if (!FileName.empty())
-            Node_DescriptionMetadata->Add_Child("mpeg7:PrivateIdentifier", FileName);
+    Ztring FileName=MI.Get(Stream_General, 0, General_FileName);
+    Ztring Extension=MI.Get(Stream_General, 0, General_FileExtension);
+    if (!Extension.empty())
+        FileName+=__T('.')+Extension;
+    if (!FileName.empty())
+       Node_DescriptionMetadata->Add_Child("mpeg7:PrivateIdentifier", FileName);
 
-        //Current date/time is ISO format
-        time_t Time=time(NULL);
-        Ztring TimeS; TimeS.Date_From_Seconds_1970((int32u)Time);
-        TimeS.FindAndReplace(__T("UTC "), __T(""));
-        TimeS.FindAndReplace(__T(" "), __T("T"));
-        TimeS+=__T("+00:00");
-        Node_DescriptionMetadata->Add_Child("mpeg7:CreationTime", TimeS);
+    //Current date/time is ISO format
+    time_t Time=time(NULL);
+    Ztring TimeS; TimeS.Date_From_Seconds_1970((int32u)Time);
+    TimeS.FindAndReplace(__T("UTC "), __T(""));
+    TimeS.FindAndReplace(__T(" "), __T("T"));
+    TimeS+=__T("+00:00");
+    Node_DescriptionMetadata->Add_Child("mpeg7:CreationTime", TimeS);
 
-        Node* Node_Instrument=Node_DescriptionMetadata->Add_Child("mpeg7:Instrument");
-        Node_Instrument->Add_Child("mpeg7:Tool")->Add_Child("mpeg7:Name", MediaInfoLib::Config.Info_Version_Get());
-    }
-
+    Node* Node_Instrument=Node_DescriptionMetadata->Add_Child("mpeg7:Instrument");
+    Node_Instrument->Add_Child("mpeg7:Tool")->Add_Child("mpeg7:Name", MediaInfoLib::Config.Info_Version_Get());
 
     if (!MI.Get(Stream_General, 0, General_Movie).empty()
      || !MI.Get(Stream_General, 0, General_Track).empty()
@@ -1070,10 +1067,18 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
         Node* Node_Description=Node_Mpeg7->Add_Child("mpeg7:Description", "", "xsi:type", "CreationDescriptionType");
         Node* Node_Creation=Node_Description->Add_Child("mpeg7:CreationInformation")->Add_Child("mpeg7:Creation");
 
-        Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Movie, "mpeg7:Title", "type", std::string("songTitle"));
-
-        Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Track, "mpeg7:Title", "type", std::string("songTitle"));
-        Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Album, "mpeg7:Title", "type", std::string("albumTitle"));
+        if (!MI.Get(Stream_General, 0, General_Movie).empty()
+         || !MI.Get(Stream_General, 0, General_Track).empty()
+         || !MI.Get(Stream_General, 0, General_Album).empty())
+        {
+            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Movie, "mpeg7:Title", "type", std::string("songTitle"));
+            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Track, "mpeg7:Title", "type", std::string("songTitle"));
+            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Album, "mpeg7:Title", "type", std::string("albumTitle"));
+        }
+        else
+        {
+              Node_Creation->Add_Child("mpeg7:Title", FileName);
+        }
 
         if (!MI.Get(Stream_General, 0, General_WrittenBy).empty())
         {
