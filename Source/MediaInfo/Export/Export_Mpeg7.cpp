@@ -831,6 +831,8 @@ void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamP
     int32u VisualCodingFormatCS_termID=Mpeg7_VisualCodingFormatCS_termID(MI, StreamPos);
     if (VisualCodingFormatCS_termID)
         Node_Format->Add_Attribute("href", __T("urn:mpeg:mpeg7:cs:VisualCodingFormatCS:2001:")+Ztring::ToZtring(VisualCodingFormatCS_termID/10000));
+    else
+        Node_Format->Add_Attribute("href", __T("urn:x-mpeg7-mediainfo:cs:VisualCodingFormatCS:2009:unknown"));
 
     Ztring Value=Mpeg7_Visual_colorDomain(MI, StreamPos); //Algo puts empty string if not known
     if (!Value.empty())
@@ -969,6 +971,8 @@ void Mpeg7_Transform_Audio(Node* Parent, MediaInfo_Internal &MI, size_t StreamPo
     int32u AudioCodingFormatCS_termID=Mpeg7_AudioCodingFormatCS_termID(MI, StreamPos);
     if (AudioCodingFormatCS_termID)
         Node_Format->Add_Attribute("href", __T("urn:mpeg:mpeg7:cs:AudioCodingFormatCS:2001:")+Ztring::ToZtring(AudioCodingFormatCS_termID/10000));
+    else
+       Node_Format->Add_Attribute("href", __T("urn:x-mpeg7-mediainfo:cs:AudioCodingFormatCS:2009:unknown"));
 
     Node_Format->Add_Child("mpeg7:Name", Mpeg7_AudioCodingFormatCS_Name((AudioCodingFormatCS_termID/10000)*10000, MI, StreamPos), "xml:lang", "en");
     if (AudioCodingFormatCS_termID%10000)
@@ -1193,6 +1197,7 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     {
         Node* Node_FileFormat=Node_MediaFormat->Add_Child("mpeg7:FileFormat");
 
+        Value="urn:x-mpeg7-mediainfo:cs:FileFormatCS:2009:unknown";
         int32u FileFormatCS_termID=Mpeg7_FileFormatCS_termID(MI);
         if (FileFormatCS_termID)
         {
@@ -1201,9 +1206,8 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
             else
                 Value="urn:mpeg:mpeg7:cs:FileFormatCS:2001:";
             Value+=Ztring::ToZtring(FileFormatCS_termID/10000);
-
-            Node_FileFormat->Add_Attribute("href", Value);
         }
+        Node_FileFormat->Add_Attribute("href", Value);
 
         Node_FileFormat->Add_Child("mpeg7:Name", Mpeg7_FileFormatCS_Name((FileFormatCS_termID/10000)*10000, MI), "xml:lang", "en");
         if (FileFormatCS_termID%10000)
