@@ -1307,6 +1307,13 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
             Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "PersonGroupType");
             Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_DistributedBy));
         }
+        if (!MI.Get(Stream_General, 0, General_Label).empty())
+        {
+            Node* Node_Creator=Node_Creation->Add_Child("mpeg7:Creator");
+            Node_Creator->Add_Child("mpeg7:Role", "", "href", "urn:x-mpeg7-mediainfo:cs:RoleCS:2009:RECORD-LABEL");
+            Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "OrganizationType");
+            Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Label));
+        }
         if (!MI.Get(Stream_General, 0, General_Encoded_Library).empty())
         {
             Node* Node_Tool=Node_Creation->Add_Child("mpeg7:CreationTool")->Add_Child("mpeg7:Tool");
