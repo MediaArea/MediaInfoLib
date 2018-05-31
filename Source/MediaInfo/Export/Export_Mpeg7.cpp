@@ -869,7 +869,8 @@ void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamP
     Node_Frame->Add_Attribute("height", MI.Get(Stream_Video, 0, Video_Height));
     Node_Frame->Add_Attribute("width", MI.Get(Stream_Video, 0, Video_Width));
     Node_Frame->Add_Attribute("rate", MI.Get(Stream_Video, 0, Video_FrameRate));
-    Node_Frame->Add_Attribute("structure", MI.Get(Stream_Video, 0, Video_ScanType).MakeLowerCase());
+    if (!MI.Get(Stream_Video, 0, Video_ScanType).empty())
+        Node_Frame->Add_Attribute("structure", MI.Get(Stream_Video, 0, Video_ScanType).MakeLowerCase());
 
     //Colorimetry
     if (MI.Get(Stream_Video, StreamPos, Video_Colorimetry).find(__T("4:2:0"))!=string::npos)
@@ -990,11 +991,11 @@ void Mpeg7_Transform_Audio(Node* Parent, MediaInfo_Internal &MI, size_t StreamPo
     }
 
     //AudioChannels
-    Node_AudioCoding->Add_Child("mpeg7:AudioChannels", MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_));
+    Node_AudioCoding->Add_Child_IfNotEmpty(MI, Stream_Audio, StreamPos, Audio_Channel_s_, "mpeg7:AudioChannels");
 
     //Sample
     Node* Node_Sample=Node_AudioCoding->Add_Child("mpeg7:Sample");
-    Node_Sample->Add_Attribute("rate", MI.Get(Stream_Audio, StreamPos, Audio_SamplingRate));
+    Node_Sample->Add_Attribute_IfNotEmpty(MI, Stream_Audio, StreamPos, Audio_SamplingRate, "rate");
     Node_Sample->Add_Attribute_IfNotEmpty(MI, Stream_Audio, StreamPos, Audio_BitDepth, "bitsPer");
 
     //Emphasis
@@ -1039,14 +1040,14 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     //Description - DescriptionMetadata
     Node* Node_DescriptionMetadata=Node_Mpeg7->Add_Child("mpeg7:DescriptionMetadata");
 
+    Node_DescriptionMetadata->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_ISRC, "mpeg7:PublicIdentifier", "type", std::string("ISRC"));
+
     Ztring FileName=MI.Get(Stream_General, 0, General_FileName);
     Ztring Extension=MI.Get(Stream_General, 0, General_FileExtension);
     if (!Extension.empty())
         FileName+=__T('.')+Extension;
     if (!FileName.empty())
        Node_DescriptionMetadata->Add_Child("mpeg7:PrivateIdentifier", FileName);
-
-    Node_DescriptionMetadata->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_ISRC, "mpeg7:PublicIdentifier", "type", std::string("ISRC"));
 
     //Current date/time is ISO format
     time_t Time=time(NULL);
@@ -1327,7 +1328,8 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
         //MediaTimePoint
         Node_MediaTime->Add_Child("mpeg7:MediaTimePoint", Mpeg7_MediaTimePoint(MI));
         //MediaDuration
-        Node_MediaTime->Add_Child("mpeg7:MediaDuration", Mpeg7_MediaDuration(MI));
+        if (!Mpeg7_MediaDuration(MI).empty())
+            Node_MediaTime->Add_Child("mpeg7:MediaDuration", Mpeg7_MediaDuration(MI));
     }
 
     Ztring ToReturn=Ztring().From_UTF8(To_XML(*Node_Mpeg7, 0, true, true).c_str());
