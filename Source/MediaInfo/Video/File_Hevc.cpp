@@ -1836,6 +1836,8 @@ void File_Hevc::sei()
         Element_End0();
     }
     BS_Begin();
+    if (!Peek_SB())
+        Fill(Stream_Video, 0, "SEI_rbsp_stop_one_bit", "Missing", Unlimited, true, true);
     Mark_1(                                                     );
     BS_End();
 }
