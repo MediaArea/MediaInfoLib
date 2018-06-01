@@ -1226,7 +1226,7 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
             if (!MI.Get(Stream_General, 0, General_Track_Position).empty())
             {
                  Ztring Total=MI.Get(Stream_General, 0, General_Track_Position_Total);
-                 Value=MI.Get(Stream_General, 0, General_Track_Position)+(Total.empty()?__T(""):(__T("/")+Total));
+                 Value=MI.Get(Stream_General, 0, General_Track_Position)+(Total.empty()?Ztring():(__T("/")+Total));
 
                  Node_Creation->Add_Child("mpeg7:Title", Value, "type", std::string("urn:x-mpeg7-mediainfo:cs:TitleTypeCS:2009:TRACK"));
             }
