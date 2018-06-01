@@ -1861,6 +1861,23 @@ void File_Hevc::sei_message(int32u &seq_parameter_set_id)
         while(payload_size_byte==0xFF);
     Element_End0();
 
+    //Manage buggy files not having final bit stop
+    const int8u* Buffer_Buggy;
+    int64u Buffer_Offset_Buggy, Element_Size_Buggy;
+    if (Element_Offset+payloadSize>Element_Size)
+    {
+        Buffer_Buggy=Buffer;
+        Buffer_Offset_Buggy=Buffer_Offset;
+        Element_Size_Buggy=Element_Size;
+        Element_Size=Element_Offset+payloadSize;
+        Buffer=new int8u[(size_t)Element_Size];
+        Buffer_Offset=0;
+        memcpy((void*)Buffer, Buffer_Buggy+Buffer_Offset, (size_t)Element_Size_Buggy);
+        memset((void*)(Buffer+(size_t)Element_Size_Buggy), 0x00, (size_t)(Element_Size-Element_Size_Buggy)); //Last 0x00 bytes are discarded, we recreate them
+    }
+    else
+        Buffer_Buggy=NULL;
+
     int64u Element_Offset_Save=Element_Offset+payloadSize;
     if (Element_Offset_Save>Element_Size)
     {
@@ -1889,6 +1906,15 @@ void File_Hevc::sei_message(int32u &seq_parameter_set_id)
     }
     Element_Offset=Element_Offset_Save; //Positionning in the right place.
     Element_Size=Element_Size_Save; //Positionning in the right place.
+
+    //Manage buggy files not having final bit stop
+    if (Buffer_Buggy)
+    {
+        delete[] Buffer;
+        Buffer=Buffer_Buggy;
+        Buffer_Offset=Buffer_Offset_Buggy;
+        Element_Size=Element_Size_Buggy;
+    }
 }
 
 //---------------------------------------------------------------------------
