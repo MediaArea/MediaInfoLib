@@ -863,14 +863,22 @@ void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamP
     }
 
     //Frame
-    Node* Node_Frame=Node_VisualCoding->Add_Child("mpeg7:Frame");
-    Node_Frame->Add_Attribute("aspectRatio", MI.Get(Stream_Video, 0, Video_DisplayAspectRatio));
+    if (!MI.Get(Stream_Video, 0, Video_DisplayAspectRatio).empty()
+     || !MI.Get(Stream_Video, 0, Video_Height).empty()
+     || !MI.Get(Stream_Video, 0, Video_Width).empty()
+     || !MI.Get(Stream_Video, 0, Video_FrameRate).empty()
+     || !MI.Get(Stream_Video, 0, Video_ScanType).empty())
+    {
+        Node* Node_Frame=Node_VisualCoding->Add_Child("mpeg7:Frame");
+        Node_Frame->Add_Attribute_IfNotEmpty(MI, Stream_Video, 0, Video_DisplayAspectRatio, "aspectRatio");
+        Node_Frame->Add_Attribute_IfNotEmpty(MI, Stream_Video, 0, Video_Height, "height");
+        Node_Frame->Add_Attribute_IfNotEmpty(MI, Stream_Video, 0, Video_Width, "width");
+        Node_Frame->Add_Attribute_IfNotEmpty(MI, Stream_Video, 0, Video_FrameRate, "rate");
 
-    Node_Frame->Add_Attribute("height", MI.Get(Stream_Video, 0, Video_Height));
-    Node_Frame->Add_Attribute("width", MI.Get(Stream_Video, 0, Video_Width));
-    Node_Frame->Add_Attribute("rate", MI.Get(Stream_Video, 0, Video_FrameRate));
-    if (!MI.Get(Stream_Video, 0, Video_ScanType).empty())
-        Node_Frame->Add_Attribute("structure", MI.Get(Stream_Video, 0, Video_ScanType).MakeLowerCase());
+        Value=MI.Get(Stream_Video, 0, Video_ScanType).MakeLowerCase();
+        if (!Value.empty())
+            Node_Frame->Add_Attribute("structure", Value==__T("mbaff")?__T("interlaced"):Value);
+    }
 
     //Colorimetry
     if (MI.Get(Stream_Video, StreamPos, Video_Colorimetry).find(__T("4:2:0"))!=string::npos)
@@ -1326,10 +1334,13 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     {
         Node* Node_MediaTime=Node_Type->Add_Child("mpeg7:MediaTime");
         //MediaTimePoint
-        Node_MediaTime->Add_Child("mpeg7:MediaTimePoint", Mpeg7_MediaTimePoint(MI));
+        Value=Mpeg7_MediaTimePoint(MI);
+        if (!Value.empty())
+            Node_MediaTime->Add_Child("mpeg7:MediaTimePoint", Value);
         //MediaDuration
-        if (!Mpeg7_MediaDuration(MI).empty())
-            Node_MediaTime->Add_Child("mpeg7:MediaDuration", Mpeg7_MediaDuration(MI));
+        Value=Mpeg7_MediaDuration(MI);
+        if (!Value.empty())
+            Node_MediaTime->Add_Child("mpeg7:MediaDuration", Value);
     }
 
     Ztring ToReturn=Ztring().From_UTF8(To_XML(*Node_Mpeg7, 0, true, true).c_str());
