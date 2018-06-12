@@ -877,7 +877,7 @@ void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamP
 
         Value=MI.Get(Stream_Video, 0, Video_ScanType).MakeLowerCase();
         if (!Value.empty())
-            Node_Frame->Add_Attribute("structure", Value==__T("mbaff")?__T("interlaced"):Value);
+            Node_Frame->Add_Attribute("structure", Value==__T("mbaff")?Ztring(__T("interlaced")):Value);
     }
 
     //Colorimetry
