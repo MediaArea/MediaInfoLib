@@ -31,6 +31,9 @@ namespace MediaInfoLib
 {
 
 //---------------------------------------------------------------------------
+extern const float64 Mpegv_frame_rate[16];
+
+//---------------------------------------------------------------------------
 extern const int32u AC3_SamplingRate[]=
 { 48000,  44100,  32000,      0,};
 
@@ -1483,9 +1486,6 @@ bool File_Ac3::Synchronize()
         {
             TimeStamp_IsPresent=true;
             Buffer_Offset-=16;
-
-            if (Frame_Count_Valid<10000)
-                Frame_Count_Valid=10000; //Setting it to 10000 in order to be able to have the drop frame for extreme stream (60 fps...)
         }
     }
 
@@ -1547,7 +1547,11 @@ bool File_Ac3::Synched_Test()
 
     //Quick test of synchro
     if (!FrameSynchPoint_Test())
+    {
+        if (TimeStamp_IsPresent && !TimeStamp_Parsed && Buffer_Offset>=16)
+            Buffer_Offset-=16;
         return false; //Need more data
+    }
     if (!Synched)
         return true;
 
@@ -1729,8 +1733,6 @@ void File_Ac3::Header_Parse()
         Header_Fill_Code(2, "TimeStamp");
         return;
     }
-    else
-        TimeStamp_Parsed=false; //Currently, only one kind of intermediate element is detected (no TimeStamp and HD part together), and we don't know the precise specification of MLP nor TimeStamp, so we consider next eleemnt is TimeStamp
 
     if (Save_Buffer)
     {
@@ -1790,6 +1792,9 @@ void File_Ac3::Header_Parse()
 //---------------------------------------------------------------------------
 void File_Ac3::Data_Parse()
 {
+    if (Element_Code != 2) // Not time stamp
+        TimeStamp_Parsed=false; //Currently, only one kind of intermediate element is detected (no TimeStamp and HD part together), and we don't know the precise specification of MLP nor TimeStamp, so we consider next eleemnt is TimeStamp
+
     if (Save_Buffer)
     {
         File_Offset+=Buffer_Offset;
@@ -4038,27 +4043,34 @@ void File_Ac3::HD()
 //---------------------------------------------------------------------------
 void File_Ac3::TimeStamp()
 {
+    // Format looks like a Sync word 0x0110 then SMPTE ST 339 Time stamp
+    
     //Parsing
-    int8u H1, H2, M1, M2, S1, S2, F1, F2;
-    Skip_B1(                                                    "Magic value");
-    Skip_B1(                                                    "Size?");
+    int8u H1, H2, M1, M2, S1, S2, F1, F2, FrameRate;
+    bool DropFrame;
+    Skip_B2(                                                    "Sync word");
     BS_Begin();
-    Skip_S1(8,                                                  "H");
-    Get_S1 (4, H1,                                              "H");
-    Get_S1( 4, H2,                                              "H");
-    Skip_S1(8,                                                  "M");
-    Get_S1 (4, M1,                                              "M");
-    Get_S1( 4, M2,                                              "M");
-    Skip_S1(8,                                                  "S");
-    Get_S1 (4, S1,                                              "S");
-    Get_S1( 4, S2,                                              "S");
-    Skip_S1(8,                                                  "F");
-    Get_S1 (4, F1,                                              "F");
-    Get_S1( 4, F2,                                              "F");
+    Skip_S2(10,                                                 "H");
+    Get_S1 ( 2, H1,                                             "H");
+    Get_S1 ( 4, H2,                                             "H");
+    Skip_S2( 9,                                                 "M");
+    Get_S1 ( 3, M1,                                             "M");
+    Get_S1 ( 4, M2,                                             "M");
+    Skip_S2( 9,                                                 "S");
+    Get_S1 ( 3, S1,                                             "S");
+    Get_S1 ( 4, S2,                                             "S");
+    Skip_S2( 9,                                                 "F");
+    Get_SB (    DropFrame,                                      "Drop frame");
+    Get_S1 ( 2, F1,                                             "F");
+    Get_S1 ( 4, F2,                                             "F");
+    Skip_S2(16,                                                 "Sample number");
+    Skip_S2( 9,                                                 "Unknown");
+    Skip_SB(                                                    "Status");
+    Get_S1 ( 4, FrameRate,                                      "Frame rate"); Param_Info1(Mpegv_frame_rate[FrameRate]);
+    Skip_SB(                                                    "Status");
+    Skip_SB(                                                    "Drop frame");
     BS_End();
-    Skip_B2(                                                    "Unknown");
-    Skip_B2(                                                    "Unknown");
-    Skip_B2(                                                    "Unknown (fixed)");
+    Skip_B2(                                                    "User private");
 
     FILLING_BEGIN();
         float64 Temp=H1*10*60*60
@@ -4066,41 +4078,23 @@ void File_Ac3::TimeStamp()
                    + M1   *10*60
                    + M2      *60
                    + S1      *10
-                   + S2
-                   + (F1*10+F2)/29.97; //No idea about where is the frame rate
+                   + S2;
+        if (Mpegv_frame_rate[FrameRate])
+            Temp+=(F1*10+F2)/Mpegv_frame_rate[FrameRate];
         #ifdef MEDIAINFO_TRACE
-            Element_Info1(Ztring::ToZtring(H1)+Ztring::ToZtring(H2)+__T(':')
+           Element_Info1(Ztring::ToZtring(H1)+Ztring::ToZtring(H2)+__T(':')
                        + Ztring::ToZtring(M1)+Ztring::ToZtring(M2)+__T(':')
-                       + Ztring::ToZtring(S1)+Ztring::ToZtring(S2)+__T(':')
+                       + Ztring::ToZtring(S1)+Ztring::ToZtring(S2)+(DropFrame?__T(';'):__T(':'))
                        + Ztring::ToZtring(F1)+Ztring::ToZtring(F2));
         #endif //MEDIAINFO_TRACE
         if (Frame_Count==0)
+        {
             TimeStamp_Content=Temp;
+            TimeStamp_DropFrame_IsValid=true;
+            TimeStamp_DropFrame_Content=DropFrame;
+        }
         TimeStamp_IsParsing=false;
         TimeStamp_Parsed=true;
-
-        if (!TimeStamp_DropFrame_IsValid && M2 && !S2 && !S1 && !F1)
-        {
-            //If drop frame configuration, frames 0 and 1 are dropped for every minutes except 00 10 20 30 40 50
-            switch (F2)
-            {
-                case 0 :
-                case 1 :
-                            TimeStamp_DropFrame_IsValid=true;
-                            TimeStamp_DropFrame_Content=false;
-                            break;
-                case 2 :
-                            if (Frame_Count>=2)
-                            {
-                                TimeStamp_DropFrame_IsValid=true;
-                                TimeStamp_DropFrame_Content=true;
-                            }
-                default:    ;
-            }
-
-            if (TimeStamp_DropFrame_IsValid)
-                Frame_Count_Valid=32; //Reset
-        }
     FILLING_END();
 }
 
