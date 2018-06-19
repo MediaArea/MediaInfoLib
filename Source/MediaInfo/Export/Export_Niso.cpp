@@ -138,6 +138,9 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
         Node* Node_BasicDigitalObjectInformation = new Node("mix:BasicDigitalObjectInformation");
         Node_BasicDigitalObjectInformation->Add_Child("mix:ObjectIdentifier")->Add_Child("mix:objectIdentifierType", string("MediaInfo"));
 
+        if (MI.Get(Stream_General, 0, General_Format) == __T("TIFF"))
+             Node_BasicDigitalObjectInformation->Add_Child("mix:FormatDesignation")->Add_Child("mix:formatName", std::string("image/tiff"));
+
         std::string byteOrder = MI.Get(Stream_Image, Pos, Image_Format_Settings_Endianness).To_UTF8();
         if (!byteOrder.empty())
             Node_BasicDigitalObjectInformation->Add_Child("mix:byteOrder", byteOrder=="Little"?std::string("little endian"):(byteOrder=="Big"?std::string("big endian"): byteOrder));
