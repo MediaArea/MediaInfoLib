@@ -1257,7 +1257,7 @@ void File_Ac3::Streams_Fill()
     else if (bsid_Max<=0x09)
         SamplesPerFrame=768; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
     else if (bsid_Max>0x0A && bsid_Max<=0x10)
-        SamplesPerFrame=256;
+        SamplesPerFrame=256*(numblkscod==3?6:(numblkscod+1));
     else if (HD_MajorSync_Parsed && (HD_StreamType==0xBA || HD_StreamType==0xBB)) // TrueHD or MLP
         SamplesPerFrame=40;
     else
