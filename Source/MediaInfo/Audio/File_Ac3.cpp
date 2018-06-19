@@ -915,10 +915,14 @@ File_Ac3::File_Ac3()
 
     //Temp
     Frame_Count_HD=0;
+    addbsi_Buffer=NULL;
+    addbsi_Buffer_Size=0;
     fscod=0;
     fscod2=0;
     frmsizecod=0;
     bsid_Max=(int8u)-1;
+    Formats[0]=0;
+    Formats[1]=0;
     for (int8u Pos=0; Pos<8; Pos++)
         for (int8u Pos2=0; Pos2<9; Pos2++)
         {
@@ -933,6 +937,10 @@ File_Ac3::File_Ac3()
     numblkscod=0;
     substreamid_Independant_Current=0;
     substreams_Count=0;
+    joc_complexity_index_Container=(int8u)-1;
+    joc_complexity_index_Stream=(int8u)-1;
+    num_dynamic_objects=(int8u)-1;
+    nonstd_bed_channel_assignment_mask=(int32u)-1;
     dxc3_Parsed=false;
     HD_MajorSync_Parsed=false;
     Core_IsPresent=false;
@@ -945,6 +953,12 @@ File_Ac3::File_Ac3()
     TimeStamp_DropFrame_IsValid=false;
     BigEndian=true;
     IgnoreCrc_Done=false;
+}
+
+//---------------------------------------------------------------------------
+File_Ac3::~File_Ac3()
+{
+    delete[] addbsi_Buffer;
 }
 
 //***************************************************************************
@@ -1005,7 +1019,7 @@ void File_Ac3::Streams_Fill()
         }
     }
 
-    if (joc_num_objects_map.size()==1 && (joc_num_objects_map.begin()->second >= Frame_Count_Valid / 2 || joc_num_objects_map.begin()->second >= Frame_Count / 2)) //Accepting that some frames do not contain JOC
+    if (joc_num_objects_map.size()==1 && (joc_num_objects_map.begin()->second >= Frame_Count_Valid / 8 || joc_num_objects_map.begin()->second >= Frame_Count / 8)) //Accepting that some frames do not contain JOC
     {
         joc_num_objects = joc_num_objects_map.begin()->first;
         Fill(Stream_Audio, 0, Audio_Format_Profile, bsid_Max<=0x09?"AC-3+Atmos":"E-AC-3+Atmos");
@@ -1013,6 +1027,19 @@ void File_Ac3::Streams_Fill()
         Fill(Stream_Audio, 0, Audio_Channel_s_, Ztring::ToZtring(joc_num_objects)+__T(" objects"));
         Fill(Stream_Audio, 0, Audio_ChannelPositions, Ztring::ToZtring(joc_num_objects) + __T(" objects"));
         Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, Ztring::ToZtring(joc_num_objects) + __T(" objects"));
+        Fill(Stream_Audio, 0, Audio_ChannelLayout, Ztring::ToZtring(joc_num_objects) + __T(" objects"));
+        if (dxc3_Parsed && joc_complexity_index_Container!=(int8u)-1)
+            Fill(Stream_Audio, 0, "ComplexityIndex", joc_complexity_index_Container);
+        if (dxc3_Parsed && joc_complexity_index_Container==(int8u)-1 && joc_complexity_index_Stream!=(int8u)-1)
+            Fill(Stream_Audio, 0, "ComplexityIndex", "Not present");
+        if (joc_complexity_index_Stream!=(int8u)-1 && joc_complexity_index_Stream!=joc_complexity_index_Container)
+            Fill(Stream_Audio, 0, "ComplexityIndex", joc_complexity_index_Stream);
+        if (dxc3_Parsed && joc_complexity_index_Container!=(int8u)-1 && joc_complexity_index_Stream==(int8u)-1)
+            Fill(Stream_Audio, 0, "ComplexityIndex", "Not present");
+        if (num_dynamic_objects!=(int8u)-1)
+            Fill(Stream_Audio, 0, "NumberOfDynamicObjects", num_dynamic_objects);
+        if (nonstd_bed_channel_assignment_mask !=(int32u)-1)
+            Fill(Stream_Audio, 0, "BedChannelConfiguration", AC3_nonstd_bed_channel_assignment_mask_ChannelLayout(nonstd_bed_channel_assignment_mask));
     }
 
     //AC-3
@@ -2026,6 +2053,7 @@ void File_Ac3::Core_Frame()
     int8u  strmtyp=0, substreamid=0, acmod=0, bsmod=0, dsurmod=0;
     bool   compre=false, compr2e=false, dynrnge=false, dynrng2e=false;
     bool   lfeon=false, chanmape=false;
+    bool   addbsie;
 
     if (bsid<=0x09)
     {
@@ -2186,7 +2214,6 @@ void File_Ac3::Core_Frame()
                     Get_S2(16, chanmap,                             "chanmap"); Param_Info1(AC3_chanmap_ChannelPositions(chanmap));
                 TEST_SB_END();
             }
-            /* Not finished, for reference only
             TEST_SB_SKIP(                                           "mixmdate");
                 int8u dmixmod, ltrtcmixlev, lorocmixlev, ltrtsurmixlev, lorosurmixlev, mixdef;
                 if(acmod > 0x2)
@@ -2300,7 +2327,7 @@ void File_Ac3::Core_Frame()
                         {
                             int8u blkmixcfginfo;
                             Get_S1 (5, blkmixcfginfo,               "blkmixcfginfo[0]");
-                            aud_blks[0].blkmixcfginfo = blkmixcfginfo;
+                            //aud_blks[0].blkmixcfginfo = blkmixcfginfo;
                         }
                         else
                         {
@@ -2310,7 +2337,7 @@ void File_Ac3::Core_Frame()
                                 TEST_SB_SKIP(                       "blkmixcfginfoe");
                                     int8u blkmixcfginfo;
                                     Get_S1 (5, blkmixcfginfo,       "blkmixcfginfo[x]");
-                                    aud_blks[blk].blkmixcfginfo = blkmixcfginfo;
+                                    //aud_blks[blk].blkmixcfginfo = blkmixcfginfo;
                                 TEST_SB_END();
                             }
                         }
@@ -2360,14 +2387,21 @@ void File_Ac3::Core_Frame()
                     Get_S1(6, frmsizecod,                           "frmsizecod");
             }
 
-            TEST_SB_SKIP(                                           "addbsie");
+            TEST_SB_GET (addbsie,                                   "addbsie");
                 int8u addbsil;
                 Get_S1 (6, addbsil,                                 "addbsil");
-                size_t addbsilen = (addbsil + 1) * 8;
-                Skip_BS(addbsilen,                                  "addbsi");
+                if (addbsil!=addbsi_Buffer_Size)
+                {
+                    delete[] addbsi_Buffer;
+                    addbsi_Buffer_Size=addbsil+1;
+                    addbsi_Buffer=new int8u[addbsi_Buffer_Size];
+                }
+                for (int8u Pos=0; Pos<=addbsil; Pos++) //addbsil+1 bytes
+                    Get_S1 (8, addbsi_Buffer[Pos],                  "addbsi");
             TEST_SB_END();
         Element_End0();
 
+        /* Not finished, for reference only
         int8u numblks = numblkscod == 3 ? 6 : (numblkscod + 1);
 
         Element_Begin1("audfrm");
@@ -3455,8 +3489,6 @@ void File_Ac3::Core_Frame()
                 Element_End0();
             }
             //*/
-
-        Element_End0();
     }
     else
         Skip_XX(Element_Size-Element_Offset,                        "Unknown");
@@ -3497,6 +3529,14 @@ void File_Ac3::Core_Frame()
     FILLING_BEGIN();
         if (bsid>0x10)
             return; //Not supported
+
+        Formats[bsid<=0x09?0:1]++;
+
+        // addbsi
+        if (!joc_num_objects_map.empty() && addbsie && addbsi_Buffer_Size >= 2 && (addbsi_Buffer[0]&0x01))
+        {
+            joc_complexity_index_Stream = addbsi_Buffer[1];
+        }
 
         //Information
         if (strmtyp>1)
@@ -3555,6 +3595,11 @@ void File_Ac3::Core_Frame()
 //---------------------------------------------------------------------------
 void File_Ac3::emdf()
 {
+    //JOC reinit
+    joc_complexity_index_Stream=(int8u)-1;
+    num_dynamic_objects=(int8u)-1;
+    nonstd_bed_channel_assignment_mask=(int32u)-1;
+
     Element_Begin1("emdf");
     emdf_sync();
     emdf_container();
@@ -3758,11 +3803,12 @@ void File_Ac3::object_audio_metadata_payload()
 
     int8u object_count_bits;
     Get_S1 (5, object_count_bits,                               "object_count_bits");
+    num_dynamic_objects = object_count_bits + 1;
     if (object_count_bits == 0x1F)
     {
         int8u object_count_bits_ext;
         Get_S1 (7, object_count_bits_ext,                       "object_count_bits_ext");
-        object_count_bits += object_count_bits_ext;
+        num_dynamic_objects += object_count_bits_ext;
     }
 
     program_assignment();
@@ -3780,7 +3826,14 @@ void File_Ac3::program_assignment()
     Get_SB (b_dyn_object_only_program,                          "b_dyn_object_only_program");
     if (b_dyn_object_only_program)
     {
-        Skip_SB(                                                "b_lfe_present");
+        bool b_lfe_present;
+        Get_SB (b_lfe_present,                                  "b_lfe_present");
+        if (b_lfe_present)
+        {
+            nonstd_bed_channel_assignment_mask=(1<<3);
+            if (num_dynamic_objects!=(int8u)-1)
+                num_dynamic_objects--;
+        }
     }
     else
     {
@@ -3810,9 +3863,13 @@ void File_Ac3::program_assignment()
                     bool b_standard_chan_assign;
                     Get_SB (b_standard_chan_assign,             "b_standard_chan_assign");
                     if (b_standard_chan_assign)
-                        Skip_S2(10,                             "bed_channel_assignment_mask");
+                    {
+                        int16u bed_channel_assignment_mask;
+                        Get_S2 (10, bed_channel_assignment_mask, "bed_channel_assignment_mask");
+                        nonstd_bed_channel_assignment_mask=AC3_bed_channel_assignment_mask_2_nonstd(bed_channel_assignment_mask);
+                    }
                     else
-                        Skip_S3(17,                             "nonstd_bed_channel_assignment_mask");
+                        Get_S3 (17, nonstd_bed_channel_assignment_mask, "nonstd_bed_channel_assignment_mask");
                 }
                 Element_End0();
             }
@@ -3824,14 +3881,17 @@ void File_Ac3::program_assignment()
         if (content_description_mask & 0x4)
         {
             int8u num_dynamic_objects_bits;
-            Get_S1 (5, num_dynamic_objects_bits,                "num_dynamic_objects_bits");
+            Get_S1(5, num_dynamic_objects_bits,                 "num_dynamic_objects_bits");
             if (num_dynamic_objects_bits == 0x1F)
             {
                 int8u num_dynamic_objects_bits_ext = 0;
                 Get_S1 (7, num_dynamic_objects_bits_ext,        "num_dynamic_objects_bits_ext");
                 num_dynamic_objects_bits += num_dynamic_objects_bits_ext;
             }
+            num_dynamic_objects = num_dynamic_objects_bits + 1;
         }
+        else
+            num_dynamic_objects = 0;
 
         if (content_description_mask & 0x8)
         {
@@ -4222,6 +4282,8 @@ void File_Ac3::dec3()
         int8u num_dep_sub;
         Get_S1 (2, fscod,                                       "fscod");
         Get_S1 (5, bsid,                                        "bsid");
+        Skip_SB(                                                "reserved");
+        Skip_SB(                                                "asvc");
         Get_S1 (3, bsmod_Max[Pos][0],                           "bsmod");
         Get_S1 (3, acmod_Max[Pos][0],                           "acmod");
         Get_SB (   lfeon_Max[Pos][0],                           "lfeon");
@@ -4233,7 +4295,16 @@ void File_Ac3::dec3()
             Skip_SB(                                            "reserved");
         Element_End0();
     }
+    if (Data_BS_Remain())
+    {
+        Skip_S1( 7,                                             "reserved");
+        TEST_SB_SKIP(                                           "flag_ec3_extension_type_joc");
+            Get_S1 ( 8, joc_complexity_index_Container,         "joc_complexity_index");
+        TEST_SB_END();
+    }
     BS_End();
+    if (Element_Offset<Element_Size)
+        Skip_XX(Element_Size-Element_Offset,                    "reserved");
 
     MustParse_dec3=false;
     dxc3_Parsed=true;
