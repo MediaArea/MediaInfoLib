@@ -201,7 +201,7 @@ int16u AC3_acmod2chanmap[]=
     0xE000,
     0xA100,
     0xE100,
-    0xB900,
+    0xB800,
     0xF800,
 };
 
@@ -287,6 +287,7 @@ int8u AC3_chanmap_Channels (int16u chanmap)
                 case  9 :
                 case 10 :
                 case 11 :
+                case 13 :
                             Channels+=2; break;
                 default:
                             Channels++; break;
@@ -298,22 +299,110 @@ int8u AC3_chanmap_Channels (int16u chanmap)
 }
 
 //---------------------------------------------------------------------------
+static const char* AC3_chanmap_ChannelLayout_List[16] =
+{
+    "L",
+    "C",
+    "R",
+    "Ls",
+    "Rs",
+    "Lc Rc",
+    "Lrs Rrs",
+    "Cs",
+    "Ts",
+    "Lsd Rsd",
+    "Lw Rw",
+    "Lvh Rvh",
+    "Vhc", // Cvh is a typo in specs 
+    "Lts Rts",
+    "LFE2",
+    "LFE",
+};
 Ztring AC3_chanmap_ChannelLayout (int16u chanmap, const Ztring &ChannelLayout0)
 {
     Ztring ToReturn=ChannelLayout0;
 
-    for (int8u Pos=0; Pos<16; Pos++)
+    for (int8u Pos=5; Pos<15; Pos++) // Custom ones only
     {
         if (chanmap&(1<<(15-Pos)))
         {
-            switch (Pos)
-            {
-                case  5 :   ToReturn+=__T(" Lc Rc"); break;
-                case  6 :   ToReturn+=__T(" Lrs Rrs"); break;
-                case  7 :   ToReturn+=__T(" Cs");
-                default: ;
-            }
+            if (!ChannelLayout0.empty())
+                ToReturn+=__T(' ');
+            ToReturn+=Ztring().From_UTF8(AC3_chanmap_ChannelLayout_List[Pos]);
         }
+    }
+
+    return ToReturn;
+}
+
+//---------------------------------------------------------------------------
+static const char* AC3_nonstd_bed_channel_assignment_mask_ChannelLayout_List[17] =
+{
+    "L",
+    "R",
+    "C",
+    "LFE",
+    "Ls",
+    "Rs",
+    "Lrs",
+    "Rrs",
+    "Lvh", // Lfh in spec but same as Lvh from E-AC-3
+    "Rvh", // Rfh in spec but same as Rvh from E-AC-3
+    "Lts", // Ltm in spec but same as Lts from E-AC-3
+    "Rts", // Rtm in spec but same as Rts from E-AC-3
+    "Lrh",
+    "Rrh",
+    "Lw",
+    "Rw",
+    "LFE2",
+};
+Ztring AC3_nonstd_bed_channel_assignment_mask_ChannelLayout(int32u nonstd_bed_channel_assignment_mask)
+{
+    Ztring ToReturn;
+
+    for (int8u i=0; i<17; i++)
+    {
+        if (nonstd_bed_channel_assignment_mask&(1<<i))
+        {
+            ToReturn+=Ztring().From_UTF8(AC3_nonstd_bed_channel_assignment_mask_ChannelLayout_List[i]);
+            ToReturn+=__T(' ');
+        }
+    }
+
+    if (!ToReturn.empty())
+        ToReturn.pop_back();
+
+    return ToReturn;
+}
+//---------------------------------------------------------------------------
+static const int8u AC3_bed_channel_assignment_mask_ChannelLayout_Mapping[10] =
+{
+    2,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+};
+int32u AC3_bed_channel_assignment_mask_2_nonstd(int16u bed_channel_assignment_mask)
+{
+    int32u ToReturn=0;
+
+    int8u j=0;
+    for (int8u i=0; i<10; i++)
+    {
+        if (bed_channel_assignment_mask&(1<<i))
+        {
+            ToReturn|=(1<<(j++));
+            if (AC3_bed_channel_assignment_mask_ChannelLayout_Mapping[i]>1)
+                ToReturn|=(1<<(j++));
+        }
+        else
+            j+=AC3_bed_channel_assignment_mask_ChannelLayout_Mapping[i];
     }
 
     return ToReturn;
@@ -1004,18 +1093,13 @@ void File_Ac3::Streams_Fill()
                 int32u frmsiz_Total=0;
                 for (size_t Pos2=0; Pos2<8; Pos2++)
                     frmsiz_Total+=frmsizplus1_Max[Pos][Pos2];
-                if (numblks)
-                {
-                    Fill(Stream_Audio, 0, Audio_BitRate, ((frmsiz_Total*2)*8*(750/((int32u)numblks)))/4);
-                    if (frmsizplus1_Max[Pos][1]) //If dependand substreams
-                        Fill(Stream_Audio, 0, Audio_BitRate, ((frmsizplus1_Max[Pos][0]*2)*8*(750/((int16u)numblks)))/4);
-
-                }
-
+                int32u SamplingRate;
                 if (fscod!=3)
-                    Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_SamplingRate[fscod]);
+                    SamplingRate=AC3_SamplingRate[fscod];
                 else
-                    Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_SamplingRate2[fscod2]);
+                    SamplingRate=AC3_SamplingRate2[fscod2];
+                Fill(Stream_Audio, 0, Audio_SamplingRate, SamplingRate);
+                Fill(Stream_Audio, 0, Audio_BitRate, ((int64u)frmsiz_Total)*SamplingRate/32/numblks);
 
                 if (acmod_Max[Pos][1]!=(int8u)-1)
                 {
@@ -1896,7 +1980,20 @@ void File_Ac3::Core_Frame()
 {
     //Save true Element_Size (if Core+substreams, Element_Size is for all elements, and we want to limit to core)
     int64u Element_Size_Save=Element_Size;
-    if (bsid>0x0A && bsid<=0x10) //E-AC-3 only
+    bsid=CC1(Buffer+Buffer_Offset+Element_Offset+5)>>3;
+    if (bsid<=0x09)
+    {
+        fscod     =(Buffer[(size_t)(Buffer_Offset+4)]&0xC0)>>6;
+        frmsizecod= Buffer[(size_t)(Buffer_Offset+4)]&0x3F;
+
+        //Filling
+        fscods[fscod]++;
+        frmsizecods[frmsizecod]++;
+        Element_Size=AC3_FrameSize_Get(frmsizecod, fscod);
+        if (Element_Size>Element_Size_Save)
+            Element_Size=Element_Size_Save; // Not expected, but trying to parse the begining
+    }
+    else if (bsid>0x0A && bsid<=0x10) //E-AC-3 only
     {
         int16u frmsiz=CC2(Buffer+Buffer_Offset+(size_t)Element_Offset+2)&0x07FF;
         Element_Size=Element_Offset+2+frmsiz*2;
@@ -1911,7 +2008,7 @@ void File_Ac3::Core_Frame()
                 |(         Buffer[Buffer_Offset+(Element_Size)-3] >>2);
     else
         auxdatal=(int16u)-1; //auxdata is empty
-    BitStream_Fast Search(Buffer+Buffer_Offset, Element_Size);
+    BitStream_Fast Search(Buffer+Buffer_Offset+Element_Offset, Element_Size-Element_Offset);
     while(Search.Remain()>18)
     {
         if (Search.Peek2(16)==0x5838 && Ac3_EMDF_Test(Search))
@@ -3394,11 +3491,7 @@ void File_Ac3::Core_Frame()
             Skip_XX(Element_Size-Element_Offset,                    "Unknown");
         }
 
-        if (bsid>0x0A) //E-AC-3 only
-        {
-            //true Element_Size is back
-            Element_Size=Element_Size_Save;
-        }
+        Element_Size=Element_Size_Save;
     }
 
     FILLING_BEGIN();
@@ -3416,7 +3509,7 @@ void File_Ac3::Core_Frame()
         //Specific to first frame
         if (Frame_Count==0)
         {
-            frmsizplus1_Max[substreamid_Independant_Current][strmtyp+substreamid]=frmsiz+1;
+            frmsizplus1_Max[substreamid_Independant_Current][strmtyp+substreamid]=((bsid<=0x09)?(frmsizecod/2<19?AC3_BitRate[frmsizecod/2]*4:0):((frmsiz+1)*2));
             acmod_Max[substreamid_Independant_Current][strmtyp+substreamid]=acmod;
             lfeon_Max[substreamid_Independant_Current][strmtyp+substreamid]=lfeon;
             bsmod_Max[substreamid_Independant_Current][strmtyp+substreamid]=bsmod;
@@ -4335,10 +4428,12 @@ size_t File_Ac3::Core_Size_Get()
 
         //Filling
         Size=2+frmsiz*2;
+    }
 
         substreams_Count=0;
         int8u substreams_Count_Independant=0;
         int8u substreams_Count_Dependant=0;
+
         for (;;)
         {
             if (Buffer_Offset+Size+6>Buffer_Size)
@@ -4362,8 +4457,8 @@ size_t File_Ac3::Core_Size_Get()
             if (substreamid==0 && strmtyp==0)
                 break; //Next block
 
-            frmsiz    =((int16u)(Buffer[(size_t)(Buffer_Offset+Size+2)]&0x07)<<8)
-                     | (         Buffer[(size_t)(Buffer_Offset+Size+3)]         );
+            int16u frmsiz =((int16u)(Buffer[(size_t)(Buffer_Offset+Size+2)]&0x07)<<8)
+                          | (         Buffer[(size_t)(Buffer_Offset+Size+3)]         );
 
             //Filling
             Size+=2+frmsiz*2;
@@ -4377,7 +4472,6 @@ size_t File_Ac3::Core_Size_Get()
                 substreams_Count_Dependant++;
             substreams_Count++;
         }
-    }
 
     return Size;
 }
@@ -4402,7 +4496,7 @@ void File_Ac3::Get_V4(int8u  Bits, int32u  &Info, const char* Name)
             int8u Count = 0;
             do
             {
-                Info += BS->Get1(Bits);
+                Info += BS->Get4(Bits);
                 Count += Bits;
             }
             while (BS->GetB());
@@ -4413,7 +4507,7 @@ void File_Ac3::Get_V4(int8u  Bits, int32u  &Info, const char* Name)
     #endif //MEDIAINFO_TRACE
         {
             do
-                Info += BS->Get1(Bits);
+                Info += BS->Get4(Bits);
             while (BS->GetB());
         }
 }
@@ -4428,7 +4522,7 @@ void File_Ac3::Skip_V4(int8u  Bits, const char* Name)
             int8u Count = 0;
             do
             {
-                Info += BS->Get1(Bits);
+                Info += BS->Get4(Bits);
                 Count += Bits;
             }
             while (BS->GetB());
