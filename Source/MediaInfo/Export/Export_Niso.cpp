@@ -136,7 +136,13 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
 
         //BasicDigitalObjectInformation
         Node* Node_BasicDigitalObjectInformation=Node_Root->Add_Child("mix:BasicDigitalObjectInformation");
-        Node_BasicDigitalObjectInformation->Add_Child("mix:ObjectIdentifier")->Add_Child("mix:objectIdentifierType", std::string("MediaInfo"));
+        Node* Node_ObjectIdentifier=Node_BasicDigitalObjectInformation->Add_Child("mix:ObjectIdentifier");
+
+        Node_ObjectIdentifier->Add_Child("mix:objectIdentifierType", std::string("MediaInfo"));
+        Node_ObjectIdentifier->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_CompleteName, "mix:objectIdentifierValue");
+
+        if (MI.Get(Stream_General, 0, General_FileSize).To_int64u()>0)
+            Node_BasicDigitalObjectInformation->Add_Child("mix:fileSize", MI.Get(Stream_General, 0, General_FileSize));
 
         if (MI.Get(Stream_General, 0, General_Format)==__T("TIFF"))
              Node_BasicDigitalObjectInformation->Add_Child("mix:FormatDesignation")->Add_Child("mix:formatName", std::string("image/tiff"));
@@ -190,7 +196,7 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
         if (!Make.empty() || !Model.empty() || !Software.empty() || !Encoded_Date.empty())
         {
             Node* Node_ImageCaptureMetadata=Node_Root->Add_Child("mix:ImageCaptureMetadata");
-            
+
             if (!Encoded_Date.empty())
             {
                 if (Encoded_Date.size()>4 && Encoded_Date[4]==':')
