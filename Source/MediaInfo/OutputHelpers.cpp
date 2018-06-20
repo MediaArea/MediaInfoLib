@@ -90,14 +90,24 @@ string To_XML (Node& Cur_Node, const int& Level, bool Print_Header, bool Indent)
         Result+=string("<!-- Generated at "+TimeS.To_UTF8()+" by "+MediaInfoLib::Config.Info_Version_Get().To_UTF8()+" -->\n");
     }
 
-    if (Cur_Node.Name.empty())
+    if (Cur_Node.Name.empty() && Cur_Node.XmlCommentOut.empty())
         return Result;
 
     if (Level)
         Result+="\n";
 
-    if (Cur_Node.XmlCommentOut.size())
-        Result+=(Indent?string(Level, '\t'):string(""))+"<!-- "+Cur_Node.XmlCommentOut+"\n";
+    if (!Cur_Node.XmlCommentOut.empty())
+    {
+        Result+=(Indent?string(Level, '\t'):string(""))+"<!-- "+Cur_Node.XmlCommentOut;
+
+        // If the node name is empty, just print the comment
+        if (Cur_Node.Name.empty())
+        {
+            Result += " -->";
+            return Result;
+        }
+        Result+="\n";
+    }
 
     Result+=(Indent?string(Level, '\t'):string(""))+"<"+Cur_Node.Name;
 
