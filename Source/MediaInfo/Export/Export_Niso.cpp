@@ -25,6 +25,7 @@
 #include "MediaInfo/File__Analyse_Automatic.h"
 #include "MediaInfo/OutputHelpers.h"
 #include <ctime>
+#include <cmath>
 
 using namespace std;
 
@@ -53,6 +54,8 @@ Export_Niso::~Export_Niso ()
 //***************************************************************************
 // Helpers
 //***************************************************************************
+
+//---------------------------------------------------------------------------
 Node* Transform_Header()
 {
     //Root node
@@ -63,6 +66,29 @@ Node* Transform_Header()
 
     return Node_Header;
 }
+
+//---------------------------------------------------------------------------
+void ComputeSamplingFrequency(Node* Parent, Ztring& Value)
+{
+    while (Value.size()>0 && Value[Value.size()-1]==__T('0'))
+        Value.resize(Value.size()-1);
+    if (Value.size()>0 && Value[Value.size()-1]==__T('.'))
+        Value.resize(Value.size()-1);
+
+    int32u SamplingFrequencyDenominator=0;
+    size_t Dot=Value.find(__T("."));
+    if (Dot!=std::string::npos)
+    {
+        SamplingFrequencyDenominator=std::pow(10, Value.size()-Dot-1);
+        Value.erase(Dot, 1);
+    }
+
+    Parent->Add_Child("mix:numerator", Value);
+
+    if (SamplingFrequencyDenominator)
+        Parent->Add_Child("mix:denominator", Ztring().From_Number(SamplingFrequencyDenominator));
+}
+
 //***************************************************************************
 // Input
 //***************************************************************************
@@ -229,8 +255,8 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
 
             //SpatialMetrics
             string samplingFrequencyUnit=MI.Get(Stream_Image, Pos, __T("Density_Unit")).To_UTF8();
-            string xSamplingFrequency=MI.Get(Stream_Image, Pos, __T("Density_X")).To_UTF8();
-            string ySamplingFrequency=MI.Get(Stream_Image, Pos, __T("Density_Y")).To_UTF8();
+            Ztring xSamplingFrequency=MI.Get(Stream_Image, Pos, __T("Density_X"));
+            Ztring ySamplingFrequency=MI.Get(Stream_Image, Pos, __T("Density_Y"));
             if (!xSamplingFrequency.empty() || !ySamplingFrequency.empty())
             {
                 Node* Node_SpatialMetrics=Node_ImageAssessmentMetadata->Add_Child("mix:SpatialMetrics");
@@ -243,10 +269,9 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
                     Node_SpatialMetrics->Add_Child("mix:samplingFrequencyUnit", string("cm"));
 
                 if (!xSamplingFrequency.empty())
-                    Node_SpatialMetrics->Add_Child("mix:xSamplingFrequency")->Add_Child("mix:numerator", xSamplingFrequency);
-
+                    ComputeSamplingFrequency(Node_SpatialMetrics->Add_Child("mix:xSamplingFrequency"), xSamplingFrequency);
                 if (!ySamplingFrequency.empty())
-                    Node_SpatialMetrics->Add_Child("mix:ySamplingFrequency")->Add_Child("mix:numerator", ySamplingFrequency);
+                    ComputeSamplingFrequency(Node_SpatialMetrics->Add_Child("mix:ySamplingFrequency"), ySamplingFrequency);
             }
 
             size_t SamplesPerPixel=MI.Get(Stream_Image, Pos, Image_ColorSpace).length();
