@@ -229,6 +229,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
 
 if COMPILE_DLL
 lib@MediaInfoLib_LibName@_la_SOURCES += \
+                       ../../../Source/MediaInfoDLL/MediaInfoJNI.cpp \
                        ../../../Source/MediaInfoDLL/MediaInfoDLL.cpp
 
 @MediaInfoLib_LibName@DLLincludedir = $(includedir)/MediaInfoDLL
