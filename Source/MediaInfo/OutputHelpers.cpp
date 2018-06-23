@@ -39,7 +39,13 @@ Ztring XML_Encode (const Ztring& Data)
             case __T('\''): Result+=__T("&apos;"); break;
             case __T('<'): Result+=__T("&lt;"); break;
             case __T('>'): Result+=__T("&gt;"); break;
-            default: Result+=Data[Pos];
+            case __T('\n'): Result+=__T("&#xA;"); break;
+            case __T('\r'):
+                Result+=__T("&#xA;");
+                if (Pos+1<Data.size() && Data[Pos+1]==__T('\n')) // translate the #xD #xA sequence to a single #xA character
+                    Pos++;
+            break;
+            default: if (Data[Pos]>=0x20) Result+=Data[Pos]; // Ignore others control characters
         }
     }
     return Result;
@@ -58,7 +64,13 @@ string XML_Encode (const string& Data)
             case '&': Result+="&amp;"; break;
             case '<': Result+="&lt;"; break;
             case '>': Result+="&gt;"; break;
-            default: Result+=Data[Pos];
+            case '\n': Result+="&#xA;"; break;
+            case '\r':
+                Result+="&#xA;";
+                if (Pos+1<Data.size() && Data[Pos+1]=='\n') // translate the #xD #xA sequence to a single #xA character
+                    Pos++;
+            break;
+            default: if (Data[Pos]>=0x20) Result+=Data[Pos]; // Ignore others control characters
         }
     }
     return Result;
