@@ -79,8 +79,8 @@ void ComputeSamplingFrequency(Node* Parent, Ztring& Value)
     size_t Dot=Value.find(__T("."));
     if (Dot!=std::string::npos)
     {
-        SamplingFrequencyDenominator=std::pow(10, Value.size()-Dot-1);
         Value.erase(Dot, 1);
+        SamplingFrequencyDenominator=(int32u)std::pow((double)10, (int)Value.size()-Dot);
     }
 
     Parent->Add_Child("mix:numerator", Value);
