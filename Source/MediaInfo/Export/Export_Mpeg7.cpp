@@ -802,6 +802,19 @@ Ztring Mpeg7_MediaDuration(MediaInfo_Internal &MI)
     return ToReturn;
 }
 
+//---------------------------------------------------------------------------
+Ztring Mpeg7_StripExtraValues(Ztring Value)
+{
+    if (Value.empty())
+        return Value;
+
+    size_t SlashPos=Value.find(__T(" / "));
+    if (SlashPos!=string::npos)
+        Value.erase(SlashPos);
+
+    return Value;
+}
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -859,7 +872,9 @@ void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamP
     {
         Node* Node_Pixel=Node_VisualCoding->Add_Child("mpeg7:Pixel");
         Node_Pixel->Add_Attribute_IfNotEmpty(MI, Stream_Video, 0, Video_PixelAspectRatio, "aspectRatio");
-        Node_Pixel->Add_Attribute_IfNotEmpty(MI, Stream_Video, 0, Video_Resolution, "bitsPer");
+        Ztring bitsPer=Mpeg7_StripExtraValues(MI.Get(Stream_Video, 0, Video_Resolution));
+        if (!bitsPer.empty())
+            Node_Pixel->Add_Attribute("bitsPer", bitsPer);
     }
 
     //Frame
@@ -871,13 +886,25 @@ void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamP
     {
         Node* Node_Frame=Node_VisualCoding->Add_Child("mpeg7:Frame");
         Node_Frame->Add_Attribute_IfNotEmpty(MI, Stream_Video, 0, Video_DisplayAspectRatio, "aspectRatio");
-        Node_Frame->Add_Attribute_IfNotEmpty(MI, Stream_Video, 0, Video_Height, "height");
-        Node_Frame->Add_Attribute_IfNotEmpty(MI, Stream_Video, 0, Video_Width, "width");
+
+        Ztring Height=Mpeg7_StripExtraValues(MI.Get(Stream_Video, 0, Video_Height));
+        if (!Height.empty())
+            Node_Frame->Add_Attribute("height", Height);
+
+        Ztring Width=Mpeg7_StripExtraValues(MI.Get(Stream_Video, 0, Video_Width));
+        if (!Width.empty())
+            Node_Frame->Add_Attribute("width", Width);
+
         Node_Frame->Add_Attribute_IfNotEmpty(MI, Stream_Video, 0, Video_FrameRate, "rate");
 
         Value=MI.Get(Stream_Video, 0, Video_ScanType).MakeLowerCase();
         if (!Value.empty())
-            Node_Frame->Add_Attribute("structure", Value==__T("mbaff")?Ztring(__T("interlaced")):Value);
+        {
+            if (Value==__T("mbaff") || Value==__T("interlaced"))
+                Node_Frame->Add_Attribute("structure", "interlaced");
+            else if (Value==__T("progressive"))
+                Node_Frame->Add_Attribute("structure", "progressive");
+        }
     }
 
     //Colorimetry
@@ -999,12 +1026,20 @@ void Mpeg7_Transform_Audio(Node* Parent, MediaInfo_Internal &MI, size_t StreamPo
     }
 
     //AudioChannels
-    Node_AudioCoding->Add_Child_IfNotEmpty(MI, Stream_Audio, StreamPos, Audio_Channel_s_, "mpeg7:AudioChannels");
+    Ztring Channels=Mpeg7_StripExtraValues(MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_));
+    if (!Channels.empty())
+        Node_AudioCoding->Add_Child("mpeg7:AudioChannels", Channels);
 
     //Sample
     Node* Node_Sample=Node_AudioCoding->Add_Child("mpeg7:Sample");
-    Node_Sample->Add_Attribute_IfNotEmpty(MI, Stream_Audio, StreamPos, Audio_SamplingRate, "rate");
-    Node_Sample->Add_Attribute_IfNotEmpty(MI, Stream_Audio, StreamPos, Audio_BitDepth, "bitsPer");
+
+    Ztring Rate=Mpeg7_StripExtraValues(MI.Get(Stream_Audio, StreamPos, Audio_SamplingRate));
+    if (!Rate.empty())
+        Node_Sample->Add_Attribute("rate", Rate);
+
+    Ztring bitsPer=Mpeg7_StripExtraValues(MI.Get(Stream_Audio, StreamPos, Audio_BitDepth));
+    if (!bitsPer.empty())
+        Node_Sample->Add_Attribute("bitsPer", bitsPer);
 
     //Emphasis
     if (MI.Get(Stream_Audio, StreamPos, Audio_Format)==__T("MPEG Audio"))
@@ -1166,15 +1201,20 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
                     Value+=Ztring::ToZtring(SystemCS_termID%100);
                 }
             }
-            Node_System->Add_Attribute("href", Value);
         }
+        else
+        {
+            Value="urn:x-mpeg7-mediainfo:cs:SystemCS:2009:unknown";
+        }
+        Node_System->Add_Attribute("href", Value);
         Node_System->Add_Child("mpeg7:Name", Mpeg7_SystemCS_Name(SystemCS_termID), "xml:lang", "en");
     }
 
     //BitRate
-    if (!MI.Get(Stream_General, 0, General_OverallBitRate).empty())
+    Ztring BitRate=Mpeg7_StripExtraValues(MI.Get(Stream_General, 0, General_OverallBitRate));
+    if (!BitRate.empty())
     {
-        Node* Node_BitRate=Node_MediaFormat->Add_Child("mpeg7:BitRate", MI.Get(Stream_General, 0, General_OverallBitRate));
+        Node* Node_BitRate=Node_MediaFormat->Add_Child("mpeg7:BitRate", BitRate);
         bool IsCBR=true;
         bool IsVBR=true;
         for (size_t StreamKind=Stream_Video; StreamKind<=Stream_Audio; StreamKind++)
