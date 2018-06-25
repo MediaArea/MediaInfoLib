@@ -2016,7 +2016,7 @@ void File_Ac3::Core_Frame()
         //Filling
         fscods[fscod]++;
         frmsizecods[frmsizecod]++;
-        Element_Size=AC3_FrameSize_Get(frmsizecod, fscod);
+        Element_Size=Element_Offset+AC3_FrameSize_Get(frmsizecod, fscod);
         if (Element_Size>Element_Size_Save)
             Element_Size=Element_Size_Save; // Not expected, but trying to parse the begining
     }
@@ -2027,6 +2027,8 @@ void File_Ac3::Core_Frame()
         if (Element_Size>Element_Size_Save)
             Element_Size=Element_Size_Save; // Not expected, but trying to parse the begining
     }
+    if (Element_Offset==Element_Size)
+        Element_Size=Element_Size_Save; // Something went wrong, using the whole packet
 
     //Pre-parsing, finding some elements presence
     int16u auxdatal;
@@ -2390,7 +2392,7 @@ void File_Ac3::Core_Frame()
             TEST_SB_GET (addbsie,                                   "addbsie");
                 int8u addbsil;
                 Get_S1 (6, addbsil,                                 "addbsil");
-                if (addbsil!=addbsi_Buffer_Size)
+                if (addbsil+1!=addbsi_Buffer_Size)
                 {
                     delete[] addbsi_Buffer;
                     addbsi_Buffer_Size=addbsil+1;
@@ -3509,6 +3511,11 @@ void File_Ac3::Core_Frame()
             else if (Data_BS_Remain()>BitsAtEnd)
                 Skip_BS(Data_BS_Remain()-BitsAtEnd,                 bsid<=0x0A?"(Unparsed audblk(continue)+5*audblk+padding)":"(Unparsed bsi+6*audblk+padding)");
             Element_Begin1("auxdata");
+                if (auxdatal!=(int16u)-1)
+                {
+                    Skip_BS(auxdatal,                               "auxbits");
+                    Skip_S2(14,                                     "auxdatal");
+                }
                 Skip_SB(                                            "auxdatae");
             Element_End0();
             Element_Begin1("errorcheck");
@@ -3518,11 +3525,10 @@ void File_Ac3::Core_Frame()
             Element_End0();
         }
         else
-        {
             BS_End();
-            Skip_XX(Element_Size-Element_Offset,                    "Unknown");
-        }
 
+        if (Element_Offset<Element_Size)
+            Skip_XX(Element_Size-Element_Offset,                    "Unknown");
         Element_Size=Element_Size_Save;
     }
 
