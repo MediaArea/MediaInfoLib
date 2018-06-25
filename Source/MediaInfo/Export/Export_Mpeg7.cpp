@@ -1145,7 +1145,7 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     }
 
     //FileSize
-    Node_MediaFormat->Add_Child("mpeg7:FileSize", MI.Get(Stream_General, 0, General_FileSize));
+    Node_MediaFormat->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_FileSize, "mpeg7:FileSize");
 
     //System
     if (!MI.Get(Stream_Video, 0, Video_Standard).empty())
