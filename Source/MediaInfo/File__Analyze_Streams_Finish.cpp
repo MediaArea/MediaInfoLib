@@ -471,7 +471,7 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
             {
                 ZtringList ValidExtensions;
                 ValidExtensions.Separator_Set(0, __T(" "));
-                ValidExtensions.Write(FormatList.Get(Format->first, InfoFormat_Extensions));
+                ValidExtensions.Write(Retrieve(Stream_General, StreamPos, General_Format_Extensions));
                 if (!ValidExtensions.empty() && ValidExtensions.Find(Extension)==string::npos)
                     Fill(Stream_General, StreamPos, "FileExtension_Invalid", ValidExtensions.Read());
             }
