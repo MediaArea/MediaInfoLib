@@ -275,6 +275,84 @@ Ztring File__Analyze_Encoded_Library_String(const Ztring &CompanyName, const Ztr
 extern const Char* MediaInfo_Version;
 
 //***************************************************************************
+// Preset
+//***************************************************************************
+static const size_t Channels_DolbyPreset_Size=13;
+static const char* Channels_DolbyPreset[Channels_DolbyPreset_Size][2] =
+{
+    { "Cs", "Cb" },
+    { "Lc", "Lscr" },
+    { "Lrh", "Tbl" },
+    { "Lrs", "Lb" },
+    { "Lts", "Tsl" },
+    { "Lvh", "Tfl" },
+    { "Rc", "Rscr" },
+    { "Rrh", "Tbr" },
+    { "Rrs", "Rb" },
+    { "Rts", "Tsr" },
+    { "Rvh", "Tfr" },
+    { "Vhc", "Tfc" },
+    { "Ts", "Tc" },
+};
+Ztring DolbyPreset_Channels(const Ztring& Channels)
+{
+    ZtringList List;
+    List.Separator_Set(0, __T(" "));
+    List.Write(Channels);
+    for (size_t i=0; i<List.size(); i++)
+    {
+        Ztring& ChannelName=List[i];
+        string ChannelNameS=ChannelName.To_UTF8();
+        for (size_t j=0; j<Channels_DolbyPreset_Size; j++)
+            if (!strcmp(ChannelNameS.c_str(), Channels_DolbyPreset[j][0]) && Channels_DolbyPreset[j][1])
+                ChannelName.From_UTF8(Channels_DolbyPreset[j][1]);
+    }
+    Ztring ToReturn=List.Read();
+    ToReturn.FindAndReplace(__T("L C R"), __T("L R C"));
+    return ToReturn;
+}
+Ztring DolbyPreset(size_t Parameter, ZtringList& Info)
+{
+    if (Parameter==Audio_Format && Info[Audio_Format_Profile]==__T("E-AC-3"))
+        return __T("E-AC-3");
+    if (Parameter==Audio_Format && Info[Audio_Format_Profile]==__T("E-AC-3 JOC"))
+        return __T("E-AC-3 JOC");
+    if (Parameter==Audio_Format && Info[Audio_Format_Profile]==__T("JOC"))
+        return __T("E-AC-3 JOC");
+    if (Parameter==Audio_Format_Profile && Info[Audio_Format_Profile]==__T("E-AC-3"))
+        return __T("Blu-ray Disc");
+    if (Parameter==Audio_Format_Profile && Info[Audio_Format_Profile]==__T("E-AC-3 JOC"))
+        return __T("Blu-ray Disc");
+    if (Parameter==Audio_Format_Profile && Info[Audio_Format]==__T("E-AC-3") && Info[Audio_Format_Profile]==__T("JOC"))
+        return Ztring();
+    if (Parameter==Audio_Format_Info && Info[Audio_Format_Profile]==__T("E-AC-3"))
+        return __T("Enhanced AC-3");
+    if (Parameter== Audio_Format_Info && Info[Audio_Format_Profile]==__T("E-AC-3 JOC"))
+        return __T("Enhanced AC-3 with Joint Object Coding");
+    if (Parameter== Audio_Format_Info && Info[Audio_Format_Profile]==__T("JOC"))
+        return __T("Enhanced AC-3 with Joint Object Coding");
+    if (Parameter==Audio_Format_Commercial_IfAny && Info[Audio_Format]==__T("E-AC-3") && Info[Audio_Format_Profile].empty())
+        return __T("Dolby Digital Plus");
+    if (Parameter==Audio_Format_Commercial_IfAny && Info[Audio_Format_Profile]==__T("E-AC-3"))
+        return __T("Dolby Digital Plus");
+    if (Parameter==Audio_Format_Commercial_IfAny && Info[Audio_Format_Profile]==__T("E-AC-3 JOC"))
+        return __T("Dolby Digital Plus with Dolby Atmos");
+    if (Parameter==Audio_Format_Commercial_IfAny && Info[Audio_Format_Profile]==__T("JOC"))
+        return __T("Dolby Digital Plus with Dolby Atmos");
+    if (Parameter==Audio_ChannelLayout)
+        return DolbyPreset_Channels(Info[Parameter]);
+    return Info[Parameter];
+}
+Ztring DolbyPreset(const Ztring& Parameter, const Ztring& Value)
+{
+    if (Parameter==__T("BedChannelConfiguration"))
+        return DolbyPreset_Channels(Value);
+    if (Parameter==__T("Core channel layout"))
+        return DolbyPreset_Channels(Value);
+    return Value;
+}
+
+//***************************************************************************
 // Constructor/destructor
 //***************************************************************************
 
@@ -1104,12 +1182,103 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, size_t Par
         if (KindOfInfo!=Info_Text)
             EXECUTE_STRING(MediaInfoLib::Config.Info_Get(StreamKind, Parameter, KindOfInfo), Debug+=__T("Get, will return ");Debug+=ToReturn;) //look for static information only
         else if (Parameter<Stream[StreamKind][StreamPos].size())
-            EXECUTE_STRING(Stream[StreamKind][StreamPos][Parameter], Debug+=__T("Get, will return ");Debug+=ToReturn;)
+        {
+            if (true)
+            {
+                if (StreamKind==Stream_General)
+                {
+                    if (Parameter==General_Format && Stream[StreamKind][StreamPos][General_Format_Profile]==__T("E-AC-3"))
+                        return __T("E-AC-3");
+                    if (Parameter==General_Format && Stream[StreamKind][StreamPos][General_Format_Profile]==__T("E-AC-3 JOC"))
+                        return __T("E-AC-3 JOC");
+                    if (Parameter==General_Format && Stream[StreamKind][StreamPos][General_Format_Profile]==__T("JOC"))
+                        return __T("E-AC-3 JOC");
+                    if (Parameter==General_Format_Profile && Stream[StreamKind][StreamPos][General_Format_Profile]==__T("E-AC-3"))
+                        return __T("Blu-ray Disc");
+                    if (Parameter==General_Format_Profile && Stream[StreamKind][StreamPos][General_Format_Profile]==__T("E-AC-3 JOC"))
+                        return __T("Blu-ray Disc");
+                    if (Parameter==General_Format_Profile && Stream[StreamKind][StreamPos][General_Format]==__T("E-AC-3") && Stream[StreamKind][StreamPos][General_Format_Profile]==__T("JOC"))
+                        return Ztring();
+                    if (Parameter==General_Format_Info && Stream[StreamKind][StreamPos][General_Format_Profile]==__T("E-AC-3"))
+                        return __T("Enhanced AC-3");
+                    if (Parameter== General_Format_Info && Stream[StreamKind][StreamPos][General_Format_Profile]==__T("E-AC-3 JOC"))
+                        return __T("Enhanced AC-3 with Joint Object Coding");
+                    if (Parameter== General_Format_Info && Stream[StreamKind][StreamPos][General_Format_Profile]==__T("JOC"))
+                        return __T("Enhanced AC-3 with Joint Object Coding");
+                    if (Parameter==General_Format_Commercial_IfAny && Stream[StreamKind][StreamPos][General_Format]==__T("E-AC-3") && Stream[StreamKind][StreamPos][General_Format_Profile].empty())
+                        return __T("Dolby Digital Plus");
+                    if (Parameter==General_Format_Commercial_IfAny && Stream[StreamKind][StreamPos][General_Format_Profile]==__T("E-AC-3"))
+                        return __T("Dolby Digital Plus");
+                    if (Parameter==General_Format_Commercial_IfAny && Stream[StreamKind][StreamPos][General_Format_Profile]==__T("E-AC-3 JOC"))
+                        return __T("Dolby Digital Plus with Dolby Atmos");
+                    if (Parameter==General_Format_Commercial_IfAny && Stream[StreamKind][StreamPos][General_Format_Profile]==__T("JOC"))
+                        return __T("Dolby Digital Plus with Dolby Atmos");
+                    if (Parameter==General_Audio_Format_List || Parameter==General_Audio_Format_WithHint_List)
+                    {
+                        ZtringList List;
+                        List.Separator_Set(0, __T(" / "));
+                        List.Write(Stream[StreamKind][StreamPos][Parameter]);
+                        bool Modified=false;
+                        for (size_t i=0; i<List.size(); i++)
+                        {
+                            Ztring ToReturn=DolbyPreset(Audio_Format, Stream[Stream_Audio][i]);
+                            if (ToReturn!=List[i])
+                            {
+                                List[i]=ToReturn;
+                                Modified=true;
+                            }
+                        }
+                        if (Modified)
+                            return List.Read();
+                    }
+                }
+                if (StreamKind==Stream_Audio)
+                {
+                    /*
+                    if (Parameter==Audio_Format && Stream[StreamKind][StreamPos][Audio_Format_Profile]==__T("E-AC-3"))
+                        return __T("E-AC-3");
+                    if (Parameter==Audio_Format && Stream[StreamKind][StreamPos][Audio_Format_Profile]==__T("E-AC-3 JOC"))
+                        return __T("E-AC-3 JOC");
+                    if (Parameter==Audio_Format && Stream[StreamKind][StreamPos][Audio_Format_Profile]==__T("JOC"))
+                        return __T("E-AC-3 JOC");
+                    if (Parameter==Audio_Format_Profile && Stream[StreamKind][StreamPos][Audio_Format_Profile]==__T("E-AC-3"))
+                        return __T("Blu-ray Disc");
+                    if (Parameter==Audio_Format_Profile && Stream[StreamKind][StreamPos][Audio_Format_Profile]==__T("E-AC-3 JOC"))
+                        return __T("Blu-ray Disc");
+                    if (Parameter==Audio_Format_Profile && Stream[StreamKind][StreamPos][Audio_Format]==__T("E-AC-3") && Stream[StreamKind][StreamPos][Audio_Format_Profile]==__T("JOC"))
+                        return Ztring();
+                    if (Parameter==Audio_Format_Info && Stream[StreamKind][StreamPos][Audio_Format_Profile]==__T("E-AC-3"))
+                        return __T("Enhanced AC-3");
+                    if (Parameter== Audio_Format_Info && Stream[StreamKind][StreamPos][Audio_Format_Profile]==__T("E-AC-3 JOC"))
+                        return __T("Enhanced AC-3 with Joint Object Coding");
+                    if (Parameter== Audio_Format_Info && Stream[StreamKind][StreamPos][Audio_Format_Profile]==__T("JOC"))
+                        return __T("Enhanced AC-3 with Joint Object Coding");
+                    if (Parameter==Audio_Format_Commercial_IfAny && Stream[StreamKind][StreamPos][Audio_Format_Profile]==__T("E-AC-3"))
+                        return __T("Dolby Digital Plus");
+                    if (Parameter==Audio_Format_Commercial_IfAny && Stream[StreamKind][StreamPos][Audio_Format_Profile]==__T("E-AC-3 JOC"))
+                        return __T("Dolby Digital Plus with Dolby Atmos");
+                    if (Parameter==Audio_Format_Commercial_IfAny && Stream[StreamKind][StreamPos][Audio_Format_Profile]==__T("JOC"))
+                        return __T("Dolby Digital Plus with Dolby Atmos");
+                    */
+                    Ztring ToReturn=DolbyPreset(Parameter, Stream[StreamKind][StreamPos]);
+                    EXECUTE_STRING(ToReturn, Debug += __T("Get, will return "); Debug += ToReturn;)
+                }
+            }
+            EXECUTE_STRING(Stream[StreamKind][StreamPos][Parameter], Debug += __T("Get, will return "); Debug += ToReturn;)
+        }
         else
             EXECUTE_STRING(MediaInfoLib::Config.EmptyString_Get(), Debug+=__T("Get, will return ");Debug+=ToReturn;) //This parameter is known, but not filled
     }
     else
-        EXECUTE_STRING(Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()](KindOfInfo), Debug+=__T("Get, will return ");Debug+=ToReturn;)
+    {
+        if (KindOfInfo==Info_Text && true)
+        {
+            Ztring ToReturn=DolbyPreset(Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()][Info_Name], Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()](KindOfInfo));
+            EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return ");Debug+=ToReturn;)
+        }
+        else
+            EXECUTE_STRING(Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()](KindOfInfo), Debug+=__T("Get, will return ");Debug+=ToReturn;)
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -1224,7 +1393,13 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, const Stri
         }
         CS.Leave();
         CriticalSectionLocker CSL(CS);
-        return Stream_More[StreamKind][StreamPos][ParameterI](KindOfInfo);
+        if (KindOfInfo==Info_Text && true)
+        {
+            Ztring ToReturn=DolbyPreset(Stream_More[StreamKind][StreamPos][ParameterI][Info_Name], Stream_More[StreamKind][StreamPos][ParameterI](KindOfInfo));
+            EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return ");Debug+=ToReturn;)
+        }
+        else
+            EXECUTE_STRING(Stream_More[StreamKind][StreamPos][ParameterI](KindOfInfo), Debug+=__T("Get, will return ");Debug+=ToReturn;)
     }
 
     CS.Leave();
