@@ -1031,10 +1031,6 @@ void File_Ac3::Streams_Fill()
         joc_num_objects = joc_num_objects_map.begin()->first;
         Fill(Stream_Audio, 0, Audio_Format_Profile, bsid_Max<=0x09?"AC-3+Atmos":"E-AC-3+Atmos");
         Fill(Stream_Audio, 0, Audio_Codec_Profile, bsid_Max<=0x09?"AC-3+Atmos":"E-AC-3+Atmos");
-        Fill(Stream_Audio, 0, Audio_Channel_s_, Ztring::ToZtring(joc_num_objects)+__T(" objects"));
-        Fill(Stream_Audio, 0, Audio_ChannelPositions, Ztring::ToZtring(joc_num_objects) + __T(" objects"));
-        Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, Ztring::ToZtring(joc_num_objects) + __T(" objects"));
-        Fill(Stream_Audio, 0, Audio_ChannelLayout, Ztring::ToZtring(joc_num_objects) + __T(" objects"));
         if (dxc3_Parsed && joc_complexity_index_Container!=(int8u)-1)
             Fill(Stream_Audio, 0, "ComplexityIndex", joc_complexity_index_Container);
         if (dxc3_Parsed && joc_complexity_index_Container==(int8u)-1 && joc_complexity_index_Stream!=(int8u)-1)
