@@ -259,7 +259,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 
 %postun
 
-%global libmediainfo_files %defattr(-,root,root,-)\
+%define libmediainfo_files %defattr(-,root,root,-)\
 %doc History.txt ReadMe.txt\
 %if 0%{?fedora_version} || 0%{?centos_version} >= 700 || 0%{?rhel_version} >= 700\
 %license License.html\
@@ -281,7 +281,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 %{libmediainfo_files}
 %endif
 
-%global doc_files %defattr(-,root,root,-)\
+%define doc_files %defattr(-,root,root,-)\
 %doc Changes.txt Documentation.html Doc Source/Example
 
 %files     -n %{name_without_0_ending}-doc
@@ -292,7 +292,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 %{doc_files}
 %endif
 
-%global devel_files %defattr(-,root,root,-)\
+%define devel_files %defattr(-,root,root,-)\
 %{_includedir}/MediaInfo\
 %{_includedir}/MediaInfoDLL\
 %{_libdir}/pkgconfig/*.pc\
