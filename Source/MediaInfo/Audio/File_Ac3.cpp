@@ -408,6 +408,7 @@ int32u AC3_bed_channel_assignment_mask_2_nonstd(int16u bed_channel_assignment_ma
     return ToReturn;
 }
 
+
 //---------------------------------------------------------------------------
 const int16u AC3_FrameSize[27][4]=
 {
@@ -1029,6 +1030,8 @@ void File_Ac3::Streams_Fill()
     bool HasJOC = joc_num_objects_map.size()==1 && (joc_num_objects_map.begin()->second >= Frame_Count_Valid / 8 || joc_num_objects_map.begin()->second >= Frame_Count / 8); //Accepting that some frames do not contain JOC
     if (HasJOC)
     {
+        if (Count_Get(Stream_Audio)==0)
+            Stream_Prepare(Stream_Audio);
         joc_num_objects = joc_num_objects_map.begin()->first;
         Fill(Stream_Audio, 0, Audio_Format_Profile, bsid_Max<=0x09?"AC-3 JOC":"E-AC-3 JOC");
         Fill(Stream_Audio, 0, Audio_Codec_Profile, bsid_Max<=0x09?"AC-3 JOC":"E-AC-3 JOC");
@@ -1043,7 +1046,21 @@ void File_Ac3::Streams_Fill()
         if (num_dynamic_objects!=(int8u)-1)
             Fill(Stream_Audio, 0, "NumberOfDynamicObjects", num_dynamic_objects);
         if (nonstd_bed_channel_assignment_mask !=(int32u)-1)
-            Fill(Stream_Audio, 0, "BedChannelConfiguration", AC3_nonstd_bed_channel_assignment_mask_ChannelLayout(nonstd_bed_channel_assignment_mask));
+        {
+            Ztring BedChannelConfiguration=AC3_nonstd_bed_channel_assignment_mask_ChannelLayout(nonstd_bed_channel_assignment_mask);
+            size_t BedChannelCount=0;
+            if (!BedChannelConfiguration.empty())
+                for (size_t i=0; i<BedChannelConfiguration.size();)
+                {
+                    BedChannelCount++;
+                    i=BedChannelConfiguration.find(__T(' '), i+1);
+                }
+            Fill(Stream_Audio, 0, "BedChannelCount", BedChannelCount);
+            Fill_SetOptions(Stream_Audio, 0, "BedChannelCount", "N NIY");
+            Fill(Stream_Audio, 0, "BedChannelCount/String", MediaInfoLib::Config.Language_Get(Ztring::ToZtring(BedChannelCount), __T(" channel")));
+            Fill_SetOptions(Stream_Audio, 0, "BedChannelCount/String", "Y NIN");
+            Fill(Stream_Audio, 0, "BedChannelConfiguration", BedChannelConfiguration);
+        }
     }
 
     //AC-3
