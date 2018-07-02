@@ -246,6 +246,7 @@ Codec_Settings_PacketBitStream;Codec settings, Packet bitstream
 Codec_Settings_QPel;Codec settings, QPel
 Codec_Settings_Sign;Codec settings, Sign
 Codec_Url;Weblink for codec
+CodecConfigurationBox;Codec configuration box
 CodecID;Codec ID
 CodecID_Description;Description of the codec
 CoDirector;Codirector
