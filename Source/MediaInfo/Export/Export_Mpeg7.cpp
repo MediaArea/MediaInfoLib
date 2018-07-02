@@ -1027,7 +1027,7 @@ void Mpeg7_Transform_Audio(Node* Parent, MediaInfo_Internal &MI, size_t StreamPo
 
     //AudioChannels
     Ztring Channels=Mpeg7_StripExtraValues(MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_));
-    if (!Channels.empty())
+    if (!Channels.empty() && Channels.To_int32s())
         Node_AudioCoding->Add_Child("mpeg7:AudioChannels", Channels);
 
     //Sample
