@@ -5197,6 +5197,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_AORD()
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_avcC()
 {
     Element_Name("AVC decode");
+    AddCodecConfigurationBoxInfo();
 
     //Parsing
     int8u Version;
@@ -5268,6 +5269,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_avcC()
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_avcE()
 {
     Element_Name("Dolby Vision EL AVC");
+    AddCodecConfigurationBoxInfo();
 
     //Parsing
     Skip_XX(Element_Size,                                       "AVCDecoderConfigurationRecord"); //enhancement-layer configuration information required to initialize the Dolby Vision decoder for the enhancement - layer substream
@@ -5878,6 +5880,7 @@ extern const char* DolbyVision_Levels[DolbyVision_Profiles_Size] = // dv[BL_code
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC()
 {
     Element_Name("Dolby Vision Configuration");
+    AddCodecConfigurationBoxInfo();
 
     //Parsing
     int8u  dv_version_major, dv_version_minor, dv_profile, dv_level;
@@ -6033,6 +6036,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_fiel()
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_glbl()
 {
     Element_Name("Global");
+    AddCodecConfigurationBoxInfo();
 
     if (Retrieve(Stream_Video, StreamPos_Last, Video_MuxingMode)==__T("MXF"))
     {
@@ -6070,6 +6074,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_glbl()
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
 {
     Element_Name("HEVCDecoderConfigurationRecord");
+    AddCodecConfigurationBoxInfo();
 
     //Parsing
     #ifdef MEDIAINFO_HEVC_YES
@@ -6128,6 +6133,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcE()
 {
     Element_Name("Dolby Vision EL HEVC");
+    AddCodecConfigurationBoxInfo();
 
     //Parsing
     Skip_XX(Element_Size,                                       "HEVCDecoderConfigurationRecord"); //enhancement-layer configuration information required to initialize the Dolby Vision decoder for the enhancement - layer substream

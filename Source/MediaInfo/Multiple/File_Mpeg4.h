@@ -314,6 +314,7 @@ private :
     method Metadata_Get(std::string &Parameter, const std::string &Meta);
     void Descriptors();
     void TimeCode_Associate(int32u TrackID);
+    void AddCodecConfigurationBoxInfo();
 
     //Temp
     bool List;
@@ -351,6 +352,7 @@ private :
     struct stream
     {
         Ztring                  File_Name;
+        std::vector<int32u>     CodecConfigurationBoxInfo;
         std::vector<File__Analyze*> Parsers;
         std::map<string, Ztring> Infos;
         MediaInfo_Internal*     MI;

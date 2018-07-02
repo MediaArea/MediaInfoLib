@@ -275,6 +275,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "Codec_Settings_QPel;Codec settings, QPel\n"
     "Codec_Settings_Sign;Codec settings, Sign\n"
     "Codec_Url;Weblink for codec\n"
+    "CodecConfigurationBox;Codec configuration box\n"
     "CodecID;Codec ID\n"
     "CodecID_Description;Description of the codec\n"
     "CoDirector;Codirector\n"
