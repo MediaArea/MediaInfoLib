@@ -32,6 +32,7 @@ MultiView_Layout;;;Y YTY;;;Multiview, how views are muxed in the container in ca
 DolbyVision/String;;;Y NTN;;;Dolby Vision info
 DolbyVision_Version;;;N YTY;;;Dolby Vision version
 DolbyVision_Profile;;;N YTY;;;Dolby Vision profile
+DolbyVision_Level;;;N YTY;;;Dolby Vision level
 DolbyVision_Layers;;;N YTY;;;Dolby Vision layers
 Format_Settings;;;Y NT;;;Settings needed for decoder used, summary
 Format_Settings_BVOP;;Yes;N YTY;;;Settings needed for decoder used, detailled
