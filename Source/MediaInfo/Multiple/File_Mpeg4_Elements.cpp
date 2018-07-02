@@ -711,6 +711,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_ddts=0x64647473;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dvc1=0x64766331;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC=0x64766343;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dvvC=0x64767643;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_esds=0x65736473;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_fiel=0x6669656C;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_glbl=0x676C626C;
@@ -1051,6 +1052,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ddts)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dvc1)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dvvC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_esds)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_fiel)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_glbl)
