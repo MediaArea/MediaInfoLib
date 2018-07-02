@@ -1,23 +1,23 @@
-%define libmediainfo_version      18.05
-%define libmediainfo_version_major      18
-%define libmediainfo_version_minor      05
-%define libzen_version            0.4.37
-%define libzen_version_major      0
-%define libzen_version_minor      4
-%define libzen_version_release    37
+%global libmediainfo_version      18.05
+%global libmediainfo_version_major      18
+%global libmediainfo_version_minor      05
+%global libzen_version            0.4.37
+%global libzen_version_major      0
+%global libzen_version_minor      4
+%global libzen_version_release    37
 
 %if 0%{?fedora_version} || 0%{?centos_version} >= 600 || 0%{?rhel_version} >= 600
-%define package_with_0_ending 0
-%define libmediainfo_name libmediainfo
+%global package_with_0_ending 0
+%global libmediainfo_name libmediainfo
 %else
-%define package_with_0_ending 1
-%define libmediainfo_name libmediainfo0
+%global package_with_0_ending 1
+%global libmediainfo_name libmediainfo0
 %endif
 
-%define name_without_0_ending libmediainfo
+%global name_without_0_ending libmediainfo
 
-%define libzen_suffix %{libzen_version_major}%{libzen_version_minor}%{libzen_version_release}
-%define libmediainfo_suffix %{libmediainfo_version_major}%{libmediainfo_version_minor}
+%global libzen_suffix %{libzen_version_major}%{libzen_version_minor}%{libzen_version_release}
+%global libmediainfo_suffix %{libmediainfo_version_major}%{libmediainfo_version_minor}
 
 Name:           %{libmediainfo_name}
 Version:        %{libmediainfo_version}
@@ -61,7 +61,7 @@ Summary:        Most relevant technical and tag data for video and audio files -
 Requires:       libzen%{libzen_suffix} >= %{libzen_version}
 %endif
 
-%define libmediainfo_description MediaInfo is a convenient unified display of the most relevant technical\
+%global libmediainfo_description MediaInfo is a convenient unified display of the most relevant technical\
 and tag data for video and audio files.\
 \
 What information can I get from MediaInfo?\
@@ -108,7 +108,7 @@ Group:          Development/Libraries
 Requires:       %{libmediainfo_name}%{libmediainfo_suffix} = %{version}
 %endif
 
-%define doc_description MediaInfo is a convenient unified display of the most relevant technical\
+%global doc_description MediaInfo is a convenient unified display of the most relevant technical\
 and tag data for video and audio files.\
 \
 What information can I get from MediaInfo?\
@@ -164,7 +164,7 @@ Requires:       %{libmediainfo_name}%{libmediainfo_suffix}%{?_isa} = %{version}
 Requires:       libcurl-devel
 %endif
 
-%define devel_description MediaInfo is a convenient unified display of the most relevant technical\
+%global devel_description MediaInfo is a convenient unified display of the most relevant technical\
 and tag data for video and audio files.\
 \
 What information can I get from MediaInfo?\
@@ -259,7 +259,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 
 %postun
 
-%define libmediainfo_files %defattr(-,root,root,-)\
+%global libmediainfo_files %defattr(-,root,root,-)\
 %doc History.txt ReadMe.txt\
 %if 0%{?fedora_version} || 0%{?centos_version} >= 700 || 0%{?rhel_version} >= 700\
 %license License.html\
@@ -281,7 +281,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 %{libmediainfo_files}
 %endif
 
-%define doc_files %defattr(-,root,root,-)\
+%global doc_files %defattr(-,root,root,-)\
 %doc Changes.txt Documentation.html Doc Source/Example
 
 %files     -n %{name_without_0_ending}-doc
@@ -292,7 +292,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 %{doc_files}
 %endif
 
-%define devel_files %defattr(-,root,root,-)\
+%global devel_files %defattr(-,root,root,-)\
 %{_includedir}/MediaInfo\
 %{_includedir}/MediaInfoDLL\
 %{_libdir}/pkgconfig/*.pc\
