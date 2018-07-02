@@ -968,9 +968,16 @@ File_Ac3::~File_Ac3()
 //---------------------------------------------------------------------------
 void File_Ac3::Streams_Fill()
 {
+    if (dxc3_Parsed)
+    {
+        if (Count_Get(Stream_Audio)==0)
+            Stream_Prepare(Stream_Audio);
+    }
+
     if (HD_MajorSync_Parsed)
     {
-        Stream_Prepare(Stream_Audio);
+        if (Count_Get(Stream_Audio)==0)
+            Stream_Prepare(Stream_Audio);
         if (HD_BitRate_Max)
             Fill(Stream_Audio, 0, Audio_BitRate_Maximum, (HD_BitRate_Max*AC3_HD_SamplingRate(HD_SamplingRate2)+8)>>4);
 
@@ -1011,10 +1018,10 @@ void File_Ac3::Streams_Fill()
             if (HD_SamplingRate1!=HD_SamplingRate2)
                 Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate2));
             Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_MLP_Channels[HD_Channels1]);
-            if (HD_Channels1!=HD_Channels2)
+            if (MediaInfoLib::Config.LegacyStreamDisplay_Get() && HD_Channels1!=HD_Channels2)
                 Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_MLP_Channels[HD_Channels1]);
             Fill(Stream_Audio, 0, Audio_BitDepth, AC3_MLP_Resolution[HD_Resolution2]);
-            if (HD_Resolution1!=HD_Resolution2)
+            if (MediaInfoLib::Config.LegacyStreamDisplay_Get() && HD_Resolution1!=HD_Resolution2)
                 Fill(Stream_Audio, 0, Audio_BitDepth, AC3_MLP_Resolution[HD_Resolution1]);
         }
     }
@@ -1047,9 +1054,12 @@ void File_Ac3::Streams_Fill()
     {
         if (Count_Get(Stream_Audio)==0)
             Stream_Prepare(Stream_Audio);
-        Fill(Stream_General, 0, General_Format, "AC-3");
-        Fill(Stream_Audio, 0, Audio_Format, "AC-3");
-        Fill(Stream_Audio, 0, Audio_Codec, "AC3");
+        if (Retrieve(Stream_Audio, 0, Audio_Format).empty())
+        {
+            Fill(Stream_General, 0, General_Format, "AC-3");
+            Fill(Stream_Audio, 0, Audio_Format, "AC-3");
+            Fill(Stream_Audio, 0, Audio_Codec, "AC3");
+        }
         Fill(Stream_Audio, 0, Audio_BitDepth, 16);
 
         int32u Divider=bsid_Max==9?2:1; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
@@ -1071,7 +1081,7 @@ void File_Ac3::Streams_Fill()
 
         Fill(Stream_Audio, 0, Audio_ServiceKind, AC3_Mode[bsmod_Max[0][0]]);
         Fill(Stream_Audio, 0, Audio_ServiceKind_String, AC3_Mode_String[bsmod_Max[0][0]]);
-        if (acmod_Max[0][0]!=(int8u)-1)
+        if (MediaInfoLib::Config.LegacyStreamDisplay_Get() && acmod_Max[0][0]!=(int8u)-1)
         {
             int8u Channels=AC3_Channels[acmod_Max[0][0]];
             Ztring ChannelPositions; ChannelPositions.From_Local(AC3_ChannelPositions[acmod_Max[0][0]]);
@@ -1089,7 +1099,7 @@ void File_Ac3::Streams_Fill()
                 Fill(Stream_Audio, 0, Audio_ChannelPositions, ChannelPositions);
             if (ChannelPositions2!=Retrieve(Stream_Audio, 0, Audio_ChannelPositions_String2))
                 Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ChannelPositions2);
-            if (ChannelLayout!=Retrieve(Stream_Audio, 0, Audio_ChannelLayout))
+            if (Retrieve(Stream_Audio, 0, Audio_ChannelLayout).empty())
                 Fill(Stream_Audio, 0, Audio_ChannelLayout, ChannelLayout);
         }
         if (dsurmod_Max[0][0]==2)
@@ -1108,9 +1118,13 @@ void File_Ac3::Streams_Fill()
         for (size_t Pos=0; Pos<8; Pos++)
             if (acmod_Max[Pos][0]!=(int8u)-1)
             {
-                Stream_Prepare(Stream_Audio);
-                Fill(Stream_Audio, 0, Audio_Format, "E-AC-3");
-                Fill(Stream_Audio, 0, Audio_Codec, "AC3+");
+                if (Count_Get(Stream_Audio)==0)
+                    Stream_Prepare(Stream_Audio);
+                if (Retrieve(Stream_Audio, 0, Audio_Format).empty())
+                {
+                    Fill(Stream_Audio, 0, Audio_Format, Formats[0]?"AC-3":"E-AC-3");
+                    Fill(Stream_Audio, 0, Audio_Codec, Formats[0] ?"AC-3":"AC3+");
+                }
 
                 if (acmod_Max[1][0]!=(int8u)-1)
                     Fill(Stream_Audio, 0, Audio_ID, 1+Pos);
@@ -1148,16 +1162,19 @@ void File_Ac3::Streams_Fill()
                     Fill(Stream_Audio, 0, Audio_Codec_Profile, "E-AC-3+Dep");
                     Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_chanmap_Channels(chanmap_Final));
                     Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_chanmap_ChannelPositions(chanmap_Final));
-                    Ztring ChannelLayout; ChannelLayout.From_Local(lfeon_Max[0][0]?AC3_ChannelLayout_lfeon[acmod_Max[0][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[0][0]]);
-                    Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_chanmap_ChannelLayout(chanmap_Final, ChannelLayout));
+                    if (MediaInfoLib::Config.LegacyStreamDisplay_Get() || Retrieve(Stream_Audio, 0, Audio_ChannelLayout).empty())
+                    {
+                        Ztring ChannelLayout; ChannelLayout.From_Local(lfeon_Max[0][0]?AC3_ChannelLayout_lfeon[acmod_Max[0][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[0][0]]);
+                        Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_chanmap_ChannelLayout(chanmap_Final, ChannelLayout));
+                    }
                 }
                 if (!Retrieve(Stream_Audio, 0, Audio_Format_Profile).empty())
-                    Fill(Stream_Audio, 0, Audio_Format_Profile, "E-AC-3");
+                    Fill(Stream_Audio, 0, Audio_Format_Profile, Retrieve(Stream_Audio, 0, Audio_Format));
                 if (!Retrieve(Stream_Audio, 0, Audio_Codec_Profile).empty())
-                    Fill(Stream_Audio, 0, Audio_Codec_Profile, "E-AC-3");
+                    Fill(Stream_Audio, 0, Audio_Codec_Profile, Retrieve(Stream_Audio, 0, Audio_Format));
                 Fill(Stream_Audio, 0, Audio_ServiceKind, AC3_Mode[bsmod_Max[0][0]]);
                 Fill(Stream_Audio, 0, Audio_ServiceKind_String, AC3_Mode_String[bsmod_Max[0][0]]);
-                if (acmod_Max[Pos][0]!=(int8u)-1)
+                if ((MediaInfoLib::Config.LegacyStreamDisplay_Get() || Retrieve(Stream_Audio, 0, Audio_Channel_s_).empty()) && acmod_Max[Pos][0]!=(int8u)-1)
                 {
                     int8u Channels=AC3_Channels[acmod_Max[Pos][0]];
                     Ztring ChannelPositions; ChannelPositions.From_Local(AC3_ChannelPositions[acmod_Max[Pos][0]]);
