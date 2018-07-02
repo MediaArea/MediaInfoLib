@@ -5848,30 +5848,16 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_dvc1()
 extern const size_t DolbyVision_Profiles_Size = 10;
 extern const char* DolbyVision_Profiles [DolbyVision_Profiles_Size] = // dv[BL_codec_type].[number_of_layers][bit_depth][cross-compatibility]
 {
-    "dvav.per",
-    "dvav.pen",
-    "dvhe.der",
-    "dvhe.den",
-    "dvhe.dtr",
-    "dvhe.stn",
-    "dvhe.dth",
-    "dvhe.dtb",
-    "dvhe.st",
-    "dvav.se",
-};
-extern const size_t DolbyVision_Levels_Size = 10;
-extern const char* DolbyVision_Levels[DolbyVision_Profiles_Size] = // dv[BL_codec_type].[number_of_layers][bit_depth][cross-compatibility]
-{
-    "",
-    "hd24",
-    "hd30",
-    "fhd24",
-    "fhd30",
-    "fhd60",
-    "uhd24",
-    "uhd30",
-    "uhd48",
-    "uhd60",
+    "dvav",
+    "dvav",
+    "dvhe",
+    "dvhe",
+    "dvhe",
+    "dvhe",
+    "dvhe",
+    "dvhe",
+    "dvhe",
+    "dvav",
 };
 
 //---------------------------------------------------------------------------
@@ -5902,23 +5888,21 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC()
         Fill(Stream_Video, StreamPos_Last, "DolbyVision_Version", Summary);
         if (dv_version_major==1)
         {
-            string Profile;
+            string Profile, Level;
             if (dv_profile<DolbyVision_Profiles_Size)
                 Profile+=DolbyVision_Profiles[dv_profile];
             else
-                Profile+=Ztring().From_Number(dv_profile).To_UTF8();
-            if (dv_level)
-            {
-                Profile+='@';
-                if (dv_level<DolbyVision_Levels_Size)
-                    Profile+=DolbyVision_Levels[dv_level];
-                else
-                    Profile+=Ztring().From_Number(dv_level).To_UTF8();
-            }
+                Profile+=Ztring().From_CC1(dv_profile).To_UTF8();
+            Profile+=__T('.');
+            Profile+=Ztring().From_CC1(dv_profile).To_UTF8();
+            Level+=Ztring().From_CC1(dv_level).To_UTF8();
             Fill(Stream_Video, StreamPos_Last, "DolbyVision_Profile", Profile);
+            Fill(Stream_Video, StreamPos_Last, "DolbyVision_Level", Level);
             Summary+=__T(',');
             Summary+=__T(' ');
             Summary+=Ztring().From_UTF8(Profile);
+            Summary+=__T('.');
+            Summary+=Ztring().From_UTF8(Level);
 
             string Layers;
             if (rpu_present_flag|el_present_flag|bl_present_flag)
