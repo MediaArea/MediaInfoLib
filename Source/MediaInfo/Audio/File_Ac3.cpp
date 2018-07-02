@@ -1026,11 +1026,12 @@ void File_Ac3::Streams_Fill()
         }
     }
 
-    if (joc_num_objects_map.size()==1 && (joc_num_objects_map.begin()->second >= Frame_Count_Valid / 8 || joc_num_objects_map.begin()->second >= Frame_Count / 8)) //Accepting that some frames do not contain JOC
+    bool HasJOC = joc_num_objects_map.size()==1 && (joc_num_objects_map.begin()->second >= Frame_Count_Valid / 8 || joc_num_objects_map.begin()->second >= Frame_Count / 8); //Accepting that some frames do not contain JOC
+    if (HasJOC)
     {
         joc_num_objects = joc_num_objects_map.begin()->first;
-        Fill(Stream_Audio, 0, Audio_Format_Profile, bsid_Max<=0x09?"AC-3+Atmos":"E-AC-3+Atmos");
-        Fill(Stream_Audio, 0, Audio_Codec_Profile, bsid_Max<=0x09?"AC-3+Atmos":"E-AC-3+Atmos");
+        Fill(Stream_Audio, 0, Audio_Format_Profile, bsid_Max<=0x09?"AC-3 JOC":"E-AC-3 JOC");
+        Fill(Stream_Audio, 0, Audio_Codec_Profile, bsid_Max<=0x09?"AC-3 JOC":"E-AC-3 JOC");
         if (dxc3_Parsed && joc_complexity_index_Container!=(int8u)-1)
             Fill(Stream_Audio, 0, "ComplexityIndex", joc_complexity_index_Container);
         if (dxc3_Parsed && joc_complexity_index_Container==(int8u)-1 && joc_complexity_index_Stream!=(int8u)-1)
@@ -1277,6 +1278,18 @@ void File_Ac3::Streams_Fill()
         SamplesPerFrame=0;
     if (SamplesPerFrame)
         Fill(Stream_Audio, 0, Audio_SamplesPerFrame, SamplesPerFrame);
+
+    // Commercial name
+    if (Retrieve(Stream_Audio, 0, Audio_Format)==__T("E-AC-3"))
+        Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "Dolby Digital");
+    if (Retrieve(Stream_Audio, 0, Audio_Format)==__T("E-AC-3") || Retrieve(Stream_Audio, 0, Audio_Format_Profile).find(__T("E-AC-3"))==0)
+    {
+        if (HasJOC)
+            Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "Dolby Digital Plus with Dolby Atmos");
+        else
+            Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "Dolby Digital Plus");
+        Fill(Stream_General, 0, General_Format_Commercial_IfAny, Retrieve(Stream_Audio, 0, Audio_Format_Commercial_IfAny));
+    }
 }
 
 //---------------------------------------------------------------------------
