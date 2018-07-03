@@ -984,7 +984,6 @@ void File_Ac3::Streams_Fill()
 
         if (HD_StreamType==0xBA) //TrueHD
         {
-            Fill(Stream_General, 0, General_Format, "TrueHD");
             Fill(Stream_Audio, 0, Audio_Format, "TrueHD");
             Fill(Stream_Audio, 0, Audio_Codec, "TrueHD");
             if (HD_HasAtmos)
@@ -1008,7 +1007,6 @@ void File_Ac3::Streams_Fill()
 
         if (HD_StreamType==0xBB) //TrueHD
         {
-            Fill(Stream_General, 0, General_Format, "MLP");
             if (!Core_IsPresent)
             {
                 Fill(Stream_Audio, 0, Audio_Format, "MLP");
@@ -1070,7 +1068,6 @@ void File_Ac3::Streams_Fill()
             Stream_Prepare(Stream_Audio);
         if (Retrieve(Stream_Audio, 0, Audio_Format).empty())
         {
-            Fill(Stream_General, 0, General_Format, "AC-3");
             Fill(Stream_Audio, 0, Audio_Format, "AC-3");
             Fill(Stream_Audio, 0, Audio_Codec, "AC3");
         }
@@ -1305,8 +1302,9 @@ void File_Ac3::Streams_Fill()
             Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "Dolby Digital Plus with Dolby Atmos");
         else
             Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "Dolby Digital Plus");
-        Fill(Stream_General, 0, General_Format_Commercial_IfAny, Retrieve(Stream_Audio, 0, Audio_Format_Commercial_IfAny));
     }
+    Fill(Stream_General, 0, General_Format_Profile, Retrieve(Stream_Audio, 0, Audio_Format_Profile));
+    Fill(Stream_General, 0, General_Format_Commercial_IfAny, Retrieve(Stream_Audio, 0, Audio_Format_Commercial_IfAny));
 }
 
 //---------------------------------------------------------------------------
