@@ -370,7 +370,7 @@ Ztring AC3_nonstd_bed_channel_assignment_mask_ChannelLayout(int32u nonstd_bed_ch
     }
 
     if (!ToReturn.empty())
-        ToReturn.pop_back();
+        ToReturn.resize(ToReturn.size()-1);
 
     return ToReturn;
 }
