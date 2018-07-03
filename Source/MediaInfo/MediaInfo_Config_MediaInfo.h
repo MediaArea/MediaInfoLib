@@ -151,7 +151,9 @@ public :
         bool          File_MergeBitRateInfo_Get ();
         void          File_HighestFormat_Set (bool NewValue);
         bool          File_HighestFormat_Get ();
-    #endif //MEDIAINFO_ADVANCED
+        void          File_ChannelLayout_Set(bool NewValue);
+        bool          File_ChannelLayout_Get();
+#endif //MEDIAINFO_ADVANCED
 
     #if MEDIAINFO_DEMUX
         #if MEDIAINFO_ADVANCED
@@ -441,6 +443,7 @@ private :
         bool                File_RiskyBitRateEstimation;
         bool                File_MergeBitRateInfo;
         bool                File_HighestFormat;
+        bool                File_ChannelLayout;
         #if MEDIAINFO_DEMUX
             bool                File_Demux_Unpacketize_StreamLayoutChange_Skip;
         #endif //MEDIAINFO_DEMUX
