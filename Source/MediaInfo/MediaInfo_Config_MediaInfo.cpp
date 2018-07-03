@@ -157,6 +157,7 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
         File_Source_List=false;
         File_RiskyBitRateEstimation=false;
         File_MergeBitRateInfo=true;
+        File_HighestFormat=false;
         #if MEDIAINFO_DEMUX
             File_Demux_Unpacketize_StreamLayoutChange_Skip=false;
         #endif //MEDIAINFO_DEMUX
@@ -500,6 +501,15 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     {
         #if MEDIAINFO_ADVANCED
             File_MergeBitRateInfo_Set(!(Value==__T("0") || Value.empty()));
+            return Ztring();
+        #else //MEDIAINFO_ADVANCED
+            return __T("Advanced features are disabled due to compilation options");
+        #endif //MEDIAINFO_ADVANCED
+    }
+    else if (Option_Lower==__T("file_highestformat"))
+    {
+        #if MEDIAINFO_ADVANCED
+            File_HighestFormat_Set(!(Value==__T("0") || Value.empty()));
             return Ztring();
         #else //MEDIAINFO_ADVANCED
             return __T("Advanced features are disabled due to compilation options");
@@ -1581,6 +1591,21 @@ bool MediaInfo_Config_MediaInfo::File_MergeBitRateInfo_Get ()
 {
     CriticalSectionLocker CSL(CS);
     return File_MergeBitRateInfo;
+}
+#endif //MEDIAINFO_ADVANCED
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_ADVANCED
+void MediaInfo_Config_MediaInfo::File_HighestFormat_Set (bool NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    File_HighestFormat=NewValue;
+}
+
+bool MediaInfo_Config_MediaInfo::File_HighestFormat_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return File_HighestFormat;
 }
 #endif //MEDIAINFO_ADVANCED
 
