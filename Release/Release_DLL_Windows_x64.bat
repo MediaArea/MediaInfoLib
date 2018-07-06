@@ -144,6 +144,7 @@ xcopy ..\Project\MSVC2017\ShellExtension\*.bat MediaInfoDLL_Windows_x64\
 rem --- Compressing Archive ---
 cd MediaInfoDLL_Windows_x64\
 %BPATH%\Windows\7-Zip\7z a -r -t7z -mx9 ..\MediaInfo_DLL_Windows_x64_WithoutInstaller.7z *
+%BPATH%\Windows\7-Zip\7z a -r -tzip -mx9 ..\MediaInfo_DLL_Windows_x64_WithoutInstaller.zip *
 cd ..
 
 rem --- Installer ---
