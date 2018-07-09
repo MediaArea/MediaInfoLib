@@ -132,8 +132,17 @@ int32u Mpeg7_FileFormatCS_termID_MediaInfo(MediaInfo_Internal &MI)
             return 510000; //mp1
         return 0;
     }
-    if (Format==__T("Wave") && MI.Get(Stream_General, 0, General_Format_Profile)==__T("RF64"))
-        return 520000; //Wav (RF64)
+    if (Format==__T("Wave"))
+    {
+        if (MI.Get(Stream_General, 0, General_Format_Profile)==__T("RF64"))
+        {
+            if (!MI.Get(Stream_General, 0, __T("bext_Present")).empty())
+                return 520100; // Wav (RF64) with bext
+            return 520000; //Wav (RF64)
+        }
+        else if (!MI.Get(Stream_General, 0, __T("bext_Present")).empty())
+            return 90100;
+    }
     if (Format==__T("Wave64"))
         return 530000;
     if (Format==__T("DSF"))
@@ -176,7 +185,7 @@ int32u Mpeg7_FileFormatCS_termID(MediaInfo_Internal &MI)
         return 180000;
     if (Format==__T("Wave"))
     {
-        if (!MI.Get(Stream_General, 0, General_Format_Profile).empty())
+        if (!MI.Get(Stream_General, 0, General_Format_Profile).empty() || !MI.Get(Stream_General, 0, __T("bext_Present")).empty())
             return Mpeg7_FileFormatCS_termID_MediaInfo(MI); //Out of specs
         else
             return 90000;
@@ -207,7 +216,11 @@ Ztring Mpeg7_FileFormatCS_Name(int32u termID, MediaInfo_Internal &MI) //xxyyzz: 
         case  6 : return __T("dv");
         case  7 : return __T("avi");
         case  8 : return __T("bdf");
-        case  9 : return __T("wav");
+        case  9 :   switch ((termID%10000)/100)
+                    {
+                        case 1 : return __T("bwf");
+                        default: return __T("wav");
+                    }
         case 10 : return __T("zip");
         case 11 : return __T("bmp");
         case 12 : return __T("gif");
@@ -224,7 +237,11 @@ Ztring Mpeg7_FileFormatCS_Name(int32u termID, MediaInfo_Internal &MI) //xxyyzz: 
         //Out of specs --> MediaInfo CS
         case 50 : return __T("mp1");
         case 51 : return __T("mp2");
-        case 52 : return __T("wav-rf64");
+        case 52:   switch ((termID%10000)/100)
+                    {
+                        case 1 : return __T("mbwf");
+                        default: return __T("wav-rf64");
+                    }
         case 53 : return __T("wave64");
         case 54 : return __T("dsf");
         case 55 : return __T("dsdiff");
