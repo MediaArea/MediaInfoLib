@@ -1414,6 +1414,10 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     for (size_t Pos=0; Pos<ToReplace.size(); Pos++)
         ToReturn.FindAndReplace(ToReplace[Pos][0], ToReplace[Pos][1], 0, Ztring_Recursive);
 
+    //Carriage return
+    if (MediaInfoLib::Config.LineSeparator_Get()!=__T("\n"))
+        ToReturn.FindAndReplace(__T("\n"), MediaInfoLib::Config.LineSeparator_Get(), 0, Ztring_Recursive);
+
     return ToReturn;
 }
 
