@@ -136,6 +136,10 @@ int32u Mpeg7_FileFormatCS_termID_MediaInfo(MediaInfo_Internal &MI)
         return 520000; //Wav (RF64)
     if (Format==__T("Wave64"))
         return 530000;
+    if (Format==__T("DSF"))
+        return 540000;
+    if (Format==__T("DSDIFF"))
+        return 550000;
     return 0;
 }
 
@@ -222,6 +226,8 @@ Ztring Mpeg7_FileFormatCS_Name(int32u termID, MediaInfo_Internal &MI) //xxyyzz: 
         case 51 : return __T("mp2");
         case 52 : return __T("wav-rf64");
         case 53 : return __T("wave64");
+        case 54 : return __T("dsf");
+        case 55 : return __T("dsdiff");
         default : return MI.Get(Stream_General, 0, General_Format);
     }
 }
@@ -554,6 +560,18 @@ Ztring Mpeg7_SystemCS_Name(int32u termID) //xxyyzz: xx=main number, yy=sub-numbe
 }
 
 //---------------------------------------------------------------------------
+int32u Mpeg7_AudioCodingFormatCS_termID_MediaInfo(MediaInfo_Internal &MI, size_t StreamPos)
+{
+    const Ztring &Format=MI.Get(Stream_Audio, StreamPos, Audio_Format);
+
+    if (Format==__T("DSD"))
+        return 500000;
+    if (Format==__T("DST"))
+        return 510000;
+    return 0;
+}
+
+//---------------------------------------------------------------------------
 int32u Mpeg7_AudioCodingFormatCS_termID(MediaInfo_Internal &MI, size_t StreamPos)
 {
     const Ztring &Format=MI.Get(Stream_Audio, StreamPos, Audio_Format);
@@ -591,7 +609,8 @@ int32u Mpeg7_AudioCodingFormatCS_termID(MediaInfo_Internal &MI, size_t StreamPos
     if (Format==__T("PCM"))
         return 80000;
 
-    return 0;
+    //Out of specs
+    return Mpeg7_AudioCodingFormatCS_termID_MediaInfo(MI, StreamPos);
 }
 
 Ztring Mpeg7_AudioCodingFormatCS_Name(int32u termID, MediaInfo_Internal &MI, size_t StreamPos) //xxyyzz: xx=main number, yy=sub-number, zz=sub-sub-number
@@ -626,6 +645,9 @@ Ztring Mpeg7_AudioCodingFormatCS_Name(int32u termID, MediaInfo_Internal &MI, siz
                         default: return __T("MPEG-2 Audio");
                     }
         case 8 : return __T("Linear PCM");
+        //Out of specs --> MediaInfo CS
+        case 50 : return __T("DSD");
+        case 51 : return __T("DST");
         default: return MI.Get(Stream_Audio, StreamPos, Video_Format);
     }
 }
@@ -1005,7 +1027,9 @@ void Mpeg7_Transform_Audio(Node* Parent, MediaInfo_Internal &MI, size_t StreamPo
     Node* Node_Format=Node_AudioCoding->Add_Child("mpeg7:Format");
 
     int32u AudioCodingFormatCS_termID=Mpeg7_AudioCodingFormatCS_termID(MI, StreamPos);
-    if (AudioCodingFormatCS_termID)
+    if (AudioCodingFormatCS_termID>=50)
+        Node_Format->Add_Attribute("href", __T("urn:x-mpeg7-mediainfo:cs:AudioCodingFormatCS:2009:")+Ztring::ToZtring(AudioCodingFormatCS_termID/10000));
+    else if (AudioCodingFormatCS_termID)
         Node_Format->Add_Attribute("href", __T("urn:mpeg:mpeg7:cs:AudioCodingFormatCS:2001:")+Ztring::ToZtring(AudioCodingFormatCS_termID/10000));
     else
        Node_Format->Add_Attribute("href", __T("urn:x-mpeg7-mediainfo:cs:AudioCodingFormatCS:2009:unknown"));
