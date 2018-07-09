@@ -149,6 +149,10 @@ int32u Mpeg7_FileFormatCS_termID_MediaInfo(MediaInfo_Internal &MI)
         return 540000;
     if (Format==__T("DSDIFF"))
         return 550000;
+    if (Format==__T("FLAC"))
+        return 560000;
+    if (Format==__T("AIFF"))
+        return 570000;
     return 0;
 }
 
@@ -245,8 +249,22 @@ Ztring Mpeg7_FileFormatCS_Name(int32u termID, MediaInfo_Internal &MI) //xxyyzz: 
         case 53 : return __T("wave64");
         case 54 : return __T("dsf");
         case 55 : return __T("dsdiff");
+        case 56 : return __T("flac");
+        case 57 : return __T("aiff");
         default : return MI.Get(Stream_General, 0, General_Format);
     }
+}
+
+//---------------------------------------------------------------------------
+int32u Mpeg7_VisualCodingFormatCS_termID_MediaInfo(MediaInfo_Internal &MI, size_t StreamPos)
+{
+    const Ztring &Format=MI.Get(Stream_Video, StreamPos, Video_Format);
+
+    if (Format==__T("AVC"))
+        return 500000;
+    if (Format==__T("HEVC"))
+        return 510000;
+    return 0;
 }
 
 //---------------------------------------------------------------------------
@@ -539,7 +557,8 @@ int32u Mpeg7_VisualCodingFormatCS_termID(MediaInfo_Internal &MI, size_t StreamPo
     if (Format==__T("H.263"))
         return 80000;
 
-    return 0;
+    //Out of specs
+    return Mpeg7_VisualCodingFormatCS_termID_MediaInfo(MI, StreamPos);
 }
 
 //---------------------------------------------------------------------------
@@ -585,6 +604,10 @@ int32u Mpeg7_AudioCodingFormatCS_termID_MediaInfo(MediaInfo_Internal &MI, size_t
         return 500000;
     if (Format==__T("DST"))
         return 510000;
+    if (Format==__T("FLAC"))
+        return 520000;
+    if (Format.find(__T("AAC"))==0)
+        return 530000;
     return 0;
 }
 
@@ -665,6 +688,8 @@ Ztring Mpeg7_AudioCodingFormatCS_Name(int32u termID, MediaInfo_Internal &MI, siz
         //Out of specs --> MediaInfo CS
         case 50 : return __T("DSD");
         case 51 : return __T("DST");
+        case 52 : return __T("FLAC");
+        case 53 : return __T("AAC");
         default: return MI.Get(Stream_Audio, StreamPos, Video_Format);
     }
 }
