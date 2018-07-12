@@ -263,6 +263,12 @@ int32u Mpeg7_VisualCodingFormatCS_termID_MediaInfo(MediaInfo_Internal &MI, size_
         return 500000;
     if (Format==__T("HEVC"))
         return 510000;
+    if (Format==__T("WMV"))
+        return 520000;
+    if (Format==__T("WMV2"))
+        return 530000;
+    if (Format==__T("ProRes"))
+        return 540000;
     return 0;
 }
 
@@ -607,6 +613,8 @@ int32u Mpeg7_AudioCodingFormatCS_termID_MediaInfo(MediaInfo_Internal &MI, size_t
         return 520000;
     if (Format.find(__T("AAC"))==0)
         return 530000;
+    if (Format==__T("WMA"))
+        return 540000;
     return 0;
 }
 
@@ -689,6 +697,7 @@ Ztring Mpeg7_AudioCodingFormatCS_Name(int32u termID, MediaInfo_Internal &MI, siz
         case 51 : return __T("DST");
         case 52 : return __T("FLAC");
         case 53 : return __T("AAC");
+        case 54 : return __T("WMA");
         default: return MI.Get(Stream_Audio, StreamPos, Audio_Format);
     }
 }
