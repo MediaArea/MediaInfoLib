@@ -44,11 +44,13 @@ static Ztring Mpeg7_TimeToISO(Ztring Value)
 {
     if (Value.size()>=3 && Value[0]==__T('U') && Value[1]==__T('T') && Value[2]==__T('C') && Value[3]==__T(' '))
     {
-        Value.erase(Value.begin(), Value.begin()+4);
+        Value.erase(0, 4);
         Value+=__T("+00:00");
     }
     if (Value.size()>11 && Value[10]==__T(' '))
         Value[10]=__T('T');
+    if (Value.size() > 19 && Value[19] == __T('.')) //Milliseconds are valid ISO but MPEG-7 XSD does not like them
+        Value.erase(19, Value.find_first_not_of(__T("0123456789"), 20)-19);
     return Value;
 }
 
