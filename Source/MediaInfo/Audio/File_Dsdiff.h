@@ -48,6 +48,10 @@ private :
     void DSD__DIIN_MARK();
     void DSD__DSD_();
     void DSD__DST_();
+    void DSD__DST__DSTC();
+    void DSD__DST__DSTF();
+    void DSD__DST__FRTE();
+    void DSD__DSTI();
     void DSD__FVER();
     void DSD__ID3_();
     void DSD__PROP();
