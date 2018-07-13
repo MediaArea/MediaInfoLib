@@ -40,6 +40,19 @@ extern MediaInfo_Config Config;
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+static Ztring Mpeg7_TimeToISO(Ztring Value)
+{
+    if (Value.size()>=3 && Value[0]==__T('U') && Value[1]==__T('T') && Value[2]==__T('C') && Value[3]==__T(' '))
+    {
+        Value.erase(Value.begin(), Value.begin()+4);
+        Value+=__T("+00:00");
+    }
+    if (Value.size()>11 && Value[10]==__T(' '))
+        Value[10]=__T('T');
+    return Value;
+}
+
+//---------------------------------------------------------------------------
 const Char* Mpeg7_Type(MediaInfo_Internal &MI) //TO ADAPT
 {
     if (MI.Count_Get(Stream_Image))
@@ -1271,7 +1284,11 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
      || !MI.Get(Stream_General, 0, General_Track).empty()
      || !MI.Get(Stream_General, 0, General_Track_Position).empty()
      || !MI.Get(Stream_General, 0, General_Album).empty()
+     || !MI.Get(Stream_General, 0, General_Recorded_Date).empty()
+     || !MI.Get(Stream_General, 0, General_Encoded_Date).empty()
+     || !MI.Get(Stream_General, 0, General_Encoded_Application).empty()
      || !MI.Get(Stream_General, 0, General_Encoded_Library).empty()
+     || !MI.Get(Stream_General, 0, General_Producer).empty()
      || !MI.Get(Stream_General, 0, General_Performer).empty())
     {
         Node* Node_Creation=Node_Type->Add_Child("mpeg7:CreationInformation")->Add_Child("mpeg7:Creation");
@@ -1375,9 +1392,34 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
             Node* Node_Agent=Node_Creator->Add_Child("mpeg7:Agent", "", "xsi:type", "OrganizationType");
             Node_Agent->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Label));
         }
-        if (!MI.Get(Stream_General, 0, General_Encoded_Library).empty())
+        if (!MI.Get(Stream_General, 0, General_Recorded_Date).empty())
+        {
+            Node* Node_Date=Node_Creation->Add_Child("mpeg7:CreationCoordinates")->Add_Child("mpeg7:Date");
+            Node_Date->Add_Child("")->XmlCommentOut="Recorded date";
+            Node_Date->Add_Child("mpeg7:TimePoint", Mpeg7_TimeToISO(MI.Get(Stream_General, 0, General_Recorded_Date)));
+        }
+        if (!MI.Get(Stream_General, 0, General_Encoded_Date).empty())
+        {
+            Node* Node_Date=Node_Creation->Add_Child("mpeg7:CreationCoordinates")->Add_Child("mpeg7:Date");
+            Node_Date->Add_Child("")->XmlCommentOut="Encoded date";
+            Node_Date->Add_Child("mpeg7:TimePoint", Mpeg7_TimeToISO(MI.Get(Stream_General, 0, General_Encoded_Date)));
+        }
+        if (!MI.Get(Stream_General, 0, General_Producer).empty())
         {
             Node* Node_Tool=Node_Creation->Add_Child("mpeg7:CreationTool")->Add_Child("mpeg7:Tool");
+            Node_Tool->Add_Child("")->XmlCommentOut="Producer";
+            Node_Tool->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Producer));
+        }
+        if (!MI.Get(Stream_General, 0, General_Encoded_Application).empty())
+        {
+            Node* Node_Tool=Node_Creation->Add_Child("mpeg7:CreationTool")->Add_Child("mpeg7:Tool");
+            Node_Tool->Add_Child("")->XmlCommentOut="Writing application";
+            Node_Tool->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Encoded_Application));
+        }
+        else if (!MI.Get(Stream_General, 0, General_Encoded_Library).empty())
+        {
+            Node* Node_Tool=Node_Creation->Add_Child("mpeg7:CreationTool")->Add_Child("mpeg7:Tool");
+            Node_Tool->Add_Child("")->XmlCommentOut="Writing library";
             Node_Tool->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Encoded_Library));
         }
     }
