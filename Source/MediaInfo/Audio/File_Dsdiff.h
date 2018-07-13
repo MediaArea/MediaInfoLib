@@ -49,6 +49,7 @@ private :
     void DSD__DSD_();
     void DSD__DST_();
     void DSD__FVER();
+    void DSD__ID3_();
     void DSD__PROP();
     void DSD__PROP_ABSS();
     void DSD__PROP_CHNL();

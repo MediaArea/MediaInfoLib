@@ -22,6 +22,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Audio/File_Dsdiff.h"
+#if defined(MEDIAINFO_ID3V2_YES)
+    #include "MediaInfo/Tag/File_Id3v2.h"
+#endif //MEDIAINFO_ID3V2_YES
 #include <vector>
 using namespace ZenLib;
 using namespace std;
@@ -87,6 +90,7 @@ namespace Elements
     const int64u DSD__DSD_ = 0x44534420;
     const int64u DSD__DST_ = 0x44535420;
     const int64u DSD__FVER = 0x46564552;
+    const int64u DSD__ID3_ = 0x49443320;
     const int64u DSD__PROP = 0x50524F50;
     const int64u DSD__PROP_ABSS = 0x41425353;
     const int64u DSD__PROP_CHNL = 0x43484E4C;
@@ -227,6 +231,7 @@ void File_Dsdiff::Data_Parse()
         ATOM_PARTIAL(DSD__DSD_)
         ATOM_PARTIAL(DSD__DST_)
         ATOM(DSD__FVER)
+        ATOM(DSD__ID3_)
         LIST(DSD__PROP)
             ATOM_BEGIN
             ATOM(DSD__PROP_ABSS)
@@ -426,6 +431,23 @@ void File_Dsdiff::DSD__FVER()
     FILLING_BEGIN_PRECISE();
         Fill(Stream_General, 0, General_Format_Version, __T("Version ")+Ztring::ToZtring(version1)+__T('.')+Ztring::ToZtring(version2)+__T('.')+Ztring::ToZtring(version3)+__T('.')+Ztring::ToZtring(version4));
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Dsdiff::DSD__ID3_()
+{
+    Element_Name("ID3v2 tags");
+
+    //Parsing
+    #if defined(MEDIAINFO_ID3V2_YES)
+        File_Id3v2 MI;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI);
+        Finish(&MI);
+        Merge(MI, Stream_General, 0, 0);
+    #else //defined(MEDIAINFO_ID3V2_YES)
+        Skip_XX(Element_Size,                                   "Id3v2 data");
+    #endif
 }
 
 //---------------------------------------------------------------------------
