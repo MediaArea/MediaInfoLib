@@ -53,7 +53,7 @@ static const char*  DSDIFF_lsConfig_ChannelLayout[DSDIFF_lsConfig_Size] =
     "",
     "",
     "L R C Ls Rs",
-    "L R C Ls Rs LFE",
+    "L R C LFE Ls Rs",
 };
 
 //---------------------------------------------------------------------------
@@ -258,7 +258,10 @@ void File_Dsdiff::Data_Parse()
     DATA_END
 
     if (pad)
+    {
         Element_Size++;
+        Skip_B1(                                                "pad");
+    }
 }
 
 //***************************************************************************
@@ -419,6 +422,7 @@ void File_Dsdiff::DSD__DSD_()
 
     //Filling
     Fill(Stream_Audio, 0, Audio_StreamSize, Element_TotalSize_Get()-(pad?1:0));
+    Fill(Stream_Audio, 0, Audio_Format_Settings, "Big"); Fill(Stream_Audio, 0, Audio_Format_Settings_Endianness, "Big");
 }
 
 //---------------------------------------------------------------------------
@@ -650,7 +654,7 @@ void File_Dsdiff::DSD__PROP_LSCO()
             Fill(Stream_Audio, 0, Audio_ChannelPositions, DSDIFF_lsConfig[lsConfig]);
             Ztring ChannelLayout_New; ChannelLayout_New.From_Local(DSDIFF_lsConfig_ChannelLayout[lsConfig]);
             const Ztring& ChannelLayout_Old=Retrieve_Const(Stream_Audio, 0, Audio_ChannelLayout);
-            if (ChannelLayout_New!=ChannelLayout_Old)
+            if (ChannelLayout_New!=ChannelLayout_Old) // 5.1!
                 Fill(Stream_Audio, 0, Audio_ChannelLayout, ChannelLayout_New);
         }
         else if (lsConfig!=0xFFFF)
