@@ -22,6 +22,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Audio/File_Dsdiff.h"
+#if defined(MEDIAINFO_ID3V2_YES)
+    #include "MediaInfo/Tag/File_Id3v2.h"
+#endif //MEDIAINFO_ID3V2_YES
 #include <vector>
 using namespace ZenLib;
 using namespace std;
@@ -86,7 +89,12 @@ namespace Elements
     const int64u DSD__DIIN_MARK = 0x4D41524B;
     const int64u DSD__DSD_ = 0x44534420;
     const int64u DSD__DST_ = 0x44535420;
+    const int64u DSD__DST__DSTC = 0x44535443;
+    const int64u DSD__DST__DSTF = 0x44535446;
+    const int64u DSD__DST__FRTE = 0x46525445;
+    const int64u DSD__DSTI = 0x44535449;
     const int64u DSD__FVER = 0x46564552;
+    const int64u DSD__ID3_ = 0x49443320;
     const int64u DSD__PROP = 0x50524F50;
     const int64u DSD__PROP_ABSS = 0x41425353;
     const int64u DSD__PROP_CHNL = 0x43484E4C;
@@ -123,11 +131,15 @@ void File_Dsdiff::Streams_Accept()
 //---------------------------------------------------------------------------
 void File_Dsdiff::Streams_Finish()
 {
-    int64u DSDsoundData_Size=Retrieve(Stream_Audio, 0, Audio_StreamSize).To_int64u();
     int32u sampleRate=Retrieve(Stream_Audio, 0, Audio_SamplingRate).To_int32u();
-    int16u numChannels=Retrieve(Stream_Audio, 0, Audio_Channel_s_).To_int16u();
-    if (DSDsoundData_Size && sampleRate && numChannels)
-        Fill(Stream_Audio, 0, Audio_Duration, ((float64)DSDsoundData_Size)*8/numChannels/sampleRate, 3);
+
+    if (Retrieve(Stream_Audio, 0, Audio_Format)==__T("DSD"))
+    {
+        int64u DSDsoundData_Size=Retrieve(Stream_Audio, 0, Audio_StreamSize).To_int64u();
+        int16u numChannels=Retrieve(Stream_Audio, 0, Audio_Channel_s_).To_int16u();
+        if (DSDsoundData_Size && sampleRate && numChannels)
+            Fill(Stream_Audio, 0, Audio_Duration, ((float64)DSDsoundData_Size)*8*1000/numChannels/sampleRate, 3);
+    }
 
     for (int64u Multiplier=64; Multiplier<=512; Multiplier*=2)
     {
@@ -225,8 +237,15 @@ void File_Dsdiff::Data_Parse()
             ATOM(DSD__DIIN_MARK)
             ATOM_END
         ATOM_PARTIAL(DSD__DSD_)
-        ATOM_PARTIAL(DSD__DST_)
+        LIST(DSD__DST_)
+            ATOM_BEGIN
+            ATOM(DSD__DST__DSTC)
+            ATOM(DSD__DST__DSTF)
+            ATOM(DSD__DST__FRTE)
+            ATOM_END
+        ATOM_PARTIAL(DSD__DSTI)
         ATOM(DSD__FVER)
+        ATOM(DSD__ID3_)
         LIST(DSD__PROP)
             ATOM_BEGIN
             ATOM(DSD__PROP_ABSS)
@@ -407,8 +426,56 @@ void File_Dsdiff::DSD__DST_()
 {
     Element_Name("DST Sound Data");
 
+    Fill(Stream_Audio, 0, Audio_StreamSize, Element_TotalSize_Get());
+}
+
+//---------------------------------------------------------------------------
+void File_Dsdiff::DSD__DST__DSTC()
+{
+    Element_Name("DST Frame CRC Chunk");
+
     //Parsing
-    Skip_XX(Element_TotalSize_Get(),                            "DstChunks");
+    Skip_XX(Element_TotalSize_Get(),                            "crcData");
+}
+
+//---------------------------------------------------------------------------
+void File_Dsdiff::DSD__DST__DSTF()
+{
+    Element_Name("DST Frame Data Chunk");
+
+    //Parsing
+    Skip_XX(Element_TotalSize_Get(),                            "DSTsoundData");
+
+    GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get(1));
+}
+
+//---------------------------------------------------------------------------
+void File_Dsdiff::DSD__DST__FRTE()
+{
+    Element_Name("DST Frame Information Chunk");
+
+    //Parsing
+    int32u numFrames;
+    int16u frameRate;
+    Get_B4 (numFrames,                                          "numFrames");
+    Get_B2 (frameRate,                                          "frameRate");
+
+    FILLING_BEGIN_PRECISE();
+        Fill(Stream_Audio, 0, Audio_FrameRate, frameRate);
+        Fill(Stream_Audio, 0, Audio_FrameCount, numFrames);
+        Fill(Stream_Audio, 0, Audio_Duration, ((float32)numFrames)*1000/frameRate);
+
+        GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get(1));
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Dsdiff::DSD__DSTI()
+{
+    Element_Name("DST Sound Index Chunk");
+
+    //Parsing
+    Skip_XX(Element_TotalSize_Get(),                            "indexData");
 }
 
 //---------------------------------------------------------------------------
@@ -426,6 +493,23 @@ void File_Dsdiff::DSD__FVER()
     FILLING_BEGIN_PRECISE();
         Fill(Stream_General, 0, General_Format_Version, __T("Version ")+Ztring::ToZtring(version1)+__T('.')+Ztring::ToZtring(version2)+__T('.')+Ztring::ToZtring(version3)+__T('.')+Ztring::ToZtring(version4));
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Dsdiff::DSD__ID3_()
+{
+    Element_Name("ID3v2 tags");
+
+    //Parsing
+    #if defined(MEDIAINFO_ID3V2_YES)
+        File_Id3v2 MI;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI);
+        Finish(&MI);
+        Merge(MI, Stream_General, 0, 0);
+    #else //defined(MEDIAINFO_ID3V2_YES)
+        Skip_XX(Element_Size,                                   "Id3v2 data");
+    #endif
 }
 
 //---------------------------------------------------------------------------
