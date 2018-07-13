@@ -101,7 +101,7 @@ int32u Mpeg7_ContentCS_termID(MediaInfo_Internal &MI, size_t)
     return 0;
 }
 
-Ztring Mpeg7_ContentCS_Name(int32u termID, MediaInfo_Internal &, size_t) //xxyyzz: xx=main number, yy=sub-number, zz=sub-sub-number
+Ztring Mpeg7_ContentCS_Name(int32u termID, MediaInfo_Internal &MI, size_t) //xxyyzz: xx=main number, yy=sub-number, zz=sub-sub-number
 {
     switch (termID/10000)
     {
@@ -114,7 +114,7 @@ Ztring Mpeg7_ContentCS_Name(int32u termID, MediaInfo_Internal &, size_t) //xxyyz
                         case 2 : return __T("Video");
                         case 3 : return __T("Graphics");
                     }
-        default : return Ztring();
+        default : return MI.Get(Stream_General, 0, General_FileExtension);
     }
 }
 
