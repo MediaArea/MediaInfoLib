@@ -1244,6 +1244,8 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "AU;;;A;Au;uLaw/AU Audio File;au;audio/basic;\n"
     "CAF;;;A;Caf;Core Audio Format;caf;audio/x-caf;https://developer.apple.com/library/content/documentation/MusicAudio/Reference/CAFSpec/CAF_overview/CAF_overview.html\n"
     "DolbyE;;;A;Aes3;;dde\n"
+    "DSDIFF;;;A;Dsdiff;Direct Stream Digital Interchange File Format;dff;;;Lossy\n"
+    "DSF;;;A;Dsf;Direct Stream Digital Stream File;dsf;;;Lossy\n"
     "DTS;;;A;Dts;Digital Theater Systems;dts dtshd;;;Lossy\n"
     "DTS-HD;;;A;Dts;Digital Theater Systems;dts dtshd;;;Lossy\n"
     "E-AC-3;;;A;Ac3;Enhanced Audio Coding 3;dd+ ec3 eac3;audio/eac3;;Lossy\n"

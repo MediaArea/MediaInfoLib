@@ -71,6 +71,8 @@ Atrac3;;;A;;;;audio/ATRAC3;;Lossy
 AU;;;A;Au;uLaw/AU Audio File;au;audio/basic;;
 CAF;;;A;Caf;Core Audio Format;caf;audio/x-caf;https://developer.apple.com/library/content/documentation/MusicAudio/Reference/CAFSpec/CAF_overview/CAF_overview.html;
 DolbyE;;;A;Aes3;;dde
+DSDIFF;;;A;Dsdiff;Direct Stream Digital Interchange File Format;dff;;;Lossy
+DSF;;;A;Dsf;Direct Stream Digital Stream File;dsf;;;Lossy
 DTS;;;A;Dts;Digital Theater Systems;dts dtshd;;;Lossy
 DTS-HD;;;A;Dts;Digital Theater Systems;dts dtshd;;;Lossy
 E-AC-3;;;A;Ac3;Enhanced Audio Coding 3;dd+ ec3 eac3;audio/eac3;;Lossy
