@@ -138,7 +138,7 @@ void File_Dsdiff::Streams_Finish()
         int64u DSDsoundData_Size=Retrieve(Stream_Audio, 0, Audio_StreamSize).To_int64u();
         int16u numChannels=Retrieve(Stream_Audio, 0, Audio_Channel_s_).To_int16u();
         if (DSDsoundData_Size && sampleRate && numChannels)
-            Fill(Stream_Audio, 0, Audio_Duration, ((float64)DSDsoundData_Size)*8/numChannels/sampleRate, 3);
+            Fill(Stream_Audio, 0, Audio_Duration, ((float64)DSDsoundData_Size)*8*1000/numChannels/sampleRate, 3);
     }
 
     for (int64u Multiplier=64; Multiplier<=512; Multiplier*=2)
