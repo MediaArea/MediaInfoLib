@@ -1271,6 +1271,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "Scream Tracker 3;;;A;S3m;;s3m;;\n"
     "Shorten;;;A;;;shn;;http://etree.org/shnutils/shorten/;Lossless\n"
     "SLS;;;A;;MPEG-4 Scalable Lossless Coding;sls;;http://www.chiariglione.org/mpeg/technologies/mp04-sls/index.htm;Lossless\n"
+    "S/PDIF;;;A;Spdif;Sony/Philips Digital Interface;spdif;;https://en.wikipedia.org/wiki/S/PDIF\n"
     "Speex;;;A;;;spx;audio/speex;http://www.speex.org/;Lossy\n"
     "Opus;;;A;;;;audio/opus;http://opus-codec.org/;Lossy\n"
     "TAK;;;A;;;tak;;http://thbeck.de/Tak/Tak.html;Lossless\n"
