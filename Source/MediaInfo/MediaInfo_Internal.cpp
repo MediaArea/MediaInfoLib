@@ -1256,9 +1256,8 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, size_t Par
                 Ztring ToReturn=HighestFormat(StreamKind, Parameter, Stream[StreamKind][StreamPos]);
                 EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return "); Debug+=ToReturn;)
             }
-            else
             #if MEDIAINFO_ADVANCED
-                 if (Config.File_ChannelLayout_Get())
+            else if (Config.File_ChannelLayout_Get())
             #endif //MEDIAINFO_ADVANCED
             {
                 Ztring ToReturn=ChannelLayout_2018_Rename(StreamKind, Parameter, Stream[StreamKind][StreamPos]);
