@@ -47,6 +47,14 @@ static const char*  DSDIFF_lsConfig[DSDIFF_lsConfig_Size]=
     "Front: L C R, Side: L R",
     "Front: L C R, Side: L R, LFE",
 };
+static const char*  DSDIFF_lsConfig_ChannelPositions2[]=
+{
+    "2",
+    "",
+    "",
+    "3/2",
+    "3/2.1",
+};
 static const char*  DSDIFF_lsConfig_ChannelLayout[DSDIFF_lsConfig_Size] =
 {
     "L R",
@@ -71,6 +79,93 @@ static Ztring DSDIFF_CHNL_chID(int32u chID)
         case 0x4C464520 : return __T("LFE");
         default : return Ztring().From_CC4(chID).Trim();
     }
+}
+
+
+//---------------------------------------------------------------------------
+static void DSDIFF_CHNL_chID_ChannelPositions(int32u chID, int32u& Mask)
+{
+    switch (chID)
+    {
+        case 0x43202020 : Mask |= 1<<1; break; //C
+        case 0x4D4C4654 :
+        case 0x534C4654 : Mask |= 1<<0; break; //L
+        case 0x4D524754 :
+        case 0x53524754 : Mask |= 1<<2; break; //R
+        case 0x4C532020 : Mask |= 1<<3; break; //Ls
+        case 0x52532020 : Mask |= 1<<4; break; //Rs
+        case 0x4C464520 : Mask |= 1<<5; break; //LFE
+        default : Mask=(int32u)-1; ; //Unknown;
+    }
+}
+static Ztring DSDIFF_CHNL_chID_ChannelPositions(int32u Mask)
+{
+    if (Mask==(int32u)-1)
+        return Ztring();
+
+    Ztring ToReturn;
+    if (Mask&((1<<0)|(1<<1)|(1<<2)))
+    {
+        ToReturn+=__T("Front: ");
+        if (Mask&(1<<0))
+            ToReturn+=__T("L ");
+        if (Mask&(1<<1))
+            ToReturn+=__T("C ");
+        if (Mask&(1<<2))
+            ToReturn+=__T("R ");
+        ToReturn.resize(ToReturn.size()-1);
+    }
+    if (Mask&((1<<3)|(1<<4)))
+    {
+        if (!ToReturn.empty())
+            ToReturn+=__T(", ");
+        ToReturn+=__T("Side: ");
+        if (Mask&(1<<3))
+            ToReturn+=__T("L ");
+        if (Mask&(1<<4))
+            ToReturn+=__T("R ");
+        ToReturn.resize(ToReturn.size()-1);
+    }
+    if (Mask&(1<<5))
+    {
+        if (!ToReturn.empty())
+            ToReturn+=__T(", ");
+        ToReturn+=__T("LFE");
+    }
+    return ToReturn;
+}
+
+//---------------------------------------------------------------------------
+static void DSDIFF_CHNL_chID_ChannelPositions2(int32u chID, int32u& Mask)
+{
+    switch (chID)
+    {
+        case 0x43202020 :
+        case 0x4D4C4654 :
+        case 0x534C4654 :
+        case 0x4D524754 :
+        case 0x53524754 : Mask += 1; break; //Front
+        case 0x4C532020 :
+        case 0x52532020 : Mask += 1<<8;  break; //Side
+        case 0x4C464520 : Mask += 1<<24;  break; //LFE
+        default : Mask = (int32u)-1; ; //Unknown;
+    }
+}
+static Ztring DSDIFF_CHNL_chID_ChannelPositions2(int32u Mask)
+{
+    if (Mask==(int32u)-1)
+        return Ztring();
+
+    Ztring ToReturn=Ztring::ToZtring(Mask&0xFF);
+    if ((Mask>>8)&0xFFFF)
+    {
+        ToReturn+=__T('/')+Ztring::ToZtring((Mask>>8)&0xFF);
+        if ((Mask>>16)&0xFF)
+            ToReturn+=__T('/')+Ztring::ToZtring((Mask>>16)&0xFF);
+    }
+    if ((Mask>>24)&0xFF)
+        ToReturn+=__T('.')+Ztring::ToZtring((Mask>>24)&0xFF);
+    return ToReturn;
 }
 
 //***************************************************************************
@@ -592,10 +687,24 @@ void File_Dsdiff::DSD__PROP_CHNL()
 
     FILLING_BEGIN();
         Fill(Stream_Audio, 0, Audio_Channel_s_, numChannels);
+        int32u ChannelPositions=0;
+        int32u ChannelPositions2=0;
         ZtringList ChannelLayout;
         ChannelLayout.Separator_Set(0, __T(" "));
         for (size_t i=0; i<chIDs.size(); i++)
+        {
+            DSDIFF_CHNL_chID_ChannelPositions(chIDs[i], ChannelPositions);
+            DSDIFF_CHNL_chID_ChannelPositions2(chIDs[i], ChannelPositions2);
             ChannelLayout.push_back(DSDIFF_CHNL_chID(chIDs[i]));
+        }
+        Ztring ChannelPositions_New=DSDIFF_CHNL_chID_ChannelPositions(ChannelPositions);
+        const Ztring& ChannelPositions_Old=Retrieve_Const(Stream_Audio, 0, Audio_ChannelPositions);
+        if (ChannelPositions_New!=ChannelPositions_Old)
+            Fill(Stream_Audio, 0, Audio_ChannelPositions, ChannelPositions_New);
+        Ztring ChannelPositions2_New=DSDIFF_CHNL_chID_ChannelPositions2(ChannelPositions2);
+        const Ztring& ChannelPositions2_Old=Retrieve_Const(Stream_Audio, 0, Audio_ChannelPositions_String2);
+        if (ChannelPositions2_New!=ChannelPositions2_Old)
+            Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ChannelPositions2_New);
         const Ztring& ChannelLayout_New=ChannelLayout.Read();
         const Ztring& ChannelLayout_Old=Retrieve_Const(Stream_Audio, 0, Audio_ChannelLayout);
         if (ChannelLayout_New!=ChannelLayout_Old)
@@ -651,10 +760,17 @@ void File_Dsdiff::DSD__PROP_LSCO()
     FILLING_BEGIN();
         if (lsConfig<DSDIFF_lsConfig_Size)
         {
-            Fill(Stream_Audio, 0, Audio_ChannelPositions, DSDIFF_lsConfig[lsConfig]);
+            const Ztring& ChannelPositions_Old=Retrieve_Const(Stream_Audio, 0, Audio_ChannelPositions);
+            Ztring ChannelPositions_New=Ztring().From_UTF8(DSDIFF_lsConfig[lsConfig]);
+            if (ChannelPositions_New!=ChannelPositions_Old)
+                Fill(Stream_Audio, 0, Audio_ChannelPositions, ChannelPositions_New);
+            const Ztring& ChannelPositions2_Old=Retrieve_Const(Stream_Audio, 0, Audio_ChannelPositions_String2);
+            Ztring ChannelPositions2_New=Ztring().From_UTF8(DSDIFF_lsConfig_ChannelPositions2[lsConfig]);
+            if (ChannelPositions2_New!=ChannelPositions2_Old)
+                Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ChannelPositions2_New);
             Ztring ChannelLayout_New; ChannelLayout_New.From_Local(DSDIFF_lsConfig_ChannelLayout[lsConfig]);
             const Ztring& ChannelLayout_Old=Retrieve_Const(Stream_Audio, 0, Audio_ChannelLayout);
-            if (ChannelLayout_New!=ChannelLayout_Old) // 5.1!
+            if (ChannelLayout_New!=ChannelLayout_Old)
                 Fill(Stream_Audio, 0, Audio_ChannelLayout, ChannelLayout_New);
         }
         else if (lsConfig!=0xFFFF)
