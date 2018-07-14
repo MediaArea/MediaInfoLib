@@ -458,6 +458,13 @@ void File__Analyze::Streams_Finish_StreamOnly(stream_t StreamKind, size_t Pos)
 //---------------------------------------------------------------------------
 void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
 {
+    //Exception
+    if (Retrieve(Stream_General, 0, General_Format)==__T("AC-3") && Retrieve(Stream_General, 0, General_Format_Profile).find(__T("E-AC-3"))==0)
+    {
+        Fill(Stream_General, 0, General_Format_Extensions, "ac3 eb3", Unlimited, true, true);
+        Fill(Stream_General, 0, General_Codec_Extensions, "ac3 eb3", Unlimited, true, true);
+    }
+
     //File extension test
     if (Retrieve(Stream_General, StreamPos, "FileExtension_Invalid").empty())
     {
