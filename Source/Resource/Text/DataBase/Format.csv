@@ -66,8 +66,9 @@ ADIF;;;A;Adif;Audio Data Interchange Format;;;;
 ADTS;;;A;Adts;Audio Data Transport Stream;aac aacp adts;;;
 ALS;;;A;Als;MPEG-4 Audio Lossless Coding;als;;http://www.nue.tu-berlin.de/forschung/projekte/lossless/mp4als.html#downloads;Lossless
 AMR;;;A;Amr;Adaptive Multi-Rate;amr;audio/AMR;http://www.apple.com/quicktime/download/standalone.html;
-Atrac;;;A;;;;audio/ATRAC;;Lossy
-Atrac3;;;A;;;;audio/ATRAC3;;Lossy
+Atrac;;;A;;Adaptive Transform Acoustic Coding;;audio/ATRAC;;Lossy
+Atrac3;;;A;;Adaptive Transform Acoustic Coding 3;;audio/ATRAC3;;Lossy
+Atrac9;;;A;;Adaptive Transform Acoustic Coding 9;;audio/ATRAC9;https://en.wikipedia.org/wiki/Adaptive_Transform_Acoustic_Coding;Lossy
 AU;;;A;Au;uLaw/AU Audio File;au;audio/basic;;
 CAF;;;A;Caf;Core Audio Format;caf;audio/x-caf;https://developer.apple.com/library/content/documentation/MusicAudio/Reference/CAFSpec/CAF_overview/CAF_overview.html;
 DolbyE;;;A;Aes3;;dde
@@ -109,7 +110,7 @@ TAK;;;A;;;tak;;http://thbeck.de/Tak/Tak.html;Lossless
 TrueHD;;;A;Ac3;;mlp thd vr;;;Lossless
 TwinVQ;;;A;TwinVQ;Transform domain Weighted INterleave Vector Quantization;vqf;;http://www.twinvq.org/english/index_en.html;
 Vorbis;;;A;;;;audio/vorbis;http://www.vorbis.com/;Lossy
-Wave;;;A;Riff;;act wav;audio/vnd.wave;;
+Wave;;;A;Riff;;act at9 wav;audio/vnd.wave;;
 Wave64;;;A;Riff;;w64;;;
 WavPack;;;A;Wvpk;;wv wvc;;http://www.wavpack.com;
 Arri Raw;;;I;ArriRaw;;ari;;;
