@@ -988,17 +988,12 @@ void File_Ac3::Streams_Fill()
             Fill(Stream_Audio, 0, Audio_Codec, "TrueHD");
             if (HD_HasAtmos)
             {
-
                 Fill(Stream_Audio, 0, Audio_Format_Profile, "TrueHD+Atmos / TrueHD");
                 Fill(Stream_Audio, 0, Audio_Codec_Profile, "TrueHD+Atmos / TrueHD");
-                Fill(Stream_Audio, 0, Audio_Channel_s_, "Object Based");
-                Fill(Stream_Audio, 0, Audio_ChannelPositions, "Object Based");
-                Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, "Object Based");
             }
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
             Ztring Sampling;
             Sampling.From_Number(AC3_HD_SamplingRate(HD_SamplingRate1));
-            if (HD_HasAtmos) Sampling.insert(0, __T(" / "));
             Fill(Stream_Audio, 0, Audio_SamplingRate, Sampling);
             Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_TrueHD_Channels(HD_Channels2));
             Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_TrueHD_Channels_Positions(HD_Channels2));
@@ -1026,13 +1021,15 @@ void File_Ac3::Streams_Fill()
     }
 
     bool HasJOC = joc_num_objects_map.size()==1 && (joc_num_objects_map.begin()->second >= Frame_Count_Valid / 8 || joc_num_objects_map.begin()->second >= Frame_Count / 8); //Accepting that some frames do not contain JOC
-    if (HasJOC)
+    if (HasJOC || HD_HasAtmos)
     {
         if (Count_Get(Stream_Audio)==0)
             Stream_Prepare(Stream_Audio);
-        joc_num_objects = joc_num_objects_map.begin()->first;
-        Fill(Stream_Audio, 0, Audio_Format_Profile, bsid_Max<=0x09?"AC-3 JOC":"E-AC-3 JOC");
-        Fill(Stream_Audio, 0, Audio_Codec_Profile, bsid_Max<=0x09?"AC-3 JOC":"E-AC-3 JOC");
+        if (HasJOC)
+        {
+            Fill(Stream_Audio, 0, Audio_Format_Profile, bsid_Max<=0x09?"AC-3 JOC":"E-AC-3 JOC");
+            Fill(Stream_Audio, 0, Audio_Codec_Profile, bsid_Max<=0x09?"AC-3 JOC":"E-AC-3 JOC");
+        }
         if (dxc3_Parsed && joc_complexity_index_Container!=(int8u)-1)
             Fill(Stream_Audio, 0, "ComplexityIndex", joc_complexity_index_Container);
         if (dxc3_Parsed && joc_complexity_index_Container==(int8u)-1 && joc_complexity_index_Stream!=(int8u)-1)
@@ -1066,7 +1063,7 @@ void File_Ac3::Streams_Fill()
     {
         if (Count_Get(Stream_Audio)==0)
             Stream_Prepare(Stream_Audio);
-        if (Retrieve(Stream_Audio, 0, Audio_Format).empty())
+        if (Retrieve(Stream_Audio, 0, Audio_Format).empty() || !HasJOC)
         {
             Fill(Stream_Audio, 0, Audio_Format, "AC-3");
             Fill(Stream_Audio, 0, Audio_Codec, "AC3");
@@ -1131,7 +1128,7 @@ void File_Ac3::Streams_Fill()
             {
                 if (Count_Get(Stream_Audio)==0)
                     Stream_Prepare(Stream_Audio);
-                if (Retrieve(Stream_Audio, 0, Audio_Format).empty())
+                if (Retrieve(Stream_Audio, 0, Audio_Format).empty() || !HasJOC)
                 {
                     Fill(Stream_Audio, 0, Audio_Format, Formats[0]?"AC-3":"E-AC-3");
                     Fill(Stream_Audio, 0, Audio_Codec, Formats[0] ?"AC-3":"AC3+");
@@ -4049,21 +4046,28 @@ void File_Ac3::HD()
         CRC_16^=LittleEndian2int16u(Buffer+Buffer_Offset+24);
         */
 
-        Element_Begin1("MajorSync");
-        Skip_B3(                                                "Synch");
-        Get_B1 (HD_StreamType,                                  "Stream type"); Param_Info1(AC3_HD_StreamType(HD_StreamType));
+        Element_Begin1("format_sync");
+        int32u format_sync;
+        Get_B4(format_sync,                                     "format_sync");
+        HD_StreamType=(int8u)format_sync; Param_Info1(AC3_HD_StreamType(HD_StreamType));
 
         if (HD_StreamType==0xBA)
         {
+            Element_Begin1("format_info");
             BS_Begin();
-            Get_S1 ( 4, HD_SamplingRate1,                       "Sampling rate"); Param_Info2(AC3_HD_SamplingRate(HD_SamplingRate1), " Hz");
-            Skip_S1( 8,                                         "Unknown");
-            Get_S1 ( 5, HD_Channels1,                           "Channels (1st substream)"); Param_Info1(AC3_TrueHD_Channels(HD_Channels1)); Param_Info1(Ztring().From_Local(AC3_TrueHD_Channels_Positions(HD_Channels1)));
-            Skip_S1( 2,                                         "Unknown");
-            Get_S2 (13, HD_Channels2,                           "Channels (2nd substream)"); Param_Info1(AC3_TrueHD_Channels(HD_Channels2)); Param_Info1(Ztring().From_Local(AC3_TrueHD_Channels_Positions(HD_Channels2)));
+            Get_S1 ( 4, HD_SamplingRate1,                       "audio_sampling_frequency"); Param_Info2(AC3_HD_SamplingRate(HD_SamplingRate1), " Hz");
+            Skip_SB(                                            "6ch_multichannel_type");
+            Skip_SB(                                            "8ch_multichannel_typ");
+            Skip_S1( 2,                                         "reserved");
+            Skip_S1( 2,                                         "2ch_presentation_channel_modifier");
+            Skip_S1( 2,                                         "6ch_presentation_channel_modifier");
+            Get_S1 ( 5, HD_Channels1,                           "6ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels1)); Param_Info1(Ztring().From_Local(AC3_TrueHD_Channels_Positions(HD_Channels1)));
+            Skip_S1( 2,                                         "8ch_presentation_channel_modifier");
+            Get_S2 (13, HD_Channels2,                           "8ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels2)); Param_Info1(Ztring().From_Local(AC3_TrueHD_Channels_Positions(HD_Channels2)));
             BS_End();
             HD_Resolution2=HD_Resolution1=24; //Not sure
             HD_SamplingRate2=HD_SamplingRate1;
+            Element_End0();
         }
         else if (HD_StreamType==0xBB)
         {
@@ -4083,47 +4087,64 @@ void File_Ac3::HD()
             return;
         }
 
-        Skip_B6(                                                "Unknown");
+        Skip_B2(                                                "signature");
+        Skip_B2(                                                "flags");
+        Skip_B2(                                                "reserved");
         BS_Begin();
-        Get_SB (    HD_IsVBR,                                   "Is VBR");
-        Get_S2 (15, HD_BitRate_Max,                             "Maximum bitrate"); Param_Info2((HD_BitRate_Max*(AC3_HD_SamplingRate(HD_SamplingRate2)?AC3_HD_SamplingRate(HD_SamplingRate2):AC3_HD_SamplingRate(HD_SamplingRate1))+8)>>4, " bps");
-        Get_S1 ( 4, HD_SubStreams_Count,                        "SubStreams_Count");
-        Skip_S1( 4,                                             "Unknown");
-        BS_End();
-        Skip_B1(                                                "Unknown");
-        Skip_B1(                                                "Unknown");
-        Skip_B1(                                                "Unknown");
-        Skip_B1(                                                "Unknown");
-        Skip_B1(                                                "Unknown");
-        Skip_B1(                                                "Unknown");
-        Skip_B1(                                                "Unknown");
-        Skip_B1(                                                "Unknown");
-        BS_Begin();
-        Skip_S1( 7,                                             "Unknown");
-        bool HasExtend;
-        Get_SB (    HasExtend,                                  "Has Extend");
-        BS_End();
-        if (HasExtend)
+        Get_SB (    HD_IsVBR,                                   "variable_rate");
+        Get_S2 (15, HD_BitRate_Max,                             "peak_data_rate"); Param_Info2((HD_BitRate_Max*(AC3_HD_SamplingRate(HD_SamplingRate2)?AC3_HD_SamplingRate(HD_SamplingRate2):AC3_HD_SamplingRate(HD_SamplingRate1))+8)>>4, " bps");
+        Get_S1 ( 4, HD_SubStreams_Count,                        "substreams");
+        Skip_S1( 2,                                             "reserved");
+        Skip_S1( 2,                                             "extended_substream_info");
+        if (HD_StreamType==0xBA)
         {
-            unsigned char Extend = 0;
-            unsigned char Unknown = 0;
-            bool HasContent = false;
-            BS_Begin();
-            Get_S1( 4, Extend,                                  "Extend Header");
-            Get_S1( 4, Unknown,                                 "Unknown");
-            if (Unknown)
-                HasContent = true;
+            Element_Begin1("substream_info");
+                Get_SB (    HD_HasAtmos,                        "16-channel presentation is present");
+                Skip_S1(3,                                      "8-ch presentation");
+                Skip_S1(2,                                      "6-ch presentation");
+                Skip_S1(2,                                      "reserved");
+            Element_End0();
             BS_End();
-            for (Extend = (Extend * 2) + 1; Extend > 0; Extend--)
-            {
-                Get_B1(Unknown,                                 "Unknown");
-                if (Unknown)
-                    HasContent = true;
-            }
-            if (HasContent)
-                HD_HasAtmos=true; //Currently only Atmos is known as having data here
+            Element_Begin1("channel_meaning");
+                Skip_B1(                                        "Unknown");
+                Skip_B1(                                        "Unknown");
+                Skip_B1(                                        "Unknown");
+                Skip_B1(                                        "Unknown");
+                Skip_B1(                                        "Unknown");
+                Skip_B1(                                        "Unknown");
+                Skip_B1(                                        "Unknown");
+                BS_Begin();
+                Skip_S1( 7,                                     "Unknown");
+                bool HasExtend;
+                Get_SB (    HasExtend,                          "extra_channel_meaning_present");
+                BS_End();
+                if (HasExtend)
+                {
+                    unsigned char Extend = 0;
+                    unsigned char Unknown = 0;
+                    bool HasContent = false;
+                    BS_Begin();
+                    Get_S1( 4, Extend,                          "extra_channel_meaning_length");
+                    size_t After=(((size_t)Extend)+1)*16-4;
+                    if (After>=Data_BS_Remain())
+                        After=0;
+                    else
+                        After=Data_BS_Remain()-After;
+                    if (HD_HasAtmos)
+                    {
+                        Element_Begin1("16ch_channel_meaning");
+                        Skip_S1(5,                              "16ch_dialogue_norm");
+                        Skip_S1(6,                              "16ch_mix_level");
+                        Get_S1 (5, num_dynamic_objects,         "16ch_channel_count");
+                        num_dynamic_objects++;
+                        program_assignment();
+                        Element_End0();
+                    }
+                    if (Data_BS_Remain()>After)
+                        Skip_BS(Data_BS_Remain()-After,         "Unknown");
+                }
+            Element_End0();
         }
-
         Element_End0();
 
         FILLING_BEGIN();
