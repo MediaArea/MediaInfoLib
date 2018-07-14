@@ -92,7 +92,7 @@ MIDI;;;A;Riff;RIFF Musical Instrument Digital Interface;midi mid kar;audio/midi;
 Module;;;A;Module;;mod;;;
 Monkey's Audio;;;A;Ape;;ape mac;;http://www.monkeysaudio.com/;Lossless
 MPEG Audio;;;A;Mpega;;m1a mpa mpa1 mp1 m2a mpa2 mp2 mp3;audio/mpeg;;Lossy
-OpenMG;;;A;OpenMG;;oma omg aa3 at3;;;Lossy
+OpenMG;;;A;OpenMG;;oma omg aa3 at3 at9;;https://en.wikipedia.org/wiki/Adaptive_Transform_Acoustic_Coding;Lossy
 Musepack SV7;;;A;Mpc;;mpc;;http://www.musepack.net;Lossy
 Musepack SV8;;;A;MpcSv8;;mp+;;http://www.musepack.net;Lossy
 QCELP;;;A;;;;audio/QCELP;;
