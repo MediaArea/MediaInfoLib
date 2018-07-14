@@ -2660,6 +2660,7 @@ void MediaInfo_Config_CodecID_Audio_Riff (InfoMap &Info)
     "178;ADPCM;Knowledge Adventure, Inc.;;;\n"
     "180;AAC;Fraunhofer IIS;;;\n"
     "190;DTS;;Digital Theater Systems;;\n"
+    "19D;FLAC;;\n"
     "200;ADPCM;Creative Labs;;;\n"
     "202;Fast Speech 8;Creative Labs\n"
     "203;Fast Speech 10;Creative Labs\n"
