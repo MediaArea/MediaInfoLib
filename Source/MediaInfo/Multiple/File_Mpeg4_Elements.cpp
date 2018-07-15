@@ -6737,7 +6737,7 @@ void File_Mpeg4::moov_trak_tkhd()
     Get_DATE1904_DEPENDOFVERSION(Date_Modified,                 "Modification time");
     Get_B4 (moov_trak_tkhd_TrackID,                             "Track ID"); Element_Info1(moov_trak_tkhd_TrackID);
     Skip_B4(                                                    "Reserved");
-    Get_B_DEPENDOFVERSION(Duration,                             "Duration"); if (moov_mvhd_TimeScale) {Param_Info2(Duration*1000/moov_mvhd_TimeScale, " ms"); Element_Info2(Duration*1000/moov_mvhd_TimeScale, " ms");}
+    Get_B_DEPENDOFVERSION(Duration,                             "Duration"); if (moov_mvhd_TimeScale && Duration!=((Version==0)?(int32u)-1:(int64u)-1)) {Param_Info2(Duration*1000/moov_mvhd_TimeScale, " ms"); Element_Info2(Duration*1000/moov_mvhd_TimeScale, " ms");}
     Skip_B4(                                                    "Reserved");
     Skip_B4(                                                    "Reserved");
     Skip_B2(                                                    "Layer");
@@ -6769,7 +6769,7 @@ void File_Mpeg4::moov_trak_tkhd()
         }
         Streams[moov_trak_tkhd_TrackID].IsEnabled = Enabled;
         if (Alternate_Group) Fill(StreamKind_Last, StreamPos_Last, "AlternateGroup", Alternate_Group);
-        if (moov_mvhd_TimeScale)
+        if (moov_mvhd_TimeScale && Duration!=((Version==0)?(int32u)-1:(int64u)-1))
             Fill(StreamKind_Last, StreamPos_Last, "Duration", float64_int64s(((float64)Duration)*1000/moov_mvhd_TimeScale));
         Fill(StreamKind_Last, StreamPos_Last, "Encoded_Date", Date_Created);
         Fill(StreamKind_Last, StreamPos_Last, "Tagged_Date", Date_Modified);
