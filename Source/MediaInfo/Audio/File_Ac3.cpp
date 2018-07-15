@@ -1506,6 +1506,7 @@ void File_Ac3::Streams_Finish()
             FrameDuration=16; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
         else if (bsid_Max>0x0A && bsid_Max<=0x10)
             FrameDuration=((float64)32)/6;
+        }
         else
             FrameDuration=0;
         if (FrameDuration)
@@ -4432,7 +4433,8 @@ bool File_Ac3::FrameSynchPoint_Test()
         }
         if (Size>=6)
         {
-            if (Buffer_Offset+Size>Buffer_Size)
+            size_t Size_Total=Core_Size_Get();
+            if (Element_IsWaitingForMoreData())
                 return false; //Need more data
 
             Save_Buffer=Buffer;
@@ -4440,15 +4442,15 @@ bool File_Ac3::FrameSynchPoint_Test()
             Save_Buffer_Size=Buffer_Size;
 
             {
-                int8u* Buffer_Little=new int8u[Size];
-                for (size_t Pos=0; Pos+1<Size; Pos+=2)
+                int8u* Buffer_Little=new int8u[Size_Total];
+                for (size_t Pos=0; Pos+1<Size_Total; Pos+=2)
                 {
                     Buffer_Little[Pos+1]=Save_Buffer[Buffer_Offset+Pos  ];
                     Buffer_Little[Pos  ]=Save_Buffer[Buffer_Offset+Pos+1];
                 }
                 Buffer=Buffer_Little;
                 Buffer_Offset=0;
-                Buffer_Size=Size;
+                Buffer_Size=Size_Total;
 
                 Synched=CRC_Compute(Size);
 
@@ -4548,12 +4550,14 @@ bool File_Ac3::CRC_Compute(size_t Size)
 //---------------------------------------------------------------------------
 size_t File_Ac3::Core_Size_Get()
 {
+    bool IsLE=(Buffer[Buffer_Offset+0]==0x77);
+
     int16u Size=1;
-    bsid=(Buffer[(size_t)(Buffer_Offset+5)]&0xF8)>>3;
+    bsid=(Buffer[(size_t)(Buffer_Offset+5-IsLE)]&0xF8)>>3;
     if (bsid<=0x09)
     {
-        fscod     =(Buffer[(size_t)(Buffer_Offset+4)]&0xC0)>>6;
-        frmsizecod= Buffer[(size_t)(Buffer_Offset+4)]&0x3F;
+        fscod     =(Buffer[(size_t)(Buffer_Offset+4+IsLE)]&0xC0)>>6;
+        frmsizecod= Buffer[(size_t)(Buffer_Offset+4+IsLE)]&0x3F;
 
         //Filling
         fscods[fscod]++;
@@ -4562,8 +4566,8 @@ size_t File_Ac3::Core_Size_Get()
     }
     else if (bsid>0x0A && bsid<=0x10)
     {
-        int16u frmsiz    =((int16u)(Buffer[(size_t)(Buffer_Offset+2)]&0x07)<<8)
-                        | (         Buffer[(size_t)(Buffer_Offset+3)]         );
+        int16u frmsiz    =((int16u)(Buffer[(size_t)(Buffer_Offset+2+IsLE)]&0x07)<<8)
+                        | (         Buffer[(size_t)(Buffer_Offset+3-IsLE)]         );
 
         //Filling
         Size=2+frmsiz*2;
@@ -4577,27 +4581,27 @@ size_t File_Ac3::Core_Size_Get()
         {
             if (Buffer_Offset+Size+6>Buffer_Size)
             {
-                if (!IsSub && !Save_Buffer)
+                if (!IsSub && !Save_Buffer && File_Offset+Buffer_Offset+Size<File_Size)
                     Element_WaitForMoreData();
                 break;
             }
 
-            int8u bsid=Buffer[Buffer_Offset+Size+5]>>3;
+            int8u bsid=Buffer[Buffer_Offset+Size+5-IsLE]>>3;
             if (bsid<=0x09 || bsid>0x10)
                 break; //Not E-AC-3
 
-            int8u substreamid=(Buffer[Buffer_Offset+Size+2]>>3)&0x07;
+            int8u substreamid=(Buffer[Buffer_Offset+Size+2+IsLE]>>3)&0x07;
             if (substreamid!=substreams_Count_Independant)
                 break; //Problem
             if (substreamid!=substreams_Count_Dependant)
                 break; //Problem
 
-            int8u strmtyp = Buffer[Buffer_Offset + Size + 2] >> 6;
+            int8u strmtyp = Buffer[Buffer_Offset+Size+2+IsLE]>>6;
             if (substreamid==0 && strmtyp==0)
                 break; //Next block
 
-            int16u frmsiz =((int16u)(Buffer[(size_t)(Buffer_Offset+Size+2)]&0x07)<<8)
-                          | (         Buffer[(size_t)(Buffer_Offset+Size+3)]         );
+            int16u frmsiz =((int16u)(Buffer[(size_t)(Buffer_Offset+Size+2+IsLE)]&0x07)<<8)
+                          | (         Buffer[(size_t)(Buffer_Offset+Size+3-IsLE)]         );
 
             //Filling
             Size+=2+frmsiz*2;
