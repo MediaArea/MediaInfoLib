@@ -1505,7 +1505,9 @@ void File_Ac3::Streams_Finish()
         else if (bsid_Max<=0x09)
             FrameDuration=16; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
         else if (bsid_Max>0x0A && bsid_Max<=0x10)
-            FrameDuration=((float64)32)/6;
+        {
+            int8u numblks=numblkscod==3?6:numblkscod+1;
+            FrameDuration=((float64)32)/6*numblks;
         }
         else
             FrameDuration=0;
