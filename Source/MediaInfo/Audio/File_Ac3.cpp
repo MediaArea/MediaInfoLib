@@ -1291,8 +1291,6 @@ void File_Ac3::Streams_Fill()
         Fill(Stream_Audio, 0, Audio_SamplesPerFrame, SamplesPerFrame);
 
     // Commercial name
-    if (Retrieve(Stream_Audio, 0, Audio_Format)==__T("E-AC-3"))
-        Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "Dolby Digital");
     if (Retrieve(Stream_Audio, 0, Audio_Format)==__T("E-AC-3") || Retrieve(Stream_Audio, 0, Audio_Format_Profile).find(__T("E-AC-3"))==0)
     {
         if (HasJOC)
@@ -1300,6 +1298,9 @@ void File_Ac3::Streams_Fill()
         else
             Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "Dolby Digital Plus");
     }
+    else if (Retrieve(Stream_Audio, 0, Audio_Format)==__T("AC-3"))
+        Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "Dolby Digital");
+    Fill(Stream_General, 0, General_Format, Retrieve(Stream_Audio, 0, Audio_Format), true);
     Fill(Stream_General, 0, General_Format_Profile, Retrieve(Stream_Audio, 0, Audio_Format_Profile));
     Fill(Stream_General, 0, General_Format_Commercial_IfAny, Retrieve(Stream_Audio, 0, Audio_Format_Commercial_IfAny));
 }
