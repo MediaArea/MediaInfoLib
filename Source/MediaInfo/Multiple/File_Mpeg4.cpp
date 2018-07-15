@@ -2829,6 +2829,8 @@ void File_Mpeg4::TimeCode_Associate(int32u TrackID)
 //---------------------------------------------------------------------------
 void File_Mpeg4::AddCodecConfigurationBoxInfo()
 {
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+        return;
     Streams[moov_trak_tkhd_TrackID].CodecConfigurationBoxInfo.push_back((int32u)Element_Code);
 }
 
