@@ -1684,7 +1684,7 @@ void File__Analyze::Video_FrameRate_Rounding(size_t Pos, video Parameter)
     else if (FrameRate>29.940*2 && FrameRate<=29.985*2) FrameRate=29.970*2;
     else if (FrameRate>29.970*2 && FrameRate<=30.030*2) FrameRate=30.000*2;
 
-    if (FrameRate!=FrameRate_Sav)
+    if (std::fabs(FrameRate-FrameRate_Sav) > 0.01)
         Fill(Stream_Video, Pos, Parameter, FrameRate, 3, true);
 }
 
