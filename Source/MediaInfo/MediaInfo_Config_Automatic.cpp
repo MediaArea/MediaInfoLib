@@ -1208,7 +1208,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "MXF;;;M;Mxf;;mxf;application/mxf;\n"
     "NSV;;;M;Nsv;Nullsoft Streaming Video;nsv;;http://winamp.com\n"
     "NUT;;;M;Nut;;nut;\n"
-    "Ogg;;;M;Ogg;;ogg ogm opus;video/ogg;http://www.free-codecs.com/Ogg_DirectShow_Filters_download.htm\n"
+    "Ogg;;;M;Ogg;;oga ogg ogm ogv ogx opus spx;;https://en.wikipedia.org/wiki/Ogg\n"
     "PMP;;;M;Pmp;Playstation Portable;pmp;;\n"
     "PTX;;;M;Ptx;;ptx;;\n"
     "QuickTime;;;M;Mpeg4;Original Apple specifications;mov qt;video/quicktime;http://www.apple.com/quicktime/download/standalone.html\n"
