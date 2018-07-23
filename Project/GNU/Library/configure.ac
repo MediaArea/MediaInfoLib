@@ -50,8 +50,11 @@ AC_ARG_ENABLE(visibility,       AC_HELP_STRING([--enable-visibility],       [Ena
 AC_ARG_ENABLE(universal_binary, AC_HELP_STRING([--enable-universal_binary], [Create Mac PPC/i386 Universal binary]),      , enable_universal_binary=no)
 AC_ARG_ENABLE(arch-ppc,         AC_HELP_STRING([--enable-arch-ppc],         [Create Mac PPC architecture]),               , enable_arch_ppc=no)
 AC_ARG_ENABLE(arch-ppc64,       AC_HELP_STRING([--enable-arch-ppc64],       [Create Mac PPC64 architecture]),             , enable_arch_ppc64=no)
-AC_ARG_ENABLE(arch-i386,        AC_HELP_STRING([--enable-arch-i386],        [Create Mac i386 architecture]),              , enable_arch_i386=no)
-AC_ARG_ENABLE(arch-x86_64,      AC_HELP_STRING([--enable-arch-x86_64],      [Create Mac x86_64 architecture]),            , enable_arch_x86_64=no)
+AC_ARG_ENABLE(arch-i386,        AC_HELP_STRING([--enable-arch-i386],        [Create Mac/iPhone i386 architecture]),       , enable_arch_i386=no)
+AC_ARG_ENABLE(arch-x86_64,      AC_HELP_STRING([--enable-arch-x86_64],      [Create Mac/iPhone x86_64 architecture]),     , enable_arch_x86_64=no)
+AC_ARG_ENABLE(arch-armv7,       AC_HELP_STRING([--enable-arch-armv7],       [Create iPhone ARMv7 architecture]),          , enable_arch_armv7=no)
+AC_ARG_ENABLE(arch-armv7s,      AC_HELP_STRING([--enable-arch-armv7s],      [Create iPhone ARMv7s architecture]),         , enable_arch_armv7s=no)
+AC_ARG_ENABLE(arch-arm64,       AC_HELP_STRING([--enable-arch-arm64],       [Create iPhone ARM64 architecture]),          , enable_arch_arm64=no)
 AC_ARG_ENABLE(staticlibs,       AC_HELP_STRING([--enable-staticlibs],       [Use static libmediainfo and libzen]),        , enable_staticlibs=no)
 AC_ARG_ENABLE(minimize-size,    AC_HELP_STRING([--enable-minimize-size],    [Enable size optimisations]),                 MediaInfoMinimizeSize=$enableval, MediaInfoMinimizeSize=depend)
 AC_ARG_ENABLE(minimal,    		AC_HELP_STRING([--enable-minimal],    		[Enable minimal management (except parsers)]),MediaInfoMinimal=$enableval, MediaInfoMinimal=depend)
@@ -197,18 +200,20 @@ AC_ARG_ENABLE(y4m,     AC_HELP_STRING([--disable-y4m],     [Disable Video - YUV4
 dnl -------------------------------------------------------------------------
 dnl With
 dnl
-AC_ARG_WITH(macosx-sdk,         AC_HELP_STRING([--with-macosx-sdk],         [Force the Mac SDK]),                         , with_macosx_sdk=no)
-AC_ARG_WITH(macosx-version-min, AC_HELP_STRING([--with-macosx-version-min], [Force the Mac Version]),                     , with_macosx_version_min=no)
-AC_ARG_WITH(libz_static,        AC_HELP_STRING([--with-libz-static],        [Use static version of Zlib]),                , with_libz_static=no)
-AC_ARG_WITH(libcurl,            AC_HELP_STRING([--with-libcurl],            [Use libcurl (specific directory)]),          , with_libcurl=no)
-AC_ARG_WITH(libmms,             AC_HELP_STRING([--with-libmms],             [Use libmms (specific directory)]),           , with_libmms=no)
-AC_ARG_WITH(libaes,             AC_HELP_STRING([--with-libaes],             [Use libaes (system)]),                       , with_libaes=depend)
-AC_ARG_WITH(libmd5,             AC_HELP_STRING([--with-libmd5],             [Use libmd5 (system)]),                       , with_libmd5=depend)
-AC_ARG_WITH(libsha1,             AC_HELP_STRING([--with-libsha1],             [Use libsha1 (system)]),                       , with_libsha1=depend)
-AC_ARG_WITH(libsha2,             AC_HELP_STRING([--with-libsha2],             [Use libsha2 (system)]),                       , with_libsha2=depend)
-AC_ARG_WITH(libhmac,             AC_HELP_STRING([--with-libhmac],             [Use libhmac (system)]),                       , with_libhmac=depend)
-AC_ARG_WITH(libtinyxml2,        AC_HELP_STRING([--with-libtinyxml2],        [Use libtinyxml2 (system)]),                  , with_libtinyxml2=depend)
-AC_ARG_WITH(libmediainfo-name,  AC_HELP_STRING([--with-libmediainfo-name],  [Force libmediainfo filename]),               , with_libmediainfo_name=mediainfo)
+AC_ARG_WITH(macosx-sdk,           AC_HELP_STRING([--with-macosx-sdk],           [Force the Mac SDK]),                         , with_macosx_sdk=no)
+AC_ARG_WITH(macosx-version-min,   AC_HELP_STRING([--with-macosx-version-min],   [Force the Mac Version]),                     , with_macosx_version_min=no)
+AC_ARG_WITH(iphoneos-sdk,         AC_HELP_STRING([--with-iphoneos-sdk],         [Force the iPhone SDK]),                      , with_iphoneos_sdk=no)
+AC_ARG_WITH(iphoneos-version-min, AC_HELP_STRING([--with-iphoneos-version-min], [Force the iPhone Version]),                  , with_iphoneos_version_min=no)
+AC_ARG_WITH(libz_static,          AC_HELP_STRING([--with-libz-static],          [Use static version of Zlib]),                , with_libz_static=no)
+AC_ARG_WITH(libcurl,              AC_HELP_STRING([--with-libcurl],              [Use libcurl (specific directory)]),          , with_libcurl=no)
+AC_ARG_WITH(libmms,               AC_HELP_STRING([--with-libmms],               [Use libmms (specific directory)]),           , with_libmms=no)
+AC_ARG_WITH(libaes,               AC_HELP_STRING([--with-libaes],               [Use libaes (system)]),                       , with_libaes=depend)
+AC_ARG_WITH(libmd5,               AC_HELP_STRING([--with-libmd5],               [Use libmd5 (system)]),                       , with_libmd5=depend)
+AC_ARG_WITH(libsha1,              AC_HELP_STRING([--with-libsha1],              [Use libsha1 (system)]),                      , with_libsha1=depend)
+AC_ARG_WITH(libsha2,              AC_HELP_STRING([--with-libsha2],              [Use libsha2 (system)]),                      , with_libsha2=depend)
+AC_ARG_WITH(libhmac,              AC_HELP_STRING([--with-libhmac],              [Use libhmac (system)]),                      , with_libhmac=depend)
+AC_ARG_WITH(libtinyxml2,          AC_HELP_STRING([--with-libtinyxml2],          [Use libtinyxml2 (system)]),                  , with_libtinyxml2=depend)
+AC_ARG_WITH(libmediainfo-name,    AC_HELP_STRING([--with-libmediainfo-name],    [Force libmediainfo filename]),               , with_libmediainfo_name=mediainfo)
 
 dnl -------------------------------------------------------------------------
 dnl MediaInfo *
@@ -771,6 +776,21 @@ if test "$enable_arch_x86_64" = "yes"; then
 	CFLAGS="$CFLAGS -arch x86_64"
 	LDFLAGS="$LDFLAGS -arch x86_64"
 fi
+if test "$enable_arch_armv7" = "yes"; then
+	CXXFLAGS="$CXXFLAGS -arch armv7"
+	CFLAGS="$CFLAGS -arch armv7"
+	LDFLAGS="$LDFLAGS -arch armv7"
+fi
+if test "$enable_arch_armv7s" = "yes"; then
+	CXXFLAGS="$CXXFLAGS -arch armv7s"
+	CFLAGS="$CFLAGS -arch armv7s"
+	LDFLAGS="$LDFLAGS -arch armv7s"
+fi
+if test "$enable_arch_arm64" = "yes"; then
+	CXXFLAGS="$CXXFLAGS -arch arm64"
+	CFLAGS="$CFLAGS -arch arm64"
+	LDFLAGS="$LDFLAGS -arch arm64"
+fi
 if test "$with_macosx_sdk" = "yes" ; then
 	CXXFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk $CXXFLAGS"
 	CFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk $CFLAGS"
@@ -784,6 +804,20 @@ if test "x$with_macosx_version_min" != xno ; then
 	CXXFLAGS="-mmacosx-version-min=$with_macosx_version_min $CXXFLAGS"
 	CFLAGS="-mmacosx-version-min=$with_macosx_version_min $CFLAGS"
 	LDFLAGS="-mmacosx-version-min=$with_macosx_version_min $LDFLAGS"
+fi
+if test "$with_iphoneos_sdk" = "yes" ; then
+	CXXFLAGS="-isysroot /Developer/SDKs/iPhoneOS.sdk $CXXFLAGS"
+	CFLAGS="-isysroot /Developer/SDKs/iPhoneOS.sdk $CFLAGS"
+	LDFLAGS="-isysroot /Developer/SDKs/iPhoneOS.sdk $LDFLAGS"
+elif test "x$with_iphoneos_sdk" != xno ; then
+	CXXFLAGS="-isysroot $with_iphoneos_sdk $CXXFLAGS"
+	CFLAGS="-isysroot $with_iphoneos_sdk $CFLAGS"
+	LDFLAGS="-isysroot $with_iphoneos_sdk $LDFLAGS"
+fi
+if test "x$with_iphoneos_version_min" != xno ; then
+	CXXFLAGS="-miphoneos-version-min=$with_iphoneos_version_min $CXXFLAGS"
+	CFLAGS="-miphoneos-version-min=$with_iphoneos_version_min $CFLAGS"
+	LDFLAGS="-miphoneos-version-min=$with_iphoneos_version_min $LDFLAGS"
 fi
 
 dnl #########################################################################
