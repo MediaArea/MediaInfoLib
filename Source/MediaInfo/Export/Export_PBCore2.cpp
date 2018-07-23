@@ -457,6 +457,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Other_Language_List") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("OverallBitRate") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("OverallBitRate_Mode") &&
+            MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Recorded_Date") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("StreamCount") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("StreamKind") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("StreamKindID") &&
