@@ -309,7 +309,8 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
         Ztring dateIssued=MI.Get(Stream_General, 0, General_Recorded_Date);
         dateIssued.FindAndReplace(__T("UTC"), __T(""));
         dateIssued.FindAndReplace(__T(" "), __T("T"));
-        dateIssued+=__T('Z');
+        if (dateIssued.size()>=13)
+            dateIssued+=__T('Z');
         Node_Main.Add_Child("instantiationDate", dateIssued, "dateType", "recorded");
     }
 
@@ -319,7 +320,8 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
         Ztring dateModified=MI.Get(Stream_General, 0, General_File_Modified_Date);
         dateModified.FindAndReplace(__T("UTC "), __T(""));
         dateModified.FindAndReplace(__T(" "), __T("T"));
-        dateModified+=__T('Z');
+        if (dateModified.size()>=13)
+            dateModified+=__T('Z');
         Node_Main.Add_Child("instantiationDate", dateModified, "dateType", "file modification");
     }
 
@@ -329,7 +331,8 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
         Ztring dateEncoded=MI.Get(Stream_General, 0, General_Encoded_Date);
         dateEncoded.FindAndReplace(__T("UTC "), __T(""));
         dateEncoded.FindAndReplace(__T(" "), __T("T"));
-        dateEncoded+=__T('Z');
+        if (dateEncoded.size()>=13)
+            dateEncoded+=__T('Z');
         Node_Main.Add_Child("instantiationDate", dateEncoded, "dateType", "encoded");
     }
 
@@ -339,7 +342,8 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
         Ztring dateTagged=MI.Get(Stream_General, 0, General_Tagged_Date);
         dateTagged.FindAndReplace(__T("UTC "), __T(""));
         dateTagged.FindAndReplace(__T(" "), __T("T"));
-        dateTagged+=__T('Z');
+        if (dateTagged.size()>=13)
+            dateTagged+=__T('Z');
         Node_Main.Add_Child("instantiationDate", dateTagged, "dateType", "tagged");
     }
 
@@ -453,6 +457,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Other_Language_List") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("OverallBitRate") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("OverallBitRate_Mode") &&
+            MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Recorded_Date") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("StreamCount") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("StreamKind") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("StreamKindID") &&
