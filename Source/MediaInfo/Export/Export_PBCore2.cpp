@@ -228,6 +228,8 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("BitRate") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("BitRate_Mode") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Bits-(Pixel*Frame)") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Channel(s)") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ChannelLayout") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ChannelPositions") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec/CC") &&
@@ -428,6 +430,26 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     //formatTracks
     Node_Main.Add_Child("instantiationTracks", Ztring::ToZtring(MI.Count_Get(Stream_Video)+
         MI.Count_Get(Stream_Audio)+ MI.Count_Get(Stream_Image)+ MI.Count_Get(Stream_Text)));
+
+    //instantiationChannelConfiguration
+    Ztring channelConfiguration;
+    for (size_t StreamKind=Stream_Audio; StreamKind<Stream_Max; StreamKind++)
+        for (size_t StreamPos=0; StreamPos<MI.Count_Get((stream_t)StreamKind); StreamPos++)
+            if (MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_) == __T("1"))
+            {
+                channelConfiguration+=__T(", Track ") + Ztring(MI.Get(Stream_Audio, StreamPos, Audio_ID)) + __T(": ") + Ztring(MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_)) + __T(" channel");
+                if (!MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout).empty())
+                    channelConfiguration+=__T(" (") + Ztring(MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout)) + __T(")");
+            }
+            else if (!MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_).empty())
+            {
+                channelConfiguration+=__T(", Track ") + Ztring(MI.Get(Stream_Audio, StreamPos, Audio_ID)) + __T(": ") + Ztring(MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_)) + __T(" channels");
+                if (!MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout).empty())
+                    channelConfiguration+=__T(" (") + Ztring(MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout)) + __T(")");
+            }
+    channelConfiguration=channelConfiguration.erase(0,2);
+    if (!channelConfiguration.empty())
+        Node_Main.Add_Child("instantiationChannelConfiguration", channelConfiguration);
 
     //Streams
     for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
