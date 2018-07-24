@@ -146,8 +146,16 @@ Ztring ToReturn;
         
         Child->Add_Attribute_IfNotEmpty(MI, StreamKind, StreamPos, "Format_Version", "version");
 
+        Ztring encoding_annotation;
         if (!MI.Get(StreamKind, StreamPos, __T("Format_Profile")).empty())
-            Child->Add_Attribute("annotation", __T("profile:")+MI.Get(StreamKind, StreamPos, __T("Format_Profile")));
+            encoding_annotation+=__T(" profile:")+MI.Get(StreamKind, StreamPos, __T("Format_Profile"));
+        if (!MI.Get(StreamKind, StreamPos, __T("Format_Settings_Endianness")).empty())
+            encoding_annotation+=__T(" endianness:")+MI.Get(StreamKind, StreamPos, __T("Format_Settings_Endianness"));
+        if (!MI.Get(StreamKind, StreamPos, __T("Format_Settings_Sign")).empty())
+            encoding_annotation+=__T(" signedness:")+MI.Get(StreamKind, StreamPos, __T("Format_Settings_Sign"));
+        encoding_annotation=encoding_annotation.erase(0,1);
+        if (!encoding_annotation.empty())
+            Child->Add_Attribute("annotation", encoding_annotation);
     }
 
     //essenceTrackDataRate
@@ -260,6 +268,8 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format/Url") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Commercial") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Profile") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Settings_Endianness") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Settings_Sign") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Version") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("FrameRate") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("FrameRate_Mode") &&
