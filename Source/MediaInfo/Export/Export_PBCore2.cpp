@@ -248,6 +248,8 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Language") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("MenuID") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Resolution") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Sampled_Height") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Sampled_Width") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("SamplingRate") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Standard") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("StreamCount") &&
