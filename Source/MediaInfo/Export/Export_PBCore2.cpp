@@ -306,6 +306,9 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     // get final cut uuids as instantiation identifiers
     Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, "Media/UUID", "instantiationIdentifier", "source", std::string("com.apple.finalcutstudio.media.uuid"));
 
+    // get broadcast wave umids as instantiation identifiers
+    Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, "UMID", "instantiationIdentifier", "source", std::string("UMID"));
+
     //instantiationDates
     //dateIssued
     if (!MI.Get(Stream_General, 0, General_Recorded_Date).empty())
@@ -473,6 +476,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Text_Format_List") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Text_Format_WithHint_List") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Text_Language_List") &&
+            MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("UMID") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("UniqueID") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("VideoCount") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Video_Codec_List") &&
