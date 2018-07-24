@@ -188,9 +188,9 @@ Ztring ToReturn;
         else if (!MI.Get(Stream_Video, StreamPos, Video_Delay_Original_String3).empty())
             Node_EssenceTrack->Add_Child_IfNotEmpty(MI, Stream_Video, StreamPos, Video_Delay_Original_String3, "essenceTrackTimeStart", "annotation", std::string("from encoding"));
         else if (!MI.Get(Stream_Video, StreamPos, Video_Delay_String4).empty())
-            Node_EssenceTrack->Add_Child_IfNotEmpty(MI, Stream_Video, StreamPos, Video_Delay_Original_String4, "essenceTrackTimeStart", "annotation", std::string("from container"));
+            Node_EssenceTrack->Add_Child_IfNotEmpty(MI, Stream_Video, StreamPos, Video_Delay_String4, "essenceTrackTimeStart", "annotation", Video_Delay_Source);
         else if (!MI.Get(Stream_Video, StreamPos, Video_Delay_String3).empty())
-            Node_EssenceTrack->Add_Child_IfNotEmpty(MI, Stream_Video, StreamPos, Video_Delay_Original_String3, "essenceTrackTimeStart", "annotation", std::string("from container"));
+            Node_EssenceTrack->Add_Child_IfNotEmpty(MI, Stream_Video, StreamPos, Video_Delay_String3, "essenceTrackTimeStart", "annotation", Video_Delay_Source);
     }
 
     //essenceTrackDuration
