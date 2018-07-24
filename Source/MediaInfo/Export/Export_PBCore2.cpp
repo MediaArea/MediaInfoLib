@@ -126,6 +126,7 @@ Ztring ToReturn;
     //essenceTrackIdentifier
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "ID", "essenceTrackIdentifier", "source", std::string("ID"));
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "UniqueID", "essenceTrackIdentifier", "source", std::string("UniqueID"));
+    Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "MenuID", "essenceTrackIdentifier", "source", std::string("MenuID"));
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "StreamKindID", "essenceTrackIdentifier", "source", std::string("StreamKindID (MediaInfo)"));
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "StreamOrder", "essenceTrackIdentifier", "source", std::string("StreamOrder (MediaInfo)"));
 
@@ -245,6 +246,7 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ID") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("InternetMediaType") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Language") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("MenuID") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Resolution") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("SamplingRate") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Standard") &&
