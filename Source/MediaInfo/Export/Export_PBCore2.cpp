@@ -126,6 +126,7 @@ Ztring ToReturn;
     //essenceTrackIdentifier
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "ID", "essenceTrackIdentifier", "source", std::string("ID"));
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "UniqueID", "essenceTrackIdentifier", "source", std::string("UniqueID"));
+    Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "MenuID", "essenceTrackIdentifier", "source", std::string("MenuID"));
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "StreamKindID", "essenceTrackIdentifier", "source", std::string("StreamKindID (MediaInfo)"));
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "StreamOrder", "essenceTrackIdentifier", "source", std::string("StreamOrder (MediaInfo)"));
 
@@ -145,8 +146,16 @@ Ztring ToReturn;
         
         Child->Add_Attribute_IfNotEmpty(MI, StreamKind, StreamPos, "Format_Version", "version");
 
+        Ztring encoding_annotation;
         if (!MI.Get(StreamKind, StreamPos, __T("Format_Profile")).empty())
-            Child->Add_Attribute("annotation", __T("profile:")+MI.Get(StreamKind, StreamPos, __T("Format_Profile")));
+            encoding_annotation+=__T(" profile:")+MI.Get(StreamKind, StreamPos, __T("Format_Profile"));
+        if (!MI.Get(StreamKind, StreamPos, __T("Format_Settings_Endianness")).empty())
+            encoding_annotation+=__T(" endianness:")+MI.Get(StreamKind, StreamPos, __T("Format_Settings_Endianness"));
+        if (!MI.Get(StreamKind, StreamPos, __T("Format_Settings_Sign")).empty())
+            encoding_annotation+=__T(" signedness:")+MI.Get(StreamKind, StreamPos, __T("Format_Settings_Sign"));
+        encoding_annotation=encoding_annotation.erase(0,1);
+        if (!encoding_annotation.empty())
+            Child->Add_Attribute("annotation", encoding_annotation);
     }
 
     //essenceTrackDataRate
@@ -187,9 +196,26 @@ Ztring ToReturn;
         else if (!MI.Get(Stream_Video, StreamPos, Video_Delay_Original_String3).empty())
             Node_EssenceTrack->Add_Child_IfNotEmpty(MI, Stream_Video, StreamPos, Video_Delay_Original_String3, "essenceTrackTimeStart", "annotation", std::string("from encoding"));
         else if (!MI.Get(Stream_Video, StreamPos, Video_Delay_String4).empty())
-            Node_EssenceTrack->Add_Child_IfNotEmpty(MI, Stream_Video, StreamPos, Video_Delay_Original_String4, "essenceTrackTimeStart", "annotation", std::string("from container"));
+            Node_EssenceTrack->Add_Child_IfNotEmpty(MI, Stream_Video, StreamPos, Video_Delay_String4, "essenceTrackTimeStart", "annotation", Video_Delay_Source);
         else if (!MI.Get(Stream_Video, StreamPos, Video_Delay_String3).empty())
-            Node_EssenceTrack->Add_Child_IfNotEmpty(MI, Stream_Video, StreamPos, Video_Delay_Original_String3, "essenceTrackTimeStart", "annotation", std::string("from container"));
+            Node_EssenceTrack->Add_Child_IfNotEmpty(MI, Stream_Video, StreamPos, Video_Delay_String3, "essenceTrackTimeStart", "annotation", Video_Delay_Source);
+    }
+    else if (StreamKind==Stream_Audio)
+    {
+        if (!MI.Get(Stream_Audio, StreamPos, Audio_Delay_Original_String4).empty())
+            Node_EssenceTrack->Add_Child_IfNotEmpty(MI, Stream_Audio, StreamPos, Audio_Delay_Original_String4, "essenceTrackTimeStart", "annotation", std::string("from encoding"));
+        else if (!MI.Get(Stream_Audio, StreamPos, Audio_Delay_Original_String3).empty())
+            Node_EssenceTrack->Add_Child_IfNotEmpty(MI, Stream_Audio, StreamPos, Audio_Delay_Original_String3, "essenceTrackTimeStart", "annotation", std::string("from encoding"));
+        else if (!MI.Get(Stream_Audio, StreamPos, Audio_Delay_String4).empty())
+        {
+            Node* Child=Node_EssenceTrack->Add_Child("essenceTrackTimeStart", MI.Get(Stream_Audio, StreamPos, Audio_Delay_String4));
+            Child->Add_Attribute_IfNotEmpty(MI, Stream_Audio, StreamPos, Audio_Delay_Source, "annotation");
+        }
+        else if (!MI.Get(Stream_Audio, StreamPos, Audio_Delay_String3).empty())
+        {
+            Node* Child=Node_EssenceTrack->Add_Child("essenceTrackTimeStart", MI.Get(Stream_Audio, StreamPos, Audio_Delay_String3));
+            Child->Add_Attribute_IfNotEmpty(MI, Stream_Audio, StreamPos, Audio_Delay_Source, "annotation");
+        }
     }
 
     //essenceTrackDuration
@@ -210,6 +236,8 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("BitRate") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("BitRate_Mode") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Bits-(Pixel*Frame)") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Channel(s)") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ChannelLayout") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ChannelPositions") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec/CC") &&
@@ -228,6 +256,8 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec_Settings_Sign") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Colorimetry") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Count") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Delay") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Delay_Source") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("DisplayAspectRatio") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Duration") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Encoded_Date") &&
@@ -238,6 +268,8 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format/Url") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Commercial") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Profile") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Settings_Endianness") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Settings_Sign") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Version") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("FrameRate") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("FrameRate_Mode") &&
@@ -245,7 +277,10 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ID") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("InternetMediaType") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Language") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("MenuID") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Resolution") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Sampled_Height") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Sampled_Width") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("SamplingRate") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Standard") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("StreamCount") &&
@@ -301,6 +336,9 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
 
     // get final cut uuids as instantiation identifiers
     Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, "Media/UUID", "instantiationIdentifier", "source", std::string("com.apple.finalcutstudio.media.uuid"));
+
+    // get broadcast wave umids as instantiation identifiers
+    Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, "UMID", "instantiationIdentifier", "source", std::string("UMID"));
 
     //instantiationDates
     //dateIssued
@@ -403,6 +441,26 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     Node_Main.Add_Child("instantiationTracks", Ztring::ToZtring(MI.Count_Get(Stream_Video)+
         MI.Count_Get(Stream_Audio)+ MI.Count_Get(Stream_Image)+ MI.Count_Get(Stream_Text)));
 
+    //instantiationChannelConfiguration
+    Ztring channelConfiguration;
+    for (size_t StreamKind=Stream_Audio; StreamKind<Stream_Max; StreamKind++)
+        for (size_t StreamPos=0; StreamPos<MI.Count_Get((stream_t)StreamKind); StreamPos++)
+            if (MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_) == __T("1"))
+            {
+                channelConfiguration+=__T(", Track ") + Ztring(MI.Get(Stream_Audio, StreamPos, Audio_ID)) + __T(": ") + Ztring(MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_)) + __T(" channel");
+                if (!MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout).empty())
+                    channelConfiguration+=__T(" (") + Ztring(MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout)) + __T(")");
+            }
+            else if (!MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_).empty())
+            {
+                channelConfiguration+=__T(", Track ") + Ztring(MI.Get(Stream_Audio, StreamPos, Audio_ID)) + __T(": ") + Ztring(MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_)) + __T(" channels");
+                if (!MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout).empty())
+                    channelConfiguration+=__T(" (") + Ztring(MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout)) + __T(")");
+            }
+    channelConfiguration=channelConfiguration.erase(0,2);
+    if (!channelConfiguration.empty())
+        Node_Main.Add_Child("instantiationChannelConfiguration", channelConfiguration);
+
     //Streams
     for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
         for (size_t StreamPos=0; StreamPos<MI.Count_Get((stream_t)StreamKind); StreamPos++)
@@ -469,6 +527,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Text_Format_List") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Text_Format_WithHint_List") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Text_Language_List") &&
+            MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("UMID") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("UniqueID") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("VideoCount") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Video_Codec_List") &&
