@@ -105,6 +105,7 @@ Shorten;;;A;;;shn;;http://etree.org/shnutils/shorten/;Lossless
 SLS;;;A;;MPEG-4 Scalable Lossless Coding;sls;;http://www.chiariglione.org/mpeg/technologies/mp04-sls/index.htm;Lossless
 S/PDIF;;;A;Spdif;Sony/Philips Digital Interface;spdif;;https://en.wikipedia.org/wiki/S/PDIF;
 Speex;;;A;;;spx;audio/speex;http://www.speex.org/;Lossy
+USAC;;;A;;Unified Speech and Audio Coding;;audio/usac;http://en.wikipedia.org/wiki/Unified_Speech_and_Audio_Coding;Lossy
 Opus;;;A;;;;audio/opus;http://opus-codec.org/;Lossy
 TAK;;;A;;;tak;;http://thbeck.de/Tak/Tak.html;Lossless
 TrueHD;;;A;Ac3;;mlp thd vr;;;Lossless
