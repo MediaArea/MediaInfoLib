@@ -548,7 +548,7 @@ void File_Mpeg4_Descriptors::Descriptor_04()
             case 0x20 : Fill(Stream_Video   , StreamPos_Last, Video_Format, "MPEG-4 Visual", Error, false, true); break;
             case 0x21 : Fill(Stream_Video   , StreamPos_Last, Video_Format, "AVC", Error, false, true); break;
             //case 0x22 Parameter Sets for AVC
-            case 0x40 : Fill(Stream_Audio   , StreamPos_Last, Audio_Format, "AAC", Error, false, true); break; //MPEG-4 AAC
+            case 0x40 : break; //MPEG-4 Audio (several formats are possible)
             case 0x60 : Fill(Stream_Video   , StreamPos_Last, Video_Format, "MPEG Video", Error, false, true); Fill(Stream_Video, StreamPos_Last, Video_Format_Profile, "Simple" , Error, false, true); Fill(Stream_Video, StreamPos_Last, Video_Format_Version, "Version 2", Error, false, true); break; //MPEG-2V Simple
             case 0x61 : Fill(Stream_Video   , StreamPos_Last, Video_Format, "MPEG Video", Error, false, true); Fill(Stream_Video, StreamPos_Last, Video_Format_Profile, "Main"   , Error, false, true); Fill(Stream_Video, StreamPos_Last, Video_Format_Version, "Version 2", Error, false, true); break; //MPEG-2V Main
             case 0x62 : Fill(Stream_Video   , StreamPos_Last, Video_Format, "MPEG Video", Error, false, true); Fill(Stream_Video, StreamPos_Last, Video_Format_Profile, "SNR"    , Error, false, true); Fill(Stream_Video, StreamPos_Last, Video_Format_Version, "Version 2", Error, false, true); break; //MPEG-2V SNR

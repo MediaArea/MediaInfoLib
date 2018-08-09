@@ -2592,6 +2592,20 @@ Ztring File_Mpeg4::Language_Get(int16u Language)
 }
 
 //---------------------------------------------------------------------------
+//Check if it is Qt or Mp4
+bool File_Mpeg4::IsQt()
+{
+    const Ztring& CodecID=Retrieve_Const(Stream_General, 0, General_CodecID);
+    if (CodecID.empty() || CodecID==__T("qt  "))
+        return true;
+    const Ztring& CodecID_Compatible=Retrieve_Const(Stream_General, 0, General_CodecID_Compatible);
+    for (size_t i=0; i<CodecID_Compatible.size(); i+=5)
+        if (CodecID_Compatible.substr(i, 4)==__T("qt  "))
+            return true;
+    return false;
+}
+
+//---------------------------------------------------------------------------
 //Get Metadata definition from 4CC
 File_Mpeg4::method File_Mpeg4::Metadata_Get(std::string &Parameter, int64u Meta)
 {

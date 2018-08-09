@@ -302,6 +302,7 @@ private :
     bool Element_Name_Get();
     bool Element_Size_Get();
     Ztring Language_Get(int16u Language);
+    bool IsQt();
     enum method
     {
         Method_None,
