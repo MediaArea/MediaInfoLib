@@ -392,6 +392,10 @@ void File__Analyze::Streams_Finish_StreamOnly()
 //---------------------------------------------------------------------------
 void File__Analyze::Streams_Finish_StreamOnly(stream_t StreamKind, size_t Pos)
 {
+    //Format
+    if (Retrieve_Const(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_Format)).empty())
+        Fill(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_Format), Retrieve_Const(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_CodecID)));
+
     //BitRate from Duration and StreamSize
     if (StreamKind!=Stream_General && StreamKind!=Stream_Other && StreamKind!=Stream_Menu && Retrieve(StreamKind, Pos, "BitRate").empty() && !Retrieve(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_StreamSize)).empty() && !Retrieve(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_Duration)).empty())
     {

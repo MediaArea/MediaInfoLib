@@ -2407,7 +2407,8 @@ void File__Analyze::CodecID_Fill(const Ztring &Value, stream_t StreamKind, size_
 
     Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_CodecID), Value);
     const Ztring &C1=MediaInfoLib::Config.CodecID_Get(StreamKind_CodecID, Format, Value, InfoCodecID_Format);
-    Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format), C1.empty()?Value:C1, true);
+    if (!C1.empty())
+        Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format), C1, true);
     Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_CodecID_Info), MediaInfoLib::Config.CodecID_Get(StreamKind_CodecID, Format, Value, InfoCodecID_Description), true);
     Fill(StreamKind, StreamPos, "CodecID/Hint", MediaInfoLib::Config.CodecID_Get(StreamKind_CodecID, Format, Value, InfoCodecID_Hint), true);
     Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_CodecID_Url), MediaInfoLib::Config.CodecID_Get(StreamKind_CodecID, Format, Value, InfoCodecID_Url), true);
