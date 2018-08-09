@@ -1283,6 +1283,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "SLS;;;A;;MPEG-4 Scalable Lossless Coding;sls;;http://www.chiariglione.org/mpeg/technologies/mp04-sls/index.htm;Lossless\n"
     "S/PDIF;;;A;Spdif;Sony/Philips Digital Interface;spdif;;https://en.wikipedia.org/wiki/S/PDIF\n"
     "Speex;;;A;;;spx;audio/speex;http://www.speex.org/;Lossy\n"
+    "USAC;;;A;;Unified Speech and Audio Coding;;audio/usac;http://en.wikipedia.org/wiki/Unified_Speech_and_Audio_Coding;Lossy\n"
     "Opus;;;A;;;;audio/opus;http://opus-codec.org/;Lossy\n"
     "TAK;;;A;;;tak;;http://thbeck.de/Tak/Tak.html;Lossless\n"
     "TrueHD;;;A;Ac3;;mlp thd vr;;;Lossless\n"

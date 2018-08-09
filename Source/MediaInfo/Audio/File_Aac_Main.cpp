@@ -90,6 +90,7 @@ static const char* Aac_Format(int8u ID)
         case   39 : return "ER AAC ELD";
         case   40 : return "SMR Simple";
         case   41 : return "SMR Main";
+        case   42 : return "USAC";
         default   : return "";
     }
 }
@@ -152,6 +153,7 @@ const char* Aac_audioObjectType(int8u audioObjectType)
         case   39 : return "ER AAC ELD";
         case   40 : return "SMR Simple";
         case   41 : return "SMR Main";
+        case   42 : return "USAC";
         default   : return "";
     }
 }
@@ -551,6 +553,10 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
         FillInfosHEAACv2(psData ? __T("Explicit") : __T("NBC")); // "Not Backward Compatible");
     else if (psData)
         Infos["Format_Settings_PS"]=__T("No (Explicit)");
+
+    //Commercial names
+    if (Infos["Format"]==__T("USAC"))
+        Infos["Format_Commercial_IfAny"]=__T("xHE-AAC");
 }
 
 //---------------------------------------------------------------------------
