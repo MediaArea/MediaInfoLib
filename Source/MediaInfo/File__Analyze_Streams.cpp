@@ -87,6 +87,9 @@ void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_Col
         else if (x[G]== 8500 && x[B]== 6550 && x[R]==35400 && x[3]==15635
               && y[G]==39850 && y[B]== 2300 && y[R]==14600 && y[3]==16450)
             MasteringDisplay_ColorPrimaries=Mpegv_colour_primaries(9); // BT.2020
+        else if (x[G]==13250 && x[B]== 7500 && x[R]==34000 && x[3]==15700
+              && y[G]==34500 && y[B]== 3000 && y[R]==16000 && y[3]==17550)
+            MasteringDisplay_ColorPrimaries=Mpegv_colour_primaries(11); // DCI P3
         else if (x[G]==13250 && x[B]== 7500 && x[R]==34000 && x[3]==15635
               && y[G]==34500 && y[B]== 3000 && y[R]==16000 && y[3]==16450)
             MasteringDisplay_ColorPrimaries=Mpegv_colour_primaries(12); // Display P3
