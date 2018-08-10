@@ -285,6 +285,7 @@ void MediaInfo_Config::Init()
     Quote=__T("\"");
     DecimalPoint=__T(".");
     ThousandsPoint=Ztring();
+    CarriageReturnReplace=__T(" / ");
     #if MEDIAINFO_EVENTS
         Event_CallBackFunction=NULL;
         Event_UserHandler=NULL;
@@ -725,6 +726,17 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     if (Option_Lower==__T("thousandspoint_get"))
     {
         return ThousandsPoint_Get();
+    }
+    if (Option_Lower==__T("carriagereturnreplace"))
+    {
+        if (Value.find_first_of(__T("\r\n"))!=string::npos)
+            return __T("\\r or \\n in CarriageReturnReplace is not supported");
+        CarriageReturnReplace_Set(Value);
+        return Ztring();
+    }
+    if (Option_Lower==__T("carriagereturnreplace_get"))
+    {
+        return CarriageReturnReplace_Get();
     }
     if (Option_Lower==__T("streammax"))
     {
@@ -1764,6 +1776,19 @@ Ztring MediaInfo_Config::ThousandsPoint_Get ()
 {
     CriticalSectionLocker CSL(CS);
     return ThousandsPoint;
+}
+
+//---------------------------------------------------------------------------
+void MediaInfo_Config::CarriageReturnReplace_Set (const Ztring &NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    CarriageReturnReplace=NewValue;
+}
+
+Ztring MediaInfo_Config::CarriageReturnReplace_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return CarriageReturnReplace;
 }
 
 //---------------------------------------------------------------------------
