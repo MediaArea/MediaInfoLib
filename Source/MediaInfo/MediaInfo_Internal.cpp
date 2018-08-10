@@ -1240,7 +1240,7 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, size_t Par
                     bool Modified=false;
                     for (size_t i=0; i<List.size(); i++)
                     {
-                        Ztring ToReturn=HighestFormat(Stream_Audio, Audio_Format, Stream[Stream_Audio][i]);
+                        Ztring ToReturn=HighestFormat(Stream_Audio, Audio_Format, Stream[Stream_Audio][StreamPos]);
                         if (ToReturn!=List[i])
                         {
                             List[i]=ToReturn;
