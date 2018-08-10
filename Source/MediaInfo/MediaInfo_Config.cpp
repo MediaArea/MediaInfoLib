@@ -3040,6 +3040,12 @@ size_t MediaInfo_Config::AcquisitionDataOutputMode_Get ()
 void MediaInfo_Config::ExternalMetadata_Set(Ztring Value)
 {
     CriticalSectionLocker CSL(CS);
+    if (!ExternalMetadata.empty() && !Value.empty() && Value.find_first_of(__T("\r\n"))==string::npos) //Exception: if new value is on a single line, we add content to the previous content
+    {
+        ExternalMetadata+=LineSeparator;
+        ExternalMetadata+=Value;
+        return;
+    }
     ExternalMetadata=Value;
 }
 
