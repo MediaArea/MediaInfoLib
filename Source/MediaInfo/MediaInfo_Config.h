@@ -174,6 +174,9 @@ public :
           void      ThousandsPoint_Set (const Ztring &NewValue);
           Ztring    ThousandsPoint_Get ();
 
+          void      CarriageReturnReplace_Set (const Ztring &NewValue);
+          Ztring    CarriageReturnReplace_Get ();
+
           void      StreamMax_Set (const ZtringListList &NewValue);
           Ztring    StreamMax_Get ();
 
@@ -408,6 +411,7 @@ private :
     Ztring          Quote;
     Ztring          DecimalPoint;
     Ztring          ThousandsPoint;
+    Ztring          CarriageReturnReplace;
     Translation     Language; //ex. : "KB;Ko"
     ZtringListList  Custom_View; //Definition of "General", "Video", "Audio", "Text", "Other", "Image"
     ZtringListList  Custom_View_Replace; //ToReplace;ReplaceBy

@@ -377,16 +377,20 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     #endif //MEDIAINFO_ADVANCED
 
     //Handling values with \r\n inside
-    if (Value.find(__T('\r'))!=string::npos || Value.find(__T('\n'))!=string::npos)
+    if (Value.find_first_of(__T("\r\n"))!=string::npos)
     {
-        Ztring NewValue=Value;
-        NewValue.FindAndReplace(__T("\r\n"), __T(" / "), 0, Ztring_Recursive);
-        NewValue.FindAndReplace(__T("\r"), __T(" / "), 0, Ztring_Recursive);
-        NewValue.FindAndReplace(__T("\n"), __T(" / "), 0, Ztring_Recursive);
-        if (NewValue.size()>=3 && NewValue.rfind(__T(" / "))==NewValue.size()-3)
-            NewValue.resize(NewValue.size()-3);
-        Fill(StreamKind, StreamPos, Parameter, NewValue, Replace);
-        return;
+        Ztring CarriageReturnReplace=MediaInfoLib::Config.CarriageReturnReplace_Get();
+        if (!CarriageReturnReplace.empty())
+        {
+            Ztring NewValue=Value;
+            NewValue.FindAndReplace(__T("\r\n"), CarriageReturnReplace, 0, Ztring_Recursive);
+            NewValue.FindAndReplace(__T("\r"), CarriageReturnReplace, 0, Ztring_Recursive);
+            NewValue.FindAndReplace(__T("\n"), CarriageReturnReplace, 0, Ztring_Recursive);
+            if (NewValue.size()>=CarriageReturnReplace.size() && NewValue.rfind(CarriageReturnReplace)==NewValue.size()-CarriageReturnReplace.size())
+                NewValue.resize(NewValue.size()-CarriageReturnReplace.size());
+            Fill(StreamKind, StreamPos, Parameter, NewValue, Replace);
+            return;
+        }
     }
 
     //Handle Value before StreamKind
@@ -1018,16 +1022,20 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
         return;
 
     //Handling values with \r\n inside
-    if (Value.find(__T('\r'))!=string::npos || Value.find(__T('\n'))!=string::npos)
+    if (Value.find_first_of(__T("\r\n"))!=string::npos)
     {
-        Ztring NewValue=Value;
-        NewValue.FindAndReplace(__T("\r\n"), __T(" / "), 0, Ztring_Recursive);
-        NewValue.FindAndReplace(__T("\r"), __T(" / "), 0, Ztring_Recursive);
-        NewValue.FindAndReplace(__T("\n"), __T(" / "), 0, Ztring_Recursive);
-        if (NewValue.size()>=3 && NewValue.rfind(__T(" / "))==NewValue.size()-3)
-            NewValue.resize(NewValue.size()-3);
-        Fill(StreamKind, StreamPos, Parameter, NewValue, Replace);
-        return;
+        Ztring CarriageReturnReplace=MediaInfoLib::Config.CarriageReturnReplace_Get();
+        if (!CarriageReturnReplace.empty())
+        {
+            Ztring NewValue=Value;
+            NewValue.FindAndReplace(__T("\r\n"), CarriageReturnReplace, 0, Ztring_Recursive);
+            NewValue.FindAndReplace(__T("\r"), CarriageReturnReplace, 0, Ztring_Recursive);
+            NewValue.FindAndReplace(__T("\n"), CarriageReturnReplace, 0, Ztring_Recursive);
+            if (NewValue.size()>=CarriageReturnReplace.size() && NewValue.rfind(CarriageReturnReplace)==NewValue.size()-CarriageReturnReplace.size())
+                NewValue.resize(NewValue.size()-CarriageReturnReplace.size());
+            Fill(StreamKind, StreamPos, Parameter, NewValue, Replace);
+            return;
+        }
     }
 
     //Handle Value before StreamKind
