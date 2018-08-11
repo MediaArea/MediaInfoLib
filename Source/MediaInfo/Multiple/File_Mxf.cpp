@@ -3830,49 +3830,49 @@ void File_Mxf::Streams_Finish_CommercialNames ()
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "DV");
             Fill(Stream_General, 0, General_Format_Commercial, "MXF DV");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("AVC") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:0") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("56064000"))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("AVC") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:0") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("56064000"))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "AVC-Intra 50");
             Fill(Stream_General, 0, General_Format_Commercial, "MXF AVC-Intra 50");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "AVC-Intra 50");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("AVC") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:2") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("113664000"))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("AVC") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:2") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("113664000"))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "AVC-Intra 100");
             Fill(Stream_General, 0, General_Format_Commercial, "MXF AVC-Intra 100");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "AVC-Intra 100");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:2") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("30000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("30000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("30000000")))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:2") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("30000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("30000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("30000000")))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "IMX 30");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "IMX 30");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:2") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("40000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("40000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("40000000")))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:2") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("40000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("40000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("40000000")))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "IMX 40");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "IMX 40");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:2") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("50000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("50000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("50000000")))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:2") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("50000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("50000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("50000000")))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "IMX 50");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "IMX 50");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && !Retrieve(Stream_Video, 0, Video_Format_Settings_GOP).empty() && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:0") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("18000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("18000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("18000000")))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && !Retrieve(Stream_Video, 0, Video_Format_Settings_GOP).empty() && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:0") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("18000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("18000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("18000000")))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "XDCAM HD 18");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "XDCAM HD 18");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && !Retrieve(Stream_Video, 0, Video_Format_Settings_GOP).empty() && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:0") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("25000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("25000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("25000000")))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && !Retrieve(Stream_Video, 0, Video_Format_Settings_GOP).empty() && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:0") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("25000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("25000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("25000000")))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "XDCAM HD 25");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "XDCAM HD 25");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && !Retrieve(Stream_Video, 0, Video_Format_Settings_GOP).empty() && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:0") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("35000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("35000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("35000000")))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && !Retrieve(Stream_Video, 0, Video_Format_Settings_GOP).empty() && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:0") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("35000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("35000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("35000000")))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "XDCAM HD 35");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "XDCAM HD 35");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && !Retrieve(Stream_Video, 0, Video_Format_Settings_GOP).empty() && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:2") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("50000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("50000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("50000000")))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && !Retrieve(Stream_Video, 0, Video_Format_Settings_GOP).empty() && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:2") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("50000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("50000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("50000000")))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "XDCAM HD422");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "XDCAM HD422");
