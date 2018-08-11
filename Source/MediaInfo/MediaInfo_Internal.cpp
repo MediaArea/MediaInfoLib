@@ -311,8 +311,10 @@ Ztring ChannelLayout_2018_Rename(const Ztring& Channels)
     ToReturn.FindAndReplace(__T("L C R"), __T("L R C"));
     return ToReturn;
 }
-Ztring ChannelLayout_2018_Rename(stream_t StreamKind, size_t Parameter, ZtringList& Info)
+Ztring ChannelLayout_2018_Rename(stream_t StreamKind, size_t Parameter, ZtringList& Info, bool &ShouldReturn)
 {
+    bool ShouldReturn_Save=ShouldReturn;
+    ShouldReturn=true;
     switch (StreamKind)
     {
         case Stream_Audio:
@@ -324,19 +326,23 @@ Ztring ChannelLayout_2018_Rename(stream_t StreamKind, size_t Parameter, ZtringLi
             break;
         default:;
     }
+    ShouldReturn=ShouldReturn_Save;
     return Info[Parameter];
 }
-Ztring ChannelLayout_2018_Rename(stream_t StreamKind, const Ztring& Parameter, const Ztring& Value)
+Ztring ChannelLayout_2018_Rename(stream_t StreamKind, const Ztring& Parameter, const Ztring& Value, bool &ShouldReturn)
 {
+    bool ShouldReturn_Save=ShouldReturn;
+    ShouldReturn=true;
     if (StreamKind==Stream_Audio && Parameter==__T("BedChannelConfiguration"))
         return ChannelLayout_2018_Rename(Value);
+    ShouldReturn=ShouldReturn_Save;
     return Value;
 }
 
 //***************************************************************************
 // Modifiers - Highest format
 //***************************************************************************
-Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info)
+Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Ztring& Value, bool &ShouldReturn)
 {
     size_t Parameter_Generic;
     switch (StreamKind)
@@ -346,9 +352,11 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info)
             {
                 case Audio_Format: Parameter_Generic=Generic_Format; break;
                 case Audio_Format_Profile: Parameter_Generic=Generic_Format_Profile; break;
+                case Audio_Format_Level: Parameter_Generic=Generic_Format_Level; break;
                 case Audio_Format_Info: Parameter_Generic=Generic_Format_Info; break;
-                case Audio_ChannelLayout: return ChannelLayout_2018_Rename(Info[Parameter]);
-                default: return Info[Parameter];
+                case Audio_Format_Commercial: Parameter_Generic=Generic_Format_Commercial; break;
+                case Audio_Format_Commercial_IfAny: Parameter_Generic=Generic_Format_Commercial_IfAny; break;
+                default: return Ztring();
             }
             break;
         case Stream_General:
@@ -357,33 +365,95 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info)
                 case General_Format: Parameter_Generic=Generic_Format; break;
                 case General_Format_Profile: Parameter_Generic=Generic_Format_Profile; break;
                 case General_Format_Info: Parameter_Generic=Generic_Format_Info; break;
-                default: return Info[Parameter];
+                default: return Ztring();
             }
             break;
-        default: return Info[Parameter];
+        default: return Ztring();
     }
 
     static const Char* Bluray=__T("Blu-ray Disc");
     static const Char* AC3=__T("AC-3");
     static const Char* EAC3=__T("E-AC-3");
     static const Char* EAC3JOC=__T("E-AC-3 JOC");
+    static const Char* AAC=__T("AAC");
+    static const Char* AACLC=__T("AAC LC");
+    static const Char* AACLTP=__T("AAC LTP");
+    static const Char* AACMain=__T("AAC Main");
+    static const Char* AACSSR=__T("AAC SSR");
+    static const Char* AACLCSBR=__T("AAC LC SBR");
+    static const Char* AACLCSBRPS=__T("AAC LC SBR PS");
+    static const Char* ERAAC=__T("ER AAC");
+    static const Char* ERAACLC=__T("ER AAC LC");
+    static const Char* ERAACLTP=__T("ER AAC LTP");
+    static const Char* ERAACScalable=__T("ER AAC scalable");
+    static const Char* HEAACv2 = __T("HE-AACv2");
+    static const Char* HEAAC = __T("HE-AAC");
     static const Char* JOC=__T("JOC");
+    static const Char* LC=__T("LC");
+    static const Char* LTP=__T("LTP");
+    static const Char* Main=__T("Main");
+    static const Char* NonCore=__T("non-core");
+    static const Char* Scalable=__T("scalable");
+    static const Char* SSR=__T("SSR");
 
+    ShouldReturn=true; 
     switch (Parameter_Generic)
     {
         case Generic_Format:
-            if ((Info[Parameter]==AC3 || Info[Parameter]==EAC3) && Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(JOC)!=string::npos)
+            if (Value==AAC)
+            {
+                const Ztring& Profile=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)];
+                if (Profile.find(HEAACv2)!=string::npos)
+                    return AACLCSBRPS;
+                if (Profile.find(HEAAC)!=string::npos)
+                    return AACLCSBR;
+                if (Profile.find(LC)!=string::npos)
+                    return AACLC;
+                if (Profile.find(LTP)!=string::npos)
+                    return AACLTP;
+                if (Profile.find(Main)!=string::npos)
+                    return AACMain;
+                if (Profile.find(SSR)!=string::npos)
+                    return AACSSR;
+            }
+            if (Value==ERAAC)
+            {
+                const Ztring& Profile=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)];
+                if (Profile.find(LC)!=string::npos)
+                    return ERAACLC;
+                if (Profile.find(LTP)!=string::npos)
+                    return ERAACLTP;
+                if (Profile.find(Scalable)!=string::npos)
+                    return ERAACScalable;
+            }
+            if ((Value==AC3 || Value==EAC3) && Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(JOC)!=string::npos)
                 return EAC3JOC;
-            if (Info[Parameter]==AC3 && Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(EAC3)!=string::npos)
+            if (Value==AC3 && Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(EAC3)!=string::npos)
                 return EAC3;
             break;
         case Generic_Format_Profile:
-            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 && Info[Parameter].find(EAC3)!=string::npos)
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AAC)
+                return Info[Audio_Format_Level];
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 && Value.find(EAC3)!=string::npos)
                 return Bluray;
-            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3 && (Info[Parameter].find(EAC3)!=string::npos || Info[Parameter].find(JOC)!=string::npos))
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3 && (Value.find(EAC3)!=string::npos || Value.find(JOC)!=string::npos))
+                return Ztring();
+            break;
+        case Generic_Format_Level:
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AAC)
                 return Ztring();
             break;
         case Generic_Format_Info:
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AAC)
+            {
+                const Ztring& Profile=Info[Audio_Format_Profile];
+                if (Profile.find(HEAACv2)!=string::npos)
+                    return "Advanced Audio Codec Low Complexity with Spectral Band Replication and Parametric Stereo";
+                if (Profile.find(HEAAC)!=string::npos)
+                    return "Advanced Audio Codec Low Complexity with Spectral Band Replication";
+                if (Profile.find(LC)!=string::npos)
+                    return "Advanced Audio Codec Low Complexity";
+            }
             if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3)
             {
                 if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(JOC)!=string::npos)
@@ -392,9 +462,20 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info)
                     return __T("Enhanced AC-3");
             }
             break;
+        case Generic_Format_Commercial:
+        case Generic_Format_Commercial_IfAny:
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AAC)
+            {
+                const Ztring& Profile=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)];
+                if (Profile.find(HEAACv2)!=string::npos)
+                    return "HE-AACv2";
+                if (Profile.find(HEAAC)!=string::npos)
+                    return "HE-AAC";
+            }
+            break;
         default:;
     }
-    return Info[Parameter];
+    return Value;
 }
 
 //***************************************************************************
@@ -1228,6 +1309,7 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, size_t Par
             EXECUTE_STRING(MediaInfoLib::Config.Info_Get(StreamKind, Parameter, KindOfInfo), Debug+=__T("Get, will return ");Debug+=ToReturn;) //look for static information only
         else if (Parameter<Stream[StreamKind][StreamPos].size())
         {
+            bool ShouldReturn=false;
             #if MEDIAINFO_ADVANCED
             if (Config.File_HighestFormat_Get())
             #endif //MEDIAINFO_ADVANCED
@@ -1237,31 +1319,28 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, size_t Par
                     ZtringList List;
                     List.Separator_Set(0, __T(" / "));
                     List.Write(Stream[StreamKind][StreamPos][Parameter]);
-                    bool Modified=false;
                     for (size_t i=0; i<List.size(); i++)
-                    {
-                        Ztring ToReturn=HighestFormat(Stream_Audio, Audio_Format, Stream[Stream_Audio][StreamPos]);
-                        if (ToReturn!=List[i])
-                        {
-                            List[i]=ToReturn;
-                            Modified=true;
-                        }
-                    }
-                    if (Modified)
+                        List[i]=HighestFormat(Stream_Audio, Audio_Format, Stream[Stream_Audio][StreamPos], List[i], ShouldReturn);
+                    if (ShouldReturn)
                     {
                         Ztring ToReturn=List.Read();
                         EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return "); Debug+=ToReturn;)
                     }
                 }
-                Ztring ToReturn=HighestFormat(StreamKind, Parameter, Stream[StreamKind][StreamPos]);
-                EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return "); Debug+=ToReturn;)
+                else
+                {
+                    Ztring ToReturn=HighestFormat(StreamKind, Parameter, Stream[StreamKind][StreamPos], Stream[StreamKind][StreamPos][Parameter], ShouldReturn);
+                    if (ShouldReturn)
+                        EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return "); Debug+=ToReturn;)
+                }
             }
             #if MEDIAINFO_ADVANCED
-            else if (Config.File_ChannelLayout_Get())
+            if (Config.File_ChannelLayout_Get())
             #endif //MEDIAINFO_ADVANCED
             {
-                Ztring ToReturn=ChannelLayout_2018_Rename(StreamKind, Parameter, Stream[StreamKind][StreamPos]);
-                EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return "); Debug += ToReturn;)
+                Ztring ToReturn=ChannelLayout_2018_Rename(StreamKind, Parameter, Stream[StreamKind][StreamPos], ShouldReturn);
+                if (ShouldReturn)
+                    EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return "); Debug += ToReturn;)
             }
             EXECUTE_STRING(Stream[StreamKind][StreamPos][Parameter], Debug += __T("Get, will return "); Debug+=ToReturn;)
         }
@@ -1270,17 +1349,16 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, size_t Par
     }
     else
     {
-        if (KindOfInfo==Info_Text
-            #if MEDIAINFO_ADVANCED
-            && Config.File_ChannelLayout_Get()
-            #endif //MEDIAINFO_ADVANCED
-            )
+        #if MEDIAINFO_ADVANCED
+        if (KindOfInfo==Info_Text && Config.File_ChannelLayout_Get())
+        #endif //MEDIAINFO_ADVANCED
         {
-            Ztring ToReturn=ChannelLayout_2018_Rename(StreamKind, Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()][Info_Name], Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()](KindOfInfo));
-            EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return ");Debug+=ToReturn;)
+            bool ShouldReturn=false;
+            Ztring ToReturn=ChannelLayout_2018_Rename(StreamKind, Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()][Info_Name], Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()](KindOfInfo), ShouldReturn);
+            if (ShouldReturn)
+                EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return ");Debug+=ToReturn;)
         }
-        else
-            EXECUTE_STRING(Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()](KindOfInfo), Debug+=__T("Get, will return ");Debug+=ToReturn;)
+        EXECUTE_STRING(Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()](KindOfInfo), Debug+=__T("Get, will return ");Debug+=ToReturn;)
     }
 }
 
@@ -1396,17 +1474,16 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, const Stri
         }
         CS.Leave();
         CriticalSectionLocker CSL(CS);
-        if (KindOfInfo==Info_Text
-            #if MEDIAINFO_ADVANCED
-            && Config.File_ChannelLayout_Get()
-            #endif //MEDIAINFO_ADVANCED
-            )
+        #if MEDIAINFO_ADVANCED
+        if (KindOfInfo==Info_Text && Config.File_ChannelLayout_Get())
+        #endif //MEDIAINFO_ADVANCED
         {
-            Ztring ToReturn=ChannelLayout_2018_Rename(StreamKind, Stream_More[StreamKind][StreamPos][ParameterI][Info_Name], Stream_More[StreamKind][StreamPos][ParameterI](KindOfInfo));
-            EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return ");Debug+=ToReturn;)
+            bool ShouldReturn=false;
+            Ztring ToReturn=ChannelLayout_2018_Rename(StreamKind, Stream_More[StreamKind][StreamPos][ParameterI][Info_Name], Stream_More[StreamKind][StreamPos][ParameterI](KindOfInfo), ShouldReturn);
+            if (ShouldReturn)
+                EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return ");Debug+=ToReturn;)
         }
-        else
-            EXECUTE_STRING(Stream_More[StreamKind][StreamPos][ParameterI](KindOfInfo), Debug+=__T("Get, will return ");Debug+=ToReturn;)
+        EXECUTE_STRING(Stream_More[StreamKind][StreamPos][ParameterI](KindOfInfo), Debug+=__T("Get, will return ");Debug+=ToReturn;)
     }
 
     CS.Leave();

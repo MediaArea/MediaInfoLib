@@ -59,7 +59,7 @@ static const char* Aac_Format(int8u ID)
         case    3 :
         case    4 : return "AAC";
         case    5 : return "SBR";
-        case    6 : return "AAC Scalable";
+        case    6 : return "AAC scalable";
         case    7 : return "TwinVQ";
         case    8 : return "CELP";
         case    9 : return "HVXC";
@@ -121,7 +121,7 @@ const char* Aac_audioObjectType(int8u audioObjectType)
         case    3 : return "AAC SSR";
         case    4 : return "AAC LTP";
         case    5 : return "SBR";
-        case    6 : return "AAC Scalable";
+        case    6 : return "AAC scalable";
         case    7 : return "TwinVQ";
         case    8 : return "CELP";
         case    9 : return "HVXC";
@@ -132,7 +132,7 @@ const char* Aac_audioObjectType(int8u audioObjectType)
         case   16 : return "Algorithmic Synthesis and Audio FX";
         case   17 : return "ER AAC LC";
         case   19 : return "ER AAC LTP";
-        case   20 : return "ER AAC Scalable";
+        case   20 : return "ER AAC scalable";
         case   21 : return "ER TwinVQ";
         case   22 : return "ER BSAC";
         case   23 : return "ER AAC LD";
