@@ -157,7 +157,7 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
         File_Source_List=false;
         File_RiskyBitRateEstimation=false;
         File_MergeBitRateInfo=true;
-        File_HighestFormat=false;
+        File_HighestFormat=true;
         File_ChannelLayout=false;
         #if MEDIAINFO_DEMUX
             File_Demux_Unpacketize_StreamLayoutChange_Skip=false;
