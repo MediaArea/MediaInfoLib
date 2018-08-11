@@ -275,7 +275,7 @@ void MediaInfo_Config::Init()
     Trace_Format=Trace_Format_Tree;
     Language_Raw=false;
     ReadByHuman=true;
-    Legacy=true;
+    Legacy=false;
     LegacyStreamDisplay=false;
     SkipBinaryData=false;
     Demux=0;
