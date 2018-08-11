@@ -276,7 +276,7 @@ void MediaInfo_Config::Init()
     Language_Raw=false;
     ReadByHuman=true;
     Legacy=true;
-    LegacyStreamDisplay=true;
+    LegacyStreamDisplay=false;
     SkipBinaryData=false;
     Demux=0;
     LineSeparator=EOL;
