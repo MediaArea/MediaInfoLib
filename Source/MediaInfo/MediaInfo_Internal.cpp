@@ -352,7 +352,10 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
             {
                 case Audio_Format: Parameter_Generic=Generic_Format; break;
                 case Audio_Format_Profile: Parameter_Generic=Generic_Format_Profile; break;
+                case Audio_Format_Level: Parameter_Generic=Generic_Format_Level; break;
                 case Audio_Format_Info: Parameter_Generic=Generic_Format_Info; break;
+                case Audio_Format_Commercial: Parameter_Generic=Generic_Format_Commercial; break;
+                case Audio_Format_Commercial_IfAny: Parameter_Generic=Generic_Format_Commercial_IfAny; break;
                 default: return Ztring();
             }
             break;
@@ -372,30 +375,102 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
     static const Char* AC3=__T("AC-3");
     static const Char* EAC3=__T("E-AC-3");
     static const Char* EAC3JOC=__T("E-AC-3 JOC");
+    static const Char* AAC=__T("AAC");
+    static const Char* AACLC=__T("AAC LC");
+    static const Char* AACLTP=__T("AAC LTP");
+    static const Char* AACMain=__T("AAC Main");
+    static const Char* AACSSR=__T("AAC SSR");
+    static const Char* AACLCSBR=__T("AAC LC SBR");
+    static const Char* AACLCSBRPS=__T("AAC LC SBR PS");
+    static const Char* ERAAC=__T("ER AAC");
+    static const Char* ERAACLC=__T("ER AAC LC");
+    static const Char* ERAACLTP=__T("ER AAC LTP");
+    static const Char* ERAACScalable=__T("ER AAC scalable");
+    static const Char* HEAACv2 = __T("HE-AACv2");
+    static const Char* HEAAC = __T("HE-AAC");
     static const Char* JOC=__T("JOC");
+    static const Char* LC=__T("LC");
+    static const Char* LTP=__T("LTP");
+    static const Char* Main=__T("Main");
+    static const Char* NonCore=__T("non-core");
+    static const Char* Scalable=__T("scalable");
+    static const Char* SSR=__T("SSR");
 
     ShouldReturn=true; 
     switch (Parameter_Generic)
     {
         case Generic_Format:
+            if (Value==AAC)
+            {
+                const Ztring& Profile=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)];
+                if (Profile.find(HEAACv2)!=string::npos)
+                    return AACLCSBRPS;
+                if (Profile.find(HEAAC)!=string::npos)
+                    return AACLCSBR;
+                if (Profile.find(LC)!=string::npos)
+                    return AACLC;
+                if (Profile.find(LTP)!=string::npos)
+                    return AACLTP;
+                if (Profile.find(Main)!=string::npos)
+                    return AACMain;
+                if (Profile.find(SSR)!=string::npos)
+                    return AACSSR;
+            }
+            if (Value==ERAAC)
+            {
+                const Ztring& Profile=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)];
+                if (Profile.find(LC)!=string::npos)
+                    return ERAACLC;
+                if (Profile.find(LTP)!=string::npos)
+                    return ERAACLTP;
+                if (Profile.find(Scalable)!=string::npos)
+                    return ERAACScalable;
+            }
             if ((Value==AC3 || Value==EAC3) && Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(JOC)!=string::npos)
                 return EAC3JOC;
             if (Value==AC3 && Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(EAC3)!=string::npos)
                 return EAC3;
             break;
         case Generic_Format_Profile:
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AAC)
+                return Info[Audio_Format_Level];
             if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 && Value.find(EAC3)!=string::npos)
                 return Bluray;
             if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3 && (Value.find(EAC3)!=string::npos || Value.find(JOC)!=string::npos))
                 return Ztring();
             break;
+        case Generic_Format_Level:
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AAC)
+                return Ztring();
+            break;
         case Generic_Format_Info:
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AAC)
+            {
+                const Ztring& Profile=Info[Audio_Format_Profile];
+                if (Profile.find(HEAACv2)!=string::npos)
+                    return "Advanced Audio Codec Low Complexity with Spectral Band Replication and Parametric Stereo";
+                if (Profile.find(HEAAC)!=string::npos)
+                    return "Advanced Audio Codec Low Complexity with Spectral Band Replication";
+                if (Profile.find(LC)!=string::npos)
+                    return "Advanced Audio Codec Low Complexity";
+            }
             if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3)
             {
                 if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(JOC)!=string::npos)
                     return __T("Enhanced AC-3 with Joint Object Coding");
                 if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(EAC3)!=string::npos)
                     return __T("Enhanced AC-3");
+            }
+            break;
+        case Generic_Format_Commercial:
+        case Generic_Format_Commercial_IfAny:
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AAC)
+            {
+                const Ztring& Profile=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)];
+                if (Profile.find(HEAACv2)!=string::npos)
+                    return "HE-AACv2";
+                if (Profile.find(HEAAC)!=string::npos)
+                    return "HE-AAC";
             }
             break;
         default:;
