@@ -1772,39 +1772,6 @@ void File__Analyze::Audio_BitRate_Rounding(size_t Pos, audio Parameter)
         if (BitRate>= 501760 && BitRate<= 522240) BitRate= 512000;
         if (BitRate>= 564480 && BitRate<= 587520) BitRate= 576000;
         if (BitRate>= 627200 && BitRate<= 652800) BitRate= 640000;
-  }
-
-    else if (Format.find(__T("DTS"))==0)
-    {
-        if (BitRate>=  31000 && BitRate<=  33000) BitRate=  32000;
-        if (BitRate>=  54000 && BitRate<=  58000) BitRate=  56000;
-        if (BitRate>=  62720 && BitRate<=  65280) BitRate=  64000;
-        if (BitRate>=  94080 && BitRate<=  97920) BitRate=  96000;
-        if (BitRate>= 109760 && BitRate<= 114240) BitRate= 112000;
-        if (BitRate>= 125440 && BitRate<= 130560) BitRate= 128000;
-        if (BitRate>= 188160 && BitRate<= 195840) BitRate= 192000;
-        if (BitRate>= 219520 && BitRate<= 228480) BitRate= 224000;
-        if (BitRate>= 250880 && BitRate<= 261120) BitRate= 256000;
-        if (BitRate>= 313600 && BitRate<= 326400) BitRate= 320000;
-        if (BitRate>= 376320 && BitRate<= 391680) BitRate= 384000;
-        if (BitRate>= 439040 && BitRate<= 456960) BitRate= 448000;
-        if (BitRate>= 501760 && BitRate<= 522240) BitRate= 512000;
-        if (BitRate>= 564480 && BitRate<= 587520) BitRate= 576000;
-        if (BitRate>= 627200 && BitRate<= 652800) BitRate= 640000;
-        if (BitRate>= 752640 && BitRate<= 783360) BitRate= 768000;
-        if (BitRate>= 940800 && BitRate<= 979200) BitRate= 960000;
-        if (BitRate>=1003520 && BitRate<=1044480) BitRate=1024000;
-        if (BitRate>=1128960 && BitRate<=1175040) BitRate=1152000;
-        if (BitRate>=1254400 && BitRate<=1305600) BitRate=1280000;
-        if (BitRate>=1317120 && BitRate<=1370880) BitRate=1344000;
-        if (BitRate>=1379840 && BitRate<=1436160) BitRate=1408000;
-        if (BitRate>=1382976 && BitRate<=1439424) BitRate=1411200;
-        if (BitRate>=1442560 && BitRate<=1501440) BitRate=1472000;
-        if (BitRate>=1505280 && BitRate<=1566720) BitRate=1536000;
-        if (BitRate>=1881600 && BitRate<=1958400) BitRate=1920000;
-        if (BitRate>=2007040 && BitRate<=2088960) BitRate=2048000;
-        if (BitRate>=3010560 && BitRate<=3133440) BitRate=3072000;
-        if (BitRate>=3763200 && BitRate<=3916800) BitRate=3840000;
     }
 
     else if (Format.find(__T("AAC"))==0)
