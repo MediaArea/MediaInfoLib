@@ -344,7 +344,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     if (!MediaInfoLib::Config.Legacy_Get())
     {
         const Ztring& Info=MediaInfoLib::Config.Info_Get(StreamKind, Parameter, Info_Info);
-        if (Info.size()>10 && Info[0]==__T('D') && Info[1]==__T('e') && Info[2]==__T('p') && Info[3]==__T('r') && Info[4]==__T('e') && Info[5]==__T('c') && Info[6]==__T('a') && Info[7]==__T('t') && Info[8]==__T('e') && Info[9]==__T('d'))
+        if (Info.size()>9 && Info[0]==__T('D') && Info[1]==__T('e') && Info[2]==__T('p') && Info[3]==__T('r') && Info[4]==__T('e') && Info[5]==__T('c') && Info[6]==__T('a') && Info[7]==__T('t') && Info[8]==__T('e') && Info[9]==__T('d'))
             return;
     }
 
@@ -456,8 +456,8 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     //Deprecated
     if (Parameter==Fill_Parameter(StreamKind, Generic_BitDepth))
         Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Resolution), Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_BitDepth)), true);
-    if (StreamKind==Stream_Video && Parameter==Video_Colorimetry)
-        Fill(Stream_Video, StreamPos, Video_ChromaSubsampling, Value, Replace);
+    if (StreamKind==Stream_Video && Parameter==Video_ChromaSubsampling)
+        Fill(Stream_Video, StreamPos, Video_Colorimetry, Value, Replace);
 
     switch (StreamKind)
     {
@@ -1719,11 +1719,9 @@ void File__Analyze::Video_BitRate_Rounding(size_t Pos, video Parameter)
 void File__Analyze::Audio_BitRate_Rounding(size_t Pos, audio Parameter)
 {
     const Ztring& Format=Retrieve(Stream_Audio, Pos, Audio_Format);
-    const Ztring& Codec=Retrieve(Stream_Audio, Pos, Audio_Codec);
     int32u BitRate=Retrieve(Stream_Audio, Pos, Parameter).To_int32u();
     int32u BitRate_Sav=BitRate;
-    if (MediaInfoLib::Config.Codec_Get(Codec, InfoCodec_KindofCodec, Stream_Audio).find(__T("MPEG-"))==0
-     || Retrieve(Stream_Audio, Pos, Audio_Codec_String).find(__T("MPEG-"))==0)
+    if (Format.find(__T("MPEG"))==0)
     {
         if (BitRate>=   7500 && BitRate<=   8500) BitRate=   8000;
         if (BitRate>=  15000 && BitRate<=  17000) BitRate=  16000;
@@ -1753,7 +1751,7 @@ void File__Analyze::Audio_BitRate_Rounding(size_t Pos, audio Parameter)
             BitRate=BitRate_Sav; //If VBR, we want the exact value
     }
 
-    else if (MediaInfoLib::Config.Codec_Get(Codec, InfoCodec_Name, Stream_Audio).find(__T("AC3"))==0)
+    else if (Format.find(__T("AC3"))==0)
     {
         if (BitRate>=  31000 && BitRate<=  33000) BitRate=  32000;
         if (BitRate>=  39000 && BitRate<=  41000) BitRate=  40000;
@@ -1774,42 +1772,9 @@ void File__Analyze::Audio_BitRate_Rounding(size_t Pos, audio Parameter)
         if (BitRate>= 501760 && BitRate<= 522240) BitRate= 512000;
         if (BitRate>= 564480 && BitRate<= 587520) BitRate= 576000;
         if (BitRate>= 627200 && BitRate<= 652800) BitRate= 640000;
-  }
-
-    else if (MediaInfoLib::Config.Codec_Get(Codec, InfoCodec_Name, Stream_Audio).find(__T("DTS"))==0)
-    {
-        if (BitRate>=  31000 && BitRate<=  33000) BitRate=  32000;
-        if (BitRate>=  54000 && BitRate<=  58000) BitRate=  56000;
-        if (BitRate>=  62720 && BitRate<=  65280) BitRate=  64000;
-        if (BitRate>=  94080 && BitRate<=  97920) BitRate=  96000;
-        if (BitRate>= 109760 && BitRate<= 114240) BitRate= 112000;
-        if (BitRate>= 125440 && BitRate<= 130560) BitRate= 128000;
-        if (BitRate>= 188160 && BitRate<= 195840) BitRate= 192000;
-        if (BitRate>= 219520 && BitRate<= 228480) BitRate= 224000;
-        if (BitRate>= 250880 && BitRate<= 261120) BitRate= 256000;
-        if (BitRate>= 313600 && BitRate<= 326400) BitRate= 320000;
-        if (BitRate>= 376320 && BitRate<= 391680) BitRate= 384000;
-        if (BitRate>= 439040 && BitRate<= 456960) BitRate= 448000;
-        if (BitRate>= 501760 && BitRate<= 522240) BitRate= 512000;
-        if (BitRate>= 564480 && BitRate<= 587520) BitRate= 576000;
-        if (BitRate>= 627200 && BitRate<= 652800) BitRate= 640000;
-        if (BitRate>= 752640 && BitRate<= 783360) BitRate= 768000;
-        if (BitRate>= 940800 && BitRate<= 979200) BitRate= 960000;
-        if (BitRate>=1003520 && BitRate<=1044480) BitRate=1024000;
-        if (BitRate>=1128960 && BitRate<=1175040) BitRate=1152000;
-        if (BitRate>=1254400 && BitRate<=1305600) BitRate=1280000;
-        if (BitRate>=1317120 && BitRate<=1370880) BitRate=1344000;
-        if (BitRate>=1379840 && BitRate<=1436160) BitRate=1408000;
-        if (BitRate>=1382976 && BitRate<=1439424) BitRate=1411200;
-        if (BitRate>=1442560 && BitRate<=1501440) BitRate=1472000;
-        if (BitRate>=1505280 && BitRate<=1566720) BitRate=1536000;
-        if (BitRate>=1881600 && BitRate<=1958400) BitRate=1920000;
-        if (BitRate>=2007040 && BitRate<=2088960) BitRate=2048000;
-        if (BitRate>=3010560 && BitRate<=3133440) BitRate=3072000;
-        if (BitRate>=3763200 && BitRate<=3916800) BitRate=3840000;
     }
 
-    else if (Codec.find(__T("AAC"))==0 || MediaInfoLib::Config.Codec_Get(Codec, InfoCodec_Name, Stream_Audio).find(__T("AAC"))==0)
+    else if (Format.find(__T("AAC"))==0)
     {
         if (BitRate>=  46000 && BitRate<=  50000) BitRate=  48000;
         if (BitRate>=  64827 && BitRate<=  67473) BitRate=  66150;
@@ -1828,7 +1793,7 @@ void File__Analyze::Audio_BitRate_Rounding(size_t Pos, audio Parameter)
         if (BitRate>= 648270 && BitRate<= 674730) BitRate= 661500;
     }
 
-    else if (Codec==__T("PCM") || Codec==__T("QDM2") || MediaInfoLib::Config.Codec_Get(Codec, InfoCodec_Name, Stream_Audio).find(__T("PCM"))==0)
+    else if (Format==__T("PCM") || Format==__T("Qdesign 2"))
     {
         if (BitRate>=  62720 && BitRate<=  65280) BitRate=  64000;
         if (BitRate>=  86436 && BitRate<=  89964) BitRate=  88200;
@@ -1849,11 +1814,8 @@ void File__Analyze::Audio_BitRate_Rounding(size_t Pos, audio Parameter)
         if (BitRate>=6021120 && BitRate<=6266880) BitRate=6144000;
     }
 
-    else if (MediaInfoLib::Config.Codec_Get(Codec, InfoCodec_Name, Stream_Audio).find(__T("ADPCM"))==0
-          || MediaInfoLib::Config.Codec_Get(Codec, InfoCodec_Name, Stream_Audio).find(__T("U-Law"))==0
-          || MediaInfoLib::Config.Codec_Get(Codec, InfoCodec_KindofCodec, Stream_Audio)==__T("ADPCM")
-          || MediaInfoLib::Config.Codec_Get(Codec, InfoCodec_KindofCodec, Stream_Audio)==__T("U-Law")
-          || Format==__T("ADPCM"))
+    else if (Format.find(__T("ADPCM"))==0
+          || Format.find(__T("U-Law"))==0)
     {
         if (BitRate>=  42000 && BitRate<=  46000) BitRate=  44100;
         if (BitRate>=  62720 && BitRate<=  65280) BitRate=  64000;
