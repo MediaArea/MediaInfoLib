@@ -661,19 +661,20 @@ void File_Dts::Streams_Fill()
         Data[Profiles].clear(); //Core is the default one
 
     // Filling
+    bool LegacyStreamDisplay=MediaInfoLib::Config.LegacyStreamDisplay_Get();
     Fill(Stream_Audio, 0, Audio_Format_Profile, Data[Profiles].Read());
     Fill(Stream_Audio, 0, Audio_Codec, (Data[Profiles].Find(__T("MA"))!=string::npos || Data[Profiles].Find(__T("HRA"))!=string::npos)?"DTS-HD":"DTS");
     Fill(Stream_General, 0, General_Format_Profile, Retrieve(Stream_Audio, 0, Audio_Format_Profile));
-    Fill(Stream_Audio, 0, Audio_Channel_s_, Data[Channels].Read());
-    Fill(Stream_Audio, 0, Audio_ChannelPositions, Data[ChannelPositions].Read());
-    Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, Data[ChannelPositions2].Read());
-    Fill(Stream_Audio, 0, Audio_ChannelLayout, Data[ChannelLayout].Read());
-    Fill(Stream_Audio, 0, Audio_BitDepth, Data[BitDepth].Read());
-    Fill(Stream_Audio, 0, Audio_SamplingRate, Data[SamplingRate].Read());
-    Fill(Stream_Audio, 0, Audio_BitRate, Data[BitRate].Read());
-    Fill(Stream_Audio, 0, Audio_BitRate_Mode, Data[BitRate_Mode].Read());
+    Fill(Stream_Audio, 0, Audio_Channel_s_, LegacyStreamDisplay?Data[Channels].Read():Data[Channels].Read(0));
+    Fill(Stream_Audio, 0, Audio_ChannelPositions, LegacyStreamDisplay?Data[ChannelPositions].Read():Data[ChannelPositions].Read(0));
+    Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, LegacyStreamDisplay?Data[ChannelPositions2].Read():Data[ChannelPositions2].Read(0));
+    Fill(Stream_Audio, 0, Audio_ChannelLayout, LegacyStreamDisplay?Data[ChannelLayout].Read():Data[ChannelLayout].Read(0));
+    Fill(Stream_Audio, 0, Audio_BitDepth, LegacyStreamDisplay?Data[BitDepth].Read():Data[BitDepth].Read(0));
+    Fill(Stream_Audio, 0, Audio_SamplingRate, LegacyStreamDisplay?Data[SamplingRate].Read():Data[SamplingRate].Read(0));
+    Fill(Stream_Audio, 0, Audio_BitRate, LegacyStreamDisplay?Data[BitRate].Read():(Data[BitRate].Read(0)==__T("Unknown")?Ztring():Data[BitRate].Read(0)));
+    Fill(Stream_Audio, 0, Audio_BitRate_Mode, LegacyStreamDisplay?Data[BitRate_Mode].Read():Data[BitRate_Mode].Read(0));
     Fill(Stream_General, 0, General_OverallBitRate_Mode, Retrieve(Stream_Audio, 0, Audio_BitRate_Mode));
-    Fill(Stream_Audio, 0, Audio_Compression_Mode, Data[Compression_Mode].Read(), true);
+    Fill(Stream_Audio, 0, Audio_Compression_Mode, LegacyStreamDisplay?Data[Compression_Mode].Read():Data[Compression_Mode].Read(0), true);
 
     // Cleanup up
     for (size_t Pos=0; Pos<10; ++Pos)
@@ -1449,7 +1450,7 @@ void File_Dts::HD_XBR(int64u Size)
 //---------------------------------------------------------------------------
 void File_Dts::HD_XSA(int64u Size)
 {
-    Element_Name("XSA (low bitrate)");
+    Element_Name("LBR (low bitrate)");
     Skip_XX(Size,                                               "Data");
 
     FILLING_BEGIN();
