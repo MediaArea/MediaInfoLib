@@ -371,6 +371,7 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
         default: return Ztring();
     }
 
+    static const Char* _9624=__T("96/24");
     static const Char* Bluray=__T("Blu-ray Disc");
     static const Char* AC3=__T("AC-3");
     static const Char* EAC3=__T("E-AC-3");
@@ -382,15 +383,23 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
     static const Char* AACSSR=__T("AAC SSR");
     static const Char* AACLCSBR=__T("AAC LC SBR");
     static const Char* AACLCSBRPS=__T("AAC LC SBR PS");
+    static const Char* Core=__T("Core");
+    static const Char* Discrete=__T("ES Discrete without ES Matrix");
+    static const Char* DTS=__T("DTS");
     static const Char* ERAAC=__T("ER AAC");
     static const Char* ERAACLC=__T("ER AAC LC");
     static const Char* ERAACLTP=__T("ER AAC LTP");
     static const Char* ERAACScalable=__T("ER AAC scalable");
+    static const Char* ESMatrix=__T("ES Matrix");
+    static const Char* ESDiscrete=__T("ES Discrete");
+    static const Char* Express=__T("Express");
     static const Char* HEAACv2 = __T("HE-AACv2");
     static const Char* HEAAC = __T("HE-AAC");
+    static const Char* HRA=__T("HRA");
     static const Char* JOC=__T("JOC");
     static const Char* LC=__T("LC");
     static const Char* LTP=__T("LTP");
+    static const Char* MA=__T("MA");
     static const Char* Main=__T("Main");
     static const Char* NonCore=__T("non-core");
     static const Char* Scalable=__T("scalable");
@@ -416,6 +425,38 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
                 if (Profile.find(SSR)!=string::npos)
                     return AACSSR;
             }
+            if (Value==DTS)
+            {
+                Ztring Format=Value;
+                ZtringList Profiles;
+                Profiles.Separator_Set(0, __T(" / "));
+                Profiles.Write(Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)]);
+                for (size_t i=Profiles.size()-1; i!=(size_t)-1; i--)
+                {
+                    if (Profiles[i]!=Core)
+                    {
+                        if (!Format.empty())
+                            Format+=__T(' ');
+                             if (Profiles[i]==_9624)
+                            Format+=_9624;
+                        else if (Profiles[i]==Discrete)
+                            Format+=__T("XXCH");
+                        else if (Profiles[i]==ESDiscrete)
+                            Format+=__T("ES XXCH");
+                        else if (Profiles[i]==ESMatrix)
+                            Format+=__T("ES");
+                        else if (Profiles[i]==Express)
+                            Format+=__T("LBR");
+                        else if (Profiles[i]==HRA)
+                            Format+=__T("XBR");
+                        else if (Profiles[i]==MA)
+                            Format+=__T("XLL");
+                        else
+                            Format+=Profiles[i];
+                    }
+                }
+                return Format;
+            }
             if (Value==ERAAC)
             {
                 const Ztring& Profile=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)];
@@ -436,6 +477,8 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
                 return Info[Audio_Format_Level];
             if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 && Value.find(EAC3)!=string::npos)
                 return Bluray;
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==DTS)
+                return Ztring();
             if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3 && (Value.find(EAC3)!=string::npos || Value.find(JOC)!=string::npos))
                 return Ztring();
             break;
@@ -471,6 +514,22 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
                     return "HE-AACv2";
                 if (Profile.find(HEAAC)!=string::npos)
                     return "HE-AAC";
+            }
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==DTS)
+            {
+                const Ztring& Profile=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)];
+                if (Profile.find(MA)!=string::npos)
+                    return "DTS-HD Master Audio";
+                if (Profile.find(HRA)!=string::npos)
+                    return "DTS-HD High Resolution Audio";
+                if (Profile.find(_9624)!=string::npos)
+                    return "DTS 96/24";
+                if (Profile.find(ESDiscrete)!=string::npos)
+                    return "DTS-ES Discrete";
+                if (Profile.find(ESMatrix)!=string::npos)
+                    return "DTS-ES Matrix";
+                if (Profile.find(Express)!=string::npos)
+                    return "DTS Express";
             }
             break;
         default:;
