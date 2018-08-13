@@ -16,7 +16,8 @@ UniqueID;;;N YTY;;;The unique ID for this stream, should be copied with stream c
 UniqueID/String;;;Y NT;;;The unique ID for this stream, should be copied with stream copy
 MenuID;;;N YTY;;;The menu ID for this stream in this file
 MenuID/String;;;Y NT;;;The menu ID for this stream in this file
-Format;;;Y YTY;;;Format used
+Format;;;N YTY;;;Format used
+Format/String;;;Y NT;;;Format used + additional features
 Format/Info;;;Y NT;;;Info about Format
 Format/Url;;;N NT;;;Link
 Format_Commercial;;;N NT;;;Commercial name used by vendor for theses setings or Format field if there is no difference
@@ -26,6 +27,7 @@ Format_Profile;;;Y YTY;;;Profile of the Format (old XML: 'Profile@Level@Tier' fo
 Format_Level;;;Y YTY;;;Level of the Format (only MIXML)
 Format_Tier;;;Y YTY;;;Tier of the Format (only MIXML)
 Format_Compression;;;Y YTY;;;Compression method used
+Format_AdditionalFeatures;;;N YTY;;;Format features needed for fully supporting the content
 MultiView_BaseProfile;;;Y YTY;;;Multiview, profile of the base stream
 MultiView_Count;;;Y YTY;;;Multiview, count of views
 MultiView_Layout;;;Y YTY;;;Multiview, how views are muxed in the container in case of it is not muxing in the stream
