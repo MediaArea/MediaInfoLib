@@ -169,7 +169,7 @@ const char*  AC3_ChannelPositions2[]=
 //---------------------------------------------------------------------------
 const char*  AC3_ChannelLayout_lfeoff[]=
 {
-    "1+1",
+    "M M",
     "C",
     "L R",
     "L C R",
@@ -599,7 +599,7 @@ int8u AC3_TrueHD_Channels(int16u ChannelsMap)
 }
 
 //---------------------------------------------------------------------------
-std::string AC3_TrueHD_Channels_Positions(int16u ChannelsMap)
+std::string AC3_TrueHD_Channels_Positions(int16u ChannelsMap, bool Bit11=false)
 {
     std::string Text;
     if ((ChannelsMap&0x0003)==0x0003)
@@ -618,11 +618,11 @@ std::string AC3_TrueHD_Channels_Positions(int16u ChannelsMap)
     if (ChannelsMap&0x80)
         Text+=", Back: C";
 
-    if ((ChannelsMap&0x0810)==0x0810)
+    if ((ChannelsMap&0x0810)==0x0810 && Bit11)
         Text+=", vh: L C R";
     else
     {
-        if (ChannelsMap&0x0010)
+        if (ChannelsMap&0x0010 && !Bit11)
             Text+=", vh: L R";
         if (ChannelsMap&0x0800)
             Text+=", vh: C";
@@ -648,7 +648,7 @@ std::string AC3_TrueHD_Channels_Positions(int16u ChannelsMap)
 }
 
 //---------------------------------------------------------------------------
-Ztring AC3_TrueHD_Channels_Positions2(int16u ChannelsMap)
+Ztring AC3_TrueHD_Channels_Positions2(int16u ChannelsMap, bool Bit11=false)
 {
     int8u Front=0, Surround=0, Rear=0, LFE=0;
 
@@ -662,8 +662,10 @@ Ztring AC3_TrueHD_Channels_Positions2(int16u ChannelsMap)
     if (ChannelsMap&0x80)
         Surround++;
 
-    if (ChannelsMap&0x0010)
+    if (ChannelsMap & 0x0010)
         Rear+=2; //vh
+    if (!Bit11)
+    {
     if (ChannelsMap&0x0800)
         Rear++;  //vh
 
@@ -683,12 +685,58 @@ Ztring AC3_TrueHD_Channels_Positions2(int16u ChannelsMap)
         LFE++;
     if (ChannelsMap&0x1000)
         LFE++;
+    }
 
     Ztring Text;
     Text+=Ztring::ToZtring(Front);
     Text+=__T('/')+Ztring::ToZtring(Surround);
     Text+=__T('/')+Ztring::ToZtring(Rear);
     Text+=__T('.')+Ztring::ToZtring(LFE);
+    return Text;
+}
+
+//---------------------------------------------------------------------------
+static const size_t AC3_TrueHD_ChannelLayoutNames_Size=13;
+const char* AC3_TrueHD_ChannelLayoutNames[AC3_TrueHD_ChannelLayoutNames_Size]=
+{
+    "L R",
+    "C",
+    "LFE",
+    "Ls Rs",
+    "Tfl Tfr",
+    "Lsc Rsc",
+    "Lb Rb",
+    "Cb",
+    "Tc",
+    "Lsd Rsd",
+    "Lw Rw",
+    "Tfc",
+    "LFE2",
+};
+static const size_t AC3_TrueHD_ChannelLayoutNames2_Size=1;
+const char* AC3_TrueHD_ChannelLayoutNames2[AC3_TrueHD_ChannelLayoutNames2_Size]=
+{
+    "Tsl Tsr",
+};
+std::string AC3_TrueHD_Channels_ChannelLayout(int16u ChannelsMap, bool Bit11=false)
+{
+    std::string Text;
+
+    for (size_t i=0; i<16; i++)
+        if (ChannelsMap&(1<<i))
+        {
+            if (!Text.empty())
+                Text+=' ';
+
+            if ((!Bit11 && i>=AC3_TrueHD_ChannelLayoutNames_Size) || (Bit11 && i>=4 && i-4>=AC3_TrueHD_ChannelLayoutNames2_Size))
+            {
+                Text+='+'; //Unknown layout
+                return Text;
+            }
+
+            Text+=(Bit11 && i>=4)?AC3_TrueHD_ChannelLayoutNames2[i-4]:AC3_TrueHD_ChannelLayoutNames[i];
+        }
+
     return Text;
 }
 
@@ -996,8 +1044,9 @@ void File_Ac3::Streams_Fill()
             Sampling.From_Number(AC3_HD_SamplingRate(HD_SamplingRate1));
             Fill(Stream_Audio, 0, Audio_SamplingRate, Sampling);
             Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_TrueHD_Channels(HD_Channels2));
-            Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_TrueHD_Channels_Positions(HD_Channels2));
-            Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, AC3_TrueHD_Channels_Positions2(HD_Channels2));
+            Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_TrueHD_Channels_Positions(HD_Channels2, HD_flags&(1<<11)));
+            Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, AC3_TrueHD_Channels_Positions2(HD_Channels2, HD_flags&(1<<11)));
+            Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_TrueHD_Channels_ChannelLayout(HD_Channels2, HD_flags&(1<<11)));
         }
 
         if (HD_StreamType==0xBB) //TrueHD
@@ -4098,7 +4147,7 @@ void File_Ac3::HD()
         }
 
         Skip_B2(                                                "signature");
-        Skip_B2(                                                "flags");
+        Get_B2 (HD_flags,                                       "flags");
         Skip_B2(                                                "reserved");
         BS_Begin();
         Get_SB (    HD_IsVBR,                                   "variable_rate");
