@@ -199,61 +199,119 @@ static const char* Mpeg4_Descriptors_SceneProfileLevelIndication(int8u ID)
 }
 
 //---------------------------------------------------------------------------
-static const char* Mpeg4_Descriptors_AudioProfileLevelIndication(int8u ID)
+static const char* Mpeg4_Descriptors_AudioProfileLevelIndication_Profile[]=
 {
-    switch (ID)
-    {
-        case    1 : return "Main@L1";
-        case    2 : return "Main@L2";
-        case    3 : return "Main@L3";
-        case    4 : return "Main@L4";
-        case    5 : return "Scalable@L1";
-        case    6 : return "Scalable@L2";
-        case    7 : return "Scalable@L3";
-        case    8 : return "Scalable@L4";
-        case    9 : return "Speech@L1";
-        case   10 : return "Speech@L2";
-        case   11 : return "Synthesis@L1";
-        case   12 : return "Synthesis@L2";
-        case   13 : return "Synthesis@L3";
-        case   14 : return "HighQualityAudio@L1";
-        case   15 : return "HighQualityAudio@L2";
-        case   16 : return "HighQualityAudio@L3";
-        case   17 : return "HighQualityAudio@L4";
-        case   18 : return "HighQualityAudio@L5";
-        case   19 : return "HighQualityAudio@L6";
-        case   20 : return "HighQualityAudio@L7";
-        case   21 : return "HighQualityAudio@L8";
-        case   22 : return "LowDelayAudio@L1";
-        case   23 : return "LowDelayAudio@L2";
-        case   24 : return "LowDelayAudio@L3";
-        case   25 : return "LowDelayAudio@L4";
-        case   26 : return "LowDelayAudio@L5";
-        case   27 : return "LowDelayAudio@L6";
-        case   28 : return "LowDelayAudio@L7";
-        case   29 : return "LowDelayAudio@L8";
-        case   30 : return "NaturalAudio@L1";
-        case   31 : return "NaturalAudio@L2";
-        case   32 : return "NaturalAudio@L3";
-        case   33 : return "NaturalAudio@L4";
-        case   34 : return "MobileAudioInternetworking@L1";
-        case   35 : return "MobileAudioInternetworking@L2";
-        case   36 : return "MobileAudioInternetworking@L3";
-        case   37 : return "MobileAudioInternetworking@L4";
-        case   38 : return "MobileAudioInternetworking@L5";
-        case   39 : return "MobileAudioInternetworking@L6";
-        case   40 : return "AAC@L1";
-        case   41 : return "AAC@L2";
-        case   42 : return "AAC@L4";
-        case   43 : return "AAC@L5";
-        case   44 : return "HighEfficiencyAAC@L2";
-        case   45 : return "HighEfficiencyAAC@L3";
-        case   46 : return "HighEfficiencyAAC@L4";
-        case   47 : return "HighEfficiencyAAC@L5";
-        case   59 : return "HighDefinitionAAC@L1";
-        case   60 : return "ALSSimple@L1";
-        default   : return "";
-    }
+    "",
+    "Main Audio",
+    "Scalable Audio",
+    "Speech Audio",
+    "Synthesis Audio",
+    "High Quality Audio",
+    "Low Delay Audio",
+    "Natural Audio",
+    "Mobile Audio Internetworking",
+    "AAC",
+    "High Efficiency AAC",
+    "Low Delay AAC",
+    "High Definition AAC",
+    "ALS Simple",
+};
+enum profile
+{
+    NoProfile,
+    Main_Audio,
+    Scalable_Audio,
+    Speech_Audio,
+    Synthesis_Audio,
+    High_Quality_Audio,
+    Low_Delay_Audio,
+    Natural_Audio,
+    Mobile_Audio_Internetworking,
+    AAC,
+    High_Efficiency_AAC,
+    Low_Delay_AAC,
+    High_Definition_AAC,
+    ALS_Simple,
+};
+struct profilelevel_struct
+{
+    int8u profile;
+    int8u level;
+};
+static const size_t Mpeg4_Descriptors_AudioProfileLevelIndication_Size=0x3D;
+static const profilelevel_struct Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[Mpeg4_Descriptors_AudioProfileLevelIndication_Size]=
+{
+    { NoProfile, 0 },
+    { Main_Audio, 1 },
+    { Main_Audio, 2 },
+    { Main_Audio, 3 },
+    { Main_Audio, 4 },
+    { Scalable_Audio, 1 },
+    { Scalable_Audio, 2 },
+    { Scalable_Audio, 3 },
+    { Scalable_Audio, 4 },
+    { Speech_Audio, 1 },
+    { Speech_Audio, 2 },
+    { Synthesis_Audio, 1 },
+    { Synthesis_Audio, 2 },
+    { Synthesis_Audio, 3 },
+    { High_Quality_Audio, 1 },
+    { High_Quality_Audio, 2 },
+    { High_Quality_Audio, 3 },
+    { High_Quality_Audio, 4 },
+    { High_Quality_Audio, 5 },
+    { High_Quality_Audio, 6 },
+    { High_Quality_Audio, 7 },
+    { High_Quality_Audio, 8 },
+    { Low_Delay_Audio, 1 },
+    { Low_Delay_Audio, 2 },
+    { Low_Delay_Audio, 3 },
+    { Low_Delay_Audio, 4 },
+    { Low_Delay_Audio, 5 },
+    { Low_Delay_Audio, 6 },
+    { Low_Delay_Audio, 7 },
+    { Low_Delay_Audio, 8 },
+    { Natural_Audio, 1 },
+    { Natural_Audio, 2 },
+    { Natural_Audio, 3 },
+    { Natural_Audio, 4 },
+    { Mobile_Audio_Internetworking, 1 },
+    { Mobile_Audio_Internetworking, 2 },
+    { Mobile_Audio_Internetworking, 3 },
+    { Mobile_Audio_Internetworking, 4 },
+    { Mobile_Audio_Internetworking, 5 },
+    { Mobile_Audio_Internetworking, 6 },
+    { AAC, 1 },
+    { AAC, 2 },
+    { AAC, 4 },
+    { AAC, 5 },
+    { High_Efficiency_AAC, 2 },
+    { High_Efficiency_AAC, 3 },
+    { High_Efficiency_AAC, 4 },
+    { High_Efficiency_AAC, 5 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { High_Definition_AAC, 1 },
+    { ALS_Simple, 1 },
+};
+static const Ztring Mpeg4_Descriptors_AudioProfileLevelIndication(int8u AudioProfileLevelIndication)
+{
+    if (AudioProfileLevelIndication>=Mpeg4_Descriptors_AudioProfileLevelIndication_Size || Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[AudioProfileLevelIndication].profile==NoProfile)
+        return Ztring();
+    Ztring ToReturn;
+    ToReturn.From_UTF8(Mpeg4_Descriptors_AudioProfileLevelIndication_Profile[Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[AudioProfileLevelIndication].profile]);
+    ToReturn+=__T("@L");
+    ToReturn+=Ztring().From_Number(Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[AudioProfileLevelIndication].level);
+    return ToReturn;
 }
 
 //---------------------------------------------------------------------------
