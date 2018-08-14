@@ -669,8 +669,10 @@ void File_Mpeg4_Descriptors::Descriptor_04()
          && !(bufferSizeDB==AvgBitrate && bufferSizeDB==MaxBitrate && bufferSizeDB==0x1000)) //Some buggy data were found
         {
             Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate_Nominal), AvgBitrate);
-            if (MaxBitrate<=AvgBitrate*1.005)
+            if (!MaxBitrate || (MaxBitrate>=AvgBitrate && MaxBitrate<=AvgBitrate*1.005))
+            {
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate_Mode), "CBR");
+            }
             else
             {
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate_Mode), "VBR");
