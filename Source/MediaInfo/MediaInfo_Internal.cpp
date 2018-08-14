@@ -277,22 +277,74 @@ extern const Char* MediaInfo_Version;
 //***************************************************************************
 // Modifiers - ChannelLayout_2018
 //***************************************************************************
-static const size_t ChannelLayout_2018_Size=13;
+static const size_t ChannelLayout_2018_Size=65;
 static const char* ChannelLayout_2018[ChannelLayout_2018_Size][2] =
 {
+    { "BC", "Cb" },
+    { "BL", "Lb" },
+    { "BR", "Lr" },
+    { "CI", "Bfc" },
+    { "CL", "Ls" },
+    { "CR", "Rs" },
+    { "Ch", "Tfc" },
+    { "Chr", "Tbc" },
+    { "Cl", "Ls" },
+    { "Cr", "Rs" },
     { "Cs", "Cb" },
+    { "Cv", "Tfc" },
+    { "Cvr", "Tbc" },
+    { "FC", "C" },
+    { "FL", "L" },
+    { "FLC", "Lscr" },
+    { "FR", "R" },
+    { "FRC", "Rscr" },
+    { "LI", "Bfl" },
     { "Lc", "Lscr" },
+    { "Lfh", "Tfl" },
+    { "Lh", "Vhl" },
+    { "Lhr", "Tbl" },
+    { "Lhs", "Tfl" },
     { "Lrh", "Tbl" },
     { "Lrs", "Lb" },
+    { "Lsc", "Lscr" },
+    { "Lsr", "Lb" },
+    { "Ltm", "Tsl" },
     { "Lts", "Tsl" },
+    { "Lv", "Tfl" },
     { "Lvh", "Tfl" },
+    { "Lvr", "Tbl" },
+    { "Lvs", "Tsl" },
+    { "Lvss", "Tll" },
+    { "Oh", "Tc" },
     { "Rc", "Rscr" },
+    { "Rfh", "Tfrr" },
+    { "Rh", "Vhr" },
+    { "Rhr", "Tbr" },
+    { "Rhs", "Tfr" },
+    { "RI", "Bfr" },
     { "Rrh", "Tbr" },
     { "Rrs", "Rb" },
+    { "Rsc", "Rscr" },
+    { "Rsr", "Rb" },
+    { "Rtm", "Tsr" },
     { "Rts", "Tsr" },
+    { "Rv", "Tfr" },
     { "Rvh", "Tfr" },
-    { "Vhc", "Tfc" },
+    { "Rvr", "Tbr" },
+    { "Rvs", "Tsr" },
+    { "Rvss", "Tsr" },
+    { "S", "Cb" },
+    { "SL", "Ls" },
+    { "SR", "Rs" },
+    { "TBC", "Tbc" },
+    { "TBL", "Tbl" },
+    { "TBR", "Tbr" },
+    { "TC", "Tc" },
+    { "TFC", "Tfc" },
+    { "TFL", "Tfl" },
+    { "TFR", "Tfr" },
     { "Ts", "Tc" },
+    { "Vhc", "Tfc" },
 };
 Ztring ChannelLayout_2018_Rename(const Ztring& Channels)
 {
@@ -308,7 +360,6 @@ Ztring ChannelLayout_2018_Rename(const Ztring& Channels)
                 ChannelName.From_UTF8(ChannelLayout_2018[j][1]);
     }
     Ztring ToReturn=List.Read();
-    ToReturn.FindAndReplace(__T("L C R"), __T("L R C"));
     return ToReturn;
 }
 Ztring ChannelLayout_2018_Rename(stream_t StreamKind, size_t Parameter, ZtringList& Info, bool &ShouldReturn)

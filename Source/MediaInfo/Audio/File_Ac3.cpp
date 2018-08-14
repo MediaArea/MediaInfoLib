@@ -172,11 +172,11 @@ const char*  AC3_ChannelLayout_lfeoff[]=
     "M M",
     "C",
     "L R",
-    "L C R",
+    "L R C",
     "L R S",
-    "L C R Cs",
+    "L R C Cs",
     "L R Ls Rs",
-    "L C R Ls Rs",
+    "L R C Ls Rs",
 };
 
 //---------------------------------------------------------------------------
@@ -185,11 +185,11 @@ const char*  AC3_ChannelLayout_lfeon[]=
     "1+1 LFE",
     "C LFE",
     "L R LFE",
-    "L C R LFE",
+    "L R C LFE",
     "L R S LFE",
-    "L C R LFE Cs",
+    "L R C LFE Cs",
     "L R LFE Ls Rs",
-    "L C R LFE Ls Rs",
+    "L R C LFE Ls Rs",
 };
 
 //---------------------------------------------------------------------------

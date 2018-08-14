@@ -120,7 +120,7 @@ const char*  DTS_ChannelPositions2[16]=
 static const char*  DTS_ChannelLayout[16]=
 {
     "C",
-    "1+1",
+    "M M",
     "L R",
     "L R",
     "Lt Rt",
