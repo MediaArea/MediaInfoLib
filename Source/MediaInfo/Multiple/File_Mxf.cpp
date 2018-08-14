@@ -1489,9 +1489,9 @@ static string MXF_MCALabelDictionaryID_ChannelPositions(const std::vector<int128
             if (Front[5])
                 FrontS+="Rt ";
             if (Front[6])
-                FrontS+="M1 ";
+                FrontS+="M ";
             if (Front[7])
-                FrontS+="M2 ";
+                FrontS+="M ";
             FrontS.resize(FrontS.size()-1);
         }
         if (Side.any())
@@ -1567,8 +1567,8 @@ static string MXF_MCALabelDictionaryID_ChannelLayout(const std::vector<int128u> 
                                                 case 0x04 : Value="LFE"; break;
                                                 case 0x05 : Value="Ls"; break;
                                                 case 0x06 : Value="Rs"; break;
-                                                case 0x20 : Value="M1"; break;
-                                                case 0x21 : Value="M2"; break;
+                                                case 0x20 : Value="M"; break;
+                                                case 0x21 : Value="M"; break;
                                                 case 0x22 : Value="Lt"; break;
                                                 case 0x23 : Value="Rt"; break;
                                                 default   : Value="";

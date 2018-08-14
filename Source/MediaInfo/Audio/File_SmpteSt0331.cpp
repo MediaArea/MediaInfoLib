@@ -69,6 +69,19 @@ static const char* Smpte_St0331_ChannelsPositions2(int8u number_channels)
     }
 }
 
+//---------------------------------------------------------------------------
+static const char* Smpte_St0331_ChannelLayout(int8u number_channels)
+{
+    switch (number_channels)
+    {
+        case  2 : return "L R";                                         //2 channels
+        case  4 : return "L R C LFE";                                   //4 channels
+        case  6 : return "L R C LFE Ls Rs";                             //6 channels
+        case  8 : return "L R C LFE Ls Rs Lrs Rrs";                     //8 channels
+        default : return "";
+    }
+}
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -116,6 +129,7 @@ void File_SmpteSt0331::Streams_Fill()
     Fill(Stream_Audio, 0, Audio_Channel_s_, Channels_Count);
     Fill(Stream_Audio, 0, Audio_ChannelPositions, Smpte_St0331_ChannelsPositions(Channels_Count));
     Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, Smpte_St0331_ChannelsPositions2(Channels_Count));
+    Fill(Stream_Audio, 0, Audio_ChannelLayout, Smpte_St0331_ChannelLayout(Channels_Count));
     if (QuantizationBits)
         Fill(Stream_Audio, 0, Audio_BitDepth, QuantizationBits);
 }
