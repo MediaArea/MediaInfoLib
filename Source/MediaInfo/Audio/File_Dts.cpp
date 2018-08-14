@@ -291,6 +291,48 @@ std::string DTS_HD_SpeakerActivityMask2 (int16u SpeakerActivityMask, bool AddCs=
 }
 
 //---------------------------------------------------------------------------
+std::string DTS_HD_SpeakerActivityMask_ChannelLayout (int16u SpeakerActivityMask, bool AddCs=false, bool AddLrsRrs=false)
+{
+    std::string Text;
+    if (SpeakerActivityMask&0x0001)
+        Text+=" C";
+    if (SpeakerActivityMask&0x0002)
+        Text+=" L R";
+    if (SpeakerActivityMask&0x0004)
+        Text+=" Ls Rs";
+    if (SpeakerActivityMask&0x0008)
+        Text+=" LFE";
+    if (SpeakerActivityMask&0x0010 || AddCs)
+        Text+=" Cs";
+    if (SpeakerActivityMask&0x0020)
+        Text+=" Lh Rh";
+    if (SpeakerActivityMask&0x0040 || AddLrsRrs)
+        Text+=" Lsr Rsr";
+    if (SpeakerActivityMask&0x0080)
+        Text+=" Ch";
+    if (SpeakerActivityMask&0x0100)
+        Text+=" Oh";
+    if (SpeakerActivityMask&0x0200)
+        Text+=" Lc Rc";
+    if (SpeakerActivityMask&0x0400)
+        Text+=" Lw Rw";
+    if (SpeakerActivityMask&0x0800)
+        Text+=" Lss Rss";
+    if (SpeakerActivityMask&0x1000)
+        Text+=" LFE2";
+    if (SpeakerActivityMask&0x2000)
+        Text+=" Lhs Rhs";
+    if (SpeakerActivityMask&0x4000)
+        Text+=" Chr";
+    if (SpeakerActivityMask&0x8000)
+        Text+=" Lhr";
+
+    if (!Text.empty())
+        Text.erase(0, 1);
+    return Text;
+}
+
+//---------------------------------------------------------------------------
 static const char* DTS_HD_TypeDescriptor[]=
 {
     "Music",
@@ -433,7 +475,7 @@ void File_Dts::Streams_Fill_Extension()
     {
         Data[ChannelPositions].push_back(DTS_HD_SpeakerActivityMask(HD_SpeakerActivityMask, AddCs).c_str()); //AddLrsRrs
         Data[ChannelPositions2].push_back(DTS_HD_SpeakerActivityMask2(HD_SpeakerActivityMask, AddCs).c_str()); //AddLrsRrs
-        Data[ChannelLayout].push_back(Ztring());
+        Data[ChannelLayout].push_back(DTS_HD_SpeakerActivityMask_ChannelLayout(HD_SpeakerActivityMask, AddCs).c_str()); //AddLrsRrs
     }
     else
     {
