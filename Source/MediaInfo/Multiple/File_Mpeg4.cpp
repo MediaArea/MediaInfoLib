@@ -28,7 +28,6 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_Mpeg4.h"
-#include "MediaInfo/Multiple/File_Mpeg4_Descriptors.h"
 #if defined(MEDIAINFO_MPEGPS_YES)
     #include "MediaInfo/Multiple/File_MpegPs.h"
 #endif
@@ -1180,6 +1179,21 @@ void File_Mpeg4::Streams_Finish()
             CodecConfigurationBoxInfo+=Ztring().From_CC4(Temp->second.CodecConfigurationBoxInfo[i]);
         }
         Fill(StreamKind_Last, StreamPos_Last, "Codec configuration box", CodecConfigurationBoxInfo);
+
+        //ES_ID
+        for (File_Mpeg4_Descriptors::es_id_infos::iterator ES_ID_Info=ES_ID_Infos.begin(); ES_ID_Info!=ES_ID_Infos.end(); ES_ID_Info++)
+        {
+            if (ES_ID_Info->first==Temp->first && ES_ID_Info->second.StreamKind==Temp->second.StreamKind)
+            {
+                if (Retrieve_Const(StreamKind_Last, StreamPos_Last, "Format_Profile").empty())
+                    Fill(StreamKind_Last, StreamPos_Last, "Format_Profile", ES_ID_Info->second.ProfileLevel);
+                else if (StreamKind_Last==Stream_Audio && Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_Format).find(__T("AAC"))!=string::npos && Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_Format_Level).empty())
+                {
+                    //Legacy issue with AAC, "Format_Profile" was used for something else, cheating with "Format_Level" for storing profile+level
+                    Fill(Stream_Audio, StreamPos_Last, Audio_Format_Level, ES_ID_Info->second.ProfileLevel);
+                }
+            }
+        }
 
         ++Temp;
     }
@@ -2792,6 +2806,9 @@ void File_Mpeg4::Descriptors()
         Streams[moov_trak_tkhd_TrackID].Parsers.push_back(MI.Parser);
         mdat_MustParse=true;
     }
+
+    if (!MI.ES_ID_Infos.empty())
+        ES_ID_Infos=MI.ES_ID_Infos;
 }
 
 //---------------------------------------------------------------------------

@@ -420,6 +420,7 @@ void File_Mpeg4_Descriptors::Data_Parse()
 void File_Mpeg4_Descriptors::Descriptor_01()
 {
     //Parsing
+    int8u ProfileLevel[5];
     bool URL_Flag;
     BS_Begin();
     Skip_S2(10,                                                 "ObjectDescriptorID");
@@ -433,16 +434,50 @@ void File_Mpeg4_Descriptors::Descriptor_01()
         Get_B1 (URLlength,                                      "URLlength");
         Skip_UTF8(URLlength,                                    "URLstring");
     }
-    if (Element_Code==0x02 || Element_Code==0x10)
+    else if (Element_Code==0x02 || Element_Code==0x10)
     {
-        Info_B1(ODProfileLevel,                                 "ODProfileLevelIndication"); Param_Info1(Mpeg4_Descriptors_ODProfileLevelIndication(ODProfileLevel));
-        Info_B1(SceneProfileLevel,                              "sceneProfileLevelIndication"); Param_Info1(Mpeg4_Descriptors_SceneProfileLevelIndication(SceneProfileLevel));
-        Info_B1(AudioProfileLevel,                              "audioProfileLevelIndication"); Param_Info1(Mpeg4_Descriptors_AudioProfileLevelIndication(AudioProfileLevel));
-        Info_B1(VisualProfileLevel,                             "visualProfileLevelIndication"); Param_Info1(Mpeg4v_Profile_Level(VisualProfileLevel));
-        Info_B1(GraphicsProfileLevel,                           "graphicsProfileLevelIndication"); Param_Info1(Mpeg4_Descriptors_GraphicsProfileLevelIndication(GraphicsProfileLevel));
+        Get_B1 (ProfileLevel[0],                                "ODProfileLevelIndication"); Param_Info1(Mpeg4_Descriptors_ODProfileLevelIndication(ProfileLevel[0]));
+        Get_B1 (ProfileLevel[1],                                "sceneProfileLevelIndication"); Param_Info1(Mpeg4_Descriptors_SceneProfileLevelIndication(ProfileLevel[1]));
+        Get_B1 (ProfileLevel[2],                                "audioProfileLevelIndication"); Param_Info1(Mpeg4_Descriptors_AudioProfileLevelIndication(ProfileLevel[2]));
+        Get_B1 (ProfileLevel[3],                                "visualProfileLevelIndication"); Param_Info1(Mpeg4v_Profile_Level(ProfileLevel[3]));
+        Get_B1 (ProfileLevel[4],                                "graphicsProfileLevelIndication"); Param_Info1(Mpeg4_Descriptors_GraphicsProfileLevelIndication(ProfileLevel[4]));
     }
 
     FILLING_BEGIN();
+        if (Element_Code==0x10)
+        {
+            //Clear
+            ES_ID_Infos.clear();
+
+            //Fill
+            int8u ProfileLevel_Count=0;
+            for (int8u i=0; i<5; i++)
+                if (ProfileLevel[i]!=0xFF)
+                    ProfileLevel_Count++;
+            if (ProfileLevel_Count==1)
+            {
+                for (int8u i=0; i<5; i++)
+                {
+                    if (ProfileLevel[i]!=0xFF)
+                    {
+                        es_id_info& ES_ID_Info=ES_ID_Infos[(int32u)-1];
+                        switch (i)
+                        {
+                            case  2 :   ES_ID_Info.StreamKind=Stream_Audio; 
+                                        ES_ID_Info.ProfileLevel=Mpeg4_Descriptors_AudioProfileLevelIndication(ProfileLevel[i]);
+                                        break;
+                            case  3 :
+                                        ES_ID_Info.StreamKind=Stream_Video;
+                                        ES_ID_Info.ProfileLevel=Mpeg4v_Profile_Level(ProfileLevel[i]);
+                                        break;
+                            default :   ;
+                        }
+                        if (ES_ID_Info.ProfileLevel.empty() && ProfileLevel[i]!=0xFE)
+                            ES_ID_Info.ProfileLevel.From_Number(ProfileLevel[i]);
+                    }
+                }
+            }
+        }
         Element_ThisIsAList();
     FILLING_END();
 }
@@ -974,7 +1009,14 @@ void File_Mpeg4_Descriptors::Descriptor_09()
 void File_Mpeg4_Descriptors::Descriptor_0E()
 {
     //Parsing
-    Skip_B4(                                                    "Track_ID"); //ID of the track to use
+    int32u Track_ID;
+    Get_B4 (Track_ID,                                           "Track_ID"); //ID of the track to use
+
+    FILLING_BEGIN();
+        es_id_infos::iterator ES_ID_Info=ES_ID_Infos.find((int32u)-1);
+        if (ES_ID_Info!=ES_ID_Infos.end())
+            ES_ID_Infos[Track_ID]=ES_ID_Info->second;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
