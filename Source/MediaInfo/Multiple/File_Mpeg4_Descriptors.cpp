@@ -212,9 +212,13 @@ static const char* Mpeg4_Descriptors_AudioProfileLevelIndication_Profile[]=
     "Mobile Audio Internetworking",
     "AAC",
     "High Efficiency AAC",
+    "High Efficiency AAC v2",
     "Low Delay AAC",
+    "Baseline MPEG Surround",
     "High Definition AAC",
     "ALS Simple",
+    "Baseline USAC",
+    "Extended HE AAC",
 };
 enum profile
 {
@@ -229,16 +233,20 @@ enum profile
     Mobile_Audio_Internetworking,
     AAC,
     High_Efficiency_AAC,
+    High_Efficiency_AAC_v2,
     Low_Delay_AAC,
+    Baseline_MPEG_Surround,
     High_Definition_AAC,
     ALS_Simple,
+    Baseline_USAC,
+    Extended_HE_AAC,
 };
 struct profilelevel_struct
 {
     int8u profile;
     int8u level;
 };
-static const size_t Mpeg4_Descriptors_AudioProfileLevelIndication_Size=0x3D;
+static const size_t Mpeg4_Descriptors_AudioProfileLevelIndication_Size=0x58;
 static const profilelevel_struct Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[Mpeg4_Descriptors_AudioProfileLevelIndication_Size]=
 {
     { NoProfile, 0 },
@@ -289,19 +297,46 @@ static const profilelevel_struct Mpeg4_Descriptors_AudioProfileLevelIndication_M
     { High_Efficiency_AAC, 3 },
     { High_Efficiency_AAC, 4 },
     { High_Efficiency_AAC, 5 },
-    { NoProfile, 0 },
-    { NoProfile, 0 },
-    { NoProfile, 0 },
-    { NoProfile, 0 },
-    { NoProfile, 0 },
-    { NoProfile, 0 },
-    { NoProfile, 0 },
-    { NoProfile, 0 },
-    { NoProfile, 0 },
-    { NoProfile, 0 },
-    { NoProfile, 0 },
+    { High_Efficiency_AAC_v2, 2 },
+    { High_Efficiency_AAC_v2, 3 },
+    { High_Efficiency_AAC_v2, 4 },
+    { High_Efficiency_AAC_v2, 5 },
+    { Low_Delay_AAC, 1 },
+    { Baseline_MPEG_Surround, 1 },
+    { Baseline_MPEG_Surround, 2 },
+    { Baseline_MPEG_Surround, 3 },
+    { Baseline_MPEG_Surround, 4 },
+    { Baseline_MPEG_Surround, 5 },
+    { Baseline_MPEG_Surround, 6 },
     { High_Definition_AAC, 1 },
     { ALS_Simple, 1 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { Baseline_USAC, 1 },
+    { Baseline_USAC, 2 },
+    { Baseline_USAC, 3 },
+    { Baseline_USAC, 4 },
+    { Extended_HE_AAC, 1 },
+    { Extended_HE_AAC, 2 },
+    { Extended_HE_AAC, 3 },
+    { Extended_HE_AAC, 4 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { NoProfile, 0 },
+    { AAC, 6 },
+    { AAC, 7 },
+    { High_Efficiency_AAC, 6 },
+    { High_Efficiency_AAC, 7 },
+    { High_Efficiency_AAC_v2, 6 },
+    { High_Efficiency_AAC_v2, 7 },
+    { Extended_HE_AAC, 6 },
+    { Extended_HE_AAC, 7 },
 };
 static const Ztring Mpeg4_Descriptors_AudioProfileLevelIndication(int8u AudioProfileLevelIndication)
 {
