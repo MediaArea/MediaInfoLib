@@ -351,9 +351,11 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
             switch (Parameter)
             {
                 case Audio_Format: Parameter_Generic=Generic_Format; break;
+                case Audio_Format_String: Parameter_Generic=Generic_Format_String; break;
                 case Audio_Format_Profile: Parameter_Generic=Generic_Format_Profile; break;
                 case Audio_Format_Level: Parameter_Generic=Generic_Format_Level; break;
                 case Audio_Format_Info: Parameter_Generic=Generic_Format_Info; break;
+                case Audio_Format_AdditionalFeatures: Parameter_Generic=Generic_Format_AdditionalFeatures; break;
                 case Audio_Format_Commercial: Parameter_Generic=Generic_Format_Commercial; break;
                 case Audio_Format_Commercial_IfAny: Parameter_Generic=Generic_Format_Commercial_IfAny; break;
                 default: return Ztring();
@@ -363,8 +365,12 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
             switch (Parameter)
             {
                 case General_Format: Parameter_Generic=Generic_Format; break;
+                case General_Format_String: Parameter_Generic=Generic_Format_String; break;
                 case General_Format_Profile: Parameter_Generic=Generic_Format_Profile; break;
                 case General_Format_Info: Parameter_Generic=Generic_Format_Info; break;
+                case General_Format_AdditionalFeatures: Parameter_Generic=Generic_Format_AdditionalFeatures; break;
+                case General_Format_Commercial: Parameter_Generic=Generic_Format_Commercial; break;
+                case General_Format_Commercial_IfAny: Parameter_Generic=Generic_Format_Commercial_IfAny; break;
                 default: return Ztring();
             }
             break;
@@ -375,6 +381,7 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
     static const Char* Bluray=__T("Blu-ray Disc");
     static const Char* AC3=__T("AC-3");
     static const Char* EAC3=__T("E-AC-3");
+    static const Char* EAC3Dep=__T("E-AC-3+Dep");
     static const Char* EAC3JOC=__T("E-AC-3 JOC");
     static const Char* AAC=__T("AAC");
     static const Char* AACLC=__T("AAC LC");
@@ -398,6 +405,8 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
     static const Char* HRA=__T("HRA");
     static const Char* JOC=__T("JOC");
     static const Char* LC=__T("LC");
+    static const Char* LCSBR=__T("LC SBR");
+    static const Char* LCSBRPS=__T("LC SBR PS");
     static const Char* LTP=__T("LTP");
     static const Char* MA=__T("MA");
     static const Char* Main=__T("Main");
@@ -409,23 +418,7 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
     switch (Parameter_Generic)
     {
         case Generic_Format:
-            if (Value==AAC)
-            {
-                const Ztring& Profile=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)];
-                if (Profile.find(HEAACv2)!=string::npos)
-                    return AACLCSBRPS;
-                if (Profile.find(HEAAC)!=string::npos)
-                    return AACLCSBR;
-                if (Profile.find(LC)!=string::npos)
-                    return AACLC;
-                if (Profile.find(LTP)!=string::npos)
-                    return AACLTP;
-                if (Profile.find(Main)!=string::npos)
-                    return AACMain;
-                if (Profile.find(SSR)!=string::npos)
-                    return AACSSR;
-            }
-            if (Value==DTS)
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==DTS)
             {
                 Ztring Format=Value;
                 ZtringList Profiles;
@@ -433,44 +426,142 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
                 Profiles.Write(Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)]);
                 for (size_t i=Profiles.size()-1; i!=(size_t)-1; i--)
                 {
-                    if (Profiles[i]!=Core)
-                    {
-                        if (!Format.empty())
-                            Format+=__T(' ');
-                             if (Profiles[i]==_9624)
-                            Format+=_9624;
-                        else if (Profiles[i]==Discrete)
-                            Format+=__T("XXCH");
-                        else if (Profiles[i]==ESDiscrete)
-                            Format+=__T("ES XXCH");
-                        else if (Profiles[i]==ESMatrix)
-                            Format+=__T("ES");
-                        else if (Profiles[i]==Express)
-                            Format+=__T("LBR");
-                        else if (Profiles[i]==HRA)
-                            Format+=__T("XBR");
-                        else if (Profiles[i]==MA)
-                            Format+=__T("XLL");
-                        else
-                            Format+=Profiles[i];
-                    }
+                    if (Profiles[i]==Express)
+                        Format+=__T(" LBR");
                 }
                 return Format;
             }
-            if (Value==ERAAC)
+            break;
+        case Generic_Format_String:
+            if (!Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_AdditionalFeatures)].empty())
+                return Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]+__T(' ')+Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_AdditionalFeatures)];
+            else if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3)
+            {
+                Ztring ToReturn=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)];
+                Ztring AdditionalFeatures=HighestFormat(StreamKind, File__Analyze::Fill_Parameter(StreamKind, Generic_Format_AdditionalFeatures), Info, Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_AdditionalFeatures)], ShouldReturn);
+                if (!AdditionalFeatures.find(EAC3))
+                    ToReturn.clear();
+
+                //Remove "Dep" from Format string
+                size_t HasDep=AdditionalFeatures.find(__T("Dep"));
+                if (HasDep!=string::npos)
+                {
+                    if (ToReturn==AC3)
+                        ToReturn=EAC3;
+                    if (HasDep && AdditionalFeatures[HasDep-1]==__T(' '))
+                        AdditionalFeatures.erase(HasDep-1, 4);
+                    else if (HasDep+3<AdditionalFeatures.size() && AdditionalFeatures[HasDep+3]==__T(' '))
+                        AdditionalFeatures.erase(HasDep, 4);
+                    else if (AdditionalFeatures.size()==3)
+                        AdditionalFeatures.clear();
+                }
+                if (!AdditionalFeatures.empty())
+                {
+                    if (!ToReturn.empty())
+                        ToReturn+=__T(' ');
+                    ToReturn+=AdditionalFeatures;
+                }
+
+                return ToReturn;
+            }
+            else
+            {
+                Ztring ToReturn=HighestFormat(StreamKind, File__Analyze::Fill_Parameter(StreamKind, Generic_Format), Info, Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)], ShouldReturn);
+                const Ztring& AdditionalFeatures=HighestFormat(StreamKind, File__Analyze::Fill_Parameter(StreamKind, Generic_Format_AdditionalFeatures), Info, Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_AdditionalFeatures)], ShouldReturn);
+                if (!AdditionalFeatures.empty())
+                    ToReturn+=__T(' ')+AdditionalFeatures;
+                return ToReturn;
+            }
+            break;
+        case Generic_Format_AdditionalFeatures:
+            if (!Value.empty())
+                break;
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AAC)
+            {
+                const Ztring& Profile=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)];
+                if (Profile.find(HEAACv2)!=string::npos)
+                    return LCSBRPS;
+                if (Profile.find(HEAAC)!=string::npos)
+                    return LCSBR;
+                if (Profile.find(LC)!=string::npos)
+                    return LC;
+                if (Profile.find(LTP)!=string::npos)
+                    return LTP;
+                if (Profile.find(Main)!=string::npos)
+                    return Main;
+                if (Profile.find(SSR)!=string::npos)
+                    return SSR;
+            }
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==DTS)
+            {
+                Ztring AdditionalFeatures;
+                ZtringList Profiles;
+                Profiles.Separator_Set(0, __T(" / "));
+                Profiles.Write(Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)]);
+                for (size_t i=Profiles.size()-1; i!=(size_t)-1; i--)
+                {
+                    if (Profiles[i]!=Core && Profiles[i]!=Express)
+                    {
+                        if (!AdditionalFeatures.empty())
+                            AdditionalFeatures+=__T(' ');
+                             if (Profiles[i]==_9624)
+                            AdditionalFeatures+=_9624;
+                        else if (Profiles[i]==Discrete)
+                            AdditionalFeatures+=__T("XXCH");
+                        else if (Profiles[i]==ESDiscrete)
+                            AdditionalFeatures+=__T("ES XXCH");
+                        else if (Profiles[i]==ESMatrix)
+                            AdditionalFeatures+=__T("ES");
+                        else if (Profiles[i]==HRA)
+                            AdditionalFeatures+=__T("XBR");
+                        else if (Profiles[i]==MA)
+                            AdditionalFeatures+=__T("XLL");
+                        else
+                            AdditionalFeatures+=Profiles[i];
+                    }
+                }
+                return AdditionalFeatures;
+            }
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==ERAAC)
             {
                 const Ztring& Profile=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)];
                 if (Profile.find(LC)!=string::npos)
-                    return ERAACLC;
+                    return LC;
                 if (Profile.find(LTP)!=string::npos)
-                    return ERAACLTP;
+                    return LTP;
                 if (Profile.find(Scalable)!=string::npos)
-                    return ERAACScalable;
+                    return Scalable;
             }
-            if ((Value==AC3 || Value==EAC3) && Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(JOC)!=string::npos)
-                return EAC3JOC;
-            if (Value==AC3 && Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(EAC3)!=string::npos)
-                return EAC3;
+            if ((Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3))
+            {
+                Ztring AdditionalFeatures;
+                ZtringList Profiles;
+                Profiles.Separator_Set(0, __T(" / "));
+                Profiles.Write(Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)]);
+                bool HasAC3=false, HasEAC3=false;
+                for (size_t i=Profiles.size()-1; i!=(size_t)-1; i--)
+                {
+                    if (Profiles[i]==AC3)
+                        HasAC3=true;
+                    else if (Profiles[i]==EAC3)
+                        HasEAC3=true;
+                    else
+                    {
+                        if (!AdditionalFeatures.empty())
+                            AdditionalFeatures+=__T(' ');
+                             if (Profiles[i]==EAC3Dep)
+                        {
+                            AdditionalFeatures+=__T("Dep");
+                            HasEAC3=true;
+                        }
+                        else if (Profiles[i]==EAC3JOC)
+                            AdditionalFeatures+=JOC;
+                        else
+                            AdditionalFeatures+=Profiles[i];
+                    }
+                }
+                return AdditionalFeatures;
+            }
             break;
         case Generic_Format_Profile:
             if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AAC)

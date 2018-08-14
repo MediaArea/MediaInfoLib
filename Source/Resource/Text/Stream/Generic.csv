@@ -1,4 +1,5 @@
 Format
+Format/String
 Format/Info
 Format/Url
 Format_Commercial
@@ -9,6 +10,7 @@ Format_Level
 Format_Tier
 Format_Compression
 Format_Settings
+Format_AdditionalFeatures
 InternetMediaType
 CodecID
 CodecID/Info

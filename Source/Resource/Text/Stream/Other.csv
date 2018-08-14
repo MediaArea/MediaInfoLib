@@ -17,7 +17,8 @@ UniqueID/String;;;Y NT;;;The unique ID for this stream, should be copied with st
 MenuID;;;N YTY;;;The menu ID for this stream in this file
 MenuID/String;;;Y NT;;;The menu ID for this stream in this file
 Type;;;Y YTY;;;Type
-Format;;;Y YTY;;;Format used
+Format;;;N YTY;;;Format used
+Format/String;;;Y NT;;;Format used + additional features
 Format/Info;;;N NT;;;Info about Format
 Format/Url;;;N NT;;;Link
 Format_Commercial;;;N NT;;;Commercial name used by vendor for theses setings or Format field if there is no difference
@@ -26,6 +27,7 @@ Format_Version;;;Y NTY;;;Version of this format
 Format_Profile;;;Y NTY;;;Profile of the Format
 Format_Compression;;;Y NTY;;;Compression method used;;
 Format_Settings;;;Y NTY;;;Settings needed for decoder used
+Format_AdditionalFeatures;;;N YTY;;;Format features needed for fully supporting the content
 MuxingMode;;;Y YTY;;;How this file is muxed in the container
 CodecID;;;Y YTY;;;Codec ID (found in some containers);;
 CodecID/String;;;Y NT;;;Codec ID (found in some containers);;

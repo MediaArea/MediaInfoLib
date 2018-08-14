@@ -17,7 +17,8 @@ UniqueID/String;;;Y NT;;;The unique ID for this stream, should be copied with st
 MenuID;;;N YTY;;;The menu ID for this stream in this file
 MenuID/String;;;Y NT;;;The menu ID for this stream in this file
 Title;;;Y YTY;;;Name of the track
-Format;;;Y YTY;;;Format used
+Format;;;N YTY;;;Format used
+Format/String;;;Y NT;;;Format used + additional features
 Format/Info;;;Y NT;;;Info about Format
 Format/Url;;;N NT;;;Link
 Format_Commercial;;;N NT;;;Commercial name used by vendor for theses setings or Format field if there is no difference
@@ -29,6 +30,7 @@ Format_Settings_Packing;;;N YTY;;;;;
 Format_Compression;;;Y YTY;;;Compression method used
 Format_Settings;;;Y NT;;;Settings needed for decoder used
 Format_Settings_Wrapping;;;Y YTY;;;Wrapping mode (Frame wrapped or Clip wrapped)
+Format_AdditionalFeatures;;;N YTY;;;Format features needed for fully supporting the content
 InternetMediaType;;;N YT;;;Internet Media Type (aka MIME Type, Content-Type)
 CodecID;;;Y YTY;;;Codec ID (found in some containers);;
 CodecID/String;;;Y NT;;;Codec ID (found in some containers);;
