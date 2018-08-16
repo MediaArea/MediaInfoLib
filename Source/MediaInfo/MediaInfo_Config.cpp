@@ -3036,7 +3036,7 @@ size_t MediaInfo_Config::AcquisitionDataOutputMode_Get ()
     return AcquisitionDataOutputMode;
 }
 #endif // MEDIAINFO_EBUCORE_YES
-#if defined(MEDIAINFO_EBUCORE_YES) || defined(MEDIAINFO_NISO_YES)
+#if defined(MEDIAINFO_EBUCORE_YES) || defined(MEDIAINFO_NISO_YES) || MEDIAINFO_ADVANCED
 void MediaInfo_Config::ExternalMetadata_Set(Ztring Value)
 {
     CriticalSectionLocker CSL(CS);
@@ -3066,7 +3066,7 @@ Ztring MediaInfo_Config::ExternalMetaDataConfig_Get ()
     CriticalSectionLocker CSL(CS);
     return ExternalMetaDataConfig;
 }
-#endif //defined(MEDIAINFO_EBUCORE_YES) || defined(MEDIAINFO_NISO_YES)
+#endif //defined(MEDIAINFO_EBUCORE_YES) || defined(MEDIAINFO_NISO_YES) || MEDIAINFO_ADVANCED
 
 //***************************************************************************
 // Event
