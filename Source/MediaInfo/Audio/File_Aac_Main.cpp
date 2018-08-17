@@ -1084,6 +1084,7 @@ void File_Aac::adts_fixed_header()
             Infos["Format"].From_Local("AAC");
             Infos["Format_Version"].From_Local(id?"Version 2":"Version 4");
             Infos["Format_Profile"].From_Local(Aac_Format_Profile(audioObjectType));
+            Infos["CodecID"].From_Number(audioObjectType);
             Infos["Codec"].From_Local(Aac_audioObjectType(audioObjectType));
             if (Aac_sampling_frequency[sampling_frequency_index])
                 Infos["SamplingRate"].From_Number(Aac_sampling_frequency[sampling_frequency_index]);
