@@ -3650,7 +3650,7 @@ void File_Ac3::Core_Frame()
             bsid_Max=bsid;
 
         //Specific to first frame
-        if (Frame_Count==0)
+        if (acmod_Max[substreamid_Independant_Current][strmtyp+substreamid]==(int8u)-1)
         {
             frmsizplus1_Max[substreamid_Independant_Current][strmtyp+substreamid]=((bsid<=0x09)?(frmsizecod/2<19?AC3_BitRate[frmsizecod/2]*4:0):((frmsiz+1)*2));
             acmod_Max[substreamid_Independant_Current][strmtyp+substreamid]=acmod;
