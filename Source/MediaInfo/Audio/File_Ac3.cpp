@@ -4105,9 +4105,10 @@ void File_Ac3::HD()
         CRC_16^=LittleEndian2int16u(Buffer+Buffer_Offset+24);
         */
 
-        Element_Begin1("format_sync");
+        Element_Info1("major_sync");
+        Element_Begin1("major_sync_info");
         int32u format_sync;
-        Get_B4(format_sync,                                     "format_sync");
+        Get_B4(format_sync,                                     "major_sync");
         HD_StreamType=(int8u)format_sync; Param_Info1(AC3_HD_StreamType(HD_StreamType));
 
         if (HD_StreamType==0xBA)
@@ -4163,15 +4164,20 @@ void File_Ac3::HD()
                 Skip_S1(2,                                      "6-ch presentation");
                 Skip_S1(2,                                      "reserved");
             Element_End0();
-            BS_End();
-            Element_Begin1("channel_meaning");
-                Skip_B1(                                        "Unknown");
-                Skip_B1(                                        "Unknown");
-                Skip_B1(                                        "Unknown");
-                Skip_B1(                                        "Unknown");
-                Skip_B1(                                        "Unknown");
-                Skip_B1(                                        "Unknown");
-                Skip_B1(                                        "Unknown");
+        }
+        else
+            Skip_S1(8,                                          "Unknown");
+        BS_End();
+        Element_Begin1("channel_meaning");
+            Skip_B1(                                            "Unknown");
+            Skip_B1(                                            "Unknown");
+            Skip_B1(                                            "Unknown");
+            Skip_B1(                                            "Unknown");
+            Skip_B1(                                            "Unknown");
+            Skip_B1(                                            "Unknown");
+            Skip_B1(                                            "Unknown");
+            if (HD_StreamType==0xBA)
+            {
                 BS_Begin();
                 Skip_S1( 7,                                     "Unknown");
                 bool HasExtend;
@@ -4199,23 +4205,83 @@ void File_Ac3::HD()
                         program_assignment();
                         Element_End0();
                     }
+                    int16u padding;
+                    Peek_S2(Data_BS_Remain()%16, padding);
+                    if (Data_BS_Remain()-Data_BS_Remain()%16==After && !padding)
+                        Skip_BS(Data_BS_Remain()%16,            "padding");
                     if (Data_BS_Remain()>After)
-                        Skip_BS(Data_BS_Remain()-After,         "Unknown");
+                        Skip_BS(Data_BS_Remain()-After,         "reserved");
+                    BS_End();
                 }
+            }
+            else
+                Skip_B1(                                        "Unknown");
+        Element_End0();
+        Skip_B2(                                                "major_sync_info_CRC");
+        Element_End0();
+    }
+    else if (!HD_MajorSync_Parsed)
+    {
+        return; // Wait for major sync
+    }
+
+    int64u PosBeforeDirectory=Element_Offset;
+    BS_Begin();
+    for (int8u i=0; i<HD_SubStreams_Count; i++)
+    {
+        Element_Begin1("substream_directory");
+        bool extra_substream_word, restart_nonexistent;
+        Get_SB (extra_substream_word,                           "extra_substream_word");
+        Get_SB (restart_nonexistent,                            "restart_nonexistent");
+        if ((!restart_nonexistent && Synch!=0xF8726F) || (restart_nonexistent && Synch==0xF8726F))
+        {
             Element_End0();
+            return;
+        }
+        Skip_SB(                                                "crc_present");
+        Skip_SB(                                                "reserved");
+        Skip_S2(12,                                             "substream_end_ptr");
+        if (extra_substream_word)
+        {
+            Skip_S2(9,                                          "drc_gain_update");
+            Skip_S1(3,                                          "drc_time_update");
+            Skip_S1(4,                                          "reserved");
         }
         Element_End0();
-
-        FILLING_BEGIN();
-            HD_MajorSync_Parsed=true;
-
-            if (HD_SubStreams_Count==1 && HD_StreamType==0xBB) //MLP with only 1 stream
-            {
-                HD_Resolution2=HD_Resolution1;
-                HD_SamplingRate2=HD_SamplingRate1;
-            }
-        FILLING_END();
     }
+    BS_End();
+
+    FILLING_BEGIN();
+        //CRC compute
+        size_t Size=(size_t)(Element_Offset-PosBeforeDirectory);
+        int8u crc=0;
+        for (int8u i=0; i<4; i++)
+        {
+            int8u Value=Buffer[Buffer_Offset-4+i];
+            crc^=(Value&0xF);
+            Value>>=4;
+            crc^=Value;
+        }
+        for (int8u i=0; i<Size; i++)
+        {
+            int8u Value=Buffer[Buffer_Offset+(size_t)(Element_Offset-Size+i)];
+            crc^=(Value&0xF);
+            Value>>=4;
+            crc^=Value;
+        }
+        if (crc!=0xF)
+        {
+            return;
+        }
+        HD_MajorSync_Parsed=true;
+
+        if (HD_SubStreams_Count==1 && HD_StreamType==0xBB) //MLP with only 1 stream
+        {
+            HD_Resolution2=HD_Resolution1;
+            HD_SamplingRate2=HD_SamplingRate1;
+        }
+    FILLING_END();
+
 
     /*
     if (HD_MajorSync_Parsed)
