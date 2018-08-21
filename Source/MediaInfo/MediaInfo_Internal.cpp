@@ -428,6 +428,7 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
         default: return Ztring();
     }
 
+    static const Char* _16ch =__T("16-ch");
     static const Char* _9624=__T("96/24");
     static const Char* Bluray=__T("Blu-ray Disc");
     static const Char* AC3=__T("AC-3");
@@ -461,6 +462,8 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
     static const Char* LTP=__T("LTP");
     static const Char* MA=__T("MA");
     static const Char* Main=__T("Main");
+    static const Char* MLP=__T("MLP");
+    static const Char* MLPFBA=__T("MLP FBA");
     static const Char* NonCore=__T("non-core");
     static const Char* Scalable=__T("scalable");
     static const Char* SSR=__T("SSR");
@@ -583,33 +586,31 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
                 if (Profile.find(Scalable)!=string::npos)
                     return Scalable;
             }
-            if ((Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3))
+            if ((Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3) || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)].find(MLP)==0)
             {
                 Ztring AdditionalFeatures;
                 ZtringList Profiles;
                 Profiles.Separator_Set(0, __T(" / "));
                 Profiles.Write(Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)]);
-                bool HasAC3=false, HasEAC3=false;
+                const Ztring& Format=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)];
                 for (size_t i=Profiles.size()-1; i!=(size_t)-1; i--)
                 {
-                    if (Profiles[i]==AC3)
-                        HasAC3=true;
-                    else if (Profiles[i]==EAC3)
-                        HasEAC3=true;
-                    else
+                    if (!AdditionalFeatures.empty())
+                        AdditionalFeatures+=__T(' ');
+
+                            if (Profiles[i]==EAC3Dep)
+                        AdditionalFeatures+=__T("Dep");
+                    else if (Profiles[i].find(JOC)!=string::npos)
+                        AdditionalFeatures+=JOC;
+                    else if (Profiles[i].find(_16ch)!=string::npos)
+                        AdditionalFeatures+=_16ch;
+                    else if (Profiles[i]==Format)
                     {
                         if (!AdditionalFeatures.empty())
-                            AdditionalFeatures+=__T(' ');
-                             if (Profiles[i]==EAC3Dep)
-                        {
-                            AdditionalFeatures+=__T("Dep");
-                            HasEAC3=true;
-                        }
-                        else if (Profiles[i]==EAC3JOC)
-                            AdditionalFeatures+=JOC;
-                        else
-                            AdditionalFeatures+=Profiles[i];
+                            AdditionalFeatures.resize(AdditionalFeatures.size()-1);
                     }
+                    else
+                        AdditionalFeatures+=Profiles[i];
                 }
                 return AdditionalFeatures;
             }
@@ -621,7 +622,9 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
                 return Bluray;
             if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==DTS)
                 return Ztring();
-            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3 && (Value.find(EAC3)!=string::npos || Value.find(JOC)!=string::npos))
+            if ((Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3) && (Value.find(EAC3)!=string::npos || Value.find(JOC)!=string::npos || Value.find(MLP)!=string::npos))
+                return Ztring();
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)].find(MLP)==0)
                 return Ztring();
             break;
         case Generic_Format_Level:
@@ -638,6 +641,26 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
                     return "Advanced Audio Codec Low Complexity with Spectral Band Replication";
                 if (Profile.find(LC)!=string::npos)
                     return "Advanced Audio Codec Low Complexity";
+            }
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==MLP || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(MLP)!=string::npos)
+            {
+                Ztring ToReturn;
+                if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3)
+                    ToReturn=__T("Audio Coding 3");
+                else if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3)
+                    ToReturn=__T("Enhanced AC-3");
+                if (!ToReturn.empty())
+                {
+                    if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(JOC)!=string::npos)
+                        ToReturn+=__T(" with Joint Object Coding");
+                    ToReturn+=__T(" + ");
+                }
+                ToReturn+=__T("Meridian Lossless Packing");
+                if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==MLPFBA || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(MLPFBA)!=string::npos)
+                    ToReturn+=__T(" FBA");
+                if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(_16ch)!=string::npos)
+                    ToReturn+=__T(" with 16-channel presentation");
+                return ToReturn;
             }
             if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3)
             {
@@ -1543,6 +1566,8 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, size_t Par
                 if (ShouldReturn)
                     EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return "); Debug += ToReturn;)
             }
+            if (Stream[StreamKind][StreamPos][Parameter].empty() && Parameter==File__Analyze::Fill_Parameter(StreamKind, Generic_Format_String))
+                EXECUTE_STRING(Stream[StreamKind][StreamPos][File__Analyze::Fill_Parameter(StreamKind, Generic_Format)], Debug += __T("Get, will return "); Debug+=ToReturn;)
             EXECUTE_STRING(Stream[StreamKind][StreamPos][Parameter], Debug += __T("Get, will return "); Debug+=ToReturn;)
         }
         else
