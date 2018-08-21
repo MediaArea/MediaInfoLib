@@ -4131,6 +4131,22 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tmcd()
         Parser->NumberOfFrames=NumberOfFrames; //tc->FrameDuration?(((float64)tc->TimeScale)/tc->FrameDuration):0;
         Parser->DropFrame=tc->DropFrame;
         Parser->NegativeTimes=tc->NegativeTimes;
+
+        //Get delay from timecode track's edit list
+        int64s FrameDurationInMediaUnits = tc->FrameDuration * Streams[moov_trak_tkhd_TrackID].mdhd_TimeScale;
+        if (FrameDurationInMediaUnits > 0)
+        {
+            for (size_t i = 0; i < Streams[moov_trak_tkhd_TrackID].edts.size(); ++i)
+            {
+                const stream::edts_struct& Edit = Streams[moov_trak_tkhd_TrackID].edts[i];
+                if (Edit.Delay != (int32u)-1)
+                {
+                    //Inform parser of offset (in TC frames) due to edit list
+                    Parser->FirstEditOffset = Edit.Delay * tc->TimeScale / FrameDurationInMediaUnits;
+                    break;
+                }
+            }
+        }
         Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
         mdat_MustParse=true; //Data is in MDAT
     FILLING_ELSE();
