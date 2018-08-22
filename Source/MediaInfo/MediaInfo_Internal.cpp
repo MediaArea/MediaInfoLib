@@ -1542,9 +1542,9 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, size_t Par
                 {
                     ZtringList List;
                     List.Separator_Set(0, __T(" / "));
-                    List.Write(Stream[StreamKind][StreamPos][Parameter]);
+                    List.Write(Stream[Stream_General][StreamPos][Parameter]);
                     for (size_t i=0; i<List.size(); i++)
-                        List[i]=HighestFormat(Stream_Audio, Audio_Format, Stream[Stream_Audio][StreamPos], List[i], ShouldReturn);
+                        List[i]=HighestFormat(Stream_Audio, Audio_Format_String, Stream[Stream_Audio][i], List[i], ShouldReturn);
                     if (ShouldReturn)
                     {
                         Ztring ToReturn=List.Read();

@@ -4175,7 +4175,8 @@ void File_Mxf::Streams_Finish_Component_ForAS11(const int128u ComponentUID, floa
                                                     Fill(Stream_Other, StreamPos_Last, "OtherIdentifierType", AS11->second.OtherIdentifierType);
                                                     Fill(Stream_Other, StreamPos_Last, "Genre", AS11->second.Genre);
                                                     Fill(Stream_Other, StreamPos_Last, "Distributor", AS11->second.Distributor);
-                                                    Fill(Stream_Other, StreamPos_Last, "PictureRatio", Ztring::ToZtring(AS11->second.PictureRatio_N)+__T(':')+Ztring::ToZtring(AS11->second.PictureRatio_D));
+                                                    if (AS11->second.PictureRatio_D!=(int32u)-1)
+                                                        Fill(Stream_Other, StreamPos_Last, "PictureRatio", Ztring::ToZtring(AS11->second.PictureRatio_N)+__T(':')+Ztring::ToZtring(AS11->second.PictureRatio_D));
                                                     if (AS11->second.ThreeD!=(int8u)-1)
                                                         Fill(Stream_Other, StreamPos_Last, "3D", AS11->second.ThreeD?__T("Yes"):__T("No"));
                                                     if (AS11->second.ThreeDType<Mxf_AS11_3D_Type_Count)
@@ -9234,6 +9235,18 @@ void File_Mxf::InterchangeObject_InstanceUID()
         {
             Components[InstanceUID].Update(Component->second);
             Components.erase(Component);
+        }
+        dmsegments::iterator DMSegment=DMSegments.find(0);
+        if (DMSegment!=DMSegments.end())
+        {
+            DMSegments[InstanceUID]=DMSegment->second;
+            DMSegments.erase(DMSegment);
+        }
+        as11s::iterator AS11=AS11s.find(0);
+        if (AS11!=AS11s.end())
+        {
+            AS11s[InstanceUID]=AS11->second;
+            AS11s.erase(AS11);
         }
     FILLING_END();
 }
