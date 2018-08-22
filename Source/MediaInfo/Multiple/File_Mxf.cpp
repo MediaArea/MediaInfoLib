@@ -9236,6 +9236,18 @@ void File_Mxf::InterchangeObject_InstanceUID()
             Components[InstanceUID].Update(Component->second);
             Components.erase(Component);
         }
+        dmsegments::iterator DMSegment=DMSegments.find(0);
+        if (DMSegment!=DMSegments.end())
+        {
+            DMSegments[InstanceUID]=DMSegment->second;
+            DMSegments.erase(DMSegment);
+        }
+        as11s::iterator AS11=AS11s.find(0);
+        if (AS11!=AS11s.end())
+        {
+            AS11s[InstanceUID]=AS11->second;
+            AS11s.erase(AS11);
+        }
     FILLING_END();
 }
 
