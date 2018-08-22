@@ -4175,7 +4175,8 @@ void File_Mxf::Streams_Finish_Component_ForAS11(const int128u ComponentUID, floa
                                                     Fill(Stream_Other, StreamPos_Last, "OtherIdentifierType", AS11->second.OtherIdentifierType);
                                                     Fill(Stream_Other, StreamPos_Last, "Genre", AS11->second.Genre);
                                                     Fill(Stream_Other, StreamPos_Last, "Distributor", AS11->second.Distributor);
-                                                    Fill(Stream_Other, StreamPos_Last, "PictureRatio", Ztring::ToZtring(AS11->second.PictureRatio_N)+__T(':')+Ztring::ToZtring(AS11->second.PictureRatio_D));
+                                                    if (AS11->second.PictureRatio_D!=(int32u)-1)
+                                                        Fill(Stream_Other, StreamPos_Last, "PictureRatio", Ztring::ToZtring(AS11->second.PictureRatio_N)+__T(':')+Ztring::ToZtring(AS11->second.PictureRatio_D));
                                                     if (AS11->second.ThreeD!=(int8u)-1)
                                                         Fill(Stream_Other, StreamPos_Last, "3D", AS11->second.ThreeD?__T("Yes"):__T("No"));
                                                     if (AS11->second.ThreeDType<Mxf_AS11_3D_Type_Count)
