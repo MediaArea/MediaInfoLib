@@ -37,6 +37,7 @@ cp ../Source/MediaInfoDLL/MediaInfoDLL.h MediaInfo_DLL_GNU_FromSource/Source/Med
 cp ../Source/MediaInfoDLL/MediaInfoDLL_Static.h MediaInfo_DLL_GNU_FromSource/Source/MediaInfoDLL/
 cp ../Source/MediaInfoDLL/MediaInfoDLL.cs MediaInfo_DLL_GNU_FromSource/Source/MediaInfoDLL/
 cp ../Source/MediaInfoDLL/MediaInfoDLL.JNA.java MediaInfo_DLL_GNU_FromSource/Source/MediaInfoDLL/
+cp ../Source/MediaInfoDLL/MediaInfoDLL.JNI.java MediaInfo_DLL_GNU_FromSource/Source/MediaInfoDLL/
 cp ../Source/MediaInfoDLL/MediaInfoDLL.JNative.java MediaInfo_DLL_GNU_FromSource/Source/MediaInfoDLL/
 cp ../Source/MediaInfoDLL/MediaInfoDLL.py MediaInfo_DLL_GNU_FromSource/Source/MediaInfoDLL/
 cp ../Source/MediaInfoDLL/MediaInfoDLL3.py MediaInfo_DLL_GNU_FromSource/Source/MediaInfoDLL/

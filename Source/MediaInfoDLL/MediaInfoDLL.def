@@ -76,4 +76,5 @@ EXPORTS
     MediaInfoListA_State_Get       @60
     MediaInfoListA_Count_Get       @61
     MediaInfoListA_Count_Get_Files @63
-;Last item = 77
+    JNI_OnLoad                     @78
+;Last item = 78

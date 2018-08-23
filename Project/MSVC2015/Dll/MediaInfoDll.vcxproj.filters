@@ -12,8 +12,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\MediaInfoDLL\MediaInfoDLL.cpp">
+    <ClCompile Include="..\..\..\Source\MediaInfoDLL\MediaInfoJNI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\ThirdParty\jni\jni.h">
+      <Filter>ThirdParty\jni</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MediaInfo.rc">

@@ -42,6 +42,7 @@ xcopy ..\Source\Doc\Documentation.html MediaInfo_DLL_GNU_Prepare\Source\Doc\ /S
 xcopy ..\Source\Example\HowToUse* MediaInfo_DLL_GNU_Prepare\Source\Example\ /S
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.cs MediaInfo_DLL_GNU_Prepare\Source\MediaInfoDLL\ /S
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.JNA.java MediaInfo_DLL_GNU_Prepare\Source\MediaInfoDLL\ /S
+xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.JNI.java MediaInfo_DLL_GNU_Prepare\Source\MediaInfoDLL\ /S
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.JNative.java MediaInfo_DLL_GNU_Prepare\Source\MediaInfoDLL\ /S
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.py MediaInfo_DLL_GNU_Prepare\Source\MediaInfoDLL\ /S
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL3.py MediaInfo_DLL_GNU_Prepare\Source\MediaInfoDLL\ /S

@@ -44,6 +44,7 @@ cp ../../Source/MediaInfoDLL/MediaInfoDLL.h MediaInfoLib/Developpers/Include/Med
 cp ../../Source/MediaInfoDLL/MediaInfoDLL_Static.h MediaInfoLib/Developpers/Include/MediaInfoDLL
 cp ../../Source/MediaInfoDLL/MediaInfoDLL.cs MediaInfoLib/Developpers/Include/MediaInfoDLL
 cp ../../Source/MediaInfoDLL/MediaInfoDLL.JNA.java MediaInfoLib/Developpers/Include/MediaInfoDLL
+cp ../../Source/MediaInfoDLL/MediaInfoDLL.JNI.java MediaInfoLib/Developpers/Include/MediaInfoDLL
 cp ../../Source/MediaInfoDLL/MediaInfoDLL.JNative.java MediaInfoLib/Developpers/Include/MediaInfoDLL
 cp ../../Source/MediaInfoDLL/MediaInfoDLL.py MediaInfoLib/Developpers/Include/MediaInfoDLL
 cp ../../Source/MediaInfoDLL/MediaInfoDLL3.py MediaInfoLib/Developpers/Include/MediaInfoDLL

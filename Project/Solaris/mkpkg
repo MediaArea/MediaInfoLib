@@ -80,6 +80,7 @@ cp ../../Source/MediaInfoDLL/MediaInfoDLL.cs ${install_prefix}/include/MediaInfo
 cp ../../Source/MediaInfoDLL/MediaInfoDLL.h ${install_prefix}/include/MediaInfoDLL/
 cp ../../Source/MediaInfoDLL/MediaInfoDLL_Static.h ${install_prefix}/include/MediaInfoDLL/
 cp ../../Source/MediaInfoDLL/MediaInfoDLL.JNA.java ${install_prefix}/include/MediaInfoDLL/
+cp ../../Source/MediaInfoDLL/MediaInfoDLL.JNI.java ${install_prefix}/include/MediaInfoDLL/
 cp ../../Source/MediaInfoDLL/MediaInfoDLL.JNative.java ${install_prefix}/include/MediaInfoDLL/
 cp ../../Source/MediaInfoDLL/MediaInfoDLL.py ${install_prefix}/include/MediaInfoDLL/
 cp ../../Source/MediaInfoDLL/MediaInfoDLL3.py ${install_prefix}/include/MediaInfoDLL/

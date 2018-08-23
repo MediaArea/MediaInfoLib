@@ -101,6 +101,8 @@ xcopy ..\Project\Java\Example.JNA\*.bat MediaInfo_Lib_Source\Project\Java\Exampl
 xcopy ..\Project\Java\Example.JNA\*.sh MediaInfo_Lib_Source\Project\Java\Example.JNA\ /S
 xcopy ..\Project\Java\Example.JNA\*.java MediaInfo_Lib_Source\Project\Java\Example.JNA\ /S
 xcopy ..\Project\Java\Example.JNA\*.txt MediaInfo_Lib_Source\Project\Java\Example.JNA\ /S
+xcopy ..\Project\Java\Example.JNI\*.bat MediaInfo_Lib_Source\Project\Java\Example.JNI\ /S
+xcopy ..\Project\Java\Example.JNI\*.sh MediaInfo_Lib_Source\Project\Java\Example.JNI\ /S
 xcopy ..\Project\Java\Example.JNative\*.bat MediaInfo_Lib_Source\Project\Java\Example.JNative\ /S
 xcopy ..\Project\Java\Example.JNative\*.sh MediaInfo_Lib_Source\Project\Java\Example.JNative\ /S
 xcopy ..\Project\Java\Example.JNative\*.java MediaInfo_Lib_Source\Project\Java\Example.JNative\ /S
