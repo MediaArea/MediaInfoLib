@@ -4,12 +4,6 @@
  *  be found in the License.html file in the root of the source tree.
  */
 
-/*  Copyright (c) MediaArea.net SARL. All Rights Reserved.
- *
- *  Use of this source code is governed by a BSD-style license that can
- *  be found in the License.html file in the root of the source tree.
- */
-
 class MediaInfo
 {
     static
@@ -33,6 +27,7 @@ class MediaInfo
         }
         catch (LinkageError e)
         {
+            throw new UnsatisfiedLinkError("Unable to load library 'mediainfo'");
         }
     }
 
@@ -41,7 +36,14 @@ class MediaInfo
     // Constructor
     public MediaInfo()
     {
-        mi = Init();
+        try
+        {
+          mi = Init();
+        }
+        catch (LinkageError e)
+        {
+          throw new UnsatisfiedLinkError("Library 'mediainfo' found but its JNI interface is missing");
+        }
     }
 
     public enum StreamKind {
