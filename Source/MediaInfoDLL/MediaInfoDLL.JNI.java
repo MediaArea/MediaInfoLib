@@ -27,6 +27,7 @@ class MediaInfo
         }
         catch (LinkageError e)
         {
+            throw new UnsatisfiedLinkError("Unable to load library 'mediainfo'");
         }
     }
 
@@ -35,7 +36,14 @@ class MediaInfo
     // Constructor
     public MediaInfo()
     {
-        mi = Init();
+        try
+        {
+          mi = Init();
+        }
+        catch (LinkageError e)
+        {
+          throw new UnsatisfiedLinkError("Library 'mediainfo' found but its JNI interface is missing");
+        }
     }
 
     public enum StreamKind {
