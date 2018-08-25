@@ -10,7 +10,7 @@
 //   - data is from a RandomAccessFile object (local file)
 //   - data is from a FileUrl object (an URL, HTTP or HTTPS)
 //     - without authentication
-//     - with Amazon S3 authentication (input format is in the form "https://AWSAccessKeyId:AWSSecretAccessKey@s3.amazonaws.com/bucketname/filename"
+//     - with Amazon S3 authentication (input format is in the form "https://AWSAccessKeyId:AWSSecretAccessKey@s3.amazonaws.com/bucketname/filename")
 
 // Example for both JNA and JNI interfaces
 

@@ -952,8 +952,8 @@ jint JNI_GetDefaultJavaVMInitArgs(void*);
 jint JNI_CreateJavaVM(JavaVM**, JNIEnv**, void*);
 jint JNI_GetCreatedJavaVMs(JavaVM**, jsize, jsize*);
 #define JNIIMPORT
-#ifdef WIN32
-#define JNIEXPORT __declspec(dllexport)
+#ifdef _WIN32
+#define JNIEXPORT // Not from Android, added for compatibility with Windows // __declspec(dllexport) not used because we use a .def
 #else
 #define JNIEXPORT  __attribute__ ((visibility ("default")))
 #endif

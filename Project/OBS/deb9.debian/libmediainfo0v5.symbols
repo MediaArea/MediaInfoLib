@@ -76,6 +76,7 @@ libmediainfo.so.0 libmediainfo0v5 #MINVER#
  MediaInfo_Set@Base 0.7.52
  MediaInfo_SetI@Base 0.7.52
  MediaInfo_State_Get@Base 0.7.52
+ JNI_OnLoad@Base 18.08
  (c++)"MediaInfoLib::MediaInfoList::Option_Static(std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&, std::__cxx11::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> > const&)@Base" 0.7.56
  (c++)"MediaInfoLib::MediaInfoList::Open_Buffer_Init(unsigned long long, unsigned long long)@Base" 0.7.52
  (c++|regex)"MediaInfoLib::MediaInfoList::Open_Buffer_Continue\(unsigned (int|long), unsigned char const\*, unsigned (int|long)\)@Base" 0.7.52
