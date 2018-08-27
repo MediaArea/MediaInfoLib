@@ -816,7 +816,7 @@ void File_Mk::Streams_Finish()
                             Utc=Item2->second;
                             Item->second.erase(Item2);
                         }
-                        if (Utc>=Hutc)
+                        if (Utc<=Hutc)
                             Tags_Verified=true;
                         else
                             Fill(StreamKind_Last, StreamPos_Last, "Statistics Tags Issue", App + __T(' ') + Utc + __T(" / ") + Retrieve(Stream_General, 0, "Encoded_Application") + __T(' ') + Hutc);
@@ -2126,7 +2126,7 @@ void File_Mk::Ebml_DocTypeReadVersion()
 
     //Filling
     FILLING_BEGIN();
-        if (UInteger!=Format_Version)
+        if (UInteger!=Format_Version && MediaInfoLib::Config.LegacyStreamDisplay_Get())
             Fill(Stream_General, 0, General_Format_Version, __T("Version ")+Ztring::ToZtring(UInteger)); //Adding compatible version for info about legacy decoders
     FILLING_END();
 }
