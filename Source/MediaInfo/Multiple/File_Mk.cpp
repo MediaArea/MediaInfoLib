@@ -2126,7 +2126,7 @@ void File_Mk::Ebml_DocTypeReadVersion()
 
     //Filling
     FILLING_BEGIN();
-        if (UInteger!=Format_Version)
+        if (UInteger!=Format_Version && MediaInfoLib::Config.LegacyStreamDisplay_Get())
             Fill(Stream_General, 0, General_Format_Version, __T("Version ")+Ztring::ToZtring(UInteger)); //Adding compatible version for info about legacy decoders
     FILLING_END();
 }
