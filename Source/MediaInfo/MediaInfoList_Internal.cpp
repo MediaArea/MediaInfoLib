@@ -98,6 +98,22 @@ size_t MediaInfoList_Internal::Open(const String &File_Name, const fileoptions_t
     {
         List=Dir::GetAllFileNames(File_Name, (Options&FileOption_NoRecursive)?Dir::Include_Files:((Dir::dirlist_t)(Dir::Include_Files|Dir::Parse_SubDirs)));
         sort(List.begin(), List.end());
+
+        #if MEDIAINFO_ADVANCED
+            if (MediaInfoLib::Config.ParseOnlyKnownExtensions_IsSet())
+            {
+                set<Ztring> ExtensionsList=MediaInfoLib::Config.ParseOnlyKnownExtensions_GetList_Set();
+                bool AcceptNoExtension=ExtensionsList.find(Ztring())!=ExtensionsList.end();
+                for (size_t i=List.size()-1; i!=(size_t)-1; i--)
+                {
+                    const Ztring& Name=List[i];
+                    size_t Extension_Pos=Name.rfind(__T('.'));
+                    if (Extension_Pos!=string::npos && ExtensionsList.find(Name.substr(Extension_Pos+1))==ExtensionsList.end()
+                     || Extension_Pos==string::npos && !AcceptNoExtension)
+                            List.erase(List.begin()+i);
+                }
+            }
+        #endif //MEDIAINFO_ADVANCED
     }
     #endif //defined(MEDIAINFO_DIRECTORY_YES)
 
