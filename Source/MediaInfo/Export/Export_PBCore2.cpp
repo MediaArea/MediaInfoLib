@@ -153,6 +153,8 @@ Ztring ToReturn;
             encoding_annotation+=__T(" endianness:")+MI.Get(StreamKind, StreamPos, __T("Format_Settings_Endianness"));
         if (!MI.Get(StreamKind, StreamPos, __T("Format_Settings_Sign")).empty())
             encoding_annotation+=__T(" signedness:")+MI.Get(StreamKind, StreamPos, __T("Format_Settings_Sign"));
+        if (!MI.Get(StreamKind, StreamPos, __T("Compression_Mode")).empty())
+            encoding_annotation+=__T(" compression_mode:")+MI.Get(StreamKind, StreamPos, __T("Compression_Mode"));
         encoding_annotation=encoding_annotation.erase(0,1);
         if (!encoding_annotation.empty())
             Child->Add_Attribute("annotation", encoding_annotation);
@@ -255,6 +257,7 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec_Settings_RefFrames") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec_Settings_Sign") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Colorimetry") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Compression_Mode") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Count") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Delay") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Delay_Source") &&
