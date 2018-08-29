@@ -1371,9 +1371,13 @@ void File_Ac3::Streams_Fill()
     else if (Retrieve(Stream_Audio, 0, Audio_Format)==__T("MLP FBA") || Retrieve(Stream_Audio, 0, Audio_Format_Profile).find(__T("MLP FBA"))==0)
     {
         if (HasJOC || HD_HasAtmos)
-            Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "TrueHD with Dolby Atmos");
+            Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "Dolby TrueHD with Dolby Atmos");
         else
-            Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "TrueHD");
+            Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "Dolby TrueHD");
+    }
+    else if (Retrieve(Stream_Audio, 0, Audio_Format)==__T("MLP") || Retrieve(Stream_Audio, 0, Audio_Format_Profile).find(__T("MLP"))==0)
+    {
+        Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "MLP Lossless");
     }
     else if (Retrieve(Stream_Audio, 0, Audio_Format)==__T("AC-3"))
         Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "Dolby Digital");

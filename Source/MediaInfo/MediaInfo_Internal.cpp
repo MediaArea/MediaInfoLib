@@ -642,7 +642,7 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
                 if (Profile.find(LC)!=string::npos)
                     return "Advanced Audio Codec Low Complexity";
             }
-            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==MLP || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(MLP)!=string::npos)
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)].find(MLP)!=string::npos || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(MLP)!=string::npos)
             {
                 Ztring ToReturn;
                 if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3)
