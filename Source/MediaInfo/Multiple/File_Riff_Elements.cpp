@@ -3642,7 +3642,7 @@ void File_Riff::WAVE_bext()
         Fill(Stream_General, 0, General_Encoded_Library_Settings, History);
         if (SamplesPerSec && TimeReference!=(int64u)-1)
         {
-            Fill(Stream_Audio, 0, Audio_Delay, float64_int64s(((float64)TimeReference)*1000/SamplesPerSec));
+            Fill(Stream_Audio, 0, Audio_Delay, ((float64)TimeReference*1000/SamplesPerSec), 6);
             Fill(Stream_Audio, 0, Audio_Delay_Source, "Container (bext)");
         }
         if (Version>=1 && UMID1 != 0 && UMID2 != 0)
