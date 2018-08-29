@@ -1283,6 +1283,8 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     }
 
     if (!MI.Get(Stream_General, 0, General_Movie).empty()
+     || !MI.Get(Stream_General, 0, General_Part).empty()
+     || !MI.Get(Stream_General, 0, General_Part_Position).empty()
      || !MI.Get(Stream_General, 0, General_Track).empty()
      || !MI.Get(Stream_General, 0, General_Track_Position).empty()
      || !MI.Get(Stream_General, 0, General_Album).empty()
@@ -1298,10 +1300,19 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
         if (!MI.Get(Stream_General, 0, General_Movie).empty()
          || !MI.Get(Stream_General, 0, General_Track).empty()
          || !MI.Get(Stream_General, 0, General_Track_Position).empty()
+         || !MI.Get(Stream_General, 0, General_Part).empty()
+         || !MI.Get(Stream_General, 0, General_Part_Position).empty()
          || !MI.Get(Stream_General, 0, General_Album).empty())
         {
             Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Movie, "mpeg7:Title", "type", std::string("songTitle"));
             Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Track, "mpeg7:Title", "type", std::string("songTitle"));
+            if (!MI.Get(Stream_General, 0, General_Part_Position).empty())
+            {
+                Ztring Total=MI.Get(Stream_General, 0, General_Part_Position_Total);
+                Value=MI.Get(Stream_General, 0, General_Part_Position)+(Total.empty()?Ztring():(__T("/")+Total));
+
+                Node_Creation->Add_Child("mpeg7:Title", Value, "type", std::string("urn:x-mpeg7-mediainfo:cs:TitleTypeCS:2009:PART"));
+            }
             if (!MI.Get(Stream_General, 0, General_Track_Position).empty())
             {
                  Ztring Total=MI.Get(Stream_General, 0, General_Track_Position_Total);
