@@ -1342,7 +1342,19 @@ void File_Ac3::Streams_Fill()
     else if (bsid_Max>0x0A && bsid_Max<=0x10)
         SamplesPerFrame=256*(numblkscod==3?6:(numblkscod+1));
     else if (HD_MajorSync_Parsed && (HD_StreamType==0xBA || HD_StreamType==0xBB)) // TrueHD or MLP
-        SamplesPerFrame=40;
+    {
+        int64u HD_SamplingRate=Retrieve_Const(Stream_Audio, 0, Audio_SamplingRate).To_int64u();
+        if (HD_SamplingRate<44100)
+            SamplesPerFrame=0; //Unknown
+        else if (HD_SamplingRate<=48000)
+            SamplesPerFrame=40;
+        else if (HD_SamplingRate<=96000)
+            SamplesPerFrame=80;
+        else if (HD_SamplingRate<=192000)
+            SamplesPerFrame=160;
+        else
+            SamplesPerFrame=0; //Unknown
+    }
     else
         SamplesPerFrame=0;
     if (SamplesPerFrame)
