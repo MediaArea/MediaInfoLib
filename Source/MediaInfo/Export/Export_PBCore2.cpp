@@ -172,7 +172,15 @@ Ztring ToReturn;
     if (StreamKind==Stream_Video && !MI.Get(Stream_Video, StreamPos, Video_FrameRate).empty())
     {
         Node* Child=Node_EssenceTrack->Add_Child("essenceTrackFrameRate", MI.Get(Stream_Video, StreamPos, Video_FrameRate));
-        Child->Add_Attribute_IfNotEmpty(MI, Stream_Video, StreamPos, Video_FrameRate_Mode, "annotation");
+
+        Ztring frame_rate_annotation;
+        if (!MI.Get(StreamKind, StreamPos, __T("Video_FrameRate_Mode")).empty())
+            frame_rate_annotation+=__T(" mode:")+MI.Get(StreamKind, StreamPos, __T("Video_FrameRate_Mode"));
+        if (!MI.Get(StreamKind, StreamPos, __T("FrameRate_Num")).empty())
+            frame_rate_annotation+=__T(" rational_frame_rate:")+MI.Get(StreamKind, StreamPos, __T("FrameRate_Num"))+__T("/")+MI.Get(StreamKind, StreamPos, __T("FrameRate_Den"));
+        frame_rate_annotation=frame_rate_annotation.erase(0,1);
+        if (!frame_rate_annotation.empty())
+            Child->Add_Attribute("annotation", frame_rate_annotation);
     }
 
     //essenceTrackSamplingRate
@@ -275,7 +283,9 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Settings_Sign") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Version") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("FrameRate") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("FrameRate_Den") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("FrameRate_Mode") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("FrameRate_Num") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Height") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ID") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("InternetMediaType") &&
