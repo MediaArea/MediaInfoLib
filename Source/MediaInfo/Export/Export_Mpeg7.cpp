@@ -55,6 +55,81 @@ static Ztring Mpeg7_TimeToISO(Ztring Value)
 }
 
 //---------------------------------------------------------------------------
+static bool Mpeg7_TimeToISO_Isvalid(Ztring& TimePoint)
+{
+    if (TimePoint.size()<=3)
+       return false;
+    else if (!(TimePoint[0]>=__T('0') && TimePoint[0]<=__T('9')
+            && TimePoint[1]>=__T('0') && TimePoint[1]<=__T('9')
+            && TimePoint[2]>=__T('0') && TimePoint[2]<=__T('9')
+            && TimePoint[3]>=__T('0') && TimePoint[3]<=__T('9')))
+       return false;
+    else if (TimePoint.size()>4)
+    {
+        if (TimePoint.size()<=6)
+           return false;
+        else if (!(TimePoint[4]==__T('-')
+                && TimePoint[5]>=__T('0') && TimePoint[5]<=__T('9')
+                && TimePoint[6]>=__T('0') && TimePoint[6]<=__T('9')))
+           return false;
+        else if (TimePoint.size()>7)
+        {
+            if (TimePoint.size()<=9)
+               return false;
+            else if (!(TimePoint[7]==__T('-')
+                    && TimePoint[8]>=__T('0') && TimePoint[8]<=__T('9')
+                    && TimePoint[9]>=__T('0') && TimePoint[9]<=__T('9')))
+               return false;
+            else if (TimePoint.size()>10)
+            {
+                if (TimePoint.size()<=12)
+                   return false;
+                else if (!(TimePoint[10]==__T('T')
+                        && TimePoint[11]>=__T('0') && TimePoint[11]<=__T('9')
+                        && TimePoint[12]>=__T('0') && TimePoint[12]<=__T('9')))
+                   return false;
+                else if (TimePoint.size()>13)
+                {
+                    if (TimePoint.size()<=15)
+                       return false;
+                    else if (!(TimePoint[13]==__T(':')
+                            && TimePoint[14]>=__T('0') && TimePoint[14]<=__T('9')
+                            && TimePoint[15]>=__T('0') && TimePoint[15]<=__T('9')))
+                       return false;
+                    else if (TimePoint.size()>16)
+                    {
+                        if (TimePoint.size()<=18)
+                           return false;
+                        else if (!(TimePoint[16]==__T(':')
+                                && TimePoint[17]>=__T('0') && TimePoint[17]<=__T('9')
+                                && TimePoint[18]>=__T('0') && TimePoint[18]<=__T('9')))
+                           return false;
+                        else if (TimePoint.size()>19)
+                        {
+                            if (TimePoint.size()==20 && TimePoint[19]==__T('Z'))
+                            {
+                                TimePoint[19]=__T('+');
+                                TimePoint+=__T("00:00");
+                            }
+                            else if (TimePoint.size()<=24)
+                               return false;
+                            else if (!((TimePoint[19]==__T('+') || TimePoint[19]==__T('-'))
+                                    && TimePoint[20]>=__T('0') && TimePoint[20]<=__T('9')
+                                    && TimePoint[21]>=__T('0') && TimePoint[21]<=__T('9')
+                                    && TimePoint[22]>=__T(':')
+                                    && TimePoint[23]>=__T('0') && TimePoint[23]<=__T('9')
+                                    && TimePoint[24]>=__T('0') && TimePoint[24]<=__T('9')))
+                               return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
+//---------------------------------------------------------------------------
 const Char* Mpeg7_Type(MediaInfo_Internal &MI) //TO ADAPT
 {
     if (MI.Count_Get(Stream_Image))
@@ -1438,8 +1513,13 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
         if (!MI.Get(Stream_General, 0, General_Encoded_Date).empty())
         {
             Node* Node_Date=Node_Creation->Add_Child("mpeg7:CreationCoordinates")->Add_Child("mpeg7:Date");
-            Node_Date->Add_Child("")->XmlCommentOut="Encoded date";
-            Node_Date->Add_Child("mpeg7:TimePoint", Mpeg7_TimeToISO(MI.Get(Stream_General, 0, General_Encoded_Date)));
+            Ztring TimePoint=Mpeg7_TimeToISO(MI.Get(Stream_General, 0, General_Encoded_Date));
+            bool TimePoint_Isvalid=Mpeg7_TimeToISO_Isvalid(TimePoint);
+            if (TimePoint_Isvalid)
+                Node_Date->Add_Child("")->XmlCommentOut="Encoded date";
+            Node_Date->Add_Child("mpeg7:TimePoint", TimePoint);
+            if (!TimePoint_Isvalid)
+                Node_Date->XmlCommentOut="Encoded date, invalid input";
         }
         if (!MI.Get(Stream_General, 0, General_Producer).empty())
         {
