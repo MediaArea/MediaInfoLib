@@ -450,6 +450,10 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     if (!PBCore2_MediaType(MI).empty())
         Node_Main.Add_Child("instantiationMediaType", PBCore2_MediaType(MI));
 
+    //instantiationGenerations
+    if (!MI.Get(Stream_General, 0, __T("instantiationGenerations")).empty())
+        Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, "instantiationGenerations", "instantiationGenerations");
+
     //formatFileSize
     Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_FileSize, "instantiationFileSize", "unitsOfMeasure", std::string("byte"));
 
