@@ -785,6 +785,30 @@ Ztring Mpeg7_MediaTimePoint(MediaInfo_Internal &MI)
         return ToReturn;
     }
 
+    if (MI.Count_Get(Stream_Audio)==1 && MI.Get(Stream_General, 0, General_Format)==__T("Wave"))
+    {
+        int64u Rate=MI.Get(Stream_Audio, 0, Audio_SamplingRate).To_int64u();
+        int64u Delay=(int64u)float64_int64s(MI.Get(Stream_Audio, 0, Audio_Delay).To_float64()*Rate/1000);
+        int64u DD=Delay/(24*60*60*Rate);
+        Delay=Delay%(24*60*60*Rate);
+        int64u HH=Delay/(60*60*Rate);
+        Delay=Delay%(60*60*Rate);
+        int64u MM=Delay/(60*Rate);
+        Delay=Delay%(60*Rate);
+        int64u Sec=Delay/Rate;
+        Delay=Delay%Rate;
+        Ztring ToReturn;
+        if (DD)
+            ToReturn+=Ztring::ToZtring(DD);
+        ToReturn+=__T('T');
+        ToReturn+=(HH<10?__T("0"):__T(""))+Ztring::ToZtring(HH)+__T(':');
+        ToReturn+=(MM<10?__T("0"):__T(""))+Ztring::ToZtring(MM)+__T(':');
+        ToReturn+=(Sec<10?__T("0"):__T(""))+Ztring::ToZtring(Sec)+__T(':');
+        ToReturn+=Ztring::ToZtring(Delay)+__T('F');
+        ToReturn+=Ztring::ToZtring(Rate);
+        return ToReturn;
+    }
+
     //Default: In milliseconds
     int64u Milliseconds=MI.Get(Stream_Video, 0, Video_Delay).To_int64u();
     int64u DD=Milliseconds/(24*60*60*1000);
