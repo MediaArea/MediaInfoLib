@@ -178,6 +178,10 @@ Ztring ToReturn;
             frame_rate_annotation+=__T(" mode:")+MI.Get(StreamKind, StreamPos, __T("Video_FrameRate_Mode"));
         if (!MI.Get(StreamKind, StreamPos, __T("FrameRate_Num")).empty())
             frame_rate_annotation+=__T(" rational_frame_rate:")+MI.Get(StreamKind, StreamPos, __T("FrameRate_Num"))+__T("/")+MI.Get(StreamKind, StreamPos, __T("FrameRate_Den"));
+        if (!MI.Get(StreamKind, StreamPos, __T("ScanOrder")).empty())
+            frame_rate_annotation+=__T(" interlacement:")+MI.Get(StreamKind, StreamPos, __T("ScanOrder"));
+        else if (!MI.Get(StreamKind, StreamPos, __T("ScanType")).empty())
+            frame_rate_annotation+=__T(" interlacement:")+MI.Get(StreamKind, StreamPos, __T("ScanType"));
         frame_rate_annotation=frame_rate_annotation.erase(0,1);
         if (!frame_rate_annotation.empty())
             Child->Add_Attribute("annotation", frame_rate_annotation);
@@ -296,6 +300,8 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Sampled_Height") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Sampled_Width") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("SamplingRate") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ScanType") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ScanOrder") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Standard") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("StreamCount") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("StreamKind") &&
