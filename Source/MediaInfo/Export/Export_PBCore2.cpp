@@ -323,6 +323,7 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("StreamSize_Proportion") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Tagged_Date") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("UniqueID") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Video_Delay") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Video_DisplayAspectRatio") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Video_FrameRate") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Video_FrameRate_Mode") &&
