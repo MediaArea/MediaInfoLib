@@ -441,7 +441,10 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     Child->Add_Attribute_IfNotEmpty(MI, Stream_General, 0, General_Format_Version, "annotation");
 
     //formatLocation
-    Node_Main.Add_Child("instantiationLocation", MI.Get(Stream_General, 0, General_CompleteName));
+    if (!MI.Get(Stream_General, 0, __T("instantiationLocation")).empty())
+        Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, "instantiationLocation", "instantiationLocation");
+    else
+        Node_Main.Add_Child("instantiationLocation", MI.Get(Stream_General, 0, General_CompleteName));
 
     //formatMediaType
     if (!PBCore2_MediaType(MI).empty())
@@ -539,6 +542,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Format_Version") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("FrameRate") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("HeaderSize") &&
+            MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("instantiationLocation") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("InternetMediaType") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("IsStreamable") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("MenuCount") &&
