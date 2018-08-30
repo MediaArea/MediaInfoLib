@@ -118,7 +118,7 @@ Ztring ToReturn;
                 return; //Not supported
         default:            return; //Not supported
     }
-    
+
     Node* Node_EssenceTrack=Parent->Add_Child("instantiationEssenceTrack");
 
     Node_EssenceTrack->Add_Child("essenceTrackType", essenceTrackType);
@@ -153,7 +153,6 @@ Ztring ToReturn;
             Child->Add_Attribute("source", "codecid");
             Child->Add_Attribute("ref", MI.Get(StreamKind, StreamPos, __T("CodecID")));
         }
-        
         Child->Add_Attribute_IfNotEmpty(MI, StreamKind, StreamPos, "Format_Version", "version");
 
         Ztring encoding_annotation;
