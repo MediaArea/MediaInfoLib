@@ -573,7 +573,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         }
 
         //General Format
-        if (Parameter==Fill_Parameter(StreamKind, Generic_Format) && Retrieve(Stream_General, 0, General_Format).empty() && !Value.empty())
+        if (Parameter==Fill_Parameter(StreamKind, Generic_Format) && Retrieve(Stream_General, 0, General_Format).empty() && !Value.empty() && Count_Get(Stream_Video)+Count_Get(Stream_Audio)+Count_Get(Stream_Text)+Count_Get(Stream_Other)+Count_Get(Stream_Image)==1)
             Fill(Stream_General, 0, General_Format, Value); //If not already filled, we are filling with the stream format
 
         //ID
@@ -1369,6 +1369,7 @@ size_t File__Analyze::Merge(MediaInfo_Internal &ToAdd, bool)
             {
                 if (StreamKind!=Stream_General
                  || !(Pos==General_CompleteName
+                   || Pos==General_CompleteName_Last
                    || Pos==General_FolderName
                    || Pos==General_FileName
                    || Pos==General_FileExtension
