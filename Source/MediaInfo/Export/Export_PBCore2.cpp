@@ -311,6 +311,7 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Resolution") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Sampled_Height") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Sampled_Width") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("SamplingCount") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("SamplingRate") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ScanType") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ScanOrder") &&
