@@ -126,16 +126,16 @@ Ztring ToReturn;
     //essenceTrackIdentifier
     if (!MI.Get(StreamKind, StreamPos, __T("ID")).empty())
     {
-    Node* Child=Node_EssenceTrack->Add_Child("essenceTrackIdentifier", MI.Get(StreamKind, StreamPos, __T("ID")));
-    Child->Add_Attribute("source", std::string("ID"));
-    Ztring id_annotation;
-    if (!MI.Get(StreamKind, StreamPos, __T("Default")).empty())
-        id_annotation+=__T(" default:")+MI.Get(StreamKind, StreamPos, __T("Default"));
-    if (!MI.Get(StreamKind, StreamPos, __T("Forced")).empty())
-        id_annotation+=__T(" forced:")+MI.Get(StreamKind, StreamPos, __T("Forced"));
-    id_annotation=id_annotation.erase(0,1);
-    if (!id_annotation.empty())
-        Child->Add_Attribute("annotation", id_annotation);
+        Node* Child=Node_EssenceTrack->Add_Child("essenceTrackIdentifier", MI.Get(StreamKind, StreamPos, __T("ID")));
+        Child->Add_Attribute("source", std::string("ID"));
+        Ztring id_annotation;
+        if (!MI.Get(StreamKind, StreamPos, __T("Default")).empty())
+            id_annotation+=__T(" default:")+MI.Get(StreamKind, StreamPos, __T("Default"));
+        if (!MI.Get(StreamKind, StreamPos, __T("Forced")).empty())
+            id_annotation+=__T(" forced:")+MI.Get(StreamKind, StreamPos, __T("Forced"));
+        id_annotation=id_annotation.erase(0,1);
+        if (!id_annotation.empty())
+            Child->Add_Attribute("annotation", id_annotation);
     }
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "UniqueID", "essenceTrackIdentifier", "source", std::string("UniqueID"));
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "MenuID", "essenceTrackIdentifier", "source", std::string("MenuID"));
