@@ -1331,7 +1331,9 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     Mpeg7_CS(Node_MediaFormat, "mpeg7:FileFormat", "FileFormatCS", Mpeg7_FileFormatCS_termID, Mpeg7_FileFormatCS_Name, MI, 0);
 
     //FileSize
-    Node_MediaFormat->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_FileSize, "mpeg7:FileSize");
+    Node* FileSize=Node_MediaFormat->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_FileSize, "mpeg7:FileSize");
+    if (FileSize && !MI.Get(Stream_General, 0, __T("IsTruncated")).empty())
+        FileSize->XmlComment="Malformed file: truncated";
 
     //System
     Mpeg7_CS(Node_MediaFormat, "mpeg7:System", "SystemCS", Mpeg7_SystemCS_termID, Mpeg7_SystemCS_Name, MI, 0);
