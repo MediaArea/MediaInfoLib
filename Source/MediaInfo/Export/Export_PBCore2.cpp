@@ -282,6 +282,8 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Count") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Default") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Delay") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Delay_DropFrame") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Delay_Settings") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Delay_Source") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("DisplayAspectRatio") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Duration") &&
