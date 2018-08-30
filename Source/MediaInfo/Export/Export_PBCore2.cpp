@@ -164,6 +164,10 @@ Ztring ToReturn;
             encoding_annotation+=__T(" endianness:")+MI.Get(StreamKind, StreamPos, __T("Format_Settings_Endianness"));
         if (!MI.Get(StreamKind, StreamPos, __T("Format_Settings_Sign")).empty())
             encoding_annotation+=__T(" signedness:")+MI.Get(StreamKind, StreamPos, __T("Format_Settings_Sign"));
+        if (!MI.Get(StreamKind, StreamPos, __T("Format_Settings_Packing")).empty())
+            encoding_annotation+=__T(" packing:")+MI.Get(StreamKind, StreamPos, __T("Format_Settings_Packing"));
+        if (!MI.Get(StreamKind, StreamPos, __T("Format_Compression")).empty())
+            encoding_annotation+=__T(" compression:")+MI.Get(StreamKind, StreamPos, __T("Format_Compression"));
         if (!MI.Get(StreamKind, StreamPos, __T("Compression_Mode")).empty())
             encoding_annotation+=__T(" compression_mode:")+MI.Get(StreamKind, StreamPos, __T("Compression_Mode"));
         encoding_annotation=encoding_annotation.erase(0,1);
@@ -304,7 +308,9 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Encoded_Library") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Forced") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Compression") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Settings") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Settings_Packing") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format/Info") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format/Url") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Commercial") &&
