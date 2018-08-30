@@ -204,8 +204,16 @@ Ztring ToReturn;
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "BitDepth", "essenceTrackBitDepth");
 
     //essenceTrackFrameSize
-    if (StreamKind==Stream_Video && !MI.Get(Stream_Video, StreamPos, Video_Width).empty())
-        Node_EssenceTrack->Add_Child("essenceTrackFrameSize", MI.Get(Stream_Video, StreamPos, Video_Width)+__T("x")+MI.Get(Stream_Video, StreamPos, Video_Height));
+    if (!MI.Get(StreamKind, StreamPos, Video_Width).empty())
+        Node_EssenceTrack->Add_Child("essenceTrackFrameSize", MI.Get(StreamKind, StreamPos, Video_Width)+__T("x")+MI.Get(StreamKind, StreamPos, Video_Height));
+    else if (!MI.Get(StreamKind, StreamPos, __T("Width")).empty())
+    {
+        Ztring framesize;
+        framesize=MI.Get(StreamKind, StreamPos, __T("Width"));
+        framesize+=__T("x");
+        framesize+=MI.Get(StreamKind, StreamPos, __T("Height"));
+        Node_EssenceTrack->Add_Child("essenceTrackFrameSize", framesize);
+    }
 
     //essenceTrackAspectRatio
     if (StreamKind==Stream_Video)
