@@ -31,6 +31,7 @@ struct Node
     std::string Value;
     Attributes Attrs;
     std::vector<Node*> Childs;
+    std::string XmlComment; //If set, add comment after element data
     std::string XmlCommentOut; //If set, comment out the whole node in the xml output with the string as comment
     std::string RawContent; //If set, replace the whole node by the string
     bool Multiple;
