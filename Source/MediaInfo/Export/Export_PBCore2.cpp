@@ -507,6 +507,13 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
         for (size_t StreamPos=0; StreamPos<MI.Count_Get((stream_t)StreamKind); StreamPos++)
             PBCore2_Transform(&Node_Main, MI, (stream_t)StreamKind, StreamPos);
 
+    //instantiationRights
+    if (!MI.Get(Stream_General, 0, General_Copyright).empty())
+    {
+        Node* instantiationRights=Node_Main.Add_Child("instantiationRights");
+        instantiationRights->Add_Child("rightsSummary", MI.Get(Stream_General, 0, General_Copyright), "annotation", "embedded copyright statement");
+    }
+
     //instantiationAnnotations
     for (size_t Pos=0; Pos<MI.Count_Get(Stream_General, 0); Pos++)
         if (
@@ -525,6 +532,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("CodecID_Version") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("CompleteName") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("com.apple.quicktime.player.movie.audio.mute") &&
+            MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Copyright") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Count") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("DataSize") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Duration") &&
