@@ -248,7 +248,7 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
         }
 
         if (!MI.Get(Stream_Image, Pos, __T("Density_X")).empty() ||
-            !MI.Get(Stream_Image, Pos, __T("Density_X")).empty() ||
+            !MI.Get(Stream_Image, Pos, __T("Density_Y")).empty() ||
             !MI.Get(Stream_Image, Pos, Image_ColorSpace).empty())
         {
             Node* Node_ImageAssessmentMetadata=Node_Root->Add_Child("mix:ImageAssessmentMetadata");
