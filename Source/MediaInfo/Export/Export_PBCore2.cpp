@@ -285,6 +285,9 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Delay_DropFrame") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Delay_Settings") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Delay_Source") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Density_Unit") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Density_X") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Density_Y") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("DisplayAspectRatio") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Duration") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Encoded_Date") &&
@@ -418,6 +421,17 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
         if (dateTagged.size()>=13)
             dateTagged+=__T('Z');
         Node_Main.Add_Child("instantiationDate", dateTagged, "dateType", "tagged");
+    }
+
+    //instantiationDimensions
+    if (!MI.Get(Stream_Image, 0, __T("Density_X")).empty())
+    {
+        Ztring dimensions;
+        dimensions=MI.Get(Stream_Image, 0, __T("Density_X"));
+        dimensions+=__T("x");
+        dimensions+=MI.Get(Stream_Image, 0, __T("Density_Y"));
+        Node* Child=Node_Main.Add_Child("instantiationDimensions", dimensions);
+        Child->Add_Attribute_IfNotEmpty(MI, Stream_Image, 0, "Density_Unit", "unitsOfMeasure");
     }
 
     //instantiationDigital
