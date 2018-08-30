@@ -583,9 +583,9 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("UniqueID") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("VideoCount") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Video_Codec_List") &&
-            MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Video_Format_List") &&
-            MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Video_Format_WithHint_List") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Video_Language_List") &&
+            MI.Get(Stream_General, 0, Pos, Info_Name).find(__T("_Format_List"))==std::string::npos &&
+            MI.Get(Stream_General, 0, Pos, Info_Name).find(__T("_Format_WithHint_List"))==std::string::npos &&
             MI.Get(Stream_General, 0, Pos, Info_Name).find(__T("String"))==std::string::npos
             )
                 Node_Main.Add_Child("instantiationAnnotation", MI.Get(Stream_General, 0, Pos),
