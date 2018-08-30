@@ -863,6 +863,8 @@ Ztring Mpeg7_MediaTimePoint(MediaInfo_Internal &MI)
     if (MI.Count_Get(Stream_Audio)==1 && MI.Get(Stream_General, 0, General_Format)==__T("Wave"))
     {
         int64u Rate=MI.Get(Stream_Audio, 0, Audio_SamplingRate).To_int64u();
+        if (!Rate)
+            return Ztring();
         int64u Delay=(int64u)float64_int64s(MI.Get(Stream_Audio, 0, Audio_Delay).To_float64()*Rate/1000);
         int64u DD=Delay/(24*60*60*Rate);
         Delay=Delay%(24*60*60*Rate);
