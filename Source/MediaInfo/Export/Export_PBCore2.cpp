@@ -124,7 +124,17 @@ Ztring ToReturn;
     Node_EssenceTrack->Add_Child("essenceTrackType", essenceTrackType);
 
     //essenceTrackIdentifier
-    Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "ID", "essenceTrackIdentifier", "source", std::string("ID"));
+    Node* Child=Node_EssenceTrack->Add_Child("essenceTrackIdentifier", MI.Get(StreamKind, StreamPos, __T("ID")));
+    Child->Add_Attribute("source", std::string("ID"));
+    Ztring id_annotation;
+    if (!MI.Get(StreamKind, StreamPos, __T("Default")).empty())
+        id_annotation+=__T(" default:")+MI.Get(StreamKind, StreamPos, __T("Default"));
+    if (!MI.Get(StreamKind, StreamPos, __T("Forced")).empty())
+        id_annotation+=__T(" forced:")+MI.Get(StreamKind, StreamPos, __T("Forced"));
+    id_annotation=id_annotation.erase(0,1);
+    if (!id_annotation.empty())
+        Child->Add_Attribute("annotation", id_annotation);
+
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "UniqueID", "essenceTrackIdentifier", "source", std::string("UniqueID"));
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "MenuID", "essenceTrackIdentifier", "source", std::string("MenuID"));
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "StreamKindID", "essenceTrackIdentifier", "source", std::string("StreamKindID (MediaInfo)"));
@@ -153,6 +163,8 @@ Ztring ToReturn;
             encoding_annotation+=__T(" endianness:")+MI.Get(StreamKind, StreamPos, __T("Format_Settings_Endianness"));
         if (!MI.Get(StreamKind, StreamPos, __T("Format_Settings_Sign")).empty())
             encoding_annotation+=__T(" signedness:")+MI.Get(StreamKind, StreamPos, __T("Format_Settings_Sign"));
+        if (!MI.Get(StreamKind, StreamPos, __T("Compression_Mode")).empty())
+            encoding_annotation+=__T(" compression_mode:")+MI.Get(StreamKind, StreamPos, __T("Compression_Mode"));
         encoding_annotation=encoding_annotation.erase(0,1);
         if (!encoding_annotation.empty())
             Child->Add_Attribute("annotation", encoding_annotation);
@@ -170,7 +182,19 @@ Ztring ToReturn;
     if (StreamKind==Stream_Video && !MI.Get(Stream_Video, StreamPos, Video_FrameRate).empty())
     {
         Node* Child=Node_EssenceTrack->Add_Child("essenceTrackFrameRate", MI.Get(Stream_Video, StreamPos, Video_FrameRate));
-        Child->Add_Attribute_IfNotEmpty(MI, Stream_Video, StreamPos, Video_FrameRate_Mode, "annotation");
+
+        Ztring frame_rate_annotation;
+        if (!MI.Get(StreamKind, StreamPos, __T("Video_FrameRate_Mode")).empty())
+            frame_rate_annotation+=__T(" mode:")+MI.Get(StreamKind, StreamPos, __T("Video_FrameRate_Mode"));
+        if (!MI.Get(StreamKind, StreamPos, __T("FrameRate_Num")).empty())
+            frame_rate_annotation+=__T(" rational_frame_rate:")+MI.Get(StreamKind, StreamPos, __T("FrameRate_Num"))+__T("/")+MI.Get(StreamKind, StreamPos, __T("FrameRate_Den"));
+        if (!MI.Get(StreamKind, StreamPos, __T("ScanOrder")).empty())
+            frame_rate_annotation+=__T(" interlacement:")+MI.Get(StreamKind, StreamPos, __T("ScanOrder"));
+        else if (!MI.Get(StreamKind, StreamPos, __T("ScanType")).empty())
+            frame_rate_annotation+=__T(" interlacement:")+MI.Get(StreamKind, StreamPos, __T("ScanType"));
+        frame_rate_annotation=frame_rate_annotation.erase(0,1);
+        if (!frame_rate_annotation.empty())
+            Child->Add_Attribute("annotation", frame_rate_annotation);
     }
 
     //essenceTrackSamplingRate
@@ -255,13 +279,16 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec_Settings_RefFrames") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Codec_Settings_Sign") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Colorimetry") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Compression_Mode") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Count") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Default") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Delay") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Delay_Source") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("DisplayAspectRatio") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Duration") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Encoded_Date") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Encoded_Library") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Forced") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Settings") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format/Info") &&
@@ -272,16 +299,21 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Settings_Sign") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Format_Version") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("FrameRate") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("FrameRate_Den") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("FrameRate_Mode") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("FrameRate_Num") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Height") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ID") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("InternetMediaType") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Language") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("MenuID") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("PixelAspectRatio") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Resolution") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Sampled_Height") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Sampled_Width") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("SamplingRate") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ScanType") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("ScanOrder") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Standard") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("StreamCount") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("StreamKind") &&
@@ -291,6 +323,7 @@ Ztring ToReturn;
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("StreamSize_Proportion") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Tagged_Date") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("UniqueID") &&
+            MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Video_Delay") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Video_DisplayAspectRatio") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Video_FrameRate") &&
             MI.Get(StreamKind, StreamPos, Pos, Info_Name)!=__T("Video_FrameRate_Mode") &&
@@ -408,11 +441,18 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     Child->Add_Attribute_IfNotEmpty(MI, Stream_General, 0, General_Format_Version, "annotation");
 
     //formatLocation
-    Node_Main.Add_Child("instantiationLocation", MI.Get(Stream_General, 0, General_CompleteName));
+    if (!MI.Get(Stream_General, 0, __T("instantiationLocation")).empty())
+        Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, "instantiationLocation", "instantiationLocation");
+    else
+        Node_Main.Add_Child("instantiationLocation", MI.Get(Stream_General, 0, General_CompleteName));
 
     //formatMediaType
     if (!PBCore2_MediaType(MI).empty())
         Node_Main.Add_Child("instantiationMediaType", PBCore2_MediaType(MI));
+
+    //instantiationGenerations
+    if (!MI.Get(Stream_General, 0, __T("instantiationGenerations")).empty())
+        Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, "instantiationGenerations", "instantiationGenerations");
 
     //formatFileSize
     Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_FileSize, "instantiationFileSize", "unitsOfMeasure", std::string("byte"));
@@ -506,6 +546,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Format_Version") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("FrameRate") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("HeaderSize") &&
+            MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("instantiationLocation") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("InternetMediaType") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("IsStreamable") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("MenuCount") &&
