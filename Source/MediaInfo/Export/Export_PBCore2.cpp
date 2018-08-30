@@ -419,7 +419,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
         Node_Main.Add_Child("instantiationDate", dateTagged, "dateType", "tagged");
     }
 
-    //formatDigital
+    //instantiationDigital
     Ztring Format;
     if (!MI.Get(Stream_General, 0, General_InternetMediaType).empty())
         Format=Ztring(MI.Get(Stream_General, 0, General_InternetMediaType));
@@ -433,7 +433,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
         Format=__T("application/x-")+Ztring(MI.Get(Stream_General, 0, __T("Format"))).MakeLowerCase();
     Node_Main.Add_Child("instantiationDigital", Format);
 
-    //formatStandard
+    //instantiationStandard
     Ztring formatStandard=MI.Get(Stream_General, 0, General_Format);
     if (!MI.Get(Stream_General, 0, General_Format_Commercial_IfAny).empty())
         formatStandard+=__T(" (")+MI.Get(Stream_General, 0, General_Format_Commercial_IfAny)+__T(")");
@@ -441,13 +441,13 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     Child->Add_Attribute_IfNotEmpty(MI, Stream_General, 0, General_Format_Profile, "profile");
     Child->Add_Attribute_IfNotEmpty(MI, Stream_General, 0, General_Format_Version, "annotation");
 
-    //formatLocation
+    //instantiationLocation
     if (!MI.Get(Stream_General, 0, __T("instantiationLocation")).empty())
         Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, "instantiationLocation", "instantiationLocation");
     else
         Node_Main.Add_Child("instantiationLocation", MI.Get(Stream_General, 0, General_CompleteName));
 
-    //formatMediaType
+    //instantiationMediaType
     if (!PBCore2_MediaType(MI).empty())
         Node_Main.Add_Child("instantiationMediaType", PBCore2_MediaType(MI));
 
@@ -455,30 +455,30 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     if (!MI.Get(Stream_General, 0, __T("instantiationGenerations")).empty())
         Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, "instantiationGenerations", "instantiationGenerations");
 
-    //formatFileSize
+    //instantiationFileSize
     Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_FileSize, "instantiationFileSize", "unitsOfMeasure", std::string("byte"));
 
-    //formatTimeStart
+    //instantiationTimeStart
     if (!MI.Get(Stream_General, 0, General_Delay_String4).empty())
         Node_Main.Add_Child("instantiationTimeStart", MI.Get(Stream_General, 0, General_Delay_String4));
     else if (!MI.Get(Stream_General, 0, General_Delay_String3).empty())
         Node_Main.Add_Child("instantiationTimeStart", MI.Get(Stream_General, 0, General_Delay_String3));
 
-    //formatDuration
+    //instantiationDuration
     //TODO add annotation if duration/source_duration mismatch
     if (!MI.Get(Stream_General, 0, General_Duration_String4).empty())
         Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Duration_String4, "instantiationDuration");
     else
         Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Duration_String3, "instantiationDuration");
 
-    //formatDataRate
+    //instantiationDataRate
     if (!MI.Get(Stream_General, 0, General_OverallBitRate).empty())
     {
         Node* Child=Node_Main.Add_Child("instantiationDataRate", MI.Get(Stream_General, 0, General_OverallBitRate), "unitsOfMeasure", "bit/second");
         Child->Add_Attribute_IfNotEmpty(MI, Stream_General, 0, General_OverallBitRate_Mode, "annotation");
     }
 
-    //formatTracks
+    //instantiationTracks
     Node_Main.Add_Child("instantiationTracks", Ztring::ToZtring(MI.Count_Get(Stream_Video)+
         MI.Count_Get(Stream_Audio)+ MI.Count_Get(Stream_Image)+ MI.Count_Get(Stream_Text)));
 
