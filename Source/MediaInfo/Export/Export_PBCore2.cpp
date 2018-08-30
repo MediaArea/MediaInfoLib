@@ -124,6 +124,8 @@ Ztring ToReturn;
     Node_EssenceTrack->Add_Child("essenceTrackType", essenceTrackType);
 
     //essenceTrackIdentifier
+    if (!MI.Get(StreamKind, StreamPos, __T("ID")).empty())
+    {
     Node* Child=Node_EssenceTrack->Add_Child("essenceTrackIdentifier", MI.Get(StreamKind, StreamPos, __T("ID")));
     Child->Add_Attribute("source", std::string("ID"));
     Ztring id_annotation;
@@ -134,7 +136,7 @@ Ztring ToReturn;
     id_annotation=id_annotation.erase(0,1);
     if (!id_annotation.empty())
         Child->Add_Attribute("annotation", id_annotation);
-
+    }
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "UniqueID", "essenceTrackIdentifier", "source", std::string("UniqueID"));
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "MenuID", "essenceTrackIdentifier", "source", std::string("MenuID"));
     Node_EssenceTrack->Add_Child_IfNotEmpty(MI, StreamKind, StreamPos, "StreamKindID", "essenceTrackIdentifier", "source", std::string("StreamKindID (MediaInfo)"));
