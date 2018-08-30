@@ -554,6 +554,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Format_Version") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("FrameRate") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("HeaderSize") &&
+            MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("instantiationGenerations") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("instantiationLocation") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("InternetMediaType") &&
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("IsStreamable") &&
