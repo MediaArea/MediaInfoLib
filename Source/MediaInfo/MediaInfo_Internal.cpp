@@ -444,6 +444,7 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
     static const Char* AACLCSBRPS=__T("AAC LC SBR PS");
     static const Char* Core=__T("Core");
     static const Char* Discrete=__T("ES Discrete without ES Matrix");
+    static const Char* Dep=__T("Dep");
     static const Char* DTS=__T("DTS");
     static const Char* ERAAC=__T("ER AAC");
     static const Char* ERAACLC=__T("ER AAC LC");
@@ -487,9 +488,7 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
             }
             break;
         case Generic_Format_String:
-            if (!Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_AdditionalFeatures)].empty())
-                return Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]+__T(' ')+Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_AdditionalFeatures)];
-            else if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3)
+            if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3)
             {
                 Ztring ToReturn=Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)];
                 Ztring AdditionalFeatures=HighestFormat(StreamKind, File__Analyze::Fill_Parameter(StreamKind, Generic_Format_AdditionalFeatures), Info, Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_AdditionalFeatures)], ShouldReturn);
@@ -497,7 +496,7 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
                     ToReturn.clear();
 
                 //Remove "Dep" from Format string
-                size_t HasDep=AdditionalFeatures.find(__T("Dep"));
+                size_t HasDep=AdditionalFeatures.find(Dep);
                 if (HasDep!=string::npos)
                 {
                     if (ToReturn==AC3)
@@ -599,7 +598,7 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
                         AdditionalFeatures+=__T(' ');
 
                             if (Profiles[i]==EAC3Dep)
-                        AdditionalFeatures+=__T("Dep");
+                        AdditionalFeatures+=Dep;
                     else if (Profiles[i].find(JOC)!=string::npos)
                         AdditionalFeatures+=JOC;
                     else if (Profiles[i].find(_16ch)!=string::npos)
@@ -664,9 +663,11 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, ZtringList& Info, Zt
             }
             if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==AC3 || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format)]==EAC3)
             {
-                if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(JOC)!=string::npos)
+                if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(JOC)!=string::npos
+                 || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_AdditionalFeatures)].find(JOC)!=string::npos)
                     return __T("Enhanced AC-3 with Joint Object Coding");
-                if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(EAC3)!=string::npos)
+                if (Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_Profile)].find(EAC3)!=string::npos
+                 || Info[File__Analyze::Fill_Parameter(StreamKind, Generic_Format_AdditionalFeatures)].find(Dep)!=string::npos)
                     return __T("Enhanced AC-3");
             }
             break;
