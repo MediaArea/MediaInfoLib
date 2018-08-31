@@ -1,6 +1,13 @@
 I changed some elements in the interface.
 No break in binary compatibily (no crash), but some details.
 
+18.05 --> 18.08
+---------------
+- AC-3/DTS/AAC: display of info about legacy decoders behavior removed, use --LegacyStreamDisplay=1 for old behavior
+- AC-3/DTS/AAC: New terminology for format name, use --File_HighestFormat=0 for old behavior
+- Audio channel layout: using a new terminology, use --File_ChannelLayout=1 for old behavior
+- Deprecated fields disabled by default, use --Legacy=1 for old behavior
+
 17.10 --> 17.12
 ---------------
 - MasteringDisplayColorVolume: no need to show 4 digits after comma for max luminescence, removed
