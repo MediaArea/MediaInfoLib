@@ -530,6 +530,8 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                 Fill(Stream_General, 0, General_Codec_String, Value, true);
             }
         }
+        if (MediaInfoLib::Config.Legacy_Get())
+        {
         if (StreamKind==Stream_General && Parameter==General_Format_Info)
             (*Stream)[Stream_General][0](General_Codec_Info)=Value;
         if (StreamKind==Stream_General && Parameter==General_Format_Url)
@@ -540,7 +542,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
             (*Stream)[Stream_General][0](General_Codec_Settings)=Value;
 
         //Codec
-        if (Parameter==Fill_Parameter(StreamKind, Generic_Codec) && MediaInfoLib::Config.Legacy_Get())
+        if (Parameter==Fill_Parameter(StreamKind, Generic_Codec))
         {
             const Ztring &C1=MediaInfoLib::Config.Codec_Get(Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Codec)), InfoCodec_Name, (stream_t)StreamKind);
             if (C1.empty())
@@ -555,6 +557,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                 Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Codec_Info)  , MediaInfoLib::Config.Codec_Get(Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Codec)), InfoCodec_Description, StreamKind), true);
                 Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Codec_Url)   , MediaInfoLib::Config.Codec_Get(Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Codec)), InfoCodec_Url,         StreamKind), true);
             }
+        }
         }
 
         //CodecID_Description
