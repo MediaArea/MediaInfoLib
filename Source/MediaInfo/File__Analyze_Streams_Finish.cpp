@@ -184,6 +184,22 @@ void File__Analyze::Streams_Finish_Global()
         #endif //MEDIAINFO_IBIUSAGE
     }
 
+    //Exception
+    if (Retrieve(Stream_General, 0, General_Format)==__T("AC-3") && (Retrieve(Stream_General, 0, General_Format_Profile).find(__T("E-AC-3"))==0 || Retrieve(Stream_General, 0, General_Format_AdditionalFeatures).find(__T("Dep"))!=string::npos))
+    {
+        //Using AC-3 extensions + E-AC-3 extensions + "eb3" specific extension
+        Ztring Extensions=Retrieve(Stream_General, 0, General_Format_Extensions);
+        if (Extensions.find(__T(" eb3"))==string::npos)
+        {
+            Extensions+=__T(' ');
+            Extensions+=MediaInfoLib::Config.Format_Get(__T("E-AC-3"), InfoFormat_Extensions);
+            Extensions+=__T(" eb3");
+            Fill(Stream_General, 0, General_Format_Extensions, Extensions, true);
+            if (MediaInfoLib::Config.Legacy_Get())
+                Fill(Stream_General, 0, General_Codec_Extensions, Extensions, true);
+        }
+    }
+
     Streams_Finish_StreamOnly();
     Streams_Finish_StreamOnly();
     Streams_Finish_InterStreams();
@@ -658,13 +674,6 @@ void File__Analyze::Streams_Finish_StreamOnly(stream_t StreamKind, size_t Pos)
 //---------------------------------------------------------------------------
 void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
 {
-    //Exception
-    if (Retrieve(Stream_General, 0, General_Format)==__T("AC-3") && (Retrieve(Stream_General, 0, General_Format_Profile).find(__T("E-AC-3"))==0 || Retrieve(Stream_General, 0, General_Format_AdditionalFeatures).find(__T("Dep"))!=string::npos))
-    {
-        Fill(Stream_General, 0, General_Format_Extensions, "ac3 eb3 ec3", Unlimited, true, true); //ec3 added because some reference files use it
-        Fill(Stream_General, 0, General_Codec_Extensions, "ac3 eb3 ec3", Unlimited, true, true);
-    }
-
     //File extension test
     if (Retrieve(Stream_General, StreamPos, "FileExtension_Invalid").empty())
     {
