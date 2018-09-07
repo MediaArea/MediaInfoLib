@@ -7,7 +7,8 @@ TESTS = \
     s3.sh \
     xml.sh \
     mixml.sh \
-    ebucore.sh
+    ebucore.sh \
+    unicode.sh
 
 check_PROGRAMS = mil_analyze
 mil_analyze_SOURCES = \
