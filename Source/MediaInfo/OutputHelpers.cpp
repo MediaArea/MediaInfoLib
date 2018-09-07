@@ -70,7 +70,7 @@ string XML_Encode (const string& Data)
                 if (Pos+1<Data.size() && Data[Pos+1]=='\n') // translate the #xD #xA sequence to a single #xA character
                     Pos++;
             break;
-            default: if (Data[Pos]>=0x20) Result+=Data[Pos]; // Ignore others control characters
+            default: if ((unsigned char)Data[Pos]>=0x20) Result+=Data[Pos]; // Ignore others control characters
         }
     }
     return Result;
