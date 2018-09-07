@@ -260,7 +260,10 @@ void File_Pdf::xref()
         {
             if (*Buffer_Temp=='n')
             {
-                int32u Offset=(int32u)atoi((const char*)(Buffer_Temp-17));
+                char atoi_buf[30];
+                atoi_buf[29]=0;
+                strncpy(atoi_buf,Buffer_Temp-17,29);
+                int32u Offset=(int32u)atoi(atoi_buf);
                 Objects[Base+Pos].Offset=Offset;
                 //Offsets[Offset]=Base+Pos;
                 Offsets.push_back(Offset);
