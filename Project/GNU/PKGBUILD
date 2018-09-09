@@ -3,7 +3,7 @@
 # Contributor: hydro <hydro@freenet.de>
 
 pkgname=libmediainfo
-pkgver=18.08
+pkgver=18.08.1
 pkgrel=1
 pkgdesc="shared library for mediainfo"
 arch=('i686' 'x86_64')
