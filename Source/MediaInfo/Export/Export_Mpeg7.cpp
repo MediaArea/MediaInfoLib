@@ -1160,6 +1160,7 @@ void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamP
     if (MI.Get(Stream_Video, StreamPos, Video_ChromaSubsampling).find(__T("4:2:0"))!=string::npos)
     {
         Node* Node_ColorSampling=Node_VisualCoding->Add_Child("mpeg7:ColorSampling");
+        Node_ColorSampling->XmlComment="YUV 4:2:0 Interlaced";
         Node* Node_Lattice=Node_ColorSampling->Add_Child("mpeg7:Lattice");
         Node_Lattice->Add_Attribute("height", "720");
         Node_Lattice->Add_Attribute("width", "486");
