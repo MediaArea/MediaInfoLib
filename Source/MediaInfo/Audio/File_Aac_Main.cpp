@@ -1068,8 +1068,12 @@ void File_Aac::adts_fixed_header()
     Skip_BS( 2,                                                 "layer");
     Get_SB (    protection_absent,                              "protection_absent");
     Get_S1 ( 2, audioObjectType,                                "profile_ObjectType"); audioObjectType++; Param_Info1(Aac_audioObjectType(audioObjectType));
-    Get_S1 ( 4, sampling_frequency_index,                       "sampling_frequency_index"); Param_Info2(Aac_sampling_frequency[sampling_frequency_index], " Hz");
-    Frequency_b=Aac_sampling_frequency[sampling_frequency_index];
+    Get_S1 ( 4, sampling_frequency_index,                       "sampling_frequency_index"); 
+	if (sampling_frequency_index < Aac_sampling_frequency_Size)
+		Frequency_b = Aac_sampling_frequency[sampling_frequency_index];
+	else
+		Frequency_b = 0;
+	Param_Info2(Frequency_b, " Hz");
     Skip_SB(                                                    "private");
     Get_S1 ( 3, channelConfiguration,                           "channel_configuration");
     Skip_SB(                                                    "original");
@@ -1086,8 +1090,8 @@ void File_Aac::adts_fixed_header()
             Infos["Format_Profile"].From_Local(Aac_Format_Profile(audioObjectType));
             Infos["CodecID"].From_Number(audioObjectType);
             Infos["Codec"].From_Local(Aac_audioObjectType(audioObjectType));
-            if (Aac_sampling_frequency[sampling_frequency_index])
-                Infos["SamplingRate"].From_Number(Aac_sampling_frequency[sampling_frequency_index]);
+            if (Frequency_b)
+                Infos["SamplingRate"].From_Number(Frequency_b);
             Infos["Channel(s)"].From_Number(channelConfiguration);
             Infos["ChannelPositions"].From_Local(Aac_ChannelConfiguration[channelConfiguration]);
             Infos["ChannelPositions/String2"].From_Local(Aac_ChannelConfiguration2[channelConfiguration]);
