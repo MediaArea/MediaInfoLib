@@ -21,6 +21,22 @@ using System.Runtime.InteropServices;
 
 namespace MediaInfoLib
 {
+    internal enum LoadLibraryFlags : uint
+    {
+        DEFAULT = 0x00000000,
+        DONT_RESOLVE_DLL_REFERENCES = 0x00000001,
+        LOAD_IGNORE_CODE_AUTHZ_LEVEL = 0x00000010,
+        LOAD_LIBRARY_AS_DATAFILE = 0x00000002,
+        LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE = 0x00000040,
+        LOAD_LIBRARY_AS_IMAGE_RESOURCE = 0x00000020,
+        LOAD_LIBRARY_SEARCH_APPLICATION_DIR = 0x00000200,
+        LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x00001000,
+        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x00000100,
+        LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800,
+        LOAD_LIBRARY_SEARCH_USER_DIRS = 0x00000400,
+        LOAD_WITH_ALTERED_SEARCH_PATH = 0x00000008,
+    }
+
     public enum StreamKind
     {
         General,
@@ -71,6 +87,13 @@ namespace MediaInfoLib
 
     public class MediaInfo
     {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, LoadLibraryFlags dwFlags);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool FreeLibrary(IntPtr hModule);
+
         //Import of DLL functions. DO NOT USE until you know what you do (MediaInfo DLL do NOT use CoTaskMemAlloc to allocate memory)
         [DllImport("MediaInfo.dll")]
         private static extern IntPtr MediaInfo_New();
@@ -122,6 +145,12 @@ namespace MediaInfoLib
         //MediaInfo class
         public MediaInfo()
         {
+            Module = LoadLibraryEx("MediaInfo.dll", IntPtr.Zero, LoadLibraryFlags.DEFAULT |
+                                     LoadLibraryFlags.LOAD_LIBRARY_SEARCH_APPLICATION_DIR |
+                                        LoadLibraryFlags.LOAD_LIBRARY_SEARCH_DEFAULT_DIRS |
+                                        LoadLibraryFlags.LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR |
+                                        LoadLibraryFlags.LOAD_LIBRARY_SEARCH_SYSTEM32);
+
             try
             {
                 Handle = MediaInfo_New();
@@ -135,7 +164,18 @@ namespace MediaInfoLib
             else
                 MustUseAnsi=false;
         }
-        ~MediaInfo() { if (Handle == (IntPtr)0) return; MediaInfo_Delete(Handle); }
+
+        ~MediaInfo()
+        {
+            if (Module != (IntPtr)0)
+                FreeLibrary(Module);
+
+            if (Handle == (IntPtr)0)
+                return;
+
+            MediaInfo_Delete(Handle);
+        }
+
         public int Open(String FileName)
         {
             if (Handle == (IntPtr)0)
@@ -218,6 +258,7 @@ namespace MediaInfoLib
         public int State_Get() { if (Handle == (IntPtr)0) return 0; return (int)MediaInfo_State_Get(Handle); }
         public int Count_Get(StreamKind StreamKind, int StreamNumber) { if (Handle == (IntPtr)0) return 0; return (int)MediaInfo_Count_Get(Handle, (IntPtr)StreamKind, (IntPtr)StreamNumber); }
         private IntPtr Handle;
+        private IntPtr Module;
         private bool MustUseAnsi;
 
         //Default values, if you know how to set default values in C#, say me
@@ -227,22 +268,6 @@ namespace MediaInfoLib
         public String Option(String Option_) { return Option(Option_, ""); }
         public int Count_Get(StreamKind StreamKind) { return Count_Get(StreamKind, -1); }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     public class MediaInfoList
     {
@@ -269,8 +294,32 @@ namespace MediaInfoLib
         private static extern IntPtr MediaInfoList_Count_Get(IntPtr Handle, IntPtr FilePos, IntPtr StreamKind, IntPtr StreamNumber);
 
         //MediaInfo class
-        public MediaInfoList() { Handle = MediaInfoList_New(); }
-        ~MediaInfoList() { MediaInfoList_Delete(Handle); }
+        public MediaInfoList() {
+            Module = LoadLibraryEx("MediaInfo.dll", IntPtr.Zero, LoadLibraryFlags.DEFAULT |
+                                     LoadLibraryFlags.LOAD_LIBRARY_SEARCH_APPLICATION_DIR |
+                                        LoadLibraryFlags.LOAD_LIBRARY_SEARCH_DEFAULT_DIRS |
+                                        LoadLibraryFlags.LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR |
+                                        LoadLibraryFlags.LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+            try
+            {
+                Handle = MediaInfoList_New();
+            }
+            catch
+            {
+                Handle = (IntPtr)0;
+            }
+        }
+        ~MediaInfoList()
+       {
+            if (Module != (IntPtr)0)
+                FreeLibrary(Module);
+
+            if (Handle == (IntPtr)0)
+                return;
+
+            MediaInfoList_Delete(Handle);
+       }
         public int Open(String FileName, InfoFileOptions Options) { return (int)MediaInfoList_Open(Handle, FileName, (IntPtr)Options); }
         public void Close(int FilePos) { MediaInfoList_Close(Handle, (IntPtr)FilePos); }
         public String Inform(int FilePos) { return Marshal.PtrToStringUni(MediaInfoList_Inform(Handle, (IntPtr)FilePos, (IntPtr)0)); }
@@ -280,6 +329,7 @@ namespace MediaInfoLib
         public int State_Get() { return (int)MediaInfoList_State_Get(Handle); }
         public int Count_Get(int FilePos, StreamKind StreamKind, int StreamNumber) { return (int)MediaInfoList_Count_Get(Handle, (IntPtr)FilePos, (IntPtr)StreamKind, (IntPtr)StreamNumber); }
         private IntPtr Handle;
+        private IntPtr Module;
 
         //Default values, if you know how to set default values in C#, say me
         public void Open(String FileName) { Open(FileName, 0); }
