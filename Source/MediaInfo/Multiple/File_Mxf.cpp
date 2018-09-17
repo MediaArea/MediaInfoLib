@@ -1313,6 +1313,8 @@ static const char* Mxf_ColorPrimaries(const int128u ColorPrimaries)
         case 0x04 : return "BT.2020";
         case 0x05 : return "XYZ";
         case 0x06 : return "Display P3";
+        case 0x07 : return "ACES"; //  SMPTE ST 2065-1
+        case 0x08 : return "XYZ"; //  SMPTE ST 2067-40 / ISO 11664-3
         default   : return "";
     }
 }
@@ -1334,6 +1336,8 @@ static const char* Mxf_TransferCharacteristic(const int128u TransferCharacterist
         case 0x09 : return "BT.2020"; // ISO does a difference of value between 10 and 12 bit
         case 0x0A : return "PQ";
         case 0x0B : return "HLG";
+        case 0x0C : return "Gamma 2.6"; // SMPTE ST 2067-50
+        case 0x0D : return "sRGB/sYCC"; // IEC 61966-2-1
         default   : return "";
     }
 }
@@ -1349,7 +1353,7 @@ static const char* Mxf_CodingEquations(const int128u CodingEquations)
         case 0x03 : return "SMPTE 240M";
         case 0x04 : return "YCgCo";
         case 0x05 : return "Identity";
-        case 0x06 : return "BT.2020"; // ISO does a difference between constant and non constant, not SMPTE?
+        case 0x06 : return "BT.2020 non-constant";
         default   : return "";
     }
 }
