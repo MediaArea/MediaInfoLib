@@ -2866,7 +2866,7 @@ void File_Mpeg_Descriptors::Descriptor_81()
     BS_Begin();
     Get_S1 (3, sample_rate_code,                                "sample_rate_code"); if (sample_rate_code<4) {Param_Info2(AC3_SamplingRate[sample_rate_code], " Hz");}
     Skip_S1(5,                                                  "bsid");
-    Get_S1 (6, bit_rate_code,                                   "bit_rate_code"); Param_Info2(AC3_BitRate[bit_rate_code]*1000, " Kbps");
+    Get_S1 (6, bit_rate_code,                                   "bit_rate_code"); if (bit_rate_code<19) {Param_Info2(AC3_BitRate[bit_rate_code]*1000, " Kbps");}
     Get_S1 (2, surround_mode,                                   "surround_mode"); Param_Info1(AC3_Surround[surround_mode]);
     Get_S1 (3, bsmod,                                           "bsmod");
     Get_S1 (4, num_channels,                                    "num_channels"); if (num_channels<8) {Param_Info2(AC3_Channels[num_channels], " channels");}
@@ -2882,7 +2882,8 @@ void File_Mpeg_Descriptors::Descriptor_81()
                             Complete_Stream->Streams[elementary_PID]->descriptor_tag=0x81;
                             if (sample_rate_code<4)
                                 Complete_Stream->Streams[elementary_PID]->Infos["SamplingRate"]=Ztring::ToZtring(AC3_SamplingRate[sample_rate_code]);
-                            Complete_Stream->Streams[elementary_PID]->Infos["BitRate"]=Ztring::ToZtring(AC3_BitRate[bit_rate_code]*1000);
+                            if (bit_rate_code<19)
+                                Complete_Stream->Streams[elementary_PID]->Infos["BitRate"]=Ztring::ToZtring(AC3_BitRate[bit_rate_code]*1000);
                             if (num_channels<8)
                                 Complete_Stream->Streams[elementary_PID]->Infos["Channel(s)"]=Ztring::ToZtring(AC3_Channels[num_channels]);
                         }
