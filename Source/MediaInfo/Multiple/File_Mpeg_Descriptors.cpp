@@ -2864,12 +2864,12 @@ void File_Mpeg_Descriptors::Descriptor_81()
     int8u sample_rate_code, bit_rate_code, surround_mode, bsmod, num_channels, langcod, textlen, text_code;
     bool language_flag, language_flag_2;
     BS_Begin();
-    Get_S1 (3, sample_rate_code,                                "sample_rate_code"); if (sample_rate_code<4) {Param_Info2(AC3_SamplingRate[sample_rate_code], " Hz");}
+    Get_S1 (3, sample_rate_code,                                "sample_rate_code"); Param_Info2C(sample_rate_code<4,AC3_SamplingRate[sample_rate_code], " Hz");
     Skip_S1(5,                                                  "bsid");
-    Get_S1 (6, bit_rate_code,                                   "bit_rate_code"); if (bit_rate_code<19) {Param_Info2(AC3_BitRate[bit_rate_code]*1000, " Kbps");}
-    Get_S1 (2, surround_mode,                                   "surround_mode"); Param_Info1(AC3_Surround[surround_mode]);
+    Get_S1 (6, bit_rate_code,                                   "bit_rate_code"); Param_Info2C(bit_rate_code<19,AC3_BitRate[bit_rate_code]*1000, " Kbps");
+    Get_S1 (2, surround_mode,                                   "surround_mode"); Param_Info1C(surround_mode<4,AC3_Surround[surround_mode]);
     Get_S1 (3, bsmod,                                           "bsmod");
-    Get_S1 (4, num_channels,                                    "num_channels"); if (num_channels<8) {Param_Info2(AC3_Channels[num_channels], " channels");}
+    Get_S1 (4, num_channels,                                    "num_channels"); Param_Info2C(num_channels<8,AC3_Channels[num_channels], " channels");
     Skip_SB(                                                    "full_svc");
     BS_End();
 

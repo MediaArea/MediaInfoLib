@@ -2190,7 +2190,7 @@ void File_Ac3::Core_Frame()
             Skip_B2(                                                "crc1");
             BS_Begin();
             Get_S1 (2, fscod,                                       "fscod - Sample Rate Code"); Param_Info2(AC3_SamplingRate[fscod], " Hz");
-            Get_S1 (6, frmsizecod,                                  "frmsizecod - Frame Size Code"); if (frmsizecod/2<19) {Param_Info2(AC3_BitRate[frmsizecod/2]*1000, " bps");}
+            Get_S1 (6, frmsizecod,                                  "frmsizecod - Frame Size Code"); Param_Info2C(frmsizecod/2<19,AC3_BitRate[frmsizecod/2]*1000, " bps");
         Element_End0();
 
         Element_Begin1("bsi");
