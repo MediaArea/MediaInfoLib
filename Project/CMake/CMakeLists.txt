@@ -67,7 +67,7 @@ else()
   if(UNIX AND BUILD_SHARED_LIBS)
     target_compile_options(zlibstatic PRIVATE -fPIC)
   endif()
-  set(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../../../zlib)
+  set(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../../../zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
 endif()
 
 if(NOT MSVC)
