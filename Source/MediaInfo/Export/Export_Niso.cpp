@@ -136,7 +136,7 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
                 Ztring Date=DateTime.substr(0, 10);
                 Ztring Time=DateTime.substr(11);
 
-                Node* Node_CoreMain=Node_Extension->Add_Child("ebucore:ebuCoreMain");
+                Node_CoreMain=Node_Extension->Add_Child("ebucore:ebuCoreMain");
                 Node_CoreMain->Add_Attribute("xmlns:dc", "http://purl.org/dc/elements/1.1/");
                 {
                     Node_CoreMain->Add_Attribute("xmlns:ebucore", "urn:ebu:metadata-schema:ebucore");
