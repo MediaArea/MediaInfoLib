@@ -1152,6 +1152,22 @@ static const char* Mxf_EssenceCompression_Profile(const int128u& EssenceCompress
                                                                                     }
                                                                         default   : return "";
                                                                     }
+                                                        case 0x03 : //Individual Picure Coding Schemes
+                                                                    switch (Code6)
+                                                                    {
+                                                                        case 0x06 : //ProRes
+                                                                                    switch (Code7)
+                                                                                    {
+                                                                                        case 0x01 : return "422 Proxy";
+                                                                                        case 0x02 : return "422 LT";
+                                                                                        case 0x03 : return "422";
+                                                                                        case 0x04 : return "422 HQ";
+                                                                                        case 0x05 : return "4444";
+                                                                                        case 0x06 : return "4444 XQ";
+                                                                                        default   : return "";
+                                                                                    }
+                                                                        default   : return "";
+                                                                    }
                                                         default   : return "";
                                                     }
                                          default   : return "";
