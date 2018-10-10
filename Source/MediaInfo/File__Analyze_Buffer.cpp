@@ -1570,7 +1570,7 @@ void File__Analyze::Get_C4(int32u &Info, const char* Name)
 {
     INTEGRITY_SIZE_ATLEAST_INT(4);
     Info=CC4(Buffer+Buffer_Offset+(size_t)Element_Offset);
-    if (Trace_Activated) Param(Name, Buffer+Buffer_Offset+(size_t)Element_Offset, 4, false);
+    if (Trace_Activated) Param(Name, Ztring().From_ISO_8859_1((const char*)Buffer+Buffer_Offset+(size_t)Element_Offset, 4), false);
     Element_Offset+=4;
 }
 
