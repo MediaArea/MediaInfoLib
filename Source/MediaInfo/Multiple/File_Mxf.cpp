@@ -3517,21 +3517,50 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
             if (Info!=Info_MasteringDisplay_Primaries
              && Info!=Info_MasteringDisplay_WhitePointChromaticity
              && Info!=MasteringDisplay_Luminance_Max
-             && Info!=MasteringDisplay_Luminance_Min
-             && Retrieve(StreamKind_Last, StreamPos_Last, Info->first.c_str()).empty())
+             && Info!=MasteringDisplay_Luminance_Min)
             {
                 //Special case
                 if (Info->first=="BitRate" && Retrieve(StreamKind_Last, StreamPos_Last, General_ID).find(__T(" / "))!=string::npos)
                 {
+                    if (!Retrieve(StreamKind_Last, StreamPos_Last, Info->first.c_str()).empty())
+                        continue; // Not always valid e.g. Dolby E or AC-3 in AES3. TODO: check in case of normal check
                     if (Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate)).empty() || Retrieve(StreamKind_Last, StreamPos_Last, General_ID).find(__T('-'))!=string::npos)
                         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate_Encoded), Info->second.To_int64u()*2, 10, true);
                     else
                         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate), Info->second.To_int64u()*2, 10, true);
                 }
-                else
+                else if (!Info->second.empty())
                 {
+                    const Ztring FromEssence=Retrieve_Const(StreamKind_Last, StreamPos_Last, Info->first.c_str());
                     for (size_t Pos=0; Pos<StreamWithSameID; Pos++)
-                        Fill(StreamKind_Last, StreamPos_Last+Pos, Info->first.c_str(), Info->second, true);
+                    {
+                        if (FromEssence.empty())
+                            Fill(StreamKind_Last, StreamPos_Last+Pos, Info->first.c_str(), Info->second);
+                        else if (FromEssence!=Info->second)
+                        {
+                            // Special cases
+                            if (Info->first=="ColorSpace" && ((Info->second==__T("RGB") && FromEssence==__T("XYZ")) || (Info->second==__T("RGBA") && FromEssence==__T("XYZA"))))
+                                continue; // "RGB" is used by MXF for "XYZ" too
+                            if (Info->first=="Format")
+                                continue; // Too much important to show the essence format, ignoring for the moment. TODO: display something in such case
+                            if (Info->first=="Duration")
+                                continue; // Found 1 file with descriptor with wrong descriptor SampleRate. TODO: better display in such case (should not take precedence other other durations, how to display the issue between component duration and descriptor duration, both container metadata?). Must also take care about StereoscopicPictureSubDescriptor (SampleRate divided by 2 in that case)
+                            if (Info->first=="DisplayAspectRatio")
+                                continue; // Handled separately
+                            if (Info->first=="Channel(s)")
+                                continue; // Not always valid e.g. Dolby E. TODO: check in case of normal check
+                            if (Info->first=="BitDepth")
+                                continue; // Not always valid e.g. Dolby E. TODO: check in case of normal check
+                            if (Info->first=="BitRate")
+                                continue; // Not always valid e.g. Dolby E. TODO: check in case of normal check
+                            if (Info->first=="StreamOrder")
+                                continue; // Is not useful and has some issues with Dolby E
+
+                            // Filling both values
+                            Fill(StreamKind_Last, StreamPos_Last+Pos, (Info->first+"_Original").c_str(), FromEssence); //TODO: use the generic engine by filling descriptor info before merging essence info
+                            Fill(StreamKind_Last, StreamPos_Last+Pos, Info->first.c_str(), Info->second, true); //TODO: use the generic engine by filling descriptor info before merging essence info
+                        }
+                    }
                 }
             }
         Ztring Format, CodecID;
@@ -8889,7 +8918,8 @@ void File_Mxf::CDCIEssenceDescriptor_ComponentDepth()
     Get_B4 (Data,                                                "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
-        Descriptor_Fill("BitDepth", Ztring().From_Number(Data));
+        if (Data)
+            Descriptor_Fill("BitDepth", Ztring().From_Number(Data));
     FILLING_END();
 }
 
