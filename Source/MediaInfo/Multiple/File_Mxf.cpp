@@ -3491,6 +3491,8 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
                 Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Original, SampleRate_RawStream);
             Fill(Stream_Video, StreamPos_Last, Video_FrameRate, SampleRate, 3, true);
         }
+        if (StreamKind_Last==Stream_Video)
+            ColorLevels_Compute(Descriptor, true, Retrieve(Stream_Video, StreamPos_Last, Video_BitDepth).To_int32u());
 
         //MasteringDisplay specific info
         std::map<std::string, Ztring>::iterator Info_MasteringDisplay_Primaries = Descriptor->second.Infos.find("MasteringDisplay_Primaries");
@@ -7316,6 +7318,8 @@ void File_Mxf::Primer()
 //---------------------------------------------------------------------------
 void File_Mxf::RGBAEssenceDescriptor()
 {
+    Descriptors[InstanceUID].Type=descriptor::Type_RGBA;
+
     if (Code2>=0x8000)
     {
         // Not a short code
@@ -8966,7 +8970,14 @@ void File_Mxf::CDCIEssenceDescriptor_ColorSiting()
 void File_Mxf::CDCIEssenceDescriptor_BlackRefLevel()
 {
     //Parsing
-    Info_B4(Data,                                               "Data"); Element_Info1(Data);
+    int32u Data;
+    Get_B4 (Data,                                                "Data"); Element_Info1(Data);
+
+    FILLING_BEGIN();
+        if (Descriptors[InstanceUID].MinRefLevel==(int32u)-1)
+            Descriptors[InstanceUID].MinRefLevel=Data;
+        ColorLevels_Compute(Descriptors.find(InstanceUID));
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -8974,7 +8985,14 @@ void File_Mxf::CDCIEssenceDescriptor_BlackRefLevel()
 void File_Mxf::CDCIEssenceDescriptor_WhiteReflevel()
 {
     //Parsing
-    Info_B4(Data,                                               "Data"); Element_Info1(Data);
+    int32u Data;
+    Get_B4 (Data,                                                "Data"); Element_Info1(Data);
+
+    FILLING_BEGIN();
+        if (Descriptors[InstanceUID].MaxRefLevel==(int32u)-1)
+            Descriptors[InstanceUID].MaxRefLevel=Data;
+        ColorLevels_Compute(Descriptors.find(InstanceUID));
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -8982,7 +9000,14 @@ void File_Mxf::CDCIEssenceDescriptor_WhiteReflevel()
 void File_Mxf::CDCIEssenceDescriptor_ColorRange()
 {
     //Parsing
-    Info_B4(Data,                                               "Data"); Element_Info1(Data);
+    int32u Data;
+    Get_B4 (Data,                                                "Data"); Element_Info1(Data);
+
+    FILLING_BEGIN();
+        if (Descriptors[InstanceUID].ColorRange==(int32u)-1)
+            Descriptors[InstanceUID].ColorRange=Data;
+        ColorLevels_Compute(Descriptors.find(InstanceUID));
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -11117,7 +11142,14 @@ void File_Mxf::RGBAEssenceDescriptor_ScanningDirection()
 void File_Mxf::RGBAEssenceDescriptor_ComponentMaxRef()
 {
     //Parsing
-    Info_B4(Data,                                                "Data"); Element_Info1(Data);
+    int32u Data;
+    Get_B4 (Data,                                                "Data"); Element_Info1(Data);
+
+    FILLING_BEGIN();
+        if (Descriptors[InstanceUID].MaxRefLevel==(int32u)-1)
+            Descriptors[InstanceUID].MaxRefLevel=Data;
+        ColorLevels_Compute(Descriptors.find(InstanceUID));
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -11125,7 +11157,14 @@ void File_Mxf::RGBAEssenceDescriptor_ComponentMaxRef()
 void File_Mxf::RGBAEssenceDescriptor_ComponentMinRef()
 {
     //Parsing
-    Info_B4(Data,                                                "Data"); Element_Info1(Data);
+    int32u Data;
+    Get_B4 (Data,                                                "Data"); Element_Info1(Data);
+
+    FILLING_BEGIN();
+        if (Descriptors[InstanceUID].MinRefLevel==(int32u)-1)
+            Descriptors[InstanceUID].MinRefLevel=Data;
+        ColorLevels_Compute(Descriptors.find(InstanceUID));
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -17357,6 +17396,54 @@ void File_Mxf::Subsampling_Compute(descriptors::iterator Descriptor)
                         default: Descriptor->second.Infos["ChromaSubsampling"].clear(); return;
                     }
         default:    return;
+    }
+}
+
+
+//---------------------------------------------------------------------------
+void File_Mxf::ColorLevels_Compute(descriptors::iterator Descriptor, bool Force, int32u BitDepth)
+{
+    // BitDepth check
+    std::map<std::string, Ztring>::iterator Info=Descriptor->second.Infos.find("BitDepth");
+    if (Info!=Descriptor->second.Infos.end())
+    {
+        if (BitDepth==(int32u)-1)
+            BitDepth=Info->second.To_int32u();
+        else if (Force && BitDepth!=Info->second.To_int32u())
+            Fill(StreamKind_Last, StreamPos_Last, "BitDepth_Container", Info->second);
+    }
+
+    // Known values
+    if (BitDepth>=8 && BitDepth<=16)
+    {
+        int32u Multiplier=1<<(BitDepth-8);
+        if (Descriptor->second.MinRefLevel==16*Multiplier && Descriptor->second.MaxRefLevel==235*Multiplier && (Descriptor->second.Type==descriptor::Type_RGBA || Descriptor->second.ColorRange==1+224*Multiplier))
+        {
+            Descriptor->second.Infos["colour_range"]=__T("Limited");
+            return;
+        }
+        if (Descriptor->second.MinRefLevel==0*Multiplier && Descriptor->second.MaxRefLevel==256*Multiplier-1 && (Descriptor->second.Type==descriptor::Type_RGBA || Descriptor->second.ColorRange==256*Multiplier))
+        {
+            Descriptor->second.Infos["colour_range"]=__T("Full");
+            return;
+        }
+    }
+
+    if (Descriptor==Descriptors.end() || (!Force && (Descriptor->second.MinRefLevel==(int32u)-1 || Descriptor->second.MaxRefLevel==(int32u)-1) || (Descriptor->second.Type!=descriptor::Type_RGBA && Descriptor->second.ColorRange==(int32u)-1)))
+        return;
+
+    // Listing values
+    ZtringList List;
+    if (Descriptor->second.MinRefLevel!=(int32u)-1)
+        List.push_back(__T("Min: ")+Ztring::ToZtring(Descriptor->second.MinRefLevel));
+    if (Descriptor->second.MaxRefLevel!=(int32u)-1)
+        List.push_back(__T("Max: ")+Ztring::ToZtring(Descriptor->second.MaxRefLevel));
+    if (Descriptor->second.ColorRange!=(int32u)-1)
+        List.push_back(__T("Chroma range: ")+Ztring::ToZtring(Descriptor->second.ColorRange));
+    if (!List.empty())
+    {
+        List.Separator_Set(0, __T(", "));
+        Descriptor->second.Infos["colour_range"]=List.Read();
     }
 }
 
