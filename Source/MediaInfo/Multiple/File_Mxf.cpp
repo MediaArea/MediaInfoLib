@@ -17411,7 +17411,7 @@ void File_Mxf::ColorLevels_Compute(descriptors::iterator Descriptor, bool Force,
     std::map<std::string, Ztring>::iterator Info=Descriptor->second.Infos.find("BitDepth");
     if (Info!=Descriptor->second.Infos.end())
     {
-        if (BitDepth==(int32u)-1)
+        if (BitDepth==0 || BitDepth==(int32u)-1)
             BitDepth=Info->second.To_int32u();
         else if (Force && BitDepth!=Info->second.To_int32u())
             Fill(StreamKind_Last, StreamPos_Last, "BitDepth_Container", Info->second);
