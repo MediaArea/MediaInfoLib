@@ -1570,9 +1570,12 @@ void File_Ac3::Streams_Finish()
                         FrameDuration*=((float64)48000)/AC3_SamplingRate[fscod]; //32 ms for 48 KHz, else proportional (34.83 for 44.1 KHz, 48 ms for 32 KHz)
                         Fill(Stream_Audio, 0, Audio_SamplingCount, Frame_Count_ForDuration*1536);
                         Fill(Stream_Audio, 0, Audio_Duration, Frame_Count_ForDuration*FrameDuration, 0);
-                        int32u BitRate=AC3_BitRate[frmsizecod/2]*1000;
-                        int32u Divider=bsid_Max==9?2:1; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
-                        Fill(Stream_Audio, 0, Audio_BitRate, BitRate/Divider);
+                        if (frmsizecod/2<19)
+                        {
+                            int32u BitRate=AC3_BitRate[frmsizecod/2]*1000;
+                            int32u Divider=bsid_Max == 9?2:1; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
+                            Fill(Stream_Audio, 0, Audio_BitRate, BitRate/Divider);
+                        }
                     }
                 }
             }
@@ -2187,7 +2190,7 @@ void File_Ac3::Core_Frame()
             Skip_B2(                                                "crc1");
             BS_Begin();
             Get_S1 (2, fscod,                                       "fscod - Sample Rate Code"); Param_Info2(AC3_SamplingRate[fscod], " Hz");
-            Get_S1 (6, frmsizecod,                                  "frmsizecod - Frame Size Code"); if (frmsizecod/2<19) {Param_Info2(AC3_BitRate[frmsizecod/2]*1000, " bps");}
+            Get_S1 (6, frmsizecod,                                  "frmsizecod - Frame Size Code"); Param_Info2C(frmsizecod/2<19,AC3_BitRate[frmsizecod/2]*1000, " bps");
         Element_End0();
 
         Element_Begin1("bsi");
