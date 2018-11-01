@@ -2176,6 +2176,32 @@ static string Mxf_AcquisitionMetadata_Sony_MonitoringBaseCurve(int128u Value)
 }
 
 //***************************************************************************
+// Config
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+const char* ShowSource_List[] =
+{
+    "colour_description",
+    "colour_range",
+    "colour_primaries",
+    "matrix_coefficients",
+    "transfer_characteristics",
+    "MasteringDisplay_ColorPrimaries",
+    "MasteringDisplay_Luminance",
+    "MaxCLL",
+    "MaxFALL",
+    NULL
+};
+bool ShowSource_IsInList(const string &Value)
+{
+    for (size_t i = 0; ShowSource_List[i]; i++)
+        if (ShowSource_List[i] == Value)
+            return true;
+    return false;
+}
+
+//***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
 
@@ -3519,7 +3545,7 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
             if (MasteringDisplay_ColorPrimaries==__T("R: x=0.708000 y=0.292000, G: x=0.170000 y=0.797000, B: x=0.131000 y=0.046000, White point: x=0.312700 y=0.329000")) MasteringDisplay_ColorPrimaries=__T("BT.2020");
             if (MasteringDisplay_ColorPrimaries==__T("R: x=0.680000 y=0.320000, G: x=0.265000 y=0.690000, B: x=0.150000 y=0.060000, White point: x=0.312700 y=0.329000")) MasteringDisplay_ColorPrimaries=__T("Display P3");
 
-            Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_ColorPrimaries", MasteringDisplay_ColorPrimaries, true);
+            Descriptor->second.Infos["MasteringDisplay_ColorPrimaries"]=MasteringDisplay_ColorPrimaries;
         }
         if (MasteringDisplay_Luminance_Max!=Descriptor->second.Infos.end() || MasteringDisplay_Luminance_Min!=Descriptor->second.Infos.end())
         {
@@ -3532,9 +3558,14 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
             }
             else
                     MasteringDisplay_Luminance=__T("max: ")+MasteringDisplay_Luminance_Max->second;
-            Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_Luminance", MasteringDisplay_Luminance, true);
+
+            Descriptor->second.Infos["MasteringDisplay_Luminance"]=MasteringDisplay_Luminance;
         }
 
+        for (size_t i=0; ShowSource_List[i]; i++)
+            if (!Retrieve_Const(StreamKind_Last, StreamPos_Last, ShowSource_List[i]).empty())
+                for (size_t Pos=0; Pos<StreamWithSameID; Pos++)
+                    Fill(StreamKind_Last, StreamPos_Last+Pos, (string(ShowSource_List[i])+"_Source").c_str(), "Stream");
         for (std::map<std::string, Ztring>::iterator Info=Descriptor->second.Infos.begin(); Info!=Descriptor->second.Infos.end(); ++Info)
             if (Info!=Info_MasteringDisplay_Primaries
              && Info!=Info_MasteringDisplay_WhitePointChromaticity
@@ -3557,7 +3588,11 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
                     for (size_t Pos=0; Pos<StreamWithSameID; Pos++)
                     {
                         if (FromEssence.empty())
+                        {
                             Fill(StreamKind_Last, StreamPos_Last+Pos, Info->first.c_str(), Info->second);
+                            if (ShowSource_IsInList(Info->first))
+                                Fill(StreamKind_Last, StreamPos_Last+Pos, (Info->first+"_Source").c_str(), "Container");
+                        }
                         else if (FromEssence!=Info->second)
                         {
                             // Special cases
@@ -3581,6 +3616,16 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
                             // Filling both values
                             Fill(StreamKind_Last, StreamPos_Last+Pos, (Info->first+"_Original").c_str(), FromEssence); //TODO: use the generic engine by filling descriptor info before merging essence info
                             Fill(StreamKind_Last, StreamPos_Last+Pos, Info->first.c_str(), Info->second, true); //TODO: use the generic engine by filling descriptor info before merging essence info
+                            if (ShowSource_IsInList(Info->first))
+                            {
+                                Fill(StreamKind_Last, StreamPos_Last+Pos, (Info->first+"_Source").c_str(), "Container", Unlimited, true, true);
+                                Fill(StreamKind_Last, StreamPos_Last+Pos, (Info->first+"_Original_Source").c_str(), "Stream");
+                            }
+                        }
+                        else
+                        {
+                            if (ShowSource_IsInList(Info->first))
+                                Fill(StreamKind_Last, StreamPos_Last+Pos, (Info->first+"_Source").c_str(), "Container / Stream", Unlimited, true, true);
                         }
                     }
                 }
