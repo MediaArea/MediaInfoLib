@@ -1602,6 +1602,9 @@ bool File_Dts::FrameSynchPoint_Test()
         {
             if (Word)
             {
+                if (Buffer_Offset+8>Buffer_Size)
+                    return false; //Need more data
+
                 if (BigEndian)
                     Size=((Buffer[Buffer_Offset+5]&0x03)<<12)
                        | ( Buffer[Buffer_Offset+6]      << 4)
@@ -1615,6 +1618,9 @@ bool File_Dts::FrameSynchPoint_Test()
             }
             else
             {
+                if (Buffer_Offset+10>Buffer_Size)
+                    return false; //Need more data
+
                 if (BigEndian)
                     Size=((Buffer[Buffer_Offset+6]&0x03)<<12)
                        | ( Buffer[Buffer_Offset+7]      << 4)
@@ -1627,7 +1633,7 @@ bool File_Dts::FrameSynchPoint_Test()
                 Original_Size=Size*16/14;
             }
         }
-        if (Buffer_Offset+Size>Buffer_Size)
+        if (Buffer_Offset+Original_Size>Buffer_Size)
             return false; //Need more data
 
         if (!Word || !BigEndian)
