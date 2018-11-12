@@ -3562,10 +3562,6 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
             Descriptor->second.Infos["MasteringDisplay_Luminance"]=MasteringDisplay_Luminance;
         }
 
-        for (size_t i=0; ShowSource_List[i]; i++)
-            if (!Retrieve_Const(StreamKind_Last, StreamPos_Last, ShowSource_List[i]).empty())
-                for (size_t Pos=0; Pos<StreamWithSameID; Pos++)
-                    Fill(StreamKind_Last, StreamPos_Last+Pos, (string(ShowSource_List[i])+"_Source").c_str(), "Stream");
         for (std::map<std::string, Ztring>::iterator Info=Descriptor->second.Infos.begin(); Info!=Descriptor->second.Infos.end(); ++Info)
             if (Info!=Info_MasteringDisplay_Primaries
              && Info!=Info_MasteringDisplay_WhitePointChromaticity
@@ -3590,8 +3586,6 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
                         if (FromEssence.empty())
                         {
                             Fill(StreamKind_Last, StreamPos_Last+Pos, Info->first.c_str(), Info->second);
-                            if (ShowSource_IsInList(Info->first))
-                                Fill(StreamKind_Last, StreamPos_Last+Pos, (Info->first+"_Source").c_str(), "Container");
                         }
                         else if (FromEssence!=Info->second)
                         {
