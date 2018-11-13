@@ -4357,7 +4357,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
 
     int64s SampleRate=0;
     int32u Channels=0, SampleSize=0, Flags=0;
-    int16u Version, ID;
+    int16u Version=0, ID;
     if (!IsQt() && Element_Code==0x6D703461) // like ISO MP4 and CodecID is mp4a
     {
         int16u SampleRate16;
