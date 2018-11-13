@@ -548,7 +548,7 @@ std::string File_Av1::GOP_Detect (std::string PictureTypes)
 
             //Finding the longest string
             ZtringList List; List.Separator_Set(0, __T(" "));
-            List.Write(Ztring().From_Local(PictureTypes));
+            List.Write(Ztring().From_UTF8(PictureTypes));
             size_t MaxLength=0;
             size_t MaxLength_Pos=0;
             for (size_t Pos=0; Pos<List.size(); Pos++)

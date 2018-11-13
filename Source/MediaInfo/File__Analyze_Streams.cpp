@@ -1032,7 +1032,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
     }
 
     //Handling of well known parameters
-    const Ztring Parameter_Local = Ztring().From_Local(Parameter);
+    const Ztring Parameter_Local = Ztring().From_UTF8(Parameter);
     const size_t Pos=MediaInfoLib::Config.Info_Get(StreamKind).Find(Parameter_Local);
     if (Pos!=Error)
     {
@@ -1088,7 +1088,7 @@ void File__Analyze::Fill_SetOptions(stream_t StreamKind, size_t StreamPos, const
     }
 
     //Handling of well known parameters
-    size_t Pos=MediaInfoLib::Config.Info_Get(StreamKind).Find(Ztring().From_Local(Parameter));
+    size_t Pos=MediaInfoLib::Config.Info_Get(StreamKind).Find(Ztring().From_UTF8(Parameter));
     if (Pos!=Error)
     {
         //We can not change that
@@ -1138,7 +1138,7 @@ const Ztring &File__Analyze::Retrieve_Const (stream_t StreamKind, size_t StreamP
 
     if (KindOfInfo!=Info_Text)
         return MediaInfoLib::Config.Info_Get(StreamKind, Parameter, KindOfInfo);
-    const Ztring Parameter_Local = Ztring().From_Local(Parameter);
+    const Ztring Parameter_Local = Ztring().From_UTF8(Parameter);
     size_t Parameter_Pos=MediaInfoLib::Config.Info_Get(StreamKind).Find(Parameter_Local);
     if (Parameter_Pos==Error)
     {
@@ -1162,7 +1162,7 @@ Ztring File__Analyze::Retrieve (stream_t StreamKind, size_t StreamPos, const cha
 
     if (KindOfInfo!=Info_Text)
         return MediaInfoLib::Config.Info_Get(StreamKind, Parameter, KindOfInfo);
-    const Ztring Parameter_Local = Ztring().From_Local(Parameter);
+    const Ztring Parameter_Local = Ztring().From_UTF8(Parameter);
     size_t Parameter_Pos=MediaInfoLib::Config.Info_Get(StreamKind).Find(Parameter_Local);
     if (Parameter_Pos==Error)
     {
@@ -1194,7 +1194,7 @@ void File__Analyze::Clear (stream_t StreamKind, size_t StreamPos, const char* Pa
             }
         return;
     }
-    const Ztring Parameter_Local = Ztring().From_Local(Parameter);
+    const Ztring Parameter_Local = Ztring().From_UTF8(Parameter);
     size_t Parameter_Pos=MediaInfoLib::Config.Info_Get(StreamKind).Find(Parameter_Local);
     if (Parameter_Pos==Error)
     {

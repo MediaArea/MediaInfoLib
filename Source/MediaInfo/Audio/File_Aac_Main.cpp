@@ -517,15 +517,15 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
 
     if (Frequency_b)
         Infos["SamplingRate"].From_Number(Frequency_b);
-    Infos["Format"].From_Local(Aac_Format(audioObjectType));
-    Infos["Format_Profile"].From_Local(Aac_Format_Profile(audioObjectType));
-    Infos["Codec"].From_Local(Aac_audioObjectType(audioObjectType));
+    Infos["Format"].From_UTF8(Aac_Format(audioObjectType));
+    Infos["Format_Profile"].From_UTF8(Aac_Format_Profile(audioObjectType));
+    Infos["Codec"].From_UTF8(Aac_audioObjectType(audioObjectType));
     if (channelConfiguration && channelConfiguration<8)
     {
         Infos["Channel(s)"].From_Number(Aac_Channels[channelConfiguration]);
-        Infos["ChannelPositions"].From_Local(Aac_ChannelConfiguration[channelConfiguration]);
-        Infos["ChannelPositions/String2"].From_Local(Aac_ChannelConfiguration2[channelConfiguration]);
-        Infos["ChannelLayout"].From_Local(Aac_ChannelLayout[channelConfiguration]);
+        Infos["ChannelPositions"].From_UTF8(Aac_ChannelConfiguration[channelConfiguration]);
+        Infos["ChannelPositions/String2"].From_UTF8(Aac_ChannelConfiguration2[channelConfiguration]);
+        Infos["ChannelLayout"].From_UTF8(Aac_ChannelLayout[channelConfiguration]);
     }
 
     if (sbrPresentFlag || !Infos["Format_Settings_SBR"].empty())
@@ -544,7 +544,7 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
         }
         Infos["Format_Settings"]=sbrData?__T("Explicit"):__T("NBC"); // "Not Backward Compatible"
         Infos["Format_Settings_SBR"]=sbrData?__T("Yes (Explicit)"):__T("Yes (NBC)"); // "Not Backward Compatible"
-        Infos["Codec"]=Ztring().From_Local(Aac_audioObjectType(audioObjectType))+__T("-SBR");
+        Infos["Codec"]=Ztring().From_UTF8(Aac_audioObjectType(audioObjectType))+__T("-SBR");
     }
     else if (sbrData)
         Infos["Format_Settings_SBR"]=__T("No (Explicit)");
@@ -994,7 +994,7 @@ void File_Aac::adif_header()
             Fill(Stream_Audio, StreamPos, Audio_MuxingMode, "ADIF");
         if (num_program_config_elements==0) //Easy to fill only if 1 audio stream
         {
-            Infos["BitRate_Mode"].From_Local(bitstream_type?"VBR":"CBR");
+            Infos["BitRate_Mode"].From_UTF8(bitstream_type?"VBR":"CBR");
             if (bitrate>0)
                 Infos[bitstream_type?"BitRate_Maximum":"BitRate"].From_Number(bitrate);
         }
@@ -1083,21 +1083,21 @@ void File_Aac::adts_fixed_header()
     FILLING_BEGIN();
         if (Infos["Format"].empty())
         {
-            Infos_General["Format"].From_Local("ADTS");
+            Infos_General["Format"].From_UTF8("ADTS");
 
-            Infos["Format"].From_Local("AAC");
-            Infos["Format_Version"].From_Local(id?"Version 2":"Version 4");
-            Infos["Format_Profile"].From_Local(Aac_Format_Profile(audioObjectType));
+            Infos["Format"].From_UTF8("AAC");
+            Infos["Format_Version"].From_UTF8(id?"Version 2":"Version 4");
+            Infos["Format_Profile"].From_UTF8(Aac_Format_Profile(audioObjectType));
             Infos["CodecID"].From_Number(audioObjectType);
-            Infos["Codec"].From_Local(Aac_audioObjectType(audioObjectType));
+            Infos["Codec"].From_UTF8(Aac_audioObjectType(audioObjectType));
             if (Frequency_b)
                 Infos["SamplingRate"].From_Number(Frequency_b);
             Infos["Channel(s)"].From_Number(channelConfiguration);
-            Infos["ChannelPositions"].From_Local(Aac_ChannelConfiguration[channelConfiguration]);
-            Infos["ChannelPositions/String2"].From_Local(Aac_ChannelConfiguration2[channelConfiguration]);
-            Infos["ChannelLayout"].From_Local(Aac_ChannelLayout[channelConfiguration]);
+            Infos["ChannelPositions"].From_UTF8(Aac_ChannelConfiguration[channelConfiguration]);
+            Infos["ChannelPositions/String2"].From_UTF8(Aac_ChannelConfiguration2[channelConfiguration]);
+            Infos["ChannelLayout"].From_UTF8(Aac_ChannelLayout[channelConfiguration]);
             if (IsSub)
-                Infos["MuxingMode"].From_Local("ADTS");
+                Infos["MuxingMode"].From_UTF8("ADTS");
         }
     FILLING_END();
 }

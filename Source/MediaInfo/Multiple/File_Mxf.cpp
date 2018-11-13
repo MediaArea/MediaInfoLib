@@ -3028,7 +3028,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             }
             for (size_t Pos=0; Pos<StreamMoreSave.size(); Pos++)
             {
-                Fill(StreamKind_Last, StreamPos_Last, StreamMoreSave(Pos, 0).To_Local().c_str(), StreamMoreSave(Pos, 1));
+                Fill(StreamKind_Last, StreamPos_Last, StreamMoreSave(Pos, 0).To_UTF8().c_str(), StreamMoreSave(Pos, 1));
                 if (StreamMoreSave(Pos, Info_Name)==__T("Delay_SDTI"))
                     Fill_SetOptions(StreamKind_Last, StreamPos_Last, "Delay_SDTI", "N NT");
                 if (StreamMoreSave(Pos, Info_Name)==__T("Delay_SystemScheme1"))
@@ -3630,7 +3630,7 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
             CodecID.From_Number(Descriptor->second.EssenceContainer.lo, 16);
             if (CodecID.size()<16)
                 CodecID.insert(0, 16-CodecID.size(), __T('0'));
-            Format.From_Local(Mxf_EssenceContainer(Descriptor->second.EssenceContainer));
+            Format.From_UTF8(Mxf_EssenceContainer(Descriptor->second.EssenceContainer));
         }
         if (Descriptor->second.EssenceCompression.hi!=(int64u)-1)
         {
@@ -3641,7 +3641,7 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
             if (EssenceCompression.size()<16)
                 EssenceCompression.insert(0, 16-EssenceCompression.size(), __T('0'));
             CodecID+=EssenceCompression;
-            Ztring Format_FromCompression; Format_FromCompression.From_Local(Mxf_EssenceCompression(Descriptor->second.EssenceCompression));
+            Ztring Format_FromCompression; Format_FromCompression.From_UTF8(Mxf_EssenceCompression(Descriptor->second.EssenceCompression));
             if (!Format_FromCompression.empty())
                 Format=Format_FromCompression; //EssenceCompression has priority
         }
@@ -4227,7 +4227,7 @@ void File_Mxf::Streams_Finish_Component_ForAS11(const int128u ComponentUID, floa
                                                             }
                                                     }
                                                     Fill(Stream_Other, StreamPos_Last, "PrimaryAudioLanguage", AS11->second.PrimaryAudioLanguage);
-                                                    //Fill_SetOptions(Stream_Other][StreamPos_Last](Ztring().From_Local("PrimaryAudioLanguage", "N NT");
+                                                    //Fill_SetOptions(Stream_Other][StreamPos_Last](Ztring().From_UTF8("PrimaryAudioLanguage", "N NT");
                                                     //if (MediaInfoLib::Config.Iso639_Find(AS11->second.PrimaryAudioLanguage).empty())
                                                     //    Fill(Stream_Other, StreamPos_Last, "PrimaryAudioLanguage/String", MediaInfoLib::Config.Iso639_Translate(AS11->second.PrimaryAudioLanguage));
                                                     if (AS11->second.ClosedCaptionsPresent<2)
@@ -6173,9 +6173,9 @@ void File_Mxf::Data_Parse()
                         if (i==Descriptor->second.Infos.end())
                         {
                             Ztring Format;
-                            Format.From_Local(Mxf_EssenceCompression(Descriptor->second.EssenceCompression));
+                            Format.From_UTF8(Mxf_EssenceCompression(Descriptor->second.EssenceCompression));
                             if (Format.empty())
-                                Format.From_Local(Mxf_EssenceContainer(Descriptor->second.EssenceContainer));
+                                Format.From_UTF8(Mxf_EssenceContainer(Descriptor->second.EssenceContainer));
                             if (Format.find(__T("PCM"))==0)
                                 Descriptor->second.Infos["Format_Settings_Endianness"]=__T("Little");
                         }
@@ -6186,7 +6186,7 @@ void File_Mxf::Data_Parse()
                         ChooseParser__FromEssence(Essence, Descriptor); //Searching by the track identifier
 
                     #ifdef MEDIAINFO_VC3_YES
-                        if (Ztring().From_Local(Mxf_EssenceContainer(Descriptor->second.EssenceContainer))==__T("VC-3"))
+                        if (Ztring().From_UTF8(Mxf_EssenceContainer(Descriptor->second.EssenceContainer))==__T("VC-3"))
                             ((File_Vc3*)(*(Essence->second.Parsers.begin())))->FrameRate=Descriptor->second.SampleRate;
                     #endif //MEDIAINFO_VC3_YES
                     break;
@@ -8791,7 +8791,7 @@ void File_Mxf::SDTI_PackageMetadataSet()
                                 Get_BER(Length,                 "Length");
                                 switch ((Tag.lo>>16)&0xFF)
                                 {
-                                    case 0x00 : Skip_Local(Length,"Data"); break;
+                                    case 0x00 : Skip_UTF8(Length,"Data"); break;
                                     case 0x01 : Skip_UTF16L(Length,"Data"); break;
                                     default   : Skip_XX(Length, "Data");
                                 }
@@ -10537,7 +10537,7 @@ void File_Mxf::PrimaryExtendedSpokenLanguage()
 {
     //Parsing
     Ztring Data;
-    Get_Local (Length2, Data,                                   "Data"); Element_Info1(Data);
+    Get_UTF8 (Length2, Data,                                    "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
         DMScheme1s[InstanceUID].PrimaryExtendedSpokenLanguage=Data;
@@ -10549,7 +10549,7 @@ void File_Mxf::PrimaryExtendedSpokenLanguage()
 void File_Mxf::SecondaryExtendedSpokenLanguage()
 {
     //Parsing
-    Info_Local(Length2, Data,                                   "Data"); Element_Info1(Data);
+    Info_UTF8(Length2, Data,                                    "Data"); Element_Info1(Data);
 }
 
 //---------------------------------------------------------------------------
@@ -10557,7 +10557,7 @@ void File_Mxf::SecondaryExtendedSpokenLanguage()
 void File_Mxf::OriginalExtendedSpokenLanguage()
 {
     //Parsing
-    Info_Local(Length2, Data,                                   "Data"); Element_Info1(Data);
+    Info_UTF8(Length2, Data,                                    "Data"); Element_Info1(Data);
 }
 
 //---------------------------------------------------------------------------
@@ -10565,7 +10565,7 @@ void File_Mxf::OriginalExtendedSpokenLanguage()
 void File_Mxf::SecondaryOriginalExtendedSpokenLanguage()
 {
     //Parsing
-    Info_Local(Length2, Data,                                   "Data"); Element_Info1(Data);
+    Info_UTF8(Length2, Data,                                    "Data"); Element_Info1(Data);
 }
 
 //---------------------------------------------------------------------------
@@ -10586,7 +10586,7 @@ void File_Mxf::RFC5646AudioLanguageCode()
 
     //Parsing
     Ztring Value;
-    Get_Local (Length2-(SizeIsPresent?4:0), Value,              "Value"); Element_Info1(Value);
+    Get_UTF8 (Length2-(SizeIsPresent?4:0), Value,               "Value"); Element_Info1(Value);
 
     FILLING_BEGIN();
         Descriptor_Fill("Language", Value);
@@ -13443,7 +13443,7 @@ void File_Mxf::Omneon_010201020100_8005()
 void File_Mxf::Omneon_010201020100_8006()
 {
     //Parsing
-    Skip_Local(Length2,                                         "Content");
+    Skip_UTF8(Length2,                                          "Content");
 }
 
 //***************************************************************************
