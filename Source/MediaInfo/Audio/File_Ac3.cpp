@@ -1144,9 +1144,9 @@ void File_Ac3::Streams_Fill()
         if ((MediaInfoLib::Config.LegacyStreamDisplay_Get() || Retrieve(Stream_Audio, 0, Audio_ChannelLayout).empty()) && acmod_Max[0][0]!=(int8u)-1)
         {
             int8u Channels=AC3_Channels[acmod_Max[0][0]];
-            Ztring ChannelPositions; ChannelPositions.From_Local(AC3_ChannelPositions[acmod_Max[0][0]]);
-            Ztring ChannelPositions2; ChannelPositions2.From_Local(AC3_ChannelPositions2[acmod_Max[0][0]]);
-            Ztring ChannelLayout; ChannelLayout.From_Local(lfeon_Max[0][0]?AC3_ChannelLayout_lfeon[acmod_Max[0][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[0][0]]);
+            Ztring ChannelPositions; ChannelPositions.From_UTF8(AC3_ChannelPositions[acmod_Max[0][0]]);
+            Ztring ChannelPositions2; ChannelPositions2.From_UTF8(AC3_ChannelPositions2[acmod_Max[0][0]]);
+            Ztring ChannelLayout; ChannelLayout.From_UTF8(lfeon_Max[0][0]?AC3_ChannelLayout_lfeon[acmod_Max[0][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[0][0]]);
             if (lfeon_Max[0][0])
             {
                 Channels+=1;
@@ -1222,7 +1222,7 @@ void File_Ac3::Streams_Fill()
                     Fill(Stream_Audio, 0, Audio_Codec_Profile, "E-AC-3+Dep");
                     Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_chanmap_Channels(chanmap_Final));
                     Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_chanmap_ChannelPositions(chanmap_Final));
-                    Ztring ChannelPositions2; ChannelPositions2.From_Local(AC3_ChannelPositions2[acmod_Max[0][0]]); //TODO: handle the dependancy
+                    Ztring ChannelPositions2; ChannelPositions2.From_UTF8(AC3_ChannelPositions2[acmod_Max[0][0]]); //TODO: handle the dependancy
                     if (lfeon_Max[Pos][0])
                     {
                         ChannelPositions2+=__T(".1");
@@ -1230,7 +1230,7 @@ void File_Ac3::Streams_Fill()
                     Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ChannelPositions2);
                     if (MediaInfoLib::Config.LegacyStreamDisplay_Get() || Retrieve(Stream_Audio, 0, Audio_ChannelLayout).empty())
                     {
-                        Ztring ChannelLayout; ChannelLayout.From_Local(lfeon_Max[0][0]?AC3_ChannelLayout_lfeon[acmod_Max[0][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[0][0]]);
+                        Ztring ChannelLayout; ChannelLayout.From_UTF8(lfeon_Max[0][0]?AC3_ChannelLayout_lfeon[acmod_Max[0][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[0][0]]);
                         Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_chanmap_ChannelLayout(chanmap_Final, ChannelLayout));
                     }
                 }
@@ -1243,8 +1243,8 @@ void File_Ac3::Streams_Fill()
                 if ((MediaInfoLib::Config.LegacyStreamDisplay_Get() || Retrieve(Stream_Audio, 0, Audio_Channel_s_).empty()) && acmod_Max[Pos][0]!=(int8u)-1)
                 {
                     int8u Channels=AC3_Channels[acmod_Max[Pos][0]];
-                    Ztring ChannelPositions; ChannelPositions.From_Local(AC3_ChannelPositions[acmod_Max[Pos][0]]);
-                    Ztring ChannelPositions2; ChannelPositions2.From_Local(AC3_ChannelPositions2[acmod_Max[0][0]]);
+                    Ztring ChannelPositions; ChannelPositions.From_UTF8(AC3_ChannelPositions[acmod_Max[Pos][0]]);
+                    Ztring ChannelPositions2; ChannelPositions2.From_UTF8(AC3_ChannelPositions2[acmod_Max[0][0]]);
                     if (lfeon_Max[Pos][0])
                     {
                         Channels+=1;
@@ -4150,9 +4150,9 @@ void File_Ac3::HD()
             Skip_S1( 2,                                         "reserved");
             Skip_S1( 2,                                         "2ch_presentation_channel_modifier");
             Skip_S1( 2,                                         "6ch_presentation_channel_modifier");
-            Get_S1 ( 5, HD_Channels1,                           "6ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels1)); Param_Info1(Ztring().From_Local(AC3_TrueHD_Channels_Positions(HD_Channels1)));
+            Get_S1 ( 5, HD_Channels1,                           "6ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels1)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels1)));
             Skip_S1( 2,                                         "8ch_presentation_channel_modifier");
-            Get_S2 (13, HD_Channels2,                           "8ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels2)); Param_Info1(Ztring().From_Local(AC3_TrueHD_Channels_Positions(HD_Channels2)));
+            Get_S2 (13, HD_Channels2,                           "8ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels2)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels2)));
             BS_End();
             HD_Resolution2=HD_Resolution1=24; //Not sure
             HD_SamplingRate2=HD_SamplingRate1;

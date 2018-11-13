@@ -2958,8 +2958,8 @@ void File_Mk::Segment_Info_SegmentUID()
     FILLING_BEGIN();
         if (Segment_Info_Count>1)
             return; //First element has the priority
-        Fill(Stream_General, 0, General_UniqueID, Ztring().From_Local(Data.toString(10)));
-        Fill(Stream_General, 0, General_UniqueID_String, Ztring().From_Local(Data.toString(10))+__T(" (0x")+Ztring().From_Local(Data.toString(16))+__T(')'));
+        Fill(Stream_General, 0, General_UniqueID, Ztring().From_UTF8(Data.toString(10)));
+        Fill(Stream_General, 0, General_UniqueID_String, Ztring().From_UTF8(Data.toString(10))+__T(" (0x")+Ztring().From_UTF8(Data.toString(16))+__T(')'));
     FILLING_END();
 }
 

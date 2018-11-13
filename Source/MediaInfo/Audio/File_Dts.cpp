@@ -557,9 +557,9 @@ void File_Dts::Streams_Fill_Core()
     if (Core_Core_AMODE<16)
     {
         Data[Channels].push_back(Ztring::ToZtring(DTS_Channels[Core_Core_AMODE]+(Core_Core_LFF?1:0)));
-        Data[ChannelPositions].push_back(Ztring().From_Local(DTS_ChannelPositions[Core_Core_AMODE])+(Core_Core_LFF?__T(", LFE"):__T("")));
-        Data[ChannelPositions2].push_back(Ztring().From_Local(DTS_ChannelPositions2[Core_Core_AMODE])+(Core_Core_LFF?__T(".1"):__T(".0")));
-        Data[ChannelLayout].push_back(Ztring().From_Local(DTS_ChannelLayout[Core_Core_AMODE])+(Core_Core_LFF?__T(" LFE"):__T("")));
+        Data[ChannelPositions].push_back(Ztring().From_UTF8(DTS_ChannelPositions[Core_Core_AMODE])+(Core_Core_LFF?__T(", LFE"):__T("")));
+        Data[ChannelPositions2].push_back(Ztring().From_UTF8(DTS_ChannelPositions2[Core_Core_AMODE])+(Core_Core_LFF?__T(".1"):__T(".0")));
+        Data[ChannelLayout].push_back(Ztring().From_UTF8(DTS_ChannelLayout[Core_Core_AMODE])+(Core_Core_LFF?__T(" LFE"):__T("")));
     }
     else
     {
