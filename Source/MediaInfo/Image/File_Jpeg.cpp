@@ -1232,10 +1232,18 @@ void File_Jpeg::APP2()
     //Parsing
     if (Element_Size>=12 && Buffer[Buffer_Offset+11]==0 && string((const char*)Buffer+Buffer_Offset)=="ICC_PROFILE")
     {
+        Element_Info1("ICC profile");
+        int8u Pos;
         Skip_Local(12,                                          "Signature");
-        Skip_B2(                                            "?");
-        APP2_ICC_PROFILE();
+        Get_B1 (Pos,                                            "Chunk position?"); //1-based?
+        Skip_B1(                                                "Chunk Max?"); //1-based?
+        if (Pos<=1) //Multi-chunk ICC is not supported so we test it is order to skip the extra ICC blocks
+            APP2_ICC_PROFILE();
+        else
+            Skip_XX(Element_Size-Element_Offset,                "(Multi-chunk ICC is not supported)");
     }
+    else
+        Skip_XX(Element_Size,                                   "Data");
 }
 
 //---------------------------------------------------------------------------
@@ -1247,7 +1255,6 @@ struct icctagtable
 };
 void File_Jpeg::APP2_ICC_PROFILE()
 {
-    Element_Info1("ICC profile");
     Element_Begin1("ICC profile");
 
     //Parsing
