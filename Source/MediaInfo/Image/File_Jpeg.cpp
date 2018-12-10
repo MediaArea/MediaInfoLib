@@ -1327,6 +1327,8 @@ void File_Jpeg::APP2_ICC_PROFILE()
     vector<icctagtable> TagTables;
     Element_Begin1("Tag table");
         Get_B4(Count,                                           "Count");
+        if (Count*12>Element_Size-Element_Offset)
+            Count=(Element_Size-Element_Offset)/12;
         for (int32u i=0; i<Count; i++)
         {
             icctagtable TagTable;
