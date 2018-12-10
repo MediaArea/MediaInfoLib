@@ -934,6 +934,7 @@ void File_Jpeg::SOF_()
             Fill(StreamKind_Last, 0, "Width", Width);
 
             //ColorSpace from http://docs.oracle.com/javase/1.4.2/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html
+            //TODO: if APPE_Adobe0_transform is present, indicate that K is inverted, see http://halicery.com/Image/jpeg/JPEGCMYK.html
             switch (APPE_Adobe0_transform)
             {
                 case 0x01 :
@@ -942,7 +943,7 @@ void File_Jpeg::SOF_()
                             break;
                 case 0x02 :
                             if (Count==4)
-                                Fill(StreamKind_Last, 0, "ColorSpace", "YCCB");
+                                Fill(StreamKind_Last, 0, "ColorSpace", "YUVK");
                             break;
                 default   :
                             {
@@ -965,6 +966,8 @@ void File_Jpeg::SOF_()
                                                   || (SamplingFactors[0].Ci==0 && SamplingFactors[1].Ci==1 && SamplingFactors[2].Ci==2)                                 //012
                                                   || (SamplingFactors[0].Ci==1 && SamplingFactors[1].Ci==2 && SamplingFactors[2].Ci==3))                                //123
                                                 Fill(StreamKind_Last, 0, "ColorSpace", "YUV");
+                                            else if (APPE_Adobe0_transform==0 || APPE_Adobe0_transform==(int8u)-1)                                                      //transform set to RGB (it is a guess)
+                                                Fill(StreamKind_Last, 0, "ColorSpace", "RGB");
                                             break;
                                 case 4 :
                                                  if (!APP0_JFIF_Parsed && Ci['R']==1 && Ci['G']==1 && Ci['B']==1 && Ci['A']==1)                                         //RGBA
@@ -975,8 +978,10 @@ void File_Jpeg::SOF_()
                                                   || (SamplingFactors[0].Ci==0 && SamplingFactors[1].Ci==1 && SamplingFactors[2].Ci==2 && SamplingFactors[3].Ci==3)     //0123
                                                   || (SamplingFactors[0].Ci==1 && SamplingFactors[1].Ci==2 && SamplingFactors[2].Ci==3 && SamplingFactors[3].Ci==4))    //1234
                                                 Fill(StreamKind_Last, 0, "ColorSpace", "YUVA");
-                                            else if (APPE_Adobe0_transform==0)                                                                                          //transform set to CMYK
-                                                Fill(StreamKind_Last, 0, "ColorSpace", "YCCB");
+                                            else if (Ci['C']==1 && Ci['M']==1 && Ci['Y']==1 && Ci['K']==1)                                                              //CMYK
+                                                Fill(StreamKind_Last, 0, "ColorSpace", "CMYK");
+                                            else if (APPE_Adobe0_transform==0 || APPE_Adobe0_transform==(int8u)-1)                                                      //transform set to CMYK (it is a guess)
+                                                Fill(StreamKind_Last, 0, "ColorSpace", "CMYK");
                                             break;
                                 default:    ;
                             }
@@ -992,7 +997,7 @@ void File_Jpeg::SOF_()
                     case 1 :
                             switch (SamplingFactors[0].Vi)
                             {
-                                case 1 : ChromaSubsampling="4:4:4"; break;
+                                case 1 : if (Retrieve(StreamKind_Last, 0, "ColorSpace").find(__T("YUV"))==0) ChromaSubsampling="4:4:4"; break;
                                 default: ;
                             }
                             break;
@@ -1016,13 +1021,8 @@ void File_Jpeg::SOF_()
                 }
                 if (!ChromaSubsampling.empty())
                 {
-                    if (SamplingFactors.size()==4)
-                    {
-                        if (ChromaSubsampling=="4:4:4" && SamplingFactors[3].Hi==1 && SamplingFactors[3].Vi==1)
-                            ChromaSubsampling+=":4";
-                        else
-                            ChromaSubsampling+=":?";
-                    }
+                    if (SamplingFactors.size()>3 && (SamplingFactors[3].Hi!=SamplingFactors[0].Hi || SamplingFactors[3].Vi!=SamplingFactors[0].Vi))
+                        ChromaSubsampling+=":?";
                     Fill(StreamKind_Last, 0, "ChromaSubsampling", ChromaSubsampling);
                 }
             }
