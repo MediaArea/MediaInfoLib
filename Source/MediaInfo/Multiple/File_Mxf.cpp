@@ -2180,7 +2180,7 @@ static string Mxf_AcquisitionMetadata_Sony_MonitoringBaseCurve(int128u Value)
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const char* ShowSource_List[] =
+static const char* ShowSource_List[] =
 {
     "colour_description",
     "colour_range",
