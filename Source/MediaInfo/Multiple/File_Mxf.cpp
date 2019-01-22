@@ -2180,7 +2180,7 @@ static string Mxf_AcquisitionMetadata_Sony_MonitoringBaseCurve(int128u Value)
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const char* ShowSource_List[] =
+static const char* ShowSource_List[] =
 {
     "colour_description",
     "colour_range",
@@ -2193,7 +2193,7 @@ const char* ShowSource_List[] =
     "MaxFALL",
     NULL
 };
-bool ShowSource_IsInList(const string &Value)
+static bool ShowSource_IsInList(const string &Value)
 {
     for (size_t i = 0; ShowSource_List[i]; i++)
         if (ShowSource_List[i] == Value)
