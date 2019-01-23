@@ -76,7 +76,7 @@ void ComputeSamplingFrequency(Node* Parent, Ztring& Value)
         Value.resize(Value.size()-1);
 
     int32u SamplingFrequencyDenominator=0;
-    size_t Dot=Value.find(__T("."));
+    size_t Dot=Value.find(__T('.'));
     if (Dot!=std::string::npos)
     {
         Value.erase(Dot, 1);
