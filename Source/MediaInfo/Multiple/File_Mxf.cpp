@@ -2314,6 +2314,16 @@ File_Mxf::~File_Mxf()
         if (!Ancillary_IsBinded)
             delete Ancillary;
     #endif //defined(MEDIAINFO_ANCILLARY_YES)
+	
+    for (size_t i = 0; i < AcquisitionMetadataLists.size(); i++)
+        delete AcquisitionMetadataLists[ i ];
+	
+    AcquisitionMetadataLists.clear();
+	
+    for (size_t i = 0; i < AcquisitionMetadata_Sony_E201_Lists.size(); i++)
+        delete AcquisitionMetadata_Sony_E201_Lists[ i ];
+	
+    AcquisitionMetadata_Sony_E201_Lists.clear();
 }
 
 //***************************************************************************
