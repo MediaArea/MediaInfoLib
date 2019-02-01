@@ -11033,7 +11033,7 @@ void File_Mxf::PartitionMetadata()
                     Element_Size_WithPadding+=KAGSize_Corrected;
                 }
 
-                if (File_Offset+Buffer_Offset+Element_Size_WithPadding+HeaderByteCount+IndexByteCount > File_Size)
+                if (File_Offset+Buffer_Offset-Header_Size+Element_Size_WithPadding+HeaderByteCount+IndexByteCount > File_Size)
                     IsTruncated=true;
                 else
                     IsTruncated=false;
