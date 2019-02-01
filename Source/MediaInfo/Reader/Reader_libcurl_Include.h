@@ -926,8 +926,11 @@ extern "C"
     static GModule* libcurl_Module=NULL;
 #elif defined (_WIN32) || defined (WIN32)
     #undef __TEXT
-    #include <windows.h>
-    static HMODULE  libcurl_Module=NULL;
+    namespace WindowsNamespace
+    {
+    #include "windows.h"
+    }
+    static WindowsNamespace::HMODULE  libcurl_Module=NULL;
 #else
     #include <dlfcn.h>
     static void*    libcurl_Module=NULL;

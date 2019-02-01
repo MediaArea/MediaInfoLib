@@ -1150,7 +1150,7 @@ size_t Reader_libcurl::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
 
                                     Curl_Data->CountOfSeconds++;
                                     #ifdef WINDOWS
-                                        Sleep(1000);
+                                        WindowsNamespace::Sleep(1000);
                                     #endif //WINDOWS
 
                                     continue;
@@ -1234,7 +1234,7 @@ size_t Reader_libcurl::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                             if (FileSize_Old==Curl_Data->FileSize)
                             {
                                 #ifdef WINDOWS
-                                    Sleep(1000);
+                                    WindowsNamespace::Sleep(1000);
                                 #endif //WINDOWS
                             }
                         }
@@ -1360,7 +1360,7 @@ bool Reader_libcurl::Load(const Ztring File_Name)
                 #ifdef WINDOWS_UWP
                     libcurl_Module=LoadPackagedLibrary(MEDIAINFODLL_NAME, 0);
                 #else
-                    libcurl_Module=LoadLibrary(MEDIAINFODLL_NAME);
+                    libcurl_Module=WindowsNamespace::LoadLibrary(MEDIAINFODLL_NAME);
                 #endif
             #else
                 libcurl_Module=dlopen(MEDIAINFODLL_NAME, RTLD_LAZY);

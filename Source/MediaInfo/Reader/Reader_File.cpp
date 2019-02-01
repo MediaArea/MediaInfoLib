@@ -28,7 +28,10 @@
 #include "ZenLib/FileName.h"
 #ifdef WINDOWS
     #undef __TEXT
-    #include "Windows.h"
+    namespace WindowsNamespace
+    {
+    #include "windows.h"
+    }
 #endif //WINDOWS
 using namespace ZenLib;
 using namespace std;
@@ -721,7 +724,7 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                     }
 
                     #ifdef WINDOWS
-                        Sleep(1000);
+                        WindowsNamespace::Sleep(1000);
                     #endif //WINDOWS
                 }
 
