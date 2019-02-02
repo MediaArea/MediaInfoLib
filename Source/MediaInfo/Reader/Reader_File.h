@@ -25,10 +25,15 @@
 #if MEDIAINFO_READTHREAD
     #ifdef WINDOWS
         #undef __TEXT
-        namespace WindowsNamespace
-        {
+        #if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
+            namespace WindowsNamespace
+            {
+        #endif
         #include "windows.h"
-        }
+        #if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
+            }
+            using namespace WindowsNamespace;
+        #endif
     #endif //WINDOWS
 #endif //MEDIAINFO_READTHREAD
 //---------------------------------------------------------------------------

@@ -28,10 +28,15 @@
 #include <vector>
 #ifdef __WINDOWS__
     #undef __TEXT
-    namespace WindowsNamespace
-    {
+    #if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
+        namespace WindowsNamespace
+        {
+    #endif
     #include "windows.h"
-    }
+    #if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
+        }
+        using namespace WindowsNamespace;
+    #endif
 #endif // __WINDOWS__
 
 #if MEDIAINFO_EVENTS
@@ -816,7 +821,7 @@ void File_AribStdB24B37::JIS (int8u Row, int8u Column)
             ShiftJIS[1]=Column+126;
 
         wchar_t Temp[2];
-        int CharSize=WindowsNamespace::MultiByteToWideChar(932, 0, ShiftJIS, 2, Temp, 2); //932 = Shift-JIS (Windows-31J)
+        int CharSize=MultiByteToWideChar(932, 0, ShiftJIS, 2, Temp, 2); //932 = Shift-JIS (Windows-31J)
         if (CharSize>0)
         {
             Temp[CharSize]=__T('\0');
