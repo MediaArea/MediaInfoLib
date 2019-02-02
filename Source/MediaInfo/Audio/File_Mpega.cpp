@@ -1034,7 +1034,7 @@ void File_Mpega::Data_Parse()
     }
 
     //error_check
-    if (protection_bit)
+    if (!protection_bit)
     {
         Element_Begin1("error_check");
         Skip_B2(                                                "crc_check");
