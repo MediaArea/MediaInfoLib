@@ -28,10 +28,15 @@
 #include "ZenLib/FileName.h"
 #ifdef WINDOWS
     #undef __TEXT
-    namespace WindowsNamespace
-    {
+    #if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
+        namespace WindowsNamespace
+        {
+    #endif
     #include "windows.h"
-    }
+    #if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
+        }
+        using namespace WindowsNamespace;
+    #endif
 #endif //WINDOWS
 using namespace ZenLib;
 using namespace std;
@@ -724,7 +729,7 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                     }
 
                     #ifdef WINDOWS
-                        WindowsNamespace::Sleep(1000);
+                        Sleep(1000);
                     #endif //WINDOWS
                 }
 
