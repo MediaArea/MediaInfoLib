@@ -343,7 +343,6 @@ private :
 
     //Elements
     void slice_segment_layer();
-    void slice_layer();
     void video_parameter_set();
     void seq_parameter_set();
     void pic_parameter_set();
