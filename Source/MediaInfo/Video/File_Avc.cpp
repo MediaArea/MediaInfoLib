@@ -217,7 +217,7 @@ static const int8u Avc_SubWidthC[]=
 };
 
 //---------------------------------------------------------------------------
-const int8u Avc_SubHeightC[]=
+static const int8u Avc_SubHeightC[]=
 {
     1,
     2,
