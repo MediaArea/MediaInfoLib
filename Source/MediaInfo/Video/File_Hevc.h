@@ -219,6 +219,7 @@ private :
         bool    general_progressive_source_flag;
         bool    general_interlaced_source_flag;
         bool    general_frame_only_constraint_flag;
+        bool    general_max_8bit_constraint_flag;
 
         //Computed value
         bool    NalHrdBpPresentFlag() {return vui_parameters && vui_parameters->NAL;}
@@ -227,7 +228,7 @@ private :
         int8u   ChromaArrayType() {return separate_colour_plane_flag?0:chroma_format_idc;}
 
         //Constructor/Destructor
-        seq_parameter_set_struct(vui_parameters_struct* vui_parameters_, int32u profile_space_, bool tier_flag_, int32u profile_idc_, int32u level_idc_, int32u pic_width_in_luma_samples_, int32u pic_height_in_luma_samples_, int32u conf_win_left_offset_, int32u conf_win_right_offset_, int32u conf_win_top_offset_, int32u conf_win_bottom_offset_, int8u video_parameter_set_id_, int8u chroma_format_idc_, bool separate_colour_plane_flag_, int8u log2_max_pic_order_cnt_lsb_minus4_, int8u bit_depth_luma_minus8_, int8u bit_depth_chroma_minus8_, bool general_progressive_source_flag_, bool general_interlaced_source_flag_, bool general_frame_only_constraint_flag_)
+        seq_parameter_set_struct(vui_parameters_struct* vui_parameters_, int32u profile_space_, bool tier_flag_, int32u profile_idc_, int32u level_idc_, int32u pic_width_in_luma_samples_, int32u pic_height_in_luma_samples_, int32u conf_win_left_offset_, int32u conf_win_right_offset_, int32u conf_win_top_offset_, int32u conf_win_bottom_offset_, int8u video_parameter_set_id_, int8u chroma_format_idc_, bool separate_colour_plane_flag_, int8u log2_max_pic_order_cnt_lsb_minus4_, int8u bit_depth_luma_minus8_, int8u bit_depth_chroma_minus8_, bool general_progressive_source_flag_, bool general_interlaced_source_flag_, bool general_frame_only_constraint_flag_, bool general_max_8bit_constraint_flag_)
             :
             vui_parameters(vui_parameters_),
             #if MEDIAINFO_DEMUX
@@ -252,7 +253,8 @@ private :
             bit_depth_chroma_minus8(bit_depth_chroma_minus8_),
             general_progressive_source_flag(general_progressive_source_flag_),
             general_interlaced_source_flag(general_interlaced_source_flag_),
-            general_frame_only_constraint_flag(general_frame_only_constraint_flag_)
+            general_frame_only_constraint_flag(general_frame_only_constraint_flag_),
+            general_max_8bit_constraint_flag(general_max_8bit_constraint_flag_)
         {
         }
 
@@ -434,6 +436,7 @@ private :
     bool    general_progressive_source_flag;
     bool    general_interlaced_source_flag;
     bool    general_frame_only_constraint_flag;
+    bool    general_max_8bit_constraint_flag;
     bool    RapPicFlag;
     bool    first_slice_segment_in_pic_flag;
 };

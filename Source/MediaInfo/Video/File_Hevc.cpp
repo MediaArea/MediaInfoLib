@@ -41,10 +41,16 @@ extern const char* Hevc_profile_idc(int32u profile_idc)
 {
     switch (profile_idc)
     {
-        case   0 : return "No profile";
         case   1 : return "Main";
         case   2 : return "Main 10";
         case   3 : return "Main Still";
+        case   4 : return "Format Range"; // extensions
+        case   5 : return "High Throughput";
+        case   6 : return "Multiview Main";
+        case   7 : return "Scalable Main"; // can be "Scalable Main 10" depending on general_max_8bit_constraint_flag
+        case   8 : return "3D Main";
+        case   9 : return "Screen Content"; // coding extensions
+        case  10 : return "Scalable Format Range"; // extensions
         default  : return "";
     }
 }
@@ -277,7 +283,11 @@ void File_Hevc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator se
     if ((*seq_parameter_set_Item)->profile_space==0)
     {
         if ((*seq_parameter_set_Item)->profile_idc)
+        {
             Profile=Ztring().From_UTF8(Hevc_profile_idc((*seq_parameter_set_Item)->profile_idc));
+            if ((*seq_parameter_set_Item)->profile_idc == 7 && (*seq_parameter_set_Item)->general_max_8bit_constraint_flag)
+                Profile+=__T(" 10");
+        }
         if ((*seq_parameter_set_Item)->level_idc)
         {
             if ((*seq_parameter_set_Item)->profile_idc)
@@ -1431,6 +1441,7 @@ void File_Hevc::seq_parameter_set()
                                                                     0,
                                                                     false,
                                                                     false,
+                                                                    false,
                                                                     false
                                                                     );
 
@@ -1568,7 +1579,8 @@ void File_Hevc::seq_parameter_set()
                                                                     (int8u)bit_depth_chroma_minus8,
                                                                     general_progressive_source_flag,
                                                                     general_interlaced_source_flag,
-                                                                    general_frame_only_constraint_flag
+                                                                    general_frame_only_constraint_flag,
+                                                                    general_max_8bit_constraint_flag
                                                                   );
 
         //NextCode
@@ -2421,11 +2433,25 @@ void File_Hevc::profile_tier_level(int8u maxNumSubLayersMinus1)
             else
                 Skip_SB(                                        "general_profile_compatibility_flag");
     Element_End0();
-    Get_SB (    general_progressive_source_flag,                "general_progressive_source_flag");
-    Get_SB (    general_interlaced_source_flag,                 "general_interlaced_source_flag");
-    Skip_SB(                                                    "general_non_packed_constraint_flag");
-    Get_SB (    general_frame_only_constraint_flag,             "general_frame_only_constraint_flag");
-    Skip_S8(44,                                                 "general_reserved_zero_44bits");
+    Element_Begin1("general_profile_compatibility_flags");
+        Get_SB (    general_progressive_source_flag,            "general_progressive_source_flag");
+        Get_SB (    general_interlaced_source_flag,             "general_interlaced_source_flag");
+        Skip_SB(                                                "general_non_packed_constraint_flag");
+        Get_SB (    general_frame_only_constraint_flag,         "general_frame_only_constraint_flag");
+        Skip_SB(                                                "general_max_12bit_constraint_flag");
+        Skip_SB(                                                "general_max_10bit_constraint_flag");
+        Get_SB (    general_max_8bit_constraint_flag,           "general_max_8bit_constraint_flag");
+        Skip_SB(                                                "general_max_422chroma_constraint_flag");
+        Skip_SB(                                                "general_max_420chroma_constraint_flag");
+        Skip_SB(                                                "general_max_monochrome_constraint_flag");
+        Skip_SB(                                                "general_intra_constraint_flag");
+        Skip_SB(                                                "general_one_picture_only_constraint_flag");
+        Skip_SB(                                                "general_lower_bit_rate_constraint_flag");
+        Skip_SB(                                                "general_max_14bit_constraint_flag");
+        for (int8u constraint_pos=0; constraint_pos<33; constraint_pos++)
+            Skip_SB(                                            "general_reserved");
+        Skip_SB(                                                "general_inbld_flag");
+    Element_End0();
     Get_S1 (8,  level_idc,                                      "general_level_idc");
     for (int32u SubLayerPos=0; SubLayerPos<maxNumSubLayersMinus1; SubLayerPos++)
     {
