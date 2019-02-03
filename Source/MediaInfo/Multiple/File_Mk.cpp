@@ -549,19 +549,6 @@ static const char* Mk_StereoMode(int64u StereoMode)
 }
 
 //---------------------------------------------------------------------------
-static const char* Mk_OldStereoMode(int64u StereoMode)
-{
-    switch (StereoMode)
-    {
-        case 0x00 : return ""; //Mono (default)
-        case 0x01 : return "Right Eye";
-        case 0x02 : return "Left Eye";
-        case 0x03 : return "Both Eye";
-        default   : return "";
-    }
-}
-
-//---------------------------------------------------------------------------
 static const char* Mk_OriginalSourceMedium_From_Source_ID (const Ztring &Value)
 {
     if (Value.size()==6 && Value[0] == __T('0') && Value[1] == __T('0'))

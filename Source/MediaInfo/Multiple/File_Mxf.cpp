@@ -576,18 +576,6 @@ static const char* Mxf_AVC_SequenceParameterSetFlag_Constancy(bool Constancy)
 }
 
 //---------------------------------------------------------------------------
-static const char* Mxf_AVC_ParameterSetFlag_Location(int8u Location)
-{
-    switch (Location)
-    {
-        case 0x01 : return "First access unit";
-        case 0x02 : return "Every access unit";
-        case 0x03 : return "Every GOP";
-        default   : return "";
-    }
-}
-
-//---------------------------------------------------------------------------
 static const char* Mxf_OperationalPattern(const int128u OperationalPattern)
 {
     //Item and Package Complexity
