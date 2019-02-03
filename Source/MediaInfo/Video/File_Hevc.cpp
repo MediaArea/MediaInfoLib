@@ -1058,6 +1058,12 @@ void File_Hevc::Data_Parse()
         case  1 :
         case  2 :
         case  3 :
+        case  4:
+        case  5:
+        case  6:
+        case  7:
+        case  8:
+        case  9:
         case 16 :
         case 17 :
         case 18 :
@@ -1065,13 +1071,6 @@ void File_Hevc::Data_Parse()
         case 20 :
         case 21 :
                   slice_segment_layer(); break;
-        case  4 :
-        case  5 :
-        case  6 :
-        case  7 :
-        case  8 :
-        case  9 :
-                  slice_layer(); break;
         case 32 : video_parameter_set(); break;
         case 33 : seq_parameter_set(); break;
         case 34 : pic_parameter_set(); break;
@@ -1173,6 +1172,12 @@ void File_Hevc::slice_segment_layer()
             case 1 : break;
             case 2 :
             case 3 : Element_Info("TSA"); break;
+            case 4:
+            case 5: Element_Info("STSA"); break;
+            case 6:
+            case 7: Element_Info("RADL"); break;
+            case 8:
+            case 9: Element_Info("RASL"); break;
             case 16 :
             case 17 :
             case 18 : Element_Info("BLA"); break;
@@ -1222,28 +1227,6 @@ void File_Hevc::slice_segment_layer()
             }
         }
     FILLING_END();
-}
-
-//---------------------------------------------------------------------------
-// Packets
-void File_Hevc::slice_layer()
-{
-    #if MEDIAINFO_TRACE
-        Element_Name("slice_layer");
-        switch (Element_Code)
-        {
-            case 4 :
-            case 5 : Element_Info("STSA"); break;
-            case 6 :
-            case 7 : Element_Info("RADL"); break;
-            case 8 :
-            case 9 : Element_Info("RASL"); break;
-            default: ;
-        }
-    #endif //MEDIAINFO_TRACE
-
-    //Parsing
-    Skip_XX(Element_Size-Element_Offset,                        "(ToDo)");
 }
 
 //---------------------------------------------------------------------------
