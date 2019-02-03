@@ -1297,9 +1297,6 @@ bool File_Mpega::Header_Xing()
             if (Lame || Lib=="LAME" || Lib=="GOGO" || Lib=="L3.9")
                 Header_Encoders_Lame();
 
-            if (CC4(Xing_Header)==CC4("Info"))
-                VBR_Frames=0; //This is not a VBR file
-
             //Clearing Error detection
             sampling_frequency_Count.clear();
             mode_Count.clear();
