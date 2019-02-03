@@ -677,6 +677,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_EbuCore.cpp">
       <Filter>Source Files\Export</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Niso.cpp">
+      <Filter>Source Files\Export</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Ptx.cpp">
       <Filter>Source Files\Multiple</Filter>
     </ClCompile>
@@ -775,6 +778,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Av1.cpp">
       <Filter>Source Files\Video</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsf.cpp">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsdiff.cpp">
+      <Filter>Source Files\Audio</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1345,6 +1354,9 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_EbuCore.h">
       <Filter>Header Files\Export</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Niso.h">
+      <Filter>Header Files\Export</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Ptx.h">
       <Filter>Header Files\Multiple</Filter>
     </ClInclude>
@@ -1449,6 +1461,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Av1.h">
       <Filter>Header Files\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dsf.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dsdiff.h">
+      <Filter>Header Files\Audio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

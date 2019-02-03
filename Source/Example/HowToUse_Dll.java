@@ -10,8 +10,10 @@
 //   - data is from a RandomAccessFile object (local file)
 //   - data is from a FileUrl object (an URL, HTTP or HTTPS)
 //     - without authentication
-//     - with Amazon S3 authentication (input format is in the form "https://AWSAccessKeyId:AWSSecretAccessKey@s3.amazonaws.com/bucketname/filename"
- 
+//     - with Amazon S3 authentication (input format is in the form "https://AWSAccessKeyId:AWSSecretAccessKey@s3.amazonaws.com/bucketname/filename")
+
+// Example for both JNA and JNI interfaces
+
 // For "By buffer" interface, example from a file
 import java.io.RandomAccessFile;
 
@@ -37,7 +39,7 @@ public static void main(String... args) throws Exception
     String FileName = "Example.ogg";
     if (args.length > 0)
         FileName = args[0];
-        
+
     //Comment this line and uncomment the next one if you would like to test the "by buffer" interface
     if (false)
     //if (true)
@@ -54,19 +56,6 @@ public static void main(String... args) throws Exception
 private static void ByFileName(String FileName) throws Exception
 {
     String To_Display = "";
-
-    //Info about the library
-
-    To_Display += MediaInfo.Option_Static("Info_Version");
-
-    To_Display += "\r\n\r\nInfo_Parameters\r\n";
-    To_Display += MediaInfo.Option_Static("Info_Parameters");
-
-    To_Display += "\r\n\r\nInfo_Capacities\r\n";
-    To_Display += MediaInfo.Option_Static("Info_Capacities");
-
-    To_Display += "\r\n\r\nInfo_Codecs\r\n";
-    To_Display += MediaInfo.Option_Static("Info_Codecs");
 
     //An example of how to use the library
 
@@ -184,7 +173,7 @@ private static void ByBuffer_URL(String FileName) throws Exception
         Amazon_S3_Authorization = "AWS "+Amazon_S3_AWSAccessKeyId+":"+calculateHmacSHA1(Amazon_S3_ToSign, Amazon_S3_AWSSecretAccessKey);
     }
     URL FileUrl = new URL(FileName);
-    
+
     //From: preparing an example file for reading
     HttpURLConnection HttpFrom = (HttpURLConnection ) FileUrl.openConnection();
     if (!Amazon_S3_Authorization.isEmpty())

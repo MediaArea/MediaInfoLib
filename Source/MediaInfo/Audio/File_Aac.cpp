@@ -139,7 +139,10 @@ void File_Aac::Streams_Fill()
         default           : ;
     }
 
-    Fill(Stream_Audio, StreamPos_Last, Audio_SamplesPerFrame, frame_length);
+    int16u frame_length_Multiplier=1;
+    if (!MediaInfoLib::Config.LegacyStreamDisplay_Get() && Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_Format).find(__T("AAC"))==0 && Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_Format_Settings_SBR).find(__T("Yes"))==0)
+        frame_length_Multiplier=2;
+    Fill(Stream_Audio, StreamPos_Last, Audio_SamplesPerFrame, frame_length*frame_length_Multiplier);
 }
 
 //---------------------------------------------------------------------------
@@ -148,7 +151,7 @@ void File_Aac::Streams_Update()
     if (Frame_Count)
     {
         if (Mode==Mode_ADTS)
-            Infos["BitRate_Mode"].From_Local(adts_buffer_fullness_Is7FF?"VBR":"CBR");
+            Infos["BitRate_Mode"].From_UTF8(adts_buffer_fullness_Is7FF?"VBR":"CBR");
 
         #if MEDIAINFO_ADVANCED
             switch(Mode)

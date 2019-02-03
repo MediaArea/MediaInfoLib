@@ -560,20 +560,33 @@ void File_Riff::Streams_Finish ()
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "DV");
             Fill(Stream_General, 0, General_Format_Commercial, "AVI DV");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:2") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("30000000"))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:2") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("30000000"))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "MPEG IMX 30");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "MPEG IMX 30");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:2") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("40000000"))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:2") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("40000000"))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "MPEG IMX 40");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "MPEG IMX 40");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:2") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("50000000"))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:2") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("50000000"))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "MPEG IMX 50");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "MPEG IMX 50");
+        }
+    }
+    else if (Count_Get(Stream_Audio)==1)
+    {
+        if (Retrieve(Stream_Audio, StreamPos_Last, Audio_Format)==__T("PCM"))
+        {
+            int64u Resolution=Retrieve(Stream_Audio, StreamPos_Last, Audio_BitDepth).To_int64u();
+            if (Resolution==24)
+            {
+                int64u SamplingRate=Retrieve(Stream_Audio, StreamPos_Last, Audio_SamplingRate).To_int64u();
+                if (SamplingRate==44100*8 || SamplingRate==48000*8)
+                    Fill(Stream_Audio, StreamPos_Last, Audio_Format_Commercial_IfAny, "DXD");
+            }
         }
     }
 }

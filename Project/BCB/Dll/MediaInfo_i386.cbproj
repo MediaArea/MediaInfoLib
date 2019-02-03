@@ -132,6 +132,10 @@
             <DependentOn>..\..\..\Source\MediaInfoDLL\MediaInfoDLL.h</DependentOn>
             <BuildOrder>0</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfoDLL\MediaInfoJNI.cpp">
+            <DependentOn>..\..\..\Source\ThirdParty\jni\jni.h</DependentOn>
+            <BuildOrder>1</BuildOrder>
+        </CppCompile>
         <LibFiles Include="..\..\..\..\ZenLib\Project\BCB\Library\Win32\Release\ZenLib.lib" Condition="'$(Platform)'=='Win32'">
             <BuildOrder>2</BuildOrder>
             <IgnorePath>true</IgnorePath>

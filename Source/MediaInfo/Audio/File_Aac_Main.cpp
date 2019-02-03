@@ -37,7 +37,8 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-extern const int32u Aac_sampling_frequency[13]=
+const size_t Aac_sampling_frequency_Size=13;
+extern const int32u Aac_sampling_frequency[Aac_sampling_frequency_Size]=
 {96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050,
  16000, 12000, 11025,  8000,  7350};
 
@@ -58,7 +59,7 @@ static const char* Aac_Format(int8u ID)
         case    3 :
         case    4 : return "AAC";
         case    5 : return "SBR";
-        case    6 : return "AAC Scalable";
+        case    6 : return "AAC scalable";
         case    7 : return "TwinVQ";
         case    8 : return "CELP";
         case    9 : return "HVXC";
@@ -89,6 +90,7 @@ static const char* Aac_Format(int8u ID)
         case   39 : return "ER AAC ELD";
         case   40 : return "SMR Simple";
         case   41 : return "SMR Main";
+        case   42 : return "USAC";
         default   : return "";
     }
 }
@@ -119,7 +121,7 @@ const char* Aac_audioObjectType(int8u audioObjectType)
         case    3 : return "AAC SSR";
         case    4 : return "AAC LTP";
         case    5 : return "SBR";
-        case    6 : return "AAC Scalable";
+        case    6 : return "AAC scalable";
         case    7 : return "TwinVQ";
         case    8 : return "CELP";
         case    9 : return "HVXC";
@@ -130,7 +132,7 @@ const char* Aac_audioObjectType(int8u audioObjectType)
         case   16 : return "Algorithmic Synthesis and Audio FX";
         case   17 : return "ER AAC LC";
         case   19 : return "ER AAC LTP";
-        case   20 : return "ER AAC Scalable";
+        case   20 : return "ER AAC scalable";
         case   21 : return "ER TwinVQ";
         case   22 : return "ER BSAC";
         case   23 : return "ER AAC LD";
@@ -151,6 +153,7 @@ const char* Aac_audioObjectType(int8u audioObjectType)
         case   39 : return "ER AAC ELD";
         case   40 : return "SMR Simple";
         case   41 : return "SMR Main";
+        case   42 : return "USAC";
         default   : return "";
     }
 }
@@ -255,7 +258,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
     Element_Begin1("AudioSpecificConfig");
     GetAudioObjectType(audioObjectType,                         "audioObjectType");
     Infos["CodecID"].From_Number(audioObjectType);
-    Get_S1 (4, sampling_frequency_index,                        "samplingFrequencyIndex"); Param_Info1(Aac_sampling_frequency[sampling_frequency_index]);
+    Get_S1 (4, sampling_frequency_index,                        "samplingFrequencyIndex"); Param_Info1C(sampling_frequency_index<Aac_sampling_frequency_Size, Aac_sampling_frequency[sampling_frequency_index]);
     if (sampling_frequency_index==0xF)
     {
         int32u samplingFrequency;
@@ -263,8 +266,10 @@ void File_Aac::AudioSpecificConfig (size_t End)
         Frequency_b=samplingFrequency;
         sampling_frequency_index=Aac_AudioSpecificConfig_sampling_frequency_index(Frequency_b);
     }
-    else
+    else if(sampling_frequency_index<Aac_sampling_frequency_Size)
         Frequency_b=Aac_sampling_frequency[sampling_frequency_index];
+    else
+        Frequency_b=0;
     Get_S1 (4, channelConfiguration,                            "channelConfiguration"); Param_Info1(Aac_ChannelConfiguration[channelConfiguration]);
     if (audioObjectType==5 || audioObjectType==29)
     {
@@ -272,7 +277,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
         sbrPresentFlag=true;
         if (audioObjectType==29)
             psPresentFlag=true;
-        Get_S1 (4, extension_sampling_frequency_index,          "extensionSamplingFrequencyIndex"); Param_Info1(Aac_sampling_frequency[extension_sampling_frequency_index]);
+        Get_S1 (4, extension_sampling_frequency_index,          "extensionSamplingFrequencyIndex"); Param_Info1C(sampling_frequency_index<Aac_sampling_frequency_Size, Aac_sampling_frequency[extension_sampling_frequency_index]);
         if (extension_sampling_frequency_index==0xF)
         {
             Get_S3 (24, extension_sampling_frequency,           "extensionSamplingFrequency");
@@ -362,14 +367,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
             Element_Begin1("not implemented part");
             Skip_BS(Data_BS_Remain()-((End==(size_t)-1)?0:End), "(Not implemented)");
             Element_End0();
-            FILLING_BEGIN()
-                if (Mode==File_Aac::Mode_ADIF || Mode==File_Aac::Mode_ADTS)
-                    File__Tags_Helper::Finish();
-                else if (Mode==Mode_AudioSpecificConfig)
-                    File__Analyze::Finish();
-                Frame_Count=(size_t)-1; //Forcing not to parse following data anymore (if ParseSpeed==1)
-            FILLING_END()
-            return;
+            Frame_Count=(size_t)-1; //Forcing not to parse following data anymore
     }
 
     switch (audioObjectType)
@@ -398,16 +396,9 @@ void File_Aac::AudioSpecificConfig (size_t End)
                     Element_Begin1("not implemented part");
                     Skip_BS(Data_BS_Remain()-((End==(size_t)-1)?0:End), "(Not implemented)");
                     Element_End0();
-                    if (Mode==File_Aac::Mode_ADIF || Mode==File_Aac::Mode_ADTS)
-                        File__Tags_Helper::Finish();
-                    else
-                    {
-                        if (Mode==Mode_LATM)
-                            File__Analyze::Accept();
-                        File__Analyze::Finish();
-                    }
-                    Frame_Count=(size_t)-1; //Forcing not to parse following data anymore (if ParseSpeed==1)
-                    return;
+                    if (Mode==Mode_LATM)
+                        File__Analyze::Accept();
+                    Frame_Count=(size_t)-1; //Forcing not to parse following data anymore
                 }
             }
         default : ;
@@ -475,7 +466,14 @@ void File_Aac::AudioSpecificConfig (size_t End)
 
     FILLING_BEGIN();
         AudioSpecificConfig_OutOfBand (Frequency_b, audioObjectType, sbrData, psData, sbrPresentFlag, psPresentFlag);
-    FILLING_END();
+        if (Frame_Count==(size_t)-1)
+        {
+            if (Mode==File_Aac::Mode_ADIF || Mode==File_Aac::Mode_ADTS)
+                File__Tags_Helper::Finish();
+            else
+                File__Analyze::Finish();
+        }
+    FILLING_END()
 }
 
 //---------------------------------------------------------------------------
@@ -519,15 +517,15 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
 
     if (Frequency_b)
         Infos["SamplingRate"].From_Number(Frequency_b);
-    Infos["Format"].From_Local(Aac_Format(audioObjectType));
-    Infos["Format_Profile"].From_Local(Aac_Format_Profile(audioObjectType));
-    Infos["Codec"].From_Local(Aac_audioObjectType(audioObjectType));
+    Infos["Format"].From_UTF8(Aac_Format(audioObjectType));
+    Infos["Format_Profile"].From_UTF8(Aac_Format_Profile(audioObjectType));
+    Infos["Codec"].From_UTF8(Aac_audioObjectType(audioObjectType));
     if (channelConfiguration && channelConfiguration<8)
     {
         Infos["Channel(s)"].From_Number(Aac_Channels[channelConfiguration]);
-        Infos["ChannelPositions"].From_Local(Aac_ChannelConfiguration[channelConfiguration]);
-        Infos["ChannelPositions/String2"].From_Local(Aac_ChannelConfiguration2[channelConfiguration]);
-        Infos["ChannelLayout"].From_Local(Aac_ChannelLayout[channelConfiguration]);
+        Infos["ChannelPositions"].From_UTF8(Aac_ChannelConfiguration[channelConfiguration]);
+        Infos["ChannelPositions/String2"].From_UTF8(Aac_ChannelConfiguration2[channelConfiguration]);
+        Infos["ChannelLayout"].From_UTF8(Aac_ChannelLayout[channelConfiguration]);
     }
 
     if (sbrPresentFlag || !Infos["Format_Settings_SBR"].empty())
@@ -546,7 +544,7 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
         }
         Infos["Format_Settings"]=sbrData?__T("Explicit"):__T("NBC"); // "Not Backward Compatible"
         Infos["Format_Settings_SBR"]=sbrData?__T("Yes (Explicit)"):__T("Yes (NBC)"); // "Not Backward Compatible"
-        Infos["Codec"]=Ztring().From_Local(Aac_audioObjectType(audioObjectType))+__T("-SBR");
+        Infos["Codec"]=Ztring().From_UTF8(Aac_audioObjectType(audioObjectType))+__T("-SBR");
     }
     else if (sbrData)
         Infos["Format_Settings_SBR"]=__T("No (Explicit)");
@@ -555,6 +553,10 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
         FillInfosHEAACv2(psData ? __T("Explicit") : __T("NBC")); // "Not Backward Compatible");
     else if (psData)
         Infos["Format_Settings_PS"]=__T("No (Explicit)");
+
+    //Commercial names
+    if (Infos["Format"]==__T("USAC"))
+        Infos["Format_Commercial_IfAny"]=__T("xHE-AAC");
 }
 
 //---------------------------------------------------------------------------
@@ -567,7 +569,7 @@ void File_Aac::GetAudioObjectType(int8u &ObjectType, const char* Name)
         Get_S1(6, ObjectType,                                   "audioObjectTypeExt");
         ObjectType+=32;
     }
-    Element_Info1(ObjectType); Element_Info1(Aac_Format_Profile(ObjectType));
+    Element_Info1(ObjectType); Element_Info1(Aac_Format(ObjectType)); Element_Info1(Aac_Format_Profile(ObjectType));
     Element_End0();
 }
 
@@ -992,7 +994,7 @@ void File_Aac::adif_header()
             Fill(Stream_Audio, StreamPos, Audio_MuxingMode, "ADIF");
         if (num_program_config_elements==0) //Easy to fill only if 1 audio stream
         {
-            Infos["BitRate_Mode"].From_Local(bitstream_type?"VBR":"CBR");
+            Infos["BitRate_Mode"].From_UTF8(bitstream_type?"VBR":"CBR");
             if (bitrate>0)
                 Infos[bitstream_type?"BitRate_Maximum":"BitRate"].From_Number(bitrate);
         }
@@ -1066,8 +1068,12 @@ void File_Aac::adts_fixed_header()
     Skip_BS( 2,                                                 "layer");
     Get_SB (    protection_absent,                              "protection_absent");
     Get_S1 ( 2, audioObjectType,                                "profile_ObjectType"); audioObjectType++; Param_Info1(Aac_audioObjectType(audioObjectType));
-    Get_S1 ( 4, sampling_frequency_index,                       "sampling_frequency_index"); Param_Info2(Aac_sampling_frequency[sampling_frequency_index], " Hz");
-    Frequency_b=Aac_sampling_frequency[sampling_frequency_index];
+    Get_S1 ( 4, sampling_frequency_index,                       "sampling_frequency_index"); 
+    if(sampling_frequency_index<Aac_sampling_frequency_Size)
+        Frequency_b=Aac_sampling_frequency[sampling_frequency_index];
+    else
+        Frequency_b=0;
+    Param_Info2(Frequency_b, " Hz");
     Skip_SB(                                                    "private");
     Get_S1 ( 3, channelConfiguration,                           "channel_configuration");
     Skip_SB(                                                    "original");
@@ -1077,20 +1083,21 @@ void File_Aac::adts_fixed_header()
     FILLING_BEGIN();
         if (Infos["Format"].empty())
         {
-            Infos_General["Format"].From_Local("ADTS");
+            Infos_General["Format"].From_UTF8("ADTS");
 
-            Infos["Format"].From_Local("AAC");
-            Infos["Format_Version"].From_Local(id?"Version 2":"Version 4");
-            Infos["Format_Profile"].From_Local(Aac_Format_Profile(audioObjectType));
-            Infos["Codec"].From_Local(Aac_audioObjectType(audioObjectType));
-            if (Aac_sampling_frequency[sampling_frequency_index])
-                Infos["SamplingRate"].From_Number(Aac_sampling_frequency[sampling_frequency_index]);
-            Infos["Channel(s)"].From_Number(channelConfiguration);
-            Infos["ChannelPositions"].From_Local(Aac_ChannelConfiguration[channelConfiguration]);
-            Infos["ChannelPositions/String2"].From_Local(Aac_ChannelConfiguration2[channelConfiguration]);
-            Infos["ChannelLayout"].From_Local(Aac_ChannelLayout[channelConfiguration]);
+            Infos["Format"].From_UTF8("AAC");
+            Infos["Format_Version"].From_UTF8(id?"Version 2":"Version 4");
+            Infos["Format_Profile"].From_UTF8(Aac_Format_Profile(audioObjectType));
+            Infos["CodecID"].From_Number(audioObjectType);
+            Infos["Codec"].From_UTF8(Aac_audioObjectType(audioObjectType));
+            if (Frequency_b)
+                Infos["SamplingRate"].From_Number(Frequency_b);
+            Infos["Channel(s)"].From_Number(Aac_Channels[channelConfiguration]);
+            Infos["ChannelPositions"].From_UTF8(Aac_ChannelConfiguration[channelConfiguration]);
+            Infos["ChannelPositions/String2"].From_UTF8(Aac_ChannelConfiguration2[channelConfiguration]);
+            Infos["ChannelLayout"].From_UTF8(Aac_ChannelLayout[channelConfiguration]);
             if (IsSub)
-                Infos["MuxingMode"].From_Local("ADTS");
+                Infos["MuxingMode"].From_UTF8("ADTS");
         }
     FILLING_END();
 }

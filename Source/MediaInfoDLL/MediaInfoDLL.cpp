@@ -64,7 +64,7 @@ static CriticalSection Critical;
 static bool utf8=false;
 
 //---------------------------------------------------------------------------
-static const char* WC2MB(void* Handle, const wchar_t* Text)
+static mi_outputs::iterator MI_Outputs_Find(void* Handle)
 {
     //Coherancy
     Critical.Enter();
@@ -74,6 +74,12 @@ static const char* WC2MB(void* Handle, const wchar_t* Text)
         MI_Output=MI_Outputs.insert(std::make_pair(Handle,new mi_output)).first; //Generic Handle
     }
     Critical.Leave();
+    return MI_Output;
+}
+//---------------------------------------------------------------------------
+static const char* WC2MB(void* Handle, const wchar_t* Text)
+{
+    mi_outputs::iterator MI_Output=MI_Outputs_Find(Handle);
 
     //Adaptation
     if (utf8)
@@ -773,14 +779,7 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
                             Debug+=", Option=";Debug+=Ztring(Option).To_UTF8();Debug+=", Value=";Debug+=Ztring(Value).To_UTF8();)
 
         //Coherancy
-        Critical.Enter();
-        mi_outputs::iterator MI_Output=MI_Outputs.find(NULL);
-        if (MI_Outputs.find(NULL)==MI_Outputs.end())
-        {
-            MI_Outputs[NULL]=new mi_output; //Generic Handle
-            MI_Output=MI_Outputs.find(NULL);
-        }
-        Critical.Leave();
+        mi_outputs::iterator MI_Output=MI_Outputs_Find(NULL);
 
         if (Ztring(Value).Compare(L"UTF-8", L"=="))
             utf8=true;
@@ -796,14 +795,7 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
     if (Ztring(Option).Compare(L"setlocale_LC_CTYPE", L"=="))
     {
         //Coherancy
-        Critical.Enter();
-        mi_outputs::iterator MI_Output=MI_Outputs.find(NULL);
-        if (MI_Outputs.find(NULL)==MI_Outputs.end())
-        {
-            MI_Outputs[NULL]=new mi_output; //Generic Handle
-            MI_Output=MI_Outputs.find(NULL);
-        }
-        Critical.Leave();
+        mi_outputs::iterator MI_Output=MI_Outputs_Find(NULL);
 
         setlocale(LC_CTYPE, utf8?Ztring(Value).To_UTF8().c_str():Ztring(Value).To_Local().c_str());
         MI_Output->second->Unicode.clear();
@@ -824,14 +816,7 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
     else
     {
         //MANAGE_STRING
-        Critical.Enter();
-        mi_outputs::iterator MI_Output=MI_Outputs.find(NULL);
-        if (MI_Output==MI_Outputs.end())
-        {
-            MI_Outputs[NULL]=new mi_output;
-            MI_Output=MI_Outputs.find(NULL);
-        }
-        Critical.Leave();
+        mi_outputs::iterator MI_Output=MI_Outputs_Find(NULL);
 
         EXECUTE_STRING( "Option_Static",
                         MediaInfo,
@@ -1019,14 +1004,7 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
                             Debug+=", Option=";Debug+=Ztring(Option).To_UTF8();Debug+=", Value=";Debug+=Ztring(Value).To_UTF8();)
 
         //Coherancy
-        Critical.Enter();
-        mi_outputs::iterator MI_Output=MI_Outputs.find(NULL);
-        if (MI_Outputs.find(NULL)==MI_Outputs.end())
-        {
-            MI_Outputs[NULL]=new mi_output; //Generic Handle
-            MI_Output=MI_Outputs.find(NULL);
-        }
-        Critical.Leave();
+        mi_outputs::iterator MI_Output=MI_Outputs_Find(NULL);
 
         if (Ztring(Value).Compare(L"UTF-8", L"=="))
             utf8=true;
@@ -1042,14 +1020,7 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
     if (Ztring(Option).Compare(L"setlocale_LC_CTYPE", L"=="))
     {
         //Coherancy
-        Critical.Enter();
-        mi_outputs::iterator MI_Output=MI_Outputs.find(NULL);
-        if (MI_Outputs.find(NULL)==MI_Outputs.end())
-        {
-            MI_Outputs[NULL]=new mi_output; //Generic Handle
-            MI_Output=MI_Outputs.find(NULL);
-        }
-        Critical.Leave();
+        mi_outputs::iterator MI_Output=MI_Outputs_Find(NULL);
 
         setlocale(LC_CTYPE, utf8?Ztring(Value).To_UTF8().c_str():Ztring(Value).To_Local().c_str());
         MI_Output->second->Unicode.clear();
@@ -1070,14 +1041,7 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
     else
     {
         //MANAGE_STRING
-        Critical.Enter();
-        mi_outputs::iterator MI_Output=MI_Outputs.find(NULL);
-        if (MI_Output==MI_Outputs.end())
-        {
-            MI_Outputs[NULL]=new mi_output;
-            MI_Output=MI_Outputs.find(NULL);
-        }
-        Critical.Leave();
+        mi_outputs::iterator MI_Output=MI_Outputs_Find(NULL);
 
         EXECUTE_STRING( "Option_Static",
                         MediaInfoList,

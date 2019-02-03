@@ -53,6 +53,8 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Audio/File_Caf.cpp \
                        ../../../Source/MediaInfo/Audio/File_Celt.cpp \
                        ../../../Source/MediaInfo/Audio/File_ChannelGrouping.cpp \
+                       ../../../Source/MediaInfo/Audio/File_Dsdiff.cpp \
+                       ../../../Source/MediaInfo/Audio/File_Dsf.cpp \
                        ../../../Source/MediaInfo/Audio/File_Dts.cpp \
                        ../../../Source/MediaInfo/Audio/File_DolbyE.cpp \
                        ../../../Source/MediaInfo/Audio/File_ExtendedModule.cpp \
@@ -90,6 +92,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Export/Export_PBCore.cpp \
                        ../../../Source/MediaInfo/Export/Export_PBCore2.cpp \
                        ../../../Source/MediaInfo/Export/Export_reVTMD.cpp \
+                       ../../../Source/MediaInfo/Export/Export_Niso.cpp \
                        ../../../Source/MediaInfo/Image/File_ArriRaw.cpp \
                        ../../../Source/MediaInfo/Image/File_Bmp.cpp \
                        ../../../Source/MediaInfo/Image/File_Bpg.cpp \
@@ -228,6 +231,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
 
 if COMPILE_DLL
 lib@MediaInfoLib_LibName@_la_SOURCES += \
+                       ../../../Source/MediaInfoDLL/MediaInfoJNI.cpp \
                        ../../../Source/MediaInfoDLL/MediaInfoDLL.cpp
 
 @MediaInfoLib_LibName@DLLincludedir = $(includedir)/MediaInfoDLL

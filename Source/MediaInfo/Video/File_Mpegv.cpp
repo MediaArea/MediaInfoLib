@@ -162,7 +162,7 @@ extern const float64 Mpegv_frame_rate[16]=
 };
 
 //---------------------------------------------------------------------------
-const char* Mpegv_Colorimetry_format[4]=
+const char* Mpegv_chroma_format[4]=
 {
     "",
     "4:2:0",
@@ -171,7 +171,7 @@ const char* Mpegv_Colorimetry_format[4]=
 };
 
 //---------------------------------------------------------------------------
-const char* Mpegv_Colorimetry_format_Colorspace[4] =
+const char* Mpegv_chroma_format_Colorspace[4] =
 {
     "",
     "YUV",
@@ -1274,8 +1274,8 @@ void File_Mpegv::Streams_Fill()
 
     Fill(Stream_Video, 0, Video_Width, 0x1000*horizontal_size_extension+horizontal_size_value);
     Fill(Stream_Video, 0, Video_Height, 0x1000*vertical_size_extension+vertical_size_value);
-    Fill(Stream_Video, 0, Video_Colorimetry, Mpegv_Colorimetry_format[chroma_format]);
-    Fill(Stream_Video, 0, Video_ColorSpace, Mpegv_Colorimetry_format_Colorspace[chroma_format]);
+    Fill(Stream_Video, 0, Video_ChromaSubsampling, Mpegv_chroma_format[chroma_format]);
+    Fill(Stream_Video, 0, Video_ColorSpace, Mpegv_chroma_format_Colorspace[chroma_format]);
     Fill(Stream_Video, 0, Video_BitDepth, 8);
 
     //AspectRatio
@@ -1375,13 +1375,13 @@ void File_Mpegv::Streams_Fill()
     //Profile
     if (!profile_and_level_indication_escape && profile_and_level_indication_profile!=(int8u)-1 && profile_and_level_indication_level!=(int8u)-1)
     {
-        Fill(Stream_Video, 0, Video_Format_Profile, Ztring().From_Local(Mpegv_profile_and_level_indication_profile[profile_and_level_indication_profile])+__T("@")+Ztring().From_Local(Mpegv_profile_and_level_indication_level[profile_and_level_indication_level]));
-        Fill(Stream_Video, 0, Video_Codec_Profile, Ztring().From_Local(Mpegv_profile_and_level_indication_profile[profile_and_level_indication_profile])+__T("@")+Ztring().From_Local(Mpegv_profile_and_level_indication_level[profile_and_level_indication_level]));
+        Fill(Stream_Video, 0, Video_Format_Profile, Ztring().From_UTF8(Mpegv_profile_and_level_indication_profile[profile_and_level_indication_profile])+__T("@")+Ztring().From_UTF8(Mpegv_profile_and_level_indication_level[profile_and_level_indication_level]));
+        Fill(Stream_Video, 0, Video_Codec_Profile, Ztring().From_UTF8(Mpegv_profile_and_level_indication_profile[profile_and_level_indication_profile])+__T("@")+Ztring().From_UTF8(Mpegv_profile_and_level_indication_level[profile_and_level_indication_level]));
     }
     else if (profile_and_level_indication_escape)
     {
-        Fill(Stream_Video, 0, Video_Format_Profile, Ztring().From_Local(Mpegv_profile_and_level_indication(profile_and_level_indication)));
-        Fill(Stream_Video, 0, Video_Codec_Profile, Ztring().From_Local(Mpegv_profile_and_level_indication(profile_and_level_indication)));
+        Fill(Stream_Video, 0, Video_Format_Profile, Ztring().From_UTF8(Mpegv_profile_and_level_indication(profile_and_level_indication)));
+        Fill(Stream_Video, 0, Video_Codec_Profile, Ztring().From_UTF8(Mpegv_profile_and_level_indication(profile_and_level_indication)));
     }
 
     //Standard
@@ -2001,9 +2001,7 @@ void File_Mpegv::Read_Buffer_Unsynched()
 {
     for (int8u Pos=0x00; Pos<0xB9; Pos++)
     {
-        Streams[Pos].Searching_Payload=false;
-        Streams[Pos].Searching_TimeStamp_Start=false;
-        Streams[Pos].Searching_TimeStamp_End=false;
+        Streams[Pos].Init_Stream(false);
     }
     Streams[0xB3].Searching_TimeStamp_End=true; //sequence_header
     Streams[0xB8].Searching_TimeStamp_End=true; //group_start
@@ -2373,14 +2371,11 @@ void File_Mpegv::picture_start()
         #endif //MEDIAINFO_MACROBLOCKS
 
         //Temporal reference
-        if (TemporalReference_Offset+temporal_reference>=TemporalReference.size())
-            TemporalReference.resize(TemporalReference_Offset+temporal_reference+1);
-        if (TemporalReference[TemporalReference_Offset+temporal_reference]==NULL)
-            TemporalReference[TemporalReference_Offset+temporal_reference]=new temporalreference;
-        TemporalReference[TemporalReference_Offset+temporal_reference]->IsValid=true;
+        temporalreference* Ref=GetTemporalReference();
+        Ref->IsValid=true;
 
         //picture_coding_types
-        if (picture_coding_type==1) //I-Frame
+        if (picture_coding_type==1  && !FirstFieldFound) //I-Frame
         {
             if (!picture_coding_types_Current.empty())
             {
@@ -2409,7 +2404,7 @@ void File_Mpegv::picture_start()
             }
             picture_coding_types_Current='I';
         }
-        else if (!picture_coding_types_Current.empty()) //If an I-Frame is already found
+        else if (!picture_coding_types_Current.empty() && !FirstFieldFound) //If an I-Frame is already found
             picture_coding_types_Current+=Mpegv_picture_coding_type[picture_coding_type];
 
         //Detecting streams with only I-Frames
@@ -2580,7 +2575,7 @@ void File_Mpegv::slice_start()
                 Element_Info1(__T("Frame (decoding order) ")+Ztring::ToZtring(Frame_Count));
                 if (Frame_Count_LastIFrame!=(int64u)-1)
                     Element_Info1(__T("Frame (presentation order) ")+Ztring::ToZtring(Frame_Count_LastIFrame+temporal_reference));
-                Element_Info1(__T("picture_coding_type ")+Ztring().From_Local(Mpegv_picture_coding_type[picture_coding_type]));
+                Element_Info1(__T("picture_coding_type ")+Ztring().From_UTF8(Mpegv_picture_coding_type[picture_coding_type]));
                 Element_Info1(__T("temporal_reference ")+Ztring::ToZtring(temporal_reference));
                 if (FrameInfo.PTS!=(int64u)-1)
                     Element_Info1(__T("PTS ")+Ztring().Duration_From_Milliseconds(float64_int64s(((float64)FrameInfo.PTS)/1000000)));
@@ -3193,7 +3188,7 @@ void File_Mpegv::user_data_start()
     if (Library_Start_Offset>0)
         Skip_XX(Library_Start_Offset,                           "junk");
     if (Library_End_Offset-Library_Start_Offset)
-        Get_Local(Library_End_Offset-Library_Start_Offset, Temp,"data");
+        Get_UTF8(Library_End_Offset-Library_Start_Offset, Temp, "data");
     if (Element_Offset<Element_Size)
         Skip_XX(Element_Size-Element_Offset,                    "junk");
 
@@ -3329,14 +3324,11 @@ void File_Mpegv::user_data_start_3()
             Scte_TemporalReference_Offset=Pos+1;
         }
 
-        if (TemporalReference_Offset+temporal_reference>=TemporalReference.size())
-            TemporalReference.resize(TemporalReference_Offset+temporal_reference+1);
-        if (TemporalReference[TemporalReference_Offset+temporal_reference]==NULL)
-            TemporalReference[TemporalReference_Offset+temporal_reference]=new temporalreference;
+        temporalreference* Ref=GetTemporalReference();
         buffer_data* BufferData=new buffer_data(Buffer+Buffer_Offset+(size_t)Element_Offset,(size_t)(Element_Size-Element_Offset));
-        TemporalReference[TemporalReference_Offset+temporal_reference]->Scte.push_back(BufferData);
-        TemporalReference[TemporalReference_Offset+temporal_reference]->Scte_Parsed.push_back(false);
-        if (TemporalReference[TemporalReference_Offset+temporal_reference]->Scte_Parsed.size()>=2 && TemporalReference[TemporalReference_Offset+temporal_reference]->Scte_Parsed[TemporalReference[TemporalReference_Offset+temporal_reference]->Scte_Parsed.size()-2] && Scte_TemporalReference_Offset==TemporalReference_Offset+temporal_reference+1)
+        Ref->Scte.push_back(BufferData);
+        Ref->Scte_Parsed.push_back(false);
+        if (Ref->Scte_Parsed.size()>=2 && Ref->Scte_Parsed[Ref->Scte_Parsed.size()-2] && Scte_TemporalReference_Offset==TemporalReference_Offset+temporal_reference+1)
             Scte_TemporalReference_Offset--;
 
         //Parsing
@@ -3505,11 +3497,7 @@ void File_Mpegv::user_data_start_GA94_03()
             GA94_03_TemporalReference_Offset=Pos+1;
         }
 
-        if (TemporalReference_Offset+temporal_reference>=TemporalReference.size())
-            TemporalReference.resize(TemporalReference_Offset+temporal_reference+1);
-        temporalreference* &Ref=TemporalReference[TemporalReference_Offset+temporal_reference];
-        if (Ref==NULL)
-            Ref=new temporalreference;
+        temporalreference* Ref=GetTemporalReference();
         if (Ref->GA94_03==NULL)
             Ref->GA94_03=new buffer_data;
         buffer_data* NewBuffer=Ref->GA94_03;
@@ -3762,7 +3750,7 @@ void File_Mpegv::extension_start()
                         Get_S1 ( 4, profile_and_level_indication_level, "profile_and_level_indication_level"); Param_Info1(Mpegv_profile_and_level_indication_level[profile_and_level_indication_level]);
                     }
                     Get_SB (    progressive_sequence,           "progressive_sequence");
-                    Get_S1 ( 2, chroma_format,                  "chroma_format"); Param_Info1(Mpegv_Colorimetry_format[chroma_format]);
+                    Get_S1 ( 2, chroma_format,                  "chroma_format"); Param_Info1(Mpegv_chroma_format[chroma_format]);
                     Get_S1 ( 2, horizontal_size_extension,      "horizontal_size_extension");
                     Get_S1 ( 2, vertical_size_extension,        "vertical_size_extension");
                     Get_S2 (12, bit_rate_extension,             "bit_rate_extension");
@@ -3898,16 +3886,13 @@ void File_Mpegv::extension_start()
                                 Interlaced_Bottom++;
                             PictureStructure_Frame++;
                             FirstFieldFound=false;
-                            if (TemporalReference_Offset+temporal_reference>=TemporalReference.size())
-                                TemporalReference.resize(TemporalReference_Offset+temporal_reference+1);
-                            if (TemporalReference[TemporalReference_Offset+temporal_reference]==NULL)
-                                TemporalReference[TemporalReference_Offset+temporal_reference]=new temporalreference;
-                            TemporalReference[TemporalReference_Offset+temporal_reference]->picture_coding_type=picture_coding_type;
-                            TemporalReference[TemporalReference_Offset+temporal_reference]->progressive_frame=progressive_frame;
-                            TemporalReference[TemporalReference_Offset+temporal_reference]->picture_structure=picture_structure;
-                            TemporalReference[TemporalReference_Offset+temporal_reference]->top_field_first=top_field_first;
-                            TemporalReference[TemporalReference_Offset+temporal_reference]->repeat_first_field=repeat_first_field;
-                            TemporalReference[TemporalReference_Offset+temporal_reference]->HasPictureCoding=true;
+                            temporalreference* Ref=GetTemporalReference();
+                            Ref->picture_coding_type=picture_coding_type;
+                            Ref->progressive_frame=progressive_frame;
+                            Ref->picture_structure=picture_structure;
+                            Ref->top_field_first=top_field_first;
+                            Ref->repeat_first_field=repeat_first_field;
+                            Ref->HasPictureCoding=true;
                         }
                         else                                //Field
                         {
@@ -3932,16 +3917,13 @@ void File_Mpegv::extension_start()
                         PictureStructure_Frame++;
                         if (picture_structure==3)           //Frame
                         {
-                            if (TemporalReference_Offset+temporal_reference>=TemporalReference.size())
-                                TemporalReference.resize(TemporalReference_Offset+temporal_reference+1);
-                            if (TemporalReference[TemporalReference_Offset+temporal_reference]==NULL)
-                                TemporalReference[TemporalReference_Offset+temporal_reference]=new temporalreference;
-                            TemporalReference[TemporalReference_Offset+temporal_reference]->picture_coding_type=picture_coding_type;
-                            TemporalReference[TemporalReference_Offset+temporal_reference]->progressive_frame=progressive_frame;
-                            TemporalReference[TemporalReference_Offset+temporal_reference]->picture_structure=picture_structure;
-                            TemporalReference[TemporalReference_Offset+temporal_reference]->top_field_first=top_field_first;
-                            TemporalReference[TemporalReference_Offset+temporal_reference]->repeat_first_field=repeat_first_field;
-                            TemporalReference[TemporalReference_Offset+temporal_reference]->HasPictureCoding=true;
+                            temporalreference* Ref=GetTemporalReference();
+                            Ref->picture_coding_type=picture_coding_type;
+                            Ref->progressive_frame=progressive_frame;
+                            Ref->picture_structure=picture_structure;
+                            Ref->top_field_first=top_field_first;
+                            Ref->repeat_first_field=repeat_first_field;
+                            Ref->HasPictureCoding=true;
                         }
                     }
                 FILLING_END();

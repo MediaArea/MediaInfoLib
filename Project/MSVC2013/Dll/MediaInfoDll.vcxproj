@@ -136,7 +136,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Source\MediaInfoDLL\MediaInfoJNI.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfoDLL\MediaInfoDLL.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\ThirdParty\jni\jni.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\Source\MediaInfoDLL\MediaInfoDLL.def" />

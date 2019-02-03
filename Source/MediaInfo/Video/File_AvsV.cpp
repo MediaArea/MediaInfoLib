@@ -210,7 +210,7 @@ void File_AvsV::Streams_Fill()
     }
     else if (AvsV_aspect_ratio[aspect_ratio])
         Fill(Stream_Video, StreamPos_Last, Video_DisplayAspectRatio, AvsV_aspect_ratio[aspect_ratio], 3, true);
-    Fill(Stream_Video, 0, Video_Colorimetry, AvsV_chroma_format[chroma_format]);
+    Fill(Stream_Video, 0, Video_ChromaSubsampling, AvsV_chroma_format[chroma_format]);
     if (progressive_frame_Count && progressive_frame_Count!=Frame_Count)
     {
         //This is mixed
@@ -551,7 +551,7 @@ void File_AvsV::user_data_start()
     if (Library_Start_Offset>0)
         Skip_XX(Library_Start_Offset,                           "junk");
     if (Library_End_Offset-Library_Start_Offset)
-        Get_Local(Library_End_Offset-Library_Start_Offset, Temp,"data");
+        Get_UTF8(Library_End_Offset-Library_Start_Offset, Temp, "data");
     if (Element_Offset<Element_Size)
         Skip_XX(Element_Size-Element_Offset,                    "junk");
 

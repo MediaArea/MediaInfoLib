@@ -30,6 +30,7 @@
 #include "ZenLib/FileName.h"
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
+#include "MediaInfo/MediaInfo_Internal.h"
 #if MEDIAINFO_IBI
     #include "MediaInfo/Multiple/File_Ibi.h"
 #endif //MEDIAINFO_IBI
@@ -84,6 +85,66 @@ void File__Analyze::Streams_Finish_Global()
     if (IsSub)
         return;
 
+    TestDirectory();
+
+    #if MEDIAINFO_ADVANCED
+        if (MediaInfoLib::Config.ExternalMetaDataConfig_Get().empty()) // ExternalMetadata is used directly only if there is no ExternalMetadata config (=another format)
+        {
+            Ztring ExternalMetadata=MediaInfoLib::Config.ExternalMetadata_Get();
+            if (!ExternalMetadata.empty())
+            {
+                ZtringListList List;
+                List.Separator_Set(0, MediaInfoLib::Config.LineSeparator_Get());
+                List.Separator_Set(1, __T(";"));
+                List.Write(ExternalMetadata);
+
+                for (size_t i=0; i<List.size(); i++)
+                {
+                    // col 1&2 can be removed, conidered as "General;0"
+                    // 1: stream kind (General, Video, Audio, Text...)
+                    // 2: 0-based stream number
+                    // 3: field name
+                    // 4: field value
+                    // 5 (optional): replace instead of ignoring if field is already present (metadata from the file)
+                    if (List[i].size()<2 || List[i].size()>5)
+                    {
+                        MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, "Invalid column size for external metadata");
+                        continue;
+                    }
+
+                    Ztring StreamKindZ=Ztring(List[i][0]).MakeLowerCase();
+                    stream_t StreamKind;
+                    size_t   Offset;
+                    if (List[i].size()<4)
+                    {
+                        StreamKind=Stream_General;
+                        Offset=2;
+                    }
+                    else
+                    {
+                        Offset=0;
+                             if (StreamKindZ==__T("general"))   StreamKind=Stream_General;
+                        else if (StreamKindZ==__T("video"))     StreamKind=Stream_Video;
+                        else if (StreamKindZ==__T("audio"))     StreamKind=Stream_Audio;
+                        else if (StreamKindZ==__T("text"))      StreamKind=Stream_Text;
+                        else if (StreamKindZ==__T("other"))     StreamKind=Stream_Other;
+                        else if (StreamKindZ==__T("image"))     StreamKind=Stream_Image;
+                        else if (StreamKindZ==__T("menu"))      StreamKind=Stream_Menu;
+                        else
+                        {
+                            MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, "Invalid column 0 for external metadata");
+                            continue;
+                        }
+                    }
+                    size_t StreamPos=(size_t)List[i][1].To_int64u();
+                    bool ShouldReplace=List[i].size()>4-Offset && List[i][4-Offset].To_int64u();
+                    if (ShouldReplace || Retrieve_Const(StreamKind, StreamPos, List[i][2-Offset].To_UTF8().c_str()).empty())
+                        Fill(StreamKind, StreamPos, List[i][2-Offset].To_UTF8().c_str(), List[i][3-Offset], ShouldReplace);
+                }
+            }
+        }
+    #endif //MEDIAINFO_ADVANCED
+
     #if MEDIAINFO_ADVANCED
         //Default frame rate
         if (Count_Get(Stream_Video)==1 && Retrieve(Stream_Video, 0, Video_FrameRate).empty() && Config->File_DefaultFrameRate_Get())
@@ -121,6 +182,22 @@ void File__Analyze::Streams_Finish_Global()
                 Fill(Stream_Video, 0, Video_FrameCount, IbiStream->Infos[IbiStream->Infos.size()-1].FrameNumber);
         }
         #endif //MEDIAINFO_IBIUSAGE
+    }
+
+    //Exception
+    if (Retrieve(Stream_General, 0, General_Format)==__T("AC-3") && (Retrieve(Stream_General, 0, General_Format_Profile).find(__T("E-AC-3"))==0 || Retrieve(Stream_General, 0, General_Format_AdditionalFeatures).find(__T("Dep"))!=string::npos))
+    {
+        //Using AC-3 extensions + E-AC-3 extensions + "eb3" specific extension
+        Ztring Extensions=Retrieve(Stream_General, 0, General_Format_Extensions);
+        if (Extensions.find(__T(" eb3"))==string::npos)
+        {
+            Extensions+=__T(' ');
+            Extensions+=MediaInfoLib::Config.Format_Get(__T("E-AC-3"), InfoFormat_Extensions);
+            Extensions+=__T(" eb3");
+            Fill(Stream_General, 0, General_Format_Extensions, Extensions, true);
+            if (MediaInfoLib::Config.Legacy_Get())
+                Fill(Stream_General, 0, General_Codec_Extensions, Extensions, true);
+        }
     }
 
     Streams_Finish_StreamOnly();
@@ -334,6 +411,141 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
 #endif //defined(MEDIAINFO_FILE_YES)
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_FILE_YES)
+// title-of-work/
+//     title-of-work.wav
+//     dpx/
+//         title-of-work_0086880.dpx
+//         title-of-work_0086881.dpx
+//         ... etc ...
+static void PotentialAudioNames_Scenario1(const Ztring& DpxName, Ztring& ContainerDirName, ZtringList& List)
+{
+    if (DpxName.size()<4)
+        return;
+
+    if (DpxName.substr(DpxName.size()-4)!=__T(".dpx"))
+        return;
+
+    size_t PathSeparator_Pos1=DpxName.find_last_of(__T("\\/"));
+    if (PathSeparator_Pos1==string::npos)
+        return;
+
+    size_t PathSeparator_Pos2=DpxName.find_last_of(__T("\\/"), PathSeparator_Pos1-1);
+    if (PathSeparator_Pos2==string::npos)
+        return;
+
+    size_t PathSeparator_Pos3=DpxName.find_last_of(__T("\\/"), PathSeparator_Pos2-1); //string::npos is accepted (relative path) 
+
+    size_t TitleSeparator_Pos=DpxName.find_last_of(__T('_'));
+    if (TitleSeparator_Pos==string::npos || TitleSeparator_Pos<=PathSeparator_Pos1)
+        return;
+
+    Ztring DirDpx=DpxName.substr(PathSeparator_Pos2+1, PathSeparator_Pos1-(PathSeparator_Pos2+1));
+    if (DirDpx!=__T("dpx"))
+        return;
+
+    Ztring TitleDpx=DpxName.substr(PathSeparator_Pos1+1, TitleSeparator_Pos-(PathSeparator_Pos1+1));
+    Ztring TitleDir=DpxName.substr(PathSeparator_Pos3+1, PathSeparator_Pos2-(PathSeparator_Pos3+1));
+    if (TitleDpx!=TitleDir)
+        return;
+
+    ContainerDirName=DpxName.substr(0, PathSeparator_Pos2+1);
+    List.push_back(ContainerDirName+TitleDpx+__T(".wav"));
+}
+void File__Analyze::TestDirectory()
+{
+    if (IsSub || !Config->File_TestDirectory_Get())
+        return;
+
+    if (Config->File_Names.size()<=1)
+        return;
+
+    Ztring ContainerDirName;
+    ZtringList List;
+    PotentialAudioNames_Scenario1(Config->File_Names[0], ContainerDirName, List);
+    bool IsModified=false;
+    for (size_t i=0; i<List.size(); i++)
+    {
+        MediaInfo_Internal MI;
+        if (MI.Open(List[i]))
+        {
+            IsModified=true;
+            Ztring AudioFileName=MI.Get(Stream_General, 0, General_CompleteName);
+            for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+                for (size_t StreamPos=0; StreamPos<MI.Count_Get((stream_t)StreamKind); StreamPos++)
+                {
+                    Stream_Prepare((stream_t)StreamKind);
+                    Merge(MI, (stream_t)StreamKind, StreamPos_Last, StreamPos);
+                    if (AudioFileName.size()>ContainerDirName.size())
+                        Fill((stream_t)StreamKind, StreamPos_Last, "Source", AudioFileName.substr(ContainerDirName.size()));
+                    Fill((stream_t)StreamKind, StreamPos_Last, "MuxingMode", MI.Get(Stream_General, 0, General_Format));
+                    if (Retrieve_Const((stream_t)StreamKind, StreamPos_Last, "Encoded_Application").empty())
+                        Fill((stream_t)StreamKind, StreamPos_Last, "Encoded_Application", MI.Get(Stream_General, 0, General_Encoded_Application));
+                    if (Retrieve_Const((stream_t)StreamKind, StreamPos_Last, "Encoded_Library").empty())
+                        Fill((stream_t)StreamKind, StreamPos_Last, "Encoded_Library", MI.Get(Stream_General, 0, General_Encoded_Library));
+                }
+            #if MEDIAINFO_ADVANCED
+                if (!Config->File_IgnoreSequenceFileSize_Get())
+            #endif //MEDIAINFO_ADVANCED
+            {
+                File_Size+=MI.Get(Stream_General, 0, General_FileSize).To_int64u();
+            }
+        }
+    }
+    if (IsModified)
+    {
+        Ztring VideoFileName=Retrieve(Stream_General, 0, General_CompleteName);
+        Ztring VideoFileName_Last=Retrieve(Stream_General, 0, General_CompleteName_Last);
+        Ztring VideoMuxingMode=Retrieve_Const(Stream_General, 0, General_Format);
+        if (VideoFileName.size()>ContainerDirName.size())
+            Fill(Stream_Video, 0, "Source", VideoFileName.substr(ContainerDirName.size()));
+        if (VideoFileName_Last.size()>ContainerDirName.size())
+            Fill(Stream_Video, 0, "Source_Last", VideoFileName_Last.substr(ContainerDirName.size()));
+        Fill(Stream_Video, 0, Video_MuxingMode, VideoMuxingMode);
+
+        Fill(Stream_General, 0, General_CompleteName, ContainerDirName, true);
+        Fill(Stream_General, 0, General_FileSize, File_Size, 10, true);
+        Fill(Stream_General, 0, General_Format, "Directory", Unlimited, true, true);
+
+        Clear(Stream_General, 0, General_CompleteName_Last);
+        Clear(Stream_General, 0, General_FolderName_Last);
+        Clear(Stream_General, 0, General_FileName_Last);
+        Clear(Stream_General, 0, General_FileNameExtension_Last);
+        Clear(Stream_General, 0, General_FileExtension_Last);
+        Clear(Stream_General, 0, General_Format_String);
+        Clear(Stream_General, 0, General_Format_Info);
+        Clear(Stream_General, 0, General_Format_Url);
+        Clear(Stream_General, 0, General_Format_Commercial);
+        Clear(Stream_General, 0, General_Format_Commercial_IfAny);
+        Clear(Stream_General, 0, General_Format_Version);
+        Clear(Stream_General, 0, General_Format_Profile);
+        Clear(Stream_General, 0, General_Format_Level);
+        Clear(Stream_General, 0, General_Format_Compression);
+        Clear(Stream_General, 0, General_Format_Settings);
+        Clear(Stream_General, 0, General_Format_AdditionalFeatures);
+        Clear(Stream_General, 0, General_InternetMediaType);
+        Clear(Stream_General, 0, General_Duration);
+        Clear(Stream_General, 0, General_Encoded_Application);
+        Clear(Stream_General, 0, General_Encoded_Application_String);
+        Clear(Stream_General, 0, General_Encoded_Application_CompanyName);
+        Clear(Stream_General, 0, General_Encoded_Application_Name);
+        Clear(Stream_General, 0, General_Encoded_Application_Version);
+        Clear(Stream_General, 0, General_Encoded_Application_Url);
+        Clear(Stream_General, 0, General_Encoded_Library);
+        Clear(Stream_General, 0, General_Encoded_Library_String);
+        Clear(Stream_General, 0, General_Encoded_Library_CompanyName);
+        Clear(Stream_General, 0, General_Encoded_Library_Name);
+        Clear(Stream_General, 0, General_Encoded_Library_Version);
+        Clear(Stream_General, 0, General_Encoded_Library_Date);
+        Clear(Stream_General, 0, General_Encoded_Library_Settings);
+        Clear(Stream_General, 0, General_Encoded_OperatingSystem);
+        Clear(Stream_General, 0, General_FrameCount);
+        Clear(Stream_General, 0, General_FrameRate);
+    }
+}
+#endif //defined(MEDIAINFO_FILE_YES)
+
+//---------------------------------------------------------------------------
 #if MEDIAINFO_FIXITY
 bool File__Analyze::FixFile(int64u FileOffsetForWriting, const int8u* ToWrite, const size_t ToWrite_Size)
 {
@@ -392,6 +604,10 @@ void File__Analyze::Streams_Finish_StreamOnly()
 //---------------------------------------------------------------------------
 void File__Analyze::Streams_Finish_StreamOnly(stream_t StreamKind, size_t Pos)
 {
+    //Format
+    if (Retrieve_Const(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_Format)).empty())
+        Fill(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_Format), Retrieve_Const(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_CodecID)));
+
     //BitRate from Duration and StreamSize
     if (StreamKind!=Stream_General && StreamKind!=Stream_Other && StreamKind!=Stream_Menu && Retrieve(StreamKind, Pos, "BitRate").empty() && !Retrieve(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_StreamSize)).empty() && !Retrieve(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_Duration)).empty())
     {
@@ -434,7 +650,7 @@ void File__Analyze::Streams_Finish_StreamOnly(stream_t StreamKind, size_t Pos)
         int64u BitRate=Retrieve(StreamKind, Pos, "BitRate").To_int64u();
         int64u StreamSize=Retrieve(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_StreamSize)).To_int64u();
         if (BitRate>0 && StreamSize>0)
-            Fill(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_Duration), StreamSize*8*1000/BitRate);
+            Fill(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_Duration), ((float64)StreamSize)*8*1000/BitRate, 0);
     }
 
     //StreamSize from BitRate and Duration
@@ -471,7 +687,7 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
             {
                 ZtringList ValidExtensions;
                 ValidExtensions.Separator_Set(0, __T(" "));
-                ValidExtensions.Write(FormatList.Get(Format->first, InfoFormat_Extensions));
+                ValidExtensions.Write(Retrieve(Stream_General, StreamPos, General_Format_Extensions));
                 if (!ValidExtensions.empty() && ValidExtensions.Find(Extension)==string::npos)
                     Fill(Stream_General, StreamPos, "FileExtension_Invalid", ValidExtensions.Read());
             }

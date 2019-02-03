@@ -31,6 +31,7 @@ struct Node
     std::string Value;
     Attributes Attrs;
     std::vector<Node*> Childs;
+    std::string XmlComment; //If set, add comment after element data
     std::string XmlCommentOut; //If set, comment out the whole node in the xml output with the string as comment
     std::string RawContent; //If set, replace the whole node by the string
     bool Multiple;
@@ -39,24 +40,28 @@ struct Node
     Node()
     {
     }
-    Node(const char* _Name) : Name(_Name), RawContent(std::string()), Multiple(false)
+    Node(const char* _Name) : Name(_Name), Multiple(false)
     {
     }
-    Node(const char* _Name, bool _Multiple) : Name(_Name), RawContent(std::string()), Multiple(_Multiple)
+    Node(const char* _Name, bool _Multiple) : Name(_Name), Multiple(_Multiple)
     {
     }
-    Node(const std::string& _Name, const std::string& _Value=std::string()) : Name(_Name), Value(_Value), RawContent(std::string()), Multiple(false)
+    Node(const std::string& _Name, const std::string& _Value=std::string()) : Name(_Name), Value(_Value), Multiple(false)
     {
     }
-    Node(const std::string& _Name, const std::string& _Value, bool _Multiple) : Name(_Name), Value(_Value), RawContent(std::string()), Multiple(_Multiple)
+    Node(const std::string& _Name, const std::string& _Value, bool _Multiple) : Name(_Name), Value(_Value), Multiple(_Multiple)
     {
     }
-    Node(const std::string& _Name, const std::string& _Value, const std::string& _Atribute_Name, const std::string& _Atribute_Value=std::string()) : Name(_Name), Value(_Value), RawContent(std::string()), Multiple(false)
+    Node(const std::string& _Name, const std::string& _Value, const std::string& _Atribute_Name, const std::string& _Atribute_Value=std::string()) : Name(_Name), Value(_Value), Multiple(false)
     {
+        if (_Atribute_Value.empty())
+            return;
         Add_Attribute(_Atribute_Name, _Atribute_Value);
     }
-    Node(const std::string& _Name, const std::string& _Value, const std::string& _Atribute_Name, const std::string& _Atribute_Value, bool _Multiple) : Name(_Name), Value(_Value), RawContent(std::string()), Multiple(_Multiple)
+    Node(const std::string& _Name, const std::string& _Value, const std::string& _Atribute_Name, const std::string& _Atribute_Value, bool _Multiple) : Name(_Name), Value(_Value), Multiple(_Multiple)
     {
+        if (_Atribute_Value.empty())
+            return;
         Add_Attribute(_Atribute_Name, _Atribute_Value);
     }
 
@@ -101,81 +106,93 @@ struct Node
         return Add_Child(Name, Value.To_UTF8(), _Atribute_Name, _Atribute_Value, Multiple);
     }
     //Add_Child_IfNotEmpty functions
-    void Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, const char* FieldName, const std::string& Name, bool Multiple=false)
+    Node* Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, const char* FieldName, const std::string& Name, bool Multiple=false)
     {
         if (StreamKind==Stream_Max || StreamPos==(size_t)-1)
-            return;
+            return NULL;
         const ZenLib::Ztring& Value=MI.Get(StreamKind, StreamPos, ZenLib::Ztring().From_UTF8(FieldName));
         if (!Value.empty())
-            Add_Child(Name, Value, Multiple);
+            return Add_Child(Name, Value, Multiple);
+        return NULL;
     }
-    void Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, size_t FieldName, const std::string& Name, bool Multiple=false)
+    Node* Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, size_t FieldName, const std::string& Name, bool Multiple=false)
     {
         if (StreamKind==Stream_Max || StreamPos==(size_t)-1)
-            return;
+            return NULL;
         const ZenLib::Ztring& Value=MI.Get(StreamKind, StreamPos, FieldName);
         if (!Value.empty())
-            Add_Child(Name, Value, Multiple);
+            return Add_Child(Name, Value, Multiple);
+        return NULL;
     }
-    void Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, size_t FieldName, const std::string& Name, const std::string& Name2, bool Multiple=false, bool Multiple2=false)
+    Node* Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, size_t FieldName, const std::string& Name, const std::string& Name2, bool Multiple=false, bool Multiple2=false)
     {
         if (StreamKind==Stream_Max || StreamPos==(size_t)-1)
-            return;
+            return NULL;
         const ZenLib::Ztring& Value=MI.Get(StreamKind, StreamPos, FieldName);
         if (!Value.empty())
         {
             Node* Child=Add_Child(Name, std::string(), Multiple);
             Child->Add_Child(Name2, Value.To_UTF8(), Multiple2);
+            return Child;
         }
+        return NULL;
     }
-    void Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, const char* FieldName, const std::string& Name, const std::string& Name2, bool Multiple=false, bool Multiple2=false)
+    Node* Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, const char* FieldName, const std::string& Name, const std::string& Name2, bool Multiple=false, bool Multiple2=false)
     {
         if (StreamKind==Stream_Max || StreamPos==(size_t)-1)
-            return;
+            return NULL;
         const ZenLib::Ztring& Value=MI.Get(StreamKind, StreamPos, ZenLib::Ztring().From_UTF8(FieldName));
         if (!Value.empty())
         {
             Node* Child=Add_Child(Name, std::string(), Multiple);
-            Child->Add_Child(Name2, Value.To_UTF8(), Multiple2);
+            return Child->Add_Child(Name2, Value.To_UTF8(), Multiple2);
+            return Child;
         }
+        return NULL;
     }
-    void Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, size_t FieldName, const std::string& Name, const std::string& Atribute_Name, const std::string& Attribute_Value, bool Multiple=false)
+    Node* Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, size_t FieldName, const std::string& Name, const std::string& Atribute_Name, const std::string& Attribute_Value, bool Multiple=false)
     {
         if (StreamKind==Stream_Max || StreamPos==(size_t)-1)
-            return;
+            return NULL;
         const ZenLib::Ztring& Value=MI.Get(StreamKind, StreamPos, FieldName);
         if (!Value.empty())
-            Add_Child(Name, Value, Atribute_Name, Attribute_Value, Multiple);
+            return Add_Child(Name, Value, Atribute_Name, Attribute_Value, Multiple);
+        return NULL;
     }
-    void Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, const char* FieldName, const std::string& Name, const std::string& Atribute_Name, const std::string& Attribute_Value, bool Multiple=false)
+    Node* Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, const char* FieldName, const std::string& Name, const std::string& Atribute_Name, const std::string& Attribute_Value, bool Multiple=false)
     {
         if (StreamKind==Stream_Max || StreamPos==(size_t)-1)
-            return;
+            return NULL;
         const ZenLib::Ztring& Value=MI.Get(StreamKind, StreamPos, ZenLib::Ztring().From_UTF8(FieldName));
         if (!Value.empty())
-            Add_Child(Name, Value, Atribute_Name, Attribute_Value, Multiple);
+            return Add_Child(Name, Value, Atribute_Name, Attribute_Value, Multiple);
+        return NULL;
     }
-    void Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, size_t FieldName, const std::string& Name, const std::string& Atribute_Name, const std::string& Attribute_Value, const std::string& Name2, bool Multiple=false, bool Multiple2=false)
+    Node* Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, size_t FieldName, const std::string& Name, const std::string& Atribute_Name, const std::string& Attribute_Value, const std::string& Name2, bool Multiple=false, bool Multiple2=false)
     {
         if (StreamKind==Stream_Max || StreamPos==(size_t)-1)
-            return;
+            return NULL;
         const ZenLib::Ztring& Value=MI.Get(StreamKind, StreamPos, FieldName);
         if (!Value.empty())
         {
             Node* Child=Add_Child(Name, std::string(), Atribute_Name, Attribute_Value, Multiple);
             Child->Add_Child(Name2, Value.To_UTF8(), Multiple2);
+            return Child;
         }
+        return NULL;
     }
-    void Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, const char* FieldName, const std::string& Name, const std::string& Atribute_Name, const std::string& Attribute_Value, const std::string& Name2, bool Multiple=false, bool Multiple2=false)
+    Node* Add_Child_IfNotEmpty(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, const char* FieldName, const std::string& Name, const std::string& Atribute_Name, const std::string& Attribute_Value, const std::string& Name2, bool Multiple=false, bool Multiple2=false)
     {
         if (StreamKind==Stream_Max || StreamPos==(size_t)-1)
-            return;
+            return NULL;
         const ZenLib::Ztring& Value=MI.Get(StreamKind, StreamPos, ZenLib::Ztring().From_UTF8(FieldName));
         if (!Value.empty())
         {
             Node* Child=Add_Child(Name, std::string(), Atribute_Name, Attribute_Value, Multiple);
             Child->Add_Child(Name2, Value.To_UTF8(), Multiple2);
+            return Child;
         }
+        return NULL;
     }
     //Add_Attribute functions
     void Add_Attribute(const std::string& Name, const char* Value=NULL)
@@ -211,6 +228,9 @@ struct Node
 
 std::string To_XML (Node& Cur_Node, const int& Level, bool Print_Header=false, bool Indent=true);
 std::string To_JSON (Node& Cur_Node, const int& Level, bool Print_Header=false, bool Indent=true);
+
+bool ExternalMetadata(const ZenLib::Ztring& FileName, const ZenLib::Ztring& ExternalMetadata, const ZenLib::Ztring& ExternalMetaDataConfig, const ZenLib::ZtringList& Parents, const  ZenLib::Ztring& PlaceHolder, Node* Main, Node* MI_Info);
+
 Ztring VideoCompressionCodeCS_Name(int32u termID, MediaInfo_Internal &MI, size_t StreamPos);
 
 } //NameSpace

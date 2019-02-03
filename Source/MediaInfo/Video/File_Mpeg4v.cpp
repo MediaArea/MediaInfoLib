@@ -144,7 +144,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-const char* Mpeg4v_Colorimetry[]=
+const char* Mpeg4v_ChromaSubsampling[]=
 {
     "",
     "4:2:0",
@@ -444,7 +444,7 @@ void File_Mpeg4v::Streams_Fill()
     Fill(Stream_Video, 0, Video_ColorSpace, rgb_components?"RGB":"YUV");
     Fill(Stream_Video, 0, Video_BitDepth, bits_per_pixel);
     if (chroma_format<4)
-        Fill(Stream_Video, 0, Video_Colorimetry, Mpeg4v_Colorimetry[chroma_format]);
+        Fill(Stream_Video, 0, Video_ChromaSubsampling, Mpeg4v_ChromaSubsampling[chroma_format]);
     if (colour_description)
     {
         Fill(Stream_Video, 0, Video_colour_description_present, "Yes");
@@ -891,7 +891,7 @@ void File_Mpeg4v::video_object_layer_start()
         if (shape!=2) //Shape!=BinaryOnly
         {
             Get_SB (   rgb_components,                          "rgb_components");
-            Get_S1 (2, chroma_format,                           "chroma_format"); Param_Info1(Mpeg4v_Colorimetry[chroma_format]);
+            Get_S1 (2, chroma_format,                           "chroma_format"); Param_Info1(Mpeg4v_ChromaSubsampling[chroma_format]);
             Get_S1 (4, bits_per_pixel,                          "bits_per_pixel");
         }
         if (shape==0) //Shape=Rectangular
@@ -941,7 +941,7 @@ void File_Mpeg4v::video_object_layer_start()
         Get_S1 (8, par_height,                                  "par_height");
     }
     TEST_SB_SKIP(                                               "vol_control_parameters");
-        Get_S1 (2, chroma_format,                               "chroma_format"); Param_Info1(Mpeg4v_Colorimetry[chroma_format]);
+        Get_S1 (2, chroma_format,                               "chroma_format"); Param_Info1(Mpeg4v_ChromaSubsampling[chroma_format]);
         Get_SB (   low_delay,                                   "low_delay");
         TEST_SB_SKIP(                                           "vbv_parameters");
             int16u first_half_bit_rate, latter_half_bit_rate, first_half_vbv_buffer_size, latter_half_vbv_buffer_size;
@@ -1354,11 +1354,11 @@ void File_Mpeg4v::user_data_start()
         Library_End_Offset++;
 
     //Parsing
-    Ztring Temp;
+    string Temp;
     if (Library_Start_Offset>0)
         Skip_XX(Library_Start_Offset,                           "junk");
     if (Library_End_Offset-Library_Start_Offset)
-        Get_Local(Library_End_Offset-Library_Start_Offset, Temp,"data");
+        Get_String(Library_End_Offset-Library_Start_Offset, Temp,"data");
     if (Element_Offset<Element_Size)
         Skip_XX(Element_Size-Element_Offset,                    "junk");
 
@@ -1371,10 +1371,10 @@ void File_Mpeg4v::user_data_start()
     FILLING_BEGIN();
         if (Temp.size()>=4)
         {
-            if (Temp.find(__T("build"))==0)
-                Library+=Ztring(__T(" "))+Temp;
+            if (Temp.find("build")==0)
+                Library+=Ztring().From_UTF8(" "+Temp);
             else
-                Library=Temp;
+                Library.From_UTF8(Temp);
 
             //Library
             if (Library.find(__T("DivX50"))==0)
@@ -1433,7 +1433,7 @@ void File_Mpeg4v::user_data_start_SNC()
 
     //Parsing
     Ztring Value;
-    Get_Local(Element_Size, Value,                              "Value");
+    Get_UTF8(Element_Size, Value,                               "Value");
     ZtringListList List;
     List.Separator_Set(0, __T("\r\n"));
     List.Separator_Set(1, __T(": "));

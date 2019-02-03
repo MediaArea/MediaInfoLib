@@ -190,6 +190,8 @@ Author;Author
 BarCode;BarCode
 Basic;Basic
 Basic_Note;Note : for more information about this file, you must select a different view (Sheet, Tree...)
+BedChannelConfiguration;Bed channel configuration
+BedChannelCount;Bed channel count
 BitDepth;Bit depth
 BitDepth_Detected;Detected bit depth
 BitDepth_Stored;Stored bit depth
@@ -205,6 +207,7 @@ Bits-(Pixel*Frame);Bits/(Pixel*Frame)
 BufferSize;Buffer size
 Cancel;Cancel
 Channel(s);Channel(s)
+ChannelLayout;Channel layout
 ChannelPositions;Channel positions
 Chapter(s);Chapter(s)
 Chapters;Chapters
@@ -246,6 +249,7 @@ Codec_Settings_PacketBitStream;Codec settings, Packet bitstream
 Codec_Settings_QPel;Codec settings, QPel
 Codec_Settings_Sign;Codec settings, Sign
 Codec_Url;Weblink for codec
+CodecConfigurationBox;Codec configuration box
 CodecID;Codec ID
 CodecID_Description;Description of the codec
 CoDirector;Codirector
@@ -259,6 +263,7 @@ CommissionedBy;Commissioned by
 Compilation;Compilation
 CompleteName;Complete name
 CompletionDate;Completion Date
+ComplexityIndex;Complexity index
 Composer;Composer
 Compression_Mode;Compression mode
 Compression_Mode_Lossless;Lossless
@@ -303,9 +308,10 @@ DisplayAspectRatio_Original;Original display aspect ratio
 DistributedBy;Distributed by
 Distributor;Distributor
 DolbyVision;Dolby Vision
+DolbyVision_Layers;Dolby Vision layers
+DolbyVision_Level;Dolby Vision level
 DolbyVision_Profile;Dolby Vision profile
 DolbyVision_Version;Dolby Vision version
-DolbyVision_Layer;Dolby Vision layer
 Donate;Donate
 DotsPerInch;Dots per inch
 Duration;Duration
@@ -858,6 +864,7 @@ Menu_Hint;More possibilities
 Menu_No;No menu
 MenuCount;Count of menu streams
 MenuID;Menu ID
+NumberOfDynamicObjects;Number of dynamic objects
 mn; min
 Mood;Mood
 More;More

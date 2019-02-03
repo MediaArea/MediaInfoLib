@@ -43,6 +43,7 @@ xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.cs MediaInfoDLL_Windows_x64\Developers
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.jsl MediaInfoDLL_Windows_x64\Developers\Source\MediaInfoDLL\
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.vb MediaInfoDLL_Windows_x64\Developers\Source\MediaInfoDLL\
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.JNA.java MediaInfoDLL_Windows_x64\Developers\Source\MediaInfoDLL\
+xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.JNI.java MediaInfoDLL_Windows_x64\Developers\Source\MediaInfoDLL\
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.JNative.java MediaInfoDLL_Windows_x64\Developers\Source\MediaInfoDLL\
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.py MediaInfoDLL_Windows_x64\Developers\Source\MediaInfoDLL\
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL3.py MediaInfoDLL_Windows_x64\Developers\Source\MediaInfoDLL\
@@ -106,6 +107,8 @@ xcopy ..\Project\Java\Example.JNA\*.java MediaInfoDLL_Windows_x64\Developers\Pro
 xcopy ..\Project\Java\Example.JNA\*.txt MediaInfoDLL_Windows_x64\Developers\Project\Java\Example.JNA\
 xcopy ..\Project\Java\Example.JNA\*.bat MediaInfoDLL_Windows_x64\Developers\Project\Java\Example.JNA\
 xcopy ..\Project\Java\Example.JNA\*.sh MediaInfoDLL_Windows_x64\Developers\Project\Java\Example.JNA\
+xcopy ..\Project\Java\Example.JNI\*.bat MediaInfoDLL_Windows_x64\Developers\Project\Java\Example.JNI\
+xcopy ..\Project\Java\Example.JNI\*.sh MediaInfoDLL_Windows_x64\Developers\Project\Java\Example.JNI\
 xcopy ..\Project\Java\Example.JNative\*.java MediaInfoDLL_Windows_x64\Developers\Project\Java\Example.JNative\
 xcopy ..\Project\Java\Example.JNative\*.txt MediaInfoDLL_Windows_x64\Developers\Project\Java\Example.JNative\
 xcopy ..\Project\Java\Example.JNative\*.bat MediaInfoDLL_Windows_x64\Developers\Project\Java\Example.JNative\
@@ -144,6 +147,7 @@ xcopy ..\Project\MSVC2017\ShellExtension\*.bat MediaInfoDLL_Windows_x64\
 rem --- Compressing Archive ---
 cd MediaInfoDLL_Windows_x64\
 %BPATH%\Windows\7-Zip\7z a -r -t7z -mx9 ..\MediaInfo_DLL_Windows_x64_WithoutInstaller.7z *
+%BPATH%\Windows\7-Zip\7z a -r -tzip -mx9 ..\MediaInfo_DLL_Windows_x64_WithoutInstaller.zip *
 cd ..
 
 rem --- Installer ---

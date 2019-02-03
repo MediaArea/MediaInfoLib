@@ -28,7 +28,6 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_Mpeg4.h"
-#include "MediaInfo/Multiple/File_Mpeg4_Descriptors.h"
 #if defined(MEDIAINFO_MPEGPS_YES)
     #include "MediaInfo/Multiple/File_MpegPs.h"
 #endif
@@ -392,7 +391,7 @@ void File_Mpeg4::Streams_Finish()
                 }
                 if (TempString.size())
                 {
-                    Fill(StreamKind_Last, StreamPos_Last, "Subtitles For", TempString.To_Local().c_str());
+                    Fill(StreamKind_Last, StreamPos_Last, "Subtitles For", TempString.To_UTF8().c_str());
                     TempString.clear();
                 }
             }
@@ -425,7 +424,7 @@ void File_Mpeg4::Streams_Finish()
                             TempString.append(Ztring().From_Number(*TrackID));
                         }
                     }
-                    Fill(StreamKind_Last, StreamPos_Last, "Default", TempString.size()?TempString.To_Local().c_str():"No");
+                    Fill(StreamKind_Last, StreamPos_Last, "Default", TempString.size()?TempString.To_UTF8().c_str():"No");
                     TempString.clear();
                 }
             }
@@ -444,7 +443,7 @@ void File_Mpeg4::Streams_Finish()
                             if (TempString.size()) TempString.append(__T(","));
                             TempString.append(Ztring().From_Number(*TrackID));
                         }
-                        Fill(StreamKind_Last, StreamPos_Last, "Full Alternative", TempString.To_Local().c_str());
+                        Fill(StreamKind_Last, StreamPos_Last, "Full Alternative", TempString.To_UTF8().c_str());
                         TempString.clear();
                     }
                 }
@@ -457,7 +456,7 @@ void File_Mpeg4::Streams_Finish()
                         if (TempString.size()) TempString.append(__T(","));
                         TempString.append(Ztring().From_Number(*TrackID));
                     }
-                    if (TempString.size()) Fill(StreamKind_Last, StreamPos_Last, "Forced Alternative", TempString.To_Local().c_str());
+                    if (TempString.size()) Fill(StreamKind_Last, StreamPos_Last, "Forced Alternative", TempString.To_UTF8().c_str());
                     TempString.clear();
                 }
             }
@@ -472,7 +471,7 @@ void File_Mpeg4::Streams_Finish()
                     }
                     if (TempString.size())
                     {
-                        Fill(StreamKind_Last, StreamPos_Last, "Fallback To", TempString.To_Local().c_str());
+                        Fill(StreamKind_Last, StreamPos_Last, "Fallback To", TempString.To_UTF8().c_str());
                         TempString.clear();
                     }
                 }
@@ -485,7 +484,7 @@ void File_Mpeg4::Streams_Finish()
                     }
                     if (TempString.size())
                     {
-                        Fill(StreamKind_Last, StreamPos_Last, "Fallback From", TempString.To_Local().c_str());
+                        Fill(StreamKind_Last, StreamPos_Last, "Fallback From", TempString.To_UTF8().c_str());
                         TempString.clear();
                     }
                 }
@@ -513,7 +512,7 @@ void File_Mpeg4::Streams_Finish()
                     }
                     if (TempString.size())
                     {
-                        Fill(StreamKind_Last, StreamPos_Last, "Subtitles", TempString.To_Local().c_str());
+                        Fill(StreamKind_Last, StreamPos_Last, "Subtitles", TempString.To_UTF8().c_str());
                         TempString.clear();
                     }
                 }
@@ -527,7 +526,7 @@ void File_Mpeg4::Streams_Finish()
                     }
                     if (TempString.size())
                     {
-                        Fill(StreamKind_Last, StreamPos_Last, "Closed Captions", TempString.To_Local().c_str());
+                        Fill(StreamKind_Last, StreamPos_Last, "Closed Captions", TempString.To_UTF8().c_str());
                         TempString.clear();
                     }
             }
@@ -540,7 +539,7 @@ void File_Mpeg4::Streams_Finish()
                     }
                     if (TempString.size())
                     {
-                        Fill(StreamKind_Last, StreamPos_Last, "Closed Captions For", TempString.To_Local().c_str());
+                        Fill(StreamKind_Last, StreamPos_Last, "Closed Captions For", TempString.To_UTF8().c_str());
                         TempString.clear();
                     }
             }
@@ -553,7 +552,7 @@ void File_Mpeg4::Streams_Finish()
                 }
                 if (TempString.size())
                 {
-                    Fill(StreamKind_Last, StreamPos_Last, "Menus", TempString.To_Local().c_str());
+                    Fill(StreamKind_Last, StreamPos_Last, "Menus", TempString.To_UTF8().c_str());
                     TempString.clear();
                 }
             }
@@ -570,7 +569,7 @@ void File_Mpeg4::Streams_Finish()
             }
             if (TempString.size())
             {
-                Fill(StreamKind_Last, StreamPos_Last, "Menu For", TempString.To_Local().c_str());
+                Fill(StreamKind_Last, StreamPos_Last, "Menu For", TempString.To_UTF8().c_str());
                 TempString.clear();
             }
         }
@@ -860,7 +859,7 @@ void File_Mpeg4::Streams_Finish()
                             if (Retrieve(StreamKind_Last, StreamPos_Last, Pos).empty())
                                 Fill(StreamKind_Last, StreamPos_Last, Pos, StreamSave[Pos]);
                         for (size_t Pos=0; Pos<StreamMoreSave.size(); Pos++)
-                            Fill(StreamKind_Last, StreamPos_Last, StreamMoreSave(Pos, 0).To_Local().c_str(), StreamMoreSave(Pos, 1));
+                            Fill(StreamKind_Last, StreamPos_Last, StreamMoreSave(Pos, 0).To_UTF8().c_str(), StreamMoreSave(Pos, 1));
                     }
                     Ztring LawRating=Temp->second.Parsers[0]->Retrieve(Stream_General, 0, General_LawRating);
                     if (!LawRating.empty())
@@ -912,7 +911,7 @@ void File_Mpeg4::Streams_Finish()
                                 if (Retrieve(StreamKind_Last, StreamPos_Last, Pos).empty())
                                     Fill(StreamKind_Last, StreamPos_Last, Pos, StreamSave[Pos]);
                             for (size_t Pos=0; Pos<StreamMoreSave.size(); Pos++)
-                                Fill(StreamKind_Last, StreamPos_Last, StreamMoreSave(Pos, 0).To_Local().c_str(), StreamMoreSave(Pos, 1));
+                                Fill(StreamKind_Last, StreamPos_Last, StreamMoreSave(Pos, 0).To_UTF8().c_str(), StreamMoreSave(Pos, 1));
                         }
                     }
 
@@ -1171,6 +1170,31 @@ void File_Mpeg4::Streams_Finish()
         for (std::map<string, Ztring>::iterator Info=Temp->second.Infos.begin(); Info!=Temp->second.Infos.end(); ++Info)
             Fill(StreamKind_Last, StreamPos_Last, Info->first.c_str(), Info->second);
 
+        //Codec configuration box
+        Ztring CodecConfigurationBoxInfo;
+        for (size_t i=0; i<Temp->second.CodecConfigurationBoxInfo.size(); i++)
+        {
+            if (i)
+                CodecConfigurationBoxInfo+=__T('+');
+            CodecConfigurationBoxInfo+=Ztring().From_CC4(Temp->second.CodecConfigurationBoxInfo[i]);
+        }
+        Fill(StreamKind_Last, StreamPos_Last, "Codec configuration box", CodecConfigurationBoxInfo);
+
+        //ES_ID
+        for (File_Mpeg4_Descriptors::es_id_infos::iterator ES_ID_Info=ES_ID_Infos.begin(); ES_ID_Info!=ES_ID_Infos.end(); ES_ID_Info++)
+        {
+            if (ES_ID_Info->first==Temp->first && ES_ID_Info->second.StreamKind==Temp->second.StreamKind)
+            {
+                if (Retrieve_Const(StreamKind_Last, StreamPos_Last, "Format_Profile").empty())
+                    Fill(StreamKind_Last, StreamPos_Last, "Format_Profile", ES_ID_Info->second.ProfileLevel);
+                else if (StreamKind_Last==Stream_Audio && Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_Format).find(__T("AAC"))!=string::npos && Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_Format_Level).empty())
+                {
+                    //Legacy issue with AAC, "Format_Profile" was used for something else, cheating with "Format_Level" for storing profile+level
+                    Fill(Stream_Audio, StreamPos_Last, Audio_Format_Level, ES_ID_Info->second.ProfileLevel);
+                }
+            }
+        }
+
         ++Temp;
     }
     if (Vendor!=0x00000000 && Vendor!=0xFFFFFFFF)
@@ -1298,22 +1322,22 @@ void File_Mpeg4::Streams_Finish_CommercialNames()
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, Retrieve(Stream_Video, 0, Video_Format_Commercial_IfAny));
             Fill(Stream_General, 0, General_Format_Commercial, Retrieve(Stream_General, 0, General_Format)+__T(' ')+Retrieve(Stream_Video, 0, Video_Format_Commercial_IfAny));
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:0") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("18000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("18000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("18000000")))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:0") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("18000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("18000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("18000000")))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "XDCAM EX 18");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "XDCAM EX 18");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:0") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("25000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("25000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("25000000")))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:0") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("25000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("25000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("25000000")))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "XDCAM EX 25");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "XDCAM EX 25");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:0") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("35000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("35000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("35000000")))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:0") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("35000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("35000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("35000000")))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "XDCAM EX 35");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "XDCAM EX 35");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_Colorimetry)==__T("4:2:2") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("50000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("50000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("50000000")))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("MPEG Video") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)!=__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:2") && (Retrieve(Stream_Video, 0, Video_BitRate)==__T("50000000") || Retrieve(Stream_Video, 0, Video_BitRate_Nominal)==__T("50000000") || Retrieve(Stream_Video, 0, Video_BitRate_Maximum)==__T("50000000")))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "XDCAM HD422");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "XDCAM HD422");
@@ -2582,6 +2606,20 @@ Ztring File_Mpeg4::Language_Get(int16u Language)
 }
 
 //---------------------------------------------------------------------------
+//Check if it is Qt or Mp4
+bool File_Mpeg4::IsQt()
+{
+    const Ztring& CodecID=Retrieve_Const(Stream_General, 0, General_CodecID);
+    if (CodecID.empty() || CodecID==__T("qt  "))
+        return true;
+    const Ztring& CodecID_Compatible=Retrieve_Const(Stream_General, 0, General_CodecID_Compatible);
+    for (size_t i=0; i<CodecID_Compatible.size(); i+=5)
+        if (CodecID_Compatible.substr(i, 4)==__T("qt  "))
+            return true;
+    return false;
+}
+
+//---------------------------------------------------------------------------
 //Get Metadata definition from 4CC
 File_Mpeg4::method File_Mpeg4::Metadata_Get(std::string &Parameter, int64u Meta)
 {
@@ -2698,7 +2736,7 @@ File_Mpeg4::method File_Mpeg4::Metadata_Get(std::string &Parameter, int64u Meta)
     Value.append(1, (Char)((Meta&0x0000FF00)>> 8));
     Value.append(1, (Char)((Meta&0x000000FF)>> 0));
     if (MediaInfoLib::Config.CustomMapping_IsPresent(__T("MP4"), Value))
-        Parameter=MediaInfoLib::Config.CustomMapping_Get(__T("MP4"), Value).To_Local();
+        Parameter=MediaInfoLib::Config.CustomMapping_Get(__T("MP4"), Value).To_UTF8();
     
     //Cleanup of the parameter, removing anything not ANSI 7-bit
     for (size_t i=0; i<Parameter.size();)
@@ -2768,6 +2806,9 @@ void File_Mpeg4::Descriptors()
         Streams[moov_trak_tkhd_TrackID].Parsers.push_back(MI.Parser);
         mdat_MustParse=true;
     }
+
+    if (!MI.ES_ID_Infos.empty())
+        ES_ID_Infos=MI.ES_ID_Infos;
 }
 
 //---------------------------------------------------------------------------
@@ -2815,6 +2856,14 @@ void File_Mpeg4::TimeCode_Associate(int32u TrackID)
             //Fill(Strea->second.StreamKind, Strea->second.StreamPos, "TimeCode_Source", Streams[TrackID].Parsers[0]->Get(Stream_General, 0, "TimeCode_Source"));
         }
  }
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::AddCodecConfigurationBoxInfo()
+{
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+        return;
+    Streams[moov_trak_tkhd_TrackID].CodecConfigurationBoxInfo.push_back((int32u)Element_Code);
+}
 
 //---------------------------------------------------------------------------
 void File_Mpeg4::IsParsing_mdat_Set()

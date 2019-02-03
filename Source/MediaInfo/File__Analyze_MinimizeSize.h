@@ -669,7 +669,7 @@ public :
     };
     #define VLC_END \
         {(int32u)-1, (int8u)-1, 0, 0, 0}
-    void Get_VL_Prepare(vlc_fast &Vlc);
+    static void Get_VL_Prepare(vlc_fast &Vlc);
     void Get_VL_ (const vlc Vlc[], size_t &Info);
     void Get_VL_ (const vlc_fast &Vlc, size_t &Info);
     #define Get_VL(Vlc, Info, Name) Get_VL_(Vlc, Info);
@@ -1262,8 +1262,10 @@ protected :
 public:
     #if defined(MEDIAINFO_FILE_YES)
     void TestContinuousFileNames(size_t CountOfFiles=24, Ztring FileExtension=Ztring(), bool SkipComputeDelay=false);
+    void TestDirectory();
     #else //defined(MEDIAINFO_FILE_YES)
     void TestContinuousFileNames(size_t =24, Ztring =Ztring(), bool =false) {}
+    void TestDirectory() {}
     #endif //defined(MEDIAINFO_FILE_YES)
     #if MEDIAINFO_FIXITY
     bool FixFile(int64u FileOffsetForWriting, const int8u* ToWrite, const size_t ToWrite_Size);

@@ -233,16 +233,6 @@ void File_Teletext::Read_Buffer_Unsynched()
         Parser->Open_Buffer_Unsynch();
 }
 
-static inline int8u ReverseBits(int8u c)
-{
-    // Input: bit order is 76543210
-    //Output: bit order is 01234567
-    c = (c & 0x0F) << 4 | (c & 0xF0) >> 4;
-    c = (c & 0x33) << 2 | (c & 0xCC) >> 2;
-    c = (c & 0x55) << 1 | (c & 0xAA) >> 1;
-    return c;
-}
-
 //---------------------------------------------------------------------------
 void File_Teletext::Read_Buffer_Continue()
 {
@@ -613,7 +603,7 @@ void File_Teletext::Data_Parse()
             byte&=0x7F;
             if (byte<0x20)
                 byte=0x20;
-            Param_Info1(Ztring().From_Local((const char*)&byte, 1));
+            Param_Info1(Ztring().From_UTF8((const char*)&byte, 1));
             if (byte!=Stream.CC_Displayed_Values[Y][PosX] && (!C[7] || Y)) // C[7] is "Suppress Header", to be tested when Y==0
             {
                 Char Uni;

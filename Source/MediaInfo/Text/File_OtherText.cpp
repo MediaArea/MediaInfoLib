@@ -48,7 +48,11 @@ void File_OtherText::Read_Buffer_Continue()
     //Feed File and Lines
     File.From_UTF8((const char*)Buffer, Buffer_Size>65536?65536:Buffer_Size);
     if (File.empty())
-        File.From_Local((const char*)Buffer, Buffer_Size>65536?65536:Buffer_Size); // Trying from local code page
+        #ifdef WINDOWS
+        File.From_Local((const char*)Buffer, Buffer_Size>65536?65536:Buffer_Size);
+        #else //WINDOWS
+        File.From_ISO_8859_1((const char*)Buffer, Buffer_Size>65536?65536:Buffer_Size);
+        #endif //WINDOWS
     if (File.size()<0x100)
     {
         File.From_Unicode((wchar_t*)Buffer, 0, Buffer_Size/sizeof(wchar_t)); //Unicode with BOM
@@ -66,17 +70,17 @@ void File_OtherText::Read_Buffer_Continue()
     Lines.Separator_Set(0, __T("\n"));
     Lines.Write(File);
     Lines.resize(0x20);
-
-         if (Lines[0]==__T("[Script Info]")
+	const bool Is_Script_Info = Lines[0] == __T("[Script Info]");
+         if (Is_Script_Info
           && (Lines.Find(__T("ScriptType: v4.00"))!=Error || Lines.Find(__T("Script Type: V4.00"))!=Error)
           && Lines.Find(__T("[V4 Styles]"))!=Error
           )
     {
        Format=__T("SSA");
        FormatMore=__T("SubStation Alpha");
-       Codec=__T("SSA");
+       Codec=Format;
     }
-    else if (Lines[0]==__T("[Script Info]")
+    else if (Is_Script_Info
           && (Lines.Find(__T("ScriptType: v4.00+"))!=Error || Lines.Find(__T("Script Type: V4.00+"))!=Error)
           && Lines.Find(__T("[V4+ Styles]"))!=Error
           )
@@ -104,7 +108,7 @@ void File_OtherText::Read_Buffer_Continue()
           )
     {
        Format=__T("AQTitle");
-       Codec=__T("AQTitle");
+       Codec=Format;
     }
     else if (Lines[0].size()>28
           && Lines[0][ 0]==__T('0') && Lines[0][ 1]==__T('0')
@@ -131,7 +135,7 @@ void File_OtherText::Read_Buffer_Continue()
           )
     {
        Format=__T("Captions Inc");
-       Codec=__T("Captions inc");
+       Codec=Format;
     }
     else if (Lines[0].size()>1
           && Lines[0][0]==__T('*')
@@ -147,7 +151,7 @@ void File_OtherText::Read_Buffer_Continue()
     )
     {
        Format=__T("CPC Captioning");
-       Codec=__T("CPC Captioning");
+       Codec=Format;
     }
     else if (Lines[0].find(__T("<SAMI>"))==0)
     {

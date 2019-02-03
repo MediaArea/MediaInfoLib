@@ -217,7 +217,7 @@ static const int8u Avc_SubWidthC[]=
 };
 
 //---------------------------------------------------------------------------
-const int8u Avc_SubHeightC[]=
+static const int8u Avc_SubHeightC[]=
 {
     1,
     2,
@@ -254,7 +254,7 @@ const char* Mpegv_matrix_coefficients(int8u matrix_coefficients);
 const char* Mpegv_matrix_coefficients_ColorSpace(int8u matrix_coefficients);
 
 //---------------------------------------------------------------------------
-static const char* Avc_Colorimetry_format_idc(int8u chroma_format_idc)
+static const char* Avc_ChromaSubsampling_format_idc(int8u chroma_format_idc)
 {
     switch (chroma_format_idc)
     {
@@ -266,7 +266,7 @@ static const char* Avc_Colorimetry_format_idc(int8u chroma_format_idc)
 }
 
 //---------------------------------------------------------------------------
-static const char* Avc_Colorimetry_format_idc_ColorSpace(int8u chroma_format_idc)
+static const char* Avc_ChromaSubsampling_format_idc_ColorSpace(int8u chroma_format_idc)
 {
     switch (chroma_format_idc)
     {
@@ -774,7 +774,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
     Fill(Stream_Video, 0, Video_Format, "AVC");
     Fill(Stream_Video, 0, Video_Codec, "AVC");
 
-    Ztring Profile=Ztring().From_Local(Avc_profile_idc((*seq_parameter_set_Item)->profile_idc));
+    Ztring Profile=Ztring().From_UTF8(Avc_profile_idc((*seq_parameter_set_Item)->profile_idc));
     switch ((*seq_parameter_set_Item)->profile_idc)
     {
         case  44 : // CAVLC 4:4:4 Intra
@@ -795,7 +795,8 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
     if ((*seq_parameter_set_Item)->frame_crop_top_offset || (*seq_parameter_set_Item)->frame_crop_bottom_offset)
         Fill(Stream_Video, StreamPos_Last, Video_Stored_Height, ((*seq_parameter_set_Item)->pic_height_in_map_units_minus1+1)*16*(2-(*seq_parameter_set_Item)->frame_mbs_only_flag));
     Fill(Stream_Video, 0, Video_PixelAspectRatio, PixelAspectRatio, 3, true);
-    Fill(Stream_Video, 0, Video_DisplayAspectRatio, Width*PixelAspectRatio/Height, 3, true); //More precise
+    if(Height)
+        Fill(Stream_Video, 0, Video_DisplayAspectRatio, Width*PixelAspectRatio/Height, 3, true); //More precise
     if (FrameRate_Divider==2)
     {
         Fill(Stream_Video, StreamPos_Last, Video_Format_Settings_FrameMode, "Frame doubling");
@@ -923,8 +924,8 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         Fill(Stream_Video, 0, Video_Codec_Settings_RefFrames, (*seq_parameter_set_Item)->max_num_ref_frames);
     }
     if (Retrieve(Stream_Video, 0, Video_ColorSpace).empty())
-        Fill(Stream_Video, 0, Video_ColorSpace, Avc_Colorimetry_format_idc_ColorSpace((*seq_parameter_set_Item)->chroma_format_idc));
-    Fill(Stream_Video, 0, Video_Colorimetry, Avc_Colorimetry_format_idc((*seq_parameter_set_Item)->chroma_format_idc));
+        Fill(Stream_Video, 0, Video_ColorSpace, Avc_ChromaSubsampling_format_idc_ColorSpace((*seq_parameter_set_Item)->chroma_format_idc));
+    Fill(Stream_Video, 0, Video_ChromaSubsampling, Avc_ChromaSubsampling_format_idc((*seq_parameter_set_Item)->chroma_format_idc));
     if ((*seq_parameter_set_Item)->bit_depth_luma_minus8==(*seq_parameter_set_Item)->bit_depth_chroma_minus8)
         Fill(Stream_Video, 0, Video_BitDepth, (*seq_parameter_set_Item)->bit_depth_luma_minus8+8);
 }
@@ -932,7 +933,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
 //---------------------------------------------------------------------------
 void File_Avc::Streams_Fill_subset(const std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item)
 {
-    Ztring Profile=Ztring().From_Local(Avc_profile_idc((*seq_parameter_set_Item)->profile_idc))+__T("@L")+Ztring().From_Number(((float)(*seq_parameter_set_Item)->level_idc)/10, 1);
+    Ztring Profile=Ztring().From_UTF8(Avc_profile_idc((*seq_parameter_set_Item)->profile_idc))+__T("@L")+Ztring().From_Number(((float)(*seq_parameter_set_Item)->level_idc)/10, 1);
     Ztring Profile_Base=Retrieve(Stream_Video, 0, Video_Format_Profile);
     Fill(Stream_Video, 0, Video_Format_Profile, Profile, true);
     if (!Profile_Base.empty())
@@ -1091,14 +1092,7 @@ void File_Avc::Data_Parse_Iso14496()
             std::vector<seq_parameter_set_struct*>::iterator Data_Item=seq_parameter_sets.begin();
             if (Data_Item!=seq_parameter_sets.end() && (*Data_Item))
             {
-                delete[] (*Data_Item)->Iso14496_10_Buffer;
-                (*Data_Item)->Iso14496_10_Buffer_Size=(size_t)(Element_Size+4);
-                (*Data_Item)->Iso14496_10_Buffer=new int8u[(*Data_Item)->Iso14496_10_Buffer_Size];
-                (*Data_Item)->Iso14496_10_Buffer[0]=0x00;
-                (*Data_Item)->Iso14496_10_Buffer[1]=0x00;
-                (*Data_Item)->Iso14496_10_Buffer[2]=0x01;
-                (*Data_Item)->Iso14496_10_Buffer[3]=0x67;
-                std::memcpy((*Data_Item)->Iso14496_10_Buffer+4, Buffer+Buffer_Offset, (size_t)Element_Size);
+                (*Data_Item)->Init_Iso14496_10(0x67, Buffer+Buffer_Offset, Element_Size);
             }
         }
         if (Element_Code==0x08)
@@ -1106,14 +1100,7 @@ void File_Avc::Data_Parse_Iso14496()
             std::vector<pic_parameter_set_struct*>::iterator Data_Item=pic_parameter_sets.begin();
             if (Data_Item!=pic_parameter_sets.end() && (*Data_Item))
             {
-                delete[] (*Data_Item)->Iso14496_10_Buffer;
-                (*Data_Item)->Iso14496_10_Buffer_Size=(size_t)(Element_Size+4);
-                (*Data_Item)->Iso14496_10_Buffer=new int8u[(*Data_Item)->Iso14496_10_Buffer_Size];
-                (*Data_Item)->Iso14496_10_Buffer[0]=0x00;
-                (*Data_Item)->Iso14496_10_Buffer[1]=0x00;
-                (*Data_Item)->Iso14496_10_Buffer[2]=0x01;
-                (*Data_Item)->Iso14496_10_Buffer[3]=0x68;
-                std::memcpy((*Data_Item)->Iso14496_10_Buffer+4, Buffer+Buffer_Offset, (size_t)Element_Size);
+                (*Data_Item)->Init_Iso14496_10(0x68, Buffer+Buffer_Offset, Element_Size);
             }
         }
         if (Element_Code==0x0F)
@@ -1122,14 +1109,7 @@ void File_Avc::Data_Parse_Iso14496()
             if (Data_Item!=subset_seq_parameter_sets.end() && (*Data_Item))
             {
                 SizeOfNALU_Minus1=0;
-                delete[] (*Data_Item)->Iso14496_10_Buffer;
-                (*Data_Item)->Iso14496_10_Buffer_Size=(size_t)(Element_Size+4);
-                (*Data_Item)->Iso14496_10_Buffer=new int8u[(*Data_Item)->Iso14496_10_Buffer_Size];
-                (*Data_Item)->Iso14496_10_Buffer[0]=0x00;
-                (*Data_Item)->Iso14496_10_Buffer[1]=0x00;
-                (*Data_Item)->Iso14496_10_Buffer[2]=0x01;
-                (*Data_Item)->Iso14496_10_Buffer[3]=0x6F;
-                std::memcpy((*Data_Item)->Iso14496_10_Buffer+4, Buffer+Buffer_Offset, (size_t)Element_Size);
+                (*Data_Item)->Init_Iso14496_10(0x6F, Buffer+Buffer_Offset, Element_Size);
             }
         }
     }
@@ -2419,7 +2399,7 @@ void File_Avc::slice_header()
                 Element_Info1(TemporalReferences_Offset_pic_order_cnt_lsb_Last);
                 Element_Info1((((*seq_parameter_set_Item)->frame_mbs_only_flag || !field_pic_flag)?__T("Frame "):(bottom_field_flag?__T("Field (Bottom) "):__T("Field (Top) ")))+Ztring::ToZtring(Frame_Count));
                 if (slice_type<9)
-                    Element_Info1(__T("slice_type ")+Ztring().From_Local(Avc_slice_type[slice_type]));
+                    Element_Info1(__T("slice_type ")+Ztring().From_UTF8(Avc_slice_type[slice_type]));
                 Element_Info1(__T("frame_num ")+Ztring::ToZtring(frame_num));
                 if ((*seq_parameter_set_Item)->vui_parameters && (*seq_parameter_set_Item)->vui_parameters->fixed_frame_rate_flag)
                 {
@@ -2968,9 +2948,10 @@ void File_Avc::sei_message_user_data_registered_itu_t_t35_GA94_03_Delayed(int32u
                         else if ((*seq_parameter_set_Item)->vui_parameters->aspect_ratio_idc==0xFF && (*seq_parameter_set_Item)->vui_parameters->sar_height)
                             PixelAspectRatio=((float64)(*seq_parameter_set_Item)->vui_parameters->sar_width)/(*seq_parameter_set_Item)->vui_parameters->sar_height;
                     }
-                    int32u Width =((*seq_parameter_set_Item)->pic_width_in_mbs_minus1       +1)*16;
-                    int32u Height=((*seq_parameter_set_Item)->pic_height_in_map_units_minus1+1)*16*(2-(*seq_parameter_set_Item)->frame_mbs_only_flag);
-                    ((File_DtvccTransport*)GA94_03_Parser)->AspectRatio=Width*PixelAspectRatio/Height;
+                    const int32u Width =((*seq_parameter_set_Item)->pic_width_in_mbs_minus1       +1)*16;
+                    const int32u Height=((*seq_parameter_set_Item)->pic_height_in_map_units_minus1+1)*16*(2-(*seq_parameter_set_Item)->frame_mbs_only_flag);
+                    if(Height)
+                        ((File_DtvccTransport*)GA94_03_Parser)->AspectRatio=Width*PixelAspectRatio/Height;
                 }
             }
             if (GA94_03_Parser->PTS_DTS_Needed)
@@ -3089,8 +3070,8 @@ void File_Avc::sei_message_user_data_unregistered(int32u payloadSize)
 void File_Avc::sei_message_user_data_unregistered_x264(int32u payloadSize)
 {
     //Parsing
-    Ztring Data;
-    Peek_Local(payloadSize, Data);
+    string Data;
+    Peek_String(payloadSize, Data);
     if (Data.size()!=payloadSize && Data.size()+1!=payloadSize)
     {
         Skip_XX(payloadSize,                                    "Unknown");
@@ -3100,10 +3081,10 @@ void File_Avc::sei_message_user_data_unregistered_x264(int32u payloadSize)
     size_t Loop=0;
     do
     {
-        size_t Data_Pos=Data.find(__T(" - "), Data_Pos_Before);
+        size_t Data_Pos=Data.find(" - ", Data_Pos_Before);
         if (Data_Pos==std::string::npos)
             Data_Pos=Data.size();
-        if (Data.find(__T("options: "), Data_Pos_Before)==Data_Pos_Before)
+        if (Data.find("options: ", Data_Pos_Before)==Data_Pos_Before)
         {
             Element_Begin1("options");
             size_t Options_Pos_Before=Data_Pos_Before;
@@ -3113,16 +3094,16 @@ void File_Avc::sei_message_user_data_unregistered_x264(int32u payloadSize)
                 size_t Options_Pos=Data.find(__T(' '), Options_Pos_Before);
                 if (Options_Pos==std::string::npos)
                     Options_Pos=Data.size();
-                Ztring option;
-                Get_Local (Options_Pos-Options_Pos_Before, option, "option");
+                string option;
+                Get_String (Options_Pos-Options_Pos_Before, option, "option");
                 Options_Pos_Before=Options_Pos;
                 do
                 {
-                    Ztring Separator;
-                    Peek_Local(1, Separator);
-                    if (Separator==__T(" "))
+                    string Separator;
+                    Peek_String(1, Separator);
+                    if (Separator==" ")
                     {
-                        Skip_Local(1,                               "separator");
+                        Skip_UTF8(1,                                "separator");
                         Options_Pos_Before+=1;
                     }
                     else
@@ -3131,13 +3112,13 @@ void File_Avc::sei_message_user_data_unregistered_x264(int32u payloadSize)
                 while (Options_Pos_Before!=Data.size());
 
                 //Filling
-                if (option!=__T("options:"))
+                if (option!="options:")
                 {
                     if (!Encoded_Library_Settings.empty())
                         Encoded_Library_Settings+=__T(" / ");
-                    Encoded_Library_Settings+=option;
-                    if (option.find(__T("bitrate="))==0)
-                        BitRate_Nominal=option.substr(8)+__T("000"); //After "bitrate="
+                    Encoded_Library_Settings+=Ztring().From_UTF8(option.c_str());
+                    if (option.find("bitrate=")==0)
+                        BitRate_Nominal.From_UTF8(option.substr(8)+"000"); //After "bitrate="
                 }
             }
             while (Options_Pos_Before!=Data.size());
@@ -3145,8 +3126,8 @@ void File_Avc::sei_message_user_data_unregistered_x264(int32u payloadSize)
         }
         else
         {
-            Ztring Value;
-            Get_Local(Data_Pos-Data_Pos_Before, Value,          "data");
+            string Value;
+            Get_String(Data_Pos-Data_Pos_Before, Value,          "data");
 
             //Saving
             if (Loop==0)
@@ -3156,18 +3137,18 @@ void File_Avc::sei_message_user_data_unregistered_x264(int32u payloadSize)
                     Value.erase(Value.begin());
                 while (!Value.empty() && Value[Value.size()-1]<0x30)
                     Value.erase(Value.end()-1);
-                Encoded_Library=Value;
+                Encoded_Library.From_UTF8(Value.c_str());
             }
             if (Loop==1 && Encoded_Library.find(__T("x264"))==0)
             {
                 Encoded_Library+=__T(" - ");
-                Encoded_Library+=Value;
+                Encoded_Library+=Ztring().From_UTF8(Value.c_str());
             }
         }
         Data_Pos_Before=Data_Pos;
         if (Data_Pos_Before+3<=Data.size())
         {
-            Skip_Local(3,                                       "separator");
+            Skip_UTF8(3,                                        "separator");
             Data_Pos_Before+=3;
         }
 
@@ -3241,7 +3222,7 @@ void File_Avc::sei_message_user_data_unregistered_bluray_MDPM(int32u payloadSize
             case 0x18:
                         {
                         int16u Year;
-                        int8u  ID, MM, Zone_Hours;
+                        int8u  MM, Zone_Hours;
                         bool   Zone_Sign, Zone_Minutes;
                         BS_Begin();
                         Mark_0();
@@ -3272,7 +3253,7 @@ void File_Avc::sei_message_user_data_unregistered_bluray_MDPM(int32u payloadSize
                         break;
             case 0x19:
                         {
-                        int8u  MM, DD, hh, mm, ss;
+                        int8u  DD, hh, mm, ss;
                         Get_B1 (DD,                             "Day");
                         Get_B1 (hh,                             "Hour");
                         Get_B1 (mm,                             "Minute");
@@ -3428,14 +3409,14 @@ void File_Avc::sei_message_mainconcept(int32u payloadSize)
     Element_Info1("MainConcept text");
 
     //Parsing
-    Ztring Text;
-    Get_Local(payloadSize, Text,                                "text");
+    string Text;
+    Get_String(payloadSize, Text,                               "text");
 
-    if (Text.find(__T("produced by MainConcept H.264/AVC Codec v"))!=std::string::npos)
+    if (Text.find("produced by MainConcept H.264/AVC Codec v")!=std::string::npos)
     {
-        Encoded_Library=Text.SubString(__T("produced by "), __T(" MainConcept AG"));
+        Encoded_Library=Ztring().From_UTF8(Text).SubString(__T("produced by "), __T(" MainConcept AG"));
         Encoded_Library_Name=__T("MainConcept H.264/AVC Codec");
-        Encoded_Library_Version=Text.SubString(__T("produced by MainConcept H.264/AVC Codec v"), __T(" (c) "));
+        Encoded_Library_Version= Ztring().From_UTF8(Text).SubString(__T("produced by MainConcept H.264/AVC Codec v"), __T(" (c) "));
         Encoded_Library_Date=MediaInfoLib::Config.Library_Get(InfoLibrary_Format_MainConcept_Avc, Encoded_Library_Version, InfoLibrary_Date);
     }
 }
@@ -3902,7 +3883,7 @@ File_Avc::seq_parameter_set_struct* File_Avc::seq_parameter_set_data(int32u &Dat
         case 128 :  //High profiles
         case 138 :
                     Element_Begin1("high profile specific");
-                    Get_UE (chroma_format_idc,                  "chroma_format_idc"); Param_Info1C((chroma_format_idc<3), Avc_Colorimetry_format_idc(chroma_format_idc));
+                    Get_UE (chroma_format_idc,                  "chroma_format_idc"); Param_Info1C((chroma_format_idc<3), Avc_ChromaSubsampling_format_idc(chroma_format_idc));
                     if (chroma_format_idc==3)
                         Get_SB (separate_colour_plane_flag,     "separate_colour_plane_flag");
                     Get_UE (bit_depth_luma_minus8,              "bit_depth_luma_minus8");
@@ -4328,7 +4309,7 @@ void File_Avc::SPS_PPS()
     FILLING_BEGIN_PRECISE();
         //Detection of some bugs in the file
         if (!seq_parameter_sets.empty() && seq_parameter_sets[0] && (Profile!=seq_parameter_sets[0]->profile_idc || Level!=seq_parameter_sets[0]->level_idc))
-            MuxingMode=Ztring("Container profile=")+Ztring().From_Local(Avc_profile_idc(Profile))+__T("@")+Ztring().From_Number(((float)Level)/10, 1);
+            MuxingMode=Ztring("Container profile=")+Ztring().From_UTF8(Avc_profile_idc(Profile))+__T("@")+Ztring().From_Number(((float)Level)/10, 1);
 
         MustParse_SPS_PPS=false;
         if (!Status[IsAccepted])
@@ -4362,7 +4343,7 @@ std::string File_Avc::GOP_Detect (std::string PictureTypes)
 
             //Finding the longest string
             ZtringList List; List.Separator_Set(0, __T(" "));
-            List.Write(Ztring().From_Local(PictureTypes));
+            List.Write(Ztring().From_UTF8(PictureTypes));
             size_t MaxLength=0;
             size_t MaxLength_Pos=0;
             for (size_t Pos=0; Pos<List.size(); Pos++)
@@ -4371,7 +4352,7 @@ std::string File_Avc::GOP_Detect (std::string PictureTypes)
                     MaxLength=List[Pos].size();
                     MaxLength_Pos=Pos;
                 }
-            PictureTypes=List[MaxLength_Pos].To_Local();
+            PictureTypes=List[MaxLength_Pos].To_UTF8();
 
         }
     }
@@ -4444,7 +4425,7 @@ std::string File_Avc::GOP_Detect (std::string PictureTypes)
                 break;
             }
         if (IsOK)
-            return GOPs[0].To_Local();
+            return GOPs[0].To_UTF8();
     }
 
     return string();
@@ -4472,7 +4453,7 @@ std::string File_Avc::ScanOrder_Detect (std::string ScanOrders)
 
             //Finding the longest string
             ZtringList List; List.Separator_Set(0, __T(" "));
-            List.Write(Ztring().From_Local(ScanOrders));
+            List.Write(Ztring().From_UTF8(ScanOrders));
             size_t MaxLength=0;
             size_t MaxLength_Pos=0;
             for (size_t Pos=0; Pos<List.size(); Pos++)
@@ -4481,7 +4462,7 @@ std::string File_Avc::ScanOrder_Detect (std::string ScanOrders)
                     MaxLength=List[Pos].size();
                     MaxLength_Pos=Pos;
                 }
-            ScanOrders=List[MaxLength_Pos].To_Local();
+            ScanOrders=List[MaxLength_Pos].To_UTF8();
 
         }
     }

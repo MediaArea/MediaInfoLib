@@ -197,6 +197,12 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_DolbyE.cpp">
             <BuildOrder>86</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsdiff.cpp">
+            <BuildOrder>227</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsf.cpp">
+            <BuildOrder>228</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dts.cpp">
             <BuildOrder>89</BuildOrder>
         </CppCompile>
@@ -293,6 +299,10 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_EbuCore.cpp">
             <DependentOn>..\..\..\Source\MediaInfo\Export\Export_EbuCore.h</DependentOn>
             <BuildOrder>40</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Niso.cpp">
+            <DependentOn>..\..\..\Source\MediaInfo\Export\Export_Niso.h</DependentOn>
+            <BuildOrder>213</BuildOrder>
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Fims.cpp">
             <DependentOn>..\..\..\Source\MediaInfo\Export\Export_Fims.h</DependentOn>

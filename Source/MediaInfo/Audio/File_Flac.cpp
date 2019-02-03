@@ -37,6 +37,7 @@ namespace MediaInfoLib
 extern const char* Id3v2_PictureType(int8u Type); //In Tag/File_Id3v2.cpp
 extern std::string ExtensibleWave_ChannelMask (int32u ChannelMask); //In Multiple/File_Riff_Elements.cpp
 extern std::string ExtensibleWave_ChannelMask2 (int32u ChannelMask); //In Multiple/File_Riff_Elements.cpp
+extern std::string ExtensibleWave_ChannelMask_ChannelLayout(int32u ChannelMask); //In Multiple/File_Riff_Elements.cpp
 
 //***************************************************************************
 // Constructor/Destructor
@@ -155,6 +156,7 @@ void File_Flac::Data_Parse()
         if (t) {
             Fill(Stream_Audio, 0, Audio_ChannelPositions, ExtensibleWave_ChannelMask(t));
             Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ExtensibleWave_ChannelMask2(t));
+            Fill(Stream_Audio, 0, Audio_ChannelLayout, ExtensibleWave_ChannelMask_ChannelLayout(t));
         }
     }
 
@@ -253,7 +255,7 @@ void File_Flac::PICTURE()
     Ztring MimeType, Description;
     Get_B4 (PictureType,                                        "Picture type"); Element_Info1(Id3v2_PictureType((int8u)PictureType));
     Get_B4 (MimeType_Size,                                      "MIME type size");
-    Get_Local(MimeType_Size, MimeType,                          "MIME type");
+    Get_UTF8(MimeType_Size, MimeType,                           "MIME type");
     Get_B4 (Description_Size,                                   "Description size");
     Get_UTF8(Description_Size, Description,                     "Description");
     Skip_B4(                                                    "Width");
@@ -263,7 +265,6 @@ void File_Flac::PICTURE()
     Get_B4 (Data_Size,                                          "Data size");
     if (Element_Offset+Data_Size>Element_Size)
         return; //There is a problem
-    Skip_XX(Element_Size-Element_Offset, "Data");
 
     //Filling
     Fill(Stream_General, 0, General_Cover, "Yes");
@@ -278,6 +279,10 @@ void File_Flac::PICTURE()
             Fill(Stream_General, 0, General_Cover_Data, Data_Base64);
         }
     #endif //MEDIAINFO_ADVANCED
+
+    Skip_XX(Data_Size,                                          "Data");
+    if (Element_Offset<Element_Size)
+        Skip_XX(Element_Size-Element_Offset,                    "?");
 }
 
 } //NameSpace

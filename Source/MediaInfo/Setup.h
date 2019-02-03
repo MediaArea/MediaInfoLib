@@ -125,6 +125,9 @@
     #if !defined (MEDIAINFO_EXPORT_NO) && !defined (MEDIAINFO_EXPORT_YES)
         #define MEDIAINFO_EXPORT_NO
     #endif
+    #if !defined (MEDIAINFO_JNI_NO) && !defined (MEDIAINFO_JNI_YES)
+        #define MEDIAINFO_JNI_NO
+    #endif
 #endif
 
 //---------------------------------------------------------------------------
@@ -337,7 +340,7 @@
         #undef MEDIAINFO_READTHREAD_NO //MEDIAINFO_READTHREAD_YES has priority
     #endif
     #if !defined(MEDIAINFO_READTHREAD_NO) && !defined(MEDIAINFO_READTHREAD_YES)
-        #define MEDIAINFO_READTHREAD_NO //MEDIAINFO_READTHREAD_NO by default, as there are 
+        #define MEDIAINFO_READTHREAD_NO //MEDIAINFO_READTHREAD_NO by default, as there are
     #endif
     #if defined(MEDIAINFO_READTHREAD_NO) || !defined(WINDOWS) //Currently supported only on Windows TODO: add support of non Windows OS
         #define MEDIAINFO_READTHREAD 0
@@ -415,6 +418,9 @@
 #endif
 #if !defined(MEDIAINFO_EXPORT_NO) && !defined(MEDIAINFO_REVTMD_NO) && !defined(MEDIAINFO_REVTMD_YES)
     #define MEDIAINFO_REVTMD_YES
+#endif
+#if !defined(MEDIAINFO_EXPORT_NO) && !defined(MEDIAINFO_NISO_NO) && !defined(MEDIAINFO_NISO_YES)
+    #define MEDIAINFO_NISO_YES
 #endif
 
 //---------------------------------------------------------------------------
@@ -692,6 +698,12 @@
 #if !defined(MEDIAINFO_AUDIO_NO) && !defined(MEDIAINFO_DOLBYE_NO) && !defined(MEDIAINFO_DOLBYE_YES)
     #define MEDIAINFO_DOLBYE_YES
 #endif
+#if !defined(MEDIAINFO_AUDIO_NO) && !defined(MEDIAINFO_DSF_NO) && !defined(MEDIAINFO_DSF_YES)
+    #define MEDIAINFO_DSF_YES
+#endif
+#if !defined(MEDIAINFO_AUDIO_NO) && !defined(MEDIAINFO_DSDIFF_NO) && !defined(MEDIAINFO_DSDIFF_YES)
+    #define MEDIAINFO_DSDIFF_YES
+#endif
 #if !defined(MEDIAINFO_AUDIO_NO) && !defined(MEDIAINFO_DTS_NO) && !defined(MEDIAINFO_DTS_YES)
     #define MEDIAINFO_DTS_YES
 #endif
@@ -952,6 +964,9 @@
 #endif
 #if !defined(MEDIAINFO_UNKNOWN_NO)
     #define MEDIAINFO_UNKNOWN_YES
+#endif
+#if !defined(MEDIAINFO_JNI_NO)
+    #define MEDIAINFO_JNI_YES
 #endif
 
 #endif

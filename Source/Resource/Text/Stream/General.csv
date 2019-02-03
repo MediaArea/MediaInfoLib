@@ -57,8 +57,8 @@ FolderName_Last;;;N NT;;;Folder name only of the last file (in the case of a seq
 FileNameExtension_Last;;;N NT;;;File name and extension of the last file (in the case of a sequence of files)
 FileName_Last;;;N NT;;;File name only of the last file (in the case of a sequence of files)
 FileExtension_Last;;;N NT;;;File extension only of the last file (in the case of a sequence of files)
-Format;;;Y YTY;;;Format used
-Format/String;;;N NT;;;Deprecated, do not use in new projects
+Format;;;N YTY;;;Format used
+Format/String;;;Y NT;;;Format used + additional features
 Format/Info;;;Y NT;;;Info about this Format
 Format/Url;;;N NT;;;Link to a description of this format
 Format/Extensions;;;N NT;;;Known extensions of this format
@@ -69,15 +69,16 @@ Format_Profile;;;Y YTY;;;Profile of the Format (old XML: 'Profile@Level' format;
 Format_Level;;;Y YTY;;;Level of the Format (only MIXML)
 Format_Compression;;;Y YTY;;;Compression method used;;
 Format_Settings;;;Y YTY;;;Settings needed for decoder used
+Format_AdditionalFeatures;;;N YTY;;;Format features needed for fully supporting the content
 InternetMediaType;;;N YT;;;Internet Media Type (aka MIME Type, Content-Type)
 CodecID;;;N YTY;;;Codec ID (found in some containers);;
 CodecID/String;;;Y NT;;;Codec ID (found in some containers);;
 CodecID/Info;;;Y NT;;;Info about this codec
 CodecID/Hint;;;Y NT;;;A hint/popular name for this codec
 CodecID/Url;;;N NT;;;A link to more details about this codec ID
-CodecID_Description;;;Y YT;;;Manual description given by the container
-CodecID_Version;;;N YT;;;Version of the CodecID
-CodecID_Compatible;;;N YT;;;Compatible CodecIDs
+CodecID_Description;;;Y YTY;;;Manual description given by the container
+CodecID_Version;;;N YTY;;;Version of the CodecID
+CodecID_Compatible;;;N YTY;;;Compatible CodecIDs
 Interleaved;;;N YTY;;;If Audio and video are muxed
 Codec;;;N NT;;;Deprecated, do not use in new projects
 Codec/String;;;N NT;;;Deprecated, do not use in new projects

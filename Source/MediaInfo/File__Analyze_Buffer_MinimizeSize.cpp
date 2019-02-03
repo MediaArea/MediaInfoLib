@@ -1066,30 +1066,7 @@ void File__Analyze::Get_VL_(const vlc Vlc[], size_t &Info)
 void File__Analyze::Skip_VL_(const vlc Vlc[])
 {
     size_t Info=0;
-    int32u Value=0;
-
-    for(;;)
-    {
-        switch (Vlc[Info].bit_increment)
-        {
-            case 255 :
-                        Trusted_IsNot();
-                        return;
-            default  : ;
-                        Value<<=Vlc[Info].bit_increment;
-                        Value|=BS->Get1(Vlc[Info].bit_increment);
-                        break;
-            case   1 :
-                        Value<<=1;
-                        if (BS->GetB())
-                            Value++;
-            case   0 :  ;
-        }
-
-        if (Value==Vlc[Info].value)
-            return;
-        Info++;
-    }
+    Get_VL_(Vlc, Info);
 }
 
 //---------------------------------------------------------------------------
@@ -1238,7 +1215,11 @@ void File__Analyze::Get_C8(int64u &Info)
 void File__Analyze::Get_Local(int64u Bytes, Ztring &Info)
 {
     INTEGRITY_SIZE_ATLEAST_STRING(Bytes);
+    #ifdef WINDOWS
     Info.From_Local((const char*)(Buffer+Buffer_Offset+(size_t)Element_Offset), (size_t)Bytes);
+    #else //WINDOWS
+    Info.From_ISO_8859_1((const char*)(Buffer+Buffer_Offset+(size_t)Element_Offset), (size_t)Bytes); //Trying with the most commonly used charset before UTF8
+    #endif //WINDOWS
     Element_Offset+=Bytes;
 }
 
@@ -1405,7 +1386,11 @@ void File__Analyze::Get_String(int64u Bytes, std::string &Info)
 void File__Analyze::Peek_Local(int64u Bytes, Ztring &Info)
 {
     INTEGRITY_SIZE_ATLEAST_STRING(Bytes);
+    #ifdef WINDOWS
     Info.From_Local((const char*)(Buffer+Buffer_Offset+(size_t)Element_Offset), (size_t)Bytes);
+    #else //WINDOWS
+    Info.From_ISO_8859_1((const char*)(Buffer+Buffer_Offset+(size_t)Element_Offset), (size_t)Bytes); //Trying with the most commonly used charset before UTF8
+    #endif //WINDOWS
 }
 
 //---------------------------------------------------------------------------

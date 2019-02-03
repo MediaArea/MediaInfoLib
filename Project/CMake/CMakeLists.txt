@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8.11)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
-set(MediaInfoLib_MAJOR_VERSION 17)
+set(MediaInfoLib_MAJOR_VERSION 18)
 set(MediaInfoLib_MINOR_VERSION 12)
 set(MediaInfoLib_PATCH_VERSION 0)
 set(MediaInfoLib_VERSION ${MediaInfoLib_MAJOR_VERSION}.${MediaInfoLib_MINOR_VERSION})
@@ -36,8 +36,10 @@ configure_file(
   "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
   IMMEDIATE @ONLY)
 
-add_custom_target(uninstall
-  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+if(NOT TARGET uninstall)
+    add_custom_target(uninstall
+   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+endif()
 
 if (NOT BUILD_ZENLIB)
   find_package(ZenLib REQUIRED)
@@ -65,7 +67,7 @@ else()
   if(UNIX AND BUILD_SHARED_LIBS)
     target_compile_options(zlibstatic PRIVATE -fPIC)
   endif()
-  set(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../../../zlib)
+  set(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../../../zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
 endif()
 
 if(NOT MSVC)
@@ -167,6 +169,8 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Caf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Celt.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_ChannelGrouping.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Dsdiff.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Dsf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Dts.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_DolbyE.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_ExtendedModule.cpp
@@ -199,6 +203,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Duplicate/File__Duplicate__Writer.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Duplicate/File__Duplicate_MpegTs.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_EbuCore.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_Niso.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_Fims.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_Mpeg7.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_PBCore.cpp
@@ -333,6 +338,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Y4m.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/XmlUtils.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/OutputHelpers.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfoDLL/MediaInfoJNI.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfoDLL/MediaInfoDLL.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfoDLL/MediaInfoDLL.def
 )

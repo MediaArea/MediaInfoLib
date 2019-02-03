@@ -13,12 +13,14 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
+#include "tinyxml2.h"
 #include "MediaInfo/OutputHelpers.h"
 #include "MediaInfo/File__Analyse_Automatic.h"
 #include <ctime>
 
 using namespace std;
 using namespace ZenLib;
+using namespace tinyxml2;
 
 namespace MediaInfoLib
 {
@@ -37,7 +39,13 @@ Ztring XML_Encode (const Ztring& Data)
             case __T('\''): Result+=__T("&apos;"); break;
             case __T('<'): Result+=__T("&lt;"); break;
             case __T('>'): Result+=__T("&gt;"); break;
-            default: Result+=Data[Pos];
+            case __T('\n'): Result+=__T("&#xA;"); break;
+            case __T('\r'):
+                Result+=__T("&#xA;");
+                if (Pos+1<Data.size() && Data[Pos+1]==__T('\n')) // translate the #xD #xA sequence to a single #xA character
+                    Pos++;
+            break;
+            default: if (Data[Pos]>=0x20) Result+=Data[Pos]; // Ignore others control characters
         }
     }
     return Result;
@@ -56,7 +64,13 @@ string XML_Encode (const string& Data)
             case '&': Result+="&amp;"; break;
             case '<': Result+="&lt;"; break;
             case '>': Result+="&gt;"; break;
-            default: Result+=Data[Pos];
+            case '\n': Result+="&#xA;"; break;
+            case '\r':
+                Result+="&#xA;";
+                if (Pos+1<Data.size() && Data[Pos+1]=='\n') // translate the #xD #xA sequence to a single #xA character
+                    Pos++;
+            break;
+            default: if ((unsigned char)Data[Pos]>=0x20) Result+=Data[Pos]; // Ignore others control characters
         }
     }
     return Result;
@@ -88,14 +102,24 @@ string To_XML (Node& Cur_Node, const int& Level, bool Print_Header, bool Indent)
         Result+=string("<!-- Generated at "+TimeS.To_UTF8()+" by "+MediaInfoLib::Config.Info_Version_Get().To_UTF8()+" -->\n");
     }
 
-    if (Cur_Node.Name.empty())
+    if (Cur_Node.Name.empty() && Cur_Node.XmlCommentOut.empty())
         return Result;
 
     if (Level)
         Result+="\n";
 
-    if (Cur_Node.XmlCommentOut.size())
-        Result+=(Indent?string(Level, '\t'):string())+"<!-- "+Cur_Node.XmlCommentOut+"\n";
+    if (!Cur_Node.XmlCommentOut.empty())
+    {
+        Result+=(Indent?string(Level, '\t'):string())+"<!-- "+Cur_Node.XmlCommentOut;
+
+        // If the node name is empty, just print the comment
+        if (Cur_Node.Name.empty())
+        {
+            Result += " -->";
+            return Result;
+        }
+        Result+="\n";
+    }
 
     Result+=(Indent?string(Level, '\t'):string())+"<"+Cur_Node.Name;
 
@@ -111,6 +135,8 @@ string To_XML (Node& Cur_Node, const int& Level, bool Print_Header, bool Indent)
     if (Cur_Node.Value.empty() && Cur_Node.Childs.empty())
     {
         Result+=" />";
+        if (!Cur_Node.XmlComment.empty() && Cur_Node.XmlCommentOut.empty())
+            Result+=" <!-- "+Cur_Node.XmlComment+" -->";
         if (Cur_Node.XmlCommentOut.size())
             Result+="\n"+(Indent?string(Level, '\t'):string())+"-->";
         return Result;
@@ -125,8 +151,13 @@ string To_XML (Node& Cur_Node, const int& Level, bool Print_Header, bool Indent)
         Result+=XML_Encode(Cur_Node.Value);
     }
 
+    bool CanDisplayXmlComment;
     if (Cur_Node.Childs.size())
     {
+        CanDisplayXmlComment=false;
+        if (!Cur_Node.XmlComment.empty() && Cur_Node.XmlCommentOut.empty())
+            Result+=" <!-- "+Cur_Node.XmlComment+" -->";
+
         for (size_t Pos=0; Pos<Cur_Node.Childs.size(); Pos++)
         {
             if (!Cur_Node.Childs[Pos])
@@ -139,10 +170,14 @@ string To_XML (Node& Cur_Node, const int& Level, bool Print_Header, bool Indent)
         Cur_Node.Childs.clear(); //Free memory
         Result+="\n"+(Indent?string(Level, '\t'):string());
     }
+    else
+        CanDisplayXmlComment=true;
 
     Result+="</"+Cur_Node.Name+">";
     if (Cur_Node.XmlCommentOut.size())
         Result+="\n"+(Indent?string(Level, '\t'):string())+"-->";
+    else if (!Cur_Node.XmlComment.empty() && CanDisplayXmlComment)
+        Result+=" <!-- "+Cur_Node.XmlComment+" -->";
     if (!Level)
         Result+="\n";
 
@@ -297,6 +332,108 @@ string To_JSON (Node& Cur_Node, const int& Level, bool Print_Header, bool Indent
         Result+="\n}\n";
 
     return Result;
+}
+
+//---------------------------------------------------------------------------
+bool Parse_XML(const ZtringList& Parents, const Ztring& PlaceHolder, const XMLNode* _XmlNode, Node* _Node, Node** _MI_Info, const Ztring& FileName, ZtringListList& Values)
+{
+    bool ToReturn = true;
+
+    if (!_Node)
+        return ToReturn;
+
+    Node* Current=NULL;
+
+    const XMLElement* Element = _XmlNode->ToElement();
+
+    if (!Element)
+        return ToReturn;
+
+    if (Parents.Find(Ztring(Element->Value()))==string::npos)
+    {
+        if (PlaceHolder==Ztring(Element->Value()) && Element->FirstChild() == NULL && _MI_Info && *_MI_Info)
+        {
+            //Replace placeholder by MediaInfo report
+            _Node->Childs.push_back(*_MI_Info);
+            *_MI_Info=NULL;
+        }
+        else
+        {
+            Ztring Value=Ztring(Element->GetText()?Element->GetText():"");
+            if (Value.length()>3 && Value.at(0)=='%' && Value.at(1)!='%' && Value.at(Value.length()-1)=='%')
+            {
+                Value=Values.FindValue(FileName, Values(0).Find(Value.substr(1, Value.length()-2)), 0, 1);
+                if (Value.empty())
+                    return false;
+            }
+
+            Current=new Node(Element->Value(), Value.To_UTF8(), true);
+
+            for (const XMLAttribute* Attribute = Element->FirstAttribute(); Attribute; Attribute = Attribute->Next())
+            {
+                Ztring Value=Ztring(Attribute->Value());
+                if (Value.length()>3 && Value.at(0)=='%' && Value.at(1)!='%' && Value.at(Value.length()-1)=='%')
+                {
+                    Value=Values.FindValue(FileName, Values(0).Find(Value.substr(1, Value.length()-2)), 0, 1);
+                    if (Value.empty())
+                        return false;
+                }
+
+                Current->Add_Attribute(Attribute->Name(), Value);
+            }
+        }
+    }
+
+    for (const XMLNode* El = Element->FirstChild(); El; El = El->NextSibling())
+        ToReturn=Parse_XML(Parents, PlaceHolder, El, Current?Current:_Node, _MI_Info, FileName, Values);
+
+    if (Current)
+    {
+        if (ToReturn)
+            _Node->Childs.push_back(Current);
+        else
+            delete Current;
+  }
+
+    return ToReturn;
+}
+
+//---------------------------------------------------------------------------
+bool ExternalMetadata(const Ztring& FileName, const Ztring& ExternalMetadata, const Ztring& ExternalMetaDataConfig, const ZtringList& Parents, const Ztring& PlaceHolder, Node* Main, Node* MI_Info)
+{
+    if (ExternalMetaDataConfig.empty()) // ExternalMetadata is used in export only if there is ExternalMetadata config (= else it is another format)
+        return true;
+
+    ZtringListList CSV;
+    CSV.Separator_Set(0, EOL);
+    CSV.Separator_Set(1, __T(";"));
+    CSV.Write(ExternalMetadata);
+
+    //Check if the CSV contains at least the header + one entry
+    if (CSV.size()<2)
+    {
+        MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, "Invalid CSV for external metadata");
+        return false;
+    }
+
+    //Check if the file is present in the CSV
+    if (CSV.FindValue(FileName, 0, 0, 1).empty())
+    {
+        MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, "File name not found in external metadata file");
+        return false;
+    }
+
+    //Parse XML template
+    XMLDocument Template;
+    if (Template.Parse(ExternalMetaDataConfig.To_UTF8().c_str()) != XML_SUCCESS)
+    {
+        MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, "Invalid XML template for external metadata");
+        return false;
+    }
+
+    Parse_XML(Parents, PlaceHolder, Template.RootElement(), Main, &MI_Info, FileName, CSV);
+
+    return true;
 }
 
 //---------------------------------------------------------------------------

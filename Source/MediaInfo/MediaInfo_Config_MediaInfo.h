@@ -99,6 +99,9 @@ public :
     void          File_TestContinuousFileNames_Set (bool NewValue);
     bool          File_TestContinuousFileNames_Get ();
 
+    void          File_TestDirectory_Set (bool NewValue);
+    bool          File_TestDirectory_Get ();
+
     void          File_KeepInfo_Set (bool NewValue);
     bool          File_KeepInfo_Get ();
 
@@ -149,7 +152,11 @@ public :
         bool          File_RiskyBitRateEstimation_Get ();
         void          File_MergeBitRateInfo_Set (bool NewValue);
         bool          File_MergeBitRateInfo_Get ();
-    #endif //MEDIAINFO_ADVANCED
+        void          File_HighestFormat_Set (bool NewValue);
+        bool          File_HighestFormat_Get ();
+        void          File_ChannelLayout_Set(bool NewValue);
+        bool          File_ChannelLayout_Get();
+#endif //MEDIAINFO_ADVANCED
 
     #if MEDIAINFO_DEMUX
         #if MEDIAINFO_ADVANCED
@@ -423,6 +430,7 @@ private :
     bool                    FileIsDetectingDuration;
     bool                    FileIsReferenced;
     bool                    FileTestContinuousFileNames;
+    bool                    FileTestDirectory;
     bool                    FileKeepInfo;
     bool                    FileStopAfterFilled;
     bool                    FileStopSubStreamAfterFilled;
@@ -438,6 +446,8 @@ private :
         bool                File_Source_List;
         bool                File_RiskyBitRateEstimation;
         bool                File_MergeBitRateInfo;
+        bool                File_HighestFormat;
+        bool                File_ChannelLayout;
         #if MEDIAINFO_DEMUX
             bool                File_Demux_Unpacketize_StreamLayoutChange_Skip;
         #endif //MEDIAINFO_DEMUX

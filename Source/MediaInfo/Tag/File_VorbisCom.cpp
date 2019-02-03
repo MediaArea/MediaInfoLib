@@ -35,6 +35,7 @@ namespace MediaInfoLib
 extern const char* Id3v2_PictureType(int8u Type); //In Tag/File_Id3v2.cpp
 extern std::string ExtensibleWave_ChannelMask (int32u ChannelMask); //In Multiple/File_Riff_Elements.cpp
 extern std::string ExtensibleWave_ChannelMask2 (int32u ChannelMask); //In Multiple/File_Riff_Elements.cpp
+extern std::string ExtensibleWave_ChannelMask_ChannelLayout(int32u ChannelMask); //In Multiple/File_Riff_Elements.cpp
 
 //***************************************************************************
 // Constructor/Destructor
@@ -93,7 +94,7 @@ void File_VorbisCom::FileHeader_Parse()
     Ztring vendor_string;
     int32u vendor_length;
     Get_L4 (vendor_length,                                      "vendor_length");
-    Get_Local(vendor_length, vendor_string,                     "vendor_string");
+    Get_UTF8(vendor_length, vendor_string,                      "vendor_string");
     Get_L4 (user_comment_list_length,                           "user_comment_list_length");
 
     FILLING_BEGIN();
@@ -202,7 +203,7 @@ void File_VorbisCom::Data_Parse()
     if (Element_Size && comment.empty())
     {
         Element_Offset=0; //Retry
-        Get_Local(Element_Size, comment,                             "comment");
+        Get_ISO_8859_1(Element_Size, comment,                   "comment");
     }
     Element_Name(comment);
 
@@ -231,7 +232,7 @@ void File_VorbisCom::Data_Parse()
         else if (Key==__T("DISC"))                   Fill(StreamKind_Common,   0, "Part", Value, true);
         else if (Key==__T("DISCID"))                 {}
         else if (Key==__T("DISCNUMBER"))             Fill(StreamKind_Common,   0, "Part", Value, true);
-        else if (Key==__T("DISCTOTAL"))              Fill(StreamKind_Common,   0, "Part/Position_Total", Value);
+        else if (Key==__T("DISCTOTAL"))              {if (Value!=Retrieve(StreamKind_Common, 0, "Part/Position_Total")) Fill(StreamKind_Common,   0, "Part/Position_Total", Value);}
         else if (Key==__T("ENCODEDBY"))              Fill(StreamKind_Common,   0, "EncodedBy", Value);
         else if (Key==__T("ENCODED-BY"))             Fill(StreamKind_Common,   0, "EncodedBy", Value);
         else if (Key==__T("ENCODER"))                Fill(StreamKind_Common,   0, "Encoded_Application", Value);
@@ -265,11 +266,11 @@ void File_VorbisCom::Data_Parse()
         else if (Key==__T("REPLAYGAIN_TRACK_GAIN"))  Fill(StreamKind_Specific, 0, "ReplayGain_Gain",       Value.To_float64(), 2);
         else if (Key==__T("REPLAYGAIN_TRACK_PEAK"))  Fill(StreamKind_Specific, 0, "ReplayGain_Peak",       Value.To_float64(), 6);
         else if (Key==__T("TITLE"))                  Fill(StreamKind_Common,   0, "Title", Value);
-        else if (Key==__T("TOTALTRACKS"))            Fill(StreamKind_Common,   0, "Track/Position_Total", Value);
-        else if (Key==__T("TOTALDISCS"))             Fill(StreamKind_Common,   0, "Part/Position_Total", Value);
+        else if (Key==__T("TOTALTRACKS"))            {if (Value!=Retrieve(StreamKind_Common, 0, "Track/Position_Total")) Fill(StreamKind_Common,   0, "Track/Position_Total", Value);}
+        else if (Key==__T("TOTALDISCS"))             {if (Value!=Retrieve(StreamKind_Common, 0, "Part/Position_Total")) Fill(StreamKind_Common,   0, "Part/Position_Total", Value);}
         else if (Key==__T("TRACK_COMMENT"))          Fill(StreamKind_Multiple, 0, "Comment", Value);
         else if (Key==__T("TRACKNUMBER"))            Fill(StreamKind_Multiple, 0, "Track/Position", Value);
-        else if (Key==__T("TRACKTOTAL"))             Fill(StreamKind_Multiple, 0, "Track/Position_Total", Value);
+        else if (Key==__T("TRACKTOTAL"))             {if (Value!=Retrieve(StreamKind_Common, 0, "Track/Position_Total")) Fill(StreamKind_Multiple, 0, "Track/Position_Total", Value);}
         else if (Key==__T("VERSION"))                Fill(StreamKind_Common,   0, "Track_More", Value);
         else if (Key==__T("BPM"))                    Fill(StreamKind_Common,   0, "BPM", Value);
         else if (Key==__T("WAVEFORMATEXTENSIBLE_CHANNEL_MASK"))
@@ -292,6 +293,7 @@ void File_VorbisCom::Data_Parse()
                 }
                 Fill(Stream_Audio, 0, Audio_ChannelPositions, ExtensibleWave_ChannelMask(ValueI));
                 Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ExtensibleWave_ChannelMask2(ValueI));
+                Fill(Stream_Audio, 0, Audio_ChannelLayout, ExtensibleWave_ChannelMask_ChannelLayout(ValueI));
             }
         }
         else if (Key==__T("VALID_BITS"))
@@ -336,7 +338,7 @@ void File_VorbisCom::Data_Parse()
             }
             Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_End, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
         }
-        else                                Fill(Stream_General, 0, comment.SubString(__T(""), __T("=")).To_Local().c_str(), Value);
+        else                                Fill(Stream_General, 0, comment.SubString(__T(""), __T("=")).To_UTF8().c_str(), Value);
     FILLING_END();
 
     if (user_comment_list_length==0)

@@ -28,12 +28,14 @@
 #include "ZenLib/ZtringListList.h"
 #include "ZenLib/Translation.h"
 #include "ZenLib/InfoMap.h"
+#include <set>
 #include <bitset>
 using namespace ZenLib;
 using std::vector;
 using std::string;
 using std::map;
 using std::make_pair;
+using namespace std;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -96,8 +98,13 @@ public :
           void      MultipleValues_Set (size_t NewValue);
           size_t    MultipleValues_Get ();
 
-          void      ParseUnknownExtensions_Set (size_t NewValue);
-          size_t    ParseUnknownExtensions_Get ();
+          #if MEDIAINFO_ADVANCED
+          void      ParseOnlyKnownExtensions_Set (const Ztring &NewValue);
+          Ztring    ParseOnlyKnownExtensions_Get();
+          bool      ParseOnlyKnownExtensions_IsSet();
+          set<Ztring> ParseOnlyKnownExtensions_GetList_Set();
+          Ztring    ParseOnlyKnownExtensions_GetList_String();
+          #endif //MEDIAINFO_ADVANCED
 
           void      ShowFiles_Set (const ZtringListList &NewShowFiles);
           size_t    ShowFiles_Nothing_Get ();
@@ -174,6 +181,9 @@ public :
           void      ThousandsPoint_Set (const Ztring &NewValue);
           Ztring    ThousandsPoint_Get ();
 
+          void      CarriageReturnReplace_Set (const Ztring &NewValue);
+          Ztring    CarriageReturnReplace_Get ();
+
           void      StreamMax_Set (const ZtringListList &NewValue);
           Ztring    StreamMax_Get ();
 
@@ -227,7 +237,7 @@ public :
     const ZtringListList &Info_Get(stream_t KindOfStream); //Should not be, but too difficult to hide it
 
           Ztring    Info_Parameters_Get (bool Complete=false);
-          Ztring    HideShowParameter   (const Ztring &Value, Char Show);
+          Ztring    HideShowParameter   (const Ztring &Value, ZenLib::Char Show);
           Ztring    Info_OutputFormats_Get(basicformat Format);
           Ztring    Info_Tags_Get       () const;
           Ztring    Info_CodecsID_Get   ();
@@ -282,11 +292,13 @@ public :
     #if defined(MEDIAINFO_EBUCORE_YES)
           void        AcquisitionDataOutputMode_Set (size_t Value);
           size_t      AcquisitionDataOutputMode_Get ();
+    #endif //MEDIAINFO_EBUCORE_YES
+    #if defined(MEDIAINFO_EBUCORE_YES) || defined(MEDIAINFO_NISO_YES) || MEDIAINFO_ADVANCED
           void        ExternalMetadata_Set (Ztring Value);
           Ztring      ExternalMetadata_Get ();
           void        ExternalMetaDataConfig_Set (Ztring Value);
           Ztring      ExternalMetaDataConfig_Get ();
-    #endif //MEDIAINFO_EBUCORE_YES
+    #endif //MEDIAINFO_EBUCORE_YES || defined(MEDIAINFO_NISO_YES) || MEDIAINFO_ADVANCED
 
     ZtringListList  SubFile_Config_Get ();
 
@@ -370,16 +382,18 @@ private :
     #if MEDIAINFO_ADVANCED
         bool        Format_Profile_Split;
     #endif //MEDIAINFO_ADVANCED
-    #if defined(MEDIAINFO_EBUCORE_YES)
+    #if defined(MEDIAINFO_EBUCORE_YES) || defined(MEDIAINFO_NISO_YES) || MEDIAINFO_ADVANCED
         size_t      AcquisitionDataOutputMode;
         Ztring      ExternalMetadata;
         Ztring      ExternalMetaDataConfig;
-    #endif //defined(MEDIAINFO_EBUCORE_YES)
+    #endif //defined(MEDIAINFO_EBUCORE_YES) || defined(MEDIAINFO_NISO_YES) || MEDIAINFO_ADVANCED
     size_t          Complete;
     size_t          BlockMethod;
     size_t          Internet;
     size_t          MultipleValues;
-    size_t          ParseUnknownExtensions;
+    #ifdef MEDIAINFO_ADVANCED
+    Ztring          ParseOnlyKnownExtensions;
+    #endif
     size_t          ShowFiles_Nothing;
     size_t          ShowFiles_VideoAudio;
     size_t          ShowFiles_VideoOnly;
@@ -406,6 +420,7 @@ private :
     Ztring          Quote;
     Ztring          DecimalPoint;
     Ztring          ThousandsPoint;
+    Ztring          CarriageReturnReplace;
     Translation     Language; //ex. : "KB;Ko"
     ZtringListList  Custom_View; //Definition of "General", "Video", "Audio", "Text", "Other", "Image"
     ZtringListList  Custom_View_Replace; //ToReplace;ReplaceBy
@@ -433,7 +448,12 @@ private :
     ZenLib::CriticalSection CS;
 
     void      Language_Set (stream_t StreamKind);
-
+    void      Language_Set_Internal(stream_t KindOfStream);
+    void      Language_Set_All(stream_t KindOfStream)
+    {
+        CriticalSectionLocker CSL(CS);
+        Language_Set_Internal(KindOfStream);
+    }
     //Event
     #if MEDIAINFO_EVENTS
     MediaInfo_Event_CallBackFunction* Event_CallBackFunction; //void Event_Handler(unsigned char* Data_Content, size_t Data_Size, void* UserHandler)

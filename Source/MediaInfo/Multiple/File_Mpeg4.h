@@ -13,6 +13,7 @@
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/File__HasReferences.h"
 #include "MediaInfo/MediaInfo_Internal.h"
+#include "MediaInfo/Multiple/File_Mpeg4_Descriptors.h"
 class File_MpegPs;
 //---------------------------------------------------------------------------
 
@@ -176,6 +177,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_ddts();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_dvc1();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_dvvC() {moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC();}
     void moov_trak_mdia_minf_stbl_stsd_xxxx_esds();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_fiel();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_glbl();
@@ -301,6 +303,7 @@ private :
     bool Element_Name_Get();
     bool Element_Size_Get();
     Ztring Language_Get(int16u Language);
+    bool IsQt();
     enum method
     {
         Method_None,
@@ -314,6 +317,7 @@ private :
     method Metadata_Get(std::string &Parameter, const std::string &Meta);
     void Descriptors();
     void TimeCode_Associate(int32u TrackID);
+    void AddCodecConfigurationBoxInfo();
 
     //Temp
     bool List;
@@ -351,6 +355,7 @@ private :
     struct stream
     {
         Ztring                  File_Name;
+        std::vector<int32u>     CodecConfigurationBoxInfo;
         std::vector<File__Analyze*> Parsers;
         std::map<string, Ztring> Infos;
         MediaInfo_Internal*     MI;
@@ -534,6 +539,7 @@ private :
     typedef std::map<int32u, stream> streams;
     streams             Streams;
     streams::iterator   Stream;
+    File_Mpeg4_Descriptors::es_id_infos ES_ID_Infos;
     #if MEDIAINFO_NEXTPACKET
         bool                    ReferenceFiles_IsParsing;
     #endif //MEDIAINFO_NEXTPACKET

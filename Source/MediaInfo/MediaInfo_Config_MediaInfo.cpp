@@ -135,12 +135,15 @@ const size_t Buffer_NormalSize=/*188*7;//*/64*1024;
 
 MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
 {
+    MediaInfoLib::Config.Init(); //Initialize Configuration
+
     RequestTerminate=false;
     FileIsSeekable=true;
     FileIsSub=false;
     FileIsDetectingDuration=false;
     FileIsReferenced=false;
     FileTestContinuousFileNames=true;
+    FileTestDirectory=true;
     FileKeepInfo=false;
     FileStopAfterFilled=false;
     FileStopSubStreamAfterFilled=false;
@@ -155,6 +158,8 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
         File_Source_List=false;
         File_RiskyBitRateEstimation=false;
         File_MergeBitRateInfo=true;
+        File_HighestFormat=true;
+        File_ChannelLayout=true;
         #if MEDIAINFO_DEMUX
             File_Demux_Unpacketize_StreamLayoutChange_Skip=false;
         #endif //MEDIAINFO_DEMUX
@@ -377,6 +382,15 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     {
         return File_TestContinuousFileNames_Get()?"1":"0";
     }
+    if (Option_Lower==__T("file_testdirectory"))
+    {
+        File_TestDirectory_Set(!(Value==__T("0") || Value.empty()));
+        return __T("");
+    }
+    else if (Option_Lower==__T("file_testdirectory_get"))
+    {
+        return File_TestDirectory_Get()?"1":"0";
+    }
     if (Option_Lower==__T("file_keepinfo"))
     {
         File_KeepInfo_Set(!(Value==__T("0") || Value.empty()));
@@ -498,6 +512,24 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     {
         #if MEDIAINFO_ADVANCED
             File_MergeBitRateInfo_Set(!(Value==__T("0") || Value.empty()));
+            return Ztring();
+        #else //MEDIAINFO_ADVANCED
+            return __T("Advanced features are disabled due to compilation options");
+        #endif //MEDIAINFO_ADVANCED
+    }
+    else if (Option_Lower==__T("file_highestformat"))
+    {
+        #if MEDIAINFO_ADVANCED
+            File_HighestFormat_Set(!(Value==__T("0") || Value.empty()));
+            return Ztring();
+        #else //MEDIAINFO_ADVANCED
+            return __T("Advanced features are disabled due to compilation options");
+        #endif //MEDIAINFO_ADVANCED
+    }
+    else if (Option_Lower==__T("file_channellayout"))
+    {
+        #if MEDIAINFO_ADVANCED
+            File_ChannelLayout_Set(Value==__T("2018"));
             return Ztring();
         #else //MEDIAINFO_ADVANCED
             return __T("Advanced features are disabled due to compilation options");
@@ -1340,6 +1372,19 @@ bool MediaInfo_Config_MediaInfo::File_TestContinuousFileNames_Get ()
     return FileTestContinuousFileNames;
 }
 
+//---------------------------------------------------------------------------
+void MediaInfo_Config_MediaInfo::File_TestDirectory_Set (bool NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    FileTestDirectory=NewValue;
+}
+
+bool MediaInfo_Config_MediaInfo::File_TestDirectory_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return FileTestDirectory;
+}
+
 //***************************************************************************
 // Stop after filled
 //***************************************************************************
@@ -1579,6 +1624,36 @@ bool MediaInfo_Config_MediaInfo::File_MergeBitRateInfo_Get ()
 {
     CriticalSectionLocker CSL(CS);
     return File_MergeBitRateInfo;
+}
+#endif //MEDIAINFO_ADVANCED
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_ADVANCED
+void MediaInfo_Config_MediaInfo::File_ChannelLayout_Set (bool NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    File_ChannelLayout =NewValue;
+}
+
+bool MediaInfo_Config_MediaInfo::File_ChannelLayout_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return File_ChannelLayout;
+}
+#endif //MEDIAINFO_ADVANCED
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_ADVANCED
+void MediaInfo_Config_MediaInfo::File_HighestFormat_Set (bool NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    File_HighestFormat=NewValue;
+}
+
+bool MediaInfo_Config_MediaInfo::File_HighestFormat_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return File_HighestFormat;
 }
 #endif //MEDIAINFO_ADVANCED
 
