@@ -2760,7 +2760,6 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         else if (Value==__T("143457")) Value=__T("Norway");
                         else if (Value==__T("143458")) Value=__T("Denmark");
                         else if (Value==__T("143459")) Value=__T("Switzerland");
-                        else if (Value==__T("143459")) Value=__T("Switzerland");
                         else if (Value==__T("143460")) Value=__T("Australia");
                         else if (Value==__T("143461")) Value=__T("New Zealand");
                         else if (Value==__T("143462")) Value=__T("Japan");
