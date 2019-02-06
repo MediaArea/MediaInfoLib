@@ -2026,92 +2026,127 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35()
     Element_Info1("user_data_registered_itu_t_t35");
 
     int8u itu_t_t35_country_code;
-    Get_B1(itu_t_t35_country_code, "itu_t_t35_country_code");
-    int16u terminal_provider_code;
-    Get_B2(terminal_provider_code, "terminal_provider_code");
-    int8u terminal_provider_oriented_code_message_idc;
-    Get_B1(terminal_provider_oriented_code_message_idc, "terminal_provider_oriented_code_message_idc");
-    if (itu_t_t35_country_code == 0xB5 && terminal_provider_code == 0x3A)
+    Get_B1(itu_t_t35_country_code,                              "itu_t_t35_country_code");
+
+    switch (itu_t_t35_country_code)
     {
-        if (!terminal_provider_oriented_code_message_idc)
+        case 0xB5:  sei_message_user_data_registered_itu_t_t35_B5(); break; // USA
+    }
+}
+
+//---------------------------------------------------------------------------
+// SEI - 4 - USA
+void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5()
+{
+    int16u itu_t_t35_terminal_provider_code;
+    Get_B2 (itu_t_t35_terminal_provider_code,                   "itu_t_t35_terminal_provider_code");
+
+    switch (itu_t_t35_terminal_provider_code)
+    {
+        case 0x003A: sei_message_user_data_registered_itu_t_t35_B5_003A(); break;
+    }
+}
+
+//---------------------------------------------------------------------------
+// SEI - 4 - USA - 003A
+void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003A()
+{
+    int8u itu_t_t35_terminal_provider_oriented_code;
+    Get_B1 (itu_t_t35_terminal_provider_oriented_code,          "itu_t_t35_terminal_provider_oriented_code");
+
+    switch (itu_t_t35_terminal_provider_oriented_code)
+    {
+        case 0x00: sei_message_user_data_registered_itu_t_t35_B5_003A_00(); break;
+        case 0x02: sei_message_user_data_registered_itu_t_t35_B5_003A_02(); break;
+    }
+}
+
+//---------------------------------------------------------------------------
+// SEI - 4 - USA - 003A - ETSI 103-433-1
+void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003A_00()
+{
+    Element_Info1("SL-HDR message");
+    BS_Begin();
+    int8u sl_hdr_mode_value_minus1, sl_hdr_spec_major_version_idc, sl_hdr_spec_minor_version_idc;
+    bool sl_hdr_cancel_flag;
+    Get_S1 (4, sl_hdr_mode_value_minus1,                        "sl_hdr_mode_value_minus1");
+    Get_S1 (4, sl_hdr_spec_major_version_idc,                   "sl_hdr_spec_major_version_idc");
+    Get_S1 (7, sl_hdr_spec_minor_version_idc,                   "sl_hdr_spec_minor_version_idc");
+    Get_SB (sl_hdr_cancel_flag,                                 "sl_hdr_cancel_flag");
+    int8u sl_hdr_payload_mode;
+    int8u k_coefficient_value[3];
+    if (!sl_hdr_cancel_flag)
+    {
+        bool coded_picture_info_present_flag, target_picture_info_present_flag, src_mdcv_info_present_flag;
+        Skip_SB(                                                "sl_hdr_persistence_flag");
+        Get_SB (coded_picture_info_present_flag,                "coded_picture_info_present_flag");
+        Get_SB (target_picture_info_present_flag,               "target_picture_info_present_flag");
+        Get_SB (src_mdcv_info_present_flag,                     "src_mdcv_info_present_flag");
+        Skip_SB(                                                "sl_hdr_extension_present_flag");
+        Get_S1 (3, sl_hdr_payload_mode,                         "sl_hdr_payload_mode");
+        BS_End();
+        if (coded_picture_info_present_flag)
         {
-            BS_Begin();
-            int8u sl_hdr_mode_value_minus1;
-            Get_S1(4, sl_hdr_mode_value_minus1, "sl_hdr_mode_value_minus1");
-            int8u sl_hdr_spec_major_version_idc;
-            Get_S1(4, sl_hdr_spec_major_version_idc, "sl_hdr_spec_major_version_idc");
-            int8u sl_hdr_spec_minor_version_idc;
-            Get_S1(7, sl_hdr_spec_minor_version_idc, "sl_hdr_spec_minor_version_idc");
-            bool sl_hdr_cancel_flag;
-            Get_SB(sl_hdr_cancel_flag, "sl_hdr_cancel_flag");
-            BS_End();
-            int8u sl_hdr_payload_mode;
-            int8u k_coefficient_value[3];
-            if (!sl_hdr_cancel_flag)
+            Skip_B1(                                            "coded_picture_primaries");
+            Skip_B2(                                            "coded_picture_max_luminance");
+            Skip_B2(                                            "coded_picture_min_luminance");
+        }
+        if (target_picture_info_present_flag)
+        {
+            Skip_B1(                                            "target_picture_primaries");
+            Skip_B2(                                            "target_picture_max_luminance");
+            Skip_B2(                                            "target_picture_min_luminance");
+        }
+        if (src_mdcv_info_present_flag)
+        {
+            for (int8u i = 0; i < 3; i++)
             {
-                BS_Begin();
-                Skip_SB("sl_hdr_persistence_flag");
-                bool coded_picture_info_present_flag;
-                Get_SB(coded_picture_info_present_flag, "coded_picture_info_present_flag");
-                bool target_picture_info_present_flag;
-                Get_SB(target_picture_info_present_flag, "target_picture_info_present_flag");
-                bool src_mdcv_info_present_flag;
-                Get_SB(src_mdcv_info_present_flag, "src_mdcv_info_present_flag");
-                Skip_SB("sl_hdr_extension_present_flag");
-                Get_S1(3, sl_hdr_payload_mode, "sl_hdr_payload_mode");
-                BS_End();
-                if (coded_picture_info_present_flag)
-                {
-                    Skip_B1("coded_picture_primaries");
-                    Skip_B2("coded_picture_max_luminance");
-                    Skip_B2("coded_picture_min_luminance");
-                }
-                if (target_picture_info_present_flag)
-                {
-                    Skip_B1("target_picture_primaries");
-                    Skip_B2("target_picture_max_luminance");
-                    Skip_B2("target_picture_min_luminance");
-                }
-                if (src_mdcv_info_present_flag)
-                {
-                    for (int8u i = 0; i < 3; i++)
-                    {
-                        Skip_B2("src_mdcv_primaries_x");
-                        Skip_B2("src_mdcv_primaries_y");
-                    }
-                    Skip_B2("src_mdcv_ref_white_x");
-                    Skip_B2("src_mdcv_ref_white_y");
-                    Skip_B2("src_mdcv_max_mastering_luminance");
-                    Skip_B2("src_mdcv_min_mastering_luminance");
-                }
-                for (int8u i = 0; i < 4; i++)
-                    Skip_B2("matrix_coefficient_value");
-                for (int8u i = 0; i < 2; i++)
-                    Skip_B2("chroma_to_luma_injection");
-                for (int8u i = 0; i < 3; i++)
-                    Get_B1(k_coefficient_value[i], "k_coefficient_value");
+                Skip_B2(                                        "src_mdcv_primaries_x");
+                Skip_B2(                                        "src_mdcv_primaries_y");
             }
+            Skip_B2(                                            "src_mdcv_ref_white_x");
+            Skip_B2(                                            "src_mdcv_ref_white_y");
+            Skip_B2(                                            "src_mdcv_max_mastering_luminance");
+            Skip_B2(                                            "src_mdcv_min_mastering_luminance");
+        }
+        for (int8u i = 0; i < 4; i++)
+            Skip_B2(                                            "matrix_coefficient_value");
+        for (int8u i = 0; i < 2; i++)
+            Skip_B2(                                            "chroma_to_luma_injection");
+        for (int8u i = 0; i < 3; i++)
+            Get_B1 (k_coefficient_value[i],                     "k_coefficient_value");
+
+        FILLING_BEGIN()
             EtsiTS103433 = __T("SL-HDR") + Ztring().From_Number(sl_hdr_mode_value_minus1 + 1);
             if (!sl_hdr_mode_value_minus1)
-            {
                 EtsiTS103433 += k_coefficient_value[0] == 0 && k_coefficient_value[1] == 0 && k_coefficient_value[2] == 0 ? __T(" NCL") : __T(" CL");
-            }
-            EtsiTS103433+= __T(" specVersion=") + Ztring().From_Number(sl_hdr_spec_major_version_idc) + __T(".") + Ztring().From_Number(sl_hdr_spec_minor_version_idc);
-            EtsiTS103433+= __T(" payloadMode=") + Ztring().From_Number(sl_hdr_payload_mode);
-        }
-        else if (terminal_provider_oriented_code_message_idc == 0x02)
-        {
-            BS_Begin();
-            int8u ts_103_433_spec_version;
-            Get_S1(4, ts_103_433_spec_version, "ts_103_433_spec_version");
-            int8u ts_103_433_payload_mode;
-            Get_S1(4, ts_103_433_payload_mode, "ts_103_433_payload_mode");
-            BS_End();
-            EtsiTS103433 = __T("SL-HDR1");
-            EtsiTS103433+= __T(" specVersion=") + Ztring().From_Number(ts_103_433_spec_version);
-            EtsiTS103433+= __T(" payloadMode=") + Ztring().From_Number(ts_103_433_payload_mode);
-        }
+            EtsiTS103433 += __T(" specVersion=") + Ztring().From_Number(sl_hdr_spec_major_version_idc) + __T(".") + Ztring().From_Number(sl_hdr_spec_minor_version_idc);
+            EtsiTS103433 += __T(" payloadMode=") + Ztring().From_Number(sl_hdr_payload_mode);
+        FILLING_END();
     }
+    else
+        BS_End();
+}
+
+//---------------------------------------------------------------------------
+// SEI - 4 - USA - 003A - ETSI 103-433
+void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003A_02()
+{
+    Element_Info1("SL-HDR information");
+    int8u ts_103_433_spec_version;
+    BS_Begin();
+    Get_S1 (4, ts_103_433_spec_version,                         "ts_103_433_spec_version");
+    if (ts_103_433_spec_version==0)
+    {
+        Skip_S1 (4,                                             "ts_103_433_payload_mode");
+    }
+    else if (ts_103_433_spec_version==1)
+    {
+        Skip_S1 (3,                                             "sl_hdr_mode_support");
+    }
+    else
+        Skip_S1 (Data_BS_Remain(),                              "Unknown");
+    BS_End();
 }
 
 //---------------------------------------------------------------------------
