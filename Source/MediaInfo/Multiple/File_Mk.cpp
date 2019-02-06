@@ -1255,9 +1255,12 @@ void File_Mk::Streams_Finish()
                         PerLanguage+=EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterDisplays[ChapterDisplays_Pos].ChapString;
                         Text+=PerLanguage+__T(" - ");
                     }
+                    Ztring Time=Ztring().Duration_From_Milliseconds(EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterTimeStart/1000000).To_UTF8().c_str();
                     if (Text.size())
                         Text.resize(Text.size()-3);
-                    Fill(Stream_Menu, StreamPos_Last, Ztring().Duration_From_Milliseconds(EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterTimeStart/1000000).To_UTF8().c_str(), Text);
+                    else
+                        Text = Time;
+                    Fill(Stream_Menu, StreamPos_Last, Time.To_UTF8().c_str(), Text);
                 }
             }
             Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_End, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
