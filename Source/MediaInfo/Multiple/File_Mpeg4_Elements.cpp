@@ -108,6 +108,8 @@
 #include "ThirdParty/base64/base64.h"
 #include <zlib.h>
 #include <algorithm>
+#include <cmath>
+#include <cfloat>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -4912,7 +4914,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
             Fill(Stream_Video, StreamPos_Last, Video_Width, Width, 10, true);
         if (Height)
             Fill(Stream_Video, StreamPos_Last, Video_Height, Height, 10, true);
-        if (moov_trak_tkhd_DisplayAspectRatio && Height && moov_trak_tkhd_DisplayAspectRatio!=((float32)Width)/Height)
+        if (moov_trak_tkhd_DisplayAspectRatio && Height && fabs(moov_trak_tkhd_DisplayAspectRatio-((float32)Width)/Height)>=FLT_EPSILON)
         {
             Fill(Stream_Video, StreamPos_Last, Video_DisplayAspectRatio, moov_trak_tkhd_DisplayAspectRatio, 3, true);
             Fill(Stream_Video, StreamPos_Last, Video_PixelAspectRatio, moov_trak_tkhd_DisplayAspectRatio/Width*Height, 3, true);
