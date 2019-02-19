@@ -1310,6 +1310,12 @@ protected :
     }
     int8u AcquisitionMetadata_Sony_CalibrationType;
 
+    //RollOut
+    int32u IndexStartPositionIndexDuration_Max;
+    int32u IndexStartPosition_Current;
+    int32u IndexDuration_Current;
+    float64 IndexEditRate;
+
     //Demux
     #if MEDIAINFO_DEMUX
         bool Demux_HeaderParsed;
