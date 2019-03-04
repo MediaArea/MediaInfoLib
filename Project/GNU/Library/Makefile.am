@@ -81,6 +81,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Audio/File_Tak.cpp \
                        ../../../Source/MediaInfo/Audio/File_Tta.cpp \
                        ../../../Source/MediaInfo/Audio/File_TwinVQ.cpp \
+                       ../../../Source/MediaInfo/Audio/File_Usac.cpp \
                        ../../../Source/MediaInfo/Audio/File_Vorbis.cpp \
                        ../../../Source/MediaInfo/Audio/File_Wvpk.cpp \
                        ../../../Source/MediaInfo/Duplicate/File__Duplicate__Base.cpp \

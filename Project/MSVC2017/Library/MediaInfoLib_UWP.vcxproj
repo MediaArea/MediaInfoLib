@@ -202,6 +202,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_SmpteSt0302.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_SmpteSt0331.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_SmpteSt0337.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Usac.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_EbuCore.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Fims.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_PBCore2.cpp" />

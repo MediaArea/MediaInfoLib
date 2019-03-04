@@ -278,6 +278,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_TwinVQ.cpp">
             <BuildOrder>179</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Usac.cpp">
+            <BuildOrder>229</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Vorbis.cpp">
             <BuildOrder>184</BuildOrder>
         </CppCompile>

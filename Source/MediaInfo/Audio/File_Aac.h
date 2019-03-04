@@ -270,6 +270,32 @@ protected :
     void ELDSpecificConfig                  ();
     void ld_sbr_header                      ();
 
+    //Elements - USAC
+    void UsacConfig                         ();
+    void UsacDecoderConfig                  (int8u coreSbrFrameLengthIndex);
+    void UsacSingleChannelElementConfig     (int8u coreSbrFrameLengthIndex);
+    void UsacChannelPairElementConfig       (int8u coreSbrFrameLengthIndex);
+    void UsacLfeElementConfig               ();
+    void UsacExtElementConfig               ();
+    void UsacCoreConfig                     ();
+    void SbrConfig                          ();
+    void SbrDlftHeader                      ();
+    void Mps212Config                       (int8u StereoConfigindex);
+    void uniDrcConfig                       ();
+    void uniDrcConfigExtension              ();
+    void downmixInstructions                (bool V1=false);
+    void drcCoefficientsBasic               ();
+    void drcCoefficientsUniDrc              (bool V1=false);
+    void drcInstructionsBasic               ();
+    void drcInstructionsUniDrc              (bool V1=false);
+    void channelLayout                      ();
+    void UsacConfigExtension                ();
+    void loudnessInfoSet                    (bool V1=false);
+    void loudnessInfo                       (bool FromAlbum, bool V1=false);
+    void loudnessInfoSetExtension           ();
+    void streamId                           ();
+    void escapedValue                       (int32u &Value, int8u nBits1, int8u nBits2, int8u nBits3, const char* Name);
+
     //Helpers
     void hcod                               (int8u sect_cb, const char* Name);
     void hcod_sf                            (const char* Name);
@@ -369,6 +395,23 @@ protected :
     std::map<std::string, Ztring>   Infos;
     std::map<std::string, Ztring>   Infos_AudioSpecificConfig;
     bool                            CanFill;
+
+    //***********************************************************************
+    // Temp USAC
+    //***********************************************************************
+
+    ZtringList                      drcSetEffectTotal;
+    struct loudness_info
+    {
+        ZtringList                  Ids;
+        ZtringList                  SamplePeakLevel;
+        ZtringList                  TruePeakLevel;
+        map<int8u, ZtringList>      Measurements;
+    };
+    loudness_info                   loudnessInfo_Data[2];
+    int8u                           baseChannelCount;
+    int8u                           targetChannelCount;
+    int8u                           bandCount;
 
 private :
     void FillInfosHEAACv2(const Ztring& Format_Settings);
