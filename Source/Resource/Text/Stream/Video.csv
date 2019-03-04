@@ -31,11 +31,14 @@ Format_AdditionalFeatures;;;N YTY;;;Format features needed for fully supporting 
 MultiView_BaseProfile;;;Y YTY;;;Multiview, profile of the base stream
 MultiView_Count;;;Y YTY;;;Multiview, count of views
 MultiView_Layout;;;Y YTY;;;Multiview, how views are muxed in the container in case of it is not muxing in the stream
-DolbyVision/String;;;Y NTN;;;Dolby Vision info
-DolbyVision_Version;;;N YTY;;;Dolby Vision version
-DolbyVision_Profile;;;N YTY;;;Dolby Vision profile
-DolbyVision_Level;;;N YTY;;;Dolby Vision level
-DolbyVision_Layers;;;N YTY;;;Dolby Vision layers
+HDR_Format;;;N YTY;;;Format used
+HDR_Format/String;;;Y NT;;;Format used + version + profile + level + layers + settings + compatibility
+HDR_Format_Commercial;;;N NT;;;Commercial name used by vendor for theses HDR settings or HDR Format field if there is no difference
+HDR_Format_Version;;;N YTY;;;Version of this format
+HDR_Format_Profile;;;N YTY;;;Profile of the Format
+HDR_Format_Level;;;N YTY;;;Level of the Format
+HDR_Format_Settings;;;N YTY;;;Settings of the Format
+HDR_Format_Compatibility;;;N YTY;;;Compatibility with some commercial namings
 Format_Settings;;;Y NT;;;Settings needed for decoder used, summary
 Format_Settings_BVOP;;Yes;N YTY;;;Settings needed for decoder used, detailled
 Format_Settings_BVOP/String;;;Y NT;;;Settings needed for decoder used, detailled

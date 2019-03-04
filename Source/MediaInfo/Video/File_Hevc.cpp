@@ -247,13 +247,39 @@ void File_Hevc::Streams_Fill()
     Fill(Stream_Video, 0, Video_Encoded_Library_Name, Encoded_Library_Name);
     Fill(Stream_Video, 0, Video_Encoded_Library_Version, Encoded_Library_Version);
     Fill(Stream_Video, 0, Video_Encoded_Library_Settings, Encoded_Library_Settings);
-    if (!MasteringDisplay_ColorPrimaries.empty())
+    hdr::iterator EtsiTs103433=HDR.find(HdrFormat_EtsiTs103433);
+    if (EtsiTs103433!=HDR.end())
     {
-        Fill(Stream_Video, 0, "MasteringDisplay_ColorPrimaries", MasteringDisplay_ColorPrimaries);
-        Fill(Stream_Video, 0, "MasteringDisplay_Luminance", MasteringDisplay_Luminance);
+        for (std::map<video, Ztring>::iterator Item=EtsiTs103433->second.begin(); Item!=EtsiTs103433->second.end(); ++Item)
+        {
+            Fill(Stream_Video, 0, Item->first, Item->second);
+        }
+    }
+    hdr::iterator SmpteSt2086=HDR.find(HdrFormat_SmpteSt2086);
+    if (SmpteSt2086!=HDR.end())
+    {
+        for (std::map<video, Ztring>::iterator Item=SmpteSt2086->second.begin(); Item!=SmpteSt2086->second.end(); ++Item)
+        {
+            bool Ignore;
+            switch (Item->first)
+            {
+                case Video_HDR_Format:
+                    Ignore=!Retrieve_Const(Stream_Video, 0, Item->first).empty();
+                    break;
+                case Video_MasteringDisplay_ColorPrimaries:
+                case Video_MasteringDisplay_Luminance:
+                    Ignore=Retrieve_Const(Stream_Video, 0, Item->first)==Item->second;
+                    break;
+            }
+            if (!Ignore)
+                Fill(Stream_Video, 0, Item->first, Item->second);
+        }
     }
     if (!EtsiTS103433.empty())
+    {
         Fill(Stream_Video, 0, "EtsiTS103433", EtsiTS103433);
+        Fill_SetOptions(Stream_Video, 0, "EtsiTS103433", "N NTN");
+    }
     if (maximum_content_light_level)
         Fill(Stream_Video, 0, "MaxCLL", Ztring::ToZtring(maximum_content_light_level) + __T(" cd/m2"));
     if (maximum_frame_average_light_level)
@@ -2077,6 +2103,7 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003A_00()
     int8u k_coefficient_value[3];
     if (!sl_hdr_cancel_flag)
     {
+        mastering_metadata_2086 Meta;
         bool coded_picture_info_present_flag, target_picture_info_present_flag, src_mdcv_info_present_flag;
         Skip_SB(                                                "sl_hdr_persistence_flag");
         Get_SB (coded_picture_info_present_flag,                "coded_picture_info_present_flag");
@@ -2099,15 +2126,18 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003A_00()
         }
         if (src_mdcv_info_present_flag)
         {
+            int16u max, min;
             for (int8u i = 0; i < 3; i++)
             {
-                Skip_B2(                                        "src_mdcv_primaries_x");
-                Skip_B2(                                        "src_mdcv_primaries_y");
+                Get_B2 (Meta.Primaries[i*2  ],                  "src_mdcv_primaries_x");
+                Get_B2 (Meta.Primaries[i*2+1],                  "src_mdcv_primaries_y");
             }
-            Skip_B2(                                            "src_mdcv_ref_white_x");
-            Skip_B2(                                            "src_mdcv_ref_white_y");
-            Skip_B2(                                            "src_mdcv_max_mastering_luminance");
-            Skip_B2(                                            "src_mdcv_min_mastering_luminance");
+            Get_B2 (Meta.Primaries[3*2  ],                      "src_mdcv_ref_white_x");
+            Get_B2 (Meta.Primaries[3*2+1],                      "src_mdcv_ref_white_y");
+            Get_B2 (max,                                        "src_mdcv_max_mastering_luminance");
+            Get_B2 (min,                                        "src_mdcv_min_mastering_luminance");
+            Meta.Luminance[0]=min;
+            Meta.Luminance[1]=((int32u)max)*10000;
         }
         for (int8u i = 0; i < 4; i++)
             Skip_B2(                                            "matrix_coefficient_value");
@@ -2117,11 +2147,26 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003A_00()
             Get_B1 (k_coefficient_value[i],                     "k_coefficient_value");
 
         FILLING_BEGIN()
-            EtsiTS103433 = __T("SL-HDR") + Ztring().From_Number(sl_hdr_mode_value_minus1 + 1);
-            if (!sl_hdr_mode_value_minus1)
-                EtsiTS103433 += k_coefficient_value[0] == 0 && k_coefficient_value[1] == 0 && k_coefficient_value[2] == 0 ? __T(" NCL") : __T(" CL");
-            EtsiTS103433 += __T(" specVersion=") + Ztring().From_Number(sl_hdr_spec_major_version_idc) + __T(".") + Ztring().From_Number(sl_hdr_spec_minor_version_idc);
-            EtsiTS103433 += __T(" payloadMode=") + Ztring().From_Number(sl_hdr_payload_mode);
+            std::map<video, Ztring>& EtsiTs103433=HDR[HdrFormat_EtsiTs103433];
+            Ztring& HDR_Format=EtsiTs103433[Video_HDR_Format];
+            if (HDR_Format.empty())
+            {
+                HDR_Format=__T("SL-HDR")+Ztring().From_Number(sl_hdr_mode_value_minus1+1);
+                EtsiTs103433[Video_HDR_Format_Version]=Ztring().From_Number(sl_hdr_spec_major_version_idc)+__T('.')+Ztring().From_Number(sl_hdr_spec_minor_version_idc);
+                Get_MasteringDisplayColorVolume(EtsiTs103433[Video_MasteringDisplay_ColorPrimaries], EtsiTs103433[Video_MasteringDisplay_Luminance], Meta);
+                if (sl_hdr_payload_mode<2)
+                    EtsiTs103433[Video_HDR_Format_Settings]=sl_hdr_payload_mode?__T("Table-based"):__T("Parameter-based");
+                else
+                    EtsiTs103433[Video_HDR_Format_Settings]=__T("Payload Mode ") + Ztring().From_Number(sl_hdr_payload_mode);
+                if (!sl_hdr_mode_value_minus1)
+                    EtsiTs103433[Video_HDR_Format_Settings]+=k_coefficient_value[0]==0 && k_coefficient_value[1]==0 && k_coefficient_value[2]==0?__T(", non-constant"):__T(", constant");
+
+                EtsiTS103433 = __T("SL-HDR") + Ztring().From_Number(sl_hdr_mode_value_minus1 + 1);
+                if (!sl_hdr_mode_value_minus1)
+                    EtsiTS103433 += k_coefficient_value[0] == 0 && k_coefficient_value[1] == 0 && k_coefficient_value[2] == 0 ? __T(" NCL") : __T(" CL");
+                EtsiTS103433 += __T(" specVersion=") + Ztring().From_Number(sl_hdr_spec_major_version_idc) + __T(".") + Ztring().From_Number(sl_hdr_spec_minor_version_idc);
+                EtsiTS103433 += __T(" payloadMode=") + Ztring().From_Number(sl_hdr_payload_mode);
+            }
         FILLING_END();
     }
     else
@@ -2358,7 +2403,14 @@ void File_Hevc::sei_message_mastering_display_colour_volume()
 {
     Element_Info1("mastering_display_colour_volume");
 
-    Get_MasteringDisplayColorVolume(MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance);
+    std::map<video, Ztring>& SmpteSt2086=HDR[HdrFormat_SmpteSt2086];
+    Ztring& HDR_Format=SmpteSt2086[Video_HDR_Format];
+    if (HDR_Format.empty())
+    {
+        HDR_Format=__T("SMPTE ST 2086");
+        SmpteSt2086[Video_HDR_Format_Compatibility]="HDR10";
+    }
+    Get_MasteringDisplayColorVolume(SmpteSt2086[Video_MasteringDisplay_ColorPrimaries], SmpteSt2086[Video_MasteringDisplay_Luminance]);
 }
 
 //---------------------------------------------------------------------------
