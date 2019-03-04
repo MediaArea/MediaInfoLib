@@ -197,6 +197,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Tak.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Tta.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_TwinVQ.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Usac.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Vorbis.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Wvpk.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Duplicate/File__Duplicate__Base.cpp
