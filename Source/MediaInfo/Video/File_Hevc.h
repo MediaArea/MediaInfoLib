@@ -416,6 +416,7 @@ private :
     enum hdr_format
     {
         HdrFormat_EtsiTs103433,
+        HdrFormat_SmpteSt209440,
         HdrFormat_SmpteSt2086,
     };
     typedef std::map<hdr_format, std::map<video, Ztring> > hdr;

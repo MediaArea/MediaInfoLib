@@ -255,6 +255,23 @@ void File_Hevc::Streams_Fill()
             Fill(Stream_Video, 0, Item->first, Item->second);
         }
     }
+    hdr::iterator SmpteSt209440=HDR.find(HdrFormat_SmpteSt209440);
+    if (SmpteSt209440!=HDR.end())
+    {
+        for (std::map<video, Ztring>::iterator Item=SmpteSt209440->second.begin(); Item!=SmpteSt209440->second.end(); ++Item)
+        {
+            switch (Item->first)
+            {
+                case Video_MasteringDisplay_ColorPrimaries:
+                case Video_MasteringDisplay_Luminance:
+                    if (Retrieve_Const(Stream_Video, 0, Item->first)==Item->second)
+                        break;
+                    // Fallthrough
+                default:
+                    Fill(Stream_Video, 0, Item->first, Item->second);
+            }
+        }
+    }
     hdr::iterator SmpteSt2086=HDR.find(HdrFormat_SmpteSt2086);
     if (SmpteSt2086!=HDR.end())
     {
@@ -2070,6 +2087,7 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5()
     switch (itu_t_t35_terminal_provider_code)
     {
         case 0x003A: sei_message_user_data_registered_itu_t_t35_B5_003A(); break;
+        case 0x003C: sei_message_user_data_registered_itu_t_t35_B5_003C(); break;
     }
 }
 
@@ -2192,6 +2210,157 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003A_02()
     else
         Skip_S1 (Data_BS_Remain(),                              "Unknown");
     BS_End();
+}
+
+//---------------------------------------------------------------------------
+// SEI - 4 - USA - 003C
+void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003C()
+{
+    int16u itu_t_t35_terminal_provider_oriented_code;
+    Get_B2 (itu_t_t35_terminal_provider_oriented_code,          "itu_t_t35_terminal_provider_oriented_code");
+
+    switch (itu_t_t35_terminal_provider_oriented_code)
+    {
+        case 0x0001: sei_message_user_data_registered_itu_t_t35_B5_003C_0001(); break;
+    }
+}
+
+//---------------------------------------------------------------------------
+// SEI - 4 - USA - 003C - 0001
+void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003C_0001()
+{
+    int8u application_identifier;
+    Get_B1 (application_identifier,                             "application_identifier");
+
+    switch (application_identifier)
+    {
+        case 0x04: sei_message_user_data_registered_itu_t_t35_B5_003C_0001_04(); break;
+    }
+}
+
+//---------------------------------------------------------------------------
+// SEI - 4 - USA - 003C - 0001 - SMPTE ST 2094-40 (HDR10+)
+void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003C_0001_04()
+{
+    Element_Info1("SMPTE ST 2094 App 4");
+    int8u application_version;
+    bool IsHDRplus=false, tone_mapping_flag;
+    Get_B1 (application_version,                                "application_version");
+    if (application_version==1)
+    {
+        int32u targeted_system_display_maximum_luminance, maxscl[4], distribution_maxrgb_percentiles[16];
+        int16u fraction_bright_pixels;
+        int8u num_distribution_maxrgb_percentiles, distribution_maxrgb_percentages[16], num_windows, num_bezier_curve_anchors;
+        bool targeted_system_display_actual_peak_luminance_flag, mastering_display_actual_peak_luminance_flag, color_saturation_mapping_flag;
+        BS_Begin();
+        Get_S1 ( 2, num_windows,                                "num_windows");
+
+        for (int8u w=1; w<num_windows; w++)
+        {
+            Element_Begin1("window");
+            Skip_S2(16,                                         "window_upper_left_corner_x");
+            Skip_S2(16,                                         "window_upper_left_corner_y");
+            Skip_S2(16,                                         "window_lower_right_corner_x");
+            Skip_S2(16,                                         "window_lower_right_corner_y");
+            Skip_S2(16,                                         "center_of_ellipse_x");
+            Skip_S2(16,                                         "center_of_ellipse_y");
+            Skip_S1( 8,                                         "rotation_angle");
+            Skip_S2(16,                                         "semimajor_axis_internal_ellipse");
+            Skip_S2(16,                                         "semimajor_axis_external_ellipse");
+            Skip_S2(16,                                         "semiminor_axis_external_ellipse");
+            Skip_SB(                                            "overlap_process_option");
+            Element_End0();
+        }
+
+        Get_S4 (27, targeted_system_display_maximum_luminance,  "targeted_system_display_maximum_luminance");
+        TEST_SB_GET (targeted_system_display_actual_peak_luminance_flag, "targeted_system_display_actual_peak_luminance_flag");
+            int8u num_rows_targeted_system_display_actual_peak_luminance, num_cols_targeted_system_display_actual_peak_luminance;
+            Get_S1(5, num_rows_targeted_system_display_actual_peak_luminance, "num_rows_targeted_system_display_actual_peak_luminance");
+            Get_S1(5, num_cols_targeted_system_display_actual_peak_luminance, "num_cols_targeted_system_display_actual_peak_luminance");
+            for(int8u i=0; i<num_rows_targeted_system_display_actual_peak_luminance; i++)
+                for(int8u j=0; j<num_cols_targeted_system_display_actual_peak_luminance; j++)
+                    Skip_S1(4,                                   "targeted_system_display_actual_peak_luminance");
+        TEST_SB_END();
+
+        for (int8u w=0; w<num_windows; w++)
+        {
+            Element_Begin1("window");
+            for(int8u i=0; i<3; i++)
+            {
+                Get_S3 (17, maxscl[i],                          "maxscl"); Param_Info2(Ztring::ToZtring(((float)maxscl[i])/100000, 5), " cd/m2");
+            }
+            Get_S3 (17, maxscl[3],                              "average_maxrgb");   Param_Info2(Ztring::ToZtring(((float)maxscl[3])/100000, 5), " cd/m2");
+
+            Get_S1(4, num_distribution_maxrgb_percentiles,      "num_distribution_maxrgb_percentiles");
+            for (int8u i=0; i< num_distribution_maxrgb_percentiles; i++)
+            {
+                Element_Begin1(                                 "distribution_maxrgb");
+                Get_S1 ( 7, distribution_maxrgb_percentages[i], "distribution_maxrgb_percentages");
+                Get_S3 (17, distribution_maxrgb_percentiles[i], "distribution_maxrgb_percentiles");
+                Element_Info1(distribution_maxrgb_percentages[i]);
+                Element_Info1(distribution_maxrgb_percentiles[i]);
+                Element_End0();
+            }
+            Get_S2 (10, fraction_bright_pixels,                 "fraction_bright_pixels");
+            Element_End0();
+        }
+
+        TEST_SB_GET (mastering_display_actual_peak_luminance_flag, "mastering_display_actual_peak_luminance_flag");
+            int8u num_rows_mastering_display_actual_peak_luminance, num_cols_mastering_display_actual_peak_luminance;
+            Get_S1(5, num_rows_mastering_display_actual_peak_luminance, "num_rows_mastering_display_actual_peak_luminance");
+            Get_S1(5, num_cols_mastering_display_actual_peak_luminance, "num_cols_mastering_display_actual_peak_luminance");
+            for(int8u i=0; i< num_rows_mastering_display_actual_peak_luminance; i++)
+                for(int8u j=0; j< num_cols_mastering_display_actual_peak_luminance; j++)
+                    Skip_S1(4,                                   "mastering_display_actual_peak_luminance");
+        TEST_SB_END();
+
+        for (int8u w=0; w<num_windows; w++)
+        {
+            Element_Begin1("window");
+            TEST_SB_GET (tone_mapping_flag,                     "tone_mapping_flag");
+                Skip_S2(12,                                     "knee_point_x");
+                Skip_S2(12,                                     "knee_point_y");
+                Get_S1(4, num_bezier_curve_anchors,             "num_bezier_curve_anchors");
+                for (int8u i = 0; i < num_bezier_curve_anchors; i++)
+                    Skip_S2(10,                                 "bezier_curve_anchor");
+            TEST_SB_END();
+            Element_End0();
+        }
+        TEST_SB_GET (color_saturation_mapping_flag,             "color_saturation_mapping_flag");
+            Info_S1(6, color_saturation_weight,                 "color_saturation_weight"); Param_Info1(((float)color_saturation_weight)/8);
+        TEST_SB_END();
+        BS_End();
+
+        FILLING_BEGIN();
+            IsHDRplus=true;
+            if (num_windows!=1 || targeted_system_display_actual_peak_luminance_flag || num_distribution_maxrgb_percentiles!=9 || fraction_bright_pixels || mastering_display_actual_peak_luminance_flag || (distribution_maxrgb_percentages[2]>100 && distribution_maxrgb_percentages[2]!=0xFF) || (!tone_mapping_flag && targeted_system_display_maximum_luminance) || (tone_mapping_flag && num_bezier_curve_anchors>9) || color_saturation_mapping_flag)
+                IsHDRplus=false;
+            for(int8u i=0; i<4; i++)
+                if (maxscl[i]>100000)
+                    IsHDRplus=false;
+            if (IsHDRplus)
+                for(int8u i=0; i<9; i++)
+                {
+                    static const int8u distribution_maxrgb_percentages_List[9]={1, 5, 10, 25, 50, 75, 90, 95, 99};
+                    if (distribution_maxrgb_percentages[i]!=distribution_maxrgb_percentages_List[i])
+                        IsHDRplus=false;
+                    if (distribution_maxrgb_percentiles[i]>100000)
+                        IsHDRplus=false;
+                }
+        FILLING_END();
+    }
+
+    FILLING_BEGIN();
+        std::map<video, Ztring>& SmpteSt209440=HDR[HdrFormat_SmpteSt209440];
+        Ztring& HDR_Format=SmpteSt209440[Video_HDR_Format];
+        if (HDR_Format.empty())
+        {
+            HDR_Format=__T("SMPTE ST 2094 App 4");
+            SmpteSt209440[Video_HDR_Format_Version].From_Number(application_version);
+            if (IsHDRplus)
+                SmpteSt209440[Video_HDR_Format_Compatibility]=tone_mapping_flag?__T("HDR10+ Profile B"):__T("HDR10+ Profile A");
+        }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
