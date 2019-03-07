@@ -17,6 +17,7 @@ DVD Video;;;M;Dvdv;;ifo;;;
 Flash Video;;;M;Flv;;flv;video/x-flv;http://www.macromedia.com/go/getflashplayer;
 GXF;;;M;Gxf;SMPTE 360M;gxf;;;
 HDS F4M;Flash Media Manifest;;M;HdsF4m;;f4m;
+HEIF;;;M;Mpeg4;;heif avci avcs heic heics avif avis;;
 HLS;;;M;Hls;;m3u8;;
 Google Video;;;M;Riff;Hack of AVI;gvi;;http://video.google.com/playerdownload.html;
 ISM;Internet Streaming Media;;M;Ism;;ism;;;

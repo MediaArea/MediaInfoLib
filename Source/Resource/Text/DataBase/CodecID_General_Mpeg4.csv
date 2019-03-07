@@ -29,6 +29,8 @@ JP20;MPEG-4;;;http://gpac.sourceforge.net/;JPEG 2000
 JPM ;MPEG-4;;;http://www.iso.org/;JPEG 2000 Compound Image
 JPX ;MPEG-4;;;http://www.iso.org/;JPEG 2000 w/ extensions
 KDDI;MPEG-4;;;http://www.3gpp2.org/;3GPP2 EZMovie for KDDI 3G Cellphones
+mif1;HEIF;;;
+msf1;MPEG-4;;;;HEIF Sequence
 MJ2S;MPEG-4;;;http://www.iso.org/;Motion JPEG 2000 Simple Profile
 MJP2;MPEG-4;;;http://www.iso.org/;Motion JPEG 2000 General Profile
 MQT ;MPEG-4;;;http://www.sony.com/;Sony/Mobile QuickTime
