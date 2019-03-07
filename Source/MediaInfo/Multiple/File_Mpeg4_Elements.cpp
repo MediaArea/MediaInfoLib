@@ -37,6 +37,9 @@
 #if defined(MEDIAINFO_AIC_YES)
     #include "MediaInfo/Video/File_Aic.h"
 #endif
+#if defined(MEDIAINFO_AV1_YES)
+    #include "MediaInfo/Video/File_Av1.h"
+#endif
 #if defined(MEDIAINFO_AVC_YES)
     #include "MediaInfo/Video/File_Avc.h"
 #endif
@@ -584,6 +587,7 @@ namespace Elements
     const int64u meta_iloc=0x696C6F63;
     const int64u meta_iprp=0x69707270;
     const int64u meta_iprp_ipco=0x6970636F;
+    const int64u meta_iprp_ipco_av1C=0x61763143;
     const int64u meta_iprp_ipco_auxC=0x61757843;
     const int64u meta_iprp_ipco_avcC=0x61766343;
     const int64u meta_iprp_ipco_clap=0x636C6170;
@@ -720,6 +724,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_APRG=0x41505247;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_ARES=0x41524553;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_AORD=0x414F5244;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_av1C=0x61763143;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_avcC=0x61766343;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_avcE=0x61766345;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_bitr=0x62697472;
@@ -940,6 +945,7 @@ void File_Mpeg4::Data_Parse()
             ATOM_BEGIN
             LIST(meta_iprp_ipco)
                 ATOM_BEGIN
+                ATOM(meta_iprp_ipco_av1C)
                 ATOM(meta_iprp_ipco_auxC)
                 ATOM(meta_iprp_ipco_avcC)
                 ATOM(meta_iprp_ipco_clap)
@@ -1100,6 +1106,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_APRG)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ARES)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_AORD)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_av1C)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_avcC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_avcE)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_bitr)
@@ -2249,6 +2256,14 @@ void File_Mpeg4::meta_iprp_ipco()
         FILLING_END(); \
         meta_iprp_ipco_Buffer_Size++; \
     } \
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::meta_iprp_ipco_av1C()
+{
+    FILLING_BEGIN_IPCO();
+        moov_trak_mdia_minf_stbl_stsd_xxxx_av1C();
+    FILLING_END_IPCO();
+}
 
 //---------------------------------------------------------------------------
 void File_Mpeg4::meta_iprp_ipco_auxC()
@@ -5571,6 +5586,14 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
                 }
             #endif
+            #if defined(MEDIAINFO_AV1_YES)
+                if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("AV1"))
+                {
+                    File_Av1* Parser=new File_Av1;
+                    Parser->FrameIsAlwaysComplete=true;
+                    Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                }
+            #endif
             #if defined(MEDIAINFO_AVC_YES)
                 if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("AVC"))
                 {
@@ -5892,6 +5915,54 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_AORD()
     Skip_B4(                                                    "Field display ordering"); // 1 = First field in time display first line, 2 = First field in time display second line, 
     Skip_B4(                                                    "Byte ordering"); // 1 = YCbCr, 2 = CbYCrY
     Skip_B4(                                                    "Reserved"); // Must be 0
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_av1C()
+{
+    Element_Name("AV1CodecConfigurationRecord");
+    AddCodecConfigurationBoxInfo();
+
+    //Parsing
+    #ifdef MEDIAINFO_AV1_YES
+        for (size_t Pos=0; Pos<Streams[moov_trak_tkhd_TrackID].Parsers.size(); Pos++) //Removing any previous parser (in case of multiple streams in one track, or dummy parser for demux)
+            delete Streams[moov_trak_tkhd_TrackID].Parsers[Pos];
+        Streams[moov_trak_tkhd_TrackID].Parsers_Clear();
+
+        File_Av1* Parser=new File_Av1;
+        Parser->FrameIsAlwaysComplete=true;
+        #if MEDIAINFO_DEMUX
+            Element_Code=moov_trak_tkhd_TrackID;
+        #endif //MEDIAINFO_DEMUX
+        Open_Buffer_Init(Parser);
+        Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+        mdat_MustParse=true; //Data is in MDAT
+
+        //Demux
+        #if MEDIAINFO_DEMUX
+            switch (Config->Demux_InitData_Get())
+            {
+                case 0 :    //In demux event
+                            Demux_Level=2; //Container
+                            Demux(Buffer+Buffer_Offset, (size_t)Element_Size, ContentType_Header);
+                            break;
+                case 1 :    //In field
+                            {
+                            std::string Data_Raw((const char*)(Buffer+Buffer_Offset), (size_t)Element_Size);
+                            std::string Data_Base64(Base64::encode(Data_Raw));
+                            Fill(Stream_Video, StreamPos_Last, "Demux_InitBytes", Data_Base64);
+                            Fill_SetOptions(Stream_Video, StreamPos_Last, "Demux_InitBytes", "N NT");
+                            }
+                            break;
+                default :   ;
+            }
+        #endif //MEDIAINFO_DEMUX
+
+        //Parsing
+        Open_Buffer_OutOfBand(Parser);
+    #else
+        Skip_XX(Element_Size,                               "HEVC Data");
+    #endif
 }
 
 //---------------------------------------------------------------------------
