@@ -1143,7 +1143,7 @@ void File_Mpeg4::Streams_Finish()
         }
 
         //Bitrate Mode
-        if (Retrieve(StreamKind_Last, StreamPos_Last, "BitRate_Mode").empty())
+        if (StreamKind_Last!=Stream_Menu && Retrieve(StreamKind_Last, StreamPos_Last, "BitRate_Mode").empty())
         {
             if (Temp->second.stss.empty() && Temp->second.stss.size()!=Temp->second.stsz_Total.size() && !IsFragmented)
             {

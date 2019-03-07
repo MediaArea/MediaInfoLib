@@ -274,7 +274,7 @@ size_t File__Analyze::Stream_Erase (stream_t KindOfStream, size_t StreamPos)
     //Filling basic info
     for (size_t Pos=0; Pos<Count_Get(KindOfStream); Pos++)
     {
-        Fill(KindOfStream, Pos, General_StreamCount, Count_Get(StreamKind_Last), 10, true);
+        Fill(KindOfStream, Pos, General_StreamCount, Count_Get(KindOfStream), 10, true);
         Fill(KindOfStream, Pos, General_StreamKindID, Pos, 10, true);
         if (Count_Get(KindOfStream)>1)
             Fill(KindOfStream, Pos, General_StreamKindPos, Pos+1, 10, true);
@@ -1104,11 +1104,22 @@ const Ztring &File__Analyze::Retrieve_Const (stream_t StreamKind, size_t StreamP
     //Integrity
     if (StreamKind>=Stream_Max
      || StreamPos>=(*Stream)[StreamKind].size()
-     || Parameter>=(*Stream)[StreamKind][StreamPos].size())
+     || Parameter>=MediaInfoLib::Config.Info_Get(StreamKind).size()+(*Stream_More)[StreamKind][StreamPos].size())
         return MediaInfoLib::Config.EmptyString_Get();
+
+    if (Parameter>=MediaInfoLib::Config.Info_Get(StreamKind).size())
+    {
+        Parameter-=MediaInfoLib::Config.Info_Get(StreamKind).size();
+        if (KindOfInfo>=(*Stream_More)[StreamKind][StreamPos][Parameter].size())
+            return MediaInfoLib::Config.EmptyString_Get();
+        return (*Stream_More)[StreamKind][StreamPos][Parameter][KindOfInfo];
+    }
 
     if (KindOfInfo!=Info_Text)
         return MediaInfoLib::Config.Info_Get(StreamKind, Parameter, KindOfInfo);
+
+    if (Parameter>=(*Stream)[StreamKind][StreamPos].size())
+        return MediaInfoLib::Config.EmptyString_Get();
     return (*Stream)[StreamKind][StreamPos](Parameter);
 }
 
@@ -1118,11 +1129,22 @@ Ztring File__Analyze::Retrieve (stream_t StreamKind, size_t StreamPos, size_t Pa
     //Integrity
     if (StreamKind>=Stream_Max
      || StreamPos>=(*Stream)[StreamKind].size()
-     || Parameter>=(*Stream)[StreamKind][StreamPos].size())
+     || Parameter>=MediaInfoLib::Config.Info_Get(StreamKind).size()+(*Stream_More)[StreamKind][StreamPos].size())
         return MediaInfoLib::Config.EmptyString_Get();
+
+    if (Parameter>=MediaInfoLib::Config.Info_Get(StreamKind).size())
+    {
+        Parameter-=MediaInfoLib::Config.Info_Get(StreamKind).size();
+        if (KindOfInfo>=(*Stream_More)[StreamKind][StreamPos][Parameter].size())
+            return MediaInfoLib::Config.EmptyString_Get();
+        return (*Stream_More)[StreamKind][StreamPos][Parameter][KindOfInfo];
+    }
 
     if (KindOfInfo!=Info_Text)
         return MediaInfoLib::Config.Info_Get(StreamKind, Parameter, KindOfInfo);
+
+    if (Parameter>=(*Stream)[StreamKind][StreamPos].size())
+        return MediaInfoLib::Config.EmptyString_Get();
     return (*Stream)[StreamKind][StreamPos](Parameter);
 }
 
