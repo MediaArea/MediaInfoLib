@@ -54,6 +54,7 @@ ATM4;MPEG-4 Visual;Nero;;http://www.nero.com;;;YUV;4:2:0
 AUR2;YUV;;Auravision Aura 2;;;;YUV;4:2:2
 AURA;YUV;;Auravision Aura 1;;;;YUV;4:1:1
 AUVX;AUVX;;USH GmbH;;;;;
+AV01;AV1;;;;;;
 AV1X;Avid 1:1;;;http://mirror01.iptelecom.net.ua/~video/codecs/Avid.VfW.codec.v2.0d2.exe;;;;
 AVC1;AVC;;;http://ffdshow-tryout.sourceforge.net/;;;YUV;4:2:0;
 avc1;AVC;;;http://ffdshow-tryout.sourceforge.net/;;;YUV;4:2:0;
