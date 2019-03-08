@@ -2113,7 +2113,7 @@ void File_Mpeg4::meta_iinf_infe()
     
     FILLING_BEGIN();
         moov_trak_tkhd_TrackID=item_ID;
-        const char* Format;
+        const char* Format=NULL;
         bool Skip=false;
         switch (item_type)
         {
@@ -2135,7 +2135,6 @@ void File_Mpeg4::meta_iinf_infe()
             case 0x696F766C:    // iovl
                                 Format="Image Overlay";
                                 break;
-            default:            Format=NULL;
         }
         if (!Skip)
         {
