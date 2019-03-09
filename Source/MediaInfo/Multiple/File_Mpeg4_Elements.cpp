@@ -6673,7 +6673,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC()
 
     FILLING_BEGIN();
         Ztring Summary=Ztring::ToZtring(dv_version_major)+__T('.')+Ztring::ToZtring(dv_version_minor);
-        Fill(Stream_Video, StreamPos_Last, "DolbyVision_Version", Summary);
+        Fill(Stream_Video, StreamPos_Last, "HDR_Format_Version", Summary);
         if (dv_version_major==1)
         {
             string Profile, Level;
@@ -6684,8 +6684,9 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC()
             Profile+=__T('.');
             Profile+=Ztring().From_CC1(dv_profile).To_UTF8();
             Level+=Ztring().From_CC1(dv_level).To_UTF8();
-            Fill(Stream_Video, StreamPos_Last, "DolbyVision_Profile", Profile);
-            Fill(Stream_Video, StreamPos_Last, "DolbyVision_Level", Level);
+            Fill(Stream_Video, StreamPos_Last, "HDR_Format", "Dolby Vision");
+            Fill(Stream_Video, StreamPos_Last, "HDR_Format_Profile", Profile);
+            Fill(Stream_Video, StreamPos_Last, "HDR_Format_Level", Level);
             Summary+=__T(',');
             Summary+=__T(' ');
             Summary+=Ztring().From_UTF8(Profile);
@@ -6706,8 +6707,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC()
                 Layers.resize(Layers.size()-1);
                 Summary+=Ztring().From_UTF8(Layers);
             }
-            Fill(Stream_Video, StreamPos_Last, "DolbyVision_Layers", Layers);
-            Fill(Stream_Video, StreamPos_Last, "DolbyVision/String", Summary);
+            Fill(Stream_Video, StreamPos_Last, "HDR_Format_Settings", Layers);
         }
     FILLING_END();
 }
@@ -6926,6 +6926,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv()
     Get_MasteringDisplayColorVolume(MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance);
 
     FILLING_BEGIN();
+        Fill(StreamKind_Last, StreamPos_Last, "HDR_Format", "SMPTE ST 2086");
+        Fill(StreamKind_Last, StreamPos_Last, "HDR_Format_Compatibility", "HDR10");
         Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_ColorPrimaries", MasteringDisplay_ColorPrimaries);
         Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_Luminance", MasteringDisplay_Luminance);
     FILLING_END();
