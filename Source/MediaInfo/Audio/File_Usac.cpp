@@ -113,23 +113,58 @@ void File_Aac::UsacConfig()
     Element_End0();
 
     // Filling
-    Fill(Stream_Audio, 0, "DrcSets_Count", drcSetEffectTotal.size());
-    Fill(Stream_Audio, 0, "DrcSets_Effects", drcSetEffectTotal);
+    if (!drcInstructionsUniDrc_Data.empty())
+    {
+        Fill(Stream_Audio, 0, "DrcSets_Count", drcInstructionsUniDrc_Data.size());
+        ZtringList Ids, Data;
+        for (std::map<Ztring, drc_info>::iterator Item=drcInstructionsUniDrc_Data.begin(); Item!=drcInstructionsUniDrc_Data.end(); ++Item)
+        {
+            Ids.push_back(Item->first);
+            Data.push_back(Ztring().From_UTF8(Item->second.drcSetEffectTotal));
+        }
+        Fill(Stream_Audio, 0, "DrcSets_Effects", Data, Ids);
+    }
+    bool DefaultIdPresent=false;
     for (int8u i=0; i<2; i++)
     {
-        Fill(Stream_Audio, 0, i?"SamplePeakLevel_Album":"SamplePeakLevel", loudnessInfo_Data[i].SamplePeakLevel);
-        Fill(Stream_Audio, 0, i?"TruePeakLevel_Album":"TruePeakLevel", loudnessInfo_Data[i].TruePeakLevel);
-        for (map<int8u, ZtringList>::iterator Loudness=loudnessInfo_Data[i].Measurements.begin(); Loudness!=loudnessInfo_Data[i].Measurements.end(); ++Loudness)
+        ZtringList Ids;
+        ZtringList SamplePeakLevel;
+        ZtringList TruePeakLevel;
+        ZtringList Measurements[16];
+        for (std::map<Ztring, loudness_info>::iterator Item=loudnessInfo_Data[i].begin(); Item!=loudnessInfo_Data[i].end(); ++Item)
         {
-            if (Loudness->first && Loudness->first<=LoudnessMeaning_Size)
-                Fill(Stream_Audio, 0, i?(string(LoudnessMeaning[Loudness->first-1])+"_Album").c_str():LoudnessMeaning[Loudness->first-1], Loudness->second);
+            Ids.push_back(Item->first);
+            SamplePeakLevel.push_back(Item->second.SamplePeakLevel);
+            TruePeakLevel.push_back(Item->second.TruePeakLevel);
+            for (int8u j=1; j<16; j++)
+                Measurements[j].push_back(Item->second.Measurements.Values[j]);
         }
+        if (Ids.size()>=1 && Ids.front().empty())
+        {
+            if (!i)
+                DefaultIdPresent=true;
+            if (Ids.size()==1)
+                Ids.clear();
+        }
+        Fill(Stream_Audio, 0, i?"SamplePeakLevel_Album":"SamplePeakLevel",SamplePeakLevel, Ids);
+        Fill(Stream_Audio, 0, i?"TruePeakLevel_Album":"TruePeakLevel", TruePeakLevel, Ids);
+        for (int8u j=1; j<16; j++)
+        {
+            string Field;
+            if (j<LoudnessMeaning_Size)
+                Field=LoudnessMeaning[j-1];
+            if (i)
+                Field+="_Album";
+            Fill(Stream_Audio, 0, Field.c_str(), Measurements[j], Ids);
+        }
+
     }
-    if ((find(loudnessInfo_Data[0].Ids.begin(), loudnessInfo_Data[0].Ids.end(), __T("0-0"))==loudnessInfo_Data[0].Ids.end()
-      && find(loudnessInfo_Data[0].Ids.begin(), loudnessInfo_Data[0].Ids.end(), __T("0-0-0"))==loudnessInfo_Data[0].Ids.end())
-     || (loudnessInfo_Data[0].Measurements.find(1)==loudnessInfo_Data[0].Measurements.end()
-      && loudnessInfo_Data[0].Measurements.find(2)==loudnessInfo_Data[0].Measurements.end()))
-        Fill(Stream_Audio, 0, "Loudness_Present", "No");
+    if (loudnessInfo_Data[0].empty())
+        Fill(Stream_Audio, 0, "ConformanceCheck", "loudnessInfo is missing");
+    else if (!DefaultIdPresent)
+        Fill(Stream_Audio, 0, "ConformanceCheck", "loudnessInfo with drcSetId=0, eqSetId=0, downmixId=0 is missing");
+    else if (loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
+        Fill(Stream_Audio, 0, "ConformanceCheck", "None of program loudness or anchor loudness is present in loudnessInfo with drcSetId=0, eqSetId=0, downmixId=0");
 }
 
 //---------------------------------------------------------------------------
@@ -715,8 +750,9 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
     int8u channelCount=baseChannelCount;
     vector<int8s> gainSetIndex;
     int16u drcSetEffect;
+    int8u drcSetId, downmixId;
     bool downmixIdPresent;
-    Skip_S1(6,                                                  "drcSetId");
+    Get_S1 (6, drcSetId,                                        "drcSetId");
     if (V1)
         Skip_S1(4,                                              "drcSetComplexityLevel");
     Skip_S1(4,                                                  "drcLocation");
@@ -726,7 +762,6 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
         downmixIdPresent=true;
     if (downmixIdPresent)
     {
-        int8u downmixId;
         bool drcApplyToDownmix;
         Get_S1(7, downmixId,                                    "downmixId");
         if (V1)
@@ -832,7 +867,13 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
                     Value+='0'+(i%10);
                 }
             }
-        drcSetEffectTotal.push_back(Ztring().From_UTF8(Value));
+
+        Ztring Id=Ztring::ToZtring(drcSetId);
+        if (downmixIdPresent && downmixId!=127)
+            Id+=__T('-')+Ztring::ToZtring(downmixId);
+        if (Id==__T("0") || Id==__T("0-0"))
+            Id.clear();
+        drcInstructionsUniDrc_Data[Id].drcSetEffectTotal=Value;
     }
 }
 
@@ -943,6 +984,7 @@ void File_Aac::loudnessInfo(bool FromAlbum, bool V1)
 {
     Element_Begin1(V1?"loudnessInfoV1":"loudnessInfo");
 
+    loudness_info::measurements Measurements;
     int16u bsSamplePeakLevel, bsTruePeakLevel;
     int8u measurementCount;
     bool samplePeakLevelPresent, truePeakLevelPresent;
@@ -997,7 +1039,7 @@ void File_Aac::loudnessInfo(bool FromAlbum, bool V1)
                         Value=methodValue/2-32;
                     else
                         Value=methodValue-134; 
-                    measurement=Ztring::ToZtring(Value);
+                    measurement=Ztring::ToZtring(Value)+__T(" LU");
                     }
                     break;
             case 7: 
@@ -1016,20 +1058,27 @@ void File_Aac::loudnessInfo(bool FromAlbum, bool V1)
                     measurement=Ztring::ToZtring(-116+((double)methodValue)/2, 1)+__T(" LKFS");
                     break;
             default:
-                    measurement=__T("Method ")+Ztring::ToZtring(methodDefinition)+__T(" not supported");
+                    measurement.From_Number(methodValue);
         }
 
         if (methodDefinition)
-            loudnessInfo_Data[FromAlbum].Measurements[methodDefinition].push_back(measurement);
+        {
+            Ztring& Content=Measurements.Values[methodDefinition];
+            if (!Content.empty())
+                Content+=__T(" & ");
+            Content+=measurement;
+        }
     }
 
-    Ztring Ids=Ztring::ToZtring(drcSetId);
+    Ztring Id=Ztring::ToZtring(drcSetId);
     if (V1)
-        Ids+=__T('-')+Ztring::ToZtring(eqSetId);
-    Ids+=__T('-')+Ztring::ToZtring(downmixId);
-    loudnessInfo_Data[FromAlbum].Ids.push_back(Ids);
-    loudnessInfo_Data[FromAlbum].SamplePeakLevel.push_back((samplePeakLevelPresent && bsSamplePeakLevel)?(Ztring::ToZtring(20-((double)bsSamplePeakLevel)/32)+__T(" dBFS")):Ztring());
-    loudnessInfo_Data[FromAlbum].TruePeakLevel.push_back((truePeakLevelPresent && bsTruePeakLevel)?(Ztring::ToZtring(20-((double)bsTruePeakLevel)/32)+__T(" dBTP")):Ztring());
+        Id+=__T('-')+Ztring::ToZtring(eqSetId);
+    Id+=__T('-')+Ztring::ToZtring(downmixId);
+    if (Id==__T("0-0") || Id==__T("0-0-0"))
+        Id.clear();
+    loudnessInfo_Data[FromAlbum][Id].SamplePeakLevel=((samplePeakLevelPresent && bsSamplePeakLevel)?(Ztring::ToZtring(20-((double)bsSamplePeakLevel)/32)+__T(" dBFS")):Ztring());
+    loudnessInfo_Data[FromAlbum][Id].TruePeakLevel=((truePeakLevelPresent && bsTruePeakLevel)?(Ztring::ToZtring(20-((double)bsTruePeakLevel)/32)+__T(" dBTP")):Ztring());
+    loudnessInfo_Data[FromAlbum][Id].Measurements=Measurements;
     Element_End0();
 }
 

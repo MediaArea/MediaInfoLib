@@ -400,15 +400,22 @@ protected :
     // Temp USAC
     //***********************************************************************
 
-    ZtringList                      drcSetEffectTotal;
+    struct drc_info
+    {
+        string                      drcSetEffectTotal;
+    };
     struct loudness_info
     {
-        ZtringList                  Ids;
-        ZtringList                  SamplePeakLevel;
-        ZtringList                  TruePeakLevel;
-        map<int8u, ZtringList>      Measurements;
+        struct measurements
+        {
+            Ztring                  Values[16];
+        };
+        Ztring                      SamplePeakLevel;
+        Ztring                      TruePeakLevel;
+        measurements                Measurements;
     };
-    loudness_info                   loudnessInfo_Data[2];
+    std::map<Ztring, drc_info>      drcInstructionsUniDrc_Data; // By id
+    std::map<Ztring, loudness_info> loudnessInfo_Data[2]; // By non-album/album then by id
     int8u                           baseChannelCount;
     int8u                           targetChannelCount;
     int8u                           bandCount;
