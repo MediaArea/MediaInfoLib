@@ -60,6 +60,8 @@ base;RGBA;;;;;;RGBA;16:16:16:16
 blit;RGBA;;;;;;RGBA;16:16:16:16
 blnd;Alpha Compositor;;;;;;;
 blur;Blur;;;;;;CMYK;
+brlt;Blackmagic RAW;;;https://www.blackmagicdesign.com/products/blackmagicraw;LT;;;
+brxq;Blackmagic RAW;;;https://www.blackmagicdesign.com/products/blackmagicraw;XQ;;;
 CFHD;CineForm;;CineForm High-Definition (HD) wavelet codec;http://www.cineform.com/;;;;
 CHQX;Canopus HQX;;;;;;;
 CLLC;Canopus Lossless;;;;;;;
