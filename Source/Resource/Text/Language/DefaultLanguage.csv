@@ -270,7 +270,6 @@ Compression_Mode_Lossless;Lossless
 Compression_Mode_Lossy;Lossy
 Compression_Ratio;Compression ratio
 Conductor;Conductor
-ConformanceCheck;Conformance check
 ContactEmail;Contact Email
 ContactTelephoneNumber;Contact Telephone Number
 Container and general information;Container and general information
@@ -850,6 +849,8 @@ LineUpStart;Line Up Start
 List;List
 Loudness_Anchor;Anchor loudness
 Loudness_Anchor_Album;Anchor loudness (album)
+Loudness_Count;Loudness info count
+Loudness_Count_Album;Loudness info count (album)
 Loudness_MaximumMomentary;Maximum momentary loudness
 Loudness_MaximumMomentary_Album;Maximum momentary loudness (album)
 Loudness_MaximumOfRange;Maximum of the range
@@ -860,8 +861,8 @@ Loudness_ProductionMixingLevel;Production mixing level
 Loudness_ProductionMixingLevel_Album;Production mixing level (album)
 Loudness_Program;Program loudness
 Loudness_Program_Album;Program loudness (album)
-Loudness_Range;Loudness Range
-Loudness_Range_Album;Loudness Range (album)
+Loudness_Range;Loudness range
+Loudness_Range_Album;Loudness range (album)
 Loudness_RoomType;Production room type
 Loudness_RoomType_Album;Production room type (album)
 Lyricist;Lyricist

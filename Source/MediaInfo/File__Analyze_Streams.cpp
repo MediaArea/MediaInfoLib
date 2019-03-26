@@ -1138,7 +1138,8 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
     ZtringList List;
     List.Separator_Set(0, __T(" / "));
     for (size_t i=0; i<Value.size(); i++)
-        List.push_back(Value[i]+(Id[i].empty()?Ztring():(__T(" (")+Id[i]+__T(')'))));
+        if (!Value[i].empty()) // Only if there is a content
+            List.push_back(Value[i]+(Id[i].empty()?Ztring():(__T(" (")+Id[i]+__T(')'))));
     Fill(StreamKind, StreamPos, Parameter, List.Read());
 }
 

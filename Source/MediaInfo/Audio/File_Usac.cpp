@@ -78,6 +78,9 @@ static const char* LoudnessMeaning[LoudnessMeaning_Size]=
 //---------------------------------------------------------------------------
 void File_Aac::UsacConfig()
 {
+    // Init
+    loudnessInfoSet_Present=false;
+
     Element_Begin1("UsacConfig");
     int8u coreSbrFrameLengthIndex;
     bool usacConfigExtensionPresent;
@@ -127,6 +130,8 @@ void File_Aac::UsacConfig()
     bool DefaultIdPresent=false;
     for (int8u i=0; i<2; i++)
     {
+        if (!loudnessInfo_Data[i].empty())
+            Fill(Stream_Audio, 0, i?"Loudness_Count_Album":"Loudness_Count", loudnessInfo_Data[i].size());
         ZtringList Ids;
         ZtringList SamplePeakLevel;
         ZtringList TruePeakLevel;
@@ -159,12 +164,26 @@ void File_Aac::UsacConfig()
         }
 
     }
-    if (loudnessInfo_Data[0].empty())
-        Fill(Stream_Audio, 0, "ConformanceCheck", "loudnessInfo is missing");
+    if (!loudnessInfoSet_Present)
+    {
+        Fill(Stream_Audio, 0, "Invalid", "loudnessInfoSet is missing");
+        Fill(Stream_Audio, 0, "Invalid/Short", "loudnessInfoSet missing");
+    }
+    else if (loudnessInfo_Data[0].empty())
+    {
+        Fill(Stream_Audio, 0, "Invalid", "loudnessInfoSet is empty");
+        Fill(Stream_Audio, 0, "Invalid/Short", "loudnessInfoSet empty");
+    }
     else if (!DefaultIdPresent)
-        Fill(Stream_Audio, 0, "ConformanceCheck", "loudnessInfo with drcSetId=0, eqSetId=0, downmixId=0 is missing");
+    {
+        Fill(Stream_Audio, 0, "Invalid", "loudnessInfo with drcSetId=0, downmixId=0 is missing"); // No ", eqSetId=0" for the moment
+        Fill(Stream_Audio, 0, "Invalid/Short", "loudnessInfoSet incomplete");
+    }
     else if (loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
-        Fill(Stream_Audio, 0, "ConformanceCheck", "None of program loudness or anchor loudness is present in loudnessInfo with drcSetId=0, eqSetId=0, downmixId=0");
+    {
+        Fill(Stream_Audio, 0, "Invalid", "None of program loudness or anchor loudness is present in loudnessInfo with drcSetId=0, downmixId=0"); // No ", eqSetId=0" for the moment
+        Fill(Stream_Audio, 0, "Invalid/Short", "Default loudnessInfo incomplete");
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -779,6 +798,8 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
         else if (downmixId==0x7F)
             channelCount=1;
     }
+    else
+        downmixId=0; // 0 is default
     Get_S2 (16, drcSetEffect,                                   "drcSetEffect");
     if ((drcSetEffect & (3<<10)) == 0)
     {
@@ -868,10 +889,8 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
                 }
             }
 
-        Ztring Id=Ztring::ToZtring(drcSetId);
-        if (downmixIdPresent && downmixId!=127)
-            Id+=__T('-')+Ztring::ToZtring(downmixId);
-        if (Id==__T("0") || Id==__T("0-0"))
+        Ztring Id=Ztring::ToZtring(drcSetId)+=__T('-')+Ztring::ToZtring(downmixId);
+        if (Id==__T("0-0"))
             Id.clear();
         drcInstructionsUniDrc_Data[Id].drcSetEffectTotal=Value;
     }
@@ -955,6 +974,7 @@ void File_Aac::UsacConfigExtension()
 void File_Aac::loudnessInfoSet(bool V1)
 {
     Element_Begin1(V1?"loudnessInfoSetV1":"loudnessInfoSet");
+    loudnessInfoSet_Present=true;
 
     int8u loudnessInfoAlbumCount, loudnessInfoCount;
     bool loudnessInfoSetExtPresent;
@@ -1071,9 +1091,9 @@ void File_Aac::loudnessInfo(bool FromAlbum, bool V1)
     }
 
     Ztring Id=Ztring::ToZtring(drcSetId);
-    if (V1)
-        Id+=__T('-')+Ztring::ToZtring(eqSetId);
     Id+=__T('-')+Ztring::ToZtring(downmixId);
+    //if (V1)
+    //    Id+=__T('-')+Ztring::ToZtring(eqSetId); // No eqSetId for the moment
     if (Id==__T("0-0") || Id==__T("0-0-0"))
         Id.clear();
     loudnessInfo_Data[FromAlbum][Id].SamplePeakLevel=((samplePeakLevelPresent && bsSamplePeakLevel)?(Ztring::ToZtring(20-((double)bsSamplePeakLevel)/32)+__T(" dBFS")):Ztring());

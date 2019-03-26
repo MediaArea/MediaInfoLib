@@ -419,6 +419,7 @@ protected :
     int8u                           baseChannelCount;
     int8u                           targetChannelCount;
     int8u                           bandCount;
+    bool                            loudnessInfoSet_Present;
 
 private :
     void FillInfosHEAACv2(const Ztring& Format_Settings);
