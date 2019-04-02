@@ -3467,6 +3467,11 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                     int32u keys_Pos=Element_Code_Get(Element_Level-1);
                     if (keys_Pos && keys_Pos<=moov_udta_meta_keys_List.size())
                         Metadata_Get(Parameter, moov_udta_meta_keys_List[keys_Pos-1]);
+                    if (Parameter=="Recorded_Date" && Value.size()>=10 && Value[4]==__T(':') && Value[7]==__T(':'))
+                    {
+                        Value[4]=__T('-');
+                        Value[7]=__T('-');
+                    }
                     if (Parameter=="com.apple.quicktime.version")
                         Vendor_Version=Value.SubString(__T(""), __T(" "));
                     else if (Parameter=="com.apple.quicktime.player.version")
@@ -3498,6 +3503,13 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                             Fill(Stream_General, 0, "UniversalAdID/String", Value+__T(" (")+Retrieve(Stream_General, 0, "UniversalAdID_Registry")+__T(")"), true);
                             Fill_SetOptions(Stream_General, 0, "UniversalAdID/String", "Y NTN");
                         }
+                    }
+                    else if (Parameter=="DisplayAspectRatio")
+                    {
+                        DisplayAspectRatio=Value;
+                        size_t i=DisplayAspectRatio.find(':');
+                        if (i!=string::npos)
+                            DisplayAspectRatio.From_Number(Ztring(DisplayAspectRatio.substr(0, i)).To_float64()/Ztring(DisplayAspectRatio.substr(i+1)).To_float64(), 3);
                     }
                     else if (!Parameter.empty())
                         Fill(Stream_General, 0, Parameter.c_str(), Value, true);
