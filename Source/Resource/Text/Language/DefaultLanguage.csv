@@ -270,6 +270,7 @@ Compression_Mode_Lossless;Lossless
 Compression_Mode_Lossy;Lossy
 Compression_Ratio;Compression ratio
 Conductor;Conductor
+ConformanceCheck;Conformance check
 ContactEmail;Contact Email
 ContactTelephoneNumber;Contact Telephone Number
 Container and general information;Container and general information

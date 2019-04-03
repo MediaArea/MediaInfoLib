@@ -156,8 +156,8 @@ void File_Aac::Streams_Fill()
         Fill_SetOptions(Stream_Audio, 0, "Loudness_Count", "N NI"); // Hidden in text output
     if (!Retrieve_Const(Stream_Audio, 0, "Loudness_Count_Album").empty())
         Fill_SetOptions(Stream_Audio, 0, "Loudness_Count_Album", "N NI"); // Hidden in text output
-    if (!Retrieve_Const(Stream_Audio, 0, "Invalid/Short").empty())
-        Fill_SetOptions(Stream_Audio, 0, "Invalid/Short", "N NT"); // Hidden in text output
+    if (!Retrieve_Const(Stream_Audio, 0, "ConformanceCheck/Short").empty())
+        Fill_SetOptions(Stream_Audio, 0, "ConformanceCheck/Short", "N NT"); // Hidden in text output
 }
 
 //---------------------------------------------------------------------------

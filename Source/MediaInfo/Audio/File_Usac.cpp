@@ -116,6 +116,7 @@ void File_Aac::UsacConfig()
     Element_End0();
 
     // Filling
+    Fill(Stream_Audio, 0, Audio_SamplesPerFrame, coreSbrFrameLengthIndex_Mapping[coreSbrFrameLengthIndex].outputFrameLengthDivided256 << 8, true);
     if (!drcInstructionsUniDrc_Data.empty())
     {
         Fill(Stream_Audio, 0, "DrcSets_Count", drcInstructionsUniDrc_Data.size());
@@ -166,23 +167,23 @@ void File_Aac::UsacConfig()
     }
     if (!loudnessInfoSet_Present)
     {
-        Fill(Stream_Audio, 0, "Invalid", "loudnessInfoSet is missing");
-        Fill(Stream_Audio, 0, "Invalid/Short", "loudnessInfoSet missing");
+        Fill(Stream_Audio, 0, "ConformanceCheck", "Invalid: loudnessInfoSet is missing");
+        Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet missing");
     }
     else if (loudnessInfo_Data[0].empty())
     {
-        Fill(Stream_Audio, 0, "Invalid", "loudnessInfoSet is empty");
-        Fill(Stream_Audio, 0, "Invalid/Short", "loudnessInfoSet empty");
+        Fill(Stream_Audio, 0, "ConformanceCheck", "Invalid: loudnessInfoSet is empty");
+        Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet empty");
     }
     else if (!DefaultIdPresent)
     {
-        Fill(Stream_Audio, 0, "Invalid", "loudnessInfo with drcSetId=0, downmixId=0 is missing"); // No ", eqSetId=0" for the moment
-        Fill(Stream_Audio, 0, "Invalid/Short", "loudnessInfoSet incomplete");
+        Fill(Stream_Audio, 0, "ConformanceCheck", "Invalid: Default loudnessInfo is missing");
+        Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfoSet missing");
     }
     else if (loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
     {
-        Fill(Stream_Audio, 0, "Invalid", "None of program loudness or anchor loudness is present in loudnessInfo with drcSetId=0, downmixId=0"); // No ", eqSetId=0" for the moment
-        Fill(Stream_Audio, 0, "Invalid/Short", "Default loudnessInfo incomplete");
+        Fill(Stream_Audio, 0, "ConformanceCheck", "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
+        Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo incomplete");
     }
 }
 
@@ -822,6 +823,7 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
         Skip_SB(                                                "requiresEq");
     for (int8u c=0; c<channelCount; c++)
     {
+        Element_Begin1("channel");
         int8u bsGainSetIndex;
         Get_S1 (6, bsGainSetIndex,                              "bsGainSetIndex");
         gainSetIndex.push_back(bsGainSetIndex);
@@ -838,14 +840,17 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
             gainSetIndex.resize(gainSetIndex.size()+bsRepeatGainSetIndexCount, bsGainSetIndex);
             c+=bsRepeatGainSetIndexCount;
         TEST_SB_END();
+        Element_End0();
     }
 
     size_t nDrcChannelGroups=set<int8s>(gainSetIndex.begin(), gainSetIndex.end()).size();
 
     for (int8u c=0; c< nDrcChannelGroups; c++)
     {
+        Element_Begin1("DrcChannel");
         for (int8u k=0; k<bandCount; k++)
         {
+            Element_Begin1("band");
             TEST_SB_SKIP(                                       "targetCharacteristicLeftPresent");
                 Skip_S1(4,                                      "targetCharacteristicLeftIndex");
             TEST_SB_END();
@@ -860,6 +865,7 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
                 Skip_SB(                                        "bsGainSign");
                 Skip_S1(5,                                      "bsGainOffset");
             TEST_SB_END();
+            Element_End0();
         }
         if (bandCount==1)
         {
@@ -867,6 +873,7 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
                 Skip_S1(4,                                      "shapeFilterIndex");
             TEST_SB_END();
         }
+        Element_End0();
     }
 
     Element_End0();
