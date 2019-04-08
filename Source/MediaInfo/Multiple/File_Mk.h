@@ -174,7 +174,7 @@ private :
     void Segment_Tracks_TrackEntry_TrackTranslate_TrackTranslateTrackID(){Skip_XX(Element_Size, "Data");};
     void Segment_Tracks_TrackEntry_Video();
     void Segment_Tracks_TrackEntry_Video_FlagInterlaced(){UInteger_Info();};
-    void Segment_Tracks_TrackEntry_Video_FieldOrder(){UInteger_Info();};
+    void Segment_Tracks_TrackEntry_Video_FieldOrder();
     void Segment_Tracks_TrackEntry_Video_StereoMode();
     void Segment_Tracks_TrackEntry_Video_AlphaMode(){UInteger_Info();};
     void Segment_Tracks_TrackEntry_Video_OldStereoMode();

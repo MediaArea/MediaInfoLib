@@ -4013,6 +4013,53 @@ void File_Mk::Segment_Tracks_TrackEntry_Video_PixelWidth()
 }
 
 //---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_Video_FieldOrder()
+{
+    //Parsing
+    int64u UInteger=UInteger_Get();
+
+    //Filling
+    FILLING_BEGIN();
+        // Same as MOV
+        switch(UInteger)
+        {
+            case  1 :
+            case  9 :
+            case  6 :
+            case 14 :
+                        Fill(Stream_Video, StreamPos_Last, Video_ScanType, "Interlaced", Unlimited, true, true);
+                        break;
+            default  :  ;
+        }
+        switch(UInteger)
+        {
+            case  1 :   // T is displayed earliest, T is stored first in the file.
+            case  9 :   // B is displayed earliest, T is stored first in the file.
+                        Fill(Stream_Video, StreamPos_Last, Video_ScanOrder, "TFF", Unlimited, true, true);
+                        break;
+            case  6 :   // B is displayed earliest, B is stored first in the file.
+            case 14 :   // T is displayed earliest, B is stored first in the file.
+                        Fill(Stream_Video, StreamPos_Last, Video_ScanOrder, "BFF", Unlimited, true, true);
+                        break;
+            default  :  ;
+        }
+        switch (UInteger)
+        {
+            case  1 :   // Separated fields, TFF
+            case  6 :   // Separated fields, BFF
+                        Fill(Stream_Video, StreamPos_Last, Video_ScanType_StoreMethod_FieldsPerBlock, 2, 10, true);
+                        Fill(Stream_Video, StreamPos_Last, Video_ScanType_StoreMethod, "SeparatedFields", Unlimited, true, true);
+                        break;
+            case  9 :   // Interleaved fields, TFF
+            case 14 :   // Interleaved fields, BFF
+                        Fill(Stream_Video, StreamPos_Last, Video_ScanType_StoreMethod, "InterleavedFields", Unlimited, true, true);
+                        break;
+            default  :  ;
+        }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Mk::Segment_Tracks_TrackEntry_Video_StereoMode()
 {
     //Parsing
