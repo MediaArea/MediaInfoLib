@@ -376,7 +376,7 @@ enum general
     General_SoundEngineer,
     General_ArtDirector,
     General_ProductionDesigner,
-    General_Choregrapher,
+    General_Choreographer,
     General_CostumeDesigner,
     General_Actor,
     General_Actor_Character,
