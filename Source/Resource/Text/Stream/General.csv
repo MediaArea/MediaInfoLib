@@ -219,7 +219,7 @@ DirectorOfPhotography;;;Y YTY;;;The name of the director of photography, also kn
 SoundEngineer;;;Y YTY;;;The name of the sound engineer or sound recordist.;;Entity
 ArtDirector;;;Y YTY;;;The person who oversees the artists and craftspeople who build the sets.;;Entity
 ProductionDesigner;;;Y YTY;;;The person responsible for designing the Overall visual appearance of a movie.;;Entity
-Choregrapher;;;Y YTY;;;The name of the choregrapher.;;Entity
+Choreographer;;;Y YTY;;;The name of the choreographer.;;Entity
 CostumeDesigner;;;Y YTY;;;The name of the costume designer.;;Entity
 Actor;;;Y YTY;;;Real name of an actor or actress playing a role in the movie.;;Entity
 Actor_Character;;;Y YTY;;;Name of the character an actor or actress plays in this movie.;;Entity
