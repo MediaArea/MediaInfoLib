@@ -654,8 +654,11 @@ void File_Aac::drcCoefficientsUniDrc(bool V1)
     }
     int8u gainSetCount;
     Get_S1 (6, gainSetCount,                                    "gainSetCount");
+    gainSets.clear();
     for (int8u i=0; i<gainSetCount; i++)
     {
+        Element_Begin1("gainSet");
+        gain_set gainSet;
         int8u gainCodingProfile;
         Get_S1 (2, gainCodingProfile,                           "gainCodingProfile");
         Skip_SB(                                                "gainInterpolationType");
@@ -666,13 +669,13 @@ void File_Aac::drcCoefficientsUniDrc(bool V1)
         TEST_SB_END();
         if (gainCodingProfile != 3)
         {
-            int8u bandCount;
             bool drcBandType;
-            Get_S1 (4, bandCount,                               "bandCount");
-            if (bandCount>1)
+            Get_S1 (4, gainSet.bandCount,                       "bandCount");
+            if (gainSet.bandCount>1)
                 Get_SB (drcBandType,                            "drcBandType");
-            for (int8u i=0; i<bandCount; i++)
+            for (int8u i=0; i<gainSet.bandCount; i++)
             {
+                Element_Begin1("bandCount");
                 if (V1)
                 {
                     TEST_SB_SKIP(                               "indexPresent");
@@ -699,8 +702,9 @@ void File_Aac::drcCoefficientsUniDrc(bool V1)
                         }
                     TEST_SB_END();
                 }
+                Element_End0();
             }
-            for (int8u i=1; i <bandCount; i++)
+            for (int8u i=1; i <gainSet.bandCount; i++)
             {
                 if (drcBandType)
                     Skip_S1( 4,                                 "crossoverFreqIndex");
@@ -708,6 +712,10 @@ void File_Aac::drcCoefficientsUniDrc(bool V1)
                     Skip_S2(10,                                 "startSubBandIndex");
             }
         }
+        else
+            gainSet.bandCount=1;
+        gainSets.push_back(gainSet);
+        Element_End0();
     }
 
     Element_End0();
@@ -826,6 +834,13 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
         Element_Begin1("channel");
         int8u bsGainSetIndex;
         Get_S1 (6, bsGainSetIndex,                              "bsGainSetIndex");
+        if (!bsGainSetIndex || bsGainSetIndex>gainSets.size()) // 1-based
+        {
+            Skip_BS(Data_BS_Remain(),                               "(Not implemented)");
+            Element_End0();
+            Element_End0();
+            return;
+        }
         gainSetIndex.push_back(bsGainSetIndex);
         if ((drcSetEffect & (3<<10)) != 0)
         {
@@ -843,11 +858,13 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
         Element_End0();
     }
 
-    size_t nDrcChannelGroups=set<int8s>(gainSetIndex.begin(), gainSetIndex.end()).size();
+    set<int8s> DrcChannelGroups=set<int8s>(gainSetIndex.begin(), gainSetIndex.end());
+    size_t nDrcChannelGroups=DrcChannelGroups.size();
 
-    for (int8u c=0; c< nDrcChannelGroups; c++)
+    for (set<int8s>::iterator DrcChannelGroup=DrcChannelGroups.begin(); DrcChannelGroup!=DrcChannelGroups.end(); ++DrcChannelGroup)
     {
         Element_Begin1("DrcChannel");
+        int8u bandCount=gainSets[*DrcChannelGroup-1].bandCount;
         for (int8u k=0; k<bandCount; k++)
         {
             Element_Begin1("band");
@@ -911,7 +928,6 @@ void File_Aac::channelLayout()
     bool layoutSignalingPresent;
     Get_S1 (7, baseChannelCount,                                "baseChannelCount");
     targetChannelCount=baseChannelCount;
-    bandCount=1;
     Get_SB (   layoutSignalingPresent,                          "layoutSignalingPresent");
     if (layoutSignalingPresent)
     {

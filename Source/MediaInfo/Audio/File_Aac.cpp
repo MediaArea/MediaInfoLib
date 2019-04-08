@@ -152,6 +152,8 @@ void File_Aac::Streams_Fill()
     Fill(Stream_Audio, StreamPos_Last, Audio_SamplesPerFrame, frame_length*frame_length_Multiplier);
     }
 
+    if (!Retrieve_Const(Stream_Audio, 0, "DrcSets_Count").empty())
+        Fill_SetOptions(Stream_Audio, 0, "DrcSets_Count", "N NI"); // Hidden in text output
     if (!Retrieve_Const(Stream_Audio, 0, "Loudness_Count").empty())
         Fill_SetOptions(Stream_Audio, 0, "Loudness_Count", "N NI"); // Hidden in text output
     if (!Retrieve_Const(Stream_Audio, 0, "Loudness_Count_Album").empty())

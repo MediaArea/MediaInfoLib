@@ -418,7 +418,11 @@ protected :
     std::map<Ztring, loudness_info> loudnessInfo_Data[2]; // By non-album/album then by id
     int8u                           baseChannelCount;
     int8u                           targetChannelCount;
-    int8u                           bandCount;
+    struct gain_set
+    {
+        int8u                       bandCount;
+    };
+    std::vector<gain_set>           gainSets;
     bool                            loudnessInfoSet_Present;
 
 private :
