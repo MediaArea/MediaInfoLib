@@ -798,6 +798,13 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
         {
             Ztring ToReplace=Elements(Elements_Index).SubString(__T("%"), __T("%"));
             Ztring ReplacedBy=Get(StreamKind, StreamPos, ToReplace);
+            ReplacedBy.FindAndReplace(__T("\\"), __T("|SC1|"), 0, Ztring_Recursive);
+            ReplacedBy.FindAndReplace(__T("["), __T("|SC2|"), 0, Ztring_Recursive);
+            ReplacedBy.FindAndReplace(__T("]"), __T("|SC3|"), 0, Ztring_Recursive);
+            ReplacedBy.FindAndReplace(__T(","), __T("|SC4|"), 0, Ztring_Recursive);
+            ReplacedBy.FindAndReplace(__T(";"), __T("|SC5|"), 0, Ztring_Recursive);
+            ReplacedBy.FindAndReplace(__T("("), __T("|SC6|"), 0, Ztring_Recursive);
+            ReplacedBy.FindAndReplace(__T(")"), __T("|SC7|"), 0, Ztring_Recursive);
             ToReplace=Ztring(__T("%"))+ToReplace+Ztring(__T("%"));
             Elements(Elements_Index).FindAndReplace(ToReplace, ReplacedBy);
         }
