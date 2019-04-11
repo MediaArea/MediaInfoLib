@@ -938,7 +938,7 @@ void File_Riff::Header_Parse()
     }
 
     //Alignment
-    if (Size_Complete%2 && !IsNotWordAligned)
+    if (Size_Complete%2 && !IsNotWordAligned && File_Offset+Buffer_Offset+Element_Offset+Size_Complete<File_Size)
     {
         Size_Complete++; //Always 2-byte aligned
         Alignement_ExtraByte=1;
