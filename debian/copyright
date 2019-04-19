@@ -4,7 +4,7 @@ Upstream-Contact: MediaArea.net SARL <Info@MediaArea.net>
 Source: http://mediainfo.sf.net
 
 Files: *
-Copyright: 2002-2013, MediaArea.net SARL <Info@MediaArea.net>
+Copyright: 2002-2019, MediaArea.net SARL <Info@MediaArea.net>
 License: BSD-2-clause
 
 Files: Project/MSCS2008/Example/HowToUse_Dll.cs
@@ -22,7 +22,7 @@ Copyright: 1998-2013, Brian Gladman
 License: aes-gladman
 
 Files: debian/*
-Copyright: 2008-2015, MediaArea.net SARL <info@mediaarea.net>
+Copyright: 2008-2019, MediaArea.net SARL <info@mediaarea.net>
            2012-2015, Chow Loong Jin <hyperair@debian.org>
 License: BSD-2-clause
 
