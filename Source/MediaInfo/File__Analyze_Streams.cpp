@@ -1117,6 +1117,33 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
 }
 
 //---------------------------------------------------------------------------
+void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Parameter, ZtringList &Value, ZtringList& Id, bool Replace)
+{
+    //Test if not empty
+    size_t Value_Size=Value.size();
+    size_t i=0;
+    for (; i<Value_Size; i++)
+        if (!Value[i].empty())
+            break;
+    if (i==Value_Size)
+        return;
+
+    if (Value.size()!=Id.size())
+    {
+        Value.Separator_Set(0, __T(" / "));
+        Fill(StreamKind, StreamPos, Parameter, Value.Read());
+        return;
+    }
+
+    ZtringList List;
+    List.Separator_Set(0, __T(" / "));
+    for (size_t i=0; i<Value.size(); i++)
+        if (!Value[i].empty()) // Only if there is a content
+            List.push_back(Value[i]+(Id[i].empty()?Ztring():(__T(" (")+Id[i]+__T(')'))));
+    Fill(StreamKind, StreamPos, Parameter, List.Read());
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Fill_SetOptions(stream_t StreamKind, size_t StreamPos, const char* Parameter, const char* Options)
 {
     //Integrity
