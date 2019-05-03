@@ -1539,6 +1539,7 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
     Source_Info_Temp=Retrieve(StreamKind, StreamPos_To, "Source_Info");
     Ztring BitRate_Temp=Retrieve(StreamKind, StreamPos_To, "BitRate");
     Ztring CodecID_Temp=Retrieve(StreamKind, StreamPos_To, "CodecID");
+    Ztring Title_Temp=Retrieve(StreamKind, StreamPos_To, "Title");
 
     //Merging
     size_t Size=ToAdd.Count_Get(StreamKind, StreamPos_From);
@@ -1720,6 +1721,13 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
     if (!CodecID_Temp.empty() && !CodecID_New.empty() && CodecID_Temp!=CodecID_New && (Config->File_IsReferenced_Get() ^ !ToAdd.Config->File_IsReferenced_Get())) //TODO: better handling of merges, avoiding duplicate merges so we can remeove hack CodecID_Temp!=CodecID_New
     {
         Fill(StreamKind, StreamPos_To, "CodecID", CodecID_Temp+__T('-')+ToAdd.Retrieve(StreamKind, StreamPos_From, "CodecID"), true);
+    }
+    const Ztring& Title_New=ToAdd.Retrieve_Const(StreamKind, StreamPos_From, "Title");
+    if (StreamKind!=Stream_General && !Title_Temp.empty() && !Title_New.empty() && Title_Temp!=Title_New)
+    {
+        Title_Temp+=__T(" - ");
+        if (Title_New.compare(0, Title_Temp.size(), Title_Temp)) //For a master file with title referencing a essence file with title and stream title, we check that master file title is not the essence file title (not same due to stream title)
+            Fill(StreamKind, StreamPos_To, "Title", Title_Temp+Title_New, true);
     }
 
     Fill(StreamKind, StreamPos_To, (size_t)General_Count, Count_Get(StreamKind, StreamPos_To), 10, true);
