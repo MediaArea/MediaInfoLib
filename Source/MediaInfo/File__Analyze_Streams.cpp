@@ -518,9 +518,10 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                             switch (Parameter)
                             {
                                 case Audio_SamplesPerFrame:
+                                case Audio_SamplingRate:
                                     if (Retrieve(Stream_Audio, StreamPos, Audio_FrameRate).empty())
                                     {
-                                        float64 SamplesPerFrame=Value.To_float64();
+                                        float64 SamplesPerFrame=Retrieve(Stream_Audio, StreamPos, Audio_SamplesPerFrame).To_float64();
                                         float64 SamplingRate=DBL_MAX;
                                         ZtringList SamplingRates;
                                         SamplingRates.Separator_Set(0, " / ");
