@@ -6659,21 +6659,6 @@ void File_Mxf::AES3PCMDescriptor()
 //---------------------------------------------------------------------------
 void File_Mxf::CDCIEssenceDescriptor()
 {
-    if (Code2>=0x8000)
-    {
-        // Not a short code
-        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
-        if (Primer_Value!=Primer_Values.end())
-        {
-            int32u Code_Compare1=Primer_Value->second.hi>>32;
-            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
-            int32u Code_Compare3=Primer_Value->second.lo>>32;
-            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
-            if(0);
-            ELEMENT_UUID(SubDescriptors,                                "Sub Descriptors")
-        }
-    }
-
     switch(Code2)
     {
         ELEMENT(3301, CDCIEssenceDescriptor_ComponentDepth,     "Active bits per sample")
@@ -6686,8 +6671,22 @@ void File_Mxf::CDCIEssenceDescriptor()
         ELEMENT(3308, CDCIEssenceDescriptor_VerticalSubsampling,"Vertical colour subsampling")
         ELEMENT(3309, CDCIEssenceDescriptor_AlphaSampleDepth,   "Bits per alpha sample")
         ELEMENT(330B, CDCIEssenceDescriptor_ReversedByteOrder,  "Luma followed by Chroma")
-        default: GenericPictureEssenceDescriptor();
+        default:
+                {
+                    std::map<int16u, int128u>::iterator Primer_Value = Primer_Values.find(Code2);
+                    if (Primer_Value != Primer_Values.end())
+                    {
+                        int32u Code_Compare1 = Primer_Value->second.hi >> 32;
+                        int32u Code_Compare2 = (int32u)Primer_Value->second.hi;
+                        int32u Code_Compare3 = Primer_Value->second.lo >> 32;
+                        int32u Code_Compare4 = (int32u)Primer_Value->second.lo;
+                        if (0);
+                        ELEMENT_UUID(SubDescriptors,            "Sub Descriptors")
+                    }
+                }
     }
+
+    GenericPictureEssenceDescriptor();
 
     if (Descriptors[InstanceUID].Infos.find("ColorSpace")==Descriptors[InstanceUID].Infos.end())
         Descriptor_Fill("ColorSpace", "YUV");
@@ -7001,9 +7000,7 @@ void File_Mxf::GenericDescriptor()
 //---------------------------------------------------------------------------
 void File_Mxf::JPEG2000PictureSubDescriptor()
 {
-    if (Code2>=0x8000)
     {
-        // Not a short code
         std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
         if (Primer_Value!=Primer_Values.end())
         {
@@ -7012,26 +7009,19 @@ void File_Mxf::JPEG2000PictureSubDescriptor()
             int32u Code_Compare3=Primer_Value->second.lo>>32;
             int32u Code_Compare4=(int32u)Primer_Value->second.lo;
             if(0);
-            ELEMENT_UUID(JPEG2000PictureSubDescriptor_Rsiz,             "Rsiz - Decoder capabilities")
-            ELEMENT_UUID(JPEG2000PictureSubDescriptor_Xsiz,             "Xsiz - Width")
-            ELEMENT_UUID(JPEG2000PictureSubDescriptor_Ysiz,             "Ysiz - Height")
-            ELEMENT_UUID(JPEG2000PictureSubDescriptor_XOsiz,            "XOsiz - Horizontal offset")
-            ELEMENT_UUID(JPEG2000PictureSubDescriptor_YOsiz,            "YOsiz - Vertical offset")
-            ELEMENT_UUID(JPEG2000PictureSubDescriptor_XTsiz,            "XTsiz - Width of one reference tile")
-            ELEMENT_UUID(JPEG2000PictureSubDescriptor_YTsiz,            "YTsiz - Height of one reference tile")
-            ELEMENT_UUID(JPEG2000PictureSubDescriptor_XTOsiz,           "XTOsiz - Horizontal offset of the first tile")
-            ELEMENT_UUID(JPEG2000PictureSubDescriptor_YTOsiz,           "YTOsiz - Vertical offset of the first tile")
-            ELEMENT_UUID(JPEG2000PictureSubDescriptor_Csiz,             "Csiz - Number of components in the picture")
+            ELEMENT_UUID(JPEG2000PictureSubDescriptor_Rsiz,     "Rsiz - Decoder capabilities")
+            ELEMENT_UUID(JPEG2000PictureSubDescriptor_Xsiz,     "Xsiz - Width")
+            ELEMENT_UUID(JPEG2000PictureSubDescriptor_Ysiz,     "Ysiz - Height")
+            ELEMENT_UUID(JPEG2000PictureSubDescriptor_XOsiz,    "XOsiz - Horizontal offset")
+            ELEMENT_UUID(JPEG2000PictureSubDescriptor_YOsiz,    "YOsiz - Vertical offset")
+            ELEMENT_UUID(JPEG2000PictureSubDescriptor_XTsiz,    "XTsiz - Width of one reference tile")
+            ELEMENT_UUID(JPEG2000PictureSubDescriptor_YTsiz,    "YTsiz - Height of one reference tile")
+            ELEMENT_UUID(JPEG2000PictureSubDescriptor_XTOsiz,   "XTOsiz - Horizontal offset of the first tile")
+            ELEMENT_UUID(JPEG2000PictureSubDescriptor_YTOsiz,   "YTOsiz - Vertical offset of the first tile")
+            ELEMENT_UUID(JPEG2000PictureSubDescriptor_Csiz,     "Csiz - Number of components in the picture")
             ELEMENT_UUID(JPEG2000PictureSubDescriptor_PictureComponentSizing, "Picture Component Sizing")
             ELEMENT_UUID(JPEG2000PictureSubDescriptor_CodingStyleDefault, "Coding Style Default")
             ELEMENT_UUID(JPEG2000PictureSubDescriptor_QuantizationDefault, "Quantization Default")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                        "Data");
-            }
-
-            return;
         }
     }
 
@@ -7066,24 +7056,6 @@ void File_Mxf::GenericPackage()
 //---------------------------------------------------------------------------
 void File_Mxf::GenericPictureEssenceDescriptor()
 {
-    if (Code2>=0x8000)
-    {
-        // Not a short code
-        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
-        if (Primer_Value!=Primer_Values.end())
-        {
-            int32u Code_Compare1=Primer_Value->second.hi>>32;
-            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
-            int32u Code_Compare3=Primer_Value->second.lo>>32;
-            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
-            if(0);
-            ELEMENT_UUID(MasteringDisplayPrimaries, "Mastering Display Primaries")
-            ELEMENT_UUID(MasteringDisplayWhitePointChromaticity, "Mastering Display White Point Chromaticity")
-            ELEMENT_UUID(MasteringDisplayMaximumLuminance, "Mastering Display Maximum Luminance")
-            ELEMENT_UUID(MasteringDisplayMinimumLuminance, "Mastering Display Minimum Luminance")
-        }
-    }
-
     switch(Code2)
     {
         ELEMENT(3201, GenericPictureEssenceDescriptor_PictureEssenceCoding, "Identifier of the Picture Compression Scheme")
@@ -7112,8 +7084,25 @@ void File_Mxf::GenericPictureEssenceDescriptor()
         ELEMENT(3218, GenericPictureEssenceDescriptor_ActiveFormatDescriptor, "Specifies the intended framing of the content within the displayed image")
         ELEMENT(3219, GenericPictureEssenceDescriptor_ColorPrimaries, "Color Primaries")
         ELEMENT(321A, GenericPictureEssenceDescriptor_CodingEquations, "Coding Equations")
-        default: FileDescriptor();
+        default:
+                {
+                    std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+                    if (Primer_Value!=Primer_Values.end())
+                    {
+                        int32u Code_Compare1=Primer_Value->second.hi>>32;
+                        int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+                        int32u Code_Compare3=Primer_Value->second.lo>>32;
+                        int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+                        if(0);
+                        ELEMENT_UUID(MasteringDisplayPrimaries, "Mastering Display Primaries")
+                        ELEMENT_UUID(MasteringDisplayWhitePointChromaticity, "Mastering Display White Point Chromaticity")
+                        ELEMENT_UUID(MasteringDisplayMaximumLuminance, "Mastering Display Maximum Luminance")
+                        ELEMENT_UUID(MasteringDisplayMinimumLuminance, "Mastering Display Minimum Luminance")
+                    }
+                }
     }
+
+    FileDescriptor();
 
     if (Descriptors[InstanceUID].StreamKind==Stream_Max)
     {
@@ -7217,9 +7206,7 @@ void File_Mxf::MPEG2VideoDescriptor()
 {
     Descriptors[InstanceUID].HasMPEG2VideoDescriptor=true;
 
-    if (Code2>=0x8000)
     {
-        // Not a short code
         std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
         if (Primer_Value!=Primer_Values.end())
         {
@@ -7238,13 +7225,6 @@ void File_Mxf::MPEG2VideoDescriptor()
             ELEMENT_UUID(MPEG2VideoDescriptor_BPictureCount,            "Maximum number of B pictures between P or I frames")
             ELEMENT_UUID(MPEG2VideoDescriptor_ProfileAndLevel,          "Profile and level")
             ELEMENT_UUID(MPEG2VideoDescriptor_BitRate,                  "Maximum bit rate")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                        "Data");
-            }
-
-            return;
         }
     }
 
@@ -7257,36 +7237,28 @@ void File_Mxf::MultipleDescriptor()
     if (Descriptors[InstanceUID].Type==descriptor::Type_Unknown)
         Descriptors[InstanceUID].Type=descriptor::type_Mutiple;
 
-    /*
-    //TODO: check when MPEG-4 Visual subdescriptor, it disabled stream info merge
-    if (Code2>=0x8000)
-    {
-        // Not a short code
-        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
-        if (Primer_Value!=Primer_Values.end())
-        {
-            int32u Code_Compare1=Primer_Value->second.hi>>32;
-            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
-            int32u Code_Compare3=Primer_Value->second.lo>>32;
-            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
-            if(0);
-            ELEMENT_UUID(SubDescriptors,                                "Sub Descriptors")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                        "Data");
-            }
-
-            return;
-        }
-    }
-    */
-
     switch(Code2)
     {
         ELEMENT(3F01, MultipleDescriptor_FileDescriptors,       "FileDescriptors")
-        default: FileDescriptor();
+        default:;
+                /*
+                //TODO: check when MPEG-4 Visual subdescriptor, it disabled stream info merge
+                {
+                    std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+                    if (Primer_Value!=Primer_Values.end())
+                    {
+                        int32u Code_Compare1=Primer_Value->second.hi>>32;
+                        int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+                        int32u Code_Compare3=Primer_Value->second.lo>>32;
+                        int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+                        if(0);
+                        ELEMENT_UUID(SubDescriptors,            "Sub Descriptors")
+                    }
+                }
+                */
     }
+
+    FileDescriptor();
 }
 
 //---------------------------------------------------------------------------
@@ -7369,28 +7341,6 @@ void File_Mxf::RGBAEssenceDescriptor()
 {
     Descriptors[InstanceUID].Type=descriptor::Type_RGBA;
 
-    if (Code2>=0x8000)
-    {
-        // Not a short code
-        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
-        if (Primer_Value!=Primer_Values.end())
-        {
-            int32u Code_Compare1=Primer_Value->second.hi>>32;
-            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
-            int32u Code_Compare3=Primer_Value->second.lo>>32;
-            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
-            if(0);
-            ELEMENT_UUID(SubDescriptors,                                "Sub Descriptors")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                        "Data");
-            }
-
-            return;
-        }
-    }
-
     switch(Code2)
     {
         ELEMENT(3401, RGBAEssenceDescriptor_PixelLayout,        "Pixel Layout")
@@ -7401,9 +7351,23 @@ void File_Mxf::RGBAEssenceDescriptor()
         ELEMENT(3407, RGBAEssenceDescriptor_ComponentMinRef,    "Minimum value for RGB components")
         ELEMENT(3408, RGBAEssenceDescriptor_AlphaMaxRef,        "Maximum value for alpha component")
         ELEMENT(3409, RGBAEssenceDescriptor_AlphaMinRef,        "Minimum value for alpha component")
-        default: GenericPictureEssenceDescriptor();
+        default:
+                {
+                    std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+                    if (Primer_Value!=Primer_Values.end())
+                    {
+                        int32u Code_Compare1=Primer_Value->second.hi>>32;
+                        int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+                        int32u Code_Compare3=Primer_Value->second.lo>>32;
+                        int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+                        if(0);
+                        ELEMENT_UUID(SubDescriptors,            "Sub Descriptors")
+                    }
+                }
     }
 
+    GenericPictureEssenceDescriptor(); 
+    
     if (Descriptors[InstanceUID].Infos.find("ColorSpace")==Descriptors[InstanceUID].Infos.end())
         Descriptor_Fill("ColorSpace", "RGB");
 }
@@ -7548,9 +7512,7 @@ void File_Mxf::SystemScheme1()
 //
 void File_Mxf::AS11_AAF_Core()
 {
-    if (Code2>=0x8000)
     {
-        // Not a short code
         std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
         if (Primer_Value!=Primer_Values.end())
         {
@@ -7569,13 +7531,6 @@ void File_Mxf::AS11_AAF_Core()
             ELEMENT_UUID(AS11_Core_ClosedCaptionsType,          "Closed Captions Type")
             ELEMENT_UUID(AS11_Core_ClosedCaptionsLanguage,      "Closed Captions Language")
             ELEMENT_UUID(AS11_Core_ShimVersion,                 "Shim Version")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                "Data");
-            }
-
-            return;
         }
     }
 
@@ -7589,9 +7544,7 @@ void File_Mxf::AS11_AAF_Core()
 //
 void File_Mxf::AS11_AAF_Segmentation()
 {
-    if (Code2>=0x8000)
     {
-        // Not a short code
         std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
         if (Primer_Value!=Primer_Values.end())
         {
@@ -7602,13 +7555,6 @@ void File_Mxf::AS11_AAF_Segmentation()
             if(0);
             ELEMENT_UUID(AS11_Segment_PartNumber,               "Part Number")
             ELEMENT_UUID(AS11_Segment_PartTotal,                "Part Total")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                "Data");
-            }
-
-            return;
         }
     }
 
@@ -7622,9 +7568,7 @@ void File_Mxf::AS11_AAF_Segmentation()
 //
 void File_Mxf::AS11_AAF_UKDPP()
 {
-    if (Code2>=0x8000)
     {
-        // Not a short code
         std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
         if (Primer_Value!=Primer_Values.end())
         {
@@ -7670,13 +7614,6 @@ void File_Mxf::AS11_AAF_UKDPP()
             ELEMENT_UUID(AS11_UKDPP_ProgrammeTextLanguage,      "Programme Text Language")
             ELEMENT_UUID(AS11_UKDPP_ContactEmail,               "Contact Email")
             ELEMENT_UUID(AS11_UKDPP_ContactTelephoneNumber,     "Contact Telephone Number")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                "Data");
-            }
-
-            return;
         }
     }
 
@@ -7690,9 +7627,7 @@ void File_Mxf::AS11_AAF_UKDPP()
 //SMPTE 380M
 void File_Mxf::DMScheme1()
 {
-    if (Code2>=0x8000)
     {
-        // Not a short code
         std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
         if (Primer_Value!=Primer_Values.end())
         {
@@ -7705,13 +7640,6 @@ void File_Mxf::DMScheme1()
             ELEMENT_UUID(SecondaryExtendedSpokenLanguage,               "Secondary Extended Spoken Language")
             ELEMENT_UUID(OriginalExtendedSpokenLanguage,                "Original Extended Spoken Language")
             ELEMENT_UUID(SecondaryOriginalExtendedSpokenLanguage,       "Secondary Original Extended Spoken Language")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                        "Data");
-            }
-
-            return;
         }
     }
 
@@ -7773,28 +7701,6 @@ void File_Mxf::TimecodeComponent()
 //---------------------------------------------------------------------------
 void File_Mxf::WaveAudioDescriptor()
 {
-    if (Code2>=0x8000)
-    {
-        // Not a short code
-        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
-        if (Primer_Value!=Primer_Values.end())
-        {
-            int32u Code_Compare1=Primer_Value->second.hi>>32;
-            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
-            int32u Code_Compare3=Primer_Value->second.lo>>32;
-            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
-            if(0);
-            ELEMENT_UUID(SubDescriptors,                                "Sub Descriptors")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                        "Data");
-            }
-
-            return;
-        }
-    }
-
     switch(Code2)
     {
         ELEMENT(3D09, WaveAudioDescriptor_AvgBps,               "Average Bytes per second")
@@ -7810,8 +7716,22 @@ void File_Mxf::WaveAudioDescriptor()
         ELEMENT(3D30, WaveAudioDescriptor_PeakEnvelopeTimestamp,"Time stamp of the creation of the peak data")
         ELEMENT(3D31, WaveAudioDescriptor_PeakEnvelopeData ,    "Peak envelope data")
         ELEMENT(3D32, WaveAudioDescriptor_ChannelAssignment,    "Channel assignment")
-        default: GenericSoundEssenceDescriptor();
+        default:
+                {
+                    std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+                    if (Primer_Value!=Primer_Values.end())
+                    {
+                        int32u Code_Compare1=Primer_Value->second.hi>>32;
+                        int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+                        int32u Code_Compare3=Primer_Value->second.lo>>32;
+                        int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+                        if(0);
+                        ELEMENT_UUID(SubDescriptors,                                "Sub Descriptors")
+                    }
+                }
     }
+
+    GenericSoundEssenceDescriptor();
 }
 
 //---------------------------------------------------------------------------
@@ -7853,9 +7773,7 @@ void File_Mxf::AncPacketsDescriptor()
 //---------------------------------------------------------------------------
 void File_Mxf::MpegAudioDescriptor()
 {
-    if (Code2>=0x8000)
     {
-        // Not a short code
         std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
         if (Primer_Value!=Primer_Values.end())
         {
@@ -7865,13 +7783,6 @@ void File_Mxf::MpegAudioDescriptor()
             int32u Code_Compare4=(int32u)Primer_Value->second.lo;
             if(0);
             ELEMENT_UUID(MpegAudioDescriptor_BitRate,                   "Bit Rate")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                        "Data");
-            }
-
-            return;
         }
     }
 
@@ -7917,7 +7828,6 @@ void File_Mxf::MCALabelSubDescriptor()
     if (Descriptors[InstanceUID].Type==descriptor::Type_Unknown)
         Descriptors[InstanceUID].Type=descriptor::Type_MCALabelSubDescriptor;
 
-    if (Code2>=0x8000)
     {
         // Not a short code
         std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
@@ -7944,13 +7854,6 @@ void File_Mxf::MCALabelSubDescriptor()
             ELEMENT_UUID(MCAAudioContentKind,                           "MCA Audio Content Kind")
             ELEMENT_UUID(MCAAudioElementKind,                           "MCA Audio Element Kind")
             ELEMENT_UUID(RFC5646AudioLanguageCode,                      "Secondary Original Extended Spoken Language")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                        "Data");
-            }
-
-            return;
         }
     }
 
@@ -7964,9 +7867,7 @@ void File_Mxf::MCALabelSubDescriptor()
 //---------------------------------------------------------------------------
 void File_Mxf::TimedTextDescriptor()
 {
-    if (Code2>=0x8000)
     {
-        // Not a short code
         std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
         if (Primer_Value!=Primer_Values.end())
         {
@@ -7978,13 +7879,6 @@ void File_Mxf::TimedTextDescriptor()
             ELEMENT_UUID(ResourceID,                            "Resource ID")
             ELEMENT_UUID(NamespaceURI,                          "Namespace URI")
             ELEMENT_UUID(UCSEncoding,                           "UCS Encoding")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                "Data");
-            }
-
-            return;
         }
     }
 
@@ -8047,13 +7941,6 @@ void File_Mxf::Mpeg4VisualSubDescriptor()
             ELEMENT_UUID(Mpeg4VisualDescriptor_BPictureCount,           "Maximum number of B pictures between P or I frames")
             ELEMENT_UUID(Mpeg4VisualDescriptor_ProfileAndLevel,         "Profile and level")
             ELEMENT_UUID(Mpeg4VisualDescriptor_BitRate,                 "Maximum bit rate")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                        "Data");
-            }
-
-            return;
         }
     }
 
@@ -8091,25 +7978,6 @@ void File_Mxf::AudioChannelLabelSubDescriptor()
     if (Descriptors[InstanceUID].Type==descriptor::Type_Unknown)
         Descriptors[InstanceUID].Type=descriptor::Type_AudioChannelLabelSubDescriptor;
 
-    if (Code2>=0x8000)
-    {
-        // Not a short code
-        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
-        if (Primer_Value!=Primer_Values.end())
-        {
-            int32u Code_Compare1=Primer_Value->second.hi>>32;
-            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
-            int32u Code_Compare3=Primer_Value->second.lo>>32;
-            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
-            if(0);
-            ELEMENT_UUID(SoundfieldGroupLinkID,                   "Soundfield Group Link ID")
-            else
-                MCALabelSubDescriptor();
-
-            return;
-        }
-    }
-
     //switch(Code2)
     //{
     //    default:
@@ -8135,10 +8003,6 @@ void File_Mxf::SoundfieldGroupLabelSubDescriptor()
             int32u Code_Compare4=(int32u)Primer_Value->second.lo;
             if(0);
             ELEMENT_UUID(GroupOfSoundfieldGroupsLinkID,                 "Group Of Soundfield Groups Link ID")
-            else
-                MCALabelSubDescriptor();
-
-            return;
         }
     }
 
@@ -8177,9 +8041,7 @@ void File_Mxf::GroupOfSoundfieldGroupsLabelSubDescriptor()
 //---------------------------------------------------------------------------
 void File_Mxf::AVCSubDescriptor()
 {
-    if (Code2>=0x8000)
     {
-        // Not a short code
         std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
         if (Primer_Value!=Primer_Values.end())
         {
@@ -8203,13 +8065,6 @@ void File_Mxf::AVCSubDescriptor()
             ELEMENT_UUID(AVCDescriptor_SequenceParameterSetFlag,        "Sequence parameter set flag")
             ELEMENT_UUID(AVCDescriptor_PictureParameterSetFlag,         "Picture parameter set flag")
             ELEMENT_UUID(AVCDescriptor_AverageBitRate,                  "Average bit rate")
-            else
-            {
-                Element_Info1(Ztring().From_UUID(Primer_Value->second));
-                Skip_XX(Length2,                                        "Data");
-            }
-
-            return;
         }
     }
 
