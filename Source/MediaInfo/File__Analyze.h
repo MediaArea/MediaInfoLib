@@ -1336,6 +1336,7 @@ protected :
     int64u Buffer_TotalBytes_Fill_Max;
     friend class File__Tags_Helper;
     friend class File_Mpeg4;
+    friend class File_Mk;
 
     //***************************************************************************
     // Helpers
