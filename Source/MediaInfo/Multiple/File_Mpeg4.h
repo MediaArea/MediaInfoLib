@@ -220,6 +220,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_ihdr() {jp2h_ihdr();}
     void moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_pasp();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_frma();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_imif();
