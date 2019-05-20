@@ -1168,7 +1168,7 @@ void File_SmpteSt0337::Data_Parse()
             Skip_S1( 5,                                         "data_type_dependent");
             Skip_SB(                                            "error_flag");
             Info_S1( 2, data_mode,                              "data_mode"); Param_Info2(16+4*data_mode, " bits");
-            Get_S1 ( 5, data_type_New,                          "data_type"); Param_Info1(Smpte_St0337_data_type[data_type]);
+            Get_S1 ( 5, data_type_New,                          "data_type"); Param_Info1(Smpte_St0337_data_type[data_type_New]);
             if (Stream_Bits>16)
                 Skip_S1( 4,                                     "reserved");
             if (Stream_Bits>20)

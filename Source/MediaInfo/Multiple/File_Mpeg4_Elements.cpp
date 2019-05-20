@@ -762,6 +762,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_ihdr=0x69686472;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv=0x6D646376;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_pasp=0x70617370;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D=0x53413344;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf=0x73696E66;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_frma=0x66726D61;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_imif=0x696D6966;
@@ -1137,6 +1138,7 @@ void File_Mpeg4::Data_Parse()
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_ihdr)
                                     ATOM_END
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_pasp)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D)
                                 LIST(moov_trak_mdia_minf_stbl_stsd_xxxx_sinf)
                                     ATOM_BEGIN
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_frma)
@@ -6966,6 +6968,49 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pasp()
             Clear(Stream_Video, StreamPos_Last, Video_DisplayAspectRatio);
             Fill(Stream_Video, StreamPos_Last, Video_PixelAspectRatio, PixelAspectRatio, 3, true);
             Streams[moov_trak_tkhd_TrackID].CleanAperture_PixelAspectRatio=PixelAspectRatio; //This is the PAR of the clean aperture
+        }
+    FILLING_END();
+}
+
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D()
+{
+    Element_Name("Spatial Audio Metadata");
+
+    //Parsing
+    int32u num_channels;
+    int8u version, ambisonic_type;
+    Get_B1 (version,                                            "version");
+    if (version)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Data");
+        return;
+    }
+    Get_B1 (ambisonic_type,                                     "ambisonic_type");
+    Skip_B4(                                                    "ambisonic_order");
+    Skip_B1(                                                    "ambisonic_channel_ordering");
+    Skip_B1(                                                    "ambisonic_normalization");
+    Get_B4 (num_channels,                                       "num_channels");
+    for (int32u i=0; i<num_channels; i++)
+    {
+        Skip_B1(                                                "channel_map");
+    }
+
+    FILLING_BEGIN();
+        if (StreamKind_Last==Stream_Audio)
+        {
+            Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, num_channels);
+            if (ambisonic_type==0x00 && num_channels==4)
+            {
+                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, "Ambisonics (W X Y Z)");
+                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, "Ambisonics (W X Y Z)");
+            }
+            if (ambisonic_type==0x80 && num_channels==6)
+            {
+                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, "Front: L R, Ambisonics (W X Y Z)");
+                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, "L, R, Ambisonics (W X Y Z)");
+            }
         }
     FILLING_END();
 }
