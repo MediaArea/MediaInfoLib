@@ -1494,7 +1494,7 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         Stream_Prepare(StreamKind);
 
     //Specific stuff
-    Ztring Width_Temp, Height_Temp, PixelAspectRatio_Temp, DisplayAspectRatio_Temp, FrameRate_Temp, FrameRate_Num_Temp, FrameRate_Den_Temp, FrameRate_Mode_Temp, ScanType_Temp, ScanOrder_Temp, HDR_Temp[Video_HDR_Format_Compatibility-Video_HDR_Format+1], Channels_Temp, Delay_Temp, Delay_DropFrame_Temp, Delay_Source_Temp, Delay_Settings_Temp, Source_Temp, Source_Kind_Temp, Source_Info_Temp;
+    Ztring Width_Temp, Height_Temp, PixelAspectRatio_Temp, DisplayAspectRatio_Temp, FrameRate_Temp, FrameRate_Num_Temp, FrameRate_Den_Temp, FrameRate_Mode_Temp, ScanType_Temp, ScanOrder_Temp, HDR_Temp[Video_HDR_Format_Compatibility-Video_HDR_Format+1], Channels_Temp[4], Delay_Temp, Delay_DropFrame_Temp, Delay_Source_Temp, Delay_Settings_Temp, Source_Temp, Source_Kind_Temp, Source_Info_Temp;
     if (StreamKind==Stream_Video)
     {
         Width_Temp=Retrieve(Stream_Video, StreamPos_To, Video_Width);
@@ -1512,7 +1512,10 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
     }
     if (StreamKind==Stream_Audio)
     {
-        Channels_Temp=Retrieve(Stream_Audio, StreamPos_To, Audio_Channel_s_);
+        Channels_Temp[0]=Retrieve(Stream_Audio, StreamPos_To, Audio_Channel_s_);
+        Channels_Temp[2]=Retrieve(Stream_Audio, StreamPos_To, Audio_ChannelPositions);
+        Channels_Temp[3]=Retrieve(Stream_Audio, StreamPos_To, Audio_ChannelPositions_String2);
+        Channels_Temp[1]=Retrieve(Stream_Audio, StreamPos_To, Audio_ChannelLayout);
     }
     if (ToAdd.Retrieve(StreamKind, StreamPos_From, Fill_Parameter(StreamKind, Generic_Delay_Source))==__T("Container"))
     {
@@ -1668,29 +1671,43 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
     }
     if (StreamKind==Stream_Audio)
     {
-        if (!Channels_Temp.empty())
-        {
-            //Test with legacy streams information
-            bool IsOk=(Channels_Temp==Retrieve(Stream_Audio, StreamPos_To, Audio_Channel_s_));
-            if (!IsOk)
+        bool IsOkGlobal=true;
+        static audio AudioField[4]={ Audio_Channel_s_, Audio_ChannelLayout, Audio_ChannelPositions, Audio_ChannelPositions_String2 };
+        for (size_t i=0; i<4; i++)
+            if (!Channels_Temp[i].empty())
             {
-                ZtringList Temp; Temp.Separator_Set(0, __T(" / "));
-                Temp.Write(Retrieve(Stream_Audio, StreamPos_To, Audio_Channel_s_));
-                for (size_t Pos=0; Pos<Temp.size(); Pos++)
-                    if (Channels_Temp==Temp[Pos])
-                        IsOk=true;
+                //Test with legacy streams information
+                bool IsOk=(Channels_Temp[i]==Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
+                if (!IsOk)
+                {
+                    ZtringList Temp; Temp.Separator_Set(0, __T(" / "));
+                    Temp.Write(Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
+                    for (size_t Pos=0; Pos<Temp.size(); Pos++)
+                        if (Channels_Temp[i]==Temp[Pos])
+                            IsOk=true;
+                }
+
+                //Special case with AES3: wrong container information is accepted
+                if (!IsOk && Retrieve(Stream_Audio, StreamPos_To, Audio_MuxingMode).find(__T("SMPTE ST 337"))!=string::npos)
+                    IsOk=true;
+
+                if (!IsOk)
+                    IsOkGlobal=false;
             }
 
-            //Special case with AES3: wrong container information is accepted
-            if (!IsOk && Retrieve(Stream_Audio, StreamPos_To, Audio_MuxingMode).find(__T("SMPTE ST 337"))!=string::npos)
-                IsOk=true;
-
-            if (!IsOk)
-            {
-                Fill(Stream_Audio, StreamPos_To, Audio_Channel_s__Original, (*Stream)[Stream_Audio][StreamPos_To][Audio_Channel_s_], true);
-                Fill(Stream_Audio, StreamPos_To, Audio_Channel_s_, Channels_Temp, true);
-            }
-        }
+            if (!IsOkGlobal)
+                for (size_t i=0; i<4; i++)
+                    if (Channels_Temp[i]!=(*Stream)[Stream_Audio][StreamPos_To][AudioField[i]])
+                    {
+                        string Original=Retrieve_Const(Stream_Audio, StreamPos_To, AudioField[i], Info_Name).To_UTF8();
+                        size_t Original_Insert=Original.find('/');
+                        if (Original_Insert==(size_t)-1)
+                            Original_Insert=Original.size();
+                        Original.insert(Original_Insert, "_Original");
+                        Fill(Stream_Audio, StreamPos_To, Original.c_str(), (*Stream)[Stream_Audio][StreamPos_To][AudioField[i]], true);
+                        Fill_SetOptions(Stream_Audio, StreamPos_To, Original.c_str(), Retrieve_Const(Stream_Audio, StreamPos_To, AudioField[i], Info_Options).To_UTF8().c_str());
+                        Fill(Stream_Audio, StreamPos_To, AudioField[i], Channels_Temp[i], true);
+                    }
     }
     if (!Delay_Source_Temp.empty() && Delay_Source_Temp!=Retrieve(StreamKind, StreamPos_To, "Delay_Source"))
     {
