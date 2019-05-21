@@ -608,6 +608,7 @@ public :
     void Skip_BF8 (               const char* Name);
     void Skip_BF10(               const char* Name);
     void Skip_BFP4(int8u Bits,                const char* Name);
+    void Skip_Hexa(int8u Bytes,   const char* Name);
     #define Info_B1(_INFO, _NAME)   int8u   _INFO; Get_B1  (_INFO, _NAME)
     #define Info_B2(_INFO, _NAME)   int16u  _INFO; Get_B2  (_INFO, _NAME)
     #define Info_B3(_INFO, _NAME)   int32u  _INFO; Get_B3  (_INFO, _NAME)
@@ -1335,6 +1336,7 @@ protected :
     int64u Buffer_TotalBytes_FirstSynched_Max;
     int64u Buffer_TotalBytes_Fill_Max;
     friend class File__Tags_Helper;
+    friend class File_Mk;
     friend class File_Mpeg4;
     friend class File_Mk;
 

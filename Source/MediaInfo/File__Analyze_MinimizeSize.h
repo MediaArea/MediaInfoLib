@@ -421,6 +421,7 @@ public :
     #define Skip_BF8(Name) Element_Offset+=8
     #define Skip_B16(Name) Element_Offset+=16
     #define Skip_BFP4(Size, Name) Element_Offset+=4
+    #define Skip_Hexa(Bytes, Name) Element_Offset+=Bytes
     #define Info_B1(_INFO, _NAME)   Element_Offset++
     #define Info_B2(_INFO, _NAME)   Element_Offset+=2
     #define Info_B3(_INFO, _NAME)   Element_Offset+=3
@@ -1260,6 +1261,7 @@ protected :
     int64u Buffer_TotalBytes_FirstSynched_Max;
     int64u Buffer_TotalBytes_Fill_Max;
     friend class File__Tags_Helper;
+    friend class File_Mk;
     friend class File_Mpeg4;
 
     //***************************************************************************
