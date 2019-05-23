@@ -1194,6 +1194,13 @@ void File_Mk::Streams_Finish()
             //if (Duration_Temp.empty()) Duration_Temp=Retrieve(StreamKind_Last, Temp->second.StreamPos, Fill_Parameter(StreamKind_Last, Generic_Duration)); //Duration from stream is sometimes false
             //else Duration_Temp.clear();
 
+            #ifdef MEDIAINFO_PCM_YES
+                if (Temp->second.Parser && Retrieve(Stream_Audio, StreamPos_Last, Audio_Format)==__T("PCM"))
+                {
+                    Temp->second.Parser->Accept();
+                    Temp->second.Parser->Fill(); // No need of any content for filling, so filling it even if very quick pass
+                }
+            #endif //MEDIAINFO_PCM_YES
             Finish(Temp->second.Parser);
             Merge(*Temp->second.Parser, StreamKind_Last, 0, StreamPos_Last);
             //if (!Duration_Temp.empty()) Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration_Temp, true);
@@ -3243,6 +3250,18 @@ void File_Mk::Segment_Tracks_TrackEntry()
 }
 
 //---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_Audio()
+{
+    //Default values
+    if (StreamKind_Last==Stream_Max)
+        Stream_Prepare(Stream_Audio);
+    Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, 1);
+    if (Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_SamplingRate).empty())
+        Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, 8000);
+    Audio_Manage();
+}
+
+//---------------------------------------------------------------------------
 void File_Mk::Segment_Tracks_TrackEntry_Audio_BitDepth()
 {
     //Parsing
@@ -3254,11 +3273,7 @@ void File_Mk::Segment_Tracks_TrackEntry_Audio_BitDepth()
         if (UInteger)
         {
             Fill(StreamKind_Last, StreamPos_Last, "BitDepth", UInteger, 10, true);
-
-            #ifdef MEDIAINFO_PCM_YES
-                if (Stream[TrackNumber].Parser && Retrieve(Stream_Audio, StreamPos_Last, Audio_Format)==__T("PCM"))
-                    ((File_Pcm*)Stream[TrackNumber].Parser)->Sign=(UInteger==8?'U':'S');
-            #endif //MEDIAINFO_PCM_YES
+            Audio_Manage();
         }
     FILLING_END();
 }
@@ -3272,7 +3287,11 @@ void File_Mk::Segment_Tracks_TrackEntry_Audio_Channels()
     FILLING_BEGIN();
         if (Segment_Info_Count>1)
             return; //First element has the priority
-        Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, UInteger, 10, true);
+        if (UInteger)
+        {
+            Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, UInteger, 10, true);
+            Audio_Manage();
+        }
     FILLING_END();
 }
 
@@ -3285,7 +3304,10 @@ void File_Mk::Segment_Tracks_TrackEntry_Audio_OutputSamplingFrequency()
     FILLING_BEGIN();
         if (Segment_Info_Count>1)
             return; //First element has the priority
-        Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, Float, 0, true);
+        if (Float)
+        {
+            Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, Float, 0, true);
+        }
     FILLING_END();
 }
 
@@ -3298,11 +3320,16 @@ void File_Mk::Segment_Tracks_TrackEntry_Audio_SamplingFrequency()
     FILLING_BEGIN();
         if (Segment_Info_Count>1)
             return; //First element has the priority
-        Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, Float, 0, true);
-        #ifdef MEDIAINFO_AAC_YES
-            if (Retrieve(Stream_Audio, StreamPos_Last, Audio_CodecID).find(__T("A_AAC/"))==0)
-                ((File_Aac*)Stream[TrackNumber].Parser)->AudioSpecificConfig_OutOfBand(float64_int64s(Float));
-        #endif //MEDIAINFO_AAC_YES
+        if (Float)
+        {
+            if (Retrieve(Stream_Audio, StreamPos_Last, Audio_SamplingRate)==__T("8000"))
+                Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, Float, 0, true);
+            #ifdef MEDIAINFO_AAC_YES
+                if (Retrieve(Stream_Audio, StreamPos_Last, Audio_CodecID).find(__T("A_AAC/"))==0)
+                    ((File_Aac*)Stream[TrackNumber].Parser)->AudioSpecificConfig_OutOfBand(float64_int64s(Float));
+            #endif //MEDIAINFO_AAC_YES
+            Audio_Manage();
+        }
     FILLING_END();
 }
 
@@ -3728,18 +3755,21 @@ void File_Mk::Segment_Tracks_TrackEntry_TrackType()
         if (Segment_Info_Count>1)
             return; //First element has the priority
         TrackType=UInteger;
-        switch(UInteger)
+        if (StreamKind_Last==Stream_Max)
         {
-            case 0x01 :
-                        Stream_Prepare(Stream_Video);
-                        break;
-            case 0x02 :
-                        Stream_Prepare(Stream_Audio);
-                        break;
-            case 0x11 :
-                        Stream_Prepare(Stream_Text );
-                        break;
-            default   : ;
+            switch(UInteger)
+            {
+                case 0x01 :
+                            Stream_Prepare(Stream_Video);
+                            break;
+                case 0x02 :
+                            Stream_Prepare(Stream_Audio);
+                            break;
+                case 0x11 :
+                            Stream_Prepare(Stream_Text);
+                            break;
+                default   : ;
+            }
         }
 
         if (TrackNumber!=(int64u)-1 && StreamKind_Last!=Stream_Max)
@@ -3775,6 +3805,8 @@ void File_Mk::Segment_Tracks_TrackEntry_Video()
     //Preparing
     if (Segment_Info_Count>1)
         return; //First element has the priority
+    if (StreamKind_Last==Stream_Max)
+        Stream_Prepare(Stream_Video);
     TrackVideoDisplayWidth=0;
     TrackVideoDisplayHeight=0;
 }
@@ -4642,6 +4674,7 @@ void File_Mk::CodecID_Manage()
     #endif
     Element_Code=TrackNumber;
     Open_Buffer_Init(streamItem.Parser);
+    Audio_Manage();
 
     CodecID.clear();
 }
@@ -4672,6 +4705,34 @@ void File_Mk::CodecPrivate_Manage()
     CodecPrivate_Size=0;
 }
 
+
+//---------------------------------------------------------------------------
+void File_Mk::Audio_Manage()
+{
+    if (!Stream[TrackNumber].Parser)
+        return; //Not ready (or not needed)
+
+    const stream& streamItem=Stream[TrackNumber];
+
+    #ifdef MEDIAINFO_PCM_YES
+        if (Retrieve(Stream_Audio, StreamPos_Last, Audio_Format)==__T("PCM"))
+        {
+            File_Pcm* Parser=(File_Pcm*)streamItem.Parser;
+            int8u Channels=Retrieve(Stream_Audio, StreamPos_Last, Audio_Channel_s_).To_int8u();
+            if (Channels)
+                Parser->Channels=Channels;
+            int32u SamplingFrequency=Retrieve(Stream_Audio, StreamPos_Last, Audio_SamplingRate).To_int32u();
+            if (SamplingFrequency)
+                Parser->SamplingRate=SamplingFrequency;
+            int8u BitDepth=Retrieve(Stream_Audio, StreamPos_Last, Audio_BitDepth).To_int8u();
+            if (BitDepth)
+            {
+                Parser->BitDepth=BitDepth;
+                Parser->Sign=(BitDepth==8?'U':'S');
+            }
+        }
+    #endif //MEDIAINFO_PCM_YES
+}
 
 //---------------------------------------------------------------------------
 void File_Mk::Segment_Tracks_TrackEntry_Video_Colour_MasteringMetadata_Primary(int8u i)
