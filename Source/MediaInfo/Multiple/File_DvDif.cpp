@@ -388,6 +388,7 @@ void File_DvDif::Streams_Fill()
         }
     }
 
+    Fill(Stream_Video, 0, Video_ColorSpace, "YUV");
     if (!FSC_WasSet) //Original DV 25 Mbps
     {
         if (system==false) //NTSC
