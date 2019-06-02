@@ -1,0 +1,46 @@
+import kotlin.random.Random
+
+apply plugin: 'com.android.application'
+
+apply plugin: 'kotlin-android'
+
+apply plugin: 'kotlin-android-extensions'
+
+def mediainfoVersion = "19.04"
+
+android {
+    compileSdkVersion 28
+    defaultConfig {
+        applicationId "com.example.mediainfojs"
+        minSdkVersion 21
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation"org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation 'androidx.appcompat:appcompat:1.0.2'
+    implementation 'androidx.core:core-ktx:1.0.2'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+}
+
+task getMediaInfoJs(type: DefaultTask) {
+    ant.get(src: "https://mediaarea.net/download/binary/libmediainfo0/${mediainfoVersion}/MediaInfo_DLL_${mediainfoVersion}_JavaScript.zip", dest: "${temporaryDir}")
+
+    copy {
+        from zipTree("${temporaryDir}/MediaInfo_DLL_${mediainfoVersion}_JavaScript.zip")
+        include("**/*")
+        into "src/main/assets"
+    }
+}
+
+preBuild.dependsOn getMediaInfoJs
