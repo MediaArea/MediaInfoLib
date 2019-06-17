@@ -22,7 +22,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MediaInfo.rc">
+    <ResourceCompile Include="..\..\..\Source\MediaInfoDLL\MediaInfoDLL.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

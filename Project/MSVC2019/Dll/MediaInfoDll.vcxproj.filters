@@ -8,7 +8,7 @@
     <ClInclude Include="..\..\..\Source\ThirdParty\jni\jni.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MediaInfo.rc" />
+    <ResourceCompile Include="..\..\..\Source\MediaInfoDLL\MediaInfoDLL.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\Source\MediaInfoDLL\MediaInfoDLL.def" />
