@@ -21,9 +21,6 @@ if (NOT WIN32)
 else()
   option(BUILD_ZLIB "Build bundled zlib" ON)
   option(BUILD_ZENLIB "Build bundled ZenLib" ON)
-
-  # FIXME: On Windows shared library is not compiling now.
-  set(BUILD_SHARED_LIBS OFF)
 endif()
 
 set(LIB_SUFFIX "" CACHE STRING "Define suffix of directory name (32/64)" )
@@ -70,10 +67,12 @@ else()
   set(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../../../zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
 endif()
 
-if(NOT MSVC)
-  set(MediaInfoLib_CONFIG_INSTALL_DIR "${LIB_INSTALL_DIR}/cmake/mediainfolib")
+if(VCPKG_TARGET_TRIPLET)
+  set(MediaInfoLib_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/share/mediainfolib")
+elseif(MSVC)
+  set(MediaInfoLib_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/cmake")
 else()
-  set(MediaInfoLib_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/cmake/")
+  set(MediaInfoLib_CONFIG_INSTALL_DIR "${LIB_INSTALL_DIR}/cmake/mediainfolib")
 endif()
 
 set(MediaInfoLib_SOURCES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../Source)
@@ -342,6 +341,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfoDLL/MediaInfoJNI.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfoDLL/MediaInfoDLL.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfoDLL/MediaInfoDLL.def
+  ${CMAKE_CURRENT_SOURCE_DIR}/MediaInfo.rc
 )
 
 if(NOT TinyXML_FOUND)
@@ -362,7 +362,7 @@ if(NOT CURL_FOUND)
   target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBCURL_NO)
 else()
   include_directories(${CURL_INCLUDE_DIRS})
-  target_link_libraries(mediainfo "${CURL_LIBRARIES}")
+  target_link_libraries(mediainfo ${CURL_LIBRARIES})
   set(CURL_PC " libcurl")
   set(CURL_LIB " -lcurl")
 endif()
@@ -387,10 +387,9 @@ if(BUILD_ZENLIB)
   target_include_directories(mediainfo PRIVATE ${ZLIB_INCLUDE_DIRS})
 endif()
 
-target_link_libraries(mediainfo
-  ${ZenLib_LIBRARY} ${ZLIB_LIBRARIES})
+target_link_libraries(mediainfo ${ZenLib_LIBRARY} ${ZLIB_LIBRARIES})
 
-if(MSVC)
+if(MSVC AND BUILD_SHARED_LIBS)
   get_target_property(LOCATION mediainfo LOCATION_DEBUG)
   string(REGEX REPLACE "\\.[^.]*$" ".pdb" LOCATION "${LOCATION}")
   install(FILES ${LOCATION} DESTINATION ${BIN_INSTALL_DIR} CONFIGURATIONS Debug)
