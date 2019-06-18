@@ -344,6 +344,11 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfoDLL/MediaInfoDLL.rc
 )
 
+if(WIN32)
+  # aes_ni.h has windows-only include
+  set(MediaInfoLib_SRCS ${MediaInfoLib_SRCS} ${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/aes_ni.c)
+endif()
+
 if(NOT TinyXML_FOUND)
   include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/)
   list(APPEND MediaInfoLib_SRCS ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/tinyxml2.cpp)
