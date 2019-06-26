@@ -1012,6 +1012,28 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         }
     }
 
+    if (StreamKind==Stream_Other && Parameter==Other_FrameRate)
+    {
+        Clear(StreamKind, StreamPos, Other_FrameRate_Num);
+        Clear(StreamKind, StreamPos, Other_FrameRate_Den);
+
+        if (Value)
+        {
+            if (float32_int32s(Value) - Value*1.001000 > -0.000002
+             && float32_int32s(Value) - Value*1.001000 < +0.000002) // Detection of precise 1.001 (e.g. 24000/1001) taking into account precision of 32-bit float
+            {
+                Fill(StreamKind, StreamPos, Other_FrameRate_Num,  Value*1001, 0, Replace);
+                Fill(StreamKind, StreamPos, Other_FrameRate_Den,   1001, 10, Replace);
+            }
+            if (float32_int32s(Value) - Value*1.001001 > -0.000002
+             && float32_int32s(Value) - Value*1.001001 < +0.000002) // Detection of rounded 1.001 (e.g. 23976/1000) taking into account precision of 32-bit float
+            {
+                Fill(StreamKind, StreamPos, Other_FrameRate_Num,  Value*1000, 0, Replace);
+                Fill(StreamKind, StreamPos, Other_FrameRate_Den,   1000, 10, Replace);
+            }
+        }
+    }
+
     Fill(StreamKind, StreamPos, Parameter, Ztring::ToZtring(Value, AfterComma), Replace);
 }
 

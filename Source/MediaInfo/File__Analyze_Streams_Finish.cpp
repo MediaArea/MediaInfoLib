@@ -1454,6 +1454,12 @@ void File__Analyze::Streams_Finish_HumanReadable_PerStream(stream_t StreamKind, 
          && !Retrieve(StreamKind, StreamPos, Video_FrameRate_Original_Num).empty()
          && !Retrieve(StreamKind, StreamPos, Video_FrameRate_Original_Den).empty())
             Fill(Stream_Video, StreamPos, Video_FrameRate_Original_String, MediaInfoLib::Config.Language_Get(Retrieve(StreamKind, StreamPos, Video_FrameRate_Original)+__T(" (")+Retrieve(StreamKind, StreamPos, Video_FrameRate_Original_Num)+__T("/")+Retrieve(StreamKind, StreamPos, Video_FrameRate_Original_Den)+__T(")"), __T(" fps")), true);
+        if (StreamKind==Stream_Other
+         && Parameter==Other_FrameRate
+         && !Retrieve(StreamKind, StreamPos, Other_FrameRate).empty()
+         && !Retrieve(StreamKind, StreamPos, Other_FrameRate_Num).empty()
+         && !Retrieve(StreamKind, StreamPos, Other_FrameRate_Den).empty())
+            Fill(Stream_Other, StreamPos, Other_FrameRate_String, MediaInfoLib::Config.Language_Get(Retrieve(StreamKind, StreamPos, Other_FrameRate)+__T(" (")+Retrieve(StreamKind, StreamPos, Other_FrameRate_Num)+__T("/")+Retrieve(StreamKind, StreamPos, Other_FrameRate_Den)+__T(")"), __T(" fps")), true);
     }
 
     //BitRate_Mode / OverallBitRate_Mode
