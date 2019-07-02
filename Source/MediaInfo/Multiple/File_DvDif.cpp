@@ -483,6 +483,12 @@ void File_DvDif::Streams_Fill()
             Fill(Stream_Video, 0, Video_BitRate_Mode, "CBR");
         }
     }
+    else if (audio_locked && Retrieve(Stream_Video, 0, Video_Standard) == __T("PAL") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling) == __T("4:2:0"))
+    {
+        Fill(Stream_General, 0, General_Format_Commercial_IfAny, "DVCAM");
+        Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "DVCAM");
+        Fill(Stream_Video, 0, Video_BitRate_Mode, "CBR");
+    }
     else if (audio_locked || (Retrieve(Stream_Video, 0, Video_Standard)==__T("PAL") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:1:1")))
     {
         Fill(Stream_General, 0, General_Format_Commercial_IfAny, "DVCPRO");
