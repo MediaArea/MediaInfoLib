@@ -8712,6 +8712,8 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
             {
                 SDTI_TimeCode_RepetitionCount++;
                 TimeCode_Current++;
+                if (!SDTI_TimeCode_StartTimecode.IsValid() && SDTI_TimeCode_RepetitionCount>=RepetitionMaxCount)
+                    SDTI_TimeCode_StartTimecode=SDTI_TimeCode_Previous; //The first time code was the first one of the repetition sequence
             }
             else
             {
