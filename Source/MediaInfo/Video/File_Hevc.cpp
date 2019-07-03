@@ -915,8 +915,8 @@ void File_Hevc::Header_Parse()
             return;
         }
 
-        if (nuh_temporal_id_plus1==0)
-            Trusted_IsNot("nuh_temporal_id_plus1");
+        //if (nuh_temporal_id_plus1==0) // Found 1 stream with nuh_temporal_id_plus1==0, lets disable this coherency test for the moment
+        //    Trusted_IsNot("nuh_temporal_id_plus1");
     }
     else
     {
@@ -953,8 +953,8 @@ void File_Hevc::Header_Parse()
         Get_S1 (3, nuh_temporal_id_plus1,                       "nuh_temporal_id_plus1");
         BS_End();
 
-        if (nuh_temporal_id_plus1==0)
-            Trusted_IsNot("nuh_temporal_id_plus1");
+        //if (nuh_temporal_id_plus1==0) // Found 1 stream with nuh_temporal_id_plus1==0, lets disable this coherency test for the moment
+        //    Trusted_IsNot("nuh_temporal_id_plus1");
 
         FILLING_BEGIN();
             Header_Fill_Size(Size?(Element_Offset-2+Size):(Buffer_Size-Buffer_Offset)); //If Size is 0, it is not normal, we skip the complete frame
