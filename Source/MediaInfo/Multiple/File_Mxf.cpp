@@ -2837,7 +2837,7 @@ void File_Mxf::Streams_Finish_Track_ForTimeCode(const int128u TrackUID, bool IsS
     StreamPos_Last=(size_t)-1;
 
     //Sequence
-    Streams_Finish_Component_ForTimeCode(Track->second.Sequence, Track->second.EditRate_Real?Track->second.EditRate_Real:Track->second.EditRate, Track->second.TrackID, Track->second.Origin, IsSourcePackage);
+    Streams_Finish_Component_ForTimeCode(Track->second.Sequence, Track->second.EditRate_Real?Track->second.EditRate_Real:Track->second.EditRate, Track->second.TrackID, Track->second.Origin, IsSourcePackage, Track->second.TrackName);
 }
 
 //---------------------------------------------------------------------------
@@ -4066,7 +4066,7 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
 }
 
 //---------------------------------------------------------------------------
-void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin, bool IsSourcePackage)
+void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin, bool IsSourcePackage, const Ztring& TrackName)
 {
     components::iterator Component=Components.find(ComponentUID);
     if (Component==Components.end())
@@ -4101,6 +4101,7 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, TC.ToString().c_str());
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Settings, IsSourcePackage?__T("Source Package"):__T("Material Package"));
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Striped, "Yes");
+            Fill(Stream_Other, StreamPos_Last, Other_Title, TrackName);
 
             if ((!TimeCodeFromMaterialPackage && IsSourcePackage) || (TimeCodeFromMaterialPackage && !IsSourcePackage))
             {
