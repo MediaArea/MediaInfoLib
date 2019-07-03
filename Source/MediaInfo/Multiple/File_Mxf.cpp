@@ -2459,6 +2459,7 @@ void File_Mxf::Streams_Finish()
             Fill(Stream_Other, StreamPos_Last, Other_Format, "SMPTE TC");
             Fill(Stream_Other, StreamPos_Last, Other_MuxingMode, "SDTI");
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, SDTI_TimeCode_StartTimecode.ToString());
+            Fill(Stream_Other, StreamPos_Last, Other_FrameRate, SDTI_TimeCode_StartTimecode.FramesPerSecond/(SDTI_TimeCode_StartTimecode.DropFrame?1.001:1.000)*(SDTI_TimeCode_StartTimecode.MustUseSecondField?2:1));
         }
     }
     if (SystemScheme1_TimeCodeArray_StartTimecode_ms!=(int64u)-1)
@@ -2837,7 +2838,7 @@ void File_Mxf::Streams_Finish_Track_ForTimeCode(const int128u TrackUID, bool IsS
     StreamPos_Last=(size_t)-1;
 
     //Sequence
-    Streams_Finish_Component_ForTimeCode(Track->second.Sequence, Track->second.EditRate_Real?Track->second.EditRate_Real:Track->second.EditRate, Track->second.TrackID, Track->second.Origin, IsSourcePackage);
+    Streams_Finish_Component_ForTimeCode(Track->second.Sequence, Track->second.EditRate_Real?Track->second.EditRate_Real:Track->second.EditRate, Track->second.TrackID, Track->second.Origin, IsSourcePackage, Track->second.TrackName);
 }
 
 //---------------------------------------------------------------------------
@@ -4066,7 +4067,7 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
 }
 
 //---------------------------------------------------------------------------
-void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin, bool IsSourcePackage)
+void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin, bool IsSourcePackage, const Ztring& TrackName)
 {
     components::iterator Component=Components.find(ComponentUID);
     if (Component==Components.end())
@@ -4098,9 +4099,12 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
             Fill(Stream_Other, StreamPos_Last, Other_ID, Ztring::ToZtring(TrackID)+(IsSourcePackage?__T("-Source"):__T("-Material")));
             Fill(Stream_Other, StreamPos_Last, Other_Type, "Time code");
             Fill(Stream_Other, StreamPos_Last, Other_Format, "MXF TC");
+            if (Component2->second.MxfTimeCode.RoundedTimecodeBase<=(int8u)-1) // Found files with RoundedTimecodeBase of 0x8000
+                Fill(Stream_Other, StreamPos_Last, Other_FrameRate, Component2->second.MxfTimeCode.RoundedTimecodeBase/(Component2->second.MxfTimeCode.DropFrame?1.001:1.000));
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, TC.ToString().c_str());
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Settings, IsSourcePackage?__T("Source Package"):__T("Material Package"));
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Striped, "Yes");
+            Fill(Stream_Other, StreamPos_Last, Other_Title, TrackName);
 
             if ((!TimeCodeFromMaterialPackage && IsSourcePackage) || (TimeCodeFromMaterialPackage && !IsSourcePackage))
             {
@@ -8711,6 +8715,8 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
             {
                 SDTI_TimeCode_RepetitionCount++;
                 TimeCode_Current++;
+                if (!SDTI_TimeCode_StartTimecode.IsValid() && SDTI_TimeCode_RepetitionCount>=RepetitionMaxCount)
+                    SDTI_TimeCode_StartTimecode=SDTI_TimeCode_Previous; //The first time code was the first one of the repetition sequence
             }
             else
             {
