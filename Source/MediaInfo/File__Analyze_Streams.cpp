@@ -988,7 +988,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
 }
 
 //---------------------------------------------------------------------------
-void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Parameter, float32 Value, int8u AfterComma, bool Replace)
+void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Parameter, float64 Value, int8u AfterComma, bool Replace)
 {
     if (StreamKind==Stream_Video && Parameter==Video_FrameRate)
     {
@@ -997,14 +997,14 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
 
         if (Value)
         {
-            if (float32_int32s(Value) - Value*1.001000 > -0.000002
-             && float32_int32s(Value) - Value*1.001000 < +0.000002) // Detection of precise 1.001 (e.g. 24000/1001) taking into account precision of 32-bit float
+            if (float64_int64s(Value) - Value*1.001000 > -0.000002
+             && float64_int64s(Value) - Value*1.001000 < +0.000002) // Detection of precise 1.001 (e.g. 24000/1001) taking into account precision of 64-bit float
             {
                 Fill(StreamKind, StreamPos, Video_FrameRate_Num,  Value*1001, 0, Replace);
                 Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1001, 10, Replace);
             }
-            if (float32_int32s(Value) - Value*1.001001 > -0.000002
-             && float32_int32s(Value) - Value*1.001001 < +0.000002) // Detection of rounded 1.001 (e.g. 23976/1000) taking into account precision of 32-bit float
+            if (float64_int64s(Value) - Value*1.001001 > -0.000002
+             && float64_int64s(Value) - Value*1.001001 < +0.000002) // Detection of rounded 1.001 (e.g. 23976/1000) taking into account precision of 64-bit float
             {
                 Fill(StreamKind, StreamPos, Video_FrameRate_Num,  Value*1000, 0, Replace);
                 Fill(StreamKind, StreamPos, Video_FrameRate_Den,   1000, 10, Replace);
