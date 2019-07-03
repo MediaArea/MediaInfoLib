@@ -2459,6 +2459,7 @@ void File_Mxf::Streams_Finish()
             Fill(Stream_Other, StreamPos_Last, Other_Format, "SMPTE TC");
             Fill(Stream_Other, StreamPos_Last, Other_MuxingMode, "SDTI");
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, SDTI_TimeCode_StartTimecode.ToString());
+            Fill(Stream_Other, StreamPos_Last, Other_FrameRate, SDTI_TimeCode_StartTimecode.FramesPerSecond/(SDTI_TimeCode_StartTimecode.DropFrame?1.001:1.000)*(SDTI_TimeCode_StartTimecode.MustUseSecondField?2:1));
         }
     }
     if (SystemScheme1_TimeCodeArray_StartTimecode_ms!=(int64u)-1)
@@ -4098,6 +4099,8 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
             Fill(Stream_Other, StreamPos_Last, Other_ID, Ztring::ToZtring(TrackID)+(IsSourcePackage?__T("-Source"):__T("-Material")));
             Fill(Stream_Other, StreamPos_Last, Other_Type, "Time code");
             Fill(Stream_Other, StreamPos_Last, Other_Format, "MXF TC");
+            if (Component2->second.MxfTimeCode.RoundedTimecodeBase<=(int8u)-1) // Found files with RoundedTimecodeBase of 0x8000
+                Fill(Stream_Other, StreamPos_Last, Other_FrameRate, Component2->second.MxfTimeCode.RoundedTimecodeBase/(Component2->second.MxfTimeCode.DropFrame?1.001:1.000));
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, TC.ToString().c_str());
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Settings, IsSourcePackage?__T("Source Package"):__T("Material Package"));
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Striped, "Yes");
