@@ -1758,9 +1758,9 @@ void File__Analyze::TS_Set(int64s Ticks, ts_type Type)
 
         int64s divisor = gcd(1000000000, Frequency_b);
         if (Type&TS_PTS)
-            FrameInfo.PTS=Ticks*(1000000000/divisor)/(Frequency_b/divisor);
+            FrameInfo.PTS=float64_int64s((float64)Ticks*(1000000000/divisor)/(Frequency_b/divisor));
         if (Type&TS_DTS)
-            FrameInfo.DTS=Ticks*(1000000000/divisor)/(Frequency_b/divisor);
+            FrameInfo.DTS=float64_int64s((float64)Ticks*(1000000000/divisor)/(Frequency_b/divisor));
     }
     else
     {
@@ -1769,9 +1769,9 @@ void File__Analyze::TS_Set(int64s Ticks, ts_type Type)
 
         int64s divisor = gcd(1000000000, Frequency_c);
         if (Type&TS_PTS)
-            FrameInfo.PTS=Ticks*(1000000000/divisor)/(Frequency_c/divisor);
+            FrameInfo.PTS=float64_int64s((float64)Ticks*(1000000000/divisor)/(Frequency_c/divisor));
         if (Type&TS_DTS)
-            FrameInfo.DTS=Ticks*(1000000000/divisor)/(Frequency_c/divisor);
+            FrameInfo.DTS=float64_int64s((float64)Ticks*(1000000000/divisor)/(Frequency_c/divisor));
     }
 
 #if MEDIAINFO_ADVANCED2
