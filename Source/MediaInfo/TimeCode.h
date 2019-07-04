@@ -68,7 +68,11 @@ public:
     //Helpers
     bool IsValid() const
     {
-        return FramesPerSecond && Hours!=(int8u)-1;
+        return FramesPerSecond && HasValue();
+    }
+    bool HasValue() const
+    {
+        return Hours!=(int8u)-1;
     }
     void PlusOne();
     void MinusOne();
