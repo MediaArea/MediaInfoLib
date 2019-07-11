@@ -55,6 +55,14 @@ BuildRequires:  libcurl-devel
 BuildRequires:  libcurl-devel
 %endif
 
+%if 0%{?mageia} > 6
+%ifarch x86_64
+BuildRequires: lib64openssl-devel
+%else
+BuildRequires: libopenssl-devel
+%endif
+%endif
+
 %if 0%{?rhel}
 %package        -n %{libmediainfo_name}%{libmediainfo_suffix}
 Summary:        Most relevant technical and tag data for video and audio files -- slot version
@@ -209,8 +217,8 @@ pushd Project/GNU/Library
 popd
 
 %build
-export CFLAGS="%{optflags}"
-export CPPFLAGS="%{optflags}"
+export CFLAGS="-g %{optflags}"
+export CPPFLAGS="-g %{optflags}"
 export CXXFLAGS="%{optflags}"
 
 pushd Source/Doc/
