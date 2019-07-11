@@ -1286,7 +1286,14 @@ protected :
     int8u                           Config_Demux;
     Ztring                          Config_LineSeparator;
     bool                            IsSub;
-    bool                            IsRawStream;
+    enum stream_source
+    {
+        IsContainer,
+        IsStream,
+        IsContainerExtra,
+        StreamSource_Max,
+    };
+    stream_source                   StreamSource;
 
     //Configuration
     bool DataMustAlwaysBeComplete;  //Data must always be complete, else wait for more data

@@ -28,6 +28,7 @@
 #include "ZenLib/BitStream_LE.h"
 #include <cmath>
 #include <cfloat>
+#include <cassert>
 using namespace std;
 //---------------------------------------------------------------------------
 
@@ -337,7 +338,7 @@ size_t File__Analyze::Stream_Erase (stream_t KindOfStream, size_t StreamPos)
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-static bool ShowSource_IsInList(video Value)
+bool ShowSource_IsInList(video Value)
 {
     switch (Value)
     {
@@ -383,9 +384,16 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     }
 
     // Handling sources
-    if (StreamKind==Stream_Video && ShowSource_IsInList((video)Parameter) && Retrieve_Const(Stream_Video, StreamPos, Parameter+1).empty())
+    const char* SourceValue[StreamSource_Max] =
     {
-        Fill(Stream_Video, StreamPos, Parameter+1, IsRawStream?"Stream":"Container");
+        "Container",
+        "Stream",
+        "ContainerExtra",
+    };
+    assert(sizeof(SourceValue)==StreamSource_Max*sizeof(const char*));
+    if (StreamKind==Stream_Video && ShowSource_IsInList((video)Parameter) && StreamSource<StreamSource_Max && Retrieve_Const(Stream_Video, StreamPos, Parameter+1).empty())
+    {
+        Fill(Stream_Video, StreamPos, Parameter+1, SourceValue[StreamSource]);
     }
 
     //Format_Profile split (see similar code in MediaInfo_Inform.cpp, dedicated to MIXML)
@@ -504,8 +512,8 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         case Stream_Video:
                             switch (Parameter)
                             {
-                                case Video_Width:   if (IsRawStream) Fill(Stream_Video, StreamPos, Video_Sampled_Width, Value); break;
-                                case Video_Height:  if (IsRawStream) Fill(Stream_Video, StreamPos, Video_Sampled_Height, Value); break;
+                                case Video_Width:   if (StreamSource==IsStream) Fill(Stream_Video, StreamPos, Video_Sampled_Width, Value); break;
+                                case Video_Height:  if (StreamSource==IsStream) Fill(Stream_Video, StreamPos, Video_Sampled_Height, Value); break;
                                 case Video_DisplayAspectRatio:  DisplayAspectRatio_Fill(Value, Stream_Video, StreamPos, Video_Width, Video_Height, Video_PixelAspectRatio, Video_DisplayAspectRatio); break;
                                 case Video_PixelAspectRatio:    PixelAspectRatio_Fill(Value, Stream_Video, StreamPos, Video_Width, Video_Height, Video_PixelAspectRatio, Video_DisplayAspectRatio);   break;
                                 case Video_DisplayAspectRatio_CleanAperture:  DisplayAspectRatio_Fill(Value, Stream_Video, StreamPos, Video_Width_CleanAperture, Video_Height_CleanAperture, Video_PixelAspectRatio_CleanAperture, Video_DisplayAspectRatio_CleanAperture); break;
