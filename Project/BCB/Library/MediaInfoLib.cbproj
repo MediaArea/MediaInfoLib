@@ -760,6 +760,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_Dirac.cpp">
             <BuildOrder>85</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.cpp">
+            <BuildOrder>230</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_Ffv1.cpp">
             <BuildOrder>100</BuildOrder>
         </CppCompile>

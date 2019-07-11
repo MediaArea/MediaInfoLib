@@ -22,6 +22,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_Mxf.h"
+#include "MediaInfo/Video/File_DolbyVisionMetadata.h"
 #if defined(MEDIAINFO_DVDIF_YES)
     #include "MediaInfo/Multiple/File_DvDif.h"
 #endif
@@ -373,6 +374,7 @@ namespace Elements
     UUID(060E2B34, 02050101, 0D010201, 01030200, 0000, "SMPTE ST 377-1", ClosedIncompleteBodyPartition, "")
     UUID(060E2B34, 02050101, 0D010201, 01030300, 0000, "SMPTE ST 377-1", OpenCompleteBodyPartition, "")
     UUID(060E2B34, 02050101, 0D010201, 01030400, 0000, "SMPTE ST 377-1", ClosedCompleteBodyPartition, "")
+    UUID(060E2B34, 02050101, 0D010201, 01031100, 0000, "SMPTE ST 377-1", GenericStreamPartition, "")
     UUID(060E2B34, 02050101, 0D010201, 01040100, 0000, "SMPTE ST 377-1", OpenIncompleteFooterPartition, "")
     UUID(060E2B34, 02050101, 0D010201, 01040200, 0000, "SMPTE ST 377-1", ClosedIncompleteFooterPartition, "")
     UUID(060E2B34, 02050101, 0D010201, 01040300, 0000, "SMPTE ST 377-1", OpenCompleteFooterPartition, "")
@@ -400,6 +402,10 @@ namespace Elements
     //                           04 - ?
     //                             01 - ?
     UUID(060E2B34, 02530101, 0D010401, 01010100, 0000, "", DMScheme1, "")
+
+    //                           05 - ?
+    //                             09 - ?
+    UUID(060E2B34, 0101010C, 0D010509, 01000000, 0000, "", Application05_09_01, "")
 
     //                           07 - AMWA AS-11
     //                             01 - ?
@@ -472,6 +478,13 @@ namespace Elements
 
     //                         06 - Sony
     UUID(060E2B34, 01020101, 0E067F03, 00000000, 0000, "", GenericContainer_Sony, "")
+
+    //                         09 - Dolby
+    UUID(060E2B34, 01020105, 0E090607, 01010100, 0000, "Dolby", Dolby_PHDRImageMetadataItem, "")
+    UUID(060E2B34, 02530105, 0E090607, 01010103, 0000, "Dolby", Dolby_PHDRMetadataTrackSubDescriptor, "")
+    UUID(060E2B34, 01010105, 0E090607, 01010104, 0000, "Dolby", Dolby_DataDefinition, "")
+    UUID(060E2B34, 01010105, 0E090607, 01010105, 0000, "Dolby", Dolby_SourceTrackID, "")
+    UUID(060E2B34, 01010105, 0E090607, 01010106, 0000, "Dolby", Dolby_SimplePayloadSID, "")
 
     //                         0B - Omneon Video Networks
     UUID(060E2B34, 02530105, 0E0B0102, 01010100, 0000, "", Omneon_010201010100, "")
@@ -616,6 +629,8 @@ static const char* Mxf_EssenceElement(const int128u EssenceElement)
 
     int8u Code1=(int8u)((EssenceElement.lo&0xFF00000000000000LL)>>56);
     int8u Code2=(int8u)((EssenceElement.lo&0x00FF000000000000LL)>>48);
+    int8u Code3=(int8u)((EssenceElement.lo&0x0000FF0000000000LL)>>40);
+    int8u Code4=(int8u)((EssenceElement.lo&0x000000FF00000000LL)>>32);
     int8u Code5=(int8u)((EssenceElement.lo&0x00000000FF000000LL)>>24);
     int8u Code7=(int8u)((EssenceElement.lo&0x000000000000FF00LL)>> 8);
 
@@ -631,6 +646,17 @@ static const char* Mxf_EssenceElement(const int128u EssenceElement)
                                                     case 0x15 : return "Sony private picture stream";
                                                     default   : return "Sony private stream";
                                                 }
+                        case 0x09 : //Dolby
+                                    switch (Code3)
+                                    {
+                                        case 0x06 :
+                                                    switch (Code4)
+                                                    {
+                                                        case 0x07 : return "Dolby Vision Frame Data";
+                                                        default   : return "Dolby private stream";
+                                                    }
+                                        default   : return "Dolby private stream";
+                                    }
                         default   : return "Unknown private stream";
                     }
         default   : ;
@@ -2270,6 +2296,10 @@ File_Mxf::File_Mxf()
         Ancillary_IsBinded=false;
     #endif //defined(MEDIAINFO_ANCILLARY_YES)
 
+    ExtraMetadata_Offset=(int64u)-1;
+    ExtraMetadata_SID=(int32u)-1;
+    DolbyVisionMetadata=NULL;
+
     #if MEDIAINFO_DEMUX
         Demux_HeaderParsed=false;
     #endif //MEDIAINFO_DEMUX
@@ -2696,6 +2726,12 @@ void File_Mxf::Streams_Finish()
                 Fill_SetOptions(Stream_Other, 0, ElementName_FrameCounts.c_str(), "N NT");
             }
         }
+    }
+
+    //Dolby Vision
+    if (DolbyVisionMetadata)
+    {
+        Merge(*DolbyVisionMetadata, Stream_Video, 0, 0);
     }
 }
 
@@ -5948,15 +5984,16 @@ void File_Mxf::Data_Parse()
     ELEMENT(GroupOfSoundfieldGroupsLabelSubDescriptor,          "Group Of Soundfield Groups Label Sub-Descriptor")
     ELEMENT(AVCSubDescriptor,                                   "AVC Sub-Descriptor")
     ELEMENT(OpenIncompleteHeaderPartition,                      "Open and Incomplete Header Partition Pack")
-    ELEMENT(ClosedIncompleteHeaderPartition,                    "Closed and Iomplete Header Partition Pack")
+    ELEMENT(ClosedIncompleteHeaderPartition,                    "Closed and Incomplete Header Partition Pack")
     ELEMENT(OpenCompleteHeaderPartition,                        "Open and Complete Header Partition Pack")
     ELEMENT(ClosedCompleteHeaderPartition,                      "Closed and Complete Header Partition Pack")
     ELEMENT(OpenIncompleteBodyPartition,                        "Open and Incomplete Body Partition Pack")
-    ELEMENT(ClosedIncompleteBodyPartition,                      "Closed and Iomplete Body Partition Pack")
+    ELEMENT(ClosedIncompleteBodyPartition,                      "Closed and Incomplete Body Partition Pack")
     ELEMENT(OpenCompleteBodyPartition,                          "Open and Complete Body Partition Pack")
     ELEMENT(ClosedCompleteBodyPartition,                        "Closed and Complete Body Partition Pack")
+    ELEMENT(GenericStreamPartition,                             "Generic Stream Partition")
     ELEMENT(OpenIncompleteFooterPartition,                      "Open and Incomplete Footer Partition Pack")
-    ELEMENT(ClosedIncompleteFooterPartition,                    "Closed and Iomplete Footer Partition Pack")
+    ELEMENT(ClosedIncompleteFooterPartition,                    "Closed and Incomplete Footer Partition Pack")
     ELEMENT(OpenCompleteFooterPartition,                        "Open and Complete Footer Partition Pack")
     ELEMENT(ClosedCompleteFooterPartition,                      "Closed and Complete Footer Partition Pack")
     ELEMENT(Primer,                                             "Primer")
@@ -5990,12 +6027,15 @@ void File_Mxf::Data_Parse()
     ELEMENT(AS11_AAF_Segmentation,                              "AS-11 segmentation metadata framework")
     ELEMENT(AS11_AAF_UKDPP,                                     "AS-11 UK DPP metadata framework")
     ELEMENT(DMScheme1,                                          "Descriptive Metadata Scheme 1") //SMPTE 380M
+    ELEMENT(Application05_09_01,                                "Application05_09_01")
+    ELEMENT(Dolby_PHDRMetadataTrackSubDescriptor,               "Dolby PHDRMetadataTrackSubDescriptor")
     ELEMENT(Omneon_010201010100,                                "Omneon .01.02.01.01.01.00")
     ELEMENT(Omneon_010201020100,                                "Omneon .01.02.01.02.01.00")
     else if (Code_Compare1==Elements::GenericContainer_Aaf1
           && ((Code_Compare2)&0xFFFFFF00)==(Elements::GenericContainer_Aaf2&0xFFFFFF00)
           && (Code_Compare3==Elements::GenericContainer_Aaf3
            || Code_Compare3==Elements::GenericContainer_Avid3
+           || Code_Compare3==Elements::Dolby_PHDRImageMetadataItem3
            || Code_Compare3==Elements::GenericContainer_Sony3))
     {
         Element_Name(Mxf_EssenceElement(Code));
@@ -6833,6 +6873,13 @@ void File_Mxf::ClosedCompleteBodyPartition()
 }
 
 //---------------------------------------------------------------------------
+void File_Mxf::GenericStreamPartition()
+{
+    //Parsing
+    PartitionMetadata();
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::OpenIncompleteFooterPartition()
 {
     //Parsing
@@ -7387,6 +7434,8 @@ void File_Mxf::RandomIndexPack()
         FILLING_BEGIN();
             if (!RandomIndexPacks_AlreadyParsed && PartitionPack_AlreadyParsed.find(RandomIndexPack.ByteOffset)==PartitionPack_AlreadyParsed.end())
                 RandomIndexPacks.push_back(RandomIndexPack);
+            if (!RandomIndexPacks_AlreadyParsed && RandomIndexPack.BodySID==ExtraMetadata_SID)
+                ExtraMetadata_Offset=RandomIndexPack.ByteOffset;
         FILLING_END();
     }
     Skip_B4(                                                    "Length");
@@ -7644,6 +7693,19 @@ void File_Mxf::DMScheme1()
     }
 
     InterchangeObject();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::Application05_09_01()
+{
+    //Parsing
+    delete DolbyVisionMetadata;
+    DolbyVisionMetadata=new File_DolbyVisionMetadata;
+    Open_Buffer_Init(DolbyVisionMetadata);
+    Open_Buffer_Continue(DolbyVisionMetadata);
+    Element_Offset=0;
+    Skip_String(Element_Size,                                   "Data");
 }
 
 //---------------------------------------------------------------------------
@@ -8714,6 +8776,40 @@ void File_Mxf::SDTI_ControlMetadataSet()
     //Filling
     if (SDTI_SizePerFrame==0)
         Partitions_IsCalculatingSdtiByteCount=true;
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Dolby_PHDRImageMetadataItem()
+{
+    //Parsing
+    Skip_String(Element_Size,                                   "Data");
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Dolby_PHDRMetadataTrackSubDescriptor()
+{
+    {
+        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+        if (Primer_Value!=Primer_Values.end())
+        {
+            int32u Code_Compare1=Primer_Value->second.hi>>32;
+            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+            int32u Code_Compare3=Primer_Value->second.lo>>32;
+            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+            if(0);
+            ELEMENT_UUID(Dolby_DataDefinition,                          "Dolby Data Definition")
+            ELEMENT_UUID(Dolby_SourceTrackID,                           "Dolby Source Track ID")
+            ELEMENT_UUID(Dolby_SimplePayloadSID,                        "Dolby Simple Payload SID")
+        }
+    }
+
+    if (Descriptors[InstanceUID].StreamKind==Stream_Max)
+    {
+        Descriptors[InstanceUID].StreamKind=Stream_Other;
+        if (Streams_Count==(size_t)-1)
+            Streams_Count=0;
+        Streams_Count++;
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -10844,7 +10940,7 @@ void File_Mxf::PartitionMetadata()
             default   : ;
         }
 
-    if ((Code.lo&0xFF0000)==0x030000) //If Body Partition Pack
+    if ((Code.lo&0xFF0000)==0x030000 && (Code.lo&0x00FF00)<=0x000400) //If Body Partition Pack
     {
         if (IsParsingEnd)
         {
@@ -13307,6 +13403,42 @@ void File_Mxf::Omneon_010201020100_8006()
 {
     //Parsing
     Skip_UTF8(Length2,                                          "Content");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::Dolby_DataDefinition()
+{
+    //Parsing
+    Skip_UUID(                                                  "Value");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::Dolby_SourceTrackID()
+{
+    //Parsing
+    int32u Data;
+    Get_B4 (Data,                                               "Data"); Element_Info1(Data);
+
+    FILLING_BEGIN();
+        if (Descriptors[InstanceUID].LinkedTrackID==(int32u)-1)
+            Descriptors[InstanceUID].LinkedTrackID=Data;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::Dolby_SimplePayloadSID()
+{
+    //Parsing
+    int32u Data;
+    Get_B4 (Data,                                               "Data"); Element_Info1(Data);
+
+    FILLING_BEGIN();
+        if (ExtraMetadata_SID==(int32u)-1)
+            ExtraMetadata_SID=Data;
+    FILLING_END();
 }
 
 //***************************************************************************
@@ -16444,6 +16576,7 @@ void File_Mxf::ChooseParser__FromEssence(const essences::iterator &Essence, cons
     {
         case Elements::GenericContainer_Aaf3        : return ChooseParser__Aaf(Essence, Descriptor);
         case Elements::GenericContainer_Avid3       : return ChooseParser__Avid(Essence, Descriptor);
+        case Elements::Dolby_PHDRImageMetadataItem3 : return ChooseParser__Dolby(Essence, Descriptor);
         case Elements::GenericContainer_Sony3       : return ChooseParser__Sony(Essence, Descriptor);
         default                                     : return;
     }
@@ -16519,6 +16652,26 @@ void File_Mxf::ChooseParser__Aaf_CP_Picture(const essences::iterator &Essence, c
                     break;
         default   : //Unknown
                     ;
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::ChooseParser__Dolby(const essences::iterator &Essence, const descriptors::iterator &Descriptor)
+{
+    int8u Code3=(int8u)((Code.lo&0x0000FF0000000000LL)>>40);
+    int8u Code4=(int8u)((Code.lo&0x000000FF00000000LL)>>32);
+
+    switch (Code3)
+    {
+        case 0x06 :
+                    switch (Code4)
+                    {
+                    
+                        case 0x07 : ChooseParser_DolbyVisionFrameData(Essence, Descriptor);
+                        default:;
+                    }
+                    break;
+        default   : ;
     }
 }
 
@@ -17245,6 +17398,19 @@ void File_Mxf::ChooseParser_ProRes(const essences::iterator &Essence, const desc
     Essence->second.Parsers.push_back(Parser);
 }
 
+//---------------------------------------------------------------------------
+void File_Mxf::ChooseParser_DolbyVisionFrameData(const essences::iterator &Essence, const descriptors::iterator &Descriptor)
+{
+    Essence->second.StreamKind=Stream_Other;
+
+    //Filling
+    File__Analyze* Parser=new File_Unknown();
+    Open_Buffer_Init(Parser);
+    Parser->Stream_Prepare(Stream_Other);
+    Parser->Fill(Stream_Other, 0, Other_Format, "Dolby Vision Metadata");
+    Essence->second.Parsers.push_back(Parser);
+}
+
 //***************************************************************************
 // Helpers
 //***************************************************************************
@@ -17498,6 +17664,12 @@ bool File_Mxf::BookMark_Needed()
         IsParsingEnd=false;
         IsCheckingRandomAccessTable=false;
         Streams_Count=(size_t)-1;
+    }
+
+    if (ExtraMetadata_Offset!=(int64u)-1)
+    {
+        GoTo(ExtraMetadata_Offset);
+        ExtraMetadata_Offset=(int64u)-1;
     }
 
     return false;
