@@ -1,6 +1,6 @@
-%global libmediainfo_version      19.04
+%global libmediainfo_version      19.07
 %global libmediainfo_version_major      19
-%global libmediainfo_version_minor      04
+%global libmediainfo_version_minor      07
 %global libzen_version            0.4.37
 %global libzen_version_major      0
 %global libzen_version_minor      4
@@ -316,7 +316,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 %endif
 
 %changelog
-* Sun Jan 01 2012 MediaArea.net SARL <info@mediaarea.net> - 19.04-0
+* Sun Jan 01 2012 MediaArea.net SARL <info@mediaarea.net> - 19.07-0
 - See History.txt for more info and real dates
 - Previous packages made by Toni Graffy <toni@links2linux.de>
 - Fedora style made by Vasiliy N. Glazov <vascom2@gmail.com>
