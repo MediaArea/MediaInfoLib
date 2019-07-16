@@ -4,7 +4,7 @@
         <ProjectType>CppVCLApplication</ProjectType>
         <MainSource>PreRelease.cpp</MainSource>
         <Config Condition="'$(Config)'==''">Debug</Config>
-        <ProjectVersion>18.3</ProjectVersion>
+        <ProjectVersion>19.7</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
