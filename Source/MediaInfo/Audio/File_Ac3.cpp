@@ -1000,6 +1000,7 @@ File_Ac3::File_Ac3()
     TimeStamp_IsParsing=false;
     TimeStamp_Parsed=false;
     TimeStamp_DropFrame_IsValid=false;
+    TimeStamp_Count=0;
     BigEndian=true;
     IgnoreCrc_Done=false;
 }
@@ -1130,7 +1131,10 @@ void File_Ac3::Streams_Fill()
                 Fill(Stream_Audio, 0, Audio_BitRate, "Unknown");
             int32u BitRate=AC3_BitRate[frmsizecod/2]*1000;
             int32u Divider=bsid_Max==9?2:1; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
-            Fill(Stream_Audio, 0, Audio_BitRate, BitRate/Divider);
+            int32u TimeStamp_BitRate=0;
+                if (TimeStamp_Count==Frame_Count || TimeStamp_Count>Frame_Count/2) // In case of corrupted stream, check that there is a minimal count of timestamps 
+                    TimeStamp_BitRate+=float32_int32s(AC3_SamplingRate[fscod]/Divider/12.0); // 12 = 1536 samples per frame / 128 bits per timestamp frame
+            Fill(Stream_Audio, 0, Audio_BitRate, BitRate/Divider+TimeStamp_BitRate);
             if (CalculateDelay && Buffer_TotalBytes_FirstSynched>100 && BitRate>0)
             {
                 Fill(Stream_Audio, 0, Audio_Delay, (float)Buffer_TotalBytes_FirstSynched*8*1000/BitRate, 0);
@@ -1198,6 +1202,8 @@ void File_Ac3::Streams_Fill()
                     SamplingRate=AC3_SamplingRate[fscod];
                 else
                     SamplingRate=AC3_SamplingRate2[fscod2];
+                if (TimeStamp_Count==Frame_Count || TimeStamp_Count>Frame_Count/2) // In case of corrupted stream, check that there is a minimal count of timestamps 
+                    frmsiz_Total+=16;
                 Fill(Stream_Audio, 0, Audio_SamplingRate, SamplingRate);
                 Fill(Stream_Audio, 0, Audio_BitRate, ((int64u)frmsiz_Total)*SamplingRate/32/numblks);
 
@@ -4469,6 +4475,7 @@ void File_Ac3::TimeStamp()
         }
         TimeStamp_IsParsing=false;
         TimeStamp_Parsed=true;
+        TimeStamp_Count++;
     FILLING_END();
 }
 

@@ -183,6 +183,7 @@ private :
     bool   IgnoreCrc_Done;
     bool   IgnoreCrc;
     float64 TimeStamp_Content;
+    size_t TimeStamp_Count;
 };
 
 } //NameSpace
