@@ -6439,7 +6439,6 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_dec3()
         {
             File_Ac3* Parser=new File_Ac3;
             Open_Buffer_Init(Parser);
-            Parser->Frame_Count_Valid=2;
             Parser->MustParse_dec3=true;
             Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
             mdat_MustParse=true; //Data is in MDAT
