@@ -1,0 +1,3 @@
+This project demonstrate how to integrate MediaInfoLib JavaScript module with Android using WebView.
+
+For the native library, see Project/Java/Example.JNI.

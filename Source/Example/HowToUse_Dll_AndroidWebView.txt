@@ -1,0 +1,1 @@
+To integrate the Javascript module with the Android WebView see example in Project/Android/MediaInfoJs
