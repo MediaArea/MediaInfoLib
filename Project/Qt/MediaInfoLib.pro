@@ -53,6 +53,7 @@ HEADERS += \
         ../../Source/MediaInfo/Audio/File_Aac_GeneralAudio_Sbr.h \
         ../../Source/MediaInfo/Audio/File_Aac_GeneralAudio_Sbr_Ps.h \
         ../../Source/MediaInfo/Audio/File_Ac3.h \
+        ../../Source/MediaInfo/Audio/File_Ac4.h \
         ../../Source/MediaInfo/Audio/File_Adpcm.h \
         ../../Source/MediaInfo/Audio/File_Als.h \
         ../../Source/MediaInfo/Audio/File_Amr.h \
@@ -268,6 +269,7 @@ SOURCES += \
         ../../Source/MediaInfo/Audio/File_Aac_Main.cpp \
         ../../Source/MediaInfo/Audio/File_Aac_Others.cpp \
         ../../Source/MediaInfo/Audio/File_Ac3.cpp \
+        ../../Source/MediaInfo/Audio/File_Ac4.cpp \
         ../../Source/MediaInfo/Audio/File_Adpcm.cpp \
         ../../Source/MediaInfo/Audio/File_Als.cpp \
         ../../Source/MediaInfo/Audio/File_Amr.cpp \
