@@ -708,6 +708,7 @@ Language_hr;Croatian
 Language_ht;Haitian
 Language_hu;Hungarian
 Language_hy;Armenian
+Language_hy-az;Armenian (Azerbaijani)
 Language_hz;Herero
 Language_ia;Auxiliary Language Association
 Language_id;Indonesian
@@ -752,10 +753,12 @@ Language_mi;Maori
 Language_mk;Macedonian
 Language_ml;Malayalam
 Language_mn;Mongolian
+Language_mn-cn;Mongolian (China)
 Language_mo;Moldavian
 Language_More;Language, more info
 Language_mr;Marathi
 Language_ms;Malay
+Language_ms-bn;Malay (Brunei)
 Language_mt;Maltese
 Language_mul;Multiple languages
 Language_my;Burmese
@@ -765,6 +768,7 @@ Language_nd;Ndebele
 Language_ne;Nepali
 Language_ng;Ndonga
 Language_nl;Dutch
+Language_nl-be;Flemish
 Language_nn;Norwegian Nynorsk
 Language_no;Norwegian
 Language_nr;Ndebele
@@ -796,6 +800,7 @@ Language_si;Sinhala
 Language_sk;Slovak
 Language_sl;Slovenian
 Language_sm;Samoan
+Language_smi;Sami
 Language_sn;Shona
 Language_so;Somali
 Language_sq;Albanian
