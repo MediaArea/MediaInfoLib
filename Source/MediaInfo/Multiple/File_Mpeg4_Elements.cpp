@@ -558,6 +558,31 @@ const char* Mpegv_matrix_coefficients_ColorSpace(int8u matrix_coefficients);
     extern std::string DTS_HD_SpeakerActivityMask2 (int16u SpeakerActivityMask, bool AddCs=false, bool AddLrsRrs=false);
 #endif //defined(MEDIAINFO_DTS_YES)
 
+//---------------------------------------------------------------------------
+int8u File_Mpeg4_PcmSampleSizeFromCodecID(int32u CodecID)
+{
+    switch (CodecID)
+    {
+        case 0x72617720:
+            return 8;
+        case 0x00000000:
+        case 0x4E4F4E45:
+        case 0x74776F73:
+        case 0x736F7774:
+            return 16;
+        case 0x696E3234:
+            return 24;
+        case 0x666C3332:
+        case 0x696E3332:
+            return 32;
+        case 0x666C3634:
+        case 0x696E3634:
+            return 64;
+        default:
+            return 0;
+    }
+}
+
 //***************************************************************************
 // Constants
 //***************************************************************************
@@ -5065,17 +5090,23 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
     int64s SampleRate=0;
     int32u Channels=0, SampleSize=0, Flags=0;
     int16u Version=0, ID;
-    if (!IsQt() && Element_Code==0x6D703461) // like ISO MP4 and CodecID is mp4a
+    if (!IsQt()) // like ISO MP4
     {
-        int16u SampleRate16;
+        int16u Channels16, SampleSize16, SampleRate16;
         Skip_B4(                                                "reserved (0)");
         Skip_B4(                                                "reserved (0)");
-        Skip_B2(                                                "reserved (2)");
-        Skip_B2(                                                "reserved (16)");
-        Skip_B4(                                                "reserved (0)");
-        Get_B2 (SampleRate16,                                   "time-scale");
+        Get_B2 (Channels16,                                     "channelcount (2)");
+        Get_B2 (SampleSize16,                                   "samplesize (16)");
+        Skip_B2(                                                "pre_defined (0)");
         Skip_B2(                                                "reserved (0)");
-        SampleRate=SampleRate16;
+        Get_B2 (SampleRate16,                                   "samplerate");
+        Skip_B2(                                                "samplerate (0)");
+        if (MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("PCM"))
+        {
+            Channels=Channels16;
+            SampleSize=SampleSize16;
+            SampleRate=SampleRate16;
+        }
     }
     else
     {
@@ -5093,13 +5124,27 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
         Skip_B2(                                                "Reserved");
         if (Version>=1)
         {
-            Skip_B4(                                            "Samples per packet");
-            Skip_B4(                                            "Bytes per packet");
-            Skip_B4(                                            "Bytes per frame");
-            Skip_B4(                                            "Bytes per sample");
+            int32u SamplesPerPacket, BytesPerPacket, BytesPerFrame, BytesPerSample;
+            Get_B4 (SamplesPerPacket,                           "Samples per packet");
+            Get_B4 (BytesPerPacket,                             "Bytes per packet");
+            Get_B4 (BytesPerFrame,                              "Bytes per frame");
+            Get_B4 (BytesPerSample,                             "Bytes per sample");
+            if (SampleSize16==16)
+            {
+                //Sample size may be hard coded 16, we need to compute sample size from elsewhere
+                if (BytesPerFrame && Channels16 && MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("PCM"))
+                {
+                    SampleSize=BytesPerFrame*8/Channels16;
+                    if (SampleSize%8==0 && SampleSize/8!=BytesPerSample)
+                        SampleSize=0; // It is maybe not PCM, ignoring
+                }
+            }
+            else
+                SampleSize=SampleSize16;
         }
+        else
+            SampleSize=SampleSize16;
         Channels=Channels16;
-        SampleSize=SampleSize16;
         SampleRate=SampleRate16;
     }
     else if (Version==2)
@@ -5128,13 +5173,9 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
     }
     }
 
-    //Bug found in one file: sample size is 16 with a 24-bit CodecID ("in24")
-    if (Element_Code==0x696E3234 && SampleSize==16)
-        SampleSize=24; //Correcting the header
-    //Bug found in one file: sample size is 16 with a 32-bit CodecID ("fl32")
-    if (Element_Code==0x666C3332 && SampleSize==16)
-        SampleSize=32; //Correcting the header
-
+    if (SampleSize==0 && MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("PCM"))
+        SampleSize=File_Mpeg4_PcmSampleSizeFromCodecID((int32u)Element_Code);
+    
     if (moov_trak_mdia_minf_stbl_stsd_Pos)
         return; //Handling only the first description
 
