@@ -216,14 +216,64 @@ MediaInfo_Config Config;
 // Constructor/Destructor
 //***************************************************************************
 
-void MediaInfo_Config::Init()
+void MediaInfo_Config::Init(bool Force)
 {
     {
         CriticalSectionLocker CSL(CS);
     //We use Init() instead of COnstructor because for some backends (like WxWidgets...) does NOT like constructor of static object with Unicode conversion
 
     //Test
-    if (!LineSeparator.empty())
+    if (Force)
+    {
+        #if defined(MEDIAINFO_EBUCORE_YES) || defined(MEDIAINFO_NISO_YES) || MEDIAINFO_ADVANCED
+            ExternalMetadata.clear();
+            ExternalMetaDataConfig.clear();
+        #endif //defined(MEDIAINFO_EBUCORE_YES) || defined(MEDIAINFO_NISO_YES) || MEDIAINFO_ADVANCED
+        #ifdef MEDIAINFO_ADVANCED
+            ParseOnlyKnownExtensions.clear();
+        #endif
+        Trace_Layers.reset();
+        Trace_Modificators.clear();
+        Version.clear();
+        Version.clear();
+        ColumnSeparator.clear();
+        LineSeparator.clear();
+        TagSeparator.clear();
+        Quote.clear();
+        DecimalPoint.clear();
+        ThousandsPoint.clear();
+        CarriageReturnReplace.clear();
+        Language.clear();
+        Custom_View.clear();
+        Custom_View_Replace.clear();
+        Container.clear();
+        for (size_t Format=0; Format<InfoCodecID_Format_Max; Format++)
+            for (size_t StreamKind=0; StreamKind<Stream_Max; StreamKind++)
+                CodecID[Format][StreamKind].clear();
+        Format.clear();
+        Codec.clear();
+        for (size_t Format=0; Format<InfoLibrary_Format_Max; Format++)
+            Library[Format].clear();
+        Iso639_1.clear();
+        Iso639_2.clear();
+        for (size_t StreamKind=0; StreamKind<Stream_Max; StreamKind++)
+            Info[StreamKind].clear();
+        SubFile_Config.clear();
+        CustomMapping.clear();
+        #if defined(MEDIAINFO_LIBCURL_YES)
+            Ssh_PublicKeyFileName.clear();
+            Ssh_PrivateKeyFileName.clear();
+            Ssh_KnownHostsFileName.clear();
+            Ssl_CertificateFileName.clear();
+            Ssl_CertificateFormat.clear();
+            Ssl_PrivateKeyFileName.clear();
+            Ssl_PrivateKeyFormat.clear();
+            Ssl_CertificateAuthorityFileName.clear();
+            Ssl_CertificateAuthorityPath.clear();
+            Ssl_CertificateRevocationListFileName.clear();
+        #endif //defined(MEDIAINFO_LIBCURL_YES)
+    }
+    else if (!LineSeparator.empty())
     {
         return; //Already done
     }
