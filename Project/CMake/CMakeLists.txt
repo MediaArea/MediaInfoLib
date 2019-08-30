@@ -159,6 +159,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Aac_Main.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Aac_Others.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Ac3.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Ac4.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Adpcm.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Als.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Amr.cpp

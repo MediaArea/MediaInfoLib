@@ -170,6 +170,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ac3.cpp">
             <BuildOrder>60</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ac4.cpp">
+            <BuildOrder>231</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Adpcm.cpp">
             <BuildOrder>62</BuildOrder>
         </CppCompile>

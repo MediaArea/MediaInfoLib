@@ -44,6 +44,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Audio/File_Aac_Main.cpp \
                        ../../../Source/MediaInfo/Audio/File_Aac_Others.cpp \
                        ../../../Source/MediaInfo/Audio/File_Ac3.cpp \
+                       ../../../Source/MediaInfo/Audio/File_Ac4.cpp \
                        ../../../Source/MediaInfo/Audio/File_Adpcm.cpp \
                        ../../../Source/MediaInfo/Audio/File_Als.cpp \
                        ../../../Source/MediaInfo/Audio/File_Amr.cpp \

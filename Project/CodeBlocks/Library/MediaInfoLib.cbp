@@ -42,6 +42,8 @@
 		<Unit filename="..\..\..\Source\MediaInfo\Archive\File_Zip.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Ac3.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Ac3.h" />
+		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Ac4.cpp" />
+		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Ac4.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Adif.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Adif.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Adts.cpp" />

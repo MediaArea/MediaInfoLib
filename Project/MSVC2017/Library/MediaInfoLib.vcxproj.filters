@@ -188,6 +188,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ac3.cpp">
       <Filter>Source Files\Audio</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ac4.cpp">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Adpcm.cpp">
       <Filter>Source Files\Audio</Filter>
     </ClCompile>
@@ -875,6 +878,9 @@
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Ac3.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Ac4.h">
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Adpcm.h">
