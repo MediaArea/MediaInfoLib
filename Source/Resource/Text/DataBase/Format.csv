@@ -142,7 +142,7 @@ ELF;;;C;Elf;;so;;;
 ISO 9660;;;C;Iso9660;;iso;;;
 MZ;;;C;Mz;;exe dll;;;
 RAR;;;C;Rar;From Rarlabs;rar;application/x-rar-compressed;http://rarlabs.com;
-ZIP;;;C;Zip;;zip;application/zip;http://winzip.com;
+ZIP;;;C;Zip;;zip docx odt xlsx ods;application/zip;http://winzip.com;
 Adobe encore DVD;;;T;Other;;txt;;http://www.adobe.fr/products/encore/;Lossless
 AQTitle;;;T;Other;;aqt;;http://www.volny.cz/aberka/czech/aqt.html;Lossless
 ASS;;;T;Other;;ssa;;http://ffdshow.sourceforge.net/tikiwiki/tiki-index.php?page=Getting+ffdshow;Lossless
