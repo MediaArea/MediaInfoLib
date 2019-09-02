@@ -364,6 +364,8 @@ static size_t Xml_Content_Escape_MustEscape(const char* Content, size_t Size)
             default:
                 if (C<0x20)
                     return Pos;
+                if (C>0x7F)
+                    return Pos;
         }
     }
 
