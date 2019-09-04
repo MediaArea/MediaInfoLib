@@ -3773,7 +3773,6 @@ void File_Mpeg4::moov_trak_mdia_hdlr()
     //Parsing
     Ztring Title;
     int32u Type, SubType, Manufacturer;
-    int8u Size;
     Get_C4 (Type,                                               "Component type");
     Get_C4 (SubType,                                            "Component subtype");
     Get_C4 (Manufacturer,                                       "Component manufacturer");
@@ -3781,24 +3780,63 @@ void File_Mpeg4::moov_trak_mdia_hdlr()
     Skip_B4(                                                    "Component flags mask");
     if (Element_Offset<Element_Size)
     {
-        Peek_B1(Size);
-        std::string TitleS;
-        if (Element_Offset+1+Size==Element_Size)
+        //Found 3 types, whatever is the ftyp:
+        //- copy of Type
+        //- QuickTime style
+        //- ISO style (with or without '\0')
+        //With sometimes sub-boxes
+
+        //If it is a copy of Type
+        bool NameIsParsed=false;
+        if (Element_Offset+4==Element_Size || (Element_Offset+4<Element_Size && Buffer[Buffer_Offset+(size_t)Element_Offset+4]=='\0'))
         {
-            Skip_B1(                                                "Component name size");
-            Get_String(Size, TitleS,                                "Component name");
+            int32u SubType2;
+            Peek_B4(SubType2);
+            if (SubType2==SubType)
+            {
+                Skip_C4(                                        "Component name");
+                NameIsParsed=true;
+            }
         }
-        else
+        //QuickTime style or ISO style
+        if (!NameIsParsed)
         {
-            Get_String(Element_Size-Element_Offset, TitleS,         "Component name");
+            //Looking for trailing nul
+            size_t Pos=(size_t)Element_Offset;
+            while (Pos<Element_Size && Buffer[Buffer_Offset+Pos]!='\0')
+                Pos++;
+
+            //Trying to guess if it is QuickTime style, with all invalid "flavors" found in files (lot of zeroes in the name, size includes the size byte...)
+            int8u Size;
+            Peek_B1(Size);
+            bool IsMacStyle;
+            if (Size<0x20 || Element_Offset+1+Size==Element_Size || Element_Offset+1+Size==Pos || (Pos+1<Element_Size && Element_Offset+2+Size==Pos))
+            {
+                IsMacStyle=true;
+                if (Element_Offset+Size==Element_Size)
+                    Size--;
+            }
+            else
+                IsMacStyle=false;
+
+            //Parsing
+            if (IsMacStyle)
+            {
+                Skip_B1(                                        IsQt()?"Component name size":"Component name size (not in specs)"); // This is an invalid stream if MP4
+                if (Element_Offset+Size<=Element_Size)
+                    Get_MacRoman(Size, Title,                   "Component name");
+                else
+                    Skip_XX(Element_Size-Element_Offset,        "Component name decoding issue, skiping");
+            }
+            else
+            {
+                Get_UTF8(Pos-Element_Offset, Title,             "Component name");
+                if (Element_Offset<Element_Size)
+                    Element_Offset++; // Skip trailing nul
+            }
         }
-        if (!TitleS.empty())
-        {
-            Title.From_UTF8(TitleS.c_str());
-            if (Title.empty())
-                Title.From_ISO_8859_1(TitleS.c_str()); //Trying ISO 8859-1...
-        }
-        if (Title.find(__T("Handler"))!=std::string::npos || Title.find(__T("handler"))!=std::string::npos || Title.find(__T("vide"))!=std::string::npos || Title.find(__T("soun"))!=std::string::npos || Title==Ztring().From_CC4(SubType))
+        
+        if (Title.find(__T("Handler"))!=string::npos || Title.find(__T(" handler"))!=string::npos || Title.find(__T("Gestionnaire "))==0 || Title.find(__T("Module "))==0 || Title.find(__T("Gestor "))==0 || Title.find(__T("Procedura "))==0)
             Title.clear(); //This is not a Title
     }
 

@@ -847,6 +847,7 @@ public :
     void Get_ISO_8859_1(int64u Bytes, Ztring   &Info, const char* Name);
     void Get_ISO_8859_2(int64u Bytes, Ztring   &Info, const char* Name);
     void Get_ISO_8859_5(int64u Bytes, Ztring   &Info, const char* Name);
+    void Get_MacRoman(int64u Bytes, Ztring& Info, const char* Name);
     void Get_String (int64u Bytes, std::string &Info, const char* Name);
     void Get_UTF8   (int64u Bytes, Ztring      &Info, const char* Name);
     void Get_UTF16  (int64u Bytes, Ztring      &Info, const char* Name);
