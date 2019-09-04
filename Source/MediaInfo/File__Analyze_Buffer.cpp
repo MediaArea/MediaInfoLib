@@ -1873,7 +1873,7 @@ void File__Analyze::Get_String(int64u Bytes, std::string &Info, const char* Name
 {
     INTEGRITY_SIZE_ATLEAST_STRING(Bytes);
     Info.assign((const char*)(Buffer+Buffer_Offset+(size_t)Element_Offset), (size_t)Bytes);
-    if (Trace_Activated && Bytes) Param(Name, Info);
+    if (Trace_Activated && Bytes) Param(Name, Ztring().From_ISO_8859_1((const char*)(Buffer+Buffer_Offset+(size_t)Element_Offset), (size_t)Bytes)); //Trying with the most commonly used charset
     Element_Offset+=Bytes;
 }
 
@@ -1960,11 +1960,7 @@ void File__Analyze::Skip_ISO_6937_2(int64u Bytes, const char* Name)
 void File__Analyze::Skip_String(int64u Bytes, const char* Name)
 {
     INTEGRITY_SIZE_ATLEAST(Bytes);
-    #ifdef WINDOWS
-    if (Trace_Activated && Bytes) Param(Name, Ztring().From_Local((const char*)(Buffer+Buffer_Offset+(size_t)Element_Offset), (size_t)Bytes));
-    #else //WINDOWS
-    if (Trace_Activated && Bytes) Param(Name, Ztring().From_ISO_8859_1((const char*)(Buffer+Buffer_Offset+(size_t)Element_Offset), (size_t)Bytes)); //Trying with the most commonly used charset before UTF8
-    #endif //WINDOWS
+    if (Trace_Activated && Bytes) Param(Name, Ztring().From_ISO_8859_1((const char*)(Buffer+Buffer_Offset+(size_t)Element_Offset), (size_t)Bytes)); //Trying with the most commonly used charset
     Element_Offset+=Bytes;
 }
 
