@@ -629,6 +629,12 @@ void            __stdcall MediaInfo_Delete (void* Handle)
         delete MI_Outputs[NULL];
         MI_Outputs.erase(NULL);
     }
+
+    if (MI_Inputs.find(Handle)!=MI_Inputs.end())
+    {
+        delete MI_Inputs[Handle];
+        MI_Inputs.erase(Handle);
+    }
     Critical.Leave();
 
     MEDIAINFO_DEBUG2(   "Delete",
@@ -913,6 +919,12 @@ void            __stdcall MediaInfoList_Delete (void* Handle)
     {
         delete MI_Outputs[NULL];
         MI_Outputs.erase(NULL);
+    }
+
+    if (MI_Inputs.find(Handle)!=MI_Inputs.end())
+    {
+        delete MI_Inputs[Handle];
+        MI_Inputs.erase(Handle);
     }
     Critical.Leave();
 
