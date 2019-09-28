@@ -1,0 +1,27 @@
+path_classifiers:
+  template:
+    - Source/Resource/JavaScript/*
+
+extraction:
+  cpp:
+    prepare:
+      packages: 
+        - libzen-dev
+    configure:
+      command:
+        - cd Project/GNU/Library
+        - sh autogen.sh
+        - ./configure
+    index:
+      build_command:
+        - cd Project/GNU/Library
+        - make
+  csharp:
+    index:
+      solution:
+        - Project/MSCS2010/Example/HowToUse_Dll.csproj
+  java:
+    index:
+      build_command:
+        - cd Project/Java/Example.JNI
+        - sh Compile.sh
