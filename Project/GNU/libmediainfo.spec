@@ -45,6 +45,9 @@ BuildRequires:  libtool
 BuildRequires:  automake
 BuildRequires:  autoconf
 %if 0%{?rhel_version} || 0%{?centos_version}
+%if 0%{?rhel_version} >= 800 || 0%{?centos_version} >= 800
+BuildRequires:  gdb
+%endif
 %if 0%{?rhel_version} > 599
 BuildRequires:  libcurl-devel
 %endif
