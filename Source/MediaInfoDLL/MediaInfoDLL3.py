@@ -160,7 +160,7 @@ class MediaInfo:
     MediaInfo_Get.argtypes = [c_void_p, c_size_t, c_size_t, c_wchar_p, c_size_t, c_size_t]
     MediaInfo_Get.restype = c_wchar_p
     MediaInfoA_Get = MediaInfoDLL_Handler.MediaInfoA_Get
-    MediaInfoA_Get.argtypes = [c_void_p, c_size_t, c_size_t, c_wchar_p, c_size_t, c_size_t]
+    MediaInfoA_Get.argtypes = [c_void_p, c_size_t, c_size_t, c_char_p, c_size_t, c_size_t]
     MediaInfoA_Get.restype = c_char_p
 
     #/** @brief Wrapper for MediaInfoLib::MediaInfo::Set */
@@ -169,7 +169,7 @@ class MediaInfo:
     MediaInfo_SetI.argtypes = [c_void_p, c_wchar_p, c_size_t, c_size_t, c_size_t, c_wchar_p]
     MediaInfo_SetI.restype = c_void_p
     MediaInfoA_SetI = MediaInfoDLL_Handler.MediaInfoA_SetI
-    MediaInfoA_SetI.argtypes = [c_void_p, c_char_p, c_size_t, c_size_t, c_size_t, c_wchar_p]
+    MediaInfoA_SetI.argtypes = [c_void_p, c_char_p, c_size_t, c_size_t, c_size_t, c_char_p]
     MediaInfoA_SetI.restype = c_void_p
 
     #/** @brief Wrapper for MediaInfoLib::MediaInfo::Set */
@@ -178,7 +178,7 @@ class MediaInfo:
     MediaInfo_Set.argtypes = [c_void_p, c_wchar_p, c_size_t, c_size_t, c_wchar_p, c_wchar_p]
     MediaInfo_Set.restype = c_size_t
     MediaInfoA_Set = MediaInfoDLL_Handler.MediaInfoA_Set
-    MediaInfoA_Set.argtypes = [c_void_p, c_char_p, c_size_t, c_size_t, c_wchar_p, c_wchar_p]
+    MediaInfoA_Set.argtypes = [c_void_p, c_char_p, c_size_t, c_size_t, c_char_p, c_char_p]
     MediaInfoA_Set.restype = c_size_t
 
     #/** @brief Wrapper for MediaInfoLib::MediaInfo::Option */
