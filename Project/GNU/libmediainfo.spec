@@ -220,7 +220,7 @@ for development.
 %package        -n python2-mediainfo
 Summary:        Most relevant technical and tag data for video and audio files -- python2 binding
 Group:          Development/Libraries
-Requires:       %{libmediainfo_name}%{libmediainfo_suffix}%{?_isa} = %{version}
+Requires:       %{libmediainfo_name}%{?_isa} = %{version}
 
 %description    -n python2-mediainfo
 MediaInfo is a convenient unified display of the most relevant technical
@@ -251,7 +251,7 @@ This package contains the python2 wrapper of the library.
 %package        -n python3-mediainfo
 Summary:        Most relevant technical and tag data for video and audio files -- python3 binding
 Group:          Development/Libraries
-Requires:       %{libmediainfo_name}%{libmediainfo_suffix}%{?_isa} = %{version}
+Requires:       %{libmediainfo_name}%{?_isa} = %{version}
 
 %description    -n python3-mediainfo
 MediaInfo is a convenient unified display of the most relevant technical
