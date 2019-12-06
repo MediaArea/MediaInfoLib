@@ -101,7 +101,7 @@ namespace ConsoleApp
 
                 if ((Result & Status.Finalized) == Status.Finalized)
                     break;
-                
+
                 // Test if MediaInfo requests to go elsewhere
                 long desiredSeekLocation = MI.Open_Buffer_Continue_GoTo_Get();
                 if (desiredSeekLocation != -1)
@@ -113,7 +113,7 @@ namespace ConsoleApp
             }
             while (numberOfBytesRead > 0);
 
-            Console.WriteLine($"Total Bytes read: {totalNumberOfBytesRead}/{contentLength} = {totalNumberOfBytesRead/ (float)contentLength}");
+            Console.WriteLine($"Total Bytes read: {totalNumberOfBytesRead}/{contentLength} = {totalNumberOfBytesRead / (float)contentLength}");
 
             // This is the end of the stream, MediaInfo must finish some work
             MI.Open_Buffer_Finalize();
@@ -126,7 +126,7 @@ namespace ConsoleApp
         }
 
 
-        
+
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         //
         // This example demonstrates how to parse a file in Azure Blob Storage using a connection string for auth.
@@ -149,12 +149,12 @@ namespace ConsoleApp
             var fileUri = new Uri("https://mystorageaccount.blob.core.windows.net/blendercontainer/bbb_sunflower_1080p_30fps_normal.mp4");
             var connectionString = "DefaultEndpointsProtocol=https;AccountName=mystorageaccount;AccountKey=...";
 
-            var blobUriBuilder = new BlobUriBuilder(fileUri); // The blobUriBuild simplifies the parsing of Azure Storage Uris
+            var blobUriBuilder = new BlobUriBuilder(fileUri); // The blobUriBuilder simplifies the parsing of Azure Storage Uris
             BlobBaseClient blobBaseClient = new BlobBaseClient(connectionString, blobUriBuilder.BlobContainerName, blobUriBuilder.BlobName);
 
             // Initialize MediaInfo
             var MI = new MediaInfo();
-            
+
             // Do a HEAD on the file:
             var blobProperties = await blobBaseClient.GetPropertiesAsync();
             long contentLength = blobProperties.Value.ContentLength;
@@ -163,10 +163,10 @@ namespace ConsoleApp
             MI.Open_Buffer_Init(contentLength, 0);
 
             // The parsing loop using a fixed memory buffer for reading and marshaling
-            const int localByteBufferSize = 64 * 1024;
+            const int localByteBufferSize = 1 * 1024 * 1024;
             byte[] localByteBuffer = new byte[localByteBufferSize];
             int numberOfBytesRead;
-            long currentPosition = 0;
+            long currentPosition;
             long desiredOffset = 0;
             long totalNumberOfBytesRead = 0;
             do
@@ -174,12 +174,8 @@ namespace ConsoleApp
                 // Read remote byte-range into localByteBuffer
                 var downloadResponse = await blobBaseClient.DownloadAsync(new HttpRange(desiredOffset, localByteBufferSize));
                 numberOfBytesRead = (int)downloadResponse.Value.ContentLength;
-                using (var ms = new MemoryStream(localByteBufferSize))
-                {
-                    downloadResponse.Value.Content.CopyTo(ms);
-                    localByteBuffer = ms.GetBuffer();
-                    currentPosition = downloadResponse.Value.Content.Position;
-                }
+                downloadResponse.Value.Content.Read(localByteBuffer, 0, numberOfBytesRead);
+                currentPosition = desiredOffset + numberOfBytesRead;
                 totalNumberOfBytesRead += numberOfBytesRead;
 
                 // Send the buffer to MediaInfo
@@ -196,7 +192,7 @@ namespace ConsoleApp
                 if (desiredOffset != -1)
                 {
                     // Inform MediaInfo we have seek
-                    MI.Open_Buffer_Init(contentLength, desiredOffset); 
+                    MI.Open_Buffer_Init(contentLength, desiredOffset);
                 }
                 else
                 {
@@ -204,12 +200,12 @@ namespace ConsoleApp
                     desiredOffset = currentPosition;
                 }
             }
-            while (numberOfBytesRead > 0  && desiredOffset != contentLength);
+            while (numberOfBytesRead > 0 && desiredOffset != contentLength);
 
             Console.WriteLine($"Total Bytes read: {totalNumberOfBytesRead}/{contentLength} = {totalNumberOfBytesRead / (float)contentLength}");
 
             // This is the end of the stream, MediaInfo must finish some work
-            MI.Open_Buffer_Finalize(); 
+            MI.Open_Buffer_Finalize();
 
             // Use MediaInfoLib as needed
             MI.Option("Complete", "1");
