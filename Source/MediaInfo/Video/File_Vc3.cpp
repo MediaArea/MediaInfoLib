@@ -710,7 +710,7 @@ void File_Vc3::Data_Parse()
         }
         else
         {
-            FrameInfo.PTS=FrameInfo.DTS=FrameInfo.DUR=(int64u)-1;
+            FrameInfo.PTS=FrameInfo.DUR=(int64u)-1;
         }
         if (!Status[IsAccepted])
             Accept("VC-3");
