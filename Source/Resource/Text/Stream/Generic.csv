@@ -48,7 +48,7 @@ BitRate_Maximum
 BitRate_Maximum/String
 BitRate_Encoded
 BitRate_Encoded/String
-FrameRate;
+FrameRate
 FrameRate/String
 FrameRate_Num
 FrameRate_Den
