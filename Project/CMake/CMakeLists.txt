@@ -74,8 +74,13 @@ elseif(MSVC)
 else()
   set(MediaInfoLib_CONFIG_INSTALL_DIR "${LIB_INSTALL_DIR}/cmake/mediainfolib")
 endif()
-
-set(MediaInfoLib_SOURCES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../Source)
+if(MINGW)
+  # Work around for cmake generating extra long paths
+  file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../Source DESTINATION .)
+  set(MediaInfoLib_SOURCES_PATH ${CMAKE_CURRENT_BINARY_DIR}/Source)
+else()
+  set(MediaInfoLib_SOURCES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../Source)
+endif()
 
 # On Windows debug library should have 'd' postfix.
 if(WIN32)
@@ -354,6 +359,10 @@ endif()
 if(NOT TinyXML_FOUND)
   include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/)
   list(APPEND MediaInfoLib_SRCS ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/tinyxml2.cpp)
+endif()
+
+if(WIN32)
+  set_source_files_properties(${MediaInfoLib_SRCS} PROPERTIES GENERATED true)
 endif()
 
 add_library(mediainfo ${MediaInfoLib_SRCS})
