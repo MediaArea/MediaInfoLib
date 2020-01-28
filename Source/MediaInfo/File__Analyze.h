@@ -1344,6 +1344,7 @@ protected :
     friend class File__Tags_Helper;
     friend class File_Mk;
     friend class File_Mpeg4;
+    friend class File_Hevc;
 
     //***************************************************************************
     // Helpers
