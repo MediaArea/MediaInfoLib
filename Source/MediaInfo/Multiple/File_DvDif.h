@@ -175,7 +175,6 @@ protected :
     bool   REC_ST;
     bool   REC_END;
     bool   REC_IsValid;
-    std::bitset<8> audio_source_IsPresentInFrame;
     struct dvdate
     {
         int8u  Days;
@@ -243,12 +242,12 @@ protected :
     std::vector<size_t> Video_STA_Errors; //Per STA type
     std::vector<size_t> Video_STA_Errors_ByDseq; //Per Dseq & STA type
     std::vector<size_t> Video_STA_Errors_Total; //Per STA type
-    std::vector<size_t> Audio_Errors; //Per Dseq
-    std::vector<bool> audio_source_IsPresent;
-    std::vector<bool>   CH_IsPresent;
-    std::vector<std::vector<size_t> > Audio_Errors_Total; //Per Channel and Dseq
-    std::vector<std::vector<size_t> > Audio_Invalids; //Per Channel and Dseq
-    std::vector<std::vector<size_t> > Audio_Invalids_Total; //Per Channel and Dseq
+    static const size_t ChannelGroup_Count=2;
+    static const size_t Dseq_Count=16;
+    std::vector<std::vector<int8u> > audio_source_mode; //Per ChannelGroup and Dseq, -1 means not present
+    bitset<ChannelGroup_Count*2> ChannelInfo;
+    std::vector<std::vector<size_t> > Audio_Errors; //Per ChannelGroup and Dseq
+    std::vector<std::vector<size_t> > Audio_Errors_TotalPerChannel; //Per Channel and Dseq
     struct recZ_Single
     {
         int64u FramePos;
