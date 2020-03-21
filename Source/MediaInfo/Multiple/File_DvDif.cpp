@@ -269,7 +269,6 @@ File_DvDif::File_DvDif()
     Speed_FrameCount_Stts_Fluctuation=0;
     SMP=(int8u)-1;
     QU=(int8u)-1;
-    CH_IsPresent.resize(8);
     Speed_TimeCode_IsValid=false;
     Speed_Arb_IsValid=false;
     Mpeg4_stts=NULL;
