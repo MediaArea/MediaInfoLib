@@ -721,10 +721,10 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
         if (Duration && FrameRate)
         {
             Fill(Stream_Video, Pos, Video_FrameCount, Duration*FrameRate/1000, 0);
-            if (DurationFromGeneral)
+            if (DurationFromGeneral && Retrieve_Const(Stream_Audio, Pos, Audio_Format)!=Retrieve_Const(Stream_General, 0, General_Format))
             {
                 Fill(Stream_Video, Pos, "FrameCount_Source", "General_Duration");
-                //Fill_SetOptions(Stream_Video, Pos, "FrameCount_Source", "N NTN");
+                Fill_SetOptions(Stream_Video, Pos, "FrameCount_Source", "N NTN");
             }
         }
     }
@@ -1017,10 +1017,10 @@ void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
         if (Duration && SamplingRate)
         {
             Fill(Stream_Audio, Pos, Audio_SamplingCount, ((float64)Duration)/1000*SamplingRate, 0);
-            if (DurationFromGeneral)
+            if (DurationFromGeneral && Retrieve_Const(Stream_Audio, Pos, Audio_Format)!=Retrieve_Const(Stream_General, 0, General_Format))
             {
                 Fill(Stream_Audio, Pos, "SamplingCount_Source", "General_Duration");
-                //Fill_SetOptions(Stream_Audio, Pos, "SamplingCount_Source", "N NTN");
+                Fill_SetOptions(Stream_Audio, Pos, "SamplingCount_Source", "N NTN");
             }
         }
     }
