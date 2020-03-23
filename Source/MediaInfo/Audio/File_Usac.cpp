@@ -40,6 +40,8 @@ extern int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampl
 extern const size_t Aac_sampling_frequency_Size_Usac; // USAC expands Aac_sampling_frequency[]
 extern const int32u Aac_sampling_frequency[];
 extern const char* const Aac_ChannelLayout[];
+extern const size_t Aac_OutputChannelPosition_Size;
+extern const char* const Aac_OutputChannelPosition[];
 
 //---------------------------------------------------------------------------
 struct coreSbrFrameLengthIndex_mapping
@@ -101,7 +103,9 @@ void File_Aac::UsacConfig()
         int32u numOutChannels;
         escapedValue(numOutChannels, 5, 8, 16,                  "numOutChannels");
         for (int32u i=0; i<numOutChannels; i++)
-            Skip_S1(5,                                          "bsOutChannelPos"); //TODO: mapping
+        {
+            Info_S1(5, bsOutChannelPos,                         "bsOutChannelPos"); Param_Info1(Aac_OutputChannelPosition[bsOutChannelPos]);
+        }
     }
     if (coreSbrFrameLengthIndex>=coreSbrFrameLengthIndex_Mapping_Size)
     {
@@ -795,7 +799,7 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
         if (V1)
             Get_SB (   drcApplyToDownmix,                       "drcApplyToDownmix");
         else
-            drcApplyToDownmix=drcApplyToDownmix?true:false;
+            drcApplyToDownmix=downmixId?true:false;
         TEST_SB_SKIP(                                           "additionalDownmixIdPresent");
             int8u additionalDownmixIdCount;
             Get_S1 (3, additionalDownmixIdCount,                "additionalDownmixIdCount");
@@ -834,13 +838,6 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
         Element_Begin1("channel");
         int8u bsGainSetIndex;
         Get_S1 (6, bsGainSetIndex,                              "bsGainSetIndex");
-        if (!bsGainSetIndex || bsGainSetIndex>gainSets.size()) // 1-based
-        {
-            Skip_BS(Data_BS_Remain(),                               "(Not implemented)");
-            Element_End0();
-            Element_End0();
-            return;
-        }
         gainSetIndex.push_back(bsGainSetIndex);
         if ((drcSetEffect & (3<<10)) != 0)
         {
@@ -863,16 +860,20 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
     for (set<int8s>::iterator DrcChannelGroup=DrcChannelGroups.begin(); DrcChannelGroup!=DrcChannelGroups.end(); ++DrcChannelGroup)
     {
         Element_Begin1("DrcChannel");
-        int8u bandCount=gainSets[*DrcChannelGroup-1].bandCount;
+        int8s gainSetIndex=*DrcChannelGroup-1;
+        int8u bandCount=V1?(gainSetIndex<gainSets.size()?gainSets[gainSetIndex].bandCount:0):1;
         for (int8u k=0; k<bandCount; k++)
         {
             Element_Begin1("band");
+            if (V1)
+            {
             TEST_SB_SKIP(                                       "targetCharacteristicLeftPresent");
                 Skip_S1(4,                                      "targetCharacteristicLeftIndex");
             TEST_SB_END();
             TEST_SB_SKIP(                                       "targetCharacteristicRightPresent");
                 Skip_S1(4,                                      "targetCharacteristicRightIndex");
             TEST_SB_END();
+            }
             TEST_SB_SKIP(                                       "gainScalingPresent");
                 Skip_S1(4,                                      "bsAttenuationScaling");
                 Skip_S1(4,                                      "bsAmplificationScaling");
@@ -883,7 +884,7 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
             TEST_SB_END();
             Element_End0();
         }
-        if (bandCount==1)
+        if (V1 && bandCount==1)
         {
             TEST_SB_SKIP(                                       "shapeFilterPresent");
                 Skip_S1(4,                                      "shapeFilterIndex");
@@ -935,7 +936,9 @@ void File_Aac::channelLayout()
         if (!definedLayout)
         {
             for (int8u i=0; i<baseChannelCount; i++)
-                Skip_S1(7,                                      "speakerPosition");
+            {
+                Info_S1(7, speakerPosition,                     "speakerPosition"); Param_Info1C(speakerPosition<Aac_OutputChannelPosition_Size, Aac_OutputChannelPosition[speakerPosition]);
+            }
         }
     }
 
@@ -1022,7 +1025,7 @@ void File_Aac::loudnessInfoSet(bool V1)
         loudnessInfo(false, V1);
     if (!V1)
     {
-        Get_SB (loudnessInfoSetExtPresent,                     "loudnessInfoSetExtPresent");
+        Get_SB (loudnessInfoSetExtPresent,                      "loudnessInfoSetExtPresent");
         if (loudnessInfoSetExtPresent)
             loudnessInfoSetExtension();
     }
