@@ -162,7 +162,8 @@ const char* Aac_audioObjectType(int8u audioObjectType)
 }
 
 //---------------------------------------------------------------------------
-static const int8u Aac_Channels[]=
+extern const int8u Aac_Channels_Size=13;
+extern const int8u Aac_Channels[Aac_Channels_Size]=
 {
     0,
     1,
@@ -172,71 +173,131 @@ static const int8u Aac_Channels[]=
     5,
     6,
     8,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
+    //AudioSpecificConfig
+    2,
+    3,
+    4,
+    7,
+    8,
 };
 
 //---------------------------------------------------------------------------
-static const char* Aac_ChannelConfiguration[]=
+extern const char* Aac_ChannelConfiguration[Aac_Channels_Size]=
 {
     "",
     "Front: C",
     "Front: L R",
     "Front: L C R",
-    "Front: L C R, Side: C",
+    "Front: L C R, Back: C",
     "Front: L C R, Side: L R",
     "Front: L C R, Side: L R, LFE",
     "Front: L C R, Side: L R, Back: L R, LFE",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
+    //AudioSpecificConfig
+    "Dual mono",
+    "Front: L R, Back: C",
+    "Front: L C R, Back: L R",
+    "Front: L C R, Back: L C R, LFE",
+    "Front: L C R, Back: L L R R, LFE",
 };
 
 //---------------------------------------------------------------------------
-static const char* Aac_ChannelConfiguration2[]=
+extern const char* Aac_ChannelConfiguration2[Aac_Channels_Size]=
 {
     "",
     "1/0/0",
     "2/0/0",
     "3/0/0",
-    "3/1/0",
+    "3/0/1",
     "3/2/0",
     "3/2/0.1",
+    "3/4/0.1",
+    //AudioSpecificConfig
+    "1+1",
+    "2/0/1",
+    "3/2/0",
+    "3/2/1.1",
     "3/2/2.1",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
 };
 
 //---------------------------------------------------------------------------
-extern const char* const Aac_ChannelLayout[]=
+extern const char* const Aac_ChannelMode[Aac_Channels_Size]=
+{
+    "",
+    "1.0",
+    "2.0",
+    "3.0",
+    "4.0",
+    "5.0",
+    "5.1",
+    "7.1",
+    //AudioSpecificConfig
+    "1+1",
+    "3.0",
+    "4.0",
+    "6.1",
+    "7.1",
+};
+
+//---------------------------------------------------------------------------
+extern const char* const Aac_ChannelLayout[Aac_Channels_Size]=
 {
     "",
     "C",
     "L R",
-    "C L R",
-    "C L R Cs",
-    "C L R Ls Rs",
-    "C L R Ls Rs LFE",
-    "C L R Ls Rs Lrs Rrs LFE",
+    "L R C",
+    "L R C Cb",
+    "L R C Ls Rs",
+    "L R C LFE Ls Rs",
+    "L R C LFE Ls Rs Lw Rw",
+    //AudioSpecificConfig
+    "M M",
+    "L R Cb",
+    "L R Ls Rs",
+    "L R C LFE Ls Rs Cb",
+    "L R C LFE Ls Rs Lb Rb",
 };
 
+
+//---------------------------------------------------------------------------
+extern const size_t Aac_OutputChannelPosition_Size=32;
+extern const char* const Aac_OutputChannelPosition[Aac_OutputChannelPosition_Size]=
+{
+    //USAC
+    "L",
+    "R",
+    "C",
+    "LFE",
+    "Ls",
+    "Rs",
+    "Lc",
+    "Rc",
+    "Lsr",
+    "Rsr",
+    "Cs",
+    "Lsd",
+    "Rsd",
+    "Lss",
+    "Rss",
+    "Lw",
+    "Rw",
+    "Lv",
+    "rv",
+    "Tfc",
+    "Tbl",
+    "Tbr",
+    "Tbc",
+    "Tsl",
+    "Tsr",
+    "Tc",
+    "LFE2",
+    "Bfl",
+    "Bfr",
+    "Bfc",
+    "Lvs",
+    "Rvs",
+};
+
+//---------------------------------------------------------------------------
 int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampling_frequency)
 {
     if (sampling_frequency>=92017) return 0;
@@ -526,7 +587,7 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
     Infos["Format"].From_UTF8(Aac_Format(audioObjectType));
     Infos["Format_Profile"].From_UTF8(Aac_Format_Profile(audioObjectType));
     Infos["Codec"].From_UTF8(Aac_audioObjectType(audioObjectType));
-    if (channelConfiguration && channelConfiguration<8)
+    if (channelConfiguration && channelConfiguration<Aac_Channels_Size)
     {
         Infos["Channel(s)"].From_Number(Aac_Channels[channelConfiguration]);
         Infos["ChannelPositions"].From_UTF8(Aac_ChannelConfiguration[channelConfiguration]);
