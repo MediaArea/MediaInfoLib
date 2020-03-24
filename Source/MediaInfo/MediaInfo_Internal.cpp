@@ -277,7 +277,7 @@ extern const Char* MediaInfo_Version;
 //***************************************************************************
 // Modifiers - ChannelLayout_2018
 //***************************************************************************
-static const size_t ChannelLayout_2018_Size=65;
+static const size_t ChannelLayout_2018_Size=63;
 static const char* ChannelLayout_2018[ChannelLayout_2018_Size][2] =
 {
     { "BC", "Cb" },
@@ -313,7 +313,6 @@ static const char* ChannelLayout_2018[ChannelLayout_2018_Size][2] =
     { "Lv", "Tfl" },
     { "Lvh", "Tfl" },
     { "Lvr", "Tbl" },
-    { "Lvs", "Tsl" },
     { "Lvss", "Tll" },
     { "Oh", "Tc" },
     { "Rc", "Rscr" },
@@ -331,7 +330,6 @@ static const char* ChannelLayout_2018[ChannelLayout_2018_Size][2] =
     { "Rv", "Tfr" },
     { "Rvh", "Tfr" },
     { "Rvr", "Tbr" },
-    { "Rvs", "Tsr" },
     { "Rvss", "Tsr" },
     { "S", "Cb" },
     { "SL", "Ls" },
@@ -346,23 +344,53 @@ static const char* ChannelLayout_2018[ChannelLayout_2018_Size][2] =
     { "Ts", "Tc" },
     { "Vhc", "Tfc" },
 };
-Ztring ChannelLayout_2018_Rename(const Ztring& Channels)
+static const size_t ChannelLayout_2018_Aac_Size=3;
+static const char* ChannelLayout_2018_Aac[ChannelLayout_2018_Aac_Size][2] =
+{
+    { "Cb", "Bfc" },
+    { "Lb", "Bfl" },
+    { "Rb", "Bfr" },
+};
+Ztring ChannelLayout_2018_Rename(const Ztring& Channels, const Ztring& Format)
 {
     ZtringList List;
     List.Separator_Set(0, __T(" "));
     List.Write(Channels);
+    size_t LfePos[3];
+    memset(LfePos, -1, sizeof(LfePos));
+    bool IsAac=Format==__T("USAC");
     for (size_t i=0; i<List.size(); i++)
     {
         Ztring& ChannelName=List[i];
         string ChannelNameS=ChannelName.To_UTF8();
         for (size_t j=0; j<ChannelLayout_2018_Size; j++)
-            if (!strcmp(ChannelNameS.c_str(), ChannelLayout_2018[j][0]) && ChannelLayout_2018[j][1])
+            if (!strcmp(ChannelNameS.c_str(), ChannelLayout_2018[j][0]))
                 ChannelName.From_UTF8(ChannelLayout_2018[j][1]);
+        if (IsAac)
+        {
+            for (size_t j=0; j< ChannelLayout_2018_Aac_Size; j++)
+                if (!strcmp(ChannelNameS.c_str(), ChannelLayout_2018_Aac[j][0]))
+                    ChannelName.From_UTF8(ChannelLayout_2018_Aac[j][1]);
+            if (ChannelNameS.size()>=3 && ChannelNameS[0]=='L' && ChannelNameS[1]=='F' && ChannelNameS[2]=='E')
+            {
+                if (LfePos[0] && ChannelNameS.size()==3)
+                    LfePos[0]=i;
+                if (LfePos[1] && ChannelNameS.size()==4 && ChannelNameS[3]==__T('2'))
+                    LfePos[1]=i;
+                if (LfePos[2] && ChannelNameS.size()==4 && ChannelNameS[3]==__T('3'))
+                    LfePos[2]=i;
+            }
+        }
+    }
+    if (LfePos[0]==(size_t)-1 && LfePos[1]!=(size_t)-1 && LfePos[2]!=(size_t)-1)
+    {
+        List[LfePos[1]].resize(3); // LFE2 --> LFE
+        List[LfePos[2]][3]--; // LFE3 --> LFE2
     }
     Ztring ToReturn=List.Read();
     return ToReturn;
 }
-Ztring ChannelLayout_2018_Rename(stream_t StreamKind, size_t Parameter, ZtringList& Info, bool &ShouldReturn)
+Ztring ChannelLayout_2018_Rename(stream_t StreamKind, size_t Parameter, ZtringList& Info, const Ztring& StreamFormat, bool &ShouldReturn)
 {
     bool ShouldReturn_Save=ShouldReturn;
     ShouldReturn=true;
@@ -371,7 +399,7 @@ Ztring ChannelLayout_2018_Rename(stream_t StreamKind, size_t Parameter, ZtringLi
         case Stream_Audio:
             switch (Parameter)
             {
-                case Audio_ChannelLayout: return ChannelLayout_2018_Rename(Info[Parameter]);
+                case Audio_ChannelLayout: return ChannelLayout_2018_Rename(Info[Parameter], StreamFormat);
                 default:;
             }
             break;
@@ -380,12 +408,12 @@ Ztring ChannelLayout_2018_Rename(stream_t StreamKind, size_t Parameter, ZtringLi
     ShouldReturn=ShouldReturn_Save;
     return Info[Parameter];
 }
-Ztring ChannelLayout_2018_Rename(stream_t StreamKind, const Ztring& Parameter, const Ztring& Value, bool &ShouldReturn)
+Ztring ChannelLayout_2018_Rename(stream_t StreamKind, const Ztring& Parameter, const Ztring& Value, const Ztring& StreamFormat, bool &ShouldReturn)
 {
     bool ShouldReturn_Save=ShouldReturn;
     ShouldReturn=true;
-    if (StreamKind==Stream_Audio && Parameter==__T("BedChannelConfiguration"))
-        return ChannelLayout_2018_Rename(Value);
+    if (StreamKind==Stream_Audio && (Parameter==__T("BedChannelConfiguration") || (Parameter.size()>=14 && Parameter.find(__T(" ChannelLayout"), Parameter.size()-14)!=string::npos)))
+        return ChannelLayout_2018_Rename(Value, StreamFormat);
     ShouldReturn=ShouldReturn_Save;
     return Value;
 }
@@ -1705,7 +1733,7 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, size_t Par
             if (Config.File_ChannelLayout_Get())
             #endif //MEDIAINFO_ADVANCED
             {
-                Ztring ToReturn=ChannelLayout_2018_Rename(StreamKind, Parameter, Stream[StreamKind][StreamPos], ShouldReturn);
+                Ztring ToReturn=ChannelLayout_2018_Rename(StreamKind, Parameter, Stream[StreamKind][StreamPos], Stream[StreamKind][StreamPos][File__Analyze::Fill_Parameter(StreamKind, Generic_Format)], ShouldReturn);
                 if (ShouldReturn)
                     EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return "); Debug += ToReturn;)
             }
@@ -1723,7 +1751,7 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, size_t Par
         #endif //MEDIAINFO_ADVANCED
         {
             bool ShouldReturn=false;
-            Ztring ToReturn=ChannelLayout_2018_Rename(StreamKind, Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()][Info_Name], Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()](KindOfInfo), ShouldReturn);
+            Ztring ToReturn=ChannelLayout_2018_Rename(StreamKind, Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()][Info_Name], Stream_More[StreamKind][StreamPos][Parameter-MediaInfoLib::Config.Info_Get(StreamKind).size()](KindOfInfo), Stream[StreamKind][StreamPos][File__Analyze::Fill_Parameter(StreamKind, Generic_Format)], ShouldReturn);
             if (ShouldReturn)
                 EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return ");Debug+=ToReturn;)
         }
@@ -1855,7 +1883,7 @@ Ztring MediaInfo_Internal::Get(stream_t StreamKind, size_t StreamPos, const Stri
         #endif //MEDIAINFO_ADVANCED
         {
             bool ShouldReturn=false;
-            Ztring ToReturn=ChannelLayout_2018_Rename(StreamKind, Stream_More[StreamKind][StreamPos][ParameterI][Info_Name], Stream_More[StreamKind][StreamPos][ParameterI](KindOfInfo), ShouldReturn);
+            Ztring ToReturn=ChannelLayout_2018_Rename(StreamKind, Stream_More[StreamKind][StreamPos][ParameterI][Info_Name], Stream_More[StreamKind][StreamPos][ParameterI](KindOfInfo), Stream[StreamKind][StreamPos][File__Analyze::Fill_Parameter(StreamKind, Generic_Format)], ShouldReturn);
             if (ShouldReturn)
                 EXECUTE_STRING(ToReturn, Debug+=__T("Get, will return ");Debug+=ToReturn;)
         }

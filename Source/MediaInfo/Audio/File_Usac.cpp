@@ -16,8 +16,6 @@
 #include "MediaInfo/Setup.h"
 //---------------------------------------------------------------------------
 
-//TODO: move USAC content to its on class instead of expanding AAC class
-
 //---------------------------------------------------------------------------
 #if defined(MEDIAINFO_AAC_YES)
 //---------------------------------------------------------------------------
@@ -37,11 +35,13 @@ namespace MediaInfoLib
 
 //---------------------------------------------------------------------------
 extern int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampling_frequency);
-extern const size_t Aac_sampling_frequency_Size_Usac; // USAC expands Aac_sampling_frequency[]
+extern const size_t Aac_sampling_frequency_Size_Usac;
 extern const int32u Aac_sampling_frequency[];
-extern const char* const Aac_ChannelLayout[];
-extern const size_t Aac_OutputChannelPosition_Size;
-extern const char* const Aac_OutputChannelPosition[];
+extern string Aac_Channels_GetString(int8u ChannelLayout);
+extern string Aac_ChannelConfiguration_GetString(int8u ChannelLayout);
+extern string Aac_ChannelConfiguration2_GetString(int8u ChannelLayout);
+extern string Aac_ChannelLayout_GetString(int8u ChannelLayout);
+extern string Aac_OutputChannelPosition_GetString(int8u OutputChannelPosition);
 
 //---------------------------------------------------------------------------
 struct coreSbrFrameLengthIndex_mapping
@@ -97,14 +97,14 @@ void File_Aac::UsacConfig()
     else
         Frequency_b=Aac_sampling_frequency[sampling_frequency_index];
     Get_S1 (3, coreSbrFrameLengthIndex,                         "coreSbrFrameLengthIndex");
-    Get_S1 (5, channelConfiguration,                            "channelConfiguration"); Param_Info1C(channelConfiguration<8, Aac_ChannelLayout[channelConfiguration]);
+    Get_S1 (5, channelConfiguration,                            "channelConfiguration"); Param_Info1C(channelConfiguration, Aac_ChannelLayout_GetString(channelConfiguration));
     if (!channelConfiguration)
     {
         int32u numOutChannels;
         escapedValue(numOutChannels, 5, 8, 16,                  "numOutChannels");
         for (int32u i=0; i<numOutChannels; i++)
         {
-            Info_S1(5, bsOutChannelPos,                         "bsOutChannelPos"); Param_Info1(Aac_OutputChannelPosition[bsOutChannelPos]);
+            Info_S1(5, bsOutChannelPos,                         "bsOutChannelPos"); Param_Info1(Aac_OutputChannelPosition_GetString(bsOutChannelPos));
         }
     }
     if (coreSbrFrameLengthIndex>=coreSbrFrameLengthIndex_Mapping_Size)
@@ -163,6 +163,8 @@ void File_Aac::UsacConfig()
             string Field;
             if (j<LoudnessMeaning_Size)
                 Field=LoudnessMeaning[j-1];
+            else
+                Field="LoudnessMeaning"+Ztring::ToZtring(j).To_UTF8();
             if (i)
                 Field+="_Album";
             Fill(Stream_Audio, 0, Field.c_str(), Measurements[j], Ids);
@@ -357,10 +359,10 @@ void File_Aac::SbrDlftHeader()
     }
     if (dflt_header_extra2)
     {
-        Skip_S1(2,                                              "dflt_limiter_bands;");
+        Skip_S1(2,                                              "dflt_limiter_bands");
         Skip_S1(2,                                              "dflt_limiter_gains");
-        Skip_SB(                                                "dflt_interpol_freq;");
-        Skip_SB(                                                "dflt_smoothing_mode;");
+        Skip_SB(                                                "dflt_interpol_freq");
+        Skip_SB(                                                "dflt_smoothing_mode");
     }
 
     Element_End0();
@@ -400,6 +402,11 @@ void File_Aac::Mps212Config(int8u StereoConfigindex)
 //---------------------------------------------------------------------------
 void File_Aac::uniDrcConfig()
 {
+    downmixInstructions_Data.clear();
+    drcInstructionsUniDrc_Data.clear();
+    loudnessInfo_Data[0].clear();
+    loudnessInfo_Data[1].clear();
+
     Element_Begin1("uniDrcConfig");
 
     int8u downmixInstructionsCount, drcCoefficientsBasicCount, drcInstructionsBasicCount, drcCoefficientsUniDrcCount, drcInstructionsUniDrcCount;
@@ -531,7 +538,8 @@ void File_Aac::downmixInstructions(bool V1)
     Element_Begin1("downmixInstructionsV1");
 
     bool layoutSignalingPresent;
-    Skip_S1(7,                                                  "downmixId");
+    int8u downmixId, targetChannelCount;
+    Get_S1 (7, downmixId,                                       "downmixId");
     Get_S1 (7, targetChannelCount,                              "targetChannelCount");
     Skip_S1(8,                                                  "targetLayout");
     Get_SB (   layoutSignalingPresent,                          "layoutSignalingPresent");
@@ -543,7 +551,7 @@ void File_Aac::downmixInstructions(bool V1)
             for (int8u j=0; j<baseChannelCount; j++)
                 Skip_S1(V1?5:4,                                 V1?"bsDownmixCoefficientV1":"bsDownmixCoefficient");
     }
-
+    downmixInstructions_Data[downmixId].targetChannelCount=targetChannelCount;
     Element_End0();
 }
 
@@ -754,7 +762,7 @@ void File_Aac::drcInstructionsBasic()
         TEST_SB_END();
     TEST_SB_END();
 
-  Element_End0();
+    Element_End0();
 }
 
 static const size_t drcSetEffect_List_Size=12;
@@ -777,7 +785,7 @@ static const char* drcSetEffect_List[drcSetEffect_List_Size] =
 //---------------------------------------------------------------------------
 void File_Aac::drcInstructionsUniDrc(bool V1)
 {
-    Element_Begin1("drcInstructionsUniDrcV1");
+    Element_Begin1(V1?"drcInstructionsUniDrcV1":"drcInstructionsUniDrc");
 
     int8u channelCount=baseChannelCount;
     vector<int8s> gainSetIndex;
@@ -806,8 +814,14 @@ void File_Aac::drcInstructionsUniDrc(bool V1)
             for (int8u i=0; i<additionalDownmixIdCount; i++)
                 Skip_S1(7,                                      "additionalDownmixId");
         TEST_SB_END();
-        if ((!V1 || drcApplyToDownmix) && downmixId && downmixId!=0x7F)
-            channelCount=targetChannelCount; //targetChannelCountFromDownmix
+        if ((!V1 || drcApplyToDownmix) && downmixId && downmixId != 0x7F)
+        {
+            std::map<int8u, downmix_instruction>::iterator downmixInstruction_Data=downmixInstructions_Data.find(downmixId);
+            if (downmixInstruction_Data!=downmixInstructions_Data.end())
+                channelCount=downmixInstruction_Data->second.targetChannelCount;
+            else
+                channelCount=1;
+        }
         else if (downmixId==0x7F)
             channelCount=1;
     }
@@ -927,7 +941,6 @@ void File_Aac::channelLayout()
 
     bool layoutSignalingPresent;
     Get_S1 (7, baseChannelCount,                                "baseChannelCount");
-    targetChannelCount=baseChannelCount;
     Get_SB (   layoutSignalingPresent,                          "layoutSignalingPresent");
     if (layoutSignalingPresent)
     {
@@ -937,7 +950,7 @@ void File_Aac::channelLayout()
         {
             for (int8u i=0; i<baseChannelCount; i++)
             {
-                Info_S1(7, speakerPosition,                     "speakerPosition"); Param_Info1C(speakerPosition<Aac_OutputChannelPosition_Size, Aac_OutputChannelPosition[speakerPosition]);
+                Info_S1(7, speakerPosition,                     "speakerPosition"); Param_Info1(Aac_OutputChannelPosition_GetString(speakerPosition));
             }
         }
     }
