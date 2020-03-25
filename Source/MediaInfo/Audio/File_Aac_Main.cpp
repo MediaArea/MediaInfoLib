@@ -162,7 +162,8 @@ const char* Aac_audioObjectType(int8u audioObjectType)
 }
 
 //---------------------------------------------------------------------------
-static const int8u Aac_Channels_Size=14;
+static const int8u Aac_Channels_Size_Usac=14;
+static const int8u Aac_Channels_Size=21;
 static const int8u Aac_Channels[Aac_Channels_Size]=
 {
     0,
@@ -180,6 +181,14 @@ static const int8u Aac_Channels[Aac_Channels_Size]=
     7,
     8,
     24,
+    //MPEG-H 3D Audio
+    8,
+    12,
+    10,
+    12,
+    14,
+    12,
+    14,
 };
 extern int8u Aac_Channels_Get(int8u ChannelLayout)
 {
@@ -216,6 +225,14 @@ static const char* Aac_ChannelConfiguration[Aac_Channels_Size]=
     "Front: L C R, Back: L C R, LFE",
     "Front: L C R, Back: L L R R, LFE",
     "",
+    //MPEG-H 3D Audio
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
 };
 extern string Aac_ChannelConfiguration_GetString(int8u ChannelLayout)
 {
@@ -243,6 +260,14 @@ static const char* Aac_ChannelConfiguration2[Aac_Channels_Size]=
     "3/2/1.1",
     "3/2/2.1",
     "",
+    //MPEG-H 3D Audio
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
 };
 extern string Aac_ChannelConfiguration2_GetString(int8u ChannelLayout)
 {
@@ -253,7 +278,7 @@ extern string Aac_ChannelConfiguration2_GetString(int8u ChannelLayout)
 }
 
 //---------------------------------------------------------------------------
-static const Aac_OutputChannel Aac_ChannelLayout[]= //size of each line is provided by Aac_Channels[]
+static const Aac_OutputChannel Aac_ChannelLayout[]= //Size of each line is provided by Aac_Channels[]
 {
     CH_M_000,
     CH_M_L030, CH_M_R030,
@@ -269,6 +294,33 @@ static const Aac_OutputChannel Aac_ChannelLayout[]= //size of each line is provi
     CH_M_000, CH_M_L030, CH_M_R030, CH_M_L110, CH_M_R110, CH_M_180, CH_LFE,
     CH_M_000, CH_M_L030, CH_M_R030, CH_M_L110, CH_M_R110, CH_M_L135, CH_M_R135, CH_LFE,
     CH_M_000, CH_M_L030, CH_M_R030, CH_M_L060, CH_M_R060, CH_M_L090, CH_M_R090, CH_M_L135, CH_M_R135, CH_M_180, CH_LFE, CH_LFE2, CH_U_000, CH_U_L030, CH_U_R030, CH_U_L090, CH_U_R090, CH_T_000, CH_U_L135, CH_U_R135, CH_U_180, CH_L_000, CH_L_L045, CH_L_R045,
+};
+
+//---------------------------------------------------------------------------
+static const Aac_OutputChannel Aac_ChannelLayout_MpegH[]= //Size of each line is provided by Aac_Channels[]
+{
+    CH_M_000,
+    CH_M_L030, CH_M_R030,
+    CH_M_L030, CH_M_R030, CH_M_000,
+    CH_M_L030, CH_M_R030, CH_M_000, CH_M_180,
+    CH_M_L030, CH_M_R030, CH_M_000, CH_M_L110, CH_M_R110,
+    CH_M_L030, CH_M_R030, CH_M_000, CH_LFE, CH_M_L110, CH_M_R110,
+    CH_M_L030, CH_M_R030, CH_M_000, CH_LFE, CH_M_L110, CH_M_R110, CH_M_L060, CH_M_R060,
+    //AudioSpecificConfig
+    CH_M_000, CH_M_000,
+    CH_M_L030, CH_M_R030, CH_M_180,
+    CH_M_L030, CH_M_R030, CH_M_L110, CH_M_R110,
+    CH_M_L030, CH_M_R030, CH_M_000, CH_LFE, CH_M_L110, CH_M_R110, CH_M_180,
+    CH_M_L030, CH_M_R030, CH_M_000, CH_LFE, CH_M_L110, CH_M_R110, CH_M_L135, CH_M_R135,
+    CH_M_L060, CH_M_R060, CH_M_000, CH_LFE2, CH_M_L135, CH_M_R135, CH_M_L030, CH_M_R030, CH_M_180, CH_LFE3, CH_M_L090, CH_M_R090, CH_U_L045, CH_U_R045, CH_U_000, CH_T_000, CH_U_L135, CH_U_R135, CH_U_L090, CH_U_R090, CH_U_180, CH_L_000, CH_L_L045, CH_L_R045,
+    //MPEG-H
+    CH_M_L030, CH_M_R030, CH_M_000, CH_LFE, CH_M_L110, CH_M_R110, CH_U_L030, CH_U_R030,
+    CH_M_L030, CH_M_R030, CH_M_000, CH_LFE2, CH_M_L135, CH_M_R135, CH_LFE3, CH_M_L090, CH_M_R090, CH_U_L045, CH_U_R045, CH_U_180,
+    CH_M_L030, CH_M_R030, CH_M_000, CH_LFE, CH_M_L110, CH_M_R110, CH_U_L030, CH_U_R030, CH_U_L110, CH_U_R110,
+    CH_M_L030, CH_M_R030, CH_M_000, CH_LFE, CH_M_L110, CH_M_R110, CH_U_L030, CH_U_R030, CH_U_000, CH_U_L110, CH_U_R110, CH_T_000,
+    CH_M_L030, CH_M_R030, CH_M_000, CH_LFE, CH_M_L110, CH_M_R110, CH_M_L150, CH_M_R150, CH_U_L030, CH_U_R030, CH_U_000, CH_U_L110, CH_U_R110, CH_T_000,
+    CH_M_L030, CH_M_R030, CH_M_000, CH_LFE, CH_M_L135, CH_M_R135, CH_M_L090, CH_M_R090, CH_U_L030, CH_U_R030, CH_U_L135, CH_U_R135,
+    CH_M_L030, CH_M_R030, CH_M_000, CH_LFE, CH_M_L135, CH_M_R135, CH_M_L090, CH_M_R090, CH_U_L045, CH_U_R045, CH_U_L135, CH_U_R135, CH_M_LSCR, CH_M_RSCR,
 };
 
 static const size_t Aac_OutputChannelPosition_Size=CH_MAX;
@@ -307,6 +359,18 @@ static const char* const Aac_OutputChannelPosition[Aac_OutputChannelPosition_Siz
     "Cb",
     "Lvs",
     "Rvs",
+    //MPEG-H 3D Audio
+    "Lv", // +45 version of Lv (+30), merged
+    "Rv", // -45 version of Rv (-30), merged
+    "L", // +45 version of L (+30), merged
+    "R", // -45 version of R (-30), merged
+    "LFE3",
+    "Lscr",
+    "Rscr",
+    "Lsch",
+    "Rsch",
+    "Lsr", // +150 version of Lsr (+135), merged
+    "Rsr", // -150 version of Rsr (-135), merged
 };
 extern string Aac_OutputChannelPosition_GetString(int8u OutputChannelPosition)
 {
@@ -334,11 +398,11 @@ extern string Aac_ChannelLayout_GetString(const Aac_OutputChannel* const OutputC
     Value.resize(Value.size()-1);
     return Value;
 }
-extern string Aac_ChannelLayout_GetString(int8u ChannelLayout)
+extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegh3da=false)
 {
     if (!ChannelLayout)
         return string();
-    if (ChannelLayout>=Aac_Channels_Size)
+    if (ChannelLayout>=(IsMpegh3da?Aac_Channels_Size:Aac_Channels_Size_Usac))
         return "ChannelLayout"+Ztring::ToZtring(ChannelLayout).To_UTF8();
 
     // Compute start/end in Aac_ChannelLayout array
@@ -348,7 +412,7 @@ extern string Aac_ChannelLayout_GetString(int8u ChannelLayout)
     int Aac_ChannelLayout_End=Aac_ChannelLayout_Start+Aac_Channels[ChannelLayout];
 
     // Build the string
-    return Aac_ChannelLayout_GetString(Aac_ChannelLayout+Aac_ChannelLayout_Start, Aac_ChannelLayout_End-Aac_ChannelLayout_Start);
+    return Aac_ChannelLayout_GetString((IsMpegh3da?Aac_ChannelLayout_MpegH:Aac_ChannelLayout)+Aac_ChannelLayout_Start, Aac_ChannelLayout_End-Aac_ChannelLayout_Start);
 }
 extern string Aac_ChannelLayout_GetString(const vector<Aac_OutputChannel>& OutputChannels)
 {
@@ -392,6 +456,18 @@ extern const char Aac_ChannelMode[Aac_OutputChannelPosition_Size]=
     3,
     2,
     2,
+    //MPEG-H 3D Audio
+    2,
+    2,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
 };
 
 //---------------------------------------------------------------------------
@@ -431,11 +507,11 @@ extern string Aac_ChannelMode_GetString(const Aac_OutputChannel* const OutputCha
     }
     return Value;
 }
-extern string Aac_ChannelMode_GetString(int8u ChannelLayout)
+extern string Aac_ChannelMode_GetString(int8u ChannelLayout, bool IsMpegh3da=false)
 {
     if (!ChannelLayout)
         return string();
-    if (ChannelLayout>=Aac_Channels_Size)
+    if (ChannelLayout>=(IsMpegh3da?Aac_Channels_Size:Aac_Channels_Size_Usac))
         return "ChannelLayout"+Ztring::ToZtring(ChannelLayout).To_UTF8();
 
     // Compute start/end in Aac_ChannelLayout array
@@ -445,7 +521,7 @@ extern string Aac_ChannelMode_GetString(int8u ChannelLayout)
     int Aac_ChannelLayout_End=Aac_ChannelLayout_Start+Aac_Channels[ChannelLayout];
 
     // Build the string
-    return Aac_ChannelMode_GetString(Aac_ChannelLayout+Aac_ChannelLayout_Start, Aac_ChannelLayout_End-Aac_ChannelLayout_Start);
+    return Aac_ChannelMode_GetString((IsMpegh3da?Aac_ChannelLayout_MpegH:Aac_ChannelLayout)+Aac_ChannelLayout_Start, Aac_ChannelLayout_End-Aac_ChannelLayout_Start);
 }
 extern string Aac_ChannelMode_GetString(const vector<Aac_OutputChannel>& OutputChannels)
 {

@@ -61,6 +61,18 @@ enum Aac_OutputChannel
     CH_L_000,
     CH_U_L110,
     CH_U_R110,
+    //MPEG-H 3D Audio
+    CH_U_L045,
+    CH_U_R045,
+    CH_M_L045,
+    CH_M_R045,
+    CH_LFE3,
+    CH_M_LSCR,
+    CH_M_RSCR,
+    CH_M_LSCH,
+    CH_M_RSCH,
+    CH_M_L150,
+    CH_M_R150,
     CH_MAX
 };
 

@@ -40,7 +40,7 @@ extern const int32u Aac_sampling_frequency[];
 extern string Aac_Channels_GetString(int8u ChannelLayout);
 extern string Aac_ChannelConfiguration_GetString(int8u ChannelLayout);
 extern string Aac_ChannelConfiguration2_GetString(int8u ChannelLayout);
-extern string Aac_ChannelLayout_GetString(int8u ChannelLayout);
+extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegh3da=false);
 extern string Aac_OutputChannelPosition_GetString(int8u OutputChannelPosition);
 
 //---------------------------------------------------------------------------
@@ -49,8 +49,8 @@ struct coreSbrFrameLengthIndex_mapping
     int8u    sbrRatioIndex;
     int8u    outputFrameLengthDivided256;
 };
-static const size_t coreSbrFrameLengthIndex_Mapping_Size=5;
-static coreSbrFrameLengthIndex_mapping coreSbrFrameLengthIndex_Mapping[coreSbrFrameLengthIndex_Mapping_Size] =
+extern const size_t coreSbrFrameLengthIndex_Mapping_Size=5;
+extern coreSbrFrameLengthIndex_mapping coreSbrFrameLengthIndex_Mapping[coreSbrFrameLengthIndex_Mapping_Size] =
 {
     { 0,  3 },
     { 0,  4 },

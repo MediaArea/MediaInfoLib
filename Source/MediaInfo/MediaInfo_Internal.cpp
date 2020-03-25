@@ -358,7 +358,7 @@ Ztring ChannelLayout_2018_Rename(const Ztring& Channels, const Ztring& Format)
     List.Write(Channels);
     size_t LfePos[3];
     memset(LfePos, -1, sizeof(LfePos));
-    bool IsAac=Format==__T("USAC");
+    bool IsAac=(Format==__T("USAC") || Format==__T("MPEG-H 3D Audio"));
     for (size_t i=0; i<List.size(); i++)
     {
         Ztring& ChannelName=List[i];

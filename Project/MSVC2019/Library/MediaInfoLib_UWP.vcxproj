@@ -266,6 +266,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpc.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_MpcSv8.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpega.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Pcm.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ps2Audio.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ScreamTracker3.cpp" />
@@ -581,6 +582,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpc.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_MpcSv8.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpega.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Pcm.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Ps2Audio.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ScreamTracker3.h" />

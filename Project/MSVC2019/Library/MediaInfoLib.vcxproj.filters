@@ -794,6 +794,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.cpp">
       <Filter>Source Files\Video</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.cpp">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1482,6 +1485,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.h">
       <Filter>Header Files\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.h">
+      <Filter>Header Files\Audio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
