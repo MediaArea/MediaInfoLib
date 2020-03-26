@@ -720,7 +720,8 @@ void File_Mpeg4::Streams_Finish()
         //Fragments
         if (IsFragmented)
         {
-            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Temp->second.stts_Duration/((float)Temp->second.mdhd_TimeScale)*1000, 0, true);
+            if (Temp->second.mdhd_TimeScale)
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Temp->second.stts_Duration/((float)Temp->second.mdhd_TimeScale)*1000, 0, true);
             Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), Temp->second.stts_FrameCount, 10, true);
         }
 
