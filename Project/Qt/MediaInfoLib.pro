@@ -290,6 +290,7 @@ SOURCES += \
         ../../Source/MediaInfo/Audio/File_Mpc.cpp \
         ../../Source/MediaInfo/Audio/File_MpcSv8.cpp \
         ../../Source/MediaInfo/Audio/File_Mpega.cpp \
+        ../../Source/MediaInfo/Audio/File_Mpegh3da.cpp \
         ../../Source/MediaInfo/Audio/File_OpenMG.cpp \
         ../../Source/MediaInfo/Audio/File_Opus.cpp \
         ../../Source/MediaInfo/Audio/File_Pcm.cpp \

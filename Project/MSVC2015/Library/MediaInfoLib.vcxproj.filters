@@ -239,6 +239,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpega.cpp">
       <Filter>Source Files\Audio</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.cpp">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Pcm.cpp">
       <Filter>Source Files\Audio</Filter>
     </ClCompile>
@@ -929,6 +932,9 @@
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpega.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.h">
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Pcm.h">

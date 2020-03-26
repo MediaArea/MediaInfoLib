@@ -2460,6 +2460,18 @@ void File__Analyze::Value_Value123(stream_t StreamKind, size_t StreamPos, size_t
     {
         //Filling
         List2.push_back(MediaInfoLib::Config.Language_Get(List[Pos], MediaInfoLib::Config.Info_Get(StreamKind).Read(Parameter, Info_Measure)));
+
+        //Special case : Audio Channels with ChannelMode
+        if (StreamKind==Stream_Audio && Parameter==Audio_Channel_s_)
+        {
+            const Ztring& ChannelMode=Retrieve_Const(Stream_Audio, StreamPos, "ChannelMode");
+            if (ChannelMode.size()>3 || (ChannelMode.size()==3 && ChannelMode[2]!=__T('0')))
+            {
+                List2[List2.size()-1]+=__T(" (");
+                List2[List2.size()-1]+=ChannelMode;
+                List2[List2.size()-1]+=__T(")");
+            }
+        }
     }
 
     //Special case : audio with samples per frames

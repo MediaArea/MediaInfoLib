@@ -28,6 +28,9 @@
 #ifdef MEDIAINFO_AC4_YES
     #include "MediaInfo/Audio/File_Ac4.h"
 #endif
+#ifdef MEDIAINFO_AC4_YES
+    #include "MediaInfo/Audio/File_Mpegh3da.h"
+#endif
 #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
     #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #endif //defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
@@ -862,6 +865,17 @@ const char* Mpeg_Descriptors_MPEG_4_audio_profile_and_level(int8u MPEG_4_audio_p
         default   : return "";
     }
 }
+
+//---------------------------------------------------------------------------
+extern int8u Aac_Channels_Get(int8u ChannelLayout);
+extern string Aac_Channels_GetString(int8u ChannelLayout);
+extern string Aac_ChannelConfiguration_GetString(int8u ChannelLayout);
+extern string Aac_ChannelConfiguration2_GetString(int8u ChannelLayout);
+extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegh3da=false);
+extern string Aac_ChannelMode_GetString(int8u ChannelLayout, bool IsMpegh3da=false);
+
+//---------------------------------------------------------------------------
+extern string Mpegh3da_Profile_Get(int8u mpegh3daProfileLevelIndication);
 
 //---------------------------------------------------------------------------
 extern const float64 Mpegv_frame_rate[16]; //In Video/File_Mpegv.cpp
@@ -2151,6 +2165,37 @@ void File_Mpeg_Descriptors::Descriptor_3F_03()
         Skip_S4(32,                                         "num_units_in_tick");
     }
     BS_End();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg_Descriptors::Descriptor_3F_08()
+{
+    //Parsing
+    int8u mpegh3daProfileLevelIndication, referenceChannelLayout;
+    Get_B1 (mpegh3daProfileLevelIndication,                 "mpegh3daProfileLevelIndication"); Param_Info1(Mpegh3da_Profile_Get(mpegh3daProfileLevelIndication));
+    BS_Begin();
+    Skip_SB(                                                "interactivityEnabled");
+    Skip_S1(9,                                              "reserved");
+    Get_S1 (6, referenceChannelLayout,                      "referenceChannelLayout"); Param_Info1(Aac_ChannelLayout_GetString(referenceChannelLayout, true));
+    BS_End();
+
+    FILLING_BEGIN();
+        if (elementary_PID_IsValid)
+        {
+            Complete_Stream->Streams[elementary_PID]->StreamKind_FromDescriptor=Stream_Audio;
+            Complete_Stream->Streams[elementary_PID]->Infos["Format"]=__T("MPEG-H 3D Audio");
+            if (mpegh3daProfileLevelIndication)
+                Complete_Stream->Streams[elementary_PID]->Infos["Format_Profile"].From_UTF8(Mpegh3da_Profile_Get(mpegh3daProfileLevelIndication));
+            if (Aac_Channels_Get(referenceChannelLayout))
+            {
+                Complete_Stream->Streams[elementary_PID]->Infos["Channel(s)"].From_UTF8(Aac_Channels_GetString(referenceChannelLayout));
+                Complete_Stream->Streams[elementary_PID]->Infos["ChannelPositions"].From_UTF8(Aac_ChannelConfiguration_GetString(referenceChannelLayout));
+                Complete_Stream->Streams[elementary_PID]->Infos["ChannelPositions/String2"].From_UTF8(Aac_ChannelConfiguration2_GetString(referenceChannelLayout));
+                Complete_Stream->Streams[elementary_PID]->Infos["ChannelLayout"].From_UTF8(Aac_ChannelLayout_GetString(referenceChannelLayout, true));
+                Complete_Stream->Streams[elementary_PID]->Infos["ChannelMode"].From_UTF8(Aac_ChannelMode_GetString(referenceChannelLayout, true));
+            }
+        }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------

@@ -182,6 +182,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Mpc.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_MpcSv8.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Mpega.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Mpegh3da.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_OpenMG.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Opus.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Pcm.cpp
