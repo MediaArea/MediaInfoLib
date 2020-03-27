@@ -828,8 +828,10 @@ private :
     void Descriptor_7D() {Skip_XX(Element_Size, "Data");};
     void Descriptor_7E() {Skip_XX(Element_Size, "Data");};
     void Descriptor_7F();
+    void Descriptor_7F_06();
     void Descriptor_7F_0F();
     void Descriptor_7F_15();
+    void Descriptor_7F_19();
     void Descriptor_80() {Skip_XX(Element_Size, "Data");};
     void Descriptor_81();
     void Descriptor_86();

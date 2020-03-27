@@ -63,6 +63,7 @@ VP8;;;V;;;;;http://www.webmproject.org/;Lossy
 YUV;;;V;;;;;;Lossless
 AAC;;;A;;Advanced Audio Codec;;;;Lossy
 AC-3;;;A;Ac3;Audio Coding 3;ac3;;https://en.wikipedia.org/wiki/AC3;Lossy
+AC-4;;;A;Ac4;Audio Coding 4;ac4;;;Lossy
 ADIF;;;A;Adif;Audio Data Interchange Format;;;;
 ADTS;;;A;Adts;Audio Data Transport Stream;aac aacp adts;;;
 ALS;;;A;Als;MPEG-4 Audio Lossless Coding;als;;http://www.nue.tu-berlin.de/forschung/projekte/lossless/mp4als.html#downloads;Lossless
