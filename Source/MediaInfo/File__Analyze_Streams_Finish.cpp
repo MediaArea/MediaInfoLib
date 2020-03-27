@@ -209,6 +209,8 @@ void File__Analyze::Streams_Finish_Global()
     Streams_Finish_InterStreams();
     Streams_Finish_StreamOnly();
 
+    Config->File_ExpandSubs_Update((void**)(&Stream_More));
+
     if (!IsSub && !Config->File_IsReferenced_Get() && MediaInfoLib::Config.ReadByHuman_Get())
         Streams_Finish_HumanReadable();
 }
@@ -713,7 +715,7 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
         if (Duration==0)
         {
             Duration=Retrieve(Stream_General, 0, General_Duration).To_int64s();
-            DurationFromGeneral=true;
+            DurationFromGeneral=Retrieve(Stream_General, 0, General_Format)!=Retrieve(Stream_Video, Pos, Audio_Format);
         }
         else
             DurationFromGeneral=false;
@@ -1009,7 +1011,7 @@ void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
         if (Duration==0)
         {
             Duration=Retrieve(Stream_General, 0, General_Duration).To_int64s();
-            DurationFromGeneral=true;
+            DurationFromGeneral=Retrieve(Stream_General, 0, General_Format)!=Retrieve(Stream_Audio, Pos, Audio_Format);
         }
         else
             DurationFromGeneral=false;
