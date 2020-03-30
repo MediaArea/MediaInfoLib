@@ -1617,7 +1617,14 @@ void MediaInfo_Config_MediaInfo::File_ExpandSubs_Update(void** Source)
                     }
                     //if (Spaces)
                     {
-                        Name.erase(0, i);
+                        size_t j;
+                        if (i>=2 && Pos && i-2==Track[Pos-1][Info_Name].size())
+                            j=2;
+                        else
+                            j=1;
+                        int Nested=Spaces && Pos && i && i-j<=Track[Pos-1][Info_Name].size() && Name.substr(0, i-j)==Track[Pos-1][Info_Name].substr(0, i-j) && Info_Name_Text<Track[Pos-1].size() && Spaces-1<=Track[Pos-1][Info_Name_Text].find_first_not_of(__T(' '));
+                        if (Nested)
+                            Name.erase(0, i);
                         size_t Number=0;
                         if (!Name.empty() && Pos+1<Track.size())
                         {
@@ -1637,7 +1644,8 @@ void MediaInfo_Config_MediaInfo::File_ExpandSubs_Update(void** Source)
                         Ztring TranslatedName=MediaInfoLib::Config.Language_Get(Name);
                         if (!TranslatedName.empty())
                             Name=TranslatedName;
-                        Name.insert(0, Spaces, __T(' '));
+                        if (Nested)
+                            Name.insert(0, Spaces, __T(' '));
                         if (Number)
                             Name+= MediaInfoLib::Config.Language_Get(__T("  Config_Text_NumberTag"))+Ztring::ToZtring(Number);
                         (*Stream_More)[StreamKind][StreamPos][Pos][Info_Name_Text]=Name;
