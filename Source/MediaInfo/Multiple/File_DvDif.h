@@ -114,7 +114,6 @@ protected :
     Ztring Recorded_Date_Time;
     Ztring Encoded_Library_Settings;
     TimeCode TimeCode_FirstFrame;
-    int64u Duration;
     int64u FrameSize_Theory; //The size of a frame
     int8u  SCT;
     int8u  SCT_Old;
