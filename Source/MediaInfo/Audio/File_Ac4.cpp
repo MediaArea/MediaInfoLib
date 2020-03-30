@@ -1356,11 +1356,11 @@ void File_Ac4::Streams_Fill()
             GroupNum.push_back(Ztring::ToZtring(Presentation_Current.substream_group_info_specifiers[s]+1));
         }
         GroupPos.Separator_Set(0, __T(" + "));
-        Fill(Stream_Audio, 0, (P + " LinkedTo_Group_Pos").c_str(), GroupPos.Read());
-        Fill_SetOptions(Stream_Audio, 0, (P+" LinkedTo_Group_Pos").c_str(), "N NIY");
+        Fill(Stream_Audio, 0, (P + (bitstream_version<2?" LinkedTo_Substream_Pos":" LinkedTo_Group_Pos")).c_str(), GroupPos.Read());
+        Fill_SetOptions(Stream_Audio, 0, (P+(bitstream_version<2?" LinkedTo_Substream_Pos":" LinkedTo_Group_Pos")).c_str(), "N NIY");
         GroupNum.Separator_Set(0, __T(" + "));
-        Fill(Stream_Audio, 0, (P+" LinkedTo_Group_Pos/String").c_str(), GroupNum.Read());
-        Fill_SetOptions(Stream_Audio, 0, (P+" LinkedTo_Group_Pos/String").c_str(), "Y NIN");
+        Fill(Stream_Audio, 0, (P+(bitstream_version<2?" LinkedTo_Substream_Pos/String":" LinkedTo_Group_Pos/String")).c_str(), GroupNum.Read());
+        Fill_SetOptions(Stream_Audio, 0, (P+(bitstream_version<2?" LinkedTo_Substream_Pos/String":" LinkedTo_Group_Pos/String")).c_str(), "Y NIN");
     }
     for (size_t g=0; g<Groups.size(); g++)
     {
