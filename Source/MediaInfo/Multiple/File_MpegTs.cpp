@@ -1364,7 +1364,7 @@ void File_MpegTs::Streams_Finish()
         File__Duplicate_Streams_Finish();
     #endif //MEDIAINFO_DUPLICATE
 
-    #if MEDIAINFO_IBICREATE
+    #if MEDIAINFO_IBIUSAGE
         if (!IsSub && Config_Ibi_Create)
         {
             for (ibi::streams::iterator IbiStream_Temp=Ibi.Streams.begin(); IbiStream_Temp!=Ibi.Streams.end(); ++IbiStream_Temp)
