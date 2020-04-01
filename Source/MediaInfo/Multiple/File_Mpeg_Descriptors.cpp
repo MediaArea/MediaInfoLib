@@ -3080,9 +3080,9 @@ void File_Mpeg_Descriptors::Descriptor_7F_19()
             size_t Infos_Pos=0;
             for (map<int8u, Descriptor_7F_19_Info>::iterator Info=Infos.begin(); Info!=Infos.end(); Info++)
             {
-                string Prefix="Presentation"+Ztring::ToZtring(Info->first).To_UTF8();
+                string Prefix="Preselection"+Ztring::ToZtring(Info->first).To_UTF8();
                 if (Info->second.preselection_id!=Infos_Pos)
-                    Complete_Stream->Streams[elementary_PID]->Infos[Prefix+" PresentationID"].From_Number(Info->second.preselection_id);
+                    Complete_Stream->Streams[elementary_PID]->Infos[Prefix+" ID"].From_Number(Info->second.preselection_id);
                 Complete_Stream->Streams[elementary_PID]->Infos[Prefix]=Ztring::ToZtring(Info->first);
                 if (Info->second.audio_rendering_indication)
                     Complete_Stream->Streams[elementary_PID]->Infos[Prefix + " AudioRenderingIndication"]=Info->second.audio_rendering_indication<=audio_rendering_indication_Size?Ztring().From_UTF8(audio_rendering_indication[Info->second.audio_rendering_indication-1]):Ztring::ToZtring(Info->second.audio_rendering_indication);
