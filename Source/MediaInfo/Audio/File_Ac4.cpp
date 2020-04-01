@@ -1896,6 +1896,20 @@ void File_Ac4::raw_ac4_frame()
             Finish();
         }
     FILLING_END();
+
+    if (!Presentations_IFrame.empty())
+    {
+        Presentations=Presentations_IFrame;
+        Presentations_IFrame.clear();
+        Groups=Groups_IFrame;
+        Groups_IFrame.clear();
+        for (std::map<int8u, audio_substream>::iterator AudioSubstream=AudioSubstreams_IFrame.begin(); AudioSubstream!=AudioSubstreams_IFrame.end(); ++AudioSubstream)
+        {
+            AudioSubstreams[AudioSubstream->first]=AudioSubstream->second;
+            AudioSubstream->second.Buffer.Data=NULL; //This is a move, Buffer moves from AudioSubstreams_IFrame to AudioSubstreams
+        }
+        AudioSubstreams_IFrame.clear();
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -2061,16 +2075,25 @@ void File_Ac4::ac4_toc()
         Element_Offset=Element_Size;
         return;
     }
-    Presentations.clear();
-    Groups.clear();
     if (b_iframe_global)
+    {
+        Presentations.clear();
+        Groups.clear();
         AudioSubstreams.clear();
+    }
     else
     {
+        Presentations_IFrame=Presentations;
+        Groups_IFrame=Groups;
+
         for (map<int8u, audio_substream>::iterator AudioSubstream=AudioSubstreams.begin(); AudioSubstream!=AudioSubstreams.end();)
         {
             if (!AudioSubstream->second.Buffer_Index)
+            {
+                AudioSubstreams_IFrame[AudioSubstream->first]=AudioSubstream->second;
+                AudioSubstream->second.Buffer.Data=NULL; //This is a move, Buffer moves from AudioSubstreams to AudioSubstreams_IFrame
                 AudioSubstreams.erase(AudioSubstream++);
+            }
             else
                 ++AudioSubstream;
         }
@@ -2104,8 +2127,9 @@ void File_Ac4::ac4_toc()
 
     if (bitstream_version<=1)
     {
+        Presentations.resize(n_presentations);
         for(int8u Pos=0; Pos<n_presentations; Pos++)
-            ac4_presentation_info();
+            ac4_presentation_info(Presentations[Pos]);
     }
     else
     {
@@ -2129,11 +2153,14 @@ void File_Ac4::ac4_toc()
             TEST_SB_END();
         TEST_SB_END();
 
+        Presentations.resize(n_presentations);
         for (int8u Pos=0; Pos<n_presentations; Pos++)
-            ac4_presentation_v1_info();
+            ac4_presentation_v1_info(Presentations[Pos]);
 
-        for (int8u Pos=0; Pos<max_group_index+1; Pos++)
-            ac4_substream_group_info();
+        size_t max_group_Size=max_group_index+1;
+        Groups.resize(max_group_Size);
+        for (int8u Pos=0; Pos< max_group_Size; Pos++)
+            ac4_substream_group_info(Groups[Pos]);
     }
 
     substream_index_table();
@@ -2154,6 +2181,7 @@ void File_Ac4::ac4_toc_Compute(vector<presentation>& Ps, vector<group>& Gs, bool
     {
         presentation& P=Ps[p];
         bool b_obj_or_ajoc=false, b_obj_or_ajoc_adaptive=false;
+        P.Language.clear();
         for (size_t Pos=0; Pos<P.substream_group_info_specifiers.size(); Pos++)
         {
             int8u Group_Index=P.substream_group_info_specifiers[Pos];
@@ -2217,10 +2245,9 @@ void File_Ac4::ac4_toc_Compute(vector<presentation>& Ps, vector<group>& Gs, bool
 }
 
 //---------------------------------------------------------------------------
-void File_Ac4::ac4_presentation_info()
+void File_Ac4::ac4_presentation_info(presentation& P)
 {
-    Presentations.resize(Presentations.size()+1);
-    presentation& P=Presentations.back();
+    P.reset_cumulative();
 
     bool b_single_substream, b_add_emdf_substreams=false;
 
@@ -2301,7 +2328,7 @@ void File_Ac4::ac4_presentation_info()
                         ac4_hsf_ext_substream_info(Groups.back().Substreams[0], true); // Main HSF
                     break;
             default:
-                    presentation_config_ext_info(P.presentation_config);
+                    presentation_config_ext_info(P);
             }
         }
         Skip_SB(                                                "b_pre_virtualized");
@@ -2331,12 +2358,11 @@ void File_Ac4::ac4_presentation_info()
 }
 
 //---------------------------------------------------------------------------
-void File_Ac4::ac4_presentation_v1_info()
+void File_Ac4::ac4_presentation_v1_info(presentation& P)
 {
-    Presentations.resize(Presentations.size()+1);
-    presentation& P=Presentations.back();
+    P.reset_cumulative();
 
-    bool b_single_substream_group, b_add_emdf_substreams=false;
+    bool b_single_substream_group, b_add_emdf_substreams = false;
     int8u n_substream_groups=0, b_multi_pid_PresentAndValue=(int8u)-1;
 
     Element_Begin1(                                             "ac4_presentation_v1_info");
@@ -2427,7 +2453,7 @@ void File_Ac4::ac4_presentation_v1_info()
                             ac4_sgi_specifier(P);
                         break;
                 default: // EMDF and other data
-                        presentation_config_ext_info(P.presentation_config);
+                        presentation_config_ext_info(P);
             }
         }
         Skip_SB(                                                "b_pre_virtualized");
@@ -2465,7 +2491,9 @@ void File_Ac4::ac4_sgi_specifier(presentation& P)
     Element_Begin1(                                             "ac4_sgi_specifier");
     if (bitstream_version==1)
     {
-        ac4_substream_group_info(&P);
+        P.substream_group_info_specifiers.push_back(Groups.size());
+        Groups.resize(Groups.size()+1);
+        ac4_substream_group_info(Groups[Groups.size()-1]);
     }
     else
     {
@@ -2557,13 +2585,8 @@ void File_Ac4::ac4_substream_info(presentation& P)
 }
 
 //---------------------------------------------------------------------------
-void File_Ac4::ac4_substream_group_info(presentation* P)
+void File_Ac4::ac4_substream_group_info(group& G)
 {
-    if (P)
-        P->substream_group_info_specifiers.push_back(Groups.size()); //For bitstream_version==1
-    Groups.resize(Groups.size()+1);
-    group& G=Groups.back();
-
     bool b_substreams_present, b_single_substream;
     int8u n_lf_substreams;
 
@@ -2925,7 +2948,7 @@ void File_Ac4::ac4_presentation_substream_info(presentation& P)
 }
 
 //---------------------------------------------------------------------------
-void File_Ac4::presentation_config_ext_info(int8u presentation_config)
+void File_Ac4::presentation_config_ext_info(presentation& P)
 {
     Element_Begin1(                                             "presentation_config_ext_info");
     int16u n_skip_bytes; // TODO: verify max size
@@ -2937,10 +2960,10 @@ void File_Ac4::presentation_config_ext_info(int8u presentation_config)
         n_skip_bytes=(int8u)n_skip_bytes32<<5;
     TEST_SB_END();
 
-    if (bitstream_version==1 && presentation_config==7)
+    if (bitstream_version==1 && P.presentation_config==7)
     {
         size_t Pos_Before=Data_BS_Remain();
-        ac4_presentation_v1_info();
+        ac4_presentation_v1_info(P);
         size_t Pos_After=Data_BS_Remain();
         size_t n_bits_read=Pos_After-Pos_Before;
         if (n_bits_read%8)
@@ -3024,6 +3047,7 @@ void File_Ac4::content_type(content_info& ContentInfo)
             TESTELSE_SB_ELSE(                                   "b_serialized_language_tag");
                 int8u n_language_tag_bytes;
                 Get_S1 (6, n_language_tag_bytes,                "n_language_tag_bytes");
+                ContentInfo.language_tag_bytes.clear();
                 for (int8u Pos=0; Pos<n_language_tag_bytes; Pos++)
                 {
                     int8u language_tag_bytes;

@@ -37,7 +37,7 @@ public :
 
     struct loudness_info
     {
-        int8u dialnorm_bits; //TODO
+        int8u dialnorm_bits;
         int8u loud_prac_type;
         int8u loud_dialgate_prac_type;
         int16u max_truepk;
@@ -239,8 +239,16 @@ private :
             b_pres_centre_present(false),
             pres_top_channel_pairs(0)
         {}
+
+        void reset_cumulative()
+        {
+            substream_group_info_specifiers.clear();
+            Substreams.clear();
+            frame_rate_fraction_minus1=0;
+        }
     };
     vector<presentation> Presentations;
+    vector<presentation> Presentations_IFrame;
     vector<presentation> Presentations_dac4;
 
     //Groups
@@ -294,6 +302,7 @@ private :
         bool b_hsf_ext;
     };
     vector<group> Groups;
+    vector<group> Groups_IFrame;
     vector<group> Groups_dac4;
 
     //Audio substreams
@@ -363,6 +372,7 @@ private :
         {}
     };
     std::map<int8u, audio_substream> AudioSubstreams;
+    std::map<int8u, audio_substream> AudioSubstreams_IFrame;
 
     //Streams management
     void Streams_Fill();
@@ -385,17 +395,17 @@ private :
     void raw_ac4_frame();
     void raw_ac4_frame_substreams();
     void ac4_toc();
-    void ac4_presentation_info();
-    void ac4_presentation_v1_info();
+    void ac4_presentation_info(presentation& P);
+    void ac4_presentation_v1_info(presentation& P);
     void ac4_sgi_specifier(presentation& P);
     void ac4_substream_info(presentation& P);
-    void ac4_substream_group_info(presentation* P=NULL);
+    void ac4_substream_group_info(group& G);
     void ac4_hsf_ext_substream_info(group_substream& G, bool b_substreams_present);
     void ac4_substream_info_chan(group_substream& G, size_t Pos, bool b_substreams_present);
     void ac4_substream_info_ajoc(group_substream& G, bool b_substreams_present);
     void ac4_substream_info_obj(group_substream& G, bool b_substreams_present);
     void ac4_presentation_substream_info(presentation& P);
-    void presentation_config_ext_info(int8u presentation_config);
+    void presentation_config_ext_info(presentation& P);
     void bed_dyn_obj_assignment(group_substream& G, int8u n_signals);
     void content_type(content_info& ContentInfo);
     void frame_rate_multiply_info();
