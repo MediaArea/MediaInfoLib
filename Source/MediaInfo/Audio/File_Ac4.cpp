@@ -102,6 +102,12 @@ string Value(const sized_array_string Array, size_t Pos)
         return Ztring::ToZtring(Pos-1).To_UTF8();
     return Array[Pos];
 }
+bool Value_IsEmpty(const sized_array_string Array, size_t Pos)
+{
+    if (Pos++>=(size_t)Array[0] || !Array[Pos])
+        return false;
+    return !Array[Pos][0];
+}
 
 static const int16u Ac4_fs_index[2]=
 {
@@ -1644,19 +1650,23 @@ void File_Ac4::Streams_Fill()
             Fill(Stream_Audio, 0, (S+" dialnorm").c_str(), -0.25*Substream_Info->second.LoudnessInfo.dialnorm_bits, 2);
         {
             const preprocessing& P=Substream_Info->second.Preprocessing;
-            if (P.pre_dmixtyp_2ch!=(int8u)-1 || P.pre_dmixtyp_5ch!=(int8u)-1 || P.phase90_info_mc!=(int8u)-1)
+            bitset<3> Preprocessing_Available;
+            Preprocessing_Available[0]=(P.pre_dmixtyp_2ch!=(int8u)-1 && (!Value_IsEmpty(Ac4_pre_dmixtyp_2ch, P.pre_dmixtyp_2ch) || !Value_IsEmpty(Ac4_phase90_info_2ch, P.phase90_info_2ch)));
+            Preprocessing_Available[1]=(P.pre_dmixtyp_5ch!=(int8u)-1 && (!Value_IsEmpty(Ac4_pre_dmixtyp_5ch, P.pre_dmixtyp_5ch)));
+            Preprocessing_Available[2]=(P.phase90_info_mc!=(int8u)-1 && (!Value_IsEmpty(Ac4_phase90_info_mc, P.phase90_info_mc) || P.b_surround_attenuation_known || P.b_lfe_attenuation_known));
+            if (Preprocessing_Available.any())
             {
                 Fill(Stream_Audio, 0, (S+" Preprocessing").c_str(), "Yes");
-                if (P.pre_dmixtyp_2ch!=(int8u)-1)
+                if (Preprocessing_Available[0])
                 {
                     Fill(Stream_Audio, 0, (S+" Preprocessing PreviousMixType2ch").c_str(), Value(Ac4_pre_dmixtyp_2ch, P.pre_dmixtyp_2ch));
                     Fill(Stream_Audio, 0, (S+" Preprocessing Phase90FilterInfo2ch").c_str(), Value(Ac4_phase90_info_2ch, P.phase90_info_2ch));
                 }
-                if (P.pre_dmixtyp_5ch!=(int8u)-1)
+                if (Preprocessing_Available[1])
                 {
                     Fill(Stream_Audio, 0, (S+" Preprocessing PreviousDownmixType5ch").c_str(), Value(Ac4_pre_dmixtyp_5ch, P.pre_dmixtyp_5ch));
                 }
-                if (P.phase90_info_mc!=(int8u)-1)
+                if (Preprocessing_Available[2])
                 {
                     Fill(Stream_Audio, 0, (S+" Preprocessing Phase90FilterInfo").c_str(), Value(Ac4_phase90_info_mc, P.phase90_info_mc));
                     Fill(Stream_Audio, 0, (S+" Preprocessing SurroundAttenuationKnown").c_str(), P.b_surround_attenuation_known?"Yes":"No");
