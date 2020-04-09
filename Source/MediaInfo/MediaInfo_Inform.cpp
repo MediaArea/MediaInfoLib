@@ -598,15 +598,15 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
 
                     if (!Nested.empty())
                     {
-                        nested& LastNested=Nested[Nested.size()-1];
+                        nested* LastNested=&Nested[Nested.size()-1];
                         while(!Nested.empty()
-                         && !(Nom.size()>LastNested.Name.size() && !Nom.rfind(LastNested.Name, LastNested.Name.size()) && Nom[LastNested.Name.size()]==__T(' ')))
+                         && !(Nom.size()>LastNested->Name.size() && !Nom.rfind(LastNested->Name, LastNested->Name.size()) && Nom[LastNested->Name.size()]==__T(' ')))
                         {
-                            Fields_Current=LastNested.Target;
+                            Fields_Current=LastNested->Target;
                             Nested.pop_back();
                             if (Nested.empty())
                                 break;
-                            LastNested=Nested[Nested.size()-1];
+                            LastNested=&Nested[Nested.size()-1];
                         }
                         if (Nested.empty())
                         {
@@ -616,7 +616,7 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                                 Fields_Current=&Fields;
                         }
                         else
-                            Nom_ToErase=LastNested.Name.size()+1;
+                            Nom_ToErase=LastNested->Name.size()+1;
                     }
 
                     if (NextName.size()>Nom.size() && !NextName.rfind(Nom, Nom.size()) && NextName[Nom.size()]==__T(' '))
