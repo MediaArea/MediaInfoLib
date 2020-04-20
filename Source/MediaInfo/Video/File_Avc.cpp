@@ -699,7 +699,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
             if (!(*seq_parameter_set_Item)->vui_parameters->fixed_frame_rate_flag)
                 Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode, "VFR");
             else if ((*seq_parameter_set_Item)->vui_parameters->timing_info_present_flag && (*seq_parameter_set_Item)->vui_parameters->time_scale && (*seq_parameter_set_Item)->vui_parameters->num_units_in_tick)
-                Fill(Stream_Video, StreamPos_Last, Video_FrameRate, (float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick/((*seq_parameter_set_Item)->frame_mbs_only_flag?2:((*seq_parameter_set_Item)->pic_order_cnt_type==2?1:2))/FrameRate_Divider);
+                Fill(Stream_Video, StreamPos_Last, Video_FrameRate, (float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick/((*seq_parameter_set_Item)->frame_mbs_only_flag?2:(((*seq_parameter_set_Item)->pic_order_cnt_type==2 && Structure_Frame/2>Structure_Field)?1:2))/FrameRate_Divider);
         }
 
         //Colour description
@@ -2356,6 +2356,8 @@ void File_Avc::slice_header()
 
             TemporalReferences_Offset_pic_order_cnt_lsb_Diff=(int32s)((int32s)(TemporalReferences_Offset+pic_order_cnt)-TemporalReferences_Offset_pic_order_cnt_lsb_Last);
             TemporalReferences_Offset_pic_order_cnt_lsb_Last=(size_t)(TemporalReferences_Offset+pic_order_cnt);
+            if (field_pic_flag && (*seq_parameter_set_Item)->pic_order_cnt_type==2 && TemporalReferences_Offset_pic_order_cnt_lsb_Last<TemporalReferences.size() && TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last])
+                TemporalReferences_Offset_pic_order_cnt_lsb_Last++;
             if (TemporalReferences_Max<=TemporalReferences_Offset_pic_order_cnt_lsb_Last)
                 TemporalReferences_Max=TemporalReferences_Offset_pic_order_cnt_lsb_Last+((*seq_parameter_set_Item)->frame_mbs_only_flag?2:1);
             if (TemporalReferences_Min>TemporalReferences_Offset_pic_order_cnt_lsb_Last)
