@@ -225,6 +225,13 @@ File_DvDif::File_DvDif()
 {
     //Configuration
     ParserName="DV";
+    #if MEDIAINFO_EVENTS
+        ParserIDs[0]=MediaInfo_Parser_DvDif;
+        StreamIDs_Width[0]=4;
+    #endif //MEDIAINFO_EVENTS
+    #if MEDIAINFO_DEMUX
+        Demux_Level=2; //Container
+    #endif //MEDIAINFO_DEMUX
     MustSynchronize=true;
     Buffer_TotalBytes_FirstSynched_Max=64*1024;
 
