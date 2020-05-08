@@ -79,8 +79,10 @@ void File_DvDif::Read_Buffer_Continue()
                         }
                     }
                 }
+                break;
             case 0x20 : //SCT=1 (Subcode)
                 {
+                    FSC=(Buffer[Buffer_Offset+1  ]&0x08);
                     if (!FSC && ssyb_AP3!=(int8u)-1)
                         ssyb_AP3=(Buffer[Buffer_Offset+3]>>4)&0x7;
                     for (size_t Pos=0; Pos<48; Pos+=8)
@@ -205,7 +207,6 @@ void File_DvDif::Read_Buffer_Continue()
                     }
                 }
                 break;
-
             case 0x40 : //SCT=2 (VAUX)
                 {
                     for (size_t Pos=0; Pos<15*5; Pos+=5)
@@ -615,6 +616,7 @@ void File_DvDif::Errors_Stats_Update()
                                         Event.VideoRatio_N=0;
                                         Event.VideoRatio_D=0;
                             }
+                        break;
                 default: ;
                         Event.VideoRatio_N=0;
                         Event.VideoRatio_D=0;
@@ -1074,7 +1076,7 @@ void File_DvDif::Errors_Stats_Update()
             }
             if (Video_STA_Errors_Details.size()>2)
             {
-                Ztring Video_STA_Errors_Count_Padded=Ztring::ToZtring(((float)Video_STA_Errors_Count)*100/(DSF?1500:1350)*(QU_FSC?2:1), 2);
+                Ztring Video_STA_Errors_Count_Padded=Ztring::ToZtring(((float)Video_STA_Errors_Count)*100/(DSF?1500:1350)*(FSC_WasSet?2:1), 2);
                 if (Video_STA_Errors_Count_Padded.size()<5)
                     Video_STA_Errors_Count_Padded.insert(0, 5-Video_STA_Errors_Count_Padded.size(), __T(' '));
                 Errors_Stats_Line_Details+=Video_STA_Errors_Count_Padded+__T("%");
@@ -1106,7 +1108,7 @@ void File_DvDif::Errors_Stats_Update()
                     for (int8u Dseq=Dseq_Begin; Dseq<Dseq_End; Dseq++)
                     {
                         size_t Audio_Errors_PerDseq=0;
-                        if (ChannelGroup<audio_source_mode.size() && !audio_source_mode[ChannelGroup].empty() && audio_source_mode[ChannelGroup][Dseq]&0xF==0xF)
+                        if (ChannelGroup<audio_source_mode.size() && !audio_source_mode[ChannelGroup].empty() && (audio_source_mode[ChannelGroup][Dseq]&0xF)==0xF)
                             Audio_Errors_PerDseq=9; //We consider all audio blocks as invalid if audio mode is 0xF (15)
                         if (!Audio_Errors_PerDseq && audio_source_mode.empty() && ChannelInfo[ChannelGroup*2+Channel])
                             Audio_Errors_PerDseq=9; //We consider all audio blocks as invalid if the frame has no audio_source for this channel but had it in the previous frames
@@ -1145,7 +1147,7 @@ void File_DvDif::Errors_Stats_Update()
                             Errors_Stats_Line+=__T('2');
                         }
 
-                        Ztring Audio_Errors_Count_Padded=Ztring::ToZtring(((float)Audio_Errors_PerChannel)*100/(DSF?54:45)*(QU_FSC?2:1), 2);
+                        Ztring Audio_Errors_Count_Padded=Ztring::ToZtring(((float)Audio_Errors_PerChannel)*100/(DSF?54:45)*(FSC_WasSet?2:1), 2);
                         if (Audio_Errors_Count_Padded.size()<2)
                             Audio_Errors_Count_Padded.insert(0, 2-Audio_Errors_Count_Padded.size(), __T(' '));
                         if (ErrorsAreAlreadyDetected)
@@ -1351,7 +1353,7 @@ void File_DvDif::Errors_Stats_Update()
             if (Errors_Stats_Line_Details.size()>10)
             {
                 Errors=Errors_Stats_Line_Details.To_Local();
-                Event.Errors=(char*)Errors.c_str();
+                Event.Errors=Errors.c_str();
             }
             struct MediaInfo_Event_DvDif_Analysis_Frame_1 Event1;
             Event_Prepare((struct MediaInfo_Event_Generic*)&Event1);
@@ -1365,6 +1367,7 @@ void File_DvDif::Errors_Stats_Update()
             Event1.Errors=Event.Errors;
             Event1.Video_STA_Errors_Count=Video_STA_Errors_ByDseq.size();
             Event1.Video_STA_Errors=Video_STA_Errors_ByDseq.empty()?NULL:&Video_STA_Errors_ByDseq[0];
+            size_t Audio_Errors_PerDseq[16]; //Per Dseq
             if (Audio_Errors.empty())
             {
                 Event1.Audio_Data_Errors_Count=0;
@@ -1372,7 +1375,6 @@ void File_DvDif::Errors_Stats_Update()
             }
             else
             {
-                size_t Audio_Errors_PerDseq[16]; //Per Dseq
                 memset(Audio_Errors_PerDseq, 0, sizeof(Audio_Errors_PerDseq));
                 for (size_t ChannelGroup=0; ChannelGroup<Audio_Errors.size(); ChannelGroup++)
                     for (size_t Dseq=0; Dseq<Dseq_Count; Dseq++)
