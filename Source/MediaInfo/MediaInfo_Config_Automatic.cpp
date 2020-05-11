@@ -2573,6 +2573,7 @@ void MediaInfo_Config_CodecID_Audio_Mpeg4 (InfoMap &Info)
     "mha2;MPEG-H 3D Audio;;;\n"
     "mhm1;MPEG-H 3D Audio;;;\n"
     "mhm2;MPEG-H 3D Audio;;;\n"
+    "mlpa;TrueHD;;;;;\n"
     "nmos;Nellymoser;;;http://www.nellymoser.com/\n"
     "NONE;PCM;;;http://www.apple.com/quicktime/download/standalone.html\n"
     "owma;WMA Pro;;Smooth Streaming Media Audio;http://alexzambelli.com/blog/2009/02/10/smooth-streaming-architecture/\n"
