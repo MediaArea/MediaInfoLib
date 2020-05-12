@@ -209,6 +209,14 @@ void File_DvDif::Read_Buffer_Continue()
                 break;
             case 0x40 : //SCT=2 (VAUX)
                 {
+                    //Test coherency
+                    if (Buffer[Buffer_Offset+3+15*5+0]!=0xFF
+                     || Buffer[Buffer_Offset+3+15*5+1]!=0xFF)
+                    {
+                        //TODO: error info in an event
+                        break;
+                    }
+                
                     for (size_t Pos=0; Pos<15*5; Pos+=5)
                     {
                         int8u PackType=Buffer[Buffer_Offset+3+Pos];
