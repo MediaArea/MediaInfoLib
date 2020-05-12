@@ -293,6 +293,15 @@ void File_DvDif::Read_Buffer_Continue()
                             uint8_t Dseq    =Buffer[Buffer_Offset+1]>>4;
                             Element_Code = (0x2 << 16) | (0x65 << 8) | Dseq; // Set identifier with SCT=0x2, PackType=0x65, and Dseq
                             Demux(Buffer+Buffer_Offset+3+Pos+1, 4, ContentType_MainStream);
+                            Captions_Flags.set(0);
+
+                            // Quick parity check
+                            for (size_t i=0; i<4; i++)
+                            {
+                                bitset<8> ForCounting(Buffer[Buffer_Offset+3+Pos+1+i]);
+                                if (!(ForCounting.count()%2))
+                                    Captions_Flags.set(1);
+                            }
                         }
                     }
                 }
@@ -674,6 +683,8 @@ void File_DvDif::Errors_Stats_Update()
                 Event.AudioChannels=0;
                 Event.AudioBitDepth=0;
             }
+            Event.Captions_Flags=Captions_Flags[0]?1:0;
+            Captions_Flags.reset(0);
         EVENT_END()
         #if MEDIAINFO_EVENTS
             //Demux
@@ -1390,6 +1401,8 @@ void File_DvDif::Errors_Stats_Update()
                 Event1.Audio_Data_Errors_Count=16;
                 Event1.Audio_Data_Errors=Audio_Errors_PerDseq;
             }
+            Event1.Captions_Errors=Captions_Flags[1]?1:0;
+            Captions_Flags.reset(1);
             Config->Event_Send(NULL, (const int8u*)&Event1, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_1));
             Config->Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_0));
         #endif //MEDIAINFO_EVENTS
