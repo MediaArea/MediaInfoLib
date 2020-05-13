@@ -149,8 +149,9 @@ void File_DvDif::Read_Buffer_Continue()
                                                            + ((Buffer[Buffer_Offset+3+Pos+3]&0x0F)   )   ;
                             int8u Years                     =((Buffer[Buffer_Offset+3+Pos+4]&0xF0)>>4)*10
                                                            + ((Buffer[Buffer_Offset+3+Pos+4]&0x0F)   )   ;
-                            if (Months<=12
-                             && Days  <=31)
+                            if (Years!=165
+                             && Months && Months<=12
+                             && Days && Days<=31)
                             {
                                 if (Speed_RecDate_Current.IsValid
                                  && Speed_RecDate_Current.Days      !=Days
