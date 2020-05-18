@@ -1765,6 +1765,15 @@ void File_DvDif::consumer_camera_2()
 //---------------------------------------------------------------------------
 void File_DvDif::recdate(bool FromVideo)
 {
+    // Coherency test
+    int32u Test;
+    Peek_B4(Test);
+    if (Test==(int32u)-1)
+    {
+        Skip_B4(                                                "Junk");
+        return;
+    }
+
     BS_Begin();
 
     int8u Temp;
@@ -1793,7 +1802,7 @@ void File_DvDif::recdate(bool FromVideo)
 
     BS_End();
 
-    if (FromVideo && Frame_Count==1 && Month<=12 && Day<=31 && Recorded_Date_Date.empty())
+    if (FromVideo && Frame_Count==1 && Year!=2065 && Month && Month<=12 && Day && Day<=31 && Recorded_Date_Date.empty())
     {
         Ztring MonthString;
         if (Month<10)
@@ -1810,6 +1819,15 @@ void File_DvDif::recdate(bool FromVideo)
 //---------------------------------------------------------------------------
 void File_DvDif::rectime(bool FromVideo)
 {
+    // Coherency test
+    int32u Test;
+    Peek_B4(Test);
+    if (Test==(int32u)-1)
+    {
+        Skip_B4(                                            "Junk");
+        return;
+    }
+
     if (!DSF_IsValid)
     {
         Trusted_IsNot("Not in right order");
