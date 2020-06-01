@@ -1490,8 +1490,6 @@ void File_DvDif::Errors_Stats_Update()
 
     FSC_WasSet=false;
     FSP_WasNotSet=false;
-    video_source_stype=(int8u)-1;
-    aspect=(int8u)-1;
     ssyb_AP3=(int8u)-1;
     Speed_TimeCode_Last=Speed_TimeCode_Current;
     Speed_TimeCode_Current.Clear();
