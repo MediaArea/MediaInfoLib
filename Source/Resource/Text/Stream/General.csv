@@ -5,7 +5,7 @@ StreamKind;General;;N NT;;;Stream type name
 StreamKind/String;;;N NT;;;Stream type name
 StreamKindID;;;N NI;;;Stream number (base=0)
 StreamKindPos;;;N NI;;;Number of the stream, when multiple (base=1)
-StreamOrder;;;N YI;;;Stream order in the file for type of stream (base=0)
+StreamOrder;;;N YIY;;;Stream order in the file for type of stream (base=0)
 FirstPacketOrder;;;N YI;;;Order of the first fully decodable packet met in the file for stream type (base=0)
 Inform;;;N NT;;;Last **Inform** call
 ID;;;N YTY;;;The ID for this stream in this file
