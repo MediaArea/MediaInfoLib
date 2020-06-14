@@ -1464,7 +1464,7 @@ void File_DvDif::Errors_Stats_Update()
         {
             Speed_RecTime_Current_Theory.Time.Seconds=0;
             Speed_RecTime_Current_Theory.Time.Minutes++;
-            if (Speed_RecTime_Current_Theory.Time.Seconds>=60)
+            if (Speed_RecTime_Current_Theory.Time.Minutes>=60)
             {
                 Speed_RecTime_Current_Theory.Time.Minutes=0;
                 Speed_RecTime_Current_Theory.Time.Hours++;
