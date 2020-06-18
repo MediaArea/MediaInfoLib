@@ -879,6 +879,7 @@ namespace Elements
     const int64u moov_udta_AllF=0x416C6C46;
     const int64u moov_udta_chpl=0x6368706C;
     const int64u moov_udta_clsf=0x636C7366;
+    const int64u moov_udta_date=0x64617465;
     const int64u moov_udta_DcMD=0x44634D44;
     const int64u moov_udta_DcMD_Cmbo=0x436D626F;
     const int64u moov_udta_DcMD_DcME=0x44634D45;
@@ -898,6 +899,8 @@ namespace Elements
     const int64u moov_udta_MCPS=0x4D435053;
     const int64u moov_udta_meta=0x6D657461;
     const int64u moov_udta_meta_hdlr=0x68646C72;
+    const int64u moov_udta_meta_keys=0x6B657973;
+    const int64u moov_udta_meta_keys_mdta=0x6D647461;
     const int64u moov_udta_meta_ilst=0x696C7374;
     const int64u moov_udta_meta_ilst_xxxx_data=0x64617461;
     const int64u moov_udta_meta_ilst_xxxx_mean=0x6D65616E;
@@ -1275,6 +1278,7 @@ void File_Mpeg4::Data_Parse()
             ATOM(moov_udta_AllF)
             ATOM(moov_udta_chpl)
             ATOM(moov_udta_clsf)
+            ATOM(moov_udta_date)
             LIST(moov_udta_DcMD)
                 ATOM_BEGIN
                 ATOM(moov_udta_DcMD_Cmbo)
@@ -1300,6 +1304,10 @@ void File_Mpeg4::Data_Parse()
             ATOM(moov_udta_MCPS)
             LIST(moov_udta_meta)
                 ATOM_BEGIN
+                LIST(moov_udta_meta_keys)
+                    ATOM_BEGIN
+                    ATOM(moov_udta_meta_keys_mdta)
+                    ATOM_END
                 ATOM(moov_udta_meta_hdlr)
                 LIST(moov_udta_meta_ilst)
                     LIST_DEFAULT_ALONE_BEGIN (moov_udta_meta_ilst_xxxx)
@@ -8152,6 +8160,20 @@ void File_Mpeg4::moov_udta_clsf()
 }
 
 //---------------------------------------------------------------------------
+void File_Mpeg4::moov_udta_date()
+{
+    Element_Name("First recording date");
+
+    //Parsing
+    string Date;
+    Get_String (Element_Size-Element_Offset, Date,              "Date");
+
+    FILLING_BEGIN();
+        Fill(Stream_General, 0, General_Recorded_Date, Date);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg4::moov_udta_DcMD()
 {
     Element_Name("Kodak MetaData");
@@ -8334,6 +8356,18 @@ void File_Mpeg4::moov_udta_meta()
 
     //Filling
     moov_meta_hdlr_Type=Elements::moov_udta_meta;
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_udta_meta_keys()
+{
+    moov_meta_keys();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_udta_meta_keys_mdta()
+{
+    moov_meta_keys_mdta();
 }
 
 //---------------------------------------------------------------------------
