@@ -376,6 +376,25 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         }
         else
         {
+            //Check inverted bytes from UTF BOM
+            Value_NotBOM_Pos=Value.find_first_not_of(__T('\xFFFE')); // Avoid deep recursivity
+            if (Value_NotBOM_Pos)
+            {
+                Ztring Value2;
+                Value2.reserve(Value.size()-1);
+                for (size_t i=0; i<Value.size(); i++)
+                {
+                    //Swap
+                    Char ValueChar=Value[i];
+                    ValueChar=((ValueChar<<8 & 0xFFFF) | ((ValueChar>>8) & 0xFF)); // Swap
+                    Value2.append(1, ValueChar);
+                }
+                Value_NotBOM_Pos=Value2.find_first_not_of(__T('\xFEFF')); // Avoid deep recursivity
+                if (Value_NotBOM_Pos)
+                    Value2=Value2.substr(Value_NotBOM_Pos);
+                return Fill(StreamKind, StreamPos, Parameter, Value2, Replace);
+            }
+
             Value_NotBOM_Pos=Value.find_first_not_of(__T('\xFEFF')); // Avoid deep recursivity
         }
         if (Value_NotBOM_Pos)
