@@ -360,6 +360,28 @@ bool ShowSource_IsInList(video Value)
 //---------------------------------------------------------------------------
 void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Parameter, const Ztring &Value, bool Replace)
 {
+    // Sanitize
+    if (!Value.empty())
+    {
+        size_t Value_NotBOM_Pos;
+        if (sizeof(Char)==1)
+        {
+            Value_NotBOM_Pos=0;
+            while (Value.size()-Value_NotBOM_Pos>=3 // Avoid deep recursivity
+             && Value[Value_NotBOM_Pos  ]==0xEF 
+             && Value[Value_NotBOM_Pos+1]==0xBB
+             && Value[Value_NotBOM_Pos+2]==0xBF
+                )
+                Value_NotBOM_Pos+=3;
+        }
+        else
+        {
+            Value_NotBOM_Pos=Value.find_first_not_of(__T('\xFEFF')); // Avoid deep recursivity
+        }
+        if (Value_NotBOM_Pos)
+            return Fill(StreamKind, StreamPos, Parameter, Value.substr(Value_NotBOM_Pos), Replace);
+    }
+
     //MergedStreams
     if (FillAllMergedStreams)
     {
