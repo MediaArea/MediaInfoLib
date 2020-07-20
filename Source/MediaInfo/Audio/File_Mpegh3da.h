@@ -11,6 +11,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Tag/File__Tags.h"
+#include "MediaInfo/Audio/File_Usac.h"
 #include "MediaInfo/Audio/File_Aac.h"
 //---------------------------------------------------------------------------
 
@@ -24,6 +25,10 @@ namespace MediaInfoLib
 class File_Mpegh3da : public File_Usac
 {
 public :
+    //In
+    bool   MustParse_mhaC;
+    bool   MustParse_mpegh3daFrame;
+
     //Constructor/Destructor
     File_Mpegh3da();
 
@@ -70,6 +75,9 @@ private :
     void Streams_Fill();
     void Streams_Finish();
 
+    //Buffer - Global
+    void Read_Buffer_Continue();
+
     //Buffer - Per element
     void Header_Parse();
     void Data_Parse();
@@ -81,6 +89,7 @@ private :
     void mpegh3daFlexibleSpeakerConfig(speaker_layout& Layout);
     void mpegh3daSpeakerDescription(speaker_layout& Layout);
     void mpegh3daFrame();
+    void mhaC();
 
     //Helpers
     void Streams_Fill_ChannelLayout(const string& Prefix, const speaker_layout& Layout, int8u speakerLayoutType=0);

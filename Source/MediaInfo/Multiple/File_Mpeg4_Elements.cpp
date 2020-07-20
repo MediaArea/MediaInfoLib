@@ -794,6 +794,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_colr=0x636F6C72;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_ihdr=0x69686472;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv=0x6D646376;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC=0x6D686143;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_pasp=0x70617370;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D=0x53413344;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf=0x73696E66;
@@ -1153,6 +1154,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_clap)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_clli)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_colr)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_d263)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dac3)
@@ -7155,6 +7157,41 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv()
         Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_ColorPrimaries", MasteringDisplay_ColorPrimaries);
         Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_Luminance", MasteringDisplay_Luminance);
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC()
+{
+    Element_Name("MHAConfigurationBox");
+
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+    {
+        Skip_XX(Element_Size,                                   "Data not analyzed");
+        return; //Handling only the first description
+    }
+
+    AddCodecConfigurationBoxInfo();
+    #ifdef MEDIAINFO_MPEGH3DA_YES
+        if (!Streams[moov_trak_tkhd_TrackID].Parsers.empty())
+        {
+            for (size_t i=0; i<Streams[moov_trak_tkhd_TrackID].Parsers.size(); i++)
+                delete Streams[moov_trak_tkhd_TrackID].Parsers[i];
+            Streams[moov_trak_tkhd_TrackID].Parsers.clear();
+        }
+
+        File_Mpegh3da* Parser=new File_Mpegh3da;
+        Open_Buffer_Init(Parser);
+        Parser->MustParse_mhaC=true;
+        Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+        mdat_MustParse=true; //Data is in MDAT
+
+        //Parsing
+        Open_Buffer_Continue(Parser);
+    #else
+        Skip_XX(Element_Size,                                   "MPEG-H 3D Audio Data");
+
+        Fill(Stream_Audio, StreamKind_Last, Audio_Format, "MPEG-H 3D Audio");
+    #endif
 }
 
 //---------------------------------------------------------------------------
