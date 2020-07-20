@@ -751,12 +751,6 @@ dnl
 if test "$enable_universal_binary" = "yes"; then
 	enable_arch_ppc=yes
 	enable_arch_i386=yes
-	if test "$with_macosx_sdk" = no ; then
-		with_macosx_sdk="/Developer/SDKs/MacOSX10.4u.sdk"
-	fi
-	if test "$with_macosx_version_min" = no ; then
-		with_macosx_version_min="10.4"
-	fi
 fi
 if test "$enable_arch_ppc" = "yes"; then
 	CXXFLAGS="$CXXFLAGS -arch ppc"
@@ -793,11 +787,7 @@ if test "$enable_arch_arm64" = "yes"; then
 	CFLAGS="$CFLAGS -arch arm64"
 	LDFLAGS="$LDFLAGS -arch arm64"
 fi
-if test "$with_macosx_sdk" = "yes" ; then
-	CXXFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk $CXXFLAGS"
-	CFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk $CFLAGS"
-	LDFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk $LDFLAGS"
-elif test "x$with_macosx_sdk" != xno ; then
+if test "x$with_macosx_sdk" != xno ; then
 	CXXFLAGS="-isysroot $with_macosx_sdk $CXXFLAGS"
 	CFLAGS="-isysroot $with_macosx_sdk $CFLAGS"
 	LDFLAGS="-isysroot $with_macosx_sdk $LDFLAGS"
@@ -807,11 +797,7 @@ if test "x$with_macosx_version_min" != xno ; then
 	CFLAGS="-mmacosx-version-min=$with_macosx_version_min $CFLAGS"
 	LDFLAGS="-mmacosx-version-min=$with_macosx_version_min $LDFLAGS"
 fi
-if test "$with_iphoneos_sdk" = "yes" ; then
-	CXXFLAGS="-isysroot /Developer/SDKs/iPhoneOS.sdk $CXXFLAGS"
-	CFLAGS="-isysroot /Developer/SDKs/iPhoneOS.sdk $CFLAGS"
-	LDFLAGS="-isysroot /Developer/SDKs/iPhoneOS.sdk $LDFLAGS"
-elif test "x$with_iphoneos_sdk" != xno ; then
+if test "x$with_iphoneos_sdk" != xno ; then
 	CXXFLAGS="-isysroot $with_iphoneos_sdk $CXXFLAGS"
 	CFLAGS="-isysroot $with_iphoneos_sdk $CFLAGS"
 	LDFLAGS="-isysroot $with_iphoneos_sdk $LDFLAGS"

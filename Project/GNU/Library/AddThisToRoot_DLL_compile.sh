@@ -32,7 +32,6 @@ Parallel_Make () {
 Home=`pwd`
 Make="make"
 ZenLib_Options=""
-MacOptions="--with-macosx-version-min=10.5"
 JsOptions="--host=le32-unknown-nacl"
 
 OS=$(uname -s)
@@ -72,8 +71,6 @@ if test -e ZenLib/Project/GNU/Library/configure; then
 
     if [ "$OS" = "emscripten" ]; then
         emconfigure ./configure --enable-static --disable-shared $JsOptions $ZenLib_Options $* CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS"
-    elif [ "$OS" = "mac" ]; then
-        ./configure --enable-static --disable-shared $MacOptions $ZenLib_Options $*
     else
         ./configure --enable-static --disable-shared $ZenLib_Options $*
     fi
@@ -105,8 +102,6 @@ if test -e MediaInfoLib/Project/GNU/Library/configure; then
     chmod +x configure
     if [ "$OS" = "emscripten" ]; then
         emconfigure ./configure --enable-static --disable-shared --disable-dll $JsOptions $* CFLAGS="$CFLAGS -s USE_ZLIB=1" CXXFLAGS="$CXXFLAGS $MediaInfoLib_CXXFLAGS"
-    elif [ "$OS" = "mac" ]; then
-        ./configure $MacOptions --enable-staticlibs --enable-shared --disable-static --with-libcurl=runtime $MediaInfoLib_Options $*
     else
         ./configure --enable-staticlibs --enable-shared --disable-static --with-libcurl=runtime $MediaInfoLib_Options $*
     fi
@@ -159,4 +154,4 @@ echo "MediaInfo shared object is in MediaInfoLib/Project/GNU/Library/.libs"
 echo "For installing ZenLib, cd ZenLib/Project/GNU/Library && make install"
 echo "For installing MediaInfoLib, cd MediaInfoLib/Project/GNU/Library && make install"
 
-unset -v Home ZenLib_Options MacOptions OS
+unset -v Home ZenLib_Options JsOptions OS
