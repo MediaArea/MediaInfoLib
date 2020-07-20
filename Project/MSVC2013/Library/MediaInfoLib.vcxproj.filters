@@ -1489,5 +1489,8 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.h">
       <Filter>Header Files\Video</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Usac.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

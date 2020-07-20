@@ -428,6 +428,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_SmpteSt0302.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_SmpteSt0331.h" />
     <ClInclude Include="..\..\..\source\mediainfo\audio\File_SmpteSt0337.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Usac.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_EbuCore.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Niso.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Fims.h" />
