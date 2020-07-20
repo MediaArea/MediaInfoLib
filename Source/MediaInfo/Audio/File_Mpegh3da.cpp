@@ -101,7 +101,7 @@ static char* Mpegh3da_MHASPacketType[Mpegh3da_MHASPacketType_Size]=
 
 //---------------------------------------------------------------------------
 File_Mpegh3da::File_Mpegh3da()
-:File__Analyze()
+:File_Usac()
 {
     //Configuration
     #if MEDIAINFO_TRACE
@@ -373,26 +373,6 @@ void File_Mpegh3da::Streams_Fill_ChannelLayout(const string& Prefix, const speak
     {
         Fill(Stream_Audio, 0, (Prefix+"ChannelLayout").c_str(), Layout.ChannelLayout);
     }
-}
-
-//---------------------------------------------------------------------------
-void File_Mpegh3da::escapedValue(int32u& Value, int8u nBits1, int8u nBits2, int8u nBits3, const char* Name)
-{
-    Element_Begin1(Name);
-    Get_S4(nBits1, Value, "nBits1");
-    if (Value == ((1 << nBits1) - 1))
-    {
-        int32u ValueAdd;
-        Get_S4(nBits2, ValueAdd, "nBits2");
-        Value += ValueAdd;
-        if (nBits3 && Value == ((1 << nBits2) - 1))
-        {
-            Get_S4(nBits3, ValueAdd, "nBits3");
-            Value += ValueAdd;
-        }
-    }
-    Element_Info1(Value);
-    Element_End0();
 }
 
 //***************************************************************************

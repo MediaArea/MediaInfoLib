@@ -21,7 +21,7 @@ namespace MediaInfoLib
 // Class File_Mpegh3da
 //***************************************************************************
 
-class File_Mpegh3da : public File__Analyze
+class File_Mpegh3da : public File_Usac
 {
 public :
     //Constructor/Destructor
@@ -84,7 +84,6 @@ private :
 
     //Helpers
     void Streams_Fill_ChannelLayout(const string& Prefix, const speaker_layout& Layout, int8u speakerLayoutType=0);
-    void escapedValue(int32u& Value, int8u nBits1, int8u nBits2, int8u nBits3, const char* Name);
 };
 
 } //NameSpace
