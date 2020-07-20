@@ -22,6 +22,16 @@ namespace MediaInfoLib
 // Class File_Mpegh3da
 //***************************************************************************
 
+struct speaker_info
+{
+    Aac_OutputChannel CICPspeakerIdx;
+    int16u AzimuthAngle;
+    bool AzimuthDirection;
+    int16u ElevationAngle;
+    bool ElevationDirection;
+    bool isLFE;
+};
+
 class File_Mpegh3da : public File_Usac
 {
 public :
@@ -34,24 +44,6 @@ public :
 
 private :
     //Info
-    struct speaker_info
-    {
-        bool angularPrecision;
-        int16u AzimuthAngle;
-        bool AzimuthDirection;
-        int16u ElevationAngle;
-        bool ElevationDirection;
-        bool isLFE;
-
-        speaker_info(bool angularPrecision) :
-            angularPrecision(angularPrecision),
-            AzimuthAngle(0),
-            AzimuthDirection(false),
-            ElevationAngle(0),
-            ElevationDirection(false),
-            isLFE(false)
-        {};
-    };
 
     struct speaker_layout
     {
@@ -87,7 +79,7 @@ private :
     void mpegh3daConfig();
     void SpeakerConfig3d(speaker_layout& Layout);
     void mpegh3daFlexibleSpeakerConfig(speaker_layout& Layout);
-    void mpegh3daSpeakerDescription(speaker_layout& Layout);
+    void mpegh3daSpeakerDescription(speaker_info& SpeakerInfo, bool angularPrecision);
     void mpegh3daFrame();
     void mhaC();
 
