@@ -404,10 +404,11 @@ static std::string Mpeg4_chan_ChannelDescription (int64u ChannelLabels)
 }
 
 //---------------------------------------------------------------------------
-static const char* Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
+static string Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
 {
     switch(ChannelLabel)
     {
+        case   0 : return "";
         case   1 : return "L";
         case   2 : return "R";
         case   3 : return "C";
@@ -433,6 +434,12 @@ static const char* Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
         case  37 : return "LFE2";
         case  38 : return "Lt";
         case  39 : return "Rt";
+        case  40 : return "HearingImpaired";
+        case  41 : return "Narration";
+        case  42 : return "M";
+        case  43 : return "DialogCentricMix";
+        case  44 : return "CenterSurroundDirect";
+        case  45 : return "Haptic";
         case 200 : return "W";
         case 201 : return "X";
         case 202 : return "Y";
@@ -441,39 +448,15 @@ static const char* Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
         case 205 : return "S";
         case 206 : return "X";
         case 207 : return "Y";
-        case 0x10000 : return "Discrete-0";
-        case 0x10001 : return "Discrete-1";
-        case 0x10002 : return "Discrete-2";
-        case 0x10003 : return "Discrete-3";
-        case 0x10004 : return "Discrete-4";
-        case 0x10005 : return "Discrete-5";
-        case 0x10006 : return "Discrete-6";
-        case 0x10007 : return "Discrete-7";
-        case 0x10008 : return "Discrete-8";
-        case 0x10009 : return "Discrete-9";
-        case 0x1000A : return "Discrete-10";
-        case 0x1000B : return "Discrete-11";
-        case 0x1000C : return "Discrete-12";
-        case 0x1000D : return "Discrete-13";
-        case 0x1000E : return "Discrete-14";
-        case 0x1000F : return "Discrete-15";
-        case 0x10010 : return "Discrete-16";
-        case 0x10011 : return "Discrete-17";
-        case 0x10012 : return "Discrete-18";
-        case 0x10013 : return "Discrete-19";
-        case 0x10014 : return "Discrete-20";
-        case 0x10015 : return "Discrete-21";
-        case 0x10016 : return "Discrete-22";
-        case 0x10017 : return "Discrete-23";
-        case 0x10018 : return "Discrete-24";
-        case 0x10019 : return "Discrete-25";
-        case 0x1001A : return "Discrete-26";
-        case 0x1001B : return "Discrete-27";
-        case 0x1001C : return "Discrete-28";
-        case 0x1001D : return "Discrete-29";
-        case 0x1001E : return "Discrete-30";
-        case 0x1001F : return "Discrete-31";
-        default  : return "?";
+        case 301 : return "HeadphonesLeft";
+        case 302 : return "HeadphonesRight";
+        case 304 : return "ClickTrack";
+        case 305 : return "ForeignLanguage";
+        case 400 : return "Discrete";
+        default  : 
+                    if ((ChannelLabel>>16)==1) //0x10000 to 0x1FFFF, numbered Discrete
+                        return "Discrete-"+Ztring::ToZtring(ChannelLabel&0xFFFF).To_UTF8();
+                    return Ztring::ToZtring(ChannelLabel).To_UTF8();
     }
 }
 
