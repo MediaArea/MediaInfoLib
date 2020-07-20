@@ -107,6 +107,10 @@ File_Mpegh3da::File_Mpegh3da()
     #if MEDIAINFO_TRACE
         Trace_Layers_Update(8); //Stream
     #endif //MEDIAINFO_TRACE
+
+    //In
+    MustParse_mhaC=false;
+    MustParse_mpegh3daFrame=false;
 }
 
 //***************************************************************************
@@ -127,6 +131,27 @@ void File_Mpegh3da::Streams_Fill()
 //---------------------------------------------------------------------------
 void File_Mpegh3da::Streams_Finish()
 {
+}
+
+//***************************************************************************
+// Buffer - Global
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Mpegh3da::Read_Buffer_Continue()
+{
+    if (MustParse_mhaC)
+    {
+        mhaC();
+        MustParse_mhaC=false;
+        MustParse_mpegh3daFrame=true;
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
+        return;
+    }
+    if (MustParse_mpegh3daFrame)
+    {
+        mpegh3daFrame();
+    }
 }
 
 //***************************************************************************
@@ -159,7 +184,7 @@ void File_Mpegh3da::Data_Parse()
         case  1 : mpegh3daConfig(); break;
         case  2 : mpegh3daFrame(); break;
         case  6 : Sync(); break;
-        default : Skip_XX(Element_Size-Element_Offset, "Data");
+        default : Skip_XX(Element_Size-Element_Offset,          "Data");
     }
 }
 
@@ -309,8 +334,7 @@ void File_Mpegh3da::mpegh3daSpeakerDescription(speaker_layout& Layout)
 //---------------------------------------------------------------------------
 void File_Mpegh3da::mpegh3daFrame()
 {
-    Element_Begin1("mpegh3daFrame");
-    Element_End0();
+    Skip_XX(Element_Size,                                       "mpegh3daFrame");
 
     FILLING_BEGIN();
         //Filling
@@ -324,6 +348,18 @@ void File_Mpegh3da::Sync()
 {
     //Parsing
     Skip_B1(                                                    "syncword");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpegh3da::mhaC()
+{
+    Element_Begin1("MHADecoderConfigurationRecord");
+    Skip_B1(                                                    "configurationVersion");
+    Skip_B1(                                                    "mpegh3daProfileLevelIndication");
+    Skip_B1(                                                    "referenceChannelLayout");
+    Skip_B2(                                                    "mpegh3daConfigLength");
+    mpegh3daConfig();
+    Element_End0();
 }
 
 //***************************************************************************
