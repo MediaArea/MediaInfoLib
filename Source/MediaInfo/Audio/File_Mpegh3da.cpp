@@ -48,6 +48,7 @@ extern int8u Aac_Channels_Get(int8u ChannelLayout);
 extern string Aac_Channels_GetString(int8u ChannelLayout);
 extern string Aac_ChannelConfiguration_GetString(int8u ChannelLayout);
 extern string Aac_ChannelConfiguration2_GetString(int8u ChannelLayout);
+extern string Aac_ChannelLayout_GetString(const Aac_OutputChannel* const OutputChannels, size_t OutputChannels_Size);
 extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegh3da=false);
 extern string Aac_ChannelLayout_GetString(const vector<Aac_OutputChannel>& OutputChannels);
 extern string Aac_ChannelMode_GetString(int8u ChannelLayout, bool IsMpegh3da=false);
@@ -93,6 +94,54 @@ static char* Mpegh3da_MHASPacketType[Mpegh3da_MHASPacketType_Size]=
     "GLOBAL_CRC32",
     "AUDIOTRUNCATION",
     "GENDATA",
+};
+
+static const size_t Mpegh3da_SpeakerInfo_Size=43;
+static const speaker_info Mpegh3da_SpeakerInfo[Mpegh3da_SpeakerInfo_Size]=
+{
+    {CH_M_L030,  30, false,  0, false, false},
+    {CH_M_R030,  30, true ,  0, false, false},
+    {CH_M_000 ,   0, false,  0, false, false},
+    {CH_LFE   ,   0, false, 15, true ,  true},
+    {CH_M_L110, 110, false,  0, false, false},
+    {CH_M_R110, 110, true ,  0, false, false},
+    {CH_M_L022,  22, false,  0, false, false},
+    {CH_M_R022,  22, true ,  0, false, false},
+    {CH_M_L135, 135, false,  0, false, false},
+    {CH_M_R135, 135, true ,  0, false, false},
+    {CH_M_180 , 180, false,  0, false, false},
+    {CH_M_LSD , 135, false,  0, false, false},
+    {CH_M_RSD , 135, true ,  0, false, false},
+    {CH_M_L090,  90, false,  0, false, false},
+    {CH_M_R090,  90, true ,  0, false, false},
+    {CH_M_L060,  60, false,  0, false, false},
+    {CH_M_R060,  60, true ,  0, false, false},
+    {CH_U_L030,  30, false, 35, false, false},
+    {CH_U_R030,  30, true , 35, false, false},
+    {CH_U_000 ,   0, false, 35, false, false},
+    {CH_U_L135, 135, false, 35, false, false},
+    {CH_U_R135, 135, true , 35, false, false},
+    {CH_U_180 , 180, false, 35, false, false},
+    {CH_U_L090,  90, false, 35, false, false},
+    {CH_U_R090,  90, true , 35, false, false},
+    {CH_T_000 ,   0, false, 90, false, false},
+    {CH_LFE2  ,  45, false, 15, true ,  true},
+    {CH_L_L045,  45, false, 15, true , false},
+    {CH_L_R045,  45, true , 15, true , false},
+    {CH_L_000 ,   0, false, 15, true , false},
+    {CH_U_L110, 110, false, 35, false, false},
+    {CH_U_R110, 110, true , 35, false, false},
+    {CH_U_L045,  45, false, 35, false, false},
+    {CH_U_R045,  45, true , 35, false, false},
+    {CH_M_L045,  45, false,  0, false, false},
+    {CH_M_R045,  45, true ,  0, false, false},
+    {CH_LFE3  ,  45, true , 15, true ,  true},
+    {CH_M_LSCR,   2, false,  0, false, false},
+    {CH_M_RSCR,   2, true ,  0, false, false},
+    {CH_M_LSCH,   1, false,  0, false, false},
+    {CH_M_RSCH,   1, true ,  0, false, false},
+    {CH_M_L150, 150, false,  0, false, false},
+    {CH_M_R150, 150, true ,  0, false, false},
 };
 
 //***************************************************************************
@@ -238,7 +287,7 @@ void File_Mpegh3da::SpeakerConfig3d(speaker_layout& Layout)
     Get_S1(2, speakerLayoutType,                                "speakerLayoutType");
     if (speakerLayoutType==0)
     {
-        Get_S1 (6, Layout.ChannelLayout,                        "CICPspeakerLayoutIdx");
+        Get_S1 (6, Layout.ChannelLayout,                        "CICPspeakerLayoutIdx"); Param_Info2(Aac_Channels_Get(Layout.ChannelLayout), " channels");
     }
     else
     {
@@ -279,20 +328,33 @@ void File_Mpegh3da::mpegh3daFlexibleSpeakerConfig(speaker_layout& Layout)
     Get_SB(angularPrecision,                                    "angularPrecision");
     for (size_t Pos=0; Pos<Layout.numSpeakers; Pos++)
     {
-        Layout.SpeakersInfo.push_back(speaker_info(angularPrecision));
-        mpegh3daSpeakerDescription(Layout);
-        if (Layout.SpeakersInfo.back().AzimuthAngle && Layout.SpeakersInfo.back().AzimuthAngle!=180)
-            Skip_SB(                                            "alsoAddSymmetricPair");
+        Layout.SpeakersInfo.push_back(speaker_info());
+        speaker_info& SpeakerInfo=Layout.SpeakersInfo[Layout.SpeakersInfo.size()-1];
+        mpegh3daSpeakerDescription(SpeakerInfo, angularPrecision);
+        if (SpeakerInfo.AzimuthAngle && SpeakerInfo.AzimuthAngle!=180)
+        {
+            bool alsoAddSymmetricPair;
+            Get_SB (alsoAddSymmetricPair,                       "alsoAddSymmetricPair");
+            if (alsoAddSymmetricPair)
+                Pos++;
+        }
     }
     Element_End0();
 }
 
 //---------------------------------------------------------------------------
-void File_Mpegh3da::mpegh3daSpeakerDescription(speaker_layout& Layout)
+void File_Mpegh3da::mpegh3daSpeakerDescription(speaker_info& SpeakerInfo, bool angularPrecision)
 {
     Element_Begin1("mpegh3daSpeakerDescription");
     TESTELSE_SB_SKIP(                                           "isCICPspeakerIdx");
-        Skip_S1(7,                                              "CICPspeakerIdx");
+    {
+        int8u CICPspeakerIdx;
+        Get_S1 (7, CICPspeakerIdx,                              "CICPspeakerIdx");
+        if (CICPspeakerIdx<Mpegh3da_SpeakerInfo_Size)
+            SpeakerInfo=Mpegh3da_SpeakerInfo[CICPspeakerIdx];
+        else
+            SpeakerInfo.CICPspeakerIdx=(Aac_OutputChannel)CICPspeakerIdx;
+    }
     TESTELSE_SB_ELSE(                                           "isCICPspeakerIdx");
         int8u ElevationClass;
         Get_S1(2, ElevationClass,                               "ElevationClass");
@@ -300,33 +362,36 @@ void File_Mpegh3da::mpegh3daSpeakerDescription(speaker_layout& Layout)
         switch (ElevationClass)
         {
         case 0:
-            Layout.SpeakersInfo.back().ElevationAngle=0;
+            SpeakerInfo.ElevationAngle=0;
             break;
         case 1:
-            Layout.SpeakersInfo.back().ElevationAngle=35;
+            SpeakerInfo.ElevationAngle=35;
+            SpeakerInfo.ElevationDirection=false;
             break;
         case 2:
-            Layout.SpeakersInfo.back().ElevationAngle=15;
-            Layout.SpeakersInfo.back().ElevationDirection=true;
+            SpeakerInfo.ElevationAngle=15;
+            SpeakerInfo.ElevationDirection=true;
             break;
         case 3:
             int8u ElevationAngleIdx;
-            Get_S1(Layout.SpeakersInfo.back().angularPrecision?7:5, ElevationAngleIdx, "ElevationAngleIdx");
-            Layout.SpeakersInfo.back().ElevationAngle=ElevationAngleIdx*Layout.SpeakersInfo.back().angularPrecision?1:5;
+            Get_S1(angularPrecision?7:5, ElevationAngleIdx, "ElevationAngleIdx");
+            SpeakerInfo.ElevationAngle=ElevationAngleIdx*(angularPrecision?1:5);
 
-            if (Layout.SpeakersInfo.back().ElevationAngle)
-                Get_SB(Layout.SpeakersInfo.back().ElevationDirection, "ElevationDirection");
+            if (SpeakerInfo.ElevationAngle)
+                Get_SB(SpeakerInfo.ElevationDirection,         "ElevationDirection");
             break;
         }
 
         int8u AzimuthAngleIdx;
-        Get_S1(Layout.SpeakersInfo.back().angularPrecision?8:6, AzimuthAngleIdx, "AzimuthAngleIdx");
-        Layout.SpeakersInfo.back().AzimuthAngle=AzimuthAngleIdx*Layout.SpeakersInfo.back().angularPrecision?1:5;
+        Get_S1(angularPrecision?8:6, AzimuthAngleIdx, "AzimuthAngleIdx");
+        SpeakerInfo.AzimuthAngle=AzimuthAngleIdx*(angularPrecision?1:5);
 
-        if (Layout.SpeakersInfo.back().AzimuthAngle && Layout.SpeakersInfo.back().AzimuthAngle!=180)
-            Get_SB(Layout.SpeakersInfo.back().AzimuthDirection, "AzimuthDirection");
+        if (SpeakerInfo.AzimuthAngle && SpeakerInfo.AzimuthAngle!=180)
+            Get_SB(SpeakerInfo.AzimuthDirection, "AzimuthDirection");
 
-        Get_SB(Layout.SpeakersInfo.back().isLFE,                "isLFE");
+        Get_SB(SpeakerInfo.isLFE,                "isLFE");
+
+        SpeakerInfo.CICPspeakerIdx=(Aac_OutputChannel)-1;
     TESTELSE_SB_END();
     Element_End0();
 }
@@ -396,13 +461,58 @@ void File_Mpegh3da::Streams_Fill_ChannelLayout(const string& Prefix, const speak
     else if (Layout.numSpeakers)
     {
         if (speakerLayoutType==1) // Objects
-            Fill(Stream_Audio, 0, (Prefix+"ObjectCount").c_str(), Layout.numSpeakers);
+        {
+            Fill(Stream_Audio, 0, (Prefix+"NumberOfObjects").c_str(), Layout.numSpeakers);
+            Fill_SetOptions(Stream_Audio, 0, (Prefix+"NumberOfObjects").c_str(), "N YTY");
+            Fill(Stream_Audio, 0, (Prefix + "NumberOfObjects/String").c_str(), MediaInfoLib::Config.Language_Get(Ztring::ToZtring(Layout.numSpeakers), __T(" object")));
+            Fill_SetOptions(Stream_Audio, 0, (Prefix+"NumberOfObjects/String").c_str(), "Y YTN");
+        }
         else
+        {
             Fill(Stream_Audio, 0, (Prefix+"Channel(s)").c_str(), Layout.numSpeakers);
+            Fill_SetOptions(Stream_Audio, 0, (Prefix+"Channel(s)").c_str(), "N YTY");
+            Fill(Stream_Audio, 0, (Prefix + "Channel(s)/String").c_str(), MediaInfoLib::Config.Language_Get(Ztring::ToZtring(Layout.numSpeakers), __T(" channel")));
+            Fill_SetOptions(Stream_Audio, 0, (Prefix+"Channel(s)/String").c_str(), "Y YTN");
+        }
         if (!Layout.CICPspeakerIdxs.empty())
         {
             Fill(Stream_Audio, 0, (Prefix+"ChannelMode").c_str(), Aac_ChannelMode_GetString(Layout.CICPspeakerIdxs));
             Fill(Stream_Audio, 0, (Prefix+"ChannelLayout").c_str(), Aac_ChannelLayout_GetString(Layout.CICPspeakerIdxs));
+        }
+        else
+        {
+            vector<Aac_OutputChannel> CICPspeakerIdxs;
+            string ChannelLayout;
+            for (size_t i=0; i<Layout.SpeakersInfo.size(); i++)
+            {
+                if (i)
+                    ChannelLayout+=' ';
+                if (Layout.SpeakersInfo[i].CICPspeakerIdx!=(Aac_OutputChannel)-1)
+                {
+                    ChannelLayout+=Aac_ChannelLayout_GetString(&Layout.SpeakersInfo[i].CICPspeakerIdx, 1);
+                    CICPspeakerIdxs.push_back(Layout.SpeakersInfo[i].CICPspeakerIdx);
+                }
+                else
+                {
+                    if (Layout.SpeakersInfo[i].ElevationAngle==0)
+                        ChannelLayout+='M';
+                    else
+                        ChannelLayout+=Layout.SpeakersInfo[i].ElevationDirection?'B':'U';
+                    ChannelLayout+='_';
+                    if (Layout.SpeakersInfo[i].AzimuthAngle!=0 && Layout.SpeakersInfo[i].AzimuthAngle!=180)
+                        ChannelLayout+=Layout.SpeakersInfo[i].AzimuthDirection?'L':'R';
+                    string AzimuthAngleString=Ztring::ToZtring(Layout.SpeakersInfo[i].AzimuthAngle).To_UTF8();
+                    AzimuthAngleString.insert(0, 3-AzimuthAngleString.size(), '0');
+                    ChannelLayout.append(AzimuthAngleString);
+                }
+            }
+            if (CICPspeakerIdxs.size()==Layout.SpeakersInfo.size())
+            {
+                Fill(Stream_Audio, 0, (Prefix+"ChannelMode").c_str(), Aac_ChannelMode_GetString(CICPspeakerIdxs));
+                Fill(Stream_Audio, 0, (Prefix+"ChannelLayout").c_str(), Aac_ChannelLayout_GetString(CICPspeakerIdxs));
+            }
+            else
+                Fill(Stream_Audio, 0, (Prefix+"ChannelLayout").c_str(), ChannelLayout);
         }
     }
     else if (Layout.ChannelLayout)
