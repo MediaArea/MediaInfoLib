@@ -144,7 +144,7 @@ private :
     vector<int8u> mpegh3daCompatibleProfileLevelSet;
     int32u usacSamplingFrequency;
     int8u coreSbrFrameLengthIndex;
-    std::map<int8u, std::map<Ztring, drc_info> > Mpegh3da_drcInstructionsUniDrc_Data[4]; // By type, by group id, By id
+    std::map<int8u, std::map<int16u, drc_info> > Mpegh3da_drcInstructionsUniDrc_Data[4]; // By type, by group id, By id
     struct loudness_info_data
     {
         std::map<Ztring, loudness_info> Data[2];

@@ -391,7 +391,7 @@ void File_Mpegh3da::Streams_Fill()
             Fill(Stream_Audio, 0, (p+" Kind").c_str(), Mpegh3da_groupPresetKind[P.Kind]);
         if (!Mpegh3da_drcInstructionsUniDrc_Data[3].empty())
         {
-            std::map<int8u, std::map<Ztring, drc_info> >::iterator drcInstructionsUniDrc=Mpegh3da_drcInstructionsUniDrc_Data[3].find(P.ID);
+            std::map<int8u, std::map<int16u, drc_info> >::iterator drcInstructionsUniDrc=Mpegh3da_drcInstructionsUniDrc_Data[3].find(P.ID);
             if (drcInstructionsUniDrc!=Mpegh3da_drcInstructionsUniDrc_Data[3].end())
             {
                 drcInstructionsUniDrc_Data=drcInstructionsUniDrc->second;
@@ -522,7 +522,7 @@ void File_Mpegh3da::Streams_Fill()
             Fill(Stream_Audio, 0, (g+" Default").c_str(), G.defaultOnOff?"Yes":"No");
         if (!Mpegh3da_drcInstructionsUniDrc_Data[1].empty())
         {
-            std::map<int8u, std::map<Ztring, drc_info> >::iterator drcInstructionsUniDrc=Mpegh3da_drcInstructionsUniDrc_Data[1].find(G.ID);
+            std::map<int8u, std::map<int16u, drc_info> >::iterator drcInstructionsUniDrc=Mpegh3da_drcInstructionsUniDrc_Data[1].find(G.ID);
             if (drcInstructionsUniDrc!=Mpegh3da_drcInstructionsUniDrc_Data[1].end())
             {
                 drcInstructionsUniDrc_Data=drcInstructionsUniDrc->second;
@@ -543,7 +543,7 @@ void File_Mpegh3da::Streams_Fill()
         }
         if (!Mpegh3da_drcInstructionsUniDrc_Data[2].empty()) // Not sure
         {
-            std::map<int8u, std::map<Ztring, drc_info> >::iterator drcInstructionsUniDrc=Mpegh3da_drcInstructionsUniDrc_Data[2].find(G.ID);
+            std::map<int8u, std::map<int16u, drc_info> >::iterator drcInstructionsUniDrc=Mpegh3da_drcInstructionsUniDrc_Data[2].find(G.ID);
             if (drcInstructionsUniDrc!=Mpegh3da_drcInstructionsUniDrc_Data[2].end())
             {
                 drcInstructionsUniDrc_Data=drcInstructionsUniDrc->second;

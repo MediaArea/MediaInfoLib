@@ -86,7 +86,7 @@ public :
         Ztring                      TruePeakLevel;
         measurements                Measurements;
     };
-    std::map<Ztring, drc_info>      drcInstructionsUniDrc_Data; // By id
+    std::map<int16u, drc_info>      drcInstructionsUniDrc_Data; // By id
     std::map<Ztring, loudness_info> loudnessInfo_Data[2]; // By non-album/album then by id
     int8u                           baseChannelCount;
     struct downmix_instruction
