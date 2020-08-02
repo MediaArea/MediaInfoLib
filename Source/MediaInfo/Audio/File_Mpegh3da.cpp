@@ -62,6 +62,7 @@ static const char* const Mpegh3da_Profile[]=
     "Main",
     "High",
     "LC",
+    "BL",
 };
 static size_t Mpegh3da_Profile_Size=sizeof(Mpegh3da_Profile)/sizeof(const char* const);
 extern string Mpegh3da_Profile_Get(int8u mpegh3daProfileLevelIndication)
@@ -192,6 +193,7 @@ static const char* const Mpegh3da_usacConfigExtType[]=
     "HOA_MATRIX",
     "ICG",
     "SIG_GROUP_INFO",
+    "COMPATIBLE_PROFILE_LEVEL_SET",
 };
 static const size_t Mpegh3da_usacConfigExtType_Size=sizeof(Mpegh3da_usacConfigExtType)/sizeof(const char* const);
 
@@ -275,7 +277,13 @@ void File_Mpegh3da::Streams_Fill()
 {
     Stream_Prepare(Stream_Audio);
     Fill(Stream_Audio, 0, Audio_Format, "MPEG-H 3D Audio");
-    Fill(Stream_Audio, 0, Audio_Format_Profile, Mpegh3da_Profile_Get(mpegh3daProfileLevelIndication));
+    string Format_Profile=Mpegh3da_Profile_Get(mpegh3daProfileLevelIndication);
+    for (size_t Pos=0; Pos<mpegh3daCompatibleProfileLevelSet.size(); Pos++)
+    {
+        Format_Profile+=", ";
+        Format_Profile+=Mpegh3da_Profile_Get(mpegh3daCompatibleProfileLevelSet[Pos]);
+    }
+    Fill(Stream_Audio, 0, Audio_Format_Profile, Format_Profile);
     Fill(Stream_Audio, 0, Audio_SamplingRate, usacSamplingFrequency);
     Fill(Stream_Audio, 0, Audio_SamplesPerFrame, coreSbrFrameLengthIndex_Mapping[coreSbrFrameLengthIndex].outputFrameLengthDivided256<<8);
     if (isMainStream!=(int8u)-1)
@@ -690,7 +698,7 @@ void File_Mpegh3da::mpegh3daConfig()
     Element_Begin1("mpegh3daConfig");
     BS_Begin();
     int8u usacSamplingFrequencyIndex;
-    Get_S1 (8, mpegh3daProfileLevelIndication,                  "mpegh3daProfileLevelIndication"); Param_Info1(Mpegh3da_Profile_Get(mpegh3daProfileLevelIndication));
+    Get_S1(8, mpegh3daProfileLevelIndication, "mpegh3daProfileLevelIndication"); Param_Info1(Mpegh3da_Profile_Get(mpegh3daProfileLevelIndication));
     Get_S1 (5, usacSamplingFrequencyIndex,                      "usacSamplingFrequencyIndex");
     if (usacSamplingFrequencyIndex==0x1f)
         Get_S3 (24, usacSamplingFrequency,                      "usacSamplingFrequency");
@@ -1454,6 +1462,9 @@ void File_Mpegh3da::mpegh3daConfigExtension()
         case ID_CONFIG_EXT_SIG_GROUP_INFO:
             SignalGroupInformation();
             break;
+        case ID_CONFIG_EXT_COMPATIBLE_PROFILE_LEVEL_SET:
+            CompatibleProfileLevelSet();
+            break;
         default:
             Skip_BS(usacConfigExtLength*8,                      "reserved");
         }
@@ -1481,6 +1492,21 @@ void File_Mpegh3da::SignalGroupInformation()
     {
         Skip_S1(3,                                              "groupPriority");
         Skip_SB(                                                "fixedPosition");
+    }
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpegh3da::CompatibleProfileLevelSet()
+{
+    Element_Begin1("CompatibleProfileLevelSet");
+    int8u bsNumCompatibleSets;
+    Get_S1 (4, bsNumCompatibleSets,                             "bsNumCompatibleSets");
+    Skip_S1(4,                                                  "reserved");
+    mpegh3daCompatibleProfileLevelSet.resize(bsNumCompatibleSets+1);
+    for (int8u Pos=0; Pos<=bsNumCompatibleSets; Pos++)
+    {
+        Get_S1(8, mpegh3daCompatibleProfileLevelSet[Pos], "CompatibleSetIndication"); Param_Info1(Mpegh3da_Profile_Get(mpegh3daCompatibleProfileLevelSet[Pos]));
     }
     Element_End0();
 }

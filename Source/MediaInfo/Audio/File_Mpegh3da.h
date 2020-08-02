@@ -87,6 +87,7 @@ private :
         ID_CONFIG_EXT_HOA_MATRIX,
         ID_CONFIG_EXT_ICG,
         ID_CONFIG_EXT_SIG_GROUP_INFO,
+        ID_CONFIG_EXT_COMPATIBLE_PROFILE_LEVEL_SET,
     };
 
     enum MaeDataType
@@ -140,6 +141,7 @@ private :
     int8u isMainStream;
     int8u audioSceneInfoID;
     int8u mpegh3daProfileLevelIndication;
+    vector<int8u> mpegh3daCompatibleProfileLevelSet;
     int32u usacSamplingFrequency;
     int8u coreSbrFrameLengthIndex;
     std::map<int8u, std::map<Ztring, drc_info> > Mpegh3da_drcInstructionsUniDrc_Data[4]; // By type, by group id, By id
@@ -237,6 +239,7 @@ private :
     void EnhancedObjectMetadataConfig();
     void mpegh3daConfigExtension();
     void SignalGroupInformation();
+    void CompatibleProfileLevelSet();
     void HoaRenderingMatrixSet();
     void ICGConfig();
     void mae_AudioSceneInfo();
