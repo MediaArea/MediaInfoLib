@@ -159,9 +159,14 @@ void File_Usac::Fill_DRC(const char* Prefix)
         Fill(Stream_Audio, 0, (FieldPrefix+"DrcSets_Count").c_str(), drcInstructionsUniDrc_Data.size());
         Fill_SetOptions(Stream_Audio, 0, (FieldPrefix + "DrcSets_Count").c_str(), "N NI"); // Hidden in text output
         ZtringList Ids, Data;
-        for (std::map<Ztring, drc_info>::iterator Item=drcInstructionsUniDrc_Data.begin(); Item!=drcInstructionsUniDrc_Data.end(); ++Item)
+        for (std::map<int16u, drc_info>::iterator Item=drcInstructionsUniDrc_Data.begin(); Item!=drcInstructionsUniDrc_Data.end(); ++Item)
         {
-            Ids.push_back(Item->first);
+            int8u drcSetId=Item->first>>8;
+            int8u downmixId=Item->first&((1<<8)-1);
+            Ztring Id;
+            if (drcSetId || downmixId)
+                Id=Ztring::ToZtring(drcSetId)+=__T('-')+Ztring::ToZtring(downmixId);
+            Ids.push_back(Id);
             Data.push_back(Ztring().From_UTF8(Item->second.drcSetEffectTotal));
         }
         Fill(Stream_Audio, 0, (FieldPrefix+"DrcSets_Effects").c_str(), Data, Ids);
@@ -994,9 +999,7 @@ bool File_Usac::drcInstructionsUniDrc(bool V1, bool NoV0)
                 }
             }
 
-        Ztring Id=Ztring::ToZtring(drcSetId)+=__T('-')+Ztring::ToZtring(downmixId);
-        if (Id==__T("0-0"))
-            Id.clear();
+        int16u Id=drcSetId<<8|downmixId;
         drcInstructionsUniDrc_Data[Id].drcSetEffectTotal=Value;
     }
 

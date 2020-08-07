@@ -117,6 +117,9 @@
  month1; month
  month2; months
  month3; months
+ object1; object
+ object2; objects
+ object3; objects
  pixel1; pixel
  pixel2; pixels
  pixel3; pixels
@@ -186,6 +189,7 @@ AudioDescriptionPresent;Audio Description Present
 AudioDescriptionType;Audio Description Type
 AudioLoudnessStandard;Audio Loudness Standard
 AudioRenderingIndication;Audio rendering indication
+AudioSceneInfoID;Audio scene info ID
 AudioTrackLayout;Audio Track Layout
 Author;Author
 BarCode;BarCode
@@ -619,6 +623,7 @@ Gop_OpenClosed_FirstFrame;GOP, Open/Closed of first frame
 Gop_OpenClosed_Open;Open
 Group;Group
 Grouping;Grouping
+GroupPreset;Group preset
 h; h
 HDR_Format;HDR format
 Header file;Create a header file
@@ -873,6 +878,7 @@ Library;Muxing library
 Lightness;Lightness
 LineUpStart;Line Up Start
 LinkedTo_Group_Pos;Group #s
+LinkedTo_SignalGroup_Pos;Signal group #s
 LinkedTo_Substream_Pos;Substream #s
 List;List
 LoRoCenterMixGain;LoRo center mix gain
@@ -949,6 +955,7 @@ NumberOfPresentations;Number of presentations
 NumberOfSubstreams;Number of substreams
 NumberOfSubstreams;Number of substreams
 NumColors;Number of colors
+ObjectCount;Object Count
 OK;OK
 One output file per input file;One output file per input file
 Open;Open
@@ -1105,6 +1112,7 @@ ShimName;Shim Name
 ShimVersion;Shim Version
 Show menu;Show menu
 Show toolbar;Show toolbar
+SignalGroup;Signal group
 SigningPresent;Signing Present
 SignLanguage;Sign Language
 Sort;Sorted by
@@ -1140,6 +1148,7 @@ Summary;Summary
 Supported formats;Supported formats
 Supported?;Supported?
 SurroundAttenuationKnown;Surround attenuation known
+SwitchGroup;Switch group
 Synopsis;Synopsis
 SystemId;Id
 Tagged_Application;Tagging application
