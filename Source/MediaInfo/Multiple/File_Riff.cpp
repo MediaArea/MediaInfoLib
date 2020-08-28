@@ -121,6 +121,7 @@ File_Riff::File_Riff()
     SMV_BlockSize=0;
     SamplesPerSec=0;
     stream_Count=0;
+    BlockAlign=0;
     rec__Present=false;
     NeedOldIndex=true;
     IsBigEndian=false;
