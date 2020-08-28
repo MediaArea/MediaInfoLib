@@ -105,8 +105,8 @@ File_Riff::File_Riff()
     Interleaved1_10=0;
 
     //Temp
-    WAVE_data_Size=0xFFFFFFFF;
-    WAVE_fact_samplesCount=0xFFFFFFFF;
+    WAVE_data_Size=(int64u)-1;
+    WAVE_fact_samplesCount=(int64u)-1;
     Buffer_DataToParse_Begin=(int64u)-1;
     Buffer_DataToParse_End=0;
     #if MEDIAINFO_DEMUX

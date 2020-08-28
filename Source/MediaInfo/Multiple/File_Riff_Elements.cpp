@@ -799,8 +799,12 @@ void File_Riff::AIFF_COMM()
         StreamItem.StreamKind=Stream_Audio;
     #endif
     #if MEDIAINFO_DEMUX
-        BlockAlign=numChannels*sampleSize/8;
-        AvgBytesPerSec=(int32u)float64_int64s(BlockAlign*(float64)sampleRate);
+        unsigned int ComputedBlockAlign=numChannels*sampleSize/8;
+        if (ComputedBlockAlign<0x10000)
+        {
+            BlockAlign=(int16u)ComputedBlockAlign;
+            AvgBytesPerSec=(int32u)float64_int64s(ComputedBlockAlign*sampleRate);
+        }
     #endif //MEDIAINFO_DEMUX
 
     Element_Code=(int64u)-1;
@@ -3801,19 +3805,17 @@ void File_Riff::WAVE_data()
         return; //This is maybe embeded in another container, and there is only the header (What is the junk?)
     }
 
-    FILLING_BEGIN();
-        Fill(Stream_Audio, 0, Audio_StreamSize, Buffer_DataToParse_End-Buffer_DataToParse_Begin);
-    FILLING_END();
-
     //Parsing
     Element_Code=(int64u)-1;
 
     FILLING_BEGIN();
-        int64u Duration=Retrieve(Stream_Audio, 0, Audio_Duration).To_int64u();
-        int64u BitRate=Retrieve(Stream_Audio, 0, Audio_BitRate).To_int64u();
+        int64u StreamSize=Buffer_DataToParse_End-Buffer_DataToParse_Begin;
+        Fill(Stream_Audio, 0, Audio_StreamSize, StreamSize, 10, true);
+        float64 Duration=Retrieve(Stream_Audio, 0, Audio_Duration).To_float64();
+        float64 BitRate=Retrieve(Stream_Audio, 0, Audio_BitRate).To_float64();
         if (Duration)
         {
-            int64u BitRate_New=(Buffer_DataToParse_End-Buffer_DataToParse_Begin)*8*1000/Duration;
+            float64 BitRate_New=((float64)StreamSize)*8*1000/Duration;
             if (BitRate_New<BitRate*0.95 || BitRate_New>BitRate*1.05)
                 Fill(Stream_Audio, 0, Audio_BitRate, BitRate_New, 10, true); //Correcting the bitrate, it was false in the header
         }
@@ -3821,11 +3823,11 @@ void File_Riff::WAVE_data()
         {
             if (IsSub)
                 //Retrieving "data" real size, in case of truncated files and/or wave header in another container
-                Duration=((int64u)LittleEndian2int32u(Buffer+Buffer_Offset-4))*8*1000/BitRate; //TODO: RF64 is not handled
+                Duration=((float64)LittleEndian2int32u(Buffer+Buffer_Offset-4))*8*1000/BitRate; //TODO: RF64 is not handled
             else
-                Duration=(Buffer_DataToParse_End-Buffer_DataToParse_Begin)*8*1000/BitRate;
-            Fill(Stream_General, 0, General_Duration, Duration, 10, true);
-            Fill(Stream_Audio, 0, Audio_Duration, Duration, 10, true);
+                Duration=((float64)StreamSize)*8*1000/BitRate;
+            Fill(Stream_General, 0, General_Duration, Duration, 0, true);
+            Fill(Stream_Audio, 0, Audio_Duration, Duration, 0, true);
         }
     FILLING_END();
 }
@@ -3871,25 +3873,22 @@ void File_Riff::WAVE_fact()
     Element_Name("Sample count");
 
     //Parsing
-    int64u SamplesCount64;
     int32u SamplesCount;
     Get_L4 (SamplesCount,                                       "SamplesCount");
-    SamplesCount64=SamplesCount;
-    if (SamplesCount64==0xFFFFFFFF)
-        SamplesCount64=WAVE_fact_samplesCount;
 
     FILLING_BEGIN();
-        int32u SamplingRate=Retrieve(Stream_Audio, 0, Audio_SamplingRate).To_int32u();
-        if (SamplingRate)
+        int64u SamplesCount64=SamplesCount==(int32u)-1?WAVE_fact_samplesCount:SamplesCount;
+        float64 SamplingRate=Retrieve(Stream_Audio, 0, Audio_SamplingRate).To_float64();
+        if (SamplesCount64!=(int64u)-1 && SamplingRate)
         {
             //Calculating
-            int64u Duration=(SamplesCount64*1000)/SamplingRate;
+            float64 Duration=((float64)SamplesCount64)*1000/SamplingRate;
 
             //Coherency test
             bool IsOK=true;
             if (File_Size!=(int64u)-1)
             {
-                int64u BitRate=Retrieve(Stream_Audio, 0, Audio_BitRate).To_int64u();
+                float64 BitRate=Retrieve(Stream_Audio, 0, Audio_BitRate).To_float64();
                 if (BitRate)
                 {
                     int64u Duration_FromBitRate = File_Size * 8 * 1000 / BitRate;
@@ -3900,7 +3899,7 @@ void File_Riff::WAVE_fact()
 
             //Filling
             if (IsOK)
-                Fill(Stream_Audio, 0, Audio_Duration, Duration);
+                Fill(Stream_Audio, 0, Audio_Duration, Duration, 0);
         }
     FILLING_END();
 }
