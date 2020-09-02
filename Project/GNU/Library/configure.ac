@@ -496,6 +496,11 @@ elif test "$with_libcurl" = "no"; then
 	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_LIBCURL_NO"
 	using_libcurl="no"
 elif test "$with_libcurl" = "runtime"; then
+	AC_CHECK_LIB([dl], [dlopen], [use_libdl="yes"], [use_libdl="no"])
+	if test "$use_libdl" = "yes"; then
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static -ldl"
+		Curl_Lib=" -ldl"
+	fi
 	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_LIBCURL_DLL_RUNTIME"
 	using_libcurl="system (runtime)"
 elif test -e ../../../../curl/libcurl.pc; then
