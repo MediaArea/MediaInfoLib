@@ -54,6 +54,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Audio/File_Caf.cpp \
                        ../../../Source/MediaInfo/Audio/File_Celt.cpp \
                        ../../../Source/MediaInfo/Audio/File_ChannelGrouping.cpp \
+                       ../../../Source/MediaInfo/Audio/File_ChannelSplitting.cpp \
                        ../../../Source/MediaInfo/Audio/File_Dsdiff.cpp \
                        ../../../Source/MediaInfo/Audio/File_Dsf.cpp \
                        ../../../Source/MediaInfo/Audio/File_Dts.cpp \

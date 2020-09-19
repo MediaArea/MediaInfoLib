@@ -1105,7 +1105,7 @@ void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
         if (Duration && BitRate)
             Fill(Stream_Audio, Pos, Audio_StreamSize, Duration*BitRate/8/1000);
         if (Duration && BitRate_Encoded)
-            Fill(Stream_Audio, Pos, Audio_StreamSize_Encoded, Duration*BitRate_Encoded/8/1000);
+            Fill(Stream_Audio, Pos, Audio_StreamSize_Encoded, Duration*BitRate_Encoded/8/1000, 10, true);
     }
 
     //CBR/VBR

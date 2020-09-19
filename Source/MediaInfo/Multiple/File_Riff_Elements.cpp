@@ -223,6 +223,7 @@ std::string ExtensibleWave_ChannelMask_ChannelLayout(int32u ChannelMask)
 #endif
 #if defined(MEDIAINFO_SMPTEST0337_YES)
     #include "MediaInfo/Audio/File_SmpteSt0337.h"
+    #include "MediaInfo/Audio/File_ChannelSplitting.h"
 #endif
 #if defined(MEDIAINFO_ID3_YES)
     #include "MediaInfo/Tag/File_Id3.h"
@@ -762,6 +763,22 @@ void File_Riff::AIFF_COMM()
         File_SmpteSt0337* Parser=new File_SmpteSt0337;
         Parser->Endianness='B';
         Parser->Container_Bits=(int8u)sampleSize;
+        Parser->ShouldContinueParsing=true;
+        #if MEDIAINFO_DEMUX
+            if (Config->Demux_Unpacketize_Get())
+            {
+                Parser->Demux_Level=2; //Container
+                Parser->Demux_UnpacketizeContainer=true;
+                Demux_Level=4; //Intermediate
+            }
+        #endif //MEDIAINFO_DEMUX
+        Stream[Stream_ID].Parsers.push_back(Parser);
+    }
+    if (Retrieve(Stream_Audio, 0, Audio_CodecID).empty() && numChannels>2 && sampleSize<=32 && sampleRate==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
+    {
+        File_ChannelSplitting* Parser=new File_ChannelSplitting;
+        Parser->Endianness='B';
+        Parser->BitDepth=(int8u)sampleSize;
         Parser->ShouldContinueParsing=true;
         #if MEDIAINFO_DEMUX
             if (Config->Demux_Unpacketize_Get())
@@ -1343,6 +1360,7 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
         #endif
 
         #if defined(MEDIAINFO_SMPTEST0337_YES)
+        if (Channels==2 && BitsPerSample<=32 && SamplesPerSec==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
         {
             File_SmpteSt0337* Parser=new File_SmpteSt0337;
             Parser->Container_Bits=(int8u)BitsPerSample;
@@ -1357,6 +1375,23 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
                 }
             #endif //MEDIAINFO_DEMUX
             StreamItem.Parsers.push_back(Parser);
+        }
+        if (Channels>2 && BitsPerSample<=32 && SamplesPerSec==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
+        {
+            File_ChannelSplitting* Parser=new File_ChannelSplitting;
+            Parser->BitDepth=(int8u)BitsPerSample;
+            Parser->Endianness='B';
+            Parser->Channel_Total=(int8u)Channels;
+            Parser->ShouldContinueParsing=true;
+            #if MEDIAINFO_DEMUX
+                if (Config->Demux_Unpacketize_Get())
+                {
+                    Parser->Demux_Level=2; //Container
+                    Parser->Demux_UnpacketizeContainer=true;
+                    Demux_Level=4; //Intermediate
+                }
+            #endif //MEDIAINFO_DEMUX
+            Stream[Stream_ID].Parsers.push_back(Parser);
         }
         #endif
     }
