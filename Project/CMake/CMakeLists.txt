@@ -169,6 +169,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Caf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Celt.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_ChannelGrouping.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_ChannelSplitting.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Dsdiff.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Dsf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Dts.cpp

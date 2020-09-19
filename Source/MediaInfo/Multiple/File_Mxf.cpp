@@ -56,6 +56,9 @@
 #if defined(MEDIAINFO_SMPTEST0337_YES)
     #include "MediaInfo/Audio/File_ChannelGrouping.h"
 #endif
+#if defined(MEDIAINFO_SMPTEST0337_YES)
+    #include "MediaInfo/Audio/File_ChannelSplitting.h"
+#endif
 #if defined(MEDIAINFO_MPEGA_YES)
     #include "MediaInfo/Audio/File_Mpega.h"
 #endif
@@ -16399,10 +16402,13 @@ void File_Mxf::ChooseParser(const essences::iterator &Essence, const descriptors
                                                     switch (Code5)
                                                     {
                                                         case 0x01 :
+                                                        case 0x7E :
                                                         case 0x7F : if (Descriptor->second.ChannelCount==1) //PCM, but one file is found with Dolby E in it
                                                                         ChooseParser_ChannelGrouping(Essence, Descriptor);
                                                                     if (Descriptor->second.ChannelCount==2) //PCM, but one file is found with Dolby E in it
                                                                         ChooseParser_SmpteSt0337(Essence, Descriptor);
+                                                                    if (Descriptor->second.ChannelCount>2 && Descriptor->second.ChannelCount!=(int32u)-1) //PCM, but one file is found with Dolby E in it
+                                                                        ChooseParser_ChannelSplitting(Essence, Descriptor);
                                                         default   : return ChooseParser_Pcm(Essence, Descriptor);
                                                     }
                                         case 0x02 : //Compressed coding
@@ -16511,6 +16517,8 @@ void File_Mxf::ChooseParser__FromEssenceContainer(const essences::iterator &Esse
                                                                                                         ChooseParser_ChannelGrouping(Essence, Descriptor);
                                                                                                     if (Descriptor->second.ChannelCount==2) //PCM, but one file is found with Dolby E in it
                                                                                                         ChooseParser_SmpteSt0337(Essence, Descriptor);
+                                                                                                    if (Descriptor->second.ChannelCount>2 && Descriptor->second.ChannelCount!=(int32u)-1) //PCM, but one file is found with Dolby E in it
+                                                                                                        ChooseParser_ChannelSplitting(Essence, Descriptor);
                                                                                                     return ChooseParser_Pcm(Essence, Descriptor);
                                                                                         case 0x04 : return; //MPEG ES mappings with Stream ID
                                                                                         case 0x0A : return ChooseParser_Alaw(Essence, Descriptor);
@@ -17179,6 +17187,53 @@ void File_Mxf::ChooseParser_ChannelGrouping(const essences::iterator &Essence, c
     ChooseParser_Pcm(Essence, Descriptor);
 }
 
+//---------------------------------------------------------------------------
+void File_Mxf::ChooseParser_ChannelSplitting(const essences::iterator &Essence, const descriptors::iterator &Descriptor)
+{
+    Essence->second.StreamKind=Stream_Audio;
+
+    //Filling
+    #if defined(MEDIAINFO_SMPTEST0337_YES)
+        File_ChannelSplitting* Parser=new File_ChannelSplitting;
+        if (Descriptor!=Descriptors.end())
+        {
+            Parser->Channel_Total=Descriptor->second.ChannelCount;
+            if (Descriptor->second.BlockAlign<64)
+                Parser->BitDepth=(int8u)(Descriptor->second.BlockAlign*8/Descriptor->second.ChannelCount);
+            else if (Descriptor->second.QuantizationBits!=(int32u)-1)
+                Parser->BitDepth=(int8u)Descriptor->second.QuantizationBits;
+            std::map<std::string, Ztring>::const_iterator i=Descriptor->second.Infos.find("SamplingRate");
+            if (i!=Descriptor->second.Infos.end())
+                Parser->SamplingRate=i->second.To_int16u();
+            i=Descriptor->second.Infos.find("Format_Settings_Endianness");
+            if (i!=Descriptor->second.Infos.end())
+            {
+                if (i->second==__T("Big"))
+                    Parser->Endianness='B';
+                else
+                    Parser->Endianness='L';
+            }
+            else
+                Parser->Endianness='L';
+        }
+        else
+            Parser->Endianness='L';
+        Parser->Aligned=true;
+
+        #if MEDIAINFO_DEMUX
+            if (Demux_UnpacketizeContainer)
+            {
+                Parser->Demux_Level=2; //Container
+                Parser->Demux_UnpacketizeContainer=true;
+            }
+        #endif //MEDIAINFO_DEMUX
+
+        Essence->second.Parsers.push_back(Parser);
+    #endif //defined(MEDIAINFO_SMPTEST0337_YES)
+
+    //Adding PCM
+    ChooseParser_Pcm(Essence, Descriptor);
+}
 //---------------------------------------------------------------------------
 void File_Mxf::ChooseParser_Mpega(const essences::iterator &Essence, const descriptors::iterator &Descriptor)
 {
