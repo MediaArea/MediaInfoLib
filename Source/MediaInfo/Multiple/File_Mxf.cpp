@@ -3031,12 +3031,26 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             }
 
             //Removing the 2 corresponding streams
-            NewPos1=(Essence->second.StreamPos_Initial/2)*2+StreamPos_Difference;
-            size_t NewPos2=NewPos1+1;
+            NewPos1=Essence->second.StreamPos_Initial-1+StreamPos_Difference;
             ID=Ztring::ToZtring(Essence1->second.TrackID)+__T(" / ")+Ztring::ToZtring(Essence->second.TrackID);
 
-            Stream_Erase(NewKind, NewPos2);
+            Stream_Erase(NewKind, NewPos1+1);
             Stream_Erase(NewKind, NewPos1);
+
+            essences::iterator NextStream=Essence1;
+            ++NextStream;
+            size_t NewAudio_Count=Essence->second.Parsers[0]->Count_Get(Stream_Audio);
+            while (NextStream!=Essences.end())
+            {
+                if (NextStream->second.StreamKind==Stream_Audio)
+                {
+                    NextStream->second.StreamPos-=2;
+                    NextStream->second.StreamPos+=NewAudio_Count;
+                    NextStream->second.StreamPos_Initial-=2;
+                    NextStream->second.StreamPos_Initial+=NewAudio_Count;
+                }
+                ++NextStream;
+            }
         }
         else
         {
@@ -3079,14 +3093,6 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
                 }
             }
         }
-
-        //Positioning other streams
-        for (essences::iterator Essence_Temp=Essence; Essence_Temp!=Essences.end(); ++Essence_Temp)
-            if (!Essence_Temp->second.Parsers.empty() && Essence_Temp->second.Parsers[0]->Count_Get(Stream_Audio))
-            {
-                Essence_Temp->second.StreamPos-=2; //ChannelGrouping
-                Essence_Temp->second.StreamPos+=(*(Essence_Temp->second.Parsers.begin()))->Count_Get(Stream_Audio);
-            }
     }
     else //Normal
     {
