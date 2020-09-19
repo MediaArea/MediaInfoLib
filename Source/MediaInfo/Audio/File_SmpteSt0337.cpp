@@ -1391,6 +1391,7 @@ void File_SmpteSt0337::Data_Parse()
         Buffer_Offset=Save_Buffer_Offset;
         Buffer_Size=Save_Buffer_Size;
         File_Offset-=Buffer_Offset;
+        Element_Size=Save_Element_Size;
     }
 
     // Guard band
