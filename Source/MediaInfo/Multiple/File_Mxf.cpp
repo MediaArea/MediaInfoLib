@@ -17266,6 +17266,8 @@ void File_Mxf::ChooseParser_Pcm(const essences::iterator &Essence, const descrip
             }
         #endif //MEDIAINFO_DEMUX
 
+        if (Essence->second.Parsers.empty())
+            Parser->Frame_Count_Valid=1;
         Essence->second.Parsers.push_back(Parser);
     #endif
 }

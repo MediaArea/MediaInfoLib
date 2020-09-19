@@ -374,7 +374,7 @@ bool File_SmpteSt0337::Synchronize()
     // Synchronizing
     while (Buffer_Offset+16<=Buffer_Size)
     {
-        if (!Status[IsAccepted] && !IsSub && File_Offset_FirstSynched==(int64u)-1 && Buffer_TotalBytes+Buffer_Offset>=Buffer_TotalBytes_FirstSynched_Max)
+        if (!Status[IsAccepted] && File_Offset_FirstSynched==(int64u)-1 && Buffer_TotalBytes+Buffer_Offset>=Buffer_TotalBytes_FirstSynched_Max)
         {
             Reject();
             return false;
