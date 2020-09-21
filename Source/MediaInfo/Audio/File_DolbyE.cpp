@@ -642,8 +642,19 @@ void File_DolbyE::Streams_Fill()
             Fill(Stream_Audio, StreamPos_Last, "Title_FromStream", description_text_Values[ProgramNumber].Previous);
             Fill_SetOptions(Stream_Audio, StreamPos_Last, "Title_FromStream", "N NT");
         }
+
+        if (FrameSizes.size()==1 && DolbyE_Channels[ProgramConfiguration])
+        {
+            Fill(Stream_Audio, StreamPos_Last, Audio_BitRate, FrameSizes.begin()->first*8*Mpegv_frame_rate[FrameRate]*DolbyE_Channels_PerProgram(ProgramConfiguration, ProgramNumber)/DolbyE_Channels[ProgramConfiguration], 0);
+        }
     }
-    Fill(Stream_General, 0, General_OverallBitRate, Element_Size*8*Mpegv_frame_rate[FrameRate], 0);
+    if (FrameSizes.size()==1)
+    {
+        Fill(Stream_General, 0, General_OverallBitRate, FrameSizes.begin()->first *8*Mpegv_frame_rate[FrameRate], 0);
+        Fill(Stream_Audio, 0, Audio_BitRate_Encoded, FrameSizes.begin()->first*8*Mpegv_frame_rate[FrameRate], 0);
+        for (size_t i=1; i<Count_Get(Stream_Audio); i++)
+            Fill(Stream_Audio, i, Audio_BitRate_Encoded, 0, 0, true);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -782,6 +793,8 @@ void File_DolbyE::Header_Parse()
 //---------------------------------------------------------------------------
 void File_DolbyE::Data_Parse()
 {
+    FrameSizes[Element_Size]++;
+
     //In case of scrambling
     const int8u*    Save_Buffer=NULL;
     size_t          Save_Buffer_Offset=0;

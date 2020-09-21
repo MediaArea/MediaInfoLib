@@ -64,6 +64,7 @@ private :
     int8u   BitDepth;
     bool    ScrambledBitStream;
     int8u*  Descrambled_Buffer; //Used in case of scrambled bitstream
+    std::map<int64u, int64u> FrameSizes;
     int64u  GuardBand_Before_Initial;
     int64u  GuardBand_After_Initial;
     struct description_text_value
