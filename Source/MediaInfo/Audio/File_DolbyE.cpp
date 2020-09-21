@@ -641,6 +641,10 @@ File_DolbyE::File_DolbyE()
 void File_DolbyE::Streams_Fill()
 {
     Fill(Stream_General, 0, General_Format, "Dolby E");
+    int8u DolbyE_Audio_Pos=0;
+    for (size_t i=0; i<8; i++)
+        if (channel_subsegment_sizes[i].size()>1)
+            DolbyE_Audio_Pos=(int8u)-1;
     for (int8u program=0; program<DolbyE_Programs[program_config]; program++)
     {
         Stream_Prepare(Stream_Audio);
@@ -651,6 +655,16 @@ void File_DolbyE::Streams_Fill()
         Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, DolbyE_ChannelPositions_PerProgram(program_config, program));
         Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions_String2, DolbyE_ChannelPositions2_PerProgram(program_config, program));
         Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, DolbyE_ChannelLayout_PerProgram(program_config, program));
+        int32u Program_Size=0;
+        if (DolbyE_Audio_Pos!=(int8u)-1)
+            for (int8u Pos=0; Pos<DolbyE_Channels_PerProgram(program_config, program); Pos++)
+                Program_Size+=channel_subsegment_size[DolbyE_Audio_Pos+Pos];
+        if (!Mpegv_frame_rate_type[program_config])
+            Program_Size*=2; //Low bit rate, 2 channel component per block
+        Program_Size*=bit_depth;
+        Fill(Stream_Audio, StreamPos_Last, Audio_BitRate, Program_Size*Mpegv_frame_rate[frame_rate_code], 0);
+        if (DolbyE_Audio_Pos!=(int8u)-1)
+            DolbyE_Audio_Pos+=DolbyE_Channels_PerProgram(program_config, program);
         Streams_Fill_PerProgram();
 
         if (program<description_text_Values.size())
@@ -1085,7 +1099,10 @@ void File_DolbyE::metadata_segment()
     Element_End0();
     Skip_S1( 8,                                                 "metadata_reserved_bits");
     for (int8u Channel=0; Channel<DolbyE_Channels[program_config]; Channel++)
+    {
         Get_S2 (10, channel_subsegment_size[Channel],           "channel_subsegment_size");
+        channel_subsegment_sizes[Channel][channel_subsegment_size[Channel]]++;
+    }
     if (!Mpegv_frame_rate_type[frame_rate_code])
         Get_S1 ( 8, metadata_extension_segment_size,            "metadata_extension_segment_size");
     else

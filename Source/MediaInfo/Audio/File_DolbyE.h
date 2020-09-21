@@ -78,6 +78,7 @@ private :
     bool    key_present;
     int8u*  Descrambled_Buffer; //Used in case of key_present
     std::map<int64u, int64u> FrameSizes;
+    std::map<int16u, int64u> channel_subsegment_sizes[8];
     int64u  GuardBand_Before_Initial;
     int64u  GuardBand_After_Initial;
     struct description_text_value
