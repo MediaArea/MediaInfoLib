@@ -284,7 +284,7 @@ void File_Png::IHDR()
             switch (Compression_method)
             {
                 case 0 :
-                    Fill(StreamKind_Last, 0, "Format_Compression", "LZ77");
+                    Fill(StreamKind_Last, 0, "Format_Compression", "Deflate");
                     break;
                 default: ;
             }
