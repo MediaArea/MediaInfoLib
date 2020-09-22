@@ -1374,7 +1374,9 @@ void File__Analyze::Streams_Finish_InterStreams()
         for (size_t StreamKind_Pos=Stream_General+1; StreamKind_Pos<Stream_Menu; StreamKind_Pos++)
             for (size_t Pos=0; Pos<Count_Get((stream_t)StreamKind_Pos); Pos++)
             {
-                int64u StreamXX_StreamSize=Retrieve((stream_t)StreamKind_Pos, Pos, Fill_Parameter((stream_t)StreamKind_Pos, Generic_StreamSize)).To_int64u();
+                int64u StreamXX_StreamSize=Retrieve((stream_t)StreamKind_Pos, Pos, Fill_Parameter((stream_t)StreamKind_Pos, Generic_StreamSize_Encoded)).To_int64u();
+                if (!StreamXX_StreamSize)
+                    StreamXX_StreamSize=Retrieve((stream_t)StreamKind_Pos, Pos, Fill_Parameter((stream_t)StreamKind_Pos, Generic_StreamSize)).To_int64u();
                 if (StreamXX_StreamSize>0 || StreamKind_Pos==Stream_Text)
                     StreamSize-=StreamXX_StreamSize;
                 else
