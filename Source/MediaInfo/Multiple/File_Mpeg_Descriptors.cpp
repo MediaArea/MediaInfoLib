@@ -3454,7 +3454,12 @@ void File_Mpeg_Descriptors::Descriptor_B0()
         Get_SB (   rpu_present_flag,                            "rpu_present_flag");
         Get_SB (   el_present_flag,                             "el_present_flag");
         Get_SB (   bl_present_flag,                             "bl_present_flag");
-        if (Data_BS_Remain())
+        if (!bl_present_flag && Data_BS_Remain()>=20)
+        {
+            Skip_S2(13,                                         "dependency_pid");
+            Skip_S1( 3,                                         "reserved");
+        }
+        else if (Data_BS_Remain())
         {
             Get_S1 (4, dv_bl_signal_compatibility_id,           "dv_bl_signal_compatibility_id"); // in dv_version_major 2 only if based on specs but it was confirmed to be seen in dv_version_major 1 too and it does not hurt (value 0 means no new display)
             if (End<Data_BS_Remain())
