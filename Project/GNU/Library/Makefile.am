@@ -207,6 +207,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Video/File_Avc_Duplicate.cpp \
                        ../../../Source/MediaInfo/Video/File_AvsV.cpp \
                        ../../../Source/MediaInfo/Video/File_Canopus.cpp \
+                       ../../../Source/MediaInfo/Video/File_CineForm.cpp \
                        ../../../Source/MediaInfo/Video/File_Dirac.cpp \
                        ../../../Source/MediaInfo/Video/File_DolbyVisionMetadata.cpp \
                        ../../../Source/MediaInfo/Video/File_Ffv1.cpp \

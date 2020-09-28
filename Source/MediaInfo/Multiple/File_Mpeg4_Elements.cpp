@@ -43,6 +43,9 @@
 #if defined(MEDIAINFO_AVC_YES)
     #include "MediaInfo/Video/File_Avc.h"
 #endif
+#if defined(MEDIAINFO_CINEFORM_YES)
+    #include "MediaInfo/Video/File_CineForm.h"
+#endif
 #if defined(MEDIAINFO_FFV1_YES)
     #include "MediaInfo/Video/File_Ffv1.h"
 #endif
@@ -5887,6 +5890,13 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                     #if MEDIAINFO_DEMUX
                         Streams[moov_trak_tkhd_TrackID].Demux_Level=4; //Intermediate
                     #endif //MEDIAINFO_DEMUX
+                }
+            #endif
+            #if defined(MEDIAINFO_CINEFORM_YES)
+                if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Mpeg4, Codec, InfoCodecID_Format)==__T("CineForm"))
+                {
+                    File_CineForm* Parser=new File_CineForm;
+                    Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
                 }
             #endif
 

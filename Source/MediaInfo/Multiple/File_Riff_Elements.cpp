@@ -167,6 +167,9 @@ std::string ExtensibleWave_ChannelMask_ChannelLayout(int32u ChannelMask)
     #include "MediaInfo/Multiple/File_Ogg.h"
     #include "MediaInfo/Multiple/File_Ogg_SubElement.h"
 #endif
+#if defined(MEDIAINFO_CINEFORM_YES)
+    #include "MediaInfo/Video/File_CineForm.h"
+#endif
 #if defined(MEDIAINFO_FFV1_YES)
     #include "MediaInfo/Video/File_Ffv1.h"
 #endif
@@ -1897,6 +1900,13 @@ void File_Riff::AVI__hdlr_strl_strf_vids()
         File_Ffv1* Parser=new File_Ffv1;
         Parser->Width=Width;
         Parser->Height=Height;
+        Stream[Stream_ID].Parsers.push_back(Parser);
+    }
+    #endif
+    #if defined(MEDIAINFO_CINEFORM_YES)
+    else if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Riff, Ztring().From_CC4(Compression), InfoCodecID_Format)==__T("CineForm"))
+    {
+        File_CineForm* Parser=new File_CineForm;
         Stream[Stream_ID].Parsers.push_back(Parser);
     }
     #endif

@@ -323,6 +323,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Avc_Duplicate.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_AvsV.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Canopus.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_CineForm.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Dirac.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_DolbyVisionMetadata.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Ffv1.cpp
