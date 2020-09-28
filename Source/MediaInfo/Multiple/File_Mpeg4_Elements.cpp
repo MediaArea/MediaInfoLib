@@ -58,6 +58,9 @@
 #if defined(MEDIAINFO_MPEGV_YES)
     #include "MediaInfo/Video/File_Mpegv.h"
 #endif
+#if defined(MEDIAINFO_PNG_YES)
+    #include "MediaInfo/Image/File_Png.h"
+#endif
 #if defined(MEDIAINFO_PRORES_YES)
     #include "MediaInfo/Video/File_ProRes.h"
 #endif
@@ -5890,6 +5893,14 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                     #if MEDIAINFO_DEMUX
                         Streams[moov_trak_tkhd_TrackID].Demux_Level=4; //Intermediate
                     #endif //MEDIAINFO_DEMUX
+                }
+            #endif
+            #if defined(MEDIAINFO_PNG_YES)
+                if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Mpeg4, Codec, InfoCodecID_Format)==__T("PNG"))
+                {
+                    File_Png* Parser=new File_Png;
+                    Parser->StreamKind=Stream_Video;
+                    Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
                 }
             #endif
             #if defined(MEDIAINFO_CINEFORM_YES)
