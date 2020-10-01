@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.11)
 
 project(MediaInfoLib)
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
 
 set(MediaInfoLib_MAJOR_VERSION 20)
 set(MediaInfoLib_MINOR_VERSION 08)
