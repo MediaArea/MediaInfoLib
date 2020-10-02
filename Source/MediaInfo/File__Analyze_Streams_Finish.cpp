@@ -642,7 +642,7 @@ void File__Analyze::Streams_Finish_StreamOnly(stream_t StreamKind, size_t Pos)
         if (Duration==0)
             Duration=Retrieve(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_Duration)).To_float64();
         int64u StreamSize_Encoded=Retrieve(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_StreamSize_Encoded)).To_int64u();
-        if (Duration>0 && StreamSize_Encoded>0)
+        if (Duration>0)
             Fill(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_BitRate_Encoded), StreamSize_Encoded*8*1000/Duration, 0);
     }
 
@@ -658,10 +658,13 @@ void File__Analyze::Streams_Finish_StreamOnly(stream_t StreamKind, size_t Pos)
     //StreamSize from BitRate and Duration
     if (StreamKind!=Stream_Other && Retrieve(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_StreamSize)).empty() && !Retrieve(StreamKind, Pos, "BitRate").empty() && !Retrieve(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_Duration)).empty() && Retrieve(StreamKind, Pos, "BitRate").find(__T(" / "))==std::string::npos) //If not done the first time or by other routine
     {
-        int64u BitRate=Retrieve(StreamKind, Pos, "BitRate").To_int64u();
-        int64u Duration=Retrieve(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_Duration)).To_int64u();
+        float64 BitRate=Retrieve(StreamKind, Pos, "BitRate").To_float64();
+        float64 Duration=Retrieve(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_Duration)).To_float64();
         if (BitRate>0 && Duration>0)
-            Fill(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_StreamSize), BitRate*Duration/8/1000);
+        {
+            float64 StreamSize=BitRate*Duration/8/1000;
+            Fill(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_StreamSize), StreamSize, 0);
+        }
     }
 
     //Bit rate and maximum bit rate
@@ -993,6 +996,8 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
 void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
 {
     // 
+    if (Retrieve(Stream_Audio, Pos, Audio_StreamSize_Encoded)==Retrieve(Stream_Audio, Pos, Audio_StreamSize))
+        Clear(Stream_Audio, Pos, Audio_StreamSize_Encoded);
     if (Retrieve(Stream_Audio, Pos, Audio_BitRate_Encoded)==Retrieve(Stream_Audio, Pos, Audio_BitRate))
         Clear(Stream_Audio, Pos, Audio_BitRate_Encoded);
 
@@ -1103,13 +1108,17 @@ void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
     //Stream size
     if (Retrieve(Stream_Audio, Pos, Audio_StreamSize).empty() && Retrieve(Stream_Audio, Pos, Audio_BitRate_Mode)==__T("CBR"))
     {
-        int64u Duration=Retrieve(Stream_Audio, Pos, Audio_Duration).To_float64();
-        int64u BitRate=Retrieve(Stream_Audio, Pos, Audio_BitRate).To_float64();
-        int64u BitRate_Encoded=Retrieve(Stream_Audio, Pos, Audio_BitRate_Encoded).To_float64();
+        float64 Duration=Retrieve(Stream_Audio, Pos, Audio_Duration).To_float64();
+        float64 BitRate=Retrieve(Stream_Audio, Pos, Audio_BitRate).To_float64();
         if (Duration && BitRate)
-            Fill(Stream_Audio, Pos, Audio_StreamSize, Duration*BitRate/8/1000);
-        if (Duration && BitRate_Encoded)
-            Fill(Stream_Audio, Pos, Audio_StreamSize_Encoded, Duration*BitRate_Encoded/8/1000, 10, true);
+            Fill(Stream_Audio, Pos, Audio_StreamSize, Duration*BitRate/8/1000, 0, true);
+    }
+    if (Retrieve(Stream_Audio, Pos, Audio_StreamSize_Encoded).empty() && !Retrieve(Stream_Audio, Pos, Audio_BitRate_Encoded).empty() && Retrieve(Stream_Audio, Pos, Audio_BitRate_Mode)==__T("CBR"))
+    {
+        float64 Duration=Retrieve(Stream_Audio, Pos, Audio_Duration).To_float64();
+        float64 BitRate_Encoded=Retrieve(Stream_Audio, Pos, Audio_BitRate_Encoded).To_float64();
+        if (Duration)
+            Fill(Stream_Audio, Pos, Audio_StreamSize_Encoded, Duration*BitRate_Encoded/8/1000, 0, true);
     }
 
     //CBR/VBR
@@ -1374,7 +1383,11 @@ void File__Analyze::Streams_Finish_InterStreams()
         for (size_t StreamKind_Pos=Stream_General+1; StreamKind_Pos<Stream_Menu; StreamKind_Pos++)
             for (size_t Pos=0; Pos<Count_Get((stream_t)StreamKind_Pos); Pos++)
             {
-                int64u StreamXX_StreamSize=Retrieve((stream_t)StreamKind_Pos, Pos, Fill_Parameter((stream_t)StreamKind_Pos, Generic_StreamSize)).To_int64u();
+                int64u StreamXX_StreamSize=0;
+                if (!Retrieve((stream_t)StreamKind_Pos, Pos, Fill_Parameter((stream_t)StreamKind_Pos, Generic_StreamSize_Encoded)).empty())
+                    StreamXX_StreamSize+=Retrieve((stream_t)StreamKind_Pos, Pos, Fill_Parameter((stream_t)StreamKind_Pos, Generic_StreamSize_Encoded)).To_int64u();
+                else if (!Retrieve((stream_t)StreamKind_Pos, Pos, Fill_Parameter((stream_t)StreamKind_Pos, Generic_StreamSize)).empty())
+                    StreamXX_StreamSize+=Retrieve((stream_t)StreamKind_Pos, Pos, Fill_Parameter((stream_t)StreamKind_Pos, Generic_StreamSize)).To_int64u();
                 if (StreamXX_StreamSize>0 || StreamKind_Pos==Stream_Text)
                     StreamSize-=StreamXX_StreamSize;
                 else

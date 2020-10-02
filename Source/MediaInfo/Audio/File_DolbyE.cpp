@@ -659,7 +659,7 @@ void File_DolbyE::Streams_Fill()
         if (DolbyE_Audio_Pos!=(int8u)-1)
             for (int8u Pos=0; Pos<DolbyE_Channels_PerProgram(program_config, program); Pos++)
                 Program_Size+=channel_subsegment_size[DolbyE_Audio_Pos+Pos];
-        if (!Mpegv_frame_rate_type[program_config])
+        if (!Mpegv_frame_rate_type[frame_rate_code])
             Program_Size*=2; //Low bit rate, 2 channel component per block
         Program_Size*=bit_depth;
         Fill(Stream_Audio, StreamPos_Last, Audio_BitRate, Program_Size*Mpegv_frame_rate[frame_rate_code], 0);

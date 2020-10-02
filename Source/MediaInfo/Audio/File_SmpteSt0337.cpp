@@ -187,14 +187,6 @@ void File_SmpteSt0337::Streams_Fill()
         Fill(Parser);
         Merge(*Parser);
 
-        int64u OverallBitRate=Parser->Retrieve(Stream_General, 0, General_OverallBitRate).To_int64u();
-        if (OverallBitRate)
-        {
-            OverallBitRate*=Element_Size; OverallBitRate/=Element_Size-Stream_Bits*4/8;
-            OverallBitRate*=Container_Bits;
-            OverallBitRate/=Stream_Bits;
-            Fill(Stream_General, 0, General_OverallBitRate, OverallBitRate);
-        }
         if (Parser->Count_Get(Stream_Audio))
         {
             FrameRate=Retrieve(Stream_Audio, 0, Audio_FrameRate).To_float64();
@@ -228,6 +220,19 @@ void File_SmpteSt0337::Streams_Fill()
             // Maybe NTSC frame rate and 48 kHz.
             FrameSize=FrameSizes.begin()->first+((float64)Container_Bits)/4*3/5; //2x small then 3x big
         }
+        else
+        {
+            int64u FrameSize_Total=0;
+            int64u FrameSize_Count=0;
+            for (std::map<int64u, int64u>::iterator F=FrameSizes.begin(); F!=FrameSizes.end(); ++F)
+            {
+                FrameSize_Total+=F->first*F->second;
+                FrameSize_Count+=F->second;
+            }
+            if (FrameSize_Count>=10)
+                FrameSize=((float64)FrameSize_Total/FrameSize_Count);
+        }
+
         if (FrameSize)
         {
             float64 BitRate=FrameSize*8*FrameRate;
@@ -240,8 +245,16 @@ void File_SmpteSt0337::Streams_Fill()
         }
 
         //Underlying encoded bit rate has no meaning
-        for (size_t i=StartPosToClear; i<Count_Get(Stream_Audio); i++)
-            Clear(Stream_Audio, i, Audio_BitRate_Encoded);
+        if (StartPosToClear)
+        {
+            for (size_t i=StartPosToClear; i<Count_Get(Stream_Audio); i++)
+                Fill(Stream_Audio, i, Audio_BitRate_Encoded, 0, 10, true);
+        }
+        else
+        {
+            for (size_t i=0; i<Count_Get(Stream_Audio); i++)
+                Clear(Stream_Audio, i, Audio_BitRate_Encoded);
+        }
     }
 
     for (size_t Pos=0; Pos<Count_Get(StreamKind_Last); Pos++)
@@ -292,6 +305,13 @@ void File_SmpteSt0337::Streams_Finish()
                     Fill(StreamKind_Last, Pos, Fill_Parameter(StreamKind_Last, Generic_Duration), Retrieve(Stream_General, 0, General_Duration));
             }
         }
+    }
+
+    if (!IsSub && File_Size!=(int64u)-1)
+    {
+        Fill(Stream_Audio, 0, Audio_StreamSize_Encoded, File_Size, 10, true);
+        for (size_t Pos=1; Pos<Count_Get(Stream_Audio); Pos++)
+            Fill(Stream_Audio, Pos, Audio_StreamSize_Encoded, 0, 10, true);
     }
 }
 
