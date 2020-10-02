@@ -5381,6 +5381,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
                 Parser->BitDepth=(int8u)SampleSize;
                 Parser->Endianness=(Flags&0x02)?'B':'L';
                 Parser->Channel_Total=(int8u)Channels;
+                Parser->SamplingRate=SampleRate;
                 Parser->ShouldContinueParsing=true;
                 #if MEDIAINFO_DEMUX
                     if (Config->Demux_Unpacketize_Get())

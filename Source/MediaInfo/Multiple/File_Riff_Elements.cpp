@@ -751,7 +751,7 @@ void File_Riff::AIFF_COMM()
     Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, numChannels);
     Fill(Stream_Audio, StreamPos_Last, Audio_BitDepth, sampleSize);
     if (sampleRate)
-        Fill(Stream_Audio, StreamPos_Last, Audio_Duration, numSampleFrames/sampleRate*1000);
+        Fill(Stream_Audio, StreamPos_Last, Audio_Duration, numSampleFrames/sampleRate*1000, 0);
     Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, sampleRate, 0);
 
     //Compute the current codec ID
@@ -4023,6 +4023,7 @@ void File_Riff::Parser_Pcm(stream& StreamItem, int16u Channels, int16u BitsPerSa
         Parser->Endianness='B';
         Parser->Channel_Total=(int8u)Channels;
         Parser->ShouldContinueParsing=true;
+        Parser->SamplingRate=48000;
         #if MEDIAINFO_DEMUX
             if (Config->Demux_Unpacketize_Get())
             {

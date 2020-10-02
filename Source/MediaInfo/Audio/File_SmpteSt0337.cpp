@@ -220,6 +220,19 @@ void File_SmpteSt0337::Streams_Fill()
             // Maybe NTSC frame rate and 48 kHz.
             FrameSize=FrameSizes.begin()->first+((float64)Container_Bits)/4*3/5; //2x small then 3x big
         }
+        else
+        {
+            int64u FrameSize_Total=0;
+            int64u FrameSize_Count=0;
+            for (std::map<int64u, int64u>::iterator F=FrameSizes.begin(); F!=FrameSizes.end(); ++F)
+            {
+                FrameSize_Total+=F->first*F->second;
+                FrameSize_Count+=F->second;
+            }
+            if (FrameSize_Count>=10)
+                FrameSize=((float64)FrameSize_Total/FrameSize_Count);
+        }
+
         if (FrameSize)
         {
             float64 BitRate=FrameSize*8*FrameRate;
@@ -292,6 +305,13 @@ void File_SmpteSt0337::Streams_Finish()
                     Fill(StreamKind_Last, Pos, Fill_Parameter(StreamKind_Last, Generic_Duration), Retrieve(Stream_General, 0, General_Duration));
             }
         }
+    }
+
+    if (!IsSub && File_Size!=(int64u)-1)
+    {
+        Fill(Stream_Audio, 0, Audio_StreamSize_Encoded, File_Size, 10, true);
+        for (size_t Pos=1; Pos<Count_Get(Stream_Audio); Pos++)
+            Fill(Stream_Audio, Pos, Audio_StreamSize_Encoded, 0, 10, true);
     }
 }
 
