@@ -26,6 +26,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Audio/File_DolbyE.h"
+#include "MediaInfo/Audio/File_Aac.h"
 #include <cmath>
 using namespace std;
 //---------------------------------------------------------------------------
@@ -605,6 +606,323 @@ extern const float64 Mpegv_frame_rate[16];
 const bool Mpegv_frame_rate_type[16]=
 {false, false, false, false, false, false, true, true, true, false, false, false, false, false, false, false};
 
+
+//---------------------------------------------------------------------------
+static const int8u intermediate_spatial_format_object_count[8]=
+{
+    4,
+    8,
+    10,
+    14,
+    15,
+    30,
+    0,
+    0,
+};
+
+const char* sound_category_Values[4]=
+{
+    "",
+    "Dialog",
+    "",
+    "",
+};
+const char* hp_render_mode_Values[4]=
+{
+    "Bypassed",
+    "Near",
+    "Far",
+    "",
+};
+string default_target_device_config_Value(int32u config)
+{
+    string Value;
+    if (config&0x1)
+        Value+="Stereo / ";
+    if (config&0x2)
+        Value+="Surround / ";
+    if (config&0x4)
+        Value+="Immersive / ";
+    if (!Value.empty())
+        Value.resize(Value.size()-3);
+    return Value;
+}
+struct pos3d
+{
+    int8u x;
+    int8u y;
+    int8u z;
+    const char* Value;
+};
+int16u mgi_6bit_unsigned_to_oari_Q15[0x40]=
+{
+      0,   529,  1057,  1586,  2114,  2643,  3171,  3700,
+   4228,  4757,  5285,  5814,  6342,  6871,  7399,  7928,
+   8456,  8985,  9513, 10042, 10570, 11099, 11627, 12156,
+  12684, 13213, 13741, 14270, 14798, 15327, 15855, 16384,
+  16913, 17441, 17970, 18498, 19027, 19555, 20084, 20612,
+  21141, 21669, 22198, 22726, 23255, 23783, 24312, 24840,
+  25369, 25897, 26426, 26954, 27483, 28011, 28540, 29068,
+  29597, 30125, 30654, 31182, 31711, 32239, 32767, 32767
+};
+
+int16u mgi_4bit_unsigned_to_oari_Q15[0x10]=
+{
+      0,  2185,  4369,  6554,  8738, 10923, 13107, 15292,
+  17476, 19661, 21845, 24030, 26214, 28399, 30583, 32767
+};
+
+int mgi_bitstream_val_to_Q15(int value, int8u num_bits)
+{
+    bool sign;
+    if (value<0)
+    {
+        sign=true;
+        value=-value;
+    }
+    else
+        sign=false;
+
+    int16u* Table;
+    switch (num_bits)
+    {
+        case 4: Table=mgi_4bit_unsigned_to_oari_Q15; break;
+        case 6: Table=mgi_6bit_unsigned_to_oari_Q15; break;
+        default: return 0; //Problem
+    }
+    int decoded=Table[value];
+
+    return sign?-decoded:decoded;
+}
+
+int mgi_bitstream_pos_z_to_Q15(bool pos_z_sign, int8u pos_z_bits)
+{
+    if (pos_z_bits == 0xf) {
+        if (pos_z_sign == 1) /* +1 */ {
+            return(32767);
+        }
+        else /* -1 */ {
+            return(-32768);
+        }
+    }
+    else {
+        /* Negative number */
+        if (pos_z_sign == 1) {
+            return(mgi_bitstream_val_to_Q15(pos_z_bits, 4));
+        }
+        else {
+            return(mgi_bitstream_val_to_Q15(-pos_z_bits, 4));
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
+struct speaker_info
+{
+    int8u AzimuthAngle; //0 to 180 (right, if AzimuthDirection is false) or 179 (left, if AzimuthDirection is true)
+    int8s ElevationDirectionAngle; //-90 (bottom) to 90 (top)
+    enum flag
+    {
+        None                            = 0,
+        AzimuthDirection                = 1<<0, // true = right
+        isLFE                           = 1<<1,
+    };
+    int8u Flags;
+};
+bool operator== (const speaker_info& L, const speaker_info& R)
+{
+    return L.AzimuthAngle==R.AzimuthAngle
+        && L.ElevationDirectionAngle==R.ElevationDirectionAngle
+        && L.Flags==R.Flags;
+}
+extern string Aac_ChannelLayout_GetString(const Aac_OutputChannel* const OutputChannels, size_t OutputChannels_Size);
+static const size_t SpeakerInfos_Size=43;
+static const speaker_info SpeakerInfos[SpeakerInfos_Size] =
+{
+    {  30,   0, speaker_info::AzimuthDirection },
+    {  30,   0, speaker_info::None },
+    {   0,   0, speaker_info::None },
+    {   0, -15,                                 speaker_info::isLFE },
+    { 110,   0, speaker_info::AzimuthDirection },
+    { 110,   0, speaker_info::None },
+    {  22,   0, speaker_info::AzimuthDirection },
+    {  22,   0, speaker_info::None },
+    { 135,   0, speaker_info::AzimuthDirection },
+    { 135,   0, speaker_info::None },
+    { 180,   0, speaker_info::None },
+    { 135,   0, speaker_info::AzimuthDirection },
+    { 135,   0, speaker_info::None },
+    {  90,   0, speaker_info::AzimuthDirection },
+    {  90,   0, speaker_info::None },
+    {  60,   0, speaker_info::AzimuthDirection },
+    {  60,   0, speaker_info::None },
+    {  30,  35, speaker_info::AzimuthDirection },
+    {  30,  35, speaker_info::None },
+    {   0,  35, speaker_info::None },
+    { 135,  35, speaker_info::AzimuthDirection },
+    { 135,  35, speaker_info::None },
+    { 180,  35, speaker_info::None },
+    {  90,  35, speaker_info::AzimuthDirection },
+    {  90,  35, speaker_info::None },
+    {   0,  90, speaker_info::None },
+    {  45, -15,                                 speaker_info::isLFE },
+    {  45, -15, speaker_info::AzimuthDirection },
+    {  45, -15, speaker_info::None },
+    {   0, -15, speaker_info::None },
+    { 110,  35, speaker_info::AzimuthDirection },
+    { 110,  35, speaker_info::None },
+    {  45,  35, speaker_info::AzimuthDirection },
+    {  45,  35, speaker_info::None },
+    {  45,   0, speaker_info::AzimuthDirection },
+    {  45,   0, speaker_info::None },
+    {  45, -15, speaker_info::None | speaker_info::isLFE },
+    {   2,   0, speaker_info::AzimuthDirection },
+    {   2,   0, speaker_info::None },
+    {   1,   0, speaker_info::AzimuthDirection },
+    {   1,   0, speaker_info::None },
+    { 150,   0, speaker_info::AzimuthDirection },
+    { 150,   0, speaker_info::None }, 
+};
+
+struct angles
+{
+    int Azimuth;
+    int Elevation;
+
+    angles()
+    {}
+
+    angles(int theta, int phi) :
+        Azimuth(theta),
+        Elevation(phi)
+    {}
+};
+Aac_OutputChannel AnglesToChannelName(angles Angles)
+{
+    speaker_info SpeakerInfo;
+    if (Angles.Azimuth<0)
+    {
+        SpeakerInfo.AzimuthAngle=(int8u)-Angles.Azimuth;
+        SpeakerInfo.Flags=speaker_info::AzimuthDirection;
+    }
+    else
+    {
+        SpeakerInfo.AzimuthAngle=Angles.Azimuth;
+        SpeakerInfo.Flags=speaker_info::None;
+    }
+    SpeakerInfo.ElevationDirectionAngle=Angles.Elevation;
+
+    for (size_t i=0; i<SpeakerInfos_Size; i++)
+        if (SpeakerInfos[i]==SpeakerInfo)
+            return (Aac_OutputChannel)i;
+    return CH_MAX;
+}
+string ToAngle3Digits(int Value)
+{
+    string ToReturn=Ztring::ToZtring(Value).To_UTF8();
+    ToReturn.insert(0, 3-ToReturn.size(), '0');
+    return ToReturn;
+}
+angles mgi_bitstream_pos_ToAngles(int x_int, int y_int, int z_int)
+{
+    //Center becomes 0 and edges +/-1
+    float x=(((float)x_int)*2-32768)/32768;
+    float y=(((float)y_int)*2-32768)/32768;
+    float z=((float)z_int)/32768;
+
+    if (!x && !y)
+    {
+        if (z>0)
+            return angles(0, 90);
+        else if (z<0)
+            return angles(0, -90);
+        return angles(0, 0); // Should not happen (is the center in practice)
+    }
+    else
+    {
+        angles ToReturn;
+        
+        float radius=sqrt(x*x+y*y+z*z);
+        float theta_float=round(atan2(y, x)*180/3.14159265359/5)*5;
+        ToReturn.Azimuth=float32_int32s(theta_float);
+        float phi_float=round(acos(z/radius)*180/3.14159265359);
+        ToReturn.Elevation=float32_int32s(phi_float);
+
+        //Reference is front of viewer
+        if (ToReturn.Azimuth<90)
+            ToReturn.Azimuth+=90;
+        else
+            ToReturn.Azimuth-=270;
+        ToReturn.Elevation=90-ToReturn.Elevation;
+
+        return ToReturn;
+    }
+}
+
+string Angles2String(angles Angles)
+{
+    string ToReturn;
+
+    //Elevation
+    switch (Angles.Elevation)
+    {
+        case   0:   ToReturn+='M'; break;
+        case  90:   ToReturn+='T'; break;
+        case -90:   ToReturn+='X'; break; //No standard for that
+        default :   ToReturn+=(Angles.Elevation>0?'U':'B');
+                    //if (Angles.phi!=35 && Angles.phi!=-15)
+                        ToReturn+=ToAngle3Digits(Angles.Elevation);
+    }
+
+    ToReturn+='_';
+
+    //Azimuth
+    if (Angles.Azimuth<0)
+        ToReturn+='L';
+    else if (Angles.Azimuth>0 && Angles.Azimuth!=180)
+        ToReturn+='R';
+    ToReturn+=ToAngle3Digits(Angles.Azimuth<0?-Angles.Azimuth:Angles.Azimuth);
+
+    return ToReturn;
+}
+
+string Angles2KnownChannelName(angles& Angles)
+{
+    //Exception handling
+    int Azimuth;
+    if (Angles.Azimuth==-180)
+        Azimuth=180;
+    else
+        Azimuth=Angles.Azimuth;
+    int Elevation;
+    if (Angles.Elevation>=35 && Angles.Elevation<=45)
+        Elevation=35;
+    else
+        Elevation=Angles.Elevation;
+
+    Aac_OutputChannel KnownChannel=AnglesToChannelName(angles(Azimuth, Elevation));
+    if (KnownChannel!=CH_MAX)
+        return Aac_ChannelLayout_GetString(&KnownChannel, 1);
+    else
+        return Angles2String(Angles);
+}
+
+//---------------------------------------------------------------------------
+extern int32u AC3_bed_channel_assignment_mask_2_nonstd(int16u bed_channel_assignment_mask);
+extern Ztring AC3_nonstd_bed_channel_assignment_mask_ChannelLayout(int32u nonstd_bed_channel_assignment_mask);
+size_t BedChannelConfiguration_ChannelCount(int32u nonstd_bed_channel_assignment_mask)
+{
+    Ztring BedChannelConfiguration=AC3_nonstd_bed_channel_assignment_mask_ChannelLayout(nonstd_bed_channel_assignment_mask);
+    size_t BedChannelCount=0;
+    if (!BedChannelConfiguration.empty())
+        for (size_t i=0; i<BedChannelConfiguration.size();)
+        {
+            BedChannelCount++;
+            i=BedChannelConfiguration.find(__T(' '), i+1);
+        }
+    return BedChannelCount;
+}
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -628,6 +946,10 @@ File_DolbyE::File_DolbyE()
     //Out
     GuardBand_After=0;
 
+    //ED2
+    Guardband_EMDF_PresentAndSize=0;
+    num_desc_packets_m1=(int32u)-1;
+
     //Temp
     SMPTE_time_code_StartTimecode=(int64u)-1;
     FrameInfo.DTS=0;
@@ -641,6 +963,13 @@ File_DolbyE::File_DolbyE()
 void File_DolbyE::Streams_Fill()
 {
     Fill(Stream_General, 0, General_Format, "Dolby E");
+
+    if (!Presets.empty())
+    {
+        Streams_Fill_ED2();
+        return;
+    }
+
     int8u DolbyE_Audio_Pos=0;
     for (size_t i=0; i<8; i++)
         if (channel_subsegment_sizes[i].size()>1)
@@ -717,6 +1046,341 @@ void File_DolbyE::Streams_Fill_PerProgram()
         {
             Fill(Stream_General, 0, General_OverallBitRate, FrameSizes.begin()->first*8*Mpegv_frame_rate[frame_rate_code], 0);
             Fill(Stream_Audio, 0, Audio_BitRate_Encoded, FrameSizes.begin()->first*8*Mpegv_frame_rate[frame_rate_code], 0);
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_DolbyE::Streams_Fill_ED2()
+{
+    Stream_Prepare(Stream_Audio);
+    Fill(Stream_Audio, StreamPos_Last, Audio_Format, "Dolby ED2");
+    if (Guardband_EMDF_PresentAndSize)
+        Fill(Stream_Audio, StreamPos_Last, Audio_BitRate, Guardband_EMDF_PresentAndSize*8*Mpegv_frame_rate[frame_rate_code], 0);
+    size_t ChannelCount=DynObjects.size();
+    for (size_t p=0; p<BedInstances.size(); p++)
+        if (p<nonstd_bed_channel_assignment_masks.size())
+            ChannelCount+=BedChannelConfiguration_ChannelCount(nonstd_bed_channel_assignment_masks[p]);
+    if (ChannelCount)
+        Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, ChannelCount);
+    Streams_Fill_PerProgram();
+
+    for (size_t p=0; p<Presets.size(); p++)
+    {
+        const preset& Presentation_Current=Presets[p];
+
+        string Title;
+        if (p<Presets_More.size() && !Presets_More[p].description.empty())
+            Title=Presets_More[p].description;
+        
+        string Summary=Title;
+        if (Summary.empty())
+            Summary="Yes";
+
+        string P="Presentation"+Ztring::ToZtring(p).To_UTF8();
+        Fill(Stream_Audio, 0, P.c_str(), Summary);
+        if (!Title.empty())
+        {
+            Fill(Stream_Audio, 0, (P+" Title").c_str(), Title);
+            Fill_SetOptions(Stream_Audio, 0, (P+" Title").c_str(), "N NTY");
+        }
+        Fill(Stream_Audio, 0, (P+" DefaultTargetDeviceConfig").c_str(), default_target_device_config_Value(Presentation_Current.default_target_device_config));
+        Fill_SetOptions(Stream_Audio, 0, (P+" DefaultTargetDeviceConfig").c_str(), "Y NTY");
+        for (size_t t=0; t<Presentation_Current.target_device_configs.size(); t++)
+        {
+            const preset::target_device_config& Target_Current=Presentation_Current.target_device_configs[t];
+            
+            string Summary2=default_target_device_config_Value(Target_Current.target_devices_mask);
+            if (Summary2.empty())
+                Summary2="Yes";
+
+            string T=P+" Target"+Ztring::ToZtring(t).To_UTF8();
+            Fill(Stream_Audio, 0, T.c_str(), Summary2);
+
+            Fill(Stream_Audio, 0, (T+" TargetDeviceConfig").c_str(), default_target_device_config_Value(Target_Current.target_devices_mask));
+            Fill_SetOptions(Stream_Audio, 0, (T+" TargetDeviceConfig").c_str(), "N NTY");
+
+            ZtringList GroupPos[2], GroupNum[2];
+            for (size_t i=0; i<Target_Current.md_indexes.size(); i++)
+            {
+                if (Target_Current.md_indexes[i]!=(int32u)-1)
+                {
+                    size_t I1, I2;
+                    if (i<DynObjects.size())
+                    {
+                        I1=i;
+                        I2=Target_Current.md_indexes[i];
+                        if (I2 && I2>DynObjects[I1].Alts.size()) // 0 = OAMD, else Alt - 1
+                            I2=0; // There is a problem
+                    }
+                    else
+                    {
+                        I1=i-DynObjects.size();
+                        I2=Target_Current.md_indexes[i];
+                        if (I2 && I2>BedInstances[I1].Alts.size()) // 0 = OAMD, else Alt - 1
+                            I2=0; // There is a problem
+                    }
+
+                    int j=i<DynObjects.size()?1:0;
+                    GroupPos[j].push_back(Ztring::ToZtring(I1));
+                    GroupNum[j].push_back(Ztring::ToZtring(I1+1));
+                    if (I2 )
+                    {
+                        GroupPos[j][GroupPos[j].size()-1]+=__T('-');
+                        GroupNum[j][GroupNum[j].size()-1]+=__T('-');
+                        GroupPos[j][GroupPos[j].size()-1]+=Ztring::ToZtring(I2-1);
+                        GroupNum[j][GroupNum[j].size()-1]+=Ztring::ToZtring(I2);
+                    }
+                }
+            }
+
+            for (size_t i=0; i<2; i++)
+            {
+                GroupPos[i].Separator_Set(0, __T(" + "));
+                Fill(Stream_Audio, 0, (T+(!i?" LinkedTo_Bed_Pos":" LinkedTo_Object_Pos")).c_str(), GroupPos[i].Read());
+                Fill_SetOptions(Stream_Audio, 0, (T+(!i?" LinkedTo_Bed_Pos":" LinkedTo_Object_Pos")).c_str(), "N NIY");
+                GroupNum[i].Separator_Set(0, __T(" + "));
+                Fill(Stream_Audio, 0, (T+(!i?" LinkedTo_Bed_Pos/String":" LinkedTo_Object_Pos/String")).c_str(), GroupNum[i].Read());
+                Fill_SetOptions(Stream_Audio, 0, (T+(!i?" LinkedTo_Bed_Pos/String":" LinkedTo_Object_Pos/String")).c_str(), "Y NIN");
+            }
+        }
+    }
+
+    // Computing the count of objects in bed instances
+    size_t Bed_Object_Count=0;
+
+    // Beds
+    for (size_t p=0; p<BedInstances.size(); p++)
+    {
+        const bed_instance& BedInstance=BedInstances[p];
+
+        string Summary;
+        if (Summary.empty())
+            Summary=AC3_nonstd_bed_channel_assignment_mask_ChannelLayout(nonstd_bed_channel_assignment_masks[p]).To_UTF8();
+        if (Summary.empty())
+            Summary="Yes";
+
+        string P=Ztring(__T("Bed")+Ztring::ToZtring(p)).To_UTF8();
+        Fill(Stream_Audio, 0, P.c_str(), Summary);
+
+        if (p<nonstd_bed_channel_assignment_masks.size())
+        {
+            Fill(Stream_Audio, StreamPos_Last, (P+" Channel(s)").c_str(), BedChannelConfiguration_ChannelCount(nonstd_bed_channel_assignment_masks[p]));
+            Fill_SetOptions(Stream_Audio, 0, (P+" Channel(s)").c_str(), "Y NTY");
+            Fill(Stream_Audio, 0, (P+" ChannelLayout").c_str(), AC3_nonstd_bed_channel_assignment_mask_ChannelLayout(nonstd_bed_channel_assignment_masks[p]));
+            Fill_SetOptions(Stream_Audio, 0, (P+" ChannelLayout").c_str(), "Y NTY");
+
+            // From OAMD
+            if (Bed_Object_Count<ObjectElements.size() && !ObjectElements[Bed_Object_Count].Alts.empty())
+            {
+                string A=P;
+
+                // Computing the count of objects in bed instances
+                size_t ThisBed_Object_Count=BedChannelConfiguration_ChannelCount(nonstd_bed_channel_assignment_masks[p]);
+
+                if (ThisBed_Object_Count)
+                {
+                    // Check if all same
+                    int8s obj_gain_db_Ref=ObjectElements[Bed_Object_Count].Alts[0].obj_gain_db;
+                    for (size_t o=1; o<ThisBed_Object_Count; o++)
+                    {
+                        int8s obj_gain_db=ObjectElements[Bed_Object_Count+o].Alts[0].obj_gain_db;
+                        if (obj_gain_db!=obj_gain_db_Ref)
+                        {
+                            obj_gain_db_Ref=INT8_MAX;
+                            break;
+                        }
+                    }
+                    if (obj_gain_db_Ref!=INT8_MAX)
+                    {
+                        // Same
+                        if (obj_gain_db_Ref==INT8_MIN)
+                            Fill_Measure(Stream_Audio, 0, (A+" Gain").c_str(), string("-infinite"), " dB");
+                        else
+                            Fill_Measure(Stream_Audio, 0, (A+" Gain").c_str(), obj_gain_db_Ref, " dB");
+                    }
+                    else
+                    {
+                        // Not same
+                        for (size_t o=0; o<ThisBed_Object_Count; o++)
+                        {
+                            const dyn_object::dyn_object_alt& DynObject_Current=ObjectElements[Bed_Object_Count+o].Alts[0];
+                            if (DynObject_Current.obj_gain_db!=INT8_MAX)
+                            {
+                                if (DynObject_Current.obj_gain_db==INT8_MIN)
+                                    Fill_Measure(Stream_Audio, 0, (A+" Gain").c_str(), string("-infinite"), " dB");
+                                else
+                                    Fill_Measure(Stream_Audio, 0, (A+" Gain").c_str(), DynObject_Current.obj_gain_db, " dB");
+                            }
+                        }
+                    }
+
+                }
+                Bed_Object_Count+=ThisBed_Object_Count;
+            }
+        }
+
+        for (size_t a=0; a<BedInstance.Alts.size(); a++)
+        {
+            const bed_instance::bed_alt& BedInstance_Current=BedInstance.Alts[a];
+
+            string Summary2;
+            if (Summary2.empty())
+                Summary2="Yes";
+
+            string A=P+Ztring(__T(" Alt")+Ztring::ToZtring(a)).To_UTF8();
+            Fill(Stream_Audio, 0, A.c_str(), Summary2);
+            if (BedInstance_Current.bed_gain_db!=INT8_MAX)
+            {
+                Fill_Measure(Stream_Audio, 0, (A+" Gain").c_str(), BedInstance_Current.bed_gain_db, " dB");
+            }
+        }
+
+        const substream_mapping& S=substream_mappings[DynObjects.size()+p];
+        {
+            Fill(Stream_Audio, 0, (P+" SubtstreamIdChannel").c_str(), Ztring::ToZtring(S.substream_id)+__T('-')+Ztring::ToZtring(S.channel_index));
+            Fill_SetOptions(Stream_Audio, 0, (P+" SubtstreamIdChannel").c_str(), "Y NTY");
+        }
+    }
+
+    // Dynamic objects
+    for (size_t p=0; p<DynObjects.size(); p++)
+    {
+        const dyn_object& DynObject=DynObjects[p];
+        string P=Ztring(__T("Object")+Ztring::ToZtring(p)).To_UTF8();
+
+        // From OAMD
+        Ztring Position_Cartesian;
+        string Position_Polar;
+        string ChannelLayout;
+        if (Bed_Object_Count<ObjectElements.size() && p<ObjectElements.size()-Bed_Object_Count && !ObjectElements[Bed_Object_Count+p].Alts.empty())
+        {
+            string A=P;
+            const dyn_object::dyn_object_alt& DynObject_Current=ObjectElements[Bed_Object_Count+p].Alts[0];
+            if (DynObject_Current.pos3d_x_bits!=(int8u)-1)
+            {
+                int x_32k=mgi_bitstream_val_to_Q15(DynObject_Current.pos3d_x_bits, 6);
+                int y_32k=mgi_bitstream_val_to_Q15(DynObject_Current.pos3d_y_bits, 6);
+                int z_32k=mgi_bitstream_pos_z_to_Q15(DynObject_Current.pos3d_z_sig, DynObject_Current.pos3d_z_bits);
+                Position_Cartesian=__T("x=")+Ztring::ToZtring((((float)x_32k)*2-32768)/32768, 1)+__T(" y=")+Ztring::ToZtring((((float)y_32k)*2-32768)/32768, 1)+__T(" z=")+Ztring::ToZtring(((float)z_32k)/32768, 1);
+                angles Angles=mgi_bitstream_pos_ToAngles(x_32k, y_32k, z_32k);
+                Position_Polar=Angles2String(Angles);
+                ChannelLayout=Angles2KnownChannelName(Angles);
+                if (ChannelLayout==Position_Polar)
+                    ChannelLayout.clear();
+            }
+        }
+
+        string Summary;
+        if (Summary.empty())
+            Summary=sound_category_Values[DynObject.sound_category];
+        if (Summary.empty())
+            Summary=ChannelLayout;
+        if (Summary.empty())
+            Summary=Position_Polar;
+        if (Summary.empty())
+            Summary="Yes";
+
+        Fill(Stream_Audio, 0, P.c_str(), Summary);
+
+        if (sound_category_Values[DynObject.sound_category][0])
+        {
+            Fill(Stream_Audio, 0, (P+" SoundCategory").c_str(), sound_category_Values[DynObject.sound_category]);
+            Fill_SetOptions(Stream_Audio, 0, (P+" SoundCategory").c_str(), "Y NTY");
+        }
+
+        // From OAMD
+        if (Bed_Object_Count<ObjectElements.size() && p<ObjectElements.size()-Bed_Object_Count && !ObjectElements[Bed_Object_Count+p].Alts.empty())
+        {
+            string A=P;
+            const dyn_object::dyn_object_alt& DynObject_Current=ObjectElements[Bed_Object_Count+p].Alts[0];
+            if (!ChannelLayout.empty())
+            {
+                Fill(Stream_Audio, 0, (A+" ChannelLayout").c_str(), ChannelLayout);
+                Fill_SetOptions(Stream_Audio, 0, (A+" ChannelLayout").c_str(), "Y NTY");
+            }
+            if (!Position_Polar.empty())
+            {
+                Fill(Stream_Audio, 0, (A+" Position_Polar").c_str(), Position_Polar);
+                Fill_SetOptions(Stream_Audio, 0, (A+" Position_Polar").c_str(), "Y NTY");
+            }
+            if (!Position_Cartesian.empty())
+            {
+                Fill(Stream_Audio, 0, (A+" Position_Cartesian").c_str(), Position_Cartesian);
+                Fill_SetOptions(Stream_Audio, 0, (A+" Position_Cartesian").c_str(), "Y NTY");
+            }
+            if (DynObject_Current.obj_gain_db!=INT8_MAX)
+            {
+                if (DynObject_Current.obj_gain_db==INT8_MIN)
+                    Fill_Measure(Stream_Audio, 0, (A+" Gain").c_str(), string("-infinite"), " dB");
+                else
+                    Fill_Measure(Stream_Audio, 0, (A+" Gain").c_str(), DynObject_Current.obj_gain_db, " dB");
+            }
+        }
+
+        for (size_t a=0; a<DynObject.Alts.size(); a++)
+        {
+            const dyn_object::dyn_object_alt& DynObject_Current=DynObject.Alts[a];
+            Ztring Position_Cartesian;
+            string Position_Polar;
+            string ChannelLayout;
+            if (DynObject_Current.pos3d_x_bits!=(int8u)-1)
+            {
+                int x_32k=mgi_bitstream_val_to_Q15(DynObject_Current.pos3d_x_bits, 6);
+                int y_32k=mgi_bitstream_val_to_Q15(DynObject_Current.pos3d_y_bits, 6);
+                int z_32k=mgi_bitstream_pos_z_to_Q15(DynObject_Current.pos3d_z_sig, DynObject_Current.pos3d_z_bits);
+                Position_Cartesian=__T("x=")+Ztring::ToZtring((((float)x_32k)*2-32768)/32768, 1)+__T(" y=")+Ztring::ToZtring((((float)y_32k)*2-32768)/32768, 1)+__T(" z=")+Ztring::ToZtring(((float)z_32k)/32768, 1);
+                angles Angles=mgi_bitstream_pos_ToAngles(x_32k, y_32k, z_32k);
+                Position_Polar=Angles2String(Angles);
+                ChannelLayout=Angles2KnownChannelName(Angles);
+                if (ChannelLayout==Position_Polar)
+                    ChannelLayout.clear();
+            }
+            string Summary2;
+            if (Summary2.empty())
+                Summary2=sound_category_Values[DynObject.sound_category];
+            if (Summary2.empty())
+                Summary2=ChannelLayout;
+            if (Summary2.empty())
+                Summary2=Position_Polar;
+            if (Summary2.empty())
+                Summary2="Yes";
+
+            string A=P+Ztring(__T(" Alt")+Ztring::ToZtring(a)).To_UTF8();
+            Fill(Stream_Audio, 0, A.c_str(), Summary2);
+            if (!ChannelLayout.empty())
+            {
+                Fill(Stream_Audio, 0, (A+" ChannelLayout").c_str(), ChannelLayout);
+                Fill_SetOptions(Stream_Audio, 0, (A+" ChannelLayout").c_str(), "Y NTY");
+            }
+            if (!Position_Polar.empty())
+            {
+                Fill(Stream_Audio, 0, (A+" Position_Polar").c_str(), Position_Polar);
+                Fill_SetOptions(Stream_Audio, 0, (A+" Position_Polar").c_str(), "Y NTY");
+            }
+            if (!Position_Cartesian.empty())
+            {
+                Fill(Stream_Audio, 0, (A+" Position_Cartesian").c_str(), Position_Cartesian);
+                Fill_SetOptions(Stream_Audio, 0, (A+" Position_Cartesian").c_str(), "Y NTY");
+            }
+            if (DynObject_Current.obj_gain_db!=INT8_MAX)
+            {
+                if (DynObject_Current.obj_gain_db==INT8_MIN)
+                    Fill_Measure(Stream_Audio, 0, (A+" Gain").c_str(), string("-infinite"), " dB");
+                else
+                    Fill_Measure(Stream_Audio, 0, (A+" Gain").c_str(), DynObject_Current.obj_gain_db, " dB");
+            }
+            if (DynObject_Current.hp_render_mode!=(int8u)-1)
+            {
+                Fill(Stream_Audio, 0, (A+" RenderMode").c_str(), hp_render_mode_Values[DynObject_Current.hp_render_mode]);
+                Fill_SetOptions(Stream_Audio, 0, (P + " RenderMode").c_str(), "Y NTY");
+            }
+        }
+
+        const substream_mapping& S=substream_mappings[p];
+        {
+            Fill(Stream_Audio, 0, (P+" SubtstreamIdChannel").c_str(), Ztring::ToZtring(S.substream_id)+__T('-')+Ztring::ToZtring(S.channel_index));
+            Fill_SetOptions(Stream_Audio, 0, (P+" SubtstreamIdChannel").c_str(), "Y NTY");
         }
     }
 }
@@ -809,6 +1473,8 @@ bool File_DolbyE::Synched_Test()
 void File_DolbyE::Read_Buffer_Unsynched()
 {
     description_text_Values.clear();
+    num_desc_packets_m1=(int32u)-1;
+    description_packet_data.clear();
 }
 
 //***************************************************************************
@@ -896,6 +1562,15 @@ void File_DolbyE::Data_Parse()
     meter_segment();
     BS_End();
 
+    //Check if there is content in padding
+    int16u Padding;
+    if (Element_Size-Element_Offset>=2)
+    {
+        Peek_B2(Padding);
+        if (Padding==0x5838)
+            guard_band();
+    }
+
     if (Element_Offset<Element_Size)
         Skip_XX(Element_Size-Element_Offset,                    "Unknown");
 
@@ -968,7 +1643,7 @@ void File_DolbyE::Data_Parse()
             FrameInfo.DTS+=FrameInfo.DUR;
         if (FrameInfo.PTS!=(int64u)-1)
             FrameInfo.PTS+=FrameInfo.DUR;
-        if (!Status[IsFilled] && (description_text_Values.empty() || Frame_Count>=32+1+1+32+1)) // max 32 chars (discarded) + ETX (discarded) + STX + max 32 chars + ETX
+        if (!Status[IsFilled] && ((description_packet_data.empty() && description_text_Values.empty()) || Frame_Count>=32+1+1+32+1)) // max 32 chars (discarded) + ETX (discarded) + STX + max 32 chars + ETX
             Fill("Dolby E");
     FILLING_END();
     if (Frame_Count==0 && Buffer_TotalBytes>Buffer_TotalBytes_FirstSynched_Max)
@@ -1097,7 +1772,9 @@ void File_DolbyE::metadata_segment()
             SMPTE_time_code_StartTimecode=TimeCode;
     }
     Element_End0();
-    Skip_S1( 8,                                                 "metadata_reserved_bits");
+    bool evolution_data_exists;
+    Get_SB (    evolution_data_exists,                          "evolution_data_exists");
+    Skip_S1( 7,                                                 "metadata_reserved_bits");
     for (int8u Channel=0; Channel<DolbyE_Channels[program_config]; Channel++)
     {
         Get_S2 (10, channel_subsegment_size[Channel],           "channel_subsegment_size");
@@ -1173,6 +1850,38 @@ void File_DolbyE::metadata_segment()
             Skip_BS(Data_BS_Remain()-End,                       "unknown");
         Element_End0();
     }
+    if (evolution_data_exists)
+    {
+        for (;;)
+        {
+            const size_t evolution_data_segment_id_Name_Size=2;
+            const char* const evolution_data_segment_id_Name[evolution_data_segment_id_Name_Size]=
+            {
+                "End",
+                "intelligent_loudness_evolution_data_segment",
+            };
+
+            Element_Begin1("evolution_data_segment");
+            int16u evolution_data_segment_length;
+            int8u evolution_data_segment_id;
+            Get_S1 ( 4, evolution_data_segment_id,              "evolution_data_segment_id"); Param_Info1C(evolution_data_segment_id<evolution_data_segment_id_Name_Size, evolution_data_segment_id_Name[evolution_data_segment_id]);
+            if (!evolution_data_segment_id)
+            {
+                Element_End0();
+                break;
+            }
+            Get_S2 (12, evolution_data_segment_length,          "evolution_data_segment_length");
+            size_t End=Data_BS_Remain()-evolution_data_segment_length;
+            switch (evolution_data_segment_id)
+            {
+                case  1: intelligent_loudness_evolution_data_segment(); break;
+                default: Skip_BS(evolution_data_segment_length, "evolution_data_segment (unknown)");
+            }
+            if (Data_BS_Remain()>End)
+                Skip_BS(Data_BS_Remain()-End,                   "unknown");
+            Element_End0();
+        }
+    }
     if (Data_BS_Remain()>metadata_segment_BitCountAfter)
         Skip_BS(Data_BS_Remain()-metadata_segment_BitCountAfter,"reserved_metadata_bits");
     Skip_S3(bit_depth,                                          "metadata_crc");
@@ -1197,6 +1906,1144 @@ void File_DolbyE::metadata_segment()
     }
 
     Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_DolbyE::guard_band()
+{
+    int8u* NewBuffer=NULL;
+    size_t Buffer_Offset_Save;
+    size_t Buffer_Size_Save;
+    int64u Element_Offset_Save;
+    int64u Element_Size_Save;
+
+    Element_Begin1("guard_band (with data)");
+    int16u element_length;
+    int8u element_id;
+    bool escape_code_valid;
+    Skip_B2(                                                    "sync_word");
+    BS_Begin();
+    Skip_S1( 3,                                                 "reserved");
+    Get_SB (    escape_code_valid,                              "escape_code_valid");
+    if (escape_code_valid)
+    {
+        int16u escape_code;
+        Get_S2 (12, escape_code,                                 "escape_code");
+        BS_End();
+        for (int64u i=Element_Offset; i+1<Element_Size; i++)
+        {
+            if ( Buffer[Buffer_Offset+i  ]     ==(escape_code>>4) && (Buffer[Buffer_Offset+i+1]>>4)==(escape_code&0x0F))
+            {
+                //0xABCD --> 0x078D
+                if (!NewBuffer)
+                {
+                    NewBuffer=new int8u[Element_Size-Element_Offset];
+                    memcpy(NewBuffer, Buffer+Buffer_Offset+Element_Offset, Element_Size-Element_Offset);
+                }
+                NewBuffer[i  -Element_Offset]=0x07;
+                NewBuffer[i+1-Element_Offset]=(NewBuffer[i+1-Element_Offset]&0x0F)|0x80;
+            }
+            if ((Buffer[Buffer_Offset+i  ]&0xF)==(escape_code>>8) &&  Buffer[Buffer_Offset+i+1]    ==(escape_code&0xFF))
+            {
+                //0xABCD --> 0xA078
+                if (!NewBuffer)
+                {
+                    NewBuffer=new int8u[Element_Size-Element_Offset];
+                    memcpy(NewBuffer, Buffer+Buffer_Offset+Element_Offset, Element_Size-Element_Offset);
+                }
+                NewBuffer[i  -Element_Offset]=(NewBuffer[i  -Element_Offset]&0xF0);
+                NewBuffer[i+1-Element_Offset]=0x78;
+            }
+        }
+        if (NewBuffer)
+        {
+            Buffer=NewBuffer;
+            Buffer_Offset_Save=Buffer_Offset;
+            Buffer_Size_Save=Buffer_Offset;
+            Element_Offset_Save=Element_Offset;
+            Element_Size_Save=Element_Size;
+            File_Offset+=Buffer_Offset+Element_Offset;
+            Buffer_Offset=0;
+            Buffer_Size=Element_Size-Element_Offset;
+            Element_Offset=0;
+            Element_Size=Buffer_Size;
+        }
+    }
+    else
+    {
+        Skip_S2(12,                                             "escape_code");
+        BS_End();
+    }
+    Get_B1 (    element_id,                                     "element_id");
+    Get_B2 (    element_length,                                 "element_length");
+    int64u After=Element_Offset+element_length;
+    switch (element_id)
+    {
+        case 0xBB: evo_frame(); break;
+        default: Skip_XX(element_length,                        "Unknown");
+    }
+    if (Element_Offset<After)
+        Skip_XX(After-Element_Offset,                           "Unknown");
+    else if (Element_Offset>After)
+    {
+        Param_Info1("Problem");
+        Element_Offset=After;
+    }
+    Skip_B2(                                                    "crc");
+    {
+        //CRC test
+        size_t Pos_End=Buffer_Offset+Element_Offset;
+        size_t Pos_Begin=Pos_End-(element_length+2); //+2 for CRC
+
+        int16u CRC=CRC_16_Compute(Buffer+Pos_Begin, Pos_End-Pos_Begin, 0, 0);
+        if (CRC)
+        {
+            // CRC is wrong
+            Param_Info1("crc NOK");
+        }
+        Element_End0();
+        int64u RemainingBytes=Element_Size-Element_Offset;
+        if (RemainingBytes && RemainingBytes<bit_depth/4)
+        {
+            bool HasContent=false;
+            size_t Offset=Buffer_Offset+(size_t)Element_Offset;
+            size_t Size=Buffer_Offset+(size_t)Element_Size;
+            for (; Offset<Size; Offset++)
+                if (Buffer[Offset])
+                    HasContent=true;
+            if (!HasContent)
+                Skip_XX(Element_Size-Element_Offset,            "Padding");
+        }
+    }
+
+    if (NewBuffer)
+    {
+        delete[] Buffer;
+        Buffer_Offset=Buffer_Offset_Save;
+        Buffer_Size=Buffer_Offset_Save;
+        Element_Offset=Element_Offset_Save;
+        Element_Size=Element_Size_Save;
+        File_Offset-=Buffer_Offset+Element_Offset;
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_DolbyE::intelligent_loudness_evolution_data_segment()
+{
+    Element_Begin1("intelligent_loudness_evolution_data_segment");
+    for (int8u program=0; program<DolbyE_Programs[program_config]; program++)
+    {
+        Element_Begin1("per program");
+        Skip_S1(4,                                          "loudness_reg_type");
+        Skip_SB(                                            "dialogue_corrected");
+        Skip_S1(1,                                          "loudness_corr_type");
+        Element_End0();
+    }
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+extern const char* Ac3_emdf_payload_id[16];
+void File_DolbyE::evo_frame()
+{
+    if (!Guardband_EMDF_PresentAndSize)
+        Guardband_EMDF_PresentAndSize=Element_Size;
+
+    Element_Begin1("evo_frame");
+    BS_Begin();
+    int8u evo_version, key_id;
+    Get_S1 (2, evo_version,                                     "evo_version");
+    if (evo_version==3)
+    {
+        int32u evo_version32;
+        Get_V4 (2, evo_version32,                               "evo_version");
+        evo_version32+=3;
+        evo_version=(int8u)evo_version32;
+    }
+    if (evo_version)
+    {
+        Skip_BS(Data_BS_Remain(),                               "(Unparsed evo_frame data)");
+        Element_End0(); 
+        return;
+    }
+    Get_S1 (3, key_id,                                          "key_id");
+    if (key_id==7)
+        Skip_V4(3,                                              "key_id");
+
+    int32u payload_id = 0;
+        
+    for(;;)
+    {
+        Element_Begin1("evo_payload");
+        Get_S4 (5, payload_id,                                  "payload_id");
+        if (payload_id==0x1F)
+        {
+            int32u add;
+            Get_V4 (5, add,                                     "payload_id");
+            payload_id += add;
+        }
+
+        if (payload_id<16)
+            Element_Info1(Ac3_emdf_payload_id[payload_id]);
+        if (!payload_id)
+        {
+            Element_End0();
+            break;
+        }
+
+        evo_payload_config();
+
+        int32u payload_size = 0;
+        Get_V4 (8, payload_size,                                "payload_size");
+        size_t payload_End=(Data_BS_Remain()>payload_size*8)?(Data_BS_Remain()-payload_size*8):0;
+
+        Element_Begin1("payload");
+            switch (payload_id)
+            {
+                case 11: object_audio_metadata_payload(); break;
+                case 13: mgi_payload(); break;
+                default: Skip_BS(payload_size*8,                "(Unknown)");
+            }
+            size_t Remaining=Data_BS_Remain()-payload_End;
+            if (Remaining && Remaining<8)
+            {
+                int8u padding;
+                Peek_S1(Remaining, padding);
+                if (!padding)
+                    Skip_S1(Remaining,                          "padding");
+            }
+            if (Data_BS_Remain()>payload_End)
+            {
+                Skip_BS(Data_BS_Remain()-payload_End,           "(Unparsed payload bytes)");
+            }
+            else if (Data_BS_Remain()<payload_End)
+            {
+                //There is a problem, too many bits were consumed by the parser. //TODO: prevent the parser to consume more bits than count of bits in this element
+                if (Data_BS_Remain()>=payload_End)
+                    Skip_BS(Data_BS_Remain()-payload_End,       "(Problem during emdf_payload parsing)");
+                else
+                    Skip_BS(Data_BS_Remain(),                   "(Problem during payload parsing, going to end directly)");
+                Element_End0();
+                Element_End0();
+                break;
+            }
+        Element_End0();
+        Element_End0();
+    }
+
+    evo_protection();
+    BS_End();
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_DolbyE::evo_payload_config()
+{
+    Element_Begin1("payload_config");
+    bool timestamp_present;
+    TEST_SB_GET (timestamp_present,                             "timestamp_present");
+        Skip_V4(11,                                             "timestamp");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "duration_present");
+        Skip_V4(11,                                             "duration");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "group_id_present");
+        Skip_V4(2,                                              "group_id");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "codec_specific_id_present");
+        Skip_S1(8,                                              "codec_specific_id");
+    TEST_SB_END();
+
+    bool dont_transcode;
+    Get_SB(dont_transcode,                                      "dont_transcode");
+    if (!dont_transcode)
+    {
+        bool now_or_never = false;
+        if (!timestamp_present)
+        {
+            Get_SB (now_or_never,                               "now_or_never");
+            if (now_or_never)
+            {
+                Skip_SB(                                        "create_duplicate");
+                Skip_SB(                                        "remove_duplicate");
+
+            }
+        }
+
+        if (timestamp_present || now_or_never)
+        {
+            Skip_S1(5,                                          "priority");
+            Skip_S1(2,                                          "tight_coupling");
+        }
+    }
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_DolbyE::evo_protection()
+{
+    Element_Begin1("protection");
+    int8u len_primary, len_second;
+    Get_S1(2, len_primary,                                      "protection_length_primary");
+    Get_S1(2, len_second,                                       "protection_length_secondary");
+
+    switch (len_primary)
+    {
+        case 0: len_primary = 0; break;
+        case 1: len_primary = 8; break;
+        case 2: len_primary = 32; break;
+        case 3: len_primary = 128; break;
+        default:; //Cannot append, read only 2 bits
+    };
+    switch (len_second)
+    {
+        case 0: len_second = 0; break;
+        case 1: len_second = 8; break;
+        case 2: len_second = 32; break;
+        case 3: len_second = 128; break;
+        default:; //Cannot append, read only 2 bits
+    };
+    Skip_BS(len_primary,                                        "protection_bits_primary");
+    if (len_second)
+        Skip_BS(len_primary,                                    "protection_bits_secondary");
+
+    Element_End0();
+}
+
+
+//---------------------------------------------------------------------------
+void File_DolbyE::object_audio_metadata_payload()
+{
+    nonstd_bed_channel_assignment_masks.clear();
+    ObjectElements.clear();
+
+    Element_Begin1("object_audio_metadata_payload");
+    int8u oa_md_version_bits;
+    Get_S1 (2, oa_md_version_bits,                              "oa_md_version_bits");
+    if (oa_md_version_bits == 0x3)
+    {
+        int8u oa_md_version_bits_ext;
+        Get_S1 (3, oa_md_version_bits_ext,                      "oa_md_version_bits_ext");
+        oa_md_version_bits += oa_md_version_bits_ext;
+    }
+
+    int8u object_count_bits;
+    Get_S1 (5, object_count_bits,                               "object_count_bits");
+    if (object_count_bits==0x1F)
+    {
+        int8u object_count_bits_ext;
+        Get_S1 (7, object_count_bits_ext,                       "object_count_bits_ext");
+        object_count_bits=0x1F+object_count_bits_ext;
+    }
+    object_count=object_count_bits+1;
+    Param_Info2(object_count, " objects");
+
+    program_assignment();
+
+    bool b_alternate_object_data_present;
+    Get_SB(b_alternate_object_data_present,                     "b_alternate_object_data_present");
+    int8u oa_element_count_bits;
+    Get_S1(4, oa_element_count_bits,                            "oa_element_count_bits");
+    if (oa_element_count_bits==0xF)
+    {
+        Get_S1(5, oa_element_count_bits,                        "oa_element_count_bits_ext");
+        oa_element_count_bits+=0xF;
+    }
+    for (int8u i=0; i<oa_element_count_bits; i++)
+        oa_element_md(b_alternate_object_data_present);
+
+    Element_End0();
+}
+
+void File_DolbyE::program_assignment()
+{
+    Element_Begin1("program_assignment");
+    bool b_dyn_object_only_program = false;
+    Get_SB (b_dyn_object_only_program,                          "b_dyn_object_only_program");
+    if (b_dyn_object_only_program)
+    {
+        bool b_lfe_present;
+        Get_SB (b_lfe_present,                                  "b_lfe_present");
+        if (b_lfe_present)
+        {
+            nonstd_bed_channel_assignment_masks.push_back(1<<3);
+            b_object_in_bed_or_isf.push_back(true);
+        }
+    }
+    else
+    {
+        int8u content_description_mask;
+        Get_S1 (4, content_description_mask,                    "content_description_mask");
+        if (content_description_mask & 0x1)
+        {
+            bool b_bed_object_chan_distribute, b_multiple_bed_instances_present;
+
+            Get_SB (b_bed_object_chan_distribute,               "b_bed_object_chan_distribute");
+            Get_SB (b_multiple_bed_instances_present,           "b_multiple_bed_instances_present");
+            int32u num_bed_instances = 1;
+            if (b_multiple_bed_instances_present)
+            {
+                int8u num_bed_instances_bits = 0;
+                Get_S1 (3, num_bed_instances_bits,              "num_bed_instances_bits");
+                num_bed_instances = num_bed_instances_bits + 2;
+            }
+
+            for (int32u bed = 0; bed < num_bed_instances; ++bed)
+            {
+                Element_Begin1("Bed");
+                bool b_lfe_only = true;
+                Get_SB (b_lfe_only,                             "b_lfe_only");
+                if (!b_lfe_only)
+                {
+                    bool b_standard_chan_assign;
+                    Get_SB (b_standard_chan_assign,             "b_standard_chan_assign");
+                    int32u nonstd_bed_channel_assignment_mask;
+                    if (b_standard_chan_assign)
+                    {
+                        int16u bed_channel_assignment_mask;
+                        Get_S2 (10, bed_channel_assignment_mask, "bed_channel_assignment_mask");
+                        nonstd_bed_channel_assignment_mask=AC3_bed_channel_assignment_mask_2_nonstd(bed_channel_assignment_mask);
+                    }
+                    else
+                    {
+                        int32u nonstd_bed_channel_assignment_mask;
+                        Get_S3 (17, nonstd_bed_channel_assignment_mask, "nonstd_bed_channel_assignment_mask");
+                    }
+                    Param_Info1(AC3_nonstd_bed_channel_assignment_mask_ChannelLayout(nonstd_bed_channel_assignment_mask));
+                    nonstd_bed_channel_assignment_masks.push_back(nonstd_bed_channel_assignment_mask);
+                    size_t BedChannelCount=BedChannelConfiguration_ChannelCount(nonstd_bed_channel_assignment_mask);
+                    b_object_in_bed_or_isf.resize(b_object_in_bed_or_isf.size()+BedChannelCount, true);
+                }
+                else
+                    b_object_in_bed_or_isf.push_back(true);
+                Element_End0();
+            }
+        }
+
+        if (content_description_mask & 0x2)
+        {
+            int8u intermediate_spatial_format_idx;
+            Get_S1 (3, intermediate_spatial_format_idx,        "intermediate_spatial_format_idx");
+            b_object_in_bed_or_isf.resize(b_object_in_bed_or_isf.size()+intermediate_spatial_format_object_count[intermediate_spatial_format_idx], true);
+        }
+
+        if (content_description_mask & 0x4)
+        {
+            int8u num_dynamic_objects_bits;
+            Get_S1(5, num_dynamic_objects_bits,                 "num_dynamic_objects_bits");
+            if (num_dynamic_objects_bits==0x1F)
+            {
+                int8u num_dynamic_objects_bits_ext = 0;
+                Get_S1 (7, num_dynamic_objects_bits_ext,        "num_dynamic_objects_bits_ext");
+                num_dynamic_objects_bits=0x1F+num_dynamic_objects_bits_ext;
+            }
+            num_dynamic_objects_bits++;
+            Param_Info2(object_count-num_dynamic_objects_bits, " static objects");
+            Param_Info2(num_dynamic_objects_bits, " dynamic objects");
+            b_object_in_bed_or_isf.resize(b_object_in_bed_or_isf.size()+num_dynamic_objects_bits, false);
+        }
+
+        if (content_description_mask & 0x8)
+        {
+            int8u reserved_data_size_bits;
+            Get_S1 (4, reserved_data_size_bits,                 "reserved_data_size_bits");
+            int8u padding = 8 - (reserved_data_size_bits % 8);
+            Skip_S1(reserved_data_size_bits,                    "reserved_data()");
+            Skip_S1(padding,                                    "padding");
+        }
+    }
+
+    Element_End0();
+}
+
+void File_DolbyE::oa_element_md(bool b_alternate_object_data_present)
+{
+    Element_Begin1("oa_element_md");
+    int8u oa_element_id_idx;
+    int32u oa_element_size_bits;
+    Get_S1 (4, oa_element_id_idx,                               "oa_element_id_idx");
+    Get_V4 (4, 4, oa_element_size_bits,                         "oa_element_size_bits");
+    oa_element_size_bits++;
+    oa_element_size_bits*=8;
+    int32u b_alternate_object_data_present_Reduced=b_alternate_object_data_present*4+1;
+    if (oa_element_size_bits<b_alternate_object_data_present_Reduced || oa_element_size_bits>Data_BS_Remain())
+    {
+        Skip_BS(oa_element_size_bits,                           "?");
+        Element_End0();
+        return;
+    }
+    oa_element_size_bits-=b_alternate_object_data_present_Reduced;
+    if (b_alternate_object_data_present)
+        Skip_S1(4,                                              "alternate_object_data_id_idx");
+    Skip_SB(                                                    "b_discard_unknown_element");
+    size_t End=Data_BS_Remain()-oa_element_size_bits;
+    switch (oa_element_id_idx)
+    {
+        case  1: object_element(); break;
+        default: Skip_BS(oa_element_size_bits,                  "oa_element");
+    }
+    if (Data_BS_Remain()>End)
+        Skip_BS(Data_BS_Remain()-End,                           "padding");
+    Element_End0();
+}
+
+void File_DolbyE::object_element()
+{
+    Element_Begin1("object_element");
+    int8u num_obj_info_blocks_bits;
+    md_update_info(num_obj_info_blocks_bits);
+    bool b_reserved_data_not_present;
+    Get_SB (b_reserved_data_not_present,                        "b_reserved_data_not_present");
+    if (!b_reserved_data_not_present)
+        Skip_S1(5,                                              "reserved");
+    for (int8u i=0; i<object_count; i++)
+        object_data(i, num_obj_info_blocks_bits);
+    Element_End0();
+}
+
+void File_DolbyE::md_update_info(int8u& num_obj_info_blocks_bits)
+{
+    Element_Begin1("md_update_info");
+    int8u sample_offset_code;
+    Get_S1 (2, sample_offset_code,                              "sample_offset_code");
+    switch (sample_offset_code)
+    {
+        case 1 : Skip_S1(2,                                     "sample_offset_idx"); break;
+        case 2 : Skip_S1(5,                                     "sample_offset_bits"); break;
+        default:;
+    }
+    Get_S1 (3, num_obj_info_blocks_bits,                        "num_obj_info_blocks_bits");
+    for (int8u blk=0; blk<=num_obj_info_blocks_bits; blk++)
+        block_update_info();
+    Element_End0();
+}
+
+void File_DolbyE::block_update_info()
+{
+    Element_Begin1("block_update_info");
+    int8u block_offset_factor_bits, ramp_duration_code;
+    Get_S1 (6, block_offset_factor_bits,                        "block_offset_factor_bits");
+    Get_S1 (2, ramp_duration_code,                              "ramp_duration_code");
+    switch (ramp_duration_code)
+    {
+        case 3 : 
+                {
+                    bool b_use_ramp_duration_idx;
+                    Get_SB (b_use_ramp_duration_idx,            "b_use_ramp_duration_idx");
+                    if (b_use_ramp_duration_idx)
+                        Skip_S1( 4,                             "ramp_duration_idx");
+                    else
+                        Skip_S1(11,                             "ramp_duration_bits");
+                }
+                break;
+        default:;
+    }
+    Element_End0();
+}
+
+void File_DolbyE::object_data(int8u obj_idx, int8u num_obj_info_blocks_bits)
+{
+    ObjectElements.resize(ObjectElements.size()+1);
+    ObjectElements[ObjectElements.size()-1].Alts.resize(num_obj_info_blocks_bits+1);
+
+    Element_Begin1("object_data");
+    for (int8u blk=0; blk<=num_obj_info_blocks_bits; blk++)
+        object_info_block(obj_idx, blk);
+    Element_End0();
+}
+
+void File_DolbyE::object_info_block(int8u obj_idx, int8u blk)
+{
+    Element_Begin1("object_info_block");
+    int8u object_basic_info_status_idx, object_render_info_status_idx;
+    bool b_object_not_active;
+    Get_SB (b_object_not_active,                                "b_object_not_active");
+    if (b_object_not_active)
+        object_basic_info_status_idx=0;
+    else if (!blk)
+        object_basic_info_status_idx=1;
+    else
+        Get_S1 (2, object_basic_info_status_idx,                "object_basic_info_status_idx");
+    if (object_basic_info_status_idx&1) // 1 or 3
+        object_basic_info(object_basic_info_status_idx>>1, blk); // Use bit 1
+    else
+    {
+        dyn_object& D=ObjectElements[ObjectElements.size()-1];
+        dyn_object::dyn_object_alt& A=D.Alts[blk];
+        A.obj_gain_db=INT_MAX;
+    }
+    if (b_object_not_active || (obj_idx<b_object_in_bed_or_isf.size() && b_object_in_bed_or_isf[obj_idx]))
+        object_render_info_status_idx=0;
+    else if (!blk)
+        object_render_info_status_idx=1;
+    else
+        Get_S1 (2, object_render_info_status_idx,               "object_render_info_status_idx");
+    if (object_render_info_status_idx&1) // 1 or 3
+        object_render_info(object_render_info_status_idx>>1, blk); // Use bit 1
+    else
+    {
+        dyn_object& D=ObjectElements[ObjectElements.size()-1];
+        dyn_object::dyn_object_alt& A=D.Alts[blk];
+        A.pos3d_x_bits=(int8u)-1;
+    }
+    bool b_additional_table_data_exists;
+    Get_SB (b_additional_table_data_exists,                     "b_additional_table_data_exists");
+    if (b_additional_table_data_exists)
+    {
+        int8u additional_table_data_size_bits;
+        Get_S1(4, additional_table_data_size_bits,              "additional_table_data_size_bits");
+        additional_table_data_size_bits++;
+        additional_table_data_size_bits*=8;
+        Skip_BS(additional_table_data_size_bits,                "additional_table_data");
+    }
+    Element_End0();
+}
+
+void File_DolbyE::object_basic_info(int8u object_basic_info_array, int8u blk)
+{
+    Element_Begin1("object_basic_info");
+    if (!object_basic_info_array) // object_basic_info_array is "reuse" info at this point
+        object_basic_info_array=3; // 2x 1
+    else
+        Get_S1 (2, object_basic_info_array,                     "object_basic_info[]");
+    dyn_object& D=ObjectElements[ObjectElements.size()-1];
+    dyn_object::dyn_object_alt& A=D.Alts[blk];
+    if (object_basic_info_array>>1) // bit 1
+    {
+        int8u object_gain_idx;
+        Get_S1 (2, object_gain_idx,                             "object_gain_idx");
+        switch (object_gain_idx)
+        {
+            case 0 :
+                    A.obj_gain_db=0;
+                    break;
+            case 1 :
+                    A.obj_gain_db=INT8_MIN;
+                    break;
+            case 2 :
+                    {
+                    int8u object_gain_bits;
+                    Get_S1 (6, object_gain_bits,                "object_gain_bits");
+                    A.obj_gain_db=(object_gain_bits<15?15:14)-object_gain_bits;
+                    }
+                    break;
+            default:
+                    if (ObjectElements.size()>=2)
+                        A.obj_gain_db=ObjectElements[ObjectElements.size()-2].Alts[blk].obj_gain_db;
+                    else
+                        A.obj_gain_db=0;
+        }
+    }
+    else
+        A.obj_gain_db=INT8_MAX;
+    if (object_basic_info_array&1) // bit 0
+    {
+        bool b_default_object_priority;
+        Get_SB (   b_default_object_priority,                   "b_default_object_priority");
+        if (!b_default_object_priority)
+            Skip_S1(5,                                          "b_default_object_priority");
+    }
+    Element_End0();
+}
+
+void File_DolbyE::object_render_info(int8u object_render_info_array, int8u blk)
+{
+    Element_Begin1("object_render_info");
+    if (!object_render_info_array) // object_render_info_array is "reuse" info at this point
+        object_render_info_array=0xF; // 4x 1
+    else
+        Get_S1 (4, object_render_info_array,                    "object_render_info[]");
+    dyn_object& D=ObjectElements[ObjectElements.size()-1];
+    dyn_object::dyn_object_alt& A=D.Alts[blk];
+    if (object_render_info_array&1) // bit 0
+    {
+        bool b_differential_position_specified;
+        if (!blk)
+            b_differential_position_specified=0;
+        else
+            Get_SB(b_differential_position_specified,           "b_differential_position_specified");
+        if (b_differential_position_specified)
+        {
+            Skip_S1(3,                                          "diff_pos3D_X_bits");
+            Skip_S1(3,                                          "diff_pos3D_Y_bits");
+            Skip_S1(3,                                          "diff_pos3D_Z_bits");
+            A.pos3d_x_bits=(int8u)-1; // Not supported
+        }
+        else
+        {
+            bool b_object_distance_specified;
+            Get_S1 (6, A.pos3d_x_bits,                          "pos3d_x_bits"); Param_Info3(mgi_bitstream_val_to_Q15(A.pos3d_x_bits, 6)/32768.0*100, "%", 0);
+            Get_S1 (6, A.pos3d_y_bits,                          "pos3d_y_bits"); Param_Info3(mgi_bitstream_val_to_Q15(A.pos3d_y_bits, 6)/32768.0*100, "%", 0);
+            Get_SB (   A.pos3d_z_sig,                           "pos3d_z_sig");
+            Get_S1 (4, A.pos3d_z_bits,                          "pos3d_z_bits"); Param_Info3(mgi_bitstream_pos_z_to_Q15(A.pos3d_z_sig, A.pos3d_z_bits)/32768.0*100, "%", 0);
+            Get_SB (   b_object_distance_specified,             "b_object_distance_specified");
+            if (b_object_distance_specified)
+            {
+                bool b_object_at_infinity;
+                Get_SB (   b_object_at_infinity,                "b_object_at_infinity");
+                if (!b_object_at_infinity)
+                    Skip_S1(4,                                  "distance_factor_idx");
+            }
+        }
+    }
+    else
+        A.pos3d_x_bits=(int8u)-1;
+    A.hp_render_mode=(int8u)-1;
+    if ((object_render_info_array>>1)&1) // bit 1
+    {
+        Skip_S1(3,                                              "zone_constraints_idx");
+        Skip_SB(                                                "b_enable_elevation");
+    }
+    if ((object_render_info_array>>2)&1) // bit 2
+    {
+        int8u object_size_idx;
+        Get_S1 (2, object_size_idx,                             "object_size_idx");
+        switch (object_size_idx)
+        {
+            case  1:
+                    {
+                    Skip_S1(5,                                  "object_size_bits");
+                    }
+                    break;
+            case  2:
+                    {
+                    Skip_S1(5,                                  "object_width_bits");
+                    Skip_S1(5,                                  "object_depth_bits");
+                    Skip_S1(5,                                  "object_height_bits");
+                    }
+                    break;
+            default:;
+        }
+    }
+    if (object_render_info_array>>3) // bit 3
+    {
+        bool b_object_use_screen_ref;
+        Get_SB (   b_object_use_screen_ref,                     "b_object_use_screen_ref");
+        if (b_object_use_screen_ref)
+        {
+            Skip_S1(3,                                          "screen_factor_bits");
+            Skip_S1(2,                                          "depth_factor_idx");
+        }
+        Skip_SB(                                                "b_object_snap");
+    }
+    Element_End0();
+}
+
+int8u bits_needed(size_t value)
+{
+    if (!value)
+        return 0;
+
+    int8u res = 0;
+    while (value) {
+        res += 1;
+        value >>= 1;
+    }
+    return res;
+}
+
+void File_DolbyE::mgi_payload()
+{
+    DynObjects.clear();
+    BedInstances.clear();
+    Presets.clear();
+    substream_mappings.clear();
+
+    Element_Begin1("mgi_payload");
+    size_t BS_Start=Data_BS_Remain();
+    int8u mgi_version, num_presets_m1, num_dyn_objects, num_bed_instances;
+    bool program_id_available, is_substream_mapping_present, mini_mixgraph_extension_present, mini_mixgraph_description_present;
+    Get_S1 (2, mgi_version,                                     "mgi_version");
+    if (mgi_version ==3)
+    {
+        int32u mgi_version32;
+        Get_V4 (2, mgi_version32,                               "mgi_version");
+        mgi_version32+=3;
+        mgi_version=(int8u)mgi_version32;
+    }
+    if (mgi_version!=5)
+    {
+        Skip_BS(1,                                              "(Unparsed mgi_payload data)"); //TODO: exact count of bits
+        Element_End0();
+        return;
+    }
+    Get_SB (program_id_available,                               "program_id_available");
+    Get_SB (is_substream_mapping_present,                       "is_substream_mapping_present");
+    Get_SB (mini_mixgraph_extension_present,                    "mini_mixgraph_extension_present");
+    Get_SB (mini_mixgraph_description_present,                  "mini_mixgraph_description_present");
+    if (program_id_available)
+    {
+        Skip_S1( 3,                                             "program_uuid_segment_number");
+        Skip_S2(16,                                             "program_uuid_segment");
+    }
+    {
+        size_t ToPadd=(BS_Start-Data_BS_Remain())%8;
+        if (ToPadd<8)
+            Skip_BS(8-ToPadd,                                   "byte_align");
+    }
+    Skip_S2(16,                                                 "short_program_id");
+    Get_S1 (4, num_presets_m1,                                  "num_presets_m1");
+    Get_S1 (7, num_dyn_objects,                                 "num_dyn_objects");
+    Get_S1 (4, num_bed_instances,                               "num_bed_instances");
+
+    DynObjects.resize(num_dyn_objects);
+    for (int8u i=0; i<num_dyn_objects; i++)
+    {
+        dyn_object& D=DynObjects[i];
+        Element_Begin1("dyn_object");
+        int32u num_dyn_obj_alt_md;
+        Get_V4 (2, num_dyn_obj_alt_md,                          "num_dyn_obj_alt_md");
+        Get_S1 (2, D.sound_category,                            "sound_category"); Param_Info1(sound_category_Values[D.sound_category]);
+        D.Alts.resize(num_dyn_obj_alt_md);
+        for (int32u j=0; j<num_dyn_obj_alt_md; j++)
+        {
+            dyn_object::dyn_object_alt& A=D.Alts[j];
+            Element_Begin1("dyn_obj_alt_md");
+            int32u object_info_mask, object_info_size_bytes;
+            Get_V4 (3, object_info_mask,                        "object_info_mask");
+            //Get_V4 (3, object_info_size_bytes,                  "object_info_size_bytes"); //TODO
+            Get_S4 (4, object_info_size_bytes,                  "object_info_size_bytes, variable_bits ignored");
+            object_info_size_bytes=4;
+            size_t Begin=Data_BS_Remain();
+            if (object_info_size_bytes)
+            {
+                if (object_info_mask & 0x1)
+                {
+                    int8u dyn_obj_gain_db_bits;
+                    Get_S1(6, dyn_obj_gain_db_bits,             "dyn_obj_gain_db_bits");
+                    if (dyn_obj_gain_db_bits==63)
+                        A.obj_gain_db=INT_MIN;
+                    else
+                        A.obj_gain_db=15-dyn_obj_gain_db_bits;
+                }
+                else
+                    A.obj_gain_db=INT_MAX;
+                if (object_info_mask & 0x2)
+                {
+                    Get_S1 (6, A.pos3d_x_bits,                  "pos3d_x_bits"); Param_Info3(mgi_bitstream_val_to_Q15(A.pos3d_x_bits, 6)/32768.0*100, "%", 0);
+                    Get_S1 (6, A.pos3d_y_bits,                  "pos3d_y_bits"); Param_Info3(mgi_bitstream_val_to_Q15(A.pos3d_y_bits, 6)/32768.0*100, "%", 0);
+                    Get_SB (   A.pos3d_z_sig,                   "pos3d_z_sig");
+                    Get_S1 (4, A.pos3d_z_bits,                  "pos3d_z_bits"); Param_Info3(mgi_bitstream_pos_z_to_Q15(A.pos3d_z_sig, A.pos3d_z_bits)/32768.0*100, "%", 0);
+                    Element_Level--;
+                    Element_Info1(Angles2String(mgi_bitstream_pos_ToAngles(mgi_bitstream_val_to_Q15(A.pos3d_x_bits, 6), mgi_bitstream_val_to_Q15(A.pos3d_y_bits, 6), mgi_bitstream_pos_z_to_Q15(A.pos3d_z_sig, A.pos3d_z_bits))));
+                    Element_Level++;
+                }
+                else
+                    A.pos3d_x_bits=(int8u)-1;
+                if (object_info_mask & 0x4)
+                {
+                    Skip_SB(                                    "hp_md_state");
+                    Get_S1 (2, A.hp_render_mode,                "hp_render_mode"); Param_Info1(hp_render_mode_Values[A.hp_render_mode]);
+                    Skip_SB(                                    "hp_headtrack_state");
+                }
+                else
+                    A.hp_render_mode=(int8u)-1;
+                size_t Parsed=Begin-Data_BS_Remain();
+                int8u Padding=8-(Parsed%8);
+                Skip_BS(Padding,                                "padding");
+            }
+            Element_End0();
+        }
+        Element_End0();
+    }
+
+    BedInstances.resize(num_bed_instances);
+    for (int8u i=0; i<num_bed_instances; i++)
+    {
+        bed_instance& B=BedInstances[i];
+        Element_Begin1("bed_instance");
+        int32u num_bed_alt_md;
+        Get_V4 (2, num_bed_alt_md,                              "num_bed_alt_md");
+        B.Alts.resize(num_bed_alt_md);
+        for (int8u j=0; j<num_bed_alt_md; j++)
+        {
+            bed_instance::bed_alt& A=B.Alts[j];
+            Element_Begin1("bed_alt_md");
+            int32u bed_info_mask, bed_info_size_bytes;
+            Get_V4 (2, bed_info_mask,                           "bed_info_mask");
+            Get_V4 (2, bed_info_size_bytes,                     "bed_info_size_bytes");
+            size_t End=Data_BS_Remain()-bed_info_size_bytes*8;
+            if (bed_info_mask&1)
+            {
+                int8u bed_gain_db_bits;
+                Get_S1(6, bed_gain_db_bits,                     "bed_gain_db_bits");
+                A.bed_gain_db=15-bed_gain_db_bits;
+            }
+            else
+                A.bed_gain_db=INT8_MAX;
+            if (Data_BS_Remain()>End)
+                Skip_BS(Data_BS_Remain()-End,                   "padding");
+            Element_End0();
+        }
+        Element_End0();
+    }
+
+    Presets.resize(num_presets_m1 + 1);
+    for (int8u i=0; i<=num_presets_m1; i++)
+    {
+        preset& P=Presets[i];
+        Element_Begin1("preset");
+        int32u num_target_device_configs_m1;
+        Get_V4 (2, num_target_device_configs_m1,                "num_target_device_configs_m1");
+        Get_V4 (2, P.default_target_device_config,              "default_target_device_config"); Param_Info1(default_target_device_config_Value(P.default_target_device_config));
+        P.target_device_configs.resize(num_target_device_configs_m1+1);
+        for (int32u j=0; j<=num_target_device_configs_m1; j++)
+        {
+            preset::target_device_config& T=P.target_device_configs[j];
+            Element_Begin1("target_device_config");
+            Get_V4 (3, T.target_devices_mask,                   "target_devices_mask"); Param_Info1(default_target_device_config_Value(T.target_devices_mask));
+            for (int32u k=0; k<num_dyn_objects+num_bed_instances; k++)
+            {
+                Element_Begin1(k<num_dyn_objects?"object":"bed");
+                bool active;
+                Get_SB (active,                                 k<num_dyn_objects?"object_active":"bed_active");
+                if (active)
+                {
+                    int32u md_index;
+                    size_t Size=k<num_dyn_objects?DynObjects[k].Alts.size():BedInstances[k-num_dyn_objects].Alts.size();
+                    Get_S4 (bits_needed(Size+1), md_index, k<num_dyn_objects?"obj_md_index":"bed_md_index");
+                    T.md_indexes.push_back(md_index);
+                }
+                else
+                    T.md_indexes.push_back((int32u)-1);
+                Element_End0();
+            }
+            Element_End0();
+        }
+        TEST_SB_SKIP(                                           "preset_extension");
+            int32u extension_size;
+            Get_V4 (4, extension_size,                          "extension_size");
+            Skip_BS(extension_size,                             "extension");
+        TEST_SB_END();
+        Element_End0();
+    }
+
+    substream_mappings.resize(num_dyn_objects+num_bed_instances);
+    if (is_substream_mapping_present)
+    {
+        Element_Begin1("substream_mapping");
+        for (int8u i=0; i<substream_mappings.size(); i++)
+        {
+            substream_mapping& S=substream_mappings[i];
+            Element_Begin1(i<num_dyn_objects?"dyn_object":"bed_instance");
+            bool standard_index;
+            Get_S1(4, S.substream_id,                           "substream_id");
+            Get_SB(   standard_index,                           "standard_index");
+            if (standard_index)
+                Get_S4 (3, S.channel_index,                     "channel_index");
+            else
+            {
+                Get_S4(5, S.channel_index,                      "channel_index");
+                if (S.channel_index==0x1F)
+                {
+                    Get_V4(3, S.channel_index,                  "channel_index");
+                    S.channel_index+=0x1F;
+                }
+            }
+
+            Element_End0();
+        }
+        Element_End0();
+    }
+    int8u byte_align_Content=0;
+    {
+        size_t ToPadd=(BS_Start-Data_BS_Remain())%8;
+        if (ToPadd)
+            Get_S1(8-ToPadd, byte_align_Content,                "byte_align");
+    }
+    if (mini_mixgraph_extension_present)
+    {
+        Element_Begin1("mini_mixgraph_extension");
+        TEST_SB_SKIP(                                           "mgi_extension");
+            int32u extension_size;
+            Get_V4 (4, extension_size,                          "extension_size");
+            Skip_BS(extension_size,                             "extension");
+        TEST_SB_END();
+        Element_End0();
+    }
+    if (mini_mixgraph_description_present)
+    {
+        Element_Begin1("mini_mixgraph_description");
+        int32u desc_packet_idx, desc_pkt_size_bits;
+        if (!byte_align_Content)
+        {
+            Get_V4 (5, desc_packet_idx,                         "desc_packet_idx");
+        }
+        else
+        {
+            Skip_S1(6,                                          "0x3F?");
+            desc_packet_idx = 30; //Not in spec. Bug in the stream here?
+        }
+        if (!desc_packet_idx)
+        {
+            Get_V4 (5, num_desc_packets_m1,                     "num_desc_packets_m1");
+        }
+        if (desc_packet_idx==num_desc_packets_m1)
+        {
+            Get_V4 (7, desc_pkt_size_bits,                      "desc_pkt_size_bits");
+        }
+        else
+        {
+            Get_V4 (4, desc_pkt_size_bits,                      "desc_pkt_size_bytes");
+            desc_pkt_size_bits<<=3; //bits to bytes
+        }
+        while (desc_pkt_size_bits)
+        {
+            int8u bits8=desc_pkt_size_bits>8?8:desc_pkt_size_bits;
+            int8u data;
+            Get_S1(bits8, data,                                 "description_packet_data");
+            if (num_desc_packets_m1!=(int32u)-1)
+                description_packet_data.push_back(data<<(8-bits8));
+            desc_pkt_size_bits-=bits8;
+        }
+        if (desc_packet_idx==num_desc_packets_m1 && !description_packet_data.empty())
+        {
+            Presets_More.clear();
+            BitStream_Fast* BS_Save=BS;
+            BS=new BitStream_Fast(&*description_packet_data.begin(), description_packet_data.size()); //In bytes, we can not provide a precise count of bits
+            Element_Begin1("packet_description");
+            int8u preset_description_id_bits;
+            Get_S1(3, preset_description_id_bits,           "preset_description_id_bits");
+            for (int8u i=0; i <=num_presets_m1; i++)
+            {
+                Skip_BS(preset_description_id_bits,         "preset_description_id[i]");
+            }
+            TEST_SB_SKIP("preset_description_text_present");
+                Presets_More.resize(num_presets_m1+1);
+                for (int8u i=0; i<=num_presets_m1; i++)
+                {
+                    preset_more& P=Presets_More[i];
+                    int8u desc_text_len;
+                    Get_S1(5, desc_text_len,                "desc_text_len");
+                    Element_Begin1("preset_description");
+                    for (int8u j=0; j<desc_text_len; j++)
+                    {
+                        int8u preset_description_char;
+                        Get_S1(8, preset_description_char,  "preset_description_char");
+                        P.description+=(char)preset_description_char;
+                    }
+                    if (Ztring().From_UTF8(P.description).empty())
+                        P.description.clear(); // Problem while parsing
+                    Element_Info1(P.description);
+                    Element_End0();
+                }
+            TEST_SB_END();
+            Element_End0();
+            delete BS; BS=BS_Save;
+            description_packet_data.clear();
+            mini_mixgraph_description_present=false; //Indicates that the stream is ready for data filling
+        }
+        Element_End0();
+        {
+            size_t ToPadd=(BS_Start-Data_BS_Remain())%8;
+            if (ToPadd<8)
+                Skip_BS(8-ToPadd,                               "byte_align");
+        }
+    }
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_DolbyE::Get_V4(int8u Bits, int8u MaxLoops, int32u& Info, const char* Name)
+{
+    Info=0;
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            int8u Count=0;
+            for (;;)
+            {
+                Info+=BS->Get4(Bits);
+                Count+=1+Bits;
+                if (!BS->GetB() || !(--MaxLoops))
+                    break;
+                Info<<=Bits;
+                Info+=(1<<Bits);
+            }
+
+            Param(Name, Info, Count);
+            Param_Info(__T("(")+Ztring::ToZtring(Count)+__T(" bits)"));
+        }
+        else
+    #endif //MEDIAINFO_TRACE
+        {
+            for (;;)
+            {
+                Info+=BS->Get4(Bits);
+                if (!BS->GetB() || !(--MaxLoops))
+                    break;
+                Info<<=Bits;
+                Info+=(1<<Bits);
+            }
+        }
+}
+
+//---------------------------------------------------------------------------
+void File_DolbyE::Get_V4(int8u Bits, int32u& Info, const char* Name)
+{
+    Info=0;
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            int8u Count=0;
+            for (;;)
+            {
+                Info+=BS->Get4(Bits);
+                Count+=1+Bits;
+                if (!BS->GetB())
+                    break;
+                Info<<=Bits;
+                Info+=(1<<Bits);
+            }
+
+            Param(Name, Info, Count);
+            Param_Info(__T("(")+Ztring::ToZtring(Count)+__T(" bits)"));
+        }
+        else
+    #endif //MEDIAINFO_TRACE
+        {
+            for (;;)
+            {
+                Info+=BS->Get4(Bits);
+                if (!BS->GetB())
+                    break;
+                Info<<=Bits;
+                Info+=(1<<Bits);
+            }
+        }
+}
+
+//---------------------------------------------------------------------------
+void File_DolbyE::Skip_V4(int8u  Bits, const char* Name)
+{
+    #if MEDIAINFO_TRACE
+        if (Trace_Activated)
+        {
+            int32u Info=0;
+            int8u Count=0;
+            for (;;)
+            {
+                Info+=BS->Get4(Bits);
+                Count+=1+Bits;
+                if (!BS->GetB())
+                    break;
+                Info<<=Bits;
+                Info+=(1<<Bits);
+            }
+
+            Param(Name, Info, Count);
+            Param_Info(__T("(")+Ztring::ToZtring(Count)+__T(" bits)"));
+        }
+        else
+    #endif //MEDIAINFO_TRACE
+        {
+            for (;;)
+            {
+                BS->Skip(Bits);
+                if (!BS->GetB())
+                    break;
+            }
+        }
 }
 
 //---------------------------------------------------------------------------

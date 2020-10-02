@@ -34,6 +34,7 @@
  day1; day
  day2; days
  day3; days
+ dB0;0 dB
  dB1; dB
  dB2; dB
  dB3; dB
@@ -301,6 +302,7 @@ Customize;Customize
 Date;Date
 Debug;Debug
 Decimal point;Decimal point
+DefaultTargetDeviceConfig;Default target device config
 Delay;Delay
 Delay_Source;Delay, origin
 Delay_Source_Container;Container
@@ -309,7 +311,6 @@ Delete;Delete
 Description;Description
 dialnorm;Dialog Normalization
 DialogueCorrected;Dialogue corrected
-DialogueEnhancement;Dialogue enhancement
 DialogueEnhancement;Dialogue enhancement
 DialogueNormalization;Dialogue normalization
 Digitized_Date;Digitized date
@@ -877,7 +878,9 @@ LfeMixGain;LFE mix gain
 Library;Muxing library
 Lightness;Lightness
 LineUpStart;Line Up Start
+LinkedTo_Bed_Pos;Bed #s
 LinkedTo_Group_Pos;Group #s
+LinkedTo_Object_Pos;Object #s
 LinkedTo_SignalGroup_Pos;Signal group #s
 LinkedTo_Substream_Pos;Substream #s
 List;List
@@ -953,9 +956,7 @@ NumberOfElementaryStreams;Number of elementary streams
 NumberOfObjects;Number of objects
 NumberOfPresentations;Number of presentations
 NumberOfSubstreams;Number of substreams
-NumberOfSubstreams;Number of substreams
 NumColors;Number of colors
-ObjectCount;Object Count
 OK;OK
 One output file per input file;One output file per input file
 Open;Open
@@ -1039,6 +1040,8 @@ PodcastCategory;Podcast category
 PortableHeadphones;Portable headphones
 PortableSpeakers;Portable speakers
 Position;Position
+Position_Cartesian;Position (cartesian)
+Position_Polar;Position (polar)
 Position_Total;Total
 Preferences;Preferences
 PreferredDownmix;Preferred downmix
@@ -1068,6 +1071,7 @@ Recorded_Date;Recorded date
 Recorded_Location;Recorded location
 Released_Date;Released date
 RemixedBy;Remixed by
+RenderMode;Render mode
 ReplayGain_Gain;Replay gain
 ReplayGain_Peak;Replay gain peak
 Resolution;Resolution
@@ -1116,6 +1120,7 @@ SignalGroup;Signal group
 SigningPresent;Signing Present
 SignLanguage;Sign Language
 Sort;Sorted by
+SoundCategory;Sound category
 SoundEngineer;Sound engineer
 Source;Source
 Source_Duration;Source duration
@@ -1144,6 +1149,7 @@ StreamSize_Proportion;Proportion of this stream
 Subject;Subject
 Substream;Substream
 SubTrack;SubTrack
+SubtstreamIdChannel;Substream start ID & channel index
 Summary;Summary
 Supported formats;Supported formats
 Supported?;Supported?
@@ -1153,6 +1159,7 @@ Synopsis;Synopsis
 SystemId;Id
 Tagged_Application;Tagging application
 Tagged_Date;Tagged date
+TargetDeviceConfig;Target device config
 Technician;Technician
 TermsOfUse;Terms of use
 TertiaryAudioLanguage;Tertiary Audio Language
