@@ -1848,7 +1848,7 @@ void File_Mpeg4::mdat_xxxx()
                                 break; //TODO: handle more complex Edit Lists
                     }
 
-                    if (FrameInfo.DTS!=(int64u)-1 && -Delay<(int64s)stts_Offset) //TODO: check potential incoherency between movie timescale and track timescale
+                    if (FrameInfo.DTS!=(int64u)-1 && -Delay<(int64s)stts_Offset && moov_mvhd_TimeScale) //TODO: check potential incoherency between movie timescale and track timescale
                         FrameInfo.DTS+=Delay*1000000000/moov_mvhd_TimeScale;
                     else
                         FrameInfo.DTS=TimeCode_DtsOffset;
