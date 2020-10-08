@@ -4327,21 +4327,21 @@ void File_Avc::SPS_PPS()
     //Parsing
     int8u Profile, Level, seq_parameter_set_count, pic_parameter_set_count;
     if (SizedBlocks)
-        Skip_B1(                                                "Version");
-    Get_B1 (Profile,                                            "Profile");
-    Skip_B1(                                                    "Compatible profile");
-    Get_B1 (Level,                                              "Level");
+        Skip_B1(                                                "configurationVersion");
+    Get_B1 (Profile,                                            "AVCProfileIndication");
+    Skip_B1(                                                    "profile_compatibility");
+    Get_B1 (Level,                                              "AVCLevelIndication");
     BS_Begin();
-    Skip_S1(6,                                                  "Reserved");
-    Get_S1 (2, SizeOfNALU_Minus1,                               "Size of NALU length minus 1");
-    Skip_S1(3,                                                  "Reserved");
-    Get_S1 (5, seq_parameter_set_count,                         "seq_parameter_set count");
+    Skip_S1(6,                                                  "reserved");
+    Get_S1 (2, SizeOfNALU_Minus1,                               "lengthSizeMinusOne");
+    Skip_S1(3,                                                  "reserved");
+    Get_S1 (5, seq_parameter_set_count,                         "numOfSequenceParameterSets");
     BS_End();
     for (int8u Pos=0; Pos<seq_parameter_set_count; Pos++)
     {
         Element_Begin1("seq_parameter_set");
         int16u Size;
-        Get_B2 (Size,                                           "Size");
+        Get_B2 (Size,                                           "sequenceParameterSetLength");
         BS_Begin();
         Mark_0 ();
         Skip_S1( 2,                                             "nal_ref_idc");
@@ -4364,12 +4364,12 @@ void File_Avc::SPS_PPS()
         Element_Size=Element_Size_Save;
         Element_End0();
     }
-    Get_B1 (pic_parameter_set_count,                            "pic_parameter_set count");
+    Get_B1 (pic_parameter_set_count,                            "numOfPictureParameterSets");
     for (int8u Pos=0; Pos<pic_parameter_set_count; Pos++)
     {
         Element_Begin1("pic_parameter_set");
         int16u Size;
-        Get_B2 (Size,                                           "Size");
+        Get_B2 (Size,                                           "pictureParameterSetLength");
         BS_Begin();
         Mark_0 ();
         Skip_S1( 2,                                             "nal_ref_idc");
@@ -4390,7 +4390,7 @@ void File_Avc::SPS_PPS()
         Element_End0();
     }
     if (Element_Offset<Element_Size)
-        Skip_XX(Element_Size-Element_Offset,                    "Padding?");
+        Skip_XX(Element_Size-Element_Offset,                        "Padding?");
 
     //Filling
     FILLING_BEGIN_PRECISE();
