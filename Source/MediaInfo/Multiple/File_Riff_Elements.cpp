@@ -24,6 +24,7 @@
 #include "MediaInfo/Setup.h"
 #include <ZenLib/Ztring.h>
 #include <string>
+#include <algorithm>
 using namespace std;
 using namespace ZenLib;
 //---------------------------------------------------------------------------
@@ -1691,9 +1692,9 @@ void File_Riff::AVI__hdlr_strl_strf_vids()
     Element_Info1("Video");
 
     //Parsing
-    int32u Compression, Width, Height;
+    int32u Size, Compression, Width, Height;
     int16u Resolution;
-    Skip_L4(                                                    "Size");
+    Get_L4 (Size,                                               "Size");
     Get_L4 (Width,                                              "Width");
     Get_L4 (Height,                                             "Height");
     Skip_L2(                                                    "Planes");
@@ -1871,6 +1872,12 @@ void File_Riff::AVI__hdlr_strl_strf_vids()
         return; //No options
 
     //Filling
+    int32u Element_Size_Save=0;
+    if (Size<Element_Size)
+    {
+        Element_Size_Save=Element_Size;
+        Element_Size=Size;
+    }
          if (0);
     else if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Riff, Ztring().From_CC4(Compression))==__T("AVC"))
         AVI__hdlr_strl_strf_vids_Avc();
@@ -1879,6 +1886,9 @@ void File_Riff::AVI__hdlr_strl_strf_vids()
     else if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Riff, Ztring().From_CC4(Compression))==__T("HuffYUV"))
         AVI__hdlr_strl_strf_vids_HuffYUV(Resolution, Height);
     else Skip_XX(Element_Size-Element_Offset,                   "Unknown");
+    if (Element_Size_Save)
+        Element_Size=Element_Size_Save;
+    Skip_XX(Element_Size-Element_Offset,                        "Unknown");
 }
 
 //---------------------------------------------------------------------------
