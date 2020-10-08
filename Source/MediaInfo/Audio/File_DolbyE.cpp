@@ -28,6 +28,14 @@
 #include "MediaInfo/Audio/File_DolbyE.h"
 #include "MediaInfo/Audio/File_Aac.h"
 #include <cmath>
+
+#if !defined(INT8_MAX)
+#define INT8_MAX (127)
+#endif //!defined(INT8_MAX)
+#if !defined(INT8_MIN)
+#define INT8_MIN (-128)
+#endif //!defined(INT8_MIN)
+
 using namespace std;
 //---------------------------------------------------------------------------
 
