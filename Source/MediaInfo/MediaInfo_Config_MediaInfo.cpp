@@ -1649,7 +1649,8 @@ void MediaInfo_Config_MediaInfo::File_ExpandSubs_Update(void** Source)
                                                             if ((*Stream_More)[StreamKind][StreamPos][k][Info_Name]==ToSearch3)
                                                             {
                                                                 Found=(*Stream_More)[StreamKind][StreamPos][k][Info_Text];
-                                                                if (k
+                                                                if (k && !Temp.empty()
+                                                                 && Temp[Temp.size()-1][Info_Name].rfind(__T(" ChannelLayout" ))+14==Temp[Temp.size()-1][Info_Name].size()
                                                                  && (*Stream_More)[StreamKind][StreamPos][k  ][Info_Name].rfind(__T(" Position_Polar"))+15==(*Stream_More)[StreamKind][StreamPos][k  ][Info_Name].size()
                                                                  && (*Stream_More)[StreamKind][StreamPos][k-1][Info_Name].rfind(__T(" ChannelLayout" ))+14!=(*Stream_More)[StreamKind][StreamPos][k-1][Info_Name].size())
                                                                 {
