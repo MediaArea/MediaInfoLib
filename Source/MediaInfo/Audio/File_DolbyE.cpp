@@ -1282,10 +1282,12 @@ void File_DolbyE::Streams_Fill_ED2()
         string Summary;
         if (Summary.empty())
             Summary=sound_category_Values[DynObject.sound_category];
+        /*
         if (Summary.empty())
             Summary=ChannelLayout;
         if (Summary.empty())
             Summary=Position_Polar;
+        */
         if (Summary.empty())
             Summary="Yes";
 
@@ -1302,11 +1304,13 @@ void File_DolbyE::Streams_Fill_ED2()
         {
             string A=P;
             const dyn_object::dyn_object_alt& DynObject_Current=ObjectElements[Bed_Object_Count+p].Alts[0];
+            /*
             if (!ChannelLayout.empty())
             {
                 Fill(Stream_Audio, 0, (A+" ChannelLayout").c_str(), ChannelLayout);
                 Fill_SetOptions(Stream_Audio, 0, (A+" ChannelLayout").c_str(), "Y NTY");
             }
+            */
             if (!Position_Polar.empty())
             {
                 Fill(Stream_Audio, 0, (A+" Position_Polar").c_str(), Position_Polar);
@@ -1347,20 +1351,24 @@ void File_DolbyE::Streams_Fill_ED2()
             string Summary2;
             if (Summary2.empty())
                 Summary2=sound_category_Values[DynObject.sound_category];
+            /*
             if (Summary2.empty())
                 Summary2=ChannelLayout;
             if (Summary2.empty())
                 Summary2=Position_Polar;
+            */
             if (Summary2.empty())
                 Summary2="Yes";
 
             string A=P+Ztring(__T(" Alt")+Ztring::ToZtring(a)).To_UTF8();
             Fill(Stream_Audio, 0, A.c_str(), Summary2);
+            /*
             if (!ChannelLayout.empty())
             {
                 Fill(Stream_Audio, 0, (A+" ChannelLayout").c_str(), ChannelLayout);
                 Fill_SetOptions(Stream_Audio, 0, (A+" ChannelLayout").c_str(), "Y NTY");
             }
+            */
             if (!Position_Polar.empty())
             {
                 Fill(Stream_Audio, 0, (A+" Position_Polar").c_str(), Position_Polar);
