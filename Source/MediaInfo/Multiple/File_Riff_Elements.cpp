@@ -3669,6 +3669,8 @@ void File_Riff::WAVE_bext()
 
         Fill(Stream_General, 0, "bext_Present", "Yes");
         Fill_SetOptions(Stream_General, 0, "bext_Present", "N NT");
+        Fill(Stream_General, 0, "bext_Version", Version);
+        Fill_SetOptions(Stream_General, 0, "bext_Version", "N NIY");
         Fill(Stream_General, 0, General_Description, Description);
         Fill(Stream_General, 0, General_Producer, Originator);
         Fill(Stream_General, 0, "Producer_Reference", OriginatorReference);
