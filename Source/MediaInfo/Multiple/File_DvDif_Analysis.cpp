@@ -1416,7 +1416,7 @@ void File_DvDif::Errors_Stats_Update()
             int MaxStaErrors=((DSF?1500:1350)*(FSC_WasSet?2:1));
             bool Video_StaNonZero=false;
             for (size_t i=0; i<16; i++)
-                if (Video_Errors_PerSta[i])
+                if (Video_Errors_PerSta[i]==MaxStaErrors)
                     Video_StaNonZero=true; // Only if all from the same STA value
             size_t Audio_TotalErrors=0;
             size_t Audio_Errors_PerDseq[16]; //Per Dseq
