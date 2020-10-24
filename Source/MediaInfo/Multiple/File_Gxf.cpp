@@ -1577,7 +1577,7 @@ File__Analyze* File_Gxf::ChooseParser_ChannelGrouping(int8u TrackID)
     File_ChannelGrouping* Parser;
     if (Audio_Count%2)
     {
-        if (!Streams[TrackID-1].IsChannelGrouping)
+        if (!TrackID || !Streams[TrackID-1].IsChannelGrouping)
             return NULL; //Not a channel grouping
 
         Parser=new File_ChannelGrouping;

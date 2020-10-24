@@ -1848,7 +1848,7 @@ void File_Mpeg4::mdat_xxxx()
                                 break; //TODO: handle more complex Edit Lists
                     }
 
-                    if (FrameInfo.DTS!=(int64u)-1 && -Delay<(int64s)stts_Offset) //TODO: check potential incoherency between movie timescale and track timescale
+                    if (FrameInfo.DTS!=(int64u)-1 && -Delay<(int64s)stts_Offset && moov_mvhd_TimeScale) //TODO: check potential incoherency between movie timescale and track timescale
                         FrameInfo.DTS+=Delay*1000000000/moov_mvhd_TimeScale;
                     else
                         FrameInfo.DTS=TimeCode_DtsOffset;
@@ -2297,17 +2297,20 @@ void File_Mpeg4::meta_iprp_ipco()
 #define FILLING_BEGIN_IPCO() \
     { \
         FILLING_BEGIN(); \
-            std::vector<int32u>& Entry=meta_iprp_ipma_Entries[meta_iprp_ipco_Buffer_Size]; \
-            size_t Entry_Size=Entry.size(); \
-            int64u Element_Offset_Save=Element_Offset; \
-            for (size_t i=0; i<Entry_Size; i++) \
+            if (meta_iprp_ipco_Buffer_Size<meta_iprp_ipma_Entries.size()) \
             { \
-                moov_trak_tkhd_TrackID=Entry[i]; \
-                META_CREATESTREAM(); \
-                Element_Offset=Element_Offset_Save; \
+                std::vector<int32u>& Entry=meta_iprp_ipma_Entries[meta_iprp_ipco_Buffer_Size]; \
+                size_t Entry_Size=Entry.size(); \
+                int64u Element_Offset_Save=Element_Offset; \
+                for (size_t i=0; i<Entry_Size; i++) \
+                { \
+                    moov_trak_tkhd_TrackID=Entry[i]; \
+                    META_CREATESTREAM(); \
+                    Element_Offset=Element_Offset_Save; \
 
 #define FILLING_END_IPCO() \
-            } \
+                } \
+            }\
         FILLING_END(); \
         meta_iprp_ipco_Buffer_Size++; \
     } \
