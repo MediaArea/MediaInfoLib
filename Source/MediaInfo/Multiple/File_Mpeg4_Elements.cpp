@@ -2559,6 +2559,9 @@ void File_Mpeg4::meta_iprp_ipma()
         const int8u* Buffer_Save=Buffer;
         size_t Buffer_Offset_Save=Buffer_Offset;
         size_t Buffer_Size_Save=Buffer_Size;
+        int8u* Buffer_Temp_Save=Buffer_Temp;
+        size_t Buffer_Temp_Size_Save=Buffer_Temp_Size;
+        size_t Buffer_Temp_Size_Max_Save=Buffer_Temp_Size_Max;
         int64u File_Offset_Save=File_Offset;
         int64u Element_Size_Save=Element_Size;
         Buffer=meta_iprp_ipco_Buffer;
@@ -2578,6 +2581,9 @@ void File_Mpeg4::meta_iprp_ipma()
         File_Offset=File_Offset_Save;
         Element_Offset=Element_Size_Save;
         Element_Size=Element_Size_Save;
+        Buffer_Temp=Buffer_Temp_Save;
+        Buffer_Temp_Size=Buffer_Temp_Size_Save;
+        Buffer_Temp_Size_Max=Buffer_Temp_Size_Max_Save;
         delete[] meta_iprp_ipco_Buffer; meta_iprp_ipco_Buffer=NULL;
         Element_Begin0();
         Element[Element_Level].Code=Elements::meta_iprp_ipma;
