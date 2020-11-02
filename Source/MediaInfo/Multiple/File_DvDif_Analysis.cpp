@@ -356,7 +356,7 @@ void File_DvDif::Read_Buffer_Continue()
                         REC_ST =(Buffer[Buffer_Offset+3+2]&0x80)?true:false;
                         REC_END=(Buffer[Buffer_Offset+3+2]&0x40)?true:false;
                         REC_IsValid=true;
-                        Coherency_Flags.set(Coherency_audio_source);
+                        Coherency_Flags.set(Coherency_audio_control);
                     }
 
                     //audio_recdate
@@ -1440,7 +1440,7 @@ void File_DvDif::Errors_Stats_Update()
             Captions_Flags.reset(1);
             Event1.Coherency_Flags=(Coherency_Flags[Coherency_PackInSub]?0:(1<<0))
                                  | (Coherency_Flags[Coherency_PackInVid]?0:(1<<1))
-                                 | (Coherency_Flags[Coherency_DataInAud]?0:(1<<2))
+                                 | (Coherency_Flags[Coherency_PackInAud]?0:(1<<2))
                                  | ((!Video_StaNonZero)?0:(1<<3))
                                  | ((Audio_TotalErrors<((DSF?100:90)*(FSC_WasSet?2:1)))?0:(1<<4))
                                  | ((Coherency_Flags[Coherency_video_source] && Coherency_Flags[Coherency_video_control])?0:(1<<5))

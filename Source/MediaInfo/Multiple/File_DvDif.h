@@ -249,8 +249,6 @@ protected :
         Coherency_PackInSub,
         Coherency_PackInVid,
         Coherency_PackInAud,
-        Coherency_DataInVid,
-        Coherency_DataInAud,
         Coherency_video_source,
         Coherency_video_control,
         Coherency_audio_source,
