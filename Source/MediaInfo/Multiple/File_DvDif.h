@@ -243,6 +243,11 @@ protected :
     std::vector<size_t> Video_STA_Errors_Total; //Per STA type
     static const size_t ChannelGroup_Count=2;
     static const size_t Dseq_Count=16;
+    enum caption
+    {
+        Caption_Present,
+        Caption_ParityIssueAny,
+    };
     bitset<32> Captions_Flags;
     enum coherency
     {
