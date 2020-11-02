@@ -269,7 +269,8 @@ void File_DvDif::Read_Buffer_Continue()
                                                            + ((Buffer[Buffer_Offset+3+Pos+3]&0x0F)   )   ;
                             int8u Years                     =((Buffer[Buffer_Offset+3+Pos+4]&0xF0)>>4)*10
                                                            + ((Buffer[Buffer_Offset+3+Pos+4]&0x0F)   )   ;
-                            if (Months<=12
+                            if (Years<100
+                             && Months<=12
                              && Days  <=31)
                             {
                                 if (Speed_RecDate_Current.IsValid
@@ -744,6 +745,7 @@ void File_DvDif::Errors_Stats_Update()
             Event.TimeCode=0;
             Event.RecordedDateTime1=0;
             Event.RecordedDateTime2=0;
+            int16u RecordedDateTime2Fixed=0;
             Event.Arb=0;
             Event.Verbosity=0;
             Event.Errors=NULL;
@@ -904,7 +906,9 @@ void File_DvDif::Errors_Stats_Update()
             #if MEDIAINFO_EVENTS
                 Event.RecordedDateTime1|=Speed_RecDate_Current.Years<<17;
                 Event.RecordedDateTime2|=Speed_RecDate_Current.Months<<12;
+                RecordedDateTime2Fixed|=Speed_RecDate_Current.Months<<12;
                 Event.RecordedDateTime2|=Speed_RecDate_Current.Days<<8;
+                RecordedDateTime2Fixed|=Speed_RecDate_Current.Days<<6;
             #endif //MEDIAINFO_EVENTS
         }
         else
@@ -914,6 +918,8 @@ void File_DvDif::Errors_Stats_Update()
                 Event.RecordedDateTime1|=0x7F<<17;
                 Event.RecordedDateTime2|=0x0F<<12;
                 Event.RecordedDateTime2|=0x1F<<8;
+                RecordedDateTime2Fixed|=0x0F<<12;
+                RecordedDateTime2Fixed|=0x1F<<6;
             #endif //MEDIAINFO_EVENTS
         }
         Errors_Stats_Line+=__T(" ");
@@ -949,6 +955,7 @@ void File_DvDif::Errors_Stats_Update()
                 Speed_RecTimeZ_Current+=__T('0')+(Char)(Milliseconds%10);
                 #if MEDIAINFO_EVENTS
                     Event.RecordedDateTime2|=Speed_RecTime_Current.Time.Frames;
+                    RecordedDateTime2Fixed|=Speed_RecTime_Current.Time.Frames;
                 #endif //MEDIAINFO_EVENTS
             }
             else
@@ -956,6 +963,7 @@ void File_DvDif::Errors_Stats_Update()
                 Speed_RecTimeZ_Current+=__T("    ");
                 #if MEDIAINFO_EVENTS
                     Event.RecordedDateTime2|=0x7F;
+                    RecordedDateTime2Fixed|=0x3F;
                 #endif //MEDIAINFO_EVENTS
             }
             Errors_Stats_Line+=Speed_RecTimeZ_Current;
@@ -981,6 +989,7 @@ void File_DvDif::Errors_Stats_Update()
             #if MEDIAINFO_EVENTS
                 Event.RecordedDateTime1|=0x1FFFF;
                 Event.RecordedDateTime2|=0x7F;
+                RecordedDateTime2Fixed|=0x3F;
             #endif //MEDIAINFO_EVENTS
         }
         Errors_Stats_Line+=__T('\t');
@@ -1431,7 +1440,7 @@ void File_DvDif::Errors_Stats_Update()
             Event1.StreamOffset=Speed_FrameCount_StartOffset;
             Event1.TimeCode=Event.TimeCode;
             Event1.RecordedDateTime1=Event.RecordedDateTime1;
-            Event1.RecordedDateTime2=Event.RecordedDateTime2;
+            Event1.RecordedDateTime2Buggy=Event.RecordedDateTime2;
             Event1.Arb=Event.Arb;
             Event1.Verbosity=Event.Verbosity;
             Event1.Errors=Event.Errors;
@@ -1475,6 +1484,7 @@ void File_DvDif::Errors_Stats_Update()
                                  | ((Coherency_Flags[Coherency_audio_source] && Coherency_Flags[Coherency_audio_control])?0:(1<<6))
                                  ;
             Coherency_Flags.reset();
+            Event1.RecordedDateTime2=RecordedDateTime2Fixed;
             Config->Event_Send(NULL, (const int8u*)&Event1, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_1));
             Config->Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_0));
         #endif //MEDIAINFO_EVENTS
