@@ -221,6 +221,25 @@ void File_DvDif::Read_Buffer_Continue()
                         break;
                     }
                 
+                    // Coherency
+                    map<int8u, int8u> VauxCoherency;
+                    for (size_t Pos=0; Pos<15*5; Pos+=5)
+                    {
+                        int8u PackType=Buffer[Buffer_Offset+3+Pos];
+                        VauxCoherency[PackType]++;
+                    }
+                    bool VauxCoherency_IsNok=false;
+                    for (map<int8u, int8u>::iterator VauxCoherency_Item=VauxCoherency.begin(); VauxCoherency_Item!=VauxCoherency.end(); ++VauxCoherency_Item)
+                        if (VauxCoherency_Item->first!=0xFF && VauxCoherency_Item->second>1)
+                            VauxCoherency_IsNok=true;
+                    if (VauxCoherency.find(0xFF)==VauxCoherency.end())
+                        VauxCoherency_IsNok=true;
+                    if (VauxCoherency_IsNok)
+                    {
+                        //TODO: error info in an event
+                        break;
+                    }
+
                     for (size_t Pos=0; Pos<15*5; Pos+=5)
                     {
                         int8u PackType=Buffer[Buffer_Offset+3+Pos];
