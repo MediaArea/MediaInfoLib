@@ -304,20 +304,29 @@ void File_DvDif::Read_Buffer_Continue()
                             }
                         }
 
-                        //video_rectime
+                        //closed_captions
                         if (PackType==0x65) //Pack type=0x65 (closed_captions)
                         {
                             uint8_t Dseq    =Buffer[Buffer_Offset+1]>>4;
                             Element_Code = (0x2 << 16) | (0x65 << 8) | Dseq; // Set identifier with SCT=0x2, PackType=0x65, and Dseq
-                            Demux(Buffer+Buffer_Offset+3+Pos+1, 4, ContentType_MainStream);
-                            Captions_Flags.set(0);
+                            bool FSC=(Buffer[Buffer_Offset+1  ]&0x08)?true:false;
+                            bool FSP=(Buffer[Buffer_Offset+1  ]&0x04)?true:false;
+                            if (!FSC && FSP) // Only first part of DV50/DV100
+                                Demux(Buffer+Buffer_Offset+3+Pos+1, 4, ContentType_MainStream);
+                            Captions_Flags.set(Caption_Present);
 
                             // Quick parity check
-                            for (size_t i=0; i<4; i++)
+                            for (size_t i=0; i<2; i++)
                             {
-                                bitset<8> ForCounting(Buffer[Buffer_Offset+3+Pos+1+i]);
-                                if (!(ForCounting.count()%2))
-                                    Captions_Flags.set(1);
+                                int8u Byte0=Buffer[Buffer_Offset+3+Pos+1+i*2  ];
+                                int8u Byte1=Buffer[Buffer_Offset+3+Pos+1+i*2+1];
+                                if (Byte0!=0xFF && Byte1!=0xFF)
+                                {
+                                    bitset<8> ForCounting0(Byte0);
+                                    bitset<8> ForCounting1(Byte1);
+                                    if (!(ForCounting0.count()%2) || !(ForCounting1.count()%2))
+                                        Captions_Flags.set(Caption_ParityIssueAny);
+                                }
                             }
                         }
                     }
