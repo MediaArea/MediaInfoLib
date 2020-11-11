@@ -222,16 +222,18 @@ void File_DvDif::Read_Buffer_Continue()
                     }
                 
                     // Coherency
-                    map<int8u, int8u> VauxCoherency;
+                    map<int8u, const int8u*> VauxCoherency;
+                    bool VauxCoherency_IsNok=false;
                     for (size_t Pos=0; Pos<15*5; Pos+=5)
                     {
                         int8u PackType=Buffer[Buffer_Offset+3+Pos];
-                        VauxCoherency[PackType]++;
-                    }
-                    bool VauxCoherency_IsNok=false;
-                    for (map<int8u, int8u>::iterator VauxCoherency_Item=VauxCoherency.begin(); VauxCoherency_Item!=VauxCoherency.end(); ++VauxCoherency_Item)
-                        if (VauxCoherency_Item->first!=0xFF && VauxCoherency_Item->second>1)
+                        map<int8u, const int8u*>::iterator VauxCoherency_Item=VauxCoherency.find(PackType);
+                        const int8u* VauxBuf=Buffer+Buffer_Offset+3+Pos;
+                        if (VauxCoherency_Item!=VauxCoherency.end() && memcmp(VauxCoherency_Item->second, VauxBuf, 5))
                             VauxCoherency_IsNok=true;
+                        else
+                            VauxCoherency[PackType]=VauxBuf;
+                    }
                     if (VauxCoherency.find(0xFF)==VauxCoherency.end())
                         VauxCoherency_IsNok=true;
                     if (VauxCoherency_IsNok)
