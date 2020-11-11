@@ -10,6 +10,7 @@
 //
 // From
 // http://partners.adobe.com/public/developer/en/tiff/TIFF6.pdf
+// http://partners.adobe.com/public/developer/en/tiff/TIFFphotoshop.pdf
 // http://www.fileformat.info/format/tiff/
 // http://en.wikipedia.org/wiki/Tagged_Image_File_Format
 //
@@ -143,7 +144,9 @@ static const char* Tiff_Compression(int32u Compression)
         case     2 : return "CCITT Group 3";
         case     3 : return "CCITT T.4";
         case     5 : return "LZW";
-        case     6 : return "JPEG";
+        case     6 : return "JPEG (TIFF v6)";
+        case     7 : return "JPEG (ISO)";
+        case     8 : return "Deflate";
         case 32773 : return "PackBits";
         default    : return ""; //Unknown
     }
@@ -158,6 +161,7 @@ static const char* Tiff_Compression_Mode(int32u Compression)
         case     2 :
         case     3 :
         case     5 :
+        case     8 :
         case 32773 : return "Lossless";
         default    : return ""; //Unknown or depends of the compresser (e.g. JPEG can be lossless or lossy)
     }
