@@ -222,16 +222,18 @@ void File_DvDif::Read_Buffer_Continue()
                     }
                 
                     // Coherency
-                    map<int8u, int8u> VauxCoherency;
+                    map<int8u, const int8u*> VauxCoherency;
+                    bool VauxCoherency_IsNok=false;
                     for (size_t Pos=0; Pos<15*5; Pos+=5)
                     {
                         int8u PackType=Buffer[Buffer_Offset+3+Pos];
-                        VauxCoherency[PackType]++;
-                    }
-                    bool VauxCoherency_IsNok=false;
-                    for (map<int8u, int8u>::iterator VauxCoherency_Item=VauxCoherency.begin(); VauxCoherency_Item!=VauxCoherency.end(); ++VauxCoherency_Item)
-                        if (VauxCoherency_Item->first!=0xFF && VauxCoherency_Item->second>1)
+                        map<int8u, const int8u*>::iterator VauxCoherency_Item=VauxCoherency.find(PackType);
+                        const int8u* VauxBuf=Buffer+Buffer_Offset+3+Pos;
+                        if (VauxCoherency_Item!=VauxCoherency.end() && memcmp(VauxCoherency_Item->second, VauxBuf, 5))
                             VauxCoherency_IsNok=true;
+                        else
+                            VauxCoherency[PackType]=VauxBuf;
+                    }
                     if (VauxCoherency.find(0xFF)==VauxCoherency.end())
                         VauxCoherency_IsNok=true;
                     if (VauxCoherency_IsNok)
@@ -269,7 +271,8 @@ void File_DvDif::Read_Buffer_Continue()
                                                            + ((Buffer[Buffer_Offset+3+Pos+3]&0x0F)   )   ;
                             int8u Years                     =((Buffer[Buffer_Offset+3+Pos+4]&0xF0)>>4)*10
                                                            + ((Buffer[Buffer_Offset+3+Pos+4]&0x0F)   )   ;
-                            if (Months<=12
+                            if (Years<100
+                             && Months<=12
                              && Days  <=31)
                             {
                                 if (Speed_RecDate_Current.IsValid
@@ -323,20 +326,29 @@ void File_DvDif::Read_Buffer_Continue()
                             }
                         }
 
-                        //video_rectime
+                        //closed_captions
                         if (PackType==0x65) //Pack type=0x65 (closed_captions)
                         {
                             uint8_t Dseq    =Buffer[Buffer_Offset+1]>>4;
                             Element_Code = (0x2 << 16) | (0x65 << 8) | Dseq; // Set identifier with SCT=0x2, PackType=0x65, and Dseq
-                            Demux(Buffer+Buffer_Offset+3+Pos+1, 4, ContentType_MainStream);
-                            Captions_Flags.set(0);
+                            bool FSC=(Buffer[Buffer_Offset+1  ]&0x08)?true:false;
+                            bool FSP=(Buffer[Buffer_Offset+1  ]&0x04)?true:false;
+                            if (!FSC && FSP) // Only first part of DV50/DV100
+                                Demux(Buffer+Buffer_Offset+3+Pos+1, 4, ContentType_MainStream);
+                            Captions_Flags.set(Caption_Present);
 
                             // Quick parity check
-                            for (size_t i=0; i<4; i++)
+                            for (size_t i=0; i<2; i++)
                             {
-                                bitset<8> ForCounting(Buffer[Buffer_Offset+3+Pos+1+i]);
-                                if (!(ForCounting.count()%2))
-                                    Captions_Flags.set(1);
+                                int8u Byte0=Buffer[Buffer_Offset+3+Pos+1+i*2  ];
+                                int8u Byte1=Buffer[Buffer_Offset+3+Pos+1+i*2+1];
+                                if (Byte0!=0xFF && Byte1!=0xFF)
+                                {
+                                    bitset<8> ForCounting0(Byte0);
+                                    bitset<8> ForCounting1(Byte1);
+                                    if (!(ForCounting0.count()%2) || !(ForCounting1.count()%2))
+                                        Captions_Flags.set(Caption_ParityIssueAny);
+                                }
                             }
                         }
                     }
@@ -375,7 +387,7 @@ void File_DvDif::Read_Buffer_Continue()
                         REC_ST =(Buffer[Buffer_Offset+3+2]&0x80)?true:false;
                         REC_END=(Buffer[Buffer_Offset+3+2]&0x40)?true:false;
                         REC_IsValid=true;
-                        Coherency_Flags.set(Coherency_audio_source);
+                        Coherency_Flags.set(Coherency_audio_control);
                     }
 
                     //audio_recdate
@@ -735,6 +747,7 @@ void File_DvDif::Errors_Stats_Update()
             Event.TimeCode=0;
             Event.RecordedDateTime1=0;
             Event.RecordedDateTime2=0;
+            int16u RecordedDateTime2Fixed=0;
             Event.Arb=0;
             Event.Verbosity=0;
             Event.Errors=NULL;
@@ -895,7 +908,9 @@ void File_DvDif::Errors_Stats_Update()
             #if MEDIAINFO_EVENTS
                 Event.RecordedDateTime1|=Speed_RecDate_Current.Years<<17;
                 Event.RecordedDateTime2|=Speed_RecDate_Current.Months<<12;
+                RecordedDateTime2Fixed|=Speed_RecDate_Current.Months<<12;
                 Event.RecordedDateTime2|=Speed_RecDate_Current.Days<<8;
+                RecordedDateTime2Fixed|=Speed_RecDate_Current.Days<<6;
             #endif //MEDIAINFO_EVENTS
         }
         else
@@ -905,6 +920,8 @@ void File_DvDif::Errors_Stats_Update()
                 Event.RecordedDateTime1|=0x7F<<17;
                 Event.RecordedDateTime2|=0x0F<<12;
                 Event.RecordedDateTime2|=0x1F<<8;
+                RecordedDateTime2Fixed|=0x0F<<12;
+                RecordedDateTime2Fixed|=0x1F<<6;
             #endif //MEDIAINFO_EVENTS
         }
         Errors_Stats_Line+=__T(" ");
@@ -940,6 +957,7 @@ void File_DvDif::Errors_Stats_Update()
                 Speed_RecTimeZ_Current+=__T('0')+(Char)(Milliseconds%10);
                 #if MEDIAINFO_EVENTS
                     Event.RecordedDateTime2|=Speed_RecTime_Current.Time.Frames;
+                    RecordedDateTime2Fixed|=Speed_RecTime_Current.Time.Frames;
                 #endif //MEDIAINFO_EVENTS
             }
             else
@@ -947,6 +965,7 @@ void File_DvDif::Errors_Stats_Update()
                 Speed_RecTimeZ_Current+=__T("    ");
                 #if MEDIAINFO_EVENTS
                     Event.RecordedDateTime2|=0x7F;
+                    RecordedDateTime2Fixed|=0x3F;
                 #endif //MEDIAINFO_EVENTS
             }
             Errors_Stats_Line+=Speed_RecTimeZ_Current;
@@ -972,6 +991,7 @@ void File_DvDif::Errors_Stats_Update()
             #if MEDIAINFO_EVENTS
                 Event.RecordedDateTime1|=0x1FFFF;
                 Event.RecordedDateTime2|=0x7F;
+                RecordedDateTime2Fixed|=0x3F;
             #endif //MEDIAINFO_EVENTS
         }
         Errors_Stats_Line+=__T('\t');
@@ -1422,7 +1442,7 @@ void File_DvDif::Errors_Stats_Update()
             Event1.StreamOffset=Speed_FrameCount_StartOffset;
             Event1.TimeCode=Event.TimeCode;
             Event1.RecordedDateTime1=Event.RecordedDateTime1;
-            Event1.RecordedDateTime2=Event.RecordedDateTime2;
+            Event1.RecordedDateTime2Buggy=Event.RecordedDateTime2;
             Event1.Arb=Event.Arb;
             Event1.Verbosity=Event.Verbosity;
             Event1.Errors=Event.Errors;
@@ -1459,13 +1479,14 @@ void File_DvDif::Errors_Stats_Update()
             Captions_Flags.reset(1);
             Event1.Coherency_Flags=(Coherency_Flags[Coherency_PackInSub]?0:(1<<0))
                                  | (Coherency_Flags[Coherency_PackInVid]?0:(1<<1))
-                                 | (Coherency_Flags[Coherency_DataInAud]?0:(1<<2))
+                                 | (Coherency_Flags[Coherency_PackInAud]?0:(1<<2))
                                  | ((!Video_StaNonZero)?0:(1<<3))
                                  | ((Audio_TotalErrors<((DSF?100:90)*(FSC_WasSet?2:1)))?0:(1<<4))
                                  | ((Coherency_Flags[Coherency_video_source] && Coherency_Flags[Coherency_video_control])?0:(1<<5))
                                  | ((Coherency_Flags[Coherency_audio_source] && Coherency_Flags[Coherency_audio_control])?0:(1<<6))
                                  ;
             Coherency_Flags.reset();
+            Event1.RecordedDateTime2=RecordedDateTime2Fixed;
             Config->Event_Send(NULL, (const int8u*)&Event1, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_1));
             Config->Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_0));
         #endif //MEDIAINFO_EVENTS
