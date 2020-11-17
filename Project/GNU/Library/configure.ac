@@ -54,7 +54,7 @@ AC_ARG_ENABLE(arch-i386,        AC_HELP_STRING([--enable-arch-i386],        [Cre
 AC_ARG_ENABLE(arch-x86_64,      AC_HELP_STRING([--enable-arch-x86_64],      [Create Mac/iPhone x86_64 architecture]),     , enable_arch_x86_64=no)
 AC_ARG_ENABLE(arch-armv7,       AC_HELP_STRING([--enable-arch-armv7],       [Create iPhone ARMv7 architecture]),          , enable_arch_armv7=no)
 AC_ARG_ENABLE(arch-armv7s,      AC_HELP_STRING([--enable-arch-armv7s],      [Create iPhone ARMv7s architecture]),         , enable_arch_armv7s=no)
-AC_ARG_ENABLE(arch-arm64,       AC_HELP_STRING([--enable-arch-arm64],       [Create iPhone ARM64 architecture]),          , enable_arch_arm64=no)
+AC_ARG_ENABLE(arch-arm64,       AC_HELP_STRING([--enable-arch-arm64],       [Create Mac/iPhone ARM64 architecture]),      , enable_arch_arm64=no)
 AC_ARG_ENABLE(staticlibs,       AC_HELP_STRING([--enable-staticlibs],       [Use static libmediainfo and libzen]),        , enable_staticlibs=no)
 AC_ARG_ENABLE(minimize-size,    AC_HELP_STRING([--enable-minimize-size],    [Enable size optimisations]),                 MediaInfoMinimizeSize=$enableval, MediaInfoMinimizeSize=depend)
 AC_ARG_ENABLE(minimal,    		AC_HELP_STRING([--enable-minimal],    		[Enable minimal management (except parsers)]),MediaInfoMinimal=$enableval, MediaInfoMinimal=depend)
