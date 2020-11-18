@@ -316,7 +316,14 @@ protected :
     };
     std::vector<timeStampsZ> Speed_TimeStampsZ;
 
-
+    enum status
+    {
+        BlockStatus_Unk,
+        BlockStatus_OK,
+        BlockStatus_NOK,
+    };
+    static const size_t BlockStatus_MaxSize=1800*4; // Max 1800 if PAL * 4 if DV100
+    MediaInfo_int8u BlockStatus[BlockStatus_MaxSize];
 
     struct arb
     {

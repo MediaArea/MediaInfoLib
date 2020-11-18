@@ -484,8 +484,13 @@ void File_DvDif::Read_Buffer_Continue()
                             if (Audio_Errors[Channel].empty())
                                 Audio_Errors[Channel].resize(Dseq_Count);
                             Audio_Errors[Channel][Dseq]++;
+                            BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_NOK;
                         }
+                        else
+                            BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_OK;
                     }
+                    else
+                        BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_OK;
                 }
                 break;
 
@@ -516,12 +521,11 @@ void File_DvDif::Read_Buffer_Continue()
                     }
 
                     //STA
+                    int8u STA_Error=Buffer[Buffer_Offset+3]>>4;
                     if (Buffer[Buffer_Offset+3]&0xF0)
                     {
                         if (video_source_stype!=(int8u)-1)
                         {
-                            int8u STA_Error=Buffer[Buffer_Offset+3]>>4;
-
                             if (Video_STA_Errors.empty())
                                 Video_STA_Errors.resize(16);
                             Video_STA_Errors[STA_Error]++;
@@ -532,6 +536,7 @@ void File_DvDif::Read_Buffer_Continue()
                             Video_STA_Errors_ByDseq[(Dseq<<4)|STA_Error]++;
                         }
                     }
+                    BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=STA_Error?BlockStatus_NOK:BlockStatus_OK;
                 }
                 break;
         }
@@ -552,6 +557,8 @@ void File_DvDif::Read_Buffer_Continue()
 
 void File_DvDif::Errors_Stats_Update()
 {
+    if (!Status[IsAccepted])
+        Accept();
     if (!Analyze_Activated)
     {
         if (Config->File_DvDif_Analysis_Get())
@@ -1487,8 +1494,11 @@ void File_DvDif::Errors_Stats_Update()
                                  ;
             Coherency_Flags.reset();
             Event1.RecordedDateTime2=RecordedDateTime2Fixed;
+            Event1.BlockStatus_Count=((DSF?1800:1500)*(FSC_WasSet?2:1));
+            Event1.BlockStatus=BlockStatus;
             Config->Event_Send(NULL, (const int8u*)&Event1, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_1));
             Config->Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_0));
+            memset(BlockStatus, 0, Event1.BlockStatus_Count);
         #endif //MEDIAINFO_EVENTS
     }
 
