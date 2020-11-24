@@ -925,30 +925,7 @@ void File_Riff::Header_Parse()
     if (IsBigEndian)
         Get_B4 (Size,                                           "Size");
     else
-    {
         Get_L4 (Size,                                           "Size");
-
-        //Testing malformed (not word aligned)
-        if (!IsNotWordAligned_Tested && Size%2)
-        {
-            if (File_Offset+Buffer_Offset+8+Size==File_Size)
-                IsNotWordAligned=true;
-            #if defined(MEDIAINFO_FILE_YES) //TODO: seek if file API is not available
-            else if (!File_Name.empty())
-            {
-                File F(File_Name);
-                F.GoTo(File_Offset+Buffer_Offset+8+Size);
-                int8u Temp;
-                if (F.Read(&Temp, 1))
-                {
-                    if (!((Temp<'A' || Temp>'z') && Temp!=' '))
-                        IsNotWordAligned=true;
-                }
-            }
-            #endif //defined(MEDIAINFO_FILE_YES)
-            IsNotWordAligned_Tested=true;
-        }
-    }
 
     //RF64
     int64u Size_Complete=Size;
@@ -971,6 +948,27 @@ void File_Riff::Header_Parse()
             Size_Complete=WAVE_data_Size;
             Param_Info1(Size_Complete);
         }
+    }
+
+    //Testing malformed (not word aligned)
+    if (!IsNotWordAligned_Tested && !IsBigEndian && Size%2)
+    {
+        if (File_Offset+Buffer_Offset+8+Size==File_Size)
+            IsNotWordAligned=true;
+        #if defined(MEDIAINFO_FILE_YES) //TODO: seek if file API is not available
+        else if (!File_Name.empty())
+        {
+            File F(File_Name);
+            F.GoTo(File_Offset+Buffer_Offset+8+Size);
+            int8u Temp;
+            if (F.Read(&Temp, 1))
+            {
+                if (!((Temp<'A' || Temp>'z') && Temp!=' '))
+                    IsNotWordAligned=true;
+            }
+        }
+        #endif //defined(MEDIAINFO_FILE_YES)
+        IsNotWordAligned_Tested=true;
     }
 
     //Coherency
