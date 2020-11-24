@@ -650,6 +650,7 @@ namespace Elements
     const int64u moof_mfhd=0x6D666864;
     const int64u moof_traf=0x74726166;
     const int64u moof_traf_sdtp=0x73647470;
+    const int64u moof_traf_tfdt=0x74666474;
     const int64u moof_traf_tfhd=0x74666864;
     const int64u moof_traf_trun=0x7472756E;
     const int64u moov=0x6D6F6F76;
@@ -924,6 +925,7 @@ namespace Elements
     const int64u REDV=0x52454456;
     const int64u REOB=0x52454F42;
     const int64u skip=0x736B6970;
+    const int64u sidx=0x73696478;
     const int64u wide=0x77696465;
 }
 
@@ -1024,6 +1026,7 @@ void File_Mpeg4::Data_Parse()
         LIST(moof_traf)
             ATOM_BEGIN
             ATOM(moof_traf_sdtp)
+            ATOM(moof_traf_tfdt)
             ATOM(moof_traf_tfhd)
             ATOM(moof_traf_trun)
             ATOM_END
@@ -1345,6 +1348,7 @@ void File_Mpeg4::Data_Parse()
     ATOM(pckg)
     ATOM(pnot)
     LIST_SKIP(skip)
+    ATOM(sidx)
     LIST_SKIP(wide)
     DATA_END
 }
@@ -2761,6 +2765,27 @@ void File_Mpeg4::moof_traf_sdtp()
 }
 
 //---------------------------------------------------------------------------
+void File_Mpeg4::moof_traf_tfdt()
+{
+    NAME_VERSION_FLAG("Track Fragment Base Media Decode Time");
+    if (Version>1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                   "Data");
+        return;
+    }
+
+    //Parsing
+    if (!Version)
+    {
+        Skip_B4(                                                "baseMediaDecodeTime");
+    }
+    else
+    {
+        Skip_B8(                                                "baseMediaDecodeTime");
+    }
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg4::moof_traf_tfhd()
 {
     NAME_VERSION_FLAG("Track Fragment Header");
@@ -2864,7 +2889,9 @@ void File_Mpeg4::moof_traf_trun()
         if (sample_flags_present)
             Skip_B4(                                            "sample_flags");
         if (sample_composition_time_offset_present)
-            Skip_B4(                                            "sample_composition_time_offset");
+        {
+            Info_B4(sample_composition_time_offset,             "sample_composition_time_offset"); Param_Info1((int32s)sample_composition_time_offset);
+        }
         Element_End0();
     }
 }
@@ -8880,6 +8907,47 @@ void File_Mpeg4::skip()
 
     //Parsing
     Skip_XX(Element_Size,                                       "Free");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::sidx()
+{
+    NAME_VERSION_FLAG("Segment Index");
+    if (Version>1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                   "Data");
+        return;
+    }
+
+    //Parsing
+    Skip_B4(                                                    "reference_ID");
+    Skip_B4(                                                    "timescale");
+    if (!Version)
+    {
+        Skip_B4(                                                "earliest_presentation_time");
+        Skip_B4(                                                "first_offset");
+    }
+    else
+    {
+        Skip_B8(                                                "earliest_presentation_time");
+        Skip_B8(                                                "first_offset");
+    }
+    Skip_B2(                                                    "reserved");
+    int16u reference_counts;
+    Get_B2 (reference_counts,                                   "reference_counts");
+    BS_Begin();
+    for (int32u Pos=0; Pos<reference_counts; Pos++)
+    {
+        Element_Begin1("reference");
+        Skip_SB(                                                "reference_type");
+        Skip_S4(31,                                             "referenced_size");
+        Skip_S4(32,                                             "subsegment_duration");
+        Skip_SB(                                                "starts_with_SAP");
+        Skip_S4( 3,                                             "SAP_type");
+        Skip_S4(28,                                             "SAP_delta_time");
+        Element_End0();
+    }
+    BS_End();
 }
 
 //---------------------------------------------------------------------------
