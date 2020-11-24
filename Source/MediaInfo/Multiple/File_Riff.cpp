@@ -951,9 +951,9 @@ void File_Riff::Header_Parse()
     }
 
     //Testing malformed (not word aligned)
-    if (!IsNotWordAligned_Tested && !IsBigEndian && Size%2)
+    if (!IsNotWordAligned_Tested && !IsBigEndian && Size_Complete %2)
     {
-        if (File_Offset+Buffer_Offset+8+Size==File_Size)
+        if (File_Offset+Buffer_Offset+8+Size_Complete==File_Size)
             IsNotWordAligned=true;
         #if defined(MEDIAINFO_FILE_YES) //TODO: seek if file API is not available
         else if (!File_Name.empty())
