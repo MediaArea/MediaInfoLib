@@ -671,7 +671,8 @@ void File_Tiff::GetValueOffsetu(ifditem &IfdItem)
                             Get_B4 (N,                          "Numerator");
                             Get_B4 (D,                          "Denominator");
                         }
-                        Element_Info1(Ztring::ToZtring(((float64)N)/D));
+                        if (D)
+                            Element_Info1(Ztring::ToZtring(((float64)N)/D));
                     #else //MEDIAINFO_TRACE
                         if (Element_Offset+8>Element_Size)
                         {
@@ -690,7 +691,10 @@ void File_Tiff::GetValueOffsetu(ifditem &IfdItem)
                         }
                         Element_Offset+=8;
                     #endif //MEDIAINFO_TRACE
-                    Info.push_back(Ztring::ToZtring(((float64)N)/D, D==1?0:3));
+                    if (D)
+                        Info.push_back(Ztring::ToZtring(((float64)N)/D, D==1?0:3));
+                    else
+                        Info.push_back(Ztring()); // Division by zero, undefined
                 }
                 break;
 
