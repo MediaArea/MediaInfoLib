@@ -128,6 +128,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cfloat>
+
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -1132,20 +1133,20 @@ void File_Mpeg4::Data_Parse()
                         ATOM(moov_trak_mdia_minf_stbl_stsc)
                         LIST(moov_trak_mdia_minf_stbl_stsd)
                             ATOM_BEGIN
-                            LIST(moov_trak_mdia_minf_stbl_stsd_stpp)
+                            LIST_COMPLETE(moov_trak_mdia_minf_stbl_stsd_stpp)
                                 ATOM_BEGIN
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_stpp_btrt)
                                 ATOM_END
                             ATOM(moov_trak_mdia_minf_stbl_stsd_text)
-                            LIST(moov_trak_mdia_minf_stbl_stsd_tmcd)
+                            LIST_COMPLETE(moov_trak_mdia_minf_stbl_stsd_tmcd)
                                 ATOM_BEGIN
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_tmcd_name)
                                 ATOM_END
-                            LIST(moov_trak_mdia_minf_stbl_stsd_tx3g)
+                            LIST_COMPLETE(moov_trak_mdia_minf_stbl_stsd_tx3g)
                                 ATOM_BEGIN
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_tx3g_ftab)
                                 ATOM_END
-                            LIST_DEFAULT(moov_trak_mdia_minf_stbl_stsd_xxxx)
+                            LIST_DEFAULT_COMPLETE(moov_trak_mdia_minf_stbl_stsd_xxxx)
                                 ATOM_BEGIN
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_alac)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_AALP)

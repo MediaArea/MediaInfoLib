@@ -1669,12 +1669,44 @@ public :
                 _ATOM(); \
             } \
 
+#define LIST_COMPLETE(_ATOM) \
+    case Elements::_ATOM : \
+            if (Level==Element_Level) \
+            { \
+                if (Element_IsComplete_Get()) \
+                { \
+                    Element_ThisIsAList(); \
+                    _ATOM(); \
+                } \
+                else \
+                { \
+                    Element_WaitForMoreData(); \
+                    return; \
+                } \
+            } \
+
 #define LIST_DEFAULT(_ATOM) \
             default : \
             if (Level==Element_Level) \
             { \
                 Element_ThisIsAList(); \
                 _ATOM(); \
+            } \
+
+#define LIST_DEFAULT_COMPLETE(_ATOM) \
+            default : \
+            if (Level==Element_Level) \
+            { \
+                if (Element_IsComplete_Get()) \
+                { \
+                    Element_ThisIsAList(); \
+                    _ATOM(); \
+                } \
+                else \
+                { \
+                    Element_WaitForMoreData(); \
+                    return; \
+                } \
             } \
 
 #define ATOM_END_DEFAULT \
