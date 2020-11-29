@@ -1035,7 +1035,6 @@ void File_Ac3::Streams_Fill()
 
         if (HD_StreamType==0xBA) //TrueHD
         {
-            if (bsid_Max==(int8u)-1)
             {
                 Fill(Stream_Audio, 0, Audio_Format, "MLP FBA");
                 Fill(Stream_Audio, 0, Audio_Codec, "MLP FBA");
@@ -1046,6 +1045,7 @@ void File_Ac3::Streams_Fill()
                 Fill(Stream_Audio, 0, Audio_Codec_Profile, "MLP FBA 16-ch / MLP FBA");
             }
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
+            Fill(Stream_Audio, 0, Audio_Compression_Mode, "Lossless");
             Ztring Sampling;
             Sampling.From_Number(AC3_HD_SamplingRate(HD_SamplingRate1));
             Fill(Stream_Audio, 0, Audio_SamplingRate, Sampling);
@@ -1057,12 +1057,12 @@ void File_Ac3::Streams_Fill()
 
         if (HD_StreamType==0xBB) //TrueHD
         {
-            if (!Core_IsPresent)
             {
                 Fill(Stream_Audio, 0, Audio_Format, "MLP");
                 Fill(Stream_Audio, 0, Audio_Codec,  "MLP");
             }
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
+            Fill(Stream_Audio, 0, Audio_Compression_Mode, "Lossless");
             Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate2));
             if (HD_SamplingRate1!=HD_SamplingRate2)
                 Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate2));
