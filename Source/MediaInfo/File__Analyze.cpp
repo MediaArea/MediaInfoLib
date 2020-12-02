@@ -1624,9 +1624,13 @@ bool File__Analyze::Synchronize_0x000001()
 //---------------------------------------------------------------------------
 bool File__Analyze::FileHeader_Begin_0x000001()
 {
+    // No need to check if inside a container
+    if (IsSub)
+        return true;
+
     //Element_Size
     if (Buffer_Size<192*4)
-        return true; //Not enough buffer for a test
+        return false; //Not enough buffer for a test
 
     //Detecting OldDirac/WAV/SWF/FLV/ELF/DPG/WM files
     int64u Magic8=CC8(Buffer);
