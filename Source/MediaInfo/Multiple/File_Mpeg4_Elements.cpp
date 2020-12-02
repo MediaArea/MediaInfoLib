@@ -8068,6 +8068,7 @@ void File_Mpeg4::moov_trak_udta_xxxx()
 void File_Mpeg4::moov_udta()
 {
     Element_Name("User Data");
+    Skip_XX(Element_TotalSize_Get(), "XXX");
 
     moov_trak_tkhd_TrackID=(int32u)-1;
 }
@@ -8907,7 +8908,11 @@ void File_Mpeg4::skip()
     Element_Name("Skip");
 
     //Parsing
-    Skip_XX(Element_Size,                                       "Free");
+    Skip_XX(Element_TotalSize_Get(),                            "Data");
+    #if MEDIAINFO_HASH
+        if (Hash && !IsSecondPass)
+            GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Hash will be done during second pass
+    #endif //MEDIAINFO_HASH
 }
 
 //---------------------------------------------------------------------------
