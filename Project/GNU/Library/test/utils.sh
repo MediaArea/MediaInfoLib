@@ -31,7 +31,7 @@ enabled()
 
     set -- $RUN_TESTS
     while test $# -gt 0 ; do
-        if test "$1" = "$test" ; then
+        if test "$1" = "$test" || test "$1" = "all" ; then
             return 0
         fi
         shift

@@ -294,5 +294,5 @@ REGRESSION_FILES = $(TESTS_DIR)/Files
 clone_regression_files: $(REGRESSION_FILES)
 
 $(REGRESSION_FILES):
-	git clone https://github.com/MediaArea/MediaArea-RegressionTestingFiles $(TESTS_DIR)/Files
+	git clone --depth=1 https://github.com/MediaArea/MediaArea-RegressionTestingFiles $(TESTS_DIR)/Files
 
