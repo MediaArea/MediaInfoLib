@@ -11,7 +11,7 @@ then
     wget https://github.com/MediaArea/MediaAreaXml/raw/master/micromediatrace.xsd -O "$UTILS_PATH/micromediatrace.xsd"
 fi
 
-if [ ! -f "$UTILS_PATH/mediainfo_2_0.xsd" ]
+if [ ! -f "$UTILS_PATH/mediainfo.xsd" ]
 then
     wget https://mediaarea.net/mediainfo/mediainfo_2_0.xsd -O "$UTILS_PATH/mediainfo.xsd"
 fi
