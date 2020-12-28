@@ -7,4 +7,4 @@ cd ../../../../MediaInfoLib/Project/GNU/Library
 ./autogen.sh
 cd ../../../..
 
-./SO_Compile.sh --enable-arch-x86_64 --enable-arch-i386
+./SO_Compile.sh --enable-arch-x86_64 --enable-arch-arm64
