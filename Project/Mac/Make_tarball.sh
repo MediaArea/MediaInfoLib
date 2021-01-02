@@ -53,8 +53,8 @@ echo
 echo ========== Create the archive ==========
 echo
 
-(BZIP=-9 tar -cjf MediaInfo_DLL_$1_Mac_i386+x86_64.tar.bz2 MediaInfoLib)
-(XZ_OPT=-9e tar -cJf MediaInfo_DLL_$1_Mac_i386+x86_64.tar.xz MediaInfoLib)
+(BZIP=-9 tar -cjf MediaInfo_DLL_$1_Mac_x86_64+arm64.tar.bz2 MediaInfoLib)
+(XZ_OPT=-9e tar -cJf MediaInfo_DLL_$1_Mac_x86_64+arm64.tar.xz MediaInfoLib)
 
 # Clean up
 rm -fr MediaInfoLib
