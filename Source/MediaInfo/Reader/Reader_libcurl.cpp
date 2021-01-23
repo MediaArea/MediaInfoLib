@@ -582,7 +582,7 @@ string Amazon_AWS_GetRegion(const string &serviceName, const string &bucketName,
 
 void Amazon_AWS_Manage(Http::Url &File_URL, Reader_libcurl::curl_data* Curl_Data, const ZtringList& ExternalHttpHeaders)
 {
-    // Looking for style of URL (Virtual-hosted–style URL Path-style URL), service name, region name
+    // Looking for style of URL (Virtual-hosted-style URL Path-style URL), service name, region name
     // Format:
     // <bucket>.<service>.<aws-region>
     // <service>.<aws-region>
