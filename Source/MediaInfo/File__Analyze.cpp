@@ -1090,16 +1090,25 @@ bool File__Analyze::Open_Buffer_Continue_Loop ()
     Element[Element_Level].WaitForMoreData=false;
     Read_Buffer_Continue();
     if (Element_IsWaitingForMoreData())
+    {
+        Buffer_TotalBytes+=Buffer_Offset;
         return false; //Wait for more data
+    }
     if (sizeof(size_t)<sizeof(int64u) && Buffer_Offset+Element_Offset>=(int64u)(size_t)-1)
         GoTo(File_Offset+Buffer_Offset+Element_Offset);
     else
         Buffer_Offset+=(size_t)Element_Offset;
     if ((Status[IsFinished] && !ShouldContinueParsing) || Buffer_Offset>Buffer_Size || File_GoTo!=(int64u)-1)
+    {
+        Buffer_TotalBytes+=Buffer_Offset;
         return false; //Finish
+    }
     #if MEDIAINFO_DEMUX
         if (Config->Demux_EventWasSent)
+        {
+            Buffer_TotalBytes+=Buffer_Offset;
             return false;
+        }
     #endif //MEDIAINFO_DEMUX
 
     //Parsing;

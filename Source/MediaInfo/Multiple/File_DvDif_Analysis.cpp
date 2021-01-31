@@ -44,9 +44,23 @@ void File_DvDif::Read_Buffer_Continue()
             return;
     }
 
+    if (!Synchro_Manage())
+    {
+        Element_WaitForMoreData();
+        return; //Wait for more data
+    }
+
     //Errors stats
     while (Buffer_Offset+80<=Buffer_Size)
     {
+        #if MEDIAINFO_DEMUX
+            if (Demux_TotalBytes && File_Offset+Buffer_Offset+80>Demux_TotalBytes)
+            {
+                Element_WaitForMoreData();
+                return; //Wait for more data
+            }
+        #endif // MEDIAINFO_DEMUX
+
         //Quick search depends of SCT
         switch(Buffer[Buffer_Offset]&0xE0)
         {
@@ -553,6 +567,11 @@ void File_DvDif::Read_Buffer_Continue()
     if (!Status[IsAccepted])
         File__Analyze::Buffer_Offset=0;
     Config->State_Set(((float)File_Offset)/File_Size);
+
+    {
+        Element_WaitForMoreData();
+        return; //Wait for more data
+    }
 }
 
 void File_DvDif::Errors_Stats_Update()
