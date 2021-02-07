@@ -54,7 +54,7 @@ void File_DvDif::Read_Buffer_Continue()
     while (Buffer_Offset+80<=Buffer_Size)
     {
         #if MEDIAINFO_DEMUX
-            if (Demux_TotalBytes && File_Offset+Buffer_Offset+80>Demux_TotalBytes)
+            if (Demux_TotalBytes && Buffer_TotalBytes+Buffer_Offset>=Demux_TotalBytes)
             {
                 Element_WaitForMoreData();
                 return; //Wait for more data
