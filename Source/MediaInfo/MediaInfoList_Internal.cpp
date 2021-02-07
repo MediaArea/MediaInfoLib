@@ -98,6 +98,8 @@ size_t MediaInfoList_Internal::Open(const String &File_Name, const fileoptions_t
     {
         List=Dir::GetAllFileNames(File_Name, (Options&FileOption_NoRecursive)?Dir::Include_Files:((Dir::dirlist_t)(Dir::Include_Files|Dir::Parse_SubDirs)));
         sort(List.begin(), List.end());
+        if (List.empty())
+            List.push_back(File_Name); // Try directly the file name e.g. "-" for pipe
 
         #if MEDIAINFO_ADVANCED
             if (MediaInfoLib::Config.ParseOnlyKnownExtensions_IsSet())
