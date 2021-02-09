@@ -230,7 +230,7 @@ File_DvDif::File_DvDif()
         StreamIDs_Width[0]=4;
     #endif //MEDIAINFO_EVENTS
     #if MEDIAINFO_DEMUX
-        Demux_Level=1; //Container
+        Demux_Level=3; //Container and Stream
     #endif //MEDIAINFO_DEMUX
     MustSynchronize=true;
     Buffer_TotalBytes_FirstSynched_Max=64*1024;
