@@ -44,11 +44,13 @@ void File_DvDif::Read_Buffer_Continue()
             return;
     }
 
-    if (!Synchro_Manage())
-    {
-        Element_WaitForMoreData();
-        return; //Wait for more data
-    }
+    #if MEDIAINFO_DEMUX
+        if (Demux_UnpacketizeContainer && !Synchro_Manage()) // We need to manage manually synchronization in case of demux
+        {
+            Element_WaitForMoreData();
+            return; //Wait for more data
+        }
+    #endif // MEDIAINFO_DEMUX
 
     //Errors stats
     while (Buffer_Offset+80<=Buffer_Size)
@@ -567,11 +569,6 @@ void File_DvDif::Read_Buffer_Continue()
     if (!Status[IsAccepted])
         File__Analyze::Buffer_Offset=0;
     Config->State_Set(((float)File_Offset)/File_Size);
-
-    {
-        Element_WaitForMoreData();
-        return; //Wait for more data
-    }
 }
 
 void File_DvDif::Errors_Stats_Update()

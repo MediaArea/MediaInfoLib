@@ -413,9 +413,10 @@ void File__Analyze::Open_Buffer_Init (int64u File_Size_)
     if (Config->File_IsSub_Get())
         IsSub=true;
     #if MEDIAINFO_DEMUX
-        if (Demux_Level==1 && !IsSub && Config->Demux_Unpacketize_Get()) //If Demux_Level is Frame
+        if (Demux_Level&1 && !IsSub && Config->Demux_Unpacketize_Get()) //If Demux_Level is Frame
         {
-            Demux_Level=2; //Container
+            if (!(Demux_Level&2)) // Special case when a stream is both container and stream: keep it
+                Demux_Level=2; //Container
             Demux_UnpacketizeContainer=true;
         }
     #endif //MEDIAINFO_DEMUX
