@@ -148,7 +148,7 @@ void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_Col
 
     if (Meta.Luminance[0]!=(int32u)-1 && Meta.Luminance[1]!=(int32u)-1)
         MasteringDisplay_Luminance=        __T("min: ")+Ztring::ToZtring(((float64)Meta.Luminance[0])/10000, 4)
-                                  +__T(" cd/m2, max: ")+Ztring::ToZtring(((float64)Meta.Luminance[1])/10000, (Meta.Luminance[1]-((int)Meta.Luminance[1])==0)?0:4)
+                                  +__T(" cd/m2, max: ")+Ztring::ToZtring(((float64)Meta.Luminance[1])/10000, ((float64)Meta.Luminance[1]/10000-Meta.Luminance[1]/10000==0)?0:4)
                                   +__T(" cd/m2");
 }
 #endif
