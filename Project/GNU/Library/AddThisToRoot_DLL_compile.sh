@@ -32,7 +32,7 @@ Parallel_Make () {
 Home=`pwd`
 Make="make"
 ZenLib_Options=""
-JsOptions="--host=le32-unknown-nacl"
+JsOptions="--host=le32-unknown-nacl --disable-unicode"
 
 OS=$(uname -s)
 # expr isn’t available on mac
@@ -51,8 +51,8 @@ if [ "$1" = "--emscripten-lib" ]; then
     shift
     OS="emscripten"
     Make="emmake make"
-    CFLAGS="$CFLAGS -Oz -DUNICODE"
-    CXXFLAGS="$CXXFLAGS -Oz -DUNICODE -fno-exceptions"
+    CFLAGS="$CFLAGS -Oz -s EMBIND_STD_STRING_IS_UTF8=1"
+    CXXFLAGS="$CXXFLAGS -Oz -s EMBIND_STD_STRING_IS_UTF8=1 -fno-exceptions"
     MediaInfoLib_CXXFLAGS="-I ../../../Source -I ../../../../ZenLib/Source -s USE_ZLIB=1 \
     -DMEDIAINFO_ADVANCED_NO -DMEDIAINFO_REFERENCES_NO -DMEDIAINFO_FILTER_NO -DMEDIAINFO_DUPLICATE_NO -DMEDIAINFO_MACROBLOCKS_NO \
     -DMEDIAINFO_TRACE_NO -DMEDIAINFO_TRACE_FFV1CONTENT_NO -DMEDIAINFO_IBI_NO -DMEDIAINFO_DIRECTORY_NO -DMEDIAINFO_JNI_NO\
