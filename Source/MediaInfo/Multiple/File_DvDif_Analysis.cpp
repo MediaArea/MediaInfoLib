@@ -98,9 +98,42 @@ void File_DvDif::Read_Buffer_Continue()
                 break;
             case 0x20 : //SCT=1 (Subcode)
                 {
-                    FSC=(Buffer[Buffer_Offset+1  ]&0x08);
+                    FSC=(Buffer[Buffer_Offset+1  ]&0x08)?true:false;
+                    FSP=(Buffer[Buffer_Offset+1  ]&0x04)?true:false;
                     if (!FSC && ssyb_AP3!=(int8u)-1)
                         ssyb_AP3=(Buffer[Buffer_Offset+3]>>4)&0x7;
+                    if (!FSC && FSP)
+                    {
+                        if (ssyb_AP3!=(int8u)-1)
+                            ssyb_AP3=(Buffer[Buffer_Offset+3]>>4)&0x7;
+                        int8u AbstBf[6];
+                        for (int i=0; i<6; i++)
+                            AbstBf[i]=((Buffer[Buffer_Offset+8*i+3]&0xF)<< 4)
+                                     |((Buffer[Buffer_Offset+8*i+4]    )>> 4);
+                        int32u Abst_New[2];
+                        for (int i=0; i<2; i++)
+                            Abst_New[i]=(((int32u)AbstBf[i*3+0])>> 1)
+                                       |(((int32u)AbstBf[i*3+1])<< 7)
+                                       |(((int32u)AbstBf[i*3+2])<<15);
+                        if (Abst_New[0]!=0x7FFFFF                               //Not max
+                         && Abst_New[1]==Abst_New[0])                           //Discarding if first abst value is not same as second abst value, in order to avoid glitches found in some files
+                        {
+                            int32u Abst_Current=(AbstBf_Current>>1)&0x7FFFFF;
+                            if (Abst_New[0]<Abst_Current)
+                            {
+                                int64u Offset=(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/12000; // In case the first caught abst is not in the first block of a frame
+                                if (Abst_New[0]>=Offset)
+                                {
+                                    Abst_New[0]-=Offset;
+                                    AbstBf_Current&=~(0x7FFFFF<<1);
+                                    AbstBf_Current|=(Abst_New[0]<<1);
+                                }
+                            }
+                            AbstBf_Current|=(1<<24); //Bf presence flag
+                            if (AbstBf[0]&1 && !(AbstBf_Current&1))
+                                AbstBf_Current|=1;
+                        }
+                    }
                     for (size_t Pos=0; Pos<48; Pos+=8)
                     {
                         int8u PackType=Buffer[Buffer_Offset+3+Pos+3];
@@ -850,6 +883,22 @@ void File_DvDif::Errors_Stats_Update()
         }
         Errors_Stats_Line+=__T('\t');
 
+        //Absolute track number + Blank flag
+        int32u Abst_Previous=(AbstBf_Previous>>1)&0x7FFFFF;
+        int32u Abst_Current=(AbstBf_Current>>1)&0x7FFFFF;
+        if ((Abst_Previous!=0x7FFFFF || (AbstBf_Previous>>24)&1) && Abst_Current!=0x7FFFFF) // Accept also if previous value is max
+        {
+            if (Abst_Current==Abst_Previous && ((AbstBf_Current>>24)&1)) //Only if value is present
+                AbstBf_Current|=(1<<31); //Repeat
+            else if (Abst_Current<Abst_Previous
+                  || Abst_Current>=(Abst_Previous+(DSF?12:10)*(FSC_WasSet?2:1)*2)) //Max 2x the expected gap
+                AbstBf_Current|=(1<<30); //Non-consecutive
+        }
+        if (Abst_Previous!=0x7FFFFF && Abst_Current==0x7FFFFF)
+            AbstBf_Previous+=((DSF?12:10)*(FSC_WasSet?2:1))<<1; //Theoritical AbstBf
+        else
+            AbstBf_Previous=AbstBf_Current;
+
         //Timecode order coherency
         if (!Speed_TimeCode_IsValid && Speed_TimeCode_Current.IsValid
          && (Speed_TimeCode_Current.Time.Hours!=0
@@ -1511,6 +1560,7 @@ void File_DvDif::Errors_Stats_Update()
             Event1.RecordedDateTime2=RecordedDateTime2Fixed;
             Event1.BlockStatus_Count=((DSF?1800:1500)*(FSC_WasSet?2:1));
             Event1.BlockStatus=BlockStatus;
+            Event1.AbstBf=AbstBf_Current;
             Config->Event_Send(NULL, (const int8u*)&Event1, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_1));
             Config->Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_0));
             memset(BlockStatus, 0, Event1.BlockStatus_Count);
@@ -1591,6 +1641,7 @@ void File_DvDif::Errors_Stats_Update()
     FSC_WasSet=false;
     FSP_WasNotSet=false;
     ssyb_AP3=(int8u)-1;
+    AbstBf_Current=(0x7FFFFF)<<1;
     Speed_TimeCode_Last=Speed_TimeCode_Current;
     Speed_TimeCode_Current.Clear();
     Speed_RecDate_Current.IsValid=false;

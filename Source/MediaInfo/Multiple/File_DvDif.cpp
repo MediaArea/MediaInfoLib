@@ -273,6 +273,8 @@ File_DvDif::File_DvDif()
     Speed_Contains_NULL=0;
     Speed_FrameCount_Arb_Incoherency=0;
     Speed_FrameCount_Stts_Fluctuation=0;
+    AbstBf_Current=(0x7FFFFF)<<1;
+    AbstBf_Previous=(0x7FFFFF)<<1;
     SMP=(int8u)-1;
     QU=(int8u)-1;
     Speed_TimeCode_IsValid=false;
@@ -1199,7 +1201,7 @@ void File_DvDif::Subcode_Ssyb(int8u syb_num)
         Skip_S1(3,                                              "APT - track application ID");
     else
         Skip_S1(3,                                              "Res - Reserved");
-    Skip_S1(8,                                                  "Arb - Arbitrary bits");
+    Skip_S1(8,                                                  "ABST/BF - Absolute track number / Blank flag");
     Skip_S1(4,                                                  "Syb - SSYSB number");
     BS_End();
     //FFh

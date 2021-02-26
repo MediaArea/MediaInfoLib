@@ -167,6 +167,8 @@ protected :
     int64u Speed_Contains_NULL;                         //Per Frame - Error 4
     int64u Speed_FrameCount_Arb_Incoherency;            //Global    - Error 5
     int64u Speed_FrameCount_Stts_Fluctuation;           //Global    - Error 6
+    int32u AbstBf_Current;
+    int32u AbstBf_Previous;
     int8u  SMP;
     int8u  QU;
     bool   QU_FSC; //Validity is with QU
