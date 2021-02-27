@@ -1357,16 +1357,6 @@ void File_DvDif::timecode()
 {
     Element_Name("timecode");
 
-    if (Buffer[Buffer_Offset+(size_t)Element_Offset  ]==0x00
-     && Buffer[Buffer_Offset+(size_t)Element_Offset+1]==0x00
-     && Buffer[Buffer_Offset+(size_t)Element_Offset+2]==0x00
-     && Buffer[Buffer_Offset+(size_t)Element_Offset+3]==0x00
-    )
-    {
-        Skip_XX(4,                                              "All zero");
-        return;
-    }
-
     //Parsing
     int8u Frames_Units, Frames_Tens, Seconds_Units, Seconds_Tens, Minutes_Units, Minutes_Tens, Hours_Units, Hours_Tens;
     int64u MilliSeconds=0;
