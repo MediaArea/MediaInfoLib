@@ -136,7 +136,7 @@ if [ "$OS" = "emscripten" ]; then
          -s EXPORT_NAME="'MediaInfoLib'" \
          -o MediaInfo.js
 
-    em++ -s WASM=1 $CXXFLAGS $MediaInfoLib_CXXFLAGS -s TOTAL_MEMORY=134217728 -s NO_FILESYSTEM=1 -s MODULARIZE=1 --closure 0 \
+    em++ -s WASM=1 $CXXFLAGS $MediaInfoLib_CXXFLAGS -s TOTAL_MEMORY=33554432 -s ALLOW_MEMORY_GROWTH=1 -s NO_FILESYSTEM=1 -s MODULARIZE=1 --closure 0 \
          --bind MediaInfoJS.o .libs/libmediainfo.a ../../../../ZenLib/Project/GNU/Library/.libs/libzen.a \
          --post-js ../../../Source/Resource/JavaScript/Post.js \
          -s EXPORT_NAME="'MediaInfoLib'" \
