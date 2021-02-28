@@ -153,21 +153,6 @@ void File_DvDif::Read_Buffer_Continue()
                             int8u Hours                     =((Buffer[Buffer_Offset+3+Pos+3+4]&0x30)>>4)*10
                                                            + ((Buffer[Buffer_Offset+3+Pos+3+4]&0x0F)   )   ;
 
-                            if (Frames ==0x00
-                             && Seconds==0x00
-                             && Minutes==0x00
-                             && Hours  ==0x00
-                             && Buffer[Buffer_Offset+3+Pos+3+1]==0x00
-                             && Buffer[Buffer_Offset+3+Pos+3+2]==0x00
-                             && Buffer[Buffer_Offset+3+Pos+3+3]==0x00
-                             && Buffer[Buffer_Offset+3+Pos+3+4]==0x00
-                             )
-                            {
-                                Frames =45;
-                                Seconds=85;
-                                Minutes=85;
-                                Hours  =45;
-                            }
                             if (Frames !=45
                              && Seconds!=85
                              && Minutes!=85
