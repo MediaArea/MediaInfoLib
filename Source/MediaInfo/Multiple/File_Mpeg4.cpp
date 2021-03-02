@@ -339,6 +339,7 @@ File_Mpeg4::File_Mpeg4()
     StreamOrder=0;
     meta_pitm_item_ID=(int32u)-1;
     meta_iprp_ipco_Buffer=NULL;
+    moov_trak_mdia_minf_stbl_stsd_Pos=0;
     moov_trak_tkhd_TrackID=(int32u)-1;
     mdat_Pos_NormalParsing=false;
     moof_traf_base_data_offset=(int64u)-1;
