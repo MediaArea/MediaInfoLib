@@ -24,6 +24,8 @@
 #include "MediaInfo/Multiple/File_DvDif.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/MediaInfo_Events_Internal.h"
+#include <algorithm>
+#include <fstream>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -121,17 +123,92 @@ void File_DvDif::Read_Buffer_Continue()
                             int32u Abst_Current=(AbstBf_Current>>1)&0x7FFFFF;
                             if (Abst_New[0]<Abst_Current)
                             {
-                                int64u Offset=(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/12000; // In case the first caught abst is not in the first block of a frame
-                                if (Abst_New[0]>=Offset)
-                                {
-                                    Abst_New[0]-=Offset;
-                                    AbstBf_Current&=~(0x7FFFFF<<1);
-                                    AbstBf_Current|=(Abst_New[0]<<1);
-                                }
+                                int32s Dseq_Offset=(int32s)((File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/12000);
+                                int32s Abst=(int32s)Abst_New[0];
+                                Abst-=Dseq_Offset;
+                                AbstBf_Current|=(1<<25); //Abst presence flag
+                                AbstBf_Current&=~(0x7FFFFF<<1);
+                                AbstBf_Current|=((Abst&0x7FFFFF)<<1);
                             }
                             AbstBf_Current|=(1<<24); //Bf presence flag
                             if (AbstBf[0]&1 && !(AbstBf_Current&1))
                                 AbstBf_Current|=1;
+                        }
+
+                        //Try to find a suitable and trustable Abst
+                        if (Speed_FrameCount_StartOffset==-1)
+                            Speed_FrameCount_StartOffset=0;
+                        int32s Abst_First;
+                        int32s Abst_Previous=(AbstBf_Previous>>1)&0x7FFFFF;
+                        int32s Abst_Theory_Max=Abst_Previous+(DSF?12:10)*(FSC_WasSet?2:1)*2; //Max 2x the expected gap
+                        for (int i=0; i<2; i++)
+                        {
+                            int32s AbstBf0=(int32s)AbstBf[i*3+0];
+                            int32s AbstBf1=(int32s)AbstBf[i*3+1];
+                            int32s AbstBf2=(int32s)AbstBf[i*3+2];
+                            if (AbstBf0!=0xFF || AbstBf1!=0xFF || AbstBf2!=0xFF)
+                            {
+                                int32s Abst_TrustMultiplier=1;
+                                if (AbstBf0!=0xFF) // If 1st byte not 0xFF
+                                    Abst_TrustMultiplier*=2;
+                                if (AbstBf1!=0xFF) // If 2nd byte not 0xFF
+                                    Abst_TrustMultiplier*=2;
+                                if (AbstBf2!=0xFF) // If 3rd byte not 0xFF
+                                    Abst_TrustMultiplier*=2;
+                                int32s Abst=(AbstBf0>> 1)
+                                           |(AbstBf1<< 7)
+                                           |(AbstBf2<<15);
+                                if (Abst!=0xFFFF) // abst of 0xFFFF often seen as not a real value 
+                                    Abst_TrustMultiplier*=2;
+                                if (i)
+                                {
+                                    if (Abst==Abst_First) // If same value in the same block
+                                        Abst_TrustMultiplier*=3;
+                                }
+                                else
+                                {
+                                    Abst_First=Abst;
+                                }
+
+                                if (AbstBf2==0xFF) // Consider all values equal or above 0x7F8000 (highest byte 0xFF) as negative
+                                    Abst-=0x800000;
+                                int32s StoredAbst=Abst;
+                                int32s Dseq_Offset=(int32s)((File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/12000);
+                                Abst-=Dseq_Offset;
+                                if (Abst<0) // If negative value, we don't really trust (it is very unliky, except for syntheticly created abst)
+                                    Abst_TrustMultiplier/=16;
+                                AbstBf_Current_Weighted.bf[AbstBf0&1]+=Abst_TrustMultiplier;
+                                int32s Abst_TrustMultiplier_Save=Abst_TrustMultiplier;
+
+                                for (int j=0; j<=1; j++) // Test first with standard (offset of 10, in NTSC) then non standard (offset of 15, in NTSC)
+                                {
+                                    if (j)
+                                    {
+                                        Abst_TrustMultiplier=Abst_TrustMultiplier_Save;
+                                        Abst-=Dseq_Offset/2+Dseq_Offset%2;
+                                    }
+                                    bool IsFound=false;
+                                    size_t k=0;
+                                    for (; k<AbstBf_Current_Weighted.abst[j].size(); k++)
+                                    {
+                                        if (AbstBf_Current_Weighted.abst[j][k].Value==Abst)
+                                        {
+                                            AbstBf_Current_Weighted.abst[j][k].Trust+=Abst_TrustMultiplier;
+                                            Abst_TrustMultiplier=0;
+                                        }
+                                        if (AbstBf_Current_Weighted.abst[j][k].Value<=Abst)
+                                            break;
+                                    }
+                                    if (Abst_TrustMultiplier)
+                                    {
+                                        abst_bf::value_trust NewAbst;
+                                        NewAbst.Value=Abst;
+                                        NewAbst.Trust=Abst_TrustMultiplier;
+                                        AbstBf_Current_Weighted.abst[j].insert(AbstBf_Current_Weighted.abst[j].begin()+k, NewAbst);
+                                    }
+                                    AbstBf_Current_Weighted.StoredValues.insert(StoredAbst);
+                                }
+                            }
                         }
                     }
                     for (size_t Pos=0; Pos<48; Pos+=8)
@@ -869,20 +946,99 @@ void File_DvDif::Errors_Stats_Update()
         Errors_Stats_Line+=__T('\t');
 
         //Absolute track number + Blank flag
-        int32u Abst_Previous=(AbstBf_Previous>>1)&0x7FFFFF;
-        int32u Abst_Current=(AbstBf_Current>>1)&0x7FFFFF;
-        if ((Abst_Previous!=0x7FFFFF || (AbstBf_Previous>>24)&1) && Abst_Current!=0x7FFFFF) // Accept also if previous value is max
+        for (int j=0; j<=1; j++) // Test first with standard (offset of 10, in NTSC) then non standard (offset of 15, in NTSC)
         {
-            if (Abst_Current==Abst_Previous && ((AbstBf_Current>>24)&1)) //Only if value is present
+            vector<abst_bf::value_trust>& abst=AbstBf_Current_Weighted.abst[j];
+            //Remove crazy values
+            if (AbstBf_Current_Weighted.abst[j].empty())
+                continue;
+            size_t k;
+            for (k=1; k<abst.size(); k++)
+            {
+                if (abst[k].Value-abst[k-1].Value<10+j*5)
+                    break;
+                abst.erase(abst.begin(), abst.begin()+k);
+            }
+            for (k=AbstBf_Current_Weighted.abst[j].size()-1; k; k--)
+            {
+                if (AbstBf_Current_Weighted.abst[j][k].Value-AbstBf_Current_Weighted.abst[j][k-1].Value>10+j*5)
+                    AbstBf_Current_Weighted.abst[j].resize(k);
+            }
+            
+            //Remove less trustable values
+            sort(AbstBf_Current_Weighted.abst[j].begin(), AbstBf_Current_Weighted.abst[j].end());
+            for (k=1; k<abst.size(); k++)
+            {
+                if (abst[k].Trust!=abst[k-1].Trust)
+                    break;
+            }
+            if (k>abst.size())
+                abst.erase(abst.begin()+k);
+        }
+        int j=0;
+        if (AbstBf_Current_Weighted.abst[1].size()<AbstBf_Current_Weighted.abst[0].size())
+            j=1;
+        int32s AbstBf_Current_MaxAbst=0xFFFFFF;
+        if (!AbstBf_Current_Weighted.abst[j].empty())
+        {
+            int32s abst=AbstBf_Current_Weighted.abst[j][0].Value;
+            if (AbstBf_Current_Weighted.abst[j].size()>1 && !AbstBf_Current_Weighted.StoredValues.empty())
+            {
+                //Difficult to trust one value other another one, we use the smallest trustable stored value
+                for (set<int32s>::iterator StoredValue=AbstBf_Current_Weighted.StoredValues.begin(); ; StoredValue++)
+                    if (abst<=*StoredValue)
+                    {
+                        abst=*StoredValue;
+                        AbstBf_Current_MaxAbst=abst;
+                        for (; StoredValue!=AbstBf_Current_Weighted.StoredValues.end(); StoredValue++)
+                        {
+                            if (*StoredValue>=(abst+(DSF?12:10)*(FSC_WasSet?2:1)*2)) //Max 2x the expected gap
+                                break;
+                            AbstBf_Current_MaxAbst=*StoredValue;
+                        }
+                        break;
+                    }
+
+            }
+            AbstBf_Current&=~(0x7FFFFF<<1);
+            AbstBf_Current|=((abst&0x7FFFFF)<<1);
+        }
+        int32s Abst_Previous=(int32s)((AbstBf_Previous>>1)&0x7FFFFF);
+        if (((AbstBf_Previous>>16)&0xFF)==0xFF) // Consider all values equal or above 0x7F8000 (highest byte 0xFF) as negative
+            Abst_Previous-=0x800000;
+        int32s Abst_Current=(int32s)((AbstBf_Current>>1)&0x7FFFFF);
+        if (((AbstBf_Current >>16)&0xFF)==0xFF) // Consider all values equal or above 0x7F8000 (highest byte 0xFF) as negative
+            Abst_Current-=0x800000;
+        if (((AbstBf_Previous>>25)&1) && ((AbstBf_Current>>25)&1)) // If previous value is available
+        {
+            if (Abst_Current==Abst_Previous)
                 AbstBf_Current|=(1<<31); //Repeat
             else if (Abst_Current<Abst_Previous
                   || Abst_Current>=(Abst_Previous+(DSF?12:10)*(FSC_WasSet?2:1)*2)) //Max 2x the expected gap
-                AbstBf_Current|=(1<<30); //Non-consecutive
+            {
+                if (AbstBf_Previous_MaxAbst==0xFFFFFF || Abst_Current>AbstBf_Previous_MaxAbst+(DSF?12:10)*(FSC_WasSet?2:1))
+                    AbstBf_Current|=(1<<30); //Non-consecutive
+            }
         }
-        if (Abst_Previous!=0x7FFFFF && Abst_Current==0x7FFFFF)
-            AbstBf_Previous+=((DSF?12:10)*(FSC_WasSet?2:1))<<1; //Theoritical AbstBf
+        int32s Abst_Gap=(DSF?12:10)*(FSC_WasSet?2:1);
+        if (((AbstBf_Previous>>25)&1) && !((AbstBf_Current>>25)&1))
+        {
+            if (AbstBf_Current_Weighted.Frames_NonStandard[0]>Speed_FrameCount/2)
+                Abst_Gap=Abst_Gap/2;
+            if (AbstBf_Current_Weighted.Frames_NonStandard[1]>Speed_FrameCount/2)
+                Abst_Gap=Abst_Gap*3/2;
+            AbstBf_Previous+=Abst_Gap<<1; //Theoritical AbstBf
+        }
         else
+        {
+            if (Abst_Previous+Abst_Gap/2==Abst_Current)
+                AbstBf_Current_Weighted.Frames_NonStandard[0]++;
+            if (Abst_Previous+Abst_Gap*3/2==Abst_Current)
+                AbstBf_Current_Weighted.Frames_NonStandard[1]++;
             AbstBf_Previous=AbstBf_Current;
+        }
+        AbstBf_Previous_MaxAbst=AbstBf_Current_MaxAbst;
+        AbstBf_Current_Weighted.reset();
 
         //Timecode order coherency
         if (!Speed_TimeCode_IsValid && Speed_TimeCode_Current.IsValid
