@@ -3245,7 +3245,7 @@ void File_Hevc::VPS_SPS_PPS()
             Element_Begin1("nalUnit");
             int16u nalUnitLength;
             Get_B2 (nalUnitLength,                              "nalUnitLength");
-            if (nalUnitLength<2 || Element_Offset+nalUnitLength>Element_Size)
+            if (nalUnitLength<2 || Element_Offset+nalUnitLength>Element_Size || Element_Offset+nalUnitLength>BS->Remain())
             {
                 Trusted_IsNot("Size is wrong");
                 break; //There is an error
