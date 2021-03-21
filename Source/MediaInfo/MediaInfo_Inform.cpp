@@ -104,6 +104,21 @@ void MediaInfo_Internal::ConvertRetour(Ztring& Retour)
     Retour.FindAndReplace(__T("\r"), __T("\n"), 0, Ztring_Recursive);
     Retour.FindAndReplace(__T("\n"), MediaInfoLib::Config.LineSeparator_Get(), 0, Ztring_Recursive);
 }
+
+//---------------------------------------------------------------------------
+void MediaInfo_Internal::ConvertRetourSCX(Ztring& Retour)
+{
+    Retour.FindAndReplace(__T("|SC1|"), __T("\\"), 0, Ztring_Recursive);
+    Retour.FindAndReplace(__T("|SC2|"), __T("["), 0, Ztring_Recursive);
+    Retour.FindAndReplace(__T("|SC3|"), __T("]"), 0, Ztring_Recursive);
+    Retour.FindAndReplace(__T("|SC4|"), __T(","), 0, Ztring_Recursive);
+    Retour.FindAndReplace(__T("|SC5|"), __T(";"), 0, Ztring_Recursive);
+    Retour.FindAndReplace(__T("|SC6|"), __T("("), 0, Ztring_Recursive);
+    Retour.FindAndReplace(__T("|SC7|"), __T(")"), 0, Ztring_Recursive);
+    Retour.FindAndReplace(__T("|SC8|"), __T(")"), 0, Ztring_Recursive);
+    Retour.FindAndReplace(__T("|SC9|"), __T("),"), 0, Ztring_Recursive);
+}
+
 //---------------------------------------------------------------------------
 Ztring MediaInfo_Internal::Inform()
 {
@@ -282,15 +297,7 @@ Ztring MediaInfo_Internal::Inform()
         ConvertRetour(Retour);
 
         //Special characters
-        Retour.FindAndReplace(__T("|SC1|"), __T("\\"), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC2|"), __T("["), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC3|"), __T("]"), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC4|"), __T(","), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC5|"), __T(";"), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC6|"), __T("("), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC7|"), __T(")"), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC8|"), __T(")"), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC9|"), __T("),"), 0, Ztring_Recursive);
+        ConvertRetourSCX(Retour);
 
         return Retour;
     }
@@ -432,15 +439,7 @@ Ztring MediaInfo_Internal::Inform()
     ConvertRetour(Retour);
 
     //Special characters
-    Retour.FindAndReplace(__T("|SC1|"), __T("\\"), 0, Ztring_Recursive);
-    Retour.FindAndReplace(__T("|SC2|"), __T("["), 0, Ztring_Recursive);
-    Retour.FindAndReplace(__T("|SC3|"), __T("]"), 0, Ztring_Recursive);
-    Retour.FindAndReplace(__T("|SC4|"), __T(","), 0, Ztring_Recursive);
-    Retour.FindAndReplace(__T("|SC5|"), __T(";"), 0, Ztring_Recursive);
-    Retour.FindAndReplace(__T("|SC6|"), __T("("), 0, Ztring_Recursive);
-    Retour.FindAndReplace(__T("|SC7|"), __T(")"), 0, Ztring_Recursive);
-    Retour.FindAndReplace(__T("|SC8|"), __T(")"), 0, Ztring_Recursive);
-    Retour.FindAndReplace(__T("|SC9|"), __T("),"), 0, Ztring_Recursive);
+    ConvertRetourSCX(Retour);
 
     #if MEDIAINFO_TRACE
         if (XML_0_7_78_MA)
@@ -929,15 +928,7 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
     //Special characters
     if (IsDirect)
     {
-        Retour.FindAndReplace(__T("|SC1|"), __T("\\"), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC2|"), __T("["), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC3|"), __T("]"), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC4|"), __T(","), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC5|"), __T(";"), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC6|"), __T("("), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC7|"), __T(")"), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC8|"), __T(")"), 0, Ztring_Recursive);
-        Retour.FindAndReplace(__T("|SC9|"), __T("),"), 0, Ztring_Recursive);
+        ConvertRetourSCX(Retour);
     }
 
     return Retour;
