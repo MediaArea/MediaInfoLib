@@ -1730,7 +1730,7 @@ bool File_Ac4::Synchronize()
         Buffer_Offset_Current=Buffer_Offset;
         Synched=true; //For using Synched_Test()
         int8s i=0;
-        const int8s count=4;
+        const int8s count=(Frame_Count_Valid && Frame_Count_Valid<4)?Frame_Count_Valid:4;
         for (; i<count; i++) //4 frames in a row tested
         {
             if (!Synched_Test())
