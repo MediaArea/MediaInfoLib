@@ -203,6 +203,9 @@ public :
           void      Inform_Version_Set (bool NewValue);
           bool      Inform_Version_Get ();
 
+          void      Inform_Timestamp_Set (bool NewValue);
+          bool      Inform_Timestamp_Get ();
+
           #if MEDIAINFO_ADVANCED
           Ztring    Cover_Data_Set (const Ztring &NewValue);
           Ztring    Cover_Data_Get ();
@@ -413,6 +416,7 @@ private :
     bool            Language_Raw;
     bool            ReadByHuman;
     bool            Inform_Version;
+    bool            Inform_Timestamp;
     bool            Legacy;
     bool            LegacyStreamDisplay;
     bool            SkipBinaryData;
