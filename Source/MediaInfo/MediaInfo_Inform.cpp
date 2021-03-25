@@ -440,8 +440,7 @@ Ztring MediaInfo_Internal::Inform()
                 Name_Size=32; //Default
             Name.resize(Name_Size, ' ');
 
-            time_t Now=time(NULL);
-            Ztring Date=Ztring().Date_From_Seconds_1970((int64s)mktime(gmtime(&Now)));
+            Ztring Date=Ztring().Date_From_Seconds_1970((int64s)time(NULL));
 
             Retour+=Name;
             Retour+=MediaInfoLib::Config.Language_Get(__T("  Config_Text_Separator"));
