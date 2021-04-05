@@ -418,6 +418,9 @@ void MediaInfo_Config::Init(bool Force)
         InitDataNotRepeated_Occurences=(int64u)-1; //Disabled by default
         InitDataNotRepeated_GiveUp=false;
     #endif //MEDIAINFO_ADVANCED
+    #if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+        TimeOut=(int64u)-1;
+    #endif //MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
     MpegTs_MaximumOffset=64*1024*1024;
     MpegTs_MaximumScanDuration=30000000000LL;
     MpegTs_ForceStreamDisplay=false;
@@ -1280,6 +1283,23 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         #else // MEDIAINFO_ADVANCED
             return __T("advanced features are disabled due to compilation options");
         #endif // MEDIAINFO_ADVANCED
+    }
+    if (Option_Lower==__T("timeout"))
+    {
+        #if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+            TimeOut_Set(Value.empty()?((int64u)-1):Value.To_int64u());
+            return Ztring();
+        #else // MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+            return __T("advanced features are disabled due to compilation options");
+        #endif // MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+    }
+    if (Option_Lower==__T("timeout_get"))
+    {
+        #if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+            return Ztring::ToZtring(TimeOut_Get());
+        #else // MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+            return __T("advanced features are disabled due to compilation options");
+        #endif // MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
     }
     if (Option_Lower==__T("mpegts_maximumoffset"))
     {
@@ -3132,6 +3152,21 @@ bool MediaInfo_Config::InitDataNotRepeated_GiveUp_Get ()
     return InitDataNotRepeated_GiveUp;
 }
 #endif // MEDIAINFO_ADVANCED
+
+
+#if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+void MediaInfo_Config::TimeOut_Set (int64u Value)
+{
+    CriticalSectionLocker CSL(CS);
+    TimeOut=Value;
+}
+
+int64u MediaInfo_Config::TimeOut_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return TimeOut;
+}
+#endif // MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
 
 void MediaInfo_Config::MpegTs_MaximumOffset_Set (int64u Value)
 {

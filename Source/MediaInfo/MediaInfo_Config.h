@@ -267,6 +267,10 @@ public :
           void      InitDataNotRepeated_GiveUp_Set (bool Value);
           bool      InitDataNotRepeated_GiveUp_Get ();
     #endif //MEDIAINFO_ADVANCED
+    #if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+          void      TimeOut_Set (int64u Value);
+          int64u    TimeOut_Get ();
+    #endif //MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
 
           void      MpegTs_MaximumOffset_Set (int64u Value);
           int64u    MpegTs_MaximumOffset_Get ();
@@ -376,6 +380,10 @@ private :
         int64u      InitDataNotRepeated_Occurences;
         bool        InitDataNotRepeated_GiveUp;
     #endif //MEDIAINFO_ADVANCED
+    #if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+        int64u      TimeOut;
+    #endif //MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+
     int64u          MpegTs_MaximumOffset;
     int64u          MpegTs_MaximumScanDuration;
     bool            MpegTs_ForceStreamDisplay;
