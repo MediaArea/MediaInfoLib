@@ -76,7 +76,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
@@ -87,7 +87,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
@@ -99,7 +99,7 @@
     <ClCompile>
       <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
@@ -111,7 +111,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -145,6 +145,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Usac.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_EbuCore.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Niso.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Graph.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Fims.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_PBCore2.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_reVTMD.cpp" />
@@ -436,6 +437,8 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Usac.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_EbuCore.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Niso.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Graph.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Graph_gvc_Include.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Fims.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_PBCore2.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_reVTMD.h" />

@@ -43,6 +43,9 @@
 #if defined(MEDIAINFO_NISO_YES)
 #include "MediaInfo/Export/Export_Niso.h"
 #endif //defined(MEDIAINFO_NISO_YES)
+#if defined(MEDIAINFO_GRAPH_YES)
+#include "MediaInfo/Export/Export_Graph.h"
+#endif //defined(MEDIAINFO_GRAPH_YES)
 
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/File__Analyze.h"
@@ -214,6 +217,30 @@ Ztring MediaInfo_Internal::Inform()
         if (MediaInfoLib::Config.Inform_Get()==__T("NISO_Z39.87"))
             return Export_Niso().Transform(*this, MediaInfoLib::Config.ExternalMetadata_Get(), MediaInfoLib::Config.ExternalMetaDataConfig_Get());
     #endif //defined(MEDIAINFO_NISO_YES)
+    #if defined(MEDIAINFO_GRAPH_YES)
+        if (MediaInfoLib::Config.Inform_Get()==__T("Graph_Dot"))
+            return Export_Graph().Transform(*this, Export_Graph::Graph_All, Export_Graph::Format_Dot);
+        #if defined(MEDIAINFO_GRAPHVIZ_YES)
+            if (MediaInfoLib::Config.Inform_Get()==__T("Graph_Svg"))
+                return Export_Graph().Transform(*this, Export_Graph::Graph_All, Export_Graph::Format_Svg);
+        #endif //defined(MEDIAINFO_GRAPHVIZ_YES)
+    #endif //defined(MEDIAINFO_GRAPH_YES)
+    #if defined(MEDIAINFO_GRAPH_YES) && defined(MEDIAINFO_AC4_YES)
+        if (MediaInfoLib::Config.Inform_Get()==__T("Graph_Ac4_Dot"))
+            return Export_Graph().Transform(*this, Export_Graph::Graph_Ac4, Export_Graph::Format_Dot);
+        #if defined(MEDIAINFO_GRAPHVIZ_YES)
+            if (MediaInfoLib::Config.Inform_Get()==__T("Graph_Ac4_Svg"))
+                return Export_Graph().Transform(*this, Export_Graph::Graph_Ac4, Export_Graph::Format_Svg);
+        #endif //defined(MEDIAINFO_GRAPHVIZ_YES)
+    #endif //defined(MEDIAINFO_GRAPH_YES) && defined(MEDIAINFO_AC4_YES)
+    #if defined(MEDIAINFO_GRAPH_YES) && defined(MEDIAINFO_MPEGH3DA_YES)
+        if (MediaInfoLib::Config.Inform_Get()==__T("Graph_Mpegh3da_Dot"))
+            return Export_Graph().Transform(*this, Export_Graph::Graph_Mpegh3da, Export_Graph::Format_Dot);
+        #if defined(MEDIAINFO_GRAPHVIZ_YES)
+            if (MediaInfoLib::Config.Inform_Get()==__T("Graph_Mpegh3da_Svg"))
+                return Export_Graph().Transform(*this, Export_Graph::Graph_Mpegh3da, Export_Graph::Format_Svg);
+        #endif //defined(MEDIAINFO_GRAPHVIZ_YES)
+    #endif //defined(MEDIAINFO_GRAPH_YES) && defined(MEDIAINFO_MPEGH3DA_YES)
     #if defined(MEDIAINFO_REVTMD_YES)
         if (MediaInfoLib::Config.Inform_Get()==__T("reVTMD"))
             return __T("reVTMD is disabled due to its non-free licensing."); //return Export_reVTMD().Transform(*this);
