@@ -445,7 +445,14 @@ void File_DvDif::Read_Buffer_Continue()
                             bool FSC=(Buffer[Buffer_Offset+1  ]&0x08)?true:false;
                             bool FSP=(Buffer[Buffer_Offset+1  ]&0x04)?true:false;
                             if (!FSC && FSP) // Only first part of DV50/DV100
+                            {
+                                FrameInfo.DTS=FrameInfo.PTS=Speed_FrameCount_system[0]*100100000/3+Speed_FrameCount_system[1]*40000000;
+                                Speed_FrameCount_system[system]++;
+                                int64u NextPTS=Speed_FrameCount_system[0]*100100000/3+Speed_FrameCount_system[1]*40000000;
+                                Speed_FrameCount_system[system]--;
+                                FrameInfo.DUR=NextPTS-FrameInfo.PTS; // PTS + DUR = PTS of next frame, DUR rounding is adapted in order to have the exact PTS of next frame
                                 Demux(Buffer+Buffer_Offset+3+Pos+1, 4, ContentType_MainStream);
+                            }
                             Captions_Flags.set(Caption_Present);
 
                             // Quick parity check
