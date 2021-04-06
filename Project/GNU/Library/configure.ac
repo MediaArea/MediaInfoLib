@@ -206,6 +206,7 @@ AC_ARG_WITH(macosx-version-min,   AC_HELP_STRING([--with-macosx-version-min],   
 AC_ARG_WITH(iphoneos-sdk,         AC_HELP_STRING([--with-iphoneos-sdk],         [Force the iPhone SDK]),                      , with_iphoneos_sdk=no)
 AC_ARG_WITH(iphoneos-version-min, AC_HELP_STRING([--with-iphoneos-version-min], [Force the iPhone Version]),                  , with_iphoneos_version_min=no)
 AC_ARG_WITH(libz_static,          AC_HELP_STRING([--with-libz-static],          [Use static version of Zlib]),                , with_libz_static=no)
+AC_ARG_WITH(graphviz,             AC_HELP_STRING([--with-graphviz],             [Use graphviz (specific directory)]),         , with_graphviz=no)
 AC_ARG_WITH(libcurl,              AC_HELP_STRING([--with-libcurl],              [Use libcurl (specific directory)]),          , with_libcurl=no)
 AC_ARG_WITH(libmms,               AC_HELP_STRING([--with-libmms],               [Use libmms (specific directory)]),           , with_libmms=no)
 AC_ARG_WITH(libaes,               AC_HELP_STRING([--with-libaes],               [Use libaes (system)]),                       , with_libaes=depend)
@@ -467,6 +468,57 @@ else
 	else
 		AC_MSG_ERROR([libzen configuration is not found])
 	fi
+fi
+
+dnl -------------------------------------------------------------------------
+dnl graphviz
+dnl
+if test -d $with_graphviz; then
+	if test -f "$with_graphviz/lib/pkgconfig/libgvc.pc"; then
+		gvcpcfile="$with_graphviz/lib/pkgconfig/libgvc.pc"
+	else
+		AC_MSG_ERROR([Problem while configuring builtin graphviz (libgvc.pc not found)])
+	fi
+	CXXFLAGS="$CXXFLAGS $(pkg-config --cflags $gvcpcfile)"
+	if test "$enable_staticlibs" = "yes"; then
+		using_graphviz="custom (static)"
+		LIBS="$LIBS $(pkg-config --libs --static $gvcpcfile)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --libs --static $gvcpcfile)"
+		Graphviz_Lib=" $(pkg-config --libs --static $gvcpcfile)"
+	else
+		using_graphviz="custom"
+		LIBS="$LIBS $(pkg-config --libs $gvcpcfile)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --libs --static $gvcpcfile)"
+		Graphviz_Lib=" $(pkg-config --libs --static $gvcpcfile)"
+	fi
+elif test "$with_graphviz" = "no"; then
+	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_GRAPHVIZ_NO"
+	using_graphviz="no"
+elif test "$with_graphviz" = "runtime"; then
+	AC_CHECK_LIB([dl], [dlopen], [use_libdl="yes"], [use_libdl="no"])
+	if test "$use_libdl" = "yes"; then
+		LIBS="$LIBS -ldl"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static -ldl"
+		Graphviz_Lib=" -ldl"
+	fi
+	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_GRAPHVIZ_DLL_RUNTIME"
+	using_graphviz="system (runtime)"
+elif pkg-config --exists libgvc; then
+	CXXFLAGS="$CXXFLAGS $(pkg-config --cflags libgvc)"
+	if test "$enable_staticlibs" = "yes"; then
+		using_graphviz="system (static)"
+		LIBS="$LIBS $(pkg-config --libs --static libgvc)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --libs --static libgvc)"
+		Graphviz_Lib=" $(pkg-config --libs --static libgvc)"
+	else
+		using_graphviz="system"
+		LIBS="$LIBS $(pkg-config --libs libgvc)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --libs libgvc)"
+		Graphviz_Lib=" $(pkg-config --libs libgvc)"
+	fi
+	Graphviz_Require=" libgvc"
+else
+	AC_MSG_ERROR([graphviz development files are not found. Install the corresponding graphviz development package (e.g. "apt-get install graphviz-dev" or "yum install graphviz-devel"])
 fi
 
 dnl -------------------------------------------------------------------------
@@ -892,6 +944,8 @@ AC_SUBST(MediaInfoLib_LIBS)
 AC_SUBST(MediaInfoLib_LIBS_Static)
 AC_SUBST(MediaInfoLib_Unicode)
 AC_SUBST(MediaInfoLib_LibName)
+AC_SUBST(Graphviz_Require)
+AC_SUBST(Graphviz_Lib)
 AC_SUBST(Curl_Require)
 AC_SUBST(Curl_Lib)
 AC_CONFIG_FILES(libmediainfo-config, [chmod u+x libmediainfo-config])
@@ -915,6 +969,7 @@ echo "Configured MediaInfoLib for '$build'"
 echo ""
 echo "  Unicode?                                                $enable_unicode"
 echo "  Using ZenLib?                                           $with_zenlib"
+echo "  Using graphviz?                                         $using_graphviz"
 echo "  Using libcurl?                                          $using_libcurl"
 echo "  Using libmms?                                           $using_libmms"
 echo "  Using zlib?                                             $with_zlib"

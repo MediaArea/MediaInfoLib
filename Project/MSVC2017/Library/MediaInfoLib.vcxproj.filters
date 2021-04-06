@@ -686,6 +686,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Niso.cpp">
       <Filter>Source Files\Export</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Graph.cpp">
+      <Filter>Source Files\Export</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Ptx.cpp">
       <Filter>Source Files\Multiple</Filter>
     </ClCompile>
@@ -1379,6 +1382,12 @@
       <Filter>Header Files\Export</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Niso.h">
+      <Filter>Header Files\Export</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Graph.h">
+      <Filter>Header Files\Export</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Graph_gvc_Include.h">
       <Filter>Header Files\Export</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Ptx.h">
