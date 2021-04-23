@@ -163,6 +163,9 @@ std::string ExtensibleWave_ChannelMask_ChannelLayout(int32u ChannelMask)
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_Riff.h"
+#if defined(MEDIAINFO_ADM_YES)
+    #include "MediaInfo/Multiple/File_Adm.h"
+#endif
 #if defined(MEDIAINFO_DVDIF_YES)
     #include "MediaInfo/Multiple/File_DvDif.h"
 #endif
@@ -3610,6 +3613,20 @@ void File_Riff::WAVE_axml()
     }
 
     Element_Name("AXML");
+
+    //Creating the parser
+    File_Adm MI;
+
+    //Parsing
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI, Element_Size);
+
+    //Filling
+    Finish(&MI);
+    if (!Count_Get(Stream_Audio))
+        Stream_Prepare(Stream_Audio);
+    Merge(MI, Stream_Audio, 0, 0);
+    return;
 
     //Parsing
     Skip_UTF8(Element_Size,                                     "XML data");
