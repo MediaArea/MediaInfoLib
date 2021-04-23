@@ -234,6 +234,14 @@ Ztring MediaInfo_Internal::Inform()
                 return Export_Graph().Transform(*this, Export_Graph::Graph_Ac4, Export_Graph::Format_Svg);
         #endif //defined(MEDIAINFO_GRAPHVIZ_YES)
     #endif //defined(MEDIAINFO_GRAPH_YES) && defined(MEDIAINFO_AC4_YES)
+    #if defined(MEDIAINFO_GRAPH_YES) && defined(MEDIAINFO_ADM_YES)
+        if (MediaInfoLib::Config.Inform_Get()==__T("Graph_Adm_Dot"))
+            return Export_Graph().Transform(*this, Export_Graph::Graph_Adm, Export_Graph::Format_Dot);
+        #if defined(MEDIAINFO_GRAPHVIZ_YES)
+            if (MediaInfoLib::Config.Inform_Get()==__T("Graph_Adm_Svg"))
+                return Export_Graph().Transform(*this, Export_Graph::Graph_Adm, Export_Graph::Format_Svg);
+        #endif //defined(MEDIAINFO_GRAPHVIZ_YES)
+    #endif //defined(MEDIAINFO_GRAPH_YES) && defined(MEDIAINFO_ADM_YES)
     #if defined(MEDIAINFO_GRAPH_YES) && defined(MEDIAINFO_MPEGH3DA_YES)
         if (MediaInfoLib::Config.Inform_Get()==__T("Graph_Mpegh3da_Dot"))
             return Export_Graph().Transform(*this, Export_Graph::Graph_Mpegh3da, Export_Graph::Format_Dot);

@@ -117,6 +117,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha1-gladman/sha1.c
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha2-gladman/sha2.c
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/hmac-gladman/hmac.c
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tfsxml/tfsxml.c
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze_Buffer.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze_Buffer_MinimizeSize.cpp
@@ -160,6 +161,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Aac_Others.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Ac3.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Ac4.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Adm.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Adpcm.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Als.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Amr.cpp

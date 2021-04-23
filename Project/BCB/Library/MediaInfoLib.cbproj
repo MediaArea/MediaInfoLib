@@ -66,7 +66,7 @@
         <VerInfo_Locale>1036</VerInfo_Locale>
         <AllPackageLibs>rtl.lib</AllPackageLibs>
         <Manifest_File>None</Manifest_File>
-        <IncludePath>..\..\..\Source\ThirdParty\hmac-gladman\;..\..\..\Source\ThirdParty\sha1-gladman\;..\..\..\Source\ThirdParty\sha2-gladman\;..\..\..\Source\MediaInfo\Archive\;..\..\..\Source\MediaInfo\Video\;..\..\..\Source\MediaInfo\Text\;..\..\..\Source\MediaInfo\Audio\;..\..\..\Source\MediaInfo\Duplicate\;..\..\..\Source\;..\..\..\Source\MediaInfo\;..\..\..\Source\MediaInfo\Reader\;..\..\..\Source\MediaInfo\Tag\;..\..\..\Source\MediaInfo\Export\;..\..\..\Source\MediaInfo\Image\;..\..\..\Source\MediaInfo\Multiple\;..\..\..\Source\ThirdParty\aes-gladman\;..\..\..\Source\ThirdParty\base64\;..\..\..\Source\ThirdParty\md5\;..\..\..\Source\ThirdParty\tinyxml2\;..\..\..\..\ZenLib\Source\;..\..\..\..\zlib\;$(IncludePath)</IncludePath>
+        <IncludePath>..\..\..\Source\ThirdParty\hmac-gladman\;..\..\..\Source\ThirdParty\sha1-gladman\;..\..\..\Source\ThirdParty\sha2-gladman\;..\..\..\Source\MediaInfo\Archive\;..\..\..\Source\MediaInfo\Video\;..\..\..\Source\MediaInfo\Text\;..\..\..\Source\MediaInfo\Audio\;..\..\..\Source\MediaInfo\Duplicate\;..\..\..\Source\;..\..\..\Source\MediaInfo\;..\..\..\Source\MediaInfo\Reader\;..\..\..\Source\MediaInfo\Tag\;..\..\..\Source\MediaInfo\Export\;..\..\..\Source\MediaInfo\Image\;..\..\..\Source\MediaInfo\Multiple\;..\..\..\Source\ThirdParty\aes-gladman\;..\..\..\Source\ThirdParty\base64\;..\..\..\Source\ThirdParty\md5\;..\..\..\Source\ThirdParty\tinyxml2\;..\..\..\Source\ThirdParty\tfsxml\;..\..\..\..\ZenLib\Source\;..\..\..\..\zlib\;$(IncludePath)</IncludePath>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <IntermediateOutputDir>.\$(Platform)\$(Config)</IntermediateOutputDir>
         <FinalOutputDir>.\$(Platform)\$(Config)</FinalOutputDir>
@@ -172,6 +172,9 @@
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ac4.cpp">
             <BuildOrder>231</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Adm.cpp">
+            <BuildOrder>233</BuildOrder>
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Adpcm.cpp">
             <BuildOrder>62</BuildOrder>
@@ -844,6 +847,9 @@
         </CppCompile>
         <CppCompile Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.cpp">
             <BuildOrder>209</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.c">
+            <BuildOrder>232</BuildOrder>
         </CppCompile>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

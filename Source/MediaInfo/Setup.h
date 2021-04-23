@@ -467,6 +467,9 @@
 #if !defined(MEDIAINFO_MULTI_NO) && !defined(MEDIAINFO_ANCILLARY_NO) && !defined(MEDIAINFO_ANCILLARY_YES)
     #define MEDIAINFO_ANCILLARY_YES
 #endif
+#if !defined(MEDIAINFO_MULTI_NO) && !defined(MEDIAINFO_ADM_NO) && !defined(MEDIAINFO_ADM_YES)
+    #define MEDIAINFO_ADM_YES
+#endif
 #if !defined(MEDIAINFO_MULTI_NO) && !defined(MEDIAINFO_BDAV_NO) && !defined(MEDIAINFO_BDAV_YES)
     #define MEDIAINFO_BDAV_YES
 #endif

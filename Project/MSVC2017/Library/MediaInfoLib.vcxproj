@@ -192,6 +192,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ac3.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ac4.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Adpcm.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Adm.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Als.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Amr.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Amv.cpp" />
@@ -405,6 +406,11 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -417,6 +423,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Aac_GeneralAudio.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Aac_GeneralAudio_Sbr.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Aac_GeneralAudio_Sbr_Ps.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Adm.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Caf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Celt.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ChannelGrouping.h" />
@@ -646,6 +653,7 @@
     <ClInclude Include="..\..\..\Source\ThirdParty\md5\md5.h" />
     <ClInclude Include="..\..\..\Source\ThirdParty\sha1-gladman\sha1.h" />
     <ClInclude Include="..\..\..\Source\ThirdParty\sha2-gladman\sha2.h" />
+    <ClInclude Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.h" />
     <ClInclude Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.h" />
   </ItemGroup>
   <ItemGroup>
