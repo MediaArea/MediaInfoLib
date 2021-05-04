@@ -933,8 +933,9 @@ void File_Jpeg::SOF_()
             Fill(StreamKind_Last, 0, "Height", Height*(Interlaced?2:1));
             Fill(StreamKind_Last, 0, "Width", Width);
 
-            //ColorSpace from http://docs.oracle.com/javase/1.4.2/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html
-            //TODO: if APPE_Adobe0_transform is present, indicate that K is inverted, see http://halicery.com/Image/jpeg/JPEGCMYK.html
+            //ColorSpace from https://docs.oracle.com/javase/10/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html
+            //TODO: if APPE_Adobe0_flags1 is 0x01, indicate that K is inverted (used in EPS), see http://halicery.com/Image%20Decoders/JPEG/JPEG%20notes/CMYK.html
+            //and https://newsgroup.xnview.com/viewtopic.php?f=35&t=1191&p=15548&hilit=YCCk#p15548
             switch (APPE_Adobe0_transform)
             {
                 case 0x01 :
@@ -943,7 +944,7 @@ void File_Jpeg::SOF_()
                             break;
                 case 0x02 :
                             if (Count==4)
-                                Fill(StreamKind_Last, 0, "ColorSpace", "YUVK");
+                                Fill(StreamKind_Last, 0, "ColorSpace", "YCCK"); // the same as YUVK and YCCB and CYYK
                             break;
                 default   :
                             {
@@ -959,10 +960,10 @@ void File_Jpeg::SOF_()
                                 case 3 :
                                                  if (!APP0_JFIF_Parsed && Ci['R']==1 && Ci['G']==1 && Ci['B']==1)                                                       //RGB
                                                 Fill(StreamKind_Last, 0, "ColorSpace", "RGB");
-                                            else if ((Ci['Y']==1 && ((Ci['C']==1 && Ci['c']==1)                                                                         //YCc
+                                            else if (Ci['Y']==1 && ((Ci['C']==1 && Ci['c']==1)                                                                          //YCc (PhotoYCC)
                                                                   || Ci['C']==2))                                                                                       //YCC
-                                                  || APP0_JFIF_Parsed                                                                                                   //APP0 JFIF header present so YCC
-                                                  || APPE_Adobe0_transform==0                                                                                           //transform set to YCC
+                                                Fill(StreamKind_Last, 0, "ColorSpace", "PhotoYCC");
+                                            else if (APP0_JFIF_Parsed || APPE_Adobe0_transform==0                                                                       //APP0 JFIF header present so YCC
                                                   || (SamplingFactors[0].Ci==0 && SamplingFactors[1].Ci==1 && SamplingFactors[2].Ci==2)                                 //012
                                                   || (SamplingFactors[0].Ci==1 && SamplingFactors[1].Ci==2 && SamplingFactors[2].Ci==3))                                //123
                                                 Fill(StreamKind_Last, 0, "ColorSpace", "YUV");
@@ -972,15 +973,16 @@ void File_Jpeg::SOF_()
                                 case 4 :
                                                  if (!APP0_JFIF_Parsed && Ci['R']==1 && Ci['G']==1 && Ci['B']==1 && Ci['A']==1)                                         //RGBA
                                                 Fill(StreamKind_Last, 0, "ColorSpace", "RGBA");
-                                            else if ((Ci['Y']==1 && Ci['A']==1 && ((Ci['C']==1 && Ci['c']==1)                                                           //YCcA
+                                            else if (Ci['Y']==1 && Ci['A']==1 && ((Ci['C']==1 && Ci['c']==1)                                                            //YCcA (PhotoYCC Alpha)
                                                                                 || Ci['C']==2))                                                                         //YCCA
-                                                  || APP0_JFIF_Parsed                                                                                                   //APP0 JFIF header present so YCCA
+                                                Fill(StreamKind_Last, 0, "ColorSpace", "PhotoYCC-A");
+                                            else if (APPE_Adobe0_transform==0 || APPE_Adobe0_transform==(int8u)-1)                                                      //transform set to CMYK (it is a guess)
+                                                Fill(StreamKind_Last, 0, "ColorSpace", "CMYK");
+                                            else if (APP0_JFIF_Parsed                                                                                                   //APP0 JFIF header present so YCCA
                                                   || (SamplingFactors[0].Ci==0 && SamplingFactors[1].Ci==1 && SamplingFactors[2].Ci==2 && SamplingFactors[3].Ci==3)     //0123
                                                   || (SamplingFactors[0].Ci==1 && SamplingFactors[1].Ci==2 && SamplingFactors[2].Ci==3 && SamplingFactors[3].Ci==4))    //1234
                                                 Fill(StreamKind_Last, 0, "ColorSpace", "YUVA");
                                             else if (Ci['C']==1 && Ci['M']==1 && Ci['Y']==1 && Ci['K']==1)                                                              //CMYK
-                                                Fill(StreamKind_Last, 0, "ColorSpace", "CMYK");
-                                            else if (APPE_Adobe0_transform==0 || APPE_Adobe0_transform==(int8u)-1)                                                      //transform set to CMYK (it is a guess)
                                                 Fill(StreamKind_Last, 0, "ColorSpace", "CMYK");
                                             break;
                                 default:    ;
