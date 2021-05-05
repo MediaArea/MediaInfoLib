@@ -29,6 +29,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Setup.h"
+#include <bitset>
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
@@ -43,7 +44,100 @@ using namespace ZenLib;
 
 namespace MediaInfoLib
 {
+//---------------------------------------------------------------------------
+static const char* profile_names[]=
+{
+    "profileName",
+    "profileVersion",
+    "profileID",
+    "levelID",
+};
+static const int profile_names_size=(int)sizeof(profile_names)/sizeof(const char*);
+static const char* profile_names_InternalID[profile_names_size]=
+{
+    "Format",
+    "Version",
+    "Profile",
+    "Level",
+};
+struct profile_info
+{
+    string Strings[4];
+    string profile_info_build(size_t Max=profile_names_size)
+    {
+        bool HasParenthsis=false;
+        string ToReturn;
+        for (size_t i=0; i<Max; i++)
+        {
+            if (!Strings[i].empty())
+            {
+                if (!ToReturn.empty())
+                {
+                    if (i==1)
+                        ToReturn+=", Version";
+                    if (!HasParenthsis)
+                        ToReturn+=' ';
+                }
+                if (i>=2)
+                {
+                    if (!HasParenthsis)
+                    {
+                        ToReturn+='(';
+                        HasParenthsis=true;
+                    }
+                    else
+                    {
+                        ToReturn+=',';
+                        ToReturn+=' ';
+                    }
+                }
+                if (i>=2)
+                {
+                    ToReturn+=profile_names[i];
+                    ToReturn+='=';
+                }
+                ToReturn+=Strings[i];
+            }
+        }
+        if (HasParenthsis)
+            ToReturn+=')';
+        return ToReturn;
+    }
+};
 
+static bool IsHexaDigit(char Value)
+{
+    return (Value >= '0' && Value <= '9')
+        || (Value >= 'A' && Value <= 'F')
+        || (Value >= 'a' && Value <= 'f');
+}
+
+enum flags {
+    Version0,
+    Version1,
+    Version2,
+    Count0,
+    Count1,
+    Count2,
+    flags_Max
+};
+
+struct attribute_item {
+    const char*         Name;
+    bitset<flags_Max>   Flags;
+};
+
+struct element_item {
+    const char*         Name;
+    int                 Flags;
+};
+
+struct element {
+    attribute_item*     Attributes;
+    element_item*       Elements;
+    int                 Attributes_Count;
+    int                 Elements_Count;
+};
 
 enum items {
     item_audioProgramme,
@@ -175,10 +269,50 @@ enum audioStreamFormat_StringVector {
     audioStreamFormat_StringVector_Max
 };
 
+enum error_Type {
+    Error,
+    Warning,
+    error_Type_Max,
+};
+
+static const char* error_Type_String[] = {
+    "Errors",
+    "Warnings",
+};
+
+static attribute_item audioProgramme_Attributes[] =
+{
+    { "audioProgrammeID"                , (1 << Version0) | (1 << Version1) | (1 << Version2) | (1 << Count1) },
+    { "audioProgrammeName"              , (1 << Version0) | (1 << Version1) | (1 << Version2) | (1 << Count1) },
+    { "audioProgrammeLanguage"          , (1 << Version0) | (1 << Version1) | (1 << Version2) },
+    { "start"                           , (1 << Version0) | (1 << Version1) | (1 << Version2) },
+    { "end"                             , (1 << Version0) | (1 << Version1) | (1 << Version2) },
+    { "maxDuckingDepth"                 , (1 << Version0) | (1 << Version1) | (1 << Version2) },
+};
+
+static element_item audioProgramme_Elements[] =
+{
+    { "audioProgrammeLabel"             ,                                     (1 << Version2) },
+    { "audioContentIDRef"               , (1 << Version0) | (1 << Version1) | (1 << Version2) | (1 << Count1) | (1 << Count2) },
+    { "loudnessMetadata"                , (1 << Version0) | (1 << Version1) | (1 << Version2) },
+    { "audioProgrammeReferenceScreen"   , (1 << Version0) | (1 << Version1) | (1 << Version2) | (1 << Count0) | (1 << Count1) },
+    { "authoringInformation"            ,                                     (1 << Version2) | (1 << Count0) | (1 << Count1) },
+    { "alternativeValueSetIDRef"        ,                                     (1 << Version2) | (1 << Count0) | (1 << Count1) },
+};
+
+static element audioProgramme_Element =
+{
+    audioProgramme_Attributes,
+    audioProgramme_Elements,
+    sizeof(audioProgramme_Attributes) / sizeof(attribute_item),
+    sizeof(audioProgramme_Elements) / sizeof(element_item),
+};
+
 struct Item_Struct {
     vector<string> Strings;
     vector<vector<string> > StringVectors;
     map<string, string> Extra;
+    vector<string> Errors[error_Type_Max];
 };
 
 struct Items_Struct {
@@ -248,6 +382,8 @@ class file_adm_private
 public:
     tfsxml_string p;
     Items_Struct Items[item_Max];
+    int Version = 0;
+    vector<profile_info> profileInfos;
 
     void parse();
     void coreMetadata();
@@ -279,31 +415,45 @@ void file_adm_private::parse()
             for (;;) { \
                 if (tfsxml_attr(&p, &b, &v)) \
                     break; \
-            if (false) { \
-            } \
+                if (false) { \
+                } \
 
-    #define ELEMENT_MIDDLE() \
+    #define ELEMENT_MIDDLE(NAME) \
+                else { \
+                    NAME##_Content.Errors[Warning].push_back("Attribute \"" + string(b.buf, b.len) + "\" is out of specs"); \
+                } \
             } \
         tfsxml_enter(&p, &b); \
         for (;;) { \
             if (tfsxml_next(&p, &b)) \
                 break; \
-        if (false) { \
-        } \
+            if (false) { \
+            } \
 
-    #define ELEMENT_END() \
+    #define ELEMENT_END(NAME) \
+                else if (tfsxml_cmp_charp(b, "loudnessMetadata") && tfsxml_cmp_charp(b, "authoringInformation") && tfsxml_cmp_charp(b, "alternativeValueSetIDRef")) { \
+                    NAME##_Content.Errors[Warning].push_back("Element \"" + string(b.buf, b.len) + "\" is out of specs"); \
+                } \
             } \
         } \
 
     #define ATTRIBUTE(NAME,ATTR) \
-        if (!tfsxml_cmp_charp(b, #ATTR)) { \
+        else if (!tfsxml_cmp_charp(b, #ATTR)) { \
             NAME##_Content.Strings[NAME##_##ATTR].assign(v.buf, v.len); \
         } \
 
+    #define ATTRIBUTE_I(NAME,ATTR) \
+        else if (!tfsxml_cmp_charp(b, #ATTR)) { \
+        } \
+
     #define ELEMENT(NAME,ELEM) \
-        if (!tfsxml_cmp_charp(b, #ELEM)) { \
+        else if (!tfsxml_cmp_charp(b, #ELEM)) { \
             tfsxml_value(&p, &b); \
             NAME##_Content.StringVectors[NAME##_##ELEM].push_back(string(b.buf, b.len)); \
+        } \
+
+    #define ELEMENT_I(NAME,ELEM) \
+        else if (!tfsxml_cmp_charp(b, #ELEM)) { \
         } \
 
     for (;;) {
@@ -349,15 +499,45 @@ void file_adm_private::coreMetadata()
 
 void file_adm_private::format()
 {
-    tfsxml_string b;
+    tfsxml_string b, v;
 
     tfsxml_enter(&p, &b);
     for (;;) {
         if (tfsxml_next(&p, &b))
             break;
-        if (!tfsxml_cmp_charp(b, "audioFormatExtended"))
-        {
+        if (!tfsxml_cmp_charp(b, "audioFormatExtended")) {
             audioFormatExtended();
+        }
+        if (!tfsxml_cmp_charp(b, "audioFormatCustom")) {
+            tfsxml_enter(&p, &b);
+            while (!tfsxml_next(&p, &b)) {
+                if (!tfsxml_cmp_charp(b, "audioFormatCustomSet")) {
+                    tfsxml_enter(&p, &b);
+                    while (!tfsxml_next(&p, &b)) {
+                        if (!tfsxml_cmp_charp(b, "admInformation")) {
+                            tfsxml_enter(&p, &b);
+                            while (!tfsxml_next(&p, &b)) {
+                                if (!tfsxml_cmp_charp(b, "profile")) {
+                                    profileInfos.resize(profileInfos.size() + 1);
+                                    profile_info& profileInfo = profileInfos[profileInfos.size() - 1];
+                                    while (!tfsxml_attr(&p, &b, &v)) {
+                                        for (size_t i = 0; i < profile_names_size; i++)
+                                        {
+                                            if (!tfsxml_cmp_charp(b, profile_names[i])) {
+                                                profileInfo.Strings[i] = string(v.buf, v.len);
+                                                if (!i && profileInfo.Strings[0].size() >= 12 && !profileInfo.Strings[0].compare(profileInfo.Strings[0].size() - 12, 12, " ADM Profile"))
+                                                    profileInfo.Strings[0].resize(profileInfo.Strings[0].size() - 12);
+                                            }
+                                        }
+                                    }
+                                    while (!tfsxml_next(&p, &b)) {
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -366,19 +546,29 @@ void file_adm_private::audioFormatExtended()
 {
     tfsxml_string b, v;
 
+    while (!tfsxml_attr(&p, &b, &v)) {
+        if (!tfsxml_cmp_charp(b, "version")) {
+            if (!tfsxml_cmp_charp(v, "ITU-R_BS.2076-1")) {
+                Version = 1;
+            }
+            if (!tfsxml_cmp_charp(v, "ITU-R_BS.2076-2")) {
+                Version = 2;
+            }
+        }
+    }
     tfsxml_enter(&p, &b);
     for (;;) {
         if (tfsxml_next(&p, &b))
             break;
         ELEMENT_START(audioProgramme)
-            ATTRIBUTE(audioProgramme, audioProgrammeID);
-            ATTRIBUTE(audioProgramme, audioProgrammeName);
-            ATTRIBUTE(audioProgramme, audioProgrammeLanguage);
-            ATTRIBUTE(audioProgramme, start);
-            ATTRIBUTE(audioProgramme, end);
-        ELEMENT_MIDDLE()
-            ELEMENT(audioProgramme, audioContentIDRef);
-            if (!tfsxml_cmp_charp(b, "audioProgrammeLabel")) {
+            ATTRIBUTE(audioProgramme, audioProgrammeID)
+            ATTRIBUTE(audioProgramme, audioProgrammeName)
+            ATTRIBUTE(audioProgramme, audioProgrammeLanguage)
+            ATTRIBUTE(audioProgramme, start)
+            ATTRIBUTE(audioProgramme, end)
+        ELEMENT_MIDDLE(audioProgramme)
+            ELEMENT(audioProgramme, audioContentIDRef)
+            else if (!tfsxml_cmp_charp(b, "audioProgrammeLabel")) {
                 string Language;
                 for (;;) {
                     if (tfsxml_attr(&p, &b, &v))
@@ -394,15 +584,15 @@ void file_adm_private::audioFormatExtended()
                 }
                 audioProgramme_Content.StringVectors[audioProgramme_audioProgrammeLabel].push_back(Value);
             }
-        ELEMENT_END()
+        ELEMENT_END(audioProgramme)
         ELEMENT_START(audioContent)
-            ATTRIBUTE(audioContent, audioContentID);
-            ATTRIBUTE(audioContent, audioContentName);
-            ATTRIBUTE(audioContent, audioContentLanguage);
-            ATTRIBUTE(audioContent, typeLabel);
-        ELEMENT_MIDDLE()
-            ELEMENT(audioContent, audioObjectIDRef);
-            if (!tfsxml_cmp_charp(b, "dialogue")) {
+            ATTRIBUTE(audioContent, audioContentID)
+            ATTRIBUTE(audioContent, audioContentName)
+            ATTRIBUTE(audioContent, audioContentLanguage)
+            ATTRIBUTE(audioContent, typeLabel)
+        ELEMENT_MIDDLE(audioContent)
+            ELEMENT(audioContent, audioObjectIDRef)
+            else if (!tfsxml_cmp_charp(b, "dialogue")) {
                 string Type;
                 for (;;) {
                     if (tfsxml_attr(&p, &b, &v))
@@ -480,7 +670,7 @@ void file_adm_private::audioFormatExtended()
                 }
                 audioContent_Content.StringVectors[audioContent_dialogue].push_back(Value);
             }
-            if (!tfsxml_cmp_charp(b, "audioContentLabel")) {
+            else if (!tfsxml_cmp_charp(b, "audioContentLabel")) {
                 string Language;
                 for (;;) {
                     if (tfsxml_attr(&p, &b, &v))
@@ -507,33 +697,33 @@ void file_adm_private::audioFormatExtended()
                     }
                 }
             }
-            ELEMENT(audioContent, dialogue);
-        ELEMENT_END()
+            ELEMENT(audioContent, dialogue)
+        ELEMENT_END(audioContent)
         ELEMENT_START(audioObject)
-            ATTRIBUTE(audioObject, audioObjectID);
-            ATTRIBUTE(audioObject, audioObjectName);
-            ATTRIBUTE(audioObject, duration);
-            ATTRIBUTE(audioObject, startTime);
-            ATTRIBUTE(audioObject, typeLabel);
-        ELEMENT_MIDDLE()
-            ELEMENT(audioObject, audioPackFormatIDRef);
-            ELEMENT(audioObject, audioTrackUIDRef);
-        ELEMENT_END()
+            ATTRIBUTE(audioObject, audioObjectID)
+            ATTRIBUTE(audioObject, audioObjectName)
+            ATTRIBUTE(audioObject, duration)
+            ATTRIBUTE(audioObject, startTime)
+            ATTRIBUTE(audioObject, typeLabel)
+        ELEMENT_MIDDLE(audioObject)
+            ELEMENT(audioObject, audioPackFormatIDRef)
+            ELEMENT(audioObject, audioTrackUIDRef)
+        ELEMENT_END(audioObject)
         ELEMENT_START(audioPackFormat)
-            ATTRIBUTE(audioPackFormat, audioPackFormatID);
-            ATTRIBUTE(audioPackFormat, audioPackFormatName);
-            ATTRIBUTE(audioPackFormat, typeDefinition);
-            ATTRIBUTE(audioPackFormat, typeLabel);
-        ELEMENT_MIDDLE()
-            ELEMENT(audioPackFormat, audioChannelFormatIDRef);
-        ELEMENT_END()
+            ATTRIBUTE(audioPackFormat, audioPackFormatID)
+            ATTRIBUTE(audioPackFormat, audioPackFormatName)
+            ATTRIBUTE(audioPackFormat, typeDefinition)
+            ATTRIBUTE(audioPackFormat, typeLabel)
+        ELEMENT_MIDDLE(audioPackFormat)
+            ELEMENT(audioPackFormat, audioChannelFormatIDRef)
+        ELEMENT_END(audioPackFormat)
         ELEMENT_START(audioChannelFormat)
-            ATTRIBUTE(audioChannelFormat, audioChannelFormatID);
-            ATTRIBUTE(audioChannelFormat, audioChannelFormatName);
-            ATTRIBUTE(audioChannelFormat, typeDefinition);
-            ATTRIBUTE(audioChannelFormat, typeLabel);
-        ELEMENT_MIDDLE()
-            if (!tfsxml_cmp_charp(b, "audioBlockFormat")) {
+            ATTRIBUTE(audioChannelFormat, audioChannelFormatID)
+            ATTRIBUTE(audioChannelFormat, audioChannelFormatName)
+            ATTRIBUTE(audioChannelFormat, typeDefinition)
+            ATTRIBUTE(audioChannelFormat, typeLabel)
+        ELEMENT_MIDDLE(audioChannelFormat)
+            else if (!tfsxml_cmp_charp(b, "audioBlockFormat")) {
                 map<string, string>::iterator Extra_Type = audioChannelFormat_Content.Extra.find("Type");
                 if (Extra_Type != audioChannelFormat_Content.Extra.end()) {
                     audioChannelFormat_Content.Extra.clear();
@@ -550,43 +740,47 @@ void file_adm_private::audioFormatExtended()
                             break;
                         if (!tfsxml_cmp_charp(b, "speakerLabel")) {
                             tfsxml_value(&p, &b);
-                            audioChannelFormat_Content.Extra["SpeakerLabel"] = string(b.buf, b.len);
+                            string SpeakerLabel(b.buf, b.len);
+                            if (SpeakerLabel.rfind("RC_", 0) == 0) {
+                                SpeakerLabel.erase(0, 3);
+                            }
+                            audioChannelFormat_Content.Extra["SpeakerLabel"] = SpeakerLabel;
                         }
                     }
                 }
             }
-        ELEMENT_END()
+        ELEMENT_END(audioChannelFormat)
         ELEMENT_START(audioTrackUID)
-            ATTRIBUTE(audioTrackUID, UID);
-            ATTRIBUTE(audioTrackUID, bitDepth);
-            ATTRIBUTE(audioTrackUID, sampleRate);
-            ATTRIBUTE(audioTrackUID, typeLabel);
-        ELEMENT_MIDDLE()
-            ELEMENT(audioTrackUID, audioChannelFormatIDRef);
-            ELEMENT(audioTrackUID, audioPackFormatIDRef);
-            ELEMENT(audioTrackUID, audioTrackFormatIDRef);
-        ELEMENT_END()
+            ATTRIBUTE(audioTrackUID, UID)
+            ATTRIBUTE(audioTrackUID, bitDepth)
+            ATTRIBUTE(audioTrackUID, sampleRate)
+            ATTRIBUTE(audioTrackUID, typeLabel)
+        ELEMENT_MIDDLE(audioTrackUID)
+            ELEMENT(audioTrackUID, audioChannelFormatIDRef)
+            ELEMENT(audioTrackUID, audioPackFormatIDRef)
+            ELEMENT(audioTrackUID, audioTrackFormatIDRef)
+        ELEMENT_END(audioTrackUID)
         ELEMENT_START(audioTrackFormat)
-            ATTRIBUTE(audioTrackFormat, audioTrackFormatID);
-            ATTRIBUTE(audioTrackFormat, audioTrackFormatName);
-            ATTRIBUTE(audioTrackFormat, formatDefinition);
-            ATTRIBUTE(audioTrackFormat, typeDefinition);
-            ATTRIBUTE(audioTrackFormat, typeLabel);
-        ELEMENT_MIDDLE()
-            ELEMENT(audioTrackFormat, audioStreamFormatIDRef);
-        ELEMENT_END()
+            ATTRIBUTE(audioTrackFormat, audioTrackFormatID)
+            ATTRIBUTE(audioTrackFormat, audioTrackFormatName)
+            ATTRIBUTE(audioTrackFormat, formatDefinition)
+            ATTRIBUTE(audioTrackFormat, typeDefinition)
+            ATTRIBUTE(audioTrackFormat, typeLabel)
+        ELEMENT_MIDDLE(audioTrackFormat)
+            ELEMENT(audioTrackFormat, audioStreamFormatIDRef)
+        ELEMENT_END(audioTrackFormat)
         ELEMENT_START(audioStreamFormat)
-            ATTRIBUTE(audioStreamFormat, audioStreamFormatID);
-            ATTRIBUTE(audioStreamFormat, audioStreamFormatName);
-            ATTRIBUTE(audioStreamFormat, formatDefinition);
-            ATTRIBUTE(audioStreamFormat, formatLabel);
-            ATTRIBUTE(audioStreamFormat, typeDefinition);
-            ATTRIBUTE(audioStreamFormat, typeLabel);
-        ELEMENT_MIDDLE()
-            ELEMENT(audioStreamFormat, audioChannelFormatIDRef);
-            ELEMENT(audioStreamFormat, audioPackFormatIDRef);
-            ELEMENT(audioStreamFormat, audioTrackFormatIDRef);
-        ELEMENT_END()
+            ATTRIBUTE(audioStreamFormat, audioStreamFormatID)
+            ATTRIBUTE(audioStreamFormat, audioStreamFormatName)
+            ATTRIBUTE(audioStreamFormat, formatDefinition)
+            ATTRIBUTE(audioStreamFormat, formatLabel)
+            ATTRIBUTE(audioStreamFormat, typeDefinition)
+            ATTRIBUTE(audioStreamFormat, typeLabel)
+        ELEMENT_MIDDLE(audioStreamFormat)
+            ELEMENT(audioStreamFormat, audioChannelFormatIDRef)
+            ELEMENT(audioStreamFormat, audioPackFormatIDRef)
+            ELEMENT(audioStreamFormat, audioTrackFormatIDRef)
+        ELEMENT_END(audioStreamFormat)
     }
 }
 
@@ -654,6 +848,39 @@ bool File_Adm::FileHeader_Begin()
     Stream_Prepare(Stream_Audio);
     if (!IsSub)
         Fill(Stream_Audio, StreamPos_Last, Audio_Format, "ADM");
+    Fill(Stream_Audio, StreamPos_Last, "Metadata_Format", "ADM, Version " + Ztring::ToZtring(File_Adm_Private->Version).To_UTF8());
+    if (File_Adm_Private->Items[item_audioProgramme].Items.size() == 1 && File_Adm_Private->Items[item_audioProgramme].Items[0].Strings[audioProgramme_audioProgrammeName] == "Atmos_Master") {
+        Fill(Stream_Audio, 0, "AdmProfile", "Dolby Atmos Master");
+    }
+    vector<profile_info>& profileInfos = File_Adm_Private->profileInfos;
+    if (!profileInfos.empty())
+    {
+        // Find what is in common
+        int PosCommon = profile_names_size;
+        for (int i = 0; i < PosCommon; i++)
+            for (size_t j = 1; j < profileInfos.size(); j++)
+                if (profileInfos[j].Strings[i] != profileInfos[0].Strings[i])
+                    PosCommon = i;
+
+        Fill(Stream_Audio, 0, "AdmProfile", PosCommon ? profileInfos[0].profile_info_build(PosCommon) : string("Multiple"));
+        if (profileInfos.size() > 1)
+        {
+            for (size_t i = 0; i < profileInfos.size(); i++)
+            {
+                Fill(Stream_Audio, 0, ("AdmProfile AdmProfile" + Ztring::ToZtring(i).To_UTF8()).c_str(), profileInfos[i].profile_info_build());
+                for (size_t j = 0; j < profile_names_size; j++)
+                {
+                    Fill(Stream_Audio, 0, ("AdmProfile AdmProfile" + Ztring::ToZtring(i).To_UTF8() + ' ' + profile_names_InternalID[j]).c_str(), profileInfos[i].Strings[j]);
+                    Fill_SetOptions(Stream_Audio, 0, ("AdmProfile AdmProfile" + Ztring::ToZtring(i).To_UTF8() + ' ' + profile_names_InternalID[j]).c_str(), "N NTY");
+                }
+            }
+        }
+        for (size_t j = 0; j < (PosCommon == 0 ? 1 : PosCommon); j++)
+        {
+            Fill(Stream_Audio, 0, (string("AdmProfile_") + profile_names_InternalID[j]).c_str(), j < PosCommon ? profileInfos[0].Strings[j] : "Multiple");
+            Fill_SetOptions(Stream_Audio, 0, (string("AdmProfile_") + profile_names_InternalID[j]).c_str(), "N NTY");
+        }
+    }
     FILL_COUNT(audioProgramme, "Programme");
     FILL_COUNT(audioContent, "Content");
     FILL_COUNT(audioObject, "Object");
@@ -666,6 +893,8 @@ bool File_Adm::FileHeader_Begin()
     for (size_t i = 0; i < item_Max; i++)
         TotalCount += File_Adm_Private->Items[i].Items.size();
     bool Full = TotalCount < 100 ? true : false;
+    vector<string> Errors_Field[error_Type_Max];
+    vector<string> Errors_Value[error_Type_Max];
 
     FILL_START(audioProgramme, audioProgrammeName, "Programme")
         if (Full)
@@ -683,6 +912,31 @@ bool File_Adm::FileHeader_Begin()
             Summary += Label;
             Summary += __T(')');
             Fill(StreamKind_Last, StreamPos_Last, P.c_str(), Summary, true);
+        }
+
+        // Errors
+        const string& audioProgrammeID = File_Adm_Private->Items[item_audioProgramme].Items[i].Strings[audioProgramme_audioProgrammeID];
+        if (audioProgrammeID.size() != 8
+            || audioProgrammeID[0] != 'A'
+            || audioProgrammeID[1] != 'P'
+            || audioProgrammeID[2] != 'R'
+            || audioProgrammeID[3] != '_'
+            || !IsHexaDigit(audioProgrammeID[4])
+            || !IsHexaDigit(audioProgrammeID[5])
+            || !IsHexaDigit(audioProgrammeID[6])
+            || !IsHexaDigit(audioProgrammeID[7])
+            ) {
+            File_Adm_Private->Items[item_audioProgramme].Items[i].Errors->push_back(audioProgrammeID + " is not a valid form (APR_wwww form, wwww is hexadecimal value)");
+        }
+
+
+        for (size_t k = 0; k < error_Type_Max; k++) {
+            if (!File_Adm_Private->Items[item_audioProgramme].Items[i].Errors[k].empty()) {
+                for (size_t j = 0; j < File_Adm_Private->Items[item_audioProgramme].Items[i].Errors[k].size(); j++) {
+                    Errors_Field[k].push_back("audioProgramme");
+                    Errors_Value[k].push_back(File_Adm_Private->Items[item_audioProgramme].Items[i].Errors[k][j]);
+                }
+            }
         }
     }
 
@@ -721,6 +975,29 @@ bool File_Adm::FileHeader_Begin()
             FILL_A(audioPackFormat, audioPackFormatID, "ID");
         FILL_A(audioPackFormat, audioPackFormatName, "Title");
         FILL_A(audioPackFormat, typeDefinition, "TypeDefinition");
+        const Item_Struct& Source = File_Adm_Private->Items[item_audioPackFormat].Items[i];
+        const Items_Struct& Dest = File_Adm_Private->Items[item_audioChannelFormat];
+        string SpeakerLabel;
+        for (size_t j = 0; j < Source.StringVectors[audioPackFormat_audioChannelFormatIDRef].size(); j++) {
+            const string& ID = Source.StringVectors[audioPackFormat_audioChannelFormatIDRef][j];
+            for (size_t k = 0; k < Dest.Items.size(); k++) {
+                if (Dest.Items[k].Strings[audioChannelFormat_audioChannelFormatID] != ID) {
+                    continue;
+                }
+                for (map<string, string>::const_iterator Extra = Dest.Items[k].Extra.begin(); Extra != Dest.Items[k].Extra.end(); ++Extra) {
+                    if (Extra->first == "SpeakerLabel") {
+                        if (!SpeakerLabel.empty()) {
+                            SpeakerLabel += ' ';
+                        }
+                        SpeakerLabel += Extra->second;
+                    }
+                }
+            }
+        }
+        if (!SpeakerLabel.empty()) {
+            Fill(StreamKind_Last, StreamPos_Last, (P + " ChannelLayout").c_str(), SpeakerLabel, true, true);
+        }
+
         LINK(audioPackFormat, "ChannelFormat", audioChannelFormatIDRef, audioChannelFormat);
     }
 
@@ -765,6 +1042,14 @@ bool File_Adm::FileHeader_Begin()
     else
         Fill(Stream_Audio, 0, "PartialDisplay", "Yes");
 
+    for (size_t k = 0; k < error_Type_Max; k++) {
+        if (!Errors_Field[k].empty()) {
+            Fill(StreamKind_Last, StreamPos_Last, error_Type_String[k], Errors_Field[k].size());
+            for (size_t i = 0; i < Errors_Field[k].size(); i++) {
+                Fill(StreamKind_Last, StreamPos_Last, (string(error_Type_String[k]) + ' ' + Errors_Field[k][i]).c_str(), Errors_Value[k][i]);
+            }
+        }
+    }
 
     Element_Offset=File_Size;
     delete File_Adm_Private; File_Adm_Private = NULL;
