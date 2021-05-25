@@ -99,9 +99,9 @@ xcopy ..\Project\MSVC2013\Example\HowToUse_Dll.vcxproj.filters MediaInfoDLL_Wind
 xcopy ..\Project\MSVC2015\*.sln MediaInfoDLL_Windows_i386\Developers\Project\MSVC2015\
 xcopy ..\Project\MSVC2015\Example\HowToUse_Dll.vcxproj MediaInfoDLL_Windows_i386\Developers\Project\MSVC2015\Example\
 xcopy ..\Project\MSVC2015\Example\HowToUse_Dll.vcxproj.filters MediaInfoDLL_Windows_i386\Developers\Project\MSVC2015\Example\
-xcopy ..\Project\MSVC2017\*.sln MediaInfoDLL_Windows_i386\Developers\Project\MSVC2017\
-xcopy ..\Project\MSVC2017\Example\HowToUse_Dll.vcxproj MediaInfoDLL_Windows_i386\Developers\Project\MSVC2017\Example\
-xcopy ..\Project\MSVC2017\Example\HowToUse_Dll.vcxproj.filters MediaInfoDLL_Windows_i386\Developers\Project\MSVC2017\Example\
+xcopy ..\Project\MSVC2019\*.sln MediaInfoDLL_Windows_i386\Developers\Project\MSVC2019\
+xcopy ..\Project\MSVC2019\Example\HowToUse_Dll.vcxproj MediaInfoDLL_Windows_i386\Developers\Project\MSVC2019\Example\
+xcopy ..\Project\MSVC2019\Example\HowToUse_Dll.vcxproj.filters MediaInfoDLL_Windows_i386\Developers\Project\MSVC2019\Example\
 xcopy ..\Project\GCC\Example\Make* MediaInfoDLL_Windows_i386\Developers\Project\GCC\Example\
 xcopy ..\Project\Java\Example.JNA\*.java MediaInfoDLL_Windows_i386\Developers\Project\Java\Example.JNA\
 xcopy ..\Project\Java\Example.JNA\*.txt MediaInfoDLL_Windows_i386\Developers\Project\Java\Example.JNA\
@@ -126,8 +126,8 @@ xcopy ..\Project\NetBeans\Example.JNative\src\*.java MediaInfoDLL_Windows_i386\D
 
 rem --- Copying : Libs ---
 xcopy ..\Release\BCB\DLL\MediaInfo.lib MediaInfoDLL_Windows_i386\Developers\Release\BCB\DLL\
-xcopy ..\Project\MSVC2017\Win32\Release\MediaInfo.lib MediaInfoDLL_Windows_x64\Developers\Project\MSVC2017\Win32\Release\
-xcopy ..\Project\MSVC2017\Win32\Debug\MediaInfo.lib MediaInfoDLL_Windows_x64\Developers\Project\MSVC2017\x64\Debug\
+xcopy ..\Project\MSVC2019\Win32\Release\MediaInfo.lib MediaInfoDLL_Windows_x64\Developers\Project\MSVC2019\Win32\Release\
+xcopy ..\Project\MSVC2019\Win32\Debug\MediaInfo.lib MediaInfoDLL_Windows_x64\Developers\Project\MSVC2019\x64\Debug\
 
 rem --- Copying : Examples ---
 xcopy ..\Source\Example\HowToUse_Dll*.* MediaInfoDLL_Windows_i386\Developers\Source\Example\
@@ -143,9 +143,9 @@ rem --- Copying : Contrib ---
 xcopy ..\Contrib\*.* MediaInfoDLL_Windows_i386\Developers\Contrib\ /S
 
 rem --- Copying : DLL ---
-xcopy ..\Project\MSVC2017\Win32\Release\MediaInfo.dll MediaInfoDLL_Windows_i386\
-xcopy ..\Project\MSVC2017\Win32\Release\MediaInfo_InfoTip.dll MediaInfoDLL_Windows_i386\
-xcopy ..\Project\MSVC2017\ShellExtension\*.bat MediaInfoDLL_Windows_i386\
+xcopy ..\Project\MSVC2019\Win32\Release\MediaInfo.dll MediaInfoDLL_Windows_i386\
+xcopy ..\Project\MSVC2019\Win32\Release\MediaInfo_InfoTip.dll MediaInfoDLL_Windows_i386\
+xcopy ..\Project\MSVC2019\ShellExtension\*.bat MediaInfoDLL_Windows_i386\
 
 
 rem --- Compressing Archive ---
