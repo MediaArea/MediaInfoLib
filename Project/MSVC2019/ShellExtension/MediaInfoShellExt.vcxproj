@@ -90,7 +90,6 @@
       </DllDataFileName>
       <InterfaceIdentifierFileName>MediaInfoShellExt_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>MediaInfoShellExt_p.c</ProxyFileName>
-      <ValidateAllParameters>false</ValidateAllParameters>
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\..\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -150,7 +149,6 @@
       </DllDataFileName>
       <InterfaceIdentifierFileName>MediaInfoShellExt_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>MediaInfoShellExt_p.c</ProxyFileName>
-      <ValidateAllParameters>false</ValidateAllParameters>
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\..\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
