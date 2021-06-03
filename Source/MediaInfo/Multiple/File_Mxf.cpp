@@ -56,6 +56,9 @@
 #if defined(MEDIAINFO_SMPTEST0337_YES)
     #include "MediaInfo/Audio/File_ChannelGrouping.h"
 #endif
+#if defined(MEDIAINFO_SMPTEST0337_YES)
+    #include "MediaInfo/Audio/File_ChannelSplitting.h"
+#endif
 #if defined(MEDIAINFO_MPEGA_YES)
     #include "MediaInfo/Audio/File_Mpega.h"
 #endif
@@ -3031,12 +3034,26 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             }
 
             //Removing the 2 corresponding streams
-            NewPos1=(Essence->second.StreamPos_Initial/2)*2+StreamPos_Difference;
-            size_t NewPos2=NewPos1+1;
+            NewPos1=Essence->second.StreamPos_Initial-1+StreamPos_Difference;
             ID=Ztring::ToZtring(Essence1->second.TrackID)+__T(" / ")+Ztring::ToZtring(Essence->second.TrackID);
 
-            Stream_Erase(NewKind, NewPos2);
+            Stream_Erase(NewKind, NewPos1+1);
             Stream_Erase(NewKind, NewPos1);
+
+            essences::iterator NextStream=Essence1;
+            ++NextStream;
+            size_t NewAudio_Count=Essence->second.Parsers[0]->Count_Get(Stream_Audio);
+            while (NextStream!=Essences.end())
+            {
+                if (NextStream->second.StreamKind==Stream_Audio)
+                {
+                    NextStream->second.StreamPos-=2;
+                    NextStream->second.StreamPos+=NewAudio_Count;
+                    NextStream->second.StreamPos_Initial-=2;
+                    NextStream->second.StreamPos_Initial+=NewAudio_Count;
+                }
+                ++NextStream;
+            }
         }
         else
         {
@@ -3055,9 +3072,9 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             for (size_t Pos=0; Pos<StreamSave.size(); Pos++)
             {
                 if (Pos==Fill_Parameter(StreamKind_Last, Generic_BitRate) && (*Parser)->Count_Get(NewKind)>1 && (!StreamSave[Pos].empty() || StreamPos))
-                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate_Encoded), StreamPos?0:(StreamSave[Pos].To_int64u()*2));
+                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate_Encoded), StreamPos?0:(StreamSave[Pos].To_int64u()*2), 10, true);
                 else if (Pos==Fill_Parameter(StreamKind_Last, Generic_StreamSize) && (*Parser)->Count_Get(NewKind)>1 && (!StreamSave[Pos].empty() || StreamPos))
-                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize_Encoded), StreamPos?0:(StreamSave[Pos].To_int64u()*2));
+                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize_Encoded), StreamPos?0:(StreamSave[Pos].To_int64u()*2), 10, true);
                 else if (Retrieve(StreamKind_Last, StreamPos_Last, Pos).empty())
                     Fill(StreamKind_Last, StreamPos_Last, Pos, StreamSave[Pos]);
             }
@@ -3079,14 +3096,6 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
                 }
             }
         }
-
-        //Positioning other streams
-        for (essences::iterator Essence_Temp=Essence; Essence_Temp!=Essences.end(); ++Essence_Temp)
-            if (!Essence_Temp->second.Parsers.empty() && Essence_Temp->second.Parsers[0]->Count_Get(Stream_Audio))
-            {
-                Essence_Temp->second.StreamPos-=2; //ChannelGrouping
-                Essence_Temp->second.StreamPos+=(*(Essence_Temp->second.Parsers.begin()))->Count_Get(Stream_Audio);
-            }
     }
     else //Normal
     {
@@ -3568,38 +3577,43 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
         std::map<std::string, Ztring>::iterator Info_MasteringDisplay_WhitePointChromaticity = Descriptor->second.Infos.find("MasteringDisplay_WhitePointChromaticity");
         std::map<std::string, Ztring>::iterator MasteringDisplay_Luminance_Max = Descriptor->second.Infos.find("MasteringDisplay_Luminance_Max");
         std::map<std::string, Ztring>::iterator MasteringDisplay_Luminance_Min = Descriptor->second.Infos.find("MasteringDisplay_Luminance_Min");
-        if (Info_MasteringDisplay_Primaries!= Descriptor->second.Infos.end() || Info_MasteringDisplay_WhitePointChromaticity!= Descriptor->second.Infos.end())
+        mastering_metadata_2086 MasteringMeta;
+        memset(&MasteringMeta, 0xFF, sizeof(MasteringMeta));
+        if (Info_MasteringDisplay_Primaries!= Descriptor->second.Infos.end())
         {
-            Ztring MasteringDisplay_ColorPrimaries;
-            if (Info_MasteringDisplay_Primaries!= Descriptor->second.Infos.end())
+            ZtringList Primaries (Info_MasteringDisplay_Primaries->second);
+            if (Primaries.size() == 6)
             {
-                MasteringDisplay_ColorPrimaries=Info_MasteringDisplay_Primaries->second;
-                if (Info_MasteringDisplay_WhitePointChromaticity!= Descriptor->second.Infos.end())
-                    MasteringDisplay_ColorPrimaries+=__T(", White point: ")+Info_MasteringDisplay_WhitePointChromaticity->second;
+                MasteringMeta.Primaries[0] = Primaries[0].To_int16u();
+                MasteringMeta.Primaries[1] = Primaries[1].To_int16u();
+                MasteringMeta.Primaries[2] = Primaries[2].To_int16u();
+                MasteringMeta.Primaries[3] = Primaries[3].To_int16u();
+                MasteringMeta.Primaries[4] = Primaries[4].To_int16u();
+                MasteringMeta.Primaries[5] = Primaries[5].To_int16u();
             }
-            else
-                    MasteringDisplay_ColorPrimaries=__T("White point: ")+Info_MasteringDisplay_WhitePointChromaticity->second;
-
-            if (MasteringDisplay_ColorPrimaries==__T("R: x=0.640000 y=0.330000, G: x=0.300000 y=0.600000, B: x=0.150000 y=0.060000, White point: x=0.312700 y=0.329000")) MasteringDisplay_ColorPrimaries=__T("BT.709");
-            if (MasteringDisplay_ColorPrimaries==__T("R: x=0.708000 y=0.292000, G: x=0.170000 y=0.797000, B: x=0.131000 y=0.046000, White point: x=0.312700 y=0.329000")) MasteringDisplay_ColorPrimaries=__T("BT.2020");
-            if (MasteringDisplay_ColorPrimaries==__T("R: x=0.680000 y=0.320000, G: x=0.265000 y=0.690000, B: x=0.150000 y=0.060000, White point: x=0.312700 y=0.329000")) MasteringDisplay_ColorPrimaries=__T("Display P3");
-
-            Descriptor->second.Infos["MasteringDisplay_ColorPrimaries"]=MasteringDisplay_ColorPrimaries;
         }
-        if (MasteringDisplay_Luminance_Max!=Descriptor->second.Infos.end() || MasteringDisplay_Luminance_Min!=Descriptor->second.Infos.end())
+        if (Info_MasteringDisplay_WhitePointChromaticity!= Descriptor->second.Infos.end())
         {
-            Ztring MasteringDisplay_Luminance;
-            if (MasteringDisplay_Luminance_Min!=Descriptor->second.Infos.end())
+            ZtringList WhitePoint (Info_MasteringDisplay_WhitePointChromaticity->second);
+            if (WhitePoint.size() == 2)
             {
-                MasteringDisplay_Luminance=__T("min: ")+MasteringDisplay_Luminance_Min->second+__T(" cd/m2");
-                if (MasteringDisplay_Luminance_Max!=Descriptor->second.Infos.end())
-                    MasteringDisplay_Luminance+=__T(", max: ")+ MasteringDisplay_Luminance_Max->second+__T(" cd/m2");;
+                MasteringMeta.Primaries[6] = WhitePoint[0].To_int16u();
+                MasteringMeta.Primaries[7] = WhitePoint[1].To_int16u();
             }
-            else
-                    MasteringDisplay_Luminance=__T("max: ")+MasteringDisplay_Luminance_Max->second;
-
-            Descriptor->second.Infos["MasteringDisplay_Luminance"]=MasteringDisplay_Luminance;
         }
+        if (MasteringDisplay_Luminance_Min!=Descriptor->second.Infos.end())
+        {
+            MasteringMeta.Luminance[0] = MasteringDisplay_Luminance_Min->second.To_int32u();
+        }
+        if (MasteringDisplay_Luminance_Max!=Descriptor->second.Infos.end())
+        {
+            MasteringMeta.Luminance[1] = MasteringDisplay_Luminance_Max->second.To_int32u();
+        }
+        Ztring MasteringDisplay_ColorPrimaries;
+        Ztring MasteringDisplay_Luminance;
+        Get_MasteringDisplayColorVolume(MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance, MasteringMeta);
+        Descriptor->second.Infos["MasteringDisplay_ColorPrimaries"]=MasteringDisplay_ColorPrimaries;
+        Descriptor->second.Infos["MasteringDisplay_Luminance"]=MasteringDisplay_Luminance;
 
         for (std::map<std::string, Ztring>::iterator Info=Descriptor->second.Infos.begin(); Info!=Descriptor->second.Infos.end(); ++Info)
             if (Info!=Info_MasteringDisplay_Primaries
@@ -3896,7 +3910,12 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
                     }
                     
                     for (std::map<std::string, Ztring>::iterator Info=SubDescriptor->second.Infos.begin(); Info!=SubDescriptor->second.Infos.end(); ++Info)
-                        if (Retrieve(StreamKind_Last, StreamPos_Last, Info->first.c_str()).empty())
+                        if (Info->first=="ComponentCount")
+                        {
+                            if (Info->second==__T("4") && !Retrieve(StreamKind_Last, StreamPos_Last, "ColorSpace").empty())
+                                Fill(StreamKind_Last, StreamPos_Last, "ColorSpace", Retrieve(StreamKind_Last, StreamPos_Last, "ColorSpace")+__T('A'), true); // Descriptor name is "RGBA"...
+                        }
+                        else if (Retrieve(StreamKind_Last, StreamPos_Last, Info->first.c_str()).empty())
                             Fill(StreamKind_Last, StreamPos_Last, Info->first.c_str(), Info->second);
                         else if (Retrieve(StreamKind_Last, StreamPos_Last, Info->first.c_str()) != Info->second)
                         {
@@ -9775,34 +9794,13 @@ void File_Mxf::MasteringDisplayPrimaries()
     }
 
     FILLING_BEGIN();
-        //Reordering to RGB
-        size_t G=4, B=4, R=4;
-        for (size_t c=0; c<3; c++)
+        ZtringList MasteringDisplay_ColorPrimaries;
+        for (size_t c = 0; c < 3; c++)
         {
-            if (x[c]<17500 && y[c]<17500)
-                B=c;
-            else if (y[c]-x[c]>=0)
-                G=c;
-            else
-                R=c;
+            MasteringDisplay_ColorPrimaries.push_back(Ztring::ToZtring(x[c]));
+            MasteringDisplay_ColorPrimaries.push_back(Ztring::ToZtring(y[c]));
         }
-        if ((R|B|G)>=4)
-        {
-            //Order not automatically detected, betting on GBR order
-            G=0;
-            B=1;
-            R=2;
-        }
-
-        Ztring
-        MasteringDisplay_ColorPrimaries=__T("R: x=")+Ztring::ToZtring(((float64)x[R])/50000, 6)
-                                       +__T(  " y=")+Ztring::ToZtring(((float64)y[R])/50000, 6)
-                                     +__T(", G: x=")+Ztring::ToZtring(((float64)x[G])/50000, 6)
-                                       +__T(  " y=")+Ztring::ToZtring(((float64)y[G])/50000, 6)
-                                     +__T(", B: x=")+Ztring::ToZtring(((float64)x[B])/50000, 6)
-                                       +__T(  " y=")+Ztring::ToZtring(((float64)y[B])/50000, 6)
-            ;
-        Descriptor_Fill("MasteringDisplay_Primaries", MasteringDisplay_ColorPrimaries);
+        Descriptor_Fill("MasteringDisplay_Primaries", MasteringDisplay_ColorPrimaries.Read());
     FILLING_END();
 }
 
@@ -9816,12 +9814,10 @@ void File_Mxf::MasteringDisplayWhitePointChromaticity()
     Get_B2(y,                                                   "white_point_y");
 
     FILLING_BEGIN();
-        Ztring
-        MasteringDisplay_ColorPrimaries=
-                                           __T("x=")+Ztring::ToZtring(((float64)x)/50000, 6)
-                                       +__T(  " y=")+Ztring::ToZtring(((float64)y)/50000, 6);
-            ;
-        Descriptor_Fill("MasteringDisplay_WhitePointChromaticity", MasteringDisplay_ColorPrimaries);
+        ZtringList MasteringDisplay_WhitePointChromaticity;
+        MasteringDisplay_WhitePointChromaticity.push_back(Ztring::ToZtring(x));
+        MasteringDisplay_WhitePointChromaticity.push_back(Ztring::ToZtring(y));
+        Descriptor_Fill("MasteringDisplay_WhitePointChromaticity", MasteringDisplay_WhitePointChromaticity.Read());
     FILLING_END();
 }
 
@@ -9834,7 +9830,7 @@ void File_Mxf::MasteringDisplayMaximumLuminance()
     Get_B4 (max,                                                "Data");
 
     FILLING_BEGIN();
-        Descriptor_Fill("MasteringDisplay_Luminance_Max", Ztring::ToZtring(((float64)max)/10000, (max-((int)max)==0)?0:4));
+        Descriptor_Fill("MasteringDisplay_Luminance_Max", Ztring::ToZtring(max));
     FILLING_END();
 }
 
@@ -9847,7 +9843,7 @@ void File_Mxf::MasteringDisplayMinimumLuminance()
     Get_B4 (min,                                               "Data");
 
     FILLING_BEGIN();
-        Descriptor_Fill("MasteringDisplay_Luminance_Min", Ztring::ToZtring(((float64)min)/10000, 4));
+        Descriptor_Fill("MasteringDisplay_Luminance_Min", Ztring::ToZtring(min));
     FILLING_END();
 }
 
@@ -9991,7 +9987,7 @@ void File_Mxf::GenericTrack_Sequence()
 {
     //Parsing
     int128u Data;
-    Get_UUID(Data,                                              "Data"); Element_Info1(Ztring::ToZtring(Data, 16));
+    Get_UUID(Data,                                              "Data"); Element_Info1(uint128toString(Data, 16));
 
     FILLING_BEGIN();
         Tracks[InstanceUID].Sequence=Data;
@@ -10421,7 +10417,13 @@ void File_Mxf::JPEG2000PictureSubDescriptor_YTOsiz()
 void File_Mxf::JPEG2000PictureSubDescriptor_Csiz()
 {
     //Parsing
-    Info_B2(Data,                                                "Data"); Element_Info1(Data);
+    int16u Data;
+    Get_B2 (Data,                                                "Data"); Element_Info1(Data);
+
+    FILLING_BEGIN()
+        Descriptor_Fill("ComponentCount", Ztring::ToZtring(Data));
+    FILLING_END()
+
 }
 
 //---------------------------------------------------------------------------
@@ -16393,10 +16395,13 @@ void File_Mxf::ChooseParser(const essences::iterator &Essence, const descriptors
                                                     switch (Code5)
                                                     {
                                                         case 0x01 :
+                                                        case 0x7E :
                                                         case 0x7F : if (Descriptor->second.ChannelCount==1) //PCM, but one file is found with Dolby E in it
                                                                         ChooseParser_ChannelGrouping(Essence, Descriptor);
                                                                     if (Descriptor->second.ChannelCount==2) //PCM, but one file is found with Dolby E in it
                                                                         ChooseParser_SmpteSt0337(Essence, Descriptor);
+                                                                    if (Descriptor->second.ChannelCount>2 && Descriptor->second.ChannelCount!=(int32u)-1) //PCM, but one file is found with Dolby E in it
+                                                                        ChooseParser_ChannelSplitting(Essence, Descriptor);
                                                         default   : return ChooseParser_Pcm(Essence, Descriptor);
                                                     }
                                         case 0x02 : //Compressed coding
@@ -16505,6 +16510,8 @@ void File_Mxf::ChooseParser__FromEssenceContainer(const essences::iterator &Esse
                                                                                                         ChooseParser_ChannelGrouping(Essence, Descriptor);
                                                                                                     if (Descriptor->second.ChannelCount==2) //PCM, but one file is found with Dolby E in it
                                                                                                         ChooseParser_SmpteSt0337(Essence, Descriptor);
+                                                                                                    if (Descriptor->second.ChannelCount>2 && Descriptor->second.ChannelCount!=(int32u)-1) //PCM, but one file is found with Dolby E in it
+                                                                                                        ChooseParser_ChannelSplitting(Essence, Descriptor);
                                                                                                     return ChooseParser_Pcm(Essence, Descriptor);
                                                                                         case 0x04 : return; //MPEG ES mappings with Stream ID
                                                                                         case 0x0A : return ChooseParser_Alaw(Essence, Descriptor);
@@ -17174,6 +17181,53 @@ void File_Mxf::ChooseParser_ChannelGrouping(const essences::iterator &Essence, c
 }
 
 //---------------------------------------------------------------------------
+void File_Mxf::ChooseParser_ChannelSplitting(const essences::iterator &Essence, const descriptors::iterator &Descriptor)
+{
+    Essence->second.StreamKind=Stream_Audio;
+
+    //Filling
+    #if defined(MEDIAINFO_SMPTEST0337_YES)
+        File_ChannelSplitting* Parser=new File_ChannelSplitting;
+        if (Descriptor!=Descriptors.end())
+        {
+            Parser->Channel_Total=Descriptor->second.ChannelCount;
+            if (Descriptor->second.BlockAlign<64)
+                Parser->BitDepth=(int8u)(Descriptor->second.BlockAlign*8/Descriptor->second.ChannelCount);
+            else if (Descriptor->second.QuantizationBits!=(int32u)-1)
+                Parser->BitDepth=(int8u)Descriptor->second.QuantizationBits;
+            std::map<std::string, Ztring>::const_iterator i=Descriptor->second.Infos.find("SamplingRate");
+            if (i!=Descriptor->second.Infos.end())
+                Parser->SamplingRate=i->second.To_int16u();
+            i=Descriptor->second.Infos.find("Format_Settings_Endianness");
+            if (i!=Descriptor->second.Infos.end())
+            {
+                if (i->second==__T("Big"))
+                    Parser->Endianness='B';
+                else
+                    Parser->Endianness='L';
+            }
+            else
+                Parser->Endianness='L';
+        }
+        else
+            Parser->Endianness='L';
+        Parser->Aligned=true;
+
+        #if MEDIAINFO_DEMUX
+            if (Demux_UnpacketizeContainer)
+            {
+                Parser->Demux_Level=2; //Container
+                Parser->Demux_UnpacketizeContainer=true;
+            }
+        #endif //MEDIAINFO_DEMUX
+
+        Essence->second.Parsers.push_back(Parser);
+    #endif //defined(MEDIAINFO_SMPTEST0337_YES)
+
+    //Adding PCM
+    ChooseParser_Pcm(Essence, Descriptor);
+}
+//---------------------------------------------------------------------------
 void File_Mxf::ChooseParser_Mpega(const essences::iterator &Essence, const descriptors::iterator &Descriptor)
 {
     Essence->second.StreamKind=Stream_Audio;
@@ -17266,6 +17320,8 @@ void File_Mxf::ChooseParser_Pcm(const essences::iterator &Essence, const descrip
             }
         #endif //MEDIAINFO_DEMUX
 
+        if (Essence->second.Parsers.empty())
+            Parser->Frame_Count_Valid=1;
         Essence->second.Parsers.push_back(Parser);
     #endif
 }
@@ -17460,6 +17516,8 @@ void File_Mxf::Subsampling_Compute(descriptors::iterator Descriptor)
 //---------------------------------------------------------------------------
 void File_Mxf::ColorLevels_Compute(descriptors::iterator Descriptor, bool Force, int32u BitDepth)
 {
+    if (Descriptor == Descriptors.end())
+        return;
     // BitDepth check
     std::map<std::string, Ztring>::iterator Info=Descriptor->second.Infos.find("BitDepth");
     if (Info!=Descriptor->second.Infos.end())
@@ -17486,7 +17544,7 @@ void File_Mxf::ColorLevels_Compute(descriptors::iterator Descriptor, bool Force,
         }
     }
 
-    if (Descriptor==Descriptors.end() || (!Force && (Descriptor->second.MinRefLevel==(int32u)-1 || Descriptor->second.MaxRefLevel==(int32u)-1) || (Descriptor->second.Type!=descriptor::Type_RGBA && Descriptor->second.ColorRange==(int32u)-1)))
+    if (!Force && (Descriptor->second.MinRefLevel==(int32u)-1 || Descriptor->second.MaxRefLevel==(int32u)-1) || (Descriptor->second.Type!=descriptor::Type_RGBA && Descriptor->second.ColorRange==(int32u)-1))
         return;
 
     // Listing values

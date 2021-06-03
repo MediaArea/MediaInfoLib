@@ -137,6 +137,7 @@ private :
     MediaInfo_Internal &operator =(const MediaInfo_Internal &);
 
     static void ConvertRetour(Ztring& Retour);
+    static void ConvertRetourSCX(Ztring& Retour);
 
     //Open Buffer
     bool Info_IsMultipleParsing;
@@ -157,7 +158,7 @@ public :
     void TestContinuousFileNames();
     #endif //defined(MEDIAINFO_FILE_YES)
     #if MEDIAINFO_EVENTS
-        void Event_Prepare (struct MediaInfo_Event_Generic* Event);
+        void Event_Prepare (struct MediaInfo_Event_Generic* Event, int32u Event_Code, size_t Event_Size);
     #endif // MEDIAINFO_EVENTS
     #if defined(MEDIAINFO_FILE_YES)
         int  ListFormats(const String &File_Name=String());

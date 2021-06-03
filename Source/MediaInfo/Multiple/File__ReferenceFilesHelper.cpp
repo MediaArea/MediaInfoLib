@@ -846,10 +846,7 @@ void File__ReferenceFilesHelper::ParseReferences()
 
         #if MEDIAINFO_EVENTS
             struct MediaInfo_Event_General_SubFile_End_0 Event;
-            MI->Event_Prepare((struct MediaInfo_Event_Generic*)&Event);
-            Event.EventCode=MediaInfo_EventCode_Create(0, MediaInfo_Event_General_SubFile_End, 0);
-            Event.EventSize=sizeof(struct MediaInfo_Event_General_SubFile_End_0);
-
+            MI->Event_Prepare((struct MediaInfo_Event_Generic*)&Event, MediaInfo_EventCode_Create(0, MediaInfo_Event_General_SubFile_End, 0), sizeof(struct MediaInfo_Event_General_SubFile_End_0));
             MI->Config->Event_Send(NULL, (const int8u*)&Event, Event.EventSize, MI->File_Name);
         #endif //MEDIAINFO_EVENTS
 
@@ -1420,7 +1417,7 @@ void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()
         CodecID+=MI->Retrieve(StreamKind_Last, StreamPos_To, MI->Fill_Parameter(StreamKind_Last, Generic_CodecID));
         MI->Fill(StreamKind_Last, StreamPos_To, MI->Fill_Parameter(StreamKind_Last, Generic_CodecID), CodecID, true);
     }
-    if (!Sequences[Sequences_Current]->IsMain && Sequences[Sequences_Current]->MI->Count_Get(Stream_Video)+Sequences[Sequences_Current]->MI->Count_Get(Stream_Audio)>1 && Sequences[Sequences_Current]->MI->Get(Stream_Video, 0, Video_Format)!=__T("DV"))
+    if (!Sequences[Sequences_Current]->IsMain && Sequences[Sequences_Current]->MI->Count_Get(Stream_Video)+Sequences[Sequences_Current]->MI->Count_Get(Stream_Audio)>1 && Sequences[Sequences_Current]->MI->Get(Stream_Video, 0, Video_Format)!=__T("DV") && Sequences[Sequences_Current]->MI->Get(Stream_Audio, 0, Audio_Format)!=__T("Dolby E"))
     {
         if (StreamKind_Last==Stream_Menu)
         {

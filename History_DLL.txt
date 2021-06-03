@@ -7,6 +7,76 @@ x Correction
 bug reports and feature request are here:
 https://sourceforge.net/p/mediainfo/_list/tickets
 
+Version 21.03, 2021-03-26
+-------------
++ WAV: ADM profile detection of Dolby Atmos Master or MPEG-H
++ SMPTE ST 337: support of AC-4
++ AC-3/AC-4: show top layer channels after Lw/Rw, as it becomes the defacto standard layout
++ Dolby Surround EX and Pro Logic IIz detection
++ Matroska: add DV support
++ JavaScript module: reduce binary size
++ JavaScript module: reserve less memory at startup
++ DV: remove check of zeroed bytes in timecode, considered again as valid timecode
++ TIFF; add support of compression codes 7 and 8
++ WAV: show bext (BWF) version in verbose mode / XML / JSON
++ MXF: detection fo DCI P3 mastering display color primaries
++ Options: add software version to text output
++ Options: add report creation timestamp to text output
++ macOS: native build for Apple Silicon (arm64)
+x HDR: mastering max. luminance precision was wrong
+x WM: fix EncodingTime parsing
+x MOV/MP4: skip XMP huge atoms, fix
+x MPEG-TS: fix inverted supplementary_audio_descriptor mix_type values
+x AAC: fix File_Aac::is_intensity according to ISO/IEC 14496-3:2009
+x I1353, MP4: Skip user data Xtra and free atoms
+x FFV1: fix crash with some bitstreams parsing
+x TIFF: fix division by 0
+x RF64: fix the WAV malformed chunk size test
+x Supported platforms: this is the last version compatible with Windows XP, macOS 10.5-10.9, RHEL/CentOS 6
+
+Version 20.09, 2020-10-09
+-------------
++ Dolby ED2: full featured support (presentations, presentation targets, beds, objects)
++ MKV: support of Dolby Vision metadata
++ MXF: detection of Dolby E hidden in PCM tracks having more than 2 channels
++ WAV: detection of Dolby E hidden in PCM tracks having more than 2 channels
++ CineForm: display of color space (including Bayer), bit depth
+x WAV: more precise sample count
+x SMPTE ST 337: catch of streams starting later than usual (probing increased from 4 to 16 PCM "frames")
+x PNG: detection of additional alpha plane in color space
+x MXF: detection of additional alpha plane in color space
+x AVI: detection of additional alpha plane in color space
+x MPEG Audio: was wrongly flagging Xing info tag as CBR
+x VorbisTag: does not skip DISCID
+x Miscellaneous bug/crash fixes
+
+Version 20.08, 2020-08-11
+-------------
++ MPEG-H 3D Audio full featured support (group presets, switch groups, groups, signal groups)
++ MP4/MOV: support of more metadata locations
++ JSON and XML outputs: authorize "complete" output
++ MPEG-4: support of TrueHD
++ WM: show legacy value of performer if not same as modern one
++ WAV: trace of adtl (Associated Data List) chunk
+x URL encoding detection fix for URL having a query part (issue with e.g. pre-signed AWS S3 URLs)
+x Don't try to seek to the end (false positive range related error with HTTP)
+x DPX: don't load the whole file in RAM
+x Opus: fix wrong channel mapping
+x Miscellaneous other bug fixes
+
+Version 20.03, 2020-04-03
+-------------
++ AC-4 full featured support (presentations, groups, substreams)
++ MPEG-H 3D Audio basic support
++ MPEG-TS: audio preselection descriptor support
++ Dolby Vision v2 detection
++ MPEG-4: support of colr/nclx (color information) box
+x URL encoding option fixes, permitting to use URL encoded or non URL encoded links
+x AAC: fix SBR frequency when in ADIF
+x DPX: ColorimetricSpecification and TransferCharacteristic were inverted
+x Some API calls were not thread safe
+x Several crash and memory leaks fixes
+
 Version 19.09, 2019-09-10
 -------------
 + AC-4: basic detection, raw, in MP4 or TS

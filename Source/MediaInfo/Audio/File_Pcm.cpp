@@ -80,7 +80,7 @@ File_Pcm::File_Pcm()
     PTS_DTS_Needed=true;
 
     //In
-    Frame_Count_Valid=4;
+    Frame_Count_Valid=16;
     BitDepth=0;
     BitDepth_Significant=0;
     Channels=0;
@@ -322,7 +322,7 @@ void File_Pcm::Header_Parse()
         }
     #endif //MEDIAINFO_DEMUX
 
-    if (BitDepth && Channels)
+    if (BitDepth*Channels/8)
     {
         int64u Size=(Element_Size/(BitDepth*Channels/8))*(BitDepth*Channels/8); //A complete sample
         if (Element_Size && Size==0)

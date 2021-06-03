@@ -62,7 +62,7 @@ static MediaInfo_Internal* GetMiObj(JNIEnv* _env, jobject _this)
 }
 
 //------------------------------------------------------------------------------
-static jlong JNI_Init(JNIEnv* _env, jobject _this)
+static jlong JNI_Init(JNIEnv*, jobject)
 {
     return (jlong)new MediaInfo_Internal();
 }
@@ -116,7 +116,7 @@ static jint JNI_OpenFd(JNIEnv* _env, jobject _this, jint fd, jstring name)
         if (count < 0)
             break; // error
 
-        bitset<32> state = mi->Open_Buffer_Continue((int8u*)buffer, count);
+        bitset<32> state = mi->Open_Buffer_Continue(buffer, (size_t)count);
 
         // bit 3 set means finalized
         if (state.test(3))

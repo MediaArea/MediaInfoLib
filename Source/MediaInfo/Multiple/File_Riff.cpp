@@ -105,8 +105,8 @@ File_Riff::File_Riff()
     Interleaved1_10=0;
 
     //Temp
-    WAVE_data_Size=0xFFFFFFFF;
-    WAVE_fact_samplesCount=0xFFFFFFFF;
+    WAVE_data_Size=(int64u)-1;
+    WAVE_fact_samplesCount=(int64u)-1;
     Buffer_DataToParse_Begin=(int64u)-1;
     Buffer_DataToParse_End=0;
     #if MEDIAINFO_DEMUX
@@ -121,6 +121,8 @@ File_Riff::File_Riff()
     SMV_BlockSize=0;
     SamplesPerSec=0;
     stream_Count=0;
+    AdmProfile_Dolby=0;
+    BlockAlign=0;
     rec__Present=false;
     NeedOldIndex=true;
     IsBigEndian=false;
@@ -176,6 +178,17 @@ void File_Riff::Streams_Finish ()
     //Global
     if (IsRIFF64)
         Fill(Stream_General, 0, General_Format_Profile, "RF64");
+    if ((AdmProfile_Dolby&3)==3)
+    {
+        Fill(Stream_Audio, 0, "AdmProfile", (AdmProfile_Dolby&4)?"Dolby Atmos Master, Version 1":"Dolby Atmos Master");
+        Fill(Stream_Audio, 0, "AdmProfile_Format", "Dolby Atmos Master");
+        Fill_SetOptions(Stream_Audio, 0, "AdmProfile_Format", "N NTY");
+        if (AdmProfile_Dolby&4)
+        {
+            Fill(Stream_Audio, 0, "AdmProfile_Version", "1");
+            Fill_SetOptions(Stream_Audio, 0, "AdmProfile_Version", "N NTY");
+        }
+    }
 
     //Time codes
     TimeCode_Fill(__T("ISMP"), INFO_ISMP);
@@ -241,6 +254,16 @@ void File_Riff::Streams_Finish ()
                     Clear(Stream_Audio, 0, Audio_Channel_s_);
 
                 size_t StreamPos_Base=StreamPos_Last;
+                if (StreamKind_Last==Stream_Audio && (Temp->second.Parsers[0]->Count_Get(Stream_Audio)>1 || (!Temp->second.Parsers[0]->Get(Stream_Audio, 0, Audio_MuxingMode).empty() && Temp->second.Parsers[0]->Get(Stream_Audio, 0, Audio_MuxingMode)!=__T("ADTS"))))
+                {
+                    //Content from underlying format is preffered
+                    Clear(Stream_Audio, StreamPos_Last, Audio_Channel_s_);
+                    Fill(Stream_Audio, StreamPos_Last, Audio_BitRate_Encoded, Retrieve(Stream_Audio, StreamPos_Last, Audio_BitRate), true);
+                    Clear(Stream_Audio, StreamPos_Last, Audio_BitRate);
+                    Clear(Stream_Audio, StreamPos_Last, Audio_SamplingRate);
+                    Fill(Stream_Audio, StreamPos_Last, Audio_StreamSize_Encoded, Retrieve(Stream_Audio, StreamPos_Last, Audio_StreamSize), true);
+                    Clear(Stream_Audio, StreamPos_Last, Audio_StreamSize);
+                }
                 for (size_t Pos=0; Pos<Temp->second.Parsers[0]->Count_Get(StreamKind_Last); Pos++)
                 {
                     Ztring Temp_ID=ID;
@@ -284,6 +307,20 @@ void File_Riff::Streams_Finish ()
                         StreamPos_Last=Count_Get(Stream_Video)-1;
                     }
                 }
+
+                //Special case - Multiple Audio
+                if (StreamKind_Last==Stream_Audio)
+                {
+                    for (size_t Pos=0; Pos<Temp->second.Parsers[0]->Count_Get(Stream_Audio); Pos++)
+                    {
+                        if (Retrieve(Stream_Audio, StreamPos_Base+Pos, Audio_CodecID).empty())
+                            Fill(Stream_Audio, StreamPos_Base+Pos, Audio_CodecID, Retrieve(Stream_Audio, StreamPos_Base, Audio_CodecID));
+                        if (Retrieve(Stream_Audio, StreamPos_Base+Pos, Audio_Duration).empty())
+                            Fill(Stream_Audio, StreamPos_Base+Pos, Audio_Duration, Retrieve(Stream_Audio, StreamPos_Base, Audio_Duration));
+                        if (Pos)
+                            Fill(Stream_Audio, StreamPos_Base+Pos, Audio_StreamSize_Encoded, 0, 10, true);
+                    }
+                }
             }
             else
             {
@@ -292,7 +329,8 @@ void File_Riff::Streams_Finish ()
             }
 
             //Hacks - After
-            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), StreamSize, true);
+            if (!Temp->second.Parsers.empty() && Temp->second.Parsers[0]->Count_Get(StreamKind_Last)==1)
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize_Encoded)).empty()?Generic_StreamSize:Generic_StreamSize_Encoded), StreamSize, true);
             if (StreamKind_Last==Stream_Video)
             {
                 if (!Codec_Temp.empty())
@@ -772,7 +810,15 @@ bool File_Riff::Header_Begin()
             default        : AVI__movi_xxxx();
         }
 
+        bool ShouldStop=false;
         if (Config->ParseSpeed<1.0 && File_Offset+Buffer_Offset+Element_Offset-Buffer_DataToParse_Begin>=256*1024)
+        {
+            ShouldStop=true;
+            for (std::map<int32u, stream>::iterator StreamItem=Stream.begin(); StreamItem!=Stream.end(); ++StreamItem)
+                if (StreamItem->second.Parsers.size()>1 || (!StreamItem->second.Parsers.empty() && !StreamItem->second.Parsers[0]->Status[IsFilled]))
+                    ShouldStop=false;
+        }
+        if (ShouldStop)
         {
             File_GoTo=Buffer_DataToParse_End;
             Buffer_Offset=Buffer_Size;
@@ -891,30 +937,7 @@ void File_Riff::Header_Parse()
     if (IsBigEndian)
         Get_B4 (Size,                                           "Size");
     else
-    {
         Get_L4 (Size,                                           "Size");
-
-        //Testing malformed (not word aligned)
-        if (!IsNotWordAligned_Tested && Size%2)
-        {
-            if (File_Offset+Buffer_Offset+8+Size==File_Size)
-                IsNotWordAligned=true;
-            #if defined(MEDIAINFO_FILE_YES) //TODO: seek if file API is not available
-            else if (!File_Name.empty())
-            {
-                File F(File_Name);
-                F.GoTo(File_Offset+Buffer_Offset+8+Size);
-                int8u Temp;
-                if (F.Read(&Temp, 1))
-                {
-                    if (!((Temp<'A' || Temp>'z') && Temp!=' '))
-                        IsNotWordAligned=true;
-                }
-            }
-            #endif //defined(MEDIAINFO_FILE_YES)
-            IsNotWordAligned_Tested=true;
-        }
-    }
 
     //RF64
     int64u Size_Complete=Size;
@@ -937,6 +960,27 @@ void File_Riff::Header_Parse()
             Size_Complete=WAVE_data_Size;
             Param_Info1(Size_Complete);
         }
+    }
+
+    //Testing malformed (not word aligned)
+    if (!IsNotWordAligned_Tested && !IsBigEndian && Size_Complete %2)
+    {
+        if (File_Offset+Buffer_Offset+8+Size_Complete==File_Size)
+            IsNotWordAligned=true;
+        #if defined(MEDIAINFO_FILE_YES) //TODO: seek if file API is not available
+        else if (!File_Name.empty())
+        {
+            File F(File_Name);
+            F.GoTo(File_Offset+Buffer_Offset+8+Size);
+            int8u Temp;
+            if (F.Read(&Temp, 1))
+            {
+                if (!((Temp<'A' || Temp>'z') && Temp!=' '))
+                    IsNotWordAligned=true;
+            }
+        }
+        #endif //defined(MEDIAINFO_FILE_YES)
+        IsNotWordAligned_Tested=true;
     }
 
     //Coherency

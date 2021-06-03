@@ -672,6 +672,12 @@ void File_Avc::Streams_Fill()
 //---------------------------------------------------------------------------
 void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item)
 {
+    if (Count_Get(Stream_Video))
+        return;
+    Stream_Prepare(Stream_Video);
+    Fill(Stream_Video, 0, Video_Format, "AVC");
+    Fill(Stream_Video, 0, Video_Codec, "AVC");
+
     //Calculating - Pixels
     int32u Width =((*seq_parameter_set_Item)->pic_width_in_mbs_minus1       +1)*16;
     int32u Height=((*seq_parameter_set_Item)->pic_height_in_map_units_minus1+1)*16*(2-(*seq_parameter_set_Item)->frame_mbs_only_flag);
@@ -699,7 +705,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
             if (!(*seq_parameter_set_Item)->vui_parameters->fixed_frame_rate_flag)
                 Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode, "VFR");
             else if ((*seq_parameter_set_Item)->vui_parameters->timing_info_present_flag && (*seq_parameter_set_Item)->vui_parameters->time_scale && (*seq_parameter_set_Item)->vui_parameters->num_units_in_tick)
-                Fill(Stream_Video, StreamPos_Last, Video_FrameRate, (float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick/((*seq_parameter_set_Item)->frame_mbs_only_flag?2:((*seq_parameter_set_Item)->pic_order_cnt_type==2?1:2))/FrameRate_Divider);
+                Fill(Stream_Video, StreamPos_Last, Video_FrameRate, (float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick/((*seq_parameter_set_Item)->frame_mbs_only_flag?2:(((*seq_parameter_set_Item)->pic_order_cnt_type==2 && Structure_Frame/2>Structure_Field)?1:2))/FrameRate_Divider);
         }
 
         //Colour description
@@ -768,11 +774,6 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
                 Fill(Stream_Video, 0, cbr_flag?Video_BitRate_Nominal:Video_BitRate_Maximum, bit_rate_value);
         }
     }
-
-    if (Count_Get(Stream_Video)==0)
-        Stream_Prepare(Stream_Video);
-    Fill(Stream_Video, 0, Video_Format, "AVC");
-    Fill(Stream_Video, 0, Video_Codec, "AVC");
 
     Ztring Profile=Ztring().From_UTF8(Avc_profile_idc((*seq_parameter_set_Item)->profile_idc));
     switch ((*seq_parameter_set_Item)->profile_idc)
@@ -897,7 +898,8 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
     Fill(Stream_Video, 0, Video_Encoded_Library_Name, Encoded_Library_Name);
     Fill(Stream_Video, 0, Video_Encoded_Library_Version, Encoded_Library_Version);
     Fill(Stream_Video, 0, Video_Encoded_Library_Settings, Encoded_Library_Settings);
-    Fill(Stream_Video, 0, Video_BitRate_Nominal, BitRate_Nominal);
+    if (Retrieve_Const(Stream_Video, 0, Video_BitRate_Nominal).empty()) // SPS has priority over other metadata
+        Fill(Stream_Video, 0, Video_BitRate_Nominal, BitRate_Nominal);
     Fill(Stream_Video, 0, Video_MuxingMode, MuxingMode);
     for (std::vector<pic_parameter_set_struct*>::iterator pic_parameter_set_Item=pic_parameter_sets.begin(); pic_parameter_set_Item!=pic_parameter_sets.end(); ++pic_parameter_set_Item)
         if (*pic_parameter_set_Item && (*pic_parameter_set_Item)->seq_parameter_set_id==seq_parameter_set_Item-(seq_parameter_sets.empty()?subset_seq_parameter_sets.begin():seq_parameter_sets.begin()))
@@ -2104,7 +2106,7 @@ void File_Avc::slice_header()
     ref_pic_list_modification(slice_type, Element_Code==20); //nal_unit_type==20 --> ref_pic_list_mvc_modification()
     if (((*pic_parameter_set_Item)->weighted_pred_flag && (slice_type==0 || slice_type==3 || slice_type==5 || slice_type==8))
      || ((*pic_parameter_set_Item)->weighted_bipred_idc==1 && (slice_type==1 || slice_type==6)))
-        pred_weight_table(num_ref_idx_l0_active_minus1, num_ref_idx_l1_active_minus1, (*seq_parameter_set_Item)->ChromaArrayType());
+        pred_weight_table(slice_type, num_ref_idx_l0_active_minus1, num_ref_idx_l1_active_minus1, (*seq_parameter_set_Item)->ChromaArrayType());
     std::vector<int8u> memory_management_control_operations;
     if (nal_ref_idc)
         dec_ref_pic_marking(memory_management_control_operations);
@@ -2356,6 +2358,8 @@ void File_Avc::slice_header()
 
             TemporalReferences_Offset_pic_order_cnt_lsb_Diff=(int32s)((int32s)(TemporalReferences_Offset+pic_order_cnt)-TemporalReferences_Offset_pic_order_cnt_lsb_Last);
             TemporalReferences_Offset_pic_order_cnt_lsb_Last=(size_t)(TemporalReferences_Offset+pic_order_cnt);
+            if (field_pic_flag && (*seq_parameter_set_Item)->pic_order_cnt_type==2 && TemporalReferences_Offset_pic_order_cnt_lsb_Last<TemporalReferences.size() && TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last])
+                TemporalReferences_Offset_pic_order_cnt_lsb_Last++;
             if (TemporalReferences_Max<=TemporalReferences_Offset_pic_order_cnt_lsb_Last)
                 TemporalReferences_Max=TemporalReferences_Offset_pic_order_cnt_lsb_Last+((*seq_parameter_set_Item)->frame_mbs_only_flag?2:1);
             if (TemporalReferences_Min>TemporalReferences_Offset_pic_order_cnt_lsb_Last)
@@ -2581,8 +2585,9 @@ void File_Avc::ref_pic_list_modification(int32u slice_type, bool mvc)
 
 //---------------------------------------------------------------------------
 //
-void File_Avc::pred_weight_table(int32u num_ref_idx_l0_active_minus1, int32u num_ref_idx_l1_active_minus1, int8u ChromaArrayType)
+void File_Avc::pred_weight_table(int32u  slice_type, int32u num_ref_idx_l0_active_minus1, int32u num_ref_idx_l1_active_minus1, int8u ChromaArrayType)
 {
+    // 7.3.3.2 Prediction weight table syntax
     Skip_UE(                                                    "luma_log2_weight_denom");
     if (ChromaArrayType)
         Skip_UE(                                                "chroma_log2_weight_denom");
@@ -2592,13 +2597,34 @@ void File_Avc::pred_weight_table(int32u num_ref_idx_l0_active_minus1, int32u num
             Skip_SE(                                            "luma_weight_l0");
             Skip_SE(                                            "luma_offset_l0");
         TEST_SB_END();
+		if (ChromaArrayType)
+		{
+			TEST_SB_SKIP(                                       "chroma_weight_l0_flag");
+				Skip_SE(                                        "chroma_weight_l0");
+				Skip_SE(                                        "chroma_offset_l0");
+				Skip_SE(                                        "chroma_weight_l0");
+				Skip_SE(                                        "chroma_offset_l0");
+			TEST_SB_END();
+		}
     }
-    if (ChromaArrayType)
+    if (slice_type % 5 == 1)
     {
-        TEST_SB_SKIP(                                           "chroma_weight_l0_flag");
-            Skip_SE(                                            "chroma_weight_l0");
-            Skip_SE(                                            "chroma_offset_l0");
-        TEST_SB_END();
+        for (int32u i = 0; i <= num_ref_idx_l1_active_minus1; i++)
+        {
+            TEST_SB_SKIP("luma_weight_l1_flag");
+            Skip_SE("luma_weight_l1");
+            Skip_SE("luma_offset_l1");
+            TEST_SB_END();
+            if (ChromaArrayType)
+            {
+                TEST_SB_SKIP("chroma_weight_l1_flag");
+                Skip_SE("chroma_weight_l1");
+                Skip_SE("chroma_offset_l1");
+                Skip_SE("chroma_weight_l1");
+                Skip_SE("chroma_offset_l1");
+                TEST_SB_END();
+            }
+        }
     }
 }
 
@@ -4321,21 +4347,21 @@ void File_Avc::SPS_PPS()
     //Parsing
     int8u Profile, Level, seq_parameter_set_count, pic_parameter_set_count;
     if (SizedBlocks)
-        Skip_B1(                                                "Version");
-    Get_B1 (Profile,                                            "Profile");
-    Skip_B1(                                                    "Compatible profile");
-    Get_B1 (Level,                                              "Level");
+        Skip_B1(                                                "configurationVersion");
+    Get_B1 (Profile,                                            "AVCProfileIndication");
+    Skip_B1(                                                    "profile_compatibility");
+    Get_B1 (Level,                                              "AVCLevelIndication");
     BS_Begin();
-    Skip_S1(6,                                                  "Reserved");
-    Get_S1 (2, SizeOfNALU_Minus1,                               "Size of NALU length minus 1");
-    Skip_S1(3,                                                  "Reserved");
-    Get_S1 (5, seq_parameter_set_count,                         "seq_parameter_set count");
+    Skip_S1(6,                                                  "reserved");
+    Get_S1 (2, SizeOfNALU_Minus1,                               "lengthSizeMinusOne");
+    Skip_S1(3,                                                  "reserved");
+    Get_S1 (5, seq_parameter_set_count,                         "numOfSequenceParameterSets");
     BS_End();
     for (int8u Pos=0; Pos<seq_parameter_set_count; Pos++)
     {
         Element_Begin1("seq_parameter_set");
         int16u Size;
-        Get_B2 (Size,                                           "Size");
+        Get_B2 (Size,                                           "sequenceParameterSetLength");
         BS_Begin();
         Mark_0 ();
         Skip_S1( 2,                                             "nal_ref_idc");
@@ -4358,12 +4384,12 @@ void File_Avc::SPS_PPS()
         Element_Size=Element_Size_Save;
         Element_End0();
     }
-    Get_B1 (pic_parameter_set_count,                            "pic_parameter_set count");
+    Get_B1 (pic_parameter_set_count,                            "numOfPictureParameterSets");
     for (int8u Pos=0; Pos<pic_parameter_set_count; Pos++)
     {
         Element_Begin1("pic_parameter_set");
         int16u Size;
-        Get_B2 (Size,                                           "Size");
+        Get_B2 (Size,                                           "pictureParameterSetLength");
         BS_Begin();
         Mark_0 ();
         Skip_S1( 2,                                             "nal_ref_idc");
@@ -4384,7 +4410,54 @@ void File_Avc::SPS_PPS()
         Element_End0();
     }
     if (Element_Offset<Element_Size)
-        Skip_XX(Element_Size-Element_Offset,                    "Padding?");
+    {
+        switch (Profile)
+        {
+            case 100:
+            case 110:
+            case 122:
+            case 144:
+                        {
+                        int8u numOfSequenceParameterSetExt;
+                        BS_Begin();
+                        Skip_S1( 6,                             "reserved");
+                        Skip_S1( 2,                             "chroma_format");
+                        Skip_S1( 5,                             "reserved");
+                        Skip_S1( 3,                             "bit_depth_luma_minus8");
+                        Skip_S1( 5,                             "reserved");
+                        Skip_S1( 3,                             "bit_depth_chroma_minus8");
+                        BS_End();
+                        Get_B1 (numOfSequenceParameterSetExt,   "numOfSequenceParameterSetExt");
+                        for (int8u Pos=0; Pos<numOfSequenceParameterSetExt; Pos++)
+                        {
+                            Element_Begin1("sequenceParameterSetExtNALUnit");
+                            int16u Size;
+                            Get_B2 (Size,                       "sequenceParameterSetExtLength");
+                            BS_Begin();
+                            Mark_0 ();
+                            Skip_S1( 2,                         "nal_ref_idc");
+                            Skip_S1( 5,                         "nal_unit_type");
+                            BS_End();
+                            int64u Element_Offset_Save=Element_Offset;
+                            int64u Element_Size_Save=Element_Size;
+                            Buffer_Offset+=(size_t)Element_Offset_Save;
+                            Element_Offset=0;
+                            Element_Size=Size-1;
+                            if (Element_Size>Element_Size_Save-Element_Offset_Save)
+                                break; //There is an error
+                            Element_Code=0x0F; //subset_seq_parameter_set
+                            Data_Parse();
+                            Buffer_Offset-=(size_t)Element_Offset_Save;
+                            Element_Offset=Element_Offset_Save+Size-1;
+                            Element_Size=Element_Size_Save;
+                            Element_End0();
+                        }
+                        }
+            default:;
+        }
+    }
+    if (Element_Offset<Element_Size)
+        Skip_XX(Element_Size-Element_Offset,                        "Padding?");
 
     //Filling
     FILLING_BEGIN_PRECISE();

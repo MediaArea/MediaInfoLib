@@ -32,8 +32,6 @@ Parallel_Make () {
 Home=`pwd`
 Make="make"
 ZenLib_Options=""
-MacOptions="--with-macosx-version-min=10.5"
-JsOptions="--host=le32-unknown-nacl"
 
 OS=$(uname -s)
 # expr isn’t available on mac
@@ -52,14 +50,15 @@ if [ "$1" = "--emscripten-lib" ]; then
     shift
     OS="emscripten"
     Make="emmake make"
-    CFLAGS="$CFLAGS -Oz -DUNICODE"
-    CXXFLAGS="$CXXFLAGS -Oz -DUNICODE -fno-exceptions"
+    CFLAGS="$CFLAGS -Oz -s EMBIND_STD_STRING_IS_UTF8=1"
+    CXXFLAGS="$CXXFLAGS -Oz -s EMBIND_STD_STRING_IS_UTF8=1 -fno-exceptions"
     MediaInfoLib_CXXFLAGS="-I ../../../Source -I ../../../../ZenLib/Source -s USE_ZLIB=1 \
-    -DMEDIAINFO_ADVANCED_NO -DMEDIAINFO_REFERENCES_NO -DMEDIAINFO_FILTER_NO -DMEDIAINFO_DUPLICATE_NO -DMEDIAINFO_MACROBLOCKS_NO \
-    -DMEDIAINFO_TRACE_NO -DMEDIAINFO_TRACE_FFV1CONTENT_NO -DMEDIAINFO_IBI_NO -DMEDIAINFO_DIRECTORY_NO -DMEDIAINFO_JNI_NO\
-    -DMEDIAINFO_LIBCURL_NO -DMEDIAINFO_LIBMMS_NO -DMEDIAINFO_DVDIF_ANALYZE_NO -DMEDIAINFO_MPEGTS_DUPLICATE_NO \
-    -DMEDIAINFO_READTHREAD_NO -DMEDIAINFO_MD5_NO -DMEDIAINFO_SHA1_NO -DMEDIAINFO_SHA2_NO -DMEDIAINFO_EVENTS_NO \
-    -DMEDIAINFO_DEMUX_NO -DMEDIAINFO_AES_NO -DMEDIAINFO_FIXITY_NO -DMEDIAINFO_READER_NO -DMEDIAINFO_NEXTPACKET_NO"
+                           -DMEDIAINFO_ADVANCED_NO \
+                           -DMEDIAINFO_MINIMAL_YES \
+                           -DMEDIAINFO_EXPORT_YES \
+                           -DMEDIAINFO_SEEK_YES \
+                           -DMEDIAINFO_READER_NO \
+                           -DMEDIAINFO_REFERENCES_NO"
 fi
 
 ##################################################################
@@ -71,9 +70,7 @@ if test -e ZenLib/Project/GNU/Library/configure; then
     chmod +x configure
 
     if [ "$OS" = "emscripten" ]; then
-        emconfigure ./configure --enable-static --disable-shared $JsOptions $ZenLib_Options $* CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS"
-    elif [ "$OS" = "mac" ]; then
-        ./configure --enable-static --disable-shared $MacOptions $ZenLib_Options $*
+        emconfigure ./configure --host=le32-unknown-nacl --disable-unicode --enable-static --disable-shared CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS"
     else
         ./configure --enable-static --disable-shared $ZenLib_Options $*
     fi
@@ -104,9 +101,7 @@ if test -e MediaInfoLib/Project/GNU/Library/configure; then
     test -e Makefile && rm Makefile
     chmod +x configure
     if [ "$OS" = "emscripten" ]; then
-        emconfigure ./configure --enable-static --disable-shared --disable-dll $JsOptions $* CFLAGS="$CFLAGS -s USE_ZLIB=1" CXXFLAGS="$CXXFLAGS $MediaInfoLib_CXXFLAGS"
-    elif [ "$OS" = "mac" ]; then
-        ./configure $MacOptions --enable-staticlibs --enable-shared --disable-static --with-libcurl=runtime $MediaInfoLib_Options $*
+        emconfigure ./configure --host=le32-unknown-nacl --enable-static --disable-shared --disable-dll $* CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS $MediaInfoLib_CXXFLAGS"
     else
         ./configure --enable-staticlibs --enable-shared --disable-static --with-libcurl=runtime $MediaInfoLib_Options $*
     fi
@@ -131,12 +126,21 @@ cd $Home
 
 ##################################################################
 # JavaScript Interface
-cd MediaInfoLib/Project/GNU/Library/
 if [ "$OS" = "emscripten" ]; then
-    em++ $CXXFLAGS $MediaInfoLib_CXXFLAGS --bind -c ../../../Source/MediaInfoDLL/MediaInfoJS.cpp
-    em++ $CXXFLAGS $MediaInfoLib_CXXFLAGS -s TOTAL_MEMORY=134217728 -s NO_FILESYSTEM=1 -s MODULARIZE=1 \
-    --llvm-lto 0 --closure 1 --bind ../../../Source/MediaInfoDLL/MediaInfoJS.o .libs/libmediainfo.a \
-    ../../../../ZenLib/Project/GNU/Library/.libs/libzen.a -o MediaInfo.js
+    cd MediaInfoLib/Project/GNU/Library/
+    em++ $CXXFLAGS $MediaInfoLib_CXXFLAGS --bind -c ../../../Source/MediaInfoDLL/MediaInfoJS.cpp -o MediaInfoJS.o
+
+    em++ -s WASM=0 $CXXFLAGS $MediaInfoLib_CXXFLAGS -s TOTAL_MEMORY=134217728 -s NO_FILESYSTEM=1 -s MODULARIZE=1 --closure 0 \
+         --bind MediaInfoJS.o .libs/libmediainfo.a ../../../../ZenLib/Project/GNU/Library/.libs/libzen.a \
+         --post-js ../../../Source/Resource/JavaScript/Post.js \
+         -s EXPORT_NAME="'MediaInfoLib'" \
+         -o MediaInfo.js
+
+    em++ -s WASM=1 $CXXFLAGS $MediaInfoLib_CXXFLAGS -s TOTAL_MEMORY=33554432 -s ALLOW_MEMORY_GROWTH=1 -s NO_FILESYSTEM=1 -s MODULARIZE=1 --closure 0 \
+         --bind MediaInfoJS.o .libs/libmediainfo.a ../../../../ZenLib/Project/GNU/Library/.libs/libzen.a \
+         --post-js ../../../Source/Resource/JavaScript/Post.js \
+         -s EXPORT_NAME="'MediaInfoLib'" \
+         -o MediaInfoWasm.js
 
     if test -e MediaInfo.js; then
         echo MediaInfoLib JavaScript interface compiled
@@ -145,13 +149,10 @@ if [ "$OS" = "emscripten" ]; then
         exit
     fi
 
-    mv MediaInfo.js MediaInfo_.js
-    cat ../../../Source/Resource/JavaScript/Pre.js MediaInfo_.js ../../../Source/Resource/JavaScript/Post.js > MediaInfo.js
-    rm MediaInfo_.js
-
     echo "MediaInfoLib JavaScript interface is in MediaInfoLib/Project/GNU/Library"
+    cd $Home
+    exit
 fi
-cd $Home
 
 ##################################################################
 
@@ -159,4 +160,4 @@ echo "MediaInfo shared object is in MediaInfoLib/Project/GNU/Library/.libs"
 echo "For installing ZenLib, cd ZenLib/Project/GNU/Library && make install"
 echo "For installing MediaInfoLib, cd MediaInfoLib/Project/GNU/Library && make install"
 
-unset -v Home ZenLib_Options MacOptions OS
+unset -v Home ZenLib_Options JsOptions OS

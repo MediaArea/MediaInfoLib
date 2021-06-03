@@ -1,11 +1,11 @@
-project(MediaInfoLib)
-
 cmake_minimum_required(VERSION 2.8.11)
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+project(MediaInfoLib)
 
-set(MediaInfoLib_MAJOR_VERSION 19)
-set(MediaInfoLib_MINOR_VERSION 09)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
+
+set(MediaInfoLib_MAJOR_VERSION 21)
+set(MediaInfoLib_MINOR_VERSION 03)
 set(MediaInfoLib_PATCH_VERSION 0)
 set(MediaInfoLib_VERSION ${MediaInfoLib_MAJOR_VERSION}.${MediaInfoLib_MINOR_VERSION})
 
@@ -169,6 +169,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Caf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Celt.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_ChannelGrouping.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_ChannelSplitting.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Dsdiff.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Dsf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Dts.cpp
@@ -182,6 +183,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Mpc.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_MpcSv8.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Mpega.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Mpegh3da.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_OpenMG.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Opus.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Pcm.cpp
@@ -321,6 +323,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Avc_Duplicate.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_AvsV.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Canopus.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_CineForm.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Dirac.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_DolbyVisionMetadata.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Ffv1.cpp

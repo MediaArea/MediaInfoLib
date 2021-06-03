@@ -1,6 +1,8 @@
 #!/bin/sh
 
 PATH_SCRIPT=$(dirname "$0")
+. "$PATH_SCRIPT/utils.sh"
+
 RCODE=0
 
 if [ -z $S3_KEY ] || [ -z $S3_PASS ] || ! enabled s3 ; then

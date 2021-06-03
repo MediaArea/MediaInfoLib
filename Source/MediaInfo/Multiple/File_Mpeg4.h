@@ -101,6 +101,7 @@ private :
     void moof_mfhd();
     void moof_traf();
     void moof_traf_sdtp();
+    void moof_traf_tfdt();
     void moof_traf_tfhd();
     void moof_traf_trun();
     void moov();
@@ -207,6 +208,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_damr();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_dec3();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_ddts();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_dmlp();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_dvc1();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_dvvC() {moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC();}
@@ -220,6 +222,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_colr() {jp2h_colr();}
     void moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_ihdr() {jp2h_ihdr();}
     void moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_pasp();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf();
@@ -273,12 +276,15 @@ private :
     void moov_trak_tref_tmcd();
     void moov_trak_tref_vdep();
     void moov_trak_udta();
+    void moov_trak_udta_free() { moov_udta_free(); }
+    void moov_trak_udta_Xtra() { moov_udta_Xtra(); }
     void moov_trak_udta_xxxx();
     void moov_udta();
     void moov_udta_AllF();
     void moov_udta_chpl();
     void moov_udta_clsf();
     void moov_udta_cprt();
+    void moov_udta_date();
     void moov_udta_DcMD();
     void moov_udta_DcMD_Cmbo();
     void moov_udta_DcMD_DcME();
@@ -286,6 +292,7 @@ private :
     void moov_udta_DcMD_DcME_Mtmd();
     void moov_udta_DcMD_DcME_Rate();
     void moov_udta_FIEL();
+    void moov_udta_free() { free(); }
     void moov_udta_FXTC();
     void moov_udta_hinf();
     void moov_udta_hinv();
@@ -297,6 +304,8 @@ private :
     void moov_udta_LOOP();
     void moov_udta_MCPS();
     void moov_udta_meta();
+    void moov_udta_meta_keys();
+    void moov_udta_meta_keys_mdta();
     void moov_udta_meta_hdlr();
     void moov_udta_meta_ilst();
     void moov_udta_meta_ilst_xxxx();
@@ -315,6 +324,7 @@ private :
     void moov_udta_tags_tseg_tshd();
     void moov_udta_WLOC();
     void moov_udta_XMP_();
+    void moov_udta_Xtra();
     void moov_udta_yrrc();
     void moov_udta_xxxx();
     void pdin();
@@ -330,6 +340,7 @@ private :
     void REDV();
     void REOB();
     void skip();
+    void sidx();
     void wide();
 
     //Helpers

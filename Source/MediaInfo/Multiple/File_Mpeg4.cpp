@@ -720,7 +720,8 @@ void File_Mpeg4::Streams_Finish()
         //Fragments
         if (IsFragmented)
         {
-            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Temp->second.stts_Duration/((float)Temp->second.mdhd_TimeScale)*1000, 0, true);
+            if (Temp->second.mdhd_TimeScale)
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Temp->second.stts_Duration/((float)Temp->second.mdhd_TimeScale)*1000, 0, true);
             Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), Temp->second.stts_FrameCount, 10, true);
         }
 
@@ -931,6 +932,9 @@ void File_Mpeg4::Streams_Finish()
                  ||  Temp->second.Parsers[0]->Retrieve(Stream_General, 0, General_Format)==__T("Final Cut CDP"))
                 {
                     //Before
+                    int64u StreamSize_Encoded=Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize_Encoded)).To_int64u();
+                    if (!StreamSize_Encoded)
+                        StreamSize_Encoded=Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize)).To_int64u();
                     Clear(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize));
                     if (StreamKind_Last==Stream_Audio)
                     {
@@ -951,11 +955,12 @@ void File_Mpeg4::Streams_Finish()
                     if (Temp->second.Parsers[0]->Retrieve(Stream_General, 0, General_Format)==__T("ChannelGrouping"))
                     {
                         //Channel coupling, removing the 2 corresponding streams
-                        NewPos1=(StreamPos_Last/2)*2;
-                        size_t NewPos2=NewPos1+1;
-                        ID=Retrieve(StreamKind_Last, NewPos1, General_ID)+__T(" / ")+Retrieve(StreamKind_Last, NewPos2, General_ID);
+                        NewPos1=StreamPos_Last-1;
+                        ID=Retrieve(StreamKind_Last, NewPos1, General_ID)+__T(" / ")+Retrieve(StreamKind_Last, StreamPos_Last, General_ID);
+                        if (StreamSize_Encoded)
+                            StreamSize_Encoded+=Retrieve(StreamKind_Last, NewPos1, Fill_Parameter(StreamKind_Last, Generic_StreamSize)).To_int64u();
 
-                        Stream_Erase(NewKind, NewPos2);
+                        Stream_Erase(NewKind, StreamPos_Last);
                         Stream_Erase(NewKind, NewPos1);
 
                         streams::iterator NextStream=Temp;
@@ -985,13 +990,25 @@ void File_Mpeg4::Streams_Finish()
                     {
                         Stream_Prepare(NewKind, NewPos1+StreamPos);
                         Merge(*Temp->second.Parsers[0], StreamKind_Last, StreamPos, StreamPos_Last);
-                        Ztring Parser_ID=Retrieve(StreamKind_Last, StreamPos_Last, General_ID);
-                        Fill(StreamKind_Last, StreamPos_Last, General_ID, ID+__T("-")+Parser_ID, true);
+                        Ztring Parser_ID=ID+__T('-')+Retrieve(StreamKind_Last, StreamPos_Last, General_ID);
+                        if (ID.size()+1==Parser_ID.size())
+                            Parser_ID.resize(ID.size());
+                        Fill(StreamKind_Last, StreamPos_Last, General_ID, Parser_ID, true);
                         for (size_t Pos=0; Pos<StreamSave.size(); Pos++)
                             if (Retrieve(StreamKind_Last, StreamPos_Last, Pos).empty())
                                 Fill(StreamKind_Last, StreamPos_Last, Pos, StreamSave[Pos]);
                         for (size_t Pos=0; Pos<StreamMoreSave.size(); Pos++)
                             Fill(StreamKind_Last, StreamPos_Last, StreamMoreSave(Pos, 0).To_UTF8().c_str(), StreamMoreSave(Pos, 1));
+                        if (StreamPos)
+                        {
+                            if (StreamSize_Encoded)
+                                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize_Encoded), 0, 10, true);
+                        }
+                        else
+                        {
+                            if (StreamSize_Encoded)
+                                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize_Encoded), StreamSize_Encoded, 10, true);
+                        }
                     }
                     Ztring LawRating=Temp->second.Parsers[0]->Retrieve(Stream_General, 0, General_LawRating);
                     if (!LawRating.empty())
@@ -1010,6 +1027,17 @@ void File_Mpeg4::Streams_Finish()
                     ZtringListList StreamMoreSave;
                     if (New_Count > 1)
                     {
+                        if (StreamKind_Last==Stream_Audio)
+                        {
+                            //Content from underlying format is preferred
+                            Clear(Stream_Audio, StreamPos_Last, Audio_Channel_s_);
+                            Clear(Stream_Audio, StreamPos_Last, Audio_BitRate);
+                            Clear(Stream_Audio, StreamPos_Last, Audio_SamplingRate);
+                        }
+                        Clear(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize));
+                        Clear(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize_Encoded));
+                        Clear(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate));
+                        Clear(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate_Encoded));
                         ID = Retrieve(StreamKind_Last, StreamPos_Last, General_ID);
                         if (StreamKind_Last != Stream_Max)
                         {
@@ -1034,14 +1062,28 @@ void File_Mpeg4::Streams_Finish()
                             }
                         }
                         Merge(*Temp->second.Parsers[0], StreamKind_Last, Parser_StreamPos, StreamPos_Last);
-                        const Ztring& Parser_ID=Temp->second.Parsers[0]->Retrieve(StreamKind_Last, Parser_StreamPos, General_ID);
+                        Ztring Parser_ID=Temp->second.Parsers[0]->Retrieve(StreamKind_Last, Parser_StreamPos, General_ID);
                         if (!Parser_ID.empty())
+                        {
+                            if (Parser_ID.find(__T(" / "))!=string::npos)
+                            {
+                                Parser_ID.insert(0, 1, __T('('));
+                                size_t End=Parser_ID.find(__T('-'));
+                                if (End==string::npos)
+                                    End=Parser_ID.size();
+                                Parser_ID.insert(End, 1, __T(')'));
+                            }
                             Fill(StreamKind_Last, StreamPos_Last, General_ID, ID + __T('-') + Parser_ID, true);
+                        }
                         if (Parser_StreamPos)
                         {
                             for (size_t Pos=0; Pos<StreamSave.size(); Pos++)
+                            {
+                                if (StreamKind_Last==Stream_Audio && Pos==Audio_Channel_s_)
+                                    continue;
                                 if (Retrieve(StreamKind_Last, StreamPos_Last, Pos).empty())
                                     Fill(StreamKind_Last, StreamPos_Last, Pos, StreamSave[Pos]);
+                            }
                             for (size_t Pos=0; Pos<StreamMoreSave.size(); Pos++)
                                 Fill(StreamKind_Last, StreamPos_Last, StreamMoreSave(Pos, 0).To_UTF8().c_str(), StreamMoreSave(Pos, 1));
                         }
@@ -1310,7 +1352,7 @@ void File_Mpeg4::Streams_Finish()
                 CodecConfigurationBoxInfo+=__T('+');
             CodecConfigurationBoxInfo+=Ztring().From_CC4(Temp->second.CodecConfigurationBoxInfo[i]);
         }
-        Fill(StreamKind_Last, StreamPos_Last, "Codec configuration box", CodecConfigurationBoxInfo);
+        Fill(StreamKind_Last, StreamPos_Last, "CodecConfigurationBox", CodecConfigurationBoxInfo);
 
         //ES_ID
         for (File_Mpeg4_Descriptors::es_id_infos::iterator ES_ID_Info=ES_ID_Infos.begin(); ES_ID_Info!=ES_ID_Infos.end(); ES_ID_Info++)
@@ -2359,7 +2401,7 @@ bool File_Mpeg4::BookMark_Needed()
             //Limit the detection
             #if defined(MEDIAINFO_SMPTEST0337_YES) && defined(MEDIAINFO_PCM_YES)
                 if (Temp->second.IsPcm && Temp->second.Parsers.size()>=2 && !Temp->second.stsc.empty() && Temp->second.stsc[0].SamplesPerChunk>=48000/4) // 1/4 of second is enough for detection
-                    ((File_Pcm*)Temp->second.Parsers[Temp->second.Parsers.size()-1])->Frame_Count_Valid=2; //2 for checking the PCM block after this one (next track)
+                    ((File_Pcm*)Temp->second.Parsers[Temp->second.Parsers.size()-1])->Frame_Count_Valid=3; //3 for checking the PCM block after this one (next track) + Some files have 2 consecutive packets before the next stream, and we want to catch the channel grouping
             #endif //defined(MEDIAINFO_PCM_YES)
 
             //PCM split

@@ -128,6 +128,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Caf.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Celt.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ChannelGrouping.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ChannelSplitting.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_DolbyE.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsdiff.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsf.cpp" />
@@ -205,6 +206,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpc.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_MpcSv8.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpega.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Pcm.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ps2Audio.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ScreamTracker3.cpp" />
@@ -260,6 +262,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Ttml.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\TimeCode.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Av1.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_CineForm.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\XmlUtils.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\OutputHelpers.cpp" />
@@ -416,6 +419,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Caf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Celt.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ChannelGrouping.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ChannelSplitting.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_DolbyE.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dsdiff.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dsf.h" />
@@ -427,6 +431,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_SmpteSt0302.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_SmpteSt0331.h" />
     <ClInclude Include="..\..\..\source\mediainfo\audio\File_SmpteSt0337.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Usac.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_EbuCore.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Niso.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Fims.h" />
@@ -520,6 +525,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpc.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_MpcSv8.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpega.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Pcm.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Ps2Audio.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ScreamTracker3.h" />
@@ -575,6 +581,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Ttml.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\TimeCode.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Av1.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_CineForm.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\XmlUtils.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\OutputHelpers.h" />

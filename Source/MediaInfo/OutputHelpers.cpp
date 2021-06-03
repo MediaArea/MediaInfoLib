@@ -29,7 +29,7 @@ namespace MediaInfoLib
 Ztring XML_Encode (const Ztring& Data)
 {
     Ztring Result;
-    wstring::size_type Pos;
+    tstring::size_type Pos;
     for (Pos=0; Pos<Data.size(); Pos++)
     {
         switch (Data[Pos])
@@ -45,7 +45,7 @@ Ztring XML_Encode (const Ztring& Data)
                 if (Pos+1<Data.size() && Data[Pos+1]==__T('\n')) // translate the #xD #xA sequence to a single #xA character
                     Pos++;
             break;
-            default: if (Data[Pos]>=0x20) Result+=Data[Pos]; // Ignore others control characters
+            default: if (Data[Pos]<0x0 || Data[Pos]>=0x20) Result+=Data[Pos]; // Ignore others control characters
         }
     }
     return Result;
@@ -258,15 +258,24 @@ string To_JSON_Elements(Node& Cur_Node, const int& Level, bool Indent)
             if (!Cur_Node.Childs[Pos2])
                 continue;
 
-            Result+=(Indent?string(Level+1, '\t'):string())+"{";
-            Result+=To_JSON_Attributes(*Cur_Node.Childs[Pos2], Level+2, Indent);
-            Result+=To_JSON_Elements(*Cur_Node.Childs[Pos2], Level+2, Indent);
-            Result+="\n";
+            if (Cur_Node.Childs[Pos2]->Attrs.empty() && Cur_Node.Childs[Pos2]->Childs.empty() && !Cur_Node.Childs[Pos2]->Multiple)
+            {
+                if (Cur_Node.Childs[Pos2]->Value.empty())
+                    Result+="null";
+                else
+                    Result+="\""+JSON_Encode(Cur_Node.Childs[Pos2]->Value)+"\"";
+            }
+            else
+            {
+                Result+=(Indent?string(Level+1, '\t'):string())+"{";
+                Result+=To_JSON_Attributes(*Cur_Node.Childs[Pos2], Level+2, Indent);
+                Result+=To_JSON_Elements(*Cur_Node.Childs[Pos2], Level+2, Indent);
+                Result+="\n";
 
-            if(!Cur_Node.Childs[Pos2]->Value.empty())
-                Result+=(Indent?string(Level+2, '\t'):string())+"\"#value\": \""+JSON_Encode(Cur_Node.Childs[Pos2]->Value)+"\"\n";
-            Result+=(Indent?string(Level+1, '\t'):string())+"}";
-
+                if(!Cur_Node.Childs[Pos2]->Value.empty())
+                    Result+=(Indent?string(Level+2, '\t'):string())+"\"#value\": \""+JSON_Encode(Cur_Node.Childs[Pos2]->Value)+"\"\n";
+                Result+=(Indent?string(Level+1, '\t'):string())+"}";
+            }
             if (Pos2<Cur_Node.Childs.size()-1 && Cur_Node.Childs[Pos2]->Name==Cur_Node.Childs[Pos2+1]->Name)
                 Result+=",";
 

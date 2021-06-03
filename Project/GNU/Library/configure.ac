@@ -5,7 +5,7 @@ dnl #########################################################################
 dnl -------------------------------------------------------------------------
 dnl Name and version
 dnl
-AC_INIT([libmediainfo], [19.09])
+AC_INIT([libmediainfo], [21.03])
 
 dnl -------------------------------------------------------------------------
 dnl Test if we are at the good place
@@ -54,7 +54,7 @@ AC_ARG_ENABLE(arch-i386,        AC_HELP_STRING([--enable-arch-i386],        [Cre
 AC_ARG_ENABLE(arch-x86_64,      AC_HELP_STRING([--enable-arch-x86_64],      [Create Mac/iPhone x86_64 architecture]),     , enable_arch_x86_64=no)
 AC_ARG_ENABLE(arch-armv7,       AC_HELP_STRING([--enable-arch-armv7],       [Create iPhone ARMv7 architecture]),          , enable_arch_armv7=no)
 AC_ARG_ENABLE(arch-armv7s,      AC_HELP_STRING([--enable-arch-armv7s],      [Create iPhone ARMv7s architecture]),         , enable_arch_armv7s=no)
-AC_ARG_ENABLE(arch-arm64,       AC_HELP_STRING([--enable-arch-arm64],       [Create iPhone ARM64 architecture]),          , enable_arch_arm64=no)
+AC_ARG_ENABLE(arch-arm64,       AC_HELP_STRING([--enable-arch-arm64],       [Create Mac/iPhone ARM64 architecture]),      , enable_arch_arm64=no)
 AC_ARG_ENABLE(staticlibs,       AC_HELP_STRING([--enable-staticlibs],       [Use static libmediainfo and libzen]),        , enable_staticlibs=no)
 AC_ARG_ENABLE(minimize-size,    AC_HELP_STRING([--enable-minimize-size],    [Enable size optimisations]),                 MediaInfoMinimizeSize=$enableval, MediaInfoMinimizeSize=depend)
 AC_ARG_ENABLE(minimal,    		AC_HELP_STRING([--enable-minimal],    		[Enable minimal management (except parsers)]),MediaInfoMinimal=$enableval, MediaInfoMinimal=depend)
@@ -496,6 +496,11 @@ elif test "$with_libcurl" = "no"; then
 	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_LIBCURL_NO"
 	using_libcurl="no"
 elif test "$with_libcurl" = "runtime"; then
+	AC_CHECK_LIB([dl], [dlopen], [use_libdl="yes"], [use_libdl="no"])
+	if test "$use_libdl" = "yes"; then
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static -ldl"
+		Curl_Lib=" -ldl"
+	fi
 	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_LIBCURL_DLL_RUNTIME"
 	using_libcurl="system (runtime)"
 elif test -e ../../../../curl/libcurl.pc; then
@@ -751,12 +756,6 @@ dnl
 if test "$enable_universal_binary" = "yes"; then
 	enable_arch_ppc=yes
 	enable_arch_i386=yes
-	if test "$with_macosx_sdk" = no ; then
-		with_macosx_sdk="/Developer/SDKs/MacOSX10.4u.sdk"
-	fi
-	if test "$with_macosx_version_min" = no ; then
-		with_macosx_version_min="10.4"
-	fi
 fi
 if test "$enable_arch_ppc" = "yes"; then
 	CXXFLAGS="$CXXFLAGS -arch ppc"
@@ -793,11 +792,7 @@ if test "$enable_arch_arm64" = "yes"; then
 	CFLAGS="$CFLAGS -arch arm64"
 	LDFLAGS="$LDFLAGS -arch arm64"
 fi
-if test "$with_macosx_sdk" = "yes" ; then
-	CXXFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk $CXXFLAGS"
-	CFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk $CFLAGS"
-	LDFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk $LDFLAGS"
-elif test "x$with_macosx_sdk" != xno ; then
+if test "x$with_macosx_sdk" != xno ; then
 	CXXFLAGS="-isysroot $with_macosx_sdk $CXXFLAGS"
 	CFLAGS="-isysroot $with_macosx_sdk $CFLAGS"
 	LDFLAGS="-isysroot $with_macosx_sdk $LDFLAGS"
@@ -807,11 +802,7 @@ if test "x$with_macosx_version_min" != xno ; then
 	CFLAGS="-mmacosx-version-min=$with_macosx_version_min $CFLAGS"
 	LDFLAGS="-mmacosx-version-min=$with_macosx_version_min $LDFLAGS"
 fi
-if test "$with_iphoneos_sdk" = "yes" ; then
-	CXXFLAGS="-isysroot /Developer/SDKs/iPhoneOS.sdk $CXXFLAGS"
-	CFLAGS="-isysroot /Developer/SDKs/iPhoneOS.sdk $CFLAGS"
-	LDFLAGS="-isysroot /Developer/SDKs/iPhoneOS.sdk $LDFLAGS"
-elif test "x$with_iphoneos_sdk" != xno ; then
+if test "x$with_iphoneos_sdk" != xno ; then
 	CXXFLAGS="-isysroot $with_iphoneos_sdk $CXXFLAGS"
 	CFLAGS="-isysroot $with_iphoneos_sdk $CFLAGS"
 	LDFLAGS="-isysroot $with_iphoneos_sdk $LDFLAGS"

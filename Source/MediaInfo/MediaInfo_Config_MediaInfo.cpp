@@ -150,6 +150,8 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     Audio_MergeMonoStreams=false;
     File_Demux_Interleave=false;
     File_ID_OnlyRoot=false;
+    File_ExpandSubs_Backup=NULL;
+    File_ExpandSubs_Source=NULL;
     #if MEDIAINFO_ADVANCED
         File_IgnoreSequenceFileSize=false;
         File_IgnoreSequenceFilesCount=false;
@@ -299,6 +301,7 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
 MediaInfo_Config_MediaInfo::~MediaInfo_Config_MediaInfo()
 {
     delete[] File_Buffer; //File_Buffer=NULL;
+    delete (std::vector<std::vector<ZtringListList> >*)File_ExpandSubs_Backup; //File_ExpandSubs_Backup=NULL
 
     #if MEDIAINFO_EVENTS
         for (events_delayed::iterator Event=Events_Delayed.begin(); Event!=Events_Delayed.end(); ++Event)
@@ -439,6 +442,11 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     else if (Option_Lower==__T("file_id_onlyroot"))
     {
         File_ID_OnlyRoot_Set(!(Value==__T("0") || Value.empty()));
+        return __T("");
+    }
+    else if (Option_Lower==__T("file_expandsubs"))
+    {
+        File_ExpandSubs_Set(!(Value==__T("0") || Value.empty()));
         return __T("");
     }
     else if (Option_Lower==__T("file_id_onlyroot_get"))
@@ -1452,6 +1460,314 @@ bool MediaInfo_Config_MediaInfo::File_ID_OnlyRoot_Get ()
 {
     CriticalSectionLocker CSL(CS);
     return File_ID_OnlyRoot;
+}
+
+//---------------------------------------------------------------------------
+void MediaInfo_Config_MediaInfo::File_ExpandSubs_Set (bool NewValue)
+{
+    { //for CSL
+        CriticalSectionLocker CSL(CS);
+        if ((File_ExpandSubs_Backup && NewValue) || (!File_ExpandSubs_Backup && !NewValue))
+            return; //No change
+        if (File_ExpandSubs_Backup)
+        {
+            //We want the default
+            if (File_ExpandSubs_Source)
+            {
+                //Config has the backup, Source has the expanded one
+                std::vector<std::vector<ZtringListList> >* Stream_More=(std::vector<std::vector<ZtringListList> >*)File_ExpandSubs_Source;
+                std::vector<std::vector<ZtringListList> >* Backup=(std::vector<std::vector<ZtringListList> >*)File_ExpandSubs_Backup;
+                *Stream_More=*Backup;
+                Backup->clear();
+            }
+            delete (std::vector<std::vector<ZtringListList> > *)File_ExpandSubs_Backup;
+            File_ExpandSubs_Backup=NULL;
+        }
+        else
+        {
+            //We want the expanded subs
+            File_ExpandSubs_Backup=new std::vector<std::vector<ZtringListList> >;
+        }
+    }
+
+    File_ExpandSubs_Update(NULL);
+}
+
+bool MediaInfo_Config_MediaInfo::File_ExpandSubs_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return File_ExpandSubs_Backup?true:false;
+}
+
+void MediaInfo_Config_MediaInfo::File_ExpandSubs_Update(void** Source)
+{
+    CriticalSectionLocker CSL(CS);
+    if (Source)
+        File_ExpandSubs_Source=*Source;
+    if (!File_ExpandSubs_Source)
+        return;
+    std::vector<std::vector<ZtringListList> >* Stream_More=(std::vector<std::vector<ZtringListList> >*)File_ExpandSubs_Source;
+    std::vector<std::vector<ZtringListList> >* Backup=(std::vector<std::vector<ZtringListList> >*)File_ExpandSubs_Backup;
+
+    //Reset if needed
+    if (File_ExpandSubs_Backup && !Backup->empty())
+    {
+        *Stream_More=*Backup;
+        Backup->clear();
+    }
+    
+    if (File_ExpandSubs_Backup)
+    {
+        //Backup
+        *Backup=*Stream_More;
+
+        //Sub-elements
+        const Char* UpSuffix=__T("_Pos");
+        const Char* HideSuffix=__T("_Pos/String");
+        //for (set<string>::iterator File_ExpandSubs_Item=File_ExpandSubs_Items.begin(); File_ExpandSubs_Item!=File_ExpandSubs_Items.end(); ++File_ExpandSubs_Item)
+        for (size_t i=0; i<3; i++)
+        {
+            //const Ztring Sub=Ztring().From_UTF8(*File_ExpandSubs_Item);
+            for (size_t StreamKind=Stream_General; StreamKind<Stream_Max; StreamKind++)
+                for (size_t StreamPos=0; StreamPos<(*Stream_More)[StreamKind].size(); StreamPos++)
+                {
+                    ZtringListList Temp;
+                    size_t Pos_Max=(*Stream_More)[StreamKind][StreamPos].size();
+                    for (size_t Pos=0; Pos<Pos_Max; Pos++)
+                        if ((*Stream_More)[StreamKind][StreamPos][Pos].size()>Info_Name_Text)
+                        {
+                            Ztring& Name=(*Stream_More)[StreamKind][StreamPos][Pos][Info_Name];
+
+                            // Tree
+                            size_t Up_Pos=Name.find(__T(" LinkedTo_"));
+                            size_t Up_Pos_End;
+                            if (Up_Pos!=string::npos)
+                                Up_Pos_End=Name.find(__T("_Pos"), Name.size()-4);
+                            if (Up_Pos!=string::npos && Up_Pos_End==Name.size()-4)
+                            {
+                                Ztring Up=Name.substr(Up_Pos);
+
+                                //Hide
+                                Ztring ToHide=Name+__T("/String");
+                                for (size_t j=Pos+1; j<(*Stream_More)[StreamKind][StreamPos].size(); j++)
+                                {
+                                    if ((*Stream_More)[StreamKind][StreamPos][j][Info_Name]==ToHide)
+                                    {
+                                        ZtringList& ToHideList=(*Stream_More)[StreamKind][StreamPos][j];
+                                        ToHideList[Info_Options]=__T("N NT");
+                                        break;
+                                    }
+                                }
+
+                                //Expand
+                                size_t SpacesCount=1;
+                                size_t SpacesTestPos=Name.size()-Up.size();
+                                while (SpacesTestPos && (SpacesTestPos=Name.rfind(__T(' '), SpacesTestPos-1))!=string::npos)
+                                    SpacesCount++;
+                                ZtringList L;
+                                L.Separator_Set(0, __T(" + "));
+                                L.Write((*Stream_More)[StreamKind][StreamPos][Pos][Info_Text]);
+                                for (size_t i=0; i<L.size(); i++)
+                                {
+                                    Ztring ID=L[i];
+                                    size_t ID_DashPos=ID.find(__T('-'));
+                                    Ztring ID2;
+                                    if (ID_DashPos!=(size_t)-1)
+                                    {
+                                        ID2=ID.substr(ID_DashPos+1);
+                                        ID.resize(ID_DashPos);
+                                    }
+                                    Ztring ToSearch=Up.substr(10, Up.find('_', 10)-10)+ID;
+                                    Ztring ToSearch2=ToSearch;
+                                    if (!ID2.empty())
+                                    {
+                                        ToSearch2+=__T(" Alt");
+                                        ToSearch2+=ID2;
+                                    }
+
+                                    // Search the linked element
+                                    for (size_t j=Pos+1; j<(*Stream_More)[StreamKind][StreamPos].size(); j++)
+                                    {
+                                        if ((*Stream_More)[StreamKind][StreamPos][j][Info_Name]==ToSearch)
+                                        {
+                                            // Append the sub-elements of the linked element
+                                            for (; j<(*Stream_More)[StreamKind][StreamPos].size(); j++)
+                                            {
+                                                // Stop if not the linked element
+                                                if ((*Stream_More)[StreamKind][StreamPos][j][Info_Name].rfind(ToSearch, 0)==string::npos)
+                                                    break;
+
+                                                // Manage Alt parts when it is inside a list
+                                                Ztring ToSearchAlt=ToSearch+__T(" Alt");
+                                                if ((*Stream_More)[StreamKind][StreamPos][j][Info_Name].rfind(ToSearchAlt, 0)!=string::npos)
+                                                {
+                                                    size_t NextChar=(*Stream_More)[StreamKind][StreamPos][j][Info_Name].find_first_not_of(__T("0123456789"), ToSearchAlt.size());
+                                                    if (NextChar==string::npos || (*Stream_More)[StreamKind][StreamPos][j][Info_Name][NextChar]==__T(' '))
+                                                    {
+                                                        if (ID2.empty())
+                                                            continue;
+
+                                                        // Check if content is not in main and we have the right Alt
+                                                        if ((*Stream_More)[StreamKind][StreamPos][j][Info_Name].rfind(ToSearch2, 0)==0 && (*Stream_More)[StreamKind][StreamPos][j][Info_Name].size()>=ToSearch2.size())
+                                                        {
+                                                            Ztring Name=ToSearch;
+                                                            if ((*Stream_More)[StreamKind][StreamPos][j][Info_Name].size()>ToSearch2.size())
+                                                                Name+=__T(' ')+(*Stream_More)[StreamKind][StreamPos][j][Info_Name].substr(ToSearch2.size()+1);
+                                                            size_t IsFound=(size_t)-1;
+                                                            for (size_t k=Pos+1; k<j; k++)
+                                                            {
+                                                                if ((*Stream_More)[StreamKind][StreamPos][k][Info_Name]==Name)
+                                                                {
+                                                                    IsFound=k;
+                                                                    break;
+                                                                }
+                                                            }
+                                                            if (IsFound==(size_t)-1)
+                                                            {
+                                                                Temp.push_back((*Stream_More)[StreamKind][StreamPos][j]);
+                                                                Temp.back()[Info_Name]=Name;
+                                                                Temp.back()[Info_Name].insert(0, SpacesCount, __T(' '));
+                                                            }
+                                                        }
+
+                                                        continue;
+                                                    }
+                                                }
+
+                                                // If Alt link, find the Alt element and replace the main element with the alt value
+                                                Ztring Found;
+                                                if (!ID2.empty())
+                                                {
+                                                    size_t Space=(*Stream_More)[StreamKind][StreamPos][j][Info_Name].rfind(__T(' '));
+                                                    if (Space!=string::npos || (*Stream_More)[StreamKind][StreamPos][j][Info_Name]==ToSearch)
+                                                    {
+                                                        Ztring ToSearch3=ToSearch2;
+                                                        if (Space!=string::npos)
+                                                            ToSearch3+=(*Stream_More)[StreamKind][StreamPos][j][Info_Name].substr(Space);
+                                                        for (size_t k=Pos+1; k<(*Stream_More)[StreamKind][StreamPos].size(); k++)
+                                                        {
+                                                            if ((*Stream_More)[StreamKind][StreamPos][k][Info_Name]==ToSearch3)
+                                                            {
+                                                                Found=(*Stream_More)[StreamKind][StreamPos][k][Info_Text];
+                                                                if (k && !Temp.empty()
+                                                                 && Temp[Temp.size()-1][Info_Name].rfind(__T(" ChannelLayout" ))+14==Temp[Temp.size()-1][Info_Name].size()
+                                                                 && (*Stream_More)[StreamKind][StreamPos][k  ][Info_Name].rfind(__T(" Position_Polar"))+15==(*Stream_More)[StreamKind][StreamPos][k  ][Info_Name].size()
+                                                                 && (*Stream_More)[StreamKind][StreamPos][k-1][Info_Name].rfind(__T(" ChannelLayout" ))+14!=(*Stream_More)[StreamKind][StreamPos][k-1][Info_Name].size())
+                                                                {
+                                                                    Temp.resize(Temp.size()-1);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                
+                                                // Append
+                                                Temp.push_back((*Stream_More)[StreamKind][StreamPos][j]);
+                                                if (!ID2.empty())
+                                                    Temp.back()[Info_Name].insert(ToSearch.size(), __T("-Alt")+ID2);
+                                                Temp.back()[Info_Name].insert(0, SpacesCount, __T(' '));
+                                                if (!Found.empty())
+                                                    Temp.back()[Info_Text]=Found;;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else if (Up_Pos==string::npos || Name.size()<=11 || Name.find(__T("_Pos/String"), Name.size()-11)==Name.size()-11)
+                                Temp.push_back((*Stream_More)[StreamKind][StreamPos][Pos]);
+
+                        }
+                    (*Stream_More)[StreamKind][StreamPos]=Temp;
+                }
+        }
+    }
+
+    //Sub-elements
+    for (size_t StreamKind=Stream_General; StreamKind<Stream_Max; StreamKind++)
+        for (size_t StreamPos=0; StreamPos<(*Stream_More)[StreamKind].size(); StreamPos++)
+        {
+            const ZtringListList& Track=(*Stream_More)[StreamKind][StreamPos];
+            for (size_t Pos=0; Pos<Track.size(); Pos++)
+            {
+                const ZtringList& Field=Track[Pos];
+                if (Field.size()>Info_Name_Text)
+                {
+                    // Text
+                    Ztring Name=Field[Info_Name];
+                    size_t Spaces=0;
+                    size_t i=0;
+                    bool Nested=false;
+                    for (;;)
+                    {
+                        size_t j=Name.find(__T(' '), i);
+                        if (!j)
+                            Nested=true;
+                        if (j==(size_t)-1)
+                            break;
+                        i=j+1;
+                        Spaces++;
+                    }
+                    //if (Spaces)
+                    {
+                        size_t j;
+                        if (i>=2 && Pos && i-2==Track[Pos-1][Info_Name].size())
+                            j=2;
+                        else
+                            j=1;
+                        size_t PosPrevious=Pos;
+                        if (PosPrevious)
+                            PosPrevious--;
+                        while (PosPrevious && Track[PosPrevious][Info_Name][0]==__T(' ')) // avoid injected lines
+                            PosPrevious--;
+                        if (!Nested && Spaces && Pos && i && i-j<=Track[PosPrevious][Info_Name].size() && Name.substr(0, i-j)==Track[PosPrevious][Info_Name].substr(0, i-j) && Info_Name_Text<Track[PosPrevious].size() && Spaces-1<=Track[PosPrevious][Info_Name_Text].find_first_not_of(__T(' ')))
+                            Nested=true;
+                        if (Nested)
+                            Name.erase(0, i);
+                        ZtringList Names;
+                        vector<size_t> Numbers;
+                        if (!Name.empty() && Pos+1<Track.size())
+                        {
+                            const ZtringList& Field1=Track[Pos+1];
+                            const Ztring& Name1=Field1[Info_Name];
+                            size_t Name1_SpacePos=i+Name.size();
+                            if (Name1_SpacePos<Name1.size() && Name1[Name1_SpacePos]==__T(' ') && Name==Name1.substr(i, Name.size()))
+                            {
+                                ZtringList List;
+                                List.Separator_Set(0, __T("-"));
+                                List.Write(Name);
+                                for (size_t i=0; i<List.size(); i++)
+                                {
+                                    size_t Text_End=List[i].find_last_not_of(__T("0123456789"))+1;
+                                    if (Text_End!=List[i].size())
+                                    {
+                                        Numbers.push_back(Ztring(List[i].substr(Text_End)).To_int64u()+1);
+                                        Names.push_back(List[i].substr(0, Text_End));
+                                    }
+                                }
+                            }
+                        }
+                        if (Names.empty())
+                        {
+                            Names.push_back(Name);
+                            Numbers.push_back(0);
+                        }
+                        for (size_t i=0; i<Names.size(); i++)
+                        {
+                            Ztring TranslatedName=MediaInfoLib::Config.Language_Get(Names[i]);
+                            if (!TranslatedName.empty())
+                                Names[i]=TranslatedName;
+                            if (Nested && !i)
+                                Names[i].insert(0, Spaces, __T(' '));
+                            if (Numbers[i])
+                                Names[i]+=MediaInfoLib::Config.Language_Get(__T("  Config_Text_NumberTag"))+Ztring::ToZtring(Numbers[i]);
+                        }
+                        Names.Separator_Set(0, __T(" "));
+                        Names.Quote_Set(__T(""));
+                        (*Stream_More)[StreamKind][StreamPos][Pos][Info_Name_Text]=Names.Read();
+                    }
+                }
+            }
+        }
 }
 
 //---------------------------------------------------------------------------
@@ -2590,7 +2906,7 @@ void MediaInfo_Config_MediaInfo::Event_Send (File__Analyze* Source, const int8u*
     {
         MediaInfo_Event_Generic* Event=(MediaInfo_Event_Generic*)Data_Content;
 
-        if (Event->StreamIDs_Size>=2 && Event->ParserIDs[0]==MediaInfo_Parser_MpegTs && Event->ParserIDs[1]==MediaInfo_Parser_MpegPs)
+        if (Event->StreamIDs_Size>=2 && Event->EventCode!=(MediaInfo_Parser_DvDif<<24 | MediaInfo_Event_DvDif_Analysis_Frame<<8) &&  Event->ParserIDs[0]==MediaInfo_Parser_MpegTs && Event->ParserIDs[1]==MediaInfo_Parser_MpegPs)
         {
             //Catching reference stream
             if (Event->StreamIDs[1]==0xE0 && Events_TimestampShift_Reference_ID==(int64u)-1)

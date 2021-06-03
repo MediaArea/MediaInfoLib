@@ -28,6 +28,9 @@
 #ifdef MEDIAINFO_AC4_YES
     #include "MediaInfo/Audio/File_Ac4.h"
 #endif
+#ifdef MEDIAINFO_AC4_YES
+    #include "MediaInfo/Audio/File_Mpegh3da.h"
+#endif
 #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
     #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #endif //defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
@@ -81,10 +84,26 @@ const char* Mpeg_Descriptors_audio_type(int8u ID)
 {
     switch (ID)
     {
-        case 0x00 : return "Undefined";
+        case 0x00 : return "";
         case 0x01 : return "Clean effects";
         case 0x02 : return "Hearing impaired";
         case 0x03 : return "Visual impaired commentary";
+        default   : return "Reserved";
+    }
+}
+
+
+//---------------------------------------------------------------------------
+const char* Mpeg_Descriptors_editorial_classification(int8u ID)
+{
+    switch (ID)
+    {
+        case 0x00 : return "Main";
+        case 0x01 : return "Visual impaired commentary";
+        case 0x02 : return "Clean audio";
+        case 0x03 : return "Spoken subtitles";
+        case 0x04 : return "Dependent parametric data stream";
+        case 0x17 : return "Unspecific supplementary audio for the general audience";
         default   : return "Reserved";
     }
 }
@@ -864,6 +883,17 @@ const char* Mpeg_Descriptors_MPEG_4_audio_profile_and_level(int8u MPEG_4_audio_p
 }
 
 //---------------------------------------------------------------------------
+extern int8u Aac_Channels_Get(int8u ChannelLayout);
+extern string Aac_Channels_GetString(int8u ChannelLayout);
+extern string Aac_ChannelConfiguration_GetString(int8u ChannelLayout);
+extern string Aac_ChannelConfiguration2_GetString(int8u ChannelLayout);
+extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegh3da=false);
+extern string Aac_ChannelMode_GetString(int8u ChannelLayout, bool IsMpegh3da=false);
+
+//---------------------------------------------------------------------------
+extern string Mpegh3da_Profile_Get(int8u mpegh3daProfileLevelIndication);
+
+//---------------------------------------------------------------------------
 extern const float64 Mpegv_frame_rate[16]; //In Video/File_Mpegv.cpp
 extern const char*  Mpegv_chroma_format[]; //In Video/File_Mpegv.cpp
 extern const char*  Mpegv_profile_and_level_indication_profile[]; //In Video/File_Mpegv.cpp
@@ -1010,17 +1040,17 @@ const char* Mpeg_Descriptors_original_network_id(int16u original_network_id)
         case 0x0028 : return "Hispasat 30'W (DBS)";
         case 0x0029 : return "Hispasat 30'W (America)";
         case 0x0030 : return "Canal+ Satellite Network";
-        case 0x0031 : return "Hispasat – VIA DIGITAL";
+        case 0x0031 : return "Hispasat - VIA DIGITAL";
         case 0x0032 : return "Hispasat Network 7";
         case 0x0033 : return "Hispasat Network 8";
         case 0x0034 : return "Hispasat Network 9";
         case 0x0035 : return "Nethold Main Mux System";
         case 0x0037 : return "STENTOR";
-        case 0x0040 : return "HPT – Croatian Post and Telecommunications";
+        case 0x0040 : return "HPT - Croatian Post and Telecommunications";
         case 0x0041 : return "Mindport";
         case 0x0046 : return "1 degree W (Telenor)";
         case 0x0047 : return "1 degree W (Telenor)";
-        case 0x0050 : return "HRT – Croatian Radio and Television";
+        case 0x0050 : return "HRT - Croatian Radio and Television";
         case 0x0051 : return "Havas";
         case 0x0052 : return "Osaka Yusen Satellite";
         case 0x0055 : return "Sirius Satellite System";
@@ -1050,7 +1080,7 @@ const char* Mpeg_Descriptors_original_network_id(int16u original_network_id)
         case 0x00B3 : return "TPS";
         case 0x00B4 : return "Telesat 107.3'W";
         case 0x00B5 : return "Telesat 111.1'W";
-        case 0x00BA : return "Satellite Express – 6 (80'E)";
+        case 0x00BA : return "Satellite Express - 6 (80'E)";
         case 0x00C0 : return "Canal+";
         case 0x00C1 : return "Canal+";
         case 0x00C2 : return "Canal+";
@@ -1188,6 +1218,10 @@ static bool Mpeg_Descriptors_CA_system_ID_MustSkipSlices(int16u CA_system_ID)
         default     : return false; //We try, it is not sure
     }
 }
+
+//---------------------------------------------------------------------------
+extern const size_t DolbyVision_Compatibility_Size;
+extern const char* DolbyVision_Compatibility[];
 
 //***************************************************************************
 // Constructor/Destructor
@@ -2150,6 +2184,37 @@ void File_Mpeg_Descriptors::Descriptor_3F_03()
 }
 
 //---------------------------------------------------------------------------
+void File_Mpeg_Descriptors::Descriptor_3F_08()
+{
+    //Parsing
+    int8u mpegh3daProfileLevelIndication, referenceChannelLayout;
+    Get_B1 (mpegh3daProfileLevelIndication,                 "mpegh3daProfileLevelIndication"); Param_Info1(Mpegh3da_Profile_Get(mpegh3daProfileLevelIndication));
+    BS_Begin();
+    Skip_SB(                                                "interactivityEnabled");
+    Skip_S1(9,                                              "reserved");
+    Get_S1 (6, referenceChannelLayout,                      "referenceChannelLayout"); Param_Info1(Aac_ChannelLayout_GetString(referenceChannelLayout, true));
+    BS_End();
+
+    FILLING_BEGIN();
+        if (elementary_PID_IsValid)
+        {
+            Complete_Stream->Streams[elementary_PID]->StreamKind_FromDescriptor=Stream_Audio;
+            Complete_Stream->Streams[elementary_PID]->Infos["Format"]=__T("MPEG-H 3D Audio");
+            if (mpegh3daProfileLevelIndication)
+                Complete_Stream->Streams[elementary_PID]->Infos["Format_Profile"].From_UTF8(Mpegh3da_Profile_Get(mpegh3daProfileLevelIndication));
+            if (Aac_Channels_Get(referenceChannelLayout))
+            {
+                Complete_Stream->Streams[elementary_PID]->Infos["Channel(s)"].From_UTF8(Aac_Channels_GetString(referenceChannelLayout));
+                Complete_Stream->Streams[elementary_PID]->Infos["ChannelPositions"].From_UTF8(Aac_ChannelConfiguration_GetString(referenceChannelLayout));
+                Complete_Stream->Streams[elementary_PID]->Infos["ChannelPositions/String2"].From_UTF8(Aac_ChannelConfiguration2_GetString(referenceChannelLayout));
+                Complete_Stream->Streams[elementary_PID]->Infos["ChannelLayout"].From_UTF8(Aac_ChannelLayout_GetString(referenceChannelLayout, true));
+                Complete_Stream->Streams[elementary_PID]->Infos["ChannelMode"].From_UTF8(Aac_ChannelMode_GetString(referenceChannelLayout, true));
+            }
+        }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg_Descriptors::Descriptor_40()
 {
     //Parsing
@@ -2832,8 +2897,10 @@ void File_Mpeg_Descriptors::Descriptor_7F()
     Get_B1(descriptor_tag_extension,                            "descriptor_tag_extension");
     switch (descriptor_tag_extension)
     {
+        case 0x06 : Descriptor_7F_06(); break;
         case 0x0F : Descriptor_7F_0F(); break;
         case 0x15 : Descriptor_7F_15(); break;
+        case 0x19 : Descriptor_7F_19(); break;
         default   : Skip_XX(Element_Size-Element_Offset,        "Unknown");
                     if (elementary_PID_IsValid)
                     {
@@ -2843,6 +2910,43 @@ void File_Mpeg_Descriptors::Descriptor_7F()
                         Temp+=Ztring::ToZtring(descriptor_tag_extension);
                     }
     }
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg_Descriptors::Descriptor_7F_06()
+{
+    //Parsing
+    Ztring Language;
+    int8u editorial_classification;
+    bool mix_type, language_code_present;
+    BS_Begin();
+    Get_SB (mix_type,                                           "mix_type");
+    Get_S1 (5, editorial_classification,                        "editorial_classification");
+    Skip_SB(                                                    "reserved_future_use");
+    Get_SB (language_code_present,                              "language_code_present");
+    if (language_code_present)
+    {
+        BS_End();
+        Get_Local (3, Language,                                 "ISO_639_language_code");
+        BS_Begin();
+    }
+    if (language_code_present)
+    if (Data_BS_Remain())
+        Skip_BS(Data_BS_Remain(),                               "private_data_bytes");
+    BS_End();
+
+    FILLING_BEGIN();
+        if (elementary_PID_IsValid)
+        {
+            Complete_Stream->Streams[elementary_PID]->Infos["MixType"]=Ztring().From_UTF8(mix_type?"Independent":"Dependent");;
+            Complete_Stream->Streams[elementary_PID]->Infos["EditorialClassification"]=Mpeg_Descriptors_editorial_classification(editorial_classification);
+            if (!Language.empty())
+            {
+                Complete_Stream->Streams[elementary_PID]->Infos["Language"]=Language;
+                Complete_Stream->Streams[elementary_PID]->Infos["Language/String"]=MediaInfoLib::Config.Iso639_Translate(Language);
+            }
+        }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -2882,6 +2986,124 @@ void File_Mpeg_Descriptors::Descriptor_7F_15()
         }
     FILLING_END();
 }
+
+//---------------------------------------------------------------------------
+struct Descriptor_7F_19_Info
+{
+    int8u preselection_id;
+    int8u audio_rendering_indication;
+    bool audio_description;
+    bool spoken_subtitles;
+    bool dialogue_enhancement;
+    bool interactivity_enabled;
+    bool text_label_present;
+    int8u message_id;
+    int8u num_aux_components;
+    Ztring Language;
+};
+const size_t audio_rendering_indication_Size=4;
+const char* audio_rendering_indication[audio_rendering_indication_Size]=
+{
+    "Stereo",
+    "2-dimensional",
+    "3-dimensional",
+    "Headphones",
+};
+void File_Mpeg_Descriptors::Descriptor_7F_19()
+{
+    //Parsing
+    Param_Info1("audio_preselection_descriptor");
+    Element_Info1("audio_preselection_descriptor");
+    int8u num_preselections;
+    map<int8u, Descriptor_7F_19_Info> Infos;
+    BS_Begin();
+    Get_S1 (5, num_preselections,                               "num_preselections");
+    Skip_S1(3,                                                  "reserved");
+    for (int8u p=0; p<num_preselections; p++)
+    {
+        Element_Begin1("preselection");
+        Descriptor_7F_19_Info& Info=Infos[p];
+        int8u preselection_id;
+        bool language_code_present, text_label_present, multi_stream_info_present, future_extension;
+        Get_S1 (5, Info.preselection_id,                        "preselection_id");
+        Get_S1 (3, Info.audio_rendering_indication,             "audio_rendering_indication");
+        Get_SB (Info.audio_description,                         "audio_description");
+        Get_SB (Info.spoken_subtitles,                          "spoken_subtitles");
+        Get_SB (Info.dialogue_enhancement,                      "dialogue_enhancement");
+        Get_SB (Info.interactivity_enabled,                     "interactivity_enabled");
+        Get_SB (language_code_present,                          "language_code_present");
+        Get_SB (text_label_present,                             "text_label_present");
+        Get_SB (multi_stream_info_present,                      "multi_stream_info_present");
+        Get_SB (future_extension,                               "future_extension");
+        if (language_code_present)
+        {
+            BS_End();
+            Get_Local (3, Info.Language,                        "ISO_639_language_code");
+            BS_Begin();
+        }
+        if (text_label_present)
+        {
+            Info.text_label_present=true;
+            Get_S1 (8, Info.message_id,                         "message_id");
+        }
+        if (multi_stream_info_present)
+        {
+            Get_S1 (5, Info.num_aux_components,                 "num_aux_components");
+            Skip_S1(3,                                          "reserved");
+            for (int8u c=0; c<Info.num_aux_components; c++)
+            {
+                Element_Begin1("aux_component");
+                Skip_S1(8,                                      "component_tag");
+                Element_End0();
+            }
+        }
+        else
+            Info.num_aux_components=(int8u)-1;
+        if (future_extension)
+        {
+            int8u future_extension_length;
+            Skip_S1(3,                                          "reserved");
+            Get_S1 (5, future_extension_length,                 "future_extension_length");
+            BS_End();
+            Skip_XX(future_extension_length,                    "future_extension");
+            BS_Begin();
+        }
+        Element_End0();
+    }
+    BS_End();
+
+    FILLING_BEGIN();
+        if (elementary_PID_IsValid)
+        {
+            Complete_Stream->Streams[elementary_PID]->StreamKind_FromDescriptor=Stream_Audio;
+            size_t Infos_Pos=0;
+            for (map<int8u, Descriptor_7F_19_Info>::iterator Info=Infos.begin(); Info!=Infos.end(); Info++)
+            {
+                string Prefix="Preselection"+Ztring::ToZtring(Info->first).To_UTF8();
+                if (Info->second.preselection_id!=Infos_Pos)
+                    Complete_Stream->Streams[elementary_PID]->Infos[Prefix+" ID"].From_Number(Info->second.preselection_id);
+                Complete_Stream->Streams[elementary_PID]->Infos[Prefix]=Ztring::ToZtring(Info->first);
+                if (Info->second.audio_rendering_indication)
+                    Complete_Stream->Streams[elementary_PID]->Infos[Prefix + " AudioRenderingIndication"]=Info->second.audio_rendering_indication<=audio_rendering_indication_Size?Ztring().From_UTF8(audio_rendering_indication[Info->second.audio_rendering_indication-1]):Ztring::ToZtring(Info->second.audio_rendering_indication);
+                Complete_Stream->Streams[elementary_PID]->Infos[Prefix+" AudioDescription"]=Info->second.audio_description?"Yes":"No";
+                Complete_Stream->Streams[elementary_PID]->Infos[Prefix+" SpokenSubtitles"]=Info->second.spoken_subtitles?"Yes":"No";
+                Complete_Stream->Streams[elementary_PID]->Infos[Prefix+" DialogueEnhancement"]=Info->second.dialogue_enhancement?"Yes":"No";
+                Complete_Stream->Streams[elementary_PID]->Infos[Prefix+" InteractivityEnabled"]=Info->second.interactivity_enabled?"Yes":"No";
+                if (!Info->second.Language.empty())
+                {
+                    Complete_Stream->Streams[elementary_PID]->Infos[Prefix+" Language"]=Info->second.Language;
+                    Complete_Stream->Streams[elementary_PID]->Infos[Prefix+" Language/String"]=MediaInfoLib::Config.Iso639_Translate(Info->second.Language);
+                }
+                if (Info->second.text_label_present)
+                    Complete_Stream->Streams[elementary_PID]->Infos[Prefix+" PreselectionLabel"]=Ztring::ToZtring(Info->second.message_id);
+                if (Info->second.num_aux_components!=(int8u)-1)
+                    Complete_Stream->Streams[elementary_PID]->Infos[Prefix+" NumberOfElementaryStreams"]=Ztring::ToZtring(Info->second.num_aux_components);
+                Infos_Pos++;
+            }
+        }
+    FILLING_END();
+}
+
 //---------------------------------------------------------------------------
 void File_Mpeg_Descriptors::Descriptor_81()
 {
@@ -3209,68 +3431,11 @@ void File_Mpeg_Descriptors::Descriptor_AA()
 }
 
 //---------------------------------------------------------------------------
-extern const size_t DolbyVision_Profiles_Size;
-extern const char* DolbyVision_Profiles[];
 void File_Mpeg_Descriptors::Descriptor_B0()
 {
     //Parsing
-    int8u  dv_version_major, dv_version_minor, dv_profile, dv_level;
-    bool rpu_present_flag, el_present_flag, bl_present_flag;
-    Get_B1 (dv_version_major,                                   "dv_version_major");
-    Get_B1 (dv_version_minor,                                   "dv_version_minor");
-    if (dv_version_major==1) //Spec says nothing, we hope that a minor version change means that the stream is backward compatible
-    {
-        BS_Begin();
-        Get_S1 (7, dv_profile,                                  "dv_profile");
-        Get_S1 (6, dv_level,                                    "dv_level");
-        Get_SB (   rpu_present_flag,                            "rpu_present_flag");
-        Get_SB (   el_present_flag,                             "el_present_flag");
-        Get_SB (   bl_present_flag,                             "bl_present_flag");
-        BS_End();
-    }
-    else
-        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
-
-    FILLING_BEGIN();
-        Ztring Summary=Ztring::ToZtring(dv_version_major)+__T('.')+Ztring::ToZtring(dv_version_minor);
-        Complete_Stream->Streams[elementary_PID]->Infos["HDR_Format_Version"]=Summary;
-        if (dv_version_major==1)
-        {
-            string Profile, Level;
-            if (dv_profile<DolbyVision_Profiles_Size)
-                Profile+=DolbyVision_Profiles[dv_profile];
-            else
-                Profile+=Ztring().From_CC1(dv_profile).To_UTF8();
-            Profile+=__T('.');
-            Profile+=Ztring().From_CC1(dv_profile).To_UTF8();
-            Level+=Ztring().From_CC1(dv_level).To_UTF8();
-            Complete_Stream->Streams[elementary_PID]->Infos["HDR_Format"].From_UTF8("Dolby Vision");
-            Complete_Stream->Streams[elementary_PID]->Infos["HDR_Format_Profile"].From_UTF8(Profile);
-            Complete_Stream->Streams[elementary_PID]->Infos["HDR_Format_Level"].From_UTF8(Level);
-            Summary+=__T(',');
-            Summary+=__T(' ');
-            Summary+=Ztring().From_UTF8(Profile);
-            Summary+=__T('.');
-            Summary+=Ztring().From_UTF8(Level);
-
-            string Layers;
-            if (rpu_present_flag|el_present_flag|bl_present_flag)
-            {
-                Summary+=',';
-                Summary+=' ';
-                if (bl_present_flag)
-                    Layers +="BL+";
-                if (el_present_flag)
-                    Layers +="EL+";
-                if (rpu_present_flag)
-                    Layers +="RPU+";
-                Layers.resize(Layers.size()-1);
-                Summary+=Ztring().From_UTF8(Layers);
-            }
-            Complete_Stream->Streams[elementary_PID]->Infos["HDR_Format_Settings"].From_UTF8(Layers);
-            Complete_Stream->Streams[elementary_PID]->Infos["HDR_Format_Compatibility"]=Ztring();
-        }
-    FILLING_END();
+    std::map<std::string, Ztring>& Infos=Complete_Stream->Streams[elementary_PID]->Infos;
+    dvcC(true, &Infos);
 }
 
 //---------------------------------------------------------------------------

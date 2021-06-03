@@ -114,7 +114,6 @@ protected :
     Ztring Recorded_Date_Time;
     Ztring Encoded_Library_Settings;
     TimeCode TimeCode_FirstFrame;
-    int64u Duration;
     int64u FrameSize_Theory; //The size of a frame
     int8u  SCT;
     int8u  SCT_Old;
@@ -150,7 +149,6 @@ protected :
 
     #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
     bool Analyze_Activated;
-    bool video_source_Detected;
 
     void Errors_Stats_Update();
     void Errors_Stats_Update_Finnish();
@@ -160,6 +158,7 @@ protected :
     Ztring Errors_Stats_10;
     Ztring Date;
     Ztring Time;
+    int64u Speed_FrameCount_StartOffset;
     int64u Speed_FrameCount;                            //Global    - Total
     int64u Speed_FrameCount_Video_STA_Errors;           //Global    - Error 1
     std::vector<int64u> Speed_FrameCount_Audio_Errors;  //Global    - Error 2
@@ -168,6 +167,52 @@ protected :
     int64u Speed_Contains_NULL;                         //Per Frame - Error 4
     int64u Speed_FrameCount_Arb_Incoherency;            //Global    - Error 5
     int64u Speed_FrameCount_Stts_Fluctuation;           //Global    - Error 6
+    int64u Speed_FrameCount_system[2];                  //Global    - Total per system (NTSC or PAL)
+    struct abst_bf
+    {
+        struct value_trust
+        {
+            int32s Value;
+            int32s Trust;
+
+            value_trust()
+            {
+                Value=0;
+                Trust=0;
+            }
+
+            bool operator < (const value_trust& b) const
+            {
+                if (Trust==b.Trust)
+                    return Value<b.Value;
+                return Trust>b.Trust;
+            }
+        };
+        vector<value_trust> abst[2]; //0=standard, 1=non-standard x1.5
+        set<int32s> StoredValues;
+        size_t bf[2];
+        size_t Frames_NonStandard[2]; //0=x0.5, 1=x1.5
+
+        abst_bf()
+        {
+            Frames_NonStandard[0]=0;
+            Frames_NonStandard[1]=0;
+            reset();
+        }
+
+        void reset()
+        {
+            abst[0].clear();
+            abst[1].clear();
+            bf[0]=0;
+            bf[1]=0;
+            StoredValues.clear();
+        }
+    };
+    abst_bf AbstBf_Current_Weighted;
+    int32u AbstBf_Current;
+    int32u AbstBf_Previous;
+    int32s AbstBf_Previous_MaxAbst;
     int8u  SMP;
     int8u  QU;
     bool   QU_FSC; //Validity is with QU
@@ -175,10 +220,6 @@ protected :
     bool   REC_ST;
     bool   REC_END;
     bool   REC_IsValid;
-    std::bitset<8> audio_source_IsPresentInFrame;
-    bool   System;
-    bool   System_IsValid;
-    bool   Frame_AtLeast1DIF;
     struct dvdate
     {
         int8u  Days;
@@ -246,12 +287,29 @@ protected :
     std::vector<size_t> Video_STA_Errors; //Per STA type
     std::vector<size_t> Video_STA_Errors_ByDseq; //Per Dseq & STA type
     std::vector<size_t> Video_STA_Errors_Total; //Per STA type
-    std::vector<size_t> Audio_Errors; //Per Dseq
-    std::vector<bool> audio_source_IsPresent;
-    std::vector<bool>   CH_IsPresent;
-    std::vector<std::vector<size_t> > Audio_Errors_Total; //Per Channel and Dseq
-    std::vector<std::vector<size_t> > Audio_Invalids; //Per Channel and Dseq
-    std::vector<std::vector<size_t> > Audio_Invalids_Total; //Per Channel and Dseq
+    static const size_t ChannelGroup_Count=2;
+    static const size_t Dseq_Count=16;
+    enum caption
+    {
+        Caption_Present,
+        Caption_ParityIssueAny,
+    };
+    bitset<32> Captions_Flags;
+    enum coherency
+    {
+        Coherency_PackInSub,
+        Coherency_PackInVid,
+        Coherency_PackInAud,
+        Coherency_video_source,
+        Coherency_video_control,
+        Coherency_audio_source,
+        Coherency_audio_control,
+    };
+    bitset<32> Coherency_Flags;
+    std::vector<std::vector<int8u> > audio_source_mode; //Per ChannelGroup and Dseq, -1 means not present
+    bitset<ChannelGroup_Count*2> ChannelInfo;
+    std::vector<std::vector<size_t> > Audio_Errors; //Per ChannelGroup and Dseq
+    std::vector<std::vector<size_t> > Audio_Errors_TotalPerChannel; //Per Channel and Dseq
     struct recZ_Single
     {
         int64u FramePos;
@@ -304,7 +362,14 @@ protected :
     };
     std::vector<timeStampsZ> Speed_TimeStampsZ;
 
-
+    enum status
+    {
+        BlockStatus_Unk,
+        BlockStatus_OK,
+        BlockStatus_NOK,
+    };
+    static const size_t BlockStatus_MaxSize=1800*4; // Max 1800 if PAL * 4 if DV100
+    MediaInfo_int8u BlockStatus[BlockStatus_MaxSize];
 
     struct arb
     {

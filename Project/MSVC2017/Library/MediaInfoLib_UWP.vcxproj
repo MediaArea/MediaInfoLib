@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM">
@@ -191,9 +191,11 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Caf.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Celt.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ChannelGrouping.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ChannelSplitting.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_DolbyE.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsdiff.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsf.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_OpenMG.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Opus.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Pcm_M2ts.cpp" />
@@ -204,6 +206,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_SmpteSt0337.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Usac.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_EbuCore.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Niso.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Fims.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_PBCore2.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_reVTMD.cpp" />
@@ -322,6 +325,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Ttml.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\TimeCode.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Av1.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_CineForm.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\XmlUtils.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\OutputHelpers.cpp" />
@@ -406,7 +410,6 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Reader\Reader_libmms.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Mpeg7.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_PBCore.cpp" />
-    <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Niso.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Vc3.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Vp8.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Y4m.cpp" />
@@ -479,9 +482,11 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Caf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Celt.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ChannelGrouping.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ChannelSplitting.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_DolbyE.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dsdiff.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dsf.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_OpenMG.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Opus.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Pcm_M2ts.h" />
@@ -490,7 +495,9 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_SmpteSt0302.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_SmpteSt0331.h" />
     <ClInclude Include="..\..\..\source\mediainfo\audio\File_SmpteSt0337.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Usac.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_EbuCore.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Niso.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Fims.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_PBCore2.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_reVTMD.h" />
@@ -637,6 +644,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Ttml.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\TimeCode.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Av1.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_CineForm.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\XmlUtils.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\OutputHelpers.h" />
@@ -682,7 +690,6 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Reader\Reader_libmms.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Mpeg7.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_PBCore.h" />
-    <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Niso.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Vc3.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Vp8.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Y4m.h" />

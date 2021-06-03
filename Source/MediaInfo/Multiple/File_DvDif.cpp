@@ -225,6 +225,13 @@ File_DvDif::File_DvDif()
 {
     //Configuration
     ParserName="DV";
+    #if MEDIAINFO_EVENTS
+        ParserIDs[0]=MediaInfo_Parser_DvDif;
+        StreamIDs_Width[0]=4;
+    #endif //MEDIAINFO_EVENTS
+    #if MEDIAINFO_DEMUX
+        Demux_Level=3; //Container and Stream
+    #endif //MEDIAINFO_DEMUX
     MustSynchronize=true;
     Buffer_TotalBytes_FirstSynched_Max=64*1024;
 
@@ -235,12 +242,12 @@ File_DvDif::File_DvDif()
 
     //Temp
     FrameSize_Theory=0;
-    Duration=0;
     Synched_Test_Reset();
     DSF_IsValid=false;
     APT=0xFF; //Impossible
     video_source_stype=0xFF;
     audio_source_stype=0xFF;
+    aspect=0xFF;
     ssyb_AP3=0xFF;
     TF1=false; //Valid by default, for direct analyze
     TF2=false; //Valid by default, for direct analyze
@@ -257,7 +264,7 @@ File_DvDif::File_DvDif()
 
     #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
     Analyze_Activated=false;
-    video_source_Detected=false;
+    Speed_FrameCount_StartOffset=(int64u)-1;
     Speed_FrameCount=0;
     Speed_FrameCount_Video_STA_Errors=0;
     Speed_FrameCount_Audio_Errors.resize(8);
@@ -266,11 +273,13 @@ File_DvDif::File_DvDif()
     Speed_Contains_NULL=0;
     Speed_FrameCount_Arb_Incoherency=0;
     Speed_FrameCount_Stts_Fluctuation=0;
-    System_IsValid=false;
-    Frame_AtLeast1DIF=false;
+    Speed_FrameCount_system[0]=0;
+    Speed_FrameCount_system[1]=0;
+    AbstBf_Current=(0x7FFFFF)<<1;
+    AbstBf_Previous=(0x7FFFFF)<<1;
+    AbstBf_Previous_MaxAbst=0xFFFFFF;
     SMP=(int8u)-1;
     QU=(int8u)-1;
-    CH_IsPresent.resize(8);
     Speed_TimeCode_IsValid=false;
     Speed_Arb_IsValid=false;
     Mpeg4_stts=NULL;
@@ -279,6 +288,7 @@ File_DvDif::File_DvDif()
     Stats_Total=0;
     Stats_Total_WithoutArb=0;
     Stats_Total_AlreadyDetected=false;
+    memset(BlockStatus, 0, BlockStatus_MaxSize);
     #endif //MEDIAINFO_DVDIF_ANALYZE_YES
 }
 
@@ -549,15 +559,24 @@ void File_DvDif::Streams_Finish()
             Stream_Prepare(Stream_General);
         Fill(Stream_General, 0, General_Recorded_Date, Recorded_Date, true);
     }
-    if (!IsSub && Duration)
-        Fill(Stream_General, 0, General_Duration, Duration);
+
+    float64 OverallBitRate=Retrieve_Const(Stream_General, 0, General_OverallBitRate).To_float64();
+    if (OverallBitRate && File_Size && File_Size!=(int64u)-1)
+    {
+        float64 Duration=File_Size/OverallBitRate*8*1000;
+        if (Duration)
+        {
+            for (size_t StreamKind=0; StreamKind<Stream_Max; StreamKind++)
+                for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
+                    Fill((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_Duration), Duration, 0);
+        }
+    }
 
     #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
         if (Config->File_DvDif_Analysis_Get())
         {
             //Errors stats
             Status[IsFinished]=true; //We need to fill it before the call to Errors_Stats_Update
-            Errors_Stats_Update();
             Errors_Stats_Update_Finnish();
         }
     #endif //MEDIAINFO_DVDIF_ANALYZE_YES
@@ -620,7 +639,14 @@ bool File_DvDif::Synchronize()
         return false;
 
     if (!Status[IsAccepted])
+    {
         Accept();
+
+        #if MEDIAINFO_DEMUX
+            if (Config->Demux_Unpacketize_Get())
+                Demux_UnpacketizeContainer=true;
+        #endif //MEDIAINFO_DEMUX
+    }
 
     return true;
 }
@@ -808,6 +834,12 @@ bool File_DvDif::Demux_UnpacketizeContainer_Test()
         if (Demux_Offset+8*80>Buffer_Size && File_Offset+Buffer_Size==File_Size)
             Demux_Offset=(size_t)(File_Size-File_Offset); //Using the complete buffer (no next sync)
 
+        Element_Code=-1;
+        FrameInfo.DTS=FrameInfo.PTS=Speed_FrameCount_system[0]*100100000/3+Speed_FrameCount_system[1]*40000000;
+        Speed_FrameCount_system[system]++;
+        int64u NextPTS=Speed_FrameCount_system[0]*100100000/3+Speed_FrameCount_system[1]*40000000;
+        Speed_FrameCount_system[system]--;
+        FrameInfo.DUR=(int64u)-1; // Unknown, system flag is not yet checked
         Demux_UnpacketizeContainer_Demux();
     }
 
@@ -1177,7 +1209,7 @@ void File_DvDif::Subcode_Ssyb(int8u syb_num)
         Skip_S1(3,                                              "APT - track application ID");
     else
         Skip_S1(3,                                              "Res - Reserved");
-    Skip_S1(8,                                                  "Arb - Arbitrary bits");
+    Skip_S1(8,                                                  "ABST/BF - Absolute track number / Blank flag");
     Skip_S1(4,                                                  "Syb - SSYSB number");
     BS_End();
     //FFh
@@ -1332,16 +1364,6 @@ void File_DvDif::binary_group()
 void File_DvDif::timecode()
 {
     Element_Name("timecode");
-
-    if (Buffer[Buffer_Offset+(size_t)Element_Offset  ]==0x00
-     && Buffer[Buffer_Offset+(size_t)Element_Offset+1]==0x00
-     && Buffer[Buffer_Offset+(size_t)Element_Offset+2]==0x00
-     && Buffer[Buffer_Offset+(size_t)Element_Offset+3]==0x00
-    )
-    {
-        Skip_XX(4,                                              "All zero");
-        return;
-    }
 
     //Parsing
     int8u Frames_Units, Frames_Tens, Seconds_Units, Seconds_Tens, Minutes_Units, Minutes_Tens, Hours_Units, Hours_Tens;
@@ -1752,6 +1774,15 @@ void File_DvDif::consumer_camera_2()
 //---------------------------------------------------------------------------
 void File_DvDif::recdate(bool FromVideo)
 {
+    // Coherency test
+    int32u Test;
+    Peek_B4(Test);
+    if (Test==(int32u)-1)
+    {
+        Skip_B4(                                                "Junk");
+        return;
+    }
+
     BS_Begin();
 
     int8u Temp;
@@ -1780,7 +1811,7 @@ void File_DvDif::recdate(bool FromVideo)
 
     BS_End();
 
-    if (FromVideo && Frame_Count==1 && Month<=12 && Day<=31 && Recorded_Date_Date.empty())
+    if (FromVideo && Frame_Count==1 && Year!=2065 && Month && Month<=12 && Day && Day<=31 && Recorded_Date_Date.empty())
     {
         Ztring MonthString;
         if (Month<10)
@@ -1797,6 +1828,15 @@ void File_DvDif::recdate(bool FromVideo)
 //---------------------------------------------------------------------------
 void File_DvDif::rectime(bool FromVideo)
 {
+    // Coherency test
+    int32u Test;
+    Peek_B4(Test);
+    if (Test==(int32u)-1)
+    {
+        Skip_B4(                                            "Junk");
+        return;
+    }
+
     if (!DSF_IsValid)
     {
         Trusted_IsNot("Not in right order");

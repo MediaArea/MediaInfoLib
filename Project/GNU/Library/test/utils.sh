@@ -11,7 +11,7 @@ then
     wget https://github.com/MediaArea/MediaAreaXml/raw/master/micromediatrace.xsd -O "$UTILS_PATH/micromediatrace.xsd"
 fi
 
-if [ ! -f "$UTILS_PATH/mediainfo_2_0.xsd" ]
+if [ ! -f "$UTILS_PATH/mediainfo.xsd" ]
 then
     wget https://mediaarea.net/mediainfo/mediainfo_2_0.xsd -O "$UTILS_PATH/mediainfo.xsd"
 fi
@@ -31,7 +31,7 @@ enabled()
 
     set -- $RUN_TESTS
     while test $# -gt 0 ; do
-        if test "$1" = "$test" ; then
+        if test "$1" = "$test" || test "$1" = "all" ; then
             return 0
         fi
         shift

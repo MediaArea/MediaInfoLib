@@ -54,6 +54,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Audio/File_Caf.cpp \
                        ../../../Source/MediaInfo/Audio/File_Celt.cpp \
                        ../../../Source/MediaInfo/Audio/File_ChannelGrouping.cpp \
+                       ../../../Source/MediaInfo/Audio/File_ChannelSplitting.cpp \
                        ../../../Source/MediaInfo/Audio/File_Dsdiff.cpp \
                        ../../../Source/MediaInfo/Audio/File_Dsf.cpp \
                        ../../../Source/MediaInfo/Audio/File_Dts.cpp \
@@ -67,6 +68,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Audio/File_Mpc.cpp \
                        ../../../Source/MediaInfo/Audio/File_MpcSv8.cpp \
                        ../../../Source/MediaInfo/Audio/File_Mpega.cpp \
+                       ../../../Source/MediaInfo/Audio/File_Mpegh3da.cpp \
                        ../../../Source/MediaInfo/Audio/File_OpenMG.cpp \
                        ../../../Source/MediaInfo/Audio/File_Opus.cpp \
                        ../../../Source/MediaInfo/Audio/File_Pcm.cpp \
@@ -205,6 +207,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Video/File_Avc_Duplicate.cpp \
                        ../../../Source/MediaInfo/Video/File_AvsV.cpp \
                        ../../../Source/MediaInfo/Video/File_Canopus.cpp \
+                       ../../../Source/MediaInfo/Video/File_CineForm.cpp \
                        ../../../Source/MediaInfo/Video/File_Dirac.cpp \
                        ../../../Source/MediaInfo/Video/File_DolbyVisionMetadata.cpp \
                        ../../../Source/MediaInfo/Video/File_Ffv1.cpp \
@@ -291,5 +294,5 @@ REGRESSION_FILES = $(TESTS_DIR)/Files
 clone_regression_files: $(REGRESSION_FILES)
 
 $(REGRESSION_FILES):
-	git clone https://github.com/MediaArea/MediaArea-RegressionTestingFiles $(TESTS_DIR)/Files
+	git clone --depth=1 https://github.com/MediaArea/MediaArea-RegressionTestingFiles $(TESTS_DIR)/Files
 

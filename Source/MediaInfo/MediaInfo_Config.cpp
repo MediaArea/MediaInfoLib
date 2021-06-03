@@ -133,7 +133,7 @@ namespace MediaInfoLib
 {
 
 //---------------------------------------------------------------------------
-const Char*  MediaInfo_Version=__T("MediaInfoLib - v19.09");
+const Char*  MediaInfo_Version=__T("MediaInfoLib - v21.03");
 const Char*  MediaInfo_Url=__T("http://MediaArea.net/MediaInfo");
       Ztring EmptyZtring;       //Use it when we can't return a reference to a true Ztring
 const Ztring EmptyZtring_Const; //Use it when we can't return a reference to a true Ztring, const version
@@ -418,6 +418,9 @@ void MediaInfo_Config::Init(bool Force)
         InitDataNotRepeated_Occurences=(int64u)-1; //Disabled by default
         InitDataNotRepeated_GiveUp=false;
     #endif //MEDIAINFO_ADVANCED
+    #if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+        TimeOut=(int64u)-1;
+    #endif //MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
     MpegTs_MaximumOffset=64*1024*1024;
     MpegTs_MaximumScanDuration=30000000000LL;
     MpegTs_ForceStreamDisplay=false;
@@ -455,6 +458,8 @@ void MediaInfo_Config::Init(bool Force)
     Trace_Format=Trace_Format_Tree;
     Language_Raw=false;
     ReadByHuman=true;
+    Inform_Version=false;
+    Inform_Timestamp=false;
     Legacy=false;
     LegacyStreamDisplay=false;
     SkipBinaryData=false;
@@ -998,6 +1003,24 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     {
         return Inform_Get();
     }
+    if (Option_Lower==__T("inform_version"))
+    {
+        Inform_Version_Set(Value.To_int8u()?true:false);
+        return Ztring();
+    }
+    if (Option_Lower==__T("inform_version_get"))
+    {
+        return Inform_Version_Get()?__T("1"):__T("0");
+    }
+    if (Option_Lower==__T("inform_timestamp"))
+    {
+        Inform_Timestamp_Set(Value.To_int8u()?true:false);
+        return Ztring();
+    }
+    if (Option_Lower==__T("inform_timestamp_get"))
+    {
+        return Inform_Timestamp_Get()?__T("1"):__T("0");
+    }
     #if MEDIAINFO_ADVANCED
         if (Option_Lower==__T("cover_data"))
         {
@@ -1101,7 +1124,6 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         String NewValue_Lower(Value);
         transform(NewValue_Lower.begin(), NewValue_Lower.end(), NewValue_Lower.begin(), (int(*)(int))tolower); //(int(*)(int)) is a patch for unix
 
-        CriticalSectionLocker CSL(CS);
         if (NewValue_Lower==__T("csv"))
             Trace_Format_Set(Trace_Format_CSV);
         else if (NewValue_Lower==__T("xml") || NewValue_Lower==__T("MAXML"))
@@ -1261,6 +1283,23 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         #else // MEDIAINFO_ADVANCED
             return __T("advanced features are disabled due to compilation options");
         #endif // MEDIAINFO_ADVANCED
+    }
+    if (Option_Lower==__T("timeout"))
+    {
+        #if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+            TimeOut_Set(Value.empty()?((int64u)-1):Value.To_int64u());
+            return Ztring();
+        #else // MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+            return __T("advanced features are disabled due to compilation options");
+        #endif // MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+    }
+    if (Option_Lower==__T("timeout_get"))
+    {
+        #if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+            return Ztring::ToZtring(TimeOut_Get());
+        #else // MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+            return __T("advanced features are disabled due to compilation options");
+        #endif // MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
     }
     if (Option_Lower==__T("mpegts_maximumoffset"))
     {
@@ -2150,7 +2189,7 @@ void MediaInfo_Config::Language_Set (const ZtringListList &NewValue)
         for (size_t Pos=0; Pos<NewValue.size(); Pos++)
             if (NewValue[Pos].size()>=2)
                 Language.Write(NewValue[Pos][0], NewValue[Pos][1]);
-            else if (NewValue[Pos].size()==1)
+            else if (NewValue[Pos].size()==1 && NewValue[0]==__T("  Config_Text_ThousandsSeparator")) // Only the thousands separator is authorized to be empty, else empty content means keeping default value
                 Language.Write(NewValue[Pos][0], Ztring());
     }
 
@@ -2245,13 +2284,9 @@ Ztring MediaInfo_Config::Language_Get (const Ztring &Count, const Ztring &Value,
         return Count;
 
     //Different Plurals are available or not?
-    if (Language_Get(Value+__T("1")).empty())
-    {
-        //if (Count==__T("0") || Count==__T("1"))
-            return Count+Language_Get(Value);
-        //else
-            //return Count+Language_Get(Value+__T("s"));
-    }
+    Ztring Value1=Value+__T('1');
+    if (!ValueIsAlwaysSame && Language_Get(Value1)==Value1)
+        ValueIsAlwaysSame=true;
 
     //Detecting plural form for multiple plurals
     int8u  Form=(int8u)-1;
@@ -2321,6 +2356,8 @@ Ztring MediaInfo_Config::Language_Get (const Ztring &Count, const Ztring &Value,
         ToReturn.FindAndReplace(DecimalPoint, Language_Get(__T("  Config_Text_FloatSeparator")), DotPos);
     else
         DotPos=ToReturn.size();
+    if (DotPos>3 && ToReturn[0]==__T('-'))
+        DotPos--;
     if (DotPos>3)
         ToReturn.insert(DotPos-3, Language_Get(__T("  Config_Text_ThousandsSeparator")));
 
@@ -2433,6 +2470,32 @@ ZtringListList MediaInfo_Config::Inform_Replace_Get_All ()
 {
     CriticalSectionLocker CSL(CS);
     return Custom_View_Replace;
+}
+
+//---------------------------------------------------------------------------
+void MediaInfo_Config::Inform_Version_Set (bool NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    Inform_Version=NewValue;
+}
+
+bool MediaInfo_Config::Inform_Version_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return Inform_Version;
+}
+
+//---------------------------------------------------------------------------
+void MediaInfo_Config::Inform_Timestamp_Set (bool NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    Inform_Timestamp=NewValue;
+}
+
+bool MediaInfo_Config::Inform_Timestamp_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return Inform_Timestamp;
 }
 
 //---------------------------------------------------------------------------
@@ -3089,6 +3152,21 @@ bool MediaInfo_Config::InitDataNotRepeated_GiveUp_Get ()
     return InitDataNotRepeated_GiveUp;
 }
 #endif // MEDIAINFO_ADVANCED
+
+
+#if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+void MediaInfo_Config::TimeOut_Set (int64u Value)
+{
+    CriticalSectionLocker CSL(CS);
+    TimeOut=Value;
+}
+
+int64u MediaInfo_Config::TimeOut_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return TimeOut;
+}
+#endif // MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
 
 void MediaInfo_Config::MpegTs_MaximumOffset_Set (int64u Value)
 {

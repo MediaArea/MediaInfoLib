@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+            <meta charset="utf-8" />
             <title>MediaInfo JavaScript test page</title>
     </head>
     <body>
@@ -13,7 +14,7 @@
             // Load the WebAssembly MediaInfo module if the browser supports it,
             // otherwise load the asmjs module
             var MediaInfoJs = document.createElement('script');
-            if ('WebAssembly' in window) {
+            if ('WebAssembly' in window && typeof Promise  !== 'undefined') {
               MediaInfoJs.src = "MediaInfoWasm.js";
             } else {
               MediaInfoJs.src = "MediaInfo.js";
@@ -129,9 +130,8 @@
               }
 
               // Initialise emscripten module
-              MediaInfoModule = MediaInfoLib({'postRun': function() {
+              var ready = function() {
                 console.debug('MediaInfo ready');
-
                 // Information about MediaInfo
                 document.getElementById('result').innerText = 'Info_Parameters:\n';
                 document.getElementById('result').innerText += MediaInfoModule.MediaInfo.Option_Static('Info_Parameters') + '\n\n';
@@ -147,7 +147,21 @@
                     parseFile(input.files[0], showResult);
                   }
                 }
-              }});};
+              }
+              MediaInfoModule = MediaInfoLib({
+                'postRun': function() {
+                  if (typeof Promise !== 'undefined' && MediaInfoModule instanceof Promise) {
+                    MediaInfoModule.then(function(module) {
+                      MediaInfoModule = module;
+                      ready();
+                    });
+                  }
+                  else {
+                    ready();
+                  }
+                }
+              });
+            };
         </script>
     </body>
 </html>

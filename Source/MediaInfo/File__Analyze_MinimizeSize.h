@@ -62,7 +62,7 @@ public :
         int64u  StreamIDs[16];
         int8u   StreamIDs_Width[16];
         int8u   ParserIDs[16];
-        void    Event_Prepare (struct MediaInfo_Event_Generic* Event);
+        void    Event_Prepare (struct MediaInfo_Event_Generic* Event, int32u Event_Code, size_t Event_Size);
     #endif //MEDIAINFO_EVENTS
     #if MEDIAINFO_DEMUX
         int8u   Demux_Level; //bit 0=frame, bit 1=container, bit 2=elementary (eg MPEG-TS), bit 3=ancillary (e.g. DTVCC), default with frame set
@@ -774,13 +774,16 @@ public :
     #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES)
     void Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_ColorPrimaries, Ztring &MasteringDisplay_Luminance);
     #endif
-    #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MATROSKA_YES)
+    #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MATROSKA_YES) || defined(MEDIAINFO_MXF_YES)
     struct mastering_metadata_2086
     {
         int16u Primaries[8];
         int32u Luminance[2];
     };
     void Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_ColorPrimaries, Ztring &MasteringDisplay_Luminance, mastering_metadata_2086 &Meta);
+    #endif
+    #if defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MK_YES)
+    void dvcC(bool has_dependency_pid=false, std::map<std::string, Ztring>* Infos=NULL);
     #endif
 
     //***************************************************************************
@@ -1058,9 +1061,14 @@ public :
     inline void Fill (stream_t StreamKind, size_t StreamPos, size_t Parameter, size_t         Value, int8u Radix=10, bool Replace=false) {Fill(StreamKind, StreamPos, Parameter, Ztring::ToZtring(Value, Radix).MakeUpperCase(), Replace);}
     #endif //SIZE_T_IS_LONG
     //Fill with datas
+    void Fill_Dup (stream_t StreamKind, size_t StreamPos, const char* Parameter, const Ztring  &Value, bool Replace=false);
+    void Fill_Measure (stream_t StreamKind, size_t StreamPos, const char* Parameter, const Ztring  &Value, const Ztring& Measure, bool Replace=false);
+    inline void Fill_Measure(stream_t StreamKind, size_t StreamPos, const char* Parameter, const string&  Value, const Ztring& Measure, bool Utf8=true, bool Replace=false) {Fill_Measure(StreamKind, StreamPos, Parameter, Ztring().From_UTF8(Value.c_str(), Value.size()), Measure, Replace);}
+    inline void Fill_Measure(stream_t StreamKind, size_t StreamPos, const char* Parameter, int            Value, const Ztring& Measure, int8u Radix=10, bool Replace=false) {Fill_Measure(StreamKind, StreamPos, Parameter, Ztring::ToZtring(Value, Radix).MakeUpperCase(), Measure, Replace);}
+    inline void Fill_Measure(stream_t StreamKind, size_t StreamPos, const char* Parameter, float64        Value, const Ztring& Measure, int8u AfterComma=3, bool Replace=false) {Fill_Measure(StreamKind, StreamPos, Parameter, Ztring::ToZtring(Value, AfterComma), Measure, Replace);}
     void Fill (stream_t StreamKind, size_t StreamPos, const char* Parameter, const Ztring  &Value, bool Replace=false);
     void Fill (stream_t StreamKind, size_t StreamPos, const char* Parameter, ZtringList &Value, ZtringList& Id, bool Replace=false);
-    inline void Fill (stream_t StreamKind, size_t StreamPos, const char* Parameter, const std::string &Value, bool Utf8=true, bool Replace=false) {if (Utf8) Fill(StreamKind, StreamPos, Parameter, Ztring().From_UTF8(Value.c_str(), Value.size())); else Fill(StreamKind, StreamPos, Parameter, Ztring().From_Local(Value.c_str(), Value.size()), Replace);}
+    inline void Fill (stream_t StreamKind, size_t StreamPos, const char* Parameter, const std::string &Value, bool Utf8=true, bool Replace=false) {if (Utf8) Fill(StreamKind, StreamPos, Parameter, Ztring().From_UTF8(Value.c_str(), Value.size()), Replace); else Fill(StreamKind, StreamPos, Parameter, Ztring().From_Local(Value.c_str(), Value.size()), Replace);}
     inline void Fill (stream_t StreamKind, size_t StreamPos, const char* Parameter, const char*    Value, size_t Value_Size=Unlimited, bool Utf8=true, bool Replace=false) {if (Utf8) Fill(StreamKind, StreamPos, Parameter, Ztring().From_UTF8(Value, Value_Size), Replace); else Fill(StreamKind, StreamPos, Parameter, Ztring().From_Local(Value, Value_Size), Replace);}
     inline void Fill (stream_t StreamKind, size_t StreamPos, const char* Parameter, const wchar_t* Value, size_t Value_Size=Unlimited, bool Replace=false) {Fill(StreamKind, StreamPos, Parameter, Ztring().From_Unicode(Value, Value_Size), Replace);}
     inline void Fill (stream_t StreamKind, size_t StreamPos, const char* Parameter, int8u          Value, int8u Radix=10, bool Replace=false) {Fill(StreamKind, StreamPos, Parameter, Ztring::ToZtring(Value, Radix).MakeUpperCase(), Replace);}
@@ -1084,6 +1092,7 @@ public :
     };
     void Fill_SetOptions(stream_t StreamKind, size_t StreamPos, const char* Parameter, const char* Options);
     vector<fill_temp_item> Fill_Temp[Stream_Max+1]; // +1 because Fill_Temp[Stream_Max] is used when StreamKind is unknown
+    map<string, string> Fill_Temp_Options[Stream_Max+1]; // +1 because Fill_Temp[Stream_Max] is used when StreamKind is unknown
     void Fill_Flush ();
     static size_t Fill_Parameter(stream_t StreamKind, generic StreamPos);
 
@@ -1268,8 +1277,10 @@ protected :
     int64u Buffer_TotalBytes_FirstSynched_Max;
     int64u Buffer_TotalBytes_Fill_Max;
     friend class File__Tags_Helper;
+    friend class File_Usac;
     friend class File_Mk;
     friend class File_Mpeg4;
+    friend class File_Hevc;
 
     //***************************************************************************
     // Helpers

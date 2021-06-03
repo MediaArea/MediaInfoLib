@@ -356,15 +356,36 @@ static const char* AC3_nonstd_bed_channel_assignment_mask_ChannelLayout_List[17]
     "Rw",
     "LFE2",
 };
+static int8s AC3_nonstd_bed_channel_assignment_mask_ChannelLayout_Reordering[17] =
+{
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    6, // Wide channels before top layer
+    6, // Wide channels before top layer
+    -2,
+    -2,
+    -2,
+    -2,
+    -2,
+    -2,
+    0,
+};
 Ztring AC3_nonstd_bed_channel_assignment_mask_ChannelLayout(int32u nonstd_bed_channel_assignment_mask)
 {
     Ztring ToReturn;
 
     for (int8u i=0; i<17; i++)
     {
-        if (nonstd_bed_channel_assignment_mask&(1<<i))
+        int8u i2=i+AC3_nonstd_bed_channel_assignment_mask_ChannelLayout_Reordering[i];
+        if (nonstd_bed_channel_assignment_mask&(1<<i2))
         {
-            ToReturn+=Ztring().From_UTF8(AC3_nonstd_bed_channel_assignment_mask_ChannelLayout_List[i]);
+            ToReturn+=Ztring().From_UTF8(AC3_nonstd_bed_channel_assignment_mask_ChannelLayout_List[i2]);
             ToReturn+=__T(' ');
         }
     }
@@ -388,7 +409,7 @@ static const int8u AC3_bed_channel_assignment_mask_ChannelLayout_Mapping[10] =
     2,
     1,
 };
-int32u AC3_bed_channel_assignment_mask_2_nonstd(int16u bed_channel_assignment_mask)
+extern int32u AC3_bed_channel_assignment_mask_2_nonstd(int16u bed_channel_assignment_mask)
 {
     int32u ToReturn=0;
 
@@ -799,7 +820,7 @@ static const int32u AC3_MLP_Resolution[16]=
 };
 
 //---------------------------------------------------------------------------
-const char* Ac3_emdf_payload_id[16]=
+extern const char* Ac3_emdf_payload_id[16]=
 {
     "Container End",
     "Programme loudness data",
@@ -814,7 +835,7 @@ const char* Ac3_emdf_payload_id[16]=
     "",
     "OAMD",
     "",
-    "",
+    "Personalized Audio Mix-Graph",
     "JOC",
     "",
 };
@@ -957,6 +978,7 @@ File_Ac3::File_Ac3()
     Frame_Count_Valid=0;
     MustParse_dac3=false;
     MustParse_dec3=false;
+    MustParse_dmlp=false;
     CalculateDelay=false;
 
     //Buffer
@@ -984,6 +1006,8 @@ File_Ac3::File_Ac3()
             chanmap_Max[Pos][Pos2]=0;
         }
     numblkscod=0;
+    dsurexmod=0;
+    dheadphonmod=0;
     substreamid_Independant_Current=0;
     substreams_Count=0;
     joc_complexity_index_Container=(int8u)-1;
@@ -1032,7 +1056,6 @@ void File_Ac3::Streams_Fill()
 
         if (HD_StreamType==0xBA) //TrueHD
         {
-            if (bsid_Max==(int8u)-1)
             {
                 Fill(Stream_Audio, 0, Audio_Format, "MLP FBA");
                 Fill(Stream_Audio, 0, Audio_Codec, "MLP FBA");
@@ -1043,6 +1066,7 @@ void File_Ac3::Streams_Fill()
                 Fill(Stream_Audio, 0, Audio_Codec_Profile, "MLP FBA 16-ch / MLP FBA");
             }
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
+            Fill(Stream_Audio, 0, Audio_Compression_Mode, "Lossless");
             Ztring Sampling;
             Sampling.From_Number(AC3_HD_SamplingRate(HD_SamplingRate1));
             Fill(Stream_Audio, 0, Audio_SamplingRate, Sampling);
@@ -1054,12 +1078,12 @@ void File_Ac3::Streams_Fill()
 
         if (HD_StreamType==0xBB) //TrueHD
         {
-            if (!Core_IsPresent)
             {
                 Fill(Stream_Audio, 0, Audio_Format, "MLP");
                 Fill(Stream_Audio, 0, Audio_Codec,  "MLP");
             }
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
+            Fill(Stream_Audio, 0, Audio_Compression_Mode, "Lossless");
             Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate2));
             if (HD_SamplingRate1!=HD_SamplingRate2)
                 Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate2));
@@ -1108,6 +1132,28 @@ void File_Ac3::Streams_Fill()
             Fill_SetOptions(Stream_Audio, 0, "BedChannelCount/String", "Y NIN");
             Fill(Stream_Audio, 0, "BedChannelConfiguration", BedChannelConfiguration);
         }
+    }
+
+    //Surround
+    if (dsurmod_Max[0][0]==2)
+    {
+        Fill(Stream_Audio, 0, Audio_Format_Settings, "Dolby Surround");
+        Fill(Stream_Audio, 0, Audio_Format_Settings_Mode, "Dolby Surround");
+    }
+    if (dsurexmod==2)
+    {
+        Fill(Stream_Audio, 0, Audio_Format_Settings, "Dolby Surround EX");
+        Fill(Stream_Audio, 0, Audio_Format_Settings_Mode, "Dolby Surround EX");
+    }
+    if (dsurexmod==3)
+    {
+        Fill(Stream_Audio, 0, Audio_Format_Settings, "Dolby Pro Logic IIz");
+        Fill(Stream_Audio, 0, Audio_Format_Settings_Mode, "Dolby Pro Logic IIz");
+    }
+    if (dheadphonmod==2)
+    {
+        Fill(Stream_Audio, 0, Audio_Format_Settings, "Dolby Headphone");
+        Fill(Stream_Audio, 0, Audio_Format_Settings_Mode, "Dolby Headphone");
     }
 
     //AC-3
@@ -1166,8 +1212,6 @@ void File_Ac3::Streams_Fill()
             if (Retrieve(Stream_Audio, 0, Audio_ChannelLayout).empty())
                 Fill(Stream_Audio, 0, Audio_ChannelLayout, ChannelLayout);
         }
-        if (dsurmod_Max[0][0]==2)
-            Fill(Stream_Audio, 0, Audio_Format_Settings_Mode, "Dolby Digital");
         if (!Retrieve(Stream_Audio, 0, Audio_Format_Profile).empty())
             Fill(Stream_Audio, 0, Audio_Format_Profile, "AC-3");
         if (!Retrieve(Stream_Audio, 0, Audio_Codec_Profile).empty())
@@ -1961,6 +2005,16 @@ bool File_Ac3::Demux_UnpacketizeContainer_Test()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+void File_Ac3::Read_Buffer_OutOfBand()
+{
+    if (MustParse_dmlp)
+    {
+        dmlp();
+        return;
+    }
+}
+
+//---------------------------------------------------------------------------
 void File_Ac3::Read_Buffer_Continue()
 {
     if (MustParse_dac3)
@@ -2250,12 +2304,32 @@ void File_Ac3::Core_Frame()
             }
             Skip_SB(                                                "copyrightb - Copyright Bit");
             Skip_SB(                                                "origbs - Original Bit Stream");
-            TEST_SB_SKIP(                                           "timecod1e");
-                Skip_S1(14,                                         "timecod1"); //Note: if timecod is used, change the bitstream parsing for bsid==0x06
-            TEST_SB_END();
-            TEST_SB_SKIP(                                           "timecod2e");
-                Skip_S1(14,                                         "timecod2"); //Note: if timecod is used, change the bitstream parsing for bsid==0x06
-            TEST_SB_END();
+            if (bsid==0x06)
+            {
+                TEST_SB_SKIP(                                       "xbsi1e");
+                    Skip_S1(2,                                      "dmixmod");
+                    Skip_S1(3,                                      "ltrtcmixlev");
+                    Skip_S1(3,                                      "ltrtsurmixlev");
+                    Skip_S1(3,                                      "lorocmixlev");
+                    Skip_S1(3,                                      "lorosurmixlev");
+                TEST_SB_END();
+                TEST_SB_SKIP(                                       "xbsi2e");
+                    Get_S1 (2, dsurexmod,                           "dsurexmod");
+                    Get_S1 (2, dheadphonmod,                        "dheadphonmod");
+                    Skip_SB(                                        "adconvtyp");
+                    Skip_S1(8,                                      "xbsi2");
+                    Skip_SB(                                        "encinfo");
+                TEST_SB_END();
+            }
+            else
+            {
+                TEST_SB_SKIP(                                       "timecod1e");
+                    Skip_S2(14,                                     "timecod1");
+                TEST_SB_END();
+                TEST_SB_SKIP(                                       "timecod2e");
+                    Skip_S2(14,                                     "timecod2");
+                TEST_SB_END();
+            }
             TEST_SB_SKIP(                                           "addbsie");
                 int8u addbsil;
                 Get_S1 (6, addbsil,                                 "addbsil");
@@ -2498,11 +2572,11 @@ void File_Ac3::Core_Frame()
                 Skip_SB(                                            "origbs - Original Bit Stream");
                 if (acmod==0x2)
                 {
-                    Skip_S1(2,                                      "dsurmod");
-                    Skip_S1(2,                                      "dheadphonmod");
+                    Get_S1 (2, dsurmod,                             "dsurmod");
+                    Get_S1 (2, dheadphonmod,                        "dheadphonmod");
                 }
                 if (acmod>=0x6)
-                    Skip_S1(2,                                      "dsurexmod");
+                    Get_S1 (2, dsurexmod,                           "dsurexmod");
                 TEST_SB_SKIP(                                       "audprodie");
                     Skip_S1(5,                                      "mixlevel");
                     Skip_S1(2,                                      "roomtyp");
@@ -4159,42 +4233,12 @@ void File_Ac3::HD()
         Get_B4(format_sync,                                     "major_sync");
         HD_StreamType=(int8u)format_sync; Param_Info1(AC3_HD_StreamType(HD_StreamType));
 
-        if (HD_StreamType==0xBA)
-        {
-            Element_Begin1("format_info");
-            BS_Begin();
-            Get_S1 ( 4, HD_SamplingRate1,                       "audio_sampling_frequency"); Param_Info2(AC3_HD_SamplingRate(HD_SamplingRate1), " Hz");
-            Skip_SB(                                            "6ch_multichannel_type");
-            Skip_SB(                                            "8ch_multichannel_typ");
-            Skip_S1( 2,                                         "reserved");
-            Skip_S1( 2,                                         "2ch_presentation_channel_modifier");
-            Skip_S1( 2,                                         "6ch_presentation_channel_modifier");
-            Get_S1 ( 5, HD_Channels1,                           "6ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels1)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels1)));
-            Skip_S1( 2,                                         "8ch_presentation_channel_modifier");
-            Get_S2 (13, HD_Channels2,                           "8ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels2)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels2)));
-            BS_End();
-            HD_Resolution2=HD_Resolution1=24; //Not sure
-            HD_SamplingRate2=HD_SamplingRate1;
-            Element_End0();
-        }
-        else if (HD_StreamType==0xBB)
-        {
-            BS_Begin();
-            Get_S1 ( 4, HD_Resolution1,                         "Resolution1"); Param_Info2(AC3_MLP_Resolution[HD_Resolution1], " bits");
-            Get_S1 ( 4, HD_Resolution2,                         "Resolution2"); Param_Info2(AC3_MLP_Resolution[HD_Resolution2], " bits");
-            Get_S1 ( 4, HD_SamplingRate1,                       "Sampling rate"); Param_Info2(AC3_HD_SamplingRate(HD_SamplingRate1), " Hz");
-            Get_S1 ( 4, HD_SamplingRate2,                       "Sampling rate"); Param_Info2(AC3_HD_SamplingRate(HD_SamplingRate2), " Hz");
-            Skip_S1(11,                                         "Unknown");
-            Get_S1 ( 5, HD_Channels1,                           "Channels"); Param_Info1(AC3_MLP_Channels[HD_Channels1]);
-            BS_End();
-            HD_Channels2=HD_Channels1;
-        }
-        else
+        if ((HD_StreamType&0xFE)!=0xBA)
         {
             Skip_XX(Element_Size-Element_Offset,                "Data");
             return;
         }
-
+        HD_format_info();
         Skip_B2(                                                "signature");
         Get_B2 (HD_flags,                                       "flags");
         Skip_B2(                                                "reserved");
@@ -4420,7 +4464,7 @@ void File_Ac3::HD()
         if (!Status[IsAccepted])
         {
             Accept("AC-3");
-            if (Frame_Count_Valid<10000)
+            if (Frame_Count_Valid>1 && Frame_Count_Valid<10000)
                 Frame_Count_Valid*=32;
         }
         if (!Status[IsFilled] && !Core_IsPresent && Frame_Count>=Frame_Count_Valid)
@@ -4432,6 +4476,40 @@ void File_Ac3::HD()
                 Finish("AC-3");
         }
     FILLING_END();
+}
+
+void File_Ac3::HD_format_info()
+{
+    if (HD_StreamType==0xBA)
+    {
+        Element_Begin1("format_info");
+        BS_Begin();
+        Get_S1 ( 4, HD_SamplingRate1,                           "audio_sampling_frequency"); Param_Info2(AC3_HD_SamplingRate(HD_SamplingRate1), " Hz");
+        Skip_SB(                                                "6ch_multichannel_type");
+        Skip_SB(                                                "8ch_multichannel_typ");
+        Skip_S1( 2,                                             "reserved");
+        Skip_S1( 2,                                             "2ch_presentation_channel_modifier");
+        Skip_S1( 2,                                             "6ch_presentation_channel_modifier");
+        Get_S1 ( 5, HD_Channels1,                               "6ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels1)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels1)));
+        Skip_S1( 2,                                             "8ch_presentation_channel_modifier");
+        Get_S2 (13, HD_Channels2,                               "8ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels2)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels2)));
+        BS_End();
+        HD_Resolution2=HD_Resolution1=24; //Not sure
+        HD_SamplingRate2=HD_SamplingRate1;
+        Element_End0();
+    }
+    if (HD_StreamType==0xBB)
+    {
+        BS_Begin();
+        Get_S1 ( 4, HD_Resolution1,                             "Resolution1"); Param_Info2(AC3_MLP_Resolution[HD_Resolution1], " bits");
+        Get_S1 ( 4, HD_Resolution2,                             "Resolution2"); Param_Info2(AC3_MLP_Resolution[HD_Resolution2], " bits");
+        Get_S1 ( 4, HD_SamplingRate1,                           "Sampling rate"); Param_Info2(AC3_HD_SamplingRate(HD_SamplingRate1), " Hz");
+        Get_S1 ( 4, HD_SamplingRate2,                           "Sampling rate"); Param_Info2(AC3_HD_SamplingRate(HD_SamplingRate2), " Hz");
+        Skip_S1(11,                                             "Unknown");
+        Get_S1 ( 5, HD_Channels1,                               "Channels"); Param_Info1(AC3_MLP_Channels[HD_Channels1]);
+        BS_End();
+        HD_Channels2=HD_Channels1;
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -4542,6 +4620,29 @@ void File_Ac3::dec3()
 
     MustParse_dec3=false;
     dxc3_Parsed=true;
+}
+
+//---------------------------------------------------------------------------
+void File_Ac3::dmlp()
+{
+    //Parsing
+    HD_StreamType=0xBA;
+    HD_format_info();
+    BS_Begin();
+    Get_S2 (15, HD_BitRate_Max,                                 "peak_data_rate"); Param_Info2((HD_BitRate_Max*(AC3_HD_SamplingRate(HD_SamplingRate2)?AC3_HD_SamplingRate(HD_SamplingRate2):AC3_HD_SamplingRate(HD_SamplingRate1))+8)>>4, " bps");
+    Skip_S8(33,                                                 "reserved");
+    BS_End();
+    if (Element_Offset<Element_Size)
+        Skip_XX(Element_Size-Element_Offset,                    "unknown");
+
+    FILLING_BEGIN()
+        //Configure
+        MustParse_dmlp=false;
+        MustSynchronize=true;
+        Frame_Count_Valid=1;
+    FILLING_ELSE()
+        Reject();
+    FILLING_END()
 }
 
 //---------------------------------------------------------------------------

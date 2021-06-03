@@ -28,6 +28,7 @@ public :
     int64u Frame_Count_Valid;
     bool   MustParse_dac3;
     bool   MustParse_dec3;
+    bool   MustParse_dmlp;
     bool   CalculateDelay;
 
     //Constructor/Destructor
@@ -53,6 +54,7 @@ private :
     #endif //MEDIAINFO_DEMUX
 
     //Buffer - Global
+    void Read_Buffer_OutOfBand();
     void Read_Buffer_Continue ();
     void Read_Buffer_Unsynched();
     #if MEDIAINFO_SEEK
@@ -67,6 +69,7 @@ private :
     void Core();
     void Core_Frame();
     void HD();
+    void HD_format_info();
     void emdf();
     void emdf_sync();
     void emdf_container();
@@ -84,6 +87,7 @@ private :
     void TimeStamp();
     void dac3();
     void dec3();
+    void dmlp();
     bool FrameSynchPoint_Test();
     bool CRC_Compute(size_t Size);
     size_t Core_Size_Get();
@@ -152,6 +156,8 @@ private :
     int8u  acmod_Max[8][9];
     int8u  dsurmod_Max[8][9];
     int8u  numblkscod;
+    int8u  dsurexmod;
+    int8u  dheadphonmod;
     int8u  HD_StreamType;
     int8u  HD_SubStreams_Count;
     int8u  HD_SamplingRate1;
