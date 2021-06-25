@@ -17,7 +17,7 @@ INCLUDEPATH += \
         ../../../ZenLib/Source
 
 # Note: UNICODE is a must
-QMAKE_CXXFLAGS +=  -D_UNICODE -DMEDIAINFO_LIBMMS_NO -DMEDIAINFO_LIBCURL_NO
+QMAKE_CXXFLAGS +=  -D_UNICODE -DMEDIAINFO_LIBMMS_NO -DMEDIAINFO_LIBCURL_NO -DMEDIAINFO_GRAPHVIZ_NO
 
 # surpressing way too many warnings here, with a heavy sigh
 # these should be looked at one group at a time
@@ -96,6 +96,8 @@ HEADERS += \
         ../../Source/MediaInfo/Duplicate/File__Duplicate_MpegTs.h \
         ../../Source/MediaInfo/Export/Export_EbuCore.h \
         ../../Source/MediaInfo/Export/Export_Niso.h \
+        ../../Source/MediaInfo/Export/Export_Graph.h \
+        ../../Source/MediaInfo/Export/Export_Graph_gvc_Include.h \
         ../../Source/MediaInfo/Export/Export_Fims.h \
         ../../Source/MediaInfo/Export/Export_Mpeg7.h \
         ../../Source/MediaInfo/Export/Export_PBCore.h \
@@ -313,6 +315,7 @@ SOURCES += \
         ../../Source/MediaInfo/Duplicate/File__Duplicate_MpegTs.cpp \
         ../../Source/MediaInfo/Export/Export_EbuCore.cpp \
         ../../Source/MediaInfo/Export/Export_Niso.cpp \
+        ../../Source/MediaInfo/Export/Export_Graph.cpp \
         ../../Source/MediaInfo/Export/Export_Fims.cpp \
         ../../Source/MediaInfo/Export/Export_Mpeg7.cpp \
         ../../Source/MediaInfo/Export/Export_PBCore.cpp \

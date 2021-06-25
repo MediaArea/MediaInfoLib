@@ -95,6 +95,9 @@
     #if !defined (MEDIAINFO_DIRECTORY_NO) && !defined (MEDIAINFO_DIRECTORY_YES)
         #define MEDIAINFO_DIRECTORY_NO
     #endif
+    #if !defined (MEDIAINFO_GRAPHVIZ_NO) && !defined (MEDIAINFO_GRAPHVIZ_YES)
+        #define MEDIAINFO_GRAPHVIZ_NO
+    #endif
     #if !defined (MEDIAINFO_LIBCURL_NO) && !defined (MEDIAINFO_LIBCURL_YES)
         #define MEDIAINFO_LIBCURL_NO
     #endif
@@ -421,6 +424,12 @@
 #endif
 #if !defined(MEDIAINFO_EXPORT_NO) && !defined(MEDIAINFO_NISO_NO) && !defined(MEDIAINFO_NISO_YES)
     #define MEDIAINFO_NISO_YES
+#endif
+#if !defined(MEDIAINFO_EXPORT_NO) && !defined(MEDIAINFO_GRAPH_NO) && !defined(MEDIAINFO_GRAPH_YES)
+    #define MEDIAINFO_GRAPH_YES
+    #if !defined (MEDIAINFO_GRAPHVIZ_NO) && !defined (MEDIAINFO_GRAPHVIZ_YES)
+        #define MEDIAINFO_GRAPHVIZ_YES
+    #endif
 #endif
 
 //---------------------------------------------------------------------------
