@@ -195,6 +195,8 @@ FrameRate_Original;; fps;N YFY;;;Original (in the raw stream) frames per second
 FrameRate_Original/String;;;Y NT;;;Original (in the raw stream) frames per second (with measurement)
 FrameRate_Original_Num;;;N NFN;;;Frames per second, numerator
 FrameRate_Original_Den;;;N NFN;;;Frames per second, denominator
+FrameRate_Real;; fps;N YFY;;;Real (capture) frames per second
+FrameRate_Real/String;;;Y NT;;;Real (capture) frames per second (with measurement)
 FrameCount;;;N NIY;;;Number of frames
 Source_FrameCount;;;N NI;;;Source Number of frames
 Standard;;;Y NTY;;;NTSC or PAL
