@@ -4729,6 +4729,8 @@ void MediaInfo_Config_Video (ZtringListList &Info)
     "FrameRate_Original/String;;;Y NT;;;Original (in the raw stream) frames per second (with measurement)\n"
     "FrameRate_Original_Num;;;N NFN;;;Frames per second, numerator\n"
     "FrameRate_Original_Den;;;N NFN;;;Frames per second, denominator\n"
+    "FrameRate_Real;; fps;N YFY;;;Real (capture) frames per second\n"
+    "FrameRate_Real/String;;;Y NT;;;Real (capture) frames per second (with measurement)\n"
     "FrameCount;;;N NIY;;;Number of frames\n"
     "Source_FrameCount;;;N NI;;;Source Number of frames\n"
     "Standard;;;Y NTY;;;NTSC or PAL\n"
