@@ -94,6 +94,7 @@
 #if MEDIAINFO_EVENTS
     #include "MediaInfo/MediaInfo_Events.h"
 #endif //MEDIAINFO_EVENTS
+#include "MediaInfo/File__Analyze_Streams.h" //declaration of Encoded_Library_Tag
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include <cstring>
 #include <cmath>
@@ -108,6 +109,7 @@
 namespace MediaInfoLib
 {
 
+Ztring Encoded_Library_Tag;
 //***************************************************************************
 // Constants
 //***************************************************************************
@@ -1019,6 +1021,8 @@ void File_Mk::Streams_Finish()
                     }
                     if ((Tag->first!=__T("Language") || Retrieve(StreamKind_Last, StreamPos_Last, "Language").empty())) // Prioritize Tracks block over tags
                         Fill(StreamKind_Last, StreamPos_Last, Tag->first.To_UTF8().c_str(), Tag->second);
+                    if (Tag->first==__T("Encoded_Library") && StreamKind_Last==Stream_Video && Encoded_Library_Tag.empty())
+                        Encoded_Library_Tag = Tag->second; //save video Encoder tag value in a shared variable (once)
                 }
             }
         }
