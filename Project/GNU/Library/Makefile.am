@@ -276,6 +276,7 @@ endif
 
 if COMPILE_TINYXML2
 lib@MediaInfoLib_LibName@_la_SOURCES += \
+                       ../../../Source/ThirdParty/tfsxml/tfsxml.c
                        ../../../Source/ThirdParty/tinyxml2/tinyxml2.cpp
 endif
 

@@ -33,6 +33,9 @@
 #if defined(MEDIAINFO_AAF_YES)
     #include "MediaInfo/Multiple/File_Aaf.h"
 #endif
+#if defined(MEDIAINFO_ADM_YES)
+    #include "MediaInfo/Multiple/File_Adm.h"
+#endif
 #if defined(MEDIAINFO_BDMV_YES)
     #include "MediaInfo/Multiple/File_Bdmv.h"
 #endif
@@ -426,6 +429,9 @@ bool MediaInfo_Internal::SelectFromExtension (const String &Parser)
     #if defined(MEDIAINFO_AAF_YES)
         else if (Parser==__T("Aaf"))        Info=new File_Aaf();
     #endif
+    #if defined(MEDIAINFO_ADM_YES)
+        else if (Parser==__T("Adm"))        Info=new File_Adm();
+    #endif
     #if defined(MEDIAINFO_BDAV_YES)
         else if (Parser==__T("Bdav"))       {Info=new File_MpegTs(); ((File_MpegTs*)Info)->BDAV_Size=4;}
     #endif
@@ -797,6 +803,9 @@ int MediaInfo_Internal::ListFormats(const String &File_Name)
     // Multiple
     #if defined(MEDIAINFO_AAF_YES)
         delete Info; Info=new File_Aaf();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
+    #endif
+    #if defined(MEDIAINFO_ADM_YES)
+        delete Info; Info=new File_Adm();               if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     #endif
     #if defined(MEDIAINFO_BDAV_YES)
         delete Info; Info=new File_MpegTs(); ((File_MpegTs*)Info)->BDAV_Size=4; if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
