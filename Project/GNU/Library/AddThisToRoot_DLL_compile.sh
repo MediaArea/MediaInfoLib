@@ -103,7 +103,7 @@ if test -e MediaInfoLib/Project/GNU/Library/configure; then
     if [ "$OS" = "emscripten" ]; then
         emconfigure ./configure --host=le32-unknown-nacl --enable-static --disable-shared --disable-dll $* CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS $MediaInfoLib_CXXFLAGS"
     else
-        ./configure --enable-staticlibs --enable-shared --disable-static --with-libcurl=runtime $MediaInfoLib_Options $*
+        ./configure --enable-staticlibs --enable-shared --disable-static --with-libcurl=runtime --with-graphviz=runtime $MediaInfoLib_Options $*
     fi
     if test -e Makefile; then
         make clean

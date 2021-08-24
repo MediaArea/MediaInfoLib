@@ -79,10 +79,10 @@
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
         <PackageImports>vcldbx;frx16;TeeDB;Rave100VCL;vclib;Tee;inetdbbde;DBXOdbcDriver;DBXSybaseASEDriver;ibxpress;vclimg;frxDB16;intrawebdb_120_160;fs16;TeeUI;FMXTee;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;Intraweb_120_160;DBXDb2Driver;bcbsmp;websnap;vclribbon;frxe16;VclSmp;fsDB16;vcl;DataSnapConnectors;CloudService;DBXMSSQLDriver;FmxTeeUI;dsnapcon;vclx;webdsnap;bdertl;adortl;bcbie;$(PackageImports)</PackageImports>
-        <Defines>MEDIAINFO_LIBCURL_NO;MEDIAINFO_AES_NO;MEDIAINFO_ALL_NO;$(Defines)</Defines>
+        <Defines>MEDIAINFO_LIBCURL_NO;MEDIAINFO_GRAPHVIZ_NO;MEDIAINFO_AES_NO;MEDIAINFO_ALL_NO;$(Defines)</Defines>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
-        <Defines>MEDIAINFO_LIBCURL_NO;MEDIAINFO_AES_NO;MEDIAINFO_ALL_NO;$(Defines)</Defines>
+        <Defines>MEDIAINFO_LIBCURL_NO;MEDIAINFO_GRAPHVIZ_NO;MEDIAINFO_AES_NO;MEDIAINFO_ALL_NO;$(Defines)</Defines>
         <PackageImports>vcldbx;frx16;TeeDB;Rave100VCL;vclib;Tee;inetdbbde;DBXOdbcDriver;DBXSybaseASEDriver;ibxpress;vclimg;frxDB16;intrawebdb_120_160;fs16;TeeUI;FMXTee;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;Intraweb_120_160;DBXDb2Driver;bcbsmp;websnap;vclribbon;frxe16;VclSmp;fsDB16;vcl;DataSnapConnectors;CloudService;DBXMSSQLDriver;FmxTeeUI;dsnapcon;vclx;webdsnap;bdertl;adortl;bcbie;$(PackageImports)</PackageImports>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -116,7 +116,7 @@
         <Defines>NDEBUG;$(Defines)</Defines>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-        <Defines>NDEBUG;MEDIAINFO_LIBCURL_NO;MEDIAINFO_AES_NO;MEDIAINFO_ALL_NO;$(Defines)</Defines>
+        <Defines>NDEBUG;MEDIAINFO_LIBCURL_NO;MEDIAINFO_GRAPHVIZ_NO;MEDIAINFO_AES_NO;MEDIAINFO_ALL_NO;$(Defines)</Defines>
     </PropertyGroup>
     <ItemGroup>
         <CppCompile Include="..\..\..\Source\MediaInfo\Archive\File_7z.cpp">
@@ -309,6 +309,10 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Niso.cpp">
             <DependentOn>..\..\..\Source\MediaInfo\Export\Export_Niso.h</DependentOn>
             <BuildOrder>213</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Graph.cpp">
+            <DependentOn>..\..\..\Source\MediaInfo\Export\Export_Graph.h</DependentOn>
+            <BuildOrder>226</BuildOrder>
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Fims.cpp">
             <DependentOn>..\..\..\Source\MediaInfo\Export\Export_Fims.h</DependentOn>

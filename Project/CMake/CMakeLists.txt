@@ -207,6 +207,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Duplicate/File__Duplicate_MpegTs.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_EbuCore.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_Niso.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_Graph.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_Fims.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_Mpeg7.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_PBCore.cpp
@@ -367,7 +368,7 @@ if(BUILD_ZLIB)
 endif()
 
 # disable some features. Maybe it should be enabled.
-target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBMMS_NO)
+target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBMMS_NO PRIVATE MEDIAINFO_GRAPHVIZ_NO)
 if(NOT CURL_FOUND)
   target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBCURL_NO)
 else()
