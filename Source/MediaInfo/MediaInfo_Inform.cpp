@@ -62,13 +62,10 @@ namespace MediaInfoLib
 {
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_XML_YES)
+#if defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
 Ztring Xml_Name_Escape_0_7_78 (const Ztring &Name)
 {
     Ztring ToReturn(Name);
-
-    if (ToReturn.operator()(0)>='0' && ToReturn.operator()(0)<='9')
-        ToReturn.insert(0, 1, __T('_'));
     ToReturn.FindAndReplace(__T(" "), __T("_"), 0, Ztring_Recursive);
     ToReturn.FindAndReplace(__T("/"), __T("_"), 0, Ztring_Recursive);
     ToReturn.FindAndReplace(__T("("), Ztring(), 0, Ztring_Recursive);
@@ -89,12 +86,16 @@ Ztring Xml_Name_Escape_0_7_78 (const Ztring &Name)
         else
             ToReturn_Pos++;
     }
+
+    if (ToReturn.operator()(0)>='0' && ToReturn.operator()(0)<='9')
+        ToReturn.insert(0, 1, __T('_'));
+
     if (ToReturn.empty())
         ToReturn="Unknown";
 
     return ToReturn;
 }
-#endif //defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_XML_YES)
+#endif //defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
 
 //---------------------------------------------------------------------------
 extern MediaInfo_Config Config;
