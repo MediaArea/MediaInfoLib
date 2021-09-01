@@ -45,6 +45,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Audio/File_Aac_Others.cpp \
                        ../../../Source/MediaInfo/Audio/File_Ac3.cpp \
                        ../../../Source/MediaInfo/Audio/File_Ac4.cpp \
+                       ../../../Source/MediaInfo/Audio/File_Adm.cpp \
                        ../../../Source/MediaInfo/Audio/File_Adpcm.cpp \
                        ../../../Source/MediaInfo/Audio/File_Als.cpp \
                        ../../../Source/MediaInfo/Audio/File_Amr.cpp \
@@ -277,6 +278,7 @@ endif
 
 if COMPILE_TINYXML2
 lib@MediaInfoLib_LibName@_la_SOURCES += \
+                       ../../../Source/ThirdParty/tfsxml/tfsxml.c \
                        ../../../Source/ThirdParty/tinyxml2/tinyxml2.cpp
 endif
 

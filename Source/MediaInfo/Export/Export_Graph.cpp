@@ -310,6 +310,81 @@ Ztring Export_Graph::Ac4_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t 
 #endif //defined(MEDIAINFO_AC4_YES)
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_ADM_YES)
+Ztring Export_Graph::Adm_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t Level)
+{
+    Ztring ToReturn;
+    if (MI.Get(Stream_Audio, StreamPos, Audio_Format)!=__T("ADM"))
+        return ToReturn;
+
+    vector<relation> Relations;
+    Ztring Stream=MI.Get(Stream_Audio, StreamPos, __T("StreamKind"))+MI.Get(Stream_Audio, StreamPos, __T("StreamKindPos"));
+
+    bool Empty=true;
+    Ztring Temp;
+
+    Temp+=NewLine(Level++)+__T("subgraph cluster_")+Ztring().From_Number(StreamPos)+__T(" {");
+    Temp+=NewLine(Level)+__T("label=<<b>")+MI.Get(Stream_Audio, StreamPos, __T("StreamKind/String"));
+    if (!MI.Get(Stream_Audio, StreamPos, __T("StreamKindPos")).empty())
+        Temp+=__T(" ")+MediaInfoLib::Config.Language_Get(__T("  Config_Text_NumberTag"))+MI.Get(Stream_Audio, StreamPos, __T("StreamKindPos"));
+    Temp+=__T(" (")+MI.Get(Stream_Audio, StreamPos, Audio_Format)+__T(")</b>>");
+
+    OBJECT_START(Programme, "NumberOfProgrammes", "#000000", "#c5cae9", "#ffffff", "#303f9f")
+    OBJECT_LINK_TO(Content, "#c5cae9")
+    OBJECT_END()
+
+    OBJECT_START(Content, "NumberOfContents", "#000000", "#bbdefb", "#ffffff", "#1976d2")
+    OBJECT_LINK_TO(Object, "#bbdefb")
+    OBJECT_END()
+
+    OBJECT_START(Object, "NumberOfObjects", "#000000", "#b3e5fc", "#ffffff", "#0288d1")
+    OBJECT_LINK_TO(PackFormat, "#b3e5fc")
+    if (MediaInfoLib::Config.Graph_Adm_ShowTrackUIDs_Get())
+        OBJECT_LINK_TO(TrackUID, "#b3e5fc")
+    OBJECT_END()
+
+    if (MediaInfoLib::Config.Graph_Adm_ShowTrackUIDs_Get())
+    {
+        OBJECT_START(TrackUID, "NumberOfTrackUIDs", "#000000", "#b2ebf2", "#ffffff", "#0097a7")
+        OBJECT_LINK_TO(PackFormat, "#b2ebf2")
+        OBJECT_LINK_TO(TrackFormat, "#b2ebf2")
+        OBJECT_END()
+
+        OBJECT_START(TrackFormat, "NumberOfTrackFormats", "#000000", "#b2dfdb", "#ffffff", "#00796b")
+        OBJECT_LINK_TO(StreamFormat,  "#b2dfdb")
+        OBJECT_END()
+
+        OBJECT_START(StreamFormat, "NumberOfStreamFormats", "#000000", "#c8e6c9", "#ffffff", "#388e3c")
+        OBJECT_LINK_TO(ChannelFormat, "#c8e6c9")
+        OBJECT_LINK_TO(PackFormat, "#c8e6c9")
+        OBJECT_LINK_TO(TrackFormat, "#c8e6c9")
+        OBJECT_END()
+    }
+
+    OBJECT_START(PackFormat, "NumberOfPackFormats", "#000000", "#dcedc8", "#ffffff", "#689f38")
+    if (MediaInfoLib::Config.Graph_Adm_ShowChannelFormats_Get())
+        OBJECT_LINK_TO(ChannelFormat, "#dcedc8")
+    OBJECT_END()
+
+    if (MediaInfoLib::Config.Graph_Adm_ShowChannelFormats_Get())
+    {
+        OBJECT_START(ChannelFormat, "NumberOfChannelFormats", "#000000", "#f0f4c3", "#ffffff", "#afb42b")
+        OBJECT_END()
+    }
+
+    for (size_t Pos=0; Pos<Relations.size(); Pos++)
+        Temp+=NewLine(Level)+Relations[Pos].Src+__T("--")+Relations[Pos].Dst+__T(" ")+Relations[Pos].Opts;
+
+    Temp+=NewLine(--Level)+__T("}");
+
+    if (!Empty)
+        ToReturn+=Temp;
+
+    return ToReturn;
+}
+#endif //defined(MEDIAINFO_ADM_YES)
+
+//---------------------------------------------------------------------------
 #if defined(MEDIAINFO_MPEGH3DA_YES)
 Ztring Export_Graph::Mpegh3da_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t Level)
 {
@@ -376,6 +451,10 @@ Ztring Export_Graph::Transform(MediaInfo_Internal &MI, Export_Graph::graph Graph
             if (Graph==Graph_All || Graph==Graph_Ac4)
                 ToReturn+=Ac4_Graph(MI, StreamPos, Level);
         #endif //defined(MEDIAINFO_AC4_YES)
+        #if defined(MEDIAINFO_ADM_YES)
+            if (Graph==Graph_All || Graph==Graph_Adm)
+                ToReturn+=Adm_Graph(MI, StreamPos, Level);
+        #endif //defined(MEDIAINFO_ADM_YES)
         #if defined(MEDIAINFO_MPEGH3DA_YES)
             if (Graph==Graph_All || Graph==Graph_Mpegh3da)
                 ToReturn+=Mpegh3da_Graph(MI, StreamPos, Level);

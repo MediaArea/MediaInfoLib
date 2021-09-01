@@ -93,6 +93,9 @@
     <Filter Include="ThirdParty\sha2">
       <UniqueIdentifier>{2b174bb5-6f3b-48d7-939c-8a87bc394aa2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ThirdParty\tfsxml">
+      <UniqueIdentifier>{a1da1bf2-e4bc-454d-acbf-8dd53d541637}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\MediaInfo\File__Analyze.cpp">
@@ -806,6 +809,12 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_CineForm.cpp">
       <Filter>Source Files\Video</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.c">
+      <Filter>ThirdParty\tfsxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Adm.cpp">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1512,6 +1521,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_CineForm.h">
       <Filter>Header Files\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.h">
+      <Filter>ThirdParty\tfsxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Adm.h">
+      <Filter>Header Files\Audio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
