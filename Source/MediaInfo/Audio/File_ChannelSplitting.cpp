@@ -42,6 +42,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 File_ChannelSplitting::File_ChannelSplitting()
+:File_Pcm_Base()
 {
     //Configuration
     #if MEDIAINFO_EVENTS
@@ -59,7 +60,6 @@ File_ChannelSplitting::File_ChannelSplitting()
     //In
     BitDepth=0;
     SamplingRate=0;
-    Endianness=0;
     Aligned=false;
     Common=NULL;
     Channel_Total=1;

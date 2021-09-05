@@ -966,6 +966,8 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "Menu_Hint;More possibilities\n"
     "Menu_No;No menu\n"
     "MenuCount;Count of menu streams\n"
+    "Metadata_Format;Metadata format\n"
+    "Metadata_MuxingMode;Metadata muxing mode\n"
     "MenuID;Menu ID\n"
     "MixType;Mix type\n"
     "mn; min\n"
