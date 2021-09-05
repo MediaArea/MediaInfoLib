@@ -5431,7 +5431,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
                 #endif //MEDIAINFO_DEMUX
                 Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
             }
-            if (Channels>2 && SampleSize<=32 && SampleRate==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
+            if (Channels>=2 && SampleSize<=32 && SampleRate==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
             {
                 File_ChannelSplitting* Parser=new File_ChannelSplitting;
                 Parser->BitDepth=(int8u)SampleSize;
