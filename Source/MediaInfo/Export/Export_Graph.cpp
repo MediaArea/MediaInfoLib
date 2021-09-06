@@ -314,7 +314,7 @@ Ztring Export_Graph::Ac4_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t 
 Ztring Export_Graph::Adm_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t Level)
 {
     Ztring ToReturn;
-    if (MI.Get(Stream_Audio, StreamPos, Audio_Format)!=__T("ADM"))
+    if (MI.Get(Stream_Audio, StreamPos, __T("Metadata_Format")).find(__T("ADM, "), 0)!=0)
         return ToReturn;
 
     vector<relation> Relations;
