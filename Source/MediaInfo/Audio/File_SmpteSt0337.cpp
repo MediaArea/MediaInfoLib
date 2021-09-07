@@ -1357,8 +1357,8 @@ void File_SmpteSt0337::Data_Parse()
                         size_t UncompressedData_NewMaxSize=strm.total_out*4;
                         int8u* UncompressedData_New=new int8u[UncompressedData_NewMaxSize];
                         memcpy(UncompressedData_New, strm.next_out-strm.total_out, strm.total_out);
-                        delete[] UncompressedData; UncompressedData=UncompressedData_New;
-                        strm.next_out=UncompressedData+strm.total_out;
+                        delete[] strm.next_out; strm.next_out=UncompressedData_New;
+                        strm.next_out=strm.next_out+strm.total_out;
                         strm.avail_out=UncompressedData_NewMaxSize-strm.total_out;
                     }
                     UncompressedData=strm.next_out-strm.total_out;
