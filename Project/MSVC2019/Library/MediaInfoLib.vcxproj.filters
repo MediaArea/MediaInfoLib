@@ -809,7 +809,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_CineForm.cpp">
       <Filter>Source Files\Video</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Adm.cpp">
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Adm.cpp">
       <Filter>Source Files\Audio</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.c">
@@ -1522,7 +1522,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_CineForm.h">
       <Filter>Header Files\Video</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Adm.h">
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Adm.h">
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.h">

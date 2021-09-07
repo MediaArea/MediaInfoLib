@@ -5413,9 +5413,6 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
 
                 Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
             }
-            #endif // MEDIAINFO_SMPTEST0337_YES
-            //Specific cases
-            #if defined(MEDIAINFO_SMPTEST0337_YES)
             if (Channels==2 && SampleSize<=32 && SampleRate==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
             {
                 File_SmpteSt0337* Parser=new File_SmpteSt0337;
@@ -5431,7 +5428,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
                 #endif //MEDIAINFO_DEMUX
                 Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
             }
-            if (Channels>2 && SampleSize<=32 && SampleRate==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
+            if (Channels>=2 && SampleSize<=32 && SampleRate==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
             {
                 File_ChannelSplitting* Parser=new File_ChannelSplitting;
                 Parser->BitDepth=(int8u)SampleSize;
@@ -7332,15 +7329,10 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_wave_enda()
         #if defined(MEDIAINFO_PCM_YES)
             if (Streams[moov_trak_tkhd_TrackID].IsPcm)
             {
-                if (Streams[moov_trak_tkhd_TrackID].Parsers.size()==1)
-                    ((File_Pcm*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Endianness=Endianness?'L':'B';
-                if (Streams[moov_trak_tkhd_TrackID].Parsers.size()==2)
-                {
-#if defined(MEDIAINFO_SMPTEST0337_YES)
-                    ((File_ChannelGrouping*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Endianness=Endianness?'L':'B';
-#endif // MEDIAINFO_SMPTEST0337_YES
-                    ((File_Pcm*)Streams[moov_trak_tkhd_TrackID].Parsers[1])->Endianness=Endianness?'L':'B';
-                }
+                char EndiannessC=Endianness?'L':'B';
+                std::vector<File__Analyze*>& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
+                for (size_t i=0; i< Parsers.size(); i++)
+                    ((File_Pcm_Base*)Parsers[i])->Endianness=EndiannessC;
             }
         #endif //defined(MEDIAINFO_PCM_YES)
     FILLING_END();

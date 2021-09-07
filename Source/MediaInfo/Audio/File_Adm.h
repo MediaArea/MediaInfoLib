@@ -31,6 +31,9 @@ class file_adm_private;
 class File_Adm : public File__Analyze
 {
 public :
+    //In
+    const char* MuxingMode;
+
     //Constructor/Destructor
     File_Adm();
     ~File_Adm();

@@ -27,7 +27,19 @@ namespace MediaInfoLib
 // Class File_Pcm
 //***************************************************************************
 
-class File_Pcm : public File__Analyze
+class File_Pcm_Base : public File__Analyze
+{
+public:
+    int8u   Endianness;
+
+    //Constructor/destructor
+    File_Pcm_Base() : File__Analyze()
+    {
+        Endianness='\0';
+    }
+};
+
+class File_Pcm : public File_Pcm_Base
 {
 public :
     //In
@@ -37,7 +49,6 @@ public :
     int8u           BitDepth;
     int8u           BitDepth_Significant;
     int8u           Channels;
-    int8u           Endianness;
     int8u           Sign;
 
     //Buffer - Global

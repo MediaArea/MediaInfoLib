@@ -812,7 +812,7 @@
     <ClCompile Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.c">
       <Filter>ThirdParty\tfsxml</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Adm.cpp">
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Adm.cpp">
       <Filter>Source Files\Audio</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1525,7 +1525,7 @@
     <ClInclude Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.h">
       <Filter>ThirdParty\tfsxml</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Adm.h">
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Adm.h">
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
   </ItemGroup>

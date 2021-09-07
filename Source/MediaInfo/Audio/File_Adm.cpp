@@ -798,6 +798,8 @@ File_Adm::File_Adm()
     Buffer_MaximumSize = 256 * 1024 * 1024;
 
     File_Adm_Private = new file_adm_private();
+
+    MuxingMode=NULL;
 }
 
 //---------------------------------------------------------------------------
@@ -863,6 +865,8 @@ bool File_Adm::FileHeader_Begin()
         Fill(Stream_Audio, StreamPos_Last, Audio_Format, "ADM");
 
     Fill(Stream_Audio, StreamPos_Last, "Metadata_Format", "ADM, Version " + Ztring::ToZtring(File_Adm_Private->Version).To_UTF8());
+    if (MuxingMode)
+        Fill(Stream_Audio, StreamPos_Last, "Metadata_MuxingMode", MuxingMode);
     if (File_Adm_Private->Items[item_audioProgramme].Items.size() == 1 && File_Adm_Private->Items[item_audioProgramme].Items[0].Strings[audioProgramme_audioProgrammeName] == "Atmos_Master") {
         Fill(Stream_Audio, 0, "AdmProfile", "Dolby Atmos Master");
     }
