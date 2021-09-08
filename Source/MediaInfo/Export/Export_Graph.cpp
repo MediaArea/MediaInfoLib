@@ -594,16 +594,22 @@ Ztring Export_Graph::Transform(MediaInfo_Internal &MI, Export_Graph::graph Graph
     bool ExpandSub_Old=MI.Config.File_ExpandSubs_Get();
     MI.Config.File_ExpandSubs_Set(false);
 
+    Ztring FileName=XML_Encode(MI.Get(Stream_General, 0, General_FileNameExtension));
+    if (FileName.empty())
+        FileName=__T("&nbsp;");
+
     ToReturn+=__T("graph {");
     ToReturn+=NewLine(Level)+__T("color=\"#1565c0\"");
     ToReturn+=NewLine(Level)+__T("fontcolor=\"#1565c0\"");
     ToReturn+=NewLine(Level)+__T("labelloc=t");
-    ToReturn+=NewLine(Level)+__T("label=<<b>")+XML_Encode(MI.Get(Stream_General, 0, General_FileNameExtension))+__T("</b>>");
+    ToReturn+=NewLine(Level)+__T("label=<<b>")+FileName+__T("</b>>");
+
+    Ztring Temp;
     for (size_t StreamPos=0; StreamPos<(size_t)MI.Count_Get(Stream_Audio); StreamPos++)
     {
         #if defined(MEDIAINFO_AC4_YES)
             if (Graph==Graph_All || Graph==Graph_Ac4)
-                ToReturn+=Ac4_Graph(MI, StreamPos, Level);
+                Temp+=Ac4_Graph(MI, StreamPos, Level);
         #endif //defined(MEDIAINFO_AC4_YES)
         #if defined(MEDIAINFO_DOLBYE_YES)
             if (Graph==Graph_All || Graph==Graph_Ed2)
@@ -611,13 +617,17 @@ Ztring Export_Graph::Transform(MediaInfo_Internal &MI, Export_Graph::graph Graph
         #endif //defined(MEDIAINFO_DOLBYE_YES)
         #if defined(MEDIAINFO_ADM_YES)
             if (Graph==Graph_All || Graph==Graph_Adm)
-                ToReturn+=Adm_Graph(MI, StreamPos, Level);
+                Temp+=Adm_Graph(MI, StreamPos, Level);
         #endif //defined(MEDIAINFO_ADM_YES)
         #if defined(MEDIAINFO_MPEGH3DA_YES)
             if (Graph==Graph_All || Graph==Graph_Mpegh3da)
-                ToReturn+=Mpegh3da_Graph(MI, StreamPos, Level);
+                Temp+=Mpegh3da_Graph(MI, StreamPos, Level);
         #endif //defined(MEDIAINFO_MPEGH3DA_YES)
     }
+    if (!Temp.empty())
+        ToReturn+=Temp;
+    else
+        ToReturn+=NewLine(Level)+__T("message [shape=plaintext, fontcolor=\"#1565c0\", label=<<b>Graphs are currently available for AC-4, MPEG-H, Dolby ED2 and ADM formats.</b>>]");
     ToReturn+=__T("\n}");
 
 #ifdef MEDIAINFO_GRAPHVIZ_YES
