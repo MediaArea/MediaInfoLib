@@ -40,6 +40,7 @@ public :
     {
         Graph_All,
         Graph_Ac4,
+        Graph_Ed2,
         Graph_Adm,
         Graph_Mpegh3da,
         Graph_Max
@@ -64,6 +65,9 @@ private:
     #if defined(MEDIAINFO_AC4_YES)
     Ztring Ac4_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t Level);
     #endif //defined(MEDIAINFO_AC4_YES)
+    #if defined(MEDIAINFO_DOLBYE_YES)
+    Ztring Ed2_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t Level);
+    #endif //defined(MEDIAINFO_DOLBYE_YES)
     #if defined(MEDIAINFO_ADM_YES)
     Ztring Adm_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t Level);
     #endif //defined(MEDIAINFO_ADM_YES)
