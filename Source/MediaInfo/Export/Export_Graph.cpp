@@ -53,7 +53,7 @@ Ztring NewLine(size_t Level)
 }
 
 //---------------------------------------------------------------------------
-Ztring Element2Html(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, Ztring Element, Ztring FG, Ztring BG, Ztring HFG, Ztring HBG)
+Ztring Element2Html(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPos, Ztring Element, Ztring Format, Ztring FG, Ztring BG, Ztring HFG, Ztring HBG)
 {
     Ztring ToReturn;
     ToReturn+=__T("<table border='0' cellborder='0' cellspacing='0'>");
@@ -85,11 +85,12 @@ Ztring Element2Html(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPo
             if (Text.empty() ||
                 Name.find(Element+__T(" LinkedTo_"))==0 ||
                 Name.find(Element+__T(" Title"))==0 ||
+                (Format==__T("ED2") && Name.find(Element+__T(" Target"))==0) ||
                 (MI.Get(StreamKind, StreamPos, Pos, Info_Options)[InfoOption_ShowInInform]!=__T('Y') && !MediaInfoLib::Config.Complete_Get()))
                 continue;
 
             ToReturn+=__T("<tr>");
-            ToReturn+=__T("<td align='text' bgcolor='")+BG+__T("'>");
+            ToReturn+=__T("<td align='text' bgcolor='")+BG+__T("' port='")+XML_Encode(Name.SubString(Element+__T(" "), __T("")))+__T("'>");
             ToReturn+=__T("<font color='")+FG+__T("'>")+XML_Encode(MI.Get(StreamKind, StreamPos, Pos, Info_Name_Text))+=__T("</font><br align='left'/>");
             ToReturn+=__T("</td>");
             ToReturn+=__T("<td align='text' bgcolor='")+BG+__T("'>");
@@ -241,7 +242,7 @@ bool Export_Graph::Load()
             Temp+=NewLine(Level++)+Stream+__T("_")+Object+__T(" ["); \
             Temp+=NewLine(Level)+__T("shape=plaintext"); \
             Temp+=NewLine(Level)+__T("label=<"); \
-            Temp+=Element2Html(MI, Stream_Audio, StreamPos, Object, __T(FOREGROUND_COLOR), __T(BACKGROUND_COLOR), __T(TITLE_FOREGROUND_COLOR), __T(TITLE_BACKGROUND_COLOR)); \
+            Temp+=Element2Html(MI, Stream_Audio, StreamPos, Object, Format, __T(FOREGROUND_COLOR), __T(BACKGROUND_COLOR), __T(TITLE_FOREGROUND_COLOR), __T(TITLE_BACKGROUND_COLOR)); \
             Temp+=__T(">");\
             Temp+=NewLine(--Level)+__T("]");
 
@@ -266,6 +267,8 @@ Ztring Export_Graph::Ac4_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t 
     Ztring ToReturn;
     if (MI.Get(Stream_Audio, StreamPos, Audio_Format)!=__T("AC-4"))
         return ToReturn;
+
+    Ztring Format=__T("AC4");
 
     vector<relation> Relations;
     Ztring Stream=MI.Get(Stream_Audio, StreamPos, __T("StreamKind"))+MI.Get(Stream_Audio, StreamPos, __T("StreamKindPos"));
@@ -310,12 +313,161 @@ Ztring Export_Graph::Ac4_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t 
 #endif //defined(MEDIAINFO_AC4_YES)
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_DOLBYE_YES)
+Ztring Export_Graph::Ed2_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t Level)
+{
+    Ztring ToReturn;
+    if (MI.Get(Stream_Audio, StreamPos, Audio_Format)!=__T("Dolby ED2"))
+        return ToReturn;
+
+    Ztring Format=__T("ED2");
+
+    vector<relation> Relations;
+    Ztring Stream=MI.Get(Stream_Audio, StreamPos, __T("StreamKind"))+MI.Get(Stream_Audio, StreamPos, __T("StreamKindPos"));
+
+    bool Empty=true;
+    Ztring Temp;
+
+    Temp+=NewLine(Level++)+__T("subgraph cluster_")+Ztring().From_Number(StreamPos)+__T(" {");
+    Temp+=NewLine(Level)+__T("label=<<b>")+MI.Get(Stream_Audio, StreamPos, __T("StreamKind/String"));
+    if (!MI.Get(Stream_Audio, StreamPos, __T("StreamKindPos")).empty())
+        Temp+=__T(" ")+MediaInfoLib::Config.Language_Get(__T("  Config_Text_NumberTag"))+MI.Get(Stream_Audio, StreamPos, __T("StreamKindPos"));
+    Temp+=__T(" (")+MI.Get(Stream_Audio, StreamPos, Audio_Format)+__T(")</b>>");
+
+    OBJECT_START(Presentation, "NumberOfPresentations", "#000000", "#c5cae9", "#ffffff", "#303f9f")
+    OBJECT_END()
+
+    // Targets
+    {
+        Temp+=NewLine(Level++)+__T("rank=same {");
+        size_t Presentations=MI.Get(Stream_Audio, StreamPos,__T("NumberOfPresentations"), Info_Text).To_int64u();
+        for (size_t PresentationPos=Presentations; PresentationPos; PresentationPos--)
+        {
+            Ztring Object=__T("Presentation")+Ztring().Ztring::ToZtring(PresentationPos-1);
+            size_t Targets=MI.Get(Stream_Audio, StreamPos, Object+__T(" NumberOfTargets"), Info_Text).To_int64u();
+            for (size_t TargetPos=Targets; TargetPos; TargetPos--)
+            {
+                Ztring SubObject=__T("Target")+Ztring().Ztring::ToZtring(TargetPos-1);
+                Temp+=NewLine(Level++)+Stream+__T("_")+Object+__T("_")+SubObject+__T(" [");
+                Temp+=NewLine(Level)+__T("shape=plaintext");
+                Temp+=NewLine(Level)+__T("label=<");
+                Temp+=Element2Html(MI, Stream_Audio, StreamPos, Object + __T(" ") + SubObject, __T("#000000"), Format, __T("#bbdefb"), __T("#ffffff"), __T("#1976d2"));
+                Temp+=__T(">");
+                Temp+=NewLine(--Level)+__T("]");
+
+                Relations.push_back(relation(Stream+__T("_")+Object, Stream+__T("_")+Object+__T("_")+SubObject, __T("[color=\"#c5cae9\"]")));
+
+                ZtringList LinkedBeds;
+                LinkedBeds.Separator_Set(0, __T(" + "));
+                LinkedBeds.Write(MI.Get(Stream_Audio, StreamPos, Object+__T(" ")+SubObject+__T(" LinkedTo_Bed_Pos"), Info_Text));
+                for (size_t BedPos=0; BedPos<LinkedBeds.size(); BedPos++)
+                {
+                    if (LinkedBeds[BedPos].find(__T("-"), 0)==string::npos)
+                        Relations.push_back(relation(Stream+__T("_")+Object+__T("_")+SubObject, Stream+__T("_Bed")+LinkedBeds[BedPos], __T("[color=\"#bbdefb\"]")));
+                    else
+                    {
+                        Ztring Bed=LinkedBeds[BedPos].SubString(__T(""), __T("-"));
+                        Ztring Alt=LinkedBeds[BedPos].SubString(__T("-"), __T(""));
+                        Relations.push_back(relation(Stream+__T("_")+Object+__T("_")+SubObject, Stream+__T("_Bed")+Bed+__T(":Alt")+Alt, __T("[color=\"#bbdefb\"]")));
+                    }
+                }
+
+                ZtringList LinkedObjects;
+                LinkedObjects.Separator_Set(0, __T(" + "));
+                LinkedObjects.Write(MI.Get(Stream_Audio, StreamPos, Object+__T(" ")+SubObject+__T(" LinkedTo_Object_Pos"), Info_Text));
+                for (size_t ObjectPos=0; ObjectPos<LinkedObjects.size(); ObjectPos++)
+                {
+                    if (LinkedObjects[ObjectPos].find(__T("-"), 0)==string::npos)
+                        Relations.push_back(relation(Stream+__T("_")+Object+__T("_")+SubObject, Stream+__T("_Object")+LinkedObjects[ObjectPos], __T("[color=\"#bbdefb\"]")));
+                    else
+                    {
+                        Ztring Obj=LinkedObjects[ObjectPos].SubString(__T(""), __T("-"));
+                        Ztring Alt=LinkedObjects[ObjectPos].SubString(__T("-"), __T(""));
+                        Relations.push_back(relation(Stream+__T("_")+Object+__T("_")+SubObject, Stream+__T("_Object")+Obj+__T(":Alt")+Alt, __T("[color=\"#bbdefb\"]")));
+                    }
+                }
+            }
+        }
+        Temp+=NewLine(--Level)+__T("}");
+    }
+
+
+
+    OBJECT_START(Bed, "NumberOfBeds", "#000000", "#b3e5fc", "#ffffff", "#0288d1")
+    OBJECT_END()
+
+    // Beds Alts
+    {
+        Temp+=NewLine(Level++)+__T("rank=same {");
+        size_t Beds=MI.Get(Stream_Audio, StreamPos,__T("NumberOfBeds"), Info_Text).To_int64u();
+        for (size_t BedPos=Beds; BedPos; BedPos--)
+        {
+            Ztring Object=__T("Bed")+Ztring().Ztring::ToZtring(BedPos-1);
+            size_t Alts=MI.Get(Stream_Audio, StreamPos, Object+__T(" NumberOfAlts"), Info_Text).To_int64u();
+            for (size_t AltPos=Alts; AltPos; AltPos--)
+            {
+                Ztring SubObject=__T("Alt")+Ztring().Ztring::ToZtring(AltPos-1);
+                Temp+=NewLine(Level++)+Stream+__T("_")+Object+__T("_")+SubObject+__T(" [");
+                Temp+=NewLine(Level)+__T("shape=plaintext");
+                Temp+=NewLine(Level)+__T("label=<");
+                Temp+=Element2Html(MI, Stream_Audio, StreamPos, Object + __T(" ") + SubObject, Format, __T("#000000"), __T("#b2ebf2"), __T("#ffffff"), __T("#00796b"));
+                Temp+=__T(">");
+                Temp+=NewLine(--Level)+__T("]");
+
+                Relations.push_back(relation(Stream+__T("_")+Object, Stream+__T("_")+Object+__T("_")+SubObject, __T("[color=\"#b3e5fc\"]")));
+            }
+        }
+        Temp+=NewLine(--Level)+__T("}");
+    }
+
+    OBJECT_START(Object, "NumberOfObjects", "#000000", "#b3e5fc", "#ffffff", "#0288d1")
+    OBJECT_END()
+
+    // Objects Alts
+    {
+        Temp+=NewLine(Level++)+__T("rank=same {");
+        size_t Objects=MI.Get(Stream_Audio, StreamPos,__T("NumberOfObjects"), Info_Text).To_int64u();
+        for (size_t ObjectPos=Objects; ObjectPos; ObjectPos--)
+        {
+            Ztring Object=__T("Object")+Ztring().Ztring::ToZtring(ObjectPos-1);
+            size_t Alts=MI.Get(Stream_Audio, StreamPos, Object+__T(" NumberOfAlts"), Info_Text).To_int64u();
+            for (size_t AltPos=Alts; AltPos; AltPos--)
+            {
+                Ztring SubObject=__T("Alt")+Ztring().Ztring::ToZtring(AltPos-1);
+                Temp+=NewLine(Level++)+Stream+__T("_")+Object+__T("_")+SubObject+__T(" [");
+                Temp+=NewLine(Level)+__T("shape=plaintext");
+                Temp+=NewLine(Level)+__T("label=<");
+                Temp+=Element2Html(MI, Stream_Audio, StreamPos, Object + __T(" ") + SubObject, Format, __T("#000000"), __T("#b2dfdb"), __T("#ffffff"), __T("#0288d1"));
+                Temp+=__T(">");
+                Temp+=NewLine(--Level)+__T("]");
+
+                Relations.push_back(relation(Stream+__T("_")+Object, Stream+__T("_")+Object+__T("_")+SubObject, __T("[color=\"#b2ebf2\"]")));
+            }
+        }
+        Temp+=NewLine(--Level)+__T("}");
+    }
+
+    for (size_t Pos=0; Pos<Relations.size(); Pos++)
+        Temp+=NewLine(Level)+Relations[Pos].Src+__T("--")+Relations[Pos].Dst+__T(" ")+Relations[Pos].Opts;
+
+    Temp+=NewLine(--Level)+__T("}");
+
+    if (!Empty)
+        ToReturn+=Temp;
+
+    return ToReturn;
+}
+#endif //defined(MEDIAINFO_DOLBYE_YES)
+
+//---------------------------------------------------------------------------
 #if defined(MEDIAINFO_ADM_YES)
 Ztring Export_Graph::Adm_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t Level)
 {
     Ztring ToReturn;
     if (MI.Get(Stream_Audio, StreamPos, __T("Metadata_Format")).find(__T("ADM, "), 0)!=0)
         return ToReturn;
+
+    Ztring Format=__T("ADM");
 
     vector<relation> Relations;
     Ztring Stream=MI.Get(Stream_Audio, StreamPos, __T("StreamKind"))+MI.Get(Stream_Audio, StreamPos, __T("StreamKindPos"));
@@ -392,6 +544,8 @@ Ztring Export_Graph::Mpegh3da_Graph(MediaInfo_Internal &MI, size_t StreamPos, si
     if (MI.Get(Stream_Audio, StreamPos, Audio_Format)!=__T("MPEG-H 3D Audio"))
         return ToReturn;
 
+    Ztring Format=__T("MPEG3DA");
+
     vector<relation> Relations;
     Ztring Stream=MI.Get(Stream_Audio, StreamPos, __T("StreamKind"))+MI.Get(Stream_Audio, StreamPos, __T("StreamKindPos"));
 
@@ -440,26 +594,40 @@ Ztring Export_Graph::Transform(MediaInfo_Internal &MI, Export_Graph::graph Graph
     bool ExpandSub_Old=MI.Config.File_ExpandSubs_Get();
     MI.Config.File_ExpandSubs_Set(false);
 
+    Ztring FileName=XML_Encode(MI.Get(Stream_General, 0, General_FileNameExtension));
+    if (FileName.empty())
+        FileName=__T("&nbsp;");
+
     ToReturn+=__T("graph {");
     ToReturn+=NewLine(Level)+__T("color=\"#1565c0\"");
     ToReturn+=NewLine(Level)+__T("fontcolor=\"#1565c0\"");
     ToReturn+=NewLine(Level)+__T("labelloc=t");
-    ToReturn+=NewLine(Level)+__T("label=<<b>")+XML_Encode(MI.Get(Stream_General, 0, General_FileNameExtension))+__T("</b>>");
+    ToReturn+=NewLine(Level)+__T("label=<<b>")+FileName+__T("</b>>");
+
+    Ztring Temp;
     for (size_t StreamPos=0; StreamPos<(size_t)MI.Count_Get(Stream_Audio); StreamPos++)
     {
         #if defined(MEDIAINFO_AC4_YES)
             if (Graph==Graph_All || Graph==Graph_Ac4)
-                ToReturn+=Ac4_Graph(MI, StreamPos, Level);
+                Temp+=Ac4_Graph(MI, StreamPos, Level);
         #endif //defined(MEDIAINFO_AC4_YES)
+        #if defined(MEDIAINFO_DOLBYE_YES)
+            if (Graph==Graph_All || Graph==Graph_Ed2)
+                Temp+=Ed2_Graph(MI, StreamPos, Level);
+        #endif //defined(MEDIAINFO_DOLBYE_YES)
         #if defined(MEDIAINFO_ADM_YES)
             if (Graph==Graph_All || Graph==Graph_Adm)
-                ToReturn+=Adm_Graph(MI, StreamPos, Level);
+                Temp+=Adm_Graph(MI, StreamPos, Level);
         #endif //defined(MEDIAINFO_ADM_YES)
         #if defined(MEDIAINFO_MPEGH3DA_YES)
             if (Graph==Graph_All || Graph==Graph_Mpegh3da)
-                ToReturn+=Mpegh3da_Graph(MI, StreamPos, Level);
+                Temp+=Mpegh3da_Graph(MI, StreamPos, Level);
         #endif //defined(MEDIAINFO_MPEGH3DA_YES)
     }
+    if (!Temp.empty())
+        ToReturn+=Temp;
+    else
+        ToReturn+=NewLine(Level)+__T("message [shape=plaintext, fontcolor=\"#1565c0\", label=<<b>Graphs are currently available for AC-4, MPEG-H, Dolby ED2 and ADM formats.</b>>]");
     ToReturn+=__T("\n}");
 
 #ifdef MEDIAINFO_GRAPHVIZ_YES
