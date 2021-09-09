@@ -104,6 +104,7 @@ private :
     //Temp
     bool AllFilled;
     bool AllFinished;
+    size_t SplittedChannels_c;
     size_t SplittedChannels_i;
 };
 
