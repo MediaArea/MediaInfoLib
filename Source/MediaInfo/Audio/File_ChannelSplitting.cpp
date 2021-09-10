@@ -77,7 +77,7 @@ File_ChannelSplitting::~File_ChannelSplitting()
 //---------------------------------------------------------------------------
 void File_ChannelSplitting::Streams_Fill()
 {
-    bool HasSadm=true;
+    bool HasSadm=false;
     for (size_t i=0; i<Common->SplittedChannels[0].size(); i++)
     {
         std::vector<File__Analyze*>& Parsers=Common->SplittedChannels[0][i]->Parsers;
@@ -287,9 +287,9 @@ void File_ChannelSplitting::Read_Buffer_Continue()
                     SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
                     break;
                 default: ;
-                        // Not supported
-                        Reject();
-                        return;
+                    // Not supported
+                    Reject();
+                    return;
             }
         }
     }
@@ -310,6 +310,7 @@ void File_ChannelSplitting::Read_Buffer_Continue()
     FrameInfo=frame_info();
     AllFilled=true;
     AllFinished=true;
+    SplittedChannels_c=0;
     SplittedChannels_i=0;
     size_t ContentSize=Buffer_Offset;
     Buffer_Offset=0;
@@ -322,10 +323,11 @@ void File_ChannelSplitting::Read_Buffer_Continue()
 
 void File_ChannelSplitting::Read_Buffer_Continue_Parse()
 {
-    for (int c=0; c<2; c++)
-        for (; SplittedChannels_i<Common->SplittedChannels[c].size(); SplittedChannels_i++)
+    for (; SplittedChannels_c<2; SplittedChannels_c++)
+    {
+        for (; SplittedChannels_i<Common->SplittedChannels[SplittedChannels_c].size(); SplittedChannels_i++)
         {
-            common::channel* SplittedChannel=Common->SplittedChannels[c][SplittedChannels_i];
+            common::channel* SplittedChannel=Common->SplittedChannels[SplittedChannels_c][SplittedChannels_i];
 
             for (size_t Pos=0; Pos<SplittedChannel->Parsers.size(); Pos++)
             {
@@ -382,6 +384,8 @@ void File_ChannelSplitting::Read_Buffer_Continue_Parse()
                 }
             #endif //MEDIAINFO_DEMUX
         }
+        SplittedChannels_i=0;
+    }
     Frame_Count++;
     if (!Status[IsFilled] && AllFilled)
         Fill();
