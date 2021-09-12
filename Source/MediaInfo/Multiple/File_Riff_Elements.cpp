@@ -3691,130 +3691,9 @@ void File_Riff::WAVE_axml()
     if (!Count_Get(Stream_Audio))
         Stream_Prepare(Stream_Audio);
     Merge(MI, Stream_Audio, 0, 0);
-    return;
 
     //Parsing
-    Skip_UTF8(Element_Size,                                     "XML data");
-
-    bool IsBS2076_2=false;
-    bool IsEbuCore_not_2014_or_2016 = false;
-
-    XMLDocument Document;
-    if (Document.Parse((const char*)UncompressedData, UncompressedData_Size))
-        return;
-
-    XMLElement* format=NULL;
-    XMLElement* ebuCoreMain=Document.FirstChildElement("ebuCoreMain");
-    if (ebuCoreMain)
-    {
-        const char* xmlns=ebuCoreMain->Attribute("xmlns");
-        if (!xmlns)
-            xmlns=ebuCoreMain->Attribute("xsi:schemaLocation");
-        if (xmlns)
-        {
-            if (!strstr(xmlns, "ebuCore_2014") && !strstr(xmlns, "ebuCore_2016"))
-                IsEbuCore_not_2014_or_2016 = true;
-        }
-
-        XMLElement* coreMetadata=ebuCoreMain->FirstChildElement("coreMetadata");
-        if (coreMetadata)
-        {
-            format=coreMetadata->FirstChildElement("format");
-        }
-    }
-    if (!format)
-    {
-        format=Document.FirstChildElement("format");
-    }
-
-    if (format)
-    {
-        XMLElement* audioFormatExtended=format->FirstChildElement("audioFormatExtended");
-        if (audioFormatExtended)
-        {
-            const char* version=audioFormatExtended->Attribute("version");
-            if (version && !strcmp(version, "ITU-R_BS.2076-2"))
-                IsBS2076_2=true;
-
-            XMLElement* audioProgramme=audioFormatExtended->FirstChildElement("audioProgramme");
-            if (audioProgramme)
-            {
-                const char* audioProgrammeName=audioProgramme->Attribute("audioProgrammeName");
-                if (audioProgrammeName)
-                {
-                    if (!strcmp(audioProgrammeName, "Atmos_Master"))
-                    {
-                        AdmProfile_Dolby|=1; // Need dbmd 9 for flagging Dolby Atmos Master ADM profile
-                        if (!IsEbuCore_not_2014_or_2016 && !IsBS2076_2)
-                            AdmProfile_Dolby|=4; // Version 1 flagged if xmlns is not found or is ebuCore 2014/2016, and not BS 2076-2
-                    }
-                }
-            }
-        }
-
-        XMLElement* audioFormatCustom=format->FirstChildElement("audioFormatCustom");
-        if (audioFormatCustom)
-        {
-            XMLElement* audioFormatCustomSet=audioFormatCustom->FirstChildElement("audioFormatCustomSet");
-            if (audioFormatCustomSet)
-            {
-                XMLElement* admInformation=audioFormatCustomSet->FirstChildElement("admInformation");
-                if (admInformation)
-                {
-                    XMLElement* profile=admInformation->FirstChildElement("profile");
-                    vector<profile_info> profileInfos;
-                    while (profile)
-                    {
-                        profileInfos.resize(profileInfos.size()+1);
-                        profile_info& profileInfo=profileInfos[profileInfos.size()-1];
-
-                        for (size_t i=0; i<profile_names_size; i++)
-                        {
-                            const char* attribute=profile->Attribute(profile_names[i]);
-                            if (attribute)
-                            {
-                                profileInfo.Strings[i]=attribute;
-                                if (!i && profileInfo.Strings[0].size()>=12 && !profileInfo.Strings[0].compare(profileInfo.Strings[0].size()-12, 12, " ADM Profile"))
-                                    profileInfo.Strings[0].resize(profileInfo.Strings[0].size()-12);
-                            }
-                        }
-
-                        profile=profile->NextSiblingElement("profile");
-                    }
-
-                    // Fill
-                    if (!profileInfos.empty())
-                    {
-                        // Find what is in common
-                        int PosCommon=profile_names_size;
-                        for (int i=0; i<PosCommon; i++)
-                            for (size_t j=1; j<profileInfos.size(); j++)
-                                if (profileInfos[j].Strings[i]!=profileInfos[0].Strings[i])
-                                    PosCommon=i;
-
-                        Fill(Stream_Audio, 0, "AdmProfile", PosCommon?profileInfos[0].profile_info_build(PosCommon):string("Multiple"));
-                        if (profileInfos.size()>1)
-                        {
-                            for (size_t i=0; i<profileInfos.size(); i++)
-                            {
-                                Fill(Stream_Audio, 0, ("AdmProfile AdmProfile"+Ztring::ToZtring(i).To_UTF8()).c_str(), profileInfos[i].profile_info_build());
-                                for (size_t j=0; j<profile_names_size; j++)
-                                {
-                                    Fill(Stream_Audio, 0, ("AdmProfile AdmProfile"+Ztring::ToZtring(i).To_UTF8()+' '+profile_names_InternalID[j]).c_str(), profileInfos[i].Strings[j]);
-                                    Fill_SetOptions(Stream_Audio, 0, ("AdmProfile AdmProfile"+Ztring::ToZtring(i).To_UTF8()+' '+profile_names_InternalID[j]).c_str(), "N NTY");
-                                }
-                            }
-                        }
-                        for (size_t j=0; j<(PosCommon==0?1:PosCommon); j++)
-                        {
-                            Fill(Stream_Audio, 0, (string("AdmProfile_")+profile_names_InternalID[j]).c_str(), j<PosCommon?profileInfos[0].Strings[j]:"Multiple");
-                            Fill_SetOptions(Stream_Audio, 0, (string("AdmProfile_")+profile_names_InternalID[j]).c_str(), "N NTY");
-                        }
-                    }
-                }
-            }
-        }
-    }
+    Skip_UTF8(Element_Size, "XML data");
 }
 
 //---------------------------------------------------------------------------
@@ -4087,7 +3966,7 @@ void File_Riff::WAVE_dbmd()
         switch (metadata_segment_id)
         {
             case 9:
-                AdmProfile_Dolby|=2; // Needed for flagging Dolby Atmos Master ADM profile
+                dbmd_HasSegment9=true; // Needed for flagging Dolby Atmos Master ADM profile
                 // Fallthrough
             default: Skip_XX(metadata_segment_size,             "metadata_segment_payload");
         }

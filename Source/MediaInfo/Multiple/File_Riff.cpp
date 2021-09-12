@@ -121,7 +121,7 @@ File_Riff::File_Riff()
     SMV_BlockSize=0;
     SamplesPerSec=0;
     stream_Count=0;
-    AdmProfile_Dolby=0;
+    dbmd_HasSegment9=false;
     BlockAlign=0;
     rec__Present=false;
     NeedOldIndex=true;
@@ -178,16 +178,11 @@ void File_Riff::Streams_Finish ()
     //Global
     if (IsRIFF64)
         Fill(Stream_General, 0, General_Format_Profile, "RF64");
-    if ((AdmProfile_Dolby&3)==3)
+    if (Retrieve_Const(Stream_Audio, 0, "AdmProfile_Format")==__T("Dolby Atmos Master") && !dbmd_HasSegment9)
     {
-        Fill(Stream_Audio, 0, "AdmProfile", (AdmProfile_Dolby&4)?"Dolby Atmos Master, Version 1":"Dolby Atmos Master");
-        Fill(Stream_Audio, 0, "AdmProfile_Format", "Dolby Atmos Master");
-        Fill_SetOptions(Stream_Audio, 0, "AdmProfile_Format", "N NTY");
-        if (AdmProfile_Dolby&4)
-        {
-            Fill(Stream_Audio, 0, "AdmProfile_Version", "1");
-            Fill_SetOptions(Stream_Audio, 0, "AdmProfile_Version", "N NTY");
-        }
+        Clear(Stream_Audio, 0, "AdmProfile");
+        Clear(Stream_Audio, 0, "AdmProfile_Format");
+        Clear(Stream_Audio, 0, "AdmProfile_Version");
     }
 
     //Time codes

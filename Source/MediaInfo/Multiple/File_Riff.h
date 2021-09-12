@@ -157,7 +157,7 @@ private :
     int32u SamplesPerSec;   //For bext
     int16u BitsPerSample;   //For PCM only
     int8u  stream_Count;    //How many stream we have to parse
-    int8u  AdmProfile_Dolby;
+    bool   dbmd_HasSegment9;
     bool   rec__Present;    //True if synchro element is present
     bool   NeedOldIndex;
     bool   IsBigEndian;
