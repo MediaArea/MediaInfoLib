@@ -186,6 +186,8 @@ protected :
     void SoundfieldGroupLabelSubDescriptor();
     void GroupOfSoundfieldGroupsLabelSubDescriptor();
     void AVCSubDescriptor();
+    void IABEssenceDescriptor();
+    void IABSoundfieldLabelSubDescriptor();
     void OpenIncompleteHeaderPartition();
     void ClosedIncompleteHeaderPartition();
     void OpenCompleteHeaderPartition();
@@ -1172,6 +1174,7 @@ protected :
     void           ChooseParser_Jpeg2000(const essences::iterator &Essence, const descriptors::iterator &Descriptor);
     void           ChooseParser_ProRes(const essences::iterator &Essence, const descriptors::iterator &Descriptor);
     void           ChooseParser_DolbyVisionFrameData(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
+    void           ChooseParser_Iab(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
 
     //Helpers
     int32u Vector(int32u ExpectedLength=(int32u)-1);
