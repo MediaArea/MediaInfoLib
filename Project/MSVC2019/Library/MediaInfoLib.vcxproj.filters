@@ -815,6 +815,9 @@
     <ClCompile Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.c">
       <Filter>ThirdParty\tfsxml</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_DolbyAudioMetadata.cpp">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1527,6 +1530,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.h">
       <Filter>ThirdParty\tfsxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_DolbyAudioMetadata.h">
+      <Filter>Header Files\Audio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

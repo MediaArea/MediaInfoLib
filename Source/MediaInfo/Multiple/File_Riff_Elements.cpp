@@ -246,6 +246,7 @@ std::string ExtensibleWave_ChannelMask_ChannelLayout(int32u ChannelMask)
         #include <cstring>
     #endif
 #endif //MEDIAINFO_GXF_YES
+#include "MediaInfo/Audio/File_DolbyAudioMetadata.h"
 #include <vector>
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #if defined(MEDIAINFO_ADM_YES)
@@ -3679,18 +3680,16 @@ void File_Riff::WAVE_axml()
         UncompressedData_Size=(size_t)Element_Size;
     }
 
-    //Creating the parser
-    File_Adm MI;
-
     //Parsing
-    Open_Buffer_Init(&MI);
-    Open_Buffer_Continue(&MI, UncompressedData, UncompressedData_Size);
-
-    //Filling
-    Finish(&MI);
-    if (!Count_Get(Stream_Audio))
-        Stream_Prepare(Stream_Audio);
-    Merge(MI, Stream_Audio, 0, 0);
+    File_Adm* Adm_New=new File_Adm;
+    Open_Buffer_Init(Adm_New);
+    Open_Buffer_Continue(Adm_New, UncompressedData, UncompressedData_Size);
+    Finish(Adm_New);
+    if (Adm_New->Status[IsAccepted])
+    {
+        delete Adm;
+        Adm=Adm_New;
+    }
 
     //Parsing
     Skip_UTF8(Element_Size, "XML data");
@@ -3944,34 +3943,13 @@ void File_Riff::WAVE_dbmd()
     Element_Name("Dolby Audio Metadata");
 
     //Parsing
-    int32u version;
-    Get_L4 (version,                                            "version");
-    if ((version>>24)>1)
+    File_DolbyAudioMetadata* DolbyAudioMetadata_New=new File_DolbyAudioMetadata;
+    Open_Buffer_Init(DolbyAudioMetadata_New);
+    Open_Buffer_Continue(DolbyAudioMetadata_New);
+    if (DolbyAudioMetadata_New->Status[IsAccepted])
     {
-        Skip_XX(Element_Size-Element_Offset,                    "Data");
-        return;
-    }
-    while(Element_Offset<Element_Size)
-    {
-        Element_Begin1("metadata_segment");
-        int8u metadata_segment_id;
-        Get_L1 (metadata_segment_id,                            "metadata_segment_id"); Element_Info1(Ztring::ToZtring(metadata_segment_id));
-        if (!metadata_segment_id)
-        {
-            Element_End0();
-            break;
-        }
-        int16u metadata_segment_size;
-        Get_L2 (metadata_segment_size,                          "metadata_segment_size");
-        switch (metadata_segment_id)
-        {
-            case 9:
-                dbmd_HasSegment9=true; // Needed for flagging Dolby Atmos Master ADM profile
-                // Fallthrough
-            default: Skip_XX(metadata_segment_size,             "metadata_segment_payload");
-        }
-        Skip_L1(                                                "metadata_segment_checksum");
-        Element_End0();
+        delete DolbyAudioMetadata;
+        DolbyAudioMetadata=DolbyAudioMetadata_New;
     }
 }
 

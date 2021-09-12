@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -129,9 +129,11 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Celt.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ChannelGrouping.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ChannelSplitting.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_DolbyAudioMetadata.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_DolbyE.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsdiff.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsf.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_OpenMG.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Opus.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Pcm_M2ts.cpp" />
@@ -191,8 +193,8 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Aac.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ac3.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ac4.cpp" />
-    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Adm.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Adpcm.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Adm.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Als.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Amr.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Amv.cpp" />
@@ -208,7 +210,6 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpc.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_MpcSv8.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpega.cpp" />
-    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Pcm.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ps2Audio.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ScreamTracker3.cpp" />
@@ -407,9 +408,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.c">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
@@ -428,9 +429,11 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Celt.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ChannelGrouping.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ChannelSplitting.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_DolbyAudioMetadata.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_DolbyE.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dsdiff.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dsf.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_OpenMG.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Opus.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Pcm_M2ts.h" />
@@ -535,7 +538,6 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpc.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_MpcSv8.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpega.h" />
-    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Pcm.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Ps2Audio.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ScreamTracker3.h" />
