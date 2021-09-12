@@ -59,6 +59,7 @@ File_ChannelSplitting::File_ChannelSplitting()
 
     //In
     BitDepth=0;
+    Sign='\0';
     SamplingRate=0;
     Aligned=false;
     Common=NULL;
@@ -77,20 +78,33 @@ File_ChannelSplitting::~File_ChannelSplitting()
 //---------------------------------------------------------------------------
 void File_ChannelSplitting::Streams_Fill()
 {
-    bool HasSadm=false;
-    for (size_t i=0; i<Common->SplittedChannels[0].size(); i++)
+    size_t TotalChannelsCount=0;
+    size_t PcmChannelsCount=0;
+    size_t AdmChannelsCount=0;
+    for (int c=0; c<2; c++)
     {
-        std::vector<File__Analyze*>& Parsers=Common->SplittedChannels[0][i]->Parsers;
+        TotalChannelsCount+=Common->SplittedChannels[c].size();
+        PcmChannelsCount+=Common->SplittedChannels[c].size();
+        for (size_t i=0; i<Common->SplittedChannels[c].size(); i++)
+        {
+            std::vector<File__Analyze*>& Parsers=Common->SplittedChannels[c][i]->Parsers;
 
-        if (Parsers.size()!=1)
-            continue;
-        Fill(Parsers[0]);
-        if (Parsers[0]->Get(Stream_Audio, 0, "Metadata_Format").find(__T("ADM"))==0)
-            HasSadm=true;
+            if (Parsers.size()!=1)
+                continue;
+            Fill(Parsers[0]);
+            if (Parsers[0]->Count_Get(Stream_Audio))
+            {
+                PcmChannelsCount--;
+                if (Parsers[0]->Get(Stream_Audio, 0, "Metadata_Format").find(__T("ADM"))==0)
+                    AdmChannelsCount++;
+            }
+        }
     }
-    if (HasSadm)
+    if (PcmChannelsCount+AdmChannelsCount==TotalChannelsCount)
     {
         File_Pcm Parser;
+        Parser.Codec=Codec;
+        Parser.Sign=Sign;
         Parser.BitDepth=BitDepth;
         Parser.Channels=Channel_Total;
         Parser.SamplingRate=SamplingRate;
@@ -118,12 +132,15 @@ void File_ChannelSplitting::Streams_Fill()
 
         if (Parsers.size()!=1)
             continue;
-        
+        Fill(Parsers[0]);
+
         if (!Parsers[0]->Status[IsAccepted])
         {
             for (int j=0; j<2; j++)
             {
                 File_Pcm Parser;
+                Parser.Codec=Codec;
+                Parser.Sign=Sign;
                 Parser.BitDepth=BitDepth;
                 Parser.Channels=1;
                 Parser.SamplingRate=SamplingRate;

@@ -4342,6 +4342,7 @@ void File_Riff::Parser_Pcm(stream& StreamItem, int16u Channels, int16u BitsPerSa
     if (Channels>=2 && BitsPerSample<=32 && SamplesPerSec==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
     {
         File_ChannelSplitting* Parser=new File_ChannelSplitting;
+        Parser->Codec=Retrieve(Stream_Audio, StreamPos_Last, Audio_CodecID);
         Parser->BitDepth=(int8u)BitsPerSample;
         Parser->Endianness=Endianness;
         Parser->Channel_Total=(int8u)Channels;
