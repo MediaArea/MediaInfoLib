@@ -818,6 +818,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_DolbyAudioMetadata.cpp">
       <Filter>Source Files\Audio</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Iab.cpp">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1532,6 +1535,9 @@
       <Filter>ThirdParty\tfsxml</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_DolbyAudioMetadata.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Iab.h">
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
   </ItemGroup>

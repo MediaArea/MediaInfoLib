@@ -57,6 +57,9 @@
 #if defined(MEDIAINFO_ADM_YES)
     #include "MediaInfo/Audio/File_Adm.h"
 #endif
+#if defined(MEDIAINFO_IAB_YES)
+    #include "MediaInfo/Audio/File_Iab.h"
+#endif
 #if defined(MEDIAINFO_SMPTEST0337_YES)
     #include "MediaInfo/Audio/File_ChannelGrouping.h"
 #endif
@@ -370,6 +373,8 @@ namespace Elements
     UUID(060E2B34, 02530101, 0D010101, 01016C00, 0000, "SMPTE ST 377-4", SoundfieldGroupLabelSubDescriptor, "")
     UUID(060E2B34, 02530101, 0D010101, 01016D00, 0000, "SMPTE ST 377-4", GroupOfSoundfieldGroupsLabelSubDescriptor, "")
     UUID(060E2B34, 02530101, 0D010101, 01016E00, 0000, "SMPTE ST 381-3", AVCSubDescriptor, "AVC Sub-Descriptor")
+    UUID(060E2B34, 02530101, 0D010101, 01017B00, 0000, "SMPTE ST 207-201", IABEssenceDescriptor, "IAB Essence Descriptor")
+    UUID(060E2B34, 02530101, 0D010101, 01017C00, 0000, "SMPTE ST 207-201", IABSoundfieldLabelSubDescriptor, "IAB Soundfield Label SubDescriptor")
 
     //                           02 - MXF File Structure
     //                             01 - Version 1
@@ -714,6 +719,7 @@ static const char* Mxf_EssenceElement(const int128u EssenceElement)
                         case 0x04 : return "PCM"; //BWF
                         case 0x05 : return "MPEG Audio / AC-3";
                         case 0x0A : return "A-law";
+                        case 0x0D : return "IAB";
                         default   : return "Unknown stream";
                     }
         case 0x17 : //GC Data
@@ -777,6 +783,7 @@ static const char* Mxf_EssenceContainer(const int128u EssenceContainer)
                                                                                         case 0x11 : return "VC-3";
                                                                                         case 0x13 : return "Timed Text";
                                                                                         case 0x1C : return "ProRes";
+                                                                                        case 0x1D : return "IAB";
                                                                                         default   : return "";
                                                                                     }
                                                                         default   : return "";
@@ -924,6 +931,12 @@ static const char* Mxf_EssenceContainer_Mapping(int8u Code6, int8u Code7, int8u 
                     switch (Code7)
                     {
                         case 0x01 : return "Frame";
+                        default   : return "";
+                    }
+        case 0x1D : //IAB
+                    switch (Code7)
+                    {
+                        case 0x01 : return "Clip";
                         default   : return "";
                     }
         default   : return "";
@@ -1122,6 +1135,17 @@ static const char* Mxf_EssenceCompression(const int128u EssenceCompression)
                                                                         default   : return "";
                                                                     }
                                                          default   : return "";
+                                                    }
+                                         default   : return "";
+                                    }
+                        case 0x09 : //Dolby
+                                    switch (Code3)
+                                    {
+                                        case 0x06 :
+                                                    switch (Code4)
+                                                    {
+                                                        case 0x04 : return "IAB";
+                                                        default   : return "";
                                                     }
                                          default   : return "";
                                     }
@@ -6025,6 +6049,8 @@ void File_Mxf::Data_Parse()
     ELEMENT(SoundfieldGroupLabelSubDescriptor,                  "Soundfield Group Label Sub-Descriptor")
     ELEMENT(GroupOfSoundfieldGroupsLabelSubDescriptor,          "Group Of Soundfield Groups Label Sub-Descriptor")
     ELEMENT(AVCSubDescriptor,                                   "AVC Sub-Descriptor")
+    ELEMENT(IABEssenceDescriptor,                               "IAB Essence Descriptor")
+    ELEMENT(IABSoundfieldLabelSubDescriptor,                    "IAB Soundfield Label SubDescriptor")
     ELEMENT(OpenIncompleteHeaderPartition,                      "Open and Incomplete Header Partition Pack")
     ELEMENT(ClosedIncompleteHeaderPartition,                    "Closed and Incomplete Header Partition Pack")
     ELEMENT(OpenCompleteHeaderPartition,                        "Open and Complete Header Partition Pack")
@@ -6109,7 +6135,7 @@ void File_Mxf::Data_Parse()
                 if (SingleDescriptor->second.ByteRate==(int32u)-1)
                 {
                     std::map<std::string, Ztring>::const_iterator i=Descriptors.begin()->second.Infos.find("SamplingRate");
-                    if (i != SingleDescriptor->second.Infos.end())
+                    if (i != Descriptors.begin()->second.Infos.end())
                     {
                         int32u SamplingRate=i->second.To_int32u();
 
@@ -8259,6 +8285,26 @@ void File_Mxf::AVCSubDescriptor()
 }
 
 //---------------------------------------------------------------------------
+void File_Mxf::IABEssenceDescriptor()
+{
+    //switch(Code2)
+    //{
+    //    default:
+                GenericSoundEssenceDescriptor();
+    //}
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::IABSoundfieldLabelSubDescriptor()
+{
+    //switch(Code2)
+    //{
+    //    default:
+    MCALabelSubDescriptor();
+    //}
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::MCAChannelID()
 {
     if (Length2==4)
@@ -10050,8 +10096,11 @@ void File_Mxf::GenericSoundEssenceDescriptor_ChannelCount()
     Get_B4 (Value,                                              "Value"); Element_Info1(Value);
 
     FILLING_BEGIN();
-        Descriptors[InstanceUID].ChannelCount=Value;
-        Descriptor_Fill("Channel(s)", Ztring().From_Number(Value));
+        if (Value)
+        {
+            Descriptors[InstanceUID].ChannelCount=Value;
+            Descriptor_Fill("Channel(s)", Ztring().From_Number(Value));
+        }
     FILLING_END();
 }
 
@@ -16549,6 +16598,7 @@ void File_Mxf::ChooseParser(const essences::iterator &Essence, const descriptors
                                                                                                         return ChooseParser_SmpteSt0337(Essence, Descriptor);
                                                                                                     else
                                                                                                         return ChooseParser_Mpega(Essence, Descriptor);
+                                                                                        case 0x0A : return ChooseParser_Iab(Essence, Descriptor);
                                                                                         case 0x1C : if (Descriptor->second.ChannelCount==1)
                                                                                                         return ChooseParser_ChannelGrouping(Essence, Descriptor); //Dolby E (in 2 mono streams)
                                                                                                     else
@@ -16919,6 +16969,10 @@ void File_Mxf::ChooseParser__Aaf_GC_Sound(const essences::iterator &Essence, con
         case 0x0A : //A-law, Custom wrapped
                     ChooseParser_Alaw(Essence, Descriptor);
                     Essences[Code_Compare4].Infos["Format_Settings_Wrapping"]=__T("Custom");
+                    break;
+        case 0x0D : //IAB
+                    ChooseParser_Iab(Essence, Descriptor);
+                    Essences[Code_Compare4].Infos["Format_Settings_Wrapping"]=__T("Clip");
                     break;
         default   : //Unknown
                     ;
@@ -17565,6 +17619,24 @@ void File_Mxf::ChooseParser_DolbyVisionFrameData(const essences::iterator &Essen
     Open_Buffer_Init(Parser);
     Parser->Stream_Prepare(Stream_Other);
     Parser->Fill(Stream_Other, 0, Other_Format, "Dolby Vision Metadata");
+    Essence->second.Parsers.push_back(Parser);
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::ChooseParser_Iab(const essences::iterator &Essence, const descriptors::iterator &Descriptor)
+{
+    Essence->second.StreamKind=Stream_Audio;
+
+    //Filling
+    #if defined(MEDIAINFO_IAB_YES)
+        File_Iab* Parser=new File_Iab;
+    #else
+        //Filling
+        File__Analyze* Parser=new File_Unknown();
+        Open_Buffer_Init(Parser);
+        Parser->Stream_Prepare(Stream_Audio);
+        Parser->Fill(Stream_Audio, 0, Audio_Format, "IAB");
+    #endif
     Essence->second.Parsers.push_back(Parser);
 }
 

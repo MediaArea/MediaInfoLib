@@ -837,7 +837,7 @@ static stream_t Text2StreamT(const Ztring& ParameterName, size_t ToRemove)
 // std::cin threaded interface
 //***************************************************************************
 
-#if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+#if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES) && !defined(WINDOWS_UWP) && !defined(__BORLANDC__)
 class Reader_Cin_Thread;
 set<Reader_Cin_Thread*> ToTerminate;
 CriticalSection ToTerminate_CS;
@@ -1379,7 +1379,7 @@ void MediaInfo_Internal::Entry()
             #endif //MEDIAINFO_NEXTPACKET
         }
     #endif //MEDIAINFO_FILE_YES
-    #if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+    #if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES) && !defined(WINDOWS_UWP) && !defined(__BORLANDC__)
         else if (Config.File_Names[0]==__T("-")
             #if defined(WINDOWS) && !defined(WINDOWS_UWP) && !defined(__BORLANDC__)
                 //&& WaitForSingleObject(GetStdHandle(STD_INPUT_HANDLE), 0) == WAIT_OBJECT_0 //Check if there is something is stdin
@@ -1431,7 +1431,7 @@ void MediaInfo_Internal::Entry()
             }
             Open_Buffer_Finalize();
         }
-    #endif //MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
+    #endif //MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES) && !defined(WINDOWS_UWP) && !defined(__BORLANDC__)
 
     Config.State_Set(1);
 }
