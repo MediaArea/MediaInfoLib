@@ -5417,7 +5417,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
             {
                 File_SmpteSt0337* Parser=new File_SmpteSt0337;
                 Parser->Container_Bits=(int8u)SampleSize;
-                Parser->Endianness=(Flags&0x02)?'B':'L';
+                if (Version==2)
+                    Parser->Endianness=(Flags&0x02)?'B':'L';
                 Parser->ShouldContinueParsing=true;
                 #if MEDIAINFO_DEMUX
                     if (Config->Demux_Unpacketize_Get())
@@ -5433,6 +5434,18 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
                 File_ChannelSplitting* Parser=new File_ChannelSplitting;
                 Parser->BitDepth=(int8u)SampleSize;
                 Parser->Endianness=(Flags&0x02)?'B':'L';
+                Parser->Sign='S'; //Default is "Signed" with QuickTime (to be confirmed), may be changed by flags
+                if (Version==2)
+                {
+                    if (Flags&0x01)
+                        Parser->Endianness='F';
+                    else
+                    {
+                        Parser->Endianness=(Flags&0x02)?'B':'L';
+                        Parser->Sign=(Flags&0x04)?'S':'U';
+                    }
+                }
+                Parser->Codec=Codec;
                 Parser->Channel_Total=(int8u)Channels;
                 Parser->SamplingRate=SampleRate;
                 Parser->ShouldContinueParsing=true;

@@ -285,33 +285,36 @@ void File_SmpteSt0337::Streams_Fill()
 
     for (size_t Pos=0; Pos<Count_Get(StreamKind_Last); Pos++)
     {
-        if (!IsSub && StreamKind_Last==Stream_Audio && Retrieve_Const(StreamKind_Last, Pos, "Format").empty())
+        if (!IsSub || Retrieve_Const(StreamKind_Last, Pos, "Metadata_MuxingMode").empty())
         {
-            Fill(Stream_Audio, Pos, Audio_Format, "PCM");
-            Fill(Stream_Audio, Pos, Audio_Channel_s_, 2);
+            if (!IsSub && StreamKind_Last==Stream_Audio && Retrieve_Const(StreamKind_Last, Pos, "Format").empty())
+            {
+                Fill(Stream_Audio, Pos, Audio_Format, "PCM");
+                Fill(Stream_Audio, Pos, Audio_Channel_s_, 2);
+            }
+            if (Endianness=='L' && Retrieve(StreamKind_Last, Pos, "Format_Settings_Endianness")==__T("Little"))
+                Endianness='B';
+            switch (Endianness)
+            {
+                case 'B' :
+                            Fill(StreamKind_Last, Pos, "Format_Settings", "Big");
+                            Fill(StreamKind_Last, Pos, "Format_Settings_Endianness", "Big", Unlimited, true, true);
+                            break;
+                case 'L' :
+                            Fill(StreamKind_Last, Pos, "Format_Settings", "Little");
+                            Fill(StreamKind_Last, Pos, "Format_Settings_Endianness", "Little", Unlimited, true, true);
+                            break;
+                default  : ;
+            }
+            Fill(StreamKind_Last, Pos, "Format_Settings_Mode", Container_Bits);
+            if (Retrieve(StreamKind_Last, Pos, Fill_Parameter(StreamKind_Last, Generic_BitDepth)).empty())
+                Fill(StreamKind_Last, Pos, Fill_Parameter(StreamKind_Last, Generic_BitDepth), Stream_Bits);
+            if (Retrieve(StreamKind_Last, Pos, Fill_Parameter(StreamKind_Last, Generic_BitRate_Mode))!=__T("CBR"))
+                Fill(StreamKind_Last, Pos, Fill_Parameter(StreamKind_Last, Generic_BitRate_Mode), "CBR");
         }
-        if (Endianness=='L' && Retrieve(StreamKind_Last, Pos, "Format_Settings_Endianness")==__T("Little"))
-            Endianness='B';
-        switch (Endianness)
-        {
-            case 'B' :
-                        Fill(StreamKind_Last, Pos, "Format_Settings", "Big");
-                        Fill(StreamKind_Last, Pos, "Format_Settings_Endianness", "Big", Unlimited, true, true);
-                        break;
-            case 'L' :
-                        Fill(StreamKind_Last, Pos, "Format_Settings", "Little");
-                        Fill(StreamKind_Last, Pos, "Format_Settings_Endianness", "Little", Unlimited, true, true);
-                        break;
-            default  : ;
-        }
-        Fill(StreamKind_Last, Pos, "Format_Settings_Mode", Container_Bits);
-        if (Retrieve(StreamKind_Last, Pos, Fill_Parameter(StreamKind_Last, Generic_BitDepth)).empty())
-            Fill(StreamKind_Last, Pos, Fill_Parameter(StreamKind_Last, Generic_BitDepth), Stream_Bits);
 
         if (IsSub && Retrieve_Const(StreamKind_Last, Pos, "Metadata_MuxingMode").empty())
             Fill(StreamKind_Last, Pos, "MuxingMode", "SMPTE ST 337");
-        if (Retrieve(StreamKind_Last, Pos, Fill_Parameter(StreamKind_Last, Generic_BitRate_Mode))!=__T("CBR"))
-            Fill(StreamKind_Last, Pos, Fill_Parameter(StreamKind_Last, Generic_BitRate_Mode), "CBR");
     }
 }
 

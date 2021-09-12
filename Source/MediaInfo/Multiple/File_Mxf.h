@@ -21,7 +21,6 @@
 #if defined(MEDIAINFO_ANCILLARY_YES)
     #include <MediaInfo/Multiple/File_Ancillary.h>
 #endif //defined(MEDIAINFO_ANCILLARY_YES)
-#include <MediaInfo/Video/File_DolbyVisionMetadata.h>
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/TimeCode.h"
 #include <vector>
@@ -31,6 +30,10 @@
 
 namespace MediaInfoLib
 {
+
+class File_DolbyVisionMetadata;
+class File_Adm;
+class File_DolbyAudioMetadata;
 
 //***************************************************************************
 // Class File_Mxf
@@ -207,7 +210,10 @@ protected :
     void SDTI_ControlMetadataSet();
     void SystemScheme1();
     void DMScheme1();
+    void Application04_01_04_01_01();
+    void Application04_01_04_02_01();
     void Application05_09_01();
+    void Application_08_BodySID();
     void AS11_AAF_Core();
     void AS11_AAF_Segmentation();
     void AS11_AAF_UKDPP();
@@ -1323,8 +1329,12 @@ protected :
 
     // Extra metadata
     int64u ExtraMetadata_Offset;
-    int32u ExtraMetadata_SID;
+    set<int32u> ExtraMetadata_SID;
     File_DolbyVisionMetadata* DolbyVisionMetadata;
+    File_DolbyAudioMetadata* DolbyAudioMetadata;
+    #if defined(MEDIAINFO_ADM_YES)
+    File_Adm* Adm;
+    #endif
 
     //Demux
     #if MEDIAINFO_DEMUX
