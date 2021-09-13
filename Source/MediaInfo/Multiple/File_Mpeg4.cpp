@@ -687,7 +687,8 @@ void File_Mpeg4::Streams_Finish()
             {
                 for (TrackID = Temp->second.Meta.begin(); TrackID != Temp->second.Meta.end(); ++TrackID)
                 {
-                    Merge(*Streams[*TrackID].Parsers[0], Stream_Video, 0, StreamPos_Last);
+                    if (Streams[*TrackID].Parsers.size()==1)
+                        Merge(*Streams[*TrackID].Parsers[0], Stream_Video, 0, StreamPos_Last);
                     if (TempString.size()) TempString.append(__T(","));
                     TempString.append(Ztring().From_Number(*TrackID));
                 }
