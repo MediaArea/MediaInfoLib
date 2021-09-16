@@ -460,6 +460,10 @@ void file_adm_private::parse()
     for (;;) {
         if (tfsxml_next(&p, &b))
             break;
+        if (!tfsxml_cmp_charp(b, "audioFormatExtended"))
+        {
+            audioFormatExtended();
+        }
         if (!tfsxml_cmp_charp(b, "ebuCoreMain"))
         {
             while (!tfsxml_attr(&p, &b, &v)) {
@@ -516,9 +520,6 @@ void file_adm_private::format()
     for (;;) {
         if (tfsxml_next(&p, &b))
             break;
-        if (!tfsxml_cmp_charp(b, "audioFormatExtended")) {
-            audioFormatExtended();
-        }
         if (!tfsxml_cmp_charp(b, "audioFormatCustom")) {
             tfsxml_enter(&p, &b);
             while (!tfsxml_next(&p, &b)) {
@@ -549,6 +550,9 @@ void file_adm_private::format()
                     }
                 }
             }
+        }
+        if (!tfsxml_cmp_charp(b, "audioFormatExtended")) {
+            audioFormatExtended();
         }
     }
 }
@@ -809,8 +813,6 @@ File_Adm::File_Adm()
     Buffer_MaximumSize = 256 * 1024 * 1024;
 
     File_Adm_Private = new file_adm_private();
-
-    MuxingMode=NULL;
 }
 
 //---------------------------------------------------------------------------
@@ -876,7 +878,7 @@ bool File_Adm::FileHeader_Begin()
         Fill(Stream_Audio, StreamPos_Last, Audio_Format, "ADM");
 
     Fill(Stream_Audio, StreamPos_Last, "Metadata_Format", "ADM, Version " + Ztring::ToZtring(File_Adm_Private->Version).To_UTF8());
-    if (MuxingMode)
+    if (!MuxingMode.empty())
         Fill(Stream_Audio, StreamPos_Last, "Metadata_MuxingMode", MuxingMode);
     if (File_Adm_Private->Items[item_audioProgramme].Items.size() == 1 && File_Adm_Private->Items[item_audioProgramme].Items[0].Strings[audioProgramme_audioProgrammeName] == "Atmos_Master") {
         if (!File_Adm_Private->DolbyProfileCanNotBeVersion1 && File_Adm_Private->Version>1)
