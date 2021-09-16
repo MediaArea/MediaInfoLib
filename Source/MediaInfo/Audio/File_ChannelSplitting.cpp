@@ -204,12 +204,12 @@ void File_ChannelSplitting::Read_Buffer_Init()
 {
     if (Common==NULL)
     {
-        if (Channel_Total%2)
+        if (Channel_Total%2 && BitDepth==20)
         {
             Reject();
-            return; //Currently supporting only pairs
+            return; //Currently supporting only pairs in 20-bit mode
         }
-            
+
         //Common
         Common=new common;
         for (int c=0; c<2; c++)
@@ -274,39 +274,73 @@ void File_ChannelSplitting::Read_Buffer_Continue()
 
     //Copying to splitted channels
     Buffer_Offset=0;
-    while (Channel_Total*BitDepth<=(Buffer_Size-Buffer_Offset)*8)
+    bool OddChannelCount=Channel_Total&1;
+    size_t PairCount=Channel_Total/2;
+    size_t BytesToCopy=Channel_Total*BitDepth/8;
+    vector<common::channel*>& SplittedChannels0=Common->SplittedChannels[0];
+    vector<common::channel*>& SplittedChannels1=Common->SplittedChannels[1];
+    while (BytesToCopy<=Buffer_Size-Buffer_Offset)
     {
-        for (size_t i=0; i<Common->SplittedChannels[1].size(); i++)
+        for (size_t i=0; i<PairCount; i++)
         {
-            common::channel* SplittedChannel00=Common->SplittedChannels[0][i*2];
-            common::channel* SplittedChannel01=Common->SplittedChannels[0][i*2+1];
-            common::channel* SplittedChannel1=Common->SplittedChannels[1][i];
+            common::channel* SplittedChannel00=SplittedChannels0[i*2];
+            common::channel* SplittedChannel01=SplittedChannels0[i*2+1];
+            common::channel* SplittedChannel1= SplittedChannels1[i];
 
             switch (BitDepth)
             {
                 case 24:
                     // Copy 6 bytes
                     SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
-                    SplittedChannel01->Buffer[SplittedChannel01->Buffer_Size++]=Buffer[Buffer_Offset+BitDepth/8];
                     SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel01->Buffer[SplittedChannel01->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel01->Buffer[SplittedChannel01->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel01->Buffer[SplittedChannel01->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    break;
                 case 20:
                     // Copy 5 bytes
                     SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
-                    SplittedChannel01->Buffer[SplittedChannel01->Buffer_Size++]=Buffer[Buffer_Offset+BitDepth/8];
-                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
+                    break;
                 case 16:
                     // Copy 4 bytes
                     SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
-                    SplittedChannel01->Buffer[SplittedChannel01->Buffer_Size++]=Buffer[Buffer_Offset+BitDepth/8];
                     SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
                     SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel01->Buffer[SplittedChannel01->Buffer_Size++]=Buffer[Buffer_Offset];
                     SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel01->Buffer[SplittedChannel01->Buffer_Size++]=Buffer[Buffer_Offset];
                     SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
                     break;
-                default: ;
-                    // Not supported
-                    Reject();
-                    return;
+            }
+        }
+        if (OddChannelCount)
+        {
+            common::channel* SplittedChannel00=SplittedChannels0[Channel_Total-1];
+            switch (BitDepth)
+            {
+                case 24:
+                    // Copy 3 bytes
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    break;
+                case 16:
+                    // Copy 2 bytes
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    break;
             }
         }
     }
