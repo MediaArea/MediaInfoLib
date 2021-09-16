@@ -9,7 +9,7 @@ Build-Depends: debhelper (>= 9),
                dh-autoreconf,
                doxygen,
                tofrodos,
-               libzen-dev (>= 0.4.37),
+               libzen-dev (>= 0.4.39),
                libcurl4-gnutls-dev,
                libmms-dev,
                libglib2.0-dev,
@@ -55,7 +55,7 @@ Package: libmediainfo0v5
 Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
-Depends: ${shlibs:Depends}, ${misc:Depends}, libzen0v5 (>= 0.4.37)
+Depends: ${shlibs:Depends}, ${misc:Depends}, libzen0v5 (>= 0.4.39)
 Replaces: libmediainfo0
 Conflicts: libmediainfo0
 Description: library for reading metadata from media files -- shared library

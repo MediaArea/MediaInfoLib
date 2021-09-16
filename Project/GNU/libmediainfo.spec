@@ -1,10 +1,10 @@
-%global libmediainfo_version      21.03
+%global libmediainfo_version      21.09
 %global libmediainfo_version_major      21
-%global libmediainfo_version_minor      03
-%global libzen_version            0.4.37
+%global libmediainfo_version_minor      09
+%global libzen_version            0.4.39
 %global libzen_version_major      0
 %global libzen_version_minor      4
-%global libzen_version_release    37
+%global libzen_version_release    39
 
 %if 0%{?fedora_version} || 0%{?centos_version} >= 600 || 0%{?rhel_version} >= 600
 %global package_with_0_ending 0
@@ -411,7 +411,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 %endif
 
 %changelog
-* Sun Jan 01 2012 MediaArea.net SARL <info@mediaarea.net> - 21.03-0
+* Sun Jan 01 2012 MediaArea.net SARL <info@mediaarea.net> - 21.09-0
 - See History.txt for more info and real dates
 - Previous packages made by Toni Graffy <toni@links2linux.de>
 - Fedora style made by Vasiliy N. Glazov <vascom2@gmail.com>
