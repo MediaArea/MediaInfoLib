@@ -1251,6 +1251,7 @@ void File_SmpteSt0337::Data_Parse()
     int8u data_type_dependent;
     int8u* UncompressedData=NULL;
     size_t UncompressedData_Size=0;
+    string MuxingMode;
     Element_Begin1("Header");
         BS_Begin();
         Skip_S3(Stream_Bits,                                    "Pa");
@@ -1299,7 +1300,22 @@ void File_SmpteSt0337::Data_Parse()
                         Skip_S1(Stream_Bits-16,                 "reserved");
                     Element_End0();
                 }
-                if (Parser || data_stream_number || multiple_chunk_flag || format_type>1 || Track_ID || track_numbers)
+                MuxingMode=string("SMPTE ST 337 / SMPTE ST 2116");
+                if (!data_stream_number && !multiple_chunk_flag && !in_timeline_flag && format_type<=1)
+                {
+                    MuxingMode+=" Level ";
+                    MuxingMode+='A';
+                    if (format_type==1)
+                        MuxingMode+='X';
+                    if (track_numbers<10)
+                        MuxingMode+='1'+track_numbers;
+                    else
+                    {
+                        MuxingMode+='1';
+                        MuxingMode+='0'-10+track_numbers;
+                    }
+                }
+                if (Parser || data_stream_number || multiple_chunk_flag || in_timeline_flag || format_type>1 || Track_ID || track_numbers)
                 {
                     Skip_BS(Data_BS_Remain(),                   "Data (Unsupported)");
                 }
@@ -1462,7 +1478,6 @@ void File_SmpteSt0337::Data_Parse()
             case 32+1 : // ADM
                         #if defined(MEDIAINFO_ADM_YES)
                         {
-                        const char* const MuxingMode="SMPTE ST 337 / SMPTE ST 2116";
                         if (UncompressedData || Element_Offset<Element_Size)
                         {
                             Parser=new File_Adm();

@@ -3612,9 +3612,14 @@ struct profile_info
 
 void File_Riff::WAVE_axml()
 {
-    if (Element_Size!=Element_TotalSize_Get()-Alignement_ExtraByte)
+    int64u Element_TotalSize=Element_TotalSize_Get();
+    if (Element_Size!=Element_TotalSize-Alignement_ExtraByte)
     {
-        Buffer_MaximumSize=64*1024*1024;
+        if (Buffer_MaximumSize<Element_TotalSize)
+            Buffer_MaximumSize+=Element_TotalSize;
+        size_t* File_Buffer_Size_Hint_Pointer=Config->File_Buffer_Size_Hint_Pointer_Get();
+        if (File_Buffer_Size_Hint_Pointer)
+            (*File_Buffer_Size_Hint_Pointer)=(size_t)(Element_TotalSize-Element_Size);
         Element_WaitForMoreData();
         return; //Must wait for more data
     }
@@ -3682,6 +3687,8 @@ void File_Riff::WAVE_axml()
 
     //Parsing
     File_Adm* Adm_New=new File_Adm;
+    Adm_New->MuxingMode=(Element_Code==Elements::WAVE_bxml)?'b':'a';
+    Adm_New->MuxingMode+="xml";
     Open_Buffer_Init(Adm_New);
     Open_Buffer_Continue(Adm_New, UncompressedData, UncompressedData_Size);
     Finish(Adm_New);

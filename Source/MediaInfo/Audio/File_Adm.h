@@ -32,7 +32,7 @@ class File_Adm : public File__Analyze
 {
 public :
     //In
-    const char* MuxingMode;
+    string MuxingMode;
 
     //Constructor/Destructor
     File_Adm();
