@@ -382,14 +382,19 @@ class file_adm_private
 public:
     tfsxml_string p;
     Items_Struct Items[item_Max];
-    int Version = 0;
-    bool DolbyProfileCanNotBeVersion1 = false;
+    int Version;
+    bool DolbyProfileCanNotBeVersion1;
     vector<profile_info> profileInfos;
 
     void parse();
     void coreMetadata();
     void format();
     void audioFormatExtended();
+
+    file_adm_private() {
+        Version = 0;
+        DolbyProfileCanNotBeVersion1 = false;
+    };
 };
 
 void file_adm_private::parse()
