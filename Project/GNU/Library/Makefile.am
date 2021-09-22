@@ -230,7 +230,8 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Video/File_Vp8.cpp \
                        ../../../Source/MediaInfo/Video/File_Y4m.cpp \
                        ../../../Source/MediaInfo/XmlUtils.cpp \
-                       ../../../Source/MediaInfo/OutputHelpers.cpp
+                       ../../../Source/MediaInfo/OutputHelpers.cpp \
+                       ../../../Source/ThirdParty/tfsxml/tfsxml.c
 
 @MediaInfoLib_LibName@includedir = $(includedir)/MediaInfo
 @MediaInfoLib_LibName@include_HEADERS = \
@@ -280,7 +281,6 @@ endif
 
 if COMPILE_TINYXML2
 lib@MediaInfoLib_LibName@_la_SOURCES += \
-                       ../../../Source/ThirdParty/tfsxml/tfsxml.c \
                        ../../../Source/ThirdParty/tinyxml2/tinyxml2.cpp
 endif
 
