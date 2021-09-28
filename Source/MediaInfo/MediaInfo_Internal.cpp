@@ -72,11 +72,13 @@
         #undef Yield
         #undef max
     }
-    #elif defined(_POSIX_PRIORITY_SCHEDULING)
-        #include <sched.h>
+    #else
         #include <unistd.h>
         #include <signal.h>
-    #endif //_POSIX_PRIORITY_SCHEDULING
+        #if defined(_POSIX_PRIORITY_SCHEDULING) // Note: unistd.h must be included first
+            #include <sched.h>
+        #endif //_POSIX_PRIORITY_SCHEDULING
+    #endif
     #include <ctime>
 #endif
 using namespace ZenLib;
