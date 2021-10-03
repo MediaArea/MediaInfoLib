@@ -204,7 +204,7 @@ void File_ChannelSplitting::Read_Buffer_Init()
 {
     if (Common==NULL)
     {
-        if (Channel_Total%2 && BitDepth==20)
+        if ((Channel_Total%2 && BitDepth==20) || (BitDepth!=16 && BitDepth!=20 && BitDepth!=24 && BitDepth!=32))
         {
             Reject();
             return; //Currently supporting only pairs in 20-bit mode
@@ -289,6 +289,25 @@ void File_ChannelSplitting::Read_Buffer_Continue()
 
             switch (BitDepth)
             {
+                case 32:
+                    // Copy 8 bytes
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel01->Buffer[SplittedChannel01->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel01->Buffer[SplittedChannel01->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel01->Buffer[SplittedChannel01->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel01->Buffer[SplittedChannel01->Buffer_Size++]=Buffer[Buffer_Offset];
+                    SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    break;
                 case 24:
                     // Copy 6 bytes
                     SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
@@ -330,6 +349,13 @@ void File_ChannelSplitting::Read_Buffer_Continue()
             common::channel* SplittedChannel00=SplittedChannels0[Channel_Total-1];
             switch (BitDepth)
             {
+                case 32:
+                    // Copy 4 bytes
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset++];
+                    break;
                 case 24:
                     // Copy 3 bytes
                     SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset++];
