@@ -52,6 +52,7 @@ namespace MediaInfoLib
         TypeOfValue
     }
 
+    [Flags]
     public enum InfoFileOptions
     {
         FileOption_Nothing      = 0x00,
@@ -60,6 +61,7 @@ namespace MediaInfoLib
         FileOption_Max          = 0x04
     };
 
+    [Flags]
     public enum Status
     {
         None        =       0x00,
