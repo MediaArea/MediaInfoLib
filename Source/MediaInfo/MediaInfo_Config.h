@@ -34,8 +34,8 @@ using namespace ZenLib;
 using std::vector;
 using std::string;
 using std::map;
+using std::set;
 using std::make_pair;
-using namespace std;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
