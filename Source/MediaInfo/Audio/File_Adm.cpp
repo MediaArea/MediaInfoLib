@@ -40,6 +40,7 @@
 #include "MediaInfo/Audio/File_Adm.h"
 #include "ThirdParty/tfsxml/tfsxml.h"
 using namespace ZenLib;
+using namespace std;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
