@@ -1073,6 +1073,22 @@ void File_DolbyE::Streams_Fill_ED2()
         Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, ChannelCount);
     Streams_Fill_PerProgram();
 
+    if (!Presets.empty())
+    {
+        Fill(Stream_Audio, 0, "NumberOfPresentations", Presets.size());
+        Fill_SetOptions(Stream_Audio, 0, "NumberOfPresentations", "N NIY");
+    }
+    if (!BedInstances.empty())
+    {
+        Fill(Stream_Audio, 0, "NumberOfBeds", BedInstances.size());
+        Fill_SetOptions(Stream_Audio, 0, "NumberOfBeds", "N NIY");
+    }
+    if (!DynObjects.empty())
+    {
+        Fill(Stream_Audio, 0, "NumberOfObjects", DynObjects.size());
+        Fill_SetOptions(Stream_Audio, 0, "NumberOfObjects", "N NIY");
+    }
+
     for (size_t p=0; p<Presets.size(); p++)
     {
         const preset& Presentation_Current=Presets[p];
@@ -1094,6 +1110,12 @@ void File_DolbyE::Streams_Fill_ED2()
         }
         Fill(Stream_Audio, 0, (P+" DefaultTargetDeviceConfig").c_str(), default_target_device_config_Value(Presentation_Current.default_target_device_config));
         Fill_SetOptions(Stream_Audio, 0, (P+" DefaultTargetDeviceConfig").c_str(), "Y NTY");
+
+        if (!Presentation_Current.target_device_configs.empty())
+        {
+            Fill(Stream_Audio, 0, (P+" NumberOfTargets").c_str(), Presentation_Current.target_device_configs.size());
+            Fill_SetOptions(Stream_Audio, 0, (P+" NumberOfTargets").c_str(), "N NIY");
+        }
         for (size_t t=0; t<Presentation_Current.target_device_configs.size(); t++)
         {
             const preset::target_device_config& Target_Current=Presentation_Current.target_device_configs[t];
@@ -1228,6 +1250,11 @@ void File_DolbyE::Streams_Fill_ED2()
             }
         }
 
+        if (!BedInstance.Alts.empty())
+        {
+            Fill(Stream_Audio, 0, (P+" NumberOfAlts").c_str(), BedInstance.Alts.size());
+            Fill_SetOptions(Stream_Audio, 0, (P+" NumberOfAlts").c_str(), "N NIY");
+        }
         for (size_t a=0; a<BedInstance.Alts.size(); a++)
         {
             const bed_instance::bed_alt& BedInstance_Current=BedInstance.Alts[a];
@@ -1330,6 +1357,11 @@ void File_DolbyE::Streams_Fill_ED2()
             }
         }
 
+        if (!DynObject.Alts.empty())
+        {
+            Fill(Stream_Audio, 0, (P+" NumberOfAlts").c_str(), DynObject.Alts.size());
+            Fill_SetOptions(Stream_Audio, 0, (P+" NumberOfAlts").c_str(), "N NIY");
+        }
         for (size_t a=0; a<DynObject.Alts.size(); a++)
         {
             const dyn_object::dyn_object_alt& DynObject_Current=DynObject.Alts[a];
@@ -1904,6 +1936,7 @@ void File_DolbyE::metadata_segment()
 
     {
         //CRC test
+        /*
         size_t Pos_End=Buffer_Offset*8+(size_t)Element_Size*8-Data_BS_Remain();
         size_t Pos_Begin=Pos_End-(metadata_segment_size+1)*bit_depth; //+1 for CRC
         int8u BitSkip_Begin=Pos_Begin%8;
@@ -1919,6 +1952,7 @@ void File_DolbyE::metadata_segment()
             // CRC is wrong
             Param_Info1("metadata_crc NOK");
         }
+        */
     }
 
     Element_End0();
@@ -2008,6 +2042,7 @@ void File_DolbyE::guard_band()
     Skip_B2(                                                    "crc");
     {
         //CRC test
+        /*
         size_t Pos_End=Buffer_Offset+Element_Offset;
         size_t Pos_Begin=Pos_End-(element_length+2); //+2 for CRC
 
@@ -2017,6 +2052,7 @@ void File_DolbyE::guard_band()
             // CRC is wrong
             Param_Info1("crc NOK");
         }
+        */
         Element_End0();
         int64u RemainingBytes=Element_Size-Element_Offset;
         if (RemainingBytes && RemainingBytes<bit_depth/4)
@@ -3123,6 +3159,7 @@ void File_DolbyE::audio_segment()
 
             #if MEDIAINFO_TRACE
                 //CRC test
+                /*
                 size_t Pos_End=Buffer_Offset*8+(size_t)Element_Size*8-Data_BS_Remain();
                 int8u BitSkip_Begin=Pos_Begin%8;
                 Pos_Begin/=8;
@@ -3137,6 +3174,7 @@ void File_DolbyE::audio_segment()
                     //CRC is wrong
                     Param_Info1("NOK");
                 }
+                */
             #endif //MEDIAINFO_TRACE
         }
     }
@@ -3215,6 +3253,7 @@ void File_DolbyE::metadata_extension_segment()
 
     #if MEDIAINFO_TRACE
         //CRC test
+        /*
         size_t Pos_End=Buffer_Offset*8+(size_t)Element_Size*8-Data_BS_Remain();
         int8u BitSkip_Begin=Pos_Begin%8;
         Pos_Begin/=8;
@@ -3229,6 +3268,7 @@ void File_DolbyE::metadata_extension_segment()
             //CRC is wrong
             Param_Info1("NOK");
         }
+        */
     #endif //MEDIAINFO_TRACE
 
     Element_End0();
@@ -3295,6 +3335,7 @@ void File_DolbyE::audio_extension_segment()
 
             #if MEDIAINFO_TRACE
                 //CRC test
+                /*
                 size_t Pos_End=Buffer_Offset*8+(size_t)Element_Size*8-Data_BS_Remain();
                 int8u BitSkip_Begin=Pos_Begin%8;
                 Pos_Begin/=8;
@@ -3309,6 +3350,7 @@ void File_DolbyE::audio_extension_segment()
                     //CRC is wrong
                     Param_Info1("NOK");
                 }
+                */
             #endif //MEDIAINFO_TRACE
         }
     }
@@ -3361,6 +3403,7 @@ void File_DolbyE::meter_segment()
 
     #if MEDIAINFO_TRACE
         //CRC test
+        /*
         size_t Pos_End=Buffer_Offset*8+(size_t)Element_Size*8-Data_BS_Remain();
         size_t Pos_Begin=Pos_End-(meter_segment_size+1)*bit_depth; //+1 for CRC
         int8u BitSkip_Begin=Pos_Begin%8;
@@ -3376,6 +3419,7 @@ void File_DolbyE::meter_segment()
             //CRC is wrong
             Param_Info1("NOK");
         }
+        */
     #endif //MEDIAINFO_TRACE
 
     Element_End0();

@@ -93,6 +93,9 @@
     <Filter Include="ThirdParty\sha2">
       <UniqueIdentifier>{2b174bb5-6f3b-48d7-939c-8a87bc394aa2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ThirdParty\tfsxml">
+      <UniqueIdentifier>{20bdbfdd-1a76-4a45-bc2c-6c8cd43dd7fe}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\MediaInfo\File__Analyze.cpp">
@@ -683,6 +686,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Niso.cpp">
       <Filter>Source Files\Export</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Graph.cpp">
+      <Filter>Source Files\Export</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Ptx.cpp">
       <Filter>Source Files\Multiple</Filter>
     </ClCompile>
@@ -802,6 +808,18 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_CineForm.cpp">
       <Filter>Source Files\Video</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Adm.cpp">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.c">
+      <Filter>ThirdParty\tfsxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_DolbyAudioMetadata.cpp">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Iab.cpp">
+      <Filter>Source Files\Audio</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1378,6 +1396,12 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Niso.h">
       <Filter>Header Files\Export</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Graph.h">
+      <Filter>Header Files\Export</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_Graph_gvc_Include.h">
+      <Filter>Header Files\Export</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Ptx.h">
       <Filter>Header Files\Multiple</Filter>
     </ClInclude>
@@ -1503,6 +1527,18 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_CineForm.h">
       <Filter>Header Files\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Adm.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.h">
+      <Filter>ThirdParty\tfsxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_DolbyAudioMetadata.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Iab.h">
+      <Filter>Header Files\Audio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

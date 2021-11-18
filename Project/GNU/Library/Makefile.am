@@ -45,6 +45,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Audio/File_Aac_Others.cpp \
                        ../../../Source/MediaInfo/Audio/File_Ac3.cpp \
                        ../../../Source/MediaInfo/Audio/File_Ac4.cpp \
+                       ../../../Source/MediaInfo/Audio/File_Adm.cpp \
                        ../../../Source/MediaInfo/Audio/File_Adpcm.cpp \
                        ../../../Source/MediaInfo/Audio/File_Als.cpp \
                        ../../../Source/MediaInfo/Audio/File_Amr.cpp \
@@ -58,9 +59,11 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Audio/File_Dsdiff.cpp \
                        ../../../Source/MediaInfo/Audio/File_Dsf.cpp \
                        ../../../Source/MediaInfo/Audio/File_Dts.cpp \
+                       ../../../Source/MediaInfo/Audio/File_DolbyAudioMetadata.cpp \
                        ../../../Source/MediaInfo/Audio/File_DolbyE.cpp \
                        ../../../Source/MediaInfo/Audio/File_ExtendedModule.cpp \
                        ../../../Source/MediaInfo/Audio/File_Flac.cpp \
+                       ../../../Source/MediaInfo/Audio/File_Iab.cpp \
                        ../../../Source/MediaInfo/Audio/File_ImpulseTracker.cpp \
                        ../../../Source/MediaInfo/Audio/File_La.cpp \
                        ../../../Source/MediaInfo/Audio/File_Midi.cpp \
@@ -97,6 +100,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Export/Export_PBCore2.cpp \
                        ../../../Source/MediaInfo/Export/Export_reVTMD.cpp \
                        ../../../Source/MediaInfo/Export/Export_Niso.cpp \
+                       ../../../Source/MediaInfo/Export/Export_Graph.cpp \
                        ../../../Source/MediaInfo/Image/File_ArriRaw.cpp \
                        ../../../Source/MediaInfo/Image/File_Bmp.cpp \
                        ../../../Source/MediaInfo/Image/File_Bpg.cpp \
@@ -226,7 +230,8 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Video/File_Vp8.cpp \
                        ../../../Source/MediaInfo/Video/File_Y4m.cpp \
                        ../../../Source/MediaInfo/XmlUtils.cpp \
-                       ../../../Source/MediaInfo/OutputHelpers.cpp
+                       ../../../Source/MediaInfo/OutputHelpers.cpp \
+                       ../../../Source/ThirdParty/tfsxml/tfsxml.c
 
 @MediaInfoLib_LibName@includedir = $(includedir)/MediaInfo
 @MediaInfoLib_LibName@include_HEADERS = \

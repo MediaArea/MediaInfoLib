@@ -424,6 +424,7 @@ FrameRate_Mode_CFR;Constant
 FrameRate_Mode_VFR;Variable
 FrameRate_Nominal;Nominal frame rate
 FrameRate_Original;Original frame rate
+FrameRate_Real;Real frame rate
 General;General
 Genre;Genre
 Genre_000;Blues
@@ -880,10 +881,14 @@ Library;Muxing library
 Lightness;Lightness
 LineUpStart;Line Up Start
 LinkedTo_Bed_Pos;Bed #s
+LinkedTo_ChannelFormat_Pos;Channel format #s
+LinkedTo_Content_Pos;Content #s
 LinkedTo_Group_Pos;Group #s
 LinkedTo_Object_Pos;Object #s
+LinkedTo_PackFormat_Pos;Pack format #s
 LinkedTo_SignalGroup_Pos;Signal group #s
 LinkedTo_Substream_Pos;Substream #s
+LinkedTo_TrackUID_Pos;Track UID #s
 List;List
 LoRoCenterMixGain;LoRo center mix gain
 LoRoSurroundMixGain;LoRo surround mix gain
@@ -952,11 +957,16 @@ NewVersion_Question_Content;A new version (v%Version%) is available, would you l
 NewVersion_Question_Title;A new version was released!
 No;No
 Not yet;Not yet
+NumberOfChannelFormats;Number of channel formats
+NumberOfContents;Number of Contents
 NumberOfDynamicObjects;Number of dynamic objects
 NumberOfElementaryStreams;Number of elementary streams
 NumberOfObjects;Number of objects
+NumberOfPackFormats;Number of pack formats
 NumberOfPresentations;Number of presentations
+NumberOfProgrammes;Number of programmes
 NumberOfSubstreams;Number of substreams
+NumberOfTrackUIDs;Number of track UIDs
 NumColors;Number of colors
 OK;OK
 One output file per input file;One output file per input file
@@ -1185,6 +1195,7 @@ TimeCode_Source;Time code source
 TimeCode_Striped;Time code, striped
 TimeStamp;Time stamp
 TimeZone;Timezone
+TypeDefinition;TypeDefinition
 Title;Title
 Title_More;Title, more info
 Total;Total

@@ -17,7 +17,7 @@ INCLUDEPATH += \
         ../../../ZenLib/Source
 
 # Note: UNICODE is a must
-QMAKE_CXXFLAGS +=  -D_UNICODE -DMEDIAINFO_LIBMMS_NO -DMEDIAINFO_LIBCURL_NO
+QMAKE_CXXFLAGS +=  -D_UNICODE -DMEDIAINFO_LIBMMS_NO -DMEDIAINFO_LIBCURL_NO -DMEDIAINFO_GRAPHVIZ_NO
 
 # surpressing way too many warnings here, with a heavy sigh
 # these should be looked at one group at a time
@@ -96,6 +96,8 @@ HEADERS += \
         ../../Source/MediaInfo/Duplicate/File__Duplicate_MpegTs.h \
         ../../Source/MediaInfo/Export/Export_EbuCore.h \
         ../../Source/MediaInfo/Export/Export_Niso.h \
+        ../../Source/MediaInfo/Export/Export_Graph.h \
+        ../../Source/MediaInfo/Export/Export_Graph_gvc_Include.h \
         ../../Source/MediaInfo/Export/Export_Fims.h \
         ../../Source/MediaInfo/Export/Export_Mpeg7.h \
         ../../Source/MediaInfo/Export/Export_PBCore.h \
@@ -139,10 +141,8 @@ HEADERS += \
         ../../Source/MediaInfo/MediaInfoList.h \
         ../../Source/MediaInfo/MediaInfoList_Internal.h \
         ../../Source/MediaInfo/Multiple/File__ReferenceFilesHelper.h \
-        ../../Source/MediaInfo/Multiple/File__ReferenceFilesHelper_Common.h \
         ../../Source/MediaInfo/Multiple/File__ReferenceFilesHelper_Resource.h \
         ../../Source/MediaInfo/Multiple/File__ReferenceFilesHelper_Sequence.h \
-        ../../Source/MediaInfo/Multiple/File__ReferenceFilesHelper_Sequence_Common.h \
         ../../Source/MediaInfo/Multiple/File_Aaf.h \
         ../../Source/MediaInfo/Multiple/File_Ancillary.h \
         ../../Source/MediaInfo/Multiple/File_Bdmv.h \
@@ -270,6 +270,7 @@ SOURCES += \
         ../../Source/MediaInfo/Audio/File_Aac_Others.cpp \
         ../../Source/MediaInfo/Audio/File_Ac3.cpp \
         ../../Source/MediaInfo/Audio/File_Ac4.cpp \
+        ../../Source/MediaInfo/Audio/File_Adm.cpp \
         ../../Source/MediaInfo/Audio/File_Adpcm.cpp \
         ../../Source/MediaInfo/Audio/File_Als.cpp \
         ../../Source/MediaInfo/Audio/File_Amr.cpp \
@@ -279,10 +280,15 @@ SOURCES += \
         ../../Source/MediaInfo/Audio/File_Caf.cpp \
         ../../Source/MediaInfo/Audio/File_Celt.cpp \
         ../../Source/MediaInfo/Audio/File_ChannelGrouping.cpp \
-        ../../Source/MediaInfo/Audio/File_DolbyE.cpp \
+        ../../Source/MediaInfo/Audio/File_ChannelSplitting.cpp \
+        ../../Source/MediaInfo/Audio/File_Dsdiff.cpp \
+        ../../Source/MediaInfo/Audio/File_Dsf.cpp \
         ../../Source/MediaInfo/Audio/File_Dts.cpp \
+        ../../Source/MediaInfo/Audio/File_DolbyAudioMetadata.cpp \
+        ../../Source/MediaInfo/Audio/File_DolbyE.cpp \
         ../../Source/MediaInfo/Audio/File_ExtendedModule.cpp \
         ../../Source/MediaInfo/Audio/File_Flac.cpp \
+        ../../Source/MediaInfo/Audio/File_Iab.cpp \
         ../../Source/MediaInfo/Audio/File_ImpulseTracker.cpp \
         ../../Source/MediaInfo/Audio/File_La.cpp \
         ../../Source/MediaInfo/Audio/File_Midi.cpp \
@@ -306,6 +312,7 @@ SOURCES += \
         ../../Source/MediaInfo/Audio/File_Tak.cpp \
         ../../Source/MediaInfo/Audio/File_Tta.cpp \
         ../../Source/MediaInfo/Audio/File_TwinVQ.cpp \
+        ../../Source/MediaInfo/Audio/File_Usac.cpp \
         ../../Source/MediaInfo/Audio/File_Vorbis.cpp \
         ../../Source/MediaInfo/Audio/File_Wvpk.cpp \
         ../../Source/MediaInfo/Duplicate/File__Duplicate__Base.cpp \
@@ -313,6 +320,7 @@ SOURCES += \
         ../../Source/MediaInfo/Duplicate/File__Duplicate_MpegTs.cpp \
         ../../Source/MediaInfo/Export/Export_EbuCore.cpp \
         ../../Source/MediaInfo/Export/Export_Niso.cpp \
+        ../../Source/MediaInfo/Export/Export_Graph.cpp \
         ../../Source/MediaInfo/Export/Export_Fims.cpp \
         ../../Source/MediaInfo/Export/Export_Mpeg7.cpp \
         ../../Source/MediaInfo/Export/Export_PBCore.cpp \
@@ -344,8 +352,8 @@ SOURCES += \
         ../../Source/MediaInfo/Image/File_Png.cpp \
         ../../Source/MediaInfo/Image/File_Psd.cpp \
         ../../Source/MediaInfo/Image/File_Rle.cpp \
-        ../../Source/MediaInfo/Image/File_Tga.cpp \
         ../../Source/MediaInfo/Image/File_Tiff.cpp \
+        ../../Source/MediaInfo/Image/File_Tga.cpp \
         ../../Source/MediaInfo/MediaInfo.cpp \
         ../../Source/MediaInfo/MediaInfo_Config.cpp \
         ../../Source/MediaInfo/MediaInfo_Config_Automatic.cpp \
@@ -383,6 +391,7 @@ SOURCES += \
         ../../Source/MediaInfo/Multiple/File_Ivf.cpp \
         ../../Source/MediaInfo/Multiple/File_Lxf.cpp \
         ../../Source/MediaInfo/Multiple/File_Mk.cpp \
+        ../../Source/MediaInfo/Multiple/File_MiXml.cpp \
         ../../Source/MediaInfo/Multiple/File_Mpeg4.cpp \
         ../../Source/MediaInfo/Multiple/File_Mpeg4_Descriptors.cpp \
         ../../Source/MediaInfo/Multiple/File_Mpeg4_Elements.cpp \
@@ -451,7 +460,9 @@ SOURCES += \
         ../../Source/MediaInfo/Video/File_Avc_Duplicate.cpp \
         ../../Source/MediaInfo/Video/File_AvsV.cpp \
         ../../Source/MediaInfo/Video/File_Canopus.cpp \
+        ../../Source/MediaInfo/Video/File_CineForm.cpp \
         ../../Source/MediaInfo/Video/File_Dirac.cpp \
+        ../../Source/MediaInfo/Video/File_DolbyVisionMetadata.cpp \
         ../../Source/MediaInfo/Video/File_Ffv1.cpp \
         ../../Source/MediaInfo/Video/File_Flic.cpp \
         ../../Source/MediaInfo/Video/File_Fraps.cpp \

@@ -28,6 +28,10 @@
 #include <fstream>
 //---------------------------------------------------------------------------
 
+//---------------------------------------------------------------------------
+using namespace std;
+//---------------------------------------------------------------------------
+
 namespace MediaInfoLib
 {
 
@@ -756,8 +760,17 @@ void File_DvDif::Errors_Stats_Update()
                             Event.Height=720;
                             break;
                 default   : 
-                            Event.Width=0;
-                            Event.Height=0;
+                            //Relying on other sources for the window size
+                            if (!FSC_WasSet) //Original DV 25 Mbps
+                            {
+                                Event.Width=720;
+                                Event.Height=system?576:480; //Considering DV 25 Mbps as SD for sure, so similar to stype of 0
+                            }
+                            else
+                            {
+                                Event.Width=0;
+                                Event.Height=0;
+                            }
             }
             if (video_source_stype!=(int8u)-1)
             {
@@ -775,6 +788,7 @@ void File_DvDif::Errors_Stats_Update()
                     {
                         switch (video_source_stype)
                         {
+                            case  1 : //stype of 1 is not in spec, but considering it as same as stype of 0
                             case  0 : if (APT==0)
                                         Event.VideoChromaSubsampling=1;      //PAL 25 Mbps (IEC 61834)
                                       else
@@ -880,6 +894,7 @@ void File_DvDif::Errors_Stats_Update()
             Event.RecordedDateTime1=0;
             Event.RecordedDateTime2=0;
             int16u RecordedDateTime2Fixed=0;
+            int16u MoreFlags=0;
             Event.Arb=0;
             Event.Verbosity=0;
             Event.Errors=NULL;
@@ -1245,6 +1260,13 @@ void File_DvDif::Errors_Stats_Update()
             Errors_Stats_Line+=__T('N');
             #if MEDIAINFO_EVENTS
                 Event.RecordedDateTime1|=1<<30;
+                bool IsLess = Speed_RecTime_Current.Time.Hours < Speed_RecTime_Current_Theory2.Time.Hours
+                           || Speed_RecTime_Current.Time.Minutes < Speed_RecTime_Current_Theory2.Time.Minutes
+                           || Speed_RecTime_Current.Time.Seconds < Speed_RecTime_Current_Theory2.Time.Seconds;
+                if (IsLess)
+                {
+                    MoreFlags |= 1 << 0;
+                }
             #endif //MEDIAINFO_EVENTS
             if (!REC_IsValid || REC_ST)
             {
@@ -1717,6 +1739,7 @@ void File_DvDif::Errors_Stats_Update()
             Event1.BlockStatus_Count=((DSF?1800:1500)*(FSC_WasSet?2:1));
             Event1.BlockStatus=BlockStatus;
             Event1.AbstBf=AbstBf_Current;
+            Event1.MoreFlags=MoreFlags;
             Config->Event_Send(NULL, (const int8u*)&Event1, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_1));
             Config->Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_0));
             memset(BlockStatus, 0, Event1.BlockStatus_Count);

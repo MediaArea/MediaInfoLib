@@ -5,7 +5,7 @@ project(MediaInfoLib)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
 
 set(MediaInfoLib_MAJOR_VERSION 21)
-set(MediaInfoLib_MINOR_VERSION 03)
+set(MediaInfoLib_MINOR_VERSION 09)
 set(MediaInfoLib_PATCH_VERSION 0)
 set(MediaInfoLib_VERSION ${MediaInfoLib_MAJOR_VERSION}.${MediaInfoLib_MINOR_VERSION})
 
@@ -117,6 +117,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha1-gladman/sha1.c
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha2-gladman/sha2.c
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/hmac-gladman/hmac.c
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tfsxml/tfsxml.c
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze_Buffer.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze_Buffer_MinimizeSize.cpp
@@ -160,6 +161,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Aac_Others.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Ac3.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Ac4.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Adm.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Adpcm.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Als.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Amr.cpp
@@ -173,9 +175,11 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Dsdiff.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Dsf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Dts.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_DolbyAudioMetadata.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_DolbyE.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_ExtendedModule.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Flac.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Iab.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_ImpulseTracker.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_La.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Midi.cpp
@@ -207,6 +211,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Duplicate/File__Duplicate_MpegTs.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_EbuCore.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_Niso.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_Graph.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_Fims.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_Mpeg7.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_PBCore.cpp
@@ -245,10 +250,9 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Dxw.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Flv.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Gxf.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Gxf_TimeCode.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_HdsF4m.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Hls.cpp
-  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Gxf.cpp
-  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Gxf_TimeCode.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Ibi.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Ibi_Creation.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Ism.cpp
@@ -367,7 +371,7 @@ if(BUILD_ZLIB)
 endif()
 
 # disable some features. Maybe it should be enabled.
-target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBMMS_NO)
+target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBMMS_NO PRIVATE MEDIAINFO_GRAPHVIZ_NO)
 if(NOT CURL_FOUND)
   target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBCURL_NO)
 else()
