@@ -159,8 +159,10 @@ Actor;Actor
 Actor_Character;Character played
 Added_Date;Added date
 Address;Address
-AdmProfile;ADM profile
 AdID;Ad-ID identifier
+ADM: Show ChannelFormats;ADM: Show ChannelFormats
+ADM: Show TrackUIDs;ADM: Show TrackUIDs
+AdmProfile;ADM profile
 Advanced;Advanced
 Advanced mode;Advanced mode
 Album;Album
@@ -332,7 +334,9 @@ DrcSets_Count;DRC set count
 DrcSets_Effects;DRC effect type(s)
 Duration;Duration
 Duration_End;End time
+Duration_End_Command;End time (commands)
 Duration_Start;Start time
+Duration_Start_Command;Start time (commands)
 DynamicRangeControl;Dynamic Range Control
 Eac3DrcProfile;E-AC-3 DRC profile
 Edit;Edit
@@ -349,6 +353,10 @@ EncodedBy;Encoded by
 EPG_Positions;EPG positions (internal)
 EpisodeTitleNumber;Episode Title Number
 Error_File;Error while reading file
+Events_PaintOn;Count of PaintOn events
+Events_PopOn;Count of PopOn events
+Events_RollUp;Count of RollUp events
+Events_Total;Count of events
 ExecutiveProducer;Executive producer
 Exit;Exit
 Exit_Hint;Quit the program
@@ -968,6 +976,7 @@ NumberOfProgrammes;Number of programmes
 NumberOfSubstreams;Number of substreams
 NumberOfTrackUIDs;Number of track UIDs
 NumColors;Number of colors
+ObjectCount;Object Count
 OK;OK
 One output file per input file;One output file per input file
 Open;Open
@@ -1190,12 +1199,13 @@ ThanksTo;Thanks to
 Thousands separator;Thousands separator
 TimeCode;Time code
 TimeCode_FirstFrame;Time code of first frame
+TimeCode_MaxFrameNumber;Maximum frame number in time codes
+TimeCode_MaxFrameNumber_Theory;Theoritical maximum frame number in time codes
 TimeCode_Settings;Time code settings
 TimeCode_Source;Time code source
 TimeCode_Striped;Time code, striped
 TimeStamp;Time stamp
 TimeZone;Timezone
-TypeDefinition;TypeDefinition
 Title;Title
 Title_More;Title, more info
 Total;Total
@@ -1210,6 +1220,7 @@ Tree & Text;Tree & Text
 TruePeakLevel;True peak level
 TruePeakLevel_Album;True peak level (album)
 Type;Type
+TypeDefinition;TypeDefinition
 UniqueID;Unique ID
 UniversalAdID;Universal Ad ID
 UniversalAdID_Registry;Universal Ad ID registry
