@@ -378,6 +378,7 @@ FileName;File name
 FileNameExtension;File name extension
 FileSize;File size
 FlatPanelTv;Flat panel TV
+FlowID;Flow ID
 Folder;Folder
 Folder (R);Folder (R)
 Folder (R)_Hint;Select a folder to examine (with all folders recursively)
@@ -896,6 +897,7 @@ LinkedTo_Object_Pos;Object #s
 LinkedTo_PackFormat_Pos;Pack format #s
 LinkedTo_SignalGroup_Pos;Signal group #s
 LinkedTo_Substream_Pos;Substream #s
+LinkedTo_TrackFormat_Pos;Track format #s
 LinkedTo_TrackUID_Pos;Track UID #s
 List;List
 LoRoCenterMixGain;LoRo center mix gain
@@ -943,6 +945,9 @@ Menu_Hint;More possibilities
 Menu_No;No menu
 MenuCount;Count of menu streams
 MenuID;Menu ID
+Metadata_Format;Metadata format
+Metadata_Format_Type;Type of the metadata frame
+Metadata_MuxingMode;Metadata musxing mode
 MixType;Mix type
 mn; min
 Mood;Mood
@@ -966,7 +971,7 @@ NewVersion_Question_Title;A new version was released!
 No;No
 Not yet;Not yet
 NumberOfChannelFormats;Number of channel formats
-NumberOfContents;Number of Contents
+NumberOfContents;Number of contents
 NumberOfDynamicObjects;Number of dynamic objects
 NumberOfElementaryStreams;Number of elementary streams
 NumberOfObjects;Number of objects
@@ -975,6 +980,8 @@ NumberOfPresentations;Number of presentations
 NumberOfProgrammes;Number of programmes
 NumberOfSubstreams;Number of substreams
 NumberOfTrackUIDs;Number of track UIDs
+NumberOfTrackFormats;Number of track formats
+NumberOfStreamFormats;Number of stream formats
 NumColors;Number of colors
 ObjectCount;Object Count
 OK;OK
@@ -1213,8 +1220,11 @@ TotalNumberOfParts;Total Number Of Parts
 TotalProgrammeDuration;Total Programme Duration
 Track;Track name
 Track_Count;Track count
+TrackIndex;Track index
+TrackUID;TrackUID
 transfer_characteristics;Transfer characteristics
 Translator;Translator
+Transport;Transport
 Tree;Tree
 Tree & Text;Tree & Text
 TruePeakLevel;True peak level

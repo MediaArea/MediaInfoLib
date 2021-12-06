@@ -1343,6 +1343,11 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
             Ztring ToSearch=Parameter_ISO.substr(0, Space);
             for (size_t i=0; i<Stream_More_Item.size(); i++)
             {
+                if (Stream_More_Item(i, Info_Name) == Parameter_ISO)
+                {
+                    LastFound=(size_t)-1;
+                    break;
+                }
                 if (Stream_More_Item(i, Info_Name).rfind(ToSearch, ToSearch.size())==0 && (Stream_More_Item(i, Info_Name).size()==ToSearch.size() || Stream_More_Item(i, Info_Name)[ToSearch.size()]==__T(' ')))
                     LastFound=i;
             }
