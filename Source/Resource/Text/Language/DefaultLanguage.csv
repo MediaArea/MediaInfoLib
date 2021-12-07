@@ -201,6 +201,7 @@ Basic;Basic
 Basic_Note;Note : for more information about this file, you must select a different view (Sheet, Tree...)
 BedChannelConfiguration;Bed channel configuration
 BedChannelCount;Bed channel count
+BinauralRenderMode;Binaural render mode
 BitDepth;Bit depth
 BitDepth_Detected;Detected bit depth
 BitDepth_Stored;Stored bit depth
@@ -327,6 +328,7 @@ DisplayAspectRatio_Original;Original display aspect ratio
 DistributedBy;Distributed by
 Distributor;Distributor
 DolbyAtmos;Dolby Atmos
+Dolby_Atmos_Metadata;Dolby Atmos metadata
 Donate;Donate
 DotsPerInch;Dots per inch
 Downmix;Downmix
@@ -676,6 +678,21 @@ InternetMediaType;Internet media type
 IRCA;IRCA
 ISBN;ISBN
 ISRC;ISRC
+JocBalance_FrontBackOverheadFloor;Front/back overhead/floor balance
+JocBalance_FrontBackListener;Front/back listener balance
+JocTrim_Center;Center trim
+JocTrim_Height;Height trim
+JocTrim_Surround;Surround trim
+JocTrimMode;Trim mode
+JocTrimMode0i;Trim mode for 2.0
+JocTrimMode1i;Trim mode for 5.1
+JocTrimMode2i;Trim mode for 7.1
+JocTrimMode3i;Trim mode for 2.1.2
+JocTrimMode4i;Trim mode for 5.1.2
+JocTrimMode5i;Trim mode for 7.1.2
+JocTrimMode6i;Trim mode for 2.1.4
+JocTrimMode7i;Trim mode for 5.1.4
+JocTrimMode8i;Trim mode for 7.1.4
 Keywords;Keywords
 Known codecs;Known codecs
 Known formats;Known formats
@@ -1239,6 +1256,7 @@ VideoCount;Count of video streams
 View;View
 View_Hint;Change the means of viewing information
 Warning : more streams in the files;Warning : there are more streams in the files
+WarpMode;Warp mode
 Web;Web
 WebSite_Audio;Go to the web site of this audio codec
 WebSite_Audio_More;Go to the web site (%Url%) to find this audio codec
