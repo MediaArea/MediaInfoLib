@@ -725,6 +725,8 @@ int mgi_bitstream_pos_z_to_Q15(bool pos_z_sign, int8u pos_z_bits)
 }
 
 //---------------------------------------------------------------------------
+namespace
+{
 struct speaker_info
 {
     int8u AzimuthAngle; //0 to 180 (right, if AzimuthDirection is false) or 179 (left, if AzimuthDirection is true)
@@ -742,6 +744,7 @@ bool operator== (const speaker_info& L, const speaker_info& R)
     return L.AzimuthAngle==R.AzimuthAngle
         && L.ElevationDirectionAngle==R.ElevationDirectionAngle
         && L.Flags==R.Flags;
+}
 }
 extern string Aac_ChannelLayout_GetString(const Aac_OutputChannel* const OutputChannels, size_t OutputChannels_Size);
 static const size_t SpeakerInfos_Size=43;
