@@ -108,6 +108,9 @@
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <Defines>_DEBUG;$(Defines)</Defines>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!='' And '$(FileToCompile)'=='..\..\..\Source\ThirdParty\tfsxml\tfsxml.c'">
+        <BCC_CPPCompileAlways>true</BCC_CPPCompileAlways>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <TASM_Debugging>None</TASM_Debugging>
     </PropertyGroup>
@@ -117,6 +120,9 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <Defines>NDEBUG;MEDIAINFO_LIBCURL_NO;MEDIAINFO_GRAPHVIZ_NO;MEDIAINFO_AES_NO;MEDIAINFO_ALL_NO;$(Defines)</Defines>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!='' And '$(FileToCompile)'=='..\..\..\Source\ThirdParty\tfsxml\tfsxml.c'">
+        <BCC_CPPCompileAlways>true</BCC_CPPCompileAlways>
     </PropertyGroup>
     <ItemGroup>
         <CppCompile Include="..\..\..\Source\MediaInfo\Archive\File_7z.cpp">
@@ -850,6 +856,7 @@
         </CppCompile>
         <CppCompile Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.c">
             <BuildOrder>232</BuildOrder>
+            <OptionOverrides>true</OptionOverrides>
         </CppCompile>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

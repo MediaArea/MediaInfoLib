@@ -134,7 +134,7 @@ int tfsxml_init(tfsxml_string* priv, const void* buf, int len)
     }
 
     // Init
-    priv->buf = buf;
+    priv->buf = (const char*)buf;
     priv->len = len;
     priv->flags = 0;
     set_flag(priv, 1);
