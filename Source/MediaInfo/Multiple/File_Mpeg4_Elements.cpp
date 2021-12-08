@@ -1965,6 +1965,7 @@ void File_Mpeg4::mdat_xxxx()
                 {
                     if (Stream_Temp.CodecID==0x4156696E) //AVin
                     {
+                        int32u Width=Retrieve(Stream_Video, Stream_Temp.StreamPos, Video_Width).To_int32u();
                         int32u Height=Retrieve(Stream_Video, Stream_Temp.StreamPos, Video_Height).To_int32u();
                         int32u Fields;
                         if (Retrieve(Stream_Video, Stream_Temp.StreamPos, Video_ScanType)==__T("Progressive"))
@@ -1978,7 +1979,7 @@ void File_Mpeg4::mdat_xxxx()
                             SampleDuration=Stream_Temp.stts[0].SampleDuration;
                         else
                             SampleDuration=0;
-                        Stream_Temp.CodecID=File_Avc::AVC_Intra_CodecID_FromMeta(Height, Fields, SampleDuration, Stream_Temp.mdhd_TimeScale, Stream_Temp.stsz_Sample_Size);
+                        Stream_Temp.CodecID=File_Avc::AVC_Intra_CodecID_FromMeta(Width, Height, Fields, SampleDuration, Stream_Temp.mdhd_TimeScale, Stream_Temp.stsz_Sample_Size);
                     }
 
                     //Stream_Temp.Demux_Level|= (1<<6); //In case of seek, we need to send again SPS/PPS //Deactivated because Hydra does not decode after a seek + 1 SPS/PPS only.
