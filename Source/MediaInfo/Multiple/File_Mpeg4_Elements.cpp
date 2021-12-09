@@ -6408,7 +6408,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_btrt()
         //if (avgBitrate)
         //    Fill(StreamKind_Last, StreamPos_Last, "BitRate",         avgBitrate); //Not trustable enough, and we have precise bitrate from stream size with
         if (maxBitrate)
-            Fill(StreamKind_Last, StreamPos_Last, "BitRate_Maximum", maxBitrate);
+        {
+            const Ztring& PreviousMaxBitRate=Retrieve_Const(StreamKind_Last, StreamPos_Last, "BitRate_Maximum");
+            if (PreviousMaxBitRate.empty() || PreviousMaxBitRate.To_int64u()!= maxBitrate) //TODO: a more generic test about duplicated values
+                Fill(StreamKind_Last, StreamPos_Last, "BitRate_Maximum", maxBitrate);
+        }
     FILLING_END();
 }
 
