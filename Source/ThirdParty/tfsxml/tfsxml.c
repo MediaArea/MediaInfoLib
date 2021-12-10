@@ -175,7 +175,8 @@ int tfsxml_next(tfsxml_string* priv, tfsxml_string* n)
             if (priv->len && *priv->buf == '!')
             {
                 unsigned long long probe = 0;
-                for (int i = 1; i < 8; i++)
+                int i;
+                for (i = 1; i < 8; i++)
                 {
                     probe <<= 8;
                     probe |= priv->buf[i];
@@ -386,7 +387,8 @@ int tfsxml_value(tfsxml_string* priv, tfsxml_string* v)
             if (priv->len == len_sav && priv->len > 8)
             {
                 unsigned long long probe = 0;
-                for (int i = 1; i <= 8; i++)
+                int i;
+                for (i = 1; i <= 8; i++)
                 {
                     probe <<= 8;
                     probe |= priv->buf[i];
@@ -503,7 +505,8 @@ int tfsxml_leave(tfsxml_string* priv)
             if (priv->len && *priv->buf == '!')
             {
                 unsigned long long probe = 0;
-                for (int i = 1; i < 8; i++)
+                int i;
+                for (i = 1; i < 8; i++)
                 {
                     probe <<= 8;
                     probe |= priv->buf[i];
