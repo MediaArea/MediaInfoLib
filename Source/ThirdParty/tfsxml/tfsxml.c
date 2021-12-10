@@ -1,3 +1,25 @@
+/* Copyright (c) MediaArea.net SARL. All Rights Reserved.
+
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+
+(zlib license)
+
+*/
+
 #include "tfsxml.h"
 #ifndef NULL
     #ifdef __cplusplus
@@ -6,13 +28,20 @@
         #define NULL ((void *)0)
     #endif
 #endif
+#if !defined(inline)
+    #define inline
+#endif
 
-// priv flags:
-// 0: is inside an element header
-// 1: previous element is closed
+/*
+ * priv flags :
+ * 0: is inside an element header
+ * 1: previous element is closed
+ */
 
-// attribute/value flags:
-// 0: must be decoded
+/*
+ * attribute / value flags :
+ * 0: must be decoded
+ */
 
 static inline void set_flag(tfsxml_string* priv, int offset)
 {
@@ -37,7 +66,7 @@ static inline void next_char(tfsxml_string* priv)
 
 static inline int tfsxml_leave_element_header(tfsxml_string* priv)
 {
-    // Skip attributes
+    /* Skip attributes */
     tfsxml_string n, v;
     while (!tfsxml_attr(priv, &n, &v));
 
@@ -45,7 +74,7 @@ static inline int tfsxml_leave_element_header(tfsxml_string* priv)
 }
 
 
-static inline int tfsxml_has_value(tfsxml_string* priv, tfsxml_string* v)
+static inline int tfsxml_has_value(tfsxml_string* v)
 {
     int is_end = 0;
     const char* buf = v->buf;
@@ -72,7 +101,7 @@ static inline int tfsxml_has_value(tfsxml_string* priv, tfsxml_string* v)
 
 int tfsxml_strcmp_charp(tfsxml_string a, const char* b)
 {
-    // Compare char per char and return the difference if chars are no equal
+    /* Compare char per charand return the difference if chars are no equal */
     for (; a.len && *b; a.buf++, a.len--, b++)
     {
         char c = *a.buf - *b;
@@ -81,22 +110,22 @@ int tfsxml_strcmp_charp(tfsxml_string a, const char* b)
     }
 
     if (!a.len && !*b)
-        return 0; // All equal
+        return 0; /* All equal */
     else if (*b)
-        return -*b; // b is longer than a
+        return -*b; /* b is longer than a */
     else
-        return *a.buf; // a is longer than b
+        return *a.buf; /* a is longer than b */
 }
 
 tfsxml_string tfsxml_strstr_charp(tfsxml_string a, const char* b)
 {
-    // Iterate string to be scanned
+    /* Iterate string to be scanned */
     for (; a.len; a.buf++, a.len--)
     {
         const char* buf = a.buf;
         int len = a.len;
         const char* bb = b;
-        // Compare char per char
+        /* Compare char per char */
         for (; len && *bb; buf++, len--, bb++)
         {
             char c = *buf - *bb;
@@ -117,24 +146,24 @@ int tfsxml_init(tfsxml_string* priv, const void* buf, int len)
 {
     const char* buf_8 = (const char*)buf;
 
-    // BOM detection
+    /* BOM detection */
     if (len > 3
-        && buf_8[0] == 0xEF
-        && buf_8[1] == 0xBB
-        && buf_8[2] == 0xBF)
+        && (unsigned char)buf_8[0] == 0xEF
+        && (unsigned char)buf_8[1] == 0xBB
+        && (unsigned char)buf_8[2] == 0xBF)
     {
         buf_8 += 3;
         len -= 3;
     }
 
-    // Start detection
+    /* Start detection */
     if (len < 1
         || buf_8[0] != '<') {
         return -1;
     }
 
-    // Init
-    priv->buf = buf;
+    /* Init */
+    priv->buf = (const char*)buf;
     priv->len = len;
     priv->flags = 0;
     set_flag(priv, 1);
@@ -144,15 +173,17 @@ int tfsxml_init(tfsxml_string* priv, const void* buf, int len)
 
 int tfsxml_next(tfsxml_string* priv, tfsxml_string* n)
 {
-    // Exiting previous element header analysis if needed
+    int level;
+
+    /* Exiting previous element header analysis if needed */
     if (get_flag(priv, 0) && tfsxml_leave_element_header(priv))
         return -1;
 
-    // Leaving previous element content if needed
+    /* Leaving previous element content if needed */
     if (!get_flag(priv, 1) && tfsxml_leave(priv))
         return -1;
 
-    int level = 0;
+    level = 0;
     while (priv->len)
     {
         switch (*priv->buf)
@@ -181,7 +212,7 @@ int tfsxml_next(tfsxml_string* priv, tfsxml_string* n)
                     probe <<= 8;
                     probe |= priv->buf[i];
                 }
-                if (probe == 0x5B43444154415B) // "[CDATA["
+                if (probe == 0x5B43444154415BULL) /* "[CDATA[" */
                 {
                     probe = 0;
                     priv->buf += 9;
@@ -191,7 +222,7 @@ int tfsxml_next(tfsxml_string* priv, tfsxml_string* n)
                         probe &= 0xFFFF;
                         probe <<= 8;
                         probe |= *priv->buf;
-                        if (probe == 0x5D5D3E) // "]]>"
+                        if (probe == 0x5D5D3EULL) /* "]]>" */
                             break;
                         priv->buf++;
                         priv->len--;
@@ -202,15 +233,15 @@ int tfsxml_next(tfsxml_string* priv, tfsxml_string* n)
                 if (priv->len >= 3 && priv->buf[1] == '-' && priv->buf[2] == '-')
                 {
                     int len_sav = priv->len;
-                    probe = 0;
                     const char* buf = priv->buf + 3;
                     int len = priv->len - 3;
+                    probe = 0;
                     while (len)
                     {
                         probe &= 0xFFFF;
                         probe <<= 8;
                         probe |= *buf;
-                        if (probe == 0x2D2D3E) // "-->"
+                        if (probe == 0x2D2D3EULL) /* "-->" */
                             break;
                         buf++;
                         len--;
@@ -270,11 +301,6 @@ int tfsxml_next(tfsxml_string* priv, tfsxml_string* n)
                     }
                     next_char(priv);
                 }
-
-                set_flag(priv, 0);
-                unset_flag(priv, 1);
-                n->len = priv->len;
-                return 0;
             }
             level++;
             break;
@@ -317,7 +343,8 @@ int tfsxml_attr(tfsxml_string* priv, tfsxml_string* n, tfsxml_string* v)
             unset_flag(priv, 0);
             return -1;
         default:
-            // Attribute
+        {
+            /* Attribute */
             n->buf = priv->buf;
             while (priv->len && *priv->buf != '=')
             {
@@ -327,8 +354,9 @@ int tfsxml_attr(tfsxml_string* priv, tfsxml_string* n, tfsxml_string* v)
             if (!priv->len)
                 return -1;
             next_char(priv);
-
-            // Value
+        }
+        {
+            /* Value */
             const char quote = *priv->buf;
             next_char(priv);
             v->buf = priv->buf;
@@ -343,6 +371,7 @@ int tfsxml_attr(tfsxml_string* priv, tfsxml_string* n, tfsxml_string* v)
                 return -1;
             next_char(priv);
             return 0;
+        }
         }
         next_char(priv);
     }
@@ -360,8 +389,9 @@ int tfsxml_attr(tfsxml_string* priv, tfsxml_string* n, tfsxml_string* v)
 int tfsxml_value(tfsxml_string* priv, tfsxml_string* v)
 {
     tfsxml_string priv_bak = *priv;
+    int len_sav;
 
-    // Exiting previous element header analysis if needed
+    /* Exiting previous element header analysis if needed */
     int is_first = 0;
     if (get_flag(priv, 0))
     {
@@ -369,12 +399,12 @@ int tfsxml_value(tfsxml_string* priv, tfsxml_string* v)
             return -1;
         is_first = 1;
 
-        // Previous element must not be finished
+        /* Previous element must not be finished */
         if (get_flag(priv, 1))
             return -1;
     }
 
-    int len_sav = priv->len;
+    len_sav = priv->len;
     v->flags = 0;
     while (priv->len)
     {
@@ -393,17 +423,17 @@ int tfsxml_value(tfsxml_string* priv, tfsxml_string* v)
                     probe <<= 8;
                     probe |= priv->buf[i];
                 }
-                if (probe == 0x215B43444154415B) // "![CDATA["
+                if (probe == 0x215B43444154415BULL) /* "![CDATA[" */
                 {
-                    probe = 0;
                     const char* buf = priv->buf + 9;
                     int len = priv->len - 9;
+                    probe = 0;
                     while (len)
                     {
                         probe &= 0xFFFF;
                         probe <<= 8;
                         probe |= *buf;
-                        if (probe == 0x5D5D3E) // "]]>"
+                        if (probe == 0x5D5D3EULL) /* "]]>" */
                             break;
                         buf++;
                         len--;
@@ -421,14 +451,13 @@ int tfsxml_value(tfsxml_string* priv, tfsxml_string* v)
             }
             v->len = len_sav - priv->len;
             v->buf = priv->buf - v->len;
-            if (tfsxml_has_value(priv, v))
+            if (tfsxml_has_value(v))
             {
                 *priv = priv_bak;
                 return -1;
             }
             if (is_first)
             {
-                tfsxml_string v;
                 unset_flag(priv, 1);
                 tfsxml_leave(priv);
             }
@@ -441,7 +470,7 @@ int tfsxml_value(tfsxml_string* priv, tfsxml_string* v)
     v->len = len_sav;
     v->buf = priv->buf - v->len;
     v->flags = 0;
-    if (tfsxml_has_value(priv, v))
+    if (tfsxml_has_value(v))
     {
         *priv = priv_bak;
         return -1;
@@ -451,11 +480,11 @@ int tfsxml_value(tfsxml_string* priv, tfsxml_string* v)
 
 int tfsxml_enter(tfsxml_string* priv)
 {
-    // Exiting previous element header analysis if needed
+    /* Exiting previous element header analysis if needed */
     if (get_flag(priv, 0) && tfsxml_leave_element_header(priv))
         return -1;
 
-    // Previous element must not be finished
+    /* Previous element must not be finished */
     if (get_flag(priv, 1))
         return -1;
 
@@ -465,11 +494,13 @@ int tfsxml_enter(tfsxml_string* priv)
 
 int tfsxml_leave(tfsxml_string* priv)
 {
-    // Exiting previous element header analysis if needed
+    int level;
+
+    /* Exiting previous element header analysis if needed */
     if (get_flag(priv, 0) && tfsxml_leave_element_header(priv))
         return -1;
 
-    int level = get_flag(priv, 1) ? 1 : 0;
+    level = get_flag(priv, 1) ? 1 : 0;
     while (priv->len)
     {
         switch (*priv->buf)
@@ -511,7 +542,7 @@ int tfsxml_leave(tfsxml_string* priv)
                     probe <<= 8;
                     probe |= priv->buf[i];
                 }
-                if (probe == 0x5B43444154415B) // "[CDATA["
+                if (probe == 0x5B43444154415BULL) /* "[CDATA[" */
                 {
                     probe = 0;
                     priv->buf += 9;
@@ -521,7 +552,7 @@ int tfsxml_leave(tfsxml_string* priv)
                         probe &= 0xFFFF;
                         probe <<= 8;
                         probe |= *priv->buf;
-                        if (probe == 0x5D5D3E) // "]]>"
+                        if (probe == 0x5D5D3EULL) /* "]]>" */
                             break;
                         priv->buf++;
                         priv->len--;
@@ -530,16 +561,16 @@ int tfsxml_leave(tfsxml_string* priv)
                 }
                 if (priv->len >= 3 && priv->buf[1] == '-' && priv->buf[2] == '-')
                 {
-                    int len_sav = priv->len;
-                    probe = 0;
                     const char* buf = priv->buf + 3;
+                    int len_sav = priv->len;
                     int len = priv->len - 3;
+                    probe = 0;
                     while (len)
                     {
                         probe &= 0xFFFF;
                         probe <<= 8;
                         probe |= *buf;
-                        if (probe == 0x2D2D3E) // "-->"
+                        if (probe == 0x2D2D3EULL) /* "-->" */
                             break;
                         buf++;
                         len--;
@@ -558,10 +589,12 @@ int tfsxml_leave(tfsxml_string* priv)
             }
             for (;;)
             {
+                int split;
+
                 if (!priv->len)
                     return -1;
 
-                int split = 0;
+                split = 0;
                 switch (*priv->buf)
                 {
                 case '\n':
@@ -603,6 +636,7 @@ static const char* const tfsxml_decode_markup[2] =
 
 void tfsxml_decode(void* s, const tfsxml_string* v, void (*func)(void*, const char*, int))
 {
+    const char* buf_begin;
     const char* buf = v->buf;
     int len = v->len;
 
@@ -612,7 +646,7 @@ void tfsxml_decode(void* s, const tfsxml_string* v, void (*func)(void*, const ch
         return;
     }
 
-    const char* buf_begin = buf;
+    buf_begin = buf;
     while (len)
     {
         if (*buf == '&')
@@ -630,9 +664,9 @@ void tfsxml_decode(void* s, const tfsxml_string* v, void (*func)(void*, const ch
                 int len_beg = buf_end - buf_beg;
                 if (len_beg && *buf_beg == '#')
                 {
+                    unsigned long value = 0;
                     buf_beg++;
                     len_beg--;
-                    unsigned long value = 0;
                     if (*buf_beg == 'x' || *buf_beg == 'X')
                     {
                         buf_beg++;
@@ -681,10 +715,10 @@ void tfsxml_decode(void* s, const tfsxml_string* v, void (*func)(void*, const ch
                         }
                     }
 
-                    if (value != -1)
+                    if (value != (unsigned long)-1)
                     {
-                        func(s, buf_begin, buf - buf_begin);
                         char utf8[4];
+                        func(s, buf_begin, buf - buf_begin);
                         if (value < 0x0080)
                         {
                             utf8[0] = (char)value;

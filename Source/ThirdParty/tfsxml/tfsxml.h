@@ -1,4 +1,6 @@
-// Tiny Fast Streamable XML parser
+/*
+ * Tiny Fast Streamable XML parser
+ */
 
 #ifndef TFSXML_H
 #define TFSXML_H
