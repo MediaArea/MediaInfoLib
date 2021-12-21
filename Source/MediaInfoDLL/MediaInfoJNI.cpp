@@ -17,7 +17,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #endif
-
+#include <bitset>
 #include <ZenLib/Ztring.h>
 
 #include "ThirdParty/jni/jni.h"
@@ -116,7 +116,7 @@ static jint JNI_OpenFd(JNIEnv* _env, jobject _this, jint fd, jstring name)
         if (count < 0)
             break; // error
 
-        bitset<32> state = mi->Open_Buffer_Continue(buffer, (size_t)count);
+        std::bitset<32> state = mi->Open_Buffer_Continue(buffer, (size_t)count);
 
         // bit 3 set means finalized
         if (state.test(3))
