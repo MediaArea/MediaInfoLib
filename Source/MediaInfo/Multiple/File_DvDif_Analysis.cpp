@@ -96,7 +96,7 @@ void File_DvDif::Read_Buffer_Continue()
                                 else
                                     FSP_WasNotSet=true;
                             }
-                            else
+                            else if (FSC_WasNotSet_Sum==0 && FSC_WasSet_Sum==0)
                                 FSC_WasSet=true;
                         }
                     }
@@ -668,6 +668,10 @@ void File_DvDif::Read_Buffer_Continue()
          && Buffer[Buffer_Offset+1]==0x00
          && Buffer[Buffer_Offset+2]==0x00)
            Speed_Contains_NULL++;
+        if ((Buffer[Buffer_Offset+1]&0x08)==0x00) //FSC=0
+            FSC_WasNotSet_Sum++;
+        else
+            FSC_WasSet_Sum++;
 
         Buffer_Offset+=80;
     }
@@ -740,6 +744,24 @@ void File_DvDif::Errors_Stats_Update()
                 ChannelInfo=NewChannelInfo;
         }
 
+        // Coherency checking
+        bool FSC_Incoherency=false;
+        if (FSC_WasSet_Sum && FSC_WasSet_Sum)
+        {
+            int FSC_Diff=FSC_WasSet_Sum-FSC_WasNotSet_Sum;
+            if (FSC_Diff<0)
+                FSC_Diff=-FSC_Diff;
+            if (FSC_Diff*2 < FSC_WasSet_Sum+FSC_WasNotSet_Sum)
+            {
+                FSC_WasSet=false;
+                FSC_Incoherency=true;
+            }
+            else
+            {
+                FSC_WasSet=FSC_WasSet_Sum>FSC_WasNotSet_Sum;
+            }
+        }
+
         EVENT_BEGIN(DvDif, Change, 0)
             Event.StreamOffset=Speed_FrameCount_StartOffset;
             Event.FrameNumber=Speed_FrameCount;
@@ -798,6 +820,8 @@ void File_DvDif::Errors_Stats_Update()
                         }
                     }
                 }
+                else if (FSC_Incoherency)
+                    Event.VideoChromaSubsampling=(int32u)-1;
                 else //DV 50 Mbps and 100 Mbps
                     Event.VideoChromaSubsampling=2;
             }
@@ -1825,6 +1849,8 @@ void File_DvDif::Errors_Stats_Update()
     }
 
     FSC_WasSet=false;
+    FSC_WasSet_Sum=0;
+    FSC_WasNotSet_Sum=0;
     FSP_WasNotSet=false;
     ssyb_AP3=(int8u)-1;
     AbstBf_Current=(0x7FFFFF)<<1;
