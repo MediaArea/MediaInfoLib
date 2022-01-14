@@ -576,43 +576,58 @@ void File_DvDif::Read_Buffer_Continue()
                     }
 
                     //Audio errors
-                    if (Buffer[Buffer_Offset+8]==0x80)
                     {
-                        bool Contains_8000=true;
+                        bool Contains_8000=true; // Note: standards indicate these values so old code was using only theses values, now checking all values (except 0 as it is for silent audio)
                         bool Contains_800800=true;
-                        for (size_t i=8; i<80; i+=2)
-                            if (Buffer[Buffer_Offset+i]  !=0x80
-                             || Buffer[Buffer_Offset+i+1]!=0x00)
+                        int8u ToCheck_8000_0=Buffer[Buffer_Offset+8];
+                        int8u ToCheck_8000_1=Buffer[Buffer_Offset+9];
+                        for (size_t i=10; i<80; i+=2)
+                            if (Buffer[Buffer_Offset+i  ]!=ToCheck_8000_0
+                             || Buffer[Buffer_Offset+i+1]!=ToCheck_8000_1)
                             {
                                 Contains_8000=false;
                                 break;
                             }
-                        for (size_t i=8; i<80; i+=3)
-                            if (Buffer[Buffer_Offset+i]  !=0x80
-                             || Buffer[Buffer_Offset+i+1]!=0x80
-                             || Buffer[Buffer_Offset+i+2]!=0x00)
+                        int8u Contains_800800_0=Buffer[Buffer_Offset+ 8];
+                        int8u Contains_800800_1=Buffer[Buffer_Offset+ 9];
+                        int8u Contains_800800_2=Buffer[Buffer_Offset+10];
+                        for (size_t i=11; i<80; i+=3)
+                            if (Buffer[Buffer_Offset+i  ]!=Contains_800800_0
+                             || Buffer[Buffer_Offset+i+1]!=Contains_800800_1
+                             || Buffer[Buffer_Offset+i+2]!=Contains_800800_2)
                             {
                                 Contains_800800=false;
                                 break;
                             }
-                        if ((/*QU==0 &&*/ Contains_8000)    //16-bit 0x8000
+                        if ((QU==0 && Contains_8000)    //16-bit 0x8000
                          || (QU==1 && Contains_800800)  //12-bit 0x800
                          || (QU==(int8u)-1 && (Contains_8000 || Contains_800800))) //In case of QU is not already detected
                         {
                             uint8_t Channel=(Buffer[Buffer_Offset+1]&0x08)?1:0; //FSC
                             uint8_t Dseq=Buffer[Buffer_Offset+1]>>4;
-                            if (Channel>=Audio_Errors.size())
-                                Audio_Errors.resize(Channel+1);
-                            if (Audio_Errors[Channel].empty())
-                                Audio_Errors[Channel].resize(Dseq_Count);
-                            Audio_Errors[Channel][Dseq]++;
-                            BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_NOK;
+                            bool Is16=(QU==(int8u)-1)?(Contains_8000):(QU==0);
+                            int16u Value;
+                            switch (Is16)
+                            {
+                                case 0: Value=(Contains_800800_0<<4)|(Contains_800800_1>>4); break; // Only one half
+                                case 1: Value=(ToCheck_8000_0<<8)|ToCheck_8000_1; break;
+                            }
+                            if ((Is16 && (Value&0x7FFF)) || (!Is16 && (Value&0x7FF)))
+                            {
+                                if (Channel>=Audio_Errors.size())
+                                    Audio_Errors.resize(Channel+1);
+                                if (Audio_Errors[Channel].empty())
+                                    Audio_Errors[Channel].resize(Dseq_Count);
+                                Audio_Errors[Channel][Dseq].Count++;
+                                Audio_Errors[Channel][Dseq].Values.insert(Value);
+                                BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_NOK;
+                            }
+                            else
+                                BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_OK;
                         }
                         else
                             BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_OK;
                     }
-                    else
-                        BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_OK;
                 }
                 break;
 
@@ -1474,7 +1489,7 @@ void File_DvDif::Errors_Stats_Update()
                         if (!Audio_Errors_PerDseq && audio_source_mode.empty() && ChannelInfo[ChannelGroup*2+Channel])
                             Audio_Errors_PerDseq=9; //We consider all audio blocks as invalid if the frame has no audio_source for this channel but had it in the previous frames
                         if (!Audio_Errors_PerDseq && ChannelGroup<Audio_Errors.size() && !Audio_Errors[ChannelGroup].empty())
-                            Audio_Errors_PerDseq=Audio_Errors[ChannelGroup][Dseq];
+                            Audio_Errors_PerDseq=Audio_Errors[ChannelGroup][Dseq].Count;
                         if (Audio_Errors_PerDseq)
                         {
                             Audio_Errors_PerChannel+=Audio_Errors_PerDseq;
@@ -1739,6 +1754,8 @@ void File_DvDif::Errors_Stats_Update()
                     Video_StaNonZero=true; // Only if all from the same STA value
             size_t Audio_TotalErrors=0;
             size_t Audio_Errors_PerDseq[16]; //Per Dseq
+            int8u* MoreData=NULL;
+            size_t MoreData_Offset=0;
             if (Audio_Errors.empty())
             {
                 Event1.Audio_Data_Errors_Count=0;
@@ -1749,7 +1766,23 @@ void File_DvDif::Errors_Stats_Update()
                 memset(Audio_Errors_PerDseq, 0, sizeof(Audio_Errors_PerDseq));
                 for (size_t ChannelGroup=0; ChannelGroup<Audio_Errors.size(); ChannelGroup++)
                     for (size_t Dseq=0; Dseq<Dseq_Count; Dseq++)
-                        Audio_Errors_PerDseq[Dseq]+=Audio_Errors[ChannelGroup][Dseq];
+                    {
+                        Audio_Errors_PerDseq[Dseq]+=Audio_Errors[ChannelGroup][Dseq].Count;
+                        if (!Audio_Errors[ChannelGroup][Dseq].Values.empty())
+                        {
+                            if (!MoreData)
+                                MoreData=new int8u[4096] + sizeof(size_t); // TODO: more dynamic allocation
+                            MoreData[MoreData_Offset++]=2+Audio_Errors[ChannelGroup][Dseq].Values.size()*2; // Size of the block
+                            MoreData[MoreData_Offset++]=1; // Audio error value par channel group per Dseq
+                            MoreData[MoreData_Offset++]=ChannelGroup;
+                            MoreData[MoreData_Offset++]=Dseq;
+                            for (std::set<int16u>::iterator Value=Audio_Errors[ChannelGroup][Dseq].Values.begin(); Value!=Audio_Errors[ChannelGroup][Dseq].Values.end(); ++Value)
+                            {
+                                *((int16u*)(MoreData+MoreData_Offset))=*Value&0xFFFF;
+                                MoreData_Offset+=2;
+                            }
+                        }
+                    }
                 for (size_t Dseq=0; Dseq<Dseq_Count; Dseq++)
                     Audio_TotalErrors+=Audio_Errors_PerDseq[Dseq];
                 Event1.Audio_Data_Errors_Count=16;
@@ -1771,10 +1804,17 @@ void File_DvDif::Errors_Stats_Update()
             Event1.BlockStatus=BlockStatus;
             Event1.AbstBf=AbstBf_Current;
             Event1.MoreFlags=MoreFlags;
+            if (MoreData)
+            {
+                Event1.MoreData=MoreData-sizeof(size_t);
+                *((size_t*)Event1.MoreData)=MoreData_Offset;
+            }
             Config->Event_Send(NULL, (const int8u*)&Event1, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_1));
             Config->Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_0));
             memset(BlockStatus, 0, Event1.BlockStatus_Count);
         #endif //MEDIAINFO_EVENTS
+        if (MoreData)
+            delete (MoreData-sizeof(size_t));
     }
 
     //Speed_TimeCode_Current
