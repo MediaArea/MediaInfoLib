@@ -3012,7 +3012,7 @@ void File_Hevc::slice_segment_header()
         FrameRate=(float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick;
     else
         FrameRate=0;
-    if (first_slice_segment_in_pic_flag && pic_order_cnt_DTS_Ref!=(int64u)-1 && FrameInfo.PTS!=(int64u)-1 && FrameRate)
+    if (first_slice_segment_in_pic_flag && pic_order_cnt_DTS_Ref!=(int64u)-1 && FrameInfo.PTS!=(int64u)-1 && FrameRate && TemporalReferences_Reserved)
     {
         //Frame order detection
         int64s pic_order_cnt=float64_int64s((FrameInfo.PTS-pic_order_cnt_DTS_Ref)*FrameRate/1000000000);

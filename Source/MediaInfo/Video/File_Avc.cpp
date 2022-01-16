@@ -2157,7 +2157,7 @@ void File_Avc::slice_header()
 
         //Saving some info
         int32s TemporalReferences_Offset_pic_order_cnt_lsb_Diff=0;
-        if ((*seq_parameter_set_Item)->pic_order_cnt_type!=1 && first_mb_in_slice==0 && (Element_Code!=0x14 || seq_parameter_sets.empty())) //Not slice_layer_extension except if MVC only
+        if ((*seq_parameter_set_Item)->pic_order_cnt_type!=1 && first_mb_in_slice==0 && (Element_Code!=0x14 || seq_parameter_sets.empty()) && TemporalReferences_Reserved) //Not slice_layer_extension except if MVC only
         {
             if (field_pic_flag)
             {
