@@ -336,10 +336,10 @@ void File_Hevc::Streams_Fill()
         Fill(Stream_Video, 0, "EtsiTS103433", EtsiTS103433);
         Fill_SetOptions(Stream_Video, 0, "EtsiTS103433", "N NTN");
     }
-    if (maximum_content_light_level)
-        Fill(Stream_Video, 0, "MaxCLL", Ztring::ToZtring(maximum_content_light_level) + __T(" cd/m2"));
-    if (maximum_frame_average_light_level)
-        Fill(Stream_Video, 0, "MaxFALL", Ztring::ToZtring(maximum_frame_average_light_level) + __T(" cd/m2"));
+    if (!maximum_content_light_level.empty())
+        Fill(Stream_Video, 0, Video_MaxCLL, maximum_content_light_level);
+    if (!maximum_frame_average_light_level.empty())
+        Fill(Stream_Video, 0, Video_MaxFALL, maximum_frame_average_light_level);
     if (chroma_sample_loc_type_top_field != (int32u)-1)
     {
     Fill(Stream_Video, 0, "ChromaSubsampling_Position", __T("Type ") + Ztring::ToZtring(chroma_sample_loc_type_top_field));
@@ -935,8 +935,6 @@ void File_Hevc::Synched_Init()
     //Temp
     chroma_sample_loc_type_top_field=(int32u)-1;
     chroma_sample_loc_type_bottom_field=(int32u)-1;
-    maximum_content_light_level=0;
-    maximum_frame_average_light_level=0;
     preferred_transfer_characteristics=2;
     chroma_format_idc=0;
 
@@ -2919,8 +2917,7 @@ void File_Hevc::sei_message_light_level()
     Element_Info1("light_level");
 
     //Parsing
-    Get_B2(maximum_content_light_level,                         "maximum_content_light_level");
-    Get_B2(maximum_frame_average_light_level,                   "maximum_frame_average_light_level");
+    Get_LightLevel(maximum_content_light_level, maximum_frame_average_light_level);
 }
 
 //---------------------------------------------------------------------------
