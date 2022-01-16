@@ -2503,8 +2503,19 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
                 bool DropFrame=false;
                 bool DropFrame_IsValid=false;
 
+                // Testing duration source
+                if (!DropFrame_IsValid && StreamKind==Stream_Text)
+                {
+                    const Ztring& Duration_DropFrame=Retrieve_Const(Stream_Text, StreamPos, Text_Duration_DropFrame);
+                    if (!Duration_DropFrame.empty())
+                    {
+                        DropFrame=Duration_DropFrame==__T("Yes");
+                        DropFrame_IsValid=true;
+                    }
+                }
+
                 // Testing time code
-                if (StreamKind==Stream_Video)
+                if (!DropFrame_IsValid && StreamKind==Stream_Video)
                 {
                     Ztring TC=Retrieve(Stream_Video, StreamPos, Video_TimeCode_FirstFrame);
                     if (TC.size()>=11 && TC[2]==__T(':') && TC[5]==__T(':'))
