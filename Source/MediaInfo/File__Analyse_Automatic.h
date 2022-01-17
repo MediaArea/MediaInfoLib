@@ -1438,6 +1438,7 @@ enum text
     Text_Events_RollUp,
     Text_Events_PaintOn,
     Text_Events_Total,
+    Text_Lines_Count,
     Text_FirstDisplay_Delay_Frames,
     Text_FirstDisplay_Type,
 };

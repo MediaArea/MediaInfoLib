@@ -934,6 +934,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "LfeMixGain;LFE mix gain\n"
     "Library;Muxing library\n"
     "Lightness;Lightness\n"
+    "Lines_Count;Count of lines\n"
     "LineUpStart;Line Up Start\n"
     "LinkedTo_Bed_Pos;Bed #s\n"
     "LinkedTo_ChannelFormat_Pos;Channel format #s\n"
@@ -5531,6 +5532,7 @@ void MediaInfo_Config_Text (ZtringListList &Info)
     "Events_RollUp;;;Y YTY\n"
     "Events_PaintOn;;;Y YTY\n"
     "Events_Total;;;Y YTY\n"
+    "Lines_Count;;;Y YTY\n"
     "FirstDisplay_Delay_Frames;;;Y YTY\n"
     "FirstDisplay_Type;;;Y YTY\n"
     ));
