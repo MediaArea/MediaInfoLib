@@ -467,7 +467,7 @@ void File_Ttml::Read_Buffer_Continue()
         Fill(Stream_General, 0, General_Duration, Time_End.ToMilliseconds()-Time_Start.ToMilliseconds());
         Fill(Stream_Text, 0, Text_Duration, Time_End.ToMilliseconds()-Time_Start.ToMilliseconds());
         if (!Time_Start.MoreSamples_Frequency)
-            Fill(Stream_Text, 0, Text_Duration_DropFrame, Time_Start.DropFrame?"Yes":"No");
+            Fill(Stream_Text, 0, Text_TimeCode_FirstFrame, Time_Start.ToString());
         Fill(Stream_General, 0, General_Duration_Start, Time_Start.ToMilliseconds());
         Fill(Stream_Text, 0, Text_Duration_Start, Time_Start.ToMilliseconds());
         Fill(Stream_General, 0, General_Duration_End, Time_End.ToMilliseconds());

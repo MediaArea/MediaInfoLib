@@ -2503,21 +2503,10 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
                 bool DropFrame=false;
                 bool DropFrame_IsValid=false;
 
-                // Testing duration source
-                if (!DropFrame_IsValid && StreamKind==Stream_Text)
-                {
-                    const Ztring& Duration_DropFrame=Retrieve_Const(Stream_Text, StreamPos, Text_Duration_DropFrame);
-                    if (!Duration_DropFrame.empty())
-                    {
-                        DropFrame=Duration_DropFrame==__T("Yes");
-                        DropFrame_IsValid=true;
-                    }
-                }
-
                 // Testing time code
-                if (!DropFrame_IsValid && StreamKind==Stream_Video)
+                if (!DropFrame_IsValid)
                 {
-                    Ztring TC=Retrieve(Stream_Video, StreamPos, Video_TimeCode_FirstFrame);
+                    Ztring TC=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_TimeCode_FirstFrame));
                     if (TC.size()>=11 && TC[2]==__T(':') && TC[5]==__T(':'))
                     {
                         switch (TC[8])
@@ -3129,6 +3118,7 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Delay_Original_Settings : return Video_Delay_Original_Settings;
                                     case Generic_Delay_Original_DropFrame : return Video_Delay_Original_DropFrame;
                                     case Generic_Delay_Original_Source : return Video_Delay_Original_Source;
+                                    case Generic_TimeCode_FirstFrame : return Video_TimeCode_FirstFrame;
                                     case Generic_StreamSize : return Video_StreamSize;
                                     case Generic_StreamSize_String : return Video_StreamSize_String;
                                     case Generic_StreamSize_String1 : return Video_StreamSize_String1;
@@ -3374,6 +3364,7 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Video_Delay_String2 : return Text_Video_Delay_String2;
                                     case Generic_Video_Delay_String3 : return Text_Video_Delay_String3;
                                     case Generic_Video_Delay_String4 : return Text_Video_Delay_String4;
+                                    case Generic_TimeCode_FirstFrame : return Text_TimeCode_FirstFrame;
                                     case Generic_StreamSize : return Text_StreamSize;
                                     case Generic_StreamSize_String : return Text_StreamSize_String;
                                     case Generic_StreamSize_String1 : return Text_StreamSize_String1;
@@ -3462,6 +3453,7 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Video_Delay_String2 : return Other_Video_Delay_String2;
                                     case Generic_Video_Delay_String3 : return Other_Video_Delay_String3;
                                     case Generic_Video_Delay_String4 : return Other_Video_Delay_String4;
+                                    case Generic_TimeCode_FirstFrame : return Other_TimeCode_FirstFrame;
                                     case Generic_Language : return Other_Language;
                                     default: return (size_t)-1;
                                 }
