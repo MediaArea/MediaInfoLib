@@ -344,6 +344,7 @@ void File_Ttml::Read_Buffer_Continue()
     TimeCode Time_Start(0xFF, 0xFF, 0xFF, 0xFF, (int8u)FrameRate_Int, FrameRate_Is1001);
     TimeCode Time_End(0, 0, 0, 0, (int8u)FrameRate_Int, FrameRate_Is1001);
     int64u FrameCount=0;
+    int64u LineCount=0;
     for (XMLElement* tt_element=Root->FirstChildElement(); tt_element; tt_element=tt_element->NextSiblingElement())
     {
         //body
@@ -411,6 +412,12 @@ void File_Ttml::Read_Buffer_Continue()
                                     p=div_element;
                             #endif //MEDIAINFO_EVENTS
                             FrameCount++;
+                            LineCount++;
+                            for (XMLElement* p_element=div_element->FirstChildElement(); p_element; p_element=p_element->NextSiblingElement())
+                            {
+                                if (!strcmp(p_element->Value(), "br"))
+                                    LineCount++;
+                            }
                         }
                     }
                 }
@@ -475,6 +482,7 @@ void File_Ttml::Read_Buffer_Continue()
     }
     Fill(Stream_Text, 0, Text_FrameRate_Mode, "CFR");
     Fill(Stream_Text, 0, Text_Events_Total, FrameCount);
+    Fill(Stream_Text, 0, Text_Lines_Count, LineCount);
 
     #if MEDIAINFO_DEMUX
         Demux(Buffer, Buffer_Size, ContentType_MainStream);

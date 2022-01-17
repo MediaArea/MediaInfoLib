@@ -275,5 +275,6 @@ Events_PopOn;;;Y YTY;;;;;
 Events_RollUp;;;Y YTY;;;;;
 Events_PaintOn;;;Y YTY;;;;;
 Events_Total;;;Y YTY;;;;;
+Lines_Count;;;Y YTY;;;;;
 FirstDisplay_Delay_Frames;;;Y YTY;;;;;
 FirstDisplay_Type;;;Y YTY;;;;;
