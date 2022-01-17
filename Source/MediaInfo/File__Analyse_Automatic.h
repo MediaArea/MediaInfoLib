@@ -1211,6 +1211,7 @@ enum text
     Text_Duration_String3,
     Text_Duration_String4,
     Text_Duration_String5,
+    Text_Duration_DropFrame,
     Text_Duration_Start_Command,
     Text_Duration_Start_Command_String,
     Text_Duration_Start_Command_String1,

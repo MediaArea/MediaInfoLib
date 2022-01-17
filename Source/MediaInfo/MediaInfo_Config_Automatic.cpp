@@ -5304,6 +5304,7 @@ void MediaInfo_Config_Text (ZtringListList &Info)
     "Duration/String3;;;N NT;;;Play time in format : HH:MM:SS.MMM\n"
     "Duration/String4;;;N NT;;;Play time in format : HH:MM:SS:FF, last colon replaced by semicolon for drop Duration;; ms;N YFY;;;Play time of the stream, in ms\n"
     "Duration/String5;;;N NT;;;Play time in format : HH:MM:SS.mmm (HH:MM:SS:FF)\n"
+    "Duration_DropFrame;;;N YTY;;;If time is in time code, drop frame info\n"
     "Duration_Start_Command;; ms;N YFY;;;Play time of the stream, in ms\n"
     "Duration_Start_Command/String;;;Y NT;;;Play time (formated)\n"
     "Duration_Start_Command/String1;;;N NT;;;Play time in format : HHh MMmn SSs MMMms, XX omited if zero\n"
