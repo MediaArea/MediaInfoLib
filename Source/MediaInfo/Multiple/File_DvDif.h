@@ -209,6 +209,8 @@ protected :
             StoredValues.clear();
         }
     };
+    int16u FSC_WasSet_Sum;
+    int16u FSC_WasNotSet_Sum;
     abst_bf AbstBf_Current_Weighted;
     int32u AbstBf_Current;
     int32u AbstBf_Previous;
