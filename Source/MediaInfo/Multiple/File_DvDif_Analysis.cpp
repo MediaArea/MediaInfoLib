@@ -78,7 +78,7 @@ void File_DvDif::Read_Buffer_Continue()
                        && Buffer[Buffer_Offset+1]==0x00
                        && Buffer[Buffer_Offset+2]==0x00)) // Ignore NULL
                     {
-                        if ((Buffer[Buffer_Offset+1]&0xF0)==0x00) //Dseq=0
+                        if ((Buffer[Buffer_Offset+1]&0xF0)==0x00 && Buffer[Buffer_Offset+2]==0x00) //Dseq=0 && DBN=0
                         {
                             if ((Buffer[Buffer_Offset+1]&0x08)==0x00) //FSC=0
                             {
