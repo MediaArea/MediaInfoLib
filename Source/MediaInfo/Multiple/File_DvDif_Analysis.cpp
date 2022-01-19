@@ -577,7 +577,7 @@ void File_DvDif::Read_Buffer_Continue()
 
                     //Audio errors
                     {
-                        bool Contains_8000=true; // Note: standards indicate these values so old code was using only theses values, now checking all values (except 0 as it is for silent audio)
+                        bool Contains_8000=true; // Note: standards indicate these values so old code was using only theses values, now checking all values (except 0 or -1 as it is for silent audio)
                         bool Contains_800800=true;
                         int8u ToCheck_8000_0=Buffer[Buffer_Offset+8];
                         int8u ToCheck_8000_1=Buffer[Buffer_Offset+9];
@@ -612,7 +612,7 @@ void File_DvDif::Read_Buffer_Continue()
                                 case 0: Value=(Contains_800800_0<<4)|(Contains_800800_1>>4); break; // Only one half
                                 case 1: Value=(ToCheck_8000_0<<8)|ToCheck_8000_1; break;
                             }
-                            if ((Is16 && (Value&0x7FFF)) || (!Is16 && (Value&0x7FF)))
+                            if ((Is16 && (Value&0x7FFF) && Value!=0xFFFF) || (!Is16 && (Value&0x7FF) && Value!=0xFFF))
                             {
                                 if (Channel>=Audio_Errors.size())
                                     Audio_Errors.resize(Channel+1);
@@ -1767,6 +1767,8 @@ void File_DvDif::Errors_Stats_Update()
                 for (size_t ChannelGroup=0; ChannelGroup<Audio_Errors.size(); ChannelGroup++)
                     for (size_t Dseq=0; Dseq<Dseq_Count; Dseq++)
                     {
+                        if (Dseq>=Audio_Errors[ChannelGroup].size())
+                            break;
                         Audio_Errors_PerDseq[Dseq]+=Audio_Errors[ChannelGroup][Dseq].Count;
                         if (!Audio_Errors[ChannelGroup][Dseq].Values.empty())
                         {
