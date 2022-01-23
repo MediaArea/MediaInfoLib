@@ -522,13 +522,13 @@ static const char* Mpeg4_chan_ChannelBitmap_Layout (int32u ChannelBitmap)
         case   1 : return "R";      // Right
         case   2 : return "C";      // Center
         case   3 : return "LFE";    // LFEScreen
-        case   4 : return "Ls";     // LeftSurround / Back Left
-        case   5 : return "Rs";     // RightSurround / Back Right
+        case   4 : return "Lb";     // LeftSurround / Back Left
+        case   5 : return "Rb";     // RightSurround / Back Right
         case   6 : return "?";      // LeftCenter
         case   7 : return "?";      // RightCenter
-        case   8 : return "Cs";     // CenterSurround / Back Center
-        case   9 : return "Lsd";    // LeftSurroundDirect / Side Left
-        case  10 : return "Rsd";    // RightSurroundDirect / Side Right
+        case   8 : return "Cb";     // CenterSurround / Back Center
+        case   9 : return "Ls";     // LeftSurroundDirect / Side Left
+        case  10 : return "Rs";     // RightSurroundDirect / Side Right
         case  11 : return "?";      // TopCenterSurround
         case  12 : return "?";      // VerticalHeightLeft / Top Front Left
         case  13 : return "?";      // VerticalHeightCenter / Top Front Center
