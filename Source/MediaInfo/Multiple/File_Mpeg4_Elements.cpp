@@ -337,7 +337,7 @@ const char* Mpeg4_chan_Layout(int16u Ordering)
         case 125 : return "L R C LFE Ls Rs Cs";
         case 126 : return "L R C LFE Ls Rs Lc Rc";
         case 127 : return "C Lc Rc L R Ls Rs LFE";
-        case 128 : return "L R C LFE Ls R Rls Rrs";
+        case 128 : return "L R C LFE Ls Rs Rls Rrs";
         case 129 : return "L R Ls Rs C LFE Lc Rc";
         case 130 : return "L R C LFE Ls Rs Lt Rt";
         case 131 : return "L R Cs";
