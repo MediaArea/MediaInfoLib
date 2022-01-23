@@ -6445,22 +6445,27 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_chan()
     Get_B4 (ChannelLayoutTag,                                   "ChannelLayoutTag");
     Get_B4 (ChannelBitmap,                                      "ChannelBitmap");
     Get_B4 (NumberChannelDescriptions,                          "NumberChannelDescriptions");
-    if (ChannelLayoutTag==0) //UseChannelDescriptions
+    //if (ChannelLayoutTag==0) //UseChannelDescriptions
     {
         for (int32u Pos=0; Pos<NumberChannelDescriptions; Pos++)
         {
+            Element_Begin1("ChannelDescription");
             int32u ChannelLabel;
             Get_B4 (ChannelLabel,                                   "ChannelLabel");
+            string ChannelLayout=Mpeg4_chan_ChannelDescription_Layout(ChannelLabel);
+            Param_Info1(ChannelLayout);
+            Element_Info1(ChannelLayout);
             if (ChannelLabel<64)
                 ChannelLabels|=(((int64u)1)<<ChannelLabel);
             else
                 ChannelLabels_Valid=false;
-            ChannelDescription_Layout+=Mpeg4_chan_ChannelDescription_Layout(ChannelLabel);
+            ChannelDescription_Layout+=ChannelLayout;
             ChannelDescription_Layout+=__T(' ');
             Skip_B4(                                                "ChannelFlags");
             Skip_BF4(                                               "Coordinates (0)");
             Skip_BF4(                                               "Coordinates (1)");
             Skip_BF4(                                               "Coordinates (2)");
+            Element_End0();
         }
         if (!ChannelDescription_Layout.empty())
             ChannelDescription_Layout.resize(ChannelDescription_Layout.size()-1);
@@ -6470,15 +6475,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_chan()
         return; //Handling only the first description
 
     FILLING_BEGIN();
-        if (ChannelLayoutTag==0) //UseChannelDescriptions
-        {
-            Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, ChannelDescription_Layout.c_str(), Unlimited, true, true);
-            if (ChannelLabels_Valid)
-                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, Mpeg4_chan_ChannelDescription(ChannelLabels), true, true);
-            else
-                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, ChannelDescription_Layout);
-        }
-        else if (ChannelLayoutTag==0x10000) //UseChannelBitmap
+        if (ChannelLayoutTag==0x10000) //UseChannelBitmap
         {
             int8u Channels=0;
             for (size_t Bit=0; Bit<18; Bit++)
@@ -6506,6 +6503,25 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_chan()
             //Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, Channels, 10, true); //Channel count from this atom should not be used as a primary source, it may be wrong
             Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, Mpeg4_chan(Ordering), Unlimited, true, true);
             Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, Mpeg4_chan_Layout(Ordering));
+        }
+        if (!ChannelDescription_Layout.empty()) //UseChannelDescriptions
+        {
+            Ztring ChannelLayout_Previous=Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_ChannelLayout);
+            ChannelLayout_Previous.FindAndReplace(__T("Rls"), __T("Lrs"), 0, Ztring_Recursive); //TODO: there is a mix of "Rls" and "Lrs", should use "Rls" everywhere in MOV due to specs
+            if (ChannelLayout_Previous.To_UTF8()!=ChannelDescription_Layout)
+                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, ChannelDescription_Layout.c_str());
+            if (ChannelLabels_Valid)
+            {
+                Ztring ChannelPositions_Previous=Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_ChannelPositions);
+                ChannelPositions_Previous.FindAndReplace(__T("Rear:"), __T("Back:"), 0, Ztring_Recursive); //TODO: there is a mix of "Rear" and "Back", should use "Rear" everywhere
+                string ChannelDescription=Mpeg4_chan_ChannelDescription(ChannelLabels);
+                if (ChannelPositions_Previous.To_UTF8()!=ChannelDescription)
+                    Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, ChannelDescription);
+            }
+            else
+            {
+                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, ChannelDescription_Layout);
+            }
         }
     FILLING_END();
 }
