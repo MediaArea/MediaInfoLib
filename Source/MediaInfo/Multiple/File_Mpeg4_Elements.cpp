@@ -6503,8 +6503,17 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_chan()
             //int16u Channels=ChannelLayoutTag&0x0000FFFF;
             int16u Ordering=(ChannelLayoutTag&0xFFFF0000)>>16;
             //Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, Channels, 10, true); //Channel count from this atom should not be used as a primary source, it may be wrong
-            Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, Mpeg4_chan(Ordering), Unlimited, true, true);
-            Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, Mpeg4_chan_Layout(Ordering));
+            if (Ordering==100 && ChannelDescription_Layout=="M")
+            {
+                // ChannelDescription_Layout is more precise, it does the difference between C and Mono
+                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, "Mono", Unlimited, true, true);
+                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, "M", Unlimited, true, true);
+            }
+            else
+            {
+                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, Mpeg4_chan(Ordering), Unlimited, true, true);
+                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, Mpeg4_chan_Layout(Ordering), Unlimited, true, true);
+            }
         }
         if (!ChannelDescription_Layout.empty()) //UseChannelDescriptions
         {
