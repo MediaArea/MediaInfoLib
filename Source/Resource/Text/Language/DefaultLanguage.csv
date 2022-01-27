@@ -178,6 +178,7 @@ Arranger;Arranger
 ArtDirector;ArtDirector
 AspectRatio;Aspect ratio
 AssistantDirector;AssistantDirector
+AssociatedVideo_FrameRate;Associated video frame rate
 at;at
 At least one file;(You must at least open one file)
 Audio;Audio
@@ -332,6 +333,9 @@ Dolby_Atmos_Metadata;Dolby Atmos metadata
 Donate;Donate
 DotsPerInch;Dots per inch
 Downmix;Downmix
+Downmix_5to2;5.1 to 2.0 downmix
+Downmix_5to2_90deg;5.1 to 2.0 downmix, 90-deg phase shift
+Downmix_5.1.x;5.1 and 5.1.x downmix
 DrcSets_Count;DRC set count
 DrcSets_Effects;DRC effect type(s)
 Duration;Duration
@@ -1267,7 +1271,6 @@ VideoCount;Count of video streams
 View;View
 View_Hint;Change the means of viewing information
 Warning : more streams in the files;Warning : there are more streams in the files
-WarpMode;Warp mode
 Web;Web
 WebSite_Audio;Go to the web site of this audio codec
 WebSite_Audio_More;Go to the web site (%Url%) to find this audio codec
