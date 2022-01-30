@@ -305,8 +305,10 @@ void File__Analyze::Get_LightLevel(Ztring &MaxCLL, Ztring &MaxFALL)
     Get_B2(maximum_content_light_level,                         "maximum_content_light_level");
     Get_B2(maximum_frame_average_light_level,                   "maximum_frame_average_light_level");
 
-    MaxCLL = Ztring::ToZtring(maximum_content_light_level) + __T(" cd/m2");
-    MaxFALL = Ztring::ToZtring(maximum_frame_average_light_level) + __T(" cd/m2");
+    if (maximum_content_light_level)
+        MaxCLL=Ztring::ToZtring(maximum_content_light_level)+__T(" cd/m2");
+    if (maximum_frame_average_light_level)
+        MaxFALL=Ztring::ToZtring(maximum_frame_average_light_level)+__T(" cd/m2");
 }
 #endif
 
@@ -1792,7 +1794,6 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
 
     //Specific stuff
     Ztring Width_Temp, Height_Temp, PixelAspectRatio_Temp, DisplayAspectRatio_Temp, FrameRate_Temp, FrameRate_Num_Temp, FrameRate_Den_Temp, FrameRate_Mode_Temp, ScanType_Temp, ScanOrder_Temp, HDR_Temp[Video_HDR_Format_Compatibility-Video_HDR_Format+1], Channels_Temp[4], Delay_Temp, Delay_DropFrame_Temp, Delay_Source_Temp, Delay_Settings_Temp, Source_Temp, Source_Kind_Temp, Source_Info_Temp;
-    Ztring colour_description_present_Temp, colour_primaries_Temp, transfer_characteristics_Temp, matrix_coefficients_Temp;
     if (StreamKind==Stream_Video)
     {
         Width_Temp=Retrieve(Stream_Video, StreamPos_To, Video_Width);
@@ -1805,17 +1806,6 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         FrameRate_Mode_Temp=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Mode); //We want to keep the FrameRate_Mode of AVI 120 fps
         ScanType_Temp=Retrieve(Stream_Video, StreamPos_To, Video_ScanType);
         ScanOrder_Temp=Retrieve(Stream_Video, StreamPos_To, Video_ScanOrder);
-        colour_description_present_Temp=Retrieve(Stream_Video, StreamPos_To, Video_colour_description_present);
-        if (!colour_description_present_Temp.empty())
-        {
-            colour_primaries_Temp=Retrieve(Stream_Video, StreamPos_To, Video_colour_primaries);
-            transfer_characteristics_Temp=Retrieve(Stream_Video, StreamPos_To, Video_transfer_characteristics);
-            matrix_coefficients_Temp=Retrieve(Stream_Video, StreamPos_To, Video_matrix_coefficients);
-        }
-        Clear(Stream_Video, StreamPos_To, Video_colour_description_present);
-        Clear(Stream_Video, StreamPos_To, Video_colour_primaries);
-        Clear(Stream_Video, StreamPos_To, Video_transfer_characteristics);
-        Clear(Stream_Video, StreamPos_To, Video_matrix_coefficients);
         for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
             HDR_Temp[i-Video_HDR_Format]=Retrieve(Stream_Video, StreamPos_To, i);
     }
@@ -1964,30 +1954,6 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
             }
             else
                 Fill(Stream_Video, StreamPos_To, Video_ScanOrder, ScanOrder_Temp, true);
-        }
-        if (!colour_description_present_Temp.empty())
-        {
-            if (!Retrieve(Stream_Video, StreamPos_To, Video_colour_description_present).empty()
-             && (colour_primaries_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_colour_primaries)
-              || transfer_characteristics_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_transfer_characteristics)
-              || matrix_coefficients_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_matrix_coefficients)))
-            {
-                Fill(Stream_Video, StreamPos_To, Video_colour_description_present_Original, (*Stream)[Stream_Video][StreamPos_To][Video_colour_description_present], true);
-                Fill(Stream_Video, StreamPos_To, Video_colour_description_present, colour_description_present_Temp, true);
-                Fill(Stream_Video, StreamPos_To, Video_colour_primaries_Original, (*Stream)[Stream_Video][StreamPos_To][Video_colour_primaries], true);
-                Fill(Stream_Video, StreamPos_To, Video_colour_primaries, colour_primaries_Temp, true);
-                Fill(Stream_Video, StreamPos_To, Video_transfer_characteristics_Original, (*Stream)[Stream_Video][StreamPos_To][Video_transfer_characteristics], true);
-                Fill(Stream_Video, StreamPos_To, Video_transfer_characteristics, transfer_characteristics_Temp, true);
-                Fill(Stream_Video, StreamPos_To, Video_matrix_coefficients_Original, (*Stream)[Stream_Video][StreamPos_To][Video_matrix_coefficients], true);
-                Fill(Stream_Video, StreamPos_To, Video_matrix_coefficients, matrix_coefficients_Temp, true);
-            }
-            else
-            {
-                Fill(Stream_Video, StreamPos_To, Video_colour_description_present, colour_description_present_Temp, true);
-                Fill(Stream_Video, StreamPos_To, Video_colour_primaries, colour_primaries_Temp, true);
-                Fill(Stream_Video, StreamPos_To, Video_transfer_characteristics, transfer_characteristics_Temp, true);
-                Fill(Stream_Video, StreamPos_To, Video_matrix_coefficients, matrix_coefficients_Temp, true);
-            }
         }
         if (!HDR_Temp[0].empty() && !ToAdd.Retrieve_Const(Stream_Video, StreamPos_From, Video_HDR_Format).empty() && HDR_Temp[0]!=ToAdd.Retrieve_Const(Stream_Video, StreamPos_From, Video_HDR_Format))
         {
