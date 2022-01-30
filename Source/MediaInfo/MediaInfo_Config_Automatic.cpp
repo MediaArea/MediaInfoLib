@@ -998,7 +998,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "MenuID;Menu ID\n"
     "Metadata_Format;Metadata format\n"
     "Metadata_Format_Type;Type of the metadata frame\n"
-    "Metadata_MuxingMode;Metadata musxing mode\n"
+    "Metadata_MuxingMode;Metadata muxing mode\n"
     "MixType;Mix type\n"
     "mn; min\n"
     "Mood;Mood\n"
