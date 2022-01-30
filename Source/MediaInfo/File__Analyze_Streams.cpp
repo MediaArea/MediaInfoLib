@@ -3119,6 +3119,9 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Delay_Original_DropFrame : return Video_Delay_Original_DropFrame;
                                     case Generic_Delay_Original_Source : return Video_Delay_Original_Source;
                                     case Generic_TimeCode_FirstFrame : return Video_TimeCode_FirstFrame;
+                                    case Generic_TimeCode_DropFrame: return Video_TimeCode_DropFrame;
+                                    case Generic_TimeCode_Settings: return Video_TimeCode_Settings;
+                                    case Generic_TimeCode_Source: return Video_TimeCode_Source;
                                     case Generic_StreamSize : return Video_StreamSize;
                                     case Generic_StreamSize_String : return Video_StreamSize_String;
                                     case Generic_StreamSize_String1 : return Video_StreamSize_String1;
@@ -3241,6 +3244,10 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Video_Delay_String2 : return Audio_Video_Delay_String2;
                                     case Generic_Video_Delay_String3 : return Audio_Video_Delay_String3;
                                     case Generic_Video_Delay_String4 : return Audio_Video_Delay_String4;
+                                    case Generic_TimeCode_FirstFrame : return Audio_TimeCode_FirstFrame;
+                                    case Generic_TimeCode_DropFrame: return Audio_TimeCode_DropFrame;
+                                    case Generic_TimeCode_Settings: return Audio_TimeCode_Settings;
+                                    case Generic_TimeCode_Source: return Audio_TimeCode_Source;
                                     case Generic_StreamSize : return Audio_StreamSize;
                                     case Generic_StreamSize_String : return Audio_StreamSize_String;
                                     case Generic_StreamSize_String1 : return Audio_StreamSize_String1;
@@ -3365,6 +3372,9 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Video_Delay_String3 : return Text_Video_Delay_String3;
                                     case Generic_Video_Delay_String4 : return Text_Video_Delay_String4;
                                     case Generic_TimeCode_FirstFrame : return Text_TimeCode_FirstFrame;
+                                    case Generic_TimeCode_DropFrame: return Text_TimeCode_DropFrame;
+                                    case Generic_TimeCode_Settings: return Text_TimeCode_Settings;
+                                    case Generic_TimeCode_Source: return Text_TimeCode_Source;
                                     case Generic_StreamSize : return Text_StreamSize;
                                     case Generic_StreamSize_String : return Text_StreamSize_String;
                                     case Generic_StreamSize_String1 : return Text_StreamSize_String1;
@@ -3454,6 +3464,9 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Video_Delay_String3 : return Other_Video_Delay_String3;
                                     case Generic_Video_Delay_String4 : return Other_Video_Delay_String4;
                                     case Generic_TimeCode_FirstFrame : return Other_TimeCode_FirstFrame;
+                                    case Generic_TimeCode_DropFrame: return Other_TimeCode_DropFrame;
+                                    case Generic_TimeCode_Settings: return Other_TimeCode_Settings;
+                                    case Generic_TimeCode_Source: return Other_TimeCode_Source;
                                     case Generic_Language : return Other_Language;
                                     default: return (size_t)-1;
                                 }
