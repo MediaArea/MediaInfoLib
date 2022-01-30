@@ -135,6 +135,7 @@ private :
         float32 Duration_Start;
         float32 Duration_End;
         float32 Duration_End_Command;
+        bool    Duration_End_Command_WasJustUpdated;
 
         stream()
         {
@@ -156,6 +157,7 @@ private :
             Duration_Start=FLT_MAX;
             Duration_End=FLT_MAX;
             Duration_End_Command=FLT_MAX;
+            Duration_End_Command_WasJustUpdated=false;
         }
     };
     std::vector<stream*> Streams;
