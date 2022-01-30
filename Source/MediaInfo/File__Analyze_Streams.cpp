@@ -2342,11 +2342,11 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
     //Per value
     for (size_t Pos=0; Pos<List.size(); Pos++)
     {
-        int32s HH, MM, Sec, MS;
+        int64s HH, MS;
+        int32s MM, Sec;
         Ztring DurationString1, DurationString2, DurationString3;
         bool Negative=false;
-        MS=List[Pos].To_int32s(); //in ms
-
+        MS=List[Pos].To_int64s(); //in ms
         if (MS<0)
         {
             Negative=true;
@@ -2371,7 +2371,7 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
         }
 
         //Minutes
-        MM=MS/1000/60; //mn
+        MM=(int32s)(MS/1000/60); //mn
         if (MM>0 || HH>0)
         {
             if (DurationString1.size()>0)
@@ -2395,7 +2395,7 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
         }
 
         //Seconds
-        Sec=MS/1000; //s
+        Sec=(int32s)(MS/1000); //s
         if (Sec>0 || MM>0 || HH>0)
         {
             if (DurationString1.size()>0)
@@ -2454,41 +2454,28 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
         Fill(StreamKind, StreamPos, Parameter+3, DurationString2); // /String2
         Fill(StreamKind, StreamPos, Parameter+4, DurationString3); // /String3
 
-        if (Retrieve_Const(StreamKind, StreamPos, Parameter+6, Info_Name)==Retrieve_Const(StreamKind, StreamPos, Parameter, Info_Name)+__T("/String5"))
+        if (HH<=0xFF && Retrieve_Const(StreamKind, StreamPos, Parameter+6, Info_Name)==Retrieve_Const(StreamKind, StreamPos, Parameter, Info_Name)+__T("/String5"))
         {
             Ztring DurationString4;
-            Ztring FrameRateS=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameRate));
-            Ztring FrameCountS=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameCount));
-            if (FrameCountS.empty() || StreamKind==Stream_Text)
+            Ztring FrameRateS;
+            if (FrameRateS.empty() && StreamKind==Stream_Audio)
+                FrameRateS=Retrieve(Stream_Audio, StreamPos, "TimeCode_FirstFrame_FrameRate");
+            if (FrameRateS.empty() && StreamKind==Stream_Audio)
+                FrameRateS=Retrieve(Stream_Audio, StreamPos, "Dolby_Atmos_Metadata AssociatedVideo_FrameRate");
+            if (FrameRateS.empty() && StreamKind!=Stream_Audio)
+                FrameRateS=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameRate));
+            Ztring FrameCountS;
+            if (Parameter==Fill_Parameter(StreamKind, Generic_Duration))
+                FrameCountS=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameCount));
+            if (FrameCountS.empty() || StreamKind==Stream_Text || (StreamKind==Stream_Audio && Retrieve(Stream_Audio, StreamPos, Stream_Audio)!=__T("PCM")))
             {
                 //FrameCount is not based on frame rate
-                FrameCountS.From_Number(List[Pos].To_int32s()*Video_FrameRate_Rounded(Retrieve_Const(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameRate)))/1000.0, 0);
+                FrameCountS.From_Number(List[Pos].To_float32()*Video_FrameRate_Rounded(FrameRateS)/1000, 0);
             }
             if (!FrameRateS.empty() && !FrameCountS.empty() && FrameRateS.To_int64u() && FrameRateS.To_int64u()<256)
             {
                 bool DropFrame=false;
                 bool DropFrame_IsValid=false;
-
-                // Testing time code
-                if (!DropFrame_IsValid)
-                {
-                    Ztring TC=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_TimeCode_FirstFrame));
-                    if (TC.size()>=11 && TC[2]==__T(':') && TC[5]==__T(':'))
-                    {
-                        switch (TC[8])
-                        {
-                            case __T(':'):
-                                            DropFrame=false;
-                                            DropFrame_IsValid=true;
-                                            break;
-                            case __T(';'):
-                                            DropFrame=true;
-                                            DropFrame_IsValid=true;
-                                            break;
-                            default      :  ;
-                        }
-                    }
-                }
 
                 // Testing delay
                 if (!DropFrame_IsValid)
@@ -2543,6 +2530,27 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
 
                         if (DropFrame_IsValid)
                             break; //Using first time code track
+                    }
+                }
+
+                // Testing time code
+                if (!DropFrame_IsValid)
+                {
+                    Ztring TC=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_TimeCode_FirstFrame));
+                    if (TC.size()>=11 && TC[2]==__T(':') && TC[5]==__T(':'))
+                    {
+                        switch (TC[8])
+                        {
+                            case __T(':'):
+                                            DropFrame=false;
+                                            DropFrame_IsValid=true;
+                                            break;
+                            case __T(';'):
+                                            DropFrame=true;
+                                            DropFrame_IsValid=true;
+                                            break;
+                            default      :  ;
+                        }
                     }
                 }
 
