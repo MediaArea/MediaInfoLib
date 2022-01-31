@@ -1458,8 +1458,8 @@ static const char* Mxf_ChannelAssignment_ChannelLayout(const int128u& ChannelLay
                                                     switch (ChannelsCount)
                                                     {
                                                         case  6 : return "L R C LFE Ls Rs";
-                                                        case  8 : return "L R C LFE Ls Rs Rls Rrs";
-                                                        default : return "L R C LFE Ls Rs Rls Rrs HI VI-N";
+                                                        case  8 : return "L R C LFE Ls Rs Lrs Rrs";
+                                                        default : return "L R C LFE Ls Rs Lrs Rrs HI VI-N";
                                                     }
                                         default   : return "";
                                     }

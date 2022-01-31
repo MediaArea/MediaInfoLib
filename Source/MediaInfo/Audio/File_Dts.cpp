@@ -131,8 +131,8 @@ static const char*  DTS_ChannelLayout[16]=
     "C L R Ls Rs",
     "Cl Cr L R Ls Rs",
     "C L R Ls Rs",
-    "C L R Ls Rs Rls Rrs",
-    "C L R Ls Rs Rls Rrs",
+    "C L R Ls Rs Lrs Rrs",
+    "C L R Ls Rs Lrs Rrs",
     "L R Ls Rs Rls Cs Cs Rrs",
     "C L R Ls Rs Rls Cs Rrs",
 };
