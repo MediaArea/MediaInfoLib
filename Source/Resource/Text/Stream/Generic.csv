@@ -92,6 +92,9 @@ Video_Delay/String3
 Video_Delay/String4
 Video_Delay/String5
 TimeCode_FirstFrame
+TimeCode_DropFrame
+TimeCode_Settings
+TimeCode_Source
 StreamSize
 StreamSize/String
 StreamSize/String1

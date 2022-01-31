@@ -1383,14 +1383,14 @@ void File_Ac3::Streams_Fill()
     //TimeStamp
     if (TimeStamp_IsPresent)
     {
-        Ztring TimeCode_FrameRate=Ztring::ToZtring((float64)TimeStamp_FirstFrame.FramesPerSecond/((TimeStamp_FirstFrame.DropFrame|TimeStamp_FirstFrame.FramesPerSecond_Is1001)?1.001:1.000), 3);
+        Ztring TimeCode_FrameRate=Ztring::ToZtring((float64)TimeStamp_FirstFrame.FramesPerSecond/((TimeStamp_FirstFrame.DropFrame || TimeStamp_FirstFrame.FramesPerSecond_Is1001)?1.001:1.000), 3);
         if (TimeStamp_FirstFrame.MoreSamples)
             TimeStamp_FirstFrame.MoreSamples_Frequency=Retrieve(Stream_Audio, 0, Audio_SamplingRate).To_int32s();
         Fill(Stream_Audio, 0, "TimeCode_FirstFrame", TimeStamp_FirstFrame.ToString());
         Fill_SetOptions(Stream_Audio, 0, "TimeCode_FirstFrame", "N YCY");
         Fill(Stream_Audio, 0, "TimeCode_FirstFrame/String", TimeStamp_FirstFrame.ToString()+" ("+TimeCode_FrameRate.To_UTF8()+" fps), embedded in stream");
         Fill_SetOptions(Stream_Audio, 0, "TimeCode_FirstFrame/String", "Y NTN");
-        Fill(Stream_Audio, 0, "TimeCode_FirstFrame_FrameRate", TimeStamp_FirstFrame.ToString());
+        Fill(Stream_Audio, 0, "TimeCode_FirstFrame_FrameRate", TimeCode_FrameRate);
         Fill_SetOptions(Stream_Audio, 0, "TimeCode_FirstFrame_FrameRate", "N YFY");
         Fill(Stream_Audio, 0, "TimeCode_Source", "Stream");
         Fill_SetOptions(Stream_Audio, 0, "TimeCode_Source", "N YTY");

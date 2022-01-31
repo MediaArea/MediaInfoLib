@@ -305,8 +305,10 @@ void File__Analyze::Get_LightLevel(Ztring &MaxCLL, Ztring &MaxFALL)
     Get_B2(maximum_content_light_level,                         "maximum_content_light_level");
     Get_B2(maximum_frame_average_light_level,                   "maximum_frame_average_light_level");
 
-    MaxCLL = Ztring::ToZtring(maximum_content_light_level) + __T(" cd/m2");
-    MaxFALL = Ztring::ToZtring(maximum_frame_average_light_level) + __T(" cd/m2");
+    if (maximum_content_light_level)
+        MaxCLL=Ztring::ToZtring(maximum_content_light_level)+__T(" cd/m2");
+    if (maximum_frame_average_light_level)
+        MaxFALL=Ztring::ToZtring(maximum_frame_average_light_level)+__T(" cd/m2");
 }
 #endif
 
@@ -773,6 +775,18 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format_Commercial), Value);
     if (Parameter==Fill_Parameter(StreamKind, Generic_Format_Commercial_IfAny))
         Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format_Commercial), Value, true);
+
+    if (Parameter==Fill_Parameter(StreamKind, Generic_TimeCode_FirstFrame) && Value.size()>=11)
+    {
+        Char C=Value[8];
+        switch (C)
+        {
+            case __T(':'):
+            case __T(';'):
+                Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_TimeCode_DropFrame), (C==__T(';'))?__T("Yes"):__T("No"));
+                break;
+        }
+    }
 
     if (!IsSub)
     {
@@ -1792,7 +1806,6 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
 
     //Specific stuff
     Ztring Width_Temp, Height_Temp, PixelAspectRatio_Temp, DisplayAspectRatio_Temp, FrameRate_Temp, FrameRate_Num_Temp, FrameRate_Den_Temp, FrameRate_Mode_Temp, ScanType_Temp, ScanOrder_Temp, HDR_Temp[Video_HDR_Format_Compatibility-Video_HDR_Format+1], Channels_Temp[4], Delay_Temp, Delay_DropFrame_Temp, Delay_Source_Temp, Delay_Settings_Temp, Source_Temp, Source_Kind_Temp, Source_Info_Temp;
-    Ztring colour_description_present_Temp, colour_primaries_Temp, transfer_characteristics_Temp, matrix_coefficients_Temp;
     if (StreamKind==Stream_Video)
     {
         Width_Temp=Retrieve(Stream_Video, StreamPos_To, Video_Width);
@@ -1805,17 +1818,6 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         FrameRate_Mode_Temp=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Mode); //We want to keep the FrameRate_Mode of AVI 120 fps
         ScanType_Temp=Retrieve(Stream_Video, StreamPos_To, Video_ScanType);
         ScanOrder_Temp=Retrieve(Stream_Video, StreamPos_To, Video_ScanOrder);
-        colour_description_present_Temp=Retrieve(Stream_Video, StreamPos_To, Video_colour_description_present);
-        if (!colour_description_present_Temp.empty())
-        {
-            colour_primaries_Temp=Retrieve(Stream_Video, StreamPos_To, Video_colour_primaries);
-            transfer_characteristics_Temp=Retrieve(Stream_Video, StreamPos_To, Video_transfer_characteristics);
-            matrix_coefficients_Temp=Retrieve(Stream_Video, StreamPos_To, Video_matrix_coefficients);
-        }
-        Clear(Stream_Video, StreamPos_To, Video_colour_description_present);
-        Clear(Stream_Video, StreamPos_To, Video_colour_primaries);
-        Clear(Stream_Video, StreamPos_To, Video_transfer_characteristics);
-        Clear(Stream_Video, StreamPos_To, Video_matrix_coefficients);
         for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
             HDR_Temp[i-Video_HDR_Format]=Retrieve(Stream_Video, StreamPos_To, i);
     }
@@ -1965,30 +1967,6 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
             else
                 Fill(Stream_Video, StreamPos_To, Video_ScanOrder, ScanOrder_Temp, true);
         }
-        if (!colour_description_present_Temp.empty())
-        {
-            if (!Retrieve(Stream_Video, StreamPos_To, Video_colour_description_present).empty()
-             && (colour_primaries_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_colour_primaries)
-              || transfer_characteristics_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_transfer_characteristics)
-              || matrix_coefficients_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_matrix_coefficients)))
-            {
-                Fill(Stream_Video, StreamPos_To, Video_colour_description_present_Original, (*Stream)[Stream_Video][StreamPos_To][Video_colour_description_present], true);
-                Fill(Stream_Video, StreamPos_To, Video_colour_description_present, colour_description_present_Temp, true);
-                Fill(Stream_Video, StreamPos_To, Video_colour_primaries_Original, (*Stream)[Stream_Video][StreamPos_To][Video_colour_primaries], true);
-                Fill(Stream_Video, StreamPos_To, Video_colour_primaries, colour_primaries_Temp, true);
-                Fill(Stream_Video, StreamPos_To, Video_transfer_characteristics_Original, (*Stream)[Stream_Video][StreamPos_To][Video_transfer_characteristics], true);
-                Fill(Stream_Video, StreamPos_To, Video_transfer_characteristics, transfer_characteristics_Temp, true);
-                Fill(Stream_Video, StreamPos_To, Video_matrix_coefficients_Original, (*Stream)[Stream_Video][StreamPos_To][Video_matrix_coefficients], true);
-                Fill(Stream_Video, StreamPos_To, Video_matrix_coefficients, matrix_coefficients_Temp, true);
-            }
-            else
-            {
-                Fill(Stream_Video, StreamPos_To, Video_colour_description_present, colour_description_present_Temp, true);
-                Fill(Stream_Video, StreamPos_To, Video_colour_primaries, colour_primaries_Temp, true);
-                Fill(Stream_Video, StreamPos_To, Video_transfer_characteristics, transfer_characteristics_Temp, true);
-                Fill(Stream_Video, StreamPos_To, Video_matrix_coefficients, matrix_coefficients_Temp, true);
-            }
-        }
         if (!HDR_Temp[0].empty() && !ToAdd.Retrieve_Const(Stream_Video, StreamPos_From, Video_HDR_Format).empty() && HDR_Temp[0]!=ToAdd.Retrieve_Const(Stream_Video, StreamPos_From, Video_HDR_Format))
         {
             for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
@@ -2090,9 +2068,8 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-float64 File__Analyze::Video_FrameRate_Rounded(const Ztring& Value)
+float64 File__Analyze::Video_FrameRate_Rounded(float64 FrameRate)
 {
-    float64 FrameRate=Value.To_float64();
     float64 FrameRate_Sav=FrameRate;
 
          if (FrameRate> 9.990 && FrameRate<=10.010) FrameRate=10.000;
@@ -2121,7 +2098,7 @@ float64 File__Analyze::Video_FrameRate_Rounded(const Ztring& Value)
 void File__Analyze::Video_FrameRate_Rounding(stream_t StreamKind, size_t Pos, size_t Parameter)
 {
     const Ztring Value=Retrieve_Const(StreamKind, Pos, Parameter);
-    float64 FrameRate=Video_FrameRate_Rounded(Value);
+    float64 FrameRate=Video_FrameRate_Rounded(Value.To_float64());
     float64 FrameRate_Sav=Value.To_float64();
 
     if (FrameRate!=FrameRate_Sav)
@@ -2374,11 +2351,11 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
     //Per value
     for (size_t Pos=0; Pos<List.size(); Pos++)
     {
-        int32s HH, MM, Sec, MS;
+        int64s HH, MS;
+        int32s MM, Sec;
         Ztring DurationString1, DurationString2, DurationString3;
         bool Negative=false;
-        MS=List[Pos].To_int32s(); //in ms
-
+        MS=List[Pos].To_int64s(); //in ms
         if (MS<0)
         {
             Negative=true;
@@ -2403,7 +2380,7 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
         }
 
         //Minutes
-        MM=MS/1000/60; //mn
+        MM=(int32s)(MS/1000/60); //mn
         if (MM>0 || HH>0)
         {
             if (DurationString1.size()>0)
@@ -2427,7 +2404,7 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
         }
 
         //Seconds
-        Sec=MS/1000; //s
+        Sec=(int32s)(MS/1000); //s
         if (Sec>0 || MM>0 || HH>0)
         {
             if (DurationString1.size()>0)
@@ -2486,41 +2463,28 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
         Fill(StreamKind, StreamPos, Parameter+3, DurationString2); // /String2
         Fill(StreamKind, StreamPos, Parameter+4, DurationString3); // /String3
 
-        if (Retrieve_Const(StreamKind, StreamPos, Parameter+6, Info_Name)==Retrieve_Const(StreamKind, StreamPos, Parameter, Info_Name)+__T("/String5"))
+        if (HH<=0xFF && Retrieve_Const(StreamKind, StreamPos, Parameter+6, Info_Name)==Retrieve_Const(StreamKind, StreamPos, Parameter, Info_Name)+__T("/String5"))
         {
             Ztring DurationString4;
-            Ztring FrameRateS=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameRate));
-            Ztring FrameCountS=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameCount));
-            if (FrameCountS.empty() || StreamKind==Stream_Text)
+            Ztring FrameRateS;
+            if (FrameRateS.empty() && StreamKind==Stream_Audio)
+                FrameRateS=Retrieve(Stream_Audio, StreamPos, "TimeCode_FirstFrame_FrameRate");
+            if (FrameRateS.empty() && StreamKind==Stream_Audio)
+                FrameRateS=Retrieve(Stream_Audio, StreamPos, "Dolby_Atmos_Metadata AssociatedVideo_FrameRate");
+            if (FrameRateS.empty() && StreamKind!=Stream_Audio)
+                FrameRateS=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameRate));
+            Ztring FrameCountS;
+            if (Parameter==Fill_Parameter(StreamKind, Generic_Duration))
+                FrameCountS=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameCount));
+            if (FrameCountS.empty() || StreamKind==Stream_Text || (StreamKind==Stream_Audio && Retrieve(Stream_Audio, StreamPos, Stream_Audio)!=__T("PCM")))
             {
                 //FrameCount is not based on frame rate
-                FrameCountS.From_Number(List[Pos].To_int32s()*Video_FrameRate_Rounded(Retrieve_Const(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameRate)))/1000.0, 0);
+                FrameCountS.From_Number(List[Pos].To_float32()*Video_FrameRate_Rounded(FrameRateS.To_float64())/1000, 0);
             }
             if (!FrameRateS.empty() && !FrameCountS.empty() && FrameRateS.To_int64u() && FrameRateS.To_int64u()<256)
             {
                 bool DropFrame=false;
                 bool DropFrame_IsValid=false;
-
-                // Testing time code
-                if (!DropFrame_IsValid)
-                {
-                    Ztring TC=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_TimeCode_FirstFrame));
-                    if (TC.size()>=11 && TC[2]==__T(':') && TC[5]==__T(':'))
-                    {
-                        switch (TC[8])
-                        {
-                            case __T(':'):
-                                            DropFrame=false;
-                                            DropFrame_IsValid=true;
-                                            break;
-                            case __T(';'):
-                                            DropFrame=true;
-                                            DropFrame_IsValid=true;
-                                            break;
-                            default      :  ;
-                        }
-                    }
-                }
 
                 // Testing delay
                 if (!DropFrame_IsValid)
@@ -2575,6 +2539,27 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
 
                         if (DropFrame_IsValid)
                             break; //Using first time code track
+                    }
+                }
+
+                // Testing time code
+                if (!DropFrame_IsValid)
+                {
+                    Ztring TC=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_TimeCode_FirstFrame));
+                    if (TC.size()>=11 && TC[2]==__T(':') && TC[5]==__T(':'))
+                    {
+                        switch (TC[8])
+                        {
+                            case __T(':'):
+                                            DropFrame=false;
+                                            DropFrame_IsValid=true;
+                                            break;
+                            case __T(';'):
+                                            DropFrame=true;
+                                            DropFrame_IsValid=true;
+                                            break;
+                            default      :  ;
+                        }
                     }
                 }
 
@@ -3117,6 +3102,9 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Delay_Original_DropFrame : return Video_Delay_Original_DropFrame;
                                     case Generic_Delay_Original_Source : return Video_Delay_Original_Source;
                                     case Generic_TimeCode_FirstFrame : return Video_TimeCode_FirstFrame;
+                                    case Generic_TimeCode_DropFrame: return Video_TimeCode_DropFrame;
+                                    case Generic_TimeCode_Settings: return Video_TimeCode_Settings;
+                                    case Generic_TimeCode_Source: return Video_TimeCode_Source;
                                     case Generic_StreamSize : return Video_StreamSize;
                                     case Generic_StreamSize_String : return Video_StreamSize_String;
                                     case Generic_StreamSize_String1 : return Video_StreamSize_String1;
@@ -3239,6 +3227,10 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Video_Delay_String2 : return Audio_Video_Delay_String2;
                                     case Generic_Video_Delay_String3 : return Audio_Video_Delay_String3;
                                     case Generic_Video_Delay_String4 : return Audio_Video_Delay_String4;
+                                    case Generic_TimeCode_FirstFrame : return Audio_TimeCode_FirstFrame;
+                                    case Generic_TimeCode_DropFrame: return Audio_TimeCode_DropFrame;
+                                    case Generic_TimeCode_Settings: return Audio_TimeCode_Settings;
+                                    case Generic_TimeCode_Source: return Audio_TimeCode_Source;
                                     case Generic_StreamSize : return Audio_StreamSize;
                                     case Generic_StreamSize_String : return Audio_StreamSize_String;
                                     case Generic_StreamSize_String1 : return Audio_StreamSize_String1;
@@ -3363,6 +3355,9 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Video_Delay_String3 : return Text_Video_Delay_String3;
                                     case Generic_Video_Delay_String4 : return Text_Video_Delay_String4;
                                     case Generic_TimeCode_FirstFrame : return Text_TimeCode_FirstFrame;
+                                    case Generic_TimeCode_DropFrame: return Text_TimeCode_DropFrame;
+                                    case Generic_TimeCode_Settings: return Text_TimeCode_Settings;
+                                    case Generic_TimeCode_Source: return Text_TimeCode_Source;
                                     case Generic_StreamSize : return Text_StreamSize;
                                     case Generic_StreamSize_String : return Text_StreamSize_String;
                                     case Generic_StreamSize_String1 : return Text_StreamSize_String1;
@@ -3452,6 +3447,9 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Video_Delay_String3 : return Other_Video_Delay_String3;
                                     case Generic_Video_Delay_String4 : return Other_Video_Delay_String4;
                                     case Generic_TimeCode_FirstFrame : return Other_TimeCode_FirstFrame;
+                                    case Generic_TimeCode_DropFrame: return Other_TimeCode_DropFrame;
+                                    case Generic_TimeCode_Settings: return Other_TimeCode_Settings;
+                                    case Generic_TimeCode_Source: return Other_TimeCode_Source;
                                     case Generic_Language : return Other_Language;
                                     default: return (size_t)-1;
                                 }

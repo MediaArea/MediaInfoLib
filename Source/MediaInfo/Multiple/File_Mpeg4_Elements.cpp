@@ -241,14 +241,14 @@ const char* Mpeg4_chan(int16u Ordering)
         case 106 : return "Front: L R (Binaural)";
         case 107 : return "Front: W X Y Z";
         case 108 : return "Front: L R, Side: L R";
-        case 109 : return "Front: L C R, Rear: L R";
-        case 110 : return "Front: L C R, Rear: L C R";
-        case 111 : return "Front: L C R, Side: L R, Rear: L C R";
-        case 112 : return "Front: L R, TopFront: L R, Rear: L R, TopRear: L R";
+        case 109 : return "Front: L C R, Back: L R";
+        case 110 : return "Front: L C R, Back: L C R";
+        case 111 : return "Front: L C R, Side: L R, Back: L C R";
+        case 112 : return "Front: L R, TopFront: L R, Back: L R, TopRear: L R";
         case 113 : return "Front: L C R";
         case 114 : return "Front: L C R";
-        case 115 : return "Front: L C R, Rear: C";
-        case 116 : return "Front: L C R, Rear: C";
+        case 115 : return "Front: L C R, Back: C";
+        case 116 : return "Front: L C R, Back: C";
         case 117 : return "Front: L C R, Side: L R";
         case 118 : return "Front: L C R, Side: L R";
         case 119 : return "Front: L C R, Side: L R";
@@ -260,25 +260,25 @@ const char* Mpeg4_chan(int16u Ordering)
         case 125 : return "Front: L C R, Side: L C R";
         case 126 : return "Front: L Lc C Rc R, Side: L R";
         case 127 : return "Front: L Lc Rc R, Side: L R, LFE";
-        case 128 : return "Front: L C R, Side: L R, Rear: L R, LFE";
-        case 129 : return "Front: L C R, Side: L R, Rear: L R, LFE";
+        case 128 : return "Front: L C R, Side: L R, Back: L R, LFE";
+        case 129 : return "Front: L C R, Side: L R, Back: L R, LFE";
         case 130 : return "Front: L C R, Side: L R, LF, Front: L R (Matrix)";
-        case 131 : return "Front: L R, Rear: C";
+        case 131 : return "Front: L R, Back: C";
         case 132 : return "Front: L R, Side: L R";
         case 133 : return "Front: L R, LFE";
-        case 134 : return "Front: L R, Rear: C, LFE";
+        case 134 : return "Front: L R, Back: C, LFE";
         case 135 : return "Front: L C R, Side: L R, LFE";
         case 136 : return "Front: L C R, LFE";
-        case 137 : return "Front: L C R, Rear: C, LFE";
-        case 138 : return "Front: L R, Rear: L R, LFE";
-        case 139 : return "Front: L C R, Rear: L R, LFE";
-        case 140 : return "Front: L C R, Side: L R, Rear: L R";
-        case 141 : return "Front: L C R, Side: L R, Rear: C";
-        case 142 : return "Front: L C R, Side: L R, Rear: C, LFE";
-        case 143 : return "Front: L C R, Side: L R, Rear: L R";
-        case 144 : return "Front: L C R, Side: L R, Rear: L C R";
-        case 145 : return "Front: Lw L C R Rw, TopFront: L C R, Side: L R, Rear: L C Cd R, LFE: L R"; //d=direct, all must be confirmed
-        case 146 : return "Front: Lw L Lc C Rc R Rw, TopFront: L C R, Side: L R, Rear: L C Cd R, LFE: L R, HI, VI, Haptic"; //d=direct, all must be confirmed
+        case 137 : return "Front: L C R, Back: C, LFE";
+        case 138 : return "Front: L R, Back: L R, LFE";
+        case 139 : return "Front: L C R, Back: L R, LFE";
+        case 140 : return "Front: L C R, Side: L R, Back: L R";
+        case 141 : return "Front: L C R, Side: L R, Back: C";
+        case 142 : return "Front: L C R, Side: L R, Back: C, LFE";
+        case 143 : return "Front: L C R, Side: L R, Back: L R";
+        case 144 : return "Front: L C R, Side: L R, Back: L C R";
+        case 145 : return "Front: Lw L C R Rw, TopFront: L C R, Side: L R, Back: L C Cd R, LFE: L R"; //d=direct, all must be confirmed
+        case 146 : return "Front: Lw L Lc C Rc R Rw, TopFront: L C R, Side: L R, Back: L C Cd R, LFE: L R, HI, VI, Haptic"; //d=direct, all must be confirmed
         default  : return "";
     }
 }
@@ -337,7 +337,7 @@ const char* Mpeg4_chan_Layout(int16u Ordering)
         case 125 : return "L R C LFE Ls Rs Cs";
         case 126 : return "L R C LFE Ls Rs Lc Rc";
         case 127 : return "C Lc Rc L R Ls Rs LFE";
-        case 128 : return "L R C LFE Ls Rs Rls Rrs";
+        case 128 : return "L R C LFE Ls Rs Lrs Rrs";
         case 129 : return "L R Ls Rs C LFE Lc Rc";
         case 130 : return "L R C LFE Ls Rs Lt Rt";
         case 131 : return "L R Cs";
@@ -349,11 +349,11 @@ const char* Mpeg4_chan_Layout(int16u Ordering)
         case 137 : return "L R C LFE Cs";
         case 138 : return "L R Ls Rs LFE";
         case 139 : return "L R Ls Rs C Cs";
-        case 140 : return "L R Ls Rs C Rls Rrs";
+        case 140 : return "L R Ls Rs C Lrs Rrs";
         case 141 : return "C L R Ls Rs Cs ";
         case 142 : return "C L R Ls Rs Cs LFE";
-        case 143 : return "C L R Ls Rs Rls Rrs";
-        case 144 : return "C L R Ls Rs Rls Rrs Cs";
+        case 143 : return "C L R Ls Rs Lrs Rrs";
+        case 144 : return "C L R Ls Rs Lrs Rrs Cs";
         case 145 : return "L R C Vhc Lsd Rsd Ls Rs Vhl Vhr Lw Rw Csd Cs LFE1 LFE2";
         case 146 : return "L R C Vhc Lsd Rsd Ls Rs Vhl Vhr Lw Rw Csd Cs LFE1 LFE2 Lc Rc HI VI Haptic";
         case 147 : return "";

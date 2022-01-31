@@ -425,7 +425,9 @@ Ztring ChannelLayout_2018_Rename(stream_t StreamKind, size_t Parameter, ZtringLi
         case Stream_Audio:
             switch (Parameter)
             {
-                case Audio_ChannelLayout: return ChannelLayout_2018_Rename(Info[Parameter], StreamFormat);
+                case Audio_ChannelLayout:
+                case Audio_ChannelLayout_Original:
+                    return ChannelLayout_2018_Rename(Info[Parameter], StreamFormat);
                 default:;
             }
             break;

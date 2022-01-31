@@ -969,7 +969,7 @@ MenuCount;Count of menu streams
 MenuID;Menu ID
 Metadata_Format;Metadata format
 Metadata_Format_Type;Type of the metadata frame
-Metadata_MuxingMode;Metadata musxing mode
+Metadata_MuxingMode;Metadata muxing mode
 MixType;Mix type
 mn; min
 Mood;Mood
