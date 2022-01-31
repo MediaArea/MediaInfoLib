@@ -963,7 +963,9 @@ File_DolbyE::File_DolbyE()
 
     //Temp
     SMPTE_time_code_StartTimecode=(int64u)-1;
+    frame_rate_code=0;
     FrameInfo.DTS=0;
+    program_config=0;
 }
 
 //***************************************************************************
