@@ -776,6 +776,18 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     if (Parameter==Fill_Parameter(StreamKind, Generic_Format_Commercial_IfAny))
         Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format_Commercial), Value, true);
 
+    if (Parameter==Fill_Parameter(StreamKind, Generic_TimeCode_FirstFrame) && Value.size()>=11)
+    {
+        Char C=Value[8];
+        switch (C)
+        {
+            case __T(':'):
+            case __T(';'):
+                Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_TimeCode_DropFrame), (C==__T(';'))?__T("Yes"):__T("No"));
+                break;
+        }
+    }
+
     if (!IsSub)
     {
         Ztring ParameterName=Retrieve(StreamKind, StreamPos, Parameter, Info_Name);
@@ -2056,9 +2068,8 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-float64 File__Analyze::Video_FrameRate_Rounded(const Ztring& Value)
+float64 File__Analyze::Video_FrameRate_Rounded(float64 FrameRate)
 {
-    float64 FrameRate=Value.To_float64();
     float64 FrameRate_Sav=FrameRate;
 
          if (FrameRate> 9.990 && FrameRate<=10.010) FrameRate=10.000;
@@ -2087,7 +2098,7 @@ float64 File__Analyze::Video_FrameRate_Rounded(const Ztring& Value)
 void File__Analyze::Video_FrameRate_Rounding(stream_t StreamKind, size_t Pos, size_t Parameter)
 {
     const Ztring Value=Retrieve_Const(StreamKind, Pos, Parameter);
-    float64 FrameRate=Video_FrameRate_Rounded(Value);
+    float64 FrameRate=Video_FrameRate_Rounded(Value.To_float64());
     float64 FrameRate_Sav=Value.To_float64();
 
     if (FrameRate!=FrameRate_Sav)
@@ -2470,7 +2481,7 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
             if (FrameCountS.empty() || StreamKind==Stream_Text || (StreamKind==Stream_Audio && Retrieve(Stream_Audio, StreamPos, Stream_Audio)!=__T("PCM")))
             {
                 //FrameCount is not based on frame rate
-                FrameCountS.From_Number(List[Pos].To_float32()*Video_FrameRate_Rounded(FrameRateS)/1000, 0);
+                FrameCountS.From_Number(List[Pos].To_float32()*Video_FrameRate_Rounded(FrameRateS.To_float64())/1000, 0);
             }
             if (!FrameRateS.empty() && !FrameCountS.empty() && FrameRateS.To_int64u() && FrameRateS.To_int64u()<256)
             {
