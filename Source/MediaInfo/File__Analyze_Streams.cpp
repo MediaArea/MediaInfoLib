@@ -2165,7 +2165,6 @@ void File__Analyze::Audio_BitRate_Rounding(size_t Pos, audio Parameter)
         if (BitRate>= 109760 && BitRate<= 114240) BitRate= 112000;
         if (BitRate>= 125440 && BitRate<= 130560) BitRate= 128000;
         if (BitRate>= 156800 && BitRate<= 163200) BitRate= 160000;
-        if (BitRate>= 156800 && BitRate<= 163200) BitRate= 160000;
         if (BitRate>= 188160 && BitRate<= 195840) BitRate= 192000;
         if (BitRate>= 219520 && BitRate<= 228480) BitRate= 224000;
         if (BitRate>= 219520 && BitRate<= 228480) BitRate= 224000;
@@ -2241,7 +2240,6 @@ void File__Analyze::Audio_BitRate_Rounding(size_t Pos, audio Parameter)
         if (BitRate>=  46000 && BitRate<=  50000) BitRate=  48000;
         if (BitRate>=  64827 && BitRate<=  67473) BitRate=  66150;
         if (BitRate>=  70560 && BitRate<=  73440) BitRate=  72000;
-        if (BitRate>=  94080 && BitRate<=  97920) BitRate=  96000;
         if (BitRate>=  94080 && BitRate<=  97920) BitRate=  96000;
         if (BitRate>= 129654 && BitRate<= 134946) BitRate= 132300;
         if (BitRate>= 141120 && BitRate<= 146880) BitRate= 144000;
