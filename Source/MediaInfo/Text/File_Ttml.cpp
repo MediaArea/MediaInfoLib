@@ -182,8 +182,8 @@ void File_Ttml::Streams_Accept()
     Stream_Prepare(Stream_Text);
     Fill(Stream_Text, 0, "Format", "TTML");
 
-    Time_Start=TimeCode(0xFF, 0xFF, 0xFF, 0xFF, (int8u)FrameRate_Int, FrameRate_Is1001);
-    Time_End=TimeCode(0, 0, 0, 0, (int8u)FrameRate_Int, FrameRate_Is1001);
+    Time_Start=TimeCode(0xFF, 0xFF, 0xFF, 0xFF, 0, false);
+    Time_End=TimeCode(0, 0, 0, 0, 0, false);
     FrameCount=0;
     LineCount=0;
     FrameRate_Int=0;
@@ -207,12 +207,12 @@ void File_Ttml::Streams_Finish()
         Fill(Stream_Text, 0, Text_FrameRate_Den, FrameRateMultiplier_Den);
     }
 
-    if (Time_Start!=TimeCode(0xFF, 0xFF, 0xFF, 0xFF, (int8u)FrameRate_Int, FrameRate_Is1001))
+    if (Time_Start!=TimeCode(0xFF, 0xFF, 0xFF, 0xFF, 0, false))
     {
         if (Time_Start.MoreSamples_Frequency)
         {
             Time_Start.FramesPerSecond=0;
-            Time_End.FramesPerSecond =0;
+            Time_End.FramesPerSecond=0;
         }
         Fill(Stream_General, 0, General_Duration, Time_End.ToMilliseconds()-Time_Start.ToMilliseconds());
         Fill(Stream_Text, 0, Text_Duration, Time_End.ToMilliseconds()-Time_Start.ToMilliseconds());
@@ -387,22 +387,26 @@ void File_Ttml::Read_Buffer_Continue()
                         TimeCode TC;
                         TC.FramesPerSecond=(int8u)FrameRate_Int;
                         TC.FramesPerSecond_Is1001=FrameRate_Is1001;
-                        TC.FromString(Attribute);
-                        if (Time_Start.ToMilliseconds()>TC.ToMilliseconds())
-                            Time_Start=TC;
-                        if (Time_End.ToMilliseconds()<TC.ToMilliseconds())
-                            Time_End=TC;
+                        if (!TC.FromString(Attribute))
+                        {
+                            if (Time_Start.ToMilliseconds()>TC.ToMilliseconds())
+                                Time_Start=TC;
+                            if (Time_End.ToMilliseconds()<TC.ToMilliseconds())
+                                Time_End=TC;
+                        }
                     }
                     if (const char* Attribute=body_element->Attribute("end"))
                     {
                         TimeCode TC;
                         TC.FramesPerSecond=(int8u)FrameRate_Int;
                         TC.FramesPerSecond_Is1001=FrameRate_Is1001;
-                        TC.FromString(Attribute);
-                        if (Time_Start.ToMilliseconds()>TC.ToMilliseconds())
-                            Time_Start=TC;
-                        if (Time_End.ToMilliseconds()<TC.ToMilliseconds())
-                            Time_End=TC;
+                        if (!TC.FromString(Attribute))
+                        {
+                            if (Time_Start.ToMilliseconds()>TC.ToMilliseconds())
+                                Time_Start=TC;
+                            if (Time_End.ToMilliseconds()<TC.ToMilliseconds())
+                                Time_End=TC;
+                        }
                     }
 
                     for (XMLElement* div_element=body_element->FirstChildElement(); div_element; div_element=div_element->NextSiblingElement())
@@ -415,22 +419,26 @@ void File_Ttml::Read_Buffer_Continue()
                                 TimeCode TC;
                                 TC.FramesPerSecond=(int8u)FrameRate_Int;
                                 TC.FramesPerSecond_Is1001=FrameRate_Is1001;
-                                TC.FromString(Attribute);
-                                if (Time_Start.ToMilliseconds()>TC.ToMilliseconds())
-                                    Time_Start=TC;
-                                if (Time_End.ToMilliseconds()<TC.ToMilliseconds())
-                                    Time_End=TC;
+                                if (!TC.FromString(Attribute))
+                                {
+                                    if (Time_Start.ToMilliseconds()>TC.ToMilliseconds())
+                                        Time_Start=TC;
+                                    if (Time_End.ToMilliseconds()<TC.ToMilliseconds())
+                                        Time_End=TC;
+                                }
                             }
                             if (const char* Attribute=div_element->Attribute("end"))
                             {
                                 TimeCode TC;
                                 TC.FramesPerSecond=(int8u)FrameRate_Int;
                                 TC.FramesPerSecond_Is1001=FrameRate_Is1001;
-                                TC.FromString(Attribute);
-                                if (Time_Start.ToMilliseconds()>TC.ToMilliseconds())
-                                    Time_Start=TC;
-                                if (Time_End.ToMilliseconds()<TC.ToMilliseconds())
-                                    Time_End=TC;
+                                if (!TC.FromString(Attribute))
+                                {
+                                    if (Time_Start.ToMilliseconds()>TC.ToMilliseconds())
+                                        Time_Start=TC;
+                                    if (Time_End.ToMilliseconds()<TC.ToMilliseconds())
+                                        Time_End=TC;
+                                }
                             }
                             if (!div)
                                 div=body_element;
