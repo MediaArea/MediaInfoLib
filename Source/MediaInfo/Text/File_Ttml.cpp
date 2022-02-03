@@ -295,6 +295,22 @@ void File_Ttml::Read_Buffer_Continue()
     // Root attributes
     bool IsSmpteTt=false, IsEbuTt=false, IsImsc1=false;
     const char* Tt_Attribute;
+    Tt_Attribute=Root->Attribute("ittp:aspectRatio");
+    if (!Tt_Attribute)
+        Tt_Attribute=Root->Attribute("aspectRatio");
+    if (Tt_Attribute && Retrieve_Const(Stream_Text, 0, Text_DisplayAspectRatio).empty())
+    {
+        int64u DisplayAspectRatio_Num=atoi(Tt_Attribute);
+        if (const char* Tt_Attribute_Space=strchr(Tt_Attribute, ' '))
+        {
+            int64u DisplayAspectRatio_Den=atoi(Tt_Attribute_Space+1);
+            if (DisplayAspectRatio_Num && DisplayAspectRatio_Den)
+            {
+                float64 DisplayAspectRatio=((float64)DisplayAspectRatio_Num)/DisplayAspectRatio_Den;
+                Fill(Stream_Text, 0, Text_DisplayAspectRatio, DisplayAspectRatio);
+            }
+        }
+    }
     Tt_Attribute=Root->Attribute("ttp:frameRate");
     if (!Tt_Attribute)
         Tt_Attribute=Root->Attribute("frameRate");

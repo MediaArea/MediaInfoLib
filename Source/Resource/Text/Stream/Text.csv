@@ -129,6 +129,10 @@ Width;; character;N YIY;;;Width
 Width/String;;;Y NT;;;
 Height;; character;N YIY;;;Height
 Height/String;;;Y NT;;;
+DisplayAspectRatio;;;N YFY;;;Display Aspect ratio
+DisplayAspectRatio/String;;;Y NT;;;Display Aspect ratio
+DisplayAspectRatio_Original;;;N YFY;;;Original (in the raw stream) Display Aspect ratio
+DisplayAspectRatio_Original/String;;;Y NT;;;Original (in the raw stream) Display Aspect ratio
 FrameRate_Mode;;;N YTY;;;Frame rate mode (CFR, VFR)
 FrameRate_Mode/String;;;N NT;;;Frame rate mode (Constant, Variable)
 FrameRate;; fps;N YFY;;;Frames per second
