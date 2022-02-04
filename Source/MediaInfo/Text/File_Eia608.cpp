@@ -168,6 +168,8 @@ void File_Eia608::Streams_Finish()
         if (Streams[Pos] || (Pos<2 && Config->File_Eia608_DisplayEmptyStream_Get()))
         {
             Fill(Stream_Text, i, Text_Duration, Retrieve_Const(Stream_General, 0, General_Duration));
+            if (Streams[Pos]->Duration_Start!=FLT_MAX && Streams[Pos]->Duration_End!=FLT_MAX)
+                Fill(Stream_Text, i, Text_Duration_Start2End, Streams[Pos]->Duration_End-Streams[Pos]->Duration_Start);
             if (Streams[Pos]->Duration_Start_Command!=FLT_MAX)
                 Fill(Stream_Text, i, Text_Duration_Start_Command, Streams[Pos]->Duration_Start_Command);
             if (Streams[Pos]->Duration_Start!=FLT_MAX)
@@ -184,8 +186,8 @@ void File_Eia608::Streams_Finish()
                 Streams[Pos]->Count_PaintOn++;
             if (Streams[Pos]->Count_PaintOn)
                 Fill(Stream_Text, i, Text_Events_PaintOn, Streams[Pos]->Count_PaintOn);
-            if ((Streams[Pos]->Count_PopOn?1:0)+(Streams[Pos]->Count_RollUp?1:0)+(Streams[Pos]->Count_PaintOn?1:0)>1)
-                Fill(Stream_Text, i, Text_Events_Total, Streams[Pos]->Count_PopOn + Streams[Pos]->Count_RollUp + Streams[Pos]->Count_PaintOn);
+            if (size_t Events_Total=Streams[Pos]->Count_PopOn+Streams[Pos]->Count_RollUp+Streams[Pos]->Count_PaintOn)
+                Fill(Stream_Text, i, Text_Events_Total, Events_Total);
             if (Streams[Pos]->FirstDisplay_Delay_Frames!=(size_t)-1)
                 Fill(Stream_Text, i, Text_FirstDisplay_Delay_Frames, Streams[Pos]->FirstDisplay_Delay_Frames);
             if (Streams[Pos]->FirstDisplay_Delay_Type!=(int8u)-1)
@@ -341,7 +343,7 @@ void File_Eia608::Read_Buffer_Continue()
             size_t StreamPos=TextMode*2+DataChannelMode; // From previous parsing
             if (StreamPos<Streams.size() && Streams[StreamPos] && Streams[StreamPos]->Duration_End_Command_WasJustUpdated && FrameInfo.DTS!=(int64u)-1 && FrameInfo.DUR!=(int64u)-1 )
             {
-                Streams[StreamPos]->Duration_End_Command=(FrameInfo.DTS+FrameInfo.DUR)/1000000.0;
+                Streams[StreamPos]->Duration_End_Command=(FrameInfo.DTS)/1000000.0;
                 Streams[StreamPos]->Duration_End_Command_WasJustUpdated=false;
             }
             return; //Nothing to do
@@ -1055,7 +1057,7 @@ void File_Eia608::Special_14(int8u cc_data_2)
     }
     if (FrameInfo.DTS!=(int64u)-1 && FrameInfo.DUR!=(int64u)-1)
     {
-        Streams[StreamPos]->Duration_End_Command=(FrameInfo.DTS+FrameInfo.DUR)/1000000.0;
+        Streams[StreamPos]->Duration_End_Command=(FrameInfo.DTS)/1000000.0;
         Streams[StreamPos]->Duration_End_Command_WasJustUpdated=true;
     }
 }
@@ -1242,7 +1244,7 @@ void File_Eia608::HasChanged()
     {
         if (Streams[StreamPos]->Duration_Start==FLT_MAX)
             Streams[StreamPos]->Duration_Start=FrameInfo.DTS/1000000.0;
-        Streams[StreamPos]->Duration_End=(FrameInfo.DTS+FrameInfo.DUR)/1000000.0;
+        Streams[StreamPos]->Duration_End=(FrameInfo.DTS)/1000000.0;
     }
     #if MEDIAINFO_EVENTS
             if (StreamPos<Streams.size() && Streams[StreamPos])

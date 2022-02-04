@@ -49,6 +49,13 @@ Duration/String2;;;N NT;;;Play time in format : XXx YYy only, YYy omited if zero
 Duration/String3;;;N NT;;;Play time in format : HH:MM:SS.MMM;
 Duration/String4;;;N NT;;;Play time in format : HH:MM:SS:FF, last colon replaced by semicolon for drop Duration;; ms;N YFY;;;Play time of the stream, in ms;
 Duration/String5;;;N NT;;;Play time in format : HH:MM:SS.mmm (HH:MM:SS:FF)
+Duration_Start2End;; ms;N YFY;;;Play time of the stream, in ms;
+Duration_Start2End/String;;;Y NT;;;Play time (formated);
+Duration_Start2End/String1;;;N NT;;;Play time in format : HHh MMmn SSs MMMms, XX omited if zero;
+Duration_Start2End/String2;;;N NT;;;Play time in format : XXx YYy only, YYy omited if zero;
+Duration_Start2End/String3;;;N NT;;;Play time in format : HH:MM:SS.MMM;
+Duration_Start2End/String4;;;N NT;;;Play time in format : HH:MM:SS:FF, last colon replaced by semicolon for drop Duration;; ms;N YFY;;;Play time of the stream, in ms;
+Duration_Start2End/String5;;;N NT;;;Play time in format : HH:MM:SS.mmm (HH:MM:SS:FF)
 Duration_Start_Command;; ms;N YFY;;;Play time of the stream, in ms;
 Duration_Start_Command/String;;;Y NT;;;Play time (formated);
 Duration_Start_Command/String1;;;N NT;;;Play time in format : HHh MMmn SSs MMMms, XX omited if zero;

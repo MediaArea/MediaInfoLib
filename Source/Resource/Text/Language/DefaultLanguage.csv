@@ -343,6 +343,7 @@ Duration_End;End time
 Duration_End_Command;End time (commands)
 Duration_Start;Start time
 Duration_Start_Command;Start time (commands)
+Duration_Start2End;Duration of the visible content
 DynamicRangeControl;Dynamic Range Control
 Eac3DrcProfile;E-AC-3 DRC profile
 Edit;Edit
