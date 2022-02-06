@@ -1453,11 +1453,12 @@ enum text
     Text_Encoded_Date,
     Text_Tagged_Date,
     Text_Encryption,
+    Text_Events_Total,
     Text_Events_PopOn,
     Text_Events_RollUp,
     Text_Events_PaintOn,
-    Text_Events_Total,
     Text_Lines_Count,
+    Text_Lines_MaxCountPerEvent,
     Text_FirstDisplay_Delay_Frames,
     Text_FirstDisplay_Type,
 };

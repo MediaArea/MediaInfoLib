@@ -186,6 +186,7 @@ void File_Ttml::Streams_Accept()
     Time_End=TimeCode(0, 0, 0, 0, 0, false);
     FrameCount=0;
     LineCount=0;
+    LineMaxCountPerEvent=0;
     FrameRate_Int=0;
     FrameRateMultiplier_Num=1;
     FrameRateMultiplier_Den=1;
@@ -224,6 +225,8 @@ void File_Ttml::Streams_Finish()
     Fill(Stream_Text, 0, Text_FrameRate_Mode, "CFR");
     Fill(Stream_Text, 0, Text_Events_Total, FrameCount);
     Fill(Stream_Text, 0, Text_Lines_Count, LineCount);
+    if (LineCount)
+        Fill(Stream_Text, 0, Text_Lines_MaxCountPerEvent, LineMaxCountPerEvent+1);
 }
 
 //***************************************************************************
@@ -464,11 +467,17 @@ void File_Ttml::Read_Buffer_Continue()
                             #endif //MEDIAINFO_EVENTS
                             FrameCount++;
                             LineCount++;
+                            int64u LineMaxCountPerEvent_Temp=0;
                             for (XMLElement* p_element=div_element->FirstChildElement(); p_element; p_element=p_element->NextSiblingElement())
                             {
                                 if (!strcmp(p_element->Value(), "br"))
+                                {
                                     LineCount++;
+                                    LineMaxCountPerEvent_Temp++;
+                                }
                             }
+                            if (LineMaxCountPerEvent<LineMaxCountPerEvent_Temp)
+                                LineMaxCountPerEvent=LineMaxCountPerEvent_Temp;
                         }
                     }
                 }

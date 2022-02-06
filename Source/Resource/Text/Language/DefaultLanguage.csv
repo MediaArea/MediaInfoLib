@@ -150,6 +150,7 @@
 : ;: 
 3D;3D
 3DType;3D Type
+608_Mode;EIA-608 conversion mode
 About;About
 About_Hint;How to contact me and find last version
 Accompaniment;Accompaniment
@@ -217,6 +218,7 @@ BitRate_Nominal;Nominal bit rate
 Bits-(Pixel*Frame);Bits/(Pixel*Frame)
 BufferSize;Buffer size
 Cancel;Cancel
+CaptionServiceName;Caption service name
 Channel(s);Channel(s)
 ChannelCoded;Channel coded
 ChannelConfiguration;Channel configuration
@@ -384,6 +386,8 @@ FileExtension;File extension
 FileName;File name
 FileNameExtension;File name extension
 FileSize;File size
+FirstDisplay_Delay_Frames;Count of frames before first event
+FirstDisplay_Type;Type of the first event
 FlatPanelTv;Flat panel TV
 FlowID;Flow ID
 Folder;Folder
@@ -911,6 +915,7 @@ LfeMixGain;LFE mix gain
 Library;Muxing library
 Lightness;Lightness
 Lines_Count;Count of lines
+Lines_MaxCountPerEvent;Maximum count of lines per event
 LineUpStart;Line Up Start
 LinkedTo_Bed_Pos;Bed #s
 LinkedTo_ChannelFormat_Pos;Channel format #s

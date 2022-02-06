@@ -296,6 +296,9 @@ void File_Scc::FileHeader_Parse()
     else
         FrameRate=0;
     Fill(Stream_Text, 0, Text_FrameRate, FrameRate_F);
+    TimeCode_FirstFrame.FramesPerSecond=FrameRate;
+    TimeCode_FirstFrame.FramesPerSecond_Is1001=FrameRate_Is1001;
+    Fill(Stream_Text, 0, Text_Delay, TimeCode_FirstFrame.ToMilliseconds());
 }
 
 //***************************************************************************

@@ -105,7 +105,7 @@ private :
 
         character()
             :
-            Value(L' '),
+            Value(L'\0'),
             Attribute(0x00)
         {
         }
@@ -125,9 +125,11 @@ private :
         bool    Synched;
 
         //Stats
-        size_t  Count_PopOn;
-        size_t  Count_RollUp;
+        int64u  Count_PopOn;
+        int64u  Count_RollUp;
         size_t  Count_PaintOn;
+        int64u  LineCount;
+        int64u  LineMaxCountPerEvent;
         bool    Count_CurrentHasContent;
         int8u   FirstDisplay_Delay_Type;
         size_t  FirstDisplay_Delay_Frames;
@@ -150,6 +152,8 @@ private :
             Count_PopOn=0;
             Count_RollUp=0;
             Count_PaintOn=0;
+            LineCount=0;
+            LineMaxCountPerEvent=0;
             Count_CurrentHasContent=false;
             FirstDisplay_Delay_Type=(int8u)-1;
             FirstDisplay_Delay_Frames=(size_t)-1;
@@ -166,6 +170,7 @@ private :
     int8u cc_data_2_Old;
     bool   HasContent;
     bool   HasContent_Displayed;
+    bool   HasJumped;
     std::bitset<8> DataDetected; //1=CC1, 2=CC2, 3=T1, 4=T2, 5=XDS
 };
 
