@@ -182,6 +182,10 @@ void File_Eia608::Streams_Finish()
                 Fill(Stream_Text, i, Text_Duration_End, Stream.Duration_End);
             if (Stream.Duration_End_Command!=FLT_MAX)
                 Fill(Stream_Text, i, Text_Duration_End_Command, Stream.Duration_End_Command);
+            if (Stream.FirstDisplay_Delay_Frames!=(size_t)-1)
+                Fill(Stream_Text, i, Text_FirstDisplay_Delay_Frames, Stream.FirstDisplay_Delay_Frames);
+            if (Stream.FirstDisplay_Delay_Type!=(int8u)-1)
+                Fill(Stream_Text, i, Text_FirstDisplay_Type, FirstDisplay_Type_Name[Stream.FirstDisplay_Delay_Type]);
             if (!HasJumped)
             {
                 if (Stream.Count_PopOn)
@@ -194,10 +198,6 @@ void File_Eia608::Streams_Finish()
                     Fill(Stream_Text, i, Text_Events_PaintOn, Stream.Count_PaintOn);
                 if (size_t Events_Total=Stream.Count_PopOn+Stream.Count_RollUp+Stream.Count_PaintOn)
                     Fill(Stream_Text, i, Text_Events_Total, Events_Total);
-                if (Stream.FirstDisplay_Delay_Frames!=(size_t)-1)
-                    Fill(Stream_Text, i, Text_FirstDisplay_Delay_Frames, Stream.FirstDisplay_Delay_Frames);
-                if (Stream.FirstDisplay_Delay_Type!=(int8u)-1)
-                    Fill(Stream_Text, i, Text_FirstDisplay_Type, FirstDisplay_Type_Name[Stream.FirstDisplay_Delay_Type]);
                 Fill(Stream_Text, i, Text_Lines_Count, Stream.LineCount);
                 if (Stream.LineCount)
                     Fill(Stream_Text, i, Text_Lines_MaxCountPerEvent, Stream.LineMaxCountPerEvent);
