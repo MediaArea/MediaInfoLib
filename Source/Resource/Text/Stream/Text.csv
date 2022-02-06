@@ -282,10 +282,11 @@ Summary;;;N NTY;;;;;
 Encoded_Date;;;Y YTY;;;The time that the encoding of this item was completed began.;;Temporal
 Tagged_Date;;;Y YTY;;;The time that the tags were done for this item.;;Temporal
 Encryption;;;Y YTY;;;;;
+Events_Total;;;Y YTY;;;;;
 Events_PopOn;;;Y YTY;;;;;
 Events_RollUp;;;Y YTY;;;;;
 Events_PaintOn;;;Y YTY;;;;;
-Events_Total;;;Y YTY;;;;;
 Lines_Count;;;Y YTY;;;;;
+Lines_MaxCountPerEvent;;;Y YTY;;;;;
 FirstDisplay_Delay_Frames;;;Y YTY;;;;;
 FirstDisplay_Type;;;Y YTY;;;;;
