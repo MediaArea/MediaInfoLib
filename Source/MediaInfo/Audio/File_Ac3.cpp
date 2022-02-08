@@ -2570,7 +2570,7 @@ void File_Ac3::Core_Frame()
             TEST_SB_END();
 
             TEST_SB_SKIP(                                           "infomdate");
-                Skip_S1(3,                                          "bsmod");
+                Get_S1 (3, bsmod,                                   "bsmod - Bit Stream Mode"); Param_Info1(AC3_Mode[bsmod]);
                 Skip_SB(                                            "copyrightb - Copyright Bit");
                 Skip_SB(                                            "origbs - Original Bit Stream");
                 if (acmod==0x2)
