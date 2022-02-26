@@ -1132,10 +1132,14 @@ void File_DvDif::Errors_Stats_Update()
                 Errors_AreDetected=true;
         }
         else if (Speed_TimeCode_IsValid && Speed_TimeCode_Current.IsValid && Speed_TimeCode_Current_Theory.IsValid
-              && (   Speed_TimeCode_Current.Time.Frames !=Speed_TimeCode_Current_Theory.Time.Frames
-                  || Speed_TimeCode_Current.Time.Seconds!=Speed_TimeCode_Current_Theory.Time.Seconds
-                  || Speed_TimeCode_Current.Time.Minutes!=Speed_TimeCode_Current_Theory.Time.Minutes
-                  || Speed_TimeCode_Current.Time.Hours  !=Speed_TimeCode_Current_Theory.Time.Hours))
+              && !(   Speed_TimeCode_Current.Time.Frames ==Speed_TimeCode_Current_Theory.Time.Frames
+                   && Speed_TimeCode_Current.Time.Seconds==Speed_TimeCode_Current_Theory.Time.Seconds
+                   && Speed_TimeCode_Current.Time.Minutes==Speed_TimeCode_Current_Theory.Time.Minutes
+                   && Speed_TimeCode_Current.Time.Hours  ==Speed_TimeCode_Current_Theory.Time.Hours)
+              && !(Speed_TimeCode_Current.Time.Frames == Speed_TimeCode_Current_Theory2.Time.Frames
+                   && Speed_TimeCode_Current.Time.Seconds==Speed_TimeCode_Current_Theory2.Time.Seconds
+                   && Speed_TimeCode_Current.Time.Minutes==Speed_TimeCode_Current_Theory2.Time.Minutes
+                   && Speed_TimeCode_Current.Time.Hours  ==Speed_TimeCode_Current_Theory2.Time.Hours))
         {
             size_t Speed_TimeCodeZ_Pos=Speed_TimeCodeZ.size();
             Speed_TimeCodeZ.resize(Speed_TimeCodeZ_Pos+1);
@@ -1147,14 +1151,48 @@ void File_DvDif::Errors_Stats_Update()
             Errors_Stats_Line+=__T('N');
             #if MEDIAINFO_EVENTS
                 Event.TimeCode|=1<<30;
-                bool IsLess=Speed_TimeCode_Current.Time.Hours<Speed_TimeCode_Current_Theory.Time.Hours
-                         || Speed_TimeCode_Current.Time.Minutes<Speed_TimeCode_Current_Theory.Time.Minutes
-                         || Speed_TimeCode_Current.Time.Seconds<Speed_TimeCode_Current_Theory.Time.Seconds
-                         || Speed_TimeCode_Current.Time.Frames<Speed_TimeCode_Current_Theory.Time.Frames;
-                if (IsLess)
+                int32u Time_Current=(((int32u)Speed_TimeCode_Current.Time.Hours          )<<24)
+                                   |(((int32u)Speed_TimeCode_Current.Time.Minutes        )<<16)
+                                   |(((int32u)Speed_TimeCode_Current.Time.Seconds        )<< 8)
+                                   |(((int32u)Speed_TimeCode_Current.Time.Frames         )    );
+                int32u Time_Theory =(((int32u)Speed_TimeCode_Current_Theory2.Time.Hours  )<<24)
+                                   |(((int32u)Speed_TimeCode_Current_Theory2.Time.Minutes)<<16)
+                                   |(((int32u)Speed_TimeCode_Current_Theory2.Time.Seconds)<< 8)
+                                   |(((int32u)Speed_TimeCode_Current_Theory2.Time.Frames )    );
+                if (Time_Current<Time_Theory)
                     MoreFlags|=1<<1;
             #endif //MEDIAINFO_EVENTS
-            Speed_TimeCode_Current_Theory=Speed_TimeCode_Current;
+            Speed_TimeCode_Current_Theory2=Speed_TimeCode_Current; // Change it only once
+            int8u Frames_Max;
+            if (video_source_stype!=(int8u)-1)
+                Frames_Max=system?25:30;
+            else
+                Frames_Max=DSF?25:30;
+
+            Speed_TimeCode_Current_Theory2.Time.Frames++;
+            if (Speed_TimeCode_Current_Theory2.Time.Frames>=Frames_Max)
+            {
+                Speed_TimeCode_Current_Theory2.Time.Seconds++;
+                Speed_TimeCode_Current_Theory2.Time.Frames=0;
+                if (Speed_TimeCode_Current_Theory2.Time.Seconds>=60)
+                {
+                    Speed_TimeCode_Current_Theory2.Time.Seconds=0;
+                    Speed_TimeCode_Current_Theory2.Time.Minutes++;
+
+                    if (!DSF && Speed_TimeCode_Current_Theory2.Time.DropFrame && Speed_TimeCode_Current_Theory2.Time.Minutes%10)
+                        Speed_TimeCode_Current_Theory2.Time.Frames=2; //frames 0 and 1 are dropped for every minutes except 00 10 20 30 40 50
+
+                    if (Speed_TimeCode_Current_Theory2.Time.Minutes>=60)
+                    {
+                        Speed_TimeCode_Current_Theory2.Time.Minutes=0;
+                        Speed_TimeCode_Current_Theory2.Time.Hours++;
+                        if (Speed_TimeCode_Current_Theory2.Time.Hours>=24)
+                        {
+                            Speed_TimeCode_Current_Theory2.Time.Hours=0;
+                        }
+                    }
+                }
+            }
             TimeCode_Disrupted=true;
             Errors_AreDetected=true;
         }
@@ -1305,10 +1343,19 @@ void File_DvDif::Errors_Stats_Update()
             Errors_Stats_Line+=__T('N');
             #if MEDIAINFO_EVENTS
                 Event.RecordedDateTime1|=1<<30;
-                bool IsLess=Speed_RecTime_Current.Time.Hours<Speed_RecTime_Current_Theory2.Time.Hours
-                         || Speed_RecTime_Current.Time.Minutes<Speed_RecTime_Current_Theory2.Time.Minutes
-                         || Speed_RecTime_Current.Time.Seconds<Speed_RecTime_Current_Theory2.Time.Seconds;
-                if (IsLess)
+                int64u Time_Current=(((int64u)Speed_RecDate_Current.Years               )<<36)
+                                   |(((int64u)Speed_RecDate_Current.Months              )<<32)
+                                   |(((int64u)Speed_RecDate_Current.Days                )<<24)
+                                   |(((int64u)Speed_RecTime_Current.Time.Hours          )<<16)
+                                   |(((int64u)Speed_RecTime_Current.Time.Minutes        )<< 8)
+                                   |(((int64u)Speed_RecTime_Current.Time.Seconds        )    );
+                int64u Time_Theory =(((int64u)Speed_RecDate_Current_Theory2.Years       )<<36)
+                                   |(((int64u)Speed_RecDate_Current_Theory2.Months      )<<32)
+                                   |(((int64u)Speed_RecDate_Current_Theory2.Days        )<<24)
+                                   |(((int64u)Speed_RecTime_Current_Theory2.Time.Hours  )<<16)
+                                   |(((int64u)Speed_RecTime_Current_Theory2.Time.Minutes)<< 8)
+                                   |(((int64u)Speed_RecTime_Current_Theory2.Time.Seconds));
+                if (Time_Current<Time_Theory)
                     MoreFlags|=1<<0;
             #endif //MEDIAINFO_EVENTS
             if (!REC_IsValid || REC_ST)
@@ -1820,8 +1867,8 @@ void File_DvDif::Errors_Stats_Update()
     }
 
     //Speed_TimeCode_Current
-    if (!Speed_TimeCode_Current_Theory.IsValid)
-        Speed_TimeCode_Current_Theory=Speed_TimeCode_Current;
+    Speed_TimeCode_Current_Theory2=Speed_TimeCode_Current; // Don't change it
+    Speed_TimeCode_Current_Theory=Speed_TimeCode_Current;
     if (Speed_TimeCode_Current_Theory.IsValid)
     {
         int8u Frames_Max;
@@ -1857,6 +1904,7 @@ void File_DvDif::Errors_Stats_Update()
     }
 
     //Speed_RecTime_Current_Theory
+    Speed_RecDate_Current_Theory2=Speed_RecDate_Current; //Don't change it
     Speed_RecTime_Current_Theory=Speed_RecTime_Current;
     Speed_RecTime_Current_Theory2=Speed_RecTime_Current; //Don't change it
     if (Speed_RecTime_Current_Theory.IsValid)
