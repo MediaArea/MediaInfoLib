@@ -612,7 +612,7 @@ void File_DvDif::Read_Buffer_Continue()
                                 case 0: Value=(Contains_800800_0<<4)|(Contains_800800_1>>4); break; // Only one half
                                 case 1: Value=(ToCheck_8000_0<<8)|ToCheck_8000_1; break;
                             }
-                            if ((Is16 && (Value&0x7FFF) && Value!=0xFFFF) || (!Is16 && (Value&0x7FF) && Value!=0xFFF))
+                            if (Value && Value!=(0xFFFF>>(Is16?0:4))) // 0 and -1 are often used as silence
                             {
                                 if (Channel>=Audio_Errors.size())
                                     Audio_Errors.resize(Channel+1);
@@ -1817,7 +1817,9 @@ void File_DvDif::Errors_Stats_Update()
                         if (Dseq>=Audio_Errors[ChannelGroup].size())
                             break;
                         Audio_Errors_PerDseq[Dseq]+=Audio_Errors[ChannelGroup][Dseq].Count;
-                        if (!Audio_Errors[ChannelGroup][Dseq].Values.empty())
+                        std::set<int16u>& Values=Audio_Errors[ChannelGroup][Dseq].Values;
+                        bool Is16=(QU==(int8u)-1)?true:(QU==0);
+                        if (!Values.empty() && (Values.size()>1 || *Values.begin()!=(0x8000>>(Is16?0:4))))
                         {
                             if (!MoreData)
                                 MoreData=new int8u[4096] + sizeof(size_t); // TODO: more dynamic allocation
