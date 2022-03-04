@@ -803,6 +803,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dvvC=0x64767643;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_esds=0x65736473;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_fiel=0x6669656C;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_gama=0x67616D61;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_glbl=0x676C626C;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC=0x68766343;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_hvcE=0x68766345;
@@ -1208,6 +1209,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dvvC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_esds)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_fiel)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_gama)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_glbl)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_hvcE)
@@ -7155,6 +7157,18 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_fiel()
                         break;
             default   : ;
         }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_gama()
+{
+    float32 Data;
+    Get_BFP4 (16, Data,                                          "Data");
+
+    FILLING_BEGIN();
+        if (Data)
+            Fill(Stream_Video, StreamPos_Last, "Gamma", Data);
     FILLING_END();
 }
 
