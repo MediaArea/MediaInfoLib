@@ -57,7 +57,7 @@ static const char* binaural_render_mode_Name[] =
     "Near",
     "Far",
     "Mid",
-    "Not Indicated",
+    "Not Indicated (Mid)",
 };
 static size_t binaural_render_mode_Name_Size=sizeof(binaural_render_mode_Name)/sizeof(const char*);
 
@@ -65,8 +65,8 @@ static const char* warp_mode_Name[] =
 {
     "Direct Render",
     "Direct Render with room balance",
-    "Dolby Pro Logic IIx",
-    "Standard (Lo/Ro)",
+    "Lt/Rt (Dolby Pro Logic IIx)",
+    "Lo/Ro",
     "Not Indicated",
 };
 static size_t warp_mode_Name_Size=sizeof(warp_mode_Name)/sizeof(const char*);
@@ -94,17 +94,17 @@ static size_t frames_per_second_Size=sizeof(frames_per_second_Values)/sizeof(flo
 static const char* downmix_type_5to2_Values[] =
 {
     NULL,
-    "Standard (Lo/Ro)",
-    "Dolby Pro Logic",
-    "Dolby Pro Logic II",
+    "Lo/Ro",
+    "Lt/Rt (Pro Logic)",
+    "Lt/Rt (Pro Logic II)",
     "Direct stereo render",
 };
 static size_t downmix_type_5to2_Size=sizeof(downmix_type_5to2_Values)/sizeof(const char*);
 
 static const char* phaseshift_90deg_5to2_Values[] =
 {
-    "No",
-    "Yes",
+    "w/o Phase 90",
+    "w/ Phase 90",
 };
 static size_t phaseshift_90deg_5to2_Size=sizeof(phaseshift_90deg_5to2_Values)/sizeof(const char*);
 
@@ -258,7 +258,7 @@ void File_DolbyAudioMetadata::Dolby_Atmos_Metadata_Segment()
     Skip_XX(27,                                                 "Unknown");
     BS_Begin();
     Skip_SB(                                                    "Unknown");
-    Get_S1 (2, downmix_type_5to2,                               "downmix_type_5to2"); Param_Info1C(downmix_type_5to2<downmix_type_5to2_Size, downmix_type_5to2_Values[downmix_type_5to2]);
+    Get_S1 (3, downmix_type_5to2,                               "downmix_type_5to2"); Param_Info1C(downmix_type_5to2<downmix_type_5to2_Size, downmix_type_5to2_Values[downmix_type_5to2]);
     Skip_S1(2,                                                  "Unknown");
     Get_S1 (2, phaseshift_90deg_5to2,                           "phaseshift_90deg_5to2"); Param_Info1C(phaseshift_90deg_5to2<phaseshift_90deg_5to2_Size, phaseshift_90deg_5to2_Values[phaseshift_90deg_5to2]);
     BS_End();
@@ -278,10 +278,16 @@ void File_DolbyAudioMetadata::Dolby_Atmos_Metadata_Segment()
             +Ztring::ToZtring((content_creation_tool_version>>8)&0xFF)+__T('.')
             +Ztring::ToZtring(content_creation_tool_version&0xFF);
         Fill(Stream_Audio, 0, "Dolby_Atmos_Metadata Encoded_Application", content_creation_tool+__T(", ")+Version);
+        string Downmix_5to2;
         if (downmix_type_5to2 && downmix_type_5to2<downmix_type_5to2_Size)
-            Fill(Stream_Audio, 0, "Dolby_Atmos_Metadata Downmix_5to2", downmix_type_5to2_Values[downmix_type_5to2]);
+            Downmix_5to2=downmix_type_5to2_Values[downmix_type_5to2];
         if (phaseshift_90deg_5to2<phaseshift_90deg_5to2_Size)
-            Fill(Stream_Audio, 0, "Dolby_Atmos_Metadata Downmix_5to2_90deg", phaseshift_90deg_5to2_Values[phaseshift_90deg_5to2]);
+        {
+            if (!Downmix_5to2.empty())
+                Downmix_5to2+=' ';
+            Downmix_5to2+=phaseshift_90deg_5to2_Values[phaseshift_90deg_5to2];
+        }
+        Fill(Stream_Audio, 0, "Dolby_Atmos_Metadata Downmix_5to2", Downmix_5to2);
         if (warp_mode!=4) // Avoid "Not indicated"
             Fill(Stream_Audio, 0, "Dolby_Atmos_Metadata Downmix_5.1.x", warp_mode<warp_mode_Name_Size?warp_mode_Name[warp_mode]:Ztring().ToZtring(warp_mode).To_UTF8().c_str());
         if (frames_per_second && frames_per_second<frames_per_second_Size)
@@ -448,23 +454,61 @@ void File_DolbyAudioMetadata::Dolby_Atmos_Supplemental_Metadata_Segment()
     Element_End0();
     Element_Begin1("headphone_metadata");
     BS_Begin();
-    set<int8u> BinauralRenderModes;
     for (int obj=0; obj<object_count; obj++)
     {
         int8u head_track_mode, binaural_render_mode;
         Get_S1 (2, head_track_mode,                             "head_track_mode");
         Skip_S1(3,                                              "reserved");
         Get_S1 (3, binaural_render_mode,                        "binaural_render_mode"); Param_Info1C(binaural_render_mode<binaural_render_mode_Name_Size, binaural_render_mode_Name[binaural_render_mode]);
-        BinauralRenderModes.insert(binaural_render_mode);
+        BinauralRenderModes.push_back(binaural_render_mode);
     }
-    if (BinauralRenderModes.size()>1 || (BinauralRenderModes.size()==1 && *BinauralRenderModes.begin()!=4)) // Avoid "Not Indicated" alone
-        for (set<int8u>::iterator BinauralRenderMode=BinauralRenderModes.begin(); BinauralRenderMode!=BinauralRenderModes.end(); ++BinauralRenderMode)
-        {
-            int8u binaural_render_mode=*BinauralRenderMode;
-            Fill(Stream_Audio, 0, "Dolby_Atmos_Metadata BinauralRenderMode", binaural_render_mode<binaural_render_mode_Name_Size?binaural_render_mode_Name[binaural_render_mode]:Ztring().ToZtring(binaural_render_mode).To_UTF8().c_str());
-        }
     BS_End();
     Element_End0();
+}
+
+//***************************************************************************
+// Delayed
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_DolbyAudioMetadata::Merge(File__Analyze& In, size_t StreamPos)
+{
+    int64u NumberOfTrackFormats=In.Retrieve_Const(Stream_Audio, 0, "NumberOfTrackFormats").To_int64u();
+    if (NumberOfTrackFormats && NumberOfTrackFormats!=BinauralRenderModes.size())
+        return;
+    for (size_t i=0; i<BinauralRenderModes.size(); i++)
+    {
+        string Name="TrackFormat"+to_string(i);
+        if (!NumberOfTrackFormats)
+            In.Fill(Stream_Audio, 0, Name.c_str(), "Yes");
+        Name+=" BinauralRenderMode";
+        int8u binaural_render_mode=BinauralRenderModes[i];
+        In.Fill(Stream_Audio, 0, Name.c_str(), binaural_render_mode<binaural_render_mode_Name_Size?binaural_render_mode_Name[binaural_render_mode]:Ztring().ToZtring(binaural_render_mode).To_UTF8().c_str());
+    }
+        
+    int64u NumberOfObjects=In.Retrieve_Const(Stream_Audio, 0, "NumberOfObjects").To_int64u();
+    for (size_t i=0; i<NumberOfObjects; i++)
+    {
+        string Name="Object"+to_string(i);
+        Ztring LinkedTos=In.Retrieve_Const(Stream_Audio, 0, (Name+" LinkedTo_TrackUID_Pos").c_str());
+        ZtringList LinkedToList;
+        LinkedToList.Separator_Set(0, " + ");
+        LinkedToList.Write(LinkedTos);
+        Name+=" BinauralRenderMode";
+        ZtringList BinauralRenderMode;
+        set<int8u> BinauralRenderMode_Diffs;
+        BinauralRenderMode.Separator_Set(0, " + ");
+        for (const auto& LinkedTo : LinkedToList)
+        {
+            int64u TrackUID_Pos=LinkedTo.To_int64u();
+            int8u binaural_render_mode=BinauralRenderModes[TrackUID_Pos];
+            BinauralRenderMode.push_back(binaural_render_mode<binaural_render_mode_Name_Size?binaural_render_mode_Name[binaural_render_mode]:Ztring().ToZtring(binaural_render_mode).To_UTF8().c_str());
+            BinauralRenderMode_Diffs.insert(binaural_render_mode);
+        }
+        if (BinauralRenderMode_Diffs.size()==1)
+            BinauralRenderMode.resize(1);
+        In.Fill(Stream_Audio, 0, Name.c_str(), BinauralRenderMode.Read());
+    }
 }
 
 } //NameSpace
