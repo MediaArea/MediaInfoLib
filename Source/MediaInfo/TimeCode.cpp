@@ -306,6 +306,7 @@ bool TimeCode::FromString(const char* Value, size_t Length)
                         return true;
                     MoreSamples_Frequency=Multiplier;
                 }
+                Frames=(int8u)-1;
                 MoreSamples=S;
                 DropFrame=false;
             }
@@ -318,7 +319,6 @@ bool TimeCode::FromString(const char* Value, size_t Length)
                 DropFrame=Value[8]==';';
                 Frames=((Value[9]-'0')*10)+(Value[10]-'0');
                 MoreSamples=0;
-                MoreSamples_Frequency=0;
             }
             else
                 return true;
@@ -326,7 +326,6 @@ bool TimeCode::FromString(const char* Value, size_t Length)
         else
         {
             MoreSamples=0;
-            MoreSamples_Frequency=0;
         }
         Hours=((Value[0]-'0')*10)+(Value[1]-'0');
         Minutes=((Value[3]-'0')*10)+(Value[4]-'0');
@@ -356,7 +355,7 @@ bool TimeCode::FromString(const char* Value, size_t Length)
         Hours=S/3600;
         Minutes=(S%3600)/60;
         Seconds=S%60;
-        Frames=0;
+        Frames=(int8u)-1;
         c=(unsigned char)Value[i];
         if (c=='.' || c==',')
         {
@@ -419,6 +418,40 @@ bool TimeCode::FromString(const char* Value, size_t Length)
         Minutes=(S%OneHourInFrames)/OneMinuteInFrames;
         Seconds=(S%OneMinuteInFrames)/FramesPerSecond;
         Frames=S%FramesPerSecond;
+        MoreSamples=0;
+        return false;
+    }
+    //Xt format
+    if (Length>=2
+     && Value[Length-1]=='t')
+    {
+        Length--; //Remove the "t" from the string
+        unsigned char c;
+        int i=0;
+        int64s S=0;
+        int TheoriticalMax=i+PowersOf10_Size;
+        int MaxLength=Length>TheoriticalMax?TheoriticalMax:Length;
+        while (i<MaxLength)
+        {
+            c=(unsigned char)Value[i];
+            c-='0';
+            if (c>9)
+                break;
+            S*=10;
+            S+=c;
+            i++;
+        }
+        if (i!=Length)
+            return true;
+        if (!MoreSamples_Frequency)
+            MoreSamples_Frequency=1; // Arbitrary choosen
+        int64s OneHourInFrequency=3600*MoreSamples_Frequency;
+        int64s OneMinuteInFrequency=60*MoreSamples_Frequency;
+        Hours=S/OneHourInFrequency;
+        Minutes=(S%OneHourInFrequency)/OneMinuteInFrequency;
+        Seconds=(S%OneMinuteInFrequency)/MoreSamples_Frequency;
+        Frames=0; // (int8u)-1;
+        MoreSamples=S%MoreSamples_Frequency;
         return false;
     }
 
@@ -502,17 +535,35 @@ int64s TimeCode::ToFrames()
 //---------------------------------------------------------------------------
 int64s TimeCode::ToMilliseconds()
 {
-    if (!FramesPerSecond)
+    if (!FramesPerSecond || Frames==(int8u)-1)
     {
         int64s TC=(int64s(Hours)     *3600
                  + int64s(Minutes)   *  60
                  + int64s(Seconds)        )*1000;
+        if (Frames!=(int8u)-1)
+        {
+            if (MoreSamples_Frequency)
+            {
+                int32s MoreSamples_Frequency_Duplicate=MoreSamples_Frequency;
+                if (!(MoreSamples_Frequency_Duplicate%1000))
+                    MoreSamples_Frequency_Duplicate/=1000;
+                if (MoreSamples_Frequency_Duplicate<=0xFF)
+                {
+                    TimeCode Duplicate(*this);
+                    Duplicate.FramesPerSecond=(int8u)MoreSamples_Frequency_Duplicate;
+                    return Duplicate.ToMilliseconds();
+                }
+            }
+            TC+=(((int64u)Frames)*1000+0xFF/2)/0xFF;
+        }
         if (MoreSamples_Frequency)
-            TC+=((int64s)MoreSamples)*1000/MoreSamples_Frequency;
+            TC+=(((int64s)MoreSamples)*1000+MoreSamples_Frequency/2)/MoreSamples_Frequency;
         return TC;
     }
 
     int64s MS=float64_int64s(ToFrames()*1000*((DropFrame || FramesPerSecond_Is1001)?1.001:1.000)/(FramesPerSecond*(MustUseSecondField?2:1)));
+    if (MoreSamples_Frequency)
+        MS+=(((int64s)MoreSamples)*1000+MoreSamples_Frequency/2)/MoreSamples_Frequency;
 
     return IsNegative?-MS:MS;
 }
