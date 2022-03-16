@@ -2537,20 +2537,81 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
                     }
                 }
 
+                // Value from another stream
+                if (!DropFrame_IsValid)
+                {
+                    bool DropFrame_AlreadyThere_IsValid=false;
+                    bool DropFrame_AlreadyThere;
+                    for (size_t i=Stream_General; i<Stream_Max; i++)
+                    {
+                        size_t Count=Count_Get((stream_t)i);
+                        for (size_t j=0; j<Count; j++)
+                        {
+                            Ztring TC=Retrieve((stream_t)i, j, Fill_Parameter((stream_t)i, Generic_TimeCode_FirstFrame));
+                            if (TC.size()>=11 && TC[2]==__T(':') && TC[5]==__T(':'))
+                            {
+                                switch (TC[8])
+                                {
+                                    case __T(':'):
+                                                    DropFrame=false;
+                                                    DropFrame_IsValid=true;
+                                                    break;
+                                    case __T(';'):
+                                                    DropFrame=true;
+                                                    DropFrame_IsValid=true;
+                                                    break;
+                                    default      :  ;
+                                }
+                            }
+                            if (!DropFrame_IsValid)
+                                continue;
+                            if (DropFrame_AlreadyThere_IsValid)
+                            {
+                                if (DropFrame_AlreadyThere==DropFrame)
+                                    continue;
+                                DropFrame_IsValid=false;
+                                i=Stream_Max;
+                                break;
+                            }
+                            DropFrame_AlreadyThere_IsValid=true;
+                            DropFrame_AlreadyThere=DropFrame;
+                        }
+                    }
+                }
+
                 // Testing frame rate (1/1001)
                 if (!DropFrame_IsValid)
                 {
                     int32s  FrameRateI=float32_int32s(FrameRateS.To_float32());
-                    if (FrameRateI==30) // Flagging drop frame only for 30 DF
+                    if (FrameRateI==30 || FrameRateI==60) // Flagging drop frame only for 30/60 DF
                     {
                         float32 FrameRateF=FrameRateS.To_float32();
                         float FrameRateF_Min=((float32)FrameRateI)/((float32)1.002);
                         float FrameRateF_Max=(float32)FrameRateI;
                         if (FrameRateF>=FrameRateF_Min && FrameRateF<FrameRateF_Max)
-                            DropFrame=true;
+                        {
+                            // Default from user
+                            if (!DropFrame_IsValid)
+                            {
+                                #if MEDIAINFO_ADVANCED
+                                    switch (Config->File_DefaultTimeCodeDropFrame_Get())
+                                    {
+                                        case 0 :
+                                                DropFrame=false;
+                                                break;
+                                        default:
+                                                DropFrame=true;
+                                    }
+                                #else //MEDIAINFO_ADVANCED
+                                    DropFrame=true;
+                                #endif //MEDIAINFO_ADVANCED
+                            }
+                        }
                         else
                             DropFrame=false;
                     }
+                    else
+                        DropFrame=false;
                 }
 
                 TimeCode TC(FrameCountS.To_int64s(), (int8u)float32_int32s(FrameRateS.To_float32()), DropFrame);
