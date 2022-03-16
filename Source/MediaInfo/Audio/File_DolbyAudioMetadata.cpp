@@ -22,6 +22,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Audio/File_DolbyAudioMetadata.h"
+#include "MediaInfo/TimeCode.h"
 #include "tinyxml2.h"
 #include "ThirdParty/base64/base64.h"
 using namespace tinyxml2;
@@ -244,8 +245,8 @@ void File_DolbyAudioMetadata::Dolby_Atmos_Metadata_Segment()
 
     //Parsing
     Ztring content_creation_tool;
-    int32u content_creation_tool_version;
-    int8u warp_mode, frames_per_second, downmix_type_5to2, phaseshift_90deg_5to2;
+    int32u content_creation_tool_version, first_action_time_SS;
+    int8u warp_mode, frames_per_second, downmix_type_5to2, phaseshift_90deg_5to2, first_action_time_HH, first_action_time_MM;
     Skip_String(32,                                             "reserved");
     Element_Begin1("content_information");
     Get_UTF8(64, content_creation_tool,                         "content_creation_tool");
@@ -255,7 +256,12 @@ void File_DolbyAudioMetadata::Dolby_Atmos_Metadata_Segment()
     Skip_S1(4,                                                  "Unknown");
     Get_S1 (4, frames_per_second,                               "frames_per_second"); Param_Info1C(frames_per_second<frames_per_second_Size, frames_per_second_Values[frames_per_second]);
     BS_End();
-    Skip_XX(27,                                                 "Unknown");
+    Element_Begin1("first_action_time");
+        Get_L1 (first_action_time_HH,                           "HH");
+        Get_L1 (first_action_time_MM,                           "MM");
+        Get_L4 (first_action_time_SS,                           "1/100000 SS");
+    Element_End0();
+    Skip_XX(21,                                                 "Unknown");
     BS_Begin();
     Skip_SB(                                                    "Unknown");
     Get_S1 (3, downmix_type_5to2,                               "downmix_type_5to2"); Param_Info1C(downmix_type_5to2<downmix_type_5to2_Size, downmix_type_5to2_Values[downmix_type_5to2]);
@@ -308,6 +314,23 @@ void File_DolbyAudioMetadata::Dolby_Atmos_Metadata_Segment()
             Fill_SetOptions(Stream_Audio, 0, "Dolby_Atmos_Metadata AssociatedVideo_FrameRate", "N NTY");
             Fill_SetOptions(Stream_Audio, 0, "Dolby_Atmos_Metadata AssociatedVideo_FrameRate/String", "Y NTN");
             Fill_SetOptions(Stream_Audio, 0, "Dolby_Atmos_Metadata AssociatedVideo_FrameRate_DropFrame", "N NTY");
+        }
+        if (first_action_time_HH!=(int8u)-1)
+        {
+            TimeCode TC;
+            if (((int8s)first_action_time_HH)<0)
+            {
+                TC.IsNegative=true;
+                TC.Hours=-((int8s)first_action_time_HH);
+            }
+            else
+                TC.Hours=first_action_time_HH;
+            TC.Minutes=first_action_time_MM;
+            TC.Seconds=first_action_time_SS/100000;
+            TC.MoreSamples_Frequency=100000;
+            TC.MoreSamples=first_action_time_SS%100000;
+            Fill(Stream_Audio, 0, "Dolby_Atmos_Metadata FirstFrameOfAction", TC.ToString());
+            Fill_SetOptions(Stream_Audio, 0, "Dolby_Atmos_Metadata FirstFrameOfAction", "Y NTY");
         }
         FILLING_END()
 }
@@ -478,7 +501,7 @@ void File_DolbyAudioMetadata::Merge(File__Analyze& In, size_t StreamPos)
         return;
     for (size_t i=0; i<BinauralRenderModes.size(); i++)
     {
-        string Name="TrackFormat"+to_string(i);
+        string Name="TrackFormat"+Ztring::ToZtring(i).To_UTF8();
         if (!NumberOfTrackFormats)
             In.Fill(Stream_Audio, 0, Name.c_str(), "Yes");
         Name+=" BinauralRenderMode";
@@ -489,7 +512,7 @@ void File_DolbyAudioMetadata::Merge(File__Analyze& In, size_t StreamPos)
     int64u NumberOfObjects=In.Retrieve_Const(Stream_Audio, 0, "NumberOfObjects").To_int64u();
     for (size_t i=0; i<NumberOfObjects; i++)
     {
-        string Name="Object"+to_string(i);
+        string Name="Object"+Ztring::ToZtring(i).To_UTF8();
         Ztring LinkedTos=In.Retrieve_Const(Stream_Audio, 0, (Name+" LinkedTo_TrackUID_Pos").c_str());
         ZtringList LinkedToList;
         LinkedToList.Separator_Set(0, " + ");
@@ -498,8 +521,9 @@ void File_DolbyAudioMetadata::Merge(File__Analyze& In, size_t StreamPos)
         ZtringList BinauralRenderMode;
         set<int8u> BinauralRenderMode_Diffs;
         BinauralRenderMode.Separator_Set(0, " + ");
-        for (const auto& LinkedTo : LinkedToList)
+        for (size_t i=0; i<LinkedToList.size(); i++)
         {
+            const Ztring& LinkedTo=LinkedToList[i];
             int64u TrackUID_Pos=LinkedTo.To_int64u();
             int8u binaural_render_mode=BinauralRenderModes[TrackUID_Pos];
             BinauralRenderMode.push_back(binaural_render_mode<binaural_render_mode_Name_Size?binaural_render_mode_Name[binaural_render_mode]:Ztring().ToZtring(binaural_render_mode).To_UTF8().c_str());

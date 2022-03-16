@@ -416,6 +416,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "FileSize;File size\n"
     "FirstDisplay_Delay_Frames;Count of frames before first event\n"
     "FirstDisplay_Type;Type of the first event\n"
+    "FirstFrameOfAction;First frame of action\n"
     "FlatPanelTv;Flat panel TV\n"
     "FlowID;Flow ID\n"
     "Folder;Folder\n"
