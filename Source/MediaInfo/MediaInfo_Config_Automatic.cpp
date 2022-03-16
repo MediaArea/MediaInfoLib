@@ -365,7 +365,6 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "DotsPerInch;Dots per inch\n"
     "Downmix;Downmix\n"
     "Downmix_5to2;5.1 to 2.0 downmix\n"
-    "Downmix_5to2_90deg;5.1 to 2.0 downmix, 90-deg phase shift\n"
     "Downmix_5.1.x;5.1 and 5.1.x downmix\n"
     "DrcSets_Count;DRC set count\n"
     "DrcSets_Effects;DRC effect type(s)\n"
