@@ -81,7 +81,7 @@ TimeCode::TimeCode (int64s Frames_, int8u FramesPerSecond_, bool DropFrame_, boo
         Seconds = 0;
         Minutes = 0;
         Hours   = 0;
-        IsNegative = true; //Forcing a weird display
+        IsNegative = false;
         return;
     }
 
@@ -461,9 +461,6 @@ bool TimeCode::FromString(const char* Value, size_t Length)
 //---------------------------------------------------------------------------
 string TimeCode::ToString()
 {
-    if (!FramesPerSecond)
-        return string();
-
     string TC;
     if (IsNegative)
         TC+='-';
@@ -475,34 +472,42 @@ string TimeCode::ToString()
     TC+=':';
     TC+=('0'+Seconds/10);
     TC+=('0'+Seconds%10);
-    if (MoreSamples && MoreSamples_Frequency)
+    if (Frames!=(int8u)-1)
     {
-        int AfterCommaMinus1=0;
-        if (MoreSamples>0)
-        {
-            AfterCommaMinus1=PowersOf10_Size;
-            while ((--AfterCommaMinus1)>=0 && PowersOf10[AfterCommaMinus1]!=MoreSamples_Frequency);
-            TC+=AfterCommaMinus1>=0?'.':'+';
-        }
-        else
+        TC+=DropFrame?';':':';
+        TC+=('0'+(Frames*(MustUseSecondField?2:1)+(IsSecondField?1:0))/10);
+        TC+=('0'+(Frames*(MustUseSecondField?2:1)+(IsSecondField?1:0))%10);
+    }
+    if (MoreSamples_Frequency)
+    {
+        int AfterCommaMinus1;
+        if (MoreSamples<0)
         {
             AfterCommaMinus1=-1;
             TC+='-';
             MoreSamples=-MoreSamples;
         }
-        stringstream s;
-        s<<MoreSamples;
-        TC+=s.str();
-        TC+='S';
-        s.str(string());
-        s<<MoreSamples_Frequency;
-        TC+=s.str();
-    }
-    else
-    {
-        TC+=DropFrame?';':':';
-        TC+=('0'+(Frames*(MustUseSecondField?2:1)+(IsSecondField?1:0))/10);
-        TC+=('0'+(Frames*(MustUseSecondField?2:1)+(IsSecondField?1:0))%10);
+        else
+        {
+            AfterCommaMinus1=PowersOf10_Size;
+            while ((--AfterCommaMinus1)>=0 && PowersOf10[AfterCommaMinus1]!=MoreSamples_Frequency);
+            TC+=(Frames!=(int8u)-1 || AfterCommaMinus1<0)?'+':'.';
+        }
+        if ((Frames!=(int8u)-1 || AfterCommaMinus1<0))
+        {
+            stringstream s;
+            s<<MoreSamples;
+            TC+=s.str();
+            TC+='S';
+            s.str(string());
+            s<<MoreSamples_Frequency;
+            TC+=s.str();
+        }
+        else
+        {
+            for (int i=0; i<=AfterCommaMinus1;i++)
+                TC+='0'+(MoreSamples/(i==AfterCommaMinus1?1:PowersOf10[AfterCommaMinus1-i-1])%10);
+        }
     }
 
     return TC;
