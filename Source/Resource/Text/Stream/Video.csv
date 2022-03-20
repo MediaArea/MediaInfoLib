@@ -258,6 +258,7 @@ TimeStamp_FirstFrame/String3;;;N NT;;;TimeStamp in format : HH:MM:SS.MMM;
 TimeStamp_FirstFrame/String4;;;N NT;;;TimeStamp in format: HH:MM:SS:FF, last colon replaced by semicolon for drop frame if available;
 TimeStamp_FirstFrame/String5;;;N NT;;;TimeStamp in format : HH:MM:SS.mmm (HH:MM:SS:FF)
 TimeCode_FirstFrame;;;Y YCY;;;Time code in HH:MM:SS:FF, last colon replaced by semicolon for drop frame if available format
+TimeCode_LastFrame;;;Y YCY;;;Time code of the last frame (excluding the duration of the last frame) in HH:MM:SS:FF, last colon replaced by semicolon for drop frame if available format
 TimeCode_DropFrame;;;N NT;;;Delay drop frame;
 TimeCode_Settings;;;Y YTY;;;Time code settings
 TimeCode_Source;;;Y YTY;;;Time code source (Container, Stream, SystemScheme1, SDTI, ANC...)

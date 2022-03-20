@@ -1234,6 +1234,7 @@ ThanksTo;Thanks to
 Thousands separator;Thousands separator
 TimeCode;Time code
 TimeCode_FirstFrame;Time code of first frame
+TimeCode_LastFrame;Time code of last frame
 TimeCode_MaxFrameNumber;Maximum frame number in time codes
 TimeCode_MaxFrameNumber_Theory;Theoritical maximum frame number in time codes
 TimeCode_Settings;Time code settings
