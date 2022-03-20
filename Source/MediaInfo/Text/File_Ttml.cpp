@@ -215,6 +215,12 @@ void File_Ttml::Streams_Finish()
         Fill(Stream_Text, 0, Text_Duration, Time_End.ToMilliseconds()-Time_Begin.ToMilliseconds());
         if (!Time_Begin.MoreSamples_Frequency)
             Fill(Stream_Text, 0, Text_TimeCode_FirstFrame, Time_Begin.ToString());
+        if (!Time_End.MoreSamples_Frequency && Time_End.FramesPerSecond)
+        {
+            TimeCode LastFrame=Time_End;
+            LastFrame--;
+            Fill(Stream_Text, 0, Text_TimeCode_LastFrame, LastFrame.ToString());
+        }
         Fill(Stream_Text, 0, Text_Duration_Start, Time_Begin.ToMilliseconds());
         Fill(Stream_Text, 0, Text_Duration_End, Time_End.ToMilliseconds());
     }

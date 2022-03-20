@@ -41,9 +41,12 @@ File_Mpeg4_TimeCode::File_Mpeg4_TimeCode()
     Pos=(int32u)-1;
 
     FirstEditOffset=0;
+    FirstEditDuration=(int64u)-1;
     NumberOfFrames=0;
     DropFrame=false;
     NegativeTimes=false;
+    tkhd_Duration=0;
+    mvhd_Duration_TimeScale=0;
 }
 
 //***************************************************************************
@@ -77,7 +80,32 @@ void File_Mpeg4_TimeCode::Streams_Fill()
         Fill(Stream_Other, StreamPos_Last, Other_Type, "Time code");
         Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, TC.ToString().c_str());
         if (Frame_Count==1)
+        {
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Striped, "Yes");
+            int64s FrameCount;
+            if (NumberOfFrames==mdhd_Duration_TimeScale) // Prioritize mdhd or edit list for in case there are drop frame and integer frame rate
+            {
+                if (FirstEditDuration!=(int64u)-1)
+                {
+                    float64 FrameCountF=(float64)FirstEditDuration/mvhd_Duration_TimeScale*FrameRate_WithDF;
+                    FrameCount=(int64u)FrameCountF;
+                    if (FrameCount!=FrameCountF)
+                        FrameCount++;
+                }
+                else
+                    FrameCount=mdhd_Duration-FirstEditOffset;
+            }
+            else
+            {
+                float64 FrameCountF=(float64)tkhd_Duration/mvhd_Duration_TimeScale*FrameRate_WithDF;
+                FrameCount=(int64u)FrameCountF;
+                if (FrameCount!=FrameCountF && FrameCount*1000!=float64_int64s(FrameCountF*1000000/1001)) // TODO: better catch of 1/1.001
+                    FrameCount++;
+            }
+            Fill(Stream_Other, StreamPos_Last, Other_FrameCount, FrameCount);
+            if (FrameCount)
+                Fill(Stream_Other, StreamPos_Last, Other_TimeCode_LastFrame, (TC+(FrameCount-1)).ToString().c_str());
+        }
     }
 }
 

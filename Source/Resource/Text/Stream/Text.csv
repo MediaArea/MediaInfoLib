@@ -202,6 +202,7 @@ Video0_Delay/String3;;;N NT;;;Deprecated, do not use in new projects
 Video0_Delay/String4;;;N NT;;;Deprecated, do not use in new projects
 Video0_Delay/String5;;;N NT;;;Deprecated, do not use in new projects
 TimeCode_FirstFrame;;;Y YCY;;;Time code in HH:MM:SS:FF, last colon replaced by semicolon for drop frame if available format
+TimeCode_LastFrame;;;Y YCY;;;Time code of the last frame (excluding the duration of the last frame) in HH:MM:SS:FF, last colon replaced by semicolon for drop frame if available format
 TimeCode_DropFrame;;;N NT;;;Delay drop frame;
 TimeCode_Settings;;;Y YTY;;;Time code settings
 TimeCode_Source;;;Y YTY;;;Time code source (Container, Stream, SystemScheme1, SDTI, ANC...)
