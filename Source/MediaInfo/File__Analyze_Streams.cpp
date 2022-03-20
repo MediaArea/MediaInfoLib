@@ -2447,15 +2447,17 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
                 FrameRateS=Retrieve(Stream_Audio, StreamPos, "Dolby_Atmos_Metadata AssociatedVideo_FrameRate");
             if (FrameRateS.empty() && StreamKind!=Stream_Audio)
                 FrameRateS=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameRate));
+            float64 FrameRateF=FrameRateS.To_float64();
+            int64s FrameRateI=float64_int64s(FrameRateF);
             Ztring FrameCountS;
             if (Parameter==Fill_Parameter(StreamKind, Generic_Duration))
                 FrameCountS=Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameCount));
             if (FrameCountS.empty() || StreamKind==Stream_Text || (StreamKind==Stream_Audio && Retrieve(Stream_Audio, StreamPos, Stream_Audio)!=__T("PCM")))
             {
                 //FrameCount is not based on frame rate
-                FrameCountS.From_Number(List[Pos].To_float32()*Video_FrameRate_Rounded(FrameRateS.To_float64())/1000, 0);
+                FrameCountS.From_Number(List[Pos].To_float32()*Video_FrameRate_Rounded(FrameRateF)/1000, 0);
             }
-            if (!FrameRateS.empty() && !FrameCountS.empty() && FrameRateS.To_int64u() && FrameRateS.To_int64u()<256)
+            if (!FrameRateS.empty() && !FrameCountS.empty() && FrameRateI && FrameRateI<256)
             {
                 bool DropFrame=false;
                 bool DropFrame_IsValid=false;
@@ -2583,7 +2585,6 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
                 if (!DropFrame_IsValid)
                 {
                     int32s  FrameRateI=float32_int32s(FrameRateS.To_float32());
-                    if (FrameRateI==30 || FrameRateI==60) // Flagging drop frame only for 30/60 DF
                     {
                         float32 FrameRateF=FrameRateS.To_float32();
                         float FrameRateF_Min=((float32)FrameRateI)/((float32)1.002);
@@ -2610,11 +2611,10 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
                         else
                             DropFrame=false;
                     }
-                    else
-                        DropFrame=false;
                 }
 
-                TimeCode TC(FrameCountS.To_int64s(), (int8u)float32_int32s(FrameRateS.To_float32()), DropFrame);
+                TimeCode TC(FrameCountS.To_int64s(), (int8u)float32_int32s(FrameRateS.To_float32()), DropFrame && FrameRateI!=FrameRateF);
+                TC.DropFrame=DropFrame;
                 DurationString4.From_UTF8(TC.ToString());
 
                 Fill(StreamKind, StreamPos, Parameter+5, DurationString4); // /String4

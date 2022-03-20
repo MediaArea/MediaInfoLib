@@ -59,8 +59,15 @@ void File_Mpeg4_TimeCode::Streams_Fill()
         float64 FrameRate_WithDF=NumberOfFrames;
         if (DropFrame)
         {
+            int FramesToRemove=0;
+            int NumberOfFramesMultiplier=0;
+            while (NumberOfFrames>NumberOfFramesMultiplier)
+            {
+                FramesToRemove+=108;
+                NumberOfFramesMultiplier+=30;
+            }
             float64 FramesPerHour_NDF=FrameRate_WithDF*60*60;
-            FrameRate_WithDF*=(FramesPerHour_NDF-108)/FramesPerHour_NDF;
+            FrameRate_WithDF*=(FramesPerHour_NDF-FramesToRemove)/FramesPerHour_NDF;
         }
 
         Fill(Stream_General, 0, "Delay", Pos_Temp*1000/FrameRate_WithDF, 0);
