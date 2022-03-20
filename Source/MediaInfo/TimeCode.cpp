@@ -75,14 +75,19 @@ TimeCode::TimeCode (int64s Frames_, int8u FramesPerSecond_, bool DropFrame_, boo
     MustUseSecondField(MustUseSecondField_),
     IsSecondField(IsSecondField_)
 {
-    if (!FramesPerSecond_)
+    FromFrames(Frames_);
+}
+
+bool TimeCode::FromFrames(int64s Frames_)
+{
+    if (!FramesPerSecond)
     {
         Frames  = 0;
         Seconds = 0;
         Minutes = 0;
         Hours   = 0;
         IsNegative = false;
-        return;
+        return true;
     }
 
     if (Frames_<0)
@@ -94,31 +99,33 @@ TimeCode::TimeCode (int64s Frames_, int8u FramesPerSecond_, bool DropFrame_, boo
         IsNegative=false;
 
     int8u Dropped=0;
-    if (DropFrame_)
+    if (DropFrame)
     {
         Dropped=2;
-        if (FramesPerSecond_>30)
+        if (FramesPerSecond>30)
             Dropped+=2;
-        if (FramesPerSecond_>60)
+        if (FramesPerSecond>60)
             Dropped+=2;
-        if (FramesPerSecond_>90)
+        if (FramesPerSecond>90)
             Dropped+=2;
-        if (FramesPerSecond_>120)
+        if (FramesPerSecond>120)
             Dropped+=2;
     }
 
-    int64u Minutes_Tens = Frames_/(600*FramesPerSecond_-Dropped*9); //Count of 10 minutes
-    int64u Minutes_Units = (Frames_-Minutes_Tens*(600*FramesPerSecond_-Dropped*9))/(60*FramesPerSecond_-Dropped);
+    int64u Minutes_Tens = Frames_/(600*FramesPerSecond-Dropped*9); //Count of 10 minutes
+    int64u Minutes_Units = (Frames_-Minutes_Tens*(600*FramesPerSecond-Dropped*9))/(60*FramesPerSecond-Dropped);
 
     Frames_ += 9*Dropped*Minutes_Tens+Dropped*Minutes_Units;
-    if (Minutes_Units && ((Frames_/FramesPerSecond_)%60)==0 && (Frames_%FramesPerSecond_)<Dropped) // If Minutes_Tens is not 0 (drop) but count of remaining seconds is 0 and count of remaining frames is less than 2, 1 additional drop was actually counted, removing it
+    if (Minutes_Units && ((Frames_/FramesPerSecond)%60)==0 && (Frames_%FramesPerSecond)<Dropped) // If Minutes_Tens is not 0 (drop) but count of remaining seconds is 0 and count of remaining frames is less than 2, 1 additional drop was actually counted, removing it
         Frames_-=Dropped;
 
-    Frames  =    Frames_ % FramesPerSecond_;
-    Seconds =   (Frames_ / FramesPerSecond_) % 60;
-    Minutes =  ((Frames_ / FramesPerSecond_) / 60) % 60;
-    int64s Temp = (((Frames_ / FramesPerSecond_) / 60) / 60);
+    Frames  =    Frames_ % FramesPerSecond;
+    Seconds =   (Frames_ / FramesPerSecond) % 60;
+    Minutes =  ((Frames_ / FramesPerSecond) / 60) % 60;
+    int64s Temp = (((Frames_ / FramesPerSecond) / 60) / 60);
     Hours = (Temp>99 || Temp<-99)?(Temp%24):Temp;
+
+    return false;
 }
 
 //---------------------------------------------------------------------------
@@ -459,7 +466,7 @@ bool TimeCode::FromString(const char* Value, size_t Length)
 }
 
 //---------------------------------------------------------------------------
-string TimeCode::ToString()
+string TimeCode::ToString() const
 {
     string TC;
     if (IsNegative)
@@ -481,22 +488,24 @@ string TimeCode::ToString()
     if (MoreSamples_Frequency)
     {
         int AfterCommaMinus1;
+        int32s MoreSamples_Temp;
         if (MoreSamples<0)
         {
             AfterCommaMinus1=-1;
             TC+='-';
-            MoreSamples=-MoreSamples;
+            MoreSamples_Temp=-MoreSamples;
         }
         else
         {
             AfterCommaMinus1=PowersOf10_Size;
             while ((--AfterCommaMinus1)>=0 && PowersOf10[AfterCommaMinus1]!=MoreSamples_Frequency);
             TC+=(Frames!=(int8u)-1 || AfterCommaMinus1<0)?'+':'.';
+            MoreSamples_Temp=MoreSamples;
         }
         if ((Frames!=(int8u)-1 || AfterCommaMinus1<0))
         {
             stringstream s;
-            s<<MoreSamples;
+            s<<MoreSamples_Temp;
             TC+=s.str();
             TC+='S';
             s.str(string());
@@ -506,7 +515,7 @@ string TimeCode::ToString()
         else
         {
             for (int i=0; i<=AfterCommaMinus1;i++)
-                TC+='0'+(MoreSamples/(i==AfterCommaMinus1?1:PowersOf10[AfterCommaMinus1-i-1])%10);
+                TC+='0'+(MoreSamples_Temp/(i==AfterCommaMinus1?1:PowersOf10[AfterCommaMinus1-i-1])%10);
         }
     }
 
@@ -514,7 +523,7 @@ string TimeCode::ToString()
 }
 
 //---------------------------------------------------------------------------
-int64s TimeCode::ToFrames()
+int64s TimeCode::ToFrames() const
 {
     if (!FramesPerSecond)
         return 0;
@@ -526,9 +535,19 @@ int64s TimeCode::ToFrames()
 
     if (DropFrame)
     {
-        TC-= int64s(Hours)      *108
-          + (int64s(Minutes)/10)*18
-          + (int64s(Minutes)%10)*2;
+        int Dropped=0;
+        int FramesPerSecond2=FramesPerSecond-1;
+        for (;;)
+        {
+            Dropped++;
+            FramesPerSecond2-=30;
+            if (FramesPerSecond2<0)
+                break;
+        }
+
+        TC-= int64s(Hours)      *108*Dropped
+          + (int64s(Minutes)/10)*18*Dropped
+          + (int64s(Minutes)%10)* 2*Dropped;
     }
 
     TC*=(MustUseSecondField?2:1);
@@ -538,7 +557,7 @@ int64s TimeCode::ToFrames()
 }
 
 //---------------------------------------------------------------------------
-int64s TimeCode::ToMilliseconds()
+int64s TimeCode::ToMilliseconds() const
 {
     if (!FramesPerSecond || Frames==(int8u)-1)
     {
