@@ -289,6 +289,7 @@ lib@MediaInfoLib_LibName@_la_LDFLAGS     = -no-undefined -version-info 0:0:0
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libmediainfo.pc
 
+AM_CXXFLAGS = -std=c++11
 AM_CPPFLAGS = -I../../../Source -I../../../../ZenLib/Source
 
 TESTS_DIR = test
