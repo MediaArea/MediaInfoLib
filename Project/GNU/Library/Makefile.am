@@ -154,6 +154,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Multiple/File_MpegTs.cpp \
                        ../../../Source/MediaInfo/Multiple/File_MpegTs_Duplicate.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Mxf.cpp \
+                       ../../../Source/MediaInfo/Multiple/File_Nsv.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Nut.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Ogg.cpp \
                        ../../../Source/MediaInfo/Multiple/File_Ogg_SubElement.cpp \
