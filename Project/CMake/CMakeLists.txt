@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.1.0)
 
 project(MediaInfoLib)
 
@@ -422,6 +422,12 @@ else()
     VERSION "${MediaInfoLib_SOVERSION}.${MediaInfoLib_MAJOR_VERSION}${MediaInfoLib_MINOR_VERSION}.${MediaInfoLib_PATCH_VERSION}"
     SOVERSION ${MediaInfoLib_SOVERSION})
 endif()
+
+set_target_properties(mediainfo PROPERTIES
+  CXX_STANDARD 11
+  CXX_EXTENSIONS NO
+  CXX_STANDARD_REQUIRED YES
+)
 
 install(TARGETS mediainfo EXPORT mediainfo-export
   RUNTIME DESTINATION ${BIN_INSTALL_DIR}
