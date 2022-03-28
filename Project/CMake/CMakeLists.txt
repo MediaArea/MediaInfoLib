@@ -270,6 +270,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_MpegTs.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_MpegTs_Duplicate.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Mxf.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Nsv.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Nut.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Ogg.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Ogg_SubElement.cpp

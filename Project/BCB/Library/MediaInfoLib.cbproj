@@ -568,6 +568,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Mxf.cpp">
             <BuildOrder>2</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Nsv.cpp">
+            <BuildOrder>234</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Nut.cpp">
             <BuildOrder>139</BuildOrder>
         </CppCompile>
