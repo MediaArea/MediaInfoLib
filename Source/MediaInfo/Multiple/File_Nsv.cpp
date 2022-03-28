@@ -232,6 +232,11 @@ void File_Nsv::FileHeader_Parse()
         Element_WaitForMoreData();
         return; //Must wait for more data
     }
+    Fill(Stream_General, 0, General_Duration, file_len_ms);
+    Fill(Stream_Video, 0, Video_Duration, file_len_ms);
+    Fill(Stream_Audio, 0, Audio_Duration, file_len_ms);
+    if (file_size>File_Size)
+        Fill(Stream_General, 0, "IsTruncated", "Yes");
     if (metadata_len)
     {
         Element_Begin1("metadata");
