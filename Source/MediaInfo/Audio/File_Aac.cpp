@@ -317,12 +317,6 @@ void File_Aac::Read_Buffer_Continue_AudioSpecificConfig()
 //---------------------------------------------------------------------------
 void File_Aac::Read_Buffer_Continue_raw_data_block()
 {
-    if (Frame_Count>Frame_Count_Valid)
-    {
-        Skip_XX(Element_Size,                                   "Data");
-        return; //Parsing completely only the 1st frame
-    }
-
     BS_Begin();
     raw_data_block();
     BS_End();

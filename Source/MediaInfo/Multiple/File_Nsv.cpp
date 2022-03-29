@@ -212,7 +212,6 @@ void File_Nsv::FileHeader_Parse()
     {
         if (header_size<28
          || header_size>file_size
-         || !file_len_ms
          || metadata_len>header_size-28
          || toc_alloc<toc_size
          || toc_alloc>(header_size-28)/4
@@ -232,9 +231,12 @@ void File_Nsv::FileHeader_Parse()
         Element_WaitForMoreData();
         return; //Must wait for more data
     }
-    Fill(Stream_General, 0, General_Duration, file_len_ms);
-    Fill(Stream_Video, 0, Video_Duration, file_len_ms);
-    Fill(Stream_Audio, 0, Audio_Duration, file_len_ms);
+    if (file_len_ms)
+    {
+        Fill(Stream_General, 0, General_Duration, file_len_ms);
+        Fill(Stream_Video, 0, Video_Duration, file_len_ms);
+        Fill(Stream_Audio, 0, Audio_Duration, file_len_ms);
+    }
     if (file_size>File_Size)
         Fill(Stream_General, 0, "IsTruncated", "Yes");
     if (metadata_len)

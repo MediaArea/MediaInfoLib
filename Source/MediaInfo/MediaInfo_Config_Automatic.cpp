@@ -5930,7 +5930,7 @@ void MediaInfo_Config_Menu (ZtringListList &Info)
     "MenuID;;;N YTY;;;The menu ID for this stream in this file\n"
     "MenuID/String;;;Y NT;;;The menu ID for this stream in this file\n"
     "Format;;;N YTY;;;Format used\n"
-    "Format/String;;;N NT;;;Format used + additional features\n"
+    "Format/String;;;Y NT;;;Format used + additional features\n"
     "Format/Info;;;N NT;;;Info about Format\n"
     "Format/Url;;;N NT;;;Link\n"
     "Format_Commercial;;;N NT;;;Commercial name used by vendor for theses setings or Format field if there is no difference\n"
