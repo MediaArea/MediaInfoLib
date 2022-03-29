@@ -54,6 +54,17 @@ private :
     Private* P;
 };
 
+
+//***************************************************************************
+// Class File_StarDiva
+//***************************************************************************
+
+class File_StarDiva : public File__Analyze
+{
+private :
+    //Buffer - Global
+    void Read_Buffer_Continue();
+};
 } //NameSpace
 
 #endif
