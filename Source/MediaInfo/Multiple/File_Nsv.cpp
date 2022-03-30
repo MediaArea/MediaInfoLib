@@ -1374,6 +1374,7 @@ void File_StarDiva::Read_Buffer_Continue()
         Fill(Stream_General, 0, "Room", Room);
         auto AdaptDate = [](string& Date)
         {
+            Date.erase(Date.find_last_not_of('\0') + 1);
             if (Date.size()!=19
              || Date[ 2]!='.'
              || Date[ 5]!='.'
