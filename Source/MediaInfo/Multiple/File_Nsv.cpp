@@ -22,6 +22,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_Nsv.h"
+#if defined(MEDIAINFO_AVC_YES)
+    #include "MediaInfo/Video/File_Avc.h"
+#endif
 #if defined(MEDIAINFO_MPEG4V_YES)
     #include "MediaInfo/Video/File_Mpeg4v.h"
 #endif
@@ -75,7 +78,9 @@ namespace Elements
 {
     const int32u AAC_=0x41414320;
     const int32u AACP=0x41414350;
+    const int32u AAV_=0x41415620;
     const int32u DIVX=0x44495658;
+    const int32u H264=0x48323634;
     const int32u MP3_=0x4D503320;
     const int32u NONE=0x4E4F4E45;
     const int32u NSVf=0x4E535666;
@@ -342,6 +347,23 @@ void File_Nsv::FileHeader_Parse()
             Skip_XX(End-Element_Offset,                         "toc_padding");
         Element_End0();
     }
+
+    // StarDiva metadata
+    if (header_size==0x96000 && Element_Offset<0x4B000 && BigEndian2int32u(Buffer+0x4B000)==0x4A4C1A00)
+    {
+        Skip_XX(0x4B000-Element_Offset,                         "Zeroes");
+
+        File_StarDiva StarDiva;
+        Open_Buffer_Init(&StarDiva);
+        Open_Buffer_Continue(&StarDiva, 0x4B000);
+        if (StarDiva.Status[IsAccepted])
+        {
+            Merge(StarDiva, Stream_General, 0, 0);
+            Stream_Prepare(Stream_Menu);
+            Merge(StarDiva, Stream_Menu, 0, 0);
+        }
+    }
+
     if (Element_Offset<header_size)
         Skip_XX(header_size-Element_Offset,                     "header_padding");
     Element_End0();
@@ -544,6 +566,17 @@ void File_Nsv::Data_Parse()
                                                                         Parser->Fill(Stream_Video, 0, Video_Format, "MPEG-4 Visual");
                                                                     #endif //defined(MEDIAINFO_MPEG4V_YES)
                                                                     break;
+                                            case Elements::H264:
+                                                                    #if defined(MEDIAINFO_AVC_YES)
+                                                                        Parser=new File_Avc();
+                                                                        ((File_Avc*)Parser)->FrameIsAlwaysComplete=true;
+                                                                    #else
+                                                                        Parser=new File_Unknown();
+                                                                        Open_Buffer_Init(Parser);
+                                                                        Parser->Stream_Prepare(Stream_Video);
+                                                                        Parser->Fill(Stream_Video, 0, Video_Format, "AVC");
+                                                                    #endif //defined(MEDIAINFO_AVC_YES)
+                                                                    break;
                                             case Elements::RGB3:
                                                                     Parser=new File_Unknown;
                                                                     Open_Buffer_Init(Parser);
@@ -585,6 +618,7 @@ void File_Nsv::Data_Parse()
                                         {
                                             case Elements::AAC_:
                                             case Elements::AACP:
+                                            case Elements::AAV_:
                                             case Elements::VLB_:
                                                                     #if defined(MEDIAINFO_AAC_YES)
                                                                         Parser=new File_Aac();
@@ -679,6 +713,709 @@ void File_Nsv::Data_Parse()
       || ((!P->Streams[0].codecid || (P->Streams[0].Parser && P->Streams[0].Parser->Status[IsAccepted]))
        && (!P->Streams[1].codecid || (P->Streams[1].Parser && P->Streams[1].Parser->Status[IsAccepted])))))
         Finish();
+}
+
+//***************************************************************************
+// StarDiva
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_StarDiva::Read_Buffer_Continue()
+{
+    int32u Magic;
+    Get_B4(Magic, "Always 0x4A4C1A00");
+    if (Magic!=0x4A4C1A00)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
+        Reject();
+        return;
+    }
+
+    Accept();
+    Stream_Prepare(Stream_Menu);
+    Fill(Stream_Menu, 0, Menu_Format, "StarDiva");
+
+
+    size_t Begin;
+    size_t End;
+
+    Element_Begin1("StarDiva time line data");
+        Element_Begin1("Header");
+            int32u JL_TotalSize;
+            Get_B4 (JL_TotalSize,                               "Time line data total size");
+            if (JL_TotalSize<16 && JL_TotalSize>0x49000)
+            {
+                Element_End0();
+                Element_End0();
+                Skip_XX(Element_Size-Element_Offset,            "Unknown");
+                Fill(Stream_Menu, 0, "Errors", "StarDiva metadata");
+                return;
+            }
+        Element_End0();
+        size_t JL_End=Element_Offset-8+JL_TotalSize;
+
+        Element_Begin1("Footer");
+            Element_Offset=JL_End-16;
+            int32u Footer_Flags1, Footer_Offset1, Footer_Size1, Footer_Offset2;
+            Get_B4 (Footer_Flags1,                              "0x80000000");
+            Get_B4 (Footer_Offset1,                             "Offset to footer");
+            Get_B4 (Footer_Size1,                               "0x80000000 + diff of offset?");
+            Get_B4 (Footer_Offset2,                             "Offset to stats?");
+            int32u Footer_Size1_31=Footer_Size1>>31;
+            Footer_Size1&=0x7FFFFFFF;
+            if (Footer_Flags1!=0x80000000
+                || Footer_Offset1!=JL_TotalSize-16
+                || Footer_Offset2>=Footer_Offset1
+                || Footer_Size1_31!=1
+                || Footer_Size1!=Footer_Offset1-Footer_Offset2
+                || (Footer_Size1!=0x35 && Footer_Size1!=0x36)
+                )
+            {
+                Element_End0();
+                Element_End0();
+                Skip_XX(Element_Size-Element_Offset,            "Unknown");
+                Fill(Stream_Menu, 0, "Errors", "StarDiva metadata");
+                return;
+            }
+        Element_End0();
+
+        Element_Begin1("Stats?");
+            Element_Offset=Footer_Offset2;
+            int8u Stats_Byte0, Stats_Byte1, Stats_Byte32, Stats_Byte33, Stats_Byte34, Stats_Byte35;
+            Get_B1 (Stats_Byte0,                                "0x80");
+            Get_B1 (Stats_Byte1,                                "0xB0");
+            bool Stats_Metadata_NotFound=memcmp(Buffer+Buffer_Offset+Element_Offset, "metadata[time:S,offset:I,typ:I,data:S,speaker:S]", 0x30);
+            Skip_String(0x30,                                   "metadata string");
+            Get_B1 (Stats_Byte32,                               "0x81");
+            Get_B1 (Stats_Byte33,                               "Unknown");
+            Get_B1 (Stats_Byte34,                               "Unknown");
+            if (Footer_Size1>=0x36)
+                Get_B1 (Stats_Byte35,                           "Unknown");
+            if (Stats_Byte0!=0x80
+                || Stats_Byte1!=0xB0
+                || Stats_Metadata_NotFound
+                || Stats_Byte32!=0x81
+            )
+            {
+                Element_End0();
+                Element_End0();
+                Skip_XX(Element_Size-Element_Offset,            "Unknown");
+                Fill(Stream_Menu, 0, "Errors", "StarDiva metadata");
+                return;
+            }
+            bool Skip5ZeroesBeforeAndAfterFlags=Footer_Size1==0x35 && Stats_Byte32==0x81 && Stats_Byte33==0x91 && Stats_Byte34==0xB1;
+            JL_End=Footer_Offset2; // All after Footer_Offset2 is already parsed
+        Element_End0();
+
+        vector<string> Times;
+        Element_Begin1("Times");
+            Element_Offset=8;
+            while (Buffer[Element_Offset]!=0x99 && Buffer[Element_Offset]!=0x09)
+            {
+                string Time;
+                Get_String(8, Time,                             "Time");
+                bool Problem;
+                if (Time.size()<8
+                    || Time[0]<'0' || Time[0]>'2'
+                    || Time[1]<'0' || Time[1]>'9'
+                    || Time[2]!=':'
+                    || Time[3]<'0' || Time[3]>'5'
+                    || Time[4]<'0' || Time[4]>'9'
+                    || Time[5]!=':'
+                    || Time[6]<'0' || Time[6]>'5'
+                    || Time[7]<'0' || Time[7]>'9'
+                    )
+                    Problem=true;
+                else
+                    Problem=false;
+                if (Problem || Element_Offset>=JL_End || Buffer[Element_Offset])
+                {
+                    Element_End0();
+                    Element_End0();
+                    Skip_XX(Element_Size-Element_Offset,        "Unknown");
+                    Fill(Stream_Menu, 0, "Errors", "StarDiva metadata");
+                    return;
+                }
+                Times.push_back(Time);
+                Element_Offset++;
+            }
+            Element_Info1(Ztring(Ztring::ToZtring(Times.size())+__T(" lines")).To_UTF8().c_str());
+        Element_End0();
+
+        Element_Begin1("Always 9 - 4 bits per line");
+            BS_Begin_LE();
+            for (size_t i=0; i<Times.size(); i++)
+            {
+                int8u Nine;
+                Get_T1(4, Nine,                                 "9");
+                if (Nine!=9)
+                {
+                    Element_End0();
+                    Element_End0();
+                    Skip_XX(Element_Size-Element_Offset,        "Unknown");
+                    Fill(Stream_Menu, 0, "Errors", "StarDiva metadata");
+                    return;
+                }
+            }
+            if (Times.size()%2)
+            {
+                int8u Padding;
+                Get_T1(4, Padding, "Padding");
+                if (Padding)
+                {
+                    Element_End0();
+                    Element_End0();
+                    Skip_XX(Element_Size-Element_Offset,        "Unknown");
+                    Fill(Stream_Menu, 0, "Errors", "StarDiva metadata");
+                    return;
+                }
+            }
+            BS_End_LE();
+        Element_End0();
+
+        // Zeroes in some specific cases
+        if (Skip5ZeroesBeforeAndAfterFlags)
+        {
+            int64u Zero;
+            Get_B5 (Zero,                                       "0x0000000000");
+            if (Zero)
+            {
+                Element_End0();
+                Skip_XX(Element_Size-Element_Offset,            "Unknown");
+                Fill(Stream_Menu, 0, "Errors", "StarDiva metadata");
+                return;
+            }
+        }
+
+        // Offsets
+        vector<int32u> Offsets;
+        if (!Skip5ZeroesBeforeAndAfterFlags)
+        {
+            // Guessing size of offset values
+            int OffsetValueSize=0;
+            if (Times.size()>2)
+            {
+                for (int j=2; j<=4; j+=2)
+                {
+                    int32u Previous=0;
+                    bool IsNOK=false;
+                    size_t i_Max=Times.size();
+                    if (j==4 && !OffsetValueSize && i_Max>8) // Ignoring some values, found one file with buggy values at the end, accepting that in case that there are enough values
+                        i_Max=8;
+                    for (size_t i=0; i<i_Max; i++)
+                    {
+                        size_t CurrentOffset=Element_Offset+i*j;
+                        int32u Current;
+                        switch (j)
+                        {
+                        case 2: Current=LittleEndian2int16u(Buffer+CurrentOffset); break;
+                        case 4: Current=LittleEndian2int32u(Buffer+CurrentOffset); break;
+                        }
+                        if (Current<Previous)
+                        {
+                            IsNOK=true;
+                            break;
+                        }
+                        Previous=Current;
+                    }
+                    if (!IsNOK)
+                        OffsetValueSize+=j;
+                }
+            }
+            if (Times.size()<=2 || OffsetValueSize>4)
+            {
+                // Not enough offsets, using an empirical test which may fail if first offset is not 0
+                if (Footer_Size1==0x36)
+                    OffsetValueSize=4;
+                else if (Footer_Size1==0x35)
+                {
+                    if (BigEndian2int32u(Buffer+Element_Offset))
+                        OffsetValueSize=2;
+                    else
+                        OffsetValueSize=4;
+                }
+            }
+            if (!OffsetValueSize || OffsetValueSize>4)
+            {
+                Element_End0();
+                Skip_XX(Element_Size-Element_Offset,            "Unknown");
+                Fill(Stream_Menu, 0, "Errors", "StarDiva metadata");
+                return;
+            }
+
+            Element_Begin1("Offsets");
+                for (size_t i=0; i<Times.size(); i++)
+                {
+                    int32u Offset;
+                    if (OffsetValueSize==4)
+                    {
+                        Get_L4(Offset,                          "Offset");
+                    }
+                    else
+                    {
+                        int16u Offset16;
+                        Get_L2(Offset16,                        "Offset");
+                        Offset=Offset16;
+                    }
+                    Offsets.push_back(Offset);
+                }
+            Element_End0();
+        }
+
+        // Flags
+        vector<bool> HasSeq;
+        vector<bool> HasAgenda;
+        vector<bool> HasSpeaker;
+        vector<size_t> Seqs;
+        size_t HasSeqAgenda_Count=0;
+        size_t HasSpeaker_Count=0;
+        map<int8u, size_t> Flags_Count;
+        Element_Begin1("Flags");
+            BS_Begin_LE();
+            for (size_t i=0; i<Times.size(); i++)
+            {
+                int8u Flags;
+                Get_T1(4, Flags,                                "Flags");
+                Flags_Count[Flags]++;
+                switch (Flags)
+                {
+                    case 0x1:
+                    case 0x2:
+                    case 0x3:
+                    case 0xC:
+                    case 0xD:
+                        break;
+                    default:
+                    {
+                        Element_End0();
+                        Element_End0();
+                        Skip_XX(Element_Size-Element_Offset,    "Unknown");
+                        Fill(Stream_Menu, 0, "Errors", "StarDiva metadata");
+                        return;
+                    }
+                }
+                switch (Flags)
+                {
+                    case 0x3:
+                        HasAgenda.push_back(false);
+                        HasSpeaker.push_back(true);
+                        HasSpeaker_Count++;
+                        break;
+                    default:
+                        HasAgenda.push_back(true);
+                        HasSeqAgenda_Count++;
+                        HasSpeaker.push_back(false);
+                }
+                switch (Flags)
+                {
+                    case 0xD:
+                        Seqs.push_back(i);
+                        HasSeq.push_back(true);
+                        break;
+                    default:
+                        HasSeq.push_back(false);
+                }
+                if (HasAgenda.back())
+                    Param_Info1(HasSeq.back()?"Seq":"Agenda");
+                if (HasSpeaker.back())
+                    Param_Info1("Speaker");
+            }
+            if (Times.size()%2)
+            {
+                int8u Flags;
+                Get_T1(4, Flags, "Padding"); // Note: not checking 0 value because some files with non 0 values were found
+            }
+            BS_End_LE();
+            Element_Info2(HasSeqAgenda_Count, " seq+agendas");
+            Element_Info2(HasSpeaker_Count, " speakers");
+            for (const auto& Count : Flags_Count)
+                Element_Info2(Count.second, (Ztring(__T(" Value ")+Ztring::ToZtring(Count.first))).To_UTF8().c_str());
+        Element_End0();
+
+        // Zeroes in some specific cases
+        if (Skip5ZeroesBeforeAndAfterFlags)
+        {
+            int64u Zero;
+            Get_B5 (Zero, "0x0000000000");
+            if (Zero)
+            {
+                Element_End0();
+                Skip_XX(Element_Size-Element_Offset,            "Unknown");
+                Fill(Stream_Menu, 0, "Errors", "StarDiva metadata");
+                return;
+            }
+        }
+
+        vector<string> SeqAgendas;
+        Element_Begin1("Seqs + Agendas");
+            for (size_t Pos=0; Pos<HasAgenda.size(); Pos++)
+            {
+                if (!HasAgenda[Pos])
+                {
+                    SeqAgendas.emplace_back(string());
+                    continue;
+                }
+                Begin=Element_Offset;
+                End=Element_Offset;
+                while (Buffer[End])
+                    End++;
+                Element_Offset=Begin;
+                string SeqAgenda;
+                Get_String(End-Begin, SeqAgenda,                "Seq + Agenda");
+                SeqAgendas.push_back(SeqAgenda);
+                Element_Offset++;
+            }
+            SeqAgendas.resize(Times.size());
+        Element_End0();
+
+        // Unknown bytes before speakers
+        if (HasSpeaker_Count)
+        {
+            // Note: found 0.5, 1 or 2 times the count of lines
+            size_t Max=JL_TotalSize;
+            map<int, size_t> CheckOfMultiplesOfTimes2x_Values;
+            int CheckOfMultiplesOfTimes2x=4;
+            int CheckOfMultiplesOfTimes2x_Previous=CheckOfMultiplesOfTimes2x;
+            for (;;)
+            {
+                size_t i=Element_Offset+Times.size()*CheckOfMultiplesOfTimes2x/2;
+                if (CheckOfMultiplesOfTimes2x==1 && Times.size()%2)
+                    i++; // Padding in case of 0.5 byte per line
+
+                size_t Count=0;
+                size_t StringSizes=0;
+                size_t MinStringSizes=(size_t)-1;
+                for (size_t j=i; j<Max; j++)
+                {
+                    // Check of the terminating null byte
+                    if (!Buffer[j])
+                    {
+                        if (MinStringSizes>StringSizes)
+                            MinStringSizes=StringSizes;
+                        StringSizes=0;
+                        Count++;
+                        if (Count==HasSpeaker_Count)
+                            break;
+                        j++;
+                        if (j>=Max)
+                            break;
+                    }
+                    
+                    // Check that it may be a valid char
+                    if (Buffer[j]<0x20)
+                    {
+                        break;
+                    }
+                    StringSizes++;
+                }
+                if (Count==HasSpeaker_Count && MinStringSizes)
+                {
+                    // Check if it is part of the previous catch
+                    bool PartOfPrevious=false;
+                    if (CheckOfMultiplesOfTimes2x_Previous!=CheckOfMultiplesOfTimes2x)
+                    {
+                        PartOfPrevious=true;
+                        size_t j_Max=Element_Offset+CheckOfMultiplesOfTimes2x_Previous/2*Times.size();
+                        for (size_t j=i; j<j_Max; j++)
+                        {
+                            if (Buffer[j]<0x20)
+                                PartOfPrevious=false;
+                        }
+                    }
+                    if (PartOfPrevious)
+                    {
+                        const auto& Previous=CheckOfMultiplesOfTimes2x_Values.find(CheckOfMultiplesOfTimes2x_Previous);
+                        if (Previous!=CheckOfMultiplesOfTimes2x_Values.end())
+                            CheckOfMultiplesOfTimes2x_Values.erase(Previous);
+                    }
+                    CheckOfMultiplesOfTimes2x_Values[CheckOfMultiplesOfTimes2x]=MinStringSizes;
+                    CheckOfMultiplesOfTimes2x_Previous=CheckOfMultiplesOfTimes2x;
+                }
+
+                CheckOfMultiplesOfTimes2x/=2;
+                if (!CheckOfMultiplesOfTimes2x)
+                    break;
+            }
+            size_t CheckOfMultiplesOfTimes2x_Value=0;
+            if (CheckOfMultiplesOfTimes2x_Values.size()>1)
+            {
+                // Eliminate obviously wrong catches: 1 char long but another catch has longer strings
+                size_t MinMinStringSize=(size_t)-1;
+                size_t MaxMinStringSize=0;
+                for(map<int, size_t>::iterator It=CheckOfMultiplesOfTimes2x_Values.begin(); It!=CheckOfMultiplesOfTimes2x_Values.end(); It++)
+                {
+                    if (MinMinStringSize>It->second)
+                        MinMinStringSize=It->second;
+                    if (MaxMinStringSize<It->second)
+                        MaxMinStringSize=It->second;
+                }
+                if (MinMinStringSize==1 && MaxMinStringSize>1)
+                    for(map<int, size_t>::iterator It=CheckOfMultiplesOfTimes2x_Values.begin(); It!=CheckOfMultiplesOfTimes2x_Values.end(); It++)
+                    {
+                        if (It->second!=1)
+                        {
+                            if (CheckOfMultiplesOfTimes2x_Value)
+                            {
+                                // 2 catches have long strings, too risky
+                                CheckOfMultiplesOfTimes2x_Value=0;
+                                break;
+                            }
+                            CheckOfMultiplesOfTimes2x_Value=It->first;
+                        }
+                    }
+                else if (CheckOfMultiplesOfTimes2x_Values.begin()->second==MaxMinStringSize) // If first one is the biggest one, take it
+                    CheckOfMultiplesOfTimes2x_Value=CheckOfMultiplesOfTimes2x_Values.begin()->first;
+            }
+            if (CheckOfMultiplesOfTimes2x_Values.size()==1)
+            {
+                CheckOfMultiplesOfTimes2x_Value=CheckOfMultiplesOfTimes2x_Values.begin()->first;
+            }
+            if (!CheckOfMultiplesOfTimes2x_Value)
+            {
+                Element_End0();
+                Skip_XX(Element_Size-Element_Offset,            "Unknown");
+                Fill(Stream_Menu, 0, "Errors", "StarDiva metadata");
+                return;
+            }
+            const char* Name;
+            switch (CheckOfMultiplesOfTimes2x_Value)
+            {
+                case 1 : Name="Unknown - 4 bits per line"; break;
+                case 2 : Name="Unknown - 1 byte per line"; break;
+                default: Name="Unknown - 2 bytes per line"; break;
+            }
+            Element_Begin1(Name);
+                if (CheckOfMultiplesOfTimes2x_Value==1)
+                    BS_Begin_LE();
+                for (size_t i=0; i<Times.size(); i++)
+                {
+                    switch (CheckOfMultiplesOfTimes2x_Value)
+                    {
+                        case 1 : Skip_T1(4,                     "Unknown"); break;
+                        case 2 : Skip_L1(                       "Unknown"); break;
+                        default: Skip_L2(                       "Unknown"); break;
+                    }
+                    ;
+                }
+                if (CheckOfMultiplesOfTimes2x_Value==1)
+                {
+                    if (Times.size()%2)
+                        Skip_T1(4,                              "Padding");
+                    BS_End_LE();
+                }
+            Element_End0();
+        }
+
+        // Speakers
+        vector<string> Speakers;
+        if (HasSpeaker_Count)
+        {
+            Element_Begin1("Speakers");
+                for (size_t Pos=0; Pos<HasSpeaker.size(); Pos++)
+                {
+                    if (!HasSpeaker[Pos])
+                    {
+                        Speakers.emplace_back(string());
+                        continue;
+                    }
+                    Begin=Element_Offset;
+                    End=Element_Offset;
+                    while (Buffer[End])
+                        End++;
+                    Element_Offset=Begin;
+                    string Speaker;
+                    Get_String(End-Begin, Speaker,                  "Speaker");
+                    Speakers.push_back(Speaker);
+                    Element_Offset++;
+                }
+            Element_End0();
+        }
+        Speakers.resize(Times.size());
+
+        // Unknown after speakers 
+        Element_Begin1("Unknown");
+            while (Element_Offset<JL_End)
+            {
+                Skip_L1("Unknown");
+            }
+        Element_End0();
+
+        //Filling
+        size_t Seqs_Pos=0;
+        size_t Subtitles_Index=1;
+        Offsets.resize(Times.size());
+        Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_Begin, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
+        for (size_t i = 0; i < Times.size(); i++)
+        {
+            bool Skip=false;
+            if (Seqs_Pos<Seqs.size() && Seqs[Seqs_Pos]==i)
+            {
+                Seqs_Pos++;
+                while (!SeqAgendas[i].empty() && SeqAgendas[i][0]!=' ')
+                    SeqAgendas[i].erase(0, 1);
+                if (SeqAgendas[i].size()>2 && SeqAgendas[i][0]==' ' && SeqAgendas[i][1]==':')
+                    SeqAgendas[i].erase(0, 2);
+            }
+
+            if (!SeqAgendas[i].empty())
+            {
+                int32u Offset=Offsets[i];
+                int8u HH=(int8u)(Offset/(60*60*1000));
+                Offset%=60*60*1000;
+                int8u MM=(int8u)(Offset/(   60*1000));
+                Offset%=60*1000;
+                int8u SS=(int8u)(Offset/(      1000));
+                Offset%=1000;
+                string Time;
+                Time+='0'+(HH/10);
+                Time+='0'+(HH%10);
+                Time+=':';
+                Time+='0'+(MM/10);
+                Time+='0'+(MM%10);
+                Time+=':';
+                Time+='0'+(SS/10);
+                Time+='0'+(SS%10);
+                Time+='.';
+                Time+='0'+(Offset/100);
+                Offset%=100;
+                Time+='0'+(Offset/10);
+                Offset%=10;
+                Time+='0'+(Offset);
+                string Content;
+                Content+=Times[i];
+                Content+=" - ";
+                if (!SeqAgendas[i].empty())
+                {
+                    if (!i && SeqAgendas.size()>6 && !SeqAgendas[i].compare(0, 6, "Start ", 6))
+                        Content+="Start";
+                    else if (SeqAgendas[i]=="Pause on")
+                    {
+                        Content+="Pause";
+                        if (i+1<Times.size() && SeqAgendas[i+1]=="Pause off" && Speakers[i].empty())
+                        {
+                            Content+=" - ";
+                            Content+=Times[i+1];
+                            Skip=true;
+                        }
+                    }
+                    else
+                        Content+=SeqAgendas[i];
+                }
+                if (!Content.empty() && Content.back()==' ') // Often seen
+                    Content.pop_back();
+                Fill(Stream_Menu, 0, Time.c_str(), Content);
+            }
+
+            if (!Speakers[i].empty())
+            {
+                int32u Offset = Offsets[i];
+                int8u HH = (int8u)(Offset / (60 * 60 * 1000));
+                Offset %= 60 * 60 * 1000;
+                int8u MM = (int8u)(Offset / (60 * 1000));
+                Offset %= 60 * 1000;
+                int8u SS = (int8u)(Offset / (1000));
+                Offset %= 1000;
+                string Time;
+                Time += '0' + (HH / 10);
+                Time += '0' + (HH % 10);
+                Time += ':';
+                Time += '0' + (MM / 10);
+                Time += '0' + (MM % 10);
+                Time += ':';
+                Time += '0' + (SS / 10);
+                Time += '0' + (SS % 10);
+                Time += '.';
+                Time += '0' + (Offset / 100);
+                Offset %= 100;
+                Time += '0' + (Offset / 10);
+                Offset %= 10;
+                Time += '0' + (Offset);
+                string Content;
+                Content += Times[i];
+                Content += " - ";
+                Content += Speakers[i];
+                if (!Content.empty() && Content.back()==' ') // Often seen
+                    Content.pop_back();
+                Fill(Stream_Menu, 0, Time.c_str(), "+ "+Content);
+
+            }
+            if (Skip)
+            {
+                i++;
+                Skip=false;
+            }
+        }
+        Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_End, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
+    Element_End0();
+
+    Element_Offset=End;
+    if (Buffer_Size==0x4B000)
+        Skip_XX(0x4AC00-Element_Offset,                         "Zeroes");
+
+    Element_Begin1("StarDiva file data");
+        string Meeting, Commission, Room, ConferenceBegin, ConferenceEnd;
+        Get_String(0x51, Meeting,                               "Meeting");
+        Get_String(0x51, Commission,                            "Commission");
+        Get_String(0x51, Room,                                  "Room");
+        Skip_L4(                                                "Unknown");
+        Skip_L4(                                                "Unknown");
+        Skip_L4(                                                "Unknown");
+        Get_String(0x13, ConferenceBegin,                       "Begin");
+        Skip_L6(                                                "Zeroes");
+        Get_String(0x13, ConferenceEnd,                         "End");
+        Skip_L5(                                                "Zeroes");
+        Skip_L4(                                                "Unknown");
+        Skip_L4(                                                "Unknown");
+        Skip_L4(                                                "Unknown");
+        Skip_L4(                                                "Unknown");
+        Skip_String(0x100,                                      "File name");
+        Fill(Stream_General, 0, "Meeting", Meeting);
+        Fill(Stream_General, 0, "Commission", Commission);
+        Fill(Stream_General, 0, "Room", Room);
+        auto AdaptDate = [](string& Date)
+        {
+            if (Date.size()!=19
+             || Date[ 2]!='.'
+             || Date[ 5]!='.'
+             || Date[10]!=' '
+             || Date[13]!=':'
+             || Date[16]!=':')
+                return;
+            Date = Date.substr(6, 4) + '-' + Date.substr(3, 2) + '-' + Date.substr(0, 2) + Date.substr(10);
+        };
+        AdaptDate(ConferenceBegin);
+        AdaptDate(ConferenceEnd);
+        if (!ConferenceEnd.empty() && ConferenceEnd!=ConferenceBegin)
+            Fill(Stream_General, 0, General_Recorded_Date, ConferenceBegin + " - " + ConferenceEnd);
+        else
+            Fill(Stream_General, 0, General_Recorded_Date, ConferenceBegin);
+        Begin=(size_t)Element_Offset;
+        End=Begin;
+        while (End<Element_Size)
+        {
+            while (End<Element_Size && (Buffer[End]<0x20 || Buffer[End]>=0x7F))
+            {
+                if (Buffer[End])
+                {
+                    Element_Offset=End;
+                    Skip_L1(                                    "Unknown");
+                }
+                End++;
+            }
+            if (End>=Element_Size)
+                break;
+            Begin=End;
+            while (End<Element_Size && Buffer[End]>=0x20 && Buffer[End]<0x7F)
+                End++;
+            if (Begin<End)
+            {
+                Element_Offset=Begin;
+                Skip_String(End-Begin,                          "Unknown");
+            }
+            End++;
+        }
+        Element_Offset=Element_Size;
+    Element_End0();
 }
 
 } //NameSpace
