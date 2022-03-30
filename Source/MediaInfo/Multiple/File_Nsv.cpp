@@ -1341,12 +1341,13 @@ void File_StarDiva::Read_Buffer_Continue()
                 Content+=" - ";
                 if (!SeqAgendas[i].empty())
                 {
-                    if (!i && SeqAgendas.size()>6 && !SeqAgendas[i].compare(0, 6, "Start ", 6))
-                        Content+="Start";
-                    else if (SeqAgendas[i]=="Pause on")
+                    if (SeqAgendas[i]=="Pause on")
                     {
+                        bool HasPauseOff=i+1<Times.size() && SeqAgendas[i+1]=="Pause off" && Speakers[i].empty();
+                        if (i+1+HasPauseOff<Times.size() && !Speakers[i+1+HasPauseOff].empty())
+                            Content.insert(0, "+ ");
                         Content+="Pause";
-                        if (i+1<Times.size() && SeqAgendas[i+1]=="Pause off" && Speakers[i].empty())
+                        if (HasPauseOff)
                         {
                             Content+=" - ";
                             Content+=Times[i+1];
