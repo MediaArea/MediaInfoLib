@@ -37,6 +37,8 @@
 #include "MediaInfo/File_Unknown.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include <algorithm>
+#include <limits>
+using namespace std;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -46,19 +48,32 @@ namespace MediaInfoLib
 // Private
 //***************************************************************************
 
+struct buffer
+{
+    int8u* Data;
+    size_t Size;
+
+    buffer(int8u* Data_, size_t Size_)
+        : Data(Data_)
+        , Size(Size_)
+    {}
+};
+
 struct stream
 {
     File__Analyze*  Parser=nullptr;
     int32u          len=0;
     int32u          codecid=0;
+    vector<buffer>  Buffers;
 };
 
 class Private
 {
 public:
     stream          Streams[2];
-    int64u          AudioDelay=0;
+    int64s          AudioDelay=0;
     int32u          AuxTotalLen=0;
+    bool            IsMajorSynched=false;
 };
 
 //***************************************************************************
@@ -496,8 +511,10 @@ void File_Nsv::Header_Parse()
             if (height)
                 Fill(Stream_Video, 0, Video_Height, height, 10, true);
         }
-        if (P->AudioDelay!=(int64u)-1)
+        if (P->AudioDelay!=numeric_limits<int64s>::min())
             P->AudioDelay=FrameInfo.PTS==(int64u)-1?((int64u)-1):(FrameInfo.PTS+(int64u)syncoffs*1000000);
+        if (!P->IsMajorSynched)
+            P->IsMajorSynched=true;
     }
     else if ((sync_hdr>>16)==0xEFBE)
     {
@@ -535,7 +552,8 @@ void File_Nsv::Header_Parse()
 //---------------------------------------------------------------------------
 void File_Nsv::Data_Parse()
 {
-    Element_Info1(Frame_Count);
+    if (P->IsMajorSynched)
+        Element_Info1(Frame_Count);
     if (FrameInfo.PTS!=(int64u)-1)
         Element_Info1(FrameInfo.PTS/1000000000.0);
 
@@ -547,6 +565,15 @@ void File_Nsv::Data_Parse()
             // Init
             if (!Stream.Parser)
             {
+                if (!P->IsMajorSynched)
+                {
+                    auto NewBuffer=new int8u[Stream.len];
+                    memcpy(NewBuffer, Buffer+Buffer_Offset+(size_t)Element_Offset, Stream.len);
+                    Stream.Buffers.emplace_back(NewBuffer, Stream.len);
+                    Skip_XX(Stream.len,                         "stream"); Param_Info1(i);
+                    continue;
+                }
+
                 Stream_Prepare(Stream_Type[i]);
                 Fill(Stream_Type[i], 0, Fill_Parameter(Stream_Type[i], Generic_CodecID), Ztring().From_CC4(Stream.codecid));
                 File__Analyze* Parser;
@@ -672,6 +699,32 @@ void File_Nsv::Data_Parse()
             Element_Begin1("stream");
             Element_Info1(i);
             Element_Code=i;
+            if (!Stream.Buffers.empty())
+            {
+                Stream.Parser->FrameInfo.DTS=0;
+                Stream.Parser->FrameInfo.PTS=0;
+                for (const auto& Buffer : Stream.Buffers)
+                {
+                    Open_Buffer_Continue(Stream.Parser, Buffer.Data, Buffer.Size);
+                    if (Stream.Parser->Status[IsAccepted])
+                        Demux(Buffer.Data, Buffer.Size, ContentType_MainStream);
+                    delete[] Buffer.Data;
+                }
+                if (Stream.Parser->Status[IsAccepted] && Stream.Parser->FrameInfo.PTS!=(int64u)-1)
+                {
+                    if (i)
+                    {
+                        if (P->AudioDelay!=numeric_limits<int64s>::min())
+                            P->AudioDelay-=Stream.Parser->FrameInfo.PTS;
+                    }
+                    else
+                    {
+                        if (FrameInfo.PTS!=(int64u)-1)
+                            FrameInfo.PTS-=Stream.Parser->FrameInfo.PTS;
+                    }
+                }
+                Stream.Buffers.clear();
+            }
             Open_Buffer_Continue(Stream.Parser, Stream.len);
             if (Stream.Parser->Status[IsAccepted])
             {
@@ -685,14 +738,14 @@ void File_Nsv::Data_Parse()
                                                 Fill(Stream_Video, 0, Video_Delay, float64_int64s(((float64)FrameInfo.PTS)/1000000));
                                             break;
                         case Stream_Audio:
-                                            if (P->AudioDelay!=(int64u)-1 && Retrieve(Stream_Audio, 0, Audio_Delay).empty())
+                                            if (P->AudioDelay!=numeric_limits<int64s>::min() && Retrieve(Stream_Audio, 0, Audio_Delay).empty())
                                                 Fill(Stream_Audio, 0, Audio_Delay, float64_int64s(((float64)P->AudioDelay)/1000000));
                                             break;
                     }
                 }
             }
             else if (i)
-                P->AudioDelay=(int64u)-1;
+                P->AudioDelay=numeric_limits<int64s>::min();
             #if MEDIAINFO_TRACE
             else
             {
@@ -705,12 +758,14 @@ void File_Nsv::Data_Parse()
         }
     }
 
-    Frame_Count++;
-    if (FrameInfo.DUR!=(int64u)-1)
+    if (P->IsMajorSynched)
+        Frame_Count++;
+    if (FrameInfo.PTS!=(int64u)-1 && FrameInfo.DUR!=(int64u)-1)
         FrameInfo.PTS+=FrameInfo.DUR;
     if (Config->ParseSpeed<1.0
      && (Frame_Count>=300
-      || ((!P->Streams[0].codecid || (P->Streams[0].Parser && P->Streams[0].Parser->Status[IsAccepted]))
+      || (P->IsMajorSynched
+       && (!P->Streams[0].codecid || (P->Streams[0].Parser && P->Streams[0].Parser->Status[IsAccepted]))
        && (!P->Streams[1].codecid || (P->Streams[1].Parser && P->Streams[1].Parser->Status[IsAccepted])))))
         Finish();
 }
@@ -1286,12 +1341,13 @@ void File_StarDiva::Read_Buffer_Continue()
                 Content+=" - ";
                 if (!SeqAgendas[i].empty())
                 {
-                    if (!i && SeqAgendas.size()>6 && !SeqAgendas[i].compare(0, 6, "Start ", 6))
-                        Content+="Start";
-                    else if (SeqAgendas[i]=="Pause on")
+                    if (SeqAgendas[i]=="Pause on")
                     {
+                        bool HasPauseOff=i+1<Times.size() && SeqAgendas[i+1]=="Pause off" && Speakers[i].empty();
+                        if (i+1+HasPauseOff<Times.size() && !Speakers[i+1+HasPauseOff].empty())
+                            Content.insert(0, "+ ");
                         Content+="Pause";
-                        if (i+1<Times.size() && SeqAgendas[i+1]=="Pause off" && Speakers[i].empty())
+                        if (HasPauseOff)
                         {
                             Content+=" - ";
                             Content+=Times[i+1];
