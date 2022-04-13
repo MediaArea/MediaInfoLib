@@ -82,6 +82,7 @@
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -92,6 +93,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
       <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -105,6 +107,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <DebugInformationFormat>None</DebugInformationFormat>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -116,6 +119,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
       <DebugInformationFormat>None</DebugInformationFormat>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
