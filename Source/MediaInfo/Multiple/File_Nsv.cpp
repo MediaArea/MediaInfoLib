@@ -690,6 +690,7 @@ void File_Nsv::Data_Parse()
                                             default            :    Parser=new File_Unknown();
                                         }
                                         break;
+                    default          :  Parser=new File_Unknown();
                 }
                 Open_Buffer_Init(Parser);
                 Stream.Parser=Parser;
