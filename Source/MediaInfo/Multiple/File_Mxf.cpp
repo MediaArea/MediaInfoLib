@@ -2567,9 +2567,6 @@ void File_Mxf::Streams_Finish()
             Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
     #endif //MEDIAINFO_ADVANCED
 
-    //Commercial names
-    Streams_Finish_CommercialNames();
-
     //Handling separate streams
     for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
         for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
@@ -2786,6 +2783,9 @@ void File_Mxf::Streams_Finish()
         Clear(Stream_Audio, 0, "AdmProfile_Format");
         Clear(Stream_Audio, 0, "AdmProfile_Version");
     }
+
+    //Commercial names
+    Streams_Finish_CommercialNames();
 }
 
 //---------------------------------------------------------------------------
