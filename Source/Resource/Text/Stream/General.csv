@@ -114,8 +114,8 @@ OverallBitRate_Maximum;; bps;N YFY;;;Maximum bit rate (in bps)
 OverallBitRate_Maximum/String;;;Y NT;;;Maximum bit rate (with measurement)
 FrameRate;; fps;N YFY;;;Frames per second
 FrameRate/String;;;N NT;;;Frames per second (with measurement)
-FrameRate_Num;;;N NFN;;;Frames per second, numerator
-FrameRate_Den;;;N NFN;;;Frames per second, denominator
+FrameRate_Num;;;N NIN;;;Frames per second, numerator
+FrameRate_Den;;;N NIN;;;Frames per second, denominator
 FrameCount;;;N NIY;;;Frame count (if a frame contains a count of samples);;
 Delay;; ms;N YI;;;Delay fixed in the stream (relative) (in ms)
 Delay/String;;;N NT;;;Delay with measurement
