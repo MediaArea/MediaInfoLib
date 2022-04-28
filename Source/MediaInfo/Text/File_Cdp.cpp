@@ -552,6 +552,8 @@ void File_Cdp::ccsvcinfo_section()
     Skip_SB(                                                    "svc_info_complete");
     Get_S1 (4, svc_count,                                       "svc_count");
     BS_End();
+    bool line21_field_Found[2]={false, false};
+    string line21_languages[2];
     for (int8u Pos=0; Pos<svc_count; Pos++)
     {
         Element_Begin1("svc");
@@ -583,10 +585,6 @@ void File_Cdp::ccsvcinfo_section()
         {
             Skip_S1(5,                                          "reserved");
             Get_SB (   line21_field,                            "line21_field");
-
-            //Coherency test
-            if (line21_field && svc_count==1)
-                line21_field=false; // Wrong info in the descriptor?
         }
         Skip_SB(                                                "easy_reader");
         Skip_SB(                                                "wide_aspect_ratio");
@@ -601,27 +599,39 @@ void File_Cdp::ccsvcinfo_section()
                 {
                     #if defined(MEDIAINFO_EIA708_YES)
                         ServiceDescriptors->ServiceDescriptors708[caption_service_number].language=language;
+                        if (!Streams[2])
+                            CreateStream(2);
                     #endif
                 }
                 else
                 {
-                    #if defined(MEDIAINFO_EIA708_YES)
-                        ServiceDescriptors->ServiceDescriptors608[line21_field?1:0].language=language;
+                    #if defined(MEDIAINFO_EIA608_YES)
+                        line21_field_Found[line21_field]=true;
+                        line21_languages[line21_field]=language;
                     #endif
                 }
             #endif
-
-            //Stream creation
-            int8u Parser_Pos;
-            if (digital_cc) //line21
-                Parser_Pos = 2;
-            else
-                Parser_Pos= (line21_field ? 1 : 0); //cc_type 2 and 3 are for the same text
-            if (Streams[Parser_Pos]==NULL)
-                CreateStream(Parser_Pos);
         FILLING_END();
     }
     Element_End0();
+
+    #if defined(MEDIAINFO_EIA608_YES)
+        // From specs: line21_field is deprecated and language is indicated as having no meaning if digital_cc is clear
+        // but some encoders fill language for CC1 and CC3, let's try to keep this metadata
+        // but some encoders also fill line21_field to 1 for CC1 alone so let's ignore this field if there is only 1 CC announced
+        if (!line21_field_Found[0] && line21_field_Found[1])
+        {
+            swap(line21_field_Found[0], line21_field_Found[1]);
+            swap(line21_languages[0], line21_languages[1]);
+        }
+        for (int i=0; i<=1; i++)
+            if (line21_field_Found[i])
+            {
+                ServiceDescriptors->ServiceDescriptors608[i].language=line21_languages[i];
+                if (!Streams[i])
+                    CreateStream(i);
+            }
+    #endif
 }
 
 //---------------------------------------------------------------------------
