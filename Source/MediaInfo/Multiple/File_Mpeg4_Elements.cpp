@@ -5084,6 +5084,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tmcd()
         mdat_Pos_ToParseInPriority_StreamIDs.push_back(moov_trak_tkhd_TrackID);
         Streams[moov_trak_tkhd_TrackID].IsPriorityStream=true;
         Parser->NumberOfFrames=NumberOfFrames; //tc->FrameDuration?(((float64)tc->TimeScale)/tc->FrameDuration):0;
+        if (tc->FrameDuration && NumberOfFrames)
+            Parser->FrameMultiplier=((int64u)tc->TimeScale+tc->FrameDuration/2)/tc->FrameDuration/NumberOfFrames;
         Parser->DropFrame=tc->DropFrame;
         Parser->NegativeTimes=tc->NegativeTimes;
         Parser->tkhd_Duration=Streams[moov_trak_tkhd_TrackID].tkhd_Duration;
