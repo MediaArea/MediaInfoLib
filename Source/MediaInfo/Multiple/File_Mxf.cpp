@@ -3034,8 +3034,10 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_FirstFrame), TC.ToString().c_str());
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_Source), "Time code track (stripped)");
     }
+    size_t SDTI_TimeCode_StartTimecode_StreamPos_Last;
     if (SDTI_TimeCode_StartTimecode.HasValue())
     {
+        SDTI_TimeCode_StartTimecode_StreamPos_Last=StreamPos_Last;
         Fill(StreamKind_Last, StreamPos_Last, "Delay_SDTI", SDTI_TimeCode_StartTimecode.ToMilliseconds());
         if (StreamKind_Last!=Stream_Max)
             Fill_SetOptions(StreamKind_Last, StreamPos_Last, "Delay_SDTI", "N NT");
@@ -3043,8 +3045,10 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_FirstFrame), SDTI_TimeCode_StartTimecode.c_str());
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_Source), "SDTI");
     }
+    size_t SystemScheme1_TimeCodeArray_StartTimecode_StreamPos_Last;
     if (SystemScheme1_TimeCodeArray_StartTimecode.HasValue())
     {
+        SystemScheme1_TimeCodeArray_StartTimecode_StreamPos_Last=StreamPos_Last;
         Fill(StreamKind_Last, StreamPos_Last, "Delay_SystemScheme1", SystemScheme1_TimeCodeArray_StartTimecode.ToMilliseconds());
         if (StreamKind_Last!=Stream_Max)
             Fill_SetOptions(StreamKind_Last, StreamPos_Last, "Delay_SystemScheme1", "N NT");
@@ -3340,6 +3344,23 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
         }
 
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), Stream_Size);
+    }
+
+    if (SDTI_TimeCode_StartTimecode.HasValue())
+    {
+        TimeCode TC=SDTI_TimeCode_StartTimecode;
+        int32u FrameRate=float32_int32s(Retrieve_Const(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate)).To_float32());
+        if (FrameRate)
+            TC.SetFramesMax((int16u)(FrameRate-1));
+        Fill(StreamKind_Last, SDTI_TimeCode_StartTimecode_StreamPos_Last, "Delay_SDTI", TC.ToMilliseconds(), true, true);
+    }
+    if (SystemScheme1_TimeCodeArray_StartTimecode.HasValue())
+    {
+        TimeCode TC=SystemScheme1_TimeCodeArray_StartTimecode;
+        int32u FrameRate=float32_int32s(Retrieve_Const(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate)).To_float32());
+        if (FrameRate)
+            TC.SetFramesMax((int16u)(FrameRate-1));
+        Fill(StreamKind_Last, SystemScheme1_TimeCodeArray_StartTimecode_StreamPos_Last, "Delay_SystemScheme1", TC.ToMilliseconds(), true, true);
     }
 
     //Done
