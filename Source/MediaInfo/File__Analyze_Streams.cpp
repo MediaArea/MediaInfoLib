@@ -2613,8 +2613,8 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
                     }
                 }
 
-                TimeCode TC(FrameCountS.To_int64s(), (int8u)float32_int32s(FrameRateS.To_float32()), DropFrame && FrameRateI!=FrameRateF);
-                TC.DropFrame=DropFrame;
+                TimeCode TC(FrameCountS.To_int64s(), (int32u)float32_int32s(FrameRateS.To_float32()-1), DropFrame && FrameRateI!=FrameRateF);
+                TC.SetDropFrame(DropFrame);
                 DurationString4.From_UTF8(TC.ToString());
 
                 Fill(StreamKind, StreamPos, Parameter+5, DurationString4); // /String4
