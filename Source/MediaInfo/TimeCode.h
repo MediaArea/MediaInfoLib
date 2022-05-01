@@ -21,17 +21,6 @@ namespace MediaInfoLib
 // Class bitset8
 //***************************************************************************
 
-#if __cplusplus >= 201400 || (_MSC_VER >= 1910 && _MSVC_LANG >= 201400)
-    #define constexpr14 constexpr
-#else
-    #define constexpr14
-#endif
-#if __cplusplus >= 202000 || (_MSC_VER >= 1910 && _MSVC_LANG >= 202000)
-    #define constexpr20 constexpr
-#else
-    #define constexpr20
-#endif
-
 class bitset8
 {
 public:
@@ -40,63 +29,63 @@ public:
         friend bitset8;
 
     public:
-        constexpr20 ~proxy() noexcept {}
+        ~proxy() noexcept {}
 
-        constexpr14 proxy& operator=(bool Value) noexcept {
+        proxy& operator=(bool Value) noexcept {
             ref->set(pos, Value);
             return *this;
         }
 
-        constexpr14 proxy& operator=(const proxy& p) noexcept {
+        proxy& operator=(const proxy& p) noexcept {
             ref->set(pos, static_cast<bool>(p));
             return *this;
         }
 
-        constexpr14 operator bool() const noexcept {
+        operator bool() const noexcept {
             return ref->test(pos);
         }
 
     private:
-        constexpr14 proxy(bitset8* _ref, size_t _pos) : ref(_ref), pos(_pos) {}
+        proxy(bitset8* _ref, size_t _pos) : ref(_ref), pos(_pos) {}
 
         bitset8* const ref;
         size_t const pos;
     };
 
-    constexpr14 bitset8& reset() noexcept
+    bitset8& reset() noexcept
     {
         stored=0;
         return *this;
     }
 
-    constexpr14 bitset8& reset(size_t pos) noexcept
+    bitset8& reset(size_t pos) noexcept
     {
         stored&=~(1<<pos);
         return *this;
     }
 
-    constexpr14 bitset8& set(size_t pos) noexcept
+    bitset8& set(size_t pos) noexcept
     {
         stored|=(1<<pos);
         return *this;
     }
 
-    constexpr14 bitset8& set(size_t pos, bool val) noexcept
+    bitset8& set(size_t pos, bool val) noexcept
     {
         return val?set(pos):reset(pos);
     }
 
-    constexpr14 bool test(size_t pos) const noexcept
+    bool test(size_t pos) const noexcept
     {
         return (stored>>pos)&1;
     }
 
-    constexpr20 proxy operator[](size_t pos) noexcept
+    proxy operator[](size_t pos) noexcept
     {
         return proxy(this, pos);
     }
 
-    constexpr14 bool operator[](size_t pos) const noexcept
+    bool operator[](size_t pos) const noexcept
     {
         return test(pos);
     }
