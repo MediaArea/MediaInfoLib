@@ -75,7 +75,7 @@ void File_Mpeg4_TimeCode::Streams_Fill()
 
         Fill(Stream_General, 0, "Delay", Pos_Temp*1000/FrameRate_WithDF, 0);
 
-        TimeCode TC(Pos_Temp, NumberOfFrames, DropFrame);
+        TimeCode TC(Pos_Temp, NumberOfFrames-1, DropFrame);
         Stream_Prepare(Stream_Other);
         Fill(Stream_Other, StreamPos_Last, Other_Type, "Time code");
         Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, TC.ToString().c_str());
