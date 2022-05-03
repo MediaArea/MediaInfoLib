@@ -574,7 +574,7 @@ void File_Cdp::ccsvcinfo_section()
         Element_Begin1("service");
         string language;
         int8u caption_service_number=0;
-        bool digital_cc, line21_field=false;
+        bool digital_cc, wide_aspect_ratio, line21_field;
         Get_String(3, language,                                 "language");
         BS_Begin();
         Get_SB (digital_cc,                                     "digital_cc");
@@ -587,7 +587,7 @@ void File_Cdp::ccsvcinfo_section()
             Get_SB (   line21_field,                            "line21_field");
         }
         Skip_SB(                                                "easy_reader");
-        Skip_SB(                                                "wide_aspect_ratio");
+        Get_SB (wide_aspect_ratio,                              "wide_aspect_ratio");
         Skip_S2(14,                                             "reserved");
         BS_End();
         Element_End0();
@@ -599,6 +599,8 @@ void File_Cdp::ccsvcinfo_section()
                 {
                     #if defined(MEDIAINFO_EIA708_YES)
                         ServiceDescriptors->ServiceDescriptors708[caption_service_number].language=language;
+                        ServiceDescriptors->ServiceDescriptors708[caption_service_number].wide_aspect_ratio.set(0);
+                        ServiceDescriptors->ServiceDescriptors708[caption_service_number].wide_aspect_ratio.set(1, wide_aspect_ratio);
                         if (!Streams[2])
                             CreateStream(2);
                     #endif
