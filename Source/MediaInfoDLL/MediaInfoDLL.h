@@ -119,12 +119,18 @@
 /*-------------------------------------------------------------------------*/
 #if defined(_WIN32) || defined(WIN32)
     #ifdef _UNICODE
-        #define MEDIAINFODLL_NAME L"MediaInfo.dll"
+        #ifndef MEDIAINFODLL_NAME
+            #define MEDIAINFODLL_NAME L"MediaInfo.dll"
+        #endif //MEDIAINFODLL_NAME
     #else //_UNICODE
-        #define MEDIAINFODLL_NAME "MediaInfo.dll"
+        #ifndef MEDIAINFODLL_NAME
+            #define MEDIAINFODLL_NAME L"MediaInfo.dll"
+        #endif //MEDIAINFODLL_NAME
     #endif //_UNICODE
 #elif defined(__APPLE__) && defined(__MACH__)
-    #define MEDIAINFODLL_NAME "libmediainfo.0.dylib"
+    #ifndef MEDIAINFODLL_NAME
+        #define MEDIAINFODLL_NAME "libmediainfo.0.dylib"
+    #endif //MEDIAINFODLL_NAME
     #define __stdcall
     #ifdef __cplusplus
         #include <new> //for size_t
@@ -132,7 +138,9 @@
         #include <stddef.h> //for size_t
     #endif /* __cplusplus */
 #else
-    #define MEDIAINFODLL_NAME "libmediainfo.so.0"
+    #ifndef MEDIAINFODLL_NAME
+        #define MEDIAINFODLL_NAME "libmediainfo.so.0"
+    #endif //MEDIAINFODLL_NAME
     #define __stdcall
 #endif //!defined(_WIN32) || defined(WIN32)
 
