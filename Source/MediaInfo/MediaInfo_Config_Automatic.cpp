@@ -5164,7 +5164,7 @@ void MediaInfo_Config_Audio (ZtringListList &Info)
     "Delay_Original_Settings;;;N NT;;;Delay settings (in case of timecode for example)\n"
     "Delay_Original_DropFrame;;;N NTY;;;Delay drop frame info\n"
     "Delay_Original_Source;;;N NTY;;;Delay source (Stream or empty)\n"
-    "Video_Delay;; ms;N NI;;;Delay fixed in the stream (absolute / video)\n"
+    "Video_Delay;; ms;N NF;;;Delay fixed in the stream (absolute / video)\n"
     "Video_Delay/String;;;Y NT\n"
     "Video_Delay/String1;;;N NT\n"
     "Video_Delay/String2;;;N NT\n"

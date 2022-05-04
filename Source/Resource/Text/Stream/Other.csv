@@ -104,7 +104,7 @@ Delay_Original/String5;;;N NT;;;Delay in format : HH:MM:SS.mmm (HH:MM:SS:FF)
 Delay_Original_Settings;;;N NT;;;Delay settings (in case of timecode for example);;
 Delay_Original_DropFrame;;;N NT;;;Delay drop frame info;
 Delay_Original_Source;;;N NT;;;Delay source (Stream or empty);
-Video_Delay;; ms;N NI;;;Delay fixed in the stream (absolute / video)
+Video_Delay;; ms;N NF;;;Delay fixed in the stream (absolute / video)
 Video_Delay/String;;;Y NT;;;
 Video_Delay/String1;;;N NT;;;
 Video_Delay/String2;;;N NT;;;
