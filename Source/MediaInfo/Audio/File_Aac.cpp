@@ -77,6 +77,7 @@ File_Aac::File_Aac()
     adts_buffer_fullness_Is7FF=false;
     #if MEDIAINFO_ADVANCED
         aac_frame_length_Total=0;
+        ParseCompletely=0;
     #endif //MEDIAINFO_ADVANCED
 
     //Temp - Main
@@ -289,7 +290,12 @@ void File_Aac::Read_Buffer_Continue()
         return;
 
     if (Frame_Count==0)
+    {
         PTS_Begin=FrameInfo.PTS;
+        #if MEDIAINFO_ADVANCED
+            ParseCompletely=Config->File_Macroblocks_Parse_Get();
+        #endif //MEDIAINFO_ADVANCED
+    }
 
     switch(Mode)
     {
