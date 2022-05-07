@@ -5421,7 +5421,7 @@ void MediaInfo_Config_Text (ZtringListList &Info)
     "FrameRate_Mode;;;N YTY;;;Frame rate mode (CFR, VFR)\n"
     "FrameRate_Mode/String;;;N NT;;;Frame rate mode (Constant, Variable)\n"
     "FrameRate;; fps;N YFY;;;Frames per second\n"
-    "FrameRate/String;;;N NT;;;Frames per second (with measurement)\n"
+    "FrameRate/String;;;Y NT;;;Frames per second (with measurement)\n"
     "FrameRate_Num;;;N NIN;;;Frames per second, numerator\n"
     "FrameRate_Den;;;N NIN;;;Frames per second, denominator\n"
     "FrameRate_Minimum;; fps;N YFY;;;Minimum Frames per second\n"
