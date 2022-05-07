@@ -36,6 +36,7 @@
 #endif
 #include "MediaInfo/File_Unknown.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
+#include "MediaInfo/TimeCode.h"
 #include <algorithm>
 #include <limits>
 using namespace std;
@@ -382,9 +383,6 @@ void File_Nsv::FileHeader_Parse()
     if (Element_Offset<header_size)
         Skip_XX(header_size-Element_Offset,                     "header_padding");
     Element_End0();
-
-    //Synched is OK
-    Synched=true;
 }
 
 //***************************************************************************
@@ -515,8 +513,9 @@ void File_Nsv::Header_Parse()
             P->Streams[1].codecid=audfmt==Elements::NONE?0:audfmt;
             if (framerate_idx)
             {
+                float64 FrameRate;
                 if (!(framerate_idx>>7))
-                    FrameInfo.DUR=1000000000/framerate_idx;
+                    FrameRate=framerate_idx;
                 else
                 {
                     int8u T=(framerate_idx&0x7F)>>2;
@@ -527,8 +526,10 @@ void File_Nsv::Header_Parse()
                         S=T-1;
                     if (framerate_idx&1)
                         S=S/1.001;
-                    FrameInfo.DUR=float64_int64s(1000000000/(S*Nsv_FrameRate_Multiplier[framerate_idx&3]));
+                    FrameRate=S*Nsv_FrameRate_Multiplier[framerate_idx&3];
                 }
+                if (FrameRate)
+                    FrameInfo.DUR=float64_int64s(1000000000/FrameRate);
                 FrameInfo.PTS=0;
             }
             if (width)
@@ -1043,18 +1044,25 @@ void File_StarDiva::Read_Buffer_Continue()
             }
 
             Element_Begin1("Offsets");
+                int32s file_len_ms=(int32s)Retrieve_Const(Stream_General, 0, General_Duration).To_int32u();
                 for (size_t i=0; i<Times.size(); i++)
                 {
-                    int32u Offset;
+                    int32s Offset;
                     if (OffsetValueSize==4)
                     {
-                        Get_L4(Offset,                          "Offset");
+                        int32u Offset32;
+                        Get_L4(Offset32,                        "Offset");
+                        Offset=(int32s)Offset32;
                     }
                     else
                     {
                         int16u Offset16;
                         Get_L2(Offset16,                        "Offset");
-                        Offset=Offset16;
+                        Offset=(int16s)Offset16;
+                    }
+                    if (Offset<0)
+                    {
+                        Offset+=48*3600*1000; // Hack: add 24 hours in order to keep the description
                     }
                     Offsets.push_back(Offset);
                 }
@@ -1358,28 +1366,12 @@ void File_StarDiva::Read_Buffer_Continue()
 
             if (!SeqAgendas[i].empty())
             {
-                int32u Offset=Offsets[i];
-                int8u HH=(int8u)(Offset/(60*60*1000));
-                Offset%=60*60*1000;
-                int8u MM=(int8u)(Offset/(   60*1000));
-                Offset%=60*1000;
-                int8u SS=(int8u)(Offset/(      1000));
-                Offset%=1000;
-                string Time;
-                Time+='0'+(HH/10);
-                Time+='0'+(HH%10);
-                Time+=':';
-                Time+='0'+(MM/10);
-                Time+='0'+(MM%10);
-                Time+=':';
-                Time+='0'+(SS/10);
-                Time+='0'+(SS%10);
-                Time+='.';
-                Time+='0'+(Offset/100);
-                Offset%=100;
-                Time+='0'+(Offset/10);
-                Offset%=10;
-                Time+='0'+(Offset);
+                int32s Offset=Offsets[i];
+                TimeCode TC;
+                TC.SetFramesMax(999);
+                TC.SetIsTime(true);
+                TC.FromFrames(Offset);
+                string Time=TC.ToString();
                 string Content;
                 Content+=Times[i];
                 Content+=" - ";
@@ -1408,28 +1400,12 @@ void File_StarDiva::Read_Buffer_Continue()
 
             if (!Speakers[i].empty())
             {
-                int32u Offset = Offsets[i];
-                int8u HH = (int8u)(Offset / (60 * 60 * 1000));
-                Offset %= 60 * 60 * 1000;
-                int8u MM = (int8u)(Offset / (60 * 1000));
-                Offset %= 60 * 1000;
-                int8u SS = (int8u)(Offset / (1000));
-                Offset %= 1000;
-                string Time;
-                Time += '0' + (HH / 10);
-                Time += '0' + (HH % 10);
-                Time += ':';
-                Time += '0' + (MM / 10);
-                Time += '0' + (MM % 10);
-                Time += ':';
-                Time += '0' + (SS / 10);
-                Time += '0' + (SS % 10);
-                Time += '.';
-                Time += '0' + (Offset / 100);
-                Offset %= 100;
-                Time += '0' + (Offset / 10);
-                Offset %= 10;
-                Time += '0' + (Offset);
+                int32s Offset=Offsets[i];
+                TimeCode TC;
+                TC.SetFramesMax(999);
+                TC.SetIsTime(true);
+                TC.FromFrames(Offset);
+                string Time=TC.ToString();
                 string Content;
                 Content += Times[i];
                 Content += " - ";
