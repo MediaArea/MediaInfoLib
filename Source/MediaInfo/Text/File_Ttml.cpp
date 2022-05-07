@@ -196,17 +196,6 @@ void File_Ttml::Streams_Accept()
 //---------------------------------------------------------------------------
 void File_Ttml::Streams_Finish()
 {
-    if (FrameRate)
-    {
-        Fill(Stream_General, 0, General_FrameRate, FrameRate);
-        Fill(Stream_Text, 0, Text_FrameRate, FrameRate);
-    }
-    if (FrameRateMultiplier_Den!=1)
-    {
-        Fill(Stream_Text, 0, Text_FrameRate_Num, FrameRate_Int*FrameRateMultiplier_Num);
-        Fill(Stream_Text, 0, Text_FrameRate_Den, FrameRateMultiplier_Den);
-    }
-
     if (Time_End.HasValue() && Time_Begin.HasValue())
     {
         Fill(Stream_General, 0, General_Duration, Time_End.ToMilliseconds()-Time_Begin.ToMilliseconds());
@@ -348,6 +337,23 @@ void File_Ttml::Read_Buffer_Continue()
     Tt_Attribute=Root->Attribute("ttp:tickRate");
     if (Tt_Attribute)
         tickRate=atoi(Tt_Attribute);
+    if (FrameRate_Int && FrameRateMultiplier_Num && FrameRateMultiplier_Den)
+    {
+        FrameRate=((float64)FrameRate_Int)*FrameRateMultiplier_Num/FrameRateMultiplier_Den;
+        if ((FrameRateMultiplier_Num==1000 && FrameRateMultiplier_Den==1001)
+         || (FrameRateMultiplier_Num==999 && FrameRateMultiplier_Den==1000)) // Seen in a 23.976 file, mistake?
+            FrameRate_Is1001=true;
+    }
+    if (FrameRate)
+    {
+        Fill(Stream_General, 0, General_FrameRate, FrameRate);
+        Fill(Stream_Text, 0, Text_FrameRate, FrameRate);
+    }
+    if (FrameRate_Int && FrameRateMultiplier_Den!=1)
+    {
+        Fill(Stream_Text, 0, Text_FrameRate_Num, FrameRate_Int*FrameRateMultiplier_Num, 10, true);
+        Fill(Stream_Text, 0, Text_FrameRate_Den, FrameRateMultiplier_Den, 10, true);
+    }
     if (!FrameRate_Int && !tickRate)
     {
         #if MEDIAINFO_ADVANCED
@@ -363,13 +369,6 @@ void File_Ttml::Read_Buffer_Continue()
             FrameRateMultiplier_Num=1000;
             FrameRateMultiplier_Den=float64_int64s(FrameRate_Int/FrameRate_F*1000);
         }
-    }
-    if (FrameRate_Int && FrameRateMultiplier_Num && FrameRateMultiplier_Den)
-    {
-        FrameRate=((float64)FrameRate_Int)*FrameRateMultiplier_Num/FrameRateMultiplier_Den;
-        if ((FrameRateMultiplier_Num==1000 && FrameRateMultiplier_Den==1001)
-         || (FrameRateMultiplier_Num==999 && FrameRateMultiplier_Den==1000)) // Seen in a 23.976 file, mistake?
-            FrameRate_Is1001=true;
     }
     Tt_Attribute=Root->Attribute("xml:lang");
     if (!Tt_Attribute)
