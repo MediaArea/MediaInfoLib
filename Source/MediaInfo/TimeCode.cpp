@@ -91,9 +91,9 @@ bool TimeCode::FromFrames(int64s Frames_)
         Frames_-=Dropped2;
 
     int64s HoursTemp=(((Frames_/FrameRate)/60)/60);
-    if (HoursTemp>(int8u)-1)
+    if (HoursTemp>(int32u)-1)
     {
-        Hours=(int8u)-1;
+        Hours=(int32u)-1;
         Minutes=59;
         Seconds=59;
         Frames=FramesMax;
