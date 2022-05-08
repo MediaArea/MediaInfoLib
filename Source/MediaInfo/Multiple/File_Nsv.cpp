@@ -1044,7 +1044,6 @@ void File_StarDiva::Read_Buffer_Continue()
             }
 
             Element_Begin1("Offsets");
-                int32s file_len_ms=(int32s)Retrieve_Const(Stream_General, 0, General_Duration).To_int32u();
                 for (size_t i=0; i<Times.size(); i++)
                 {
                     int32s Offset;
