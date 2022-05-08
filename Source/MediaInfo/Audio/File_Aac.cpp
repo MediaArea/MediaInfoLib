@@ -77,8 +77,10 @@ File_Aac::File_Aac()
     adts_buffer_fullness_Is7FF=false;
     #if MEDIAINFO_ADVANCED
         aac_frame_length_Total=0;
-        ParseCompletely=0;
     #endif //MEDIAINFO_ADVANCED
+    #if MEDIAINFO_MACROBLOCKS
+        ParseCompletely=0;
+    #endif //MEDIAINFO_MACROBLOCKS
 
     //Temp - Main
     muxConfigPresent=true;
@@ -292,9 +294,9 @@ void File_Aac::Read_Buffer_Continue()
     if (Frame_Count==0)
     {
         PTS_Begin=FrameInfo.PTS;
-        #if MEDIAINFO_ADVANCED
+        #if MEDIAINFO_MACROBLOCKS
             ParseCompletely=Config->File_Macroblocks_Parse_Get();
-        #endif //MEDIAINFO_ADVANCED
+        #endif //MEDIAINFO_MACROBLOCKS
     }
 
     switch(Mode)
