@@ -242,10 +242,12 @@ protected :
     bool    adts_buffer_fullness_Is7FF;
     #if MEDIAINFO_ADVANCED
         int64u  aac_frame_length_Total;
-        int     ParseCompletely;
-    #else //MEDIAINFO_ADVANCED
-        static constexpr int ParseCompletely=0;
     #endif //MEDIAINFO_ADVANCED
+    #if MEDIAINFO_MACROBLOCKS
+        int     ParseCompletely;
+    #else //MEDIAINFO_MACROBLOCKS
+        static constexpr int ParseCompletely=0;
+    #endif //MEDIAINFO_MACROBLOCKS
 
     //***********************************************************************
     // Elements - Speech coding (HVXC)
