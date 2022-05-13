@@ -363,6 +363,8 @@ protected :
 
     //Temp - Position
     size_t  raw_data_block_Pos;
+    size_t  ChannelPos_Temp;
+    size_t  ChannelCount_Temp;
 
     //***********************************************************************
     // Elements - Structured Audio (SA)

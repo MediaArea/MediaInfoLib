@@ -90,6 +90,8 @@ File_Aac::File_Aac()
     sbr=NULL;
     ps=NULL;
     raw_data_block_Pos=0;
+    ChannelPos_Temp=0;
+    ChannelCount_Temp=0;
 
     //Temp
     CanFill=true;
@@ -209,6 +211,9 @@ void File_Aac::Streams_Finish()
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "CBR");
         }
     }
+
+    if (Mode==Mode_ADTS && !ChannelCount_Temp && ChannelPos_Temp && Retrieve_Const(Stream_Audio, 0, Audio_Channel_s_).empty())
+        Fill(Stream_Audio, 0, Audio_Channel_s_, ChannelPos_Temp);
 }
 
 //***************************************************************************
@@ -325,12 +330,6 @@ void File_Aac::Read_Buffer_Continue_AudioSpecificConfig()
 //---------------------------------------------------------------------------
 void File_Aac::Read_Buffer_Continue_raw_data_block()
 {
-    if (Frame_Count>Frame_Count_Valid)
-    {
-        Skip_XX(Element_Size,                                   "Data");
-        return; //Parsing completely only the 1st frame
-    }
-
     BS_Begin();
     raw_data_block();
     BS_End();
