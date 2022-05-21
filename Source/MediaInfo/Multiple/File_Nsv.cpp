@@ -452,7 +452,7 @@ bool File_Nsv::Synchronize()
     }
 
     //Synched is OK
-    Synched=true;
+    Buffer_TotalBytes_LastSynched=Buffer_Offset;
     return true;
 }
 
