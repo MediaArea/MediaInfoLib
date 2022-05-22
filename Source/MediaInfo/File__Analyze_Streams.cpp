@@ -2828,21 +2828,51 @@ void File__Analyze::Value_Value123(stream_t StreamKind, size_t StreamPos, size_t
                 List2[List2.size()-1]+=__T(")");
             }
         }
-    }
 
-    //Special case : audio with samples per frames
-    if (StreamKind == Stream_Audio && List2.size() == 1 && Parameter == Audio_FrameRate)
-    {
-        const Ztring &SamplesPerFrame = Retrieve(Stream_Audio, StreamPos, Audio_SamplesPerFrame);
-        if (!SamplesPerFrame.empty())
+        //Special cases - Frame rate
+        auto FrameRate_Index=Fill_Parameter(StreamKind, Generic_FrameRate);
+        if (Parameter==FrameRate_Index)
         {
-            List2[0] += __T(" (");
-            List2[0] += SamplesPerFrame;
-            List2[0] += __T(" SPF)");
+            ZtringList Temp;
+            Temp.Separator_Set(0, __T(" / "));
+            Temp.Write(Retrieve_Const(StreamKind, StreamPos, FrameRate_Index));
+            const auto& FrameRate=Temp.Read(List2.size()-1);
+            const auto& FrameRate_Num=Retrieve_Const(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameRate_Num));
+            const auto& FrameRate_Den=Retrieve_Const(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_FrameRate_Den));
+            if (!FrameRate.empty()
+             && !FrameRate_Num.empty()
+             && !FrameRate_Den.empty())
+                List2[List2.size()-1]=MediaInfoLib::Config.Language_Get(FrameRate+__T(" (")+FrameRate_Num+__T("/")+FrameRate_Den+__T(")"), __T(" fps"));
+        }
+        if (StreamKind==Stream_Video
+         && Parameter==Video_FrameRate_Original
+         && !Retrieve(StreamKind, StreamPos, Video_FrameRate_Original).empty()
+         && !Retrieve(StreamKind, StreamPos, Video_FrameRate_Original_Num).empty()
+         && !Retrieve(StreamKind, StreamPos, Video_FrameRate_Original_Den).empty())
+            List2[List2.size()-1]=MediaInfoLib::Config.Language_Get(Retrieve(StreamKind, StreamPos, Video_FrameRate_Original)+__T(" (")+Retrieve(StreamKind, StreamPos, Video_FrameRate_Original_Num)+__T("/")+Retrieve(StreamKind, StreamPos, Video_FrameRate_Original_Den)+__T(")"), __T(" fps"));
+
+        //Special cases - 120 fps 24/30 mode
+        if (StreamKind==Stream_Video
+         && Parameter==Video_FrameRate
+         && Retrieve(Stream_Video, StreamPos, Video_FrameRate).To_int32u()==120
+         && Retrieve(Stream_Video, StreamPos, Video_FrameRate_Minimum).To_int32u()==24
+         && Retrieve(Stream_Video, StreamPos, Video_FrameRate_Maximum).To_int32u()==30)
+            List2[List2.size()-1]=MediaInfoLib::Config.Language_Get(Retrieve(Stream_Video, StreamPos, Video_FrameRate)+__T(" (24/30)"), __T(" fps"));
+
+        //Special case : audio with samples per frames
+        if (StreamKind==Stream_Audio && Parameter==Audio_FrameRate)
+        {
+            const Ztring &SamplesPerFrame = Retrieve(Stream_Audio, StreamPos, Audio_SamplesPerFrame);
+            if (!SamplesPerFrame.empty())
+            {
+                List2[List2.size()-1]+=__T(" (");
+                List2[List2.size()-1]+=SamplesPerFrame;
+                List2[List2.size()-1]+=__T(" SPF)");
+            }
         }
     }
 
-    Fill(StreamKind, StreamPos, Parameter+1, List2.Read());
+    Fill(StreamKind, StreamPos, Parameter+1, List2.Read(), true);
 }
 
 //---------------------------------------------------------------------------
