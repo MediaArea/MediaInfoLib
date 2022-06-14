@@ -142,7 +142,7 @@ void File_DvDif::Read_Buffer_Continue()
                         //Try to find a suitable and trustable Abst
                         if (Speed_FrameCount_StartOffset==-1)
                             Speed_FrameCount_StartOffset=0;
-                        int32s Abst_First;
+                        int32s Abst_First=INT_MAX;
                         int32s Abst_Previous=(AbstBf_Previous>>1)&0x7FFFFF;
                         int32s Abst_Theory_Max=Abst_Previous+(DSF?12:10)*(FSC_WasSet?2:1)*2; //Max 2x the expected gap
                         for (int i=0; i<2; i++)
