@@ -40,15 +40,20 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+void File_DvDif::Read_Buffer_Init()
+{
+    Analyze_Activated=Config->File_DvDif_Analysis_Get();
+    if (!IsSub)
+        FrameIsAlwaysComplete=Config->File_FrameIsAlwaysComplete_Get();
+    else
+        FrameIsAlwaysComplete=false;
+}
+
+//---------------------------------------------------------------------------
 void File_DvDif::Read_Buffer_Continue()
 {
     if (!Analyze_Activated)
-    {
-        if (Config->File_DvDif_Analysis_Get())
-            Analyze_Activated=true;
-        else
-            return;
-    }
+        return;
 
     #if MEDIAINFO_DEMUX
         if (Demux_UnpacketizeContainer && !Synchro_Manage()) // We need to manage manually synchronization in case of demux
@@ -85,7 +90,11 @@ void File_DvDif::Read_Buffer_Continue()
                                 if ((Buffer[Buffer_Offset+1]&0x04)==0x04) //FSP=1
                                 {
                                     //Errors stats update
-                                    if (Speed_FrameCount_StartOffset!=(int64u)-1)
+                                    if (Speed_FrameCount_StartOffset!=(int64u)-1
+                                        #if MEDIAINFO_ADVANCED
+                                         && !FrameIsAlwaysComplete
+                                        #endif
+                                    )
                                         Errors_Stats_Update();
                                     Speed_FrameCount_StartOffset=File_Offset+Buffer_Offset;
 
@@ -694,6 +703,11 @@ void File_DvDif::Read_Buffer_Continue()
     if (!Status[IsAccepted])
         File__Analyze::Buffer_Offset=0;
     Config->State_Set(((float)File_Offset)/File_Size);
+    #if MEDIAINFO_ADVANCED
+        if (FrameIsAlwaysComplete && Speed_FrameCount_StartOffset!=(int64u)-1)
+            Errors_Stats_Update();
+    #endif
+    SCT_Old=4; // For sync
 }
 
 void File_DvDif::Errors_Stats_Update()
