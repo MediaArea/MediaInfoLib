@@ -1050,6 +1050,38 @@ void File_Id3v2::RGAD()
 }
 
 //---------------------------------------------------------------------------
+void File_Id3v2::POPM()
+{
+    Ztring Owner;
+    size_t Owner_Size=0;
+    int8u Rating;
+    while (Element_Offset+Owner_Size<Element_Size && Buffer[Buffer_Offset+(size_t)Element_Offset+Owner_Size]!='\0')
+        Owner_Size++;
+    if (Element_Offset+Owner_Size+1>=Element_Size) //Null byte and rating are needed, the owner may be empty
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
+        return;
+    }
+    Get_ISO_8859_1(Owner_Size, Owner,                           "Owner identifier");
+    Skip_B1(                                                    "Null");
+    Get_B1 (Rating,                                             "Rating");
+    if (Element_Offset<Element_Size)
+        Skip_XX(Element_Size-Element_Offset,                    "Counter"); //32 bits or more
+
+    FILLING_BEGIN();
+        if (Rating)
+        {
+            //Stars as Windows shows them (1, 64, 128, 196, 255)
+            const int8u Limits[] = { 31, 95, 159, 224 };
+            int8u Stars = 1;
+            while (Stars < 5 && Rating > Limits[Stars - 1])
+                Stars++;
+            Fill_Rating(Stream_General, 0, Stars, Ztring::ToZtring(Rating), 255, Owner);
+        }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Id3v2::PRIV()
 {
     //Parsing

@@ -1262,6 +1262,7 @@ public :
         Ztring Value;
     };
     void Fill_SetOptions(stream_t StreamKind, size_t StreamPos, const char* Parameter, const char* Options);
+    void Fill_Rating(stream_t StreamKind, size_t StreamPos, float64 Stars, const Ztring& Value, int16u Scale, const Ztring& Source=Ztring()); //Personal rating
     vector<fill_temp_item> Fill_Temp[Stream_Max+1]; // +1 because Fill_Temp[Stream_Max] is used when StreamKind is unknown
     map<string, string> Fill_Temp_Options[Stream_Max+1]; // +1 because Fill_Temp[Stream_Max] is used when StreamKind is unknown
     struct stream_more_index // Positions of unknown parameters per name, in order to avoid scanning all of them for each new value
