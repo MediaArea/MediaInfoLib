@@ -71,7 +71,7 @@ private :
     void MLLT()   {Skip_XX(Element_Size, "Data");}
     void OWNE()   {Skip_XX(Element_Size, "Data");}
     void PCNT()   {Skip_XX(Element_Size, "Data");}
-    void POPM()   {Skip_XX(Element_Size, "Data");}
+    void POPM();
     void POSS()   {Skip_XX(Element_Size, "Data");}
     void PRIV();
     void RBUF()   {Skip_XX(Element_Size, "Data");}
@@ -163,7 +163,7 @@ private :
     void MCI()    {Skip_XX(Element_Size, "Data");}
     void MLL()    {Skip_XX(Element_Size, "Data");}
     void PIC_()   {APIC();}
-    void POP()    {Skip_XX(Element_Size, "Data");}
+    void POP()    {POPM();}
     void REV()    {Skip_XX(Element_Size, "Data");}
     void RVA()    {Skip_XX(Element_Size, "Data");}
     void SLT()    {Skip_XX(Element_Size, "Data");}
