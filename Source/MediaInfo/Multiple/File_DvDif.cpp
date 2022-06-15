@@ -814,27 +814,34 @@ bool File_DvDif::Demux_UnpacketizeContainer_Test()
      && (CC3(Buffer+Buffer_Offset+6*80)&0xE0F0FF)==0x600000   //Audio 0
      && (CC3(Buffer+Buffer_Offset+7*80)&0xE0F0FF)==0x800000)  //Video 0
     {
-        if (Demux_Offset==0)
+        if (FrameIsAlwaysComplete)
         {
-            Demux_Offset=Buffer_Offset+1;
+            Demux_Offset=Buffer_Size;
         }
+        else
+        {
+            if (Demux_Offset==0)
+            {
+                Demux_Offset=Buffer_Offset+1;
+            }
 
-        while (Demux_Offset+8*80<=Buffer_Size //8 blocks
-            && !((Buffer[Demux_Offset]&0xE0)==0x00   //Speed up the parsing
-              && (CC3(Buffer+Demux_Offset+0*80)&0xE0FCFF)==0x000400   //Header 0 (with FSC==false and FSP==true)
-              && (CC3(Buffer+Demux_Offset+1*80)&0xE0F0FF)==0x200000   //Subcode 0
-              && (CC3(Buffer+Demux_Offset+2*80)&0xE0F0FF)==0x200001   //Subcode 1
-              && (CC3(Buffer+Demux_Offset+3*80)&0xE0F0FF)==0x400000   //VAUX 0
-              && (CC3(Buffer+Demux_Offset+4*80)&0xE0F0FF)==0x400001   //VAUX 1
-              && (CC3(Buffer+Demux_Offset+5*80)&0xE0F0FF)==0x400002   //VAUX 2
-              && (CC3(Buffer+Demux_Offset+6*80)&0xE0F0FF)==0x600000   //Audio 0
-              && (CC3(Buffer+Demux_Offset+7*80)&0xE0F0FF)==0x800000)) //Video 0
-                Demux_Offset++;
+            while (Demux_Offset+8*80<=Buffer_Size //8 blocks
+                && !((Buffer[Demux_Offset]&0xE0)==0x00   //Speed up the parsing
+                  && (CC3(Buffer+Demux_Offset+0*80)&0xE0FCFF)==0x000400   //Header 0 (with FSC==false and FSP==true)
+                  && (CC3(Buffer+Demux_Offset+1*80)&0xE0F0FF)==0x200000   //Subcode 0
+                  && (CC3(Buffer+Demux_Offset+2*80)&0xE0F0FF)==0x200001   //Subcode 1
+                  && (CC3(Buffer+Demux_Offset+3*80)&0xE0F0FF)==0x400000   //VAUX 0
+                  && (CC3(Buffer+Demux_Offset+4*80)&0xE0F0FF)==0x400001   //VAUX 1
+                  && (CC3(Buffer+Demux_Offset+5*80)&0xE0F0FF)==0x400002   //VAUX 2
+                  && (CC3(Buffer+Demux_Offset+6*80)&0xE0F0FF)==0x600000   //Audio 0
+                  && (CC3(Buffer+Demux_Offset+7*80)&0xE0F0FF)==0x800000)) //Video 0
+                    Demux_Offset++;
 
-        if (Demux_Offset+8*80>Buffer_Size && File_Offset+Buffer_Size!=File_Size)
-            return false; //No complete frame
-        if (Demux_Offset+8*80>Buffer_Size && File_Offset+Buffer_Size==File_Size)
-            Demux_Offset=(size_t)(File_Size-File_Offset); //Using the complete buffer (no next sync)
+            if (Demux_Offset+8*80>Buffer_Size && File_Offset+Buffer_Size!=File_Size)
+                return false; //No complete frame
+            if (Demux_Offset+8*80>Buffer_Size && File_Offset+Buffer_Size==File_Size)
+                Demux_Offset=(size_t)(File_Size-File_Offset); //Using the complete buffer (no next sync)
+        }
 
         Element_Code=-1;
         FrameInfo.DTS=FrameInfo.PTS=Speed_FrameCount_system[0]*100100000/3+Speed_FrameCount_system[1]*40000000;
