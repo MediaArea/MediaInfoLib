@@ -26,9 +26,10 @@
 #endif //defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/FileName.h"
 #include "ZenLib/BitStream_LE.h"
-#include <cmath>
-#include <cfloat>
 #include <cassert>
+#include <cfloat>
+#include <cmath>
+#include <cstdlib>
 using namespace std;
 //---------------------------------------------------------------------------
 
@@ -43,6 +44,29 @@ const char* Mpegv_colour_primaries(int8u colour_primaries);
 //***************************************************************************
 // Others, specialized, parsing
 //***************************************************************************
+
+//---------------------------------------------------------------------------
+static const char* add_dec_cache =
+"00010203040506070809"
+"10111213141516171819"
+"20212223242526272829"
+"30313233343536373839"
+"40414243444546474849"
+"50515253545556575859"
+"60616263646566676869"
+"70717273747576777879"
+"80818283848586878889"
+"90919293949596979899";
+inline void add_dec_2chars(string& In, uint8_t Value)
+{
+    if (Value>=100)
+    {
+        auto Value100=div(Value, 100);
+        Value=(uint8_t)Value100.rem;
+        In+='0'+Value100.quot;
+    }
+    In.append(add_dec_cache+(Value<<1), 2);
+}
 
 //---------------------------------------------------------------------------
 #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES)
@@ -236,10 +260,10 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
             if (dv_profile<DolbyVision_Profiles_Size)
                 Profile+=DolbyVision_Profiles[dv_profile];
             else
-                Profile+=Ztring().From_CC1(dv_profile).To_UTF8();
-            Profile+=__T('.');
-            Profile+=Ztring().From_CC1(dv_profile).To_UTF8();
-            Level+=Ztring().From_CC1(dv_level).To_UTF8();
+                add_dec_2chars(Profile, dv_profile);
+            Profile+='.';
+            add_dec_2chars(Profile, dv_profile);
+            add_dec_2chars(Level, dv_level);
             if (Infos)
             {
                 (*Infos)["HDR_Format_Profile"].From_UTF8(Profile);
