@@ -1376,8 +1376,6 @@ void File_DvDif::timecode()
 
     //Parsing
     int8u Frames_Units, Frames_Tens, Seconds_Units, Seconds_Tens, Minutes_Units, Minutes_Tens, Hours_Units, Hours_Tens;
-    int64u MilliSeconds=0;
-    int8u  Frames=0;
     bool   DropFrame=false;
     bool   FieldIndication;
     BS_Begin();
@@ -1389,9 +1387,7 @@ void File_DvDif::timecode()
     else        //525/60
         Get_SB (DropFrame,                                      "DP - Drop frame"); //525/60
     Get_S1 (2, Frames_Tens,                                     "Frames (Tens)");
-    Frames+=Frames_Tens*10;
     Get_S1 (4, Frames_Units,                                    "Frames (Units)");
-    Frames+=Frames_Units;
 
     if (!DSF_IsValid)
         Get_SB(FieldIndication,                                 "BGF0 or PC");
@@ -1400,9 +1396,7 @@ void File_DvDif::timecode()
     else        //525/60
         Get_SB(FieldIndication,                                 "PC - Biphase mark polarity correction"); //0=even; 1=odd
     Get_S1 (3, Seconds_Tens,                                    "Seconds (Tens)");
-    MilliSeconds+=Seconds_Tens*10*1000;
     Get_S1 (4, Seconds_Units,                                   "Seconds (Units)");
-    MilliSeconds+=Seconds_Units*1000;
 
     if (!DSF_IsValid)
         Skip_SB(                                                "BGF2 or BGF0");
@@ -1411,9 +1405,7 @@ void File_DvDif::timecode()
     else        //525/60
         Skip_SB(                                                "BGF0 - Binary group flag");
     Get_S1 (3, Minutes_Tens,                                    "Minutes (Tens)");
-    MilliSeconds+=Minutes_Tens*10*60*1000;
     Get_S1 (4, Minutes_Units,                                   "Minutes (Units)");
-    MilliSeconds+=Minutes_Units*60*1000;
 
     if (!DSF_IsValid)
         Skip_SB(                                                "PC or BGF1");
@@ -1423,23 +1415,30 @@ void File_DvDif::timecode()
         Skip_SB(                                                "BGF1 - Binary group flag");
     Skip_SB(                                                    "BGF2 - Binary group flag");
     Get_S1 (2, Hours_Tens,                                      "Hours (Tens)");
-    MilliSeconds+=Hours_Tens*10*60*60*1000;
     Get_S1 (4, Hours_Units,                                     "Hours (Units)");
-    MilliSeconds+=Hours_Units*60*60*1000;
-    Element_Info1(Ztring().Duration_From_Milliseconds(MilliSeconds+((DSF_IsValid && Frames!=45)?((int64u)(Frames/(DSF?25.000:29.970)*1000)):0)));
     BS_End();
 
-    if (!TimeCode_FirstFrame.HasValue() && MilliSeconds!=167185000) //if all bits are set to 1, this is not a valid timestamp
-    {
-        TimeCode_FirstFrame=TimeCode(Hours_Tens  *10+Hours_Units,
-                                     Minutes_Tens*10+Minutes_Units,
-                                     Seconds_Tens*10+Seconds_Units,
-                                     (DSF_IsValid && Frames!=45)?(Frames_Tens*10+Frames_Units):0, //if all bits are set to 1, this is not a valid frame number
-                                     0, //Unknown
-                                     DropFrame,
-                                     false, //Unknown
-                                     false);
-    }
+    FILLING_BEGIN()
+        auto HH=Hours_Tens*10+Hours_Units;
+        auto MM=Minutes_Tens*10+Minutes_Units;
+        auto SS=Seconds_Tens*10+Seconds_Units;
+        if (HH+MM+SS!=215) //if all bits are set to 1, this is not a valid timestamp
+        {
+            auto FF=Frames_Tens*10+Frames_Units;
+            auto TC=TimeCode(HH,
+                             MM,
+                             SS,
+                             (DSF_IsValid && FF!=45)?FF:0, //if all bits are set to 1, this is not a valid frame number
+                             0, //Unknown
+                             DropFrame,
+                             false, //Unknown
+                             false);
+            Element_Info1(TC.ToString());
+            if (!TimeCode_FirstFrame.HasValue())
+                TimeCode_FirstFrame=TC;
+        }
+
+    FILLING_END()
 }
 
 //---------------------------------------------------------------------------
