@@ -519,6 +519,8 @@ void File_DvDif::Read_Buffer_Continue()
                         REC_END=(Buffer[Buffer_Offset+3+2]&0x40)?true:false;
                         REC_IsValid=true;
                         Coherency_Flags.set(Coherency_audio_control);
+
+                        DirectionSpeed.push_back(Buffer[Buffer_Offset+3+3]);
                     }
 
                     //audio_recdate
@@ -1853,6 +1855,17 @@ void File_DvDif::Errors_Stats_Update()
                 Event1.Audio_Data_Errors_Count=16;
                 Event1.Audio_Data_Errors=Audio_Errors_PerDseq;
             }
+            if (true)
+            {
+                if (!MoreData)
+                    MoreData=new int8u[4096]+sizeof(size_t); // TODO: more dynamic allocation
+                MoreData[MoreData_Offset++]=2+DirectionSpeed.size();
+                MoreData[MoreData_Offset++]=2; // DirectionSpeed values
+                for (std::vector<int8u>::iterator DirectionSpeed_Item=DirectionSpeed.begin(); DirectionSpeed_Item!=DirectionSpeed.end(); ++DirectionSpeed_Item)
+                {
+                    MoreData[MoreData_Offset++]=*DirectionSpeed_Item;
+                }
+            }
             Event1.Captions_Errors=Captions_Flags[1]?1:0;
             Captions_Flags.reset(1);
             Event1.Coherency_Flags=(Coherency_Flags[Coherency_PackInSub]?0:(1<<0))
@@ -1971,6 +1984,7 @@ void File_DvDif::Errors_Stats_Update()
     Speed_FrameCount++;
     Speed_FrameCount_system[system]++;
     REC_IsValid=false;
+    DirectionSpeed.clear();
     audio_source_mode.clear();
     Speed_Contains_NULL=0;
     Video_STA_Errors.clear();

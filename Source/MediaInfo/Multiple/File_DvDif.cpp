@@ -575,7 +575,7 @@ void File_DvDif::Streams_Finish()
     }
 
     #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
-        if (Config->File_DvDif_Analysis_Get())
+        if (Config->File_DvDif_Analysis_Get() && !Config->File_FrameIsAlwaysComplete_Get())
         {
             //Errors stats
             Status[IsFinished]=true; //We need to fill it before the call to Errors_Stats_Update

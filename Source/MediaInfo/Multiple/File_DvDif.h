@@ -224,6 +224,7 @@ protected :
     bool   REC_ST;
     bool   REC_END;
     bool   REC_IsValid;
+    std::vector<int8u> DirectionSpeed;
     struct dvdate
     {
         int8u  Days;
