@@ -499,6 +499,36 @@ void File_DolbyAudioMetadata::Dolby_Atmos_Supplemental_Metadata_Segment()
 //---------------------------------------------------------------------------
 void File_DolbyAudioMetadata::Merge(File__Analyze& In, size_t StreamPos)
 {
+    const auto& FirstFrameOfAction=In.Retrieve_Const(Stream_Audio, 0, "Dolby_Atmos_Metadata FirstFrameOfAction");
+    if (!FirstFrameOfAction.empty())
+    {
+        TimeCode TC(FirstFrameOfAction.To_UTF8());
+        const auto& Start=In.Retrieve_Const(Stream_Audio, 0, "Programme0 Start");
+        if (!Start.empty())
+        {
+            TimeCode TC2(Start.To_UTF8());
+            TC+=TC2;
+        }
+        auto FramesPerSecond=In.Retrieve_Const(Stream_Audio, 0, "Dolby_Atmos_Metadata AssociatedVideo_FrameRate").To_int64u();
+        auto DropFrame=In.Retrieve_Const(Stream_Audio, 0, "Dolby_Atmos_Metadata AssociatedVideo_FrameRate_DropFrame")==__T("Yes");
+        if (FramesPerSecond)
+        {
+            TimeCode TC_Frames(0, FramesPerSecond-1, DropFrame);
+            TC_Frames+=TC;
+            if (TC_Frames.ToMilliseconds()<TC.ToMilliseconds())
+            {
+                TC_Frames++;
+                string Warning("First frame of action ");
+                Warning+=TC.ToString();
+                Warning+=" has been rounded to nearest frame ";
+                Warning+=TC_Frames.ToString();
+                In.Fill(Stream_Audio, 0, "Warning", Warning);
+            }
+            TC=TC_Frames;
+        }
+        In.Fill(Stream_Audio, 0, "Dolby_Atmos_Metadata FirstFrameOfAction", TC.ToString(), false, true);
+    }
+
     if (BinauralRenderModes.empty())
         return;
 
