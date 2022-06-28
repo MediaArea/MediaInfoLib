@@ -216,6 +216,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_dvc1();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_dvvC() {moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC();}
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_dvwC() {moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC();}
     void moov_trak_mdia_minf_stbl_stsd_xxxx_esds();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_fiel();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_gama();
