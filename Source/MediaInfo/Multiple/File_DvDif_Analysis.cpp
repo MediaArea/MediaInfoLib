@@ -1859,7 +1859,7 @@ void File_DvDif::Errors_Stats_Update()
             {
                 if (!MoreData)
                     MoreData=new int8u[4096]+sizeof(size_t); // TODO: more dynamic allocation
-                MoreData[MoreData_Offset++]=2+DirectionSpeed.size();
+                MoreData[MoreData_Offset++]=DirectionSpeed.size();
                 MoreData[MoreData_Offset++]=2; // DirectionSpeed values
                 for (std::vector<int8u>::iterator DirectionSpeed_Item=DirectionSpeed.begin(); DirectionSpeed_Item!=DirectionSpeed.end(); ++DirectionSpeed_Item)
                 {
