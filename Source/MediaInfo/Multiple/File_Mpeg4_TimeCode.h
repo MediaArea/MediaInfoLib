@@ -39,6 +39,7 @@ public :
 
     //Out
     int64s  Pos;
+    int64s  Pos_Last;
 
     //Constructor/Destructor
     File_Mpeg4_TimeCode();
