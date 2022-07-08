@@ -34,6 +34,8 @@ public :
     int64u  mvhd_Duration_TimeScale;
     int64u  mdhd_Duration;
     int64u  mdhd_Duration_TimeScale;
+    int64u  tmcd_Duration;
+    int64u  tmcd_Duration_TimeScale;
 
     //Out
     int64s  Pos;

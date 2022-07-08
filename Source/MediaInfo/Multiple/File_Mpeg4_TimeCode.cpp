@@ -57,23 +57,34 @@ File_Mpeg4_TimeCode::File_Mpeg4_TimeCode()
 //---------------------------------------------------------------------------
 void File_Mpeg4_TimeCode::Streams_Fill()
 {
-    if (Pos!=(int32u)-1 && NumberOfFrames)
+    if (Pos!=(int32u)-1)
     {
-        int64s  Pos_Temp=Pos;
-        float64 FrameRate_WithDF=NumberOfFrames;
-        if (DropFrame)
+        int64s  Pos_Temp = Pos;
+        float64 FrameRate_WithDF;
+        if (tmcd_Duration && tmcd_Duration_TimeScale)
         {
-            int FramesToRemove=0;
-            int NumberOfFramesMultiplier=0;
-            while (NumberOfFrames>NumberOfFramesMultiplier)
-            {
-                FramesToRemove+=108;
-                NumberOfFramesMultiplier+=30;
-            }
-            float64 FramesPerHour_NDF=FrameRate_WithDF*60*60;
-            FrameRate_WithDF*=(FramesPerHour_NDF-FramesToRemove)/FramesPerHour_NDF;
+            FrameRate_WithDF=(float64)tmcd_Duration_TimeScale/(float64)tmcd_Duration;
+            if (!NumberOfFrames)
+                NumberOfFrames=(int8u)float64_int64s(FrameRate_WithDF)/FrameMultiplier;
+            FrameMultiplier=1;
         }
+        else
+        {
+            FrameRate_WithDF=NumberOfFrames;
+            if (DropFrame)
+            {
+                int FramesToRemove=0;
+                int NumberOfFramesMultiplier=0;
+                while (NumberOfFrames>NumberOfFramesMultiplier)
+                {
+                    FramesToRemove+=108;
+                    NumberOfFramesMultiplier+=30;
+                }
+                float64 FramesPerHour_NDF=FrameRate_WithDF*60*60;
+                FrameRate_WithDF*=(FramesPerHour_NDF-FramesToRemove)/FramesPerHour_NDF;
+            }
 
+        }
         Fill(Stream_General, 0, "Delay", Pos_Temp*1000/FrameRate_WithDF, 0);
 
         TimeCode TC(Pos_Temp, NumberOfFrames-1, DropFrame);
@@ -95,8 +106,8 @@ void File_Mpeg4_TimeCode::Streams_Fill()
             {
                 if (FirstEditDuration!=(int64u)-1)
                 {
-                    float64 FrameCountF=(float64)FirstEditDuration/mvhd_Duration_TimeScale*FrameRate_WithDF;
-                    FrameCount=(int64u)FrameCountF;
+                    float64 FrameCountF=(float64)FirstEditDuration/mvhd_Duration_TimeScale*FrameRate_WithDF*FrameMultiplier;
+                    FrameCount=(int64u)float64_int64s(FrameCountF);
                     if (FrameCount!=FrameCountF)
                         FrameCount++;
                 }
@@ -106,8 +117,8 @@ void File_Mpeg4_TimeCode::Streams_Fill()
             else
             {
                 float64 FrameCountF=(float64)tkhd_Duration/mvhd_Duration_TimeScale*FrameRate_WithDF*FrameMultiplier;
-                FrameCount=(int64u)FrameCountF;
-                if (FrameCount!=FrameCountF && FrameCount*1000!=float64_int64s(FrameCountF*1000000/1001)) // TODO: better catch of 1/1.001
+                FrameCount=(int64u)float64_int64s(FrameCountF);
+                if (FrameCountF-FrameCount>0.01) // TODO: avoid rouding issues and better way to manage partial frames
                     FrameCount++;
             }
             Fill(Stream_Other, StreamPos_Last, Other_FrameCount, FrameCount);
