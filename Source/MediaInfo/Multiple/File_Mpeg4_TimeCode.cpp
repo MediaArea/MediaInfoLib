@@ -205,9 +205,9 @@ void File_Mpeg4_TimeCode::Read_Buffer_Continue()
                 Discontinuity+='-';
                 Discontinuity+=TC_Last2.ToString();
                 Fill(Stream_Other, 0, "Discontinuities", Discontinuity);
-                Pos_Last=Pos_Last_Temp;
             }
         }
+        Pos_Last=Pos_Last_Temp;
     }
 
     FILLING_BEGIN();
