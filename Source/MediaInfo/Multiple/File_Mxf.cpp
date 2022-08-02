@@ -6534,7 +6534,7 @@ void File_Mxf::Data_Parse()
             Demux_random_access=true;
 
             bool ShouldDemux=true;
-            if (Essence->second.ShouldCheckAvcHeaders)
+            if (!Essence->second.Parsers.empty() && Essence->second.ShouldCheckAvcHeaders)
             {
                 if (Essence->second.Parsers[0]->Status[IsAccepted])
                     ShouldDemux=false;
