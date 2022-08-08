@@ -1855,11 +1855,11 @@ void File_DvDif::Errors_Stats_Update()
                 Event1.Audio_Data_Errors_Count=16;
                 Event1.Audio_Data_Errors=Audio_Errors_PerDseq;
             }
-            if (true)
+            if (!DirectionSpeed.empty())
             {
                 if (!MoreData)
                     MoreData=new int8u[4096]+sizeof(size_t); // TODO: more dynamic allocation
-                MoreData[MoreData_Offset++]=2+DirectionSpeed.size();
+                MoreData[MoreData_Offset++]=DirectionSpeed.size();
                 MoreData[MoreData_Offset++]=2; // DirectionSpeed values
                 for (std::vector<int8u>::iterator DirectionSpeed_Item=DirectionSpeed.begin(); DirectionSpeed_Item!=DirectionSpeed.end(); ++DirectionSpeed_Item)
                 {
