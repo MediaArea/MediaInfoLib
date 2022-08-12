@@ -351,7 +351,7 @@ void File_Scc::Data_Parse()
     TimeCode Temp(TimeStamp);
     Temp.SetFramesMax(FrameRate-1);
     Temp.Set1001(FrameRate_Is1001);
-    Parser->Frame_Count_NotParsedIncluded=Temp.ToFrames()-TimeCode_FirstFrame.ToFrames();
+    Frame_Count_NotParsedIncluded=Temp.ToFrames()-TimeCode_FirstFrame.ToFrames();
     Parser->FrameInfo.DTS=Temp.ToMilliseconds()*1000000;
     Parser->FrameInfo.DUR=FrameDurationNanoSeconds;
     while (Element_Offset+5<=Element_Size)
