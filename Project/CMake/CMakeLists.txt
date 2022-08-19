@@ -181,6 +181,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Iab.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_ImpulseTracker.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_La.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Mga.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Midi.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Module.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Mpc.cpp

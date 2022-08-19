@@ -70,6 +70,7 @@ HEADERS += \
         ../../Source/MediaInfo/Audio/File_Flac.h \
         ../../Source/MediaInfo/Audio/File_ImpulseTracker.h \
         ../../Source/MediaInfo/Audio/File_La.h \
+        ../../Source/MediaInfo/Audio/File_Mga.h \
         ../../Source/MediaInfo/Audio/File_Midi.h \
         ../../Source/MediaInfo/Audio/File_Module.h \
         ../../Source/MediaInfo/Audio/File_Mpc.h \
@@ -295,6 +296,7 @@ SOURCES += \
         ../../Source/MediaInfo/Audio/File_Iab.cpp \
         ../../Source/MediaInfo/Audio/File_ImpulseTracker.cpp \
         ../../Source/MediaInfo/Audio/File_La.cpp \
+        ../../Source/MediaInfo/Audio/File_Mga.cpp \
         ../../Source/MediaInfo/Audio/File_Midi.cpp \
         ../../Source/MediaInfo/Audio/File_Module.cpp \
         ../../Source/MediaInfo/Audio/File_Mpc.cpp \

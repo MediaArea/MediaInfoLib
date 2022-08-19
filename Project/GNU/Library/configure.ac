@@ -100,6 +100,7 @@ AC_ARG_ENABLE(dts,     AC_HELP_STRING([--disable-dts],     [Disable Audio - DTS]
 AC_ARG_ENABLE(flac,    AC_HELP_STRING([--disable-flac],    [Disable Audio - FLAC format]),                                MediaInfoFlac=$enableval,    MediaInfoFlac=depend)
 AC_ARG_ENABLE(la,      AC_HELP_STRING([--disable-la],      [Disable Audio - LA (Lossless Audio)]),                        MediaInfoLa=$enableval,      MediaInfoLa=depend)
 AC_ARG_ENABLE(latm,    AC_HELP_STRING([--disable-latm],    [Disable Audio - LATM]),                                       MediaInfoLatm=$enableval,    MediaInfoLatm=depend)
+AC_ARG_ENABLE(mga,     AC_HELP_STRING([--disable-mga],     [Disable Audio - MGA]),                                        MediaInfoMga=$enableval,     MediaInfoMga=depend)
 AC_ARG_ENABLE(midi,    AC_HELP_STRING([--disable-midi],    [Disable Audio - MIDI]),                                       MediaInfoMidi=$enableval,    MediaInfoMidi=depend)
 AC_ARG_ENABLE(mpc,     AC_HELP_STRING([--disable-mpc],     [Disable Audio - Musepack format (.mpc)]),                     MediaInfoMpc=$enableval,     MediaInfoMpc=depend)
 AC_ARG_ENABLE(mpcsv8,  AC_HELP_STRING([--disable-mpc],     [Disable Audio - Musepack format SV8 (.mpc)]),                 MediaInfoMpcSv8=$enableval,  MediaInfoMpcSv8=depend)
@@ -1024,6 +1025,7 @@ Mcho "Dts    " "$MediaInfoDts"
 Mcho "Flac   " "$MediaInfoFlac"
 Mcho "La     " "$MediaInfoLa"
 Mcho "Latm   " "$MediaInfoLatm"
+Mcho "Mga    " "$MediaInfoMga"
 Mcho "Midi   " "$MediaInfoMidi"
 Mcho "Mpc    " "$MediaInfoMpc"
 Mcho "MpcSv8 " "$MediaInfoMpcSv8"

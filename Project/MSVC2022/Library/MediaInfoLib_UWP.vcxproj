@@ -197,6 +197,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsdiff.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsf.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Iab.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mga.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_OpenMG.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Opus.cpp" />
@@ -502,6 +503,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dsdiff.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dsf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Iab.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mga.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_OpenMG.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Opus.h" />
