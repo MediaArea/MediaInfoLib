@@ -68,7 +68,6 @@ void File_Mpeg4_TimeCode::Streams_Fill()
             FrameRate_WithDF=(float64)tmcd_Duration_TimeScale/(float64)tmcd_Duration;
             if (!NumberOfFrames)
                 NumberOfFrames=(int8u)float64_int64s(FrameRate_WithDF)/FrameMultiplier;
-            FrameMultiplier=1;
         }
         else
         {
@@ -87,7 +86,7 @@ void File_Mpeg4_TimeCode::Streams_Fill()
             }
 
         }
-        Fill(Stream_General, 0, "Delay", Pos_Temp*1000/FrameRate_WithDF, 0);
+        Fill(Stream_General, 0, "Delay", Pos_Temp*FrameMultiplier*1000/FrameRate_WithDF, 0);
 
         TimeCode TC(Pos_Temp, NumberOfFrames-1, DropFrame);
         if (FrameMultiplier>1)
