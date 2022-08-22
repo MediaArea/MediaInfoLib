@@ -1189,6 +1189,9 @@ void File_Mpeg4::Streams_Finish()
                         Fill(Stream_Audio, Pos, Audio_StreamSize_Encoded, 0); //Included in the DV stream size
                         Ztring ID=Retrieve(Stream_Audio, Pos, Audio_ID);
                         Fill(Stream_Audio, Pos, Audio_ID, Retrieve(Stream_Video, Temp->second.StreamPos, Video_ID)+__T("-")+ID, true);
+                        Fill(Stream_Audio, Pos, "Delay", Retrieve(Stream_Video, Temp->second.StreamPos, "Delay"), true);
+                        Fill(Stream_Audio, Pos, "Delay_DropFrame", Retrieve(Stream_Video, Temp->second.StreamPos, "Delay_DropFrame"), true);
+                        Fill(Stream_Audio, Pos, "Delay_Source", Retrieve(Stream_Video, Temp->second.StreamPos, "Delay_Source"), true);
                         Fill(Stream_Audio, Pos, "Source", Retrieve(Stream_Video, Temp->second.StreamPos, "Source"));
                         Fill(Stream_Audio, Pos, "Source_Info", Retrieve(Stream_Video, Temp->second.StreamPos, "Source_Info"));
                     }
@@ -1207,6 +1210,9 @@ void File_Mpeg4::Streams_Finish()
                         Fill(Stream_Text, Pos, Text_StreamSize_Encoded, 0); //Included in the DV stream size
                         Ztring ID=Retrieve(Stream_Text, Pos, Text_ID);
                         Fill(Stream_Text, Pos, Text_ID, Retrieve(Stream_Video, Temp->second.StreamPos, Video_ID)+__T("-")+ID, true);
+                        Fill(Stream_Text, Pos, "Delay_Source", Retrieve(Stream_Video, Temp->second.StreamPos, "Delay_Source"), true);
+                        Fill(Stream_Text, Pos, "Source", Retrieve(Stream_Video, Temp->second.StreamPos, "Source"));
+                        Fill(Stream_Text, Pos, "Source_Info", Retrieve(Stream_Video, Temp->second.StreamPos, "Source_Info"));
                         Fill(Stream_Text, Pos, "Source", Retrieve(Stream_Video, Temp->second.StreamPos, "Source"));
                         Fill(Stream_Text, Pos, "Source_Info", Retrieve(Stream_Video, Temp->second.StreamPos, "Source_Info"));
                     }
@@ -2794,7 +2800,7 @@ bool File_Mpeg4::BookMark_Needed()
                 Element_Begin1("Priority streams");
 
                 mdat_Pos_Temp=Temp;
-                mdat_Pos_ToParseInPriority_StreamIDs_ToRemove.push_back(Temp-&mdat_Pos[0]);
+                mdat_Pos_ToParseInPriority_StreamIDs_ToRemove.push_back(Temp->StreamID);
                 GoTo(Temp->Offset);
                 IsParsing_mdat_Set();
             }
@@ -2813,7 +2819,9 @@ bool File_Mpeg4::BookMark_Needed()
         // Don't parse twice
         sort(mdat_Pos_ToParseInPriority_StreamIDs_ToRemove.begin(), mdat_Pos_ToParseInPriority_StreamIDs_ToRemove.end());
         for (int i=mdat_Pos_ToParseInPriority_StreamIDs_ToRemove.size()-1; i>=0; i--)
-            mdat_Pos.erase(mdat_Pos.begin()+i);
+            for (int j=mdat_Pos.size()-1; j>=0; j--)
+                if (mdat_Pos_ToParseInPriority_StreamIDs_ToRemove[i]==mdat_Pos[j].StreamID)
+                    mdat_Pos.erase(mdat_Pos.begin()+i);
 
         if (!mdat_Pos.empty())
         {
