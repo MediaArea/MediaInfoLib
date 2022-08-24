@@ -363,8 +363,8 @@ void File_Scc::Data_Parse()
                      | Char2Hex(Buffer[Buffer_Offset+(size_t)Element_Offset+4]);
         Open_Buffer_Continue(Parser, Buffer_Temp, 2);
         Element_Offset+=5;
+        Frame_Count_NotParsedIncluded=Parser->Frame_Count_NotParsedIncluded;
     }
-    Frame_Count_NotParsedIncluded=Parser->Frame_Count_NotParsedIncluded;
 }
 
 //***************************************************************************
