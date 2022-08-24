@@ -2028,7 +2028,7 @@ void File_Mpeg4::mdat_xxxx()
         if (!Stream_Temp.IsFilled && Stream_Temp.Parsers[Pos]->Status[IsFilled])
         {
             #if MEDIAINFO_DEMUX
-                if (Stream_Temp.StreamKind==Stream_Other) //If this is a TimeCode track
+                if (Stream_Temp.TimeCode) //If this is a TimeCode track
                 {
                     if (((File_Mpeg4_TimeCode*)Stream_Temp.Parsers[Pos])->Pos!=(int32u)-1)
                     {
@@ -2044,7 +2044,7 @@ void File_Mpeg4::mdat_xxxx()
 
             Stream_Temp.IsFilled=true;
 
-            if (Config->ParseSpeed<1 && !mdat_Pos.empty())
+            if (Config->ParseSpeed<1 && !mdat_Pos.empty() && !Stream_Temp.TimeCode)
             {
                 bool File_Offset_Next_IsValid;
                 int64u File_Offset_Next;
@@ -2133,6 +2133,12 @@ void File_Mpeg4::mdat_StreamJump()
 
     //Finding right file offset
     int64u ToJump=File_Size;
+    if (!mdat_Pos_ToParseInPriority_StreamIDs_ToRemove.empty())
+    {
+        int32u StreamIDNext=mdat_Pos_ToParseInPriority_StreamIDs_ToRemove[mdat_Pos_ToParseInPriority_StreamIDs_ToRemove.size()-1];
+        while (mdat_Pos_Temp!=mdat_Pos_Max && mdat_Pos_Temp->StreamID!=StreamIDNext)
+            mdat_Pos_Temp++;
+    }
     if (!mdat_Pos.empty() && mdat_Pos_Temp!=mdat_Pos_Max)
         ToJump=mdat_Pos_Temp->Offset;
     if (ToJump>File_Size)
@@ -2956,7 +2962,7 @@ void File_Mpeg4::moof_traf_trun()
             //Filling
             Stream->second.stsz_StreamSize+=sample_size;
             Stream->second.stsz_Total.push_back(sample_size);
-            if (Stream->second.stsz.size()<FrameCount_MaxPerStream)
+            if (Stream->second.stsz.size()<FrameCount_MaxPerStream || Stream->second.TimeCode)
                 Stream->second.stsz.push_back(sample_size);
         }
         if (sample_flags_present)
@@ -4661,7 +4667,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_co64()
         return;
 
     std::vector<int64u> &stco=Streams[moov_trak_tkhd_TrackID].stco;
-    stco.resize(Count<FrameCount_MaxPerStream?Count:FrameCount_MaxPerStream);
+    stco.resize((Count<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode)?Count:FrameCount_MaxPerStream);
     int64u* stco_Data=&stco[0];
 
     for (int32u Pos=0; Pos<Count; Pos++)
@@ -4677,7 +4683,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_co64()
         Offset=BigEndian2int64u(Buffer+Buffer_Offset+(size_t)Element_Offset);
         Element_Offset+=8;
 
-        if (Pos<FrameCount_MaxPerStream)
+        if (Pos<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode)
         {
             (*stco_Data)=Offset;
             stco_Data++;
@@ -4754,7 +4760,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stco()
         Offset=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
         Element_Offset+=4;
 
-        if (Pos<FrameCount_MaxPerStream)
+        if (Pos<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode)
             Streams[moov_trak_tkhd_TrackID].stco.push_back(Offset);
     }
 }
@@ -4840,7 +4846,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsc()
         */
 
         //Faster
-        if (Pos<FrameCount_MaxPerStream)
+        if (Pos<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode)
         {
             if (Element_Offset+12>Element_Size)
                 break; //Problem
@@ -7790,7 +7796,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsz()
 
             Stream->second.stsz_StreamSize+=Size;
             Stream->second.stsz_Total.push_back(Size);
-            if (Pos<FrameCount_MaxPerStream)
+            if (Pos<FrameCount_MaxPerStream || Stream->second.TimeCode)
                 Stream->second.stsz.push_back(Size);
         }
         /*

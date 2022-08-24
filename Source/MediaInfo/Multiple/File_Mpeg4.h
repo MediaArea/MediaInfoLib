@@ -472,6 +472,8 @@ private :
         int64u                  stts_Duration_FirstFrame;
         int64u                  stts_Duration_LastFrame;
         int64u                  stts_SampleDuration;
+        int64u                  FirstUsedOffset;
+        int64u                  LastUsedOffset;
         int32u                  mvex_trex_default_sample_duration;
         int32u                  mvex_trex_default_sample_size;
         int32u                  TimeCode_TrackID;
@@ -554,6 +556,8 @@ private :
             stts_Duration_FirstFrame=0;
             stts_Duration_LastFrame=0;
             stts_SampleDuration = 0;
+            FirstUsedOffset=(int64u)-1;
+            LastUsedOffset=(int64u)-1;
             mvex_trex_default_sample_duration=0;
             mvex_trex_default_sample_size=0;
             TimeCode_TrackID=(int32u)-1;
@@ -639,7 +643,7 @@ private :
     mdat_Pos_Type* mdat_Pos_Temp_ToJump;
     mdat_Pos_Type* mdat_Pos_Max;
     std::vector<int32u> mdat_Pos_ToParseInPriority_StreamIDs;
-    std::vector<size_t> mdat_Pos_ToParseInPriority_StreamIDs_ToRemove;
+    std::vector<int32u> mdat_Pos_ToParseInPriority_StreamIDs_ToRemove;
     bool                mdat_Pos_NormalParsing;
     void Skip_NulString(const char* Name);
 
