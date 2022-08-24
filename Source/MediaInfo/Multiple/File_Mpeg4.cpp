@@ -1410,6 +1410,7 @@ void File_Mpeg4::Streams_Finish()
             {
                 switch (i)
                 {
+                    case Video_FrameRate:
                     case Video_Sampled_Width:
                     case Video_Sampled_Height:
                         continue;
