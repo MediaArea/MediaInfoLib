@@ -1309,6 +1309,11 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                 Fill(StreamKind, StreamPos, FrameRate_Num,  Value*1000,  0, Replace);
                 Fill(StreamKind, StreamPos, FrameRate_Den,        1000, 10, Replace);
             }
+            if (!(Value - (int)Value)) // Detection of integer values
+            {
+                Fill(StreamKind, StreamPos, FrameRate_Num, (int)Value, 10, Replace);
+                Fill(StreamKind, StreamPos, FrameRate_Den,          1, 10, Replace);
+            }
         }
     }
 
