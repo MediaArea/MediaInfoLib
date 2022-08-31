@@ -255,6 +255,15 @@ bool Export_Graph::Load()
                     Relations.push_back(relation(Stream+__T("_")+Object, Stream+__T("_" #NAME)+Linked##NAME##s[NAME##Pos], __T("[color=\"" COLOR "\"]"))); \
             }
 
+#define OBJECT_LINK_TO2(NAME, NAME2, COLOR) \
+            { \
+                ZtringList Linked##NAME##s; \
+                Linked##NAME##s.Separator_Set(0, __T(" + ")); \
+                Linked##NAME##s.Write(MI.Get(Stream_Audio, StreamPos, Object+__T(" LinkedTo_" #NAME2 "_Pos"), Info_Text)); \
+                for (size_t NAME##Pos=0; NAME##Pos<Linked##NAME##s.size(); NAME##Pos++) \
+                    Relations.push_back(relation(Stream+__T("_")+Object, Stream+__T("_" #NAME)+Linked##NAME##s[NAME##Pos], __T("[color=\"" COLOR "\", style=\"dashed\"]"))); \
+            }
+
 #define OBJECT_END() \
         } \
         Temp+=NewLine(--Level)+__T("}"); \
@@ -483,6 +492,7 @@ Ztring Export_Graph::Adm_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t 
 
     OBJECT_START(Programme, "NumberOfProgrammes", "#000000", "#c5cae9", "#ffffff", "#303f9f")
     OBJECT_LINK_TO(Content, "#c5cae9")
+    OBJECT_LINK_TO(PackFormat, "#c5cae9")
     OBJECT_END()
 
     OBJECT_START(Content, "NumberOfContents", "#000000", "#bbdefb", "#ffffff", "#1976d2")
@@ -490,6 +500,8 @@ Ztring Export_Graph::Adm_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t 
     OBJECT_END()
 
     OBJECT_START(Object, "NumberOfObjects", "#000000", "#b3e5fc", "#ffffff", "#0288d1")
+    OBJECT_LINK_TO(Object, "black")
+    OBJECT_LINK_TO2(Object, ComplementaryObject, "black")
     OBJECT_LINK_TO(PackFormat, "#b3e5fc")
     if (MediaInfoLib::Config.Graph_Adm_ShowTrackUIDs_Get())
         OBJECT_LINK_TO(TrackUID, "#b3e5fc")
