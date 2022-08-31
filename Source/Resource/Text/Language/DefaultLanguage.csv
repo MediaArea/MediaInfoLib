@@ -150,7 +150,12 @@
 : ;: 
 3D;3D
 3DType;3D Type
+5.1.2ch;5.1.2
+5.1.4ch;5.1.4
+5.1ch;5.1
 608_Mode;EIA-608 conversion mode
+7.1.2ch;7.1.2
+7.1ch;7.1
 About;About
 About_Hint;How to contact me and find last version
 Accompaniment;Accompaniment
@@ -198,8 +203,9 @@ AudioRenderingIndication;Audio rendering indication
 AudioSceneInfoID;Audio scene info ID
 AudioTrackLayout;Audio Track Layout
 Author;Author
-Balance_FrontBackOverheadFloor;Front/back overhead/floor balance
+Back4ToBack2;Four backs to two backs
 Balance_FrontBackListener;Front/back listener balance
+Balance_FrontBackOverheadFloor;Front/back overhead/floor balance
 BarCode;BarCode
 Basic;Basic
 Basic_Note;Note : for more information about this file, you must select a different view (Sheet, Tree...)
@@ -307,6 +313,7 @@ Cover_Mime;Cover MIME
 Cover_Type;Cover type
 Cropped;Crop dimensions
 Custom;Custom
+CustomDownmixTargets;Custom downmix targets
 Customize;Customize
 Date;Date
 Debug;Debug
@@ -1133,6 +1140,8 @@ ScanType;Scan type
 ScanType_Original;Original scan type
 ScanType_StoreMethod;Scan type, store method
 ScreenplayBy;Screenplay by
+ScreenToCenter;Screen to center
+ScreenToFront;Screen to front
 Season;Season
 SecondaryAudioLanguage;Secondary Audio Language
 see below;see below
@@ -1231,6 +1240,12 @@ TimeStamp;Time stamp
 TimeZone;Timezone
 Title;Title
 Title_More;Title, more info
+Top4ToTop2;Four fronts to two fronts
+TopBackToFront;Top backs to front
+TopBackToSide;Top backs to side
+TopFrontToBack;Top fronts to back
+TopFrontToFront;Top fronts to front
+TopFrontToSide;Top fronts to side
 Total;Total
 TotalNumberOfParts;Total Number Of Parts
 TotalProgrammeDuration;Total Programme Duration
