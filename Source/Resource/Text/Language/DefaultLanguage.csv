@@ -230,6 +230,7 @@ CaptionServiceName;Caption service name
 Channel(s);Channel(s)
 ChannelCoded;Channel coded
 ChannelConfiguration;Channel configuration
+ChannelFormat;Channel format
 ChannelLayout;Channel layout
 ChannelMode;Channel mode
 ChannelPositions;Channel positions
@@ -286,6 +287,7 @@ colour_range;Color range
 Comment;Comment
 CommissionedBy;Commissioned by
 Compilation;Compilation
+ComplementaryObject;Complementary object
 CompleteName;Complete name
 CompletionDate;Completion Date
 ComplexityIndex;Complexity index
@@ -299,6 +301,7 @@ ConformanceCheck;Conformance check
 ContactEmail;Contact Email
 ContactTelephoneNumber;Contact Telephone Number
 Container and general information;Container and general information
+Content;Content
 ContentType;ContentType
 CoProducer;Coproducer
 Copyright;Copyright
@@ -354,11 +357,13 @@ Duration_End_Command;End time (commands)
 Duration_Start;Start time
 Duration_Start_Command;Start time (commands)
 Duration_Start2End;Duration of the visible content
+DynamicObject;Dynamic object
 DynamicRangeControl;Dynamic Range Control
 Eac3DrcProfile;E-AC-3 DRC profile
 Edit;Edit
 EditedBy;Edited by
 EditorialClassification;Editorial classification
+ElementaryStream;Elementary stream
 ElementCount;Count of elements
 EMail;E-Mail
 Encoded_Application;Writing application
@@ -680,6 +685,7 @@ ImageCount;Count of image streams
 ImmersiveStereo;Immersive stereo
 Info;Info
 Instruments;Instruments
+IntegratedLoudness;Integrated loudness
 IntegratedLoudness_Level;Integrated loudness (level gated)
 IntegratedLoudness_Speech;Integrated loudness (speech gated)
 InteractivityEnabled;Interactivity enabled
@@ -913,12 +919,14 @@ Lines_MaxCountPerEvent;Maximum count of lines per event
 LineUpStart;Line Up Start
 LinkedTo_Bed_Pos;Bed #s
 LinkedTo_ChannelFormat_Pos;Channel format #s
+LinkedTo_ComplementaryObject_Pos;Complementary object #s
 LinkedTo_Content_Pos;Content #s
 LinkedTo_Group_Pos;Group #s
 LinkedTo_Object_Pos;Object #s
 LinkedTo_PackFormat_Pos;Pack format #s
 LinkedTo_SignalGroup_Pos;Signal group #s
 LinkedTo_Substream_Pos;Substream #s
+LinkedTo_StreamFormat_Pos;Stream format #s
 LinkedTo_TrackFormat_Pos;Track format #s
 LinkedTo_TrackUID_Pos;Track UID #s
 List;List
@@ -1000,11 +1008,12 @@ NumberOfObjects;Number of objects
 NumberOfPackFormats;Number of pack formats
 NumberOfPresentations;Number of presentations
 NumberOfProgrammes;Number of programmes
-NumberOfSubstreams;Number of substreams
-NumberOfTrackUIDs;Number of track UIDs
-NumberOfTrackFormats;Number of track formats
 NumberOfStreamFormats;Number of stream formats
+NumberOfSubstreams;Number of substreams
+NumberOfTrackFormats;Number of track formats
+NumberOfTrackUIDs;Number of track UIDs
 NumColors;Number of colors
+Object;Object
 ObjectCount;Object Count
 OK;OK
 One output file per input file;One output file per input file
@@ -1067,6 +1076,7 @@ OverallBitRate_Minimum;Minimum Overall bit rate
 OverallBitRate_Mode;Overall bit rate mode
 OverallBitRate_Nominal;Nominal Overall bit rate
 PackageName;Package name
+PackFormat;Pack format
 Part;Part
 Part_Count;Total count
 PartNumber;Part Number
@@ -1096,6 +1106,7 @@ Preferences;Preferences
 PreferredDownmix;Preferred downmix
 PreselectionLabel;Preselection label
 Presentation;Presentation
+Presentation;Presentation
 PresentationConfig;Presentation config
 PresentationConfig_ContentClassifier;Presentation config from content classifiers
 PresentationID;Presentation ID
@@ -1107,6 +1118,7 @@ ProductionDesigner;Production designer
 ProductionNumber;Production Number
 ProductionStudio;Production studio
 ProductPlacement;Product Placement
+Programme;Programme
 ProgrammeHasText;Programme Has Text
 ProgrammeTextLanguage;Programme Text Language
 ProgrammeTitle;Programme Title
@@ -1188,6 +1200,7 @@ StoreMethod_SeparatedFields_2;Separated fields (2 fields per block)
 Stream;Stream
 Stream_MoreInfo;More information about the stream
 StreamCount;Count of stream of this kind
+StreamFormat;Stream format
 StreamID;Stream ID
 streamIdentifier;Stream identifier
 StreamKind;Kind of stream
@@ -1198,6 +1211,7 @@ StreamSize_Demuxed;Stream size when demuxed
 StreamSize_Encoded;Encoded stream size
 StreamSize_Proportion;Proportion of this stream
 Subject;Subject
+Substream;Substream
 Substream;Substream
 SubTrack;SubTrack
 SubtstreamIdChannel;Substream start ID & channel index
@@ -1251,7 +1265,9 @@ TotalNumberOfParts;Total Number Of Parts
 TotalProgrammeDuration;Total Programme Duration
 Track;Track name
 Track_Count;Track count
+TrackFormat;Track format
 TrackIndex;Track index
+TrackUID;Track UID
 TrackUID;TrackUID
 transfer_characteristics;Transfer characteristics
 Translator;Translator

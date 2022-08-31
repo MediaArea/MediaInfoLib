@@ -215,6 +215,8 @@ enum audioProgramme_String {
 enum audioProgramme_StringVector {
     audioProgramme_audioProgrammeLabel,
     audioProgramme_audioContentIDRef,
+    audioProgramme_integratedLoudness,
+    audioProgramme_audioPackFormatIDRef,
     audioProgramme_StringVector_Max
 };
 
@@ -246,6 +248,8 @@ enum audioObject_String {
 enum audioObject_StringVector {
     audioObject_audioPackFormatIDRef,
     audioObject_audioTrackUIDRef,
+    audioObject_audioObjectIDRef,
+    audioObject_audioComplementaryObjectIDRef,
     audioObject_StringVector_Max
 };
 
@@ -471,6 +475,9 @@ public:
     void audioFormatExtended();
     void frameHeader();
     void transportTrackFormat();
+
+    // Common definitions
+    vector<string> audioChannelFormatIDRefs;
 };
 
 void file_adm_private::parse()
@@ -688,6 +695,41 @@ void file_adm_private::audioFormatExtended()
                 }
                 audioProgramme_Content.StringVectors[audioProgramme_audioProgrammeLabel].push_back(Value);
             }
+            else if (!tfsxml_strcmp_charp(b, "loudnessMetadata")) {
+                if (!tfsxml_enter(&p))
+                {
+                    for (;;) {
+                        if (tfsxml_next(&p, &b))
+                            break;
+                        if (!tfsxml_strcmp_charp(b, "integratedLoudness")) {
+                            tfsxml_value(&p, &b);
+                            audioProgramme_Content.StringVectors[audioProgramme_integratedLoudness].push_back(tfsxml_decode(b));
+                        }
+                    }
+                }
+            }
+            else if (!tfsxml_strcmp_charp(b, "authoringInformation")) {
+                if (!tfsxml_enter(&p))
+                {
+                    for (;;) {
+                        if (tfsxml_next(&p, &b))
+                            break;
+                        if (!tfsxml_strcmp_charp(b, "referenceLayout")) {
+                            if (!tfsxml_enter(&p))
+                            {
+                                for (;;) {
+                                    if (tfsxml_next(&p, &b))
+                                        break;
+                                    if (!tfsxml_strcmp_charp(b, "audioPackFormatIDRef")) {
+                                        tfsxml_value(&p, &b);
+                                        audioProgramme_Content.StringVectors[audioProgramme_audioPackFormatIDRef].push_back(tfsxml_decode(b));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         ELEMENT_END(audioProgramme)
         ELEMENT_START(audioContent)
             ATTRIBUTE(audioContent, audioContentID)
@@ -790,7 +832,7 @@ void file_adm_private::audioFormatExtended()
                 }
                 audioContent_Content.StringVectors[audioContent_audioContentLabel].push_back(Value);
             }
-            if (!tfsxml_strcmp_charp(b, "loudnessMetadata")) {
+            else if (!tfsxml_strcmp_charp(b, "loudnessMetadata")) {
                 if (!tfsxml_enter(&p))
                 {
                     for (;;) {
@@ -814,6 +856,8 @@ void file_adm_private::audioFormatExtended()
         ELEMENT_MIDDLE(audioObject)
             ELEMENT(audioObject, audioPackFormatIDRef)
             ELEMENT(audioObject, audioTrackUIDRef)
+            ELEMENT(audioObject, audioObjectIDRef)
+            ELEMENT(audioObject, audioComplementaryObjectIDRef)
         ELEMENT_END(audioObject)
         ELEMENT_START(audioPackFormat)
             ATTRIBUTE(audioPackFormat, audioPackFormatID)
@@ -1084,6 +1128,15 @@ void File_Adm::Streams_Fill()
     bool WarningError=MediaInfoLib::Config.WarningError();
     #endif
 
+    // Common definitions
+    for (size_t i = 0; i < File_Adm_Private->Items[item_audioPackFormat].Items.size(); i++) {
+        const Item_Struct& Source = File_Adm_Private->Items[item_audioPackFormat].Items[i];
+        for (size_t j = 0; j < Source.StringVectors[audioPackFormat_audioChannelFormatIDRef].size(); j++) {
+
+        }
+    }
+
+
     FILL_START(audioProgramme, audioProgrammeName, "Programme")
         if (Full)
             FILL_A(audioProgramme, audioProgrammeID, "ID");
@@ -1092,7 +1145,9 @@ void File_Adm::Streams_Fill()
         FILL_A(audioProgramme, audioProgrammeLanguage, "Language");
         FILL_A(audioProgramme, start, "Start");
         FILL_A(audioProgramme, end, "End");
+        FILL_E(audioProgramme, integratedLoudness, "IntegratedLoudness");
         LINK(audioProgramme, "Content", audioContentIDRef, audioContent);
+        LINK(audioProgramme, "PackFormat", audioPackFormatIDRef, audioPackFormat);
         const Ztring& Label = Retrieve_Const(StreamKind_Last, StreamPos_Last, (P + " Label").c_str());
         if (!Label.empty()) {
             Summary += __T(' ');
@@ -1166,6 +1221,8 @@ void File_Adm::Streams_Fill()
         FILL_A(audioObject, startTime, "Start");
         FILL_A(audioObject, duration, "Duration");
         LINK(audioObject, "PackFormat", audioPackFormatIDRef, audioPackFormat);
+        LINK(audioObject, "Object", audioObjectIDRef, audioObject);
+        LINK(audioObject, "ComplementaryObject", audioComplementaryObjectIDRef, audioObject);
         if (Full)
             LINK(audioObject, "TrackUID", audioTrackUIDRef, audioTrackUID);
     }
