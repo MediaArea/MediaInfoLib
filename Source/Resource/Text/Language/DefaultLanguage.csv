@@ -446,6 +446,7 @@ Format_Settings_Wrapping;Format settings, wrapping mode
 Format_Tier;Format tier
 Format_Url;Weblink for format
 Format_Version;Format version
+FormatDefinition;Format definition
 FpaManufacturer;FPA Manufacturer
 FpaPass;FPA Pass
 FpaVersion;FPA Version
@@ -1290,7 +1291,7 @@ TrimMode8i;Trim mode for 7.1.4
 TruePeakLevel;True peak level
 TruePeakLevel_Album;True peak level (album)
 Type;Type
-TypeDefinition;TypeDefinition
+TypeDefinition;Type definition
 UniqueID;Unique ID
 UniversalAdID;Universal Ad ID
 UniversalAdID_Registry;Universal Ad ID registry
