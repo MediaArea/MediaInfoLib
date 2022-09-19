@@ -21,9 +21,9 @@ build_lib()
     export CXX="$(xcrun -sdk iphoneos -find clang++)"
     export AR="$(xcrun -sdk iphoneos -find ar)"
     export RANLIB="$(xcrun -sdk iphoneos -find ranlib)"
-    export CFLAGS="-stdlib=libc++ -fembed-bitcode -arch ${target} -isysroot $PLATFORMPATH/$platform.platform/Developer/SDKs/$platform.sdk -miphoneos-version-min=$IPHONEOS_DEPLOYMENT_TARGET"
-    export CXXFLAGS="-stdlib=libc++ -fembed-bitcode -arch ${target}  -isysroot $PLATFORMPATH/$platform.platform/Developer/SDKs/$platform.sdk -miphoneos-version-min=$IPHONEOS_DEPLOYMENT_TARGET"
-    export LDFLAGS="-stdlib=libc++ -fembed-bitcode -arch ${target} -isysroot $PLATFORMPATH/$platform.platform/Developer/SDKs/$platform.sdk"
+    export CFLAGS="-stdlib=libc++ -arch ${target} -isysroot $PLATFORMPATH/$platform.platform/Developer/SDKs/$platform.sdk -miphoneos-version-min=$IPHONEOS_DEPLOYMENT_TARGET"
+    export CXXFLAGS="-stdlib=libc++ -arch ${target}  -isysroot $PLATFORMPATH/$platform.platform/Developer/SDKs/$platform.sdk -miphoneos-version-min=$IPHONEOS_DEPLOYMENT_TARGET"
+    export LDFLAGS="-stdlib=libc++ -arch ${target} -isysroot $PLATFORMPATH/$platform.platform/Developer/SDKs/$platform.sdk"
 
     pushd "$(dirname "${BASH_SOURCE[0]}")/../GNU/Library"
         ./configure --prefix="$prefix" --disable-shared --enable-static --host=$host-apple-darwin
