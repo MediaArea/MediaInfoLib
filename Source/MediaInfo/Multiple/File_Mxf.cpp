@@ -6279,7 +6279,10 @@ void File_Mxf::Data_Parse()
 
         essences::iterator Essence=Essences.find(Code_Compare4);
         if (Essence==Essences.end())
-            Essence=Essences.insert(make_pair(Code_Compare4,essence())).first;
+        {
+            Essences[Code_Compare4];
+            Essence=Essences.find(Code_Compare4);
+        }
 
         #if MEDIAINFO_TRACE
             if (Trace_Activated)
