@@ -1269,7 +1269,6 @@ Track_Count;Track count
 TrackFormat;Track format
 TrackIndex;Track index
 TrackUID;Track UID
-TrackUID;TrackUID
 transfer_characteristics;Transfer characteristics
 Translator;Translator
 Transport;Transport
