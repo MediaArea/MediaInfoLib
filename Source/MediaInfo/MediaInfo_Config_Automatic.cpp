@@ -1298,7 +1298,6 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "TrackFormat;Track format\n"
     "TrackIndex;Track index\n"
     "TrackUID;Track UID\n"
-    "TrackUID;TrackUID\n"
     "transfer_characteristics;Transfer characteristics\n"
     "Translator;Translator\n"
     "Transport;Transport\n"
