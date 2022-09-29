@@ -129,8 +129,8 @@ TimeCode_FirstFrame;;;Y YCY;;;Time code in HH:MM:SS:FF, last colon replaced by s
 TimeCode_LastFrame;;;Y YCY;;;Time code of the last frame (excluding the duration of the last frame) in HH:MM:SS:FF, last colon replaced by semicolon for drop frame if available format
 TimeCode_DropFrame;;;N NT;;;Delay drop frame;
 TimeCode_Settings;;;Y YTY;;;Time code settings
-TimeCode_Striped;;Yes;N YTY;;;Time code is striped (only 1st time code, no discontinuity)
-TimeCode_Striped/String;;;Y NT;;;Time code is striped (only 1st time code, no discontinuity)
+TimeCode_Stripped;;Yes;N YTY;;;Time code is Stripped (only 1st time code, no discontinuity)
+TimeCode_Stripped/String;;;Y NT;;;Time code is Stripped (only 1st time code, no discontinuity)
 TimeCode_Source;;;Y YTY;;;Time code source (Container, Stream, SystemScheme1, SDTI, ANC...)
 StreamSize;; byte;N YIY;;;Streamsize in bytes;;
 StreamSize/String;;;Y NT;;;Streamsize in with percentage value;;

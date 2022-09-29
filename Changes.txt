@@ -1,6 +1,10 @@
 I changed some elements in the interface.
 No break in binary compatibily (no crash), but some details.
 
+22.06 --> 22.09
+---------------
+- TimeCode_Striped replaced by TimeCode_Stripped (value was buggy in previous builds anyway)
+
 18.05 --> 18.08
 ---------------
 - AC-3/DTS/AAC: display of info about legacy decoders behavior removed, use --LegacyStreamDisplay=1 for old behavior
