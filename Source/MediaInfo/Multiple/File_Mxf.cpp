@@ -17105,7 +17105,8 @@ void File_Mxf::ChooseParser__Aaf_14(const essences::iterator &Essence, const des
     switch (Code_Compare4_3)
     {
         case 0x01 : //MXF in MXF?
-                    Essence->second.Parsers.push_back(new File_Mxf());
+                    if (!IsSub)
+                        Essence->second.Parsers.push_back(new File_Mxf());
                     break;
         default   : ;
     }
