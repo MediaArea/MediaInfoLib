@@ -1260,7 +1260,6 @@ protected :
     #endif //MEDIAINFO_ADVANCED
     #if defined(MEDIAINFO_ANCILLARY_YES)
         File_Ancillary* Ancillary;
-        bool            Ancillary_IsBinded;
     #endif //defined(MEDIAINFO_ANCILLARY_YES)
 
     //Hints
