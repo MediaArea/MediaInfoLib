@@ -92,6 +92,25 @@ File_Usac::~File_Usac()
 {
 }
 
+//***********************************************************************
+// Conformance
+//***********************************************************************
+
+//---------------------------------------------------------------------------
+void File_Usac::Streams_Finish_Conformance()
+{
+    if (!ConformanceFlags)
+        ConformanceFlags.set(Generic).set(xHEAAC); // TODO: is xHEAAC profiled detectable in LATM?
+
+    if (ConformanceErrors.empty())
+        return;
+    Fill(Stream_Audio, 0, "ConformanceErrors", ConformanceErrors.size());
+    for (const auto& ConformanceError : ConformanceErrors)
+        if (CheckIf(ConformanceError.Flags))
+            Fill(Stream_Audio, 0, (string("ConformanceErrors") + ' ' + ConformanceError.Field).c_str(), ConformanceError.Value);
+    ConformanceErrors.clear();
+}
+
 //***************************************************************************
 // Elements - USAC
 //***************************************************************************
@@ -179,77 +198,88 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
     string FieldPrefix;
     if (Prefix)
     {
-        FieldPrefix+=Prefix;
+        FieldPrefix += Prefix;
         FieldPrefix += ' ';
     }
     string FieldSuffix;
 
-    bool DefaultIdPresent=false;
-    for (int8u i=0; i<2; i++)
+    bool DefaultIdPresent = false;
+    for (int8u i = 0; i < 2; i++)
     {
         if (i)
-            FieldSuffix="_Album";
+            FieldSuffix = "_Album";
         if (!loudnessInfo_Data[i].empty())
         {
-            Fill(Stream_Audio, 0, (FieldPrefix+"Loudness_Count"+FieldSuffix).c_str(), loudnessInfo_Data[i].size());
-            Fill_SetOptions(Stream_Audio, 0, (FieldPrefix+"Loudness_Count"+FieldSuffix).c_str(), "N NI"); // Hidden in text output
+            Fill(Stream_Audio, 0, (FieldPrefix + "Loudness_Count" + FieldSuffix).c_str(), loudnessInfo_Data[i].size());
+            Fill_SetOptions(Stream_Audio, 0, (FieldPrefix + "Loudness_Count" + FieldSuffix).c_str(), "N NI"); // Hidden in text output
         }
         ZtringList Ids;
         ZtringList SamplePeakLevel;
         ZtringList TruePeakLevel;
         ZtringList Measurements[16];
-        for (std::map<Ztring, loudness_info>::iterator Item=loudnessInfo_Data[i].begin(); Item!=loudnessInfo_Data[i].end(); ++Item)
+        for (std::map<Ztring, loudness_info>::iterator Item = loudnessInfo_Data[i].begin(); Item != loudnessInfo_Data[i].end(); ++Item)
         {
             Ids.push_back(Item->first);
             SamplePeakLevel.push_back(Item->second.SamplePeakLevel);
             TruePeakLevel.push_back(Item->second.TruePeakLevel);
-            for (int8u j=1; j<16; j++)
+            for (int8u j = 1; j < 16; j++)
                 Measurements[j].push_back(Item->second.Measurements.Values[j]);
         }
-        if (Ids.size()>=1 && Ids.front().empty())
+        if (Ids.size() >= 1 && Ids.front().empty())
         {
             if (!i)
-                DefaultIdPresent=true;
-            if (Ids.size()==1)
+                DefaultIdPresent = true;
+            if (Ids.size() == 1)
                 Ids.clear();
         }
-        Fill(Stream_Audio, 0, (FieldPrefix+"SamplePeakLevel"+FieldSuffix).c_str(), SamplePeakLevel, Ids);
-        Fill(Stream_Audio, 0, (FieldPrefix+"TruePeakLevel"+FieldSuffix).c_str(), TruePeakLevel, Ids);
-        for (int8u j=1; j<16; j++)
+        Fill(Stream_Audio, 0, (FieldPrefix + "SamplePeakLevel" + FieldSuffix).c_str(), SamplePeakLevel, Ids);
+        Fill(Stream_Audio, 0, (FieldPrefix + "TruePeakLevel" + FieldSuffix).c_str(), TruePeakLevel, Ids);
+        for (int8u j = 1; j < 16; j++)
         {
             string Field;
-            if (j<=LoudnessMeaning_Size)
-                Field=LoudnessMeaning[j-1];
+            if (j <= LoudnessMeaning_Size)
+                Field = LoudnessMeaning[j - 1];
             else
-                Field="LoudnessMeaning"+Ztring::ToZtring(j).To_UTF8();
-            Fill(Stream_Audio, 0, (FieldPrefix+Field+FieldSuffix).c_str(), Measurements[j], Ids);
+                Field = "LoudnessMeaning" + Ztring::ToZtring(j).To_UTF8();
+            Fill(Stream_Audio, 0, (FieldPrefix + Field + FieldSuffix).c_str(), Measurements[j], Ids);
         }
     }
 
     if (NoConCh)
         return;
-    if (!loudnessInfoSet_Present)
+    constexpr14 auto CheckFlags = bitset8().set(xHEAAC).set(MpegH);
+    if (!CheckIf(CheckFlags))
     {
-        Fill(Stream_Audio, 0, (FieldPrefix+"ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is missing");
+    }
+    else if (!loudnessInfoSet_Present)
+    {
+        Fill_Conformance(CheckFlags, "Loudness", "loudnessInfoSet is missing");
+        Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is missing");
         Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet missing");
     }
     else if (loudnessInfo_Data[0].empty())
     {
-        Fill(Stream_Audio, 0, (FieldPrefix+"ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is empty");
+        Fill_Conformance(CheckFlags, "Loudness", "loudnessInfoSet is empty");
+        Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is empty");
         Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet empty");
     }
     else if (!DefaultIdPresent)
     {
-        Fill(Stream_Audio, 0, (FieldPrefix+"ConformanceCheck").c_str(), "Invalid: Default loudnessInfo is missing");
+        Fill_Conformance(CheckFlags, "Loudness", "Default loudnessInfo is missing");
+        Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: Default loudnessInfo is missing");
         Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo missing");
     }
     else if (loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
     {
-        Fill(Stream_Audio, 0, (FieldPrefix+"ConformanceCheck").c_str(), "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
+        Fill_Conformance(CheckFlags, "Loudness", "None of program loudness or anchor loudness is present in default loudnessInfo");
+        Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
         Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo incomplete");
     }
     if (!Retrieve_Const(Stream_Audio, 0, "ConformanceCheck/Short").empty())
+    {
+        Fill_SetOptions(Stream_Audio, 0, "ConformanceCheck", "N NT"); // Hidden in text output (deprecated)
         Fill_SetOptions(Stream_Audio, 0, "ConformanceCheck/Short", "N NT"); // Hidden in text output
+    }
 }
 
 //---------------------------------------------------------------------------

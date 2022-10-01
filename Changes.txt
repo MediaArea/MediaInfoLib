@@ -4,6 +4,7 @@ No break in binary compatibily (no crash), but some details.
 22.06 --> 22.09
 ---------------
 - TimeCode_Striped replaced by TimeCode_Stripped (value was buggy in previous builds anyway)
+- ConformanceChecks replaced by ConformanceErrors
 
 18.05 --> 18.08
 ---------------

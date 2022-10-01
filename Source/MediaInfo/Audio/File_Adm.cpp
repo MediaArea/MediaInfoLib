@@ -1544,19 +1544,23 @@ void File_Adm::Streams_Fill()
             FillErrors(File_Adm_Private, (item)t, i, item_Info[t].Name, &Errors_Field[0], &Errors_Value[0], WarningError); \
         }
     }
+
+    //Conformance
     for (size_t k = 0; k < error_Type_Max; k++) {
         if (!Errors_Field[k].empty()) {
-            Fill(StreamKind_Last, StreamPos_Last, error_Type_String[k], Errors_Field[k].size());
+            auto FieldPrefix = "Conformance" + string(error_Type_String[k]);
+            Fill(StreamKind_Last, StreamPos_Last, FieldPrefix.c_str(), Errors_Field[k].size());
+            FieldPrefix += ' ';
             for (size_t i = 0; i < Errors_Field[k].size(); i++) {
                 size_t Space = Errors_Field[k][i].find(' ');
                 if (Space != string::npos) {
-                    const auto Field = string(error_Type_String[k]) + ' ' + Errors_Field[k][i].substr(0, Space);
+                    const auto Field = FieldPrefix + Errors_Field[k][i].substr(0, Space);
                     const auto& Value = Retrieve_Const(StreamKind_Last, StreamPos_Last, Field.c_str());
                     if (Value.empty()) {
                         Fill(StreamKind_Last, StreamPos_Last, Field.c_str(), "Yes");
                     }
                 }
-                const auto Field = string(error_Type_String[k]) + ' ' + Errors_Field[k][i];
+                const auto Field = FieldPrefix + Errors_Field[k][i];
                 const auto& Value = Retrieve_Const(StreamKind_Last, StreamPos_Last, Field.c_str());
                 if (Value == __T("Yes")) {
                     Clear(StreamKind_Last, StreamPos_Last, Field.c_str());

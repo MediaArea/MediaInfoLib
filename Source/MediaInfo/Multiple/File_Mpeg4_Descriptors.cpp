@@ -806,6 +806,15 @@ void File_Mpeg4_Descriptors::Descriptor_04()
                             Parser=new File_Aac;
                             ((File_Aac*)Parser)->Mode=File_Aac::Mode_AudioSpecificConfig;
                             ((File_Aac*)Parser)->FrameIsAlwaysComplete=true;
+                            if (ES_ID)
+                            {
+                                auto const ES_ID_Info=ES_ID_Infos.find(ES_ID);
+                                if (ES_ID_Info!=ES_ID_Infos.end())
+                                {
+                                    auto Profile=ES_ID_Info->second.ProfileLevel.rfind(__T("Extended HE AAC@"), 0)?File_Aac::Generic:File_Aac::xHEAAC;
+                                    ((File_Aac*)Parser)->ConformanceFlags.set(Profile);
+                                }
+                            }
                         #endif
                         break;
             case 0x60 :

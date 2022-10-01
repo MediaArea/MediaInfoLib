@@ -860,7 +860,7 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
         Infos["Format_Settings_PS"]=__T("No (Explicit)");
 
     //Commercial names
-    if (Infos["Format"]==__T("USAC"))
+    if (Infos["Format"]==__T("USAC") && CheckIf(bitset8().set(xHEAAC)))
         Infos["Format_Commercial_IfAny"]=__T("xHE-AAC");
 }
 

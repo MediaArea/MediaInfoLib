@@ -214,6 +214,8 @@ void File_Aac::Streams_Finish()
 
     if (Mode==Mode_ADTS && !ChannelCount_Temp && ChannelPos_Temp && Retrieve_Const(Stream_Audio, 0, Audio_Channel_s_).empty())
         Fill(Stream_Audio, 0, Audio_Channel_s_, ChannelPos_Temp);
+
+    Streams_Finish_Conformance();
 }
 
 //***************************************************************************

@@ -17,6 +17,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
+#include "MediaInfo/TimeCode.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -71,6 +72,35 @@ public :
     int8u   channelConfiguration;
     int8u   sampling_frequency_index;
     int8u   extension_sampling_frequency_index;
+
+    //***********************************************************************
+    // Conformance
+    //***********************************************************************
+
+    enum conformance_flags
+    {
+        Generic,
+        xHEAAC,
+        MpegH,
+        Conformance_Max,
+    };
+    bitset8 ConformanceFlags;
+    struct field_value
+    {
+        bitset8 Flags;
+        string Field;
+        string Value;
+
+        field_value(bitset8 Flags, string&& Field, string&& Value)
+            : Flags(Flags)
+            , Field(Field)
+            , Value(Value)
+        {}
+    };
+    vector<field_value> ConformanceErrors;
+    void Streams_Finish_Conformance();
+    void Fill_Conformance(bitset8 Flags, const char* Field, const char* Value) { ConformanceErrors.emplace_back(Flags, Field, Value); }
+    bool CheckIf(const bitset8 Flags) { return !ConformanceFlags || (ConformanceFlags & Flags); }
 
     struct drc_info
     {
