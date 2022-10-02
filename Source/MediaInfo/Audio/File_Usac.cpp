@@ -107,7 +107,22 @@ void File_Usac::Streams_Finish_Conformance()
     Fill(Stream_Audio, 0, "ConformanceErrors", ConformanceErrors.size());
     for (const auto& ConformanceError : ConformanceErrors)
         if (CheckIf(ConformanceError.Flags))
-            Fill(Stream_Audio, 0, (string("ConformanceErrors") + ' ' + ConformanceError.Field).c_str(), ConformanceError.Value);
+        {
+            const char* FieldPrefix = "ConformanceErrors ";
+            size_t Space = 0;
+            for (;;) {
+                Space = ConformanceError.Field.find(' ', Space + 1);
+                if (Space == string::npos) {
+                    break;
+                }
+                const auto Field = FieldPrefix + ConformanceError.Field.substr(0, Space);
+                const auto& Value = Retrieve_Const(StreamKind_Last, StreamPos_Last, Field.c_str());
+                if (Value.empty()) {
+                    Fill(StreamKind_Last, StreamPos_Last, Field.c_str(), "Yes");
+                }
+            }
+            Fill(Stream_Audio, 0, (FieldPrefix + ConformanceError.Field).c_str(), ConformanceError.Value);
+        }
     ConformanceErrors.clear();
 }
 
@@ -253,25 +268,25 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
     }
     else if (!loudnessInfoSet_Present)
     {
-        Fill_Conformance(CheckFlags, "Loudness", "loudnessInfoSet is missing");
+        Fill_Conformance(CheckFlags, (string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet Coherency").c_str(), "Is missing");
         Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is missing");
         Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet missing");
     }
     else if (loudnessInfo_Data[0].empty())
     {
-        Fill_Conformance(CheckFlags, "Loudness", "loudnessInfoSet is empty");
+        Fill_Conformance(CheckFlags, (string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet loudnessInfoCount").c_str(), "Is 0");
         Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is empty");
         Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet empty");
     }
     else if (!DefaultIdPresent)
     {
-        Fill_Conformance(CheckFlags, "Loudness", "Default loudnessInfo is missing");
+        Fill_Conformance(CheckFlags, (string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet Coherency").c_str(), "Default loudnessInfo is missing");
         Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: Default loudnessInfo is missing");
         Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo missing");
     }
     else if (loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
     {
-        Fill_Conformance(CheckFlags, "Loudness", "None of program loudness or anchor loudness is present in default loudnessInfo");
+        Fill_Conformance(CheckFlags, (string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet Coherency").c_str(), "None of program loudness or anchor loudness is present in default loudnessInfo");
         Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
         Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo incomplete");
     }
