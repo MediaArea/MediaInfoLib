@@ -944,7 +944,12 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                 Elements_Index=2;
         }
         else
-            Elements_Index=2;
+        {
+            if (!Get(StreamKind, StreamPos, Elements(0)).empty())
+                Elements_Index=1;
+            else
+                Elements_Index=2;
+        }
 
         //Replace
         while (Elements(Elements_Index).SubString(__T("%"), __T("%")).size()>0)

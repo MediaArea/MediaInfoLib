@@ -3072,6 +3072,7 @@ void File_Mpeg4::Descriptors()
     MI.KindOfStream=StreamKind_Last;
     MI.PosOfStream=StreamPos_Last;
     MI.Parser_DoNotFreeIt=true;
+    MI.ES_ID_Infos=ES_ID_Infos;
 
     int64u Elemen_Code_Save=Element_Code;
     Element_Code=moov_trak_tkhd_TrackID; //Element_Code is use for stream identifier
