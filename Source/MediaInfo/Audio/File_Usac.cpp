@@ -85,6 +85,10 @@ File_Usac::File_Usac()
     channelConfiguration=(int8u)-1;
     sampling_frequency_index=(int8u)-1;
     extension_sampling_frequency_index=(int8u)-1;
+
+    #if MEDIAINFO_CONFORMANCE
+        Profile=AudioProfile_Max;
+    #endif
 }
 
 //---------------------------------------------------------------------------
@@ -97,34 +101,38 @@ File_Usac::~File_Usac()
 //***********************************************************************
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
 void File_Usac::Streams_Finish_Conformance()
 {
-    if (!ConformanceFlags)
-        ConformanceFlags.set(Generic).set(xHEAAC); // TODO: is xHEAAC profiled detectable in LATM?
-
+    if (ConformanceErrors.empty())
+        return;
+    for (size_t i = ConformanceErrors.size() - 1; i < ConformanceErrors.size(); i--) {
+        if (!CheckIf(ConformanceErrors[i].Flags)) {
+            ConformanceErrors.erase(ConformanceErrors.begin() + i);
+        }
+    }
     if (ConformanceErrors.empty())
         return;
     Fill(Stream_Audio, 0, "ConformanceErrors", ConformanceErrors.size());
-    for (const auto& ConformanceError : ConformanceErrors)
-        if (CheckIf(ConformanceError.Flags))
-        {
-            const char* FieldPrefix = "ConformanceErrors ";
-            size_t Space = 0;
-            for (;;) {
-                Space = ConformanceError.Field.find(' ', Space + 1);
-                if (Space == string::npos) {
-                    break;
-                }
-                const auto Field = FieldPrefix + ConformanceError.Field.substr(0, Space);
-                const auto& Value = Retrieve_Const(StreamKind_Last, StreamPos_Last, Field.c_str());
-                if (Value.empty()) {
-                    Fill(StreamKind_Last, StreamPos_Last, Field.c_str(), "Yes");
-                }
+    for (const auto& ConformanceError : ConformanceErrors) {
+        const char* FieldPrefix = "ConformanceErrors ";
+        size_t Space = 0;
+        for (;;) {
+            Space = ConformanceError.Field.find(' ', Space + 1);
+            if (Space == string::npos) {
+                break;
             }
-            Fill(Stream_Audio, 0, (FieldPrefix + ConformanceError.Field).c_str(), ConformanceError.Value);
+            const auto Field = FieldPrefix + ConformanceError.Field.substr(0, Space);
+            const auto& Value = Retrieve_Const(StreamKind_Last, StreamPos_Last, Field.c_str());
+            if (Value.empty()) {
+                Fill(StreamKind_Last, StreamPos_Last, Field.c_str(), "Yes");
+            }
         }
+        Fill(Stream_Audio, 0, (FieldPrefix + ConformanceError.Field).c_str(), ConformanceError.Value);
+    }
     ConformanceErrors.clear();
 }
+#endif
 
 //***************************************************************************
 // Elements - USAC
@@ -140,15 +148,20 @@ void File_Usac::UsacConfig()
     int8u coreSbrFrameLengthIndex;
     bool usacConfigExtensionPresent;
     Get_S1 (5, sampling_frequency_index,                        "usacSamplingFrequencyIndex"); Param_Info1C(sampling_frequency_index<Aac_sampling_frequency_Size_Usac && Aac_sampling_frequency[sampling_frequency_index], Aac_sampling_frequency[sampling_frequency_index]);
+    int32u Frequency_b2;
     if (sampling_frequency_index==Aac_sampling_frequency_Size_Usac)
     {
         int32u samplingFrequency;
         Get_S3 (24, samplingFrequency,                          "usacSamplingFrequency");
-        Frequency_b=samplingFrequency;
+        Frequency_b2=samplingFrequency;
         sampling_frequency_index=Aac_AudioSpecificConfig_sampling_frequency_index(Frequency_b);
     }
     else
-        Frequency_b=Aac_sampling_frequency[sampling_frequency_index];
+        Frequency_b2=Aac_sampling_frequency[sampling_frequency_index];
+    #if MEDIAINFO_CONFORMANCE
+        if (Frequency_b && Frequency_b2!=Frequency_b)
+            Fill_Conformance("Crosscheck AudioSpecificConfig-UsacConfig samplingFrequency-usacSamplingFrequency", (to_string(Frequency_b) + " vs " + to_string(Frequency_b2) + " are not coherent").c_str());
+    #endif
     Get_S1 (3, coreSbrFrameLengthIndex,                         "coreSbrFrameLengthIndex");
     Get_S1 (5, channelConfiguration,                            "channelConfiguration"); Param_Info1C(channelConfiguration, Aac_ChannelLayout_GetString(channelConfiguration));
     if (!channelConfiguration)
@@ -260,41 +273,43 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         }
     }
 
-    if (NoConCh)
-        return;
-    constexpr14 auto CheckFlags = bitset8().set(xHEAAC).set(MpegH);
-    if (!CheckIf(CheckFlags))
-    {
-    }
-    else if (!loudnessInfoSet_Present)
-    {
-        Fill_Conformance(CheckFlags, (string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet Coherency").c_str(), "Is missing");
-        Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is missing");
-        Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet missing");
-    }
-    else if (loudnessInfo_Data[0].empty())
-    {
-        Fill_Conformance(CheckFlags, (string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet loudnessInfoCount").c_str(), "Is 0");
-        Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is empty");
-        Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet empty");
-    }
-    else if (!DefaultIdPresent)
-    {
-        Fill_Conformance(CheckFlags, (string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet Coherency").c_str(), "Default loudnessInfo is missing");
-        Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: Default loudnessInfo is missing");
-        Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo missing");
-    }
-    else if (loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
-    {
-        Fill_Conformance(CheckFlags, (string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet Coherency").c_str(), "None of program loudness or anchor loudness is present in default loudnessInfo");
-        Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
-        Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo incomplete");
-    }
-    if (!Retrieve_Const(Stream_Audio, 0, "ConformanceCheck/Short").empty())
-    {
-        Fill_SetOptions(Stream_Audio, 0, "ConformanceCheck", "N NT"); // Hidden in text output (deprecated)
-        Fill_SetOptions(Stream_Audio, 0, "ConformanceCheck/Short", "N NT"); // Hidden in text output
-    }
+    #if MEDIAINFO_CONFORMANCE
+        if (NoConCh)
+            return;
+        constexpr14 auto CheckFlags = bitset8().set(xHEAAC).set(MpegH);
+        if (!CheckIf(CheckFlags))
+        {
+        }
+        else if (!loudnessInfoSet_Present)
+        {
+            Fill_Conformance((string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet Coherency").c_str(), "Is missing", CheckFlags);
+            Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is missing");
+            Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet missing");
+        }
+        else if (loudnessInfo_Data[0].empty())
+        {
+            Fill_Conformance((string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet loudnessInfoCount").c_str(), "Is 0", CheckFlags);
+            Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is empty");
+            Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet empty");
+        }
+        else if (!DefaultIdPresent)
+        {
+            Fill_Conformance((string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet Coherency").c_str(), "Default loudnessInfo is missing", CheckFlags);
+            Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: Default loudnessInfo is missing");
+            Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo missing");
+        }
+        else if (loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
+        {
+            Fill_Conformance((string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet Coherency").c_str(), "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
+            Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
+            Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo incomplete");
+        }
+        if (!Retrieve_Const(Stream_Audio, 0, "ConformanceCheck/Short").empty())
+        {
+            Fill_SetOptions(Stream_Audio, 0, "ConformanceCheck", "N NT"); // Hidden in text output (deprecated)
+            Fill_SetOptions(Stream_Audio, 0, "ConformanceCheck/Short", "N NT"); // Hidden in text output
+        }
+    #endif
 }
 
 //---------------------------------------------------------------------------
@@ -516,6 +531,7 @@ void File_Usac::uniDrcConfig()
     int8u downmixInstructionsCount, drcCoefficientsBasicCount, drcInstructionsBasicCount, drcCoefficientsUniDrcCount, drcInstructionsUniDrcCount;
     TEST_SB_SKIP(                                               "sampleRatePresent");
         Skip_S3(18,                                             "bsSampleRate");
+        Fill(Stream_Audio, 0, "bsSampleRate", "bsSampleRate");
     TEST_SB_END();
     Get_S1 (7, downmixInstructionsCount,                        "downmixInstructionsCount");
     TESTELSE_SB_SKIP(                                           "drcDescriptionBasicPresent");
