@@ -60,6 +60,7 @@ AC_ARG_ENABLE(minimize-size,    AC_HELP_STRING([--enable-minimize-size],    [Ena
 AC_ARG_ENABLE(minimal,    		AC_HELP_STRING([--enable-minimal],    		[Enable minimal management (except parsers)]),MediaInfoMinimal=$enableval, MediaInfoMinimal=depend)
 AC_ARG_ENABLE(trace,    		AC_HELP_STRING([--enable-trace],    		[Enable trace management]),                   MediaInfoTrace=$enableval,   MediaInfoTrace=depend)
 AC_ARG_ENABLE(events,    		AC_HELP_STRING([--enable-events],    		[Enable events management]),                  MediaInfoEvents=$enableval,  MediaInfoEvents=depend)
+AC_ARG_ENABLE(conformance,    	AC_HELP_STRING([--enable-conformance],      [Enable conformance tests]),                  MediaInfoConformance=$enableval, MediaInfoConformance=depend)
 AC_ARG_ENABLE(demux,    		AC_HELP_STRING([--enable-demux],    		[Enable demux management]),                   MediaInfoDemux=$enableval,   MediaInfoDemux=depend)
 AC_ARG_ENABLE(libmms-describe-support, AC_HELP_STRING([--enable-libmms-describe-support], [Enable customized libmms describe support]), MediaInfoLibmmsDescribeSupport=$enableval, MediaInfoLibmmsDescribeSupport=depend)
 AC_ARG_ENABLE(dll,     AC_HELP_STRING([--disable-dll],     [Disable dll iterface]),                                       MediaInfoDll=$enableval,     MediaInfoDll=depend)
@@ -224,6 +225,7 @@ if test "$MediaInfoMinimizeSize" = "yes";  then AC_DEFINE(MEDIAINFO_MINIMIZESIZE
 if test "$MediaInfoMinimal" = "no";  then AC_DEFINE(MEDIAINFO_MINIMAL_NO) fi; if test "$MediaInfoMinimal" = "yes"; then AC_DEFINE(MEDIAINFO_MINIMAL_YES) fi
 if test "$MediaInfoTrace"   = "no";  then AC_DEFINE(MEDIAINFO_TRACE_NO)   fi; if test "$MediaInfoTrace"   = "yes"; then AC_DEFINE(MEDIAINFO_TRACE_YES)   fi
 if test "$MediaInfoEvents"  = "no";  then AC_DEFINE(MEDIAINFO_EVENTS_NO)  fi; if test "$MediaInfoEvents"  = "yes"; then AC_DEFINE(MEDIAINFO_EVENTS_YES)  fi
+if test "$MediaInfoConformance" = "no";  then AC_DEFINE(MEDIAINFO_CONFORMANCE_NO)  fi; if test "$MediaInfoConformance"  = "yes"; then AC_DEFINE(MEDIAINFO_CONFORMANCE_YES) fi
 if test "$MediaInfoDemux"   = "no";  then AC_DEFINE(MEDIAINFO_DEMUX_NO)   fi; if test "$MediaInfoDemux"   = "yes"; then AC_DEFINE(MEDIAINFO_DEMUX_YES)   fi
 if test "$MediaInfoJni"     = "no";  then AC_DEFINE(MEDIAINFO_JNI_NO)     fi; if test "$MediaInfoJni"     = "yes"; then AC_DEFINE(MEDIAINFO_JNI_YES)   fi
 if test "$MediaInfoLibmmsDescribeSupport" = "yes"; then AC_DEFINE(MEDIAINFO_LIBMMS_DESCRIBE_SUPPORT)   fi
