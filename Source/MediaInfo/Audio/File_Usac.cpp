@@ -277,7 +277,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         if (NoConCh)
             return;
         constexpr14 auto CheckFlags = bitset8().set(xHEAAC).set(MpegH);
-        if (!CheckIf(CheckFlags))
+        if (!CheckIf(CheckFlags) || Profile==AudioProfile_Unspecified)
         {
         }
         else if (!loudnessInfoSet_Present)
