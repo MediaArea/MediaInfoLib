@@ -16,6 +16,9 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
+#ifdef MEDIAINFO_MPEG4_YES
+    #include "MediaInfo/Multiple/File_Mpeg4_Descriptors.h"
+#endif
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/TimeCode.h"
 //---------------------------------------------------------------------------
@@ -77,9 +80,11 @@ public :
     // Conformance
     //***********************************************************************
 
+    #if MEDIAINFO_CONFORMANCE
     enum conformance_flags
     {
-        Generic,
+        Usac,
+        BaselineUsac,
         xHEAAC,
         MpegH,
         Conformance_Max,
@@ -87,20 +92,29 @@ public :
     bitset8 ConformanceFlags;
     struct field_value
     {
-        bitset8 Flags;
         string Field;
         string Value;
+        bitset8 Flags;
 
-        field_value(bitset8 Flags, string&& Field, string&& Value)
-            : Flags(Flags)
-            , Field(Field)
+        field_value(string&& Field, string&& Value, bitset8 Flags)
+            : Field(Field)
             , Value(Value)
+            , Flags(Flags)
         {}
     };
     vector<field_value> ConformanceErrors;
+    audio_profile Profile;
     void Streams_Finish_Conformance();
-    void Fill_Conformance(bitset8 Flags, const char* Field, const char* Value) { ConformanceErrors.emplace_back(Flags, Field, Value); }
-    bool CheckIf(const bitset8 Flags) { return !ConformanceFlags || (ConformanceFlags & Flags); }
+    void Fill_Conformance(const char* Field, const char* Value, bitset8 Flags = {}) { ConformanceErrors.emplace_back(Field, Value, Flags); }
+    void Fill_Conformance(const char* Field, const char* Value, conformance_flags Flag) { ConformanceErrors.emplace_back(Field, Value, bitset8().set(Flag)); }
+    bool CheckIf(const bitset8 Flags) { return !ConformanceFlags || !Flags || (ConformanceFlags & Flags); }
+    #else
+    inline void Streams_Finish_Conformance() {}
+    #endif
+
+    //***********************************************************************
+    // Others
+    //***********************************************************************
 
     struct drc_info
     {

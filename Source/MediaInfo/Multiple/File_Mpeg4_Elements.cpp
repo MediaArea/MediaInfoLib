@@ -5345,8 +5345,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
         {
             Channels=Channels16;
             SampleSize=SampleSize16;
-            SampleRate=SampleRate16;
         }
+        SampleRate=SampleRate16;
     }
     else
     {

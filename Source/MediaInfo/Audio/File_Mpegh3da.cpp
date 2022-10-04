@@ -262,7 +262,9 @@ File_Mpegh3da::File_Mpegh3da()
     //In
     MustParse_mhaC=false;
     MustParse_mpegh3daFrame=false;
-    ConformanceFlags.set(MpegH);
+    #if MEDIAINFO_CONFORMANCE
+        ConformanceFlags.set(MpegH);
+    #endif
 
     //Temp
     audioSceneInfoID=0;
