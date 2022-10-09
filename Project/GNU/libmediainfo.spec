@@ -124,6 +124,7 @@ BuildArch:      noarch
 Summary:        Most relevant technical and tag data for video and audio files -- documentation
 Group:          Development/Libraries
 Requires:       %{libmediainfo_name}%{libmediainfo_suffix} = %{version}
+BuildArch:      noarch
 %endif
 
 %global doc_description MediaInfo is a convenient unified display of the most relevant technical\
