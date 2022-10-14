@@ -291,6 +291,7 @@ protected :
     Ztring Speed_RecDateZ_First;
     Ztring Speed_RecDateZ_Last;
     Ztring Speed_RecDateZ_Current;
+    bool FrameIsNotFake;
     std::vector<size_t> Video_STA_Errors; //Per STA type
     std::vector<size_t> Video_STA_Errors_ByDseq; //Per Dseq & STA type
     std::vector<size_t> Video_STA_Errors_Total; //Per STA type
