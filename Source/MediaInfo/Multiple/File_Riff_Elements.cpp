@@ -447,6 +447,7 @@ namespace Elements
     const int32u WAVE_id3_=0x69643320;
     const int32u WAVE_INFO=0x494E464F;
     const int32u WAVE_iXML=0x69584D4C;
+    const int32u WAVE_MD5_=0x4D443520;
     const int32u WAVE_mext=0x6D657874;
     const int32u wave=0x77617665;
     const int32u wave_data=0x64617461;
@@ -648,6 +649,7 @@ void File_Riff::Data_Parse()
         LIST(WAVE_INFO)
             ATOM_DEFAULT_ALONE(WAVE_INFO_xxxx)
         ATOM(WAVE_iXML)
+        ATOM(WAVE_MD5_)
         ATOM(WAVE_mext)
         ATOM_END
     LIST(wave)
