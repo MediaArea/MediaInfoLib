@@ -972,6 +972,8 @@ MaxFALL;Maximum Frame-Average Light Level
 MaxGain;Max gain
 MaximumMomentaryLoudness;Maximum momentary loudness
 MaxTruePeak;Max true peak
+MD5;MD5
+MD5_Unencoded;MD5 of the unencoded content
 MediaInfo_About;MediaInfo provides easy access to technical and tag information about video and audio files.\r\nExcept the Mac App Store graphical user interface, it is open-source software, which means that it is free of charge to the end user and developers have freedom to study, to improve and to redistribute the program (BSD license)
 Menu;Menu
 Menu stream(s);Menu streams

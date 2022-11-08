@@ -212,7 +212,7 @@ void File_Flac::STREAMINFO()
         MD5_PerItem.From_UTF8(uint128toString(MD5Stored, 16));
         while (MD5_PerItem.size()<32)
             MD5_PerItem.insert(MD5_PerItem.begin(), '0'); //Padding with 0, this must be a 32-byte string
-        Fill(Stream_Audio, 0, "MD5", MD5_PerItem);
+        Fill(Stream_Audio, 0, "MD5_Unencoded", MD5_PerItem);
     FILLING_END();
 }
 
