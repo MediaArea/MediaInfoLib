@@ -1001,6 +1001,8 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "MaxGain;Max gain\n"
     "MaximumMomentaryLoudness;Maximum momentary loudness\n"
     "MaxTruePeak;Max true peak\n"
+    "MD5;MD5\n"
+    "MD5_Unencoded;MD5 of the unencoded content\n"
     "MediaInfo_About;MediaInfo provides easy access to technical and tag information about video and audio files.\r\nExcept the Mac App Store graphical user interface, it is open-source software, which means that it is free of charge to the end user and developers have freedom to study, to improve and to redistribute the program (BSD license)\n"
     "Menu;Menu\n"
     "Menu stream(s);Menu streams\n"
