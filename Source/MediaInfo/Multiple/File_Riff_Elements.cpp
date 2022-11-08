@@ -285,6 +285,7 @@ namespace Elements
     const int32u AIFF_NAME=0x4E414D45;
     const int32u AIFF_ID3_=0x49443320;
     const int32u AVI_=0x41564920;
+    const int32u AVI__CSET=0x43534554;
     const int32u AVI__cset=0x63736574;
     const int32u AVI__Cr8r=0x43723872;
     const int32u AVI__exif=0x65786966;
@@ -438,6 +439,8 @@ namespace Elements
     const int32u WAVE_bxml=0x62786D6C;
     const int32u WAVE_chna=0x63686E61;
     const int32u WAVE_cue_=0x63756520;
+    const int32u WAVE_CSET=0x43534554;
+    const int32u WAVE_cset=0x63736574;
     const int32u WAVE_data=0x64617461;
     const int32u WAVE_dbmd=0x64626D64;
     const int32u WAVE_ds64=0x64733634;
@@ -462,6 +465,25 @@ namespace Elements
     UUID(QLCM_QCELP2,                                           5E7F6D42, B115, 11D0, BA91, 00805FB4B97E)
     UUID(QLCM_EVRC,                                             E689D48D, 9076, 46B5, 91EF, 736A5100CEB4)
     UUID(QLCM_SMV,                                              8D7C2B75, A797, ED49, 985E, D53C8CC75F84)
+}
+
+//***************************************************************************
+// Info
+//***************************************************************************
+
+static std::string Riff_CodePage(int16u CodePage)
+{
+    switch (CodePage) // Formated based on https://www.iana.org/assignments/character-sets/character-sets.xhtml
+    {
+        case   437: return "IBM437";
+        case   850: return "IBM850";
+        case   858: return "IBM00858";
+        case  1252: return "windows-1252";
+        case 28591: return "ISO-8859-1";
+        case 28592: return "ISO-8859-2";
+        case 65001: return "UTF-8";
+        default: return to_string(CodePage);
+    }
 }
 
 //***************************************************************************
@@ -495,6 +517,7 @@ void File_Riff::Data_Parse()
     LIST(AVI_)
         ATOM_BEGIN
         ATOM(AVI__Cr8r);
+        ATOM(AVI__CSET)
         ATOM(AVI__cset)
         LIST(AVI__exif)
             ATOM_DEFAULT_ALONE(AVI__exif_xxxx)
@@ -639,6 +662,8 @@ void File_Riff::Data_Parse()
         ATOM(WAVE_chna)
         LIST(WAVE_data)
             break;
+        ATOM(WAVE_CSET)
+        ATOM(WAVE_cset)
         ATOM(WAVE_cue_)
         ATOM(WAVE_dbmd)
         ATOM(WAVE_ds64)
@@ -898,15 +923,20 @@ void File_Riff::AVI__Cr8r()
 }
 
 //---------------------------------------------------------------------------
-void File_Riff::AVI__cset()
+void File_Riff::AVI__CSET()
 {
     Element_Name("Regional settings");
 
     //Parsing
-    Skip_L2(                                                    "CodePage"); //TODO: take a look about IBM/MS RIFF/MCI Specification 1.0
+    int16u CodePage;
+    Get_L2 (CodePage,                                           "CodePage"); //TODO: take a look about IBM/MS RIFF/MCI Specification 1.0
     Skip_L2(                                                    "CountryCode");
     Skip_L2(                                                    "LanguageCode");
     Skip_L2(                                                    "Dialect");
+
+    FILLING_BEGIN()
+        Fill(Stream_General, 0, "CharacterSet", Riff_CodePage(CodePage));
+    FILLING_END()
 }
 
 //---------------------------------------------------------------------------
