@@ -2418,7 +2418,6 @@ void File_Riff::AVI__MD5_()
         MD5_PerItem.From_UTF8(uint128toString(MD5Stored, 16));
         while (MD5_PerItem.size()<32)
             MD5_PerItem.insert(MD5_PerItem.begin(), '0'); //Padding with 0, this must be a 32-byte string
-        MD5_PerItem.MakeLowerCase();
         MD5s.push_back(MD5_PerItem);
     }
 }
