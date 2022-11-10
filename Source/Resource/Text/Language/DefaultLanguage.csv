@@ -240,6 +240,7 @@ Chapters stream(s);Chapters stream(s)
 Chapters_Codec_List;Chapters Codecs
 Chapters_No;No chapters
 ChaptersCount;Count of chapter streams
+CharacterSet;Character set
 CheckNewVersion;Check for new version
 Choose custom;Choose custom
 Choose custom sheet;Choose your desired custom sheet
@@ -739,6 +740,7 @@ Language_bs;Bosnian
 Language_ca;Catalan
 Language_ce;Chechen
 Language_ch;Chamorro
+Language_cmn;Mandarin
 Language_co;Corsican
 Language_cr;Cree
 Language_cs;Czech
@@ -908,10 +910,17 @@ Language_wo;Wolof
 Language_xh;Xhosa
 Language_yi;Yiddish
 Language_yo;Yoruba
+Language_yue;Cantonese
 Language_za;Zhuang
 Language_zh;Chinese
 Language_zh-cn;Chinese (China)
+Language_zh-CN;Chinese (China)
 Language_zh-tw;Chinese (Taiwan)
+Language_zh-TW;Chinese (Taiwan)
+Language_zh-cmn;Mandarin
+Language_zh-yue;Cantonese
+Language_zh-Hans;Chinese (Simplied)
+Language_zh-Hant;Chinese (Traditional)
 Language_zu;Zulu
 LawRating;Law rating
 LCCN;LCCN
