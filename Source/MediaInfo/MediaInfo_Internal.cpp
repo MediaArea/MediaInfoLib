@@ -913,7 +913,7 @@ public:
 
     void Entry()
     {
-        while (!IsTerminating())
+        while (!IsTerminating() && !IsExited())
         {
             if (Buffer_Size[Buffer_Filling]==Buffer_MaxSize) //If end of buffer is reached
             {
