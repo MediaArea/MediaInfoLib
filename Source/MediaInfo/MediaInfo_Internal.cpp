@@ -853,7 +853,7 @@ static void CtrlC_Unregister();
 static void Reader_Cin_Add(Reader_Cin_Thread* Thread)
 {
     CriticalSectionLocker ToTerminate_CSL(ToTerminate_CS);
-    if (ToTerminate.empty())
+    if (ToTerminate.empty() && MediaInfoLib::Config.AcceptSignals_Get())
         CtrlC_Register();
     ToTerminate.insert(Thread);
 }
@@ -862,7 +862,7 @@ static void Reader_Cin_Remove(Reader_Cin_Thread* Thread)
 {
     CriticalSectionLocker ToTerminate_CSL(ToTerminate_CS);
     ToTerminate.erase(Thread);
-    if (ToTerminate.empty())
+    if (ToTerminate.empty() && MediaInfoLib::Config.AcceptSignals_Get())
         CtrlC_Unregister();
 }
 
