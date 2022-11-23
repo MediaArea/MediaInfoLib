@@ -1405,16 +1405,18 @@ void MediaInfo_Internal::Entry()
                 int8u* Buffer_New;
                 size_t Buffer_Size_New;
                 Cin.Current(Buffer_New, Buffer_Size_New);
+                if (Cin.IsExited())
+                    break;
                 if (Buffer_Size_New)
                 {
                     if (Open_Buffer_Continue(Buffer_New, Buffer_Size_New)[File__Analyze::IsFinished])
                         break;
+                    if (Config.RequestTerminate)
+                        Cin.RequestTerminate();
                     Cin.IsManaged();
                     if (TimeOut!=-1)
                         LastIn=clock();
                 }
-                else if (Cin.IsExited())
-                    break;
                 else
                 {
                     if (LastIn!=-1)
