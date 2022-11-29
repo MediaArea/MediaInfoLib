@@ -432,6 +432,11 @@ public :
     bool      File_GoTo_IsFrameOffset;
     #endif //MEDIAINFO_SEEK
 
+    //Logs
+    #if MEDIAINFO_ADVANCED
+        std::map<std::string, std::string>* TimeCode_Dumps;
+    #endif //MEDIAINFO_ADVANCED
+
 private :
     bool                    FileIsSeekable;
     bool                    FileIsSub;
