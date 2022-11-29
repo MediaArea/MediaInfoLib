@@ -288,6 +288,13 @@ Encoded_Date;;;Y YTY;;;The time that the encoding of this item was completed beg
 Tagged_Date;;;Y YTY;;;The time that the tags were done for this item.;;Temporal
 Encryption;;;Y YTY;;;;;
 Events_Total;;;Y YTY;;;;;
+Events_MinDuration;; ms;N YFY;;;;;
+Events_MinDuration/String;;;Y NT;;;Minimum duration per event (formated);
+Events_MinDuration/String1;;;N NT;;;Minimum duration per event in format : HHh MMmn SSs MMMms, XX omited if zero;
+Events_MinDuration/String2;;;N NT;;;Minimum duration per event in format : XXx YYy only, YYy omited if zero;
+Events_MinDuration/String3;;;N NT;;;Minimum duration per event in format : HH:MM:SS.MMM;
+Events_MinDuration/String4;;;N NT;;;Minimum duration per event in format : HH:MM:SS:FF, last colon replaced by semicolon for drop Duration;; ms;N YFY;;;Play time of the stream, in ms;
+Events_MinDuration/String5;;;N NT;;;Minimum duration per event in format : HH:MM:SS.mmm (HH:MM:SS:FF)
 Events_PopOn;;;Y YTY;;;;;
 Events_RollUp;;;Y YTY;;;;;
 Events_PaintOn;;;Y YTY;;;;;
