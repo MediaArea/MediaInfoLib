@@ -378,6 +378,7 @@ Encoded_Original;Original support
 EncodedBy;Encoded by
 EPG_Positions;EPG positions (internal)
 EpisodeTitleNumber;Episode Title Number
+Events_MinDuration;Minimum duration per event
 Error_File;Error while reading file
 Events_PaintOn;Count of PaintOn events
 Events_PopOn;Count of PopOn events
