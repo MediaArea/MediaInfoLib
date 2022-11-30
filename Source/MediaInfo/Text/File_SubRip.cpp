@@ -91,6 +91,20 @@ int64u SubRip_str2timecode(const char* Value)
     return ToReturn;
 }
 
+//---------------------------------------------------------------------------
+struct timeline
+{
+    int64u      Time_Begin;
+    int64u      Time_End;
+    size_t      LineCount;
+
+    timeline(int64u Time_Begin_, int64u Time_End_, size_t LineCount_)
+        : Time_Begin(Time_Begin_)
+        , Time_End(Time_End_)
+        , LineCount(LineCount_)
+    {}
+};
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -224,8 +238,10 @@ bool File_SubRip::FileHeader_Begin()
     size_t Events_Total=0;
     int64u Events_MinDuration=(int64u)-1;
     size_t Lines_Count=0;
-    size_t Lines_MaxCountPerEvent=0;
-    
+    size_t EmptyCount=0;
+    size_t LineMaxCountPerEvent=0;
+    vector<timeline> TimeLine;
+
     for (size_t Pos=0; Pos<List.size(); Pos++)
     {
         if (!List[Pos].empty())
@@ -251,13 +267,9 @@ bool File_SubRip::FileHeader_Begin()
                 size_t Extra_Pos=PTS_End_String.find_first_of(__T("\t "));
                 if (Extra_Pos!=string::npos)
                     PTS_End_String.resize(Extra_Pos); //Discarding positioning
-                int64u PTS_Begin=SubRip_str2timecode(PTS_Begin_String.To_UTF8().c_str());
-                if (PTS_Begin_Min>PTS_Begin)
-                    PTS_Begin_Min=PTS_Begin;
-                int64u PTS_End=SubRip_str2timecode(PTS_End_String.To_UTF8().c_str());
-                if (PTS_End_Max<PTS_End)
-                    PTS_End_Max=PTS_End;
-                size_t MaxCountPerEvent=0;
+                int64u Time_Begin_New=SubRip_str2timecode(PTS_Begin_String.To_UTF8().c_str());
+                int64u Time_End_New=SubRip_str2timecode(PTS_End_String.To_UTF8().c_str());
+                size_t LineCount_New=0;
                 #if MEDIAINFO_DEMUX
                     Ztring Content;
                 #endif //MEDIAINFO_DEMUX
@@ -269,24 +281,109 @@ bool File_SubRip::FileHeader_Begin()
                         if (Pos2+1<List[Pos].size())
                             Content+=EOL;
                     #endif //MEDIAINFO_DEMUX
-                    MaxCountPerEvent++;
+                    LineCount_New++;
                 }
-                Lines_Count+=MaxCountPerEvent;
-                if (MaxCountPerEvent)
-                    Events_Total++;
-                if (Lines_MaxCountPerEvent<MaxCountPerEvent)
-                    Lines_MaxCountPerEvent=MaxCountPerEvent;
-                int64u Duration;
-                if (PTS_Begin<PTS_End)
-                    Duration=PTS_End-PTS_Begin;
-                else
-                    Duration=0;
-                if (Events_MinDuration>Duration)
-                    Events_MinDuration=Duration;
+                if (LineCount_New && Time_Begin_New<Time_End_New)
+                {
+                    if (PTS_Begin_Min>Time_Begin_New)
+                        PTS_Begin_Min=Time_Begin_New;
+                    if (PTS_End_Max<Time_End_New)
+                        PTS_End_Max=Time_End_New;
+                   Lines_Count+=LineCount_New;
+
+                    // Not supporting back to the past
+                    for (size_t i=0; i<TimeLine.size(); i++)
+                    {
+                        if (Time_Begin_New<TimeLine[i].Time_Begin)
+                        {
+                            TimeLine.erase(TimeLine.begin()+i);
+                            i--;
+                            continue;
+                        }
+                    }
+
+                    // Empty
+                    if (!TimeLine.empty() && TimeLine[TimeLine.size()-1].Time_End<Time_Begin_New)
+                        EmptyCount++;
+
+                    // Checking same times
+                    bool HasSameTime=false;
+                    for (size_t i=0; i<TimeLine.size(); i++)
+                    {
+                        if (TimeLine[i].Time_Begin==Time_Begin_New && TimeLine[i].Time_End==Time_End_New)
+                        {
+                            TimeLine[i].LineCount+=LineCount_New;
+                            HasSameTime=true;
+                        }
+                    }
+
+                    // Checking overlappings
+                    if (!HasSameTime)
+                    {
+                        size_t CreateFrame_Begin=1;
+                        size_t CreateFrame_End=0;
+                        for (size_t i=0; i<TimeLine.size(); i++)
+                        {
+                            if (Time_Begin_New==TimeLine[i].Time_Begin
+                             || Time_Begin_New==TimeLine[i].Time_End)
+                                CreateFrame_Begin=0;
+                            if (Time_End_New!=TimeLine[i].Time_Begin
+                             && Time_End_New!=TimeLine[i].Time_End)
+                            {
+                                CreateFrame_End=1;
+                                int64u Duration;
+                                if (Time_Begin_New>TimeLine[i].Time_Begin)
+                                {
+                                    Duration=Time_Begin_New-TimeLine[i].Time_Begin;
+                                    if (Events_MinDuration>Duration)
+                                        Events_MinDuration=Duration;
+                                }
+                                if (Time_Begin_New<TimeLine[i].Time_End)
+                                {
+                                    Duration=TimeLine[i].Time_End-Time_Begin_New;
+                                    if (Events_MinDuration>Duration)
+                                        Events_MinDuration=Duration;
+                                }
+                            }
+                        }
+                        Events_Total+=CreateFrame_Begin;
+                        Events_Total+=CreateFrame_End;
+                    }
+
+                    for (size_t i=0; i<TimeLine.size(); i++)
+                    {
+                        if (TimeLine[i].Time_End<=Time_Begin_New)
+                        {
+                            TimeLine.erase(TimeLine.begin()+i);
+                            i--;
+                            continue;
+                        }
+                    }
+
+                    if (!HasSameTime)
+                        TimeLine.push_back(timeline(Time_Begin_New, Time_End_New, LineCount_New));
+
+                    LineCount_New=0;
+                    for (size_t i=0; i<TimeLine.size(); i++)
+                    {
+                        LineCount_New+=TimeLine[i].LineCount;
+                        int64u Duration;
+                        if (Time_Begin_New<Time_End_New)
+                            Duration=Time_End_New-Time_Begin_New;
+                        else
+                            Duration=0;
+                        if (Events_MinDuration>Duration)
+                            Events_MinDuration=Duration;
+                    }
+                }
+
+                if (LineMaxCountPerEvent<LineCount_New)
+                    LineMaxCountPerEvent=LineCount_New;
+
                 #if MEDIAINFO_DEMUX
                     item Item;
-                    Item.PTS_Begin=PTS_Begin;
-                    Item.PTS_End=PTS_End;
+                    Item.PTS_Begin=Time_Begin_New;
+                    Item.PTS_End=Time_End_New;
                     Item.Content=move(Content);
                     Items.push_back(Item);
                 #endif //MEDIAINFO_DEMUX
@@ -297,12 +394,16 @@ bool File_SubRip::FileHeader_Begin()
     //Filling
     if (PTS_End_Max>=PTS_Begin_Min)
         Fill(Stream_Text, 0, Text_Duration, (PTS_End_Max-PTS_Begin_Min+500000)/1000000);
-    Fill(Stream_Text, 0, Text_Duration_Start, (PTS_Begin_Min+500000)/1000000);
-    Fill(Stream_Text, 0, Text_Duration_End, (PTS_End_Max+500000)/1000000);
-    Fill(Stream_Text, 0, Text_Events_Total, Events_Total);
-    Fill(Stream_Text, 0, "Events_MinDuration", (Events_MinDuration+500000)/1000000);
+    if (PTS_Begin_Min!=(int64u)-1)
+        Fill(Stream_Text, 0, Text_Duration_Start, (PTS_Begin_Min+500000)/1000000);
+    if (PTS_End_Max)
+        Fill(Stream_Text, 0, Text_Duration_End, (PTS_End_Max+500000)/1000000);
+    Fill(Stream_Text, 0, Text_Events_Total, Events_Total-EmptyCount);
+    if (Events_MinDuration!=(int64u)-1)
+        Fill(Stream_Text, 0, Text_Events_MinDuration, (Events_MinDuration+500000)/1000000);
     Fill(Stream_Text, 0, Text_Lines_Count, Lines_Count);
-    Fill(Stream_Text, 0, Text_Lines_MaxCountPerEvent, Lines_MaxCountPerEvent);
+    if (Events_Total!=EmptyCount)
+        Fill(Stream_Text, 0, Text_Lines_MaxCountPerEvent, LineMaxCountPerEvent);
 
     return true;
 }
