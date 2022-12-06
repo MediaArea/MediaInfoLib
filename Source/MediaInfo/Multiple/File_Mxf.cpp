@@ -1910,7 +1910,7 @@ static const char* Mxf_AS11_FpaPass[Mxf_AS11_FpaPass_Count]=
 {
     "Yes",
     "No",
-    "Not tested",
+    "", // Not tested
 };
 
 //---------------------------------------------------------------------------
