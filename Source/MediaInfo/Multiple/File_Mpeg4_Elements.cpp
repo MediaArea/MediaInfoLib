@@ -658,6 +658,8 @@ namespace Elements
     const int64u moof=0x6D6F6F66;
     const int64u moof_mfhd=0x6D666864;
     const int64u moof_traf=0x74726166;
+    const int64u moof_traf_sbgp=0x73626770;
+    const int64u moof_traf_sgpd=0x73677064;
     const int64u moof_traf_sdtp=0x73647470;
     const int64u moof_traf_tfdt=0x74666474;
     const int64u moof_traf_tfhd=0x74666864;
@@ -751,7 +753,9 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_co64=0x636F3634;
     const int64u moov_trak_mdia_minf_stbl_cslg=0x63736C67;
     const int64u moov_trak_mdia_minf_stbl_ctts=0x63747473;
+    const int64u moov_trak_mdia_minf_stbl_sbgp=0x73626770;
     const int64u moov_trak_mdia_minf_stbl_sdtp=0x73647470;
+    const int64u moov_trak_mdia_minf_stbl_sgpd=0x73677064;
     const int64u moov_trak_mdia_minf_stbl_stco=0x7374636F;
     const int64u moov_trak_mdia_minf_stbl_stdp=0x73746470;
     const int64u moov_trak_mdia_minf_stbl_stps=0x73747073;
@@ -1047,6 +1051,8 @@ void File_Mpeg4::Data_Parse()
         ATOM(moof_mfhd)
         LIST(moof_traf)
             ATOM_BEGIN
+            ATOM(moof_traf_sbgp)
+            ATOM(moof_traf_sgpd)
             ATOM(moof_traf_sdtp)
             ATOM(moof_traf_tfdt)
             ATOM(moof_traf_tfhd)
@@ -1151,7 +1157,9 @@ void File_Mpeg4::Data_Parse()
                         ATOM(moov_trak_mdia_minf_stbl_co64)
                         ATOM(moov_trak_mdia_minf_stbl_cslg)
                         ATOM(moov_trak_mdia_minf_stbl_ctts)
+                        ATOM(moov_trak_mdia_minf_stbl_sgpd)
                         ATOM(moov_trak_mdia_minf_stbl_sdtp)
+                        ATOM(moov_trak_mdia_minf_stbl_sbgp)
                         ATOM(moov_trak_mdia_minf_stbl_stco)
                         ATOM(moov_trak_mdia_minf_stbl_stdp)
                         ATOM(moov_trak_mdia_minf_stbl_stps)
@@ -2800,6 +2808,8 @@ void File_Mpeg4::moof()
     IsFragmented=true;
     moof_base_data_offset=File_Offset+Buffer_Offset-Header_Size;
     data_offset_present=true;
+    for (auto& Stream : Streams)
+        Stream.second.FramePos_Offset=Stream.second.stts_FrameCount;
 }
 
 //---------------------------------------------------------------------------
@@ -2889,7 +2899,21 @@ void File_Mpeg4::moof_traf_tfhd()
     if (default_sample_size_present)
         Get_B4 (moof_traf_default_sample_size,                  "default_sample_size");
     if (default_sample_flags_present)
-        Skip_B4(                                                "default_sample_flags");
+    {
+        Element_Begin1("default_sample_flags");
+        bool sample_is_non_sync_sample;
+        BS_Begin();
+        Skip_S1(4,                                              "reserved");
+        Skip_S1(2,                                              "is_leading");
+        Skip_S1(2,                                              "sample_depends_on");
+        Skip_S1(2,                                              "sample_is_depended_on");
+        Skip_S1(2,                                              "sample_has_redundancy");
+        Skip_S1(3,                                              "sample_padding_value");
+        Get_SB (   sample_is_non_sync_sample,                   "sample_is_non_sync_sample");
+        BS_End();
+        Skip_B2(                                                "sample_degradation_priority");
+        Element_End0();
+    }
 
     FILLING_BEGIN();
         Stream=Streams.find(moov_trak_tkhd_TrackID);
@@ -2943,10 +2967,25 @@ void File_Mpeg4::moof_traf_trun()
         Stream->second.stsz.resize(Stream->second.stsz.size()+sample_count, moof_traf_default_sample_size);
 
     if (first_sample_flags_present)
-        Skip_B4(                                                "first_sample_flags");
+    {
+        Element_Begin1("first_sample_flags");
+        bool sample_is_non_sync_sample;
+        BS_Begin();
+        Skip_S1(4,                                              "reserved");
+        Skip_S1(2,                                              "is_leading");
+        Skip_S1(2,                                              "sample_depends_on");
+        Skip_S1(2,                                              "sample_is_depended_on");
+        Skip_S1(2,                                              "sample_has_redundancy");
+        Skip_S1(3,                                              "sample_padding_value");
+        Get_SB (   sample_is_non_sync_sample,                   "sample_is_non_sync_sample");
+        BS_End();
+        Skip_B2(                                                "sample_degradation_priority");
+        Element_End0();
+    }
     for (int32u Pos=0; Pos<sample_count; Pos++)
     {
         Element_Begin1("sample");
+        Element_Info1(Stream->second.FramePos_Offset+Pos);
         if (sample_duration_present)
         {
             int32u sample_duration;
@@ -2968,7 +3007,21 @@ void File_Mpeg4::moof_traf_trun()
                 Stream->second.stsz.push_back(sample_size);
         }
         if (sample_flags_present)
-            Skip_B4(                                            "sample_flags");
+        {
+            Element_Begin1("sample_flags");
+            bool sample_is_non_sync_sample;
+            BS_Begin();
+            Skip_S1(4,                                          "reserved");
+            Skip_S1(2,                                          "is_leading");
+            Skip_S1(2,                                          "sample_depends_on");
+            Skip_S1(2,                                          "sample_is_depended_on");
+            Skip_S1(2,                                          "sample_has_redundancy");
+            Skip_S1(3,                                          "sample_padding_value");
+            Get_SB (   sample_is_non_sync_sample,               "sample_is_non_sync_sample");
+            BS_End();
+            Skip_B2(                                            "sample_degradation_priority");
+            Element_End0();
+        }
         if (sample_composition_time_offset_present)
         {
             Info_B4(sample_composition_time_offset,             "sample_composition_time_offset"); Param_Info1((int32s)sample_composition_time_offset);
@@ -4750,6 +4803,92 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_ctts()
         sample_offset=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset+4);
         Element_Offset+=8;
         */
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_sbgp()
+{
+    NAME_VERSION_FLAG("Sample to Group");
+    if (Version>1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
+        return;
+    }
+
+    //Parsing
+    int64u Total=0;
+    int32u Count;
+    Skip_C4(                                                    "grouping_type");
+    if (Version==1)
+        Skip_C4(                                                "grouping_type_parameter");
+    Get_B4 (Count,                                              "entry_count");
+    auto& Stream=Streams[moov_trak_tkhd_TrackID];
+    for (int32u Pos=0; Pos<Count; Pos++)
+    {
+        Element_Begin1("sample");
+        Element_Info1(Total);
+        int32u sample_count, group_description_index;
+        Get_B4 (sample_count,                                   "sample_count"); Element_Info1(sample_count);
+        Get_B4 (group_description_index,                        "group_description_index"); Element_Info1(group_description_index);
+        Total+=sample_count;
+        Element_End0();
+    }
+    Element_Info2(Total, " samples");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_sgpd()
+{
+    NAME_VERSION_FLAG("Sample Group Description");
+    if (Version>2)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
+        return;
+    }
+
+    //Parsing
+    int32u grouping_type, Count, default_length;
+    Get_C4 (grouping_type,                                      "grouping_type");
+    if (Version==1)
+        Get_B4 (default_length,                                 "default_length");
+    if (Version>=2)
+        Skip_B4(                                                "default_sample_description_index");
+    Get_B4 (Count,                                              "entry_count");
+    if (Version!=1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
+        return;
+    }
+    for (int32u Pos=0; Pos<Count; Pos++)
+    {
+        int32u description_length;
+        if (!default_length)
+            Get_B4 (description_length,                         "description_length");
+        else
+            description_length=default_length;
+        switch (description_length)
+        {
+            case 1: Skip_B1(                                    "SampleGroupEntry"); break;
+            case 2: 
+                switch (grouping_type)
+                {
+                    case 0x70726F6C: //prol
+                    case 0x726F6C6C: //roll
+                        {
+                        int16u roll_distance;
+                        Get_B2 (roll_distance,                  "roll_distance");
+                        if (roll_distance>=0x8000)
+                            Param_Info1((int16s)roll_distance);
+                        break;
+                        }
+                    default:
+                        Skip_B2(                                "SampleGroupEntry");
+                }
+                break;
+            case 4: Skip_B4(                                    "SampleGroupEntry"); break;
+            default: Skip_XX(description_length,                "SampleGroupEntry"); break;
+        }
     }
 }
 
