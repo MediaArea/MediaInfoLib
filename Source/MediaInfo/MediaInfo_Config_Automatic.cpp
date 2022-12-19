@@ -2686,7 +2686,7 @@ void MediaInfo_Config_CodecID_Audio_Mpeg4 (InfoMap &Info)
     "dvca;PCM;;;http://www.apple.com/quicktime/download/standalone.html\n"
     "ec-3;E-AC-3\n"
     "enca;(Encrypted)\n"
-    "fl32;PCM ; ;;http://www.apple.com/quicktime/download/standalone.html\n"
+    "fl32;PCM;;;http://www.apple.com/quicktime/download/standalone.html\n"
     "fl64;PCM;;;http://www.apple.com/quicktime/download/standalone.html\n"
     "ima4;ADPCM;;;http://www.apple.com/quicktime/download/standalone.html\n"
     "in24;PCM;;;http://www.apple.com/quicktime/download/standalone.html\n"

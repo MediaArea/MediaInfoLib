@@ -4382,16 +4382,18 @@ void File_Avc::SPS_PPS()
         Element_Begin1("seq_parameter_set");
         int16u Size;
         Get_B2 (Size,                                           "sequenceParameterSetLength");
+        if (!Size || Size>Element_Size-Element_Offset)
+        {
+            Trusted_IsNot("Size is wrong");
+            break; //There is an error
+        }
         BS_Begin();
         Mark_0 ();
         Skip_S1( 2,                                             "nal_ref_idc");
         Skip_S1( 5,                                             "nal_unit_type");
         BS_End();
-        if (Element_Offset+Size-1>Element_Size)
-        {
-            Trusted_IsNot("Size is wrong");
-            break; //There is an error
-        }
+        if (!Trusted_Get())
+            break;
         int64u Element_Offset_Save=Element_Offset;
         int64u Element_Size_Save=Element_Size;
         Buffer_Offset+=(size_t)Element_Offset_Save;
@@ -4410,18 +4412,23 @@ void File_Avc::SPS_PPS()
         Element_Begin1("pic_parameter_set");
         int16u Size;
         Get_B2 (Size,                                           "pictureParameterSetLength");
+        if (!Size || Size>Element_Size-Element_Offset)
+        {
+            Trusted_IsNot("Size is wrong");
+            break; //There is an error
+        }
         BS_Begin();
         Mark_0 ();
         Skip_S1( 2,                                             "nal_ref_idc");
         Skip_S1( 5,                                             "nal_unit_type");
         BS_End();
+        if (!Trusted_Get())
+            break;
         int64u Element_Offset_Save=Element_Offset;
         int64u Element_Size_Save=Element_Size;
         Buffer_Offset+=(size_t)Element_Offset_Save;
         Element_Offset=0;
         Element_Size=Size-1;
-        if (Element_Size>Element_Size_Save-Element_Offset_Save)
-            break; //There is an error
         Element_Code=0x08; //pic_parameter_set
         Data_Parse();
         Buffer_Offset-=(size_t)Element_Offset_Save;

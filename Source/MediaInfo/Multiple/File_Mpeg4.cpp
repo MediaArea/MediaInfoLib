@@ -3084,6 +3084,7 @@ void File_Mpeg4::Descriptors()
     mdat_MustParse=true; //Data is in MDAT
 
     //Parsing
+    MI.TrackID=moov_trak_tkhd_TrackID;
     Open_Buffer_Continue(&MI);
 
     //Filling
