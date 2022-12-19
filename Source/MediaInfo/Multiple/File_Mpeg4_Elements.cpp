@@ -97,6 +97,9 @@ using namespace std;
 #if defined(MEDIAINFO_ADPCM_YES)
     #include "MediaInfo/Audio/File_Adpcm.h"
 #endif
+#if defined(MEDIAINFO_FLAC_YES)
+    #include "MediaInfo/Audio/File_Flac.h"
+#endif
 #if defined(MEDIAINFO_MPEGA_YES)
     #include "MediaInfo/Audio/File_Mpega.h"
 #endif
@@ -798,6 +801,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_damr=0x64616D72;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dec3=0x64656333;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_ddts=0x64647473;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dfLa=0x64664C61;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dmlp=0x646D6C70;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dvc1=0x64766331;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC=0x64766343;
@@ -1207,6 +1211,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_damr)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dec3)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ddts)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dfLa)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dmlp)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dvc1)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC)
@@ -5636,6 +5641,15 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
             #endif //MEDIAINFO_DEMUX
         }
         #endif
+        #if defined(MEDIAINFO_FLAC_YES)
+        if (MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Codec, InfoCodecID_Format)==__T("FLAC"))
+        {
+            //Creating the parser
+            File_Flac* Parser=new File_Flac;
+            Parser->NoFileHeader=true;
+            Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+        }
+        #endif
         #if defined(MEDIAINFO_MPEGA_YES)
         if (MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Codec, InfoCodecID_Format)==__T("MPEG Audio"))
         {
@@ -6939,6 +6953,32 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_ddts()
         }
         #endif //defined(MEDIAINFO_DTS_YES)
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_dfLa()
+{
+    NAME_VERSION_FLAG("FLAC Specific Box");
+
+    //Parsing
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+        return; //Handling only the first description
+
+    #ifdef MEDIAINFO_FLAC_YES
+        if (Streams[moov_trak_tkhd_TrackID].Parsers.empty())
+        {
+            File_Flac* Parser=new File_Flac;
+            Open_Buffer_Init(Parser);
+            Parser->NoFileHeader=true;
+            Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+            mdat_MustParse=true; //Data is in MDAT
+        }
+
+        //Parsing
+        Open_Buffer_Continue(Streams[moov_trak_tkhd_TrackID].Parsers[0]);
+    #else
+        Skip_XX(Element_Size,                                   "FLAC Data");
+    #endif
 }
 
 //---------------------------------------------------------------------------
