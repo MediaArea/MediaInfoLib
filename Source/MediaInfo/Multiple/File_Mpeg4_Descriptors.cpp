@@ -366,6 +366,7 @@ File_Mpeg4_Descriptors::File_Mpeg4_Descriptors()
     //In
     KindOfStream=Stream_Max;
     PosOfStream=(size_t)-1;
+    TrackID=(int32u)-1;
     Parser_DoNotFreeIt=false;
     SLConfig_DoNotFreeIt=false;
 
@@ -793,9 +794,8 @@ void File_Mpeg4_Descriptors::Descriptor_04()
                             ((File_Aac*)Parser)->FrameIsAlwaysComplete=true;
                             #if MEDIAINFO_CONFORMANCE
                                 ((File_Aac*)Parser)->SamplingRate=SamplingRate;
-                                if (ES_ID)
                                 {
-                                    auto const ES_ID_Info=ES_ID_Infos.find(ES_ID);
+                                    auto const ES_ID_Info=ES_ID_Infos.find(TrackID!=(int32u)-1?TrackID:ES_ID);
                                     if (ES_ID_Info!=ES_ID_Infos.end())
                                     {
                                         auto AudioProfileLevelIndication=ES_ID_Info->second.ProfileLevel[2];
@@ -805,7 +805,10 @@ void File_Mpeg4_Descriptors::Descriptor_04()
                                         else if (AudioProfileLevelIndication==0xFF)
                                             AudioProfile=AudioProfile_NoAudio;
                                         else if (AudioProfileLevelIndication<Mpeg4_Descriptors_AudioProfileLevelIndication_Size)
-                                            AudioProfile=Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[AudioProfileLevelIndication].profile;
+                                        {
+                                            const auto& ProfileLevel=Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[AudioProfileLevelIndication];
+                                            AudioProfile=ProfileLevel.profile;
+                                        }
                                         else
                                             AudioProfile=NoProfile;
                                         ((File_Aac*)Parser)->Profile=AudioProfile;
@@ -1123,9 +1126,15 @@ void File_Mpeg4_Descriptors::Descriptor_0E()
     Get_B4 (Track_ID,                                           "Track_ID"); //ID of the track to use
 
     FILLING_BEGIN();
-        es_id_infos::iterator ES_ID_Info=ES_ID_Infos.find((int32u)-1);
-        if (ES_ID_Info!=ES_ID_Infos.end())
-            ES_ID_Infos[Track_ID]=ES_ID_Info->second;
+        if (Track_ID!=(int32u)-1)
+        {
+            es_id_infos::iterator ES_ID_Info=ES_ID_Infos.find((int32u)-1);
+            if (ES_ID_Info!=ES_ID_Infos.end())
+            {
+                ES_ID_Infos[Track_ID]=ES_ID_Info->second;
+                ES_ID_Infos.erase(ES_ID_Info);
+            }
+        }
     FILLING_END();
 }
 
