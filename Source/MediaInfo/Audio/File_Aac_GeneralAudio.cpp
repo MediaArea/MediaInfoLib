@@ -317,8 +317,26 @@ void File_Aac::program_config_element()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+void File_Aac::payload()
+{
+    //Parsing
+    switch (audioObjectType)
+    {
+        case   2: raw_data_block(); break;
+        default: Skip_BS(Data_BS_Remain(),                      "payload");
+    }
+}
+
+//---------------------------------------------------------------------------
 void File_Aac::raw_data_block()
 {
+    if ((ParseCompletely<1 && Status[IsFilled])
+     ||  ParseCompletely<0)
+    {
+        Skip_BS(Data_BS_Remain(),                               "raw_data_block");
+        return;
+    }
+
     if (sampling_frequency_index>=13)
     {
         Trusted_IsNot("(Problem)");
@@ -326,15 +344,6 @@ void File_Aac::raw_data_block()
         return;
     }
 
-    //Parsing
-    if ((ParseCompletely<1 && Status[IsFilled])
-     ||  ParseCompletely<0
-     ||  audioObjectType!=2)
-    {
-        Skip_BS(Data_BS_Remain(),                               "raw_data_block");
-    }
-    else
-    {
     Element_Begin1("raw_data_block");
     raw_data_block_Pos=0;
     ChannelPos_Temp=0;
@@ -392,7 +401,6 @@ void File_Aac::raw_data_block()
             Fill(Stream_Audio, 0, "Errors", "Incoherent count of channels");
     }
     Element_End0();
-    }
 }
 
 //---------------------------------------------------------------------------

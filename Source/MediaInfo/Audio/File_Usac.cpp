@@ -37,6 +37,8 @@ namespace MediaInfoLib
 extern int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampling_frequency);
 extern const size_t Aac_sampling_frequency_Size_Usac;
 extern const int32u Aac_sampling_frequency[];
+extern const int8u Aac_Channels_Size_Usac;
+extern const int8u Aac_Channels[];
 extern string Aac_Channels_GetString(int8u ChannelLayout);
 extern string Aac_ChannelConfiguration_GetString(int8u ChannelLayout);
 extern string Aac_ChannelConfiguration2_GetString(int8u ChannelLayout);
@@ -44,13 +46,150 @@ extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegH=fals
 extern string Aac_OutputChannelPosition_GetString(int8u OutputChannelPosition);
 
 //---------------------------------------------------------------------------
+enum usacElementType_Value
+{
+    ID_USAC_SCE,
+    ID_USAC_CPE,
+    ID_USAC_LFE,
+    ID_USAC_EXT,
+    ID_USAC_Max
+};
+static const char* usacElementType_IdNames[]=
+{
+    "ID_USAC_SCE",
+    "ID_USAC_CPE",
+    "ID_USAC_LFE",
+    "ID_USAC_EXT",
+};
+static_assert(sizeof(usacElementType_IdNames)/sizeof(const char*)==ID_USAC_Max, "");
+
+//---------------------------------------------------------------------------
+enum usacExtElementType_Value
+{
+    ID_EXT_ELE_FILL,
+    ID_EXT_ELE_MPEGS,
+    ID_EXT_ELE_SAOC,
+    ID_EXT_ELE_AUDIOPREROLL,
+    ID_EXT_ELE_UNI_DRC,
+    ID_EXT_ELE_Max
+};
+const char* usacExtElementType_IdNames[]=
+{
+    "ID_EXT_ELE_FILL",
+    "ID_EXT_ELE_MPEGS",
+    "ID_EXT_ELE_SAOC",
+    "ID_EXT_ELE_AUDIOPREROLL",
+    "ID_EXT_ELE_UNI_DRC",
+};
+static_assert(sizeof(usacExtElementType_IdNames)/sizeof(const char*)==ID_EXT_ELE_Max, "");
+const char* usacExtElementType_Names[] =
+{
+    "Fill",
+    "SpatialFrame",
+    "SaocFrame",
+    "AudioPreRoll",
+    "uniDrcGain",
+};
+static_assert(sizeof(usacExtElementType_Names)/sizeof(const char*)==ID_EXT_ELE_Max, "");
+const char* usacExtElementType_ConfigNames[] =
+{
+    "",
+    "SpatialSpecificConfig",
+    "SaocSpecificConfig",
+    "",
+    "uniDrcConfig",
+};
+static_assert(sizeof(usacExtElementType_ConfigNames)/sizeof(const char*)==ID_EXT_ELE_Max, "");
+
+//---------------------------------------------------------------------------
+enum loudnessInfoSetExtType_Value
+{
+    UNIDRCLOUDEXT_TERM,
+    UNIDRCLOUDEXT_EQ,
+    UNIDRCLOUDEXT_Max
+};
+static const char* loudnessInfoSetExtType_IdNames[]=
+{
+    "UNIDRCLOUDEXT_TERM",
+    "UNIDRCLOUDEXT_EQ",
+};
+static_assert(sizeof(loudnessInfoSetExtType_IdNames)/sizeof(const char*)==UNIDRCLOUDEXT_Max, "");
+static const char* loudnessInfoSetExtType_ConfNames[]=
+{
+    "",
+    "V1loudnessInfo",
+};
+static_assert(sizeof(loudnessInfoSetExtType_ConfNames)/sizeof(const char*)==UNIDRCLOUDEXT_Max, "");
+
+//---------------------------------------------------------------------------
+enum uniDrcConfigExtType_Value
+{
+    UNIDRCCONFEXT_TERM,
+    UNIDRCCONFEXT_PARAM_DRC,
+    UNIDRCCONFEXT_V1,
+    UNIDRCCONFEXT_Max
+};
+static const char* uniDrcConfigExtType_IdNames[]=
+{
+    "UNIDRCCONFEXT_TERM",
+    "UNIDRCCONFEXT_PARAM_DRC",
+    "UNIDRCCONFEXT_V1",
+};
+static_assert(sizeof(uniDrcConfigExtType_IdNames)/sizeof(const char*)==UNIDRCCONFEXT_Max, "");
+static const char* uniDrcConfigExtType_ConfNames[]=
+{
+    "",
+    "ParametricDrc",
+    "V1Drc",
+};
+static_assert(sizeof(uniDrcConfigExtType_ConfNames)/sizeof(const char*)==UNIDRCCONFEXT_Max, "");
+
+//---------------------------------------------------------------------------
+enum usacConfigExtType_Value
+{
+    ID_CONFIG_EXT_FILL,
+    ID_CONFIG_EXT_1,
+    ID_CONFIG_EXT_LOUDNESS_INFO,
+    ID_CONFIG_EXT_3,
+    ID_CONFIG_EXT_4,
+    ID_CONFIG_EXT_5,
+    ID_CONFIG_EXT_6,
+    ID_CONFIG_EXT_STREAM_ID,
+    ID_CONFIG_EXT_Max
+};
+static const char* usacConfigExtType_IdNames[]=
+{
+    "ID_CONFIG_EXT_FILL",
+    "",
+    "ID_CONFIG_EXT_LOUDNESS_INFO",
+    "",
+    "",
+    "",
+    "",
+    "ID_CONFIG_EXT_STREAM_ID",
+};
+static_assert(sizeof(usacConfigExtType_IdNames)/sizeof(const char*)==ID_CONFIG_EXT_Max, "");
+static const char* usacConfigExtType_ConfNames[]=
+{
+    "ConfigExtFill",
+    "",
+    "loudnessInfoSet",
+    "",
+    "",
+    "",
+    "",
+    "streamId",
+};
+static_assert(sizeof(usacConfigExtType_ConfNames)/sizeof(const char*)==ID_CONFIG_EXT_Max, "");
+
+//---------------------------------------------------------------------------
 struct coreSbrFrameLengthIndex_mapping
 {
     int8u    sbrRatioIndex;
     int8u    outputFrameLengthDivided256;
 };
-extern const size_t coreSbrFrameLengthIndex_Mapping_Size=5;
-extern coreSbrFrameLengthIndex_mapping coreSbrFrameLengthIndex_Mapping[coreSbrFrameLengthIndex_Mapping_Size] =
+const size_t coreSbrFrameLengthIndex_Mapping_Size=5;
+coreSbrFrameLengthIndex_mapping coreSbrFrameLengthIndex_Mapping[coreSbrFrameLengthIndex_Mapping_Size]=
 {
     { 0,  3 },
     { 0,  4 },
@@ -63,16 +202,104 @@ extern coreSbrFrameLengthIndex_mapping coreSbrFrameLengthIndex_Mapping[coreSbrFr
 static const size_t LoudnessMeaning_Size=9;
 static const char* LoudnessMeaning[LoudnessMeaning_Size]=
 {
-    "Loudness_Program",
-    "Loudness_Anchor",
-    "Loudness_MaximumOfRange",
-    "Loudness_MaximumMomentary",
-    "Loudness_MaximumShortTerm",
-    "Loudness_Range",
-    "Loudness_ProductionMixingLevel",
-    "Loudness_RoomType",
-    "Loudness_ShortTerm",
+    "Program",
+    "Anchor",
+    "MaximumOfRange",
+    "MaximumMomentary",
+    "MaximumShortTerm",
+    "Range",
+    "ProductionMixingLevel",
+    "RoomType",
+    "ShortTerm",
 };
+
+static Ztring Loudness_Value(int8u methodDefinition, int8u methodValue)
+{
+    switch (methodDefinition)
+    {
+        case 0:
+                return Ztring();
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+                return Ztring::ToZtring(-57.75+((double)methodValue)/4, 2)+__T(" LKFS");
+        case 6: 
+                {
+                int8u Value;
+                if (methodValue==0)
+                    Value=0;
+                else if (methodValue<=128)
+                    Value=methodValue/4;
+                else if (methodValue<=204)
+                    Value=methodValue/2-32;
+                else
+                    Value=methodValue-134; 
+                return Ztring::ToZtring(Value)+__T(" LU");
+                }
+        case 7: 
+                return Ztring::ToZtring(80+methodValue)+__T(" dB");
+        case 8:
+                switch(methodValue)
+                {
+                    case 0: return Ztring();
+                    case 1: return __T("Large room");
+                    case 2: return __T("Small room");
+                    default: return Ztring::ToZtring(methodValue);
+                }
+        case 9:
+                return Ztring::ToZtring(-116+((double)methodValue)/2, 1)+__T(" LKFS");
+        default:
+                return Ztring().From_Number(methodValue);
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* measurementSystems[]=
+{
+    "",
+    "EBU R-128",
+    "ITU-R BS.1770-4",
+    "ITU-R BS.1770-4 with pre-processing",
+    "User",
+    "Expert/panel",
+    "ITU-R BS.1771-1",
+    "Reserved Measurement System A",
+    "Reserved Measurement System B",
+    "Reserved Measurement System C",
+    "Reserved Measurement System D",
+    "Reserved Measurement System E",
+};
+auto measurementSystems_Size=sizeof(measurementSystems)/sizeof(const char*);
+
+//---------------------------------------------------------------------------
+static const char* reliabilities[]=
+{
+    "",
+    "Unverified",
+    "Not to exceed ceiling",
+    "Accurate",
+};
+auto reliabilities_Size=sizeof(reliabilities)/sizeof(const char*);
+
+//---------------------------------------------------------------------------
+static const char* drcSetEffect_List[]=
+{
+    "Night",
+    "Noisy",
+    "Limited",
+    "LowLevel",
+    "Dialog",
+    "General",
+    "Expand",
+    "Artistic",
+    "Clipping",
+    "Fade",
+    "DuckOther",
+    "DuckSelf",
+};
+auto drcSetEffect_List_Size=sizeof(drcSetEffect_List)/sizeof(const char*);
 
 //***************************************************************************
 // Constructor/Destructor
@@ -94,6 +321,48 @@ File_Usac::File_Usac()
 //---------------------------------------------------------------------------
 File_Usac::~File_Usac()
 {
+}
+
+//***********************************************************************
+// BS_Bookmark
+//***********************************************************************
+
+//---------------------------------------------------------------------------
+File_Usac::bs_bookmark File_Usac::BS_Bookmark(size_t NewSize)
+{
+    bs_bookmark B;
+    if (Data_BS_Remain()>=NewSize)
+        B.End=Data_BS_Remain()-NewSize;
+    else
+        B.End=Data_BS_Remain();
+    B.Element_Offset=Element_Offset;
+    B.Trusted=Trusted;
+    B.UnTrusted=Element[Element_Level].UnTrusted;
+    B.NewSize=NewSize;
+    B.BitsNotIncluded=B.End%8;
+    if (B.BitsNotIncluded)
+        B.NewSize+=B.BitsNotIncluded;
+    BS->Resize(B.NewSize);
+    return B;
+}
+
+//---------------------------------------------------------------------------
+void File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
+{
+    if (Data_BS_Remain()>B.BitsNotIncluded)
+    {
+        int8u LastByte=0xFF;
+        auto BitsRemaining=Data_BS_Remain()-B.BitsNotIncluded;
+        if (BitsRemaining<8)
+            Peek_S1((int8u)(Data_BS_Remain()-B.BitsNotIncluded), LastByte);
+        Skip_BS(BitsRemaining,                                  LastByte?"Unknown":"Padding");
+    }
+    else if (Data_BS_Remain()<B.BitsNotIncluded)
+        Trusted_IsNot("Too big");
+    BS->Resize(B.End);
+    Element_Offset=B.Element_Offset;
+    Trusted=B.Trusted;
+    Element[Element_Level].UnTrusted=B.UnTrusted;
 }
 
 //***********************************************************************
@@ -135,66 +404,88 @@ void File_Usac::Streams_Finish_Conformance()
 #endif
 
 //***************************************************************************
-// Elements - USAC
+// Elements - USAC - Config
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-void File_Usac::UsacConfig()
+void File_Usac::UsacConfig(size_t BitsNotIncluded)
 {
     // Init
-    loudnessInfoSet_Present=false;
+    C = usac_config();
+    #if MEDIAINFO_CONFORMANCE
+        C.loudnessInfoSet_Present[0] = 0;
+        C.loudnessInfoSet_Present[1] = 0;
+    #endif
 
     Element_Begin1("UsacConfig");
-    int8u coreSbrFrameLengthIndex;
     bool usacConfigExtensionPresent;
-    Get_S1 (5, sampling_frequency_index,                        "usacSamplingFrequencyIndex"); Param_Info1C(sampling_frequency_index<Aac_sampling_frequency_Size_Usac && Aac_sampling_frequency[sampling_frequency_index], Aac_sampling_frequency[sampling_frequency_index]);
-    int32u Frequency_b2;
-    if (sampling_frequency_index==Aac_sampling_frequency_Size_Usac)
+    Get_S1 (5, C.sampling_frequency_index,                      "usacSamplingFrequencyIndex"); Param_Info1C(C.sampling_frequency_index<Aac_sampling_frequency_Size_Usac && Aac_sampling_frequency[C.sampling_frequency_index], Aac_sampling_frequency[C.sampling_frequency_index]);
+    if (C.sampling_frequency_index==Aac_sampling_frequency_Size_Usac)
     {
         int32u samplingFrequency;
         Get_S3 (24, samplingFrequency,                          "usacSamplingFrequency");
-        Frequency_b2=samplingFrequency;
-        sampling_frequency_index=Aac_AudioSpecificConfig_sampling_frequency_index(Frequency_b);
+        C.sampling_frequency_index=Aac_AudioSpecificConfig_sampling_frequency_index(samplingFrequency);
+        C.sampling_frequency=samplingFrequency;
     }
     else
-        Frequency_b2=Aac_sampling_frequency[sampling_frequency_index];
-    #if MEDIAINFO_CONFORMANCE
-        if (Frequency_b && Frequency_b2!=Frequency_b)
-            Fill_Conformance("Crosscheck AudioSpecificConfig-UsacConfig samplingFrequency-usacSamplingFrequency", (to_string(Frequency_b) + " vs " + to_string(Frequency_b2) + " are not coherent").c_str());
-    #endif
-    Get_S1 (3, coreSbrFrameLengthIndex,                         "coreSbrFrameLengthIndex");
-    Get_S1 (5, channelConfiguration,                            "channelConfiguration"); Param_Info1C(channelConfiguration, Aac_ChannelLayout_GetString(channelConfiguration));
-    if (!channelConfiguration)
     {
-        int32u numOutChannels;
-        escapedValue(numOutChannels, 5, 8, 16,                  "numOutChannels");
-        for (int32u i=0; i<numOutChannels; i++)
+        C.sampling_frequency=Aac_sampling_frequency[C.sampling_frequency_index];
+    }
+    #if MEDIAINFO_CONFORMANCE
+        if (Frequency_b && C.sampling_frequency != Frequency_b)
+            Fill_Conformance("Crosscheck AudioSpecificConfig-UsacConfig samplingFrequency-usacSamplingFrequency", (to_string(Frequency_b) + " vs " + to_string(C.sampling_frequency) + " are not coherent").c_str());
+    #endif
+    Get_S1 (3, C.coreSbrFrameLengthIndex,                       "coreSbrFrameLengthIndex");
+    Get_S1 (5, C.channelConfiguration,                          "channelConfiguration"); Param_Info1C(C.channelConfiguration, Aac_ChannelLayout_GetString(C.channelConfiguration));
+    channelConfiguration=C.channelConfiguration;
+    if (!C.channelConfiguration)
+    {
+        escapedValue(C.numOutChannels, 5, 8, 16,                "numOutChannels");
+        for (int32u i=0; i<C.numOutChannels; i++)
         {
             Info_S1(5, bsOutChannelPos,                         "bsOutChannelPos"); Param_Info1(Aac_OutputChannelPosition_GetString(bsOutChannelPos));
         }
     }
-    if (coreSbrFrameLengthIndex>=coreSbrFrameLengthIndex_Mapping_Size)
-    {
-        Skip_BS(Data_BS_Remain(),                               "(Not implemented)");
-        Element_End0();
-        return;
-    }
-    UsacDecoderConfig(coreSbrFrameLengthIndex);
+    else if (C.channelConfiguration<Aac_Channels_Size_Usac)
+        C.numOutChannels=Aac_Channels[C.channelConfiguration];
+    else
+        C.numOutChannels=(int32u)-1;
+    UsacDecoderConfig();
     Get_SB (usacConfigExtensionPresent,                         "usacConfigExtensionPresent");
     if (usacConfigExtensionPresent)
         UsacConfigExtension();
     Element_End0();
 
-    // Filling
-    Fill(Stream_Audio, 0, Audio_SamplesPerFrame, coreSbrFrameLengthIndex_Mapping[coreSbrFrameLengthIndex].outputFrameLengthDivided256 << 8, true);
-    Fill_DRC();
-    Fill_Loudness();
+    if (BitsNotIncluded!=(size_t)-1)
+    {
+        if (Data_BS_Remain()>BitsNotIncluded)
+        {
+            int8u LastByte=0xFF;
+            auto BitsRemaining=Data_BS_Remain()-BitsNotIncluded;
+            if (BitsRemaining<8)
+                Peek_S1((int8u)BitsRemaining, LastByte);
+            Skip_BS(BitsRemaining,                              LastByte?"Unknown":"Padding");
+        }
+        else if (Data_BS_Remain()<BitsNotIncluded)
+            Trusted_IsNot("Too big");
+    }
+
+    if (Trusted_Get())
+    {
+        // Filling
+        {
+            if (C.coreSbrFrameLengthIndex<coreSbrFrameLengthIndex_Mapping_Size)
+                Fill(Stream_Audio, 0, Audio_SamplesPerFrame, coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].outputFrameLengthDivided256<<8, 10, true);
+            Fill_DRC();
+            Fill_Loudness();
+        }
+    }
 }
 
 //---------------------------------------------------------------------------
 void File_Usac::Fill_DRC(const char* Prefix)
 {
-    if (!drcInstructionsUniDrc_Data.empty())
+    if (!C.drcInstructionsUniDrc_Data.empty())
     {
         string FieldPrefix;
         if (Prefix)
@@ -203,18 +494,18 @@ void File_Usac::Fill_DRC(const char* Prefix)
             FieldPrefix += ' ';
         }
 
-        Fill(Stream_Audio, 0, (FieldPrefix+"DrcSets_Count").c_str(), drcInstructionsUniDrc_Data.size());
+        Fill(Stream_Audio, 0, (FieldPrefix+"DrcSets_Count").c_str(), C.drcInstructionsUniDrc_Data.size());
         Fill_SetOptions(Stream_Audio, 0, (FieldPrefix + "DrcSets_Count").c_str(), "N NI"); // Hidden in text output
         ZtringList Ids, Data;
-        for (std::map<int16u, drc_info>::iterator Item=drcInstructionsUniDrc_Data.begin(); Item!=drcInstructionsUniDrc_Data.end(); ++Item)
+        for (const auto& Item : C.drcInstructionsUniDrc_Data)
         {
-            int8u drcSetId=Item->first>>8;
-            int8u downmixId=Item->first&((1<<8)-1);
+            int8u drcSetId=Item.first.drcSetId;
+            int8u downmixId=Item.first.downmixId;
             Ztring Id;
             if (drcSetId || downmixId)
                 Id=Ztring::ToZtring(drcSetId)+=__T('-')+Ztring::ToZtring(downmixId);
             Ids.push_back(Id);
-            Data.push_back(Ztring().From_UTF8(Item->second.drcSetEffectTotal));
+            Data.push_back(Ztring().From_UTF8(Item.second.drcSetEffectTotal));
         }
         Fill(Stream_Audio, 0, (FieldPrefix+"DrcSets_Effects").c_str(), Data, Ids);
     }
@@ -236,71 +527,75 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
     {
         if (i)
             FieldSuffix = "_Album";
-        if (!loudnessInfo_Data[i].empty())
+        if (!C.loudnessInfo_Data[i].empty())
         {
-            Fill(Stream_Audio, 0, (FieldPrefix + "Loudness_Count" + FieldSuffix).c_str(), loudnessInfo_Data[i].size());
+            Fill(Stream_Audio, 0, (FieldPrefix + "Loudness_Count" + FieldSuffix).c_str(), C.loudnessInfo_Data[i].size());
             Fill_SetOptions(Stream_Audio, 0, (FieldPrefix + "Loudness_Count" + FieldSuffix).c_str(), "N NI"); // Hidden in text output
         }
-        ZtringList Ids;
+        vector<drc_id> Ids;
         ZtringList SamplePeakLevel;
         ZtringList TruePeakLevel;
         ZtringList Measurements[16];
-        for (std::map<Ztring, loudness_info>::iterator Item = loudnessInfo_Data[i].begin(); Item != loudnessInfo_Data[i].end(); ++Item)
+        for (const auto& Item : C.loudnessInfo_Data[i])
         {
-            Ids.push_back(Item->first);
-            SamplePeakLevel.push_back(Item->second.SamplePeakLevel);
-            TruePeakLevel.push_back(Item->second.TruePeakLevel);
+            Ids.push_back(Item.first);
+            SamplePeakLevel.push_back(Item.second.SamplePeakLevel);
+            TruePeakLevel.push_back(Item.second.TruePeakLevel);
             for (int8u j = 1; j < 16; j++)
-                Measurements[j].push_back(Item->second.Measurements.Values[j]);
+                Measurements[j].push_back(Item.second.Measurements.Values[j]);
         }
         if (Ids.size() >= 1 && Ids.front().empty())
         {
             if (!i)
                 DefaultIdPresent = true;
-            if (Ids.size() == 1)
-                Ids.clear();
         }
-        Fill(Stream_Audio, 0, (FieldPrefix + "SamplePeakLevel" + FieldSuffix).c_str(), SamplePeakLevel, Ids);
-        Fill(Stream_Audio, 0, (FieldPrefix + "TruePeakLevel" + FieldSuffix).c_str(), TruePeakLevel, Ids);
-        for (int8u j = 1; j < 16; j++)
+        ZtringList Ids_Ztring;
+        for (const auto& Id : Ids)
+            Ids_Ztring.emplace_back(Ztring().From_UTF8(Id.to_string()));
+        if (Ids_Ztring.empty())
+            continue;
+        Fill(Stream_Audio, 0, (FieldPrefix + "SamplePeakLevel" + FieldSuffix).c_str(), SamplePeakLevel, Ids_Ztring);
+        Fill(Stream_Audio, 0, (FieldPrefix + "TruePeakLevel" + FieldSuffix).c_str(), TruePeakLevel, Ids_Ztring);
+        for (int8u j = 0; j < 16; j++)
         {
             string Field;
-            if (j <= LoudnessMeaning_Size)
+            if (j && j <= LoudnessMeaning_Size)
                 Field = LoudnessMeaning[j - 1];
             else
-                Field = "LoudnessMeaning" + Ztring::ToZtring(j).To_UTF8();
-            Fill(Stream_Audio, 0, (FieldPrefix + Field + FieldSuffix).c_str(), Measurements[j], Ids);
+                Field = Ztring::ToZtring(j).To_UTF8();
+            Fill(Stream_Audio, 0, (FieldPrefix + "Loudness_" + Field + FieldSuffix).c_str(), Measurements[j], Ids_Ztring);
         }
     }
 
     #if MEDIAINFO_CONFORMANCE
         if (NoConCh)
             return;
+        auto loudnessInfoSet_Present_Total=C.loudnessInfoSet_Present[0]+C.loudnessInfoSet_Present[1];
         constexpr14 auto CheckFlags = bitset8().set(xHEAAC).set(MpegH);
         if (!CheckIf(CheckFlags) || Profile==AudioProfile_Unspecified)
         {
         }
-        else if (!loudnessInfoSet_Present)
+        else if (!loudnessInfoSet_Present_Total)
         {
-            Fill_Conformance((string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet Coherency").c_str(), "Is missing", CheckFlags);
+            Fill_Conformance("loudnessInfoSet Coherency", "Is missing", CheckFlags);
             Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is missing");
             Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet missing");
         }
-        else if (loudnessInfo_Data[0].empty())
+        else if (C.loudnessInfo_Data[0].empty())
         {
-            Fill_Conformance((string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet loudnessInfoCount").c_str(), "Is 0", CheckFlags);
+            Fill_Conformance("loudnessInfoSet loudnessInfoCount", "Is 0", CheckFlags);
             Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is empty");
             Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet empty");
         }
         else if (!DefaultIdPresent)
         {
-            Fill_Conformance((string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet Coherency").c_str(), "Default loudnessInfo is missing", CheckFlags);
+            Fill_Conformance("loudnessInfoSet Coherency", "Default loudnessInfo is missing", CheckFlags);
             Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: Default loudnessInfo is missing");
             Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo missing");
         }
-        else if (loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
+        else if (C.loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
         {
-            Fill_Conformance((string(ConformanceFlags[MpegH] ? "mpegh3daConfig" : "UsacConfig") + " loudnessInfoSet Coherency").c_str(), "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
+            Fill_Conformance("loudnessInfoSet Coherency", "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
             Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
             Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo incomplete");
         }
@@ -313,7 +608,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
 }
 
 //---------------------------------------------------------------------------
-void File_Usac::UsacDecoderConfig(int8u coreSbrFrameLengthIndex)
+void File_Usac::UsacDecoderConfig()
 {
     Element_Begin1("UsacDecoderConfig");
     int32u numElements;
@@ -323,21 +618,14 @@ void File_Usac::UsacDecoderConfig(int8u coreSbrFrameLengthIndex)
     {
         Element_Begin1("usacElement");
         int8u usacElementType;
-        Get_S1(2, usacElementType,                              "usacElementType");
+        Get_S1(2, usacElementType,                              "usacElementType"); Element_Info1(usacElementType_IdNames[usacElementType]);
+        C.usacElements.push_back({usacElementType, 0});
         switch (usacElementType)
         {
-            case 0: //ID_USAC_SCE
-                UsacSingleChannelElementConfig(coreSbrFrameLengthIndex);
-                break;
-            case 1: //ID_USAC_CPE
-                UsacChannelPairElementConfig(coreSbrFrameLengthIndex);
-                break;
-            case 2: //ID_USAC_LFE
-                UsacLfeElementConfig(); 
-                break;
-            case 3: //ID_USAC_EXT
-                UsacExtElementConfig();
-                break;
+            case ID_USAC_SCE                                    : UsacSingleChannelElementConfig(); break;
+            case ID_USAC_CPE                                    : UsacChannelPairElementConfig(); break;
+            case ID_USAC_LFE                                    : UsacLfeElementConfig(); break;
+            case ID_USAC_EXT                                    : UsacExtElementConfig(); break;
         }
         Element_End0();
     }
@@ -346,24 +634,24 @@ void File_Usac::UsacDecoderConfig(int8u coreSbrFrameLengthIndex)
 }
 
 //---------------------------------------------------------------------------
-void File_Usac::UsacSingleChannelElementConfig(int8u coreSbrFrameLengthIndex)
+void File_Usac::UsacSingleChannelElementConfig()
 {
     Element_Begin1("UsacSingleChannelElementConfig");
 
     UsacCoreConfig();
-    if (coreSbrFrameLengthIndex_Mapping[coreSbrFrameLengthIndex].sbrRatioIndex)
+    if (C.coreSbrFrameLengthIndex>=coreSbrFrameLengthIndex_Mapping_Size || coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].sbrRatioIndex)
         SbrConfig();
 
     Element_End0();
 }
 
 //---------------------------------------------------------------------------
-void File_Usac::UsacChannelPairElementConfig(int8u coreSbrFrameLengthIndex)
+void File_Usac::UsacChannelPairElementConfig()
 {
     Element_Begin1("UsacChannelPairElementConfig");
 
     UsacCoreConfig();
-    if (coreSbrFrameLengthIndex_Mapping[coreSbrFrameLengthIndex].sbrRatioIndex)
+    if (C.coreSbrFrameLengthIndex>=coreSbrFrameLengthIndex_Mapping_Size || coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].sbrRatioIndex)
     {
         int8u stereoConfiglindex;
         SbrConfig();
@@ -382,55 +670,44 @@ void File_Usac::UsacLfeElementConfig()
 }
 
 //---------------------------------------------------------------------------
-static const size_t UsacExtElementConfig_usacExtElementType_Size=5;
-static const char* UsacExtElementConfig_usacExtElementType[UsacExtElementConfig_usacExtElementType_Size]=
-{
-    "FILL",
-    "MPEGS",
-    "SAOC",
-    "AUDIOPREROLL",
-    "UNI_DRC",
-};
 void File_Usac::UsacExtElementConfig()
 {
     Element_Begin1("UsacExtElementConfig");
 
-    int32u usacExtElementType, usacExtElementConfigLength, usacExtElementDefaultLength;
-    bool usacExtElementDefaultLengthPresent, usacExtElementPayloadFlag;
-    escapedValue(usacExtElementType, 4, 8, 16,                  "usacExtElementType"); Param_Info1C(usacExtElementType<UsacExtElementConfig_usacExtElementType_Size, UsacExtElementConfig_usacExtElementType[usacExtElementType]); Element_Info1C(usacExtElementType<UsacExtElementConfig_usacExtElementType_Size, UsacExtElementConfig_usacExtElementType[usacExtElementType]);
+    int32u usacExtElementType, usacExtElementConfigLength;
+    bool usacExtElementDefaultLengthPresent, usacExtElementPayloadFrag;
+    escapedValue(usacExtElementType, 4, 8, 16,                  "usacExtElementType"); Element_Level--; Element_Info1C(usacExtElementType<ID_EXT_ELE_Max, usacExtElementType_IdNames[usacExtElementType]); Element_Level++;
+    C.usacElements.back().usacElementType+=usacExtElementType<<2;
     escapedValue(usacExtElementConfigLength, 4, 8, 16,          "usacExtElementConfigLength");
     Get_SB (usacExtElementDefaultLengthPresent,                 "usacExtElementDefaultLengthPresent");
     if (usacExtElementDefaultLengthPresent)
+    {
+        int32u usacExtElementDefaultLength;
         escapedValue(usacExtElementDefaultLength, 8, 16, 0,     "usacExtElementDefaultLength");
-    else
-        usacExtElementDefaultLength=0;
-    Get_SB (usacExtElementPayloadFlag,                          "usacExtElementPayloadFlag");
-
-    size_t End;
-    if (Data_BS_Remain()>usacExtElementConfigLength*8)
-        End=Data_BS_Remain()-usacExtElementConfigLength*8;
-    else
-        End=0; //Problem
-    switch (usacExtElementType)
-    {
-        case 0: //ID_EXT_ELE_FILL
-        case 3: //ID_EXT_ELE_AUDIOPREROLL
-            break;
-        case 4: //ID_EXT_ELE_UNI_DRC
-            uniDrcConfig();
-            break;
-        default:
-            if (usacExtElementConfigLength)
-                Skip_BS(usacExtElementConfigLength*8,           "(Unknown)");
-            break;
+        C.usacElements.back().usacExtElementDefaultLength=usacExtElementDefaultLength+1;
     }
-    if (Data_BS_Remain()>End)
+    Get_SB (usacExtElementPayloadFrag,                          "usacExtElementPayloadFlag");
+    C.usacElements.back().usacExtElementPayloadFrag=usacExtElementPayloadFrag;
+
+    if (usacExtElementConfigLength)
     {
-        size_t Size=Data_BS_Remain()-End;
-        int8u Padding=1;
-        if (Size<8)
-            Peek_S1((int8u)Size, Padding);
-        Skip_BS(Data_BS_Remain()-End,                           Padding?"(Unknown)":"Padding");
+        usacExtElementConfigLength*=8;
+        if (usacExtElementConfigLength>Data_BS_Remain())
+        {
+            Trusted_IsNot("Too big");
+            Element_End0();
+            return;
+        }
+        auto B=BS_Bookmark(usacExtElementConfigLength);
+        switch (usacExtElementType)
+        {
+            case ID_EXT_ELE_FILL                                :
+            case ID_EXT_ELE_AUDIOPREROLL                        : break;
+            case ID_EXT_ELE_UNI_DRC                             : uniDrcConfig(); break;
+            default:
+                Skip_BS(usacExtElementConfigLength,             "Unknown");
+        }
+        BS_Bookmark(B);
     }
 
     Element_End0();
@@ -452,7 +729,7 @@ void File_Usac::SbrConfig()
 {
     Element_Begin1("SbrConfig");
 
-    Skip_SB(                                                    "harmonicsSBR");
+    Get_SB (C.harmonicSBR,                                      "harmonicSBR");
     Skip_SB(                                                    "bs_interTes");
     Skip_SB(                                                    "bs_pvc");
     SbrDlftHeader();
@@ -521,17 +798,17 @@ void File_Usac::Mps212Config(int8u StereoConfigindex)
 //---------------------------------------------------------------------------
 void File_Usac::uniDrcConfig()
 {
-    downmixInstructions_Data.clear();
-    drcInstructionsUniDrc_Data.clear();
-    loudnessInfo_Data[0].clear();
-    loudnessInfo_Data[1].clear();
+    C.downmixInstructions_Data.clear();
+    C.drcInstructionsUniDrc_Data.clear();
+    C.loudnessInfo_Data[0].clear();
+    C.loudnessInfo_Data[1].clear();
 
     Element_Begin1("uniDrcConfig");
 
     int8u downmixInstructionsCount, drcCoefficientsBasicCount, drcInstructionsBasicCount, drcCoefficientsUniDrcCount, drcInstructionsUniDrcCount;
     TEST_SB_SKIP(                                               "sampleRatePresent");
-        Skip_S3(18,                                             "bsSampleRate");
-        Fill(Stream_Audio, 0, "bsSampleRate", "bsSampleRate");
+        int32u bsSampleRate;
+        Get_S3 (18, bsSampleRate ,                              "bsSampleRate"); bsSampleRate+=1000; Param_Info2(bsSampleRate, " Hz");
     TEST_SB_END();
     Get_S1 (7, downmixInstructionsCount,                        "downmixInstructionsCount");
     TESTELSE_SB_SKIP(                                           "drcDescriptionBasicPresent");
@@ -565,47 +842,45 @@ void File_Usac::uniDrcConfig()
 //---------------------------------------------------------------------------
 void File_Usac::uniDrcConfigExtension()
 {
-    Element_Begin1("uniDrcConfigExtension");
-
     for (;;)
     {
+        Element_Begin1("uniDrcConfigExtension");
         int32u bitSize;
         int8u uniDrcConfigExtType, extSizeBits;
-        Get_S1 (4, uniDrcConfigExtType,                         "uniDrcConfigExtType");
+        Get_S1 (4, uniDrcConfigExtType,                         "uniDrcConfigExtType"); Element_Info1C(uniDrcConfigExtType<UNIDRCCONFEXT_Max, uniDrcConfigExtType_IdNames[uniDrcConfigExtType]);
         if (!uniDrcConfigExtType) // UNIDRCCONFEXT_TERM
+        {
+            Element_End0();
             break;
+        }
         Get_S1 (4, extSizeBits,                                 "bitSizeLen");
         extSizeBits+=4;
         Get_S4 (extSizeBits, bitSize,                           "bitSize");
         bitSize++;
+        if (bitSize>Data_BS_Remain())
+        {
+            Trusted_IsNot("Too big");
+            Element_End0();
+            break;
+        }
 
+        auto B=BS_Bookmark(bitSize);
         switch (uniDrcConfigExtType)
         {
             /*
-            case 1 : // UNIDRCCONFEXT_PARAM_DRC
+            case UNIDRCCONFEXT_PARAM_DRC :
                 {
-                size_t End;
-                if (Data_BS_Remain()>bitSize)
-                    End=Data_BS_Remain()-bitSize;
-                else
-                    End=0; //Problem
                 drcCoefficientsParametricDrc();
                 int8u parametricDrcInstructionsCount;
                 Get_S1 (4, parametricDrcInstructionsCount,      "parametricDrcInstructionsCount");
                 for (int8u i=0; i<parametricDrcInstructionsCount; i++)
                     parametricDrcInstructions();
-                if (Data_BS_Remain()>End)
-                    Skip_BS(Data_BS_Remain()-End,               "(Unknown)");
+                Skip_BS(Data_BS_Remain(),                       "(Not implemented)");
                 }
                 break;
             */
-            case 2 : // UNIDRCCONFEXT_V1
+            case UNIDRCCONFEXT_V1 :
                 {
-                size_t End;
-                if (Data_BS_Remain()>bitSize)
-                    End=Data_BS_Remain()-bitSize;
-                else
-                    End=0; //Problem
                 TEST_SB_SKIP(                                   "downmixInstructionsV1Present");
                     int8u downmixInstructionsV1Count;
                     Get_S1 (7, downmixInstructionsV1Count,      "downmixInstructionsV1Count");
@@ -639,17 +914,16 @@ void File_Usac::uniDrcConfigExtension()
                     //for (int8u i=0; i<eqInstructionsCount; i++)
                     //    eqInstructions();
                 TEST_SB_END();
-                if (Data_BS_Remain()>End)
-                    Skip_BS(Data_BS_Remain()-End,               "(Unknown)");
+                if (Data_BS_Remain()>B.BitsNotIncluded)
+                    Skip_BS(Data_BS_Remain()-B.BitsNotIncluded, "(Not implemented)");
                 }
                 break;
             default:
-                if (bitSize)
-                    Skip_BS(bitSize,                            "(Unknown)");
+                Skip_BS(bitSize,                                "Unknown");
         }
+        BS_Bookmark(B);
+        Element_End0();
     }
-
-    Element_End0();
 }
 
 //---------------------------------------------------------------------------
@@ -668,10 +942,10 @@ void File_Usac::downmixInstructions(bool V1)
         if (V1)
             Skip_S1(4,                                          "bsDownmixOffset");
         for (int8u i=0; i<targetChannelCount; i++)
-            for (int8u j=0; j<baseChannelCount; j++)
+            for (int8u j=0; j<C.baseChannelCount; j++)
                 Skip_S1(V1?5:4,                                 V1?"bsDownmixCoefficientV1":"bsDownmixCoefficient");
     }
-    downmixInstructions_Data[downmixId].targetChannelCount=targetChannelCount;
+    C.downmixInstructions_Data[downmixId].targetChannelCount=targetChannelCount;
     Element_End0();
 }
 
@@ -786,7 +1060,7 @@ void File_Usac::drcCoefficientsUniDrc(bool V1)
     }
     int8u gainSetCount;
     Get_S1 (6, gainSetCount,                                    "gainSetCount");
-    gainSets.clear();
+    C.gainSets.clear();
     for (int8u i=0; i<gainSetCount; i++)
     {
         Element_Begin1("gainSet");
@@ -846,7 +1120,7 @@ void File_Usac::drcCoefficientsUniDrc(bool V1)
         }
         else
             gainSet.bandCount=1;
-        gainSets.push_back(gainSet);
+        C.gainSets.push_back(gainSet);
         Element_End0();
     }
 
@@ -885,29 +1159,12 @@ void File_Usac::drcInstructionsBasic()
     Element_End0();
 }
 
-static const size_t drcSetEffect_List_Size=12;
-static const char* drcSetEffect_List[drcSetEffect_List_Size] =
-{
-    "Night",
-    "Noisy",
-    "Limited",
-    "LowLevel",
-    "Dialog",
-    "General",
-    "Expand",
-    "Artistic",
-    "Clipping",
-    "Fade",
-    "DuckOther",
-    "DuckSelf",
-};
-
 //---------------------------------------------------------------------------
 bool File_Usac::drcInstructionsUniDrc(bool V1, bool NoV0)
 {
     Element_Begin1(V1?"drcInstructionsUniDrcV1":"drcInstructionsUniDrc");
 
-    int8u channelCount=baseChannelCount;
+    int8u channelCount=C.baseChannelCount;
     vector<int8s> gainSetIndex;
     int16u drcSetEffect;
     int8u drcSetId, downmixId;
@@ -938,8 +1195,8 @@ bool File_Usac::drcInstructionsUniDrc(bool V1, bool NoV0)
         TESTELSE_SB_END();
         if ((!V1 || drcApplyToDownmix) && downmixId && downmixId!=0x7F && !additionalDownmixIdCount)
         {
-            std::map<int8u, downmix_instruction>::iterator downmixInstruction_Data=downmixInstructions_Data.find(downmixId);
-            if (downmixInstruction_Data!=downmixInstructions_Data.end())
+            std::map<int8u, downmix_instruction>::iterator downmixInstruction_Data=C.downmixInstructions_Data.find(downmixId);
+            if (downmixInstruction_Data!=C.downmixInstructions_Data.end())
                 channelCount=downmixInstruction_Data->second.targetChannelCount;
             else
                 channelCount=1;
@@ -951,20 +1208,15 @@ bool File_Usac::drcInstructionsUniDrc(bool V1, bool NoV0)
         downmixId=0; // 0 is default
     Get_S2 (16, drcSetEffect,                                   "drcSetEffect");
     bool IsNOK=false;
-    if (drcSetEffect>>drcSetEffect_List_Size)
-    {
-        Param_Info1("(Unknown)");
-        Fill(Stream_Audio, 0, "TEMP_drcSetEffect", drcSetEffect, 16); //TEMP
-        IsNOK=true;
-    }
     if ((drcSetEffect & (3<<10)) == 0)
     {
-        TEST_SB_SKIP(                                           "limiterPeakTargetPresent");
+        TESTELSE_SB_SKIP(                                       "limiterPeakTargetPresent");
             Skip_S1(8,                                          "bsLimiterPeakTarget");
-        TEST_SB_END();
+        TESTELSE_SB_ELSE(                                       "limiterPeakTargetPresent");
+        TESTELSE_SB_END();
     }
     else
-        channelCount=baseChannelCount; // TEMP
+        channelCount=C.baseChannelCount; // TEMP
     TEST_SB_SKIP(                                               "drcSetTargetLoudnessPresent");
         Skip_S1(6,                                              "bsDrcSetTargetLoudnessValueUpper");
         TEST_SB_SKIP(                                           "drcSetTargetLoudnessValueLowerPresent");
@@ -1008,7 +1260,7 @@ bool File_Usac::drcInstructionsUniDrc(bool V1, bool NoV0)
             continue; // 0 means not present
         Element_Begin1("DrcChannel");
         int8s gainSetIndex=*DrcChannelGroup-1;
-        int8u bandCount=V1?(gainSetIndex<gainSets.size()?gainSets[gainSetIndex].bandCount:0):1;
+        int8u bandCount=V1?(gainSetIndex<C.gainSets.size()?C.gainSets[gainSetIndex].bandCount:0):1;
         for (int8u k=0; k<bandCount; k++)
         {
             Element_Begin1("band");
@@ -1059,9 +1311,8 @@ bool File_Usac::drcInstructionsUniDrc(bool V1, bool NoV0)
                     Value+='0'+(i%10);
                 }
             }
-
-        int16u Id=drcSetId<<8|downmixId;
-        drcInstructionsUniDrc_Data[Id].drcSetEffectTotal=Value;
+        drc_id Id={drcSetId, downmixId, 0};
+        C.drcInstructionsUniDrc_Data[Id].drcSetEffectTotal=Value;
     }
 
     return false;
@@ -1073,7 +1324,7 @@ void File_Usac::channelLayout()
     Element_Begin1("channelLayout");
 
     bool layoutSignalingPresent;
-    Get_S1 (7, baseChannelCount,                                "baseChannelCount");
+    Get_S1 (7, C.baseChannelCount,                              "C.baseChannelCount");
     Get_SB (   layoutSignalingPresent,                          "layoutSignalingPresent");
     if (layoutSignalingPresent)
     {
@@ -1081,7 +1332,7 @@ void File_Usac::channelLayout()
         Get_S1 (8, definedLayout,                               "definedLayout");
         if (!definedLayout)
         {
-            for (int8u i=0; i<baseChannelCount; i++)
+            for (int8u i=0; i<C.baseChannelCount; i++)
             {
                 Info_S1(7, speakerPosition,                     "speakerPosition"); Param_Info1(Aac_OutputChannelPosition_GetString(speakerPosition));
             }
@@ -1117,37 +1368,29 @@ void File_Usac::UsacConfigExtension()
         int32u usacConfigExtType, usacConfigExtLength;
         escapedValue(usacConfigExtType, 4, 8, 16,               "usacConfigExtType"); Param_Info1C(usacConfigExtType<UsacConfigExtension_usacConfigExtType_Size && UsacConfigExtension_usacConfigExtType[usacConfigExtType], UsacConfigExtension_usacConfigExtType[usacConfigExtType]);
         escapedValue(usacConfigExtLength, 4, 8, 16,             "usacExtElementConfigLength");
-        size_t End;
-        if (Data_BS_Remain()>usacConfigExtLength*8)
-            End=Data_BS_Remain()-usacConfigExtLength*8;
-        else
-            End=0; //Problem
 
-        switch (usacConfigExtType)
+        if (usacConfigExtLength)
         {
-            case 0: //ID_CONFIG_EXT_FILL
-                if (usacConfigExtLength)
-                    Skip_BS(usacConfigExtLength *8,             "10100101"); //TODO: check if value is the right one
+            usacConfigExtLength*=8;
+            if (usacConfigExtLength>Data_BS_Remain())
+            {
+                Trusted_IsNot("Too big");
+                Element_End0();
                 break;
-            case 2: //ID_CONFIG_EXT_LOUDNESS_INFO
-                loudnessInfoSet();
-                break;
-            case 7: //ID_CONFIG_EXT_STREAM_ID
-                streamId();
-                break;
-            default:
-                if (usacConfigExtLength)
-                    Skip_BS(usacConfigExtLength *8,             "(Unknown)");
-                break;
-        }
-
-        if (Data_BS_Remain()>End)
-        {
-            size_t Size=Data_BS_Remain()-End;
-            int8u Padding=1;
-            if (Size<8)
-                Peek_S1((int8u)Size, Padding);
-            Skip_BS(Data_BS_Remain()-End,                           Padding?"(Unknown)":"Padding");
+            }
+            auto B=BS_Bookmark(usacConfigExtLength);
+            switch (usacConfigExtType)
+            {
+                case ID_CONFIG_EXT_FILL                         :
+                    if (usacConfigExtLength)
+                        Skip_BS(usacConfigExtLength,            "10100101"); //TODO: check if value is the right one
+                    break;
+                case ID_CONFIG_EXT_LOUDNESS_INFO                : loudnessInfoSet(); break;
+                case ID_CONFIG_EXT_STREAM_ID                    : streamId(); break;
+                default:
+                    Skip_BS(usacConfigExtLength,                "Unknown");
+            }
+            BS_Bookmark(B);
         }
         Element_End0();
     }
@@ -1159,12 +1402,20 @@ void File_Usac::UsacConfigExtension()
 void File_Usac::loudnessInfoSet(bool V1)
 {
     Element_Begin1(V1?"loudnessInfoSetV1":"loudnessInfoSet");
-    loudnessInfoSet_Present=true;
+
+    #if MEDIAINFO_CONFORMANCE
+        if (V1)
+            C.loudnessInfoSet_Present[V1]++;
+    #endif
 
     int8u loudnessInfoAlbumCount, loudnessInfoCount;
     bool loudnessInfoSetExtPresent;
     Get_S1 (6, loudnessInfoAlbumCount,                          "loudnessInfoAlbumCount");
     Get_S1 (6, loudnessInfoCount,                               "loudnessInfoCount");
+    #if MEDIAINFO_CONFORMANCE
+        if (!V1 && (loudnessInfoAlbumCount || loudnessInfoCount))
+            C.loudnessInfoSet_Present[V1]++;
+    #endif
     for (int8u i=0; i<loudnessInfoAlbumCount; i++)
         loudnessInfo(true, V1);
     for (int8u i=0; i<loudnessInfoCount; i++)
@@ -1197,80 +1448,43 @@ bool File_Usac::loudnessInfo(bool FromAlbum, bool V1)
     Get_S1 (6, drcSetId,                                        "drcSetId");
     if (V1)
         Get_S1 (6, eqSetId,                                     "eqSetId");
+    else
+        eqSetId=0;
     Get_S1 (7, downmixId,                                       "downmixId");
     Get_SB (samplePeakLevelPresent,                             "samplePeakLevelPresent");
     if (samplePeakLevelPresent)
-        Get_S2(12, bsSamplePeakLevel,                           "bsSamplePeakLevel");
+    {
+        Get_S2(12, bsSamplePeakLevel,                           "bsSamplePeakLevel"); Param_Info1C(bsSamplePeakLevel, Ztring::ToZtring(20-((double)bsSamplePeakLevel)/32)+__T(" dBTP"));
+    }
     Get_SB (truePeakLevelPresent,                               "truePeakLevelPresent");
     if (truePeakLevelPresent)
     {
-        Get_S2 (12, bsTruePeakLevel,                            "bsTruePeakLevel");
-        Skip_S1( 4,                                             "measurementSystem");
-        Skip_S1( 2,                                             "reliability");
+        int8u measurementSystem, reliability;
+        Get_S2 (12, bsTruePeakLevel,                            "bsTruePeakLevel"); Param_Info1C(bsTruePeakLevel, Ztring::ToZtring(20-((double)bsTruePeakLevel)/32)+__T(" dBTP"));
+        Get_S1 ( 4, measurementSystem,                          "measurementSystem"); Param_Info1C(measurementSystem<measurementSystems_Size, measurementSystems[measurementSystem]);
+        Get_S1 ( 2, reliability,                                "reliability"); Param_Info1(reliabilities[reliability]);
     }
     Get_S1 (4, measurementCount,                                "measurementCount");
     bool IsNOK=false;
     for (int8u i=0; i<measurementCount; i++)
     {
-        int8u methodDefinition, methodValue;
-        Get_S1 (4, methodDefinition,                            "methodDefinition");
+        Element_Begin1("measurement");
+        int8u methodDefinition, methodValue, measurementSystem, reliability;
+        Get_S1 (4, methodDefinition,                            "methodDefinition"); Param_Info1C(methodDefinition && methodDefinition<=LoudnessMeaning_Size, LoudnessMeaning[methodDefinition-1]);
         int8u Size;
         if (methodDefinition>=methodDefinition_Format_Size)
         {
             Param_Info1("(Unsupported)");
             Measurements.Values[methodDefinition].From_UTF8("(Unsupported)");
             IsNOK=true;
+            Element_End0();
             break;
         }
         Get_S1 (methodDefinition_Format[methodDefinition], methodValue, "methodValue");
-        Skip_S1(4,                                              "measurementSystem");
-        Skip_S1(2,                                              "reliability");
-
-        Ztring measurement;
-        switch (methodDefinition)
-        {
-            case 0:
-                    break;
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-                    measurement=Ztring::ToZtring(-57.75+((double)methodValue)/4, 2)+__T(" LKFS");
-                    break;
-            case 6: 
-                    {
-                    int8u Value;
-                    if (methodValue==0)
-                        Value=0;
-                    else if (methodValue<=128)
-                        Value=methodValue/4;
-                    else if (methodValue<=204)
-                        Value=methodValue/2-32;
-                    else
-                        Value=methodValue-134; 
-                    measurement=Ztring::ToZtring(Value)+__T(" LU");
-                    }
-                    break;
-            case 7: 
-                    measurement=Ztring::ToZtring(80+methodValue)+__T(" dB");
-                    break;
-            case 8:
-                    switch(methodValue)
-                    {
-                        case 0: break;
-                        case 1: measurement=__T("Large room"); break;
-                        case 2: measurement=__T("Small room"); break;
-                        default: measurement=Ztring::ToZtring(methodValue); break;
-                    }
-                    break;
-            case 9:
-                    measurement=Ztring::ToZtring(-116+((double)methodValue)/2, 1)+__T(" LKFS");
-                    break;
-            default:
-                    measurement.From_Number(methodValue);
-        }
-
+        Ztring measurement=Loudness_Value(methodDefinition, methodValue);
+        Param_Info1(measurement);
+        Get_S1 (4, measurementSystem,                           "measurementSystem"); Param_Info1C(measurementSystem<measurementSystems_Size, measurementSystems[measurementSystem]);
+        Get_S1 ( 2, reliability,                                "reliability"); Param_Info1(reliabilities[reliability]);
         if (methodDefinition)
         {
             Ztring& Content=Measurements.Values[methodDefinition];
@@ -1278,17 +1492,13 @@ bool File_Usac::loudnessInfo(bool FromAlbum, bool V1)
                 Content+=__T(" & ");
             Content+=measurement;
         }
+        Element_End0();
     }
 
-    Ztring Id=Ztring::ToZtring(drcSetId);
-    Id+=__T('-')+Ztring::ToZtring(downmixId);
-    //if (V1)
-    //    Id+=__T('-')+Ztring::ToZtring(eqSetId); // No eqSetId for the moment
-    if (Id==__T("0-0") || Id==__T("0-0-0"))
-        Id.clear();
-    loudnessInfo_Data[FromAlbum][Id].SamplePeakLevel=((samplePeakLevelPresent && bsSamplePeakLevel)?(Ztring::ToZtring(20-((double)bsSamplePeakLevel)/32)+__T(" dBFS")):Ztring());
-    loudnessInfo_Data[FromAlbum][Id].TruePeakLevel=((truePeakLevelPresent && bsTruePeakLevel)?(Ztring::ToZtring(20-((double)bsTruePeakLevel)/32)+__T(" dBTP")):Ztring());
-    loudnessInfo_Data[FromAlbum][Id].Measurements=Measurements;
+    drc_id Id={drcSetId, downmixId, eqSetId};
+    C.loudnessInfo_Data[FromAlbum][Id].SamplePeakLevel=((samplePeakLevelPresent && bsSamplePeakLevel)?(Ztring::ToZtring(20-((double)bsSamplePeakLevel)/32)+__T(" dBFS")):Ztring());
+    C.loudnessInfo_Data[FromAlbum][Id].TruePeakLevel=((truePeakLevelPresent && bsTruePeakLevel)?(Ztring::ToZtring(20-((double)bsTruePeakLevel)/32)+__T(" dBTP")):Ztring());
+    C.loudnessInfo_Data[FromAlbum][Id].Measurements=Measurements;
     Element_End0();
 
     return IsNOK;
@@ -1297,32 +1507,38 @@ bool File_Usac::loudnessInfo(bool FromAlbum, bool V1)
 //---------------------------------------------------------------------------
 void File_Usac::loudnessInfoSetExtension()
 {
-    Element_Begin1("loudnessInfoSetExtension");
-
     for (;;)
     {
+        Element_Begin1("loudnessInfoSetExtension");
         int32u bitSize;
         int8u loudnessInfoSetExtType, extSizeBits;
-        Get_S1 (4, loudnessInfoSetExtType,                      "loudnessInfoSetExtType");
+        Get_S1 (4, loudnessInfoSetExtType,                      "loudnessInfoSetExtType"); Element_Info1C(loudnessInfoSetExtType<UNIDRCLOUDEXT_Max, loudnessInfoSetExtType_IdNames[loudnessInfoSetExtType]);
         if (!loudnessInfoSetExtType) // UNIDRCLOUDEXT_TERM
+        {
+            Element_End0();
             break;
+        }
         Get_S1 (4, extSizeBits,                                 "bitSizeLen");
         extSizeBits+=4;
         Get_S4 (extSizeBits, bitSize,                           "bitSize");
         bitSize++;
+        if (bitSize>Data_BS_Remain())
+        {
+            Trusted_IsNot("Too big");
+            Element_End0();
+            break;
+        }
 
+        auto B=BS_Bookmark(bitSize);
         switch (loudnessInfoSetExtType)
         {
-            case 1 : // UNIDRCLOUDEXT_EQ
-                loudnessInfoSet(true);
-                break;
+            case UNIDRCLOUDEXT_EQ                               : loudnessInfoSet(true); break;
             default:
-                if (bitSize)
-                    Skip_BS(bitSize,                            "(Unknown)");
+                Skip_BS(bitSize,                                "Unknown");
         }
+        BS_Bookmark(B);
+        Element_End0();
     }
-
-    Element_End0();
 }
 
 //---------------------------------------------------------------------------
@@ -1336,6 +1552,10 @@ void File_Usac::streamId()
     Fill(Stream_Audio, 0,  "streamIdentifier", streamIdentifier);
     Element_End0();
 }
+
+//***************************************************************************
+// Utils
+//***************************************************************************
 
 //---------------------------------------------------------------------------
 void File_Usac::escapedValue(int32u &Value, int8u nBits1, int8u nBits2, int8u nBits3, const char* Name)

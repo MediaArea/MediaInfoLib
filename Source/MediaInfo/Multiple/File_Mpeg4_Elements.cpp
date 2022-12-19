@@ -5629,7 +5629,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
         {
             File_Aac* Parser=new File_Aac;
             Parser->AudioSpecificConfig_OutOfBand(SampleRate, 2);
-            Parser->Mode=File_Aac::Mode_raw_data_block;
+            Parser->Mode=File_Aac::Mode_payload;
             Parser->FrameIsAlwaysComplete=true;
             Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
         }

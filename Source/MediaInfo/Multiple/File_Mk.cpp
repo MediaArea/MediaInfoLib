@@ -2620,7 +2620,7 @@ void File_Mk::Segment_Cluster()
             //Specific cases
             #ifdef MEDIAINFO_AAC_YES
                 if (Retrieve(Temp->second.StreamKind, Temp->second.StreamPos, Audio_CodecID).find(__T("A_AAC/"))==0)
-                    ((File_Aac*)Stream[Temp->first].Parser)->Mode=File_Aac::Mode_raw_data_block; //In case AudioSpecificConfig is not present
+                    ((File_Aac*)Stream[Temp->first].Parser)->Mode=File_Aac::Mode_payload; //In case AudioSpecificConfig is not present
             #endif //MEDIAINFO_AAC_YES
         }
     }

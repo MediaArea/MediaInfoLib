@@ -38,15 +38,28 @@ public :
     File_Usac();
     ~File_Usac();
 
+    //Bookmark
+    struct bs_bookmark
+    {
+        int64u                      Element_Offset;
+        size_t                      Trusted;
+        size_t                      NewSize;
+        size_t                      End;
+        int8u                       BitsNotIncluded;
+        bool                        UnTrusted;
+    };
+    bs_bookmark                     BS_Bookmark(size_t NewSize);
+    void                            BS_Bookmark(bs_bookmark& B);
+
     //Fill
     void Fill_DRC(const char* Prefix=NULL);
     void Fill_Loudness(const char* Prefix=NULL, bool NoConCh=false);
 
-    //Elements - USAC
-    void UsacConfig                         ();
-    void UsacDecoderConfig                  (int8u coreSbrFrameLengthIndex);
-    void UsacSingleChannelElementConfig     (int8u coreSbrFrameLengthIndex);
-    void UsacChannelPairElementConfig       (int8u coreSbrFrameLengthIndex);
+    //Elements - USAC - Config
+    void UsacConfig                         (size_t BitsNotIncluded=(size_t)-1);
+    void UsacDecoderConfig                  ();
+    void UsacSingleChannelElementConfig     ();
+    void UsacChannelPairElementConfig       ();
     void UsacLfeElementConfig               ();
     void UsacExtElementConfig               ();
     void UsacCoreConfig                     ();
@@ -66,10 +79,12 @@ public :
     bool loudnessInfo                       (bool FromAlbum, bool V1=false);
     void loudnessInfoSetExtension           ();
     void streamId                           ();
+
+    //Utils
     void escapedValue                       (int32u &Value, int8u nBits1, int8u nBits2, int8u nBits3, const char* Name);
 
     //***********************************************************************
-    // Temp USAC
+    // Temp AAC
     //***********************************************************************
 
     int8u   channelConfiguration;
@@ -83,13 +98,14 @@ public :
     #if MEDIAINFO_CONFORMANCE
     enum conformance_flags
     {
+        None,
         Usac,
         BaselineUsac,
         xHEAAC,
         MpegH,
-        Conformance_Max,
+        Conformance_Max
     };
-    bitset8 ConformanceFlags;
+    bitset8                         ConformanceFlags;
     struct field_value
     {
         string Field;
@@ -116,9 +132,63 @@ public :
     // Others
     //***********************************************************************
 
-    struct drc_info
+    struct usac_element
     {
-        string                      drcSetEffectTotal;
+        int32u                      usacElementType;
+        int32u                      usacExtElementDefaultLength;
+        bool                        usacExtElementPayloadFrag;
+    };
+    struct downmix_instruction
+    {
+        int8u                       targetChannelCount;
+    };
+    typedef std::map<int8u, downmix_instruction> downmix_instructions;
+    struct drc_id
+    {
+        int8u   drcSetId;
+        int8u   downmixId;
+        int8u   eqSetId;
+
+        drc_id(int8u drcSetId, int8u downmixId=0, int8u eqSetId=0)
+          : drcSetId(drcSetId),
+            downmixId(downmixId),
+            eqSetId(eqSetId)
+        {}
+
+        bool empty() const
+        {
+            return !drcSetId && !downmixId && !eqSetId;
+        }
+
+        string to_string() const
+        {
+            if (empty())
+                return string();
+            string Id=std::to_string(drcSetId);
+            Id+='-';
+            Id+= std::to_string(downmixId);
+            //if (V1)
+            //{
+            //    Id+='-';
+            //    Id+=std::to_string(eqSetId);
+            //}
+            return Id;
+        }
+        friend bool operator<(const drc_id& l, const drc_id& r)
+        {
+            //return memcmp(&l, &r, sizeof(drc_id));
+            if (l.drcSetId<r.drcSetId)
+                return true;
+            if (l.drcSetId!=r.drcSetId)
+                return false;
+            if (l.downmixId<r.downmixId)
+                return true;
+            if (l.downmixId!=r.downmixId)
+                return false;
+            if (l.eqSetId<r.eqSetId)
+                return true;
+            return false;
+        }
     };
     struct loudness_info
     {
@@ -130,20 +200,36 @@ public :
         Ztring                      TruePeakLevel;
         measurements                Measurements;
     };
-    std::map<int16u, drc_info>      drcInstructionsUniDrc_Data; // By id
-    std::map<Ztring, loudness_info> loudnessInfo_Data[2]; // By non-album/album then by id
-    int8u                           baseChannelCount;
-    struct downmix_instruction
+    typedef std::map<drc_id, loudness_info> loudness_infos;
+    struct drc_info
     {
-        int8u                       targetChannelCount;
+        string                      drcSetEffectTotal;
     };
-    std::map<int8u, downmix_instruction> downmixInstructions_Data;
+    typedef std::map<drc_id, drc_info> drc_infos;
     struct gain_set
     {
         int8u                       bandCount;
     };
-    std::vector<gain_set>           gainSets;
-    bool                            loudnessInfoSet_Present;
+    typedef std::vector<gain_set> gain_sets;
+    struct usac_config
+    {
+        vector<usac_element>        usacElements;
+        downmix_instructions        downmixInstructions_Data;
+        loudness_infos              loudnessInfo_Data[2]; // By non-album/album
+        drc_infos                   drcInstructionsUniDrc_Data;
+        gain_sets                   gainSets;
+        #if MEDIAINFO_CONFORMANCE
+        size_t                      loudnessInfoSet_Present[2];
+        #endif
+        int32u                      numOutChannels;
+        int32u                      sampling_frequency;
+        int8u                       channelConfiguration;
+        int8u                       sampling_frequency_index;
+        int8u                       coreSbrFrameLengthIndex;
+        int8u                       baseChannelCount;
+        bool                        harmonicSBR;
+    };
+    usac_config                     C; //Current conf
 };
 
 } //NameSpace
