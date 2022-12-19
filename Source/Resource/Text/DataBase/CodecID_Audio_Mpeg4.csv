@@ -11,7 +11,7 @@ dtse;DTS;Express;;Digital Theater Systems Low Bitrate;http://www.dts.com;
 dvca;PCM;;;http://www.apple.com/quicktime/download/standalone.html;
 ec-3;E-AC-3;;;;
 enca;(Encrypted);;;;
-fl32;PCM ; ;;http://www.apple.com/quicktime/download/standalone.html;
+fl32;PCM;;;http://www.apple.com/quicktime/download/standalone.html;
 fl64;PCM;;;http://www.apple.com/quicktime/download/standalone.html;
 ima4;ADPCM;;;http://www.apple.com/quicktime/download/standalone.html;
 in24;PCM;;;http://www.apple.com/quicktime/download/standalone.html;
