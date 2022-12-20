@@ -34,6 +34,17 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+const char* ConformanceLevel_Strings[]=
+{
+    "Errors",
+    "Warnings",
+    "Infos",
+};
+static_assert(sizeof(ConformanceLevel_Strings)/sizeof(const char*)==File_Usac::ConformanceLevel_Max, "");
+#endif
+
+//---------------------------------------------------------------------------
 extern int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampling_frequency);
 extern const size_t Aac_sampling_frequency_Size_Usac;
 extern const int32u Aac_sampling_frequency[];
@@ -314,7 +325,7 @@ File_Usac::File_Usac()
     extension_sampling_frequency_index=(int8u)-1;
     IsParsingRaw=0;
     #if MEDIAINFO_CONFORMANCE
-        Profile=AudioProfile_Max;
+        Format_Profile=AudioProfile_Max;
     #endif
 }
 
@@ -343,11 +354,19 @@ File_Usac::bs_bookmark File_Usac::BS_Bookmark(size_t NewSize)
     if (B.BitsNotIncluded)
         B.NewSize+=B.BitsNotIncluded;
     BS->Resize(B.NewSize);
+    #if MEDIAINFO_CONFORMANCE
+        for (size_t Level=0; Level<ConformanceLevel_Max; Level++)
+            B.ConformanceErrors[Level]=ConformanceErrors[Level];
+    #endif
     return B;
 }
 
 //---------------------------------------------------------------------------
-void File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
+#if MEDIAINFO_CONFORMANCE
+bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B, const string& ConformanceFieldName)
+#else
+bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
+#endif
 {
     if (Data_BS_Remain()>B.BitsNotIncluded)
     {
@@ -359,10 +378,24 @@ void File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
     }
     else if (Data_BS_Remain()<B.BitsNotIncluded)
         Trusted_IsNot("Too big");
+    #if MEDIAINFO_CONFORMANCE
+        bool ToReturn = !Trusted_Get();
+        if (ToReturn)
+        {
+            for (size_t Level=0; Level<ConformanceLevel_Max; Level++)
+                ConformanceErrors[Level]=B.ConformanceErrors[Level];
+            Fill_Conformance(ConformanceFieldName.c_str(), "Malformed bitstream");
+        }
+    #endif
     BS->Resize(B.End);
     Element_Offset=B.Element_Offset;
     Trusted=B.Trusted;
     Element[Element_Level].UnTrusted=B.UnTrusted;
+    #if MEDIAINFO_CONFORMANCE
+        return ToReturn;
+    #else
+        return true;
+    #endif
 }
 
 //***********************************************************************
@@ -371,35 +404,126 @@ void File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
+void File_Usac::Fill_Conformance(const char* Field, const char* Value, bitset8 Flags, conformance_level Level)
+{
+    field_value FieldValue(Field, Value, Flags, (int64u)-1);
+    auto& Conformance = ConformanceErrors[Level];
+    auto Current = find(Conformance.begin(), Conformance.end(), FieldValue);
+    if (Current != Conformance.end())
+        return;
+    ConformanceErrors[Level].emplace_back(FieldValue);
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File_Usac::Clear_Conformance()
+{
+    for (size_t Level = 0; Level < ConformanceLevel_Max; Level++)
+    {
+        auto& Conformance = ConformanceErrors[Level];
+        Conformance.clear();
+    }
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File_Usac::Merge_Conformance(bool FromConfig)
+{
+    for (size_t Level = 0; Level < ConformanceLevel_Max; Level++)
+    {
+        auto& Conformance = ConformanceErrors[Level];
+        auto& Conformance_Total = ConformanceErrors_Total[Level];
+        for (const auto& FieldValue : Conformance)
+        {
+            auto Current = find(Conformance_Total.begin(), Conformance_Total.end(), FieldValue);
+            if (Current != Conformance_Total.end())
+            {
+                if (Current->FramePoss.size() < 8)
+                {
+                    if (FromConfig)
+                    {
+                        if (Current->FramePoss.empty() || Current->FramePoss[0] != (int64u)-1)
+                            Current->FramePoss.insert(Current->FramePoss.begin(), (int64u)-1);
+                    }
+                    else
+                        Current->FramePoss.push_back(Frame_Count_NotParsedIncluded);
+                }
+                else if (Current->FramePoss.size() == 8)
+                    Current->FramePoss.push_back((int64u)-1); //Indicating "..."
+                continue;
+            }
+            Conformance_Total.push_back(FieldValue);
+            if (!FromConfig)
+                Conformance_Total.back().FramePoss.front() = Frame_Count_NotParsedIncluded;
+        }
+        Conformance.clear();
+    }
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
 void File_Usac::Streams_Finish_Conformance()
 {
-    if (ConformanceErrors.empty())
-        return;
-    for (size_t i = ConformanceErrors.size() - 1; i < ConformanceErrors.size(); i--) {
-        if (!CheckIf(ConformanceErrors[i].Flags)) {
-            ConformanceErrors.erase(ConformanceErrors.begin() + i);
-        }
-    }
-    if (ConformanceErrors.empty())
-        return;
-    Fill(Stream_Audio, 0, "ConformanceErrors", ConformanceErrors.size());
-    for (const auto& ConformanceError : ConformanceErrors) {
-        const char* FieldPrefix = "ConformanceErrors ";
-        size_t Space = 0;
-        for (;;) {
-            Space = ConformanceError.Field.find(' ', Space + 1);
-            if (Space == string::npos) {
-                break;
-            }
-            const auto Field = FieldPrefix + ConformanceError.Field.substr(0, Space);
-            const auto& Value = Retrieve_Const(StreamKind_Last, StreamPos_Last, Field.c_str());
-            if (Value.empty()) {
-                Fill(StreamKind_Last, StreamPos_Last, Field.c_str(), "Yes");
+    Merge_Conformance(true);
+
+    for (size_t Level = 0; Level < ConformanceLevel_Max; Level++)
+    {
+        auto& Conformance_Total = ConformanceErrors_Total[Level];
+        if (Conformance_Total.empty())
+            continue;
+        for (size_t i = Conformance_Total.size() - 1; i < Conformance_Total.size(); i--) {
+            if (!CheckIf(Conformance_Total[i].Flags)) {
+                Conformance_Total.erase(Conformance_Total.begin() + i);
             }
         }
-        Fill(Stream_Audio, 0, (FieldPrefix + ConformanceError.Field).c_str(), ConformanceError.Value);
+        if (Conformance_Total.empty())
+            continue;
+        string Conformance_String = "Conformance";
+        Conformance_String += ConformanceLevel_Strings[Level];
+        Fill(Stream_Audio, 0, Conformance_String.c_str(), Conformance_Total.size());
+        Conformance_String += ' ';
+        for (const auto& ConformanceError : Conformance_Total) {
+            size_t Space = 0;
+            for (;;) {
+                Space = ConformanceError.Field.find(' ', Space + 1);
+                if (Space == string::npos) {
+                    break;
+                }
+                const auto Field = Conformance_String + ConformanceError.Field.substr(0, Space);
+                const auto& Value = Retrieve_Const(StreamKind_Last, StreamPos_Last, Field.c_str());
+                if (Value.empty()) {
+                    Fill(StreamKind_Last, StreamPos_Last, Field.c_str(), "Yes");
+                }
+            }
+            auto Value = ConformanceError.Value;
+            if (!ConformanceError.FramePoss.empty() && (ConformanceError.FramePoss.size() != 1 || ConformanceError.FramePoss[0] != (int64u)-1))
+            {
+                auto HasConfError = ConformanceError.FramePoss[0] == (int64u)-1;
+                Value += " (";
+                if (HasConfError)
+                    Value += "conf & ";
+                Value += "frame";
+                if (ConformanceError.FramePoss.size() - HasConfError > 1)
+                    Value += 's';
+                Value += ' ';
+                for (size_t i = HasConfError; i < ConformanceError.FramePoss.size(); i++)
+                {
+                    auto FramePos = ConformanceError.FramePoss[i];
+                    if (FramePos == (int64u)-1)
+                        Value += "...";
+                    else
+                        Value += to_string(FramePos);
+                    Value += '+';
+                }
+                Value.back() = ')';
+            }
+            Fill(Stream_Audio, 0, (Conformance_String + ConformanceError.Field).c_str(), Value);
+        }
+        Conformance_Total.clear();
     }
-    ConformanceErrors.clear();
 }
 #endif
 
@@ -481,11 +605,23 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
                 Fill(Stream_Audio, 0, Audio_SamplesPerFrame, coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].outputFrameLengthDivided256<<8, 10, true);
             Fill_DRC();
             Fill_Loudness();
+            #if MEDIAINFO_CONFORMANCE
+                Merge_Conformance(true);
+            #endif
             Conf=C;
         }
     }
     else
     {
+        #if MEDIAINFO_CONFORMANCE
+            if (!IsParsingRaw)
+            {
+                Clear_Conformance();
+                Fill_Conformance("UsacConfig Coherency", "Malformed bitstream");
+                Merge_Conformance();
+            }
+        #endif
+
         C.IsNotValid=true;
         if (!IsParsingRaw)
             Conf.IsNotValid=true;
@@ -586,7 +722,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
             return;
         auto loudnessInfoSet_Present_Total=C.loudnessInfoSet_Present[0]+C.loudnessInfoSet_Present[1];
         constexpr14 auto CheckFlags = bitset8().set(xHEAAC).set(MpegH);
-        if (!CheckIf(CheckFlags) || Profile==AudioProfile_Unspecified)
+        if (!CheckIf(CheckFlags) || Format_Profile==AudioProfile_Unspecified)
         {
         }
         else if (!loudnessInfoSet_Present_Total)
@@ -725,7 +861,7 @@ void File_Usac::UsacExtElementConfig()
             default:
                 Skip_BS(usacExtElementConfigLength,             "Unknown");
         }
-        BS_Bookmark(B);
+        BS_Bookmark(B, (usacExtElementType<ID_EXT_ELE_Max?string(usacExtElementType_Names[usacExtElementType]):("usacExtElementType"+to_string(usacExtElementType)))+"Config Coherency");
     }
 
     Element_End0();
@@ -939,7 +1075,7 @@ void File_Usac::uniDrcConfigExtension()
             default:
                 Skip_BS(bitSize,                                "Unknown");
         }
-        BS_Bookmark(B);
+        BS_Bookmark(B, (uniDrcConfigExtType<UNIDRCCONFEXT_Max?string(uniDrcConfigExtType_ConfNames[uniDrcConfigExtType]):("uniDrcConfigExtType"+to_string(uniDrcConfigExtType)))+" Coherency");
         Element_End0();
     }
 }
@@ -1408,7 +1544,13 @@ void File_Usac::UsacConfigExtension()
                 default:
                     Skip_BS(usacConfigExtLength,                "Unknown");
             }
-            BS_Bookmark(B);
+            if (BS_Bookmark(B, (usacConfigExtType<ID_CONFIG_EXT_Max?string(usacConfigExtType_ConfNames[usacConfigExtType]):("usacConfigExtType"+to_string(usacConfigExtType)))+" Coherency"))
+            {
+                switch (usacConfigExtType)
+                {
+                    case ID_CONFIG_EXT_LOUDNESS_INFO            : C.loudnessInfoSet_IsNotValid=true; break;
+                }
+            }
         }
         Element_End0();
     }
@@ -1445,6 +1587,8 @@ void File_Usac::loudnessInfoSet(bool V1)
             loudnessInfoSetExtension();
     }
 
+    if (!Trusted_Get())
+        C.loudnessInfoSet_IsNotValid=true;
     Element_End0();
 }
 
@@ -1554,7 +1698,7 @@ void File_Usac::loudnessInfoSetExtension()
             default:
                 Skip_BS(bitSize,                                "Unknown");
         }
-        BS_Bookmark(B);
+        BS_Bookmark(B, (loudnessInfoSetExtType<UNIDRCLOUDEXT_Max?string(uniDrcConfigExtType_ConfNames[loudnessInfoSetExtType]):("loudnessInfoSetExtType"+to_string(loudnessInfoSetExtType)))+" Coherency");
         Element_End0();
     }
 }
@@ -1630,9 +1774,22 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
 
     if (Trusted_Get())
     {
+        #if MEDIAINFO_CONFORMANCE
+            if (IsParsingRaw == 1)
+                Merge_Conformance();
+        #endif
     }
     else
     {
+        #if MEDIAINFO_CONFORMANCE
+            if (IsParsingRaw == 1)
+            {
+                Clear_Conformance();
+                Fill_Conformance("UsacFrame Coherency", "Malformed bitstream");
+                Merge_Conformance();
+            }
+        #endif
+
         if (IsParsingRaw==1)
         {
             IsParsingRaw--;
@@ -1713,7 +1870,7 @@ void File_Usac::UsacExtElement(size_t elemIdx, bool usacIndependencyFlag)
                 default:
                     Skip_BS(usacExtElementPayloadLength,        "Unknown");
             }
-            BS_Bookmark(B);
+            BS_Bookmark(B, (usacExtElementType<ID_EXT_ELE_Max?string(usacExtElementType_Names[usacExtElementType]):("usacExtElementType"+to_string(usacExtElementType)))+" Coherency");
         }
     }
     Element_End0();
@@ -1741,7 +1898,7 @@ void File_Usac::AudioPreRoll()
             UsacConfig(B.BitsNotIncluded);
             if (!Trusted_Get())
                 C=Conf; //Using default conf if new conf has a problem
-            BS_Bookmark(B);
+            BS_Bookmark(B, "UsacConfig Coherency");
             Element_End0();
         }
         else
@@ -1780,7 +1937,7 @@ void File_Usac::AudioPreRoll()
                     Element_Begin1("AccessUnit");
                     auto B=BS_Bookmark(auLen);
                     UsacFrame(B.BitsNotIncluded);
-                    BS_Bookmark(B);
+                    BS_Bookmark(B, "AudioPreRoll UsacFrame Coherency");
                     Element_End0();
                     IsParsingRaw-=frameIdx+1;
                     F=FSav;

@@ -38,6 +38,36 @@ public :
     File_Usac();
     ~File_Usac();
 
+    #if MEDIAINFO_CONFORMANCE
+    enum conformance_level
+    {
+        Error,
+        Warning,
+        Info,
+        ConformanceLevel_Max
+    };
+    struct field_value
+    {
+        string Field;
+        string Value;
+        bitset8 Flags;
+        vector<int64u> FramePoss;
+
+        field_value(string&& Field, string&& Value, bitset8 Flags, int64u FramePos)
+            : Field(Field)
+            , Value(Value)
+            , Flags(Flags)
+        {
+            FramePoss.push_back(FramePos);
+        }
+
+        friend bool operator==(const field_value& l, const field_value& r)
+        {
+            return l.Field==r.Field && l.Value==r.Value && l.Flags.to_int8u()==r.Flags.to_int8u();
+        }
+    };
+    #endif
+
     //Bookmark
     struct bs_bookmark
     {
@@ -47,9 +77,17 @@ public :
         size_t                      End;
         int8u                       BitsNotIncluded;
         bool                        UnTrusted;
+        #if MEDIAINFO_CONFORMANCE
+            vector<field_value>     ConformanceErrors[ConformanceLevel_Max];
+        #endif
     };
     bs_bookmark                     BS_Bookmark(size_t NewSize);
-    void                            BS_Bookmark(bs_bookmark& B);
+    #if MEDIAINFO_CONFORMANCE
+    bool                            BS_Bookmark(bs_bookmark& B, const string& ConformanceFieldName);
+    #else
+    bool                            BS_Bookmark(bs_bookmark& B);
+    inline bool                     BS_Bookmark(bs_bookmark& B, const string& ConformanceFieldName) {return BS_Bookmark(B);}
+    #endif
 
     //Fill
     void Fill_DRC(const char* Prefix=NULL);
@@ -116,24 +154,17 @@ public :
         Conformance_Max
     };
     bitset8                         ConformanceFlags;
-    struct field_value
-    {
-        string Field;
-        string Value;
-        bitset8 Flags;
-
-        field_value(string&& Field, string&& Value, bitset8 Flags)
-            : Field(Field)
-            , Value(Value)
-            , Flags(Flags)
-        {}
-    };
-    vector<field_value> ConformanceErrors;
-    audio_profile Profile;
-    void Streams_Finish_Conformance();
-    void Fill_Conformance(const char* Field, const char* Value, bitset8 Flags = {}) { ConformanceErrors.emplace_back(Field, Value, Flags); }
-    void Fill_Conformance(const char* Field, const char* Value, conformance_flags Flag) { ConformanceErrors.emplace_back(Field, Value, bitset8().set(Flag)); }
+    vector<field_value>             ConformanceErrors_Total[ConformanceLevel_Max];
+    vector<field_value>             ConformanceErrors[ConformanceLevel_Max];
+    audio_profile                   Format_Profile;
     bool CheckIf(const bitset8 Flags) { return !ConformanceFlags || !Flags || (ConformanceFlags & Flags); }
+    void Fill_Conformance(const char* Field, const char* Value, bitset8 Flags={}, conformance_level Level=Error);
+    void Fill_Conformance(const char* Field, const string Value, bitset8 Flags={}, conformance_level Level=Error) { Fill_Conformance(Field, Value.c_str(), Flags, Level); }
+    void Fill_Conformance(const char* Field, const char* Value, conformance_flags Flag, conformance_level Level=Error) { Fill_Conformance(Field, Value, bitset8().set(Flag)); }
+    void Fill_Conformance(const char* Field, const string Value, conformance_flags Flag, conformance_level Level=Error) { Fill_Conformance(Field, Value.c_str(), Flag, Level); }
+    void Clear_Conformance();
+    void Merge_Conformance(bool FromConfig=false);
+    void Streams_Finish_Conformance();
     #else
     inline void Streams_Finish_Conformance() {}
     #endif
