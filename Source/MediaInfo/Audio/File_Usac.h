@@ -80,6 +80,16 @@ public :
     void loudnessInfoSetExtension           ();
     void streamId                           ();
 
+    //Elements - USAC - Frame
+    #if MEDIAINFO_TRACE || MEDIAINFO_CONFORMANCE
+    void UsacFrame                          (size_t BitsNotIncluded=(size_t)-1);
+    void UsacSingleChannelElement           ();
+    void UsacChannelPairElement             ();
+    void UsacLfeElement                     ();
+    void UsacExtElement                     (size_t elemIdx, bool usacIndependencyFlag);
+    void AudioPreRoll                       ();
+    #endif //MEDIAINFO_TRACE || MEDIAINFO_CONFORMANCE
+
     //Utils
     void escapedValue                       (int32u &Value, int8u nBits1, int8u nBits2, int8u nBits3, const char* Name);
 
@@ -227,9 +237,18 @@ public :
         int8u                       sampling_frequency_index;
         int8u                       coreSbrFrameLengthIndex;
         int8u                       baseChannelCount;
+        bool                        IsNotValid;
+        bool                        loudnessInfoSet_IsNotValid;
         bool                        harmonicSBR;
     };
+    struct usac_frame
+    {
+        int32u                      numPreRollFrames;
+    };
+    usac_config                     Conf; //Main conf
     usac_config                     C; //Current conf
+    usac_frame                      F; //Current frame
+    int8u                           IsParsingRaw;
 };
 
 } //NameSpace

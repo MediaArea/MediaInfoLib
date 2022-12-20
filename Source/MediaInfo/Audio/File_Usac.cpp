@@ -312,7 +312,7 @@ File_Usac::File_Usac()
     channelConfiguration=(int8u)-1;
     sampling_frequency_index=(int8u)-1;
     extension_sampling_frequency_index=(int8u)-1;
-
+    IsParsingRaw=0;
     #if MEDIAINFO_CONFORMANCE
         Profile=AudioProfile_Max;
     #endif
@@ -412,6 +412,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
 {
     // Init
     C = usac_config();
+    C.loudnessInfoSet_IsNotValid = false;
     #if MEDIAINFO_CONFORMANCE
         C.loudnessInfoSet_Present[0] = 0;
         C.loudnessInfoSet_Present[1] = 0;
@@ -432,8 +433,8 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
         C.sampling_frequency=Aac_sampling_frequency[C.sampling_frequency_index];
     }
     #if MEDIAINFO_CONFORMANCE
-        if (Frequency_b && C.sampling_frequency != Frequency_b)
-            Fill_Conformance("Crosscheck AudioSpecificConfig-UsacConfig samplingFrequency-usacSamplingFrequency", (to_string(Frequency_b) + " vs " + to_string(C.sampling_frequency) + " are not coherent").c_str());
+        if (!IsParsingRaw && Frequency_b && C.sampling_frequency && C.sampling_frequency != Frequency_b)
+            Fill_Conformance("Crosscheck AudioSpecificConfig+UsacConfig samplingFrequency+usacSamplingFrequency", (to_string(Frequency_b) + " vs " + to_string(C.sampling_frequency) + " are not coherent").c_str());
     #endif
     Get_S1 (3, C.coreSbrFrameLengthIndex,                       "coreSbrFrameLengthIndex");
     Get_S1 (5, C.channelConfiguration,                          "channelConfiguration"); Param_Info1C(C.channelConfiguration, Aac_ChannelLayout_GetString(C.channelConfiguration));
@@ -473,13 +474,26 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
     if (Trusted_Get())
     {
         // Filling
+        C.IsNotValid=false;
+        if (!IsParsingRaw)
         {
             if (C.coreSbrFrameLengthIndex<coreSbrFrameLengthIndex_Mapping_Size)
                 Fill(Stream_Audio, 0, Audio_SamplesPerFrame, coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].outputFrameLengthDivided256<<8, 10, true);
             Fill_DRC();
             Fill_Loudness();
+            Conf=C;
         }
     }
+    else
+    {
+        C.IsNotValid=true;
+        if (!IsParsingRaw)
+            Conf.IsNotValid=true;
+    }
+    #if !MEDIAINFO_CONFORMANCE && MEDIAINFO_TRACE
+        if (!Trace_Activated)
+            Finish();
+    #endif
 }
 
 //---------------------------------------------------------------------------
@@ -568,7 +582,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
     }
 
     #if MEDIAINFO_CONFORMANCE
-        if (NoConCh)
+        if (NoConCh || C.IsNotValid)
             return;
         auto loudnessInfoSet_Present_Total=C.loudnessInfoSet_Present[0]+C.loudnessInfoSet_Present[1];
         constexpr14 auto CheckFlags = bitset8().set(xHEAAC).set(MpegH);
@@ -577,25 +591,29 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         }
         else if (!loudnessInfoSet_Present_Total)
         {
-            Fill_Conformance("loudnessInfoSet Coherency", "Is missing", CheckFlags);
+            if (!C.loudnessInfoSet_IsNotValid)
+                Fill_Conformance("loudnessInfoSet Coherency", "Is missing", CheckFlags);
             Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is missing");
             Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet missing");
         }
         else if (C.loudnessInfo_Data[0].empty())
         {
-            Fill_Conformance("loudnessInfoSet loudnessInfoCount", "Is 0", CheckFlags);
+            if (!C.loudnessInfoSet_IsNotValid)
+                Fill_Conformance("loudnessInfoSet loudnessInfoCount", "Is 0", CheckFlags);
             Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is empty");
             Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet empty");
         }
         else if (!DefaultIdPresent)
         {
-            Fill_Conformance("loudnessInfoSet Coherency", "Default loudnessInfo is missing", CheckFlags);
+            if (!C.loudnessInfoSet_IsNotValid)
+                Fill_Conformance("loudnessInfoSet Coherency", "Default loudnessInfo is missing", CheckFlags);
             Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: Default loudnessInfo is missing");
             Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo missing");
         }
         else if (C.loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
         {
-            Fill_Conformance("loudnessInfoSet Coherency", "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
+            if (!C.loudnessInfoSet_IsNotValid)
+                Fill_Conformance("loudnessInfoSet Coherency", "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
             Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
             Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo incomplete");
         }
@@ -1549,9 +1567,239 @@ void File_Usac::streamId()
     int16u streamIdentifier;
     Get_S2 (16, streamIdentifier,                               "streamIdentifier");
 
-    Fill(Stream_Audio, 0,  "streamIdentifier", streamIdentifier);
+    if (!IsParsingRaw)
+        Fill(Stream_Audio, 0,  "streamIdentifier", streamIdentifier, 10, true);
     Element_End0();
 }
+
+//***************************************************************************
+// Elements - USAC - Frame
+//***************************************************************************
+#if MEDIAINFO_TRACE || MEDIAINFO_CONFORMANCE
+
+//---------------------------------------------------------------------------
+void File_Usac::UsacFrame(size_t BitsNotIncluded)
+{
+    Element_Begin1("UsacFrame");
+    Element_Info1(Frame_Count_NotParsedIncluded==(int64u)-1? Frame_Count :Frame_Count_NotParsedIncluded);
+    bool usacIndependencyFlag;
+    Get_SB (usacIndependencyFlag,                               "usacIndependencyFlag");
+    if (!IsParsingRaw)
+    {
+        if (Conf.IsNotValid || !usacIndependencyFlag)
+        {
+            Skip_BS(Data_BS_Remain(),                           "Data");
+            Element_End0();
+            return;
+        }
+        IsParsingRaw++;
+    }
+
+    for (size_t elemIdx=0; elemIdx<C.usacElements.size(); elemIdx++)
+    {
+        switch (C.usacElements[elemIdx].usacElementType&3)
+        {
+            case ID_USAC_SCE                                    : UsacSingleChannelElement(); elemIdx=C.usacElements.size()-1; break;
+            case ID_USAC_CPE                                    : UsacChannelPairElement(); elemIdx=C.usacElements.size()-1; break;
+            case ID_USAC_LFE                                    : UsacLfeElement(); elemIdx=C.usacElements.size()-1; break;
+            case ID_USAC_EXT                                    : UsacExtElement(elemIdx, usacIndependencyFlag); break;
+            default                                             : ; //Not parsed
+        }
+        if (!Trusted_Get())
+            break;
+    }
+
+    auto BitsNotIncluded2=BitsNotIncluded!=(size_t)-1?BitsNotIncluded:0;
+    if (Data_BS_Remain()>BitsNotIncluded2)
+        Skip_BS(Data_BS_Remain()-BitsNotIncluded2,              "(Not parsed)");
+
+    if (BitsNotIncluded!=(size_t)-1)
+    {
+        if (Data_BS_Remain()>BitsNotIncluded)
+        {
+            int8u LastByte=0xFF;
+            auto BitsRemaining=Data_BS_Remain()-BitsNotIncluded;
+            if (BitsRemaining<8)
+                Peek_S1((int8u)BitsRemaining, LastByte);
+            Skip_BS(BitsRemaining,                                  LastByte?"Unknown":"Padding");
+        }
+        else if (Data_BS_Remain()<BitsNotIncluded)
+            Trusted_IsNot("Too big");
+    }
+    Element_End0();
+
+    if (Trusted_Get())
+    {
+    }
+    else
+    {
+        if (IsParsingRaw==1)
+        {
+            IsParsingRaw--;
+
+            //Counting, TODO: remove duplicate of this code due to not executed in case of parsing issue
+            Frame_Count++;
+            if (Frame_Count_NotParsedIncluded!=(int64u)-1)
+                Frame_Count_NotParsedIncluded++;
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Usac::UsacSingleChannelElement()
+{
+    Element_Begin1("UsacSingleChannelElement");
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Usac::UsacChannelPairElement()
+{
+    Element_Begin1("UsacChannelPairElement");
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Usac::UsacLfeElement()
+{
+    Element_Begin1("UsacLfeElement");
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Usac::UsacExtElement(size_t elemIdx, bool usacIndependencyFlag)
+{
+    Element_Begin1("UsacExtElement");
+    int8u usacExtElementType;
+    usacExtElementType=Conf.usacElements[elemIdx].usacElementType>>2;
+    Element_Info1C(usacExtElementType<ID_EXT_ELE_Max, usacExtElementType_IdNames[usacExtElementType]);
+    bool usacExtElementPresent;
+    Get_SB (usacExtElementPresent,                              "usacExtElementPresent");
+    if (usacExtElementPresent)
+    {
+        int32u usacExtElementPayloadLength;
+        bool usacExtElementUseDefaultLength;;
+        Get_SB (usacExtElementUseDefaultLength,                 "usacExtElementUseDefaultLength");
+        if (usacExtElementUseDefaultLength)
+            usacExtElementPayloadLength=Conf.usacElements[elemIdx].usacExtElementDefaultLength;
+        else
+        {
+            Get_S4 (8, usacExtElementPayloadLength,             "usacExtElementPayloadLength");
+            if (usacExtElementPayloadLength==0xFF)
+            {
+                Get_S4 (16, usacExtElementPayloadLength,        "usacExtElementPayloadLength");
+                usacExtElementPayloadLength+=255-2;
+            }
+        }
+        if (Conf.usacElements[elemIdx].usacExtElementPayloadFrag)
+        {
+            Skip_SB(                                            "usacExtElementStart");
+            Skip_SB(                                            "usacExtElementStop");
+        }
+
+        if (usacExtElementPayloadLength)
+        {
+            usacExtElementPayloadLength*=8;
+            if (usacExtElementPayloadLength>Data_BS_Remain())
+            {
+                Trusted_IsNot("Too big");
+                Element_End0();
+                return;
+            }
+            auto B=BS_Bookmark(usacExtElementPayloadLength);
+            switch (usacExtElementType)
+            {
+                case ID_EXT_ELE_AUDIOPREROLL                    : AudioPreRoll(); break;
+                default:
+                    Skip_BS(usacExtElementPayloadLength,        "Unknown");
+            }
+            BS_Bookmark(B);
+        }
+    }
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Usac::AudioPreRoll()
+{
+    Element_Begin1("AudioPreRoll");
+    int32u configLen;
+    escapedValue(configLen, 4, 4, 8,                            "configLen");
+    if (configLen)
+    {
+        configLen*=8;
+        if (configLen>Data_BS_Remain())
+        {
+            Trusted_IsNot("Too big");
+            Element_End0();
+            return;
+        }
+        if (IsParsingRaw<=1)
+        {
+            Element_Begin1("Config");
+            auto B=BS_Bookmark(configLen);
+            UsacConfig(B.BitsNotIncluded);
+            if (!Trusted_Get())
+                C=Conf; //Using default conf if new conf has a problem
+            BS_Bookmark(B);
+            Element_End0();
+        }
+        else
+        {
+            //No nested in nested
+            Skip_BS(configLen,                                  "Config");
+        }
+    }
+    else
+    {
+        if (IsParsingRaw <= 1)
+            C = Conf; //Using default conf if there is no replacing conf
+    }
+    Skip_SB(                                                    "applyCrossfade");
+    Skip_SB(                                                    "reserved");
+    escapedValue(F.numPreRollFrames, 2, 4, 0,                   "numPreRollFrames");
+    for (int32u frameIdx=0; frameIdx<F.numPreRollFrames; frameIdx++)
+    {
+        Element_Begin1("PreRollFrame");
+            int32u auLen;
+            escapedValue(auLen, 16, 16, 0,                      "auLen");
+            auLen*=8;
+            if (auLen)
+            {
+                if (auLen>Data_BS_Remain())
+                {
+                    Trusted_IsNot("Too big");
+                    C=Conf; //Using default conf if new conf has a problem
+                    Element_End0();
+                    break;
+                }
+                if (IsParsingRaw<=1)
+                {
+                    auto FSav=F;
+                    IsParsingRaw+=frameIdx+1;
+                    Element_Begin1("AccessUnit");
+                    auto B=BS_Bookmark(auLen);
+                    UsacFrame(B.BitsNotIncluded);
+                    BS_Bookmark(B);
+                    Element_End0();
+                    IsParsingRaw-=frameIdx+1;
+                    F=FSav;
+                }
+                else
+                {
+                    //No nested in nested
+                    Skip_BS(auLen,                              "AccessUnit");
+                }
+            }
+        Element_End0();
+    }
+    if (!Trusted_Get())
+        C=Conf; //Using default conf if new conf has a problem
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+#endif //MEDIAINFO_TRACE || MEDIAINFO_CONFORMANCE
 
 //***************************************************************************
 // Utils

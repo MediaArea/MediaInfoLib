@@ -323,6 +323,9 @@ void File_Aac::payload()
     switch (audioObjectType)
     {
         case   2: raw_data_block(); break;
+        #if MEDIAINFO_TRACE || MEDIAINFO_CONFORMANCE
+        case  42: UsacFrame(); break;
+        #endif //MEDIAINFO_TRACE || MEDIAINFO_CONFORMANCE
         default: Skip_BS(Data_BS_Remain(),                      "payload");
     }
 }
