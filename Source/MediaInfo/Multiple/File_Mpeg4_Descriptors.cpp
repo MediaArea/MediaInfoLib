@@ -811,7 +811,7 @@ void File_Mpeg4_Descriptors::Descriptor_04()
                                         }
                                         else
                                             AudioProfile=NoProfile;
-                                        ((File_Aac*)Parser)->Profile=AudioProfile;
+                                        ((File_Aac*)Parser)->Format_Profile=AudioProfile;
                                         File_Aac::conformance_flags Profile;
                                         switch (AudioProfile)
                                         {
