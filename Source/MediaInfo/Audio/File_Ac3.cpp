@@ -1811,7 +1811,7 @@ bool File_Ac3::Synchronize()
 void File_Ac3::Synched_Init()
 {
     if (!Frame_Count_Valid)
-        Frame_Count_Valid=Config->ParseSpeed>=0.3?32:2;
+        Frame_Count_Valid=Config->ParseSpeed>=0.3?32:(IsSub?1:2);
 
     //FrameInfo
     PTS_End=0;

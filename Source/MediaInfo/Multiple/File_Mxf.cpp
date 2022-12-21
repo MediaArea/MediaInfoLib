@@ -4895,6 +4895,15 @@ void File_Mxf::Read_Buffer_AfterParsing()
         if (File_GoTo==(int64u)-1)
             GoToFromEnd(0);
     }
+
+    if (IsSub)
+    {
+        Frame_Count++;
+        if (Frame_Count_NotParsedIncluded!=(int64u)-1)
+            Frame_Count_NotParsedIncluded++;
+        if (!Status[IsFilled] && Config->ParseSpeed<=0)
+            Fill();
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -5102,7 +5111,7 @@ void File_Mxf::Read_Buffer_Unsynched()
 #if (MEDIAINFO_DEMUX || MEDIAINFO_SEEK) && defined(MEDIAINFO_FILE_YES)
 bool File_Mxf::DetectDuration ()
 {
-    if (Duration_Detected)
+    if (Config->ParseSpeed<=0 || Duration_Detected)
         return false;
 
     MediaInfo_Internal MI;
@@ -6640,7 +6649,6 @@ void File_Mxf::Data_Parse()
                             Parsing_Size=Element_Size-Element_Offset; // There is a problem
                         if (Parsing_Size>Array_Size)
                             Parsing_Size=Array_Size; // There is a problem
-                        (*Parser)->Frame_Count=Frame_Count;
                         (*Parser)->Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded;
                         Open_Buffer_Continue((*Parser), Buffer+Buffer_Offset+(size_t)(Element_Offset), Parsing_Size);
                         if ((Code_Compare4&0xFF00FF00)==0x17000100 && LineNumber==21 && (*Parser)->Count_Get(Stream_Text)==0)
@@ -6655,8 +6663,18 @@ void File_Mxf::Data_Parse()
                             Skip_XX(Array_Size-Parsing_Size,    "Padding");
                         Element_End0();
                     }
-                    if (IsSub)
-                        Frame_Count++;
+                    if (!Essence->second.IsFilled && (!Count || (Essence->second.Parsers.size()==1 && Essence->second.Parsers[0]->Status[IsFilled])))
+                    {
+                        if (Streams_Count>0)
+                            Streams_Count--;
+                        Essence->second.IsFilled=true;
+                        if (Config->ParseSpeed<1.0 && IsSub)
+                        {
+                            Fill();
+                            Open_Buffer_Unsynch();
+                            Finish();
+                        }
+                    }
                 }
             }
             else
@@ -6836,7 +6854,7 @@ void File_Mxf::Data_Parse()
     }
 
     if ((!IsParsingEnd && IsParsingMiddle_MaxOffset==(int64u)-1 && Config->ParseSpeed<1.0)
-     && ((!IsSub && File_Offset>=Buffer_PaddingBytes+0x4000000) //TODO: 64 MB by default (security), should be changed
+     && ((!IsSub && File_Offset>=Buffer_PaddingBytes+(Config->ParseSpeed<=0?0x1000000:0x4000000)) //TODO: 64 MB by default (security), should be changed
       || (Streams_Count==0 && !Descriptors.empty())))
     {
         Fill();
@@ -16697,6 +16715,9 @@ void File_Mxf::Get_BER(int64u &Value, const char* Name)
 //---------------------------------------------------------------------------
 void File_Mxf::ChooseParser(const essences::iterator &Essence, const descriptors::iterator &Descriptor)
 {
+    if (Config->ParseSpeed<0)
+        return;
+
     if ((Descriptor->second.EssenceCompression.hi&0xFFFFFFFFFFFFFF00LL)!=0x060E2B3404010100LL || (Descriptor->second.EssenceCompression.lo&0xFF00000000000000LL)!=0x0400000000000000LL)
         return ChooseParser__FromEssenceContainer (Essence, Descriptor);
 
@@ -16948,6 +16969,9 @@ void File_Mxf::ChooseParser__FromEssenceContainer(const essences::iterator &Esse
 //---------------------------------------------------------------------------
 void File_Mxf::ChooseParser__FromEssence(const essences::iterator &Essence, const descriptors::iterator &Descriptor)
 {
+    if (Config->ParseSpeed<0)
+        return;
+
     int32u Code_Compare3=Code.lo>>32;
 
     switch (Code_Compare3)
@@ -18152,7 +18176,7 @@ bool File_Mxf::BookMark_Needed()
 {
     Frame_Count_NotParsedIncluded=(int64u)-1;
 
-    if (MayHaveCaptionsInStream && !IsSub && IsParsingEnd && File_Size!=(int64u)-1 && Config->ParseSpeed && Config->ParseSpeed<1 && IsParsingMiddle_MaxOffset==(int64u)-1 && File_Size/2>0x4000000) //TODO: 64 MB by default; // Do not search in the middle of the file if quick pass or full pass
+    if (MayHaveCaptionsInStream && !IsSub && IsParsingEnd && File_Size!=(int64u)-1 && Config->ParseSpeed>0 && Config->ParseSpeed<1 && IsParsingMiddle_MaxOffset==(int64u)-1 && File_Size/2>0x4000000) //TODO: 64 MB by default; // Do not search in the middle of the file if quick pass or full pass
     {
         IsParsingMiddle_MaxOffset=File_Size/2+0x4000000; //TODO: 64 MB by default;
         GoTo(File_Size/2);
