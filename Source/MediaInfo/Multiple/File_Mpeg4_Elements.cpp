@@ -1802,6 +1802,14 @@ void File_Mpeg4::mdat()
     }
     Element_Name("Data");
 
+    if (Config->ParseSpeed<=-1 && !Streams.empty())
+    {
+        if (File_Offset+Buffer_Offset+Element_TotalSize_Get()>File_Size)
+            Fill(Stream_General, 0, "IsTruncated", "Yes");
+        Finish();
+        return;
+    }
+
     //Sizes
     if (Retrieve(Stream_General, 0, General_HeaderSize).empty())
     {

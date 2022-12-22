@@ -2382,7 +2382,7 @@ bool File_Mpeg4::BookMark_Needed()
         }
     #endif //MEDIAINFO_HASH
 
-    if (!mdat_MustParse || File_GoTo!=(int64u)-1)
+    if (!mdat_MustParse || File_GoTo!=(int64u)-1 || Config->ParseSpeed<0)
         return false;
 
     //Handling of some wrong stsz and stsc atoms (ADPCM)
