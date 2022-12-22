@@ -1469,7 +1469,7 @@ bool File_Avc::Demux_UnpacketizeContainer_Test()
 void File_Avc::Synched_Init()
 {
     if (!Frame_Count_Valid)
-        Frame_Count_Valid=Config->ParseSpeed>=0.3?512:2;
+        Frame_Count_Valid=Config->ParseSpeed>=0.3?512:(IsSub?1:2);
 
     //FrameInfo
     PTS_End=0;

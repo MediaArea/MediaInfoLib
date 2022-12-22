@@ -584,7 +584,7 @@ bool File_Mpega::FileHeader_Begin()
 
     //Seems OK
     if (!Frame_Count_Valid)
-        Frame_Count_Valid=Config->ParseSpeed>=0.5?128:(Config->ParseSpeed>=0.3?32:4);
+        Frame_Count_Valid=Config->ParseSpeed>=0.5?128:(Config->ParseSpeed>=0.3?32:(IsSub?1:4));
     return true;
 }
 
