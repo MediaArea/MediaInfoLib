@@ -3,14 +3,14 @@
 # Contributor: hydro <hydro@freenet.de>
 
 pkgname=('libmediainfo' 'python-mediainfo')
-pkgver=22.09
+pkgver=22.12
 pkgrel=1
 pkgdesc="shared library for mediainfo"
 arch=('i686' 'x86_64')
 url="http://mediaarea.net"
 license=('BSD-2-Clause')
 makedepends=('libtool' 'automake' 'autoconf' 'python')
-depends=( 'curl' 'libmms' 'libzen>=0.4.39')
+depends=( 'curl' 'libmms' 'libzen>=0.4.40')
 source=(${pkgname}_${pkgver}.orig.tar.xz)
 md5sums=('00000000000000000000000000000000')
 
