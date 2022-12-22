@@ -2596,7 +2596,7 @@ void File_Mxf::Streams_Finish()
     #if MEDIAINFO_ADVANCED
         if (Footer_Position!=(int64u)-1)
             Fill(Stream_General, 0, General_FooterSize, File_Size-Footer_Position);
-        else
+        else if (Config->ParseSpeed>-1 || (!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size))
             Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
     #endif //MEDIAINFO_ADVANCED
 
@@ -5927,15 +5927,58 @@ void File_Mxf::Header_Parse()
     int32u Code_Compare2=(int32u)Code.hi;
     int32u Code_Compare3=Code.lo>>32;
     int32u Code_Compare4=(int32u)Code.lo;
-    if (Code_Compare1==Elements::Filler011
-     && (Code_Compare2&0xFFFFFF00)==(Elements::Filler012&0xFFFFFF00)
-     && Code_Compare3==Elements::Filler013)
+    bool IsFiller=Code_Compare1==Elements::Filler011
+              && (Code_Compare2&0xFFFFFF00)==(Elements::Filler012&0xFFFFFF00)
+              && Code_Compare3==Elements::Filler013;
+    if (IsFiller)
         DataMustAlwaysBeComplete=false;
+    if (Config->ParseSpeed<0
+     && !IsParsingEnd
+     && ((!Partitions_Pos
+     && !Partitions.empty()
+     && !Partitions_IsCalculatingHeaderByteCount
+     && File_Offset+Buffer_Offset+(IsFiller?(Element_Offset+Length):0)>=Partitions[Partitions_Pos].PartitionPackByteCount+Partitions[Partitions_Pos].HeaderByteCount)
+     || (Code_Compare1==Elements::GenericContainer_Aaf1
+      && ((Code_Compare2)&0xFFFFFF00)==(Elements::GenericContainer_Aaf2&0xFFFFFF00)
+      && (Code_Compare3==Elements::GenericContainer_Aaf3
+       || Code_Compare3==Elements::GenericContainer_Avid3
+       || Code_Compare3==Elements::Dolby_PHDRImageMetadataItem3
+       || Code_Compare3==Elements::GenericContainer_Sony3))
+     || (Code_Compare1==Elements::OpenIncompleteBodyPartition1
+      && ((Code_Compare2)&0xFFFFFF00)==(Elements::OpenIncompleteBodyPartition2&0xFFFFFF00)
+      && Code_Compare3==Elements::OpenIncompleteBodyPartition3
+      && ((Code_Compare4)&0xFFFF0000)==(Elements::OpenIncompleteBodyPartition4&0xFFFF0000))))
+    {
+        if (Config->ParseSpeed<=-1)
+        {
+            Finish();
+            return;
+        }
+        IsParsingEnd=true;
+        if (PartitionMetadata_FooterPartition!=(int64u)-1 && PartitionMetadata_FooterPartition>File_Offset+Buffer_Offset+(size_t)Element_Size)
+        {
+            if (PartitionMetadata_FooterPartition+17<=File_Size)
+            {
+                GoTo(PartitionMetadata_FooterPartition);
+                IsCheckingFooterPartitionAddress=true;
+            }
+            else
+            {
+                GoToFromEnd(4); //For random access table
+                FooterPartitionAddress_Jumped=true;
+            }
+        }
+        else
+        {
+            GoToFromEnd(4); //For random access table
+            FooterPartitionAddress_Jumped=true;
+        }
+        Open_Buffer_Unsynch();
+        return;
+    }
     if (Partitions_IsCalculatingHeaderByteCount)
     {
-        if (!(Code_Compare1==Elements::Filler011
-           && (Code_Compare2&0xFFFFFF00)==(Elements::Filler012&0xFFFFFF00)
-           && Code_Compare3==Elements::Filler013))
+        if (!IsFiller)
         {
             Partitions_IsCalculatingHeaderByteCount=false;
             if (Partitions_Pos<Partitions.size())
