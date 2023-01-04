@@ -92,7 +92,7 @@
         ToDisplay += "\r\n\r\nClose\r\n";
         MI.Close();
 
-        //Formating to HTML
+        //Formatting to HTML
         ToDisplay=ToDisplay.Replace("\r\n", "<br />\r\n");
         
         //Displaying the text
