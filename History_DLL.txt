@@ -2519,7 +2519,7 @@ x #1485810 : wrong playtime on CBR MP3 files with big id3v2 tags
 x #1485803 : some WMA tags were forgotten
 x #1488449 : crash on very rare buggy MP3 files
 x #1482686 : ShellExtension, crash when moving a directory
-x #1488770 : PlayTime, some "minutes" formating were forgotten
+x #1488770 : PlayTime, some "minutes" formatting were forgotten
 x #1485044 : some .ico files were detected as MPEG Audio
 x AVI, handle some malformed timestamps in tags (carriage return at the end...)
 x MPEG-1 and 2 : incoherancy of PlayTime
