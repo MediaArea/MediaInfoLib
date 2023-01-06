@@ -6,7 +6,7 @@
 %global libzen_version_minor      4
 %global libzen_version_release    40
 
-%if 0%{?fedora_version} || 0%{?centos_version} >= 600 || 0%{?rhel_version} >= 600
+%if 0%{?fedora} || 0%{?rhel}
 %global package_with_0_ending 0
 %global libmediainfo_name libmediainfo
 %else
@@ -38,31 +38,22 @@ Prefix:         %{_prefix}
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires:  gcc-c++
 BuildRequires:  libzen-devel >= %{libzen_version}
+BuildRequires:  libcurl-devel
 BuildRequires:  pkgconfig
 BuildRequires:  zlib-devel
 BuildRequires:  doxygen
 BuildRequires:  libtool
 BuildRequires:  automake
 BuildRequires:  autoconf
-%if ! 0%{?rhel_version} && ! 0%{?centos_version} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
+%if ! 0%{?rhel} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
 %if ! (0%{?sle_version} == 120300 && 0%{?is_opensuse})
 BuildRequires: python2-devel
 %endif
 BuildRequires: python3-devel
 %endif
 
-%if 0%{?rhel_version} || 0%{?centos_version}
-%if 0%{?rhel_version} >= 800 || 0%{?centos_version} >= 800
-BuildRequires:  gdb
-%endif
-%if 0%{?rhel_version} > 599
-BuildRequires:  libcurl-devel
-%endif
-%if 0%{?centos_version} > 599
-BuildRequires:  libcurl-devel
-%endif
-%else
-BuildRequires:  libcurl-devel
+%if 0%{?rhel} >= 8
+BuildRequires:  alternatives
 %endif
 
 %if 0%{?mageia} > 6
@@ -164,16 +155,7 @@ Summary:        Most relevant technical and tag data for video and audio files -
 Group:          Development/Libraries
 Requires:       %{name}%{?_isa} = %{version}
 Requires:       libzen-devel%{?_isa} >= %{libzen_version}
-%if 0%{?rhel_version} || 0%{?centos_version}
-%if 0%{?rhel_version} > 599
-Requires:  libcurl-devel
-%endif
-%if 0%{?centos_version} > 599
-Requires:  libcurl-devel
-%endif
-%else
-Requires:  libcurl-devel
-%endif
+Requires:       libcurl-devel
 
 %if 0%{?rhel}
 %package        -n %{name_without_0_ending}%{libmediainfo_suffix}-devel
@@ -216,7 +198,7 @@ for development.
 %{devel_description}
 %endif
 
-%if ! 0%{?rhel_version} && ! 0%{?centos_version} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
+%if ! 0%{?rhel} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
 %if ! (0%{?sle_version} == 120300 && 0%{?is_opensuse})
 %package        -n python2-mediainfo
 Summary:        Most relevant technical and tag data for video and audio files -- python2 binding
@@ -304,16 +286,7 @@ popd
 cp Source/Doc/*.html ./
 
 pushd Project/GNU/Library
-%if 0%{?rhel} && 0%{?rhel} < 6
-%configure --enable-shared --disable-static --enable-visibility
-%else
-%if 0%{?mageia} > 5
-%configure --enable-shared --disable-static --enable-visibility --with-libcurl --disable-dependency-tracking
-%else
 %configure --enable-shared --disable-static --enable-visibility --with-libcurl
-%endif
-%endif
-
 make %{?_smp_mflags}
 popd
 
@@ -339,7 +312,7 @@ install -m 644 Source/MediaInfoDLL/MediaInfoDLL.py %{buildroot}%{_includedir}/Me
 install -m 644 Source/MediaInfoDLL/MediaInfoDLL3.py %{buildroot}%{_includedir}/MediaInfoDLL
 
 # Python modules
-%if ! 0%{?rhel_version} && ! 0%{?centos_version} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
+%if ! 0%{?rhel} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
 %if ! (0%{?sle_version} == 120300 && 0%{?is_opensuse})
 install -dm 755 %{buildroot}%{python2_sitelib}
 install -m 644 Source/MediaInfoDLL/MediaInfoDLL.py %{buildroot}%{python2_sitelib}
@@ -356,7 +329,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 
 %define libmediainfo_files %defattr(-,root,root,-)\
 %doc History.txt ReadMe.txt\
-%if 0%{?fedora_version} || 0%{?centos_version} >= 700 || 0%{?rhel_version} >= 700\
+%if 0%{?fedora} || 0%{?rhel}\
 %license License.html\
 %else\
 %doc License.html\
@@ -401,7 +374,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 %{devel_files}
 %endif
 
-%if ! 0%{?rhel_version} && ! 0%{?centos_version} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
+%if ! 0%{?rhel} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
 %if ! (0%{?sle_version} == 120300 && 0%{?is_opensuse})
 %files     -n python2-mediainfo
 %{python2_sitelib}/*
