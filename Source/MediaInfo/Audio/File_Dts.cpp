@@ -532,7 +532,11 @@ void File_Dts::Streams_Fill_Extension()
         Data[ChannelPositions2].push_back(Ztring());
         Data[ChannelLayout].push_back(Ztring());
     }
-    if (HD_BitResolution!=(int8u)-1)
+    if (HD_BitResolution_Real!=(int8u)-1)
+    {
+        Data[BitDepth].push_back(Ztring::ToZtring(HD_BitResolution_Real));
+    }
+    else if (HD_BitResolution!=(int8u)-1)
     {
         Data[BitDepth].push_back(Ztring::ToZtring(HD_BitResolution));
     }
@@ -540,7 +544,11 @@ void File_Dts::Streams_Fill_Extension()
     {
         Data[BitDepth].push_back(Ztring());
     }
-    if (HD_MaximumSampleRate!=(int8u)-1)
+    if (HD_MaximumSampleRate_Real!=(int8u)-1)
+    {
+        Data[SamplingRate].push_back(Ztring::ToZtring(DTS_HD_MaximumSampleRate[HD_MaximumSampleRate_Real]));
+    }
+    else if (HD_MaximumSampleRate!=(int8u)-1)
     {
         Data[SamplingRate].push_back(Ztring::ToZtring(DTS_HD_MaximumSampleRate[HD_MaximumSampleRate]));
     }
