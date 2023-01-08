@@ -211,6 +211,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_colr();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc(bool LittleEndian=false, bool HasFlags=false);
     void moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_cuvv();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_d263();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_dac3();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_dac4();
