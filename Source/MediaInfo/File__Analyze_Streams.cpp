@@ -2061,6 +2061,11 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
             {
                 Ztring Container_Value=HDR_Temp[i-Video_HDR_Format];
                 Ztring Stream_Value=ToAdd.Retrieve(Stream_Video, StreamPos_From, i);
+                ZtringList Stream_Values;
+                Stream_Values.Separator_Set(0, __T(" / "));
+                Stream_Values.Write(Stream_Value);
+                if (i==Video_HDR_Format && Stream_Values.Find(Container_Value)!=Error)
+                    break;
                 if (!Container_Value.empty() || !Stream_Value.empty())
                     Container_Value+=__T(" / ");
                 Container_Value+=Stream_Value;
