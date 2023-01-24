@@ -149,6 +149,24 @@ Ztring MediaInfo_Internal::Inform()
         }
     #endif //MEDIAINFO_TRACE
 
+    #if MEDIAINFO_ADVANCED
+        if (Config.TimeCode_Dumps)
+        {
+            string Result="<?xml version=\"1.0\"?>\n<timecode_streams";
+            if (Config.ParseSpeed<1.0)
+                Result+=" full=\"0\"";
+            Result+=">\n";
+            for (const auto& TimeCode_Dump : *Config.TimeCode_Dumps)
+            {
+                Result+=TimeCode_Dump.second;
+                if (TimeCode_Dump.second.find(" start_tc=\"")==string::npos)
+                    Result+="  </timecode_stream>\n";
+            }
+            Result+="</timecode_streams>";
+            return Ztring().From_UTF8(Result);
+        }
+    #endif //MEDIAINFO_ADVANCED
+
     #if defined(MEDIAINFO_EBUCORE_YES)
         if (MediaInfoLib::Config.Inform_Get()==__T("EBUCore_1.5"))
             return Export_EbuCore().Transform(*this, Export_EbuCore::Version_1_5, Export_EbuCore::AcquisitionDataOutputMode_Default,

@@ -4294,6 +4294,20 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
             Fill(Stream_Other, StreamPos_Last, Other_ID, Ztring::ToZtring(TrackID)+(IsSourcePackage?__T("-Source"):__T("-Material")));
             Fill(Stream_Other, StreamPos_Last, Other_Type, "Time code");
             Fill(Stream_Other, StreamPos_Last, Other_Format, "MXF TC");
+
+            #if MEDIAINFO_ADVANCED
+                if (Config->TimeCode_Dumps)
+                {
+                    auto id=Ztring(Ztring::ToZtring(TrackID)+(IsSourcePackage?__T("-Source"):__T("-Material"))).To_UTF8();
+                    auto& TimeCode_Dump=(*Config->TimeCode_Dumps)[id];
+                    TimeCode_Dump="  <timecode_stream id=\""+id+"\" format=\"smpte-st377\" frame_rate=\""+to_string(Component2->second.MxfTimeCode.RoundedTimecodeBase);
+                    if (Component2->second.MxfTimeCode.DropFrame)
+                        TimeCode_Dump+=+"000/1001";
+
+                    TimeCode_Dump+="\" frame_count=\""+to_string(Component2->second.Duration)+"\" start_tc=\"" + TimeCode(Component2->second.MxfTimeCode.StartTimecode, Component2->second.MxfTimeCode.RoundedTimecodeBase - 1, Component2->second.MxfTimeCode.DropFrame).ToString() + "\"/>\n";
+                }
+            #endif //MEDIAINFO_ADVANCED
+
             if (Component2->second.MxfTimeCode.RoundedTimecodeBase<=(int8u)-1) // Found files with RoundedTimecodeBase of 0x8000
                 Fill(Stream_Other, StreamPos_Last, Other_FrameRate, Component2->second.MxfTimeCode.RoundedTimecodeBase/(Component2->second.MxfTimeCode.DropFrame?1.001:1.000));
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, TC.ToString().c_str());
@@ -8983,37 +8997,40 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
         bool  DropFrame;
         BS_Begin();
 
-        Skip_SB(                                                "CF - Color fame");
+        #if MEDIAINFO_ADVANCED
+            int32u BG;
+            bool ColorFrame, FieldPhaseBgf0, Bgf0Bgf2, Bgf1, Bgf2FieldPhase;
+            #define Get_TCB(_1,_2)      Get_SB(_1,_2)
+            #define Get_TC4(_1,_2)      Get_L4(_1,_2)
+        #else
+            #define Get_TCB(_1,_2)      Skip_SB(_2)
+            #define Get_TC4(_1,_2)      Skip_L4(_2)
+        #endif
+
+        Get_TCB(   ColorFrame,                                  "CF - Color fame");
         Get_SB (   DropFrame,                                   "DP - Drop frame");
         Get_S1 (2, Frames_Tens,                                 "Frames (Tens)");
         Get_S1 (4, Frames_Units,                                "Frames (Units)");
 
-        Skip_SB(                                                "FP - Field Phase / BGF0");
+        Get_TCB(   FieldPhaseBgf0,                              "FP - Field Phase / BGF0");
         Get_S1 (3, Seconds_Tens,                                "Seconds (Tens)");
         Get_S1 (4, Seconds_Units,                               "Seconds (Units)");
 
-        Skip_SB(                                                "BGF0 / BGF2");
+        Get_TCB(   Bgf0Bgf2,                                    "BGF0 / BGF2");
         Get_S1 (3, Minutes_Tens,                                "Minutes (Tens)");
         Get_S1 (4, Minutes_Units,                               "Minutes (Units)");
 
-        Skip_SB(                                                "BGF2 / Field Phase");
-        Skip_SB(                                                "BGF1");
+        Get_TCB(   Bgf2FieldPhase,                              "BGF2 / Field Phase");
+        Get_TCB(   Bgf1,                                        "BGF1");
         Get_S1 (2, Hours_Tens,                                  "Hours (Tens)");
         Get_S1 (4, Hours_Units,                                 "Hours (Units)");
 
-        Skip_S1(4,                                              "BG2");
-        Skip_S1(4,                                              "BG1");
-
-        Skip_S1(4,                                              "BG4");
-        Skip_S1(4,                                              "BG3");
-
-        Skip_S1(4,                                              "BG6");
-        Skip_S1(4,                                              "BG5");
-
-        Skip_S1(4,                                              "BG8");
-        Skip_S1(4,                                              "BG7");
-
         BS_End();
+
+        Get_TC4(   BG,                                          "BG");
+
+        #undef Get_TCB
+        #undef Get_TC4
 
         //TimeCode
         TimeCode TimeCode_Current(  Hours_Tens  *10+Hours_Units,
@@ -9053,6 +9070,33 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
         Element_Level--;
         Element_Info1(Ztring().From_UTF8(TimeCode_Current.ToString().c_str()));
         Element_Level++;
+
+        #if MEDIAINFO_ADVANCED
+            if (Config->TimeCode_Dumps)
+            {
+                auto id=string("SDTI");
+                auto& TimeCode_Dump=(*Config->TimeCode_Dumps)[id];
+                if (TimeCode_Dump.empty())
+                {
+                    TimeCode_Dump+="  <timecode_stream id=\""+id+"\" format=\"smpte-st326\"";
+                    if (FramesMax)
+                    {
+                        TimeCode_Dump+=" frame_rate=\""+to_string(FramesMax+1);
+                        if (DropFrame)
+                            TimeCode_Dump+="000/1001\"";
+                    }
+                    TimeCode_Dump+=" fp=\"0\" bgf=\"0\" bg=\"0\">\n";
+                }
+                TimeCode_Dump+="    <tc v=\""+TimeCode(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, 0, DropFrame).ToString();
+                if (FieldPhaseBgf0)
+                    TimeCode_Dump+=" fp=\"1\"";
+                if (Bgf0Bgf2 || Bgf1 || Bgf2FieldPhase)
+                    TimeCode_Dump+=" bgf=\""+to_string((Bgf2FieldPhase<<2)|(Bgf1<<1)|(Bgf2FieldPhase<<0))+"\"";
+                if (BG)
+                    TimeCode_Dump+=" bgf=\""+to_string(BG)+"\"";
+                TimeCode_Dump+="\"/>\n";
+            }
+        #endif //MEDIAINFO_ADVANCED
 
         Element_End0();
 
@@ -11725,6 +11769,7 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
     //Parsing
     if (Vector(8)==(int32u)-1)
         return;
+    int i=0;
     while (Element_Offset<Element_Size)
     {
         Element_Begin1("TimeCode");
@@ -11732,37 +11777,40 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
         bool  DropFrame;
         BS_Begin();
 
-        Skip_SB(                                                "CF - Color fame");
+        #if MEDIAINFO_ADVANCED
+            int32u BG;
+            bool ColorFrame, FieldPhaseBgf0, Bgf0Bgf2, Bgf1, Bgf2FieldPhase;
+            #define Get_TCB(_1,_2)      Get_SB(_1,_2)
+            #define Get_TC4(_1,_2)      Get_L4(_1,_2)
+        #else
+            #define Get_TCB(_1,_2)      Skip_SB(_2)
+            #define Get_TC4(_1,_2)      Skip_L4(_2)
+        #endif
+
+        Get_TCB(   ColorFrame,                                  "CF - Color fame");
         Get_SB (   DropFrame,                                   "DP - Drop frame");
         Get_S1 (2, Frames_Tens,                                 "Frames (Tens)");
         Get_S1 (4, Frames_Units,                                "Frames (Units)");
 
-        Skip_SB(                                                "FP - Field Phase / BGF0");
+        Get_TCB(   FieldPhaseBgf0,                              "FP - Field Phase / BGF0");
         Get_S1 (3, Seconds_Tens,                                "Seconds (Tens)");
         Get_S1 (4, Seconds_Units,                               "Seconds (Units)");
 
-        Skip_SB(                                                "BGF0 / BGF2");
+        Get_TCB(   Bgf0Bgf2,                                    "BGF0 / BGF2");
         Get_S1 (3, Minutes_Tens,                                "Minutes (Tens)");
         Get_S1 (4, Minutes_Units,                               "Minutes (Units)");
 
-        Skip_SB(                                                "BGF2 / Field Phase");
-        Skip_SB(                                                "BGF1");
+        Get_TCB(   Bgf2FieldPhase,                              "BGF2 / Field Phase");
+        Get_TCB(   Bgf1,                                        "BGF1");
         Get_S1 (2, Hours_Tens,                                  "Hours (Tens)");
         Get_S1 (4, Hours_Units,                                 "Hours (Units)");
 
-        Skip_S1(4,                                              "BG2");
-        Skip_S1(4,                                              "BG1");
-
-        Skip_S1(4,                                              "BG4");
-        Skip_S1(4,                                              "BG3");
-
-        Skip_S1(4,                                              "BG6");
-        Skip_S1(4,                                              "BG5");
-
-        Skip_S1(4,                                              "BG8");
-        Skip_S1(4,                                              "BG7");
-
         BS_End();
+
+        Get_TC4(   BG,                                          "BG");
+
+        #undef Get_TCB
+        #undef Get_TC4
 
         Element_Info1(TimeCode(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, 0, DropFrame).ToString());
         Element_End0();
@@ -11772,6 +11820,55 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
         {
             SystemScheme1_TimeCodeArray_StartTimecode=TimeCode(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, 0, DropFrame);
         }
+
+        #if MEDIAINFO_ADVANCED
+            if (Config->TimeCode_Dumps)
+            {
+                auto id="SystemScheme1-0-"+to_string(i);
+                auto& TimeCode_Dump=(*Config->TimeCode_Dumps)[id];
+                if (TimeCode_Dump.empty())
+                {
+                    TimeCode_Dump="  <timecode_stream id=\""+id+"\" format=\"smpte-st331\" frame_rate=\"";
+                    int64s FrameRate=0;
+                    if (SystemScheme1_FrameRateFromDescriptor)
+                        FrameRate=float64_int64s(SystemScheme1_FrameRateFromDescriptor);
+                    else
+                    {
+                        //No clear frame rate, looking for the common frame rate
+                        for (const auto& Track : Tracks)
+                        {
+                            if (Track.second.EditRate)
+                            {
+                                auto NewFrameRate=float64_int64s(Track.second.EditRate);
+                                if (!FrameRate)
+                                    FrameRate=NewFrameRate;
+                                else if (NewFrameRate!=FrameRate)
+                                {
+                                    FrameRate=0;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (FrameRate)
+                    {
+                        TimeCode_Dump+=" frame_rate=\""+to_string(FrameRate);
+                        if (DropFrame)
+                            TimeCode_Dump+="000/1001\"";
+                    }
+                    TimeCode_Dump+=" fp=\"0\" bgf=\"0\" bg=\"0\">\n";
+                }
+                TimeCode_Dump+="    <tc v=\""+TimeCode(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, 0, DropFrame).ToString();
+                if (FieldPhaseBgf0)
+                    TimeCode_Dump+=" fp=\"1\"";
+                if (Bgf0Bgf2 || Bgf1 || Bgf2FieldPhase)
+                    TimeCode_Dump+=" bgf=\""+to_string((Bgf2FieldPhase<<2)|(Bgf1<<1)|(Bgf2FieldPhase<<0))+"\"";
+                if (BG)
+                    TimeCode_Dump+=" bgf=\""+to_string(BG)+"\"";
+                TimeCode_Dump+="\"/>\n";
+                i++;
+            }
+        #endif //MEDIAINFO_ADVANCED
     }
 
     SystemSchemes[Element_Code&0xFFFF].IsTimeCode=true;
