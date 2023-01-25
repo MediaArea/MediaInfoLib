@@ -8936,7 +8936,7 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
 
     //Parsing
     int8u SMB, CPR_Rate, Format;
-    bool SMB_UL_Present, SMB_CreationTimeStamp, SMB_UserTimeStamp, CPR_DropFrame;
+    bool SMB_UL_Present, SMB_CreationTimeStamp, SMB_UserTimeStamp, CPR_1_1001;
     Get_B1 (SMB,                                                "System Metadata Bitmap");
         Skip_Flags(SMB, 7,                                      "FEC Active");
         Get_Flags (SMB, 6, SMB_UL_Present,                      "SMPTE Label");
@@ -8950,7 +8950,7 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
     Element_Begin1("Content Package Rate");
     Skip_S1(2,                                                  "Reserved");
     Get_S1 (5, CPR_Rate,                                        "Package Rate"); //See SMPTE 326M
-    Get_SB (   CPR_DropFrame,                                   "1.001 Flag");
+    Get_SB (   CPR_1_1001,                                      "1.001 Flag");
     Element_End0();
     Element_Begin1("Content Package Type");
     Skip_S1(3,                                                  "Stream Status");
@@ -8964,17 +8964,17 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
 
     //Some computing
     static int8u FrameRates_List[3] = { 24, 25, 30 };
-    int8u  FramesMax;
+    int8u  FrameRate;
     int8u  RepetitionMaxCount;
     if (CPR_Rate && CPR_Rate<=0x0C) //See SMPTE 326M)
     {
         CPR_Rate--;
         RepetitionMaxCount=CPR_Rate/3;
-        FramesMax=FrameRates_List[CPR_Rate%3]*(RepetitionMaxCount+1)-1;
+        FrameRate=FrameRates_List[CPR_Rate%3]*(RepetitionMaxCount+1);
     }
     else
     {
-        FramesMax=0;
+        FrameRate=0;
         RepetitionMaxCount=0;
     }
 
@@ -9037,7 +9037,7 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
                                     Minutes_Tens*10+Minutes_Units,
                                     Seconds_Tens*10+Seconds_Units,
                                     (Frames_Tens *10+Frames_Units)*(RepetitionMaxCount+1),
-                                    FramesMax,
+                                    FrameRate?(FrameRate-1):0,
                                     DropFrame);
         if (RepetitionMaxCount)
         {
@@ -9079,11 +9079,12 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
                 if (TimeCode_Dump.empty())
                 {
                     TimeCode_Dump+="  <timecode_stream id=\""+id+"\" format=\"smpte-st326\"";
-                    if (FramesMax)
+                    if (FrameRate)
                     {
-                        TimeCode_Dump+=" frame_rate=\""+to_string(FramesMax+1);
-                        if (DropFrame)
-                            TimeCode_Dump+="000/1001\"";
+                        TimeCode_Dump+=" frame_rate=\""+to_string(FrameRate);
+                        if (CPR_1_1001)
+                            TimeCode_Dump+="000/1001";
+                        TimeCode_Dump+='\"';
                     }
                     TimeCode_Dump+=" fp=\"0\" bgf=\"0\" bg=\"0\">\n";
                 }
@@ -11828,33 +11829,39 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
                 auto& TimeCode_Dump=(*Config->TimeCode_Dumps)[id];
                 if (TimeCode_Dump.empty())
                 {
-                    TimeCode_Dump="  <timecode_stream id=\""+id+"\" format=\"smpte-st331\" frame_rate=\"";
-                    int64s FrameRate=0;
-                    if (SystemScheme1_FrameRateFromDescriptor)
-                        FrameRate=float64_int64s(SystemScheme1_FrameRateFromDescriptor);
-                    else
+                    TimeCode_Dump="  <timecode_stream id=\""+id+"\" format=\"smpte-st331\"";
+
+                    //No clear frame rate, looking for the common frame rate
+                    float64 FrameRate=0;
+                    for (const auto& Track : Tracks)
                     {
-                        //No clear frame rate, looking for the common frame rate
-                        for (const auto& Track : Tracks)
+                        if (Track.second.EditRate)
                         {
-                            if (Track.second.EditRate)
+                            auto NewFrameRate=Track.second.EditRate;
+                            if (!FrameRate)
+                                FrameRate=NewFrameRate;
+                            else if (NewFrameRate!=FrameRate)
                             {
-                                auto NewFrameRate=float64_int64s(Track.second.EditRate);
-                                if (!FrameRate)
-                                    FrameRate=NewFrameRate;
-                                else if (NewFrameRate!=FrameRate)
-                                {
-                                    FrameRate=0;
-                                    break;
-                                }
+                                FrameRate=0;
+                                break;
                             }
                         }
                     }
-                    if (FrameRate)
+                    if (FrameRate>0)
                     {
-                        TimeCode_Dump+=" frame_rate=\""+to_string(FrameRate);
-                        if (DropFrame)
-                            TimeCode_Dump+="000/1001\"";
+                        TimeCode_Dump+=" frame_rate=\"";
+                        auto FrameRateInt=(int64u)ceil(FrameRate);
+                        if (FrameRateInt==FrameRate)
+                            TimeCode_Dump+=to_string(FrameRateInt);
+                        else
+                        {
+                            auto Test_1_1001=FrameRateInt/FrameRate;
+                            if (Test_1_1001>=1.00005 && Test_1_1001<1.001005)
+                                TimeCode_Dump+=to_string(FrameRateInt)+"000/1001";
+                            else
+                                TimeCode_Dump+=to_string(FrameRate);
+                        }
+                        TimeCode_Dump+='\"';
                     }
                     TimeCode_Dump+=" fp=\"0\" bgf=\"0\" bg=\"0\">\n";
                 }
