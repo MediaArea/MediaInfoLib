@@ -158,9 +158,18 @@ Ztring MediaInfo_Internal::Inform()
             Result+=">\n";
             for (const auto& TimeCode_Dump : *Config.TimeCode_Dumps)
             {
-                Result+=TimeCode_Dump.second;
-                if (TimeCode_Dump.second.find(" start_tc=\"")==string::npos)
+                Result+="  <timecode_stream";
+                Result+=TimeCode_Dump.second.Attributes_First;
+                Result+=" frame_count=\""+std::to_string(TimeCode_Dump.second.FrameCount)+'\"';
+                Result+=TimeCode_Dump.second.Attributes_Last;
+                if (TimeCode_Dump.second.List.empty())
+                    Result+="/>\n";
+                else
+                {
+                    Result+=">\n";
+                    Result+=TimeCode_Dump.second.List;
                     Result+="  </timecode_stream>\n";
+                }
             }
             Result+="</timecode_streams>";
             return Ztring().From_UTF8(Result);
