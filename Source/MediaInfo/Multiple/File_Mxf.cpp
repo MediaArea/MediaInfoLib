@@ -4303,11 +4303,15 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
                 {
                     auto id=Ztring(Ztring::ToZtring(TrackID)+(IsSourcePackage?__T("-Source"):__T("-Material"))).To_UTF8();
                     auto& TimeCode_Dump=(*Config->TimeCode_Dumps)[id];
-                    TimeCode_Dump.List="  <timecode_stream id=\""+id+"\" format=\"smpte-st377\" frame_rate=\""+to_string(Component2->second.MxfTimeCode.RoundedTimecodeBase);
-                    if (Component2->second.MxfTimeCode.DropFrame)
-                        TimeCode_Dump.List+=+"000/1001";
-
-                    TimeCode_Dump.List+="\" frame_count=\""+to_string(Component2->second.Duration)+"\" start_tc=\"" + TimeCode(Component2->second.MxfTimeCode.StartTimecode, Component2->second.MxfTimeCode.RoundedTimecodeBase - 1, Component2->second.MxfTimeCode.DropFrame).ToString() + "\"/>\n";
+                    if (TimeCode_Dump.Attributes_First.empty())
+                    {
+                        TimeCode_Dump.Attributes_First+=" id=\""+id+"\" format=\"smpte-st377\" frame_rate=\""+to_string(Component2->second.MxfTimeCode.RoundedTimecodeBase);
+                        if (Component2->second.MxfTimeCode.DropFrame)
+                            TimeCode_Dump.Attributes_First+=+"000/1001";
+                        TimeCode_Dump.Attributes_First+='\"';
+                        TimeCode_Dump.FrameCount=Component2->second.Duration;
+                        TimeCode_Dump.Attributes_Last+=" start_tc=\""+TimeCode(Component2->second.MxfTimeCode.StartTimecode, Component2->second.MxfTimeCode.RoundedTimecodeBase-1, Component2->second.MxfTimeCode.DropFrame).ToString()+'\"';
+                    }
                 }
             #endif //MEDIAINFO_ADVANCED
 
@@ -9081,15 +9085,15 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
                 auto& TimeCode_Dump=(*Config->TimeCode_Dumps)[id];
                 if (TimeCode_Dump.List.empty())
                 {
-                    TimeCode_Dump.List+="  <timecode_stream id=\""+id+"\" format=\"smpte-st326\"";
+                    TimeCode_Dump.Attributes_First+=" id=\""+id+"\" format=\"smpte-st326\"";
                     if (FrameRate)
                     {
-                        TimeCode_Dump.List+=" frame_rate=\""+to_string(FrameRate);
+                        TimeCode_Dump.Attributes_First+=" frame_rate=\""+to_string(FrameRate);
                         if (CPR_1_1001)
-                            TimeCode_Dump.List+="000/1001";
-                        TimeCode_Dump.List+='\"';
+                            TimeCode_Dump.Attributes_First+="000/1001";
+                        TimeCode_Dump.Attributes_First+='\"';
                     }
-                    TimeCode_Dump.List+=" fp=\"0\" bgf=\"0\" bg=\"0\">\n";
+                    TimeCode_Dump.Attributes_Last+=" fp=\"0\" bgf=\"0\" bg=\"0\"";
                 }
                 TimeCode CurrentTC(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, TimeCode_Dump.FramesMax, DropFrame);
                 TimeCode_Dump.List+="    <tc v=\""+CurrentTC.ToString()+'\"';
@@ -9103,6 +9107,7 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
                     TimeCode_Dump.List+=" nc=\"1\"";
                 TimeCode_Dump.LastTC=CurrentTC;
                 TimeCode_Dump.List+="/>\n";
+                TimeCode_Dump.FrameCount++;
             }
         #endif //MEDIAINFO_ADVANCED
 
@@ -11836,7 +11841,7 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
                 auto& TimeCode_Dump=(*Config->TimeCode_Dumps)[id];
                 if (TimeCode_Dump.List.empty())
                 {
-                    TimeCode_Dump.List="  <timecode_stream id=\""+id+"\" format=\"smpte-st331\"";
+                    TimeCode_Dump.Attributes_First+=" id=\""+id+"\" format=\"smpte-st331\"";
 
                     //No clear frame rate, looking for the common frame rate
                     float64 FrameRate=0;
@@ -11856,24 +11861,24 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
                     }
                     if (FrameRate>0)
                     {
-                        TimeCode_Dump.List+=" frame_rate=\"";
+                        TimeCode_Dump.Attributes_First+=" frame_rate=\"";
                         auto FrameRateInt=(int64u)ceil(FrameRate);
                         if (FrameRateInt==FrameRate)
-                            TimeCode_Dump.List+=to_string(FrameRateInt);
+                            TimeCode_Dump.Attributes_First+=to_string(FrameRateInt);
                         else
                         {
                             auto Test_1_1001=FrameRateInt/FrameRate;
                             if (Test_1_1001>=1.00005 && Test_1_1001<1.001005)
-                                TimeCode_Dump.List+=to_string(FrameRateInt)+"000/1001";
+                                TimeCode_Dump.Attributes_First+=to_string(FrameRateInt)+"000/1001";
                             else
-                                TimeCode_Dump.List+=to_string(FrameRate);
+                                TimeCode_Dump.Attributes_First+=to_string(FrameRate);
                         }
-                        TimeCode_Dump.List+='\"';
+                        TimeCode_Dump.Attributes_First+='\"';
                         FrameRateInt--;
                         if (FrameRateInt<=numeric_limits<int32u>::max())
                             (*Config->TimeCode_Dumps)[id].FramesMax=(int32u)(FrameRateInt);
                     }
-                    TimeCode_Dump.List+=" fp=\"0\" bgf=\"0\" bg=\"0\">\n";
+                    TimeCode_Dump.Attributes_Last+=" fp=\"0\" bgf=\"0\" bg=\"0\"";
                 }
                 TimeCode CurrentTC(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, TimeCode_Dump.FramesMax, DropFrame);
                 TimeCode_Dump.List+="    <tc v=\""+CurrentTC.ToString()+'\"';
@@ -11887,6 +11892,7 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
                     TimeCode_Dump.List+=" nc=\"1\"";
                 TimeCode_Dump.LastTC=CurrentTC;
                 TimeCode_Dump.List+="/>\n";
+                TimeCode_Dump.FrameCount++;
                 i++;
             }
         #endif //MEDIAINFO_ADVANCED
