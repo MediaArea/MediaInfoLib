@@ -158,8 +158,8 @@ Ztring MediaInfo_Internal::Inform()
             Result+=">\n";
             for (const auto& TimeCode_Dump : *Config.TimeCode_Dumps)
             {
-                Result+=TimeCode_Dump.second;
-                if (TimeCode_Dump.second.find(" start_tc=\"")==string::npos)
+                Result+=TimeCode_Dump.second.List;
+                if (TimeCode_Dump.second.List.find(" start_tc=\"")==string::npos)
                     Result+="  </timecode_stream>\n";
             }
             Result+="</timecode_streams>";

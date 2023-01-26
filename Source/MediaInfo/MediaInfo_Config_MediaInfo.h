@@ -31,6 +31,9 @@
 #include "ZenLib/CriticalSection.h"
 #include "ZenLib/Translation.h"
 #include "ZenLib/InfoMap.h"
+#if MEDIAINFO_ADVANCED
+    #include "MediaInfo/TimeCode.h"
+#endif //MEDIAINFO_ADVANCED
 using namespace ZenLib;
 using std::string;
 //---------------------------------------------------------------------------
@@ -434,7 +437,13 @@ public :
 
     //Logs
     #if MEDIAINFO_ADVANCED
-        std::map<std::string, std::string>* TimeCode_Dumps;
+        struct timecode_dump
+        {
+            std::string List;
+            TimeCode LastTC;
+            int32u FramesMax=0;
+        };
+        std::map<std::string, timecode_dump>* TimeCode_Dumps;
     #endif //MEDIAINFO_ADVANCED
 
 private :

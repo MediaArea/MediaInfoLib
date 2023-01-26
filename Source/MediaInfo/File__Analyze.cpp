@@ -451,7 +451,7 @@ void File__Analyze::Open_Buffer_Init (int64u File_Size_)
     #endif //MEDIAINFO_IBIUSAGE
     #if MEDIAINFO_ADVANCED
         if (!IsSub && !Config->TimeCode_Dumps && MediaInfoLib::Config.Inform_Get().MakeLowerCase()==__T("timecodexml"))
-            Config->TimeCode_Dumps=new map<string, string>;
+            Config->TimeCode_Dumps=new map<string, MediaInfo_Config_MediaInfo::timecode_dump>;
     #endif //MEDIAINFO_ADVANCED
 }
 
