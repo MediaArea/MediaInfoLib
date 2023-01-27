@@ -751,6 +751,8 @@ void File_Mpeg4::Streams_Finish()
             if (Temp->second.mdhd_TimeScale)
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Temp->second.stts_Duration/((float)Temp->second.mdhd_TimeScale)*1000, 0, true);
             Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), Temp->second.stts_FrameCount, 10, true);
+            if (Temp->second.StreamKind==Stream_Text && Retrieve_Const(Stream_Text, StreamPos_Last, Text_Format)==__T("Timed Text"))
+                Fill(Stream_Text, StreamPos_Last, Text_Events_Total, Temp->second.stsz_MoreThan2_Count, 10, true);
         }
 
         //Duration/StreamSize
@@ -2496,7 +2498,9 @@ bool File_Mpeg4::BookMark_Needed()
                     int64u* stco_Current = &Temp->second.stco[0];
                     int64u* stco_Max = stco_Current + Temp->second.stco.size();
                     int64u* stsz_Current = Temp->second.stsz.empty()?NULL:&Temp->second.stsz[0];
+                    int32u* stsz_Current2 = Temp->second.stsz_FirstSubSampleSize.empty()?NULL:&Temp->second.stsz_FirstSubSampleSize[0];
                     int64u* stsz_Max = stsz_Current + Temp->second.stsz.size();
+                    int32u* stsz_Max2 = stsz_Current2 + Temp->second.stsz_FirstSubSampleSize.size();
                     stream::stsc_struct* stsc_Current = &Temp->second.stsc[0];
                     stream::stsc_struct* stsc_Max = stsc_Current + Temp->second.stsc.size();
                     #if MEDIAINFO_DEMUX
@@ -2525,10 +2529,15 @@ bool File_Mpeg4::BookMark_Needed()
                                     mdat_Pos_Type mdat_Pos_Temp2;
                                     mdat_Pos_Temp2.Offset = *stco_Current + Chunk_Offset;
                                     mdat_Pos_Temp2.StreamID = Temp->first;
-                                    mdat_Pos_Temp2.Size = *stsz_Current;
+                                    if (stsz_Current2 && stsz_Current2 <= stsz_Max2 && *stsz_Current2)
+                                        mdat_Pos_Temp2.Size = *stsz_Current2;
+                                    else
+                                        mdat_Pos_Temp2.Size = *stsz_Current;
                                     mdat_Pos.push_back(mdat_Pos_Temp2);
                                     Chunk_Offset += *stsz_Current;
                                     stsz_Current++;
+                                    if (stsz_Current2)
+                                        stsz_Current2++;
                                     if (stsz_Current >= stsz_Max)
                                         break;
                                 }
