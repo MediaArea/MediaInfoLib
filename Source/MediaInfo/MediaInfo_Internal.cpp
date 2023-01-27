@@ -2603,6 +2603,32 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
         Result+=__T("</MicroMediaTrace>");
     }
 
+    else if (MediaInfoLib::Config.Inform_Get().MakeLowerCase()==__T("timecodexml"))
+    {
+        Result+=__T("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")+MediaInfoLib::Config.LineSeparator_Get();
+        Result+=__T('<');
+        Result+=__T("MediaTimecode");
+        Result+=MediaInfoLib::Config.LineSeparator_Get();
+        Result+=__T("    xmlns=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/mediatimecode\"");
+        Result+=MediaInfoLib::Config.LineSeparator_Get();
+        Result+=__T("    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
+        Result+=MediaInfoLib::Config.LineSeparator_Get();
+        Result+=__T("    xsi:schemaLocation=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/mediatimecode http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/xsd/mediatimecode.xsd\"");
+        Result+=MediaInfoLib::Config.LineSeparator_Get();
+        Result+=__T("    version=\"0.0\"");
+        Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
+        Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
+        Result+=MediaInfoLib::Config.LineSeparator_Get();
+
+        for (size_t FilePos=0; FilePos<Info.size(); FilePos++)
+            Result+=Info[FilePos]->Inform();
+
+        if (!Result.empty() && Result[Result.size()-1]!=__T('\r') && Result[Result.size()-1]!=__T('\n'))
+            Result+=MediaInfoLib::Config.LineSeparator_Get();
+        Result+=__T("</MediaTimecode");
+        Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
+    }
+
     else if (MediaInfoLib::Config.Inform_Get()==__T("XML") || MediaInfoLib::Config.Inform_Get()==__T("MIXML"))
     {
         Result+=__T("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")+MediaInfoLib::Config.LineSeparator_Get();
