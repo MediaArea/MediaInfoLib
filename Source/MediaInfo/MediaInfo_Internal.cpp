@@ -574,6 +574,8 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
     static const Char* LCSBR=__T("LC SBR");
     static const Char* LCSBRPS=__T("LC SBR PS");
     static const Char* LTP=__T("LTP");
+    static const Char* X=__T("X");
+    static const Char* IMAX=__T("IMAX");
     static const Char* MA=__T("MA");
     static const Char* Main=__T("Main");
     static const Char* MLP=__T("MLP");
@@ -798,7 +800,11 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
             if (Info[Parameter_Format]==DTS)
             {
                 const Ztring& Profile=Info[Parameter_Format_Profile];
-                if (Profile.find(MA)!=string::npos)
+                if (Profile.find(IMAX)!=string::npos)
+                    return "IMAX Enhanced";
+                else if (Profile.find(X)!=string::npos)
+                    return "DTS:X";
+                else if (Profile.find(MA)!=string::npos)
                     return "DTS-HD Master Audio";
                 if (Profile.find(HRA)!=string::npos)
                     return "DTS-HD High Resolution Audio";
