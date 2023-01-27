@@ -169,18 +169,18 @@ public:
         Flags.set(IsTime, IsTimeSav);
         return *this;
     }
-    TimeCode& operator +=(const int64s Frames)
+    TimeCode& operator +=(const int64s TotalFrames)
     {
-        FromFrames(ToFrames()+Frames);
+        FromFrames(ToFrames()+TotalFrames);
         return *this;
     }
     TimeCode& operator -=(const TimeCode& b)
     {
         return operator-=(b.ToFrames());
     }
-    TimeCode& operator -=(const int64s)
+    TimeCode& operator -=(const int64s TotalFrames)
     {
-        FromFrames(ToFrames()-Frames);
+        FromFrames(ToFrames()-TotalFrames);
         return *this;
     }
     TimeCode &operator ++()
