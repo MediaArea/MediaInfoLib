@@ -152,10 +152,19 @@ Ztring MediaInfo_Internal::Inform()
     #if MEDIAINFO_ADVANCED
         if (Config.TimeCode_Dumps)
         {
-            string Result="<?xml version=\"1.0\"?>\n<timecode_streams";
+            string Result="<media";
             if (Config.ParseSpeed<1.0)
                 Result+=" full=\"0\"";
-            Result+=">\n";
+            Ztring Options=Get(Stream_General, 0, General_CompleteName, Info_Options);
+            if (InfoOption_ShowInInform<Options.size() && Options[InfoOption_ShowInInform]==__T('Y'))
+            {
+                Result+=" ref=\"";
+                Result+=XML_Encode(Get(Stream_General, 0, General_CompleteName)).To_UTF8();
+                Result+='\"';
+            }
+            Result+=" format=\"";
+            Result+=XML_Encode(Get(Stream_General, 0, General_Format)).To_UTF8();
+            Result+="\">\n";
             for (const auto& TimeCode_Dump : *Config.TimeCode_Dumps)
             {
                 Result+="  <timecode_stream";
@@ -171,7 +180,7 @@ Ztring MediaInfo_Internal::Inform()
                     Result+="  </timecode_stream>\n";
                 }
             }
-            Result+="</timecode_streams>";
+            Result+="</media>";
             return Ztring().From_UTF8(Result);
         }
     #endif //MEDIAINFO_ADVANCED
