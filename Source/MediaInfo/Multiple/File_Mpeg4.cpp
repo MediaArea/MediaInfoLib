@@ -2898,7 +2898,7 @@ Ztring File_Mpeg4::Language_Get(int16u Language)
     if (Language==0x7FFF || Language==0xFFFF)
         return Ztring();
 
-    if (Language<0x100)
+    if (Language<0x400)
         return Mpeg4_Language_Apple(Language);
 
     Ztring ToReturn;
