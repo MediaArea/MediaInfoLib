@@ -9110,18 +9110,19 @@ void File_Mpeg4::moov_udta_xxxx()
                 //Parsing
                 Ztring Value;
                 int32u Size32=0;
-                int16u Size16=0, Language;
+                int16u Size16=0;
                 bool IsText=true;
-                if (Element_Size<=4)
+                if (Element_Size-Element_Offset<4)
                     IsText=false;
                 else
                 {
+                    int64u MaxSize=Element_Size-(Element_Offset+4);
                     Peek_B4(Size32);
-                    if (4+(int64u)Size32>Element_Size)
+                    if (!Size32 || Size32>MaxSize)
                     {
                         Size32=0;
                         Peek_B2(Size16);
-                        if (4+(int64u)Size16>Element_Size)
+                        if (!Size16 || Size16>MaxSize)
                             IsText=false;
                     }
                 }
@@ -9131,28 +9132,55 @@ void File_Mpeg4::moov_udta_xxxx()
                     return;
                 }
 
-                while(Element_Offset<Element_Size)
+                while (Element_Size-Element_Offset>4)
                 {
                     std::string ValueS;
                     if (Size32)
                     {
-                        Get_String(Size32, ValueS,              "Value");
                         Get_B4 (Size32,                         "Size");
+                        Get_String(Size32, ValueS,              "Value");
                     }
                     else
                     {
                         Get_B2 (Size16,                         "Size");
-                        Get_B2 (Language,                       "Language"); Param_Info1(Language_Get(Language));
+                        Info_B2(Language,                       "Language"); Param_Info1(Language_Get(Language));
                         Get_String(Size16, ValueS,              "Value");
                     }
-                    if (!ValueS.empty())
+                    
+                    // Store the first content
+                    if (Value.empty() && !ValueS.empty())
                     {
-                        Value.From_UTF8(ValueS.c_str());
+                        // Note: we do not trust the mandatory presence of BOM as well as Language >=0x400, not always the case
+                        if (ValueS.size()>1 && (BigEndian2int16u((int8u*)ValueS.c_str())==0xFEFF || !ValueS[0]))
+                            Value.From_UTF16BE(ValueS.c_str(), ValueS.size()); //Trying UTF-16 BE
                         if (Value.empty())
-                            Value.From_ISO_8859_1(ValueS.c_str()); //Trying ISO 8859-1...
+                            Value.From_UTF8(ValueS.c_str(), ValueS.size());
+                        if (Value.empty())
+                            Value.From_ISO_8859_1(ValueS.c_str(), ValueS.size()); //Trying ISO 8859-1 by default...
+
+                        // Check incoherent chars
+                        while (!Value.empty() && !Value.back())
+                            Value.pop_back(); // Some muxers put the trailing, or more, NULL even if specs say not to do it
+                        for (size_t i=0; i< Value.size(); i++)
+                            if ((unsigned char)Value[i]<0x20 && ValueS[i]!='\t' && ValueS[i]!='\r' && ValueS[i]!='\n')
+                            {
+                                Skip_XX(Element_Size-Element_Offset,"Unknown");
+                                return;
+                            }
                     }
 
-                    FILLING_BEGIN();
+                    // Check zero padding
+                    auto Buffer_Current=Buffer+Buffer_Offset+Element_Offset;
+                    auto Buffer_End=Buffer+Buffer_Offset+Element_Size;
+                    while (Buffer_Current<Buffer_End && !*Buffer_Current)
+                        Buffer_Current++;
+                    if (Buffer_Current>=Buffer_End)
+                        Skip_XX(Element_Size-Element_Offset,    "Padding");
+                }
+
+                FILLING_BEGIN_PRECISE();
+                    if (!Value.empty())
+                    {
                         if (moov_trak_tkhd_TrackID==(int32u)-1)
                         {
                             if (Retrieve(Stream_General, 0, Parameter.c_str()).empty())
@@ -9162,30 +9190,8 @@ void File_Mpeg4::moov_udta_xxxx()
                         {
                             Streams[moov_trak_tkhd_TrackID].Infos[Parameter]=Value;
                         }
-                    FILLING_END();
-
-                    if (Element_Offset+1==Element_Size)
-                    {
-                        int8u Null;
-                        Peek_B1(Null);
-                        if (Null==0x00)
-                            Skip_B1(                            "NULL");
                     }
-                    if (Element_Offset+4<=Element_Size && Size32)
-                    {
-                        int32u Null;
-                        Peek_B4(Null);
-                        if (Null==0x00000000)
-                            Skip_XX(Element_Size-Element_Offset,"Padding");
-                    }
-                    if (Element_Offset+2<=Element_Size && Size16)
-                    {
-                        int16u Null;
-                        Peek_B2(Null);
-                        if (Null==0x0000)
-                            Skip_XX(Element_Size-Element_Offset,"Padding");
-                    }
-                }
+                FILLING_END();
             }
             break;
         case Method_String2 :
