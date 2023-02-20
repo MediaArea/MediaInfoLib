@@ -30,7 +30,7 @@ jobs:
       RUN_TESTS: ${{ matrix.RUN_TESTS }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 1
       - name: Dependencies
@@ -40,7 +40,7 @@ jobs:
             sudo apt-get install -y libxml2-utils zlib1g-dev libcurl4-gnutls-dev libmms-dev
           fi
           if [ "$RUNNER_OS" == "macOS" ]; then
-            brew install automake
+            brew install automake pkgconf
           fi
           sudo npm install -g jsonlint
       - name: ZenLib
@@ -55,7 +55,7 @@ jobs:
         run: |
           cd Project/GNU/Library
           autoreconf -if
-          ./configure --with-libcurl
+          ./configure --with-libcurl=runtime
       - name: Build
         run: |
           cd Project/GNU/Library
