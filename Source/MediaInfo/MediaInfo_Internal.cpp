@@ -568,11 +568,13 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
     static const Char* Express=__T("Express");
     static const Char* HEAACv2 = __T("HE-AACv2");
     static const Char* HEAAC = __T("HE-AAC");
+    static const Char* HEAAC_ESBR = __T("HE-AAC+eSBR");
     static const Char* HRA=__T("HRA");
     static const Char* JOC=__T("JOC");
     static const Char* LC=__T("LC");
     static const Char* LCSBR=__T("LC SBR");
     static const Char* LCSBRPS=__T("LC SBR PS");
+    static const Char* LCESBR=__T("LC SBR eSBR");
     static const Char* LTP=__T("LTP");
     static const Char* X=__T("X");
     static const Char* IMAX=__T("IMAX");
@@ -650,6 +652,8 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
                 const Ztring& Profile=Info[Parameter_Format_Profile];
                 if (Profile.find(HEAACv2)!=string::npos)
                     return LCSBRPS;
+                if (Profile.find(HEAAC_ESBR)!=string::npos)
+                    return LCESBR;
                 if (Profile.find(HEAAC)!=string::npos)
                     return LCSBR;
                 if (Profile.find(LC)!=string::npos)
@@ -753,7 +757,12 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
                 if (Profile.find(HEAACv2)!=string::npos)
                     return "Advanced Audio Codec Low Complexity with Spectral Band Replication and Parametric Stereo";
                 if (Profile.find(HEAAC)!=string::npos)
-                    return "Advanced Audio Codec Low Complexity with Spectral Band Replication";
+                {
+                    if (Profile.find(__T("eSBR"))!=string::npos)
+                        return "Advanced Audio Codec Low Complexity with Enhanced Spectral Band Replication";
+                    else
+                        return "Advanced Audio Codec Low Complexity with Spectral Band Replication";
+                }
                 if (Profile.find(LC)!=string::npos)
                     return "Advanced Audio Codec Low Complexity";
             }
@@ -792,6 +801,8 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
             if (Info[Parameter_Format]==AAC)
             {
                 const Ztring& Profile=Info[Parameter_Format_Profile];
+                if (Profile.find(HEAAC_ESBR)!=string::npos)
+                    return "HE-AAC eSBR";
                 if (Profile.find(HEAACv2)!=string::npos)
                     return "HE-AACv2";
                 if (Profile.find(HEAAC)!=string::npos)
