@@ -1376,9 +1376,9 @@ void File_Aac::ld_sbr_header()
     }
 
     for (int el=0; el<numSbrHeader; el++) {
-        //~ sbr_header();
-        Element_Begin1("not implemented");
-        Element_End0();
+        sbr=new sbr_handler;
+        sbr_header();
+        delete sbr;
     }
 }
 
