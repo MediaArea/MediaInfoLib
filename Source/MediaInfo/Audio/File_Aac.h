@@ -318,8 +318,9 @@ protected :
     void sbr_sinusoidal_coding              (bool ch);
     int16u sbr_huff_dec                     (const sbr_huffman& Table, const char* Name);
 
-    //Elements - SBR - PS
+    //Elements - SBR - Extensions
     void ps_data                            (size_t End);
+    void esbr_data                          (size_t End);
 
     //Elements - Perceptual noise substitution (PNS)
     bool is_noise                           (size_t group, size_t sfb);

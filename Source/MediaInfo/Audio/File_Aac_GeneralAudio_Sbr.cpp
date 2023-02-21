@@ -481,7 +481,10 @@ void File_Aac::sbr_single_channel_element()
                 switch (bs_extension_id)
                 {
                     case 2 : ps_data(End); break; //EXTENSION_ID_PS
-                    default: ;
+                    case 3 : esbr_data(End); break; //EXTENSION_ID_ESBR
+                    default:
+                            if (End<Data_BS_Remain())
+                                Skip_BS(Data_BS_Remain()-End,   "(unknown)");
                 }
             }
             if (End<Data_BS_Remain())
@@ -631,7 +634,10 @@ void File_Aac::sbr_channel_pair_element()
                 switch (bs_extension_id)
                 {
                     case 2 : ps_data(End); break; //EXTENSION_ID_PS
-                    default: ;
+                    case 3 : esbr_data(End); break; //EXTENSION_ID_ESBR
+                    default:
+                            if (End<Data_BS_Remain())
+                                Skip_BS(Data_BS_Remain()-End,   "(unknown)");
                 }
             }
             if (End<Data_BS_Remain())
@@ -756,6 +762,19 @@ void File_Aac::sbr_sinusoidal_coding(bool)
     for (int8u n=0; n<sbr->num_env_bands[1]; n++)
         Skip_SB(                                                "bs_add_harmonic[ch][n]");
     Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Aac::esbr_data(size_t End)
+{
+    Skip_BS(Data_BS_Remain()-End,                               "(not implemented)");
+
+    FILLING_BEGIN();
+        if (Infos["Format_Profile"].find(__T("eSBR"))==string::npos)
+        {
+            Infos["Format_Profile"]=__T("HE-AAC+eSBR");
+        }
+    FILLING_END();
 }
 
 } //NameSpace
