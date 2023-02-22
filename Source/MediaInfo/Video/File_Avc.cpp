@@ -14,6 +14,12 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Setup.h"
+#include "MediaInfo/TimeCode.h" // For bitset8
+#include "ZenLib/Conf.h"
+#include <algorithm>
+#include <iterator>
+using namespace ZenLib;
+using namespace std;
 //---------------------------------------------------------------------------
 
 //***************************************************************************
@@ -21,36 +27,250 @@
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES)
+#if defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MPEG7_YES)
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
 {
 
-#include "ZenLib/Conf.h"
-using namespace ZenLib;
-
 //---------------------------------------------------------------------------
-const char* Avc_profile_idc(int8u profile_idc)
+static constexpr const char* Avc_profile_idc_Names[]= // Time sorted list
 {
-    switch (profile_idc)
+    "Baseline",                         // 2003
+    "Main",
+    "Extended",
+    "High",                             // 2005
+    "High 10",
+    "High 4:2:2",
+    "High 4:4:4",
+    "High 10 Intra",                    // 2007
+    "High 4:2:2 Intra",
+    "High 4:4:4 Intra",
+    "CAVLC 4:4:4 Intra",
+    "High 4:4:4 Predictive",
+    "Scalable Baseline",                // 2007-11
+    "Scalable High",
+    "Scalable High Intra",
+    "Constrained Baseline",             // 2009
+    "Multiview High",
+    "Stereo High",                      // 2010
+    "Progressive High",                 // 2011
+    "Constrained High",                 // 2012
+    "Scalable Constrained Baseline",
+    "Scalable Constrained High",
+    "Multiview Depth High",             // 2013
+    "MFC High",                         // 2014
+    "Enhanced Multiview Depth High",
+    "MFC Depth High",                   // 2016
+    "Progressive High 10",              // 2017
+};
+const char* Avc_profile_idc_Name(size_t Index)
+{
+    return Avc_profile_idc_Names[Index];
+}
+static constexpr int8u Avc_profile_idc_Mapping[][2]= // profile_idc sorted list
+{
+    {  44,  10 },   //  44, CAVLC 4:4:4 Intra (2007)
+    {  66,   0 },   //  66, Baseline (2003)
+    {  77,   1 },   //  77, Main (2003)
+    {  83,  12 },   //  83, Scalable Baseline (2007-11)
+    {  86,  13 },   //  86, Scalable High (2007-11)
+    {  88,   2 },   //  88, Extended (2003)
+    { 100,   3 },   // 100, High (2005)
+    { 110,   4 },   // 110, High 10 (2005)
+    { 118,  16 },   // 118, Multiview High (2009)
+    { 122,   5 },   // 122, High 4:2:2 (2005)
+    { 128,  17 },   // 128, Stereo High (2010)
+    { 134,  23 },   // 134, MFC High (2014)
+    { 135,  25 },   // 135, MFC Depth High (2016)
+    { 138,  22 },   // 138, Multiview Depth High (2013)
+    { 139,  24 },   // 139, Enhanced Multiview Depth High (2014)
+    { 144,  16 },   // 144, High 4:4:4 (2005)
+    { 244,  11 },   // 244, High 4:4:4 Predictive (2007)
+};
+static inline constexpr bool Avc_profile_idc_Names_Size_Cmp(const int8u first[2], const int8u second)
+{
+    return first[0]<second;
+}
+static constexpr const int8u Avc_level_idc_Names[]= // Time sorted list
+{
+    0x10,
+    0x11,
+    0x12,
+    0x13,
+    0x20,
+    0x21,
+    0x22,
+    0x30,
+    0x31,
+    0x32,
+    0x40,
+    0x41,
+    0x42,
+    0x50,
+    0x51,
+    0x09,
+    0x52,
+    0x60,
+    0x61,
+    0x62,
+};
+string Avc_level_idc_Name(size_t Index)
+{
+    auto Level=Avc_level_idc_Names[Index];
+    if (Level==9)
+        return "1b";
+    string LevelS;
+    LevelS+='0'+(Level>>4);
+    Level&=0xF;
+    if (Level)
     {
-        case  44 : return "CAVLC 4:4:4 Intra";
-        case  66 : return "Baseline";
-        case  77 : return "Main";
-        case  83 : return "Scalable Baseline";
-        case  86 : return "Scalable High";
-        case  88 : return "Extended";
-        case 100 : return "High";
-        case 110 : return "High 10";
-        case 118 : return "Multiview High";
-        case 122 : return "High 4:2:2";
-        case 128 : return "Stereo High";
-        case 138 : return "Multiview Depth High";
-        case 144 : return "High 4:4:4";
-        case 244 : return "High 4:4:4 Predictive";
-        default  : return "";
+        LevelS+='.';
+        LevelS+='0'+Level;
     }
+    return LevelS;
+}
+string Avc_profile_level_string(int8u profile_idc, int8u level_idc=0, int8u constraint_set_flags=0)
+{
+    string Profile;
+    MediaInfoLib::bitset8 constraint_setsB(constraint_set_flags);
+
+    //Profile
+    if (profile_idc)
+    {
+        size_t Profile_Pos=(size_t)-1;
+        if (constraint_setsB[6]) // constraint_set1_flag
+            switch (profile_idc)
+            {
+                case  66 : Profile_Pos= 15; break; // Constrained Baseline (2009)
+            }
+        if (constraint_setsB[4]) // constraint_set3_flag
+            switch (profile_idc)
+            {
+                case  86 : Profile_Pos= 14; break; // Scalable High Intra (2007-11)
+                case 110 : Profile_Pos=  7; break; // High 10 Intra (2007)
+                case 122 : Profile_Pos=  8; break; // High 4:2:2 Intra (2007)
+                case 244 : Profile_Pos=  9; break; // High 4:4:4 Intra (2007)
+            }
+        if (constraint_setsB[3]) // constraint_set4_flag
+        {
+            if (constraint_setsB[2]) // constraint_set5_flag
+                switch (profile_idc)
+                {
+                    case  83 : Profile_Pos= 20; break; // Scalable Constrained Baseline (2012)
+                    case  86 : Profile_Pos= 21; break; // Scalable Constrained High (2012)
+                    case 100 : Profile_Pos= 19; break; // Constrained High (2012)
+                }
+            else
+                switch (profile_idc)
+                {
+                    case 100 : Profile_Pos= 18; break; // Progressive High (2011)
+                    case 110 : Profile_Pos= 26; break; // Progressive High 10 (2017)
+                }
+        }
+        if (Profile_Pos==(size_t)-1)
+        {
+            auto Pos=lower_bound(begin(Avc_profile_idc_Mapping), end(Avc_profile_idc_Mapping), profile_idc, Avc_profile_idc_Names_Size_Cmp);
+            if (Pos!=end(Avc_profile_idc_Mapping))
+                Profile_Pos=(*Pos)[1];
+        }
+        if (Profile_Pos==(size_t)-1)
+            Profile=to_string(profile_idc);
+        else
+            Profile=Avc_profile_idc_Names[Profile_Pos];
+    }
+
+    //Level
+    if (level_idc)
+    {
+        auto level_idc_level=level_idc/10;
+        auto level_idc_sub=level_idc%10;
+        if (!Profile.empty())
+            Profile+='@';
+        Profile+='L';
+        bool Is1b=false;
+        switch (level_idc)
+        {
+            case  9:
+                    Is1b=true;
+                    break;
+            case 11:
+                if (constraint_setsB[4]) // constraint_set3_flag
+                    switch (profile_idc)
+                    {
+                        case  66 : // Baseline
+                        case  77 : // Main
+                        case  88 : // Extended
+                                    Is1b=true;      
+                                    break;
+                    }
+                break;
+        }
+        if (Is1b)
+            Profile+="1b";
+        else
+        {
+            if (level_idc_level>=10)
+            {
+                auto level_idc_level_10=level_idc_level/10;
+                auto level_idc_level_01=level_idc_level%10;
+                level_idc_level=level_idc_level_01;
+                Profile+='0'+level_idc_level_10;
+            }
+            Profile+='0'+level_idc_level;
+            if (level_idc_sub && level_idc_sub<10)
+            {
+                Profile+='.';
+                Profile+='0'+level_idc_sub;
+            }
+        }
+    }
+    return Profile;
+}
+size_t Avc_profile_level_Indexes(const string& ProfileLevelS) // Note: 1-based, 0 means not found, 0xPPLL form
+{
+    auto LevelPos=ProfileLevelS.find('@');
+    size_t ProfileLevel;
+    string ProfileS;
+
+    // Level
+    if (LevelPos!=string::npos)
+    {
+        if (ProfileLevelS.size()-LevelPos>2 && ProfileLevelS[LevelPos+1]=='L' && ProfileLevelS[LevelPos+2]>='0' && ProfileLevelS[LevelPos+2]<='9')
+        {
+            int8u Level=ProfileLevelS[LevelPos+2];
+            if (Level=='1' && ProfileLevelS.size()-LevelPos==3 && ProfileLevelS[LevelPos+3]=='b')
+                Level=9;
+            else
+            {
+                Level-='0';
+                Level<<=4;
+                if (ProfileLevelS.size()-LevelPos>4 && ProfileLevelS[LevelPos+3]=='.' && ProfileLevelS[LevelPos+4]>='0' && ProfileLevelS[LevelPos+4]<='9')
+                    Level+=ProfileLevelS[LevelPos+4]-'0';
+            }
+            auto Pos=find(begin(Avc_level_idc_Names), end(Avc_level_idc_Names), Level);
+            if (Pos==end(Avc_level_idc_Names))
+                ProfileLevel=0;
+            else
+                ProfileLevel=distance(begin(Avc_level_idc_Names), Pos)+1;
+        }
+        else
+        {
+            ProfileLevel=0;
+        }
+        ProfileS=ProfileLevelS.substr(0, LevelPos);
+    }
+    else
+    {
+        ProfileLevel=0;
+        ProfileS=ProfileLevelS;
+    }
+
+    // Profile
+    auto Pos=find(begin(Avc_profile_idc_Names), end(Avc_profile_idc_Names), ProfileS);
+    if (Pos!=end(Avc_profile_idc_Names))
+        ProfileLevel|=(distance(begin(Avc_profile_idc_Names), Pos)+1)<<8;
+    return ProfileLevel;
 }
 
 //---------------------------------------------------------------------------
@@ -793,18 +1013,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         }
     }
 
-    Ztring Profile=Ztring().From_UTF8(Avc_profile_idc((*seq_parameter_set_Item)->profile_idc));
-    switch ((*seq_parameter_set_Item)->profile_idc)
-    {
-        case  44 : // CAVLC 4:4:4 Intra
-        case 100 : // High
-        case 110 : // High 10
-        case 122 : // High 4:2:2"
-        case 244 : // High 4:4:4 Predictive
-                    if ((*seq_parameter_set_Item)->constraint_set3_flag)
-                        Profile+=__T(" Intra");
-    }
-    Profile+=__T("@L")+Ztring().From_Number(((float)(*seq_parameter_set_Item)->level_idc)/10, ((*seq_parameter_set_Item)->level_idc%10)?1:0);
+    auto Profile=Avc_profile_level_string((*seq_parameter_set_Item)->profile_idc, (*seq_parameter_set_Item)->level_idc, (*seq_parameter_set_Item)->constraint_set_flags);
     Fill(Stream_Video, 0, Video_Format_Profile, Profile);
     Fill(Stream_Video, 0, Video_Codec_Profile, Profile);
     Fill(Stream_Video, StreamPos_Last, Video_Width, Width);
@@ -1006,9 +1215,9 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
 //---------------------------------------------------------------------------
 void File_Avc::Streams_Fill_subset(const std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item)
 {
-    Ztring Profile=Ztring().From_UTF8(Avc_profile_idc((*seq_parameter_set_Item)->profile_idc))+__T("@L")+Ztring().From_Number(((float)(*seq_parameter_set_Item)->level_idc)/10, 1);
+    auto Profile=Avc_profile_level_string((*seq_parameter_set_Item)->profile_idc, (*seq_parameter_set_Item)->level_idc, (*seq_parameter_set_Item)->constraint_set_flags);
     Ztring Profile_Base=Retrieve(Stream_Video, 0, Video_Format_Profile);
-    Fill(Stream_Video, 0, Video_Format_Profile, Profile, true);
+    Fill(Stream_Video, 0, Video_Format_Profile, Profile, true, true);
     if (!Profile_Base.empty())
         Fill(Stream_Video, 0, Video_Format_Profile, Profile_Base);
 }
@@ -1679,9 +1888,17 @@ void File_Avc::Header_Parse()
                     }
                     break;
         }
+        if (Size>Element_Size-Element_Offset)
+        {
+            if (File_Offset+Buffer_Size==File_Size)
+                Size=Element_Size-Element_Offset; //Partial but end of file so we do with what we have
+            else
+            {
+                Size=Element_Size-Element_Offset; //If Size is 0 or Size biger than sample size, it is not normal, we skip the complete frame
+                Element_Offset=Element_Size;
+            }
+        }
         Size+=Element_Offset;
-        if (Size==Element_Offset || Buffer_Offset+Size>Buffer_Size) //If Size is 0 or Size biger than sample size, it is not normal, we skip the complete frame
-            Size=Buffer_Size-Buffer_Offset;
         Header_Fill_Size(Size);
         BS_Begin();
         Mark_0 ();
@@ -3982,20 +4199,20 @@ File_Avc::seq_parameter_set_struct* File_Avc::seq_parameter_set_data(int32u &Dat
     //Parsing
     seq_parameter_set_struct::vui_parameters_struct* vui_parameters_Item=NULL;
     int32u  chroma_format_idc=1, bit_depth_luma_minus8=0, bit_depth_chroma_minus8=0, log2_max_frame_num_minus4, pic_order_cnt_type, log2_max_pic_order_cnt_lsb_minus4=(int32u)-1, max_num_ref_frames, pic_width_in_mbs_minus1, pic_height_in_map_units_minus1, frame_crop_left_offset=0, frame_crop_right_offset=0, frame_crop_top_offset=0, frame_crop_bottom_offset=0;
-    int8u   profile_idc, level_idc;
-    bool    constraint_set3_flag, separate_colour_plane_flag=false, delta_pic_order_always_zero_flag=false, frame_mbs_only_flag, mb_adaptive_frame_field_flag=false;
+    int8u   profile_idc, constraint_set_flags, level_idc;
+    bool    constraint_set1_flag, constraint_set3_flag, separate_colour_plane_flag=false, delta_pic_order_always_zero_flag=false, frame_mbs_only_flag, mb_adaptive_frame_field_flag=false;
     Get_B1 (profile_idc,                                        "profile_idc");
+    Get_B1 (constraint_set_flags,                               "constraint_sett_flags");
+        Skip_Flags(constraint_set_flags, 7,                     "constraint_sett0_flag");
+        Skip_Flags(constraint_set_flags, 6,                     "constraint_sett1_flag");
+        Skip_Flags(constraint_set_flags, 5,                     "constraint_sett2_flag");
+        Skip_Flags(constraint_set_flags, 4,                     "constraint_sett3_flag");
+        Skip_Flags(constraint_set_flags, 3,                     "constraint_sett4_flag");
+        Skip_Flags(constraint_set_flags, 2,                     "constraint_sett5_flag");
+        Skip_Flags(constraint_set_flags, 1,                     "constraint_sett6_flag");
+        Skip_Flags(constraint_set_flags, 0,                     "constraint_sett7_flag");
+    Get_B1 (level_idc,                                          "level_idc");
     BS_Begin();
-    Element_Begin1("constraints");
-        Skip_SB(                                                "constraint_set0_flag");
-        Skip_SB(                                                "constraint_set1_flag");
-        Skip_SB(                                                "constraint_set2_flag");
-        Get_SB (constraint_set3_flag,                           "constraint_set3_flag");
-        Skip_SB(                                                "constraint_set4_flag");
-        Skip_SB(                                                "constraint_set5_flag");
-        Skip_BS(2,                                              "reserved_zero_2bits");
-    Element_End0();
-    Get_S1 ( 8, level_idc,                                      "level_idc");
     Get_UE (    Data_id,                                        "seq_parameter_set_id");
     switch (profile_idc)
     {
@@ -4109,7 +4326,7 @@ File_Avc::seq_parameter_set_struct* File_Avc::seq_parameter_set_data(int32u &Dat
                                                                     (int8u)pic_order_cnt_type,
                                                                     (int8u)log2_max_pic_order_cnt_lsb_minus4,
                                                                     (int8u)max_num_ref_frames,
-                                                                    constraint_set3_flag,
+                                                                    constraint_set_flags,
                                                                     separate_colour_plane_flag,
                                                                     delta_pic_order_always_zero_flag,
                                                                     frame_mbs_only_flag,
@@ -4490,7 +4707,7 @@ void File_Avc::SPS_PPS()
     FILLING_BEGIN_PRECISE();
         //Detection of some bugs in the file
         if (!seq_parameter_sets.empty() && seq_parameter_sets[0] && (Profile!=seq_parameter_sets[0]->profile_idc || Level!=seq_parameter_sets[0]->level_idc))
-            MuxingMode=Ztring("Container profile=")+Ztring().From_UTF8(Avc_profile_idc(Profile))+__T("@")+Ztring().From_Number(((float)Level)/10, 1);
+            MuxingMode=Ztring("Container profile=")+Ztring().From_UTF8(Avc_profile_level_string(Profile, Level));
 
         MustParse_SPS_PPS=false;
         if (!Status[IsAccepted])

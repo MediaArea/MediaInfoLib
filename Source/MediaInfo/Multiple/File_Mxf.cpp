@@ -529,7 +529,7 @@ namespace Elements
 extern const char* Mpegv_profile_and_level_indication_profile[];
 extern const char* Mpegv_profile_and_level_indication_level[];
 extern const char* Mpeg4v_Profile_Level(int32u Profile_Level);
-extern const char* Avc_profile_idc(int8u profile_idc);
+extern string Avc_profile_level_string(int8u profile_idc, int8u level_idc=0, int8u constraint_set_flags=0);
 extern string Jpeg2000_Rsiz(int16u Rsiz);
 
 //---------------------------------------------------------------------------
@@ -4030,26 +4030,37 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
                     }
 
                     //Special cases
-                    std::map<std::string, Ztring>::iterator Info_Level=SubDescriptor->second.Infos.find("Temp_AVC_Format_Level");
-                    std::map<std::string, Ztring>::iterator Info_constraint=SubDescriptor->second.Infos.find("Temp_AVC_constraint_set3_flag");
-                    if (Info_Level!=SubDescriptor->second.Infos.end() || Info_constraint!=SubDescriptor->second.Infos.end())
+                    std::map<std::string, Ztring>::iterator Info_AvcProfile=SubDescriptor->second.Infos.find("Temp_AVC_Profile");
+                    std::map<std::string, Ztring>::iterator Info_AvcLevel=SubDescriptor->second.Infos.find("Temp_AVC_Level");
+                    std::map<std::string, Ztring>::iterator Info_AvcConstraintSet=SubDescriptor->second.Infos.find("Temp_AVC_constraint_set");
+                    if (Info_AvcProfile!=SubDescriptor->second.Infos.end() || Info_AvcLevel!=SubDescriptor->second.Infos.end() || Info_AvcConstraintSet!=SubDescriptor->second.Infos.end())
                     {
                         //AVC Descriptor creates that, adapting
-                        std::map<std::string, Ztring>::iterator Info_Profile=SubDescriptor->second.Infos.find("Format_Profile");
-                        if (Info_Profile!=SubDescriptor->second.Infos.end())
+                        int8u profile_idc;
+                        if (Info_AvcProfile!=SubDescriptor->second.Infos.end())
                         {
-                            if (Info_constraint!=SubDescriptor->second.Infos.end())
-                            {
-                                if (Info_constraint->second==__T("1"))
-                                    Info_Profile->second+=__T(" Intra");
-                                SubDescriptor->second.Infos.erase(Info_constraint);
-                            }
-                            if (Info_Level!=SubDescriptor->second.Infos.end())
-                            {
-                                Info_Profile->second+=__T("@L")+Info_Level->second;
-                                SubDescriptor->second.Infos.erase(Info_Level);
-                            }
+                            profile_idc=Info_AvcProfile->second.To_int8u();
+                            SubDescriptor->second.Infos.erase(Info_AvcProfile);
                         }
+                        else
+                            profile_idc=0;
+                        int8u level_idc;
+                        if (Info_AvcLevel!=SubDescriptor->second.Infos.end())
+                        {
+                            level_idc=Info_AvcLevel->second.To_int8u();
+                            SubDescriptor->second.Infos.erase(Info_AvcLevel);
+                        }
+                        else
+                            level_idc=0;
+                        int8u constraint_set_flags;
+                        if (Info_AvcConstraintSet!=SubDescriptor->second.Infos.end())
+                        {
+                            constraint_set_flags=Info_AvcConstraintSet->second.To_int8u();
+                            SubDescriptor->second.Infos.erase(Info_AvcConstraintSet);
+                        }
+                        else
+                            constraint_set_flags=0;
+                        SubDescriptor->second.Infos["Format_Profile"].From_UTF8(Avc_profile_level_string(profile_idc, level_idc, constraint_set_flags));
                     }
                     
                     for (std::map<std::string, Ztring>::iterator Info=SubDescriptor->second.Infos.begin(); Info!=SubDescriptor->second.Infos.end(); ++Info)
@@ -11172,11 +11183,11 @@ void File_Mxf::AVCDescriptor_Profile()
 {
     //Parsing
     int8u profile_idc;
-    Get_B1 (profile_idc,                                        "profile_idc"); Element_Info1(Avc_profile_idc(profile_idc));
+    Get_B1 (profile_idc,                                        "profile_idc"); Element_Info1(Avc_profile_level_string(profile_idc));
 
     FILLING_BEGIN();
         if (profile_idc)
-            Descriptor_Fill("Format_Profile", Avc_profile_idc(profile_idc));
+            Descriptor_Fill("Temp_AVC_Profile", Ztring().From_Number(profile_idc));
     FILLING_END();
 }
 
@@ -11211,21 +11222,20 @@ void File_Mxf::AVCDescriptor_MaximumBitRate()
 void File_Mxf::AVCDescriptor_ProfileConstraint()
 {
     //Parsing
-    BS_Begin();
-    bool constraint_set3_flag;
-    Element_Begin1("constraints");
-        Skip_SB(                                                "constraint_set0_flag");
-        Skip_SB(                                                "constraint_set1_flag");
-        Skip_SB(                                                "constraint_set2_flag");
-        Get_SB (constraint_set3_flag,                           "constraint_set3_flag");
-        Skip_SB(                                                "constraint_set4_flag");
-        Skip_SB(                                                "constraint_set5_flag");
-        Skip_BS(2,                                              "reserved_zero_2bits");
-    Element_End0();
-    BS_End();
+    int8u constraint_set_flags;
+    Get_B1 (constraint_set_flags,                               "constraint_sett_flags");
+        Skip_Flags(constraint_set_flags, 7,                     "constraint_sett0_flag");
+        Skip_Flags(constraint_set_flags, 6,                     "constraint_sett1_flag");
+        Skip_Flags(constraint_set_flags, 5,                     "constraint_sett2_flag");
+        Skip_Flags(constraint_set_flags, 4,                     "constraint_sett3_flag");
+        Skip_Flags(constraint_set_flags, 3,                     "constraint_sett4_flag");
+        Skip_Flags(constraint_set_flags, 2,                     "constraint_sett5_flag");
+        Skip_Flags(constraint_set_flags, 1,                     "constraint_sett6_flag");
+        Skip_Flags(constraint_set_flags, 0,                     "constraint_sett7_flag");
 
     FILLING_BEGIN();
-        Descriptor_Fill("Temp_AVC_constraint_set3_flag", Ztring::ToZtring(constraint_set3_flag?1:0));
+        if (constraint_set_flags)
+            Descriptor_Fill("Temp_AVC_constraint_set", Ztring::ToZtring(constraint_set_flags));
     FILLING_END();
 }
 
@@ -11235,11 +11245,11 @@ void File_Mxf::AVCDescriptor_Level()
 {
     //Parsing
     int8u level_idc;
-    Get_B1 (level_idc,                                          "level_idc"); Element_Info1(Ztring().From_Number(((float)level_idc)/10, (level_idc%10)?1:0));
+    Get_B1 (level_idc,                                          "level_idc");  Element_Info1(Avc_profile_level_string(0, level_idc));
 
     FILLING_BEGIN();
         if (level_idc)
-            Descriptor_Fill("Temp_AVC_Format_Level", Ztring().From_Number(((float)level_idc)/10, (level_idc%10)?1:0));
+            Descriptor_Fill("Temp_AVC_Level", Ztring().From_Number(level_idc));
     FILLING_END();
 }
 
