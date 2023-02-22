@@ -636,6 +636,18 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
             return Fill(StreamKind, StreamPos, Parameter, Value.substr(Value_NotBOM_Pos), Replace);
     }
 
+    // Analysis of some metadata
+    if (StreamKind==Stream_General)
+    {
+        switch (Parameter)
+        {
+            case General_Description:
+                if (Value.size()==38 && Value.rfind(__T("ISAN "), 0)==0)
+                    return Fill(Stream_General, StreamPos, General_ISAN, Value.substr(5), Replace);
+                break;
+        }
+    }
+
     //MergedStreams
     if (FillAllMergedStreams)
     {
