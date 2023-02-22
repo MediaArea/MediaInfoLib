@@ -470,6 +470,7 @@ enum general
     General_BPM,
     General_ISRC,
     General_ISBN,
+    General_ISAN,
     General_BarCode,
     General_LCCN,
     General_CatalogNumber,

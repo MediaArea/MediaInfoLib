@@ -307,7 +307,8 @@ OriginalSourceForm/Sharpness;;;Y YTY;;;Identifies changes in sharpness the digit
 Tagged_Application;;;Y YTY;;;Software used to tag the file;;Technical
 BPM;;;Y YTY;;;Average number of beats per minute;;Technical
 ISRC;;;Y YTY;;;International Standard Recording Code, excluding the ISRC prefix and including hyphens;;Identifier
-ISBN;;;Y YTY;;;International Standard Book Number.;;Identifier
+ISBN;;;Y YTY;;;International Standard Book Number;;Identifier
+ISAN;;;Y YTY;;;International Standard Audiovisual Number;;Identifier
 BarCode;;;Y YTY;;;EAN-13 (13-digit European Article Numbering) or UPC-A (12-digit Universal Product Code) bar code identifier;;Identifier
 LCCN;;;Y YTY;;;Library of Congress Control Number;;Identifier
 CatalogNumber;;;Y YTY;;;A label-specific catalogue number used to identify the release. e.g. TIC 01;;Identifier
