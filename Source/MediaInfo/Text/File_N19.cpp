@@ -536,7 +536,7 @@ void File_N19::FileHeader_Parse()
         auto CPN0=(char)(CPN>>16);
         auto CPN1=(char)(CPN>> 8);
         auto CPN2=(char)(CPN    );
-        if (CPN0>='0' && CPN0<'9' && CPN1>='0' && CPN1<'9')
+        if (CPN0>='0' && CPN0<'9' && CPN1>='0' && CPN1<'9' && CPN2>='0' && CPN2<'9')
         {
             string CPN_Text="CP "+Ztring().From_CC3(CPN).To_UTF8();
             Fill(Stream_General, 0, "CharacterSet", CPN_Text.c_str());
