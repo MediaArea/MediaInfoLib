@@ -233,7 +233,7 @@ void File_Aac::program_config_element()
         case  1 : Channels_Positions+=__T("Front: C"); ChannelLayout+=__T("C "); break;
         case  2 : Channels_Positions+=__T("Front: L R"); ChannelLayout+=__T("L R "); break;
         case  3 : Channels_Positions+=__T("Front: L C R"); ChannelLayout+=num_front_channel_elements==2?(front1_element_is_cpe?__T("L R C "):__T("C L R ")):__T("? ? ? "); break;
-        case  5 : Channels_Positions+=__T("Front: L C R Lw Rw"); ChannelLayout+=num_front_channel_elements==3?(front1_element_is_cpe?__T("L R C Lw Rw "):__T("C L R Lw Rw ")):__T("? ? ? ? ? "); break;
+        case  5 : Channels_Positions+=__T("Front: L Lc C Rc R"); ChannelLayout+=num_front_channel_elements==3?(front1_element_is_cpe?__T("Lc Rc C L R "):__T("C Lc Rc L R ")):__T("? ? ? ? ? "); break;
         default : Channels_Positions+=__T("Front:"); Channels_Positions+=Ztring::ToZtring(Channels_Side); for (size_t i=0; i<Channels_Front; i++) ChannelLayout+=__T("? "); //Which config?
     }
     switch (Channels_Side)

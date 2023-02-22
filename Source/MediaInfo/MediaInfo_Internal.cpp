@@ -302,8 +302,7 @@ extern const Char* MediaInfo_Version;
 //***************************************************************************
 // Modifiers - ChannelLayout_2018
 //***************************************************************************
-static const size_t ChannelLayout_2018_Size=64;
-static const char* ChannelLayout_2018[ChannelLayout_2018_Size][2] =
+static const char* ChannelLayout_2018[][2] =
 {
     { "BC", "Cb" },
     { "BL", "Lb" },
@@ -320,11 +319,10 @@ static const char* ChannelLayout_2018[ChannelLayout_2018_Size][2] =
     { "Cvr", "Tbc" },
     { "FC", "C" },
     { "FL", "L" },
-    { "FLC", "Lscr" },
+    { "FLC", "Lc" },
     { "FR", "R" },
-    { "FRC", "Rscr" },
+    { "FRC", "Rc" },
     { "LI", "Bfl" },
-    { "Lc", "Lscr" },
     { "Lfh", "Tfl" },
     { "Lh", "Vhl" },
     { "Lhr", "Tbl" },
@@ -340,7 +338,6 @@ static const char* ChannelLayout_2018[ChannelLayout_2018_Size][2] =
     { "Lvr", "Tbl" },
     { "Lvss", "Tsl" },
     { "Oh", "Tc" },
-    { "Rc", "Rscr" },
     { "Rfh", "Tfrr" },
     { "Rh", "Vhr" },
     { "Rhr", "Tbr" },
@@ -370,6 +367,7 @@ static const char* ChannelLayout_2018[ChannelLayout_2018_Size][2] =
     { "Ts", "Tc" },
     { "Vhc", "Tfc" },
 };
+static const size_t ChannelLayout_2018_Size=sizeof(ChannelLayout_2018)/sizeof(decltype(*ChannelLayout_2018));
 static const size_t ChannelLayout_2018_Aac_Size=3;
 static const char* ChannelLayout_2018_Aac[ChannelLayout_2018_Aac_Size][2] =
 {
@@ -384,7 +382,7 @@ Ztring ChannelLayout_2018_Rename(const Ztring& Channels, const Ztring& Format)
     List.Write(Channels);
     size_t LfePos[3];
     memset(LfePos, -1, sizeof(LfePos));
-    bool IsAac=(Format==__T("USAC") || Format==__T("MPEG-H 3D Audio"));
+    bool IsAac=(Format==__T("AAC") || Format==__T("USAC") || Format==__T("MPEG-H 3D Audio"));
     for (size_t i=0; i<List.size(); i++)
     {
         Ztring& ChannelName=List[i];
