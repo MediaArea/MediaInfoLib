@@ -3491,7 +3491,7 @@ void File_Avc::sei_message_user_data_unregistered_x264(int32u payloadSize)
     else if (Encoded_Library.find(__T("SUPER(C) by eRightSoft "))==0)
     {
         Encoded_Library_Name=__T("SUPER(C) by eRightSoft");
-        Encoded_Library_Date=Ztring(__T("UTC "))+Encoded_Library.SubString(__T("2000-"), __T(" "));
+        Encoded_Library_Date=Encoded_Library.SubString(__T("2000-"), __T(" "));
     }
     else
         Encoded_Library_Name=Encoded_Library;

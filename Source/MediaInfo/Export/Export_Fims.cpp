@@ -1073,7 +1073,7 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
     if (!MI.Get(Stream_General, 0, General_Encoded_Date).empty())
     {
         Ztring DateTime=MI.Get(Stream_General, 0, General_Encoded_Date);
-        DateTime.FindAndReplace(__T("UTC "), __T(""));
+        DateTime.FindAndReplace(__T(" UTC"), __T(""));
         DateTime.FindAndReplace(__T(" "), __T("T"));
         Ztring Date=DateTime.substr(0, 10);
         Ztring Time=DateTime.substr(11, 8);
