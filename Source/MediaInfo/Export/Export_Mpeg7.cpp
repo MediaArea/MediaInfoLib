@@ -1394,7 +1394,16 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     //Description - DescriptionMetadata
     Node* Node_DescriptionMetadata=Node_Mpeg7->Add_Child("mpeg7:DescriptionMetadata");
 
+    Node_DescriptionMetadata->Add_Child_IfNotEmpty(MI, Stream_General, 0, "ISAN", "mpeg7:PublicIdentifier", "type", std::string("ISAN"));
     Node_DescriptionMetadata->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_ISRC, "mpeg7:PublicIdentifier", "type", std::string("ISRC"));
+    Node_DescriptionMetadata->Add_Child_IfNotEmpty(MI, Stream_General, 0, "Producer_Reference", "mpeg7:PublicIdentifier", "type", std::string("OriginatorReference"));
+    Ztring UMID=MI.Get(Stream_General, 0, __T("UMID"));
+    if (!UMID.empty())
+    {
+        if (UMID.size()>1 && UMID[0]==__T('0') && UMID[1]==__T('x'))
+            UMID.erase(0, 2);
+        Node_DescriptionMetadata->Add_Child("mpeg7:PublicIdentifier", UMID, "type", std::string("UMID"));
+    }
 
     Ztring FileName=MI.Get(Stream_General, 0, General_FileName);
     Ztring Extension=MI.Get(Stream_General, 0, General_FileExtension);
