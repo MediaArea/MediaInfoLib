@@ -2818,6 +2818,8 @@ bool File_Mpeg4::BookMark_Needed()
         {
             mdat_Pos_Type* Temp=&mdat_Pos[0];
             int64u stco_ToFind=Streams[mdat_Pos_ToParseInPriority_StreamIDs[0]].FirstUsedOffset;
+            if (stco_ToFind==(int64u)-1)
+                stco_ToFind=Streams[mdat_Pos_ToParseInPriority_StreamIDs[0]].stco.front();
             while (Temp<mdat_Pos_Max && Temp->Offset!=stco_ToFind)
                 Temp++;
             if (Temp<mdat_Pos_Max && Temp->Offset<File_Size) //Skipping data not in a truncated file
