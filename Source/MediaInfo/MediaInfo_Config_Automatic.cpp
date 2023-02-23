@@ -949,7 +949,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "Language_zh-TW;Chinese (Taiwan)\n"
     "Language_zh-cmn;Mandarin\n"
     "Language_zh-yue;Cantonese\n"
-    "Language_zh-Hans;Chinese (Simplied)\n"
+    "Language_zh-Hans;Chinese (Simplified)\n"
     "Language_zh-Hant;Chinese (Traditional)\n"
     "Language_zu;Zulu\n"
     "LawRating;Law rating\n"
