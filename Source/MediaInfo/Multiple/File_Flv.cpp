@@ -1589,7 +1589,7 @@ void File_Flv::meta_SCRIPTDATAVALUE(const std::string &StringData)
                     else if (StringDataModified=="Encoded_By") {ToFill=General_Encoded_Application;}
                     else if (StringDataModified=="metadatacreator") {ToFill=General_Tagged_Application;}
                     else if (StringDataModified=="title") {ToFill=General_Title;}
-                    else if (StringDataModified=="creation_time") {ToFill=General_Encoded_Date; Value.insert(0, __T("UTC "));}
+                    else if (StringDataModified=="creation_time") {ToFill=General_Encoded_Date; Value+=__T(" UTC");}
                     else if (StringDataModified=="sourcedata") {}
                     else if (StringDataModified=="audiocodecid") {}
                     else if (StringDataModified=="videocodecid") {}

@@ -161,7 +161,6 @@ void File_VorbisCom::FileHeader_Parse()
             {
                 Library_Date.insert(6, 1, __T('-'));
                 Library_Date.insert(4, 1, __T('-'));
-                Library_Date.insert(0, __T("UTC "));
             }
         }
         if (vendor_string.find(__T("libFLAC"))!=std::string::npos) Library_Name="libFLAC";

@@ -42,9 +42,22 @@ extern MediaInfo_Config Config;
 //---------------------------------------------------------------------------
 static Ztring Mpeg7_TimeToISO(Ztring Value)
 {
-    if (Value.size()>=3 && Value[0]==__T('U') && Value[1]==__T('T') && Value[2]==__T('C') && Value[3]==__T(' '))
+    if (Value.find(__T(" - ")) != string::npos)
     {
-        Value.erase(0, 4);
+        ZtringList List;
+        List.Separator_Set(0, __T(" - "));
+        List.Write(Value);
+        Value = List[0];
+        for (size_t i = 1; i < List.size(); i++)
+        {
+            if (Value > List[i])
+                Value = List[i];
+        }
+    }
+
+    if (Value.size()>=4 && Value.find(__T(" UTC"), Value.size()-4)!=string::npos)
+    {
+        Value.erase(Value.size()-4);
         Value+=__T("+00:00");
     }
     if (Value.size()>11 && Value[10]==__T(' '))
@@ -55,7 +68,7 @@ static Ztring Mpeg7_TimeToISO(Ztring Value)
 }
 
 //---------------------------------------------------------------------------
-static bool Mpeg7_TimeToISO_Isvalid(Ztring& TimePoint)
+static bool Mpeg7_TimeToISO_Isvalid(const Ztring& TimePoint)
 {
     if (TimePoint.size()<=3)
        return false;
@@ -106,12 +119,7 @@ static bool Mpeg7_TimeToISO_Isvalid(Ztring& TimePoint)
                            return false;
                         else if (TimePoint.size()>19)
                         {
-                            if (TimePoint.size()==20 && TimePoint[19]==__T('Z'))
-                            {
-                                TimePoint[19]=__T('+');
-                                TimePoint+=__T("00:00");
-                            }
-                            else if (TimePoint.size()<=24)
+                            if (TimePoint.size()<=24)
                                return false;
                             else if (!((TimePoint[19]==__T('+') || TimePoint[19]==__T('-'))
                                     && TimePoint[20]>=__T('0') && TimePoint[20]<=__T('9')
@@ -1304,9 +1312,9 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     //Current date/time is ISO format
     time_t Time=time(NULL);
     Ztring TimeS; TimeS.Date_From_Seconds_1970((int32u)Time);
-    TimeS.FindAndReplace(__T("UTC "), __T(""));
+    TimeS.FindAndReplace(__T(" UTC"), __T(""));
     TimeS.FindAndReplace(__T(" "), __T("T"));
-    TimeS+=__T("+00:00");
+    TimeS+=__T("Z");
     Node_DescriptionMetadata->Add_Child("mpeg7:CreationTime", TimeS);
 
     Node* Node_Instrument=Node_DescriptionMetadata->Add_Child("mpeg7:Instrument");
@@ -1512,8 +1520,13 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
         if (!MI.Get(Stream_General, 0, General_Recorded_Date).empty())
         {
             Node* Node_Date=Node_Creation->Add_Child("mpeg7:CreationCoordinates")->Add_Child("mpeg7:Date");
-            Node_Date->Add_Child("")->XmlCommentOut="Recorded date";
-            Node_Date->Add_Child("mpeg7:TimePoint", Mpeg7_TimeToISO(MI.Get(Stream_General, 0, General_Recorded_Date)));
+            Ztring TimePoint=Mpeg7_TimeToISO(MI.Get(Stream_General, 0, General_Recorded_Date));
+            bool TimePoint_Isvalid=Mpeg7_TimeToISO_Isvalid(TimePoint);
+            if (TimePoint_Isvalid)
+                Node_Date->Add_Child("")->XmlCommentOut="Recorded date";
+            Node_Date->Add_Child("mpeg7:TimePoint", TimePoint);
+            if (!TimePoint_Isvalid)
+                Node_Date->XmlCommentOut="Recorded date, invalid input";
         }
         if (!MI.Get(Stream_General, 0, General_Encoded_Date).empty())
         {
