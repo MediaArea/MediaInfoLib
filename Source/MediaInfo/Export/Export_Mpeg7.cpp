@@ -1251,6 +1251,100 @@ void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamP
             }
         }
     }
+    if (MI.Get(Stream_Video, StreamPos, Video_ChromaSubsampling).find(__T("4:2:2"))!=string::npos)
+    {
+        Node* Node_ColorSampling=Node_VisualCoding->Add_Child("mpeg7:ColorSampling");
+        Node_ColorSampling->XmlComment="YUV 4:2:2 Interlaced";
+        Node* Node_Lattice=Node_ColorSampling->Add_Child("mpeg7:Lattice");
+        Node_Lattice->Add_Attribute("height", "720");
+        Node_Lattice->Add_Attribute("width", "486");
+
+        {
+            Node* Node_Field=Node_ColorSampling->Add_Child("mpeg7:Field");
+            Node_Field->Add_Attribute("temporalOrder", "0");
+            Node_Field->Add_Attribute("positionalOrder", "0");
+
+            {
+                Node* Node_Component=Node_Field->Add_Child("mpeg7:Component");
+                Node_Component->Add_Child("mpeg7:Name", std::string("Luminance"));
+                Node* Node_Offset=Node_Component->Add_Child("mpeg7:Offset");
+                Node_Offset->Add_Attribute("horizontal", "0.0");
+                Node_Offset->Add_Attribute("vertical", "0.0");
+                Node* Node_Period=Node_Component->Add_Child("mpeg7:Period");
+                Node_Period->Add_Attribute("horizontal", "1.0");
+                Node_Period->Add_Attribute("vertical", "2.0");
+            }
+
+            {
+                Node* Node_Component=Node_Field->Add_Child("mpeg7:Component");
+                Node_Component->Add_Child("mpeg7:Name", std::string("ChrominanceBlueDifference"));
+                Node* Node_Offset=Node_Component->Add_Child("mpeg7:Offset");
+                Node_Offset->Add_Attribute("horizontal", "0.0");
+                Node_Offset->Add_Attribute("vertical", "0.0");
+                Node* Node_Period=Node_Component->Add_Child("mpeg7:Period");
+                Node_Period->Add_Attribute("horizontal", "2.0");
+                Node_Period->Add_Attribute("vertical", "2.0");
+            }
+
+            {
+                Node* Node_Component=Node_Field->Add_Child("mpeg7:Component");
+                Node_Component->Add_Child("mpeg7:Name", std::string("ChrominanceRedDifference"));
+                Node* Node_Offset=Node_Component->Add_Child("mpeg7:Offset");
+                Node_Offset->Add_Attribute("horizontal", "0.0");
+                Node_Offset->Add_Attribute("vertical", "0.0");
+                Node* Node_Period=Node_Component->Add_Child("mpeg7:Period");
+                Node_Period->Add_Attribute("horizontal", "2.0");
+                Node_Period->Add_Attribute("vertical", "2.0");
+            }
+        }
+
+        {
+            Node* Node_Field=Node_ColorSampling->Add_Child("mpeg7:Field");
+            Node_Field->Add_Attribute("temporalOrder", "1");
+            Node_Field->Add_Attribute("positionalOrder", "1");
+
+            {
+                Node* Node_Component=Node_Field->Add_Child("mpeg7:Component");
+                Node_Component->Add_Child("mpeg7:Name", std::string("Luminance"));
+                Node* Node_Offset=Node_Component->Add_Child("mpeg7:Offset");
+                Node_Offset->Add_Attribute("horizontal", "0.0");
+                Node_Offset->Add_Attribute("vertical", "1.0");
+                Node* Node_Period=Node_Component->Add_Child("mpeg7:Period");
+                Node_Period->Add_Attribute("horizontal", "1.0");
+                Node_Period->Add_Attribute("vertical", "2.0");
+            }
+
+            {
+                Node* Node_Component=Node_Field->Add_Child("mpeg7:Component");
+                Node_Component->Add_Child("mpeg7:Name", std::string("ChrominanceBlueDifference"));
+                Node* Node_Offset=Node_Component->Add_Child("mpeg7:Offset");
+                Node_Offset->Add_Attribute("horizontal", "0.0");
+                Node_Offset->Add_Attribute("vertical", "1.0");
+                Node* Node_Period=Node_Component->Add_Child("mpeg7:Period");
+                Node_Period->Add_Attribute("horizontal", "2.0");
+                Node_Period->Add_Attribute("vertical", "2.0");
+            }
+
+            {
+                Node* Node_Component=Node_Field->Add_Child("mpeg7:Component");
+                Node_Component->Add_Child("mpeg7:Name", std::string("ChrominanceRedDifference"));
+                Node* Node_Offset=Node_Component->Add_Child("mpeg7:Offset");
+                Node_Offset->Add_Attribute("horizontal", "0.0");
+                Node_Offset->Add_Attribute("vertical", "1.0");
+                Node* Node_Period=Node_Component->Add_Child("mpeg7:Period");
+                Node_Period->Add_Attribute("horizontal", "4.0");
+                Node_Period->Add_Attribute("vertical", "2.0");
+            }
+        }
+    }
+
+    //Encryption
+    Ztring Encryption = MI.Get(Stream_Audio, StreamPos, Audio_Encryption);
+    if (!Encryption.empty())
+    {
+        Node_VisualCoding->Add_Child("Encryption", Encryption);
+        Node_VisualCoding->XmlComment="Encryption: "+Encryption.To_UTF8();
+    }
 }
 
 //---------------------------------------------------------------------------
