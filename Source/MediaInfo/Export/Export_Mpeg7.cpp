@@ -221,6 +221,50 @@ int32u Mpeg7_FileFormatCS_termID_MediaInfo(MediaInfo_Internal &MI)
 {
     const Ztring &Format=MI.Get(Stream_General, 0, General_Format);
 
+    if (Format==__T("MPEG-4"))
+    {
+        const Ztring &Format_Profile=MI.Get(Stream_General, 0, General_Format_Profile);
+        int32u termID;
+        if (Format_Profile==__T("QuickTime"))
+            termID=160000;
+        else
+            termID=50000;
+        Ztring CodecID=MI.Get(Stream_General, 0, General_CodecID);
+        CodecID+=__T('/')+MI.Get(Stream_General, 0, General_CodecID_Compatible);
+        if (false)
+            ;
+        else if (CodecID.find(__T("isom"))!=string::npos)
+            termID+=100;
+        else if (CodecID.find(__T("avc1"))!=string::npos)
+            termID+=200;
+        else if (CodecID.find(__T("iso2"))!=string::npos)
+            termID+=300;
+        else if (CodecID.find(__T("iso3"))!=string::npos)
+            termID+=400;
+        else if (CodecID.find(__T("iso4"))!=string::npos)
+            termID+=500;
+        else if (CodecID.find(__T("iso5"))!=string::npos)
+            termID+=600;
+        else if (CodecID.find(__T("iso6"))!=string::npos)
+            termID+=700;
+        else if (CodecID.find(__T("iso7"))!=string::npos)
+            termID+=800;
+        else if (CodecID.find(__T("iso8"))!=string::npos)
+            termID+=900;
+        else if (CodecID.find(__T("iso9"))!=string::npos)
+            termID+=1000;
+        else if (CodecID.find(__T("isoa"))!=string::npos)
+            termID+=1100;
+        else if (CodecID.find(__T("isob"))!=string::npos)
+            termID+=1200;
+        else if (CodecID.find(__T("isoc"))!=string::npos)
+            termID+=1300;
+        else if (CodecID.find(__T("mp41"))!=string::npos)
+            termID+=100;
+        else if (CodecID.find(__T("mp42"))!=string::npos)
+            termID+=100;
+        return termID;
+    }
     if (Format==__T("MPEG Audio"))
     {
         if (MI.Get(Stream_Audio, 0, Audio_Format_Profile).find(__T('2'))!=string::npos)
@@ -229,19 +273,30 @@ int32u Mpeg7_FileFormatCS_termID_MediaInfo(MediaInfo_Internal &MI)
             return 510000; //mp1
         return 0;
     }
-    if (Format==__T("Wave"))
+    if (Format==__T("Wave") || Format==__T("Wave64"))
     {
-        if (MI.Get(Stream_General, 0, General_Format_Profile)==__T("RF64"))
-        {
-            if (!MI.Get(Stream_General, 0, __T("bext_Present")).empty())
-                return 520100; // Wav (RF64) with bext
-            return 520000; //Wav (RF64)
-        }
-        else if (!MI.Get(Stream_General, 0, __T("bext_Present")).empty())
-            return 90100;
+        int32u termid;
+        if (Format==__T("Wave64"))
+            termid=530000;
+        else if (MI.Get(Stream_General, 0, General_Format_Profile)==__T("RF64"))
+            termid=520000; //Wav (RF64)
+        else
+            termid=90000;
+        if (!MI.Get(Stream_General, 0, __T("bext_Present")).empty())
+            termid+=100;
+        Ztring Format_Settings=MI.Get(Stream_General, 0, General_Format_Settings);
+        if (false)
+            ;
+        else if (Format_Settings.find(__T("WaveFormatExtensible"))!=string::npos)
+            termid+=4;
+        else if (Format_Settings.find(__T("WaveFormatEx"))!=string::npos)
+            termid+=3;
+        else if (Format_Settings.find(__T("PcmWaveformat"))!=string::npos)
+            termid+=2;
+        else if (Format_Settings.find(__T("WaveFormat"))!=string::npos)
+            termid+=1;
+        return termid;
     }
-    if (Format==__T("Wave64"))
-        return 530000;
     if (Format==__T("DSF"))
         return 540000;
     if (Format==__T("DSDIFF"))
@@ -272,8 +327,6 @@ int32u Mpeg7_FileFormatCS_termID(MediaInfo_Internal &MI, size_t)
         return 20000;
     if (Format==__T("MPEG Audio"))
         return (MI.Get(Stream_Audio, 0, Audio_Format_Profile).find(__T('3'))!=string::npos)?40000:0;
-    if (Format==__T("MPEG-4"))
-        return 50000;
     if (Format==__T("MPEG-PS"))
         return 30100;
     if (Format==__T("MPEG-TS"))
@@ -284,13 +337,6 @@ int32u Mpeg7_FileFormatCS_termID(MediaInfo_Internal &MI, size_t)
         return 160000;
     if (Format==__T("TIFF"))
         return 180000;
-    if (Format==__T("Wave"))
-    {
-        if (!MI.Get(Stream_General, 0, General_Format_Profile).empty() || !MI.Get(Stream_General, 0, __T("bext_Present")).empty())
-            return Mpeg7_FileFormatCS_termID_MediaInfo(MI); //Out of specs
-        else
-            return 90000;
-    }
     if (Format==__T("Windows Media"))
         return 190000;
     if (Format==__T("ZIP"))
@@ -300,6 +346,20 @@ int32u Mpeg7_FileFormatCS_termID(MediaInfo_Internal &MI, size_t)
     return Mpeg7_FileFormatCS_termID_MediaInfo(MI);
 }
 
+const char* Mpeg7_Wav_Extra_List[]=
+{
+    "WAVEFORMAT",
+    "PCMWAVEFORMAT",
+    "WAVEFORMATEX",
+    "WAVEFORMATEXTENSIBLE",
+};
+size_t Mpeg7_Wav_Extra_List_Size=sizeof(Mpeg7_Wav_Extra_List)/sizeof(decltype(*Mpeg7_Wav_Extra_List));
+static string Mpeg7_Wav_Extra(int32u Value)
+{
+    if (!Value || Value>Mpeg7_Wav_Extra_List_Size)
+        return string();
+    return string(1, ' ')+Mpeg7_Wav_Extra_List[Value-1];
+}
 Ztring Mpeg7_FileFormatCS_Name(int32u termID, MediaInfo_Internal &MI, size_t) //xxyyzz: xx=main number, yy=sub-number, zz=sub-sub-number
 {
     switch (termID/10000)
@@ -313,14 +373,36 @@ Ztring Mpeg7_FileFormatCS_Name(int32u termID, MediaInfo_Internal &MI, size_t) //
                         default: return __T("mpeg");
                     }
         case  4 : return __T("mp3");
-        case  5 : return __T("mp4");
+        case  5 :   switch ((termID%10000)/100)
+                    {
+                        case  1 : return __T("mp4 isom");
+                        case  2 : return __T("mp4 avc1");
+                        case  3 : return __T("mp4 iso2");
+                        case  4 : return __T("mp4 iso3");
+                        case  5 : return __T("mp4 iso4");
+                        case  6 : return __T("mp4 iso5");
+                        case  7 : return __T("mp4 iso6");
+                        case  8 : return __T("mp4 iso7");
+                        case  9 : return __T("mp4 iso8");
+                        case 10 : return __T("mp4 iso9");
+                        case 11 : return __T("mp4 isoa");
+                        case 12 : return __T("mp4 isob");
+                        case 13 : return __T("mp4 isoc");
+                        default : return __T("mp4");
+                    }
         case  6 : return __T("dv");
         case  7 : return __T("avi");
         case  8 : return __T("bdf");
-        case  9 :   switch ((termID%10000)/100)
+        case  9 :
                     {
-                        case 1 : return __T("bwf");
-                        default: return __T("wav");
+                    const char* Core;
+                    switch ((termID%10000)/100)
+                    {
+                        case 1 :    Core="bwf"; break;
+                        default:    Core="wav"; break;
+                    }
+                    string Extra=Mpeg7_Wav_Extra(termID%100);
+                    return Ztring().From_UTF8(Core+Extra);
                     }
         case 10 : return __T("zip");
         case 11 : return __T("bmp");
@@ -338,12 +420,23 @@ Ztring Mpeg7_FileFormatCS_Name(int32u termID, MediaInfo_Internal &MI, size_t) //
         //Out of specs --> MediaInfo CS
         case 50 : return __T("mp1");
         case 51 : return __T("mp2");
-        case 52:   switch ((termID%10000)/100)
+        case 52 :
                     {
-                        case 1 : return __T("mbwf");
-                        default: return __T("wav-rf64");
+                    const char* Core;
+                    switch ((termID%10000)/100)
+                    {
+                        case 1 :    Core="mbwf"; break;
+                        default:    Core="wav-rf64"; break;
                     }
-        case 53 : return __T("wave64");
+                    string Extra=Mpeg7_Wav_Extra(termID%100);
+                    return Ztring().From_UTF8(Core+Extra);
+                    }
+        case 53 :
+                    {
+                    const char* Core="wave64";
+                    string Extra=Mpeg7_Wav_Extra(termID%100);
+                    return Ztring().From_UTF8(Core+Extra);
+                    }
         case 54 : return __T("dsf");
         case 55 : return __T("dsdiff");
         case 56 : return __T("flac");
@@ -353,12 +446,22 @@ Ztring Mpeg7_FileFormatCS_Name(int32u termID, MediaInfo_Internal &MI, size_t) //
 }
 
 //---------------------------------------------------------------------------
-int32u Mpeg7_VisualCodingFormatCS_termID_MediaInfo(MediaInfo_Internal &MI, size_t StreamPos)
+extern size_t Avc_profile_level_Indexes(const string& ProfileLevelS);
+extern size_t ProRes_Profile_Index(const string& ProfileS);
+int32u Mpeg7_VisualCodingFormatCS_termID_MediaInfo(MediaInfo_Internal& MI, size_t StreamPos)
 {
     const Ztring &Format=MI.Get(Stream_Video, StreamPos, Video_Format);
+    const Ztring &Profile=MI.Get(Stream_Video, StreamPos, Video_Format_Profile);
 
     if (Format==__T("AVC"))
-        return 500000;
+    {
+        auto ProfileLevelS=Profile.To_UTF8();
+        auto ProfileLevel=Avc_profile_level_Indexes(ProfileLevelS);
+        int32u ToReturn=500000;
+        ToReturn+=(ProfileLevel>>8)*100; //Profile
+        ToReturn+=ProfileLevel&0xFF; //Level
+        return ToReturn;
+    }
     if (Format==__T("HEVC"))
         return 510000;
     if (Format==__T("WMV"))
@@ -366,7 +469,13 @@ int32u Mpeg7_VisualCodingFormatCS_termID_MediaInfo(MediaInfo_Internal &MI, size_
     if (Format==__T("WMV2"))
         return 530000;
     if (Format==__T("ProRes"))
-        return 540000;
+    {
+        auto ProfileLevelS=Profile.To_UTF8();
+        auto Profile=ProRes_Profile_Index(ProfileLevelS);
+        int32u ToReturn=540000;
+        ToReturn+=Profile*100; //Profile
+        return ToReturn;
+    }
     return 0;
 }
 
