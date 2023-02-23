@@ -1355,24 +1355,20 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     {
         Node* Node_BitRate=Node_MediaFormat->Add_Child("mpeg7:BitRate", BitRate);
         bool IsCBR=true;
-        bool IsVBR=true;
+        bool IsVBR=false;
         for (size_t StreamKind=Stream_Video; StreamKind<=Stream_Audio; StreamKind++)
             for (size_t StreamPos=0; StreamPos<MI.Count_Get((stream_t)StreamKind); StreamPos++)
             {
-                if (IsCBR && MI.Get((stream_t)StreamKind, StreamPos, __T("BitRate_Mode"))==__T("VBR"))
+                Ztring BitRate_Mode=MI.Get((stream_t)StreamKind, StreamPos, __T("BitRate_Mode"));
+                if (IsCBR && BitRate_Mode==__T("VBR"))
+                    IsVBR=true;
+                if (IsVBR && BitRate_Mode!=__T("CBR"))
                     IsCBR=false;
-                if (IsVBR && MI.Get((stream_t)StreamKind, StreamPos, __T("BitRate_Mode"))==__T("CBR"))
-                    IsVBR=false;
             }
-        if (IsCBR && IsVBR)
-        {
-            IsCBR=false;
-            IsVBR=false;
-        }
-        if (IsCBR)
-            Node_BitRate->Add_Attribute("variable", "false");
         if (IsVBR)
             Node_BitRate->Add_Attribute("variable", "true");
+        else if (IsCBR)
+            Node_BitRate->Add_Attribute("variable", "false");
     }
 
     //xxxCoding
