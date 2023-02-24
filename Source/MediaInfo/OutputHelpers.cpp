@@ -97,7 +97,7 @@ string To_XML (Node& Cur_Node, const int& Level, bool Print_Header, bool Indent)
         Ztring TimeS; TimeS.Date_From_Seconds_1970((int32u)Time);
         TimeS.FindAndReplace(__T("UTC "), __T(""));
         TimeS.FindAndReplace(__T(" "), __T("T"));
-        TimeS+=__T('Z');
+        TimeS+=__T("+00:00");
 
         Result+=string("<!-- Generated at "+TimeS.To_UTF8()+" by "+MediaInfoLib::Config.Info_Version_Get().To_UTF8()+" -->\n");
     }
