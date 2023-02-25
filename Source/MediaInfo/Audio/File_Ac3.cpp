@@ -170,7 +170,7 @@ const char*  AC3_ChannelPositions2[]=
 const char*  AC3_ChannelLayout_lfeoff[]=
 {
     "M M",
-    "C",
+    "M",
     "L R",
     "L R C",
     "L R S",
@@ -741,6 +741,9 @@ const char* AC3_TrueHD_ChannelLayoutNames2[AC3_TrueHD_ChannelLayoutNames2_Size]=
 };
 std::string AC3_TrueHD_Channels_ChannelLayout(int16u ChannelsMap, bool Bit11=false)
 {
+    if (ChannelsMap==2)
+        return "M";
+
     std::string Text;
 
     for (size_t i=0; i<16; i++)

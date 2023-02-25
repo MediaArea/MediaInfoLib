@@ -405,6 +405,8 @@ extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegh3da=f
 {
     if (!ChannelLayout)
         return string();
+    if (ChannelLayout==1)
+        return "M";
     if (ChannelLayout>=(IsMpegh3da?Aac_Channels_Size:Aac_Channels_Size_Usac))
         return "ChannelLayout"+Ztring::ToZtring(ChannelLayout).To_UTF8();
 
@@ -516,6 +518,8 @@ extern string Aac_ChannelMode_GetString(int8u ChannelLayout, bool IsMpegh3da=fal
 {
     if (!ChannelLayout)
         return string();
+    if (ChannelLayout==1)
+        return "M";
     if (ChannelLayout>=(IsMpegh3da?Aac_Channels_Size:Aac_Channels_Size_Usac))
         return "ChannelLayout"+Ztring::ToZtring(ChannelLayout).To_UTF8();
 
