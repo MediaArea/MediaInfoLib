@@ -8311,8 +8311,18 @@ void File_Mpeg4::moov_trak_tkhd()
         if (Alternate_Group) Fill(StreamKind_Last, StreamPos_Last, "AlternateGroup", Alternate_Group);
         if (moov_mvhd_TimeScale && Duration!=((Version==0)?(int32u)-1:(int64u)-1))
             Fill(StreamKind_Last, StreamPos_Last, "Duration", float64_int64s(((float64)Duration)*1000/moov_mvhd_TimeScale));
-        Fill(StreamKind_Last, StreamPos_Last, "Encoded_Date", Date_Created);
-        Fill(StreamKind_Last, StreamPos_Last, "Tagged_Date", Date_Modified);
+        if (!Date_Created.empty())
+        {
+            Date_Created.FindAndReplace(__T("UTC "), Ztring());
+            Date_Created+=__T(" UTC");
+            Fill(StreamKind_Last, StreamPos_Last, "Encoded_Date", Date_Created);
+        }
+        if (!Date_Modified.empty())
+        {
+            Date_Modified.FindAndReplace(__T("UTC "), Ztring());
+            Date_Modified+=__T(" UTC");
+            Fill(StreamKind_Last, StreamPos_Last, "Tagged_Date", Date_Modified);
+        }
         Fill(StreamKind_Last, StreamPos_Last, General_ID, moov_trak_tkhd_TrackID, 10, true);
         Streams[moov_trak_tkhd_TrackID].tkhd_Duration=Duration;
         if (moov_trak_tkhd_Height*d)

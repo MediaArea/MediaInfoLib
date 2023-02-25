@@ -1524,10 +1524,13 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI)
     //Current date/time is ISO format
     time_t Time=time(NULL);
     Ztring TimeS; TimeS.Date_From_Seconds_1970((int32u)Time);
-    TimeS.FindAndReplace(__T("UTC "), __T(""));
-    TimeS.FindAndReplace(__T(" "), __T("T"));
-    TimeS+=__T("+00:00");
-    Node_DescriptionMetadata->Add_Child("mpeg7:CreationTime", TimeS);
+    if (!TimeS.empty())
+    {
+        TimeS.FindAndReplace(__T("UTC "), __T(""));
+        TimeS.FindAndReplace(__T(" "), __T("T"));
+        TimeS+=__T("+00:00");
+        Node_DescriptionMetadata->Add_Child("mpeg7:CreationTime", TimeS);
+    }
 
     Node* Node_Instrument=Node_DescriptionMetadata->Add_Child("mpeg7:Instrument");
     Node_Instrument->Add_Child("mpeg7:Tool")->Add_Child("mpeg7:Name", MediaInfoLib::Config.Info_Version_Get());
