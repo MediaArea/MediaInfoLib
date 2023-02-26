@@ -25,6 +25,8 @@
 #include "MediaInfo/File__Analyse_Automatic.h"
 #include "MediaInfo/OutputHelpers.h"
 #include <ctime>
+#include <algorithm>
+
 using namespace std;
 //---------------------------------------------------------------------------
 
@@ -910,31 +912,411 @@ Ztring Mpeg7_AudioCodingFormatCS_Name(int32u termID, MediaInfo_Internal &MI, siz
 }
 
 //---------------------------------------------------------------------------
+struct Mpeg7_AudioPresentationCS_Extra_Struct 
+{
+    size_t Index;
+    int64u ChannelLayout;
+    const char* Name;
+};
+
+enum ChannelIndex
+{
+    //Middle
+    CI_M_000,
+    CI_M_180,
+    CI_M_L022,
+    CI_M_R022,
+    CI_M_L030,
+    CI_M_R030,
+    CI_M_L060,
+    CI_M_R060,
+    CI_M_L090,
+    CI_M_R090,
+    CI_M_L110,
+    CI_M_R110,
+    CI_M_L135,
+    CI_M_R135,
+    CI_M_LSCR,
+    CI_M_RSCR,
+    CI_M_LSD,
+    CI_M_RSD,
+    //Upper
+    CI_U_000,
+    CI_U_180,
+    CI_U_L030,
+    CI_U_R030,
+    CI_U_L090,
+    CI_U_R090,
+    CI_U_L110,
+    CI_U_R110,
+    CI_U_L135,
+    CI_U_R135,
+    CI_T_000,
+    //Lower
+    CI_L_000,
+    CI_L_L030,
+    CI_L_R030,
+    //LFE
+    CI_LFE,
+    CI_LFE2,
+    CI_LFE3,
+    //Misc
+    CI_M_M,
+    CI_M_M2,
+    CI_M_LT,
+    CI_M_RT,
+    CI_MAX
+};
+const char* ChannelIndexMap[]=
+{
+    //Middle
+    "C",
+    "Cb",
+    "Lc",
+    "Rc",
+    "L",
+    "R",
+    "Lw",
+    "Rw",
+    "Lss",
+    "Rss",
+    "Ls",
+    "Rs",
+    "Lb",
+    "Rb",
+    "Lscr",
+    "Rscr",
+    "Lsd",
+    "Rsd",
+    //Upper
+    "Tfc",
+    "Tbc",
+    "Tfl",
+    "Tfr",
+    "Tsl",
+    "Tsr",
+    "Rvs",
+    "Lvs",
+    "Tbl",
+    "Tbr",
+    "Tc",
+    //Lower
+    "Bfc",
+    "Bfl",
+    "Bfr",
+    //LFE
+    "LFE",
+    "LFE2",
+    "LFE3",
+    //Misc
+    "M",
+    "M",
+    "Lt",
+    "Rt",
+};
+static_assert(sizeof(ChannelIndexMap)/sizeof(decltype(*ChannelIndexMap))==CI_MAX, "");
+enum ChannelMask : int64u
+{
+    //Middle
+    MASK_M_000  = ((uint64_t)1)<<CI_M_000,
+    MASK_M_180  = ((uint64_t)1)<<CI_M_180,
+    MASK_M_L022 = ((uint64_t)1)<<CI_M_L022,
+    MASK_M_R022 = ((uint64_t)1)<<CI_M_R022,
+    MASK_M_022  = MASK_M_L022 | MASK_M_R022,
+    MASK_M_L030 = ((uint64_t)1)<<CI_M_L030,
+    MASK_M_R030 = ((uint64_t)1)<<CI_M_R030,
+    MASK_M_030  = MASK_M_L030 | MASK_M_R030,
+    MASK_M_L060 = ((uint64_t)1)<<CI_M_L060,
+    MASK_M_R060 = ((uint64_t)1)<<CI_M_R060,
+    MASK_M_060  = MASK_M_L060 | MASK_M_R060,
+    MASK_M_L090 = ((uint64_t)1)<<CI_M_L090,
+    MASK_M_R090 = ((uint64_t)1)<<CI_M_R090,
+    MASK_M_090  = MASK_M_L090 | MASK_M_R090,
+    MASK_M_L110 = ((uint64_t)1)<<CI_M_L110,
+    MASK_M_R110 = ((uint64_t)1)<<CI_M_R110,
+    MASK_M_110  = MASK_M_L110 | MASK_M_R110,
+    MASK_M_L135 = ((uint64_t)1)<<CI_M_L135,
+    MASK_M_R135 = ((uint64_t)1)<<CI_M_R135,
+    MASK_M_135  = MASK_M_L135 | MASK_M_R135,
+    MASK_M_LSCR = ((uint64_t)1)<<CI_M_LSCR,
+    MASK_M_RSCR = ((uint64_t)1)<<CI_M_RSCR,
+    MASK_M_SCR  = MASK_M_LSCR | MASK_M_RSCR,
+    MASK_M_LSD  = ((uint64_t)1)<<CI_M_LSD,
+    MASK_M_RSD  = ((uint64_t)1)<<CI_M_RSD,
+    MASK_M_SD   = MASK_M_LSD | MASK_M_RSD,
+    MASK_M_M    = ((uint64_t)1)<<CI_M_M,
+    MASK_M_M2   = ((uint64_t)1)<<CI_M_M2,
+    MASK_M_MM   = MASK_M_M    | MASK_M_M2,
+    MASK_M_LT   = ((uint64_t)1)<<CI_M_LT,
+    MASK_M_RT   = ((uint64_t)1)<<CI_M_RT,
+    MASK_M_T    = MASK_M_LT   | MASK_M_RT,
+    //Upper
+    MASK_U_000  = ((uint64_t)1)<<CI_U_000,
+    MASK_U_180  = ((uint64_t)1)<<CI_U_180,
+    MASK_U_L030 = ((uint64_t)1)<<CI_U_L030,
+    MASK_U_R030 = ((uint64_t)1)<<CI_U_R030,
+    MASK_U_030  = MASK_U_L030 | MASK_U_R030,
+    MASK_U_L090 = ((uint64_t)1)<<CI_U_L090,
+    MASK_U_R090 = ((uint64_t)1)<<CI_U_R090,
+    MASK_U_090  = MASK_U_L090 | MASK_U_R090,
+    MASK_U_L110 = ((uint64_t)1)<<CI_U_L110,
+    MASK_U_R110 = ((uint64_t)1)<<CI_U_R110,
+    MASK_U_110  = MASK_U_L110 | MASK_U_R110,
+    MASK_U_L135 = ((uint64_t)1)<<CI_U_L135,
+    MASK_U_R135 = ((uint64_t)1)<<CI_U_R135,
+    MASK_U_135  = MASK_U_L135 | MASK_U_R135,
+    MASK_T_000  = ((uint64_t)1)<<CI_T_000,
+    //Lower
+    MASK_L_000  = ((uint64_t)1)<<CI_L_000,
+    MASK_L_L030 = ((uint64_t)1)<<CI_L_L030,
+    MASK_L_R030 = ((uint64_t)1)<<CI_L_R030,
+    MASK_L_030  = MASK_L_L030 | MASK_L_R030,
+    //LFE
+    MASK_LFE    = ((uint64_t)1)<<CI_LFE,
+    MASK_LFE2   = ((uint64_t)1)<<CI_LFE2,
+    MASK_LFE3   = ((uint64_t)1)<<CI_LFE3,
+};
+
+#define ID(_A,_B) _A*100+_B
+static const Mpeg7_AudioPresentationCS_Extra_Struct Mpeg7_AudioPresentationCS_Extra[] =
+{
+    // 1.0
+    { ID(  2, 0), MASK_M_M    , "mono" },
+    // 2.0
+    { ID(  3, 0), MASK_M_030  , "stereo" },
+    { ID(  3, 0), MASK_M_T    , "stereo" }, // stereo-matrix
+    { ID(  3, 0), MASK_M_MM   , "stereo" }, // dual-mono
+    // 2.1
+    { ID( 50, 3), MASK_M_030 | MASK_LFE   , "2.1"},
+    // 3.0
+    { ID( 51, 1), MASK_M_030 | MASK_M_000 , "3.0 with 3 front speakers"},
+    { ID( 51, 2), MASK_M_030 | MASK_M_180 , "3.0 with 2 front, 1 back speakers" },
+    // 3.1
+    { ID( 52, 1), MASK_M_030 | MASK_M_000 | MASK_LFE   , "3.1 with 3 front speakers"},
+    { ID( 52, 2), MASK_M_030 | MASK_M_180 | MASK_LFE   , "3.1 with 2 front, 1 back speakers" },
+    // 4.0
+    { ID( 54, 1), MASK_M_030 | MASK_M_110              , "4.0 with 2 front, 2 surround speakers" },
+    { ID( 54, 2), MASK_M_030 | MASK_M_135              , "4.0 with 2 front, 2 back speakers"},
+    { ID( 54, 3), MASK_M_030 | MASK_M_000 | MASK_M_180 , "4.0 with 3 front, 1 back speakers" },
+    // 4.1
+    { ID( 54, 1), MASK_M_030 | MASK_M_110              | MASK_LFE    , "4.1 with 2 front, 2 surround speakers" },
+    { ID( 54, 2), MASK_M_030 | MASK_M_135              | MASK_LFE    , "4.1 with 2 front, 2 back speakers"},
+    { ID( 54, 3), MASK_M_030 | MASK_M_000 | MASK_M_180 | MASK_LFE    , "4.1 with 3 front, 1 back speakers" },
+    // 5.0
+    { ID( 55, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 , "5.0 with 3 front, 2 side speakers" },
+    { ID( 55, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 , "5.0 with 3 front, 2 surround speakers" },
+    { ID( 55, 3), MASK_M_030 | MASK_M_000 | MASK_M_135 , "5.0 with 3 front, 2 back speakers" },
+    // 5.1
+    { ID(  5, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_LFE   , "Home theater 5.1 with 3 front, 2 side speakers" },
+    { ID(  5, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_LFE   , "Home theater 5.1 with 3 front, 2 surround speakers" },
+    { ID(  5, 3), MASK_M_030 | MASK_M_000 | MASK_M_135 | MASK_LFE   , "Home theater 5.1 with 3 front, 2 back speakers" },
+    // 6.0
+    { ID( 58, 4), MASK_M_030 | MASK_M_090 | MASK_M_135              , "6.0 with 2 front, 2 side, 2 back speakers" },
+    { ID( 58, 5), MASK_M_030 | MASK_M_110 | MASK_M_135              , "6.0 with 2 front, 2 surround, 2 back speakers" },
+    { ID( 58, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_180 , "6.0 with 3 front, 2 side, 1 back speakers" },
+    { ID( 58, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_180 , "6.0 with 3 front, 2 surround, 1 back speakers" },
+    { ID( 58, 3), MASK_M_030 | MASK_M_000 | MASK_M_135 | MASK_M_180 , "6.0 with 3 front, 3 back speakers" },
+    { ID( 58, 6), MASK_M_030 | MASK_M_022 | MASK_M_090              , "6.0 with 4 front, 2 side speakers" },
+    { ID( 58, 7), MASK_M_030 | MASK_M_022 | MASK_M_110              , "6.0 with 4 front, 2 surround speakers" },
+    { ID( 58, 8), MASK_M_030 | MASK_M_022 | MASK_M_135              , "6.0 with 4 front, 2 back speakers" },
+    // 6.1
+    { ID( 58, 4), MASK_M_030 | MASK_M_090 | MASK_M_135              | MASK_LFE   , "6.1 with 2 front, 2 side, 2 back speakers" },
+    { ID( 58, 5), MASK_M_030 | MASK_M_110 | MASK_M_135              | MASK_LFE   , "6.1 with 2 front, 2 surround, 2 back speakers" },
+    { ID( 58, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_180 | MASK_LFE   , "6.1 with 3 front, 2 side, 1 back speakers" },
+    { ID( 58, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_180 | MASK_LFE   , "6.1 with 3 front, 2 surround, 1 back speakers" },
+    { ID( 58, 3), MASK_M_030 | MASK_M_000 | MASK_M_135 | MASK_M_180 | MASK_LFE   , "6.1 with 3 front, 3 back speakers" },
+    { ID( 58, 6), MASK_M_030 | MASK_M_022 | MASK_M_090              | MASK_LFE   , "6.1 with 4 front, 2 side speakers" },
+    { ID( 58, 7), MASK_M_030 | MASK_M_022 | MASK_M_110              | MASK_LFE   , "6.1 with 4 front, 2 surround speakers" },
+    { ID( 58, 8), MASK_M_030 | MASK_M_022 | MASK_M_135              | MASK_LFE   , "6.1 with 4 front, 2 back speakers" },
+    // 6.2
+    { ID( 58, 4), MASK_M_030 | MASK_M_090 | MASK_M_135              | MASK_LFE   | MASK_LFE2   , "6.2 with 2 front, 2 side, 2 back speakers" },
+    { ID( 58, 5), MASK_M_030 | MASK_M_110 | MASK_M_135              | MASK_LFE   | MASK_LFE2   , "6.2 with 2 front, 2 surround, 2 back speakers" },
+    { ID( 58, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_180 | MASK_LFE   | MASK_LFE2   , "6.2 with 3 front, 2 side, 1 back speakers" },
+    { ID( 58, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_180 | MASK_LFE   | MASK_LFE2   , "6.2 with 3 front, 2 surround, 1 back speakers" },
+    { ID( 58, 3), MASK_M_030 | MASK_M_000 | MASK_M_135 | MASK_M_180 | MASK_LFE   | MASK_LFE2   , "6.2 with 3 front, 3 back speakers" },
+    { ID( 58, 6), MASK_M_030 | MASK_M_022 | MASK_M_090              | MASK_LFE   | MASK_LFE2   , "6.2 with 4 front, 2 side speakers" },
+    { ID( 58, 7), MASK_M_030 | MASK_M_022 | MASK_M_110              | MASK_LFE   | MASK_LFE2   , "6.2 with 4 front, 2 surround speakers" },
+    { ID( 58, 8), MASK_M_030 | MASK_M_022 | MASK_M_135              | MASK_LFE   | MASK_LFE2   , "6.2 with 4 front, 2 back speakers" },
+    // 7.0
+    { ID( 59, 3), MASK_M_030 | MASK_M_090 | MASK_M_135 | MASK_M_180 , "7.0 with 2 front, 2 side, 3 back speakers" },
+    { ID( 59, 4), MASK_M_030 | MASK_M_110 | MASK_M_135 | MASK_M_180 , "7.0 with 2 front, 2 surround, 3 back speakers" },
+    { ID( 59, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_135 , "7.0 with 3 front, 2 side, 2 back speakers" },
+    { ID( 59, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_135 , "7.0 with 3 front, 2 surround, 2 back speakers" },
+    { ID( 59, 5), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_090 , "7.0 with 5 front, 2 side speakers" },
+    { ID( 59, 6), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_110 , "7.0 with 5 front, 2 surround speakers" },
+    { ID( 59, 7), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_135 , "7.0 with 5 front, 2 back speakers" },
+    // 7.1
+    { ID(  6, 3), MASK_M_030 | MASK_M_090 | MASK_M_135 | MASK_M_180 | MASK_LFE   , "Movie theater with 2 front, 2 side, 3 back speakers" },
+    { ID(  6, 4), MASK_M_030 | MASK_M_110 | MASK_M_135 | MASK_M_180 | MASK_LFE   , "Movie theater with 2 front, 2 surround, 3 back speakers" },
+    { ID(  6, 1), MASK_M_030 | MASK_M_000 | MASK_M_060 | MASK_M_110 | MASK_LFE   , "Movie theater with 3 front, 2 wide, 2 surround speakers" },
+    { ID(  6, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_135 | MASK_LFE   , "Movie theater with 3 front, 2 side, 2 back speakers" },
+    { ID(  6, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_135 | MASK_LFE   , "Movie theater with 3 front, 2 surround, 2 back speakers" },
+    { ID(  6, 5), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_090 | MASK_LFE   , "Movie theater with 5 front, 2 side speakers" },
+    { ID(  6, 6), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_110 | MASK_LFE   , "Movie theater with 5 front, 2 surround speakers" },
+    { ID(  6, 7), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_135 | MASK_LFE   , "Movie theater with 5 front, 2 back speakers" },
+    // 7.2
+    { ID( 60, 3), MASK_M_030 | MASK_M_090 | MASK_M_135 | MASK_M_180 | MASK_LFE   | MASK_LFE2   , "7.2 with 2 front, 2 side, 3 back speakers" },
+    { ID( 60, 4), MASK_M_030 | MASK_M_110 | MASK_M_135 | MASK_M_180 | MASK_LFE   | MASK_LFE2   , "7.2 with 2 front, 2 surround, 3 back speakers" },
+    { ID( 60, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_135 | MASK_LFE   | MASK_LFE2   , "7.2 with 3 front, 2 side, 2 back speakers" },
+    { ID( 60, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_135 | MASK_LFE   | MASK_LFE2   , "7.2 with 3 front, 2 surround, 2 back speakers" },
+    { ID( 60, 5), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_110 | MASK_LFE   | MASK_LFE2   , "7.2 with 5 front, 2 side speakers" },
+    { ID( 60, 6), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_110 | MASK_LFE   | MASK_LFE2   , "7.2 with 5 front, 2 surround speakers" },
+    { ID( 60, 7), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_135 | MASK_LFE   | MASK_LFE2   , "7.2 with 5 front, 2 back speakers" },
+    // 8.0
+    { ID( 61, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_135 | MASK_M_180 , "8.0 with 3 front, 2 side, 3 back speakers" },
+    { ID( 61, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_135 | MASK_M_180 , "8.0 with 3 front, 2 surround, 3 back speakers" },
+    { ID( 61, 3), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_090 | MASK_M_180 , "8.0 with 5 front, 2 side, 1 back speakers" },
+    { ID( 61, 4), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_110 | MASK_M_180 , "8.0 with 5 front, 2 surround, 1 back speakers" },
+    { ID( 61, 5), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_135 | MASK_M_180 , "8.0 with 5 front, 3 back speakers" },
+    // 8.1
+    { ID( 62, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_135 | MASK_M_180 | MASK_LFE   , "8.1 with 3 front, 2 side, 3 back speakers" },
+    { ID( 62, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_135 | MASK_M_180 | MASK_LFE   , "8.1 with 3 front, 2 surround, 3 back speakers" },
+    { ID( 62, 3), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_110 | MASK_M_180 | MASK_LFE   , "8.1 with 5 front, 2 side, 1 back speakers" },
+    { ID( 62, 4), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_110 | MASK_M_180 | MASK_LFE   , "8.1 with 5 front, 2 surround, 1 back speakers" },
+    { ID( 62, 5), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_135 | MASK_M_180 | MASK_LFE   , "8.1 with 5 front, 3 back speakers" },
+    // 8.2
+    { ID( 63, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_135 | MASK_LFE | MASK_LFE2   , "8.2 with 3 front, 2 side, 3 back speakers" },
+    { ID( 63, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_135 | MASK_LFE | MASK_LFE2   , "8.2 with 3 front, 2 surround, 3 back speakers" },
+    { ID( 63, 3), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_110 | MASK_LFE | MASK_LFE2   , "8.2 with 5 front, 2 side, 1 back speakers" },
+    { ID( 63, 4), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_110 | MASK_LFE | MASK_LFE2   , "8.2 with 5 front, 2 surround, 1 back speakers" },
+    { ID( 63, 5), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_135 | MASK_LFE | MASK_LFE2   , "8.2 with 5 front, 3 back speakers" },
+    // 22.2 (10.2.9.3)
+    { ID(100, 0), MASK_M_030 | MASK_M_000 | MASK_M_060 | MASK_M_090 | MASK_M_135 | MASK_M_180 | MASK_U_030 | MASK_U_000 | MASK_U_090 | MASK_T_000 | MASK_U_135 | MASK_U_180 | MASK_L_030 | MASK_L_000 | MASK_LFE   | MASK_LFE2  , "Hamasaki 22.2" },
+    { ID(100, 0), MASK_M_030 | MASK_M_000 | MASK_M_060 | MASK_M_110 | MASK_M_135 | MASK_M_180 | MASK_U_030 | MASK_U_000 | MASK_U_090 | MASK_T_000 | MASK_U_135 | MASK_U_180 | MASK_L_030 | MASK_L_000 | MASK_LFE   | MASK_LFE2  , "Hamasaki 22.2" },
+    // 2.0.2
+    { ID(101, 1), MASK_M_030 | MASK_U_030 , "2.0.2 with 2 front, 2 topfront speakers" },
+    // 2.1.2
+    { ID(102, 1), MASK_M_030 | MASK_U_030 | MASK_LFE   , "2.1.2 with 2 front, 2 topfront speakers" },
+    // 3.0.2
+    { ID(103, 1), MASK_M_030 | MASK_M_000 | MASK_U_030 , "3.0.2 with 3 front, 2 topfront speakers" },
+    // 3.1.2
+    { ID(104, 1), MASK_M_030 | MASK_M_000 | MASK_U_030 | MASK_LFE   , "3.1.2 with 3 front, 2 topfront speakers" },
+    // 5.1.2
+    { ID(105, 1), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_U_030 | MASK_LFE   , "5.1.2 with 3 front, 2 surround, 2 topfront speakers" },
+    { ID(105, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_U_090 | MASK_LFE   , "5.1.2 with 3 front, 2 surround, 2 topside speakers" },
+    { ID(105, 3), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_U_110 | MASK_LFE   , "5.1.2 with 3 front, 2 surround, 2 topsurround speakers" },
+    { ID(105, 4), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_U_135 | MASK_LFE   , "5.1.2 with 3 front, 2 surround, 2 topback speakers" },
+    // 5.1.4
+    { ID(106, 1), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_U_030 | MASK_U_090 | MASK_LFE   , "5.1.4 with 3 front, 2 surround, 2 topfront, 2 topside speakers" },
+    { ID(106, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_U_030 | MASK_U_110 | MASK_LFE   , "5.1.4 with 3 front, 2 surround, 2 topfront, 2 topsurround speakers" },
+    { ID(106, 3), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_U_030 | MASK_U_135 | MASK_LFE   , "5.1.4 with 3 front, 2 surround, 2 topfront, 2 topback speakers" },
+    // 5.1.6
+    { ID(107, 1), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_U_030 | MASK_U_000 | MASK_U_110 | MASK_T_000 | MASK_LFE   , "5.1.6 with 3 front, 2 surround, 3 topfront, 1 top, 2 topsurround speakers" },
+    // 7.1.4
+    { ID(108, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_135 | MASK_U_030 | MASK_U_135 | MASK_LFE   , "7.1.4 with 3 front, 2 side, 2 back, 2 topfront, 2 topback speakers" },
+    { ID(108, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_135 | MASK_U_030 | MASK_U_135 | MASK_LFE   , "7.1.4 with 3 front, 2 surround, 2 back, 2 topfront, 2 topback speakers" },
+    // 7.2.3
+    { ID(109, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_180 | MASK_U_030 | MASK_T_000 | MASK_LFE   | MASK_LFE2  , "7.2.3 with 3 front, 2 side, 2 back, 2 topfront, 1 top speakers" },
+    { ID(109, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_180 | MASK_U_030 | MASK_T_000 | MASK_LFE   | MASK_LFE2  , "7.2.3 with 3 front, 2 surround, 2 back, 2 topfront, 1 top speakers" },
+    // 7.1.6
+    { ID(110, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_135 | MASK_U_030 | MASK_U_000 | MASK_T_000 | MASK_U_090 | MASK_LFE   , "7.1.6 with 3 front, 2 side, 2 back, 3 topfront, 1 top, 2 topside speakers" },
+    { ID(110, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_135 | MASK_U_030 | MASK_U_000 | MASK_T_000 | MASK_U_110 | MASK_LFE   , "7.1.6 with 3 front, 2 surround, 2 back, 3 topfront, 1 top, 2 topsurround speakers" },
+    { ID(110, 3), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_135 | MASK_U_030 | MASK_U_090 | MASK_U_135 | MASK_LFE   , "7.1.6 with 3 front, 2 side, 2 back, 2 topfront, 2 topside, 2 topback speakers" },
+    { ID(110, 4), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_135 | MASK_U_030 | MASK_U_110 | MASK_U_135 | MASK_LFE   , "7.1.6 with 3 front, 2 surround, 2 back, 2 topfront, 2 topsurround, 2 topback speakers" },
+    // 9.1.4
+    { ID(111, 1), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_090 | MASK_M_135 | MASK_U_030 | MASK_U_135 | MASK_LFE   , "9.1.6 with 5 front, 2 side, 2 back, 2 topfront, 2 topback speakers" },
+    { ID(111, 2), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_110 | MASK_M_135 | MASK_U_030 | MASK_U_135 | MASK_LFE   , "9.1.6 with 5 front, 2 surround, 2 back, 2 topfront, 2 topback speakers" },
+    // 9.1.6
+    { ID(112, 1), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_090 | MASK_M_135 | MASK_U_030 | MASK_U_090 | MASK_U_135 | MASK_LFE   , "9.1.6 with 5 front, 2 side, 2 back, 2 topfront, 2 topside, 2 topback speakers" },
+    { ID(112, 2), MASK_M_030 | MASK_M_000 | MASK_M_022 | MASK_M_110 | MASK_M_135 | MASK_U_030 | MASK_U_110 | MASK_U_135 | MASK_LFE   , "9.1.6 with 5 front, 2 surround, 2 back, 2 topfront, 2 topsurround, 2 topback speakers" },
+    { ID(112, 3), MASK_M_030 | MASK_M_000 | MASK_M_060 | MASK_M_110 | MASK_M_135 | MASK_U_030 | MASK_U_090 | MASK_U_135 | MASK_LFE   , "9.1.6 with 3 front, 2 side, 2 surround, 2 back, 2 topfront, 2 topside, 2 topback speakers" },
+    // 10.0.6
+    { ID(113, 1), MASK_M_030 | MASK_M_000 | MASK_M_060 | MASK_M_110 | MASK_M_135 | MASK_M_180 | MASK_U_030 | MASK_U_090 | MASK_U_135 , "10.0.6 with 3 front, 2 wide, 2 surround, 3 back, 2 topfront, 2 topside, 2 topback speakers" },
+    { ID(113, 2), MASK_M_030 | MASK_M_000 | MASK_M_060 | MASK_M_110 | MASK_M_135 | MASK_M_180 | MASK_U_030 | MASK_U_000 | MASK_U_135 | MASK_U_180 , "10.0.6 with 3 front, 2 wide, 2 surround, 3 back, 3 topfront, 3 topback speakers" },
+};
+
 int32u Mpeg7_AudioPresentationCS_termID(MediaInfo_Internal &MI, size_t StreamPos)
 {
-    const Ztring &Channels=MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_);
-    const Ztring &ChannelPositions2=MI.Get(Stream_Audio, StreamPos, Audio_ChannelPositions_String2);
-    if (Channels==__T("6") && ChannelPositions2==__T("3/2.1"))
-        return 50000;
-    if (Channels==__T("8") && ChannelPositions2==__T("3/2/2.1"))
-        return 60000;
-    if (Channels==__T("2"))
-        return 30000;
-    if (Channels==__T("1"))
-        return 20000;
+    //Get ChannelLayout and remove disabled channels e.g. from Dolby E
+    ZtringList ChannelLayout;
+    ChannelLayout.Separator_Set(0, __T(" "));
+    Ztring ChannelLayoutZ=MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout);
+    if (ChannelLayoutZ.empty())
+        ChannelLayoutZ=MI.Get(Stream_Audio, StreamPos, __T("Substream0 ChannelLayout"));
+    ChannelLayout.Write(ChannelLayoutZ);
+    int64u ChannelLayoutI=0;
+    for (const auto& Item : ChannelLayout)
+    {
+        string ItemS=Item.To_UTF8();
+        if (ItemS=="X")
+            continue; //Ignore masked channels
+        if (ItemS=="M" && (ChannelLayoutI&MASK_M_M))
+        {
+            ChannelLayoutI|=MASK_M_M2;
+            continue;
+        }
+        if (ChannelLayout.size()==1 && ItemS=="C" && MI.Count_Get(Stream_Audio)==1)
+        {
+            ChannelLayoutI|=MASK_M_M;
+            continue;
+        }
+        if (ItemS=="Lscr")
+            ItemS="Lc";
+        if (ItemS=="Rscr")
+            ItemS="Rc";
+        size_t i=0;
+        for (; i<CI_MAX; i++)
+            if (ChannelIndexMap[i]==ItemS)
+            {
+                ChannelLayoutI|=((uint64_t)1)<<i;
+                break;
+            }
+        if (i==CI_MAX)
+            return 0;
+    }
+
+    //Not ins specs
+    for (auto Pos=begin(Mpeg7_AudioPresentationCS_Extra); Pos!=end(Mpeg7_AudioPresentationCS_Extra); ++Pos)
+    {
+        if (Pos->ChannelLayout==ChannelLayoutI)
+            return Pos->Index*100;
+
+    }
+
+    const auto Channels=MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_).To_int32u();
+    switch (Channels)
+    {
+        case 1: return 20000;
+        case 2: return 30000;
+    }
     return 0;
 }
 
 Ztring Mpeg7_AudioPresentationCS_Name(int32u termID, MediaInfo_Internal &MI, size_t StreamPos)
 {
-    switch (termID/10000)
+    int32u termID0=termID/10000;
+    int32u termID1=termID%10000;
+    termID1/=100;
+    termID/=100;
+    if (!termID1)
     {
-        case 2 : return __T("mono");
-        case 3 : return __T("stereo");
-        case 5 : return __T("Home theater 5.1");
-        case 6 : return __T("Movie theater");
-        default: return MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout);
+        switch (termID0)
+        {
+            case   2:
+            case   3:
+            case 100:
+                break;
+            default:
+                termID+=1; //Using the first available then trim
+        }
     }
+    for (const auto& Mpeg7_AudioPresentationCS_Extra_Item : Mpeg7_AudioPresentationCS_Extra)
+    {
+        if (Mpeg7_AudioPresentationCS_Extra_Item.Index==termID)
+        {
+            Ztring Result;
+            Result.From_UTF8(Mpeg7_AudioPresentationCS_Extra_Item.Name);
+            if (!termID1)
+            {
+                auto With=Result.find(__T(" with"));
+                if (With!=string::npos)
+                    Result.resize(With);
+            }
+            return Result;
+        }
+    }
+
+    return MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout);
 }
 
 //---------------------------------------------------------------------------
