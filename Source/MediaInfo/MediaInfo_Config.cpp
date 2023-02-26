@@ -314,16 +314,15 @@ void MediaInfo_Config_Library_VorbisCom       (InfoMap &Info);
 //---------------------------------------------------------------------------
 // Output formats
 
-static const size_t output_formats_item_size = 3;
-static const char* OutputFormats_JSONFields[output_formats_item_size] =
+static const char* OutputFormats_JSONFields[] =
 {
     "name",
     "desc",
     "mime",
 };
+static const size_t output_formats_item_size = sizeof(OutputFormats_JSONFields) / sizeof(decltype(*OutputFormats_JSONFields));
 typedef const char* output_formats_item[output_formats_item_size];
-static const size_t output_formats_size = 15;
-static output_formats_item OutputFormats[output_formats_size] =
+static output_formats_item OutputFormats[] =
 {
     { "Text",                   "Text",                                                         "text/plain",       },
     { "HTML",                   "HTML",                                                         "text/html",        },
@@ -335,12 +334,15 @@ static output_formats_item OutputFormats[output_formats_size] =
     { "EBUCore_1.8_sp_JSON",    "EBUCore 1.8 (JSON; acq. metadata: segment then parameter)",    "text/json",        },
     { "EBUCore_1.6",            "EBUCore 1.6",                                                  "text/xml",         },
     { "FIMS_1.3",               "FIMS 1.3",                                                     "text/xml",         },
-    { "MPEG-7",                 "MPEG-7",                                                       "text/xml",         },
+    { "MPEG-7_Strict",          "MPEG-7 (Strict)",                                              "text/xml",         },
+    { "MPEG-7_Relaxed",         "MPEG-7 (Relaxed)",                                             "text/xml",         },
+    { "MPEG-7_Extended",        "MPEG-7 (Extended)",                                            "text/xml",         },
     { "PBCore_2.1",             "PBCore 2.1",                                                   "text/xml",         },
     { "PBCore_2.0",             "PBCore 2.0",                                                   "text/xml",         },
     { "PBCore_1.2",             "PBCore 1.2",                                                   "text/xml",         },
     { "NISO_Z39.87",            "NISO Z39.87",                                                  "text/xml",         },
 };
+static const size_t output_formats_size = sizeof(OutputFormats) / sizeof(decltype(*OutputFormats));
 
 //---------------------------------------------------------------------------
 
