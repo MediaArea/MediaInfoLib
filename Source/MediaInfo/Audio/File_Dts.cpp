@@ -166,7 +166,7 @@ const char*  DTS_ChannelPositions2[16]=
 //---------------------------------------------------------------------------
 static const char*  DTS_ChannelLayout[16]=
 {
-    "C",
+    "M",
     "M M",
     "L R",
     "L R",
@@ -341,6 +341,8 @@ std::string DTS_HD_SpeakerActivityMask2 (int16u SpeakerActivityMask, bool AddCs=
 std::string DTS_HD_SpeakerActivityMask_ChannelLayout (int16u SpeakerActivityMask, bool AddCs=false, bool AddLrsRrs=false)
 {
     std::string Text;
+    if (SpeakerActivityMask==1)
+        return "M";
     if (SpeakerActivityMask&0x0001)
         Text+=" C";
     if (SpeakerActivityMask&0x0002)

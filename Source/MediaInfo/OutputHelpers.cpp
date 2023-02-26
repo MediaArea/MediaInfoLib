@@ -92,14 +92,20 @@ string To_XML (Node& Cur_Node, const int& Level, bool Print_Header, bool Indent)
     if (Print_Header)
     {
         Result+="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-        //Current date/time is ISO format
+        Result+="<!-- Generated";
         time_t Time=time(NULL);
         Ztring TimeS; TimeS.Date_From_Seconds_1970((int32u)Time);
-        TimeS.FindAndReplace(__T("UTC "), __T(""));
-        TimeS.FindAndReplace(__T(" "), __T("T"));
-        TimeS+=__T("+00:00");
-
-        Result+=string("<!-- Generated at "+TimeS.To_UTF8()+" by "+MediaInfoLib::Config.Info_Version_Get().To_UTF8()+" -->\n");
+        if (!TimeS.empty())
+        {
+            TimeS.FindAndReplace(__T("UTC "), __T(""));
+            TimeS.FindAndReplace(__T(" "), __T("T"));
+            TimeS+=__T('Z');
+            Result+=" at ";
+            Result+=TimeS.To_UTF8();
+        }
+        Result+=" by ";
+        Result+=MediaInfoLib::Config.Info_Version_Get().To_UTF8();
+        Result+=" -->\n";
     }
 
     if (Cur_Node.Name.empty() && Cur_Node.XmlCommentOut.empty())

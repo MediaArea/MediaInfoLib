@@ -188,7 +188,7 @@ void File_Flac::Data_Parse()
         if (t) {
             Fill(Stream_Audio, 0, Audio_ChannelPositions, ExtensibleWave_ChannelMask(t));
             Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ExtensibleWave_ChannelMask2(t));
-            Fill(Stream_Audio, 0, Audio_ChannelLayout, ExtensibleWave_ChannelMask_ChannelLayout(t));
+            Fill(Stream_Audio, 0, Audio_ChannelLayout, t==4?"M":ExtensibleWave_ChannelMask_ChannelLayout(t));
         }
     }
 
