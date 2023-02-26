@@ -596,8 +596,8 @@ static const char* AC4_nonstd_bed_channel_assignment_mask_ChannelLayout_List[17+
     "Rb",
     "Tfl",
     "Tfr",
-    "Tl",
-    "Tr",
+    "Tsl", //Tl
+    "Tsr", //Tr
     "Tbl",
     "Tbr",
     "Lw",
