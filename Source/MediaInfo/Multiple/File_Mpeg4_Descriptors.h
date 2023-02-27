@@ -37,6 +37,7 @@ enum audio_profile
     High_Efficiency_AAC,
     High_Efficiency_AAC_v2,
     Low_Delay_AAC,
+    Low_Delay_AAC_v2,
     Baseline_MPEG_Surround,
     High_Definition_AAC,
     ALS_Simple,
