@@ -89,6 +89,7 @@ HEADERS += \
         ../../Source/MediaInfo/Audio/File_Tak.h \
         ../../Source/MediaInfo/Audio/File_Tta.h \
         ../../Source/MediaInfo/Audio/File_TwinVQ.h \
+        ../../Source/MediaInfo/Audio/File_Usac.h \
         ../../Source/MediaInfo/Audio/File_Vorbis.h \
         ../../Source/MediaInfo/Audio/File_Wvpk.h \
         ../../Source/MediaInfo/Duplicate/File__Duplicate__Base.h \
