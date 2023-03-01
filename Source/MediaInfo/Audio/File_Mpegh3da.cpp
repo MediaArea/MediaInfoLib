@@ -363,7 +363,6 @@ void File_Mpegh3da::Streams_Fill()
             C.loudnessInfoSet_Present[0]=0;
             C.loudnessInfoSet_Present[1]=1;
         #endif
-        C.loudnessInfoSet_IsNotValid=false;
         Fill_Loudness(NULL);
         C.loudnessInfo_Data[0].clear();
         C.loudnessInfo_Data[1].clear();
@@ -416,7 +415,6 @@ void File_Mpegh3da::Streams_Fill()
                     C.loudnessInfoSet_Present[0]=0;
                     C.loudnessInfoSet_Present[1]=1;
                 #endif
-                C.loudnessInfoSet_IsNotValid=false;
                 Fill_Loudness(p.c_str(), NoLoudnesConch);
                 C.loudnessInfo_Data[0].clear();
             }
@@ -551,7 +549,6 @@ void File_Mpegh3da::Streams_Fill()
                     C.loudnessInfoSet_Present[0]=0;
                     C.loudnessInfoSet_Present[1]=1;
                 #endif
-                C.loudnessInfoSet_IsNotValid=false;
                 Fill_Loudness(g.c_str(), NoLoudnesConch);
                 C.loudnessInfo_Data[0].clear();
             }
@@ -576,7 +573,6 @@ void File_Mpegh3da::Streams_Fill()
                     C.loudnessInfoSet_Present[0]=0;
                     C.loudnessInfoSet_Present[1]=1;
                 #endif
-                C.loudnessInfoSet_IsNotValid=false;
                 Fill_Loudness(g.c_str(), NoLoudnesConch);
                 C.loudnessInfo_Data[0].clear();
             }

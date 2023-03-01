@@ -83,10 +83,10 @@ public :
     };
     bs_bookmark                     BS_Bookmark(size_t NewSize);
     #if MEDIAINFO_CONFORMANCE
-    bool                            BS_Bookmark(bs_bookmark& B, const string& ConformanceFieldName);
+    void                            BS_Bookmark(bs_bookmark& B, const string& ConformanceFieldName, bool* IsNotValid=nullptr);
     #else
-    bool                            BS_Bookmark(bs_bookmark& B);
-    inline bool                     BS_Bookmark(bs_bookmark& B, const string& ConformanceFieldName) {return BS_Bookmark(B);}
+    void                            BS_Bookmark(bs_bookmark& B);
+    inline void                     BS_Bookmark(bs_bookmark& B, const string&, bool* =nullptr) {BS_Bookmark(B);}
     #endif
 
     //Fill
@@ -269,7 +269,7 @@ public :
         int8u                       coreSbrFrameLengthIndex;
         int8u                       baseChannelCount;
         bool                        IsNotValid;
-        bool                        loudnessInfoSet_IsNotValid;
+        bool                        LoudnessInfoIsNotValid;
         bool                        harmonicSBR;
     };
     struct usac_frame
