@@ -108,7 +108,10 @@ bool DateTime_Adapt(string& Value_)
             return true;
         }
 
+        #if defined(_MSC_VER)
         try
+        #endif
+        #if !defined(__GNUC__) || __GNUC__>=5
         {
             tm t;
             string ValueT(Value);
@@ -189,10 +192,13 @@ bool DateTime_Adapt(string& Value_)
                 }
             }
         }
+        #endif
+        #if defined(_MSC_VER)
         catch (...)
         {
             return false;
         }
+        #endif
     }
     
     // Year
