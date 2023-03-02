@@ -552,6 +552,8 @@ private :
     Ztring                              MuxingMode;
     string                              PictureTypes_PreviousFrames;
     int64u                              tc;
+    int64s                              pic_order_cnt_Delta;
+    int64s                              pic_order_cnt_Displayed;
     int32u                              Firstpic_order_cnt_lsbInBlock;
     int8u                               nal_ref_idc;
     int8u                               FrameRate_Divider;
