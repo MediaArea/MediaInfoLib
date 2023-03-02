@@ -2383,10 +2383,17 @@ void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool ar
     {
         // set context
         memset(&C.arithContext[ch].q[1], 1, sizeof(C.arithContext[ch].q[1]));
+        C.IsNotValid=true;
+        F.NotImplemented=true;
         return;
     }
     else if (lg>1024 || N>4096) // Preserve arrays boundaries
-        return; // TODO: Handle error
+    {
+        Trusted_IsNot("lg too high");
+        C.IsNotValid=true;
+        F.NotImplemented=true;
+        return;
+    }
 
     Element_Begin1("arithData");
 
@@ -2398,8 +2405,11 @@ void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool ar
         {
             if (!N)
             {
+                Trusted_IsNot("arith_map_context");
+                C.IsNotValid=true;
+                F.NotImplemented=true;
                 Element_End0();
-                return; // TODO: Handle error
+                return;
             }
 
             float ratio=((float)C.arithContext[ch].previous_window_size)/((float)N);
@@ -2488,9 +2498,12 @@ void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool ar
 
             if (lev>23)
             {
+                Trusted_IsNot("lev too high");
+                C.IsNotValid=true;
+                F.NotImplemented=true;
                 Element_End0();
                 Element_End0();
-                return; //TODO: Handle error
+                return;
             }
         }
 
@@ -2562,8 +2575,10 @@ void File_Usac::acSpectralData(size_t ch, bool usacIndependencyFlag)
     if (!usacIndependencyFlag)
         Get_SB (arith_reset_flag,                               "arith_reset_flag");
 
-    if (!Aac_sampling_frequency[C.sampling_frequency_index])
+    if (C.IsNotValid || !Aac_sampling_frequency[C.sampling_frequency_index])
     {
+        C.IsNotValid=true;
+        F.NotImplemented=true;
         Element_End0();
         return;
     }
@@ -2588,6 +2603,13 @@ void File_Usac::acSpectralData(size_t ch, bool usacIndependencyFlag)
     }
     else
         sampling_frequency_index_swb=C.sampling_frequency_index;
+    if (sampling_frequency_index_swb>=13)
+    {
+        C.IsNotValid=true;
+        F.NotImplemented=true;
+        Element_End0();
+        return;
+    }
 
     if (num_windows==1)
     {
@@ -2685,7 +2707,7 @@ void File_Usac::fdChannelStream(size_t ch, bool commonWindow, bool commonTw, boo
         tnsData();
 
     acSpectralData(ch, usacIndependencyFlag);
-    if (!Aac_sampling_frequency[C.sampling_frequency_index])
+    if (F.NotImplemented)
     {
         Element_End0();
         return;
@@ -2844,6 +2866,7 @@ void File_Usac::UsacCoreCoderData(size_t nrChannels, bool usacIndependencyFlag)
     {
         if (coreModes[ch])
         {
+            C.IsNotValid=true;
             F.NotImplemented=true;
             //TODO: lpd_channel_stream(indepFlag);
         }
@@ -2853,9 +2876,9 @@ void File_Usac::UsacCoreCoderData(size_t nrChannels, bool usacIndependencyFlag)
                 Get_SB(tnsDataPresent[ch],                      "tns_data_present");
 
             fdChannelStream(ch, C.common_window, C.common_tw, tnsDataPresent[ch], usacIndependencyFlag);
-            if (!Aac_sampling_frequency[C.sampling_frequency_index])
-                ch=nrChannels;
         }
+        if (F.NotImplemented)
+            ch=nrChannels;
     }
 
     Element_End0();

@@ -41,6 +41,7 @@ extern const int32u Aac_sampling_frequency[];
 struct coreSbrFrameLengthIndex_mapping
 {
     int8u    sbrRatioIndex;
+    int16u   coreCoderFrameLength;
     int8u    outputFrameLengthDivided256;
 };
 extern const size_t coreSbrFrameLengthIndex_Mapping_Size;
