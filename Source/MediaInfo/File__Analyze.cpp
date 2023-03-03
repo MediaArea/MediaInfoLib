@@ -2423,6 +2423,7 @@ bool File__Analyze::Data_Manage()
         {
             FrameInfo=FrameInfo_Next;
             FrameInfo_Next=frame_info();
+            Frame_Count_InThisBlock=0;
         }
 
         //Testing the parser result
