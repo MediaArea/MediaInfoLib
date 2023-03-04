@@ -512,6 +512,9 @@ void File_Flv::Streams_Fill()
 //---------------------------------------------------------------------------
 void File_Flv::Streams_Finish()
 {
+    if (File_Offset+Buffer_Offset!=File_Size)
+        Read_Buffer_Unsynched();
+
     //Duration
     //if (meta_duration)
     //    Fill(Stream_General, 0, General_Duration, meta_duration, 10, true);
