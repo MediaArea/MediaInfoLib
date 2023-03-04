@@ -20,6 +20,24 @@ class File_MpegPs;
 namespace MediaInfoLib
 {
 
+struct stts_struct
+{
+    int32u                      SampleCount;
+    int32u                      SampleDuration;
+};
+
+struct sgpd_prol_struct
+{
+    int16s                      roll_distance;
+};
+
+struct sbgp_struct
+{
+    int64u                      FirstSample;
+    int64u                      LastSample;
+    int32u                      group_description_index;
+};
+
 //***************************************************************************
 // Class File_Mpeg4
 //***************************************************************************
@@ -465,11 +483,6 @@ private :
         int64u                  stsz_MoreThan2_Count;
         std::vector<int64u>     stss; //Sync Sample, base=0
         int64u                  FramePos_Offset;
-        struct stts_struct
-        {
-            int32u SampleCount;
-            int32u SampleDuration;
-        };
         std::vector<stts_struct> stts;
         int64u                  stsz_Sample_Size;
         int64u                  stsz_Sample_Multiplier;
@@ -544,6 +557,13 @@ private :
             int32u          CodecID;
             void            SplitAudio(File_Mpeg4::stream& Video, int32u moov_mvhd_TimeScale);
         #endif //MEDIAINFO_DEMUX
+        #if MEDIAINFO_CONFORMANCE
+            bool                stss_IsPresent;
+            std::vector<sgpd_prol_struct> sgpd_prol;
+            std::vector<sbgp_struct> sbgp;
+            int8u               default_sample_is_non_sync_sample_PresenceAndValue;
+            size_t              FirstOutputtedDecodedSample;
+        #endif
 
         stream()
         {
@@ -604,6 +624,11 @@ private :
                 Demux_EventWasSent=false;
                 CodecID=0x00000000;
             #endif //MEDIAINFO_DEMUX
+            #if MEDIAINFO_CONFORMANCE
+                stss_IsPresent=false;
+                default_sample_is_non_sync_sample_PresenceAndValue=0;
+                FirstOutputtedDecodedSample=0;
+            #endif
         }
 
         ~stream()

@@ -887,7 +887,7 @@ extern int8u Aac_Channels_Get(int8u ChannelLayout);
 extern string Aac_Channels_GetString(int8u ChannelLayout);
 extern string Aac_ChannelConfiguration_GetString(int8u ChannelLayout);
 extern string Aac_ChannelConfiguration2_GetString(int8u ChannelLayout);
-extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegh3da=false);
+extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegh3da=false, bool IsTip=false);
 extern string Aac_ChannelMode_GetString(int8u ChannelLayout, bool IsMpegh3da=false);
 
 //---------------------------------------------------------------------------

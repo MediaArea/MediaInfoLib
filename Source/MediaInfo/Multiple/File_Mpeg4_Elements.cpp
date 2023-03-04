@@ -2039,7 +2039,6 @@ void File_Mpeg4::mdat_xxxx()
         }
     #endif //MEDIAINFO_DEMUX
 
-    int64u Size;
     for (size_t Pos=0; Pos<Stream_Temp.Parsers.size(); Pos++)
     {
         #if MEDIAINFO_DEMUX
@@ -2929,6 +2928,9 @@ void File_Mpeg4::moof_traf_tfhd()
         Skip_S1(2,                                              "sample_has_redundancy");
         Skip_S1(3,                                              "sample_padding_value");
         Get_SB (   sample_is_non_sync_sample,                   "sample_is_non_sync_sample");
+        #if MEDIAINFO_CONFORMANCE
+            Stream->second.default_sample_is_non_sync_sample_PresenceAndValue=1|(sample_is_non_sync_sample<<1);
+        #endif
         BS_End();
         Skip_B2(                                                "sample_degradation_priority");
         Element_End0();
@@ -2985,6 +2987,9 @@ void File_Mpeg4::moof_traf_trun()
     if (!sample_size_present)
         Stream->second.stsz.resize(Stream->second.stsz.size()+sample_count, moof_traf_default_sample_size);
 
+    #if MEDIAINFO_CONFORMANCE
+        int8u first_sample_is_non_sync_sample_PresenceAndValue;
+    #endif
     if (first_sample_flags_present)
     {
         Element_Begin1("first_sample_flags");
@@ -2997,10 +3002,17 @@ void File_Mpeg4::moof_traf_trun()
         Skip_S1(2,                                              "sample_has_redundancy");
         Skip_S1(3,                                              "sample_padding_value");
         Get_SB (   sample_is_non_sync_sample,                   "sample_is_non_sync_sample");
+        #if MEDIAINFO_CONFORMANCE
+            first_sample_is_non_sync_sample_PresenceAndValue=1|(sample_is_non_sync_sample<<1);
+        #endif
         BS_End();
         Skip_B2(                                                "sample_degradation_priority");
         Element_End0();
     }
+    #if MEDIAINFO_CONFORMANCE
+        else
+            first_sample_is_non_sync_sample_PresenceAndValue=0;
+    #endif
     for (int32u Pos=0; Pos<sample_count; Pos++)
     {
         Element_Begin1("sample");
@@ -3027,6 +3039,9 @@ void File_Mpeg4::moof_traf_trun()
             if (Stream->second.StreamKind==Stream_Text && sample_size>2)
                 Stream->second.stsz_MoreThan2_Count++;
         }
+        #if MEDIAINFO_CONFORMANCE
+            int8u sample_is_non_sync_sample_PresenceAndValue;
+        #endif
         if (sample_flags_present)
         {
             Element_Begin1("sample_flags");
@@ -3041,8 +3056,19 @@ void File_Mpeg4::moof_traf_trun()
             Get_SB (   sample_is_non_sync_sample,               "sample_is_non_sync_sample");
             BS_End();
             Skip_B2(                                            "sample_degradation_priority");
+            #if MEDIAINFO_CONFORMANCE
+                sample_is_non_sync_sample_PresenceAndValue=1|(sample_is_non_sync_sample<<1);
+            #endif
             Element_End0();
         }
+        #if MEDIAINFO_CONFORMANCE
+            else if (!Pos && first_sample_is_non_sync_sample_PresenceAndValue)
+                sample_is_non_sync_sample_PresenceAndValue=first_sample_is_non_sync_sample_PresenceAndValue;
+            else
+                sample_is_non_sync_sample_PresenceAndValue=Stream->second.default_sample_is_non_sync_sample_PresenceAndValue;
+            if (sample_is_non_sync_sample_PresenceAndValue==1) //Present and sync
+                Stream->second.stss.push_back(Stream->second.FramePos_Offset+Pos);
+        #endif
         if (sample_composition_time_offset_present)
         {
             Info_B4(sample_composition_time_offset,             "sample_composition_time_offset"); Param_Info1((int32s)sample_composition_time_offset);
@@ -3953,6 +3979,7 @@ void File_Mpeg4::moov_trak_edts_elst()
     //Parsing
     int32u Count;
     Get_B4 (Count,                                              "Number of entries");
+    auto& Stream=Streams[moov_trak_tkhd_TrackID];
     for (int32u Pos=0; Pos<Count; Pos++)
     {
         stream::edts_struct edts;
@@ -3962,8 +3989,13 @@ void File_Mpeg4::moov_trak_edts_elst()
         Get_B4 (edts.Rate,                                      "Media rate"); Param_Info1(((float)edts.Rate)/0x10000);
         Element_End0();
 
-        Streams[moov_trak_tkhd_TrackID].edts.push_back(edts);
+        Stream.edts.push_back(edts);
     }
+
+    #if MEDIAINFO_CONFORMANCE
+        if (Count)
+            Stream.FirstOutputtedDecodedSample=Stream.edts.front().Delay;
+    #endif
 }
 
 //---------------------------------------------------------------------------
@@ -4845,6 +4877,9 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_sbgp()
         Skip_C4(                                                "grouping_type_parameter");
     Get_B4 (Count,                                              "entry_count");
     auto& Stream=Streams[moov_trak_tkhd_TrackID];
+    #if MEDIAINFO_CONFORMANCE
+        auto& sbgp=Stream.sbgp;
+    #endif
     for (int32u Pos=0; Pos<Count; Pos++)
     {
         Element_Begin1("sample");
@@ -4852,6 +4887,10 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_sbgp()
         int32u sample_count, group_description_index;
         Get_B4 (sample_count,                                   "sample_count"); Element_Info1(sample_count);
         Get_B4 (group_description_index,                        "group_description_index"); Element_Info1(group_description_index);
+        #if MEDIAINFO_CONFORMANCE
+            if (group_description_index&0xFFFF)
+                sbgp.push_back({Stream.FramePos_Offset+Total, Stream.FramePos_Offset+Total+sample_count, group_description_index&0xFFFF});
+        #endif
         Total+=sample_count;
         Element_End0();
     }
@@ -4901,6 +4940,9 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_sgpd()
                         Get_B2 (roll_distance,                  "roll_distance");
                         if (roll_distance>=0x8000)
                             Param_Info1((int16s)roll_distance);
+                        #if MEDIAINFO_CONFORMANCE
+                            Streams[moov_trak_tkhd_TrackID].sgpd_prol.push_back({(int16s)roll_distance});
+                        #endif
                         break;
                         }
                     default:
@@ -5646,6 +5688,12 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
             Parser->AudioSpecificConfig_OutOfBand(SampleRate, 2);
             Parser->Mode=File_Aac::Mode_payload;
             Parser->FrameIsAlwaysComplete=true;
+            #if MEDIAINFO_CONFORMANCE
+                Parser->Immediate_FramePos=&Streams[moov_trak_tkhd_TrackID].stss;
+                Parser->Immediate_FramePos_IsPresent=&Streams[moov_trak_tkhd_TrackID].stss_IsPresent;
+                Parser->roll_distance_Values=&Streams[moov_trak_tkhd_TrackID].sgpd_prol;
+                Parser->roll_distance_FramePos=&Streams[moov_trak_tkhd_TrackID].sbgp;
+            #endif
             Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
         }
         #endif
@@ -7883,6 +7931,9 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stss()
 {
     NAME_VERSION_FLAG("Sync Sample");
 
+    #if MEDIAINFO_CONFORMANCE
+        Streams[moov_trak_tkhd_TrackID].stss_IsPresent=true;
+    #endif
     Streams[moov_trak_tkhd_TrackID].stss.clear();
 
     //Parsing
@@ -8180,7 +8231,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_subs()
 
 void File_Mpeg4::stream::moov_trak_mdia_minf_stbl_stts_Common(int32u SampleCount, int32u SampleDuration, int32u Pos, int32u NumberOfEntries)
 {
-    stream::stts_struct Stts;
+    stts_struct Stts;
     Stts.SampleCount=SampleCount;
     Stts.SampleDuration=SampleDuration;
     stts.push_back(Stts);

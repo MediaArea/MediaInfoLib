@@ -3085,7 +3085,15 @@ void File_Mpeg4::Descriptors()
     MI.Parser_DoNotFreeIt=true;
     MI.ES_ID_Infos=ES_ID_Infos;
     #if MEDIAINFO_CONFORMANCE
+        const auto& Stream=Streams[moov_trak_tkhd_TrackID];
         MI.SamplingRate=Retrieve_Const(Stream_Audio, 0, Audio_SamplingRate).To_int16u();
+        MI.stss=&Stream.stss;
+        MI.stss_IsPresent=&Stream.stss_IsPresent;
+        MI.sbgp=&Stream.sbgp;
+        MI.stts=&Stream.stts;
+        MI.FirstOutputtedDecodedSample=&Stream.FirstOutputtedDecodedSample;
+        MI.sgpd_prol=&Stream.sgpd_prol;
+        MI.sbgp=&Stream.sbgp;
     #endif
 
     int64u Elemen_Code_Save=Element_Code;

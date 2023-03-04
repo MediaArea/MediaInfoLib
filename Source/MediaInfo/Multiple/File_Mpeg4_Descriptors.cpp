@@ -69,6 +69,7 @@
     #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
     #include "ThirdParty/base64/base64.h"
 #endif //MEDIAINFO_DEMUX
+using namespace std;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -225,8 +226,7 @@ const char* Mpeg4_Descriptors_AudioProfileLevelIndication_Profile[]=
     "No audio capability required",
     #endif
 };
-static const size_t Mpeg4_Descriptors_AudioProfileLevelIndication_Size=0x58;
-const profilelevel_struct Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[Mpeg4_Descriptors_AudioProfileLevelIndication_Size]=
+const profilelevel_struct Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[]=
 {
     { NoProfile, 0 },
     { Main_Audio, 1 },
@@ -317,6 +317,7 @@ const profilelevel_struct Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[
     { Extended_HE_AAC, 6 },
     { Extended_HE_AAC, 7 },
 };
+const size_t Mpeg4_Descriptors_AudioProfileLevelIndication_Size=sizeof(Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping)/sizeof(profilelevel_struct);
 static const Ztring Mpeg4_Descriptors_AudioProfileLevelIndication(int8u AudioProfileLevelIndication)
 {
     if (AudioProfileLevelIndication>=Mpeg4_Descriptors_AudioProfileLevelIndication_Size || Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[AudioProfileLevelIndication].profile==NoProfile)
@@ -327,6 +328,35 @@ static const Ztring Mpeg4_Descriptors_AudioProfileLevelIndication(int8u AudioPro
     ToReturn+=Ztring().From_Number(Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[AudioProfileLevelIndication].level);
     return ToReturn;
 }
+int8u Mpeg4_Descriptors_ToAudioProfileLevelIndication(audio_profile Profile, int8u Level)
+{
+    const profilelevel_struct ToMatch = { Profile, Level};
+    for (size_t i = 0; i < Mpeg4_Descriptors_AudioProfileLevelIndication_Size; i++)
+        if (ToMatch == Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[i])
+            return i;
+    return NoProfile;
+}
+#if MEDIAINFO_CONFORMANCE
+string Mpeg4_Descriptors_ToAudioProfileLevelIndicationString(audio_profile Profile, int8u Level)
+{
+    auto AudioProfileLevelIndication = (Mpeg4_Descriptors_ToAudioProfileLevelIndication(Profile, Level));
+    string ProfileString;
+    if (AudioProfileLevelIndication)
+        ProfileString = to_string(AudioProfileLevelIndication);
+    if (Profile) {
+        if (AudioProfileLevelIndication)
+            ProfileString += " (";
+        ProfileString += Mpeg4_Descriptors_AudioProfileLevelIndication_Profile[Profile];
+        if (Level) {
+            ProfileString += '@';
+            ProfileString += to_string(Level);
+        }
+        if (AudioProfileLevelIndication)
+            ProfileString += ')';
+    }
+    return ProfileString;
+}
+#endif
 
 //---------------------------------------------------------------------------
 extern const char* Mpeg4v_Profile_Level(int32u Profile_Level);
@@ -381,6 +411,8 @@ File_Mpeg4_Descriptors::File_Mpeg4_Descriptors()
     //Conformance
     #if MEDIAINFO_CONFORMANCE
         SamplingRate=0;
+        stss=nullptr;
+        sbgp=nullptr;
     #endif
 }
 
@@ -793,6 +825,12 @@ void File_Mpeg4_Descriptors::Descriptor_04()
                             ((File_Aac*)Parser)->Mode=File_Aac::Mode_AudioSpecificConfig;
                             ((File_Aac*)Parser)->FrameIsAlwaysComplete=true;
                             #if MEDIAINFO_CONFORMANCE
+                                ((File_Aac*)Parser)->Immediate_FramePos=stss;
+                                ((File_Aac*)Parser)->Immediate_FramePos_IsPresent=stss_IsPresent;
+                                ((File_Aac*)Parser)->outputFrameLength=stts;
+                                ((File_Aac*)Parser)->FirstOutputtedDecodedSample=FirstOutputtedDecodedSample;
+                                ((File_Aac*)Parser)->roll_distance_Values=sgpd_prol;
+                                ((File_Aac*)Parser)->roll_distance_FramePos=sbgp;
                                 ((File_Aac*)Parser)->SamplingRate=SamplingRate;
                                 {
                                     auto const ES_ID_Info=ES_ID_Infos.find(TrackID!=(int32u)-1?TrackID:ES_ID);
@@ -800,6 +838,7 @@ void File_Mpeg4_Descriptors::Descriptor_04()
                                     {
                                         auto AudioProfileLevelIndication=ES_ID_Info->second.ProfileLevel[2];
                                         audio_profile AudioProfile;
+                                        int8u AudioLevel=0;
                                         if (AudioProfileLevelIndication==0xFE)
                                             AudioProfile=AudioProfile_Unspecified;
                                         else if (AudioProfileLevelIndication==0xFF)
@@ -808,10 +847,12 @@ void File_Mpeg4_Descriptors::Descriptor_04()
                                         {
                                             const auto& ProfileLevel=Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[AudioProfileLevelIndication];
                                             AudioProfile=ProfileLevel.profile;
+                                            AudioLevel=ProfileLevel.level;
                                         }
                                         else
                                             AudioProfile=NoProfile;
-                                        ((File_Aac*)Parser)->Format_Profile=AudioProfile;
+                                        ((File_Aac*)Parser)->Profile=AudioProfile;
+                                        ((File_Aac*)Parser)->Level=AudioLevel;
                                         File_Aac::conformance_flags Profile;
                                         switch (AudioProfile)
                                         {
@@ -916,6 +957,13 @@ void File_Mpeg4_Descriptors::Descriptor_05()
                                 #if defined(MEDIAINFO_AAC_YES)
                                     delete Parser; Parser=new File_Aac;
                                     ((File_Aac*)Parser)->Mode=File_Aac::Mode_AudioSpecificConfig;
+                                    #if MEDIAINFO_CONFORMANCE
+                                        ((File_Aac*)Parser)->Immediate_FramePos=stss;
+                                        ((File_Aac*)Parser)->Immediate_FramePos_IsPresent=stss_IsPresent;
+                                        ((File_Aac*)Parser)->outputFrameLength=stts;
+                                        ((File_Aac*)Parser)->roll_distance_Values=sgpd_prol;
+                                        ((File_Aac*)Parser)->roll_distance_FramePos=sbgp;
+                                    #endif
                                 #endif
                                 break;
             default: ;

@@ -36,7 +36,6 @@ namespace MediaInfoLib
 // Info
 //***************************************************************************
 
-extern const size_t Aac_sampling_frequency_Size_Usac; // USAC expands Aac_sampling_frequency[]
 extern const int32u Aac_sampling_frequency[];
 struct coreSbrFrameLengthIndex_mapping
 {
@@ -51,7 +50,7 @@ extern string Aac_Channels_GetString(int8u ChannelLayout);
 extern string Aac_ChannelConfiguration_GetString(int8u ChannelLayout);
 extern string Aac_ChannelConfiguration2_GetString(int8u ChannelLayout);
 extern string Aac_ChannelLayout_GetString(const Aac_OutputChannel* const OutputChannels, size_t OutputChannels_Size);
-extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegh3da=false);
+extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegh3da=false, bool IsTip=false);
 extern string Aac_ChannelLayout_GetString(const vector<Aac_OutputChannel>& OutputChannels);
 extern string Aac_ChannelMode_GetString(int8u ChannelLayout, bool IsMpegh3da=false);
 extern string Aac_ChannelMode_GetString(const vector<Aac_OutputChannel>& OutputChannels);

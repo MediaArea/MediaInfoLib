@@ -30,6 +30,16 @@
 namespace MediaInfoLib
 {
 
+constexpr int8u Aac_Channels_Size_Usac = 14; // USAC expands Aac_Channels[]
+constexpr int8u Aac_Channels_Size = 21; //MPEG-H 3D Audio expands Aac_Channels[]
+constexpr int8u Aac_sampling_frequency_Size = 13;
+constexpr int8u Aac_sampling_frequency_Size_Usac = 31; // USAC expands Aac_sampling_frequency[]
+
+struct stts_struct;
+struct edts_struct;
+struct sgpd_prol_struct;
+struct sbgp_struct;
+
 //***************************************************************************
 // Class File_Usac
 //***************************************************************************
@@ -91,10 +101,10 @@ public :
     };
     bs_bookmark                     BS_Bookmark(size_t NewSize);
     #if MEDIAINFO_CONFORMANCE
-    void                            BS_Bookmark(bs_bookmark& B, const string& ConformanceFieldName, bool* IsNotValid=nullptr);
+    bool                            BS_Bookmark(bs_bookmark& B, const string& ConformanceFieldName);
     #else
-    void                            BS_Bookmark(bs_bookmark& B);
-    inline void                     BS_Bookmark(bs_bookmark& B, const string&, bool* =nullptr) {BS_Bookmark(B);}
+    bool                            BS_Bookmark(bs_bookmark& B);
+    inline bool                     BS_Bookmark(bs_bookmark& B, const string&) {return BS_Bookmark(B);}
     #endif
 
     //Fill
@@ -178,7 +188,15 @@ public :
     bitset8                         ConformanceFlags;
     vector<field_value>             ConformanceErrors_Total[ConformanceLevel_Max];
     vector<field_value>             ConformanceErrors[ConformanceLevel_Max];
-    audio_profile                   Format_Profile;
+    audio_profile                   Profile;
+    int8u                           Level;
+    set<int8u>                      usacExtElementType_Present;
+    const std::vector<int64u>*      Immediate_FramePos;
+    const bool*                     Immediate_FramePos_IsPresent;
+    const std::vector<stts_struct>* outputFrameLength;
+    const size_t*                   FirstOutputtedDecodedSample;
+    const std::vector<sgpd_prol_struct>* roll_distance_Values;
+    const std::vector<sbgp_struct>* roll_distance_FramePos;
     bool CheckIf(const bitset8 Flags) { return !ConformanceFlags || !Flags || (ConformanceFlags & Flags); }
     void Fill_Conformance(const char* Field, const char* Value, bitset8 Flags={}, conformance_level Level=Error);
     void Fill_Conformance(const char* Field, const string Value, bitset8 Flags={}, conformance_level Level=Error) { Fill_Conformance(Field, Value.c_str(), Flags, Level); }
@@ -187,6 +205,8 @@ public :
     void Clear_Conformance();
     void Merge_Conformance(bool FromConfig=false);
     void Streams_Finish_Conformance();
+    struct usac_config;
+    void Streams_Finish_Conformance_Profile(usac_config& CurrentConf);
     #else
     inline void Streams_Finish_Conformance() {}
     #endif
@@ -313,8 +333,11 @@ public :
         int8u                       coreSbrFrameLengthIndex;
         int8u                       baseChannelCount;
         int8u                       stereoConfigIndex;
-        bool                        IsNotValid;
+        #if MEDIAINFO_CONFORMANCE
+        int8u                       drcRequired_Present;
         bool                        LoudnessInfoIsNotValid;
+        #endif
+        bool                        IsNotValid;
         bool                        harmonicSBR;
         bool                        bs_interTes;
         bool                        bs_pvc;
