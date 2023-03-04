@@ -376,8 +376,6 @@ static const char* const Aac_OutputChannelPosition[Aac_OutputChannelPosition_Siz
 };
 extern string Aac_OutputChannelPosition_GetString(int8u OutputChannelPosition)
 {
-    if (!OutputChannelPosition)
-        return string();
     if (OutputChannelPosition>=Aac_OutputChannelPosition_Size)
         return "OutputChannelPosition"+Ztring::ToZtring(OutputChannelPosition).To_UTF8();
 

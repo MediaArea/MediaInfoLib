@@ -131,6 +131,7 @@ public :
     bool drcInstructionsUniDrc              (bool V1=false, bool NoV0=false);
     void channelLayout                      ();
     void UsacConfigExtension                ();
+    void fill_bytes                         (size_t usacConfigExtLength);
     void loudnessInfoSet                    (bool V1=false);
     bool loudnessInfo                       (bool FromAlbum, bool V1=false);
     void loudnessInfoSetExtension           ();
@@ -206,7 +207,9 @@ public :
     void Merge_Conformance(bool FromConfig=false);
     void Streams_Finish_Conformance();
     struct usac_config;
+    struct usac_frame;
     void Streams_Finish_Conformance_Profile(usac_config& CurrentConf);
+    void numPreRollFrames_Check(usac_config& CurrentConf, int32u numPreRollFrames, const string numPreRollFramesConchString);
     #else
     inline void Streams_Finish_Conformance() {}
     #endif
@@ -325,6 +328,7 @@ public :
         gain_sets                   gainSets;
         #if MEDIAINFO_CONFORMANCE
         size_t                      loudnessInfoSet_Present[2];
+        vector<size_t>              numOutChannels_Lfe;
         #endif
         int32u                      numOutChannels;
         int32u                      sampling_frequency;
