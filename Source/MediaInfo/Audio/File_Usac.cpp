@@ -466,10 +466,10 @@ const char* usacExtElementType_Names[] =
 static_assert(sizeof(usacExtElementType_Names)/sizeof(const char*)==ID_EXT_ELE_Max, "");
 const char* usacExtElementType_ConfigNames[] =
 {
-    "",
+    nullptr,
     "SpatialSpecificConfig",
     "SaocSpecificConfig",
-    "",
+    nullptr,
     "uniDrcConfig",
 };
 static_assert(sizeof(usacExtElementType_ConfigNames)/sizeof(const char*)==ID_EXT_ELE_Max, "");
@@ -1165,6 +1165,48 @@ void File_Usac::Streams_Finish_Conformance()
 }
 #endif
 
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File_Usac::numPreRollFrames_Check(usac_config& CurrentConf, int32u numPreRollFrames, const string numPreRollFramesConchString)
+{
+    string FieldName = numPreRollFramesConchString.substr(numPreRollFramesConchString.rfind(' ') + 1);
+    int numPreRollFrames_Max;
+    if (CurrentConf.coreSbrFrameLengthIndex >= coreSbrFrameLengthIndex_Mapping_Size || coreSbrFrameLengthIndex_Mapping[CurrentConf.coreSbrFrameLengthIndex].sbrRatioIndex)
+    {
+        if (CurrentConf.harmonicSBR)
+            numPreRollFrames_Max = 3;
+        else
+            numPreRollFrames_Max = 2;
+    }
+    else
+        numPreRollFrames_Max = 1;
+    if (numPreRollFrames != numPreRollFrames_Max)
+    {
+        auto Value = FieldName + " is " + to_string(numPreRollFrames) + " but ";
+        if (numPreRollFrames > numPreRollFrames_Max)
+            Value += "<= ";
+        Value += to_string(numPreRollFrames_Max) + " is ";
+        if (numPreRollFrames > numPreRollFrames_Max)
+            Value += "required";
+        else
+            Value += "recommended";
+        if (CurrentConf.coreSbrFrameLengthIndex >= coreSbrFrameLengthIndex_Mapping_Size || coreSbrFrameLengthIndex_Mapping[CurrentConf.coreSbrFrameLengthIndex].sbrRatioIndex)
+        {
+            if (CurrentConf.harmonicSBR)
+            {
+                if (numPreRollFrames < numPreRollFrames_Max)
+                    Value += " due to SBR with harmonic patching";
+            }
+            else
+                Value += " due to SBR without harmonic patching";
+        }
+        else
+            Value += " due to no SBR";
+        Fill_Conformance(numPreRollFramesConchString.c_str(), Value, bitset8(), numPreRollFrames > numPreRollFrames_Max ? Error : Warning);
+    }
+}
+#endif
+
 //***************************************************************************
 // Elements - USAC - Config
 //***************************************************************************
@@ -1216,17 +1258,62 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
     Get_S1 (3, C.coreSbrFrameLengthIndex,                       "coreSbrFrameLengthIndex");
     Get_S1 (5, C.channelConfiguration,                          "channelConfiguration"); Param_Info1C(C.channelConfiguration, Aac_ChannelLayout_GetString(C.channelConfiguration));
     #if MEDIAINFO_CONFORMANCE
-        if (channelConfiguration && C.channelConfiguration != channelConfiguration)
+        if (channelConfiguration && C.channelConfiguration && C.channelConfiguration != channelConfiguration)
             Fill_Conformance("Crosscheck AudioSpecificConfig+UsacConfig channelConfiguration", ("AudioSpecificConfig channelConfiguration " + to_string(channelConfiguration) + Aac_ChannelLayout_GetString(channelConfiguration, false, true) + " does not match UsacConfig channelConfigurationIndex " + to_string(C.channelConfiguration) + Aac_ChannelLayout_GetString(C.channelConfiguration, false, true)).c_str());
     #endif
-    channelConfiguration=C.channelConfiguration;
     if (!C.channelConfiguration)
     {
         escapedValue(C.numOutChannels, 5, 8, 16,                "numOutChannels");
+        #if MEDIAINFO_CONFORMANCE
+            C.numOutChannels_Lfe.clear();
+            string ExpectedOrder;
+            if (channelConfiguration)
+                ExpectedOrder = Aac_ChannelLayout_GetString(channelConfiguration);
+            string ActualOrder;
+            set<int32u> bsOutChannelPos_List;
+        #endif
         for (int32u i=0; i<C.numOutChannels; i++)
         {
-            Info_S1(5, bsOutChannelPos,                         "bsOutChannelPos"); Param_Info1(Aac_OutputChannelPosition_GetString(bsOutChannelPos));
+            int8u bsOutChannelPos;
+            Get_S1 (5, bsOutChannelPos,                         "bsOutChannelPos"); Param_Info1(Aac_OutputChannelPosition_GetString(bsOutChannelPos));
+            #if MEDIAINFO_CONFORMANCE
+                if (bsOutChannelPos_List.find(bsOutChannelPos) != bsOutChannelPos_List.end())
+                {
+                    string Value = Aac_OutputChannelPosition_GetString(bsOutChannelPos);
+                    if (Value.empty())
+                        Value = to_string(bsOutChannelPos);
+                    else
+                        Value = to_string(bsOutChannelPos) + " (" + Value + ')';
+                    Fill_Conformance("bsOutChannelPos Coherency", ("bsOutChannelPos " + Value + " is present 2 times but only 1 instance is allowed").c_str());
+                }
+                else
+                    bsOutChannelPos_List.insert(bsOutChannelPos);
+                size_t ActualOrder_Previous = ActualOrder.size();
+                ActualOrder += Aac_OutputChannelPosition_GetString(bsOutChannelPos);
+                if (ActualOrder.find("LFE", ActualOrder_Previous) != string::npos)
+                    C.numOutChannels_Lfe.push_back(i);
+                ActualOrder += ' ';
+            #endif
         }
+        #if MEDIAINFO_CONFORMANCE
+            if (!C.numOutChannels)
+                Fill_Conformance("numOutChannels Coherency", "numOutChannels is 0");
+            else if (!ExpectedOrder.empty())
+            {
+                ActualOrder.pop_back();
+                if (ExpectedOrder != ActualOrder)
+                    Fill_Conformance("Crosscheck AudioSpecificConfig+UsacConfig channelConfiguration", ("AudioSpecificConfig channelConfiguration " + to_string(channelConfiguration) + " (" + ExpectedOrder + ") does not match UsacConfig channel mapping " + ActualOrder).c_str());
+            }
+            if (!ActualOrder.empty())
+            {
+                for (size_t i = 1; i < Aac_Channels_Size_Usac; i++)
+                {
+                    string PossibleOrder = Aac_ChannelLayout_GetString(i);
+                    if (PossibleOrder == ActualOrder)
+                        Fill_Conformance("UsacConfig channelConfiguration", ("channelConfiguration is 0 but channelConfiguration " + to_string(i) + " could be used for channel mapping " + ActualOrder).c_str(), bitset8(), Warning);
+                }
+            }
+        #endif
     }
     else if (C.channelConfiguration<Aac_Channels_Size_Usac)
         C.numOutChannels=Aac_Channels[C.channelConfiguration];
@@ -1237,6 +1324,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
             Fill_Conformance("UsacConfig channelConfiguration", ("Value " + to_string(C.channelConfiguration) + " is known as reserved in ISO/IEC 23003-3:2020, bitstream parsing is partial and may be wrong").c_str(), bitset8(), Info);
         #endif
     }
+    channelConfiguration=C.channelConfiguration;
     #if MEDIAINFO_CONFORMANCE
         Streams_Finish_Conformance_Profile(C);
         if (C.coreSbrFrameLengthIndex >= coreSbrFrameLengthIndex_Mapping_Size)
@@ -1486,6 +1574,58 @@ void File_Usac::UsacDecoderConfig()
         Element_End0();
     }
     #if MEDIAINFO_CONFORMANCE
+        if (!C.channelConfiguration)
+        {
+            size_t ChannelCount_NonLfe=0;
+            vector<size_t> Channels_Lfe;
+            bool AccrossCpe = false;
+            for (size_t i = 0 ; i < C.usacElements.size(); i++)
+            {
+                auto usacElement = C.usacElements[i];
+                switch (usacElement.usacElementType)
+                {
+                    case ID_USAC_SCE                          : ChannelCount_NonLfe++; break;
+                    case ID_USAC_CPE                          : ChannelCount_NonLfe+=2; break;
+                    case ID_USAC_LFE                          : Channels_Lfe.push_back(ChannelCount_NonLfe + Channels_Lfe.size()); break;
+                }
+                if (usacElement.usacElementType == ID_USAC_CPE && C.numOutChannels == ChannelCount_NonLfe + Channels_Lfe.size() - 1)
+                    AccrossCpe = true;
+            }
+            auto ChannelCount = ChannelCount_NonLfe + Channels_Lfe.size();
+            if (ChannelCount < C.numOutChannels)
+                Fill_Conformance("UsacConfig numOutChannels", ("numOutChannels is " + to_string(C.numOutChannels) + " but the bitstream contains " + to_string(ChannelCount_NonLfe) + " channels").c_str());
+            if (ChannelCount > C.numOutChannels)
+            {
+                if (AccrossCpe)
+                    Fill_Conformance("UsacConfig numOutChannels", ("numOutChannels is " + to_string(C.numOutChannels) + ", it is not recommended that the bitstream contains " + to_string(ChannelCount_NonLfe) + " channels, especially when only one channel of a CPE is included in numOutChannels").c_str(), bitset8(), Warning);
+                else
+                    Fill_Conformance("UsacConfig numOutChannels", ("numOutChannels is " + to_string(C.numOutChannels) + ", it is not recommended that the bitstream contains " + to_string(ChannelCount_NonLfe) + " channels").c_str(), bitset8(), Warning);
+            }
+            if (ChannelCount == C.numOutChannels)
+            {
+                auto C_ChannelCount_NonLfe = C.numOutChannels - C.numOutChannels_Lfe.size();
+                if (ChannelCount_NonLfe != C_ChannelCount_NonLfe && Channels_Lfe.size() == C.numOutChannels_Lfe.size())
+                    Fill_Conformance("UsacConfig numOutChannels", ("numOutChannels minus LFE channel count is " + to_string(C_ChannelCount_NonLfe) + " but the bitstream contains " + to_string(ChannelCount_NonLfe) + " non LFE channels").c_str());
+                if (Channels_Lfe.size() != C.numOutChannels_Lfe.size())
+                    Fill_Conformance("UsacConfig numOutChannels", ("non LFE channel count is " + to_string(C_ChannelCount_NonLfe) + " and LFE channel count is " + to_string(C.numOutChannels_Lfe.size()) + " but the bitstream contains " + to_string(ChannelCount_NonLfe) + " non LFE channels and " + to_string(Channels_Lfe.size()) + " LFE channels").c_str());
+            }
+            if (Channels_Lfe.size() > C.numOutChannels_Lfe.size())
+                Channels_Lfe.resize(C.numOutChannels_Lfe.size());
+            if (C.numOutChannels_Lfe.size() > Channels_Lfe.size())
+                C.numOutChannels_Lfe.resize(Channels_Lfe.size());
+            for (size_t i = C.numOutChannels_Lfe.size() - 1; (int)i >= 0; i--)
+            {
+                auto Lfe = C.numOutChannels_Lfe[i];
+                for (size_t j = Channels_Lfe.size() - 1; (int)j >= 0; j--)
+                    if (Channels_Lfe[j] == Lfe)
+                    {
+                        C.numOutChannels_Lfe.erase(C.numOutChannels_Lfe.begin() + j);
+                        Channels_Lfe.erase(Channels_Lfe.begin() + i);
+                    }
+            }
+            for (size_t i = C.numOutChannels_Lfe.size() - 1; (int)i >= 0; i--)
+                Fill_Conformance("UsacConfig numOutChannels", ("LFE channel is expected at position " + to_string(C.numOutChannels_Lfe[i]) + " but the bitstream contains a LFE channel at position " + to_string(Channels_Lfe[i])).c_str());
+        }
         if (C.channelConfiguration >= Aac_Channels_Size_Usac)
         {
             channelConfiguration_Orders_Max = 0;
@@ -1512,7 +1652,7 @@ void File_Usac::UsacDecoderConfig()
                         if (usacElement.usacElementType >= ID_USAC_EXT)
                             continue;
                         ActualOrder += usacElementType_IdNames[usacElement.usacElementType];
-                        ActualOrder += '+';
+                        ActualOrder += ' ';
                     }
                     ActualOrder.pop_back();
                     Fill_Conformance("UsacConfig channelConfigurationIndex", ("channelConfigurationIndex " + to_string(C.channelConfiguration) + " is used but the bitstream contains " + ActualOrder + ", which is the configuration indicated by channelConfigurationIndex " + to_string(i)).c_str(), bitset8(), Warning);
@@ -1529,7 +1669,7 @@ void File_Usac::UsacDecoderConfig()
             for (; channelConfiguration_Orders_Pos < channelConfiguration_Orders_Max; channelConfiguration_Orders_Pos++)
             {
                 ExpectedOrder += usacElementType_IdNames[channelConfiguration_Orders_Base[channelConfiguration_Orders_Pos]];
-                ExpectedOrder += '+';
+                ExpectedOrder += ' ';
             }
             ExpectedOrder.pop_back();
             string ActualOrder;
@@ -1538,7 +1678,7 @@ void File_Usac::UsacDecoderConfig()
                 if (usacElement.usacElementType >= ID_USAC_EXT)
                     continue;
                 ActualOrder += usacElementType_IdNames[usacElement.usacElementType];
-                ActualOrder += '+';
+                ActualOrder += ' ';
             }
             ActualOrder.pop_back();
             Fill_Conformance("UsacConfig channelConfigurationIndex", ("channelConfigurationIndex " + to_string(C.channelConfiguration) + " implies element order " + ExpectedOrder + " but actual element order is " + ActualOrder).c_str());
@@ -1594,23 +1734,41 @@ void File_Usac::UsacExtElementConfig()
     escapedValue(usacExtElementType, 4, 8, 16,                  "usacExtElementType"); Element_Level--; Element_Info1C(usacExtElementType<ID_EXT_ELE_Max, usacExtElementType_IdNames[usacExtElementType]); Element_Level++;
     C.usacElements.back().usacElementType+=usacExtElementType<<2;
     #if MEDIAINFO_CONFORMANCE
-        if (usacExtElementType_Present.find(usacExtElementType) != usacExtElementType_Present.end())
+        if (usacExtElementType_Present.find(usacExtElementType) != usacExtElementType_Present.end() && usacExtElementType < ID_EXT_ELE_Max && usacExtElementType_ConfigNames[usacExtElementType])
         {
-            auto FieldName = (usacExtElementType < ID_EXT_ELE_Max ? string(usacExtElementType_ConfigNames[usacExtElementType]) : ("usacExtElementType" + to_string(usacExtElementType)));
+            auto FieldName = string(usacExtElementType_ConfigNames[usacExtElementType]);
             Fill_Conformance((FieldName + " Coherency").c_str(), (FieldName + " is present 2 times but only 1 instance is allowed").c_str());
         }
         else
+        {
             usacExtElementType_Present.insert(usacExtElementType);
+            if (usacExtElementType == ID_EXT_ELE_AUDIOPREROLL && C.usacElements.size() != 1)
+                Fill_Conformance("AudioPreRollConfig Location", ("AudioPreRollConfig is present in position "+to_string(C.usacElements.size()-1)+" but only presence in position 0 is allowed").c_str());
+        }
     #endif
     escapedValue(usacExtElementConfigLength, 4, 8, 16,          "usacExtElementConfigLength");
+    #if MEDIAINFO_CONFORMANCE
+        if (usacExtElementType == ID_EXT_ELE_AUDIOPREROLL && usacExtElementConfigLength)
+            Fill_Conformance("AudioPreRollConfig usacExtElementConfigLength", ("usacExtElementConfigLength is "+to_string(usacExtElementConfigLength)+" but only value 0 is allowed").c_str());
+    #endif
     Get_SB (usacExtElementDefaultLengthPresent,                 "usacExtElementDefaultLengthPresent");
     if (usacExtElementDefaultLengthPresent)
     {
+        #if MEDIAINFO_CONFORMANCE
+            if (usacExtElementType == ID_EXT_ELE_AUDIOPREROLL)
+                Fill_Conformance("AudioPreRollConfig usacExtElementDefaultLengthPresent", "usacExtElementDefaultLengthPresent is 1 but only value 0 is allowed");
+        #endif
         int32u usacExtElementDefaultLength;
         escapedValue(usacExtElementDefaultLength, 8, 16, 0,     "usacExtElementDefaultLength");
         C.usacElements.back().usacExtElementDefaultLength=usacExtElementDefaultLength+1;
     }
+    else
+        C.usacElements.back().usacExtElementDefaultLength=0;
     Get_SB (usacExtElementPayloadFrag,                          "usacExtElementPayloadFlag");
+    #if MEDIAINFO_CONFORMANCE
+        if (usacExtElementType == ID_EXT_ELE_AUDIOPREROLL && usacExtElementPayloadFrag)
+            Fill_Conformance("AudioPreRollConfig usacExtElementConfigLength", "usacExtElementPayloadFrag is 1 but only value 0 is allowed");
+    #endif
     C.usacElements.back().usacExtElementPayloadFrag=usacExtElementPayloadFrag;
 
     if (usacExtElementConfigLength)
@@ -1625,11 +1783,11 @@ void File_Usac::UsacExtElementConfig()
         auto B=BS_Bookmark(usacExtElementConfigLength);
         switch (usacExtElementType)
         {
-            case ID_EXT_ELE_FILL                                :
-            case ID_EXT_ELE_AUDIOPREROLL                        : break;
-            case ID_EXT_ELE_UNI_DRC                             : uniDrcConfig(); break;
-            default:
-                Skip_BS(usacExtElementConfigLength,             "Unknown");
+            case ID_EXT_ELE_FILL                              : break;
+            case ID_EXT_ELE_UNI_DRC                           : uniDrcConfig(); break;
+            case ID_EXT_ELE_AUDIOPREROLL                      :
+            default                                           : if (usacExtElementConfigLength)
+                                                                    Skip_BS(usacExtElementConfigLength, "Unknown");
         }
         BS_Bookmark(B, (usacExtElementType<ID_EXT_ELE_Max?string(usacExtElementType_Names[usacExtElementType]):("usacExtElementType"+to_string(usacExtElementType)))+"Config");
     }
@@ -2353,14 +2511,10 @@ void File_Usac::UsacConfigExtension()
             auto B=BS_Bookmark(usacConfigExtLength);
             switch (usacConfigExtType)
             {
-                case ID_CONFIG_EXT_FILL                         :
-                    if (usacConfigExtLength)
-                        Skip_BS(usacConfigExtLength,            "10100101"); //TODO: check if value is the right one
-                    break;
-                case ID_CONFIG_EXT_LOUDNESS_INFO                : loudnessInfoSet(); break;
-                case ID_CONFIG_EXT_STREAM_ID                    : streamId(); break;
-                default:
-                    Skip_BS(usacConfigExtLength,                "Unknown");
+                case ID_CONFIG_EXT_FILL                       : fill_bytes(usacConfigExtLength); break;
+                case ID_CONFIG_EXT_LOUDNESS_INFO              : loudnessInfoSet(); break;
+                case ID_CONFIG_EXT_STREAM_ID                  : streamId(); break;
+                default                                       : Skip_BS(usacConfigExtLength,                "Unknown");
             }
             if (BS_Bookmark(B, usacConfigExtType<ID_CONFIG_EXT_Max?string(usacConfigExtType_ConfNames[usacConfigExtType]):("usacConfigExtType"+to_string(usacConfigExtType))))
             {
@@ -2374,6 +2528,27 @@ void File_Usac::UsacConfigExtension()
     }
 
     Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Usac::fill_bytes(size_t usacConfigExtLength)
+{
+    #if MEDIAINFO_CONFORMANCE
+        Element_Begin1("fill_bytes");
+        map<int8u, size_t> fill_bytes;
+        for (; usacConfigExtLength; usacConfigExtLength -= 8)
+        {
+            int8u fill_byte;
+            Get_S1 (8, fill_byte,                               "fill_byte");
+            if (fill_byte != 0b10100101)
+                fill_bytes[fill_byte]++;
+        }
+        if (!fill_bytes.empty())
+            Fill_Conformance("fill_byte", "fill_byte is "+(fill_bytes.size()==1?("0b"+Ztring::ToZtring(fill_bytes.begin()->first, 2).To_UTF8()):"with different values")+" but only 0b10100101 is expected", bitset8(), Warning);
+        Element_End0();
+    #else
+        Skip_BS(usacConfigExtLength,                            "0b10100101");
+    #endif
 }
 
 //---------------------------------------------------------------------------
@@ -2591,47 +2766,11 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
         {
             if (find(roll_distance_FramePos->begin(), roll_distance_FramePos->end(), Frame_Count_NotParsedIncluded) != roll_distance_FramePos->end())
             {
-                const auto numPreRollFramesConchString = "Crosscheck Container+UsacFrame roll_distance";
                 auto numPreRollFrames = (*roll_distance_Values)[0].roll_distance;
                 if (numPreRollFrames <= 0)
                     Fill_Conformance("sgpd roll_distance", "roll_distance is " + to_string(numPreRollFrames) + " so <= 0");
                 else
-                {
-                    int numPreRollFrames_Max;
-                    if (Conf.coreSbrFrameLengthIndex >= coreSbrFrameLengthIndex_Mapping_Size || coreSbrFrameLengthIndex_Mapping[Conf.coreSbrFrameLengthIndex].sbrRatioIndex)
-                    {
-                        if (Conf.harmonicSBR)
-                            numPreRollFrames_Max = 3;
-                        else
-                            numPreRollFrames_Max = 2;
-                    }
-                    else
-                        numPreRollFrames_Max = 1;
-                    if (numPreRollFrames != numPreRollFrames_Max)
-                    {
-                        auto Value = "roll_distance is " + to_string(numPreRollFrames) + " but ";
-                        if (numPreRollFrames > numPreRollFrames_Max)
-                            Value += "<= ";
-                        Value += to_string(numPreRollFrames_Max) + ' ';
-                        if (numPreRollFrames > numPreRollFrames_Max)
-                            Value += "required";
-                        else
-                            Value += "recommended";
-                        if (Conf.coreSbrFrameLengthIndex >= coreSbrFrameLengthIndex_Mapping_Size || coreSbrFrameLengthIndex_Mapping[Conf.coreSbrFrameLengthIndex].sbrRatioIndex)
-                        {
-                            if (Conf.harmonicSBR)
-                            {
-                                if (numPreRollFrames < numPreRollFrames_Max)
-                                    Value += " due to SBR with harmonic patching";
-                            }
-                            else
-                                Value += " due to SBR without harmonic patching";
-                        }
-                        else
-                            Value += " due to no SBR";
-                        Fill_Conformance(numPreRollFramesConchString, Value, bitset8(), numPreRollFrames > numPreRollFrames_Max ? Error : Warning);
-                    }
-                }
+                    numPreRollFrames_Check(Conf, (int32u)numPreRollFrames, "Crosscheck Container+UsacFrame roll_distance");
             }
         }
     #endif
@@ -2723,7 +2862,7 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
     }
 
     auto BitsNotIncluded2=BitsNotIncluded!=(size_t)-1?BitsNotIncluded:0;
-    if (Data_BS_Remain()>BitsNotIncluded2)
+    if (F.NotImplemented && Data_BS_Remain()>BitsNotIncluded2)
         Skip_BS(Data_BS_Remain()-BitsNotIncluded2,              "(Not parsed)");
 
     if (BitsNotIncluded!=(size_t)-1)
@@ -2928,6 +3067,11 @@ void File_Usac::scaleFactorData()
 {
     Element_Begin1("scale_factor_data");
 
+    #if MEDIAINFO_TRACE
+        bool Trace_Activated_Save=Trace_Activated;
+        Trace_Activated=false; //It is too big, disabling trace for now for full USAC parsing
+    #endif //MEDIAINFO_TRACE
+
     for (int8u group=0; group<num_window_groups; group++)
     {
         for (int8u sfb=0; sfb<max_sfb; sfb++)
@@ -2936,6 +3080,9 @@ void File_Usac::scaleFactorData()
                 hcod_sf(                                        "hcod_sf[dpcm_sf[g][sfb]]");
         }
     }
+        #if MEDIAINFO_TRACE
+            Trace_Activated=Trace_Activated_Save;
+        #endif //MEDIAINFO_TRACE
 
     Element_End0();
 }
@@ -3135,12 +3282,21 @@ void File_Usac::acSpectralData(size_t ch, bool usacIndependencyFlag)
 {
     Element_Begin1("ac_spectral_data");
 
+    #if MEDIAINFO_TRACE
+        bool Trace_Activated_Save=Trace_Activated;
+        Trace_Activated=false; //It is too big, disabling trace for now for full USAC parsing
+    #endif //MEDIAINFO_TRACE
+
     bool arith_reset_flag=true;
     if (!usacIndependencyFlag)
         Get_SB (arith_reset_flag,                               "arith_reset_flag");
 
     if (C.IsNotValid || !Aac_sampling_frequency[C.sampling_frequency_index])
     {
+        #if MEDIAINFO_TRACE
+            Trace_Activated=Trace_Activated_Save;
+        #endif //MEDIAINFO_TRACE
+
         C.IsNotValid=true;
         F.NotImplemented=true;
         Element_End0();
@@ -3169,6 +3325,10 @@ void File_Usac::acSpectralData(size_t ch, bool usacIndependencyFlag)
         sampling_frequency_index_swb=C.sampling_frequency_index;
     if (sampling_frequency_index_swb>=13)
     {
+        #if MEDIAINFO_TRACE
+            Trace_Activated=Trace_Activated_Save;
+        #endif //MEDIAINFO_TRACE
+
         C.IsNotValid=true;
         F.NotImplemented=true;
         Element_End0();
@@ -3202,6 +3362,10 @@ void File_Usac::acSpectralData(size_t ch, bool usacIndependencyFlag)
             break;
     }
 
+    #if MEDIAINFO_TRACE
+        Trace_Activated=Trace_Activated_Save;
+    #endif //MEDIAINFO_TRACE
+
     Element_End0();
 }
 
@@ -3209,6 +3373,11 @@ void File_Usac::acSpectralData(size_t ch, bool usacIndependencyFlag)
 void File_Usac::tnsData()
 {
     Element_Begin1("tns_data");
+
+    #if MEDIAINFO_TRACE
+        bool Trace_Activated_Save=Trace_Activated;
+        Trace_Activated=false; //It is too big, disabling trace for now for full USAC parsing
+    #endif //MEDIAINFO_TRACE
 
     for (int8u win=0; win<num_windows; win++)
     {
@@ -3247,6 +3416,10 @@ void File_Usac::tnsData()
             }
         }
     }
+
+    #if MEDIAINFO_TRACE
+        Trace_Activated=Trace_Activated_Save;
+    #endif //MEDIAINFO_TRACE
 
     Element_End0();
 }
@@ -3475,7 +3648,13 @@ void File_Usac::UsacExtElement(size_t elemIdx, bool usacIndependencyFlag)
         bool usacExtElementUseDefaultLength;;
         Get_SB (usacExtElementUseDefaultLength,                 "usacExtElementUseDefaultLength");
         if (usacExtElementUseDefaultLength)
+        {
+            #if MEDIAINFO_CONFORMANCE
+                if (usacExtElementType == ID_EXT_ELE_AUDIOPREROLL)
+                    Fill_Conformance("AudioPreRoll usacExtElementUseDefaultLength", "usacExtElementUseDefaultLength is 1 but only value 0 is allowed");
+            #endif
             usacExtElementPayloadLength=Conf.usacElements[elemIdx].usacExtElementDefaultLength;
+        }
         else
         {
             Get_S4 (8, usacExtElementPayloadLength,             "usacExtElementPayloadLength");
@@ -3497,7 +3676,11 @@ void File_Usac::UsacExtElement(size_t elemIdx, bool usacIndependencyFlag)
                 if (IsParsingRaw > 1)
                     Fill_Conformance("AudioPreRoll UsacFrame usacExtElementPresent", "usacExtElementPresent is 1 for AudioPreRoll inside AudioPreRoll");
                 else if (!usacExtElementPayloadLength)
+                {
                     F.numPreRollFrames = 0;
+                    if (!Frame_Count && IsParsingRaw <= 1)
+                        numPreRollFrames_Check(Conf, 0, "AudioPreRoll numPreRollFrames");
+                }
             }
         #endif
         if (usacExtElementPayloadLength)
@@ -3566,49 +3749,7 @@ void File_Usac::AudioPreRoll()
     Skip_SB(                                                    "reserved");
     escapedValue(F.numPreRollFrames, 2, 4, 0,                   "numPreRollFrames");
     #if MEDIAINFO_CONFORMANCE
-        const auto numPreRollFramesconchString = "AudioPreRoll numPreRollFrames";
-        auto numPreRollFrames = F.numPreRollFrames;
-        {
-            int numPreRollFrames_Max;
-            if (C.coreSbrFrameLengthIndex >= coreSbrFrameLengthIndex_Mapping_Size || coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].sbrRatioIndex)
-            {
-                if (C.harmonicSBR)
-                    numPreRollFrames_Max = 3;
-                else
-                    numPreRollFrames_Max = 2;
-            }
-            else
-                numPreRollFrames_Max = 1;
-            if (numPreRollFrames != numPreRollFrames_Max)
-            {
-                auto Value = "numPreRollFrames is " + to_string(numPreRollFrames) + " but ";
-                if (numPreRollFrames > numPreRollFrames_Max)
-                    Value += "<= ";
-                Value += to_string(numPreRollFrames_Max) + " is ";
-                if (numPreRollFrames > numPreRollFrames_Max)
-                    Value += "required";
-                else
-                    Value += "recommended";
-                Value += "";
-                if (C.coreSbrFrameLengthIndex >= coreSbrFrameLengthIndex_Mapping_Size || coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].sbrRatioIndex)
-                {
-                    if (C.harmonicSBR)
-                    {
-                        if (numPreRollFrames < numPreRollFrames_Max)
-                            Value += " due to SBR with harmonic patching";
-                    }
-                    else
-                        Value += " due to SBR without harmonic patching";
-                }
-                else
-                    Value += " due to no SBR";
-                Fill_Conformance(numPreRollFramesconchString, Value, bitset8(), numPreRollFrames > numPreRollFrames_Max ? Error : Warning);
-            }
-        }
-    #endif
-    #if MEDIAINFO_CONFORMANCE
-        if (!F.numPreRollFrames)
-            Fill_Conformance("AudioPreRoll numPreRollFrames", "numPreRollFrames is 0", bitset8(), Warning);
+        numPreRollFrames_Check(C, F.numPreRollFrames, "AudioPreRoll numPreRollFrames");
     #endif
     for (int32u frameIdx=0; frameIdx<F.numPreRollFrames; frameIdx++)
     {
