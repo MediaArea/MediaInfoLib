@@ -416,7 +416,7 @@ extern string Aac_ChannelConfiguration2_GetString(int8u ChannelLayout);
 extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegh3da=false, bool IsTip=false);
 extern string Aac_OutputChannelPosition_GetString(int8u OutputChannelPosition);
 extern bool Aac_Sbr_Compute(sbr_handler *sbr, int8u extension_sampling_frequency_index);
-extern string Mpeg4_Descriptors_ToAudioProfileLevelIndicationString(audio_profile Profile, int8u Level);
+extern string Mpeg4_Descriptors_AudioProfileLevelString(const profilelevel_struct& ProfileLevel);
 
 //---------------------------------------------------------------------------
 enum usacElementType_Value
@@ -682,15 +682,15 @@ struct profile_constraints
     int8u   MaxChannels;
     int8u   MaxSamplingRate;              // 1 = 24 kHz, 2 = 48 kHz, 3 = 96 kHz
 };
-static profile_constraints xHEAAC_Constraints[] = // From table "Levels for the extended HE AAC profile"
+static profile_constraints xHEAAC_Constraints[] = // Frame tables in chapter "Extended HE AAC profile" (comments are from table "Levels for the extended HE AAC profile")
 {
-    {  0, 0},
+    {  1, 2},
     {  2, 2},
     {  2, 2},
-    {  6, 2},
-    {  6, 3},
-    {  8, 2},
-    {  8, 3},
+    {  2, 2}, // {  6, 2},
+    {  2, 2}, // {  6, 3},
+    {  2, 2}, // {  8, 2},
+    {  2, 2}, // {  8, 3},
 };
 struct measurement_present
 {
@@ -795,10 +795,10 @@ File_Usac::File_Usac()
     extension_sampling_frequency_index=(int8u)-1;
     IsParsingRaw=0;
     #if MEDIAINFO_CONFORMANCE
-        Profile=AudioProfile_Max;
-        Level=0;
+        ProfileLevel = { UnknownAudio, 0 };
         Immediate_FramePos=nullptr;
         Immediate_FramePos_IsPresent=nullptr;
+        IsCmaf=nullptr;
         outputFrameLength=nullptr;
         FirstOutputtedDecodedSample=nullptr;
         roll_distance_Values=nullptr;
@@ -1009,12 +1009,14 @@ bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
 #if MEDIAINFO_CONFORMANCE
 void File_Usac::Fill_Conformance(const char* Field, const char* Value, bitset8 Flags, conformance_level Level)
 {
+    if (Level == Warning && Warning_Error)
+        Level = Error;
     field_value FieldValue(Field, Value, Flags, (int64u)-1);
     auto& Conformance = ConformanceErrors[Level];
     auto Current = find(Conformance.begin(), Conformance.end(), FieldValue);
     if (Current != Conformance.end())
         return;
-    ConformanceErrors[Level].emplace_back(FieldValue);
+    Conformance.emplace_back(FieldValue);
 }
 #endif
 
@@ -1057,6 +1059,8 @@ void File_Usac::Merge_Conformance(bool FromConfig)
                     Current->FramePoss.push_back((int64u)-1); //Indicating "..."
                 continue;
             }
+            if (!CheckIf(FieldValue.Flags))
+                continue;
             Conformance_Total.push_back(FieldValue);
             if (!FromConfig)
                 Conformance_Total.back().FramePoss.front() = Frame_Count_NotParsedIncluded;
@@ -1068,25 +1072,49 @@ void File_Usac::Merge_Conformance(bool FromConfig)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
+const profilelevel_struct& Mpeg4_Descriptors_ToProfileLevel(int8u AudioProfileLevelIndication);
+void File_Usac::SetProfileLevel(int8u AudioProfileLevelIndication)
+{
+    ProfileLevel = Mpeg4_Descriptors_ToProfileLevel(AudioProfileLevelIndication);
+    switch (ProfileLevel.profile)
+    {
+        case Baseline_USAC                    : ConformanceFlags.set(BaselineUsac); break;
+        case Extended_HE_AAC                  : ConformanceFlags.set(xHEAAC); break;
+        default:;
+    }
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
 void File_Usac::Streams_Finish_Conformance_Profile(usac_config& CurrentConf)
 {
-    if (ConformanceFlags[xHEAAC] && Profile == Extended_HE_AAC && Level > 1 && Level <= 5)
+    if (ProfileLevel.profile == UnknownAudio)
     {
-        if (CurrentConf.sampling_frequency && xHEAAC_Constraints[Level].MaxSamplingRate)
+        auto AudioProfileLevelIndication = MediaInfoLib::Config.UsacProfile();
+        if (!AudioProfileLevelIndication)
+            SetProfileLevel(AudioProfileLevelIndication);
+        else if (!IsSub)
+            ConformanceFlags.set(xHEAAC); // TODO: remove this check (initially done for LATM without the profile option)
+    }
+
+    if (ConformanceFlags[xHEAAC] && ProfileLevel.profile == Extended_HE_AAC && ProfileLevel.level > 1 && ProfileLevel.level <= 5)
+    {
+        if (CurrentConf.sampling_frequency && xHEAAC_Constraints[ProfileLevel.level].MaxSamplingRate)
         {
-            int32u MaxSamplingRate = 24000 << (xHEAAC_Constraints[Level].MaxSamplingRate - 1);
+            int32u MaxSamplingRate = 24000 << (xHEAAC_Constraints[ProfileLevel.level].MaxSamplingRate - 1);
             if (CurrentConf.sampling_frequency > MaxSamplingRate)
-                Fill_Conformance("Crosscheck InitialObjectDescriptor+UsacConfig usacSamplingFrequency", ("InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_ToAudioProfileLevelIndicationString(Profile, Level) + " does not permit UsacConfig usacSamplingFrequency " + to_string(CurrentConf.sampling_frequency) + ", max is " + to_string(MaxSamplingRate)).c_str());
+                Fill_Conformance("Crosscheck InitialObjectDescriptor+UsacConfig usacSamplingFrequency", ("InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit UsacConfig usacSamplingFrequency " + to_string(CurrentConf.sampling_frequency) + ", max is " + to_string(MaxSamplingRate)).c_str());
         }
         else if (CurrentConf.sampling_frequency > 48000)
-            Fill_Conformance("Crosscheck InitialObjectDescriptor+UsacConfig usacSamplingFrequency", ("InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_ToAudioProfileLevelIndicationString(Profile, Level) + " does not permit UsacConfig usacSamplingFrequency " + to_string(CurrentConf.sampling_frequency) + ", max is 48000").c_str());
+            Fill_Conformance("Crosscheck InitialObjectDescriptor+UsacConfig usacSamplingFrequency", ("InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit UsacConfig usacSamplingFrequency " + to_string(CurrentConf.sampling_frequency) + ", max is 48000").c_str());
         else if (CurrentConf.sampling_frequency_index < Aac_sampling_frequency_Size && Aac_sampling_frequency[CurrentConf.sampling_frequency_index] == CurrentConf.sampling_frequency
          && ((CurrentConf.sampling_frequency_index < 0x03 || CurrentConf.sampling_frequency_index > 0x0C) && (CurrentConf.sampling_frequency_index < 0x11 || CurrentConf.sampling_frequency_index > 0x1B)))
-            Fill_Conformance("Crosscheck InitialObjectDescriptor+UsacConfig usacSamplingFrequencyIndex", ("InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_ToAudioProfileLevelIndicationString(Profile, Level) + " does not permit UsacConfig usacSamplingFrequencyIndex " + to_string(CurrentConf.sampling_frequency_index)).c_str());
+            Fill_Conformance("Crosscheck InitialObjectDescriptor+UsacConfig usacSamplingFrequencyIndex", ("InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit UsacConfig usacSamplingFrequencyIndex " + to_string(CurrentConf.sampling_frequency_index)).c_str());
         if (!CurrentConf.channelConfiguration)
         {
-            if (CurrentConf.numOutChannels && CurrentConf.numOutChannels > xHEAAC_Constraints[Level].MaxChannels)
-                Fill_Conformance("Crosscheck InitialObjectDescriptor+UsacConfig numOutChannels", ("InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_ToAudioProfileLevelIndicationString(Profile, Level) + " does not permit UsacConfig numOutChannels " + to_string(CurrentConf.numOutChannels) + ", max is " + to_string(xHEAAC_Constraints[Level].MaxChannels)).c_str());
+            if (CurrentConf.numOutChannels && CurrentConf.numOutChannels > xHEAAC_Constraints[ProfileLevel.level].MaxChannels)
+                Fill_Conformance("Crosscheck InitialObjectDescriptor+UsacConfig numOutChannels", ("InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit UsacConfig numOutChannels " + to_string(CurrentConf.numOutChannels) + ", max is " + to_string(xHEAAC_Constraints[ProfileLevel.level].MaxChannels)).c_str());
         }
         else
         {
@@ -1097,10 +1125,12 @@ void File_Usac::Streams_Finish_Conformance_Profile(usac_config& CurrentConf)
                 case 8 :
                         break;
                 default:
-                    Fill_Conformance("Crosscheck InitialObjectDescriptor+UsacConfig channelConfigurationIndex", ("InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_ToAudioProfileLevelIndicationString(Profile, Level) + " does not permit UsacConfig channelConfigurationIndex " + to_string(CurrentConf.channelConfiguration)).c_str());
+                    Fill_Conformance("Crosscheck InitialObjectDescriptor+UsacConfig channelConfiguration", ("InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit UsacConfig channelConfigurationIndex " + to_string(CurrentConf.channelConfiguration)).c_str());
             }
         }
     }
+    if (IsCmaf && *IsCmaf && CurrentConf.channelConfiguration != 1 && CurrentConf.channelConfiguration != 2)
+        Fill_Conformance("Crosscheck CMAF+UsacConfig channelConfiguration", ("CMAF does not permit channelConfigurationIndex " + to_string(CurrentConf.channelConfiguration) + ", permitted values are 1 and 2").c_str());
 }
 void File_Usac::Streams_Finish_Conformance()
 {
@@ -1217,6 +1247,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
     // Init
     C = usac_config();
     #if MEDIAINFO_CONFORMANCE
+        Warning_Error=MediaInfoLib::Config.WarningError();
         C.loudnessInfoSet_Present[0] = 0;
         C.loudnessInfoSet_Present[1] = 0;
     #endif
@@ -1274,22 +1305,22 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
         #endif
         for (int32u i=0; i<C.numOutChannels; i++)
         {
-            int8u bsOutChannelPos;
-            Get_S1 (5, bsOutChannelPos,                         "bsOutChannelPos"); Param_Info1(Aac_OutputChannelPosition_GetString(bsOutChannelPos));
+            int8u bsOutputChannelPos;
+            Get_S1 (5, bsOutputChannelPos,                         "bsOutputChannelPos"); Param_Info1(Aac_OutputChannelPosition_GetString(bsOutputChannelPos));
             #if MEDIAINFO_CONFORMANCE
-                if (bsOutChannelPos_List.find(bsOutChannelPos) != bsOutChannelPos_List.end())
+                if (bsOutChannelPos_List.find(bsOutputChannelPos) != bsOutChannelPos_List.end())
                 {
-                    string Value = Aac_OutputChannelPosition_GetString(bsOutChannelPos);
+                    string Value = Aac_OutputChannelPosition_GetString(bsOutputChannelPos);
                     if (Value.empty())
-                        Value = to_string(bsOutChannelPos);
+                        Value = to_string(bsOutputChannelPos);
                     else
-                        Value = to_string(bsOutChannelPos) + " (" + Value + ')';
+                        Value = to_string(bsOutputChannelPos) + " (" + Value + ')';
                     Fill_Conformance("bsOutChannelPos Coherency", ("bsOutChannelPos " + Value + " is present 2 times but only 1 instance is allowed").c_str());
                 }
                 else
-                    bsOutChannelPos_List.insert(bsOutChannelPos);
+                    bsOutChannelPos_List.insert(bsOutputChannelPos);
                 size_t ActualOrder_Previous = ActualOrder.size();
-                ActualOrder += Aac_OutputChannelPosition_GetString(bsOutChannelPos);
+                ActualOrder += Aac_OutputChannelPosition_GetString(bsOutputChannelPos);
                 if (ActualOrder.find("LFE", ActualOrder_Previous) != string::npos)
                     C.numOutChannels_Lfe.push_back(i);
                 ActualOrder += ' ';
@@ -1495,32 +1526,44 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         if (C.loudnessInfoSet_Present[0]>1)
             Fill_Conformance("loudnessInfoSet Coherency", "loudnessInfoSet is present " + to_string(C.loudnessInfoSet_Present[0]) + " times but only 1 instance is allowed");
         constexpr14 auto CheckFlags = bitset8().set(xHEAAC).set(MpegH);
-        if (!CheckIf(CheckFlags) || Profile==AudioProfile_Unspecified)
+        if (false)
         {
         }
         else if (!loudnessInfoSet_Present_Total)
         {
             Fill_Conformance("loudnessInfoSet Coherency", "loudnessInfoSet is missing", CheckFlags);
-            Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is missing");
-            Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet missing");
+            if (ConformanceFlags & CheckFlags)
+            {
+                Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is missing");
+                Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet missing");
+            }
         }
         else if (C.loudnessInfo_Data[0].empty())
         {
             Fill_Conformance("loudnessInfoSet loudnessInfoCount", "loudnessInfoCount is 0", CheckFlags);
-            Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is empty");
-            Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet empty");
+            if (ConformanceFlags & CheckFlags)
+            {
+                Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is empty");
+                Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: loudnessInfoSet empty");
+            }
         }
         else if (!DefaultIdPresent)
         {
             Fill_Conformance("loudnessInfoSet Coherency", "Default loudnessInfo is missing", CheckFlags);
-            Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: Default loudnessInfo is missing");
-            Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo missing");
+            if (ConformanceFlags & CheckFlags)
+            {
+                Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: Default loudnessInfo is missing");
+                Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo missing");
+            }
         }
         else if (!C.LoudnessInfoIsNotValid && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
         {
             Fill_Conformance("loudnessInfoSet Coherency", "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
-            Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
-            Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo incomplete");
+            if (ConformanceFlags & CheckFlags)
+            {
+                Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
+                Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo incomplete");
+            }
         }
         if (!Retrieve_Const(Stream_Audio, 0, "ConformanceCheck/Short").empty())
         {
@@ -1655,7 +1698,7 @@ void File_Usac::UsacDecoderConfig()
                         ActualOrder += ' ';
                     }
                     ActualOrder.pop_back();
-                    Fill_Conformance("UsacConfig channelConfigurationIndex", ("channelConfigurationIndex " + to_string(C.channelConfiguration) + " is used but the bitstream contains " + ActualOrder + ", which is the configuration indicated by channelConfigurationIndex " + to_string(i)).c_str(), bitset8(), Warning);
+                    Fill_Conformance("UsacConfig channelConfiguration", ("channelConfigurationIndex " + to_string(C.channelConfiguration) + " is used but the bitstream contains " + ActualOrder + ", which is the configuration indicated by channelConfigurationIndex " + to_string(i)).c_str(), bitset8(), Warning);
                     break;
                 }
             }
@@ -1681,7 +1724,7 @@ void File_Usac::UsacDecoderConfig()
                 ActualOrder += ' ';
             }
             ActualOrder.pop_back();
-            Fill_Conformance("UsacConfig channelConfigurationIndex", ("channelConfigurationIndex " + to_string(C.channelConfiguration) + " implies element order " + ExpectedOrder + " but actual element order is " + ActualOrder).c_str());
+            Fill_Conformance("UsacConfig channelConfiguration", ("channelConfigurationIndex " + to_string(C.channelConfiguration) + " implies element order " + ExpectedOrder + " but actual element order is " + ActualOrder).c_str());
         }
     #endif
 

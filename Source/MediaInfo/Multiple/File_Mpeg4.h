@@ -691,6 +691,9 @@ private :
         int64u          TimeCode_DtsOffset;
         std::map<int64u, int64u> StreamOffset_Jump; //Key is the current position, value is the jump position
     #endif //MEDIAINFO_DEMUX
+    #if MEDIAINFO_CONFORMANCE
+        bool            IsCmaf;
+    #endif
 };
 
 } //NameSpace
