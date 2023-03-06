@@ -34,9 +34,8 @@ namespace MediaInfoLib
 // Infos
 //***************************************************************************
 
-extern const char* Mpeg4_Descriptors_AudioProfileLevelIndication_Profile[];
 extern const char* Aac_audioObjectType(int8u audioObjectType);
-extern string Mpeg4_Descriptors_ToAudioProfileLevelIndicationString(audio_profile Profile, int8u Level);
+extern string Mpeg4_Descriptors_AudioProfileLevelIndicationString(const profilelevel_struct& ProfileLevel);
 
 //***************************************************************************
 // Constructor/Destructor
@@ -227,15 +226,12 @@ void File_Aac::Streams_Finish()
     #if MEDIAINFO_CONFORMANCE
         if (audioObjectType==42 && !ConformanceFlags) {
             ConformanceFlags.set(Usac);
-            if (Profile==AudioProfile_Max) {
-                ConformanceFlags.set(xHEAAC); // TODO: is xHEAAC profiled detectable in LATM? or just ignore xHEAAC in case of LATM
-            }
         }
         if (Retrieve_Const(Stream_Audio, 0, "ConformanceErrors").empty() && Retrieve_Const(Stream_Audio, 0, "ConformanceWarnings").empty() && Retrieve_Const(Stream_Audio, 0, "ConformanceInfos").empty()) { //TODO: check why called twice in some cases
-        if (Profile && Mpeg4_Descriptors_AudioProfileLevelIndication_Profile[Profile]
+        if (ProfileLevel.profile != UnknownAudio && ProfileLevel.profile != UnspecifiedAudio
             && ((audioObjectType == 42 && !ConformanceFlags[BaselineUsac] && !ConformanceFlags[xHEAAC])
              || (audioObjectType != 42 && (ConformanceFlags[BaselineUsac] || ConformanceFlags[xHEAAC])))) {
-            string ProfileString = Mpeg4_Descriptors_ToAudioProfileLevelIndicationString(Profile, Level);
+            string ProfileLevelString = Mpeg4_Descriptors_AudioProfileLevelIndicationString(ProfileLevel);
             auto audioObjectTypeString = to_string(audioObjectType);
             auto audioObjectTypeTemp = Aac_audioObjectType(audioObjectType);
             if (audioObjectTypeTemp && *audioObjectTypeTemp) {
@@ -243,7 +239,7 @@ void File_Aac::Streams_Finish()
                 audioObjectTypeString += audioObjectTypeTemp;
                 audioObjectTypeString += ')';
             }
-            Fill_Conformance("Crosscheck InitialObjectDescriptor+AudioSpecificConfig audioProfileLevelIndication+audioObjectType", ("InitialObjectDescriptor audioProfileLevelIndication " + ProfileString + " does not permit AudioSpecificConfig audioObjectType " + audioObjectTypeString).c_str(), bitset8().set(Usac).set(BaselineUsac).set(xHEAAC));
+            Fill_Conformance("Crosscheck InitialObjectDescriptor+AudioSpecificConfig audioProfileLevelIndication+audioObjectType", ("InitialObjectDescriptor audioProfileLevelIndication " + ProfileLevelString + " does not permit AudioSpecificConfig audioObjectType " + audioObjectTypeString).c_str(), bitset8().set(Usac).set(BaselineUsac).set(xHEAAC));
         }
         Streams_Finish_Conformance();
         }

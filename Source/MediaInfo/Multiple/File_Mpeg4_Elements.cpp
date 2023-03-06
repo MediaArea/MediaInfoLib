@@ -619,7 +619,10 @@ namespace Elements
     const int64u free=0x66726565;
     const int64u ftyp=0x66747970;
     const int64u ftyp_qt=0x71742020;
-    const int64u ftyp_dash=0x64617368;
+    const int64u ftyp_cmfc=0x636D6663;
+    const int64u ftyp_cmff=0x636D6666;
+    const int64u ftyp_cmfl=0x636D666C;
+    const int64u ftyp_cmfs=0x636D6673;
     const int64u ftyp_isom=0x69736F6D;
     const int64u ftyp_caqv=0x63617176;
     const int64u idat=0x69646174;
@@ -1616,8 +1619,16 @@ void File_Mpeg4::ftyp()
         for (size_t Pos=0; Pos<ftyps.size(); Pos++)
             switch (ftyps[Pos])
             {
-                case Elements::ftyp_dash : if (Config->File_Names.size()==1)TestContinuousFileNames(1, __T("m4s")); break;
                 case Elements::ftyp_caqv : Fill(StreamKind_Last, StreamPos_Last, "Encoded_Application", "Casio Digital Camera"); break;
+                case Elements::ftyp_cmfc :
+                case Elements::ftyp_cmff :
+                case Elements::ftyp_cmfl :
+                case Elements::ftyp_cmfs :
+                                           if (Config->File_Names.size()==1)
+                                               TestContinuousFileNames(1, __T("m4s"));
+                                           #if MEDIAINFO_CONFORMANCE
+                                               IsCmaf=true;
+                                           #endif
                 default : ;
             }
         CodecID_Fill(Ztring().From_CC4(MajorBrand), Stream_General, 0, InfoCodecID_Format_Mpeg4);
@@ -5689,10 +5700,14 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
             Parser->Mode=File_Aac::Mode_payload;
             Parser->FrameIsAlwaysComplete=true;
             #if MEDIAINFO_CONFORMANCE
-                Parser->Immediate_FramePos=&Streams[moov_trak_tkhd_TrackID].stss;
-                Parser->Immediate_FramePos_IsPresent=&Streams[moov_trak_tkhd_TrackID].stss_IsPresent;
-                Parser->roll_distance_Values=&Streams[moov_trak_tkhd_TrackID].sgpd_prol;
-                Parser->roll_distance_FramePos=&Streams[moov_trak_tkhd_TrackID].sbgp;
+                const auto& Stream=Streams[moov_trak_tkhd_TrackID];
+                Parser->Immediate_FramePos=&Stream.stss;
+                Parser->Immediate_FramePos_IsPresent=&Stream.stss_IsPresent;
+                Parser->IsCmaf=&IsCmaf;
+                Parser->outputFrameLength=&Stream.stts;
+                Parser->FirstOutputtedDecodedSample=&Stream.FirstOutputtedDecodedSample;
+                Parser->roll_distance_Values=&Stream.sgpd_prol;
+                Parser->roll_distance_FramePos=&Stream.sbgp;
             #endif
             Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
         }

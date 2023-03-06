@@ -352,6 +352,9 @@ File_Mpeg4::File_Mpeg4()
         TimeCode_FrameOffset=0;
         TimeCode_DtsOffset=0;
     #endif //MEDIAINFO_DEMUX
+    #if MEDIAINFO_CONFORMANCE
+        IsCmaf=false;
+    #endif
 }
 
 //---------------------------------------------------------------------------
@@ -1989,6 +1992,10 @@ void File_Mpeg4::Read_Buffer_Init()
         FrameCount_MaxPerStream=128;
     else
         FrameCount_MaxPerStream=512;
+
+    #if MEDIAINFO_CONFORMANCE
+        IsCmaf=MediaInfoLib::Config.Mp4Profile().find("cmfc")!=string::npos;
+    #endif
 }
 
 //***************************************************************************
@@ -3089,6 +3096,7 @@ void File_Mpeg4::Descriptors()
         MI.SamplingRate=Retrieve_Const(Stream_Audio, 0, Audio_SamplingRate).To_int16u();
         MI.stss=&Stream.stss;
         MI.stss_IsPresent=&Stream.stss_IsPresent;
+        MI.IsCmaf=&IsCmaf;
         MI.sbgp=&Stream.sbgp;
         MI.stts=&Stream.stts;
         MI.FirstOutputtedDecodedSample=&Stream.FirstOutputtedDecodedSample;
