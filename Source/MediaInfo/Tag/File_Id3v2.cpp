@@ -1200,7 +1200,7 @@ void File_Id3v2::Fill_Name()
                               {
                                 if (Element_Value.find(__T('('))==0)
                                     Element_Value=Element_Value.SubString(__T("("), __T(")")); //Replace (nn) by nn
-                                if (Element_Value==__T("0") || Element_Value==__T("255"))
+                                if (Element_Value==__T("255"))
                                     Element_Value.clear();
                                 Fill(Stream_General, 0, General_Genre, Element_Value);
                               }
