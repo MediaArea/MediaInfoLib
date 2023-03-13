@@ -21,7 +21,7 @@ Format;;;N YTY;;;Format used
 Format/String;;;Y NT;;;Format used + additional features
 Format/Info;;;Y NT;;;Info about Format
 Format/Url;;;N NT;;;Link
-Format_Commercial;;;N NT;;;Commercial name used by vendor for theses setings or Format field if there is no difference
+Format_Commercial;;;N YT;;;Commercial name used by vendor for theses setings or Format field if there is no difference
 Format_Commercial_IfAny;;;Y YTY;;;Commercial name used by vendor for theses setings if there is one
 Format_Version;;;Y NTY;;;Version of this format
 Format_Profile;;;Y NTY;;;Profile of the Format

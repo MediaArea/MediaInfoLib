@@ -55,7 +55,7 @@ ZenLib::Ztring Resources_Create_Save(Ztring FileName, Ztring &Contents)
 
 //---------------------------------------------------------------------------
 // Open an item
-ZenLib::Ztring Resources_Create_Item(const Ztring &Directory, const Ztring &Name, const Ztring &Class, Ztring &Contents)
+ZenLib::Ztring Resources_Create_Item(const Ztring &Directory, const Ztring &Name, const Ztring &Class, Ztring &Contents, bool IgnoreComments=false)
 {
     Contents.clear();
     Ztring Result;
@@ -80,6 +80,8 @@ ZenLib::Ztring Resources_Create_Item(const Ztring &Directory, const Ztring &Name
     ZLL.Load(Ztring(L"../Source/Resource/Text/")+Directory+L"/"+Name+L".csv");
     for (size_t Pos=0; Pos<ZLL.size(); Pos++)
     {
+        if (IgnoreComments)
+            ZLL[Pos].resize(4);
         Ztring Line_Temp=Line;
         Line_Temp.FindAndReplace(L"%Line%", ZLL.Read(Pos));
         Contents+=Line_Temp;
@@ -194,37 +196,37 @@ ZenLib::Ztring Resources_Create()
         return Result;
     Out+=Contents;
 
-    Result=Resources_Create_Item(L"Stream", L"General", L"ZtringListList", Contents);
+    Result=Resources_Create_Item(L"Stream", L"General", L"ZtringListList", Contents, true);
     if (!Result.empty())
         return Result;
     Out+=Contents;
 
-    Result=Resources_Create_Item(L"Stream", L"Video", L"ZtringListList", Contents);
+    Result=Resources_Create_Item(L"Stream", L"Video", L"ZtringListList", Contents, true);
     if (!Result.empty())
         return Result;
     Out+=Contents;
 
-    Result=Resources_Create_Item(L"Stream", L"Audio", L"ZtringListList", Contents);
+    Result=Resources_Create_Item(L"Stream", L"Audio", L"ZtringListList", Contents, true);
     if (!Result.empty())
         return Result;
     Out+=Contents;
 
-    Result=Resources_Create_Item(L"Stream", L"Text", L"ZtringListList", Contents);
+    Result=Resources_Create_Item(L"Stream", L"Text", L"ZtringListList", Contents, true);
     if (!Result.empty())
         return Result;
     Out+=Contents;
 
-    Result=Resources_Create_Item(L"Stream", L"Other", L"ZtringListList", Contents);
+    Result=Resources_Create_Item(L"Stream", L"Other", L"ZtringListList", Contents, true);
     if (!Result.empty())
         return Result;
     Out+=Contents;
 
-    Result=Resources_Create_Item(L"Stream", L"Image", L"ZtringListList", Contents);
+    Result=Resources_Create_Item(L"Stream", L"Image", L"ZtringListList", Contents, true);
     if (!Result.empty())
         return Result;
     Out+=Contents;
 
-    Result=Resources_Create_Item(L"Stream", L"Menu", L"ZtringListList", Contents);
+    Result=Resources_Create_Item(L"Stream", L"Menu", L"ZtringListList", Contents, true);
     if (!Result.empty())
         return Result;
     Out+=Contents;
