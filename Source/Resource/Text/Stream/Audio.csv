@@ -180,7 +180,7 @@ Delay_Original/String5;;;N NT;;;Delay in format : HH:MM:SS.mmm (HH:MM:SS:FF)
 Delay_Original_Settings;;;N NT;;;Delay settings (in case of timecode for example);;
 Delay_Original_DropFrame;;;N NTY;;;Delay drop frame info;
 Delay_Original_Source;;;N NTY;;;Delay source (Stream or empty);
-Video_Delay;; ms;N NF;;;Delay fixed in the stream (absolute / video)
+Video_Delay;; ms;N NFY;;;Delay fixed in the stream (absolute / video)
 Video_Delay/String;;;Y NT;;;
 Video_Delay/String1;;;N NT;;;
 Video_Delay/String2;;;N NT;;;
@@ -209,7 +209,7 @@ StreamSize/String2;;;N NT;;;;;
 StreamSize/String3;;;N NT;;;;;
 StreamSize/String4;;;N NT;;;;;
 StreamSize/String5;;;N NT;;;Streamsize in with percentage value;;
-StreamSize_Proportion;;;N NTY;;;Stream size divided by file size;;
+StreamSize_Proportion;;;N NT;;;Stream size divided by file size;;
 StreamSize_Demuxed;; byte;N YIN;;;StreamSize in bytes of hte stream after demux;;
 StreamSize_Demuxed/String;;;N NT;;;StreamSize_Demuxed in with percentage value;;
 StreamSize_Demuxed/String1;;;N NT;;;;;
@@ -224,7 +224,7 @@ Source_StreamSize/String2;;;N NT;;;;;
 Source_StreamSize/String3;;;N NT;;;;;
 Source_StreamSize/String4;;;N NT;;;;;
 Source_StreamSize/String5;;;N NT;;;Source Streamsize in with percentage value;;
-Source_StreamSize_Proportion;;;N NTY;;;Source Stream size divided by file size;;
+Source_StreamSize_Proportion;;;N NT;;;Source Stream size divided by file size;;
 StreamSize_Encoded;; byte;N YIY;;;Encoded Streamsize in bytes;;
 StreamSize_Encoded/String;;;N NT;;;Encoded Streamsize in with percentage value;;
 StreamSize_Encoded/String1;;;N NT;;;;;
@@ -254,7 +254,7 @@ Encoded_Application/String;;;Y NT;;;Name of the software package used to create 
 Encoded_Application_CompanyName;;;N YTY;;;Name of the company;;Technical
 Encoded_Application_Name;;;N YTY;;;Name of the product;;Technical
 Encoded_Application_Version;;;N YTY;;;Version of the product;;Technical
-Encoded_Application_Url;;;N YT;;;Name of the software package used to create the file, such as Microsoft WaveEdit.;;Technical
+Encoded_Application_Url;;;N YTY;;;Name of the software package used to create the file, such as Microsoft WaveEdit.;;Technical
 Encoded_Library;;;N YTY;;;Software used to create the file;;Technical
 Encoded_Library/String;;;Y NT;;;Software used to create the file, trying to have the format 'CompanyName ProductName (OperatingSystem) Version (Date)';;Technical
 Encoded_Library_CompanyName;;;N YTY;;;Name of the company;;Technical
