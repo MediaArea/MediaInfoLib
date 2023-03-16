@@ -258,7 +258,7 @@ void File_Pcm::Streams_Finish()
     Frame_Count_NotParsedIncluded=(int64u)-1;
 
     #if MEDIAINFO_CONFORMANCE
-    if (!IsNotSilence)
+    if (Config->ParseSpeed>=1 && !IsNotSilence)
     {
         Fill(Stream_Audio, 0, "ConformanceInfos", "1");
         Fill(Stream_Audio, 0, "ConformanceInfos Content", "Content is silence");
