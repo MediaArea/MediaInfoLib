@@ -2999,7 +2999,13 @@ void File_Mk::Segment_Info_DateUTC()
     FILLING_BEGIN();
         if (Segment_Info_Count>1)
             return; //First element has the priority
-        Fill(Stream_General, 0, "Encoded_Date", Ztring().Date_From_Seconds_1970((int32u)(Data/1000000000+978307200))); //978307200s between beginning of the millenium and 1970
+        Ztring Time=Ztring().Date_From_Seconds_1970((int32u)(Data/1000000000+978307200)); //978307200s between beginning of the millenium and 1970
+        if (!Time.empty())
+        {
+            Time.FindAndReplace(__T("UTC "), __T(""));
+            Time+=__T(" UTC");
+        }
+        Fill(Stream_General, 0, "Encoded_Date", Time);
     FILLING_END();
 }
 
