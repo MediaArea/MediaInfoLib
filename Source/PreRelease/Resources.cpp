@@ -81,7 +81,12 @@ ZenLib::Ztring Resources_Create_Item(const Ztring &Directory, const Ztring &Name
     for (size_t Pos=0; Pos<ZLL.size(); Pos++)
     {
         if (IgnoreComments)
-            ZLL[Pos].resize(4);
+        {
+            if (ZLL[Pos].size()>6 && !ZLL[Pos][6].rfind(L"Deprecated", 0))
+                ZLL[Pos][6].resize(10);
+            else
+                ZLL[Pos].resize(4);
+        }
         Ztring Line_Temp=Line;
         Line_Temp.FindAndReplace(L"%Line%", ZLL.Read(Pos));
         Contents+=Line_Temp;

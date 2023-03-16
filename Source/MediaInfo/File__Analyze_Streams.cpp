@@ -930,7 +930,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     if (!MediaInfoLib::Config.Legacy_Get())
     {
         const Ztring& Info=MediaInfoLib::Config.Info_Get(StreamKind, Parameter, Info_Info);
-        if (Info.size()>9 && Info[0]==__T('D') && Info[1]==__T('e') && Info[2]==__T('p') && Info[3]==__T('r') && Info[4]==__T('e') && Info[5]==__T('c') && Info[6]==__T('a') && Info[7]==__T('t') && Info[8]==__T('e') && Info[9]==__T('d'))
+        if (Info==__T("Deprecated"))
             return;
     }
 
