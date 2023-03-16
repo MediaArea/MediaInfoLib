@@ -623,6 +623,7 @@ namespace Elements
     const int64u ftyp_cmff=0x636D6666;
     const int64u ftyp_cmfl=0x636D666C;
     const int64u ftyp_cmfs=0x636D6673;
+    const int64u ftyp_dash=0x64617368;
     const int64u ftyp_isom=0x69736F6D;
     const int64u ftyp_caqv=0x63617176;
     const int64u idat=0x69646174;
@@ -1624,11 +1625,13 @@ void File_Mpeg4::ftyp()
                 case Elements::ftyp_cmff :
                 case Elements::ftyp_cmfl :
                 case Elements::ftyp_cmfs :
-                                           if (Config->File_Names.size()==1)
-                                               TestContinuousFileNames(1, __T("m4s"));
                                            #if MEDIAINFO_CONFORMANCE
                                                IsCmaf=true;
                                            #endif
+                                           //fall through
+                case Elements::ftyp_dash :
+                                           if (Config->File_Names.size()==1)
+                                               TestContinuousFileNames(1, __T("m4s"));
                 default : ;
             }
         CodecID_Fill(Ztring().From_CC4(MajorBrand), Stream_General, 0, InfoCodecID_Format_Mpeg4);
