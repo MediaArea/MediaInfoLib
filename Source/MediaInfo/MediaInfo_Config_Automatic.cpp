@@ -4443,7 +4443,7 @@ void MediaInfo_Config_General (ZtringListList &Info)
     "Delay_Source;;;N NTY\n"
     "Delay_Source/String;;;N NT\n"
     "StreamSize;; byte;N YIY\n"
-    "StreamSize/String;;;Y NT\n"
+    "StreamSize/String;;;N NT\n"
     "StreamSize/String1;;;N NT\n"
     "StreamSize/String2;;;N NT\n"
     "StreamSize/String3;;;N NT\n"
