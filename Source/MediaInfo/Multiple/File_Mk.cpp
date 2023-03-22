@@ -141,10 +141,15 @@ namespace Elements
     const int64u RawcookedBlock_BeforeData=0x01;
     const int64u RawcookedBlock_FileName=0x10;
     const int64u RawcookedBlock_FileHash=0x20;
+    const int64u RawcookedBlock_InData=0x05;
     const int64u RawcookedBlock_MaskAdditionAfterData=0x04;
     const int64u RawcookedBlock_MaskAdditionBeforeData=0x03;
     const int64u RawcookedBlock_MaskAdditionFileName=0x11;
+    const int64u RawcookedBlock_MaskAdditionInData=0x06;
     const int64u RawcookedSegment=0x7273;
+    const int64u RawcookedSegment_FileName=0x10;
+    const int64u RawcookedSegment_FileHash=0x20;
+    const int64u RawcookedSegment_InData=0x05;
     const int64u RawcookedSegment_LibraryName=0x70;
     const int64u RawcookedSegment_LibraryVersion=0x71;
     const int64u RawcookedTrack=0x7274;
@@ -152,9 +157,11 @@ namespace Elements
     const int64u RawcookedTrack_BeforeData=0x01;
     const int64u RawcookedTrack_FileName=0x10;
     const int64u RawcookedTrack_FileHash=0x20;
+    const int64u RawcookedTrack_InData=0x05;
     const int64u RawcookedTrack_MaskBaseAfterData=0x04;
     const int64u RawcookedTrack_MaskBaseBeforeData=0x03;
     const int64u RawcookedTrack_MaskBaseFileName=0x11;
+    const int64u RawcookedTrack_MaskBaseInData=0x06;
 
     //Segment
     const int64u Segment=0x8538067;
@@ -1652,12 +1659,17 @@ void File_Mk::Data_Parse()
         ATO2(RawcookedBlock_BeforeData, "BeforeData")
         ATO2(RawcookedBlock_FileName, "FileName")
         ATO2(RawcookedBlock_FileHash, "FileHash")
+        ATO2(RawcookedBlock_InData, "InData")
         ATO2(RawcookedBlock_MaskAdditionBeforeData, "MaskAdditionBeforeData")
         ATO2(RawcookedBlock_MaskAdditionAfterData, "MaskAdditionAfterData")
         ATO2(RawcookedBlock_MaskAdditionFileName, "MaskAdditionFileName")
+        ATO2(RawcookedBlock_MaskAdditionInData, "MaskAdditionInData")
         ATOM_END_MK
     LIS2(RawcookedSegment, "RawcookedSegment")
         ATOM_BEGIN
+        ATO2(RawcookedSegment_FileName, "FileName")
+        ATO2(RawcookedSegment_FileHash, "FileHash")
+        ATO2(RawcookedSegment_InData, "InData")
         ATO2(RawcookedSegment_LibraryName, "LibraryName")
         ATO2(RawcookedSegment_LibraryVersion, "LibraryVersion")
         ATOM_END_MK
@@ -1667,9 +1679,11 @@ void File_Mk::Data_Parse()
         ATO2(RawcookedTrack_AfterData, "AfterData")
         ATO2(RawcookedTrack_FileName, "FileName")
         ATO2(RawcookedTrack_FileHash, "FileHash")
+        ATO2(RawcookedTrack_InData, "InData")
         ATO2(RawcookedTrack_MaskBaseAfterData, "MaskBaseAfterData")
         ATO2(RawcookedTrack_MaskBaseBeforeData, "MaskBaseBeforeData")
         ATO2(RawcookedTrack_MaskBaseFileName, "MaskBaseFileName")
+        ATO2(RawcookedTrack_MaskBaseInData, "MaskBaseInData")
         ATOM_END_MK
 #endif //MEDIAINFO_TRACE
     LIS2(Segment, "Segment")
@@ -2346,6 +2360,25 @@ void File_Mk::Rawcooked_FileName(bool HasMask, bool UseMask)
 
     Rawcooked_Compressed_End(HasMask?&RawcookedTrack_Data.MaskBaseFileName:NULL, UseMask);
 }
+
+//---------------------------------------------------------------------------
+void File_Mk::Rawcooked_InData()
+{
+    //Parsing
+    Skip_XX(Element_Size-Element_Offset,                        "Data");
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Rawcooked_InData(bool, bool UseMask)
+{
+    if (!Rawcooked_Compressed_Start(NULL, UseMask))
+        return;
+
+    Rawcooked_InData();
+
+    Rawcooked_Compressed_End(NULL, UseMask);
+}
+
 //---------------------------------------------------------------------------
 void File_Mk::RawcookedBlock()
 {

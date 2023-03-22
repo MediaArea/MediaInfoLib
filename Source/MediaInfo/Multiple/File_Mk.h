@@ -72,15 +72,22 @@ private :
     void Rawcooked_AfterData(bool HasMask, bool UseMask=false);
     void Rawcooked_FileName();
     void Rawcooked_FileName(bool HasMask, bool UseMask=false);
+    void Rawcooked_InData();
+    void Rawcooked_InData(bool HasMask, bool UseMask=false);
     void RawcookedBlock();
     void RawcookedBlock_BeforeData() { Rawcooked_BeforeData(false); }
     void RawcookedBlock_AfterData() { Rawcooked_AfterData(false); }
     void RawcookedBlock_FileHash();
     void RawcookedBlock_FileName() { Rawcooked_FileName(false); }
+    void RawcookedBlock_InData() { Rawcooked_InData(false); }
     void RawcookedBlock_MaskAdditionBeforeData() { Rawcooked_BeforeData(true, true); }
     void RawcookedBlock_MaskAdditionAfterData() { Rawcooked_AfterData(true, true); }
     void RawcookedBlock_MaskAdditionFileName() { Rawcooked_FileName(true, true); }
+    void RawcookedBlock_MaskAdditionInData() { Rawcooked_InData(true, true); }
     void RawcookedSegment();
+    void RawcookedSegment_FileHash() { RawcookedBlock_FileHash(); }
+    void RawcookedSegment_FileName() { Rawcooked_FileName(false); }
+    void RawcookedSegment_InData() { Rawcooked_BeforeData(false, false); }
     void RawcookedSegment_LibraryName();
     void RawcookedSegment_LibraryVersion();
     void RawcookedTrack();
@@ -88,9 +95,11 @@ private :
     void RawcookedTrack_AfterData() { RawcookedBlock_AfterData(); }
     void RawcookedTrack_FileHash() { RawcookedBlock_FileHash(); }
     void RawcookedTrack_FileName() { RawcookedBlock_FileName(); }
+    void RawcookedTrack_InData() { RawcookedBlock_InData(); }
     void RawcookedTrack_MaskBaseBeforeData() { Rawcooked_BeforeData(true, false); }
     void RawcookedTrack_MaskBaseAfterData() { Rawcooked_AfterData(true, false); }
     void RawcookedTrack_MaskBaseFileName() { Rawcooked_FileName(true, false); }
+    void RawcookedTrack_MaskBaseInData() { Rawcooked_InData(true, false); }
     void Segment();
     void Segment_SeekHead();
     void Segment_SeekHead_Seek();
