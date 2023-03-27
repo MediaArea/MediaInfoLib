@@ -804,6 +804,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc=0x6E636C63;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclx=0x6E636C78;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof=0x70726F66;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_cuvv=0x63757676;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_d263=0x64323633;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dac3=0x64616333;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dac4=0x64616334;
@@ -1220,6 +1221,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_colr)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_cuvv)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_d263)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dac3)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dac4)
@@ -6929,6 +6931,30 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof()
 {
     //Parsing
     Skip_XX(Element_Size-Element_Offset,                        "ICC profile"); //TODO: parse ICC profile
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_cuvv()
+{
+    Element_Name("CUVVConfigurationBox");
+
+    //Parsing
+    int16u cuva_version_map;
+    Get_B2 (cuva_version_map,                                   "cuva_version_map");
+    Skip_B2(                                                    "terminal_provide_code");
+    Skip_B2(                                                    "terminal_provide_oriented_code");
+    for (int i=0; i<4; i++)
+        Skip_B4(                                                "reserved");
+
+    FILLING_BEGIN();
+        Fill(Stream_Video, StreamPos_Last, Video_HDR_Format, "HDR Vivid");
+        for (int i=15; i>=0; i--)
+            if (cuva_version_map>>i)
+            {
+                Fill(Stream_Video, StreamPos_Last, Video_HDR_Format_Version, i+1);
+                break;
+            }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
