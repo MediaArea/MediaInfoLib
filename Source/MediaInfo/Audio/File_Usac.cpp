@@ -1248,8 +1248,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
     C = usac_config();
     #if MEDIAINFO_CONFORMANCE
         Warning_Error=MediaInfoLib::Config.WarningError();
-        C.loudnessInfoSet_Present[0] = 0;
-        C.loudnessInfoSet_Present[1] = 0;
+        C.Reset();
     #endif
 
     Element_Begin1("UsacConfig");
@@ -1521,7 +1520,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         if (NoConCh || C.IsNotValid)
             return;
         auto loudnessInfoSet_Present_Total=C.loudnessInfoSet_Present[0]+C.loudnessInfoSet_Present[1];
-        if (C.loudnessInfoSet_Present[0] && C.loudnessInfoSet_Present[1])
+        if (C.loudnessInfoSet_HasContent[0] && C.loudnessInfoSet_HasContent[1])
             Fill_Conformance("loudnessInfoSet Coherency", "Mix of v0 and v1");
         if (C.loudnessInfoSet_Present[0]>1)
             Fill_Conformance("loudnessInfoSet Coherency", "loudnessInfoSet is present " + to_string(C.loudnessInfoSet_Present[0]) + " times but only 1 instance is allowed");
@@ -2600,8 +2599,7 @@ void File_Usac::loudnessInfoSet(bool V1)
     Element_Begin1(V1?"loudnessInfoSetV1":"loudnessInfoSet");
 
     #if MEDIAINFO_CONFORMANCE
-        if (V1)
-            C.loudnessInfoSet_Present[V1]++;
+        C.loudnessInfoSet_Present[V1]++;
     #endif
 
     int8u loudnessInfoAlbumCount, loudnessInfoCount;
@@ -2609,9 +2607,10 @@ void File_Usac::loudnessInfoSet(bool V1)
     Get_S1 (6, loudnessInfoAlbumCount,                          "loudnessInfoAlbumCount");
     Get_S1 (6, loudnessInfoCount,                               "loudnessInfoCount");
     #if MEDIAINFO_CONFORMANCE
-        if (!V1 && (loudnessInfoAlbumCount || loudnessInfoCount))
-            C.loudnessInfoSet_Present[V1]++;
+        if (loudnessInfoAlbumCount || loudnessInfoCount)
+            C.loudnessInfoSet_HasContent[V1]=true;
     #endif
+
     for (int8u i=0; i<loudnessInfoAlbumCount; i++)
         loudnessInfo(true, V1);
     for (int8u i=0; i<loudnessInfoCount; i++)
