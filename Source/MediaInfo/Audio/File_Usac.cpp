@@ -1009,6 +1009,8 @@ bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
 #if MEDIAINFO_CONFORMANCE
 void File_Usac::Fill_Conformance(const char* Field, const char* Value, bitset8 Flags, conformance_level Level)
 {
+    if (strncmp(Field, "UsacConfig loudnessInfoSet", 26))
+        return;
     if (Level == Warning && Warning_Error)
         Level = Error;
     field_value FieldValue(Field, Value, Flags, (int64u)-1);
@@ -1413,6 +1415,9 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
     }
     else
     {
+        if (!IsParsingRaw)
+            Fill_Loudness();
+
         #if MEDIAINFO_CONFORMANCE
             if (!IsParsingRaw)
             {
@@ -1522,16 +1527,16 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
             return;
         auto loudnessInfoSet_Present_Total=C.loudnessInfoSet_Present[0]+C.loudnessInfoSet_Present[1];
         if (C.loudnessInfoSet_Present[0] && C.loudnessInfoSet_Present[1])
-            Fill_Conformance("loudnessInfoSet Coherency", "Mix of v0 and v1");
+            Fill_Conformance("UsacConfig loudnessInfoSet Coherency", "Mix of v0 and v1");
         if (C.loudnessInfoSet_Present[0]>1)
-            Fill_Conformance("loudnessInfoSet Coherency", "loudnessInfoSet is present " + to_string(C.loudnessInfoSet_Present[0]) + " times but only 1 instance is allowed");
+            Fill_Conformance("UsacConfig loudnessInfoSet Coherency", "loudnessInfoSet is present " + to_string(C.loudnessInfoSet_Present[0]) + " times but only 1 instance is allowed");
         constexpr14 auto CheckFlags = bitset8().set(xHEAAC).set(MpegH);
         if (false)
         {
         }
         else if (!loudnessInfoSet_Present_Total)
         {
-            Fill_Conformance("loudnessInfoSet Coherency", "loudnessInfoSet is missing", CheckFlags);
+            Fill_Conformance("UsacConfig loudnessInfoSet Coherency", "loudnessInfoSet is missing", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is missing");
@@ -1540,7 +1545,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         }
         else if (C.loudnessInfo_Data[0].empty())
         {
-            Fill_Conformance("loudnessInfoSet loudnessInfoCount", "loudnessInfoCount is 0", CheckFlags);
+            Fill_Conformance("UsacConfig loudnessInfoSet loudnessInfoCount", "loudnessInfoCount is 0", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is empty");
@@ -1549,7 +1554,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         }
         else if (!DefaultIdPresent)
         {
-            Fill_Conformance("loudnessInfoSet Coherency", "Default loudnessInfo is missing", CheckFlags);
+            Fill_Conformance("UsacConfig loudnessInfoSet Coherency", "Default loudnessInfo is missing", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: Default loudnessInfo is missing");
@@ -1558,7 +1563,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         }
         else if (!C.LoudnessInfoIsNotValid && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
         {
-            Fill_Conformance("loudnessInfoSet Coherency", "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
+            Fill_Conformance("UsacConfig loudnessInfoSet Coherency", "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
@@ -2562,8 +2567,8 @@ void File_Usac::UsacConfigExtension()
             if (BS_Bookmark(B, usacConfigExtType<ID_CONFIG_EXT_Max?string(usacConfigExtType_ConfNames[usacConfigExtType]):("usacConfigExtType"+to_string(usacConfigExtType))))
             {
                 #if MEDIAINFO_CONFORMANCE
-                    if (usacConfigExtType==ID_CONFIG_EXT_LOUDNESS_INFO)
-                        C.LoudnessInfoIsNotValid=true;
+                    //if (usacConfigExtType==ID_CONFIG_EXT_LOUDNESS_INFO)
+                    //    C.LoudnessInfoIsNotValid=true;
                 #endif
             }
         }
@@ -2600,7 +2605,7 @@ void File_Usac::loudnessInfoSet(bool V1)
     Element_Begin1(V1?"loudnessInfoSetV1":"loudnessInfoSet");
 
     #if MEDIAINFO_CONFORMANCE
-        if (V1)
+        //if (V1)
             C.loudnessInfoSet_Present[V1]++;
     #endif
 
@@ -2609,8 +2614,8 @@ void File_Usac::loudnessInfoSet(bool V1)
     Get_S1 (6, loudnessInfoAlbumCount,                          "loudnessInfoAlbumCount");
     Get_S1 (6, loudnessInfoCount,                               "loudnessInfoCount");
     #if MEDIAINFO_CONFORMANCE
-        if (!V1 && (loudnessInfoAlbumCount || loudnessInfoCount))
-            C.loudnessInfoSet_Present[V1]++;
+        //if (!V1 && (loudnessInfoAlbumCount || loudnessInfoCount))
+        //    C.loudnessInfoSet_Present[V1]++;
     #endif
     for (int8u i=0; i<loudnessInfoAlbumCount; i++)
         loudnessInfo(true, V1);
