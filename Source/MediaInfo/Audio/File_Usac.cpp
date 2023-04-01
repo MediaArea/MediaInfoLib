@@ -3158,7 +3158,7 @@ void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool ar
     // arith_map_context
     {
         if (arith_reset_flag || C.arithContext[ch].previous_window_size==(int16u)-1)
-            memset(&C.arithContext[ch].q, NULL, sizeof(C.arithContext[ch].q));
+            memset(&C.arithContext[ch].q, 0, sizeof(C.arithContext[ch].q));
         else if (N != C.arithContext[ch].previous_window_size)
         {
             if (!N)

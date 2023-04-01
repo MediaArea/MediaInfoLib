@@ -305,7 +305,7 @@ public :
 
         arith_context() :           previous_window_size((int16u)-1)
         {
-            memset(&q, NULL, sizeof(q));
+            memset(&q, 0, sizeof(q));
         }
     };
 
