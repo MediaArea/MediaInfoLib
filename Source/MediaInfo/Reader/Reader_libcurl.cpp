@@ -702,11 +702,11 @@ size_t libcurl_WriteData_CallBack(void *ptr, size_t size, size_t nmemb, void *da
             {
                 //First time
                 ((Reader_libcurl::curl_data*)data)->FileSize=(int64u)File_SizeD;
-                ((Reader_libcurl::curl_data*)data)->MI->Open_Buffer_Init((int64u)File_SizeD, Reader_libcurl_FileNameWithoutPasswordAndParameters(((Reader_libcurl::curl_data*)data)->File_Name));
+                ((Reader_libcurl::curl_data*)data)->MI->Open_Buffer_Init((int64u)File_SizeD, ((Reader_libcurl::curl_data*)data)->File_Name);
             }
         }
         else
-            ((Reader_libcurl::curl_data*)data)->MI->Open_Buffer_Init((int64u)-1, Reader_libcurl_FileNameWithoutPasswordAndParameters(((Reader_libcurl::curl_data*)data)->File_Name));
+            ((Reader_libcurl::curl_data*)data)->MI->Open_Buffer_Init((int64u)-1, ((Reader_libcurl::curl_data*)data)->File_Name);
         ((Reader_libcurl::curl_data*)data)->FileOffset=0;
         ((Reader_libcurl::curl_data*)data)->Init_AlreadyDone=true;
     }

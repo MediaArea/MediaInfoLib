@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<indexFile xmlns="urn:digimetrics-xml-wrapper" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:digimetrics-xml-wrapper DMSCLIP.XSD">
+ <clip file="Example.ogg" />
+</indexFile>
