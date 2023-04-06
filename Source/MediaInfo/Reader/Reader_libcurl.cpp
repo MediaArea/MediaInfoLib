@@ -454,7 +454,7 @@ size_t libcurl_WriteData_CallBack_Amazon_AWS_Region(void *ptr, size_t size, size
 }
 
 //---------------------------------------------------------------------------
-void Amazon_AWS_Sign(MediaInfoLib::String &File_Name, struct curl_slist* &HttpHeader, const Http::Url &File_URL, const string &regionName, const string &serviceName, const ZtringList& ExternalHttpHeaders)
+void Amazon_AWS_Sign(struct curl_slist* &HttpHeader, const Http::Url &File_URL, const string &regionName, const string &serviceName, const ZtringList& ExternalHttpHeaders)
 {
     // Amazon AWS Authorization Header v4
     // See http://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
@@ -559,11 +559,13 @@ string Amazon_AWS_GetRegion(const string &serviceName, const string &bucketName,
     File_URL2.Query="location";
 
     //Send a location request
+    struct curl_slist* HttpHeader=NULL;
+    Amazon_AWS_Sign(HttpHeader, File_URL2, "us-east-1", serviceName, ExternalHttpHeaders);
     Reader_libcurl_curl_data_getregion Curl_Data2;
     Curl_Data2.Curl=Curl;
+    File_URL2.User.clear();
+    File_URL2.Password.clear();
     Curl_Data2.File_Name.From_UTF8(File_URL2.ToString());
-    struct curl_slist* HttpHeader=NULL;
-    Amazon_AWS_Sign(Curl_Data2.File_Name, HttpHeader, File_URL2, "us-east-1", serviceName, ExternalHttpHeaders);
     string FileName_String=Curl_Data2.File_Name.To_UTF8();
     curl_easy_setopt(Curl, CURLOPT_WRITEFUNCTION, &libcurl_WriteData_CallBack_Amazon_AWS_Region);
     curl_easy_setopt(Curl, CURLOPT_WRITEDATA, &Curl_Data2);
@@ -636,7 +638,7 @@ void Amazon_AWS_Manage(Http::Url &File_URL, Reader_libcurl::curl_data* Curl_Data
     // Handling S3 signature
     if (serviceName=="s3" && !regionName.empty())
     {
-        Amazon_AWS_Sign(Curl_Data->File_Name, Curl_Data->HttpHeader, File_URL, regionName, serviceName, ExternalHttpHeaders);
+        Amazon_AWS_Sign(Curl_Data->HttpHeader, File_URL, regionName, serviceName, ExternalHttpHeaders);
 
         //Removing the login/pass FTP-style, not usable by libcurl
         File_URL.User.clear();
@@ -700,11 +702,11 @@ size_t libcurl_WriteData_CallBack(void *ptr, size_t size, size_t nmemb, void *da
             {
                 //First time
                 ((Reader_libcurl::curl_data*)data)->FileSize=(int64u)File_SizeD;
-                ((Reader_libcurl::curl_data*)data)->MI->Open_Buffer_Init((int64u)File_SizeD, Reader_libcurl_FileNameWithoutPasswordAndParameters(((Reader_libcurl::curl_data*)data)->File_Name));
+                ((Reader_libcurl::curl_data*)data)->MI->Open_Buffer_Init((int64u)File_SizeD, ((Reader_libcurl::curl_data*)data)->File_Name);
             }
         }
         else
-            ((Reader_libcurl::curl_data*)data)->MI->Open_Buffer_Init((int64u)-1, Reader_libcurl_FileNameWithoutPasswordAndParameters(((Reader_libcurl::curl_data*)data)->File_Name));
+            ((Reader_libcurl::curl_data*)data)->MI->Open_Buffer_Init((int64u)-1, ((Reader_libcurl::curl_data*)data)->File_Name);
         ((Reader_libcurl::curl_data*)data)->FileOffset=0;
         ((Reader_libcurl::curl_data*)data)->Init_AlreadyDone=true;
     }
