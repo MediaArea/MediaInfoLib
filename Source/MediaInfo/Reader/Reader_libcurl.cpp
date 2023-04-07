@@ -1540,13 +1540,23 @@ bool Reader_libcurl::Load(const Ztring File_Name)
             size_t Errors=0;
 
             /* Load library */
+            #if defined(__APPLE__) && defined(__MACH__)
+                #define MEDIAINFODLL_NAME  "libcurl.4.dylib"
+                #define __stdcall
+            #elif !defined (_WIN32) && !defined (WIN32)
+                #define MEDIAINFODLL_NAME  "libcurl.so.4"
+                #define __stdcall
+            #endif //!defined(_WIN32) || defined (WIN32)
             #ifdef MEDIAINFO_GLIBC
                 libcurl_Module=g_module_open(MEDIAINFODLL_NAME, G_MODULE_BIND_LAZY);
             #elif defined (_WIN32) || defined (WIN32)
                 #ifdef WINDOWS_UWP
-                    libcurl_Module=LoadPackagedLibrary(MEDIAINFODLL_NAME, 0);
+                    libcurl_Module=LoadPackagedLibrary(__T("libcurl.dll"), 0);
                 #else
-                    libcurl_Module=LoadLibrary(MEDIAINFODLL_NAME);
+                    if (sizeof(size_t)==8)
+                        libcurl_Module=LoadLibrary(__T("libcurl-x64.dll"));
+                    if (!libcurl_Module)
+                        libcurl_Module=LoadLibrary(__T("libcurl.dll"));
                 #endif
             #else
                 libcurl_Module=dlopen(MEDIAINFODLL_NAME, RTLD_LAZY);
