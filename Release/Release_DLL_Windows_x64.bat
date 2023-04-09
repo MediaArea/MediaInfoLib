@@ -151,7 +151,9 @@ cd MediaInfoDLL_Windows_x64\
 cd ..
 
 rem --- Installer ---
-%BPATH%\Windows\NSIS\makensis ..\Source\Install\MediaInfo_DLL_Windows_x64.nsi
+pushd %BPATH%\Windows\NSIS
+makensis.exe "%~dp0\..\Source\Install\MediaInfo_DLL_Windows_x64.nsi"
+popd
 
 rem --- Clean up ---
 if "%1"=="SkipCleanUp" goto SkipCleanUp
