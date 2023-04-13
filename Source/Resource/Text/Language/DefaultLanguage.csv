@@ -227,6 +227,7 @@ Bits-(Pixel*Frame);Bits/(Pixel*Frame)
 BufferSize;Buffer size
 Cancel;Cancel
 CaptionServiceName;Caption service name
+CatalogNumber;Catalog number 
 Channel(s);Channel(s)
 ChannelCoded;Channel coded
 ChannelConfiguration;Channel configuration
@@ -1145,6 +1146,7 @@ Quote character;Quote character
 RadioStation;Radio station
 Rating;Rating
 RealtimeLoudnessCorrected;Realtime loudness corrected
+Reel;Reel
 Recorded_Date;Recorded date
 Recorded_Location;Recorded location
 Released_Date;Released date

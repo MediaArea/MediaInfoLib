@@ -51,6 +51,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Audio/File_Amr.cpp \
                        ../../../Source/MediaInfo/Audio/File_Amv.cpp \
                        ../../../Source/MediaInfo/Audio/File_Ape.cpp \
+                       ../../../Source/MediaInfo/Audio/File_Aptx100.cpp \
                        ../../../Source/MediaInfo/Audio/File_Au.cpp \
                        ../../../Source/MediaInfo/Audio/File_Caf.cpp \
                        ../../../Source/MediaInfo/Audio/File_Celt.cpp \

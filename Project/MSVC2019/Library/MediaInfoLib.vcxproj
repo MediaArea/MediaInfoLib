@@ -130,6 +130,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Aac_GeneralAudio_Sbr_Ps.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Aac_Main.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Aac_Others.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Aptx100.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Caf.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Celt.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ChannelGrouping.cpp" />
@@ -433,6 +434,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Aac_GeneralAudio_Sbr.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Aac_GeneralAudio_Sbr_Ps.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Adm.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Aptx100.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Caf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Celt.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ChannelGrouping.h" />

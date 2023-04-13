@@ -196,6 +196,9 @@ Comic/Position_Total;;;Y YIY;;;Total number of comics;;Title
 Part;;;Y YTY;;;Name of the part (e.g. CD1, CD2);;Title
 Part/Position;;;Y YIY;;;Number of the part;;Title
 Part/Position_Total;;;Y YIY;;;Total number of parts;;Title
+Reel;;;Y YTY;;;Name of the reel;;Title
+Reel/Position;;;Y YIY;;;Number of the reel;;Title
+Reel/Position_Total;;;Y YIY;;;Total number of reel;;Title
 Track;;;Y YTY;;;Name of the track (e.g. track 1, track 2);;Title
 Track_More;;;Y YTY;;;More information about the Track;;Title
 Track/Url;;;Y YT;;;Link to a site about this Track;;Title

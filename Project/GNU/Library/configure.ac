@@ -257,6 +257,7 @@ if test "$MediaInfoAls"     = "no";  then AC_DEFINE(MEDIAINFO_ALS_NO)     fi; if
 if test "$MediaInfoAmr"     = "no";  then AC_DEFINE(MEDIAINFO_AMR_NO)     fi; if test "$MediaInfoAmr"     = "yes"; then AC_DEFINE(MEDIAINFO_AMR_YES)     fi
 if test "$MediaInfoAmv"     = "no";  then AC_DEFINE(MEDIAINFO_AMV_NO)     fi; if test "$MediaInfoAmv"     = "yes"; then AC_DEFINE(MEDIAINFO_AMV_YES)     fi
 if test "$MediaInfoApe"     = "no";  then AC_DEFINE(MEDIAINFO_APE_NO)     fi; if test "$MediaInfoApe"     = "yes"; then AC_DEFINE(MEDIAINFO_APE_YES)     fi
+if test "$MediaInfoAptx100" = "no";  then AC_DEFINE(MEDIAINFO_APTX100_NO) fi; if test "$MediaInfoAptx100" = "yes"; then AC_DEFINE(MEDIAINFO_APTX100_YES) fi
 if test "$MediaInfoAu"      = "no";  then AC_DEFINE(MEDIAINFO_AU_NO)      fi; if test "$MediaInfoAu"      = "yes"; then AC_DEFINE(MEDIAINFO_AU_YES)      fi
 if test "$MediaInfoCaf"     = "no";  then AC_DEFINE(MEDIAINFO_CAF_NO)     fi; if test "$MediaInfoCaf"     = "yes"; then AC_DEFINE(MEDIAINFO_CAF_YES)     fi
 if test "$MediaInfoCelt"    = "no";  then AC_DEFINE(MEDIAINFO_CELT_NO)    fi; if test "$MediaInfoCelt"    = "yes"; then AC_DEFINE(MEDIAINFO_CELT_YES)    fi

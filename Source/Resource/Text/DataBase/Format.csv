@@ -71,6 +71,7 @@ AMR;;;A;Amr;Adaptive Multi-Rate;amr;audio/AMR;http://www.apple.com/quicktime/dow
 Atrac;;;A;;Adaptive Transform Acoustic Coding;;audio/ATRAC;;Lossy
 Atrac3;;;A;;Adaptive Transform Acoustic Coding 3;;audio/ATRAC3;;Lossy
 Atrac9;;;A;;Adaptive Transform Acoustic Coding 9;;audio/ATRAC9;https://en.wikipedia.org/wiki/Adaptive_Transform_Acoustic_Coding;Lossy
+APT-X100;;;A;Aptx100;;AUD AUE aud aue;;;Lossy
 AU;;;A;Au;uLaw/AU Audio File;au;audio/basic;;
 CAF;;;A;Caf;Core Audio Format;caf;audio/x-caf;https://developer.apple.com/library/content/documentation/MusicAudio/Reference/CAFSpec/CAF_overview/CAF_overview.html;
 DolbyE;;;A;Aes3;;dde
