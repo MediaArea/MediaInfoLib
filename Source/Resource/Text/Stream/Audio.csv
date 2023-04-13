@@ -144,8 +144,8 @@ SamplingCount;;;N NIY;;;Sample count (based on sampling rate)
 Source_SamplingCount;;;N NIY;;;Source Sample count (based on sampling rate), with information derived from header metadata
 FrameRate;; fps;N YFY;;;Frames per second, as integer (e.g. 29.970)
 FrameRate/String;;;Y NT;;;Frames per second, with measurement (e.g. 29.970 (29970/1000) FPS)
-FrameRate_Num;;;N NIN;;;Numerator for determined frames per second (e.g. 29970)
-FrameRate_Den;;;N NIN;;;Denominator for determined frames per second (e.g. 1000)
+FrameRate_Num;;;N NIY;;;Numerator for determined frames per second (e.g. 29970)
+FrameRate_Den;;;N NIY;;;Denominator for determined frames per second (e.g. 1000)
 FrameCount;;;N NIY;;;Frame count (a frame contains a count of samples depends of the format)
 Source_FrameCount;;;N NIY;;;Source Frame count (a frame contains a count of samples depends of the format)
 Resolution;; bit;N NI;;;Deprecated, do not use in new projects
