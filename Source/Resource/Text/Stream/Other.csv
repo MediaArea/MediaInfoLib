@@ -79,8 +79,8 @@ BitRate_Encoded;; bps;N YFY;;;Encoded (with forced padding) bit rate in bps, if 
 BitRate_Encoded/String;;;N NT;;;Encoded (with forced padding) bit rate (with measurement), if some container padding is present
 FrameRate;; fps;N YFY;;;Frames per second
 FrameRate/String;;;Y NT;;;Frames per second (with measurement)
-FrameRate_Num;;;N NIN;;;Frames per second, numerator
-FrameRate_Den;;;N NIN;;;Frames per second, denominator
+FrameRate_Num;;;N NIY;;;Frames per second, numerator
+FrameRate_Den;;;N NIY;;;Frames per second, denominator
 FrameCount;;;N NIY;;;Number of frames
 Source_FrameCount;;;N NI;;;Source Number of frames
 Delay;; ms;N NFY;;;Delay fixed in the stream (relative) IN MS;
