@@ -1504,6 +1504,31 @@ void File_Dts::HD_XLL(int64u Size)
 {
     Element_Name("XLL (LossLess)");
 
+    //Coherency check
+    auto MaxSize=Element_Size-Element_Offset;
+    if (MaxSize<=5)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "?");
+        return; // Happens in some files, at the end of a stream, no idea about what it is supposed to be
+    }
+    int16u Begin;
+    Peek_B2(Begin);
+    int8u Version=Begin>>12;
+    if (Version)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "?");
+        return;
+    }
+    int8u HeaderSize=Begin>>4;
+    if (HeaderSize<8)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "?");
+        return;
+    }
+    auto CRC=Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, HeaderSize-3);
+    if (CRC)
+        return;
+
     // Quick and dirty search of DTS:X pattern
     if (!Presence[presence_Extended_XLL])
     {
@@ -1517,14 +1542,13 @@ void File_Dts::HD_XLL(int64u Size)
     int64u End=Element_Offset+Size;
     int64u LLFrameSize;
     int16u ChSetHeaderSize;
-    int8u HeaderSize, Bits4FrameFsize, NumChSetsInFrame, SegmentsInFrame, Bits4SSize, Bits4ChMask;
+    int8u Bits4FrameFsize, NumChSetsInFrame, SegmentsInFrame, Bits4SSize, Bits4ChMask;
     bool ScalableLSBs;
     Element_Begin1("Common");
     BS_Begin();
     int64u EndBS=Data_BS_Remain();
     Skip_S1(4,                                                  "Version");
     Get_S1 (8, HeaderSize,                                      "HeaderSize"); Param_Info1(HeaderSize-3);
-    auto CRC=Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, HeaderSize-3);
     Get_S1 (5, Bits4FrameFsize,                                 "Bits4FrameFsize"); Param_Info1(Bits4FrameFsize+1);
     Get_S8 (Bits4FrameFsize+1, LLFrameSize,                     "LLFrameSize"); Param_Info1(LLFrameSize+1);
     Get_S1 (4, NumChSetsInFrame,                                "NumChSetsInFrame");
@@ -1611,28 +1635,16 @@ void File_Dts::HD_XLL(int64u Size)
             Count*=2;
     }
     size_t NaviByteCount=(Count*Bits4SSize+7)/8+2;
-    bool NaviIsfine=false;
     CRC=Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, NaviByteCount);
     if (CRC)
     {
-        while (CRC)
-        {
-            auto Buffer_Temp=Buffer+Buffer_Offset+Element_Offset+NaviByteCount;
-            auto Buffer_End=Buffer+Buffer_Offset+End;
-            while (CRC && Buffer_Temp<Buffer_End)
-                CRC=(CRC>>8)^CRC_CCIT_Table[((uint8_t)CRC)^*Buffer_Temp++];
-            if (!CRC)
-            {
-                NaviIsfine=true;
-                Count=(Buffer_Temp-(Buffer+Buffer_Offset+Element_Offset)-2)*8/Bits4SSize;
-            }
-        }
-    }
-    else
-        NaviIsfine=true;
-    if (!NaviIsfine)
-    {
-        return;
+        auto Buffer_Temp=Buffer+Buffer_Offset+Element_Offset+NaviByteCount;
+        auto Buffer_End=Buffer+Buffer_Offset+End;
+        while (CRC && Buffer_Temp<Buffer_End)
+            CRC=(CRC>>8)^CRC_CCIT_Table[((uint8_t)CRC)^*Buffer_Temp++];
+        if (CRC)
+            return;
+        Count=(Buffer_Temp-(Buffer+Buffer_Offset+Element_Offset)-2)*8/Bits4SSize;
     }
     Element_Begin1("NAVI");
     BS_Begin();
@@ -1647,8 +1659,13 @@ void File_Dts::HD_XLL(int64u Size)
     Skip_B2(                                                    "CRC16");
     Element_End0();
 
-    Skip_XX(Sizes_Total,                                        "Segments");
-    Skip_XX(Count,                                              "1 byte per set?");
+    if (Element_Size-Element_Offset>=Sizes_Total+Count)
+    {
+        Skip_XX(Sizes_Total,                                    "Segments");
+        Skip_XX(Count,                                          "1 byte per set?");
+    }
+    else
+        Skip_XX(Element_Size-Element_Offset,                    "?");
     if (End>Element_Offset)
     {
         auto Remainingbytes=Element_Offset%4;
