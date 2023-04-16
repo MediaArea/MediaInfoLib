@@ -687,6 +687,9 @@
 #if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_VP8_NO) && !defined(MEDIAINFO_VP8_YES)
     #define MEDIAINFO_VP8_YES
 #endif
+#if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_VP9_NO) && !defined(MEDIAINFO_VP9_YES)
+    #define MEDIAINFO_VP9_YES
+#endif
 #if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_Y4M_NO) && !defined(MEDIAINFO_Y4M_YES)
     #define MEDIAINFO_Y4M_YES
 #endif

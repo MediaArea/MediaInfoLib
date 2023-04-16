@@ -343,6 +343,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Vc1.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Vc3.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Vp8.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Vp9.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Y4m.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/XmlUtils.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/OutputHelpers.cpp
