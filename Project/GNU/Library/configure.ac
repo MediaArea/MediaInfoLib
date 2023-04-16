@@ -360,6 +360,7 @@ if test "$MediaInfoTheora"  = "no";  then AC_DEFINE(MEDIAINFO_THEORA_NO)  fi; if
 if test "$MediaInfoVc1"     = "no";  then AC_DEFINE(MEDIAINFO_VC1_NO)     fi; if test "$MediaInfoVc1"     = "yes"; then AC_DEFINE(MEDIAINFO_VC1_YES)     fi
 if test "$MediaInfoVc3"     = "no";  then AC_DEFINE(MEDIAINFO_VC3_NO)     fi; if test "$MediaInfoVc3"     = "yes"; then AC_DEFINE(MEDIAINFO_VC3_YES)     fi
 if test "$MediaInfoVp8"     = "no";  then AC_DEFINE(MEDIAINFO_VP8_NO)     fi; if test "$MediaInfoVp8"     = "yes"; then AC_DEFINE(MEDIAINFO_VP8_YES)     fi
+if test "$MediaInfoVp9"     = "no";  then AC_DEFINE(MEDIAINFO_VP9_NO)     fi; if test "$MediaInfoVp9"     = "yes"; then AC_DEFINE(MEDIAINFO_VP9_YES)     fi
 if test "$MediaInfoY4m"     = "no";  then AC_DEFINE(MEDIAINFO_Y4M_NO)     fi; if test "$MediaInfoY4m"     = "yes"; then AC_DEFINE(MEDIAINFO_Y4M_YES)     fi
 
 AM_CONDITIONAL([COMPILE_DLL], [test "$MediaInfoDll" != "no"])

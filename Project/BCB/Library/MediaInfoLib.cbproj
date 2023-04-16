@@ -309,21 +309,21 @@
             <DependentOn>..\..\..\Source\MediaInfo\Export\Export_EbuCore.h</DependentOn>
             <BuildOrder>40</BuildOrder>
         </CppCompile>
-        <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Niso.cpp">
-            <DependentOn>..\..\..\Source\MediaInfo\Export\Export_Niso.h</DependentOn>
-            <BuildOrder>213</BuildOrder>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Fims.cpp">
+            <DependentOn>..\..\..\Source\MediaInfo\Export\Export_Fims.h</DependentOn>
+            <BuildOrder>207</BuildOrder>
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Graph.cpp">
             <DependentOn>..\..\..\Source\MediaInfo\Export\Export_Graph.h</DependentOn>
             <BuildOrder>226</BuildOrder>
         </CppCompile>
-        <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Fims.cpp">
-            <DependentOn>..\..\..\Source\MediaInfo\Export\Export_Fims.h</DependentOn>
-            <BuildOrder>207</BuildOrder>
-        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Mpeg7.cpp">
             <DependentOn>..\..\..\Source\MediaInfo\Export\Export_Mpeg7.h</DependentOn>
             <BuildOrder>41</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_Niso.cpp">
+            <DependentOn>..\..\..\Source\MediaInfo\Export\Export_Niso.h</DependentOn>
+            <BuildOrder>213</BuildOrder>
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Export\Export_PBCore.cpp">
             <DependentOn>..\..\..\Source\MediaInfo\Export\Export_PBCore.h</DependentOn>
@@ -818,6 +818,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_Vp8.cpp">
             <BuildOrder>186</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_Vp9.cpp">
+            <BuildOrder>236</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_Y4m.cpp">
             <BuildOrder>190</BuildOrder>
         </CppCompile>
@@ -848,11 +851,11 @@
         <CppCompile Include="..\..\..\Source\ThirdParty\sha2-gladman\sha2.c">
             <BuildOrder>216</BuildOrder>
         </CppCompile>
-        <CppCompile Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.cpp">
-            <BuildOrder>209</BuildOrder>
-        </CppCompile>
         <CppCompile Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml.c">
             <BuildOrder>232</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.cpp">
+            <BuildOrder>209</BuildOrder>
         </CppCompile>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

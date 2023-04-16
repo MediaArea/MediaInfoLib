@@ -64,6 +64,9 @@
 #if defined(MEDIAINFO_VP8_YES)
     #include "MediaInfo/Video/File_Vp8.h"
 #endif
+#if defined(MEDIAINFO_VP9_YES)
+    #include "MediaInfo/Video/File_Vp9.h"
+#endif
 #if defined(MEDIAINFO_AAC_YES)
     #include "MediaInfo/Audio/File_Aac.h"
 #endif
@@ -4796,6 +4799,12 @@ void File_Mk::CodecID_Manage()
     else if (Format==__T("VP8"))
     {
         streamItem.Parser=new File_Vp8;
+    }
+    #endif
+    #if defined(MEDIAINFO_VP8_YES)
+    else if (Format==__T("VP9"))
+    {
+        streamItem.Parser=new File_Vp9;
     }
     #endif
     #if defined(MEDIAINFO_OGG_YES)
