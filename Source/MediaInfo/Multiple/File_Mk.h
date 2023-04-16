@@ -135,9 +135,9 @@ private :
     void Segment_Cluster_BlockGroup_Block_Lace();
     void Segment_Cluster_BlockGroup_BlockVirtual(){Skip_XX(Element_Size, "Data");};
     void Segment_Cluster_BlockGroup_BlockAdditions(){};
-    void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore(){};
-    void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAddID(){UInteger_Info();};
-    void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditional(){Skip_XX(Element_Size, "Data");};
+    void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore();
+    void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAddID();
+    void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditional();
     void Segment_Cluster_BlockGroup_BlockDuration();
     void Segment_Cluster_BlockGroup_ReferencePriority(){UInteger_Info();};
     void Segment_Cluster_BlockGroup_ReferenceBlock(){UInteger_Info();};
@@ -348,6 +348,21 @@ private :
     void Segment_Tags_Tag_SimpleTag_TagString();
     void Segment_Tags_Tag_SimpleTag_TagBinary(){Skip_XX(Element_Size, "Data");};
 
+    // Extra
+    enum hdr_format
+    {
+        HdrFormat_SmpteSt209440,
+        HdrFormat_SmpteSt2086,
+        HdrFormat_Max,
+    };
+    typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
+    hdr                                 HDR;
+    void sei_message_user_data_registered_itu_t_t35();
+    void sei_message_user_data_registered_itu_t_t35_B5();
+    void sei_message_user_data_registered_itu_t_t35_B5_003C();
+    void sei_message_user_data_registered_itu_t_t35_B5_003C_0001();
+    void sei_message_user_data_registered_itu_t_t35_B5_003C_0001_04();
+
     struct stream
     {
         std::vector<int64u>     TimeCodes;
@@ -443,6 +458,9 @@ private :
     void     CodecID_Manage();
     int64u   TrackType;
     int64u   AudioBitDepth;
+
+    //Temp - BlockAddition
+    int64u   BlockAddID;
 
     //Temp
     int8u   InvalidByteMax;

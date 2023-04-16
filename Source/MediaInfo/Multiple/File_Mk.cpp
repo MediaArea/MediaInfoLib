@@ -98,11 +98,13 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
+#include <bitset>
 #include <zlib.h>
 #include "ThirdParty/base64/base64.h"
 #if MEDIAINFO_EVENTS
     #include "MediaInfo/MediaInfo_Events_Internal.h"
 #endif //MEDIAINFO_EVENTS
+using namespace std;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -1153,14 +1155,78 @@ void File_Mk::Streams_Finish()
             Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode, IsVfr?"VFR":"CFR");
 
             //MasteringDisplay
-            Ztring MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance;
+            Ztring& MasteringDisplay_ColorPrimaries=HDR[Video_MasteringDisplay_ColorPrimaries][HdrFormat_SmpteSt2086];
+            Ztring& MasteringDisplay_Luminance=HDR[Video_MasteringDisplay_Luminance][HdrFormat_SmpteSt2086];
             Get_MasteringDisplayColorVolume(MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance, Temp->second.MasteringMetadata);
             if (!MasteringDisplay_ColorPrimaries.empty() || !MasteringDisplay_Luminance.empty())
             {
-                Fill(StreamKind_Last, StreamPos_Last, "HDR_Format", "SMPTE ST 2086");
-                Fill(StreamKind_Last, StreamPos_Last, "HDR_Format_Compatibility", "HDR10");
-                Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_ColorPrimaries", MasteringDisplay_ColorPrimaries);
-                Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_Luminance", MasteringDisplay_Luminance);
+                auto& HDR_Format=HDR[Video_HDR_Format][HdrFormat_SmpteSt2086];
+                if (HDR_Format.empty())
+                {
+                    HDR_Format=__T("SMPTE ST 2086");
+                    HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt2086]="HDR10";
+                }
+            }
+
+            //Merge info about different HDR formats
+            auto HDR_Format=HDR.find(Video_HDR_Format);
+            if (HDR_Format!=HDR.end())
+            {
+                bitset<HdrFormat_Max> HDR_Present;
+                size_t HDR_FirstFormatPos=(size_t)-1;
+                for (size_t i=0; i<HdrFormat_Max; i++)
+                    if (!HDR_Format->second[i].empty())
+                    {
+                        if (HDR_FirstFormatPos==(size_t)-1)
+                            HDR_FirstFormatPos=i;
+                        HDR_Present[i]=true;
+                    }
+                bool LegacyStreamDisplay=MediaInfoLib::Config.LegacyStreamDisplay_Get();
+                for (const auto& HDR_Item: HDR)
+                {
+                    size_t i=HDR_FirstFormatPos;
+                    size_t HDR_FirstFieldNonEmpty=(size_t)-1;
+                    if (HDR_Item.first>Video_HDR_Format_Compatibility)
+                    {
+                        for (; i<HdrFormat_Max; i++)
+                        {
+                            if (!HDR_Present[i])
+                                continue;
+                            if (HDR_FirstFieldNonEmpty==(size_t)-1 && !HDR_Item.second[i].empty())
+                                HDR_FirstFieldNonEmpty=i;
+                            if (!HDR_Item.second[i].empty() && HDR_Item.second[i]!=HDR_Item.second[HDR_FirstFieldNonEmpty])
+                                break;
+                        }
+                    }
+                    if (i==HdrFormat_Max)
+                        Fill(Stream_Video, 0, HDR_Item.first, HDR_Item.second[HDR_FirstFieldNonEmpty]);
+                    else if (!LegacyStreamDisplay)
+                    {
+                        for (i=HDR_FirstFormatPos; i<HdrFormat_Max; i++)
+                        {
+                            if (!HDR_Present[i])
+                                continue;
+                            if (HDR_Item.first<=Video_HDR_Format_Compatibility || !HDR_Item.second[i].empty())
+                            {
+                                Fill(Stream_Video, 0, HDR_Item.first, HDR_Item.second[i]);
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ZtringList Value;
+                        Value.Separator_Set(0, __T(" / "));
+                        if (i!=HdrFormat_Max)
+                            for (i=HDR_FirstFormatPos; i<HdrFormat_Max; i++)
+                            {
+                                if (!HDR_Present[i])
+                                    continue;
+                                Value.push_back(HDR_Item.second[i]);
+                            }
+                        Fill(Stream_Video, 0, HDR_Item.first, Value.Read());
+                    }
+                }
             }
         }
 
@@ -2956,6 +3022,33 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
         if (Trace_Activated && (Trace_Segment_Cluster_Count>MaxCountSameElementInTrace || streamItem.Trace_Segment_Cluster_Block_Count>MaxCountSameElementInTrace))
             Element_Children_IfNoErrors();
     #endif // MEDIAINFO_TRACE
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Cluster_BlockGroup_BlockAdditions_BlockMore()
+{
+    BlockAddID=(int64u)-1;
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAddID()
+{
+    //Parsing
+    int64u Temp=UInteger_Get();
+
+    FILLING_BEGIN();
+        BlockAddID=Temp;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditional()
+{
+    switch (BlockAddID)
+    {
+        case 4 : sei_message_user_data_registered_itu_t_t35(); break;
+        default: {Skip_XX(Element_Size, "Data"); }
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -5099,6 +5192,188 @@ void File_Mk::CRC32_Check ()
                 CRC32Compute[i].UpTo=0;
             }
         }
+}
+
+//***************************************************************************
+// Extra
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+// SEI - 4
+void File_Mk::sei_message_user_data_registered_itu_t_t35()
+{
+    Element_Info1("user_data_registered_itu_t_t35");
+
+    int8u itu_t_t35_country_code;
+    Get_B1(itu_t_t35_country_code,                              "itu_t_t35_country_code");
+
+    switch (itu_t_t35_country_code)
+    {
+        case 0xB5:  sei_message_user_data_registered_itu_t_t35_B5(); break; // USA
+    }
+}
+
+//---------------------------------------------------------------------------
+// SEI - 4 - USA
+void File_Mk::sei_message_user_data_registered_itu_t_t35_B5()
+{
+    int16u itu_t_t35_terminal_provider_code;
+    Get_B2 (itu_t_t35_terminal_provider_code,                   "itu_t_t35_terminal_provider_code");
+
+    switch (itu_t_t35_terminal_provider_code)
+    {
+        case 0x003C: sei_message_user_data_registered_itu_t_t35_B5_003C(); break;
+    }
+}
+
+//---------------------------------------------------------------------------
+// SEI - 4 - USA - 003C
+void File_Mk::sei_message_user_data_registered_itu_t_t35_B5_003C()
+{
+    int16u itu_t_t35_terminal_provider_oriented_code;
+    Get_B2 (itu_t_t35_terminal_provider_oriented_code,          "itu_t_t35_terminal_provider_oriented_code");
+
+    switch (itu_t_t35_terminal_provider_oriented_code)
+    {
+        case 0x0001: sei_message_user_data_registered_itu_t_t35_B5_003C_0001(); break;
+    }
+}
+
+//---------------------------------------------------------------------------
+// SEI - 4 - USA - 003C - 0001
+void File_Mk::sei_message_user_data_registered_itu_t_t35_B5_003C_0001()
+{
+    int8u application_identifier;
+    Get_B1 (application_identifier,                             "application_identifier");
+
+    switch (application_identifier)
+    {
+        case 0x04: sei_message_user_data_registered_itu_t_t35_B5_003C_0001_04(); break;
+    }
+}
+
+//---------------------------------------------------------------------------
+// SEI - 4 - USA - 003C - 0001 - SMPTE ST 2094-40 (HDR10+)
+void File_Mk::sei_message_user_data_registered_itu_t_t35_B5_003C_0001_04()
+{
+    Element_Info1("SMPTE ST 2094 App 4");
+    int8u application_version;
+    bool IsHDRplus=false, tone_mapping_flag;
+    Get_B1 (application_version,                                "application_version");
+    if (application_version<=1)
+    {
+        int32u targeted_system_display_maximum_luminance, maxscl[4], distribution_maxrgb_percentiles[16];
+        int16u fraction_bright_pixels;
+        int8u num_distribution_maxrgb_percentiles, distribution_maxrgb_percentages[16], num_windows, num_bezier_curve_anchors;
+        bool targeted_system_display_actual_peak_luminance_flag, mastering_display_actual_peak_luminance_flag, color_saturation_mapping_flag;
+        BS_Begin();
+        Get_S1 ( 2, num_windows,                                "num_windows");
+
+        for (int8u w=1; w<num_windows; w++)
+        {
+            Element_Begin1("window");
+            Skip_S2(16,                                         "window_upper_left_corner_x");
+            Skip_S2(16,                                         "window_upper_left_corner_y");
+            Skip_S2(16,                                         "window_lower_right_corner_x");
+            Skip_S2(16,                                         "window_lower_right_corner_y");
+            Skip_S2(16,                                         "center_of_ellipse_x");
+            Skip_S2(16,                                         "center_of_ellipse_y");
+            Skip_S1( 8,                                         "rotation_angle");
+            Skip_S2(16,                                         "semimajor_axis_internal_ellipse");
+            Skip_S2(16,                                         "semimajor_axis_external_ellipse");
+            Skip_S2(16,                                         "semiminor_axis_external_ellipse");
+            Skip_SB(                                            "overlap_process_option");
+            Element_End0();
+        }
+
+        Get_S4 (27, targeted_system_display_maximum_luminance,  "targeted_system_display_maximum_luminance");
+        TEST_SB_GET (targeted_system_display_actual_peak_luminance_flag, "targeted_system_display_actual_peak_luminance_flag");
+            int8u num_rows_targeted_system_display_actual_peak_luminance, num_cols_targeted_system_display_actual_peak_luminance;
+            Get_S1(5, num_rows_targeted_system_display_actual_peak_luminance, "num_rows_targeted_system_display_actual_peak_luminance");
+            Get_S1(5, num_cols_targeted_system_display_actual_peak_luminance, "num_cols_targeted_system_display_actual_peak_luminance");
+            for(int8u i=0; i<num_rows_targeted_system_display_actual_peak_luminance; i++)
+                for(int8u j=0; j<num_cols_targeted_system_display_actual_peak_luminance; j++)
+                    Skip_S1(4,                                   "targeted_system_display_actual_peak_luminance");
+        TEST_SB_END();
+
+        for (int8u w=0; w<num_windows; w++)
+        {
+            Element_Begin1("window");
+            for(int8u i=0; i<3; i++)
+            {
+                Get_S3 (17, maxscl[i],                          "maxscl"); Param_Info2(Ztring::ToZtring(((float)maxscl[i])/100000, 5), " cd/m2");
+            }
+            Get_S3 (17, maxscl[3],                              "average_maxrgb");   Param_Info2(Ztring::ToZtring(((float)maxscl[3])/100000, 5), " cd/m2");
+
+            Get_S1(4, num_distribution_maxrgb_percentiles,      "num_distribution_maxrgb_percentiles");
+            for (int8u i=0; i< num_distribution_maxrgb_percentiles; i++)
+            {
+                Element_Begin1(                                 "distribution_maxrgb");
+                Get_S1 ( 7, distribution_maxrgb_percentages[i], "distribution_maxrgb_percentages");
+                Get_S3 (17, distribution_maxrgb_percentiles[i], "distribution_maxrgb_percentiles");
+                Element_Info1(distribution_maxrgb_percentages[i]);
+                Element_Info1(distribution_maxrgb_percentiles[i]);
+                Element_End0();
+            }
+            Get_S2 (10, fraction_bright_pixels,                 "fraction_bright_pixels");
+            Element_End0();
+        }
+
+        TEST_SB_GET (mastering_display_actual_peak_luminance_flag, "mastering_display_actual_peak_luminance_flag");
+            int8u num_rows_mastering_display_actual_peak_luminance, num_cols_mastering_display_actual_peak_luminance;
+            Get_S1(5, num_rows_mastering_display_actual_peak_luminance, "num_rows_mastering_display_actual_peak_luminance");
+            Get_S1(5, num_cols_mastering_display_actual_peak_luminance, "num_cols_mastering_display_actual_peak_luminance");
+            for(int8u i=0; i< num_rows_mastering_display_actual_peak_luminance; i++)
+                for(int8u j=0; j< num_cols_mastering_display_actual_peak_luminance; j++)
+                    Skip_S1(4,                                   "mastering_display_actual_peak_luminance");
+        TEST_SB_END();
+
+        for (int8u w=0; w<num_windows; w++)
+        {
+            Element_Begin1("window");
+            TEST_SB_GET (tone_mapping_flag,                     "tone_mapping_flag");
+                Skip_S2(12,                                     "knee_point_x");
+                Skip_S2(12,                                     "knee_point_y");
+                Get_S1(4, num_bezier_curve_anchors,             "num_bezier_curve_anchors");
+                for (int8u i = 0; i < num_bezier_curve_anchors; i++)
+                    Skip_S2(10,                                 "bezier_curve_anchor");
+            TEST_SB_END();
+            Element_End0();
+        }
+        TEST_SB_GET (color_saturation_mapping_flag,             "color_saturation_mapping_flag");
+            Info_S1(6, color_saturation_weight,                 "color_saturation_weight"); Param_Info1(((float)color_saturation_weight)/8);
+        TEST_SB_END();
+        BS_End();
+
+        FILLING_BEGIN();
+            IsHDRplus=true;
+            if (num_windows!=1 || targeted_system_display_actual_peak_luminance_flag || num_distribution_maxrgb_percentiles!=9 || fraction_bright_pixels || mastering_display_actual_peak_luminance_flag || (distribution_maxrgb_percentages[2]>100 && distribution_maxrgb_percentages[2]!=0xFF) || (!tone_mapping_flag && targeted_system_display_maximum_luminance) || (tone_mapping_flag && num_bezier_curve_anchors>9) || color_saturation_mapping_flag)
+                IsHDRplus=false;
+            for(int8u i=0; i<4; i++)
+                if (maxscl[i]>100000)
+                    IsHDRplus=false;
+            if (IsHDRplus)
+                for(int8u i=0; i<9; i++)
+                {
+                    static const int8u distribution_maxrgb_percentages_List[9]={1, 5, 10, 25, 50, 75, 90, 95, 99};
+                    if (distribution_maxrgb_percentages[i]!=distribution_maxrgb_percentages_List[i])
+                        IsHDRplus=false;
+                    if (distribution_maxrgb_percentiles[i]>100000)
+                        IsHDRplus=false;
+                }
+        FILLING_END();
+    }
+
+    FILLING_BEGIN();
+        auto& HDR_Format=HDR[Video_HDR_Format][HdrFormat_SmpteSt209440];
+        if (HDR_Format.empty())
+        {
+            HDR_Format=__T("SMPTE ST 2094 App 4");
+            HDR[Video_HDR_Format_Version][HdrFormat_SmpteSt209440].From_Number(application_version);
+            if (IsHDRplus)
+                HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt209440]=tone_mapping_flag?__T("HDR10+ Profile B"):__T("HDR10+ Profile A");
+        }
+    FILLING_END();
 }
 
 } //NameSpace
