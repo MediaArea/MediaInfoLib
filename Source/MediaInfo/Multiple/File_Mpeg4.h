@@ -357,6 +357,7 @@ private :
     void moov_udta_tags_meta();
     void moov_udta_tags_tseg();
     void moov_udta_tags_tseg_tshd();
+    void moov_udta_thmb();
     void moov_udta_WLOC();
     void moov_udta_XMP_();
     void moov_udta_Xtra();
