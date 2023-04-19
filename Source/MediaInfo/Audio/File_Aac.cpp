@@ -155,7 +155,12 @@ void File_Aac::Streams_Fill()
     }
 
     if (Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_SamplesPerFrame).empty())
-        Fill(Stream_Audio, StreamPos_Last, Audio_SamplesPerFrame, frame_length);
+    {
+    int16u frame_length_Multiplier=1;
+    if (!MediaInfoLib::Config.LegacyStreamDisplay_Get() && Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_Format).find(__T("AAC"))==0 && Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_Format_Settings_SBR).find(__T("Yes"))==0)
+        frame_length_Multiplier=2;
+    Fill(Stream_Audio, StreamPos_Last, Audio_SamplesPerFrame, frame_length*frame_length_Multiplier);
+    }
 }
 
 //---------------------------------------------------------------------------

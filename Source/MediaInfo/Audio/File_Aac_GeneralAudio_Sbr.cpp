@@ -1044,12 +1044,10 @@ void File_Aac::sbr_extension_data(size_t End, int8u id_aac, bool crc_flag)
             if (!Frequency_b && !SamplingRate.empty())
                 Frequency_b=SamplingRate.To_int64s();
             Infos["SamplingRate"].From_Number((extension_sampling_frequency_index==(int8u)-1)?(Frequency_b*2):extension_sampling_frequency, 10);
-            Infos["SamplesPerFrame"].From_Number(frame_length*2);
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
             {
                 Infos["Format_Profile"]+=__T(" / LC");
                 Infos["SamplingRate"]+=__T(" / ")+SamplingRate;
-                Infos["SamplesPerFrame"]+=__T(" / ")+Ztring().From_Number(frame_length);
             }
             Infos["Format_Settings"]=__T("Implicit");
             Infos["Format_Settings_SBR"]=__T("Yes (Implicit)");

@@ -583,6 +583,11 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
     static const Char* NonCore=__T("non-core");
     static const Char* Scalable=__T("scalable");
     static const Char* SSR=__T("SSR");
+    static const Char* XBR=__T("XBR");
+    static const Char* XCh=__T("XCh");
+    static const Char* XCH=__T("XCH");
+    static const Char* XXCh=__T("XXCh");
+    static const Char* XXCH=__T("XXCH");
 
     ShouldReturn=true; 
     switch (Parameter_Generic)
@@ -675,16 +680,12 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
                     {
                         if (!AdditionalFeatures.empty())
                             AdditionalFeatures+=__T(' ');
-                             if (Profiles[i]==_9624)
-                            AdditionalFeatures+=_9624;
-                        else if (Profiles[i]==Discrete)
-                            AdditionalFeatures+=__T("XXCH");
-                        else if (Profiles[i]==ESDiscrete)
-                            AdditionalFeatures+=__T("ES XXCH");
-                        else if (Profiles[i]==ESMatrix)
+                             if (Profiles[i]==ESMatrix)
                             AdditionalFeatures+=__T("ES");
-                        else if (Profiles[i]==HRA)
-                            AdditionalFeatures+=__T("XBR");
+                        else if (Profiles[i]==Discrete)
+                            AdditionalFeatures+=__T("XCh");
+                        else if (Profiles[i]==ESDiscrete)
+                            AdditionalFeatures+=__T("XCh");
                         else if (Profiles[i]==MA)
                             AdditionalFeatures+=__T("XLL");
                         else
@@ -808,23 +809,50 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
             }
             if (Info[Parameter_Format]==DTS)
             {
-                const Ztring& Profile=Info[Parameter_Format_Profile];
-                if (Profile.find(IMAX)!=string::npos)
-                    return "IMAX Enhanced";
-                else if (Profile.find(X)!=string::npos)
-                    return "DTS:X";
-                else if (Profile.find(MA)!=string::npos)
-                    return "DTS-HD Master Audio";
-                if (Profile.find(HRA)!=string::npos)
-                    return "DTS-HD High Resolution Audio";
-                if (Profile.find(_9624)!=string::npos)
-                    return "DTS 96/24";
-                if (Profile.find(ESDiscrete)!=string::npos)
-                    return "DTS-ES Discrete";
-                if (Profile.find(ESMatrix)!=string::npos)
-                    return "DTS-ES Matrix";
-                if (Profile.find(Express)!=string::npos)
-                    return "DTS Express";
+                ZtringList Profiles;
+                Profiles.Separator_Set(0, __T(" / "));
+                Profiles.Write(Info[Parameter_Format_Profile]);
+                bool Has9624=false;
+                const char* Value=nullptr;
+                for (size_t i=Profiles.size()-1; i!=(size_t)-1; i--)
+                {
+                    const auto& Profile=Profiles[i];
+                         if (Profile==Core)
+                        ;
+                    else if (Profile==ESMatrix)
+                        Value="DTS-ES";
+                    else if (Profile==ESDiscrete)
+                        Value="DTS-ES Discrete";
+                    else if (Profile==_9624)
+                    {
+                        Value="DTS 96/24";
+                        Has9624=true;
+                    }
+                    else if (Profile==HRA)
+                        Value="DTS-HD High Resolution Audio";
+                    else if (Profile==XBR)
+                        Value="DTS-HD High Resolution Audio";
+                    else if (Profile==XCH)
+                    {
+                        if (Has9624)
+                            Value="DTS-HD High Resolution Audio";
+                    }
+                    else if (Profile==XXCH)
+                    {
+                        if (Has9624)
+                            Value="DTS-HD High Resolution Audio";
+                    }
+                    else if (Profile==MA)
+                        Value="DTS-HD Master Audio";
+                    else if (Profile==Express)
+                        Value="DTS Express";
+                    else if (Profile==X)
+                        Value="DTS:X";
+                    else if (Profile==IMAX)
+                        Value="DTS:X IMAX";
+                }
+                if (Value)
+                    return Value;
             }
             break;
         default:;

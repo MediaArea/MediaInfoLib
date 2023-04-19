@@ -860,12 +860,10 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
         {
             const Ztring SamplingRate_Previous = Infos["SamplingRate"];
             Infos["SamplingRate"].From_Number(SamplingRate, 10);
-            Infos["SamplesPerFrame"].From_Number(frame_length*2);
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
             {
                 Infos["Format_Profile"]+=__T(" / LC");
                 Infos["SamplingRate"]+=__T(" / ")+SamplingRate_Previous;
-                Infos["SamplesPerFrame"]+=__T(" / ")+Ztring().From_Number(frame_length);
             }
         }
         Infos["Format_Settings"]=sbrData?__T("Explicit"):__T("NBC"); // "Not Backward Compatible"
