@@ -3094,10 +3094,12 @@ void File_Aac::program_config_element()
             const Ztring SamplingRate=Infos["SamplingRate"];
             Infos["Format_Profile"]=__T("HE-AAC");
             Infos["SamplingRate"].From_Number((extension_sampling_frequency_index==(int8u)-1)?(Frequency_b*2):extension_sampling_frequency, 10);
+            Infos["SamplesPerFrame"].From_Number(frame_length*2);
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
             {
                 Infos["Format_Profile"]+=__T(" / LC");
                 Infos["SamplingRate"]+=__T(" / ")+SamplingRate;
+                Infos["SamplesPerFrame"]+=__T(" / ")+Ztring().From_Number(frame_length);
             }
             Infos["Format_Settings"]=__T("NBC"); // "Not Backward Compatible"
             Infos["Format_Settings_SBR"]=__T("Yes (NBC)"); // "Not Backward Compatible"
