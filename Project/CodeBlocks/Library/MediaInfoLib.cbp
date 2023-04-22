@@ -54,6 +54,8 @@
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Amv.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Ape.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Ape.h" />
+		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Aptx100.cpp" />
+		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Aptx100.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Au.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Au.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Dts.cpp" />

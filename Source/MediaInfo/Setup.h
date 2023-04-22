@@ -723,6 +723,9 @@
 #if !defined(MEDIAINFO_AUDIO_NO) && !defined(MEDIAINFO_APE_NO) && !defined(MEDIAINFO_APE_YES)
     #define MEDIAINFO_APE_YES
 #endif
+#if !defined(MEDIAINFO_APTX100_NO) && !defined(MEDIAINFO_APTX100_NO) && !defined(MEDIAINFO_APTX100_YES)
+    #define MEDIAINFO_APTX100_YES
+#endif
 #if !defined(MEDIAINFO_AUDIO_NO) && !defined(MEDIAINFO_AU_NO) && !defined(MEDIAINFO_AU_YES)
     #define MEDIAINFO_AU_YES
 #endif

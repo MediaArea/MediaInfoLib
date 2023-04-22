@@ -263,6 +263,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Amr.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Amv.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ape.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Aptx100.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Au.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dts.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ExtendedModule.cpp" />
@@ -596,6 +597,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Amr.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Amv.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Ape.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Aptx100.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Au.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dts.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ExtendedModule.h" />
