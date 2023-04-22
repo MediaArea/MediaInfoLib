@@ -818,7 +818,6 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
                 ZtringList Profiles;
                 Profiles.Separator_Set(0, __T(" / "));
                 Profiles.Write(Info[Parameter_Format_Profile]);
-                bool Has9624=false;
                 const char* Value=nullptr;
                 for (size_t i=Profiles.size()-1; i!=(size_t)-1; i--)
                 {
@@ -830,32 +829,17 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
                     else if (Profile==ESDiscrete)
                         Value="DTS-ES Discrete";
                     else if (Profile==_9624)
-                    {
                         Value="DTS 96/24";
-                        Has9624=true;
-                    }
-                    else if (Profile==HRA)
+                    else if (Profile==HRA || Profile==XBR || Profile==XXCH)
                         Value="DTS-HD High Resolution Audio";
-                    else if (Profile==XBR)
-                        Value="DTS-HD High Resolution Audio";
-                    else if (Profile==XCH)
-                    {
-                        if (Has9624)
-                            Value="DTS-HD High Resolution Audio";
-                    }
-                    else if (Profile==XXCH)
-                    {
-                        if (Has9624)
-                            Value="DTS-HD High Resolution Audio";
-                    }
                     else if (Profile==MA)
                         Value="DTS-HD Master Audio";
                     else if (Profile==Express)
                         Value="DTS Express";
                     else if (Profile==X)
-                        Value="DTS:X";
+                        Value="DTS-HD MA + DTS:X";
                     else if (Profile==IMAX)
-                        Value="DTS:X IMAX";
+                        Value="DTS-HD MA + DTS:X IMAX Enhanced";
                 }
                 if (Value)
                     return Value;

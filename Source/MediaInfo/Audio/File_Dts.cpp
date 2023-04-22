@@ -719,13 +719,13 @@ void File_Dts::Streams_Fill()
     {
         Data[Profiles].push_back(__T("IMAX"));
         Streams_Fill_Extension();
+        Data[BitRate].pop_back();
+        Data[BitRate_Mode].pop_back();
+        Data[BitRate].push_back(__T("Unknown"));
+        Data[BitRate_Mode].push_back(__T("VBR"));
         if (Presence[presence_Extended_XLL])
         {
-            Data[BitRate].pop_back();
-            Data[BitRate_Mode].pop_back();
             Data[Compression_Mode].pop_back();
-            Data[BitRate].push_back(__T("Unknown"));
-            Data[BitRate_Mode].push_back(__T("VBR"));
             Data[Compression_Mode].push_back(__T("Lossless"));
         }
     }
@@ -735,13 +735,13 @@ void File_Dts::Streams_Fill()
     {
         Data[Profiles].push_back(__T("X"));
         Streams_Fill_Extension();
+        Data[BitRate].pop_back();
+        Data[BitRate_Mode].pop_back();
+        Data[BitRate].push_back(__T("Unknown"));
+        Data[BitRate_Mode].push_back(__T("VBR"));
         if (Presence[presence_Extended_XLL])
         {
-            Data[BitRate].pop_back();
-            Data[BitRate_Mode].pop_back();
             Data[Compression_Mode].pop_back();
-            Data[BitRate].push_back(__T("Unknown"));
-            Data[BitRate_Mode].push_back(__T("VBR"));
             Data[Compression_Mode].push_back(__T("Lossless"));
         }
     }
