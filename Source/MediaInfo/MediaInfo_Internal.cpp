@@ -819,6 +819,7 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
                 Profiles.Separator_Set(0, __T(" / "));
                 Profiles.Write(Info[Parameter_Format_Profile]);
                 const char* Value=nullptr;
+                bool HasHRA=false, HasXLL=false;
                 for (size_t i=Profiles.size()-1; i!=(size_t)-1; i--)
                 {
                     const auto& Profile=Profiles[i];
@@ -831,15 +832,35 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
                     else if (Profile==_9624)
                         Value="DTS 96/24";
                     else if (Profile==HRA || Profile==XBR || Profile==XXCH)
+                    {
                         Value="DTS-HD High Resolution Audio";
+                        HasHRA=true;
+                    }
                     else if (Profile==MA)
-                        Value="DTS-HD Master Audio";
+                    {
+                         Value="DTS-HD Master Audio";
+                         HasXLL=true;
+                    }
                     else if (Profile==Express)
                         Value="DTS Express";
                     else if (Profile==X)
-                        Value="DTS-HD MA + DTS:X";
+                    {
+                        if (HasXLL)
+                            Value="DTS-HD MA + DTS:X";
+                        else if (HasHRA)
+                            Value="DTS-HD HRA + DTS:X";
+                        else
+                            Value="DTS:X";
+                    }
                     else if (Profile==IMAX)
-                        Value="DTS-HD MA + DTS:X IMAX Enhanced";
+                    {
+                        if (HasXLL)
+                            Value="DTS-HD MA + IMAX Enhanced";
+                        else if (HasHRA)
+                            Value="DTS-HD HRA + IMAX Enhanced";
+                        else
+                            Value="IMAX Enhanced";
+                    }
                 }
                 if (Value)
                     return Value;
