@@ -719,6 +719,9 @@ void File_Dts::Streams_Fill()
     {
         Data[Profiles].push_back(__T("IMAX"));
         Streams_Fill_Extension();
+        Data[ChannelPositions].back()+=__T(", Objects");
+        Data[ChannelPositions2].back()+=__T(".?");
+        Data[ChannelLayout].back()+=__T(" Objects");
         Data[BitRate].pop_back();
         Data[BitRate_Mode].pop_back();
         Data[BitRate].push_back(__T("Unknown"));
@@ -735,6 +738,9 @@ void File_Dts::Streams_Fill()
     {
         Data[Profiles].push_back(__T("X"));
         Streams_Fill_Extension();
+        Data[ChannelPositions].back()+=__T(", Objects");
+        Data[ChannelPositions2].back()+=__T(".?");
+        Data[ChannelLayout].back()+=__T(" Objects");
         Data[BitRate].pop_back();
         Data[BitRate_Mode].pop_back();
         Data[BitRate].push_back(__T("Unknown"));
