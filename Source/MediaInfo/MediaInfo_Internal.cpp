@@ -546,7 +546,6 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
         return Ztring();
 
     static const Char* _16ch =__T("16-ch");
-    static const Char* _9624=__T("96/24");
     static const Char* Bluray=__T("Blu-ray Disc");
     static const Char* AC3=__T("AC-3");
     static const Char* EAC3=__T("E-AC-3");
@@ -573,7 +572,6 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
     static const Char* HEAACv2 = __T("HE-AACv2");
     static const Char* HEAAC = __T("HE-AAC");
     static const Char* HEAAC_ESBR = __T("HE-AAC+eSBR");
-    static const Char* HRA=__T("HRA");
     static const Char* JOC=__T("JOC");
     static const Char* LC=__T("LC");
     static const Char* LCSBR=__T("LC SBR");
@@ -594,6 +592,8 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
     static const Char* XCH=__T("XCH");
     static const Char* XXCh=__T("XXCh");
     static const Char* XXCH=__T("XXCH");
+    static const Char* X96=__T("X96");
+    static const Char* x96=__T("x96");
 
     ShouldReturn=true; 
     switch (Parameter_Generic)
@@ -829,9 +829,9 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
                         Value="DTS-ES";
                     else if (Profile==ESDiscrete)
                         Value="DTS-ES Discrete";
-                    else if (Profile==_9624)
+                    else if (Profile==x96)
                         Value="DTS 96/24";
-                    else if (Profile==HRA || Profile==XBR || Profile==XXCH)
+                    else if (Profile==X96 || Profile==XBR || Profile==XXCH)
                     {
                         Value="DTS-HD High Resolution Audio";
                         HasHRA=true;

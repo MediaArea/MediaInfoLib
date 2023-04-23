@@ -796,7 +796,7 @@ void File_Dts::Streams_Fill()
     // DTS-HD 96/24
     if (Presence[presence_Extended_X96])
     {
-        Data[Profiles].push_back(__T("HRA"));
+        Data[Profiles].push_back(__T("X96"));
         Streams_Fill_Extension();
     }
 
@@ -810,7 +810,7 @@ void File_Dts::Streams_Fill()
     // DTS 96/24
     if (Presence[presence_Core_X96])
     {
-        Data[Profiles].push_back(__T("96/24"));
+        Data[Profiles].push_back(__T("x96"));
         Streams_Fill_Core(true);
     }
 
