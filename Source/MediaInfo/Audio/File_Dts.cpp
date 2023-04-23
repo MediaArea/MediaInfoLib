@@ -1420,6 +1420,20 @@ void File_Dts::Extensions()
         }
     FILLING_END();
 
+    if (Element_Size-Element_Offset>=6)
+    {
+        int64u SyncWord;
+        Peek_B6(SyncWord);
+        if (SyncWord==0x3A429B0A0011)
+        {
+            Element_Begin1("After assets?");
+            Element_Begin1("Header");
+            Skip_B6(                                            "SyncWord");
+            Element_End0();
+            Extensions2();
+            Element_End0();
+        }
+    }
     if (Element_Size>Element_Offset)
         Skip_XX(Element_Size-Element_Offset,                    "(Unknown)");
 }
