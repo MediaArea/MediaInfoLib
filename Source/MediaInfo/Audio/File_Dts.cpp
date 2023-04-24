@@ -2011,12 +2011,12 @@ void File_Dts::Extensions2()
     switch (SyncWord)
     {
         case 0x02000850:
+        case 0xF14000D1:
             Element_Name("X?");
             Presence.set(presence_Extended_X);
             break;
         case 0xF14000D0:
-        case 0xF14000D1:
-            Element_Name("X IMAX");
+            Element_Name("X IMAX?");
             Presence.set(presence_Extended_X); // It was reported that IMAX is detected as X on legacy X decoders
             Presence.set(presence_Extended_IMAX);
             break;
