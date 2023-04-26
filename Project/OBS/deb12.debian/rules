@@ -42,7 +42,7 @@ override_dh_makeshlibs:
 	dh_makeshlibs -- -c4
 
 override_dh_strip:
-	dh_strip --dbg-package=libmediainfo0-dbg
+	dh_strip --dbg-package=libmediainfo0v5-dbg
 
 %:
 	dh $@ --with=autoreconf,python3 --parallel

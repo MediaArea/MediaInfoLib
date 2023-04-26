@@ -1,7 +1,7 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: libmediainfo
 Upstream-Contact: MediaArea.net SARL <Info@MediaArea.net>
-Source: http://mediainfo.sf.net
+Source: https://mediaarea.net/MediaInfo
 
 Files: *
 Copyright: 2002-2020, MediaArea.net SARL <Info@MediaArea.net>

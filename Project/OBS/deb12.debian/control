@@ -24,7 +24,7 @@ Package: libmediainfo-dev
 Section: libdevel
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
-Depends: libmediainfo0 (= ${binary:Version}),
+Depends: libmediainfo0v5 (= ${binary:Version}),
          libzen-dev,
          libcurl4-gnutls-dev,
          ${misc:Depends}
@@ -50,11 +50,11 @@ Description: library reading metadata from media files -- headers
  This package contains the headers and other development support files needed
  for compiling and linking applications and libraries which use this library.
 
-Package: libmediainfo0
+Package: libmediainfo0v5
 Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
-Depends: ${shlibs:Depends}, ${misc:Depends}, libzen0 (>= 0.4.41)
+Depends: ${shlibs:Depends}, ${misc:Depends}, libzen0v5 (>= 0.4.41)
 Description: library for reading metadata from media files -- shared library
  MediaInfo is a library used for retrieving technical information and other
  metadata about audio or video files.
@@ -80,7 +80,7 @@ Description: library for reading metadata from media files -- shared library
 Package: python3-mediainfodll
 Section: python
 Architecture: all
-Depends: ${python3:Depends}, libmediainfo0 (>= ${source:Version}),
+Depends: ${python3:Depends}, libmediainfo0v5 (>= ${source:Version}),
          ${misc:Depends}
 Description: library for reading metadata from media files -- shared library
  MediaInfo is a library used for retrieving technical information and other
@@ -130,12 +130,12 @@ Description: library for reading metadata from media files -- documentation
  This package contains the Doxygen generated API reference for developing
  applications/libraries using this library.
 
-Package: libmediainfo0-dbg
+Package: libmediainfo0v5-dbg
 Architecture: any
 Multi-Arch: same
 Section: debug
 Priority: extra
-Depends: libmediainfo0 (= ${binary:Version}), ${misc:Depends}
+Depends: libmediainfo0v5 (= ${binary:Version}), ${misc:Depends}
 Description: library for reading metadata from media files -- shared library
  MediaInfo is a library used for retrieving technical information and other
  metadata about audio or video files.
