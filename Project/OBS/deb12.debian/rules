@@ -1,0 +1,48 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+include /usr/share/dpkg/default.mk
+
+# shared library versions
+version = $(DEB_VERSION_UPSTREAM)
+
+override_dh_auto_configure:
+	dh_auto_configure -DProject/GNU/Library --	\
+		--enable-shared				\
+		--enable-visibility			\
+		--with-libcurl				\
+		--with-libmms				\
+		--without-libmd5
+
+override_dh_auto_build:
+	cd Source/Doc && doxygen Doxyfile
+	cp Source/Doc/*.html ./
+	dh_auto_build -DProject/GNU/Library
+
+override_dh_auto_install:
+	dh_auto_install -DProject/GNU/Library
+	for py3 in $(shell py3versions -vr); do												\
+		install -D -m644 Source/MediaInfoDLL/MediaInfoDLL3.py debian/tmp/usr/lib/python$$py3/dist-packages/MediaInfoDLL3.py;	\
+	done
+
+override_dh_auto_clean:
+	dh_auto_clean -DProject/GNU/Library
+
+	rm -rf Doc/
+	(cd Source/Doc && find -maxdepth 1 -name '*.html' -print0) | xargs -0 rm -f
+
+override_dh_installchangelogs:
+	dh_installchangelogs Changes.txt
+	fromdos debian/*/usr/share/doc/*/changelog
+
+override_dh_installexamples:
+	dh_installexamples
+
+override_dh_makeshlibs:
+	dh_makeshlibs -- -c4
+
+override_dh_strip:
+	dh_strip --dbg-package=libmediainfo0v5-dbg
+
+%:
+	dh $@ --with=autoreconf,python3 --parallel
