@@ -935,18 +935,23 @@ int16u File_Usac::sbr_huff_dec(const int8s(*Table)[2], const char* Name)
 File_Usac::bs_bookmark File_Usac::BS_Bookmark(size_t NewSize)
 {
     bs_bookmark B;
-    if (Data_BS_Remain()>=NewSize)
-        B.End=Data_BS_Remain()-NewSize;
-    else
-        B.End=Data_BS_Remain();
+    auto RemainingSize=Data_BS_Remain();
+    #if !MEDIAINFO_TRACE
+        size_t BS_Size=(Element_Size-Element_Offset)*8;
+    #endif //MEDIAINFO_TRACE
+    auto AlreadyParsed=BS_Size-RemainingSize;
+    if (NewSize>RemainingSize)
+        NewSize=RemainingSize;
     B.Element_Offset=Element_Offset;
+    B.Element_Size=Element_Size;
     B.Trusted=Trusted;
     B.UnTrusted=Element[Element_Level].UnTrusted;
-    B.NewSize=NewSize;
+    B.End=RemainingSize-NewSize;
     B.BitsNotIncluded=B.End%8;
-    if (B.BitsNotIncluded)
-        B.NewSize+=B.BitsNotIncluded;
+    B.NewSize=NewSize+B.BitsNotIncluded;
     BS->Resize(B.NewSize);
+    BS_Size=AlreadyParsed+B.NewSize;
+    Element_Size=Element_Offset+(BS_Size+7)/8;
     #if MEDIAINFO_CONFORMANCE
         for (size_t Level=0; Level<ConformanceLevel_Max; Level++)
             B.ConformanceErrors[Level]=ConformanceErrors[Level];
@@ -996,6 +1001,10 @@ bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
     #endif
     BS->Resize(B.End);
     Element_Offset=B.Element_Offset;
+    Element_Size=B.Element_Size;
+    #if MEDIAINFO_TRACE
+        BS_Size=(Element_Size-Element_Offset)*8;
+    #endif //MEDIAINFO_TRACE
     Trusted=B.Trusted;
     Element[Element_Level].UnTrusted=B.UnTrusted;
     return IsNotValid;
@@ -3739,7 +3748,7 @@ void File_Usac::UsacExtElement(size_t elemIdx, bool usacIndependencyFlag)
             {
                 case ID_EXT_ELE_AUDIOPREROLL                    : AudioPreRoll(); break;
                 default:
-                    Skip_BS(usacExtElementPayloadLength,        "Unknown");
+                    Skip_BS(usacExtElementPayloadLength,        usacExtElementType==ID_EXT_ELE_FILL?"(Not parsed)":"Unknown");
             }
             BS_Bookmark(B, usacExtElementType<ID_EXT_ELE_Max?string(usacExtElementType_Names[usacExtElementType]):("usacExtElementType"+to_string(usacExtElementType)));
         }

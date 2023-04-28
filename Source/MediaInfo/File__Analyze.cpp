@@ -2808,8 +2808,8 @@ void File__Analyze::Element_End_Common_Flush()
 {
     #if MEDIAINFO_TRACE
     //Size if not filled
-    if (File_Offset+Buffer_Offset+Element_Offset+BS->Offset_Get()<Element[Element_Level].Next)
-        Element[Element_Level].TraceNode.Size=File_Offset+Buffer_Offset+Element_Offset+BS->Offset_Get()-Element[Element_Level].TraceNode.Pos;
+    if (File_Offset+Buffer_Offset+Element_Offset+(BS_Size-BS->Remain())/8<Element[Element_Level].Next)
+        Element[Element_Level].TraceNode.Size=File_Offset+Buffer_Offset+Element_Offset+(BS_Size-BS->Remain())/8-Element[Element_Level].TraceNode.Pos;
     #endif //MEDIAINFO_TRACE
 
     //Level

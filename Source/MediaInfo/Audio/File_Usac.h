@@ -90,6 +90,7 @@ public :
     struct bs_bookmark
     {
         int64u                      Element_Offset;
+        int64u                      Element_Size;
         size_t                      Trusted;
         size_t                      NewSize;
         size_t                      End;

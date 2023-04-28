@@ -128,6 +128,8 @@ void File_Aac::Streams_Accept()
                             TestContinuousFileNames();
         default : ;
     }
+    if (Frame_Count_NotParsedIncluded==(int64u)-1)
+        Frame_Count_NotParsedIncluded=0;
 }
 
 //---------------------------------------------------------------------------
