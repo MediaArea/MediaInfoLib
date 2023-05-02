@@ -1009,8 +1009,6 @@ bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
 #if MEDIAINFO_CONFORMANCE
 void File_Usac::Fill_Conformance(const char* Field, const char* Value, bitset8 Flags, conformance_level Level)
 {
-    if (strncmp(Field, "UsacConfig loudnessInfoSet", 26) && strncmp(Field, "mpegh3daConfig loudnessInfoSet", 30))
-        return; // TODO: remove when all tests are active in production
     if (Level == Warning && Warning_Error)
         Level = Error;
     field_value FieldValue(Field, Value, Flags, (int64u)-1);
@@ -1414,9 +1412,6 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
     }
     else
     {
-        if (!IsParsingRaw)
-            Fill_Loudness(); // TODO: remove when all tests are active in production
-
         #if MEDIAINFO_CONFORMANCE
             if (!IsParsingRaw)
             {
@@ -1535,7 +1530,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         }
         else if (!loudnessInfoSet_Present_Total)
         {
-            Fill_Conformance((string(C.usacElements.empty() ? "mpegh3daConfig " : "UsacConfig ") + "loudnessInfoSet Coherency").c_str(), "loudnessInfoSet is missing", CheckFlags);
+            Fill_Conformance("loudnessInfoSet Coherency", "loudnessInfoSet is missing", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is missing");
@@ -1544,7 +1539,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         }
         else if (C.loudnessInfo_Data[0].empty())
         {
-            Fill_Conformance((string(C.usacElements.empty() ? "mpegh3daConfig " : "UsacConfig ") + "loudnessInfoSet loudnessInfoCount").c_str(), "Is 0", CheckFlags);
+            Fill_Conformance("loudnessInfoSet loudnessInfoCount", "loudnessInfoCount is 0", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is empty");
@@ -1553,16 +1548,16 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         }
         else if (!DefaultIdPresent)
         {
-            Fill_Conformance((string(C.usacElements.empty() ? "mpegh3daConfig " : "UsacConfig ") + "loudnessInfoSet Coherency").c_str(), "Default loudnessInfo is missing", CheckFlags);
+            Fill_Conformance("loudnessInfoSet Coherency", "Default loudnessInfo is missing", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: Default loudnessInfo is missing");
                 Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo missing");
             }
         }
-        else if (C.loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty()) // TODO: add !C.LoudnessInfoIsNotValid check when all tests are active in production
+        else if (!C.LoudnessInfoIsNotValid && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
         {
-            Fill_Conformance((string(C.usacElements.empty() ? "mpegh3daConfig " : "UsacConfig ") + "loudnessInfoSet Coherency").c_str(), "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
+            Fill_Conformance("loudnessInfoSet Coherency", "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
