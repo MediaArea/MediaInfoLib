@@ -752,7 +752,7 @@ const int8s Aac_k2_offset[9][14]=
 extern const char* Aac_audioObjectType(int8u audioObjectType);
 
 //---------------------------------------------------------------------------
-int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampling_frequency);
+int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampling_frequency, bool usac=false);
 
 //---------------------------------------------------------------------------
 // Master frequency band table

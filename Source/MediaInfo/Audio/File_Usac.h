@@ -145,7 +145,7 @@ public :
     void UsacChannelPairElement             (bool usacIndependencyFlag);
     void twData                             ();
     void icsInfo                            ();
-    void scaleFactorData                    ();
+    void scaleFactorData                    (size_t ch);
     void arithData                          (size_t ch, int16u N, int16u lg, int16u lg_max, bool arith_reset_flag);
     void acSpectralData                     (size_t ch, bool usacIndependencyFlag);
     void tnsData                            ();
@@ -344,7 +344,7 @@ public :
         int8u                       drcRequired_Present;
         bool                        LoudnessInfoIsNotValid;
         #endif
-        bool                        IsNotValid;
+        bool                        WaitForNextIndependantFrame;
         bool                        harmonicSBR;
         bool                        bs_interTes;
         bool                        bs_pvc;
@@ -369,7 +369,6 @@ public :
     struct usac_frame
     {
         int32u                      numPreRollFrames;
-        bool                        NotImplemented;
     };
     usac_config                     Conf; //Main conf
     usac_config                     C; //Current conf

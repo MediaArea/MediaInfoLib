@@ -547,17 +547,19 @@ extern string Aac_ChannelMode_GetString(const vector<Aac_OutputChannel>& OutputC
 }
 
 //---------------------------------------------------------------------------
-int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampling_frequency)
+int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampling_frequency, bool usac=false)
 {
     if (sampling_frequency>=92017) return 0;
     if (sampling_frequency>=75132) return 1;
     if (sampling_frequency>=55426) return 2;
     if (sampling_frequency>=46009) return 3;
-    if (sampling_frequency>=37566) return 4;
+    if (sampling_frequency>=37566 && !usac) return 4;
+    if (sampling_frequency>=42000 && usac) return 4;
+    if (sampling_frequency>=35777 && usac) return 17;
     if (sampling_frequency>=27713) return 5;
     if (sampling_frequency>=23004) return 6;
     if (sampling_frequency>=18783) return 7;
-    if (sampling_frequency>=13856) return 8;
+    if (sampling_frequency>=13856 || usac) return 8;
     if (sampling_frequency>=11502) return 9;
     if (sampling_frequency>=9391) return 10;
     return 11;
@@ -847,7 +849,7 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
         Infos["ChannelPositions/String2"].From_UTF8(Aac_ChannelConfiguration2_GetString(channelConfiguration));
         Infos["ChannelLayout"].From_UTF8(Aac_ChannelLayout_GetString(channelConfiguration));
     }
-    else if (audioObjectType_==42 && !Conf.IsNotValid && Conf.numOutChannels)
+    else if (audioObjectType_==42 && !Conf.WaitForNextIndependantFrame && Conf.numOutChannels)
     {
         Infos["Channel(s)"].From_Number(Conf.numOutChannels);
     }
@@ -1163,7 +1165,7 @@ void File_Aac::PayloadMux()
                                 Frame_Count_Valid=0;
                             }
                             else
-                                payload();
+                                payload(Data_BS_Remain()-8*MuxSlotLengthBytes[streamID[prog][lay]]);
                             break;
                     case 1 :
                             Skip_BS(8 * (frameLength[streamID[prog][lay]] + 20),"payload[streamID[prog][lay]]");
