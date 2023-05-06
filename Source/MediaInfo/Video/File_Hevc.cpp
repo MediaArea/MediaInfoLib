@@ -315,7 +315,7 @@ void File_Hevc::Streams_Fill()
                         break;
                 }
             }
-            if (i==HdrFormat_Max)
+            if (i==HdrFormat_Max && HDR_FirstFieldNonEmpty!=(size_t)-1)
                 Fill(Stream_Video, 0, HDR_Item.first, HDR_Item.second[HDR_FirstFieldNonEmpty]);
             else if (!LegacyStreamDisplay)
             {
