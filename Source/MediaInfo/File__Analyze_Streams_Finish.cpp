@@ -1391,7 +1391,7 @@ void File__Analyze::Streams_Finish_InterStreams()
         }
 
         //Filling
-        if (IsOK && StreamSize_Total>0 && StreamSize_Total<File_Size)
+        if (IsOK && StreamSize_Total>0 && StreamSize_Total<File_Size && (File_Size==StreamSize_Total || File_Size-StreamSize_Total>8)) //to avoid strange behavior due to rounding, TODO: avoid rounding
             Fill(Stream_General, 0, General_StreamSize, File_Size-StreamSize_Total);
     }
 
@@ -1581,7 +1581,7 @@ void File__Analyze::Streams_Finish_InterStreams()
                 else
                     StreamSizeIsValid=false;
             }
-        if (StreamSizeIsValid && StreamSize>=0) //to avoid strange behavior
+        if (StreamSizeIsValid && (!StreamSize || StreamSize>8)) //to avoid strange behavior due to rounding, TODO: avoid rounding
             Fill(Stream_General, 0, General_StreamSize, StreamSize);
     }
 

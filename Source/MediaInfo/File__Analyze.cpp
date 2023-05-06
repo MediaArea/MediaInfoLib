@@ -1583,6 +1583,8 @@ void File__Analyze::Buffer_Clear()
     Buffer_Offset=0;
     Buffer_Offset_Temp=0;
     Buffer_MinimumSize=0;
+    Element_Offset=0;
+    Element_Size=0;
 
     OriginalBuffer_Size=0;
     Offsets_Stream.clear();

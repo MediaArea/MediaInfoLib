@@ -128,6 +128,7 @@ protected :
     void Read_Buffer_Continue ();
     void Read_Buffer_Continue_AudioSpecificConfig();
     void Read_Buffer_Continue_payload();
+    void Read_Buffer_Unsynched();
 
     //Buffer - Synchro
     bool Synchronize();
