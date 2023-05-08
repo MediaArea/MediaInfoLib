@@ -407,7 +407,7 @@ static_assert(sizeof(ConformanceLevel_Strings)/sizeof(const char*)==File_Usac::C
 #endif
 
 //---------------------------------------------------------------------------
-extern int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampling_frequency);
+extern int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampling_frequency, bool usac=false);
 extern const int32u Aac_sampling_frequency[];
 extern const int8u Aac_Channels[];
 extern string Aac_Channels_GetString(int8u ChannelLayout);
@@ -826,7 +826,7 @@ void File_Usac::hcod_sf(const char* Name)
     {
         int8u h;
         Peek_S1(2, h);
-        index = huffman_scl[index][h]; /* Expensive memory access */
+        index = huffman_scl[index][h];
         if (index & 1)
         {
             if (index & 2)
@@ -840,7 +840,10 @@ void File_Usac::hcod_sf(const char* Name)
 
         if (Pos>240)
         {
-            Skip_BS(Data_BS_Remain(),                           "Error");
+            #if MEDIAINFO_CONFORMANCE
+                Fill_Conformance("UsacCoreCoderData Coherency", "Issue detected while parsing hcod_sf");
+            #endif
+            C.WaitForNextIndependantFrame=true;
             Element_End0();
             return;
         }
@@ -935,18 +938,23 @@ int16u File_Usac::sbr_huff_dec(const int8s(*Table)[2], const char* Name)
 File_Usac::bs_bookmark File_Usac::BS_Bookmark(size_t NewSize)
 {
     bs_bookmark B;
-    if (Data_BS_Remain()>=NewSize)
-        B.End=Data_BS_Remain()-NewSize;
-    else
-        B.End=Data_BS_Remain();
+    auto RemainingSize=Data_BS_Remain();
+    #if !MEDIAINFO_TRACE
+        size_t BS_Size=(Element_Size-Element_Offset)*8;
+    #endif //MEDIAINFO_TRACE
+    auto AlreadyParsed=BS_Size-RemainingSize;
+    if (NewSize>RemainingSize)
+        NewSize=RemainingSize;
     B.Element_Offset=Element_Offset;
+    B.Element_Size=Element_Size;
     B.Trusted=Trusted;
     B.UnTrusted=Element[Element_Level].UnTrusted;
-    B.NewSize=NewSize;
+    B.End=RemainingSize-NewSize;
     B.BitsNotIncluded=B.End%8;
-    if (B.BitsNotIncluded)
-        B.NewSize+=B.BitsNotIncluded;
+    B.NewSize=NewSize+B.BitsNotIncluded;
     BS->Resize(B.NewSize);
+    BS_Size=AlreadyParsed+B.NewSize;
+    Element_Size=Element_Offset+(BS_Size+7)/8;
     #if MEDIAINFO_CONFORMANCE
         for (size_t Level=0; Level<ConformanceLevel_Max; Level++)
             B.ConformanceErrors[Level]=ConformanceErrors[Level];
@@ -983,7 +991,7 @@ bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
         }
         Skip_BS(BitsRemaining,                                  LastByte?"Unknown":"Padding");
     }
-    else if (Data_BS_Remain()<B.BitsNotIncluded)
+    else if (!C.WaitForNextIndependantFrame && Data_BS_Remain()<B.BitsNotIncluded)
         Trusted_IsNot("Too big");
     bool IsNotValid=!Trusted_Get();
     #if MEDIAINFO_CONFORMANCE
@@ -996,6 +1004,10 @@ bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
     #endif
     BS->Resize(B.End);
     Element_Offset=B.Element_Offset;
+    Element_Size=B.Element_Size;
+    #if MEDIAINFO_TRACE
+        BS_Size=(Element_Size-Element_Offset)*8;
+    #endif //MEDIAINFO_TRACE
     Trusted=B.Trusted;
     Element[Element_Level].UnTrusted=B.UnTrusted;
     return IsNotValid;
@@ -1009,8 +1021,6 @@ bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
 #if MEDIAINFO_CONFORMANCE
 void File_Usac::Fill_Conformance(const char* Field, const char* Value, bitset8 Flags, conformance_level Level)
 {
-    if (strncmp(Field, "UsacConfig loudnessInfoSet", 26) && strncmp(Field, "mpegh3daConfig loudnessInfoSet", 30))
-        return; // TODO: remove when all tests are active in production
     if (Level == Warning && Warning_Error)
         Level = Error;
     field_value FieldValue(Field, Value, Flags, (int64u)-1);
@@ -1260,7 +1270,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
     {
         int32u samplingFrequency;
         Get_S3 (24, samplingFrequency,                          "usacSamplingFrequency");
-        C.sampling_frequency_index=Aac_AudioSpecificConfig_sampling_frequency_index(samplingFrequency);
+        C.sampling_frequency_index=Aac_AudioSpecificConfig_sampling_frequency_index(samplingFrequency, true);
         C.sampling_frequency=samplingFrequency;
         #if MEDIAINFO_CONFORMANCE
             if (C.sampling_frequency == Aac_sampling_frequency[C.sampling_frequency_index]) {
@@ -1363,6 +1373,11 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
             Fill_Conformance("UsacConfig coreSbrFrameLengthIndex", ("Value " + to_string(C.coreSbrFrameLengthIndex) + " is known as reserved in ISO/IEC 23003-3:2020, bitstream parsing is partial and may be wrong").c_str(), bitset8(), Info);
     #endif
     UsacDecoderConfig();
+    if (C.WaitForNextIndependantFrame)
+    {
+        Element_End0();
+        return;
+    }
     Get_SB (usacConfigExtensionPresent,                         "usacConfigExtensionPresent");
     if (usacConfigExtensionPresent)
         UsacConfigExtension();
@@ -1392,14 +1407,13 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
             }
             Skip_BS(BitsRemaining,                              LastByte?"Unknown":"Padding");
         }
-        else if (Data_BS_Remain()<BitsNotIncluded)
+        else if (!C.WaitForNextIndependantFrame && Data_BS_Remain()<BitsNotIncluded)
             Trusted_IsNot("Too big");
     }
 
     if (Trusted_Get())
     {
         // Filling
-        C.IsNotValid=false;
         if (!IsParsingRaw)
         {
             if (C.coreSbrFrameLengthIndex<coreSbrFrameLengthIndex_Mapping_Size)
@@ -1414,9 +1428,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
     }
     else
     {
-        if (!IsParsingRaw)
-            Fill_Loudness(); // TODO: remove when all tests are active in production
-
+        C.usacElements.clear();
         #if MEDIAINFO_CONFORMANCE
             if (!IsParsingRaw)
             {
@@ -1425,15 +1437,12 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
                 Merge_Conformance();
             }
         #endif
-
-        C.IsNotValid=true;
-        if (!IsParsingRaw)
-            Conf.IsNotValid=true;
     }
     #if !MEDIAINFO_CONFORMANCE && MEDIAINFO_TRACE
         if (!Trace_Activated)
             Finish();
     #endif
+    C.WaitForNextIndependantFrame=true;
 }
 
 //---------------------------------------------------------------------------
@@ -1522,7 +1531,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
     }
 
     #if MEDIAINFO_CONFORMANCE
-        if (NoConCh || C.IsNotValid)
+        if (NoConCh || C.WaitForNextIndependantFrame)
             return;
         auto loudnessInfoSet_Present_Total=C.loudnessInfoSet_Present[0]+C.loudnessInfoSet_Present[1];
         if (C.loudnessInfoSet_HasContent[0] && C.loudnessInfoSet_HasContent[1])
@@ -1535,7 +1544,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         }
         else if (!loudnessInfoSet_Present_Total)
         {
-            Fill_Conformance((string(C.usacElements.empty() ? "mpegh3daConfig " : "UsacConfig ") + "loudnessInfoSet Coherency").c_str(), "loudnessInfoSet is missing", CheckFlags);
+            Fill_Conformance("loudnessInfoSet Coherency", "loudnessInfoSet is missing", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is missing");
@@ -1544,7 +1553,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         }
         else if (C.loudnessInfo_Data[0].empty())
         {
-            Fill_Conformance((string(C.usacElements.empty() ? "mpegh3daConfig " : "UsacConfig ") + "loudnessInfoSet loudnessInfoCount").c_str(), "Is 0", CheckFlags);
+            Fill_Conformance("loudnessInfoSet loudnessInfoCount", "loudnessInfoCount is 0", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is empty");
@@ -1553,16 +1562,16 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         }
         else if (!DefaultIdPresent)
         {
-            Fill_Conformance((string(C.usacElements.empty() ? "mpegh3daConfig " : "UsacConfig ") + "loudnessInfoSet Coherency").c_str(), "Default loudnessInfo is missing", CheckFlags);
+            Fill_Conformance("loudnessInfoSet Coherency", "Default loudnessInfo is missing", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: Default loudnessInfo is missing");
                 Fill(Stream_Audio, 0, "ConformanceCheck/Short", "Invalid: Default loudnessInfo missing");
             }
         }
-        else if (C.loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty()) // TODO: add !C.LoudnessInfoIsNotValid check when all tests are active in production
+        else if (!C.LoudnessInfoIsNotValid && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
         {
-            Fill_Conformance((string(C.usacElements.empty() ? "mpegh3daConfig " : "UsacConfig ") + "loudnessInfoSet Coherency").c_str(), "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
+            Fill_Conformance("loudnessInfoSet Coherency", "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
@@ -1619,6 +1628,8 @@ void File_Usac::UsacDecoderConfig()
             case ID_USAC_EXT                                    : UsacExtElementConfig(); break;
         }
         Element_End0();
+        if (!Trusted_Get() || C.WaitForNextIndependantFrame)
+            break;
     }
     #if MEDIAINFO_CONFORMANCE
         if (!C.channelConfiguration)
@@ -2857,36 +2868,18 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
         }
         Merge_Conformance();
     #endif
+    if (usacIndependencyFlag)
+         C.WaitForNextIndependantFrame=false;
     if (!IsParsingRaw)
-    {
-        if (Conf.IsNotValid || !usacIndependencyFlag)
-        {
-            Skip_BS(Data_BS_Remain(),                           "Data");
-            Element_End0();
-            #if MEDIAINFO_CONFORMANCE
-                if (IsParsingRaw <= 1)
-                {
-                    if (Immediate_FramePos && roll_distance_FramePos)
-                    {
-                        if (usacIndependencyFlag)
-                        {
-                            auto ContainerSaysImmediate = (Immediate_FramePos_IsPresent && !*Immediate_FramePos_IsPresent) || find(Immediate_FramePos->begin(), Immediate_FramePos->end(), Frame_Count_NotParsedIncluded) != Immediate_FramePos->end();
-                            auto ContainerSaysNonImmediate = find(roll_distance_FramePos->begin(), roll_distance_FramePos->end(), Frame_Count_NotParsedIncluded) != roll_distance_FramePos->end();
-                            if (ContainerSaysImmediate && ContainerSaysNonImmediate)
-                                Fill_Conformance("Crosscheck Container+UsacFrame usacIndependencyFlag", "usacIndependencyFlag is 1 and both MP4 stts and MP4 sgpd_prol indicate this frame is independent, only one place is permitted");
-                        }
-                    }
-                }
-                Merge_Conformance();
-            #endif
-            return;
-        }
         IsParsingRaw++;
-    }
 
     for (size_t elemIdx=0; elemIdx<C.usacElements.size(); elemIdx++)
     {
-        F.NotImplemented=false;
+        if (!Trusted_Get() || (C.WaitForNextIndependantFrame && (!usacIndependencyFlag || elemIdx || C.usacElements[0].usacElementType!=((ID_USAC_EXT<<2)|ID_EXT_ELE_AUDIOPREROLL))))
+        {
+            Skip_BS(Data_BS_Remain(),                           "Skipped due to error or non support in previous frame");
+            break;
+        }
         switch (C.usacElements[elemIdx].usacElementType&3)
         {
             case ID_USAC_SCE:
@@ -2904,13 +2897,12 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
             default:
                 ; //Not parsed
         }
-        if (!Trusted_Get() || F.NotImplemented)
+        if (C.WaitForNextIndependantFrame)
+        {
+            Skip_BS(Data_BS_Remain(),                           "Skipped due to error or non support in previous frame");
             break;
+        }
     }
-
-    auto BitsNotIncluded2=BitsNotIncluded!=(size_t)-1?BitsNotIncluded:0;
-    if (F.NotImplemented && Data_BS_Remain()>BitsNotIncluded2)
-        Skip_BS(Data_BS_Remain()-BitsNotIncluded2,              "(Not parsed)");
 
     if (BitsNotIncluded!=(size_t)-1)
     {
@@ -2936,39 +2928,28 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
             }
             Skip_BS(BitsRemaining,                              LastByte?"Unknown":"Padding");
         }
-        else if (Data_BS_Remain()<BitsNotIncluded)
+        else if (!C.WaitForNextIndependantFrame && Data_BS_Remain()<BitsNotIncluded)
             Trusted_IsNot("Too big");
     }
-    Element_End0();
-
-    if (Trusted_Get())
+    else if (IsParsingRaw <= 1)
     {
         #if MEDIAINFO_CONFORMANCE
-            if (IsParsingRaw == 1)
-                Merge_Conformance();
-        #endif
-    }
-    else
-    {
-        #if MEDIAINFO_CONFORMANCE
-            if (IsParsingRaw == 1)
+            if (Data_BS_Remain() >= 8)
             {
-                Clear_Conformance();
-                Fill_Conformance("UsacFrame Coherency", "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed");
-                Merge_Conformance();
+                auto Size = (Data_BS_Remain() + 7) / 8;
+                auto Buffer_Temp = Buffer + (size_t)Element_Size - Size;
+                size_t i = 0;
+                for (; i < Size; i++)
+                    if (Buffer_Temp[i])
+                        break;
+                if (i == Size)
+                    Fill_Conformance("UsacFrame Coherency", "Extra zero bytes after the end of the syntax was reached", bitset8(), Warning);
+                else
+                    Fill_Conformance("UsacFrame Coherency", "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
             }
         #endif
-
-        if (IsParsingRaw==1)
-        {
-            IsParsingRaw--;
-
-            //Counting, TODO: remove duplicate of this code due to not executed in case of parsing issue
-            Frame_Count++;
-            if (Frame_Count_NotParsedIncluded!=(int64u)-1)
-                Frame_Count_NotParsedIncluded++;
-        }
     }
+    Element_End0();
 
     #if MEDIAINFO_CONFORMANCE
         if (IsParsingRaw <= 1 && Frame_Count_NotParsedIncluded != (int64u)-1)
@@ -3021,6 +3002,28 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
         }
         Merge_Conformance();
     #endif
+
+    if (Trusted_Get())
+    {
+        #if MEDIAINFO_CONFORMANCE
+            if (IsParsingRaw==1)
+                Merge_Conformance();
+        #endif
+    }
+    else if (IsParsingRaw==1)
+    {
+        #if MEDIAINFO_CONFORMANCE
+            Clear_Conformance();
+            Fill_Conformance("UsacFrame Coherency", "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed");
+            Merge_Conformance();
+        #endif
+        C.WaitForNextIndependantFrame=true;
+
+        //Counting, TODO: remove duplicate of this code due to not executed in case of parsing issue
+        Frame_Count++;
+        if (Frame_Count_NotParsedIncluded!=(int64u)-1)
+            Frame_Count_NotParsedIncluded++;
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -3029,8 +3032,19 @@ void File_Usac::UsacSingleChannelElement(bool usacIndependencyFlag)
     Element_Begin1("UsacSingleChannelElement");
 
     UsacCoreCoderData(1, usacIndependencyFlag);
+    if (C.WaitForNextIndependantFrame)
+    {
+        Element_End0();
+        return;
+    }
     if (C.coreSbrFrameLengthIndex>=coreSbrFrameLengthIndex_Mapping_Size || coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].sbrRatioIndex)
-        F.NotImplemented=true;
+    {
+        #if MEDIAINFO_CONFORMANCE
+            //Fill_Conformance("UsacSbrData", "UsacSbrData support not implemented", bitset8(), Info);
+        #endif
+        C.WaitForNextIndependantFrame=true;
+        //TODO: UsacSbrData();
+    }
 
     Element_End0();
 }
@@ -3041,12 +3055,26 @@ void File_Usac::UsacChannelPairElement(bool usacIndependencyFlag)
     Element_Begin1("UsacChannelPairElement");
 
     UsacCoreCoderData(C.stereoConfigIndex==1?1:2, usacIndependencyFlag);
+    if (C.WaitForNextIndependantFrame)
+    {
+        Element_End0();
+        return;
+    }
     if (C.coreSbrFrameLengthIndex>=coreSbrFrameLengthIndex_Mapping_Size || coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].sbrRatioIndex)
-        F.NotImplemented=true;
+    {
+        #if MEDIAINFO_CONFORMANCE
+            //Fill_Conformance("UsacSbrData", "UsacSbrData support not implemented", bitset8(), Info);
+        #endif
+        C.WaitForNextIndependantFrame=true;
+        //TODO: UsacSbrData();
+    }
 
     if (C.stereoConfigIndex)
     {
-        F.NotImplemented=true;
+        #if MEDIAINFO_CONFORMANCE
+            //Fill_Conformance("Mps212Data", "Mps212Data support not implemented", bitset8(), Info);
+        #endif
+        C.WaitForNextIndependantFrame=true;
         //TODO: Mps212Data(indepFlag);
     }
 
@@ -3084,6 +3112,7 @@ void File_Usac::icsInfo()
     {
         Get_S1(6, max_sfb,                                      "max_sfb");
     }
+    max_sfb1=max_sfb;
 
     Element_End0();
 
@@ -3110,7 +3139,7 @@ void File_Usac::icsInfo()
 }
 
 //---------------------------------------------------------------------------
-void File_Usac::scaleFactorData()
+void File_Usac::scaleFactorData(size_t ch)
 {
     Element_Begin1("scale_factor_data");
 
@@ -3121,7 +3150,7 @@ void File_Usac::scaleFactorData()
 
     for (int8u group=0; group<num_window_groups; group++)
     {
-        for (int8u sfb=0; sfb<max_sfb; sfb++)
+        for (int8u sfb=0; sfb<(ch?max_sfb1:max_sfb); sfb++)
         {
             if (group || sfb)
                 hcod_sf(                                        "hcod_sf[dpcm_sf[g][sfb]]");
@@ -3137,23 +3166,23 @@ void File_Usac::scaleFactorData()
 //---------------------------------------------------------------------------
 void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool arith_reset_flag)
 {
-    if (lg==0)
+    if (lg>1024 || N>4096) // Preserve arrays boundaries
     {
-        // set context
-        memset(&C.arithContext[ch].q[1], 1, sizeof(C.arithContext[ch].q[1]));
-        C.IsNotValid=true;
-        F.NotImplemented=true;
-        return;
-    }
-    else if (lg>1024 || N>4096) // Preserve arrays boundaries
-    {
-        Trusted_IsNot("lg too high");
-        C.IsNotValid=true;
-        F.NotImplemented=true;
+        #if MEDIAINFO_CONFORMANCE
+            if (lg>1024)
+                Fill_Conformance("arithData Coherency", "lg is more than 1024");
+            if (N>4096)
+                Fill_Conformance("arithData Coherency", "N is more than 4096");
+        #endif
+        C.WaitForNextIndependantFrame=true;
         return;
     }
 
-    Element_Begin1("arithData");
+    if (lg==0)
+    {
+        memset(&C.arithContext[ch].q[1], 1, sizeof(C.arithContext[ch].q[1]));
+        return;
+    }
 
     // arith_map_context
     {
@@ -3163,10 +3192,10 @@ void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool ar
         {
             if (!N)
             {
-                Trusted_IsNot("arith_map_context");
-                C.IsNotValid=true;
-                F.NotImplemented=true;
-                Element_End0();
+                #if MEDIAINFO_CONFORMANCE
+                    Fill_Conformance("arithData Coherency", "N is 0");
+                #endif
+                C.WaitForNextIndependantFrame=true;
                 return;
             }
 
@@ -3185,6 +3214,8 @@ void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool ar
         }
         C.arithContext[ch].previous_window_size=N;
     }
+
+    Element_Begin1("arithData");
 
     auto BS_Sav=*BS;
     int16u low=0, high=65535, value, offset;
@@ -3256,9 +3287,10 @@ void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool ar
 
             if (lev>23)
             {
-                Trusted_IsNot("lev too high");
-                C.IsNotValid=true;
-                F.NotImplemented=true;
+                #if MEDIAINFO_CONFORMANCE
+                    Fill_Conformance("arithData Coherency", "lev is more than 23");
+                #endif
+                C.WaitForNextIndependantFrame=true;
                 Element_End0();
                 Element_End0();
                 return;
@@ -3329,26 +3361,14 @@ void File_Usac::acSpectralData(size_t ch, bool usacIndependencyFlag)
 {
     Element_Begin1("ac_spectral_data");
 
-    #if MEDIAINFO_TRACE
-        bool Trace_Activated_Save=Trace_Activated;
-        Trace_Activated=false; //It is too big, disabling trace for now for full USAC parsing
-    #endif //MEDIAINFO_TRACE
-
     bool arith_reset_flag=true;
     if (!usacIndependencyFlag)
         Get_SB (arith_reset_flag,                               "arith_reset_flag");
 
-    if (C.IsNotValid || !Aac_sampling_frequency[C.sampling_frequency_index])
-    {
-        #if MEDIAINFO_TRACE
-            Trace_Activated=Trace_Activated_Save;
-        #endif //MEDIAINFO_TRACE
-
-        C.IsNotValid=true;
-        F.NotImplemented=true;
-        Element_End0();
-        return;
-    }
+    #if MEDIAINFO_TRACE
+        bool Trace_Activated_Save=Trace_Activated;
+        Trace_Activated=false; //It is too big, disabling trace for now for full USAC parsing
+    #endif //MEDIAINFO_TRACE
 
     int16u N=0, lg=0;
     int8u sampling_frequency_index_swb;
@@ -3366,18 +3386,26 @@ void File_Usac::acSpectralData(size_t ch, bool usacIndependencyFlag)
             sampling_frequency_swb*=coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].coreCoderFrameLength/256;
             sampling_frequency_swb/=coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].outputFrameLengthDivided256;
         }
-        sampling_frequency_index_swb=Aac_AudioSpecificConfig_sampling_frequency_index(float64_int64s(sampling_frequency_swb));
+        sampling_frequency_index_swb=Aac_AudioSpecificConfig_sampling_frequency_index(float64_int64s(sampling_frequency_swb)); // Not USAC index on purpose
     }
     else
         sampling_frequency_index_swb=C.sampling_frequency_index;
-    if (sampling_frequency_index_swb>=13)
+    if (!Aac_sampling_frequency[sampling_frequency_index_swb] || sampling_frequency_index_swb>=13)
     {
         #if MEDIAINFO_TRACE
             Trace_Activated=Trace_Activated_Save;
         #endif //MEDIAINFO_TRACE
 
-        C.IsNotValid=true;
-        F.NotImplemented=true;
+        #if MEDIAINFO_CONFORMANCE
+            if (Aac_sampling_frequency[C.sampling_frequency_index]) // Only if there wasn't already information from sampling_frequency_index
+            {
+                if (Aac_sampling_frequency[sampling_frequency_index_swb])
+                    ;//Fill_Conformance("acSpectralData", "acSpectralData is not implemented for this sampling_frequency_index_swb", bitset8(), Info);
+                else
+                    Fill_Conformance("acSpectralData Cohenrecy", "Issue in acSpectralData while computing sampling_frequency_index_swb");
+            }
+        #endif
+        C.WaitForNextIndependantFrame=true;
         Element_End0();
         return;
     }
@@ -3387,16 +3415,16 @@ void File_Usac::acSpectralData(size_t ch, bool usacIndependencyFlag)
         if (C.coreSbrFrameLengthIndex<coreSbrFrameLengthIndex_Mapping_Size)
             N=2*coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].coreCoderFrameLength;
 
-        if (max_sfb<=Aac_swb_offset_long_window[sampling_frequency_index_swb]->num_swb)
-            lg=Aac_swb_offset_long_window[sampling_frequency_index_swb]->swb_offset[max_sfb];
+        if ((ch?max_sfb1:max_sfb)<=Aac_swb_offset_long_window[sampling_frequency_index_swb]->num_swb)
+            lg=Aac_swb_offset_long_window[sampling_frequency_index_swb]->swb_offset[(ch?max_sfb1:max_sfb)];
     }
     else
     {
         if (C.coreSbrFrameLengthIndex<coreSbrFrameLengthIndex_Mapping_Size)
             N=2*coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].coreCoderFrameLength/8;
 
-        if (max_sfb<Aac_swb_offset_short_window[sampling_frequency_index_swb]->num_swb)
-            lg=Aac_swb_offset_short_window[sampling_frequency_index_swb]->swb_offset[max_sfb];
+        if ((ch?max_sfb1:max_sfb)<=Aac_swb_offset_short_window[sampling_frequency_index_swb]->num_swb)
+            lg=Aac_swb_offset_short_window[sampling_frequency_index_swb]->swb_offset[(ch?max_sfb1:max_sfb)];
     }
     int16u lg_max=N/2;
     if (lg>lg_max)
@@ -3405,7 +3433,7 @@ void File_Usac::acSpectralData(size_t ch, bool usacIndependencyFlag)
     for (int8u win=0; win<num_windows; win++)
     {
         arithData(ch, N, lg, lg_max, arith_reset_flag&&(win==0));
-        if (F.NotImplemented)
+        if (C.WaitForNextIndependantFrame)
             break;
     }
 
@@ -3489,20 +3517,23 @@ void File_Usac::fdChannelStream(size_t ch, bool commonWindow, bool commonTw, boo
     if (C.tw_mdct && !commonTw)
         twData();
 
-    scaleFactorData();
+    scaleFactorData(ch);
 
     if (tnsDataPresent)
         tnsData();
 
     acSpectralData(ch, usacIndependencyFlag);
-    if (F.NotImplemented)
+    if (C.WaitForNextIndependantFrame)
     {
         Element_End0();
         return;
     }
 
     TEST_SB_SKIP(                                               "fac_data_present");
-        F.NotImplemented=true;
+        #if MEDIAINFO_CONFORMANCE
+            //Fill_Conformance("fdChannelStream", "facData support not implemented", bitset8(), Info);
+        #endif
+        C.WaitForNextIndependantFrame=true;
         //TODO: facData(true, coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].coreCoderFrameLength/(num_windows==1?8:16));
     TEST_SB_END();
 
@@ -3654,8 +3685,10 @@ void File_Usac::UsacCoreCoderData(size_t nrChannels, bool usacIndependencyFlag)
     {
         if (coreModes[ch])
         {
-            C.IsNotValid=true;
-            F.NotImplemented=true;
+            #if MEDIAINFO_CONFORMANCE
+                //Fill_Conformance("UsacCoreCoderData", "lpd_channel_stream() support not implemented", bitset8(), Info);
+            #endif
+            C.WaitForNextIndependantFrame=true;
             //TODO: lpd_channel_stream(indepFlag);
         }
         else
@@ -3665,7 +3698,7 @@ void File_Usac::UsacCoreCoderData(size_t nrChannels, bool usacIndependencyFlag)
 
             fdChannelStream(ch, C.common_window, C.common_tw, tnsDataPresent[ch], usacIndependencyFlag);
         }
-        if (F.NotImplemented)
+        if (C.WaitForNextIndependantFrame)
             break;
     }
 
@@ -3676,7 +3709,10 @@ void File_Usac::UsacCoreCoderData(size_t nrChannels, bool usacIndependencyFlag)
 void File_Usac::UsacLfeElement()
 {
     Element_Begin1("UsacLfeElement");
-        F.NotImplemented=true;
+        #if MEDIAINFO_CONFORMANCE
+            Fill_Conformance("UsacLfeElement", "UsacLfeElement support not implemented", bitset8(), Info);
+        #endif
+        C.WaitForNextIndependantFrame=true;
     Element_End0();
 }
 
@@ -3685,7 +3721,7 @@ void File_Usac::UsacExtElement(size_t elemIdx, bool usacIndependencyFlag)
 {
     Element_Begin1("UsacExtElement");
     int8u usacExtElementType;
-    usacExtElementType=Conf.usacElements[elemIdx].usacElementType>>2;
+    usacExtElementType=C.usacElements[elemIdx].usacElementType>>2;
     Element_Info1C(usacExtElementType<ID_EXT_ELE_Max, usacExtElementType_IdNames[usacExtElementType]);
     bool usacExtElementPresent;
     Get_SB (usacExtElementPresent,                              "usacExtElementPresent");
@@ -3700,7 +3736,7 @@ void File_Usac::UsacExtElement(size_t elemIdx, bool usacIndependencyFlag)
                 if (usacExtElementType == ID_EXT_ELE_AUDIOPREROLL)
                     Fill_Conformance("AudioPreRoll usacExtElementUseDefaultLength", "usacExtElementUseDefaultLength is 1 but only value 0 is allowed");
             #endif
-            usacExtElementPayloadLength=Conf.usacElements[elemIdx].usacExtElementDefaultLength;
+            usacExtElementPayloadLength=C.usacElements[elemIdx].usacExtElementDefaultLength;
         }
         else
         {
@@ -3711,7 +3747,7 @@ void File_Usac::UsacExtElement(size_t elemIdx, bool usacIndependencyFlag)
                 usacExtElementPayloadLength+=255-2;
             }
         }
-        if (Conf.usacElements[elemIdx].usacExtElementPayloadFrag)
+        if (C.usacElements[elemIdx].usacExtElementPayloadFrag)
         {
             Skip_SB(                                            "usacExtElementStart");
             Skip_SB(                                            "usacExtElementStop");
@@ -3744,7 +3780,7 @@ void File_Usac::UsacExtElement(size_t elemIdx, bool usacIndependencyFlag)
             {
                 case ID_EXT_ELE_AUDIOPREROLL                    : AudioPreRoll(); break;
                 default:
-                    Skip_BS(usacExtElementPayloadLength,        "Unknown");
+                    Skip_BS(usacExtElementPayloadLength,        usacExtElementType==ID_EXT_ELE_FILL?"(Not parsed)":"Unknown");
             }
             BS_Bookmark(B, usacExtElementType<ID_EXT_ELE_Max?string(usacExtElementType_Names[usacExtElementType]):("usacExtElementType"+to_string(usacExtElementType)));
         }
@@ -3765,6 +3801,7 @@ void File_Usac::AudioPreRoll()
         {
             Trusted_IsNot("Too big");
             Element_End0();
+            C.WaitForNextIndependantFrame=true;
             return;
         }
         if (IsParsingRaw<=1)
@@ -3773,7 +3810,7 @@ void File_Usac::AudioPreRoll()
             auto B=BS_Bookmark(configLen);
             UsacConfig(B.BitsNotIncluded);
             if (!Trusted_Get())
-                C=Conf; //Using default conf if new conf has a problem
+                C.WaitForNextIndependantFrame=true;
             BS_Bookmark(B, "AudioPreRoll UsacConfig");
             Element_End0();
         }
@@ -3809,8 +3846,8 @@ void File_Usac::AudioPreRoll()
                 if (auLen>Data_BS_Remain())
                 {
                     Trusted_IsNot("Too big");
-                    C=Conf; //Using default conf if new conf has a problem
                     Element_End0();
+                    C.WaitForNextIndependantFrame=true;
                     break;
                 }
                 if (IsParsingRaw<=1)
@@ -3820,6 +3857,8 @@ void File_Usac::AudioPreRoll()
                     Element_Begin1("AccessUnit");
                     auto B=BS_Bookmark(auLen);
                     UsacFrame(B.BitsNotIncluded);
+                    if (!Trusted_Get())
+                        C.WaitForNextIndependantFrame=true;
                     BS_Bookmark(B, "AudioPreRoll UsacFrame");
                     Element_End0();
                     IsParsingRaw-=frameIdx+1;
@@ -3839,9 +3878,12 @@ void File_Usac::AudioPreRoll()
             }
         Element_End0();
     }
-    if (!Trusted_Get())
-        C=Conf; //Using default conf if new conf has a problem
     Element_End0();
+    if (!Trusted_Get())
+    {
+        C=Conf; //If there was an issue in the Preroll parsing, we disable the parsing of next frame but we take the default config for catching next preroll
+        C.WaitForNextIndependantFrame=true;
+    }
 }
 
 //---------------------------------------------------------------------------
