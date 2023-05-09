@@ -856,7 +856,15 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
                 if (!HDR_Format_Compatibility[j].empty())
                 {
                     Summary[j]+=__T(", ")+HDR_Format_Compatibility[j]+__T(" compatible");
-                    Commercial[j]=HDR_Format_Compatibility[j].substr(0, HDR_Format_Compatibility[j].find(__T(' ')));
+                    Commercial[j]=HDR_Format_Compatibility[j];
+                    if (!Commercial[j].empty())
+                    {
+                        auto Commercial_Reduce=Commercial[j].find(__T(' '));
+                        if (Commercial_Reduce<Commercial[j].size()-1 && Commercial[j][Commercial_Reduce+1]>='0' && Commercial[j][Commercial_Reduce+1]<='9')
+                            Commercial_Reduce=Commercial[j].find(__T(' '), Commercial_Reduce+1);
+                        if (Commercial_Reduce!=string::npos)
+                            Commercial[j].resize(Commercial_Reduce);
+                    }
                 }
             Fill(Stream_Video, Pos, Video_HDR_Format_String, Summary.Read());
             Fill(Stream_Video, Pos, Video_HDR_Format_Commercial, Commercial.Read());

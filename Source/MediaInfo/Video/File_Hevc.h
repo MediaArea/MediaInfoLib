@@ -367,6 +367,7 @@ private :
     void sei_message_user_data_registered_itu_t_t35_B5_0031_GA94();
     void sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03();
     void sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03_Delayed(int32u seq_parameter_set_id);
+    void sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_09();
     void sei_message_user_data_registered_itu_t_t35_B5_003A();
     void sei_message_user_data_registered_itu_t_t35_B5_003A_00();
     void sei_message_user_data_registered_itu_t_t35_B5_003A_02();
@@ -479,6 +480,7 @@ private :
         HdrFormat_EtsiTs103433,
         HdrFormat_HdrVivid,
         HdrFormat_SmpteSt209440,
+        HdrFormat_SmpteSt209410,
         HdrFormat_SmpteSt2086,
         HdrFormat_Max,
     };

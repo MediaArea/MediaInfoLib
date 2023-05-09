@@ -2316,6 +2316,7 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94()
     switch (user_data_type_code)
     {
         case 0x03: sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03(); break;
+        case 0x09: sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_09(); break;
         default: Skip_XX(Element_Size - Element_Offset, "GA94_reserved_user_data");
     }
 }
@@ -2425,6 +2426,142 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03_Delay
         //TemporalReferences_Min+=((seq_parameter_sets[seq_parameter_set_id]->frame_mbs_only_flag | !TemporalReferences[TemporalReferences_Min]->IsField)?2:1);
         TemporalReferences_Min++;
     }
+}
+
+//---------------------------------------------------------------------------
+// SEI - 4 - USA - 0031 - GA94 - 09 - SMPTE ST 2094-10
+static const char* Smpte209410_BlockNames[]=
+{
+    nullptr,
+    "Content Range",
+    "Trim Pass",
+    nullptr,
+    nullptr,
+    "Active Area",
+};
+static const auto Smpte209410_BlockNames_Size=sizeof(Smpte209410_BlockNames)/sizeof(decltype(*Smpte209410_BlockNames));
+void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_09()
+{
+    Element_Info1("SMPTE ST 2094-10");
+    int32u app_identifier, app_version;
+    bool metadata_refresh_flag;
+    vector<int32u> ext_block_level_List;
+    BS_Begin();
+    Get_UE(app_identifier, "app_identifier");
+    if (app_identifier!=1)
+        return;
+    Get_UE (app_version,                                        "app_version");
+    if (!app_version)
+    {
+        Get_SB(metadata_refresh_flag,                           "metadata_refresh_flag");
+        if (metadata_refresh_flag)
+        {
+            int32u num_ext_blocks;
+            Get_UE (num_ext_blocks,                             "num_ext_blocks");
+            if (num_ext_blocks)
+            {
+                auto Align=Data_BS_Remain()%8;
+                if (Align)
+                    Skip_BS(Align,                              "dm_alignment_zero_bits");
+                for (int32u i=0; i<num_ext_blocks; i++)
+                {
+                    Element_Begin1("block");
+                    Element_Begin1("Header");
+                    int32u ext_block_length;
+                    int8u ext_block_level;
+                    Get_UE (ext_block_length,                   "ext_block_length");
+                    Get_S1 (8, ext_block_level,                 "ext_block_level");
+                    Element_End0();
+                    Element_Info1((ext_block_level<Smpte209410_BlockNames_Size && Smpte209410_BlockNames[ext_block_level])?Smpte209410_BlockNames[ext_block_level]:to_string(ext_block_level).c_str());
+                    if (ext_block_length>Data_BS_Remain())
+                    {
+                        Element_End0();
+                        Trusted_IsNot("Coherency");
+                        break;
+                    }
+                    ext_block_length*=8;
+                    if (ext_block_length>Data_BS_Remain())
+                    {
+                        Element_End0();
+                        Trusted_IsNot("Coherency");
+                        break;
+                    }
+                    auto End=Data_BS_Remain()-ext_block_length;
+                    ext_block_level_List.push_back(ext_block_level);
+                    switch (ext_block_level)
+                    {
+                        case 1:
+                            Skip_S2(12,                         "min_PQ");
+                            Skip_S2(12,                         "max_PQ");
+                            Skip_S2(12,                         "avg_PQ");
+                            break;
+                        case 2:
+                            Skip_S2(12,                         "target_max_PQ");
+                            Skip_S2(12,                         "trim_slope");
+                            Skip_S2(12,                         "trim_offset");
+                            Skip_S2(12,                         "trim_power");
+                            Skip_S2(12,                         "trim_chroma_weight");
+                            Skip_S2(12,                         "trim_saturation_gain");
+                            Skip_S1( 3,                         "ms_weight");
+                            break;
+                        case 5:
+                            Skip_S2(13,                         "active_area_left_offset");
+                            Skip_S2(13,                         "active_area_right_offset");
+                            Skip_S2(13,                         "active_area_top_offset");
+                            Skip_S2(13,                         "active_area_bottom_offset");
+                            break;
+                    }
+                    if (Data_BS_Remain()>End)
+                    {
+                        auto Align=Data_BS_Remain()-End;
+                        if (Align)
+                            Skip_BS(Align,                      Align>=8?"(Unknown)":"dm_alignment_zero_bits");
+                    }
+                    Element_End0();
+                }
+            }
+        }
+        auto Align=Data_BS_Remain()%8;
+        if (Align)
+            Skip_BS(Align,                                      Align>=8?"(Unknown)":"dm_alignment_zero_bits");
+        BS_End();
+    }
+
+    FILLING_BEGIN();
+        auto& HDR_Format=HDR[Video_HDR_Format][HdrFormat_SmpteSt209410];
+        if (HDR_Format.empty())
+        {
+            HDR_Format=__T("SMPTE ST 2094-10");
+            HDR[Video_HDR_Format_Version][HdrFormat_SmpteSt209410].From_Number(app_version);
+            int32u level_Counts[Smpte209410_BlockNames_Size];
+            memset(level_Counts, 0, sizeof(level_Counts));
+            bool IsNotAtsc3=false;
+            bool Has1or2Before5=false;
+            bool Has5=false;
+            for (auto level : ext_block_level_List)
+            {
+                if (level<Smpte209410_BlockNames_Size)
+                    level_Counts[level]++;
+                switch (level)
+                {
+                    case 1:
+                    case 2:
+                        Has1or2Before5=true;
+                        break;
+                    case 5:
+                        Has5=true;
+                        if (!Has1or2Before5)
+                            IsNotAtsc3=true;
+                        else
+                            Has1or2Before5=false;
+                        break;
+                }
+            }
+            if (!IsNotAtsc3 && (!Has5 || !Has1or2Before5) && !app_version && level_Counts[1]==1 && level_Counts[2]<=16 && level_Counts[5]<=1)
+                HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt209410]=__T("ATSC 3.0");
+        }
+    FILLING_END();
+
 }
 
 //---------------------------------------------------------------------------
