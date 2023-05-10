@@ -49,6 +49,24 @@ namespace MediaInfoLib
 #define IncoherencyMessage "Incoherency between enums and message strings"
     
 //---------------------------------------------------------------------------
+static int32u pow10(int i)
+{
+    static int pow10[10] =
+    {
+        1,
+        10,
+        100,
+        1000,
+        10000, 
+        100000,
+        1000000,
+        10000000,
+        100000000,
+        1000000000,
+    };
+    return pow10[i];
+}
+
 static float32 TimeCodeToFloat(string v)
 {
     if (v.size() < 8 || v[2] != ':' || v[5] != ':')
@@ -67,7 +85,7 @@ static float32 TimeCodeToFloat(string v)
                 return 0;
         }
     }
-    float32 Value = (v[0] - '0') * 10 * 6 * 10 * 6 * 10
+    int32u  Value = (v[0] - '0') * 10 * 6 * 10 * 6 * 10
                   + (v[1] - '0')      * 6 * 10 * 6 * 10
                   + (v[3] - '0')          * 10 * 6 * 10
                   + (v[4] - '0')               * 6 * 10
@@ -76,14 +94,43 @@ static float32 TimeCodeToFloat(string v)
     if (v.size() < 9 || v[8] != '.')
         return Value;
     int i = 9;
-    float32 Divider = 1;
+    int32u ValueF = 0;
+    int ValueF_Exponent = 0;
+    const int Exponent_Max = 9;
     while (i < v.size() && v[i] >= '0' && v[i] <= '9')
     {
-        Divider *= 10;
-        Value += ((float32)(v[i] - '0')) / Divider;
+        ValueF_Exponent++;
+        if (ValueF_Exponent <= Exponent_Max)
+        {
+            ValueF *= 10;
+            ValueF += v[i] - '0';
+        }
         i++;
     }
-    return Value;
+    if (i >= v.size() || v[i] != 'S')
+        return Value + (float32)ValueF / pow10(ValueF_Exponent <= Exponent_Max ? ValueF_Exponent : Exponent_Max);
+    int32u SampleRate = 0;
+    int SampleRate_Exponent = 0;
+    i++;
+    while (i < v.size() && v[i] >= '0' && v[i] <= '9')
+    {
+        SampleRate_Exponent++;
+        if (SampleRate_Exponent <= Exponent_Max)
+        {
+            SampleRate *= 10;
+            SampleRate += v[i] - '0';
+        }
+        i++;
+    }
+    while (SampleRate_Exponent > Exponent_Max)
+    {
+        if (ValueF_Exponent < Exponent_Max)
+            ValueF_Exponent /= 10;
+        if (ValueF_Exponent)
+            ValueF_Exponent--;
+        SampleRate_Exponent--;
+    }
+    return Value + (float32)ValueF / SampleRate;
 }
 
 //---------------------------------------------------------------------------
