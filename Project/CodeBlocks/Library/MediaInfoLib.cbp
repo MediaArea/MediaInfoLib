@@ -64,6 +64,7 @@
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Flac.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Latm.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Latm.h" />
+		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Mga.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Midi.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Midi.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Mpc.cpp" />
