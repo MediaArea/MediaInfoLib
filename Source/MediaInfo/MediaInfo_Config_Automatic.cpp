@@ -1840,6 +1840,8 @@ void MediaInfo_Config_CodecID_Video_Mpeg4 (InfoMap &Info)
     "v210;YUV;AJA Video Systems Xena;;;;;YUV;4:2:2\n"
     "V210;YUV;AJA Video Systems Xena;;;;;YUV;4:2:2\n"
     "vc-1;VC-1;;SMPTE VC-1;http://www.smpte.org/;;;YUV\n"
+    "vvc1;VVC;;Versatile Video Coding\n"
+    "vvi1;VVC;;Versatile Video Coding\n"
     "WMV3;VC-1;WMV3;Windows Media Video 9;http://www.microsoft.com/windows/windowsmedia/format/codecdownload.aspx\n"
     "WRLE;Bitmap;;Windows BMP image format;http://www.apple.com/quicktime/download/standalone.html;;;YUV\n"
     "xd50;MPEG Video;;;http://www.apple.com/quicktime/download/standalone.html;;;YUV\n"

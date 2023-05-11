@@ -842,6 +842,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_imif=0x696D6966;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schi=0x73636869;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schm=0x7363686D;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_vvcC=0x76766343;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_wave=0x77617665;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_wave_acbf=0x61636266;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_wave_dec3=0x64656333;
@@ -1256,6 +1257,7 @@ void File_Mpeg4::Data_Parse()
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schi)
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schm)
                                     ATOM_END
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vvcC)
                                 LIST(moov_trak_mdia_minf_stbl_stsd_xxxx_wave)
                                     ATOM_BEGIN
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_esds)
@@ -7792,6 +7794,13 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schm()
     Skip_B4(                                                    "scheme_version");
     if (Flags&0x000001)
         Skip_UTF8(Element_Size-Element_Offset,                  "scheme_uri");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_vvcC()
+{
+    Element_Name("VVC decode");
+    AddCodecConfigurationBoxInfo();
 }
 
 //---------------------------------------------------------------------------
