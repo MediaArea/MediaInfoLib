@@ -67,6 +67,9 @@ extern const char* Hevc_profile_idc(int32u profile_idc)
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Video/File_Hevc.h"
+#if defined(MEDIAINFO_AFDBARDATA_YES)
+    #include "MediaInfo/Video/File_AfdBarData.h"
+#endif //defined(MEDIAINFO_AFDBARDATA_YES)
 #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
     #include "MediaInfo/Text/File_DtvccTransport.h"
 #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
@@ -2299,9 +2302,57 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031()
     Peek_B4(Identifier);
     switch (Identifier)
     {
+        case 0x44544731 :   sei_message_user_data_registered_itu_t_t35_B5_0031_DTG1(); return;
         case 0x47413934 :   sei_message_user_data_registered_itu_t_t35_B5_0031_GA94(); return;
         default         :   if (Element_Size-Element_Offset)
                                 Skip_XX(Element_Size-Element_Offset, "Unknown");
+    }
+}
+
+//---------------------------------------------------------------------------
+// SEI - 4 - USA - 0031 - DTG1
+void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_DTG1()
+{
+    Element_Info1("Active Format Description");
+
+    //Parsing
+    Skip_C4(                                                    "afd_identifier");
+    if (Element_Offset<Element_Size)
+    {
+        File_AfdBarData DTG1_Parser;
+        for (auto seq_parameter_set_Item : seq_parameter_sets)
+        {
+            if (seq_parameter_set_Item && seq_parameter_set_Item->vui_parameters && seq_parameter_set_Item->vui_parameters->aspect_ratio_info_present_flag)
+            {
+                //TODO: avoid duplicated code
+                int32u Width = seq_parameter_set_Item->pic_width_in_luma_samples;
+                int32u Height= seq_parameter_set_Item->pic_height_in_luma_samples;
+                int8u chromaArrayType = seq_parameter_set_Item->ChromaArrayType();
+                if (chromaArrayType >= 4)
+                    chromaArrayType = 0;
+                int32u CropUnitX=Hevc_SubWidthC [chromaArrayType];
+                int32u CropUnitY=Hevc_SubHeightC[chromaArrayType];
+                Width -=(seq_parameter_set_Item->conf_win_left_offset+seq_parameter_set_Item->conf_win_right_offset)*CropUnitX;
+                Height-=(seq_parameter_set_Item->conf_win_top_offset +seq_parameter_set_Item->conf_win_bottom_offset)*CropUnitY;
+                if (Height)
+                {
+                    float64 PixelAspectRatio = 1;
+                    if (seq_parameter_set_Item->vui_parameters->aspect_ratio_idc<Avc_PixelAspectRatio_Size)
+                            PixelAspectRatio = Avc_PixelAspectRatio[seq_parameter_set_Item->vui_parameters->aspect_ratio_idc];
+                    else if (seq_parameter_set_Item->vui_parameters->aspect_ratio_idc == 0xFF && seq_parameter_set_Item->vui_parameters->sar_height)
+                            PixelAspectRatio = ((float64) seq_parameter_set_Item->vui_parameters->sar_width) / seq_parameter_set_Item->vui_parameters->sar_height;
+                    auto DAR=Width*PixelAspectRatio/Height;
+                    if (DAR>=4.0/3.0*0.95 && DAR<4.0/3.0*1.05) DTG1_Parser.aspect_ratio_FromContainer=0; //4/3
+                    if (DAR>=16.0/9.0*0.95 && DAR<16.0/9.0*1.05) DTG1_Parser.aspect_ratio_FromContainer=1; //16/9
+                }
+                break;
+            }
+        }
+        Open_Buffer_Init(&DTG1_Parser);
+        DTG1_Parser.Format=File_AfdBarData::Format_A53_4_DTG1;
+        Open_Buffer_Continue(&DTG1_Parser, Buffer+Buffer_Offset+(size_t)Element_Offset, Element_Size-Element_Offset);
+        Merge(DTG1_Parser, Stream_Video, 0, 0);
+        Element_Offset=Element_Size;
     }
 }
 

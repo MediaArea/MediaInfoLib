@@ -3425,8 +3425,8 @@ void File_Mpegv::user_data_start_DTG1()
                 if (vertical_size_value && Mpegv_aspect_ratio1[aspect_ratio_information])
                     DAR=((float32)(0x1000*horizontal_size_extension+horizontal_size_value))/(0x1000*vertical_size_extension+vertical_size_value)/Mpegv_aspect_ratio1[aspect_ratio_information];
             }
-            if (DAR>=1.330 && DAR<1.336) ((File_AfdBarData*)DTG1_Parser)->aspect_ratio_FromContainer=0; //4/3
-            if (DAR>=1.774 && DAR<1.780) ((File_AfdBarData*)DTG1_Parser)->aspect_ratio_FromContainer=1; //16/9
+            if (DAR>=4.0/3.0*0.95 && DAR<4.0/3.0*1.05) ((File_AfdBarData*)DTG1_Parser)->aspect_ratio_FromContainer=0; //4/3
+            if (DAR>=16.0/9.0*0.95 && DAR<16.0/9.0*1.05) ((File_AfdBarData*)DTG1_Parser)->aspect_ratio_FromContainer=1; //16/9
         }
         if (DTG1_Parser->PTS_DTS_Needed)
         {
