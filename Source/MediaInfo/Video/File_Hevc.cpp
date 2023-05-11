@@ -2504,6 +2504,15 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_09()
                             Skip_S2(12,                         "trim_saturation_gain");
                             Skip_S1( 3,                         "ms_weight");
                             break;
+                        case 3:
+                            Skip_S2(12,                         "min_PQ_offset");
+                            Skip_S2(12,                         "max_PQ_offset");
+                            Skip_S2(12,                         "avg_PQ_offset");
+                            break;
+                        case 4:
+                            Skip_S2(12,                         "TF_PQ_mean");
+                            Skip_S2(12,                         "TF_PQ_stdev");
+                            break;
                         case 5:
                             Skip_S2(13,                         "active_area_left_offset");
                             Skip_S2(13,                         "active_area_right_offset");
@@ -2527,41 +2536,20 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_09()
         BS_End();
     }
 
-    FILLING_BEGIN();
-        auto& HDR_Format=HDR[Video_HDR_Format][HdrFormat_SmpteSt209410];
-        if (HDR_Format.empty())
-        {
-            HDR_Format=__T("SMPTE ST 2094-10");
+    auto& HDR_Format=HDR[Video_HDR_Format][HdrFormat_SmpteSt209410];
+    if (HDR_Format.empty())
+    {
+        HDR_Format=__T("SMPTE ST 2094-10");
+        FILLING_BEGIN();
             HDR[Video_HDR_Format_Version][HdrFormat_SmpteSt209410].From_Number(app_version);
-            int32u level_Counts[Smpte209410_BlockNames_Size];
-            memset(level_Counts, 0, sizeof(level_Counts));
-            bool IsNotAtsc3=false;
-            bool Has1or2Before5=false;
-            bool Has5=false;
-            for (auto level : ext_block_level_List)
-            {
-                if (level<Smpte209410_BlockNames_Size)
-                    level_Counts[level]++;
-                switch (level)
-                {
-                    case 1:
-                    case 2:
-                        Has1or2Before5=true;
-                        break;
-                    case 5:
-                        Has5=true;
-                        if (!Has1or2Before5)
-                            IsNotAtsc3=true;
-                        else
-                            Has1or2Before5=false;
-                        break;
-                }
-            }
-            if (!IsNotAtsc3 && (!Has5 || !Has1or2Before5) && !app_version && level_Counts[1]==1 && level_Counts[2]<=16 && level_Counts[5]<=1)
-                HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt209410]=__T("ATSC 3.0");
-        }
-    FILLING_END();
-
+        FILLING_END();
+    }
+    if (!Trusted_Get())
+    {
+        Fill(Stream_Video, 0, "ConformanceErrors", 1, 10, true);
+        Fill(Stream_Video, 0, "ConformanceErrors SMPTE_ST_2049_CVT", 1, 10, true);
+        Fill(Stream_Video, 0, "ConformanceErrors SMPTE_ST_2049_CVT Coherency", "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed", Unlimited, true, true);
+    }
 }
 
 //---------------------------------------------------------------------------
