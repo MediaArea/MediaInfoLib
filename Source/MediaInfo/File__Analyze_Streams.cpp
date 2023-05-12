@@ -1154,7 +1154,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         {
             case __T(':'):
             case __T(';'):
-                Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_TimeCode_DropFrame), (C==__T(';'))?__T("Yes"):__T("No"));
+                Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_TimeCode_DropFrame), (C==__T(';'))?__T("Yes"):__T("No"), Unlimited, Replace);
                 break;
         }
     }
