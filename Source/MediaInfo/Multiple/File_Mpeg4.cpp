@@ -121,6 +121,7 @@ namespace Elements
     const int64u moov_meta__grup=0x67727570;
     const int64u moov_meta__hdvd=0x68647664;
     const int64u moov_meta__itnu=0x69746E75;
+    const int64u moov_meta__kind=0x6B696E64;
     const int64u moov_meta__keyw=0x6B657977;
     const int64u moov_meta__ldes=0x6C646573;
     const int64u moov_meta__name=0x6E616D65;
@@ -2999,6 +3000,7 @@ File_Mpeg4::method File_Mpeg4::Metadata_Get(std::string &Parameter, int64u Meta)
         case Elements::moov_meta__grup : Parameter="Grouping"; Method=Method_String; break;
         case Elements::moov_meta__hdvd : Parameter="HDVideo"; Method=Method_Binary; break;
         case Elements::moov_meta__itnu : Parameter="iTunesU"; Method=Method_Binary; break;
+        case Elements::moov_meta__kind : Parameter="ServiceKind"; Method= Method_Binary; break;
         case Elements::moov_meta__keyw : Parameter="Keyword"; Method=Method_String; break;
         case Elements::moov_meta__ldes : Parameter="LongDescription"; Method=Method_String; break;
         case Elements::moov_meta__name : Parameter="Title"; Method=Method_String; break;

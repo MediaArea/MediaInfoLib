@@ -21,7 +21,7 @@
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_AC3_YES) || defined(MEDIAINFO_DVDV_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MIXML_YES)
+#if defined(MEDIAINFO_AC3_YES) || defined(MEDIAINFO_DVDV_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MIXML_YES)
 //---------------------------------------------------------------------------
 
 #include "ZenLib/Conf.h"
