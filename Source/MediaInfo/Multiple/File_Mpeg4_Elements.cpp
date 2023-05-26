@@ -9305,32 +9305,32 @@ void File_Mpeg4::moov_udta_xxxx()
                         Skip_B1(                                    "zero");
 
                     FILLING_BEGIN()
-                        string FinalValue, FinaleValue_String;
+                        string FinalValue, FinalValue_String;
                         if (name_space=="urn:mpeg:dash:role:2011")
                         {
                             int8u Index=0;
                                  if (value=="alternate")
                             {
-                                FinaleValue_String=FinalValue="Alternate";
+                                FinalValue_String=FinalValue="Alternate";
                             }
                             else if (value=="caption")
                             {
                                 FinalValue=AC3_Mode[3];
-                                FinalValue=AC3_Mode_String[3];
+                                FinalValue_String=AC3_Mode_String[3];
                             }
                             else if (value=="commentary")
                             {
                                 FinalValue=AC3_Mode[5];
-                                FinalValue=AC3_Mode_String[5];
+                                FinalValue_String=AC3_Mode_String[5];
                             }
                             else if (value=="description")
                             {
                                 FinalValue=AC3_Mode[2];
-                                FinalValue=AC3_Mode_String[2];
+                                FinalValue_String=AC3_Mode_String[2];
                             }
                             else if (value=="dub")
                             {
-                                FinaleValue_String=FinalValue="Dubbed";
+                                FinalValue_String=FinalValue="Dubbed";
                             }
                             else if (value=="forced-subtitle")
                             {
@@ -9341,17 +9341,17 @@ void File_Mpeg4::moov_udta_xxxx()
                             }
                             else if (value=="supplementary")
                             {
-                                FinaleValue_String=FinalValue="Supplementary";
+                                FinalValue_String=FinalValue="Supplementary";
                             }
                             else
-                                FinaleValue_String=FinalValue=name_space+':'+value;
+                                FinalValue_String=FinalValue=name_space+':'+value;
                         }
                         else
-                            FinaleValue_String=FinalValue=name_space+':'+value;
+                            FinalValue_String=FinalValue=name_space+':'+value;
                         if (!FinalValue.empty())
                         {
                             Fill(StreamKind_Last, StreamPos_Last, "ServiceKind", FinalValue);
-                            Fill(StreamKind_Last, StreamPos_Last, "ServiceKind/String", FinalValue);
+                            Fill(StreamKind_Last, StreamPos_Last, "ServiceKind/String", FinalValue_String);
                         }
                         FILLING_END()
                 }
