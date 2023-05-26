@@ -2272,7 +2272,7 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
          || !MI.Get(Stream_General, 0, General_Part_Position).empty()
          || !MI.Get(Stream_General, 0, General_Album).empty())
         {
-            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Movie, "mpeg7:Title", "type", std::string("songTitle"));
+            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Movie, "mpeg7:Title", "type", std::string("main"));
             Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Track, "mpeg7:Title", "type", std::string("songTitle"));
             if (!MI.Get(Stream_General, 0, General_Part_Position).empty())
             {
