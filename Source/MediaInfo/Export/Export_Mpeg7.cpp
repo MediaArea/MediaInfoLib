@@ -1123,23 +1123,23 @@ static const Mpeg7_AudioPresentationCS_Extra_Struct Mpeg7_AudioPresentationCS_Ex
     { ID(  5, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_LFE   , "Home theater 5.1 with 3 front, 2 surround speakers" },
     { ID(  5, 3), MASK_M_030 | MASK_M_000 | MASK_M_135 | MASK_LFE   , "Home theater 5.1 with 3 front, 2 back speakers" },
     // 6.0
-    { ID( 58, 4), MASK_M_030 | MASK_M_090 | MASK_M_135              , "6.0 with 2 front, 2 side, 2 back speakers" },
-    { ID( 58, 5), MASK_M_030 | MASK_M_110 | MASK_M_135              , "6.0 with 2 front, 2 surround, 2 back speakers" },
-    { ID( 58, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_180 , "6.0 with 3 front, 2 side, 1 back speakers" },
-    { ID( 58, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_180 , "6.0 with 3 front, 2 surround, 1 back speakers" },
-    { ID( 58, 3), MASK_M_030 | MASK_M_000 | MASK_M_135 | MASK_M_180 , "6.0 with 3 front, 3 back speakers" },
-    { ID( 58, 6), MASK_M_030 | MASK_M_022 | MASK_M_090              , "6.0 with 4 front, 2 side speakers" },
-    { ID( 58, 7), MASK_M_030 | MASK_M_022 | MASK_M_110              , "6.0 with 4 front, 2 surround speakers" },
-    { ID( 58, 8), MASK_M_030 | MASK_M_022 | MASK_M_135              , "6.0 with 4 front, 2 back speakers" },
+    { ID( 56, 4), MASK_M_030 | MASK_M_090 | MASK_M_135              , "6.0 with 2 front, 2 side, 2 back speakers" },
+    { ID( 56, 5), MASK_M_030 | MASK_M_110 | MASK_M_135              , "6.0 with 2 front, 2 surround, 2 back speakers" },
+    { ID( 56, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_180 , "6.0 with 3 front, 2 side, 1 back speakers" },
+    { ID( 56, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_180 , "6.0 with 3 front, 2 surround, 1 back speakers" },
+    { ID( 56, 3), MASK_M_030 | MASK_M_000 | MASK_M_135 | MASK_M_180 , "6.0 with 3 front, 3 back speakers" },
+    { ID( 56, 6), MASK_M_030 | MASK_M_022 | MASK_M_090              , "6.0 with 4 front, 2 side speakers" },
+    { ID( 56, 7), MASK_M_030 | MASK_M_022 | MASK_M_110              , "6.0 with 4 front, 2 surround speakers" },
+    { ID( 56, 8), MASK_M_030 | MASK_M_022 | MASK_M_135              , "6.0 with 4 front, 2 back speakers" },
     // 6.1
-    { ID( 58, 4), MASK_M_030 | MASK_M_090 | MASK_M_135              | MASK_LFE   , "6.1 with 2 front, 2 side, 2 back speakers" },
-    { ID( 58, 5), MASK_M_030 | MASK_M_110 | MASK_M_135              | MASK_LFE   , "6.1 with 2 front, 2 surround, 2 back speakers" },
-    { ID( 58, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_180 | MASK_LFE   , "6.1 with 3 front, 2 side, 1 back speakers" },
-    { ID( 58, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_180 | MASK_LFE   , "6.1 with 3 front, 2 surround, 1 back speakers" },
-    { ID( 58, 3), MASK_M_030 | MASK_M_000 | MASK_M_135 | MASK_M_180 | MASK_LFE   , "6.1 with 3 front, 3 back speakers" },
-    { ID( 58, 6), MASK_M_030 | MASK_M_022 | MASK_M_090              | MASK_LFE   , "6.1 with 4 front, 2 side speakers" },
-    { ID( 58, 7), MASK_M_030 | MASK_M_022 | MASK_M_110              | MASK_LFE   , "6.1 with 4 front, 2 surround speakers" },
-    { ID( 58, 8), MASK_M_030 | MASK_M_022 | MASK_M_135              | MASK_LFE   , "6.1 with 4 front, 2 back speakers" },
+    { ID( 57, 4), MASK_M_030 | MASK_M_090 | MASK_M_135              | MASK_LFE   , "6.1 with 2 front, 2 side, 2 back speakers" },
+    { ID( 57, 5), MASK_M_030 | MASK_M_110 | MASK_M_135              | MASK_LFE   , "6.1 with 2 front, 2 surround, 2 back speakers" },
+    { ID( 57, 1), MASK_M_030 | MASK_M_000 | MASK_M_090 | MASK_M_180 | MASK_LFE   , "6.1 with 3 front, 2 side, 1 back speakers" },
+    { ID( 57, 2), MASK_M_030 | MASK_M_000 | MASK_M_110 | MASK_M_180 | MASK_LFE   , "6.1 with 3 front, 2 surround, 1 back speakers" },
+    { ID( 57, 3), MASK_M_030 | MASK_M_000 | MASK_M_135 | MASK_M_180 | MASK_LFE   , "6.1 with 3 front, 3 back speakers" },
+    { ID( 57, 6), MASK_M_030 | MASK_M_022 | MASK_M_090              | MASK_LFE   , "6.1 with 4 front, 2 side speakers" },
+    { ID( 57, 7), MASK_M_030 | MASK_M_022 | MASK_M_110              | MASK_LFE   , "6.1 with 4 front, 2 surround speakers" },
+    { ID( 57, 8), MASK_M_030 | MASK_M_022 | MASK_M_135              | MASK_LFE   , "6.1 with 4 front, 2 back speakers" },
     // 6.2
     { ID( 58, 4), MASK_M_030 | MASK_M_090 | MASK_M_135              | MASK_LFE   | MASK_LFE2   , "6.2 with 2 front, 2 side, 2 back speakers" },
     { ID( 58, 5), MASK_M_030 | MASK_M_110 | MASK_M_135              | MASK_LFE   | MASK_LFE2   , "6.2 with 2 front, 2 surround, 2 back speakers" },
@@ -1627,6 +1627,23 @@ static Node* Mpeg7_CS(Node* Node_MediaFormat, const char* MainName, const char* 
     return Node_Main;
 }
 
+//---------------------------------------------------------------------------
+static const char* Mpeg7_ServiceKind2Type[][2] =
+{
+    { "Dubbed", "dubbed"},
+    { "HI", "hearingImpaired"},
+    { "VI", "visuallyImpaired"},
+};
+static const size_t Mpeg7_ServiceKind2Type_Size=sizeof(Mpeg7_ServiceKind2Type)/sizeof(*Mpeg7_ServiceKind2Type);
+static const char* Mpeg7_ServiceKind2Type_Get(const char* Value)
+{
+
+    for (size_t i=0; i<Mpeg7_ServiceKind2Type_Size; i++)
+        if (!strcmp(Value, Mpeg7_ServiceKind2Type[i][0]))
+            return Mpeg7_ServiceKind2Type[i][1];
+    return nullptr;
+}
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -1649,6 +1666,10 @@ Export_Mpeg7::~Export_Mpeg7 ()
 void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamPos, size_t& Version)
 {
     Node* Node_VisualCoding=Parent->Add_Child("mpeg7:VisualCoding");
+
+    //ID
+    if (Version>=2)
+        Node_VisualCoding->Add_Attribute("id", Ztring(__T("video.")+Ztring::ToZtring(1+StreamPos)));
 
     //Format
     Node* Node_Format=Mpeg7_CS(Node_VisualCoding, "mpeg7:Format", "VisualCodingFormatCS", Mpeg7_VisualCodingFormatCS_termID, VideoCompressionCodeCS_Name, MI, StreamPos);
@@ -1886,8 +1907,13 @@ void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamP
         }
     }
   
+    //Language
+    Ztring Language=MI.Get(Stream_Audio, StreamPos, Audio_Language);
+    if (!Language.empty())
+        Node_VisualCoding->Add_Child("")->XmlCommentOut="Language: "+Language.To_UTF8();
+ 
     //Encryption
-    Ztring Encryption=MI.Get(Stream_Audio, StreamPos, Audio_Encryption);
+    Ztring Encryption=MI.Get(Stream_Video, StreamPos, Video_Encryption);
     if (!Encryption.empty())
     {
         if (Version || (StreamPos && !Version))
@@ -1905,6 +1931,10 @@ void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamP
 void Mpeg7_Transform_Audio(Node* Parent, MediaInfo_Internal &MI, size_t StreamPos, size_t& Version)
 {
     Node* Node_AudioCoding=Parent->Add_Child("mpeg7:AudioCoding");
+
+    //ID
+    if (Version>=2)
+        Node_AudioCoding->Add_Attribute("id", Ztring(__T("audio.")+Ztring::ToZtring(1+StreamPos)));
 
     //Format
     Mpeg7_CS(Node_AudioCoding, "mpeg7:Format", "AudioCodingFormatCS", Mpeg7_AudioCodingFormatCS_termID, Mpeg7_AudioCodingFormatCS_Name, MI, StreamPos);
@@ -1972,14 +2002,7 @@ void Mpeg7_Transform_Audio(Node* Parent, MediaInfo_Internal &MI, size_t StreamPo
     //Language
     Ztring Language=MI.Get(Stream_Audio, StreamPos, Audio_Language);
     if (!Language.empty())
-    {
-        if (StreamPos && Version<=2)
-        {
-            Node_AudioCoding->Add_Child("mpeg7:Language", Language);
-        }
-        else
-            Node_AudioCoding->Add_Child("")->XmlCommentOut="Language: "+Language.To_UTF8();
-    }
+        Node_AudioCoding->Add_Child("")->XmlCommentOut="Language: "+Language.To_UTF8();
    
     //Encryption
     Ztring Encryption=MI.Get(Stream_Audio, StreamPos, Audio_Encryption);
@@ -2002,35 +2025,64 @@ void Mpeg7_Transform_Audio(Node* Parent, MediaInfo_Internal &MI, size_t StreamPo
 //---------------------------------------------------------------------------
 void Mpeg7_Transform_Text(Node* Parent, MediaInfo_Internal &MI, size_t StreamPos, size_t& Version)
 {
-    Node* Node_AudioCoding=Parent->Add_Child("mpeg7:TextualCoding");
+    Node* Node_TextualCoding=Parent->Add_Child("mpeg7:TextualCoding");
+
+    //ID
+    if (Version>=2)
+        Node_TextualCoding->Add_Attribute("id", Ztring(__T("textual.")+Ztring::ToZtring(1+StreamPos)));
 
     //Format
-    Mpeg7_CS(Node_AudioCoding, "mpeg7:Format", "TextualCodingFormatCS", Mpeg7_TextualCodingFormatCS_termID, Mpeg7_TextualCodingFormatCS_Name, MI, StreamPos);
+    Mpeg7_CS(Node_TextualCoding, "mpeg7:Format", "TextualCodingFormatCS", Mpeg7_TextualCodingFormatCS_termID, Mpeg7_TextualCodingFormatCS_Name, MI, StreamPos);
    
+    //Frame
+    if (!MI.Get(Stream_Text, 0, Text_DisplayAspectRatio).empty()
+     || !MI.Get(Stream_Text, 0, Text_Height).empty()
+     || !MI.Get(Stream_Text, 0, Text_Width).empty()
+     || !MI.Get(Stream_Text, 0, Text_FrameRate).empty()
+     || !MI.Get(Stream_Text, 0, Text_FrameRate_Mode).empty())
+    {
+        Node* Node_Frame=Node_TextualCoding->Add_Child("mpeg7:Frame");
+        Node_Frame->Add_Attribute_IfNotEmpty(MI, Stream_Text, 0, Text_DisplayAspectRatio, "aspectRatio");
+
+        Ztring Height=Mpeg7_StripExtraValues(MI.Get(Stream_Text, 0, Text_Height));
+        if (!Height.empty())
+            Node_Frame->Add_Attribute("height", Height);
+
+        Ztring Width=Mpeg7_StripExtraValues(MI.Get(Stream_Text, 0, Text_Width));
+        if (!Width.empty())
+            Node_Frame->Add_Attribute("width", Width);
+
+        Node_Frame->Add_Attribute_IfNotEmpty(MI, Stream_Text, 0, Text_FrameRate, "rate");
+
+        if (MI.Get(Stream_Text, 0, Text_FrameRate_Mode)==__T("VFR"))
+        {
+            if (Version>1)
+            {
+                Node_Frame->Add_Attribute("variableRate", "true");
+                Version=3;
+            }
+            else
+                Node_Frame->XmlComment="variableRate: true";
+        }
+    }
+
     //Language
     Ztring Language=MI.Get(Stream_Text, StreamPos, Text_Language);
     if (!Language.empty())
     {
         bool Forced=MI.Get(Stream_Text, StreamPos, Text_Forced).empty();
-        if (!Version)
-        {
-            Node* Node_Language=Node_AudioCoding->Add_Child("mpeg7:Language", Language);
-            if (Forced)
-                Node_Language->Add_Attribute("closed", "false");
-        }
-        else
-            Node_AudioCoding->Add_Child("")->XmlCommentOut="Language: "+Language.To_UTF8()+(Forced?", open":"");
+        Node_TextualCoding->Add_Child("")->XmlCommentOut="Language: "+Language.To_UTF8()+(Forced?", open":"");
     }
   
     //Encryption
     Ztring Encryption=MI.Get(Stream_Text, StreamPos, Text_Encryption);
     if (!Encryption.empty())
     {
-        Node_AudioCoding->Add_Child("mpeg7:Encryption", Encryption);
+        Node_TextualCoding->Add_Child("mpeg7:Encryption", Encryption);
     }
 
     if (!Version)
-        Node_AudioCoding->XmlCommentOut = "No Textual track in strict MPEG-7";
+        Node_TextualCoding->XmlCommentOut = "No Textual track in strict MPEG-7";
 }
 
 //---------------------------------------------------------------------------
@@ -2220,7 +2272,7 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
          || !MI.Get(Stream_General, 0, General_Part_Position).empty()
          || !MI.Get(Stream_General, 0, General_Album).empty())
         {
-            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Movie, "mpeg7:Title", "type", std::string("songTitle"));
+            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Movie, "mpeg7:Title", "type", std::string("main"));
             Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Track, "mpeg7:Title", "type", std::string("songTitle"));
             if (!MI.Get(Stream_General, 0, General_Part_Position).empty())
             {
@@ -2364,8 +2416,17 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
     }
 
     //Language
-    ZtringList AudioLanguages, TextLanguages;
-    bool AudioLanguages_HasContent=false, TextLanguages_HasContent=false;
+    ZtringList VideoLanguages, AudioLanguages, TextLanguages, AudioTypes, TextTypes;
+    bool VideoLanguages_HasContent=false, AudioLanguages_HasContent=false, TextLanguages_HasContent=false;
+    for (size_t StreamPos=0; StreamPos< Video_Count; StreamPos++)
+    {
+        Ztring Language=MI.Get(Stream_Video, StreamPos, Video_Language);
+        if (Language.empty())
+            Language=__T("und");
+        else
+            VideoLanguages_HasContent=true;
+        VideoLanguages.push_back(Language);
+    }
     for (size_t StreamPos=0; StreamPos<Audio_Count; StreamPos++)
     {
         Ztring Language=MI.Get(Stream_Audio, StreamPos, Audio_Language);
@@ -2374,6 +2435,15 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
         else
             AudioLanguages_HasContent=true;
         AudioLanguages.push_back(Language);
+        Ztring ServiceKind=MI.Get(Stream_Audio, StreamPos, Audio_ServiceKind);
+        auto Type=Mpeg7_ServiceKind2Type_Get(ServiceKind.To_UTF8().c_str());
+        if (Type)
+            ServiceKind.From_UTF8(Type);
+        else
+            ServiceKind.clear();
+        if (!ServiceKind.empty())
+            AudioLanguages_HasContent=true;
+        AudioTypes.push_back(ServiceKind);
     }
     for (size_t StreamPos=0; StreamPos<Text_Count; StreamPos++)
     {
@@ -2383,9 +2453,19 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
         else
             TextLanguages_HasContent=true;
         TextLanguages.push_back(Language);
+        Ztring ServiceKind=MI.Get(Stream_Text, StreamPos, Text_ServiceKind);
+        auto Type=Mpeg7_ServiceKind2Type_Get(ServiceKind.To_UTF8().c_str());
+        if (Type)
+            ServiceKind.From_UTF8(Type);
+        else
+            ServiceKind.clear();
+        if (!ServiceKind.empty())
+            TextLanguages_HasContent=true;
+        TextTypes.push_back(ServiceKind);
     }
 
-    if (AudioLanguages_HasContent
+    if (VideoLanguages_HasContent
+     || AudioLanguages_HasContent
      || TextLanguages_HasContent
     )
     {
@@ -2393,10 +2473,36 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
             Node_CreationInformation=Node_Type->Add_Child("mpeg7:CreationInformation");
         Node* Node_Classification=Node_CreationInformation->Add_Child("mpeg7:Classification");
 
+        if (VideoLanguages_HasContent)
+        {
+            for (size_t StreamPos=0; StreamPos<VideoLanguages.size(); StreamPos++)
+            {
+                const auto& Language=VideoLanguages[StreamPos];
+                if (Version>2)
+                {
+                    auto Node_Language=Node_Classification->Add_Child("mpeg7:Language", Language);
+                    Node_Language->Add_Attribute("ref", Ztring(__T("visual.")+Ztring::ToZtring(1+StreamPos)));
+                }
+                else
+                    Node_Classification->Add_Child("")->XmlCommentOut="video "+to_string(1+StreamPos)+" language: "+Language.To_UTF8();
+            }
+        }
         if (AudioLanguages_HasContent)
         {
-            for (const auto& Language : AudioLanguages)
-                Node_Classification->Add_Child("mpeg7:Language", Language);
+            for (size_t StreamPos=0; StreamPos< AudioLanguages.size(); StreamPos++)
+            {
+                const auto& Language=AudioLanguages[StreamPos];
+                if (Version<=1 && (VideoLanguages_HasContent || AudioLanguages.size()>1))
+                    Node_Classification->Add_Child("")->XmlCommentOut="below is audio languages with same order as in MediaFormat";
+                auto Node_Language=Node_Classification->Add_Child("mpeg7:Language", Language);
+                if (Version>1)
+                {
+                    Node_Language->Add_Attribute("ref", Ztring(__T("audio.")+Ztring::ToZtring(1+StreamPos)));
+                    if (!AudioTypes[StreamPos].empty())
+                        
+                        Node_Language->Add_Attribute("type", AudioTypes[StreamPos]);
+                }
+            }
         }
         if (TextLanguages_HasContent)
         {
@@ -2406,6 +2512,12 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
                 Node* Node_CaptionLanguage=Node_Classification->Add_Child("mpeg7:CaptionLanguage", Language);
                 if (!MI.Get(Stream_Text, StreamPos, Text_Forced).empty())
                     Node_CaptionLanguage->Add_Attribute("closed", "false");
+                if (Version>1)
+                {
+                    Node_CaptionLanguage->Add_Attribute("ref", Ztring(__T("textual.")+Ztring::ToZtring(1+StreamPos)));
+                    if (!TextTypes[StreamPos].empty())
+                        Node_CaptionLanguage->Add_Attribute("type", TextTypes[StreamPos]);
+                }
             }
         }
     }
