@@ -1886,6 +1886,18 @@ void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamP
         }
     }
   
+    //Language
+    Ztring Language=MI.Get(Stream_Audio, StreamPos, Audio_Language);
+    if (!Language.empty())
+    {
+        if (StreamPos && Version<=2)
+        {
+            Node_VisualCoding->Add_Child("mpeg7:Language", Language);
+        }
+        else
+            Node_VisualCoding->Add_Child("")->XmlCommentOut="Language: "+Language.To_UTF8();
+    }
+ 
     //Encryption
     Ztring Encryption=MI.Get(Stream_Video, StreamPos, Video_Encryption);
     if (!Encryption.empty())
