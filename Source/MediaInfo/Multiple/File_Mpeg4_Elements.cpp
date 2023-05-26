@@ -606,6 +606,10 @@ int8u File_Mpeg4_PcmSampleSizeFromCodecID(int32u CodecID)
     }
 }
 
+//---------------------------------------------------------------------------
+extern const char* AC3_Mode[];
+extern const char* AC3_Mode_String[];
+
 //***************************************************************************
 // Constants
 //***************************************************************************
@@ -9278,8 +9282,82 @@ void File_Mpeg4::moov_udta_xxxx()
             break;
         case Method_Binary :
             {
-                Element_Name("Binary");
-                Skip_XX(Element_Size,                           "Unknown");
+                if (Parameter=="ServiceKind")
+                {
+                    string name_space, value;
+                    NAME_VERSION_FLAG("Text");
+                    auto Buffer_Begin=Buffer+Buffer_Offset+4;
+                    auto Buffer_Current=Buffer_Begin;
+                    auto Buffer_End=Buffer+Buffer_Offset+(size_t)Element_Size;
+                    while (Buffer_Current<Buffer_End && *Buffer_Current)
+                        Buffer_Current++;
+                    Get_String(Buffer_Current-Buffer_Begin, name_space, "namespace");
+                    if (Element_Offset<Element_Size)
+                    {
+                        Skip_B1(                                    "zero");
+                        Buffer_Current++;
+                    }
+                    Buffer_Begin=Buffer_Current;
+                    while (Buffer_Current<Buffer_End && *Buffer_Current)
+                        Buffer_Current++;
+                    Get_String(Buffer_Current-Buffer_Begin, value, "value");
+                    if (Element_Offset<Element_Size)
+                        Skip_B1(                                    "zero");
+
+                    FILLING_BEGIN()
+                        string FinalValue, FinaleValue_String;
+                        if (name_space=="urn:mpeg:dash:role:2011")
+                        {
+                            int8u Index=0;
+                                 if (value=="alternate")
+                            {
+                                FinaleValue_String=FinalValue="Alternate";
+                            }
+                            else if (value=="caption")
+                            {
+                                FinalValue=AC3_Mode[3];
+                                FinalValue=AC3_Mode_String[3];
+                            }
+                            else if (value=="commentary")
+                            {
+                                FinalValue=AC3_Mode[5];
+                                FinalValue=AC3_Mode_String[5];
+                            }
+                            else if (value=="description")
+                            {
+                                FinalValue=AC3_Mode[2];
+                                FinalValue=AC3_Mode_String[2];
+                            }
+                            else if (value=="dub")
+                            {
+                                FinaleValue_String=FinalValue="Dubbed";
+                            }
+                            else if (value=="forced-subtitle")
+                            {
+                                Fill(StreamKind_Last, StreamPos_Last, "Forced", "Yes");
+                            }
+                            else if (value=="subtitle")
+                            {
+                            }
+                            else if (value=="supplementary")
+                            {
+                                FinaleValue_String=FinalValue="Supplementary";
+                            }
+                            else
+                                FinaleValue_String=FinalValue=name_space+':'+value;
+                        }
+                        else
+                            FinaleValue_String=FinalValue=name_space+':'+value;
+                        if (!FinalValue.empty())
+                        {
+                            Fill(StreamKind_Last, StreamPos_Last, "ServiceKind", FinalValue);
+                            Fill(StreamKind_Last, StreamPos_Last, "ServiceKind/String", FinalValue);
+                        }
+                        FILLING_END()
+                }
+                else
+                    Element_Name("Binary");
+                Skip_XX(Element_Size-Element_Offset,            "Unknown");
                 return;
             }
             break;
