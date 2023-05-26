@@ -99,6 +99,7 @@ Ztring Xml_Name_Escape_0_7_78 (const Ztring &Name)
 #endif //defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
 
 //---------------------------------------------------------------------------
+std::string URL_Encoded_Encode(const std::string& URL);
 extern MediaInfo_Config Config;
 extern const Char* MediaInfo_Version;
 //---------------------------------------------------------------------------
@@ -421,7 +422,7 @@ Ztring MediaInfo_Internal::Inform()
         XML_0_7_78_MI=true;
     #endif //defined(MEDIAINFO_XML_YES)
      #if defined(MEDIAINFO_JSON_YES)
-    if (MediaInfoLib::Config.Inform_Get()==__T("JSON"))
+    if (MediaInfoLib::Config.Inform_Get()==__T("JSON") || MediaInfoLib::Config.Inform_Get()==__T("JSON_URL"))
         JSON=true;
     #endif //defined(MEDIAINFO_JSON_YES)
     #if defined(MEDIAINFO_CSV_YES)
@@ -588,6 +589,11 @@ Ztring MediaInfo_Internal::Inform()
         }
     #endif //MEDIAINFO_TRACE
 
+    #if defined(MEDIAINFO_JSON_YES)
+    if (MediaInfoLib::Config.Inform_Get()==__T("JSON_URL"))
+        Retour.From_UTF8("https://mediaarea.net/MoreInfo?mi="+URL_Encoded_Encode(Retour.To_UTF8()));
+    #endif //defined(MEDIAINFO_JSON_YES)
+
     return Retour;
 
     #else //defined(MEDIAINFO_TEXT_YES) || defined(MEDIAINFO_HTML_YES) || defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_CSV_YES)
@@ -640,7 +646,7 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
             XML=true;
         #endif //defined(MEDIAINFO_XML_YES)
         #if defined(MEDIAINFO_JSON_YES)
-        JSON=MediaInfoLib::Config.Inform_Get()==__T("JSON")?true:false;
+        JSON=(MediaInfoLib::Config.Inform_Get()==__T("JSON") || MediaInfoLib::Config.Inform_Get()==__T("JSON_URL"))?true:false;
         #endif //defined(MEDIAINFO_JSON_YES)
         #if defined(MEDIAINFO_CSV_YES)
         bool CSV=MediaInfoLib::Config.Inform_Get()==__T("CSV")?true:false;
