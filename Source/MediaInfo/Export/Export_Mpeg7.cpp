@@ -2034,6 +2034,38 @@ void Mpeg7_Transform_Text(Node* Parent, MediaInfo_Internal &MI, size_t StreamPos
     //Format
     Mpeg7_CS(Node_TextualCoding, "mpeg7:Format", "TextualCodingFormatCS", Mpeg7_TextualCodingFormatCS_termID, Mpeg7_TextualCodingFormatCS_Name, MI, StreamPos);
    
+    //Frame
+    if (!MI.Get(Stream_Text, 0, Text_DisplayAspectRatio).empty()
+     || !MI.Get(Stream_Text, 0, Text_Height).empty()
+     || !MI.Get(Stream_Text, 0, Text_Width).empty()
+     || !MI.Get(Stream_Text, 0, Text_FrameRate).empty()
+     || !MI.Get(Stream_Text, 0, Text_FrameRate_Mode).empty())
+    {
+        Node* Node_Frame=Node_TextualCoding->Add_Child("mpeg7:Frame");
+        Node_Frame->Add_Attribute_IfNotEmpty(MI, Stream_Text, 0, Text_DisplayAspectRatio, "aspectRatio");
+
+        Ztring Height=Mpeg7_StripExtraValues(MI.Get(Stream_Text, 0, Text_Height));
+        if (!Height.empty())
+            Node_Frame->Add_Attribute("height", Height);
+
+        Ztring Width=Mpeg7_StripExtraValues(MI.Get(Stream_Text, 0, Text_Width));
+        if (!Width.empty())
+            Node_Frame->Add_Attribute("width", Width);
+
+        Node_Frame->Add_Attribute_IfNotEmpty(MI, Stream_Text, 0, Text_FrameRate, "rate");
+
+        if (MI.Get(Stream_Text, 0, Text_FrameRate_Mode)==__T("VFR"))
+        {
+            if (Version>1)
+            {
+                Node_Frame->Add_Attribute("variableRate", "true");
+                Version=3;
+            }
+            else
+                Node_Frame->XmlComment="variableRate: true";
+        }
+    }
+
     //Language
     Ztring Language=MI.Get(Stream_Text, StreamPos, Text_Language);
     if (!Language.empty())
