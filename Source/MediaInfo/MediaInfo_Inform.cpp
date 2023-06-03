@@ -237,11 +237,11 @@ Ztring MediaInfo_Internal::Inform()
         if (MediaInfoLib::Config.Inform_Get()==__T("MPEG-7"))
             return Export_Mpeg7().Transform(*this);
         if (MediaInfoLib::Config.Inform_Get()==__T("MPEG-7_Strict"))
-            return Export_Mpeg7().Transform(*this, 0);
+            return Export_Mpeg7().Transform(*this, Export_Mpeg7::Version_Strict);
         if (MediaInfoLib::Config.Inform_Get()==__T("MPEG-7_Relaxed"))
-            return Export_Mpeg7().Transform(*this, 1);
+            return Export_Mpeg7().Transform(*this, Export_Mpeg7::Version_BestEffort_Strict);
         if (MediaInfoLib::Config.Inform_Get()==__T("MPEG-7_Extended"))
-            return Export_Mpeg7().Transform(*this, 2);
+            return Export_Mpeg7().Transform(*this, Export_Mpeg7::Version_BestEffort_Extended);
     #endif //defined(MEDIAINFO_MPEG7_YES)
     #if defined(MEDIAINFO_PBCORE_YES)
         if (MediaInfoLib::Config.Inform_Get()==__T("PBCore_1") || MediaInfoLib::Config.Inform_Get()==__T("PBCore1")) // 1.x
