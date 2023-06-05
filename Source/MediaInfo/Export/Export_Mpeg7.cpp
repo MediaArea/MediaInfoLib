@@ -142,13 +142,8 @@ static bool Mpeg7_TimeToISO_Isvalid(const Ztring& TimePoint)
 //---------------------------------------------------------------------------
 const Char* Mpeg7_Type(MediaInfo_Internal &MI) //TO ADAPT
 {
-    if (MI.Count_Get(Stream_Image))
-    {
-        if (MI.Count_Get(Stream_Video) || MI.Count_Get(Stream_Audio))
-            return __T("Multimedia");
-        else
-            return __T("Image");
-    }
+    if (MI.Count_Get(Stream_Image)>1)
+        return __T("Multimedia");
     else if (MI.Count_Get(Stream_Video))
     {
         if (MI.Count_Get(Stream_Audio))
@@ -158,6 +153,8 @@ const Char* Mpeg7_Type(MediaInfo_Internal &MI) //TO ADAPT
     }
     else if (MI.Count_Get(Stream_Audio))
         return __T("Audio");
+    else if (MI.Count_Get(Stream_Image))
+        return __T("Image");
 
     //Not known
     const Ztring &Format=MI.Get(Stream_General, 0, General_Format);
@@ -1277,12 +1274,14 @@ int32u Mpeg7_AudioPresentationCS_termID(MediaInfo_Internal &MI, size_t StreamPos
             return 0;
     }
 
+    if (std::bitset<64>(ChannelLayoutI).count()!=ChannelLayout.size())
+        return 0;
+
     //Not ins specs
     for (auto Pos=begin(Mpeg7_AudioPresentationCS_Extra); Pos!=end(Mpeg7_AudioPresentationCS_Extra); ++Pos)
     {
         if (Pos->ChannelLayout==ChannelLayoutI)
             return Pos->Index*100;
-
     }
 
     const auto Channels=MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_).To_int32u();
@@ -1735,7 +1734,7 @@ void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamP
     {
         Node* Node_ColorSampling=Node_VisualCoding->Add_Child("mpeg7:ColorSampling");
         if (Extended)
-            Node_ColorSampling->Add_Child("Name", std::string("YUV 4:2:0 Interlaced"));
+            Node_ColorSampling->Add_Child("mpeg7:Name", std::string("YUV 4:2:0 Interlaced"));
         else
             Node_ColorSampling->XmlComment="YUV 4:2:0 Interlaced";
         Node* Node_Lattice=Node_ColorSampling->Add_Child("mpeg7:Lattice");
