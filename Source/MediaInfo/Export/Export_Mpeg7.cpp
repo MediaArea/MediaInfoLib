@@ -1823,7 +1823,7 @@ void Mpeg7_Transform_Visual(Node* Parent, MediaInfo_Internal &MI, size_t StreamP
     {
         Node* Node_ColorSampling=Node_VisualCoding->Add_Child("mpeg7:ColorSampling");
         if (Extended)
-            Node_ColorSampling->Add_Child("Name", std::string("YUV 4:2:0 Interlaced"));
+            Node_ColorSampling->Add_Child("mpeg7:Name", std::string("YUV 4:2:2 Interlaced"));
         else
             Node_ColorSampling->XmlComment="YUV 4:2:2 Interlaced";
         Node* Node_Lattice=Node_ColorSampling->Add_Child("mpeg7:Lattice");
