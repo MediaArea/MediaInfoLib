@@ -306,7 +306,7 @@ bool DateTime_Adapt(string& Value_)
 
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES)
+#if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGTS_YES)
 void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_ColorPrimaries, Ztring &MasteringDisplay_Luminance, bool FromAV1)
 {
     //Parsing
