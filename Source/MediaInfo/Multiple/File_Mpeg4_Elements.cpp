@@ -544,6 +544,10 @@ static const char* Mpeg4_chan_ChannelBitmap_Layout (int32u ChannelBitmap)
 }
 
 //---------------------------------------------------------------------------
+extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegh3da=false, bool IsTip=false);
+extern string Aac_OutputChannelPosition_GetString(int8u OutputChannelPosition);
+
+//---------------------------------------------------------------------------
 static const char* Mpeg4_jp2h_METH(int8u METH)
 {
     switch (METH)
@@ -802,6 +806,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_ccst=0x63637374;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_clap=0x636C6170;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_chan=0x6368616E;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_chnl=0x63686E6C;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_clli=0x636C6C69;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr=0x636F6C72;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_clcn=0x636C636E;
@@ -840,6 +845,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv=0x6D646376;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC=0x6D686143;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_pasp=0x70617370;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC=0x70636D43;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D=0x53413344;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf=0x73696E66;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_frma=0x66726D61;
@@ -1222,6 +1228,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_btrt)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ccst)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_chan)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_chnl)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_clap)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_clli)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv)
@@ -1253,6 +1260,7 @@ void File_Mpeg4::Data_Parse()
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_ihdr)
                                     ATOM_END
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_pasp)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D)
                                 LIST(moov_trak_mdia_minf_stbl_stsd_xxxx_sinf)
                                     ATOM_BEGIN
@@ -5119,6 +5127,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd()
 
     //Filling
     moov_trak_mdia_minf_stbl_stsd_Pos=0;
+    Version_Temp=Version;
 }
 
 //---------------------------------------------------------------------------
@@ -5579,20 +5588,34 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
     int16u Version=0, ID;
     if (!IsQt()) // like ISO MP4
     {
+        if (Version_Temp>1)
+        {
+            Skip_XX(Element_Size-Element_Offset,                "Unknown");
+            return;
+        }
         int16u Channels16, SampleSize16, SampleRate16;
+        if (Version_Temp==1)
+        {
+            Skip_B2(                                            "entry_version (1)");
+            Skip_B2(                                            "reserved (0)");
+        }
+        else
+            Skip_B4(                                            "reserved (0)");
         Skip_B4(                                                "reserved (0)");
-        Skip_B4(                                                "reserved (0)");
-        Get_B2 (Channels16,                                     "channelcount (2)");
+        Get_B2 (Channels16,                                     Version_Temp==1?"channelcount":"channelcount (2)");
         Get_B2 (SampleSize16,                                   "samplesize (16)");
         Skip_B2(                                                "pre_defined (0)");
         Skip_B2(                                                "reserved (0)");
         Get_B2 (SampleRate16,                                   "samplerate");
         Skip_B2(                                                "samplerate (0)");
-        if (MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("PCM"))
+        if (Version_Temp==1 || MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("PCM"))
         {
+            channelcount=Channels16;
             Channels=Channels16;
             SampleSize=SampleSize16;
         }
+        else
+            channelcount=0;
         SampleRate=SampleRate16;
     }
     else
@@ -6831,6 +6854,61 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_chan()
 }
 
 //---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_chnl()
+{
+    NAME_VERSION_FLAG("Channel layout");
+
+    // Parsing
+    int8u stream_structure, definedLayout=0;
+    string speaker_positions;
+    Get_B1 (stream_structure,                                   "stream_structure");
+    if (stream_structure & 1) // channelStructured
+    {
+        Get_B1 (definedLayout,                                  "definedLayout"); Param_Info1C(!definedLayout, Aac_ChannelLayout_GetString(definedLayout));
+        if (!definedLayout)
+        {
+            for (int16u i=0; i<channelcount; i++)
+            {
+                int8u speaker_position;
+                Get_B1 (speaker_position,                       "speaker_position"); Param_Info1(Aac_OutputChannelPosition_GetString(speaker_position));
+                if (speaker_position==126) // explicit position
+                {
+                    Info_B2(azimuth,                            "azimuth"); Param_Info1((int16s)azimuth);
+                    Info_B1(elevation,                          "elevation"); Param_Info1((int8s)elevation);
+                }
+                speaker_positions+=Aac_OutputChannelPosition_GetString(speaker_position);
+                speaker_positions+=' ';
+            }
+        }
+        else
+        {
+            Skip_B8(                                            "omittedChannelsMap");
+        }
+    }
+    if (stream_structure & 2) // objectStructured
+    {
+        int8u object_count;
+        Get_B1 (object_count,                                   "object_count");
+    }
+
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+        return; //Handling only the first description
+
+    FILLING_BEGIN();
+        if (definedLayout)
+            Fill(Stream_Audio, 0, Audio_ChannelLayout, Aac_ChannelLayout_GetString(definedLayout), true, true);
+        else if (!speaker_positions.empty())
+        {
+            if (speaker_positions.find("126 ")==string::npos)
+            {
+                speaker_positions.pop_back();
+                Fill(Stream_Audio, 0, Audio_ChannelLayout, speaker_positions, true, true);
+            }
+        }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_clap()
 {
     Element_Name("Clean Aperture");
@@ -7707,6 +7785,39 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pasp()
     FILLING_END();
 }
 
+//---------------------------------------------------------------------------
+// ISO ISO/IEC 23003-5:2020
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC()
+{
+    NAME_VERSION_FLAG("PCM decode");
+
+    //Parsing
+    if (Version)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
+        return;
+    }
+    int8u format_flags, bit_depth;
+    Get_B1 (format_flags,                                       "format_flags?");
+    Get_B1 (bit_depth,                                          "bit_depth?");
+
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+        return; //Handling only the first description
+
+    FILLING_BEGIN();
+        #if defined(MEDIAINFO_PCM_YES)
+            if (Streams[moov_trak_tkhd_TrackID].IsPcm)
+            {
+                char EndiannessC=(format_flags&1)?'L':'B';
+                std::vector<File__Analyze*>& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
+                for (size_t i=0; i< Parsers.size(); i++)
+                    ((File_Pcm_Base*)Parsers[i])->Endianness=EndiannessC;
+            }
+        #endif //defined(MEDIAINFO_PCM_YES)
+        if (bit_depth)
+            Fill(Stream_Audio, StreamPos_Last, Audio_BitDepth, bit_depth, 10, true);
+    FILLING_END();
+}
 
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D()

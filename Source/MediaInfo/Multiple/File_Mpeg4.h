@@ -225,6 +225,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_btrt();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_ccst();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_chan();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_chnl();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_clap();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_clli();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_colr();
@@ -256,6 +257,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_pasp();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_frma();
@@ -440,6 +442,7 @@ private :
     std::vector<std::vector<int32u> >       meta_iprp_ipma_Entries;
     int8u*                                  meta_iprp_ipco_Buffer;
     size_t                                  meta_iprp_ipco_Buffer_Size; //Used as property_index if no buffer
+    int16u                                  channelcount;
     int8u                                   Version_Temp; //Used when box version must be provided to nested boxes
 
     //Data
