@@ -699,7 +699,10 @@ size_t File__Analyze::Stream_Prepare (stream_t KindOfStream, size_t StreamPos)
             if (Begin!=string::npos && End!=string::npos && Begin<End)
                 FileName_Modified.erase(Begin, End-Begin);
             Fill (Stream_General, 0, General_CompleteName, FileName_Modified);
-            size_t FileName_Modified_PathSeparatorOffset=FileName_Modified.find_last_of(__T('/'));
+            size_t Query=FileName_Modified.find(__T('?'));
+            if (Query!=string::npos)
+                FileName_Modified.erase(Query);
+            size_t FileName_Modified_PathSeparatorOffset=FileName_Modified.find_last_of(__T("/\\"));
             if (FileName_Modified_PathSeparatorOffset!=string::npos)
             {
                 Fill (Stream_General, 0, General_FolderName, FileName_Modified.substr(0, FileName_Modified_PathSeparatorOffset));
