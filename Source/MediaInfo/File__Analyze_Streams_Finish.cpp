@@ -699,6 +699,25 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
             }
         }
     }
+
+    //Audio_Channels_Total
+    if (Retrieve_Const(Stream_General, StreamPos, General_Audio_Channels_Total).empty())
+    {
+        auto Audio_Count = Count_Get(Stream_Audio);
+        int64u Channels_Total=0;
+        for (size_t i=0; i<Audio_Count; i++)
+        {
+            int64u Channels=Retrieve_Const(Stream_Audio, 0, Audio_Channel_s_).To_int64u();
+            if (!Channels)
+            {
+                Channels_Total=0;
+                break;
+            }
+            Channels_Total+=Channels;
+        }
+        if (Channels_Total)
+            Fill(Stream_General, StreamPos, General_Audio_Channels_Total, Channels_Total);
+    }
 }
 
 //---------------------------------------------------------------------------

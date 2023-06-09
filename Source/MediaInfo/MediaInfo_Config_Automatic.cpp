@@ -4338,6 +4338,7 @@ void MediaInfo_Config_General (ZtringListList &Info)
     "Audio_Format_WithHint_List;;;N NT\n"
     "Audio_Codec_List;;;N NT;;;Deprecated\n"
     "Audio_Language_List;;;N NT\n"
+    "Audio_Channels_Total;;;N NI\n"
     "Text_Format_List;;;N NT\n"
     "Text_Format_WithHint_List;;;N NT\n"
     "Text_Codec_List;;;N NT;;;Deprecated\n"
