@@ -2697,6 +2697,7 @@ void MediaInfo_Config_CodecID_Audio_Mpeg4 (InfoMap &Info)
     "ima4;ADPCM;;;http://www.apple.com/quicktime/download/standalone.html\n"
     "in24;PCM;;;http://www.apple.com/quicktime/download/standalone.html\n"
     "in32;PCM;;;http://www.apple.com/quicktime/download/standalone.html\n"
+    "ipcm;PCM\n"
     "lpcm;PCM\n"
     "MAC3;MACE 3\n"
     "MAC6;MACE 6\n"
