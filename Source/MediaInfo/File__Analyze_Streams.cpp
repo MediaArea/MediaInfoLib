@@ -1738,7 +1738,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
     }
     else
     {
-        size_t Space=Parameter_ISO.find(__T(' '));
+        size_t Space=Parameter_ISO.rfind(__T(' '));
         size_t LastFound=(size_t)-1;
         if (Space!=string::npos)
         {

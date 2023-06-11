@@ -91,14 +91,19 @@ public :
         string Field;
         string Value;
         bitset8 Flags;
-        vector<int64u> FramePoss;
+        struct frame_pos
+        {
+            int64u Main;
+            int64u Sub;
+        };
+        vector<frame_pos> FramePoss;
 
-        field_value(string&& Field, string&& Value, bitset8 Flags, int64u FramePos)
+        field_value(string&& Field, string&& Value, bitset8 Flags, int64u FramePos, int64u SubFramePos)
             : Field(Field)
             , Value(Value)
             , Flags(Flags)
         {
-            FramePoss.push_back(FramePos);
+            FramePoss.push_back({FramePos, SubFramePos});
         }
 
         friend bool operator==(const field_value& l, const field_value& r)
@@ -204,7 +209,7 @@ public :
     void TsdData                            ();
     void OttData                            (bool usacIndependencyFlag);
     void Mps212Data                         (bool usacIndependencyFlag);
-    void UsacLfeElement                     ();
+    void UsacLfeElement                     (bool usacIndependencyFlag);
     void UsacExtElement                     (size_t elemIdx, bool usacIndependencyFlag);
     void AudioPreRoll                       ();
     #endif //MEDIAINFO_TRACE || MEDIAINFO_CONFORMANCE
@@ -400,7 +405,7 @@ public :
         #endif
         int32u                      numOutChannels;
         int32u                      sampling_frequency;
-        int8u                       channelConfiguration;
+        int8u                       channelConfigurationIndex;
         int8u                       sampling_frequency_index;
         int8u                       coreSbrFrameLengthIndex;
         int8u                       baseChannelCount;

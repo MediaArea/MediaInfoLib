@@ -587,7 +587,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
         Frequency_b=0;
     #if MEDIAINFO_CONFORMANCE
         if (ConformanceFlags && SamplingRate && Frequency_b!=SamplingRate) //TODO: handling of AAC implicit SBR
-            Fill_Conformance("Crosscheck Container+AudioSpecificConfig SamplingRate+samplingFrequency", (to_string(SamplingRate) + " vs " + to_string(Frequency_b) + " are not coherent").c_str());
+            Fill_Conformance("Crosscheck AudioSampleEntry samplerate", ("MP4 AudioSampleEntry samplerate " + to_string(SamplingRate) + " does not match MP4 AudioSpecificConfig samplingFrequency " + to_string(Frequency_b)).c_str());
     #endif
     Get_S1 (4, channelConfiguration,                            "channelConfiguration"); Param_Info1(Aac_ChannelConfiguration[channelConfiguration]);
     if (audioObjectType==5 || audioObjectType==29)

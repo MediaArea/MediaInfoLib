@@ -17,6 +17,59 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_REFERENCES_YES) || defined(MEDIAINFO_JSON_YES)
+//---------------------------------------------------------------------------
+
+#include <string>
+
+namespace MediaInfoLib
+{
+
+//***************************************************************************
+// Utils
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+static unsigned char Hex2Char (unsigned char Value)
+{
+         if (Value<=0x9)
+        Value+='0';
+    else if (Value<=0xF)
+        Value+='A'-10;
+    else
+        Value =0;
+    return Value;
+}
+
+//---------------------------------------------------------------------------
+std::string URL_Encoded_Encode(const std::string& URL)
+{
+    std::string Result;
+    for (std::string::size_type Pos=0; Pos<URL.size(); Pos++)
+    {
+        auto Char=URL[Pos];
+        if (Char<=0x40
+#if defined(__APPLE__) && defined(__MACH__)
+         || Char=='{'
+         || Char=='}'
+#endif
+        )
+        {
+            Result+='%';
+            Result+=Hex2Char(Char>>4);
+            Result+=Hex2Char(Char&0xF);
+        }
+        else
+            Result+=Char;
+    }
+    return Result;
+}
+
+}
+
+#endif
+
+//---------------------------------------------------------------------------
 #if defined(MEDIAINFO_REFERENCES_YES)
 //---------------------------------------------------------------------------
 
