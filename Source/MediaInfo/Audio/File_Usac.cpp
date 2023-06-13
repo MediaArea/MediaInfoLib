@@ -2055,7 +2055,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
                         Value = to_string(bsOutputChannelPos);
                     else
                         Value = to_string(bsOutputChannelPos) + " (" + Value + ')';
-                    Fill_Conformance("bsOutChannelPos Coherency", ("bsOutChannelPos " + Value + " is present 2 times but only 1 instance is recommended").c_str(), bitset8(), Warning);
+                    Fill_Conformance("UsacConfig bsOutputChannelPos", ("bsOutputChannelPos " + Value + " is present 2 times but only 1 instance is permitted").c_str());
                 }
                 else
                     bsOutChannelPos_List.insert(bsOutputChannelPos);
