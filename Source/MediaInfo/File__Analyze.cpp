@@ -528,7 +528,8 @@ void File__Analyze::Open_Buffer_OutOfBand (File__Analyze* Sub, size_t Size)
     #endif //MEDIAINFO_DEMUX
 
     #if MEDIAINFO_TRACE
-        Trace_Details_Handling(Sub);
+        if (Size)
+            Trace_Details_Handling(Sub);
     #endif // MEDIAINFO_TRACE
 }
 #if MEDIAINFO_TRACE
@@ -1073,7 +1074,8 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
     }
 
     #if MEDIAINFO_TRACE
-        Trace_Details_Handling(Sub);
+        if (ToAdd_Size)
+            Trace_Details_Handling(Sub);
     #endif //MEDIAINFO_TRACE
 }
 
