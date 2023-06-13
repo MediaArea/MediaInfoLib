@@ -477,6 +477,8 @@ Ztring Export_Graph::Adm_Graph(MediaInfo_Internal &MI, size_t StreamPos, size_t 
 {
     Ztring ToReturn;
     if (MI.Get(Stream_Audio, StreamPos, __T("Metadata_Format")).find(__T("ADM, "), 0)!=0
+     && MI.Get(Stream_Audio, StreamPos, __T("Metadata_Format")).find(__T("S-ADM, "), 0)!=0
+     && MI.Get(Stream_Audio, StreamPos, __T("Format"))!=__T("MGA")
      && MI.Get(Stream_Audio, StreamPos, __T("Format"))!=__T("IAB"))
         return ToReturn;
 
