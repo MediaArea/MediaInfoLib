@@ -64,12 +64,16 @@ File_Mga::File_Mga()
     StreamSource=IsStream;
 
     //In
-    Frame_Count_Valid=1;
+    Frame_Count_Valid=5; // Needed for catching 1.001 frame rates in ADM
+
+    //Temp
+    Parser=nullptr;
 }
 
 //---------------------------------------------------------------------------
 File_Mga::~File_Mga()
 {
+    delete Parser;
 }
 
 //***************************************************************************
@@ -82,6 +86,16 @@ void File_Mga::Streams_Accept()
     //Filling
     Stream_Prepare(Stream_Audio);
     Fill(Stream_Audio, 0, Audio_Format, "MGA");
+}
+
+void File_Mga::Streams_Finish()
+{
+    //Filling
+    if (Parser)
+    {
+        Finish(Parser);
+        Merge(*Parser, Stream_Audio, 0, 0);
+    }
 }
 
 //***************************************************************************
@@ -235,24 +249,29 @@ void File_Mga::SerialAudioDefinitionModelMetadataPayload(int64u Length)
         UncompressedData_Size=strm.total_out;
     }
 
-    File__Analyze* Parser=NULL;
     #if defined(MEDIAINFO_ADM_YES)
     {
     if (UncompressedData || Element_Offset<Element_Size)
     {
-        Parser=new File_Adm();
-        ((File_Adm*)Parser)->MuxingMode="SMPTE ST 2127-1 / SMPTE ST 2109 / SMPTE ST 2127-10";
-        Open_Buffer_Init(Parser);
+        if (!Parser)
+        {
+            Parser=new File_Adm();
+            ((File_Adm*)Parser)->MuxingMode="SMPTE ST 2127-1 / SMPTE ST 2109 / SMPTE ST 2127-10";
+            Open_Buffer_Init(Parser);
+        }
     }
     #else
     {
         //Filling
-        Parser=new File_Unknown();
-        Open_Buffer_Init(Parser);
-        Parser->Accept();
-        Parser->Stream_Prepare(Stream_Audio);
-        Parser->Fill(Stream_Audio, 0, "Metadata_Format", "ADM");
-        Parser->Finish();
+        if (!Parser)
+        {
+            Parser=new File_Unknown();
+            Open_Buffer_Init(Parser);
+            Parser->Accept();
+            Parser->Stream_Prepare(Stream_Audio);
+            Parser->Fill(Stream_Audio, 0, "Metadata_Format", "ADM");
+            Parser->Finish();
+        }
     }
     #endif
     }
@@ -268,9 +287,6 @@ void File_Mga::SerialAudioDefinitionModelMetadataPayload(int64u Length)
         {
             Open_Buffer_Continue(Parser, Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Length-2));
         }
-        Open_Buffer_Finalize(Parser);
-        Merge(*Parser, Stream_Audio, 0, 0);
-        delete Parser;
     }
 
     Element_End0();

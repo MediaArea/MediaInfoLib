@@ -33,6 +33,7 @@ public :
 private :
     //Streams management
     void Streams_Accept();
+    void Streams_Finish();
 
     //Buffer - Per element
     void Header_Parse();
@@ -44,6 +45,9 @@ private :
 
     //Helpers
     void Get_BER(int64u& Value, const char* Name);
+
+    //Temp
+    File__Analyze* Parser;
 };
 
 } //NameSpace
