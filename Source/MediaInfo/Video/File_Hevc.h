@@ -479,10 +479,10 @@ private :
     Ztring                              Encoded_Library_Settings;
     enum hdr_format
     {
+        HdrFormat_SmpteSt209410,
+        HdrFormat_SmpteSt209440,
         HdrFormat_EtsiTs103433,
         HdrFormat_HdrVivid,
-        HdrFormat_SmpteSt209440,
-        HdrFormat_SmpteSt209410,
         HdrFormat_SmpteSt2086,
         HdrFormat_Max,
     };

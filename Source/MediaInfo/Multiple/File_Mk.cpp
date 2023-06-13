@@ -1206,19 +1206,6 @@ void File_Mk::Streams_Finish()
                     }
                     if (i==HdrFormat_Max && HDR_FirstFieldNonEmpty!=(size_t)-1)
                         Fill(Stream_Video, 0, HDR_Item.first, HDR_Item.second[HDR_FirstFieldNonEmpty]);
-                    else if (!LegacyStreamDisplay)
-                    {
-                        for (i=HDR_FirstFormatPos; i<HdrFormat_Max; i++)
-                        {
-                            if (!HDR_Present[i])
-                                continue;
-                            if (HDR_Item.first<=Video_HDR_Format_Compatibility || !HDR_Item.second[i].empty())
-                            {
-                                Fill(Stream_Video, 0, HDR_Item.first, HDR_Item.second[i]);
-                                break;
-                            }
-                        }
-                    }
                     else
                     {
                         ZtringList Value;
@@ -1226,11 +1213,15 @@ void File_Mk::Streams_Finish()
                         if (i!=HdrFormat_Max)
                             for (i=HDR_FirstFormatPos; i<HdrFormat_Max; i++)
                             {
+                                if (!LegacyStreamDisplay && HDR_FirstFormatPos != HdrFormat_SmpteSt2086 && i >= HdrFormat_SmpteSt2086)
+                                    break;
                                 if (!HDR_Present[i])
                                     continue;
                                 Value.push_back(HDR_Item.second[i]);
                             }
-                        Fill(Stream_Video, 0, HDR_Item.first, Value.Read());
+                        auto Value_Flat = Value.Read();
+                        if (!Value.empty() && Value_Flat.size() > (Value.size() - 1) * 3)
+                            Fill(Stream_Video, 0, HDR_Item.first, Value.Read());
                     }
                 }
             }
