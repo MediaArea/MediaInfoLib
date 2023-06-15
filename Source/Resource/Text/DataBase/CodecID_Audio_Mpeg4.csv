@@ -8,6 +8,7 @@ dtsc;DTS;;Digital Theater Systems;http://www.dts.com;
 dtsh;DTS;HRA;Digital Theater Systems High Res;http://www.dts.com;
 dtsl;DTS;MA;Digital Theater Systems Master Audio;http://www.dts.com;
 dtse;DTS;Express;;Digital Theater Systems Low Bitrate;http://www.dts.com;
+dtsx;DTS-UHD;DTS:X;;Digital Theater Systems Object-Based Audio;http://www.dts.com;
 dvca;PCM;;;http://www.apple.com/quicktime/download/standalone.html;
 ec-3;E-AC-3;;;;
 enca;(Encrypted);;;;
