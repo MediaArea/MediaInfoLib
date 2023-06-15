@@ -9989,7 +9989,12 @@ void File_Mpeg4::moov_udta_xxxx()
                             if (Parameter!="Omud" // Some complex data is in Omud, but nothing interessant found
                              && Parameter!="_SGI" // Found "_SGIxV4" with DM_IMAGE_PIXEL_ASPECT, in RLE, ignoring it for the moment
                              && Parameter!="hway") // Unknown
-                                Streams[moov_trak_tkhd_TrackID].Infos[Parameter]=Value;
+                            {
+                                auto& Field=Streams[moov_trak_tkhd_TrackID].Infos[Parameter];
+                                if (!Field.empty())
+                                    Field+=__T(" / ");
+                                Field+=Value;
+                            }
                         }
                     FILLING_END();
                 }
