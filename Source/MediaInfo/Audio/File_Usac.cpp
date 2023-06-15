@@ -1523,7 +1523,7 @@ void File_Usac::hcod_sf(const char* Name)
         if (Pos>240)
         {
             #if MEDIAINFO_CONFORMANCE
-                Fill_Conformance("UsacCoreCoderData Coherency", "Issue detected while parsing hcod_sf");
+                Fill_Conformance("UsacCoreCoderData GeneralCompliance", "Issue detected while parsing hcod_sf");
             #endif
             C.WaitForNextIndependantFrame=true;
             Element_End0();
@@ -1697,14 +1697,14 @@ bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
             //Peek_S1((int8u)BitsRemaining, LastByte);
             //#if MEDIAINFO_CONFORMANCE
             //    if (LastByte)
-            //        Fill_Conformance((ConformanceFieldName+" Coherency").c_str(), "Padding bits are not 0, the bitstream may be malformed", bitset8(), Warning);
+            //        Fill_Conformance((ConformanceFieldName+" GeneralCompliance").c_str(), "Padding bits are not 0, the bitstream may be malformed", bitset8(), Warning);
             //#endif
             LastByte=0;
         }
         else
         {
             #if MEDIAINFO_CONFORMANCE
-                Fill_Conformance((ConformanceFieldName+" Coherency").c_str(), "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
+                Fill_Conformance((ConformanceFieldName+" GeneralCompliance").c_str(), "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
             #endif
             LastByte=1;
         }
@@ -1718,7 +1718,7 @@ bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
         {
             for (size_t Level=0; Level<ConformanceLevel_Max; Level++)
                 ConformanceErrors[Level]=B.ConformanceErrors[Level];
-            Fill_Conformance((ConformanceFieldName + " Coherency").c_str(), "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed");
+            Fill_Conformance((ConformanceFieldName + " GeneralCompliance").c_str(), "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed");
         }
     #endif
     BS->Resize(B.End);
@@ -2055,7 +2055,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
                         Value = to_string(bsOutputChannelPos);
                     else
                         Value = to_string(bsOutputChannelPos) + " (" + Value + ')';
-                    Fill_Conformance("bsOutChannelPos Coherency", ("bsOutChannelPos " + Value + " is present 2 times but only 1 instance is recommended").c_str(), bitset8(), Warning);
+                    Fill_Conformance("UsacConfig bsOutputChannelPos", ("bsOutputChannelPos " + Value + " is present 2 times but only 1 instance is permitted").c_str());
                 }
                 else
                     bsOutChannelPos_List.insert(bsOutputChannelPos);
@@ -2083,7 +2083,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
                 }
             }
             if (!C.numOutChannels)
-                Fill_Conformance("numOutChannels Coherency", "numOutChannels is 0");
+                Fill_Conformance("numOutChannels GeneralCompliance", "numOutChannels is 0");
             else if (!ExpectedOrder.empty())
             {
                 if (ExpectedOrder != ActualOrder)
@@ -2128,14 +2128,14 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
                 //Peek_S1((int8u)BitsRemaining, LastByte);
                 //#if MEDIAINFO_CONFORMANCE
                 //    if (LastByte)
-                //        Fill_Conformance((ConformanceFieldName+" Coherency").c_str(), "Padding bits are not 0, the bitstream may be malformed", bitset8(), Warning);
+                //        Fill_Conformance((ConformanceFieldName+" GeneralCompliance").c_str(), "Padding bits are not 0, the bitstream may be malformed", bitset8(), Warning);
                 //#endif
                 LastByte=0;
             }
             else
             {
                 #if MEDIAINFO_CONFORMANCE
-                    Fill_Conformance("UsacConfig Coherency", "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
+                    Fill_Conformance("UsacConfig GeneralCompliance", "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
                 #endif
                 LastByte=1;
             }
@@ -2167,7 +2167,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
             if (!IsParsingRaw)
             {
                 Clear_Conformance();
-                Fill_Conformance("UsacConfig Coherency", "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed.");
+                Fill_Conformance("UsacConfig GeneralCompliance", "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed.");
                 Merge_Conformance();
             }
         #endif
@@ -2269,16 +2269,16 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
             return;
         auto loudnessInfoSet_Present_Total=C.loudnessInfoSet_Present[0]+C.loudnessInfoSet_Present[1];
         if (C.loudnessInfoSet_HasContent[0] && C.loudnessInfoSet_HasContent[1])
-            Fill_Conformance("loudnessInfoSet Coherency", "loudnessInfoSet contains a mix of v0 and v1 loudnessInfo", bitset8(), Warning);
+            Fill_Conformance("loudnessInfoSet GeneralCompliance", "loudnessInfoSet contains a mix of v0 and v1 loudnessInfo", bitset8(), Warning);
         if (C.loudnessInfoSet_Present[0]>1)
-            Fill_Conformance("loudnessInfoSet Coherency", ("loudnessInfoSet is present " + to_string(C.loudnessInfoSet_Present[0]) + " times but only 1 instance is recommended").c_str(), bitset8(), Warning);
+            Fill_Conformance("loudnessInfoSet GeneralCompliance", ("loudnessInfoSet is present " + to_string(C.loudnessInfoSet_Present[0]) + " times but only 1 instance is recommended").c_str(), bitset8(), Warning);
         constexpr14 auto CheckFlags = bitset8().set(xHEAAC).set(MpegH);
         if (false)
         {
         }
         else if (!loudnessInfoSet_Present_Total)
         {
-            Fill_Conformance("loudnessInfoSet Coherency", "loudnessInfoSet is missing", CheckFlags);
+            Fill_Conformance("loudnessInfoSet GeneralCompliance", "loudnessInfoSet is missing", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: loudnessInfoSet is missing");
@@ -2296,7 +2296,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         }
         else if (!DefaultIdPresent)
         {
-            Fill_Conformance("loudnessInfoSet Coherency", "Default loudnessInfo is missing", CheckFlags);
+            Fill_Conformance("loudnessInfoSet GeneralCompliance", "Default loudnessInfo is missing", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: Default loudnessInfo is missing");
@@ -2305,7 +2305,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
         }
         else if (!C.LoudnessInfoIsNotValid && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[1].empty() && C.loudnessInfo_Data[0].begin()->second.Measurements.Values[2].empty())
         {
-            Fill_Conformance("loudnessInfoSet Coherency", "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
+            Fill_Conformance("loudnessInfoSet GeneralCompliance", "None of program loudness or anchor loudness is present in default loudnessInfo", CheckFlags);
             if (ConformanceFlags & CheckFlags)
             {
                 Fill(Stream_Audio, 0, (FieldPrefix + "ConformanceCheck").c_str(), "Invalid: None of program loudness or anchor loudness is present in default loudnessInfo");
@@ -2534,13 +2534,13 @@ void File_Usac::UsacExtElementConfig()
         if (usacExtElementType_Present.find(usacExtElementType) != usacExtElementType_Present.end() && usacExtElementType < ID_EXT_ELE_Max && usacExtElementType_ConfigNames[usacExtElementType])
         {
             auto FieldName = string(usacExtElementType_ConfigNames[usacExtElementType]);
-            Fill_Conformance("UsacExtElementConfig Coherency", (FieldName + " is present 2 times but only 1 instance is recommended").c_str(), bitset8(), Warning);
+            Fill_Conformance("UsacExtElementConfig GeneralCompliance", (FieldName + " is present 2 times but only 1 instance is recommended").c_str(), bitset8(), Warning);
         }
         else
         {
             usacExtElementType_Present.insert(usacExtElementType);
             if (usacExtElementType == ID_EXT_ELE_AUDIOPREROLL && C.usacElements.size() != 1)
-                Fill_Conformance("UsacExtElementConfig Coherency", ("AudioPreRoll is present in position "+to_string(C.usacElements.size()-1)+" but only presence in position 0 is allowed").c_str());
+                Fill_Conformance("UsacExtElementConfig GeneralCompliance", ("AudioPreRoll is present in position "+to_string(C.usacElements.size()-1)+" but only presence in position 0 is allowed").c_str());
         }
     #endif
     escapedValue(usacExtElementConfigLength, 4, 8, 16,          "usacExtElementConfigLength");
@@ -3453,7 +3453,7 @@ bool File_Usac::loudnessInfo(bool FromAlbum, bool V1)
     }
     #if MEDIAINFO_CONFORMANCE
         if (!drcSetId && !samplePeakLevelPresent && !truePeakLevelPresent)
-            Fill_Conformance("loudnessInfo Coherency", "None of samplePeakLevelPresent or truePeakLevelPresent is present", bitset8().set(Usac), Warning);
+            Fill_Conformance("loudnessInfo GeneralCompliance", "None of samplePeakLevelPresent or truePeakLevelPresent is present", bitset8().set(Usac), Warning);
     #endif
     Get_S1 (4, measurementCount,                                "measurementCount");
     bool IsNOK=false;
@@ -3521,7 +3521,7 @@ bool File_Usac::loudnessInfo(bool FromAlbum, bool V1)
     drc_id Id={drcSetId, downmixId, eqSetId};
     #if MEDIAINFO_CONFORMANCE
         if (C.loudnessInfo_Data[FromAlbum].find(Id) != C.loudnessInfo_Data[FromAlbum].end())
-            Fill_Conformance("loudnessInfo Coherency", ((Id.empty() ? string("Default loudness") : Id.to_string()) + " is present 2 times but only 1 instance is recommended").c_str(), bitset8(), Warning);
+            Fill_Conformance("loudnessInfo GeneralCompliance", ((Id.empty() ? string("Default loudness") : Id.to_string()) + " is present 2 times but only 1 instance is recommended").c_str(), bitset8(), Warning);
     #endif
     C.loudnessInfo_Data[FromAlbum][Id].SamplePeakLevel=((samplePeakLevelPresent && bsSamplePeakLevel)?(Ztring::ToZtring(20-((double)bsSamplePeakLevel)/32)+__T(" dBFS")):Ztring());
     C.loudnessInfo_Data[FromAlbum][Id].TruePeakLevel=((truePeakLevelPresent && bsTruePeakLevel)?(Ztring::ToZtring(20-((double)bsTruePeakLevel)/32)+__T(" dBTP")):Ztring());
@@ -3685,14 +3685,14 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
                 //Peek_S1((int8u)BitsRemaining, LastByte);
                 //#if MEDIAINFO_CONFORMANCE
                 //    if (LastByte)
-                //        Fill_Conformance((ConformanceFieldName+" Coherency").c_str(), "Padding bits are not 0, the bitstream may be malformed", bitset8(), Warning);
+                //        Fill_Conformance((ConformanceFieldName+" GeneralCompliance").c_str(), "Padding bits are not 0, the bitstream may be malformed", bitset8(), Warning);
                 //#endif
                 LastByte=0;
             }
             else
             {
                 #if MEDIAINFO_CONFORMANCE
-                    Fill_Conformance(IsParsingRaw > 1 ? "AudioPreRoll UsacFrame Coherency" : "UsacFrame Coherency", "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
+                    Fill_Conformance(IsParsingRaw > 1 ? "UsacFrame GeneralCompliance" : "UsacFrame GeneralCompliance", "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
                 #endif
                 LastByte=1;
             }
@@ -3713,9 +3713,9 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
                     if (Buffer_Temp[i])
                         break;
                 if (i == Size)
-                    Fill_Conformance("UsacFrame Coherency", "Extra zero bytes after the end of the syntax was reached", bitset8(), Warning);
+                    Fill_Conformance("UsacFrame GeneralCompliance", "Extra zero bytes after the end of the syntax was reached", bitset8(), Warning);
                 else
-                    Fill_Conformance("UsacFrame Coherency", "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
+                    Fill_Conformance("UsacFrame GeneralCompliance", "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
             }
         #endif
     }
@@ -3746,7 +3746,7 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
                     auto ContainerSaysNonImmediate = find(roll_distance_FramePos->begin(), roll_distance_FramePos->end(), Frame_Count_NotParsedIncluded) != roll_distance_FramePos->end();
                     if (ContainerSaysNonImmediate && (!FirstOutputtedDecodedSample || !*FirstOutputtedDecodedSample))
                     {
-                        Fill_Conformance("AudioPreRoll Coherency", "This is the first frame in this stream but USAC AudioPreRoll is not present", bitset8(), Warning);
+                        Fill_Conformance("AudioPreRoll GeneralCompliance", "This is the first frame in this stream but USAC AudioPreRoll is not present", bitset8(), Warning);
                     }
                 }
                 if (Immediate_FramePos)
@@ -3786,7 +3786,7 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
     {
         #if MEDIAINFO_CONFORMANCE
             Clear_Conformance();
-            Fill_Conformance("UsacFrame Coherency", "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed");
+            Fill_Conformance("UsacFrame GeneralCompliance", "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed");
             Merge_Conformance();
         #endif
         C.WaitForNextIndependantFrame=true;
@@ -3940,9 +3940,9 @@ void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool ar
     {
         #if MEDIAINFO_CONFORMANCE
             if (lg>1024)
-                Fill_Conformance("arithData Coherency", "lg is more than 1024");
+                Fill_Conformance("arithData GeneralCompliance", "lg is more than 1024");
             if (N>4096)
-                Fill_Conformance("arithData Coherency", "N is more than 4096");
+                Fill_Conformance("arithData GeneralCompliance", "N is more than 4096");
         #endif
         C.WaitForNextIndependantFrame=true;
         return;
@@ -3963,7 +3963,7 @@ void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool ar
             if (!N)
             {
                 #if MEDIAINFO_CONFORMANCE
-                    Fill_Conformance("arithData Coherency", "N is 0");
+                    Fill_Conformance("arithData GeneralCompliance", "N is 0");
                 #endif
                 C.WaitForNextIndependantFrame=true;
                 return;
@@ -4058,7 +4058,7 @@ void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool ar
             if (lev>23)
             {
                 #if MEDIAINFO_CONFORMANCE
-                    Fill_Conformance("arithData Coherency", "Issue detected while computing lev");
+                    Fill_Conformance("arithData GeneralCompliance", "Issue detected while computing lev");
                 #endif
                 C.WaitForNextIndependantFrame=true;
                 Element_End0();
@@ -5039,7 +5039,7 @@ void File_Usac::UsacSbrData(size_t nrSbrChannels, bool usacIndependencyFlag)
         {
             Element_End0();
             #if MEDIAINFO_CONFORMANCE
-                Fill_Conformance("UsacSbrData Coherency", "Issue detected while computing SBR bands");
+                Fill_Conformance("UsacSbrData GeneralCompliance", "Issue detected while computing SBR bands");
             #endif
             C.WaitForNextIndependantFrame=true;
             return;
@@ -5645,7 +5645,7 @@ void File_Usac::EnvelopeReshapeHuff(bool (&bsTempShapeEnableChannel)[2])
             if (i+len>C.mps212Handler.numSlots)
             {
                 #if MEDIAINFO_CONFORMANCE
-                    Fill_Conformance("EnvelopeReshapeHuff Coherency", "Issue detected while computing 2Dhuff_dec");
+                    Fill_Conformance("EnvelopeReshapeHuff GeneralCompliance", "Issue detected while computing 2Dhuff_dec");
                 #endif
                 C.WaitForNextIndependantFrame =true;
                 return;
