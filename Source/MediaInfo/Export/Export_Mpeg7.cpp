@@ -2103,7 +2103,12 @@ void Mpeg7_Transform_Text(Node* Parent, MediaInfo_Internal &MI, size_t StreamPos
         else
             Node_TextualCoding->Add_Child("")->XmlCommentOut="Language: "+Language.To_UTF8()+(Forced?", open":"");
     }
-  
+
+    //TotalNumOfSamples
+    Ztring TotalNumOfSamples=MI.Get(Stream_Text, StreamPos, Text_Events_Total);
+    if (!TotalNumOfSamples.empty())
+        Node_TextualCoding->Add_Child("mpeg7:TotalNumOfSamples", TotalNumOfSamples);
+
     //Encryption
     Ztring Encryption=MI.Get(Stream_Text, StreamPos, Text_Encryption);
     if (!Encryption.empty())
