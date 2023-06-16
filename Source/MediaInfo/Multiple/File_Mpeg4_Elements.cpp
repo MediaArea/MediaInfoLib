@@ -9810,10 +9810,12 @@ void File_Mpeg4::moov_udta_xxxx()
                             }
                             else if (value=="forced-subtitle")
                             {
-                                Fill(StreamKind_Last, StreamPos_Last, "Forced", "Yes");
+                                if (Retrieve_Const(StreamKind_Last, StreamPos_Last, "Forced")!=__T("Yes"))
+                                    Fill(StreamKind_Last, StreamPos_Last, "Forced", "Yes");
                             }
                             else if (value=="subtitle")
                             {
+                                 FinalValue_String=FinalValue="Translation";
                             }
                             else if (value=="supplementary")
                             {
@@ -9984,12 +9986,84 @@ void File_Mpeg4::moov_udta_xxxx()
                             if (Retrieve(Stream_General, 0, Parameter.c_str()).empty())
                                 Fill(Stream_General, 0, Parameter.c_str(), Value);
                         }
+                        else if (Value.empty())
+                        {
+                        }
+                        else if (Parameter=="ServiceKind")
+                        {
+                            auto& Field=Streams[moov_trak_tkhd_TrackID].Infos["ServiceKind"];
+                            auto& Field_String=Streams[moov_trak_tkhd_TrackID].Infos["ServiceKind/String"];
+                            if (Field.To_UTF8()=="Supplementary")
+                            {
+                                Field.clear();
+                                Field_String.clear();
+                            }
+                            string FinalValue, FinalValue_String;
+                            auto value=Value.To_UTF8();
+                                 if (false) {}
+                            else if (value=="public.auxiliary-content")
+                            {
+                                if (Field.empty())
+                                    FinalValue_String=FinalValue="Supplementary";
+                            }
+                            else if (value=="public.accessibility.describes-music-and-sound")
+                            {
+                                FinalValue=string(AC3_Mode[StreamKind_Last==Stream_Audio?2:3])+'-'+AC3_Mode[1];
+                                FinalValue_String=string(AC3_Mode_String[StreamKind_Last==Stream_Audio?2:3])+" - "+AC3_Mode_String[1];
+                            }
+                            else if (value=="public.accessibility.describes-video")
+                            {
+                                FinalValue=AC3_Mode[2];
+                                FinalValue_String=AC3_Mode_String[2];
+                            }
+                            else if (value=="public.easy-to-read")
+                            {
+                                FinalValue="EasyReader";
+                                FinalValue_String="Easy reader";
+                            }
+                            else if (value=="public.subtitles.forced-only")
+                            {
+                                if (Retrieve_Const(StreamKind_Last, StreamPos_Last, "Forced")!=__T("Yes"))
+                                    Fill(StreamKind_Last, StreamPos_Last, "Forced", "Yes");
+                            }
+                            else if (value=="public.accessibility.transcribes-spoken-dialog")
+                            {
+                                FinalValue=string(AC3_Mode[StreamKind_Last==Stream_Audio?2:3])+'-'+AC3_Mode[4];
+                                FinalValue_String=string(AC3_Mode_String[StreamKind_Last==Stream_Audio?2:3])+" - "+AC3_Mode_String[4];
+                            }
+                            else if (value=="public.main-program-content")
+                            {
+                                FinalValue=AC3_Mode[0];
+                                FinalValue_String=AC3_Mode_String[0];
+                            }
+                            else if (value=="public.translation")
+                            {
+                                FinalValue_String=FinalValue=StreamKind_Last==Stream_Audio?"Dubbed":"Translation";
+                            }
+                            else
+                                FinalValue_String=FinalValue=value;
+                            if (!FinalValue.empty())
+                            {
+                                if (!Field.empty())
+                                {
+                                    Field+=__T(" / ");
+                                    Field_String+=__T(" / ");
+                                }
+                                Field+=Ztring().From_UTF8(FinalValue);
+                                Field_String+=Ztring().From_UTF8(FinalValue_String);
+                            }
+                        }
                         else
                         {
                             if (Parameter!="Omud" // Some complex data is in Omud, but nothing interessant found
                              && Parameter!="_SGI" // Found "_SGIxV4" with DM_IMAGE_PIXEL_ASPECT, in RLE, ignoring it for the moment
                              && Parameter!="hway") // Unknown
-                                Streams[moov_trak_tkhd_TrackID].Infos[Parameter]=Value;
+                            {
+                                auto& Field=Streams[moov_trak_tkhd_TrackID].Infos[Parameter];
+                                if (!Field.empty())
+                                    Field+=__T(" / ");
+                                Field+=Value;
+                            }
                         }
                     FILLING_END();
                 }
