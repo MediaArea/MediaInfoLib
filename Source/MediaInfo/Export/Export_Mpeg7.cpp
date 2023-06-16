@@ -1630,8 +1630,16 @@ static Node* Mpeg7_CS(Node* Node_MediaFormat, const char* MainName, const char* 
 static const char* Mpeg7_ServiceKind2Type[][2] =
 {
     { "Dubbed", "dubbed"},
+    { "Commentary", "commentary"},
+    { "EasyReader", "easyReader"},
     { "HI", "hearingImpaired"},
+    { "HI-ME", "hearingImpaired"},
+    { "HI-D", "hearingImpaired"},
+    { "Translated", "translated"},
+    { "Supplementary", "supplementary"},
     { "VI", "visuallyImpaired"},
+    { "VI-ME", "visuallyImpaired"},
+    { "VI-D", "visuallyImpaired"},
 };
 static const size_t Mpeg7_ServiceKind2Type_Size=sizeof(Mpeg7_ServiceKind2Type)/sizeof(*Mpeg7_ServiceKind2Type);
 static const char* Mpeg7_ServiceKind2Type_Get(const char* Value)

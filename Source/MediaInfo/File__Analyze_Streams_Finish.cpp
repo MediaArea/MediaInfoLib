@@ -675,6 +675,44 @@ void File__Analyze::Streams_Finish_StreamOnly(stream_t StreamKind, size_t Pos)
         if (Retrieve(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_BitRate_Mode)).empty())
             Fill(StreamKind, Pos, Fill_Parameter(StreamKind, Generic_BitRate_Mode), "CBR");
     }
+
+    //ServiceKind
+    auto ServiceKind = Retrieve(StreamKind, Pos, "ServiceKind");
+    if (!ServiceKind.empty())
+    {
+        ZtringList List;
+        List.Separator_Set(0, __T(" / "));
+        List.Write(ServiceKind);
+        if (List.size()>1)
+        {
+            size_t HI_ME_Pos=(size_t)-1;
+            size_t HI_D_Pos=(size_t)-1;
+            static const auto HI_ME_Text=__T("HI-ME");
+            static const auto HI_D_Text=__T("HI-D");
+            static const auto VI_ME_Text=__T("VI-ME");
+            static const auto VI_D_Text=__T("VI-D");
+            for (size_t i=0; i<List.size(); i++)
+            {
+                const auto& Item=List[i];
+                if (HI_ME_Pos==(size_t)-1 && (Item==HI_ME_Text || Item==VI_ME_Text))
+                    HI_ME_Pos=i;
+                if (HI_D_Pos==(size_t)-1 && (Item==HI_D_Text || Item==HI_D_Text))
+                    HI_D_Pos=i;
+            }
+            if (HI_ME_Pos!=(size_t)-1 && HI_D_Pos!=(size_t)-1)
+            {
+                if (HI_ME_Pos>HI_D_Pos)
+                    std::swap(HI_ME_Pos, HI_D_Pos);
+                List[HI_ME_Pos]=__T("HI");
+                List.erase(List.begin()+HI_D_Pos);
+                Fill(StreamKind, Pos, "ServiceKind", List.Read(), true);
+                List.Write(Retrieve(StreamKind, Pos, "ServiceKind/String"));
+                List[HI_ME_Pos].From_UTF8("Hearing Impaired");
+                List.erase(List.begin()+HI_D_Pos);
+                Fill(StreamKind, Pos, "ServiceKind/String", List.Read(), true);
+            }
+        }
+    }
 }
 
 //---------------------------------------------------------------------------

@@ -144,6 +144,7 @@ namespace Elements
     const int64u moov_meta__sonm=0x736F6E6D;
     const int64u moov_meta__sosn=0x736F736E;
     const int64u moov_meta__stik=0x7374696B;
+    const int64u moov_meta__tagc=0x74616763;
     const int64u moov_meta__titl=0x7469746C;
     const int64u moov_meta__tool=0x746F6F6C;
     const int64u moov_meta__trkn=0x74726B6E;
@@ -568,7 +569,10 @@ void File_Mpeg4::Streams_Finish()
                 if (Temp->second.HasForcedSamples)
                 {
                     if (Temp->second.AllForcedSamples)
-                        Fill(StreamKind_Last, StreamPos_Last, "Forced", "Yes");
+                    {
+                        if (Retrieve_Const(StreamKind_Last, StreamPos_Last, "Forced")!=__T("Yes"))
+                            Fill(StreamKind_Last, StreamPos_Last, "Forced", "Yes");
+                    }
                     else
                         Fill(StreamKind_Last, StreamPos_Last, "Forced", "Mixed");
                     if (Temp->second.ForcedFor.size())
@@ -3021,6 +3025,7 @@ File_Mpeg4::method File_Mpeg4::Metadata_Get(std::string &Parameter, int64u Meta)
         case Elements::moov_meta__sonm : Parameter="Title/Sort"; Method=Method_String; break; //SortName
         case Elements::moov_meta__sosn : Parameter="Title/Sort"; Method=Method_String; break; //SortShow
         case Elements::moov_meta__stik : Parameter="ContentType"; Method=Method_Binary; break;
+        case Elements::moov_meta__tagc : Parameter="ServiceKind"; Method=Method_String3; break;
         case Elements::moov_meta__titl : Parameter="Title"; Method=Method_String2; break;
         case Elements::moov_meta__tool : Parameter="Encoded_Application"; Method=Method_String3; break;
         case Elements::moov_meta__tmpo : Parameter="BPM"; Method=Method_Binary; break;
@@ -3032,7 +3037,6 @@ File_Mpeg4::method File_Mpeg4::Metadata_Get(std::string &Parameter, int64u Meta)
         case Elements::moov_meta__tvsn : Parameter="Season"; Method=Method_String; break; //TVSeason
         case Elements::moov_meta__xid_ : Parameter="Vendor"; Method=Method_String; break;
         case Elements::moov_meta__year : Parameter="Recorded_Date"; Method=Method_String2; break;
-        case Elements::moov_meta__yyrc : Parameter="Recorded_Date"; Method=Method_String2; break;
         default :
             {
                 Parameter.clear();
