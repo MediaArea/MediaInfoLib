@@ -745,7 +745,7 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
         int64u Channels_Total=0;
         for (size_t i=0; i<Audio_Count; i++)
         {
-            int64u Channels=Retrieve_Const(Stream_Audio, 0, Audio_Channel_s_).To_int64u();
+            int64u Channels=Retrieve_Const(Stream_Audio, i, Audio_Channel_s_).To_int64u();
             if (!Channels)
             {
                 Channels_Total=0;
