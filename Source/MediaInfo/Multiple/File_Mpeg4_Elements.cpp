@@ -10052,6 +10052,12 @@ void File_Mpeg4::moov_udta_xxxx()
                                 Field+=Ztring().From_UTF8(FinalValue);
                                 Field_String+=Ztring().From_UTF8(FinalValue_String);
                             }
+                            if (MediaInfoLib::Config.Verbosity_Get()>=(float32)1.0)
+                            {
+                                auto Field= (Ztring().From_CC4(Element[Element_Level-1].Code).To_UTF8()+'_'+ Ztring().From_CC4(Element[Element_Level].Code).To_UTF8()+'_'+value);
+                                Fill(StreamKind_Last, StreamPos_Last, Field.c_str(), "Yes");
+                                Fill_SetOptions(StreamKind_Last, StreamPos_Last, Field.c_str(), "N NTY");
+                            }
                         }
                         else
                         {
