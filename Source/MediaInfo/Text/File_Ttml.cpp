@@ -346,9 +346,9 @@ void File_Ttml::Read_Buffer_Continue()
         #if MEDIAINFO_ADVANCED
             float64 FrameRate_F=Video_FrameRate_Rounded(Config->File_DefaultFrameRate_Get());
             if (!FrameRate_F)
-                FrameRate_F=30/1.001;
+                FrameRate_F=30; //"if no application defined frame rate applies, then thirty (30) frames per second" https://www.w3.org/TR/2018/REC-ttml2-20181108/#parameter-attribute-frameRate
         #else //MEDIAINFO_ADVANCED
-            const float64 FrameRate_F=30/1.001;
+            const float64 FrameRate_F=30;
         #endif //MEDIAINFO_ADVANCED
         FrameRate_Int=float64_int64s(FrameRate_F);
         if (FrameRate_Int != FrameRate_F)
