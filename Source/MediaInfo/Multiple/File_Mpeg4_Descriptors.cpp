@@ -137,7 +137,7 @@ static const char* Mpeg4_Descriptors_ObjectTypeIndication(int8u ID)
         case 0xA5 : return "AC-3";
         case 0xA6 : return "E-AC-3";
         case 0xA9 : return "DTS";
-        case 0xAA : return "DTS-HD High Resolution";
+        case 0xAA : return "DTS-HD High Resolution Audio";
         case 0xAB : return "DTS-HD Master Audio";
         case 0xAC : return "DTS-HD Express";
         case 0xD1 : return "Private - EVRC";

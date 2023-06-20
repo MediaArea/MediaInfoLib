@@ -8257,9 +8257,9 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_udts()
     }
 
     FILLING_BEGIN();
-        Fill(Stream_Audio, StreamPos_Last, Audio_Format, "DTS-UHD");
-        Fill(Stream_Audio, StreamPos_Last, Audio_BitRate_Mode, "VBR");
-        Fill(Stream_Audio, StreamPos_Last, Audio_Format_Profile, DecoderProfileCode + 2);
+        Fill(Stream_Audio, StreamPos_Last, Audio_Format, "DTS-UHD", Unlimited, true, true);
+        Fill(Stream_Audio, StreamPos_Last, Audio_BitRate_Mode, "VBR", Unlimited, true, true);
+        Fill(Stream_Audio, StreamPos_Last, Audio_Format_Profile, DecoderProfileCode + 2, 10, true);
         Fill(Stream_Audio, StreamPos_Last, Audio_Format_Settings, RepresentationTypeTable[RepresentationType]);
         if (!DecoderProfileCode)
             Fill(Stream_Audio, StreamPos_Last, Audio_Format_Commercial_IfAny, "DTS:X P2");
