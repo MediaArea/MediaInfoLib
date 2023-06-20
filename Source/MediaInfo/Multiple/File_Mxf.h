@@ -670,6 +670,7 @@ protected :
     bool   FooterPartitionAddress_Jumped;
     bool   PartitionPack_Parsed;
     bool   HeaderPartition_IsOpen;
+    bool   Is1001;
     size_t IdIsAlwaysSame_Offset;
 
     //Primer

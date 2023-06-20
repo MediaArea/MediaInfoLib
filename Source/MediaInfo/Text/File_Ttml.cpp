@@ -198,8 +198,11 @@ void File_Ttml::Streams_Finish()
 {
     if (Time_End.HasValue() && Time_Begin.HasValue())
     {
-        Fill(Stream_General, 0, General_Duration, Time_End.ToMilliseconds()-Time_Begin.ToMilliseconds());
-        Fill(Stream_Text, 0, Text_Duration, Time_End.ToMilliseconds()-Time_Begin.ToMilliseconds());
+        auto Duration=(Time_End-Time_Begin).ToMilliseconds();
+        if (Time_End.GetFramesMax()!=Time_Begin.GetFramesMax())
+            Duration=Time_End.ToMilliseconds()-Time_Begin.ToMilliseconds();
+        Fill(Stream_General, 0, General_Duration, Duration);
+        Fill(Stream_Text, 0, Text_Duration, Duration);
         if (!Time_Begin.GetIsTime())
             Fill(Stream_Text, 0, Text_TimeCode_FirstFrame, Time_Begin.ToString());
         if (!Time_End.GetIsTime() && Time_End>Time_Begin)
@@ -355,6 +358,8 @@ void File_Ttml::Read_Buffer_Continue()
         {
             FrameRateMultiplier_Num=1000;
             FrameRateMultiplier_Den=float64_int64s(FrameRate_Int/FrameRate_F*1000);
+            if (FrameRateMultiplier_Num==1000 && FrameRateMultiplier_Den==1001)
+                FrameRate_Is1001=true;
         }
     }
     Tt_Attribute=Root->Attribute("xml:lang");
