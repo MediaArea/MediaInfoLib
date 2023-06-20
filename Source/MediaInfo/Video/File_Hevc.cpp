@@ -3228,7 +3228,7 @@ void File_Hevc::sei_time_code()
             FILLING_BEGIN();
                 if (!i && seconds_flag && minutes_flag && hours_flag && !Frame_Count)
                 {
-                    TimeCode TC(hours_value, minutes_value, seconds_value, n_frames, -1, counting_type==4);
+                    TimeCode TC(hours_value, minutes_value, seconds_value, n_frames, 99, TimeCode::DropFrame(counting_type==4));
                     Fill(Stream_Video, 0, Video_TimeCode_FirstFrame, TC.ToString(), true, true);
                 }
             FILLING_END();

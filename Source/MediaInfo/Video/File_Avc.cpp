@@ -134,7 +134,7 @@ string Avc_level_idc_Name(size_t Index)
 string Avc_profile_level_string(int8u profile_idc, int8u level_idc=0, int8u constraint_set_flags=0)
 {
     string Profile;
-    MediaInfoLib::bitset8 constraint_setsB(constraint_set_flags);
+    bitset8 constraint_setsB(constraint_set_flags);
 
     //Profile
     if (profile_idc)
