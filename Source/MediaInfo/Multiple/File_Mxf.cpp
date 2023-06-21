@@ -2417,6 +2417,7 @@ File_Mxf::File_Mxf()
     FooterPartitionAddress_Jumped=false;
     PartitionPack_Parsed=false;
     HeaderPartition_IsOpen=false;
+    Is1001=false;
     IdIsAlwaysSame_Offset=0;
     PartitionMetadata_PreviousPartition=(int64u)-1;
     PartitionMetadata_FooterPartition=(int64u)-1;
@@ -4416,7 +4417,8 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
             #endif //MEDIAINFO_ADVANCED
 
             if (Component2->second.MxfTimeCode.RoundedTimecodeBase<=(int8u)-1) // Found files with RoundedTimecodeBase of 0x8000
-                Fill(Stream_Other, StreamPos_Last, Other_FrameRate, Component2->second.MxfTimeCode.RoundedTimecodeBase/(Component2->second.MxfTimeCode.DropFrame?1.001:1.000));
+                Fill(Stream_Other, StreamPos_Last, Other_FrameRate, Component2->second.MxfTimeCode.RoundedTimecodeBase/(Is1001?1.001:1.000));
+            TC.Set1001(Is1001);
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, TC.ToString().c_str());
             if (Component2->second.Duration && Component2->second.Duration!=(int64u)-1)
             {
@@ -9234,6 +9236,7 @@ void File_Mxf::SDTI_SystemMetadataPack() //SMPTE 385M + 326M
                                     (Frames_Tens *10+Frames_Units)*(RepetitionMaxCount+1),
                                     FrameRate?(FrameRate-1):0,
                                     DropFrame);
+        TimeCode_Current.Set1001(CPR_1_1001);
         if (RepetitionMaxCount)
         {
             if (SDTI_TimeCode_Previous.HasValue() && TimeCode_Current==SDTI_TimeCode_Previous)
@@ -12080,13 +12083,15 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
         #undef Get_TCB
         #undef Get_TC4
 
-        Element_Info1(TimeCode(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, 0, DropFrame).ToString());
+        auto FramesMax=MxfTimeCodeForDelay.IsInit()?(MxfTimeCodeForDelay.RoundedTimecodeBase-1):0;
+        Element_Info1(TimeCode(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, FramesMax, DropFrame).ToString());
         Element_End0();
 
         //TimeCode
         if (!SystemScheme1_TimeCodeArray_StartTimecode.HasValue() && !IsParsingEnd && IsParsingMiddle_MaxOffset==(int64u)-1)
         {
-            SystemScheme1_TimeCodeArray_StartTimecode=TimeCode(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, 0, DropFrame);
+            SystemScheme1_TimeCodeArray_StartTimecode=TimeCode(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, FramesMax, DropFrame);
+            SystemScheme1_TimeCodeArray_StartTimecode.Set1001(Is1001);
         }
 
         #if MEDIAINFO_ADVANCED
@@ -12360,6 +12365,8 @@ void File_Mxf::Track_EditRate()
 
     FILLING_BEGIN();
         Tracks[InstanceUID].EditRate=Data;
+        if (Data!=(int)Data)
+            Is1001=true;
     FILLING_END();
 }
 

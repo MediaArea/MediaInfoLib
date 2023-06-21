@@ -309,7 +309,7 @@ bool TimeCode::FromString(const char* Value, size_t Length)
             {
                 Frames=((Value[9]-'0')*10)+(Value[10]-'0');
                 Flags.set(DropFrame, Value[8]==';');
-                if (Value[8])
+                if (Value[8]==';')
                     Flags.set(FramesPerSecond_Is1001);
                 Flags.reset(IsSecondField);
                 Flags.reset(IsNegative);
