@@ -524,6 +524,7 @@ private :
         bool                    HasForcedSamples;
         bool                    AllForcedSamples;
         bool                    IsImage;
+        bool                    tkhd_Found;
         std::vector<int32u>     CC;
         std::vector<int32u>     CCFor;
         std::vector<int32u>     FallBackTo;
@@ -617,6 +618,7 @@ private :
             HasForcedSamples=false;
             AllForcedSamples=false;
             IsImage=false;
+            tkhd_Found=false;
             CleanAperture_Width=0;
             CleanAperture_Height=0;
             CleanAperture_PixelAspectRatio=0;

@@ -8850,6 +8850,12 @@ void File_Mpeg4::moov_trak_tkhd()
     NAME_VERSION_FLAG("Track Header")
 
     //Parsing
+    if (moov_trak_tkhd_TrackID!=(int32u)-1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "(Not parsed)");
+        Element_Info1("(Duplicate, skipping)");
+        return;
+    }
     Ztring Date_Created, Date_Modified;
     float32 a, b, u, c, d, v, x, y, w;
     int64u Duration;
@@ -8885,6 +8891,21 @@ void File_Mpeg4::moov_trak_tkhd()
     Get_BFP4(16, moov_trak_tkhd_Height,                         "Track height");
 
     FILLING_BEGIN();
+        //Handle tracks with same ID than a previous track
+        auto TrackID_Temp=moov_trak_tkhd_TrackID;
+        for (;;)
+        {
+            std::map<int32u, stream>::iterator PreviousTrack=Streams.find(TrackID_Temp);
+            if (PreviousTrack==Streams.end() || !PreviousTrack->second.tkhd_Found)
+                break;
+            TrackID_Temp++;
+        }
+        if (moov_trak_tkhd_TrackID!=TrackID_Temp)
+        {
+            Fill(StreamKind_Last, StreamPos_Last, "Warning", "ID is fake due to ID "+to_string(moov_trak_tkhd_TrackID)+" already used by a previous track");
+            moov_trak_tkhd_TrackID=TrackID_Temp;
+        }
+        Streams[moov_trak_tkhd_TrackID].tkhd_Found=true;
         //Case of header is after main part
         std::map<int32u, stream>::iterator Temp=Streams.find((int32u)-1);
         if (Temp!=Streams.end())
