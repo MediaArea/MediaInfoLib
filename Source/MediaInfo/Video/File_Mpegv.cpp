@@ -1585,13 +1585,26 @@ void File_Mpegv::Streams_Finish()
     else if (!TimeCodeIsNotTrustable && Time_End_Seconds!=Error && FrameRate)
     {
         const int32u ceilFrameRate=(int32u)ceil(FrameRate);
+        if (Time_End_Frames>=ceilFrameRate)
+        {
+            auto AddToSeconds=Time_End_Frames/ceilFrameRate;
+            auto NewFrames=Time_End_Frames%ceilFrameRate;
+            Time_End_Seconds+=AddToSeconds;
+            Time_End_Frames=NewFrames;
+        }
         bool DropFrame=group_start_IsParsed?group_start_drop_frame_flag:((FrameRate==ceilFrameRate)?true:false);
         int32u FramesMax=ceilFrameRate-1;
-        TimeCode Time_Begin_TC(Time_Begin_Seconds/3600, (int8u)((Time_Begin_Seconds%3600)/60), (int8u)(Time_Begin_Seconds%60), Time_Begin_Frames, FramesMax, DropFrame);
-        TimeCode Time_End_TC  (Time_End_Seconds  /3600, (int8u)((Time_End_Seconds  %3600)/60), (int8u)(Time_End_Seconds  %60), Time_End_Frames  , FramesMax, DropFrame);
-        int64u FrameCount=Time_End_TC.ToFrames()-Time_Begin_TC.ToFrames();
-        Fill(Stream_Video, 0, Video_FrameCount, FrameCount, 0);
-        Fill(Stream_Video, 0, Video_Duration, FrameCount/FrameRate*1000, 0);
+        TimeCode Time_Begin_TC(Time_Begin_Seconds/3600, (int8u)((Time_Begin_Seconds%3600)/60), (int8u)(Time_Begin_Seconds%60), Time_Begin_Frames, FramesMax, TimeCode::DropFrame(DropFrame));
+        TimeCode Time_End_TC  (Time_End_Seconds  /3600, (int8u)((Time_End_Seconds  %3600)/60), (int8u)(Time_End_Seconds  %60), Time_End_Frames  , FramesMax, TimeCode::DropFrame(DropFrame));
+        if (Time_Begin_TC.IsValid() && Time_End_TC.IsValid())
+        {
+            int64u FrameCount=Time_End_TC.ToFrames()-Time_Begin_TC.ToFrames();
+            if (FrameCount)
+            {
+                Fill(Stream_Video, 0, Video_FrameCount, FrameCount, 0);
+                Fill(Stream_Video, 0, Video_Duration, FrameCount/FrameRate*1000, 0);
+            }
+        }
     }
 
     //picture_coding_types

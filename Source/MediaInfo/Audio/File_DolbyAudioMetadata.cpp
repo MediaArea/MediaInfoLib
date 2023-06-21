@@ -317,21 +317,11 @@ void File_DolbyAudioMetadata::Dolby_Atmos_Metadata_Segment()
         }
         if (first_action_time_HH!=(int8u)-1)
         {
-            TimeCode TC;
-            if (((int8s)first_action_time_HH)<0)
-            {
-                TC.SetNegative();
-                TC.SetHours(-((int8s)first_action_time_HH));
-            }
-            else
-                TC.SetHours(first_action_time_HH);
-            const int32u FrameRate=100000;
-            TC.SetMinutes(first_action_time_MM);
-            TC.SetSeconds(first_action_time_SS/FrameRate);
-            TC.SetFrames(first_action_time_SS%FrameRate);
-            TC.SetFramesMax(FrameRate-1);
-            TC.SetIsTime();
-            TC.SetIsValid();
+            bool IsNegative=((int8s)first_action_time_HH)<0;
+            if (IsNegative)
+                first_action_time_HH=(int8u)((-((int8s)first_action_time_HH)));
+            const int32u FrameRate = 100000;
+            TimeCode TC(first_action_time_HH, first_action_time_MM, first_action_time_SS/FrameRate, first_action_time_SS%FrameRate, FrameRate-1, TimeCode::Timed().Negative(IsNegative));
             Fill(Stream_Audio, 0, "Dolby_Atmos_Metadata FirstFrameOfAction", TC.ToString());
             Fill_SetOptions(Stream_Audio, 0, "Dolby_Atmos_Metadata FirstFrameOfAction", "Y NTY");
         }
@@ -509,13 +499,13 @@ void File_DolbyAudioMetadata::Merge(File__Analyze& In, size_t StreamPos)
             TimeCode TC2(Start.To_UTF8());
             TC+=TC2;
         }
-        auto FramesPerSecond=In.Retrieve_Const(Stream_Audio, 0, "Dolby_Atmos_Metadata AssociatedVideo_FrameRate").To_int64u();
-        auto DropFrame=In.Retrieve_Const(Stream_Audio, 0, "Dolby_Atmos_Metadata AssociatedVideo_FrameRate_DropFrame")==__T("Yes");
-        if (FramesPerSecond)
+        auto FramesPerSecondF=In.Retrieve_Const(Stream_Audio, 0, "Dolby_Atmos_Metadata AssociatedVideo_FrameRate").To_float32();
+        if (FramesPerSecondF)
         {
-            TimeCode TC_Frames(0, FramesPerSecond-1, DropFrame);
-            TC_Frames+=TC;
-            if (TC_Frames.ToMilliseconds()<TC.ToMilliseconds())
+            auto FramesPerSecondI = float32_int32s(FramesPerSecondF);
+            auto DropFrame = In.Retrieve_Const(Stream_Audio, 0, "Dolby_Atmos_Metadata AssociatedVideo_FrameRate_DropFrame") == __T("Yes");
+            TimeCode TC_Frames(TC.ToSeconds(),FramesPerSecondI-1, TimeCode::DropFrame(DropFrame).FPS1001(FramesPerSecondI!=FramesPerSecondF), true);
+            if (TC_Frames.ToMilliseconds()!=TC.ToMilliseconds())
             {
                 TC_Frames++;
                 string Warning("First frame of action ");
