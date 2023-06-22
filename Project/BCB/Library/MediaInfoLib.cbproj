@@ -215,6 +215,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dts.cpp">
             <BuildOrder>89</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_DtsUhd.cpp">
+            <BuildOrder>239</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_ExtendedModule.cpp">
             <BuildOrder>99</BuildOrder>
         </CppCompile>

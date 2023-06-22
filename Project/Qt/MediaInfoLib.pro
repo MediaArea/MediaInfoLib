@@ -66,6 +66,7 @@ HEADERS += \
         ../../Source/MediaInfo/Audio/File_ChannelGrouping.h \
         ../../Source/MediaInfo/Audio/File_DolbyE.h \
         ../../Source/MediaInfo/Audio/File_Dts.h \
+        ../../Source/MediaInfo/Audio/File_DtsUhd.h \
         ../../Source/MediaInfo/Audio/File_ExtendedModule.h \
         ../../Source/MediaInfo/Audio/File_Flac.h \
         ../../Source/MediaInfo/Audio/File_ImpulseTracker.h \
@@ -289,6 +290,7 @@ SOURCES += \
         ../../Source/MediaInfo/Audio/File_Dsdiff.cpp \
         ../../Source/MediaInfo/Audio/File_Dsf.cpp \
         ../../Source/MediaInfo/Audio/File_Dts.cpp \
+        ../../Source/MediaInfo/Audio/File_DtsUhd.cpp \
         ../../Source/MediaInfo/Audio/File_DolbyAudioMetadata.cpp \
         ../../Source/MediaInfo/Audio/File_DolbyE.cpp \
         ../../Source/MediaInfo/Audio/File_ExtendedModule.cpp \
