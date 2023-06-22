@@ -2702,8 +2702,16 @@ bool File_Mpeg4::BookMark_Needed()
             #endif //MEDIAINFO_DEMUX
         }
         std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
-        mdat_Pos_Temp=mdat_Pos.empty()?NULL:&mdat_Pos[0];
-        mdat_Pos_Max=mdat_Pos_Temp+mdat_Pos.size();
+        if (mdat_Pos.empty())
+        {
+            mdat_Pos_Temp=nullptr;
+            mdat_Pos_Max=nullptr;
+        }
+        else
+        {
+            mdat_Pos_Temp=&mdat_Pos[0];
+            mdat_Pos_Max=mdat_Pos_Temp+mdat_Pos.size();
+        }
 
         #if MEDIAINFO_DEMUX
             if (!stco_IsDifferent && Muxing.size()==2)
@@ -2896,8 +2904,21 @@ bool File_Mpeg4::BookMark_Needed()
                     {
                         auto StreamID=Temp->StreamID;
                         for (int j=mdat_Pos.size()-1; j>=0; j--)
-                            if (StreamID==mdat_Pos[j].StreamID && mdat_Pos[j].Offset!=StreamTemp.FirstUsedOffset && mdat_Pos[j].Offset!=StreamTemp.LastUsedOffset)
+                            if (StreamID==mdat_Pos[j].StreamID && mdat_Pos[j].Offset!=stco_ToFind && mdat_Pos[j].Offset!=StreamTemp.FirstUsedOffset && mdat_Pos[j].Offset!=StreamTemp.LastUsedOffset)
                                 mdat_Pos.erase(mdat_Pos.begin()+j);
+                        if (mdat_Pos.empty())
+                        {
+                            mdat_Pos_Temp=nullptr;
+                            mdat_Pos_Max=nullptr;
+                        }
+                        else
+                        {
+                            Temp=&mdat_Pos[0];
+                            mdat_Pos_Max=Temp+mdat_Pos.size();
+                            while (Temp<mdat_Pos_Max && Temp->Offset!=stco_ToFind)
+                                Temp++;
+                            mdat_Pos_Temp=Temp<mdat_Pos_Max?Temp:nullptr;
+                        }
                     }
                 }
             }
@@ -2927,7 +2948,12 @@ bool File_Mpeg4::BookMark_Needed()
             mdat_Pos_ToParseInPriority_StreamIDs_ToRemove.clear();
         }
 
-        if (!mdat_Pos.empty())
+        if (mdat_Pos.empty())
+        {
+            mdat_Pos_Temp=nullptr;
+            mdat_Pos_Max=nullptr;
+        }
+        else
         {
             mdat_Pos_Temp=mdat_Pos_Temp_ToJump?mdat_Pos_Temp_ToJump:&mdat_Pos[0];
             mdat_Pos_Max=&mdat_Pos[0]+mdat_Pos.size();

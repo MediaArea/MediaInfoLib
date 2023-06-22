@@ -2122,17 +2122,24 @@ void File_Mpeg4::mdat_xxxx()
                     File_Offset_Next_IsValid=false;
                 }
                 mdat_pos mdat_Pos_New;
-                mdat_Pos_Max=mdat_Pos.empty()?NULL:(&mdat_Pos[0]+mdat_Pos.size());
                 if (!mdat_Pos.empty())
                 {
                     for (mdat_Pos_Type* mdat_Pos_Item=&mdat_Pos[0]; mdat_Pos_Item<mdat_Pos_Max; ++mdat_Pos_Item)
                         if (mdat_Pos_Item->StreamID!=(int32u)Element_Code)
                             mdat_Pos_New.push_back(*mdat_Pos_Item);
                 }
-                mdat_Pos=mdat_Pos_New;
+                mdat_Pos=move(mdat_Pos_New);
                 std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
-                mdat_Pos_Temp=mdat_Pos.empty()?NULL:&mdat_Pos[0];
-                mdat_Pos_Max=mdat_Pos_Temp+mdat_Pos.size();
+                if (mdat_Pos.empty())
+                {
+                    mdat_Pos_Temp=nullptr;
+                    mdat_Pos_Max=nullptr;
+                }
+                else
+                {
+                    mdat_Pos_Temp=&mdat_Pos[0];
+                    mdat_Pos_Max=mdat_Pos_Temp+mdat_Pos.size();
+                }
                 if (File_Offset_Next_IsValid)
                     for (; mdat_Pos_Temp<mdat_Pos_Max; ++mdat_Pos_Temp)
                     {
