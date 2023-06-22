@@ -525,6 +525,7 @@ private :
         bool                    AllForcedSamples;
         bool                    IsImage;
         bool                    tkhd_Found;
+        int32u                  TrackID;
         std::vector<int32u>     CC;
         std::vector<int32u>     CCFor;
         std::vector<int32u>     FallBackTo;
@@ -578,7 +579,7 @@ private :
             MI=NULL;
             TimeCode=NULL;
             StreamKind=Stream_Max;
-            StreamPos=0;
+            StreamPos=(size_t)-1;
             hdlr_Type=0x00000000;
             hdlr_SubType=0x00000000;
             hdlr_Manufacturer=0x00000000;
