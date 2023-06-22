@@ -479,10 +479,23 @@ void File_Mpeg4::Streams_Finish()
             ++Temp;
             continue;
         }
-        if (StreamKind_Last==Stream_Max && Temp->second.hdlr_SubType)
+        if (Temp->second.hdlr_SubType && (StreamPos_Last==(size_t)-1 || Retrieve_Const(Stream_Other, StreamPos_Last, Other_Type).empty()))
         {
-            Stream_Prepare(Stream_Other);
-            Fill(Stream_Other, StreamPos_Last, Other_Type, Ztring().From_CC4(Temp->second.hdlr_SubType));
+            bool ShowSubType=false;
+            if (StreamKind_Last==Stream_Other)
+            {
+                const auto& Format=Retrieve_Const(Stream_Other, StreamPos_Last, Other_Format);
+                const auto& CodecID=Retrieve_Const(Stream_Other, StreamPos_Last, Other_CodecID);
+                if (Format.empty() || Format==CodecID)
+                    ShowSubType=true;
+            }
+            if (StreamPos_Last==(size_t)-1)
+            {
+                Stream_Prepare(Stream_Other);
+                ShowSubType=true;
+            }
+            if (ShowSubType)
+                Fill(Stream_Other, StreamPos_Last, Other_Type, Ztring().From_CC4(Temp->second.hdlr_SubType));
         }
         if (StreamKind_Last == Stream_Video && !DisplayAspectRatio.empty() && Retrieve_Const(Stream_Video, StreamPos_Last, Video_DisplayAspectRatio).empty())
         {
@@ -1441,6 +1454,31 @@ void File_Mpeg4::Streams_Finish()
                     Fill(StreamKind_Last, StreamPos_Last, Name.To_UTF8().c_str(), Value, true);
                     const Ztring& Options=Retrieve_Const(Source_StreamKind, Source_StreamPos, i, Info_Options);
                     Fill_SetOptions(StreamKind_Last, StreamPos_Last, Name.To_UTF8().c_str(), Options.To_UTF8().c_str());
+                }
+            }
+        }
+
+        // Adapting from fake ID
+        if (Temp->second.tkhd_Found && Temp->second.TrackID!=Temp->first)
+        {
+            Ztring CurrentID=Ztring::ToZtring(Temp->first);
+            Ztring RealID=Ztring::ToZtring(Temp->second.TrackID);
+            ZtringList IDs;
+            IDs.Separator_Set(0, "-");
+            for (size_t i=Stream_General+1; i<Stream_Max; i++)
+            {
+                size_t Count=Count_Get((stream_t)i);
+                for (size_t j=0; j<Count; j++)
+                {
+                    IDs.Write(Retrieve_Const((stream_t)i, j, General_ID));
+                    if (!IDs.empty() && IDs[0]==CurrentID)
+                    {
+                        IDs[0]=RealID;
+                        Fill((stream_t)i, j, General_ID, IDs.Read(), true);
+                        Fill((stream_t)i, j, "ConformanceErrors", "Yes", Unlimited, true, true);
+                        Fill((stream_t)i, j, "ConformanceErrors tkhd", "Yes", Unlimited, true, true);
+                        Fill((stream_t)i, j, "ConformanceErrors tkhd track_ID", ("track_ID "+RealID.To_UTF8()+" is already used by another track"));
+                    }
                 }
             }
         }
@@ -2664,8 +2702,16 @@ bool File_Mpeg4::BookMark_Needed()
             #endif //MEDIAINFO_DEMUX
         }
         std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
-        mdat_Pos_Temp=mdat_Pos.empty()?NULL:&mdat_Pos[0];
-        mdat_Pos_Max=mdat_Pos_Temp+mdat_Pos.size();
+        if (mdat_Pos.empty())
+        {
+            mdat_Pos_Temp=nullptr;
+            mdat_Pos_Max=nullptr;
+        }
+        else
+        {
+            mdat_Pos_Temp=&mdat_Pos[0];
+            mdat_Pos_Max=mdat_Pos_Temp+mdat_Pos.size();
+        }
 
         #if MEDIAINFO_DEMUX
             if (!stco_IsDifferent && Muxing.size()==2)
@@ -2858,8 +2904,21 @@ bool File_Mpeg4::BookMark_Needed()
                     {
                         auto StreamID=Temp->StreamID;
                         for (int j=mdat_Pos.size()-1; j>=0; j--)
-                            if (StreamID==mdat_Pos[j].StreamID && mdat_Pos[j].Offset!=StreamTemp.FirstUsedOffset && mdat_Pos[j].Offset!=StreamTemp.LastUsedOffset)
+                            if (StreamID==mdat_Pos[j].StreamID && mdat_Pos[j].Offset!=stco_ToFind && mdat_Pos[j].Offset!=StreamTemp.FirstUsedOffset && mdat_Pos[j].Offset!=StreamTemp.LastUsedOffset)
                                 mdat_Pos.erase(mdat_Pos.begin()+j);
+                        if (mdat_Pos.empty())
+                        {
+                            mdat_Pos_Temp=nullptr;
+                            mdat_Pos_Max=nullptr;
+                        }
+                        else
+                        {
+                            Temp=&mdat_Pos[0];
+                            mdat_Pos_Max=Temp+mdat_Pos.size();
+                            while (Temp<mdat_Pos_Max && Temp->Offset!=stco_ToFind)
+                                Temp++;
+                            mdat_Pos_Temp=Temp<mdat_Pos_Max?Temp:nullptr;
+                        }
                     }
                 }
             }
@@ -2889,7 +2948,12 @@ bool File_Mpeg4::BookMark_Needed()
             mdat_Pos_ToParseInPriority_StreamIDs_ToRemove.clear();
         }
 
-        if (!mdat_Pos.empty())
+        if (mdat_Pos.empty())
+        {
+            mdat_Pos_Temp=nullptr;
+            mdat_Pos_Max=nullptr;
+        }
+        else
         {
             mdat_Pos_Temp=mdat_Pos_Temp_ToJump?mdat_Pos_Temp_ToJump:&mdat_Pos[0];
             mdat_Pos_Max=&mdat_Pos[0]+mdat_Pos.size();

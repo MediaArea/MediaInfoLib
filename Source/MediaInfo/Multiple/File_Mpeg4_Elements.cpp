@@ -2122,17 +2122,24 @@ void File_Mpeg4::mdat_xxxx()
                     File_Offset_Next_IsValid=false;
                 }
                 mdat_pos mdat_Pos_New;
-                mdat_Pos_Max=mdat_Pos.empty()?NULL:(&mdat_Pos[0]+mdat_Pos.size());
                 if (!mdat_Pos.empty())
                 {
                     for (mdat_Pos_Type* mdat_Pos_Item=&mdat_Pos[0]; mdat_Pos_Item<mdat_Pos_Max; ++mdat_Pos_Item)
                         if (mdat_Pos_Item->StreamID!=(int32u)Element_Code)
                             mdat_Pos_New.push_back(*mdat_Pos_Item);
                 }
-                mdat_Pos=mdat_Pos_New;
+                mdat_Pos=move(mdat_Pos_New);
                 std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
-                mdat_Pos_Temp=mdat_Pos.empty()?NULL:&mdat_Pos[0];
-                mdat_Pos_Max=mdat_Pos_Temp+mdat_Pos.size();
+                if (mdat_Pos.empty())
+                {
+                    mdat_Pos_Temp=nullptr;
+                    mdat_Pos_Max=nullptr;
+                }
+                else
+                {
+                    mdat_Pos_Temp=&mdat_Pos[0];
+                    mdat_Pos_Max=mdat_Pos_Temp+mdat_Pos.size();
+                }
                 if (File_Offset_Next_IsValid)
                     for (; mdat_Pos_Temp<mdat_Pos_Max; ++mdat_Pos_Temp)
                     {
@@ -5143,6 +5150,14 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_mebx()
     Skip_B6(                                                    "Reserved");
     Skip_B2(                                                    "Data reference index");
 
+    if (StreamKind_Last == Stream_Max)
+    {
+        Stream_Prepare(Stream_Other);
+        Streams[moov_trak_tkhd_TrackID].StreamKind=StreamKind_Last;
+        Streams[moov_trak_tkhd_TrackID].StreamPos=StreamPos_Last;
+    }
+    CodecID_Fill(Ztring().From_CC4((int32u)Element_Code), StreamKind_Last, StreamPos_Last, InfoCodecID_Format_Mpeg4);
+
     Element_ThisIsAList();
 }
 
@@ -5563,11 +5578,20 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx()
             case Stream_Audio : moov_trak_mdia_minf_stbl_stsd_xxxxSound(); break;
             case Stream_Text  : moov_trak_mdia_minf_stbl_stsd_xxxxText (); break;
             default           :
-                                CodecID_Fill(Ztring().From_CC4((int32u)Element_Code), StreamKind_Last, StreamPos_Last, InfoCodecID_Format_Mpeg4);
-                                switch (Element_Code)
+                                if (StreamKind_Last==Stream_Max)
                                 {
-                                    case Elements::moov_trak_mdia_minf_stbl_stsd_mp4s : moov_trak_mdia_minf_stbl_stsd_xxxxStream(); break;
-                                    default                                           : Skip_XX(Element_TotalSize_Get()-Element_Offset, "Unknown");
+                                    Stream_Prepare(Stream_Other);
+                                    Streams[moov_trak_tkhd_TrackID].StreamKind=StreamKind_Last;
+                                    Streams[moov_trak_tkhd_TrackID].StreamPos=StreamPos_Last;
+                                }
+                                if (Element_Code)
+                                {
+                                    CodecID_Fill(Ztring().From_CC4((int32u)Element_Code), StreamKind_Last, StreamPos_Last, InfoCodecID_Format_Mpeg4);
+                                    switch (Element_Code)
+                                    {
+                                        case Elements::moov_trak_mdia_minf_stbl_stsd_mp4s : moov_trak_mdia_minf_stbl_stsd_xxxxStream(); break;
+                                        default                                           : Skip_XX(Element_TotalSize_Get()-Element_Offset, "Unknown");
+                                    }
                                 }
         }
 
@@ -8892,19 +8916,22 @@ void File_Mpeg4::moov_trak_tkhd()
 
     FILLING_BEGIN();
         //Handle tracks with same ID than a previous track
-        auto TrackID_Temp=moov_trak_tkhd_TrackID;
-        for (;;)
+        bool tkhd_SameID=false;
+        std::map<int32u, stream>::iterator PreviousTrack=Streams.find(moov_trak_tkhd_TrackID);
+        if (PreviousTrack!=Streams.end() && PreviousTrack->second.tkhd_Found)
         {
-            std::map<int32u, stream>::iterator PreviousTrack=Streams.find(TrackID_Temp);
-            if (PreviousTrack==Streams.end() || !PreviousTrack->second.tkhd_Found)
-                break;
-            TrackID_Temp++;
-        }
-        if (moov_trak_tkhd_TrackID!=TrackID_Temp)
-        {
-            Fill(StreamKind_Last, StreamPos_Last, "Warning", "ID is fake due to ID "+to_string(moov_trak_tkhd_TrackID)+" already used by a previous track");
+            auto TrackID_Temp=((int32u)-1)/2+1;
+            for (; TrackID_Temp<(int32u)-1; TrackID_Temp++)
+            {
+                std::map<int32u, stream>::iterator PreviousTrack=Streams.find(TrackID_Temp);
+                if (PreviousTrack==Streams.end())
+                    break;
+            }
+            Streams[TrackID_Temp].TrackID=moov_trak_tkhd_TrackID;
             moov_trak_tkhd_TrackID=TrackID_Temp;
         }
+        else
+            Streams[moov_trak_tkhd_TrackID].TrackID=moov_trak_tkhd_TrackID;
         Streams[moov_trak_tkhd_TrackID].tkhd_Found=true;
         //Case of header is after main part
         std::map<int32u, stream>::iterator Temp=Streams.find((int32u)-1);
