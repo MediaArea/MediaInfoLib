@@ -48,11 +48,20 @@ std::string URL_Encoded_Encode(const std::string& URL)
     for (std::string::size_type Pos=0; Pos<URL.size(); Pos++)
     {
         auto Char=URL[Pos];
-        if (Char<=0x40
-#if defined(__APPLE__) && defined(__MACH__)
+        if (Char<=0x2C
+         || Char==0x2E
+         || Char==0x2F
+         || Char==0x3A
+         || Char==0x3B
+         || Char==0x3D
+         || Char==0x3F
+         || Char==0x40
+         || Char==0x5B
+         || Char==0x5D
+//#if defined(__APPLE__) && defined(__MACH__) // URL is rejected by API on macOS, not considered as URL by Thunderbird
          || Char=='{'
          || Char=='}'
-#endif
+//#endif
         )
         {
             Result+='%';
