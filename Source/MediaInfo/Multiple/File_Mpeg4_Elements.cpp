@@ -3111,6 +3111,7 @@ void File_Mpeg4::moof_traf_trun()
                 sample_is_non_sync_sample_PresenceAndValue=Stream->second.default_sample_is_non_sync_sample_PresenceAndValue;
             if (sample_is_non_sync_sample_PresenceAndValue==1) //Present and sync
                 Stream->second.stss.push_back(Stream->second.FramePos_Offset+Pos);
+            Streams[moov_trak_tkhd_TrackID].stss_IsPresent=true; // Spec does not indicate that but we may consider trun presence as enough for considering that stts is present and empty
         #endif
         if (sample_composition_time_offset_present)
         {
