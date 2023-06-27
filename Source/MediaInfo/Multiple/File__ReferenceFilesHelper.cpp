@@ -642,19 +642,19 @@ void File__ReferenceFilesHelper::ParseReferences()
                 if (Names[Pos].find(__T("file:///"))==0)
                 {
                     Names[Pos].erase(0, 8); //Removing "file:///", this is the default behaviour and this makes comparison easier
-                    Names[Pos]=URL_Encoded_Decode(Names[Pos]);
+                    Names[Pos].From_Unicode(URL_Encoded_Decode(Names[Pos].To_Unicode()));
                     IsUrlEncoded=true;
                 }
                 if (Names[Pos].find(__T("file://"))==0)
                 {
                     Names[Pos].erase(0, 7); //Removing "file://", this is the default behaviour and this makes comparison easier
-                    Names[Pos]=URL_Encoded_Decode(Names[Pos]);
+                    Names[Pos].From_Unicode(URL_Encoded_Decode(Names[Pos].To_Unicode()));
                     IsUrlEncoded=true;
                 }
                 if (Names[Pos].find(__T("file:"))==0)
                 {
                     Names[Pos].erase(0, 5); //Removing "file:", this is the default behaviour and this makes comparison easier
-                    Names[Pos]=URL_Encoded_Decode(Names[Pos]);
+                    Names[Pos].From_Unicode(URL_Encoded_Decode(Names[Pos].To_Unicode()));
                     IsUrlEncoded=true;
                 }
                 Ztring AbsoluteName;
@@ -687,7 +687,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                 //Configuring file name (this time, we try to force URL decode in all cases)
                 for (size_t Pos=0; Pos<Names.size(); Pos++)
                 {
-                    Names[Pos]=URL_Encoded_Decode(Names[Pos]);
+                    Names[Pos].From_Unicode(URL_Encoded_Decode(Names[Pos].To_Unicode()));
                     IsUrlEncoded=true;
                     Ztring AbsoluteName;
                     if (Names[Pos].find(__T(':'))!=1 && Names[Pos].find(__T("/"))!=0 && Names[Pos].find(__T("\\\\"))!=0) //If absolute patch
@@ -805,7 +805,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                     }
                 }
             }
-            Sequences[Sequences_Current]->Source=IsUrlEncoded?URL_Encoded_Decode(Sequences[Sequences_Current]->FileNames.Read(0)).c_str():Sequences[Sequences_Current]->FileNames.Read(0);
+            Sequences[Sequences_Current]->Source=IsUrlEncoded?Ztring().From_Unicode(URL_Encoded_Decode(Sequences[Sequences_Current]->FileNames.Read(0).To_Unicode())).c_str():Sequences[Sequences_Current]->FileNames.Read(0);
             if (Sequences[Sequences_Current]->StreamKind!=Stream_Max && !Sequences[Sequences_Current]->Source.empty())
             {
                 if (Sequences[Sequences_Current]->StreamPos==(size_t)-1)
