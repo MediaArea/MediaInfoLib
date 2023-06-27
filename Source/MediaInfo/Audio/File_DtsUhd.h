@@ -10,10 +10,7 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#include "MediaInfo/File__Analyze.h"
-#ifdef ES
-   #undef ES //Solaris defines this somewhere
-#endif
+#include "MediaInfo/Audio/File_Dts.h" // Should be File__Analyze.h but we need DTSHDHDR parsing
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -35,21 +32,15 @@ struct DTSUHD_ChannelMaskInfo
 
 struct DTSUHD_ChannelMaskInfo DTSUHD_DecodeChannelMask(int32u ChannelMask);
 
-class File_DtsUhd : public File__Analyze
+class File_DtsUhd : public File_Dts_Common
 {
 public :
-    //In
-    int64u Frame_Count_Valid;
-
     //Constructor/Destructor
     File_DtsUhd();
 
 protected :
     //Streams management
     void Streams_Fill();
-
-    //Buffer - File header
-    bool FileHeader_Begin();
 
     //Buffer - Synchro
     bool Synchronize();
@@ -60,49 +51,48 @@ protected :
     void Header_Parse();
     void Data_Parse();
 
-    bool FrameSynchPoint_Test();
+    bool FrameSynchPoint_Test(bool AcceptNonSync);
 
     struct MDObject
     {
         bool Started=false;  /* Object seen since last reset. */
         int PresIndex=0;
-        int RepType=0;
-        int ChActivityMask=0;
+        int8u RepType=0;
+        int32u ChActivityMask=0;
     };
 
     struct MD01
     {
         MDObject Object[257]; /* object id max value is 256 */
-        bool StaticMDUpdateFlag=false;
-        int Bit=0;
+        bool StaticMDParamsExtracted=false;
+        bool StaticMetadataUpdtFlag=false;
         int ChunkId=0;
-        int ObjectList[256]={0};
-        int ObjectListCount=0;
+        int16u ObjectList[256]={0};
+        int32u NumObjects=0; /* Valid entries in 'ObjectList' array */
+        int32u NumStaticMDPackets=0;
         int PacketsAcquired=0;
-        int StaticMDExtracted=0;
-        int StaticMDPackets=0;
-        int StaticMDPacketSize=0;
+        int32u StaticMDPacketByteSize=0;
         std::vector<int8u> Buffer;
     };
 
-    struct NAVI
+    struct audio_chunk
     {
         bool Present=false;
-        int Bytes=0;
-        int Id=0;
-        int Index=0;
+        int32u AudioChunkSize=0;
+        int32u AudioChunkID=0;
+        int32u Index=0;
     };
 
-    struct UHDAudio
+    struct UHDAudPresParam
     {
-        int Mask=0;
-        int Selectable=0;
+        bool Selectable=false;
+        int DepAuPresMask=0;
     };
 
-    struct UHDChunk
+    struct md_chunk
     {
-        bool CrcFlag=false;
-        int Bytes=0;
+        bool MDChunkCRCFlag=false;
+        int32u MDChunkSize=0;
     };
 
     struct UHDFrameDescriptor
@@ -117,53 +107,52 @@ protected :
         int RepType;
     };
 
-    int32u ReadBitsMD01(MD01* MD01, int Bits);
+    int32u ReadBitsMD01(MD01* MD01, int Bits, const char* Name =nullptr);
     MD01* ChunkAppendMD01(int Id);
     MD01* ChunkFindMD01(int Id);
     MDObject* FindDefaultAudio();
     void ExtractObjectInfo(MDObject*);
     void UpdateDescriptor();
-    int ParseExplicitObjectLists(int Mask, int Index);
-    int ParseAudPresParams();
+    int ExtractExplicitObjectsLists(int Mask, int Index);
+    int ResolveAudPresParams();
     void DecodeVersion();
-    int ParseStreamParams();
+    int ExtractStreamParams();
     void NaviPurge();
-    int NaviFindIndex(int DesiredIndex, int* ListIndex);
-    int ParseChunkNavi();
-    int ParseMDObjectList(MD01*);
-    void SkipMPParamSet(MD01*, bool NominalFlag);
+    int NaviFindIndex(int DesiredIndex, int32u* ListIndex);
+    int ExtractChunkNaviData();
+    int ExtractMDChunkObjIDList(MD01*);
+    void ExtractLTLMParamSet(MD01*, bool NominalLD_DescriptionFlag);
     int ParseStaticMDParams(MD01*, bool OnlyFirst);
-    int ParseMultiFrameMd(MD01*);
-    int IsSuitableForRender(MD01*, int ObjectId);
-    void ParseChMaskParams(MD01*, MDObject*);
-    int ParseObjectMetadata(MD01*, MDObject*, bool, int);
+    int ExtractMultiFrameDistribStaticMD(MD01*);
+    bool CheckIfMDIsSuitableforImplObjRenderer(MD01*, int ObjectId);
+    void ExtractChMaskParams(MD01*, MDObject*);
+    int ExtractObjectMetadata(MD01*, MDObject*, bool, int);
     int ParseMD01(MD01*, int PresIndex);
-    int ParseChunks();
-    bool CheckCurrentFrame(bool SyncFrame);
-    int DtsUhd_Frame();
+    int UnpackMDFrame();
+    void UnpackMDFrame_1(int8u MDChunkID);
+    bool CheckCurrentFrame();
+    int Frame();
 
-    UHDAudio Audio[256];
+    UHDAudPresParam AudPresParam[256];
     UHDFrameDescriptor FrameDescriptor;
-    bool FullChannelMixFlag;
-    bool InteractiveObjLimitsPresent;
+    bool FullChannelBasedMixFlag;
+    bool InteractObjLimitsPresent;
     bool SyncFrameFlag;
-    const int8u* FrameStart;
-    int ChunkBytes;
-    int ClockRate;
-    int FTOCBytes;
-    int FrameBit;
+    int32u ChunkBytes;
+    int ClockRateInHz;
+    int32u FTOCPayloadinBytes;
     int FrameDuration;
-    int FrameDurationCode;
-    int FrameRate;
-    int MajorVersion;
-    int NumAudioPres;
+    int8u StreamMajorVerNum;
+    int32u NumAudioPres;
     int SampleRate;
-    int SampleRateMod;
     int32u FrameSize;
-    int32u FramesTotal;
     std::vector<MD01> MD01List;
-    std::vector<NAVI> NaviList;
-    std::vector<UHDChunk> ChunkList;
+    std::vector<audio_chunk> Audio_Chunks;
+    std::vector<md_chunk> MD_Chunks;
+
+    //Helpers
+    void Get_VR(const uint8_t Table[], int32u& Info, const char* Name);
+    void Skip_VR(const uint8_t Table[], const char* Name) { int32u Info; Get_VR(Table, Info, Name); }
 };
 
 } //NameSpace

@@ -1471,7 +1471,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "DST;;;A;;Direct Stream Transfer;;;;Lossless\n"
     "DTS;;;A;Dts;Digital Theater Systems;dts dtshd dtshdma;;https://en.wikipedia.org/wiki/DTS_(sound_system)\n"
     "DTS-HD;;;A;Dts;Digital Theater Systems;dts dtshd dtshdma;;;Lossy\n"
-    "DTS-UHD;;;A;Dts\n"
+    "DTS-UHD;;;A;DtsUhd;;dtsx\n"
     "E-AC-3;;;A;Ac3;Enhanced AC-3;dd+ ec3 eac3;audio/eac3;https://en.wikipedia.org/wiki/Dolby_Digital_Plus;Lossy\n"
     "Extended Module;;;A;ExtendedModule;;xm\n"
     "FLAC;;;A;Flac;Free Lossless Audio Codec;fla flac;audio/x-flac;https://xiph.org/flac/;Lossless\n"
