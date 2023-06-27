@@ -3111,6 +3111,7 @@ void File_Mpeg4::moof_traf_trun()
                 sample_is_non_sync_sample_PresenceAndValue=Stream->second.default_sample_is_non_sync_sample_PresenceAndValue;
             if (sample_is_non_sync_sample_PresenceAndValue==1) //Present and sync
                 Stream->second.stss.push_back(Stream->second.FramePos_Offset+Pos);
+            Streams[moov_trak_tkhd_TrackID].stss_IsPresent=true; // Spec does not indicate that but we may consider trun presence as enough for considering that stts is present and empty
         #endif
         if (sample_composition_time_offset_present)
         {
@@ -4921,6 +4922,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_sbgp()
     Get_B4 (Count,                                              "entry_count");
     auto& Stream=Streams[moov_trak_tkhd_TrackID];
     #if MEDIAINFO_CONFORMANCE
+        Streams[moov_trak_tkhd_TrackID].sbgp_IsPresent=true;
         auto& sbgp=Stream.sbgp;
     #endif
     for (int32u Pos=0; Pos<Count; Pos++)
@@ -5772,6 +5774,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
                 Parser->FirstOutputtedDecodedSample=&Stream.FirstOutputtedDecodedSample;
                 Parser->roll_distance_Values=&Stream.sgpd_prol;
                 Parser->roll_distance_FramePos=&Stream.sbgp;
+                Parser->roll_distance_FramePos_IsPresent=&Stream.sbgp_IsPresent;
             #endif
             Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
         }

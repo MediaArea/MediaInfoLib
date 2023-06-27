@@ -1485,6 +1485,7 @@ File_Usac::File_Usac()
         FirstOutputtedDecodedSample=nullptr;
         roll_distance_Values=nullptr;
         roll_distance_FramePos=nullptr;
+        roll_distance_FramePos_IsPresent=nullptr;
     #endif
 }
 
@@ -3590,7 +3591,7 @@ void File_Usac::streamId()
 void File_Usac::UsacFrame(size_t BitsNotIncluded)
 {
     #if MEDIAINFO_CONFORMANCE
-        if (roll_distance_Values && roll_distance_FramePos && roll_distance_Values && !roll_distance_Values->empty())
+        if (roll_distance_FramePos_IsPresent && *roll_distance_FramePos_IsPresent && roll_distance_Values && roll_distance_FramePos && roll_distance_Values && !roll_distance_Values->empty())
         {
             if (find(roll_distance_FramePos->begin(), roll_distance_FramePos->end(), Frame_Count_NotParsedIncluded) != roll_distance_FramePos->end())
             {
@@ -3617,14 +3618,14 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
                 auto ContainerSaysNonImmediate = find(roll_distance_FramePos->begin(), roll_distance_FramePos->end(), Frame_Count_NotParsedIncluded) != roll_distance_FramePos->end();
                 if (usacIndependencyFlag)
                 {
-                    if (!ContainerSaysImmediate && !ContainerSaysNonImmediate)
+                    if (!ContainerSaysImmediate && !ContainerSaysNonImmediate && roll_distance_FramePos_IsPresent && *roll_distance_FramePos_IsPresent)
                         Fill_Conformance("Crosscheck stss sample_number", "MP4 stss or MP4 sbgp does not indicate this frame is independent but USAC UsacFrame usacIndependencyFlag 1 indicates this frame is independent");
                 }
                 else
                 {
                     if (ContainerSaysImmediate)
                         Fill_Conformance("Crosscheck stss sample_number", "MP4 stss indicates this frame is an immediate play-out frame (IPF) but USAC UsacFrame usacIndependencyFlag 0 indicates this frame is not an immediate play-out frame (IPF)");
-                    if (ContainerSaysNonImmediate)
+                    if (ContainerSaysNonImmediate && roll_distance_FramePos_IsPresent && *roll_distance_FramePos_IsPresent)
                         Fill_Conformance("Crosscheck sbgp group_description_index", "MP4 sbgp indicates this frame is an independent frame (IF) but USAC UsacFrame usacIndependencyFlag 0 indicates this frame is not an independent frame (IF)");
                 }
             }
@@ -3758,7 +3759,7 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
                         //Immediate
                         if (!ContainerSaysImmediate)
                             Fill_Conformance("Crosscheck stss sample_number", "MP4 stss does not indicate this frame is an immediate play-out frame (IPF) but USAC AudioPreRoll is present");
-                        if (ContainerSaysNonImmediate)
+                        if (ContainerSaysNonImmediate && roll_distance_FramePos_IsPresent && *roll_distance_FramePos_IsPresent)
                             Fill_Conformance("Crosscheck sbgp group_description_index", "MP4 sbgp indicates this frame is an independent frame (IF) but USAC AudioPreRoll is present");
                     }
                     else
@@ -3766,7 +3767,7 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
                         //NonImmediate
                         if (ContainerSaysImmediate)
                             Fill_Conformance("Crosscheck stss sample_number", "MP4 stss indicates this frame is an immediate play-out frame (IPF) but USAC AudioPreRoll is not present");
-                        if (!ContainerSaysNonImmediate)
+                        if (!ContainerSaysNonImmediate && roll_distance_FramePos_IsPresent && *roll_distance_FramePos_IsPresent)
                             Fill_Conformance("Crosscheck sbgp group_description_index", "MP4 sbgp does not indicate this frame is an independent frame (IF) but USAC AudioPreRoll is not present");
                     }
                 }
