@@ -38,6 +38,7 @@ using namespace std;
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_Dvdv.h"
+#include "MediaInfo/MediaInfo_Internal.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -280,6 +281,30 @@ File_Dvdv::File_Dvdv()
 //---------------------------------------------------------------------------
 void File_Dvdv::Streams_Finish()
 {
+    //Manage related VOB files
+    if (!IsSub && !Config->File_IsReferenced_Get() && File_Name.size()>=5 && File_Name.find(__T("0.IFO"), File_Name.size()-5)!=string::npos)
+    {
+        Ztring VOB_File=File_Name.substr(0, File_Name.size()-5)+__T("1.VOB");
+
+        MediaInfo_Internal MI;
+        MI.Option(__T("File_IsReferenced"), __T("1"));
+        if (MI.Open(VOB_File))
+        {
+            Merge(MI);
+            auto SeparatorPos=VOB_File.find_last_of(__T("/\\"));
+            if (SeparatorPos!=string::npos)
+            {
+                auto FileSize=Retrieve_Const(Stream_General, 0, General_FileSize).To_int64u();
+                FileSize+=MI.Get(Stream_General, 0, General_FileSize).To_int64u();
+                Fill(Stream_General, 0, General_FileSize, FileSize, 10, true);
+                VOB_File.erase(0, SeparatorPos+1);
+                for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+                    for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
+                        Fill((stream_t)StreamKind, StreamPos, "Source", VOB_File);
+            }
+        }
+    }
+
     //Purge what is not needed anymore
     if (!File_Name.empty()) //Only if this is not a buffer, with buffer we can have more data
         Sectors.clear();
