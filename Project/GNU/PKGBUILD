@@ -3,7 +3,7 @@
 # Contributor: hydro <hydro@freenet.de>
 
 pkgname=('libmediainfo' 'python-mediainfo')
-pkgver=23.04
+pkgver=23.06
 pkgrel=1
 pkgdesc="shared library for mediainfo"
 arch=('i686' 'x86_64')

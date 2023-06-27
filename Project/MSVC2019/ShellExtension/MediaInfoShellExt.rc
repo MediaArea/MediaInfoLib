@@ -19,10 +19,10 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "MediaArea.net"
             VALUE "FileDescription", "Most relevant technical and tag data for video and audio files"
-            VALUE "FileVersion", "23.04.0.0"
+            VALUE "FileVersion", "23.06.0.0"
             VALUE "LegalCopyright", "Copyright (C) 2002-2020 MediaArea.net SARL"
             VALUE "ProductName", "MediaInfo"
-            VALUE "ProductVersion", "23.04.0.0"
+            VALUE "ProductVersion", "23.06.0.0"
         END
     END
     BLOCK "VarFileInfo"

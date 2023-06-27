@@ -2,7 +2,7 @@ Format: 3.0 (quilt)
 Source: libmediainfo
 Binary: libmediainfo-dev, libmediainfo0v5, python-mediainfodll, python3-mediainfodll, libmediainfo-doc libmediainfo0v5-dbg
 Architecture: any all
-Version: 23.04-1deb9
+Version: 23.06-1deb9
 Maintainer: MediaArea.net SARL <info@mediaarea.net>
 Homepage: http://MediaArea.net/MediaInfo
 Standards-Version: 3.9.6
@@ -16,11 +16,11 @@ Package-List:
  python-mediainfodll deb python optional arch=all
  python3-mediainfodll deb python optional arch=all
 Checksums-Sha1:
- 0000000000000000000000000000000000000000 000000 libmediainfo_23.04.orig.tar.xz
- 0000000000000000000000000000000000000000 000000 libmediainfo_23.04-1deb9.debian.tar.xz
+ 0000000000000000000000000000000000000000 000000 libmediainfo_23.06.orig.tar.xz
+ 0000000000000000000000000000000000000000 000000 libmediainfo_23.06-1deb9.debian.tar.xz
 Checksums-Sha256:
- 0000000000000000000000000000000000000000000000000000000000000000 000000 libmediainfo_23.04.orig.tar.xz
- 0000000000000000000000000000000000000000000000000000000000000000 000000 libmediainfo_23.04-1deb9.debian.tar.xz
+ 0000000000000000000000000000000000000000000000000000000000000000 000000 libmediainfo_23.06.orig.tar.xz
+ 0000000000000000000000000000000000000000000000000000000000000000 000000 libmediainfo_23.06-1deb9.debian.tar.xz
 Files:
- 00000000000000000000000000000000 000000 libmediainfo_23.04.orig.tar.xz
- 00000000000000000000000000000000 000000 libmediainfo_23.04-1deb9.debian.tar.xz
+ 00000000000000000000000000000000 000000 libmediainfo_23.06.orig.tar.xz
+ 00000000000000000000000000000000 000000 libmediainfo_23.06-1deb9.debian.tar.xz
