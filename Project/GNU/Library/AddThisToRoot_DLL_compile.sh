@@ -57,6 +57,7 @@ if [ "$1" = "--emscripten-lib" ]; then
                            -DMEDIAINFO_MINIMAL_YES \
                            -DMEDIAINFO_EXPORT_YES \
                            -DMEDIAINFO_SEEK_YES \
+                           -DMEDIAINFO_CONFORMANCE_YES \
                            -DMEDIAINFO_READER_NO \
                            -DMEDIAINFO_REFERENCES_NO"
 fi
