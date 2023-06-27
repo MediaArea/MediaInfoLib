@@ -3168,10 +3168,10 @@ void File_Mpeg4::Descriptors()
         MI.stss_IsPresent=&Stream.stss_IsPresent;
         MI.IsCmaf=&IsCmaf;
         MI.sbgp=&Stream.sbgp;
+        MI.sbgp_IsPresent=&Stream.sbgp_IsPresent;
+        MI.sgpd_prol=&Stream.sgpd_prol;
         MI.stts=&Stream.stts;
         MI.FirstOutputtedDecodedSample=&Stream.FirstOutputtedDecodedSample;
-        MI.sgpd_prol=&Stream.sgpd_prol;
-        MI.sbgp=&Stream.sbgp;
     #endif
 
     int64u Elemen_Code_Save=Element_Code;

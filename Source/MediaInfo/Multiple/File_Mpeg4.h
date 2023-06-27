@@ -568,6 +568,7 @@ private :
         #endif //MEDIAINFO_DEMUX
         #if MEDIAINFO_CONFORMANCE
             bool                stss_IsPresent;
+            bool                sbgp_IsPresent;
             std::vector<sgpd_prol_struct> sgpd_prol;
             std::vector<sbgp_struct> sbgp;
             int8u               default_sample_is_non_sync_sample_PresenceAndValue;
@@ -636,6 +637,7 @@ private :
             #endif //MEDIAINFO_DEMUX
             #if MEDIAINFO_CONFORMANCE
                 stss_IsPresent=false;
+                sbgp_IsPresent=false;
                 default_sample_is_non_sync_sample_PresenceAndValue=0;
                 FirstOutputtedDecodedSample=0;
             #endif

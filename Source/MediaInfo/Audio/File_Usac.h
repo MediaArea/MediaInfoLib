@@ -255,6 +255,7 @@ public :
     const size_t*                   FirstOutputtedDecodedSample;
     const std::vector<sgpd_prol_struct>* roll_distance_Values;
     const std::vector<sbgp_struct>* roll_distance_FramePos;
+    const bool*                     roll_distance_FramePos_IsPresent;
     bool CheckIf(const bitset8 Flags) { return !Flags || (ConformanceFlags & Flags); }
     void SetProfileLevel(int8u AudioProfileLevelIndication);
     void Fill_Conformance(const char* Field, const char* Value, bitset8 Flags={}, conformance_level Level=Error);
