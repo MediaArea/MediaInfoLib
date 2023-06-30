@@ -110,51 +110,106 @@ static const char* phaseshift_90deg_5to2_Values[] =
 static size_t phaseshift_90deg_5to2_Size=sizeof(phaseshift_90deg_5to2_Values)/sizeof(const char*);
 
 //---------------------------------------------------------------------------
-void Merge_FillTimeCode(File__Analyze& In, const string& Prefix, const TimeCode& TC_Time, float FramesPerSecondF, bool DropFrame, bool Negative, int32u Frequency)
+void Merge_FillTimeCode(File__Analyze& In, const string& Prefix, const TimeCode& TC_Time, float FramesPerSecondF, bool DropFrame, TimeCode::rounding Rounding, int32u Frequency)
 {
     if (!TC_Time.IsSet())
         return;
     auto FramesPerSecondI=float32_int32s(FramesPerSecondF);
-    TimeCode TC_Frames(TC_Time.ToSeconds(), FramesPerSecondI-1, TimeCode::DropFrame(DropFrame).FPS1001(FramesPerSecondI!=FramesPerSecondF), true);
-    string TC_ExtraSubFrames_String=TC_Frames.ToString();
-    auto Diff=TC_Time.ToSeconds()-TC_Frames.ToSeconds();
-    TimeCode TC_ExtraSubFrames(Diff, FramesPerSecondI*100-1, TimeCode::flags(), true);
-    auto SubFrames=TC_ExtraSubFrames.ToFrames();
-    auto Diff_Back=TC_ExtraSubFrames.ToSeconds();
-    if (Diff-Diff_Back>=1.0/Frequency)
-        SubFrames++; // ceil rounding
-    if (SubFrames)
+    TimeCode TC_Frames=TC_Time.ToRescaled(FramesPerSecondI-1, TimeCode::DropFrame(DropFrame).FPS1001(FramesPerSecondI!=FramesPerSecondF), Rounding);
+    bool IsRounded=false;
+    if (Rounding==TimeCode::Floor)
     {
-        TC_ExtraSubFrames_String+='.';
-        auto Temp=to_string(SubFrames);
-        if (Temp.size()==1)
-            Temp.insert(0, 1, '0');
-        TC_ExtraSubFrames_String+=Temp;
-    }
-    if (Negative)
-    {
-        if (Diff>=1.0/Frequency)
+        //Handling TC_Time rounding issue
+        TimeCode TC_Frames1=TC_Frames+1;
+        TimeCode TC_Frames1_InTime=TC_Frames1.ToRescaled(TC_Time.GetFramesMax(), TimeCode::flags(), TimeCode::Floor);
+        if (TC_Time==TC_Frames1_InTime)
         {
-            TC_Frames++;
-            Diff=1/FramesPerSecondF-Diff;
+            TC_Frames=TC_Frames1;
+            IsRounded=true;
         }
-        else
-            Diff=0;
     }
-    TimeCode TC_ExtraSamples(Diff, Frequency, TimeCode::flags(), true);
+    if (Rounding==TimeCode::Ceil)
+    {
+        //Handling TC_Time rounding issue
+        TimeCode TC_Frames1=TC_Frames-1;
+        TimeCode TC_Frames1_InTime=TC_Frames1.ToRescaled(TC_Time.GetFramesMax(), TimeCode::flags(), TimeCode::Ceil);
+        if (TC_Time==TC_Frames1_InTime)
+        {
+            TC_Frames=TC_Frames1;
+            IsRounded=true;
+        }
+    }
+
+    // With samples
     string TC_ExtraSamples_String=TC_Frames.ToString();
-    auto Samples=TC_ExtraSamples.ToFrames();
+    int64_t Samples;
+    if (IsRounded)
+        Samples=0;
+    else
+    {
+        TimeCode TC_Frames_InSamples=TC_Frames.ToRescaled(Frequency-1, TimeCode::flags(), Rounding);
+        TimeCode TC_Time_Samples=TC_Time.ToRescaled(Frequency-1, TimeCode::flags(), Rounding);
+        TimeCode TC_ExtraSamples;
+        if (Rounding==TimeCode::Ceil)
+            TC_ExtraSamples=TC_Frames_InSamples-TC_Time_Samples;
+        else
+            TC_ExtraSamples=TC_Time_Samples-TC_Frames_InSamples;
+        Samples=TC_ExtraSamples.ToFrames();
+    }
     if (Samples)
     {
-        TC_ExtraSamples_String+=Negative?'-':'+';
+        if (Samples>=0)
+            TC_ExtraSamples_String+=Rounding==TimeCode::Ceil?'-':'+';
         TC_ExtraSamples_String+=to_string(Samples);
         TC_ExtraSamples_String+="samples";
     }
+
     if (Prefix.find("TimeCode")!=string::npos)
     {
         In.Fill(Stream_Audio, 0, Prefix.c_str(), TC_ExtraSamples_String, true, true);
         return;
     }
+
+    // With subframes
+    constexpr TimeCode::rounding TC_Frames_Sub_Rounding=TimeCode::Ceil;
+    TimeCode TC_Frames_Sub=TC_Time.ToRescaled(FramesPerSecondI*100-1, TimeCode::DropFrame(DropFrame).FPS1001(FramesPerSecondI!=FramesPerSecondF), TC_Frames_Sub_Rounding);
+    IsRounded=false;
+    if (TC_Frames_Sub_Rounding==TimeCode::Floor)
+    {
+        //Handling TC_Time rounding issue
+        TimeCode TC_Frames_Sub1=TC_Frames_Sub+1;
+        TimeCode TC_Frames_Sub1_InTime=TC_Frames_Sub1.ToRescaled(TC_Time.GetFramesMax(), TimeCode::flags(), TimeCode::Floor);
+        if (TC_Time==TC_Frames_Sub1_InTime)
+        {
+            TC_Frames_Sub=TC_Frames_Sub1;
+            IsRounded=true;
+        }
+    }
+    if (TC_Frames_Sub_Rounding==TimeCode::Ceil)
+    {
+        //Handling TC_Time rounding issue
+        TimeCode TC_Frames_Sub1=TC_Frames_Sub-1;
+        TimeCode TC_Frames_Sub1_InTime=TC_Frames_Sub1.ToRescaled(TC_Time.GetFramesMax(), TimeCode::flags(), TimeCode::Ceil);
+        if (TC_Time==TC_Frames_Sub1_InTime)
+        {
+            TC_Frames_Sub=TC_Frames_Sub1;
+            IsRounded=true;
+        }
+    }
+    int64_t SubFrames=TC_Frames_Sub.ToFrames();
+    int64_t SubFrames_Main=SubFrames/100;
+    int64_t SubFrames_Part=SubFrames%100;
+    TimeCode TC_Frames_Sub_Main=TimeCode(SubFrames_Main, FramesPerSecondI-1, TimeCode::DropFrame(DropFrame).FPS1001(FramesPerSecondI!=FramesPerSecondF));
+    string TC_ExtraSubFrames_String=TC_Frames_Sub_Main.ToString();
+    if (SubFrames_Part)
+    {
+        TC_ExtraSubFrames_String+='.';
+        auto Temp=to_string(SubFrames_Part);
+        if (Temp.size()==1)
+            Temp.insert(0, 1, '0');
+        TC_ExtraSubFrames_String+=Temp;
+    }
+    
     In.Fill(Stream_Audio, 0, Prefix.c_str(), TC_Time.ToString(), true, true);
     In.Fill_SetOptions(Stream_Audio, 0, Prefix.c_str(), "N NTY");
     In.Fill(Stream_Audio, 0, (Prefix+"/String").c_str(), TC_Time.ToString()+" ("+TC_ExtraSamples_String+')', true, true);
@@ -380,7 +435,7 @@ void File_DolbyAudioMetadata::Dolby_Atmos_Metadata_Segment()
                 first_action_time_HH=(int8u)((-((int8s)first_action_time_HH)));
             const int32u FrameRate = 100000;
             TimeCode TC(first_action_time_HH, first_action_time_MM, first_action_time_SS/FrameRate, first_action_time_SS%FrameRate, FrameRate-1, TimeCode::Timed().Negative(IsNegative));
-            Merge_FillTimeCode(*this, "Dolby_Atmos_Metadata FirstFrameOfAction", TC, frames_per_second_Values[frames_per_second], frames_per_second==4, false, 48000);
+            Merge_FillTimeCode(*this, "Dolby_Atmos_Metadata FirstFrameOfAction", TC, frames_per_second_Values[frames_per_second], frames_per_second==4, TimeCode::Ceil, 48000);
         }
         FILLING_END()
 }
@@ -564,14 +619,14 @@ void File_DolbyAudioMetadata::Merge(File__Analyze& In, size_t StreamPos)
             auto SamplingRate=In.Retrieve_Const(Stream_Audio, 0, Audio_SamplingRate).To_int32u();
             if (!SamplingRate)
                 SamplingRate=48000;
-            Merge_FillTimeCode(In, "Programme0 Start", TC_Start_Time, FramesPerSecondF, DropFrame, false, SamplingRate);
+            Merge_FillTimeCode(In, "Programme0 Start", TC_Start_Time, FramesPerSecondF, DropFrame, TimeCode::Floor, SamplingRate);
             const auto& End=In.Retrieve_Const(Stream_Audio, 0, "Programme0 End");
             if (!End.empty())
             {
                 auto TC_End_Time=TimeCode(End.To_UTF8());
-                Merge_FillTimeCode(In, "Programme0 End", TC_End_Time, FramesPerSecondF, DropFrame, true, SamplingRate);
+                Merge_FillTimeCode(In, "Programme0 End", TC_End_Time, FramesPerSecondF, DropFrame, TimeCode::Ceil, SamplingRate);
             }
-            Merge_FillTimeCode(In, "Dolby_Atmos_Metadata FirstFrameOfAction", TC, FramesPerSecondF, DropFrame, true, SamplingRate);
+            Merge_FillTimeCode(In, "Dolby_Atmos_Metadata FirstFrameOfAction", TC, FramesPerSecondF, DropFrame, TimeCode::Ceil, SamplingRate);
         }
     }
 
