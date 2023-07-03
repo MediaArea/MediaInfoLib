@@ -1542,17 +1542,17 @@ int32u File_Usac::arith_decode(int16u& low, int16u& high, int16u& value, const i
     int32u cm=((((int)(value32-low+1))<<14)-((int)1))/range;
     const int16u* p=cf-1;
 
-     do
-     {
-         const int16u* q=p+(cfl>>1);
-         if (*q>cm)
-         {
-             p=q;
-             cfl++;
-         }
-         cfl>>=1;
-     }
-     while (cfl>1);
+    do
+    {
+        const int16u* q=p+(cfl>>1);
+        if (*q>cm)
+        {
+            p=q;
+            cfl++;
+        }
+        cfl>>=1;
+    }
+    while (cfl>1);
 
     int32u symbol=(int32u)(p-cf+1);
     if (symbol)
@@ -4242,12 +4242,12 @@ void File_Usac::tnsData()
 
             if (num_windows==1)
             {
-                Skip_S1(6,                                       "lenght[w][filt]");
+                Skip_S1(6,                                       "length[w][filt]");
                 Get_S1 (4, order,                                "order[w][filt]");
             }
             else
             {
-                Skip_S1(4,                                       "lenght[w][filt]");
+                Skip_S1(4,                                       "length[w][filt]");
                 Get_S1 (3, order,                                "order[w][filt]");
             }
 
