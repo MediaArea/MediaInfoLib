@@ -3605,6 +3605,44 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                     Value.From_Number(Data);
                     }
                     break;
+        case 0x47 : // Blackmagic RAW - 32-bit Float Array
+                    {
+                        int64u ArrayTotalSize = Element_Size - Element_Offset;
+                        int64u ArrayElementCount = ArrayTotalSize / 4;
+                        ZtringList ValueList = ZtringList();
+                        ValueList.Separator_Set(0, ",");
+                        for (int64u ElementIndex = 0; ElementIndex < ArrayElementCount; ElementIndex++) {
+                            float32 Element;
+                            Get_BF4(Element, "Element");
+                            ValueList.push_back(Ztring().From_Number(Element));
+                        }
+                        Value = ValueList.Read();
+                        break;
+                    }
+        case 0x4C: // Blackmagic RAW - Signed Integer
+                    {
+                        switch (Element_Size - Element_Offset)
+                        {
+                        case 1: {int8u  ValueI; Get_B1(ValueI, "Value"); Value.From_Number((int8s)ValueI);}; break;
+                        case 2: {int16u ValueI; Get_B2(ValueI, "Value"); Value.From_Number((int16s)ValueI);}; break;
+                        case 4: {int32u ValueI; Get_B4(ValueI, "Value"); Value.From_Number((int32s)ValueI);}; break;
+                        case 8: {int64u ValueI; Get_B8(ValueI, "Value"); Value.From_Number((int64s)ValueI);}; break;
+                        default: Value = __T("Unknown kind of integer value!");
+                        }
+                    }
+                    break;
+        case 0x4D: // Blackmagic RAW - Unsigned Integer
+                    {
+                        switch (Element_Size - Element_Offset)
+                        {
+                        case 1: {int8u  ValueI; Get_B1(ValueI, "Value"); Value.From_Number(ValueI);}; break;
+                        case 2: {int16u ValueI; Get_B2(ValueI, "Value"); Value.From_Number(ValueI);}; break;
+                        case 4: {int32u ValueI; Get_B4(ValueI, "Value"); Value.From_Number(ValueI);}; break;
+                        case 8: {int64u ValueI; Get_B8(ValueI, "Value"); Value.From_Number(ValueI);}; break;
+                        default: Value = __T("Unknown kind of integer value!");
+                        }
+                    }
+        break;
         default: Value=__T("Unknown kind of value!");
    }
 
