@@ -5935,6 +5935,15 @@ void File_Usac::UsacExtElement(size_t elemIdx, bool usacIndependencyFlag)
             BS_Bookmark(B, usacExtElementType<ID_EXT_ELE_Max?string(usacExtElementType_Names[usacExtElementType]):("usacExtElementType"+to_string(usacExtElementType)));
         }
     }
+    else
+    {
+        #if MEDIAINFO_CONFORMANCE
+            if (usacIndependencyFlag && usacExtElementType == ID_EXT_ELE_AUDIOPREROLL && IsParsingRaw == 1 && roll_distance_FramePos_IsPresent && !*roll_distance_FramePos_IsPresent)
+            {
+                Fill_Conformance("Crosscheck sbgp roll_distance", "MP4 sbgp is not present and this is an independent frame (IF), seeking is not optimal", bitset8(), Info);
+            }
+        #endif
+    }
     Element_End0();
 }
 
