@@ -1705,7 +1705,17 @@ bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
         else
         {
             #if MEDIAINFO_CONFORMANCE
-                Fill_Conformance((ConformanceFieldName+" GeneralCompliance").c_str(), "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
+                bool IsZeroed=false;
+                if (BitsRemaining<=32) //TODO: more than 32 bits
+                {
+                    int32u Probe;
+                    Peek_S4(BitsRemaining, Probe);
+                    IsZeroed=!Probe;
+                }
+                if (IsZeroed)
+                    Fill_Conformance((ConformanceFieldName+" GeneralCompliance").c_str(), "Extra zero bytes after the end of the syntax was reached", bitset8(), Warning);
+                else
+                    Fill_Conformance((ConformanceFieldName+" GeneralCompliance").c_str(), "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
             #endif
             LastByte=1;
         }
@@ -2136,7 +2146,17 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
             else
             {
                 #if MEDIAINFO_CONFORMANCE
-                    Fill_Conformance("UsacConfig GeneralCompliance", "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
+                    bool IsZeroed=false;
+                    if (BitsRemaining<=32) //TODO: more than 32 bits
+                    {
+                        int32u Probe;
+                        Peek_S4(BitsRemaining, Probe);
+                        IsZeroed=!Probe;
+                    }
+                    if (IsZeroed)
+                        Fill_Conformance("UsacConfig GeneralCompliance", "Extra zero bytes after the end of the syntax was reached", bitset8(), Warning);
+                    else
+                        Fill_Conformance("UsacConfig GeneralCompliance", "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
                 #endif
                 LastByte=1;
             }
@@ -3693,7 +3713,17 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
             else
             {
                 #if MEDIAINFO_CONFORMANCE
-                    Fill_Conformance(IsParsingRaw > 1 ? "UsacFrame GeneralCompliance" : "UsacFrame GeneralCompliance", "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
+                    bool IsZeroed=false;
+                    if (BitsRemaining<=32) //TODO: more than 32 bits
+                    {
+                        int32u Probe;
+                        Peek_S4(BitsRemaining, Probe);
+                        IsZeroed=!Probe;
+                    }
+                    if (IsZeroed)
+                        Fill_Conformance("UsacFrame GeneralCompliance", "Extra zero bytes after the end of the syntax was reached", bitset8(), Warning);
+                    else
+                        Fill_Conformance("UsacFrame GeneralCompliance", "Extra bytes after the end of the syntax was reached", bitset8(), Warning);
                 #endif
                 LastByte=1;
             }
