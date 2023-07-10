@@ -38,6 +38,7 @@ using namespace std;
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_Dvdv.h"
+#include "MediaInfo/MediaInfo_Config.h"
 #include "MediaInfo/MediaInfo_Internal.h"
 //---------------------------------------------------------------------------
 
@@ -303,6 +304,45 @@ void File_Dvdv::Streams_Finish()
                         Fill((stream_t)StreamKind, StreamPos, "Source", VOB_File);
             }
         }
+    }
+
+    //Remove menus with short duration
+    #if MEDIAINFO_ADVANCED
+        auto Trigger=MediaInfoLib::Config.Collection_Trigger_Get();
+    #else
+        auto const Trigger=-2;
+    #endif
+    int64u MaxDuration;
+    if (Trigger>=0)
+        MaxDuration=(int64u)Trigger;
+    else
+    {
+        MaxDuration=0;
+        for (size_t Pos=0; Pos<Count_Get(Stream_Menu); Pos++)
+        {
+            int64u Duration=Retrieve_Const(Stream_Menu, Pos, Menu_Duration).To_int64u();
+            if (MaxDuration<Duration)
+                MaxDuration=Duration;
+        }
+        MaxDuration/=(int64u)(-Trigger);
+    }
+    for (size_t Pos=0; Pos<Count_Get(Stream_Menu);)
+    {
+        int64u Duration=Retrieve_Const(Stream_Menu, Pos, Menu_Duration).To_int64u();
+        if (Duration>=MaxDuration)
+            Pos++;
+        else
+            Stream_Erase(Stream_Menu, Pos);
+    }
+
+    //Fill stream duration
+    Ztring Duration=Retrieve_Const(Stream_Menu, 0, Menu_Duration);
+    for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+    {
+        if (StreamKind==Stream_Menu)
+            continue;
+        for (size_t Pos=0; Pos<Count_Get((stream_t)StreamKind); Pos++)
+            Fill((stream_t)StreamKind, Pos, Fill_Parameter((stream_t)StreamKind, Generic_Duration), Duration);
     }
 
     //Purge what is not needed anymore

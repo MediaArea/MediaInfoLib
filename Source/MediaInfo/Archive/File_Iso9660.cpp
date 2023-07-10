@@ -22,6 +22,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Archive/File_Iso9660.h"
+#include "MediaInfo/MediaInfo_Config.h"
 #include "MediaInfo/MediaInfo_Internal.h"
 //---------------------------------------------------------------------------
 
@@ -46,31 +47,71 @@ File_Iso9660::~File_Iso9660()
 //---------------------------------------------------------------------------
 void File_Iso9660::Streams_Accept()
 {
-    Fill(Stream_General, 0, General_Format, "ISO 9660");
+    Fill(Stream_General, 0, General_Format, HasTag?"ISO 13346":"ISO 9660");
 }
 
 //---------------------------------------------------------------------------
+typedef size_t sizes[Stream_Max];
+const char* FieldsToOffset[] =
+{
+    "Audio",
+    "Subtitles 4/3",
+    "Subtitles Wide",
+    "Subtitles Letterbox",
+    "Subtitles Pan&Scan",
+};
 void File_Iso9660::Streams_Finish()
 {
-    //Merge
+    //Merge master file data
     if (MI_MasterFiles.empty())
         return;
     MediaInfo_Internal* MI=MI_MasterFiles.begin()->second;
     Ztring FileSizeS=Retrieve_Const(Stream_General, 0, General_FileSize);
-    Merge(*(MI->Info));
     Merge(*(MI->Info), Stream_General, 0, 0);
     const Ztring &Format=Retrieve(Stream_General, 0, General_Format);
     Fill(Stream_General, 0, General_Format, __T("ISO 9660 / ")+Format, true);
     Fill(Stream_General, 0, General_FileSize, FileSizeS, true);
     Clear(Stream_General, 0, General_OverallBitRate);
+    auto MI_Offsets=new sizes[MI_MasterFiles.size()];
+    size_t i=0;
+    for (auto& MI_MasterFile : MI_MasterFiles)
+    {
+        for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+            MI_Offsets[i][StreamKind]=Count_Get((stream_t)StreamKind);
+        Merge(*MI_MasterFile.second->Info);
+        for (size_t Pos=MI_Offsets[i][Stream_Menu]; Pos<Count_Get(Stream_Menu); Pos++)
+            for (auto& Field : FieldsToOffset)
+            {
+                auto FielFullName=string("List (")+Field+')';
+                ZtringList List;
+                List.Separator_Set(0, __T(" / "));
+                List.Write(Retrieve_Const(Stream_Menu, Pos, FielFullName.c_str()));
+                for (auto& Item : List)
+                {
+                    auto Value=Item.To_int64u();
+                    auto Kind=Field[0]=='A'?Stream_Audio:Stream_Text;
+                    if (Value<MI_MasterFile.second->Count_Get(Kind))
+                        Item.From_Number(Value+MI_Offsets[i][Kind]);
+                    else
+                        Item.clear();
+                }
+                Fill(Stream_Menu, Pos, FielFullName.c_str(), List.Read(), true);
+            }
+        i++;
+    }
 
-    //Merge
-    if (MI_DataFiles.empty())
+    //Merge data files data
+    if (MI_DataFiles.size()!=MI_MasterFiles.size() || !MI_Offsets)
         return;
-    MI=MI_DataFiles.begin()->second;
-    for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
-        for (size_t Pos=0; Pos<Count_Get((stream_t)StreamKind); Pos++)
-            Merge(*(MI->Info), (stream_t)StreamKind, Pos, Pos);
+    i=0;
+    for (auto& MI_DataFile : MI_DataFiles)
+    {
+        for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+            for (size_t Pos=0; Pos<Count_Get((stream_t)StreamKind); Pos++)
+                Merge(*MI_DataFile.second->Info, (stream_t)StreamKind, Pos, MI_Offsets[i][StreamKind]+Pos);
+        i++;
+    }
+    delete[] MI_Offsets;
 }
 
 //***************************************************************************
@@ -90,13 +131,17 @@ void File_Iso9660::FileHeader_Parse()
     int64u Magic=CC8(Buffer+32768);
     switch (Magic)
     {
+        case 0x0042454130310100LL: //0x01+"BEA01"+0x0100 (ECMA-167 / ISO-13346, UDF)
+            HasTag=true;
+            break;
         case 0x0143443030310100LL: //0x01+"CD001"+0x0100 (ECMA-119 / ISO-9660, CDROM)
+            HasTag=false;
             break;
         default:
             Reject("ISO 9660");
             return;
     }
-    Skip_XX(0x8000,                                             "System area");
+    Skip_XX(HasTag?0x10000:0x8000,                              "System area");
 
     //All should be OK...
     Accept("ISO 9660");
@@ -126,6 +171,21 @@ void File_Iso9660::Header_Parse()
     }
 
     //Parsing
+    if (HasTag)
+    {
+        int16u Type;
+        Get_L2 (Type,                                           "Tag Identifier");
+        Skip_L2(                                                "Descriptor Version");
+        Skip_L1(                                                "Tag Checksum");
+        Skip_L1(                                                "Reserved");
+        Skip_L2(                                                "Tag Serial Number");
+        Skip_L2(                                                "Descriptor CRC");
+        Skip_L2(                                                "Descriptor CRC Length");
+        Skip_L4(                                                "Tag Location");
+        Header_Fill_Code(Type, Ztring().From_CC2(Type));
+        Header_Fill_Size(Logical_Block_Size);
+        return;
+    }
     int8u Type;
     Get_B1 (Type,                                               "Volume Descriptor Type");
     Skip_Local(5,                                               "Standard Identifier");
@@ -141,7 +201,7 @@ void File_Iso9660::Data_Parse()
 {
     switch (Element_Code)
     {
-        case 0x00000001 : Primary_Volume_Descriptor(); break;
+        case 0x00000001 : HasTag?Primary_Volume_Descriptor2():Primary_Volume_Descriptor(); break;
         case 0x80000000 : Directory(); break;
         case 0x80000001 : File(); break;
         default         : ForceFinish();
@@ -183,7 +243,8 @@ void File_Iso9660::Primary_Volume_Descriptor()
     Skip_Local(37,                                              "Bibliographic File Identifier");
     Skip_XX(17,                                                 "Volume Creation Date and Time");
 
-    Fill(Stream_General, 0, "Title", VolumeIdentifier);
+    VolumeIdentifier.Trim(__T(' '));
+    Fill(Stream_General, 0, General_Title, VolumeIdentifier);
 
     if (!NotParsed.empty())
     {
@@ -191,6 +252,47 @@ void File_Iso9660::Primary_Volume_Descriptor()
         GoTo(((int64u)*NotParsed.begin())*Logical_Block_Size);
         return;
     }
+
+    ForceFinish();
+}
+
+//---------------------------------------------------------------------------
+void File_Iso9660::Primary_Volume_Descriptor2()
+{
+    Element_Name("Primary Volume Descriptor");
+
+    //Parsing
+    Ztring VolumeIdentifier;
+    int32u Volume_Space_Size, Location_Of_Path_Table;
+    int8u VolumeIdentifier_Size;
+    Skip_L4(                                                    "Volume Descriptor Sequence Number");
+    Skip_L4(                                                    "Primary Volume Descriptor Number");
+    Get_B1 (VolumeIdentifier_Size,                              "Volume Identifier (Size)");
+    if (VolumeIdentifier_Size>31)
+        VolumeIdentifier_Size=31;
+    Get_Local (VolumeIdentifier_Size, VolumeIdentifier,         "Volume Identifier");
+    Skip_XX(31-VolumeIdentifier_Size,                           "Volume Identifier (Padding)");
+    Skip_L2(                                                    "Volume Sequence Number");
+    Skip_L2(                                                    "Maximum Volume Sequence Number");
+    Skip_L2(                                                    "Interchange Level");
+    Skip_L2(                                                    "Maximum Interchange Level");
+    Skip_L4(                                                    "Character Set List");
+    Skip_L4(                                                    "Maximum Character Set List");
+    Skip_Local(128,                                             "Volume Set Identifier");
+    Skip_Local(64,                                              "Descriptor Character Set");
+    Skip_Local(64,                                              "Explanatory Character Set");
+    Skip_B8(                                                    "Volume Abstract");
+    Skip_B8(                                                    "Volume Copyright Notice");
+    Skip_XX(32,                                                 "Application Identifier");
+    Skip_XX(12,                                                 "Recording Date and Time");
+    Skip_XX(32,                                                 "Implementation Identifier");
+    Skip_XX(64,                                                 "Implementation Use");
+    Skip_L4(                                                    "Predecessor Volume Descriptor Sequence Location");
+    Skip_L2(                                                    "Flags");
+    Skip_XX(22,                                                 "Reserved");
+
+    VolumeIdentifier.Trim(__T(' '));
+    Fill(Stream_General, 0, General_Title, VolumeIdentifier);
 
     ForceFinish();
 }
@@ -377,7 +479,7 @@ void File_Iso9660::Manage_Files()
     {
         std::swap(MI_DataFiles[MI_DataFileInfos.begin()->first], MI_Current);
         MI_DataFileInfos.erase(MI_DataFileInfos.begin());
-        if (Manage_File(MI_MasterFileInfos))
+        if (Manage_File(MI_DataFileInfos))
         {
             #if MEDIAINFO_TRACE
                 Trace_Activated=Trace_Activated_Save;
@@ -425,43 +527,60 @@ void File_Iso9660::Manage_DataFiles()
         Trace_Activated=false; //It is too big, disabling trace for now for full USAC parsing
     #endif //MEDIAINFO_TRACE
 
-    Ztring MI_FileName;
     if (MI_MasterFiles.size()>1)
     {
-        int64u MaxDuration=0;
-        MediaInfo_Internal* MI_MaxDuration=nullptr;
+        #if MEDIAINFO_ADVANCED
+            auto Trigger=MediaInfoLib::Config.Collection_Trigger_Get();
+        #else
+            auto const Trigger=-2;
+        #endif
+        int64u MaxDuration;
+        if (Trigger>=0)
+            MaxDuration=(int64u)Trigger;
+        else
+        {
+            MaxDuration=0;
+            for (const auto& MI_Item : MI_MasterFiles)
+            {
+                int64u Duration=MI_Item.second->Get(Stream_General, 0, General_Duration).To_int64u();
+                if (MaxDuration<Duration)
+                    MaxDuration=Duration;
+            }
+            if (!MaxDuration)
+            {
+                ForceFinish(); // Nothing else to do
+                return;
+            }
+            MaxDuration/=(int64u)(-Trigger);
+        }
+
+        decltype(MI_MasterFiles) MI_MasterFiles2;
         for (const auto& MI_Item : MI_MasterFiles)
         {
             int64u Duration=MI_Item.second->Get(Stream_General, 0, General_Duration).To_int64u();
-            if (MaxDuration<Duration)
-            {
-                MaxDuration=Duration;
-                MI_MaxDuration=MI_Item.second;
-                MI_FileName=MI_Item.first;
-            }
+            if (Duration>=MaxDuration)
+                MI_MasterFiles2[MI_Item.first]=MI_Item.second;
         }
-        if (!MaxDuration)
-        {
-            ForceFinish(); // Nothing else to do
-            return;
-        }
-        MI_MasterFiles.clear();
-        MI_MasterFiles[MI_FileName]=MI_MaxDuration;
+        MI_MasterFiles=std::move(MI_MasterFiles2);
     }
 
     //DVD Video
-    if (MI_FileName.size()>=5 && MI_FileName.find(__T("0.IFO"), MI_FileName.size()-5)!=string::npos && MI_FileName.rfind(Ztring(__T("VIDEO_TS"))+PathSeparator, 0)!=string::npos)
+    for (const auto& MI_Item : MI_MasterFiles)
     {
-        auto FileSize=MI_MasterFiles.begin()->second->Get(Stream_General, 0, General_FileSize);
-        MI_FileName.erase(0, 9);
-        MI_FileName.erase(MI_FileName.size()-5);
-        const auto& Root=Records[Root_Location];
-        for (auto& Level1 : Root)
-            if (Level1.Name==__T("VIDEO_TS") && Level1.Flags&0x2) // Directory
-                for (auto& Level2 : Records[Level1.Location])
-                    if (Level2.Name.size()>=4 && Level2.Name.rfind(MI_FileName, 0)!=string::npos && !(Level2.Flags & 0x2))
-                        if (Level2.Name==MI_FileName+__T("1.VOB"))
-                            MI_DataFileInfos[Level1.Name+PathSeparator+Level2.Name]=&Level2;
+        Ztring MI_FileName=MI_Item.first;
+        if (MI_FileName.size()>=5 && MI_FileName.find(__T("0.IFO"), MI_FileName.size()-5)!=string::npos && MI_FileName.rfind(Ztring(__T("VIDEO_TS"))+PathSeparator, 0)!=string::npos)
+        {
+            auto FileSize=MI_MasterFiles.begin()->second->Get(Stream_General, 0, General_FileSize);
+            MI_FileName.erase(0, 9);
+            MI_FileName.erase(MI_FileName.size()-5);
+            const auto& Root=Records[Root_Location];
+            for (auto& Level1 : Root)
+                if (Level1.Name==__T("VIDEO_TS") && Level1.Flags&0x2) // Directory
+                    for (auto& Level2 : Records[Level1.Location])
+                        if (Level2.Name.size()>=4 && Level2.Name.rfind(MI_FileName, 0)!=string::npos && !(Level2.Flags & 0x2))
+                            if (Level2.Name==MI_FileName+__T("1.VOB"))
+                                MI_DataFileInfos[Level1.Name+PathSeparator+Level2.Name]=&Level2;
+        }
     }
  
     if (Manage_File(MI_DataFileInfos))

@@ -34,6 +34,7 @@ public :
 
 private :
     //Streams management
+    void Streams_Accept();
     void Streams_Finish();
 
     //Buffer - File header
@@ -45,6 +46,7 @@ private :
 
     //Elements
     void Primary_Volume_Descriptor();
+    void Primary_Volume_Descriptor2();
     void Path_Table();
     void Directory();
     void File();
@@ -79,6 +81,7 @@ private :
     int64u MI_Current_StartOffset;
     int64u MI_Current_EndOffset;
     int32u Root_Location;
+    bool HasTag;
     #if MEDIAINFO_TRACE
         bool Trace_Activated_Save;
     #endif //MEDIAINFO_TRACE

@@ -482,6 +482,9 @@ void MediaInfo_Config::Init(bool Force)
     DecimalPoint=__T(".");
     ThousandsPoint=Ztring();
     CarriageReturnReplace=__T(" / ");
+    #if MEDIAINFO_ADVANCED
+        Collection_Trigger=-2;
+    #endif
     #if MEDIAINFO_EVENTS
         Event_CallBackFunction=NULL;
         Event_UserHandler=NULL;
@@ -1440,6 +1443,15 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     {
         CustomMapping_Set(Value);
         return Ztring();
+    }
+    if (Option_Lower==__T("collection_trigger"))
+    {
+        #if MEDIAINFO_ADVANCED
+            Collection_Trigger_Set(Value);
+            return Ztring();
+        #else // MEDIAINFO_ADVANCED
+            return __T("advanced features are disabled due to compilation options");
+        #endif // MEDIAINFO_ADVANCED
     }
     if (Option_Lower==__T("format_profile_split"))
     {
@@ -3474,6 +3486,33 @@ ZtringListList MediaInfo_Config::SubFile_Config_Get ()
 
     return SubFile_Config;
 }
+
+//***************************************************************************
+// Collections
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_ADVANCED
+void MediaInfo_Config::Collection_Trigger_Set(const Ztring& Value)
+{
+    int64s ValueI;
+    if (!Value.empty() && Value.back()==__T('x'))
+        ValueI=-Value.To_int64s();
+    else
+        ValueI=(int64s)(Value.To_float32()*1000);
+
+    CriticalSectionLocker CSL(CS);
+
+    Collection_Trigger=ValueI;
+}
+
+int64s MediaInfo_Config::Collection_Trigger_Get()
+{
+    CriticalSectionLocker CSL(CS);
+
+    return Collection_Trigger;
+}
+#endif // MEDIAINFO_ADVANCED
 
 //***************************************************************************
 // Custom mapping
