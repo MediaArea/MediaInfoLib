@@ -412,7 +412,7 @@ public :
         int8u                       baseChannelCount;
         int8u                       stereoConfigIndex;
         #if MEDIAINFO_CONFORMANCE
-        int8u                       drcRequired_Present;
+        int8u                       drcSetEffect;
         bool                        LoudnessInfoIsNotValid;
         #endif
         bool                        WaitForNextIndependantFrame;

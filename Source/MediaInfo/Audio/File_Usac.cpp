@@ -2848,17 +2848,17 @@ void File_Usac::uniDrcConfigExtension()
                     int8u drcInstructionsUniDrcV1Count;
                     Get_S1 (6, drcInstructionsUniDrcV1Count,    "drcInstructionsUniDrcV1Count");
                     #if MEDIAINFO_CONFORMANCE
-                        C.drcRequired_Present = 0;
+                        C.drcSetEffect = 0;
                     #endif
                     for (int8u i=0; i<drcInstructionsUniDrcV1Count; i++)
                         drcInstructionsUniDrc(true);
                     #if MEDIAINFO_CONFORMANCE
-                        if (C.drcRequired_Present != 0x27)
+                        if (C.drcSetEffect && (C.drcSetEffect & 0x27) != 0x27) // If one of the 8 first bits is set, bits (1 is LSB) 1, 2, 3, 6 must be set
                         {
                             string Value;
                             for (int8u i = 0; i < 6; i++)
                             {
-                                if (!(C.drcRequired_Present & (1 << i)))
+                                if (!(C.drcSetEffect & (1 << i)))
                                     Fill_Conformance("drcInstructions drcSetEffect", (string(drcSetEffect_List[i]) + " isn't in at least one DRC").c_str());
                                 if (i == 2)
                                     i += 2;
@@ -3177,7 +3177,7 @@ bool File_Usac::drcInstructionsUniDrc(bool V1, bool NoV0)
         downmixId=0; // 0 is default
     Get_S2 (16, drcSetEffect,                                   "drcSetEffect");
     #if MEDIAINFO_CONFORMANCE
-        C.drcRequired_Present |= (drcSetEffect & 0x27); //Bits (1 is LSB) 1, 2, 3, 6;
+        C.drcSetEffect |= (int8u)drcSetEffect; // We need only the 8 first bits
     #endif
     bool IsNOK=false;
     if ((drcSetEffect & (3<<10)) == 0)
