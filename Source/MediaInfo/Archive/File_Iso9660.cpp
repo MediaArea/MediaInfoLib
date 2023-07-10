@@ -79,6 +79,9 @@ void File_Iso9660::Streams_Finish()
         for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
             MI_Offsets[i][StreamKind]=Count_Get((stream_t)StreamKind);
         Merge(*MI_MasterFile.second->Info);
+        for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+            for (size_t Pos=MI_Offsets[i][StreamKind]; Pos<Count_Get((stream_t)StreamKind); Pos++)
+                Fill((stream_t)StreamKind, Pos, "Source", MI_MasterFile.first);
         for (size_t Pos=MI_Offsets[i][Stream_Menu]; Pos<Count_Get(Stream_Menu); Pos++)
             for (auto& Field : FieldsToOffset)
             {
@@ -218,7 +221,7 @@ void File_Iso9660::Primary_Volume_Descriptor()
     Element_Name("Primary Volume Descriptor");
 
     //Parsing
-    Ztring VolumeIdentifier;
+    Ztring VolumeIdentifier, ApplicationIdentifier;
     int32u Volume_Space_Size, Location_Of_Path_Table;
     Skip_Local(32,                                              "System Identifier");
     Get_Local (32, VolumeIdentifier,                            "Volume Identifier");
@@ -237,14 +240,16 @@ void File_Iso9660::Primary_Volume_Descriptor()
     Skip_Local(128,                                             "Volume Set Identifier");
     Skip_Local(128,                                             "Publisher Identifier");
     Skip_Local(128,                                             "Data Preparer Identifier");
-    Skip_Local(128,                                             "Application Identifier");
+    Get_Local (128, ApplicationIdentifier,                      "Application Identifier");
     Skip_Local(37,                                              "Copyright File Identifier");
     Skip_Local(37,                                              "Abstract File Identifier");
     Skip_Local(37,                                              "Bibliographic File Identifier");
     Skip_XX(17,                                                 "Volume Creation Date and Time");
 
     VolumeIdentifier.Trim(__T(' '));
+    ApplicationIdentifier.Trim(__T(' '));
     Fill(Stream_General, 0, General_Title, VolumeIdentifier);
+    Fill(Stream_General, 0, General_Encoded_Application, ApplicationIdentifier);
 
     if (!NotParsed.empty())
     {
@@ -558,7 +563,7 @@ void File_Iso9660::Manage_DataFiles()
         for (const auto& MI_Item : MI_MasterFiles)
         {
             int64u Duration=MI_Item.second->Get(Stream_General, 0, General_Duration).To_int64u();
-            if (Duration>=MaxDuration)
+            if (Duration && Duration>=MaxDuration)
                 MI_MasterFiles2[MI_Item.first]=MI_Item.second;
         }
         MI_MasterFiles=std::move(MI_MasterFiles2);
