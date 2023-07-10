@@ -321,6 +321,11 @@ public :
 
     ZtringListList  SubFile_Config_Get ();
 
+    #if MEDIAINFO_ADVANCED
+          void        Collection_Trigger_Set (const Ztring& Value);
+          int64s      Collection_Trigger_Get();
+    #endif //MEDIAINFO_ADVANCED
+
     void            CustomMapping_Set (const Ztring &Value);
     Ztring          CustomMapping_Get (const Ztring &Format, const Ztring &Field);
     bool            CustomMapping_IsPresent (const Ztring &Format, const Ztring &Field);
@@ -503,6 +508,10 @@ private :
     ZtringListList  Info[Stream_Max]; //General info
 
     ZtringListList  SubFile_Config;
+
+    #if MEDIAINFO_ADVANCED
+        int64s      Collection_Trigger;
+    #endif //MEDIAINFO_ADVANCED
 
     std::map<Ztring, std::map<Ztring, Ztring> > CustomMapping;
 
