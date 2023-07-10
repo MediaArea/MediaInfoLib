@@ -2119,91 +2119,8 @@ void Mpeg7_Transform_Text(Node* Parent, MediaInfo_Internal &MI, size_t StreamPos
 }
 
 //---------------------------------------------------------------------------
-Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
+void Mpeg7_Transform(Node* Node_MultimediaContent, MediaInfo_Internal& MI, size_t& Extended, size_t Menu_Pos=(size_t)-1)
 {
-    Ztring Value;
-
-    //Version upgrade if needed
-    size_t Video_Count=MI.Count_Get(Stream_Video);
-    size_t Audio_Count=MI.Count_Get(Stream_Audio);
-    size_t Text_Count=MI.Count_Get(Stream_Text);
-    size_t Extended=0;
-    switch (Version)
-    {
-        case Export_Mpeg7::Version_BestEffort_Extended:
-            if (MI.Get(Stream_Video, 0, Video_FrameRate_Mode)==__T("VFR")
-             || MI.Get(Stream_Video, 0, Video_Gop_OpenClosed).empty()
-             || !MI.Get(Stream_Video, 0, Video_Language).empty()
-             || (!Mpeg7_AudioPresentationCS_termID(MI, 0) && !MI.Get(Stream_Audio, 0, Audio_ChannelLayout).empty()))
-                Extended=1;
-            //fall through
-        case Export_Mpeg7::Version_BestEffort_Strict:
-            if (Video_Count>1
-             || Audio_Count>1
-             || Text_Count
-             || !MI.Get(Stream_Video, 0, Video_Encryption).empty()
-             || !MI.Get(Stream_Audio, 0, Audio_Encryption).empty()
-             || !MI.Get(Stream_General, 0, __T("IsTruncated")).empty())
-                Extended=1;
-    }
-
-    //ebuCoreMain
-    Node* Node_Mpeg7 = new Node("mpeg7:Mpeg7");
-    Node_Mpeg7->Add_Attribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
-    if (Extended)
-    {
-        Node_Mpeg7->Add_Attribute("xmlns", "urn:mpeg:mpeg7-extended:schema:2023");
-        Node_Mpeg7->Add_Attribute("xmlns:mpeg7", "urn:mpeg:mpeg7-extended:schema:2023");
-        Node_Mpeg7->Add_Attribute("xsi:schemaLocation", "urn:mpeg:mpeg7-extended:schema:2023 https://mediaarea.net/xsd/mpeg7-v2-extended.xsd");
-    }
-    else
-    {
-        Node_Mpeg7->Add_Attribute("xmlns", "urn:mpeg:mpeg7:schema:2004");
-        Node_Mpeg7->Add_Attribute("xmlns:mpeg7", "urn:mpeg:mpeg7:schema:2004");
-        Node_Mpeg7->Add_Attribute("xsi:schemaLocation", "urn:mpeg:mpeg7:schema:2004 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-7_schema_files/mpeg7-v2.xsd");
-    }
-
-    //Description - DescriptionMetadata
-    Node* Node_DescriptionMetadata=Node_Mpeg7->Add_Child("mpeg7:DescriptionMetadata");
-
-    Node_DescriptionMetadata->Add_Child_IfNotEmpty(MI, Stream_General, 0, "ISAN", "mpeg7:PublicIdentifier", "type", std::string("ISAN"));
-    Node_DescriptionMetadata->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_ISRC, "mpeg7:PublicIdentifier", "type", std::string("ISRC"));
-    Node_DescriptionMetadata->Add_Child_IfNotEmpty(MI, Stream_General, 0, "Producer_Reference", "mpeg7:PublicIdentifier", "type", std::string("OriginatorReference"));
-    Ztring UMID=MI.Get(Stream_General, 0, __T("UMID"));
-    if (!UMID.empty())
-    {
-        if (UMID.size()>1 && UMID[0]==__T('0') && UMID[1]==__T('x'))
-            UMID.erase(0, 2);
-        Node_DescriptionMetadata->Add_Child("mpeg7:PublicIdentifier", UMID, "type", std::string("UMID"));
-    }
-
-    Ztring FileName=MI.Get(Stream_General, 0, General_FileName);
-    Ztring Extension=MI.Get(Stream_General, 0, General_FileExtension);
-    if (!Extension.empty())
-        FileName+=__T('.')+Extension;
-    if (!FileName.empty())
-       Node_DescriptionMetadata->Add_Child("mpeg7:PrivateIdentifier", FileName);
-
-    //Current date/time is ISO format
-    time_t Time=time(NULL);
-    Ztring TimeS; TimeS.Date_From_Seconds_1970((int32u)Time);
-    if (!TimeS.empty())
-    {
-        TimeS.FindAndReplace(__T("UTC "), __T(""));
-        TimeS.FindAndReplace(__T(" "), __T("T"));
-        TimeS+=__T("+00:00");
-        Node_DescriptionMetadata->Add_Child("mpeg7:CreationTime", TimeS);
-    }
-
-    Node* Node_Instrument=Node_DescriptionMetadata->Add_Child("mpeg7:Instrument");
-    Node_Instrument->Add_Child("mpeg7:Tool")->Add_Child("mpeg7:Name", MediaInfoLib::Config.Info_Version_Get());
-
-    //Description - CreationDescription
-    Node* Node_Description=Node_Mpeg7->Add_Child("mpeg7:Description", "", "xsi:type", "ContentEntityType");
-
-    //MultimediaContent
-    Node* Node_MultimediaContent=Node_Description->Add_Child("mpeg7:MultimediaContent", std::string(""), "xsi:type", Ztring(Ztring(Mpeg7_Type(MI))+__T("Type")).To_UTF8());
-
     //(Type)
     Node* Node_Type=Node_MultimediaContent->Add_Child(Ztring(Ztring(__T("mpeg7:"))+Ztring(Mpeg7_Type(MI))).To_UTF8());
 
@@ -2253,6 +2170,9 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
     }
 
     //xxxCoding
+    size_t Video_Count=MI.Count_Get(Stream_Video);
+    size_t Audio_Count=MI.Count_Get(Stream_Audio);
+    size_t Text_Count=MI.Count_Get(Stream_Text);
     for (size_t Pos=0; Pos<Video_Count; Pos++)
         Mpeg7_Transform_Visual(Node_MediaFormat, MI, Pos, Extended);
     for (size_t Pos=0; Pos<Audio_Count; Pos++)
@@ -2332,14 +2252,14 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
             if (!MI.Get(Stream_General, 0, General_Part_Position).empty())
             {
                 Ztring Total=MI.Get(Stream_General, 0, General_Part_Position_Total);
-                Value=MI.Get(Stream_General, 0, General_Part_Position)+(Total.empty()?Ztring():(__T("/")+Total));
+                Ztring Value=MI.Get(Stream_General, 0, General_Part_Position)+(Total.empty()?Ztring():(__T("/")+Total));
 
                 Node_Creation->Add_Child("mpeg7:Title", Value, "type", std::string("urn:x-mpeg7-mediainfo:cs:TitleTypeCS:2009:PART"));
             }
             if (!MI.Get(Stream_General, 0, General_Track_Position).empty())
             {
                  Ztring Total=MI.Get(Stream_General, 0, General_Track_Position_Total);
-                 Value=MI.Get(Stream_General, 0, General_Track_Position)+(Total.empty()?Ztring():(__T("/")+Total));
+                 Ztring Value=MI.Get(Stream_General, 0, General_Track_Position)+(Total.empty()?Ztring():(__T("/")+Total));
 
                  Node_Creation->Add_Child("mpeg7:Title", Value, "type", std::string("urn:x-mpeg7-mediainfo:cs:TitleTypeCS:2009:TRACK"));
             }
@@ -2347,6 +2267,10 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
         }
         else
         {
+            Ztring FileName=MI.Get(Stream_General, 0, General_FileName);
+            Ztring Extension=MI.Get(Stream_General, 0, General_FileExtension);
+            if (!Extension.empty())
+                FileName+=__T('.')+Extension;
               Node_Creation->Add_Child("mpeg7:Title", FileName);
         }
 
@@ -2591,7 +2515,98 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
         if (!MediaDuration_Value.empty())
             Node_MediaTime->Add_Child("mpeg7:MediaDuration", MediaDuration_Value);
     }
+}
 
+//---------------------------------------------------------------------------
+Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
+{
+    Ztring Value;
+
+    //Version upgrade if needed
+    size_t Video_Count=MI.Count_Get(Stream_Video);
+    size_t Audio_Count=MI.Count_Get(Stream_Audio);
+    size_t Text_Count=MI.Count_Get(Stream_Text);
+    size_t Extended=0;
+    switch (Version)
+    {
+        case Export_Mpeg7::Version_BestEffort_Extended:
+            if (MI.Get(Stream_Video, 0, Video_FrameRate_Mode)==__T("VFR")
+             || MI.Get(Stream_Video, 0, Video_Gop_OpenClosed).empty()
+             || !MI.Get(Stream_Video, 0, Video_Language).empty()
+             || (!Mpeg7_AudioPresentationCS_termID(MI, 0) && !MI.Get(Stream_Audio, 0, Audio_ChannelLayout).empty()))
+                Extended=1;
+            //fall through
+        case Export_Mpeg7::Version_BestEffort_Strict:
+            if (Video_Count>1
+             || Audio_Count>1
+             || Text_Count
+             || !MI.Get(Stream_Video, 0, Video_Encryption).empty()
+             || !MI.Get(Stream_Audio, 0, Audio_Encryption).empty()
+             || !MI.Get(Stream_General, 0, __T("IsTruncated")).empty())
+                Extended=1;
+    }
+
+    //ebuCoreMain
+    Node* Node_Mpeg7 = new Node("mpeg7:Mpeg7");
+    Node_Mpeg7->Add_Attribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+    if (Extended)
+    {
+        Node_Mpeg7->Add_Attribute("xmlns", "urn:mpeg:mpeg7-extended:schema:2023");
+        Node_Mpeg7->Add_Attribute("xmlns:mpeg7", "urn:mpeg:mpeg7-extended:schema:2023");
+        Node_Mpeg7->Add_Attribute("xsi:schemaLocation", "urn:mpeg:mpeg7-extended:schema:2023 https://mediaarea.net/xsd/mpeg7-v2-extended.xsd");
+    }
+    else
+    {
+        Node_Mpeg7->Add_Attribute("xmlns", "urn:mpeg:mpeg7:schema:2004");
+        Node_Mpeg7->Add_Attribute("xmlns:mpeg7", "urn:mpeg:mpeg7:schema:2004");
+        Node_Mpeg7->Add_Attribute("xsi:schemaLocation", "urn:mpeg:mpeg7:schema:2004 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-7_schema_files/mpeg7-v2.xsd");
+    }
+
+    //Description - DescriptionMetadata
+    Node* Node_DescriptionMetadata=Node_Mpeg7->Add_Child("mpeg7:DescriptionMetadata");
+
+    Node_DescriptionMetadata->Add_Child_IfNotEmpty(MI, Stream_General, 0, "ISAN", "mpeg7:PublicIdentifier", "type", std::string("ISAN"));
+    Node_DescriptionMetadata->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_ISRC, "mpeg7:PublicIdentifier", "type", std::string("ISRC"));
+    Node_DescriptionMetadata->Add_Child_IfNotEmpty(MI, Stream_General, 0, "Producer_Reference", "mpeg7:PublicIdentifier", "type", std::string("OriginatorReference"));
+    Ztring UMID=MI.Get(Stream_General, 0, __T("UMID"));
+    if (!UMID.empty())
+    {
+        if (UMID.size()>1 && UMID[0]==__T('0') && UMID[1]==__T('x'))
+            UMID.erase(0, 2);
+        Node_DescriptionMetadata->Add_Child("mpeg7:PublicIdentifier", UMID, "type", std::string("UMID"));
+    }
+
+    Ztring FileName=MI.Get(Stream_General, 0, General_FileName);
+    Ztring Extension=MI.Get(Stream_General, 0, General_FileExtension);
+    if (!Extension.empty())
+        FileName+=__T('.')+Extension;
+    if (!FileName.empty())
+       Node_DescriptionMetadata->Add_Child("mpeg7:PrivateIdentifier", FileName);
+
+    //Current date/time is ISO format
+    time_t Time=time(NULL);
+    Ztring TimeS; TimeS.Date_From_Seconds_1970((int32u)Time);
+    if (!TimeS.empty())
+    {
+        TimeS.FindAndReplace(__T("UTC "), __T(""));
+        TimeS.FindAndReplace(__T(" "), __T("T"));
+        TimeS+=__T("+00:00");
+        Node_DescriptionMetadata->Add_Child("mpeg7:CreationTime", TimeS);
+    }
+
+    Node* Node_Instrument=Node_DescriptionMetadata->Add_Child("mpeg7:Instrument");
+    Node_Instrument->Add_Child("mpeg7:Tool")->Add_Child("mpeg7:Name", MediaInfoLib::Config.Info_Version_Get());
+
+    //Description - CreationDescription
+    Node* Node_Description=Node_Mpeg7->Add_Child("mpeg7:Description", "", "xsi:type", "ContentEntityType");
+
+    //MultimediaContent
+    Node* Node_MultimediaContent=Node_Description->Add_Child("mpeg7:MultimediaContent", std::string(""), "xsi:type", Ztring(Ztring(Mpeg7_Type(MI))+__T("Type")).To_UTF8());
+
+    //Main parsing
+    Mpeg7_Transform(Node_MultimediaContent, MI, Extended);
+
+    //Transform
     Ztring ToReturn=Ztring().From_UTF8(To_XML(*Node_Mpeg7, 0, true, true).c_str());
 
     //Find and replace
