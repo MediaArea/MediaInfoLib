@@ -137,11 +137,13 @@ protected :
     UHDFrameDescriptor FrameDescriptor;
     bool FullChannelBasedMixFlag;
     bool InteractObjLimitsPresent;
+    bool HasLoudness;
     bool SyncFrameFlag;
     int32u ChunkBytes;
     int ClockRateInHz;
     int32u FTOCPayloadinBytes;
     int FrameDuration;
+    int8u LongTermLoudnessIndex;
     int8u StreamMajorVerNum;
     int32u NumAudioPres;
     int SampleRate;

@@ -62,6 +62,19 @@ enum RepType {
     REP_TYPE_3D_MONO_OBJECT_SINGLE_SRC_PER_WF,
 };
 
+// Section 5.2.2.2: Long Term Loudness Measure Table
+static constexpr char const* LongTermLoudnessMeasure[] =
+{
+    "-40.00", "-39.00", "-38.00", "-37.00", "-36.00", "-35.00", "-34.00", "-33.00",
+    "-32.00", "-31.00", "-30.00", "-29.50", "-29.00", "-28.50", "-28.00", "-27.50",
+    "-27.00", "-26.75", "-26.50", "-26.25", "-26.00", "-25.75", "-25.50", "-25.25",
+    "-25.00", "-24.75", "-24.50", "-24.25", "-24.00", "-23.75", "-23.50", "-23.25",
+    "-23.00", "-22.75", "-22.50", "-22.25", "-22.00", "-21.75", "-21.50", "-21.25",
+    "-21.00", "-20.50", "-20.00", "-19.50", "-19.00", "-18.00", "-17.00", "-16.00",
+    "-15.00", "-14.00", "-13.00", "-12.00", "-11.00", "-10.00",  "-9.00",  "-8.00",
+     "-7.00",  "-6.00",  "-5.00",  "-4.00",  "-3.00",  "-2.00",  "-1.00",   "0.00",
+};
+
 static int CountBits(int32u Mask)
 {
     int Count=0;
@@ -553,7 +566,9 @@ int File_DtsUhd::ExtractMDChunkObjIDList(MD01* MD01)
 void File_DtsUhd::ExtractLTLMParamSet(MD01* MD01, bool NominalLD_DescriptionFlag)
 {
     Element_Begin1("ExtractLTLMParamSet");
-    Skip_S1(6,                                                  "LongTermLoudnessMeasureIndex"); /* rLoudness */
+    Get_S1 (6, LongTermLoudnessIndex,                           "LongTermLoudnessMeasureIndex"); /* rLoudness */
+    Param_Info2(LongTermLoudnessMeasure[LongTermLoudnessIndex], " LKFS");
+
     if (!NominalLD_DescriptionFlag)
         Skip_S1(5,                                              "AssociatedAssetType");
 
@@ -1348,6 +1363,7 @@ File_DtsUhd::File_DtsUhd()
     #if MEDIAINFO_TRACE
         Trace_Layers_Update(8); //Stream
     #endif //MEDIAINFO_TRACE
+    LongTermLoudnessIndex=(int8u)-1;
     MustSynchronize=true;
     Buffer_TotalBytes_FirstSynched_Max=32*1024;
     PTS_DTS_Needed=true;
@@ -1383,6 +1399,9 @@ void File_DtsUhd::Streams_Fill()
     Fill(Stream_Audio, 0, Audio_SamplesPerFrame, FrameDescriptor.SampleCount, 10, true);
     if (SampleRate)
         Fill(Stream_Audio, 0, Audio_SamplingRate, SampleRate);
+
+    if (LongTermLoudnessIndex<64)
+        Fill(Stream_Audio, 0, "Long Term Loudness", std::string(LongTermLoudnessMeasure[LongTermLoudnessIndex])+" LKFS");
 
     if (FrameDescriptor.ChannelMask)
     {
