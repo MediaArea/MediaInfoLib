@@ -948,7 +948,7 @@ size_t Reader_libcurl::SetOptions()
             return 1;
         }
     }
-    else
+    /*else
     {
         CURLcode res;
         char* cainfo = NULL;
@@ -956,8 +956,8 @@ size_t Reader_libcurl::SetOptions()
         CURLINFO CURLINFO_CAINFO = (CURLINFO)(CURLINFO_STRING + 61);
         curl_easy_getinfo(Curl_Data->Curl, CURLINFO_CAINFO, &cainfo);
         if (cainfo)
-            printf("default ca info path: %s\n", cainfo);
-    }
+            fprintf(stderr, "default ca info path: %s\n", cainfo);
+    }*/
 
     if (!Curl_Data->Ssl_CertificateRevocationListFileName.empty())
     {
