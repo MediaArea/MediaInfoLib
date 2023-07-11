@@ -16,6 +16,29 @@
 #include "MediaInfo/Setup.h"
 //---------------------------------------------------------------------------
 
+#if defined(MEDIAINFO_ISO9660_YES) || defined(MEDIAINFO_MPEG7_YES)
+
+namespace MediaInfoLib
+{
+
+//***************************************************************************
+// Infos
+//***************************************************************************
+
+const char* FieldsToOffset[] =
+{
+    "Audio",
+    "Subtitles 4/3",
+    "Subtitles Wide",
+    "Subtitles Letterbox",
+    "Subtitles Pan&Scan",
+};
+}
+
+//---------------------------------------------------------------------------
+#endif
+//---------------------------------------------------------------------------
+
 //---------------------------------------------------------------------------
 #if defined(MEDIAINFO_ISO9660_YES)
 //---------------------------------------------------------------------------
@@ -52,14 +75,6 @@ void File_Iso9660::Streams_Accept()
 
 //---------------------------------------------------------------------------
 typedef size_t sizes[Stream_Max];
-const char* FieldsToOffset[] =
-{
-    "Audio",
-    "Subtitles 4/3",
-    "Subtitles Wide",
-    "Subtitles Letterbox",
-    "Subtitles Pan&Scan",
-};
 void File_Iso9660::Streams_Finish()
 {
     //Merge master file data

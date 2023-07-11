@@ -42,6 +42,10 @@ extern MediaInfo_Config Config;
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+const size_t FieldsToOffset_Size=5;
+extern const char* FieldsToOffset[FieldsToOffset_Size];
+
+//---------------------------------------------------------------------------
 static Ztring Mpeg7_TimeToISO(Ztring Value)
 {
     if (Value.find(__T(" - ")) != string::npos)
@@ -2134,7 +2138,8 @@ void Mpeg7_Transform(Node* Node_MultimediaContent, MediaInfo_Internal& MI, size_
     Mpeg7_CS(Node_MediaFormat, "mpeg7:Content", "ContentCS", Mpeg7_ContentCS_termID, Mpeg7_ContentCS_Name, MI, 0, true, true);
 
     //FileFormat
-    Mpeg7_CS(Node_MediaFormat, "mpeg7:FileFormat", "FileFormatCS", Mpeg7_FileFormatCS_termID, Mpeg7_FileFormatCS_Name, MI, 0);
+    if (Menu_Pos==(size_t)-1)
+        Mpeg7_CS(Node_MediaFormat, "mpeg7:FileFormat", "FileFormatCS", Mpeg7_FileFormatCS_termID, Mpeg7_FileFormatCS_Name, MI, 0);
 
     //FileSize
     Node* FileSize=Node_MediaFormat->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_FileSize, "mpeg7:FileSize");
@@ -2169,16 +2174,51 @@ void Mpeg7_Transform(Node* Node_MultimediaContent, MediaInfo_Internal& MI, size_
             Node_BitRate->Add_Attribute("variable", "true");
     }
 
+    //Filter in case of collections
+    set<int64u> Set_Audio;
+    set<int64u> Set_Text;
+    if (Menu_Pos!=(size_t)-1)
+    {
+        for (auto& Field : FieldsToOffset)
+        {
+            auto FielFullName=string("List (")+Field+')';
+            ZtringList List;
+            List.Separator_Set(0, __T(" / "));
+            List.Write(MI.Get(Stream_Menu, Menu_Pos, Ztring().From_UTF8(FielFullName.c_str())));
+            for (auto& Item : List)
+            {
+                if (!Item.empty())
+                {
+                    auto Value=Item.To_int64u();
+                    auto& Set=Field[0]=='A'?Set_Audio:Set_Text;
+                    Set.insert(Value);
+                }
+            }
+        }
+    }
+
     //xxxCoding
     size_t Video_Count=MI.Count_Get(Stream_Video);
     size_t Audio_Count=MI.Count_Get(Stream_Audio);
     size_t Text_Count=MI.Count_Get(Stream_Text);
     for (size_t Pos=0; Pos<Video_Count; Pos++)
+    {
+        if (Menu_Pos!=(size_t)-1 && Pos!=Menu_Pos)
+            continue;
         Mpeg7_Transform_Visual(Node_MediaFormat, MI, Pos, Extended);
+    }
     for (size_t Pos=0; Pos<Audio_Count; Pos++)
+    {
+        if (Menu_Pos!=(size_t)-1 && Set_Audio.find(Pos)==Set_Audio.end())
+            continue;
         Mpeg7_Transform_Audio(Node_MediaFormat, MI, Pos, Extended);
+    }
     for (size_t Pos=0; Pos<Text_Count; Pos++)
+    {
+        if (Menu_Pos!=(size_t)-1 && Set_Text.find(Pos)==Set_Text.end())
+            continue;
         Mpeg7_Transform_Text(Node_MediaFormat, MI, Pos, Extended);
+    }
 
     //MediaTranscodingHints, intraFrameDistance and anchorFrameDistance
     if (!MI.Get(Stream_Video, 0, Video_Format_Settings_GOP).empty()
@@ -2245,9 +2285,46 @@ void Mpeg7_Transform(Node* Node_MultimediaContent, MediaInfo_Internal& MI, size_
          || !MI.Get(Stream_General, 0, General_Track_Position).empty()
          || !MI.Get(Stream_General, 0, General_Part).empty()
          || !MI.Get(Stream_General, 0, General_Part_Position).empty()
-         || !MI.Get(Stream_General, 0, General_Album).empty())
+         || !MI.Get(Stream_General, 0, General_Album).empty()
+         || Menu_Pos!=(size_t)-1)
         {
-            Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Movie, "mpeg7:Title", "type", std::string("main"));
+            if (Menu_Pos!=(size_t)-1)
+            {
+                auto Title=std::to_string(Menu_Pos+1);
+                if (Title.size()==1)
+                    Title.insert(0, 1, '0');
+                auto Source=MI.Get(Stream_Menu, Menu_Pos, __T("Source"));
+                auto Part=Source.SubString(__T("VTS_"), __T("_0.IFO"));
+                if (Part.size()==2 && Part[0]==__T('0'))
+                    Part.erase(0, 1);
+                Node_Creation->Add_Child("mpeg7:Title", "Title "+Title, "type", std::string("main"));
+                if (!Part.empty())
+                {
+                    size_t Menu_Count=MI.Count_Get(Stream_Menu);
+                    auto Source_Last=MI.Get(Stream_Menu, Menu_Count-1, __T("Source"));
+                    auto Part_Last=Source_Last.SubString(__T("VTS_"), __T("_0.IFO"));
+                    if (Part_Last.size()==2 && Part_Last[0]==__T('0'))
+                        Part_Last.erase(0, 1);
+                    if (!Part_Last.empty())
+                    {
+                        Part+=__T('/');
+                        Part+=Part_Last;
+                    }
+                    Node_Creation->Add_Child("mpeg7:Title", Part.To_UTF8(), "type", std::string("urn:x-mpeg7-mediainfo:cs:TitleTypeCS:2009:PART"));
+                    size_t Track=0;
+                    size_t Track_Total=0;
+                    for (size_t Pos=0; Pos<Menu_Count; Pos++)
+                        if (MI.Get(Stream_Menu, Pos, __T("Source"))==Source)
+                        {
+                            if (Pos<=Menu_Pos)
+                                Track++;
+                            Track_Total++;
+                        }
+                    Node_Creation->Add_Child("mpeg7:Title", std::to_string(Track)+'/'+std::to_string(Track_Total), "type", std::string("urn:x-mpeg7-mediainfo:cs:TitleTypeCS:2009:TRACK"));
+                }
+            }
+            else
+                Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Movie, "mpeg7:Title", "type", std::string("main"));
             Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Track, "mpeg7:Title", "type", std::string("songTitle"));
             if (!MI.Get(Stream_General, 0, General_Part_Position).empty())
             {
@@ -2374,19 +2451,19 @@ void Mpeg7_Transform(Node* Node_MultimediaContent, MediaInfo_Internal& MI, size_
             if (!TimePoint_Isvalid)
                 Node_Date->XmlCommentOut="Encoded date, invalid input";
         }
-        if (!MI.Get(Stream_General, 0, General_Producer).empty())
+        if (!MI.Get(Stream_General, 0, General_Producer).empty() && Menu_Pos==(size_t)-1)
         {
             Node* Node_Tool=Node_Creation->Add_Child("mpeg7:CreationTool")->Add_Child("mpeg7:Tool");
             Node_Tool->Add_Child("")->XmlCommentOut="Producer";
             Node_Tool->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Producer));
         }
-        if (!MI.Get(Stream_General, 0, General_Encoded_Application).empty())
+        if (!MI.Get(Stream_General, 0, General_Encoded_Application).empty() && Menu_Pos==(size_t)-1)
         {
             Node* Node_Tool=Node_Creation->Add_Child("mpeg7:CreationTool")->Add_Child("mpeg7:Tool");
             Node_Tool->Add_Child("")->XmlCommentOut="Writing application";
             Node_Tool->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Encoded_Application));
         }
-        else if (!MI.Get(Stream_General, 0, General_Encoded_Library).empty())
+        else if (!MI.Get(Stream_General, 0, General_Encoded_Library).empty() && Menu_Pos==(size_t)-1)
         {
             Node* Node_Tool=Node_Creation->Add_Child("mpeg7:CreationTool")->Add_Child("mpeg7:Tool");
             Node_Tool->Add_Child("")->XmlCommentOut="Writing library";
@@ -2456,6 +2533,8 @@ void Mpeg7_Transform(Node* Node_MultimediaContent, MediaInfo_Internal& MI, size_
         {
             for (size_t StreamPos=0; StreamPos<VideoLanguages.size(); StreamPos++)
             {
+                if (Menu_Pos!=(size_t)-1 && StreamPos!=Menu_Pos)
+                    continue;
                 const auto& Language=VideoLanguages[StreamPos];
                 if (Extended)
                 {
@@ -2470,6 +2549,8 @@ void Mpeg7_Transform(Node* Node_MultimediaContent, MediaInfo_Internal& MI, size_
         {
             for (size_t StreamPos=0; StreamPos< AudioLanguages.size(); StreamPos++)
             {
+                if (Menu_Pos!=(size_t)-1 && Set_Audio.find(StreamPos)==Set_Audio.end())
+                    continue;
                 const auto& Language=AudioLanguages[StreamPos];
                 if (!Extended && (VideoLanguages_HasContent || AudioLanguages.size()>1))
                     Node_Classification->Add_Child("")->XmlCommentOut="below is audio languages with same order as in MediaFormat";
@@ -2487,6 +2568,8 @@ void Mpeg7_Transform(Node* Node_MultimediaContent, MediaInfo_Internal& MI, size_
         {
             for (size_t StreamPos=0; StreamPos<TextLanguages.size(); StreamPos++)
             {
+                if (Menu_Pos!=(size_t)-1 && Set_Text.find(StreamPos)==Set_Text.end())
+                    continue;
                 const auto& Language=TextLanguages[StreamPos];
                 Node* Node_CaptionLanguage=Node_Classification->Add_Child("mpeg7:CaptionLanguage", Language);
                 if (!MI.Get(Stream_Text, StreamPos, Text_Forced).empty())
@@ -2601,10 +2684,40 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
     Node* Node_Description=Node_Mpeg7->Add_Child("mpeg7:Description", "", "xsi:type", "ContentEntityType");
 
     //MultimediaContent
-    Node* Node_MultimediaContent=Node_Description->Add_Child("mpeg7:MultimediaContent", std::string(""), "xsi:type", Ztring(Ztring(Mpeg7_Type(MI))+__T("Type")).To_UTF8());
+    Node* Node_MultimediaContent;
+    Node* Node_Type;
+    if (MI.Get(Stream_General, 0, General_Format).find(__T("DVD Video"))!=string::npos && MI.Count_Get(Stream_Menu)>1)
+    {
+        Node_MultimediaContent=Node_Description->Add_Child("mpeg7:MultimediaContent", std::string(), "xsi:type", "MultimediaCollectionType");
+        auto Node_Collection=Node_MultimediaContent->Add_Child("mpeg7:Collection", std::string(), "xsi:type", "ContentCollectionType");
+        auto Node_CreationInformation=Node_Collection->Add_Child("mpeg7:CreationInformation");
+        auto Node_Creation=Node_CreationInformation->Add_Child("mpeg7:Creation");
+        Node_Creation->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_Movie, "mpeg7:Title", "type", std::string("main"));
+        if (!MI.Get(Stream_General, 0, General_Encoded_Application).empty())
+        {
+            Node* Node_Tool=Node_Creation->Add_Child("mpeg7:CreationTool")->Add_Child("mpeg7:Tool");
+            Node_Tool->Add_Child("mpeg7:Name", MI.Get(Stream_General, 0, General_Encoded_Application));
+        }
+        auto Node_TextAnnotation=Node_Collection->Add_Child("mpeg7:TextAnnotation");
+        auto Node_KeywordAnnotation=Node_TextAnnotation->Add_Child("mpeg7:KeywordAnnotation");
+        Node_KeywordAnnotation->Add_Child("mpeg7:Keyword", MI.Get(Stream_General, 0, General_Format), "type", "main");
 
-    //Main parsing
-    Mpeg7_Transform(Node_MultimediaContent, MI, Extended);
+        //Main parsing
+        size_t Menu_Count=MI.Count_Get(Stream_Menu);
+        for (size_t Menu_Pos=0; Menu_Pos<Menu_Count; Menu_Pos++)
+        {
+            auto Node_Collection_Content=Node_Collection->Add_Child("mpeg7:Content", std::string(), "xsi:type", Ztring(Ztring(Mpeg7_Type(MI))+__T("Type")).To_UTF8());
+            Node_Collection_Content->Add_Attribute("id", "content"+to_string(1+Menu_Pos));
+            Mpeg7_Transform(Node_Collection_Content, MI, Extended, Menu_Pos);
+        }
+    }
+    else
+    {
+        Node_MultimediaContent=Node_Description->Add_Child("mpeg7:MultimediaContent", std::string(), "xsi:type", Ztring(Ztring(Mpeg7_Type(MI))+__T("Type")).To_UTF8());
+
+        //Main parsing
+        Mpeg7_Transform(Node_MultimediaContent, MI, Extended);
+    }
 
     //Transform
     Ztring ToReturn=Ztring().From_UTF8(To_XML(*Node_Mpeg7, 0, true, true).c_str());
