@@ -976,6 +976,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "LinkedTo_TrackFormat_Pos;Track format #s\n"
     "LinkedTo_TrackUID_Pos;Track UID #s\n"
     "List;List\n"
+    "LongTermLoudness;Long term loudness\n"
     "LoRoCenterMixGain;LoRo center mix gain\n"
     "LoRoSurroundMixGain;LoRo surround mix gain\n"
     "Loudness_Anchor;Anchor loudness\n"
