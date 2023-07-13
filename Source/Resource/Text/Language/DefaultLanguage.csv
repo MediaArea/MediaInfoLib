@@ -947,6 +947,7 @@ LinkedTo_Substream_Pos;Substream #s
 LinkedTo_TrackFormat_Pos;Track format #s
 LinkedTo_TrackUID_Pos;Track UID #s
 List;List
+LongTermLoudness;Long term loudness
 LoRoCenterMixGain;LoRo center mix gain
 LoRoSurroundMixGain;LoRo surround mix gain
 Loudness_Anchor;Anchor loudness

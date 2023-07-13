@@ -81,7 +81,7 @@ DSF;;;A;Dsf;Direct Stream Digital Stream File;dsf;;;
 DST;;;A;;Direct Stream Transfer;;;;Lossless
 DTS;;;A;Dts;Digital Theater Systems;dts dtshd dtshdma;;https://en.wikipedia.org/wiki/DTS_(sound_system);
 DTS-HD;;;A;Dts;Digital Theater Systems;dts dtshd dtshdma;;;Lossy
-DTS-UHD;;;A;Dts;;;;;
+DTS-UHD;;;A;Dts;;dtsx;;;
 E-AC-3;;;A;Ac3;Enhanced AC-3;dd+ ec3 eac3;audio/eac3;https://en.wikipedia.org/wiki/Dolby_Digital_Plus;Lossy
 Extended Module;;;A;ExtendedModule;;xm;;;
 FLAC;;;A;Flac;Free Lossless Audio Codec;fla flac;audio/x-flac;https://xiph.org/flac/;Lossless

@@ -267,6 +267,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Aptx100.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Au.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dts.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_DtsUhd.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ExtendedModule.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Flac.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ImpulseTracker.cpp" />
@@ -607,6 +608,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Aptx100.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Au.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dts.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_DtsUhd.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ExtendedModule.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Flac.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ImpulseTracker.h" />

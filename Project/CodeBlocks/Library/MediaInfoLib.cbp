@@ -60,6 +60,8 @@
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Au.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Dts.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Dts.h" />
+		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_DtsUhd.cpp" />
+		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_DtsUhd.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Flac.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Flac.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Audio\File_Latm.cpp" />
