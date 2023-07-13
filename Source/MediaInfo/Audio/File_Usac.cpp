@@ -1946,7 +1946,7 @@ void File_Usac::Streams_Finish_Conformance()
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
-void File_Usac::numPreRollFrames_Check(usac_config& CurrentConf, int32u numPreRollFrames, const string numPreRollFramesConchString)
+void File_Usac::numPreRollFrames_Check(usac_config& CurrentConf, int32u numPreRollFrames, const string& numPreRollFramesConchString)
 {
     string FieldName = numPreRollFramesConchString.substr(numPreRollFramesConchString.rfind(' ') + 1);
     int numPreRollFrames_Max;
