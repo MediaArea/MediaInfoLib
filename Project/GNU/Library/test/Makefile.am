@@ -2,6 +2,8 @@ AUTOMAKE_OPTIONS = foreign subdir-objects
 
 AM_TESTS_FD_REDIRECT = 9>&2
 
+AM_CXXFLAGS = -std=c++11
+
 TESTS = \
     trace.sh \
     s3.sh \
