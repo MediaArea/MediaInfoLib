@@ -1532,7 +1532,7 @@ size_t Reader_libcurl::Format_Test_PerParser_Seek (MediaInfo_Internal* MI, size_
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-bool Reader_libcurl::Load(const Ztring File_Name)
+bool Reader_libcurl::Load(const Ztring &File_Name)
 {
     #if defined MEDIAINFO_LIBCURL_DLL_RUNTIME
         if (libcurl_Module_Count==0)

@@ -2128,7 +2128,7 @@ void File_Mpeg4::mdat_xxxx()
                         if (mdat_Pos_Item->StreamID!=(int32u)Element_Code)
                             mdat_Pos_New.push_back(*mdat_Pos_Item);
                 }
-                mdat_Pos=move(mdat_Pos_New);
+                mdat_Pos=std::move(mdat_Pos_New);
                 std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
                 if (mdat_Pos.empty())
                 {

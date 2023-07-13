@@ -1910,7 +1910,7 @@ set<Ztring> MediaInfo_Config::ParseOnlyKnownExtensions_GetList_Set()
     if (DefaultList)
     {
         InfoMap &FormatList=MediaInfoLib::Config.Format_Get();
-        for (InfoMap::iterator Format=FormatList.begin(); Format!=FormatList.end(); Format++)
+        for (InfoMap::iterator Format=FormatList.begin(); Format!=FormatList.end(); ++Format)
             if (InfoFormat_Extensions<Format->second.size())
             {
                 if (!StreamKinds.empty() && Format->second[InfoFormat_KindofFormat].find_first_of(StreamKinds)==string::npos)
@@ -1932,7 +1932,7 @@ Ztring MediaInfo_Config::ParseOnlyKnownExtensions_GetList_String()
 {
     set<Ztring> Extensions=ParseOnlyKnownExtensions_GetList_Set();
     Ztring List;
-    for (set<Ztring>::iterator Extension=Extensions.begin(); Extension!=Extensions.end(); Extension++)
+    for (set<Ztring>::iterator Extension=Extensions.begin(); Extension!=Extensions.end(); ++Extension)
     {
         List+=*Extension;
         List+=__T(',');
@@ -2964,7 +2964,7 @@ const Ztring MediaInfo_Config::Iso639_Find (const Ztring &Value)
 }
 
 //---------------------------------------------------------------------------
-const Ztring MediaInfo_Config::Iso639_Translate (const Ztring Value)
+const Ztring MediaInfo_Config::Iso639_Translate (const Ztring &Value)
 {
     Ztring Code(Value);
     if (Code.size()==3 && !MediaInfoLib::Config.Iso639_1_Get(Code).empty())
