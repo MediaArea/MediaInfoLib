@@ -3197,19 +3197,14 @@ void File_Hevc::sei_time_code()
         {
             int16u n_frames;
             int8u counting_type, seconds_value, minutes_value, hours_value, time_offset_length;
-            bool units_field_based_flag, full_timestamp_flag, discontinuity_flag, cnt_dropped_flag, seconds_flag, minutes_flag, hours_flag;
+            bool units_field_based_flag, full_timestamp_flag, cnt_dropped_flag, seconds_flag, minutes_flag, hours_flag;
             Get_SB (units_field_based_flag,                     "units_field_based_flag");
             Get_S1 (5, counting_type,                           "counting_type");
             Get_SB (full_timestamp_flag,                        "full_timestamp_flag");
-            Get_SB (discontinuity_flag,                         "discontinuity_flag");
+            Skip_SB(                                            "discontinuity_flag");
             Get_SB (cnt_dropped_flag,                           "cnt_dropped_flag");
             Get_S2 (9, n_frames,                                "n_frames");
-            if (full_timestamp_flag)
-            {
-                seconds_flag=true;
-                minutes_flag=true;
-                hours_flag=true;
-            }
+            seconds_flag=minutes_flag=hours_flag=full_timestamp_flag;
             if (!full_timestamp_flag)
                 Get_SB (seconds_flag,                           "seconds_flag");
             if (seconds_flag)
@@ -3228,8 +3223,9 @@ void File_Hevc::sei_time_code()
             FILLING_BEGIN();
                 if (!i && seconds_flag && minutes_flag && hours_flag && !Frame_Count)
                 {
-                    TimeCode TC(hours_value, minutes_value, seconds_value, n_frames, 99, TimeCode::DropFrame(counting_type==4));
+                    TimeCode TC(hours_value, minutes_value, seconds_value, n_frames, -1, TimeCode::DropFrame(cnt_dropped_flag));
                     Fill(Stream_Video, 0, Video_TimeCode_FirstFrame, TC.ToString(), true, true);
+                    Element_Info1(TC.ToString());
                 }
             FILLING_END();
         }
