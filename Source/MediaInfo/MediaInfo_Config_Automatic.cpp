@@ -1740,6 +1740,7 @@ void MediaInfo_Config_CodecID_Video_Mpeg4 (InfoMap &Info)
     "brvm;Blackmagic RAW;;;https://www.blackmagicdesign.com/products/blackmagicraw;VM\n"
     "brhq;Blackmagic RAW;;;https://www.blackmagicdesign.com/products/blackmagicraw;HQ\n"
     "brvl;Blackmagic RAW;;;https://www.blackmagicdesign.com/products/blackmagicraw;VL\n"
+    "brvn;Blackmagic RAW;;;https://www.blackmagicdesign.com/products/blackmagicraw;VN\n"
     "CFHD;CineForm;;CineForm High-Definition (HD) wavelet codec;http://www.cineform.com/\n"
     "CHQX;Canopus HQX\n"
     "CLLC;Canopus Lossless\n"
