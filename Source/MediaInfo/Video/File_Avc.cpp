@@ -3271,7 +3271,11 @@ void File_Avc::sei_message_user_data_registered_itu_t_t35_GA94_03_Delayed(int32u
             TemporalReferences_Min_New--;
         TemporalReferences_Min=TemporalReferences_Min_New;
         while (TemporalReferences[TemporalReferences_Min]==NULL)
+        {
             TemporalReferences_Min++;
+            if (TemporalReferences_Min>=TemporalReferences.size())
+                return;
+        }
     }
 
     // Parsing captions
