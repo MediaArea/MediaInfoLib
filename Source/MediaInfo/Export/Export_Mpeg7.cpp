@@ -2159,19 +2159,24 @@ void Mpeg7_Transform(Node* Node_MultimediaContent, MediaInfo_Internal& MI, size_
     if (!BitRate.empty())
     {
         Node* Node_BitRate=Node_MediaFormat->Add_Child("mpeg7:BitRate", BitRate);
-        bool IsVBR=false;
-        for (size_t StreamKind=Stream_Video; StreamKind<=Stream_Audio; StreamKind++)
-            for (size_t StreamPos=0; StreamPos<MI.Count_Get((stream_t)StreamKind); StreamPos++)
-            {
-                Ztring BitRate_Mode=MI.Get((stream_t)StreamKind, StreamPos, __T("BitRate_Mode"));
-                if (BitRate_Mode==__T("VBR"))
+        Ztring BitRate_Mode=MI.Get(Stream_General, 0, General_OverallBitRate_Mode);
+        bool IsCBR=BitRate_Mode==__T("CBR");
+        bool IsVBR=BitRate_Mode==__T("VBR");
+        if (!IsCBR && !IsVBR)
+        {
+            IsCBR=true;
+            for (size_t StreamKind=Stream_Video; StreamKind<=Stream_Audio; StreamKind++)
+                for (size_t StreamPos=0; StreamPos<MI.Count_Get((stream_t)StreamKind); StreamPos++)
                 {
-                    IsVBR=true;
-                    break;
+                    BitRate_Mode=MI.Get((stream_t)StreamKind, StreamPos, __T("BitRate_Mode"));
+                    if (BitRate_Mode!=__T("CBR"))
+                        IsCBR=false;
+                    if (BitRate_Mode==__T("VBR"))
+                        IsVBR=true;
                 }
-            }
-        if (IsVBR)
-            Node_BitRate->Add_Attribute("variable", "true");
+        }
+        if (IsCBR || IsVBR)
+            Node_BitRate->Add_Attribute("variable", IsVBR?"true":"false");
     }
 
     //Filter in case of collections
