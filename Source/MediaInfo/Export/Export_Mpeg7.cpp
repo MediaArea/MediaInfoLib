@@ -2619,7 +2619,7 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
     {
         case Export_Mpeg7::Version_BestEffort_Extended:
             if (MI.Get(Stream_Video, 0, Video_FrameRate_Mode)==__T("VFR")
-             || MI.Get(Stream_Video, 0, Video_Gop_OpenClosed).empty()
+             || !MI.Get(Stream_Video, 0, Video_Gop_OpenClosed).empty()
              || !MI.Get(Stream_Video, 0, Video_Language).empty()
              || (!Mpeg7_AudioPresentationCS_termID(MI, 0) && !MI.Get(Stream_Audio, 0, Audio_ChannelLayout).empty()))
                 Extended=1;
