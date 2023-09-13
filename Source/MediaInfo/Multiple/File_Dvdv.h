@@ -71,6 +71,13 @@ private :
     //std::vector<size_t>                 Sectors;
     //std::vector<std::vector<size_t> >   Sectors_Times;
     //std::vector<int8u>                  Sectors_Times_SecondsPerTime;
+    struct title
+    {
+        size_t Pos;
+        int32u Sector_Out;
+        int64u Duration;
+    };
+    std::map<int32u, title> Titles; // Key is Sector_In
 
     enum sector
     {
@@ -99,7 +106,7 @@ private :
     size_t Time_Pos;
     void Get_Duration(int64u  &Duration, const Ztring &Name);
     Ztring Time_String; //Value from Time_*()
-    void PGC(int64u Offset, bool Title=false);
+    void PGC(bool Title=false);
 };
 
 //***************************************************************************
