@@ -2780,7 +2780,8 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
     //MultimediaContent
     Node* Node_MultimediaContent;
     Node* Node_Type;
-    if (MI.Get(Stream_General, 0, General_Format).find(__T("DVD Video"))!=string::npos && MI.Count_Get(Stream_Menu)>1)
+    auto Collection_Display=Config.Collection_Display_Get();
+    if (Collection_Display>=display_if::Always || (Collection_Display>display_if::Never && MI.Get(Stream_General, 0, General_Format).find(__T("DVD Video"))!=string::npos && (Collection_Display>=display_if::Supported || MI.Count_Get(Stream_Menu)>1)))
     {
         Node_MultimediaContent=Node_Description->Add_Child("mpeg7:MultimediaContent", std::string(), "xsi:type", "MultimediaCollectionType");
         auto Node_Collection=Node_MultimediaContent->Add_Child("mpeg7:Collection", std::string(), "xsi:type", "ContentCollectionType");
