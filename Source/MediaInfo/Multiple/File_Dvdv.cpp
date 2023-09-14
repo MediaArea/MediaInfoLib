@@ -290,19 +290,17 @@ void File_Dvdv::Streams_Finish()
         MediaInfo_Internal MI;
         MI.Option(__T("File_IsReferenced"), __T("1"));
         if (MI.Open(VOB_File))
-        {
             Merge(MI);
-            auto SeparatorPos=VOB_File.find_last_of(__T("/\\"));
-            if (SeparatorPos!=string::npos)
-            {
-                auto FileSize=Retrieve_Const(Stream_General, 0, General_FileSize).To_int64u();
-                FileSize+=MI.Get(Stream_General, 0, General_FileSize).To_int64u();
-                Fill(Stream_General, 0, General_FileSize, FileSize, 10, true);
-                VOB_File.erase(0, SeparatorPos+1);
-                for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
-                    for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
-                        Fill((stream_t)StreamKind, StreamPos, "Source", VOB_File);
-            }
+        auto SeparatorPos=VOB_File.find_last_of(__T("/\\"));
+        if (SeparatorPos!=string::npos)
+        {
+            auto FileSize=Retrieve_Const(Stream_General, 0, General_FileSize).To_int64u();
+            FileSize+=MI.Get(Stream_General, 0, General_FileSize).To_int64u();
+            Fill(Stream_General, 0, General_FileSize, FileSize, 10, true);
+            VOB_File.erase(0, SeparatorPos+1);
+            for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+                for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
+                    Fill((stream_t)StreamKind, StreamPos, "Source", VOB_File);
         }
     }
 
@@ -336,13 +334,29 @@ void File_Dvdv::Streams_Finish()
     }
 
     //Fill stream duration
-    Ztring Duration=Retrieve_Const(Stream_Menu, 0, Menu_Duration);
+    map<Ztring, int64u> Durations;
+    auto Menu_Count=Count_Get(Stream_Menu);
+    for (size_t Pos=0; Pos<Menu_Count; Pos++)
+        Durations[Retrieve_Const(Stream_Menu, 0, "Source")]+=Retrieve_Const(Stream_Menu, 0, Menu_Duration).To_int64u();
     for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
     {
         if (StreamKind==Stream_Menu)
             continue;
-        for (size_t Pos=0; Pos<Count_Get((stream_t)StreamKind); Pos++)
-            Fill((stream_t)StreamKind, Pos, Fill_Parameter((stream_t)StreamKind, Generic_Duration), Duration);
+        auto Count=Count_Get((stream_t)StreamKind);
+        for (size_t Pos=0; Pos<Count; Pos++)
+            Fill((stream_t)StreamKind, Pos, Fill_Parameter((stream_t)StreamKind, Generic_Duration), Durations[Retrieve_Const((stream_t)StreamKind, Pos, "Source")], 10, true);
+    }
+    int64u Duration_Total=0;
+    for (const auto& Duration : Durations)
+        Duration_Total+=Duration.second;
+    Fill(Stream_General, 0, General_Duration, Duration_Total, 10, true);
+
+    //Duration offsets
+    Duration_Total=0;
+    for (const auto& Title : Titles)
+    {
+        Fill(Stream_Menu, Title.second.Pos, Menu_Delay, Duration_Total, 10, true);
+        Duration_Total+=Title.second.Duration;
     }
 
     //Purge what is not needed anymore
@@ -943,7 +957,7 @@ void File_Dvdv::VTS_PGCI ()
     //DETAILLEVEL_SET(1.0);
     while (Element_Offset<=EndAddress)
     {
-        PGC(Offset, true);
+        PGC(true);
     }
 }
 
@@ -1006,7 +1020,7 @@ void File_Dvdv::VTSM_PGCI_UT ()
                 Skip_XX(Offset-16,                              "Unknown");
         Element_End0();
         for (int16u PGC_Pos=0; PGC_Pos<PGC_Count; PGC_Pos++)
-            PGC(Element_Offset);
+            PGC();
 
         Element_End0();
     }
@@ -1240,7 +1254,7 @@ void File_Dvdv::Get_Duration(int64u  &Duration, const Ztring &Name)
 }
 
 
-void File_Dvdv::PGC(int64u Offset, bool Title)
+void File_Dvdv::PGC(bool Title)
 {
         vector<int8u> Stream_Control_Audio;
         vector<int8u> Stream_Control_SubPicture_43;
@@ -1251,6 +1265,7 @@ void File_Dvdv::PGC(int64u Offset, bool Title)
         vector<int8u> ProgramMap;
 
         //VTS_PGC
+        int64u Offset = Element_Offset;
         Element_Begin1("PGC");
         int16u commands, program_map, cell_playback, cell_position;
         int8u Program_Count;
@@ -1474,6 +1489,7 @@ void File_Dvdv::PGC(int64u Offset, bool Title)
         }
 
         //cell playback
+        int32u FirstFirst, Last=0;
         if (cell_playback>0)
         {
             if (Element_Offset<Offset+cell_playback)
@@ -1482,16 +1498,18 @@ void File_Dvdv::PGC(int64u Offset, bool Title)
             for (int8u Pos=0; Pos<Cells; Pos++)
             {
                 int64u CellDuration;
+                int32u First;
                 Element_Begin1("cell");
                 Skip_XX(4,                                      "ToDo");
                 Get_Duration(CellDuration,                      "Time");
-                Skip_B4(                                        "first VOBU start sector");
+                Get_B4 (First,                                  "first VOBU start sector");
+                if (!Pos)
+                    FirstFirst=First;
                 Skip_B4(                                        "first ILVU end sector");
                 Skip_B4(                                        "last VOBU start sector");
-                Skip_B4(                                        "last VOBU end sector");
+                Get_B4 (Last,                                   "last VOBU end sector");
                 Element_Info1(Ztring::ToZtring(Pos)); Element_Info1(Ztring::ToZtring(CellDuration));
                 Element_End0();
-
                 CellDurations.push_back(CellDuration);
             }
             Element_End0();
@@ -1520,6 +1538,8 @@ void File_Dvdv::PGC(int64u Offset, bool Title)
             if (Title)
             {
                 Stream_Prepare(Stream_Menu);
+                if (Title && Last)
+                    Titles[FirstFirst]={ StreamPos_Last, Last, TotalDuration };
 
                 int64u ProgramTotalDuration=0;
                 Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_Begin, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
