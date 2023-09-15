@@ -1385,7 +1385,7 @@ Ztring Mpeg7_TextualCodingFormatCS_Name(int32u termID, MediaInfo_Internal& MI, s
 //---------------------------------------------------------------------------
 Ztring Mpeg7_MediaTimePoint(MediaInfo_Internal &MI, size_t Menu_Pos=(size_t)-1)
 {
-    if (MI.Count_Get(Stream_Video)==1 && MI.Get(Stream_General, 0, General_Format)==__T("MPEG-PS"))
+    if (Menu_Pos==(size_t)-1 && MI.Count_Get(Stream_Video)==1 && MI.Get(Stream_General, 0, General_Format)==__T("MPEG-PS"))
     {
         auto Value=MI.Get(Stream_Video, 0, Video_Delay);
         if (Value.empty())
@@ -1412,7 +1412,7 @@ Ztring Mpeg7_MediaTimePoint(MediaInfo_Internal &MI, size_t Menu_Pos=(size_t)-1)
         return ToReturn;
     }
 
-    if (MI.Count_Get(Stream_Audio)==1 && MI.Get(Stream_General, 0, General_Format)==__T("Wave"))
+    if (Menu_Pos==(size_t)-1 && MI.Count_Get(Stream_Audio)==1 && MI.Get(Stream_General, 0, General_Format)==__T("Wave"))
     {
         int64u Rate=MI.Get(Stream_Audio, 0, Audio_SamplingRate).To_int64u();
         if (!Rate)
@@ -1472,9 +1472,9 @@ Ztring Mpeg7_MediaTimePoint(MediaInfo_Internal &MI, size_t Menu_Pos=(size_t)-1)
 }
 
 //---------------------------------------------------------------------------
-Ztring Mpeg7_MediaDuration(MediaInfo_Internal &MI)
+Ztring Mpeg7_MediaDuration(MediaInfo_Internal &MI, size_t Menu_Pos=(size_t)-1)
 {
-    if (MI.Count_Get(Stream_Video)==1)
+    if (Menu_Pos==(size_t)-1 && MI.Count_Get(Stream_Video)==1)
     {
         auto Value=MI.Get(Stream_Video, 0, Video_FrameCount);
         if (Value.empty())
@@ -1504,7 +1504,7 @@ Ztring Mpeg7_MediaDuration(MediaInfo_Internal &MI)
         return ToReturn;
     }
 
-    if (MI.Count_Get(Stream_Audio)==1)
+    if (Menu_Pos==(size_t)-1 && MI.Count_Get(Stream_Audio)==1)
     {
         auto Value=MI.Get(Stream_Audio, 0, Audio_SamplingCount);
         if (Value.empty())
@@ -1535,7 +1535,11 @@ Ztring Mpeg7_MediaDuration(MediaInfo_Internal &MI)
     }
 
     //Default: In milliseconds
-    auto Value=MI.Get(Stream_General, 0, General_Duration);
+    Ztring Value;
+    if (Menu_Pos==(size_t)-1)
+        Value=MI.Get(Stream_General, 0, General_Duration);
+    else
+        Value=MI.Get(Stream_Menu, Menu_Pos, Menu_Duration);
     if (Value.empty())
         return {};
     int64u Milliseconds=Value.To_int64u();
@@ -1728,7 +1732,7 @@ void Mpeg7_Create_StreamID(Node* N, bool Extended, MediaInfo_Internal& MI, strea
         }
         MediaLocator->Add_Child("mpeg7:StreamID", Main);
         if (!Sub.empty())
-            MediaLocator->Add_Child("mpeg7:SubstreamID ", Sub);
+            MediaLocator->Add_Child("mpeg7:SubstreamID", Sub);
     }
     else
     {
@@ -2662,7 +2666,7 @@ void Mpeg7_Transform(Node* Node_MultimediaContent, MediaInfo_Internal& MI, size_
     }
 
     auto MediaTimePoint_Value=Mpeg7_MediaTimePoint(MI, Menu_Pos);
-    auto MediaDuration_Value=Mpeg7_MediaDuration(MI);
+    auto MediaDuration_Value=Mpeg7_MediaDuration(MI, Menu_Pos);
     if (!MediaTimePoint_Value.empty() || !MediaDuration_Value.empty())
     {
         Node* Node_MediaTime=Node_Type->Add_Child("mpeg7:MediaTime");
