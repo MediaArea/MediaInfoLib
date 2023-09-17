@@ -337,22 +337,33 @@ void File_Dvdv::Streams_Finish()
     map<Ztring, int64u> Durations;
     auto Menu_Count=Count_Get(Stream_Menu);
     for (size_t Pos=0; Pos<Menu_Count; Pos++)
-        Durations[Retrieve_Const(Stream_Menu, 0, "Source")]+=Retrieve_Const(Stream_Menu, 0, Menu_Duration).To_int64u();
+    {
+        const auto& Duration=Retrieve_Const(Stream_Menu, 0, Menu_Duration);
+        if (!Duration.empty())
+            Durations[Retrieve_Const(Stream_Menu, 0, "Source")]+=Duration.To_int64u();
+    }
     for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
     {
         if (StreamKind==Stream_Menu)
             continue;
         auto Count=Count_Get((stream_t)StreamKind);
         for (size_t Pos=0; Pos<Count; Pos++)
-            Fill((stream_t)StreamKind, Pos, Fill_Parameter((stream_t)StreamKind, Generic_Duration), Durations[Retrieve_Const((stream_t)StreamKind, Pos, "Source")], 10, true);
+        {
+            const auto Duration=Durations.find(Retrieve_Const((stream_t)StreamKind, Pos, "Source"));
+            if (Duration!=Durations.end())
+                Fill((stream_t)StreamKind, Pos, Fill_Parameter((stream_t)StreamKind, Generic_Duration), Duration->second, 10, true);
+        }
     }
-    int64u Duration_Total=0;
-    for (const auto& Duration : Durations)
-        Duration_Total+=Duration.second;
-    Fill(Stream_General, 0, General_Duration, Duration_Total, 10, true);
+    if (!Durations.empty())
+    {
+        int64u Duration_Total=0;
+        for (const auto& Duration : Durations)
+            Duration_Total+=Duration.second;
+        Fill(Stream_General, 0, General_Duration, Duration_Total, 10, true);
+    }
 
     //Duration offsets
-    Duration_Total=0;
+    int64u Duration_Total=0;
     for (const auto& Title : Titles)
     {
         Fill(Stream_Menu, Title.second.Pos, Menu_Delay, Duration_Total, 10, true);
@@ -1359,9 +1370,9 @@ void File_Dvdv::PGC(bool Title)
                         ToAdd=0x88;
                     if (Retrieve(Stream_Audio, Pos, Audio_Format)==__T("LPCM"))
                         ToAdd=0xA0;
-                    Ztring ID_String = Get_Hex_ID(ToAdd + Number);
-                    Fill(Stream_Audio, Pos, Audio_ID, ID_String);
-                    Fill(Stream_Audio, Pos, Audio_ID_String, ID_String, true);
+                    auto ID=ToAdd+Number;
+                    Fill(Stream_Audio, Pos, Audio_ID, __T("189-")+Ztring::ToZtring(ID));
+                    Fill(Stream_Audio, Pos, Audio_ID_String, __T("189 (0xBD)-")+Get_Hex_ID(ID), true);
                 }
             }
             Element_End0();
@@ -1393,9 +1404,9 @@ void File_Dvdv::PGC(bool Title)
                     while (Pos>Count_Get(Stream_Text))
                         Stream_Prepare(Stream_Text);
 
-                    Ztring ID_String = Get_Hex_ID(0x20 + Number_Wide);
-                    Fill(Stream_Text, Pos, Text_ID, ID_String);
-                    Fill(Stream_Text, Pos, Text_ID_String, ID_String, true);
+                    auto ID=0x20+Number_Wide;
+                    Fill(Stream_Text, Pos, Text_ID, __T("189-")+Ztring::ToZtring(ID));
+                    Fill(Stream_Text, Pos, Text_ID_String, __T("189 (0xBD)-")+Get_Hex_ID(ID), true);
                 }
             }
             Element_End0();
