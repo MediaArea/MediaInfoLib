@@ -1592,6 +1592,10 @@ void File_Dvdv::PGC(bool Title)
                 Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_End, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
                 auto FrameRate=TotalDuration.GetFramesMax()+1;
                 Fill(Stream_Menu, StreamPos_Last, Menu_Duration, (TotalDuration.GetHours()*3600+TotalDuration.GetMinutes()*60+TotalDuration.GetSeconds())*1000+(TotalDuration.GetFrames()*1000/FrameRate));
+                Fill(Stream_Menu, StreamPos_Last, Menu_FrameRate, FrameRate/(TotalDuration.Is1001fps()?1.001:1));
+                Fill(Stream_Menu, StreamPos_Last, Menu_FrameRate_Num, FrameRate*(TotalDuration.Is1001fps()?1000:1));
+                Fill(Stream_Menu, StreamPos_Last, Menu_FrameRate_Den, TotalDuration.Is1001fps()?1001:1);
+                Fill(Stream_Menu, StreamPos_Last, Menu_FrameCount, (int64s)TotalDuration.ToFrames());
 
                 for (size_t Pos=0; Pos<Stream_Control_Audio.size(); Pos++)
                 {

@@ -1484,8 +1484,13 @@ string Mpeg7_MediaDuration(MediaInfo_Internal &MI, size_t Menu_Pos=(size_t)-1)
     int64u Count, Rate;
     if (Menu_Pos!=(size_t)-1)
     {
-        Count=MI.Get(Stream_Menu, Menu_Pos, Menu_Duration).To_int64u();
-        Rate=1000;
+        Count=MI.Get(Stream_Menu, Menu_Pos, Menu_FrameCount).To_int64u();
+        Rate=(int64u)float64_int64s(MI.Get(Stream_Menu, Menu_Pos, Menu_FrameRate).To_int64u());
+        if (!Count || !Rate)
+        {
+            Count=MI.Get(Stream_Menu, Menu_Pos, Menu_Duration).To_int64u();
+            Rate=1000;
+        }
     }
     else
     {

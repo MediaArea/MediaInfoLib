@@ -56,6 +56,13 @@ Delay/String5;;;N NT;;;Delay in format HH:MM:SS.mmm (HH:MM:SS:FF)
 Delay_Settings;;;N NTY;;;Delay settings (in case of timecode for example)
 Delay_DropFrame;;;N NTY;;;Delay drop frame
 Delay_Source;;;N NTY;;;Part of the file where the delay was set (e.g. Container, Stream, or empty)
+FrameRate_Mode;;;N YTY;;;Frame rate mode, considering data from both the container and codec, as acronym (e.g. CFR, VFR)
+FrameRate_Mode/String;;;N NT;;;Frame rate mode, considering data from both the container and codec, as word (e.g. Constant, Variable)
+FrameRate;; fps;N YFY;;;Frames per second, as integer (e.g. 29.970)
+FrameRate/String;;;N NT;;;Frames per second, with measurement (e.g. 29.970 (29970/1000) FPS)
+FrameRate_Num;;;N NIY;;;Numerator for determined frames per second (e.g. 29970)
+FrameRate_Den;;;N NIY;;;Denominator for determined frames per second (e.g. 1000)
+FrameCount;;;N NIY;;;Numer of frames (e.g. 78112)
 List_StreamKind;;;N YTY;;;List of programs available
 List_StreamPos;;;N YTY;;;List of programs available
 List;;;N YT;;;List of programs available
