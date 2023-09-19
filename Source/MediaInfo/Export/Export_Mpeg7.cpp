@@ -1381,188 +1381,134 @@ Ztring Mpeg7_TextualCodingFormatCS_Name(int32u termID, MediaInfo_Internal& MI, s
         default  : return MI.Get(Stream_Text, StreamPos, Text_Format);
     }
 }
-    
+
 //---------------------------------------------------------------------------
-Ztring Mpeg7_MediaTimePoint(MediaInfo_Internal &MI, size_t Menu_Pos=(size_t)-1)
+string Mpeg7_CreateTime(int64u Count, int64u Rate, bool IsP=false)
 {
-    if (Menu_Pos==(size_t)-1 && MI.Count_Get(Stream_Video)==1 && MI.Get(Stream_General, 0, General_Format)==__T("MPEG-PS"))
-    {
-        auto Value=MI.Get(Stream_Video, 0, Video_Delay);
-        if (Value.empty())
-            return {};
-        int64u Delay=(int64u)(Value.To_float64()*90);
-        int64u Rate=90000;
-        int64u DD=Delay/(24*60*60*Rate);
-        Delay=Delay%(24*60*60*Rate);
-        int64u HH=Delay/(60*60*Rate);
-        Delay=Delay%(60*60*Rate);
-        int64u MM=Delay/(60*Rate);
-        Delay=Delay%(60*Rate);
-        int64u Sec=Delay/Rate;
-        Delay=Delay%Rate;
-        Ztring ToReturn;
-        if (DD)
-            ToReturn+=Ztring::ToZtring(DD);
-        ToReturn+=__T('T');
-        ToReturn+=(HH<10?__T("0"):__T(""))+Ztring::ToZtring(HH)+__T(':');
-        ToReturn+=(MM<10?__T("0"):__T(""))+Ztring::ToZtring(MM)+__T(':');
-        ToReturn+=(Sec<10?__T("0"):__T(""))+Ztring::ToZtring(Sec)+__T(':');
-        ToReturn+=Ztring::ToZtring(Delay)+__T('F');
-        ToReturn+=Ztring::ToZtring(Rate);
-        return ToReturn;
-    }
-
-    if (Menu_Pos==(size_t)-1 && MI.Count_Get(Stream_Audio)==1 && MI.Get(Stream_General, 0, General_Format)==__T("Wave"))
-    {
-        int64u Rate=MI.Get(Stream_Audio, 0, Audio_SamplingRate).To_int64u();
-        if (!Rate)
-            return Ztring();
-        auto Value=MI.Get(Stream_Audio, 0, Audio_Delay);
-        if (Value.empty())
-            return {};
-        int64u Delay=(int64u)float64_int64s(Value.To_float64()*Rate/1000);
-        int64u DD=Delay/(24*60*60*Rate);
-        Delay=Delay%(24*60*60*Rate);
-        int64u HH=Delay/(60*60*Rate);
-        Delay=Delay%(60*60*Rate);
-        int64u MM=Delay/(60*Rate);
-        Delay=Delay%(60*Rate);
-        int64u Sec=Delay/Rate;
-        Delay=Delay%Rate;
-        Ztring ToReturn;
-        if (DD)
-            ToReturn+=Ztring::ToZtring(DD);
-        ToReturn+=__T('T');
-        ToReturn+=(HH<10?__T("0"):__T(""))+Ztring::ToZtring(HH)+__T(':');
-        ToReturn+=(MM<10?__T("0"):__T(""))+Ztring::ToZtring(MM)+__T(':');
-        ToReturn+=(Sec<10?__T("0"):__T(""))+Ztring::ToZtring(Sec)+__T(':');
-        ToReturn+=Ztring::ToZtring(Delay)+__T('F');
-        ToReturn+=Ztring::ToZtring(Rate);
-        return ToReturn;
-    }
-
-    //Default: In milliseconds
-    Ztring Value;
-    if (Menu_Pos==(size_t)-1)
-        Value=MI.Get(Stream_Video, 0, Video_Delay);
-    else
-        Value=MI.Get(Stream_Menu, Menu_Pos, Menu_Delay);
-    if (Value.empty())
-        return {};
-    int64u Milliseconds=Value.To_int64u();
-    int64u DD=Milliseconds/(24*60*60*1000);
-    Milliseconds=Milliseconds%(24*60*60*1000);
-    int64u HH=Milliseconds/(60*60*1000);
-    Milliseconds=Milliseconds%(60*60*1000);
-    int64u MM=Milliseconds/(60*1000);
-    Milliseconds=Milliseconds%(60*1000);
-    int64u Sec=Milliseconds/1000;
-    int64u NN=Milliseconds%1000;
-    int64u FF=1000;
-    Ztring ToReturn;
+    int64u DD=Count/(24*60*60*Rate);
+    Count=Count%(24*60*60*Rate);
+    int64u HH=Count/(60*60*Rate);
+    Count=Count%(60*60*Rate);
+    int64u MM=Count/(60*Rate);
+    Count=Count%(60*Rate);
+    int64u SS=Count/Rate;
+    Count=Count%Rate;
+    string ToReturn;
+    if (IsP)
+        ToReturn+='P';
     if (DD)
-        ToReturn+=Ztring::ToZtring(DD);
-    ToReturn+=__T('T');
-    ToReturn+=(HH<10?__T("0"):__T(""))+Ztring::ToZtring(HH)+__T(':');
-    ToReturn+=(MM<10?__T("0"):__T(""))+Ztring::ToZtring(MM)+__T(':');
-    ToReturn+=(Sec<10?__T("0"):__T(""))+Ztring::ToZtring(Sec)+__T(':');
-    ToReturn+=Ztring::ToZtring(NN)+__T('F');
-    ToReturn+=Ztring::ToZtring(FF);
+    {
+        ToReturn+=to_string(DD);
+        ToReturn+='D';
+    }
+    ToReturn+='T';
+    if (!IsP && HH<10)
+        ToReturn+='0';
+    ToReturn+=to_string(HH);
+    ToReturn+=IsP?'H':':';
+    if (!IsP && MM<10)
+        ToReturn+='0';
+    ToReturn+=to_string(MM);
+    ToReturn+=IsP?'M':':';
+    if (!IsP && SS<10)
+        ToReturn+='0';
+    ToReturn+=to_string(SS);
+    ToReturn+=IsP?'S':':';
+    if (Rate>1)
+    {
+        ToReturn+=to_string(Count);
+        ToReturn+=IsP?'N':'F';
+        ToReturn+=to_string(Rate);
+        if (IsP)
+            ToReturn+='F';
+    }
     return ToReturn;
 }
 
 //---------------------------------------------------------------------------
-Ztring Mpeg7_MediaDuration(MediaInfo_Internal &MI, size_t Menu_Pos=(size_t)-1)
+string Mpeg7_MediaTimePoint(MediaInfo_Internal &MI, size_t Menu_Pos=(size_t)-1)
 {
-    if (Menu_Pos==(size_t)-1 && MI.Count_Get(Stream_Video)==1)
+    int64u Count, Rate;
+    if (Menu_Pos!=(size_t)-1)
     {
-        auto Value=MI.Get(Stream_Video, 0, Video_FrameCount);
-        if (Value.empty())
+        auto CountS=MI.Get(Stream_Menu, Menu_Pos, Menu_Delay);
+        if (CountS.empty())
             return {};
-        int64u FrameCount=MI.Get(Stream_Video, 0, Video_FrameCount).To_int64u();
-        int64u FrameRate=MI.Get(Stream_Video, 0, Video_FrameRate).To_int64u();
-        if (FrameRate==0)
-            return Ztring();
-        int64u DD=FrameCount/(24*60*60*FrameRate);
-        FrameCount=FrameCount%(24*60*60*FrameRate);
-        int64u HH=FrameCount/(60*60*FrameRate);
-        FrameCount=FrameCount%(60*60*FrameRate);
-        int64u MM=FrameCount/(60*FrameRate);
-        FrameCount=FrameCount%(60*FrameRate);
-        int64u Sec=FrameCount/FrameRate;
-        FrameCount=FrameCount%FrameRate;
-        Ztring ToReturn;
-        ToReturn+=__T('P');
-        if (DD)
-            ToReturn+=Ztring::ToZtring(DD)+__T('D');
-        ToReturn+=__T('T');
-        ToReturn+=Ztring::ToZtring(HH)+__T('H');
-        ToReturn+=Ztring::ToZtring(MM)+__T('M');
-        ToReturn+=Ztring::ToZtring(Sec)+__T('S');
-        ToReturn+=Ztring::ToZtring(FrameCount)+__T('N');
-        ToReturn+=Ztring::ToZtring(FrameRate)+__T('F');
-        return ToReturn;
+        Count=CountS.To_int64u();
+        Rate=1000;
     }
-
-    if (Menu_Pos==(size_t)-1 && MI.Count_Get(Stream_Audio)==1)
-    {
-        auto Value=MI.Get(Stream_Audio, 0, Audio_SamplingCount);
-        if (Value.empty())
-            return {};
-        int64u SamplingCount=Value.To_int64u();
-        int64u SamplingRate=MI.Get(Stream_Audio, 0, Audio_SamplingRate).To_int64u();
-        if (SamplingRate==0)
-            return Ztring();
-        int64u DD=SamplingCount/(24*60*60*SamplingRate);
-        SamplingCount=SamplingCount%(24*60*60*SamplingRate);
-        int64u HH=SamplingCount/(60*60*SamplingRate);
-        SamplingCount=SamplingCount%(60*60*SamplingRate);
-        int64u MM=SamplingCount/(60*SamplingRate);
-        SamplingCount=SamplingCount%(60*SamplingRate);
-        int64u Sec=SamplingCount/SamplingRate;
-        SamplingCount=SamplingCount%SamplingRate;
-        Ztring ToReturn;
-        ToReturn+=__T('P');
-        if (DD)
-            ToReturn+=Ztring::ToZtring(DD)+__T('D');
-        ToReturn+=__T('T');
-        ToReturn+=Ztring::ToZtring(HH)+__T('H');
-        ToReturn+=Ztring::ToZtring(MM)+__T('M');
-        ToReturn+=Ztring::ToZtring(Sec)+__T('S');
-        ToReturn+=Ztring::ToZtring(SamplingCount)+__T('N');
-        ToReturn+=Ztring::ToZtring(SamplingRate)+__T('F');
-        return ToReturn;
-    }
-
-    //Default: In milliseconds
-    Ztring Value;
-    if (Menu_Pos==(size_t)-1)
-        Value=MI.Get(Stream_General, 0, General_Duration);
     else
-        Value=MI.Get(Stream_Menu, Menu_Pos, Menu_Duration);
-    if (Value.empty())
+    {
+        if (MI.Count_Get(Stream_Video)==1 && MI.Get(Stream_General, 0, General_Format)==__T("MPEG-PS"))
+        {
+            auto DelayS=MI.Get(Stream_Video, 0, Video_Delay);
+            if (DelayS.empty())
+                return {};
+            auto Delay=DelayS.To_float64();
+            Count=(int64u)float64_int64s(Delay*90);
+            Rate=90000;
+        }
+        else if (MI.Count_Get(Stream_Audio)==1 && MI.Get(Stream_General, 0, General_Format)==__T("Wave"))
+        {
+            auto DelayS=MI.Get(Stream_Audio, 0, Audio_Delay);
+            if (DelayS.empty())
+                return {};
+            Rate=MI.Get(Stream_Audio, 0, Audio_SamplingRate).To_int64u();
+            if (Rate)
+            {
+                auto Delay=DelayS.To_float64();
+                Count=(int64u)float64_int64s(Delay*Rate/1000);
+            }
+            else
+            {
+                Count=DelayS.To_int64u();
+                Rate=1000;
+            }
+        }
+        else
+        {
+            //Default: In milliseconds
+            auto CountS=MI.Get(Stream_Video, 0, Video_Delay);
+            if (CountS.empty())
+                return {};
+            Count=CountS.To_int64u();
+            Rate=1000;
+        }
+    }
+    return Mpeg7_CreateTime(Count, Rate);
+}
+
+//---------------------------------------------------------------------------
+string Mpeg7_MediaDuration(MediaInfo_Internal &MI, size_t Menu_Pos=(size_t)-1)
+{
+    int64u Count, Rate;
+    if (Menu_Pos!=(size_t)-1)
+    {
+        Count=MI.Get(Stream_Menu, Menu_Pos, Menu_Duration).To_int64u();
+        Rate=1000;
+    }
+    else
+    {
+        if (MI.Count_Get(Stream_Video)==1)
+        {
+            Count=MI.Get(Stream_Video, 0, Video_FrameCount).To_int64u();
+            Rate=(int64u)float64_int64s(MI.Get(Stream_Video, 0, Video_FrameRate).To_int64u());
+        }
+        else if (MI.Count_Get(Stream_Audio)==1)
+        {
+            Count=MI.Get(Stream_Audio, 0, Audio_SamplingCount).To_int64u();
+            Rate=(int64u)float64_int64s(MI.Get(Stream_Audio, 0, Audio_SamplingRate).To_int64u());
+        }
+        else
+        {
+            //Default: In milliseconds
+            Count=MI.Get(Stream_General, 0, General_Duration).To_int64u();
+            Rate=1000;
+        }
+    }
+    if (!Count || !Rate)
         return {};
-    int64u Milliseconds=Value.To_int64u();
-    int64u DD=Milliseconds/(24*60*60*1000);
-    Milliseconds=Milliseconds%(24*60*60*1000);
-    int64u HH=Milliseconds/(60*60*1000);
-    Milliseconds=Milliseconds%(60*60*1000);
-    int64u MM=Milliseconds/(60*1000);
-    Milliseconds=Milliseconds%(60*1000);
-    int64u Sec=Milliseconds/1000;
-    int64u NN=Milliseconds%1000;
-    int64u FF=1000;
-    Ztring ToReturn;
-    ToReturn+=__T('P');
-    if (DD)
-        ToReturn+=Ztring::ToZtring(DD)+__T('D');
-    ToReturn+=__T('T');
-    ToReturn+=Ztring::ToZtring(HH)+__T('H');
-    ToReturn+=Ztring::ToZtring(MM)+__T('M');
-    ToReturn+=Ztring::ToZtring(Sec)+__T('S');
-    ToReturn+=Ztring::ToZtring(NN)+__T('N');
-    ToReturn+=Ztring::ToZtring(FF)+__T('F');
-    return ToReturn;
+    return Mpeg7_CreateTime(Count, Rate, true);
 }
 
 //---------------------------------------------------------------------------
@@ -2686,7 +2632,7 @@ void Mpeg7_Transform(Node* Node_MultimediaContent, MediaInfo_Internal& MI, size_
         }
         //MediaTimePoint
         if (MediaTimePoint_Value.empty())
-            MediaTimePoint_Value.From_UTF8("T00:00:00"); //It is mandatory, so fake value
+            MediaTimePoint_Value="T00:00:00"; //It is mandatory, so fake value
         if (!MediaTimePoint_Value.empty())
             Node_MediaTime->Add_Child("mpeg7:MediaTimePoint", MediaTimePoint_Value);
         //MediaDuration
