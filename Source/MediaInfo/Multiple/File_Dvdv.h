@@ -18,6 +18,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
+#include "MediaInfo/TimeCode.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -75,7 +76,7 @@ private :
     {
         size_t Pos;
         int32u Sector_Out;
-        int64u Duration;
+        TimeCode Duration;
     };
     std::map<int32u, title> Titles; // Key is Sector_In
 
@@ -104,7 +105,7 @@ private :
     Ztring Time_ADT(int32u Value);
     size_t Program_Pos;
     size_t Time_Pos;
-    void Get_Duration(int64u  &Duration, const Ztring &Name);
+    void Get_Duration(TimeCode &Duration, const Ztring &Name);
     Ztring Time_String; //Value from Time_*()
     void PGC(bool Title=false);
 };

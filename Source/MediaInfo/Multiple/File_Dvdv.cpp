@@ -235,7 +235,7 @@ static const char*  IFO_Language_MoreT[]=
 };
 
 static const size_t IFO_PlaybackTime_FrameRate[]=
-{1, 25, 1, 30};
+{0, 25, 0, 30};
 
 static const char*  IFO_MenuType[]=
 {
@@ -363,10 +363,10 @@ void File_Dvdv::Streams_Finish()
     }
 
     //Duration offsets
-    int64u Duration_Total=0;
+    TimeCode Duration_Total;
     for (const auto& Title : Titles)
     {
-        Fill(Stream_Menu, Title.second.Pos, Menu_Delay, Duration_Total, 10, true);
+        Fill(Stream_Menu, Title.second.Pos, Menu_Delay, (int64s)Duration_Total.ToMilliseconds(), 10, true);
         Duration_Total+=Title.second.Duration;
     }
 
@@ -1242,25 +1242,43 @@ Ztring File_Dvdv::Time_ADT(int32u)
     */
 }
 
-void File_Dvdv::Get_Duration(int64u  &Duration, const Ztring &Name)
+
+//---------------------------------------------------------------------------
+static unsigned BCD_to_Decimal(unsigned Value)
+{
+    int Tens=Value>>4;
+    int Units=Value&0xF;
+    if (Tens>=10 || Units>=10)
+        return (unsigned)-1;
+    return Tens*10+Units;
+}
+
+void File_Dvdv::Get_Duration(TimeCode &Duration, const Ztring &Name)
 {
     int32u FrameRate, FF;
-    int8u HH, MM, Sec;
+    int8u HH, MM, SS;
     Element_Begin1(Name);
-        Get_B1 (HH,                                     "Hours (BCD)");
-        Get_B1 (MM,                                     "Minutes (BCD)");
-        Get_B1 (Sec,                                     "Seconds (BCD)");
+        Get_C1 (HH,                                     "Hours (BCD)");
+        Get_C1 (MM,                                     "Minutes (BCD)");
+        Get_C1 (SS,                                     "Seconds (BCD)");
         BS_Begin();
-        Get_BS (2, FrameRate,                           "Frame rate"); Param_Info2(IFO_PlaybackTime_FrameRate[FrameRate], " fps");
+        Get_BS (2, FrameRate,                           "Frame rate"); Param_Info2C(IFO_PlaybackTime_FrameRate[FrameRate], IFO_PlaybackTime_FrameRate[FrameRate], " fps");
         Get_BS (6, FF,                                  "Frames (BCD)");
         BS_End();
 
-        Duration= Ztring::ToZtring(HH, 16).To_int64u() * 60 * 60 * 1000 //BCD
-                + Ztring::ToZtring(MM, 16).To_int64u()      * 60 * 1000 //BCD
-                + Ztring::ToZtring(Sec, 16).To_int64u()          * 1000 //BCD
-                + Ztring::ToZtring(FF, 16).To_int64u()           * 1000/IFO_PlaybackTime_FrameRate[FrameRate]; //BCD
-
-        Element_Info1(Ztring::ToZtring(Duration));
+        auto hh=BCD_to_Decimal(HH);
+        auto mm=BCD_to_Decimal(MM);
+        auto ss=BCD_to_Decimal(SS);
+        auto ff=BCD_to_Decimal(FF);
+        if (hh==(int8u)-1 || mm==(int8u)-1 || ss==(int8u)-1 || ff==(int8u)-1 || !IFO_PlaybackTime_FrameRate[FrameRate])
+        {
+            Duration=TimeCode();
+            return;
+        }
+        
+        bool Drop=IFO_PlaybackTime_FrameRate[FrameRate]==30;
+        Duration=TimeCode((uint32_t)hh, (uint8_t)mm, (uint8_t)ss, (uint8_t)ff, IFO_PlaybackTime_FrameRate[FrameRate]-1);
+        Element_Info1(Duration.ToString());
     Element_End0();
 }
 
@@ -1272,7 +1290,7 @@ void File_Dvdv::PGC(bool Title)
         vector<int8u> Stream_Control_SubPicture_Wide;
         vector<int8u> Stream_Control_SubPicture_Letterbox;
         vector<int8u> Stream_Control_SubPicture_PanScan;
-        vector<int64u> CellDurations;
+        vector<TimeCode> CellDurations;
         vector<int8u> ProgramMap;
 
         //VTS_PGC
@@ -1283,7 +1301,7 @@ void File_Dvdv::PGC(bool Title)
         Element_Begin1("Header");
             int32u Flags;
             int8u Cells;
-            int64u TotalDuration;
+            TimeCode TotalDuration;
             Skip_B2(                                            "Unknown");
             Get_B1 (Program_Count,                              "number of programs");
             Get_B1 (Cells,                                      "number of cells");
@@ -1508,7 +1526,7 @@ void File_Dvdv::PGC(bool Title)
             Element_Begin1("cell playback");
             for (int8u Pos=0; Pos<Cells; Pos++)
             {
-                int64u CellDuration;
+                TimeCode CellDuration;
                 int32u First;
                 Element_Begin1("cell");
                 Skip_XX(4,                                      "ToDo");
@@ -1519,7 +1537,7 @@ void File_Dvdv::PGC(bool Title)
                 Skip_B4(                                        "first ILVU end sector");
                 Skip_B4(                                        "last VOBU start sector");
                 Get_B4 (Last,                                   "last VOBU end sector");
-                Element_Info1(Ztring::ToZtring(Pos)); Element_Info1(Ztring::ToZtring(CellDuration));
+                Element_Info1(Ztring::ToZtring(Pos)); Element_Info1(CellDuration.ToString());
                 Element_End0();
                 CellDurations.push_back(CellDuration);
             }
@@ -1552,11 +1570,11 @@ void File_Dvdv::PGC(bool Title)
                 if (Title && Last)
                     Titles[FirstFirst]={ StreamPos_Last, Last, TotalDuration };
 
-                int64u ProgramTotalDuration=0;
+                TimeCode ProgramTotalDuration;
                 Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_Begin, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
                 for (int8u Pos=0; Pos<ProgramMap.size(); Pos++)
                 {
-                    Fill(StreamKind_Last, StreamPos_Last, Ztring().Duration_From_Milliseconds(ProgramTotalDuration).To_Local().c_str(), Ztring(__T("Chapter "))+Ztring::ToZtring(Pos+1));
+                    Fill(StreamKind_Last, StreamPos_Last, Ztring().Duration_From_Milliseconds((int64s)ProgramTotalDuration.ToMilliseconds()).To_Local().c_str(), Ztring(__T("Chapter "))+Ztring::ToZtring(Pos+1));
 
                     int8u End;
                     if (Pos+1>=Program_Count)
@@ -1564,7 +1582,7 @@ void File_Dvdv::PGC(bool Title)
                     else
                         End=ProgramMap[Pos+1];
 
-                    int64u ProgramDuration=0;
+                    TimeCode ProgramDuration;
                     if (Pos<ProgramMap.size())
                         for (int8u CellPos=ProgramMap[Pos]; CellPos<End; CellPos++)
                             if (CellPos && CellPos<=CellDurations.size())
@@ -1572,7 +1590,8 @@ void File_Dvdv::PGC(bool Title)
                     ProgramTotalDuration+=ProgramDuration;
                 }
                 Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_End, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
-                Fill(Stream_Menu, StreamPos_Last, Menu_Duration, TotalDuration);
+                auto FrameRate=TotalDuration.GetFramesMax()+1;
+                Fill(Stream_Menu, StreamPos_Last, Menu_Duration, (TotalDuration.GetHours()*3600+TotalDuration.GetMinutes()*60+TotalDuration.GetSeconds())*1000+(TotalDuration.GetFrames()*1000/FrameRate));
 
                 for (size_t Pos=0; Pos<Stream_Control_Audio.size(); Pos++)
                 {
