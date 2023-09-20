@@ -6,7 +6,7 @@ StreamKind/String;;;N NT;;;Name of stream type. Options are: General, Video, Aud
 StreamKindID;;;N NI;;;Identification number for stream, assigned in order of parsing. Counting starts at 0
 StreamKindPos;;;N NI;;;Identification number for stream when multiple, assigned in order of parsing. Counting starts at 1
 StreamOrder;;;N YIY;;;Stream order in the file for type of stream. Counting starts at 0
-FirstPacketOrder;;;N YIY;;;Order of the first fully decodable packet parsed in the file for stream type. Counting starts at 0
+FirstPacketOrder;;;N NIY;;;Order of the first fully decodable packet parsed in the file for stream type. Counting starts at 0
 Inform;;;N NT;;;Last **Inform** call. This is mostly for internal use
 ID;;;N YTY;;;The identification number for this stream in this file
 ID/String;;;Y NT;;;The identification number for this stream in this file (String format)
@@ -20,11 +20,11 @@ Format;;;N YTY;;;Format used
 Format/String;;;Y NT;;;Format used and any additional features or settings
 Format/Info;;;Y NT;;;More details about the identified Format
 Format/Url;;;N NT;;;Link to a description of this format
-Format_Commercial;;;N YT;;;Commercial name used by vendor for these settings or Format field if there is no difference
+Format_Commercial;;;N NT;;;Commercial name used by vendor for these settings or Format field if there is no difference
 Format_Commercial_IfAny;;;Y YTY;;;Commercial name used by vendor for these settings, if available
 Format_Version;;;Y YTY;;;Version for the identified format
-Format_Profile;;;Y YTY;;;Profile of the Format (old XML: 'Profile@Level' format)
-Format_Level;;;Y YTY;;;Level of the Format (MIXML only)
+Format_Profile;;;Y YTY;;;Profile of the Format
+Format_Level;;;Y YTY;;;Level of the Format
 Format_Compression;;;Y YTY;;;Compression method used
 Format_Settings;;;Y NT;;;Settings used and required by decoder
 Format_Settings_SBR;;Yes;N YTY;;;Whether Spectral band replication settings used in encoding. Options are Yes (NBC)/No (Explicit). Note: NBC stands for "Not Backwards Compatable"
@@ -68,86 +68,86 @@ Codec_Settings_Endianness;;;N NT;;;Deprecated, do not use in new projects
 Codec_Settings_Sign;;;N NT;;;Deprecated, do not use in new projects
 Codec_Settings_Law;;;N NT;;;Deprecated, do not use in new projects
 Codec_Settings_ITU;;;N NT;;;Deprecated, do not use in new projects
-Duration;; ms;N YFY;;;Play time, in milliseconds
+Duration;; ms;N YFY;;;Play time of the stream, in s (ms for text output)
 Duration/String;;;Y NT;;;Play time in format XXx YYy, with YYy value omitted if zero (e.g. 1 h 40 min)
 Duration/String1;;;N NT;;;Play time in format HHh MMmn SSs MMMms, with any fields omitted if zero
 Duration/String2;;;N NT;;;Play time in format XXx YYy, with YYy omitted if value is zero
 Duration/String3;;;N NT;;;Play time in format HH:MM:SS.mmm (e.g. 01:40:00.000)
 Duration/String4;;;N NT;;;Play time in format HH:MM:SS:FF, with last colon replaced by semicolon for drop frame if available
 Duration/String5;;;N NT;;;Play time in format HH:MM:SS.mmm (HH:MM:SS:FF)
-Duration_FirstFrame;; ms;N YFY;;;Duration of the first frame (if different than other frames), in milliseconds
+Duration_FirstFrame;; ms;N YFY;;;Duration of the first frame (if different than other frames), in ms
 Duration_FirstFrame/String;;;Y NT;;;Duration of the first frame (if different than other frames), in format XXx YYy, with YYy value omitted if zero
 Duration_FirstFrame/String1;;;N NT;;;Duration of the first frame (if different than other frames), in format HHh MMmn SSs MMMms, with any fields omitted if zero
 Duration_FirstFrame/String2;;;N NT;;;Duration of the first frame (if different than other frames), in format XXx YYy, with YYy omitted if value is zero
 Duration_FirstFrame/String3;;;N NT;;;Duration of the first frame (if different than other frames), in format HH:MM:SS.mmm
 Duration_FirstFrame/String4;;;N NT;;;Duration of the first frame (if different than other frames), in format HH:MM:SS:FF, with last colon replaced by semicolon for drop frame if available
 Duration_FirstFrame/String5;;;N NT;;;Duration of the first frame (if different than other frames), in format HH:MM:SS.mmm (HH:MM:SS:FF)
-Duration_LastFrame;; ms;N YFY;;;Duration of the last frame (if different than other frames), in milliseconds
+Duration_LastFrame;; ms;N YFY;;;Duration of the last frame (if different than other frames), in ms
 Duration_LastFrame/String;;;Y NT;;;Duration of the last frame (if different than other frames), in format XXx YYy, with YYy value omitted if zero
 Duration_LastFrame/String1;;;N NT;;;Duration of the last frame (if different than other frames), in format HHh MMmn SSs MMMms, with any fields omitted if zero
 Duration_LastFrame/String2;;;N NT;;;Duration of the last frame (if different than other frames), in format XXx YYy, with YYy omitted if value is zero
 Duration_LastFrame/String3;;;N NT;;;Duration of the last frame (if different than other frames), in format HH:MM:SS.mmm
 Duration_LastFrame/String4;;;N NT;;;Duration of the last frame (if different than other frames), in format HH:MM:SS:FF, with last colon replaced by semicolon for drop frame if available
 Duration_LastFrame/String5;;;N NT;;;Duration of the last frame (if different than other frames), in format HH:MM:SS.mmm (HH:MM:SS:FF)
-Source_Duration;; ms;N YFY;;;Duration of content stored in the file, in milliseconds
+Source_Duration;; ms;N YFY;;;Duration of content stored in the file, in ms
 Source_Duration/String;;;Y NT;;;Duration of content stored in the file, in format XXx YYy, with YYy value omitted if zero
 Source_Duration/String1;;;N NT;;;Duration of content stored in the file, in format HHh MMmn SSs MMMms, with any fields omitted if zero
 Source_Duration/String2;;;N NT;;;Duration of content stored in the file, in format XXx YYy, with YYy omitted if value is zero
 Source_Duration/String3;;;N NT;;;Duration of content stored in the file, in format HH:MM:SS.mmm
 Source_Duration/String4;;;N NT;;;Duration of content stored in the file, in format HH:MM:SS:FF, with last colon replaced by semicolon for drop frame if available
 Source_Duration/String5;;;N NT;;;Duration of content stored in the file, in format HH:MM:SS.mmm (HH:MM:SS:FF)
-Source_Duration_FirstFrame;; ms;N YFY;;;Duration of the first frame of content stored in the file (if different than other frames), in milliseconds
+Source_Duration_FirstFrame;; ms;N YFY;;;Duration of the first frame of content stored in the file (if different than other frames), in ms
 Source_Duration_FirstFrame/String;;;Y NT;;;Duration of the first frame of content stored in the file (if different than other frames), in format XXx YYy, with YYy value omitted if zero
 Source_Duration_FirstFrame/String1;;;N NT;;;Duration of the first frame of content stored in the file (if different than other frames), in format HHh MMmn SSs MMMms, with any fields omitted if zero
 Source_Duration_FirstFrame/String2;;;N NT;;;Duration of the first frame of content stored in the file (if different than other frames), in format XXx YYy, with YYy omitted if value is zero
 Source_Duration_FirstFrame/String3;;;N NT;;;Duration of the first frame of content stored in the file (if different than other frames), in format HH:MM:SS.mmm
 Source_Duration_FirstFrame/String4;;;N NT;;;Duration of the first frame of content stored in the file (if different than other frames), in format HH:MM:SS:FF, with last colon replaced by semicolon for drop frame if available
 Source_Duration_FirstFrame/String5;;;N NT;;;Duration of the first frame of content stored in the file (if different than other frames), in format HH:MM:SS.mmm (HH:MM:SS:FF)
-Source_Duration_LastFrame;; ms;N YFY;;;Duration of the last frame of content stored in the file (if different than other frames), in milliseconds
+Source_Duration_LastFrame;; ms;N YFY;;;Duration of the last frame of content stored in the file (if different than other frames), in ms
 Source_Duration_LastFrame/String;;;Y NT;;;Duration of the last frame of content stored in the file (if different than other frames), in format XXx YYy, with YYy value omitted if zero
 Source_Duration_LastFrame/String1;;;N NT;;;Duration of the last frame of content stored in the file (if different than other frames), in format HHh MMmn SSs MMMms, with any fields omitted if zero
 Source_Duration_LastFrame/String2;;;N NT;;;Duration of the last frame of content stored in the file (if different than other frames), in format XXx YYy, with YYy omitted if value is zero
 Source_Duration_LastFrame/String3;;;N NT;;;Duration of the last frame of content stored in the file (if different than other frames), in format HH:MM:SS.mmm
 Source_Duration_LastFrame/String4;;;N NT;;;Duration of the last frame of content stored in the file (if different than other frames), in format HH:MM:SS:FF, with last colon replaced by semicolon for drop frame if available
 Source_Duration_LastFrame/String5;;;N NT;;;Duration of the last frame of content stored in the file (if different than other frames), in format HH:MM:SS.mmm (HH:MM:SS:FF)
-BitRate_Mode;;;N YTY;;;Bit rate mode of this stream, as acronym (VBR, CBR)
+BitRate_Mode;;;N YTY;;;Bit rate mode of this stream (CBR, VBR)
 BitRate_Mode/String;;;Y NT;;;Bit rate mode of this stream, as word (Variable, Constant)
-BitRate;; bps;N YFY;;;Bit rate of this stream, in bits per second (e.g. 128026)
+BitRate;; bps;N YFY;;;Bit rate of this stream, in bps
 BitRate/String;;;Y NT;;;Bit rate of this stream, with measurement (e.g. 128 kb/s)
-BitRate_Minimum;; bps;N YFY;;;Minimum bit rate of this stream, in bits per second
+BitRate_Minimum;; bps;N YFY;;;Minimum bit rate of this stream, in bps
 BitRate_Minimum/String;;;Y NT;;;Minimum bit rate of this stream, with measurement
-BitRate_Nominal;; bps;N YFY;;;Nominal bit rate of this stream, in bits per second
+BitRate_Nominal;; bps;N YFY;;;Nominal bit rate of this stream, in bps
 BitRate_Nominal/String;;;Y NT;;;Nominal bit rate of this stream, with measurement
-BitRate_Maximum;; bps;N YFY;;;Maximum bit rate of this stream, in bits per second
+BitRate_Maximum;; bps;N YFY;;;Maximum bit rate of this stream, in bps
 BitRate_Maximum/String;;;Y NT;;;Maximum bit rate of this stream, with measurement
-BitRate_Encoded;; bps;N YFY;;;Encoded bit rate (with forced padding), if container padding is present, in bits per second
-BitRate_Encoded/String;;;N NT;;;Encoded bit rate (with forced padding), if container padding is present, in bits per second
+BitRate_Encoded;; bps;N YFY;;;Encoded bit rate (with forced padding), if container padding is present, in bps
+BitRate_Encoded/String;;;N NT;;;Encoded bit rate (with forced padding), if container padding is present, in bps
 Channel(s);; channel;N YIY;;;Number of channels (e.g. 2)
 Channel(s)/String;;;Y NT;;;Number of channels (with measurement)
-Channel(s)_Original;; channel;N YIY;;;Number of channels, considering data only from the codec (e.g. 6)
-Channel(s)_Original/String;;;Y NT;;;Number of channels, considering data only from the codec, with measurement (e.g. 6 channels)
+Channel(s)_Original;; channel;N NIY;;;Number of channels (e.g. 6)
+Channel(s)_Original/String;;;Y NT;;;Number of channels, with measurement (e.g. 6 channels)
 Matrix_Channel(s);; channel;N YIY;;;Number of channels after matrix decoding
 Matrix_Channel(s)/String;;;Y NT;;;Number of channels after matrix decoding, with measurement
 ChannelPositions;;;N YTY;;;Position of channels (e.g. Front: L C R, Side: L R, Back: L R, LFE)
-ChannelPositions_Original;;;N YTY;;;Position of channels, considering data only from the codec (e.g. Front: L C R, Side: L R, Back: L R, LFE)
+ChannelPositions_Original;;;N NTY;;;Position of channels (e.g. Front: L C R, Side: L R, Back: L R, LFE)
 ChannelPositions/String2;;;N NT;;;Position of channels in x/y.z format (e.g. 3/2/0.1)
-ChannelPositions_Original/String2;;;N NT;;;Position of channels in x/y.z format, considering data only from the codec (e.g. 3/2/0.1)
+ChannelPositions_Original/String2;;;N NT;;;Position of channels in x/y.z format (e.g. 3/2/0.1)
 Matrix_ChannelPositions;;;Y YTY;;;Position of channels after matrix decoding
 Matrix_ChannelPositions/String2;;;N NT;;;Position of channels after matrix decoding in x/y.z format
 ChannelLayout;;;Y YTY;;;Layout of channels (e.g. L R C LFE Ls Rs Lb Rb)
-ChannelLayout_Original;;;Y YTY;;;Layout of channels, considering data only from the codec (e.g. L R C LFE Ls Rs Lb Rb)
+ChannelLayout_Original;;;Y NTY;;;Layout of channels (e.g. L R C LFE Ls Rs Lb Rb)
 ChannelLayoutID;;;N YT;;;ID of layout of channels (e.g. MXF descriptor channel assignment). Warning, sometimes this is not enough for uniquely identifying a layout (e.g. MXF descriptor channel assignment is SMPTE 377-4). For AC-3, the form is x,y with x=acmod and y=lfeon
 SamplesPerFrame;;;N YFY;;;Samples per frame (e.g. 1536)
 SamplingRate;; Hz;N YFY;;;Sampling rate, in Hertz (e.g. 48000)
 SamplingRate/String;;;Y NT;;;Sampling rate, in Hertz, with measurement (e.g. 48.0 KHz)
-SamplingCount;;;N NIY;;;Sample count (based on sampling rate)
-Source_SamplingCount;;;N NIY;;;Source Sample count (based on sampling rate), with information derived from header metadata
-FrameRate;; fps;N YFY;;;Frames per second, as integer (e.g. 29.970)
+SamplingCount;;;N YIY;;;Sample count (based on sampling rate)
+Source_SamplingCount;;;N YIY;;;Source Sample count (based on sampling rate), with information derived from header metadata
+FrameRate;; fps;N YFY;;;Frames per second, as float (e.g. 29.970)
 FrameRate/String;;;Y NT;;;Frames per second, with measurement (e.g. 29.970 (29970/1000) FPS)
 FrameRate_Num;;;N NIY;;;Numerator for determined frames per second (e.g. 29970)
 FrameRate_Den;;;N NIY;;;Denominator for determined frames per second (e.g. 1000)
-FrameCount;;;N NIY;;;Frame count (a frame contains a count of samples depends of the format)
-Source_FrameCount;;;N NIY;;;Source Frame count (a frame contains a count of samples depends of the format)
+FrameCount;;;N YIY;;;Frame count
+Source_FrameCount;;;N YIY;;;Source frame count
 Resolution;; bit;N NI;;;Deprecated, do not use in new projects
 Resolution/String;;;N NT;;;Deprecated, do not use in new projects
 BitDepth;; bit;N YIY;;;Number of bits in each sample (resolution) of stream (e.g. 16). This field will show the significant bits if the stored bit depth is different
@@ -156,34 +156,34 @@ BitDepth_Detected;; bit;N YIY;;;Number of bits in each sample (resolution), as d
 BitDepth_Detected/String;;;Y NT;;;Number of bits in each sample (resolution), as detected during scan of the input by the muxer, in bits (e.g. 24)
 BitDepth_Stored;; bit;N YIY;;;Stored number of bits in each sample (resolution), in bits (e.g. 24)
 BitDepth_Stored/String;;;Y NT;;;Stored number of bits in each sample (resolution), in bits (e.g. 24)
-Compression_Mode;;;N YTY;;;Compression mode (Lossy or Lossless)
-Compression_Mode/String;;;Y NT;;;Compression mode (Lossy or Lossless)
-Compression_Ratio;;;Y YF;;;Stream size divided by uncompressed stream size
-Delay;; ms;N NFY;;;Delay fixed in the stream (relative), in milliseconds
+Compression_Mode;;;N YTY;;;Compression mode (Lossy, Lossless)
+Compression_Mode/String;;;Y NT;;;Compression mode (Lossy, Lossless)
+Compression_Ratio;;;Y NF;;;Stream size divided by uncompressed stream size
+Delay;; ms;N YFY;;;Delay fixed in the stream (relative), in ms
 Delay/String;;;N NT;;;Delay fixed in the stream (relative), with measurement
 Delay/String1;;;N NT;;;Delay fixed in the stream (relative), with measurement
 Delay/String2;;;N NT;;;Delay fixed in the stream (relative), with measurement
 Delay/String3;;;N NT;;;Delay fixed in the stream (relative) in format HH:MM:SS.mmm, with measurement
 Delay/String4;;;N NT;;;Delay in format HH:MM:SS:FF, with last colon replaced by semicolon for drop frame if available
 Delay/String5;;;N NT;;;Delay in format HH:MM:SS.mmm (HH:MM:SS:FF)
-Delay_Settings;;;N NTY;;;Delay settings (i.e. in case of timecode)
+Delay_Settings;;;N NTY;;;Delay settings, (e.g. in case of timecode)
 Delay_DropFrame;;;N NTY;;;Delay drop frame information
 Delay_Source;;;N NTY;;;Source location of the Delay (e.g. Container, Stream, empty)
 Delay_Source/String;;;N NT;;;Source location of the Delay (e.g. Container, Stream, empty)
-Delay_Original;; ms;N NIY;;;Delay, considering data only from the codec, in milliseconds
-Delay_Original/String;;;N NT;;;Delay, considering data only from the codec, with measurement
-Delay_Original/String1;;;N NT;;;Delay, considering data only from the codec, with measurement
-Delay_Original/String2;;;N NT;;;Delay, considering data only from the codec, with measurement
-Delay_Original/String3;;;N NT;;;Delay, considering data only from the codec, in format HH:MM:SS.mmm
-Delay_Original/String4;;;N NT;;;Delay, considering data only from the codec, in format HH:MM:SS:FF, with last colon replaced by semicolon for drop frame if available
-Delay_Original/String5;;;N NT;;;Delay, considering data only from the codec, in format HH:MM:SS.mmm (HH:MM:SS:FF)
-Delay_Original_Settings;;;N NT;;;Delay settings, considering data only from the codec (i.e. in case of timecode)
-Delay_Original_DropFrame;;;N NTY;;;Delay drop frame information, considering data only from the codec
+Delay_Original;; ms;N NIY;;;Delay, in ms
+Delay_Original/String;;;N NT;;;Delay, with measurement
+Delay_Original/String1;;;N NT;;;Delay, with measurement
+Delay_Original/String2;;;N NT;;;Delay, with measurement
+Delay_Original/String3;;;N NT;;;Delay, in format HH:MM:SS.mmm
+Delay_Original/String4;;;N NT;;;Delay, in format HH:MM:SS:FF, with last colon replaced by semicolon for drop frame if available
+Delay_Original/String5;;;N NT;;;Delay, in format HH:MM:SS.mmm (HH:MM:SS:FF)
+Delay_Original_Settings;;;N NT;;;Delay settings (e.g. in case of timecode)
+Delay_Original_DropFrame;;;N NTY;;;Delay drop frame information
 Delay_Original_Source;;;N NTY;;;Delay source (e.g. Container, Stream, empty)
-Video_Delay;; ms;N NFY;;;Delay fixed in the stream relative to video, in milliseconds (e.g. -80)
-Video_Delay/String;;;Y NT;;;Delay fixed in the stream relative to video, in milliseconds, with measurement (e.g. -80 ms)
-Video_Delay/String1;;;N NT;;;Delay fixed in the stream relative to video, in milliseconds, with measurement (e.g. -80 ms)
-Video_Delay/String2;;;N NT;;;Delay fixed in the stream relative to video, in milliseconds, with measurement (e.g. -80 ms)
+Video_Delay;; ms;N NFY;;;Delay fixed in the stream relative to video, in ms (e.g. -80)
+Video_Delay/String;;;Y NT;;;Delay fixed in the stream relative to video, in ms, with measurement (e.g. -80 ms)
+Video_Delay/String1;;;N NT;;;Delay fixed in the stream relative to video, in ms, with measurement (e.g. -80 ms)
+Video_Delay/String2;;;N NT;;;Delay fixed in the stream relative to video, in ms, with measurement (e.g. -80 ms)
 Video_Delay/String3;;;N NT;;;Delay fixed in the stream relative to video, in format HH:MM:SS.mmm (e.g. -00:00:00.080)
 Video_Delay/String4;;;N NT;;;Delay in format HH:MM:SS:FF, with the last colon replaced by semicolon for drop frame if available
 Video_Delay/String5;;;N NT;;;Delay fixed in the stream relative to video, in format HH:MM:SS.mmm (HH:MM:SS:FF)
@@ -200,9 +200,9 @@ TimeCode_DropFrame;;;N NT;;;Time code drop frame
 TimeCode_Settings;;;Y YTY;;;Additional time code settings
 TimeCode_Source;;;Y YTY;;;Time code source (Container, Stream, SystemScheme1, SDTI, ANC, etc.)
 ReplayGain_Gain;; dB;N YTY;;;The gain to apply to reach 89dB SPL on playback
-ReplayGain_Gain/String;;;Y YT;;;The gain to apply to reach 89dB SPL on playback
+ReplayGain_Gain/String;;;Y NTN;;;The gain to apply to reach 89dB SPL on playback
 ReplayGain_Peak;;;Y YTY;;;The maximum absolute peak value of the item
-StreamSize;; byte;N YIY;;;Size of this stream, in bytes (e.g. 11010717)
+StreamSize;; byte;N YIY;;;Size of this stream, in bytes
 StreamSize/String;;;Y NT;;;Size of this stream, with measurement (measured in powers of 1024) and percentage value (e.g. 10.5 MiB (98%))
 StreamSize/String1;;;N NT;;;Size of this stream, with measurement (measured in powers of 1024) rounded to the nearest integer (e.g. 11 MiB)
 StreamSize/String2;;;N NT;;;Size of this stream, measurement (measured in powers of 1024) rounded to the two most significant digits (e.g. 11 MiB)
@@ -210,14 +210,14 @@ StreamSize/String3;;;N NT;;;Size of this stream, measurement (measured in powers
 StreamSize/String4;;;N NT;;;Size of this stream, measurement (measured in powers of 1024) rounded to the four most significant digits (e.g. 10.50 MiB)
 StreamSize/String5;;;N NT;;;Size of this stream, with measurement (measured in powers of 1024) and percentage value (e.g. 10.5 MiB (98%))
 StreamSize_Proportion;;;N NT;;;Size of this stream divided by total file size
-StreamSize_Demuxed;; byte;N YIN;;;Size of this stream after demuxing, in bytes
+StreamSize_Demuxed;; byte;N NIN;;;Size of this stream after demuxing, in bytes
 StreamSize_Demuxed/String;;;N NT;;;Size of this stream after demuxing, with measurement (measured in powers of 1024) and percentage value (e.g. 10.5 MiB (98%))
 StreamSize_Demuxed/String1;;;N NT;;;Size of this stream after demuxing, with measurement (measured in powers of 1024) rounded to the nearest integer (e.g. 11 MiB)
 StreamSize_Demuxed/String2;;;N NT;;;Size of this stream after demuxing, measurement (measured in powers of 1024) rounded to the two most significant digits (e.g. 11 MiB)
 StreamSize_Demuxed/String3;;;N NT;;;Size of this stream after demuxing, measurement (measured in powers of 1024) rounded to the three most significant digits (e.g. 10.5 MiB)
 StreamSize_Demuxed/String4;;;N NT;;;Size of this stream after demuxing, measurement (measured in powers of 1024) rounded to the four most significant digits (e.g. 10.50 MiB)
 StreamSize_Demuxed/String5;;;N NT;;;Size of this stream after demuxing, with measurement (measured in powers of 1024) and percentage value (e.g. 10.5 MiB (98%))
-Source_StreamSize;; byte;N YIY;;;Size of content stored in the file, in bytes (e.g. 11010717)
+Source_StreamSize;; byte;N YIY;;;Size of content stored in the file, in bytes
 Source_StreamSize/String;;;Y NT;;;Size of content stored in the file, with measurement (measured in powers of 1024) and percentage value (e.g. 10.5 MiB (98%))
 Source_StreamSize/String1;;;N NT;;;Size of content stored in the file, with measurement (measured in powers of 1024) rounded to the nearest integer (e.g. 11 MiB)
 Source_StreamSize/String2;;;N NT;;;Size of content stored in the file, measurement (measured in powers of 1024) rounded to the two most significant digits (e.g. 11 MiB)
@@ -233,7 +233,7 @@ StreamSize_Encoded/String3;;;N NT;;;Size of this stream when encoded, measuremen
 StreamSize_Encoded/String4;;;N NT;;;Size of this stream when encoded, measurement (measured in powers of 1024) rounded to the four most significant digits (e.g. 10.50 MiB)
 StreamSize_Encoded/String5;;;N NT;;;Size of this stream when encoded, with measurement (measured in powers of 1024) and percentage value (e.g. 10.5 MiB (98%))
 StreamSize_Encoded_Proportion;;;N NT;;;Encoded Stream size divided by file size
-Source_StreamSize_Encoded;; byte;N YIY;;;Size of content stored in the file when encoded, in bytes (e.g. 11010717)
+Source_StreamSize_Encoded;; byte;N YIY;;;Size of content stored in the file when encoded, in bytes
 Source_StreamSize_Encoded/String;;;N NT;;;Size of content stored in the file when encoded, with measurement (measured in powers of 1024) and percentage value (e.g. 10.5 MiB (98%))
 Source_StreamSize_Encoded/String1;;;N NT;;;Size of content stored in the file when encoded, with measurement (measured in powers of 1024) rounded to the nearest integer (e.g. 11 MiB)
 Source_StreamSize_Encoded/String2;;;N NT;;;Size of content stored in the file when encoded, measurement (measured in powers of 1024) rounded to the two most significant digits (e.g. 11 MiB)
@@ -244,10 +244,10 @@ Source_StreamSize_Encoded_Proportion;;;N NT;;;Source Encoded Stream size divided
 Alignment;;;N YTY;;;How this stream is aligned in the container (e.g. Aligned, Split)
 Alignment/String;;;Y NT;;;How this stream is aligned in the container (e.g. Aligned, Split)
 Interleave_VideoFrames;;;N YFY;;;For interleaved video, between how many video frames this stream is inserted (e.g. 0.51 video frame)
-Interleave_Duration;; ms;N YFY;;;For interleaved video, between how much time, in milliseconds, this stream is inserted (e.g. 21 ms)
-Interleave_Duration/String;;;Y NT;;;For interleaved video, between how many video frames this stream is inserted, as duration with measurement and amount of frame(s) in parenthesis (e.g. 21 ms (0.51 video frame))
-Interleave_Preload;; ms;N YFY;;;How much time is buffered before the first video frame, in milliseconds (e.g. 500)
-Interleave_Preload/String;;;Y NT;;;How much time is buffered before the first video frame, in milliseconds with measurement (e.g. 500 ms)
+Interleave_Duration;; ms;N YFY;;;For interleaved video, between how much time, in ms, this stream is inserted (e.g. 21 ms)
+Interleave_Duration/String;;;Y NT;;;For interleaved video, between how many video frames this stream is inserted, as duration with measurement and amount of frame (s) in parenthesis (e.g. 21 ms (0.51 video frame))
+Interleave_Preload;; ms;N YFY;;;How much time is buffered before the first video frame, in ms (e.g. 500)
+Interleave_Preload/String;;;Y NT;;;How much time is buffered before the first video frame, in ms with measurement (e.g. 500 ms)
 Title;;;Y YTY;;;Title of track
 Encoded_Application;;;N YTY;;;Name of the software package used to create the file (e.g. Microsoft WaveEdiTY);;Technical
 Encoded_Application/String;;;Y NT;;;Name of the software package used to create the file, in the format "CompanyName ProductName (OperatingSystem) Version (Date)";;Technical
@@ -258,9 +258,9 @@ Encoded_Application_Url;;;N YTY;;;URL associated with the encoding software;;Tec
 Encoded_Library;;;N YTY;;;Software used to create the file;;Technical
 Encoded_Library/String;;;Y NT;;;Software used to create the file, in the format "CompanyName ProductName (OperatingSystem) Version (Date)";;Technical
 Encoded_Library_CompanyName;;;N YTY;;;Name of the encoding software company;;Technical
-Encoded_Library_Name;;;N NTY;;;Name of the encoding software;;Technical
-Encoded_Library_Version;;;N NTY;;;Version of the encoding software;;Technical
-Encoded_Library_Date;;;N NTY;;;Release date of the encoding software, in UTC;;Technical
+Encoded_Library_Name;;;N YTY;;;Name of the encoding software;;Technical
+Encoded_Library_Version;;;N YTY;;;Version of the encoding software;;Technical
+Encoded_Library_Date;;;N YTY;;;Release date of the encoding software, in UTC;;Technical
 Encoded_Library_Settings;;;Y YTY;;;Parameters used by the encoding software;;Technical
 Encoded_OperatingSystem;;;N YTY;;;Operating System of the encoding software;;Technical
 Language;;;N YTY;;;Language, formatted as 2-letter ISO 639-1 if exists, else 3-letter ISO 639-2, and with optional ISO 3166-1 country separated by a dash if available (e.g. en, en-US, en-CN)
@@ -272,12 +272,12 @@ Language/String4;;;N NT;;;Language, formatted as 2-letter ISO 639-1, if exists, 
 Language_More;;;Y YTY;;;More information about Language (e.g. Director's Comment)
 ServiceKind;;;N YTY;;;Type of assisted service (e.g. visually impaired, commentary, voice over)
 ServiceKind/String;;;Y NT;;;Type of assisted service (e.g. visually impaired, commentary, voice over)
-Disabled;;Yes;N YTY;;;Set if this stream should not be used. Options are Yes/No
-Disabled/String;;;Y NT;;;Set if this stream should not be used. Options are Yes/No
-Default;;Yes;N YTY;;;Flag set if this stream should be used if no language found matches the user preference. Options are Yes/No
-Default/String;;;Y NT;;;Flag set if this stream should be used if no language found matches the user preference. Options are Yes/No
-Forced;;Yes;N YTY;;;Flag set if this stream should be used regardless of user preferences, often used for sparse subtitle dialogue in an otherwise unsubtitled movie. Options are Yes/No
-Forced/String;;;Y NT;;;Flag set if this stream should be used regardless of user preferences, often used for sparse subtitle dialogue in an otherwise unsubtitled movie. Options are Yes/No
+Disabled;;Yes;N YTY;;;Set if this stream should not be used (Yes, No)
+Disabled/String;;;Y NT;;;Set if this stream should not be used (Yes, No)
+Default;;Yes;N YTY;;;Flag set if this stream should be used if no language found matches the user preference (Yes, No)
+Default/String;;;Y NT;;;Flag set if this stream should be used if no language found matches the user preference (Yes, No)
+Forced;;Yes;N YTY;;;Flag set if this stream should be used regardless of user preferences, often used for sparse subtitle dialogue in an otherwise unsubtitled movie (Yes, No)
+Forced/String;;;Y NT;;;Flag set if this stream should be used regardless of user preferences, often used for sparse subtitle dialogue in an otherwise unsubtitled movie (Yes, No)
 AlternateGroup;;Yes;N YTY;;;Number of a group in order to provide versions of the same track
 AlternateGroup/String;;;Y NT;;;Number of a group in order to provide versions of the same track
 Encoded_Date;;;Y YTY;;;Time that the encoding of this item was completed, in UTC;;Temporal

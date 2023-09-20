@@ -6,12 +6,12 @@ StreamKind/String;;;N NT;;;Name of stream type. Options are: Audio, General, Ima
 StreamKindID;;;N NI;;;Identification number for stream, assigned in order of parsing. Counting starts at 0
 StreamKindPos;;;N NI;;;Identification number for stream when multiple, assigned in order of parsing. Counting starts at 1
 StreamOrder;;;N YIY;;;Stream order in the file for type of stream. Counting starts at 0
-FirstPacketOrder;;;N YIY;;;Order of the first fully decodable packet parsed in the file for stream type. Counting starts at 0
+FirstPacketOrder;;;N NIY;;;Order of the first fully decodable packet parsed in the file for stream type. Counting starts at 0
 Inform;;;N NT;;;Last **Inform** call. This is mostly for internal use
 ID;;;N YTY;;;The identification number for this stream in this file
 ID/String;;;Y NT;;;The identification number for this stream in this file (String format)
-OriginalSourceMedium_ID;;;N YTY;;;Identification for this stream in the original medium of the material
-OriginalSourceMedium_ID/String;;;Y NT;;;Identification for this stream in the original medium of the material (String format)
+OriginalSourceMedium_ID;;;N YTY;;;Identification for this stream in the original medium of the material, taken from Tag metadata
+OriginalSourceMedium_ID/String;;;Y NT;;;Identification for this stream in the original medium of the material, taken from Tag metadata (String format)
 UniqueID;;;N YTY;;;The unique ID for this stream, should be copied with stream copy
 UniqueID/String;;;Y NT;;;The unique ID for this stream, should be copied with stream copy
 MenuID;;;N YTY;;;The menu ID for this stream in this file
@@ -63,11 +63,11 @@ Format/String;;;Y NT;;;Format used + additional features
 Format/Info;;;Y NT;;;More details about the identified Format
 Format/Url;;;N NT;;;Link to a description of this format
 Format/Extensions;;;N NT;;;Known extensions for the identified format
-Format_Commercial;;;N YT;;;Commercial name used by vendor for these settings or Format field if there is no difference
+Format_Commercial;;;N NT;;;Commercial name used by vendor for these settings or Format field if there is no difference
 Format_Commercial_IfAny;;;Y YTY;;;Commercial name used by vendor for these settings if there is one
 Format_Version;;;Y YTY;;;Version for the identified format
-Format_Profile;;;Y YTY;;;Profile of the Format (old XML: 'Profile@Level' format; MIXML: 'Profile' only)
-Format_Level;;;Y YTY;;;Level of the Format (MIXML only)
+Format_Profile;;;Y YTY;;;Profile of the Format
+Format_Level;;;Y YTY;;;Level of the Format
 Format_Compression;;;Y YTY;;;Compression method used
 Format_Settings;;;Y YTY;;;Settings used and required by decoder
 Format_AdditionalFeatures;;;N YTY;;;Features required to fully support the file content
@@ -94,7 +94,7 @@ FileSize/String1;;;N NT;;;File size with measurement (measured in powers of 1024
 FileSize/String2;;;N NT;;;File size with measurement (measured in powers of 1024) rounded to the two most significant digits
 FileSize/String3;;;N NT;;;File size with measurement (measured in powers of 1024) rounded to the three most significant digits
 FileSize/String4;;;N NT;;;File size with measurement (measured in powers of 1024) rounded to the four most significant digits
-Duration;; ms;N YFY;;;Play time (in ms)
+Duration;; ms;N YFY;;;Play time of the content, in s (ms for text output)
 Duration/String;;;Y NT;;;Play time in format XXx YYy, with YYy value omitted if zero (e.g. 1 h 40 min)
 Duration/String1;;;N NT;;;Play time in format HHh MMmn SSs MMMms, with any fields omitted if zero
 Duration/String2;;;N NT;;;Play time in format XXx YYy, with YYy omitted if value is zero
@@ -115,33 +115,33 @@ Duration_End/String2;;;N NT
 Duration_End/String3;;;N NT
 Duration_End/String4;;;N NT
 Duration_End/String5;;;N NT
-OverallBitRate_Mode;;;N YTY;;;Bit rate mode of all streams, as acronym (VBR, CBR)
+OverallBitRate_Mode;;;N YTY;;;Bit rate mode of all streams (CBR, VBR)
 OverallBitRate_Mode/String;;;Y NT;;;Bit rate mode of all streams, as word (Variable, Constant)
-OverallBitRate;; bps;N YFY;;;Bit rate of all streams, in bits per second
+OverallBitRate;; bps;N YFY;;;Bit rate of all streams, in bps
 OverallBitRate/String;;;Y NT;;;Bit rate of all streams, with measurement (e.g. 14.2 kb/s)
-OverallBitRate_Minimum;; bps;N YFY;;;Minimum total bit rate of all streams, in bits per second
+OverallBitRate_Minimum;; bps;N YFY;;;Minimum total bit rate of all streams, in bps
 OverallBitRate_Minimum/String;;;Y NT;;;Minimum bit rate of all streams, with measurement
-OverallBitRate_Nominal;; bps;N YFY;;;Nominal bit rate of all streams, in bits per second
+OverallBitRate_Nominal;; bps;N YFY;;;Nominal bit rate of all streams, in bps
 OverallBitRate_Nominal/String;;;Y NT;;;Nominal bit rate of all streams, with measurement
-OverallBitRate_Maximum;; bps;N YFY;;;Maximum bit rate of all streams, in bits per second
+OverallBitRate_Maximum;; bps;N YFY;;;Maximum bit rate of all streams, in bps
 OverallBitRate_Maximum/String;;;Y NT;;;Maximum bit rate of all streams, with measurement
 FrameRate;; fps;N YFY;;;Frames per second
 FrameRate/String;;;Y NT;;;Frames per second, with measurement
 FrameRate_Num;;;N NIY;;;Frames per second, numerator
 FrameRate_Den;;;N NIY;;;Frames per second, denominator
-FrameCount;;;N NIY;;;Frame count, if a frame contains a count of samples
-Delay;; ms;N YI;;;Delay fixed in the stream (relative), as floating point number in milliseconds (e.g. 213.366667)
+FrameCount;;;N YIY;;;Frame count, if a stream has the same frame rate everywhere
+Delay;; ms;N YI;;;Delay fixed in the stream (relative), is s (ms for text output)
 Delay/String;;;N NT;;;Delay with measurement and rounded to integer (e.g. 213 ms)
 Delay/String1;;;N NT;;;Delay with measurement and rounded to integer (e.g. 213 ms)
 Delay/String2;;;N NT;;;Delay with measurement and rounded to integer (e.g. 213 ms)
 Delay/String3;;;N NT;;;Delay in format HH:MM:SS.mmm
 Delay/String4;;;N NT;;;Delay in format HH:MM:SS:FF, with the last colon replaced by semicolon for drop frame if available
 Delay/String5;;;N NT;;;Delay in format HH:MM:SS.mmm (HH:MM:SS:FF)
-Delay_Settings;;;N NTY;;;Delay settings (in case of timecode, for example)
-Delay_DropFrame;;;N NTY;;;Delay drop frame
-Delay_Source;;;N NTY;;;Delay source (Container, Stream, or empty)
+Delay_Settings;;;N YTY;;;Delay settings (in case of timecode, for example)
+Delay_DropFrame;;;N YTY;;;Delay drop frame
+Delay_Source;;;N YTY;;;Delay source (Container, Stream, or empty)
 Delay_Source/String;;;N NT;;;Delay source (Container, Stream, or empty)
-StreamSize;; byte;N YIY;;;Size of this stream, in bytes (e.g. 11010717)
+StreamSize;; byte;N YIY;;;Size of this stream, in bytes
 StreamSize/String;;;N NT;;;Size of this stream, with measurement (measured in powers of 1024) and percentage value (e.g. 10.5 MiB (98%))
 StreamSize/String1;;;N NT;;;Size of this stream, with measurement (measured in powers of 1024) rounded to the nearest integer (e.g. 11 MiB)
 StreamSize/String2;;;N NT;;;Size of this stream, measurement (measured in powers of 1024) rounded to the two most significant digits (e.g. 11 MiB)
@@ -149,7 +149,7 @@ StreamSize/String3;;;N NT;;;Size of this stream, measurement (measured in powers
 StreamSize/String4;;;N NT;;;Size of this stream, measurement (measured in powers of 1024) rounded to the four most significant digits (e.g. 10.50 MiB)
 StreamSize/String5;;;N NT;;;Size of this stream, with measurement (measured in powers of 1024) and percentage value (e.g. 10.5 MiB (98%))
 StreamSize_Proportion;;;N NT;;;Size of this stream divided by total file size
-StreamSize_Demuxed;; byte;N YIN;;;Size of this stream after demuxing, in bytes
+StreamSize_Demuxed;; byte;N NIN;;;Size of this stream after demuxing, in bytes
 StreamSize_Demuxed/String;;;N NT;;;Size of this stream after demuxing, with measurement (measured in powers of 1024) and percentage value (e.g. 10.5 MiB (98%))
 StreamSize_Demuxed/String1;;;N NT;;;Size of this stream after demuxing, with measurement (measured in powers of 1024) rounded to the nearest integer (e.g. 11 MiB)
 StreamSize_Demuxed/String2;;;N NT;;;Size of this stream after demuxing, measurement (measured in powers of 1024) rounded to the two most significant digits (e.g. 11 MiB)
@@ -159,22 +159,22 @@ StreamSize_Demuxed/String5;;;N NT;;;Size of this stream after demuxing, with mea
 HeaderSize;;;N YIY;;;Header field size, in bytes
 DataSize;;;N YIY;;;Data field size, in bytes
 FooterSize;;;N YIY;;;Footer field size, in bytes
-IsStreamable;;;N YTY;;;Set if this file is streamable or not. Options are Yes/No
+IsStreamable;;;N YTY;;;Set if this file is streamable or not (Yes, No)
 Album_ReplayGain_Gain;; dB;N YTY;;;The gain to apply to reach 89dB SPL on playback
-Album_ReplayGain_Gain/String;;;Y YT;;;The gain to apply to reach 89dB SPL on playback
+Album_ReplayGain_Gain/String;;;Y NT;;;The gain to apply to reach 89dB SPL on playback
 Album_ReplayGain_Peak;;;Y YTY;;;The maximum absolute peak value of the item
-Encryption;;;Y YT;;;Advanced Encryption Standard
-Encryption_Format;;;N YTY;;;Advanced Encryption Standard format
-Encryption_Length;;;N YTY;;;Advanced Encryption Standard length (128, 192 or 256 bits)
-Encryption_Method;;;N YTY;;;Advanced Encryption Standard method
-Encryption_Mode;;;N YTY;;;Advanced Encryption Standard mode
-Encryption_Padding;;;N YTY;;;Advanced Encryption Standard padding
-Encryption_InitializationVector;;;N YTY;;;Advanced Encryption Standard initialization vector
+Encryption;;;Y YT;;;Encryption
+Encryption_Format;;;N YTY;;;Encryption format
+Encryption_Length;;;N YTY;;;Encryption length (128, 192 or 256 bits)
+Encryption_Method;;;N YTY;;;Encryption method
+Encryption_Mode;;;N YTY;;;Encryption mode
+Encryption_Padding;;;N YTY;;;Encryption padding
+Encryption_InitializationVector;;;N YTY;;;Encryption initialization vector
 UniversalAdID/String;;;Y NT;;;Universal Ad-ID, see https://ad-id.org for more information
 UniversalAdID_Registry;;;N YTY;;;Universal Ad-ID registry
 UniversalAdID_Value;;;N YTY;;;Universal Ad-ID value
-Title;;;N NTY;;;Title of file;;Title
-Title_More;;;N NTY;;;More title information;;Title
+Title;;;N YTY;;;Title of file;;Title
+Title_More;;;N YTY;;;More title information;;Title
 Title/Url;;;N NT;;;URL;;Title
 Domain;;;Y YTY;;;Universe that the file's contents belong to (e.g. Star Wars, Stargate, Buffy, Dragonball);;Title
 Collection;;;Y YTY;;;Name of the series (e.g. Star Wars movies, Stargate SG-1, Angel);;Title
@@ -267,7 +267,7 @@ Keywords;;;Y YTY;;;Keywords for the content separated by a comma, used for searc
 Summary;;;Y YTY;;;Plot outline or a summary of the story;;Classification
 Synopsis;;;Y YTY;;;Description of the story line of the item;;Classification
 Period;;;Y YTY;;;Describes the period that the piece is from or about (e.g. Renaissance);;Classification
-LawRating;;;Y YTY;;;Legal rating of a movie. Format depends on country of origin (e.g. PG or R in the USA, an age in other countries, or a URI defining a logo);;Classification
+LawRating;;;Y YTY;;;Legal rating of a movie. Format depends on country of origin (e.g. PG, 16);;Classification
 LawRating_Reason;;;Y YTY;;;Reason for the law rating;;Classification
 ICRA;;;Y YTY;;;The ICRA rating (previously RSACi);;Classification
 Released_Date;;;Y YTY;;;Date/year that the content was released;;Temporal
@@ -277,12 +277,12 @@ Encoded_Date;;;Y YTY;;;Time/date/year that the encoding of this content was comp
 Tagged_Date;;;Y YTY;;;Time/date/year that the tags were added to this content;;Temporal
 Written_Date;;;Y YTY;;;Time/date/year that the composition of the music/script began;;Temporal
 Mastered_Date;;;Y YTY;;;Time/date/year that the content was digitally mastered;;Temporal
-File_Created_Date;;;N NTY;;;Time that the file was created on the file system;;Temporal
-File_Created_Date_Local;;;N NTY;;;Local time that the file was created on the file system. (Warning: this field depends of local configuration, do not use it in an international database);;Temporal
+File_Created_Date;;;N YTY;;;Time that the file was created on the file system;;Temporal
+File_Created_Date_Local;;;N YTY;;;Local time that the file was created on the file system (not to be used in an international database);;Temporal
 File_Modified_Date;;;N NTY;;;Time that the file was last modified on the file system;;Temporal
-File_Modified_Date_Local;;;N NTY;;;Local time that the file was last modified on the file system (Warning: this field depends of local configuration, do not use it in an international database);;Temporal
+File_Modified_Date_Local;;;N NTY;;;Local time that the file was last modified on the file system (not to be used in an international database);;Temporal
 Recorded_Location;;;Y YTY;;;Location where track was recorded, as Longitude+Latitude;;Spatial
-Written_Location;;;Y YTY;;;Location that the item was originally designed/written. Information should be stored in the following format: country code, state/province, city where the country code is the same 2 octets as in Internet domains, or possibly ISO-3166 (e.g. US, Texas, Austin);;Spatial
+Written_Location;;;Y YTY;;;Location that the item was originally designed/written;;Spatial
 Archival_Location;;;Y YTY;;;Location where an item is archived (e.g. Louvre, Paris, France);;Spatial
 Encoded_Application;;;N YTY;;;Name of the software package used to create the file (e.g. Microsoft WaveEdiTY);;Technical
 Encoded_Application/String;;;Y NT;;;Name of the software package used to create the file, in the format "CompanyName ProductName (OperatingSystem) Version (Date)";;Technical
@@ -293,9 +293,9 @@ Encoded_Application_Url;;;N YTY;;;URL associated with the encoding software;;Tec
 Encoded_Library;;;N YTY;;;Software used to create the file;;Technical
 Encoded_Library/String;;;Y NT;;;Software used to create the file, in the format "CompanyName ProductName (OperatingSystem) Version (Date)";;Technical
 Encoded_Library_CompanyName;;;N YTY;;;Name of the encoding software company;;Technical
-Encoded_Library_Name;;;N NTY;;;Name of the encoding software;;Technical
-Encoded_Library_Version;;;N NTY;;;Version of the encoding software;;Technical
-Encoded_Library_Date;;;N NTY;;;Release date of the encoding software, in UTC;;Technical
+Encoded_Library_Name;;;N YTY;;;Name of the encoding software;;Technical
+Encoded_Library_Version;;;N YTY;;;Version of the encoding software;;Technical
+Encoded_Library_Date;;;N YTY;;;Release date of the encoding software, in UTC;;Technical
 Encoded_Library_Settings;;;Y YTY;;;Parameters used by the encoding software;;Technical
 Encoded_OperatingSystem;;;N YTY;;;Operating System of the encoding software;;Technical
 Cropped;;;Y YTY;;;Describes whether an image has been cropped and, if so, how it was cropped;;Technical
@@ -315,8 +315,9 @@ ISBN;;;Y YTY;;;International Standard Book Number;;Identifier
 ISAN;;;Y YTY;;;International Standard Audiovisual Number;;Identifier
 BarCode;;;Y YTY;;;EAN-13 (13-digit European Article Numbering) or UPC-A (12-digit Universal Product Code) bar code identifier;;Identifier
 LCCN;;;Y YTY;;;Library of Congress Control Number;;Identifier
+UMID;;;Y YTY;;;Universal Media Identifier
 CatalogNumber;;;Y YTY;;;A label-specific catalogue number used to identify the release (e.g. TIC 01);;Identifier
-LabelCode;;;Y YTY;;;A 4-digit or 5-digit number to identify the record label, typically printed as (LC) xxxx or (LC) 0xxxx on CDs media or covers, with only the number being stored;;Identifier
+LabelCode;;;Y YTY;;;Label code (e.g. 12345, meaning LC-12345);;Identifier
 Owner;;;Y YTY;;;Owner of the file;;Legal
 Copyright;;;Y YTY;;;Copyright attribution;;Legal
 Copyright/Url;;;Y YTY;;;Link to a site with copyright/legal information;;Legal
@@ -324,14 +325,14 @@ Producer_Copyright;;;Y YTY;;;Copyright information as per the production copyrig
 TermsOfUse;;;Y YTY;;;License information (e.g. All Rights Reserved, Any Use Permitted);;Legal
 ServiceName;;;Y YTY;;;Name of assisted service;;Legal
 ServiceChannel;;;Y YTY;;;Channel of assisted service;;Legal
-Service/Url;;;Y YTY;;;URL for of assisted service;;Legal
+Service/Url;;;Y YTY;;;URL of of assisted service;;Legal
 ServiceProvider;;;Y YTY;;;Provider of assisted service;;Legal
-ServiceProvider/Url;;;Y YTN;;;URL for provider of assisted service;;Legal
+ServiceProvider/Url;;;Y YTN;;;URL of provider of assisted service;;Legal
 ServiceType;;;Y YTY;;;Type of assisted service;;Legal
 NetworkName;;;Y YTY;;;Television network name;;Legal
-OriginalNetworkName;;;Y YTY;;;Television network name for original broadcast;;Legal
-Country;;;Y YTY;;;Country information for the content;;Legal
-TimeZone;;;Y YTY;;;TimeZone information for the content;;Legal
+OriginalNetworkName;;;Y YTY;;;Television network name of original broadcast;;Legal
+Country;;;Y YTY;;;Country information of the content;;Legal
+TimeZone;;;Y YTY;;;Time zone information of the content;;Legal
 Cover;;;Y YTY;;;Is there a cover? Result will be "Yes" if present, empty if not;;Info
 Cover_Description;;;Y YTY;;;Short description of cover image file (e.g. Earth in space);;Info
 Cover_Type;;;Y YTY;;;Cover type (e.g. "Cover (front)");;Info
@@ -339,7 +340,7 @@ Cover_Mime;;;Y YTY;;;MIME type of cover file (e.g. image/png);;Info
 Cover_Data;;;N YTY;;;Cover, in binary format, encoded as Base64;;Info
 Lyrics;;;Y YTY;;;Text of a song;;Info
 Comment;;;Y YTY;;;Any comment related to the content;;Personal
-Rating;;;Y YTY;;;A numeric value defining how much a person likes the song/movie. The number is between 1 and 5 with decimal values possible (e.g. 2.7), 5(.0) being the highest possible rating;;Personal
+Rating;;;Y YTY;;;A numeric value defining how much a person likes the song/movie, 1 to 5 (e.g. 2, 5.0);;Personal
 Added_Date;;;Y YTY;;;Date/year the item was added to the owners collection;;Personal
 Played_First_Date;;;Y YTY;;;Date the owner first played an item;;Personal
 Played_Last_Date;;;Y YTY;;;Date the owner last played an item;;Personal

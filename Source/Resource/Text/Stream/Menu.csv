@@ -6,7 +6,7 @@ StreamKind/String;;;N NT;;;Name of stream type. Options are: Audio, General, Ima
 StreamKindID;;;N NI;;;Identification number for stream, assigned in order of parsing. Counting starts at 0
 StreamKindPos;;;N NI;;;Identification number for stream when multiple, assigned in order of parsing. Counting starts at 1
 StreamOrder;;;N YIY;;;Stream order in the file for type of stream. Counting starts at 0
-FirstPacketOrder;;;N YIY;;;Order of the first fully decodable packet parsed in the file for stream type. Counting starts at 0
+FirstPacketOrder;;;N NIY;;;Order of the first fully decodable packet parsed in the file for stream type. Counting starts at 0
 Inform;;;N NT;;;Last **Inform** call. This is mostly for internal use
 ID;;;N YTY;;;The identification number for this stream in this file
 ID/String;;;Y NT;;;The identification number for this stream in this file (String format)
@@ -20,10 +20,10 @@ Format;;;N YTY;;;Format used
 Format/String;;;Y NT;;;Format used and any additional features or settings
 Format/Info;;;Y NT;;;More details about the identified Format
 Format/Url;;;N NT;;;Link to a description of this format
-Format_Commercial;;;N YT;;;Commercial name used by vendor for these settings or Format field if there is no difference
+Format_Commercial;;;N NT;;;Commercial name used by vendor for these settings or Format field if there is no difference
 Format_Commercial_IfAny;;;Y YTY;;;Commercial name used by vendor for these settings, if available
 Format_Version;;;Y NTY;;;Version for the identified format
-Format_Profile;;;Y NTY;;;Profile of the Format (old XML: 'Profile@Level' format)
+Format_Profile;;;Y NTY;;;Profile of the Format
 Format_Compression;;;Y NTY;;;Compression method used
 Format_Settings;;;Y NTY;;;Settings used and required by decoder
 Format_AdditionalFeatures;;;N YTY;;;Features from the format that are required to fully support the file content
@@ -33,11 +33,11 @@ CodecID/Info;;;Y NT;;;More information about this codec identifier
 CodecID/Hint;;;Y NT;;;Common alternative names for this codec identifier
 CodecID/Url;;;N NT;;;A link to more details about this codec identifier
 CodecID_Description;;;Y YT;;;Codec description, as defined by the container
-Codec;;;N YT;;;Deprecated
+Codec;;;N NT;;;Deprecated
 Codec/String;;;N NT;;;Deprecated
 Codec/Info;;;N NT;;;Deprecated
 Codec/Url;;;N NT;;;Deprecated
-Duration;; ms;N YFY;;;Play time, in milliseconds
+Duration;; ms;N YFY;;;Play time of the stream, in s (ms for text output)
 Duration/String;;;Y NT;;;Play time in format XXx YYy, with YYy value omitted if zero (e.g. 1 h 40 min)
 Duration/String1;;;N NT;;;Play time in format HHh MMmn SSs MMMms, with any fields omitted if zero
 Duration/String2;;;N NT;;;Play time in format XXx YYy, with YYy omitted if value is zero
@@ -46,7 +46,7 @@ Duration/String4;;;N NT;;;Play time in format HH:MM:SS:FF, with last colon repla
 Duration/String5;;;N NT;;;Play time in format HH:MM:SS.mmm (HH:MM:SS:FF)
 Duration_Start;;;Y YTY;;;Start time of stream, in UTC
 Duration_End;;;Y YTY;;;End time of stream, in UTC
-Delay;; ms;N NFY;;;Delay fixed in the stream (relative), in milliseconds
+Delay;; ms;N YFY;;;Delay fixed in the stream (relative), in ms
 Delay/String;;;N NT;;;Delay fixed in the stream (relative), with measurement
 Delay/String1;;;N NT;;;Delay fixed in the stream (relative), with measurement
 Delay/String2;;;N NT;;;Delay fixed in the stream (relative), with measurement
@@ -56,13 +56,13 @@ Delay/String5;;;N NT;;;Delay in format HH:MM:SS.mmm (HH:MM:SS:FF)
 Delay_Settings;;;N NTY;;;Delay settings (in case of timecode for example)
 Delay_DropFrame;;;N NTY;;;Delay drop frame
 Delay_Source;;;N NTY;;;Part of the file where the delay was set (e.g. Container, Stream, or empty)
-FrameRate_Mode;;;N YTY;;;Frame rate mode, considering data from both the container and codec, as acronym (e.g. CFR, VFR)
-FrameRate_Mode/String;;;N NT;;;Frame rate mode, considering data from both the container and codec, as word (e.g. Constant, Variable)
-FrameRate;; fps;N YFY;;;Frames per second, as integer (e.g. 29.970)
+FrameRate_Mode;;;N YTY;;;Frame rate mode, as acronym (e.g. CFR, VFR)
+FrameRate_Mode/String;;;N NT;;;Frame rate mode, as word (e.g. Constant, Variable)
+FrameRate;; fps;N YFY;;;Frames per second, as float (e.g. 29.970)
 FrameRate/String;;;N NT;;;Frames per second, with measurement (e.g. 29.970 (29970/1000) FPS)
 FrameRate_Num;;;N NIY;;;Numerator for determined frames per second (e.g. 29970)
 FrameRate_Den;;;N NIY;;;Denominator for determined frames per second (e.g. 1000)
-FrameCount;;;N NIY;;;Numer of frames (e.g. 78112)
+FrameCount;;;N NIY;;;Numer of frames
 List_StreamKind;;;N YTY;;;List of programs available
 List_StreamPos;;;N YTY;;;List of programs available
 List;;;N YT;;;List of programs available
@@ -79,23 +79,23 @@ ServiceKind;;;N YTY;;;Type of assisted service (e.g. visually impaired, commenta
 ServiceKind/String;;;Y NT;;;Type of assisted service (e.g. visually impaired, commentary, voice over)
 ServiceName;;;Y YTY;;;Name of assisted service;;Legal
 ServiceChannel;;;Y YTY;;;Channel of assisted service;;Legal
-Service/Url;;;Y YTY;;;URL for of assisted service;;Legal
+Service/Url;;;Y YTY;;;URL of assisted service;;Legal
 ServiceProvider;;;Y YTY;;;Provider of assisted service;;Legal
-ServiceProvider/Url;;;Y YTN;;;URL for provider of assisted service;;Legal
+ServiceProvider/Url;;;Y YTN;;;URL of provider of assisted service;;Legal
 ServiceType;;;Y YTY;;;Type of assisted service;;Legal
 NetworkName;;;Y YTY;;;Television network name;;Legal
-Original/NetworkName;;;Y YTY;;;Television network name for original broadcast;;Legal
-Countries;;;Y YTY;;;Country information for the content;;Legal
-TimeZones;;;Y YTY;;;TimeZone information for the content;;Legal
-LawRating;;;Y YTY;;;Legal rating of a movie. Format depends on country of origin (e.g. PG or R in the USA, an age in other countries, or a URI defining a logo);;Classification
-LawRating_Reason;;;Y YTY;;;Reason for the law rating;;Classification
-Disabled;;Yes;N YTY;;;Set if this stream should not be used. Options are Yes/No
-Disabled/String;;;Y NT;;;Set if this stream should not be used. Options are Yes/No
-Default;;Yes;N YTY;;;Flag set if this stream should be used if no language found matches the user preference. Options are Yes/No
-Default/String;;;Y NT;;;Flag set if this stream should be used if no language found matches the user preference. Options are Yes/No
-Forced;;Yes;N YTY;;;Flag set if this stream should be used regardless of user preferences, often used for sparse subtitle dialogue in an otherwise unsubtitled movie. Options are Yes/No
-Forced/String;;;Y NT;;;Flag set if this stream should be used regardless of user preferences, often used for sparse subtitle dialogue in an otherwise unsubtitled movie. Options are Yes/No
+Original/NetworkName;;;Y YTY;;;Television network name of original broadcast;;Legal
+Countries;;;Y YTY;;;Country information of the content;;Legal
+TimeZones;;;Y YTY;;;TimeZone information of the content;;Legal
+LawRating;;;Y YTY;;;Legal rating of a movie. Format depends on country of origin (e.g. PG, 16);;Classification
+LawRating_Reason;;;Y YTY;;;Reason of the law rating;;Classification
+Disabled;;Yes;N YTY;;;Set if this stream should not be used (Yes, No)
+Disabled/String;;;Y NT;;;Set if this stream should not be used (Yes, No)
+Default;;Yes;N YTY;;;Flag set if this stream should be used if no language found matches the user preference (Yes, No)
+Default/String;;;Y NT;;;Flag set if this stream should be used if no language found matches the user preference (Yes, No)
+Forced;;Yes;N YTY;;;Flag set if this stream should be used regardless of user preferences, often used for sparse subtitle dialogue in an otherwise unsubtitled movie (Yes, No)
+Forced/String;;;Y NT;;;Flag set if this stream should be used regardless of user preferences, often used for sparse subtitle dialogue in an otherwise unsubtitled movie (Yes, No)
 AlternateGroup;;Yes;N YTY;;;Number of a group in order to provide versions of the same track
 AlternateGroup/String;;;Y NT;;;Number of a group in order to provide versions of the same track
-Chapters_Pos_Begin;;;N NI;;;Used by third-party developers to know about the beginning of the chapters list, to be used by Get(Stream_Menu, x, Pos), where Pos is an Integer between Chapters_Pos_Begin and Chapters_Pos_End
+Chapters_Pos_Begin;;;N NI;;;Used by third-party developers to know about the beginning of the chapters list, to be used by Get (Stream_Menu, x, Pos), where Pos is an Integer between Chapters_Pos_Begin and Chapters_Pos_End
 Chapters_Pos_End;;;N NI;;;Used by third-party developers to know about the end of the chapters list (this position excluded)

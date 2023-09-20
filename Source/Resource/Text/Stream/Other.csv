@@ -6,7 +6,7 @@ StreamKind/String;;;N NT;;;Stream type name
 StreamKindID;;;N NI;;;Number of the stream (base=0)
 StreamKindPos;;;N NI;;;When multiple streams, number of the stream (base=1)
 StreamOrder;;;N YIY;;;Stream order in the file, whatever is the kind of stream (base=0)
-FirstPacketOrder;;;N YIY;;;Order of the first fully decodable packet met in the file, whatever is the kind of stream (base=0)
+FirstPacketOrder;;;N NIY;;;Order of the first fully decodable packet met in the file, whatever is the kind of stream (base=0)
 Inform;;;N NT;;;Last **Inform** call
 ID;;;N YTY;;;The ID for this stream in this file
 ID/String;;;Y NT;;;The ID for this stream in this file
@@ -21,7 +21,7 @@ Format;;;N YTY;;;Format used
 Format/String;;;Y NT;;;Format used + additional features
 Format/Info;;;Y NT;;;Info about Format
 Format/Url;;;N NT;;;Link
-Format_Commercial;;;N YT;;;Commercial name used by vendor for theses setings or Format field if there is no difference
+Format_Commercial;;;N NT;;;Commercial name used by vendor for theses setings or Format field if there is no difference
 Format_Commercial_IfAny;;;Y YTY;;;Commercial name used by vendor for theses setings if there is one
 Format_Version;;;Y NTY;;;Version of this format
 Format_Profile;;;Y NTY;;;Profile of the Format
@@ -83,7 +83,7 @@ FrameRate_Num;;;N NIY;;;Frames per second, numerator
 FrameRate_Den;;;N NIY;;;Frames per second, denominator
 FrameCount;;;N NIY;;;Number of frames
 Source_FrameCount;;;N NI;;;Source Number of frames
-Delay;; ms;N NFY;;;Delay fixed in the stream (relative) IN MS;
+Delay;; ms;N YFY;;;Delay fixed in the stream (relative) IN MS;
 Delay/String;;;N NT;;;Delay with measurement;
 Delay/String1;;;N NT;;;Delay with measurement;
 Delay/String2;;;N NT;;;Delay with measurement;
@@ -140,7 +140,7 @@ StreamSize/String3;;;N NT;;;;;
 StreamSize/String4;;;N NT;;;;;
 StreamSize/String5;;;N NT;;;Streamsize in with percentage value;;
 StreamSize_Proportion;;;N NT;;;Stream size divided by file size;;
-StreamSize_Demuxed;; byte;N YIN;;;StreamSize in bytes of hte stream after demux;;
+StreamSize_Demuxed;; byte;N NIN;;;StreamSize in bytes of hte stream after demux;;
 StreamSize_Demuxed/String;;;N NT;;;StreamSize_Demuxed in with percentage value;;
 StreamSize_Demuxed/String1;;;N NT;;;;;
 StreamSize_Demuxed/String2;;;N NT;;;;;
