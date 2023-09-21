@@ -1,0 +1,46 @@
+MIXML;MPEG-7;EBUCore;PBCore
+creatingLibrary;DescriptionMetadata/Instrument/Tool/Name;"ebuCoreMain writingLibraryName,
+ebuCoreMain writingLibraryVersion";
+;DescriptionMetadata/CreationTime;dateLastModified, timeLastModified;
+;Content/Name;;instantiationMediaType
+ID;;containerFormatId;
+CompleteName;DescriptionMetadata/PrivateIdentifiert (Name+Extension only);"fileName (Name+Extension only),
+locator";instantiationIdentifier (Name+Extension only)
+Format;MediaFormat/FileFormat;containerFormatName;instantiationStandard
+Format_Version;;containerFormatVersionId;
+InternetMediaType;;;instantiationDigital
+CodecID;;codecIdentifier/identifier;
+CodecID_Description;;codecIdentifier/name;
+FileSize;MediaFormat/FileSize;fileSize;instantiationFileSize
+Duration;MediaTime/MediaDuration;duration/normalPlayTime;instantiationDuration
+OverallBitRate_Mode;MediaFormat/BitRate variable;;
+OverallBitRate;MediaFormat/BitRate;;instantiationDataRate
+Delay;MediaTime/MediaTimePoint;;
+Title;Creation/Title@type=songTitle;;
+Album;Creation/Title@type=albumTitle;;
+Part;Creation/Title@type=songTitle;;
+Part/Position;Creation/Title@type=urn:x-mpeg7-mediainfo:cs:TitleTypeCS:2009:PART;;
+Part/Position_Total;Creation/Title@type=urn:x-mpeg7-mediainfo:cs:TitleTypeCS:2009:PART;;
+Track/Position;Creation/Title@type=urn:x-mpeg7-mediainfo:cs:TitleTypeCS:2009:TRACK;;
+Track/Position_Total;Creation/Title@type=urn:x-mpeg7-mediainfo:cs:TitleTypeCS:2009:TRACK;;
+Performer;Creation/Creator/Role@type=urn:mpeg:mpeg7:cs:RoleCS:2001:PERFORMER;;
+Composer;Creation/Creator/Role@type=urn:mpeg:mpeg7:cs:RoleCS:2001:COMPOSER;;
+Director;Creation/Creator/Role@type=urn:mpeg:mpeg7:cs:RoleCS:2001:PRODUCER;;
+ProductionDesigner;Creation/Creator/Role@type=urn:mpeg:mpeg7:cs:RoleCS:2001:PRODUCTION-DESIGNER;;
+CostumeDesigner;Creation/Creator/Role@type=urn:mpeg:mpeg7:cs:RoleCS:2001:COSTUME-SUPERVISOR;;
+WrittenBy;Creation/Creator/Role@type=urn:mpeg:mpeg7:cs:RoleCS:2001:AUTHOR;;
+Producer;Creation/Creator/Role@type=urn:mpeg:mpeg7:cs:RoleCS:2001:PRODUCER;;
+ExecutiveProducer;Creation/Creator/Role@type=urn:mpeg:mpeg7:cs:RoleCS:2001:EXECUTIVE-PRODUCER;;
+DistributedBy;Creation/Creator/Role@type=urn:mpeg:mpeg7:cs:RoleCS:2001:DISTRIBUTOR;;
+Publisher;Creation/Creator/Role@type=urn:mpeg:mpeg7:cs:RoleCS:2001:PUBLISHER;;
+Label;Creation/Creator/Role@type=urn:mpeg:mpeg7:cs:RoleCS:2001:RECORD-LABEL;;
+Recorded_Date;Creation/CreationCoordinates/Date;dateCreated;instantiationDate
+Encoded_Date;Creation/CreationCoordinates/Date;dateModified;instantiationDate
+Encoded_Application;Creation/CreationTool/Tool/Name;;
+Encoded_Library;Creation/CreationTool/Tool/Name;;
+ISRC;"DescriptionMetadata/PublicIdentifier@type=""ISRC""";;
+ISAN;"DescriptionMetadata/PublicIdentifier@type=""ISAN""";;
+UMID;"DescriptionMetadata/PublicIdentifier@type=""UMID""";;
+Owner;;;instantiationRights/rightsSummary
+Producer_Reference;"DescriptionMetadata/PublicIdentifier@type=""OriginatorReference""";;
+IsTruncated;MediaFormat/IsTruncated (Extended only);;

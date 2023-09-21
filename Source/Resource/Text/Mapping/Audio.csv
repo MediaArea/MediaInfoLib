@@ -1,0 +1,24 @@
+MIXML;MPEG-7;EBUCore;PBCore
+ID;;audioTrack@trackId;essenceTrackIdentifier
+Format;Format;"audioFormat@audioFormatName,
+audioEncoding@typeLabel";essenceTrackEncoding
+Format_Version;Format;"audioFormat@@audioFormatVersionId,
+audioEncoding@typeLabel";essenceTrackEncoding@version
+Format_Profile;Format;audioEncoding@typeLabel;
+Format_Level;Format;audioEncoding@typeLabel;
+Format_Settings_Emphasis;Emphasis;;
+CodecID;;codec/codecIdentifier;
+Duration;;;essenceTrackDuration
+BitRate_Mode;;bitRateMode;
+BitRate;;bitRate;essenceTrackDataRate
+BitRate_Maximum;;bitRateMax;
+Channel(s);AudioChannels;channels;
+ChannelLayout;"AudioChannels@front @side @surround @back @lfe,
+Presentation";audioTrackConfiguration;instantiationChannelConfiguration
+SamplingRate;Sample@rate;samplingRate;essenceTrackSamplingRate
+FrameRate;;;essenceTrackFrameRate
+BitDepth;Sample@bitsPer;sampleSize;essenceTrackBitDepth
+Delay;;;essenceTrackTimeStart
+Title;;trackName;
+Language;Classification/Language;trackLanguage;
+Encryption;Encryption (Extended only);;

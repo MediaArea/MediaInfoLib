@@ -1,0 +1,32 @@
+MIXML;MPEG-7;EBUCore;PBCore
+ID;;videoTrack@trackId;essenceTrackIdentifier
+Format;Format;"videoFormat@videoFormatName,
+videoEncoding@typeLabel";essenceTrackEncoding
+Format_Version;Format;"videoFormat@@videoFormatVersionId,
+videoEncoding@typeLabel";essenceTrackEncoding@version
+Format_Profile;Format;videoEncoding@typeLabel;
+Format_Level;Format;videoEncoding@typeLabel;
+MultiView_Count;;flag_3D;
+Format_Settings_GOP;CodingHints@intraFrameDistance @anchorFrameDistance;;
+CodecID;;codec/codecIdentifier;essenceTrackEncoding
+Duration;;;essenceTrackDuration
+BitRate_Mode;;bitRateMode;
+BitRate;;bitRate;essenceTrackDataRate
+BitRate_Maximum;;bitRateMax;
+Width;Frame@width;width;essenceTrackFrameSize (custom text)
+Height;Frame@height;height;essenceTrackFrameSize (custom text)
+PixelAspectRatio;Pixel@aspectRatio;;essenceTrackAspectRatio
+DisplayAspectRatio;Frame@aspectRatio;aspectRatio;
+FrameRate_Mode;Frame@variableRate (Extended only);;
+FrameRate;Frame@rate;frameRate;essenceTrackFrameRate
+Standard;;;essenceTrackStandard
+ChromaSubsampling;"Format@colorDomain (for color vs gray)
+Format/ColorSampling";;
+BitDepth;Pixel@bitsPer;sampleSize;essenceTrackBitDepth
+ScanType;Format@structure;scanningFormat;
+ScanOrder;MediaFormat/System;scanningOrder;
+Delay;;;essenceTrackTimeStart
+Gop_OpenClosed;CodingHints@openGOP (Extended only);;
+Gop_OpenClosed_FirstFrame;CodingHints@openFirstGOP (Extended only);;
+Title;;trackName;
+Encryption;Encryption (Extended only);;
