@@ -477,6 +477,7 @@ enum general
     General_ISAN,
     General_BarCode,
     General_LCCN,
+    General_UMID,
     General_CatalogNumber,
     General_LabelCode,
     General_Owner,

@@ -23,6 +23,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RegressionTest", "Regressio
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlibstat", "..\..\..\zlib\contrib\vstudio\vc17\zlibstat.vcxproj", "{745DEC58-EBB3-47A9-A9B8-4C6627C01BF8}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FieldsDescription", "FieldsDescription\FieldsDescription.vcxproj", "{3BEA2212-C3A5-45A5-81CE-39E9A2ED3127}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -87,6 +89,14 @@ Global
 		{745DEC58-EBB3-47A9-A9B8-4C6627C01BF8}.Release|Win32.Build.0 = ReleaseWithoutAsm|Win32
 		{745DEC58-EBB3-47A9-A9B8-4C6627C01BF8}.Release|x64.ActiveCfg = ReleaseWithoutAsm|x64
 		{745DEC58-EBB3-47A9-A9B8-4C6627C01BF8}.Release|x64.Build.0 = ReleaseWithoutAsm|x64
+		{3BEA2212-C3A5-45A5-81CE-39E9A2ED3127}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3BEA2212-C3A5-45A5-81CE-39E9A2ED3127}.Debug|Win32.Build.0 = Debug|Win32
+		{3BEA2212-C3A5-45A5-81CE-39E9A2ED3127}.Debug|x64.ActiveCfg = Debug|x64
+		{3BEA2212-C3A5-45A5-81CE-39E9A2ED3127}.Debug|x64.Build.0 = Debug|x64
+		{3BEA2212-C3A5-45A5-81CE-39E9A2ED3127}.Release|Win32.ActiveCfg = Release|Win32
+		{3BEA2212-C3A5-45A5-81CE-39E9A2ED3127}.Release|Win32.Build.0 = Release|Win32
+		{3BEA2212-C3A5-45A5-81CE-39E9A2ED3127}.Release|x64.ActiveCfg = Release|x64
+		{3BEA2212-C3A5-45A5-81CE-39E9A2ED3127}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
