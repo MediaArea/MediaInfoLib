@@ -1,0 +1,14 @@
+MIXML;MPEG-7;EBUCore;PBCore
+ID;;textTrack@trackId;essenceTrackIdentifier
+Format;Format (Extended only);captioningFormatName;essenceTrackEncoding
+Format_Version;Format (Extended only);;essenceTrackEncoding@version
+Format_Profile;Format (Extended only);;
+Duration;;;essenceTrackDuration
+BitRate_Mode;;bitRateMode;
+BitRate;;bitRate;essenceTrackDataRate
+BitRate_Maximum;;bitRateMax;
+FrameRate;;;essenceTrackFrameRate
+Delay;;;essenceTrackTimeStart
+Title;;trackName;
+Language;Classification/CaptionLanguage;;
+Encryption;Encryption (Extended only);;
