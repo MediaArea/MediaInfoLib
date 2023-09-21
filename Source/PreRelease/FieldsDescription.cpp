@@ -5,6 +5,7 @@
  */
 
 // TODO: very ugly automation, it deserves a refactoring
+// Usage: ..\..\.. ..\..\..\..\MediaArea-Website
 
 #include <iostream>
 #include <string>
