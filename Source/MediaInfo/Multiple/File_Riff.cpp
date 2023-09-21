@@ -868,7 +868,7 @@ bool File_Riff::Header_Begin()
                 if (StreamItem->second.Parsers.size()>1 || (!StreamItem->second.Parsers.empty() && !StreamItem->second.Parsers[0]->Status[IsFilled]))
                     ShouldStop=false;
         }
-        if (ShouldStop)
+        if (ShouldStop && Buffer_DataToParse_End)
         {
             File_GoTo=Buffer_DataToParse_End;
             Buffer_Offset=Buffer_Size;
