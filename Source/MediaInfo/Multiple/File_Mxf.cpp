@@ -307,6 +307,32 @@ namespace Elements
     UUID(060E2B34, 01010105, 04020304, 02000000, 0000, "SMPTE ST 2127-1", MGASoundEssenceAverageBytesPerSecond, "MGA Sound Essence Average Bytes Per Second")
     UUID(060E2B34, 01010105, 04020304, 03000000, 0000, "SMPTE ST 2127-1", MGASoundEssenceSequenceOffset, "MGA Sound Essence Sequence Offset")
 
+    //                             08 - 
+    UUID(060E2B34, 01010105, 04020308, 01000000, 0000, "SMPTE ST 2131", RIFFChunkStreamID, "RIFF Chunk Stream ID")
+    UUID(060E2B34, 01010105, 04020308, 02000000, 0000, "SMPTE ST 2131", RIFFChunkID, "RIFF Chunk ID")
+    UUID(060E2B34, 01010105, 04020308, 03000000, 0000, "SMPTE ST 2131", RIFFChunkUUID, "RIFF Chunk UUID")
+    UUID(060E2B34, 01010105, 04020308, 04000000, 0000, "SMPTE ST 2131", RIFFChunkHashSHA1, "RIFF Chunk Hash SHA-1")
+    UUID(060E2B34, 01010105, 04020308, 06000000, 0000, "SMPTE ST 2131", RIFFChunkStreamIDsArray, "RIFF Chunk Stream IDs Array")
+
+    //                             09 - 
+    UUID(060E2B34, 01010105, 04020309, 01000000, 0000, "SMPTE ST 2131", NumLocalChannels, "Num Local Channels")
+    UUID(060E2B34, 01010105, 04020309, 02000000, 0000, "SMPTE ST 2131", NumADMAudioTrackUIDs, "Num ADM audioTrackUIDs")
+    UUID(060E2B34, 01010105, 04020309, 03000000, 0000, "SMPTE ST 2131", ADMChannelMappingsArray, "ADM Channel Mappings Array")
+    UUID(060E2B34, 01010105, 04020309, 04000000, 0000, "SMPTE ST 2131", LocalChannelID, "Local Channel ID")
+    UUID(060E2B34, 01010105, 04020309, 05000000, 0000, "SMPTE ST 2131", ADMAudioTrackUID, "ADM audioTrackUID")
+    UUID(060E2B34, 01010105, 04020309, 06000000, 0000, "SMPTE ST 2131", ADMAudioTrackChannelFormatID, "ADM audioTrackChannelFormatID")
+    UUID(060E2B34, 01010105, 04020309, 07000000, 0000, "SMPTE ST 2131", ADMAudioPackFormatID, "ADM audioPackFormatID")
+
+    //                             0A - 
+    UUID(060E2B34, 01010105, 0402030A, 01000000, 0000, "SMPTE ST 2131", RIFFChunkStreamID_link1, "RIFF Chunk Stream ID (link 1)")
+    UUID(060E2B34, 01010105, 0402030A, 02000000, 0000, "SMPTE ST 2131", ADMProfileLevelULBatch, "ADM Profile and Level UL Batch")
+
+    //                             0B - 
+    UUID(060E2B34, 01010105, 0402030B, 01000000, 0000, "SMPTE ST 2131", RIFFChunkStreamID_link2, "RIFF Chunk Stream ID (link 2)")
+    UUID(060E2B34, 01010105, 0402030B, 02000000, 0000, "SMPTE ST 2131", ADMAudioProgrammeID_ST2131, "ADM audioProgrammeID (SMPTE ST 2131)")
+    UUID(060E2B34, 01010105, 0402030B, 03000000, 0000, "SMPTE ST 2131", ADMAudioContentID_ST2131, "ADM audioContentID (SMPTE ST 2131)")
+    UUID(060E2B34, 01010105, 0402030B, 04000000, 0000, "SMPTE ST 2131", ADMAudioObjectID_ST2131, "ADM audioObjectID (SMPTE ST 2131)")
+
     //                             05 - MGA Audio Metadata Coding Parameters
     UUID(060E2B34, 01010105, 04020305, 01000000, 0000, "SMPTE ST 2127-1", MGALinkID, "MGA Link ID")
     UUID(060E2B34, 01010105, 04020305, 02000000, 0000, "SMPTE ST 2127-1", MGAAudioMetadataIndex, "MGA Audio Metadata Index")
@@ -420,6 +446,12 @@ namespace Elements
     UUID(060E2B34, 02530101, 0D010101, 01018107, 0000, "SMPTE ST 2127-1", MGAAudioMetadataSubDescriptor, "MGA Audio Metadata SubDescriptor")
     UUID(060E2B34, 02530101, 0D010101, 01018108, 0000, "SMPTE ST 2127-1", MGASoundfieldGroupLabelSubDescriptor, "MGA Soundfield Group Label SubDescriptor")
     UUID(060E2B34, 02530101, 0D010101, 01018109, 0000, "SMPTE ST 2127-10", SADMAudioMetadataSubDescriptor, "S-ADM Audio Metadata SubDescriptor")
+    UUID(060E2B34, 02530101, 0D010101, 0101810D, 0000, "SMPTE ST 2131", RIFFChunkDefinitionSubDescriptor, "RIFF Chunk Definition Sub-Descriptor")
+    UUID(060E2B34, 02530101, 0D010101, 0101810E, 0000, "SMPTE ST 2131", ADM_CHNASubDescriptor, "ADM CHNA Sub-Descriptor")
+    UUID(060E2B34, 02530101, 0D010101, 0101810F, 0000, "SMPTE ST 2131", ADMChannelMapping, "ADM Channel Mapping")
+    UUID(060E2B34, 02530101, 0D010101, 01018110, 0000, "SMPTE ST 2131", RIFFChunkReferencesSubDescriptor, "RIFF Chunk References Sub-Descriptor")
+    UUID(060E2B34, 02530101, 0D010101, 01018111, 0000, "SMPTE ST 2131", ADMAudioMetadataSubDescriptor, "ADM Audio Metadata Sub-Descriptor")
+    UUID(060E2B34, 02530101, 0D010101, 01018112, 0000, "SMPTE ST 2131", ADMSoundfieldGroupLabelSubDescriptor, "ADM Soundfield GroupLabel Sub-Descriptor")
 
     //                           02 - MXF File Structure
     //                             01 - Version 1
@@ -6383,6 +6415,12 @@ void File_Mxf::Data_Parse()
     ELEMENT(MGAAudioMetadataSubDescriptor,                      "MGA Audio Metadata SubDescriptor")
     ELEMENT(MGASoundfieldGroupLabelSubDescriptor,               "MGA Soundfield Group Label SubDescriptor")
     ELEMENT(SADMAudioMetadataSubDescriptor,                     "S-ADM Audio Metadata SubDescriptor")
+    ELEMENT(RIFFChunkDefinitionSubDescriptor,                   "RIFF Chunk Definition Sub-Descriptor")
+    ELEMENT(ADM_CHNASubDescriptor,                              "ADM CHNA Sub-Descriptor")
+    ELEMENT(ADMChannelMapping,                                  "ADM Channel Mapping")
+    ELEMENT(RIFFChunkReferencesSubDescriptor,                   "RIFF Chunk References Sub-Descriptor")
+    ELEMENT(ADMAudioMetadataSubDescriptor,                      "ADM Audio Metadata Sub-Descriptor")
+    ELEMENT(ADMSoundfieldGroupLabelSubDescriptor,               "ADM Soundfield GroupLabel Sub-Descriptor")
     else if (Code_Compare1==Elements::GenericContainer_Aaf1
           && ((Code_Compare2)&0xFFFFFF00)==(Elements::GenericContainer_Aaf2&0xFFFFFF00)
           && (Code_Compare3==Elements::GenericContainer_Aaf3
@@ -7591,6 +7629,151 @@ void File_Mxf::SADMAudioMetadataSubDescriptor()
 }
 
 //---------------------------------------------------------------------------
+void File_Mxf::RIFFChunkDefinitionSubDescriptor()
+{
+    {
+        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+        if (Primer_Value!=Primer_Values.end())
+        {
+            int32u Code_Compare1=Primer_Value->second.hi>>32;
+            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+            int32u Code_Compare3=Primer_Value->second.lo>>32;
+            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+            if(0);
+            ELEMENT_UUID(RIFFChunkStreamID, "RIFF Chunk Stream ID")
+            ELEMENT_UUID(RIFFChunkID, "RIFF Chunk ID")
+            ELEMENT_UUID(RIFFChunkUUID, "RIFF Chunk UUID")
+            ELEMENT_UUID(RIFFChunkHashSHA1, "RIFF Chunk Hash SHA-1")
+        }
+    }
+
+    GenerationInterchangeObject();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::ADM_CHNASubDescriptor()
+{
+    {
+        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+        if (Primer_Value!=Primer_Values.end())
+        {
+            int32u Code_Compare1=Primer_Value->second.hi>>32;
+            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+            int32u Code_Compare3=Primer_Value->second.lo>>32;
+            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+            if(0);
+            ELEMENT_UUID(NumLocalChannels, "Num Local Channels")
+            ELEMENT_UUID(NumADMAudioTrackUIDs, "Num ADM audioTrackUIDs")
+            ELEMENT_UUID(ADMChannelMappingsArray, "ADM Channel Mappings Array")
+        }
+    }
+
+    GenerationInterchangeObject();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::ADMChannelMapping()
+{
+    //Clear if first sub-element
+    #if defined(MEDIAINFO_ADM_YES)
+        if (Element_Offset<=4)
+            ADMChannelMapping_Presence.reset();
+    #endif //defined(MEDIAINFO_ADM_YES)
+
+    {
+        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+        if (Primer_Value!=Primer_Values.end())
+        {
+            int32u Code_Compare1=Primer_Value->second.hi>>32;
+            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+            int32u Code_Compare3=Primer_Value->second.lo>>32;
+            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+            if(0);
+            ELEMENT_UUID(LocalChannelID, "Local Channel ID")
+            ELEMENT_UUID(ADMAudioTrackUID, "ADM audioTrackUID")
+            ELEMENT_UUID(ADMAudioTrackChannelFormatID, "ADM audioTrackChannelFormatID")
+            ELEMENT_UUID(ADMAudioPackFormatID, "ADM audioPackFormatID")
+        }
+    }
+
+    GenerationInterchangeObject();
+
+    #if defined(MEDIAINFO_ADM_YES)
+        if ((ADMChannelMapping_Presence.to_ulong()&3)==3)
+        {
+            if (!Adm)
+            {
+                Adm=new File_Adm;
+                Open_Buffer_Init(Adm);
+            }
+            Adm->chna_Add(ADMChannelMapping_LocalChannelID, ADMChannelMapping_ADMAudioTrackUID);
+            ADMChannelMapping_Presence.reset();
+        }
+    #endif //defined(MEDIAINFO_ADM_YES)
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::RIFFChunkReferencesSubDescriptor()
+{
+    {
+        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+        if (Primer_Value!=Primer_Values.end())
+        {
+            int32u Code_Compare1=Primer_Value->second.hi>>32;
+            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+            int32u Code_Compare3=Primer_Value->second.lo>>32;
+            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+            if(0);
+            ELEMENT_UUID(RIFFChunkStreamIDsArray, "RIFF Chunk Stream IDs Array")
+        }
+    }
+
+    GenerationInterchangeObject();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::ADMAudioMetadataSubDescriptor()
+{
+    {
+        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+        if (Primer_Value!=Primer_Values.end())
+        {
+            int32u Code_Compare1=Primer_Value->second.hi>>32;
+            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+            int32u Code_Compare3=Primer_Value->second.lo>>32;
+            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+            if(0);
+            ELEMENT_UUID(RIFFChunkStreamID_link1, "RIFF Chunk Stream ID (link 1)")
+            ELEMENT_UUID(ADMProfileLevelULBatch, "ADM Profile and Level UL Batch")
+        }
+    }
+
+    GenerationInterchangeObject();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::ADMSoundfieldGroupLabelSubDescriptor()
+{
+    {
+        std::map<int16u, int128u>::iterator Primer_Value = Primer_Values.find(Code2);
+        if (Primer_Value != Primer_Values.end())
+        {
+            int32u Code_Compare1 = Primer_Value->second.hi >> 32;
+            int32u Code_Compare2 = (int32u)Primer_Value->second.hi;
+            int32u Code_Compare3 = Primer_Value->second.lo >> 32;
+            int32u Code_Compare4 = (int32u)Primer_Value->second.lo;
+            if (0);
+            ELEMENT_UUID(RIFFChunkStreamID_link2, "RIFF Chunk Stream ID (link 2)")
+            ELEMENT_UUID(ADMAudioProgrammeID_ST2131, "ADM audioProgrammeID (SMPTE ST 2131)")
+            ELEMENT_UUID(ADMAudioContentID_ST2131, "ADM audioContentID (SMPTE ST 2131)")
+            ELEMENT_UUID(ADMAudioObjectID_ST2131, "ADM audioObjectID (SMPTE ST 2131)")
+        }
+    }
+
+    GenerationInterchangeObject();
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::GenerationInterchangeObject()
 {
     //Parsing
@@ -8293,6 +8476,7 @@ void File_Mxf::Application05_09_01()
         Open_Buffer_Continue(Adm_New);
         if (Adm_New->Status[IsAccepted])
         {
+            Adm_New->chna_Move(Adm);
             delete Adm;
             Adm=Adm_New;
         }
@@ -11151,6 +11335,167 @@ void File_Mxf::FFV1PictureSubDescriptor_Version()
 void File_Mxf::FFV1PictureSubDescriptor_MicroVersion()
 {
     Skip_B2(                                                    "Data");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::RIFFChunkStreamID()
+{
+    //Parsing
+    int32u Data;
+    Get_B4 (Data,                                               "Data"); Element_Info1(Data);
+
+    FILLING_BEGIN();
+         ExtraMetadata_SID.insert(Data);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::RIFFChunkID()
+{
+    Skip_C4(                                                    "Data");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::RIFFChunkUUID()
+{
+    Skip_UUID(                                                  "UUID");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::RIFFChunkHashSHA1()
+{
+    Skip_B4(                                                    "Data");
+    Skip_B4(                                                    "Data");
+    Skip_B4(                                                    "Data");
+    Skip_B4(                                                    "Data");
+    Skip_B4(                                                    "Data");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::RIFFChunkStreamIDsArray()
+{
+    if (Vector(4)==(int32u)-1)
+        return;
+    while (Element_Offset<Element_Size)
+        Skip_B4(                                                "Data");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::NumLocalChannels()
+{
+    Skip_B2(                                                    "Data");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::NumADMAudioTrackUIDs()
+{
+    Skip_B2(                                                    "Data");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::ADMChannelMappingsArray()
+{
+    if (Vector(16)==(int32u)-1)
+        return;
+    while (Element_Offset<Element_Size)
+        Skip_UUID(                                              "UUID");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::LocalChannelID()
+{
+    int32u Data;
+    Get_B4(Data,                                                "Data");
+
+    FILLING_BEGIN();
+        #if defined(MEDIAINFO_ADM_YES)
+            ADMChannelMapping_LocalChannelID=Data;
+            ADMChannelMapping_Presence.set(0);
+        #endif //defined(MEDIAINFO_ADM_YES)
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::ADMAudioTrackUID()
+{
+    Ztring Data;
+    Get_UTF16B (Length2, Data,                                  "Data");
+
+    FILLING_BEGIN();
+        #if defined(MEDIAINFO_ADM_YES)
+            ADMChannelMapping_ADMAudioTrackUID= Data.To_UTF8();
+            ADMChannelMapping_Presence.set(1);
+        #endif //defined(MEDIAINFO_ADM_YES)
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::ADMAudioTrackChannelFormatID()
+{
+    Skip_UTF16B(Length2,                                        "Data");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::ADMAudioPackFormatID()
+{
+    Skip_UTF16B(Length2,                                        "Data");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::RIFFChunkStreamID_link1()
+{
+    Skip_B4(                                                    "Data");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::ADMProfileLevelULBatch()
+{
+    if (Vector(16)==(int32u)-1)
+        return;
+    while (Element_Offset<Element_Size)
+        Skip_UUID(                                              "UUID");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::RIFFChunkStreamID_link2()
+{
+    Skip_B4(                                                    "Data");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::ADMAudioProgrammeID_ST2131()
+{
+    Skip_UTF16B(Length2,                                        "Data");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::ADMAudioContentID_ST2131()
+{
+    Skip_UTF16B(Length2,                                        "Data");
+}
+
+//---------------------------------------------------------------------------
+//
+void File_Mxf::ADMAudioObjectID_ST2131()
+{
+    Skip_UTF16B(Length2,                                        "Data");
 }
 
 //---------------------------------------------------------------------------

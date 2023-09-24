@@ -229,6 +229,12 @@ protected :
     void MGAAudioMetadataSubDescriptor();
     void MGASoundfieldGroupLabelSubDescriptor();
     void SADMAudioMetadataSubDescriptor();
+    void RIFFChunkDefinitionSubDescriptor();
+    void ADM_CHNASubDescriptor();
+    void ADMChannelMapping();
+    void RIFFChunkReferencesSubDescriptor();
+    void ADMAudioMetadataSubDescriptor();
+    void ADMSoundfieldGroupLabelSubDescriptor();
 
     //Common
     void GenerationInterchangeObject();
@@ -367,6 +373,24 @@ protected :
     void MGASoundEssenceBlockAlign() {WaveAudioDescriptor_BlockAlign();};
     void MGASoundEssenceAverageBytesPerSecond() {WaveAudioDescriptor_AvgBps();}
     void MGASoundEssenceSequenceOffset() {WaveAudioDescriptor_SequenceOffset();};
+    void RIFFChunkStreamID();
+    void RIFFChunkID();
+    void RIFFChunkUUID();
+    void RIFFChunkHashSHA1();
+    void RIFFChunkStreamIDsArray();
+    void NumLocalChannels();
+    void NumADMAudioTrackUIDs();
+    void ADMChannelMappingsArray();
+    void LocalChannelID();
+    void ADMAudioTrackUID();
+    void ADMAudioTrackChannelFormatID();
+    void ADMAudioPackFormatID();
+    void RIFFChunkStreamID_link1();
+    void ADMProfileLevelULBatch();
+    void RIFFChunkStreamID_link2();
+    void ADMAudioProgrammeID_ST2131();
+    void ADMAudioContentID_ST2131();
+    void ADMAudioObjectID_ST2131();
     void MGALinkID();                                           //
     void MGAAudioMetadataIndex();                               //
     void MGAAudioMetadataIdentifier();                          //
@@ -1380,6 +1404,9 @@ protected :
     File_DolbyAudioMetadata* DolbyAudioMetadata;
     #if defined(MEDIAINFO_ADM_YES)
     File_Adm* Adm;
+    int32u ADMChannelMapping_LocalChannelID;
+    string ADMChannelMapping_ADMAudioTrackUID;
+    std::bitset<2> ADMChannelMapping_Presence;
     #endif
     #if defined(MEDIAINFO_IAB_YES)
     File_Iab* Adm_ForLaterMerge;
