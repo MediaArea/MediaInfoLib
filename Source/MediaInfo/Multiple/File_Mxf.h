@@ -133,8 +133,10 @@ protected :
     void MCAEpisode();
     void MCAAudioContentKind();
     void MCAAudioElementKind();
+    void TextDataDescription();
     void ResourceID();
     void NamespaceURI();
+    void TextMIMEMediaType();
     void UCSEncoding();
     void Filler();
     void Filler01() {Filler();}
@@ -213,10 +215,10 @@ protected :
     void SDTI_ControlMetadataSet();
     void SystemScheme1();
     void DMScheme1();
-    void Application04_01_04_01_01();
-    void Application04_01_04_02_01();
-    void Application05_09_01();
-    void Application_08_BodySID();
+    void TextBasedFramework();
+    void GenericStreamTextBasedSet();
+    void MXFGenericStreamDataElementKey_09_01();
+    void GenericStreamID();
     void AS11_AAF_Core();
     void AS11_AAF_Segmentation();
     void AS11_AAF_UKDPP();
@@ -318,6 +320,7 @@ protected :
     void MasteringDisplayWhitePointChromaticity();
     void MasteringDisplayMaximumLuminance();
     void MasteringDisplayMinimumLuminance();
+    void TextBasedObject();
     void GenericSoundEssenceDescriptor_QuantizationBits();      //3D01
     void GenericSoundEssenceDescriptor_Locked();                //3D02
     void GenericSoundEssenceDescriptor_AudioSamplingRate();     //3D03
@@ -400,6 +403,7 @@ protected :
     void SADMProfileLevelULBatch();                             //
     void MpegAudioDescriptor_BitRate();                         //
     void MultipleDescriptor_FileDescriptors();                  //3F01
+    void RFC5646TextLanguageCode();
     void PrimaryExtendedSpokenLanguage();                       //
     void SecondaryExtendedSpokenLanguage();                     //
     void OriginalExtendedSpokenLanguage();                      //

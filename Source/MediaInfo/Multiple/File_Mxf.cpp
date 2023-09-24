@@ -165,8 +165,8 @@ namespace Elements
     UUID(060E2B34, 0101010C, 01020105, 01000000, 0000, "SMPTE ST 429-5", NamespaceURI, "Namespace URI")
 
     //                         03 - Locally Unique Identifiers
-    //                           04 - ?
-    UUID(060E2B34, 0101010D, 01030408, 00000000, 0000, "", Application_08_BodySID, "")
+    //                           04 - Locally Unique Locators
+    UUID(060E2B34, 0101010D, 01030408, 00000000, 0000, "SMPTE RP 2057", GenericStreamID, "Generic Stream ID")
     UUID(060E2B34, 0101010E, 0103040A, 00000000, 0000, "SMPTE ST 377-4", MCAChannelID, "MCA Channel ID")
 
     //                           07 - ?
@@ -198,6 +198,7 @@ namespace Elements
     //                             01 - Country and Region Codes
 
     //                             02 - Spoken Language Codes
+    UUID(060E2B34, 01010107, 03010102, 02140000, 0000, "SMPTE RP 2057", RFC5646TextLanguageCode, "RFC 5646 Text Language Code")
     UUID(060E2B34, 01010107, 03010102, 03010000, 0000, "", PrimarySpokenLanguage, "")
     UUID(060E2B34, 01010107, 03010102, 03020000, 0000, "", SecondarySpokenLanguage, "")
     UUID(060E2B34, 01010107, 03010102, 03030000, 0000, "", OriginalSpokenLanguage, "")
@@ -230,6 +231,9 @@ namespace Elements
     //                             02 - Cataloging and Indexing
     UUID(060E2B34, 0101010E, 03020102, 20000000, 0000, "", MCAAudioContentKind, "")
     UUID(060E2B34, 0101010E, 03020102, 21000000, 0000, "", MCAAudioElementKind, "")
+
+    //                             06 - Textual Description
+    UUID(060E2B34, 0101010E, 03020106, 03020000, 0000, "SMPTE RP 2057", TextDataDescription, "Text Data Description")
 
     //                       04 - Parametric
     //                         01 - Video and Image Essence Characteristics
@@ -352,6 +356,7 @@ namespace Elements
     UUID(060E2B34, 01010105, 04020403, 01020000, 0000, "SMPTE ST 381-2", MpegAudioDescriptor_BitRate, "")
 
     //                         09 - Format Characteristics
+    UUID(060E2B34, 0101010C, 04090202, 00000000, 0000, "SMPTE RP 2057", TextMIMEMediaType, "Text MIME Media Type")
     UUID(060E2B34, 0101010C, 04090500, 00000000, 0000, "SMPTE ST 429-5", UCSEncoding, "UCS Encoding")
 
     //                         20 - Device Characteristics
@@ -366,9 +371,15 @@ namespace Elements
     //                       05 - Process
 
     //                       06 - Relational
-    //                         01 - Essence and Metadata Relationships
-    //                           04 - Essence to Essence Relationships
-    UUID(060E2B34, 01010109, 06010104, 06100000, 0000, "", SubDescriptors, "")
+    //                         01 - Generic Relationships
+    //                           01 - Essence and Metadata Relationships
+    //                              04 - Object to Object Relationships
+    //                                 05 - Strong References Batches
+    //                                   41 - Text-Based Descriptive Metadata Sets
+    UUID(060E2B34, 01010109, 06010104, 05410100, 0000, "SMPTE RP 2057", TextBasedObject, "Text-Based Object")
+
+    //                                 06 - Strong References Arrays
+    UUID(060E2B34, 01010109, 06010104, 06100000, 0000, "", SubDescriptors, "Sub-descriptors")
 
     //                       07 - Spatio-temporal
 
@@ -492,12 +503,11 @@ namespace Elements
     //                           04 - ?
     //                             01 - ?
     UUID(060E2B34, 02530101, 0D010401, 01010100, 0000, "", DMScheme1, "")
-    UUID(060E2B34, 02530101, 0D010401, 04010100, 0000, "", Application04_01_04_01_01, "")
-    UUID(060E2B34, 02530101, 0D010401, 04020100, 0000, "", Application04_01_04_02_01, "")
+    UUID(060E2B34, 02530101, 0D010401, 04010100, 0000, "", TextBasedFramework, "Text-based Framework")
+    UUID(060E2B34, 02530101, 0D010401, 04020100, 0000, "", GenericStreamTextBasedSet, "Generic Stream Text-based Set")
 
-    //                           05 - ?
-    //                             09 - ?
-    UUID(060E2B34, 0101010C, 0D010509, 01000000, 0000, "", Application05_09_01, "")
+    //                           05 - MXF Generic Stream Data Element Key
+    UUID(060E2B34, 0101010C, 0D010509, 01000000, 0000, "SMPTE ST 410", MXFGenericStreamDataElementKey_09_01, "MXF Generic Stream Data Element Key")
 
     //                           07 - AMWA AS-11
     //                             01 - ?
@@ -6404,9 +6414,9 @@ void File_Mxf::Data_Parse()
     ELEMENT(AS11_AAF_Segmentation,                              "AS-11 segmentation metadata framework")
     ELEMENT(AS11_AAF_UKDPP,                                     "AS-11 UK DPP metadata framework")
     ELEMENT(DMScheme1,                                          "Descriptive Metadata Scheme 1") //SMPTE 380M
-    ELEMENT(Application04_01_04_01_01,                          "Application04_01_04_01_01")
-    ELEMENT(Application04_01_04_02_01,                          "Application04_01_04_02_01")
-    ELEMENT(Application05_09_01,                                "Application05_09_01")
+    ELEMENT(TextBasedFramework,                                 "Text-based Framework")
+    ELEMENT(GenericStreamTextBasedSet,                          "Generic Stream Text-based Set")
+    ELEMENT(MXFGenericStreamDataElementKey_09_01,               "MXF Generic Stream Data Element Key")
     ELEMENT(Dolby_PHDRMetadataTrackSubDescriptor,               "Dolby PHDRMetadataTrackSubDescriptor")
     ELEMENT(Omneon_010201010100,                                "Omneon .01.02.01.01.01.00")
     ELEMENT(Omneon_010201020100,                                "Omneon .01.02.01.02.01.00")
@@ -8395,7 +8405,7 @@ void File_Mxf::DMScheme1()
 
 //---------------------------------------------------------------------------
 //
-void File_Mxf::Application04_01_04_01_01()
+void File_Mxf::TextBasedFramework()
 {
     {
         std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
@@ -8406,10 +8416,7 @@ void File_Mxf::Application04_01_04_01_01()
             int32u Code_Compare3=Primer_Value->second.lo>>32;
             int32u Code_Compare4=(int32u)Primer_Value->second.lo;
             if(0);
-            ELEMENT_UUID(PrimaryExtendedSpokenLanguage,                 "Primary Extended Spoken Language")
-            ELEMENT_UUID(SecondaryExtendedSpokenLanguage,               "Secondary Extended Spoken Language")
-            ELEMENT_UUID(OriginalExtendedSpokenLanguage,                "Original Extended Spoken Language")
-            ELEMENT_UUID(SecondaryOriginalExtendedSpokenLanguage,       "Secondary Original Extended Spoken Language")
+            ELEMENT_UUID(TextBasedObject,                               "Text-Based Object")
         }
     }
 
@@ -8418,7 +8425,7 @@ void File_Mxf::Application04_01_04_01_01()
 
 //---------------------------------------------------------------------------
 //
-void File_Mxf::Application04_01_04_02_01()
+void File_Mxf::GenericStreamTextBasedSet()
 {
     {
         std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
@@ -8429,11 +8436,10 @@ void File_Mxf::Application04_01_04_02_01()
             int32u Code_Compare3=Primer_Value->second.lo>>32;
             int32u Code_Compare4=(int32u)Primer_Value->second.lo;
             if(0);
-            ELEMENT_UUID(PrimaryExtendedSpokenLanguage,                 "Primary Extended Spoken Language")
-            ELEMENT_UUID(SecondaryExtendedSpokenLanguage,               "Secondary Extended Spoken Language")
-            ELEMENT_UUID(OriginalExtendedSpokenLanguage,                "Original Extended Spoken Language")
-            ELEMENT_UUID(SecondaryOriginalExtendedSpokenLanguage,       "Secondary Original Extended Spoken Language")
-            ELEMENT_UUID(Application_08_BodySID,                        "BodySID?")
+            ELEMENT_UUID(TextDataDescription,                           "Text Data Description")
+            ELEMENT_UUID(TextMIMEMediaType,                             "Text MIME Media Type")
+            ELEMENT_UUID(RFC5646TextLanguageCode,                       "RFC 5646 Text Language Code")
+            ELEMENT_UUID(GenericStreamID,                               "Generic Stream ID")
         }
     }
 
@@ -8443,7 +8449,7 @@ void File_Mxf::Application04_01_04_02_01()
 
 //---------------------------------------------------------------------------
 //
-void File_Mxf::Application_08_BodySID()
+void File_Mxf::GenericStreamID()
 {
     //Parsing
     int32u Data;
@@ -8456,7 +8462,7 @@ void File_Mxf::Application_08_BodySID()
 
 //---------------------------------------------------------------------------
 //
-void File_Mxf::Application05_09_01()
+void File_Mxf::MXFGenericStreamDataElementKey_09_01()
 {
     //Parsing - Dolby Vision Metadata
     File_DolbyVisionMetadata* DolbyVisionMetadata_New=new File_DolbyVisionMetadata;
@@ -8819,6 +8825,13 @@ void File_Mxf::NamespaceURI()
 }
 
 //---------------------------------------------------------------------------
+void File_Mxf::TextMIMEMediaType()
+{
+    //Parsing
+    Info_UTF16B (Length2, Value,                                "Value"); Element_Info1(Value);
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::UCSEncoding()
 {
     //Parsing
@@ -9114,6 +9127,13 @@ void File_Mxf::MCAAudioElementKind()
     FILLING_BEGIN();
         Descriptors[InstanceUID].MCAAudioElementKind=Value;
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::TextDataDescription()
+{
+    //Parsing
+    Skip_UTF16B(Length2,                                        "Data");
 }
 
 //---------------------------------------------------------------------------
@@ -10673,6 +10693,13 @@ void File_Mxf::MasteringDisplayMinimumLuminance()
 }
 
 //---------------------------------------------------------------------------
+//
+void File_Mxf::TextBasedObject()
+{
+    Skip_UUID(                                                  "UUID");
+}
+
+//---------------------------------------------------------------------------
 // 0x3D01
 void File_Mxf::GenericSoundEssenceDescriptor_QuantizationBits()
 {
@@ -11934,6 +11961,14 @@ void File_Mxf::MultipleDescriptor_FileDescriptors()
             StreamOrder++;
         FILLING_END();
     }
+}
+
+//---------------------------------------------------------------------------
+// 0x3F01
+void File_Mxf::RFC5646TextLanguageCode()
+{
+    //Parsing
+    Skip_UTF16B(Length2,                                        "Content");
 }
 
 //---------------------------------------------------------------------------
