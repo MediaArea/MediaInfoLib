@@ -2031,10 +2031,12 @@ void File_Mpeg4::Read_Buffer_Init()
 {
     if (Config->ParseSpeed>=1.0)
         FrameCount_MaxPerStream=(int32u)-1;
+    else if (Config->ParseSpeed>=0.7)
+        FrameCount_MaxPerStream=2048;
     else if (Config->ParseSpeed<=0.3)
         FrameCount_MaxPerStream=128;
     else
-        FrameCount_MaxPerStream=512;
+        FrameCount_MaxPerStream=1024;
 
     #if MEDIAINFO_CONFORMANCE
         IsCmaf=MediaInfoLib::Config.Mp4Profile().find("cmfc")!=string::npos;
