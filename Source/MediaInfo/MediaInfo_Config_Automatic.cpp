@@ -796,6 +796,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "Language_fa;Persian\n"
     "Language_ff;Fulah\n"
     "Language_fi;Finnish\n"
+    "Language_fil;Filipino\n"
     "Language_fj;Fijian\n"
     "Language_fo;Faroese\n"
     "Language_fr;French\n"
