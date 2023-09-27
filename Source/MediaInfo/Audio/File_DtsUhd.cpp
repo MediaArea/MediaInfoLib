@@ -1387,7 +1387,7 @@ void File_DtsUhd::Streams_Fill()
     AudioCodec.back()+=FrameDescriptor.DecoderProfileCode > 0;
     CommercialString.back()+=FrameDescriptor.DecoderProfileCode;
     if (IsType1CertifiedContent)
-        CommercialString+=" with T1-CC (IMAX Enhanced)";
+        CommercialString+=" with IMAX Enhanced";
 
     Fill(Stream_General, 0, General_Format, "DTS-UHD");
     Fill(Stream_General, 0, General_OverallBitRate_Mode, "VBR");
@@ -1401,6 +1401,8 @@ void File_DtsUhd::Streams_Fill()
     Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, CommercialString);
     Fill(Stream_Audio, 0, Audio_Format_Profile, FrameDescriptor.DecoderProfileCode + 2);
     Fill(Stream_Audio, 0, Audio_Format_Settings, RepresentationTypeTable[FrameDescriptor.RepType]);
+    if (IsType1CertifiedContent)
+        Fill(Stream_Audio, 0, Audio_Format_Settings, "T1-CC");
     Fill(Stream_Audio, 0, Audio_SamplesPerFrame, FrameDescriptor.SampleCount, 10, true);
     if (SampleRate)
         Fill(Stream_Audio, 0, Audio_SamplingRate, SampleRate);
