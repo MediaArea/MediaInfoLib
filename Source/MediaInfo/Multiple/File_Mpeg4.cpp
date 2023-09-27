@@ -1650,6 +1650,12 @@ void File_Mpeg4::Read_Buffer_Unsynched()
     if (!IsSub && MajorBrand==0x6A703220) //"jp2 "
         return Read_Buffer_Unsynched_OneFramePerFile();
 
+    for (std::map<int32u, stream>::iterator Stream=Streams.begin(); Stream!=Streams.end(); ++Stream)
+    {
+        for (size_t Pos=0; Pos<Stream->second.Parsers.size(); Pos++)
+            Stream->second.Parsers[Pos]->Open_Buffer_Unsynch();
+    }
+
     if (mdat_Pos.empty())
     {
         IsParsing_mdat=false;
@@ -1691,9 +1697,6 @@ void File_Mpeg4::Read_Buffer_Unsynched()
 
     for (std::map<int32u, stream>::iterator Stream=Streams.begin(); Stream!=Streams.end(); ++Stream)
     {
-        for (size_t Pos=0; Pos<Stream->second.Parsers.size(); Pos++)
-            Stream->second.Parsers[Pos]->Open_Buffer_Unsynch();
-
         #if MEDIAINFO_SEEK && MEDIAINFO_DEMUX
             //Searching the next position for this stream
             int64u StreamOffset=(int64u)-1;
