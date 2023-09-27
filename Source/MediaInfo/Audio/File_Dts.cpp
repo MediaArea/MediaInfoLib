@@ -891,7 +891,10 @@ void File_Dts::Streams_Fill()
 
     // IMAX in core-only stream
     if (Type1CertifiedContent)
-        Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "DTS with T1-CC (IMAX Enhanced)");
+    {
+        Fill(Stream_Audio, 0, Audio_Format_Settings, "T1-CC");
+        Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "DTS with IMAX Enhanced");
+    }
 
     // Filling
     bool LegacyStreamDisplay=MediaInfoLib::Config.LegacyStreamDisplay_Get();
