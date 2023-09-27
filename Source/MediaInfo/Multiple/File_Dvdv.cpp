@@ -338,9 +338,9 @@ void File_Dvdv::Streams_Finish()
     auto Menu_Count=Count_Get(Stream_Menu);
     for (size_t Pos=0; Pos<Menu_Count; Pos++)
     {
-        const auto& Duration=Retrieve_Const(Stream_Menu, 0, Menu_Duration);
+        const auto& Duration=Retrieve_Const(Stream_Menu, Pos, Menu_Duration);
         if (!Duration.empty())
-            Durations[Retrieve_Const(Stream_Menu, 0, "Source")]+=Duration.To_int64u();
+            Durations[Retrieve_Const(Stream_Menu, Pos, "Source")]+=Duration.To_int64u();
     }
     for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
     {
