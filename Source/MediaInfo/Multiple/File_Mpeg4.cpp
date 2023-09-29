@@ -3338,8 +3338,6 @@ void File_Mpeg4::IsParsing_mdat_Set()
             int8u Buffer[4];
             int32u2BigEndian(Buffer, TimeCode_Value);
             Open_Buffer_Continue(Parser, Buffer, 4);
-            Open_Buffer_Finalize(Parser);
-            Merge(*Parser, Stream_Other, StreamPos_Last, 0);
 
             Streams[TimeCode_ID].Parsers.push_back(Parser);
             for (std::map<int32u, stream>::iterator Strea=Streams.begin(); Strea!=Streams.end(); ++Strea)
