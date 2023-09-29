@@ -2382,13 +2382,12 @@ void File_Dts::Rev2Aux()
     // in the reserved data.
     int8u Rev2Bytes;
     Peek_B1(Rev2Bytes);
-    bool DmixIndexPresent=(Rev2Bytes&1)==1;
-    Rev2Bytes = (Rev2Bytes>>1)+1;
+    auto Rev2AUXDataByteSize=(Rev2Bytes>>1)+1;
     if (Element_Size-Element_Offset>=Rev2Bytes && Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, Rev2Bytes)==0)
     {
         BS_Begin();
         // Will later use Rev2BitsRemain to skip padding up to CRC
-        int Rev2BitsRemain=(Rev2Bytes-2)*8-Data_BS_Remain();
+        auto Rev2BitsRemain=(Rev2AUXDataByteSize-2)*8-Data_BS_Remain();
 
         Skip_S1(7,                                              "Rev2AUXDataByteSize");
         bool ESMetaDataFlag;
@@ -2396,28 +2395,33 @@ void File_Dts::Rev2Aux()
         if (ESMetaDataFlag)
             Skip_S1(8,                                          "EmbESDownMixScaleIndex");
 
-        bool BroadcastMetadataPresent = false;
-        Get_SB(BroadcastMetadataPresent,                        "BroadcastMetadataPresent");
-        if (BroadcastMetadataPresent)
+        if (Rev2AUXDataByteSize>4)
         {
-            bool DRCMetadataPresent, DialnormMetadataPresent;
-            Get_SB(DRCMetadataPresent,                          "DRCMetadataPresent");
-            Get_SB(DialnormMetadataPresent,                     "DialnormMetadata");
-            if (DRCMetadataPresent)
-                Skip_S1(4,                                      "DRCversion_Rev2AUX");
-            auto Remain=Data_BS_Remain()%8;
-            if (Remain)
-                Skip_S1(Remain,                                 "ByteAlign");
-            if (DRCMetadataPresent)
+            bool BroadcastMetadataPresent;
+            Get_SB (BroadcastMetadataPresent,                   "BroadcastMetadataPresent");
+            if (BroadcastMetadataPresent)
             {
-                Element_Begin1("Rev2_DRCs");
-                for (int i=0; i<SubSubFrameCount; i++)
-                    Skip_S1(8,                                  "DRCCoeff_Rev2");
+                Element_Begin1("BroadcastMetadata");
+                bool DRCMetadataPresent, DialnormMetadataPresent;
+                Get_SB (DRCMetadataPresent,                     "DRCMetadataPresent");
+                Get_SB (DialnormMetadataPresent,                "DialnormMetadata");
+                if (DRCMetadataPresent)
+                    Skip_S1(4,                                  "DRCversion_Rev2AUX");
+                auto Remain=Data_BS_Remain()%8;
+                if (Remain)
+                    Skip_S1(Remain,                             "ByteAlign");
+                if (DRCMetadataPresent)
+                {
+                    Element_Begin1("Rev2_DRCs");
+                    for (int i=0; i<SubSubFrameCount; i++)
+                        Skip_S1(8,                              "DRCCoeff_Rev2");
+                    Element_End0();
+                }
                 Element_End0();
-            }
 
-            if (DialnormMetadataPresent)
-                Skip_S1(5,                                      "DIALNORM_rev2aux");
+                if (DialnormMetadataPresent)
+                    Skip_S1(5,                                  "DIALNORM_rev2aux");
+            }
         }
 
         Rev2BitsRemain+=Data_BS_Remain();
