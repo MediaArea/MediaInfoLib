@@ -3359,8 +3359,9 @@ void File_MpegPs::audio_stream()
         if (Streams[stream_id].Parsers[Streams[stream_id].Parsers.size()-1]==NULL)
         {
             Streams[stream_id].Parsers.clear();
-            #if defined(MEDIAINFO_MPEGA_YES)
-                Streams[stream_id].Parsers.push_back(ChooseParser_Mpega());
+            #if defined(MEDIAINFO_MPEGH3DA_YES)
+                if (Streams[stream_id].stream_type==45) // No synch available
+                    Streams[stream_id].Parsers.push_back(ChooseParser_Mpegh3da());
             #endif
             #if defined(MEDIAINFO_AC3_YES)
                 Streams[stream_id].Parsers.push_back(ChooseParser_AC3());
@@ -3376,6 +3377,9 @@ void File_MpegPs::audio_stream()
             #endif
             #if defined(MEDIAINFO_AAC_YES)
                 Streams[stream_id].Parsers.push_back(ChooseParser_Latm());
+            #endif
+            #if defined(MEDIAINFO_MPEGA_YES)
+                Streams[stream_id].Parsers.push_back(ChooseParser_Mpega());
             #endif
         }
         for (size_t Pos=0; Pos<Streams[stream_id].Parsers.size(); Pos++)
