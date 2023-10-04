@@ -1337,7 +1337,7 @@ void File_Riff::AVI__hdlr_strl_strf_auds()
     StreamItem.AvgBytesPerSec=AvgBytesPerSec; //Saving bitrate for each stream
     if (SamplesPerSec && TimeReference!=(int64u)-1)
     {
-        Fill(Stream_Audio, StreamPos_Last, Audio_Delay, float64_int64s(((float64)TimeReference)*1000/SamplesPerSec));
+        Fill(Stream_Audio, StreamPos_Last, Audio_Delay, ((float64)TimeReference)*1000/SamplesPerSec, 6);
         Fill(Stream_Audio, StreamPos_Last, Audio_Delay_Source, "Container (bext)");
     }
 
