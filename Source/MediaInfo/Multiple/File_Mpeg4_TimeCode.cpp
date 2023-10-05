@@ -31,6 +31,12 @@ using namespace std;
 namespace MediaInfoLib
 {
 
+struct stts_struct
+{
+    int32u                      SampleCount;
+    int32u                      SampleDuration;
+};
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -50,6 +56,8 @@ File_Mpeg4_TimeCode::File_Mpeg4_TimeCode()
     NegativeTimes=false;
     tkhd_Duration=0;
     mvhd_Duration_TimeScale=0;
+    DurationsPerFrame=nullptr;
+    LastUsedOffset=(int64u)-1;
 
     //Temp
     FrameMultiplier_Pos=0;
@@ -198,6 +206,7 @@ void File_Mpeg4_TimeCode::Read_Buffer_Init()
         DropFrame=Map(__T("DropFrame")).To_int8u()?true:false;
         NegativeTimes=Map(__T("NegativeTimes")).To_int8u()?true:false;
     }
+    Frame_Count_NotParsedIncluded=0;
 }
 
 //---------------------------------------------------------------------------
@@ -266,7 +275,32 @@ void File_Mpeg4_TimeCode::Read_Buffer_Continue()
     }
 
     FILLING_BEGIN();
-        Frame_Count+=Element_Size/4;
+        int64u SamplesInThisBlock=Element_Size/4;
+        if (File_Offset+Buffer_Offset==LastUsedOffset)
+        {
+            //TODO: this compute should be generic in MP4 parser
+            Frame_Count_NotParsedIncluded=0;
+            for (size_t i=0; i<DurationsPerFrame->size(); i++)
+                Frame_Count_NotParsedIncluded+=(*DurationsPerFrame)[i].SampleCount;
+            Frame_Count_NotParsedIncluded--;
+        }
+        if (Frame_Count_NotParsedIncluded!=(int64u)-1 && DurationsPerFrame && tmcd_Duration)
+        {
+            int64u Frame_Count_Temp=0;
+            size_t i=0;
+            for (; Frame_Count_NotParsedIncluded-Frame_Count_Temp>=(*DurationsPerFrame)[i].SampleCount; i++)
+                Frame_Count_Temp+=(*DurationsPerFrame)[i].SampleCount;
+            if (i<DurationsPerFrame->size())
+            {
+                SamplesInThisBlock=(*DurationsPerFrame)[i].SampleDuration/tmcd_Duration;
+                if (SamplesInThisBlock)
+                    Pos_Last+=SamplesInThisBlock-1;
+            }
+        }
+
+        Frame_Count++;
+        if (Frame_Count_NotParsedIncluded!=(int64u)-1)
+            Frame_Count_NotParsedIncluded++;
 
         if (!Status[IsAccepted])
         {

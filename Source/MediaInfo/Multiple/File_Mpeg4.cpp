@@ -2905,6 +2905,7 @@ bool File_Mpeg4::BookMark_Needed()
                 if (StreamTemp.TimeCode && (StreamTemp.stts.size()>1 || (!StreamTemp.stts.empty() && StreamTemp.stts[0].SampleCount>1 && StreamTemp.Parsers.size()==1)))
                 {
                     ((File_Mpeg4_TimeCode*)StreamTemp.Parsers[0])->FirstEditOffset=0;
+                    ((File_Mpeg4_TimeCode*)StreamTemp.Parsers[0])->LastUsedOffset=StreamTemp.LastUsedOffset;
                     if (Config->ParseSpeed<=0.5)
                     {
                         auto StreamID=Temp->StreamID;
