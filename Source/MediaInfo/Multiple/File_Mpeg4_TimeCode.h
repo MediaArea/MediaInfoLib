@@ -40,6 +40,7 @@ public :
     int64u  tmcd_Duration_TimeScale;
     const std::vector<stts_struct>* DurationsPerFrame;
     int64u  LastUsedOffset;
+    bool    AllFramesParsed;
 
     //Out
     int64s  Pos;

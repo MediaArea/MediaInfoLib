@@ -58,6 +58,7 @@ File_Mpeg4_TimeCode::File_Mpeg4_TimeCode()
     mvhd_Duration_TimeScale=0;
     DurationsPerFrame=nullptr;
     LastUsedOffset=(int64u)-1;
+    AllFramesParsed=false;
 
     //Temp
     FrameMultiplier_Pos=0;
@@ -185,7 +186,7 @@ void File_Mpeg4_TimeCode::Streams_Finish()
                 int64s Frames=TC_Last.GetFrames();
                 TC_Last-=TC_Last.GetFrames();
                 TC_Last=TimeCode((int64_t)(TC_Last.ToFrames()*FrameMultiplier), NumberOfFrames*FrameMultiplier-1, TimeCode::DropFrame(DropFrame));
-                TC_Last+=Frames*FrameMultiplier+(Config->ParseSpeed<=0.5?(FrameMultiplier-1):FrameMultiplier_Pos);
+                TC_Last+=Frames*FrameMultiplier+(AllFramesParsed?FrameMultiplier_Pos:(FrameMultiplier-1));
             }
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_LastFrame, TC_Last.ToString().c_str());
         }
@@ -229,7 +230,7 @@ void File_Mpeg4_TimeCode::Read_Buffer_Continue()
             if (Config->ParseSpeed<=0.5 && Element_Offset!=Element_Size)
                 Skip_XX(Element_Size-Element_Offset,            "Other positions");
         }
-        else if (Config->ParseSpeed>0.5)
+        else if (AllFramesParsed)
         {
             FrameMultiplier_Pos++;
             if (FrameMultiplier_Pos>=FrameMultiplier)
