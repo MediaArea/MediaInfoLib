@@ -240,6 +240,18 @@ void File_Mpeg4_TimeCode::Read_Buffer_Continue()
             }
             if (Pos_Last!=Pos_Last_Temp)
             {
+                bool ShouldIgnore=false;
+                if (Frame_Count_NotParsedIncluded!=(int64u)-1 && DurationsPerFrame && tmcd_Duration)
+                {
+                    int64u Frame_Count_Temp=0;
+                    size_t i=0;
+                    for (; Frame_Count_NotParsedIncluded-Frame_Count_Temp>=(*DurationsPerFrame)[i].SampleCount; i++)
+                        Frame_Count_Temp+=(*DurationsPerFrame)[i].SampleCount;
+                    if (i<DurationsPerFrame->size() && (*DurationsPerFrame)[i].SampleDuration==0)
+                        ShouldIgnore=true;
+                }
+                if (!ShouldIgnore)
+                {
                 const Ztring& Discontinuities=Retrieve_Const(Stream_Other, 0, "Discontinuities");
                 if (Discontinuities.size()>25*10)
                 {
@@ -269,6 +281,7 @@ void File_Mpeg4_TimeCode::Read_Buffer_Continue()
                     Discontinuity+='-';
                     Discontinuity+=TC_Last2.ToString();
                     Fill(Stream_Other, 0, "Discontinuities", Discontinuity);
+                }
                 }
             }
         }
