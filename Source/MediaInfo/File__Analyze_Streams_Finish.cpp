@@ -947,8 +947,25 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
            Fill(Stream_Video, Pos, Video_FrameRate, FrameCount/Duration, 3);
     }
 
-    //Pixel Aspect Ratio forced to 1.000 if none
+    //Pixel Aspect Ratio forced from picture pixel size and Display Aspect Ratio
     if (Retrieve(Stream_Video, Pos, Video_PixelAspectRatio).empty())
+    {
+        const Ztring& DAR_S=Retrieve_Const(Stream_Video, Pos, Video_DisplayAspectRatio);
+        float DAR=DAR_S.To_float32();
+        float Width=Retrieve(Stream_Video, Pos, Video_Width).To_float32();
+        float Height=Retrieve(Stream_Video, Pos, Video_Height).To_float32();
+        if (DAR && Height && Width)
+        {
+            if (DAR_S==__T("1.778"))
+                DAR=((float)16)/9; //More exact value
+            if (DAR_S==__T("1.333"))
+                DAR=((float)4)/3; //More exact value
+            Fill(Stream_Video, Pos, Video_PixelAspectRatio, DAR/(((float32)Width)/Height));
+        }
+    }
+
+    //Pixel Aspect Ratio forced to 1.000 if none
+    if (Retrieve(Stream_Video, Pos, Video_PixelAspectRatio).empty() && Retrieve(Stream_Video, Pos, Video_DisplayAspectRatio).empty())
         Fill(Stream_Video, Pos, Video_PixelAspectRatio, 1.000);
 
     //Standard
