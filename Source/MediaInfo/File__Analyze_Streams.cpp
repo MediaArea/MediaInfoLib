@@ -917,11 +917,32 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     //MergedStreams
     if (FillAllMergedStreams)
     {
-        FillAllMergedStreams=false;
-        size_t s = MergedStreams_Last.size();
-        for (size_t i=0; i<s; ++i)
-            Fill(MergedStreams_Last[i].StreamKind, MergedStreams_Last[i].StreamPos, Parameter, Value, Replace);
-        FillAllMergedStreams=true;
+        for (size_t i=0; sizeof(generic); i++)
+            if (Fill_Parameter(StreamKind, (generic)i)==Parameter)
+            {
+                generic Parameter2=(generic)i;
+                FillAllMergedStreams=false;
+                Ztring ID=Retrieve(StreamKind, StreamPos, General_ID); //TODO: find a better to catch content from same stream
+                auto ID_Dash_Pos=ID.find(__T("-"));
+                if (ID_Dash_Pos!=string::npos)
+                    ID.resize(ID_Dash_Pos);
+                for (size_t StreamKind2=Stream_Audio; StreamKind2<Stream_Max; StreamKind2++)
+                    for (size_t StreamPos2=0; StreamPos2<(*Stream)[StreamKind2].size(); StreamPos2++)
+                    {
+                        Ztring ID2=Retrieve((stream_t)StreamKind2, StreamPos2, General_ID);
+                        auto ID2_Dash_Pos=ID2.find(__T("-"));
+                        if (ID2_Dash_Pos!=string::npos && ID2.substr(ID2_Dash_Pos)!=__T("-Material"))
+                            ID2.resize(ID2_Dash_Pos);
+                        if (ID2==ID)
+                        {
+                            size_t Parameter3=Fill_Parameter((stream_t)StreamKind2, Parameter2);
+                            if (Parameter3!=(size_t)-1)
+                                Fill((stream_t)StreamKind2, StreamPos2, Parameter3, Value, Replace);
+                        }
+                    }
+                FillAllMergedStreams=true;
+                break;
+            }
         return;
     }
 
@@ -2149,15 +2170,12 @@ size_t File__Analyze::Merge(MediaInfo_Internal &ToAdd, stream_t StreamKind, size
 //---------------------------------------------------------------------------
 size_t File__Analyze::Merge(File__Analyze &ToAdd, bool Erase)
 {
-    MergedStreams_Last.clear();
-
     size_t Count=0;
     for (size_t StreamKind=(size_t)Stream_General+1; StreamKind<(size_t)Stream_Max; StreamKind++)
         for (size_t StreamPos=0; StreamPos<(*ToAdd.Stream)[StreamKind].size(); StreamPos++)
         {
             //Prepare a new stream
             Stream_Prepare((stream_t)StreamKind);
-            MergedStreams_Last.push_back(streamidentity(StreamKind_Last, StreamPos_Last));
 
             //Merge
             Merge(ToAdd, (stream_t)StreamKind, StreamPos, StreamPos_Last, Erase);
