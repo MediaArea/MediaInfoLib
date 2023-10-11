@@ -1468,18 +1468,6 @@ public :
     bool MustSynchronize;
     bool CA_system_ID_MustSkipSlices;
     bool FillAllMergedStreams;
-    class streamidentity
-    {
-    public:
-        stream_t StreamKind;
-        size_t   StreamPos;
-
-        streamidentity(stream_t StreamKind_, size_t StreamPos_)
-            : StreamKind(StreamKind_)
-            , StreamPos(StreamPos_)
-        {}
-    };
-    std::vector<streamidentity> MergedStreams_Last;
 
     //Demux
     enum contenttype
