@@ -831,10 +831,23 @@ bool File_Riff::Header_Begin()
             else
         #endif //MEDIAINFO_DEMUX
         if (File_Offset+Buffer_Size<=Buffer_DataToParse_End)
+        {
             Element_Size=Buffer_Size; //All the buffer is used
+            Alignement_ExtraByte=0;
+        }
         else
         {
             Element_Size=Buffer_DataToParse_End-(File_Offset+Buffer_Offset);
+
+            //Alignment
+            if (Element_Size%2 && File_Offset+Buffer_Size>=Buffer_DataToParse_End && Buffer_DataToParse_End<File_Size)
+            {
+                Element_Size++; //Always 2-byte aligned
+                Alignement_ExtraByte=1;
+            }
+            else
+                Alignement_ExtraByte=0;
+
             Buffer_DataToParse_End=0;
         }
 
@@ -852,12 +865,24 @@ bool File_Riff::Header_Begin()
             Header_Fill_Size(Element_Size);
         Element_End();
 
+        //Alignement specific
+        if (Alignement_ExtraByte && Alignement_ExtraByte<=Element_Size)
+            Element_Size-=Alignement_ExtraByte;
+
         switch (Kind)
         {
             case Kind_Wave : WAVE_data_Continue(); break;
             case Kind_Aiff : AIFF_SSND_Continue(); break;
             case Kind_Rmp3 : RMP3_data_Continue(); break;
             default        : AVI__movi_xxxx();
+        }
+
+        //Alignement specific
+        if (Alignement_ExtraByte)
+        {
+            Element_Size+=Alignement_ExtraByte;
+            if (Element_Offset+Alignement_ExtraByte==Element_Size)
+                Skip_XX(Alignement_ExtraByte,                       "Alignement");
         }
 
         bool ShouldStop=false;
@@ -870,6 +895,10 @@ bool File_Riff::Header_Begin()
         }
         if (ShouldStop && Buffer_DataToParse_End)
         {
+            //Alignment
+            if (Buffer_DataToParse_End%2)
+                Buffer_DataToParse_End++; //Always 2-byte aligned
+
             File_GoTo=Buffer_DataToParse_End;
             Buffer_Offset=Buffer_Size;
             Element_Size=0;
@@ -1100,12 +1129,18 @@ void File_Riff::Header_Parse()
     }
     if ((Name==Elements::WAVE_data || Name==Elements::AIFF_SSND))
     {
-        Buffer_DataToParse_Begin=File_Offset+Buffer_Offset+8;
+        int64u End;
         if (Size_Complete)
-            Buffer_DataToParse_End=File_Offset+Buffer_Offset+8+Size_Complete;
+            End=File_Offset+Buffer_Offset+8+Size_Complete;
         else
-            Buffer_DataToParse_End=File_Size; //Found one file with 0 as size of data part
-        Size_Complete=(Name==Elements::AIFF_SSND?8:0);
+            End=File_Size; //Found one file with 0 as size of data part
+        if (File_Offset+Buffer_Size<End)
+        {
+            Buffer_DataToParse_Begin=File_Offset+Buffer_Offset+8;
+            Buffer_DataToParse_End=End-Alignement_ExtraByte;
+            Alignement_ExtraByte=0; // Will be recalculated later
+            Size_Complete=(Name==Elements::AIFF_SSND?8:0);
+        }
     }
 
     //Filling

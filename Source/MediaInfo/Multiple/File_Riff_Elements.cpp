@@ -3577,7 +3577,6 @@ void File_Riff::WAVE()
 
     //Filling
     Fill(Stream_General, 0, General_Format, "Wave");
-    Kind=Kind_Wave;
     #if MEDIAINFO_EVENTS
         StreamIDs_Width[0]=0;
     #endif //MEDIAINFO_EVENTS
@@ -3963,8 +3962,9 @@ void File_Riff::WAVE_cue_()
 void File_Riff::WAVE_data()
 {
     Element_Name("Raw datas");
+    Kind=Kind_Wave;
 
-    if (Buffer_DataToParse_End-Buffer_DataToParse_Begin<100)
+    if (Buffer_DataToParse_End && Buffer_DataToParse_End-Buffer_DataToParse_Begin<100)
     {
         Skip_XX(Buffer_DataToParse_End-Buffer_Offset,           "Unknown");
         return; //This is maybe embeded in another container, and there is only the header (What is the junk?)
@@ -3974,7 +3974,7 @@ void File_Riff::WAVE_data()
     Element_Code=(int64u)-1;
 
     FILLING_BEGIN();
-        int64u StreamSize=Buffer_DataToParse_End-Buffer_DataToParse_Begin;
+        int64u StreamSize=(Buffer_DataToParse_End?(Buffer_DataToParse_End-Buffer_DataToParse_Begin):Element_Size)-(Element_Code==Elements::AIFF_SSND?8:0);
         Fill(Stream_Audio, StreamPos_Last, Audio_StreamSize, StreamSize, 10, true);
         if (Retrieve(Stream_Audio, StreamPos_Last, Audio_Format)==__T("PCM") && BlockAlign)
             Fill(Stream_Audio, StreamPos_Last, Audio_SamplingCount, StreamSize/BlockAlign, 10, true);
