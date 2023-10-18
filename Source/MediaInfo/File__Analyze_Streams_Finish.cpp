@@ -196,7 +196,14 @@ void Merge_FillTimeCode(File__Analyze& In, const string& Prefix, const TimeCode&
     
     In.Fill(Stream_Audio, 0, Prefix.c_str(), TC_Time.ToString(), true, true);
     In.Fill_SetOptions(Stream_Audio, 0, Prefix.c_str(), "N NTY");
-    In.Fill(Stream_Audio, 0, (Prefix+"/String").c_str(), TC_Time.ToString()+(TC_WithExtraSamples_String.empty()?string():(" ("+TC_WithExtraSamples_String+')')), true, true);
+    string ForDisplay;
+    if (Prefix=="Dolby_Atmos_Metadata FirstFrameOfAction")
+        ForDisplay=TC_Frames.ToString();
+    else if (Prefix.find(" Start")+6==Prefix.size() || Prefix.find(" End")+4==Prefix.size())
+        ForDisplay=TC_WithExtraSubFrames_String;
+    else
+        ForDisplay=TC_WithExtraSamples_String;
+    In.Fill(Stream_Audio, 0, (Prefix+"/String").c_str(), TC_Time.ToString()+(ForDisplay.empty()?string():(" ("+ForDisplay+')')), true, true);
     In.Fill_SetOptions(Stream_Audio, 0, (Prefix+"/String").c_str(), "Y NTN");
     In.Fill(Stream_Audio, 0, (Prefix+"/TimeCode").c_str(), TC_Frames.ToString(), true, true);
     if (TC_Frames.IsValid())
