@@ -3137,12 +3137,12 @@ void File_Mk::Segment_Info_DateUTC()
 {
     //Parsing
     int64u Data;
-    Get_B8(Data,                                                "Data"); Element_Info1(Data/1000000000+978307200); //From Beginning of the millenium, in nanoseconds
+    Get_B8(Data,                                                "Data"); Element_Info1((int64s)Data/1000000000+978307200); //From Beginning of the millenium, in nanoseconds
 
     FILLING_BEGIN();
         if (Segment_Info_Count>1)
             return; //First element has the priority
-        Ztring Time=Ztring().Date_From_Seconds_1970((int32u)(Data/1000000000+978307200)); //978307200s between beginning of the millenium and 1970
+        Ztring Time=Ztring().Date_From_Seconds_1970((int32u)((int64s)Data/1000000000+978307200)); //978307200s between beginning of the millenium and 1970
         if (!Time.empty())
         {
             Time.FindAndReplace(__T("UTC "), __T(""));
