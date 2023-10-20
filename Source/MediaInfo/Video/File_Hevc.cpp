@@ -1405,6 +1405,13 @@ void File_Hevc::slice_segment_layer()
         if (first_slice_segment_in_pic_flag)
         {
             //Frame_Count
+            if (Frame_Count_NotParsedIncluded<16 && TC_Current.IsSet())
+            {
+                TimeCode TC_Previous(Retrieve_Const(Stream_Video, 0, Video_TimeCode_FirstFrame).To_UTF8(), TC_Current.GetFramesMax());
+                if (!TC_Previous.IsSet() || TC_Current<TC_Previous)
+                    Fill(Stream_Video, 0, Video_TimeCode_FirstFrame, TC_Current.ToString(), true, true);
+                TC_Current=TimeCode();
+            }
             Frame_Count++;
             if (IFrame_Count && Frame_Count_NotParsedIncluded!=(int64u)-1)
                 Frame_Count_NotParsedIncluded++;
@@ -3225,11 +3232,18 @@ void File_Hevc::sei_time_code()
             if (time_offset_length)
                 Skip_S1(time_offset_length,                     "time_offset_value");
             FILLING_BEGIN();
-                if (!i && seconds_flag && minutes_flag && hours_flag && !Frame_Count)
+                if (!i && seconds_flag && minutes_flag && hours_flag && Frame_Count_NotParsedIncluded<16)
                 {
-                    TimeCode TC(hours_value, minutes_value, seconds_value, n_frames, -1, TimeCode::DropFrame(cnt_dropped_flag));
-                    Fill(Stream_Video, 0, Video_TimeCode_FirstFrame, TC.ToString(), true, true);
-                    Element_Info1(TC.ToString());
+                    int32u FrameMax;
+                    if (!seq_parameter_sets.empty() && seq_parameter_sets[0] && seq_parameter_sets[0]->vui_parameters && seq_parameter_sets[0]->vui_parameters->time_scale && seq_parameter_sets[0]->vui_parameters->num_units_in_tick) //TODO: get the exact seq
+                        FrameMax=(int32u)(float64_int64s((float64)seq_parameter_sets[0]->vui_parameters->time_scale/seq_parameter_sets[0]->vui_parameters->num_units_in_tick)-1);
+                    else if (n_frames>99)
+                        FrameMax=n_frames;
+                    else
+                        FrameMax=99;
+
+                    TC_Current=TimeCode(hours_value, minutes_value, seconds_value, n_frames, FrameMax, TimeCode::DropFrame(cnt_dropped_flag));
+                    Element_Info1(TC_Current.ToString());
                 }
             FILLING_END();
         }
