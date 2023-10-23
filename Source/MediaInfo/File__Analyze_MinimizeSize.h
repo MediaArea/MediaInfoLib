@@ -726,6 +726,7 @@ public :
     void Get_ISO_8859_1 (int64u Bytes, Ztring  &Info);
     void Get_ISO_8859_2 (int64u Bytes, Ztring  &Info);
     void Get_ISO_8859_5 (int64u Bytes, Ztring  &Info);
+    void Get_ISO_8859_9 (int64u Bytes, Ztring  &Info);
     void Get_MacRoman   (int64u Bytes, Ztring  &Info);
     void Get_String (int64u Bytes, std::string &Info);
     void Get_UTF8   (int64u Bytes, Ztring      &Info);
@@ -737,6 +738,7 @@ public :
     inline void Get_ISO_8859_1 (int64u Bytes, Ztring  &Info, const char*) {Get_ISO_8859_1(Bytes, Info);}
     inline void Get_ISO_8859_2 (int64u Bytes, Ztring  &Info, const char*) {Get_ISO_8859_2(Bytes, Info);}
     inline void Get_ISO_8859_5 (int64u Bytes, Ztring  &Info, const char*) {Get_ISO_8859_5(Bytes, Info);}
+    inline void Get_ISO_8859_9 (int64u Bytes, Ztring  &Info, const char*) {Get_ISO_8859_5(Bytes, Info);}
     inline void Get_MacRoman   (int64u Bytes, Ztring  &Info, const char*) {Get_MacRoman(Bytes, Info);}
     inline void Get_String (int64u Bytes, std::string &Info, const char*) {Get_String(Bytes, Info);}
     inline void Get_UTF8   (int64u Bytes, Ztring      &Info, const char*) {Get_UTF8(Bytes, Info);}
