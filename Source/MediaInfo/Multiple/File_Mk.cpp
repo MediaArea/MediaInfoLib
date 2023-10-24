@@ -1287,6 +1287,17 @@ void File_Mk::Streams_Finish()
             if (Temp->second.StreamKind==Stream_Video && !Codec_Temp.empty())
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Codec), Codec_Temp, true);
 
+            //BlockAdditions
+            for (auto Add=Temp->second.BlockAdditions.begin(); Add!=Temp->second.BlockAdditions.end(); ++Add)
+            {
+                auto StreamKind_Last_Sav=StreamKind_Last;
+                auto StreamPos_Last_Sav=StreamPos_Last;
+                Merge(*Add->second);
+                Fill(StreamKind_Last, StreamPos_Last, Other_ID, to_string(Temp->first)+"-Add-"+to_string(Add->first));
+                Fill(StreamKind_Last, StreamPos_Last, Other_MuxingMode, "BlockAddition");
+                StreamKind_Last=StreamKind_Last_Sav;
+                StreamPos_Last=StreamPos_Last_Sav;
+            }
 
             //Format specific
             #if defined(MEDIAINFO_DVDIF_YES)
@@ -3571,6 +3582,7 @@ void File_Mk::Segment_Tracks_TrackEntry_BlockAdditionMapping_Manage()
             {
             auto Temp=new File_Gxf_TimeCode();
             Temp->IsBigEndian=true;
+            Temp->IsTimeCodeTrack=true;
             Parser=Temp;
             }
             #endif
