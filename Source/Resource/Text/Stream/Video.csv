@@ -175,6 +175,12 @@ DisplayAspectRatio_CleanAperture/String;;;Y NT;;;The proportional relationship b
 ActiveFormatDescription;;;N YNY;;;Active Format Description, as value code (e.g. 001)
 ActiveFormatDescription/String;;;Y NT;;;Active Format Description, as text (e.g. 4:3)
 ActiveFormatDescription_MuxingMode;;;N YT;;;Muxing mode used for Active Format Description (AFD value). Options are A/53 (for Raw) or SMPTE ST 2016-3 (for Ancillary)
+Active_Width;; pixel;N YIY;;;Width of frame, not considering black bars
+Active_Width/String;;;Y NT;;;Width of frame, not considering black bars, in pixels, presented in SI unit digit spacing style, with measurement (e.g. 1 920 pixels)
+Active_Height;; pixel;N YIY;;;Height of frame, not considering black bars
+Active_Height/String;;;Y NT;;;Height of frame, not considering black bars, in pixels, presented in SI unit digit spacing style, with measurement (e.g. 1 080 pixels)
+Active_DisplayAspectRatio;;;N YFY;;;The proportional relationship between the active width and active height of a frame (e.g. 4:3)
+Active_DisplayAspectRatio/String;;;Y NT;;;The proportional relationship between the active width and active height of a frame (e.g. 4:3)
 Rotation;;;N YTY;;;Rotation of video, derived from track header data, in degrees
 Rotation/String;;;Y NT;;;Rotation of video, derived from track header data, in degrees
 FrameRate_Mode;;;N YTY;;;Frame rate mode, as acronym (e.g. CFR, VFR)

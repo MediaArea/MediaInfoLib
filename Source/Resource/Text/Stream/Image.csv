@@ -63,6 +63,12 @@ DisplayAspectRatio;;;N YFY;;;The proportional relationship between the width and
 DisplayAspectRatio/String;;;Y NT;;;The proportional relationship between the width and height of a frame (e.g. 4:3)
 DisplayAspectRatio_Original;;;N YFY;;;The proportional relationship between the width and height of a frame (e.g. 4:3)
 DisplayAspectRatio_Original/String;;;Y NT;;;The proportional relationship between the width and height of a frame (e.g. 4:3)
+Active_Width;; pixel;N YIY;;;Width of frame, not considering black bars
+Active_Width/String;;;Y NT;;;Width of frame, not considering black bars, in pixels, presented in SI unit digit spacing style, with measurement (e.g. 1 920 pixels)
+Active_Height;; pixel;N YIY;;;Height of frame, not considering black bars
+Active_Height/String;;;Y NT;;;Height of frame, not considering black bars, in pixels, presented in SI unit digit spacing style, with measurement (e.g. 1 080 pixels)
+Active_DisplayAspectRatio;;;N YFY;;;The proportional relationship between the active width and active height of a frame (e.g. 4:3)
+Active_DisplayAspectRatio/String;;;Y NT;;;The proportional relationship between the active width and active height of a frame (e.g. 4:3)
 ColorSpace;;;Y YTY;;;Color profile of the image (e.g. YUV)
 ChromaSubsampling;;;Y YTY;;;Ratio of chroma to luma in encoded image (e.g. 4:2:2)
 Resolution;; bit;N NI;;;Deprecated, do not use in new projects
