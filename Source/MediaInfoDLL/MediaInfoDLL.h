@@ -589,7 +589,7 @@ namespace MediaInfoDLL
         size_t        State_Get() {MEDIAINFO_TEST_INT; return MediaInfo_State_Get(Handle);};
         size_t        Count_Get(stream_t StreamKind, size_t StreamNumber = (size_t) - 1)  {MEDIAINFO_TEST_INT; return MediaInfo_Count_Get(Handle, (MediaInfo_stream_C)StreamKind, StreamNumber);};
 
-        bool IsReady() {return (Handle && MediaInfo_Module) ? true : false;}
+        bool IsReady() {return (Handle!=nullptr && MediaInfo_Module!=nullptr);}
 
     private :
         void* Handle;
