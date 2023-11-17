@@ -3012,6 +3012,7 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
                 if (!DropFrame_IsValid)
                 {
                     int32s  FrameRateI=float32_int32s(FrameRateS.To_float32());
+                    if (FrameRateI%30)
                     {
                         float32 FrameRateF=FrameRateS.To_float32();
                         float FrameRateF_Min=((float32)FrameRateI)/((float32)1.002);
@@ -3038,6 +3039,8 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
                         else
                             DropFrame=false;
                     }
+                    else
+                        DropFrame=false;
                 }
 
                 TimeCode TC((int64_t)FrameCountS.To_int64s(), (uint32_t)float32_int32s(FrameRateS.To_float32()-1), TimeCode::DropFrame(DropFrame).FPS1001(FrameRateI!=FrameRateF));
