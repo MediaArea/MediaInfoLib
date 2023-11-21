@@ -3208,12 +3208,12 @@ void File_Hevc::sei_time_code()
         {
             int16u n_frames;
             int8u counting_type, seconds_value, minutes_value, hours_value, time_offset_length;
-            bool units_field_based_flag, full_timestamp_flag, cnt_dropped_flag, seconds_flag, minutes_flag, hours_flag;
+            bool units_field_based_flag, full_timestamp_flag, seconds_flag, minutes_flag, hours_flag;
             Get_SB (units_field_based_flag,                     "units_field_based_flag");
             Get_S1 (5, counting_type,                           "counting_type");
             Get_SB (full_timestamp_flag,                        "full_timestamp_flag");
             Skip_SB(                                            "discontinuity_flag");
-            Get_SB (cnt_dropped_flag,                           "cnt_dropped_flag");
+            Skip_SB(                                            "cnt_dropped_flag");
             Get_S2 (9, n_frames,                                "n_frames");
             seconds_flag=minutes_flag=hours_flag=full_timestamp_flag;
             if (!full_timestamp_flag)
@@ -3235,14 +3235,19 @@ void File_Hevc::sei_time_code()
                 if (!i && seconds_flag && minutes_flag && hours_flag && Frame_Count_NotParsedIncluded<16)
                 {
                     int32u FrameMax;
-                    if (!seq_parameter_sets.empty() && seq_parameter_sets[0] && seq_parameter_sets[0]->vui_parameters && seq_parameter_sets[0]->vui_parameters->time_scale && seq_parameter_sets[0]->vui_parameters->num_units_in_tick) //TODO: get the exact seq
+                    if (counting_type>1 && counting_type!=4)
+                    {
+                        n_frames=0;
+                        FrameMax=0; //Unsupported type
+                    }
+                    else if (!seq_parameter_sets.empty() && seq_parameter_sets[0] && seq_parameter_sets[0]->vui_parameters && seq_parameter_sets[0]->vui_parameters->time_scale && seq_parameter_sets[0]->vui_parameters->num_units_in_tick) //TODO: get the exact seq
                         FrameMax=(int32u)(float64_int64s((float64)seq_parameter_sets[0]->vui_parameters->time_scale/seq_parameter_sets[0]->vui_parameters->num_units_in_tick)-1);
                     else if (n_frames>99)
                         FrameMax=n_frames;
                     else
                         FrameMax=99;
 
-                    TC_Current=TimeCode(hours_value, minutes_value, seconds_value, n_frames, FrameMax, TimeCode::DropFrame(cnt_dropped_flag));
+                    TC_Current=TimeCode(hours_value, minutes_value, seconds_value, n_frames, FrameMax, TimeCode::DropFrame(counting_type==4));
                     Element_Info1(TC_Current.ToString());
                 }
             FILLING_END();
