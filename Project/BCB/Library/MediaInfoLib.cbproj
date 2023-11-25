@@ -652,6 +652,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\OutputHelpers.cpp">
             <BuildOrder>222</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\ExternalCommandHelpers.cpp">
+            <BuildOrder>235</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\PreComp.cpp">
             <BuildOrder>196</BuildOrder>
         </CppCompile>
