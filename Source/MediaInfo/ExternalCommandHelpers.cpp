@@ -31,6 +31,9 @@
 using namespace std;
 using namespace ZenLib;
 
+namespace MediaInfoLib
+{
+
 //---------------------------------------------------------------------------
 const ZtringList ffmpeg_PossibleNames= // Hack, ZtringList needs to handle C++11 style static initialization
 {
@@ -42,7 +45,7 @@ const ZtringList ffmpeg_PossibleNames= // Hack, ZtringList needs to handle C++11
 };
 
 //---------------------------------------------------------------------------
-Ztring MediaInfoLib::External_Command_Exists(const ZtringList& PossibleNames)
+Ztring External_Command_Exists(const ZtringList& PossibleNames)
 {
     #ifndef WINDOWS_UWP
     Ztring Path;
@@ -120,7 +123,7 @@ Ztring MediaInfoLib::External_Command_Exists(const ZtringList& PossibleNames)
 }
 
 //---------------------------------------------------------------------------
-int MediaInfoLib::External_Command_Run(const Ztring& Command, const ZtringList& Arguments, Ztring &StdOut, Ztring &StdErr)
+int External_Command_Run(const Ztring& Command, const ZtringList& Arguments, Ztring* StdOut, Ztring* StdErr)
 {
     #ifdef WINDOWS
     DWORD ExitCode=-1;
@@ -141,14 +144,30 @@ int MediaInfoLib::External_Command_Run(const Ztring& Command, const ZtringList& 
     Attrs.bInheritHandle=TRUE;
 
     HANDLE StdOutRead, StdOutWrite, StdErrRead, StdErrWrite;
-    if (!CreatePipe(&StdOutRead, &StdOutWrite, &Attrs, 0))
-        return -1;
-
-    if (!CreatePipe(&StdErrRead, &StdErrWrite, &Attrs, 0))
+    if (StdOut)
     {
-        CloseHandle(StdOutWrite);
-        CloseHandle(StdOutRead);
-        return -1;
+        if (!CreatePipe(&StdOutRead, &StdOutWrite, &Attrs, 0))
+            return -1;
+    }
+    else
+    {
+        StdOutRead=nullptr;
+        StdOutWrite=nullptr;
+    }
+
+    if (StdErr)
+    {
+        if (!CreatePipe(&StdErrRead, &StdErrWrite, &Attrs, 0))
+        {
+            CloseHandle(StdOutWrite);
+            CloseHandle(StdOutRead);
+            return -1;
+        }
+    }
+    else
+    {
+        StdErrRead=nullptr;
+        StdErrWrite=nullptr;
     }
 
     STARTUPINFO StartupInfo;
@@ -174,19 +193,26 @@ int MediaInfoLib::External_Command_Run(const Ztring& Command, const ZtringList& 
     CloseHandle(StdErrWrite);
 
     char Buf[128];
-    DWORD OutReadCount, ErrReadCount;
-    do
+    if (StdOut)
     {
-        ReadFile(StdOutRead, Buf, sizeof(Buf), &OutReadCount, nullptr);
-        if (OutReadCount)
-            StdOut+=Ztring().From_UTF8(Buf, OutReadCount);
-
-        ReadFile(StdErrRead, Buf, sizeof(Buf), &ErrReadCount, nullptr);
-        if (ErrReadCount)
-            StdErr+=Ztring().From_UTF8(Buf, ErrReadCount);
+        for (;;)
+        {
+            DWORD OutReadCount;
+            if (!ReadFile(StdOutRead, Buf, sizeof(Buf), &OutReadCount, nullptr) || !OutReadCount)
+                break;
+            *StdOut+=Ztring().From_UTF8(Buf, OutReadCount);
+        }
     }
-    while (OutReadCount!=0 || ErrReadCount!=0);
-
+    if (StdErr)
+    {
+        for (;;)
+        {
+            DWORD ErrReadCount;
+            if (!ReadFile(StdErrRead, Buf, sizeof(Buf), &ErrReadCount, nullptr) || !ErrReadCount)
+                break;
+            *StdErr+=Ztring().From_UTF8(Buf, ErrReadCount);
+        }
+    }
 
     CloseHandle(StdOutRead);
     CloseHandle(StdErrRead);
@@ -253,18 +279,26 @@ int MediaInfoLib::External_Command_Run(const Ztring& Command, const ZtringList& 
         close(StdErrPipe[1]);
 
         char Buf[128];
-        ssize_t OutReadCount, ErrReadCount;
-        do
+        if (StdOut)
         {
-            OutReadCount=read(StdOutPipe[0], Buf, sizeof(Buf));
-            if (OutReadCount>0)
-                StdOut+=Ztring().From_UTF8(Buf, OutReadCount);
-
-            ErrReadCount=read(StdErrPipe[0], Buf, sizeof(Buf));
-            if (ErrReadCount>0)
-                StdErr+=Ztring().From_UTF8(Buf, ErrReadCount);
+            for (;;)
+            {
+                auto OutReadCount=read(StdOutPipe[0], Buf, sizeof(Buf));
+                if (!OutReadCount)
+                    break;
+                *StdOut+=Ztring().From_UTF8(Buf, OutReadCount);
+            }
         }
-        while (OutReadCount>0 || ErrReadCount>0);
+        if (StdErr)
+        {
+            for (;;)
+            {
+                auto ErrReadCount=read(StdErrPipe[0], Buf, sizeof(Buf));
+                if (!ErrReadCount)
+                    break;
+                *StdErr+=Ztring().From_UTF8(Buf, ErrReadCount);
+            }
+        }
 
         close(StdOutPipe[0]);
         close(StdErrPipe[0]);
@@ -276,3 +310,5 @@ int MediaInfoLib::External_Command_Run(const Ztring& Command, const ZtringList& 
 
     return ExitCode;
 }
+
+} //Namespace

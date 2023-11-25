@@ -18,7 +18,7 @@
 namespace MediaInfoLib
 {
     ZenLib::Ztring External_Command_Exists(const ZenLib::ZtringList& PossibleNames);
-    int External_Command_Run(const ZenLib::Ztring& Command, const ZtringList& Arguments, ZenLib::Ztring& StdOut, ZenLib::Ztring& StdErr);
+    int External_Command_Run(const ZenLib::Ztring& Command, const ZtringList& Arguments, ZenLib::Ztring* StdOut, ZenLib::Ztring* StdErr);
 
     extern const ZtringList ffmpeg_PossibleNames;
 } //NameSpace
