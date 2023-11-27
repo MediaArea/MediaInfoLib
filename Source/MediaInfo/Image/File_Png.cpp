@@ -65,6 +65,9 @@ namespace Elements
     const int32u IEND=0x49454E44;
     const int32u IHDR=0x49484452;
     const int32u PLTE=0x506C5445;
+    const int32u gAMA=0x67414D41;
+    const int32u pHYs=0x70485973;
+    const int32u sBIT=0x73424954;
 }
 
 //***************************************************************************
@@ -82,9 +85,6 @@ File_Png::File_Png()
 
     //In
     StreamKind=Stream_Max;
-
-    //Temp
-    Signature_Parsed=false;
 }
 
 //***************************************************************************
@@ -164,6 +164,13 @@ bool File_Png::FileHeader_Begin()
     return true;
 }
 
+//---------------------------------------------------------------------------
+void File_Png::FileHeader_Parse()
+{
+    Skip_B4(                                                    "Signature");
+    Skip_B4(                                                    "ByteOrder");
+}
+
 //***************************************************************************
 // Buffer - Global
 //***************************************************************************
@@ -171,8 +178,6 @@ bool File_Png::FileHeader_Begin()
 //---------------------------------------------------------------------------
 void File_Png::Read_Buffer_Unsynched()
 {
-    Signature_Parsed=false;
-
     Read_Buffer_Unsynched_OneFramePerFile();
 }
 
@@ -183,21 +188,14 @@ void File_Png::Read_Buffer_Unsynched()
 //---------------------------------------------------------------------------
 void File_Png::Header_Parse()
 {
-    if (!Signature_Parsed)
-    {
-        //Filling
-        Header_Fill_Size(8);
-        Header_Fill_Code(0, "File header");
-
-        return;
-    }
-
     //Parsing
     int32u Length, Chunk_Type;
     Get_B4 (Length,                                             "Length");
     Get_C4 (Chunk_Type,                                         "Chunk Type");
 
     //Filling
+    if (Chunk_Type==Elements::IDAT)
+        Element_ThisIsAList(); // No need of the content
     Header_Fill_Size(12+Length); //+4 for CRC
     Header_Fill_Code(Chunk_Type, Ztring().From_CC4(Chunk_Type));
 }
@@ -205,12 +203,6 @@ void File_Png::Header_Parse()
 //---------------------------------------------------------------------------
 void File_Png::Data_Parse()
 {
-    if (!Signature_Parsed)
-    {
-        Signature();
-        return;
-    }
-
     Element_Size-=4; //For CRC
 
     #define CASE_INFO(_NAME, _DETAIL) \
@@ -223,11 +215,15 @@ void File_Png::Data_Parse()
         CASE_INFO(IEND,                                         "Image trailer");
         CASE_INFO(IHDR,                                         "Image header");
         CASE_INFO(PLTE,                                         "Palette table");
+        CASE_INFO(gAMA,                                         "Palette table");
+        CASE_INFO(pHYs,                                         "Palette table");
+        CASE_INFO(sBIT,                                         "Significant bits");
         default : Skip_XX(Element_Size,                         "Unknown");
     }
 
     Element_Size+=4; //For CRC
-    Skip_B4(                                                    "CRC");
+    if (Element_Code!=Elements::IDAT)
+        Skip_B4(                                                "CRC"); 
 }
 
 //***************************************************************************
@@ -235,22 +231,13 @@ void File_Png::Data_Parse()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-void File_Png::Signature()
+void File_Png::IDAT()
 {
     //Parsing
-    Skip_B4(                                                    "Signature");
-    Skip_B4(                                                    "ByteOrder");
-
-    Frame_Count++;
-    if (Frame_Count_NotParsedIncluded!=(int64u)-1)
-        Frame_Count_NotParsedIncluded++;
-    Signature_Parsed=true;
-}
-
-//---------------------------------------------------------------------------
-void File_Png::IEND()
-{
-    Signature_Parsed=false;
+    Skip_XX(Element_TotalSize_Get()-4,                          "Data");
+    Param2("CRC",                                               "(Skipped) (4 bytes)");
+    if (Config->ParseSpeed<1.0)
+        Finish();
 }
 
 //---------------------------------------------------------------------------
@@ -277,6 +264,8 @@ void File_Png::IHDR()
                 ColorSpace+='A';
             Fill(StreamKind_Last, 0, "ColorSpace", ColorSpace);
             Fill(StreamKind_Last, 0, "BitDepth", Bit_depth);
+            if (Retrieve_Const(StreamKind_Last, 0, "PixelAspectRatio").empty())
+                Fill(StreamKind_Last, 0, "PixelAspectRatio", 1.0, 3);
             switch (Compression_method)
             {
                 case 0 :
@@ -295,10 +284,55 @@ void File_Png::IHDR()
 
             Fill();
         }
-
-        if (Config->ParseSpeed<1.0)
-            Finish("PNG"); //No need of more
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Png::gAMA()
+{
+    //Parsing
+    int32u Gamma;
+    Get_B4 (Gamma,                                              "Gamma");
+
+    FILLING_BEGIN()
+        Fill(StreamKind_Last, 0, "Gamma", Gamma/100000.0);
+    FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Png::pHYs()
+{
+    //Parsing
+    int32u X, Y;
+    Get_B4 (X,                                                  "Pixels per unit, X axis");
+    Get_B4 (Y,                                                  "Pixels per unit, Y axis");
+    Skip_B1(                                                    "Unit specifier");
+
+    FILLING_BEGIN()
+        if (X && Y)
+        {
+            Clear(StreamKind_Last, 0, "DisplayAspectRatio");
+            Fill(StreamKind_Last, 0, "PixelAspectRatio", ((float32)Y) / X, 3, true);
+        }
+    FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Png::sBIT()
+{
+    //Parsing
+    map<int8u, int64u> Bits;
+    for (int64u i=0; i<Element_Size; i++)
+    {
+        int8u Bit;
+        Get_B1 (Bit,                                            "Significant bits");
+        Bits[Bit]++;
+    }
+
+    FILLING_BEGIN()
+        if (Bits.size()==1)
+            Fill(StreamKind_Last, 0, "BitDepth", Bits.begin()->first, 10, true);
+    FILLING_END()
 }
 
 } //NameSpace

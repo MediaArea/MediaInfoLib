@@ -41,6 +41,7 @@ private :
 
     //Buffer - File header
     bool FileHeader_Begin();
+    void FileHeader_Parse();
 
     //Buffer - Demux
     #if MEDIAINFO_DEMUX
@@ -58,14 +59,13 @@ private :
     void Data_Parse();
 
     //Elements
-    void Signature();
-    void IDAT() {Skip_XX(Element_Size, "Data");}
-    void IEND();
+    void IDAT();
+    void IEND() {}
     void IHDR();
     void PLTE() {Skip_XX(Element_Size, "Data");}
-
-    //Temp
-    bool    Signature_Parsed;
+    void gAMA();
+    void pHYs();
+    void sBIT();
 };
 
 } //NameSpace
