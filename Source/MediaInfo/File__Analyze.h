@@ -861,6 +861,7 @@ public :
     void Peek_String(int64u Bytes, std::string &Info);
     void Skip_Local (int64u Bytes,                    const char* Name);
     void Skip_ISO_6937_2(int64u Bytes,                const char* Name);
+    void Skip_ISO_8859_1(int64u Bytes,                const char* Name);
     void Skip_String(int64u Bytes,                    const char* Name);
     void Skip_UTF8  (int64u Bytes,                    const char* Name);
     void Skip_UTF16B(int64u Bytes,                    const char* Name);

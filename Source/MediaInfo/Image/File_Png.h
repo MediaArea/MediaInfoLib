@@ -17,6 +17,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
+#include "MediaInfo/TimeCode.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -63,9 +64,20 @@ private :
     void IEND() {}
     void IHDR();
     void PLTE() {Skip_XX(Element_Size, "Data");}
+    void iTXt() {Textual(bitset8().set(IsCompressed).set(IsUTF8));}
     void gAMA();
     void pHYs();
     void sBIT();
+    void tEXt() {Textual(bitset8());}
+    void zTXt() {Textual(bitset8().set(IsCompressed));}
+
+    //Helpers
+    enum Text_Style
+    {
+        IsCompressed,
+        IsUTF8,
+    };
+    void Textual(bitset8 Method);
 };
 
 } //NameSpace

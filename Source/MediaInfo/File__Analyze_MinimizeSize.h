@@ -749,6 +749,7 @@ public :
     void Peek_String(int64u Bytes, std::string &Info);
     void Skip_Local (int64u Bytes,                    const char*) {if (Element_Offset+Bytes>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=(size_t)Bytes;}
     void Skip_ISO_6937_2(int64u Bytes,                const char*) {if (Element_Offset+Bytes>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=(size_t)Bytes;}
+    void Skip_ISO_8859_1(int64u Bytes,                const char*) {if (Element_Offset+Bytes>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=(size_t)Bytes;}
     void Skip_String(int64u Bytes,                    const char*) {if (Element_Offset+Bytes>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=(size_t)Bytes;}
     void Skip_UTF8  (int64u Bytes,                    const char*) {if (Element_Offset+Bytes>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=(size_t)Bytes;}
     void Skip_UTF16B(int64u Bytes,                    const char*) {if (Element_Offset+Bytes>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=(size_t)Bytes;}
