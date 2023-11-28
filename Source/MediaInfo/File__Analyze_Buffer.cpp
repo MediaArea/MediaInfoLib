@@ -1965,6 +1965,19 @@ void File__Analyze::Skip_Local(int64u Bytes, const char* Name)
 }
 
 //---------------------------------------------------------------------------
+void File__Analyze::Skip_ISO_8859_1(int64u Bytes, const char* Name)
+{
+    INTEGRITY_SIZE_ATLEAST(Bytes);
+    if (Trace_Activated && Bytes)
+    {
+        Ztring Temp;
+        Get_ISO_8859_1(Bytes, Temp, Name);
+    }
+    else
+        Element_Offset+=Bytes;
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Skip_ISO_6937_2(int64u Bytes, const char* Name)
 {
     INTEGRITY_SIZE_ATLEAST(Bytes);
