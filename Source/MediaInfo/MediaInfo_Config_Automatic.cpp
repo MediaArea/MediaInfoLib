@@ -5038,7 +5038,7 @@ void MediaInfo_Config_Video (ZtringListList &Info)
     "colour_range_Original_Source;;;N NTY\n"
     "colour_primaries;;;Y YTY\n"
     "colour_primaries_Source;;;N YTY\n"
-    "colour_primaries_Original;;;Y NYTY\n"
+    "colour_primaries_Original;;;Y NTY\n"
     "colour_primaries_Original_Source;;;N NTY\n"
     "transfer_characteristics;;;Y YTY\n"
     "transfer_characteristics_Source;;;N YTY\n"

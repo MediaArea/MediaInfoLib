@@ -359,7 +359,7 @@ colour_range_Original;;;Y NTY;;;Colour range for YUV colour space (if incoherenc
 colour_range_Original_Source;;;N NTY;;;Colour range for YUV colour space (source if incoherencies)
 colour_primaries;;;Y YTY;;;Chromaticity coordinates of the source primaries
 colour_primaries_Source;;;N YTY;;;Chromaticity coordinates of the source primaries (source)
-colour_primaries_Original;;;Y NYTY;;;Chromaticity coordinates of the source primaries (if incoherencies)
+colour_primaries_Original;;;Y NTY;;;Chromaticity coordinates of the source primaries (if incoherencies)
 colour_primaries_Original_Source;;;N NTY;;;Chromaticity coordinates of the source primaries (source if incoherencies)
 transfer_characteristics;;;Y YTY;;;Opto-electronic transfer characteristic of the source picture
 transfer_characteristics_Source;;;N YTY;;;Opto-electronic transfer characteristic of the source picture (source)
