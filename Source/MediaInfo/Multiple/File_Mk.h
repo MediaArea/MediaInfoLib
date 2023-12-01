@@ -163,6 +163,11 @@ private :
     void Segment_Tracks_TrackEntry_FlagEnabled(){UInteger_Info();};
     void Segment_Tracks_TrackEntry_FlagDefault();
     void Segment_Tracks_TrackEntry_FlagForced();
+    void Segment_Tracks_TrackEntry_FlagHearingImpaired();
+    void Segment_Tracks_TrackEntry_FlagVisualImpaired();
+    void Segment_Tracks_TrackEntry_FlagTextDescriptions();
+    void Segment_Tracks_TrackEntry_FlagOriginal();
+    void Segment_Tracks_TrackEntry_FlagCommentary();
     void Segment_Tracks_TrackEntry_FlagLacing(){UInteger_Info();};
     void Segment_Tracks_TrackEntry_MinCache(){UInteger_Info();};
     void Segment_Tracks_TrackEntry_MaxCache(){UInteger_Info();};
@@ -381,6 +386,11 @@ private :
         bool                    Searching_TimeStamp_Start;
         bool                    Default;
         bool                    Forced;
+        bool                    HearingImpaired;
+        bool                    VisualImpaired;
+        bool                    TextDescriptions;
+        bool                    Original;
+        bool                    Commentary;
         int64u                  ContentCompAlgo;
         size_t                  ContentCompSettings_Buffer_Size;
         int8u*                  ContentCompSettings_Buffer;
