@@ -1384,16 +1384,16 @@ void File_Mk::Streams_Finish()
         //Flags
         Fill(StreamKind_Last, StreamPos_Last, "Default", Temp->second.Default?"Yes":"No");
         Fill(StreamKind_Last, StreamPos_Last, "Forced", Temp->second.Forced?"Yes":"No");
-        Fill(StreamKind_Last, StreamPos_Last, "Original", Temp->second.Original ? "Yes" : "No");
+        Fill(StreamKind_Last, StreamPos_Last, "Original", Temp->second.Original?"Yes":"No");
 
         if (StreamKind_Last != Stream_Video)
         {
-            Fill(StreamKind_Last, StreamPos_Last, "Hearing Impaired", Temp->second.HearingImpaired ? "Yes" : "No");
-            Fill(StreamKind_Last, StreamPos_Last, "Commentary", Temp->second.Commentary ? "Yes" : "No");
-            Fill(StreamKind_Last, StreamPos_Last, "Text Descriptions", Temp->second.TextDescriptions ? "Yes" : "No");
+            Fill(StreamKind_Last, StreamPos_Last, "HearingImpaired", Temp->second.HearingImpaired?"Yes":"No");
+            Fill(StreamKind_Last, StreamPos_Last, "Commentary", Temp->second.Commentary?"Yes":"No");
+            Fill(StreamKind_Last, StreamPos_Last, "TextDescriptions", Temp->second.TextDescriptions?"Yes":"No");
         }
         else
-            Fill(StreamKind_Last, StreamPos_Last, "Visual Impaired", Temp->second.VisualImpaired ? "Yes" : "No");
+            Fill(StreamKind_Last, StreamPos_Last, "VisualImpaired", Temp->second.VisualImpaired?"Yes":"No");
     }
 
     //Chapters
@@ -4052,12 +4052,12 @@ void File_Mk::Segment_Tracks_TrackEntry_FlagForced()
 void File_Mk::Segment_Tracks_TrackEntry_FlagHearingImpaired()
 {
     //Parsing
-    int64u UInteger = UInteger_Get();
+    int64u UInteger=UInteger_Get();
 
     FILLING_BEGIN();
-    if (Segment_Info_Count > 1)
+    if (Segment_Info_Count>1)
         return; //First element has the priority
-    Stream[TrackNumber].HearingImpaired = UInteger ? true : false;
+    Stream[TrackNumber].HearingImpaired=UInteger?true:false;
     FILLING_END();
 }
 
@@ -4065,12 +4065,12 @@ void File_Mk::Segment_Tracks_TrackEntry_FlagHearingImpaired()
 void File_Mk::Segment_Tracks_TrackEntry_FlagVisualImpaired()
 {
     //Parsing
-    int64u UInteger = UInteger_Get();
+    int64u UInteger=UInteger_Get();
 
     FILLING_BEGIN();
-    if (Segment_Info_Count > 1)
+    if (Segment_Info_Count>1)
         return; //First element has the priority
-    Stream[TrackNumber].VisualImpaired = UInteger ? true : false;
+    Stream[TrackNumber].VisualImpaired=UInteger?true:false;
     FILLING_END();
 }
 
@@ -4078,12 +4078,12 @@ void File_Mk::Segment_Tracks_TrackEntry_FlagVisualImpaired()
 void File_Mk::Segment_Tracks_TrackEntry_FlagTextDescriptions()
 {
     //Parsing
-    int64u UInteger = UInteger_Get();
+    int64u UInteger=UInteger_Get();
 
     FILLING_BEGIN();
-    if (Segment_Info_Count > 1)
+    if (Segment_Info_Count>1)
         return; //First element has the priority
-    Stream[TrackNumber].TextDescriptions = UInteger ? true : false;
+    Stream[TrackNumber].TextDescriptions=UInteger?true:false;
     FILLING_END();
 }
 
@@ -4091,12 +4091,12 @@ void File_Mk::Segment_Tracks_TrackEntry_FlagTextDescriptions()
 void File_Mk::Segment_Tracks_TrackEntry_FlagOriginal()
 {
     //Parsing
-    int64u UInteger = UInteger_Get();
+    int64u UInteger=UInteger_Get();
 
     FILLING_BEGIN();
-    if (Segment_Info_Count > 1)
+    if (Segment_Info_Count>1)
         return; //First element has the priority
-    Stream[TrackNumber].Original = UInteger ? true : false;
+    Stream[TrackNumber].Original=UInteger?true:false;
     FILLING_END();
 }
 
@@ -4104,12 +4104,12 @@ void File_Mk::Segment_Tracks_TrackEntry_FlagOriginal()
 void File_Mk::Segment_Tracks_TrackEntry_FlagCommentary()
 {
     //Parsing
-    int64u UInteger = UInteger_Get();
+    int64u UInteger=UInteger_Get();
 
     FILLING_BEGIN();
-    if (Segment_Info_Count > 1)
+    if (Segment_Info_Count>1)
         return; //First element has the priority
-    Stream[TrackNumber].Commentary = UInteger ? true : false;
+    Stream[TrackNumber].Commentary=UInteger?true:false;
     FILLING_END();
 }
 
