@@ -118,6 +118,7 @@ static const char* Gxf_MediaTypes(int8u Type)
         case 23 : return "MPEG-1 Video"; //625 lines
         case 24 : return "SMPTE 12M"; //HD
         case 25 : return "DV"; //DVCPRO HD
+        case 26 : return "AVC";
         case 29 : return "AVC";
         case 30 : return "VC-3";
         default : return "";
@@ -150,6 +151,7 @@ static stream_t Gxf_MediaTypes_StreamKind(int8u Type)
         case 23 : return Stream_Video;
         case 24 : return Stream_Max;
         case 25 : return Stream_Video;
+        case 26 : return Stream_Video;
         case 29 : return Stream_Video;
         case 30 : return Stream_Video;
         default : return Stream_Max;
@@ -1089,6 +1091,7 @@ void File_Gxf::map()
                                         #endif //MEDIAINFO_RIFF_YES
                                     }
                                     break;
+                        case 26 :
                         case 29 :   //AVC
                                     {
                                         File__Analyze* Parser=new File_Avc();
