@@ -1676,8 +1676,58 @@ void File__Analyze::Streams_Finish_StreamOnly_Other(size_t UNUSED(StreamPos))
 }
 
 //---------------------------------------------------------------------------
-void File__Analyze::Streams_Finish_StreamOnly_Image(size_t UNUSED(StreamPos))
+void File__Analyze::Streams_Finish_StreamOnly_Image(size_t Pos)
 {
+    if (Retrieve(Stream_Image, Pos, Image_HDR_Format_String).empty())
+    {
+        ZtringList Summary;
+        Summary.Separator_Set(0, __T(" / "));
+        Summary.Write(Retrieve(Stream_Image, Pos, Image_HDR_Format));
+        ZtringList Commercial=Summary;
+        if (!Summary.empty())
+        {
+            ZtringList HDR_Format_Compatibility;
+            HDR_Format_Compatibility.Separator_Set(0, __T(" / "));
+            HDR_Format_Compatibility.Write(Retrieve(Stream_Image, Pos, Image_HDR_Format_Compatibility));
+            HDR_Format_Compatibility.resize(Summary.size());
+            ZtringList ToAdd;
+            ToAdd.Separator_Set(0, __T(" / "));
+            for (size_t i=Image_HDR_Format_String+1; i<=Image_HDR_Format_Settings; i++)
+            {
+                ToAdd.Write(Retrieve(Stream_Image, Pos, i));
+                ToAdd.resize(Summary.size());
+                for (size_t j=0; j<Summary.size(); j++)
+                {
+                    if (!ToAdd[j].empty())
+                    {
+                        switch (i)
+                        {
+                            case Image_HDR_Format_Version: Summary[j]+=__T(", Version "); break;
+                            case Image_HDR_Format_Level: Summary[j]+=__T('.'); break;
+                            default: Summary[j] += __T(", ");
+                        }
+                        Summary[j]+=ToAdd[j];
+                    }
+                }
+            }
+            for (size_t j=0; j<Summary.size(); j++)
+                if (!HDR_Format_Compatibility[j].empty())
+                {
+                    Summary[j]+=__T(", ")+HDR_Format_Compatibility[j]+__T(" compatible");
+                    Commercial[j]=HDR_Format_Compatibility[j];
+                    if (!Commercial[j].empty())
+                    {
+                        auto Commercial_Reduce=Commercial[j].find(__T(' '));
+                        if (Commercial_Reduce<Commercial[j].size()-1 && Commercial[j][Commercial_Reduce+1]>='0' && Commercial[j][Commercial_Reduce+1]<='9')
+                            Commercial_Reduce=Commercial[j].find(__T(' '), Commercial_Reduce+1);
+                        if (Commercial_Reduce!=string::npos)
+                            Commercial[j].resize(Commercial_Reduce);
+                    }
+                }
+            Fill(Stream_Image, Pos, Image_HDR_Format_String, Summary.Read());
+            Fill(Stream_Image, Pos, Image_HDR_Format_Commercial, Commercial.Read());
+        }
+    }
 }
 
 //---------------------------------------------------------------------------
