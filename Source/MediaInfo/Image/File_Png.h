@@ -64,8 +64,11 @@ private :
     void IEND() {}
     void IHDR();
     void PLTE() {Skip_XX(Element_Size, "Data");}
+    void cICP();
+    void cLLi();
     void iTXt() {Textual(bitset8().set(IsCompressed).set(IsUTF8));}
     void gAMA();
+    void mDCv();
     void pHYs();
     void sBIT();
     void tEXt() {Textual(bitset8());}

@@ -25,12 +25,20 @@ Format_Commercial;;;N NT;;;Commercial name used by vendor for these settings or 
 Format_Commercial_IfAny;;;Y YTY;;;Commercial name used by vendor for these settings, if available
 Format_Version;;;Y NTY;;;Version for the identified format
 Format_Profile;;;Y NTY;;;Profile of the Format
+Format_Compression;;;Y YTY;;;Compression method used
+Format_AdditionalFeatures;;;N YTY;;;Format features needed for fully supporting the content
+HDR_Format;;;N YTY;;;High Dynamic Range Format used
+HDR_Format/String;;;Y NT;;;HDR Format used, along with version, profile, level, layers, settings, and compatibility information
+HDR_Format_Commercial;;;N YT;;;Commercial name used by vendor for these HDR settings or HDR Format field if there is no difference
+HDR_Format_Version;;;N YTY;;;Version of HDR Format
+HDR_Format_Profile;;;N YTY;;;Profile of HDR Format
+HDR_Format_Level;;;N YTY;;;Level of HDR Format
+HDR_Format_Settings;;;N YTY;;;HDR Format settings
+HDR_Format_Compatibility;;;N YTY;;;HDR Format compatibility with commercial products (e.g. HDR10)
+Format_Settings;;;Y NT;;;Settings used and required by decoder
 Format_Settings_Endianness;;;N YTY;;;Order of bytes required for decoding. Options are Big/Little
 Format_Settings_Packing;;;N YTY;;;Data packing method used in DPX frames (e.g. Packed, Filled A, Filled B)
-Format_Compression;;;Y YTY;;;Compression method used
-Format_Settings;;;Y NT;;;Settings used and required by decoder
 Format_Settings_Wrapping;;;Y YTY;;;Wrapping mode set for format (e.g. Frame, Clip)
-Format_AdditionalFeatures;;;N YTY;;;Format features needed for fully supporting the content
 InternetMediaType;;;N YT;;;Internet Media Type (aka MIME Type, Content-Type)
 CodecID;;;Y YTY;;;Codec identifier as indicated by the container
 CodecID/String;;;Y NT;;;Codec identifier, as indicated by the container
