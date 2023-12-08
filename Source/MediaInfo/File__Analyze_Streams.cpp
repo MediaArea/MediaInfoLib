@@ -427,12 +427,13 @@ enum class dolbyvision_profile : uint8_t
     dav1,
     davc,
     dvav,
+    dvh1,
     dvh8,
     dvhe,
     max,
 };
 static const char DolbyVision_Profiles_Names[] = // dv[BL_codec_type].[number_of_layers][bit_depth][cross-compatibility]
-"dav1davcdvavdvh8dvhe";
+"dav1davcdvavdvh1dvh8dvhe";
 static_assert(sizeof(DolbyVision_Profiles_Names)==4*((size_t)dolbyvision_profile::max)+1, "");
 static dolbyvision_profile DolbyVision_Profiles[]=
 {
@@ -456,7 +457,7 @@ static dolbyvision_profile DolbyVision_Profiles[]=
     dolbyvision_profile::max,
     dolbyvision_profile::max,
     dolbyvision_profile::max,
-    dolbyvision_profile::max,
+    dolbyvision_profile::dvh1,
     dolbyvision_profile::max,
     dolbyvision_profile::max,
     dolbyvision_profile::max,
@@ -495,15 +496,22 @@ extern const char* DolbyVision_Compatibility[] =
     "Blu-ray",
 };
 static const size_t DolbyVision_Compatibility_Size=sizeof(DolbyVision_Compatibility)/sizeof(const char*);
+extern const char* DolbyVision_Compression[] =
+{
+    "None",
+    "Limited",
+    NULL,
+    "Extended",
+};
 void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>* Infos)
 {
     Element_Name("Dolby Vision Configuration");
 
     //Parsing
-    int8u  dv_version_major, dv_version_minor, dv_profile, dv_level, dv_bl_signal_compatibility_id;
+    int8u  dv_version_major, dv_version_minor, dv_profile, dv_level, dv_bl_signal_compatibility_id, dv_md_compression;
     bool rpu_present_flag, el_present_flag, bl_present_flag;
     Get_B1 (dv_version_major,                                   "dv_version_major");
-    if (dv_version_major && dv_version_major<=2) //Spec says nothing, we hope that a minor version change means that the stream is backward compatible
+    if (dv_version_major && dv_version_major<=3) //Spec says nothing, we hope that a minor version change means that the stream is backward compatible
     {
         Get_B1 (dv_version_minor,                               "dv_version_minor");
         BS_Begin();
@@ -525,6 +533,10 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
         if (Data_BS_Remain())
         {
             Get_S1 (4, dv_bl_signal_compatibility_id,           "dv_bl_signal_compatibility_id"); // in dv_version_major 2 only if based on specs but it was confirmed to be seen in dv_version_major 1 too and it does not hurt (value 0 means no new display)
+            if (dv_version_major>=3)
+            {
+                Get_S1(2, dv_md_compression,                    "dv_md_compression");
+            }
             if (End<Data_BS_Remain())
                 Skip_BS(Data_BS_Remain()-End,                   "reserved");
         }
@@ -539,13 +551,13 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
             (*Infos)["HDR_Format"].From_UTF8("Dolby Vision");
         else
             Fill(Stream_Video, StreamPos_Last, Video_HDR_Format, "Dolby Vision");
-        if (dv_version_major && dv_version_major<=2)
+        if (dv_version_major && dv_version_major<=3)
         {
-            Ztring Summary=Ztring::ToZtring(dv_version_major)+__T('.')+Ztring::ToZtring(dv_version_minor);
+            Ztring Version=Ztring::ToZtring(dv_version_major)+__T('.')+Ztring::ToZtring(dv_version_minor);
             if (Infos)
-                (*Infos)["HDR_Format_Version"]=Summary;
+                (*Infos)["HDR_Format_Version"]=Version;
             else
-                Fill(Stream_Video, StreamPos_Last, Video_HDR_Format_Version, Summary);
+                Fill(Stream_Video, StreamPos_Last, Video_HDR_Format_Version, Version);
             string Profile, Level;
             DolbyVision_Profiles_Append(Profile, dv_profile);
             Profile+='.';
@@ -561,17 +573,10 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
                 Fill(Stream_Video, StreamPos_Last, Video_HDR_Format_Profile, Profile);
                 Fill(Stream_Video, StreamPos_Last, Video_HDR_Format_Level, Level);
             }
-            Summary += __T(',');
-            Summary+=__T(' ');
-            Summary+=Ztring().From_UTF8(Profile);
-            Summary+=__T('.');
-            Summary+=Ztring().From_UTF8(Level);
 
             string Layers;
             if (rpu_present_flag|el_present_flag|bl_present_flag)
             {
-                Summary+=',';
-                Summary+=' ';
                 if (bl_present_flag)
                     Layers +="BL+";
                 if (el_present_flag)
@@ -579,7 +584,13 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
                 if (rpu_present_flag)
                     Layers +="RPU+";
                 Layers.resize(Layers.size()-1);
-                Summary+=Ztring().From_UTF8(Layers);
+            }
+            if (dv_version_major>=3 && DolbyVision_Compression[dv_md_compression])
+            {
+                if (Infos)
+                    (*Infos)["HDR_Format_Compression"].From_UTF8(DolbyVision_Compression[dv_md_compression]);
+                else
+                    Fill(Stream_Video, StreamPos_Last, Video_HDR_Format_Compression, DolbyVision_Compression[dv_md_compression]);
             }
             if (Infos)
                 (*Infos)["HDR_Format_Settings"].From_UTF8(Layers);

@@ -1142,7 +1142,7 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
             HDR_Format_Compatibility.resize(Summary.size());
             ZtringList ToAdd;
             ToAdd.Separator_Set(0, __T(" / "));
-            for (size_t i=Video_HDR_Format_String+1; i<=Video_HDR_Format_Settings; i++)
+            for (size_t i=Video_HDR_Format_String+1; i<=Video_HDR_Format_Compression; i++)
             {
                 ToAdd.Write(Retrieve(Stream_Video, Pos, i));
                 ToAdd.resize(Summary.size());
@@ -1154,6 +1154,7 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
                         {
                             case Video_HDR_Format_Version: Summary[j]+=__T(", Version "); break;
                             case Video_HDR_Format_Level: Summary[j]+=__T('.'); break;
+                            case Video_HDR_Format_Compression: ToAdd[j][0]+=0x20; if (ToAdd[j].size()==4) ToAdd[j].resize(2); ToAdd[j]+=__T(" metadata compression"); // Fallthrough
                             default: Summary[j] += __T(", ");
                         }
                         Summary[j]+=ToAdd[j];
