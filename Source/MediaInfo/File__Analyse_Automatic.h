@@ -554,6 +554,7 @@ enum video
     Video_HDR_Format_Profile,
     Video_HDR_Format_Level,
     Video_HDR_Format_Settings,
+    Video_HDR_Format_Compression,
     Video_HDR_Format_Compatibility,
     Video_Format_Settings,
     Video_Format_Settings_BVOP,

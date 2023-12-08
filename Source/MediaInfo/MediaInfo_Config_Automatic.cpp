@@ -4679,6 +4679,7 @@ void MediaInfo_Config_Video (ZtringListList &Info)
     "HDR_Format_Profile;;;N YTY\n"
     "HDR_Format_Level;;;N YTY\n"
     "HDR_Format_Settings;;;N YTY\n"
+    "HDR_Format_Compression;;;N YTY\n"
     "HDR_Format_Compatibility;;;N YTY\n"
     "Format_Settings;;;Y NT\n"
     "Format_Settings_BVOP;;Yes;N YTY\n"
