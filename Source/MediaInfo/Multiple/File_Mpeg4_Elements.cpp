@@ -845,6 +845,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h=0x6A703268;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_colr=0x636F6C72;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_ihdr=0x69686472;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_lhvC=0x6C687643;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv=0x6D646376;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC=0x6D686143;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_pasp=0x70617370;
@@ -1263,6 +1264,7 @@ void File_Mpeg4::Data_Parse()
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_colr)
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h_ihdr)
                                     ATOM_END
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_lhvC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_pasp)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D)
@@ -7762,6 +7764,13 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
     #else
         Skip_XX(Element_Size,                               "HEVC Data");
     #endif
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_lhvC()
+{
+    Element_Name("LHEVCDecoderConfigurationRecord");
+    AddCodecConfigurationBoxInfo();
 }
 
 //---------------------------------------------------------------------------
