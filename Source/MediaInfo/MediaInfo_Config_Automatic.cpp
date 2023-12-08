@@ -1044,6 +1044,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "MSDI;MSDI\n"
     "MultipleStream;Multiple-stream\n"
     "MusicBy;Music by\n"
+    "MultiView_Count;Count of views\n"
     "MuxingMode;Muxing mode\n"
     "MuxingMode_MoreInfo;Muxing mode, more info\n"
     "MuxingMode_PackedBitstream;Packed bitstream\n"
