@@ -118,6 +118,9 @@ using namespace std;
 #if defined(MEDIAINFO_CDP_YES)
     #include "MediaInfo/Text/File_Cdp.h"
 #endif
+#if defined(MEDIAINFO_ICC_YES)
+    #include "MediaInfo/Tag/File_Icc.h"
+#endif
 #if defined(MEDIAINFO_PROPERTYLIST_YES)
     #include "MediaInfo/Tag/File_PropertyList.h"
 #endif
@@ -641,8 +644,9 @@ namespace Elements
     const int64u idsc=0x69647363;
     const int64u jp2c=0x6A703263;
     const int64u jp2h=0x6A703268;
-    const int64u jp2h_ihdr=0x69686472;
     const int64u jp2h_colr=0x636F6C72;
+    const int64u jp2h_ihdr=0x69686472;
+    const int64u jp2h_ricc=0x72696363;
     const int64u mdat=0x6D646174;
     const int64u meta=0x6D657461;
     const int64u meta_grpl=0x6772706C;
@@ -1035,6 +1039,7 @@ void File_Mpeg4::Data_Parse()
         ATOM_BEGIN
         ATOM(jp2h_colr)
         ATOM(jp2h_ihdr)
+        ATOM(jp2h_ricc)
         ATOM_END
     LIST(mdat)
         ATOM_DEFAULT_ALONE(mdat_xxxx)
@@ -1821,7 +1826,23 @@ void File_Mpeg4::jp2h_colr()
                     Fill(StreamKind_Last, 0, "ColorSpace", Mpeg4_jp2h_EnumCS(EnumCS));
                     }
                     break;
-        case 0x02 : Skip_XX(Element_Size-Element_Offset,        "PROFILE");
+        case 0x02 :
+                    #if defined(MEDIAINFO_ICC_YES)
+                    if (Element_Offset<Element_Size && Element_Size-Element_Offset>=132)
+                    {
+                        File_Icc ICC_Parser;
+                        ICC_Parser.StreamKind=StreamKind_Last;
+                        ICC_Parser.IsAdditional=true;
+                        Open_Buffer_Init(&ICC_Parser);
+                        Open_Buffer_Continue(&ICC_Parser);
+                        Open_Buffer_Finalize(&ICC_Parser);
+                        Merge(ICC_Parser, StreamKind_Last, 0, 0);
+                    }
+                    else
+                        Skip_XX(Element_Size-Element_Offset,    "ICC profile");
+                    #else
+                        Skip_XX(Element_Size-Element_Offset,    "ICC profile");
+                    #endif
                     break;
         default   : Skip_XX(Element_Size-Element_Offset,        "Unknown");
                     return;
@@ -7105,7 +7126,17 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_nclc(bool LittleEndian,
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof()
 {
     //Parsing
-    Skip_XX(Element_Size-Element_Offset,                        "ICC profile"); //TODO: parse ICC profile
+    #if defined(MEDIAINFO_ICC_YES)
+        File_Icc ICC_Parser;
+        ICC_Parser.StreamKind=StreamKind_Last;
+        ICC_Parser.IsAdditional=true;
+        Open_Buffer_Init(&ICC_Parser);
+        Open_Buffer_Continue(&ICC_Parser);
+        Open_Buffer_Finalize(&ICC_Parser);
+        Merge(ICC_Parser, StreamKind_Last, 0, 0);
+    #else
+        Skip_XX(Element_Size-Element_Offset,                    "ICC profile");
+    #endif
 }
 
 //---------------------------------------------------------------------------

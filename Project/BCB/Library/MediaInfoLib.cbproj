@@ -677,6 +677,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Tag\File_ApeTag.cpp">
             <BuildOrder>69</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Tag\File_Icc.cpp">
+            <BuildOrder>241</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Tag\File_Id3.cpp">
             <BuildOrder>115</BuildOrder>
         </CppCompile>

@@ -66,6 +66,7 @@ private :
     void PLTE() {Skip_XX(Element_Size, "Data");}
     void cICP();
     void cLLi();
+    void iCCP();
     void iTXt() {Textual(bitset8().set(IsCompressed).set(IsUTF8));}
     void gAMA();
     void mDCv();
