@@ -374,6 +374,12 @@
 #endif
 
 //---------------------------------------------------------------------------
+// Tag
+#if defined(MEDIAINFO_ICC_YES)
+    #include "MediaInfo/Tag/File_Icc.h"
+#endif
+
+//---------------------------------------------------------------------------
 // Archive
 #if defined(MEDIAINFO_7Z_YES)
     #include "MediaInfo/Archive/File_7z.h"
@@ -766,6 +772,11 @@ static File__Analyze* SelectFromExtension(const String& Parser)
     #endif
     #if defined(MEDIAINFO_TGA_YES)
         if (Parser==__T("Tga"))         return new File_Tga();
+    #endif
+
+    // Archive
+    #if defined(MEDIAINFO_ICC_YES)
+        if (Parser==__T("Icc"))          return new File_Icc();
     #endif
 
     // Archive

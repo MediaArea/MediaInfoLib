@@ -33,6 +33,9 @@
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/Tag/File_Xmp.h"
 #include <zlib.h>
+#if defined(MEDIAINFO_ICC_YES)
+    #include "MediaInfo/Tag/File_Icc.h"
+#endif
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -77,6 +80,7 @@ namespace Elements
     const int32u cICP=0x63494350;
     const int32u cLLi=0x634C4C69;
     const int32u gAMA=0x67414D41;
+    const int32u iCCP=0x69434350;
     const int32u iTXt=0x69545874;
     const int32u mDCv=0x6D444376;
     const int32u pHYs=0x70485973;
@@ -241,6 +245,7 @@ void File_Png::Data_Parse()
         CASE_INFO(cICP,                                         "Coding-independent code points");
         CASE_INFO(cLLi,                                         "Content Light Level Information");
         CASE_INFO(gAMA,                                         "Gamma");
+        CASE_INFO(iCCP,                                         "Embedded ICC profile");
         CASE_INFO(iTXt,                                         "International textual data");
         CASE_INFO(mDCv,                                         "Mastering Display Color Volume");
         CASE_INFO(pHYs,                                         "Physical pixel dimensions");
@@ -364,6 +369,79 @@ void File_Png::gAMA()
     FILLING_BEGIN()
         Fill(StreamKind_Last, 0, "Gamma", Gamma/100000.0);
     FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Png::iCCP()
+{
+    //Parsing
+    int8u Compression;
+    size_t Zero=(size_t)Element_Offset;
+    for (; Zero<Element_Size; Zero++)
+        if (!Buffer[Buffer_Offset+Zero])
+            break;
+    if (Zero>=Element_Size)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "(Problem)");
+        return;
+    }
+    Skip_XX(Zero-Element_Offset,                                "Profile name");
+    Skip_B1(                                                    "Null separator");
+    Get_B1 (Compression,                                        "Compression method");
+
+    if (!Compression)
+    {
+        //Uncompress init
+        z_stream strm;
+        strm.next_in=(Bytef*)Buffer+Buffer_Offset+(size_t)Element_Offset;
+        strm.avail_in=(int)(Element_Size-Element_Offset);
+        strm.next_out=NULL;
+        strm.avail_out=0;
+        strm.total_out=0;
+        strm.zalloc=Z_NULL;
+        strm.zfree=Z_NULL;
+        inflateInit(&strm);
+
+        //Prepare out
+        strm.avail_out=0x1000000; //Blocks of 64 KiB, arbitrary chosen, as a begin //TEMP increase
+        strm.next_out=(Bytef*)new Bytef[strm.avail_out];
+
+        //Parse compressed data, with handling of the case the output buffer is not big enough
+        for (;;)
+        {
+            //inflate
+            int inflate_Result=inflate(&strm, Z_NO_FLUSH);
+            if (inflate_Result<0)
+                break;
+
+            //Check if we need to stop
+            if (strm.avail_out || inflate_Result)
+                break;
+
+            //Need to increase buffer
+            size_t UncompressedData_NewMaxSize=strm.total_out*4;
+            int8u* UncompressedData_New=new int8u[UncompressedData_NewMaxSize];
+            memcpy(UncompressedData_New, strm.next_out-strm.total_out, strm.total_out);
+            delete[] strm.next_out; strm.next_out=UncompressedData_New;
+            strm.next_out=strm.next_out+strm.total_out;
+            strm.avail_out=UncompressedData_NewMaxSize-strm.total_out;
+        }
+        auto Buffer=(const char*)strm.next_out-strm.total_out;
+        auto Buffer_Size=(size_t)strm.total_out;
+        #if defined(MEDIAINFO_ICC_YES)
+            File_Icc ICC_Parser;
+            ICC_Parser.StreamKind=StreamKind_Last;
+            ICC_Parser.IsAdditional=true;
+            Open_Buffer_Init(&ICC_Parser);
+            Open_Buffer_Continue(&ICC_Parser, (const int8u*)Buffer, Buffer_Size);
+            Open_Buffer_Finalize(&ICC_Parser);
+            Merge(ICC_Parser, StreamKind_Last, 0, 0);
+        #else
+            Skip_XX(Element_Size-Element_Offset,                "ICC profile");
+        #endif
+    }
+    else
+        Skip_XX(Element_Size-Element_Offset,                    "ICC profile");
 }
 
 //---------------------------------------------------------------------------
