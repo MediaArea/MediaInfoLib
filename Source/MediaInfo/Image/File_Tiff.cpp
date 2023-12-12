@@ -53,10 +53,12 @@ namespace Tiff_Tag
     const int16u BitsPerSample              = 258;
     const int16u Compression                = 259;
     const int16u PhotometricInterpretation  = 262;
+    const int16u DocumentName               = 269;
     const int16u ImageDescription           = 270;
     const int16u Make                       = 271;
     const int16u Model                      = 272;
     const int16u StripOffsets               = 273;
+    const int16u Orientation                = 274;
     const int16u SamplesPerPixel            = 277;
     const int16u RowsPerStrip               = 278;
     const int16u StripByteCounts            = 279;
@@ -79,10 +81,12 @@ static const char* Tiff_Tag_Name(int32u Tag)
         case Tiff_Tag::BitsPerSample                : return "BitsPerSample";
         case Tiff_Tag::Compression                  : return "Compression";
         case Tiff_Tag::PhotometricInterpretation    : return "PhotometricInterpretation";
+        case Tiff_Tag::DocumentName                 : return "DocumentName";
         case Tiff_Tag::ImageDescription             : return "ImageDescription";
         case Tiff_Tag::Make                         : return "Make";
         case Tiff_Tag::Model                        : return "Model";
         case Tiff_Tag::StripOffsets                 : return "StripOffsets";
+        case Tiff_Tag::Orientation                  : return "Orientation";
         case Tiff_Tag::SamplesPerPixel              : return "SamplesPerPixel";
         case Tiff_Tag::RowsPerStrip                 : return "RowsPerStrip";
         case Tiff_Tag::StripByteCounts              : return "StripByteCounts";
@@ -105,6 +109,7 @@ namespace Tiff_Type
     const int16u Short      = 3;
     const int16u Long       = 4;
     const int16u Rational   = 5;
+    const int16u Undefined  = 7;
 }
 
 //---------------------------------------------------------------------------
@@ -117,6 +122,7 @@ static const char* Tiff_Type_Name(int32u Type)
         case Tiff_Type::Short                       : return "Short";
         case Tiff_Type::Long                        : return "Long";
         case Tiff_Type::Rational                    : return "Rational";
+        case Tiff_Type::Undefined                   : return "Undefined";
         default                                     : return ""; //Unknown
     }
 }
@@ -126,6 +132,7 @@ static const int8u Tiff_Type_Size(int32u Type)
 {
     switch (Type)
     {
+        case Tiff_Type::Undefined                   :
         case Tiff_Type::Byte                        : return 1;
         case Tiff_Type::ASCII                       : return 1;
         case Tiff_Type::Short                       : return 2;
@@ -405,6 +412,11 @@ void File_Tiff::Data_Parse_Fill()
         //Note: should we differeniate between raw RGB and palette (also RGB actually...)
     }
 
+    //DocumentName
+    Info=Infos.find(Tiff_Tag::DocumentName);
+    if (Info!=Infos.end())
+        Fill(Stream_Image, StreamPos_Last, Image_Title, Info->second.Read());
+
     //ImageDescription
     Info=Infos.find(Tiff_Tag::ImageDescription);
     if (Info!=Infos.end())
@@ -564,7 +576,7 @@ void File_Tiff::GetValueOffsetu(ifditem &IfdItem)
 {
     ZtringList &Info=Infos[IfdItem.Tag]; Info.clear(); Info.Separator_Set(0, __T(" / "));
 
-    if (IfdItem.Type!=Tiff_Type::ASCII && IfdItem.Count>=1000)
+    if (IfdItem.Type!=Tiff_Type::ASCII && IfdItem.Type!=Tiff_Type::Undefined && IfdItem.Count>=1000)
     {
         //Too many data, we don't currently need it and we skip it
         Skip_XX(Tiff_Type_Size(IfdItem.Type)*IfdItem.Count,     "Data");
@@ -695,6 +707,14 @@ void File_Tiff::GetValueOffsetu(ifditem &IfdItem)
                         Info.push_back(Ztring::ToZtring(((float64)N)/D, D==1?0:3));
                     else
                         Info.push_back(Ztring()); // Division by zero, undefined
+                }
+                break;
+        case 7:                /* Undefined */
+                if (false)
+                    ;
+                else
+                {
+                    Skip_XX(Tiff_Type_Size(IfdItem.Type)*IfdItem.Count, "Data");
                 }
                 break;
 
