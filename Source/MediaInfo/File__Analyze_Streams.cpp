@@ -620,17 +620,32 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
 
 //---------------------------------------------------------------------------
 #if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES)
-void File__Analyze::Get_LightLevel(Ztring &MaxCLL, Ztring &MaxFALL)
+void File__Analyze::Get_LightLevel(Ztring &MaxCLL, Ztring &MaxFALL, int32u Divisor)
 {
     //Parsing
-    int16u maximum_content_light_level, maximum_frame_average_light_level;
-    Get_B2(maximum_content_light_level,                         "maximum_content_light_level");
-    Get_B2(maximum_frame_average_light_level,                   "maximum_frame_average_light_level");
+    if (Divisor-1)
+    {
+        int32u maximum_content_light_level, maximum_frame_average_light_level;
+        Get_B4 (maximum_content_light_level,                    "maximum_content_light_level");
+        Get_B4 (maximum_frame_average_light_level,              "maximum_frame_average_light_level");
 
-    if (maximum_content_light_level)
-        MaxCLL=Ztring::ToZtring(maximum_content_light_level)+__T(" cd/m2");
-    if (maximum_frame_average_light_level)
-        MaxFALL=Ztring::ToZtring(maximum_frame_average_light_level)+__T(" cd/m2");
+        auto Decimals=to_string(Divisor).size()-1;
+        if (maximum_content_light_level)
+            MaxCLL=Ztring::ToZtring(((float32)maximum_content_light_level)/Divisor, Decimals)+__T(" cd/m2");
+        if (maximum_frame_average_light_level)
+            MaxFALL=Ztring::ToZtring(((float32)maximum_frame_average_light_level)/Divisor, Decimals)+__T(" cd/m2");
+    }
+    else
+    {
+        int16u maximum_content_light_level, maximum_frame_average_light_level;
+        Get_B2 (maximum_content_light_level,                    "maximum_content_light_level");
+        Get_B2 (maximum_frame_average_light_level,              "maximum_frame_average_light_level");
+
+        if (maximum_content_light_level)
+            MaxCLL=Ztring::ToZtring(maximum_content_light_level)+__T(" cd/m2");
+        if (maximum_frame_average_light_level)
+            MaxFALL=Ztring::ToZtring(maximum_frame_average_light_level)+__T(" cd/m2");
+    }
 }
 #endif
 

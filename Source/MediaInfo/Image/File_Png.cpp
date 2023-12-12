@@ -346,7 +346,7 @@ void File_Png::cLLi()
 {
     //Parsing
     Ztring MaxCLL, MaxFALL;
-    Get_LightLevel(MaxCLL, MaxFALL);
+    Get_LightLevel(MaxCLL, MaxFALL, 10000);
 
     FILLING_BEGIN();
         Fill(StreamKind_Last, StreamPos_Last, "MaxCLL", MaxCLL);
