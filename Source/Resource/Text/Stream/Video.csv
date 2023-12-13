@@ -38,6 +38,7 @@ HDR_Format_Version;;;N YTY;;;Version of HDR Format
 HDR_Format_Profile;;;N YTY;;;Profile of HDR Format
 HDR_Format_Level;;;N YTY;;;Level of HDR Format
 HDR_Format_Settings;;;N YTY;;;HDR Format settings
+HDR_Format_Compression;;;N YTY;;;Compression format of HDR Format
 HDR_Format_Compatibility;;;N YTY;;;HDR Format compatibility with commercial products (e.g. HDR10)
 Format_Settings;;;Y NT;;;Settings used and required by decoder
 Format_Settings_BVOP;;Yes;N YTY;;;Whether BVOP settings are required for decoding MPEG (Yes, No)

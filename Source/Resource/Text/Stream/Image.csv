@@ -129,10 +129,38 @@ Encoded_Date;;;Y YTY;;;Time that the encoding of this item was completed, in UTC
 Tagged_Date;;;Y YTY;;;Time that the tags were added to this item, in UTC;;Temporal
 Encryption;;;Y YTY;;;Whether this stream is encrypted and, if available, how it is encrypted
 colour_description_present;;;N YTY;;;Presence of color description (Yes, No)
+colour_description_present_Source;;;N YTY;;;Presence of colour description (source)
+colour_description_present_Original;;;N NTY;;;Presence of colour description (if incoherencies)
+colour_description_present_Original_Source;;;N NTY;;;Presence of colour description (source if incoherencies)
+colour_range;;;Y YTY;;;Color range for YUV color space
+colour_range_Source;;;N YTY;;;Colour range for YUV colour space (source)
+colour_range_Original;;;Y NTY;;;Colour range for YUV colour space (if incoherencies)
+colour_range_Original_Source;;;N NTY;;;Colour range for YUV colour space (source if incoherencies)
 colour_primaries;;;Y YTY;;;Chromaticity coordinates of the source primaries
+colour_primaries_Source;;;N YTY;;;Chromaticity coordinates of the source primaries (source)
+colour_primaries_Original;;;Y NTY;;;Chromaticity coordinates of the source primaries (if incoherencies)
+colour_primaries_Original_Source;;;N NTY;;;Chromaticity coordinates of the source primaries (source if incoherencies)
 transfer_characteristics;;;Y YTY;;;Opto-electronic transfer characteristic of the source picture
+transfer_characteristics_Source;;;N YTY;;;Opto-electronic transfer characteristic of the source picture (source)
+transfer_characteristics_Original;;;Y NTY;;;Opto-electronic transfer characteristic of the source picture (if incoherencies)
+transfer_characteristics_Original_Source;;;N NTY;;;Opto-electronic transfer characteristic of the source picture (source if incoherencies)
 matrix_coefficients;;;Y YTY;;;Matrix coefficients used in deriving luma and chroma signals from the green, blue, and red primaries
-colour_description_present_Original;;;N YTY;;;Presence of colour description (if incoherencies)
-colour_primaries_Original;;;Y YTY;;;Chromaticity coordinates of the source primaries (if incoherencies)
-transfer_characteristics_Original;;;Y YTY;;;Opto-electronic transfer characteristic of the source picture (if incoherencies)
-matrix_coefficients_Original;;;Y YTY;;;Matrix coefficients used in deriving luma and chroma signals from the green, blue, and red primaries (if incoherencies)
+matrix_coefficients_Source;;;N YTY;;;Matrix coefficients used in deriving luma and chroma signals from the green, blue, and red primaries (source)
+matrix_coefficients_Original;;;Y NTY;;;Matrix coefficients used in deriving luma and chroma signals from the green, blue, and red primaries (if incoherencies)
+matrix_coefficients_Original_Source;;;N NTY;;;Matrix coefficients used in deriving luma and chroma signals from the green, blue, and red primaries (source if incoherencies)
+MasteringDisplay_ColorPrimaries;;;Y YTY;;;Chromaticity coordinates of the source primaries of the mastering display
+MasteringDisplay_ColorPrimaries_Source;;;N YTY;;;Chromaticity coordinates of the source primaries of the mastering display (source)
+MasteringDisplay_ColorPrimaries_Original;;;Y NTY;;;Chromaticity coordinates of the source primaries of the mastering display (if incoherencies)
+MasteringDisplay_ColorPrimaries_Original_Source;;;N NTY;;;Chromaticity coordinates of the source primaries of the mastering display (source if incoherencies)
+MasteringDisplay_Luminance;;;Y YTY;;;Luminance of the mastering display
+MasteringDisplay_Luminance_Source;;;N YTY;;;Luminance of the mastering display (source)
+MasteringDisplay_Luminance_Original;;;Y NTY;;;Luminance of the mastering display (if incoherencies)
+MasteringDisplay_Luminance_Original_Source;;;N NTY;;;Luminance of the mastering display (source if incoherencies)
+MaxCLL;;;Y YTY;;;Maximum content light level
+MaxCLL_Source;;;N YTY;;;Maximum content light level (source)
+MaxCLL_Original;;;Y NTY;;;Maximum content light level (if incoherencies)
+MaxCLL_Original_Source;;;N NTY;;;Maximum content light level (source if incoherencies)
+MaxFALL;;;Y YTY;;;Maximum frame average light level
+MaxFALL_Source;;;N YTY;;;Maximum frame average light level (source)
+MaxFALL_Original;;;Y NTY;;;Maximum frame average light level (if incoherencies)
+MaxFALL_Original_Source;;;N NTY;;;Maximum frame average light level (source if incoherencies)
