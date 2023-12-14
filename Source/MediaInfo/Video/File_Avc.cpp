@@ -1141,7 +1141,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
     if ((*seq_parameter_set_Item)->bit_depth_luma_minus8==(*seq_parameter_set_Item)->bit_depth_chroma_minus8)
         Fill(Stream_Video, 0, Video_BitDepth, (*seq_parameter_set_Item)->bit_depth_luma_minus8+8);
     if (MaxSlicesCount>1)
-        Fill(Stream_Video, 0, "MaxSlicesCount", MaxSlicesCount);
+        Fill(Stream_Video, 0, Video_Format_Settings_SliceCount, MaxSlicesCount);
 
     hdr::iterator EtsiTs103433 = HDR.find(HdrFormat_EtsiTs103433);
     if (EtsiTs103433 != HDR.end())

@@ -577,6 +577,8 @@ enum video
     Video_Format_Settings_GOP,
     Video_Format_Settings_PictureStructure,
     Video_Format_Settings_Wrapping,
+    Video_Format_Settings_SliceCount,
+    Video_Format_Settings_SliceCount_String,
     Video_InternetMediaType,
     Video_MuxingMode,
     Video_CodecID,

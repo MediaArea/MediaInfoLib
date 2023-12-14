@@ -127,6 +127,9 @@
  second1; second
  second2; seconds
  second3; seconds
+ slice per frame1; slice per frame
+ slice per frame2; slices per frame
+ slice per frame3; slices per frame
  text stream1; text stream
  text stream2; text streams
  text stream3; text streams
@@ -452,6 +455,7 @@ Format_Settings_QPel;Format settings, QPel
 Format_Settings_RefFrames;Format settings, Reference frames
 Format_Settings_SBR;Format settings, SBR
 Format_Settings_Sign;Format settings, Sign
+Format_Settings_SliceCount;Format settings, Slice count
 Format_Settings_Wrapping;Format settings, wrapping mode
 Format_Tier;Format tier
 Format_Url;Weblink for format
