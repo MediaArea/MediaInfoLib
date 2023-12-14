@@ -1112,21 +1112,15 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
     }
 
     //Commercial name
-    if ((Retrieve(Stream_Video, Pos, Video_BitDepth).empty() || Retrieve(Stream_Video, Pos, Video_BitDepth)==__T("10")) //e.g. ProRes has not bitdepth info
-     && Retrieve(Stream_Video, Pos, Video_ChromaSubsampling)==__T("4:2:0")
-     && (Retrieve(Stream_Video, Pos, Video_colour_description_present).empty() || //From  CFF: "colour_description_present_flag SHALL be set to 1 if the color parameters from [R709] are not used."
-       ( Retrieve(Stream_Video, Pos, Video_colour_primaries)==__T("BT.2020")
-      && Retrieve(Stream_Video, Pos, Video_transfer_characteristics)==__T("PQ")
-      && Retrieve(Stream_Video, Pos, Video_matrix_coefficients).find(__T("BT.2020"))==0))
-     && !Retrieve(Stream_Video, Pos, "MasteringDisplay_ColorPrimaries").empty()
-     // && !Retrieve(Stream_Video, Pos, "MaxCLL").empty()
-     // && !Retrieve(Stream_Video, Pos, "MaxFALL").empty() // MaxCLL & MaxFALL are required except if not available so not required in practice https://www.cta.tech/News/Press-Releases/2015/August/CEA-Defines-%E2%80%98HDR-Compatible%E2%80%99-Displays.aspx https://www.ultrahdforum.org/wp-content/uploads/2016/04/Ultra-HD-Forum-Deployment-Guidelines-V1.1-Summer-2016.pdf
-        )
+    if (Retrieve(Stream_Video, Pos, Video_HDR_Format_Compatibility).rfind(__T("HDR10"), 0)==0
+     && ((!Retrieve(Stream_Video, Pos, Video_BitDepth).empty() && Retrieve(Stream_Video, Pos, Video_BitDepth).To_int64u()<10) //e.g. ProRes has not bitdepth info
+     || Retrieve(Stream_Video, Pos, Video_colour_primaries)!=__T("BT.2020")
+     || Retrieve(Stream_Video, Pos, Video_transfer_characteristics)!=__T("PQ")
+     || Retrieve(Stream_Video, Pos, Video_MasteringDisplay_ColorPrimaries).empty()
+        ))
     {
         //We actually fill HDR10/HDR10+ by default, so it will be removed below if not fitting in the color related rules
-    }
-    else if (!Retrieve_Const(Stream_Video, Pos, Video_HDR_Format_Compatibility).empty())
-    {
+        Clear(Stream_Video, Pos, Video_HDR_Format_Compatibility);
     }
     if (Retrieve(Stream_Video, Pos, Video_HDR_Format_String).empty())
     {
@@ -1679,6 +1673,17 @@ void File__Analyze::Streams_Finish_StreamOnly_Other(size_t UNUSED(StreamPos))
 //---------------------------------------------------------------------------
 void File__Analyze::Streams_Finish_StreamOnly_Image(size_t Pos)
 {
+    //Commercial name
+    if (Retrieve(Stream_Image, Pos, Image_HDR_Format_Compatibility).rfind(__T("HDR10"), 0)==0
+     && ((!Retrieve(Stream_Image, Pos, Image_BitDepth).empty() && Retrieve(Stream_Image, Pos, Image_BitDepth).To_int64u()<10) //e.g. ProRes has not bitdepth info
+      || Retrieve(Stream_Image, Pos, Image_colour_primaries)!=__T("BT.2020")
+      || Retrieve(Stream_Image, Pos, Image_transfer_characteristics)!=__T("PQ")
+      || Retrieve(Stream_Image, Pos, Image_MasteringDisplay_ColorPrimaries).empty()
+        ))
+    {
+        //We actually fill HDR10/HDR10+ by default, so it will be removed below if not fitting in the color related rules
+        Clear(Stream_Image, Pos, Image_HDR_Format_Compatibility);
+    }
     if (Retrieve(Stream_Image, Pos, Image_HDR_Format_String).empty())
     {
         ZtringList Summary;
