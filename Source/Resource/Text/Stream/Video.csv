@@ -61,6 +61,8 @@ Format_Settings_FrameMode;;;Y YTY;;;Frame mode for decoding (e.g. Frame doubling
 Format_Settings_GOP;;;Y YTY;;;GOP method set for format (e.g. N=1, Variable)
 Format_Settings_PictureStructure;;;Y YTY;;;Picture structure method set for format (e.g. Frame, Field)
 Format_Settings_Wrapping;;;Y YTY;;;Wrapping mode set for format (e.g. Frame, Clip)
+Format_Settings_SliceCount;; slice per frame;N YIY;;;Numer of slices per frame
+Format_Settings_SliceCount/String;;;Y NTN;;;Numer of slices per frame
 InternetMediaType;;;N YT;;;Internet Media Type a.k.a. MIME Type, Content-Type
 MuxingMode;;;Y YTY;;;How this file is muxed in the container (e.g. Muxed in Video #1)
 CodecID;;;Y YTY;;;Codec identifier as indicated by the container
