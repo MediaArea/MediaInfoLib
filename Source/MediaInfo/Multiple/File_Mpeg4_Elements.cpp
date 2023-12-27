@@ -962,6 +962,7 @@ namespace Elements
     const int64u moov_udta_meta_uuid=0x75756964;
     const int64u moov_udta_ndrm=0x6E64726D;
     const int64u moov_udta_nsav=0x6E736176;
+    const int64u moov_udta_PANA=0x50414E41;
     const int64u moov_udta_ptv =0x70747620;
     const int64u moov_udta_rtng=0x72746E67;
     const int64u moov_udta_Sel0=0x53656C30;
@@ -1425,6 +1426,7 @@ void File_Mpeg4::Data_Parse()
                 ATOM_END
             ATOM(moov_udta_ndrm)
             ATOM(moov_udta_nsav)
+            ATOM(moov_udta_PANA)
             ATOM(moov_udta_ptv )
             ATOM(moov_udta_rtng)
             ATOM(moov_udta_Sel0)
@@ -1438,7 +1440,7 @@ void File_Mpeg4::Data_Parse()
                 ATOM_END
             ATOM(moov_udta_WLOC)
             ATOM(moov_udta_thmb)
-            LIST_SKIP(moov_udta_XMP_)
+            LIST_SKIP(moov_udta_XMP_) //TODO: parse XMP
             ATOM(moov_udta_Xtra)
             ATOM(moov_udta_yrrc)
             ATOM_DEFAULT (moov_udta_xxxx); //User data
@@ -9513,6 +9515,15 @@ void File_Mpeg4::moov_udta_nsav()
 }
 
 //---------------------------------------------------------------------------
+void File_Mpeg4::moov_udta_PANA()
+{
+    Element_Name("Panasonic");
+
+    //Parsing
+    Skip_XX(Element_Size,                                       "Data"); //TODO: parse Panasonic metadata
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg4::moov_udta_ptv()
 {
     Element_Name("Print To Video");
@@ -9808,6 +9819,7 @@ void File_Mpeg4::moov_udta_xxxx()
                     return;
                 }
 
+                size_t Count=0;
                 while (Element_Size-Element_Offset>4)
                 {
                     std::string ValueS;
@@ -9819,6 +9831,11 @@ void File_Mpeg4::moov_udta_xxxx()
                     else
                     {
                         Get_B2 (Size16,                         "Size");
+                        if (!Size16)
+                        {
+                            Skip_XX(Element_Size-Element_Offset,"Unknown");
+                            return;
+                        }
                         Info_B2(Language,                       "Language"); Param_Info1(Language_Get(Language));
                         Get_String(Size16, ValueS,              "Value");
                     }
@@ -9848,10 +9865,26 @@ void File_Mpeg4::moov_udta_xxxx()
                     // Check zero padding
                     auto Buffer_Current=Buffer+Buffer_Offset+Element_Offset;
                     auto Buffer_End=Buffer+Buffer_Offset+Element_Size;
+                    if (Buffer_End-Buffer_Current>=0x100)
+                        Buffer_End=Buffer_Current+0x100; // Limiting padding check
                     while (Buffer_Current<Buffer_End && !*Buffer_Current)
                         Buffer_Current++;
                     if (Buffer_Current>=Buffer_End)
-                        Skip_XX(Element_Size-Element_Offset,    "Padding");
+                    {
+                        auto SizePadding=Element_Size-Element_Offset;
+                        if (SizePadding>=0x100)
+                        {
+                            Skip_XX(Element_Size-Element_Offset,    "Unknown");
+                            return;
+                        }
+                        Skip_XX(SizePadding,                        "Padding");
+                    }
+                    Count++;
+                    if (Count>0x100) // Many values, likely not really strings
+                    {
+                        Skip_XX(Element_Size-Element_Offset,        "Unknown");
+                        return;
+                    }
                 }
 
                 FILLING_BEGIN_PRECISE();
