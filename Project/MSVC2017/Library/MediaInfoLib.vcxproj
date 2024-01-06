@@ -283,6 +283,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_CineForm.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Vp9.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Vvc.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\XmlUtils.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\OutputHelpers.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\ExternalCommandHelpers.cpp" />
@@ -619,6 +620,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_CineForm.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Vp9.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Vvc.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\XmlUtils.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\OutputHelpers.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\ExternalCommandHelpers.h" />

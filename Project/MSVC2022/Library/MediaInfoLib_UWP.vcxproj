@@ -426,6 +426,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_Mpeg7.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_PBCore.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Vc3.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Vvc.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Vp8.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Vp9.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Y4m.cpp" />
@@ -726,6 +727,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Vc3.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Vp8.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Vp9.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Vvc.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Y4m.h" />
     <ClInclude Include="..\..\..\Source\ThirdParty\aes-gladman\aes.h" />
     <ClInclude Include="..\..\..\Source\ThirdParty\aes-gladman\aescpp.h" />

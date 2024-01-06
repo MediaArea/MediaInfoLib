@@ -836,6 +836,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_Vp9.cpp">
             <BuildOrder>236</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_Vvc.cpp">
+            <BuildOrder>242</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_Y4m.cpp">
             <BuildOrder>190</BuildOrder>
         </CppCompile>
