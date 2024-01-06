@@ -199,6 +199,8 @@ AC_ARG_ENABLE(theora,  AC_HELP_STRING([--disable-theora],  [Disable Video - Theo
 AC_ARG_ENABLE(vc1,     AC_HELP_STRING([--disable-vc1],     [Disable Video - VC-1]),                                       MediaInfoVc1=$enableval,     MediaInfoVc1=depend)
 AC_ARG_ENABLE(vc3,     AC_HELP_STRING([--disable-vc3],     [Disable Video - VC-3 (DNxHD)]),                               MediaInfoVc3=$enableval,     MediaInfoVc3=depend)
 AC_ARG_ENABLE(vp8,     AC_HELP_STRING([--disable-vp8],     [Disable Video - VP8]),                                        MediaInfovp8=$enableval,     MediaInfovp8=depend)
+AC_ARG_ENABLE(vp9,     AC_HELP_STRING([--disable-vp9],     [Disable Video - VP9]),                                        MediaInfovp9=$enableval,     MediaInfovp9=depend)
+AC_ARG_ENABLE(vvc,     AC_HELP_STRING([--disable-vvc],     [Disable Video - VVC]),                                        MediaInfoVvc=$enableval,     MediaInfoVvc=depend)
 AC_ARG_ENABLE(y4m,     AC_HELP_STRING([--disable-y4m],     [Disable Video - YUV4MPEG2]),                                  MediaInfoy4m=$enableval,     MediaInfoy4m=depend)
 
 dnl -------------------------------------------------------------------------
@@ -366,6 +368,7 @@ if test "$MediaInfoVc1"     = "no";  then AC_DEFINE(MEDIAINFO_VC1_NO)     fi; if
 if test "$MediaInfoVc3"     = "no";  then AC_DEFINE(MEDIAINFO_VC3_NO)     fi; if test "$MediaInfoVc3"     = "yes"; then AC_DEFINE(MEDIAINFO_VC3_YES)     fi
 if test "$MediaInfoVp8"     = "no";  then AC_DEFINE(MEDIAINFO_VP8_NO)     fi; if test "$MediaInfoVp8"     = "yes"; then AC_DEFINE(MEDIAINFO_VP8_YES)     fi
 if test "$MediaInfoVp9"     = "no";  then AC_DEFINE(MEDIAINFO_VP9_NO)     fi; if test "$MediaInfoVp9"     = "yes"; then AC_DEFINE(MEDIAINFO_VP9_YES)     fi
+if test "$MediaInfoVvc"     = "no";  then AC_DEFINE(MEDIAINFO_VVC_NO)     fi; if test "$MediaInfoVvc"     = "yes"; then AC_DEFINE(MEDIAINFO_VVC_YES)     fi
 if test "$MediaInfoY4m"     = "no";  then AC_DEFINE(MEDIAINFO_Y4M_NO)     fi; if test "$MediaInfoY4m"     = "yes"; then AC_DEFINE(MEDIAINFO_Y4M_YES)     fi
 
 AM_CONDITIONAL([COMPILE_DLL], [test "$MediaInfoDll" != "no"])
@@ -1125,6 +1128,8 @@ Mcho "Theora " "$MediaInfoTheora"
 Mcho "Vc1    " "$MediaInfoVc1"
 Mcho "Vc3    " "$MediaInfoVc3"
 Mcho "VP8    " "$MediaInfoVp8"
+Mcho "VP9    " "$MediaInfoVp9"
+Mcho "VVC    " "$MediaInfoVvc"
 Mcho "Y4m    " "$MediaInfoY4m"
 echo ""
 echo "  CXXFLAGS: $CXXFLAGS"

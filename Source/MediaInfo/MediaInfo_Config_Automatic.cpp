@@ -1501,7 +1501,6 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "TIFF;;;I;Tiff;;tiff tif;image/tiff\n"
     "TGA;;;I;Tga;;tga;image/tga\n"
     "7-Zip;;;C;7z;;7z;;http://7-zip.org\n"
-    "ICC;;;C;Icc;;icc;;\n"
     "ACE;;;C;Ace;;ace;;http://winace.com\n"
     "ELF;;;C;Elf;;so\n"
     "ISO 9660;;;C;Iso9660;;iso\n"
@@ -1527,6 +1526,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "AutoCAD;;;O;Other;;;;http://www.autodesk.com\n"
     "PlayLater Video;;;V;Other;;;;http://www.playon.tv/playlater\n"
     "WTV;;;M;WTV;Windows Recorded TV Show;wtv;video/wtv\n"
+    "VVC;;;V;Vvc;Versatile Video Coding;vvc h266 266;video/H266\n"
     ));
     Info.Separator_Set(0, ZenLib::EOL);
 }
