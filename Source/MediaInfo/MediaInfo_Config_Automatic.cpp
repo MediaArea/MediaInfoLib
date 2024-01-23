@@ -1381,6 +1381,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "HEIF;;;M;Mpeg4;;heif avci avcs heic heics avif avis\n"
     "HLS;;;M;Hls;;m3u8\n"
     "Google Video;;;M;Riff;Hack of AVI;gvi;;http://video.google.com/playerdownload.html\n"
+    "ICC;;;;Icc;;icc\n"
     "ISM;Internet Streaming Media;;M;Ism;;ism\n"
     "IVF;;;M;Ivf;;ivf\n"
     "LXF;;;M;Lxf;;lxf;video/lxf\n"
