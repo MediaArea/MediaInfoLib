@@ -1015,6 +1015,7 @@ ms; ms
 MSDI;MSDI
 MultipleStream;Multiple-stream
 MusicBy;Music by
+MultiView_Count;Count of views
 MuxingMode;Muxing mode
 MuxingMode_MoreInfo;Muxing mode, more info
 MuxingMode_PackedBitstream;Packed bitstream

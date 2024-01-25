@@ -7818,6 +7818,55 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_lhvC()
 {
     Element_Name("LHEVCDecoderConfigurationRecord");
     AddCodecConfigurationBoxInfo();
+
+    //Parsing
+    #ifdef MEDIAINFO_HEVC_YES
+        File_Hevc* Parser=(File_Hevc*)Streams[moov_trak_tkhd_TrackID].Parsers[0];
+        Parser->FrameIsAlwaysComplete=true;
+        #if MEDIAINFO_DEMUX
+            Element_Code=moov_trak_tkhd_TrackID;
+            if (Config->Demux_Hevc_Transcode_Iso14496_15_to_AnnexB_Get())
+            {
+                Streams[moov_trak_tkhd_TrackID].Demux_Level=4; //Intermediate
+                Parser->Demux_Level=2; //Container
+                Parser->Demux_UnpacketizeContainer=true;
+            }
+        #endif //MEDIAINFO_DEMUX
+        Open_Buffer_Init(Parser);
+        Parser->MustParse_VPS_SPS_PPS=true;
+        Parser->MustParse_VPS_SPS_PPS_FromLhvc=true;
+        Parser->MustSynchronize=false;
+        //Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+        mdat_MustParse=true; //Data is in MDAT
+
+        //Demux
+        #if MEDIAINFO_DEMUX
+            if (!Config->Demux_Hevc_Transcode_Iso14496_15_to_AnnexB_Get())
+                switch (Config->Demux_InitData_Get())
+                {
+                    case 0 :    //In demux event
+                                Demux_Level=2; //Container
+                                Demux(Buffer+Buffer_Offset, (size_t)Element_Size, ContentType_Header);
+                                break;
+                    case 1 :    //In field
+                                {
+                                std::string Data_Raw((const char*)(Buffer+Buffer_Offset), (size_t)Element_Size);
+                                std::string Data_Base64(Base64::encode(Data_Raw));
+                                Fill(Stream_Video, StreamPos_Last, "Demux_InitBytes", Data_Base64);
+                                Fill_SetOptions(Stream_Video, StreamPos_Last, "Demux_InitBytes", "N NT");
+                                }
+                                break;
+                    default :   ;
+                }
+        #endif //MEDIAINFO_DEMUX
+
+        //Parsing
+        Open_Buffer_Continue(Parser);
+
+        Parser->SizedBlocks=true;  //Now this is SizeBlocks
+    #else
+        Skip_XX(Element_Size,                               "HEVC Data");
+    #endif
 }
 
 //---------------------------------------------------------------------------
