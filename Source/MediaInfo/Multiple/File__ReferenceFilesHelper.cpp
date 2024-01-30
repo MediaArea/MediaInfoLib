@@ -61,6 +61,7 @@ std::string URL_Encoded_Encode(const std::string& URL)
 //#if defined(__APPLE__) && defined(__MACH__) // URL is rejected by API on macOS, not considered as URL by Thunderbird
          || Char=='{'
          || Char=='}'
+         || Char=='\\'
 //#endif
         )
         {
