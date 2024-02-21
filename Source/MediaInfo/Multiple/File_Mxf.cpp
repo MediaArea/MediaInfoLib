@@ -18678,9 +18678,9 @@ void File_Mxf::ChooseParser_SmpteSt0337(const essences::iterator &Essence, const
         if (Descriptor!=Descriptors.end())
         {
             if (Descriptor->second.BlockAlign<64)
-                Parser->Container_Bits=(int8u)(Descriptor->second.BlockAlign*4);
+                Parser->BitDepth=(int8u)(Descriptor->second.BlockAlign*4);
             else if (Descriptor->second.QuantizationBits!=(int32u)-1)
-                Parser->Container_Bits=(int8u)Descriptor->second.QuantizationBits;
+                Parser->BitDepth=(int8u)Descriptor->second.QuantizationBits;
             std::map<std::string, Ztring>::const_iterator i=Descriptor->second.Infos.find("Format_Settings_Endianness");
             if (i!=Descriptor->second.Infos.end())
             {

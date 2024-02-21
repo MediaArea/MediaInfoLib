@@ -5930,7 +5930,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
             if (Channels==2 && SampleSize<=32 && SampleRate==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
             {
                 File_SmpteSt0337* Parser=new File_SmpteSt0337;
-                Parser->Container_Bits=(int8u)SampleSize;
+                Parser->BitDepth=(int8u)SampleSize;
                 if (Version==2)
                     Parser->Endianness=(Flags&0x02)?'B':'L';
                 Parser->ShouldContinueParsing=true;
@@ -7976,8 +7976,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC()
         return;
     }
     int8u format_flags, bit_depth;
-    Get_B1 (format_flags,                                       "format_flags?");
-    Get_B1 (bit_depth,                                          "bit_depth?");
+    Get_B1 (format_flags,                                       "format_flags");
+    Get_B1 (bit_depth,                                          "sample_size");
 
     if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
         return; //Handling only the first description
@@ -7989,11 +7989,13 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC()
                 char EndiannessC=(format_flags&1)?'L':'B';
                 std::vector<File__Analyze*>& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
                 for (size_t i=0; i< Parsers.size(); i++)
+                {
                     ((File_Pcm_Base*)Parsers[i])->Endianness=EndiannessC;
+                    ((File_Pcm_Base*)Parsers[i])->BitDepth=bit_depth;
+                    Fill(Stream_Audio, StreamPos_Last, Audio_BitDepth, bit_depth, 10, true);
+                }
             }
         #endif //defined(MEDIAINFO_PCM_YES)
-        if (bit_depth)
-            Fill(Stream_Audio, StreamPos_Last, Audio_BitDepth, bit_depth, 10, true);
     FILLING_END();
 }
 
