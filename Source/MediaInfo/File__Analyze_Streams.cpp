@@ -593,7 +593,7 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
                     Layers +="RPU+";
                 Layers.resize(Layers.size()-1);
             }
-            if (dv_version_major>=3 && DolbyVision_Compression[dv_md_compression])
+            if (DolbyVision_Compression[dv_md_compression])
             {
                 if (Infos)
                     (*Infos)["HDR_Format_Compression"].From_UTF8(DolbyVision_Compression[dv_md_compression]);
