@@ -541,10 +541,7 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
         if (Data_BS_Remain())
         {
             Get_S1 (4, dv_bl_signal_compatibility_id,           "dv_bl_signal_compatibility_id"); // in dv_version_major 2 only if based on specs but it was confirmed to be seen in dv_version_major 1 too and it does not hurt (value 0 means no new display)
-            if (dv_version_major>=3)
-            {
-                Get_S1(2, dv_md_compression,                    "dv_md_compression");
-            }
+            Get_S1 (2, dv_md_compression,                       "dv_md_compression");
             if (End<Data_BS_Remain())
                 Skip_BS(Data_BS_Remain()-End,                   "reserved");
         }
