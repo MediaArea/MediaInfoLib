@@ -4095,7 +4095,6 @@ void File_Riff::WAVE_fact()
     Get_L4 (SamplesCount,                                       "SamplesCount");
 
     FILLING_BEGIN();
-        if (!Retrieve(Stream_Audio, StreamPos_Last, Audio_SamplingCount).empty()) // Not the priority
         {
         int64u SamplesCount64=SamplesCount==(int32u)-1?WAVE_fact_samplesCount:SamplesCount;
         float64 SamplingRate=Retrieve(Stream_Audio, StreamPos_Last, Audio_SamplingRate).To_float64();
@@ -4113,7 +4112,12 @@ void File_Riff::WAVE_fact()
                 {
                     int64u Duration_FromBitRate = File_Size * 8 * 1000 / BitRate;
                     if (Duration_FromBitRate > Duration*1.02 || Duration_FromBitRate < Duration*0.98)
-                        IsOK = false;
+                    {
+                        if (Retrieve(Stream_Audio, StreamPos_Last, Audio_Format) == __T("PCM"))
+                            IsOK = false;
+                        else
+                            Clear(Stream_Audio, StreamPos_Last, Audio_BitRate); // Bit rate is often not precise or wrong for non PCM
+                    }
                 }
             }
 
