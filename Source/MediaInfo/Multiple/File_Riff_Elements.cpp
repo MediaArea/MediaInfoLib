@@ -4059,9 +4059,16 @@ void File_Riff::WAVE_ds64()
     Skip_L8(                                                    "riffSize"); //Is directly read from the header parser
     Get_L8 (dataSize,                                           "dataSize");
     Get_L8 (sampleCount,                                        "sampleCount");
-    Get_L4 (tableLength,                                        "tableLength");
-    for (int32u Pos=0; Pos<tableLength; Pos++)
-        Skip_L8(                                                "table[]");
+    if (Element_Offset<Element_Size)
+    {
+        Get_L4 (tableLength,                                    "tableLength");
+        DS64_Table.resize(tableLength);
+        for (int32u Pos=0; Pos<tableLength; Pos++)
+        {
+            Get_C4 (DS64_Table[Pos].ChunkId,                    "tableChunkId");
+            Get_L8 (DS64_Table[Pos].Size,                       "tableChunkSize");
+        }
+    }
 
     FILLING_BEGIN();
         if (dataSize && dataSize<File_Size)
