@@ -1133,13 +1133,13 @@ public:
     const map<int, string>::iterator NoSavedAttribute(int UpperLevel = 0) { return Attributes_[Level - UpperLevel].end(); }
 
 private:
-    tfsxml_string p;
+    tfsxml_string p = {};
 
 public:
-    tfsxml_string b, v;
+    tfsxml_string b = {}, v = {};
 
 //private:
-    string Code[16];
+    string Code[16] = {};
     map<int, string> Attributes_[16];
     int8u Level = 0;
     int8u Level_Max = 0;
