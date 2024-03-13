@@ -1164,6 +1164,7 @@ public:
     map<string, string> More;
     float32 FrameRate_Sum = 0;
     float32 FrameRate_Den = 0;
+    vector<size_t> ChannelFormat_BlockFormat_ReduceCount;
 
     file_adm_private()
     {
@@ -1608,6 +1609,8 @@ int file_adm_private::format()
     XML_END
 }
 
+static const size_t BlockFormat_MaxParsed = 16;
+
 int file_adm_private::audioFormatExtended()
 {
     if (IsInit()) {
@@ -1619,6 +1622,30 @@ int file_adm_private::audioFormatExtended()
             Item.Items.clear();
         }
     }
+
+    auto audioBlockformat_Reduce = [=]() {
+        auto& ChannelFormats = Items[item_audioChannelFormat].Items;
+        auto& ChannelFormat = ChannelFormats.back();
+        auto& ChannelFormat_BlockFormats = ChannelFormat.Elements[audioChannelFormat_audioBlockFormat];
+        if (ChannelFormat_BlockFormats.size() < BlockFormat_MaxParsed) {
+            return;
+        }
+
+        // We keep track of only few first blocks + the last one, while we keep doing conformance check on all blocks
+        auto& BlockFormats = Items[item_audioBlockFormat].Items;
+        auto& BlockFormats_positions = BlockFormats.back().Elements[audioBlockFormat_position];
+        auto& positions = Items[item_position].Items;
+        while (!BlockFormats_positions.empty()) {
+            BlockFormats_positions.pop_back();
+            positions.pop_back();
+        }
+        ChannelFormat_BlockFormats.pop_back();
+        BlockFormats.pop_back();
+        if (ChannelFormat_BlockFormat_ReduceCount.size() < ChannelFormats.size()) {
+            ChannelFormat_BlockFormat_ReduceCount.resize(ChannelFormats.size());
+        }
+        ChannelFormat_BlockFormat_ReduceCount.back()++;
+    };
 
     XML_BEGIN
     XML_ATTR_START
@@ -1846,7 +1873,7 @@ int file_adm_private::audioFormatExtended()
             ATTRIBUTE(audioChannelFormat, typeDefinition)
             ATTRIBUTE(audioChannelFormat, typeLabel)
         ELEMENT_MIDDLE(audioChannelFormat)
-            ELEMENT_START2(audioBlockFormat, Items[item_audioChannelFormat].Items.back().Elements[audioChannelFormat_audioBlockFormat].push_back({}))
+            ELEMENT_START2(audioBlockFormat, audioBlockformat_Reduce(); Items[item_audioChannelFormat].Items.back().Elements[audioChannelFormat_audioBlockFormat].push_back({}))
                 ATTRIB_ID(audioBlockFormat, audioBlockFormatID)
                 ATTRIBUTE(audioBlockFormat, rtime)
                 ATTRIBUTE(audioBlockFormat, duration)
@@ -2951,7 +2978,10 @@ void File_Adm::Streams_Fill()
                         ChannelFormat.AddError(Error, ":audioChannelFormat" + to_string(i) + ":audioChannelFormatName:audioChannelFormatName " + ChannelFormatName + " is not permitted" + ADM_Dolby_1_0);
                     }
                 }
-                const auto& BlockFormats_Size = ChannelFormat.Elements[audioChannelFormat_audioBlockFormat].size();
+                auto BlockFormats_Size = ChannelFormat.Elements[audioChannelFormat_audioBlockFormat].size();
+                if (i < File_Adm_Private->ChannelFormat_BlockFormat_ReduceCount.size()) {
+                    BlockFormats_Size += File_Adm_Private->ChannelFormat_BlockFormat_ReduceCount[i];
+                }
                 if (BlockFormats_Size != 1) {
                     ChannelFormat.AddError(Error, ":audioChannelFormat" + to_string(i) + ":audioBlockFormat1:GeneralCompliance:audioBlockFormat subelement count " + to_string(BlockFormats_Size) + " is not permitted, max is 1" + ADM_Dolby_1_0);
                 }
@@ -2963,6 +2993,11 @@ void File_Adm::Streams_Fill()
             const auto ID_yyyyxxxx = ID.substr(3, 8);
             for (size_t j = 0; j < BlockFormat_Count; j++) {
                 auto& BlockFormat = BlockFormats[BlockFormat_Pos + j];
+                if (j >= BlockFormat_MaxParsed - 1) {
+                    size_t position_Count = BlockFormat.Elements[audioBlockFormat_position].size();
+                    Position_Pos += position_Count;
+                    continue;
+                }
 
                 if (IsAtmos) {
                     if (Type == Type_DirectSpeakers) {
