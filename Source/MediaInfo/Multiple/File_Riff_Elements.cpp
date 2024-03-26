@@ -3664,6 +3664,7 @@ void File_Riff::WAVE_axml()
         Adm->chna_Move(Adm_chna);
         delete Adm_chna; Adm_chna=NULL;
     }
+    Adm->Container_Duration = Retrieve_Const(Stream_Audio, 0, Audio_Duration).To_float32()/1000;
     Adm->MuxingMode=(Element_Code==Elements::WAVE_bxml)?'b':'a';
     Adm->MuxingMode+="xml";
     Kind=Kind_Axml;
@@ -3740,6 +3741,7 @@ void File_Riff::WAVE_axml()
         Element_Name("AXML");
 
         //Parsing
+        Adm->TotalSize = Element_TotalSize_Get();
         WAVE_axml_Continue();
     }
 }
@@ -3748,7 +3750,7 @@ void File_Riff::WAVE_axml_Continue()
 {
     //Parsing
     Open_Buffer_Continue(Adm, Buffer+Buffer_Offset, (size_t)Element_Size);
-    Skip_UTF8(Element_Size, "XML data");
+    Element_Offset=Adm->NeedToJumpToEnd?(File_Size-(File_Offset+Buffer_Offset)):Element_Size;
 }
 
 //---------------------------------------------------------------------------
