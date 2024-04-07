@@ -35,6 +35,7 @@ ai56;AVC;;Advanced Video Coding;;;;
 ai5p;AVC;;Advanced Video Coding;;;;
 ai5q;AVC;;Advanced Video Coding;;;;
 AV01;AV1;;;;;;
+av01;AV1;;;;;;
 AV1x;YUV;;;;;;YUV;4:2:2
 avc1;AVC;;Advanced Video Coding;;;;;
 avc2;AVC;;Advanced Video Coding;;;;;
@@ -174,6 +175,8 @@ SVQ3;Sorenson 3;;Sorenson Media Video 3 (Apple QuickTime 5);http://www.apple.com
 v210;YUV;AJA Video Systems Xena;;;;;YUV;4:2:2
 V210;YUV;AJA Video Systems Xena;;;;;YUV;4:2:2
 vc-1;VC-1;;SMPTE VC-1;http://www.smpte.org/;;;YUV;
+vp08;VP8;;;http://www.webmproject.org;;;YUV;4:2:0
+vp09;VP9;;;http://www.webmproject.org;;;YUV;4:2:0
 vvc1;VVC;;Versatile Video Coding;;;;;
 vvi1;VVC;;Versatile Video Coding;;;;;
 WMV3;VC-1;WMV3;Windows Media Video 9;http://www.microsoft.com/windows/windowsmedia/format/codecdownload.aspx;;;;
