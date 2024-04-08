@@ -268,7 +268,7 @@ public:
         return GetHours() == tc.GetHours()
             && GetMinutes() == tc.GetMinutes()
             && GetSeconds() == tc.GetSeconds()
-            && GetFrames() == tc.GetFrames();
+            && GetFrames() * (tc.GetFramesMax() + 1) == tc.GetFrames() * (GetFramesMax() + 1);
     }
     bool operator!= (const TimeCode& tc) const
     {
