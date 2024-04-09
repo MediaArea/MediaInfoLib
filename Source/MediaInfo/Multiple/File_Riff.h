@@ -176,6 +176,7 @@ private :
     bool   IsBigEndian;
     bool   IsWave64;
     bool   IsRIFF64;
+    bool   IsBW64;
     bool   IsWaveBroken;
     bool   IsNotWordAligned;
     bool   IsNotWordAligned_Tested;
