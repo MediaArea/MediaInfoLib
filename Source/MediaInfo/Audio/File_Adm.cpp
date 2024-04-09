@@ -2220,6 +2220,7 @@ public:
     void Enter();
     void Leave();
     int Init(const void* const Buffer, size_t Buffer_Size);
+    int Resynch(const string& Value);
     int NextElement();
     int Attribute();
     int Value();
@@ -2440,6 +2441,20 @@ int tfsxml::Init(const void* const Buffer, size_t Buffer_Size) {
         p.len = Buffer_Size;
     }
     return 0;
+}
+
+int tfsxml::Resynch(const string& Value) {
+    for (size_t i = 0; i < Level_Max; i++) {
+        if (Code[i] != Value) {
+            continue;
+        }
+        Level_Max = i + 1;
+        IsInit_ = false;
+        MustEnter = false;
+        ParsingAttr = false;
+        return 0;
+    }
+    return 1;
 }
 
 int tfsxml::NextElement() {
@@ -5266,7 +5281,7 @@ void File_Adm::Streams_Fill()
         } \
 
     #define LINK(NAME,FIELD,VECTOR,TARGET) \
-        Apply_SubStreams(*this, P + " LinkedTo_" FIELD "_Pos", File_Adm_Private->Items[item_##NAME].Items[i], NAME##_##VECTOR, File_Adm_Private->Items[item_##TARGET], File_Adm_Private->Items[item_audioFormatExtended].Items.empty()); \
+        Apply_SubStreams(*this, P + " LinkedTo_" FIELD "_Pos", File_Adm_Private->Items[item_##NAME].Items[i], NAME##_##VECTOR, File_Adm_Private->Items[item_##TARGET], File_Adm_Private->IsPartial || File_Adm_Private->Items[item_audioFormatExtended].Items.empty()); \
 
     //Filling
     Stream_Prepare(Stream_Audio);
@@ -6574,6 +6589,28 @@ void File_Adm::Read_Buffer_Init()
 //---------------------------------------------------------------------------
 void File_Adm::Read_Buffer_Continue()
 {
+    if (NeedToJumpToEnd) {
+        // There was a jump, trying to resynch
+        NeedToJumpToEnd = false;
+        static const char* ToSearch = "</audioChannelFormat>";
+        const char* Nok = (const char*)Buffer - 1;
+        const char* LastPos = Nok;
+        while (auto NextPos = strstr(LastPos + 1, ToSearch)) {
+            LastPos = NextPos;
+        }
+        if (LastPos != Nok) {
+            size_t Offset = (const int8u*)LastPos - Buffer + 21; // + length of ToSearch
+            if (File_Adm_Private->Resynch("audioFormatExtended")) {
+                return;
+            }
+            Buffer += Offset;
+            Buffer_Size -= Offset;
+            Read_Buffer_Continue();
+            Buffer_Size += Offset;
+            Buffer -= Offset;
+        }
+    }
+
     auto Result = File_Adm_Private->parse((void*)Buffer, Buffer_Size);
     if (!Status[IsAccepted]) {
         for (const auto& Items : File_Adm_Private->Items) {
@@ -6584,7 +6621,7 @@ void File_Adm::Read_Buffer_Continue()
         }
     }
     Buffer_Offset = Buffer_Size - File_Adm_Private->Remain();
-    if (TotalSize > 512 * 1024 * 1024 && !File_Adm_Private->ChannelFormat_BlockFormat_ReduceCount.empty()) {
+    if (!File_Adm_Private->ChannelFormat_BlockFormat_ReduceCount.empty() && !File_Adm_Private->IsPartial && TotalSize > 512 * 1024 * 1024) {
         // Too big, we stop parsing here
         File_Adm_Private->IsPartial = true;
         NeedToJumpToEnd = true;

@@ -1072,6 +1072,7 @@ PackageName;Package name
 PackFormat;Pack format
 Part;Part
 Part_Count;Total count
+PartialParsing;Partial parsing
 PartNumber;Part Number
 PartTotal;Part Total
 Performer;Performer
