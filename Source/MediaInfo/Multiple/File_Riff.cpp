@@ -64,6 +64,7 @@ namespace Elements
     const int32u AIFF_SSND=0x53534E44;
     const int32u AVI_=0x41564920;
     const int32u AVI__hdlr_strl_strh_txts=0x74787473;
+    const int32u BW64=0x42573634;
     const int32u FORM=0x464F524D;
     const int32u LIST=0x4C495354;
     const int32u MThd=0x4D546864;
@@ -158,6 +159,7 @@ File_Riff::File_Riff()
     IsBigEndian=false;
     IsWave64=false;
     IsRIFF64=false;
+    IsBW64=false;
     IsWaveBroken=false;
     IsNotWordAligned=false;
     IsNotWordAligned_Tested=false;
@@ -212,7 +214,7 @@ void File_Riff::Streams_Finish ()
 
     //Global
     if (IsRIFF64)
-        Fill(Stream_General, 0, General_Format_Profile, "RF64");
+        Fill(Stream_General, 0, General_Format_Profile, IsBW64?"BW64":"RF64");
     if (DolbyAudioMetadata) //Before ADM for having content before all ADM stuff
         Merge(*DolbyAudioMetadata, Stream_Audio, 0, 0);
     if (Adm)
@@ -1106,12 +1108,15 @@ void File_Riff::Header_Parse()
     //Top level chunks
     if (Name==Elements::LIST
      || Name==Elements::RIFF
+     || Name==Elements::BW64
      || Name==Elements::RF64
      || Name==Elements::ON2_
      || Name==Elements::FORM)
     {
         if (Name==Elements::RF64)
             IsRIFF64=true;
+        if (Name==Elements::BW64)
+            IsRIFF64=IsBW64=true;
         Get_C4 (Name,                                           "Real Name");
 
         //Handling buggy files
