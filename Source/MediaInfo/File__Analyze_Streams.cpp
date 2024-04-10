@@ -1885,7 +1885,7 @@ void File__Analyze::Fill_SetOptions(stream_t StreamKind, size_t StreamPos, const
         return;
 
     //Handle Value before StreamKind
-    if (!Status[IsAccepted] || StreamKind==Stream_Max || StreamPos>=(*Stream)[StreamKind].size())
+    if (StreamKind==Stream_Max || StreamPos>=(*Stream)[StreamKind].size())
     {
         Fill_Temp_Options[StreamKind][Parameter]=Options;
         return; //No streams

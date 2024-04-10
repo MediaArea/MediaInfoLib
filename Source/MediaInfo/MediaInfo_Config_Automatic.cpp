@@ -191,6 +191,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "About;About\n"
     "About_Hint;How to contact me and find last version\n"
     "Accompaniment;Accompaniment\n"
+    "AC3_Metadata;AC-3 metadata\n"
     "Active_DisplayAspectRatio;Active display aspect ratio\n"
     "Active_Height;Active height\n"
     "Active_Width;Active width\n"
