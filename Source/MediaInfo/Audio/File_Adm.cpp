@@ -2172,6 +2172,32 @@ static void Apply_SubStreams(File__Analyze& F, const string& P_And_LinkedTo, Ite
             }
         }
         if (Pos == -1) {
+            // Trying case insensitive, this is permitted by specs
+            auto Start = ID.rfind('_');
+            if (Start != string::npos) {
+                auto ID_Up = ID;
+                for (size_t i = Start; i < ID_Up.size(); i++) {
+                    auto& Letter = ID_Up[i];
+                    if (Letter >= 'A' && Letter <= 'F') {
+                        Letter += 'a' - 'A';
+                    }
+                }
+                for (size_t k = 0; k < Dest.Items.size(); k++) {
+                    auto Target_Up = Dest.Items[k].Attributes[0];
+                    for (size_t i = Start; i < Target_Up.size(); i++) {
+                        auto& Letter = Target_Up[i];
+                        if (Letter >= 'A' && Letter <= 'F') {
+                            Letter += 'a' - 'A';
+                        }
+                    }
+                    if (Target_Up == ID_Up) {
+                        Pos = k;
+                        break;
+                    }
+                }
+            }
+        }
+        if (Pos == -1) {
             auto LinkedTo_Pos = P_And_LinkedTo.find(" LinkedTo_TrackUID_Pos");
             auto HasTransport = !F.Retrieve_Const(Stream_Audio, 0, "Transport0").empty();
             if (!NoError && HasTransport && LinkedTo_Pos != string::npos) { // TODO: better way to avoid common definitions
@@ -2319,6 +2345,7 @@ public:
         STRUCTS(frameFormat);
         STRUCTS(transportTrackFormat);
         STRUCTS(audioTrack);
+        STRUCTS(changedIDs);
         STRUCTS(audioProgrammeLabel);
         STRUCTS(loudnessMetadata);
         STRUCTS(renderer);
@@ -2974,14 +3001,40 @@ static void CheckErrors_Element_Target(file_adm_private* File_Adm_Private, item 
         }
         else {
             bool Target_Found = false;
-            auto Start = TargetIDRef.rfind('_');
-            if (Start != string::npos) {
-                auto Not0 = TargetIDRef.find_last_not_of('0');
-                Target_Found = Start == Not0; // Fake: ID 00000000 means not available, we don't raise an error for them
-            }
             for (const auto& Target : Targets) {
                 if (Target.Attributes[item_Infos[Target_Type].ID_Pos] == TargetIDRef) {
                     Target_Found = true;
+                }
+            }
+            if (!Target_Found) {
+                auto Start = TargetIDRef.rfind('_');
+                if (Start != string::npos) {
+                    auto Not0 = TargetIDRef.find_last_not_of('0');
+                    if (Start == Not0) {
+                        Target_Found = true; // Fake: ID 00000000 means not available, we don't raise an error for them
+                    }
+                    else {
+                        // Trying case insensitive, this is permitted by specs
+                        auto TargetIDRef_Up = TargetIDRef;
+                        for (size_t i = Start; i < TargetIDRef_Up.size(); i++) {
+                            auto& Letter = TargetIDRef_Up[i];
+                            if (Letter >= 'A' && Letter <= 'F') {
+                                Letter += 'a' - 'A';
+                            }
+                        }
+                        for (const auto& Target : Targets) {
+                            auto Target_Up = Target.Attributes[item_Infos[Target_Type].ID_Pos];
+                            for (size_t i = Start; i < Target_Up.size(); i++) {
+                                auto& Letter = Target_Up[i];
+                                if (Letter >= 'A' && Letter <= 'F') {
+                                    Letter += 'a' - 'A';
+                                }
+                            }
+                            if (Target_Up == TargetIDRef_Up) {
+                                Target_Found = true;
+                            }
+                        }
+                    }
                 }
             }
             if (!Target_Found) {
@@ -3491,7 +3544,24 @@ void audioBlockFormat_Check(file_adm_private* File_Adm_Private) {
     if (!CheckErrors_ID(File_Adm_Private, ID_Block, item_Infos[item_audioBlockFormat])) {
         if (!CheckErrors_ID(File_Adm_Private, ID, item_Infos[item_audioChannelFormat])) {
             const auto ID_Block_yyyyxxxx = ID_Block.substr(3, 8);
-            if (ID_Block_yyyyxxxx != ID_yyyyxxxx) {
+            bool Found = ID_Block_yyyyxxxx == ID_yyyyxxxx;
+            if (!Found) {
+                // Trying case insensitive, this is permitted by specs
+                auto ID_Block_yyyyxxxx_Up = ID_Block_yyyyxxxx;
+                for (auto& Letter : ID_Block_yyyyxxxx_Up) {
+                    if (Letter >= 'A' && Letter <= 'F') {
+                        Letter += 'a' - 'A';
+                    }
+                }
+                auto ID_yyyyxxxx_Up = ID_yyyyxxxx;
+                for (auto& Letter : ID_yyyyxxxx_Up) {
+                    if (Letter >= 'A' && Letter <= 'F') {
+                        Letter += 'a' - 'A';
+                    }
+                }
+                Found = ID_Block_yyyyxxxx_Up == ID_yyyyxxxx_Up;
+            }
+            if (!Found) {
                 ChannelFormat.AddError(File_Adm_Private->IsAtmos ? Error : Warning, ":audioChannelFormat" + to_string(i) + ":audioBlockFormat" + to_string(j) + ":audioBlockFormatID:audioBlockFormatID attribute with yyyyxxxx value \"" + ID_Block_yyyyxxxx + "\" not same as audioChannelFormatID attribute yyyyxxxx value \"" + ID_yyyyxxxx + "\"", File_Adm_Private->IsAtmos ? Source_Atmos_1_0 : Source_ADM);
             }
         }
