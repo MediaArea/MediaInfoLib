@@ -321,6 +321,7 @@ File__Analyze::File__Analyze ()
 
     //Events data
     PES_FirstByte_IsAvailable=false;
+    PES_FirstByte_Value=false;
 
     //AES
     #if MEDIAINFO_AES
