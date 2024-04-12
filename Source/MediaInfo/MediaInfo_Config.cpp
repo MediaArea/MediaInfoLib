@@ -3029,7 +3029,7 @@ const Ztring MediaInfo_Config::Iso639_Translate (const Ztring &Value)
 void MediaInfo_Config::Language_Set_Internal(stream_t KindOfStream)
 {
     //Loading codec table if not yet done
-    if (Info[KindOfStream].empty())
+    if (KindOfStream<Stream_Max && Info[KindOfStream].empty())
         switch (KindOfStream)
         {
             case Stream_General :   MediaInfo_Config_General(Info[Stream_General]);   Language_Set(Stream_General); break;
