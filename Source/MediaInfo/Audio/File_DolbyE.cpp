@@ -1018,7 +1018,7 @@ void File_DolbyE::Streams_Fill()
             Stream_Prepare(Stream_Audio);
         Fill(Stream_Audio, program, Audio_Format, "Dolby E");
         if (DolbyE_Programs[program_config]>1)
-            Fill(Stream_Audio, program, Audio_ID, Count_Get(Stream_Audio));
+            Fill(Stream_Audio, program, Audio_ID, program+1);
         Fill(Stream_Audio, program, Audio_Channel_s_, DolbyE_Channels_PerProgram(program_config, program));
         Fill(Stream_Audio, program, Audio_ChannelPositions, DolbyE_ChannelPositions_PerProgram(program_config, program));
         Fill(Stream_Audio, program, Audio_ChannelPositions_String2, DolbyE_ChannelPositions2_PerProgram(program_config, program));
@@ -1052,8 +1052,8 @@ void File_DolbyE::Streams_Fill_PerProgram(size_t program)
 
     if (SMPTE_time_code_StartTimecode!=(int64u)-1)
     {
-        Fill(StreamKind_Last, program, Audio_Delay, SMPTE_time_code_StartTimecode);
-        Fill(StreamKind_Last, program, Audio_Delay_Source, "Stream");
+        Fill(Stream_Audio, program, Audio_Delay, SMPTE_time_code_StartTimecode);
+        Fill(Stream_Audio, program, Audio_Delay_Source, "Stream");
     }
 
     Fill(Stream_Audio, program, Audio_FrameRate, Mpegv_frame_rate[frame_rate_code]);
@@ -1092,7 +1092,14 @@ void File_DolbyE::Streams_Fill_PerProgram(size_t program)
 //---------------------------------------------------------------------------
 void File_DolbyE::Streams_Fill_ED2()
 {
-    Stream_Prepare(Stream_Audio);
+    if (Count_Get(Stream_Audio))
+    {
+        while (Count_Get(Stream_Audio)>1)
+            Stream_Erase(Stream_Audio, Count_Get(Stream_Audio)-1); // We may have several streams due to metadata, we keep one
+        StreamPos_Last=0;
+    }
+    else
+        Stream_Prepare(Stream_Audio);
     Fill(Stream_Audio, StreamPos_Last, Audio_Format, "Dolby ED2");
     if (Guardband_EMDF_PresentAndSize)
         Fill(Stream_Audio, StreamPos_Last, Audio_BitRate, Guardband_EMDF_PresentAndSize*8*Mpegv_frame_rate[frame_rate_code], 0);

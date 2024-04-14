@@ -1711,6 +1711,8 @@ void File_Hevc::video_parameter_set()
         int8u ViewOrderIdx[64];
         //int8u DependencyId[64];
         //int8u AuxId[64];
+        memset(ScalabilityId, -1, 64 * 16 * sizeof(int8u));
+        memset(ViewOrderIdx, -1, 64 * sizeof(int8u));
         for (int i = 0; i <= MaxLayersMinus1; i++)
         {
             auto lId = layer_id_in_nuh[i];
@@ -1738,7 +1740,10 @@ void File_Hevc::video_parameter_set()
         {
             view_id_val.resize(64, -1);
             for (int i=0; i<NumViews; i++)
-                Get_S2 (view_id_len, view_id_val[ViewOrderIdx[i]], "view_id_val");
+                if (ViewOrderIdx[i]!=(int8u)-1)
+                    Get_S2 (view_id_len, view_id_val[ViewOrderIdx[i]], "view_id_val");
+                else
+                    Trusted_IsNot("ViewOrderIdx");
         }
         bool direct_dependency_flag[64][64];
         memset(direct_dependency_flag, 0, sizeof(direct_dependency_flag));
