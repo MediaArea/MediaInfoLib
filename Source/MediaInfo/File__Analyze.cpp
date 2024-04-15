@@ -1032,8 +1032,11 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
             int8u* Temp=Sub->OriginalBuffer;
             Sub->OriginalBuffer_Capacity=(size_t)(Sub->OriginalBuffer_Size+Element_Size-Element_Offset);
             Sub->OriginalBuffer=new int8u[Sub->OriginalBuffer_Capacity];
-            memcpy_Unaligned_Unaligned(Sub->OriginalBuffer, Temp, Sub->OriginalBuffer_Size);
-            delete[] Temp;
+            if (Temp)
+            {
+                memcpy_Unaligned_Unaligned(Sub->OriginalBuffer, Temp, Sub->OriginalBuffer_Size);
+                delete[] Temp;
+            }
         }
         memcpy_Unaligned_Unaligned(Sub->OriginalBuffer+Sub->OriginalBuffer_Size, Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset));
         Sub->OriginalBuffer_Size+=(size_t)(Element_Size-Element_Offset);
