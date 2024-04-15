@@ -45,12 +45,12 @@
 #include <cstdlib>
 using namespace ZenLib;
 using namespace std;
-#if __cplusplus > 202002L || (_MSC_VER >= 1910 && _MSVC_LANG > 202002L)
+#if __cplusplus > 202002L || (defined(_MSC_VER) && _MSC_VER >= 1910 && _MSVC_LANG > 202002L)
     #define constexpr23 constexpr
 #else
     #define constexpr23
 #endif
-#if __cplusplus >= 202002L || (_MSC_VER >= 1910 && _MSVC_LANG >= 202002L)
+#if __cplusplus >= 202002L || (defined(_MSC_VER) && _MSC_VER >= 1910 && _MSVC_LANG >= 202002L)
 #else
     #define consteval constexpr
 #endif
@@ -1892,7 +1892,7 @@ static const int8u audioPackFormat_2_audioChannelFormatIDRef_Table[] = {
     10, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12,
     11, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12, 0x15,
     12, 0x03, 0x01, 0x02, 0x22, 0x23, 0x0A, 0x0B, 0x1C, 0x1D, 0x28, 0x20, 0x21,
-    14, 0x01, 0x02, 0x03, 0x04, 0x0a, 0x0B, 0x1C, 0x1D, 0x22, 0x23, 0x1E, 0x1F, 0x24, 0x25,
+    14, 0x01, 0x02, 0x03, 0x04, 0x0A, 0x0B, 0x1C, 0x1D, 0x22, 0x23, 0x1E, 0x1F, 0x24, 0x25,
     24, 0x18, 0x19, 0x03, 0x20, 0x1C, 0x1D, 0x01, 0x02, 0x09, 0x21, 0x0A, 0x0B, 0x22, 0x23, 0x0E, 0x0C, 0x1E, 0x1F, 0x13, 0x14, 0x11, 0x15, 0x16, 0x17,
      3, 0x01, 0x02, 0x03,
      4, 0x01, 0x02, 0x03, 0x09,
@@ -1900,7 +1900,7 @@ static const int8u audioPackFormat_2_audioChannelFormatIDRef_Table[] = {
      7, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x09,
      8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x26, 0x27,
      8, 0x01, 0x02, 0x03, 0x04, 0x0A, 0x0B, 0x1C, 0x1D,
-    11, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12, 0x15,
+    22, 0x18, 0x19, 0x03, 0x1C, 0x1D, 0x01, 0x02, 0x09, 0x0A, 0x0B, 0x22, 0x23, 0x0E, 0x0C, 0x1E, 0x1F, 0x13, 0x14, 0x11, 0x15, 0x16, 0x17,
     19, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0A, 0x0B, 0x1A, 0x1B, 0x0D, 0x0F, 0x0E, 0x10, 0x12, 0x13, 0x14, 0x1E, 0x1F,
      8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x24, 0x25,
      8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x13, 0x14,
@@ -1908,23 +1908,83 @@ static const int8u audioPackFormat_2_audioChannelFormatIDRef_Table[] = {
     12, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12, 0x24, 0x25,
     10, 0x01, 0x02, 0x03, 0x04, 0x0A, 0x0B, 0x1C, 0x1D, 0x13, 0x14,
     12, 0x01, 0x02, 0x03, 0x04, 0x0A, 0x0B, 0x1C, 0x1D, 0x22, 0x23, 0x1E, 0x1F,
+    14, 0x01, 0x02, 0x03, 0x04, 0x0A, 0x0B, 0x1C, 0x1D, 0x18, 0x19, 0x22, 0x23, 0x1E, 0x1F,
+    16, 0x01, 0x02, 0x03, 0x04, 0x0A, 0x0B, 0x1C, 0x1D, 0x18, 0x19, 0x22, 0x23, 0x13, 0x14, 0x1E, 0x1F,
+    24, 0x18, 0x19, 0x03, 0x20, 0x1C, 0x1D, 0x01, 0x02, 0x09, 0x21, 0x0A, 0x0B, 0x22, 0x23, 0x0E, 0x0C, 0x1E, 0x1F, 0x13, 0x14, 0x11, 0x15, 0x16, 0x17,
+     7, 0x01, 0x02, 0x03, 0x0A, 0x0B, 0x1C, 0x1D,
+     7, 0x01, 0x02, 0x03, 0x05, 0x06, 0x0D, 0x0F,
+     7, 0x01, 0x02, 0x03, 0x05, 0x06, 0x13, 0x14,
+     9, 0x01, 0x02, 0x03, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12,
+    11, 0x01, 0x02, 0x03, 0x0A, 0x0B, 0x1C, 0x1D, 0x22, 0x23, 0x1E, 0x1F,
+     8, 0x01, 0x02, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12,
+    11, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12, 0x0C,
+    12, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12, 0x0C, 0x0E,
+    12, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x29, 0x2A, 0x0D, 0x0F, 0x10, 0x12,
+    14, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x29, 0x2A, 0x0D, 0x0F, 0x10, 0x12, 0x0C, 0x0E,
+    13, 0x03, 0x01, 0x02, 0x05, 0x06, 0x0E, 0x0D, 0x0F, 0x10, 0x12, 0x15, 0x2B, 0x2C,
      0
 };
+static const int8u audioPackFormat_2_audioChannelFormatIDRef_Table8[] = {
+     1, 0x03,
+     2, 0x01, 0x02,
+     6, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+     8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0D, 0x0F,
+    10, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12,
+    11, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12, 0x15,
+    12, 0x03, 0x01, 0x02, 0x0D, 0x0F, 0x0A, 0x0B, 0x05, 0x06, 0x28, 0x20, 0x21,
+    14, 0x01, 0x02, 0x03, 0x04, 0x0A, 0x0B, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12, 0x24, 0x25,
+    24, 0x01, 0x02, 0x03, 0x20, 0x05, 0x06, 0x07, 0x08, 0x09, 0x21, 0x0A, 0x0B, 0x0D, 0x0F, 0x0E, 0x0C, 0x10, 0x12, 0x13, 0x14, 0x11, 0x15, 0x16, 0x17,
+     3, 0x01, 0x02, 0x03,
+     4, 0x01, 0x02, 0x03, 0x09,
+     5, 0x01, 0x02, 0x03, 0x05, 0x06,
+     7, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x09,
+     8, 0x07, 0x08, 0x03, 0x04, 0x05, 0x06, 0x01, 0x02,
+     8, 0x01, 0x02, 0x03, 0x04, 0x0A, 0x0B, 0x05, 0x06,
+    22, 0x01, 0x02, 0x03, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0D, 0x0F, 0x0E, 0x0C, 0x10, 0x12, 0x13, 0x14, 0x11, 0x15, 0x16, 0x17,
+     1, 0x00,
+     8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x24, 0x25,
+     8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x13, 0x14,
+    10, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x13, 0x14, 0x24, 0x25,
+    12, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12, 0x24, 0x25,
+    10, 0x01, 0x02, 0x03, 0x04, 0x0A, 0x0B, 0x05, 0x06, 0x13, 0x14,
+    12, 0x01, 0x02, 0x03, 0x04, 0x0A, 0x0B, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12,
+    14, 0x01, 0x02, 0x03, 0x04, 0x0A, 0x0B, 0x05, 0x06, 0x18, 0x19, 0x0D, 0x0F, 0x10, 0x12,
+    16, 0x01, 0x02, 0x03, 0x04, 0x0A, 0x0B, 0x05, 0x06, 0x18, 0x19, 0x0D, 0x0F, 0x13, 0x14, 0x10, 0x12,
+    24, 0x18, 0x19, 0x03, 0x20, 0x05, 0x06, 0x01, 0x02, 0x09, 0x21, 0x0A, 0x0B, 0x0D, 0x0F, 0x0E, 0x0C, 0x10, 0x12, 0x13, 0x14, 0x11, 0x15, 0x16, 0x17,
+     7, 0x01, 0x02, 0x03, 0x0A, 0x0B, 0x05, 0x06,
+     7, 0x01, 0x02, 0x03, 0x05, 0x06, 0x0D, 0x0F,
+     7, 0x01, 0x02, 0x03, 0x05, 0x06, 0x13, 0x14,
+     9, 0x01, 0x02, 0x03, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12,
+    11, 0x01, 0x02, 0x03, 0x0A, 0x0B, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12,
+     8, 0x01, 0x02, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12,
+    11, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12, 0x0C,
+    12, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0D, 0x0F, 0x10, 0x12, 0x0C, 0x0E,
+    12, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x29, 0x2A, 0x0D, 0x0F, 0x10, 0x12,
+    14, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x29, 0x2A, 0x0D, 0x0F, 0x10, 0x12, 0x0C, 0x0E,
+    13, 0x03, 0x01, 0x02, 0x05, 0x06, 0x0E, 0x0D, 0x0F, 0x10, 0x12, 0x15, 0x16, 0x17,
+     0
+};
+
 set<string> audioPackFormatID_2_audioChannelFormatIDRef (int16u audioPackFormatID_yyyy) {
     size_t Pos = 0;
     size_t i = 0;
+    auto SearchedPos = audioPackFormatID_yyyy & 0xF7FF; // 0x8xx values
+    auto Table = audioPackFormatID_yyyy - SearchedPos ? audioPackFormat_2_audioChannelFormatIDRef_Table8 : audioPackFormat_2_audioChannelFormatIDRef_Table;
     for (;;) {
-        const auto Count = audioPackFormat_2_audioChannelFormatIDRef_Table[i++];
+        const auto Count = Table[i++];
         if (!Count) {
             return {};
         }
-        if (++Pos != audioPackFormatID_yyyy) {
+        if (++Pos != SearchedPos) {
             i += Count;
             continue;
         }
+        if (!Table[i]) {
+            return {};
+        }
         set<string> Result;
         for (int j = 0; j < Count; j++) {
-            Result.insert("AC_000100" + Hex2String(audioPackFormat_2_audioChannelFormatIDRef_Table[i++], 2));
+            Result.insert("AC_000100" + Hex2String(Table[i++], 2));
         }
         return Result;
     }
@@ -4751,9 +4811,9 @@ int file_adm_private::audioFormatExtended()
             ELEMENT_e(audioProgrammeLabel, audioProgramme, audioProgrammeLabel_Check(this))
         ELEMENT__(audioProgramme, audioContentIDRef)
         ELEMENT_s(audioProgramme, loudnessMetadata, loudnessMetadata_Source.push_back('P'))
-            ATTRIBU_I(loudnessMetadata, loudnessMethod)
-            ATTRIBU_I(loudnessMetadata, loudnessRecType)
-            ATTRIBU_I(loudnessMetadata, loudnessCorrectionType)
+            ATTRIBUTE(loudnessMetadata, loudnessMethod)
+            ATTRIBUTE(loudnessMetadata, loudnessRecType)
+            ATTRIBUTE(loudnessMetadata, loudnessCorrectionType)
             ELEMENT_M(loudnessMetadata)
             ELEMENT__(loudnessMetadata, integratedLoudness)
             ELEMENT_I(loudnessMetadata, loudnessRange)
@@ -4762,10 +4822,10 @@ int file_adm_private::audioFormatExtended()
             ELEMENT_I(loudnessMetadata, maxShortTerm)
             ELEMENT_I(loudnessMetadata, dialogueLoudness)
             ELEMENT_S(loudnessMetadata, renderer)
-                ATTRIBU_I(renderer, uri)
-                ATTRIBU_I(renderer, name)
-                ATTRIBU_I(renderer, version)
-                ATTRIBU_I(renderer, coordinateMode)
+                ATTRIBUTE(renderer, uri)
+                ATTRIBUTE(renderer, name)
+                ATTRIBUTE(renderer, version)
+                ATTRIBUTE(renderer, coordinateMode)
                 ELEMENT_M(renderer)
                 ELEMENT_I(renderer, audioPackFormatIDRef)
                 ELEMENT_I(renderer, audioObjectIDRef)
@@ -4798,10 +4858,10 @@ int file_adm_private::audioFormatExtended()
                 ELEMENT__(referenceLayout, audioPackFormatIDRef)
                 ELEMENT_E(referenceLayout, authoringInformation)
             ELEMENT_S(authoringInformation, renderer)
-                ATTRIBU_I(renderer, uri)
-                ATTRIBU_I(renderer, name)
-                ATTRIBU_I(renderer, version)
-                ATTRIBU_I(renderer, coordinateMode)
+                ATTRIBUTE(renderer, uri)
+                ATTRIBUTE(renderer, name)
+                ATTRIBUTE(renderer, version)
+                ATTRIBUTE(renderer, coordinateMode)
                 ELEMENT_M(renderer)
                 ELEMENT_I(renderer, audioPackFormatIDRef)
                 ELEMENT_I(renderer, audioObjectIDRef)
@@ -4821,9 +4881,9 @@ int file_adm_private::audioFormatExtended()
             ELEMENT_M(audioContentLabel)
             ELEMENT_e(audioContentLabel, audioContent, audioContentLabel_Check(this))
         ELEMENT_s(audioContent, loudnessMetadata, loudnessMetadata_Source.push_back('C'))
-            ATTRIBU_I(loudnessMetadata, loudnessMethod)
-            ATTRIBU_I(loudnessMetadata, loudnessRecType)
-            ATTRIBU_I(loudnessMetadata, loudnessCorrectionType)
+            ATTRIBUTE(loudnessMetadata, loudnessMethod)
+            ATTRIBUTE(loudnessMetadata, loudnessRecType)
+            ATTRIBUTE(loudnessMetadata, loudnessCorrectionType)
             ELEMENT_M(loudnessMetadata)
             ELEMENT__(loudnessMetadata, integratedLoudness)
             ELEMENT_I(loudnessMetadata, loudnessRange)
@@ -4832,10 +4892,10 @@ int file_adm_private::audioFormatExtended()
             ELEMENT_I(loudnessMetadata, maxShortTerm)
             ELEMENT_I(loudnessMetadata, dialogueLoudness)
             ELEMENT_S(loudnessMetadata, renderer)
-                ATTRIBU_I(renderer, uri)
-                ATTRIBU_I(renderer, name)
-                ATTRIBU_I(renderer, version)
-                ATTRIBU_I(renderer, coordinateMode)
+                ATTRIBUTE(renderer, uri)
+                ATTRIBUTE(renderer, name)
+                ATTRIBUTE(renderer, version)
+                ATTRIBUTE(renderer, coordinateMode)
                 ELEMENT_M(renderer)
                 ELEMENT_I(renderer, audioPackFormatIDRef)
                 ELEMENT_I(renderer, audioObjectIDRef)
@@ -4874,28 +4934,28 @@ int file_adm_private::audioFormatExtended()
         ELEMENT__(audioObject, audioComplementaryObjectIDRef)
         ELEMENT__(audioObject, audioTrackUIDRef)
         ELEMENT_S(audioObject, audioObjectInteraction)
-            ATTRIBU_I(audioObjectInteraction, onOffInteract)
-            ATTRIBU_I(audioObjectInteraction, gainInteract)
-            ATTRIBU_I(audioObjectInteraction, positionInteract)
+            ATTRIBUTE(audioObjectInteraction, onOffInteract)
+            ATTRIBUTE(audioObjectInteraction, gainInteract)
+            ATTRIBUTE(audioObjectInteraction, positionInteract)
             ELEMENT_M(audioObjectInteraction)
             ELEMENT_S(audioObjectInteraction, gainInteractionRange)
-                ATTRIBU_I(gainInteractionRange, gainUnit)
-                ATTRIBU_I(gainInteractionRange, bound)
+                ATTRIBUTE(gainInteractionRange, gainUnit)
+                ATTRIBUTE(gainInteractionRange, bound)
                 ELEMENT_M(gainInteractionRange)
                 ELEMENT_E(gainInteractionRange, audioObjectInteraction)
             ELEMENT_S(audioObjectInteraction, positionInteractionRange)
-                ATTRIBU_I(positionInteractionRange, coordinate)
-                ATTRIBU_I(positionInteractionRange, bound)
+                ATTRIBUTE(positionInteractionRange, coordinate)
+                ATTRIBUTE(positionInteractionRange, bound)
                 ELEMENT_M(positionInteractionRange)
                 ELEMENT_E(positionInteractionRange, audioObjectInteraction)
             ELEMENT_E(audioObjectInteraction, audioObject)
         ELEMENT_S(audioObject, gain)
-            ATTRIBU_I(gain, gainUnit)
+            ATTRIBUTE(gain, gainUnit)
             ELEMENT_M(gain)
             ELEMENT_E(gain, audioObject)
         ELEMENT__(audioObject, headLocked)
         ELEMENT_S(audioObject, positionOffset)
-            ATTRIBU_I(positionOffset, coordinate)
+            ATTRIBUTE(positionOffset, coordinate)
             ELEMENT_M(positionOffset)
             ELEMENT_E(positionOffset, audioObject)
         ELEMENT__(audioObject, mute)
@@ -4939,7 +4999,7 @@ int file_adm_private::audioFormatExtended()
             ATTRIBUTE(audioBlockFormat, initializeBlock)
             ELEMENT_M(audioBlockFormat)
             ELEMENT_S(audioBlockFormat, gain)
-                ATTRIBU_I(gain, gainUnit)
+                ATTRIBUTE(gain, gainUnit)
                 ELEMENT_M(gain)
                 ELEMENT_e(gain, audioBlockFormat, gain_Check(this))
             ELEMENT__(audioBlockFormat, importance)
@@ -4949,8 +5009,8 @@ int file_adm_private::audioFormatExtended()
                 ELEMENT_M(jumpPosition)
                 ELEMENT_E(jumpPosition, audioBlockFormat)
             ELEMENT_S(audioBlockFormat, headphoneVirtualise)
-                ATTRIBU_I(headphoneVirtualise, bypass)
-                ATTRIBU_I(headphoneVirtualise, DRR)
+                ATTRIBUTE(headphoneVirtualise, bypass)
+                ATTRIBUTE(headphoneVirtualise, DRR)
                 ELEMENT_M(headphoneVirtualise)
                 ELEMENT_E(headphoneVirtualise, audioBlockFormat)
             ELEMENT__(audioBlockFormat, speakerLabel)
@@ -6325,7 +6385,7 @@ void File_Adm::Streams_Fill()
                         if (Value >= 0x800) {
                             Value -= 0x800;
                         }
-                        static int8u List[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x09, 0x0A, 0x0C, 0x0F, 0x17, 0x1A, 0x1B, 0x1C, 0x1E, 0x1F };
+                        static int8u List[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x09, 0x0A, 0x0C, 0x0F, 0x10, 0x17, 0x1B, 0x1C, 0x1E, 0x1F };
                         IsNotValid = true;
                         for (auto List_Item : List) {
                             if (List_Item == Value) {
@@ -6668,17 +6728,17 @@ void File_Adm::Read_Buffer_Continue()
         while (auto NextPos = strstr(LastPos + 1, ToSearch)) {
             LastPos = NextPos;
         }
-        if (LastPos != Nok) {
-            size_t Offset = (const int8u*)LastPos - Buffer + 21; // + length of ToSearch
-            if (File_Adm_Private->Resynch("audioFormatExtended")) {
-                return;
-            }
-            Buffer += Offset;
-            Buffer_Size -= Offset;
-            Read_Buffer_Continue();
-            Buffer_Size += Offset;
-            Buffer -= Offset;
+        if (LastPos == Nok || File_Adm_Private->Resynch("audioFormatExtended")) {
+            Buffer_Offset = Buffer_Size;
+            ForceFinish();
+            return;
         }
+        size_t Offset = (const int8u*)LastPos - Buffer + 21; // + length of ToSearch
+        Buffer += Offset;
+        Buffer_Size -= Offset;
+        Read_Buffer_Continue();
+        Buffer_Size += Offset;
+        Buffer -= Offset;
     }
 
     auto Result = File_Adm_Private->parse((void*)Buffer, Buffer_Size);
@@ -6691,19 +6751,26 @@ void File_Adm::Read_Buffer_Continue()
         }
     }
     Buffer_Offset = Buffer_Size - File_Adm_Private->Remain();
-    if (!File_Adm_Private->ChannelFormat_BlockFormat_ReduceCount.empty() && !File_Adm_Private->IsPartial && TotalSize > 512 * 1024 * 1024) {
-        // Too big, we stop parsing here
-        File_Adm_Private->IsPartial = true;
-        NeedToJumpToEnd = true;
-    }
-    else if (Result && File_Adm_Private->File_Buffer_Size_Hint_Pointer) {
-        auto File_Offset_Now = File_Offset + Buffer_Size;
-        auto Size = File_Size - File_Offset_Now;
-        if (Size > 16 * 1024 * 1024) {
-            Size = 16 * 1024 * 1024;
-        }
-        *File_Adm_Private->File_Buffer_Size_Hint_Pointer = Size;
+    if (Buffer_Offset < Buffer_Size) {
         Element_WaitForMoreData();
+    }
+    if (Status[IsAccepted]) {
+        if (!File_Adm_Private->ChannelFormat_BlockFormat_ReduceCount.empty() && !File_Adm_Private->IsPartial && TotalSize > 512 * 1024 * 1024) {
+            // Too big, we stop parsing here
+            File_Adm_Private->IsPartial = true;
+            NeedToJumpToEnd = true;
+        }
+        if (Result && TotalSize > 16 * 1024 * 1024 && File_Adm_Private->File_Buffer_Size_Hint_Pointer) {
+            auto File_Offset_Now = File_Offset + Buffer_Size;
+            auto Size = File_Size - File_Offset_Now;
+            if (Size > 16 * 1024 * 1024) {
+                Size = 16 * 1024 * 1024;
+            }
+            if (Size >= 64 * 1024) {
+                *File_Adm_Private->File_Buffer_Size_Hint_Pointer = Size;
+            }
+            Element_WaitForMoreData();
+        }
     }
 }
 
