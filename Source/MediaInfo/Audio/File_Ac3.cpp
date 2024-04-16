@@ -21,10 +21,11 @@
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_AC3_YES) || defined(MEDIAINFO_DVDV_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MIXML_YES)
+#if defined(MEDIAINFO_AC3_YES) || defined(MEDIAINFO_DOLBYE_YES) || defined(MEDIAINFO_DVDV_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MIXML_YES)
 //---------------------------------------------------------------------------
 
 #include "ZenLib/Conf.h"
+#include <string>
 using namespace ZenLib;
 
 namespace MediaInfoLib
@@ -100,6 +101,24 @@ extern const int16u AC3_BitRate[]=
 //---------------------------------------------------------------------------
 extern const int8u AC3_Channels[]=
 {2, 1, 2, 3, 3, 4, 4, 5};
+
+//---------------------------------------------------------------------------
+static const char* AC3_dynrngprof[]=
+{
+    "Film Standard",
+    "Film Light",
+    "Music Standard",
+    "Music Light",
+    "Speech",
+};
+extern std::string AC3_dynrngprof_Get(int8u Value)
+{
+    if (!Value)
+        return {};
+    if (Value>sizeof(AC3_dynrngprof)/sizeof(AC3_dynrngprof[0]))
+        return std::to_string(Value);
+    return AC3_dynrngprof[Value - 1];
+}
 
 //---------------------------------------------------------------------------
 } //NameSpace
@@ -209,15 +228,15 @@ extern const char* AC3_dmixmod[]=
 };
 
 //---------------------------------------------------------------------------
-extern string Level_Value(int8u Index, float Start, float Multiplier)
+extern string AC3_Level_Value(int8u Index, float Start, float Multiplier)
 {
     return Index == 7 ? string("-inf") : Ztring::ToZtring((Start - (int)Index * Multiplier), 1).To_UTF8();
 }
 
 //---------------------------------------------------------------------------
-extern void Level_Fill(File__Analyze* A, size_t StreamPos, int8u Index, float Start, float Multiplier, const char* Name)
+extern void AC3_Level_Fill(File__Analyze* A, size_t StreamPos, int8u Index, float Start, float Multiplier, const char* Name)
 {
-    string Value = Level_Value(Index, Start, Multiplier);
+    string Value = AC3_Level_Value(Index, Start, Multiplier);
     A->Fill(Stream_Audio, StreamPos, Name, Value);
     A->Fill_SetOptions(Stream_Audio, StreamPos, Name, "N NT");
     string Name_String = string(Name) + "/String";
@@ -1544,10 +1563,10 @@ void File_Ac3::Streams_Fill()
             Fill(Stream_Audio, 0, "dmixmod", AC3_dmixmod[dmixmod_Max[0][0] - 1]);
             Fill_SetOptions(Stream_Audio, 0, "dmixmod", "Y NTY");
         }
-        Level_Fill(this, 0, ltrtcmixlev_Max[0][0], 3, 1.5, "ltrtcmixlev");
-        Level_Fill(this, 0, ltrtsurmixlev_Max[0][0], 3, 1.5, "ltrtsurmixlev");
-        Level_Fill(this, 0, lorocmixlev_Max[0][0], 3, 1.5, "lorocmixlev");
-        Level_Fill(this, 0, lorosurmixlev_Max[0][0], 3, 1.5, "lorosurmixlev");
+        AC3_Level_Fill(this, 0, ltrtcmixlev_Max[0][0], 3, 1.5, "ltrtcmixlev");
+        AC3_Level_Fill(this, 0, ltrtsurmixlev_Max[0][0], 3, 1.5, "ltrtsurmixlev");
+        AC3_Level_Fill(this, 0, lorocmixlev_Max[0][0], 3, 1.5, "lorocmixlev");
+        AC3_Level_Fill(this, 0, lorosurmixlev_Max[0][0], 3, 1.5, "lorosurmixlev");
         if (adconvtyp_Max[0][0])
         {
             Fill(Stream_Audio, 0, "adconvtyp", "HDCD");
@@ -1618,15 +1637,15 @@ void File_Ac3::Streams_Finish()
             Fill(Stream_Audio, 0, "compr_Average", Average_dB, 2);
             Fill_SetOptions(Stream_Audio, 0, "compr_Average", "N NT");
             Fill(Stream_Audio, 0, "compr_Average/String", Ztring::ToZtring(Average_dB, 2) + __T(" dB"));
-            Fill_SetOptions(Stream_Audio, 0, "compr_Average/String", "Y NTN");
+            Fill_SetOptions(Stream_Audio, 0, "compr_Average/String", "N NTN");
             Fill(Stream_Audio, 0, "compr_Minimum", Minimum_dB, 2);
             Fill_SetOptions(Stream_Audio, 0, "compr_Minimum", "N NT");
             Fill(Stream_Audio, 0, "compr_Minimum/String", Ztring::ToZtring(Minimum_dB, 2) + __T(" dB"));
-            Fill_SetOptions(Stream_Audio, 0, "compr_Minimum/String", "Y NTN");
+            Fill_SetOptions(Stream_Audio, 0, "compr_Minimum/String", "N NTN");
             Fill(Stream_Audio, 0, "compr_Maximum", Maximum_dB, 2);
             Fill_SetOptions(Stream_Audio, 0, "compr_Maximum", "N NT");
             Fill(Stream_Audio, 0, "compr_Maximum/String", Ztring::ToZtring(Maximum_dB, 2) + __T(" dB"));
-            Fill_SetOptions(Stream_Audio, 0, "compr_Maximum/String", "Y NTN");
+            Fill_SetOptions(Stream_Audio, 0, "compr_Maximum/String", "N NTN");
             Fill(Stream_Audio, 0, "compr_Count", Count);
             Fill_SetOptions(Stream_Audio, 0, "compr_Count", "N NT");
         }
@@ -1658,15 +1677,15 @@ void File_Ac3::Streams_Finish()
             Fill(Stream_Audio, 0, "dynrng_Average", Average_dB, 2);
             Fill_SetOptions(Stream_Audio, 0, "dynrng_Average", "N NT");
             Fill(Stream_Audio, 0, "dynrng_Average/String", Ztring::ToZtring(Average_dB, 2) + __T(" dB"));
-            Fill_SetOptions(Stream_Audio, 0, "dynrng_Average/String", "Y NTN");
+            Fill_SetOptions(Stream_Audio, 0, "dynrng_Average/String", "N NTN");
             Fill(Stream_Audio, 0, "dynrng_Minimum", Minimum_dB, 2);
             Fill_SetOptions(Stream_Audio, 0, "dynrng_Minimum", "N NT");
             Fill(Stream_Audio, 0, "dynrng_Minimum/String", Ztring::ToZtring(Minimum_dB, 2) + __T(" dB"));
-            Fill_SetOptions(Stream_Audio, 0, "dynrng_Minimum/String", "Y NTN");
+            Fill_SetOptions(Stream_Audio, 0, "dynrng_Minimum/String", "N NTN");
             Fill(Stream_Audio, 0, "dynrng_Maximum", Maximum_dB, 2);
             Fill_SetOptions(Stream_Audio, 0, "dynrng_Maximum", "N NT");
             Fill(Stream_Audio, 0, "dynrng_Maximum/String", Ztring::ToZtring(Maximum_dB, 2) + __T(" dB"));
-            Fill_SetOptions(Stream_Audio, 0, "dynrng_Maximum/String", "Y NTN");
+            Fill_SetOptions(Stream_Audio, 0, "dynrng_Maximum/String", "N NTN");
             Fill(Stream_Audio, 0, "dynrng_Count", Count);
             Fill_SetOptions(Stream_Audio, 0, "dynrng_Count", "N NT");
         }
