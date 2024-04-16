@@ -114,7 +114,7 @@ void File_Eia608::Streams_Fill()
     }
 
     for (size_t Pos=0; Pos<Streams.size(); Pos++)
-        if (Streams[Pos] || (Pos<2 && Config->File_Eia608_DisplayEmptyStream_Get()))
+        if ((Streams[Pos] && (DataDetected[1+Pos] || !Config->File_CommandOnlyMeansEmpty_Get())) || (Pos<2 && Config->File_Eia608_DisplayEmptyStream_Get()))
         {
             Stream_Prepare(Stream_Text);
             Fill(Stream_Text, StreamPos_Last, Text_Format, "EIA-608");
