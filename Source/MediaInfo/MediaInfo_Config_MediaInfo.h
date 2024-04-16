@@ -375,6 +375,8 @@ public :
     bool          File_Eia608_DisplayEmptyStream_Get ();
     void          File_Eia708_DisplayEmptyStream_Set (bool NewValue);
     bool          File_Eia708_DisplayEmptyStream_Get ();
+    void          File_CommandOnlyMeansEmpty_Set(bool NewValue);
+    bool          File_CommandOnlyMeansEmpty_Get();
     #if defined(MEDIAINFO_AC3_YES)
     void          File_Ac3_IgnoreCrc_Set (bool NewValue);
     bool          File_Ac3_IgnoreCrc_Get ();
@@ -609,6 +611,7 @@ private :
     #endif //defined(MEDIAINFO_LIBMMS_YES)
     bool                    File_Eia608_DisplayEmptyStream;
     bool                    File_Eia708_DisplayEmptyStream;
+    bool                    File_CommandOnlyMeansEmpty;
     #if defined(MEDIAINFO_AC3_YES)
     bool                    File_Ac3_IgnoreCrc;
     #endif //defined(MEDIAINFO_AC3_YES)
