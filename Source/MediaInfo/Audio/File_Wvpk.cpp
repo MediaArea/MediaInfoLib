@@ -569,7 +569,8 @@ void File_Wvpk::Data_Parse_Fill()
     Fill(Stream_Audio, 0, Audio_Encoded_Library_Settings, Encoded_Library_Settings);
 
     //No more need data
-    File__Tags_Helper::GoToFromEnd(512*1024, "WavPack");
+    if (File_Size!=(int64u)-1 && File_Size-(File_Offset+Buffer_Offset)>=2*512*1024)
+        File__Tags_Helper::GoToFromEnd(512*1024, "WavPack");
 }
 
 //***************************************************************************
