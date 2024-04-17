@@ -305,7 +305,7 @@ Compression_Mode;Compression mode
 Compression_Mode_Lossless;Lossless
 Compression_Mode_Lossy;Lossy
 Compression_Ratio;Compression ratio
-comprprof;RF Mode Compression Profile
+comprprof;RF (compr) profile
 Conductor;Conductor
 ConformanceCheck;Conformance check
 ConformanceErrors;Conformance errors
@@ -364,7 +364,7 @@ Downmix_5.1.x;5.1 and 5.1.x downmix
 Downmix_5to2;5.1 to 2.0 downmix
 DrcSets_Count;DRC set count
 DrcSets_Effects;DRC effect type(s)
-dynrngprof;Line Mode Compression Profile
+dynrngprof;Line (dynrng) profile
 Duration;Duration
 Duration_End;End time
 Duration_End_Command;End time (commands)
