@@ -2760,7 +2760,7 @@ void File_Mxf::Streams_Finish()
         if (Footer_Position!=(int64u)-1)
             Fill(Stream_General, 0, General_FooterSize, File_Size-Footer_Position);
         else if (Config->ParseSpeed>-1 || (!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size))
-            Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
+            IsTruncated((!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size)?Partitions[0].FooterPartition:(int64u)-1);
     #endif //MEDIAINFO_ADVANCED
 
     //Handling separate streams
@@ -4931,7 +4931,7 @@ void File_Mxf::Read_Buffer_Continue()
                         return;
                     }
 
-                    Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
+                    IsTruncated(File_Offset+17+Size, true);
                 }
             }
         }
@@ -12160,9 +12160,8 @@ void File_Mxf::PartitionMetadata()
 
         #if MEDIAINFO_ADVANCED
             //IsTruncated
-            bool IsTruncated;
             if (!Trusted_Get())
-                IsTruncated=true;
+                IsTruncated();
             else
             {
                 int32u KAGSize_Corrected=KAGSize;
@@ -12175,13 +12174,10 @@ void File_Mxf::PartitionMetadata()
                     Element_Size_WithPadding+=KAGSize_Corrected;
                 }
 
-                if (File_Offset+Buffer_Offset-Header_Size+Element_Size_WithPadding+HeaderByteCount+IndexByteCount > File_Size)
-                    IsTruncated=true;
-                else
-                    IsTruncated=false;
+                auto ExpectedSize=File_Offset+Buffer_Offset-Header_Size+Element_Size_WithPadding+HeaderByteCount+IndexByteCount;
+                if (ExpectedSize>File_Size)
+                    IsTruncated(ExpectedSize);
             }
-            if (IsTruncated)
-                Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
         #endif //MEDIAINFO_ADVANCED
     }
 

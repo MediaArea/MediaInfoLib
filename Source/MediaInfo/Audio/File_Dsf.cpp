@@ -183,9 +183,9 @@ void File_Dsf::Header_Parse()
     //Coherency check
     if (File_Offset+Buffer_Offset+Size>File_Size)
     {
-        Size=File_Size-(File_Offset+Buffer_Offset);
         if (Element_Level<=2) //Incoherencies info only at the top level chunk
-            Fill(Stream_General, 0, "IsTruncated", "Yes");
+            IsTruncated(File_Offset+Buffer_Offset+Element_Offset+Size);
+        Size=File_Size-(File_Offset+Buffer_Offset);
     }
 
     Header_Fill_Code(Name, Ztring().From_CC4(Name));

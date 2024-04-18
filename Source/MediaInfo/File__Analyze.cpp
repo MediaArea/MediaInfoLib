@@ -164,6 +164,24 @@ string uint128toString(uint128 ii, int radix)
 }
 
 //***************************************************************************
+// Conformance
+//***************************************************************************
+
+#if MEDIAINFO_CONFORMANCE
+struct field_value {
+    string  Field;
+    string  Value;
+};
+typedef vector<vector<field_value>> conformance_data[Conformance_Max][Stream_Max];
+static const char* Conformance_Type_String[] = {
+    "Errors",
+    "Warnings",
+    "Infos",
+};
+static_assert(sizeof(Conformance_Type_String) / sizeof(Conformance_Type_String[0]) == Conformance_Max, "");
+#endif //MEDIAINFO_CONFORMANCE
+
+//***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
 
@@ -338,6 +356,10 @@ File__Analyze::File__Analyze ()
         Hash_ParseUpTo=0;
     #endif //MEDIAINFO_HASH
 
+    #if MEDIAINFO_CONFORMANCE
+        Conformance_Data=nullptr;
+    #endif //MEDIAINFO_CONFORMANCE
+
     Unsynch_Frame_Count=(int64u)-1;
     #if MEDIAINFO_IBIUSAGE
         Ibi_SynchronizationOffset_Current=0;
@@ -371,6 +393,10 @@ File__Analyze::~File__Analyze ()
     #if MEDIAINFO_HASH
         delete Hash; //Hash=NULL;
     #endif //MEDIAINFO_HASH
+
+    #if MEDIAINFO_CONFORMANCE
+        delete (conformance_data*)Conformance_Data;
+    #endif //MEDIAINFO_CONFORMANCE
 
     #if MEDIAINFO_IBIUSAGE
         if (!IsSub)
@@ -3190,6 +3216,7 @@ void File__Analyze::ForceFinish ()
                     return;
             #endif //MEDIAINFO_DEMUX
         }
+        Conformance_Fill();
         Streams_Finish_Global();
         #if MEDIAINFO_DEMUX
             if (Config->Demux_EventWasSent)
@@ -3891,6 +3918,63 @@ void File__Analyze::Decoded (const int8u* Buffer, size_t Buffer_Size)
 }
 
 #endif //MEDIAINFO_DECODE
+
+//***************************************************************************
+// Conformance
+//***************************************************************************
+
+#if MEDIAINFO_CONFORMANCE
+
+//---------------------------------------------------------------------------
+void File__Analyze::Conformance(conformance_type Type, stream_t StreamKind, size_t StreamPos, const std::string& Field, const std::string& Value)
+{
+    if (!Conformance_Data) {
+        Conformance_Data = new conformance_data;
+    }
+    auto& Data = *(conformance_data*)Conformance_Data;
+    auto& Messages = Data[Type][StreamKind];
+
+    if (StreamPos >= Messages.size())
+        Messages.resize(StreamPos + 1);
+    Data[Type][StreamKind][StreamPos].push_back({ Field, Value });
+}
+
+//---------------------------------------------------------------------------
+void File__Analyze::Conformance_Fill()
+{
+    if (!Conformance_Data) {
+        return;
+    }
+    auto& Data = *(conformance_data*)Conformance_Data;
+
+    for (size_t i = 0; i < Conformance_Max; i++) {
+        auto FieldPrefix = "Conformance" + string(Conformance_Type_String[i]);
+        auto& PerErrorType = Data[i];
+        for (size_t StreamKind = 0; StreamKind < Stream_Max; StreamKind++) {
+            auto& PerStreamKind = PerErrorType[StreamKind];
+            for (size_t StreamPos = 0; StreamPos < PerStreamKind.size(); StreamPos++) {
+                auto& Messages = PerStreamKind[StreamPos];
+                if (Messages.empty()) {
+                    continue;
+                }
+                Fill((stream_t)StreamKind, StreamPos, FieldPrefix.c_str(), Messages.size());
+                for (const auto& Message : Messages) {
+                    Fill((stream_t)StreamKind, StreamPos, (FieldPrefix + ' ' + Message.Field).c_str(), Message.Value);
+                }
+            }
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
+void File__Analyze::IsTruncated(int64u ExpectedSize, bool MoreThan)
+{
+    Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
+    Fill_SetOptions(Stream_General, 0, "IsTruncated", "N NT");
+    Conformance(Conformance_Error, Stream_General, 0, "GeneralCompliance", "File size " + std::to_string(File_Size) + " is less than expected size " + (ExpectedSize == (int64u)-1 ? std::string() : ((MoreThan ? "at least " : "") + std::to_string(ExpectedSize))));
+}
+
+#endif //MEDIAINFO_CONFORMANCE
 
 //***************************************************************************
 // IBI
