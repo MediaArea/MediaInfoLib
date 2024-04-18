@@ -1437,6 +1437,17 @@ public :
         int64u              Hash_ParseUpTo;
     #endif //MEDIAINFO_HASH
 
+    #if MEDIAINFO_CONFORMANCE
+        void*               Conformance_Data;
+        void                Conformance(conformance_type Type, stream_t StreamKind, size_t StreamPos, const std::string& Field, const std::string& Value);
+        void                Conformance_Fill();
+        void                IsTruncated(int64u ExpectedSize=(int64u)-1, bool MoreThan=false);
+    #else //MEDIAINFO_CONFORMANCE
+        void                Conformance(conformance_type Type, stream_t, size_t, const std::string&, const std::string&) {}
+        void                Conformance_Fill() {}
+        void                IsTruncated(int64u, bool MoreThan=false) {}
+    #endif //MEDIAINFO_CONFORMANCE
+
     #if MEDIAINFO_SEEK
     private:
         bool Seek_Duration_Detected;
