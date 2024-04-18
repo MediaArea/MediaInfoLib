@@ -349,6 +349,12 @@
 #endif
 
 //---------------------------------------------------------------------------
+// Tag
+#if defined(MEDIAINFO_ICC_YES)
+    #include "MediaInfo/Tag/File_Icc.h"
+#endif
+
+//---------------------------------------------------------------------------
 // Archive
 #if defined(MEDIAINFO_7Z_YES)
     #include "MediaInfo/Archive/File_7z.h"
@@ -565,9 +571,6 @@ File__MultipleParsing::File__MultipleParsing()
     #if defined(MEDIAINFO_FLIC_YES)
         Parser.push_back(new File_Flic());
     #endif
-    #if defined(MEDIAINFO_H263_YES)
-        Parser.push_back(new File_H263());
-    #endif
     #if defined(MEDIAINFO_MPEG4V_YES)
         Parser.push_back(new File_Mpeg4v());
     #endif
@@ -658,9 +661,6 @@ File__MultipleParsing::File__MultipleParsing()
     #if defined(MEDIAINFO_MPCSV8_YES)
         Parser.push_back(new File_MpcSv8());
     #endif
-    #if defined(MEDIAINFO_MPEGA_YES)
-        Parser.push_back(new File_Mpega());
-    #endif
     #if defined(MEDIAINFO_OPENMG_YES)
         Parser.push_back(new File_OpenMG());
     #endif
@@ -750,9 +750,6 @@ File__MultipleParsing::File__MultipleParsing()
     #if defined(MEDIAINFO_TIFF_YES)
         Parser.push_back(new File_Tiff());
     #endif
-    #if defined(MEDIAINFO_TGA_YES)
-        Parser.push_back(new File_Tga());
-    #endif
 
     // Archive
     #if defined(MEDIAINFO_7Z_YES)
@@ -789,6 +786,20 @@ File__MultipleParsing::File__MultipleParsing()
     // Other
     #if defined(MEDIAINFO_OTHER_YES)
         Parser.push_back(new File_Other());
+    #endif
+
+    //At the end, too much sensible
+    #if defined(MEDIAINFO_MPEGA_YES)
+        Parser.push_back(new File_Mpega());
+    #endif
+    #if defined(MEDIAINFO_TGA_YES)
+        Parser.push_back(new File_Tga());
+    #endif
+    #if defined(MEDIAINFO_H263_YES)
+        Parser.push_back(new File_H263());
+    #endif
+    #if defined(MEDIAINFO_ICC_YES)
+        Parser.push_back(new File_Icc());
     #endif
 }
 
