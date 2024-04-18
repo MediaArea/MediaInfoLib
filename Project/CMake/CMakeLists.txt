@@ -5,7 +5,7 @@ project(MediaInfoLib)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
 
 set(MediaInfoLib_MAJOR_VERSION 24)
-set(MediaInfoLib_MINOR_VERSION 03)
+set(MediaInfoLib_MINOR_VERSION 04)
 set(MediaInfoLib_PATCH_VERSION 0)
 set(MediaInfoLib_VERSION ${MediaInfoLib_MAJOR_VERSION}.${MediaInfoLib_MINOR_VERSION})
 
