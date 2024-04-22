@@ -27,6 +27,7 @@
 #if MEDIAINFO_IBIUSAGE
     #include "MediaInfo/Multiple/File_Ibi_Creation.h"
 #endif //MEDIAINFO_IBIUSAGE
+#include "TimeCode.h"
 #include <cstring>
 #include <algorithm>
 using namespace std;
