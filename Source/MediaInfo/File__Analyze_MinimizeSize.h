@@ -180,6 +180,7 @@ public :
     int64u Field_Count_InThisBlock;
     int64u Frame_Count_NotParsedIncluded;
     int64u FrameNumber_PresentationOrder;
+    bool   FrameIsAlwaysComplete;
     bool   Synched;                    //Data is synched
     bool   UnSynched_IsNotJunk;        //Data is actually synched
     bool   MustExtendParsingDuration;  //Data has some substreams difficult to detect (e.g. captions), must wait a bit before final filling
@@ -1439,13 +1440,23 @@ public :
 
     #if MEDIAINFO_CONFORMANCE
         void*               Conformance_Data;
-        void                Conformance(conformance_type Type, stream_t StreamKind, size_t StreamPos, const std::string& Field, const std::string& Value);
-        void                Conformance_Fill();
-        void                IsTruncated(int64u ExpectedSize=(int64u)-1, bool MoreThan=false);
+        void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_General, size_t StreamPos = 0);
+        void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error) { Fill_Conformance(Field, Value.c_str(), Flags, Level); }
+        void                Clear_Conformance();
+        void                Merge_Conformance(bool FromConfig = false);
+        void                Streams_Finish_Conformance();
+        void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false);
+        void                RanOutOfData();
+        void                SynchLost();
     #else //MEDIAINFO_CONFORMANCE
-        void                Conformance(conformance_type Type, stream_t, size_t, const std::string&, const std::string&) {}
-        void                Conformance_Fill() {}
-        void                IsTruncated(int64u, bool MoreThan=false) {}
+        void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_General, size_t StreamPos = 0) {}
+        void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error) { Fill_Conformance(Field, Value.c_str(), Flags, Level); }
+        void                Clear_Conformance() {}
+        void                Merge_Conformance(bool FromConfig = false) {}
+        void                Streams_Finish_Conformance() {}
+        void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false) {}
+        void                RanOutOfData() { Trusted_IsNot(); }
+        void                SynchLost() { Trusted_IsNot(); }
     #endif //MEDIAINFO_CONFORMANCE
 
     #if MEDIAINFO_SEEK

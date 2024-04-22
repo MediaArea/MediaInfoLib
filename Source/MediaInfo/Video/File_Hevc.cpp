@@ -1124,13 +1124,11 @@ void File_Hevc::Header_Parse()
             case 3:     Get_B4 (Size,                           "size");
                     break;
             default:    Trusted_IsNot("No size of NALU defined");
-                        Size=(int32u)(Buffer_Size-Buffer_Offset);
+                        Header_Fill_Size(Buffer_Size-Buffer_Offset);
+                        return;
         }
-        Size+=lengthSizeMinusOne+1;
-
-        //Coherency checking
-        if (Size<lengthSizeMinusOne+1+2 || Buffer_Offset+Size>Buffer_Size || (Buffer_Offset+Size!=Buffer_Size && Buffer_Offset+Size+lengthSizeMinusOne+1>Buffer_Size))
-            Size=Buffer_Size-Buffer_Offset;
+        if (Element_Size<(int64u)lengthSizeMinusOne+1+2 || Size>Element_Size-Element_Offset)
+            return RanOutOfData();
 
         //In case there are more than 1 NAL in the block (in Stream format), trying to find the first NAL being a slice
         size_t Buffer_Offset_Temp=Buffer_Offset+lengthSizeMinusOne+1;
@@ -1150,8 +1148,10 @@ void File_Hevc::Header_Parse()
         if (Buffer_Offset_Temp+3<=Buffer_Offset+Size)
         {
             SizedBlocks_FileThenStream=File_Offset+Buffer_Offset+Size;
-            Size=Buffer_Offset_Temp-Buffer_Offset;
+            Size=Buffer_Offset_Temp-(Buffer_Offset+Element_Offset);
         }
+
+        Header_Fill_Size(Element_Offset+Size);
 
         BS_Begin();
         Mark_0 ();
@@ -1162,10 +1162,6 @@ void File_Hevc::Header_Parse()
 
         //if (nuh_temporal_id_plus1==0) // Found 1 stream with nuh_temporal_id_plus1==0, lets disable this coherency test for the moment
         //    Trusted_IsNot("nuh_temporal_id_plus1");
-
-        FILLING_BEGIN();
-            Header_Fill_Size(Size);
-        FILLING_END();
     }
 
     //Filling
@@ -4578,6 +4574,10 @@ void File_Hevc::VPS_SPS_PPS()
     MustParse_VPS_SPS_PPS=false;
     FILLING_BEGIN_PRECISE();
         Accept("HEVC");
+    FILLING_ELSE();
+        Frame_Count_NotParsedIncluded--;
+        RanOutOfData();
+        Frame_Count_NotParsedIncluded++;
     FILLING_END();
 }
 
