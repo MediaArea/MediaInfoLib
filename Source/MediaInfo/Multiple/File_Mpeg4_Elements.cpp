@@ -5682,7 +5682,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
     int64s SampleRate=0;
     int32u Channels=0, SampleSize=0, Flags=0;
     int16u Version=0, ID;
-    if (!IsQt()) // like ISO MP4
+    Peek_B2(Version);
+    if (!IsQt() && (Version_Temp || !Version)) // like ISO MP4, and some buggy files have Qt style but at the same time entry_version=1 is forbidden is stst version is not 1
     {
         if (Version_Temp>1)
         {
@@ -5716,7 +5717,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
     }
     else
     {
-    Get_B2 (Version,                                            "Version");
+    Skip_B2(                                                    "Version");
     Skip_B2(                                                    "Revision level");
     Skip_C4(                                                    "Vendor");
     if (Version<2) // Version 0 or 1
