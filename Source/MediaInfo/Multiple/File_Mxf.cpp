@@ -19186,14 +19186,86 @@ bool File_Mxf::BookMark_Needed()
 {
     Frame_Count_NotParsedIncluded=(int64u)-1;
 
-    if (MayHaveCaptionsInStream && !IsSub && IsParsingEnd && File_Size!=(int64u)-1 && Config->ParseSpeed>0 && Config->ParseSpeed<1 && IsParsingMiddle_MaxOffset==(int64u)-1 && File_Size/2>0x4000000) //TODO: 64 MB by default; // Do not search in the middle of the file if quick pass or full pass
+    if (MayHaveCaptionsInStream && !IsSub && IsParsingEnd && IsParsingMiddle_MaxOffset==(int64u)-1)
     {
-        IsParsingMiddle_MaxOffset=File_Size/2+0x4000000; //TODO: 64 MB by default;
-        GoTo(File_Size/2);
-        Open_Buffer_Unsynch();
-        IsParsingEnd=false;
-        IsCheckingRandomAccessTable=false;
-        Streams_Count=(size_t)-1;
+        int64u ProbeCaptionBytePos=(int64u)-1;
+        int64u ProbeCaptionByteDur=(int64u)-1;
+        int64u Duration=0;
+        for (size_t StreamKind=Stream_General; StreamKind<Stream_Max; StreamKind++)
+        {
+            auto Count=Count_Get((stream_t)StreamKind);
+            for (size_t StreamPos=0; StreamPos<Count; StreamPos++)
+            {
+                Duration=Retrieve_Const((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_Duration)).To_int64u()/1000;
+                if (Duration)
+                    break;
+            }
+            if (Duration)
+                break;
+        }
+        if (!Duration)
+        {
+            for (const auto& Track : Tracks)
+            {
+                if (!Track.second.EditRate)
+                    continue;
+                const auto& Component=Components.find(Track.second.Sequence);
+                if (Component!=Components.end())
+                {
+                    if (Component->second.Duration && Component->second.Duration!=(int64u)-1)
+                        Duration=Component->second.Duration/Track.second.EditRate;
+                }
+            }
+        }
+        auto Probe=Config->File_ProbeCaption_Get(ParserName);
+        switch (Probe.Start_Type)
+        {
+            case config_probe_size:
+                ProbeCaptionBytePos=Probe.Start;
+                break;
+            case config_probe_dur:
+                if (Duration)
+                {
+                    Probe.Start=Probe.Start*100/Duration; //TODO: real timestamp
+                    if (!Probe.Start)
+                        Probe.Start=1;
+                }
+                else
+                    Probe.Start=50;
+                // Fall through
+            case config_probe_percent:
+                ProbeCaptionBytePos=File_Size/100*Probe.Start;
+                break;
+        }
+        switch (Probe.Duration_Type) {
+            case config_probe_size:
+                ProbeCaptionByteDur=Probe.Duration;
+                break;
+            case config_probe_dur:
+                if (Duration)
+                {
+                    Probe.Duration=Probe.Duration*100/Duration; //TODO: real timestamp
+                    if (!Probe.Duration)
+                        Probe.Duration++;
+                }
+                else
+                    Probe.Duration=1;
+                // Fall through
+            case config_probe_percent:
+                ProbeCaptionByteDur=File_Size/100*Probe.Duration;
+                break;
+        }
+        auto MaxOffset=ProbeCaptionBytePos+ProbeCaptionByteDur;
+        auto CurrentEnd=File_Offset+Buffer_Offset;
+        if (ProbeCaptionBytePos!=(int64u)-1 && ProbeCaptionByteDur!=(int64u)-1 && File_Size/2>ProbeCaptionByteDur)
+        {
+            IsParsingMiddle_MaxOffset=MaxOffset;
+            GoTo(ProbeCaptionBytePos);
+            Open_Buffer_Unsynch();
+            IsParsingEnd=false;
+            IsCheckingRandomAccessTable=false;
+            Streams_Count=(size_t)-1;
+        }
     }
 
     if (ExtraMetadata_Offset!=(int64u)-1)

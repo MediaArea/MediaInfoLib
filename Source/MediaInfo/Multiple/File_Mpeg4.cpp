@@ -2589,6 +2589,8 @@ bool File_Mpeg4::BookMark_Needed()
                                     else
                                         mdat_Pos_Temp2.Size = *stsz_Current;
                                     mdat_Pos.push_back(mdat_Pos_Temp2);
+                                    if (Temp->second.IsCaption)
+                                        mdat_Pos_Caption.push_back(mdat_Pos_Temp2);
                                     Chunk_Offset += *stsz_Current;
                                     stsz_Current++;
                                     if (stsz_Current2)
@@ -2607,6 +2609,8 @@ bool File_Mpeg4::BookMark_Needed()
                             mdat_Pos_Temp2.StreamID = Temp->first;
                             mdat_Pos_Temp2.Size = stsc_Current->SamplesPerChunk*Temp->second.stsz_Sample_Size*Temp->second.stsz_Sample_Multiplier;
                             mdat_Pos.push_back(mdat_Pos_Temp2);
+                            if (Temp->second.IsCaption)
+                                mdat_Pos_Caption.push_back(mdat_Pos_Temp2);
 
                             #if MEDIAINFO_DEMUX
                                 if (Temp_stts_Durations.empty() || stsc_Current->SamplesPerChunk != Temp_stts_Durations[Temp_stts_Durations.size() - 1].SampleDuration)
@@ -2658,6 +2662,8 @@ bool File_Mpeg4::BookMark_Needed()
                                     if (Temp->second.FirstUsedOffset==(int64u)-1)
                                         Temp->second.FirstUsedOffset=mdat_Pos_Temp2.Offset;
                                     mdat_Pos.push_back(mdat_Pos_Temp2);
+                                    if (Temp->second.IsCaption)
+                                        mdat_Pos_Caption.push_back(mdat_Pos_Temp2);
                                 }
                                 Chunk_Offset += Size;
                                 if (Chunk_Offset >= File_Size)
@@ -2667,7 +2673,7 @@ bool File_Mpeg4::BookMark_Needed()
                                 }
                                 Chunk_FrameCount++;
                                 }
-                            if (!Temp->second.TimeCode && Chunk_FrameCount >= FrameCount_MaxPerStream)
+                            if (!Temp->second.TimeCode && !Temp->second.IsCaption && Chunk_FrameCount >= FrameCount_MaxPerStream)
                                 break;
                         }
 
