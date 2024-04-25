@@ -339,6 +339,9 @@ void File_Eia608::Read_Buffer_AfterParsing()
         FrameInfo.DTS=(int64u)-1;
         FrameInfo.PTS=(int64u)-1;
     }
+
+    if (Status[IsFilled] && Frame_Count>=1024 && Config->ParseSpeed<1.0)
+        Fill();
 }
 
 //---------------------------------------------------------------------------
@@ -711,10 +714,9 @@ void File_Eia608::PreambleAddressCode(int8u cc_data_1, int8u cc_data_2)
         {
             Streams[StreamPos]->Count_PaintOn++;
             Streams[StreamPos]->Count_CurrentHasContent=false;
-            if (Streams[StreamPos]->FirstDisplay_Delay_Type==(int8u)-1)
+            if (!HasJumped && Streams[StreamPos]->FirstDisplay_Delay_Type==(int8u)-1)
             {
-                if (!HasJumped)
-                    Streams[StreamPos]->FirstDisplay_Delay_Frames=Frame_Count_NotParsedIncluded;
+                Streams[StreamPos]->FirstDisplay_Delay_Frames=Frame_Count_NotParsedIncluded;
                 Streams[StreamPos]->FirstDisplay_Delay_Type=2;
             }
         }
@@ -1033,10 +1035,9 @@ void File_Eia608::Special_14(int8u cc_data_2)
                     {
                         Stream.Count_PaintOn++;
                         Stream.Count_CurrentHasContent=false;
-                        if (Stream.FirstDisplay_Delay_Type==(int8u)-1)
+                        if (!HasJumped && Stream.FirstDisplay_Delay_Type==(int8u)-1)
                         {
-                            if (!HasJumped)
-                                Stream.FirstDisplay_Delay_Frames=Frame_Count_NotParsedIncluded;
+                            Stream.FirstDisplay_Delay_Frames=Frame_Count_NotParsedIncluded;
                             Stream.FirstDisplay_Delay_Type=2;
                         }
                     }
@@ -1057,10 +1058,9 @@ void File_Eia608::Special_14(int8u cc_data_2)
                     if (Stream.RollUpLines && Stream.Count_CurrentHasContent)
                     {
                         Stream.Count_RollUp++;
-                        if (Stream.FirstDisplay_Delay_Type==(int8u)-1)
+                        if (!HasJumped && Stream.FirstDisplay_Delay_Type==(int8u)-1)
                         {
-                            if (HasJumped)
-                                Stream.FirstDisplay_Delay_Frames=Frame_Count_NotParsedIncluded;
+                            Stream.FirstDisplay_Delay_Frames=Frame_Count_NotParsedIncluded;
                             Stream.FirstDisplay_Delay_Type=1;
                         }
                     }
@@ -1097,10 +1097,9 @@ void File_Eia608::Special_14(int8u cc_data_2)
                     HasChanged();
                     Stream.Synched=false;
                     Stream.Count_PopOn++;
-                    if (Stream.FirstDisplay_Delay_Type==(int8u)-1)
+                    if (!HasJumped && Stream.FirstDisplay_Delay_Type==(int8u)-1)
                     {
-                        if (!HasJumped)
-                            Stream.FirstDisplay_Delay_Frames=Frame_Count_NotParsedIncluded;
+                        Stream.FirstDisplay_Delay_Frames=Frame_Count_NotParsedIncluded;
                         Stream.FirstDisplay_Delay_Type=0;
                     }
                     }

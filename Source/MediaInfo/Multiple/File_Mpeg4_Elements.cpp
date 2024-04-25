@@ -2171,8 +2171,84 @@ void File_Mpeg4::mdat_xxxx()
                         if (mdat_Pos_Item->StreamID!=(int32u)Element_Code)
                             mdat_Pos_New.push_back(*mdat_Pos_Item);
                 }
-                mdat_Pos=std::move(mdat_Pos_New);
-                std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
+                if (!mdat_Pos_New.empty())
+                {
+                    mdat_Pos=std::move(mdat_Pos_New);
+                    std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
+                }
+                else
+                {
+                    mdat_Pos=move(mdat_Pos_Caption);
+                    std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
+                    size_t mdat_Pos_Min=(size_t)-1;
+                    size_t mdat_Pos_Max=0;
+                    for (auto& Stream : Streams)
+                    {
+                        if (Stream.second.IsCaption)
+                        {
+                            Stream.second.Parsers.front()->Open_Buffer_Unsynch();
+                            int64u ProbeCaption_mdatPos=(int64u)-1;
+                            int64u ProbeCaption_mdatDur=(int64u)-1;
+                            if (Stream.second.stts_Duration && Stream.second.stts_FrameCount && Stream.second.mdhd_TimeScale)
+                            {
+                                auto FrameRateRatio=(float)Stream.second.stts_Duration/Stream.second.stts_FrameCount;
+                                auto FrameRate=Stream.second.mdhd_TimeScale/FrameRateRatio;
+                                auto Duration=(float)Stream.second.stts_Duration/Stream.second.mdhd_TimeScale;
+                                if (FrameRate)
+                                {
+                                    auto Probe=Config->File_ProbeCaption_Get(ParserName);
+                                    switch (Probe.Start_Type) {
+                                        case config_probe_dur:
+                                            ProbeCaption_mdatPos=Probe.Start*FrameRate;
+                                            break;
+                                        case config_probe_size:
+                                            Probe.Start=Probe.Start*100/File_Size; //File pos is not relevant there
+                                            if (!Probe.Start)
+                                                Probe.Start=50;
+                                            // Fall through
+                                        case config_probe_percent:
+                                            ProbeCaption_mdatPos=Stream.second.stts_FrameCount*Probe.Start/100;
+                                            break;
+                                    }
+                                    switch (Probe.Duration_Type) {
+                                        case config_probe_dur:
+                                            ProbeCaption_mdatDur=Probe.Duration*FrameRate;
+                                            break;
+                                        case config_probe_size:
+                                            Probe.Duration=Probe.Duration*100/File_Size; //File pos is not relevant there
+                                            if (!Probe.Duration)
+                                                Probe.Duration++;
+                                            // Fall through
+                                        case config_probe_percent:
+                                            ProbeCaption_mdatDur=Stream.second.stts_FrameCount*Probe.Duration/100;
+                                            break;
+                                    }
+                                }
+                            }
+                            if (ProbeCaption_mdatPos!=(int64u)-1 && ProbeCaption_mdatDur!=(int64u)-1)
+                            {
+                                size_t mdat_Pos_PerStream=0;
+                                auto ProbeCaption_mdatPosEnd=ProbeCaption_mdatPos+ProbeCaption_mdatDur;
+                                for (size_t i=0; i<mdat_Pos.size(); i++)
+                                {
+                                    const auto& mdat=mdat_Pos[i];
+                                    if (mdat.StreamID==Stream.first)
+                                    {
+                                        mdat_Pos_PerStream++;
+                                        if (mdat_Pos_PerStream==ProbeCaption_mdatPos && mdat_Pos_Min>i)
+                                            mdat_Pos_Min=i;
+                                        if (mdat_Pos_PerStream==ProbeCaption_mdatPosEnd && mdat_Pos_Max<=i)
+                                            mdat_Pos_Max=i+1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (mdat_Pos_Max && mdat_Pos_Max<mdat_Pos.size())
+                        mdat_Pos.resize(mdat_Pos_Max);
+                    if (mdat_Pos_Min<mdat_Pos.size())
+                        mdat_Pos.erase(mdat_Pos.begin(), mdat_Pos.begin()+mdat_Pos_Min);
+                }
                 if (mdat_Pos.empty())
                 {
                     mdat_Pos_Temp=nullptr;
@@ -3120,7 +3196,7 @@ void File_Mpeg4::moof_traf_trun()
             //Filling
             Stream->second.stsz_StreamSize+=sample_size;
             Stream->second.stsz_Total.push_back(sample_size);
-            if (Stream->second.stsz.size()<FrameCount_MaxPerStream || Stream->second.TimeCode)
+            if (Stream->second.stsz.size()<FrameCount_MaxPerStream || Stream->second.TimeCode || Streams[moov_trak_tkhd_TrackID].IsCaption)
                 Stream->second.stsz.push_back(sample_size);
             if (Stream->second.StreamKind==Stream_Text && sample_size>2)
                 Stream->second.stsz_MoreThan2_Count++;
@@ -4920,7 +4996,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_co64()
         return;
 
     std::vector<int64u> &stco=Streams[moov_trak_tkhd_TrackID].stco;
-    stco.resize((Count<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode)?Count:FrameCount_MaxPerStream);
+    stco.resize((Count<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode || Streams[moov_trak_tkhd_TrackID].IsCaption)?Count:FrameCount_MaxPerStream);
     int64u* stco_Data=&stco[0];
 
     for (int32u Pos=0; Pos<Count; Pos++)
@@ -4936,7 +5012,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_co64()
         Offset=BigEndian2int64u(Buffer+Buffer_Offset+(size_t)Element_Offset);
         Element_Offset+=8;
 
-        if (Pos<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode)
+        if (Pos<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode || Streams[moov_trak_tkhd_TrackID].IsCaption)
         {
             (*stco_Data)=Offset;
             stco_Data++;
@@ -5110,7 +5186,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stco()
         Offset=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
         Element_Offset+=4;
 
-        if (Pos<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode)
+        if (Pos<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode || Streams[moov_trak_tkhd_TrackID].IsCaption)
             Streams[moov_trak_tkhd_TrackID].stco.push_back(Offset);
     }
 }
@@ -5196,7 +5272,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsc()
         */
 
         //Faster
-        if (Pos<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode)
+        if (Pos<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode || Streams[moov_trak_tkhd_TrackID].IsCaption)
         {
             if (Element_Offset+12>Element_Size)
                 break; //Problem
@@ -6139,6 +6215,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxText()
             //Creating the parser
             File_Mpeg4* Parser=new File_Mpeg4;
             Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+            Streams[moov_trak_tkhd_TrackID].IsCaption=true;
         }
         #if defined(MEDIAINFO_CDP_YES)
         if (MediaInfoLib::Config.CodecID_Get(Stream_Text, InfoCodecID_Format_Mpeg4, CodecID, InfoCodecID_Format)==__T("EIA-708"))
@@ -6148,6 +6225,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxText()
             Parser->WithAppleHeader=true;
             Parser->AspectRatio=((float)16)/9; //TODO: this is hardcoded, must adapt it to the real video aspect ratio
             Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+            Streams[moov_trak_tkhd_TrackID].IsCaption=true;
         }
         #endif
         #if defined(MEDIAINFO_TTML_YES)
@@ -8609,7 +8687,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsz()
 
             Stream->second.stsz_StreamSize+=Size;
             Stream->second.stsz_Total.push_back(Size);
-            if (Pos<FrameCount_MaxPerStream || Stream->second.TimeCode)
+            if (Pos<FrameCount_MaxPerStream || Stream->second.TimeCode || Streams[moov_trak_tkhd_TrackID].IsCaption)
                 Stream->second.stsz.push_back(Size);
             if (IsTimedText && Size>2)
                 TimedText_Count++;
