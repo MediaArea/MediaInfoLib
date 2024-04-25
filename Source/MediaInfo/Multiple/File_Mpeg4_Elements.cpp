@@ -2242,11 +2242,13 @@ void File_Mpeg4::mdat_xxxx()
                                     }
                                 }
                             }
+                            else
+                                mdat_Pos_Max=0;
                         }
                     }
-                    if (mdat_Pos_Max && mdat_Pos_Max<mdat_Pos.size())
+                    if (mdat_Pos_Max<mdat_Pos.size())
                         mdat_Pos.resize(mdat_Pos_Max);
-                    if (mdat_Pos_Min<mdat_Pos.size())
+                    if (mdat_Pos_Min<=mdat_Pos.size())
                         mdat_Pos.erase(mdat_Pos.begin(), mdat_Pos.begin()+mdat_Pos_Min);
                 }
                 if (mdat_Pos.empty())

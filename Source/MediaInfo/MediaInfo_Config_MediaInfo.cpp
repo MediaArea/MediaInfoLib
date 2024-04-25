@@ -3614,7 +3614,7 @@ Ztring MediaInfo_Config_MediaInfo::File_ProbeCaption_Set (const Ztring& NewValue
     ZtringListList List;
     List.Separator_Set(0, __T(","));
     List.Separator_Set(1, __T("+"));
-    List.Write(Ztring(NewValue).MakeUpperCase());
+    List.Write(NewValue);
     CriticalSectionLocker CSL(CS);
     File_ProbeCaption.clear();
     bool HasForAll = false;
@@ -3627,21 +3627,18 @@ Ztring MediaInfo_Config_MediaInfo::File_ProbeCaption_Set (const Ztring& NewValue
                 Item.Start_Type = config_probe_size;
                 Item.Start = Value.To_int64u();
             }
-            else if (!Value.empty() && Value[0] >= __T('a') && Value[0] <= __T('z')) {
-                string Value2;
+            else if (!Value.empty() && ((Value[0] >= __T('A') && Value[0] <= __T('Z')) || (Value[0] >= __T('a') && Value[0] <= __T('z')))) {
+                string Value2(Ztring(Value).MakeUpperCase().To_UTF8());
                 bool Negative = false;
-                if (Value.rfind(__T("all"), 0) == 0) {
-                    if (Value.size() > 3) {
-                        if (Value[3] != __T('-'))
+                if (Value2.rfind("ALL", 0) == 0) {
+                    if (Value2.size() > 3) {
+                        if (Value2[3] != __T('-'))
                             return Malformed;
                         Negative = true;
                         Value2 = Value.To_UTF8().substr(4);
                         AllMinus += '-';
                         AllMinus += Value2;
                     }
-                }
-                else {
-                    Value2 = Value.To_UTF8();
                 }
                 if (Value2 != "MP4" && Value2 != "MPEG-4" && Value2 != "MXF" && !Value2.empty()) { //TODO: full list
                     return Malformed;
@@ -3668,8 +3665,42 @@ Ztring MediaInfo_Config_MediaInfo::File_ProbeCaption_Set (const Ztring& NewValue
                     return Malformed;
                 }
             }
+            else if (Pos == Value.size() - 1 && (Value[Pos] == __T('E') || Value[Pos] == __T('G') || Value[Pos] == __T('K') || Value[Pos] == __T('M') || Value[Pos] == __T('P') || Value[Pos] == __T('T') || Value[Pos] == __T('k'))) {
+                auto Value_Int = Value.To_int64u();
+                switch (Value[Pos])
+                {
+                case 'E':
+                    Value_Int <<= 10;
+                    // Fall through
+                case 'P':
+                    Value_Int <<= 10;
+                    // Fall through
+                case 'T':
+                    Value_Int <<= 10;
+                    // Fall through
+                case 'G':
+                    Value_Int <<= 10;
+                    // Fall through
+                case 'M':
+                    Value_Int <<= 10;
+                    // Fall through
+                default:
+                    Value_Int <<= 10;
+                }
+                if (Item.Start_Type == config_probe_none) {
+                    Item.Start_Type = config_probe_size;
+                    Item.Start = Value_Int;
+                }
+                else if (Item.Duration_Type == config_probe_none) {
+                    Item.Duration_Type = config_probe_size;
+                    Item.Duration = Value_Int;
+                }
+                else {
+                    return Malformed;
+                }
+            }
             else {
-                TimeCode TC(Value.To_UTF8());
+                TimeCode TC(Value.To_UTF8(), 999);
                 if (!TC.IsValid()) {
                     return Malformed;
                 }
@@ -3690,8 +3721,12 @@ Ztring MediaInfo_Config_MediaInfo::File_ProbeCaption_Set (const Ztring& NewValue
                 }
             }
         }
-        if (!Item.Parser.empty()) {
+        if (Item.Parser.empty()) {
             HasForAll=true;
+        }
+        if (Item.Duration_Type == config_probe_none) {
+            Item.Duration_Type = config_probe_dur;
+            Item.Duration = 30;
         }
         File_ProbeCaption.push_back(Item);
     }
