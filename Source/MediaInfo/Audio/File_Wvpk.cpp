@@ -121,8 +121,9 @@ File_Wvpk::File_Wvpk()
     total_samples_FirstFrame=(int32u)-1;
     block_index_FirstFrame=0;
     block_index_LastFrame=0;
-    SamplingRate=(int8u)-1;
+    SamplingRate_Index=(int8u)-1;
     SamplingRate_Shift=0;
+    SamplingRate=0;
     num_channels=0;
     channel_mask=0;
     mono=false;
@@ -145,14 +146,15 @@ void File_Wvpk::Streams_Finish()
         return;
 
     //Duration
-    if (SamplingRate<15)
+    if (!SamplingRate && SamplingRate_Index<15)
+        SamplingRate=Wvpk_SamplingRate[SamplingRate_Index]<<SamplingRate_Shift;
+    if (SamplingRate)
     {
         int64u Samples=(int64u)(block_index_LastFrame+block_samples_LastFrame-block_index_FirstFrame); //Don't forget the last frame with block_samples...
-        int64u SampleRate=Wvpk_SamplingRate[SamplingRate]<<SamplingRate_Shift<<(3*dsf);
         int64u BitDepth=dsf?1:(Wvpk_Resolution[(resolution1?1:0)*2+(resolution0?1:0)]);
-        int64u Duration=Samples*1000/(Wvpk_SamplingRate[SamplingRate]<<SamplingRate_Shift);
+        int64u Duration=Samples*1000/SamplingRate;
         int64u CompressedSize=File_Size-TagsSize;
-        int64u UncompressedSize=Duration*(mono?1:2)*BitDepth*SampleRate/8/1000;
+        int64u UncompressedSize=Duration*(mono?1:2)*BitDepth*(SamplingRate<<(3*dsf))/8/1000;
         float32 CompressionRatio=((float32)UncompressedSize)/CompressedSize;
         Fill(Stream_Audio, 0, Audio_StreamSize, CompressedSize, 3, true);
         Fill(Stream_Audio, 0, Audio_Duration, Duration, 10, true);
@@ -382,7 +384,7 @@ void File_Wvpk::Data_Parse()
                     Skip_Flags(flags, 23,                           "sampling rate");
                     Skip_Flags(flags, 24,                           "sampling rate");
                     Skip_Flags(flags, 25,                           "sampling rate");
-                    Skip_Flags(flags, 26,                           "sampling rate"); SamplingRate=(int8u)(((flags>>23)&0xF)); Param_Info1(Wvpk_SamplingRate[SamplingRate]);
+                    Skip_Flags(flags, 26,                           "sampling rate"); SamplingRate_Index=(int8u)(((flags>>23)&0xF)); Param_Info1(Wvpk_SamplingRate[SamplingRate_Index]);
                     Skip_Flags(flags, 27,                           "reserved");
                     Skip_Flags(flags, 28,                           "reserved");
                     Skip_Flags(flags, 29,                           "use IIR for negative hybrid noise shaping");
@@ -441,6 +443,7 @@ void File_Wvpk::Data_Parse()
                     case 0x0D : id_0D(); break;
                     case 0x0E : id_0E(); break;
                     case 0x25 : id_25(); break;
+                    case 0x27 : id_27(); break;
                     default   : if (word_size)
                                     Skip_XX(Size,                   "data");
                 }
@@ -564,11 +567,11 @@ void File_Wvpk::Data_Parse_Fill()
         Fill(Stream_Audio, 0, Audio_ChannelLayout, ExtensibleWave_ChannelMask_ChannelLayout(channel_mask));
     }
 
-    if (!FromMKV && SamplingRate<15)
+    if (!FromMKV && SamplingRate_Index<15)
     {
-        Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, (Wvpk_SamplingRate[SamplingRate]<<SamplingRate_Shift)<<(3*dsf));
+        Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, (Wvpk_SamplingRate[SamplingRate_Index]<<SamplingRate_Shift)<<(3*dsf));
         if (total_samples_FirstFrame!=(int32u)-1) //--> this is a valid value
-            Fill(Stream_Audio, 0, Audio_Duration, ((int64u)total_samples_FirstFrame)*1000/(Wvpk_SamplingRate[SamplingRate]<<SamplingRate_Shift));
+            Fill(Stream_Audio, 0, Audio_Duration, ((int64u)total_samples_FirstFrame)*1000/(Wvpk_SamplingRate[SamplingRate_Index]<<SamplingRate_Shift));
     }
     Fill(Stream_Audio, 0, Audio_Encoded_Library_Settings, Encoded_Library_Settings);
     Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
@@ -743,6 +746,16 @@ void File_Wvpk::id_25()
         Encoded_Library_Settings+=__T(" --optimize-mono");
     if (!Encoded_Library_Settings.empty())
         Encoded_Library_Settings.erase(Encoded_Library_Settings.begin());
+}
+
+//---------------------------------------------------------------------------
+void File_Wvpk::id_27()
+{
+    //Parsing
+    Get_L3 (SamplingRate,                                       "data");
+
+    if (SamplingRate)
+        Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, SamplingRate, 10, true);
 }
 
 //***************************************************************************
