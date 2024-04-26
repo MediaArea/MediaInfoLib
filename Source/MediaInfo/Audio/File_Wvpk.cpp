@@ -455,10 +455,15 @@ void File_Wvpk::Data_Parse()
     }
 
     //Filling
-    if (!Status[IsAccepted] && Frame_Count>=Frame_Count_Valid)
+    if (!Status[IsAccepted])
     {
-        File__Tags_Helper::Accept("WavPack");
-        Data_Parse_Fill();
+        if (File_Offset+Buffer_Offset+Element_Size==File_Size)
+            Frame_Count_Valid=Frame_Count;
+        if (Frame_Count>=Frame_Count_Valid)
+        {
+            File__Tags_Helper::Accept("WavPack");
+            Data_Parse_Fill();
+        }
     }
 }
 
