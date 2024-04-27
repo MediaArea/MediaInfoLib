@@ -6881,9 +6881,10 @@ void File_Mxf::Data_Parse()
                         Element_Begin1("Line");
                         int32u ArrayCount, ArrayLength;
                         int16u LineNumber, SampleCount;
+                        int8u WrappingType, SampleCoding;
                         Get_B2 (LineNumber,                         "Line Number"); Element_Info1(LineNumber);
-                        Skip_B1(                                    "Wrapping Type");
-                        Skip_B1(                                    "Payload Sample Coding");
+                        Get_B1 (WrappingType,                       "Wrapping Type");
+                        Get_B1 (SampleCoding,                       "Payload Sample Coding");
                         Get_B2 (SampleCount,                        "Payload Sample Count");
                         Get_B4 (ArrayCount,                         "Payload Array Count");
                         Get_B4 (ArrayLength,                        "Payload Array Length");
@@ -6896,6 +6897,16 @@ void File_Mxf::Data_Parse()
                             (*Parser)->FrameInfo.PTS=Essence->second.FrameInfo.PTS;
                         if (Essence->second.FrameInfo.DUR!=(int64u)-1)
                             (*Parser)->FrameInfo.DUR=Essence->second.FrameInfo.DUR;
+                        #if defined(MEDIAINFO_VBI_YES)
+                            if ((*Parser)->ParserName=="Vbi")
+                            {
+                                ((File_Vbi*)(*Parser))->WrappingType=WrappingType;
+                                ((File_Vbi*)(*Parser))->SampleCoding=SampleCoding;
+                                ((File_Vbi*)(*Parser))->LineNumber=LineNumber;
+                                if (Pos+1==Count)
+                                    ((File_Vbi*)(*Parser))->IsLast=true;
+                            }
+                        #endif //defined(MEDIAINFO_VBI_YES)
                         #if defined(MEDIAINFO_ANCILLARY_YES)
                             if ((*Parser)->ParserName=="Ancillary")
                                 ((File_Ancillary*)(*Parser))->LineNumber=LineNumber;
@@ -6920,13 +6931,6 @@ void File_Mxf::Data_Parse()
                             Parsing_Size=Array_Size; // There is a problem
                         (*Parser)->Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded;
                         Open_Buffer_Continue((*Parser), Buffer+Buffer_Offset+(size_t)(Element_Offset), Parsing_Size);
-                        if ((Code_Compare4&0xFF00FF00)==0x17000100 && LineNumber==21 && (*Parser)->Count_Get(Stream_Text)==0)
-                        {
-                            (*Parser)->Accept();
-                            (*Parser)->Stream_Prepare(Stream_Text);
-                            (*Parser)->Fill(Stream_Text, StreamPos_Last, Text_Format, "EIA-608");
-                            (*Parser)->Fill(Stream_Text, StreamPos_Last, Text_MuxingMode, "VBI / Line 21");
-                        }
                         Element_Offset+=Parsing_Size;
                         if (Parsing_Size<Array_Size)
                             Skip_XX(Array_Size-Parsing_Size,    "Padding");
