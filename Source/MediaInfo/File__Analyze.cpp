@@ -989,6 +989,11 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
          )
     {
         BookMark_Get();
+        if (File_GoTo==File_Size)
+        {
+            File_GoTo=(int64u)-1;
+            ForceFinish();
+        }
     }
 
     //Demand to go elsewhere
@@ -2240,10 +2245,7 @@ bool File__Analyze::Synchro_Manage()
             if (Status[IsFinished])
                 Finish(); //Finish
             if (!IsSub && File_Offset_FirstSynched==(int64u)-1 && Buffer_TotalBytes+Buffer_Offset>=Buffer_TotalBytes_FirstSynched_Max)
-            {
-                Open_Buffer_Unsynch();
-                GoToFromEnd(0);
-            }
+                Reject();
             return false; //Wait for more data
         }
         Synched=true;
@@ -2697,12 +2699,13 @@ bool File__Analyze::Data_Manage()
 
     //Next element
     if (!Element_WantNextLevel
+        && Buffer_Size // If the buffer is cleared after Open_Buffer_Unsynch(), Element[Element_Level].Next is no more relevant
         #if MEDIAINFO_HASH
             && Hash==NULL
         #endif //MEDIAINFO_HASH
             )
     {
-        if (Element[Element_Level].Next<=File_Offset+Buffer_Size)
+        if (Element[Element_Level].Next>=File_Offset && Element[Element_Level].Next<=File_Offset+Buffer_Size)
         {
             if (Element_Offset<(size_t)(Element[Element_Level].Next-File_Offset-Buffer_Offset))
                 Element_Offset=(size_t)(Element[Element_Level].Next-File_Offset-Buffer_Offset);
