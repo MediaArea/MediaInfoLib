@@ -975,7 +975,7 @@ File_DolbyE::File_DolbyE()
 
     //Configuration
     MustSynchronize=true;
-    Buffer_TotalBytes_FirstSynched_Max=32*1024;
+    Buffer_TotalBytes_FirstSynched_Max=64*1024;
 
     //In
     GuardBand_Before=0;

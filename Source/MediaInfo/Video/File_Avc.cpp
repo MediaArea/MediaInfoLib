@@ -657,7 +657,6 @@ File_Avc::File_Avc()
         Trace_Layers_Update(8); //Stream
     #endif //MEDIAINFO_TRACE
     MustSynchronize=true;
-    Buffer_TotalBytes_FirstSynched_Max=64*1024;
     PTS_DTS_Needed=true;
     StreamSource=IsStream;
     Frame_Count_NotParsedIncluded=0;
