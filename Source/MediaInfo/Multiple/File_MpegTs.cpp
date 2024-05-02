@@ -259,7 +259,6 @@ File_MpegTs::File_MpegTs()
         Demux_Level=4; //Intermediate
     #endif //MEDIAINFO_DEMUX
     MustSynchronize=true;
-    Buffer_TotalBytes_FirstSynched_Max=64*1024;
     Buffer_TotalBytes_Fill_Max=(int64u)-1; //Disabling this feature for this format, this is done in the parser
     Trusted_Multiplier=2;
     #if MEDIAINFO_DEMUX

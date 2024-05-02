@@ -110,7 +110,7 @@ File_Wvpk::File_Wvpk()
 
     //Configuration
     MustSynchronize=true;
-    Buffer_TotalBytes_FirstSynched_Max=32*1024;
+    Buffer_TotalBytes_FirstSynched_Max=64*1024;
 
     //In
     Frame_Count_Valid=2;
