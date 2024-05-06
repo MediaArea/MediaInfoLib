@@ -28,6 +28,7 @@ enum vbi_type {
     VbiType_Unknown,
     VbiType_Line21,
     VbiType_Vitc,
+    VbiType_Teletext,
     VbiType_Max
 };
 
@@ -42,17 +43,12 @@ public :
     int8u               SampleCoding;
     int16u              LineNumber;
     bool                IsLast;
-    #if defined(MEDIAINFO_TELETEXT_YES)
-        File__Analyze*  Teletext_Parser;
-    #endif //defined(MEDIAINFO_TELETEXT_YES)
-    
+ 
     //Constructor/Destructor
     File_Vbi();
-    ~File_Vbi();
 
 private :
     //Streams management
-    void Streams_Fill();
     void Streams_Finish();
 
     //Buffer - Global
@@ -63,11 +59,13 @@ private :
     void Parse();
     void Line21();
     void Vitc();
+    void Teletext();
 
     //Stream
     struct stream {
         File__Analyze*  Parser = nullptr;
         vbi_type        Type = VbiType_Unknown;
+        float           Private[4] = {};
 
         ~stream() {
             delete Parser; //Parser=NULL;
