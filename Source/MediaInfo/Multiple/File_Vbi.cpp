@@ -105,6 +105,19 @@ void File_Vbi::Streams_Finish()
                             Streams.erase(Field2);
                         }
                     }
+                    if (Stream.second.Type == VbiType_Teletext) {
+                        auto Field2 = Streams.find(ID + 263); // NTSC
+                        if (Field2 == Streams.end() || Field2->second.Type != Stream.second.Type) {
+                            Field2 = Streams.find(ID + 313); //PAL
+                        }
+                        if (Field2 != Streams.end() && Field2->second.Type == Stream.second.Type) {
+                            const auto& ID_FirstFrame1 = Stream.second.Parser->Retrieve_Const(StreamKind_Last, 0, General_ID);
+                            const auto& ID_FirstFrame2 = Field2->second.Parser->Retrieve_Const(StreamKind_Last, 0, General_ID);
+                            if (ID_FirstFrame1 == ID_FirstFrame2) {
+                                Streams.erase(Field2);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -165,12 +178,14 @@ void File_Vbi::Parse()
         switch (Stream->second.Type) {
         case VbiType_Line21: Line21(); break;
         case VbiType_Vitc: Vitc(); break;
+        case VbiType_Teletext: Teletext(); break;
         default:;
         }
     }
     else {
         Line21();
         Vitc();
+        Teletext();
     }
 }
 
@@ -446,6 +461,147 @@ void File_Vbi::Vitc()
         Open_Buffer_Init(Stream.Parser);
     }
     Open_Buffer_Continue(Stream.Parser, TimeCode_UserBits_Buffer, 8);
+    Element_Offset = Element_Size;
+}
+
+//---------------------------------------------------------------------------
+void File_Vbi::Teletext()
+{
+    // Check luminance min & max
+    int8u Level_Min = (int8u)-1;
+    int8u Level_Max = 0;
+    for (int i = 0; i < Buffer_Size; i++) {
+        auto Value = Buffer[i];
+        Level_Min = min(Level_Min, Value);
+        Level_Max = max(Level_Max, Value);
+    }
+    if (Level_Max - Level_Min < 16)
+        return; // Not enough difference in luminance for having an actual signal
+    int8u Middle = (Level_Min + Level_Max) >> 1;
+
+    // Find first and last 1 bit
+    int8u First_Highest = 0;
+    size_t First_Pos = 0;
+    for (; First_Pos < Buffer_Size; First_Pos++) {
+        auto Value = Buffer[First_Pos];
+        if (Value <= First_Highest && First_Highest >= Middle) {
+            First_Pos--;
+            break;
+        }
+        First_Highest = Value;
+    }
+    int8u Last_Highest = 0;
+    size_t Last_Pos = Buffer_Size - 1;
+    for (; Last_Pos; Last_Pos--) {
+        auto Value = Buffer[Last_Pos];
+        if (Value <= Last_Highest && Last_Highest >= Middle) {
+            Last_Pos++;
+            break;
+        }
+        Last_Highest = Value;
+    }
+    if (Last_Pos <= First_Pos) {
+        return;
+    }
+
+    // Guess the precise position of the peak based on adjacent bytes
+    auto Get_PrecisePos = [&](const int8u* Buffer, size_t i) {
+        if (i + 1 >= Buffer_Size) {
+            return (float)Buffer[i];
+        }
+        if (i && Buffer[i - 1] > Buffer[i + 1]) {
+            auto Diff0 = Level_Max - Buffer[i - 1];
+            auto Diff1 = Level_Max - Buffer[i];
+            float Sum = Diff0 + Diff1;
+            float Pos = i;
+            if (Sum) {
+                Pos -= Diff1 / Sum;
+            }
+            return Pos;
+        }
+        else {
+            auto Diff0 = Level_Max - Buffer[i];
+            auto Diff1 = Level_Max - Buffer[i + 1];
+            float Sum = Diff0 + Diff1;
+            float Pos = i;
+            if (Sum) {
+                Pos += Diff0 / Sum;
+            }
+            return Pos;
+        }
+    };
+
+    // Guess precise first 1 bit and last 1 bit
+    auto First1BitPos = Get_PrecisePos(Buffer, First_Pos);
+    auto Last1BitPos = Get_PrecisePos(Buffer, Last_Pos);
+
+    // Compute step between bits
+    auto Step = (Last1BitPos - First1BitPos) / 357; // Most frames have first 1 bit the first clock bit and last 1 bit the checksum of 0 padding so 3rd last bit
+    if (Step < 1 || Step > 2 || First1BitPos + Step * 359 + 0.5 >= Buffer_Size) {
+        return; // Not enough place for 360 elements
+    }
+    auto Get_Value = [&](int i) { // i is up to 359
+        auto Idx = First1BitPos + Step * i;
+        auto Idx_Int = (size_t)Idx;
+        auto Value = Buffer[Idx_Int];
+        Idx_Int++;
+        if (Idx_Int < Buffer_Size) {
+            auto Diff = (float)Buffer[Idx_Int] - Value;
+            Idx -= (size_t)Idx;
+            Value += Idx * Diff;
+        }
+        return Value;
+    };
+
+    //auto ID = LineNumber >= 313 ? (LineNumber - 313) : LineNumber >= 263 ? (LineNumber - 263) : LineNumber;
+    //auto& Stream = Streams[ID];
+    auto& Stream = Streams[LineNumber];
+
+    // Read 45 8-bit characters
+    int8u Teletext_Buffer[45];
+    auto Dump = [&]() {
+        int8u Current = 0;
+        for (int i = 0; i < 360; i++) {
+            auto Value = Get_Value(i);
+            Current <<= 1;
+            if (Value >= Middle) {
+                Current++;
+            }
+            if ((i % 8) == 7) {
+                Teletext_Buffer[i / 8] = ReverseBits(Current);
+            }
+        }
+    };
+    Dump();
+    if (BigEndian2int24u(Teletext_Buffer) == 0x555527 && BigEndian2int32u(Teletext_Buffer + 41) == 0x20202020) {
+        // Store pos when Clock Run-In and Framing Code as well of last 0 padding bytes are found
+        // 0 = frame count, 1 = sum of first 1 bit, 2 = sum of last 1 bit
+        Stream.Private[0]++;
+        Stream.Private[1] += First1BitPos;
+        Stream.Private[2] += Last1BitPos;
+    }
+    else if (Stream.Private[0]) {
+        // Ever it is not Teletext or no last 0 padding bytes so more difficult to find the exact step, using previous values
+        First1BitPos = Stream.Private[1] / Stream.Private[0];
+        Last1BitPos = Stream.Private[2] / Stream.Private[0];
+        Step = (Last1BitPos - First1BitPos) / 357;
+        Dump();
+        if (BigEndian2int24u(Teletext_Buffer) != 0x555527) {
+            return; // Clock Run-In and Framing Code not found
+        }
+    }
+    else {
+        return; // Clock Run-In and Framing Code not found
+    }
+
+    // Parse the characters
+    if (!Stream.Parser)
+    {
+        Stream.Parser = new File_Teletext;
+        Stream.Type = VbiType_Teletext;
+        Open_Buffer_Init(Stream.Parser);
+    }
+    Open_Buffer_Continue(Stream.Parser, Teletext_Buffer, 45);
     Element_Offset = Element_Size;
 }
 
