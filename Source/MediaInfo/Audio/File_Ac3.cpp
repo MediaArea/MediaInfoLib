@@ -1061,6 +1061,8 @@ File_Ac3::File_Ac3()
             bsmod_Max[Pos][Pos2]=0;
             cmixlev_Max[Pos][Pos2]=(int8u)-1;
             surmixlev_Max[Pos][Pos2]=(int8u)-1;
+            roomtyp_Max[Pos][Pos2]=(int8u)-1;
+            dmixmod_Max[Pos][Pos2]=(int8u)-1;
             dsurmod_Max[Pos][Pos2]=0;
             chanmape_Max[Pos][Pos2]=false;
             chanmap_Max[Pos][Pos2]=0;
