@@ -25,9 +25,9 @@
 #include "MediaInfo/Multiple/File_Vbi.h"
 #if defined(MEDIAINFO_EIA608_YES)
     #include "MediaInfo/Text/File_Eia608.h"
+#endif
 #if defined(MEDIAINFO_TIMECODE_YES)
     #include "MediaInfo/Multiple/File_Gxf_TimeCode.h"
-#endif
 #endif
 #if defined(MEDIAINFO_TELETEXT_YES)
     #include "MediaInfo/Text/File_Teletext.h"
@@ -40,17 +40,6 @@ using namespace std;
 namespace MediaInfoLib
 {
 //---------------------------------------------------------------------------
-
-//***************************************************************************
-// Info
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-static const char* Vbi_MuxingMode[] = {
-    "VBI / Line 21",
-    "VBI / VITC",
-};
-static_assert(sizeof(Vbi_MuxingMode) / sizeof(Vbi_MuxingMode[0]) == VbiType_Max - 1, "");
 
 //***************************************************************************
 // Constructor/Destructor
@@ -66,23 +55,6 @@ File_Vbi::File_Vbi()
 
     LineNumber=0;
     IsLast=false;
-    #if defined(MEDIAINFO_TELETEXT_YES)
-        Teletext_Parser=NULL;
-    #endif //defined(MEDIAINFO_TELETEXT_YES)
-}
-
-//---------------------------------------------------------------------------
-File_Vbi::~File_Vbi()
-{
-    #if defined(MEDIAINFO_TELETEXT_YES)
-        if (Teletext_Parser)
-            delete Teletext_Parser;
-    #endif //defined(MEDIAINFO_TELETEXT_YES)
-}
-
-//---------------------------------------------------------------------------
-void File_Vbi::Streams_Fill()
-{
 }
 
 //---------------------------------------------------------------------------
@@ -93,59 +65,50 @@ void File_Vbi::Streams_Finish()
             continue;
         }
         Finish(Stream.second.Parser);
-        size_t StreamKind = Stream_General + 1;
-        for (; StreamKind < Stream_Max; StreamKind++) {
-            if (Stream.second.Parser->Count_Get((stream_t)StreamKind)) {
-                break;
-            }
-        }
-        if (StreamKind >= Stream_Max) {
+    }
+
+    for (auto& Stream : Streams) {
+        if (!Stream.second.Parser) {
             continue;
         }
-        auto Start = Count_Get((stream_t)StreamKind);
+        size_t Start[Stream_Max];
+        for (size_t StreamKind = Stream_General + 1; StreamKind < Stream_Max; StreamKind++) {
+            Start[StreamKind] = Count_Get((stream_t)StreamKind);
+        }
         Merge(*Stream.second.Parser);
-        auto End = Count_Get((stream_t)StreamKind);
-        for (size_t StreamPos = Start; StreamPos < End; StreamPos++) {
-            auto ID = Stream.first >= 263 ? (Stream.first - 263) : Stream.first;
-            auto ID_String = Ztring::ToZtring(ID);
-            const auto& SubID = Retrieve_Const((stream_t)StreamKind, StreamPos, General_ID);
-            if (!SubID.empty()) {
-                ID_String += __T('-');
-                ID_String += SubID;
-            }
-            Fill((stream_t)StreamKind, StreamPos, General_ID, ID_String, true);
-            if (Stream.second.Type) {
-                Fill((stream_t)StreamKind, StreamPos, "MuxingMode", Vbi_MuxingMode[Stream.second.Type - 1]);
-                if (Stream.second.Type == VbiType_Vitc) {
-                    Fill(Stream_Other, StreamPos, Other_Format, "SMPTE TC"); // TODO: in timecode parser directly
-                    Fill(Stream_Other, StreamPos, Other_BitRate_Mode, "CBR"); // TODO: in timecode parser directly
-                    auto ID2 = ID + 263;
-                    auto Field2_Vitc = Streams.find(ID2);
-                    if (Field2_Vitc != Streams.end() && Field2_Vitc->second.Type == Stream.second.Type) {
-                        const auto& TimeCode_FirstFrame1 = Retrieve_Const(Stream_Other, StreamPos, Other_TimeCode_FirstFrame);
-                        const auto& TimeCode_FirstFrame2 = Field2_Vitc->second.Parser->Retrieve_Const(Stream_Other, StreamPos, Other_TimeCode_FirstFrame);
-                        if (TimeCode_FirstFrame2 != TimeCode_FirstFrame1) {
-                            Fill(Stream_Other, StreamPos, Other_TimeCode_FirstFrame, TimeCode_FirstFrame2);
+        for (size_t StreamKind = Stream_General + 1; StreamKind < Stream_Max; StreamKind++) {
+            auto End = Count_Get((stream_t)StreamKind);
+            for (size_t StreamPos = Start[StreamKind]; StreamPos < End; StreamPos++) {
+                auto ID = Stream.first >= 313 ? (Stream.first - 313) : Stream.first >= 263 ? (Stream.first - 263) : Stream.first;
+                auto ID_String = Ztring::ToZtring(ID);
+                const auto& SubID = Retrieve_Const((stream_t)StreamKind, StreamPos, General_ID);
+                if (!SubID.empty()) {
+                    ID_String += __T('-');
+                    ID_String += SubID;
+                }
+                Fill((stream_t)StreamKind, StreamPos, General_ID, ID_String, true);
+                if (Stream.second.Type) {
+                    Fill((stream_t)StreamKind, StreamPos, "MuxingMode", "VBI");
+                    if (Stream.second.Type == VbiType_Vitc) {
+                        Fill(Stream_Other, StreamPos, Other_Format, "SMPTE TC"); // TODO: in timecode parser directly
+                        Fill(Stream_Other, StreamPos, Other_BitRate_Mode, "CBR"); // TODO: in timecode parser directly
+                        auto Field2 = Streams.find(ID + 263); // NTSC
+                        if (Field2 == Streams.end() || Field2->second.Type != Stream.second.Type) {
+                            Field2 = Streams.find(ID + 313); //PAL
                         }
-                        Streams.erase(Field2_Vitc);
+                        if (Field2 != Streams.end() && Field2->second.Type == Stream.second.Type) {
+                            const auto& TimeCode_FirstFrame1 = Stream.second.Parser->Retrieve_Const(Stream_Other, 0, Other_TimeCode_FirstFrame);
+                            const auto& TimeCode_FirstFrame2 = Field2->second.Parser->Retrieve_Const(Stream_Other, 0, Other_TimeCode_FirstFrame);
+                            if (TimeCode_FirstFrame2 != TimeCode_FirstFrame1) {
+                                Fill(Stream_Other, StreamPos, Other_TimeCode_FirstFrame, TimeCode_FirstFrame2);
+                            }
+                            Streams.erase(Field2);
+                        }
                     }
                 }
             }
         }
     }
-
-    #if defined(MEDIAINFO_TELETEXT_YES)
-        if (Teletext_Parser && !Teletext_Parser->Status[IsFinished] && Teletext_Parser->Status[IsAccepted])
-        {
-            Finish(Teletext_Parser);
-            for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
-                for (size_t StreamPos=0; StreamPos<Teletext_Parser->Count_Get((stream_t)StreamKind); StreamPos++)
-                {
-                    Merge(*Teletext_Parser, (stream_t)StreamKind, StreamPos, StreamPos);
-                    Fill((stream_t)StreamKind, StreamPos, "MuxingMode", "VBI", Unlimited, true);
-                }
-        }
-    #endif //defined(MEDIAINFO_TELETEXT_YES)
 }
 
 //***************************************************************************
@@ -180,6 +143,16 @@ void File_Vbi::Read_Buffer_Continue()
     }
 }
 
+//---------------------------------------------------------------------------
+void File_Vbi::Read_Buffer_Unsynched()
+{
+    for (auto& Stream : Streams) {
+        if (Stream.second.Parser) {
+            Stream.second.Parser->Open_Buffer_Unsynch();
+        }
+    }
+}
+
 //***************************************************************************
 // Elements
 //***************************************************************************
@@ -187,11 +160,15 @@ void File_Vbi::Read_Buffer_Continue()
 //---------------------------------------------------------------------------
 void File_Vbi::Parse()
 {
-    auto& Stream = Streams[LineNumber];
-    switch (Stream.Type) {
-    case VbiType_Line21: Line21(); break;
-    case VbiType_Vitc: Vitc(); break;
-    default: // Probing all
+    auto Stream = Streams.find(LineNumber);
+    if (Stream != Streams.end()) {
+        switch (Stream->second.Type) {
+        case VbiType_Line21: Line21(); break;
+        case VbiType_Vitc: Vitc(); break;
+        default:;
+        }
+    }
+    else {
         Line21();
         Vitc();
     }
@@ -228,8 +205,6 @@ void File_Vbi::Line21()
             // Is 0
             if (Is1) {
                 // New 0
-                Current_Value = Value;
-                Is1 = false;
                 if (!ClockRunIn_Pos) {
                     ClockRunIn_0_x2 = Current_Pos_Min + Current_Pos_Max; // First Clock Run-In is found
                 }
@@ -237,6 +212,10 @@ void File_Vbi::Line21()
                 if (ClockRunIn_Pos == 7) {
                     break; // The 7 Clock Run-In are found
                 }
+                Current_Value = Value;
+                Current_Pos_Min = i;
+                Current_Pos_Max = i;
+                Is1 = false;
             }
             else {
                 // Another 0
@@ -250,6 +229,8 @@ void File_Vbi::Line21()
             else {
                 // New 1
                 Current_Value = Value;
+                Current_Pos_Min = i;
+                Current_Pos_Max = i;
                 Is1 = true;
             }
         }
@@ -277,7 +258,7 @@ void File_Vbi::Line21()
 
     // Compute step between bits
     Step_x12 = Current_Pos_Min + Current_Pos_Max - ClockRunIn_0_x2;
-    if (ClockRunIn_Pos != 7 || Step_x12 * 25 >= Buffer_Size * 12 - ClockRunIn_0_x2 * 6) {
+    if (ClockRunIn_Pos != 7 || Step_x12 / 12 > ClockRunIn_0_x2 || Step_x12 * 25 >= Buffer_Size * 12 - ClockRunIn_0_x2 * 6) {
         return; // Clock Run-In elements are not found or not enough place for 26 elements
     }
     auto Get_Buffer_Index = [&](int i) { // i is up to 25
@@ -467,19 +448,6 @@ void File_Vbi::Vitc()
     Open_Buffer_Continue(Stream.Parser, TimeCode_UserBits_Buffer, 8);
     Element_Offset = Element_Size;
 }
-
-//---------------------------------------------------------------------------
-void File_Vbi::Read_Buffer_Unsynched()
-{
-    #if defined(MEDIAINFO_TELETEXT_YES)
-       if (Teletext_Parser)
-            Teletext_Parser->Open_Buffer_Unsynch();
-    #endif //defined(MEDIAINFO_TELETEXT_YES)
-}
-
-//***************************************************************************
-// Helpers
-//***************************************************************************
 
 //***************************************************************************
 // C++

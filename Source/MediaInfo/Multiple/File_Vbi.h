@@ -42,17 +42,12 @@ public :
     int8u               SampleCoding;
     int16u              LineNumber;
     bool                IsLast;
-    #if defined(MEDIAINFO_TELETEXT_YES)
-        File__Analyze*  Teletext_Parser;
-    #endif //defined(MEDIAINFO_TELETEXT_YES)
-    
+ 
     //Constructor/Destructor
     File_Vbi();
-    ~File_Vbi();
 
 private :
     //Streams management
-    void Streams_Fill();
     void Streams_Finish();
 
     //Buffer - Global
