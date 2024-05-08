@@ -274,7 +274,7 @@ void conformance::Merge_Conformance(bool FromConfig)
                         if (Current->FramePoss.empty() || Current->FramePoss[0].Main != (int64u)-1)
                             Current->FramePoss.insert(Current->FramePoss.begin(), { (int64u)-1, (int64u)-1 });
                     }
-                    else
+                    else if (Current->FramePoss.empty() || Frame_Count_NotParsedIncluded != (int64u)-1)
                         Current->FramePoss.push_back({ Frame_Count_NotParsedIncluded, FieldValue.FramePoss[0].Sub });
                 }
                 else if (Current->FramePoss.size() == 8)
@@ -2987,11 +2987,34 @@ void File__Analyze::Element_Parser(const char* Parser)
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_Error(const char* Message)
 {
-    //Needed?
-    if (Config_Trace_Level<=0.7)
-        return;
+    if (Trace_Activated)
+        Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Message, "Error"));
 
-    Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Message, "Error"));
+    // Quick transform of old fashion error to new system. TODO: better wording of errors
+    string M(Message);
+    size_t Dash_Pos=string::npos;
+    if (M.find(' ')!=string::npos)
+    {
+        Fill_Conformance("GeneralCompliance", M.c_str());
+    }
+    else
+    {
+        auto Version_Pos=M.find(':');
+        if (Version_Pos!=string::npos)
+            M.erase(Version_Pos);
+        auto FFV1_Pos=M.rfind("FFV1-", 0);
+        if (FFV1_Pos !=string::npos)
+            M.erase(0, 5);
+        for (;;)
+        {
+            auto Temp=M.find('-', Dash_Pos+1);
+            if (Temp==string::npos)
+                break;
+            Dash_Pos=Temp;
+            M[Dash_Pos]=' ';
+        }
+        Fill_Conformance(M.c_str(), M.substr(Dash_Pos+1));
+    }
 }
 #endif //MEDIAINFO_TRACE
 
@@ -2999,7 +3022,36 @@ void File__Analyze::Element_Error(const char* Message)
 #if MEDIAINFO_TRACE
 void File__Analyze::Param_Error(const char* Message)
 {
-    Param_Info(Message, "Error");
+    if (Trace_Activated)
+        Param_Info(Message, "Error");
+
+    // Quick transform of old fashion error to new system. TODO: better wording of errors
+    string M(Message);
+    if (M=="TRUNCATED-ELEMENT:1")
+        return; // Redundant, TODO: sub-elements
+    size_t Dash_Pos=string::npos;
+    if (M.find(' ')!=string::npos)
+    {
+        Fill_Conformance("GeneralCompliance", M.c_str());
+    }
+    else
+    {
+        auto Version_Pos=M.find(':');
+        if (Version_Pos!=string::npos)
+            M.erase(Version_Pos);
+        auto FFV1_Pos=M.rfind("FFV1-", 0);
+        if (FFV1_Pos !=string::npos)
+            M.erase(0, 5);
+        for (;;)
+        {
+            auto Temp=M.find('-', Dash_Pos+1);
+            if (Temp==string::npos)
+                break;
+            Dash_Pos=Temp;
+            M[Dash_Pos]=' ';
+        }
+        Fill_Conformance(M.c_str(), M.substr(Dash_Pos+1));
+    }
 }
 #endif //MEDIAINFO_TRACE
 
