@@ -1671,7 +1671,14 @@ int32s File_Ffv1::pixel_GR(int32s context)
     if (current_slice->run_mode == RUN_MODE_STOP)
     {
         if (context)
+        {
+            if (context >= Context_GR_Size)
+            {
+                BS->Skip(BS->Remain());
+                return 0;
+            }
             return get_symbol_with_bias_correlation(&Context_GR[context]); // If not running, get the symbol
+        }
 
         current_slice->run_mode = RUN_MODE_PROCESSING; // New symbol, go to "run mode"
     }
@@ -1761,6 +1768,7 @@ void File_Ffv1::line(int pos, pixel_t *sample[2])
         current_slice->run_mode_init();
 
         Context_GR = current_slice->contexts[pos];
+        Context_GR_Size = context_count[pos];
         x = 0;
 
         while (s0c < s0e)

@@ -289,6 +289,7 @@ private :
     int32s bits_mask3;
     states_context_plane Context_RC; // Range Coder context
     Slice::ContextPtr    Context_GR; // Rice Golomb context
+    size_t               Context_GR_Size;
     size_t x;
 
     states_context_plane plane_states[MAX_QUANT_TABLES];
