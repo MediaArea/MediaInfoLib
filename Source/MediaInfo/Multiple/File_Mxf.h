@@ -885,6 +885,7 @@ protected :
         int16u BlockAlign;
         int32u QuantizationBits;
         int64u Duration;
+        int8u  Jp2kContentKind;
         int8u  ActiveFormat;
         int8u  FieldTopness;
         int8u  FieldDominance;
@@ -962,6 +963,7 @@ protected :
             QuantizationBits=(int32u)-1;
             Duration=(int64u)-1;
             ActiveFormat=(int8u)-1;
+            Jp2kContentKind=(int8u)-1;
             FieldTopness=(int8u)-1; //Field x is upper field
             FieldDominance=1; //Default is field 1 temporaly first
             Type=Type_Unknown;

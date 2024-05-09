@@ -4097,10 +4097,17 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
         if (StreamKind_Last==Stream_Video && Retrieve(Stream_Video, StreamPos_Last, Video_ScanType_Original).empty())
         {
             //ScanType
-            if (!Descriptor->second.ScanType.empty() && (Descriptor->second.ScanType!=Retrieve(Stream_Video, StreamPos_Last, Video_ScanType) && !(Descriptor->second.Is_Interlaced() && Retrieve(Stream_Video, StreamPos_Last, Video_ScanType)==__T("MBAFF"))))
+            auto ScanType=Descriptor->second.Jp2kContentKind==4?__T("Interlaced"):Descriptor->second.ScanType;
+            if (Retrieve(Stream_Video, StreamPos_Last, Video_ScanType).empty())
+                Fill(Stream_Video, StreamPos_Last, Video_ScanType, ScanType);
+            else if (Descriptor->second.Jp2kContentKind<=1)
+            {
+                // Do not trust frame layout info for JP2k 0 a 1, the jp2k parser needs to decide because all is possible (frame layout interlaced of frame, 1 or 2 codestreams per frame)
+            }
+            else if (!ScanType.empty() && (ScanType!=Retrieve(Stream_Video, StreamPos_Last, Video_ScanType) && !(Descriptor->second.Is_Interlaced() && Retrieve(Stream_Video, StreamPos_Last, Video_ScanType)==__T("MBAFF"))))
             {
                 Fill(Stream_Video, StreamPos_Last, Video_ScanType_Original, Retrieve(Stream_Video, StreamPos_Last, Video_ScanType));
-                Fill(Stream_Video, StreamPos_Last, Video_ScanType, Descriptor->second.ScanType, true);
+                Fill(Stream_Video, StreamPos_Last, Video_ScanType, ScanType, true);
             }
 
             //ScanOrder
@@ -4386,7 +4393,10 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
                 if (Essence->second.StreamKind==Stream_Video && Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1)==StreamPos_Last)
                 {
                     if (Essence->second.Field_Count_InThisBlock_1 && !Essence->second.Field_Count_InThisBlock_2)
+                    {
                         FrameCount/=2;
+                        EditRate/=2;
+                    }
                     break;
                 }
 
@@ -10122,6 +10132,9 @@ void File_Mxf::FileDescriptor_EssenceContainer()
 
         if (!DataMustAlwaysBeComplete && Descriptors[InstanceUID].Infos["Format_Settings_Wrapping"].find(__T("Frame"))!=string::npos)
             DataMustAlwaysBeComplete=true;
+
+        if (Code6==0x0C)
+            Descriptors[InstanceUID].Jp2kContentKind=Code7;
     FILLING_END();
 }
 
@@ -10489,7 +10502,8 @@ void File_Mxf::GenericPictureEssenceDescriptor_FrameLayout()
             if (Descriptors[InstanceUID].Height_Display!=(int32u)-1) Descriptors[InstanceUID].Height_Display*=Mxf_FrameLayout_Multiplier(Data);
             if (Descriptors[InstanceUID].Height_Display_Offset!=(int32u)-1) Descriptors[InstanceUID].Height_Display_Offset*=Mxf_FrameLayout_Multiplier(Data);
         }
-        Descriptors[InstanceUID].ScanType.From_UTF8(Mxf_FrameLayout_ScanType(Data));
+        if (Descriptors[InstanceUID].ScanType.empty() || !Partitions_IsFooter)
+            Descriptors[InstanceUID].ScanType.From_UTF8(Mxf_FrameLayout_ScanType(Data));
     FILLING_END();
 }
 
@@ -18802,7 +18816,8 @@ void File_Mxf::ChooseParser_Jpeg2000(const essences::iterator &Essence, const de
         Parser->StreamKind=Stream_Video;
         if (Descriptor!=Descriptors.end())
         {
-            Parser->Interlaced=Descriptor->second.Is_Interlaced();
+            Parser->Interlaced=Descriptor->second.Is_Interlaced() || Descriptor->second.Jp2kContentKind==4;
+            Parser->MxfContentKind=Descriptor->second.Jp2kContentKind;
             #if MEDIAINFO_DEMUX
                 if (Parser->Interlaced)
                 {
