@@ -1289,8 +1289,6 @@ protected :
         int64u SDTI_PackageMetadataSet_Trace_Count;
         int64u Padding_Trace_Count;
     #endif // MEDIAINFO_TRACE
-    TimeCode SystemScheme1_TimeCodeArray_StartTimecode;
-    int64u SystemScheme1_FrameRateFromDescriptor;
     bool   Essences_FirstEssence_Parsed;
     bool   MayHaveCaptionsInStream;
     bool   StereoscopicPictureSubDescriptor_IsPresent;
@@ -1298,17 +1296,13 @@ protected :
     int32u Essences_UsedForFrameCount;
     int32u IndexTable_NSL;
     int32u IndexTable_NPE;
-    struct systemscheme
+    struct systemscheme1
     {
-        bool IsTimeCode;
-
-        systemscheme()
-        {
-            IsTimeCode=false;
-        }
+        vector<TimeCode> TimeCodeArray_StartTimecodes;
+        string ID;
     };
-    typedef std::map<int16u, systemscheme> systemschemes;
-    systemschemes SystemSchemes;
+    typedef std::map<int16u, systemscheme1> systemscheme1s;
+    systemscheme1s SystemScheme1s;
     #if MEDIAINFO_ADVANCED
         int64u Footer_Position;
     #endif //MEDIAINFO_ADVANCED
