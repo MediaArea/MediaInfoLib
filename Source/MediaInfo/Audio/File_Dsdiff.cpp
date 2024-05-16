@@ -288,7 +288,7 @@ void File_Dsdiff::Header_Parse()
     if (File_Offset+Buffer_Offset+12+Size>File_Size)
     {
         if (Element_Level<=2) //Incoherencies info only at the top level chunk
-            IsTruncated(File_Offset+Buffer_Offset+12+Size);
+            IsTruncated(File_Offset+Buffer_Offset+12+Size, false, "DSDIFF");
         Size=File_Size-(File_Offset+Buffer_Offset+Element_Offset);
     }
 

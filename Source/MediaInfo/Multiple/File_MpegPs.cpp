@@ -874,10 +874,13 @@ bool File_MpegPs::Synched_Test()
     if (Buffer[Buffer_Offset  ]!=0x00
      || Buffer[Buffer_Offset+1]!=0x00
      || Buffer[Buffer_Offset+2]!=0x01)
-        Synched=false;
+    {
+        SynchLost("MPEG-PS");
+        return true;
+    }
 
     //Quick search
-    if (Synched && !Header_Parser_QuickSearch())
+    if (!Header_Parser_QuickSearch())
         return false;
 
     //We continue
@@ -1444,6 +1447,12 @@ bool File_MpegPs::Header_Parse_PES_packet(int8u stream_id)
         if (Demux_UnpacketizeContainer && Buffer_Offset+6+PES_packet_length>Buffer_Size)
             return false;
     #endif //MEDIAINFO_DEMUX
+    if (!IsSub)
+    {
+        int64u ExpectedSize=Buffer_Offset+6+PES_packet_length;
+        if (ExpectedSize>File_Size)
+            IsTruncated(ExpectedSize, true, "MPEG-PS");
+    }
 
     //Parsing
     switch (stream_id)

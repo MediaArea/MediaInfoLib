@@ -2750,7 +2750,7 @@ void File_Mxf::Streams_Finish()
         if (Footer_Position!=(int64u)-1)
             Fill(Stream_General, 0, General_FooterSize, File_Size-Footer_Position);
         else if (Config->ParseSpeed>-1 || (!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size))
-            IsTruncated((!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size)?Partitions[0].FooterPartition:(int64u)-1, false);
+            IsTruncated((!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size)?Partitions[0].FooterPartition:(int64u)-1, false, "MXF");
     #endif //MEDIAINFO_ADVANCED
 
     //Handling separate streams
@@ -4934,7 +4934,7 @@ void File_Mxf::Read_Buffer_Continue()
                         return;
                     }
 
-                    IsTruncated(File_Offset+17+Size, true);
+                    IsTruncated(File_Offset+17+Size, true, "MXF");
                 }
             }
         }

@@ -1888,7 +1888,7 @@ void File_Mpeg4::mdat()
     if (Config->ParseSpeed<=-1 && !Streams.empty())
     {
         if (File_Offset+Buffer_Offset+Element_TotalSize_Get()>File_Size)
-            IsTruncated(File_Offset+Buffer_Offset+Element_TotalSize_Get(), true);
+            IsTruncated(File_Offset+Buffer_Offset+Element_TotalSize_Get(), true, "MPEG-4");
         Finish();
         return;
     }

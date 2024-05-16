@@ -1883,7 +1883,7 @@ void File_Avc::Header_Parse()
                         return;
         }
         if (Element_Size<(int64u)SizeOfNALU_Minus1+1+1 || Size>Element_Size-Element_Offset)
-            return RanOutOfData();
+            return RanOutOfData("AVC");
         Header_Fill_Size(Element_Offset+Size);
         BS_Begin();
         Mark_0 ();
@@ -4781,7 +4781,7 @@ void File_Avc::SPS_PPS()
             Accept("AVC");
     FILLING_ELSE();
         Frame_Count_NotParsedIncluded--;
-        RanOutOfData();
+        RanOutOfData("AVC");
         Frame_Count_NotParsedIncluded++;
     FILLING_END();
 }

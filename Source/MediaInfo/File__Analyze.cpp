@@ -230,6 +230,19 @@ static_assert(sizeof(Conformance_Type_String) / sizeof(Conformance_Type_String[0
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
+string BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix)
+{
+    string Result;
+    if (!Prefix)
+        Prefix = ParserName.c_str();
+    if (Prefix)
+        Result += Prefix;
+    if (Prefix && Suffix)
+        Result += ' ';
+    if (Suffix)
+        Result += Suffix;
+    return Result;
+}
 void conformance::Fill_Conformance(const char* Field, const char* Value, bitset8 Flags, conformance_type Level, stream_t StreamKind, size_t StreamPos)
 {
     if (Level == Conformance_Warning && Warning_Error)
@@ -4250,7 +4263,7 @@ void File__Analyze::Streams_Finish_Conformance()
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
-void File__Analyze::IsTruncated(int64u ExpectedSize, bool MoreThan)
+void File__Analyze::IsTruncated(int64u ExpectedSize, bool MoreThan, const char* Prefix)
 {
     if (IsSub) {
         return;
@@ -4259,7 +4272,7 @@ void File__Analyze::IsTruncated(int64u ExpectedSize, bool MoreThan)
     Frame_Count_NotParsedIncluded = (int64u)-1;
     Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
     Fill_SetOptions(Stream_General, 0, "IsTruncated", "N NT");
-    Fill_Conformance("GeneralCompliance", "File size " + std::to_string(File_Size) + " is less than expected size " + (ExpectedSize == (int64u)-1 ? std::string() : ((MoreThan ? "at least " : "") + std::to_string(ExpectedSize))));
+    Fill_Conformance(BuildConformanceName(ParserName, Prefix, "GeneralCompliance").c_str(), "File size " + std::to_string(File_Size) + " is less than expected size " + (ExpectedSize == (int64u)-1 ? std::string() : ((MoreThan ? "at least " : "") + std::to_string(ExpectedSize))));
     Frame_Count_NotParsedIncluded = Frame_Count_NotParsedIncluded_Save;
 }
 
@@ -4267,7 +4280,7 @@ void File__Analyze::IsTruncated(int64u ExpectedSize, bool MoreThan)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
-void File__Analyze::RanOutOfData()
+void File__Analyze::RanOutOfData(const char* Prefix)
 {
     if (File_Offset + Buffer_Offset + Element_Size >= File_Size) {
         return;
@@ -4280,17 +4293,17 @@ void File__Analyze::RanOutOfData()
     }
     Trusted_IsNot("out of data");
     Clear_Conformance();
-    Fill_Conformance("GeneralCompliance", "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed");
+    Fill_Conformance(BuildConformanceName(ParserName, Prefix, "GeneralCompliance").c_str(), "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed");
 }
 
 #endif //MEDIAINFO_CONFORMANCE
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
-void File__Analyze::SynchLost()
+void File__Analyze::SynchLost(const char* Prefix)
 {
-    Trusted_IsNot("Synchronisation lost");
-    Fill_Conformance("GeneralCompliance", "Bitstream synchronisation is lost");
+    Synched=false;
+    Fill_Conformance(BuildConformanceName(ParserName, Prefix, "GeneralCompliance").c_str(), "Bitstream synchronisation is lost");
 }
 
 #endif //MEDIAINFO_CONFORMANCE

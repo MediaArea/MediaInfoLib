@@ -184,7 +184,7 @@ void File_Dsf::Header_Parse()
     if (Element_Offset<12 || File_Offset+Buffer_Offset+Size>File_Size)
     {
         if (Element_Level<=2) //Incoherencies info only at the top level chunk
-            IsTruncated(File_Offset+Buffer_Offset+Size);
+            IsTruncated(File_Offset+Buffer_Offset+Size, false, "DSF");
         Size=File_Size-(File_Offset+Buffer_Offset);
     }
 

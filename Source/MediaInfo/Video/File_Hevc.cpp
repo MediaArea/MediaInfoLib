@@ -1127,7 +1127,7 @@ void File_Hevc::Header_Parse()
                         return;
         }
         if (Element_Size<(int64u)lengthSizeMinusOne+1+2 || Size>Element_Size-Element_Offset)
-            return RanOutOfData();
+            return RanOutOfData("HEVC");
 
         //In case there are more than 1 NAL in the block (in Stream format), trying to find the first NAL being a slice
         size_t Buffer_Offset_Temp=Buffer_Offset+lengthSizeMinusOne+1;
@@ -4575,7 +4575,7 @@ void File_Hevc::VPS_SPS_PPS()
         Accept("HEVC");
     FILLING_ELSE();
         Frame_Count_NotParsedIncluded--;
-        RanOutOfData();
+        RanOutOfData("HEVC");
         Frame_Count_NotParsedIncluded++;
     FILLING_END();
 }
