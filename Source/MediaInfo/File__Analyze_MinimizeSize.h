@@ -1446,7 +1446,7 @@ public :
         void                Merge_Conformance(bool FromConfig = false);
         void                Streams_Finish_Conformance();
         void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* Prefix = nullptr);
-        void                RanOutOfData(cconst char* Prefix = nullptr);
+        void                RanOutOfData(const char* Prefix = nullptr);
         void                SynchLost(const char* Prefix = nullptr);
     #else //MEDIAINFO_CONFORMANCE
         void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_General, size_t StreamPos = 0) {}
