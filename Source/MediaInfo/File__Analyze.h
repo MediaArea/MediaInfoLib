@@ -1529,18 +1529,18 @@ public :
         void                Clear_Conformance();
         void                Merge_Conformance(bool FromConfig = false);
         void                Streams_Finish_Conformance();
-        void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false);
-        void                RanOutOfData();
-        void                SynchLost();
+        void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* Prefix = nullptr);
+        void                RanOutOfData(const char* Prefix = nullptr);
+        void                SynchLost(const char* Prefix = nullptr);
     #else //MEDIAINFO_CONFORMANCE
         void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_General, size_t StreamPos = 0) {}
         void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error) { Fill_Conformance(Field, Value.c_str(), Flags, Level); }
         void                Clear_Conformance() {}
         void                Merge_Conformance(bool FromConfig = false) {}
         void                Streams_Finish_Conformance() {}
-        void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false) {}
-        void                RanOutOfData() { Trusted_IsNot(); }
-        void                SynchLost() { Trusted_IsNot(); }
+        void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* = nullptr) {}
+        void                RanOutOfData(const char* = nullptr) { Trusted_IsNot(); }
+        void                SynchLost(const char* = nullptr) { Trusted_IsNot(); }
     #endif //MEDIAINFO_CONFORMANCE
 
     #if MEDIAINFO_SEEK

@@ -1509,7 +1509,7 @@ bool File_MpegTs::Synched_Test()
         //Synchro testing
         if (Buffer[Buffer_Offset+BDAV_Size]!=0x47)
         {
-            Synched=false;
+            SynchLost("MPEG-TS");
             #if MEDIAINFO_DUPLICATE
                 if (File__Duplicate_Get())
                     Trusted++; //We don't want to stop parsing if duplication is requested, TS is not a lot stable, normal...
@@ -1799,7 +1799,15 @@ bool File_MpegTs::Synched_Test()
     }
 
     if (File_Offset+Buffer_Size>=File_Size)
+    {
         Detect_EOF(); //for TRP files
+        if (File_GoTo==(int64u)-1)
+        {
+            int64u Current_Offset=File_Offset+Buffer_Offset;
+            if (Current_Offset!=File_Size)
+                IsTruncated(Current_Offset+TS_Size, true, "MPEG-TS");
+        }
+    }
 
     return false; //Not enough data
 }

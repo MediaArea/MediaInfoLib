@@ -1092,7 +1092,7 @@ void File_Riff::Header_Parse()
     if (File_Offset+Buffer_Offset+8+Size_Complete>File_Size)
     {
         if (Element_Level<=2) //Incoherencies info only at the top level chunk
-            IsTruncated(File_Offset+Buffer_Offset+8+Size_Complete, Element_Offset!=8);
+            IsTruncated(File_Offset+Buffer_Offset+8+Size_Complete, Element_Offset!=8, "RIFF");
         Size_Complete=File_Size-(File_Offset+Buffer_Offset+Element_Offset);
     }
 

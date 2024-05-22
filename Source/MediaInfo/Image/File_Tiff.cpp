@@ -545,7 +545,7 @@ void File_Tiff::Data_Parse_Fill()
         }
         
         if (ExpectedFileSize>File_Size)
-            IsTruncated(ExpectedFileSize);
+            IsTruncated(ExpectedFileSize, false, "TIFF");
     }
 }
 

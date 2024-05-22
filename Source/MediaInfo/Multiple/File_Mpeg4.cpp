@@ -2223,7 +2223,7 @@ void File_Mpeg4::Header_Parse()
 
     //Incoherencies
     if (Element_Level<=2 && File_Offset+Buffer_Offset+Size>File_Size)
-        IsTruncated(File_Offset+Buffer_Offset+Size);
+        IsTruncated(File_Offset+Buffer_Offset+Size, false, "MPEG-4");
 }
 
 //---------------------------------------------------------------------------

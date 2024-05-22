@@ -259,7 +259,7 @@ void File_Nsv::FileHeader_Parse()
         Fill(Stream_Audio, 0, Audio_Duration, file_len_ms);
     }
     if (file_size>File_Size)
-        IsTruncated(file_size);
+        IsTruncated(file_size, false, "NSV");
     if (metadata_len)
     {
         Element_Begin1("metadata");
