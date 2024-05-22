@@ -493,7 +493,6 @@ void MediaInfo_Config::Init(bool Force)
     #if MEDIAINFO_CONFORMANCE
         Usac_Profile=(int8u)-1;
         Warning_Error=false;
-        Conformance_Timestamp=false;
     #endif //MEDIAINFO_CONFORMANCE
     #if defined(MEDIAINFO_LIBCURL_YES)
         URLEncode=URLEncode_Guess;
@@ -1674,16 +1673,6 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
             return __T("conformance features are disabled due to compilation options");
         #endif // MEDIAINFO_CONFORMANCE
     }
-    if (Option_Lower==__T("conformance_timestamp"))
-    {
-        #if MEDIAINFO_CONFORMANCE
-            Conformance_Timestamp_Set(Value.empty() || Value.To_int8u());
-            return Ztring();
-        #else // MEDIAINFO_CONFORMANCE
-            return __T("conformance features are disabled due to compilation options");
-        #endif // MEDIAINFO_CONFORMANCE
-    }
-
     if (Option_Lower==__T("info_canhandleurls"))
     {
         #if defined(MEDIAINFO_LIBCURL_YES)
@@ -4037,22 +4026,6 @@ bool MediaInfo_Config::WarningError()
 {
     CriticalSectionLocker CSL(CS);
     return Warning_Error;
-}
-#endif //MEDIAINFO_CONFORMANCE
-
-#if MEDIAINFO_CONFORMANCE
-void MediaInfo_Config::Conformance_Timestamp_Set(bool Value)
-{
-    CriticalSectionLocker CSL(CS);
-    Conformance_Timestamp=Value;
-}
-#endif //MEDIAINFO_CONFORMANCE
-
-#if MEDIAINFO_CONFORMANCE
-bool MediaInfo_Config::Conformance_Timestamp_Get()
-{
-    CriticalSectionLocker CSL(CS);
-    return Conformance_Timestamp;
 }
 #endif //MEDIAINFO_CONFORMANCE
 

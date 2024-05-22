@@ -177,18 +177,33 @@ struct field_value
     bitset8 Flags;
     struct frame_pos
     {
-        int64u Main;
-        int64u Sub;
+        int64u Frame_Count_Min = (int64u)-1;
+        int64u Frame_Count_NotParsedIncluded_Min = (int64u)-1;
+        int64u SubFramePos_Min = (int64u)-1;
+        int64u PTS_Min = (int64u)-1;
+        int64u File_Offset_Min = (int64u)-1;
+        int64u Frame_Count_Max = (int64u)-1;
+        int64u Frame_Count_NotParsedIncluded_Max = (int64u)-1;
+        int64u SubFramePos_Max = (int64u)-1;
+        int64u PTS_Max = (int64u)-1;
+        int64u File_Offset_Max = (int64u)-1;
+
+        frame_pos(int64u Frame_Count = (int64u)-1, int64u Frame_Count_NotParsedIncluded = (int64u)-1, int64u SubFramePos = (int64u)-1, int64u PTS = (int64u)-1, int64u File_Offset = (int64u)-1)
+            : Frame_Count_Min(Frame_Count)
+            , Frame_Count_NotParsedIncluded_Min(Frame_Count_NotParsedIncluded)
+            , SubFramePos_Min(SubFramePos)
+            , PTS_Min(PTS)
+            , File_Offset_Min(File_Offset)
+        {}
     };
     vector<frame_pos> FramePoss;
-    vector<int64u> FrameTimes;
 
-    field_value(string&& Field, string&& Value, bitset8 Flags, int64u FramePos, int64u SubFramePos)
+    field_value(string&& Field, string&& Value, bitset8 Flags, int64u Frame_Count, int64u Frame_Count_NotParsedIncluded, int64u SubFramePos, int64u PTS, int64u File_Offset)
         : Field(Field)
         , Value(Value)
         , Flags(Flags)
     {
-        FramePoss.push_back({ FramePos, SubFramePos });
+        FramePoss.push_back({ Frame_Count, Frame_Count_NotParsedIncluded, SubFramePos, PTS, File_Offset });
     }
 
     friend bool operator==(const field_value& l, const field_value& r)
@@ -201,7 +216,10 @@ struct conformance
     conformance(File__Analyze* A) : A(A) {}
 
     File__Analyze*                  A;
+    int64u                          Frame_Count = (int64u)-1;
     int64u                          Frame_Count_NotParsedIncluded = (int64u)-1;
+    int64u                          PTS = (int64u)-1;
+    int64u                          File_Offset = (int64u)-1;
     stream_t                        StreamKind_Last = Stream_General;
     size_t                          StreamPos_Last = 0;
 
@@ -209,7 +227,6 @@ struct conformance
     vector<field_value>             ConformanceErrors_Total[Conformance_Max];
     vector<field_value>             ConformanceErrors[Conformance_Max];
     bool                            Warning_Error = false;
-    bool                            ShowTimeStamp = false;
     int8u                           IsParsingRaw = 0;
     bool                            CheckIf(const bitset8 Flags) { return !Flags || (ConformanceFlags & Flags); }
 
@@ -247,7 +264,7 @@ void conformance::Fill_Conformance(const char* Field, const char* Value, bitset8
 {
     if (Level == Conformance_Warning && Warning_Error)
         Level = Conformance_Error;
-    field_value FieldValue(Field, Value, Flags, (int64u)-1, IsParsingRaw >= 2 ? (IsParsingRaw - 2) : (int64u)-1);
+    field_value FieldValue(Field, Value, Flags, (int64u)-1, (int64u)-1, IsParsingRaw >= 2 ? (IsParsingRaw - 2) : (int64u)-1, (int64u)-1, (int64u)-1);
     auto& Conformance = ConformanceErrors[Level];
     auto Current = find(Conformance.begin(), Conformance.end(), FieldValue);
     if (Current != Conformance.end())
@@ -271,34 +288,36 @@ void conformance::Clear_Conformance()
 #if MEDIAINFO_CONFORMANCE
 void conformance::Merge_Conformance(bool FromConfig)
 {
-    for (size_t Level = 0; Level < Conformance_Max; Level++)
-    {
+    for (size_t Level = 0; Level < Conformance_Max; Level++) {
         auto& Conformance = ConformanceErrors[Level];
         auto& Conformance_Total = ConformanceErrors_Total[Level];
-        for (const auto& FieldValue : Conformance)
-        {
+        for (const auto& FieldValue : Conformance) {
             auto Current = find(Conformance_Total.begin(), Conformance_Total.end(), FieldValue);
-            if (Current != Conformance_Total.end())
-            {
-                if (Current->FramePoss.size() < 8)
-                {
-                    if (FromConfig)
-                    {
-                        if (Current->FramePoss.empty() || Current->FramePoss[0].Main != (int64u)-1)
-                            Current->FramePoss.insert(Current->FramePoss.begin(), { (int64u)-1, (int64u)-1 });
+            if (Current != Conformance_Total.end()) {
+                if (Current->FramePoss.size() < 8) {
+                    if (FromConfig) {
+                        Current->FramePoss.insert(Current->FramePoss.begin(), { (int64u)-2 });
                     }
-                    else if (Current->FramePoss.empty() || Frame_Count_NotParsedIncluded != (int64u)-1)
-                        Current->FramePoss.push_back({ Frame_Count_NotParsedIncluded, FieldValue.FramePoss[0].Sub });
+                    else if (Frame_Count != (int64u)-1 && !Current->FramePoss.empty() && (Frame_Count - Current->FramePoss.back().Frame_Count_Min <= 1 || Frame_Count - Current->FramePoss.back().Frame_Count_Max <= 1)) {
+                        Current->FramePoss.back().Frame_Count_Max = Frame_Count;
+                        Current->FramePoss.back().Frame_Count_NotParsedIncluded_Max = Frame_Count_NotParsedIncluded;
+                        Current->FramePoss.back().SubFramePos_Min = FieldValue.FramePoss[0].SubFramePos_Min;
+                        Current->FramePoss.back().PTS_Max = PTS;
+                        Current->FramePoss.back().File_Offset_Max = File_Offset;
+                    }
+                    else {
+                        Current->FramePoss.push_back({ Frame_Count, Frame_Count_NotParsedIncluded, FieldValue.FramePoss[0].SubFramePos_Min, PTS, File_Offset });
+                    }
                 }
                 else if (Current->FramePoss.size() == 8)
-                    Current->FramePoss.push_back({ (int64u)-1, (int64u)-1 }); //Indicating "..."
+                    Current->FramePoss.push_back({}); //Indicating "..."
                 continue;
             }
-            if (!CheckIf(FieldValue.Flags))
+            if (!CheckIf(FieldValue.Flags)) {
                 continue;
+            }
             Conformance_Total.push_back(FieldValue);
-            if (!FromConfig)
-                Conformance_Total.back().FramePoss.front() = { Frame_Count_NotParsedIncluded, FieldValue.FramePoss[0].Sub };
+            Conformance_Total.back().FramePoss.front() = { FromConfig?((int64u)-2):Frame_Count, FromConfig?((int64u)-1):Frame_Count_NotParsedIncluded, FieldValue.FramePoss[0].SubFramePos_Min, FromConfig?((int64u)-1):PTS, File_Offset };
         }
         Conformance.clear();
     }
@@ -340,45 +359,143 @@ void conformance::Streams_Finish_Conformance()
                     A->Fill(StreamKind_Last, StreamPos_Last, Field.c_str(), "Yes");
                 }
             }
-            auto Value = ConformanceError.Value;
-            if (!ConformanceError.FramePoss.empty() && (StreamKind_Last != Stream_General || ConformanceError.FramePoss.size() > 1 || ConformanceError.FramePoss[0].Main != (int64u)-1))
+            string Extra;
+            if (!ConformanceError.FramePoss.empty())
             {
-                auto HasConfError = ConformanceError.FramePoss[0].Main == (int64u)-1;
-                Value += " (";
-                if (HasConfError)
-                    Value += "conf";
-                if (HasConfError && ConformanceError.FramePoss.size() > 1)
-                    Value += " & ";
-                if (ConformanceError.FramePoss.size() - HasConfError >= 1)
-                    Value += "frame";
-                if (ConformanceError.FramePoss.size() - HasConfError > 1)
-                    Value += 's';
-                Value += ' ';
-                for (size_t i = HasConfError; i < ConformanceError.FramePoss.size(); i++)
-                {
+                string Frames, Times, Offsets;
+                auto Pos_Total = ConformanceError.FramePoss.size();
+                if (ConformanceError.FramePoss.back().File_Offset_Min == (int64u)-1) {
+                    Pos_Total--;
+                }
+                size_t Frames_HasContent, Times_HasContent, Offsets_HasContent;
+                Frames_HasContent = Times_HasContent = Offsets_HasContent = Pos_Total;
+                for (size_t i = 0; i < Pos_Total; i++) {
                     auto FramePos = ConformanceError.FramePoss[i];
-                    if (FramePos.Main == (int64u)-1)
-                        Value += "...";
-                    else
-                    {
-                        if (ShowTimeStamp)
-                        {
-                            TimeCode TC((int64_t)FramePos.Main, 999, TimeCode::Timed());
-                            Value += TC.ToString();
+                    if (FramePos.Frame_Count_Min == (int64u)-2) {
+                        Frames += "conf";
+                    }
+                    else {
+                        if (FramePos.Frame_Count_NotParsedIncluded_Min != (int64u)-1) {
+                            if (FramePos.Frame_Count_NotParsedIncluded_Max != (int64u)-1) {
+                                Frames += '[';
+                            }
+                            Frames += to_string(FramePos.Frame_Count_NotParsedIncluded_Min);
+                            if (FramePos.SubFramePos_Min != (int64u)-1) {
+                                Frames += '.';
+                                Frames += to_string(FramePos.SubFramePos_Min);
+                            }
+                            if (FramePos.Frame_Count_NotParsedIncluded_Max != (int64u)-1) {
+                                Frames += '.';
+                                Frames += '.';
+                                Frames += to_string(FramePos.Frame_Count_NotParsedIncluded_Max);
+                                if (FramePos.SubFramePos_Min != (int64u)-1) {
+                                    Frames += '.';
+                                    Frames += to_string(FramePos.SubFramePos_Max);
+                                }
+                                Frames += ']';
+                            }
                         }
-                        else
-                            Value += to_string(FramePos.Main);
-                        if (FramePos.Sub != (int64u)-1)
-                        {
-                            Value += '.';
-                            Value += to_string(FramePos.Sub);
+                        else {
+                            Frames += '?';
+                            Frames_HasContent--;
+                        }
+                        if (FramePos.PTS_Min != (int64u)-1) {
+                            if (FramePos.PTS_Max != (int64u)-1) {
+                                Times += '[';
+                            }
+                            auto PTS = (int64_t)FramePos.PTS_Min;
+                            if (PTS >= 0) {
+                                PTS += 500000;
+                            }
+                            else {
+                                PTS -= 500000;
+                            }
+                            PTS /= 1000000;
+                            TimeCode TC(PTS, 999, TimeCode::Timed());
+                            Times += TC.ToString();
+                            if (FramePos.PTS_Max != (int64u)-1) {
+                                Times += '.';
+                                Times += '.';
+                                auto PTS = (int64_t)FramePos.PTS_Max;
+                                if (PTS >= 0) {
+                                    PTS += 500000;
+                                }
+                                else {
+                                    PTS -= 500000;
+                                }
+                                PTS /= 1000000;
+                                TimeCode TC(PTS, 999, TimeCode::Timed());
+                                Times += TC.ToString();
+                                Times += ']';
+                            }
+                        }
+                        else {
+                            Times += '?';
+                            Times_HasContent--;
                         }
                     }
-                    Value += '+';
+                    if (FramePos.File_Offset_Min != (int64u)-1) {
+                        if (FramePos.File_Offset_Max != (int64u)-1) {
+                            Offsets += '[';
+                        }
+                        Offsets += "0x" + Ztring::ToZtring(FramePos.File_Offset_Min, 16).To_UTF8();
+                        if (FramePos.File_Offset_Max != (int64u)-1) {
+                            Offsets += '.';
+                            Offsets += '.';
+                            Offsets += "0x" + Ztring::ToZtring(FramePos.File_Offset_Max, 16).To_UTF8();
+                            Offsets += ']';
+                        }
+                    }
+                    else {
+                        Offsets += '?';
+                        Offsets_HasContent--;
+                    }
+                    Frames += '+';
+                    Times += '+';
+                    Offsets += '+';
                 }
-                Value.back() = ')';
+                if (ConformanceError.FramePoss.back().File_Offset_Min == (int64u)-1) {
+                    Frames += "...";
+                    Times += "...";
+                    Offsets += "...";
+                }
+                else {
+                    Frames.pop_back();
+                    Times.pop_back();
+                    Offsets.pop_back();
+                }
+                if (Frames_HasContent + Times_HasContent + Offsets_HasContent) {
+                    Extra = ' ';
+                    Extra += '(';
+                    if (Frames == "conf") {
+                        Extra += Frames;
+                    }
+                    else {
+                        if (Frames_HasContent) {
+                            Extra += "frame ";
+                            Extra += Frames;
+                        }
+                        if (Times_HasContent) {
+                            if (Frames_HasContent) {
+                                Extra += ',';
+                                Extra += ' ';
+                            }
+                            Extra += "time ";
+                            Extra += Times;
+                        }
+                    }
+                    if (Offsets_HasContent) {
+                        if (Frames_HasContent + Times_HasContent) {
+                            Extra += ',';
+                            Extra += ' ';
+                        }
+                        Extra += "offset ";
+                        Extra += Offsets;
+                    }
+                    Extra += ')';
+                }
             }
-            A->Fill(StreamKind_Last, StreamPos_Last, (Conformance_String + ConformanceError.Field).c_str(), Value);
+            A->Fill(StreamKind_Last, StreamPos_Last, (Conformance_String + ConformanceError.Field).c_str(), ConformanceError.Value + Extra);
         }
         Conformance_Total.clear();
     }
@@ -4194,25 +4311,29 @@ void File__Analyze::Fill_Conformance(const char* Field, const char* Value, uint8
     if (!Conformance_Data) {
         Conformance_Data = new conformance_data(this);
         ((conformance_data*)Conformance_Data)->Warning_Error = MediaInfoLib::Config.WarningError();
-        ((conformance_data*)Conformance_Data)->ShowTimeStamp = MediaInfoLib::Config.Conformance_Timestamp_Get();
     }
     auto& Data = *(conformance_data*)Conformance_Data;
-    if (IsSub || Frame_Count_NotParsedIncluded != (int64u)-1) {
-        if (Data.ShowTimeStamp) {
-            Data.Frame_Count_NotParsedIncluded = FrameInfo.PTS == (int64u)-1 ? FrameInfo.DTS : FrameInfo.PTS;
-            if (Data.Frame_Count_NotParsedIncluded != (int64u)-1) {
-                if (Frame_Count_InThisBlock) {
-                    Data.Frame_Count_NotParsedIncluded -= FrameInfo.DUR;
-                }
-                Data.Frame_Count_NotParsedIncluded = ((int64s)Data.Frame_Count_NotParsedIncluded) / 1000000;
-            }
+    Data.Frame_Count = Frame_Count;
+    Data.Frame_Count_NotParsedIncluded = Frame_Count_NotParsedIncluded;
+    if (IsSub) {
+        if (Frame_Count != (int64u)-1) {
+            Data.Frame_Count -= Frame_Count_InThisBlock;
         }
-        else {
-            Data.Frame_Count_NotParsedIncluded = Frame_Count_NotParsedIncluded;
-            if (Frame_Count_NotParsedIncluded != (int64u)-1 && IsSub)
-                Data.Frame_Count_NotParsedIncluded -= Frame_Count_InThisBlock;
+        if (Frame_Count_NotParsedIncluded != (int64u)-1) {
+            Data.Frame_Count_NotParsedIncluded -= Frame_Count_InThisBlock;
         }
     }
+    if (FrameInfo.PTS != (int64u)-1 && PTS_Begin != (int64u)-1)
+        FrameInfo.PTS -= PTS_Begin;
+    Data.PTS = FrameInfo.PTS == (int64u)-1 ? FrameInfo.DTS : FrameInfo.PTS;
+    if (FrameInfo.PTS != (int64u)-1 && PTS_Begin != (int64u)-1)
+        FrameInfo.PTS -= PTS_Begin;
+    if (Data.PTS != (int64u)-1) {
+        if (Frame_Count_InThisBlock) {
+            Data.PTS -= FrameInfo.DUR;
+        }
+    }
+    Data.File_Offset = File_Offset + Buffer_Offset + Element_Offset + BS_Size - (BS->Remain() + 7) / 8;
     Data.Fill_Conformance( Field, Value, Flags, Level, StreamKind, StreamPos);
 }
 #endif
@@ -4268,11 +4389,15 @@ void File__Analyze::IsTruncated(int64u ExpectedSize, bool MoreThan, const char* 
     if (IsSub) {
         return;
     }
+    auto Frame_Count_Save = Frame_Count;
     auto Frame_Count_NotParsedIncluded_Save = Frame_Count_NotParsedIncluded;
+    Frame_Count = (int64u)-1;
     Frame_Count_NotParsedIncluded = (int64u)-1;
     Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
     Fill_SetOptions(Stream_General, 0, "IsTruncated", "N NT");
     Fill_Conformance(BuildConformanceName(ParserName, Prefix, "GeneralCompliance").c_str(), "File size " + std::to_string(File_Size) + " is less than expected size " + (ExpectedSize == (int64u)-1 ? std::string() : ((MoreThan ? "at least " : "") + std::to_string(ExpectedSize))));
+    Merge_Conformance();
+    Frame_Count = Frame_Count_Save;
     Frame_Count_NotParsedIncluded = Frame_Count_NotParsedIncluded_Save;
 }
 

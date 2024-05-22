@@ -1233,6 +1233,7 @@ void File_Flv::video_AVC(int8u PacketType_plus1)
                     {
                         Stream[Stream_Video].Parser=new File_Avc;
                         Open_Buffer_Init(Stream[Stream_Video].Parser);
+                        ((File_Avc*)Stream[Stream_Video].Parser)->FrameIsAlwaysComplete=true;
                         ((File_Avc*)Stream[Stream_Video].Parser)->MustParse_SPS_PPS=true;
                         ((File_Avc*)Stream[Stream_Video].Parser)->SizedBlocks=true;
                         ((File_Avc*)Stream[Stream_Video].Parser)->MustSynchronize=false;

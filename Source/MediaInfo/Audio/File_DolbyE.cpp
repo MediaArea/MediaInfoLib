@@ -1058,7 +1058,7 @@ void File_DolbyE::Streams_Fill_PerProgram(size_t program)
     }
 
     Fill(Stream_Audio, program, Audio_FrameRate, Mpegv_frame_rate[frame_rate_code]);
-    if (FrameInfo.PTS!=(int64u)-1 && bit_depth)
+    if (bit_depth)
     {
         float BitRate=(float)(96000*bit_depth);
 
