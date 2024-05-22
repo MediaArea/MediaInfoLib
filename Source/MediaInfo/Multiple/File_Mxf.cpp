@@ -2616,6 +2616,8 @@ void File_Mxf::Streams_Fill()
 //---------------------------------------------------------------------------
 void File_Mxf::Streams_Finish()
 {
+    Frame_Count=Frame_Count_NotParsedIncluded=FrameInfo.PTS=FrameInfo.DTS=(int64u)-1;
+
     #if MEDIAINFO_NEXTPACKET && defined(MEDIAINFO_REFERENCES_YES)
         //Locators only
         if (ReferenceFiles_IsParsing)
@@ -3005,6 +3007,8 @@ void File_Mxf::Streams_Finish()
 
     //Commercial names
     Streams_Finish_CommercialNames();
+
+    Merge_Conformance();
 }
 
 //---------------------------------------------------------------------------
@@ -6315,6 +6319,12 @@ void File_Mxf::Data_Parse()
 {
     //Clearing
     InstanceUID=0;
+    if (!Essences_FirstEssence_Parsed)
+    {
+        Frame_Count=(int64u)-1;
+        Frame_Count_NotParsedIncluded=(int64u)-1;
+        FrameInfo=frame_info();
+    }
 
     //Parsing
     int32u Code_Compare1=Code.hi>>32;
@@ -6554,6 +6564,10 @@ void File_Mxf::Data_Parse()
             }
             #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
 
+            Frame_Count=0;
+            Frame_Count_NotParsedIncluded=0;
+            FrameInfo=frame_info();
+            FrameInfo.DTS=0;
             Essences_FirstEssence_Parsed=true;
         }
 
@@ -10512,7 +10526,7 @@ void File_Mxf::GenericPictureEssenceDescriptor_VideoLineMap()
         //    odd even field 1 upper
         //    even odd field 1 upper
         //    even even field 2 upper
-        if (Length2==8+2*4 && !VideoLineMapEntry_IsZero) //2 values
+        if (Count==2 && !VideoLineMapEntry_IsZero) //2 values
             Descriptors[InstanceUID].FieldTopness=(VideoLineMapEntries_Total%2)?1:2;
     FILLING_END();
 }
@@ -12161,9 +12175,11 @@ void File_Mxf::PartitionMetadata()
                     Element_Size_WithPadding+=KAGSize_Corrected;
                 }
 
-                auto ExpectedSize=File_Offset+Buffer_Offset-Header_Size+Element_Size_WithPadding+HeaderByteCount+IndexByteCount;
+                auto ExpectedSize=File_Offset+Buffer_Offset-Header_Size+Element_Size_WithPadding;
+                if ((Code.lo&0xFF0000)==0x020000) //If Header Partition Pack
+                    ExpectedSize+=HeaderByteCount+IndexByteCount;
                 if (ExpectedSize>File_Size)
-                    IsTruncated(ExpectedSize);
+                    IsTruncated(ExpectedSize, true);
             }
         #endif //MEDIAINFO_ADVANCED
     }

@@ -1509,7 +1509,10 @@ bool File_MpegTs::Synched_Test()
         //Synchro testing
         if (Buffer[Buffer_Offset+BDAV_Size]!=0x47)
         {
+            Frame_Count=(int64u)-1;
+            Frame_Count_NotParsedIncluded=(int64u)-1;
             SynchLost("MPEG-TS");
+            Frame_Count=0;
             #if MEDIAINFO_DUPLICATE
                 if (File__Duplicate_Get())
                     Trusted++; //We don't want to stop parsing if duplication is requested, TS is not a lot stable, normal...
@@ -1805,8 +1808,17 @@ bool File_MpegTs::Synched_Test()
         {
             int64u Current_Offset=File_Offset+Buffer_Offset;
             if (Current_Offset!=File_Size)
+            {
                 IsTruncated(Current_Offset+TS_Size, true, "MPEG-TS");
+                auto LastPacket_Size=File_Size-Current_Offset;
+                auto LastPacker_Missing=TS_Size-LastPacket_Size;
+                if (LastPacker_Missing>=TSP_Size)
+                    TSP_Size=0; // Last bytes of a content and partial TS packet without the content after the TS content
+                else
+                    TSP_Size-=LastPacker_Missing;
+            }
         }
+        return true;
     }
 
     return false; //Not enough data

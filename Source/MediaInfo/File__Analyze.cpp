@@ -4268,11 +4268,15 @@ void File__Analyze::IsTruncated(int64u ExpectedSize, bool MoreThan, const char* 
     if (IsSub) {
         return;
     }
+    auto Frame_Count_Save = Frame_Count;
     auto Frame_Count_NotParsedIncluded_Save = Frame_Count_NotParsedIncluded;
+    Frame_Count = (int64u)-1;
     Frame_Count_NotParsedIncluded = (int64u)-1;
     Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
     Fill_SetOptions(Stream_General, 0, "IsTruncated", "N NT");
     Fill_Conformance(BuildConformanceName(ParserName, Prefix, "GeneralCompliance").c_str(), "File size " + std::to_string(File_Size) + " is less than expected size " + (ExpectedSize == (int64u)-1 ? std::string() : ((MoreThan ? "at least " : "") + std::to_string(ExpectedSize))));
+    Merge_Conformance();
+    Frame_Count = Frame_Count_Save;
     Frame_Count_NotParsedIncluded = Frame_Count_NotParsedIncluded_Save;
 }
 
