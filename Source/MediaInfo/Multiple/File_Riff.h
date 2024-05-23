@@ -66,6 +66,10 @@ private :
 
     bool BookMark_Needed();
 
+    #if MEDIAINFO_CONFORMANCE
+        string CreateElementName();
+    #endif //MEDIAINFO_CONFORMANCE
+
     //Data
     struct stream
     {

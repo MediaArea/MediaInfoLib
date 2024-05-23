@@ -2987,6 +2987,28 @@ bool File_Mpeg4::BookMark_Needed()
     return false; //We do not want to use the bookmark feature, only detect the end of the file
 }
 
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+string File_Mpeg4::CreateElementName()
+{
+    if (IsParsing_mdat) {
+        return "mdat";
+    }
+    string Result;
+    for (size_t i = 1; i < Element_Level; i++) {
+        Result += Ztring().From_CC4(Element[i].Code).Trim().To_UTF8();
+        if (Result.back() >= '0' && Result.back() <= '9') {
+            Result += '_';
+        }
+        Result += __T(' ');
+    }
+    if (!Result.empty())
+        Result.pop_back();
+    return Result;
+}
+#endif
+
 //---------------------------------------------------------------------------
 //Get language string from 2CC
 Ztring File_Mpeg4::Language_Get(int16u Language)

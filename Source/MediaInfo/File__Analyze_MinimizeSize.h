@@ -1286,6 +1286,7 @@ protected :
     friend class File__Tags_Helper;
     friend class File_Usac;
     friend class File_Mk;
+    friend class File_Riff;
     friend class File_Mpeg4;
     friend class File_Hevc;
 
@@ -1445,8 +1446,9 @@ public :
         void                Clear_Conformance();
         void                Merge_Conformance(bool FromConfig = false);
         void                Streams_Finish_Conformance();
+        virtual string      CreateElementName();
         void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* Prefix = nullptr);
-        void                RanOutOfData(cconst char* Prefix = nullptr);
+        void                RanOutOfData(const char* Prefix = nullptr);
         void                SynchLost(const char* Prefix = nullptr);
     #else //MEDIAINFO_CONFORMANCE
         void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_General, size_t StreamPos = 0) {}
@@ -1454,6 +1456,7 @@ public :
         void                Clear_Conformance() {}
         void                Merge_Conformance(bool FromConfig = false) {}
         void                Streams_Finish_Conformance() {}
+        string              CreateElementName() { return {}; }
         void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* = nullptr) {}
         void                RanOutOfData(const char* = nullptr) { Trusted_IsNot(); }
         void                SynchLost(const char* = nullptr) { Trusted_IsNot(); }

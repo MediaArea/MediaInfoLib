@@ -198,7 +198,7 @@ struct field_value
     };
     vector<frame_pos> FramePoss;
 
-    field_value(string&& Field, string&& Value, bitset8 Flags, int64u Frame_Count, int64u Frame_Count_NotParsedIncluded, int64u SubFramePos, int64u PTS, int64u File_Offset)
+    field_value(string&& Field = {}, string&& Value = {}, bitset8 Flags = {}, int64u Frame_Count = (int64u)-1, int64u Frame_Count_NotParsedIncluded = (int64u)-1, int64u SubFramePos = (int64u)-1, int64u PTS = (int64u)-1, int64u File_Offset = (int64u)-1)
         : Field(Field)
         , Value(Value)
         , Flags(Flags)
@@ -250,14 +250,26 @@ static_assert(sizeof(Conformance_Type_String) / sizeof(Conformance_Type_String[0
 string BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix)
 {
     string Result;
-    if (!Prefix)
+    if (!Prefix) {
         Prefix = ParserName.c_str();
-    if (Prefix)
+    }
+    if (Prefix) {
         Result += Prefix;
-    if (Prefix && Suffix)
-        Result += ' ';
-    if (Suffix)
+    }
+    if (!Result.empty()) {
+        if (Result.back() >= '0' && Result.back() <= '9') {
+            Result += '_';
+        }
+        if (!Result.empty() && Suffix && Suffix[0]) {
+            Result += ' ';
+        }
+    }
+    if (Suffix) {
         Result += Suffix;
+        if (Result.empty() && Result.back() >= '0' && Result.back() <= '9') {
+            Result += '_';
+        }
+    }
     return Result;
 }
 void conformance::Fill_Conformance(const char* Field, const char* Value, bitset8 Flags, conformance_type Level, stream_t StreamKind, size_t StreamPos)
@@ -294,7 +306,7 @@ void conformance::Merge_Conformance(bool FromConfig)
         for (const auto& FieldValue : Conformance) {
             auto Current = find(Conformance_Total.begin(), Conformance_Total.end(), FieldValue);
             if (Current != Conformance_Total.end()) {
-                if (Current->FramePoss.size() < 8) {
+                if (Current->FramePoss.size() < 32) {
                     if (FromConfig) {
                         Current->FramePoss.insert(Current->FramePoss.begin(), { (int64u)-2 });
                     }
@@ -309,15 +321,26 @@ void conformance::Merge_Conformance(bool FromConfig)
                         Current->FramePoss.push_back({ Frame_Count, Frame_Count_NotParsedIncluded, FieldValue.FramePoss[0].SubFramePos_Min, PTS, File_Offset });
                     }
                 }
-                else if (Current->FramePoss.size() == 8)
+                else if (Current->FramePoss.size() == 32)
                     Current->FramePoss.push_back({}); //Indicating "..."
                 continue;
             }
             if (!CheckIf(FieldValue.Flags)) {
                 continue;
             }
-            Conformance_Total.push_back(FieldValue);
-            Conformance_Total.back().FramePoss.front() = { FromConfig?((int64u)-2):Frame_Count, FromConfig?((int64u)-1):Frame_Count_NotParsedIncluded, FieldValue.FramePoss[0].SubFramePos_Min, FromConfig?((int64u)-1):PTS, File_Offset };
+            if (Conformance_Total.size() < 32) {
+                Conformance_Total.push_back(FieldValue);
+                Conformance_Total.back().FramePoss.front() = { FromConfig ? ((int64u)-2) : Frame_Count, FromConfig ? ((int64u)-1) : Frame_Count_NotParsedIncluded, FieldValue.FramePoss[0].SubFramePos_Min, FromConfig ? ((int64u)-1) : PTS, File_Offset };
+            }
+            else {
+                if (Conformance_Total.size() == 32) {
+                    field_value TooMany;
+                    TooMany.Field = "GeneralCompliance";
+                    TooMany.Value = "[More conformance errors...]";
+                    Conformance_Total.push_back(TooMany);
+                }
+                break;
+            }
         }
         Conformance.clear();
     }
@@ -2742,7 +2765,18 @@ void File__Analyze::Header_Fill_Size(int64u Size)
     if (Element_Level==1)
         Element[0].Next=File_Offset+Buffer_Offset+Size;
     else if (File_Offset+Buffer_Offset+Size>Element[Element_Level-2].Next)
+    {
+        if (!IsSub || (File_Offset + Buffer_Size < File_Size && File_Size - (File_Offset + Buffer_Size) >= 0x10000)) { //TODO: good support of end of TS dumps
+            auto Name = CreateElementName();
+            if (!Name.empty()) {
+                Name += ' ';
+            }
+            Name += "GeneralCompliance";
+            Fill_Conformance(Name.c_str(), "Element size " + to_string(Size - Element_Offset) + " is more than maximal permitted size " + to_string(Element[Element_Level - 2].Next - (File_Offset + Buffer_Offset + Element_Offset)));
+        }
+
         Element[Element_Level-1].Next=Element[Element_Level-2].Next;
+    }
     else
         Element[Element_Level-1].Next=File_Offset+Buffer_Offset+Size;
     Element[Element_Level-1].IsComplete=true;
@@ -4379,6 +4413,29 @@ void File__Analyze::Streams_Finish_Conformance()
         }
     }
     Data.Streams_Finish_Conformance();
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+string File__Analyze::CreateElementName()
+{
+    string Result;
+    for (size_t i = 1; i < Element_Level; i++) {
+        if (!Element[i].Code) {
+            continue;
+        }
+        Result += '0';
+        Result += 'x';
+        Result += Ztring().From_Number(Element[i].Code, 16).To_UTF8();
+        if (Result.back() >= '0' && Result.back() <= '9') {
+            Result += '_';
+        }
+        Result += ' ';
+    }
+    if (!Result.empty())
+        Result.pop_back();
+    return Result;
 }
 #endif
 
