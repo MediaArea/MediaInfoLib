@@ -68,6 +68,10 @@ private :
     void Data_Parse();
     bool BookMark_Needed();
 
+    #if MEDIAINFO_CONFORMANCE
+        string CreateElementName();
+    #endif //MEDIAINFO_CONFORMANCE
+
     //Elements
     void bloc();
     void cdat();
