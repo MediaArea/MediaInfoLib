@@ -1804,13 +1804,21 @@ void MediaInfo_Config_MediaInfo::File_ExpandSubs_Update(void** Source)
                         }
                         for (size_t i=0; i<Names.size(); i++)
                         {
-                            Ztring TranslatedName=MediaInfoLib::Config.Language_Get(Names[i]);
+                            auto& Name=Names[i];
+                            Ztring TranslatedName=MediaInfoLib::Config.Language_Get(Name);
                             if (!TranslatedName.empty())
-                                Names[i]=TranslatedName;
+                                Name=TranslatedName;
                             if (Nested && !i)
-                                Names[i].insert(0, Spaces, __T(' '));
-                            if (Numbers[i])
-                                Names[i]+=MediaInfoLib::Config.Language_Get(__T("  Config_Text_NumberTag"))+Ztring::ToZtring(Numbers[i]);
+                                Name.insert(0, Spaces, __T(' '));
+                            if (Name.size()>1 && Name.back()==__T('_'))
+                            {
+                                auto Last2=Name[Name.size()-2];
+                                if (Last2>='0' && Last2<='9')
+                                    Name.pop_back();
+                            }
+                            auto& Number=Numbers[i];
+                            if (Number)
+                                Name+=MediaInfoLib::Config.Language_Get(__T("  Config_Text_NumberTag"))+Ztring::ToZtring(Number);
                         }
                         Names.Separator_Set(0, __T(" "));
                         Names.Quote_Set(__T(""));
