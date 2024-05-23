@@ -4367,6 +4367,9 @@ void File__Analyze::Fill_Conformance(const char* Field, const char* Value, uint8
             Data.PTS -= FrameInfo.DUR;
         }
     }
+    #if !MEDIAINFO_TRACE
+        static const size_t BS_Size=0;
+    #endif //MEDIAINFO_TRACE
     Data.File_Offset = File_Offset + Buffer_Offset + Element_Offset + BS_Size - (BS->Remain() + 7) / 8;
     Data.Fill_Conformance( Field, Value, Flags, Level, StreamKind, StreamPos);
 }
