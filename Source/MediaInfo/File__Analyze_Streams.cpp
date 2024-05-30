@@ -546,7 +546,10 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
                 Skip_BS(Data_BS_Remain()-End,                   "reserved");
         }
         else
+        {
             dv_bl_signal_compatibility_id=0;
+            dv_md_compression=0;
+        }
         BS_End();
     }
     Skip_XX(Element_Size-Element_Offset,                        "Unknown");
