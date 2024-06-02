@@ -180,6 +180,7 @@ AC_ARG_ENABLE(teletext,  AC_HELP_STRING([--disable-teletext],  [Disable Text - T
 AC_ARG_ENABLE(timedtext, AC_HELP_STRING([--disable-timedtext], [Disable Text - Timed Text (MPEG-4 Part 17)]),             MediaInfoTimedText=$enableval, MediaInfoTimedText=depend)
 AC_ARG_ENABLE(ttml,    AC_HELP_STRING([--disable-ttml],    [Disable Text - TTML]),                                        MediaInfoTtml=$enableval,    MediaInfoTtml=depend)
 AC_ARG_ENABLE(kate,    AC_HELP_STRING([--disable-kate],    [Disable Text - Kate]),                                        MediaInfoKate=$enableval,    MediaInfoKate=depend)
+AC_ARG_ENABLE(pac,     AC_HELP_STRING([--disable-pac] ,    [Disable Text - PAC]),                                         MediaInfoPac=$enableval,     MediaInfoPac=depend)
 AC_ARG_ENABLE(pdf,     AC_HELP_STRING([--disable-pdf] ,    [Disable Text - PDF]),                                         MediaInfoPdf=$enableval,     MediaInfoPdf=depend)
 AC_ARG_ENABLE(pgs,     AC_HELP_STRING([--disable-pgs] ,    [Disable Text - PGS]),                                         MediaInfoPgs=$enableval,     MediaInfoPgs=depend)
 AC_ARG_ENABLE(scc,     AC_HELP_STRING([--disable-scc] ,    [Disable Text - SCC]),                                         MediaInfoScc=$enableval,     MediaInfoScc=depend)
@@ -349,6 +350,7 @@ if test "$MediaInfoTeletext" = "no";  then AC_DEFINE(MEDIAINFO_TELETEXT_NO) fi; 
 if test "$MediaInfoTimedText" = "no";  then AC_DEFINE(MEDIAINFO_TIMEDTEXT_NO)    fi; if test "$MediaInfoTimedText"  = "yes"; then AC_DEFINE(MEDIAINFO_TIMEDTEXT_YES) fi
 if test "$MediaInfoTtml"    = "no";  then AC_DEFINE(MEDIAINFO_TTML_NO)    fi; if test "$MediaInfoTtml"    = "yes"; then AC_DEFINE(MEDIAINFO_TTML_YES) fi
 if test "$MediaInfoKate"    = "no";  then AC_DEFINE(MEDIAINFO_KATE_NO)    fi; if test "$MediaInfoKate"    = "yes"; then AC_DEFINE(MEDIAINFO_KATE_YES)    fi
+if test "$MediaInfoPac"     = "no";  then AC_DEFINE(MEDIAINFO_PAC_NO)     fi; if test "$MediaInfoPac"     = "yes"; then AC_DEFINE(MEDIAINFO_PAC_YES)     fi
 if test "$MediaInfoPdf"     = "no";  then AC_DEFINE(MEDIAINFO_PDF_NO)     fi; if test "$MediaInfoPdf"     = "yes"; then AC_DEFINE(MEDIAINFO_PDF_YES)     fi
 if test "$MediaInfoPgs"     = "no";  then AC_DEFINE(MEDIAINFO_PGS_NO)     fi; if test "$MediaInfoPgs"     = "yes"; then AC_DEFINE(MEDIAINFO_PGS_YES)     fi
 if test "$MediaInfoScc"     = "no";  then AC_DEFINE(MEDIAINFO_SCC_NO)     fi; if test "$MediaInfoScc"     = "yes"; then AC_DEFINE(MEDIAINFO_SCC_YES)     fi
@@ -1111,6 +1113,7 @@ Mcho "Teletext " "$MediaInfoTeletext"
 Mcho "TimedText " "$MediaInfoTimedText"
 Mcho "Ttml   " "$MediaInfoTtml"
 Mcho "Kate   " "$MediaInfoKate"
+Mcho "Pac    " "$MediaInfoPac"
 Mcho "Pdf    " "$MediaInfoPdf"
 Mcho "Pgs    " "$MediaInfoPgs"
 Mcho "Scc    " "$MediaInfoScc"
