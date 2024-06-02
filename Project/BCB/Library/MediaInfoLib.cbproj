@@ -737,6 +737,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Text\File_OtherText.cpp">
             <BuildOrder>145</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Text\File_Pac.cpp">
+            <BuildOrder>243</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Text\File_Pdf.cpp">
             <BuildOrder>150</BuildOrder>
         </CppCompile>

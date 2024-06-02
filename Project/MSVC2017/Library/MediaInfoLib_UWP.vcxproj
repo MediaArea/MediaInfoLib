@@ -43,40 +43,40 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -325,6 +325,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_AribStdB24B37.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_DtvccTransport.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_DvbSubtitle.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Pac.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Pdf.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Scc.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Sdp.cpp" />
@@ -668,6 +669,8 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_AribStdB24B37.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_DtvccTransport.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_DvbSubtitle.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Pac.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Pac_Codepages.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Pdf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Scc.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Scte20.h" />

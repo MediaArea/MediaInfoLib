@@ -201,6 +201,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Text/File_Eia708.cpp \
                        ../../../Source/MediaInfo/Text/File_N19.cpp \
                        ../../../Source/MediaInfo/Text/File_OtherText.cpp \
+                       ../../../Source/MediaInfo/Text/File_Pac.cpp \
                        ../../../Source/MediaInfo/Text/File_Pdf.cpp \
                        ../../../Source/MediaInfo/Text/File_Pgs.cpp \
                        ../../../Source/MediaInfo/Text/File_Scc.cpp \
