@@ -75,6 +75,7 @@ Atrac9;;;A;;Adaptive Transform Acoustic Coding 9;;audio/ATRAC9;https://en.wikipe
 APT-X100;;;A;Aptx100;;AUD AUE aud aue;;;Lossy
 AU;;;A;Au;uLaw/AU Audio File;au;audio/basic;;
 CAF;;;A;Caf;Core Audio Format;caf;audio/x-caf;https://developer.apple.com/library/content/documentation/MusicAudio/Reference/CAFSpec/CAF_overview/CAF_overview.html;
+DAT;;;A;;Digital Audio Tape;hda;;;Lossless
 DolbyE;;;A;Aes3;;dde
 DSDIFF;;;A;Dsdiff;Direct Stream Digital Interchange File Format;dff;;;Lossy
 DSD;;;A;;Direct Stream Digital;;;;Lossless
