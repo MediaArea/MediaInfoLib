@@ -379,19 +379,29 @@ void File_Mpeg4::Streams_Accept()
         TestContinuousFileNames();*/
     }
 
-    if (!IsSub && MajorBrand==0x6A703220) //"jp2 "
-    {
-        StreamSource=IsStream; //TODO: do the difference between raw stream and sequence of files with file count being frame count
-        TestContinuousFileNames();
-
-        Stream_Prepare((Config->File_Names.size()>1 || Config->File_IsReferenced_Get())?Stream_Video:Stream_Image);
-        if (StreamKind_Last==Stream_Video)
-            Fill(Stream_Video, StreamPos_Last, Video_FrameCount, Config->File_Names.size());
-    }
+    Streams_Accept_jp2();
 
     //Configuration
     Buffer_MaximumSize=64*1024*1024; //Some big frames are possible (e.g YUV 4:2:2 10 bits 1080p)
     File_Buffer_Size_Hint_Pointer=Config->File_Buffer_Size_Hint_Pointer_Get();
+}
+
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::Streams_Accept_jp2(bool IsJp2)
+{
+    //Warning: this method can be called several times
+
+    if (IsSub || StreamKind_Last != Stream_General || !(IsJp2 || MajorBrand==0x6A703220 || MajorBrand==0x6a707820)) //"jp2 "
+        return;
+
+    StreamSource=IsStream; //TODO: do the difference between raw stream and sequence of files with file count being frame count
+    TestContinuousFileNames();
+
+    Stream_Prepare((Config->File_Names.size()>1 || Config->File_IsReferenced_Get())?Stream_Video:Stream_Image);
+    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format), "JPEG 2000");
+    if (StreamKind_Last==Stream_Video)
+        Fill(Stream_Video, StreamPos_Last, Video_FrameCount, Config->File_Names.size());
 }
 
 //---------------------------------------------------------------------------
