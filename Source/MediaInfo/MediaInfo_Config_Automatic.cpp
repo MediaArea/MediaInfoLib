@@ -1496,7 +1496,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "ICO;;;I;Ico;;ico;image/vnd.microsoft.icon;;Lossless\n"
     "JNG;;;I;Jng;JPEG Network Graphic;jng;;;Lossy\n"
     "JPEG;;;I;Jpeg;;h3d jpeg jpg jpe jps mpo;image/jpeg;;Lossy\n"
-    "JPEG 2000;;;I;Jpeg;;jp2;image/jp2;http://www.morgan-multimedia.com/JPEG 2000/\n"
+    "JPEG 2000;;;I;Jpeg;;jp2 jph j2c j2k jhc;image/jp2;http://www.morgan-multimedia.com/JPEG 2000/\n"
     "LZ77;;;I\n"
     "MNG;;;I;Mng;Multiple-Image Network Graphic;mng;;;Lossless\n"
     "PCX;;;I;pcx;Personal Computer eXchange;pcx;image/pcx;;Lossless\n"
