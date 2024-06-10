@@ -300,13 +300,17 @@ void conformance::Clear_Conformance()
 #if MEDIAINFO_CONFORMANCE
 void conformance::Merge_Conformance(bool FromConfig)
 {
+    auto Limit = MediaInfoLib::Config.Conformance_Limit_Get();
+    if (!Limit) {
+        return;
+    }
     for (size_t Level = 0; Level < Conformance_Max; Level++) {
         auto& Conformance = ConformanceErrors[Level];
         auto& Conformance_Total = ConformanceErrors_Total[Level];
         for (const auto& FieldValue : Conformance) {
             auto Current = find(Conformance_Total.begin(), Conformance_Total.end(), FieldValue);
             if (Current != Conformance_Total.end()) {
-                if (Current->FramePoss.size() < 32) {
+                if (Current->FramePoss.size() < Limit) {
                     if (FromConfig) {
                         Current->FramePoss.insert(Current->FramePoss.begin(), { (int64u)-2 });
                     }
@@ -321,19 +325,19 @@ void conformance::Merge_Conformance(bool FromConfig)
                         Current->FramePoss.push_back({ Frame_Count, Frame_Count_NotParsedIncluded, FieldValue.FramePoss[0].SubFramePos_Min, PTS, File_Offset });
                     }
                 }
-                else if (Current->FramePoss.size() == 32)
+                else if (Current->FramePoss.size() == Limit)
                     Current->FramePoss.push_back({}); //Indicating "..."
                 continue;
             }
             if (!CheckIf(FieldValue.Flags)) {
                 continue;
             }
-            if (Conformance_Total.size() < 32) {
+            if (Conformance_Total.size() < Limit) {
                 Conformance_Total.push_back(FieldValue);
                 Conformance_Total.back().FramePoss.front() = { FromConfig ? ((int64u)-2) : Frame_Count, FromConfig ? ((int64u)-1) : Frame_Count_NotParsedIncluded, FieldValue.FramePoss[0].SubFramePos_Min, FromConfig ? ((int64u)-1) : PTS, File_Offset };
             }
             else {
-                if (Conformance_Total.size() == 32) {
+                if (Conformance_Total.size() == Limit) {
                     field_value TooMany;
                     TooMany.Field = "GeneralCompliance";
                     TooMany.Value = "[More conformance errors...]";
