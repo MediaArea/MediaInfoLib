@@ -870,7 +870,12 @@ bool File_Riff::Header_Begin()
         Element_Begin1("...Continued");
         Element_ThisIsAList();
         if (Buffer_DataToParse_End)
+        {
+            Header_Fill_Code(0x64617461);
             Header_Fill_Size(Buffer_DataToParse_End-(File_Offset+Buffer_Offset));
+            if (Buffer_DataToParse_End>File_Size)
+                Buffer_DataToParse_End=File_Size; // Done here for at least one conformance check of the value. TODO: better handling
+        }
         else
             Header_Fill_Size(Element_Size);
         Element_End();
@@ -1092,8 +1097,7 @@ void File_Riff::Header_Parse()
     if (File_Offset+Buffer_Offset+8+Size_Complete>File_Size)
     {
         if (Element_Level<=2) //Incoherencies info only at the top level chunk
-            IsTruncated(File_Offset+Buffer_Offset+8+Size_Complete, Element_Offset!=8, "RIFF");
-        Size_Complete=File_Size-(File_Offset+Buffer_Offset+Element_Offset);
+            IsTruncated(File_Offset+Buffer_Offset+8+Size_Complete, Element_Offset!=8, Ztring().From_CC4(Name).Trim().To_UTF8().c_str());
     }
 
     //Alignment
