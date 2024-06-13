@@ -2998,10 +2998,13 @@ string File_Mpeg4::CreateElementName()
     string Result;
     for (size_t i = 1; i < Element_Level; i++) {
         Result += Ztring().From_CC4(Element[i].Code).Trim().To_UTF8();
-        if (Result.back() >= '0' && Result.back() <= '9') {
+        if (Result.empty()) {
+            Result = "0x20202020"; // Full of spaces
+        }
+        else if (Result.back() >= '0' && Result.back() <= '9') {
             Result += '_';
         }
-        Result += __T(' ');
+        Result += ' ';
     }
     if (!Result.empty())
         Result.pop_back();
