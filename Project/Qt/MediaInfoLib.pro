@@ -64,6 +64,7 @@ HEADERS += \
         ../../Source/MediaInfo/Audio/File_Caf.h \
         ../../Source/MediaInfo/Audio/File_Celt.h \
         ../../Source/MediaInfo/Audio/File_ChannelGrouping.h \
+        ../../Source/MediaInfo/Audio/File_Dat.h \
         ../../Source/MediaInfo/Audio/File_DolbyE.h \
         ../../Source/MediaInfo/Audio/File_Dts.h \
         ../../Source/MediaInfo/Audio/File_DtsUhd.h \
@@ -289,6 +290,7 @@ SOURCES += \
         ../../Source/MediaInfo/Audio/File_Celt.cpp \
         ../../Source/MediaInfo/Audio/File_ChannelGrouping.cpp \
         ../../Source/MediaInfo/Audio/File_ChannelSplitting.cpp \
+        ../../Source/MediaInfo/Audio/File_Dat.cpp \
         ../../Source/MediaInfo/Audio/File_Dsdiff.cpp \
         ../../Source/MediaInfo/Audio/File_Dsf.cpp \
         ../../Source/MediaInfo/Audio/File_Dts.cpp \

@@ -203,6 +203,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_ChannelGrouping.cpp">
             <BuildOrder>81</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dat.cpp">
+            <BuildOrder>243</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_DolbyE.cpp">
             <BuildOrder>86</BuildOrder>
         </CppCompile>
