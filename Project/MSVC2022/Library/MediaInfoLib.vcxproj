@@ -113,6 +113,7 @@
       <DebugInformationFormat>None</DebugInformationFormat>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
       <SDLCheck>true</SDLCheck>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -125,6 +126,7 @@
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
       <DebugInformationFormat>None</DebugInformationFormat>
       <SDLCheck>true</SDLCheck>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
