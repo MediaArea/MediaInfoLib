@@ -112,6 +112,7 @@
       <DebugInformationFormat>None</DebugInformationFormat>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
       <SDLCheck>true</SDLCheck>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -120,6 +121,7 @@
       <SetChecksum>true</SetChecksum>
       <ModuleDefinitionFile>../../../Source/MediaInfoDLL/MediaInfoDLL.def</ModuleDefinitionFile>
       <GenerateDebugInformation>No</GenerateDebugInformation>
+      <CETCompat>true</CETCompat>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -130,6 +132,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DebugInformationFormat>None</DebugInformationFormat>
       <SDLCheck>true</SDLCheck>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -138,6 +141,7 @@
       <SetChecksum>true</SetChecksum>
       <ModuleDefinitionFile>../../../Source/MediaInfoDLL/MediaInfoDLL.def</ModuleDefinitionFile>
       <GenerateDebugInformation>No</GenerateDebugInformation>
+      <CETCompat>true</CETCompat>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
