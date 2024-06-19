@@ -19197,13 +19197,13 @@ bool File_Mxf::BookMark_Needed()
     {
         int64u ProbeCaptionBytePos=(int64u)-1;
         int64u ProbeCaptionByteDur=(int64u)-1;
-        int64u Duration=0;
+        float32 Duration=0;
         for (size_t StreamKind=Stream_General; StreamKind<Stream_Max; StreamKind++)
         {
             auto Count=Count_Get((stream_t)StreamKind);
             for (size_t StreamPos=0; StreamPos<Count; StreamPos++)
             {
-                Duration=Retrieve_Const((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_Duration)).To_int64u()/1000;
+                Duration=Retrieve_Const((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_Duration)).To_int64u()/1000.0;
                 if (Duration)
                     break;
             }
@@ -19225,6 +19225,20 @@ bool File_Mxf::BookMark_Needed()
             }
         }
         auto Probe=Config->File_ProbeCaption_Get(ParserName);
+        int64u HeaderSize=0;
+        int64u ContentSize=File_Size;
+        if (!Partitions.empty())
+        {
+            const auto& FirstPartition=Partitions.front();
+            HeaderSize=FirstPartition.PartitionPackByteCount+FirstPartition.HeaderByteCount+FirstPartition.IndexByteCount;
+            ContentSize-=HeaderSize;
+            const auto& LastPartition=Partitions.back();
+            if (LastPartition.StreamOffset==FirstPartition.FooterPartition)
+            {
+                 int64u FooterSize=File_Size-LastPartition.StreamOffset;
+                 ContentSize-=FooterSize;
+            }
+        }
         switch (Probe.Start_Type)
         {
             case config_probe_size:
@@ -19233,15 +19247,13 @@ bool File_Mxf::BookMark_Needed()
             case config_probe_dur:
                 if (Duration)
                 {
-                    Probe.Start=Probe.Start*100/Duration; //TODO: real timestamp
-                    if (!Probe.Start)
-                        Probe.Start=1;
+                    ProbeCaptionBytePos=HeaderSize+(float32)Probe.Start/Duration*ContentSize; //TODO: real timestamp
                 }
                 else
-                    Probe.Start=50;
-                // Fall through
+                    ProbeCaptionBytePos=HeaderSize+ContentSize/2;
+                break;
             case config_probe_percent:
-                ProbeCaptionBytePos=File_Size/100*Probe.Start;
+                ProbeCaptionBytePos=HeaderSize+ContentSize/100*Probe.Start;
                 break;
         }
         switch (Probe.Duration_Type) {
@@ -19251,15 +19263,13 @@ bool File_Mxf::BookMark_Needed()
             case config_probe_dur:
                 if (Duration)
                 {
-                    Probe.Duration=Probe.Duration*100/Duration; //TODO: real timestamp
-                    if (!Probe.Duration)
-                        Probe.Duration++;
+                    ProbeCaptionByteDur=(float32)Probe.Duration/Duration*ContentSize; //TODO: real timestamp
                 }
                 else
-                    Probe.Duration=1;
-                // Fall through
+                    ProbeCaptionByteDur=ContentSize/100;
+                break;
             case config_probe_percent:
-                ProbeCaptionByteDur=File_Size/100*Probe.Duration;
+                ProbeCaptionByteDur=ContentSize/100*Probe.Duration;
                 break;
         }
         auto MaxOffset=ProbeCaptionBytePos+ProbeCaptionByteDur;
