@@ -313,20 +313,18 @@ void File_Riff::Streams_Finish ()
                 for (size_t Pos=0; Pos<Temp->second.Parsers[0]->Count_Get(StreamKind_Last); Pos++)
                 {
                     Ztring Temp_ID=ID;
-                    Ztring Temp_ID_String=ID;
                     Merge(*Temp->second.Parsers[0], StreamKind_Last, Pos, StreamPos_Base+Pos);
                     if (!Retrieve(StreamKind_Last, StreamPos_Last, General_ID).empty())
                     {
                         if (!Temp_ID.empty())
-                        {
                             Temp_ID+=__T('-');
-                            Temp_ID_String+=__T('-');
-                        }
                         Temp_ID+=Retrieve(StreamKind_Last, StreamPos_Last, General_ID);
-                        Temp_ID_String+=Retrieve(StreamKind_Last, StreamPos_Last, General_ID);
                     }
                     Fill(StreamKind_Last, StreamPos_Last, General_ID, Temp_ID, true);
-                    Fill(StreamKind_Last, StreamPos_Last, General_StreamOrder, Temp_ID_String, true);
+                    auto Temp_ID_DashPos=Temp_ID.find(__T('-'));
+                    if (Temp_ID_DashPos!=string::npos)
+                        Temp_ID.resize(Temp_ID_DashPos);
+                    Fill(StreamKind_Last, StreamPos_Last, General_StreamOrder, Temp_ID, true);
 
                     //Special case: multiple fmt/data chunks in WAV
                     if (StreamKind_Last==Stream_Audio //TODO: smarter merge
