@@ -1013,6 +1013,7 @@ void File_Mpeg4::Streams_Finish()
                     stream_t NewKind=StreamKind_Last;
                     size_t NewPos1;
                     Ztring ID;
+                    vector<Ztring> StreamOrders;
                     if (Temp->second.Parsers[0]->Retrieve(Stream_General, 0, General_Format)==__T("ChannelGrouping"))
                     {
                         //Channel coupling, removing the 2 corresponding streams
@@ -1021,6 +1022,8 @@ void File_Mpeg4::Streams_Finish()
                         if (StreamSize_Encoded)
                             StreamSize_Encoded+=Retrieve(StreamKind_Last, NewPos1, Fill_Parameter(StreamKind_Last, Generic_StreamSize)).To_int64u();
 
+                        StreamOrders.push_back(Retrieve_Const(StreamKind_Last, NewPos1, General_StreamOrder));
+                        StreamOrders.push_back(Retrieve_Const(StreamKind_Last, StreamPos_Last, General_StreamOrder));
                         Stream_Erase(NewKind, StreamPos_Last);
                         Stream_Erase(NewKind, NewPos1);
 
@@ -1062,6 +1065,12 @@ void File_Mpeg4::Streams_Finish()
                         Ztring Parser_ID=ID+__T('-')+Retrieve(StreamKind_Last, StreamPos_Last, General_ID);
                         if (ID.size()+1==Parser_ID.size())
                             Parser_ID.resize(ID.size());
+                        if (!StreamOrders.empty())
+                        {
+                            Clear(StreamKind_Last, StreamPos_Last, General_StreamOrder);
+                            for (auto& StreamOrder : StreamOrders)
+                                Fill(StreamKind_Last, StreamPos_Last, General_StreamOrder, StreamOrder);
+                        }
                         Fill(StreamKind_Last, StreamPos_Last, General_ID, Parser_ID, true);
                         if (StreamPos)
                         {

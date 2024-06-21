@@ -3955,7 +3955,10 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
                             if (Info->first=="BitRate")
                                 continue; // Not always valid e.g. Dolby E. TODO: check in case of normal check
                             if (Info->first=="StreamOrder")
-                                continue; // Is not useful and has some issues with Dolby E
+                            {
+                                Fill(StreamKind_Last, StreamPos_Last+Pos, Info->first.c_str(), Info->second);
+                                continue;
+                            }
 
                             // Filling both values
                             Fill(StreamKind_Last, StreamPos_Last+Pos, (Info->first+"_Original").c_str(), FromEssence); //TODO: use the generic engine by filling descriptor info before merging essence info
