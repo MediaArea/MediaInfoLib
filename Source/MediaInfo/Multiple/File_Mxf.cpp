@@ -3784,6 +3784,49 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
         }
     }
 
+    Streams_Finish_Descriptor(Descriptor);
+    auto StreamKind_Last_Sav=StreamKind_Last;
+    auto StreamPos_Last_Sav=StreamPos_Last;
+    auto ID_Sav=Ztring::ToZtring(Descriptor->second.LinkedTrackID);
+    for (size_t StreamKind=Stream_Text; StreamKind<Stream_Max; StreamKind++)
+        for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
+        {
+            if (StreamKind==StreamKind_Last_Sav && StreamPos==StreamPos_Last_Sav)
+                continue;
+            auto ID=Retrieve_Const((stream_t)StreamKind, StreamPos, General_ID);
+            size_t ID_SubStreamInfo_Pos=ID.find(__T('-'));
+            if (ID_SubStreamInfo_Pos!=string::npos)
+            {
+                ID.resize(ID_SubStreamInfo_Pos);
+            }
+            if (ID==ID_Sav)
+            {
+                if (Descriptor->second.StreamKind==Stream_Video)
+                {
+                    Fill((stream_t)StreamKind, StreamPos, General_StreamOrder, Retrieve_Const(Stream_Video, 0, General_StreamOrder));
+                    continue;
+                }
+                if (Descriptor->second.StreamKind==Stream_Audio) //TODO: handle correctly when ID is same in different tracks
+                {
+                    continue;
+                }
+                StreamKind_Last=(stream_t)StreamKind;
+                StreamPos_Last=StreamPos;
+                Streams_Finish_Descriptor(Descriptor);
+            }
+        }
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Streams_Finish_Descriptor(descriptors::iterator Descriptor)
+{
+    size_t Before_Count[Stream_Max];
+    for (size_t Pos=0; Pos<Stream_Max; Pos++)
+        Before_Count[Pos]=(size_t)-1;
+    Before_Count[Stream_Video]=Count_Get(Stream_Video);
+    Before_Count[Stream_Audio]=Count_Get(Stream_Audio);
+    Before_Count[Stream_Text]=Count_Get(Stream_Text);
+
     if (StreamKind_Last!=Stream_Max && StreamPos_Last!=(size_t)-1)
     {
         //Handling buggy files
