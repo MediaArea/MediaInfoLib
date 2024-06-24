@@ -1477,6 +1477,8 @@ protected :
         int64u  DemuxedSampleCount_AddedToFirstFrame;
         int64u  DemuxedElementSize_AddedToFirstFrame;
     #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+
+    void Streams_Finish_Descriptor (descriptors::iterator Descriptor);
 };
 
 } //NameSpace
