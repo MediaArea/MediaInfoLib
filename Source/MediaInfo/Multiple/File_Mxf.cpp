@@ -588,6 +588,9 @@ namespace Elements
     UUID(060E2B34, 01020101, 0E067F03, 00000000, 0000, "", GenericContainer_Sony, "")
 
     //                         09 - Dolby
+    UUID(060E2B34, 01010105, 0E090400, 00000000, 0000, "Dolby", Dolby_040000000000, "")
+    UUID(060E2B34, 02530105, 0E090502, 00000000, 0000, "Dolby", Dolby_050200000000, "")
+    UUID(060E2B34, 01020105, 0E090502, 01000101, 0000, "Dolby", Dolby_050201000101, "")
     UUID(060E2B34, 01020105, 0E090607, 01010100, 0000, "Dolby", Dolby_PHDRImageMetadataItem, "")
     UUID(060E2B34, 02530105, 0E090607, 01010103, 0000, "Dolby", Dolby_PHDRMetadataTrackSubDescriptor, "")
     UUID(060E2B34, 01010105, 0E090607, 01010104, 0000, "Dolby", Dolby_DataDefinition, "")
@@ -6527,6 +6530,8 @@ void File_Mxf::Data_Parse()
     ELEMENT(TextBasedFramework,                                 "Text-based Framework")
     ELEMENT(GenericStreamTextBasedSet,                          "Generic Stream Text-based Set")
     ELEMENT(MXFGenericStreamDataElementKey_09_01,               "MXF Generic Stream Data Element Key")
+    ELEMENT(Dolby_050200000000,                                 "Dolby .05.02.00.00.00.00")
+    ELEMENT(Dolby_050201000101,                                 "Dolby .05.02.01.00.01.01")
     ELEMENT(Dolby_PHDRMetadataTrackSubDescriptor,               "Dolby PHDRMetadataTrackSubDescriptor")
     ELEMENT(Omneon_010201010100,                                "Omneon .01.02.01.01.01.00")
     ELEMENT(Omneon_010201020100,                                "Omneon .01.02.01.02.01.00")
@@ -9742,6 +9747,25 @@ void File_Mxf::Dolby_PHDRImageMetadataItem()
 {
     //Parsing
     Skip_String(Element_Size,                                   "Data");
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Dolby_050200000000()
+{
+    {
+        std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+        if (Primer_Value!=Primer_Values.end())
+        {
+            int32u Code_Compare1=Primer_Value->second.hi>>32;
+            int32u Code_Compare2=(int32u)Primer_Value->second.hi;
+            int32u Code_Compare3=Primer_Value->second.lo>>32;
+            int32u Code_Compare4=(int32u)Primer_Value->second.lo;
+            if(0);
+            ELEMENT_UUID(Dolby_040000000000,                            "Dolby 04.00.00.00.00.00")
+        }
+    }
+
+    GenericDataEssenceDescriptor();
 }
 
 //---------------------------------------------------------------------------
@@ -14706,6 +14730,14 @@ void File_Mxf::Omneon_010201020100_8005()
 //---------------------------------------------------------------------------
 // 0x8006
 void File_Mxf::Omneon_010201020100_8006()
+{
+    //Parsing
+    Skip_UTF8(Length2,                                          "Content");
+}
+
+//---------------------------------------------------------------------------
+// 0x8006
+void File_Mxf::Dolby_040000000000()
 {
     //Parsing
     Skip_UTF8(Length2,                                          "Content");
