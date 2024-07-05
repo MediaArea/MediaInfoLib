@@ -1062,7 +1062,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
         //Copying buffer
         if (ToAdd_Size>0)
         {
-            memcpy_Unaligned_Unaligned(Buffer_Temp+Buffer_Size, ToAdd, ToAdd_Size);
+            memcpy_Unaligned_Unaligned(Buffer_Temp+Buffer_Temp_Size, ToAdd, ToAdd_Size);
             Buffer_Temp_Size+=ToAdd_Size;
         }
 
@@ -1966,6 +1966,7 @@ void File__Analyze::Buffer_Clear()
         }
     }
     Buffer_Size=0;
+    Buffer_Temp=nullptr;
     Buffer_Temp_Size=0;
     Buffer_Offset=0;
     Buffer_Offset_Temp=0;
