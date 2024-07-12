@@ -153,6 +153,7 @@
 		<Unit filename="..\..\..\Source\MediaInfo\Multiple\File_Mpeg_Psi.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Multiple\File_Mxf.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\Multiple\File_Mxf.h" />
+		<Unit filename="..\..\..\Source\MediaInfo\Multiple\File_Mxf_Automated.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Multiple\File_Nsv.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\Multiple\File_Nsv.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Multiple\File_Ogg.cpp" />
