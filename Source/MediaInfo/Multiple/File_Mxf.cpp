@@ -4882,7 +4882,7 @@ void File_Mxf::Read_Buffer_Continue()
                 Get_B1(SS,                                      "SS");
                 Get_B1(Drop,                                    "Drop");
                 Get_B1(FF,                                      "SS");
-                TimeCode TC(HH, MM, SS, FF, FF<=99?99:255, TimeCode::flags().DropFrame());
+                TimeCode TC(HH, MM, SS, FF, FF<=99?99:255, TimeCode::flags().DropFrame(Drop));
                 Element_Info1(TC.ToString());
                 if (!Frame_Count_NotParsedIncluded)
                 {
