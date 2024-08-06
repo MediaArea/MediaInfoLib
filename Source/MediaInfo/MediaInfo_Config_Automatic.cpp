@@ -1522,6 +1522,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "CPC Captioning;;;T;Other;;txt;;http://www.cpcweb.com/Captioning/cap_software.htm;Lossless\n"
     "Cheeta;;;T;Other;;asc;;;Lossless\n"
     "N19;;;T;N19;;stl;;;Lossless\n"
+    "PAC;;;T;Pac;;pac fpc\n"
     "PDF;;;T;Pdf;;pdf\n"
     "SAMI;;;T;Sami;;smi sami;;;Lossless\n"
     "SCC;;;T;SCC;;scc sc2;;;Lossless\n"
@@ -5649,6 +5650,7 @@ void MediaInfo_Config_Text (ZtringListList &Info)
     "Events_PaintOn;;;Y YTY\n"
     "Lines_Count;;;Y YTY\n"
     "Lines_MaxCountPerEvent;;;Y YTY\n"
+    "Lines_MaxCharacterCount;;;Y YTY\n"
     "FirstDisplay_Delay_Frames;;;Y YTY\n"
     "FirstDisplay_Type;;;Y YTY\n"
     ));
