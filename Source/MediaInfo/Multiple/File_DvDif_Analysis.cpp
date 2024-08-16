@@ -296,6 +296,8 @@ void File_DvDif::Read_Buffer_Continue()
                                     Speed_RecDate_Current.Years    =Years;
                                     Speed_RecDate_Current.IsValid  =true;
                                 }
+                                if (!FrameIsNotFake)
+                                    FrameIsNotFake=true;
                             }
                         }
 
@@ -330,6 +332,8 @@ void File_DvDif::Read_Buffer_Continue()
                                     Speed_RecTime_Current.Time.Hours    =Hours;
                                     Speed_RecTime_Current.IsValid  =true;
                                 }
+                                if (!FrameIsNotFake)
+                                    FrameIsNotFake=true;
                             }
                         }
                     }
@@ -395,9 +399,9 @@ void File_DvDif::Read_Buffer_Continue()
                                                            + ((Buffer[Buffer_Offset+3+Pos+3]&0x0F)   )   ;
                             int8u Years                     =((Buffer[Buffer_Offset+3+Pos+4]&0xF0)>>4)*10
                                                            + ((Buffer[Buffer_Offset+3+Pos+4]&0x0F)   )   ;
-                            if (Years<100
-                             && Months<=12
-                             && Days  <=31)
+                            if (Years<=99
+                             && Months && Months<=12
+                             && Days && Days<=31)
                             {
                                 if (Speed_RecDate_Current.IsValid
                                  && Speed_RecDate_Current.Days      !=Days
@@ -413,6 +417,8 @@ void File_DvDif::Read_Buffer_Continue()
                                     Speed_RecDate_Current.Years    =Years;
                                     Speed_RecDate_Current.IsValid  =true;
                                 }
+                                if (!FrameIsNotFake)
+                                    FrameIsNotFake=true;
                             }
                         }
 
@@ -447,6 +453,8 @@ void File_DvDif::Read_Buffer_Continue()
                                     Speed_RecTime_Current.Time.Hours    =Hours;
                                     Speed_RecTime_Current.IsValid  =true;
                                 }
+                                if (!FrameIsNotFake)
+                                    FrameIsNotFake=true;
                             }
                         }
 
@@ -481,6 +489,8 @@ void File_DvDif::Read_Buffer_Continue()
                                         Captions_Flags.set(Caption_ParityIssueAny);
                                 }
                             }
+                            if (!FrameIsNotFake)
+                                FrameIsNotFake=true;
                         }
                     }
                 }
@@ -532,8 +542,9 @@ void File_DvDif::Read_Buffer_Continue()
                                                        + ((Buffer[Buffer_Offset+3+3]&0x0F)   )   ;
                         int8u Years                     =((Buffer[Buffer_Offset+3+4]&0xF0)>>4)*10
                                                        + ((Buffer[Buffer_Offset+3+4]&0x0F)   )   ;
-                        if (Months<=12
-                         && Days  <=31)
+                        if (Years<=99
+                         && Months && Months<=12
+                         && Days && Days<=31)
                         {
                             if (Speed_RecDate_Current.IsValid
                              && Speed_RecDate_Current.Days      !=Days
@@ -549,6 +560,8 @@ void File_DvDif::Read_Buffer_Continue()
                                 Speed_RecDate_Current.Years    =Years;
                                 Speed_RecDate_Current.IsValid  =true;
                             }
+                            if (!FrameIsNotFake)
+                                FrameIsNotFake=true;
                         }
                     }
 
@@ -583,6 +596,8 @@ void File_DvDif::Read_Buffer_Continue()
                                 Speed_RecTime_Current.Time.Hours    =Hours;
                                 Speed_RecTime_Current.IsValid  =true;
                             }
+                            if (!FrameIsNotFake)
+                                FrameIsNotFake=true;
                         }
                     }
 
@@ -637,7 +652,39 @@ void File_DvDif::Read_Buffer_Continue()
                                 BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_OK;
                         }
                         else
+                        {
                             BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_OK;
+                            if (!FrameIsNotFake)
+                            {
+                                if (QU==(int8u)-1)
+                                {
+                                    //Let's wait
+                                }
+                                else
+                                {
+                                    switch (QU)
+                                    {
+                                        case 0: //16-bit
+                                        {
+                                            for (size_t i=8; i<80; i+=2)
+                                            {
+                                                int16s Value=(int16s)BigEndian2int16u(Buffer+Buffer_Offset+i);
+                                                if (Value<=-8 || Value>=8)
+                                                {
+                                                    FrameIsNotFake=true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        break;
+                                        //TODO: check 0 and -1 for 12-bit
+                                    defaut:
+                                        FrameIsNotFake=true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 break;
@@ -683,6 +730,15 @@ void File_DvDif::Read_Buffer_Continue()
                             uint8_t Dseq=Buffer[Buffer_Offset+1]>>4;
                             Video_STA_Errors_ByDseq[(Dseq<<4)|STA_Error]++;
                         }
+                        if (!FrameIsNotFake)
+                            FrameIsNotFake=true;
+                    }
+                    else
+                    {
+                        //Looking for empty video
+                        static const unsigned char EmptyVideoTemplate[]={0xD1, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD1, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD1, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD1, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x26, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+                        if (!FrameIsNotFake && memcmp(Buffer+Buffer_Offset+4, EmptyVideoTemplate, sizeof(EmptyVideoTemplate)))
+                            FrameIsNotFake=true;
                     }
                     BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=STA_Error?BlockStatus_NOK:BlockStatus_OK;
                 }
@@ -1882,6 +1938,8 @@ void File_DvDif::Errors_Stats_Update()
             Event1.BlockStatus=BlockStatus;
             Event1.AbstBf=AbstBf_Current;
             Event1.MoreFlags=MoreFlags;
+            if (!FrameIsNotFake)
+                Event1.MoreFlags|=1<<3;
             if (MoreData)
             {
                 Event1.MoreData=MoreData-sizeof(size_t);
@@ -1983,6 +2041,7 @@ void File_DvDif::Errors_Stats_Update()
     Speed_Arb_Current.Clear();
     Speed_FrameCount++;
     Speed_FrameCount_system[system]++;
+    FrameIsNotFake=false;
     REC_IsValid=false;
     DirectionSpeed.clear();
     audio_source_mode.clear();
