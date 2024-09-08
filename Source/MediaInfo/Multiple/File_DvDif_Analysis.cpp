@@ -1847,7 +1847,7 @@ void File_DvDif::Errors_Stats_Update()
                             if (!MoreData)
                                 MoreData=new int8u[4096] + sizeof(size_t); // TODO: more dynamic allocation
                             MoreData[MoreData_Offset++]=2+Audio_Errors[ChannelGroup][Dseq].Values.size()*2; // Size of the block
-                            MoreData[MoreData_Offset++]=1; // Audio error value par channel group per Dseq
+                            MoreData[MoreData_Offset++]=MediaInfo_Event_Analysis_Frame_AudioErrorValues; // Audio error value par channel group per Dseq
                             MoreData[MoreData_Offset++]=ChannelGroup;
                             MoreData[MoreData_Offset++]=Dseq;
                             for (std::set<int16u>::iterator Value=Audio_Errors[ChannelGroup][Dseq].Values.begin(); Value!=Audio_Errors[ChannelGroup][Dseq].Values.end(); ++Value)
@@ -1867,7 +1867,7 @@ void File_DvDif::Errors_Stats_Update()
                 if (!MoreData)
                     MoreData=new int8u[4096]+sizeof(size_t); // TODO: more dynamic allocation
                 MoreData[MoreData_Offset++]=DirectionSpeed.size();
-                MoreData[MoreData_Offset++]=2; // DirectionSpeed values
+                MoreData[MoreData_Offset++]=MediaInfo_Event_Analysis_Frame_DirectionSpeed; // DirectionSpeed values
                 for (std::vector<int8u>::iterator DirectionSpeed_Item=DirectionSpeed.begin(); DirectionSpeed_Item!=DirectionSpeed.end(); ++DirectionSpeed_Item)
                 {
                     MoreData[MoreData_Offset++]=*DirectionSpeed_Item;
