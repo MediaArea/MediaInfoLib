@@ -587,6 +587,8 @@ void File_DvDif::Read_Buffer_Continue()
                     }
 
                     //Audio errors
+                    auto BlockStatus_Pos=(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80;
+                    if (BlockStatus_Pos<BlockStatus_MaxSize)
                     {
                         bool Contains_8000=true; // Note: standards indicate these values so old code was using only theses values, now checking all values (except 0 or -1 as it is for silent audio)
                         bool Contains_800800=true;
@@ -631,13 +633,13 @@ void File_DvDif::Read_Buffer_Continue()
                                     Audio_Errors[Channel].resize(Dseq_Count);
                                 Audio_Errors[Channel][Dseq].Count++;
                                 Audio_Errors[Channel][Dseq].Values.insert(Value);
-                                BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_NOK;
+                                BlockStatus[BlockStatus_Pos]=BlockStatus_NOK;
                             }
                             else
-                                BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_OK;
+                                BlockStatus[BlockStatus_Pos]=BlockStatus_OK;
                         }
                         else
-                            BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_OK;
+                            BlockStatus[BlockStatus_Pos]=BlockStatus_OK;
                     }
                 }
                 break;
@@ -684,7 +686,9 @@ void File_DvDif::Read_Buffer_Continue()
                             Video_STA_Errors_ByDseq[(Dseq<<4)|STA_Error]++;
                         }
                     }
-                    BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=STA_Error?BlockStatus_NOK:BlockStatus_OK;
+                    auto BlockStatus_Pos=(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80;
+                    if (BlockStatus_Pos<BlockStatus_MaxSize)
+                        BlockStatus[BlockStatus_Pos]=STA_Error?BlockStatus_NOK:BlockStatus_OK;
                 }
                 break;
         }
