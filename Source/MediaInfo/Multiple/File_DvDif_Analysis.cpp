@@ -55,6 +55,9 @@ void File_DvDif::Read_Buffer_Continue()
     if (!Analyze_Activated)
         return;
 
+    if (!Synchro_Manage()) // TODO: Synchro_Manage() should be called before Read_Buffer_Continue() in File__Analyze
+        return; //Wait for more data
+
     #if MEDIAINFO_DEMUX
         if (Demux_UnpacketizeContainer && !Synchro_Manage()) // We need to manage manually synchronization in case of demux
         {
