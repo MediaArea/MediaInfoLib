@@ -267,6 +267,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_AribStdB24B37.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_DtvccTransport.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_DvbSubtitle.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Pac.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Pdf.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Scc.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Sdp.cpp" />
@@ -609,6 +610,8 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_AribStdB24B37.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_DtvccTransport.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_DvbSubtitle.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Pac.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Pac_Codepages.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Pdf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Scc.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Scte20.h" />

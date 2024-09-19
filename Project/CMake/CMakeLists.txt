@@ -315,6 +315,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Text/File_Kate.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Text/File_N19.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Text/File_OtherText.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Text/File_Pac.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Text/File_Pdf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Text/File_Pgs.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Text/File_Scc.cpp

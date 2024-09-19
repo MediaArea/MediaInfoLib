@@ -222,6 +222,8 @@ HEADERS += \
         ../../Source/MediaInfo/Text/File_Kate.h \
         ../../Source/MediaInfo/Text/File_N19.h \
         ../../Source/MediaInfo/Text/File_OtherText.h \
+        ../../Source/MediaInfo/Text/File_Pac.h \
+        ../../Source/MediaInfo/Text/File_Pac_Codepages.h \
         ../../Source/MediaInfo/Text/File_Pdf.h \
         ../../Source/MediaInfo/Text/File_Pgs.h \
         ../../Source/MediaInfo/Text/File_Scc.h \
@@ -458,6 +460,7 @@ SOURCES += \
         ../../Source/MediaInfo/Text/File_Kate.cpp \
         ../../Source/MediaInfo/Text/File_N19.cpp \
         ../../Source/MediaInfo/Text/File_OtherText.cpp \
+        ../../Source/MediaInfo/Text/File_Pac.cpp \
         ../../Source/MediaInfo/Text/File_Pdf.cpp \
         ../../Source/MediaInfo/Text/File_Pgs.cpp \
         ../../Source/MediaInfo/Text/File_Scc.cpp \
