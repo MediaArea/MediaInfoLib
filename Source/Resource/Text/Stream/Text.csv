@@ -57,7 +57,7 @@ Duration_Start2End/String3;;;N NT;;;Play time from first display to last display
 Duration_Start2End/String4;;;N NT;;;Play time from first display to last display in format HH:MM:SS:FF, with last colon replaced by semicolon for drop frame if available;;
 Duration_Start2End/String5;;;N NT;;;Play time from first display to last display in format HH:MM:SS.mmm (HH:MM:SS:FF);;
 Duration_Start_Command;; ms;N YFY;;;Timestamp of first command, in ms;;
-Duration_Start_Command/String;;;Y NT;;;Timestamp of first command in format XXx YYy, with YYy value omitted if zero (e.g. 1 h 40 min);;
+Duration_Start_Command/String;;;N NT;;;Timestamp of first command in format XXx YYy, with YYy value omitted if zero (e.g. 1 h 40 min);;
 Duration_Start_Command/String1;;;N NT;;;Timestamp of first command in format HHh MMmn SSs MMMms, with any fields omitted if zero;;
 Duration_Start_Command/String2;;;N NT;;;Timestamp of first command in format XXx YYy, with YYy omitted if value is zero;;
 Duration_Start_Command/String3;;;N NT;;;Timestamp of first command in format HH:MM:SS.mmm;;
@@ -78,7 +78,7 @@ Duration_End/String3;;;N NT;;;Play time in format HH:MM:SS.mmm;;
 Duration_End/String4;;;N NT;;;Play time in format HH:MM:SS:FF, with last colon replaced by semicolon for drop frame if available;;
 Duration_End/String5;;;N NT;;;Play time in format HH:MM:SS.mmm (HH:MM:SS:FF);;
 Duration_End_Command;; ms;N YFY;;;Play time of the stream, in s (ms for text output);;
-Duration_End_Command/String;;;Y NT;;;Play time in format XXx YYy, with YYy value omitted if zero (e.g. 1 h 40 min);;
+Duration_End_Command/String;;;N NT;;;Play time in format XXx YYy, with YYy value omitted if zero (e.g. 1 h 40 min);;
 Duration_End_Command/String1;;;N NT;;;Play time in format HHh MMmn SSs MMMms, with any fields omitted if zero;;
 Duration_End_Command/String2;;;N NT;;;Play time in format XXx YYy, with YYy omitted if value is zero;;
 Duration_End_Command/String3;;;N NT;;;Play time in format HH:MM:SS.mmm;;
