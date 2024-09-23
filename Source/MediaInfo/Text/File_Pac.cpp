@@ -44,7 +44,7 @@ namespace MediaInfoLib
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-void Pac_Convert(wstring& ToConvert, const codepage& CodePage) {
+void Pac_Convert(Ztring& ToConvert, const codepage& CodePage) {
     auto Table = CodePage.List - 0x20;
     auto Table_Size = CodePage.Size + 0x20;
     for (auto& Item : ToConvert) {
@@ -329,7 +329,7 @@ void File_Pac::Data_Parse()
                 Get_ISO_8859_1(Size, Content.back(),            "Content");
                 bool Is8bit = false;
                 for (const auto& Character : Content.back()) {
-                    if (Character >= 0x80) {
+                    if ((wchar_t)Character >= 0x80) {
                         Is8bit = true;
                     }
                 }
@@ -340,7 +340,7 @@ void File_Pac::Data_Parse()
                         int Max = (int)Line.size();
                         for (int i = Max; i > 0; i--) {
                             const auto Character = Line[i];
-                            if (Character >= 0xE0) {
+                            if ((wchar_t)Character >= 0xE0) {
                                 Line.erase(i, 1); // Not supported but we currently don't need the real text
                             }
                         }
