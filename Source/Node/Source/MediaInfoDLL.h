@@ -119,18 +119,12 @@
 /*-------------------------------------------------------------------------*/
 #if defined(_WIN32) || defined(WIN32)
     #ifdef _UNICODE
-        #ifndef MEDIAINFODLL_NAME
-            #define MEDIAINFODLL_NAME L"MediaInfo.dll"
-        #endif //MEDIAINFODLL_NAME
+        #define MEDIAINFODLL_NAME L"MediaInfo.dll"
     #else //_UNICODE
-        #ifndef MEDIAINFODLL_NAME
-            #define MEDIAINFODLL_NAME "MediaInfo.dll"
-        #endif //MEDIAINFODLL_NAME
+        #define MEDIAINFODLL_NAME "MediaInfo.dll"
     #endif //_UNICODE
 #elif defined(__APPLE__) && defined(__MACH__)
-    #ifndef MEDIAINFODLL_NAME
-        #define MEDIAINFODLL_NAME "libmediainfo.0.dylib"
-    #endif //MEDIAINFODLL_NAME
+    #define MEDIAINFODLL_NAME "libmediainfo.0.dylib"
     #define __stdcall
     #ifdef __cplusplus
         #include <new> //for size_t
@@ -138,9 +132,7 @@
         #include <stddef.h> //for size_t
     #endif /* __cplusplus */
 #else
-    #ifndef MEDIAINFODLL_NAME
-        #define MEDIAINFODLL_NAME "libmediainfo.so.0"
-    #endif //MEDIAINFODLL_NAME
+    #define MEDIAINFODLL_NAME "libmediainfo.so.0"
     #define __stdcall
 #endif //!defined(_WIN32) || defined(WIN32)
 
@@ -655,7 +647,7 @@ namespace MediaInfoDLL
         size_t        State_Get() {MEDIAINFO_TEST_INT; return MediaInfo_State_Get(Handle);};
         size_t        Count_Get(stream_t StreamKind, size_t StreamNumber = (size_t) - 1)  {MEDIAINFO_TEST_INT; return MediaInfo_Count_Get(Handle, (MediaInfo_stream_C)StreamKind, StreamNumber);};
 
-        bool IsReady() {return (Handle!=nullptr && MediaInfo_Module!=nullptr);}
+        bool IsReady() {return (Handle && MediaInfo_Module) ? true : false;}
 
     private :
         void* Handle;
