@@ -41,12 +41,14 @@
     {
 //---------------------------------------------------------------------------
 
-constexpr auto HAVE_CUVA_DMI = 1;
+constexpr auto HAVE_HDRVivid_DMI = 1;
 constexpr auto HAVE_DolbyVision_DMI = 2;
 constexpr auto HAVE_SLHDR2_DMI = 4;
 constexpr auto HAVE_HDR10plus_DMI = 8;
 
-#define Patch_Start_Code(sc)            ((sc)>=0x00 && (sc)<=0x7F
+constexpr auto UNDEFINED_VALUE = "undefined!";
+
+#define Patch_Start_Code(sc)            ((sc)>=0x00 && (sc)<=0x7F)
 #define Patch_End_Code                  0x8F
 #define Video_Sequence_Start_Code	    0xB0
 #define Video_Sequence_End_Code		    0xB1
@@ -66,7 +68,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-Ztring Avs3V_profile(int8u profile_id)
+static Ztring Avs3V_profile(int8u profile_id)
 {
     switch (profile_id)
     {
@@ -74,61 +76,58 @@ Ztring Avs3V_profile(int8u profile_id)
         case 0x22 : return "Main 10-bit";
         case 0x30 : return "High 8-bit";
         case 0x32 : return "High 10-bit";
-        default :
-            return Ztring::ToZtring(profile_id);
     }
+    return UNDEFINED_VALUE;
 }
 
 //---------------------------------------------------------------------------
-Ztring Avs3V_level(int8u level_id)
+static Ztring Avs3V_level(int8u level_id)
 {
     switch (level_id)
     {
-        case 0x00 : return Ztring();
-        case 0x10 : return "@2.0.15";
-        case 0x12 : return "@2.0.30";
-        case 0x14 : return "@2.0.60";
-        case 0x20 : return "@4.0.30";
-        case 0x22 : return "@4.0.60";
-        case 0x40 : return "@6.0.30";
-        case 0x42 : return "@6.2.30";
-        case 0x41 : return "@6.4.30";
-        case 0x43 : return "@6.6.30";
-        case 0x44 : return "@6.0.60";
-        case 0x46 : return "@6.2.60";
-        case 0x45 : return "@6.4.60";
-        case 0x47 : return "@6.6.60";
-        case 0x48 : return "@6.0.120";
-        case 0x4A : return "@6.2.120";
-        case 0x49 : return "@6.4.120";
-        case 0x4B : return "@6.6.120";
-        case 0x50 : return "@8.0.30";
-        case 0x52 : return "@8.2.30";
-        case 0x51 : return "@8.4.30";
-        case 0x53 : return "@8.6.30";
-        case 0x54 : return "@8.0.60";
-        case 0x56 : return "@8.2.60";
-        case 0x55 : return "@8.4.60";
-        case 0x57 : return "@8.6.60";
-        case 0x58 : return "@8.0.120";
-        case 0x5A : return "@8.2.120";
-        case 0x59 : return "@8.4.120";
-        case 0x5B : return "@8.6.120";
-        case 0x60 : return "@10.0.30";
-        case 0x62 : return "@10.2.30";
-        case 0x61 : return "@10.4.30";
-        case 0x63 : return "@10.6.30";
-        case 0x64 : return "@10.0.60";
-        case 0x66 : return "@10.2.60";
-        case 0x65 : return "@10.4.60";
-        case 0x67 : return "@10.6.60";
-        case 0x68 : return "@10.0.120";
-        case 0x6A : return "@10.2.120";
-        case 0x69 : return "@10.4.120";
-        case 0x6B : return "@10.6.120";
-        default :
-            return __T('@')+Ztring::ToZtring(level_id);
+        case 0x10 : return "2.0.15";
+        case 0x12 : return "2.0.30";
+        case 0x14 : return "2.0.60";
+        case 0x20 : return "4.0.30";
+        case 0x22 : return "4.0.60";
+        case 0x40 : return "6.0.30";
+        case 0x42 : return "6.2.30";
+        case 0x41 : return "6.4.30";
+        case 0x43 : return "6.6.30";
+        case 0x44 : return "6.0.60";
+        case 0x46 : return "6.2.60";
+        case 0x45 : return "6.4.60";
+        case 0x47 : return "6.6.60";
+        case 0x48 : return "6.0.120";
+        case 0x4A : return "6.2.120";
+        case 0x49 : return "6.4.120";
+        case 0x4B : return "6.6.120";
+        case 0x50 : return "8.0.30";
+        case 0x52 : return "8.2.30";
+        case 0x51 : return "8.4.30";
+        case 0x53 : return "8.6.30";
+        case 0x54 : return "8.0.60";
+        case 0x56 : return "8.2.60";
+        case 0x55 : return "8.4.60";
+        case 0x57 : return "8.6.60";
+        case 0x58 : return "8.0.120";
+        case 0x5A : return "8.2.120";
+        case 0x59 : return "8.4.120";
+        case 0x5B : return "8.6.120";
+        case 0x60 : return "10.0.30";
+        case 0x62 : return "10.2.30";
+        case 0x61 : return "10.4.30";
+        case 0x63 : return "10.6.30";
+        case 0x64 : return "10.0.60";
+        case 0x66 : return "10.2.60";
+        case 0x65 : return "10.4.60";
+        case 0x67 : return "10.6.60";
+        case 0x68 : return "10.0.120";
+        case 0x6A : return "10.2.120";
+        case 0x69 : return "10.4.120";
+        case 0x6B : return "10.6.120";
     }
+    return UNDEFINED_VALUE;
 }
 
 //---------------------------------------------------------------------------
@@ -226,7 +225,7 @@ static const char* Avs3V_picture_coding_type[]=
 };
 
 //---------------------------------------------------------------------------
-const char* Avs3V_colour_primaries(int8u colour_primaries)
+static Ztring Avs3V_colour_primaries(int8u colour_primaries)
 {
     switch (colour_primaries)
     {
@@ -242,11 +241,11 @@ const char* Avs3V_colour_primaries(int8u colour_primaries)
         case 12: return "Display P3";
         case 22: return "EBU Tech 3213";
     }
-    return "";
+    return UNDEFINED_VALUE;
 }
 
 //---------------------------------------------------------------------------
-const char* Avs3V_transfer_characteristics(int8u transfer_characteristics)
+static Ztring Avs3V_transfer_characteristics(int8u transfer_characteristics)
 {
     switch (transfer_characteristics)
     {
@@ -260,14 +259,13 @@ const char* Avs3V_transfer_characteristics(int8u transfer_characteristics)
         case 10: return "Logarithmic (316.22777:1)";
         case 11: return "BT.2020 (12-bit)";
         case 12: return "BT.2100-2 PQ";
-        case 13: return "??";
         case 14: return "BT.2100-2 HLG";
     }
-    return "";
+    return UNDEFINED_VALUE;
 }
 
 //---------------------------------------------------------------------------
-const char* Avs3V_matrix_coefficients(int8u matrix_coefficients)
+static Ztring Avs3V_matrix_coefficients(int8u matrix_coefficients)
 {
     switch (matrix_coefficients)
     {
@@ -276,10 +274,10 @@ const char* Avs3V_matrix_coefficients(int8u matrix_coefficients)
         case  5: return "BT.470 System B/G";
         case  6: return "BT.601";
         case  7: return "SMPTE 240M";
-        case  8: return "YCgCo";
-        case  9: return "BT.2020 non-constant";
+        case  8: return "BT.2020 NCL";
+        case  9: return "BT.2020 CL";
     }
-    return "";
+    return UNDEFINED_VALUE;
 }
 
 
@@ -316,12 +314,12 @@ void File_Avs3V::Streams_Fill()
 {
     //Filling
     Stream_Prepare(Stream_Video);
-    Fill(Stream_Video, 0, Video_Format, "AVS Video");
-    Fill(Stream_Video, 0, Video_CodecID_String, "AVS3");
+    Fill(Stream_Video, 0, Video_Format, "AVS3 Video");
+    Fill(Stream_Video, 0, Video_CodecID_String, "AVS3V");
 
     //From sequence header
-    Fill(Stream_Video, 0, Video_Format_Profile, Avs3V_profile(profile_id)+Avs3V_level(level_id));
-    Fill(Stream_Video, 0, Video_Codec_Profile, Avs3V_profile(profile_id)+Avs3V_level(level_id));
+    Fill(Stream_Video, 0, Video_Format_Profile, Avs3V_profile(profile_id)+__T('@')+Avs3V_level(level_id));
+    Fill(Stream_Video, 0, Video_Codec_Profile, Avs3V_profile(profile_id)+__T('@')+Avs3V_level(level_id));
     Fill(Stream_Video, StreamPos_Last, Video_Width, horizontal_size);
     Fill(Stream_Video, StreamPos_Last, Video_Height, vertical_size);
     Fill(Stream_Video, 0, Video_FrameRate, Avs3V_frame_rate[frame_rate_code]/(progressive_sequence?1:2));
@@ -380,7 +378,7 @@ void File_Avs3V::Streams_Fill()
     if (DMI_Found & HAVE_HDR10plus_DMI) Fill(Stream_Video, 0, Video_HDR_Format_String, "SMPTE ST 2094-40 DMI");
     if (DMI_Found & HAVE_SLHDR2_DMI) Fill(Stream_Video, 0, Video_HDR_Format_String, "ETSI TS 103 433-2 DMI");
     if (DMI_Found & HAVE_DolbyVision_DMI) Fill(Stream_Video, 0, Video_HDR_Format_String, "SMPTE ST 2094-10 DMI");
-    if (DMI_Found & HAVE_CUVA_DMI) Fill(Stream_Video, 0, Video_HDR_Format_String, "T/UWA 005.1-2021 DMI");
+    if (DMI_Found & HAVE_HDRVivid_DMI) Fill(Stream_Video, 0, Video_HDR_Format_String, "T/UWA 005.1-2021 DMI");
 
     // from Mastering Display and Content Metadata extension
     if (have_MaxCLL) Fill(Stream_Video, 0, Video_MaxCLL, max_content_light_level);
@@ -582,7 +580,8 @@ void File_Avs3V::Data_Parse()
             picture_start(); 
             break;
         case Video_Edit_Code: 
-            video_edit(); break;
+            video_edit(); 
+            break;
         case Avs3_Reserved1:
         case Avs3_Reserved2: 
             reserved(); 
@@ -1005,7 +1004,7 @@ void File_Avs3V::extension_start()
                         // values 1, 6, 4 according to DVB Bluebook A001, 5 in AVS3 (T/AI 109.2)
                         case 1: DMI_Found |= HAVE_HDR10plus_DMI; break;
                         case 4: DMI_Found |= HAVE_DolbyVision_DMI; break;
-                        case 5: DMI_Found |= HAVE_CUVA_DMI; break;
+                        case 5: DMI_Found |= HAVE_HDRVivid_DMI; break;
                         case 6: DMI_Found |= HAVE_SLHDR2_DMI; break;
                     }
                     BS_End();
