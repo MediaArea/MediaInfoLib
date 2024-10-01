@@ -189,6 +189,7 @@ AC_ARG_ENABLE(aic,     AC_HELP_STRING([--disable-aic],     [Disable Video - AIC 
 AC_ARG_ENABLE(av1,     AC_HELP_STRING([--disable-av1],     [Disable Video - Aomedia AV1]),                                MediaInfoAv1=$enableval,     MediaInfoAv1=depend)
 AC_ARG_ENABLE(avc,     AC_HELP_STRING([--disable-avc],     [Disable Video - AVC/H264]),                                   MediaInfoAvc=$enableval,     MediaInfoAvc=depend)
 AC_ARG_ENABLE(avsV,    AC_HELP_STRING([--disable-avsv],    [Disable Video - AVS (Chinese)]),                              MediaInfoAvsV=$enableval,    MediaInfoAvsV=depend)
+AC_ARG_ENABLE(Avs3V,   AC_HELP_STRING([--disable-Avs3V],   [Disable Video - AVS3 (Chinese)]),                             MediaInfoAvs3V=$enableval,   MediaInfoAvs3V=depend)
 AC_ARG_ENABLE(canopus, AC_HELP_STRING([--disable-canopus], [Disable Video - Canopus]),                                    MediaInfoCanopus=$enableval, MediaInfoCanopus=depend)
 AC_ARG_ENABLE(ffv1,    AC_HELP_STRING([--disable-ffv1],    [Disable Video - FFV1]),                            			  MediaInfoFfv1=$enableval,    MediaInfoFfv1=depend)
 AC_ARG_ENABLE(flic,    AC_HELP_STRING([--disable-flic],    [Disable Video - FLIC (fli, flc)]),                            MediaInfoFlic=$enableval,    MediaInfoFlic=depend)
@@ -359,6 +360,7 @@ if test "$MediaInfoAic"     = "no";  then AC_DEFINE(MEDIAINFO_AIC_NO)     fi; if
 if test "$MediaInfoAv1"     = "no";  then AC_DEFINE(MEDIAINFO_AV1_NO)     fi; if test "$MediaInfoAv1"     = "yes"; then AC_DEFINE(MEDIAINFO_AV1_YES)     fi
 if test "$MediaInfoAvc"     = "no";  then AC_DEFINE(MEDIAINFO_AVC_NO)     fi; if test "$MediaInfoAvc"     = "yes"; then AC_DEFINE(MEDIAINFO_AVC_YES)     fi
 if test "$MediaInfoAvsV"    = "no";  then AC_DEFINE(MEDIAINFO_AVSV_NO)    fi; if test "$MediaInfoAvsV"    = "yes"; then AC_DEFINE(MEDIAINFO_AVSV_YES)    fi
+if test "$MediaInfoAvs3V"   = "no";  then AC_DEFINE(MEDIAINFO_AVS3V_NO)   fi; if test "$MediaInfoAvs3V"   = "yes"; then AC_DEFINE(MEDIAINFO_AVS3V_YES)   fi
 if test "$MediaInfoCanopus" = "no";  then AC_DEFINE(MEDIAINFO_CANOPUS_NO) fi; if test "$MediaInfoCanopus" = "yes"; then AC_DEFINE(MEDIAINFO_CANOPUS_YES) fi
 if test "$MediaInfoFfv1"    = "no";  then AC_DEFINE(MEDIAINFO_FFV1_NO)    fi; if test "$MediaInfoFfv1"    = "yes"; then AC_DEFINE(MEDIAINFO_FFV1_YES)    fi
 if test "$MediaInfoFlic"    = "no";  then AC_DEFINE(MEDIAINFO_FLIC_NO)    fi; if test "$MediaInfoFlic"    = "yes"; then AC_DEFINE(MEDIAINFO_FLIC_YES)    fi
@@ -1119,6 +1121,7 @@ Mcho "Aic    " "$MediaInfoAic"
 Mcho "Av1    " "$MediaInfoAv1"
 Mcho "Avc    " "$MediaInfoAvc"
 Mcho "AvsV   " "$MediaInfoAvsV"
+Mcho "Avs3V  " "$MediaInfoAvs3V"
 Mcho "Canopus" "$MediaInfoCanopus"
 Mcho "Ffv1   " "$MediaInfoFfv1"
 Mcho "Flic   " "$MediaInfoFlic"
