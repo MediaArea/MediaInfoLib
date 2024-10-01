@@ -43,6 +43,7 @@
 #endif
 #if defined(MEDIAINFO_AVSV_YES)
     #include "MediaInfo/Video/File_AvsV.h"
+    #include "MediaInfo/Video/File_Avs3V.h"
 #endif
 #if defined(MEDIAINFO_DIRAC_YES)
     #include "MediaInfo/Video/File_Dirac.h"
@@ -3494,6 +3495,8 @@ void File_MpegPs::video_stream()
                         {
                             File_AvsV* Parser=new File_AvsV;
                             Streams[stream_id].Parsers.push_back(Parser);
+                            File_Avs3V* Parser3 = new File_Avs3V;
+                            Streams[stream_id].Parsers.push_back(Parser);
                         }
                         #endif
         }
@@ -3788,6 +3791,10 @@ void File_MpegPs::extension_stream()
                                     break;
                 case 0x56432D31 :
                                     Streams_Extension[stream_id_extension].Parsers.push_back(ChooseParser_VC1());
+                                    break;
+                case 0x41565356:    
+                                    // AVSV
+                                    Streams_Extension[stream_id_extension].Parsers.push_back(ChooseParser_Avs3V());
                                     break;
                 case 0x64726163 :
                                     Streams_Extension[stream_id_extension].Parsers.push_back(ChooseParser_Dirac());
@@ -4538,6 +4545,32 @@ File__Analyze* File_MpegPs::ChooseParser_VC1()
         Parser->Fill(Stream_Video, 0, Video_Codec,  "VC-1");
         Parser->Fill(Stream_Video, 0, Video_Format, "VC-1");
     #endif
+    return Parser;
+}
+
+//---------------------------------------------------------------------------
+File__Analyze* File_MpegPs::ChooseParser_Avs3V()
+{
+    //Filling
+#if defined(MEDIAINFO_AVSV_YES)
+    File_Avs3V* Parser = new File_Avs3V;
+#if MEDIAINFO_DEMUX
+    if (Config->Demux_Unpacketize_Get())
+    {
+        Demux_UnpacketizeContainer = false; //No demux from this parser
+        Demux_Level = 4; //Intermediate
+        Parser->Demux_Level = 2; //Container
+        Parser->Demux_UnpacketizeContainer = true;
+    }
+#endif //MEDIAINFO_DEMUX
+#else
+    //Filling
+    File__Analyze* Parser = new File_Unknown();
+    Open_Buffer_Init(Parser);
+    Parser->Stream_Prepare(Stream_Video);
+    Parser->Fill(Stream_Video, 0, Video_Codec, "AVS3V");
+    Parser->Fill(Stream_Video, 0, Video_Format, "AVS3V");
+#endif
     return Parser;
 }
 
