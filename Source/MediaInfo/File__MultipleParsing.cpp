@@ -149,6 +149,9 @@
 #if defined(MEDIAINFO_AVSV_YES)
     #include "MediaInfo/Video/File_AvsV.h"
 #endif
+#if defined(MEDIAINFO_AVS3V_YES)
+    #include "MediaInfo/Video/File_Avs3V.h"
+#endif
 #if defined(MEDIAINFO_DIRAC_YES)
     #include "MediaInfo/Video/File_Dirac.h"
 #endif
