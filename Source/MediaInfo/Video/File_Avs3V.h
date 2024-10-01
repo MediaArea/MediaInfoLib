@@ -72,68 +72,68 @@ private :
     int8u NumberOfFrameCentreOffsets();
 
     //Count of a Packets
-    size_t progressive_frame_Count;
-    size_t Interlaced_Top;
-    size_t Interlaced_Bottom;
+    size_t progressive_frame_Count =0;
+    size_t Interlaced_Top = 0;
+    size_t Interlaced_Bottom = 0;
 
     //From user_data
-    Ztring Library;
-    Ztring Library_Name;
-    Ztring Library_Version;
-    Ztring Library_Date;
+    Ztring Library = "";
+    Ztring Library_Name = "";
+    Ztring Library_Version = "";
+    Ztring Library_Date = "";
 
     //Temp
-    int32u  bit_rate;                           //From video_sequence_start
-    int16u  horizontal_size;                    //From video_sequence_start
-    int16u  vertical_size;                      //From video_sequence_start
-    int16u  display_horizontal_size;            //From sequence_display
-    int16u  display_vertical_size;              //From sequence_display
-    int8u   profile_id;                         //From video_sequence_start
-    int8u   level_id;                           //From video_sequence_start
-    int8u   chroma_format;                      //From video_sequence_start
-    int8u   sample_precision;                   //From video_sequence_start
-    int8u   encoding_precision;                 //From video_sequence_start
-    int8u   aspect_ratio;                       //From video_sequence_start
-    int8u   frame_rate_code;                    //From video_sequence_start
-    int8u   video_format;                       //From sequence_display;
+    int32u  bit_rate = 0;                           //From video_sequence_start
+    int16u  horizontal_size = 0;                    //From video_sequence_start
+    int16u  vertical_size = 0;                      //From video_sequence_start
+    int16u  display_horizontal_size = 0;            //From sequence_display
+    int16u  display_vertical_size = 0;              //From sequence_display
+    int8u   profile_id = 0;                         //From video_sequence_start
+    int8u   level_id = 0;                           //From video_sequence_start
+    int8u   chroma_format = 0;                      //From video_sequence_start
+    int8u   sample_precision = 0;                   //From video_sequence_start
+    int8u   encoding_precision = 0;                 //From video_sequence_start
+    int8u   aspect_ratio = 0;                       //From video_sequence_start
+    int8u   frame_rate_code = 0;                    //From video_sequence_start
+    int8u   video_format = 0;                       //From sequence_display;
 
-    int8u   num_of_hmvp_cand;
-    int8u   nn_tools_set_hook;
-    int8u   hdr_dynamic_metadata_type;          //From HDR Dynamic Metadata extension
-    int8u   colour_primaries;                   //From sequence display extension
-    int8u   transfer_characteristics;           //From sequence display extension
-    int8u   matrix_coefficients;                //From sequence display extension
+    int8u   num_of_hmvp_cand = 0;
+    int8u   nn_tools_set_hook = 0;
+    int8u   hdr_dynamic_metadata_type = 0;          //From HDR Dynamic Metadata extension
+    int8u   colour_primaries = 0;                   //From sequence display extension
+    int8u   transfer_characteristics = 0;           //From sequence display extension
+    int8u   matrix_coefficients = 0;                //From sequence display extension
 
-    bool    have_MaxCLL;
-    int16u  max_content_light_level;            //From mastering diaplay and content metadata extension
-    bool    have_MaxFALL;
-    int16u  max_picture_average_light_level;    //From mastering diaplay and content metadata extension
+    bool    have_MaxCLL = false;
+    int16u  max_content_light_level = 0;            //From mastering diaplay and content metadata extension
+    bool    have_MaxFALL = false;
+    int16u  max_picture_average_light_level = 0;    //From mastering diaplay and content metadata extension
 
     int32u  num_ref_pic_list_set[2];
-    bool    picture_structure;
-    bool    top_field_first;
-    bool    repeat_first_field;
+    bool    picture_structure = false;
+    bool    top_field_first = false;
+    bool    repeat_first_field = false;
 
-    int8u   DMI_Found;
+    int8u   DMI_Found = 0;
 
-    bool    progressive_sequence;               //From video_sequence_start
-    bool    field_coded_sequence;               //From video_sequence_start
-    bool    library_stream_flag;                //From video_sequence_start
-    bool    library_picture_enable_flag;        //From video_sequence_start
-    bool    duplicate_sequence_header_flag;     //From video_sequence_start
-    bool    low_delay;                          //From video_sequence_start
-    bool    temporal_id_enable_flag;
-    bool    video_sequence_start_IsParsed;      //From video_sequence_start
-    bool    rpl1_same_as_rpl0_flag;             //From video_sequence_start
-    bool    weight_quant_enable_flag;
-    bool    load_seq_weight_quant_data_flag;
+    bool    progressive_sequence = false;               //From video_sequence_start
+    bool    field_coded_sequence = false;               //From video_sequence_start
+    bool    library_stream_flag = false;                //From video_sequence_start
+    bool    library_picture_enable_flag = false;        //From video_sequence_start
+    bool    duplicate_sequence_header_flag = false;     //From video_sequence_start
+    bool    low_delay = false;                          //From video_sequence_start
+    bool    temporal_id_enable_flag = false;
+    bool    video_sequence_start_IsParsed = false;      //From video_sequence_start
+    bool    rpl1_same_as_rpl0_flag = false;             //From video_sequence_start
+    bool    weight_quant_enable_flag = false;
+    bool    load_seq_weight_quant_data_flag = false;
 
-    bool    alf_enable_flag;
-    bool    affine_enable_flag;
-    bool    amvr_enable_flag;
+    bool    alf_enable_flag = false;
+    bool    affine_enable_flag = false;
+    bool    amvr_enable_flag = false;
 
-    bool    ibc_enable_flag;
-    bool    isc_enable_flag;
+    bool    ibc_enable_flag = false;
+    bool    isc_enable_flag = false;
 
     bool    picture_alf_enable_flag[3];
 

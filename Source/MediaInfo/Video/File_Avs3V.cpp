@@ -287,7 +287,9 @@ static Ztring Avs3V_matrix_coefficients(int8u matrix_coefficients)
 
 //---------------------------------------------------------------------------
 File_Avs3V::File_Avs3V()
-:File__Analyze()
+:File__Analyze(),
+num_ref_pic_list_set { 0, 0 },
+picture_alf_enable_flag { false, false, false }
 {
     //Config
     MustSynchronize=true;
