@@ -3251,7 +3251,27 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
         Fill(StreamKind_Last, StreamPos_Last, Info->first.c_str(), Info->second, true);
     if (MxfTimeCodeForDelay.IsInit())
     {
-        const float64 TimeCode_StartTimecode_Temp = MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore);
+        bool MxfTimeCodeForDelay_Is1001 = false;
+        if (Demux_Rate) {
+            MxfTimeCodeForDelay_Is1001 = Demux_Rate != (int)Demux_Rate;
+        }
+        else if (MxfTimeCodeForDelay.InstanceUID != 0) {
+            for (const auto& Component : Components) {
+                for (const auto& StructuralComponent : Component.second.StructuralComponents) {
+                    if (StructuralComponent == MxfTimeCodeForDelay.InstanceUID) {
+                        for (const auto& Track : Tracks) {
+                            if (Track.second.Sequence == Component.first) {
+                                if (Track.second.EditRate && Track.second.EditRate != (int)Track.second.EditRate) {
+                                    MxfTimeCodeForDelay_Is1001 = true; // TODO: if audio with timecode with audio sampling rate, it does not work, is there a way to know that it is 1/1.001 based?
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        const float64 TimeCode_StartTimecode_Temp = MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore, MxfTimeCodeForDelay_Is1001);
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay), TimeCode_StartTimecode_Temp*1000, 0, true);
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_DropFrame), MxfTimeCodeForDelay.DropFrame?"Yes":"No");
@@ -3449,7 +3469,27 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
                 (*Parser)->Finish();
                 if (MxfTimeCodeForDelay.IsInit())
                 {
-                    const float64 TimeCode_StartTimecode_Temp = MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore);
+                    bool MxfTimeCodeForDelay_Is1001 = false;
+                    if (Demux_Rate) {
+                        MxfTimeCodeForDelay_Is1001 = Demux_Rate != (int)Demux_Rate;
+                    }
+                    else if (MxfTimeCodeForDelay.InstanceUID != 0) {
+                        for (const auto& Component : Components) {
+                            for (const auto& StructuralComponent : Component.second.StructuralComponents) {
+                                if (StructuralComponent == MxfTimeCodeForDelay.InstanceUID) {
+                                    for (const auto& Track : Tracks) {
+                                        if (Track.second.Sequence == Component.first) {
+                                            if (Track.second.EditRate && Track.second.EditRate != (int)Track.second.EditRate) {
+                                                MxfTimeCodeForDelay_Is1001 = true; // TODO: if audio with timecode with audio sampling rate, it does not work, is there a way to know that it is 1/1.001 based?
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    const float64 TimeCode_StartTimecode_Temp = MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore, MxfTimeCodeForDelay_Is1001);
                     Fill(Stream_Audio, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay), TimeCode_StartTimecode_Temp*1000, 0, true);
                     Fill(Stream_Audio, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
                 }
@@ -3484,7 +3524,27 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             (*Parser)->Finish();
             if (MxfTimeCodeForDelay.IsInit())
             {
-                const float64 TimeCode_StartTimecode_Temp= MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore);
+                bool MxfTimeCodeForDelay_Is1001 = false;
+                if (Demux_Rate) {
+                    MxfTimeCodeForDelay_Is1001 = Demux_Rate != (int)Demux_Rate;
+                }
+                else if (MxfTimeCodeForDelay.InstanceUID != 0) {
+                    for (const auto& Component : Components) {
+                        for (const auto& StructuralComponent : Component.second.StructuralComponents) {
+                            if (StructuralComponent == MxfTimeCodeForDelay.InstanceUID) {
+                                for (const auto& Track : Tracks) {
+                                    if (Track.second.Sequence == Component.first) {
+                                        if (Track.second.EditRate && Track.second.EditRate != (int)Track.second.EditRate) {
+                                            MxfTimeCodeForDelay_Is1001 = true; // TODO: if audio with timecode with audio sampling rate, it does not work, is there a way to know that it is 1/1.001 based?
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                const float64 TimeCode_StartTimecode_Temp = MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore, MxfTimeCodeForDelay_Is1001);
                 Fill(Stream_Text, Parser_Text_Pos, Fill_Parameter(StreamKind_Last, Generic_Delay), TimeCode_StartTimecode_Temp*1000, 0, true);
                 Fill(Stream_Text, Parser_Text_Pos, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
             }
@@ -12788,6 +12848,7 @@ void File_Mxf::TimecodeComponent_StartTimecode()
     FILLING_BEGIN();
         if (Data!=(int64u)-1)
         {
+            MxfTimeCodeForDelay.InstanceUID=InstanceUID;
             MxfTimeCodeForDelay.StartTimecode=Data;
             if (MxfTimeCodeForDelay.RoundedTimecodeBase)
             {
@@ -12804,6 +12865,7 @@ void File_Mxf::TimecodeComponent_StartTimecode()
             }
         }
 
+        Components[InstanceUID].MxfTimeCode.InstanceUID=InstanceUID;
         Components[InstanceUID].MxfTimeCode.StartTimecode=Data;
     FILLING_END();
 }
