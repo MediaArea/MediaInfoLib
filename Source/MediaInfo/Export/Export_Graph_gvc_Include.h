@@ -16,7 +16,6 @@
 typedef void GVC_t;
 typedef void graph_t;
 
-
 //***************************************************************************
 // Dynamic load stuff
 //***************************************************************************
@@ -108,6 +107,7 @@ extern "C"
 // Interface
 typedef GVC_t* (*gvc_Module_gvContext)(); static gvc_Module_gvContext gvContext=NULL;
 typedef int (*gvc_Module_gvFreeContext)(GVC_t*); static gvc_Module_gvFreeContext gvFreeContext=NULL;
+typedef char** (*gvc_Module_gvPluginList)(GVC_t*, const char*, int*, const char*); static gvc_Module_gvPluginList gvPluginList=NULL;
 typedef int (*gvc_Module_gvLayout)(GVC_t*, graph_t*, const char*); static gvc_Module_gvLayout gvLayout=NULL;
 typedef int (*gvc_Module_gvFreeLayout)(GVC_t*, graph_t*); static gvc_Module_gvFreeLayout gvFreeLayout=NULL;
 typedef int (*gvc_Module_gvRenderData)(GVC_t*, graph_t*, const char*, char**, unsigned int*); static gvc_Module_gvRenderData gvRenderData=NULL;
