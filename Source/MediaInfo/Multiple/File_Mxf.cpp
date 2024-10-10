@@ -4402,13 +4402,13 @@ void File_Mxf::Streams_Finish_CommercialNames ()
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "DV");
             Fill(Stream_General, 0, General_Format_Commercial, "MXF DV");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("AVC") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:0") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("56064000"))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("AVC") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:0") && Retrieve(Stream_Video, 0, Video_Format_Settings_SliceCount)==__T("10") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("56064000"))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "AVC-Intra 50");
             Fill(Stream_General, 0, General_Format_Commercial, "MXF AVC-Intra 50");
             Fill(Stream_Video, 0, Video_Format_Commercial_IfAny, "AVC-Intra 50");
         }
-        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("AVC") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:2") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("113664000"))
+        else if (Retrieve(Stream_Video, 0, Video_Format)==__T("AVC") && Retrieve(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && Retrieve(Stream_Video, 0, Video_ChromaSubsampling)==__T("4:2:2") && Retrieve(Stream_Video, 0, Video_Format_Settings_SliceCount)==__T("10") && Retrieve(Stream_Video, 0, Video_BitRate)==__T("113664000"))
         {
             Fill(Stream_General, 0, General_Format_Commercial_IfAny, "AVC-Intra 100");
             Fill(Stream_General, 0, General_Format_Commercial, "MXF AVC-Intra 100");
@@ -6812,6 +6812,8 @@ void File_Mxf::Data_Parse()
                     ChooseParser(Essence, Descriptor); //Searching by the descriptor
                     if (Essence->second.Parsers.empty())
                         ChooseParser__FromEssence(Essence, Descriptor); //Searching by the track identifier
+                    if (Essence->second.Parsers.size()==1 && Descriptor->second.Infos["Format_Settings_Wrapping"].rfind(__T("Frame"), 0)==0 || Essence->second.Infos["Format_Settings_Wrapping"].rfind(__T("Frame"), 0)==0) //TODO: Parsers.size()==1 is for avoiding Dolby E issues, it should be fixed instead
+                        Essence->second.Parsers[0]->FrameIsAlwaysComplete=true;
 
                     #ifdef MEDIAINFO_DEMUX
                         if (Ztring().From_UTF8(Mxf_EssenceContainer(Descriptor->second.EssenceContainer))==__T("AVC"))
@@ -6824,7 +6826,11 @@ void File_Mxf::Data_Parse()
 
             //Searching by the track identifier
             if (Essence->second.Parsers.empty())
+            {
                 ChooseParser__FromEssence(Essence, Descriptors.end());
+                if (Essence->second.Parsers.size()==1 && Essence->second.Infos["Format_Settings_Wrapping"].rfind(__T("Frame"), 0)==0) //TODO: Parsers.size()==1 is for avoiding Dolby E issues, it should be fixed instead
+                    Essence->second.Parsers[0]->FrameIsAlwaysComplete=true;
+            }
 
             //Check of Essence used as a reference for frame count
             if (Essences_UsedForFrameCount==(int32u)-1)
