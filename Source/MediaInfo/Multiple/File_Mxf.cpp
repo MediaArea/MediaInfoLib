@@ -465,6 +465,7 @@ static const char* Mxf_EssenceContainer_Mapping(int64u Code_lo)
     case Labels::MXFGCImmersiveAudio:
         switch ((int16u)Code_lo) {
         case 0x0101: return "Clip";
+        case 0x0102: return "Frame";
         }
         break;
     case Labels::MXFGCJPEGXSPictures:
@@ -14498,7 +14499,8 @@ void File_Mxf::ChooseParser__FromEssence(const essences::iterator &Essence, cons
     case Essences::ALaw_Clip:
     case Essences::ALaw_Custom: ChooseParser_Alaw(Essence, Descriptor); break;
     case Essences::IAB_Temp:
-    case Essences::IAB: ChooseParser_Iab(Essence, Descriptor); break;
+    case Essences::IAB_Clip:
+    case Essences::IAB_Frame: ChooseParser_Iab(Essence, Descriptor); break;
     case Essences::MGA_Frame:
     case Essences::MGA_Clip: ChooseParser_Mga(Essence, Descriptor); break;
     case Essences::VBI_Frame: ChooseParser_Vbi(Essence, Descriptor); break;
