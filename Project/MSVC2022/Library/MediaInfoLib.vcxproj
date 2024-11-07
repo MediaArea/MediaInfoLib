@@ -527,6 +527,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Ism.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Ivf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Lxf.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Mxf_Automated.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Nsv.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_P2_Clip.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Pmp.h" />
