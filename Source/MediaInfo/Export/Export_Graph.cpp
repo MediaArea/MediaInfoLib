@@ -130,7 +130,7 @@ Ztring Dot2Svg(const Ztring& Dot)
         return ToReturn;
 
     int Renderers_Size=0;
-    char** Renderers=gvPluginList(Context, "render", &Renderers_Size, NULL);
+    char** Renderers=gvPluginList(Context, "render", &Renderers_Size);
     for (int Pos=0; Pos<Renderers_Size; Pos++) {
         if (!strcmp(Renderers[Pos], "cairo"))
             Cairo=true;
