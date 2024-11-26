@@ -27,8 +27,10 @@ Format_Version;;;Y NTY;;;Version of this format
 Format_Profile;;;Y NTY;;;Profile of the Format
 Format_Compression;;;Y NTY;;;Compression method used;;
 Format_Settings;;;Y NTY;;;Settings needed for decoder used
+Format_Settings_Wrapping;;;Y YTY;;;Wrapping mode set for format (e.g. Frame, Clip)
 Format_AdditionalFeatures;;;N YTY;;;Format features needed for fully supporting the content
 MuxingMode;;;Y YTY;;;How this file is muxed in the container
+MuxingMode_MoreInfo;;;Y NT;;;More information about MuxingMode
 CodecID;;;Y YTY;;;Codec ID (found in some containers);;
 CodecID/String;;;Y NT;;;Codec ID (found in some containers);;
 CodecID/Info;;;Y NT;;;Info about this codec

@@ -179,6 +179,7 @@ HEADERS += \
         ../../Source/MediaInfo/Multiple/File_MpegPs.h \
         ../../Source/MediaInfo/Multiple/File_MpegTs.h \
         ../../Source/MediaInfo/Multiple/File_Mxf.h \
+        ../../Source/MediaInfo/Multiple/File_Mxf_Automated.h \
         ../../Source/MediaInfo/Multiple/File_Nut.h \
         ../../Source/MediaInfo/Multiple/File_Ogg.h \
         ../../Source/MediaInfo/Multiple/File_Ogg_SubElement.h \
