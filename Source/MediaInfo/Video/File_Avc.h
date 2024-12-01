@@ -179,6 +179,8 @@ private :
             xxl*    VCL;
             int32u  num_units_in_tick;
             int32u  time_scale;
+            int32u  chroma_sample_loc_type_top_field;
+            int32u  chroma_sample_loc_type_bottom_field;
             int16u  sar_width;
             int16u  sar_height;
             int8u   video_format;
@@ -187,12 +189,14 @@ private :
             int8u   matrix_coefficients;
             vui_flags flags;
 
-            vui_parameters_struct(xxl* NAL_, xxl* VCL_, int32u num_units_in_tick_, int32u time_scale_, int16u  sar_width_, int16u  sar_height_, int8u video_format_, int8u colour_primaries_, int8u transfer_characteristics_, int8u matrix_coefficients_, vui_flags flags_)
+            vui_parameters_struct(xxl* NAL_, xxl* VCL_, int32u num_units_in_tick_, int32u time_scale_, int32u chroma_sample_loc_type_top_field_, int32u chroma_sample_loc_type_bottom_field_, int16u  sar_width_, int16u  sar_height_, int8u video_format_, int8u colour_primaries_, int8u transfer_characteristics_, int8u matrix_coefficients_, vui_flags flags_)
                 :
                 NAL(NAL_),
                 VCL(VCL_),
                 num_units_in_tick(num_units_in_tick_),
                 time_scale(time_scale_),
+                chroma_sample_loc_type_top_field(chroma_sample_loc_type_top_field_),
+                chroma_sample_loc_type_bottom_field(chroma_sample_loc_type_bottom_field_),
                 sar_width(sar_width_),
                 sar_height(sar_height_),
                 video_format(video_format_),
