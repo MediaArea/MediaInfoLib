@@ -330,7 +330,6 @@ struct par
 };
 extern const par Avc_PixelAspectRatio[] =
 {
-    {   1,   1 }, //Reserved
     {   1,   1 },
     {  12,  11 },
     {  10,  11 },
@@ -4441,21 +4440,25 @@ void File_Avc::vui_parameters(seq_parameter_set_struct::vui_parameters_struct* &
     seq_parameter_set_struct::vui_parameters_struct::xxl *NAL=NULL, *VCL=NULL;
     bitset<vui_flags_Max> flags;
     int32u  num_units_in_tick=0, time_scale=0;
-    int16u  sar_width=1, sar_height=1;
+    int16u  sar_width=0, sar_height=0;
     int8u   video_format=5, colour_primaries=2, transfer_characteristics=2, matrix_coefficients=2;
     bool    nal_hrd_parameters_present_flag, vcl_hrd_parameters_present_flag;
     TEST_SB_SKIP(                                               "aspect_ratio_info_present_flag");
         int8u aspect_ratio_idc;
-        Get_S1 (8, aspect_ratio_idc,                            "aspect_ratio_idc"); Param_Info1C((aspect_ratio_idc<Avc_PixelAspectRatio_Size), ((float32)Avc_PixelAspectRatio[aspect_ratio_idc].w)/Avc_PixelAspectRatio[aspect_ratio_idc].h);
+        Get_S1 (8, aspect_ratio_idc,                            "aspect_ratio_idc");
         if (aspect_ratio_idc==0xFF)
         {
             Get_S2 (16, sar_width,                              "sar_width");
             Get_S2 (16, sar_height,                             "sar_height");
         }
-        else if (aspect_ratio_idc < Avc_PixelAspectRatio_Size)
+        else if (aspect_ratio_idc && aspect_ratio_idc <= Avc_PixelAspectRatio_Size)
         {
-            sar_width = Avc_PixelAspectRatio[aspect_ratio_idc].w;
-            sar_height = Avc_PixelAspectRatio[aspect_ratio_idc].h;
+            aspect_ratio_idc--;
+            const auto& aspect_ratio = Avc_PixelAspectRatio[aspect_ratio_idc];
+            Param_Info1(aspect_ratio.w);
+            Param_Info1(aspect_ratio.h);
+            sar_width = aspect_ratio.w;
+            sar_height = aspect_ratio.h;
         }
     TEST_SB_END();
     TEST_SB_SKIP(                                               "overscan_info_present_flag");
