@@ -939,6 +939,13 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
                 Fill(Stream_Video, 0, Video_DisplayAspectRatio, Width*PixelAspectRatio/Height, 3, true); //More precise
         }
 
+        if (vui_parameters->chroma_sample_loc_type_top_field != (int32u)-1)
+        {
+            Fill(Stream_Video, 0, "ChromaSubsampling_Position", __T("Type ") + Ztring::ToZtring(vui_parameters->chroma_sample_loc_type_top_field));
+            if (vui_parameters->chroma_sample_loc_type_bottom_field != (int32u)-1 && vui_parameters->chroma_sample_loc_type_bottom_field != vui_parameters->chroma_sample_loc_type_top_field)
+                Fill(Stream_Video, 0, "ChromaSubsampling_Position", __T("Type ") + Ztring::ToZtring(vui_parameters->chroma_sample_loc_type_bottom_field));
+        }
+
         //Colour description
         if (preferred_transfer_characteristics!=2)
             Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(preferred_transfer_characteristics));
@@ -4439,7 +4446,7 @@ void File_Avc::vui_parameters(seq_parameter_set_struct::vui_parameters_struct* &
     //Parsing
     seq_parameter_set_struct::vui_parameters_struct::xxl *NAL=NULL, *VCL=NULL;
     bitset<vui_flags_Max> flags;
-    int32u  num_units_in_tick=0, time_scale=0;
+    int32u  num_units_in_tick=0, time_scale=0, chroma_sample_loc_type_top_field=(int32u)-1, chroma_sample_loc_type_bottom_field=(int32u)-1;
     int16u  sar_width=0, sar_height=0;
     int8u   video_format=5, colour_primaries=2, transfer_characteristics=2, matrix_coefficients=2;
     bool    nal_hrd_parameters_present_flag, vcl_hrd_parameters_present_flag;
@@ -4478,8 +4485,8 @@ void File_Avc::vui_parameters(seq_parameter_set_struct::vui_parameters_struct* &
         TEST_SB_END();
     TEST_SB_END();
     TEST_SB_SKIP(                                               "chroma_loc_info_present_flag");
-        Skip_UE(                                                "chroma_sample_loc_type_top_field");
-        Skip_UE(                                                "chroma_sample_loc_type_bottom_field");
+        Get_UE (chroma_sample_loc_type_top_field,               "chroma_sample_loc_type_top_field");
+        Get_UE (chroma_sample_loc_type_bottom_field,            "chroma_sample_loc_type_bottom_field");
     TEST_SB_END();
     TEST_SB_SKIP(                                               "timing_info_present_flag");
         flags[timing_info_present_flag]=true;
@@ -4517,6 +4524,8 @@ void File_Avc::vui_parameters(seq_parameter_set_struct::vui_parameters_struct* &
                                                                                     VCL,
                                                                                     num_units_in_tick,
                                                                                     time_scale,
+                                                                                    chroma_sample_loc_type_top_field,
+                                                                                    chroma_sample_loc_type_bottom_field,
                                                                                     sar_width,
                                                                                     sar_height,
                                                                                     video_format,
