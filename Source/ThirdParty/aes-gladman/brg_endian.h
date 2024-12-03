@@ -101,6 +101,7 @@ Issue Date: 20/12/2007
       defined( __i386__ )  || defined( _M_I86 )  || defined( _M_IX86 )    || \
       defined( __OS2__ )   || defined( sun386 )  || defined( __TURBOC__ ) || \
       defined( vax )       || defined( vms )     || defined( VMS )        || \
+      defined( _M_ARM64 )  || defined ( _M_ARM ) || \
       defined( __VMS )     || defined( _M_X64 )
 #  define PLATFORM_BYTE_ORDER IS_LITTLE_ENDIAN
 
