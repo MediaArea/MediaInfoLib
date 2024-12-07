@@ -22,7 +22,9 @@ Issue Date: 13/11/2013
 
 #if defined( USE_INTEL_AES_IF_PRESENT )
 
+#ifndef _ARM64EC_
 #pragma intrinsic(__cpuid)
+#endif // !_ARM64EC_
 
 __inline int has_aes_ni()
 {
