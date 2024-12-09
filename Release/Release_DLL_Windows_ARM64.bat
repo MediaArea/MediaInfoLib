@@ -128,7 +128,9 @@ xcopy ..\Project\NetBeans\Example.JNative\*.txt MediaInfoDLL_Windows_ARM64\Devel
 xcopy ..\Project\NetBeans\Example.JNative\src\*.java MediaInfoDLL_Windows_ARM64\Developers\Project\NetBeans\Example.JNative\src\
 
 rem --- Copying : Libs ---
+xcopy ..\Project\MSVC2022\ARM64EC\Release\MediaInfo.lib MediaInfoDLL_Windows_ARM64\Developers\Project\MSVC2022\ARM64EC\Release\
 xcopy ..\Project\MSVC2022\ARM64\Release\MediaInfo.lib MediaInfoDLL_Windows_ARM64\Developers\Project\MSVC2022\ARM64\Release\
+xcopy ..\Project\MSVC2022\ARM64EC\Debug\MediaInfo.lib MediaInfoDLL_Windows_ARM64\Developers\Project\MSVC2022\ARM64EC\Debug\
 xcopy ..\Project\MSVC2022\ARM64\Debug\MediaInfo.lib MediaInfoDLL_Windows_ARM64\Developers\Project\MSVC2022\ARM64\Debug\
 
 rem --- Copying : Examples ---
@@ -142,7 +144,7 @@ copy ..\Changes.txt MediaInfoDLL_Windows_ARM64\Developers\
 copy ReadMe_DLL_Windows.txt MediaInfoDLL_Windows_ARM64\ReadMe.txt
 
 rem --- Copying : DLL ---
-xcopy ..\Project\MSVC2022\ARM64\Release\MediaInfo.dll MediaInfoDLL_Windows_ARM64\
+xcopy ..\Project\MSVC2022\ARM64EC\Release\MediaInfo.dll MediaInfoDLL_Windows_ARM64\
 xcopy ..\Project\MSVC2022\ARM64\Release\MediaInfo_InfoTip.dll MediaInfoDLL_Windows_ARM64\
 xcopy ..\Project\MSVC2022\ShellExtension\*.bat MediaInfoDLL_Windows_ARM64\
 
