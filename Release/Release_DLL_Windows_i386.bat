@@ -158,7 +158,6 @@ cd MediaInfoDLL_Windows_i386\
 cd ..
 
 rem --- Installer ---
-rem --- Installer ---
 pushd %BPATH%\Windows\NSIS
 makensis.exe "%~dp0\..\Source\Install\MediaInfo_DLL_Windows_i386.nsi"
 popd
