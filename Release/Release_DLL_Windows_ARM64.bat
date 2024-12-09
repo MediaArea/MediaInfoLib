@@ -153,6 +153,10 @@ cd MediaInfoDLL_Windows_ARM64\
 %BPATH%\Windows\7-Zip\7z a -r -tzip -mx9 ..\MediaInfo_DLL_Windows_ARM64_WithoutInstaller.zip *
 cd ..
 
+pushd %BPATH%\Windows\NSIS
+makensis.exe "%~dp0\..\Source\Install\MediaInfo_DLL_Windows_ARM64.nsi"
+popd
+
 rem --- Clean up ---
 if "%1"=="SkipCleanUp" goto SkipCleanUp
 rmdir MediaInfoDLL_Windows_ARM64\ /S /Q
