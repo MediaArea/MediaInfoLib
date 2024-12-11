@@ -467,6 +467,16 @@ static string Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
         case  43 : return "DialogCentricMix";
         case  44 : return "CenterSurroundDirect";
         case  45 : return "Haptic";
+        case  46 : return "Ltf";
+        case  47 : return "Ctf";
+        case  48 : return "Rtf";
+        case  49 : return "Ltm";
+        case  50 : return "Ctm";
+        case  51 : return "Rtm";
+        case  52 : return "Ltr";
+        case  53 : return "Ctr";
+        case  54 : return "Rtr";
+
         case 200 : return "W";
         case 201 : return "X";
         case 202 : return "Y";
