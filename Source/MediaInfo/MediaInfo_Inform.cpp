@@ -56,6 +56,7 @@
 
 //---------------------------------------------------------------------------
 #include <ctime>
+#include <regex>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -852,6 +853,24 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                         if (Valeur.size()>=3 && Valeur.rfind(__T(" / "))== Valeur.size()-3)
                             Valeur.resize(Valeur.size()-3);
                     }
+                }
+
+                //Handling ISO-6709 location data for Text and HTML display
+                bool TextOrHTML = false;
+                #if defined(MEDIAINFO_TEXT_YES) && (defined(MEDIAINFO_HTML_YES) || defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_CSV_YES))
+                if (Text) TextOrHTML = true;
+                #else
+                TextOrHTML = true;
+                #endif // defined(MEDIAINFO_TEXT_YES) && (defined(MEDIAINFO_HTML_YES) || defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_CSV_YES))
+                #if defined(MEDIAINFO_HTML_YES)
+                if (HTML) TextOrHTML = true;
+                #endif // defined(MEDIAINFO_HTML_YES)
+                if ((TextOrHTML) && (Get(StreamKind, StreamPos, Champ_Pos, Info_Name) == __T("Recorded_Location"))) {
+                    std::string ISO6709{ Valeur.To_UTF8() };
+                    std::smatch match;
+                    std::regex pattern(R"(([-+]?(?:\d{2}|\d{4}|\d{6})(?:\.\d*)?)([-+](?:\d{3}|\d{5}|\d{7})(?:\.\d*)?)(?:([-+]\d+(?:\.\d*)?)(?:CRS(.+))?)?/)");
+                    if (std::regex_match(ISO6709, match, pattern))
+                        Valeur.From_UTF8(match[1].str() + " " + match[2].str() + " " + match[3].str() + " " + match[4].str());
                 }
 
                 #if defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
