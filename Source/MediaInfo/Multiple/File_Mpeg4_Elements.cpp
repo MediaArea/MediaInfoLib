@@ -6285,6 +6285,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
 
     int16u Width, Height, Depth, ColorTableID;
     int8u  CompressorName_Size;
+    Ztring  CompressorName;
     bool   IsGreyscale;
     Skip_B2(                                                    "Version");
     Skip_B2(                                                    "Revision level");
@@ -6302,12 +6303,12 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
     {
         //This is pascal string
         Skip_B1(                                                "Compressor name size");
-        Skip_UTF8(CompressorName_Size,                          "Compressor name");
+        Get_UTF8(CompressorName_Size, CompressorName,           "Compressor name");
         Skip_XX(32-1-CompressorName_Size,                       "Padding");
     }
     else
         //this is hard-coded 32-byte string
-        Skip_UTF8(32,                                           "Compressor name");
+        Get_UTF8(32, CompressorName,                            "Compressor name");
     Get_B2 (Depth,                                              "Depth");
     if (Depth>0x20 && Depth<0x40)
     {
@@ -6345,6 +6346,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
             CodecID_Fill(Codec, Stream_Video, StreamPos_Last, InfoCodecID_Format_Mpeg4);
         Fill(Stream_Video, StreamPos_Last, Video_Codec, Codec, true);
         Fill(Stream_Video, StreamPos_Last, Video_Codec_CC, Codec, true);
+        Fill(Stream_Video, StreamPos_Last, Video_Encoded_Library, CompressorName);
         if (Codec==__T("drms"))
             Fill(Stream_Video, StreamPos_Last, Video_Encryption, "iTunes");
         if (Codec==__T("encv"))
