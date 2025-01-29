@@ -215,6 +215,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "Alignment_Split;Split across interleaves\n"
     "All;All\n"
     "AlternateGroup;Alternate group\n"
+    "Android_Version;Android version\n"
     "Archival_Location;Archival location\n"
     "Arranger;Arranger\n"
     "ArtDirector;ArtDirector\n"

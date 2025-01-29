@@ -3987,6 +3987,8 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         Fill(Stream_General, 0, "Media/History/UUID", Value);
                     else if (Parameter=="com.android.capture.fps")
                         FrameRate_Real=Value;
+                    else if (Parameter=="com.android.version")
+                        Fill(Stream_General, 0, "Android_Version", Value);
                     else if (Parameter=="com.universaladid.idregistry")
                     {
                         Fill(Stream_General, 0, "UniversalAdID_Registry", Value);
