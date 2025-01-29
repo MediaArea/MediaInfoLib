@@ -1168,6 +1168,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "SamplesPerFrame;Samples per frame\n"
     "SamplingCount;Samples count\n"
     "SamplingRate;Sampling rate\n"
+    "Samsung_Model_Number;Samsung model number\n"
     "Save;Save\n"
     "ScanOrder;Scan order\n"
     "ScanOrder_Original;Original scan order\n"

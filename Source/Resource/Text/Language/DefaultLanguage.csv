@@ -1139,6 +1139,7 @@ SamplePeakLevel_Album;Sample peak level (album)
 SamplesPerFrame;Samples per frame
 SamplingCount;Samples count
 SamplingRate;Sampling rate
+Samsung_Model_Number;Samsung model number
 Save;Save
 ScanOrder;Scan order
 ScanOrder_Original;Original scan order
