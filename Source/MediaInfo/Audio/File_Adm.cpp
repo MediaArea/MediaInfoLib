@@ -3027,7 +3027,7 @@ static void CheckErrors_Elements(file_adm_private* File_Adm_Private, item Item_T
             }
             else if (Elem.empty() && Item_Type) {
                 #define ITEM_ELEM(A,B) ((A << 8) | B)
-                switch (ITEM_ELEM(Item_Type, j)) {
+                switch (ITEM_ELEM(static_cast<size_t>(Item_Type), j)) {
                 case ITEM_ELEM(item_audioProgrammeReferenceScreen, audioProgrammeReferenceScreen_screenCentrePosition):
                 case ITEM_ELEM(item_audioProgrammeReferenceScreen, audioProgrammeReferenceScreen_screenWidth):
                 case ITEM_ELEM(item_audioBlockFormat, audioBlockFormat_headphoneVirtualise):

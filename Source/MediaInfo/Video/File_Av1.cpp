@@ -678,7 +678,7 @@ void File_Av1::Get_leb128(int64u& Info, const char* Name)
             break; // End of stream reached, not normal
         int8u leb128_byte=BigEndian2int8u(Buffer+Buffer_Offset+(size_t)Element_Offset);
         Element_Offset++;
-        Info|=((leb128_byte&0x7f)<<(i*7));
+        Info|=(static_cast<int64u>(leb128_byte&0x7f)<<(i*7));
         if (!(leb128_byte&0x80))
         {
             #if MEDIAINFO_TRACE

@@ -68,7 +68,7 @@ inline void add_dec_2chars(string& In, uint8_t Value)
         Value=(uint8_t)Value100.rem;
         In+='0'+Value100.quot;
     }
-    In.append(add_dec_cache+(Value<<1), 2);
+    In.append(add_dec_cache+((size_t)Value<<1), 2);
 }
 
 //---------------------------------------------------------------------------
