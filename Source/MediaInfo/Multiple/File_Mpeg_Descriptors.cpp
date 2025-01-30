@@ -3266,6 +3266,7 @@ void File_Mpeg_Descriptors::Descriptor_7B()
                         {
                             Complete_Stream->Streams[elementary_PID]->descriptor_tag=0x7B;
                         }
+                        break;
             default   : ;
         }
     FILLING_END();
@@ -3304,6 +3305,7 @@ void File_Mpeg_Descriptors::Descriptor_7C()
                             Complete_Stream->Streams[elementary_PID]->descriptor_tag=0x7C;
                             Complete_Stream->Streams[elementary_PID]->Infos["Format_Profile"]=Mpeg_Descriptors_MPEG_4_audio_profile_and_level(Profile_and_level);
                         }
+                        break;
             default   : ;
         }
     FILLING_END();

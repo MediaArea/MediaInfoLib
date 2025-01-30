@@ -2923,7 +2923,7 @@ static void CheckErrors_Attributes(file_adm_private* File_Adm_Private, item Item
             break;
         default:
             Item.AddError(Error, ':' + CraftName(item_Infos[Item_Type].Name) + to_string(i) + ":" + CraftName(Attribute_Infos[j].Name) + ":" + string(Attribute_Infos[j].Name) + " attribute shall be unique");
-            // Fallthrough
+            [[fallthrough]];
         case 1:
         {
             Attributes_Present[j] = true;
@@ -3572,7 +3572,7 @@ void audioBlockFormat_Check(file_adm_private* File_Adm_Private) {
             BlockFormat.AddError(Error, ":GeneralCompliance:jumpPosition subelement count " + to_string(jumpPositions.size()) + " is not permitted, max is 1", Source_Atmos_1_0);
             break;
         }
-        // Fallthrough
+        [[fallthrough]];
     case 1:
         switch (Type) {
         case Type_Objects: {

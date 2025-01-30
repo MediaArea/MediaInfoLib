@@ -1153,7 +1153,7 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
                         {
                             case Video_HDR_Format_Version: Summary[j]+=__T(", Version "); break;
                             case Video_HDR_Format_Level: Summary[j]+=__T('.'); break;
-                            case Video_HDR_Format_Compression: ToAdd[j][0]+=0x20; if (ToAdd[j].size()==4) ToAdd[j].resize(2); ToAdd[j]+=__T(" metadata compression"); // Fallthrough
+                            case Video_HDR_Format_Compression: ToAdd[j][0]+=0x20; if (ToAdd[j].size()==4) ToAdd[j].resize(2); ToAdd[j]+=__T(" metadata compression"); [[fallthrough]];
                             default: Summary[j] += __T(", ");
                         }
                         Summary[j]+=ToAdd[j];

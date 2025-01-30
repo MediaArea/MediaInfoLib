@@ -1829,6 +1829,7 @@ size_t File__Analyze::Read_Buffer_Seek_OneFramePerFile (size_t Method, int64u Va
                         if (Config->Demux_Rate_Get()==0)
                             return (size_t)-1; //Not supported
                         Value=float64_int64s(((float64)Value)/1000000000*Config->Demux_Rate_Get());
+                        return 1;
                     #else //MEDIAINFO_DEMUX
                         return (size_t)-1; //Not supported
                     #endif //MEDIAINFO_DEMUX

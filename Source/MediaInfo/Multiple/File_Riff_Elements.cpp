@@ -2169,6 +2169,7 @@ void File_Riff::AVI__hdlr_strl_vprp()
                             Fill(Stream_Video, 0, Video_ScanOrder, "TFF");
                         if (VideoYValidStartLines.size()==2 && VideoYValidStartLines[0]>VideoYValidStartLines[1])
                             Fill(Stream_Video, 0, Video_ScanOrder, "BFF");
+                        break;
             default: ;
         }
     FILLING_END();

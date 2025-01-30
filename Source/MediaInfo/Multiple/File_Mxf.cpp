@@ -5132,7 +5132,7 @@ size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
                         }
                         Value=float64_int64s(((float64)Value)/1000000000*Descriptor->second.SampleRate);
                         }
-                    //No break;
+                    [[fallthrough]];
         case 3  :   //FrameNumber
                     Value+=Config->File_IgnoreEditsBefore;
 
@@ -14321,6 +14321,7 @@ void File_Mxf::ChooseParser__FromCodingScheme(const essences::iterator &Essence,
                                                                         ChooseParser_SmpteSt0337(Essence, Descriptor);
                                                                     if (Descriptor->second.ChannelCount>=2 && Descriptor->second.ChannelCount!=(int32u)-1) //PCM, but one file is found with Dolby E in it
                                                                         ChooseParser_ChannelSplitting(Essence, Descriptor);
+                                                                    [[fallthrough]];
                                                         default   : return ChooseParser_Pcm(Essence, Descriptor);
                                                     }
                                         case 0x02 : //Compressed coding

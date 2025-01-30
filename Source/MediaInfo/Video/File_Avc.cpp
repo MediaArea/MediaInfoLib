@@ -1181,7 +1181,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
             case Video_MasteringDisplay_Luminance:
                 if (Retrieve_Const(Stream_Video, 0, Item->first) == Item->second)
                     break;
-                // Fallthrough
+                [[fallthrough]];
             default:
                 Fill(Stream_Video, 0, Item->first, Item->second);
             }
@@ -2950,7 +2950,7 @@ void File_Avc::dec_ref_pic_marking(std::vector<int8u> &memory_management_control
                                 break;
                     case 3 :
                                 Skip_UE(                        "difference_of_pic_nums_minus1");
-                                //break; 3 --> difference_of_pic_nums_minus1 then long_term_frame_idx
+                                [[fallthrough]]; // 3 --> difference_of_pic_nums_minus1 then long_term_frame_idx
                     case 6 :
                                 Skip_UE(                        "long_term_frame_idx");
                                 break;
@@ -4796,6 +4796,7 @@ void File_Avc::SPS_PPS()
                             Element_End0();
                         }
                         }
+                        break;
             default:;
         }
     }

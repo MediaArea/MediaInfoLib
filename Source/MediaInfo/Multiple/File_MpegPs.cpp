@@ -4032,6 +4032,7 @@ void File_MpegPs::xxx_stream_Parse(ps_stream &Temp, int8u &stream_Count)
                     Temp.Searching_TimeStamp_Start=false;
                 }
             }
+            break;
         default : ;
     }
 

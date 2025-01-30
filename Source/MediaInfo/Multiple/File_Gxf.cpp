@@ -713,7 +713,7 @@ size_t File_Gxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u)
                         else
                             Value=float64_int64s(((float64)(Value-Delay))/1000000000*Gxf_FrameRate(Streams[0x00].FrameRate_Code));
                     }
-                    //No break;
+                    [[fallthrough]];
         case 3  :   //FrameNumber
                     {
                     if (Seeks.empty())

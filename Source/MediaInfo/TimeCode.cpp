@@ -723,7 +723,7 @@ TimeCode TimeCode::ToRescaled(uint32_t FramesMax, flags Flags, rounding Rounding
     {
     case Nearest:
         Result += FrameRate / 2;
-        //fall through
+        [[fallthrough]];
     case Floor:
         Result /= FrameRate;
         break;

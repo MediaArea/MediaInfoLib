@@ -3717,19 +3717,19 @@ Ztring MediaInfo_Config_MediaInfo::File_ProbeCaption_Set (const Ztring& NewValue
                 {
                 case 'E':
                     Value_Int <<= 10;
-                    // Fall through
+                    [[fallthrough]];
                 case 'P':
                     Value_Int <<= 10;
-                    // Fall through
+                    [[fallthrough]];
                 case 'T':
                     Value_Int <<= 10;
-                    // Fall through
+                    [[fallthrough]];
                 case 'G':
                     Value_Int <<= 10;
-                    // Fall through
+                    [[fallthrough]];
                 case 'M':
                     Value_Int <<= 10;
-                    // Fall through
+                    [[fallthrough]];
                 default:
                     Value_Int <<= 10;
                 }
