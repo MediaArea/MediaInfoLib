@@ -1820,7 +1820,7 @@ void File_Ac4::Read_Buffer_Unsynched()
 bool File_Ac4::Synchronize()
 {
     //Synchronizing
-    size_t Buffer_Offset_Current;
+    size_t Buffer_Offset_Current{};
     while (Buffer_Offset<Buffer_Size)
     {
         Buffer_Offset_Current=Buffer_Offset;

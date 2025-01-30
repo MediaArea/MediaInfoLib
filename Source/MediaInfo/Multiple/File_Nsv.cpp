@@ -837,7 +837,7 @@ void File_StarDiva::Read_Buffer_Continue()
 
 
     size_t Begin;
-    size_t End;
+    size_t End{};
 
     Element_Begin1("StarDiva time line data");
         Element_Begin1("Header");

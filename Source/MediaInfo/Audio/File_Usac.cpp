@@ -4489,7 +4489,7 @@ void File_Usac::UsacCoreCoderData(size_t nrChannels, bool usacIndependencyFlag)
     Element_Begin1("UsacCoreCoderData");
 
     bool coreModes[2];
-    bool tnsDataPresent[2];
+    bool tnsDataPresent[2]{};
 
     for (size_t ch=0; ch<nrChannels; ch++)
         Get_SB(coreModes[ch],                                   "core_mode");
@@ -4750,7 +4750,7 @@ void File_Usac::pvcEnvelope(bool usacIndependencyFlag)
     }
     else
     {
-        int8u num_grid_info;
+        int8u num_grid_info{};
         switch (divMode)
         {
         case 4:
@@ -5606,7 +5606,7 @@ void File_Usac::LsbData(ec_data_type dataType, bool bsQuantCoarseXXX, int8u data
 //---------------------------------------------------------------------------
 void File_Usac::EcDataPair(ec_data_type dataType, int8u paramIdx, int8u setIdx, int8u dataBands, bool bsDataPairXXX, bool bsQuantCoarseXXX, bool usacIndependencyFlag)
 {
-    int8u numQuantSteps;
+    int8u numQuantSteps{};
     switch (dataType)
     {
     case CLD:

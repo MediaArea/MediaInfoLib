@@ -2718,7 +2718,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_FirstFrame), TC.ToString().c_str());
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_Source), "Time code track (stripped)");
     }
-    size_t SDTI_TimeCode_StartTimecode_StreamPos_Last;
+    size_t SDTI_TimeCode_StartTimecode_StreamPos_Last{};
     if (SDTI_TimeCode_StartTimecode.IsSet())
     {
         SDTI_TimeCode_StartTimecode_StreamPos_Last=StreamPos_Last;
@@ -2729,7 +2729,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_FirstFrame), SDTI_TimeCode_StartTimecode.c_str());
         //Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_TimeCode_Source), "SDTI");
     }
-    size_t SystemScheme1_TimeCodeArray_StartTimecode_StreamPos_Last;
+    size_t SystemScheme1_TimeCodeArray_StartTimecode_StreamPos_Last{};
     if (!SystemScheme1s.empty() && !SystemScheme1s.begin()->second.TimeCodeArray_StartTimecodes.empty())
     {
         SystemScheme1_TimeCodeArray_StartTimecode_StreamPos_Last=StreamPos_Last;

@@ -546,7 +546,7 @@ void File_Png::Textual(bitset8 Method)
     }
     Get_ISO_8859_1(Zero-Element_Offset, Keyword,                "Keyword");
     Skip_B1(                                                    "Null separator");
-    int8u Compression;
+    int8u Compression{};
     if (Method[IsCompressed])
     {
         if (Method[IsUTF8])
