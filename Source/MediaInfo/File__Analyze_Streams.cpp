@@ -583,7 +583,7 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
             }
 
             string Layers;
-            if (rpu_present_flag|el_present_flag|bl_present_flag)
+            if (rpu_present_flag||el_present_flag||bl_present_flag)
             {
                 if (bl_present_flag)
                     Layers +="BL+";
