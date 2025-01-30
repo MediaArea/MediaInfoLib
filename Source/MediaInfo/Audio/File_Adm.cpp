@@ -2827,6 +2827,8 @@ static void CheckErrors_ID_Additions(file_adm_private* File_Adm_Private, item it
 };
 
 //---------------------------------------------------------------------------
+#pragma warning( push )
+#pragma warning( disable : 26813 ) //false positive "Use 'bitwise and' to check if a flag is set."
 static void CheckErrors_formatLabelDefinition(file_adm_private* File_Adm_Private, item item_Type, size_t i, const label_info& label_Info) {
     const bool IsAtmos = File_Adm_Private->IsAtmos;
     auto& Item = File_Adm_Private->Items[item_Type].Items[i];
@@ -2892,6 +2894,7 @@ static void CheckErrors_formatLabelDefinition(file_adm_private* File_Adm_Private
         }
     }
 };
+#pragma warning( pop )
 
 //---------------------------------------------------------------------------
 static void CheckErrors_Attributes(file_adm_private* File_Adm_Private, item Item_Type, const vector<size_t>& Attributes_Counts) {
