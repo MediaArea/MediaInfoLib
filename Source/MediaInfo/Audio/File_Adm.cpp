@@ -5482,7 +5482,7 @@ void File_Adm::Streams_Fill()
                 IsAdvSSE = true;
                 IsAdvSSE_Versions.push_back(strtoul(Profile_Item.Attributes[profile_profileVersion].c_str(), nullptr, 10));
                 IsAdvSSE_Levels.push_back(strtoul(Profile_Item.Attributes[profile_profileLevel].c_str(), nullptr, 10));
-                if (IsAdvSSE_Levels.back() > 2 && (Profile == "ITU-R BS.[ADM-NGA-EMISSION]-0" || Profile == "ITU-R BS.[ADM-NGA-EMISSION]-0")) {
+                if (IsAdvSSE_Levels.back() > 2 && (Profile == "ITU-R BS.[ADM-NGA-EMISSION]-0")) {
                     Profiles.back().AddError(Error, ':' + CraftName(item_Infos[item_profile].Name) + to_string(i) + ":profileLevel:profileLevel attribute value " + Profile_Item.Attributes[profile_profileLevel] + " is not permitted, max is 2", Source_AdvSSE_1);
                 }
             }

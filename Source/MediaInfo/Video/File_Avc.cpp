@@ -3160,7 +3160,7 @@ void File_Avc::sei_message_pic_timing(int32u /*payloadSize*/, int32u seq_paramet
                             n_frames=0;
                             FrameMax=0; //Unsupported type
                         }
-                        else if ((*seq_parameter_set_Item)->vui_parameters->flags[fixed_frame_rate_flag] && (*seq_parameter_set_Item)->vui_parameters->time_scale && (*seq_parameter_set_Item)->vui_parameters->time_scale && (*seq_parameter_set_Item)->vui_parameters->num_units_in_tick)
+                        else if ((*seq_parameter_set_Item)->vui_parameters->flags[fixed_frame_rate_flag] && (*seq_parameter_set_Item)->vui_parameters->time_scale && (*seq_parameter_set_Item)->vui_parameters->num_units_in_tick)
                             FrameMax=(int32u)(float64_int64s((float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick/((*seq_parameter_set_Item)->frame_mbs_only_flag?2:(((*seq_parameter_set_Item)->pic_order_cnt_type==2 && Structure_Frame/2>Structure_Field)?1:2))/FrameRate_Divider)-1);
                         else if (n_frames>99)
                             FrameMax=n_frames;

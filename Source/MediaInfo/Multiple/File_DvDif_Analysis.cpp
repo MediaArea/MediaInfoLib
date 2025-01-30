@@ -781,7 +781,7 @@ void File_DvDif::Errors_Stats_Update()
 
         // Coherency checking
         bool FSC_Incoherency=false;
-        if (FSC_WasSet_Sum && FSC_WasSet_Sum)
+        if (FSC_WasNotSet_Sum || FSC_WasSet_Sum)
         {
             int FSC_Diff=FSC_WasSet_Sum-FSC_WasNotSet_Sum;
             if (FSC_Diff<0)

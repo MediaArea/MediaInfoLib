@@ -931,7 +931,7 @@ void File__Analyze::Streams_Finish_StreamOnly(stream_t StreamKind, size_t Pos)
                 const auto& Item=List[i];
                 if (HI_ME_Pos==(size_t)-1 && (Item==HI_ME_Text || Item==VI_ME_Text))
                     HI_ME_Pos=i;
-                if (HI_D_Pos==(size_t)-1 && (Item==HI_D_Text || Item==HI_D_Text))
+                if (HI_D_Pos==(size_t)-1 && (Item==HI_D_Text || Item==VI_D_Text))
                     HI_D_Pos=i;
             }
             if (HI_ME_Pos!=(size_t)-1 && HI_D_Pos!=(size_t)-1)
