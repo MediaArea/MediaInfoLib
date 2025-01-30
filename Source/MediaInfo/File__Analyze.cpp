@@ -397,7 +397,7 @@ void conformance::Streams_Finish_Conformance()
                 size_t Frames_HasContent, Times_HasContent, Offsets_HasContent;
                 Frames_HasContent = Times_HasContent = Offsets_HasContent = Pos_Total;
                 for (size_t i = 0; i < Pos_Total; i++) {
-                    auto FramePos = ConformanceError.FramePoss[i];
+                    auto& FramePos = ConformanceError.FramePoss[i];
                     if (FramePos.Frame_Count_Min == (int64u)-2) {
                         Frames += "conf";
                     }
