@@ -4034,7 +4034,7 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
                     TimeCode TC2=Component_TC2->second.MxfTimeCode.RoundedTimecodeBase<0x8000?TimeCode((int64_t)(Component_TC2->second.MxfTimeCode.StartTimecode+Config->File_IgnoreEditsBefore), Component_TC2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)):TimeCode();
                     if (TC2.ToFrames()-TC.ToFrames()==2)
                     {
-                        TC++;
+                        ++TC;
                         IsHybridTimeCode=true;
                     }
                 }
@@ -8817,7 +8817,7 @@ void File_Mxf::SDTISystemMetadataPack() //SMPTE 385M + 326M
             if (SDTI_TimeCode_Previous.IsSet() && TimeCode_Current==SDTI_TimeCode_Previous)
             {
                 SDTI_TimeCode_RepetitionCount++;
-                TimeCode_Current++;
+                ++TimeCode_Current;
                 if (!SDTI_TimeCode_StartTimecode.IsSet() && SDTI_TimeCode_RepetitionCount>=RepetitionMaxCount)
                     SDTI_TimeCode_StartTimecode=SDTI_TimeCode_Previous; //The first time code was the first one of the repetition sequence
             }
@@ -8828,7 +8828,7 @@ void File_Mxf::SDTISystemMetadataPack() //SMPTE 385M + 326M
                     SDTI_TimeCode_StartTimecode=SDTI_TimeCode_Previous;
                     while(SDTI_TimeCode_RepetitionCount<RepetitionMaxCount)
                     {
-                        SDTI_TimeCode_StartTimecode++;
+                        ++SDTI_TimeCode_StartTimecode;
                         SDTI_TimeCode_RepetitionCount++;
                     }
                 }

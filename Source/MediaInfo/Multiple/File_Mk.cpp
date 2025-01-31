@@ -1439,7 +1439,7 @@ void File_Mk::Read_Buffer_Unsynched()
     if (!File_GoTo)
         Element_Level=0;
 
-    for (std::map<int64u, stream>::iterator streamItem=Stream.begin(); streamItem!=Stream.end(); streamItem++)
+    for (std::map<int64u, stream>::iterator streamItem=Stream.begin(); streamItem!=Stream.end(); ++streamItem)
     {
         if (!File_GoTo)
             streamItem->second.PacketCount=0;

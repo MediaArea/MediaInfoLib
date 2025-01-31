@@ -1073,12 +1073,12 @@ void File_DvDif::Errors_Stats_Update()
             if (AbstBf_Current_Weighted.abst[j].size()>1 && !AbstBf_Current_Weighted.StoredValues.empty())
             {
                 //Difficult to trust one value other another one, we use the smallest trustable stored value
-                for (set<int32s>::iterator StoredValue=AbstBf_Current_Weighted.StoredValues.begin(); ; StoredValue++)
+                for (set<int32s>::iterator StoredValue=AbstBf_Current_Weighted.StoredValues.begin(); ; ++StoredValue)
                     if (abst<=*StoredValue)
                     {
                         abst=*StoredValue;
                         AbstBf_Current_MaxAbst=abst;
-                        for (; StoredValue!=AbstBf_Current_Weighted.StoredValues.end(); StoredValue++)
+                        for (; StoredValue!=AbstBf_Current_Weighted.StoredValues.end(); ++StoredValue)
                         {
                             if (*StoredValue>=(abst+(DSF?12:10)*(FSC_WasSet?2:1)*2)) //Max 2x the expected gap
                                 break;

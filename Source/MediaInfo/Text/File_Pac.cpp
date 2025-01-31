@@ -115,7 +115,7 @@ void File_Pac::Streams_Finish()
     Fill(Stream_Text, 0, Text_TimeCode_FirstFrame, Time_Start_Command.ToString());
     Fill(Stream_Text, 0, Text_Duration_End_Command, (int64s)(Time_End_Command - Offset).ToMilliseconds());
     TimeCode LastFrame = Time_End_Command;
-    LastFrame--;
+    --LastFrame;
     Fill(Stream_Text, 0, Text_TimeCode_LastFrame, LastFrame.ToString());
     if (Time_Start.IsValid()) {
         Time_Start.SetFramesMax(FrameMax);

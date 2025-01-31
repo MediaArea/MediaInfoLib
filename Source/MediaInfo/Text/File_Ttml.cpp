@@ -217,7 +217,7 @@ void File_Ttml::Streams_Finish()
         if (!Time_End.IsTimed() && Time_End>Time_Begin)
         {
             TimeCode LastFrame=Time_End;
-            LastFrame--;
+            --LastFrame;
             Fill(Stream_Text, 0, Text_TimeCode_LastFrame, LastFrame.ToString());
         }
         auto MediaTimeToMilliseconds=[&](TimeCode TC)
