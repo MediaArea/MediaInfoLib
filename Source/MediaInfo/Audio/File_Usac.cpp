@@ -5071,7 +5071,7 @@ void File_Usac::UsacSbrData(size_t nrSbrChannels, bool usacIndependencyFlag)
     int64s sampling_frequency=C.sampling_frequency;
     if (C.coreSbrFrameLengthIndex==4)
     {
-        sampling_frequency=Frequency_b/2;
+        if (Frequency_b!=0) sampling_frequency=Frequency_b/2;
         C.sbrHandler.ratio=QUAD;
     }
 
