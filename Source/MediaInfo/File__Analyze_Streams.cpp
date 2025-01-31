@@ -665,7 +665,7 @@ void File__Analyze::Get_LightLevel(Ztring &MaxCLL, Ztring &MaxFALL, int32u Divis
 size_t File__Analyze::Stream_Prepare (stream_t KindOfStream, size_t StreamPos)
 {
     //Integrity
-    if (KindOfStream>Stream_Max)
+    if (KindOfStream<0 || KindOfStream>Stream_Max)
         return Error;
 
     //Clear
@@ -1000,7 +1000,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         "ContainerExtra",
     };
     assert(sizeof(SourceValue)==StreamSource_Max*sizeof(const char*));
-    if (StreamKind==Stream_Video && ShowSource_IsInList((video)Parameter) && StreamSource<StreamSource_Max && Retrieve_Const(Stream_Video, StreamPos, Parameter+1).empty())
+    if (StreamKind==Stream_Video && ShowSource_IsInList((video)Parameter) && StreamSource>=0 && StreamSource<StreamSource_Max && Retrieve_Const(Stream_Video, StreamPos, Parameter+1).empty())
     {
         Fill(Stream_Video, StreamPos, Parameter+1, SourceValue[StreamSource]);
     }
@@ -1054,7 +1054,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     if (StreamKind==Stream_Max || StreamPos>=(*Stream)[StreamKind].size())
     {
         size_t StreamKindS=(size_t)StreamKind;
-        if (StreamKind!=Stream_Max)
+        if (StreamKind>=0 && StreamKind!=Stream_Max)
         {
             //Stream kind is found, moving content
             for (size_t Pos=0; Pos<Fill_Temp[Stream_Max].size(); Pos++)
@@ -1737,7 +1737,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
     if (StreamKind==Stream_Max || StreamPos>=(*Stream)[StreamKind].size())
     {
         size_t StreamKindS=(size_t)StreamKind;
-        if (StreamKind!=Stream_Max)
+        if (StreamKind>=0 && StreamKind!=Stream_Max)
         {
             //Stream kind is found, moving content
             for (size_t Pos=0; Pos<Fill_Temp[Stream_Max].size(); Pos++)
@@ -1888,7 +1888,7 @@ void File__Analyze::Fill_SetOptions(stream_t StreamKind, size_t StreamPos, const
         return;
 
     //Handle Value before StreamKind
-    if (StreamKind==Stream_Max || StreamPos>=(*Stream)[StreamKind].size())
+    if (StreamKind>=0 && (StreamKind==Stream_Max || StreamPos>=(*Stream)[StreamKind].size()))
     {
         Fill_Temp_Options[StreamKind][Parameter]=Options;
         return; //No streams
