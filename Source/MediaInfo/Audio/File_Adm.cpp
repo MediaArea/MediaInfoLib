@@ -2141,7 +2141,10 @@ size_t Atmos_zone_Pos(const string& Name, float32* Values) {
 }
 
 string CraftName(const char* Name, bool ID = false) {
-    return (ID && !strcmp(Name, "Track")) ? "track" : ((Name && Name[0] < 'a' ? "audio" : "") + string(Name));
+    if (Name)
+        return (ID && !strcmp(Name, "Track")) ? "track" : ((Name && Name[0] < 'a' ? "audio" : "") + string(Name));
+    else
+        return "";
 }
 
 enum class E {
