@@ -1482,7 +1482,7 @@ void File_Gxf::media()
         {
             if (!Streams[TrackNumber].Parsers[Pos]->Status[IsAccepted] && Streams[TrackNumber].Parsers[Pos]->Status[IsFinished])
             {
-                delete *(Streams[TrackNumber].Parsers.begin()+Pos);
+                delete static_cast<MediaInfoLib::File__Analyze*>(*(Streams[TrackNumber].Parsers.begin()+Pos));
                 Streams[TrackNumber].Parsers.erase(Streams[TrackNumber].Parsers.begin()+Pos);
                 Pos--;
             }
@@ -1492,7 +1492,7 @@ void File_Gxf::media()
                 for (size_t Pos2=0; Pos2<Streams[TrackNumber].Parsers.size(); Pos2++)
                 {
                     if (Pos2!=Pos)
-                        delete *(Streams[TrackNumber].Parsers.begin()+Pos2);
+                        delete static_cast<MediaInfoLib::File__Analyze*>(*(Streams[TrackNumber].Parsers.begin()+Pos2));
                 }
                 Streams[TrackNumber].Parsers.clear();
                 Streams[TrackNumber].Parsers.push_back(Parser);

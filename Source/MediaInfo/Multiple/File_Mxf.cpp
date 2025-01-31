@@ -6503,7 +6503,7 @@ void File_Mxf::Data_Parse()
                     {
                         if (!Essence->second.Parsers[Pos]->Status[IsAccepted] && Essence->second.Parsers[Pos]->Status[IsFinished])
                         {
-                            delete *(Essence->second.Parsers.begin()+Pos);
+                            delete static_cast<MediaInfoLib::File__Analyze*>(*(Essence->second.Parsers.begin()+Pos));
                             Essence->second.Parsers.erase(Essence->second.Parsers.begin()+Pos);
                             Pos--;
                         }
@@ -6513,7 +6513,7 @@ void File_Mxf::Data_Parse()
                             for (size_t Pos2=0; Pos2<Essence->second.Parsers.size(); Pos2++)
                             {
                                 if (Pos2!=Pos)
-                                    delete *(Essence->second.Parsers.begin()+Pos2);
+                                    delete static_cast<MediaInfoLib::File__Analyze*>(*(Essence->second.Parsers.begin()+Pos2));
                             }
                             Essence->second.Parsers.clear();
                             Essence->second.Parsers.push_back(Parser);

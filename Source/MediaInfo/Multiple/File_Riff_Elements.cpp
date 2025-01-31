@@ -2635,7 +2635,7 @@ void File_Riff::AVI__movi_xxxx()
             {
                 if (!StreamItem.Parsers[Pos]->Status[IsAccepted] && StreamItem.Parsers[Pos]->Status[IsFinished])
                 {
-                    delete *(StreamItem.Parsers.begin()+Pos);
+                    delete static_cast<MediaInfoLib::File__Analyze*>(*(StreamItem.Parsers.begin()+Pos));
                     StreamItem.Parsers.erase(StreamItem.Parsers.begin()+Pos);
                     Pos--;
                 }
@@ -2645,7 +2645,7 @@ void File_Riff::AVI__movi_xxxx()
                     for (size_t Pos2=0; Pos2<StreamItem.Parsers.size(); Pos2++)
                     {
                         if (Pos2!=Pos)
-                            delete *(StreamItem.Parsers.begin()+Pos2);
+                            delete static_cast<MediaInfoLib::File__Analyze*>(*(StreamItem.Parsers.begin()+Pos2));
                     }
                     StreamItem.Parsers.clear();
                     StreamItem.Parsers.push_back(Parser);
