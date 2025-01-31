@@ -508,6 +508,10 @@ int TimeCode::FromString(const string_view& V, bool Ignore1001FromDropFrame)
                 return 1;
             }
             int FramesRate_Index = i - 1 - i_Start;
+            if (FramesRate_Index < 0) {
+                *this = TimeCode();
+                return 1;
+            }
             uint64_t FramesRate = PowersOf10[FramesRate_Index];
             SetFramesMax((uint32_t)FramesRate - 1);
             switch (Unit)

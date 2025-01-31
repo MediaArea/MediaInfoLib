@@ -2902,6 +2902,7 @@ void File_Usac::uniDrcConfigExtension()
             default:
                 Skip_BS(bitSize,                                "Unknown");
         }
+        #pragma warning (suppress : 6385) //Visual Studio fail to detect 'uniDrcConfigExtType<UNIDRCCONFEXT_Max' check when it is inside function parameter and warns about reading invalid data
         BS_Bookmark(B, uniDrcConfigExtType<UNIDRCCONFEXT_Max?string(uniDrcConfigExtType_ConfNames[uniDrcConfigExtType]):("uniDrcConfigExtType"+to_string(uniDrcConfigExtType)));
         Element_End0();
     }
@@ -3377,6 +3378,7 @@ void File_Usac::UsacConfigExtension()
                 case ID_CONFIG_EXT_STREAM_ID                  : streamId(); break;
                 default                                       : Skip_BS(usacConfigExtLength,                "Unknown");
             }
+            #pragma warning (suppress : 6385) //Visual Studio fail to detect 'usacConfigExtType<ID_CONFIG_EXT_Max' check when it is inside function parameter and warns about reading invalid data
             if (BS_Bookmark(B, usacConfigExtType<ID_CONFIG_EXT_Max?string(usacConfigExtType_ConfNames[usacConfigExtType]):("usacConfigExtType"+to_string(usacConfigExtType))))
             {
                 #if MEDIAINFO_CONFORMANCE
@@ -5944,6 +5946,7 @@ void File_Usac::UsacExtElement(size_t elemIdx, bool usacIndependencyFlag)
                 default:
                     Skip_BS(usacExtElementPayloadLength,        usacExtElementType==ID_EXT_ELE_FILL?"(Not parsed)":"Unknown");
             }
+            #pragma warning (suppress : 6385) //Visual Studio fail to detect 'usacExtElementType<ID_EXT_ELE_Max' check when it is inside function parameter and warns about reading invalid data
             BS_Bookmark(B, usacExtElementType<ID_EXT_ELE_Max?string(usacExtElementType_Names[usacExtElementType]):("usacExtElementType"+to_string(usacExtElementType)));
         }
     }
