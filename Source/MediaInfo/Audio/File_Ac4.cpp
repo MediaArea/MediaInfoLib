@@ -3799,7 +3799,7 @@ void File_Ac4::metadata(audio_substream& AudioSubstream, size_t Substream_Index)
             Get_SB (b_discard_unknown_payload,                  "b_discard_unknown_payload");
             if (!b_discard_unknown_payload)
             {
-                bool b_payload_frame_aligned;
+                bool b_payload_frame_aligned{};
                 if (!b_smpoffst)
                 {
                     TEST_SB_GET(b_payload_frame_aligned,        "b_payload_frame_aligned");
