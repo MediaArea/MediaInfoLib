@@ -2398,7 +2398,7 @@ public:
     file_adm_private()
     {
         auto OldLocale_Temp = setlocale(LC_NUMERIC, nullptr);
-        if (*OldLocale_Temp != 'C' || *(OldLocale_Temp + 1)) {
+        if (OldLocale_Temp && (*OldLocale_Temp != 'C' || *(OldLocale_Temp + 1))) {
             OldLocale = OldLocale_Temp;
             setlocale(LC_NUMERIC, "C");
         }
