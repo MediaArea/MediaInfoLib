@@ -2184,12 +2184,9 @@ void File_Mpeg4::mdat_xxxx()
                     File_Offset_Next_IsValid=false;
                 }
                 mdat_pos mdat_Pos_New;
-                if (!mdat_Pos.empty())
-                {
-                    for (mdat_Pos_Type* mdat_Pos_Item=&mdat_Pos[0]; mdat_Pos_Item<mdat_Pos_Max; ++mdat_Pos_Item)
-                        if (mdat_Pos_Item->StreamID!=(int32u)Element_Code)
-                            mdat_Pos_New.push_back(*mdat_Pos_Item);
-                }
+                for (mdat_Pos_Type* mdat_Pos_Item=&mdat_Pos[0]; mdat_Pos_Item<mdat_Pos_Max; ++mdat_Pos_Item)
+                    if (mdat_Pos_Item->StreamID!=(int32u)Element_Code)
+                        mdat_Pos_New.push_back(*mdat_Pos_Item);
                 if (!mdat_Pos_New.empty())
                 {
                     mdat_Pos=std::move(mdat_Pos_New);
@@ -2300,7 +2297,7 @@ void File_Mpeg4::mdat_xxxx()
                 Stream_Temp.Parsers.erase(Stream_Temp.Parsers.begin()+Pos);
                 Pos--;
             }
-            else if (Stream_Temp.Parsers.size()>1 && Stream_Temp.Parsers[Pos]->Status[IsAccepted])
+            else if (Stream_Temp.Parsers[Pos]->Status[IsAccepted])
             {
                 File__Analyze* Parser=Stream_Temp.Parsers[Pos];
                 for (size_t Pos2=0; Pos2<Stream_Temp.Parsers.size(); Pos2++)
@@ -2329,14 +2326,9 @@ void File_Mpeg4::mdat_StreamJump()
             std::map<int64u, int64u>::iterator StreamOffset_Jump_Temp=StreamOffset_Jump.find(File_Offset+Buffer_Offset+Element_Size);
             if (StreamOffset_Jump_Temp!=StreamOffset_Jump.end())
             {
-                if (!mdat_Pos.empty())
-                {
-                    mdat_Pos_Temp=&mdat_Pos[0];
-                    while (mdat_Pos_Temp<mdat_Pos_Max && mdat_Pos_Temp->Offset!=StreamOffset_Jump_Temp->second)
-                        mdat_Pos_Temp++;
-                }
-                else
-                    mdat_Pos_Temp=NULL;
+                mdat_Pos_Temp=&mdat_Pos[0];
+                while (mdat_Pos_Temp<mdat_Pos_Max && mdat_Pos_Temp->Offset!=StreamOffset_Jump_Temp->second)
+                    mdat_Pos_Temp++;
             }
         }
     #endif // MEDIAINFO_DEMUX
@@ -8119,7 +8111,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC()
             if (Streams[moov_trak_tkhd_TrackID].IsPcm)
             {
                 char EndiannessC=(format_flags&1)?'L':'B';
-                std::vector<File__Analyze*>& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
+                const std::vector<File__Analyze*>& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
                 for (size_t i=0; i< Parsers.size(); i++)
                 {
                     ((File_Pcm_Base*)Parsers[i])->Endianness=EndiannessC;
@@ -8414,7 +8406,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_wave_enda()
             if (Streams[moov_trak_tkhd_TrackID].IsPcm)
             {
                 char EndiannessC=Endianness?'L':'B';
-                std::vector<File__Analyze*>& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
+                const std::vector<File__Analyze*>& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
                 for (size_t i=0; i< Parsers.size(); i++)
                     ((File_Pcm_Base*)Parsers[i])->Endianness=EndiannessC;
             }
@@ -8993,7 +8985,6 @@ void File_Mpeg4::moov_trak_tkhd()
 
     FILLING_BEGIN();
         //Handle tracks with same ID than a previous track
-        bool tkhd_SameID=false;
         std::map<int32u, stream>::iterator PreviousTrack=Streams.find(moov_trak_tkhd_TrackID);
         if (PreviousTrack!=Streams.end() && PreviousTrack->second.tkhd_Found)
         {
@@ -9897,7 +9888,7 @@ void File_Mpeg4::moov_udta_thmb()
     MediaInfo_Internal MI;
     Ztring Demux_Save = MI.Option(__T("Demux_Get"), __T(""));
     MI.Option(__T("Demux"), Ztring());
-    size_t MiOpenResult = MI.Open(Buffer + (size_t)(Buffer_Offset + Element_Offset), (size_t)(Element_Size - Element_Offset), nullptr, 0, (size_t)(Element_Size - Element_Offset));
+    MI.Open(Buffer + (size_t)(Buffer_Offset + Element_Offset), (size_t)(Element_Size - Element_Offset), nullptr, 0, (size_t)(Element_Size - Element_Offset));
     MI.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
     if (MI.Count_Get(Stream_Image))
     {
