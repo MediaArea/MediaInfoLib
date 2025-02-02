@@ -3098,21 +3098,18 @@ void File__Analyze::Duration_Duration123(stream_t StreamKind, size_t StreamPos, 
                         if (FrameRateF>=FrameRateF_Min && FrameRateF<FrameRateF_Max)
                         {
                             // Default from user
-                            if (!DropFrame_IsValid)
-                            {
-                                #if MEDIAINFO_ADVANCED
-                                    switch (Config->File_DefaultTimeCodeDropFrame_Get())
-                                    {
-                                        case 0 :
-                                                DropFrame=false;
-                                                break;
-                                        default:
-                                                DropFrame=true;
-                                    }
-                                #else //MEDIAINFO_ADVANCED
-                                    DropFrame=true;
-                                #endif //MEDIAINFO_ADVANCED
-                            }
+                            #if MEDIAINFO_ADVANCED
+                                switch (Config->File_DefaultTimeCodeDropFrame_Get())
+                                {
+                                    case 0 :
+                                            DropFrame=false;
+                                            break;
+                                    default:
+                                            DropFrame=true;
+                                }
+                            #else //MEDIAINFO_ADVANCED
+                                DropFrame=true;
+                            #endif //MEDIAINFO_ADVANCED
                         }
                         else
                             DropFrame=false;

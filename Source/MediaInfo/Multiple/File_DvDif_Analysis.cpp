@@ -1422,8 +1422,7 @@ void File_DvDif::Errors_Stats_Update()
             #if MEDIAINFO_EVENTS
                 Event.Arb|=1<<7;
             #endif //MEDIAINFO_EVENTS
-            if (Speed_Arb_Current.Value!=0xF)
-                Arb_AreDetected=true;
+            Arb_AreDetected=true;
 
             Speed_Arb_Current_Theory.IsValid=false;
         }
