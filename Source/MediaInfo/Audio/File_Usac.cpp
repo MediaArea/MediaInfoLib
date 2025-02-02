@@ -2406,7 +2406,7 @@ void File_Usac::UsacDecoderConfig()
             bool AccrossCpe = false;
             for (size_t i = 0 ; i < C.usacElements.size(); i++)
             {
-                auto usacElement = C.usacElements[i];
+                auto& usacElement = C.usacElements[i];
                 switch (usacElement.usacElementType)
                 {
                     case ID_USAC_SCE                          : ChannelCount_NonLfe++; break;
@@ -2465,7 +2465,7 @@ void File_Usac::UsacDecoderConfig()
                 channelConfiguration_Orders_Pos = channelConfiguration_Orders_Max;
                 channelConfiguration_Orders_Max = channelConfiguration_Orders[i];
                 auto channelConfiguration_Orders_Base = channelConfiguration_Orders + Aac_Channels_Size_Usac;
-                for (auto usacElement : C.usacElements)
+                for (auto& usacElement : C.usacElements)
                 {
                     if (usacElement.usacElementType >= ID_USAC_EXT)
                         continue;
@@ -2477,14 +2477,14 @@ void File_Usac::UsacDecoderConfig()
                 if (!IsNotMatch)
                 {
                     string ActualOrder;
-                    for (auto usacElement : C.usacElements)
+                    for (auto& usacElement : C.usacElements)
                     {
                         if (usacElement.usacElementType >= ID_USAC_EXT)
                             continue;
                         ActualOrder += usacElementType_IdNames[usacElement.usacElementType];
                         ActualOrder += ' ';
                     }
-                    ActualOrder.pop_back();
+                    if (!ActualOrder.empty()) ActualOrder.pop_back();
                     Fill_Conformance("UsacConfig channelConfigurationIndex", ("channelConfigurationIndex " + to_string(C.channelConfigurationIndex) + " is used but the usacElementType sequence contains " + ActualOrder + ", which is the configuration indicated by channelConfigurationIndex " + to_string(i)).c_str(), bitset8(), Warning);
                     break;
                 }
@@ -2503,14 +2503,14 @@ void File_Usac::UsacDecoderConfig()
             }
             if (!ExpectedOrder.empty()) ExpectedOrder.pop_back();
             string ActualOrder;
-            for (auto usacElement : C.usacElements)
+            for (auto& usacElement : C.usacElements)
             {
                 if (usacElement.usacElementType >= ID_USAC_EXT)
                     continue;
                 ActualOrder += usacElementType_IdNames[usacElement.usacElementType];
                 ActualOrder += ' ';
             }
-            ActualOrder.pop_back();
+            if (!ActualOrder.empty()) ActualOrder.pop_back();
             Fill_Conformance("UsacConfig channelConfigurationIndex", ("channelConfigurationIndex " + to_string(C.channelConfigurationIndex) + " implies element order " + ExpectedOrder + " but actual element order is " + ActualOrder).c_str());
         }
     #endif
