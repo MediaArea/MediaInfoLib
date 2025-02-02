@@ -362,7 +362,7 @@ void conformance::Streams_Finish_Conformance()
         auto& Conformance_Total = ConformanceErrors_Total[Level];
         if (Conformance_Total.empty())
             continue;
-        for (size_t i = Conformance_Total.size() - 1; i < Conformance_Total.size(); i--) {
+        for (size_t i = Conformance_Total.size(); i-- > 0;) {
             if (!CheckIf(Conformance_Total[i].Flags)) {
                 Conformance_Total.erase(Conformance_Total.begin() + i);
             }
