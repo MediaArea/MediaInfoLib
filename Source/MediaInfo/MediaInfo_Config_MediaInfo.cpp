@@ -3802,7 +3802,7 @@ config_probe MediaInfo_Config_MediaInfo::File_ProbeCaption_Get(const string& Par
             return {};
         const auto& Item = File_ProbeCaption[File_ProbeCaption_Pos];
         File_ProbeCaption_Pos++;
-        if (Item.Parser.empty()) {
+        if (!Item.Parser.empty()) {
             if (Item.Parser[0] == '-') {
                 if (Item.Parser.rfind(ParserName, 1) == 1) {
                     continue;

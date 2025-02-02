@@ -98,7 +98,7 @@ bool DateTime_Adapt(string& Value_)
         IsUtc = false;
     
     // Unix style
-    if (Value.size() < 4)
+    if (Value.size() < 5)
         return false;
     if (Value[4]!='-')
     {

@@ -266,7 +266,7 @@ string BuildConformanceName(const string& ParserName, const char* Prefix, const 
     }
     if (Suffix) {
         Result += Suffix;
-        if (Result.empty() && Result.back() >= '0' && Result.back() <= '9') {
+        if (!Result.empty() && Result.back() >= '0' && Result.back() <= '9') {
             Result += '_';
         }
     }

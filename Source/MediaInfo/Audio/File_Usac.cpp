@@ -2501,7 +2501,7 @@ void File_Usac::UsacDecoderConfig()
                 ExpectedOrder += usacElementType_IdNames[channelConfiguration_Orders_Base[channelConfiguration_Orders_Pos]];
                 ExpectedOrder += ' ';
             }
-            ExpectedOrder.pop_back();
+            if (!ExpectedOrder.empty()) ExpectedOrder.pop_back();
             string ActualOrder;
             for (auto usacElement : C.usacElements)
             {
