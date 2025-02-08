@@ -183,7 +183,7 @@ Issue Date: 20/12/2007
 	AES_REV_DKS must NOT be defined when such assembler files are
 	built
 */
-#if 1 && defined( _WIN64 ) && defined( _MSC_VER )
+#if 1 && defined( _WIN64 ) && defined( _MSC_VER ) && defined( _M_AMD64 )
 #  define INTEL_AES_POSSIBLE
 #endif
 

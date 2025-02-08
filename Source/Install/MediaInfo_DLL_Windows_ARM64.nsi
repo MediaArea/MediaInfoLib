@@ -4,7 +4,7 @@ RequestExecutionLevel admin
 ; Some defines
 !define PRODUCT_NAME "MediaInfo"
 !define PRODUCT_PUBLISHER "MediaArea.net"
-!define PRODUCT_VERSION "24.12"
+!define PRODUCT_VERSION "24.11"
 !define PRODUCT_VERSION4 "${PRODUCT_VERSION}.0.0"
 !define PRODUCT_WEB_SITE "http://MediaArea.net/MediaInfo"
 !define COMPANY_REGISTRY "Software\MediaArea.net"
@@ -82,24 +82,24 @@ VIAddVersionKey /LANG=0 "ProductVersion" "${PRODUCT_VERSION4}"
 VIAddVersionKey /LANG=0 "FileDescription" "All about your audio and video files"
 VIAddVersionKey /LANG=0 "FileVersion" "${PRODUCT_VERSION4}"
 VIAddVersionKey /LANG=0 "LegalCopyright" "${PRODUCT_PUBLISHER}"
-VIAddVersionKey /LANG=0 "OriginalFilename" "${PRODUCT_NAME}_DLL_${PRODUCT_VERSION}_Windows_x64.exe"
+VIAddVersionKey /LANG=0 "OriginalFilename" "${PRODUCT_NAME}_DLL_${PRODUCT_VERSION}_Windows_ARM64.exe"
 BrandingText " "
 
 ; Modern UI end
 
 Name "${PRODUCT_NAME}.dll ${PRODUCT_VERSION}"
-OutFile "..\..\Release\MediaInfo_DLL_${PRODUCT_VERSION}_Windows_x64.exe"
+OutFile "..\..\Release\MediaInfo_DLL_${PRODUCT_VERSION}_Windows_ARM64.exe"
 InstallDir "$PROGRAMFILES64\MediaInfo.dll"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails nevershow
 ShowUnInstDetails nevershow
 
 Function .onInit
-  ${If} ${RunningX64}
+  ${If} ${IsNativeARM64}
     SetRegView 64
   ${Else}
-    MessageBox MB_OK|MB_ICONSTOP 'You are trying to install the 64-bit version of ${PRODUCT_NAME} on 32-bit Windows.$\r$\nPlease download and use the 32-bit version instead.$\r$\nClick OK to quit Setup.'
-    Quit
+    MessageBox mb_iconStop "Windows not ARM64!"
+    Abort
   ${EndIf}
   !insertmacro MUI_LANGDLL_DISPLAY
 FunctionEnd
@@ -108,8 +108,8 @@ FunctionEnd
 
 Section "SectionPrincipale" SEC01
   SetOutPath "$INSTDIR"
-  !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "..\..\Project\MSVC2022\x64\Release\MediaInfo.dll" $SYSDIR\MediaInfo.dll $SYSDIR
-  !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "..\..\Project\MSVC2022\x64\Release\MediaInfo_InfoTip.dll" $INSTDIR\MediaInfo_InfoTip.dll $INSTDIR
+  !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "..\..\Project\MSVC2022\ARM64EC\Release\MediaInfo.dll" $SYSDIR\MediaInfo.dll $SYSDIR
+  !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "..\..\Project\MSVC2022\ARM64\Release\MediaInfo_InfoTip.dll" $INSTDIR\MediaInfo_InfoTip.dll $INSTDIR
 SectionEnd
 
 Section -Post
@@ -123,11 +123,9 @@ Section -Post
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
 
   ; File size, taken from SumatraPDF installer
-  ${If} ${AtLeastWin7}
   ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
   IntFmt $0 "0x%08X" $0 ; Convert the decimal KB value in $0 to DWORD, put it right back into $0
   WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "EstimatedSize" "$0" ; Create/Write the reg key with the dword value
-  ${EndIf}
 SectionEnd
 
 
