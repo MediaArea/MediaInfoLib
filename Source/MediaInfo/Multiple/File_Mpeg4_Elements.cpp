@@ -967,6 +967,8 @@ namespace Elements
     const int64u moov_udta_ptv =0x70747620;
     const int64u moov_udta_rtng=0x72746E67;
     const int64u moov_udta_Sel0=0x53656C30;
+    const int64u moov_udta_smta=0x736d7461;
+    const int64u moov_udta_smta_mdln=0x6d646c6e;
     const int64u moov_udta_tags=0x74616773;
     const int64u moov_udta_tags_meta=0x6D657461;
     const int64u moov_udta_tags_tseg=0x74736567;
@@ -1431,6 +1433,10 @@ void File_Mpeg4::Data_Parse()
             ATOM(moov_udta_ptv )
             ATOM(moov_udta_rtng)
             ATOM(moov_udta_Sel0)
+            LIST(moov_udta_smta)
+                ATOM_BEGIN
+                ATOM(moov_udta_smta_mdln)
+                ATOM_END
             LIST(moov_udta_tags)
                 ATOM_BEGIN
                 ATOM(moov_udta_tags_meta)
@@ -3981,6 +3987,8 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         Fill(Stream_General, 0, "Media/History/UUID", Value);
                     else if (Parameter=="com.android.capture.fps")
                         FrameRate_Real=Value;
+                    else if (Parameter=="com.android.version")
+                        Fill(Stream_General, 0, "Android_Version", Value);
                     else if (Parameter=="com.universaladid.idregistry")
                     {
                         Fill(Stream_General, 0, "UniversalAdID_Registry", Value);
@@ -6279,6 +6287,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
 
     int16u Width, Height, Depth, ColorTableID;
     int8u  CompressorName_Size;
+    Ztring  CompressorName;
     bool   IsGreyscale;
     Skip_B2(                                                    "Version");
     Skip_B2(                                                    "Revision level");
@@ -6296,12 +6305,12 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
     {
         //This is pascal string
         Skip_B1(                                                "Compressor name size");
-        Skip_UTF8(CompressorName_Size,                          "Compressor name");
+        Get_UTF8(CompressorName_Size, CompressorName,           "Compressor name");
         Skip_XX(32-1-CompressorName_Size,                       "Padding");
     }
     else
         //this is hard-coded 32-byte string
-        Skip_UTF8(32,                                           "Compressor name");
+        Get_UTF8(32, CompressorName,                            "Compressor name");
     Get_B2 (Depth,                                              "Depth");
     if (Depth>0x20 && Depth<0x40)
     {
@@ -6339,6 +6348,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
             CodecID_Fill(Codec, Stream_Video, StreamPos_Last, InfoCodecID_Format_Mpeg4);
         Fill(Stream_Video, StreamPos_Last, Video_Codec, Codec, true);
         Fill(Stream_Video, StreamPos_Last, Video_Codec_CC, Codec, true);
+        Fill(Stream_Video, StreamPos_Last, Video_Encoded_Library, CompressorName);
         if (Codec==__T("drms"))
             Fill(Stream_Video, StreamPos_Last, Video_Encryption, "iTunes");
         if (Codec==__T("encv"))
@@ -9807,6 +9817,27 @@ void File_Mpeg4::moov_udta_Sel0()
 
     //Parsing
     Skip_XX(Element_Size,                                       "Data");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_udta_smta()
+{
+    NAME_VERSION_FLAG("Samsung Metadata");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_udta_smta_mdln()
+{
+    Element_Name("Model Number");
+
+    //Parsing
+    string SamsungModelNumber;
+    Get_String(Element_Size, SamsungModelNumber, "Value");
+
+    //Filling
+    FILLING_BEGIN();
+        Fill(Stream_General, 0, "Samsung_Model_Number", SamsungModelNumber);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
