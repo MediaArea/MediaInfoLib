@@ -564,7 +564,7 @@ void File_Dat::Data_Parse()
                             Previous = Priv->Frame_Last.TCs[i];
                             Previous.SetFramesMax(Frame.TCs[i].GetFramesMax());
                             Ref = Previous;
-                            Ref++;
+                            ++Ref;
                         }
                         int32u Value = 0;
                         Value |= (int32u)Frame.TCs[i].ToSeconds() << 8;

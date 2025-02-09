@@ -2141,7 +2141,10 @@ size_t Atmos_zone_Pos(const string& Name, float32* Values) {
 }
 
 string CraftName(const char* Name, bool ID = false) {
-    return (ID && !strcmp(Name, "Track")) ? "track" : ((Name && Name[0] < 'a' ? "audio" : "") + string(Name));
+    if (Name)
+        return (ID && !strcmp(Name, "Track")) ? "track" : ((Name && Name[0] < 'a' ? "audio" : "") + string(Name));
+    else
+        return "";
 }
 
 enum class E {
@@ -2398,7 +2401,7 @@ public:
     file_adm_private()
     {
         auto OldLocale_Temp = setlocale(LC_NUMERIC, nullptr);
-        if (*OldLocale_Temp != 'C' || *(OldLocale_Temp + 1)) {
+        if (OldLocale_Temp && (*OldLocale_Temp != 'C' || *(OldLocale_Temp + 1))) {
             OldLocale = OldLocale_Temp;
             setlocale(LC_NUMERIC, "C");
         }
@@ -2827,6 +2830,8 @@ static void CheckErrors_ID_Additions(file_adm_private* File_Adm_Private, item it
 };
 
 //---------------------------------------------------------------------------
+#pragma warning( push )
+#pragma warning( disable : 26813 ) //false positive "Use 'bitwise and' to check if a flag is set."
 static void CheckErrors_formatLabelDefinition(file_adm_private* File_Adm_Private, item item_Type, size_t i, const label_info& label_Info) {
     const bool IsAtmos = File_Adm_Private->IsAtmos;
     auto& Item = File_Adm_Private->Items[item_Type].Items[i];
@@ -2892,6 +2897,7 @@ static void CheckErrors_formatLabelDefinition(file_adm_private* File_Adm_Private
         }
     }
 };
+#pragma warning( pop )
 
 //---------------------------------------------------------------------------
 static void CheckErrors_Attributes(file_adm_private* File_Adm_Private, item Item_Type, const vector<size_t>& Attributes_Counts) {
@@ -2923,7 +2929,7 @@ static void CheckErrors_Attributes(file_adm_private* File_Adm_Private, item Item
             break;
         default:
             Item.AddError(Error, ':' + CraftName(item_Infos[Item_Type].Name) + to_string(i) + ":" + CraftName(Attribute_Infos[j].Name) + ":" + string(Attribute_Infos[j].Name) + " attribute shall be unique");
-            // Fallthrough
+            [[fallthrough]];
         case 1:
         {
             Attributes_Present[j] = true;
@@ -3027,7 +3033,7 @@ static void CheckErrors_Elements(file_adm_private* File_Adm_Private, item Item_T
             }
             else if (Elem.empty() && Item_Type) {
                 #define ITEM_ELEM(A,B) ((A << 8) | B)
-                switch (ITEM_ELEM(Item_Type, j)) {
+                switch (ITEM_ELEM(static_cast<size_t>(Item_Type), j)) {
                 case ITEM_ELEM(item_audioProgrammeReferenceScreen, audioProgrammeReferenceScreen_screenCentrePosition):
                 case ITEM_ELEM(item_audioProgrammeReferenceScreen, audioProgrammeReferenceScreen_screenWidth):
                 case ITEM_ELEM(item_audioBlockFormat, audioBlockFormat_headphoneVirtualise):
@@ -3572,7 +3578,7 @@ void audioBlockFormat_Check(file_adm_private* File_Adm_Private) {
             BlockFormat.AddError(Error, ":GeneralCompliance:jumpPosition subelement count " + to_string(jumpPositions.size()) + " is not permitted, max is 1", Source_Atmos_1_0);
             break;
         }
-        // Fallthrough
+        [[fallthrough]];
     case 1:
         switch (Type) {
         case Type_Objects: {
@@ -5482,7 +5488,7 @@ void File_Adm::Streams_Fill()
                 IsAdvSSE = true;
                 IsAdvSSE_Versions.push_back(strtoul(Profile_Item.Attributes[profile_profileVersion].c_str(), nullptr, 10));
                 IsAdvSSE_Levels.push_back(strtoul(Profile_Item.Attributes[profile_profileLevel].c_str(), nullptr, 10));
-                if (IsAdvSSE_Levels.back() > 2 && (Profile == "ITU-R BS.[ADM-NGA-EMISSION]-0" || Profile == "ITU-R BS.[ADM-NGA-EMISSION]-0")) {
+                if (IsAdvSSE_Levels.back() > 2 && (Profile == "ITU-R BS.[ADM-NGA-EMISSION]-0")) {
                     Profiles.back().AddError(Error, ':' + CraftName(item_Infos[item_profile].Name) + to_string(i) + ":profileLevel:profileLevel attribute value " + Profile_Item.Attributes[profile_profileLevel] + " is not permitted, max is 2", Source_AdvSSE_1);
                 }
             }

@@ -545,7 +545,7 @@ void File_Mpeg4_Descriptors::Data_Parse()
 void File_Mpeg4_Descriptors::Descriptor_01()
 {
     //Parsing
-    int8u ProfileLevel[5];
+    int8u ProfileLevel[5]{};
     bool URL_Flag;
     BS_Begin();
     Skip_S2(10,                                                 "ObjectDescriptorID");

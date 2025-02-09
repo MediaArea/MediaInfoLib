@@ -2169,6 +2169,7 @@ void File_Riff::AVI__hdlr_strl_vprp()
                             Fill(Stream_Video, 0, Video_ScanOrder, "TFF");
                         if (VideoYValidStartLines.size()==2 && VideoYValidStartLines[0]>VideoYValidStartLines[1])
                             Fill(Stream_Video, 0, Video_ScanOrder, "BFF");
+                        break;
             default: ;
         }
     FILLING_END();
@@ -2634,7 +2635,7 @@ void File_Riff::AVI__movi_xxxx()
             {
                 if (!StreamItem.Parsers[Pos]->Status[IsAccepted] && StreamItem.Parsers[Pos]->Status[IsFinished])
                 {
-                    delete *(StreamItem.Parsers.begin()+Pos);
+                    delete static_cast<MediaInfoLib::File__Analyze*>(*(StreamItem.Parsers.begin()+Pos));
                     StreamItem.Parsers.erase(StreamItem.Parsers.begin()+Pos);
                     Pos--;
                 }
@@ -2644,7 +2645,7 @@ void File_Riff::AVI__movi_xxxx()
                     for (size_t Pos2=0; Pos2<StreamItem.Parsers.size(); Pos2++)
                     {
                         if (Pos2!=Pos)
-                            delete *(StreamItem.Parsers.begin()+Pos2);
+                            delete static_cast<MediaInfoLib::File__Analyze*>(*(StreamItem.Parsers.begin()+Pos2));
                     }
                     StreamItem.Parsers.clear();
                     StreamItem.Parsers.push_back(Parser);
@@ -2794,7 +2795,7 @@ void File_Riff::AVI__movi_StreamJump()
     else if (Stream_Structure_Temp!=Stream_Structure.end())
     {
         do
-            Stream_Structure_Temp++;
+            ++Stream_Structure_Temp;
         while (Stream_Structure_Temp!=Stream_Structure.end() && !(Stream[(int32u)Stream_Structure_Temp->second.Name].SearchingPayload && Config->ParseSpeed<1.0));
         if (Stream_Structure_Temp!=Stream_Structure.end())
         {

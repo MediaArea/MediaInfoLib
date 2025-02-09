@@ -1440,6 +1440,7 @@ void File__Analyze::Get_VL(const vlc Vlc[], size_t &Info, const char* Name)
                         if (BS->GetB())
                             Value++;
                         CountOfBits++;
+                        break;
             case   0 :  ;
         }
 

@@ -826,11 +826,12 @@ void File_N19::Data_Parse()
                 }
             }
 
-            EVENT_BEGIN (Global, SimpleText, 0)
+            EVENT_BEGIN(Global, SimpleText, 0)
+                std::wstring TF_Unicode{ TF.To_Unicode() };
                 Event.DTS=((int64u)N19_HHMMSSFF_TC(TCI, FrameRate).ToMilliseconds())*1000000; // "-TCP" removed for the moment. TODO: find a way for when TCP should be removed and when it should not
                 Event.PTS=Event.DTS;
                 Event.DUR=((int64u)(N19_HHMMSSFF_TC(TCO, FrameRate)-N19_HHMMSSFF_TC(TCI, FrameRate)).ToMilliseconds())*1000000;
-                Event.Content=TF.To_Unicode().c_str();
+                Event.Content=TF_Unicode.c_str();
                 Event.Flags=0;
                 Event.MuxingMode=(int8u)-1;
                 Event.Service=(int8u)-1;

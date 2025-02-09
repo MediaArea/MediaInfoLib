@@ -1683,10 +1683,11 @@ void File_Mpeg4::ftyp()
                                            #if MEDIAINFO_CONFORMANCE
                                                IsCmaf=true;
                                            #endif
-                                           //fall through
+                                           [[fallthrough]];
                 case Elements::ftyp_dash :
                                            if (Config->File_Names.size()==1)
                                                TestContinuousFileNames(1, __T("m4s"));
+                                           [[fallthrough]];
                 default : ;
             }
         CodecID_Fill(Ztring().From_CC4(MajorBrand), Stream_General, 0, InfoCodecID_Format_Mpeg4);
@@ -2183,12 +2184,9 @@ void File_Mpeg4::mdat_xxxx()
                     File_Offset_Next_IsValid=false;
                 }
                 mdat_pos mdat_Pos_New;
-                if (!mdat_Pos.empty())
-                {
-                    for (mdat_Pos_Type* mdat_Pos_Item=&mdat_Pos[0]; mdat_Pos_Item<mdat_Pos_Max; ++mdat_Pos_Item)
-                        if (mdat_Pos_Item->StreamID!=(int32u)Element_Code)
-                            mdat_Pos_New.push_back(*mdat_Pos_Item);
-                }
+                for (mdat_Pos_Type* mdat_Pos_Item=&mdat_Pos[0]; mdat_Pos_Item<mdat_Pos_Max; ++mdat_Pos_Item)
+                    if (mdat_Pos_Item->StreamID!=(int32u)Element_Code)
+                        mdat_Pos_New.push_back(*mdat_Pos_Item);
                 if (!mdat_Pos_New.empty())
                 {
                     mdat_Pos=std::move(mdat_Pos_New);
@@ -2223,7 +2221,7 @@ void File_Mpeg4::mdat_xxxx()
                                             Probe.Start=Probe.Start*100/File_Size; //File pos is not relevant there
                                             if (!Probe.Start)
                                                 Probe.Start=50;
-                                            // Fall through
+                                            [[fallthrough]];
                                         case config_probe_percent:
                                             ProbeCaption_mdatPos=Stream.second.stts_FrameCount*Probe.Start/100;
                                             break;
@@ -2236,7 +2234,7 @@ void File_Mpeg4::mdat_xxxx()
                                             Probe.Duration=Probe.Duration*100/File_Size; //File pos is not relevant there
                                             if (!Probe.Duration)
                                                 Probe.Duration++;
-                                            // Fall through
+                                            [[fallthrough]];
                                         case config_probe_percent:
                                             ProbeCaption_mdatDur=Stream.second.stts_FrameCount*Probe.Duration/100;
                                             break;
@@ -2295,17 +2293,17 @@ void File_Mpeg4::mdat_xxxx()
         {
             if (!Stream_Temp.Parsers[Pos]->Status[IsAccepted] && Stream_Temp.Parsers[Pos]->Status[IsFinished])
             {
-                delete *(Stream_Temp.Parsers.begin()+Pos);
+                delete static_cast<MediaInfoLib::File__Analyze*>(*(Stream_Temp.Parsers.begin()+Pos));
                 Stream_Temp.Parsers.erase(Stream_Temp.Parsers.begin()+Pos);
                 Pos--;
             }
-            else if (Stream_Temp.Parsers.size()>1 && Stream_Temp.Parsers[Pos]->Status[IsAccepted])
+            else if (Stream_Temp.Parsers[Pos]->Status[IsAccepted])
             {
                 File__Analyze* Parser=Stream_Temp.Parsers[Pos];
                 for (size_t Pos2=0; Pos2<Stream_Temp.Parsers.size(); Pos2++)
                 {
                     if (Pos2!=Pos)
-                        delete *(Stream_Temp.Parsers.begin()+Pos2);
+                        delete static_cast<MediaInfoLib::File__Analyze*>(*(Stream_Temp.Parsers.begin()+Pos2));
                 }
                 Stream_Temp.Parsers_Clear();
                 Stream_Temp.Parsers.push_back(Parser);
@@ -2328,14 +2326,9 @@ void File_Mpeg4::mdat_StreamJump()
             std::map<int64u, int64u>::iterator StreamOffset_Jump_Temp=StreamOffset_Jump.find(File_Offset+Buffer_Offset+Element_Size);
             if (StreamOffset_Jump_Temp!=StreamOffset_Jump.end())
             {
-                if (!mdat_Pos.empty())
-                {
-                    mdat_Pos_Temp=&mdat_Pos[0];
-                    while (mdat_Pos_Temp<mdat_Pos_Max && mdat_Pos_Temp->Offset!=StreamOffset_Jump_Temp->second)
-                        mdat_Pos_Temp++;
-                }
-                else
-                    mdat_Pos_Temp=NULL;
+                mdat_Pos_Temp=&mdat_Pos[0];
+                while (mdat_Pos_Temp<mdat_Pos_Max && mdat_Pos_Temp->Offset!=StreamOffset_Jump_Temp->second)
+                    mdat_Pos_Temp++;
             }
         }
     #endif // MEDIAINFO_DEMUX
@@ -3562,6 +3555,7 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                                              //Not normal
                                              Kind=0x00;
                                          }
+                                         [[fallthrough]];
         default                        : ;
     }
 
@@ -4033,6 +4027,7 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         Fill(Stream_General, 0, Parameter.c_str(), Value, true);
                 FILLING_END();
             }
+            break;
         default: ;
     }
 }
@@ -4413,6 +4408,7 @@ void File_Mpeg4::moov_trak_mdia_hdlr()
                 break;
             case Elements::moov_trak_mdia_hdlr_MPEG :
                 mdat_MustParse=true; //Data is in MDAT
+                break;
             case Elements::moov_trak_mdia_hdlr_alis :
                 //Stream_Prepare(Stream_Other);
                 //Fill(Stream_Other, StreamPos_Last, Other_Type, "Alias"); //TODO: what is the meaning of such hdlr?
@@ -5132,7 +5128,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_sgpd()
     }
 
     //Parsing
-    int32u grouping_type, Count, default_length;
+    int32u grouping_type, Count, default_length{};
     Get_C4 (grouping_type,                                      "grouping_type");
     if (Version==1)
         Get_B4 (default_length,                                 "default_length");
@@ -8115,7 +8111,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC()
             if (Streams[moov_trak_tkhd_TrackID].IsPcm)
             {
                 char EndiannessC=(format_flags&1)?'L':'B';
-                std::vector<File__Analyze*>& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
+                const std::vector<File__Analyze*>& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
                 for (size_t i=0; i< Parsers.size(); i++)
                 {
                     ((File_Pcm_Base*)Parsers[i])->Endianness=EndiannessC;
@@ -8410,7 +8406,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_wave_enda()
             if (Streams[moov_trak_tkhd_TrackID].IsPcm)
             {
                 char EndiannessC=Endianness?'L':'B';
-                std::vector<File__Analyze*>& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
+                const std::vector<File__Analyze*>& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
                 for (size_t i=0; i< Parsers.size(); i++)
                     ((File_Pcm_Base*)Parsers[i])->Endianness=EndiannessC;
             }
@@ -8989,7 +8985,6 @@ void File_Mpeg4::moov_trak_tkhd()
 
     FILLING_BEGIN();
         //Handle tracks with same ID than a previous track
-        bool tkhd_SameID=false;
         std::map<int32u, stream>::iterator PreviousTrack=Streams.find(moov_trak_tkhd_TrackID);
         if (PreviousTrack!=Streams.end() && PreviousTrack->second.tkhd_Found)
         {
@@ -9893,7 +9888,7 @@ void File_Mpeg4::moov_udta_thmb()
     MediaInfo_Internal MI;
     Ztring Demux_Save = MI.Option(__T("Demux_Get"), __T(""));
     MI.Option(__T("Demux"), Ztring());
-    size_t MiOpenResult = MI.Open(Buffer + (size_t)(Buffer_Offset + Element_Offset), (size_t)(Element_Size - Element_Offset), nullptr, 0, (size_t)(Element_Size - Element_Offset));
+    MI.Open(Buffer + (size_t)(Buffer_Offset + Element_Offset), (size_t)(Element_Size - Element_Offset), nullptr, 0, (size_t)(Element_Size - Element_Offset));
     MI.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
     if (MI.Count_Get(Stream_Image))
     {
