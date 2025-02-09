@@ -9548,8 +9548,72 @@ void File_Mpeg4::moov_udta_loci()
 {
     NAME_VERSION_FLAG("Location Information"); //3GP
 
-    //Parsing
-    Skip_XX(Element_Size-Element_Offset,                        "Data");
+    // Helper functions
+    // Skip variable-length null-terminated string
+    auto SkipString = [this](const char* name) -> void {
+        bool Utf8 = true;
+        if (Element_Offset + 2 <= Element_Size)
+        {
+            int16u Utf16;
+            Peek_B2(Utf16);
+            if (Utf16 == 0xFEFF)
+                Utf8 = false;
+        }
+        if (Utf8) {
+            int8u peek = -1;
+            int64u size = 0;
+            while (peek != 0) {
+                Peek_B1(peek);
+                ++Element_Offset;
+                ++size;
+            }
+            Element_Offset -= size;
+            Skip_UTF8(size, name);
+        }
+        else {
+            int16u peek = -1;
+            int64u size = 0;
+            while (peek != 0) {
+                Peek_B2(peek);
+                Element_Offset += 2;
+                size += 2;
+            }
+            Element_Offset -= size;
+            Skip_UTF16B(size, name);
+        }
+    };
+    // Process fixed-point 32-bit signed coordinate numbers
+    auto ProcFixed32s = [](int32u data) -> double {
+        double scaledVal = static_cast<double>(*reinterpret_cast<int32s*>(&data)) / 0x10000;
+        return std::round(scaledVal * 1e5) / 1e5;
+    };
+
+    // Parsing
+    // 2-bytes language code
+    Skip_B2(                                                    "Language");
+    // Variable-length null-terminated string for 'Location'
+    SkipString(                                                 "LocationString");
+    // 1-byte role where 0:shooting, 1:real, 2:fictional and 3:reserved
+    Skip_B1(                                                    "Role");
+    // 3x 4-byte fixed-point numbers for coordinates
+    int32u lat, lon, alt;
+    Get_B4(lon,                                                 "Longitude");
+    Get_B4(lat,                                                 "Latitude");
+    Get_B4(alt,                                                 "Altitude");
+    // Variable-length null-terminated string for 'Body'
+    SkipString(                                                 "Body");
+    // Variable-length null-terminated string for 'Notes'
+    SkipString(                                                 "Notes");
+
+    // Format coordinates as ISO-6709 string
+    char ISO6709_buff[50];
+    snprintf(ISO6709_buff, sizeof(ISO6709_buff), "%+09.5f%+010.5f%+.5f/", ProcFixed32s(lat), ProcFixed32s(lon), ProcFixed32s(alt));
+    Ztring ISO6709{ ISO6709_buff };
+
+    // Filling
+    FILLING_BEGIN();
+        Fill(Stream_General, 0, "Recorded_Location", ISO6709);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
