@@ -9612,7 +9612,16 @@ void File_Mpeg4::moov_udta_loci()
 
     // Format coordinates as ISO-6709 string
     char ISO6709_buff[50];
+    string OldLocale;
+    auto OldLocale_Temp = setlocale(LC_NUMERIC, nullptr);
+    if (OldLocale_Temp && (*OldLocale_Temp != 'C' || *(OldLocale_Temp + 1))) {
+        OldLocale = OldLocale_Temp;
+        setlocale(LC_NUMERIC, "C");
+    }
     snprintf(ISO6709_buff, sizeof(ISO6709_buff), "%+09.5f%+010.5f%+.5f/", ProcFixed32s(lat), ProcFixed32s(lon), ProcFixed32s(alt));
+    if (!OldLocale.empty()) {
+        setlocale(LC_NUMERIC, OldLocale.c_str());
+    }
     Ztring ISO6709{ ISO6709_buff };
 
     // Filling
