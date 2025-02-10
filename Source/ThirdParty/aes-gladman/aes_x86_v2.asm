@@ -72,6 +72,14 @@
 ; where <NNN> is 128, 102 or 256.  In the last two calls the length can be in
 ; either bits or bytes.
 
+; Use of this assembler code in Windows kernel mode requires memory paging 
+; to be disabled
+%ifdef NO_PAGING
+%define set_page nopage
+%else
+%define set_page
+%endif
+
 ; The DLL interface must use the _stdcall convention in which the number
 ; of bytes of parameter space is added after an @ to the sutine's name.
 ; We must also remove our parameters from the stack before return (see
@@ -138,7 +146,7 @@
 ;
 ; End of user defines
 
-    section .text align=32
+    section .text align=32 set_page
     
 %ifdef AES_VAR
 %ifndef AES_128
@@ -451,7 +459,7 @@ enc_round:
 %endmacro
 
 ;   AES Encryption Subroutine
-
+    align   32
     do_name _aes_encrypt,12
     push    ebp
     push    ebx
@@ -866,7 +874,7 @@ enc_round:
 
 %ifdef REDUCE_CODE_SIZE
 
-    section .text align=32
+	align 32
 dec_round:
 	_dec_round
 	ret
@@ -898,7 +906,7 @@ dec_round:
 %endmacro
 
 ; AES Decryption Subroutine
-
+    align   32
     do_name _aes_decrypt,12
     push    ebp
     push    ebx
@@ -1299,7 +1307,7 @@ dec_end:
 
 %endif
 
-    section .data align=32
+    section .data align=32 set_page
 
 %ifdef ENCRYPTION_TABLE
 

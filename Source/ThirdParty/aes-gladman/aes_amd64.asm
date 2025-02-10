@@ -15,7 +15,7 @@
 ; in respect of its operation, including, but not limited to, correctness
 ; and fitness for purpose.
 ; ---------------------------------------------------------------------------
-; Issue Date: 20/12/2007
+; Issue Date: 27/10/2018
 ;
 ; I am grateful to Dag Arne Osvik for many discussions of the techniques that
 ; can be used to optimise AES assembler code on AMD64/EM64T architectures.
@@ -44,7 +44,10 @@
 ; used if __GNUC__ is defined.
 ;
 ; Define _SEH_ to include support for Win64 structured exception handling
-; (this requires YASM version 0.6 or later).
+; (this requires YASM version 0.6 or later).  
+;
+; In order to use this code in Windows kernel mode, set the NO_PAGING define
+; to disable structured exception handling and paging.
 ;
 ; This code provides the standard AES block size (128 bits, 16 bytes) and the
 ; three standard AES key sizes (128, 192 and 256 bits). It has the same call
@@ -70,22 +73,34 @@
 ;     AES_RETURN aes_decrypt_key(const unsigned char key[],
 ;                           unsigned int len, const aes_decrypt_ctx cx[1]);
 ;
-; where <NNN> is 128, 102 or 256.  In the last two calls the length can be in
+; where <NNN> is 128, 192 or 256.  In the last two calls the length can be in
 ; either bits or bytes.
-;
+
+;----------------------------------------------------------------------------
+
+; Use of this assembler code in Windows kernel mode requires structured
+; exception handling and memory paging to be disabled
+%ifdef NO_PAGING
+%undef _SEH_
+%define set_page nopage
+%else
+%define set_page
+%endif
+
 ; Comment in/out the following lines to obtain the desired subroutines. These
 ; selections MUST match those in the C header files aes.h and aesopt.h
-
-%define USE_INTEL_AES_IF_AVAILABLE
-
+%ifdef INTEL_AES_POSSIBLE
+%define USE_INTEL_AES_IF_PRESENT
+%endif
 %define AES_128                 ; define if AES with 128 bit keys is needed
 %define AES_192                 ; define if AES with 192 bit keys is needed
 %define AES_256                 ; define if AES with 256 bit keys is needed
 %define AES_VAR                 ; define if a variable key size is needed
 %define ENCRYPTION              ; define if encryption is needed
 %define DECRYPTION              ; define if decryption is needed
+;----------------------------------------------------------------------------
 
-%ifdef USE_INTEL_AES_IF_AVAILABLE
+%ifdef USE_INTEL_AES_IF_PRESENT
 %define aes_ni(x) aes_ %+ x %+ _i
 %undef  AES_REV_DKS
 %else
@@ -128,15 +143,15 @@
 ;     | decryption round N-1 | = INV_MIX_COL[ | encryption round N-1 | ]
 ; hi: | decryption round N   | =              | encryption round N   |
 ;
-; This layout is faster when the assembler key scheduling provided here
-; is used.
+; This layout is faster when the assembler key scheduling is used (not
+; used here).
 ;
 ; The DLL interface must use the _stdcall convention in which the number
-; of bytes of parameter space is added after an @ to the sutine's name.
+; of bytes of parameter space is added after an @ to the rouutine's name.
 ; We must also remove our parameters from the stack before return (see
 ; the do_exit macro). Define DLL_EXPORT for the Dynamic Link Library version.
 
-;%define DLL_EXPORT
+; %define DLL_EXPORT
 
 ; End of user defines
 
@@ -678,7 +693,7 @@
     export  aes_ni(encrypt)
 %endif
 
-    section .data align=64
+    section .data align=64 set_page
     align   64
 enc_tab:
     enc_vals u8
@@ -686,7 +701,7 @@ enc_tab:
     enc_vals w8
 %endif
 
-    section .text align=16
+    section .text align=16 set_page
     align   16
 
 %ifdef _SEH_
