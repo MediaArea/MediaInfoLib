@@ -292,10 +292,12 @@ void File_Pac::Data_Parse()
                 Peek_B5(Probe);
                 if (Probe >> 8 == 0x1FEFBBBF) {
                     Skip_B4(                                    "UTF-8 start");
+                    Size -= 4;
                     IsUtf8 = true;
                 }
                 if (Probe == 0x1F5731362ELL) {
                     Skip_B5(                                    "W16 start");
+                    Size -= 5;
                     IsW16 = true;
                 }
             }
@@ -317,6 +319,7 @@ void File_Pac::Data_Parse()
                         Skip_B1(                                "UTF-8 end");
                         IsUtf8 = false;
                     }
+                    Size -= 1;
                 }
                 Count_UTF8++;
             }
