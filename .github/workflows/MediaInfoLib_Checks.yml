@@ -36,7 +36,7 @@ jobs:
     env:
       S3_KEY: ${{ secrets.S3_KEY }}
       S3_PASS: ${{ secrets.S3_PASS }}
-      CXXFLAGS: ${{ matrix.CXXFLAGS }}
+      CXXFLAGS: -Werror -Wno-error=deprecated-declarations ${{ matrix.CXXFLAGS }}
       RUN_TESTS: ${{ matrix.RUN_TESTS }}
     steps:
       - name: Checkout
