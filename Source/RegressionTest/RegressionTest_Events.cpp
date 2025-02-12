@@ -69,14 +69,14 @@ void General_Start_0 (struct MediaInfo_Event_General_Start_0* Event, struct Even
 {
     echoF("MediaInfo starts\n");
 
-    echo1("Stream_Size=%i\n", Event->Stream_Size);
+    echo1("Stream_Size=%llu\n", Event->Stream_Size);
 }
 
 void General_End_0 (struct MediaInfo_Event_General_End_0* Event, struct Events_UserHandle_struct* UserHandle)
 {
     echoF("MediaInfo ends\n");
 
-    echo1("Stream_Bytes_Analyzed=%i\n", Event->Stream_Bytes_Analyzed);
+    echo1("Stream_Bytes_Analyzed=%llu\n", Event->Stream_Bytes_Analyzed);
 }
 
 void General_Parser_Selected_0 (struct MediaInfo_Event_General_Parser_Selected_0* Event, struct Events_UserHandle_struct* UserHandle)
@@ -90,14 +90,14 @@ void General_Move_Request_0 (struct MediaInfo_Event_General_Move_Request_0* Even
 {
     echoF("MediaInfo has requested to seek\n");
 
-    echo1("StreamOffset=%08x\n", Event->StreamOffset);
+    echo1("StreamOffset=%08llx\n", Event->StreamOffset);
 }
 
 void General_Move_Done_0 (struct MediaInfo_Event_General_Move_Done_0* Event, struct Events_UserHandle_struct* UserHandle)
 {
     echoF("MediaInfo has seek\n");
 
-    echo1("StreamOffset=%08x\n", Event->StreamOffset);
+    echo1("StreamOffset=%08llx\n", Event->StreamOffset);
 }
 
 void General_SubFile_Start_0 (struct MediaInfo_Event_General_SubFile_Start_0* Event, struct Events_UserHandle_struct* UserHandle)
@@ -120,16 +120,16 @@ void Global_Demux_4(struct MediaInfo_Event_Global_Demux_4 *Event, struct Events_
 
     echoF("MediaInfo Demux\n");
 
-    echo1("StreamOffset=%08x,", Event->StreamOffset);
-    echo1(" Frame_Number=%u\n", Event->FrameNumber);
+    echo1("StreamOffset=%08llx,", Event->StreamOffset);
+    echo1(" Frame_Number=%llu\n", Event->FrameNumber);
     echo0("IDs=");
     for (size_t Pos=0; Pos<Event->StreamIDs_Size; Pos++)
         switch (Event->StreamIDs_Width[Pos])
         {
-            case 2: echo1("%02x, ", Event->StreamIDs[Pos]); break;
-            case 4: echo1("%04x, ", Event->StreamIDs[Pos]); break;
-            case 8: echo1("%08x, ", Event->StreamIDs[Pos]); break;
-            default: echo1("%08x, ", Event->StreamIDs[Pos]); break;
+            case 2: echo1("%02llx, ", Event->StreamIDs[Pos]); break;
+            case 4: echo1("%04llx, ", Event->StreamIDs[Pos]); break;
+            case 8: echo1("%08llx, ", Event->StreamIDs[Pos]); break;
+            default: echo1("%08llx, ", Event->StreamIDs[Pos]); break;
         }
     echo0("\n");
     if (Event->PCR!=(int64u)-1)
@@ -143,8 +143,8 @@ void Global_Demux_4(struct MediaInfo_Event_Global_Demux_4 *Event, struct Events_
     if (Event->PCR!=(int64u)-1 || Event->PTS!=(int64u)-1 || Event->DTS!=(int64u)-1 || Event->DUR!=(int64u)-1)
         echo0("\n");
     echo1("Content_Type=%i,", Event->Content_Type);
-    echo1(" Content_Size=%i,", Event->Content_Size);
-    echo1(" Flags=%08x\n", Event->Flags);
+    echo1(" Content_Size=%zu,", Event->Content_Size);
+    echo1(" Flags=%08llx\n", Event->Flags);
 }
 
 void Video_SliceInfo_0(struct MediaInfo_Event_Video_SliceInfo_0 *Event, struct Events_UserHandle_struct* UserHandle)
@@ -154,18 +154,18 @@ void Video_SliceInfo_0(struct MediaInfo_Event_Video_SliceInfo_0 *Event, struct E
 
     echoF("MediaInfo Demux\n");
 
-    echo1("StreamOffset=%08x,", Event->StreamOffset);
-    echo1(" FramePosition=%u,", Event->FrameNumber);
-    echo1(" FieldPosition=%u,", Event->FieldPosition);
-    echo1(" SlicePosition=%u,", Event->SlicePosition);
+    echo1("StreamOffset=%08llx,", Event->StreamOffset);
+    echo1(" FramePosition=%llu,", Event->FrameNumber);
+    echo1(" FieldPosition=%llu,", Event->FieldPosition);
+    echo1(" SlicePosition=%llu,", Event->SlicePosition);
     echo0("IDs=");
     for (size_t Pos=0; Pos<Event->StreamIDs_Size; Pos++)
         switch (Event->StreamIDs_Width[Pos])
         {
-            case 2: echo1("%02x, ", Event->StreamIDs[Pos]); break;
-            case 4: echo1("%04x, ", Event->StreamIDs[Pos]); break;
-            case 8: echo1("%08x, ", Event->StreamIDs[Pos]); break;
-            default: echo1("%08x, ", Event->StreamIDs[Pos]); break;
+            case 2: echo1("%02llx, ", Event->StreamIDs[Pos]); break;
+            case 4: echo1("%04llx, ", Event->StreamIDs[Pos]); break;
+            case 8: echo1("%08llx, ", Event->StreamIDs[Pos]); break;
+            default: echo1("%08llx, ", Event->StreamIDs[Pos]); break;
         }
     echo0("\n");
     if (Event->PCR!=(int64u)-1)
@@ -178,8 +178,8 @@ void Video_SliceInfo_0(struct MediaInfo_Event_Video_SliceInfo_0 *Event, struct E
         echo1("DUR=%s, ", Ztring().Duration_From_Milliseconds(Event->DUR/1000000).To_Local().c_str());
     if (Event->PCR!=(int64u)-1 || Event->PTS!=(int64u)-1 || Event->DTS!=(int64u)-1 || Event->DUR!=(int64u)-1)
         echo0("\n");
-    echo1("SliceType=%i,", Event->SliceType);
-    echo1(" Flags=%08x\n", Event->Flags);
+    echo1("SliceType=%u,", Event->SliceType);
+    echo1(" Flags=%08llx\n", Event->Flags);
 }
 
 /***************************************************************************/
