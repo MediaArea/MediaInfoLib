@@ -2194,7 +2194,7 @@ void File_Mpeg4::mdat_xxxx()
                 }
                 else
                 {
-                    mdat_Pos=move(mdat_Pos_Caption);
+                    mdat_Pos=std::move(mdat_Pos_Caption);
                     std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
                     size_t mdat_Pos_Min=(size_t)-1;
                     size_t mdat_Pos_Max=0;
@@ -2214,6 +2214,9 @@ void File_Mpeg4::mdat_xxxx()
                                 {
                                     auto Probe=Config->File_ProbeCaption_Get(ParserName);
                                     switch (Probe.Start_Type) {
+                                        case config_probe_none:
+                                            ProbeCaption_mdatPos=File_Size;
+                                            break;
                                         case config_probe_dur:
                                             ProbeCaption_mdatPos=Probe.Start*FrameRate;
                                             break;
@@ -2227,6 +2230,9 @@ void File_Mpeg4::mdat_xxxx()
                                             break;
                                     }
                                     switch (Probe.Duration_Type) {
+                                        case config_probe_none:
+                                            ProbeCaption_mdatDur=0;
+                                            break;
                                         case config_probe_dur:
                                             ProbeCaption_mdatDur=Probe.Duration*FrameRate;
                                             break;

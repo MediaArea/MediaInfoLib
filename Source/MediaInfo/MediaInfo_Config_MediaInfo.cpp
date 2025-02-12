@@ -3804,13 +3804,13 @@ config_probe MediaInfo_Config_MediaInfo::File_ProbeCaption_Get(const string& Par
         File_ProbeCaption_Pos++;
         if (!Item.Parser.empty()) {
             if (Item.Parser[0] == '-') {
-                if (Item.Parser.rfind(ParserName, 1) == 1) {
+                if (Item.Parser.substr(1) == ParserName) {
                     continue;
                 }
             }
-        }
-        else if (Item.Parser != ParserName) {
-            continue;
+            else if (Item.Parser != ParserName) {
+                continue;
+            }
         }
 
         return Item;

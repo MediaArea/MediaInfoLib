@@ -1643,7 +1643,7 @@ void File_Hevc::video_parameter_set()
     TESTELSE_SB_SKIP(                                           "vps_extension_flag");
         int8u view_id_len;
         bool splitting_flag, vps_nuh_layer_id_present_flag;
-        for (auto Bits=Data_BS_Remain()%8; Bits--; Bits)
+        for (auto Bits=(Data_BS_Remain()%8); Bits; Bits--)
             Mark_1();
         if (vps_max_layers_minus1 && vps_base_layer_internal_flag)
         {

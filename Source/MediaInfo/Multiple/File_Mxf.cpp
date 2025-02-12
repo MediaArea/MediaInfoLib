@@ -15661,6 +15661,9 @@ bool File_Mxf::BookMark_Needed()
         }
         switch (Probe.Start_Type)
         {
+            case config_probe_none:
+                ProbeCaptionBytePos=0;
+                break;
             case config_probe_size:
                 ProbeCaptionBytePos=Probe.Start;
                 break;
@@ -15678,6 +15681,9 @@ bool File_Mxf::BookMark_Needed()
             default:;
         }
         switch (Probe.Duration_Type) {
+            case config_probe_none:
+                ProbeCaptionByteDur=ContentSize;
+                break;
             case config_probe_size:
                 ProbeCaptionByteDur=Probe.Duration;
                 break;

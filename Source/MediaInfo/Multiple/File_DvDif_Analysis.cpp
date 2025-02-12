@@ -620,11 +620,10 @@ void File_DvDif::Read_Buffer_Continue()
                             uint8_t Dseq=Buffer[Buffer_Offset+1]>>4;
                             bool Is16=(QU==(int8u)-1)?(Contains_8000):(QU==0);
                             int16u Value;
-                            switch (Is16)
-                            {
-                                case 0: Value=(Contains_800800_0<<4)|(Contains_800800_1>>4); break; // Only one half
-                                case 1: Value=(ToCheck_8000_0<<8)|ToCheck_8000_1; break;
-                            }
+                            if (Is16)
+                                Value=(ToCheck_8000_0<<8)|ToCheck_8000_1;
+                            else
+                                Value=(Contains_800800_0<<4)|(Contains_800800_1>>4); // Only one half
                             if (Value && Value!=(0xFFFF>>(Is16?0:4))) // 0 and -1 are often used as silence
                             {
                                 if (Channel>=Audio_Errors.size())
