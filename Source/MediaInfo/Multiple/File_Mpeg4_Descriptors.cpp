@@ -333,6 +333,7 @@ int8u Mpeg4_Descriptors_ToAudioProfileLevelIndication(const profilelevel_struct&
     {
         case UnspecifiedAudio             : return 0xFE;
         case NoAudio                      : return 0xFF;
+        default:;
     }
     for (size_t i = 0; i < Mpeg4_Descriptors_AudioProfileLevelIndication_Size; i++)
         if (ToMatch == Mpeg4_Descriptors_AudioProfileLevelIndication_Mapping[i])

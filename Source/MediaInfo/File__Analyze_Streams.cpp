@@ -421,7 +421,7 @@ void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_Col
 #endif
 
 //---------------------------------------------------------------------------
-extern const char* DolbyVision_Compatibility[] =
+const char* DolbyVision_Compatibility[] =
 {
     "",
     "HDR10",
@@ -504,7 +504,7 @@ static void DolbyVision_Profiles_Append(string& Profile, int8u i)
         return add_dec_2chars(Profile, i);
     Profile.append(DolbyVision_Profiles_Names+((size_t)j)*4, 4);
 }
-extern const char* DolbyVision_Compression[] =
+const char* DolbyVision_Compression[] =
 {
     "None",
     "Limited",
@@ -1913,7 +1913,7 @@ const Ztring &File__Analyze::Retrieve_Const (stream_t StreamKind, size_t StreamP
      || StreamPos>=(*Stream)[StreamKind].size()
      || Parameter>=MediaInfoLib::Config.Info_Get(StreamKind).size()+(*Stream_More)[StreamKind][StreamPos].size())
     {
-        if (StreamKind<sizeof(Fill_Temp)/sizeof(vector<fill_temp_item>))
+        if ((size_t)StreamKind<sizeof(Fill_Temp)/sizeof(*Fill_Temp))
         {
             Ztring Parameter_Local;
             Parameter_Local.From_Number(Parameter);

@@ -786,6 +786,7 @@ void File_Nsv::Data_Parse()
                                             if (P->AudioDelay!=numeric_limits<int64s>::min() && Retrieve(Stream_Audio, 0, Audio_Delay).empty())
                                                 Fill(Stream_Audio, 0, Audio_Delay, float64_int64s(((float64)P->AudioDelay)/1000000));
                                             break;
+						default:;
                     }
                 }
             }
