@@ -7,9 +7,19 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        environement: [normal, minified, minimal, minimal-with-xml]
+        environement: [gcc, minified, minimal, minimal-with-xml, cmake]
+        exclude:
+          - os: macos-latest
+            environement: minified
+          - os: macos-latest
+            environement: minimal
+          - os: macos-latest
+            environement: minimal-with-xml
         include:
-          - environement: normal
+          - environement: gcc
+            CXXFLAGS: ""
+            RUN_TESTS: "all"
+          - environement: cmake
             CXXFLAGS: ""
             RUN_TESTS: "all"
           - environement: minified
@@ -26,7 +36,7 @@ jobs:
     env:
       S3_KEY: ${{ secrets.S3_KEY }}
       S3_PASS: ${{ secrets.S3_PASS }}
-      CXXFLAGS: ${{ matrix.CXXFLAGS }}
+      CXXFLAGS: -Werror -Wno-error=deprecated-declarations ${{ matrix.CXXFLAGS }}
       RUN_TESTS: ${{ matrix.RUN_TESTS }}
     steps:
       - name: Checkout
@@ -42,34 +52,38 @@ jobs:
           if [ "$RUNNER_OS" == "macOS" ]; then
             brew install libtool automake
           fi
-          sudo npm install -g jsonlint
       - name: ZenLib
         run: |
           git -C .. clone --depth=1 https://github.com/MediaArea/ZenLib.git
+      - name: Configure
+        if: ${{ matrix.environement != 'cmake' }}
+        run: |
           pushd ../ZenLib/Project/GNU/Library
             autoreconf -if
-            ./configure --enable-static
+            ./configure --enable-silent-rules --enable-static
             make
           popd
-      - name: Configure
-        run: |
           cd Project/GNU/Library
           autoreconf -if
-          ./configure --with-libcurl=runtime
+          ./configure --enable-silent-rules --with-libcurl=runtime
       - name: Build
+        if: ${{ matrix.environement != 'cmake' }}
         run: |
           cd Project/GNU/Library
           make
       - name: Check files
+        if: ${{ matrix.environement != 'cmake' }}
         run: |
           cd Project/GNU/Library
           make clone_regression_files
       - name: Check
+        if: ${{ matrix.environement != 'cmake' }}
         run: |
+          sudo npm install -g jsonlint
           cd Project/GNU/Library
           make check
       - name: CMake Build
-        if: ${{ matrix.environement == 'normal' }}
+        if: ${{ matrix.environement == 'cmake' }}
         run: |
           mkdir Project/CMake/Build
           cd Project/CMake/Build
