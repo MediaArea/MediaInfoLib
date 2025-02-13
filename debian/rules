@@ -12,7 +12,8 @@ override_dh_auto_configure:
 		--enable-visibility			\
 		--with-libcurl				\
 		--with-libmms				\
-		--without-libmd5
+		--without-libmd5                        \
+		--with-graphviz=runtime
 
 override_dh_auto_build:
 	cd Source/Doc && doxygen Doxyfile
