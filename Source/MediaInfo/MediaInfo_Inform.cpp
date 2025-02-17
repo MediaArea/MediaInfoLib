@@ -638,7 +638,7 @@ namespace
 {
 struct nested
 {
-    std::vector<Node*>* Target;
+    std::vector<Node*>* Target{};
     Ztring Name;
 };
 }

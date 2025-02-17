@@ -2,8 +2,55 @@
 An AES (Rijndael) Implementation in C/C++ (as specified in FIPS-197)
 ====================================================================
 
-Changes in this Version (14/11/2013)
-====================================
+Change (26/09/2018)
+===================
+
+1. Changes to test programs to allow them to be built on Linux/GCC
+   (with thanks to Michael Mohr).
+
+2. Rationalisation of the defines DLL_IMPORT, DYNAMIC_DLL and USE_DLL
+   in the test code - now DLL_IMPORT and DLL_DYNAMIC_LOAD
+
+3. Update the test_avs test to allow the testing of static, DLL and
+   dynamically loaded DLL libraries.
+
+Change (21/05/2018)
+===================
+
+1. Properly dectect presence of AESNI when using GCC (my thanks to 
+   Peter Gutmann for this fix)
+
+Changes (6/12/2016)
+====================
+
+1. Changed function definition of has_aes_ni() to has_aes_ni(void), 
+   suggested by Peter Gutmann
+   
+2. Changed the default location for the vsyasm assembler to:
+   C:\Program Files\yasm
+
+Changes (27/09/2015)
+====================
+
+1. Added automatic dynamic table initialisation (my thanks to
+   Henrik S. Gaﬂmann who proposed this addition).
+
+Changes (09/09/2014)
+====================
+
+1. Added the ability to use Intel's hardware support for AES
+   with GCC on Windows and Linux
+
+Changes (01/09/2014)
+====================
+
+1. Clarify some user choices in the file aes_amd64.asm
+
+2. Change the detection of the x86 and x86_64 processors
+   in aesopt.h to allow assembler code use with GCC
+    
+Changes (14/11/2013)
+====================
 
 1. Added the ability to use Intel's hardware support for AES
    on Windows using Microsoft Visual Studio.
@@ -14,8 +61,8 @@ Changes in this Version (14/11/2013)
 3. Added a missing .text directive in aes_x86_v2.asm that caused
    runtime errors in one build configuration.
 
-Changes in this Version (16/04/2007)
-====================================
+Changes (16/04/2007)
+====================
 
 These changes remove errors in the VC++ build files and add some 
 improvements in file naming consitency and portability. There are
@@ -130,19 +177,11 @@ B. YASM
 If you wish to use the x86 assembler files you will also need the YASM open
 source x86 assembler (r1331 or later) for Windows which can be obtained from:
 
-  http://www.tortall.net/projects/yasm/
+    http://www.tortall.net/projects/yasm/
 
-This assembler should be placed in the bin directory used by VC++, which, for
-Visual Stduio 2005, is typically:
+This assembler (vsyasm.exe) should be placed in the directory:
 
- C:\Program Files (x86)\Microsoft Visual Studio 8\VC\bin
-
-You will also need to move the yasm.rules file from this distribution into
-the directory where Visual Studio 2005 expects to find it, which is typically:
-
- C:\Program Files (x86)\Microsoft Visual Studio 8\VC\VCProjectDefaults
-
-Alternatively you can configure the path for rules files within Visual Studio.
+    C:\Program Files\yasm
 
 C. Configuration
 ----------------
@@ -206,7 +245,7 @@ environments
 		                (+ aes_ni.h for AES_NI)
         C source:       aes_modes.c (+ aes_ni.c for AES_NI)
         x86 assembler:  aes_amd64.asm
-        defines         ASM_X86_V2 (set for C and assembler files)
+        defines         ASM_AMD64_C (set for C and assembler files)
     
 	dll_asm_amd64_c     x64
         headers:        aes.h, aesopt.h, aestab.h, brg_endian.h, tdefs.h
@@ -340,9 +379,13 @@ built.  These use the files:
         C source:   aesaux.c, aestmr.c
         defines:    DLL_IMPORT
 
-and link to the DLL using dynamic (run-time) linking.  However, if the lib file
-associated with the DLL is linked into this project and the symbol DYNAMIC_LINK
-in aestst.h is left undefined, then implicit linking will be used
+and default to linkingto with the AES DLL using dynamic (run-time) linking.  Implicit
+linking can be used by adding the lib file associated with the AES DLL (in the aes\dll
+sub-directory) to the build (under project Properties|Linker in Visual Studio) and 
+removing the DLL_DYNAMIC_LOAD define (under project Properties|C/C++|Preprocessor).
+
+0  Link is linked into this project and the symbol
+DLL_DYNAMIC_LOAD is left undefined, then implicit linking will be used
 
 The above tests take command line arguments that determine which test are run
 as follows:
@@ -548,7 +591,7 @@ Please note the following IMPORTANT points about the AES mode subroutines:
        below).
        
     3. For modes with IVs, the IV value is an input AND
-       an ouTput since it is updated after each call to 
+       an output since it is updated after each call to 
        the value needed for any subsequent incremental
        call(s). If the mode is reset, the IV hence has
        to be set (or reset) as well.
@@ -569,11 +612,11 @@ Please note the following IMPORTANT points about the AES mode subroutines:
        
     7. CFB, OFB and CTR modes only use AES encryption 
        operations and contexts and do not need AES
-       decrytpion operations.
+       decryption operations.
        
     8. AES keys remain valid across resets and changes
        of mode (but encryption and decryption keys must 
        both be set if they are needed).  
        
-   Brian Gladman  14/11/2013
+   Brian Gladman  26/09/2018
  

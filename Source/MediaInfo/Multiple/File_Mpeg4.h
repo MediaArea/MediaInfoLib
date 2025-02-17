@@ -370,6 +370,8 @@ private :
     void moov_udta_rtng();
     void moov_udta_ptv ();
     void moov_udta_Sel0();
+    void moov_udta_smta();
+    void moov_udta_smta_mdln();
     void moov_udta_tags();
     void moov_udta_tags_meta();
     void moov_udta_tags_tseg();

@@ -45,15 +45,7 @@ extern "C"
     static GModule* cgraph_Module=NULL;
 #elif defined (_WIN32) || defined (WIN32)
     #undef __TEXT
-    #if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
-        namespace WindowsNamespace
-        {
-    #endif
     #include "windows.h"
-    #if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
-        }
-        using namespace WindowsNamespace;
-    #endif
     static HMODULE gvc_Module=NULL;
     static HMODULE cgraph_Module=NULL;
 #else

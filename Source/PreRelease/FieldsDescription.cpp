@@ -27,7 +27,10 @@ const char* StreamKinds[] =
 
 ZtringListList Load(const string& Name, const char* ToAdd = nullptr, bool IgnoreErrors = false) {
     File InF(Ztring().From_Local(Name));
-    auto Size = InF.Size_Get();
+    auto InF_Size = InF.Size_Get();
+    if (InF_Size > ((size_t)-1) / 2)
+        return {};
+    auto Size = (size_t)InF_Size;
     if (Size == 0) {
         if (!IgnoreErrors)
             std::cerr << "Can not open " << Name << '\n';
@@ -157,7 +160,10 @@ int main(int argc, char* argv[]) {
 
     string Name = string(argv[2]) + "/src/MediaInfoBundle/Resources/views/Support/fields.html.twig";
     File OutputF(Ztring().From_Local(Name));
-    auto Size = OutputF.Size_Get();
+    auto OutputF_Size = OutputF.Size_Get();
+    if (OutputF_Size > ((size_t)-1) / 2)
+        return {};
+    auto Size = (size_t)OutputF_Size;
     if (Size == 0) {
         std::cerr << "Can not open " << Name << '\n';
         return 1;

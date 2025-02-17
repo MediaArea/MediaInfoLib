@@ -286,7 +286,7 @@ popd
 cp Source/Doc/*.html ./
 
 pushd Project/GNU/Library
-%configure --enable-shared --disable-static --enable-visibility --with-libcurl
+%configure --enable-shared --disable-static --enable-visibility --with-libcurl --with-graphviz=runtime
 make %{?_smp_mflags}
 popd
 
