@@ -96,6 +96,23 @@ Ztring Xml_Name_Escape_0_7_78 (const Ztring &Name)
 }
 
 //---------------------------------------------------------------------------
+std::wstring ToFullWidth(const std::wstring& input)
+{
+    std::wstring result;
+    for (wchar_t ch : input) {
+        if (ch >= 0x20 && ch <= 0x7E) {
+            if (ch == 0x20)
+                result += 0x3000;
+            else
+                result += ch + 0xFEE0;
+        }
+        else
+            result += ch;
+    }
+    return result;
+}
+
+//---------------------------------------------------------------------------
 std::string URL_Encoded_Encode(const std::string& URL);
 extern MediaInfo_Config Config;
 extern const Char* MediaInfo_Version;
@@ -833,6 +850,9 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                      if (Nom_Size==0)
                         Nom_Size=32; //Default
                      Nom.resize(Nom_Size, ' ');
+                     Ztring lang = MediaInfoLib::Config.Language_Get(__T("  Language_ISO639"));
+                     if (!lang.compare(__T("ja")) || !lang.compare(__T("ko")) || !lang.compare(__T("zh-CN")) || !lang.compare(__T("zh-HK")) || !lang.compare(__T("zh-TW")))
+                        Nom = ToFullWidth(Nom); //Align Japanese, Korean and Chinese characters with ASCII characters
                 }
                 Ztring Valeur=Get((stream_t)StreamKind, StreamPos, Champ_Pos, Info_Text);
 
