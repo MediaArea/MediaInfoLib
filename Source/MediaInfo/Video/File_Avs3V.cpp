@@ -803,7 +803,7 @@ void File_Avs3V::video_sequence_start()
         Get_SB(isc_enable_flag,                                 "isc_enable_flag");
         if (ibc_enable_flag || isc_enable_flag)
             Skip_S1( 4,                                         "num_of_intra_hmvp_cand");
-        Get_SB(                                                 "fimc_enable_flag");
+        Skip_SB(                                                "fimc_enable_flag");
         Get_S1(8, nn_tools_set_hook,                            "nn_tools_set_hook");
         bool NnFilterEnableFlag = nn_tools_set_hook & 0x01;
         if (NnFilterEnableFlag)
