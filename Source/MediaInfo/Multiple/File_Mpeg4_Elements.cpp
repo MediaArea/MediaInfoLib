@@ -3463,6 +3463,10 @@ void File_Mpeg4::moov_iods()
 void File_Mpeg4::moov_meta()
 {
     Element_Name("Metadata");
+    if (!IsQt() && Element_Size>=12 && BigEndian2int32u(Buffer+Buffer_Offset+4)<=Element_Size && BigEndian2int32u(Buffer+Buffer_Offset+8)==Elements::moov_meta_hdlr)
+    {
+        VERSION_FLAG();
+    }
 
     //Filling
     moov_meta_hdlr_Type=0;
