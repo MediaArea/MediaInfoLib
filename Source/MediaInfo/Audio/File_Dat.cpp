@@ -146,6 +146,7 @@ enum items {
     item_samples,
     item_numchans,
     item_quantization,
+    item_trackpitch,
     item_Max,
 };
 
@@ -218,7 +219,13 @@ void File_Dat::Streams_Accept()
         auto Index = Conditional(Priv->Items[Item]);
         if (Index >= 0) {
             if (Array[Index]) {
-                Fill(Stream_Audio, 0, Field, Array[Index]);
+                auto Value = Array[Index];
+                if (Item == item_trackpitch) {
+                    // Samples to frame rate
+                    Fill(Stream_Audio, 0, Field, 100.0 / 3 / Value);
+                    return;
+                }
+                Fill(Stream_Audio, 0, Field, Value);
             }
             else {
                 Fill(Stream_Audio, 0, Field, "Value" + to_string(Index));
@@ -288,6 +295,7 @@ void File_Dat::Streams_Accept()
     Conditional_Int16(Audio_SamplingRate, item_samples, Dat_samples);
     Conditional_Int8(Audio_Channel_s_, item_numchans, Dat_numchans);
     Conditional_Int8(Audio_BitDepth, item_quantization, Dat_quantization);
+    Conditional_Int8(Audio_FrameRate, item_trackpitch, Dat_samples_mul);
     for (int i = 0; i < 7; i++) {
         Conditional_TimeCode(i);
     }
@@ -444,13 +452,13 @@ void File_Dat::Data_Parse()
         }
     Element_End0();
     Element_Begin1("dtmainid");
-        int8u fmtid, emphasis, sampfreq, numchans, quantization;
+        int8u fmtid, emphasis, sampfreq, numchans, quantization, trackpitch;
         Get_S1 ( 2, fmtid,                                      "fmtid"); Param_Info1C(Dat_fmtid[fmtid], Dat_fmtid[fmtid]);
         Get_S1 ( 2, emphasis,                                   "emphasis"); Param_Info1C(Dat_emphasis[emphasis], Dat_emphasis[emphasis]);
         Get_S1 ( 2, sampfreq,                                   "sampfreq"); Param_Info2C(Dat_samples[sampfreq], Dat_samples[sampfreq], " samples");
         Get_S1 ( 2, numchans,                                   "numchans"); Param_Info2C(Dat_numchans[numchans], Dat_numchans[numchans], " channels");
         Get_S1 ( 2, quantization,                               "quantization"); Param_Info2C(Dat_quantization[quantization], Dat_quantization[quantization], " bits");
-        Info_S1( 2, trackpitch,                                 "trackpitch"); Param_Info1C(Dat_samples_mul[trackpitch], Dat_samples_mul[trackpitch]);
+        Get_S1 ( 2, trackpitch,                                 "trackpitch"); Param_Info1C(Dat_samples_mul[trackpitch], Dat_samples_mul[trackpitch]);
         Info_S1( 2, copy,                                       "copy"); Param_Info1C(Dat_copy[copy], Dat_copy[copy]);
         Skip_S1( 2,                                             "pack");
         if (fmtid) {
@@ -479,6 +487,7 @@ void File_Dat::Data_Parse()
         Priv->Items[item_samples][sampfreq]++;
         Priv->Items[item_numchans][numchans]++;
         Priv->Items[item_quantization][quantization]++;
+        Priv->Items[item_trackpitch][trackpitch]++;
 
         Frame_Count++;
         if (!Status[IsAccepted]) {
