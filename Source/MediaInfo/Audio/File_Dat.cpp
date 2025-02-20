@@ -153,6 +153,7 @@ enum items {
 class file_dat_frame {
 public:
     TimeCode TCs[7] = {};
+    string RecDate[7] = {};
     int8u TC_IDs[7] = {};
     int16u dtsubid_pno = 0;
 };
@@ -290,6 +291,12 @@ void File_Dat::Streams_Accept()
     for (int i = 0; i < 7; i++) {
         Conditional_TimeCode(i);
     }
+    for (int i = 0; i < 7; i++) {
+        const auto& RecDate = Priv->Frame_First.RecDate[i];
+        if (!RecDate.empty()) {
+            Fill(Stream_General, 0, General_Recorded_Date, RecDate);
+        }
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -394,7 +401,7 @@ void File_Dat::Data_Parse()
                     dttimepack(Frame.TCs[i]);
                     break;
                 case 5:
-                    dtdatepack();
+                    dtdatepack(Frame.RecDate[i]);
                     break;
                 default:
                     Skip_BS(52,                                 "(Unknown)");
@@ -673,7 +680,7 @@ void File_Dat::dttimepack(TimeCode& TC)
 }
 
 //---------------------------------------------------------------------------
-void File_Dat::dtdatepack()
+void File_Dat::dtdatepack(string& Date)
 {
     // Parsing
     int8u year2, month, day, h, m, s;
@@ -685,7 +692,7 @@ void File_Dat::dtdatepack()
     Get_BCD(h, "h1", "h2");
     Get_BCD(m, "m1", "m2");
     Get_BCD(s, "s1", "s2");
-    string Date;
+    Date.clear();
     int16u year=(int16u)year2+(year2<70?2000:1900);
     Date+='0'+((year     )/1000);
     Date+='0'+((year%1000)/100 );
