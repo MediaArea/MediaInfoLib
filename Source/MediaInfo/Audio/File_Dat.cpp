@@ -202,6 +202,9 @@ void File_Dat::Streams_Accept()
                 Max_Pos = i;
             }
         }
+        if (!Max_Value) {
+            return -1;
+        }
         Max_Value >>= 2;
         for (size_t i = 0; i < 4; i++) {
             if (Max_Value < Values[i] && i != Max_Pos) {
@@ -228,8 +231,10 @@ void File_Dat::Streams_Accept()
                 auto Value = Array[Index];
                 if (Item == item_samples) {
                     // Samples to sampling rate
-                    Value *= 100;
-                    Value /= 3;
+                    int32u Value2(Value);
+                    Value2 *= 100;
+                    Value2 /= 3;
+                    Value=(int16u)Value2;
                 }
                 Fill(Stream_Audio, 0, Field, Value);
             }
