@@ -26,10 +26,10 @@ import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Base64;
 import java.security.SignatureException;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 
 class HowToUse_Dll
 {
@@ -269,7 +269,7 @@ throws java.security.SignatureException
     {
         Mac mac = Mac.getInstance("HmacSHA1"); // Create an HMAC instance
         mac.init(new SecretKeySpec(secretKey.getBytes(), "HmacSHA1")); // Initialize the HMAC instance with the secret key
-        Result = DatatypeConverter.printBase64Binary(mac.doFinal(data.getBytes()));
+        Result = Base64.getEncoder().encodeToString(mac.doFinal(data.getBytes()));
     }
     catch (Exception e)
     {
