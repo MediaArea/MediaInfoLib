@@ -789,6 +789,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys=0x6B657973;
     const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_PHDR=0x50484452;
     const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_PHDR_keyd=0x6B657964;
+    const int64u moov_trak_mdia_minf_stbl_stsd_mett=0x6D657474;
     const int64u moov_trak_mdia_minf_stbl_stsd_mp4a=0x6D703461;
     const int64u moov_trak_mdia_minf_stbl_stsd_mp4s=0x6D703473;
     const int64u moov_trak_mdia_minf_stbl_stsd_mp4v=0x6D703476;
@@ -5724,8 +5725,44 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tx3g_ftab()
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx()
 {
     //Parsing
-    Skip_B6(                                                    "Reserved");
-    Skip_B2(                                                    "Data reference index");
+    string CodecIDAddition;
+    if (StreamKind_Last==Stream_Max)
+    {
+        switch (Element_Code)
+        {
+        case Elements::moov_trak_mdia_minf_stbl_stsd_mett:
+        {
+            string mime_format;
+            Element_Name("Metadata");
+            Skip_String(SizeUpTo0(),                            "content_encoding");
+            Skip_B1(                                            "zero");
+            Get_String(SizeUpTo0(), CodecIDAddition,            "mime_format");
+            Skip_B1(                                            "zero");
+            break;
+        }
+        default:
+        {
+            auto NotAscii=false;
+            if (Element_Size>=6)
+            {
+                for (auto Current=Buffer+Buffer_Offset, End=Current+6; Current<End; Current++)
+                {
+                    if (!IsAsciiLower(*Current) && !IsAsciiUpper(*Current))
+                        NotAscii=true;
+                }
+            }
+            if (Element_Size<6 || !NotAscii)
+            {
+                Skip_XX(Element_Size,                           "(Unknown)");
+            }
+        }
+        }
+    }
+    if (!Element_Offset)
+    {
+        Skip_B6(                                                "Reserved");
+        Skip_B2(                                                "Data reference index");
+    }
 
     //Test of buggy files
     if (StreamKind_Last==Stream_Other && Element_Code==0x61766331) //"avc1"
@@ -5767,7 +5804,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx()
             case Stream_Video : moov_trak_mdia_minf_stbl_stsd_xxxxVideo(); break;
             case Stream_Audio : moov_trak_mdia_minf_stbl_stsd_xxxxSound(); break;
             case Stream_Text  : moov_trak_mdia_minf_stbl_stsd_xxxxText (); break;
-            default           : moov_trak_mdia_minf_stbl_stsd_xxxxOthers();
+            default           : moov_trak_mdia_minf_stbl_stsd_xxxxOthers(CodecIDAddition);
         }
 
         if (Element_IsWaitingForMoreData())
@@ -6633,7 +6670,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
 }
 
 //---------------------------------------------------------------------------
-void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxOthers()
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxOthers(const string& CodecIDAddition)
 {
     switch (Element_Code)
     {
@@ -6646,6 +6683,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxOthers()
     if (Element_Code)
     {
         CodecID_Fill(Ztring().From_CC4((int32u)Element_Code), StreamKind_Last, StreamPos_Last, InfoCodecID_Format_Mpeg4);
+        if (!CodecIDAddition.empty())
+        {
+            auto CodecID=Retrieve(Stream_Other, StreamPos_Last, Other_CodecID).To_UTF8();
+            Fill(Stream_Other, StreamPos_Last, Other_CodecID, CodecID+'-'+CodecIDAddition, true, true);
+        }
     }
 
     FILLING_BEGIN();
