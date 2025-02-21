@@ -186,7 +186,6 @@ Alignment_Aligned;Aligned on interleaves
 Alignment_Split;Split across interleaves
 All;All
 AlternateGroup;Alternate group
-Android_Version;Android version
 Archival_Location;Archival location
 Arranger;Arranger
 ArtDirector;ArtDirector
@@ -383,8 +382,10 @@ ElementCount;Count of elements
 EMail;E-Mail
 Encoded_Application;Writing application
 Encoded_Date;Encoded date
+Encoded_Hardware;Writing hardware
 Encoded_Library;Writing library
 Encoded_Library_Settings;Encoding settings
+Encoded_OperatingSystem;Writing operating system
 Encoded_Original;Original support
 EncodedBy;Encoded by
 EPG_Positions;EPG positions (internal)
@@ -1140,7 +1141,6 @@ SamplePeakLevel_Album;Sample peak level (album)
 SamplesPerFrame;Samples per frame
 SamplingCount;Samples count
 SamplingRate;Sampling rate
-Samsung_Model_Number;Samsung model number
 Save;Save
 ScanOrder;Scan order
 ScanOrder_Original;Original scan order

@@ -3985,14 +3985,30 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         Fill(Stream_General, 0, General_Comment, Value, true);
                     else if (Parameter=="com.apple.quicktime.description")
                         Fill(Stream_General, 0, General_Description, Value, true);
+                    else if (Parameter == "com.apple.quicktime.creationdate")
+                        Fill(Stream_General, 0, General_Recorded_Date, Value);
+                    else if (Parameter == "com.apple.quicktime.make")
+                        Fill(Stream_General, 0, General_Encoded_Hardware_CompanyName, Value);
+                    else if (Parameter == "com.apple.quicktime.model")
+                        Fill(Stream_General, 0, General_Encoded_Hardware_Name, Value);
+                    else if (Parameter == "com.apple.quicktime.software")
+                        Fill(Stream_General, 0, General_Encoded_Application_Name, Value);
                     else if (Parameter=="com.apple.finalcutstudio.media.uuid")
                         Fill(Stream_General, 0, "Media/UUID", Value);
                     else if (Parameter=="com.apple.finalcutstudio.media.history.uuid")
                         Fill(Stream_General, 0, "Media/History/UUID", Value);
                     else if (Parameter=="com.android.capture.fps")
                         FrameRate_Real=Value;
+                    else if (Parameter=="com.android.manufacturer")
+                        Fill(Stream_General, 0, General_Encoded_Hardware_CompanyName, Value);
+                    else if (Parameter=="com.android.model")
+                        Fill(Stream_General, 0, General_Encoded_Hardware_Name, Value);
                     else if (Parameter=="com.android.version")
-                        Fill(Stream_General, 0, "Android_Version", Value);
+                    {
+                        Fill(Stream_General, 0, General_Encoded_OperatingSystem_CompanyName, "Google");
+                        Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "Android");
+                        Fill(Stream_General, 0, General_Encoded_OperatingSystem_Version, Value);
+                    }
                     else if (Parameter=="com.universaladid.idregistry")
                     {
                         Fill(Stream_General, 0, "UniversalAdID_Registry", Value);
@@ -4019,6 +4035,11 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         size_t i=DisplayAspectRatio.find(':');
                         if (i!=string::npos)
                             DisplayAspectRatio.From_Number(Ztring(DisplayAspectRatio.substr(0, i)).To_float64()/Ztring(DisplayAspectRatio.substr(i+1)).To_float64(), 3);
+                    }
+                    else if (Parameter=="Encoded_With")
+                    {
+                        if (Value!=Retrieve_Const(Stream_General, 0, General_Encoded_Application_Name))
+                            Fill(Stream_General, 0, General_Encoded_Application_Name, Value);
                     }
                     else if (!Parameter.empty())
                         Fill(Stream_General, 0, Parameter.c_str(), Value, true);
@@ -9850,7 +9871,8 @@ void File_Mpeg4::moov_udta_smta_mdln()
 
     //Filling
     FILLING_BEGIN();
-        Fill(Stream_General, 0, "Samsung_Model_Number", SamsungModelNumber);
+        Fill(Stream_General, 0, General_Encoded_Hardware_CompanyName, "Samsung");
+        Fill(Stream_General, 0, General_Encoded_Hardware_Model, SamsungModelNumber);
     FILLING_END();
 }
 

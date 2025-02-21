@@ -957,11 +957,11 @@ void File_Riff::AVI__exif_xxxx()
     //Filling
     switch (Element_Code)
     {
-        case Elements::AVI__exif_ecor : Fill(Stream_General, 0, "Make", Value); break;
-        case Elements::AVI__exif_emdl : Fill(Stream_General, 0, "Model", Value); break;
+        case Elements::AVI__exif_ecor : Fill(Stream_General, 0, General_Encoded_Hardware_CompanyName, Value); break;
+        case Elements::AVI__exif_emdl : Fill(Stream_General, 0, General_Encoded_Hardware_Name, Value); break;
         case Elements::AVI__exif_emnt : Fill(Stream_General, 0, "MakerNotes", Value); break;
         case Elements::AVI__exif_erel : Fill(Stream_General, 0, "RelatedImageFile", Value); break;
-        case Elements::AVI__exif_etim : Fill(Stream_General, 0, "Written_Date", Value); break;
+        case Elements::AVI__exif_etim : Fill(Stream_General, 0, General_Encoded_Date, Value); break;
         case Elements::AVI__exif_eucm : Fill(Stream_General, 0, General_Comment, Value); break;
         case Elements::AVI__exif_ever : break; //Exif version
         default:                    Fill(Stream_General, 0, Ztring().From_CC4((int32u)Element_Code).To_Local().c_str(), Value);
