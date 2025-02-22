@@ -2023,6 +2023,17 @@ void File__Analyze::Skip_UTF16L(int64u Bytes, const char* Name)
     Element_Offset+=Bytes;
 }
 
+//---------------------------------------------------------------------------
+size_t File__Analyze::SizeUpTo0()
+{
+    auto Buffer_Begin=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    auto Buffer_Current=Buffer_Begin;
+    auto Buffer_End=Buffer+Buffer_Offset+(size_t)Element_Size;
+    while (Buffer_Current<Buffer_End && *Buffer_Current)
+        Buffer_Current++;
+    return Buffer_Current-Buffer_Begin;
+}
+
 //***************************************************************************
 // Text
 //***************************************************************************
