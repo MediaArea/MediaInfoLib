@@ -297,7 +297,17 @@ Encoded_Library_Name;;;N YTY;;;Name of the encoding software;;Technical
 Encoded_Library_Version;;;N YTY;;;Version of the encoding software;;Technical
 Encoded_Library_Date;;;N YTY;;;Release date of the encoding software, in UTC;;Technical
 Encoded_Library_Settings;;;Y YTY;;;Parameters used by the encoding software;;Technical
-Encoded_OperatingSystem;;;N YTY;;;Operating System of the encoding software;;Technical
+Encoded_OperatingSystem;;;N YTY;;;Operating system of the encoding software;;Technical
+Encoded_OperatingSystem/String;;;Y NT;;;Operating system used to create the file, in the format "CompanyName ProductName (OperatingSystem) Version (Date)";;Technical
+Encoded_OperatingSystem_CompanyName;;;N YTY;;;Name of the operating system company;;Technical
+Encoded_OperatingSystem_Name;;;N YTY;;;Name of the operating system;;Technical
+Encoded_OperatingSystem_Version;;;N YTY;;;Version of the operating system;;Technical
+Encoded_Hardware;;;N YTY;;;Hardware of the encoding software;;Technical
+Encoded_Hardware/String;;;Y NT;;;Hardware used to create the file, in the format "CompanyName ProductName (ModelName) Version";;Technical
+Encoded_Hardware_CompanyName;;;N YTY;;;Name of the hardware company;;Technical
+Encoded_Hardware_Name;;;N YTY;;;Name of the hardware;;Technical
+Encoded_Hardware_Model;;;N YTY;;;Model of the hardware;;Technical
+Encoded_Hardware_Version;;;N YTY;;;Version of the hardware;;Technical
 Cropped;;;Y YTY;;;Describes whether an image has been cropped and, if so, how it was cropped;;Technical
 Dimensions;;;Y YTY;;;Specifies the size of the original subject of the file (e.g. 8.5 in h, 11 in w);;Technical
 DotsPerInch;;;Y YTY;;;Stores dots per inch setting of the digitization mechanism used to produce the file;;Technical

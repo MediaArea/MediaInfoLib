@@ -40,6 +40,21 @@ template <class T> inline Ztring Get_Hex_ID(const T& Value)
     return ID_String;
 }
 
+template <class T> inline T IsAsciiLower(T Value)
+{
+    return ((unsigned)Value - 'a') < 26;
+}
+
+template <class T> inline T IsAsciiUpper(T Value)
+{
+    return ((unsigned)Value - 'A') < 26;
+}
+
+template <class T> inline T IsAsciiDigit(T Value)
+{
+    return ((unsigned)Value - '0') < 10;
+}
+
 struct buffer_data
 {
     size_t Size;
