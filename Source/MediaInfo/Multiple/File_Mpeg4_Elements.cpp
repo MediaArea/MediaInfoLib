@@ -5412,30 +5412,12 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_stpp()
     Skip_B4(                                                    "Reserved");
     Skip_B2(                                                    "Reserved");
     Skip_B2(                                                    "Data reference index");
-    size_t Pos=(size_t)Element_Offset;
-    while (Pos<Element_Size)
-    {
-        if (Buffer[Buffer_Offset+Pos]=='\0')
-            break;
-        Pos++;
-    }
-    Get_String(Pos+1-Element_Offset, NameSpace,                  "namespace");
-    Pos=(size_t)Element_Offset;
-    while (Pos<Element_Size)
-    {
-        if (Buffer[Buffer_Offset+Pos]=='\0')
-            break;
-        Pos++;
-    }
-    Skip_UTF8(Pos+1-Element_Offset,                             "schema_location");
-    Pos=(size_t)Element_Offset;
-    while (Pos<Element_Size)
-    {
-        if (Buffer[Buffer_Offset+Pos]=='\0')
-            break;
-        Pos++;
-    }
-    Skip_UTF8(Pos+1-Element_Offset,                             "image_mime_type");
+    Get_String(SizeUpTo0(), NameSpace,                          "namespace");
+    Skip_B1(                                                    "zero");
+    Skip_UTF8(SizeUpTo0(),                                      "schema_location");
+    Skip_B1(                                                    "zero");
+    Skip_UTF8(SizeUpTo0(),                                      "image_mime_type");
+    Skip_B1(                                                    "zero");
 
     FILLING_BEGIN();
         CodecID_Fill(__T("stpp"), StreamKind_Last, StreamPos_Last, InfoCodecID_Format_Mpeg4);
@@ -10013,21 +9995,10 @@ void File_Mpeg4::moov_udta_xxxx()
                 {
                     string name_space, value;
                     NAME_VERSION_FLAG("Text");
-                    auto Buffer_Begin=Buffer+Buffer_Offset+4;
-                    auto Buffer_Current=Buffer_Begin;
-                    auto Buffer_End=Buffer+Buffer_Offset+(size_t)Element_Size;
-                    while (Buffer_Current<Buffer_End && *Buffer_Current)
-                        Buffer_Current++;
-                    Get_String(Buffer_Current-Buffer_Begin, name_space, "namespace");
+                    Get_String(SizeUpTo0(), name_space,             "namespace");
                     if (Element_Offset<Element_Size)
-                    {
                         Skip_B1(                                    "zero");
-                        Buffer_Current++;
-                    }
-                    Buffer_Begin=Buffer_Current;
-                    while (Buffer_Current<Buffer_End && *Buffer_Current)
-                        Buffer_Current++;
-                    Get_String(Buffer_Current-Buffer_Begin, value, "value");
+                    Get_String(SizeUpTo0(), value,                  "value");
                     if (Element_Offset<Element_Size)
                         Skip_B1(                                    "zero");
 
