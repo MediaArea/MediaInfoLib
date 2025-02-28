@@ -30,6 +30,7 @@ AC_DISABLE_STATIC
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
+PKG_PROG_PKG_CONFIG
 
 dnl #########################################################################
 dnl Configure
@@ -389,8 +390,8 @@ if test -e ../../../../ZenLib/Project/GNU/Library/libzen-config; then
 elif test "$(command -v libzen-config)" ; then
 	enable_unicode="$(libzen-config Unicode)"
 else
-	if pkg-config --exists libzen; then
-		enable_unicode="$(pkg-config --variable=Unicode libzen)"
+	if ${PKG_CONFIG:-pkg-config} --exists libzen; then
+		enable_unicode="$(${PKG_CONFIG:-pkg-config} --variable=Unicode libzen)"
 	else
 		AC_MSG_ERROR([libzen configuration is not found])
 	fi
@@ -470,15 +471,15 @@ elif test "$(command -v libzen-config)" ; then
 		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(libzen-config LIBS)"
 	fi
 else
-	if pkg-config --exists libzen; then
-		CXXFLAGS="$CXXFLAGS $(pkg-config --cflags libzen)"
+	if ${PKG_CONFIG:-pkg-config} --exists libzen; then
+		CXXFLAGS="$CXXFLAGS $(${PKG_CONFIG:-pkg-config} --cflags libzen)"
 		if test "$enable_staticlibs" = "yes"; then
 			with_zenlib="system (static)"
-			LIBS="$LIBS $(pkg-config --variable=LIBS_Static libzen)"
+			LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --variable=LIBS_Static libzen)"
 		else
 			with_zenlib="system"
-			LIBS="$LIBS $(pkg-config --libs libzen)"
-			MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --variable=LIBS libzen)"
+			LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs libzen)"
+			MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(${PKG_CONFIG:-pkg-config} --variable=LIBS libzen)"
 		fi
 	else
 		AC_MSG_ERROR([libzen configuration is not found])
@@ -494,17 +495,17 @@ if test -d $with_graphviz; then
 	else
 		AC_MSG_ERROR([Problem while configuring builtin graphviz (libgvc.pc not found)])
 	fi
-	CXXFLAGS="$CXXFLAGS $(pkg-config --cflags $gvcpcfile)"
+	CXXFLAGS="$CXXFLAGS $(${PKG_CONFIG:-pkg-config} --cflags $gvcpcfile)"
 	if test "$enable_staticlibs" = "yes"; then
 		using_graphviz="custom (static)"
-		LIBS="$LIBS $(pkg-config --libs --static $gvcpcfile)"
-		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --libs --static $gvcpcfile)"
-		Graphviz_Lib=" $(pkg-config --libs --static $gvcpcfile)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs --static $gvcpcfile)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(${PKG_CONFIG:-pkg-config} --libs --static $gvcpcfile)"
+		Graphviz_Lib=" $(${PKG_CONFIG:-pkg-config} --libs --static $gvcpcfile)"
 	else
 		using_graphviz="custom"
-		LIBS="$LIBS $(pkg-config --libs $gvcpcfile)"
-		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --libs --static $gvcpcfile)"
-		Graphviz_Lib=" $(pkg-config --libs --static $gvcpcfile)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs $gvcpcfile)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(${PKG_CONFIG:-pkg-config} --libs --static $gvcpcfile)"
+		Graphviz_Lib=" $(${PKG_CONFIG:-pkg-config} --libs --static $gvcpcfile)"
 	fi
 elif test "$with_graphviz" = "no"; then
 	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_GRAPHVIZ_NO"
@@ -518,18 +519,18 @@ elif test "$with_graphviz" = "runtime"; then
 	fi
 	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_GRAPHVIZ_DLL_RUNTIME"
 	using_graphviz="system (runtime)"
-elif pkg-config --exists libgvc; then
-	CXXFLAGS="$CXXFLAGS $(pkg-config --cflags libgvc)"
+elif ${PKG_CONFIG:-pkg-config} --exists libgvc; then
+	CXXFLAGS="$CXXFLAGS $(${PKG_CONFIG:-pkg-config} --cflags libgvc)"
 	if test "$enable_staticlibs" = "yes"; then
 		using_graphviz="system (static)"
-		LIBS="$LIBS $(pkg-config --libs --static libgvc)"
-		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --libs --static libgvc)"
-		Graphviz_Lib=" $(pkg-config --libs --static libgvc)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs --static libgvc)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(${PKG_CONFIG:-pkg-config} --libs --static libgvc)"
+		Graphviz_Lib=" $(${PKG_CONFIG:-pkg-config} --libs --static libgvc)"
 	else
 		using_graphviz="system"
-		LIBS="$LIBS $(pkg-config --libs libgvc)"
-		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --libs libgvc)"
-		Graphviz_Lib=" $(pkg-config --libs libgvc)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs libgvc)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(${PKG_CONFIG:-pkg-config} --libs libgvc)"
+		Graphviz_Lib=" $(${PKG_CONFIG:-pkg-config} --libs libgvc)"
 	fi
 	Graphviz_Require=" libgvc"
 else
@@ -549,15 +550,15 @@ if test -d $with_libcurl; then
 			AC_MSG_ERROR([Problem while configuring builtin curl (libcurl.pc not found)])
 		fi
 	fi
-	CXXFLAGS="$CXXFLAGS $(pkg-config --cflags $libcurlpcfile)"
+	CXXFLAGS="$CXXFLAGS $(${PKG_CONFIG:-pkg-config} --cflags $libcurlpcfile)"
 	if test "$enable_staticlibs" = "yes"; then
 		using_libcurl="custom (static)"
-		LIBS="$LIBS $(pkg-config --libs --static $libcurlpcfile)"
-		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --libs --static $libcurlpcfile)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs --static $libcurlpcfile)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(${PKG_CONFIG:-pkg-config} --libs --static $libcurlpcfile)"
 	else
 		using_libcurl="custom"
-		LIBS="$LIBS $with_libcurl/lib $(pkg-config --libs $libcurlpcfile)"
-		MediaInfoLib_LIBS="$MediaInfoLib_LIBS $(pkg-config --libs $libcurlpcfile)"
+		LIBS="$LIBS $with_libcurl/lib $(${PKG_CONFIG:-pkg-config} --libs $libcurlpcfile)"
+		MediaInfoLib_LIBS="$MediaInfoLib_LIBS $(${PKG_CONFIG:-pkg-config} --libs $libcurlpcfile)"
 	fi
 elif test "$with_libcurl" = "no"; then
 	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_LIBCURL_NO"
@@ -574,23 +575,23 @@ elif test -e ../../../../curl/libcurl.pc; then
 	CXXFLAGS="$CXXFLAGS -I../../../../curl/include"
 	if test "$enable_staticlibs" = "yes"; then
 		using_libcurl="builtin (static)"
-		LIBS="$LIBS $(pkg-config --libs --static ../../../../curl/libcurl.pc)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs --static ../../../../curl/libcurl.pc)"
 	else
 		using_libcurl="builtin"
-		LIBS="$LIBS $(pkg-config --libs ../../../../curl/libcurl.pc)"
-		MediaInfoLib_LIBS="$MediaInfoLib_LIBS $(pkg-config --libs ../../../../curl/libcurl.pc)"
-		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --libs ../../../../curl/libcurl.pc)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs ../../../../curl/libcurl.pc)"
+		MediaInfoLib_LIBS="$MediaInfoLib_LIBS $(${PKG_CONFIG:-pkg-config} --libs ../../../../curl/libcurl.pc)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(${PKG_CONFIG:-pkg-config} --libs ../../../../curl/libcurl.pc)"
 	fi
-elif pkg-config --exists libcurl; then
-	CXXFLAGS="$CXXFLAGS $(pkg-config --cflags libcurl)"
+elif ${PKG_CONFIG:-pkg-config} --exists libcurl; then
+	CXXFLAGS="$CXXFLAGS $(${PKG_CONFIG:-pkg-config} --cflags libcurl)"
 	if test "$enable_staticlibs" = "yes"; then
 		using_libcurl="system (static)"
-		LIBS="$LIBS $(pkg-config --libs --static libcurl)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs --static libcurl)"
 	else
 		using_libcurl="system"
-		LIBS="$LIBS $(pkg-config --libs libcurl)"
-		MediaInfoLib_LIBS="$MediaInfoLib_LIBS $(pkg-config --libs libcurl)"
-		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --libs libcurl)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs libcurl)"
+		MediaInfoLib_LIBS="$MediaInfoLib_LIBS $(${PKG_CONFIG:-pkg-config} --libs libcurl)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(${PKG_CONFIG:-pkg-config} --libs libcurl)"
 	fi
 	Curl_Require=" libcurl"
 	Curl_Lib=" -lcurl"
@@ -601,7 +602,7 @@ elif test -e /usr/bin/curl-config; then
 		LIBS="$LIBS $(/usr/bin/curl-config --libs)"
 	else
 		using_libcurl="system"
-		LIBS="$LIBS $(pkg-config --libs libcurl)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs libcurl)"
 		MediaInfoLib_LIBS="$MediaInfoLib_LIBS $(/usr/bin/curl-config --libs)"
 		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(/usr/bin/curl-config --libs)"
 	fi
@@ -614,14 +615,14 @@ elif test -e ../../../../Shared/Project/curl/Compile.sh; then
 		CXXFLAGS="$CXXFLAGS -I../../../../Shared/Source/curl/include"
 		if test "$enable_staticlibs" = "yes"; then
 			using_libcurl="builtin (static)"
-			LIBS="$LIBS -L../../../../Shared/Source/curl/lib $(pkg-config --libs --static ../../../../Shared/Source/curl/libcurl.pc)"
-			MediaInfoLib_LIBS="$MediaInfoLib_LIBS -L../../../../Shared/Source/curl/lib $(pkg-config --libs --static ../../../../Shared/Source/curl/libcurl.pc)"
-			MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static -L../../../../Shared/Source/curl/lib $(pkg-config --libs --static ../../../../Shared/Source/curl/libcurl.pc)"
+			LIBS="$LIBS -L../../../../Shared/Source/curl/lib $(${PKG_CONFIG:-pkg-config} --libs --static ../../../../Shared/Source/curl/libcurl.pc)"
+			MediaInfoLib_LIBS="$MediaInfoLib_LIBS -L../../../../Shared/Source/curl/lib $(${PKG_CONFIG:-pkg-config} --libs --static ../../../../Shared/Source/curl/libcurl.pc)"
+			MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static -L../../../../Shared/Source/curl/lib $(${PKG_CONFIG:-pkg-config} --libs --static ../../../../Shared/Source/curl/libcurl.pc)"
 		else
 			using_libcurl="builtin"
-			LIBS="$LIBS -L../../../../Shared/Source/curl/lib $(pkg-config --libs ../../../../Shared/Source/curl/libcurl.pc)"
-			MediaInfoLib_LIBS="$MediaInfoLib_LIBS -L../../../../Shared/Source/curl/lib $(pkg-config --libs ../../../../Shared/Source/curl/libcurl.pc)"
-			MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static -L../../../../Shared/Source/curl/lib $(pkg-config --libs ../../../../Shared/Source/curl/libcurl.pc)"
+			LIBS="$LIBS -L../../../../Shared/Source/curl/lib $(${PKG_CONFIG:-pkg-config} --libs ../../../../Shared/Source/curl/libcurl.pc)"
+			MediaInfoLib_LIBS="$MediaInfoLib_LIBS -L../../../../Shared/Source/curl/lib $(${PKG_CONFIG:-pkg-config} --libs ../../../../Shared/Source/curl/libcurl.pc)"
+			MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static -L../../../../Shared/Source/curl/lib $(${PKG_CONFIG:-pkg-config} --libs ../../../../Shared/Source/curl/libcurl.pc)"
 		fi
 	else
 		AC_MSG_ERROR([Problem while compiling builtin curl])
@@ -634,43 +635,43 @@ dnl -------------------------------------------------------------------------
 dnl libmms
 dnl
 if test -d $with_libmms; then
-	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_LIBMMS_FROMSOURCE -I$with_libmms/src $(pkg-config --cflags $with_libmms/pkgconfig/libmms.pc)"
-	MediaInfoLib_CXXFLAGS="$MediaInfoLib_CXXFLAGS -I$with_libmms $(pkg-config --cflags $with_libmms/pkgconfig/libmms.pc)"
+	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_LIBMMS_FROMSOURCE -I$with_libmms/src $(${PKG_CONFIG:-pkg-config} --cflags $with_libmms/pkgconfig/libmms.pc)"
+	MediaInfoLib_CXXFLAGS="$MediaInfoLib_CXXFLAGS -I$with_libmms $(${PKG_CONFIG:-pkg-config} --cflags $with_libmms/pkgconfig/libmms.pc)"
 	if test "$enable_staticlibs" = "yes"; then
 		using_libmms="custom (static)"
-		LIBS="$LIBS -L$with_libmms/src/.libs $(pkg-config --libs --static $with_libmms/pkgconfig/libmms.pc)"
-		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static -L$with_libmms/src/.libs $(pkg-config --libs --static $with_libmms/pkgconfig/libmms.pc)"
+		LIBS="$LIBS -L$with_libmms/src/.libs $(${PKG_CONFIG:-pkg-config} --libs --static $with_libmms/pkgconfig/libmms.pc)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static -L$with_libmms/src/.libs $(${PKG_CONFIG:-pkg-config} --libs --static $with_libmms/pkgconfig/libmms.pc)"
 	else
 		using_libmms="custom"
-		LIBS="$LIBS -L$with_libmms/src/.libs $(pkg-config --libs $with_libmms/pkgconfig/libmms.pc)"
-		MediaInfoLib_LIBS="$MediaInfoLib_LIBS -L$with_libmms/src/.libs $(pkg-config --libs $with_libmms/pkgconfig/libmms.pc)"
+		LIBS="$LIBS -L$with_libmms/src/.libs $(${PKG_CONFIG:-pkg-config} --libs $with_libmms/pkgconfig/libmms.pc)"
+		MediaInfoLib_LIBS="$MediaInfoLib_LIBS -L$with_libmms/src/.libs $(${PKG_CONFIG:-pkg-config} --libs $with_libmms/pkgconfig/libmms.pc)"
 	fi
 elif test "$with_libmms" = "no"; then
 	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_LIBMMS_NO"
 	using_libmms="no"
 elif test -e ../../../../libmms/libmms.pc; then
-	CXXFLAGS="$CXXFLAGS $(pkg-config --cflags ../../../../libmms/libmms.pc)"
-	MediaInfoLib_CXXFLAGS="$MediaInfoLib_CXXFLAGS $(pkg-config --cflags ../../../../libmms/libmms.pc)"
+	CXXFLAGS="$CXXFLAGS $(${PKG_CONFIG:-pkg-config} --cflags ../../../../libmms/libmms.pc)"
+	MediaInfoLib_CXXFLAGS="$MediaInfoLib_CXXFLAGS $(${PKG_CONFIG:-pkg-config} --cflags ../../../../libmms/libmms.pc)"
 	if test "$enable_staticlibs" = "yes"; then
 		using_libmms="builtin (static)"
-		LIBS="$LIBS $(pkg-config --libs --static ../../../../libmms/libmms.pc)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs --static ../../../../libmms/libmms.pc)"
 	else
 		using_libmms="builtin"
-		LIBS="$LIBS $(pkg-config --libs ../../../../libmms/libmms.pc)"
-		MediaInfoLib_LIBS="$MediaInfoLib_LIBS $(pkg-config --libs ../../../../libmms/libmms.pc)"
-		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --libs ../../../../libmms/libmms.pc)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs ../../../../libmms/libmms.pc)"
+		MediaInfoLib_LIBS="$MediaInfoLib_LIBS $(${PKG_CONFIG:-pkg-config} --libs ../../../../libmms/libmms.pc)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(${PKG_CONFIG:-pkg-config} --libs ../../../../libmms/libmms.pc)"
 	fi
-elif pkg-config --exists libmms; then
-	CXXFLAGS="$CXXFLAGS $(pkg-config --cflags libmms)"
-	MediaInfoLib_CXXFLAGS="$MediaInfoLib_CXXFLAGS $(pkg-config --cflags libmms)"
+elif ${PKG_CONFIG:-pkg-config} --exists libmms; then
+	CXXFLAGS="$CXXFLAGS $(${PKG_CONFIG:-pkg-config} --cflags libmms)"
+	MediaInfoLib_CXXFLAGS="$MediaInfoLib_CXXFLAGS $(${PKG_CONFIG:-pkg-config} --cflags libmms)"
 	if test "$enable_staticlibs" = "yes"; then
 		using_libmms="system (static)"
-		LIBS="$LIBS $(pkg-config --libs --static libmms)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs --static libmms)"
 	else
 		using_libmms="system"
-		LIBS="$LIBS $(pkg-config --libs libmms)"
-		MediaInfoLib_LIBS="$MediaInfoLib_LIBS $(pkg-config --libs libmms)"
-		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(pkg-config --libs libmms)"
+		LIBS="$LIBS $(${PKG_CONFIG:-pkg-config} --libs libmms)"
+		MediaInfoLib_LIBS="$MediaInfoLib_LIBS $(${PKG_CONFIG:-pkg-config} --libs libmms)"
+		MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $(${PKG_CONFIG:-pkg-config} --libs libmms)"
 	fi
 else
 	CXXFLAGS="$CXXFLAGS -DMEDIAINFO_LIBMMS_NO"
@@ -695,9 +696,6 @@ else
 	using_libaes="internal"
 	AM_CONDITIONAL(COMPILE_AES, true)
 fi
-
-dnl Needed in case with_libmd5=no while using pkg-config for other things
-PKG_PROG_PKG_CONFIG
 
 dnl -------------------------------------------------------------------------
 dnl libmd5
