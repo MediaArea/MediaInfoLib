@@ -164,6 +164,7 @@
 #endif
 #if defined(MEDIAINFO_AVSV_YES)
     #include "MediaInfo/Video/File_AvsV.h"
+    #include "MediaInfo/Video/File_Avs3V.h"
 #endif
 #if defined(MEDIAINFO_DIRAC_YES)
     #include "MediaInfo/Video/File_Dirac.h"
@@ -578,6 +579,7 @@ static File__Analyze* SelectFromExtension(const String& Parser)
     #endif
     #if defined(MEDIAINFO_AVSV_YES)
         if (Parser==__T("AvsV"))        return new File_AvsV();
+        if (Parser==__T("Avs3V"))        return new File_Avs3V();
     #endif
     #if defined(MEDIAINFO_DIRAC_YES)
         if (Parser==__T("Dirac"))       return new File_Dirac();
@@ -992,6 +994,7 @@ int MediaInfo_Internal::ListFormats(const String &File_Name)
     #endif
     #if defined(MEDIAINFO_AVSV_YES)
         delete Info; Info=new File_AvsV();               if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
+        delete Info; Info=new File_Avs3V();              if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     #endif
     #if defined(MEDIAINFO_DIRAC_YES)
         delete Info; Info=new File_Dirac();              if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
