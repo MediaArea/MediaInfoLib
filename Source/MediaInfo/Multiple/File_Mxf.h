@@ -64,10 +64,11 @@ public :
 
     enum type {
         Type_Unknown,
-        Type_UI16,
+        Type_UInt,
+        Type_UI16 = Type_UInt,
+        Type_Bool = Type_UInt,
         Type_AUID,
         Type_UUID,
-        Type_Bool,
         Type_ISO7,
         Type_UTF16,
         Type_Ref,
@@ -639,8 +640,7 @@ protected :
     void Get_UL (int128u &Value, const char* Name, const char* (*Param) (int128u));
     void Skip_UL(const char* Name);
     void Get_BER(int64u &Value, const char* Name);
-    int16u          Value_UI16;
-    int8u           Value_Bool;
+    int32u          Value_UInt;
     int128u         Value_UUID;
     Ztring          Value_String;
     vector<int128u> Value_UUIDVector;

@@ -5940,13 +5940,38 @@ void File_Mxf::Data_Parse()
     auto ManageGroup = [&](method_name MethodName) {
         switch ((int8u)(Code.hi>>16))         {
         case 0x05: (this->*MethodName)(); break;
+        case 0x43:
         case 0x53:
+        case 0x63:
             while (Element_Offset < Element_Size)
             {
                 Element_Begin0();
                 Element_Begin1(                                 "Header");
-                Get_B2(Code2,                                   "Code");
-                Get_B2(Length2,                                 "Length");
+                switch (((int8u)(Code.hi>>16)) & 0xF0) {
+                case 0x40:
+                {
+                    int8u Code1;
+                    Get_B1(Code1,                               "Code");
+                    Code2 = Code1;
+                }
+                break;
+                default:
+                    Get_B2(Code2,                               "Code");
+                }
+                switch (((int8u)(Code.hi>>16)) & 0xF0) {
+                case 0x60:
+                {
+                    int32u Code4;
+                    Get_B4(Code4,                               "Length");
+                    if (Code4 >> 16) {
+                        Skip_XX(Element_Size - Element_Offset,  "(Unsupported)");
+                    }
+                    Code2 = (int16u)Code4;
+                }
+                break;
+                default:
+                    Get_B2(Length2,                             "Length");
+                }
                 Element_End0();
                 #if MEDIAINFO_TRACE
                 if (Trace_Activated) {
@@ -6888,8 +6913,36 @@ void File_Mxf::UnknownGroupItem()
     }
     static const char* Name = "Value";
     switch (ItemType) {
-    case Type_UI16:             { Get_B2 (Value_UI16,           Name); Element_Info1(Value_UI16); } break;
-    case Type_Bool:             { Get_B1 (Value_Bool,           Name); Element_Info1(Value_Bool?Value_Bool>1?to_string(Value_Bool).c_str():"true":"false"); } break;
+    case Type_UInt:             {
+                                    switch (Length2) {
+                                    case 1: 
+                                        {
+                                        int8u Value;
+                                        Get_B1 (Value,          Name); Element_Info1(Value);
+                                        Value_UInt = Value;
+                                        }
+                                    break;
+                                    case 2:
+                                        {
+                                        int16u Value;
+                                        Get_B2 (Value,          Name); Element_Info1(Value);
+                                        Value_UInt = Value;
+                                        }
+                                    break;
+                                    case 3:
+                                        {
+                                        Get_B3 (Value_UInt,     Name); Element_Info1(Value_UInt);
+                                        }
+                                    break;
+                                    case 4:
+                                        {
+                                        Get_B4 (Value_UInt,     Name); Element_Info1(Value_UInt);
+                                        }
+                                    break;
+                                    default:
+                                        Skip_XX(Length2,        "(Unsupported)");
+                                    }
+                                } break;
     case Type_AUID:             { Get_UUID(Value_UUID,          Name); Element_Info1(Ztring().From_UUID(Value_UUID)); } break; // TODO: implement 16-bit Little Endian UL
     case Type_UUID:             { Get_UL(Value_UUID,            Name, nullptr); Element_Info1(int32u(Value_UUID.hi>>32)==0x060E2B34?Mxf_Param_Info((int32u)Value_UUID.hi, Value_UUID.lo):Ztring().From_UUID(Value_UUID).To_UTF8().c_str()); } break;
     case Type_UTF16:            { Get_UTF16B(Length2, Value_String, Name); Element_Info1(Value_String); } break;
