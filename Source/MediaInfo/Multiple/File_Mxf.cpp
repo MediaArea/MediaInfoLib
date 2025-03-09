@@ -1999,8 +1999,6 @@ File_Mxf::~File_Mxf()
         delete AcquisitionMetadata_Sony_E201_Lists[ i ];
 	
     AcquisitionMetadata_Sony_E201_Lists.clear();
-    for (auto DolbyVisionMetadata : DolbyVisionMetadatas)
-        delete DolbyVisionMetadata;
     delete DolbyAudioMetadata;
     #if defined(MEDIAINFO_ADM_YES)
         delete Adm;
@@ -2373,33 +2371,43 @@ void File_Mxf::Streams_Finish()
         }
     }
 
-    //Metadata
-    size_t DolbyVisionMetadata_i = 0;
-    for (const auto DolbyVisionMetadata : DolbyVisionMetadatas)
+    for (const auto& Parser : ToMergeLater)
     {
-        if (Retrieve_Const(Stream_Video, 0, "HDR_Format").find(__T("Dolby Vision")) == string::npos) // TODO: better check when more than 1 content with Dolby Vision
-            Merge(*DolbyVisionMetadata, Stream_Video, 0, 0);
-        if (DolbyVisionMetadata->IsStreamData)
+        if (Parser->Count_Get(Stream_Video))
         {
-            Stream_Prepare(Stream_Other);
-            Fill(Stream_Other, StreamPos_Last, Other_MuxingMode, "Generic Stream Data");
-            Fill(Stream_Other, StreamPos_Last, "MuxingMode_MoreInfo", "Contains additional metadata for other tracks");
-            Merge(*DolbyVisionMetadata, Stream_Other, 0, StreamPos_Last);
+            for (const auto& Elem : MXFGenericStreamDataElementKey)
+            {
+                if (Elem.second.Parser->Count_Get(Stream_Video) && Elem.second.Parser->Retrieve_Const(Stream_General, 0, General_Format)==Parser->Retrieve_Const(Stream_General, 0, General_Format))
+                    Parser->Merge(*Elem.second.Parser, Stream_Video, 0, 0);
+            }
+            if (!Count_Get(Stream_Video))
+                Stream_Prepare(Stream_Video);
+            Merge(*Parser, Stream_Video, 0, 0);
+        }
+        delete Parser;
+    }
+    ToMergeLater.clear();
 
-            if (DolbyVisionMetadata_i < DolbyVisionMetadatas_SID.size()) {
-                auto SID = DolbyVisionMetadatas_SID[DolbyVisionMetadata_i];
-                if (SID) {
-                    for (const auto& Descriptor : Descriptors) {
-                        if (Descriptor.second.SID == SID) {
-                            for (const auto& Info : Descriptor.second.Infos) {
-                                Fill(Stream_Other, StreamPos_Last, Info.first.c_str(), Info.second);
-                            }
-                        }
+    //Metadata
+    for (const auto& Elem : MXFGenericStreamDataElementKey)
+    {
+        if (!Elem.second.Parser || !Count_Get(Stream_Other))
+            continue;
+        Stream_Prepare(Stream_Other);
+        Fill(Stream_Other, StreamPos_Last, Other_MuxingMode, "Generic Stream Data");
+        Fill(Stream_Other, StreamPos_Last, "MuxingMode_MoreInfo", "Contains additional metadata for other tracks");
+        Merge(*Elem.second.Parser, Stream_Other, 0, StreamPos_Last);
+
+        auto SID = Elem.second.SID;
+        if (SID) {
+            for (const auto& Descriptor : Descriptors) {
+                if (Descriptor.second.SID == SID) {
+                    for (const auto& Info : Descriptor.second.Infos) {
+                        Fill(Stream_Other, StreamPos_Last, Info.first.c_str(), Info.second);
                     }
                 }
             }
         }
-        DolbyVisionMetadata_i++;
     }
     if (DolbyAudioMetadata) //Before ADM for having content before all ADM stuff
         Merge(*DolbyAudioMetadata, Stream_Audio, 0, 0);
@@ -2412,7 +2420,7 @@ void File_Mxf::Streams_Finish()
     {
         auto& S=*Adm_ForLaterMerge->Stream_More;
         size_t Start=(Stream_Audio<S.size() && !S[Stream_Audio].empty())?S[Stream_Audio][0].size():0;
-        Adm_ForLaterMerge->Streams_Fill_ForAdm();
+        ((File_Iab*)Adm_ForLaterMerge)->Streams_Fill_ForAdm();
         if (Adm)
         {
             //Check if compatible
@@ -2438,8 +2446,8 @@ void File_Mxf::Streams_Finish()
         }
     }
     if (DolbyAudioMetadata) //After ADM for having content inside ADM stuff
-        DolbyAudioMetadata->Merge(*this, 0);
-    if (Adm && (!DolbyAudioMetadata || !DolbyAudioMetadata->HasSegment9) && Retrieve_Const(Stream_Audio, 0, "AdmProfile_Format")==__T("Dolby Atmos Master"))
+        ((File_DolbyAudioMetadata*)DolbyAudioMetadata)->Merge(*this, 0);
+    if (Adm && (!DolbyAudioMetadata || !((File_DolbyAudioMetadata*)DolbyAudioMetadata)->HasSegment9) && Retrieve_Const(Stream_Audio, 0, "AdmProfile_Format")==__T("Dolby Atmos Master"))
     {
         Clear(Stream_Audio, 0, "AdmProfile");
         Clear(Stream_Audio, 0, "AdmProfile_Format");
@@ -3088,10 +3096,15 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
     //Done
     Essence->second.Stream_Finish_Done=true;
 
-    if ((*Parser)->Get(Stream_General, 0, General_Format) == __T("Dolby Vision Metadata")) // TODO: avoid this hack
+    if ((*Parser))
     {
-        DolbyVisionMetadatas.push_back((File_DolbyVisionMetadata*)*Parser);
-        *Parser=nullptr;
+        // TODO: avoid this hack
+        const auto& Format = (*Parser)->Retrieve_Const(Stream_General, 0, General_Format);
+        if (Format == __T("Dolby Vision Metadata"))
+        {
+            ToMergeLater.push_back(*Parser);
+            *Parser = nullptr;
+        }
     }
 }
 
@@ -7376,7 +7389,7 @@ void File_Mxf::ADMChannelMapping()
                 Adm=new File_Adm;
                 Open_Buffer_Init(Adm);
             }
-            Adm->chna_Add(ADMChannelMapping_LocalChannelID, ADMChannelMapping_ADMAudioTrackUID);
+            ((File_Adm*)Adm)->chna_Add(ADMChannelMapping_LocalChannelID, ADMChannelMapping_ADMAudioTrackUID);
             ADMChannelMapping_Presence.reset();
         }
     #endif //defined(MEDIAINFO_ADM_YES)
@@ -7970,53 +7983,67 @@ void File_Mxf::MXFGenericStreamDataElementKey_09_01()
 {
     // Check if already parsed
     auto Offset=File_Offset+Buffer_Offset+Element_Offset;
-    auto Found=MXFGenericStreamDataElementKey_Offsets.find(Offset);
-    if (Found!=MXFGenericStreamDataElementKey_Offsets.end())
+    auto Found=MXFGenericStreamDataElementKey.find(Offset);
+    if (Found!=MXFGenericStreamDataElementKey.end())
     {
         Skip_XX(Element_Size,                                   "(Already parsed)");
         return;
     }
-    MXFGenericStreamDataElementKey_Offsets.insert(Offset);
+    auto& Elem=MXFGenericStreamDataElementKey[Offset];
+    if (Partitions_Pos<Partitions.size())
+        Elem.SID=Partitions[Partitions_Pos].BodySID;
 
-    //Parsing - Dolby Vision Metadata
-    File_DolbyVisionMetadata* DolbyVisionMetadata_New=new File_DolbyVisionMetadata;
-    DolbyVisionMetadata_New->IsStreamData=true;
-    Open_Buffer_Init(DolbyVisionMetadata_New);
-    Open_Buffer_Continue(DolbyVisionMetadata_New);
-    if (DolbyVisionMetadata_New->Status[IsAccepted])
-    {
-        DolbyVisionMetadatas_SID.resize(DolbyVisionMetadatas.size());
-        DolbyVisionMetadatas.push_back(DolbyVisionMetadata_New);
-        if (!Partitions.empty() && Partitions.back().BodySID)
-            DolbyVisionMetadatas_SID.push_back(Partitions.back().BodySID);
-    }
-    Element_Offset=0;
-
-    //Parsing - ADM
+    //Preparing
+    vector<File__Analyze*> Parsers;
+    #if 1
+        Parsers.push_back(new File_DolbyVisionMetadata);
+    #endif
     #if defined(MEDIAINFO_ADM_YES)
-        File_Adm* Adm_New=new File_Adm;
-        Open_Buffer_Init(Adm_New);
-        Open_Buffer_Continue(Adm_New);
-        if (Adm_New->Status[IsAccepted])
-        {
-            Adm_New->chna_Move(Adm);
-            delete Adm;
-            Adm=Adm_New;
-        }
-        Element_Offset=0;
+        Parsers.push_back(new File_Adm);
+    #endif
+    #if 1
+        Parsers.push_back(new File_DolbyAudioMetadata(true));
     #endif
 
-    //Parsing - Dolby Audio Metadata
-    File_DolbyAudioMetadata* DolbyAudioMetadata_New=new File_DolbyAudioMetadata;
-    DolbyAudioMetadata_New->IsXML=true;
-    Open_Buffer_Init(DolbyAudioMetadata_New);
-    Open_Buffer_Continue(DolbyAudioMetadata_New);
-    if (DolbyAudioMetadata_New->Status[IsAccepted])
+    //Parsing
+    for (auto& Parser : Parsers)
     {
-        delete DolbyAudioMetadata;
-        DolbyAudioMetadata=DolbyAudioMetadata_New;
+        Open_Buffer_Init(Parser);
+        Open_Buffer_Continue(Parser);
+        if (!Elem.Parser && Parser->Status[IsAccepted])
+            Elem.Parser=Parser;
+        else
+            delete Parser;
+        Element_Offset=0;
     }
-    Element_Offset=0;
+    if (!Elem.Parser)
+    {
+        File__Analyze* Parser = new File_Unknown();
+        Open_Buffer_Init(Parser);
+        Parser->Stream_Prepare(Stream_Other);
+        Elem.Parser = Parser;
+    }
+
+    //Exception - ADM
+    #if defined(MEDIAINFO_ADM_YES)
+        if (Elem.Parser && Elem.Parser->Retrieve_Const(Stream_General, 0, General_Format)==__T("ADM"))
+        {
+            ((File_Adm*)Elem.Parser)->chna_Move((File_Adm*)Adm);
+            delete Adm;
+            Adm=Elem.Parser;
+            Elem.Parser=nullptr;
+        }
+    #endif
+
+    //Exception - Dolby Audio Metadata
+    #if 1
+        if (Elem.Parser && Elem.Parser->Retrieve_Const(Stream_General, 0, General_Format)==__T("Dolby Audio Metadata"))
+        {
+            delete DolbyAudioMetadata;
+            DolbyAudioMetadata=Elem.Parser;
+            Elem.Parser=nullptr;
+        }
+    #endif
 
     Skip_String(Element_Size,                                   "Data");
     Element_Show();
@@ -15190,7 +15217,6 @@ void File_Mxf::ChooseParser_DolbyVisionFrameData(const essences::iterator &Essen
     //Filling
     #if 1 // TODO
         File_DolbyVisionMetadata* Parser=new File_DolbyVisionMetadata;
-        Parser->IsISXD=true;
     #else
         //Filling
         File__Analyze* Parser=new File_Unknown();

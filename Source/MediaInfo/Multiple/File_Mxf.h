@@ -31,11 +31,6 @@
 namespace MediaInfoLib
 {
 
-class File_DolbyVisionMetadata;
-class File_Adm;
-class File_Iab;
-class File_DolbyAudioMetadata;
-
 //***************************************************************************
 // Class File_Mxf
 //***************************************************************************
@@ -1434,20 +1429,32 @@ protected :
     int8u AcquisitionMetadata_Sony_CalibrationType;
 
     // Extra metadata
+    struct generic_stream_data_element_key
+    {
+        File__Analyze* Parser = {};
+        int32u SID = {};
+
+        generic_stream_data_element_key() = default;
+        generic_stream_data_element_key(const generic_stream_data_element_key& Value) = delete;
+
+        ~generic_stream_data_element_key()
+        {
+            delete Parser;
+        }
+    };
+    std::map<int64u, generic_stream_data_element_key> MXFGenericStreamDataElementKey; // Key is file offset
+    std::vector<File__Analyze*> ToMergeLater;
     int64u ExtraMetadata_Offset;
     std::set<int32u> ExtraMetadata_SID;
-    std::vector<File_DolbyVisionMetadata*> DolbyVisionMetadatas;
-    std::vector<int32u> DolbyVisionMetadatas_SID;
-    std::set<int64u> MXFGenericStreamDataElementKey_Offsets;
-    File_DolbyAudioMetadata* DolbyAudioMetadata;
+    File__Analyze* DolbyAudioMetadata;
     #if defined(MEDIAINFO_ADM_YES)
-    File_Adm* Adm;
+    File__Analyze* Adm;
     int32u ADMChannelMapping_LocalChannelID;
     string ADMChannelMapping_ADMAudioTrackUID;
     std::bitset<2> ADMChannelMapping_Presence;
     #endif
     #if defined(MEDIAINFO_IAB_YES)
-    File_Iab* Adm_ForLaterMerge;
+    File__Analyze* Adm_ForLaterMerge;
     #endif
         
     //Demux
