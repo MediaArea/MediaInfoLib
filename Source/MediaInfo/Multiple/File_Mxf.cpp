@@ -14095,6 +14095,13 @@ void File_Mxf::Get_UL(int128u &Value, const char* Name, const char* (*Param) (in
             Temp = Param(V);
         }
         if (!Temp) {
+            switch ((((int32u)(V.hi)) >> 8)) {
+            case 0x024301:
+                switch (V.lo >> 8) {
+                case 0x0D010301040102: // SDTI System Metadata Pack
+                    V.lo -= V.lo & 0xFF;
+                }
+            }
             Temp = Mxf_Param_Info((int32u)V.hi, V.lo);
         }
         if (Temp) {
