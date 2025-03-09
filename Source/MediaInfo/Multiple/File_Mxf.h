@@ -243,6 +243,11 @@ protected :
     void OmneonVideoNetworksDescriptiveMetadataLinks();
     void OmneonVideoNetworksDescriptiveMetadataData();
     void OmneonVideoNetworksDescriptiveMetadataItems();
+    void HdrVividMetadataTrackSubDescriptor();
+    void HdrVividDataDefinition();
+    void HdrVividSourceTrackID();
+    void HdrVividSimplePayloadSID();
+    void HdrVividMetadataItem();
     void FFV1PictureSubDescriptor();
     void MGASoundEssenceDescriptor();
     void MGAAudioMetadataSubDescriptor();
@@ -1268,6 +1273,7 @@ protected :
     void           ChooseParser_Ffv1(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_Isxd(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_Phdr(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
+    void           ChooseParser_HdrVivid(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_DolbyVisionFrameData(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_Iab(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_Mga(const essences::iterator& Essence, const descriptors::iterator& Descriptor);

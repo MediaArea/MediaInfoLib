@@ -24,6 +24,7 @@
 #include "MediaInfo/Multiple/File_Mxf.h"
 #include "MediaInfo/Multiple/File_Mxf_Automated.h"
 #include "MediaInfo/Video/File_DolbyVisionMetadata.h"
+#include "MediaInfo/Video/File_HdrVividMetadata.h"
 #include "MediaInfo/Audio/File_DolbyAudioMetadata.h"
 #if defined(MEDIAINFO_DVDIF_YES)
     #include "MediaInfo/Multiple/File_DvDif.h"
@@ -2653,7 +2654,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
     }
     Finish(*Parser);
     StreamKind_Last=Stream_Max;
-    if ((*Parser)->Count_Get(Stream_Video) && (*Parser)->Get(Stream_General, 0, General_Format)!=__T("Dolby Vision Metadata"))
+    if ((*Parser)->Count_Get(Stream_Video) && (*Parser)->Get(Stream_General, 0, General_Format)!=__T("Dolby Vision Metadata") && (*Parser)->Get(Stream_General, 0, General_Format) != __T("HDR Vivid Metadata"))
     {
         Stream_Prepare(Stream_Video);
         if (IsSub)
@@ -3100,7 +3101,8 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
     {
         // TODO: avoid this hack
         const auto& Format = (*Parser)->Retrieve_Const(Stream_General, 0, General_Format);
-        if (Format == __T("Dolby Vision Metadata"))
+        if (Format == __T("Dolby Vision Metadata")
+         || Format == __T("HDR Vivid Metadata"))
         {
             ToMergeLater.push_back(*Parser);
             *Parser = nullptr;
@@ -6776,6 +6778,7 @@ void File_Mxf::Data_Parse()
     GROUP(PHDRMetadataTrackSubDescriptor)
     GROUP(OmneonVideoNetworksDescriptiveMetadataLinks)
     GROUP(OmneonVideoNetworksDescriptiveMetadataData)
+    GROUP(HdrVividMetadataTrackSubDescriptor)
     GROUP(FFV1PictureSubDescriptor)
     GROUP(MGASoundEssenceDescriptor)
     GROUP(MGAAudioMetadataSubDescriptor)
@@ -8051,6 +8054,9 @@ void File_Mxf::MXFGenericStreamDataElementKey_09_01()
     #if 1
         Parsers.push_back(new File_DolbyVisionMetadata);
     #endif
+    #if 1
+        Parsers.push_back(new File_HdrVividMetadata);
+    #endif
     #if defined(MEDIAINFO_ADM_YES)
         Parsers.push_back(new File_Adm);
     #endif
@@ -9150,6 +9156,44 @@ void File_Mxf::OmneonVideoNetworksDescriptiveMetadataItems()
         //Filling
         DMOmneonLinks[InstanceUID].Links.push_back(Data);
     }
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::HdrVividMetadataTrackSubDescriptor()
+{
+    ELEMENT_BEGIN()
+    ELEMENT_MIDDLE()
+    ELEM____UUID_(HdrVividDataDefinition)
+    ELEM____UUID_(HdrVividSourceTrackID)
+    ELEM____UUID_(HdrVividSimplePayloadSID)
+    ELEMENT_END()
+    GenerationInterchangeObject();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::HdrVividDataDefinition()
+{
+    Info_UL(Data,                                               "Data", nullptr); Element_Info1(Ztring().From_UUID(Data));
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::HdrVividSourceTrackID()
+{
+    //Parsing
+    Info_B4(Data,                                               "Data"); Element_Info1(Data);
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::HdrVividSimplePayloadSID()
+{
+    //Parsing
+    Info_B4(Data,                                               "Data"); Element_Info1(Data);
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::HdrVividMetadataItem()
+{
+    Skip_XX(Element_Size,                                       "HDR Vivid data");
 }
 
 //---------------------------------------------------------------------------
@@ -14602,6 +14646,7 @@ void File_Mxf::ChooseParser__FromEssence(const essences::iterator &Essence, cons
     case Essences::FrameWrappedISXDData: ChooseParser_Isxd(Essence, Descriptor); break;
     case Essences::FrameWrappedISXDData2: ChooseParser_Isxd(Essence, Descriptor); break;
     case Essences::PHDRImageMetadataItem: ChooseParser_Phdr(Essence, Descriptor); break;
+    case Essences::HdrVividMetadataItem: ChooseParser_HdrVivid(Essence, Descriptor); break;
     }
 }
 
@@ -15269,6 +15314,25 @@ void File_Mxf::ChooseParser_Phdr(const essences::iterator& Essence, const descri
 
     //Filling
     ChooseParser_DolbyVisionFrameData(Essence, Descriptor);
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::ChooseParser_HdrVivid(const essences::iterator& Essence, const descriptors::iterator& Descriptor)
+{
+    Essence->second.StreamKind = Stream_Other;
+    Essence->second.Infos["MuxingMode_MoreInfo"] = "Contains additional metadata for other tracks";
+
+    //Filling
+    #if 1 // TODO
+        File_HdrVividMetadata* Parser=new File_HdrVividMetadata;
+    #else
+        //Filling
+        File__Analyze* Parser=new File_Unknown();
+        Open_Buffer_Init(Parser);
+        Parser->Stream_Prepare(Stream_Other);
+        Parser->Fill(Stream_Other, 0, Other_Format, "HDR Vivid Metadata");
+    #endif
+    Essence->second.Parsers.push_back(Parser);
 }
 
 //---------------------------------------------------------------------------

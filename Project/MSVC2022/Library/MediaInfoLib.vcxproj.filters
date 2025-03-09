@@ -851,6 +851,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Pac.cpp">
       <Filter>Source Files\Text</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_HdrVividMetadata.cpp">
+      <Filter>Source Files\Video</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1605,6 +1608,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Mxf_Automated.h">
       <Filter>Header Files\Multiple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_HdrVividMetadata.h">
+      <Filter>Header Files\Video</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

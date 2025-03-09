@@ -174,6 +174,9 @@
 #if defined(MEDIAINFO_H263_YES)
     #include "MediaInfo/Video/File_H263.h"
 #endif
+#if defined(MEDIAINFO_MXF_YES)
+    #include "MediaInfo/Video/File_HdrVividMetadata.h"
+#endif
 #if defined(MEDIAINFO_HEVC_YES)
     #include "MediaInfo/Video/File_Hevc.h"
 #endif
@@ -986,6 +989,9 @@ int MediaInfo_Internal::ListFormats(const String &File_Name)
     #endif
     #if defined(MEDIAINFO_AVC_YES)
         delete Info; Info=new File_Avc();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
+    #endif
+    #if defined(MEDIAINFO_MXF_YES)
+        delete Info; Info = new File_HdrVividMetadata(); if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name) > 0) return 1;
     #endif
     #if defined(MEDIAINFO_HEVC_YES)
         delete Info; Info=new File_Hevc();               if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;

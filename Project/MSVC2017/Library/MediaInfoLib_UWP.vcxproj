@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM">
@@ -342,6 +342,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Av1.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_CineForm.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_HdrVividMetadata.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\XmlUtils.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\OutputHelpers.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\ExternalCommandHelpers.cpp" />
@@ -683,6 +684,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Av1.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_CineForm.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_HdrVividMetadata.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\XmlUtils.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\OutputHelpers.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\ExternalCommandHelpers.h" />

@@ -339,6 +339,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Flic.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Fraps.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_H263.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_HdrVividMetadata.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Hevc.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_HuffYuv.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Lagarith.cpp
