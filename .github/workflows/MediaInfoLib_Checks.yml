@@ -7,8 +7,10 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        environement: [gcc, minified, minimal, minimal-with-xml, cmake]
+        environement: [gcc, utf8, minified, minimal, minimal-with-xml, cmake]
         exclude:
+          - os: macos-latest
+            environement: utf8
           - os: macos-latest
             environement: minified
           - os: macos-latest
@@ -60,7 +62,7 @@ jobs:
         run: |
           pushd ../ZenLib/Project/GNU/Library
             autoreconf -if
-            ./configure --enable-silent-rules --enable-static
+            ./configure --enable-silent-rules --enable-static ${{ matrix.environement == 'utf8' && '--disable-unicode' || '' }}
             make
           popd
           cd Project/GNU/Library
