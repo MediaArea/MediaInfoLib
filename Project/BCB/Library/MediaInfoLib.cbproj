@@ -809,6 +809,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_H263.cpp">
             <BuildOrder>108</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_HdrVividMetadata.cpp">
+            <BuildOrder>245</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_Hevc.cpp">
             <BuildOrder>24</BuildOrder>
         </CppCompile>

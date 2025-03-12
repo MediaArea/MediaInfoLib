@@ -245,6 +245,7 @@ HEADERS += \
         ../../Source/MediaInfo/Video/File_Flic.h \
         ../../Source/MediaInfo/Video/File_Fraps.h \
         ../../Source/MediaInfo/Video/File_H263.h \
+        ../../Source/MediaInfo/Video/File_HdrVividMetadata.h \
         ../../Source/MediaInfo/Video/File_Hevc.h \
         ../../Source/MediaInfo/Video/File_HuffYuv.h \
         ../../Source/MediaInfo/Video/File_Lagarith.h \
@@ -485,6 +486,7 @@ SOURCES += \
         ../../Source/MediaInfo/Video/File_Flic.cpp \
         ../../Source/MediaInfo/Video/File_Fraps.cpp \
         ../../Source/MediaInfo/Video/File_H263.cpp \
+        ../../Source/MediaInfo/Video/File_HdrVividMetadata.cpp \
         ../../Source/MediaInfo/Video/File_Hevc.cpp \
         ../../Source/MediaInfo/Video/File_HuffYuv.cpp \
         ../../Source/MediaInfo/Video/File_Lagarith.cpp \
