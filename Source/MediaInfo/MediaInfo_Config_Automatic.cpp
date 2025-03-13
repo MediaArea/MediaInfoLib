@@ -1529,7 +1529,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "SAMI;;;T;Sami;;smi sami;;;Lossless\n"
     "SCC;;;T;SCC;;scc sc2;;;Lossless\n"
     "SubRip;;;T;SubRip;;srt;;http://ffdshow.sourceforge.net/tikiwiki/tiki-index.php?page=Getting+ffdshow;Lossless\n"
-    "TTML;;;T;TTML;Timed Text Markup Language;dfxp ttml;;https://en.wikipedia.org/wiki/Timed_Text_Markup_Language;Lossless\n"
+    "TTML;;;T;TTML;Timed Text Markup Language;dfxp ttml imsc imscr;;https://en.wikipedia.org/wiki/Timed_Text_Markup_Language;Lossless\n"
     "SSA;;;T;Other;;ssa;;http://ffdshow.sourceforge.net/tikiwiki/tiki-index.php?page=Getting+ffdshow;Lossless\n"
     "WebVTT;;;T;WebVTT;;vtt;;;Lossless\n"
     "Blender;;;O;Other;;blenders;;http://www.blender3d.com\n"

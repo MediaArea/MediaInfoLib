@@ -683,7 +683,11 @@ void File_Ttml::Read_Buffer_Continue()
     }
 
     if (!Rosetta_Profile.empty())
-        Fill(Stream_Text, 0, Text_Format_Profile, Rosetta_Profile + (Rosetta_Version.empty()?string():(' '+Rosetta_Version)));
+    {
+        auto Profile = Rosetta_Profile + (Rosetta_Version.empty() ? string() : (' ' + Rosetta_Version));
+        Fill(Stream_General, 0, General_Format_Profile, Profile);
+        Fill(Stream_Text, 0, Text_Format_Profile, Profile);
+    }
 
     #if MEDIAINFO_DEMUX
         Demux(Buffer, Buffer_Size, ContentType_MainStream);
