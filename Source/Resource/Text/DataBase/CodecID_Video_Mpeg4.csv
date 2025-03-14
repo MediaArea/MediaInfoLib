@@ -53,6 +53,7 @@ AVmp;MPEG Video;Avid IMX;;;;Version 2;;;
 AVUI;Avid Meridien Uncompressed;;;;;;
 avr ;JPEG;;;;;;;
 AVrp;RGB;Avid;;;;;RGB;
+avs3;AVS3 Video;;;;;;;
 b16g;Gray;;;;;;Y;16
 b32a;Gray/Alpha;;;;;;YA;16:16
 b48r;RGB;;;;;;RGB;16:16:16

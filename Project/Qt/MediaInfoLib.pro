@@ -239,6 +239,7 @@ HEADERS += \
         ../../Source/MediaInfo/Video/File_Aic.h \
         ../../Source/MediaInfo/Video/File_Avc.h \
         ../../Source/MediaInfo/Video/File_AvsV.h \
+        ../../Source/MediaInfo/Video/File_Avs3V.h \
         ../../Source/MediaInfo/Video/File_Canopus.h \
         ../../Source/MediaInfo/Video/File_Dirac.h \
         ../../Source/MediaInfo/Video/File_Ffv1.h \
@@ -478,6 +479,7 @@ SOURCES += \
         ../../Source/MediaInfo/Video/File_Avc.cpp \
         ../../Source/MediaInfo/Video/File_Avc_Duplicate.cpp \
         ../../Source/MediaInfo/Video/File_AvsV.cpp \
+        ../../Source/MediaInfo/Video/File_Avs3V.cpp \
         ../../Source/MediaInfo/Video/File_Canopus.cpp \
         ../../Source/MediaInfo/Video/File_CineForm.cpp \
         ../../Source/MediaInfo/Video/File_Dirac.cpp \
