@@ -47,3 +47,5 @@ MediaInfoLib.VC.db
 *.VC.db-shm
 *.VC.db-wal
 
+# Visual Studio 2015+ cache/options directory
+.vs/
