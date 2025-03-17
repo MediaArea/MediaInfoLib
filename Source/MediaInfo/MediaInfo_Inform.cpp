@@ -55,7 +55,9 @@
 //---------------------------------------------------------------------------
 #include <ctime>
 #include <regex>
+#if !defined(UNICODE) && !defined(_UNICODE)
 #include <codecvt>
+#endif
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
