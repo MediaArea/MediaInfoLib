@@ -3207,10 +3207,32 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
     }
     if (StreamPos_Last==(size_t)-1)
     {
-        if (Descriptors.size()==1)
+        auto NotSubDescriptorCount=Descriptors.size();
+        auto NotSubDescriptorID=Descriptor->first;
+        for (const auto& SearchedDescriptor : Descriptors)
+        {
+            if (Locators.empty() && Descriptor->second.StreamKind!=Stream_Max && SearchedDescriptor.second.StreamKind!=Descriptor->second.StreamKind)
+            {
+                NotSubDescriptorCount--;
+                continue;
+            }
+            auto IsSubDescriptor=false;
+            for (const auto& SearchingDescriptor : Descriptors)
+                for (const auto& SearchingDescriptor_SubID : SearchingDescriptor.second.SubDescriptors)
+                    if (SearchedDescriptor.first==SearchingDescriptor_SubID)
+                        IsSubDescriptor=true;
+            NotSubDescriptorCount-=IsSubDescriptor;
+            if (!IsSubDescriptor)
+                NotSubDescriptorID=SearchedDescriptor.first;
+        }
+        if (NotSubDescriptorCount==1 && NotSubDescriptorID==Descriptor->first)
         {
             if (Count_Get(Descriptor->second.StreamKind)==0)
+            {
                 Stream_Prepare(Descriptor->second.StreamKind);
+                if (Descriptor->second.LinkedTrackID!=(int32u)-1)
+                    Fill(StreamKind_Last, StreamPos_Last, General_ID, Descriptor->second.LinkedTrackID);
+            }
             else
                 StreamPos_Last=0;
         }
