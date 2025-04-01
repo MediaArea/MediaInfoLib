@@ -3542,6 +3542,7 @@ void File__Analyze::DisplayAspectRatio_Fill(const Ztring &Value, stream_t Stream
     else if (DAR>=(float)2.30 && DAR<(float)2.37)   DARS=__T("2.35:1");
     else if (DAR>=(float)2.37 && DAR<(float)2.395)  DARS=__T("2.39:1");
     else if (DAR>=(float)2.395 && DAR<(float)2.45)  DARS=__T("2.40:1");
+    else if (DAR>=(float)0.54 && DAR<(float)0.58)   DARS=__T("9:16");
     else                                            DARS.From_Number(DAR);
       DARS.FindAndReplace(__T("."), MediaInfoLib::Config.Language_Get(__T("  Config_Text_FloatSeparator")));
     if (MediaInfoLib::Config.Language_Get(__T("  Language_ISO639"))==__T("fr") &&   DARS.find(__T(":1"))==string::npos)
