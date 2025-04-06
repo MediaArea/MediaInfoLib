@@ -101,7 +101,12 @@ namespace Http
             CutHead (Host,  User,       "@"     );
             CutTail (Host,  Path,       "/"     );
             CutTail (User,  Password,   ":"     );
-            CutTail (Host,  Port,       ":"     );
+            if (Host.find("]")!=(size_t)-1) {
+                CutTail (Host,  Port,       "]:"    );
+                if (Host.find("]")==(size_t)-1) Host += "]";
+            }
+            else
+                CutTail (Host,  Port,       ":"     );
             if (User.find('/')!=(size_t)-1 && Password.empty() && Path.empty())
             {
                 // Something was weird, trying another method
@@ -112,7 +117,12 @@ namespace Http
                 CutTail (Host,  Path,       "/"     );
                 CutHead (Host,  User,       "@"     );
                 CutTail (User,  Password,   ":"     );
-                CutTail (Host,  Port,       ":"     );
+                if (Host.find("]")!=(size_t)-1) {
+                    CutTail (Host,  Port,       "]:"    );
+                    if (Host.find("]")==(size_t)-1) Host += "]";
+                }
+                else
+                    CutTail (Host,  Port,       ":"     );
                 if (Port.find_first_not_of("0123456789")!=(size_t)-1)
                 {
                     // Format not understood, putting all in Protocol
