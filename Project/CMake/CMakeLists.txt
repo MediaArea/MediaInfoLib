@@ -109,6 +109,7 @@ set(MediaInfoLib_PUBLIC_HDRS
 set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/md5/md5.c
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/aes_modes.c
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/aes_ni.c
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/aescrypt.c
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/aeskey.c
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/aestab.c
