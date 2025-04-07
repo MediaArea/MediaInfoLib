@@ -508,6 +508,7 @@ SOURCES += \
 
 SOURCES += \
         ../../Source/ThirdParty/aes-gladman/aes_modes.c \
+        ../../Source/ThirdParty/aes-gladman/aes_ni.c \
         ../../Source/ThirdParty/aes-gladman/aescrypt.c \
         ../../Source/ThirdParty/aes-gladman/aeskey.c \
         ../../Source/ThirdParty/aes-gladman/aestab.c \
