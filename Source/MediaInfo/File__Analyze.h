@@ -598,10 +598,12 @@ public :
     void Get_B2   (int16u  &Info, const char* Name);
     void Get_B3   (int32u  &Info, const char* Name);
     void Get_B4   (int32u  &Info, const char* Name);
+    void Get_B4S  (int32s  &Info, const char* Name);
     void Get_B5   (int64u  &Info, const char* Name);
     void Get_B6   (int64u  &Info, const char* Name);
     void Get_B7   (int64u  &Info, const char* Name);
     void Get_B8   (int64u  &Info, const char* Name);
+    void Get_B8S  (int64s  &Info, const char* Name);
     void Get_B16  (int128u &Info, const char* Name);
     void Get_BF2  (float32 &Info, const char* Name);
     void Get_BF4  (float32 &Info, const char* Name);
