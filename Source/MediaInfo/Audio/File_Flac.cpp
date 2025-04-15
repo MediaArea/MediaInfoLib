@@ -225,8 +225,6 @@ void File_Flac::STREAMINFO()
             return;
         File__Tags_Helper::Accept("FLAC");
 
-        File__Tags_Helper::Streams_Fill();
-
         File__Tags_Helper::Stream_Prepare(Stream_Audio);
         Fill(Stream_Audio, 0, Audio_Format, "FLAC");
         Fill(Stream_Audio, 0, Audio_Codec, "FLAC");
@@ -244,6 +242,8 @@ void File_Flac::STREAMINFO()
         while (MD5_PerItem.size()<32)
             MD5_PerItem.insert(MD5_PerItem.begin(), '0'); //Padding with 0, this must be a 32-byte string
         Fill(Stream_Audio, 0, "MD5_Unencoded", MD5_PerItem);
+
+        File__Tags_Helper::Streams_Fill();
     FILLING_END();
 }
 
