@@ -3353,6 +3353,39 @@ void File_Mpeg4::AddCodecConfigurationBoxInfo()
 }
 
 //---------------------------------------------------------------------------
+void File_Mpeg4::Loop_CheckValue(int32u& Value, int64u RemainingSize, int8u MinBlockSize, const char* Name)
+{
+    if (!MinBlockSize)
+    {
+        Value = 0; // Avoiding loop when there is no data
+        return;
+    }
+    auto MaxSize = RemainingSize / MinBlockSize;
+    if (Value > MaxSize) {
+        Ztring FullName;
+        for (size_t i = 1; i <= Element_Level; i++) {
+            FullName += Ztring().From_CC4(Element[i].Code);
+            FullName += __T(' ');
+        }
+
+        Fill_Conformance((FullName.To_UTF8() + Name).c_str(), "Value " + std::to_string(Value) + " is bigger than what the box can contain " + std::to_string(MaxSize));
+        Value = MaxSize;
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::Loop_CheckValue(int32u& Value, int8u MinBlockSize, const char* Name)
+{
+    Loop_CheckValue(Value, Element_Size > Element_Offset ? (Element_Size - Element_Offset) : 0, MinBlockSize, Name);
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::Loop_CheckValue_BS(int32u& Value, int8u MinBlockSize, const char* Name)
+{
+    Loop_CheckValue(Value, Data_BS_Remain(), MinBlockSize, Name);
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg4::IsParsing_mdat_Set()
 {
     IsParsing_mdat=true;

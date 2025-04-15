@@ -419,6 +419,13 @@ private :
     void Descriptors();
     void TimeCode_Associate(int32u TrackID);
     void AddCodecConfigurationBoxInfo();
+    void Loop_CheckValue(int32u& Value, int64u RemainingSize, int8u MinBlockSize, const char* Name);
+    void Loop_CheckValue(int32u& Value, int8u MinBlockSize, const char* Name);
+    void Loop_CheckValue(int16u& Value, int8u MinBlockSize, const char* Name) { int32u Value2 = Value; Loop_CheckValue(Value2, MinBlockSize, Name); Value = Value2; }
+    void Loop_CheckValue(int8u& Value, int8u MinBlockSize, const char* Name) { int32u Value2 = Value; Loop_CheckValue(Value2, MinBlockSize, Name); Value = Value2; }
+    void Loop_CheckValue_BS(int32u& Value, int8u MinBlockSize, const char* Name);
+    void Loop_CheckValue_BS(int16u& Value, int8u MinBlockSize, const char* Name) { int32u Value2 = Value; Loop_CheckValue_BS(Value2, MinBlockSize, Name); Value = Value2; }
+    void Loop_CheckValue_BS(int8u& Value, int8u MinBlockSize, const char* Name) { int32u Value2 = Value; Loop_CheckValue_BS(Value2, MinBlockSize, Name); Value = Value2; }
 
     //Temp
     bool List;
