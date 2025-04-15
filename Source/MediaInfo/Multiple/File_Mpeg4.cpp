@@ -161,6 +161,7 @@ namespace Elements
     const int64u moov_trak_mdia_hdlr_alis=0x616C6973;
     const int64u moov_trak_mdia_hdlr_hint=0x68696E74;
     const int64u skip=0x736B6970;
+    const int64u uuid=0x75756964;
     const int64u wide=0x77696465;
 }
 
@@ -2211,6 +2212,8 @@ void File_Mpeg4::Header_Parse()
         Name=0x6D6F6F76; //moov
     if (Name==0x61766964) //avid
         Name=0x6D646174; //mdat
+    if (Name==Elements::uuid)
+        Get_UUID(Name_UUID,                                     "Name");
 
     if (Size<8)
     {
@@ -2248,7 +2251,7 @@ void File_Mpeg4::Header_Parse()
     }
 
     //Filling
-    Header_Fill_Code(Name, Ztring().From_CC4(Name));
+    Header_Fill_Code(Name, Name==Elements::uuid?Ztring().From_UUID(Name_UUID):Ztring().From_CC4(Name));
     Header_Fill_Size(Size);
 
     if (Name==0x6D6F6F76 && Buffer_Offset+Size>Buffer_Size-Buffer_Offset) //moov
@@ -3350,6 +3353,39 @@ void File_Mpeg4::AddCodecConfigurationBoxInfo()
     if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
         return;
     Streams[moov_trak_tkhd_TrackID].CodecConfigurationBoxInfo.push_back((int32u)Element_Code);
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::Loop_CheckValue(int32u& Value, int64u RemainingSize, int8u MinBlockSize, const char* Name)
+{
+    if (!MinBlockSize)
+    {
+        Value = 0; // Avoiding loop when there is no data
+        return;
+    }
+    auto MaxSize = RemainingSize / MinBlockSize;
+    if (Value > MaxSize) {
+        Ztring FullName;
+        for (size_t i = 1; i <= Element_Level; i++) {
+            FullName += Ztring().From_CC4(Element[i].Code);
+            FullName += __T(' ');
+        }
+
+        Fill_Conformance((FullName.To_UTF8() + Name).c_str(), "Value " + std::to_string(Value) + " is bigger than what the box can contain " + std::to_string(MaxSize));
+        Value = MaxSize;
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::Loop_CheckValue(int32u& Value, int8u MinBlockSize, const char* Name)
+{
+    Loop_CheckValue(Value, Element_Size > Element_Offset ? (Element_Size - Element_Offset) : 0, MinBlockSize, Name);
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::Loop_CheckValue_BS(int32u& Value, int8u MinBlockSize, const char* Name)
+{
+    Loop_CheckValue(Value, Data_BS_Remain(), MinBlockSize, Name);
 }
 
 //---------------------------------------------------------------------------

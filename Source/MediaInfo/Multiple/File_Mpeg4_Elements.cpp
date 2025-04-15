@@ -2404,6 +2404,7 @@ void File_Mpeg4::meta_grpl_xxxx()
     int32u num_entities_in_group;
     Skip_B4(                                                    "group_id");
     Get_B4 (num_entities_in_group,                              "num_entities_in_group");
+    Loop_CheckValue(num_entities_in_group, 4, "num_entities_in_group");
     for (int16u i=0; i<num_entities_in_group; i++)
         Skip_B4(                                                "entity_id");
 }
@@ -2520,6 +2521,7 @@ void File_Mpeg4::meta_iloc()
     length_size*=8;
     base_offset_size*=8;
     index_size*=8;
+    Loop_CheckValue(item_count, 6, "item_count");
     for (int16u i=0; i<item_count; i++)
     {
         Element_Begin1("item");
@@ -2534,6 +2536,7 @@ void File_Mpeg4::meta_iloc()
         if (base_offset_size)
             Skip_BS(base_offset_size,                           "base_offset");
         Get_S2 (16, extent_count,                               "extent_count");
+        Loop_CheckValue_BS(extent_count, index_size + offset_size + length_size, "extent_count");
         for (int16u j=0; j< extent_count; j++)
         {
             Element_Begin1("extent");
@@ -2760,6 +2763,7 @@ void File_Mpeg4::meta_iprp_ipco_pixi()
     Get_B1 (num_channels,                                       "num_channels");
 
     set<int8u> bits_per_channel_List;
+    Loop_CheckValue(num_channels, 1, "num_channels");
     for (int8u Pos=0; Pos<num_channels; Pos++)
     {
         int8u bits_per_channel;
@@ -2794,6 +2798,7 @@ void File_Mpeg4::meta_iprp_ipma()
     int32u entry_count;
     Get_B4 (entry_count,                                        "entry-count");
 
+    Loop_CheckValue(entry_count, 2, "entry-count");
     for (int32u Pos=0; Pos<entry_count; Pos++)
     {
         Element_Begin1("entry");
@@ -2808,6 +2813,7 @@ void File_Mpeg4::meta_iprp_ipma()
         else
             Get_B4 (item_ID,                                    "item_ID");
         Get_B1 (association_count,                              "association_count");
+        Loop_CheckValue(association_count, 1 + (Flags & 1), "association_count");
         for (int8u j=0; j<association_count; j++)
         {
             Element_Begin1("association");
@@ -2900,6 +2906,7 @@ void File_Mpeg4::meta_iref_xxxx()
     int16u ref_count;
     Get_B4_DEPENDOFVERSION(1, from_item_ID,                     "from_item_ID");
     Get_B2 (ref_count,                                          "ref_count");
+    Loop_CheckValue(ref_count, Version < 1 ? 2 : 4, "ref_count");
     for (int16u i=0; i<ref_count; i++)
     {
         int32u to_item_ID;
@@ -3198,6 +3205,7 @@ void File_Mpeg4::moof_traf_trun()
         else
             first_sample_is_non_sync_sample_PresenceAndValue=0;
     #endif
+    Loop_CheckValue(sample_count, 4 * (sample_duration_present + sample_size_present + sample_flags_present + sample_composition_time_offset_present), "sample_count");
     for (int32u Pos=0; Pos<sample_count; Pos++)
     {
         Element_Begin1("sample");
@@ -3434,6 +3442,7 @@ void File_Mpeg4::moov_ctab()
     Skip_B4(                                                    "Color table seed");
     Skip_B2(                                                    "Color table flags");
     Get_B2 (Size,                                               "Color table size");
+    Loop_CheckValue(Size, 8, "Color_table_size");
     for (int16u Pos=0; Pos<=Size; Pos++)
     {
         Skip_B2(                                                "Zero");
@@ -4235,6 +4244,7 @@ void File_Mpeg4::moov_trak_edts_elst()
     int32u Count;
     Get_B4 (Count,                                              "Number of entries");
     auto& Stream=Streams[moov_trak_tkhd_TrackID];
+    Loop_CheckValue(Count, 8, "entry_count");
     for (int32u Pos=0; Pos<Count; Pos++)
     {
         stream::edts_struct edts;
@@ -5054,6 +5064,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_co64()
     stco.resize((Count<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode || Streams[moov_trak_tkhd_TrackID].IsCaption)?Count:FrameCount_MaxPerStream);
     int64u* stco_Data=&stco[0];
 
+    Loop_CheckValue(Count, 8, "entry_count");
     for (int32u Pos=0; Pos<Count; Pos++)
     {
         //Too much slow
@@ -5137,6 +5148,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_sbgp()
         Streams[moov_trak_tkhd_TrackID].sbgp_IsPresent=true;
         auto& sbgp=Stream.sbgp;
     #endif
+    Loop_CheckValue(Count, 8, "entry_count");
     for (int32u Pos=0; Pos<Count; Pos++)
     {
         Element_Begin1("sample");
@@ -5177,6 +5189,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_sgpd()
         Skip_XX(Element_Size-Element_Offset,                    "Unknown");
         return;
     }
+    Loop_CheckValue(Count, 1, "entry_count");
     for (int32u Pos=0; Pos<Count; Pos++)
     {
         int32u description_length;
@@ -5228,6 +5241,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stco()
 
     int32u Count, Offset;
     Get_B4 (Count,                                              "Number of entries");
+    Loop_CheckValue(Count, 4, "entry_count");
     for (int32u Pos=0; Pos<Count; Pos++)
     {
         //Too much slow
@@ -5255,6 +5269,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stdp()
     int32u sample_count;
     Get_B4 (sample_count,                                       "sample-count");
 
+    Loop_CheckValue(sample_count, 2, "sample-count");
     for (int32u Pos=0; Pos<sample_count; Pos++)
     {
         Skip_B2(                                                "priority");
@@ -5272,6 +5287,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stps()
 
     int32u Offset=1; //By default, begin at 1
     bool stss_PreviouslyEmpty=Streams[moov_trak_tkhd_TrackID].stss.empty();
+    Loop_CheckValue(sample_count, 4, "sample-count");
     for (int32u Pos=0; Pos<sample_count; Pos++)
     {
         int32u sample_number;
@@ -5310,6 +5326,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsc()
     int32u Count;
     stream::stsc_struct Stsc;
     Get_B4 (Count,                                              "Number of entries");
+    Loop_CheckValue(Count, 12, "entry_count");
     for (int32u Pos=0; Pos<Count; Pos++)
     {
         //Too much slow
@@ -5717,6 +5734,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tx3g_ftab()
     int16u entry_count;
     Get_B2 (entry_count,                                        "entry-count");
 
+    Loop_CheckValue(entry_count, 3, "entry_count");
     for (int16u Pos=0; Pos<entry_count; Pos++)
     {
         int8u FontName_Length;
@@ -6380,6 +6398,10 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
         Get_B4 (ColorStart,                                     "Color Start");
         Skip_B2(                                                "Color Count");
         Get_B2 (ColorEnd,                                       "Color End");
+        int16u Count = 0;
+        if (ColorStart <= ColorEnd)
+            Count = ((int32u)ColorEnd) - ColorStart + 1;
+        Loop_CheckValue(Count, 8, "Color_End");
         for (int32u Color=ColorStart; Color<=ColorEnd; Color++)
         {
             Skip_B2(                                            "Alpha");
@@ -6787,6 +6809,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_AALP()
     Skip_C4(                                                    "Tag");
     Skip_C4(                                                    "Version");
     Get_B4 (NumberOfTypes,                                      "Number of types");
+    Loop_CheckValue(NumberOfTypes, 4, "Number_of_types");
     for (int32u i=0; i<NumberOfTypes; i++)
         Skip_C4(                                                "Encoding type");
 }
@@ -7069,6 +7092,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_chan()
     Get_B4 (NumberChannelDescriptions,                          "NumberChannelDescriptions");
     //if (ChannelLayoutTag==0) //UseChannelDescriptions
     {
+        Loop_CheckValue(NumberChannelDescriptions, 20, "NumberChannelDescriptions");
         for (int32u Pos=0; Pos<NumberChannelDescriptions; Pos++)
         {
             Element_Begin1("ChannelDescription");
@@ -7171,6 +7195,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_chnl()
         Get_B1 (definedLayout,                                  "definedLayout"); Param_Info1C(!definedLayout, Aac_ChannelLayout_GetString(definedLayout));
         if (!definedLayout)
         {
+            Loop_CheckValue(channelcount, 1, "channelcount");
             for (int16u i=0; i<channelcount; i++)
             {
                 int8u speaker_position;
@@ -8209,6 +8234,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D()
     Skip_B1(                                                    "ambisonic_channel_ordering");
     Skip_B1(                                                    "ambisonic_normalization");
     Get_B4 (num_channels,                                       "num_channels");
+    Loop_CheckValue(num_channels, 1, "num_channels");
     for (int32u i=0; i<num_channels; i++)
     {
         Skip_B1(                                                "channel_map");
@@ -8322,6 +8348,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_udts()
     Get_S1 ( 3, StreamIndex,                                    "StreamIndex");
     Get_SB (    ExpansionBoxPresent,                            "ExpansionBoxPresent");
     Element_Begin1("IDTagPresent[NumPresentations]");
+        Loop_CheckValue_BS(NumPresentationsCode, 1, "NumPresentationsCode");
         for (size_t i = 0; i <= NumPresentationsCode; i++)
         {
             bool IDTagPresent;
@@ -8614,6 +8641,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsh()
     int32u entry_count;
     Get_B4 (entry_count,                                        "entry-count");
 
+    Loop_CheckValue(entry_count, 8, "entry_count");
     for (int32u Pos=0; Pos<entry_count; Pos++)
     {
         Skip_B4(                                                "shadowed-sample-number");
@@ -8637,6 +8665,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stss()
 
     int32u Offset=1; //By default, begin at 1
     bool stss_PreviouslyEmpty=Streams[moov_trak_tkhd_TrackID].stss.empty();
+    Loop_CheckValue(entry_count, 4, "entry-count");
     for (int32u Pos=0; Pos<entry_count; Pos++)
     {
         int32u sample_number;
@@ -8739,6 +8768,18 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsz()
         if (FieldSize==4)
             BS_Begin(); //Too much slow
         */
+        auto FieldSize_Count=FieldSize/8;
+        auto FieldSize_Rest=FieldSize%8;
+        if (FieldSize_Rest)
+        {
+            BS_Begin();
+            Loop_CheckValue_BS(Sample_Count, FieldSize, "entry_count");
+            BS_End();
+        }
+        else
+        {
+            Loop_CheckValue(Sample_Count, FieldSize_Count, "entry_count");
+        }
         for (int32u Pos=0; Pos<Sample_Count; Pos++)
         {
             //Too much slow
@@ -8813,6 +8854,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stts()
         Streams[moov_trak_tkhd_TrackID].stts_Durations.clear();
     #endif //MEDIAINFO_DEMUX
 
+    Loop_CheckValue(NumberOfEntries, 8, "entry_count");
     for (int32u Pos=0; Pos<NumberOfEntries; Pos++)
     {
         int32u SampleCount, SampleDuration;
@@ -8888,12 +8930,14 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_subs()
     int32u entry_count;
     Get_B4(entry_count,                                         "entry_count");
 
+    Loop_CheckValue(entry_count, 6, "entry_count");
     for (int32u i=0; i<entry_count; i++)
     {
         int32u sample_delta;
         int16u subsample_count;
         Get_B4(sample_delta,                                    "sample_delta");
         Get_B2(subsample_count,                                 "subsample_count");
+        Loop_CheckValue(subsample_count, 6 + (Version < 1 ? 2 : 4), "subsample_count");
         for (int32u j=0; j<subsample_count; j++)
         {
             Element_Begin1("subsample");
@@ -9778,9 +9822,7 @@ void File_Mpeg4::moov_udta_meta_ilst_xxxx_name()
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_udta_meta_uuid()
 {
-    int128u uuid;
-    Get_UUID(uuid,                                              "uuid");
-    if (uuid.hi == 0x7C92A0DB249B5CA3LL && uuid.lo == 0x900807802D903119LL) // AtomicParsley imdb
+    if (Name_UUID.hi == 0x7C92A0DB249B5CA3LL && Name_UUID.lo == 0x900807802D903119LL) // AtomicParsley imdb
     {
         int32u FourCC;
         Get_B4(FourCC,                                          "4CC");
@@ -10575,6 +10617,7 @@ void File_Mpeg4::sidx()
     Skip_B2(                                                    "reserved");
     int16u reference_counts;
     Get_B2 (reference_counts,                                   "reference_counts");
+    Loop_CheckValue(reference_counts, 12, "reference_counts");
     BS_Begin();
     for (int32u Pos=0; Pos<reference_counts; Pos++)
     {
