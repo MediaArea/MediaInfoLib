@@ -161,6 +161,7 @@ namespace Elements
     const int64u moov_trak_mdia_hdlr_alis=0x616C6973;
     const int64u moov_trak_mdia_hdlr_hint=0x68696E74;
     const int64u skip=0x736B6970;
+    const int64u uuid=0x75756964;
     const int64u wide=0x77696465;
 }
 
@@ -2211,6 +2212,8 @@ void File_Mpeg4::Header_Parse()
         Name=0x6D6F6F76; //moov
     if (Name==0x61766964) //avid
         Name=0x6D646174; //mdat
+    if (Name==Elements::uuid)
+        Get_UUID(Name_UUID,                                     "Name");
 
     if (Size<8)
     {
@@ -2248,7 +2251,7 @@ void File_Mpeg4::Header_Parse()
     }
 
     //Filling
-    Header_Fill_Code(Name, Ztring().From_CC4(Name));
+    Header_Fill_Code(Name, Name==Elements::uuid?Ztring().From_UUID(Name_UUID):Ztring().From_CC4(Name));
     Header_Fill_Size(Size);
 
     if (Name==0x6D6F6F76 && Buffer_Offset+Size>Buffer_Size-Buffer_Offset) //moov

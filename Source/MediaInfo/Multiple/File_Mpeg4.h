@@ -428,6 +428,7 @@ private :
     void Loop_CheckValue_BS(int8u& Value, int8u MinBlockSize, const char* Name) { int32u Value2 = Value; Loop_CheckValue_BS(Value2, MinBlockSize, Name); Value = Value2; }
 
     //Temp
+    int128u                                 Name_UUID;
     bool List;
     bool                                    mdat_MustParse;
     int32u                                  moov_cmov_dcom_Compressor;

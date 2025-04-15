@@ -9822,9 +9822,7 @@ void File_Mpeg4::moov_udta_meta_ilst_xxxx_name()
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_udta_meta_uuid()
 {
-    int128u uuid;
-    Get_UUID(uuid,                                              "uuid");
-    if (uuid.hi == 0x7C92A0DB249B5CA3LL && uuid.lo == 0x900807802D903119LL) // AtomicParsley imdb
+    if (Name_UUID.hi == 0x7C92A0DB249B5CA3LL && Name_UUID.lo == 0x900807802D903119LL) // AtomicParsley imdb
     {
         int32u FourCC;
         Get_B4(FourCC,                                          "4CC");
