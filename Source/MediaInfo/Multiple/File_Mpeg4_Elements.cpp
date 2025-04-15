@@ -3991,6 +3991,8 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         Fill(Stream_General, 0, General_Description, Value, true);
                     else if (Parameter == "com.apple.quicktime.creationdate")
                         Fill(Stream_General, 0, General_Recorded_Date, Value);
+                    else if (Parameter == "com.apple.quicktime.location.ISO6709")
+                        Fill(Stream_General, 0, General_Recorded_Location, Value);
                     else if (Parameter == "com.apple.quicktime.make")
                         Fill(Stream_General, 0, General_Encoded_Hardware_CompanyName, Value);
                     else if (Parameter == "com.apple.quicktime.model")
