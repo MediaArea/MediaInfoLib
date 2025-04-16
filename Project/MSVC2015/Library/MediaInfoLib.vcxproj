@@ -312,6 +312,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Png.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Rle.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Tiff.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_WebP.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Bdmv.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Cdxa.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Dpg.cpp" />

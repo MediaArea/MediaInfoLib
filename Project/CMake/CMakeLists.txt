@@ -235,6 +235,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Rle.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Tiff.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Tga.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_WebP.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File__ReferenceFilesHelper.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File__ReferenceFilesHelper_Resource.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File__ReferenceFilesHelper_Sequence.cpp
