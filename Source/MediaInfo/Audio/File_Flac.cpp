@@ -318,6 +318,7 @@ void File_Flac::PICTURE()
     {
         File__Analyze::Stream_Prepare(Stream_Image);
         Merge(MI, Stream_Image, 0, StreamPos_Last);
+        Fill(Stream_Image, StreamPos_Last, Image_MuxingMode, "FLAC Picture");
     }
     #if MEDIAINFO_ADVANCED
         if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64))

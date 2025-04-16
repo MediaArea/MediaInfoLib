@@ -39,6 +39,7 @@ Format_Settings;;;Y NT;;;Settings used and required by decoder
 Format_Settings_Endianness;;;N YTY;;;Order of bytes required for decoding. Options are Big/Little
 Format_Settings_Packing;;;N YTY;;;Data packing method used in DPX frames (e.g. Packed, Filled A, Filled B)
 Format_Settings_Wrapping;;;Y YTY;;;Wrapping mode set for format (e.g. Frame, Clip)
+MuxingMode;;;Y YTY;;;How this file is muxed in the container (e.g. Muxed in Video #1)
 InternetMediaType;;;N YT;;;Internet Media Type (aka MIME Type, Content-Type)
 CodecID;;;Y YTY;;;Codec identifier as indicated by the container
 CodecID/String;;;Y NT;;;Codec identifier, as indicated by the container
