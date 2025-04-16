@@ -957,6 +957,9 @@
 #if !defined(MEDIAINFO_IMAGE_NO) && !defined(MEDIAINFO_TGA_NO) && !defined(MEDIAINFO_TGA_YES)
     #define MEDIAINFO_TGA_YES
 #endif
+#if !defined(MEDIAINFO_IMAGE_NO) && !defined(MEDIAINFO_WEBP_NO) && !defined(MEDIAINFO_WEBP_YES)
+    #define MEDIAINFO_WEBP_YES
+#endif
 
 //---------------------------------------------------------------------------
 // Archive

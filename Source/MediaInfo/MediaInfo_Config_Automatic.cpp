@@ -1538,6 +1538,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "PlayLater Video;;;V;Other;;;;http://www.playon.tv/playlater\n"
     "WTV;;;M;WTV;Windows Recorded TV Show;wtv;video/wtv\n"
     "VVC;;;V;Vvc;Versatile Video Coding;vvc h266 266;video/H266\n"
+    "WebP;;;I;WebP;;webp;image/webp\n"
     ));
     Info.Separator_Set(0, ZenLib::EOL);
 }
