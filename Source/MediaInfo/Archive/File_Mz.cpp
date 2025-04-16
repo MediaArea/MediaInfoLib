@@ -43,6 +43,7 @@ struct mz_machine_data
 mz_machine_data Mz_Machine_Data[] =
 {
     { 0x0000, "" },
+    { 0x014C, "Intel i386" },
     { 0x014D, "Intel i860" },
     { 0x0162, "MIPS R3000" },
     { 0x0166, "MIPS R4000" },
@@ -80,7 +81,7 @@ string Mz_Machine(int16u Machine)
     for (const auto& Item : Mz_Machine_Data)
         if (Item.ID == Machine)
             return Item.Name;
-    return "0x" + Ztring::ToZtring(Machine, 16).To_UTF8();
+    return "0x" + Ztring().From_CC2(Machine).To_UTF8();
 }
 
 //***************************************************************************
