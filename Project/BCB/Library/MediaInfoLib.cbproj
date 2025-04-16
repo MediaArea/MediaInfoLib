@@ -441,6 +441,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Image\File_Tiff.cpp">
             <BuildOrder>177</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Image\File_WebP.cpp">
+            <BuildOrder>240</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\MediaInfo.cpp">
             <DependentOn>..\..\..\Source\MediaInfo\MediaInfo.h</DependentOn>
             <BuildOrder>192</BuildOrder>
