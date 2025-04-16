@@ -986,6 +986,7 @@ void File_Id3v2::APIC()
     {
         Stream_Prepare(Stream_Image);
         Merge(MI, Stream_Image, 0, StreamPos_Last);
+        Fill(Stream_Image, 0, Image_MuxingMode, "ID3v2 APIC");
     }
     #if MEDIAINFO_ADVANCED
         if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64))

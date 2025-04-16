@@ -21,6 +21,7 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
+#include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/Audio/File_Flac.h"
 #include "MediaInfo/Tag/File_VorbisCom.h"
 #include "ThirdParty/base64/base64.h"
@@ -308,6 +309,17 @@ void File_Flac::PICTURE()
     Fill(Stream_General, 0, General_Cover_Description, Description);
     Fill(Stream_General, 0, General_Cover_Type, Id3v2_PictureType((int8u)PictureType));
     Fill(Stream_General, 0, General_Cover_Mime, MimeType);
+    MediaInfo_Internal MI;
+    Ztring Demux_Save = MI.Option(__T("Demux_Get"), __T(""));
+    MI.Option(__T("Demux"), Ztring());
+    size_t MiOpenResult = MI.Open(Buffer + (size_t)(Buffer_Offset + Element_Offset), (size_t)(Element_Size - Element_Offset), nullptr, 0, (size_t)(Element_Size - Element_Offset));
+    MI.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
+    if (MI.Count_Get(Stream_Image))
+    {
+        File__Analyze::Stream_Prepare(Stream_Image);
+        Merge(MI, Stream_Image, 0, StreamPos_Last);
+        Fill(Stream_Image, StreamPos_Last, Image_MuxingMode, "FLAC Picture");
+    }
     #if MEDIAINFO_ADVANCED
         if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64))
         {
