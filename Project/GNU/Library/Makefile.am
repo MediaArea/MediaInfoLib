@@ -67,6 +67,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Audio/File_DolbyE.cpp \
                        ../../../Source/MediaInfo/Audio/File_ExtendedModule.cpp \
                        ../../../Source/MediaInfo/Audio/File_Flac.cpp \
+                       ../../../Source/MediaInfo/Audio/File_Iamf.cpp \
                        ../../../Source/MediaInfo/Audio/File_Iab.cpp \
                        ../../../Source/MediaInfo/Audio/File_ImpulseTracker.cpp \
                        ../../../Source/MediaInfo/Audio/File_La.cpp \

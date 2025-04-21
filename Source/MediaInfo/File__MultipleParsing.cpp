@@ -239,6 +239,9 @@
 #if defined(MEDIAINFO_FLAC_YES)
     #include "MediaInfo/Audio/File_Flac.h"
 #endif
+#if defined(MEDIAINFO_IAMF_YES)
+    #include "MediaInfo/Audio/File_Iamf.h"
+#endif
 #if defined(MEDIAINFO_IT_YES)
     #include "MediaInfo/Audio/File_ImpulseTracker.h"
 #endif

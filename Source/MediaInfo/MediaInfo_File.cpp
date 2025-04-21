@@ -255,6 +255,9 @@
 #if defined(MEDIAINFO_FLAC_YES)
     #include "MediaInfo/Audio/File_Flac.h"
 #endif
+#if defined(MEDIAINFO_IAMF_YES)
+    #include "MediaInfo/Audio/File_Iamf.h"
+#endif
 #if defined(MEDIAINFO_IT_YES)
     #include "MediaInfo/Audio/File_ImpulseTracker.h"
 #endif
@@ -676,6 +679,9 @@ static File__Analyze* SelectFromExtension(const String& Parser)
     #endif
     #if defined(MEDIAINFO_FLAC_YES)
         if (Parser==__T("Flac"))        return new File_Flac();
+    #endif
+    #if defined(MEDIAINFO_IAMF_YES)
+        if (Parser == __T("Iamf"))      return new File_Iamf();
     #endif
     #if defined(MEDIAINFO_IT_YES)
         if (Parser==__T("It"))          return new File_ImpulseTracker();
@@ -1104,6 +1110,9 @@ int MediaInfo_Internal::ListFormats(const String &File_Name)
     #if defined(MEDIAINFO_FLAC_YES)
         delete Info; Info=new File_Flac();               if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     #endif
+    #if defined(MEDIAINFO_IAMF_YES)
+        delete Info; Info=new File_Iamf();               if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
+    #endif
     #if defined(MEDIAINFO_IT_YES)
         delete Info; Info=new File_ImpulseTracker();     if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     #endif
@@ -1294,7 +1303,7 @@ bool MediaInfo_Internal::LibraryIsModified ()
     #if defined(MEDIAINFO_MULTI_NO) || defined(MEDIAINFO_VIDEO_NO) || defined(MEDIAINFO_AUDIO_NO) || defined(MEDIAINFO_TEXT_NO) || defined(MEDIAINFO_IMAGE_NO) || defined(MEDIAINFO_ARCHIVE_NO) \
      || defined(MEDIAINFO_BDAV_NO) || defined(MEDIAINFO_MK_NO) || defined(MEDIAINFO_OGG_NO) || defined(MEDIAINFO_RIFF_NO) || defined(MEDIAINFO_MPEG4_NO) || defined(MEDIAINFO_MPEGPS_NO) || defined(MEDIAINFO_MPEGTS_NO) || defined(MEDIAINFO_DXW_NO) || defined(MEDIAINFO_FLV_NO) || defined(MEDIAINFO_GXF_NO) || defined(MEDIAINFO_HDSF4M_NO) || defined(MEDIAINFO_HLS_NO) || defined(MEDIAINFO_ISM_NO) || defined(MEDIAINFO_IVF_NO) || defined(MEDIAINFO_LXF_NO) || defined(MEDIAINFO_SWF_NO) || defined(MEDIAINFO_MXF_NO) || defined(MEDIAINFO_NSV_NO) || defined(MEDIAINFO_NUT_NO) || defined(MEDIAINFO_WM_NO) || defined(MEDIAINFO_WTV_NO) || defined(MEDIAINFO_QT_NO) || defined(MEDIAINFO_RM_NO) || defined(MEDIAINFO_DVDIF_NO) || defined(MEDIAINFO_DVDV_NO) || defined(MEDIAINFO_AAF_NO) || defined(MEDIAINFO_CDXA_NO) || defined(MEDIAINFO_DPG_NO) || defined(MEDIAINFO_TSP_NO) \
      || defined(MEDIAINFO_AV1_NO) || defined(MEDIAINFO_AVC_NO) || defined(MEDIAINFO_AVSV_NO) || defined(MEDIAINFO_HEVC_NO) || defined(MEDIAINFO_MPEG4V_NO) || defined(MEDIAINFO_MPEGV_NO) || defined(MEDIAINFO_FLIC_NO) || defined(MEDIAINFO_THEORA_NO) || defined(MEDIAINFO_Y4M_NO) \
-     || defined(MEDIAINFO_AC3_NO) || defined(MEDIAINFO_AC4_NO) || defined(MEDIAINFO_ADIF_NO) || defined(MEDIAINFO_ADTS_NO) || defined(MEDIAINFO_SMPTEST0337_NO) || defined(MEDIAINFO_AMR_NO) || defined(MEDIAINFO_DTS_NO) || defined(MEDIAINFO_DOLBYE_NO) || defined(MEDIAINFO_FLAC_NO) || defined(MEDIAINFO_APE_NO) || defined(MEDIAINFO_MPC_NO) || defined(MEDIAINFO_MPCSV8_NO) || defined(MEDIAINFO_MPEGA_NO) || defined(MEDIAINFO_OPENMG_NO) || defined(MEDIAINFO_TWINVQ_NO) || defined(MEDIAINFO_XM_NO) || defined(MEDIAINFO_MOD_NO) || defined(MEDIAINFO_S3M_NO) || defined(MEDIAINFO_IT_NO) || defined(MEDIAINFO_SPEEX_NO) || defined(MEDIAINFO_TAK_NO) || defined(MEDIAINFO_PS2A_NO) \
+     || defined(MEDIAINFO_AC3_NO) || defined(MEDIAINFO_AC4_NO) || defined(MEDIAINFO_ADIF_NO) || defined(MEDIAINFO_ADTS_NO) || defined(MEDIAINFO_SMPTEST0337_NO) || defined(MEDIAINFO_AMR_NO) || defined(MEDIAINFO_DTS_NO) || defined(MEDIAINFO_DOLBYE_NO) || defined(MEDIAINFO_FLAC_NO) || defined(MEDIAINFO_IAMF_NO) || defined(MEDIAINFO_APE_NO) || defined(MEDIAINFO_MPC_NO) || defined(MEDIAINFO_MPCSV8_NO) || defined(MEDIAINFO_MPEGA_NO) || defined(MEDIAINFO_OPENMG_NO) || defined(MEDIAINFO_TWINVQ_NO) || defined(MEDIAINFO_XM_NO) || defined(MEDIAINFO_MOD_NO) || defined(MEDIAINFO_S3M_NO) || defined(MEDIAINFO_IT_NO) || defined(MEDIAINFO_SPEEX_NO) || defined(MEDIAINFO_TAK_NO) || defined(MEDIAINFO_PS2A_NO) \
      || defined(MEDIAINFO_CMML_NO)  || defined(MEDIAINFO_KATE_NO)  || defined(MEDIAINFO_PGS_NO) || defined(MEDIAINFO_OTHERTEXT_NO) \
      || defined(MEDIAINFO_ARRIRAW_NO) || defined(MEDIAINFO_BMP_NO) || defined(MEDIAINFO_DDS_NO) || defined(MEDIAINFO_DPX_NO) || defined(MEDIAINFO_EXR_NO) || defined(MEDIAINFO_GIF_NO) || defined(MEDIAINFO_ICO_NO) || defined(MEDIAINFO_JPEG_NO) || defined(MEDIAINFO_PNG_NO) || defined(MEDIAINFO_TGA_NO) || defined(MEDIAINFO_TIFF_NO) || defined(MEDIAINFO_WEBP_NO) \
      || defined(MEDIAINFO_7Z_NO) || defined(MEDIAINFO_ZIP_NO) || defined(MEDIAINFO_RAR_NO) || defined(MEDIAINFO_ACE_NO) || defined(MEDIAINFO_ELF_NO) || defined(MEDIAINFO_MACHO_NO) || defined(MEDIAINFO_MZ_NO) \

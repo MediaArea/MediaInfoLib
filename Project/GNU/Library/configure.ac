@@ -101,6 +101,7 @@ AC_ARG_ENABLE(celt,    AC_HELP_STRING([--disable-celt],    [Disable Audio - CELT
 AC_ARG_ENABLE(dat,     AC_HELP_STRING([--disable-dat],     [Disable Audio - DAT]),                                        MediaInfoDat=$enableval,     MediaInfoDat=depend)
 AC_ARG_ENABLE(dts,     AC_HELP_STRING([--disable-dts],     [Disable Audio - DTS]),                                        MediaInfoDts=$enableval,     MediaInfoDts=depend)
 AC_ARG_ENABLE(flac,    AC_HELP_STRING([--disable-flac],    [Disable Audio - FLAC format]),                                MediaInfoFlac=$enableval,    MediaInfoFlac=depend)
+AC_ARG_ENABLE(iamf,    AC_HELP_STRING([--disable-iamf],    [Disable Audio - IAMF]),                                       MediaInfoIamf=$enableval,    MediaInfoIamf=depend)
 AC_ARG_ENABLE(la,      AC_HELP_STRING([--disable-la],      [Disable Audio - LA (Lossless Audio)]),                        MediaInfoLa=$enableval,      MediaInfoLa=depend)
 AC_ARG_ENABLE(latm,    AC_HELP_STRING([--disable-latm],    [Disable Audio - LATM]),                                       MediaInfoLatm=$enableval,    MediaInfoLatm=depend)
 AC_ARG_ENABLE(mga,     AC_HELP_STRING([--disable-mga],     [Disable Audio - MGA]),                                        MediaInfoMga=$enableval,     MediaInfoMga=depend)
@@ -277,6 +278,7 @@ if test "$MediaInfoDat"     = "no";  then AC_DEFINE(MEDIAINFO_DAT_NO)     fi; if
 if test "$MediaInfoDts"     = "no";  then AC_DEFINE(MEDIAINFO_DTS_NO)     fi; if test "$MediaInfoDts"     = "yes"; then AC_DEFINE(MEDIAINFO_DTS_YES)     fi
 if test "$MediaInfoDtsUhd"  = "no";  then AC_DEFINE(MEDIAINFO_DTSUHD_NO)  fi; if test "$MediaInfoDtsUhd"  = "yes"; then AC_DEFINE(MEDIAINFO_DTSUHD_YES)  fi
 if test "$MediaInfoFlac"    = "no";  then AC_DEFINE(MEDIAINFO_FLAC_NO)    fi; if test "$MediaInfoFlac"    = "yes"; then AC_DEFINE(MEDIAINFO_FLAC_YES)    fi
+if test "$MediaInfoIamf"    = "no";  then AC_DEFINE(MEDIAINFO_IAMF_NO)    fi; if test "$MediaInfoIamf"    = "yes"; then AC_DEFINE(MEDIAINFO_IAMF_YES)    fi
 if test "$MediaInfoLa"      = "no";  then AC_DEFINE(MEDIAINFO_LA_NO)      fi; if test "$MediaInfoLa"      = "yes"; then AC_DEFINE(MEDIAINFO_LA_YES)      fi
 if test "$MediaInfoLatm"    = "no";  then AC_DEFINE(MEDIAINFO_LATM_NO)    fi; if test "$MediaInfoLatm"    = "yes"; then AC_DEFINE(MEDIAINFO_LATM_YES)    fi
 if test "$MediaInfoMidi"    = "no";  then AC_DEFINE(MEDIAINFO_MIDO_NO)    fi; if test "$MediaInfoMidi"    = "yes"; then AC_DEFINE(MEDIAINFO_MIDI_YES)    fi
@@ -1041,6 +1043,7 @@ Mcho "Celt   " "$MediaInfoCelt"
 Mcho "Dat    " "$MediaInfoDat"
 Mcho "Dts    " "$MediaInfoDts"
 Mcho "Flac   " "$MediaInfoFlac"
+Mcho "Iamf   " "$MediaInfoIamf"
 Mcho "La     " "$MediaInfoLa"
 Mcho "Latm   " "$MediaInfoLatm"
 Mcho "Mga    " "$MediaInfoMga"
