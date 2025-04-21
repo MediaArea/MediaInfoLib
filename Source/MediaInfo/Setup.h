@@ -981,6 +981,9 @@
 #if !defined(MEDIAINFO_ARCHIVE_NO) && !defined(MEDIAINFO_ISO9660_NO) && !defined(MEDIAINFO_ISO9660_YES)
     #define MEDIAINFO_ISO9660_YES
 #endif
+#if !defined(MEDIAINFO_ARCHIVE_NO) && !defined(MEDIAINFO_MACHO_NO) && !defined(MEDIAINFO_MACHO_YES)
+    #define MEDIAINFO_MACHO_YES
+#endif
 #if !defined(MEDIAINFO_ARCHIVE_NO) && !defined(MEDIAINFO_MZ_NO) && !defined(MEDIAINFO_MZ_YES)
     #define MEDIAINFO_MZ_YES
 #endif

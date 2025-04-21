@@ -148,6 +148,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Archive/File_Elf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Archive/File_Gzip.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Archive/File_Iso9660.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Archive/File_MachO.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Archive/File_Mz.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Archive/File_Rar.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Archive/File_Tar.cpp
