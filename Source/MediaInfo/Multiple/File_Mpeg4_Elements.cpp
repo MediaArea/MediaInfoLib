@@ -103,6 +103,9 @@ using namespace std;
 #if defined(MEDIAINFO_FLAC_YES)
     #include "MediaInfo/Audio/File_Flac.h"
 #endif
+#if defined(MEDIAINFO_IAMF_YES)
+    #include "MediaInfo/Audio/File_Iamf.h"
+#endif
 #if defined(MEDIAINFO_MPEGA_YES)
     #include "MediaInfo/Audio/File_Mpega.h"
 #endif
@@ -844,6 +847,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_glbl=0x676C626C;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC=0x68766343;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_hvcE=0x68766345;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_iacb=0x69616362;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_idfm=0x6964666D;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_idfm_atom=0x61746F6D;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_idfm_qtat=0x71746174;
@@ -1276,6 +1280,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_glbl)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_hvcE)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_iacb)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_idfm)
                                 LIST(moov_trak_mdia_minf_stbl_stsd_xxxx_jp2h)
                                     ATOM_BEGIN
@@ -8026,6 +8031,29 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
         Parser->SizedBlocks=true;  //Now this is SizeBlocks
     #else
         Skip_XX(Element_Size,                               "HEVC Data");
+    #endif
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_iacb()
+{
+    Element_Name("IAConfigurationBox");
+
+    //Parsing
+    #ifdef MEDIAINFO_IAMF_YES
+    if (Streams[moov_trak_tkhd_TrackID].Parsers.empty())
+    {
+        File_Iamf* Parser = new File_Iamf;
+        Open_Buffer_Init(Parser);
+        Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+
+        //Parsing
+        Open_Buffer_OutOfBand(Parser);
+    }
+    #else
+        Skip_XX(Element_Size, "IAMF Data");
+
+        Fill(Stream_Audio, StreamKind_Last, Audio_Format, "IAMF");
     #endif
 }
 

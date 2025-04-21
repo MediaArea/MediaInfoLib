@@ -37,6 +37,9 @@ private:
     // Streams management
     void Streams_Accept();
 
+    // Buffer - Global
+    void Read_Buffer_OutOfBand();
+
     // Buffer - Per element
     void Header_Parse();
     void Data_Parse();
