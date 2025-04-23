@@ -173,7 +173,7 @@ void File_MachO::Read_Buffer_Continue()
             Fill(Stream_General, 0, General_Format_Profile, MachO_cputype(cputype));
         }
         else {
-            Fill(Stream_General, 0, General_Format, "Universal Binary");
+            Fill(Stream_General, 0, General_Format, "Mach-O Universal");
             for (size_t i = 0; i < binaries.size(); ++i) {
                 Stream_Prepare(Stream_Other);
                 Fill(Stream_Other, i, Other_Type, "Binary");

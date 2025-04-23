@@ -1515,6 +1515,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "ELF;;;C;Elf;;so\n"
     "ISO 9660;;;C;Iso9660;;iso\n"
     "Mach-O;;;C;MachO;;o dylib kext;;;\n"
+    "Mach-O Universal;;;C;MachO;;o dylib kext;;;\n"
     "MZ;;;C;Mz;;exe dll\n"
     "RAR;;;C;Rar;From Rarlabs;rar;application/x-rar-compressed;http://rarlabs.com\n"
     "ZIP;;;C;Zip;;zip docx odt xlsx ods;application/zip;http://winzip.com\n"
