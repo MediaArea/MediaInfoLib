@@ -46,6 +46,8 @@ enum generic
     Generic_Codec_Info,
     Generic_Codec_Url,
     Generic_Codec_CC,
+    Generic_Width,
+    Generic_Height,
     Generic_Duration,
     Generic_Duration_String,
     Generic_Duration_String1,
