@@ -130,6 +130,9 @@ bool File_Xmp::FileHeader_Begin()
 
                 Fill(Stream_General, 0, General_Format_Profile, Profile);
             }
+            const char* CreatorTool=Rdf_Item->Attribute("xmp:CreatorTool");
+            if (CreatorTool && *CreatorTool!='\\') //TODO: support octal and UTF-16 ("\376\377")
+                Fill(Stream_General, 0, General_Encoded_Application, CreatorTool);
             Ztring ModifyDate, CreateDate;
             for (XMLElement* Description_Item = Rdf_Item->FirstChildElement(); Description_Item; Description_Item=Description_Item->NextSiblingElement())
             {
