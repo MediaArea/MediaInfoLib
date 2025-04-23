@@ -1020,6 +1020,9 @@
 #if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_VORBISCOM_NO) && !defined(MEDIAINFO_VORBISCOM_YES)
     #define MEDIAINFO_VORBISCOM_YES
 #endif
+#if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_XMP_NO) && !defined(MEDIAINFO_XMP_YES)
+    #define MEDIAINFO_XMP_YES
+#endif
 
 //---------------------------------------------------------------------------
 // Other

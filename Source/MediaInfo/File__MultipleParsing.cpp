@@ -365,6 +365,9 @@
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
+#if defined(MEDIAINFO_XMP_YES)
+    #include "MediaInfo/Tag/File_Xmp.h"
+#endif
 
 //---------------------------------------------------------------------------
 // Archive
@@ -771,6 +774,11 @@ File__MultipleParsing::File__MultipleParsing()
     #endif
     #if defined(MEDIAINFO_TIFF_YES)
         Parser.push_back(new File_Tiff());
+    #endif
+
+    // Tag
+    #if defined(MEDIAINFO_XMP_YES)
+        Parser.push_back(new File_Xmp());
     #endif
 
     // Archive

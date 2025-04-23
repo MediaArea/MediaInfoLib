@@ -31,11 +31,13 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/Image/File_Png.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
-#include "MediaInfo/Tag/File_Xmp.h"
-#include <zlib.h>
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
+#if defined(MEDIAINFO_XMP_YES)
+    #include "MediaInfo/Tag/File_Xmp.h"
+#endif
+#include <zlib.h>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -660,14 +662,15 @@ void File_Png::Textual(bitset8 Method)
         }
         if (Keyword_UTF8=="XML:com.adobe.xmp")
         {
+            #if defined(MEDIAINFO_XMP_YES)
             auto Text_UTF8=Text.To_UTF8();
             File_Xmp MI;
             Open_Buffer_Init(&MI, Text_UTF8.size());
             Open_Buffer_Continue(&MI, (const int8u*)Text_UTF8.c_str(), Text_UTF8.size());
-            Skip_XX(Text_UTF8.size(),                           "Stream, Data");
             Open_Buffer_Finalize(&MI);
             Merge(MI, Stream_General, 0, 0);
             Text.clear();
+            #endif
         }
         else if (!Language.empty())
             Text.insert(0, __T('(')+Language+__T(')'));

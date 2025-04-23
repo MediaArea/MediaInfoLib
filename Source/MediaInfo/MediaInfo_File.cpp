@@ -390,6 +390,9 @@
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
+#if defined(MEDIAINFO_XMP_YES)
+    #include "MediaInfo/Tag/File_Xmp.h"
+#endif
 
 //---------------------------------------------------------------------------
 // Archive
@@ -1251,6 +1254,9 @@ int MediaInfo_Internal::ListFormats(const String &File_Name)
     #endif
     #if defined(MEDIAINFO_ICC_YES)
         delete Info; Info=new File_Icc();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
+    #endif
+    #if defined(MEDIAINFO_XMP_YES)
+        delete Info; Info=new File_Xmp();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     #endif
 
     //At the end, could load too much data for nothing
