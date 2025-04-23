@@ -44,6 +44,7 @@ HEADERS += \
         ../../Source/MediaInfo/Archive/File_Elf.h \
         ../../Source/MediaInfo/Archive/File_Gzip.h \
         ../../Source/MediaInfo/Archive/File_Iso9660.h \
+        ../../Source/MediaInfo/Archive/File_MacO.h \
         ../../Source/MediaInfo/Archive/File_Mz.h \
         ../../Source/MediaInfo/Archive/File_Rar.h \
         ../../Source/MediaInfo/Archive/File_Tar.h \
@@ -271,6 +272,7 @@ SOURCES += \
         ../../Source/MediaInfo/Archive/File_Elf.cpp \
         ../../Source/MediaInfo/Archive/File_Gzip.cpp \
         ../../Source/MediaInfo/Archive/File_Iso9660.cpp \
+        ../../Source/MediaInfo/Archive/File_MacO.cpp \
         ../../Source/MediaInfo/Archive/File_Mz.cpp \
         ../../Source/MediaInfo/Archive/File_Rar.cpp \
         ../../Source/MediaInfo/Archive/File_Tar.cpp \

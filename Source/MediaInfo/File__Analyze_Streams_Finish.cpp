@@ -958,10 +958,12 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
     {
         const Ztring& Name=Retrieve(Stream_General, StreamPos, General_FileName);
         const Ztring& Extension=Retrieve(Stream_General, StreamPos, General_FileExtension);
-        if (!Name.empty() || !Extension.empty())
+        const Ztring& FormatName=Retrieve(Stream_General, StreamPos, General_Format);
+        auto IsMachOAndEmptyExtension = Extension.empty() && FormatName.rfind(__T("Mach-O"), 0)==0;
+        if ((!Name.empty() && !IsMachOAndEmptyExtension) || !Extension.empty())
         {
             InfoMap &FormatList=MediaInfoLib::Config.Format_Get();
-            InfoMap::iterator Format=FormatList.find(Retrieve(Stream_General, StreamPos, General_Format));
+            InfoMap::iterator Format=FormatList.find(FormatName);
             if (Format!=FormatList.end())
             {
                 ZtringList ValidExtensions;

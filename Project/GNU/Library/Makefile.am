@@ -33,6 +33,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Archive/File_Elf.cpp \
                        ../../../Source/MediaInfo/Archive/File_Gzip.cpp \
                        ../../../Source/MediaInfo/Archive/File_Iso9660.cpp \
+                       ../../../Source/MediaInfo/Archive/File_MachO.cpp \
                        ../../../Source/MediaInfo/Archive/File_Mz.cpp \
                        ../../../Source/MediaInfo/Archive/File_Rar.cpp \
                        ../../../Source/MediaInfo/Archive/File_Tar.cpp \
