@@ -471,6 +471,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM64EC'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_C2pa.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Icc.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_PropertyList.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_SphericalVideo.cpp" />
@@ -944,6 +945,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Pgs.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File__Tags.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_ApeTag.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_C2pa.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Icc.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Id3.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Id3v2.h" />
