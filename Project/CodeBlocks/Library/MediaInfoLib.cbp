@@ -121,6 +121,8 @@
 		<Unit filename="..\..\..\Source\MediaInfo\Image\File_Png.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\Image\File_Tiff.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\Image\File_Tiff.h" />
+		<Unit filename="..\..\..\Source\MediaInfo\Image\File_WebP.cpp" />
+		<Unit filename="..\..\..\Source\MediaInfo\Image\File_WebP.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\MediaInfo.cpp" />
 		<Unit filename="..\..\..\Source\MediaInfo\MediaInfo.h" />
 		<Unit filename="..\..\..\Source\MediaInfo\MediaInfoList.cpp" />

@@ -131,6 +131,7 @@ AC_ARG_ENABLE(png,     AC_HELP_STRING([--disable-png],     [Disable Image - PNG]
 AC_ARG_ENABLE(psd,     AC_HELP_STRING([--disable-psd],     [Disable Image - PSD]),                                        MediaInfoPsd=$enableval,     MediaInfoPsd=depend)
 AC_ARG_ENABLE(rle,     AC_HELP_STRING([--disable-rle],     [Disable Image - Run-length encoding]),                        MediaInfoRle=$enableval,     MediaInfoRle=depend)
 AC_ARG_ENABLE(tiff,    AC_HELP_STRING([--disable-tiff],    [Disable Image - TIFF]),                                       MediaInfoTiff=$enableval,    MediaInfoTiff=depend)
+AC_ARG_ENABLE(webp,    AC_HELP_STRING([--disable-webp],    [Disable Image - WEBP]),                                       MediaInfoWebP=$enableval,    MediaInfoWebP=depend)
 AC_ARG_ENABLE(aaf,     AC_HELP_STRING([--disable-aaf],     [Disable Multiple - AAF]),                                     MediaInfoAaf=$enableval,     MediaInfoAaf=depend)
 AC_ARG_ENABLE(bdav,    AC_HELP_STRING([--disable-bdav],    [Disable Multiple - Blu-ray audio-video (BDAV)]),              MediaInfoBdav=$enableval,    MediaInfoBdav=depend)
 AC_ARG_ENABLE(bdmv,    AC_HELP_STRING([--disable-bdmv],    [Disable Multiple - Blu-ray Movie]),                           MediaInfoBdmv=$enableval,    MediaInfoBdmv=depend)
@@ -303,6 +304,7 @@ if test "$MediaInfoPcx"     = "no";  then AC_DEFINE(MEDIAINFO_PCX_NO)     fi; if
 if test "$MediaInfoPng"     = "no";  then AC_DEFINE(MEDIAINFO_PNG_NO)     fi; if test "$MediaInfoPng"     = "yes"; then AC_DEFINE(MEDIAINFO_PNG_YES)     fi
 if test "$MediaInfoPsd"     = "no";  then AC_DEFINE(MEDIAINFO_PSD_NO)     fi; if test "$MediaInfoPsd"     = "yes"; then AC_DEFINE(MEDIAINFO_PSD_YES)     fi
 if test "$MediaInfoTiff"    = "no";  then AC_DEFINE(MEDIAINFO_TIFF_NO)    fi; if test "$MediaInfoTiff"    = "yes"; then AC_DEFINE(MEDIAINFO_TIFF_YES)    fi
+if test "$MediaInfoWebP"    = "no";  then AC_DEFINE(MEDIAINFO_WEBP_NO)    fi; if test "$MediaInfoWebP"    = "yes"; then AC_DEFINE(MEDIAINFO_WEBP_YES)    fi
 if test "$MediaInfoAaf"     = "no";  then AC_DEFINE(MEDIAINFO_AAF_NO)     fi; if test "$MediaInfoAaf"     = "yes"; then AC_DEFINE(MEDIAINFO_AAF_YES)     fi
 if test "$MediaInfoBdav"    = "no";  then AC_DEFINE(MEDIAINFO_BDAV_NO)    fi; if test "$MediaInfoBdav"    = "yes"; then AC_DEFINE(MEDIAINFO_BDAV_YES)    fi
 if test "$MediaInfoBdmv"    = "no";  then AC_DEFINE(MEDIAINFO_BDMV_NO)    fi; if test "$MediaInfoBdmv"    = "yes"; then AC_DEFINE(MEDIAINFO_BDMV_YES)    fi
@@ -1066,6 +1068,7 @@ Mcho "Pcx    " "$MediaInfoPcx"
 Mcho "Png    " "$MediaInfoPng"
 Mcho "Psd    " "$MediaInfoPsd"
 Mcho "Tiff   " "$MediaInfoTiff"
+Mcho "WebP   " "$MediaInfoWebP"
 Mcho "Aaf    " "$MediaInfoAaf"
 Mcho "Bdav   " "$MediaInfoBdav"
 Mcho "Bdmv   " "$MediaInfoBdmv"

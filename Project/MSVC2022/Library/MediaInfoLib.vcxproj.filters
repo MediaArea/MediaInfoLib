@@ -320,6 +320,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Tiff.cpp">
       <Filter>Source Files\Image</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_WebP.cpp">
+      <Filter>Source Files\Image</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Bdmv.cpp">
       <Filter>Source Files\Multiple</Filter>
     </ClCompile>

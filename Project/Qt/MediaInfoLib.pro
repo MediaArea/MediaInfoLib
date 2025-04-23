@@ -371,6 +371,7 @@ SOURCES += \
         ../../Source/MediaInfo/Image/File_Rle.cpp \
         ../../Source/MediaInfo/Image/File_Tiff.cpp \
         ../../Source/MediaInfo/Image/File_Tga.cpp \
+        ../../Source/MediaInfo/Image/File_WebP.cpp \
         ../../Source/MediaInfo/MediaInfo.cpp \
         ../../Source/MediaInfo/MediaInfo_Config.cpp \
         ../../Source/MediaInfo/MediaInfo_Config_Automatic.cpp \
