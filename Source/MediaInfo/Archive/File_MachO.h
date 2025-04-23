@@ -34,6 +34,15 @@ protected :
 
     //Buffer - Global
     void Read_Buffer_Continue ();
+
+    //Temp
+    struct BinaryInfo {
+        int64u size;
+        int32u cputype;
+        int32u align;
+    };
+    std::map<int64u, BinaryInfo> Universal_Positions; // Key is offset
+    std::map<int64u, BinaryInfo>::iterator Universal_Current;
 };
 
 } //NameSpace
