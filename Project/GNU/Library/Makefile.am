@@ -186,6 +186,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Reader/Reader_libmms.cpp \
                        ../../../Source/MediaInfo/Tag/File__Tags.cpp \
                        ../../../Source/MediaInfo/Tag/File_ApeTag.cpp \
+                       ../../../Source/MediaInfo/Tag/File_C2pa.cpp \
                        ../../../Source/MediaInfo/Tag/File_Icc.cpp \
                        ../../../Source/MediaInfo/Tag/File_Id3.cpp \
                        ../../../Source/MediaInfo/Tag/File_Id3v2.cpp \
