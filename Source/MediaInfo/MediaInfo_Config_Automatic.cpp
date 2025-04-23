@@ -4187,6 +4187,8 @@ void MediaInfo_Config_Generic (ZtringListList &Info)
     "Codec/Info\n"
     "Codec/Url\n"
     "Codec/CC\n"
+    "Width\n"
+    "Height\n"
     "Duration\n"
     "Duration/String\n"
     "Duration/String1\n"

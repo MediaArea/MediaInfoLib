@@ -3640,6 +3640,8 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Codec_Info : return Video_Codec_Info;
                                     case Generic_Codec_Url : return Video_Codec_Url;
                                     case Generic_Codec_CC : return Video_Codec_CC;
+                                    case Generic_Width: return Video_Width;
+                                    case Generic_Height: return Video_Height;
                                     case Generic_Duration : return Video_Duration;
                                     case Generic_Duration_String : return Video_Duration_String;
                                     case Generic_Duration_String1 : return Video_Duration_String1;
@@ -3893,6 +3895,8 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Codec_Info : return Text_Codec_Info;
                                     case Generic_Codec_Url : return Text_Codec_Url;
                                     case Generic_Codec_CC : return Text_Codec_CC;
+                                    case Generic_Width: return Text_Width;
+                                    case Generic_Height: return Text_Height;
                                     case Generic_Duration : return Text_Duration;
                                     case Generic_Duration_String : return Text_Duration_String;
                                     case Generic_Duration_String1 : return Text_Duration_String1;
@@ -4084,6 +4088,8 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Codec_String : return Image_Codec_String;
                                     case Generic_Codec_Info : return Image_Codec_Info;
                                     case Generic_Codec_Url : return Image_Codec_Url;
+                                    case Generic_Width: return Image_Width;
+                                    case Generic_Height: return Image_Height;
                                     case Generic_Duration : return Menu_Duration;
                                     case Generic_Duration_String : return Menu_Duration_String;
                                     case Generic_Duration_String1 : return Menu_Duration_String1;
