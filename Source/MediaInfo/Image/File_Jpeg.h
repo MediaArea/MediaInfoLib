@@ -134,6 +134,7 @@ private :
     void APP0_JFFF_3B();
     void APP1();
     void APP1_EXIF();
+    void APP1_XMP();
     void APP2();
     void APP2_ICC_PROFILE();
     void APP3() {Skip_XX(Element_Size, "Data");}

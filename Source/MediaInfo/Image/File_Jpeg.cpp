@@ -36,6 +36,9 @@
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
+#if defined(MEDIAINFO_XMP_YES)
+    #include "MediaInfo/Tag/File_Xmp.h"
+#endif
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "ZenLib/Utils.h"
 #include <vector>
@@ -1262,14 +1265,17 @@ void File_Jpeg::APP0_JFFF_3B()
 void File_Jpeg::APP1()
 {
     //Parsing
-    int64u Name;
-    Get_C6(Name,                                                "Name");
-
-    switch (Name)
-    {
-        case 0x457869660000LL : APP1_EXIF(); break; //"Exif\0\0"
-        default               : Skip_XX(Element_Size-Element_Offset, "Data");
+    if (Element_Size >= 29 && !strncmp((const char*)Buffer + Buffer_Offset, "http://ns.adobe.com/xap/1.0/", 29)) { // the char* contains a terminating \0
+        Skip_String(29,                                         "Name");
+        APP1_XMP();
+        return;
     }
+    if (Element_Size >= 6 && !strncmp((const char*)Buffer + Buffer_Offset, "Exif\0", 6)) { // the char* contains a second terminating \0
+        Skip_String( 6,                                         "Name");
+        APP1_EXIF();
+        return;
+    }
+    Skip_XX(Element_Size - Element_Offset,                      "(Unknown)");
 }
 
 //---------------------------------------------------------------------------
@@ -1284,6 +1290,27 @@ void File_Jpeg::APP1_EXIF()
         Skip_B4(                                                "First_IFD");
     if (Alignment==0x4D4D2A00)
         Skip_L4(                                                "First_IFD");
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::APP1_XMP()
+{
+    Accept();
+
+    Element_Info1("XMP");
+
+    //Parsing
+    #if defined(MEDIAINFO_XMP_YES)
+    File_Xmp MI;
+    Open_Buffer_Init(&MI);
+    auto Element_Offset_Sav = Element_Offset;
+    Open_Buffer_Continue(&MI);
+    Element_Offset = Element_Offset_Sav;
+    Open_Buffer_Finalize(&MI);
+    Element_Show(); //TODO: why is it needed?
+    Merge(MI, Stream_General, 0, 0);
+    #endif
+    Skip_UTF8(Element_Size - Element_Offset,                    "XMP metadata");
 }
 
 //---------------------------------------------------------------------------
