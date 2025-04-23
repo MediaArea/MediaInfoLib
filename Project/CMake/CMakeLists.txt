@@ -182,6 +182,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_DolbyE.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_ExtendedModule.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Flac.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Iamf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Iab.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_ImpulseTracker.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_La.cpp

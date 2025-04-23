@@ -71,6 +71,7 @@ HEADERS += \
         ../../Source/MediaInfo/Audio/File_DtsUhd.h \
         ../../Source/MediaInfo/Audio/File_ExtendedModule.h \
         ../../Source/MediaInfo/Audio/File_Flac.h \
+        ../../Source/MediaInfo/Audio/File_Iamf.h \
         ../../Source/MediaInfo/Audio/File_ImpulseTracker.h \
         ../../Source/MediaInfo/Audio/File_La.h \
         ../../Source/MediaInfo/Audio/File_Mga.h \
@@ -306,6 +307,7 @@ SOURCES += \
         ../../Source/MediaInfo/Audio/File_DolbyE.cpp \
         ../../Source/MediaInfo/Audio/File_ExtendedModule.cpp \
         ../../Source/MediaInfo/Audio/File_Flac.cpp \
+        ../../Source/MediaInfo/Audio/File_Iamf.cpp \
         ../../Source/MediaInfo/Audio/File_Iab.cpp \
         ../../Source/MediaInfo/Audio/File_ImpulseTracker.cpp \
         ../../Source/MediaInfo/Audio/File_La.cpp \

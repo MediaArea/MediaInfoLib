@@ -863,6 +863,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_MachO.cpp">
       <Filter>Source Files\Archive</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Iamf.cpp">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1624,5 +1627,9 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Archive\File_MachO.h">
       <Filter>Header Files\Archive</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Iamf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
+

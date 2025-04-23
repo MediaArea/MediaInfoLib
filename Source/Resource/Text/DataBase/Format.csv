@@ -94,6 +94,7 @@ G.722.1;;;A;;;;audio/G7221;;Lossy
 G.723;;;A;;;;audio/G723;;Lossy
 G.729;;;A;;;;audio/G729;;Lossy
 G.729.1;;;A;;;;audio/G7291;;Lossy
+IAMF;;;A;Iamf;Immersive Audio Model and Formats;iamf;;http://aomedia.org/
 Impulse Tracker;;;A;ImpulseTracker;;it;;;
 LA;;;A;La;Lossless Audio Codec;la;;http://www.lossless-audio.com/;Lossless
 MIDI;;;A;Riff;RIFF Musical Instrument Digital Interface;midi mid kar;audio/midi;;
