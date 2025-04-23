@@ -3433,7 +3433,6 @@ void File__Analyze::Accept ()
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(ParserName+", accepted");
             if (MustElementBegin)
                 Element_Level++;
         }
@@ -3513,7 +3512,6 @@ void File__Analyze::Fill ()
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(ParserName+", filling");
             if (MustElementBegin)
                 Element_Level++;
         }
@@ -3600,7 +3598,6 @@ void File__Analyze::ForceFinish ()
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(ParserName+", finished");
             if (MustElementBegin)
                 Element_Level++;
         }
