@@ -69,6 +69,7 @@ private :
     void cLLi() { cLLI(); }
     void iCCP();
     void iTXt() {Textual(bitset8().set(IsCompressed).set(IsUTF8));}
+    void eXIf();
     void gAMA();
     void mDCV();
     void mDCv() { mDCV(); }
