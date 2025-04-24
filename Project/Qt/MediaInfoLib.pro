@@ -209,6 +209,7 @@ HEADERS += \
         ../../Source/MediaInfo/Tag/File__Tags.h \
         ../../Source/MediaInfo/Tag/File_ApeTag.h \
         ../../Source/MediaInfo/Tag/File_C2pa.h \
+        ../../Source/MediaInfo/Tag/File_Exif.h \
         ../../Source/MediaInfo/Tag/File_Id3.h \
         ../../Source/MediaInfo/Tag/File_Id3v2.h \
         ../../Source/MediaInfo/Tag/File_Lyrics3.h \
@@ -453,6 +454,7 @@ SOURCES += \
         ../../Source/MediaInfo/Tag/File__Tags.cpp \
         ../../Source/MediaInfo/Tag/File_ApeTag.cpp \
         ../../Source/MediaInfo/Tag/File_C2pa.cpp \
+        ../../Source/MediaInfo/Tag/File_Exif.cpp \
         ../../Source/MediaInfo/Tag/File_Icc.cpp \
         ../../Source/MediaInfo/Tag/File_Id3.cpp \
         ../../Source/MediaInfo/Tag/File_Id3v2.cpp \

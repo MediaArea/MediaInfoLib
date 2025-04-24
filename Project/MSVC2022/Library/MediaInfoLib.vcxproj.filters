@@ -872,6 +872,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_C2pa.cpp">
       <Filter>Source Files\Tag</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Exif.cpp">
+      <Filter>Source Files\Tag</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1640,6 +1643,9 @@
       <Filter>Header Files\Text</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_C2pa.h">
+      <Filter>Header Files\Tag</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Exif.h">
       <Filter>Header Files\Tag</Filter>
     </ClInclude>
   </ItemGroup>
