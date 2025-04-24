@@ -130,6 +130,9 @@ bool File_Xmp::FileHeader_Begin()
 
                 Fill(Stream_General, 0, General_Format_Profile, Profile);
             }
+            const char* Credit = Rdf_Item->Attribute("photoshop:Credit");
+            if (Credit && *Credit != '\\') //TODO: support octal and UTF-16 ("\376\377")
+                Fill(Stream_General, 0, General_Copyright, Credit);
             const char* CreatorTool=Rdf_Item->Attribute("xmp:CreatorTool");
             if (CreatorTool && *CreatorTool!='\\') //TODO: support octal and UTF-16 ("\376\377")
                 Fill(Stream_General, 0, General_Encoded_Application, CreatorTool);
