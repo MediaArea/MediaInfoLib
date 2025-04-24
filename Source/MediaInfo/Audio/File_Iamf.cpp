@@ -37,6 +37,14 @@ namespace Elements
     const int32u iamf = 0x69616D66;
 }
 
+namespace CodecIDs
+{
+    const int32u Opus = 0x4F707573;
+    const int32u mp4a = 0x6D703461;
+    const int32u fLaC = 0x664C6143;
+    const int32u ipcm = 0x6970636D;
+}
+
 // audio_element_type
 #define CHANNEL_BASED   0
 #define SCENE_BASED     1
@@ -262,7 +270,7 @@ void File_Iamf::ia_codec_config()
 {
     //Parsing
     int64u codec_config_id, num_samples_per_frame;
-    int32u codec_id;
+    int32u codec_id, sample_rate;
     int16u audio_roll_distance;
     Get_leb128 (        codec_config_id,                        "codec_config_id");
     Element_Begin1("codec_config");
@@ -270,7 +278,20 @@ void File_Iamf::ia_codec_config()
         Get_leb128 (    num_samples_per_frame,                  "num_samples_per_frame");
         Get_B2 (        audio_roll_distance,                    "audio_roll_distance"); Param_Info1(reinterpret_cast<int16_t&>(audio_roll_distance));
         Element_Begin1("decoder_config");
-            Skip_XX(Element_Size - Element_Offset,              "(Not parsed)");
+            switch (codec_id)
+            {
+            case CodecIDs::Opus:
+                Skip_B1 (                                       "opus_version_id");
+                Skip_B1 (                                       "channel_count");
+                Skip_B2 (                                       "preskip");
+                Get_B4  (sample_rate,                           "rate");
+                Skip_B2 (                                       "ouput_gain");
+                Skip_B1 (                                       "channel_map");
+                break;
+            default:
+                Skip_XX(Element_Size - Element_Offset, "(Not parsed)");
+                break;
+            }
         Element_End0();
     Element_End0();
 
@@ -278,6 +299,14 @@ void File_Iamf::ia_codec_config()
         auto CodecID = Ztring::ToZtring_From_CC4(codec_id);
         if (CodecID != Retrieve_Const(Stream_Audio, 0, Audio_CodecID)) {
             Fill(Stream_Audio, 0, Audio_CodecID, CodecID);
+        }
+        switch (codec_id)
+        {
+        case CodecIDs::Opus:
+            Fill(Stream_Audio, 0, Audio_SamplingRate, sample_rate ? sample_rate : 48000);
+            break;
+        default:
+            break;
         }
     FILLING_END();
 }
