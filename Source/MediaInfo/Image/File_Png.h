@@ -71,7 +71,7 @@ private :
     void PLTE() { Data_Common(); }
     void acTL() { Data_Common(); }
     void bKGD() { Data_Common(); }
-    void caBX() {}
+    void caBX();
     void caNv() { Data_Common(); }
     void cHRM() { Data_Common(); }
     void cICP();
