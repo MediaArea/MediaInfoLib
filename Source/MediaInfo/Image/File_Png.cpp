@@ -668,6 +668,7 @@ void File_Png::Textual(bitset8 Method)
             Open_Buffer_Init(&MI, Text_UTF8.size());
             Open_Buffer_Continue(&MI, (const int8u*)Text_UTF8.c_str(), Text_UTF8.size());
             Open_Buffer_Finalize(&MI);
+            Element_Show(); //TODO: why is it needed?
             Merge(MI, Stream_General, 0, 0);
             Text.clear();
             #endif
