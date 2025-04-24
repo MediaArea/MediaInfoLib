@@ -174,6 +174,7 @@ AC_ARG_ENABLE(Id3v2,   AC_HELP_STRING([--disable-Id3v2],   [Disable Tag - Id3v2]
 AC_ARG_ENABLE(Lyrics3, AC_HELP_STRING([--disable-Lyrics3], [Disable Tag - Lyrics3]),                                      MediaInfoLyrics3=$enableval, MediaInfoLyrics3=depend)
 AC_ARG_ENABLE(Lyrics3v2, AC_HELP_STRING([--disable-Lyrics3v2], [Disable Tag - Lyrics3v2]),                                MediaInfoLyrics3v2=$enableval, MediaInfoLyrics3v2=depend)
 AC_ARG_ENABLE(VorbisCom, AC_HELP_STRING([--disable-VorbisCom], [Disable Tag - VorbisCom]),                                MediaInfoVorbisCom=$enableval, MediaInfoVorbisCom=depend)
+AC_ARG_ENABLE(SphericalVideo, AC_HELP_STRING([--disable-SphericalVideo], [Disable Tag - Spherical Video]),                MediaInfoSphericalVideo=$enableval, MediaInfoSphericalVideo=depend)
 AC_ARG_ENABLE(Xmp,     AC_HELP_STRING([--disable-Xmp],     [Disable Tag - XMP]),                                          MediaInfoVorbisXmp=$enableval, MediaInfoXmp=depend)
 AC_ARG_ENABLE(cmml,    AC_HELP_STRING([--disable-cmml],    [Disable Text - CMML]),                                        MediaInfoCmml=$enableval,    MediaInfoCmml=depend)
 AC_ARG_ENABLE(dvbsubtitle,  AC_HELP_STRING([--disable-dvbSsubtitle],  [Disable Text - DVB Subtitle]),                     MediaInfoDvbSubtitle=$enableval, MediaInfoDvbSubtitle=depend)
@@ -349,6 +350,7 @@ if test "$MediaInfoId3v2"   = "no";  then AC_DEFINE(MEDIAINFO_ID3V2_NO)   fi; if
 if test "$MediaInfoLyrics3" = "no";  then AC_DEFINE(MEDIAINFO_LYRICS3_NO) fi; if test "$MediaInfoLyrics3" = "yes"; then AC_DEFINE(MEDIAINFO_LYRICS3_YES) fi
 if test "$MediaInfoLyrics3v2" = "no";  then AC_DEFINE(MEDIAINFO_LYRICS3V2_NO) fi; if test "$MediaInfoLyrics3v2" = "yes"; then AC_DEFINE(MEDIAINFO_LYRICS3V2_YES) fi
 if test "$MediaInfoVorbisCom" = "no";  then AC_DEFINE(MEDIAINFO_VORBISCOM_NO) fi; if test "$MediaInfoVorbisCom" = "yes"; then AC_DEFINE(MEDIAINFO_VORBISCOM_YES) fi
+if test "$MediaInfoSphericalVideo" = "no";  then AC_DEFINE(SPHERICALVIDEO) fi; if test "$MediaInfoSphericalVideo" = "yes"; then AC_DEFINE(MEDIAINFO_SPHERICALVIDEO_YES) fi
 if test "$MediaInfoXmp"     = "no";  then AC_DEFINE(MEDIAINFO_XMP_NO)     fi; if test "$MediaInfoXmp"     = "yes"; then AC_DEFINE(MEDIAINFO_XMP_YES)     fi
 if test "$MediaInfoCmml"    = "no";  then AC_DEFINE(MEDIAINFO_CMML_NO)    fi; if test "$MediaInfoCmml"    = "yes"; then AC_DEFINE(MEDIAINFO_CMML_YES)    fi
 if test "$MediaInfoDvbSubtitle" = "no"; then AC_DEFINE(MEDIAINFO_DVBSUBTITLE_NO) fi; if test "$MediaInfoDvbSubtitle" = "yes"; then AC_DEFINE(MEDIAINFO_DVBSUBTITLE_YES)  fi
@@ -1115,6 +1117,7 @@ Mcho "Id3v2  " "$MediaInfoId3v2"
 Mcho "Lyrics3" "$MediaInfoLyrics3"
 Mcho "Lyrics3v2" "$MediaInfoLyrics3v2"
 Mcho "VorbisCom" "$MediaInfoVorbisCom"
+Mcho "SphericalVideo" "$MediaInfoSphericalVideo"
 Mcho "Xmp    " "$MediaInfoXmp"
 Mcho "Cmml   " "$MediaInfoCmml"
 Mcho "DvbSubtitle " "$MediaInfoDvbSubtitle"

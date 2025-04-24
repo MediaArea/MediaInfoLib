@@ -473,6 +473,7 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Icc.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_PropertyList.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_SphericalVideo.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Xmp.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_AribStdB24B37.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_DtvccTransport.cpp" />
@@ -564,6 +565,13 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Umf.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Wm.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Wm_Elements.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File__Tags.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_ApeTag.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Id3.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Id3v2.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3v2.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_VorbisCom.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Cdp.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Cmml.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Eia608.cpp" />
@@ -573,13 +581,6 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_OtherText.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Pgs.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Scte20.cpp" />
-    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File__Tags.cpp" />
-    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_ApeTag.cpp" />
-    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Id3.cpp" />
-    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Id3v2.cpp" />
-    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3.cpp" />
-    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3v2.cpp" />
-    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_VorbisCom.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Duplicate\File__Duplicate__Base.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Duplicate\File__Duplicate__Writer.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Duplicate\File__Duplicate_MpegTs.cpp" />
@@ -892,9 +893,6 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Swf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Umf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Wm.h" />
-    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Icc.h" />
-    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_PropertyList.h" />
-    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Xmp.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_AribStdB24B37.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_DtvccTransport.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_DvbSubtitle.h" />
@@ -946,11 +944,15 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Pgs.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File__Tags.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_ApeTag.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Icc.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Id3.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Id3v2.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3v2.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_PropertyList.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_SphericalVideo.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_VorbisCom.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Xmp.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Duplicate\File__Duplicate__Base.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Duplicate\File__Duplicate__Writer.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Duplicate\File__Duplicate_MpegTs.h" />

@@ -866,6 +866,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Iamf.cpp">
       <Filter>Source Files\Audio</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_SphericalVideo.cpp">
+      <Filter>Source Files\Tag</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1510,9 +1513,6 @@
     <ClInclude Include="..\..\..\Source\ThirdParty\aes-gladman\brg_types.h">
       <Filter>ThirdParty\aes</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Sdp.h">
-      <Filter>Header Files\Tag</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_PropertyList.h">
       <Filter>Header Files\Tag</Filter>
     </ClInclude>
@@ -1629,6 +1629,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Iamf.h">
       <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_SphericalVideo.h">
+      <Filter>Header Files\Tag</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Sdp.h">
+      <Filter>Header Files\Text</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

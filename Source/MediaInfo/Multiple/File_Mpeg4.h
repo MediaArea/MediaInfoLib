@@ -331,6 +331,8 @@ private :
     void moov_trak_udta_free() { moov_udta_free(); }
     void moov_trak_udta_Xtra() { moov_udta_Xtra(); }
     void moov_trak_udta_xxxx();
+    void moov_trak_uuid();
+    void moov_trak_uuid_SphericalVideo();
     void moov_udta();
     void moov_udta_AllF();
     void moov_udta_chpl();
