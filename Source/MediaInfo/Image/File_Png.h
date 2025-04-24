@@ -64,6 +64,7 @@ private :
     void IEND() {}
     void IHDR();
     void PLTE() {Skip_XX(Element_Size, "Data");}
+    void caBX();
     void cICP();
     void cLLI();
     void cLLi() { cLLI(); }
