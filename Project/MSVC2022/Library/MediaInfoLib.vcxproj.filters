@@ -1628,8 +1628,7 @@
       <Filter>Header Files\Archive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Iamf.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Audio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
-
