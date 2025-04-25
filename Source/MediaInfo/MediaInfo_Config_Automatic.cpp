@@ -1395,6 +1395,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "Blu-ray Index;;;M;Bdmv;;bdmv bdm\n"
     "Blu-ray Movie object;;;M;Bdmv;;bdmv bdm\n"
     "Blu-ray Playlist;;;M;Bdmv;;mpls\n"
+    "C2PA;;;;C2pa;;c2pa\n"
     "CDDA;;;M;Riff;;cda\n"
     "CDXA;;;M;Cdxa;;dat\n"
     "DASH MPD;;;M;DashMpd;;mpd;application/dash+xml;;Lossy\n"
