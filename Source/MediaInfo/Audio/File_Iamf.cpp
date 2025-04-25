@@ -188,10 +188,18 @@ void File_Iamf::Read_Buffer_OutOfBand()
 {
     //Parsing
     int64u configOBUs_size;
-    Skip_B1(                                                    "configurationVersion");
+    int8u configurationVersion;
+    Get_B1 (configurationVersion,                               "configurationVersion");
+    if (configurationVersion != 1)
+    {
+        Skip_XX(Element_Size - Element_Offset,                  "(Not supported)");
+        Finish();
+        return;
+    }
     Get_leb128  (        configOBUs_size,                       "configOBUs_size");
 
     Open_Buffer_Continue(Buffer, Buffer_Size);
+    Finish(); //stop once done with Descriptor OBUs, parsing for IA Data OBUs not yet implemented
 }
 
 //***************************************************************************
@@ -301,11 +309,18 @@ void File_Iamf::ia_codec_config()
     int64u codec_config_id, num_samples_per_frame;
     int32u codec_id{};
     int16u audio_roll_distance;
+    auto IsFirst = Retrieve_Const(Stream_Audio, 0, Audio_CodecID).empty(); // Currently 2 ia_codec_config are not well handled about sampling rate //TODO: how to manage 2 difference sampling rates?
     Get_leb128 (        codec_config_id,                        "codec_config_id");
     Element_Begin1("codec_config");
         Get_C4 (        codec_id,                               "codec_id");
         Get_leb128 (    num_samples_per_frame,                  "num_samples_per_frame");
         Get_B2 (        audio_roll_distance,                    "audio_roll_distance"); Param_Info1(reinterpret_cast<int16_t&>(audio_roll_distance));
+        FILLING_BEGIN();
+            auto CodecID = Ztring::ToZtring_From_CC4(codec_id);
+            if (CodecID != Retrieve_Const(Stream_Audio, 0, Audio_CodecID)) {
+                Fill(Stream_Audio, 0, Audio_CodecID, CodecID);
+            }
+        FILLING_END();
         Element_Begin1("decoder_config");
             switch (codec_id)
             {
@@ -318,18 +333,23 @@ void File_Iamf::ia_codec_config()
                 Skip_B2 (                                       "ouput_gain");
                 Skip_B1 (                                       "channel_map");
                 FILLING_BEGIN_PRECISE();
-                    Fill(Stream_Audio, 0, Audio_SamplingRate, sample_rate ? sample_rate : 48000);
+                    if (IsFirst) {
+                        Fill(Stream_Audio, 0, Audio_SamplingRate, sample_rate ? sample_rate : 48000);
+                    }
                 FILLING_END();
                 break;
             }
             case CodecIDs::mp4a: {
                 #if defined(MEDIAINFO_MPEG4_YES)
                 File_Mpeg4_Descriptors MI;
+                MI.FromIamf = true;
                 Open_Buffer_Init(&MI);
                 Open_Buffer_Continue(&MI);
                 Open_Buffer_Finalize(&MI);
                 FILLING_BEGIN_PRECISE();
-                    //Merge(MI, Stream_General, 0, 0, false);
+                    if (IsFirst) {
+                        Merge(MI, Stream_Audio, 0, 0, false);
+                    }
                 FILLING_END();
                 #endif
                 break;
@@ -343,7 +363,9 @@ void File_Iamf::ia_codec_config()
                 Open_Buffer_Continue(&MI);
                 Open_Buffer_Finalize(&MI);
                 FILLING_BEGIN_PRECISE();
-                    Merge(MI, Stream_Audio, 0, 0, false);
+                    if (IsFirst) {
+                        Merge(MI, Stream_Audio, 0, 0, false);
+                    }
                 FILLING_END();
                 #endif
                 break;
@@ -370,9 +392,8 @@ void File_Iamf::ia_codec_config()
     Element_End0();
 
     FILLING_BEGIN_PRECISE();
-        auto CodecID = Ztring::ToZtring_From_CC4(codec_id);
-        if (CodecID != Retrieve_Const(Stream_Audio, 0, Audio_CodecID)) {
-            Fill(Stream_Audio, 0, Audio_CodecID, CodecID);
+        if (IsFirst && num_samples_per_frame && Retrieve_Const(Stream_Audio, 0, Audio_SamplesPerFrame).empty()) {
+            Fill(Stream_Audio, 0, Audio_SamplesPerFrame, num_samples_per_frame);
         }
     FILLING_END();
 }
