@@ -22,6 +22,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Audio/File_Iamf.h"
+#ifdef MEDIAINFO_MPEG4_YES
+    #include "MediaInfo/Multiple/File_Mpeg4_Descriptors.h"
+#endif
 #if defined(MEDIAINFO_FLAC_YES)
     #include "MediaInfo/Audio/File_Flac.h"
 #endif
@@ -294,6 +297,18 @@ void File_Iamf::ia_codec_config()
                 FILLING_BEGIN_PRECISE();
                     Fill(Stream_Audio, 0, Audio_SamplingRate, sample_rate ? sample_rate : 48000);
                 FILLING_END();
+                break;
+            }
+            case CodecIDs::mp4a: {
+                #if defined(MEDIAINFO_MPEG4_YES)
+                File_Mpeg4_Descriptors MI;
+                Open_Buffer_Init(&MI);
+                Open_Buffer_Continue(&MI);
+                Open_Buffer_Finalize(&MI);
+                FILLING_BEGIN_PRECISE();
+                    //Merge(MI, Stream_General, 0, 0, false);
+                FILLING_END();
+                #endif
                 break;
             }
             case CodecIDs::fLaC: {
