@@ -22,6 +22,12 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Audio/File_Iamf.h"
+#ifdef MEDIAINFO_MPEG4_YES
+    #include "MediaInfo/Multiple/File_Mpeg4_Descriptors.h"
+#endif
+#if defined(MEDIAINFO_FLAC_YES)
+    #include "MediaInfo/Audio/File_Flac.h"
+#endif
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -182,10 +188,18 @@ void File_Iamf::Read_Buffer_OutOfBand()
 {
     //Parsing
     int64u configOBUs_size;
-    Skip_B1(                                                    "configurationVersion");
+    int8u configurationVersion;
+    Get_B1 (configurationVersion,                               "configurationVersion");
+    if (configurationVersion != 1)
+    {
+        Skip_XX(Element_Size - Element_Offset,                  "(Not supported)");
+        Finish();
+        return;
+    }
     Get_leb128  (        configOBUs_size,                       "configOBUs_size");
 
     Open_Buffer_Continue(Buffer, Buffer_Size);
+    Finish(); //stop once done with Descriptor OBUs, parsing for IA Data OBUs not yet implemented
 }
 
 //***************************************************************************
@@ -232,8 +246,31 @@ void File_Iamf::Data_Parse()
     case 0x00   : ia_codec_config(); break;
     case 0x01   : ia_audio_element(); break;
     case 0x02   : ia_mix_presentation(); break;
+    case 0x03   :
+    case 0x04   :
+    case 0x05   :
+    case 0x06   :
+    case 0x07   :
+    case 0x08   :
+    case 0x09   :
+    case 0x0A   :
+    case 0x0B   :
+    case 0x0C   :
+    case 0x0D   :
+    case 0x0E   :
+    case 0x0F   :
+    case 0x10   :
+    case 0x11   :
+    case 0x12   :
+    case 0x13   :
+    case 0x14   :
+    case 0x15   :
+    case 0x16   :
+    case 0x17   : Skip_XX(Element_Size - Element_Offset, "Data");
+                  Finish(); //stop once done with Descriptor OBUs, parsing for IA Data OBUs not yet implemented
+                  break;
     case 0x1F   : ia_sequence_header(); break;
-    default     : Skip_XX(Element_Size - Element_Offset, "Data");
+    default     : Skip_XX(Element_Size - Element_Offset, "Data"); break;
     }
 }
 
@@ -270,24 +307,83 @@ void File_Iamf::ia_codec_config()
 {
     //Parsing
     int64u codec_config_id, num_samples_per_frame;
-    int32u codec_id, sample_rate;
+    int32u codec_id{};
     int16u audio_roll_distance;
+    auto IsFirst = Retrieve_Const(Stream_Audio, 0, Audio_CodecID).empty(); // Currently 2 ia_codec_config are not well handled about sampling rate //TODO: how to manage 2 difference sampling rates?
     Get_leb128 (        codec_config_id,                        "codec_config_id");
     Element_Begin1("codec_config");
         Get_C4 (        codec_id,                               "codec_id");
         Get_leb128 (    num_samples_per_frame,                  "num_samples_per_frame");
         Get_B2 (        audio_roll_distance,                    "audio_roll_distance"); Param_Info1(reinterpret_cast<int16_t&>(audio_roll_distance));
+        FILLING_BEGIN();
+            auto CodecID = Ztring::ToZtring_From_CC4(codec_id);
+            if (CodecID != Retrieve_Const(Stream_Audio, 0, Audio_CodecID)) {
+                Fill(Stream_Audio, 0, Audio_CodecID, CodecID);
+            }
+        FILLING_END();
         Element_Begin1("decoder_config");
             switch (codec_id)
             {
-            case CodecIDs::Opus:
+            case CodecIDs::Opus: {
+                int32u sample_rate;
                 Skip_B1 (                                       "opus_version_id");
                 Skip_B1 (                                       "channel_count");
                 Skip_B2 (                                       "preskip");
                 Get_B4  (sample_rate,                           "rate");
                 Skip_B2 (                                       "ouput_gain");
                 Skip_B1 (                                       "channel_map");
+                FILLING_BEGIN_PRECISE();
+                    if (IsFirst) {
+                        Fill(Stream_Audio, 0, Audio_SamplingRate, sample_rate ? sample_rate : 48000);
+                    }
+                FILLING_END();
                 break;
+            }
+            case CodecIDs::mp4a: {
+                #if defined(MEDIAINFO_MPEG4_YES)
+                File_Mpeg4_Descriptors MI;
+                MI.FromIamf = true;
+                Open_Buffer_Init(&MI);
+                Open_Buffer_Continue(&MI);
+                Open_Buffer_Finalize(&MI);
+                FILLING_BEGIN_PRECISE();
+                    if (IsFirst) {
+                        Merge(MI, Stream_Audio, 0, 0, false);
+                    }
+                FILLING_END();
+                #endif
+                break;
+            }
+            case CodecIDs::fLaC: {
+                #if defined(MEDIAINFO_FLAC_YES)
+                File_Flac MI;
+                MI.NoFileHeader = true;
+                MI.FromIamf = true;
+                Open_Buffer_Init(&MI);
+                Open_Buffer_Continue(&MI);
+                Open_Buffer_Finalize(&MI);
+                FILLING_BEGIN_PRECISE();
+                    if (IsFirst) {
+                        Merge(MI, Stream_Audio, 0, 0, false);
+                    }
+                FILLING_END();
+                #endif
+                break;
+            }
+            case CodecIDs::ipcm: {
+                int32u sample_rate;
+                int8u sample_format_flags, sample_size;
+                Get_B1 (sample_format_flags,                    "sample_format_flags");
+                Get_B1 (sample_size,                            "sample_size");
+                Get_B4 (sample_rate,                            "sample_rate");
+                FILLING_BEGIN_PRECISE();
+                    const char* Endianness = sample_format_flags & 1 ? "Little" : "Big";
+                    Fill(Stream_Audio, 0, Audio_Format_Settings_Endianness, Endianness);
+                    Fill(Stream_Audio, 0, Audio_BitDepth, sample_size);
+                    Fill(Stream_Audio, 0, Audio_SamplingRate, sample_rate);
+                FILLING_END();
+                break;
+            }
             default:
                 Skip_XX(Element_Size - Element_Offset, "(Not parsed)");
                 break;
@@ -296,17 +392,8 @@ void File_Iamf::ia_codec_config()
     Element_End0();
 
     FILLING_BEGIN_PRECISE();
-        auto CodecID = Ztring::ToZtring_From_CC4(codec_id);
-        if (CodecID != Retrieve_Const(Stream_Audio, 0, Audio_CodecID)) {
-            Fill(Stream_Audio, 0, Audio_CodecID, CodecID);
-        }
-        switch (codec_id)
-        {
-        case CodecIDs::Opus:
-            Fill(Stream_Audio, 0, Audio_SamplingRate, sample_rate ? sample_rate : 48000);
-            break;
-        default:
-            break;
+        if (IsFirst && num_samples_per_frame && Retrieve_Const(Stream_Audio, 0, Audio_SamplesPerFrame).empty()) {
+            Fill(Stream_Audio, 0, Audio_SamplesPerFrame, num_samples_per_frame);
         }
     FILLING_END();
 }
@@ -527,8 +614,6 @@ void File_Iamf::ia_mix_presentation()
     //Filling
     FILLING_BEGIN_PRECISE();
     FILLING_END();
-    
-    Finish(); //stop here for now, the rest not yet implemented
 }
 
 //---------------------------------------------------------------------------

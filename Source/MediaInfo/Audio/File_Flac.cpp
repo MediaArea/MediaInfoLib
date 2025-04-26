@@ -54,6 +54,7 @@ File_Flac::File_Flac()
     //In
     NoFileHeader=false;
     VorbisHeader=false;
+    FromIamf=false;
 
     //Temp
     IsAudioFrames=false;
@@ -174,7 +175,7 @@ void File_Flac::Data_Parse()
         if (!IsSub)
             Fill(Stream_Audio, 0, Audio_StreamSize, File_Size-(File_Offset+Buffer_Offset+Element_Size));
 
-    if (Retrieve(Stream_Audio, 0, Audio_ChannelPositions).empty() && Retrieve(Stream_Audio, 0, Audio_ChannelPositions_String2).empty())
+    if (Retrieve(Stream_Audio, 0, Audio_ChannelPositions).empty() && Retrieve(Stream_Audio, 0, Audio_ChannelPositions_String2).empty() && !FromIamf)
     {
         int32u t = 0;
         int32s c = Retrieve(Stream_Audio, 0, Audio_Channel_s_).To_int32s();
@@ -234,15 +235,19 @@ void File_Flac::STREAMINFO()
          else
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
         Fill(Stream_Audio, 0, Audio_SamplingRate, SampleRate);
-        Fill(Stream_Audio, 0, Audio_Channel_s_, Channels+1);
+        if (!FromIamf)
+            Fill(Stream_Audio, 0, Audio_Channel_s_, Channels+1);
         Fill(Stream_Audio, 0, Audio_BitDepth, BitPerSample+1);
         if (!IsSub && Samples)
             Fill(Stream_Audio, 0, Audio_SamplingCount, Samples);
-        Ztring MD5_PerItem;
-        MD5_PerItem.From_UTF8(uint128toString(MD5Stored, 16));
-        while (MD5_PerItem.size()<32)
-            MD5_PerItem.insert(MD5_PerItem.begin(), '0'); //Padding with 0, this must be a 32-byte string
-        Fill(Stream_Audio, 0, "MD5_Unencoded", MD5_PerItem);
+        if (!FromIamf || MD5Stored)
+        {
+            Ztring MD5_PerItem;
+            MD5_PerItem.From_UTF8(uint128toString(MD5Stored, 16));
+            while (MD5_PerItem.size()<32)
+                MD5_PerItem.insert(MD5_PerItem.begin(), '0'); //Padding with 0, this must be a 32-byte string
+            Fill(Stream_Audio, 0, "MD5_Unencoded", MD5_PerItem);
+        }
 
         File__Tags_Helper::Streams_Fill();
     FILLING_END();

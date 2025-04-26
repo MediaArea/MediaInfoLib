@@ -8049,6 +8049,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_iacb()
 
         //Parsing
         Open_Buffer_OutOfBand(Parser);
+        mdat_MustParse = true; //Data is in MDAT
     }
     #else
         Skip_XX(Element_Size, "IAMF Data");
