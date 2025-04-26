@@ -238,8 +238,31 @@ void File_Iamf::Data_Parse()
     case 0x00   : ia_codec_config(); break;
     case 0x01   : ia_audio_element(); break;
     case 0x02   : ia_mix_presentation(); break;
+    case 0x03   :
+    case 0x04   :
+    case 0x05   :
+    case 0x06   :
+    case 0x07   :
+    case 0x08   :
+    case 0x09   :
+    case 0x0A   :
+    case 0x0B   :
+    case 0x0C   :
+    case 0x0D   :
+    case 0x0E   :
+    case 0x0F   :
+    case 0x10   :
+    case 0x11   :
+    case 0x12   :
+    case 0x13   :
+    case 0x14   :
+    case 0x15   :
+    case 0x16   :
+    case 0x17   : Skip_XX(Element_Size - Element_Offset, "Data");
+                  Finish(); //stop once done with Descriptor OBUs, parsing for IA Data OBUs not yet implemented
+                  break;
     case 0x1F   : ia_sequence_header(); break;
-    default     : Skip_XX(Element_Size - Element_Offset, "Data");
+    default     : Skip_XX(Element_Size - Element_Offset, "Data"); break;
     }
 }
 
@@ -570,8 +593,6 @@ void File_Iamf::ia_mix_presentation()
     //Filling
     FILLING_BEGIN_PRECISE();
     FILLING_END();
-    
-    Finish(); //stop here for now, the rest not yet implemented
 }
 
 //---------------------------------------------------------------------------
