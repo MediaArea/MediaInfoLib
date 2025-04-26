@@ -1427,6 +1427,8 @@ void File_Jpeg::APP1()
 //---------------------------------------------------------------------------
 void File_Jpeg::APP1_EXIF()
 {
+    Accept();
+
     Element_Info1("Exif");
 
     //Parsing
@@ -1435,7 +1437,11 @@ void File_Jpeg::APP1_EXIF()
     Open_Buffer_Init(&MI);
     Open_Buffer_Continue(&MI);
     Open_Buffer_Finalize(&MI);
-    Merge(MI, Stream_General, 0, 0);
+    Merge(MI, Stream_General, 0, 0, false);
+    size_t Count = MI.Count_Get(Stream_Image);
+    for (size_t i = 0; i < Count; i++) {
+        Merge(MI, Stream_Image, i, i, false);
+    }
     #else
     Skip_UTF8(Element_Size - Element_Offset,                    "EXIF Tags");
     #endif
@@ -1457,7 +1463,7 @@ void File_Jpeg::APP1_XMP()
     Element_Offset = Element_Offset_Sav;
     Open_Buffer_Finalize(&MI);
     Element_Show(); //TODO: why is it needed?
-    Merge(MI, Stream_General, 0, 0);
+    Merge(MI, Stream_General, 0, 0, false);
     #endif
     Skip_UTF8(Element_Size - Element_Offset,                    "XMP metadata");
 }

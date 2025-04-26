@@ -33,6 +33,9 @@ public:
     File_Exif();
 
 private :
+    //Streams management
+    void Streams_Finish();
+
     //Buffer - File header
     void FileHeader_Parse();
 
