@@ -805,6 +805,57 @@ File_Exif::File_Exif() : LittleEndian{}, currentIFD(Kind_IFD0)
 }
 
 //***************************************************************************
+// Streams management
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Exif::Streams_Finish()
+{
+    const auto Infos_Image_It = Infos.find(Kind_IFD0);
+    const auto Infos_Thumbnail_It = Infos.find(Kind_IFD1);
+    const auto Infos_Exif_It = Infos.find(Kind_Exif);
+    const auto Infos_GPS_It = Infos.find(Kind_GPS);
+
+    if (Infos_Image_It != Infos.end()) {
+        const auto Infos_Image = Infos_Image_It->second;
+        const auto Make = Infos_Image.find(IFD0::Make); if (Make != Infos_Image.end()) Fill(Stream_General, 0, General_Encoded_Hardware_CompanyName, Make->second.Read());
+        const auto Model = Infos_Image.find(IFD0::Model); if (Model != Infos_Image.end()) Fill(Stream_General, 0, General_Encoded_Hardware_Model, Model->second.Read());
+        const auto Software = Infos_Image.find(IFD0::Software); if (Software != Infos_Image.end()) Fill(Stream_General, 0, General_Encoded_Application, Software->second.Read());
+        const auto Description = Infos_Image.find(IFD0::ImageDescription); if (Description != Infos_Image.end()) Fill(Stream_General, 0, General_Description, Description->second.Read());
+        const auto Copyright = Infos_Image.find(IFD0::Copyright); if (Copyright != Infos_Image.end()) Fill(Stream_General, 0, General_Copyright, Copyright->second.Read());
+    }
+    if (Infos_Exif_It != Infos.end()) {
+        const auto Infos_Exif = Infos_Exif_It->second;
+        const auto DateTimeOriginal = Infos_Exif.find(IFDExif::DateTimeOriginal);
+        const auto SubSecTimeOriginal = Infos_Exif.find(IFDExif::SubSecTimeOriginal);
+        const auto OffsetTimeOriginal = Infos_Exif.find(IFDExif::OffsetTimeOriginal);
+        Ztring datetime;
+        if (DateTimeOriginal != Infos_Exif.end())
+            datetime += DateTimeOriginal->second.Read();
+        if (SubSecTimeOriginal != Infos_Exif.end())
+            datetime += __T(".") + SubSecTimeOriginal->second.Read();
+        if (OffsetTimeOriginal != Infos_Exif.end())
+            datetime += OffsetTimeOriginal->second.Read();
+        Fill(Stream_General, 0, General_Recorded_Date, datetime);
+    }
+    if (Infos_GPS_It != Infos.end()) {
+        const auto Infos_GPS = Infos_GPS_It->second;
+        const auto GPSLatitude = Infos_GPS.find(IFDGPS::GPSLatitude);
+        const auto GPSLatitudeRef = Infos_GPS.find(IFDGPS::GPSLatitudeRef);
+        const auto GPSLongitude = Infos_GPS.find(IFDGPS::GPSLongitude);
+        const auto GPSLongitudeRef = Infos_GPS.find(IFDGPS::GPSLongitudeRef);
+        const auto GPSAltitude = Infos_GPS.find(IFDGPS::GPSAltitude);
+        if (GPSLatitude != Infos_GPS.end() && GPSLatitude->second.size() == 3 && GPSLatitudeRef != Infos_GPS.end() && GPSLongitude != Infos_GPS.end() && GPSLongitude->second.size() == 3 && GPSLongitudeRef != Infos_GPS.end()) {
+            Ztring location = GPSLatitude->second.at(0) + __T("\u00B0") + GPSLatitude->second.at(1) + __T("'") + GPSLatitude->second.at(2) + __T("\"") + GPSLatitudeRef->second.at(0) + __T(" ")
+                + GPSLongitude->second.at(0) + __T("\u00B0") + GPSLongitude->second.at(1) + __T("'") + GPSLongitude->second.at(2) + __T("\"") + GPSLongitudeRef->second.at(0) + __T(" ");
+            if (GPSAltitude != Infos_GPS.end())
+                location += GPSAltitude->second.Read() + __T("m");
+            Fill(Stream_General, 0, General_Recorded_Location, location);
+        }
+    }
+}
+
+//***************************************************************************
 // Buffer - File header
 //***************************************************************************
 
@@ -1031,6 +1082,8 @@ void File_Exif::UserComment(ZtringList& Info)
 //---------------------------------------------------------------------------
 void File_Exif::Thumbnail()
 {
+    Stream_Prepare(Stream_Image);
+
     File__Analyze* Parser = nullptr;
     const auto Infos_Thumbnail_It = Infos.find(Kind_IFD1);
     if (Infos_Thumbnail_It != Infos.end()) {
@@ -1051,6 +1104,7 @@ void File_Exif::Thumbnail()
         Open_Buffer_Init(Parser);
         Open_Buffer_Continue(Parser);
         Open_Buffer_Finalize(Parser);
+        Merge(*Parser, Stream_Image, 0, 1, false);
     }
     else {
         //No parser available, skipping
