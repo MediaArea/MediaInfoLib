@@ -864,6 +864,17 @@ void File_Exif::FileHeader_Parse()
 {
     //Parsing
     int32u Alignment;
+    if (FromHeif) {
+        int32u Size;
+        Get_B4 (Size,                                           "Size");
+        string Identifier;
+        Get_String(Size, Identifier,                            "Identifier");
+        if (Size != 6 || strncmp(Identifier.c_str(), "Exif\0", 6)) {
+            Reject();
+            return;
+        }
+        OffsetFromContainer = 10;
+    }
     Get_C4 (Alignment,                                          "Alignment");
     if (Alignment == 0x49492A00)
         LittleEndian = true;
@@ -907,7 +918,7 @@ void File_Exif::Header_Parse()
     //Handling remaining IFD data
     if (!IfdItems.empty())
     {
-        if (Buffer_Offset != IfdItems.begin()->first) {
+        if (Buffer_Offset - OffsetFromContainer != IfdItems.begin()->first) {
             IfdItems.clear(); //There was a problem during the seek, trashing remaining positions from last IFD
             Finish();
             return;
@@ -1342,7 +1353,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
 //---------------------------------------------------------------------------
 void File_Exif::GoToOffset(int64u GoTo_)
 {
-    Element_Offset = GoTo_ - Buffer_Offset;
+    Element_Offset = GoTo_ - (Buffer_Offset - OffsetFromContainer);
 }
 
 } //NameSpace

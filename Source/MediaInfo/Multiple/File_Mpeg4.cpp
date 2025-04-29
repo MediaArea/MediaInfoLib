@@ -987,6 +987,8 @@ void File_Mpeg4::Streams_Finish()
                 for (std::map<int32u, stream>::iterator Target=Streams.begin(); Target!=Streams.end(); ++Target)
                     if (Target->second.StreamKind!=Stream_General)
                         Merge(*Temp->second.Parsers[0], Target->second.StreamKind, 0, Target->second.StreamPos);
+                //if (Temp->second.Parsers[0]->Get(Stream_General, 0, General_Format)==__T("Exif"))
+                    Merge(*Temp->second.Parsers[0], Stream_General, 0, 0);
             }
             else
             {
