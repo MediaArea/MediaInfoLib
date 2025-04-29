@@ -127,6 +127,9 @@ using namespace std;
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
+#if defined(MEDIAINFO_SPHERICALVIDEO_YES)
+    #include "MediaInfo/Tag/File_SphericalVideo.h"
+#endif
 #if defined(MEDIAINFO_PROPERTYLIST_YES)
     #include "MediaInfo/Tag/File_PropertyList.h"
 #endif
@@ -937,6 +940,7 @@ namespace Elements
     const int64u moov_trak_tref_vdep=0x76646570;
     const int64u moov_trak_udta=0x75647461;
     const int64u moov_trak_udta_free=0x66726565;
+    const int64u moov_trak_uuid=0x75756964;
     const int64u moov_udta=0x75647461;
     const int64u moov_udta_AllF=0x416C6C46;
     const int64u moov_udta_chpl=0x6368706C;
@@ -1388,6 +1392,7 @@ void File_Mpeg4::Data_Parse()
                 ATOM (moov_trak_udta_free);
                 ATOM_DEFAULT (moov_trak_udta_xxxx);
                 ATOM_END_DEFAULT
+            ATOM(moov_trak_uuid);
             ATOM_END
         LIST(moov_udta)
             ATOM_BEGIN
@@ -9416,6 +9421,28 @@ void File_Mpeg4::moov_trak_udta()
 void File_Mpeg4::moov_trak_udta_xxxx()
 {
     moov_udta_xxxx();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_uuid()
+{
+    if (Name_UUID.hi == 0xFFCC8263F8554A93LL && Name_UUID.lo == 0x8814587A02521FDDLL) {
+        moov_trak_uuid_SphericalVideo();
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_uuid_SphericalVideo()
+{
+    #if defined(MEDIAINFO_SPHERICALVIDEO_YES)
+        File_SphericalVideo MI;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI);
+        Open_Buffer_Finalize(&MI);
+        Merge(MI, Stream_Video, StreamPos_Last, 0);
+    #else
+        Skip_XX(Element_Size,                                   "(Not parsed)");
+    #endif
 }
 
 //---------------------------------------------------------------------------

@@ -192,6 +192,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Tag/File_Lyrics3.cpp \
                        ../../../Source/MediaInfo/Tag/File_Lyrics3v2.cpp \
                        ../../../Source/MediaInfo/Tag/File_PropertyList.cpp \
+                       ../../../Source/MediaInfo/Tag/File_SphericalVideo.cpp \
                        ../../../Source/MediaInfo/Tag/File_VorbisCom.cpp \
                        ../../../Source/MediaInfo/Tag/File_Xmp.cpp \
                        ../../../Source/MediaInfo/Text/File_Cdp.cpp \

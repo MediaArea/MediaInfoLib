@@ -163,6 +163,16 @@ int tfsxml_init(tfsxml_string* priv, const void* buf, unsigned len, unsigned ver
         len -= 3;
     }
 
+    /* Skip leading whitespaces */
+    while (len) {
+        const char value = *buf_8;
+        if (value != '\t' && value != '\n' && value != '\r' && value != ' ') {
+            break;
+        }
+        buf_8++;
+        len--;
+    }
+
     /* Start detection */
     if (len < 1
         || buf_8[0] != '<') {

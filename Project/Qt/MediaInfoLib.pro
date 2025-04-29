@@ -214,6 +214,7 @@ HEADERS += \
         ../../Source/MediaInfo/Tag/File_Lyrics3v2.h \
         ../../Source/MediaInfo/Tag/File_PropertyList.h \
         ../../Source/MediaInfo/Tag/File_VorbisCom.h \
+        ../../Source/MediaInfo/Tag/File_SphericalVideo.h \
         ../../Source/MediaInfo/Tag/File_Xmp.h \
         ../../Source/MediaInfo/Text/File_AribStdB24B37.h \
         ../../Source/MediaInfo/Text/File_Cdp.h \
@@ -457,6 +458,7 @@ SOURCES += \
         ../../Source/MediaInfo/Tag/File_Lyrics3v2.cpp \
         ../../Source/MediaInfo/Tag/File_PropertyList.cpp \
         ../../Source/MediaInfo/Tag/File_VorbisCom.cpp \
+        ../../Source/MediaInfo/Tag/File_SphericalVideo.cpp \
         ../../Source/MediaInfo/Tag/File_Xmp.cpp \
         ../../Source/MediaInfo/Text/File_AribStdB24B37.cpp \
         ../../Source/MediaInfo/Text/File_Cdp.cpp \

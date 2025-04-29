@@ -368,6 +368,9 @@
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
+#if defined(MEDIAINFO_SPHERICALVIDEO_YES)
+    #include "MediaInfo/Tag/File_SphericalVideo.h"
+#endif
 #if defined(MEDIAINFO_XMP_YES)
     #include "MediaInfo/Tag/File_Xmp.h"
 #endif
@@ -780,6 +783,9 @@ File__MultipleParsing::File__MultipleParsing()
     #endif
 
     // Tag
+    #if defined(MEDIAINFO_SPHERICALVIDEO_YES)
+        Parser.push_back(new File_SphericalVideo());
+    #endif
     #if defined(MEDIAINFO_XMP_YES)
         Parser.push_back(new File_Xmp());
     #endif
