@@ -2214,7 +2214,8 @@ void File_Mpeg4::mdat_xxxx()
                     size_t mdat_Pos_Max=0;
                     for (auto& Stream : Streams)
                     {
-                        if (Stream.second.IsCaption)
+                        auto HandleAllContent = Stream.second.IsCaption || (!Stream.second.Parsers.empty() && Stream.second.Parsers.front()->MustExtendParsingDuration);
+                        if (!Stream.second.Parsers.empty() && HandleAllContent)
                         {
                             Stream.second.Parsers.front()->Open_Buffer_Unsynch();
                             int64u ProbeCaption_mdatPos=(int64u)-1;
@@ -3216,6 +3217,7 @@ void File_Mpeg4::moof_traf_trun()
             first_sample_is_non_sync_sample_PresenceAndValue=0;
     #endif
     Loop_CheckValue(sample_count, 4 * (sample_duration_present + sample_size_present + sample_flags_present + sample_composition_time_offset_present), "sample_count");
+    auto HandleAllContent = Stream->second.TimeCode || Stream->second.IsCaption || (Stream->second.Parsers.empty() && Stream->second.StreamKind == Stream_Video) || (!Stream->second.Parsers.empty() && Stream->second.MayHaveCaption);
     for (int32u Pos=0; Pos<sample_count; Pos++)
     {
         Element_Begin1("sample");
@@ -3237,7 +3239,7 @@ void File_Mpeg4::moof_traf_trun()
             //Filling
             Stream->second.stsz_StreamSize+=sample_size;
             Stream->second.stsz_Total.push_back(sample_size);
-            if (Stream->second.stsz.size()<FrameCount_MaxPerStream || Stream->second.TimeCode || Streams[moov_trak_tkhd_TrackID].IsCaption)
+            if (Stream->second.stsz.size()<FrameCount_MaxPerStream || HandleAllContent)
                 Stream->second.stsz.push_back(sample_size);
             if (Stream->second.StreamKind==Stream_Text && sample_size>2)
                 Stream->second.stsz_MoreThan2_Count++;
@@ -5070,8 +5072,9 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_co64()
     if (Count==0)
         return;
 
-    std::vector<int64u> &stco=Streams[moov_trak_tkhd_TrackID].stco;
-    stco.resize((Count<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode || Streams[moov_trak_tkhd_TrackID].IsCaption)?Count:FrameCount_MaxPerStream);
+    std::vector<int64u> &stco=Stream->second.stco;
+    auto HandleAllContent = Stream->second.TimeCode || Stream->second.IsCaption || (Stream->second.Parsers.empty() && Stream->second.StreamKind == Stream_Video) || (!Stream->second.Parsers.empty() && Stream->second.MayHaveCaption);
+    stco.resize((Count<FrameCount_MaxPerStream || HandleAllContent)?Count:FrameCount_MaxPerStream);
     int64u* stco_Data=&stco[0];
 
     Loop_CheckValue(Count, 8, "entry_count");
@@ -5088,7 +5091,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_co64()
         Offset=BigEndian2int64u(Buffer+Buffer_Offset+(size_t)Element_Offset);
         Element_Offset+=8;
 
-        if (Pos<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode || Streams[moov_trak_tkhd_TrackID].IsCaption)
+        if (Pos<FrameCount_MaxPerStream || HandleAllContent)
         {
             (*stco_Data)=Offset;
             stco_Data++;
@@ -5252,6 +5255,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stco()
     int32u Count, Offset;
     Get_B4 (Count,                                              "Number of entries");
     Loop_CheckValue(Count, 4, "entry_count");
+    auto HandleAllContent = Stream->second.TimeCode || Stream->second.IsCaption || (Stream->second.Parsers.empty() && Stream->second.StreamKind == Stream_Video) || (!Stream->second.Parsers.empty() && Stream->second.MayHaveCaption);
     for (int32u Pos=0; Pos<Count; Pos++)
     {
         //Too much slow
@@ -5265,7 +5269,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stco()
         Offset=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
         Element_Offset+=4;
 
-        if (Pos<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode || Streams[moov_trak_tkhd_TrackID].IsCaption)
+        if (Pos<FrameCount_MaxPerStream || HandleAllContent)
             Streams[moov_trak_tkhd_TrackID].stco.push_back(Offset);
     }
 }
@@ -5334,9 +5338,10 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsc()
 
     //Parsing
     int32u Count;
-    stream::stsc_struct Stsc;
     Get_B4 (Count,                                              "Number of entries");
     Loop_CheckValue(Count, 12, "entry_count");
+    Stream=Streams.find(moov_trak_tkhd_TrackID);
+    auto HandleAllContent = Stream->second.TimeCode || Stream->second.IsCaption || (Stream->second.Parsers.empty() && Stream->second.StreamKind == Stream_Video) || (!Stream->second.Parsers.empty() && Stream->second.MayHaveCaption);
     for (int32u Pos=0; Pos<Count; Pos++)
     {
         //Too much slow
@@ -5354,10 +5359,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsc()
         */
 
         //Faster
-        if (Pos<FrameCount_MaxPerStream || Streams[moov_trak_tkhd_TrackID].TimeCode || Streams[moov_trak_tkhd_TrackID].IsCaption)
+        if (Pos<FrameCount_MaxPerStream || HandleAllContent)
         {
             if (Element_Offset+12>Element_Size)
                 break; //Problem
+            stream::stsc_struct Stsc;
             Stsc.FirstChunk     =BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset  );
             Stsc.SamplesPerChunk=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset+4);
             Element_Offset+=12;
@@ -6535,6 +6541,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                         }
                     #endif //MEDIAINFO_DEMUX
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                    Streams[moov_trak_tkhd_TrackID].MayHaveCaption=true;
                 }
             #endif
             #if defined(MEDIAINFO_AVS3V_YES)
@@ -6576,6 +6583,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                         }
                     #endif //MEDIAINFO_DEMUX
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                    Streams[moov_trak_tkhd_TrackID].MayHaveCaption=true;
                 }
             #endif
             #if defined(MEDIAINFO_MPEGV_YES)
@@ -6594,6 +6602,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                         }
                     #endif //MEDIAINFO_DEMUX
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                    Streams[moov_trak_tkhd_TrackID].MayHaveCaption=true;
                 }
             #endif
             #if defined(MEDIAINFO_PRORES_YES)
@@ -8814,6 +8823,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsz()
         {
             Loop_CheckValue(Sample_Count, FieldSize_Count, "entry_count");
         }
+        auto HandleAllContent = Stream->second.TimeCode || Stream->second.IsCaption || (Stream->second.Parsers.empty() && Stream->second.StreamKind == Stream_Video) || (!Stream->second.Parsers.empty() && Stream->second.MayHaveCaption);
         for (int32u Pos=0; Pos<Sample_Count; Pos++)
         {
             //Too much slow
@@ -8831,7 +8841,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsz()
             //Faster
             if (Element_Offset+4>Element_Size)
                 break; //Problem
-           switch(FieldSize)
+            switch(FieldSize)
             {
                 case  4 : if (Sample_Count%2)
                             Size=Buffer[Buffer_Offset+(size_t)Element_Offset]&0x0F;
@@ -8841,7 +8851,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsz()
                             Element_Offset++;
                           }
                           break;
-               case  8 : Size=BigEndian2int8u (Buffer+Buffer_Offset+(size_t)Element_Offset); Element_Offset++; break;
+                case  8 : Size=BigEndian2int8u (Buffer+Buffer_Offset+(size_t)Element_Offset); Element_Offset++; break;
                 case 16 : Size=BigEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Offset); Element_Offset+=2; break;
                 case 32 : Size=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset); Element_Offset+=4; break;
                 default : return;
@@ -8849,7 +8859,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsz()
 
             Stream->second.stsz_StreamSize+=Size;
             Stream->second.stsz_Total.push_back(Size);
-            if (Pos<FrameCount_MaxPerStream || Stream->second.TimeCode || Streams[moov_trak_tkhd_TrackID].IsCaption)
+            if (Pos<FrameCount_MaxPerStream || HandleAllContent)
                 Stream->second.stsz.push_back(Size);
             if (IsTimedText && Size>2)
                 TimedText_Count++;

@@ -573,6 +573,7 @@ private :
         bool                    AllForcedSamples;
         bool                    IsImage;
         bool                    IsCaption;
+        bool                    MayHaveCaption;
         bool                    tkhd_Found;
         int32u                  TrackID;
         std::vector<mdat_Pos_Type> mdat_Pos;
@@ -672,6 +673,7 @@ private :
             AllForcedSamples=false;
             IsImage=false;
             IsCaption=false;
+            MayHaveCaption=false;
             tkhd_Found=false;
             CleanAperture_Width=0;
             CleanAperture_Height=0;

@@ -2609,6 +2609,7 @@ bool File_Mpeg4::BookMark_Needed()
                         int64u MinimalOffset = (int64u)-1;
                         int64u MaximalOffset = 0;
                     #endif //MEDIAINFO_DEMUX
+                    auto HandleAllContent = Temp->second.TimeCode || Temp->second.IsCaption || (Temp->second.Parsers.empty() && Temp->second.StreamKind == Stream_Video) || (!Temp->second.Parsers.empty() && Temp->second.MayHaveCaption);
                     for (; stco_Current<stco_Max; ++stco_Current)
                     {
                         #if MEDIAINFO_DEMUX
@@ -2636,7 +2637,7 @@ bool File_Mpeg4::BookMark_Needed()
                                     else
                                         mdat_Pos_Temp2.Size = *stsz_Current;
                                     mdat_Pos.push_back(mdat_Pos_Temp2);
-                                    if (Temp->second.IsCaption)
+                                    if (HandleAllContent)
                                         mdat_Pos_Caption.push_back(mdat_Pos_Temp2);
                                     Chunk_Offset += *stsz_Current;
                                     stsz_Current++;
@@ -2656,7 +2657,7 @@ bool File_Mpeg4::BookMark_Needed()
                             mdat_Pos_Temp2.StreamID = Temp->first;
                             mdat_Pos_Temp2.Size = stsc_Current->SamplesPerChunk*Temp->second.stsz_Sample_Size*Temp->second.stsz_Sample_Multiplier;
                             mdat_Pos.push_back(mdat_Pos_Temp2);
-                            if (Temp->second.IsCaption)
+                            if (HandleAllContent)
                                 mdat_Pos_Caption.push_back(mdat_Pos_Temp2);
 
                             #if MEDIAINFO_DEMUX
@@ -2709,7 +2710,7 @@ bool File_Mpeg4::BookMark_Needed()
                                     if (Temp->second.FirstUsedOffset==(int64u)-1)
                                         Temp->second.FirstUsedOffset=mdat_Pos_Temp2.Offset;
                                     mdat_Pos.push_back(mdat_Pos_Temp2);
-                                    if (Temp->second.IsCaption)
+                                    if (HandleAllContent)
                                         mdat_Pos_Caption.push_back(mdat_Pos_Temp2);
                                 }
                                 Chunk_Offset += Size;
@@ -2720,7 +2721,7 @@ bool File_Mpeg4::BookMark_Needed()
                                 }
                                 Chunk_FrameCount++;
                                 }
-                            if (!Temp->second.TimeCode && !Temp->second.IsCaption && Chunk_FrameCount >= FrameCount_MaxPerStream)
+                            if (!HandleAllContent && Chunk_FrameCount >= FrameCount_MaxPerStream)
                                 break;
                         }
 
