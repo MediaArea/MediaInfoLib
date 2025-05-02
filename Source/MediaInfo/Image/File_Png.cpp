@@ -31,6 +31,9 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/Image/File_Png.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
+#if defined(MEDIAINFO_EXIF_YES)
+    #include "MediaInfo/Tag/File_Exif.h"
+#endif
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
@@ -94,6 +97,7 @@ namespace Elements
     const int32u cICP=0x63494350;
     const int32u cLLI=0x634C4C49;
     const int32u cLLi=0x634C4C69;
+    const int32u eXIf=0x65584966;
     const int32u gAMA=0x67414D41;
     const int32u iCCP=0x69434350;
     const int32u iTXt=0x69545874;
@@ -261,6 +265,7 @@ void File_Png::Data_Parse()
         CASE_INFO(cICP,                                         "Coding-independent code points");
         CASE_INFO(cLLI,                                         "Content Light Level Information");
         CASE_INFO(cLLi,                                         "Content Light Level Information");
+        CASE_INFO(eXIf,                                         "EXIF");
         CASE_INFO(gAMA,                                         "Gamma");
         CASE_INFO(iCCP,                                         "Embedded ICC profile");
         CASE_INFO(iTXt,                                         "International textual data");
@@ -389,6 +394,27 @@ void File_Png::cLLI()
         Fill(StreamKind_Last, StreamPos_Last, "MaxCLL", MaxCLL);
         Fill(StreamKind_Last, StreamPos_Last, "MaxFALL", MaxFALL);
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Png::eXIf()
+{
+    Element_Info1("Exif");
+
+    //Parsing
+    #if defined(MEDIAINFO_EXIF_YES)
+    File_Exif MI;
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Merge(MI, Stream_General, 0, 0, false);
+    size_t Count = MI.Count_Get(Stream_Image);
+    for (size_t i = 0; i < Count; i++) {
+        Merge(MI, Stream_Image, i, i, false);
+    }
+    #else
+    Skip_UTF8(Element_Size - Element_Offset,                    "EXIF Tags");
+    #endif
 }
 
 //---------------------------------------------------------------------------
@@ -669,7 +695,7 @@ void File_Png::Textual(bitset8 Method)
             Open_Buffer_Continue(&MI, (const int8u*)Text_UTF8.c_str(), Text_UTF8.size());
             Open_Buffer_Finalize(&MI);
             Element_Show(); //TODO: why is it needed?
-            Merge(MI, Stream_General, 0, 0);
+            Merge(MI, Stream_General, 0, 0, false);
             Text.clear();
             #endif
         }

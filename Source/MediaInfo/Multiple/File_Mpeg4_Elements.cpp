@@ -124,6 +124,9 @@ using namespace std;
 #if defined(MEDIAINFO_CDP_YES)
     #include "MediaInfo/Text/File_Cdp.h"
 #endif
+#if defined(MEDIAINFO_EXIF_YES)
+    #include "MediaInfo/Tag/File_Exif.h"
+#endif
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
@@ -2503,6 +2506,16 @@ void File_Mpeg4::meta_iinf_infe()
         }
         if (protection_index)
             Fill(StreamKind_Last, StreamPos_Last, "Encrypted", "Yes");
+        if (item_type == 0x45786966) // Exif
+        {
+            auto Parser = new File_Exif();
+            Parser->FromHeif = true;
+            Open_Buffer_Init(Parser);
+            Streams[item_ID].Parsers.push_back(Parser);
+            Streams[item_ID].StreamKind = Stream_General;
+            Streams[item_ID].StreamPos = 0;
+            mdat_MustParse = true;
+        }
     FILLING_END();
 }
 
@@ -2554,7 +2567,14 @@ void File_Mpeg4::meta_iloc()
             if (index_size)
                 Skip_BS(index_size,                             "extent_index");
             if (offset_size)
-                Skip_BS(offset_size,                            "extent_offset");
+            {
+                int32u extent_offset;
+                Get_BS (offset_size, extent_offset,             "extent_offset");
+
+                FILLING_BEGIN();
+                    Streams[item_ID].stco.push_back(extent_offset);
+                FILLING_END();
+            }
             if (length_size)
             {
                 int32u extent_length;
@@ -2562,6 +2582,8 @@ void File_Mpeg4::meta_iloc()
 
                 FILLING_BEGIN();
                     Streams[item_ID].stsz_StreamSize+=extent_length;
+                    Streams[item_ID].stsz_Sample_Size=extent_length;
+                    Streams[item_ID].stsc.push_back({1, 1});
                 FILLING_END();
             }
             Element_End0();
