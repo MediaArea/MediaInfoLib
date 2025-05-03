@@ -520,7 +520,7 @@ private :
         struct edts_struct
         {
             int64u  Duration;
-            int64u  Delay;
+            int64s  Delay;
             int32u  Rate;
         };
         std::vector<edts_struct> edts;
