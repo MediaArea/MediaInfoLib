@@ -331,7 +331,7 @@ void File_C2pa::bidb()
 {
     Element_Name("Embedded File Content");
 
-    Skip_XX(Element_Size,                                       "Data");
+    Attachment("C2PA", (Label_c2ma + " / " + Label).c_str());
 }
 
 //---------------------------------------------------------------------------
