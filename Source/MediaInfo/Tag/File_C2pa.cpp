@@ -28,7 +28,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Tag/File_C2pa.h"
-#include "MediaInfo/MediaInfo_Internal.h"
+#include "MediaInfo/File__MultipleParsing.h"
 #include "ThirdParty/base64/base64.h"
 //---------------------------------------------------------------------------
 
@@ -310,7 +310,24 @@ void File_C2pa::bidb()
 {
     Element_Name("Embedded File Content");
 
-    Skip_XX(Element_Size,                                       "Data");
+    File__MultipleParsing MI;
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Element_Show(); //TODO: why is it needed?
+    if (MI.Count_Get(Stream_Image))
+    {
+        Stream_Prepare(Stream_Image);
+        Merge(MI, Stream_Image, 0, StreamPos_Last);
+    }
+#if MEDIAINFO_ADVANCED
+    if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64))
+    {
+        std::string Data_Raw((const char*)(Buffer + (size_t)Buffer_Offset), (size_t)Element_Size);
+        std::string Data_Base64(Base64::encode(Data_Raw));
+        Fill(Stream_General, 0, General_Cover_Data, Data_Base64);
+    }
+#endif //MEDIAINFO_ADVANCED
+    Element_Offset = Element_Size;
 }
 
 //---------------------------------------------------------------------------
