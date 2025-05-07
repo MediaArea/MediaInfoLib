@@ -18,9 +18,11 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
+#include "MediaInfo/File__MultipleParsing.h"
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/MediaInfo_Config.h"
 #include "MediaInfo/TimeCode.h"
+#include "ThirdParty/base64/base64.h"
 #if defined(MEDIAINFO_FILE_YES)
 #include "ZenLib/File.h"
 #endif //defined(MEDIAINFO_REFERENCES_YES)
@@ -304,6 +306,70 @@ bool DateTime_Adapt(string& Value_)
     return false;
 }
 
+
+//---------------------------------------------------------------------------
+void File__Analyze::Attachment(const char* MuxingMode, const Ztring& Description, const Ztring& Type, const Ztring& MimeType, bool IsCover)
+{
+    if (Element_Offset >= Element_Size) {
+        return;
+    }
+
+    size_t Data_Size = (size_t)(Element_Size - Element_Offset);
+    File__MultipleParsing MI;
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Element_Show(); //TODO: why is it needed?
+
+    Ztring ModifiedType(Type);
+    if (ModifiedType.empty()) {
+        auto Description_Lower(Description);
+        Description_Lower.MakeLowerCase();
+        if (Description_Lower.find(__T("thumbnail")) != string::npos) {
+            IsCover = true;
+            ModifiedType = "Thumbnail";
+        }
+        if (Description_Lower.find(__T("cover")) != string::npos || Description_Lower.find(__T("front")) != string::npos) {
+            IsCover = true;
+            ModifiedType = "Cover";
+        }
+        if (Description_Lower.find(__T("back")) != string::npos) {
+            IsCover = true;
+            ModifiedType = "Cover_Back";
+        }
+        if (Description_Lower.find(__T("cd")) != string::npos && Description_Lower.find(__T("uuid")) == string::npos) {
+            IsCover = true;
+            ModifiedType = "Cover_Media";
+        }
+    }
+    if (IsCover) {
+        auto Type_String = __T("Type_") + ModifiedType;
+        auto Type_String2 = MediaInfoLib::Config.Language_Get(Type_String);
+        if (Type_String2 == Type_String)
+            Type_String2 = ModifiedType;
+
+        Fill(Stream_General, 0, General_Cover, "Yes");
+        Fill(Stream_General, 0, General_Cover_Description, Description);
+        Fill(Stream_General, 0, General_Cover_Type, Type_String2);
+        Fill(Stream_General, 0, General_Cover_Mime, MimeType);
+    }
+    if (MI.Count_Get(Stream_Image)) {
+        Stream_Prepare(Stream_Image);
+        Fill(Stream_Image, StreamPos_Last, Image_Type, ModifiedType);
+        Fill(Stream_Image, StreamPos_Last, Image_Title, Description);
+        Fill(Stream_Image, StreamPos_Last, Image_MuxingMode, MuxingMode);
+        Fill(Stream_Image, StreamPos_Last, Image_InternetMediaType, MimeType);
+        Fill(Stream_Image, StreamPos_Last, Image_StreamSize, Data_Size);
+        Merge(MI, Stream_Image, 0, StreamPos_Last);
+        #if MEDIAINFO_ADVANCED
+            if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64)) {
+                std::string Data_Raw((const char*)(Buffer + (size_t)(Buffer_Offset + Element_Offset)), Data_Size);
+                std::string Data_Base64(Base64::encode(Data_Raw));
+                Fill(Stream_General, 0, General_Cover_Data, Data_Base64);
+            }
+        #endif //MEDIAINFO_ADVANCED
+    }
+}
 
 //---------------------------------------------------------------------------
 #if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGTS_YES)

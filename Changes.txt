@@ -1,6 +1,14 @@
 I changed some elements in the interface.
 No break in binary compatibily (no crash), but some details.
 
+25.04 --> 25.05
+---------------
+- Cover_Type "Cover (front)" changed to "Cover"
+- Cover_Type "Media" changed to "Cover (media)"
+- Cover with "other" ID3v2 value changed from nothing to generic "Picture" value
+- Cover_Type is now translated
+- Covers/Thumbnails have now their own image track and with a type
+
 22.06 --> 22.09
 ---------------
 - TimeCode_Striped replaced by TimeCode_Stripped (value was buggy in previous builds anyway)

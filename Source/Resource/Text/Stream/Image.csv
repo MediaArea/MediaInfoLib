@@ -16,6 +16,8 @@ UniqueID;;;N YTY;;;The unique ID for this stream, should be copied with stream c
 UniqueID/String;;;Y NT;;;The unique ID for this stream, should be copied with stream copy
 MenuID;;;N YTY;;;The menu ID for this stream in this file
 MenuID/String;;;Y NT;;;The menu ID for this stream in this file
+Type;;;N YTY;;;Type
+Type/String;;;Y NT;;;Type
 Title;;;Y YTY;;;Title of track
 Format;;;N YTY;;;Format used
 Format/String;;;Y NT;;;Format used and any additional features or settings
