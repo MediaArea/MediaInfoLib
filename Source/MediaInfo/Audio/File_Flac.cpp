@@ -21,10 +21,9 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#include "MediaInfo/MediaInfo_Internal.h"
+#include "MediaInfo/File__MultipleParsing.h"
 #include "MediaInfo/Audio/File_Flac.h"
 #include "MediaInfo/Tag/File_VorbisCom.h"
-#include "ThirdParty/base64/base64.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -35,7 +34,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-extern const char* Id3v2_PictureType(int8u Type); //In Tag/File_Id3v2.cpp
+extern std::string Id3v2_PictureType(int8u Type);
 extern std::string ExtensibleWave_ChannelMask (int32u ChannelMask); //In Multiple/File_Riff_Elements.cpp
 extern std::string ExtensibleWave_ChannelMask2 (int32u ChannelMask); //In Multiple/File_Riff_Elements.cpp
 extern std::string ExtensibleWave_ChannelMask_ChannelLayout(int32u ChannelMask); //In Multiple/File_Riff_Elements.cpp
@@ -308,35 +307,14 @@ void File_Flac::PICTURE()
     Get_B4 (Data_Size,                                          "Data size");
     if (Element_Offset+Data_Size>Element_Size)
         return; //There is a problem
+    auto Element_Size_Save=Element_Size;
+    Element_Size=Element_Offset+Data_Size;
 
     //Filling
-    Fill(Stream_General, 0, General_Cover, "Yes");
-    Fill(Stream_General, 0, General_Cover_Description, Description);
-    Fill(Stream_General, 0, General_Cover_Type, Id3v2_PictureType((int8u)PictureType));
-    Fill(Stream_General, 0, General_Cover_Mime, MimeType);
-    MediaInfo_Internal MI;
-    Ztring Demux_Save = MI.Option(__T("Demux_Get"), __T(""));
-    MI.Option(__T("Demux"), Ztring());
-    size_t MiOpenResult = MI.Open(Buffer + (size_t)(Buffer_Offset + Element_Offset), (size_t)(Element_Size - Element_Offset), nullptr, 0, (size_t)(Element_Size - Element_Offset));
-    MI.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
-    if (MI.Count_Get(Stream_Image))
-    {
-        File__Analyze::Stream_Prepare(Stream_Image);
-        Merge(MI, Stream_Image, 0, StreamPos_Last);
-        Fill(Stream_Image, StreamPos_Last, Image_MuxingMode, "FLAC Picture");
-    }
-    #if MEDIAINFO_ADVANCED
-        if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64))
-        {
-            std::string Data_Raw((const char*)(Buffer+(size_t)(Buffer_Offset+Element_Offset)), Data_Size);
-            std::string Data_Base64(Base64::encode(Data_Raw));
-            Fill(Stream_General, 0, General_Cover_Data, Data_Base64);
-        }
-    #endif //MEDIAINFO_ADVANCED
-
-    Skip_XX(Data_Size,                                          "Data");
-    if (Element_Offset<Element_Size)
-        Skip_XX(Element_Size-Element_Offset,                    "?");
+    Attachment("FLAC Picture", Description, Id3v2_PictureType(PictureType).c_str(), MimeType, true);
+    
+    Element_Size=Element_Size_Save;
+    Skip_XX(Element_Size-Element_Offset,                        "(Unknown)");
 }
 
 } //NameSpace

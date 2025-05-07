@@ -1942,6 +1942,19 @@ void File__Analyze::Streams_Finish_StreamOnly_Image(size_t Pos)
             Fill(Stream_Image, Pos, Image_HDR_Format_Commercial, Commercial.Read());
         }
     }
+
+    if (Retrieve(Stream_Image, Pos, Image_Type_String).empty())
+    {
+        const auto& Type=Retrieve_Const(Stream_Image, Pos, Image_Type);
+        if (!Type.empty())
+        {
+            auto Type_String=__T("Type_")+Type;
+            auto Type_String2=MediaInfoLib::Config.Language_Get(Type_String);
+            if (Type_String2==Type_String)
+                Type_String2=Type;
+            Fill(Stream_Image, Pos, Image_Type_String, Type_String2);
+        }
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -2195,6 +2208,9 @@ void File__Analyze::Streams_Finish_InterStreams()
         bool IsCBR=true;
         bool IsVBR=false;
         for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Menu; StreamKind++)
+        {
+            if (StreamKind==Stream_Image)
+                continue;
             for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
             {
                 if (!IsValid)
@@ -2204,6 +2220,7 @@ void File__Analyze::Streams_Finish_InterStreams()
                 if (Retrieve((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_BitRate_Mode))==__T("VBR"))
                     IsVBR=true;
             }
+        }
         if (IsValid)
         {
             if (IsCBR)

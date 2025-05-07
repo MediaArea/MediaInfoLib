@@ -1737,6 +1737,8 @@ enum image
     Image_UniqueID_String,
     Image_MenuID,
     Image_MenuID_String,
+    Image_Type,
+    Image_Type_String,
     Image_Title,
     Image_Format,
     Image_Format_String,
