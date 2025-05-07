@@ -124,6 +124,7 @@ public :
     int64u File_Offset;
     int64u File_Offset_FirstSynched;
     int64u File_GoTo; //How many byte to skip?
+    bool   IsSub;
 
     //Divers
     void Clear();

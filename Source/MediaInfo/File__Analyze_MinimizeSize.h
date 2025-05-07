@@ -1228,7 +1228,6 @@ protected :
     //Save for speed improvement
     int8u           Config_Demux;
     Ztring          Config_LineSeparator;
-    bool            IsSub;
     enum stream_source
     {
         IsContainer,

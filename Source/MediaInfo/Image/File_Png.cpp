@@ -148,7 +148,7 @@ void File_Png::Streams_Accept()
             Fill(Stream_Video, StreamPos_Last, Video_FrameCount, Config->File_Names.size());
     }
     else
-        Stream_Prepare(StreamKind==Stream_Max?StreamKind_Last:StreamKind);
+        Stream_Prepare(StreamKind==Stream_Max?Stream_Image:StreamKind);
 }
 
 //***************************************************************************

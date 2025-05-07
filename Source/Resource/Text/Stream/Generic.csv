@@ -22,6 +22,8 @@ Codec/String
 Codec/Info
 Codec/Url
 Codec/CC
+Width
+Height
 Duration
 Duration/String
 Duration/String1

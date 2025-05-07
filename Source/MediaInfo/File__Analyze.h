@@ -1325,7 +1325,6 @@ protected :
     MediaInfo_Config::trace_Format  Config_Trace_Format;
     int8u                           Config_Demux;
     Ztring                          Config_LineSeparator;
-    bool                            IsSub;
     enum stream_source
     {
         IsContainer,
