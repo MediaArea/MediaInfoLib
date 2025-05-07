@@ -31,6 +31,9 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/Image/File_Png.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
+#if defined(MEDIAINFO_C2PA_YES)
+    #include "MediaInfo/Tag/File_C2pa.h"
+#endif
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
@@ -91,6 +94,7 @@ namespace Elements
     const int32u IEND=0x49454E44;
     const int32u IHDR=0x49484452;
     const int32u PLTE=0x506C5445;
+    const int32u caBX=0x63614258;
     const int32u cICP=0x63494350;
     const int32u cLLI=0x634C4C49;
     const int32u cLLi=0x634C4C69;
@@ -258,6 +262,7 @@ void File_Png::Data_Parse()
         CASE_INFO(IEND,                                         "Image trailer");
         CASE_INFO(IHDR,                                         "Image header");
         CASE_INFO(PLTE,                                         "Palette table");
+        CASE_INFO(caBX,                                         "JUMBF");
         CASE_INFO(cICP,                                         "Coding-independent code points");
         CASE_INFO(cLLI,                                         "Content Light Level Information");
         CASE_INFO(cLLi,                                         "Content Light Level Information");
@@ -351,6 +356,25 @@ void File_Png::IHDR()
             Fill();
         }
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Png::caBX()
+{
+    //Parsing
+    #if defined(MEDIAINFO_C2PA_YES)
+        File_C2pa MI;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI);
+        Open_Buffer_Finalize(&MI);
+        Merge(MI, Stream_General, 0, 0);
+        auto ImageCount = MI.Count_Get(Stream_Image);
+        for (size_t i = 0; i < ImageCount; ++i) {
+            Stream_Prepare(Stream_Image);
+            Merge(MI, Stream_Image, i, StreamPos_Last);
+            Fill(Stream_Image, StreamPos_Last, Image_MuxingMode, "C2PA");
+        }
+    #endif
 }
 
 //---------------------------------------------------------------------------
