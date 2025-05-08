@@ -33,6 +33,7 @@ using namespace std;
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_Mpeg4.h"
+#include "MediaInfo/File__MultipleParsing.h"
 #include "MediaInfo/Video/File_DolbyVisionMetadata.h"
 #if defined(MEDIAINFO_DVDIF_YES)
     #include "MediaInfo/Multiple/File_DvDif.h"
@@ -3636,17 +3637,7 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         case Elements::moov_meta__covr :
                             {
                             //Filling
-                            #if MEDIAINFO_ADVANCED
-                                if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64))
-                                {
-                                    std::string Data_Raw((const char*)(Buffer+(size_t)(Buffer_Offset+Element_Offset)), (size_t)(Element_Size-Element_Offset));
-                                    std::string Data_Base64(Base64::encode(Data_Raw));
-                                    Fill(Stream_General, 0, General_Cover_Data, Data_Base64);
-                                }
-                            #endif //MEDIAINFO_ADVANCED
-                            Fill(Stream_General, 0, General_Cover, "Yes");
-
-                            Skip_XX(Element_Size-Element_Offset, "Data");
+                            Attachment("moov-meta-covr", {}, "Cover", {}, true);
                             }
                             return;
                         case Elements::moov_meta__gnre :
@@ -3695,17 +3686,7 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         case Elements::moov_meta__covr :
                             {
                             //Filling
-                            #if MEDIAINFO_ADVANCED
-                                if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64))
-                                {
-                                    std::string Data_Raw((const char*)(Buffer+(size_t)(Buffer_Offset+Element_Offset)), (size_t)(Element_Size-Element_Offset));
-                                    std::string Data_Base64(Base64::encode(Data_Raw));
-                                    Fill(Stream_General, 0, General_Cover_Data, Data_Base64);
-                                }
-                            #endif //MEDIAINFO_ADVANCED
-                            Fill(Stream_General, 0, General_Cover, "Yes");
-
-                            Skip_XX(Element_Size-Element_Offset, "Data");
+                            Attachment("moov-meta-covr", {}, "Cover", {}, true);
                             }
                             return;
                         default:
@@ -3718,17 +3699,7 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         case Elements::moov_meta__covr :
                             {
                             //Filling
-                            #if MEDIAINFO_ADVANCED
-                                if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64))
-                                {
-                                    std::string Data_Raw((const char*)(Buffer+(size_t)(Buffer_Offset+Element_Offset)), (size_t)(Element_Size-Element_Offset));
-                                    std::string Data_Base64(Base64::encode(Data_Raw));
-                                    Fill(Stream_General, 0, General_Cover_Data, Data_Base64);
-                                }
-                            #endif //MEDIAINFO_ADVANCED
-                            Fill(Stream_General, 0, General_Cover, "Yes");
-
-                            Skip_XX(Element_Size-Element_Offset, "Data");
+                            Attachment("moov-meta-covr", {}, "Cover", {}, true);
                             }
                             return;
                         default:
@@ -10069,25 +10040,7 @@ void File_Mpeg4::moov_udta_thmb()
     }
     int32u Format;
     Get_C4 (Format,                                             "Format");
-    Fill(Stream_General, 0, General_Cover_Type, "Thumbnail");
-    MediaInfo_Internal MI;
-    Ztring Demux_Save = MI.Option(__T("Demux_Get"), __T(""));
-    MI.Option(__T("Demux"), Ztring());
-    MI.Open(Buffer + (size_t)(Buffer_Offset + Element_Offset), (size_t)(Element_Size - Element_Offset), nullptr, 0, (size_t)(Element_Size - Element_Offset));
-    MI.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
-    if (MI.Count_Get(Stream_Image))
-    {
-        Stream_Prepare(Stream_Image);
-        Merge(MI, Stream_Image, 0, StreamPos_Last);
-    }
-    #if MEDIAINFO_ADVANCED
-        if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64))
-        {
-            std::string Data_Raw((const char*)(Buffer+(size_t)(Buffer_Offset+Element_Offset)), (size_t)(Element_Size-Element_Offset));
-            std::string Data_Base64(Base64::encode(Data_Raw));
-            Fill(Stream_General, 0, General_Cover_Data, Data_Base64);
-        }
-    #endif //MEDIAINFO_ADVANCED
+    Attachment("moov-udta-thmb", {}, "Thumbnail");
 }
 
 //---------------------------------------------------------------------------
