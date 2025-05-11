@@ -89,6 +89,7 @@ namespace Elements
     const int64u moov_meta___prd=0xA9707264;
     const int64u moov_meta___PRD=0xA9505244;
     const int64u moov_meta___prf=0xA9707266;
+    const int64u moov_meta___pub=0xA9707562;
     const int64u moov_meta___req=0xA9726571;
     const int64u moov_meta___sne=0xA9736E65;
     const int64u moov_meta___sol=0xA9736F6C;
@@ -319,7 +320,11 @@ const char* Avs3V_matrix_coefficients(int8u matrix_coefficients);
 
 //---------------------------------------------------------------------------
 File_Mpeg4::File_Mpeg4()
-:File__Analyze(), File__HasReferences()
+    :File__Analyze(), File__HasReferences(),
+    File_Buffer_Size_Hint_Pointer{}, FrameCount_MaxPerStream{}, List{}, Version_Temp{}, channelcount{}, mdat_Pos_Max{}, mdat_Pos_Temp{}, 
+    meta_iprp_ipco_Buffer_Size{}, moof_base_data_offset{}, moof_traf_default_sample_duration{}, moof_traf_default_sample_size{},
+    moov_cmov_dcom_Compressor{}, moov_meta_hdlr_Type{}, moov_trak_mdia_minf_stbl_stsd_Pos{}, moov_trak_mdia_minf_stbl_stsz_Pos{},
+    moov_trak_tkhd_DisplayAspectRatio{}, moov_trak_tkhd_Height{}, moov_trak_tkhd_Rotation{}, moov_trak_tkhd_Width{}, moov_udta_meta_keys_ilst_Pos{}
 {
     //Configuration
     ParserName="MPEG-4";
@@ -3128,6 +3133,7 @@ File_Mpeg4::method File_Mpeg4::Metadata_Get(std::string &Parameter, int64u Meta)
         case Elements::moov_meta___prd : Parameter="Producer"; Method=Method_String; break;
         case Elements::moov_meta___PRD : Parameter="Product"; Method=Method_String; break;
         case Elements::moov_meta___prf : Parameter="Performer"; Method=Method_String; break;
+        case Elements::moov_meta___pub : Parameter="Publisher"; Method=Method_String; break;
         case Elements::moov_meta___req : Parameter="Comment"; Method=Method_String; break;
         case Elements::moov_meta___sne : Parameter="SoundEngineer"; Method=Method_String; break;
         case Elements::moov_meta___sol : Parameter="Conductor"; Method=Method_String; break;
@@ -3238,6 +3244,9 @@ File_Mpeg4::method File_Mpeg4::Metadata_Get(std::string &Parameter, const std::s
     else if (Meta=="iTunNORM") Parameter.clear();
     else if (Meta=="iTunes_CDDB_IDs") Parameter.clear();
     else if (Meta=="iTunSMPB") Parameter.clear();
+    else if (Meta=="ARRANGER") Parameter="Arranger";
+    else if (Meta=="LABEL") Parameter="Label";
+    else if (Meta=="LYRICIST") Parameter="Lyricist";
     else if (Meta=="PERFORMER") Parameter="Performer";
     else if (Meta=="PUBLISHER") Parameter="Publisher";
     else Parameter=Meta;
