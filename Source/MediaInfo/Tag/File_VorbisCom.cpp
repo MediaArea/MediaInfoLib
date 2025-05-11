@@ -63,7 +63,7 @@ bool VorbisCom_CheckToIgnore(const string& Key)
 
 //---------------------------------------------------------------------------
 File_VorbisCom::File_VorbisCom()
-:File__Analyze()
+    :File__Analyze(), user_comment_list_length{}
 {
     //In
     StreamKind_Specific=Stream_General;
@@ -237,6 +237,7 @@ void File_VorbisCom::Data_Parse()
         else if (Key==__T("ALBUM"))                  Fill(StreamKind_Common,   0, "Album", Value);
         else if (Key==__T("ALBUM_COMMENT"))          Fill(StreamKind_Common,   0, "Comment", Value);
         else if (Key==__T("ALBUMARTIST"))            AlbumArtists.push_back(Value);
+        else if (Key==__T("ARRANGER"))               Fill(StreamKind_Common,   0, "Arranger", Value);
         else if (Key==__T("ARTIST"))                 Artists.push_back(Value);
         else if (Key==__T("AUTHOR"))                 Fill(StreamKind_Common,   0, "WrittenBy", Value);
         else if (Key==__T("BWFVERSION"))             // bext
@@ -283,6 +284,7 @@ void File_VorbisCom::Data_Parse()
         else if (Key==__T("LYRICS"))                 Fill(StreamKind_Common,   0, "Lyrics", Value);
         else if (Key==__T("LWING_GAIN"))             Fill(StreamKind_Multiple, 0, "ReplayGain_Gain", Value.To_float64(), 2);
         else if (Key==__T("LOCATION"))               Fill(StreamKind_Common,   0, "Recorded/Location", Value);
+        else if (Key==__T("LYRICIST"))               Fill(StreamKind_Common,   0, "Lyricist", Value);
         else if (Key==__T("MUSICBRAINZ_SORTNAME"))   Fill(StreamKind_Common,   0, "Performer/Sort", Value);
         else if (Key==__T("ORGANIZATION"))           Fill(StreamKind_Common,   0, "Producer", Value);
         else if (Key==__T("ORIGINATOR"))             Fill(StreamKind_Common,   0, "Producer", Value);
