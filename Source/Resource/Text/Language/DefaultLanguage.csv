@@ -1287,6 +1287,26 @@ TrimMode8i;Trim mode for 7.1.4
 TruePeakLevel;True peak level
 TruePeakLevel_Album;True peak level (album)
 Type;Type
+Type_Composer;Composer
+Type_Conductor;Conductor
+Type_Cover;Cover
+Type_Cover_Back;Cover (back)
+Type_Cover_Media;Cover (media)
+Type_DuringPerformance;During performance
+Type_DuringRecording;During recording
+Type_FileIcon;File icon
+Type_FileIcon_32x32;File icon (32x32)
+Type_Illustration;Illustration
+Type_LeafletPage;Leaflet page
+Type_Lyricist;Lyricist
+Type_Performer;Performer
+Type_Performer_Lead;Performer (lead)
+Type_PerformerLogo;Performer logo
+Type_Picture;Picture
+Type_PublisherLogo;Publisher logo
+Type_RecordingLocation;Recording Location
+Type_ScreenCapture;Screen capture
+Type_Thumbnail;Thumbnail
 TypeDefinition;Type definition
 UniqueID;Unique ID
 UniversalAdID;Universal Ad ID

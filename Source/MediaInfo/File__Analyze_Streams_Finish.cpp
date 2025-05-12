@@ -1942,6 +1942,19 @@ void File__Analyze::Streams_Finish_StreamOnly_Image(size_t Pos)
             Fill(Stream_Image, Pos, Image_HDR_Format_Commercial, Commercial.Read());
         }
     }
+
+    if (Retrieve(Stream_Image, Pos, Image_Type_String).empty())
+    {
+        const auto& Type=Retrieve_Const(Stream_Image, Pos, Image_Type);
+        if (!Type.empty())
+        {
+            auto Type_String=__T("Type_")+Type;
+            auto Type_String2=MediaInfoLib::Config.Language_Get(Type_String);
+            if (Type_String2==Type_String)
+                Type_String2=Type;
+            Fill(Stream_Image, Pos, Image_Type_String, Type_String2);
+        }
+    }
 }
 
 //---------------------------------------------------------------------------
