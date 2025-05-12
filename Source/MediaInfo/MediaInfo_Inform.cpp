@@ -454,7 +454,7 @@ Ztring MediaInfo_Internal::Inform()
 
     if (HTML)
         Retour+=__T("<!DOCTYPE html>\n"
-            "<html>\n"
+            "<html lang=\"") + MediaInfoLib::Config.Language_Get(__T("  Language_ISO639")) + __T("\">\n"
             "  <head>\n"
             "    <meta charset=\"utf-8\">\n"
             "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
@@ -467,6 +467,29 @@ Ztring MediaInfo_Internal::Inform()
             "      table { width: 100%; padding: 2px; border-spacing: 2px; border:1px solid var(--border-color, navy); margin-bottom: 18px; }\n"
             "      td.Prefix { width: 25vw; min-width: 150px; max-width: 500px; font-style: italic; }\n"
             "      h2 { margin-top: 0px; }\n"
+            "      .cover-image {\n"
+            "        height: 100px;\n"
+            "        width: auto;\n"
+            "        cursor: pointer;\n"
+            "      }\n"
+            "      .overlay-sheet {\n"
+            "        display: none;\n"
+            "        position: fixed;\n"
+            "        top: 0;\n"
+            "        left: 0;\n"
+            "        width: 100%;\n"
+            "        height: 100%;\n"
+            "        background-color: rgba(0, 0, 0, 0.8);\n"
+            "        justify-content: center;\n"
+            "        align-items: center;\n"
+            "        z-index: 1000;\n"
+            "        cursor: pointer;\n"
+            "      }\n"
+            "      .overlay-image {\n"
+            "        max-width: 90vw;\n"
+            "        max-height: 90vh;\n"
+            "        cursor: pointer;\n"
+            "      }\n"
             "    </style>\n"
             "  </head>\n"
             "  <body>\n");
@@ -549,7 +572,26 @@ Ztring MediaInfo_Internal::Inform()
         }
     }
 
-    if (HTML) Retour+=__T("  </body>\n</html>\n");
+    if (HTML) {
+        Retour += __T("    <div id=\"overlaySheet\" class=\"overlay-sheet\">\n"
+            "      <img id=\"overlayImg\" class=\"overlay-image\" alt=\"Cover image\" src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=\">\n"
+            "    </div>\n"
+            "    <script>\n"
+            "      document.addEventListener('click', function(event) {\n"
+            "        const target = event.target;\n"
+            "        const overlaySheet = document.getElementById('overlaySheet');\n"
+            "        const overlayImg = document.getElementById('overlayImg');\n"
+            "        if (target.classList.contains('cover-image')) {\n"
+            "          overlayImg.src = target.src;\n"
+            "          overlaySheet.style.display = 'flex';\n"
+            "        }\n"
+            "        else {\n"
+            "          overlaySheet.style.display = 'none';\n"
+            "        }\n"
+            "      });\n"
+            "    </script>\n");
+        Retour += __T("  </body>\n</html>\n");
+    }
 
     if (!CSV && !HTML && !XML && !XML_0_7_78_MA && !XML_0_7_78_MI && !JSON)
     {
@@ -934,6 +976,30 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                     Valeur.FindAndReplace(__T("  "), __T(" &nbsp;"), 0, Ztring_Recursive);
                     Retour+=Valeur;
                     Retour+=__T("</td>\n      </tr>");
+
+                    #if MEDIAINFO_ADVANCED
+                    if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64)) {
+                        if (Get((stream_t)StreamKind, StreamPos, Champ_Pos, Info_Name) == __T("Cover")) {
+                            Retour += __T("\n      <tr>\n        <td class=\"Prefix\">");
+                            Retour += __T("Cover image :</td>\n        <td>");
+
+                            Ztring cover_data = Get((stream_t)StreamKind, StreamPos, __T("Cover_Data"));
+                            Ztring delimiter = " / ";
+                            std::vector<Ztring> cover_data_vec;
+                            size_t pos = 0;
+                            while ((pos = cover_data.find(delimiter)) != std::string::npos) {
+                                cover_data_vec.push_back(cover_data.substr(0, pos));
+                                cover_data.erase(0, pos + delimiter.length());
+                            }
+                            cover_data_vec.push_back(cover_data);
+                            for (size_t i = 0; i < cover_data_vec.size(); ++i) {
+                                Retour += __T(R"(<img class="cover-image" alt="Cover image preview" src="data:;base64,)") + cover_data_vec[i] + __T(R"("> )");
+                            }
+
+                            Retour += __T("</td>\n      </tr>");
+                        }
+                    }
+                    #endif //defined(MEDIAINFO_ADVANCED)
                 }
                 #endif //defined(MEDIAINFO_HTML_YES)
                 #if defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
