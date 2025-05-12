@@ -1994,8 +1994,9 @@ void File__Analyze::Streams_Finish_InterStreams()
         }
 
         //Filling
-        if (IsOK && StreamSize_Total>0 && StreamSize_Total<File_Size && (File_Size==StreamSize_Total || File_Size-StreamSize_Total>8)) //to avoid strange behavior due to rounding, TODO: avoid rounding
-            Fill(Stream_General, 0, General_StreamSize, File_Size-StreamSize_Total);
+        auto StreamSize=File_Size-StreamSize_Total;
+        if (IsOK && StreamSize_Total>0 && StreamSize_Total<File_Size && (File_Size==StreamSize_Total || !StreamSize || StreamSize>=4)) //to avoid strange behavior due to rounding, TODO: avoid rounding
+            Fill(Stream_General, 0, General_StreamSize, StreamSize);
     }
 
     //OverallBitRate if we have one Audio stream with bitrate
@@ -2184,7 +2185,7 @@ void File__Analyze::Streams_Finish_InterStreams()
                 else
                     StreamSizeIsValid=false;
             }
-        if (StreamSizeIsValid && (!StreamSize || StreamSize>8)) //to avoid strange behavior due to rounding, TODO: avoid rounding
+        if (StreamSizeIsValid && (!StreamSize || StreamSize>=4)) //to avoid strange behavior due to rounding, TODO: avoid rounding
             Fill(Stream_General, 0, General_StreamSize, StreamSize);
     }
 
@@ -2195,6 +2196,9 @@ void File__Analyze::Streams_Finish_InterStreams()
         bool IsCBR=true;
         bool IsVBR=false;
         for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Menu; StreamKind++)
+        {
+            if (StreamKind==Stream_Image)
+                continue;
             for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
             {
                 if (!IsValid)
@@ -2204,6 +2208,7 @@ void File__Analyze::Streams_Finish_InterStreams()
                 if (Retrieve((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_BitRate_Mode))==__T("VBR"))
                     IsVBR=true;
             }
+        }
         if (IsValid)
         {
             if (IsCBR)

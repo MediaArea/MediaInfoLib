@@ -72,59 +72,84 @@ private :
     void Data_Parse();
 
     //Elements
-    void TEM () {};
-    void SOC () {}
+    void TEM () { Data_Common(); };
+    void RE30() { Data_Common(); };
+    void RE31() { Data_Common(); };
+    void RE32() { Data_Common(); };
+    void RE33() { Data_Common(); };
+    void RE34() { Data_Common(); };
+    void RE35() { Data_Common(); };
+    void RE36() { Data_Common(); };
+    void RE37() { Data_Common(); };
+    void RE38() { Data_Common(); };
+    void RE39() { Data_Common(); };
+    void RE3A() { Data_Common(); };
+    void RE3B() { Data_Common(); };
+    void RE3C() { Data_Common(); };
+    void RE3D() { Data_Common(); };
+    void RE3E() { Data_Common(); };
+    void RE3F() { Data_Common(); };
+    void RE44() {}
+    void SOC () { Data_Common(); };
     void CAP ();
     void SIZ ();
     void COD ();
-    void COC () {Skip_XX(Element_Size, "Data");}
-    void TLM () {Skip_XX(Element_Size, "Data");}
-    void PLM () {Skip_XX(Element_Size, "Data");}
-    void PLT () {Skip_XX(Element_Size, "Data");}
+    void COC () { Data_Common(); };
+    void TLM () { Data_Common(); };
+    void PLM () { Data_Common(); };
+    void PLT () { Data_Common(); };
+    void CPF () { Data_Common(); };
     void QCD ();
-    void QCC () {Skip_XX(Element_Size, "Data");}
-    void RGN () {Skip_XX(Element_Size, "Data");}
-    void POC () {Skip_XX(Element_Size, "Data");}
-    void PPM () {Skip_XX(Element_Size, "Data");}
-    void PPT () {Skip_XX(Element_Size, "Data");}
-    void CME () {Skip_XX(Element_Size, "Data");}
-    void SOT () {Skip_XX(Element_Size, "Data");}
-    void SOP () {Skip_XX(Element_Size, "Data");}
-    void EPH () {Skip_XX(Element_Size, "Data");}
+    void QCC () { Data_Common(); };
+    void RGN () { Data_Common(); };
+    void POC () { Data_Common(); };
+    void PPM () { Data_Common(); };
+    void PPT () { Data_Common(); };
+    void CRG () { Data_Common(); };
+    void CME ();
+    void SEC () { Data_Common(); };
+    void EPB () { Data_Common(); };
+    void ESD () { Data_Common(); };
+    void EPC () { Data_Common(); };
+    void RED () { Data_Common(); };
+    void SOT () { Data_Common(); };
+    void SOP () { Data_Common(); };
+    void EPH () { Data_Common(); };
     void SOD ();
+    void ISEC() { Data_Common(); };
     void SOF_();
     void SOF0() {SOF_();};
     void SOF1() {SOF_();};
     void SOF2() {SOF_();};
     void SOF3() {SOF_();}
-    void DHT () {Skip_XX(Element_Size, "Data");}
+    void DHT () { Data_Common(); };
     void SOF5() {SOF_();}
     void SOF6() {SOF_();}
     void SOF7() {SOF_();}
-    void JPG () {Skip_XX(Element_Size, "Data");}
+    void JPG () { Data_Common(); };
     void SOF9() {SOF_();}
     void SOFA() {SOF_();}
     void SOFB() {SOF_();}
-    void DAC () {Skip_XX(Element_Size, "Data");}
+    void DAC () { Data_Common(); };
     void SOFD() {SOF_();}
     void SOFE() {SOF_();}
     void SOFF() {SOF_();}
-    void RST0() {};
-    void RST1() {};
-    void RST2() {};
-    void RST3() {};
-    void RST4() {};
-    void RST5() {};
-    void RST6() {};
-    void RST7() {};
-    void SOI () {};
-    void EOI () {};
+    void RST0() { Data_Common(); };
+    void RST1() { Data_Common(); };
+    void RST2() { Data_Common(); };
+    void RST3() { Data_Common(); };
+    void RST4() { Data_Common(); };
+    void RST5() { Data_Common(); };
+    void RST6() { Data_Common(); };
+    void RST7() { Data_Common(); };
+    void SOI () { Data_Common(); };
+    void EOI () { Data_Common(); };
     void SOS ();
-    void DQT () {Skip_XX(Element_Size, "Data");}
-    void DNL () {Skip_XX(Element_Size, "Data");}
-    void DRI () {Skip_XX(Element_Size, "Data");}
-    void DHP () {Skip_XX(Element_Size, "Data");}
-    void EXP () {Skip_XX(Element_Size, "Data");}
+    void DQT () { Data_Common(); };
+    void DNL () { Data_Common(); };
+    void DRI () { Data_Common(); };
+    void DHP () { Data_Common(); };
+    void EXP () { Data_Common(); };
     void APP0();
     void APP0_AVI1();
     void APP0_JFIF();
@@ -165,12 +190,17 @@ private :
     void JPGB() {Skip_XX(Element_Size, "Data");}
     void JPGC() {Skip_XX(Element_Size, "Data");}
     void JPGD() {Skip_XX(Element_Size, "Data");}
-    void COM () {Skip_XX(Element_Size, "Data");}
+    void COM();
+    
+    //Helpers
+    void Data_Common();
 
     //Temp
+    int64u Data_Size;
     int8u APPE_Adobe0_transform;
     bool  APP0_JFIF_Parsed;
     bool  SOS_SOD_Parsed;
+    bool  CME_Text_Parsed;
     File__Analyze* ICC_Parser=nullptr;
 };
 
