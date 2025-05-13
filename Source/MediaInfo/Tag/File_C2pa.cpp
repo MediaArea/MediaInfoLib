@@ -73,6 +73,7 @@ File_C2pa::File_C2pa()
     //Configuration
     ParserName="C2PA";
     DataMustAlwaysBeComplete=false;
+    MustAdaptSubOffsets=true;
 }
 
 //---------------------------------------------------------------------------
