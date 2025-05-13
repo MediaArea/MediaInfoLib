@@ -314,13 +314,6 @@ void File__Analyze::Attachment(const char* MuxingMode, const Ztring& Description
         return;
     }
 
-    size_t Data_Size = (size_t)(Element_Size - Element_Offset);
-    File__MultipleParsing MI;
-    Open_Buffer_Init(&MI);
-    Open_Buffer_Continue(&MI);
-    Open_Buffer_Finalize(&MI);
-    Element_Show(); //TODO: why is it needed?
-
     Ztring ModifiedType(Type);
     if (ModifiedType.empty()) {
         auto Description_Lower(Description);
@@ -342,6 +335,7 @@ void File__Analyze::Attachment(const char* MuxingMode, const Ztring& Description
             ModifiedType = "Cover_Media";
         }
     }
+    size_t Data_Size = (size_t)(Element_Size - Element_Offset);
     if (IsCover) {
         auto Type_String = __T("Type_") + ModifiedType;
         auto Type_String2 = MediaInfoLib::Config.Language_Get(Type_String);
@@ -352,15 +346,6 @@ void File__Analyze::Attachment(const char* MuxingMode, const Ztring& Description
         Fill(Stream_General, 0, General_Cover_Description, Description);
         Fill(Stream_General, 0, General_Cover_Type, Type_String2);
         Fill(Stream_General, 0, General_Cover_Mime, MimeType);
-    }
-    if (MI.Count_Get(Stream_Image)) {
-        Stream_Prepare(Stream_Image);
-        Fill(Stream_Image, StreamPos_Last, Image_Type, ModifiedType);
-        Fill(Stream_Image, StreamPos_Last, Image_Title, Description);
-        Fill(Stream_Image, StreamPos_Last, Image_MuxingMode, MuxingMode);
-        Fill(Stream_Image, StreamPos_Last, Image_InternetMediaType, MimeType);
-        Fill(Stream_Image, StreamPos_Last, Image_StreamSize, Data_Size);
-        Merge(MI, Stream_Image, 0, StreamPos_Last);
         #if MEDIAINFO_ADVANCED
             if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64)) {
                 std::string Data_Raw((const char*)(Buffer + (size_t)(Buffer_Offset + Element_Offset)), Data_Size);
@@ -368,6 +353,24 @@ void File__Analyze::Attachment(const char* MuxingMode, const Ztring& Description
                 Fill(Stream_General, 0, General_Cover_Data, Data_Base64);
             }
         #endif //MEDIAINFO_ADVANCED
+    }
+
+    File__MultipleParsing MI;
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Element_Show(); //TODO: why is it needed?
+    auto ImageCount = MI.Count_Get(Stream_Image);
+    if (IsCover || ImageCount) {
+        Stream_Prepare(Stream_Image);
+        Fill(Stream_Image, StreamPos_Last, Image_Type, ModifiedType);
+        Fill(Stream_Image, StreamPos_Last, Image_Title, Description);
+        Fill(Stream_Image, StreamPos_Last, Image_MuxingMode, MuxingMode);
+        Fill(Stream_Image, StreamPos_Last, Image_InternetMediaType, MimeType);
+        Fill(Stream_Image, StreamPos_Last, Image_StreamSize, Data_Size);
+        if (ImageCount) {
+            Merge(MI, Stream_Image, 0, StreamPos_Last); // We ignore thumbnails in thumbnails/covers on purpose (not the goal of the cover)
+        }
     }
 }
 
