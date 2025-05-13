@@ -31,6 +31,24 @@ using namespace std;
 namespace MediaInfoLib
 {
 
+//---------------------------------------------------------------------------
+static char* strnstr(const char* Str, size_t Size, const char* ToSearch)
+{
+    size_t ToSearch_Size = strlen(ToSearch);
+    if (ToSearch_Size == 0)
+        return (char *)Str;
+
+    if (ToSearch_Size > Size)
+        return NULL;
+
+    const char* LastPos = (const char *)Str + Size - ToSearch_Size;
+    for (const char* Start = Str; Start <= LastPos; Start++)
+        if (Start[0] == ToSearch[0] && !memcmp((const void*)&Start[1], (const void*)&ToSearch[1], ToSearch_Size - 1))
+            return (char*)Start;
+
+    return NULL;
+}
+
 //***************************************************************************
 // Buffer - File header
 //***************************************************************************
@@ -42,7 +60,7 @@ bool File_Xmp::FileHeader_Begin()
     if (Buffer_Size>=32)
     {
         //TinyXML2 seems to not like preprocessor commands at end of file. TODO: remove that after switch to another XML parser
-        auto Result=strstr((const char*)Buffer+Buffer_Size-32, "<?xpacket");
+        auto Result=strnstr((const char*)Buffer+Buffer_Size-32, 32, "<?xpacket");
         if (Result)
             Buffer_Size=(const int8u*)Result-Buffer;
     }
