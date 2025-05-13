@@ -891,6 +891,7 @@ void File_Jpeg::SIZ()
             Accept("JPEG 2000");
             Fill("JPEG 2000");
 
+            Fill(Stream_General, 0, General_Format, "JPEG 2000");
             if (Count_Get(StreamKind_Last)==0)
                 Stream_Prepare(StreamKind_Last);
             Fill(StreamKind_Last, 0, Fill_Parameter(StreamKind_Last, Generic_Format), "JPEG 2000");
@@ -1104,6 +1105,7 @@ void File_Jpeg::SOF_()
             Accept("JPEG");
             Fill("JPEG");
 
+            Fill(Stream_General, 0, General_Format, "JPEG");
             if (Count_Get(StreamKind_Last)==0)
                 Stream_Prepare(StreamKind_Last);
             Fill(StreamKind_Last, 0, Fill_Parameter(StreamKind_Last, Generic_Format), "JPEG");

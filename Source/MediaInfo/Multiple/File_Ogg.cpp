@@ -343,20 +343,20 @@ void File_Ogg::Data_Parse()
             Element_Info1C((continued), "Continue");
 
             //Parsing
+            int64u Size=Chunk_Sizes[Chunk_Sizes_Pos];
             if (continued || Parser->File_Offset!=Parser->File_Size)
             {
-                int64u Size=Chunk_Sizes[Chunk_Sizes_Pos];
                 if (Size>Element_Size-Element_Offset)
                     Size=Element_Size-Element_Offset; // Shcunk size is bigger than content size, buggy file
                 Open_Buffer_Continue(Parser, Buffer+Buffer_Offset+(size_t)Element_Offset, Size);
             }
+            Element_Offset+=Size;
             if (Chunk_Sizes_Pos<Chunk_Sizes.size()-1
              || (Chunk_Sizes_Pos==Chunk_Sizes.size()-1 && Chunk_Sizes_Finished))
             {
                 Open_Buffer_Continue(Parser, Buffer+Buffer_Offset, 0); //Purge old datas
             }
 
-            Element_Offset+=Chunk_Sizes[Chunk_Sizes_Pos];
             continued=false; //If there is another chunk, this can not be a continued chunk
             if (Parser->File_GoTo!=(int64u)-1)
                 Chunk_Sizes_Pos=Chunk_Sizes.size();
