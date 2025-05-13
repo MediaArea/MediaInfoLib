@@ -833,7 +833,7 @@ void File__Analyze::Open_Buffer_Init (int64u File_Size_)
 
 void File__Analyze::Open_Buffer_Init (File__Analyze* Sub)
 {
-    Open_Buffer_Init(Sub, Element_Size - Element_Offset);
+    Open_Buffer_Init(Sub, File_Size == (int64u)-1 ? (int64u)-1 : (File_Size - Element_Offset));
 }
 
 void File__Analyze::Open_Buffer_Init (File__Analyze* Sub, int64u File_Size_)
