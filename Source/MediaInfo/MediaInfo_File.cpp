@@ -400,6 +400,9 @@
 
 //---------------------------------------------------------------------------
 // Tag
+#if defined(MEDIAINFO_C2PA_YES)
+    #include "MediaInfo/Tag/File_C2pa.h"
+#endif
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
@@ -824,6 +827,9 @@ static File__Analyze* SelectFromExtension(const String& Parser)
     #endif
 
     // Tags
+    #if defined(MEDIAINFO_C2PA_YES)
+        if (Parser==__T("C2pa"))        return new File_C2pa();
+    #endif
     #if defined(MEDIAINFO_ICC_YES)
         if (Parser==__T("Icc"))          return new File_Icc();
     #endif

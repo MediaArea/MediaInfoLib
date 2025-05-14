@@ -34,6 +34,9 @@
 #if defined(MEDIAINFO_JPEG_YES)
     #include "MediaInfo/Image/File_Jpeg.h"
 #endif
+#if defined(MEDIAINFO_C2PA_YES)
+    #include "MediaInfo/Tag/File_C2pa.h"
+#endif
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
@@ -467,6 +470,20 @@ void File_Png::MHDR()
     FILLING_END();
 
     Data_Common();
+}
+
+//---------------------------------------------------------------------------
+void File_Png::caBX()
+{
+    //Parsing
+    #if defined(MEDIAINFO_C2PA_YES)
+        File_C2pa MI;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI);
+        Open_Buffer_Finalize(&MI);
+        Merge(MI, Stream_General, 0, 0);
+        Merge(MI);
+    #endif
 }
 
 //---------------------------------------------------------------------------

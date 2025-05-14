@@ -318,7 +318,7 @@ void File__Analyze::Attachment(const char* MuxingMode, const Ztring& Description
     if (ModifiedType.empty()) {
         auto Description_Lower(Description);
         Description_Lower.MakeLowerCase();
-        if (Description_Lower.find(__T("thumbnail")) != string::npos) {
+        if (Description_Lower.find(__T("thumbnail")) != string::npos && Description_Lower.find(__T("c2pa.thumbnail")) == string::npos) {
             IsCover = true;
             ModifiedType = "Thumbnail";
         }

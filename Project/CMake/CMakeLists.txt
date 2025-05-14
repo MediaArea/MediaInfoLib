@@ -301,6 +301,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Reader/Reader_libmms.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Tag/File__Tags.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Tag/File_ApeTag.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Tag/File_C2pa.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Tag/File_Icc.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Tag/File_Id3.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Tag/File_Id3v2.cpp

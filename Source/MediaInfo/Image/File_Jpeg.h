@@ -26,6 +26,8 @@ namespace MediaInfoLib
 // Class File_Jpeg
 //***************************************************************************
 
+class File_C2pa;
+
 class File_Jpeg : public File__Analyze
 {
 public :
@@ -170,7 +172,9 @@ private :
     void APP8() {Skip_XX(Element_Size, "Data");}
     void APP9() {Skip_XX(Element_Size, "Data");}
     void APPA() {Skip_XX(Element_Size, "Data");}
-    void APPB() {Skip_XX(Element_Size, "Data");}
+    void APPB();
+    void APPB_JPEGXT();
+    void APPB_JPEGXT_JUMB(int16u Instance, int32u SequenceNumber);
     void APPC() {Skip_XX(Element_Size, "Data");}
     void APPD() {Skip_XX(Element_Size, "Data");}
     void APPE();
@@ -202,6 +206,12 @@ private :
     bool  SOS_SOD_Parsed;
     bool  CME_Text_Parsed;
     File__Analyze* ICC_Parser=nullptr;
+    struct jpegxtext
+    {
+        File__Analyze* Parser = nullptr;
+        int32u LastSequenceNumber = 0;
+    };
+    std::map<int16u, jpegxtext> JpegXtExt_List;
 };
 
 } //NameSpace

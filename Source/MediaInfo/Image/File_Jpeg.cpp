@@ -34,6 +34,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Image/File_Jpeg.h"
+#if defined(MEDIAINFO_C2PA_YES)
+    #include "MediaInfo/Tag/File_C2pa.h"
+#endif
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
@@ -312,6 +315,15 @@ void File_Jpeg::Streams_Accept()
 //---------------------------------------------------------------------------
 void File_Jpeg::Streams_Finish()
 {
+    for (const auto& Item : JpegXtExt_List)
+    {
+        if (Item.second.Parser) {
+            Item.second.Parser->Finish();
+            Merge(*Item.second.Parser, Stream_General, 0, 0);
+            Merge(*Item.second.Parser);
+        }
+    }
+
     if (Data_Size != (int64u)-1) {
         if (StreamKind == Stream_Video && !IsSub && File_Size != (int64u)-1 && !Config->File_Sizes.empty())
             Fill(Stream_Video, 0, Video_StreamSize, File_Size - (File_Size - Data_Size) * Config->File_Sizes.size()); //We guess that the metadata part has a fixed size
@@ -1491,6 +1503,79 @@ void File_Jpeg::APP2_ICC_PROFILE()
     #else
         Skip_XX(Element_Size-Element_Offset,                    "ICC profile");
     #endif
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::APPB()
+{
+    //Parsing
+    int16u Name;
+    Get_C2(Name,                                                "Name");
+    switch (Name)
+    {
+    case 0x4A50 : APPB_JPEGXT(); break; //"JP"
+    default     : Skip_XX(Element_Size - Element_Offset,        "Unknown");
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::APPB_JPEGXT()
+{
+    Accept();
+
+    Element_Info1("JPEG XT");
+
+    //Parsing
+    int32u SequenceNumber, Name;
+    int16u Instance;
+    Get_B2 (Instance,                                           "Box Instance");
+    Get_B4 (SequenceNumber,                                     "Packet Sequence Number");
+
+    //Probe if likely C2PA
+    Element_Offset += 4;
+    Peek_B4(Name);
+    Element_Offset -= 4;
+
+    switch (Name)
+    {
+    case 0x6A756D62 : APPB_JPEGXT_JUMB(Instance, SequenceNumber); break; //"jumb"
+    default         : Skip_XX(Element_Size - Element_Offset, "Unknown");
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::APPB_JPEGXT_JUMB(int16u Instance, int32u SequenceNumber)
+{
+    #if defined(MEDIAINFO_C2PA_YES)
+    auto Item = JpegXtExt_List.find(Instance);
+    if (Item == JpegXtExt_List.end()) {
+        if (SequenceNumber > 1) {
+            Skip_XX(Element_Size - Element_Offset,              "(Missing start of content)");
+            return;
+        }
+        jpegxtext JpegXtExt;
+        JpegXtExt.LastSequenceNumber = SequenceNumber;
+        JpegXtExt.Parser = new File_C2pa();
+        int32u Size;
+        Peek_B4(Size);
+        Open_Buffer_Init(JpegXtExt.Parser, Size);
+        Item = JpegXtExt_List.emplace(Instance, JpegXtExt).first;
+    }
+    else {
+        auto TheoreticalSequenceNumber = Item->second.LastSequenceNumber + 1;
+        if (SequenceNumber != TheoreticalSequenceNumber) {
+            Skip_XX(Element_Size - Element_Offset,              "(Missing intermediate content)");
+            return;
+        }
+        Item->second.LastSequenceNumber = TheoreticalSequenceNumber;
+        Skip_B4(                                                "Total size repeated?");
+        Skip_C4(                                                "jumb repeated?");
+    }
+    auto& MI = *Item->second.Parser;
+    Open_Buffer_Continue(&MI);
+    #endif
+    Element_Show();
+    return;
 }
 
 //---------------------------------------------------------------------------
