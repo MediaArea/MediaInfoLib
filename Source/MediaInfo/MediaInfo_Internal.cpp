@@ -447,7 +447,7 @@ Ztring ChannelLayout_2018_Rename(stream_t StreamKind, size_t Parameter, ZtringLi
     ShouldReturn=ShouldReturn_Save;
     return Info[Parameter];
 }
-Ztring ChannelLayout_2018_Rename(stream_t StreamKind, const Ztring& Parameter, const Ztring& Value, const Ztring& StreamFormat, bool &ShouldReturn)
+Ztring ChannelLayout_2018_Rename(stream_t StreamKind, const Ztring Parameter, const Ztring Value, const Ztring StreamFormat, bool &ShouldReturn)
 {
     bool ShouldReturn_Save=ShouldReturn;
     ShouldReturn=true;
