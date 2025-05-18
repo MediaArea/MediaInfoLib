@@ -91,7 +91,7 @@ private :
     void sPLT() { Data_Common(); }
     void sRGB() { Data_Common(); }
     void tEXt() { Textual(bitset8()); }
-    void tIME() {}
+    void tIME();
     void tRNS() { Data_Common(); }
     void vpAg() { Data_Common(); }
     void zTXt() { Textual(bitset8().set(IsCompressed)); }
