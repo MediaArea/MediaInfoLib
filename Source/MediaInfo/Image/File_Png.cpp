@@ -675,6 +675,42 @@ void File_Png::sBIT()
     Data_Common();
 }
 
+//---------------------------------------------------------------------------
+void File_Png::tIME()
+{
+    //Parsing
+    int16u YY;
+    int8u MM, DD, hh, mm, ss;
+    Get_B2 (YY,                                             "Year");
+    Get_B1 (MM,                                             "Month");
+    Get_B1 (DD,                                             "Day");
+    Get_B1 (hh,                                             "Hour");
+    Get_B1 (mm,                                             "Minute");
+    Get_B1 (ss,                                             "Second");
+
+    FILLING_BEGIN()
+        if (MM && MM <= 12 && DD && DD < 32 && hh < 24 && mm < 61 && ss <= 61) {
+            auto MM1 = MM / 10;
+            auto MM0 = MM % 10;
+            auto DD1 = DD / 10;
+            auto DD0 = DD % 10;
+            auto hh1 = hh / 10;
+            auto hh0 = hh % 10;
+            auto mm1 = mm / 10;
+            auto mm0 = mm % 10;
+            auto ss1 = ss / 10;
+            auto ss0 = ss % 10;
+            Fill(Stream_General, 0, General_Encoded_Date,
+                std::to_string(YY) + '-' +
+                char('0' + MM1) + char('0' + MM0) + '-' +
+                char('0' + DD1) + char('0' + DD0) + 'T' +
+                char('0' + hh1) + char('0' + hh0) + ':' +
+                char('0' + mm1) + char('0' + mm0) + ':' +
+                char('0' + ss1) + char('0' + ss0) + 'Z');
+        }
+    FILLING_END()
+}
+
 //***************************************************************************
 // Helpers
 //***************************************************************************
