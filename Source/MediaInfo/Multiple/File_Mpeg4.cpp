@@ -2543,7 +2543,7 @@ bool File_Mpeg4::BookMark_Needed()
 
         //For each stream
         for (std::map<int32u, stream>::iterator Temp=Streams.begin(); Temp!=Streams.end(); ++Temp)
-            if (!Temp->second.Parsers.empty())
+            if (!Temp->second.Parsers.empty() && !Temp->second.Parsers.front()->Status[IsFinished])
         {
             //Limit the detection
             #if defined(MEDIAINFO_SMPTEST0337_YES) && defined(MEDIAINFO_PCM_YES)

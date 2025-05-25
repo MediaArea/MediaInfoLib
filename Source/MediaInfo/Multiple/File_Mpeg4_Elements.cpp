@@ -2453,9 +2453,9 @@ void File_Mpeg4::meta_iinf_infe()
         return;
     int32u item_ID, item_type;
     int16u protection_index;
-    Get_B4_DEPENDOFVERSION(3, item_ID,                          "item_ID");
+    Get_B4_DEPENDOFVERSION(3, item_ID,                          "item_ID"); Element_Info1("item_ID " + std::to_string(item_ID));
     Get_B2 (protection_index,                                   "protection_index");
-    Get_C4 (item_type,                                          "item_type");
+    Get_C4 (item_type,                                          "item_type"); Element_Info1(Ztring().From_CC4(item_type));
     Skip_NulString(                                             "item_name");
     switch (item_type)
     {
@@ -2537,16 +2537,16 @@ void File_Mpeg4::meta_iloc()
     for (int16u i=0; i<item_count; i++)
     {
         Element_Begin1("item");
+        int64u base_offset;
         int16u item_ID, extent_count;
-        Get_S2 (16, item_ID,                                    "item_ID");
+        Get_S2 (16, item_ID,                                    "item_ID"); Element_Info1("item_ID " + std::to_string(item_ID));
         if (Version)
         {
             Skip_S2(12,                                         "reserved");
             Skip_S1( 4,                                         "construction_method");
         }
         Skip_S2(16,                                             "data_reference_index");
-        if (base_offset_size)
-            Skip_BS(base_offset_size,                           "base_offset");
+        Get_S8 (base_offset_size, base_offset,                  "base_offset");
         Get_S2 (16, extent_count,                               "extent_count");
         Loop_CheckValue_BS(extent_count, index_size + offset_size + length_size, "extent_count");
         for (int16u j=0; j< extent_count; j++)
@@ -2555,7 +2555,14 @@ void File_Mpeg4::meta_iloc()
             if (index_size)
                 Skip_BS(index_size,                             "extent_index");
             if (offset_size)
-                Skip_BS(offset_size,                            "extent_offset");
+            {
+                int32u extent_offset;
+                Get_BS (offset_size, extent_offset,             "extent_offset");
+
+                FILLING_BEGIN();
+                    Streams[item_ID].stco.push_back(base_offset + extent_offset);
+                FILLING_END();
+            }
             if (length_size)
             {
                 int32u extent_length;
@@ -2563,6 +2570,8 @@ void File_Mpeg4::meta_iloc()
 
                 FILLING_BEGIN();
                     Streams[item_ID].stsz_StreamSize+=extent_length;
+                    Streams[item_ID].stsz_Sample_Size=extent_length;
+                    Streams[item_ID].stsc.push_back({1, 1});
                 FILLING_END();
             }
             Element_End0();
@@ -2589,6 +2598,9 @@ void File_Mpeg4::meta_iprp_ipco()
 
     if (meta_iprp_ipma_Entries.empty())
     {
+        #if MEDIAINFO_TRACE
+        meta_iprp_ipco_File_Offset=File_Offset+Buffer_Offset-8;
+        #endif
         meta_iprp_ipco_Buffer_Size=(size_t)Element_Size;
         meta_iprp_ipco_Buffer=new int8u[meta_iprp_ipco_Buffer_Size];
         memcpy(meta_iprp_ipco_Buffer, Buffer+Buffer_Offset, meta_iprp_ipco_Buffer_Size);
@@ -2679,6 +2691,10 @@ void File_Mpeg4::meta_iprp_ipco_hvcC()
         moov_trak_mdia_minf_stbl_stsd_Pos=0;
         moov_trak_mdia_minf_stbl_stsz_Pos=0;
         moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC();
+        auto& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
+        for (auto& Parser : Parsers) {
+            Finish(Parser);
+        }
     FILLING_END_IPCO();
 }
 

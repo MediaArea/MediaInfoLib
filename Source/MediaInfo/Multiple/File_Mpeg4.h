@@ -467,6 +467,9 @@ private :
     size_t                                  StreamOrder;
     int32u                                  meta_pitm_item_ID;
     std::vector<std::vector<int32u> >       meta_iprp_ipma_Entries;
+    #if MEDIAINFO_TRACE
+    int64u                                  meta_iprp_ipco_File_Offset;
+    #endif
     int8u*                                  meta_iprp_ipco_Buffer;
     size_t                                  meta_iprp_ipco_Buffer_Size; //Used as property_index if no buffer
     int16u                                  channelcount;
