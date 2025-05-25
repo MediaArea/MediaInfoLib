@@ -125,6 +125,9 @@ using namespace std;
 #if defined(MEDIAINFO_CDP_YES)
     #include "MediaInfo/Text/File_Cdp.h"
 #endif
+#if defined(MEDIAINFO_EXIF_YES)
+    #include "MediaInfo/Tag/File_Exif.h"
+#endif
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
@@ -2476,6 +2479,18 @@ void File_Mpeg4::meta_iinf_infe()
         switch (item_type)
         {
             case 0x45786966:    // Exif
+                                {
+                                auto Parser = new File_Exif();
+                                Parser->FromHeif = true;
+                                Open_Buffer_Init(Parser);
+                                auto& Stream = Streams[item_ID];
+                                Stream.Parsers.push_back(Parser);
+                                Stream.StreamKind = Stream_General;
+                                Stream.StreamPos = 0;
+                                mdat_MustParse = true;
+                                Skip = true;
+                                break;
+                                }
             //case 0x68767431:    // hvt1 --> image tile TODO
             case 0x6D696D65:    // mime
             case 0x75726900:    // uri
