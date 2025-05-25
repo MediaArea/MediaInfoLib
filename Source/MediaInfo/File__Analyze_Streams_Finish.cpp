@@ -1155,6 +1155,20 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
             Hardware+=Version;
         Fill(Stream_General, StreamPos, General_Encoded_Hardware_String, Hardware);
     }
+
+    //Redundancy
+    if (Retrieve_Const(Stream_General, 0, General_Encoded_Application_Name).empty() && Retrieve_Const(Stream_General, 0, General_Encoded_Application).empty())
+    {
+        if (Retrieve_Const(Stream_General, 0, General_Comment) == __T("Created with GIMP") || Retrieve_Const(Stream_General, 0, General_Description) == __T("Created with GIMP"))
+            Fill(Stream_General, 0, General_Encoded_Application, "GIMP");
+    }
+    if (Retrieve_Const(Stream_General, 0, General_Encoded_Application_Name) == __T("GIMP") || Retrieve_Const(Stream_General, 0, General_Encoded_Application) == __T("GIMP") || !Retrieve_Const(Stream_General, 0, General_Encoded_Application).rfind(__T("GIMP ")))
+    {
+        if (Retrieve_Const(Stream_General, 0, General_Comment) == __T("Created with GIMP"))
+            Clear(Stream_General, StreamPos, General_Comment);
+        if (Retrieve_Const(Stream_General, 0, General_Description) == __T("Created with GIMP"))
+            Clear(Stream_General, StreamPos, General_Description);
+    }
 }
 
 //---------------------------------------------------------------------------
