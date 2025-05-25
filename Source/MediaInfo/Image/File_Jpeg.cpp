@@ -323,7 +323,7 @@ void File_Jpeg::Streams_Finish()
         if (Item.second.Parser) {
             Item.second.Parser->Finish();
             Merge(*Item.second.Parser, Stream_General, 0, 0);
-            Merge(*Item.second.Parser);
+            Merge(*Item.second.Parser, false);
         }
     }
 
