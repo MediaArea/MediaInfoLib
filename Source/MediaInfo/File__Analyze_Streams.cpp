@@ -1170,9 +1170,74 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     }
 
     Ztring &Target=(*Stream)[StreamKind][StreamPos](Parameter);
+    bool Compare=false;
+    switch (StreamKind)
+    {
+    case Stream_General:
+        switch (Parameter)
+        {
+        case General_Title:
+        case General_Encoded_Application:
+        case General_Encoded_Library:
+        case General_Copyright:
+        case General_Comment:
+            Compare = true;
+        }
+        break;
+    case Stream_Video:
+        switch (Parameter)
+        {
+        case Video_Title:
+            Compare = true;
+        }
+        break;
+    case Stream_Audio:
+        switch (Parameter)
+        {
+        case Audio_Title:
+            Compare = true;
+        }
+        break;
+    case Stream_Text:
+        switch (Parameter)
+        {
+        case Text_Title:
+            Compare = true;
+        }
+        break;
+    case Stream_Image:
+        switch (Parameter)
+        {
+        case Image_Title:
+            Compare = true;
+        }
+        break;
+    case Stream_Other:
+        switch (Parameter)
+        {
+        case Other_Title:
+            Compare = true;
+        }
+        break;
+    }
+    if (Compare)
+    {
+        if (!Value.empty() && ((Value.front() == __T(' ') && Value.rfind(__T(" / "), 0)) || (Value.back() == __T(' ') && (Value.size() < 3 || Value.find(__T(" / "), Value.size() - 3) == string::npos))))
+        {
+            Ztring Value2(Value);
+            Value2.Trim(__T(' '));
+            if (Value2.empty())
+                return;
+            return Fill(StreamKind, StreamPos, Parameter, Value2, Replace);
+        }
+        if (!Target.empty() && Target.size() < Value.size() && Value.find(Target, Value.size() - Target.size()) != string::npos)
+            Replace = true;
+        else
+            Compare = Target.size() >= Value.size() && !Target.rfind(Value, 0);
+    }
     if (Target.empty() || Replace)
         Target=Value; //First value
-    else
+    else if (!Compare)
     {
         Target+=MediaInfoLib::Config.TagSeparator_Get();
         Target+=Value;
