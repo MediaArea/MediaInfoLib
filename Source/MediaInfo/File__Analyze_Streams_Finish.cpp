@@ -1134,6 +1134,9 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
         const auto& Name=Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Name);
         const auto& Model=Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model);
         const auto& Version=Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Version);
+        if (!CompanyName.empty() && Model.rfind(CompanyName + __T(' '), 0) == 0) {
+            Fill(Stream_General, StreamPos, General_Encoded_Hardware_Model, Model.substr(CompanyName.size() + 1), true);
+        }
         Ztring Hardware=CompanyName;
         if (!Name.empty())
         {
@@ -1154,6 +1157,20 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
         if (!Hardware.empty() && !Version.empty())
             Hardware+=Version;
         Fill(Stream_General, StreamPos, General_Encoded_Hardware_String, Hardware);
+    }
+
+    //Redundancy
+    if (Retrieve_Const(Stream_General, 0, General_Encoded_Application_Name).empty() && Retrieve_Const(Stream_General, 0, General_Encoded_Application).empty())
+    {
+        if (Retrieve_Const(Stream_General, 0, General_Comment) == __T("Created with GIMP") || Retrieve_Const(Stream_General, 0, General_Description) == __T("Created with GIMP"))
+            Fill(Stream_General, 0, General_Encoded_Application, "GIMP");
+    }
+    if (Retrieve_Const(Stream_General, 0, General_Encoded_Application_Name) == __T("GIMP") || Retrieve_Const(Stream_General, 0, General_Encoded_Application) == __T("GIMP") || !Retrieve_Const(Stream_General, 0, General_Encoded_Application).rfind(__T("GIMP ")))
+    {
+        if (Retrieve_Const(Stream_General, 0, General_Comment) == __T("Created with GIMP"))
+            Clear(Stream_General, StreamPos, General_Comment);
+        if (Retrieve_Const(Stream_General, 0, General_Description) == __T("Created with GIMP"))
+            Clear(Stream_General, StreamPos, General_Description);
     }
 }
 

@@ -2933,7 +2933,7 @@ void File_Mpeg_Descriptors::Descriptor_59()
 {
     //Parsing
     Ztring Languages;
-    int8u subtitling_type;
+    int8u subtitling_type{};
     while (Element_Offset<Element_Size)
     {
         Element_Begin1("subtitle");

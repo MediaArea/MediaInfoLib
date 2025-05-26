@@ -125,6 +125,9 @@ using namespace std;
 #if defined(MEDIAINFO_CDP_YES)
     #include "MediaInfo/Text/File_Cdp.h"
 #endif
+#if defined(MEDIAINFO_EXIF_YES)
+    #include "MediaInfo/Tag/File_Exif.h"
+#endif
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
@@ -2453,9 +2456,9 @@ void File_Mpeg4::meta_iinf_infe()
         return;
     int32u item_ID, item_type;
     int16u protection_index;
-    Get_B4_DEPENDOFVERSION(3, item_ID,                          "item_ID");
+    Get_B4_DEPENDOFVERSION(3, item_ID,                          "item_ID"); Element_Info1("item_ID " + std::to_string(item_ID));
     Get_B2 (protection_index,                                   "protection_index");
-    Get_C4 (item_type,                                          "item_type");
+    Get_C4 (item_type,                                          "item_type"); Element_Info1(Ztring().From_CC4(item_type));
     Skip_NulString(                                             "item_name");
     switch (item_type)
     {
@@ -2476,6 +2479,18 @@ void File_Mpeg4::meta_iinf_infe()
         switch (item_type)
         {
             case 0x45786966:    // Exif
+                                {
+                                auto Parser = new File_Exif();
+                                Parser->FromHeif = true;
+                                Open_Buffer_Init(Parser);
+                                auto& Stream = Streams[item_ID];
+                                Stream.Parsers.push_back(Parser);
+                                Stream.StreamKind = Stream_General;
+                                Stream.StreamPos = 0;
+                                mdat_MustParse = true;
+                                Skip = true;
+                                break;
+                                }
             //case 0x68767431:    // hvt1 --> image tile TODO
             case 0x6D696D65:    // mime
             case 0x75726900:    // uri
@@ -2537,16 +2552,16 @@ void File_Mpeg4::meta_iloc()
     for (int16u i=0; i<item_count; i++)
     {
         Element_Begin1("item");
+        int64u base_offset;
         int16u item_ID, extent_count;
-        Get_S2 (16, item_ID,                                    "item_ID");
+        Get_S2 (16, item_ID,                                    "item_ID"); Element_Info1("item_ID " + std::to_string(item_ID));
         if (Version)
         {
             Skip_S2(12,                                         "reserved");
             Skip_S1( 4,                                         "construction_method");
         }
         Skip_S2(16,                                             "data_reference_index");
-        if (base_offset_size)
-            Skip_BS(base_offset_size,                           "base_offset");
+        Get_S8 (base_offset_size, base_offset,                  "base_offset");
         Get_S2 (16, extent_count,                               "extent_count");
         Loop_CheckValue_BS(extent_count, index_size + offset_size + length_size, "extent_count");
         for (int16u j=0; j< extent_count; j++)
@@ -2555,7 +2570,14 @@ void File_Mpeg4::meta_iloc()
             if (index_size)
                 Skip_BS(index_size,                             "extent_index");
             if (offset_size)
-                Skip_BS(offset_size,                            "extent_offset");
+            {
+                int32u extent_offset;
+                Get_BS (offset_size, extent_offset,             "extent_offset");
+
+                FILLING_BEGIN();
+                    Streams[item_ID].stco.push_back(base_offset + extent_offset);
+                FILLING_END();
+            }
             if (length_size)
             {
                 int32u extent_length;
@@ -2563,6 +2585,8 @@ void File_Mpeg4::meta_iloc()
 
                 FILLING_BEGIN();
                     Streams[item_ID].stsz_StreamSize+=extent_length;
+                    Streams[item_ID].stsz_Sample_Size=extent_length;
+                    Streams[item_ID].stsc.push_back({1, 1});
                 FILLING_END();
             }
             Element_End0();
@@ -2589,6 +2613,9 @@ void File_Mpeg4::meta_iprp_ipco()
 
     if (meta_iprp_ipma_Entries.empty())
     {
+        #if MEDIAINFO_TRACE
+        meta_iprp_ipco_File_Offset=File_Offset+Buffer_Offset-8;
+        #endif
         meta_iprp_ipco_Buffer_Size=(size_t)Element_Size;
         meta_iprp_ipco_Buffer=new int8u[meta_iprp_ipco_Buffer_Size];
         memcpy(meta_iprp_ipco_Buffer, Buffer+Buffer_Offset, meta_iprp_ipco_Buffer_Size);
@@ -2679,6 +2706,10 @@ void File_Mpeg4::meta_iprp_ipco_hvcC()
         moov_trak_mdia_minf_stbl_stsd_Pos=0;
         moov_trak_mdia_minf_stbl_stsz_Pos=0;
         moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC();
+        auto& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
+        for (auto& Parser : Parsers) {
+            Finish(Parser);
+        }
     FILLING_END_IPCO();
 }
 
@@ -9735,11 +9766,6 @@ void File_Mpeg4::moov_udta_loci()
             Skip_UTF16B(size, name);
         }
     };
-    // Process fixed-point 32-bit signed coordinate numbers
-    auto ProcFixed32s = [](int32u data) -> double {
-        double scaledVal = static_cast<double>(*reinterpret_cast<int32s*>(&data)) / 0x10000;
-        return std::round(scaledVal * 1e5) / 1e5;
-    };
 
     // Parsing
     // 2-bytes language code
@@ -9749,10 +9775,10 @@ void File_Mpeg4::moov_udta_loci()
     // 1-byte role where 0:shooting, 1:real, 2:fictional and 3:reserved
     Skip_B1(                                                    "Role");
     // 3x 4-byte fixed-point numbers for coordinates
-    int32u lat, lon, alt;
-    Get_B4(lon,                                                 "Longitude");
-    Get_B4(lat,                                                 "Latitude");
-    Get_B4(alt,                                                 "Altitude");
+    float32 lat, lon, alt;
+    Get_BFP4(16, lon,                                           "Longitude");
+    Get_BFP4(16, lat,                                           "Latitude");
+    Get_BFP4(16, alt,                                           "Altitude");
     // Variable-length null-terminated string for 'Body'
     SkipString(                                                 "Body");
     // Variable-length null-terminated string for 'Notes'
@@ -9766,7 +9792,7 @@ void File_Mpeg4::moov_udta_loci()
         OldLocale = OldLocale_Temp;
         setlocale(LC_NUMERIC, "C");
     }
-    snprintf(ISO6709_buff, sizeof(ISO6709_buff), "%+09.5f%+010.5f%+.5f/", ProcFixed32s(lat), ProcFixed32s(lon), ProcFixed32s(alt));
+    snprintf(ISO6709_buff, sizeof(ISO6709_buff), "%+010.6f%+011.6f%+.3f/", lat, lon, alt);
     if (!OldLocale.empty()) {
         setlocale(LC_NUMERIC, OldLocale.c_str());
     }

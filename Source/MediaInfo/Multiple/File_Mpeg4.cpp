@@ -988,6 +988,7 @@ void File_Mpeg4::Streams_Finish()
             Finish(Temp->second.Parsers[0]);
             if (StreamKind_Last==Stream_General)
             {
+                Merge(*Temp->second.Parsers[0], Stream_General, 0, 0, false);
                 //Special case for TimeCode without link
                 for (std::map<int32u, stream>::iterator Target=Streams.begin(); Target!=Streams.end(); ++Target)
                     if (Target->second.StreamKind!=Stream_General)
@@ -2543,7 +2544,7 @@ bool File_Mpeg4::BookMark_Needed()
 
         //For each stream
         for (std::map<int32u, stream>::iterator Temp=Streams.begin(); Temp!=Streams.end(); ++Temp)
-            if (!Temp->second.Parsers.empty())
+            if (!Temp->second.Parsers.empty() && !Temp->second.Parsers.front()->Status[IsFinished])
         {
             //Limit the detection
             #if defined(MEDIAINFO_SMPTEST0337_YES) && defined(MEDIAINFO_PCM_YES)

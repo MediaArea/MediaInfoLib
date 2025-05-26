@@ -37,6 +37,9 @@
 #if defined(MEDIAINFO_C2PA_YES)
     #include "MediaInfo/Tag/File_C2pa.h"
 #endif
+#if defined(MEDIAINFO_EXIF_YES)
+    #include "MediaInfo/Tag/File_Exif.h"
+#endif
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
@@ -320,7 +323,7 @@ void File_Jpeg::Streams_Finish()
         if (Item.second.Parser) {
             Item.second.Parser->Finish();
             Merge(*Item.second.Parser, Stream_General, 0, 0);
-            Merge(*Item.second.Parser);
+            Merge(*Item.second.Parser, false);
         }
     }
 
@@ -1424,15 +1427,24 @@ void File_Jpeg::APP1()
 //---------------------------------------------------------------------------
 void File_Jpeg::APP1_EXIF()
 {
+    Accept();
+
     Element_Info1("Exif");
 
     //Parsing
-    int32u Alignment;
-    Get_C4(Alignment,                                           "Alignment");
-    if (Alignment==0x49492A00)
-        Skip_B4(                                                "First_IFD");
-    if (Alignment==0x4D4D2A00)
-        Skip_L4(                                                "First_IFD");
+    #if defined(MEDIAINFO_EXIF_YES)
+    File_Exif MI;
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Merge(MI, Stream_General, 0, 0, false);
+    size_t Count = MI.Count_Get(Stream_Image);
+    for (size_t i = 0; i < Count; i++) {
+        Merge(MI, Stream_Image, i, i, false);
+    }
+    #else
+    Skip_UTF8(Element_Size - Element_Offset,                    "EXIF Tags");
+    #endif
 }
 
 //---------------------------------------------------------------------------
@@ -1451,7 +1463,7 @@ void File_Jpeg::APP1_XMP()
     Element_Offset = Element_Offset_Sav;
     Open_Buffer_Finalize(&MI);
     Element_Show(); //TODO: why is it needed?
-    Merge(MI, Stream_General, 0, 0);
+    Merge(MI, Stream_General, 0, 0, false);
     #endif
     Skip_UTF8(Element_Size - Element_Offset,                    "XMP metadata");
 }

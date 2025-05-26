@@ -169,6 +169,7 @@ AC_ARG_ENABLE(tsp,     AC_HELP_STRING([--disable-tsp],     [Disable Multiple - T
 AC_ARG_ENABLE(wm,      AC_HELP_STRING([--disable-wm],      [Disable Multiple - Windows Media (ASF, WMV, WMA)]),           MediaInfoWm=$enableval,      MediaInfoWm=depend)
 AC_ARG_ENABLE(apetag,  AC_HELP_STRING([--disable-apetag],  [Disable Tag - ApeTag]),                                       MediaInfoApeTag=$enableval,  MediaInfoApeTag=depend)
 AC_ARG_ENABLE(c2pa,    AC_HELP_STRING([--disable-c2pa],    [Disable Tag - C2PA]),                                         MediaInfoC2pa=$enableval,    MediaInfoC2pa=depend)
+AC_ARG_ENABLE(Exif,    AC_HELP_STRING([--disable-Exif],    [Disable Tag - EXIF]),                                         MediaInfoExif=$enableval,    MediaInfoExif=depend)
 AC_ARG_ENABLE(icc,     AC_HELP_STRING([--disable-icc],     [Disable Tag - ICC]),                                          MediaInfoIcc=$enableval,     MediaInfoIcc=depend)
 AC_ARG_ENABLE(Id3,     AC_HELP_STRING([--disable-Id3],     [Disable Tag - Id3]),                                          MediaInfoId3=$enableval,     MediaInfoId3=depend)
 AC_ARG_ENABLE(Id3v2,   AC_HELP_STRING([--disable-Id3v2],   [Disable Tag - Id3v2]),                                        MediaInfoId3v2=$enableval,   MediaInfoId3v2=depend)
@@ -346,6 +347,7 @@ if test "$MediaInfoTsp"     = "no";  then AC_DEFINE(MEDIAINFO_TSP_NO)     fi; if
 if test "$MediaInfoWm"      = "no";  then AC_DEFINE(MEDIAINFO_WM_NO)      fi; if test "$MediaInfoWm"      = "yes"; then AC_DEFINE(MEDIAINFO_WM_YES)      fi
 if test "$MediaInfoApeTag"  = "no";  then AC_DEFINE(MEDIAINFO_APETAG_NO)  fi; if test "$MediaInfoApeTag"  = "yes"; then AC_DEFINE(MEDIAINFO_APETAG_YES)  fi
 if test "$MediaInfoc2pa"    = "no";  then AC_DEFINE(MEDIAINFO_C2PA_NO)    fi; if test "$MediaInfoC2pa"    = "yes"; then AC_DEFINE(MEDIAINFO_C2PA_YES)    fi
+if test "$MediaInfoExif"    = "no";  then AC_DEFINE(MEDIAINFO_EXIF_NO)    fi; if test "$MediaInfoExif"    = "yes"; then AC_DEFINE(MEDIAINFO_EXIF_YES)    fi
 if test "$MediaInfoIcc"     = "no";  then AC_DEFINE(MEDIAINFO_ICC_NO)     fi; if test "$MediaInfoIcc"     = "yes"; then AC_DEFINE(MEDIAINFO_ICC_YES)     fi
 if test "$MediaInfoId3"     = "no";  then AC_DEFINE(MEDIAINFO_ID3_NO)     fi; if test "$MediaInfoId3"     = "yes"; then AC_DEFINE(MEDIAINFO_ID3_YES)     fi
 if test "$MediaInfoId3v2"   = "no";  then AC_DEFINE(MEDIAINFO_ID3V2_NO)   fi; if test "$MediaInfoId3v2"   = "yes"; then AC_DEFINE(MEDIAINFO_ID3V2_YES)   fi
@@ -1114,6 +1116,7 @@ Mcho "Tsp    " "$MediaInfoTsp"
 Mcho "Wm     " "$MediaInfoWm"
 Mcho "ApeTag " "$MediaInfoApeTag"
 Mcho "C2pa   " "$MediaInfoC2pa"
+Mcho "Exif   " "$MediaInfoExif"
 Mcho "Icc    " "$MediaInfoIcc"
 Mcho "Id3    " "$MediaInfoId3"
 Mcho "Id3v2  " "$MediaInfoId3v2"

@@ -1011,6 +1011,9 @@
 #if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_C2PA_NO) && !defined(MEDIAINFO_C2PA_YES)
     #define MEDIAINFO_C2PA_YES
 #endif
+#if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_EXIF_NO) && !defined(MEDIAINFO_EXIF_YES)
+    #define MEDIAINFO_EXIF_YES
+#endif
 #if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_ICC_NO) && !defined(MEDIAINFO_ICC_YES)
     #define MEDIAINFO_ICC_YES
 #endif
