@@ -1134,7 +1134,10 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
         const auto& Name=Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Name);
         const auto& Model=Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model);
         const auto& Version=Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Version);
-        Ztring Hardware=CompanyName;
+        Ztring Hardware;
+        if (Model.rfind(CompanyName, 0) != 0 || !Name.empty()) {
+            Hardware+=CompanyName;
+        }
         if (!Name.empty())
         {
             if (!Hardware.empty())
