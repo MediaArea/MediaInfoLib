@@ -1308,7 +1308,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                         Element_Offset+=8;
                     #endif //MEDIAINFO_TRACE
                     if (D)
-                        Info.push_back(Ztring::ToZtring(((float64)N)/D, D==1?0:3));
+                        Info.push_back(Ztring::ToZtring(((float64)N) / D, D == 1 ? 0 : D == 10 ? 1 : D == 100 ? 2 : D == 10000 ? 4 : D == 100000 ? 5 : D == 1000000 ? 6 : 3));
                     else
                         Info.push_back(Ztring()); // Division by zero, undefined
                 }
