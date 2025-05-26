@@ -9766,11 +9766,6 @@ void File_Mpeg4::moov_udta_loci()
             Skip_UTF16B(size, name);
         }
     };
-    // Process fixed-point 32-bit signed coordinate numbers
-    auto ProcFixed32s = [](int32u data) -> double {
-        double scaledVal = static_cast<double>(*reinterpret_cast<int32s*>(&data)) / 0x10000;
-        return std::round(scaledVal * 1e5) / 1e5;
-    };
 
     // Parsing
     // 2-bytes language code
@@ -9780,10 +9775,10 @@ void File_Mpeg4::moov_udta_loci()
     // 1-byte role where 0:shooting, 1:real, 2:fictional and 3:reserved
     Skip_B1(                                                    "Role");
     // 3x 4-byte fixed-point numbers for coordinates
-    int32u lat, lon, alt;
-    Get_B4(lon,                                                 "Longitude");
-    Get_B4(lat,                                                 "Latitude");
-    Get_B4(alt,                                                 "Altitude");
+    float32 lat, lon, alt;
+    Get_BFP4(16, lon,                                           "Longitude");
+    Get_BFP4(16, lat,                                           "Latitude");
+    Get_BFP4(16, alt,                                           "Altitude");
     // Variable-length null-terminated string for 'Body'
     SkipString(                                                 "Body");
     // Variable-length null-terminated string for 'Notes'
@@ -9797,7 +9792,7 @@ void File_Mpeg4::moov_udta_loci()
         OldLocale = OldLocale_Temp;
         setlocale(LC_NUMERIC, "C");
     }
-    snprintf(ISO6709_buff, sizeof(ISO6709_buff), "%+09.5f%+010.5f%+.5f/", ProcFixed32s(lat), ProcFixed32s(lon), ProcFixed32s(alt));
+    snprintf(ISO6709_buff, sizeof(ISO6709_buff), "%+010.6f%+011.6f%+.3f/", lat, lon, alt);
     if (!OldLocale.empty()) {
         setlocale(LC_NUMERIC, OldLocale.c_str());
     }
