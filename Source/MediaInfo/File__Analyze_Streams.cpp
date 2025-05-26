@@ -51,6 +51,112 @@ const char* Mpegv_colour_primaries(int8u colour_primaries);
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+bool Location_Adapt(string& Value)
+{
+    // Zero padding of degrees/minutes/seconds
+    auto AddZeroDMS = [](string& Value, size_t& degree_pos) {
+        degree_pos = Value.find("\xC2\xB0", degree_pos);
+        if (degree_pos == string::npos) {
+            return false;
+        }
+        auto space_pos = Value.find(' ', degree_pos);
+        bool Modified = false;
+
+        auto minute_pos = Value.find('\'', degree_pos);
+        if (minute_pos >= space_pos) {
+            return false;
+        }
+        auto minute_dot_pos = Value.find('.', degree_pos);
+        if (minute_dot_pos > minute_pos) {
+            minute_dot_pos = minute_pos;
+        }
+        if (minute_dot_pos - degree_pos <= 2) {
+            Value.insert(degree_pos + 1, 1, '0');
+            minute_pos++;
+            Modified = true;
+        }
+
+        auto second_pos = Value.find('"', minute_pos);
+        if (second_pos >= space_pos) {
+            return Modified;
+        }
+        auto second_dot_pos = Value.find('.', minute_pos);
+        if (second_dot_pos > second_pos) {
+            second_dot_pos = second_pos;
+        }
+        if (second_dot_pos - minute_pos <= 2) {
+            Value.insert(minute_pos + 1, 1, '0');
+            second_pos++;
+            Modified = true;
+        }
+
+        return Modified;
+    };
+    size_t DMS_Pos = 0;
+    bool Modified = false;
+    Modified |= AddZeroDMS(Value, DMS_Pos); // Minutes
+    DMS_Pos++;
+    Modified |= AddZeroDMS(Value, DMS_Pos); // Seconds
+    if (Modified) {
+        return true;
+    }
+
+    // ISO6709 machine to human readable
+    auto lat_sign_pos = Value.find_first_of("+-");
+    auto lon_sign_pos = Value.find_first_of("+-", lat_sign_pos + 1);
+    auto alt_sign_pos = Value.find_first_of("+-", lon_sign_pos + 1);
+    auto slash_pos = Value.find('/');
+
+    if (lat_sign_pos || lon_sign_pos == std::string::npos || slash_pos == std::string::npos)
+        return false;
+
+    auto lat_sign = Value[lat_sign_pos] == '+' ? 'N' : 'S';
+    ++lat_sign_pos;
+    while (Value[lat_sign_pos] == '0' && Value[lat_sign_pos + 1] >= '0' && Value[lat_sign_pos + 1] <= '9') {
+        ++lat_sign_pos;
+    }
+    auto lat_without_sign = Value.substr(lat_sign_pos, lon_sign_pos - lat_sign_pos);
+    auto lon_sign = Value[lon_sign_pos] == '+' ? 'E' : 'W';
+    ++lon_sign_pos;
+    while (Value[lon_sign_pos] == '0' && Value[lon_sign_pos + 1] >= '0' && Value[lon_sign_pos + 1] <= '9') {
+        ++lon_sign_pos;
+    }
+    auto lon_without_sign = Value.substr(lon_sign_pos, (alt_sign_pos == std::string::npos ? slash_pos : alt_sign_pos) - lon_sign_pos);
+    string alt;
+    if (alt_sign_pos != std::string::npos) {
+        if (Value[alt_sign_pos] == '+') {
+            ++alt_sign_pos; // + sign is implicit
+        }
+        while (Value[alt_sign_pos] == '0' && Value[alt_sign_pos + 1] >= '0' && Value[alt_sign_pos + 1] <= '9') {
+            ++alt_sign_pos;
+        }
+        alt = Value.substr(alt_sign_pos, slash_pos - alt_sign_pos);
+        if (alt.find_first_of('.') != string::npos && alt.find_first_not_of("0.-") == string::npos) {
+            alt.clear(); // It is unlikely a real one...
+        }
+    }
+    Value.clear();
+    if (lat_without_sign.find_first_not_of("0.") == string::npos && lon_without_sign.find_first_not_of("0.") == string::npos && alt.empty()){
+        return true; // It is unlikely a real one...
+    }
+    Value += lat_without_sign;
+    Value += "\xC2\xB0";
+    Value += lat_sign;
+    Value += ' ';
+    Value += lon_without_sign;
+    Value += "\xC2\xB0";
+    Value += lon_sign;
+    if (!alt.empty()) {
+        Value += ' ';
+        Value += alt;
+        if (alt.find("0123456789.") == string::npos) { // if no CRS identifier
+            Value += 'm';
+        }
+    }
+    return true;
+}
+
+//---------------------------------------------------------------------------
 static const char* add_dec_cache =
 "00010203040506070809"
 "10111213141516171819"
@@ -1014,6 +1120,22 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                         return Fill(Stream_General, StreamPos, Parameter, Value2, Replace);
                     }
                 }
+                break;
+            case General_Recorded_Location:
+                {
+                string Value2(Value.To_UTF8());
+                if (Location_Adapt(Value2)) {
+                    if (Value2.empty()) {
+                        return;
+                    }
+                    string Target = Retrieve_Const(Stream_General, StreamPos, Parameter).To_UTF8();
+                    if (Value2 == Target) {
+                        return;
+                    }
+                    return Fill(Stream_General, StreamPos, Parameter, Ztring().From_UTF8(Value2), Replace);
+                }
+                }
+                break;
         }
     }
 
