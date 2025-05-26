@@ -1219,6 +1219,8 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
             Compare = true;
         }
         break;
+    default:
+        break;
     }
     if (Compare)
     {
@@ -2163,7 +2165,7 @@ Ztring File__Analyze::Retrieve (stream_t StreamKind, size_t StreamPos, const cha
 void File__Analyze::Clear (stream_t StreamKind, size_t StreamPos, const char* Parameter)
 {
     //Integrity
-    if (StreamKind>=Stream_Max
+    if (StreamKind>=Stream_Max || StreamKind<Stream_General
      || Parameter==NULL
      || Parameter[0]=='\0')
         return;
