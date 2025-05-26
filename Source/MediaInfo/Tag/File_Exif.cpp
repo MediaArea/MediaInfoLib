@@ -846,10 +846,24 @@ void File_Exif::Streams_Finish()
         const auto GPSLongitudeRef = Infos_GPS.find(IFDGPS::GPSLongitudeRef);
         const auto GPSAltitude = Infos_GPS.find(IFDGPS::GPSAltitude);
         if (GPSLatitude != Infos_GPS.end() && GPSLatitude->second.size() == 3 && GPSLatitudeRef != Infos_GPS.end() && GPSLongitude != Infos_GPS.end() && GPSLongitude->second.size() == 3 && GPSLongitudeRef != Infos_GPS.end()) {
-            Ztring location = GPSLatitude->second.at(0) + __T("\u00B0") + GPSLatitude->second.at(1) + __T("'") + GPSLatitude->second.at(2) + __T("\"") + GPSLatitudeRef->second.at(0) + __T(" ")
-                + GPSLongitude->second.at(0) + __T("\u00B0") + GPSLongitude->second.at(1) + __T("'") + GPSLongitude->second.at(2) + __T("\"") + GPSLongitudeRef->second.at(0) + __T(" ");
+            Ztring location = GPSLatitude->second.at(0) + Ztring().From_UTF8("\xC2\xB0");
+            if (GPSLatitude->second.at(1) != __T("0") || GPSLatitude->second.at(0).find(__T('.')) == string::npos) {
+                location += GPSLatitude->second.at(1) + __T('\'');
+            }
+            if (GPSLatitude->second.at(2) != __T("0") || GPSLatitude->second.at(1).find(__T('.')) == string::npos) {
+                location += GPSLatitude->second.at(2) + __T('\"');
+            }
+            location += GPSLatitudeRef->second.at(0) + __T(' ');
+            location += GPSLongitude->second.at(0) + Ztring().From_UTF8("\xC2\xB0");
+            if (GPSLongitude->second.at(1) != __T("0") || GPSLongitude->second.at(0).find(__T('.')) == string::npos) {
+                location += GPSLongitude->second.at(1) + __T('\'');
+            }
+            if (GPSLongitude->second.at(2) != __T("0") || GPSLongitude->second.at(1).find(__T('.')) == string::npos) {
+                location += GPSLongitude->second.at(2) + __T('\"');;
+            }
+            location += GPSLongitudeRef->second.at(0) + __T(' ');
             if (GPSAltitude != Infos_GPS.end())
-                location += GPSAltitude->second.Read() + __T("m");
+                location += GPSAltitude->second.Read() + __T('m');
             Fill(Stream_General, 0, General_Recorded_Location, location);
         }
     }
