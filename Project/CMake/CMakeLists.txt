@@ -370,11 +370,6 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfoDLL/MediaInfoDLL.rc
 )
 
-if(WIN32)
-  # aes_ni.h has windows-only include
-  set(MediaInfoLib_SRCS ${MediaInfoLib_SRCS} ${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/aes_ni.c)
-endif()
-
 if(NOT TinyXML_FOUND)
   include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/)
   list(APPEND MediaInfoLib_SRCS ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/tinyxml2.cpp)
@@ -388,7 +383,7 @@ if(BUILD_ZLIB)
 endif()
 
 # disable some features. Maybe it should be enabled.
-target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBMMS_NO PRIVATE MEDIAINFO_GRAPHVIZ_NO)
+target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBMMS_NO)
 if(NOT CURL_FOUND)
   target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBCURL_NO)
 else()
@@ -397,6 +392,9 @@ else()
   set(CURL_PC " libcurl")
   set(CURL_LIB " -lcurl")
 endif()
+
+# enable Graphviz runtime
+target_compile_definitions(mediainfo PRIVATE MEDIAINFO_GRAPHVIZ_DLL_RUNTIME)
 
 target_include_directories(mediainfo PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/../../../ZenLib/Source
