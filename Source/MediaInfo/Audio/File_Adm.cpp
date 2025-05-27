@@ -4512,7 +4512,7 @@ int file_adm_private::parse(const void* const Buffer, size_t Buffer_Size)
     #define ELEMENT_e(NAME,UP,CALL) \
                 else { \
                     string Value = tfsxml_decode(b); \
-                    if (Extra[Level].find(Value) == Extra[Level].end()) { \
+                    if (Extra[Level].find(Value) == Extra[Level].end() && Value.rfind("!--", 0)) { \
                         Extra[Level].insert(Value); \
                         Check_Elements_NotPartOfSpecs(item_##NAME, Items[item_##NAME].Items.size() - 1, b, NAME##_Content); \
                     } \
