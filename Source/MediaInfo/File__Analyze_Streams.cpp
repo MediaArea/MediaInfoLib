@@ -402,24 +402,30 @@ bool DateTime_Adapt(string& Value_)
         return false;
     if (Value.size() == 4)
         return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
-    
+
     // Month
     if (Value.size() <= 6)
         return false;
-    if (Value[4] != '-'
+    if ((Value[4] != '-' && Value[4] != ':')
      || Value[5] < '0' || Value[5] > '9'
      || Value[6] < '0' || Value[6] > '9')
         return false;
+    if (Value[4] == ':') {
+        Value[4] = '-';
+    }
     if (Value.size() == 7)
         return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
 
     // Day
     if (Value.size() <= 9)
         return false;
-    if (Value[7] != '-'
+    if ((Value[7] != '-' && Value[7] != ':')
      || Value[8] < '0' || Value[8] > '9'
      || Value[9] < '0' || Value[9] > '9')
         return false;
+    if (Value[7] == ':') {
+        Value[7] = '-';
+    }
     if (Value.size() == 10)
         return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
 
