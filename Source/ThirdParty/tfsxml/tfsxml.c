@@ -292,7 +292,7 @@ int tfsxml_next(tfsxml_string* priv, tfsxml_string* n) {
                         break;
                     }
                     if ((probe >> 40) == 0x2D2D) { /* "<!--" */
-                        n->buf = priv->buf;
+                        n->buf = priv->buf + 1;
                         probe = 0;
                         priv->buf += 4;
                         priv->len -= 4;
