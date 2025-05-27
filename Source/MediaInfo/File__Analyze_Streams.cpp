@@ -59,6 +59,7 @@ namespace MediaInfoLib
             if (degree_pos == string::npos) {
                 return false;
             }
+            ++degree_pos; // degree symbol is 2 bytes
             auto space_pos = Value.find(' ', degree_pos);
             bool Modified = false;
 
@@ -94,9 +95,9 @@ namespace MediaInfoLib
             };
         size_t DMS_Pos = 0;
         bool Modified = false;
-        Modified |= AddZeroDMS(Value, DMS_Pos); // Minutes
+        Modified |= AddZeroDMS(Value, DMS_Pos); // Latitude
         DMS_Pos++;
-        Modified |= AddZeroDMS(Value, DMS_Pos); // Seconds
+        Modified |= AddZeroDMS(Value, DMS_Pos); // Longitude
         if (Modified) {
             return true;
         }
