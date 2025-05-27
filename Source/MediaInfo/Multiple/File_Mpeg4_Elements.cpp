@@ -4058,6 +4058,10 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                             Fill_SetOptions(Stream_General, 0, "UniversalAdID/String", "Y NTN");
                         }
                     }
+                    else if (Parameter == "location")
+                        Fill(Stream_General, 0, General_Recorded_Location, Value);
+                    else if (Parameter == "location-eng")
+                        Fill(Stream_General, 0, General_Recorded_Location, Value);
                     else if (Parameter=="DisplayAspectRatio")
                     {
                         DisplayAspectRatio=Value;

@@ -54,9 +54,9 @@
 
 //---------------------------------------------------------------------------
 #include <ctime>
-#include <regex>
 #if !defined(UNICODE) && !defined(_UNICODE)
 #include <codecvt>
+#include <locale>
 #endif
 //---------------------------------------------------------------------------
 
@@ -926,26 +926,6 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                             Valeur.resize(Valeur.size()-3);
                     }
                 }
-
-                //Handling ISO-6709 location data for Text and HTML display
-                #if defined(MEDIAINFO_TEXT_YES) || defined(MEDIAINFO_HTML_YES)
-                bool TextOrHTML = false;
-                #if defined(MEDIAINFO_TEXT_YES) && (defined(MEDIAINFO_HTML_YES) || defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES) || defined(MEDIAINFO_CSV_YES))
-                if (Text) TextOrHTML = true;
-                #elif !(defined(MEDIAINFO_HTML_YES) || defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES) || defined(MEDIAINFO_CSV_YES))
-                TextOrHTML = true;
-                #endif // defined(MEDIAINFO_TEXT_YES) && (defined(MEDIAINFO_HTML_YES) || defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES) || defined(MEDIAINFO_CSV_YES))
-                #if defined(MEDIAINFO_HTML_YES)
-                if (HTML) TextOrHTML = true;
-                #endif // defined(MEDIAINFO_HTML_YES)
-                if ((TextOrHTML) && (Get(StreamKind, StreamPos, Champ_Pos, Info_Name) == __T("Recorded_Location"))) {
-                    std::string ISO6709{ Valeur.To_UTF8() };
-                    std::smatch match;
-                    std::regex pattern(R"(([-+]?(?:\d{2}|\d{4}|\d{6})(?:\.\d*)?)([-+](?:\d{3}|\d{5}|\d{7})(?:\.\d*)?)(?:([-+]\d+(?:\.\d*)?)(?:CRS(.+))?)?/)");
-                    if (std::regex_match(ISO6709, match, pattern))
-                        Valeur.From_UTF8(match[1].str() + " " + match[2].str() + " " + match[3].str() + " " + match[4].str());
-                }
-                #endif // defined(MEDIAINFO_TEXT_YES) || defined(MEDIAINFO_HTML_YES)
 
                 #if defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
                     if ((XML_0_7_78 || JSON) && MediaInfoLib::Config.Info_Get(StreamKind).Read(Champ_Pos, Info_Measure)==__T(" ms"))
