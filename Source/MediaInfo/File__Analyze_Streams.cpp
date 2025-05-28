@@ -1203,7 +1203,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                     {
                         if (Value2.empty())
                             return;
-                        return Fill(Stream_General, StreamPos, Parameter, Value2, Replace);
+                        return Fill(Stream_General, StreamPos, Parameter, Value2, true, Replace);
                     }
                 }
                 break;
@@ -1218,7 +1218,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                     if (Location_Compare(Target, Value2, Replace)) {
                         return;
                     }
-                    return Fill(Stream_General, StreamPos, Parameter, Ztring().From_UTF8(Value2), Replace);
+                    return Fill(Stream_General, StreamPos, Parameter, Value2, true, Replace);
                 }
                 }
                 break;
