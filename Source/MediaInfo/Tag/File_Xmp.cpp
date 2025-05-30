@@ -22,6 +22,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Tag/File_Xmp.h"
+#include "ThirdParty/base64/base64.h"
 #include <cstring>
 #include "tinyxml2.h"
 using namespace tinyxml2;
@@ -108,6 +109,29 @@ bool File_Xmp::FileHeader_Begin()
         //RDF item
         if (!strcmp(Rdf_Item->Value(), (NameSpace+"Description").c_str()))
         {
+            const char* RelitInputImageData = Rdf_Item->Attribute("GCamera:RelitInputImageData");
+            if (RelitInputImageData) {
+                std::string Data_Raw(Base64::decode(RelitInputImageData));
+                auto Buffer_Save = Buffer;
+                auto Buffer_Offset_Save = Buffer_Offset;
+                auto Buffer_Size_Save = Buffer_Size;
+                auto Element_Offset_Save = Element_Offset;
+                auto Element_Size_Save = Element_Size;
+                Buffer = (const int8u*)Data_Raw.c_str();
+                Buffer_Offset = 0;
+                Buffer_Size = Data_Raw.size();
+                Element_Offset = 0;
+                Element_Size = Buffer_Size;
+
+                //Filling
+                Attachment("Extended XMP / GCamera", Ztring(), "Relit Input Image");
+
+                Buffer = Buffer_Save;
+                Buffer_Offset = Buffer_Offset_Save;
+                Buffer_Size = Buffer_Size_Save;
+                Element_Offset = Element_Offset_Save;
+                Element_Size = Element_Size_Save;
+            }
             const char* Description=Rdf_Item->Attribute("xmp:Description");
             if (!Description)
                 Description=Rdf_Item->Attribute("pdf:Description");
