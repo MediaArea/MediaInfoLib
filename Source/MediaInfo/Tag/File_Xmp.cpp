@@ -104,34 +104,38 @@ bool File_Xmp::FileHeader_Begin()
 
     Accept("XMP");
 
+    auto ParseBase64Image = [this](const char* input_data, const char* muxing_mode, const char* description) -> void {
+        if (input_data) {
+            std::string Data_Raw(Base64::decode(input_data));
+            auto Buffer_Save = Buffer;
+            auto Buffer_Offset_Save = Buffer_Offset;
+            auto Buffer_Size_Save = Buffer_Size;
+            auto Element_Offset_Save = Element_Offset;
+            auto Element_Size_Save = Element_Size;
+            Buffer = (const int8u*)Data_Raw.c_str();
+            Buffer_Offset = 0;
+            Buffer_Size = Data_Raw.size();
+            Element_Offset = 0;
+            Element_Size = Buffer_Size;
+
+            //Filling
+            Attachment(muxing_mode, Ztring(), description);
+
+            Buffer = Buffer_Save;
+            Buffer_Offset = Buffer_Offset_Save;
+            Buffer_Size = Buffer_Size_Save;
+            Element_Offset = Element_Offset_Save;
+            Element_Size = Element_Size_Save;
+        }
+        };
+
     for (XMLElement* Rdf_Item=Rdf->FirstChildElement(); Rdf_Item; Rdf_Item=Rdf_Item->NextSiblingElement())
     {
         //RDF item
         if (!strcmp(Rdf_Item->Value(), (NameSpace+"Description").c_str()))
         {
             const char* RelitInputImageData = Rdf_Item->Attribute("GCamera:RelitInputImageData");
-            if (RelitInputImageData) {
-                std::string Data_Raw(Base64::decode(RelitInputImageData));
-                auto Buffer_Save = Buffer;
-                auto Buffer_Offset_Save = Buffer_Offset;
-                auto Buffer_Size_Save = Buffer_Size;
-                auto Element_Offset_Save = Element_Offset;
-                auto Element_Size_Save = Element_Size;
-                Buffer = (const int8u*)Data_Raw.c_str();
-                Buffer_Offset = 0;
-                Buffer_Size = Data_Raw.size();
-                Element_Offset = 0;
-                Element_Size = Buffer_Size;
-
-                //Filling
-                Attachment("Extended XMP / GCamera", Ztring(), "Relit Input Image");
-
-                Buffer = Buffer_Save;
-                Buffer_Offset = Buffer_Offset_Save;
-                Buffer_Size = Buffer_Size_Save;
-                Element_Offset = Element_Offset_Save;
-                Element_Size = Element_Size_Save;
-            }
+            ParseBase64Image(RelitInputImageData, "Extended XMP / GCamera", "Relit Input Image");
             const char* Description=Rdf_Item->Attribute("xmp:Description");
             if (!Description)
                 Description=Rdf_Item->Attribute("pdf:Description");
@@ -202,11 +206,18 @@ bool File_Xmp::FileHeader_Begin()
                 }
                 else if (!strcmp(Description_Item->Value(), "GDepth:Data"))
                 {
-                    Fill(Stream_General, 0, "GDepth:Data", Description_Item->GetText());
+                    const char* GDepth = Description_Item->GetText();
+                    ParseBase64Image(GDepth, "Extended XMP / GDepth Data", "Depth Image");
+                }
+                else if (!strcmp(Description_Item->Value(), "GDepth:Confidence"))
+                {
+                    const char* GDepth = Description_Item->GetText();
+                    ParseBase64Image(GDepth, "Extended XMP / GDepth Confidence", "Confidence Image");
                 }
                 else if (!strcmp(Description_Item->Value(), "GImage:Data"))
                 {
-                    Fill(Stream_General, 0, "GImage:Data", Description_Item->GetText());
+                    const char* GImage = Description_Item->GetText();
+                    ParseBase64Image(GImage, "Extended XMP / GImage Data", "Image");
                 }
             }
         }
