@@ -111,8 +111,6 @@ struct exif_tag_desc {
     {_NAME, _DESC}, \
 
 namespace IFD0 {
-    ELEM(0x0001, InteroperabilityIndex)
-    ELEM(0x0002, InteroperabilityVersion)
     ELEM(0x000B, ProcessingSoftware)
     ELEM(0x00FE, SubfileType)
     ELEM(0x00FF, OldSubfileType)
@@ -203,8 +201,6 @@ namespace IFD0 {
 
 exif_tag_desc Desc[] =
 {
-    ELEM_TRACE(InteroperabilityIndex, "Interoperability index")
-    ELEM_TRACE(InteroperabilityVersion, "Interoperability version")
     ELEM_TRACE(ProcessingSoftware, "Processing software")
     ELEM_TRACE(SubfileType, "Subfile type")
     ELEM_TRACE(OldSubfileType, "Old subfile type")
@@ -593,6 +589,23 @@ exif_tag_desc Desc[] =
 };
 };
 
+namespace IFDInterop {
+    ELEM(0x0001, InteroperabilityIndex)
+    ELEM(0x0002, InteroperabilityVersion)
+    ELEM(0x1000, RelatedImageFileFormat)
+    ELEM(0x1001, RelatedImageWidth)
+    ELEM(0x1002, RelatedImageHeight)
+
+exif_tag_desc Desc[] =
+{
+    ELEM_TRACE(InteroperabilityIndex, "Interoperability Index")
+    ELEM_TRACE(InteroperabilityVersion, "Interoperability Version")
+    ELEM_TRACE(RelatedImageFileFormat, "Related Image File Format")
+    ELEM_TRACE(RelatedImageWidth, "Related Image Width")
+    ELEM_TRACE(RelatedImageHeight, "Related Image Height")
+};
+};
+
 //---------------------------------------------------------------------------
 struct exif_tag_desc_size
 {
@@ -607,6 +620,7 @@ enum kind_of_ifd
     Kind_IFD1,
     Kind_Exif,
     Kind_GPS,
+    Kind_Interop,
     Kind_ParsingThumbnail,
 };
 exif_tag_desc_size Exif_Descriptions[] =
@@ -615,6 +629,7 @@ exif_tag_desc_size Exif_Descriptions[] =
     DESC_TABLE(IFD0, "IFD1 (thumbnail)")
     DESC_TABLE(IFDExif, "Exif")
     DESC_TABLE(IFDGPS, "GPS")
+    DESC_TABLE(IFDInterop, "Interoperability")
 };
 static string Exif_Tag_Description(int8u NameSpace, int16u Tag_ID)
 {
@@ -1055,6 +1070,9 @@ void File_Exif::Read_Directory()
         else if (IfdItem.Tag == IFD0::GPSInfoIFD) {
             Get_IFDOffset(Kind_GPS);
         }
+        else if (IfdItem.Tag == IFDExif::InteroperabilityIFD) {
+            Get_IFDOffset(Kind_Interop);
+        }
         else {
             GetValueOffsetu(IfdItem);
 
@@ -1360,6 +1378,11 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         default:            //Unknown
                 if (IfdItem.Tag == IFDExif::UserComment)
                     UserComment(Info);
+                if (IfdItem.Tag == IFDExif::ExifVersion || IfdItem.Tag == IFDExif::FlashpixVersion || IfdItem.Tag == IFDInterop::InteroperabilityVersion) {
+                    string Data;
+                    Get_String(4, Data,                             "Data"); Element_Info1(Data.c_str());
+                    Info.push_back(Ztring().From_UTF8(Data.c_str()));
+                }
                 else
                 Skip_XX(Exif_Type_Size(IfdItem.Type)*IfdItem.Count, "Data");
     }
