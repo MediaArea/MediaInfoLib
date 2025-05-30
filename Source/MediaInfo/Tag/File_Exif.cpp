@@ -1126,6 +1126,7 @@ void File_Exif::UserComment(ZtringList& Info)
 void File_Exif::Thumbnail()
 {
     Stream_Prepare(Stream_Image);
+    Fill(Stream_Image, 1, Image_Type, "Thumbnail");
     Fill(Stream_Image, 1, Image_MuxingMode, "Exif");
 
     File__Analyze* Parser = nullptr;
