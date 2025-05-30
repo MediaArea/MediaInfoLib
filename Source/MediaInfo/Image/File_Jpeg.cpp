@@ -263,7 +263,7 @@ string Jpeg2000_Rsiz(int16u Rsiz)
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-File_Jpeg::File_Jpeg()
+File_Jpeg::File_Jpeg() : APP0_JFIF_Parsed{}, APPE_Adobe0_transform{}, CME_Text_Parsed{}, Data_Size{}, SOS_SOD_Parsed{}
 {
     //Config
     #if MEDIAINFO_EVENTS
@@ -318,6 +318,14 @@ void File_Jpeg::Streams_Accept()
 //---------------------------------------------------------------------------
 void File_Jpeg::Streams_Finish()
 {
+    for (const auto& Item : XmpExt_List)
+    {
+        if (Item.second.Parser) {
+            Item.second.Parser->Finish();
+            Merge(*Item.second.Parser, Stream_General, 0, 0);
+            Merge(*Item.second.Parser, false);
+        }
+    }
     for (const auto& Item : JpegXtExt_List)
     {
         if (Item.second.Parser) {
@@ -1416,6 +1424,11 @@ void File_Jpeg::APP1()
         APP1_XMP();
         return;
     }
+    if (Element_Size >= 29 && !strncmp((const char*)Buffer + Buffer_Offset, "http://ns.adobe.com/xmp/extension/", 35)) { // the char* contains a terminating \0
+        Skip_String(35,                                         "Name");
+        APP1_XMP_Extension();
+        return;
+    }
     if (Element_Size >= 6 && !strncmp((const char*)Buffer + Buffer_Offset, "Exif\0", 6)) { // the char* contains a second terminating \0
         Skip_String( 6,                                         "Name");
         APP1_EXIF();
@@ -1466,6 +1479,48 @@ void File_Jpeg::APP1_XMP()
     Merge(MI, Stream_General, 0, 0, false);
     #endif
     Skip_UTF8(Element_Size - Element_Offset,                    "XMP metadata");
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::APP1_XMP_Extension()
+{
+    Accept();
+
+    Element_Info1("Extended XMP");
+
+    //Parsing
+    string GUID;
+    int32u Size, Offset;
+    Get_String(32, GUID,                                        "GUID");
+    Get_B4 (Size,                                               "Full length");
+    Get_B4 (Offset,                                             "Chunk offset");
+    #if defined(MEDIAINFO_XMP_YES)
+    auto Item = XmpExt_List.find(GUID);
+    if (Item == XmpExt_List.end()) {
+        if (Offset) {
+            Skip_XX(Element_Size - Element_Offset,              "(Missing start of content)");
+            return;
+        }
+        xmpext XmpExt;
+        XmpExt.LastOffset = 0;
+        XmpExt.Parser = new File_Xmp();
+        Open_Buffer_Init(XmpExt.Parser);
+        Item = XmpExt_List.emplace(GUID, XmpExt).first;
+    }
+    if (Offset != Item->second.LastOffset) {
+        Skip_XX(Element_Size - Element_Offset,                  "(Missing intermediate content)");
+        return;
+    }
+    Item->second.LastOffset += (int32u)(Element_Size - Element_Offset);
+    auto& MI = *(File_Xmp*)Item->second.Parser;
+    MI.Wait = Item->second.LastOffset < Size;
+    auto Element_Offset_Sav = Element_Offset;
+    Open_Buffer_Continue(&MI);
+    Element_Offset = Element_Offset_Sav;
+    Element_Show();
+    #endif
+    Skip_UTF8(Element_Size - Element_Offset,                    "XMP metadata");
+    return;
 }
 
 //---------------------------------------------------------------------------

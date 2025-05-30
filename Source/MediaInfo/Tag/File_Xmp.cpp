@@ -56,6 +56,11 @@ static char* strnstr(const char* Str, size_t Size, const char* ToSearch)
 //---------------------------------------------------------------------------
 bool File_Xmp::FileHeader_Begin()
 {
+    if (Wait) {
+        Element_WaitForMoreData();
+        return false;
+    }
+
     auto Buffer_Size_Save=Buffer_Size;
     if (Buffer_Size>=32)
     {
@@ -170,6 +175,14 @@ bool File_Xmp::FileHeader_Begin()
                     CreateDate=Ztring().From_UTF8(Description_Item->GetText());
                     if (CreateDate>ModifyDate)
                         Fill(Stream_General, 0, General_Encoded_Date, CreateDate, true);
+                }
+                else if (!strcmp(Description_Item->Value(), "GDepth:Data"))
+                {
+                    Fill(Stream_General, 0, "GDepth:Data", Description_Item->GetText());
+                }
+                else if (!strcmp(Description_Item->Value(), "GImage:Data"))
+                {
+                    Fill(Stream_General, 0, "GImage:Data", Description_Item->GetText());
                 }
             }
         }
