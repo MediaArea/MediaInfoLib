@@ -633,11 +633,13 @@ exif_tag_desc_size Exif_Descriptions[] =
 };
 static string Exif_Tag_Description(int8u NameSpace, int16u Tag_ID)
 {
+    #ifdef MEDIAINFO_TRACE
     for (size_t Pos = 0; Pos < Exif_Descriptions[NameSpace].Size; ++Pos)
     {
         if (Exif_Descriptions[NameSpace].Table[Pos].Tag_ID == Tag_ID)
             return Exif_Descriptions[NameSpace].Table[Pos].Description;
     }
+    #endif //MEDIAINFO_TRACE
     return Ztring::ToZtring_From_CC2(Tag_ID).To_UTF8();
 }
 
@@ -831,55 +833,134 @@ void File_Exif::Streams_Finish()
     const auto Infos_Exif_It = Infos.find(Kind_Exif);
     const auto Infos_GPS_It = Infos.find(Kind_GPS);
 
+    auto FillMetadata = [&](Ztring& Value, const std::pair<const int16u, ZtringList>& Item, size_t Parameter, const char* ParameterC, const string& Unit) {
+        if (Value.empty()) {
+            Value = Item.second.Read();
+        }
+        if (Parameter) {
+            if (Parameter != (size_t)-1) {
+                Fill(Stream_General, 0, Parameter, Value);
+            }
+        }
+        else if (ParameterC) {
+            Fill(Stream_General, 0, ParameterC, Value);
+            if (!Unit.empty()) {
+                Fill_SetOptions(Stream_General, 0, ParameterC, "N NF");
+                Fill(Stream_General, 0, string(ParameterC).append("/String").c_str(), (Unit.front() == ' ' ? Value : Ztring()) + Ztring().From_UTF8(Unit));
+            }
+        }
+        else {
+            //Fill(Stream_General, 0, Exif_Tag_Description(currentIFD, Item.first).c_str(), Value);
+        }
+    };
+
+    auto MergeDateTimeSubSecOffset = [&](const ZtringList& DateTime, int16u SubSecTimeTag, int16u OffsetTimeTag) -> Ztring {
+        Ztring Value = DateTime.Read();
+        if (Infos_Exif_It != Infos.end()) {
+            const auto& Infos_Exif = Infos_Exif_It->second;
+            const auto SubSecTime = Infos_Exif.find(SubSecTimeTag);
+            if (SubSecTime != Infos_Exif.end()) {
+                Value += __T('.') + SubSecTime->second.Read();
+            }
+            const auto OffsetTime = Infos_Exif.find(OffsetTimeTag);
+            if (OffsetTime != Infos_Exif.end()) {
+                Value += OffsetTime->second.Read();
+            }
+        }
+        return Value;
+    };
+
     if (Infos_Image_It != Infos.end()) {
-        const auto Infos_Image = Infos_Image_It->second;
-        const auto Make = Infos_Image.find(IFD0::Make); if (Make != Infos_Image.end()) Fill(Stream_General, 0, General_Encoded_Hardware_CompanyName, Make->second.Read());
-        const auto Model = Infos_Image.find(IFD0::Model); if (Model != Infos_Image.end()) Fill(Stream_General, 0, General_Encoded_Hardware_Model, Model->second.Read());
-        const auto Software = Infos_Image.find(IFD0::Software); if (Software != Infos_Image.end()) Fill(Stream_General, 0, General_Encoded_Application, Software->second.Read());
-        const auto Description = Infos_Image.find(IFD0::ImageDescription); if (Description != Infos_Image.end()) Fill(Stream_General, 0, General_Description, Description->second.Read());
-        const auto Copyright = Infos_Image.find(IFD0::Copyright); if (Copyright != Infos_Image.end()) Fill(Stream_General, 0, General_Copyright, Copyright->second.Read());
+        currentIFD = Kind_IFD0;
+        const auto& Infos_Image = Infos_Image_It->second;
+        for (const auto& Item : Infos_Image) {
+            size_t Parameter = 0;
+            Ztring Value;
+            const char* ParameterC = nullptr;
+            string ParameterS;
+            switch (Item.first) {
+            case IFD0::ImageDescription: Parameter = General_Description; break;
+            case IFD0::Make: Parameter = General_Encoded_Hardware_CompanyName; break;
+            case IFD0::Model: Parameter = General_Encoded_Hardware_Model; break;
+            case IFD0::Software: Parameter = General_Encoded_Application; break;
+            case IFD0::Copyright: Parameter = General_Copyright; break;
+            }
+            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS); 
+        }
     }
     if (Infos_Exif_It != Infos.end()) {
-        const auto Infos_Exif = Infos_Exif_It->second;
-        const auto DateTimeOriginal = Infos_Exif.find(IFDExif::DateTimeOriginal);
-        const auto SubSecTimeOriginal = Infos_Exif.find(IFDExif::SubSecTimeOriginal);
-        const auto OffsetTimeOriginal = Infos_Exif.find(IFDExif::OffsetTimeOriginal);
-        Ztring datetime;
-        if (DateTimeOriginal != Infos_Exif.end())
-            datetime += DateTimeOriginal->second.Read();
-        if (SubSecTimeOriginal != Infos_Exif.end())
-            datetime += __T(".") + SubSecTimeOriginal->second.Read();
-        if (OffsetTimeOriginal != Infos_Exif.end())
-            datetime += OffsetTimeOriginal->second.Read();
-        Fill(Stream_General, 0, General_Recorded_Date, datetime);
+        currentIFD = Kind_Exif;
+        const auto& Infos_Exif = Infos_Exif_It->second;
+        for (const auto& Item : Infos_Exif) {
+            size_t Parameter = 0;
+            Ztring Value;
+            const char* ParameterC = nullptr;
+            string ParameterS;
+            switch (Item.first) {
+            case IFDExif::OffsetTimeOriginal:
+            case IFDExif::SubSecTimeOriginal:
+                Parameter = (size_t)-1;
+                break;
+            case IFDExif::DateTimeOriginal:
+                Parameter = General_Recorded_Date;
+                Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTimeOriginal, IFDExif::OffsetTimeOriginal);
+                break;
+            default:;
+            }
+            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
+            switch (Item.first) {
+            case IFDExif::ExifVersion: Fill_SetOptions(Stream_General, 0, ParameterC, "N NF"); break;
+            }
+        }
     }
+
     if (Infos_GPS_It != Infos.end()) {
-        const auto Infos_GPS = Infos_GPS_It->second;
-        const auto GPSLatitude = Infos_GPS.find(IFDGPS::GPSLatitude);
-        const auto GPSLatitudeRef = Infos_GPS.find(IFDGPS::GPSLatitudeRef);
-        const auto GPSLongitude = Infos_GPS.find(IFDGPS::GPSLongitude);
-        const auto GPSLongitudeRef = Infos_GPS.find(IFDGPS::GPSLongitudeRef);
-        const auto GPSAltitude = Infos_GPS.find(IFDGPS::GPSAltitude);
-        if (GPSLatitude != Infos_GPS.end() && GPSLatitude->second.size() == 3 && GPSLatitudeRef != Infos_GPS.end() && GPSLongitude != Infos_GPS.end() && GPSLongitude->second.size() == 3 && GPSLongitudeRef != Infos_GPS.end()) {
-            Ztring location = GPSLatitude->second.at(0) + Ztring().From_UTF8("\xC2\xB0");
-            if (GPSLatitude->second.at(1) != __T("0") || GPSLatitude->second.at(0).find(__T('.')) == string::npos) {
-                location += GPSLatitude->second.at(1) + __T('\'');
+        currentIFD = Kind_GPS;
+        const auto& Infos_GPS = Infos_GPS_It->second;
+        for (const auto& Item : Infos_GPS) {
+            size_t Parameter = 0;
+            Ztring Value;
+            const char* ParameterC = nullptr;
+            string ParameterS;
+            switch (Item.first) {
+            case IFDGPS::GPSLatitudeRef:
+            case IFDGPS::GPSLongitudeRef:
+            case IFDGPS::GPSLongitude:
+            case IFDGPS::GPSAltitudeRef:
+            case IFDGPS::GPSAltitude:
+                Parameter = (size_t)-1;
+                break;
+            case IFDGPS::GPSLatitude: {
+                Parameter = General_Recorded_Location;
+                const auto GPSLatitude = Infos_GPS.find(IFDGPS::GPSLatitude);
+                const auto GPSLatitudeRef = Infos_GPS.find(IFDGPS::GPSLatitudeRef);
+                const auto GPSLongitude = Infos_GPS.find(IFDGPS::GPSLongitude);
+                const auto GPSLongitudeRef = Infos_GPS.find(IFDGPS::GPSLongitudeRef);
+                const auto GPSAltitude = Infos_GPS.find(IFDGPS::GPSAltitude);
+                if (GPSLatitude->second.size() == 3 && GPSLatitudeRef != Infos_GPS.end() && GPSLongitude != Infos_GPS.end() && GPSLongitude->second.size() == 3 && GPSLongitudeRef != Infos_GPS.end()) {
+                    Value = GPSLatitude->second.at(0) + Ztring().From_UTF8("\xC2\xB0");
+                    if (GPSLatitude->second.at(1) != __T("0") || GPSLatitude->second.at(0).find(__T('.')) == string::npos) {
+                        Value += GPSLatitude->second.at(1) + __T('\'');
+                    }
+                    if (GPSLatitude->second.at(2) != __T("0") || GPSLatitude->second.at(1).find(__T('.')) == string::npos) {
+                        Value += GPSLatitude->second.at(2) + __T('\"');
+                    }
+                    Value += GPSLatitudeRef->second.at(0) + __T(' ');
+                    Value += GPSLongitude->second.at(0) + Ztring().From_UTF8("\xC2\xB0");
+                    if (GPSLongitude->second.at(1) != __T("0") || GPSLongitude->second.at(0).find(__T('.')) == string::npos) {
+                        Value += GPSLongitude->second.at(1) + __T('\'');
+                    }
+                    if (GPSLongitude->second.at(2) != __T("0") || GPSLongitude->second.at(1).find(__T('.')) == string::npos) {
+                        Value += GPSLongitude->second.at(2) + __T('\"');;
+                    }
+                    Value += GPSLongitudeRef->second.at(0) + __T(' ');
+                    if (GPSAltitude != Infos_GPS.end())
+                        Value += GPSAltitude->second.Read() + __T('m');
+                }
+                break;
+                }
             }
-            if (GPSLatitude->second.at(2) != __T("0") || GPSLatitude->second.at(1).find(__T('.')) == string::npos) {
-                location += GPSLatitude->second.at(2) + __T('\"');
-            }
-            location += GPSLatitudeRef->second.at(0) + __T(' ');
-            location += GPSLongitude->second.at(0) + Ztring().From_UTF8("\xC2\xB0");
-            if (GPSLongitude->second.at(1) != __T("0") || GPSLongitude->second.at(0).find(__T('.')) == string::npos) {
-                location += GPSLongitude->second.at(1) + __T('\'');
-            }
-            if (GPSLongitude->second.at(2) != __T("0") || GPSLongitude->second.at(1).find(__T('.')) == string::npos) {
-                location += GPSLongitude->second.at(2) + __T('\"');;
-            }
-            location += GPSLongitudeRef->second.at(0) + __T(' ');
-            if (GPSAltitude != Infos_GPS.end())
-                location += GPSAltitude->second.Read() + __T('m');
-            Fill(Stream_General, 0, General_Recorded_Location, location);
+            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
         }
     }
 }
@@ -957,7 +1038,7 @@ void File_Exif::Header_Parse()
         #else //MEDIAINFO_TRACE
         Header_Fill_Code(IfdItems.begin()->second.Tag);
         #endif //MEDIAINFO_TRACE
-        Header_Fill_Size(Exif_Type_Size(IfdItems.begin()->second.Type) * IfdItems.begin()->second.Count);
+        Header_Fill_Size(static_cast<int64u>(Exif_Type_Size(IfdItems.begin()->second.Type)) * IfdItems.begin()->second.Count);
         return;
     }
 
@@ -994,7 +1075,7 @@ void File_Exif::Data_Parse()
             Infos[currentIFD].clear();
 
             //Parsing new IFD
-            int32u IFDOffset;
+            int32u IFDOffset{};
             while (Element_Offset + 12 < Element_Size)
                 Read_Directory();
             Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : (int8u)-1);
@@ -1024,7 +1105,7 @@ void File_Exif::Data_Parse()
         if (currentIFD != Kind_ParsingThumbnail) {
             const auto Infos_Thumbnail_It = Infos.find(Kind_IFD1);
             if (Infos_Thumbnail_It != Infos.end()) {
-                const auto Infos_Thumbnail = Infos_Thumbnail_It->second;
+                const auto& Infos_Thumbnail = Infos_Thumbnail_It->second;
                 const auto ImageOffset = Infos_Thumbnail.find(IFD0::ImageOffset);
                 if (ImageOffset != Infos_Thumbnail.end() && ImageOffset->second.size() == 1) {
                     int32u IFD_Offset = ImageOffset->second.at(0).To_int32u();
@@ -1049,7 +1130,7 @@ void File_Exif::Read_Directory()
     // Each directory consist of 4 fields
     // Get information for this directory
     Element_Begin0();
-    ifditem IfdItem;
+    ifditem IfdItem{};
     Get_X2 (IfdItem.Tag,                                        "TagID"); Param_Info1(Exif_Tag_Description(currentIFD, IfdItem.Tag));
     Get_X2 (IfdItem.Type,                                       "Data type"); Param_Info1(Exif_Type_Name(IfdItem.Type));
     Get_X4 (IfdItem.Count,                                      "Number of components");
@@ -1078,7 +1159,7 @@ void File_Exif::Read_Directory()
 
             //Padding up, skip dummy bytes
             if (Size < 4)
-                Skip_XX(4 - Size,                               "Padding");
+                Skip_XX(static_cast<int64u>(4) - Size,          "Padding");
         }
     }
     else
@@ -1132,7 +1213,7 @@ void File_Exif::Thumbnail()
     File__Analyze* Parser = nullptr;
     const auto Infos_Thumbnail_It = Infos.find(Kind_IFD1);
     if (Infos_Thumbnail_It != Infos.end()) {
-        const auto Infos_Thumbnail = Infos_Thumbnail_It->second;
+        const auto& Infos_Thumbnail = Infos_Thumbnail_It->second;
         const auto Compression_It = Infos_Thumbnail.find(IFD0::Compression);
         if (Compression_It != Infos_Thumbnail.end() && Compression_It->second.size() == 1) {
             int32u Compression = Compression_It->second.at(0).To_int32u();
@@ -1193,12 +1274,33 @@ void File_Exif::Get_IFDOffset(int8u KindOfIFD)
 //---------------------------------------------------------------------------
 void File_Exif::GetValueOffsetu(ifditem &IfdItem)
 {
+    auto GetDecimalPlaces = [](int32u numerator, int32u denominator) -> int8u {
+        if (denominator == 1)
+            return 0;
+        int8u count{ 1 };
+        while (denominator > 10) {
+            ++count;
+            denominator /= 10;
+        }
+        if (denominator == 10)
+            return count;
+        if (numerator == 1)
+            return count + 3;
+        if (numerator == 10)
+            return count + 2;
+        if (numerator == 100)
+            return count + 1;
+        if (count < 3)
+            return 3;
+        return count;
+    };
+
     ZtringList& Info = Infos[currentIFD][IfdItem.Tag]; Info.clear(); Info.Separator_Set(0, __T(" /"));
 
     if (IfdItem.Type!=Exif_Type::ASCIIStrings && IfdItem.Type!=Exif_Type::Undefined && IfdItem.Count>=1000)
     {
         //Too many data, we don't currently need it and we skip it
-        Skip_XX(Exif_Type_Size(IfdItem.Type)*IfdItem.Count,     "Data");
+        Skip_XX(static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
         return;
     }
 
@@ -1307,7 +1409,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                             Get_B4 (D,                          "Denominator");
                         }
                         if (D)
-                            Element_Info1(Ztring::ToZtring(((float64)N)/D));
+                            Element_Info1(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
                     #else //MEDIAINFO_TRACE
                         if (Element_Offset+8>Element_Size)
                         {
@@ -1327,7 +1429,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                         Element_Offset+=8;
                     #endif //MEDIAINFO_TRACE
                     if (D)
-                        Info.push_back(Ztring::ToZtring(((float64)N) / D, D == 1 ? 0 : D == 10 ? 1 : D == 100 ? 2 : D == 10000 ? 4 : D == 100000 ? 5 : D == 1000000 ? 6 : 3));
+                        Info.push_back(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
                     else
                         Info.push_back(Ztring()); // Division by zero, undefined
                 }
@@ -1351,7 +1453,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                         N = (int32s)NU;
                         D = (int32s)DU;
                         if (D)
-                            Element_Info1(Ztring::ToZtring(((float64)N)/D));
+                            Element_Info1(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
                     #else //MEDIAINFO_TRACE
                         if (Element_Offset+8>Element_Size)
                         {
@@ -1371,7 +1473,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                         Element_Offset+=8;
                     #endif //MEDIAINFO_TRACE
                     if (D)
-                        Info.push_back(Ztring::ToZtring(((float64)N)/D, D==1?0:3));
+                        Info.push_back(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
                     else
                         Info.push_back(Ztring()); // Division by zero, undefined
                 }
@@ -1385,7 +1487,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                     Info.push_back(Ztring().From_UTF8(Data.c_str()));
                 }
                 else
-                Skip_XX(Exif_Type_Size(IfdItem.Type)*IfdItem.Count, "Data");
+                Skip_XX(static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
     }
 }
 
