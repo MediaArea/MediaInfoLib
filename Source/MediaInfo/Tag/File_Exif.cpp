@@ -25,6 +25,7 @@
 #if defined(MEDIAINFO_JPEG_YES)
     #include "MediaInfo/Image/File_Jpeg.h"
 #endif
+#include <cmath>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -55,7 +56,7 @@ namespace Exif_Type {
 }
 
 //---------------------------------------------------------------------------
-static const char* Exif_Type_Name(int32u Type)
+static const char* Exif_Type_Name(int16u Type)
 {
     switch (Type)
     {
@@ -76,7 +77,7 @@ static const char* Exif_Type_Name(int32u Type)
 }
 
 //---------------------------------------------------------------------------
-static const int8u Exif_Type_Size(int32u Type)
+static const int8u Exif_Type_Size(int16u Type)
 {
     switch (Type)
     {
@@ -145,7 +146,7 @@ namespace IFD0 {
     ELEM(0x0129, PageNumber)
     ELEM(0x012D, TransferFunction)
     ELEM(0x0131, Software)
-    ELEM(0x0132, DateTimeFile)
+    ELEM(0x0132, DateTime)
     ELEM(0x013B, Artist)
     ELEM(0x013C, HostComputer)
     ELEM(0x013D, Predictor)
@@ -301,7 +302,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(PageNumber, "Page number")
     ELEM_TRACE(TransferFunction, "Transfer function")
     ELEM_TRACE(Software, "Software used")
-    ELEM_TRACE(DateTimeFile, "Date and time of file")
+    ELEM_TRACE(DateTime, "Date and time of file")
     ELEM_TRACE(Artist, "Artist")
     ELEM_TRACE(HostComputer, "Host computer")
     ELEM_TRACE(Predictor, "Predictor")
@@ -442,7 +443,7 @@ namespace IFDExif {
     ELEM(0x9003, DateTimeOriginal)
     ELEM(0x9004, DateTimeDigitized)
     ELEM(0x9009, GooglePlusUploadCode)
-    ELEM(0x9010, OffsetTimeFile)
+    ELEM(0x9010, OffsetTime)
     ELEM(0x9011, OffsetTimeOriginal)
     ELEM(0x9012, OffsetTimeDigitized)
     ELEM(0x9101, ComponentsConfiguration)
@@ -450,7 +451,7 @@ namespace IFDExif {
     ELEM(0x9201, ShutterSpeedValue)
     ELEM(0x9202, ApertureValue)
     ELEM(0x9203, BrightnessValue)
-    ELEM(0x9204, ExposureCompensation)
+    ELEM(0x9204, ExposureBiasValue)
     ELEM(0x9205, MaxApertureValue)
     ELEM(0x9206, SubjectDistance)
     ELEM(0x9207, MeteringMode)
@@ -494,7 +495,7 @@ namespace IFDExif {
     ELEM(0xA402, ExposureMode)
     ELEM(0xA403, WhiteBalance)
     ELEM(0xA404, DigitalZoomRatio)
-    ELEM(0xA405, FocalLengthIn35mmFormat)
+    ELEM(0xA405, FocalLengthIn35mmFilm)
     ELEM(0xA406, SceneCaptureType)
     ELEM(0xA407, GainControl)
     ELEM(0xA408, Contrast)
@@ -555,7 +556,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(DateTimeOriginal, "Date and time original")
     ELEM_TRACE(DateTimeDigitized, "Date and time digitized")
     ELEM_TRACE(GooglePlusUploadCode, "GooglePlusUploadCode")
-    ELEM_TRACE(OffsetTimeFile, "Date and time offset file")
+    ELEM_TRACE(OffsetTime, "Date and time offset file")
     ELEM_TRACE(OffsetTimeOriginal, "Date and time offset original")
     ELEM_TRACE(OffsetTimeDigitized, "Date and time offset digitized")
     ELEM_TRACE(ComponentsConfiguration, "Meaning of each component")
@@ -563,7 +564,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(ShutterSpeedValue, "Shutter speed")
     ELEM_TRACE(ApertureValue, "Aperture")
     ELEM_TRACE(BrightnessValue, "Brightness")
-    ELEM_TRACE(ExposureCompensation, "Exposure bias")
+    ELEM_TRACE(ExposureBiasValue, "Exposure bias")
     ELEM_TRACE(MaxApertureValue, "Maximum lens aperture")
     ELEM_TRACE(SubjectDistance, "Subject distance")
     ELEM_TRACE(MeteringMode, "Metering mode")
@@ -607,7 +608,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(ExposureMode, "Exposure mode")
     ELEM_TRACE(WhiteBalance, "White balance")
     ELEM_TRACE(DigitalZoomRatio, "Digital zoom ratio")
-    ELEM_TRACE(FocalLengthIn35mmFormat, "Focal length in 35mm film")
+    ELEM_TRACE(FocalLengthIn35mmFilm, "Focal length in 35mm film")
     ELEM_TRACE(SceneCaptureType, "Scene capture type")
     ELEM_TRACE(GainControl, "Gain control")
     ELEM_TRACE(Contrast, "Contrast")
@@ -867,8 +868,8 @@ static const char* Exif_IFD0_Compression_Name(int16u compression)
 }
 
 //---------------------------------------------------------------------------
-const char* Exif_ExifIFD_Tag_LightSource_Name(int tagID) {
-    switch (tagID) {
+static const char* Exif_ExifIFD_Tag_LightSource_Name(int16u value) {
+    switch (value) {
     case 0: return "Unknown";
     case 1: return "Daylight";
     case 2: return "Fluorescent";
@@ -896,43 +897,35 @@ const char* Exif_ExifIFD_Tag_LightSource_Name(int tagID) {
 }
 
 //---------------------------------------------------------------------------
-const char* Exif_IFDExif_Flash_Name(int flashValue) {
-    switch (flashValue) {
-    case 0x0:  return "No Flash";
-    case 0x1:  return "Fired";
-    case 0x5:  return "Fired, Return not detected";
-    case 0x7:  return "Fired, Return detected";
-    case 0x8:  return "On, Did not fire";
-    case 0x9:  return "On, Fired";
-    case 0xd:  return "On, Return not detected";
-    case 0xf:  return "On, Return detected";
-    case 0x10: return "Off, Did not fire";
-    case 0x14: return "Off, Did not fire, Return not detected";
-    case 0x18: return "Auto, Did not fire";
-    case 0x19: return "Auto, Fired";
-    case 0x1d: return "Auto, Fired, Return not detected";
-    case 0x1f: return "Auto, Fired, Return detected";
-    case 0x20: return "No flash function";
-    case 0x30: return "Off, No flash function";
-    case 0x41: return "Fired, Red-eye reduction";
-    case 0x45: return "Fired, Red-eye reduction, Return not detected";
-    case 0x47: return "Fired, Red-eye reduction, Return detected";
-    case 0x49: return "On, Red-eye reduction";
-    case 0x4d: return "On, Red-eye reduction, Return not detected";
-    case 0x4f: return "On, Red-eye reduction, Return detected";
-    case 0x50: return "Off, Red-eye reduction";
-    case 0x58: return "Auto, Did not fire, Red-eye reduction";
-    case 0x59: return "Auto, Fired, Red-eye reduction";
-    case 0x5d: return "Auto, Fired, Red-eye reduction, Return not detected";
-    case 0x5f: return "Auto, Fired, Red-eye reduction, Return detected";
-    default:   return "";
+static string Exif_IFDExif_Flash_Name(int8u value) {
+    string flash;
+    switch (value & 0b00011000) {
+    case 0b00000000: flash += "Unknown"; break;
+    case 0b00001000: flash += "On"; break;
+    case 0b00010000: flash += "Off"; break;
+    case 0b00011000: flash += "Auto"; break;
     }
+    switch (value & 0b00000001) {
+    case 0b00000000: flash += ", Did not fire"; break;
+    case 0b00000001: flash += ", Fired"; break;
+    }
+    switch (value & 0b00100000) {
+    case 0b00100000: flash += ", No flash function"; break;
+    }
+    switch (value & 0b01000000) {
+    case 0b01000000: flash += ", Red-eye reduction"; break;
+    }
+    switch (value & 0b00000110) {
+    case 0b00000100: flash += ", Return not detected"; break;
+    case 0b00000110: flash += ", Return detected"; break;
+    }
+    return flash;
 }
 
 //---------------------------------------------------------------------------
-static const char* Exif_IFDExif_ColorSpace_Name(int16u Tag_ID)
+static const char* Exif_IFDExif_ColorSpace_Name(int16u value)
 {
-    switch (Tag_ID)
+    switch (value)
     {
     case 0x1: return "sRGB";
     case 0x2: return "Adobe RGB";
@@ -943,6 +936,33 @@ static const char* Exif_IFDExif_ColorSpace_Name(int16u Tag_ID)
     }
 }
 
+//---------------------------------------------------------------------------
+static const char* Exif_IFDExif_ExposureProgram_Name(int16u value)
+{
+    switch (value) {
+    case 0: return "Not Defined";
+    case 1: return "Manual";
+    case 2: return "Program AE";
+    case 3: return "Aperture-priority AE";
+    case 4: return "Shutter speed priority AE";
+    case 5: return "Creative (Slow speed)";
+    case 6: return "Action (High speed)";
+    case 7: return "Portrait";
+    case 8: return "Landscape";
+    case 9: return "Bulb";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Exif_IFDExif_WhiteBalance_Name(int16u value)
+{
+    switch (value) {
+    case 0: return "Auto";
+    case 1: return "Manual";
+    default: return "";
+    }
+}
 
 //***************************************************************************
 // Constructor/Destructor
@@ -964,6 +984,7 @@ void File_Exif::Streams_Finish()
     const auto Infos_Thumbnail_It = Infos.find(Kind_IFD1);
     const auto Infos_Exif_It = Infos.find(Kind_Exif);
     const auto Infos_GPS_It = Infos.find(Kind_GPS);
+    const auto Infos_Interop_It = Infos.find(Kind_Interop);
 
     auto FillMetadata = [&](Ztring& Value, const std::pair<const int16u, ZtringList>& Item, size_t Parameter, const char* ParameterC, const string& Unit) {
         if (Value.empty()) {
@@ -1015,6 +1036,11 @@ void File_Exif::Streams_Finish()
             case IFD0::Make: Parameter = General_Encoded_Hardware_CompanyName; break;
             case IFD0::Model: Parameter = General_Encoded_Hardware_Model; break;
             case IFD0::Software: Parameter = General_Encoded_Application; break;
+            case IFD0::DateTime: {
+                Parameter = General_Tagged_Date;
+                Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTime, IFDExif::OffsetTime);
+                break;
+            }
             case IFD0::ResolutionXUnit:
             case IFD0::ResolutionYUnit:
             case IFD0::ResolutionXLengthUnit:
@@ -1093,6 +1119,7 @@ void File_Exif::Streams_Finish()
             FillMetadata(Value, Item, Parameter, ParameterC, ParameterS); 
         }
     }
+
     if (Infos_Exif_It != Infos.end()) {
         currentIFD = Kind_Exif;
         const auto& Infos_Exif = Infos_Exif_It->second;
@@ -1102,19 +1129,112 @@ void File_Exif::Streams_Finish()
             const char* ParameterC = nullptr;
             string ParameterS;
             switch (Item.first) {
+            case IFDExif::ExposureTime: {
+                ParameterC = "ShutterSpeed_Time";
+                const auto exposure_time{ Item.second.Read().To_float64() };
+                string ShutterSpeed_Time;
+                if (exposure_time < 0.25001 && exposure_time > 0) {
+                    ShutterSpeed_Time = "1/" + std::to_string(static_cast<int>(round(1 / exposure_time)));
+                }
+                else {
+                    ShutterSpeed_Time = std::to_string(exposure_time);
+                    ShutterSpeed_Time.erase(ShutterSpeed_Time.find_last_not_of('0') + 1);
+                    if (ShutterSpeed_Time[ShutterSpeed_Time.size() - 1] == '.')
+                        ShutterSpeed_Time.pop_back();
+                }
+                Value = Item.second.Read();
+                ParameterS = ShutterSpeed_Time + " s";
+                break;
+            }
+            case IFDExif::FNumber: ParameterC = "IrisFNumber"; Value.From_Number(Item.second.Read().To_float64(), 1); break;
+            case IFDExif::ExposureProgram: ParameterC = "AutoExposureMode"; Value = Exif_IFDExif_ExposureProgram_Name(Item.second.Read().To_int16u()); break;
+            case IFDExif::PhotographicSensitivity: ParameterC = "ISOSensitivity"; break;
+            case IFDExif::SensitivityType: {
+                int16u ISOSensitivityType = 0;
+                switch (Item.second.Read().To_int16u()) {
+                case 1:
+                case 4:
+                case 5:
+                case 7: ISOSensitivityType = IFDExif::StandardOutputSensitivity; break;
+                case 2:
+                case 6: ISOSensitivityType = IFDExif::RecommendedExposureIndex; break;
+                case 3: ISOSensitivityType = IFDExif::ISOSpeed; break;
+                }
+                if (ISOSensitivityType) {
+                    const auto RealISOSensitivity = Infos_Exif.find(ISOSensitivityType);
+                    if (RealISOSensitivity != Infos_Exif.end()) {
+                        Value = RealISOSensitivity->second.Read();
+                    }
+                }
+                if (!Value.empty()) {
+                    Clear(Stream_General, 0, "ISOSensitivity");
+                    ParameterC = "ISOSensitivity";
+                }
+                break;
+            }
+            case IFDExif::ExifVersion: {
+                ParameterC = "ExifVersion";
+                string exif_ver{ Item.second.Read().To_UTF8() };
+                if (exif_ver.size() == 4) {
+                    exif_ver.insert(2, 1, '.');
+                    if (exif_ver.front() == '0')
+                        exif_ver.erase(0, 1);
+                }
+                Value.From_UTF8(exif_ver);
+                break;
+            }
+            case IFDExif::ExposureBiasValue: {
+                ParameterC = "ExposureBiasValue";
+                if (Item.second.Read().To_float64() > 0) {
+                    Value.assign(1, '+');
+                }
+                Value += Item.second.Read();
+                break;
+            }
+            case IFDExif::Flash: ParameterC = "Flash"; Value = Exif_IFDExif_Flash_Name(Item.second.Read().To_int8u()).c_str(); break;
+            case IFDExif::FocalLength: ParameterC = "LensZoomActualFocalLength"; ParameterS = " mm"; break;
+            case IFDExif::FocalLengthIn35mmFilm:
+                if (Item.second.Read().To_int16u()) {
+                    ParameterC = "LensZoom35mmStillCameraEquivalent";
+                    ParameterS = " mm";
+                }
+                else Parameter = (size_t)-1;
+                break;
+            case IFDExif::LensMake: ParameterC = "LensMake"; break;
+            case IFDExif::LensModel: ParameterC = "LensModel"; break;
+            case IFDExif::OffsetTime:
             case IFDExif::OffsetTimeOriginal:
+            case IFDExif::OffsetTimeDigitized:
+            case IFDExif::SubSecTime:
             case IFDExif::SubSecTimeOriginal:
+            case IFDExif::SubSecTimeDigitized:
                 Parameter = (size_t)-1;
                 break;
             case IFDExif::DateTimeOriginal:
                 Parameter = General_Recorded_Date;
                 Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTimeOriginal, IFDExif::OffsetTimeOriginal);
                 break;
-            default:;
+            case IFDExif::DateTimeDigitized:
+                Parameter = General_Encoded_Date;
+                Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTimeDigitized, IFDExif::OffsetTimeDigitized);
+                break;
+            case IFDExif::FlashpixVersion: {
+                ParameterC = "FlashpixVersion";
+                string flashpix_ver{ Item.second.Read().To_UTF8() };
+                if (flashpix_ver.size() == 4) {
+                    flashpix_ver.insert(2, 1, '.');
+                    if (flashpix_ver.front() == '0')
+                        flashpix_ver.erase(0, 1);
+                }
+                Value.From_UTF8(flashpix_ver);
+                break;
+            }
+            case IFDExif::WhiteBalance: ParameterC = "AutoWhiteBalanceMode"; Value = Exif_IFDExif_WhiteBalance_Name(Item.second.Read().To_int16u()); break;
             }
             FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
             switch (Item.first) {
-            case IFDExif::ExifVersion: Fill_SetOptions(Stream_General, 0, ParameterC, "N NF"); break;
+            case IFDExif::ExifVersion:
+            case IFDExif::FlashpixVersion: Fill_SetOptions(Stream_General, 0, ParameterC, "N NF"); break;
             }
         }
     }
@@ -1128,6 +1248,14 @@ void File_Exif::Streams_Finish()
             const char* ParameterC = nullptr;
             string ParameterS;
             switch (Item.first) {
+            case IFDGPS::GPSVersionID: {
+                ParameterC = "ExifGPSVersion";
+                const auto GPSVersionID = Infos_GPS.find(IFDGPS::GPSVersionID);
+                if (GPSVersionID->second.size() == 4) {
+                    Value = GPSVersionID->second.at(0) + __T(".") + GPSVersionID->second.at(1) + __T(".") + GPSVersionID->second.at(2) + __T(".") + GPSVersionID->second.at(3);
+                }
+                break;
+            }
             case IFDGPS::GPSLatitudeRef:
             case IFDGPS::GPSLongitudeRef:
             case IFDGPS::GPSLongitude:
@@ -1166,6 +1294,37 @@ void File_Exif::Streams_Finish()
                 }
             }
             FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
+            switch (Item.first) {
+            case IFDGPS::GPSVersionID: Fill_SetOptions(Stream_General, 0, ParameterC, "N NT"); break;
+            }
+        }
+    }
+
+    if (Infos_Interop_It != Infos.end()) {
+        currentIFD = Kind_Interop;
+        const auto& Infos_Interop = Infos_Interop_It->second;
+        for (const auto& Item : Infos_Interop) {
+            size_t Parameter = 0;
+            Ztring Value;
+            const char* ParameterC = nullptr;
+            string ParameterS;
+            switch (Item.first) {
+            case IFDInterop::InteroperabilityVersion: {
+                ParameterC = "InteropVersion";
+                string interop_ver{ Item.second.Read().To_UTF8() };
+                if (interop_ver.size() == 4) {
+                    interop_ver.insert(2, 1, '.');
+                    if (interop_ver.front() == '0')
+                        interop_ver.erase(0, 1);
+                }
+                Value.From_UTF8(interop_ver);
+                break;
+            }
+            }
+            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
+            switch (Item.first) {
+            case IFDInterop::InteroperabilityVersion: Fill_SetOptions(Stream_General, 0, ParameterC, "N NF"); break;
+            }
         }
     }
 }
