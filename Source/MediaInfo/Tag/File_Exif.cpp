@@ -884,6 +884,11 @@ void File_Exif::Streams_Finish()
             case IFD0::Model: Parameter = General_Encoded_Hardware_Model; break;
             case IFD0::Software: Parameter = General_Encoded_Application; break;
             case IFD0::Copyright: Parameter = General_Copyright; break;
+            case IFD0::WinExpTitle: Parameter = General_Title; break;
+            case IFD0::WinExpComment: Parameter = General_Comment; break;
+            case IFD0::WinExpAuthor: Parameter = General_Performer; break;
+            case IFD0::WinExpKeywords: Parameter = General_Keywords; break;
+            case IFD0::WinExpSubject: Parameter = General_Subject; break;
             }
             FillMetadata(Value, Item, Parameter, ParameterC, ParameterS); 
         }
@@ -1307,6 +1312,13 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
     switch (IfdItem.Type)
     {
     case Exif_Type::UnsignedByte:                /* 8-bit unsigned integer. */
+                if (currentIFD == Kind_IFD0 && IfdItem.Tag >= IFD0::WinExpTitle && IfdItem.Tag <= IFD0::WinExpSubject) {
+                    // Content is actually UTF16LE
+                    Ztring Data;
+                    Get_UTF16L(IfdItem.Count, Data,             "Data");
+                    Info.push_back(Data);
+                }
+                else {
                 for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
                 {
                     int8u Ret8;
@@ -1323,6 +1335,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                         Element_Offset++;
                     #endif //MEDIAINFO_TRACE
                     Info.push_back(Ztring::ToZtring(Ret8));
+                }
                 }
                 break;
         case Exif_Type::ASCIIStrings:                /* ASCII */
