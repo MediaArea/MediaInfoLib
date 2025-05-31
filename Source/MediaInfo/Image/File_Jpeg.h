@@ -162,6 +162,7 @@ private :
     void APP1();
     void APP1_EXIF();
     void APP1_XMP();
+    void APP1_XMP_Extension();
     void APP2();
     void APP2_ICC_PROFILE();
     void APP3() {Skip_XX(Element_Size, "Data");}
@@ -206,6 +207,12 @@ private :
     bool  SOS_SOD_Parsed;
     bool  CME_Text_Parsed;
     File__Analyze* ICC_Parser=nullptr;
+    struct xmpext
+    {
+        File__Analyze* Parser = nullptr;
+        int32u LastOffset = 0;
+    };
+    std::map<std::string, xmpext> XmpExt_List;
     struct jpegxtext
     {
         File__Analyze* Parser = nullptr;
