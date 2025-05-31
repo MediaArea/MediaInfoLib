@@ -98,7 +98,7 @@ static const int8u Exif_Type_Size(int16u Type)
 }
 
 //---------------------------------------------------------------------------
-// EXIF Tags
+// Tags
 //---------------------------------------------------------------------------
 
 #define ELEM(_TAG,_NAME) \
@@ -110,6 +110,10 @@ struct exif_tag_desc {
 };
 #define ELEM_TRACE(_NAME,_DESC) \
     {_NAME, _DESC}, \
+
+//---------------------------------------------------------------------------
+// EXIF Tags
+//---------------------------------------------------------------------------
 
 namespace IFD0 {
     ELEM(0x000B, ProcessingSoftware)
@@ -740,6 +744,65 @@ exif_tag_desc Desc[] =
 };
 
 //---------------------------------------------------------------------------
+// MPF Tags
+
+namespace IFDMPFIndex {
+    ELEM(0xB000, MPFVersion)
+    ELEM(0xB001, NumberOfImages)
+    ELEM(0xB002, MPEntry)
+    ELEM(0xB003, ImageUIDList)
+    ELEM(0xB004, TotalFrames)
+
+exif_tag_desc Desc[] =
+{
+    ELEM_TRACE(MPFVersion,      "MP Format Version Number")
+    ELEM_TRACE(NumberOfImages,  "Number of Images")
+    ELEM_TRACE(MPEntry,         "MP Entry")
+    ELEM_TRACE(ImageUIDList,    "Individual Image Unique ID list")
+    ELEM_TRACE(TotalFrames,     "Total Number of Captured Frames")
+};
+};
+
+namespace IFDMPFAttributes {
+    ELEM(0xB000, MPFVersion)
+    ELEM(0xB101, MPIndividualNum)
+    ELEM(0xB201, PanOrientation)
+    ELEM(0xB202, PanOverlap_H)
+    ELEM(0xB203, PanOverlap_V)
+    ELEM(0xB204, BaseViewpointNum)
+    ELEM(0xB205, ConvergenceAngle)
+    ELEM(0xB206, BaselineLength)
+    ELEM(0xB207, VerticalDivergence)
+    ELEM(0xB208, AxisDistance_X)
+    ELEM(0xB209, AxisDistance_Y)
+    ELEM(0xB20A, AxisDistance_Z)
+    ELEM(0xB20B, YawAngle)
+    ELEM(0xB20C, PitchAngle)
+    ELEM(0xB20D, RollAngle)
+
+exif_tag_desc Desc[] =
+{
+    ELEM_TRACE(MPFVersion,          "MP Format Version")
+    ELEM_TRACE(MPIndividualNum,     "MP Individual Image Number")
+    ELEM_TRACE(PanOrientation,      "Panorama Scanning Orientation")
+    ELEM_TRACE(PanOverlap_H,        "Panorama Horizontal Overlap")
+    ELEM_TRACE(PanOverlap_V,        "Panorama Vertical Overlap")
+    ELEM_TRACE(BaseViewpointNum,    "Base Viewpoint Number")
+    ELEM_TRACE(ConvergenceAngle,    "Convergence Angle")
+    ELEM_TRACE(BaselineLength,      "Baseline Length")
+    ELEM_TRACE(VerticalDivergence,  "Divergence Angle")
+    ELEM_TRACE(AxisDistance_X,      "Horizontal Axis Distance")
+    ELEM_TRACE(AxisDistance_Y,      "Vertical Axis Distance")
+    ELEM_TRACE(AxisDistance_Z,      "Collimation Axis Distance")
+    ELEM_TRACE(YawAngle,            "Yaw Angle")
+    ELEM_TRACE(PitchAngle,          "Pitch Angle")
+    ELEM_TRACE(RollAngle,           "Roll Angle")
+};
+};
+
+//---------------------------------------------------------------------------
+// Names and Descriptions
+//---------------------------------------------------------------------------
 struct exif_tag_desc_size
 {
     exif_tag_desc* Table;
@@ -749,12 +812,19 @@ struct exif_tag_desc_size
 #define DESC_TABLE(_TABLE,_DESC) { _TABLE::Desc, sizeof(_TABLE::Desc) / sizeof(*_TABLE::Desc), _DESC },
 enum kind_of_ifd
 {
+    // Exif
     Kind_IFD0,
     Kind_IFD1,
     Kind_Exif,
     Kind_GPS,
     Kind_Interop,
-    Kind_ParsingThumbnail,
+
+    // MPF
+    Kind_MPFIndex,
+    Kind_MPFAttributes,
+
+    // Special
+    Kind_ParsingThumbnail
 };
 exif_tag_desc_size Exif_Descriptions[] =
 {
@@ -763,6 +833,8 @@ exif_tag_desc_size Exif_Descriptions[] =
     DESC_TABLE(IFDExif, "Exif")
     DESC_TABLE(IFDGPS, "GPS")
     DESC_TABLE(IFDInterop, "Interoperability")
+    DESC_TABLE(IFDMPFIndex, "MP Index IFD")
+    DESC_TABLE(IFDMPFAttributes, "MP Attributes IFD")
 };
 static string Exif_Tag_Description(int8u NameSpace, int16u Tag_ID)
 {
@@ -775,6 +847,10 @@ static string Exif_Tag_Description(int8u NameSpace, int16u Tag_ID)
     #endif //MEDIAINFO_TRACE
     return Ztring::ToZtring_From_CC2(Tag_ID).To_UTF8();
 }
+
+//---------------------------------------------------------------------------
+// Exif Names and Descriptions
+//---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
 namespace Exif_IFD0_Orientation {
@@ -964,13 +1040,33 @@ static const char* Exif_IFDExif_WhiteBalance_Name(int16u value)
     }
 }
 
-//***************************************************************************
-// Constructor/Destructor
-//***************************************************************************
+//---------------------------------------------------------------------------
+// MPF Names and Descriptions
+//---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-File_Exif::File_Exif() : LittleEndian{}, currentIFD(Kind_IFD0)
+static string Mpf_ImageAttribute_Desc(int32u value)
 {
+    string desc;
+    if (value & 1U << 31)
+        desc += "Dependent Parent Image, ";
+    if (value & 1U << 30)
+        desc += "Dependent Child Image, ";
+    if (value & 1U << 29)
+        desc += "Representative Image, ";
+    if (!(value & ((1U << 24) | (1U << 25) | (1U << 26))))
+        desc += "JPEG, ";
+    switch (value & ((1U << 24) - 1))
+    {
+    case 0x030000: desc += "Baseline MP Primary Image"; break;
+    case 0x010001: desc += "Large Thumbnail, Class 1, VGA equivalent"; break;
+    case 0x010002: desc += "Large Thumbnail, Class 2, Full HD equivalent"; break;
+    case 0x020001: desc += "Multi-Frame Image, Panorama"; break;
+    case 0x020002: desc += "Multi-Frame Image, Disparity"; break;
+    case 0x020003: desc += "Multi-Frame Image, Multi-Angle"; break;
+    case 0x000000: desc += "Undefined"; break;
+    }
+    return desc;
 }
 
 //***************************************************************************
@@ -1361,7 +1457,7 @@ void File_Exif::FileHeader_Parse()
     }
 
     //The only IFD that is known at forehand is the first one, it's offset is placed byte 4-7 in the file.
-    Get_IFDOffset(Kind_IFD0);
+    Get_IFDOffset(currentIFD);
 
     FILLING_BEGIN();
         if (IFD_Offsets.empty()) {
@@ -1376,6 +1472,9 @@ void File_Exif::FileHeader_Parse()
         }
         Accept();
         Stream_Prepare(Stream_Image);
+        if (MPEntries) {
+            currentIFD = Kind_MPFIndex;
+        }
 
         //Initial IFD
         GoToOffset(FirstIFDOffset);
@@ -1442,7 +1541,7 @@ void File_Exif::Data_Parse()
             int32u IFDOffset{};
             while (Element_Offset + 12 < Element_Size)
                 Read_Directory();
-            Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : (int8u)-1);
+            Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : currentIFD == Kind_MPFIndex ? Kind_MPFAttributes : (int8u)-1);
         }
     }
     else
@@ -1670,7 +1769,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
 
     switch (IfdItem.Type)
     {
-    case Exif_Type::UnsignedByte:                /* 8-bit unsigned integer. */
+        case Exif_Type::UnsignedByte:                /* 8-bit unsigned integer. */
                 if (currentIFD == Kind_IFD0 && IfdItem.Tag >= IFD0::WinExpTitle && IfdItem.Tag <= IFD0::WinExpSubject) {
                     // Content is actually UTF16LE
                     Ztring Data;
@@ -1709,10 +1808,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 {
                     int16u Ret16;
                     #if MEDIAINFO_TRACE
-                        if (LittleEndian)
-                            Get_L2 (Ret16,                      "Data");
-                        else
-                            Get_B2 (Ret16,                      "Data");
+                        Get_X2 (Ret16,                          "Data");
                         switch (IfdItem.Tag)
                         {
                             
@@ -1744,10 +1840,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 {
                     int32u Ret32;
                     #if MEDIAINFO_TRACE
-                        if (LittleEndian)
-                            Get_L4 (Ret32,                      "Data");
-                        else
-                            Get_B4 (Ret32,                      "Data");
+                        Get_X4 (Ret32,                          "Data");
                         Element_Info1(Ztring::ToZtring(Ret32));
                     #else //MEDIAINFO_TRACE
                         if (Element_Offset+4>Element_Size)
@@ -1770,16 +1863,8 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 {
                     int32u N, D;
                     #if MEDIAINFO_TRACE
-                        if (LittleEndian)
-                        {
-                            Get_L4 (N,                          "Numerator");
-                            Get_L4 (D,                          "Denominator");
-                        }
-                        else
-                        {
-                            Get_B4 (N,                          "Numerator");
-                            Get_B4 (D,                          "Denominator");
-                        }
+                        Get_X4 (N,                              "Numerator");
+                        Get_X4 (D,                              "Denominator");
                         if (D)
                             Element_Info1(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
                     #else //MEDIAINFO_TRACE
@@ -1812,16 +1897,8 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                     int32u NU, DU;
                     int32s N, D;
                     #if MEDIAINFO_TRACE
-                        if (LittleEndian)
-                        {
-                            Get_L4 (NU,                         "Numerator");
-                            Get_L4 (DU,                         "Denominator");
-                        }
-                        else
-                        {
-                            Get_B4 (NU,                         "Numerator");
-                            Get_B4 (DU,                         "Denominator");
-                        }
+                        Get_X4 (NU,                             "Numerator");
+                        Get_X4 (DU,                             "Denominator");
                         N = (int32s)NU;
                         D = (int32s)DU;
                         if (D)
@@ -1853,13 +1930,40 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         default:            //Unknown
                 if (IfdItem.Tag == IFDExif::UserComment)
                     UserComment(Info);
-                if (IfdItem.Tag == IFDExif::ExifVersion || IfdItem.Tag == IFDExif::FlashpixVersion || IfdItem.Tag == IFDInterop::InteroperabilityVersion) {
+                else if (
+                    (currentIFD == Kind_Exif && (IfdItem.Tag == IFDExif::ExifVersion || IfdItem.Tag == IFDExif::FlashpixVersion)) || 
+                    (currentIFD == Kind_Interop && IfdItem.Tag == IFDInterop::InteroperabilityVersion) ||
+                    (currentIFD == Kind_MPFIndex && IfdItem.Tag == IFDMPFIndex::MPFVersion) ||
+                    (currentIFD == Kind_MPFAttributes && IfdItem.Tag == IFDMPFAttributes::MPFVersion)
+                    ) {
                     string Data;
-                    Get_String(4, Data,                             "Data"); Element_Info1(Data.c_str());
+                    Get_String (4, Data,                        "Data"); Element_Info1(Data.c_str());
                     Info.push_back(Ztring().From_UTF8(Data.c_str()));
                 }
+                else if (currentIFD == Kind_MPFIndex && IfdItem.Tag == IFDMPFIndex::MPEntry) {
+                    int32u num_imgs{ Infos.find(Kind_MPFIndex)->second.find(IFDMPFIndex::NumberOfImages)->second.Read().To_int32u() };
+                    for (int32u i = 0; i < num_imgs; ++i) {
+                        Element_Begin1(("MP Entry " + std::to_string(i + 1)).c_str());
+                        mp_entry entry{};
+                        Get_X4 (entry.ImgAttribute,             "Individual image Attribute"); Param_Info1(Mpf_ImageAttribute_Desc(entry.ImgAttribute));
+                        Get_X4 (entry.ImgSize,                  "Individual image Size");
+                        Get_X4 (entry.ImgOffset,                "Individual image Data Offset");
+                        Get_X2 (entry.DependentImg1EntryNo,     "Dependent image 1 Entry No.");
+                        Get_X2 (entry.DependentImg2EntryNo,     "Dependent image 2 Entry No.");
+                        ((mp_entries*)MPEntries)->push_back(entry);
+                        Element_End0();
+                    }
+                }
+                else if (currentIFD == Kind_MPFIndex && IfdItem.Tag == IFDMPFIndex::ImageUIDList) {
+                    int32u num_imgs{ Infos.find(Kind_MPFIndex)->second.find(IFDMPFIndex::NumberOfImages)->second.Read().To_int32u() };
+                    for (int32u i = 0; i < num_imgs; ++i) {
+                        string Data;
+                        Get_String (33, Data,                   "Individual Image Unique ID"); Element_Info1(Data.c_str());
+                        Info.push_back(Ztring().From_UTF8(Data.c_str()));
+                    }
+                }
                 else
-                Skip_XX(static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
+                    Skip_XX (static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
     }
 }
 
