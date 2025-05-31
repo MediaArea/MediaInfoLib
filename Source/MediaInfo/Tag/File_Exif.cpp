@@ -1041,6 +1041,7 @@ void File_Exif::Streams_Finish()
                 Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTime, IFDExif::OffsetTime);
                 break;
             }
+            case IFD0::Orientation: ParameterC = "Orientation"; Value = Exif_IFD0_Orientation_Name(Item.second.Read().To_int16u()); break;
             case IFD0::ResolutionXUnit:
             case IFD0::ResolutionYUnit:
             case IFD0::ResolutionXLengthUnit:
