@@ -25,6 +25,7 @@
 #if defined(MEDIAINFO_JPEG_YES)
     #include "MediaInfo/Image/File_Jpeg.h"
 #endif
+#include <cmath>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -55,7 +56,7 @@ namespace Exif_Type {
 }
 
 //---------------------------------------------------------------------------
-static const char* Exif_Type_Name(int32u Type)
+static const char* Exif_Type_Name(int16u Type)
 {
     switch (Type)
     {
@@ -76,7 +77,7 @@ static const char* Exif_Type_Name(int32u Type)
 }
 
 //---------------------------------------------------------------------------
-static const int8u Exif_Type_Size(int32u Type)
+static const int8u Exif_Type_Size(int16u Type)
 {
     switch (Type)
     {
@@ -111,8 +112,6 @@ struct exif_tag_desc {
     {_NAME, _DESC}, \
 
 namespace IFD0 {
-    ELEM(0x0001, InteroperabilityIndex)
-    ELEM(0x0002, InteroperabilityVersion)
     ELEM(0x000B, ProcessingSoftware)
     ELEM(0x00FE, SubfileType)
     ELEM(0x00FF, OldSubfileType)
@@ -147,7 +146,7 @@ namespace IFD0 {
     ELEM(0x0129, PageNumber)
     ELEM(0x012D, TransferFunction)
     ELEM(0x0131, Software)
-    ELEM(0x0132, DateTimeFile)
+    ELEM(0x0132, DateTime)
     ELEM(0x013B, Artist)
     ELEM(0x013C, HostComputer)
     ELEM(0x013D, Predictor)
@@ -168,6 +167,72 @@ namespace IFD0 {
     ELEM(0x02BC, ApplicationNotes)
     ELEM(0x4746, Rating)
     ELEM(0x4749, RatingPercent)
+    ELEM(0x5001, ResolutionXUnit) // 5001-5113 Defined Microsoft
+    ELEM(0x5002, ResolutionYUnit)
+    ELEM(0x5003, ResolutionXLengthUnit)
+    ELEM(0x5004, ResolutionYLengthUnit)
+    ELEM(0x5005, PrintFlags)
+    ELEM(0x5006, PrintFlagsVersion)
+    ELEM(0x5007, PrintFlagsCrop)
+    ELEM(0x5008, PrintFlagsBleedWidth)
+    ELEM(0x5009, PrintFlagsBleedWidthScale)
+    ELEM(0x500A, HalftoneLPI)
+    ELEM(0x500B, HalftoneLPIUnit)
+    ELEM(0x500C, HalftoneDegree)
+    ELEM(0x500D, HalftoneShape)
+    ELEM(0x500E, HalftoneMisc)
+    ELEM(0x500F, HalftoneScreen)
+    ELEM(0x5010, JPEGQuality)
+    ELEM(0x5011, GridSize)
+    ELEM(0x5012, ThumbnailFormat)
+    ELEM(0x5013, ThumbnailWidth)
+    ELEM(0x5014, ThumbnailHeight)
+    ELEM(0x5015, ThumbnailColorDepth)
+    ELEM(0x5016, ThumbnailPlanes)
+    ELEM(0x5017, ThumbnailRawBytes)
+    ELEM(0x5018, ThumbnailLength)
+    ELEM(0x5019, ThumbnailCompressedSize)
+    ELEM(0x501a, ColorTransferFunction)
+    ELEM(0x501b, ThumbnailData)
+    ELEM(0x5020, ThumbnailImageWidth)
+    ELEM(0x5021, ThumbnailImageHeight)
+    ELEM(0x5022, ThumbnailBitsPerSample)
+    ELEM(0x5023, ThumbnailCompression)
+    ELEM(0x5024, ThumbnailPhotometricInterp)
+    ELEM(0x5025, ThumbnailDescription)
+    ELEM(0x5026, ThumbnailEquipMake)
+    ELEM(0x5027, ThumbnailEquipModel)
+    ELEM(0x5028, ThumbnailStripOffsets)
+    ELEM(0x5029, ThumbnailOrientation)
+    ELEM(0x502A, ThumbnailSamplesPerPixel)
+    ELEM(0x502B, ThumbnailRowsPerStrip)
+    ELEM(0x502C, ThumbnailStripByteCounts)
+    ELEM(0x502D, ThumbnailResolutionX)
+    ELEM(0x502E, ThumbnailResolutionY)
+    ELEM(0x502F, ThumbnailPlanarConfig)
+    ELEM(0x5030, ThumbnailResolutionUnit)
+    ELEM(0x5031, ThumbnailTransferFunction)
+    ELEM(0x5032, ThumbnailSoftware)
+    ELEM(0x5033, ThumbnailDateTime)
+    ELEM(0x5034, ThumbnailArtist)
+    ELEM(0x5035, ThumbnailWhitePoint)
+    ELEM(0x5036, ThumbnailPrimaryChromaticities)
+    ELEM(0x5037, ThumbnailYCbCrCoefficients)
+    ELEM(0x5038, ThumbnailYCbCrSubsampling)
+    ELEM(0x5039, ThumbnailYCbCrPositioning)
+    ELEM(0x503A, ThumbnailRefBlackWhite)
+    ELEM(0x503B, ThumbnailCopyright)
+    ELEM(0x5090, LuminanceTable)
+    ELEM(0x5091, ChrominanceTable)
+    ELEM(0x5100, FrameDelay)
+    ELEM(0x5101, LoopCount)
+    ELEM(0x5102, GlobalPalette)
+    ELEM(0x5103, IndexBackground)
+    ELEM(0x5104, IndexTransparent)
+    ELEM(0x5110, PixelUnits)
+    ELEM(0x5111, PixelsPerUnitX)
+    ELEM(0x5112, PixelsPerUnitY)
+    ELEM(0x5113, PaletteHistogram)
     ELEM(0x8298, Copyright)
     ELEM(0x830E, PixelScale)
     ELEM(0x83BB, IPTC_NAA)
@@ -203,8 +268,6 @@ namespace IFD0 {
 
 exif_tag_desc Desc[] =
 {
-    ELEM_TRACE(InteroperabilityIndex, "Interoperability index")
-    ELEM_TRACE(InteroperabilityVersion, "Interoperability version")
     ELEM_TRACE(ProcessingSoftware, "Processing software")
     ELEM_TRACE(SubfileType, "Subfile type")
     ELEM_TRACE(OldSubfileType, "Old subfile type")
@@ -239,7 +302,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(PageNumber, "Page number")
     ELEM_TRACE(TransferFunction, "Transfer function")
     ELEM_TRACE(Software, "Software used")
-    ELEM_TRACE(DateTimeFile, "Date and time of file")
+    ELEM_TRACE(DateTime, "Date and time of file")
     ELEM_TRACE(Artist, "Artist")
     ELEM_TRACE(HostComputer, "Host computer")
     ELEM_TRACE(Predictor, "Predictor")
@@ -260,6 +323,72 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(ApplicationNotes, "Application notes")
     ELEM_TRACE(Rating, "Rating")
     ELEM_TRACE(RatingPercent, "Rating (percent)")
+    ELEM_TRACE(ResolutionXUnit, "ResolutionXUnit")
+    ELEM_TRACE(ResolutionYUnit, "ResolutionYUnit")
+    ELEM_TRACE(ResolutionXLengthUnit, "ResolutionXLengthUnit")
+    ELEM_TRACE(ResolutionYLengthUnit, "ResolutionYLengthUnit")
+    ELEM_TRACE(PrintFlags, "PrintFlags")
+    ELEM_TRACE(PrintFlagsVersion, "PrintFlagsVersion")
+    ELEM_TRACE(PrintFlagsCrop, "PrintFlagsCrop")
+    ELEM_TRACE(PrintFlagsBleedWidth, "PrintFlagsBleedWidth")
+    ELEM_TRACE(PrintFlagsBleedWidthScale, "PrintFlagsBleedWidthScale")
+    ELEM_TRACE(HalftoneLPI, "HalftoneLPI")
+    ELEM_TRACE(HalftoneLPIUnit, "HalftoneLPIUnit")
+    ELEM_TRACE(HalftoneDegree, "HalftoneDegree")
+    ELEM_TRACE(HalftoneShape, "HalftoneShape")
+    ELEM_TRACE(HalftoneMisc, "HalftoneMisc")
+    ELEM_TRACE(HalftoneScreen, "HalftoneScreen")
+    ELEM_TRACE(JPEGQuality, "JPEGQuality")
+    ELEM_TRACE(GridSize, "GridSize")
+    ELEM_TRACE(ThumbnailFormat, "ThumbnailFormat")
+    ELEM_TRACE(ThumbnailWidth, "ThumbnailWidth")
+    ELEM_TRACE(ThumbnailHeight, "ThumbnailHeight")
+    ELEM_TRACE(ThumbnailColorDepth, "ThumbnailColorDepth")
+    ELEM_TRACE(ThumbnailPlanes, "ThumbnailPlanes")
+    ELEM_TRACE(ThumbnailRawBytes, "ThumbnailRawBytes")
+    ELEM_TRACE(ThumbnailLength, "ThumbnailLength")
+    ELEM_TRACE(ThumbnailCompressedSize, "ThumbnailCompressedSize")
+    ELEM_TRACE(ColorTransferFunction, "ColorTransferFunction")
+    ELEM_TRACE(ThumbnailData, "ThumbnailData")
+    ELEM_TRACE(ThumbnailImageWidth, "ThumbnailImageWidth")
+    ELEM_TRACE(ThumbnailImageHeight, "ThumbnailImageHeight")
+    ELEM_TRACE(ThumbnailBitsPerSample, "ThumbnailBitsPerSample")
+    ELEM_TRACE(ThumbnailCompression, "ThumbnailCompression")
+    ELEM_TRACE(ThumbnailPhotometricInterp, "ThumbnailPhotometricInterp")
+    ELEM_TRACE(ThumbnailDescription, "ThumbnailDescription")
+    ELEM_TRACE(ThumbnailEquipMake, "ThumbnailEquipMake")
+    ELEM_TRACE(ThumbnailEquipModel, "ThumbnailEquipModel")
+    ELEM_TRACE(ThumbnailStripOffsets, "ThumbnailStripOffsets")
+    ELEM_TRACE(ThumbnailOrientation, "ThumbnailOrientation")
+    ELEM_TRACE(ThumbnailSamplesPerPixel, "ThumbnailSamplesPerPixel")
+    ELEM_TRACE(ThumbnailRowsPerStrip, "ThumbnailRowsPerStrip")
+    ELEM_TRACE(ThumbnailStripByteCounts, "ThumbnailStripByteCounts")
+    ELEM_TRACE(ThumbnailResolutionX, "ThumbnailResolutionX")
+    ELEM_TRACE(ThumbnailResolutionY, "ThumbnailResolutionY")
+    ELEM_TRACE(ThumbnailPlanarConfig, "ThumbnailPlanarConfig")
+    ELEM_TRACE(ThumbnailResolutionUnit, "ThumbnailResolutionUnit")
+    ELEM_TRACE(ThumbnailTransferFunction, "ThumbnailTransferFunction")
+    ELEM_TRACE(ThumbnailSoftware, "ThumbnailSoftware")
+    ELEM_TRACE(ThumbnailDateTime, "ThumbnailDateTime")
+    ELEM_TRACE(ThumbnailArtist, "ThumbnailArtist")
+    ELEM_TRACE(ThumbnailWhitePoint, "ThumbnailWhitePoint")
+    ELEM_TRACE(ThumbnailPrimaryChromaticities, "ThumbnailPrimaryChromaticities")
+    ELEM_TRACE(ThumbnailYCbCrCoefficients, "ThumbnailYCbCrCoefficients")
+    ELEM_TRACE(ThumbnailYCbCrSubsampling, "ThumbnailYCbCrSubsampling")
+    ELEM_TRACE(ThumbnailYCbCrPositioning, "ThumbnailYCbCrPositioning")
+    ELEM_TRACE(ThumbnailRefBlackWhite, "ThumbnailRefBlackWhite")
+    ELEM_TRACE(ThumbnailCopyright, "ThumbnailCopyright")
+    ELEM_TRACE(LuminanceTable, "LuminanceTable")
+    ELEM_TRACE(ChrominanceTable, "ChrominanceTable")
+    ELEM_TRACE(FrameDelay, "FrameDelay")
+    ELEM_TRACE(LoopCount, "LoopCount")
+    ELEM_TRACE(GlobalPalette, "GlobalPalette")
+    ELEM_TRACE(IndexBackground, "IndexBackground")
+    ELEM_TRACE(IndexTransparent, "IndexTransparent")
+    ELEM_TRACE(PixelUnits, "PixelUnits")
+    ELEM_TRACE(PixelsPerUnitX, "PixelsPerUnitX")
+    ELEM_TRACE(PixelsPerUnitY, "PixelsPerUnitY")
+    ELEM_TRACE(PaletteHistogram, "PaletteHistogram")
     ELEM_TRACE(Copyright, "Copyright")
     ELEM_TRACE(PixelScale, "Pixel scale")
     ELEM_TRACE(IPTC_NAA, "IPTC NAA")
@@ -314,7 +443,7 @@ namespace IFDExif {
     ELEM(0x9003, DateTimeOriginal)
     ELEM(0x9004, DateTimeDigitized)
     ELEM(0x9009, GooglePlusUploadCode)
-    ELEM(0x9010, OffsetTimeFile)
+    ELEM(0x9010, OffsetTime)
     ELEM(0x9011, OffsetTimeOriginal)
     ELEM(0x9012, OffsetTimeDigitized)
     ELEM(0x9101, ComponentsConfiguration)
@@ -322,7 +451,7 @@ namespace IFDExif {
     ELEM(0x9201, ShutterSpeedValue)
     ELEM(0x9202, ApertureValue)
     ELEM(0x9203, BrightnessValue)
-    ELEM(0x9204, ExposureCompensation)
+    ELEM(0x9204, ExposureBiasValue)
     ELEM(0x9205, MaxApertureValue)
     ELEM(0x9206, SubjectDistance)
     ELEM(0x9207, MeteringMode)
@@ -366,7 +495,7 @@ namespace IFDExif {
     ELEM(0xA402, ExposureMode)
     ELEM(0xA403, WhiteBalance)
     ELEM(0xA404, DigitalZoomRatio)
-    ELEM(0xA405, FocalLengthIn35mmFormat)
+    ELEM(0xA405, FocalLengthIn35mmFilm)
     ELEM(0xA406, SceneCaptureType)
     ELEM(0xA407, GainControl)
     ELEM(0xA408, Contrast)
@@ -427,7 +556,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(DateTimeOriginal, "Date and time original")
     ELEM_TRACE(DateTimeDigitized, "Date and time digitized")
     ELEM_TRACE(GooglePlusUploadCode, "GooglePlusUploadCode")
-    ELEM_TRACE(OffsetTimeFile, "Date and time offset file")
+    ELEM_TRACE(OffsetTime, "Date and time offset file")
     ELEM_TRACE(OffsetTimeOriginal, "Date and time offset original")
     ELEM_TRACE(OffsetTimeDigitized, "Date and time offset digitized")
     ELEM_TRACE(ComponentsConfiguration, "Meaning of each component")
@@ -435,7 +564,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(ShutterSpeedValue, "Shutter speed")
     ELEM_TRACE(ApertureValue, "Aperture")
     ELEM_TRACE(BrightnessValue, "Brightness")
-    ELEM_TRACE(ExposureCompensation, "Exposure bias")
+    ELEM_TRACE(ExposureBiasValue, "Exposure bias")
     ELEM_TRACE(MaxApertureValue, "Maximum lens aperture")
     ELEM_TRACE(SubjectDistance, "Subject distance")
     ELEM_TRACE(MeteringMode, "Metering mode")
@@ -479,7 +608,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(ExposureMode, "Exposure mode")
     ELEM_TRACE(WhiteBalance, "White balance")
     ELEM_TRACE(DigitalZoomRatio, "Digital zoom ratio")
-    ELEM_TRACE(FocalLengthIn35mmFormat, "Focal length in 35mm film")
+    ELEM_TRACE(FocalLengthIn35mmFilm, "Focal length in 35mm film")
     ELEM_TRACE(SceneCaptureType, "Scene capture type")
     ELEM_TRACE(GainControl, "Gain control")
     ELEM_TRACE(Contrast, "Contrast")
@@ -593,6 +722,23 @@ exif_tag_desc Desc[] =
 };
 };
 
+namespace IFDInterop {
+    ELEM(0x0001, InteroperabilityIndex)
+    ELEM(0x0002, InteroperabilityVersion)
+    ELEM(0x1000, RelatedImageFileFormat)
+    ELEM(0x1001, RelatedImageWidth)
+    ELEM(0x1002, RelatedImageHeight)
+
+exif_tag_desc Desc[] =
+{
+    ELEM_TRACE(InteroperabilityIndex, "Interoperability Index")
+    ELEM_TRACE(InteroperabilityVersion, "Interoperability Version")
+    ELEM_TRACE(RelatedImageFileFormat, "Related Image File Format")
+    ELEM_TRACE(RelatedImageWidth, "Related Image Width")
+    ELEM_TRACE(RelatedImageHeight, "Related Image Height")
+};
+};
+
 //---------------------------------------------------------------------------
 struct exif_tag_desc_size
 {
@@ -607,6 +753,7 @@ enum kind_of_ifd
     Kind_IFD1,
     Kind_Exif,
     Kind_GPS,
+    Kind_Interop,
     Kind_ParsingThumbnail,
 };
 exif_tag_desc_size Exif_Descriptions[] =
@@ -615,14 +762,17 @@ exif_tag_desc_size Exif_Descriptions[] =
     DESC_TABLE(IFD0, "IFD1 (thumbnail)")
     DESC_TABLE(IFDExif, "Exif")
     DESC_TABLE(IFDGPS, "GPS")
+    DESC_TABLE(IFDInterop, "Interoperability")
 };
 static string Exif_Tag_Description(int8u NameSpace, int16u Tag_ID)
 {
+    #ifdef MEDIAINFO_TRACE
     for (size_t Pos = 0; Pos < Exif_Descriptions[NameSpace].Size; ++Pos)
     {
         if (Exif_Descriptions[NameSpace].Table[Pos].Tag_ID == Tag_ID)
             return Exif_Descriptions[NameSpace].Table[Pos].Description;
     }
+    #endif //MEDIAINFO_TRACE
     return Ztring::ToZtring_From_CC2(Tag_ID).To_UTF8();
 }
 
@@ -718,8 +868,8 @@ static const char* Exif_IFD0_Compression_Name(int16u compression)
 }
 
 //---------------------------------------------------------------------------
-const char* Exif_ExifIFD_Tag_LightSource_Name(int tagID) {
-    switch (tagID) {
+static const char* Exif_ExifIFD_Tag_LightSource_Name(int16u value) {
+    switch (value) {
     case 0: return "Unknown";
     case 1: return "Daylight";
     case 2: return "Fluorescent";
@@ -747,43 +897,35 @@ const char* Exif_ExifIFD_Tag_LightSource_Name(int tagID) {
 }
 
 //---------------------------------------------------------------------------
-const char* Exif_IFDExif_Flash_Name(int flashValue) {
-    switch (flashValue) {
-    case 0x0:  return "No Flash";
-    case 0x1:  return "Fired";
-    case 0x5:  return "Fired, Return not detected";
-    case 0x7:  return "Fired, Return detected";
-    case 0x8:  return "On, Did not fire";
-    case 0x9:  return "On, Fired";
-    case 0xd:  return "On, Return not detected";
-    case 0xf:  return "On, Return detected";
-    case 0x10: return "Off, Did not fire";
-    case 0x14: return "Off, Did not fire, Return not detected";
-    case 0x18: return "Auto, Did not fire";
-    case 0x19: return "Auto, Fired";
-    case 0x1d: return "Auto, Fired, Return not detected";
-    case 0x1f: return "Auto, Fired, Return detected";
-    case 0x20: return "No flash function";
-    case 0x30: return "Off, No flash function";
-    case 0x41: return "Fired, Red-eye reduction";
-    case 0x45: return "Fired, Red-eye reduction, Return not detected";
-    case 0x47: return "Fired, Red-eye reduction, Return detected";
-    case 0x49: return "On, Red-eye reduction";
-    case 0x4d: return "On, Red-eye reduction, Return not detected";
-    case 0x4f: return "On, Red-eye reduction, Return detected";
-    case 0x50: return "Off, Red-eye reduction";
-    case 0x58: return "Auto, Did not fire, Red-eye reduction";
-    case 0x59: return "Auto, Fired, Red-eye reduction";
-    case 0x5d: return "Auto, Fired, Red-eye reduction, Return not detected";
-    case 0x5f: return "Auto, Fired, Red-eye reduction, Return detected";
-    default:   return "";
+static string Exif_IFDExif_Flash_Name(int8u value) {
+    string flash;
+    switch (value & 0b00011000) {
+    case 0b00000000: flash += "Unknown"; break;
+    case 0b00001000: flash += "On"; break;
+    case 0b00010000: flash += "Off"; break;
+    case 0b00011000: flash += "Auto"; break;
     }
+    switch (value & 0b00000001) {
+    case 0b00000000: flash += ", Did not fire"; break;
+    case 0b00000001: flash += ", Fired"; break;
+    }
+    switch (value & 0b00100000) {
+    case 0b00100000: flash += ", No flash function"; break;
+    }
+    switch (value & 0b01000000) {
+    case 0b01000000: flash += ", Red-eye reduction"; break;
+    }
+    switch (value & 0b00000110) {
+    case 0b00000100: flash += ", Return not detected"; break;
+    case 0b00000110: flash += ", Return detected"; break;
+    }
+    return flash;
 }
 
 //---------------------------------------------------------------------------
-static const char* Exif_IFDExif_ColorSpace_Name(int16u Tag_ID)
+static const char* Exif_IFDExif_ColorSpace_Name(int16u value)
 {
-    switch (Tag_ID)
+    switch (value)
     {
     case 0x1: return "sRGB";
     case 0x2: return "Adobe RGB";
@@ -794,6 +936,33 @@ static const char* Exif_IFDExif_ColorSpace_Name(int16u Tag_ID)
     }
 }
 
+//---------------------------------------------------------------------------
+static const char* Exif_IFDExif_ExposureProgram_Name(int16u value)
+{
+    switch (value) {
+    case 0: return "Not Defined";
+    case 1: return "Manual";
+    case 2: return "Program AE";
+    case 3: return "Aperture-priority AE";
+    case 4: return "Shutter speed priority AE";
+    case 5: return "Creative (Slow speed)";
+    case 6: return "Action (High speed)";
+    case 7: return "Portrait";
+    case 8: return "Landscape";
+    case 9: return "Bulb";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Exif_IFDExif_WhiteBalance_Name(int16u value)
+{
+    switch (value) {
+    case 0: return "Auto";
+    case 1: return "Manual";
+    default: return "";
+    }
+}
 
 //***************************************************************************
 // Constructor/Destructor
@@ -815,56 +984,347 @@ void File_Exif::Streams_Finish()
     const auto Infos_Thumbnail_It = Infos.find(Kind_IFD1);
     const auto Infos_Exif_It = Infos.find(Kind_Exif);
     const auto Infos_GPS_It = Infos.find(Kind_GPS);
+    const auto Infos_Interop_It = Infos.find(Kind_Interop);
+
+    auto FillMetadata = [&](Ztring& Value, const std::pair<const int16u, ZtringList>& Item, size_t Parameter, const char* ParameterC, const string& Unit) {
+        if (Value.empty()) {
+            Value = Item.second.Read();
+        }
+        if (Parameter) {
+            if (Parameter != (size_t)-1) {
+                Fill(Stream_General, 0, Parameter, Value);
+            }
+        }
+        else if (ParameterC) {
+            Fill(Stream_General, 0, ParameterC, Value);
+            if (!Unit.empty()) {
+                Fill_SetOptions(Stream_General, 0, ParameterC, "N NF");
+                Fill(Stream_General, 0, string(ParameterC).append("/String").c_str(), (Unit.front() == ' ' ? Value : Ztring()) + Ztring().From_UTF8(Unit));
+            }
+        }
+        else {
+            //Fill(Stream_General, 0, Exif_Tag_Description(currentIFD, Item.first).c_str(), Value);
+        }
+    };
+
+    auto MergeDateTimeSubSecOffset = [&](const ZtringList& DateTime, int16u SubSecTimeTag, int16u OffsetTimeTag) -> Ztring {
+        Ztring Value = DateTime.Read();
+        if (Infos_Exif_It != Infos.end()) {
+            const auto& Infos_Exif = Infos_Exif_It->second;
+            const auto SubSecTime = Infos_Exif.find(SubSecTimeTag);
+            if (SubSecTime != Infos_Exif.end()) {
+                Value += __T('.') + SubSecTime->second.Read();
+            }
+            const auto OffsetTime = Infos_Exif.find(OffsetTimeTag);
+            if (OffsetTime != Infos_Exif.end()) {
+                Value += OffsetTime->second.Read();
+            }
+        }
+        return Value;
+    };
 
     if (Infos_Image_It != Infos.end()) {
-        const auto Infos_Image = Infos_Image_It->second;
-        const auto Make = Infos_Image.find(IFD0::Make); if (Make != Infos_Image.end()) Fill(Stream_General, 0, General_Encoded_Hardware_CompanyName, Make->second.Read());
-        const auto Model = Infos_Image.find(IFD0::Model); if (Model != Infos_Image.end()) Fill(Stream_General, 0, General_Encoded_Hardware_Model, Model->second.Read());
-        const auto Software = Infos_Image.find(IFD0::Software); if (Software != Infos_Image.end()) Fill(Stream_General, 0, General_Encoded_Application, Software->second.Read());
-        const auto Description = Infos_Image.find(IFD0::ImageDescription); if (Description != Infos_Image.end()) Fill(Stream_General, 0, General_Description, Description->second.Read());
-        const auto Copyright = Infos_Image.find(IFD0::Copyright); if (Copyright != Infos_Image.end()) Fill(Stream_General, 0, General_Copyright, Copyright->second.Read());
+        currentIFD = Kind_IFD0;
+        const auto& Infos_Image = Infos_Image_It->second;
+        for (const auto& Item : Infos_Image) {
+            size_t Parameter = 0;
+            Ztring Value;
+            const char* ParameterC = nullptr;
+            string ParameterS;
+            switch (Item.first) {
+            case IFD0::ImageDescription: Parameter = General_Description; break;
+            case IFD0::Make: Parameter = General_Encoded_Hardware_CompanyName; break;
+            case IFD0::Model: Parameter = General_Encoded_Hardware_Model; break;
+            case IFD0::Software: Parameter = General_Encoded_Application; break;
+            case IFD0::DateTime: {
+                Parameter = General_Tagged_Date;
+                Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTime, IFDExif::OffsetTime);
+                break;
+            }
+            case IFD0::ResolutionXUnit:
+            case IFD0::ResolutionYUnit:
+            case IFD0::ResolutionXLengthUnit:
+            case IFD0::ResolutionYLengthUnit:
+            case IFD0::PrintFlags:
+            case IFD0::PrintFlagsVersion:
+            case IFD0::PrintFlagsCrop:
+            case IFD0::PrintFlagsBleedWidth:
+            case IFD0::PrintFlagsBleedWidthScale:
+            case IFD0::HalftoneLPI:
+            case IFD0::HalftoneLPIUnit:
+            case IFD0::HalftoneDegree:
+            case IFD0::HalftoneShape:
+            case IFD0::HalftoneMisc:
+            case IFD0::HalftoneScreen:
+            case IFD0::JPEGQuality:
+            case IFD0::GridSize:
+            case IFD0::ThumbnailFormat:
+            case IFD0::ThumbnailWidth:
+            case IFD0::ThumbnailHeight:
+            case IFD0::ThumbnailColorDepth:
+            case IFD0::ThumbnailPlanes:
+            case IFD0::ThumbnailRawBytes:
+            case IFD0::ThumbnailLength:
+            case IFD0::ThumbnailCompressedSize:
+            case IFD0::ColorTransferFunction:
+            case IFD0::ThumbnailData:
+            case IFD0::ThumbnailImageWidth:
+            case IFD0::ThumbnailImageHeight:
+            case IFD0::ThumbnailBitsPerSample:
+            case IFD0::ThumbnailCompression:
+            case IFD0::ThumbnailPhotometricInterp:
+            case IFD0::ThumbnailDescription:
+            case IFD0::ThumbnailEquipMake:
+            case IFD0::ThumbnailEquipModel:
+            case IFD0::ThumbnailStripOffsets:
+            case IFD0::ThumbnailOrientation:
+            case IFD0::ThumbnailSamplesPerPixel:
+            case IFD0::ThumbnailRowsPerStrip:
+            case IFD0::ThumbnailStripByteCounts:
+            case IFD0::ThumbnailResolutionX:
+            case IFD0::ThumbnailResolutionY:
+            case IFD0::ThumbnailPlanarConfig:
+            case IFD0::ThumbnailResolutionUnit:
+            case IFD0::ThumbnailTransferFunction:
+            case IFD0::ThumbnailSoftware:
+            case IFD0::ThumbnailDateTime:
+            case IFD0::ThumbnailArtist:
+            case IFD0::ThumbnailWhitePoint:
+            case IFD0::ThumbnailPrimaryChromaticities:
+            case IFD0::ThumbnailYCbCrCoefficients:
+            case IFD0::ThumbnailYCbCrSubsampling:
+            case IFD0::ThumbnailYCbCrPositioning:
+            case IFD0::ThumbnailRefBlackWhite:
+            case IFD0::ThumbnailCopyright:
+            case IFD0::LuminanceTable:
+            case IFD0::ChrominanceTable:
+            case IFD0::FrameDelay:
+            case IFD0::LoopCount:
+            case IFD0::GlobalPalette:
+            case IFD0::IndexBackground:
+            case IFD0::IndexTransparent:
+            case IFD0::PixelUnits:
+            case IFD0::PixelsPerUnitX:
+            case IFD0::PixelsPerUnitY:
+            case IFD0::PaletteHistogram:
+                Parameter = (size_t)-1;
+                break;
+            case IFD0::Copyright: Parameter = General_Copyright; break;
+            case IFD0::WinExpTitle: Parameter = General_Title; break;
+            case IFD0::WinExpComment: Parameter = General_Comment; break;
+            case IFD0::WinExpAuthor: Parameter = General_Performer; break;
+            case IFD0::WinExpKeywords: Parameter = General_Keywords; break;
+            case IFD0::WinExpSubject: Parameter = General_Subject; break;
+            }
+            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS); 
+        }
     }
+
     if (Infos_Exif_It != Infos.end()) {
-        const auto Infos_Exif = Infos_Exif_It->second;
-        const auto DateTimeOriginal = Infos_Exif.find(IFDExif::DateTimeOriginal);
-        const auto SubSecTimeOriginal = Infos_Exif.find(IFDExif::SubSecTimeOriginal);
-        const auto OffsetTimeOriginal = Infos_Exif.find(IFDExif::OffsetTimeOriginal);
-        Ztring datetime;
-        if (DateTimeOriginal != Infos_Exif.end())
-            datetime += DateTimeOriginal->second.Read();
-        if (SubSecTimeOriginal != Infos_Exif.end())
-            datetime += __T(".") + SubSecTimeOriginal->second.Read();
-        if (OffsetTimeOriginal != Infos_Exif.end())
-            datetime += OffsetTimeOriginal->second.Read();
-        Fill(Stream_General, 0, General_Recorded_Date, datetime);
+        currentIFD = Kind_Exif;
+        const auto& Infos_Exif = Infos_Exif_It->second;
+        for (const auto& Item : Infos_Exif) {
+            size_t Parameter = 0;
+            Ztring Value;
+            const char* ParameterC = nullptr;
+            string ParameterS;
+            switch (Item.first) {
+            case IFDExif::ExposureTime: {
+                ParameterC = "ShutterSpeed_Time";
+                const auto exposure_time{ Item.second.Read().To_float64() };
+                string ShutterSpeed_Time;
+                if (exposure_time < 0.25001 && exposure_time > 0) {
+                    ShutterSpeed_Time = "1/" + std::to_string(static_cast<int>(round(1 / exposure_time)));
+                }
+                else {
+                    ShutterSpeed_Time = std::to_string(exposure_time);
+                    ShutterSpeed_Time.erase(ShutterSpeed_Time.find_last_not_of('0') + 1);
+                    if (ShutterSpeed_Time[ShutterSpeed_Time.size() - 1] == '.')
+                        ShutterSpeed_Time.pop_back();
+                }
+                Value = Item.second.Read();
+                ParameterS = ShutterSpeed_Time + " s";
+                break;
+            }
+            case IFDExif::FNumber: ParameterC = "IrisFNumber"; Value.From_Number(Item.second.Read().To_float64(), 1); break;
+            case IFDExif::ExposureProgram: ParameterC = "AutoExposureMode"; Value = Exif_IFDExif_ExposureProgram_Name(Item.second.Read().To_int16u()); break;
+            case IFDExif::PhotographicSensitivity: ParameterC = "ISOSensitivity"; break;
+            case IFDExif::SensitivityType: {
+                int16u ISOSensitivityType = 0;
+                switch (Item.second.Read().To_int16u()) {
+                case 1:
+                case 4:
+                case 5:
+                case 7: ISOSensitivityType = IFDExif::StandardOutputSensitivity; break;
+                case 2:
+                case 6: ISOSensitivityType = IFDExif::RecommendedExposureIndex; break;
+                case 3: ISOSensitivityType = IFDExif::ISOSpeed; break;
+                }
+                if (ISOSensitivityType) {
+                    const auto RealISOSensitivity = Infos_Exif.find(ISOSensitivityType);
+                    if (RealISOSensitivity != Infos_Exif.end()) {
+                        Value = RealISOSensitivity->second.Read();
+                    }
+                }
+                if (!Value.empty()) {
+                    Clear(Stream_General, 0, "ISOSensitivity");
+                    ParameterC = "ISOSensitivity";
+                }
+                break;
+            }
+            case IFDExif::ExifVersion: {
+                ParameterC = "ExifVersion";
+                string exif_ver{ Item.second.Read().To_UTF8() };
+                if (exif_ver.size() == 4) {
+                    exif_ver.insert(2, 1, '.');
+                    if (exif_ver.front() == '0')
+                        exif_ver.erase(0, 1);
+                }
+                Value.From_UTF8(exif_ver);
+                break;
+            }
+            case IFDExif::ExposureBiasValue: {
+                ParameterC = "ExposureBiasValue";
+                if (Item.second.Read().To_float64() > 0) {
+                    Value.assign(1, '+');
+                }
+                Value += Item.second.Read();
+                break;
+            }
+            case IFDExif::Flash: ParameterC = "Flash"; Value = Exif_IFDExif_Flash_Name(Item.second.Read().To_int8u()).c_str(); break;
+            case IFDExif::FocalLength: ParameterC = "LensZoomActualFocalLength"; ParameterS = " mm"; break;
+            case IFDExif::FocalLengthIn35mmFilm:
+                if (Item.second.Read().To_int16u()) {
+                    ParameterC = "LensZoom35mmStillCameraEquivalent";
+                    ParameterS = " mm";
+                }
+                else Parameter = (size_t)-1;
+                break;
+            case IFDExif::LensMake: ParameterC = "LensMake"; break;
+            case IFDExif::LensModel: ParameterC = "LensModel"; break;
+            case IFDExif::OffsetTime:
+            case IFDExif::OffsetTimeOriginal:
+            case IFDExif::OffsetTimeDigitized:
+            case IFDExif::SubSecTime:
+            case IFDExif::SubSecTimeOriginal:
+            case IFDExif::SubSecTimeDigitized:
+                Parameter = (size_t)-1;
+                break;
+            case IFDExif::DateTimeOriginal:
+                Parameter = General_Recorded_Date;
+                Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTimeOriginal, IFDExif::OffsetTimeOriginal);
+                break;
+            case IFDExif::DateTimeDigitized:
+                Parameter = General_Encoded_Date;
+                Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTimeDigitized, IFDExif::OffsetTimeDigitized);
+                break;
+            case IFDExif::FlashpixVersion: {
+                ParameterC = "FlashpixVersion";
+                string flashpix_ver{ Item.second.Read().To_UTF8() };
+                if (flashpix_ver.size() == 4) {
+                    flashpix_ver.insert(2, 1, '.');
+                    if (flashpix_ver.front() == '0')
+                        flashpix_ver.erase(0, 1);
+                }
+                Value.From_UTF8(flashpix_ver);
+                break;
+            }
+            case IFDExif::WhiteBalance: ParameterC = "AutoWhiteBalanceMode"; Value = Exif_IFDExif_WhiteBalance_Name(Item.second.Read().To_int16u()); break;
+            }
+            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
+            switch (Item.first) {
+            case IFDExif::ExifVersion:
+            case IFDExif::FlashpixVersion: Fill_SetOptions(Stream_General, 0, ParameterC, "N NF"); break;
+            }
+        }
     }
+
     if (Infos_GPS_It != Infos.end()) {
-        const auto Infos_GPS = Infos_GPS_It->second;
-        const auto GPSLatitude = Infos_GPS.find(IFDGPS::GPSLatitude);
-        const auto GPSLatitudeRef = Infos_GPS.find(IFDGPS::GPSLatitudeRef);
-        const auto GPSLongitude = Infos_GPS.find(IFDGPS::GPSLongitude);
-        const auto GPSLongitudeRef = Infos_GPS.find(IFDGPS::GPSLongitudeRef);
-        const auto GPSAltitude = Infos_GPS.find(IFDGPS::GPSAltitude);
-        if (GPSLatitude != Infos_GPS.end() && GPSLatitude->second.size() == 3 && GPSLatitudeRef != Infos_GPS.end() && GPSLongitude != Infos_GPS.end() && GPSLongitude->second.size() == 3 && GPSLongitudeRef != Infos_GPS.end()) {
-            Ztring location = GPSLatitude->second.at(0) + Ztring().From_UTF8("\xC2\xB0");
-            if (GPSLatitude->second.at(1) != __T("0") || GPSLatitude->second.at(0).find(__T('.')) == string::npos) {
-                location += GPSLatitude->second.at(1) + __T('\'');
+        currentIFD = Kind_GPS;
+        const auto& Infos_GPS = Infos_GPS_It->second;
+        for (const auto& Item : Infos_GPS) {
+            size_t Parameter = 0;
+            Ztring Value;
+            const char* ParameterC = nullptr;
+            string ParameterS;
+            switch (Item.first) {
+            case IFDGPS::GPSVersionID: {
+                ParameterC = "ExifGPSVersion";
+                const auto GPSVersionID = Infos_GPS.find(IFDGPS::GPSVersionID);
+                if (GPSVersionID->second.size() == 4) {
+                    Value = GPSVersionID->second.at(0) + __T(".") + GPSVersionID->second.at(1) + __T(".") + GPSVersionID->second.at(2) + __T(".") + GPSVersionID->second.at(3);
+                }
+                break;
             }
-            if (GPSLatitude->second.at(2) != __T("0") || GPSLatitude->second.at(1).find(__T('.')) == string::npos) {
-                location += GPSLatitude->second.at(2) + __T('\"');
+            case IFDGPS::GPSLatitudeRef:
+            case IFDGPS::GPSLongitudeRef:
+            case IFDGPS::GPSLongitude:
+            case IFDGPS::GPSAltitudeRef:
+            case IFDGPS::GPSAltitude:
+                Parameter = (size_t)-1;
+                break;
+            case IFDGPS::GPSLatitude: {
+                Parameter = General_Recorded_Location;
+                const auto GPSLatitude = Infos_GPS.find(IFDGPS::GPSLatitude);
+                const auto GPSLatitudeRef = Infos_GPS.find(IFDGPS::GPSLatitudeRef);
+                const auto GPSLongitude = Infos_GPS.find(IFDGPS::GPSLongitude);
+                const auto GPSLongitudeRef = Infos_GPS.find(IFDGPS::GPSLongitudeRef);
+                const auto GPSAltitude = Infos_GPS.find(IFDGPS::GPSAltitude);
+                if (GPSLatitude->second.size() == 3 && GPSLatitudeRef != Infos_GPS.end() && GPSLongitude != Infos_GPS.end() && GPSLongitude->second.size() == 3 && GPSLongitudeRef != Infos_GPS.end()) {
+                    Value = GPSLatitude->second.at(0) + Ztring().From_UTF8("\xC2\xB0");
+                    if (GPSLatitude->second.at(1) != __T("0") || GPSLatitude->second.at(0).find(__T('.')) == string::npos) {
+                        Value += GPSLatitude->second.at(1) + __T('\'');
+                    }
+                    if (GPSLatitude->second.at(2) != __T("0") || GPSLatitude->second.at(1).find(__T('.')) == string::npos) {
+                        Value += GPSLatitude->second.at(2) + __T('\"');
+                    }
+                    Value += GPSLatitudeRef->second.at(0) + __T(' ');
+                    Value += GPSLongitude->second.at(0) + Ztring().From_UTF8("\xC2\xB0");
+                    if (GPSLongitude->second.at(1) != __T("0") || GPSLongitude->second.at(0).find(__T('.')) == string::npos) {
+                        Value += GPSLongitude->second.at(1) + __T('\'');
+                    }
+                    if (GPSLongitude->second.at(2) != __T("0") || GPSLongitude->second.at(1).find(__T('.')) == string::npos) {
+                        Value += GPSLongitude->second.at(2) + __T('\"');;
+                    }
+                    Value += GPSLongitudeRef->second.at(0) + __T(' ');
+                    if (GPSAltitude != Infos_GPS.end())
+                        Value += GPSAltitude->second.Read() + __T('m');
+                }
+                break;
+                }
             }
-            location += GPSLatitudeRef->second.at(0) + __T(' ');
-            location += GPSLongitude->second.at(0) + Ztring().From_UTF8("\xC2\xB0");
-            if (GPSLongitude->second.at(1) != __T("0") || GPSLongitude->second.at(0).find(__T('.')) == string::npos) {
-                location += GPSLongitude->second.at(1) + __T('\'');
+            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
+            switch (Item.first) {
+            case IFDGPS::GPSVersionID: Fill_SetOptions(Stream_General, 0, ParameterC, "N NT"); break;
             }
-            if (GPSLongitude->second.at(2) != __T("0") || GPSLongitude->second.at(1).find(__T('.')) == string::npos) {
-                location += GPSLongitude->second.at(2) + __T('\"');;
+        }
+    }
+
+    if (Infos_Interop_It != Infos.end()) {
+        currentIFD = Kind_Interop;
+        const auto& Infos_Interop = Infos_Interop_It->second;
+        for (const auto& Item : Infos_Interop) {
+            size_t Parameter = 0;
+            Ztring Value;
+            const char* ParameterC = nullptr;
+            string ParameterS;
+            switch (Item.first) {
+            case IFDInterop::InteroperabilityVersion: {
+                ParameterC = "InteropVersion";
+                string interop_ver{ Item.second.Read().To_UTF8() };
+                if (interop_ver.size() == 4) {
+                    interop_ver.insert(2, 1, '.');
+                    if (interop_ver.front() == '0')
+                        interop_ver.erase(0, 1);
+                }
+                Value.From_UTF8(interop_ver);
+                break;
             }
-            location += GPSLongitudeRef->second.at(0) + __T(' ');
-            if (GPSAltitude != Infos_GPS.end())
-                location += GPSAltitude->second.Read() + __T('m');
-            Fill(Stream_General, 0, General_Recorded_Location, location);
+            }
+            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
+            switch (Item.first) {
+            case IFDInterop::InteroperabilityVersion: Fill_SetOptions(Stream_General, 0, ParameterC, "N NF"); break;
+            }
         }
     }
 }
@@ -942,7 +1402,7 @@ void File_Exif::Header_Parse()
         #else //MEDIAINFO_TRACE
         Header_Fill_Code(IfdItems.begin()->second.Tag);
         #endif //MEDIAINFO_TRACE
-        Header_Fill_Size(Exif_Type_Size(IfdItems.begin()->second.Type) * IfdItems.begin()->second.Count);
+        Header_Fill_Size(static_cast<int64u>(Exif_Type_Size(IfdItems.begin()->second.Type)) * IfdItems.begin()->second.Count);
         return;
     }
 
@@ -979,7 +1439,7 @@ void File_Exif::Data_Parse()
             Infos[currentIFD].clear();
 
             //Parsing new IFD
-            int32u IFDOffset;
+            int32u IFDOffset{};
             while (Element_Offset + 12 < Element_Size)
                 Read_Directory();
             Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : (int8u)-1);
@@ -1009,7 +1469,7 @@ void File_Exif::Data_Parse()
         if (currentIFD != Kind_ParsingThumbnail) {
             const auto Infos_Thumbnail_It = Infos.find(Kind_IFD1);
             if (Infos_Thumbnail_It != Infos.end()) {
-                const auto Infos_Thumbnail = Infos_Thumbnail_It->second;
+                const auto& Infos_Thumbnail = Infos_Thumbnail_It->second;
                 const auto ImageOffset = Infos_Thumbnail.find(IFD0::ImageOffset);
                 if (ImageOffset != Infos_Thumbnail.end() && ImageOffset->second.size() == 1) {
                     int32u IFD_Offset = ImageOffset->second.at(0).To_int32u();
@@ -1034,7 +1494,7 @@ void File_Exif::Read_Directory()
     // Each directory consist of 4 fields
     // Get information for this directory
     Element_Begin0();
-    ifditem IfdItem;
+    ifditem IfdItem{};
     Get_X2 (IfdItem.Tag,                                        "TagID"); Param_Info1(Exif_Tag_Description(currentIFD, IfdItem.Tag));
     Get_X2 (IfdItem.Type,                                       "Data type"); Param_Info1(Exif_Type_Name(IfdItem.Type));
     Get_X4 (IfdItem.Count,                                      "Number of components");
@@ -1055,12 +1515,15 @@ void File_Exif::Read_Directory()
         else if (IfdItem.Tag == IFD0::GPSInfoIFD) {
             Get_IFDOffset(Kind_GPS);
         }
+        else if (IfdItem.Tag == IFDExif::InteroperabilityIFD) {
+            Get_IFDOffset(Kind_Interop);
+        }
         else {
             GetValueOffsetu(IfdItem);
 
             //Padding up, skip dummy bytes
             if (Size < 4)
-                Skip_XX(4 - Size,                               "Padding");
+                Skip_XX(static_cast<int64u>(4) - Size,          "Padding");
         }
     }
     else
@@ -1108,12 +1571,13 @@ void File_Exif::UserComment(ZtringList& Info)
 void File_Exif::Thumbnail()
 {
     Stream_Prepare(Stream_Image);
+    Fill(Stream_Image, 1, Image_Type, "Thumbnail");
     Fill(Stream_Image, 1, Image_MuxingMode, "Exif");
 
     File__Analyze* Parser = nullptr;
     const auto Infos_Thumbnail_It = Infos.find(Kind_IFD1);
     if (Infos_Thumbnail_It != Infos.end()) {
-        const auto Infos_Thumbnail = Infos_Thumbnail_It->second;
+        const auto& Infos_Thumbnail = Infos_Thumbnail_It->second;
         const auto Compression_It = Infos_Thumbnail.find(IFD0::Compression);
         if (Compression_It != Infos_Thumbnail.end() && Compression_It->second.size() == 1) {
             int32u Compression = Compression_It->second.at(0).To_int32u();
@@ -1174,18 +1638,46 @@ void File_Exif::Get_IFDOffset(int8u KindOfIFD)
 //---------------------------------------------------------------------------
 void File_Exif::GetValueOffsetu(ifditem &IfdItem)
 {
+    auto GetDecimalPlaces = [](int32u numerator, int32u denominator) -> int8u {
+        if (denominator == 1)
+            return 0;
+        int8u count{ 1 };
+        while (denominator > 10) {
+            ++count;
+            denominator /= 10;
+        }
+        if (denominator == 10)
+            return count;
+        if (numerator == 1)
+            return count + 3;
+        if (numerator == 10)
+            return count + 2;
+        if (numerator == 100)
+            return count + 1;
+        if (count < 3)
+            return 3;
+        return count;
+    };
+
     ZtringList& Info = Infos[currentIFD][IfdItem.Tag]; Info.clear(); Info.Separator_Set(0, __T(" /"));
 
     if (IfdItem.Type!=Exif_Type::ASCIIStrings && IfdItem.Type!=Exif_Type::Undefined && IfdItem.Count>=1000)
     {
         //Too many data, we don't currently need it and we skip it
-        Skip_XX(Exif_Type_Size(IfdItem.Type)*IfdItem.Count,     "Data");
+        Skip_XX(static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
         return;
     }
 
     switch (IfdItem.Type)
     {
     case Exif_Type::UnsignedByte:                /* 8-bit unsigned integer. */
+                if (currentIFD == Kind_IFD0 && IfdItem.Tag >= IFD0::WinExpTitle && IfdItem.Tag <= IFD0::WinExpSubject) {
+                    // Content is actually UTF16LE
+                    Ztring Data;
+                    Get_UTF16L(IfdItem.Count, Data,             "Data");
+                    Info.push_back(Data);
+                }
+                else {
                 for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
                 {
                     int8u Ret8;
@@ -1202,6 +1694,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                         Element_Offset++;
                     #endif //MEDIAINFO_TRACE
                     Info.push_back(Ztring::ToZtring(Ret8));
+                }
                 }
                 break;
         case Exif_Type::ASCIIStrings:                /* ASCII */
@@ -1288,7 +1781,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                             Get_B4 (D,                          "Denominator");
                         }
                         if (D)
-                            Element_Info1(Ztring::ToZtring(((float64)N)/D));
+                            Element_Info1(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
                     #else //MEDIAINFO_TRACE
                         if (Element_Offset+8>Element_Size)
                         {
@@ -1308,7 +1801,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                         Element_Offset+=8;
                     #endif //MEDIAINFO_TRACE
                     if (D)
-                        Info.push_back(Ztring::ToZtring(((float64)N) / D, D == 1 ? 0 : D == 10 ? 1 : D == 100 ? 2 : D == 10000 ? 4 : D == 100000 ? 5 : D == 1000000 ? 6 : 3));
+                        Info.push_back(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
                     else
                         Info.push_back(Ztring()); // Division by zero, undefined
                 }
@@ -1332,7 +1825,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                         N = (int32s)NU;
                         D = (int32s)DU;
                         if (D)
-                            Element_Info1(Ztring::ToZtring(((float64)N)/D));
+                            Element_Info1(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
                     #else //MEDIAINFO_TRACE
                         if (Element_Offset+8>Element_Size)
                         {
@@ -1352,7 +1845,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                         Element_Offset+=8;
                     #endif //MEDIAINFO_TRACE
                     if (D)
-                        Info.push_back(Ztring::ToZtring(((float64)N)/D, D==1?0:3));
+                        Info.push_back(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
                     else
                         Info.push_back(Ztring()); // Division by zero, undefined
                 }
@@ -1360,8 +1853,13 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         default:            //Unknown
                 if (IfdItem.Tag == IFDExif::UserComment)
                     UserComment(Info);
+                if (IfdItem.Tag == IFDExif::ExifVersion || IfdItem.Tag == IFDExif::FlashpixVersion || IfdItem.Tag == IFDInterop::InteroperabilityVersion) {
+                    string Data;
+                    Get_String(4, Data,                             "Data"); Element_Info1(Data.c_str());
+                    Info.push_back(Ztring().From_UTF8(Data.c_str()));
+                }
                 else
-                Skip_XX(Exif_Type_Size(IfdItem.Type)*IfdItem.Count, "Data");
+                Skip_XX(static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
     }
 }
 
