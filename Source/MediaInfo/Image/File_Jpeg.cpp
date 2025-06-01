@@ -1275,8 +1275,21 @@ void File_Jpeg::SOS()
     }
     if (Status[IsFilled])
         Fill();
-    if (Config->ParseSpeed<1.0)
-        Finish("JPEG"); //No need of more
+    if (Config->ParseSpeed < 1.0) {
+        if (MPEntries) {
+            for (const auto& MPEntry : *static_cast<mp_entries*>(MPEntries.get())) {
+                auto ImgOffset = MPEntries_Offset + MPEntry.ImgOffset;
+                if (ImgOffset > File_Offset + Buffer_Offset) {
+                    SOS_SOD_Parsed = false;
+                    GoTo(ImgOffset);
+                    break;
+                }
+            }
+        }
+        if (File_GoTo == (int64u)-1) {
+            Finish("JPEG"); //No need of more
+        }
+    }
     FILLING_END();
 }
 
@@ -1523,22 +1536,46 @@ void File_Jpeg::APP1_XMP_Extension()
 void File_Jpeg::APP2()
 {
     //Parsing
-    if (Element_Size>=14 && !strncmp((const char*)Buffer+Buffer_Offset, "ICC_PROFILE", 12))
-        APP2_ICC_PROFILE();
-    else
-        Skip_XX(Element_Size,                                   "Data");
+    auto Begin = Buffer + Buffer_Offset;
+    auto Middle = Begin;
+    auto End = Begin + (size_t)Element_Size;
+    while (Middle < End && *Middle) {
+        ++Middle;
+    }
+    auto Size = Middle - Begin;
+    if (Size != Element_Size) {
+        Size++;
+        Skip_Local(Size,                                        "Signature");
+        switch (Size) {
+        case 4:
+            if (BigEndian2int32u(Buffer + Buffer_Offset) == 0x4D504600) { // "MPF"
+                APP2_MPF();
+                return;
+            }
+            break;
+        case 12:
+            if (!strncmp((const char*)Buffer + Buffer_Offset, "ICC_PROFILE", 12)) {
+                APP2_ICC_PROFILE();
+                return;
+            }
+            break;
+        }
+        Element_Info1(string((const char*)Buffer + Buffer_Offset, Size - 1));
+    }
+    Skip_XX(Element_Size - Element_Offset,                      "(Unknown)");
 }
 
 //---------------------------------------------------------------------------
 void File_Jpeg::APP2_ICC_PROFILE()
 {
     Element_Info1("ICC profile");
+
+    //Parsing
     #if defined(MEDIAINFO_ICC_YES)
-        Element_Begin1("ICC profile");
         int8u Pos, Max;
-        Skip_Local(12,                                          "Signature");
         Get_B1 (Pos,                                            "Chunk position");
         Get_B1 (Max,                                            "Chunk max");
+        Element_Begin1("ICC profile");
         if (Pos == 1) {
             Accept("JPEG");
             ICC_Parser.reset(new File_Icc());
@@ -1562,6 +1599,33 @@ void File_Jpeg::APP2_ICC_PROFILE()
         Element_End0();
     #else
         Skip_XX(Element_Size-Element_Offset,                    "ICC profile");
+    #endif
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::APP2_MPF()
+{
+    Element_Info1("Multi-Picture Format");
+
+    //Parsing
+    #if defined(MEDIAINFO_EXIF_YES)
+    File_Exif MI;
+    if (!MPEntries) {
+        MPEntries.reset(new mp_entries());
+        MPEntries_Offset = File_Offset + Buffer_Offset + Element_Offset;
+    }
+    else {
+        MI.IsFirstImage = false;
+    }
+    MI.MPEntries = static_cast<mp_entries*>(MPEntries.get());
+    Element_Begin1("Multi-Picture Format");
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Element_End0();
+    Merge(MI, Stream_General, 0, 0, false);
+    #else
+    Skip_UTF8(Element_Size - Element_Offset,                    "Multi-Picture Format");
     #endif
 }
 
