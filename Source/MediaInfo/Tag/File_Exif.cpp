@@ -1536,28 +1536,29 @@ void File_Exif::Read_Directory()
 }
 
 //---------------------------------------------------------------------------
-void File_Exif::UserComment(ZtringList& Info)
+void File_Exif::MulticodeString(ZtringList& Info)
 {
     //Parsing
     Ztring Value;
     int64u CharacterCode;
     Get_C8(CharacterCode,                                       "Character Code");
     auto Size = Element_Size - Element_Offset;
-    switch (CharacterCode) {
-        case 0x0000000000000000LL: {
+    switch (CharacterCode) {                                    // [Character Code] Character Encoding (Character Set)
+        case 0x0000000000000000LL: {                            // [Undefined Text] - (-)
             //TODO: check if ASCII
             Get_ISO_8859_1(Size, Value,                         "Value");
             break;
         }
-        case 0x4153434949000000LL:
+        case 0x4153434949000000LL:                              // [ASCII] ANSI INCITS 4 (ANSI INCITS 4)
             Get_ISO_8859_1(Size, Value,                         "Value");
             break;
-        case 0x554E49434F444500LL:
+        case 0x554E49434F444500LL:                              // [UNICODE] UTF-8 (Unicode)
             if (LittleEndian)
                 Get_UTF16L(Size, Value,                         "Value");
             else
                 Get_UTF16B(Size, Value,                         "Value");
             break;
+        case 0x4A49530000000000LL:                              // [JIS] ISO-2022-JP (JIS X 0208)
         default:
             Skip_XX(Size,                                       "(Unknown Character Code)");
     }
@@ -1670,196 +1671,179 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
 
     switch (IfdItem.Type)
     {
-    case Exif_Type::UnsignedByte:                /* 8-bit unsigned integer. */
-                if (currentIFD == Kind_IFD0 && IfdItem.Tag >= IFD0::WinExpTitle && IfdItem.Tag <= IFD0::WinExpSubject) {
-                    // Content is actually UTF16LE
-                    Ztring Data;
-                    Get_UTF16L(IfdItem.Count, Data,             "Data");
-                    Info.push_back(Data);
-                }
-                else {
-                for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+    case Exif_Type::UnsignedByte:                               /* 8-bit unsigned integer. */
+        if (currentIFD == Kind_IFD0 && IfdItem.Tag >= IFD0::WinExpTitle && IfdItem.Tag <= IFD0::WinExpSubject) {
+            // Content is actually UTF16LE
+            Ztring Data;
+            Get_UTF16L(IfdItem.Count, Data,                     "Data");
+            Info.push_back(Data);
+        }
+        else {
+            for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+            {
+                int8u Ret8;
+                #if MEDIAINFO_TRACE
+                    Get_B1 (Ret8,                               "Data"); //L1 and B1 are same
+                    Element_Info1(Ztring::ToZtring(Ret8));
+                #else //MEDIAINFO_TRACE
+                    if (Element_Offset+1>Element_Size)
+                    {
+                        Trusted_IsNot();
+                        break;
+                    }
+                    Ret8=BigEndian2int8u(Buffer+Buffer_Offset+(size_t)Element_Offset); //LittleEndian2int8u and BigEndian2int8u are same
+                    Element_Offset++;
+                #endif //MEDIAINFO_TRACE
+                Info.push_back(Ztring::ToZtring(Ret8));
+            }
+        }
+        break;
+    case Exif_Type::ASCIIStrings:                               /* ASCII */
+        {
+            string Data;
+            Get_String(IfdItem.Count, Data,                     "Data"); Element_Info1(Data.c_str()); //TODO: multiple strings separated by NULL
+            Info.push_back(Ztring().From_UTF8(Data.c_str()));
+        }
+        break;
+    case Exif_Type::UnsignedShort:                              /* 16-bit (2-byte) unsigned integer. */
+        for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+        {
+            int16u Ret16;
+            #if MEDIAINFO_TRACE
+                Get_X2 (Ret16,                                  "Data");
+                switch (IfdItem.Tag)
                 {
-                    int8u Ret8;
-                    #if MEDIAINFO_TRACE
-                            Get_B1 (Ret8,                       "Data"); //L1 and B1 are same
-                        Element_Info1(Ztring::ToZtring(Ret8));
-                    #else //MEDIAINFO_TRACE
-                        if (Element_Offset+1>Element_Size)
-                        {
-                            Trusted_IsNot();
-                            break;
-                        }
-                        Ret8=BigEndian2int8u(Buffer+Buffer_Offset+(size_t)Element_Offset); //LittleEndian2int8u and BigEndian2int8u are same
-                        Element_Offset++;
-                    #endif //MEDIAINFO_TRACE
-                    Info.push_back(Ztring::ToZtring(Ret8));
-                }
-                }
-                break;
-        case Exif_Type::ASCIIStrings:                /* ASCII */
-                {
-                    string Data;
-                    Get_String(IfdItem.Count, Data,             "Data"); Element_Info1(Data.c_str()); //TODO: multiple strings separated by NULL
-                    Info.push_back(Ztring().From_UTF8(Data.c_str()));
-                }
-                break;
-        case Exif_Type::UnsignedShort:                /* 16-bit (2-byte) unsigned integer. */
-                for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
-                {
-                    int16u Ret16;
-                    #if MEDIAINFO_TRACE
-                        if (LittleEndian)
-                            Get_L2 (Ret16,                      "Data");
-                        else
-                            Get_B2 (Ret16,                      "Data");
-                        switch (IfdItem.Tag)
-                        {
                             
-                            default : Element_Info1(Ztring::ToZtring(Ret16));
-                        }
-                    #else //MEDIAINFO_TRACE
-                        if (Element_Offset+2>Element_Size)
-                        {
-                            Trusted_IsNot();
-                            break;
-                        }
-                        if (LittleEndian)
-                            Ret16=LittleEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                        else
-                            Ret16=BigEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                        Element_Offset+=2;
-                    #endif //MEDIAINFO_TRACE
-                    Param_Info1C((currentIFD == Kind_IFD0 || currentIFD == Kind_IFD1) && IfdItem.Tag == IFD0::Orientation, Exif_IFD0_Orientation_Name(Ret16));
-                    Param_Info1C((currentIFD == Kind_IFD0 || currentIFD == Kind_IFD1) && IfdItem.Tag == IFD0::Compression, Exif_IFD0_Compression_Name(Ret16));
-                    Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::LightSource, Exif_ExifIFD_Tag_LightSource_Name(Ret16));
-                    Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::Flash, Exif_IFDExif_Flash_Name(Ret16));
-                    Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::ColorSpace, Exif_IFDExif_ColorSpace_Name(Ret16));
-                    Info.push_back(Ztring::ToZtring(Ret16));
+                    default : Element_Info1(Ztring::ToZtring(Ret16));
                 }
-                break;
-
-        case Exif_Type::UnsignedLong:                /* 32-bit (4-byte) unsigned integer */
-                for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+            #else //MEDIAINFO_TRACE
+                if (Element_Offset+2>Element_Size)
                 {
-                    int32u Ret32;
-                    #if MEDIAINFO_TRACE
-                        if (LittleEndian)
-                            Get_L4 (Ret32,                      "Data");
-                        else
-                            Get_B4 (Ret32,                      "Data");
-                        Element_Info1(Ztring::ToZtring(Ret32));
-                    #else //MEDIAINFO_TRACE
-                        if (Element_Offset+4>Element_Size)
-                        {
-                            Trusted_IsNot();
-                            break;
-                        }
-                        if (LittleEndian)
-                            Ret32=LittleEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                        else
-                            Ret32=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                        Element_Offset+=4;
-                    #endif //MEDIAINFO_TRACE
-                    Info.push_back(Ztring::ToZtring(Ret32));
+                    Trusted_IsNot();
+                    break;
                 }
-                break;
-
-        case Exif_Type::UnsignedRational:                /* 2x32-bit (2x4-byte) unsigned integers */
-                for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+                if (LittleEndian)
+                    Ret16=LittleEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                else
+                    Ret16=BigEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                Element_Offset+=2;
+            #endif //MEDIAINFO_TRACE
+            Param_Info1C((currentIFD == Kind_IFD0 || currentIFD == Kind_IFD1) && IfdItem.Tag == IFD0::Orientation, Exif_IFD0_Orientation_Name(Ret16));
+            Param_Info1C((currentIFD == Kind_IFD0 || currentIFD == Kind_IFD1) && IfdItem.Tag == IFD0::Compression, Exif_IFD0_Compression_Name(Ret16));
+            Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::LightSource, Exif_ExifIFD_Tag_LightSource_Name(Ret16));
+            Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::Flash, Exif_IFDExif_Flash_Name(Ret16));
+            Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::ColorSpace, Exif_IFDExif_ColorSpace_Name(Ret16));
+            Info.push_back(Ztring::ToZtring(Ret16));
+        }
+        break;
+    case Exif_Type::UnsignedLong:                               /* 32-bit (4-byte) unsigned integer */
+        for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+        {
+            int32u Ret32;
+            #if MEDIAINFO_TRACE
+                Get_X4 (Ret32,                                  "Data");
+                Element_Info1(Ztring::ToZtring(Ret32));
+            #else //MEDIAINFO_TRACE
+                if (Element_Offset+4>Element_Size)
                 {
-                    int32u N, D;
-                    #if MEDIAINFO_TRACE
-                        if (LittleEndian)
-                        {
-                            Get_L4 (N,                          "Numerator");
-                            Get_L4 (D,                          "Denominator");
-                        }
-                        else
-                        {
-                            Get_B4 (N,                          "Numerator");
-                            Get_B4 (D,                          "Denominator");
-                        }
-                        if (D)
-                            Element_Info1(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
-                    #else //MEDIAINFO_TRACE
-                        if (Element_Offset+8>Element_Size)
-                        {
-                            Trusted_IsNot();
-                            break;
-                        }
-                        if (LittleEndian)
-                        {
-                            N=LittleEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                            D=LittleEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                        }
-                        else
-                        {
-                            N=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                            D=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                        }
-                        Element_Offset+=8;
-                    #endif //MEDIAINFO_TRACE
-                    if (D)
-                        Info.push_back(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
-                    else
-                        Info.push_back(Ztring()); // Division by zero, undefined
+                    Trusted_IsNot();
+                    break;
                 }
-                break;
-        case Exif_Type::SignedRational:                /* 2x32-bit (2x4-byte) signed integers */
-                for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+                if (LittleEndian)
+                    Ret32=LittleEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                else
+                    Ret32=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                Element_Offset+=4;
+            #endif //MEDIAINFO_TRACE
+            Info.push_back(Ztring::ToZtring(Ret32));
+        }
+        break;
+    case Exif_Type::UnsignedRational:                           /* 2x32-bit (2x4-byte) unsigned integers */
+        for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+        {
+            int32u N, D;
+            #if MEDIAINFO_TRACE
+                Get_X4 (N,                                      "Numerator");
+                Get_X4 (D,                                      "Denominator");
+                if (D)
+                    Element_Info1(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
+            #else //MEDIAINFO_TRACE
+                if (Element_Offset+8>Element_Size)
                 {
-                    int32u NU, DU;
-                    int32s N, D;
-                    #if MEDIAINFO_TRACE
-                        if (LittleEndian)
-                        {
-                            Get_L4 (NU,                         "Numerator");
-                            Get_L4 (DU,                         "Denominator");
-                        }
-                        else
-                        {
-                            Get_B4 (NU,                         "Numerator");
-                            Get_B4 (DU,                         "Denominator");
-                        }
-                        N = (int32s)NU;
-                        D = (int32s)DU;
-                        if (D)
-                            Element_Info1(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
-                    #else //MEDIAINFO_TRACE
-                        if (Element_Offset+8>Element_Size)
-                        {
-                            Trusted_IsNot();
-                            break;
-                        }
-                        if (LittleEndian)
-                        {
-                            N=LittleEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                            D=LittleEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                        }
-                        else
-                        {
-                            N=BigEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                            D=BigEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                        }
-                        Element_Offset+=8;
-                    #endif //MEDIAINFO_TRACE
-                    if (D)
-                        Info.push_back(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
-                    else
-                        Info.push_back(Ztring()); // Division by zero, undefined
+                    Trusted_IsNot();
+                    break;
                 }
-                break;
-        default:            //Unknown
-                if (IfdItem.Tag == IFDExif::UserComment)
-                    UserComment(Info);
-                if (IfdItem.Tag == IFDExif::ExifVersion || IfdItem.Tag == IFDExif::FlashpixVersion || IfdItem.Tag == IFDInterop::InteroperabilityVersion) {
-                    string Data;
-                    Get_String(4, Data,                             "Data"); Element_Info1(Data.c_str());
-                    Info.push_back(Ztring().From_UTF8(Data.c_str()));
+                if (LittleEndian)
+                {
+                    N=LittleEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                    D=LittleEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
                 }
                 else
-                Skip_XX(static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
+                {
+                    N=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                    D=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                }
+                Element_Offset+=8;
+            #endif //MEDIAINFO_TRACE
+            if (D)
+                Info.push_back(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
+            else
+                Info.push_back(Ztring()); // Division by zero, undefined
+        }
+        break;
+    case Exif_Type::SignedRational:                             /* 2x32-bit (2x4-byte) signed integers */
+        for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+        {
+            int32u NU, DU;
+            int32s N, D;
+            #if MEDIAINFO_TRACE
+                Get_X4 (NU,                                     "Numerator");
+                Get_X4 (DU,                                     "Denominator");
+                N = static_cast<int32s>(NU);
+                D = static_cast<int32s>(DU);
+                if (D)
+                    Element_Info1(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
+            #else //MEDIAINFO_TRACE
+                if (Element_Offset+8>Element_Size)
+                {
+                    Trusted_IsNot();
+                    break;
+                }
+                if (LittleEndian)
+                {
+                    N=LittleEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                    D=LittleEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                }
+                else
+                {
+                    N=BigEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                    D=BigEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                }
+                Element_Offset+=8;
+            #endif //MEDIAINFO_TRACE
+            if (D)
+                Info.push_back(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
+            else
+                Info.push_back(Ztring()); // Division by zero, undefined
+        }
+        break;
+    case Exif_Type::Undefined:                                  /* Undefined */
+        if (currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::UserComment)
+            MulticodeString(Info);
+        else if (
+            (currentIFD == Kind_Exif && (IfdItem.Tag == IFDExif::ExifVersion || IfdItem.Tag == IFDExif::FlashpixVersion)) ||
+            (currentIFD == Kind_Interop && IfdItem.Tag == IFDInterop::InteroperabilityVersion)
+            ) {
+            string Data;
+            Get_String(IfdItem.Count, Data,                     "Data"); Element_Info1(Data.c_str());
+            Info.push_back(Ztring().From_UTF8(Data.c_str()));
+        }
+        else
+            Skip_XX(static_cast<int64u>(Exif_Type_Size(IfdItem.Type))* IfdItem.Count, "Data");
+        break;
+    default:                                                    // Type not yet parsed
+        Skip_XX (static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
+        break;
     }
 }
 
