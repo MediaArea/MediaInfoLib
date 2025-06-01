@@ -288,6 +288,7 @@ File_Jpeg::File_Jpeg() : APP0_JFIF_Parsed{}, APPE_Adobe0_transform{}, CME_Text_P
 //---------------------------------------------------------------------------
 File_Jpeg::~File_Jpeg()
 {
+    delete static_cast<mp_entries*>(MPEntries);
     delete ICC_Parser;
 }
 
@@ -1278,8 +1279,21 @@ void File_Jpeg::SOS()
     }
     if (Status[IsFilled])
         Fill();
-    if (Config->ParseSpeed<1.0)
-        Finish("JPEG"); //No need of more
+    if (Config->ParseSpeed < 1.0) {
+        if (MPEntries) {
+            for (const auto& MPEntry : *static_cast<mp_entries*>(MPEntries)) {
+                auto ImgOffset = MPEntries_Offset + MPEntry.ImgOffset;
+                if (ImgOffset > File_Offset + Buffer_Offset) {
+                    SOS_SOD_Parsed = false;
+                    GoTo(ImgOffset);
+                    break;
+                }
+            }
+        }
+        if (File_GoTo == (int64u)-1) {
+            Finish("JPEG"); //No need of more
+        }
+    }
     FILLING_END();
 }
 
@@ -1527,10 +1541,15 @@ void File_Jpeg::APP1_XMP_Extension()
 void File_Jpeg::APP2()
 {
     //Parsing
-    if (Element_Size>=14 && !strncmp((const char*)Buffer+Buffer_Offset, "ICC_PROFILE", 12))
+    if (Element_Size >= 14 && !strncmp((const char*)Buffer + Buffer_Offset, "ICC_PROFILE", 12)) {
         APP2_ICC_PROFILE();
-    else
-        Skip_XX(Element_Size,                                   "Data");
+        return;
+    }
+    if (Element_Size >= 4 && !strncmp((const char*)Buffer + Buffer_Offset, "MPF", 4)) {
+        APP2_MPF();
+        return;
+    }
+    Skip_XX(Element_Size, "Data");
 }
 
 //---------------------------------------------------------------------------
@@ -1569,6 +1588,33 @@ void File_Jpeg::APP2_ICC_PROFILE()
         Element_End0();
     #else
         Skip_XX(Element_Size-Element_Offset,                    "ICC profile");
+    #endif
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::APP2_MPF()
+{
+    Element_Info1("Multi-Picture Format");
+
+    Skip_String(4,                                              "MP Format Identifier");
+
+    //Parsing
+    #if defined(MEDIAINFO_EXIF_YES)
+    File_Exif MI;
+    if (!MPEntries) {
+        MPEntries = new mp_entries();
+        MPEntries_Offset = File_Offset + Buffer_Offset + Element_Offset;
+    }
+    else {
+        MI.IsFirstImage = false;
+    }
+    MI.MPEntries = static_cast<mp_entries*>(MPEntries);
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Merge(MI, Stream_General, 0, 0, false);
+    #else
+    Skip_UTF8(Element_Size - Element_Offset,                    "MPF Tags");
     #endif
 }
 

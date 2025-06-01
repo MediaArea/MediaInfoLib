@@ -165,6 +165,7 @@ private :
     void APP1_XMP_Extension();
     void APP2();
     void APP2_ICC_PROFILE();
+    void APP2_MPF();
     void APP3() {Skip_XX(Element_Size, "Data");}
     void APP4() {Skip_XX(Element_Size, "Data");}
     void APP5() {Skip_XX(Element_Size, "Data");}
@@ -206,6 +207,8 @@ private :
     bool  APP0_JFIF_Parsed;
     bool  SOS_SOD_Parsed;
     bool  CME_Text_Parsed;
+    void* MPEntries = nullptr;
+    int64u MPEntries_Offset = 0;
     File__Analyze* ICC_Parser=nullptr;
     struct xmpext
     {
