@@ -42,7 +42,7 @@ namespace MediaInfoLib
 //---------------------------------------------------------------------------
 namespace Exif_Type {
     const int16u UnsignedByte     = 1;
-    const int16u ASCIIStrings     = 2;
+    const int16u ASCIIString      = 2;
     const int16u UnsignedShort    = 3;
     const int16u UnsignedLong     = 4;
     const int16u UnsignedRational = 5;
@@ -53,6 +53,7 @@ namespace Exif_Type {
     const int16u SignedRational   = 10;
     const int16u SingleFloat      = 11;
     const int16u DoubleFloat      = 12;
+    const int16u UTF8String       = 129;
 }
 
 //---------------------------------------------------------------------------
@@ -61,7 +62,7 @@ static const char* Exif_Type_Name(int16u Type)
     switch (Type)
     {
     case Exif_Type::UnsignedByte    : return "unsigned byte";
-    case Exif_Type::ASCIIStrings    : return "ASCII strings";
+    case Exif_Type::ASCIIString     : return "ASCII string";
     case Exif_Type::UnsignedShort   : return "unsigned short";
     case Exif_Type::UnsignedLong    : return "unsigned long";
     case Exif_Type::UnsignedRational: return "unsigned rational";
@@ -72,6 +73,7 @@ static const char* Exif_Type_Name(int16u Type)
     case Exif_Type::SignedRational  : return "signed rational";
     case Exif_Type::SingleFloat     : return "single float";
     case Exif_Type::DoubleFloat     : return "double float";
+    case Exif_Type::UTF8String      : return "UTF-8 string";
     default                         : return "unknown";
     }
 }
@@ -82,7 +84,7 @@ static const int8u Exif_Type_Size(int16u Type)
     switch (Type)
     {
         case Exif_Type::UnsignedByte    : return 1;
-        case Exif_Type::ASCIIStrings    : return 1;
+        case Exif_Type::ASCIIString     : return 1;
         case Exif_Type::UnsignedShort   : return 2;
         case Exif_Type::UnsignedLong    : return 4;
         case Exif_Type::UnsignedRational: return 8;
@@ -93,6 +95,7 @@ static const int8u Exif_Type_Size(int16u Type)
         case Exif_Type::SignedRational  : return 8;
         case Exif_Type::SingleFloat     : return 4;
         case Exif_Type::DoubleFloat     : return 8;
+        case Exif_Type::UTF8String      : return 1;
         default                         : return 0;
     }
 }
@@ -1662,7 +1665,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
 
     ZtringList& Info = Infos[currentIFD][IfdItem.Tag]; Info.clear(); Info.Separator_Set(0, __T(" /"));
 
-    if (IfdItem.Type!=Exif_Type::ASCIIStrings && IfdItem.Type!=Exif_Type::Undefined && IfdItem.Count>=1000)
+    if (IfdItem.Type!=Exif_Type::ASCIIString && IfdItem.Type!=Exif_Type::UTF8String && IfdItem.Type!=Exif_Type::Undefined && IfdItem.Count>=1000)
     {
         //Too many data, we don't currently need it and we skip it
         Skip_XX(static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
@@ -1698,11 +1701,18 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             }
         }
         break;
-    case Exif_Type::ASCIIStrings:                               /* ASCII */
+    case Exif_Type::ASCIIString:                                /* ASCII */
         {
             string Data;
-            Get_String(IfdItem.Count, Data,                     "Data"); Element_Info1(Data.c_str()); //TODO: multiple strings separated by NULL
+            Get_String(IfdItem.Count, Data,                     "Data"); Element_Info1(Data.c_str());
             Info.push_back(Ztring().From_UTF8(Data.c_str()));
+        }
+        break;
+    case Exif_Type::UTF8String:                                 /* UTF-8 */
+        {
+            Ztring Data;
+            Get_UTF8(IfdItem.Count, Data,                       "Data"); Element_Info1(Data.To_UTF8().c_str());
+            Info.push_back(Data);
         }
         break;
     case Exif_Type::UnsignedShort:                              /* 16-bit (2-byte) unsigned integer. */
