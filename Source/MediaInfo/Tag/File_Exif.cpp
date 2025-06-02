@@ -967,6 +967,18 @@ static const char* Exif_IFDExif_WhiteBalance_Name(int16u value)
     }
 }
 
+//---------------------------------------------------------------------------
+static const char* Exif_IFDGPS_GPSAltitudeRef_Name(int8u value)
+{
+    switch (value) {
+    case 0: return "Positive ellipsoidal height (at or above ellipsoidal surface)";
+    case 1: return "Negative ellipsoidal height (below ellipsoidal surface)";
+    case 2: return "Positive sea level value (at or above sea level reference)";
+    case 3: return "Negative sea level value (below sea level reference)";
+    default: return "";
+    }
+}
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -1272,6 +1284,7 @@ void File_Exif::Streams_Finish()
                 const auto GPSLatitudeRef = Infos_GPS.find(IFDGPS::GPSLatitudeRef);
                 const auto GPSLongitude = Infos_GPS.find(IFDGPS::GPSLongitude);
                 const auto GPSLongitudeRef = Infos_GPS.find(IFDGPS::GPSLongitudeRef);
+                const auto GPSAltitudeRef = Infos_GPS.find(IFDGPS::GPSAltitudeRef);
                 const auto GPSAltitude = Infos_GPS.find(IFDGPS::GPSAltitude);
                 if (GPSLatitude->second.size() == 3 && GPSLatitudeRef != Infos_GPS.end() && GPSLongitude != Infos_GPS.end() && GPSLongitude->second.size() == 3 && GPSLongitudeRef != Infos_GPS.end()) {
                     Value = GPSLatitude->second.at(0) + Ztring().From_UTF8("\xC2\xB0");
@@ -1290,8 +1303,12 @@ void File_Exif::Streams_Finish()
                         Value += GPSLongitude->second.at(2) + __T('\"');;
                     }
                     Value += GPSLongitudeRef->second.at(0) + __T(' ');
-                    if (GPSAltitude != Infos_GPS.end())
+                    if (GPSAltitude != Infos_GPS.end()) {
+                        if (GPSAltitudeRef != Infos_GPS.end())
+                            if (GPSAltitude->second.Read().To_int8u() == 1 || GPSAltitude->second.Read().To_int8u() == 3)
+                                Value += __T("-");
                         Value += GPSAltitude->second.Read() + __T('m');
+                    }
                 }
                 break;
                 }
@@ -1697,6 +1714,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                     Ret8=BigEndian2int8u(Buffer+Buffer_Offset+(size_t)Element_Offset); //LittleEndian2int8u and BigEndian2int8u are same
                     Element_Offset++;
                 #endif //MEDIAINFO_TRACE
+                Param_Info1C(currentIFD == Kind_GPS && IfdItem.Tag == IFDGPS::GPSAltitudeRef, Exif_IFDGPS_GPSAltitudeRef_Name(Ret8));
                 Info.push_back(Ztring::ToZtring(Ret8));
             }
         }
@@ -1838,7 +1856,10 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         }
         break;
     case Exif_Type::Undefined:                                  /* Undefined */
-        if (currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::UserComment)
+        if (
+            (currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::UserComment) ||
+            (currentIFD == Kind_GPS && (IfdItem.Tag == IFDGPS::GPSProcessingMethod || IfdItem.Tag == IFDGPS::GPSAreaInformation))
+            )
             MulticodeString(Info);
         else if (
             (currentIFD == Kind_Exif && (IfdItem.Tag == IFDExif::ExifVersion || IfdItem.Tag == IFDExif::FlashpixVersion)) ||
