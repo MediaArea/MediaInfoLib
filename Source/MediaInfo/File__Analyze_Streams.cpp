@@ -1177,6 +1177,11 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
             return Fill(StreamKind, StreamPos, Parameter, Value.substr(Value_NotBOM_Pos), Replace);
     }
 
+    // Ignore useless values
+    if (!Value.compare(__T("N/A"))) {
+        return;
+    }
+
     // Analysis of some metadata
     if (StreamKind==Stream_General)
     {
@@ -2081,6 +2086,11 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
             Fill(StreamKind, StreamPos, Parameter, NewValue, Replace);
             return;
         }
+    }
+
+    // Ignore useless values
+    if (!Value.compare(__T("N/A"))) {
+        return;
     }
 
     //Handle Value before StreamKind
