@@ -1177,6 +1177,11 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
             return Fill(StreamKind, StreamPos, Parameter, Value.substr(Value_NotBOM_Pos), Replace);
     }
 
+    // Ignore useless values
+    if (!Value.compare(__T("N/A"))) {
+        return;
+    }
+
     // Analysis of some metadata
     if (StreamKind==Stream_General)
     {
@@ -2081,6 +2086,11 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
             Fill(StreamKind, StreamPos, Parameter, NewValue, Replace);
             return;
         }
+    }
+
+    // Ignore useless values
+    if (!Value.compare(__T("N/A"))) {
+        return;
     }
 
     //Handle Value before StreamKind
@@ -3103,24 +3113,24 @@ void File__Analyze::Tags()
     //-Movie/Album
     if (!Retrieve(Stream_General, 0, General_Title).empty() && Retrieve(Stream_General, 0, General_Movie).empty() && Retrieve(Stream_General, 0, General_Track).empty())
     {
-        if (Count_Get(Stream_Video) && Retrieve(Stream_General, 0, General_Collection).empty())
-            Fill(Stream_General, 0, "Movie", Retrieve(Stream_General, 0, General_Title));
+        if (!Count_Get(Stream_Audio) && Retrieve(Stream_General, 0, General_Collection).empty())
+            Fill(Stream_General, 0, General_Movie, Retrieve(Stream_General, 0, General_Title));
         else
-            Fill(Stream_General, 0, "Track", Retrieve(Stream_General, 0, General_Title));
+            Fill(Stream_General, 0, General_Track, Retrieve(Stream_General, 0, General_Title));
     }
     if (!Retrieve(Stream_General, 0, General_Title_More).empty() && Retrieve(Stream_General, 0, General_Movie_More).empty() && Retrieve(Stream_General, 0, General_Track_More).empty())
     {
-        if (Count_Get(Stream_Video) && Retrieve(Stream_General, 0, General_Collection).empty())
-            Fill(Stream_General, 0, "Movie_More", Retrieve(Stream_General, 0, General_Title_More));
+        if (!Count_Get(Stream_Audio) && Retrieve(Stream_General, 0, General_Collection).empty())
+            Fill(Stream_General, 0, General_Movie_More, Retrieve(Stream_General, 0, General_Title_More));
         else
-            Fill(Stream_General, 0, "Track_More", Retrieve(Stream_General, 0, General_Title_More));
+            Fill(Stream_General, 0, General_Track_More, Retrieve(Stream_General, 0, General_Title_More));
     }
     if (!Retrieve(Stream_General, 0, General_Title_Url).empty() && Retrieve(Stream_General, 0, General_Movie_Url).empty() && Retrieve(Stream_General, 0, General_Track_Url).empty())
     {
-        if (Count_Get(Stream_Video) && Retrieve(Stream_General, 0, General_Collection).empty())
-            Fill(Stream_General, 0, "Movie/Url", Retrieve(Stream_General, 0, General_Title_Url));
+        if (!Count_Get(Stream_Audio) && Retrieve(Stream_General, 0, General_Collection).empty())
+            Fill(Stream_General, 0, General_Movie_Url, Retrieve(Stream_General, 0, General_Title_Url));
         else
-            Fill(Stream_General, 0, "Track/Url", Retrieve(Stream_General, 0, General_Title_Url));
+            Fill(Stream_General, 0, General_Track_Url, Retrieve(Stream_General, 0, General_Title_Url));
     }
     //-Title
     if (Retrieve(Stream_General, 0, General_Title).empty() && !Retrieve(Stream_General, 0, General_Movie).empty())

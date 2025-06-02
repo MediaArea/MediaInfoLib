@@ -747,6 +747,7 @@ public :
     inline void Get_UTF16B (int64u Bytes, Ztring      &Info, const char*) {Get_UTF16B(Bytes, Info);}
     inline void Get_UTF16L (int64u Bytes, Ztring      &Info, const char*) {Get_UTF16L(Bytes, Info);}
     void Peek_Local (int64u Bytes, Ztring      &Info);
+    void Peek_UTF8  (int64u Bytes, Ztring      & Info);
     void Peek_String(int64u Bytes, std::string &Info);
     void Skip_Local (int64u Bytes,                    const char*) {if (Element_Offset+Bytes>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=(size_t)Bytes;}
     void Skip_ISO_6937_2(int64u Bytes,                const char*) {if (Element_Offset+Bytes>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=(size_t)Bytes;}

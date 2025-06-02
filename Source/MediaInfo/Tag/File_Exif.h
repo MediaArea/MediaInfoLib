@@ -48,7 +48,7 @@ private :
 
     //Elements
     void Read_Directory();
-    void UserComment(ZtringList& Info);
+    void MulticodeString(ZtringList& Info);
     void Thumbnail();
 
     //Temp

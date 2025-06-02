@@ -881,6 +881,7 @@ public :
     void Get_UTF16B (int64u Bytes, Ztring      &Info, const char* Name);
     void Get_UTF16L (int64u Bytes, Ztring      &Info, const char* Name);
     void Peek_Local (int64u Bytes, Ztring      &Info);
+    void Peek_UTF8  (int64u Bytes, Ztring      &Info);
     void Peek_String(int64u Bytes, std::string &Info);
     void Skip_Local (int64u Bytes,                    const char* Name);
     void Skip_ISO_6937_2(int64u Bytes,                const char* Name);
