@@ -1215,8 +1215,10 @@ void File_Exif::Streams_Finish()
                 }
                 else Parameter = (size_t)-1;
                 break;
+            case IFDExif::UserComment: Parameter = General_Comment; break;
             case IFDExif::LensMake: ParameterC = "LensMake"; break;
             case IFDExif::LensModel: ParameterC = "LensModel"; break;
+            case IFDExif::ImageTitle: Parameter = General_Title; break;
             case IFDExif::OffsetTime:
             case IFDExif::OffsetTimeOriginal:
             case IFDExif::OffsetTimeDigitized:
