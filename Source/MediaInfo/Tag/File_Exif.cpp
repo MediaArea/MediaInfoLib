@@ -1574,13 +1574,19 @@ void File_Exif::MulticodeString(ZtringList& Info)
         case 0x4153434949000000LL:                              // [ASCII] ANSI INCITS 4 (ANSI INCITS 4)
             Get_ISO_8859_1(Size, Value,                         "Value");
             break;
-        case 0x554E49434F444500LL:                              // [UNICODE] UTF-8 (Unicode)
-            if (LittleEndian)
+        case 0x554E49434F444500LL: {                            // [UNICODE] UTF-8 (Unicode)
+            Peek_UTF8(Size, Value);
+            if (Value.size() >= Size)
+                Skip_UTF8(Size,                                 "Value");
+            else if (LittleEndian)
                 Get_UTF16L(Size, Value,                         "Value");
             else
                 Get_UTF16B(Size, Value,                         "Value");
             break;
+        }
         case 0x4A49530000000000LL:                              // [JIS] ISO-2022-JP (JIS X 0208)
+            Skip_XX(Size,                                       "(Unsupported Character Code)");
+            break;
         default:
             Skip_XX(Size,                                       "(Unknown Character Code)");
     }
