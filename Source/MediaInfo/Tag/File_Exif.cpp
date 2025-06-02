@@ -1579,7 +1579,7 @@ void File_Exif::MulticodeString(ZtringList& Info)
             break;
         case 0x554E49434F444500LL: {                            // [UNICODE] UTF-8 (Unicode)
             Peek_UTF8(Size, Value);
-            if (Value.size() >= Size)
+            if (Value.size() >= (Size - 1) / 4) // UTF-8 string may (shall) have a trailing NULL, and max 4 bytes per character
                 Skip_UTF8(Size,                                 "Value");
             else if (LittleEndian)
                 Get_UTF16L(Size, Value,                         "Value");
