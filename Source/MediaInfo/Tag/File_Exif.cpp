@@ -1534,13 +1534,13 @@ void File_Exif::Read_Directory()
 
     if (Size <= 4)
     {
-        if (IfdItem.Tag == IFD0::IFDExif) {
+        if (currentIFD == Kind_IFD0 && IfdItem.Tag == IFD0::IFDExif) {
             Get_IFDOffset(Kind_Exif);
         }
-        else if (IfdItem.Tag == IFD0::GPSInfoIFD) {
+        else if (currentIFD == Kind_IFD0 && IfdItem.Tag == IFD0::GPSInfoIFD) {
             Get_IFDOffset(Kind_GPS);
         }
-        else if (IfdItem.Tag == IFDExif::InteroperabilityIFD) {
+        else if (currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::InteroperabilityIFD) {
             Get_IFDOffset(Kind_Interop);
         }
         else {
