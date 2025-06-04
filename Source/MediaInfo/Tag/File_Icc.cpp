@@ -460,6 +460,27 @@ void File_Icc::desc(int32u Format, int32u Size)
         case Elements::mluc: Get_mluc(Size, Description); break;
         default:;
     }
+
+    //Filling
+    FILLING_BEGIN()
+        string colour_primaries, transfer_characteristics;
+        if (Description == __T("sRGB") || Description == __T("sRGB IEC61966-2.1")) {
+            colour_primaries = "BT.709";
+            transfer_characteristics = "sRGB/sYCC";
+        }
+        if (Description == __T("Adobe RGB (1998)")) {
+            colour_primaries = "Adobe RGB";
+            transfer_characteristics = "Adobe RGB";
+        }
+        if (Description == __T("Display P3")) {
+            colour_primaries = "Display P3";
+            transfer_characteristics = "sRGB/sYCC";
+        }
+        if (Retrieve_Const(StreamKind_Last, StreamPos_Last, "colour_primaries").empty())
+            Fill(StreamKind_Last, StreamPos_Last, "colour_primaries", colour_primaries);
+        if (Retrieve_Const(StreamKind_Last, StreamPos_Last, "transfer_characteristics").empty())
+            Fill(StreamKind_Last, StreamPos_Last, "transfer_characteristics", transfer_characteristics);
+    FILLING_END()
 }
 
 //---------------------------------------------------------------------------
