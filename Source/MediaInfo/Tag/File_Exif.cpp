@@ -745,6 +745,185 @@ exif_tag_desc Desc[] =
 };
 };
 
+namespace IFDMakernoteApple {
+    ELEM(0x0001, MakerNoteVersion)
+    ELEM(0x0003, RunTime)
+    ELEM(0x0004, AEStable)
+    ELEM(0x0005, AETarget)
+    ELEM(0x0006, AEAverage)
+    ELEM(0x0007, AFStable)
+    ELEM(0x0008, AccelerationVector)
+    ELEM(0x000a, HDRImageType)
+    ELEM(0x000b, BurstUUID)
+    ELEM(0x000c, FocusDistanceRange)
+    ELEM(0x000f, OISMode)
+    ELEM(0x0011, ContentIdentifier)
+    ELEM(0x0014, ImageCaptureType)
+    ELEM(0x0015, ImageUniqueID)
+    ELEM(0x0017, LivePhotoVideoIndex)
+    ELEM(0x001a, QualityHint)
+    ELEM(0x001d, LuminanceNoiseAmplitude)
+    ELEM(0x001f, PhotosAppFeatureFlags)
+    ELEM(0x0021, HDRHeadroom)
+    ELEM(0x0023, AFPerformance)
+    ELEM(0x0027, SignalToNoiseRatio)
+    ELEM(0x002b, PhotoIdentifier)
+    ELEM(0x002d, ColorTemperature)
+    ELEM(0x002e, CameraType)
+    ELEM(0x002f, FocusPosition)
+    ELEM(0x0030, HDRGain)
+    ELEM(0x0038, AFMeasuredDepth)
+    ELEM(0x003d, AFConfidence)
+    ELEM(0x0040, SemanticStyle)
+    ELEM(0x0041, SemanticStyleRenderingVer)
+    ELEM(0x0042, SemanticStylePreset)
+
+exif_tag_desc Desc[] =
+{
+    ELEM_TRACE(MakerNoteVersion, "Maker Note Version")
+    ELEM_TRACE(RunTime, "Run Time")
+    ELEM_TRACE(AEStable, "AE Stable")
+    ELEM_TRACE(AETarget, "AE Target")
+    ELEM_TRACE(AEAverage, "AE Average")
+    ELEM_TRACE(AFStable, "AF Stable")
+    ELEM_TRACE(AccelerationVector, "Acceleration Vector")
+    ELEM_TRACE(HDRImageType, "HDR Image Type")
+    ELEM_TRACE(BurstUUID, "Burst UUID")
+    ELEM_TRACE(FocusDistanceRange, "Focus Distance Range")
+    ELEM_TRACE(OISMode, "OIS Mode")
+    ELEM_TRACE(ContentIdentifier, "Content Identifier")
+    ELEM_TRACE(ImageCaptureType, "Image Capture Type")
+    ELEM_TRACE(ImageUniqueID, "Image Unique ID")
+    ELEM_TRACE(LivePhotoVideoIndex, "Live Photo Video Index")
+    ELEM_TRACE(QualityHint, "Quality Hint")
+    ELEM_TRACE(LuminanceNoiseAmplitude, "Luminance Noise Amplitude")
+    ELEM_TRACE(PhotosAppFeatureFlags, "Photos App Feature Flags")
+    ELEM_TRACE(HDRHeadroom, "HDR Headroom")
+    ELEM_TRACE(AFPerformance, "AF Performance")
+    ELEM_TRACE(SignalToNoiseRatio, "Signal to Noise Ratio")
+    ELEM_TRACE(PhotoIdentifier, "Photo Identifier")
+    ELEM_TRACE(ColorTemperature, "Color Temperature")
+    ELEM_TRACE(CameraType, "Camera Type")
+    ELEM_TRACE(FocusPosition, "Focus Position")
+    ELEM_TRACE(HDRGain, "HDR Gain")
+    ELEM_TRACE(AFMeasuredDepth, "AF Measured Depth")
+    ELEM_TRACE(AFConfidence, "AF Confidence")
+    ELEM_TRACE(SemanticStyle, "Semantic Style")
+    ELEM_TRACE(SemanticStyleRenderingVer, "Semantic Style Rendering Version")
+    ELEM_TRACE(SemanticStylePreset, "Semantic Style Preset")
+};
+};
+
+namespace IFDMakernoteNikon {
+    ELEM(0x0001, MakerNoteVersion)
+    ELEM(0x0002, ISO)
+    ELEM(0x0003, ColorMode)
+    ELEM(0x0004, Quality)
+    ELEM(0x0005, WhiteBalance)
+    ELEM(0x0006, Sharpness)
+    ELEM(0x0007, FocusMode)
+    ELEM(0x0008, FlashSetting)
+    ELEM(0x0009, FlashType)
+    ELEM(0x000b, WhiteBalanceFineTune)
+    ELEM(0x000c, WB_RBLevels)
+    ELEM(0x000d, ProgramShift)
+    ELEM(0x000e, ExposureDifference)
+    ELEM(0x000f, ISOSelection)
+    ELEM(0x0010, DataDump)
+    ELEM(0x0011, PreviewIFD)
+    ELEM(0x0012, FlashExposureComp)
+    ELEM(0x0013, ISOSetting)
+    ELEM(0x0014, ColorBalanceA)
+    ELEM(0x0016, ImageBoundary)
+    ELEM(0x0017, ExternalFlashExposureComp)
+    ELEM(0x0018, FlashExposureBracketValue)
+    ELEM(0x0019, ExposureBracketValue)
+    ELEM(0x001a, ImageProcessing)
+    ELEM(0x001b, CropHiSpeed)
+    ELEM(0x001c, ExposureTuning)
+    ELEM(0x001d, SerialNumber)
+    ELEM(0x001e, ColorSpace)
+    ELEM(0x001f, VRInfo)
+    ELEM(0x0020, ImageAuthentication)
+    ELEM(0x0021, FaceDetect)
+    ELEM(0x0022, ActiveDLighting)
+    ELEM(0x0023, PictureControlData)
+    ELEM(0x0024, WorldTime)
+    ELEM(0x0025, ISOInfo)
+    ELEM(0x002a, VignetteControl)
+    ELEM(0x002b, DistortInfo)
+    ELEM(0x002c, UnknownInfo)
+
+exif_tag_desc Desc[] =
+{
+    ELEM_TRACE(MakerNoteVersion, "Maker Note Version")
+    ELEM_TRACE(ISO, "ISO")
+    ELEM_TRACE(ColorMode, "Color Mode")
+    ELEM_TRACE(Quality, "Quality")
+    ELEM_TRACE(WhiteBalance, "White Balance")
+    ELEM_TRACE(Sharpness, "Sharpness")
+    ELEM_TRACE(FocusMode, "Focus Mode")
+    ELEM_TRACE(FlashSetting, "Flash Setting")
+    ELEM_TRACE(FlashType, "Flash Type")
+    ELEM_TRACE(WhiteBalanceFineTune, "White Balance Fine Tune")
+    ELEM_TRACE(WB_RBLevels, "White Balance Red/Blue Levels")
+    ELEM_TRACE(ProgramShift, "Program Shift")
+    ELEM_TRACE(ExposureDifference, "Exposure Difference")
+    ELEM_TRACE(ISOSelection, "ISO Selection")
+    ELEM_TRACE(DataDump, "Data Dump")
+    ELEM_TRACE(PreviewIFD, "Preview IFD")
+    ELEM_TRACE(FlashExposureComp, "Flash Exposure Compensation")
+    ELEM_TRACE(ISOSetting, "ISO Setting")
+    ELEM_TRACE(ColorBalanceA, "Color Balance A")
+    ELEM_TRACE(ImageBoundary, "Image Boundary")
+    ELEM_TRACE(ExternalFlashExposureComp, "External Flash Exposure Compensation")
+    ELEM_TRACE(FlashExposureBracketValue, "Flash Exposure Bracket Value")
+    ELEM_TRACE(ExposureBracketValue, "Exposure Bracket Value")
+    ELEM_TRACE(ImageProcessing, "Image Processing")
+    ELEM_TRACE(CropHiSpeed, "Crop HiSpeed")
+    ELEM_TRACE(ExposureTuning, "Exposure Tuning")
+    ELEM_TRACE(SerialNumber, "Serial Number")
+    ELEM_TRACE(ColorSpace, "Color Space")
+    ELEM_TRACE(VRInfo, "Vibration Reduction Info")
+    ELEM_TRACE(ImageAuthentication, "Image Authentication")
+    ELEM_TRACE(FaceDetect, "Face Detect")
+    ELEM_TRACE(ActiveDLighting, "Active D-Lighting")
+    ELEM_TRACE(PictureControlData, "Picture Control Data")
+    ELEM_TRACE(WorldTime, "World Time")
+    ELEM_TRACE(ISOInfo, "ISO Info")
+    ELEM_TRACE(VignetteControl, "Vignette Control")
+    ELEM_TRACE(DistortInfo, "Distortion Info")
+    ELEM_TRACE(UnknownInfo, "Unknown Info")
+};
+};
+
+namespace IFDMakernoteSony {
+    ELEM(0x0010, CameraInfo)
+    ELEM(0x0020, FocusInfo)
+    ELEM(0x0102, Quality)
+    ELEM(0x0104, FlashExposureComp)
+    ELEM(0x0105, Teleconverter)
+    ELEM(0x0112, WhiteBalanceFineTune)
+    ELEM(0x0114, CameraSettings)
+    ELEM(0x0115, WhiteBalance)
+    ELEM(0x0116, ExtraInfo)
+    ELEM(0x2001, PreviewImage)
+
+exif_tag_desc Desc[] =
+{
+    ELEM_TRACE(CameraInfo, "Camera Info")
+    ELEM_TRACE(FocusInfo, "Focus Info")
+    ELEM_TRACE(Quality, "Quality")
+    ELEM_TRACE(FlashExposureComp, "Flash Exposure Comp")
+    ELEM_TRACE(Teleconverter, "Teleconverter")
+    ELEM_TRACE(WhiteBalanceFineTune, "White Balance Fine Tune")
+    ELEM_TRACE(CameraSettings, "Camera Settings")
+    ELEM_TRACE(WhiteBalance, "White Balance")
+    ELEM_TRACE(ExtraInfo, "Extra Info")
+    ELEM_TRACE(PreviewImage, "Preview Image")
+};
+};
+
 //---------------------------------------------------------------------------
 struct exif_tag_desc_size
 {
@@ -760,6 +939,9 @@ enum kind_of_ifd
     Kind_Exif,
     Kind_GPS,
     Kind_Interop,
+    Kind_MakernoteApple,
+    Kind_MakernoteNikon,
+    Kind_MakernoteSony,
     Kind_ParsingThumbnail,
 };
 exif_tag_desc_size Exif_Descriptions[] =
@@ -769,6 +951,9 @@ exif_tag_desc_size Exif_Descriptions[] =
     DESC_TABLE(IFDExif, "Exif")
     DESC_TABLE(IFDGPS, "GPS")
     DESC_TABLE(IFDInterop, "Interoperability")
+    DESC_TABLE(IFDMakernoteApple, "Apple Makernote")
+    DESC_TABLE(IFDMakernoteNikon, "Nikon Makernote")
+    DESC_TABLE(IFDMakernoteSony, "Sony Makernote")
 };
 static string Exif_Tag_Description(int8u NameSpace, int16u Tag_ID)
 {
@@ -982,12 +1167,141 @@ static const char* Exif_IFDGPS_GPSAltitudeRef_Name(int8u value)
     }
 }
 
+//---------------------------------------------------------------------------
+static const char* Exif_IFDMakernoteApple_ImageCaptureType_Name(int32s value)
+{
+    switch (value) {
+    case 1: return "ProRAW";
+    case 2: return "Portrait";
+    case 10: return "Photo";
+    case 11: return "Manual Focus";
+    case 12: return "Scene";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Exif_IFDMakernoteApple_CameraType_Name(int32s value)
+{
+    switch (value) {
+    case 0: return "Back Wide Angle";
+    case 1: return "Back Normal";
+    case 6: return "Front";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Exif_IFDMakernoteNikon_CropHiSpeed_Name(int16u value) {
+    switch (value) {
+    case 0: return "Off";
+    case 1: return "1.3x Crop";
+    case 2: return "DX Crop";
+    case 3: return "5:4 Crop";
+    case 4: return "3:2 Crop";
+    case 6: return "16:9 Crop";
+    case 8: return "2.7x Crop";
+    case 9: return "DX Movie Crop";
+    case 10: return "1.3x Movie Crop";
+    case 11: return "FX Uncropped";
+    case 12: return "DX Uncropped";
+    case 13: return "2.8x Movie Crop";
+    case 14: return "1.4x Movie Crop";
+    case 15: return "1.5x Movie Crop";
+    case 17: return "1:1 Crop";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Exif_IFDMakernoteNikon_ColorSpace_Name(int16u value) {
+    switch (value) {
+    case 1: return "sRGB";
+    case 2: return "Adobe RGB";
+    case 4: return "BT.2100";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Exif_IFDMakernoteNikon_ColorSpace_ColourPrimaries(int16u value) {
+    switch (value) {
+    case 1: return "BT.709";
+    case 2: return "Adobe RGB";
+    case 4: return "BT.2020";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Exif_IFDMakernoteNikon_ColorSpace_TransferCharacteristics(int16u value) {
+    switch (value) {
+    case 1: return "sRGB/sYCC";
+    case 2: return "Adobe RGB";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Exif_IFDMakernoteNikon_ActiveDLighting_Name(int16u value)
+{
+    switch (value) {
+    case 0: return "Off";
+    case 1: return "Low";
+    case 3: return "Normal";
+    case 5: return "High";
+    case 7: return "Extra High";
+    case 8: return "Extra High 1";
+    case 9: return "Extra High 2";
+    case 10: return "Extra High 3";
+    case 11: return "Extra High 4";
+    case 0xFFFF: return "Auto";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Exif_IFDMakernoteSony_Quality_Name(int32u value)
+{
+    switch (value) {
+    case 0: return "RAW";
+    case 1: return "Super Fine";
+    case 2: return "Fine";
+    case 3: return "Standard";
+    case 4: return "Economy";
+    case 5: return "Extra Fine";
+    case 6: return "RAW + JPEG/HEIF";
+    case 7: return "Compressed RAW";
+    case 8: return "Compressed RAW + JPEG";
+    case 9: return "Light";
+    case 0xFFFFFFFF: // n/a
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Exif_IFDMakernoteSony_WhiteBalance_Name(int32u value) {
+    switch (value) {
+    case 0x00: return "Auto";
+    case 0x01: return "Color Temperature/Color Filter";
+    case 0x10: return "Daylight";
+    case 0x20: return "Cloudy";
+    case 0x30: return "Shade";
+    case 0x40: return "Tungsten";
+    case 0x50: return "Flash";
+    case 0x60: return "Fluorescent";
+    case 0x70: return "Custom";
+    case 0x80: return "Underwater";
+    default: return "";
+    }
+}
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-File_Exif::File_Exif() : LittleEndian{}, currentIFD(Kind_IFD0)
+File_Exif::File_Exif() : LittleEndian{}, currentIFD(Kind_IFD0), IsMakernote{}, MakernoteOffset{}
 {
 }
 
@@ -1352,6 +1666,59 @@ void File_Exif::Streams_Finish()
             }
         }
     }
+
+    const auto Infos_MakernoteApple_It = Infos.find(Kind_MakernoteApple);
+    if (Infos_MakernoteApple_It != Infos.end()) {
+        currentIFD = Kind_MakernoteApple;
+        const auto& Infos_MakernoteApple = Infos_MakernoteApple_It->second;
+        for (const auto& Item : Infos_MakernoteApple) {
+            size_t Parameter = 0;
+            Ztring Value;
+            const char* ParameterC = nullptr;
+            string ParameterS;
+            switch (Item.first) {
+            case IFDMakernoteApple::ColorTemperature: ParameterC = "ColorTemperature"; ParameterS = " K"; break;
+            case IFDMakernoteApple::CameraType: ParameterC = "CameraType"; Value = Exif_IFDMakernoteApple_CameraType_Name(Item.second.Read().To_int32s()); break;
+            }
+            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
+        }
+    }
+
+    const auto Infos_MakernoteNikon_It = Infos.find(Kind_MakernoteNikon);
+    if (Infos_MakernoteNikon_It != Infos.end()) {
+        currentIFD = Kind_MakernoteNikon;
+        const auto& Infos_MakernoteNikon = Infos_MakernoteNikon_It->second;
+        for (const auto& Item : Infos_MakernoteNikon) {
+            size_t Parameter = 0;
+            Ztring Value;
+            const char* ParameterC = nullptr;
+            string ParameterS;
+            switch (Item.first) {
+            case IFDMakernoteNikon::ActiveDLighting: ParameterC = "Active_D-Lighting"; Value = Exif_IFDMakernoteNikon_ActiveDLighting_Name(Item.second.Read().To_int16u()); break;
+            case IFDMakernoteNikon::ColorSpace:
+                Fill(Stream_Image, 0, Image_colour_primaries, Exif_IFDMakernoteNikon_ColorSpace_ColourPrimaries(Item.second.Read().To_int16u()));
+                Fill(Stream_Image, 0, Image_transfer_characteristics, Exif_IFDMakernoteNikon_ColorSpace_TransferCharacteristics(Item.second.Read().To_int16u()));
+                break;
+            }
+            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
+        }
+    }
+
+    const auto Infos_MakernoteSony_It = Infos.find(Kind_MakernoteSony);
+    if (Infos_MakernoteSony_It != Infos.end()) {
+        currentIFD = Kind_MakernoteSony;
+        const auto& Infos_MakernoteSony = Infos_MakernoteSony_It->second;
+        for (const auto& Item : Infos_MakernoteSony) {
+            size_t Parameter = 0;
+            Ztring Value;
+            const char* ParameterC = nullptr;
+            string ParameterS;
+            switch (Item.first) {
+            case IFDMakernoteSony::WhiteBalance: ParameterC = "AutoWhiteBalanceMode"; Value = Exif_IFDMakernoteSony_WhiteBalance_Name(Item.second.Read().To_int32u()); break;
+            }
+            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
+        }
+    }
 }
 
 //***************************************************************************
@@ -1362,6 +1729,7 @@ void File_Exif::Streams_Finish()
 void File_Exif::FileHeader_Parse()
 {
     //Parsing
+    bool SkipHeader{};
     int32u Alignment;
     if (FromHeif) {
         int32u Size;
@@ -1374,19 +1742,61 @@ void File_Exif::FileHeader_Parse()
         }
         OffsetFromContainer = 10;
     }
-    Get_C4 (Alignment,                                          "Alignment");
-    if (Alignment == 0x49492A00)
-        LittleEndian = true;
-    else if (Alignment == 0x4D4D002A)
-        LittleEndian = false;
-    else
-    {
-        Reject();
-        return;
+    if (IsMakernote) {
+        if (Buffer_Size >= 10 && !strncmp((const char*)Buffer, "Apple iOS", 10)) { // the char* contains a terminating \0
+            int16u alignment;
+            Skip_String(10,                                     "Identifier");
+            Skip_XX(2,                                          "(Unknown)");
+            Get_C2(alignment,                                   "Alignment");
+            if (alignment == 0x4D4D)
+                LittleEndian = false;
+            else {
+                Reject();
+                return;
+            }
+            currentIFD = Kind_MakernoteApple;
+            SkipHeader = true;
+            IFD_Offsets[Element_Offset] = currentIFD;
+        }
+        else if (Buffer_Size >= 6 && !strncmp((const char*)Buffer, "Nikon", 6)) { // the char* contains a terminating \0
+            Skip_String(6,                                      "Identifier");
+            Skip_B2(                                            "Version");
+            Skip_XX(2,                                          "(Unknown)");
+            currentIFD = Kind_MakernoteNikon;
+            OffsetFromContainer = 10;
+        }
+        else if (Buffer_Size >= 12 &&
+            (!strncmp((const char*)Buffer, "SONY DSC \0\0", 12)) || // the char* contains another terminating \0
+            (!strncmp((const char*)Buffer, "SONY CAM \0\0", 12)) || // the char* contains another terminating \0
+            (!strncmp((const char*)Buffer, "SONY MOBILE", 12))      // the char* contains a terminating \0
+            ) {
+            Skip_String(12,                                     "Identifier");
+            currentIFD = Kind_MakernoteSony;
+            OffsetFromContainer = -static_cast<int64s>(MakernoteOffset);
+            SkipHeader = true;
+            IFD_Offsets[MakernoteOffset + Element_Offset] = currentIFD;
+        }
+        else {
+            --Element_Level;
+            Skip_XX(Buffer_Size,                                "Data");
+            return;
+        }
     }
+    if (!SkipHeader) { // Some Makernotes do not have typical header
+        Get_C4(Alignment,                                       "Alignment");
+        if (Alignment == 0x49492A00)
+            LittleEndian = true;
+        else if (Alignment == 0x4D4D002A)
+            LittleEndian = false;
+        else
+        {
+            Reject();
+            return;
+        }
 
-    //The only IFD that is known at forehand is the first one, it's offset is placed byte 4-7 in the file.
-    Get_IFDOffset(Kind_IFD0);
+        //The only IFD that is known at forehand is the first one, it's offset is placed byte 4-7 in the file.
+        Get_IFDOffset(currentIFD);
+    }
 
     FILLING_BEGIN();
         if (IFD_Offsets.empty()) {
@@ -1444,7 +1854,7 @@ void File_Exif::Header_Parse()
     
     //Filling
     Header_Fill_Code(0xFFFFFFFF, "IFD"); //OxFFFFFFFF can not be a Tag, so using it as a magic value
-    Header_Fill_Size(2 + 12 * ((int64u)NrOfDirectories) + 4); //2 for header + 12 per directory + 4 for next IFD offset
+    Header_Fill_Size((currentIFD == Kind_MakernoteSony ? 2 : 6) + 12 * ((int64u)NrOfDirectories)); //2 for header + 12 per directory + 4 for next IFD offset
 }
 
 //---------------------------------------------------------------------------
@@ -1465,9 +1875,10 @@ void File_Exif::Data_Parse()
 
             //Parsing new IFD
             int32u IFDOffset{};
-            while (Element_Offset + 12 < Element_Size)
+            while (Element_Offset + 12 <= Element_Size)
                 Read_Directory();
-            Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : (int8u)-1);
+            if (currentIFD != Kind_MakernoteSony) // Sony Makernote IFD does not have offset to next IFD
+                Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : (int8u)-1);
         }
     }
     else
@@ -1633,6 +2044,20 @@ void File_Exif::Thumbnail()
         Skip_XX(Element_Size,                                   "(Not parsed)");
     }
 }
+
+//---------------------------------------------------------------------------
+void File_Exif::Makernote()
+{
+    File_Exif MI{};
+    MI.IsMakernote = true;
+    MI.LittleEndian = LittleEndian;
+    MI.MakernoteOffset = Buffer_Offset;
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Merge(MI, Stream_General, 0, 0, false);
+    Merge(MI, Stream_Image, 0, 0, false);
+}
     
 //***************************************************************************
 // Helpers
@@ -1772,6 +2197,9 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::LightSource, Exif_ExifIFD_Tag_LightSource_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::Flash, Exif_IFDExif_Flash_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::ColorSpace, Exif_IFDExif_ColorSpace_Name(Ret16));
+            Param_Info1C(currentIFD == Kind_MakernoteNikon && IfdItem.Tag == IFDMakernoteNikon::CropHiSpeed, Exif_IFDMakernoteNikon_CropHiSpeed_Name(Ret16));
+            Param_Info1C(currentIFD == Kind_MakernoteNikon && IfdItem.Tag == IFDMakernoteNikon::ColorSpace, Exif_IFDMakernoteNikon_ColorSpace_Name(Ret16));
+            Param_Info1C(currentIFD == Kind_MakernoteNikon && IfdItem.Tag == IFDMakernoteNikon::ActiveDLighting, Exif_IFDMakernoteNikon_ActiveDLighting_Name(Ret16));
             Info.push_back(Ztring::ToZtring(Ret16));
         }
         break;
@@ -1794,6 +2222,8 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                     Ret32=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
                 Element_Offset+=4;
             #endif //MEDIAINFO_TRACE
+            Param_Info1C(currentIFD == Kind_MakernoteSony && IfdItem.Tag == IFDMakernoteSony::Quality, Exif_IFDMakernoteSony_Quality_Name(Ret32));
+            Param_Info1C(currentIFD == Kind_MakernoteSony && IfdItem.Tag == IFDMakernoteSony::WhiteBalance, Exif_IFDMakernoteSony_WhiteBalance_Name(Ret32));
             Info.push_back(Ztring::ToZtring(Ret32));
         }
         break;
@@ -1828,6 +2258,32 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 Info.push_back(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
             else
                 Info.push_back(Ztring()); // Division by zero, undefined
+        }
+        break;
+    case Exif_Type::SLONG:                                      /* 32-bit (4-byte) signed integer */
+        for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+        {
+            int32u Ret32u;
+            int32s Ret32;
+            #if MEDIAINFO_TRACE
+                Get_X4 (Ret32u,                                 "Data");
+                Ret32 = static_cast<int32s>(Ret32u);
+                Element_Info1(Ztring::ToZtring(Ret32));
+            #else //MEDIAINFO_TRACE
+                if (Element_Offset+4>Element_Size)
+                {
+                    Trusted_IsNot();
+                    break;
+                }
+                if (LittleEndian)
+                    Ret32=LittleEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                else
+                    Ret32=BigEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                Element_Offset+=4;
+            #endif //MEDIAINFO_TRACE
+            Param_Info1C(currentIFD == Kind_MakernoteApple && IfdItem.Tag == IFDMakernoteApple::ImageCaptureType, Exif_IFDMakernoteApple_ImageCaptureType_Name(Ret32));
+            Param_Info1C(currentIFD == Kind_MakernoteApple && IfdItem.Tag == IFDMakernoteApple::CameraType, Exif_IFDMakernoteApple_CameraType_Name(Ret32));
+            Info.push_back(Ztring::ToZtring(Ret32));
         }
         break;
     case Exif_Type::SRATIONAL:                                  /* 2x32-bit (2x4-byte) signed integers */
@@ -1880,8 +2336,10 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             Get_String(IfdItem.Count, Data,                     "Data"); Element_Info1(Data.c_str());
             Info.push_back(Ztring().From_UTF8(Data.c_str()));
         }
+        else if (currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::MakerNote && IfdItem.Count > 4)
+            Makernote();
         else
-            Skip_XX(static_cast<int64u>(Exif_Type_Size(IfdItem.Type))* IfdItem.Count, "Data");
+            Skip_XX(static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
         break;
     default:                                                    // Type not yet parsed
         Skip_XX (static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
