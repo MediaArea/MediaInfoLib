@@ -26,6 +26,7 @@
     #include "MediaInfo/Image/File_Jpeg.h"
 #endif
 #include <cmath>
+#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -941,8 +942,10 @@ enum kind_of_ifd
     Kind_Interop,
     Kind_MakernoteApple,
     Kind_MakernoteNikon,
+    Kind_NikonPreview,
     Kind_MakernoteSony,
     Kind_ParsingThumbnail,
+    Kind_ParsingNikonPreview
 };
 exif_tag_desc_size Exif_Descriptions[] =
 {
@@ -953,6 +956,7 @@ exif_tag_desc_size Exif_Descriptions[] =
     DESC_TABLE(IFDInterop, "Interoperability")
     DESC_TABLE(IFDMakernoteApple, "Apple Makernote")
     DESC_TABLE(IFDMakernoteNikon, "Nikon Makernote")
+    DESC_TABLE(IFD0, "Nikon Makernote Preview Image")
     DESC_TABLE(IFDMakernoteSony, "Sony Makernote")
 };
 static string Exif_Tag_Description(int8u NameSpace, int16u Tag_ID)
@@ -1848,6 +1852,13 @@ void File_Exif::Header_Parse()
         return;
     }
 
+    //Nikon Preview Image
+    if (currentIFD == Kind_ParsingNikonPreview) {
+        Header_Fill_Code(0xFFFFFFFF, "Nikon Makernote Preview Image");
+        Header_Fill_Size(Buffer_Size - Buffer_Offset);
+        return;
+    }
+
     //Get number of directories for this IFD
     int16u NrOfDirectories;
     Get_X2 (NrOfDirectories,                                    "NrOfDirectories");
@@ -1862,7 +1873,7 @@ void File_Exif::Data_Parse()
 {
     if (IfdItems.empty())
     {
-        if (currentIFD == Kind_ParsingThumbnail) {
+        if (currentIFD == Kind_ParsingThumbnail || currentIFD == Kind_ParsingNikonPreview) {
             Thumbnail();
         }
         else {
@@ -1916,6 +1927,21 @@ void File_Exif::Data_Parse()
             }
         }
 
+        //Nikon Preview Image
+        if (currentIFD != Kind_ParsingNikonPreview) {
+            const auto Infos_Thumbnail_It = Infos.find(Kind_NikonPreview);
+            if (Infos_Thumbnail_It != Infos.end()) {
+                const auto& Infos_Thumbnail = Infos_Thumbnail_It->second;
+                const auto ImageOffset = Infos_Thumbnail.find(IFD0::ImageOffset);
+                if (ImageOffset != Infos_Thumbnail.end() && ImageOffset->second.size() == 1) {
+                    int32u IFD_Offset = ImageOffset->second.at(0).To_int32u();
+                    GoToOffset(IFD_Offset);
+                    currentIFD = Kind_ParsingNikonPreview;
+                    return;
+                }
+            }
+        }
+
         Finish(); //No more IFDs
     }
 }
@@ -1953,6 +1979,9 @@ void File_Exif::Read_Directory()
         }
         else if (currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::InteroperabilityIFD) {
             Get_IFDOffset(Kind_Interop);
+        }
+        else if (currentIFD == Kind_MakernoteNikon && IfdItem.Tag == IFDMakernoteNikon::PreviewIFD) {
+            Get_IFDOffset(Kind_NikonPreview);
         }
         else {
             GetValueOffsetu(IfdItem);
@@ -2014,11 +2043,21 @@ void File_Exif::MulticodeString(ZtringList& Info)
 void File_Exif::Thumbnail()
 {
     Stream_Prepare(Stream_Image);
-    Fill(Stream_Image, 1, Image_Type, "Thumbnail");
-    Fill(Stream_Image, 1, Image_MuxingMode, "Exif");
+    Fill(Stream_Image, StreamPos_Last, Image_Type, "Thumbnail");
 
-    File__Analyze* Parser = nullptr;
-    const auto Infos_Thumbnail_It = Infos.find(Kind_IFD1);
+    std::unique_ptr<File__Analyze> Parser;
+    kind_of_ifd IFD;
+
+    if (currentIFD == Kind_ParsingNikonPreview) {
+        Fill(Stream_Image, StreamPos_Last, Image_MuxingMode, "Exif / Nikon Makernote");
+        IFD = Kind_NikonPreview;
+    }
+    else {
+        Fill(Stream_Image, StreamPos_Last, Image_MuxingMode, "Exif");
+        IFD = Kind_IFD1;
+    }
+    
+    const auto Infos_Thumbnail_It = Infos.find(IFD);
     if (Infos_Thumbnail_It != Infos.end()) {
         const auto& Infos_Thumbnail = Infos_Thumbnail_It->second;
         const auto Compression_It = Infos_Thumbnail.find(IFD0::Compression);
@@ -2027,17 +2066,17 @@ void File_Exif::Thumbnail()
             switch (Compression) {
             case 6:
             case 7:
-                Parser = new File_Jpeg;
+                Parser.reset(new File_Jpeg());
                 break;
             }
         }
     }
 
     if (Parser) {
-        Open_Buffer_Init(Parser);
-        Open_Buffer_Continue(Parser);
-        Open_Buffer_Finalize(Parser);
-        Merge(*Parser, Stream_Image, 0, 1, false);
+        Open_Buffer_Init(Parser.get());
+        Open_Buffer_Continue(Parser.get());
+        Open_Buffer_Finalize(Parser.get());
+        Merge(*Parser, Stream_Image, 0, StreamPos_Last, false);
     }
     else {
         //No parser available, skipping
@@ -2056,7 +2095,10 @@ void File_Exif::Makernote()
     Open_Buffer_Continue(&MI);
     Open_Buffer_Finalize(&MI);
     Merge(MI, Stream_General, 0, 0, false);
-    Merge(MI, Stream_Image, 0, 0, false);
+    size_t Count = MI.Count_Get(Stream_Image);
+    for (size_t i = 0; i < Count; ++i) {
+        Merge(MI, Stream_Image, i, i, false);
+    }
 }
     
 //***************************************************************************
