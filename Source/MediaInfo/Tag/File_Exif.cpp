@@ -37,23 +37,26 @@ namespace MediaInfoLib
 
 //---------------------------------------------------------------------------
 // EXIF Data Types
+// 
+// All data types are from TIFF 6.0 specification except UTF-8 which is
+// defined independently by EXIF 3.0 specification.
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
 namespace Exif_Type {
-    const int16u UnsignedByte     = 1;
-    const int16u ASCIIString      = 2;
-    const int16u UnsignedShort    = 3;
-    const int16u UnsignedLong     = 4;
-    const int16u UnsignedRational = 5;
-    const int16u SignedByte       = 6;
-    const int16u Undefined        = 7;
-    const int16u SignedShort      = 8;
-    const int16u SignedLong       = 9;
-    const int16u SignedRational   = 10;
-    const int16u SingleFloat      = 11;
-    const int16u DoubleFloat      = 12;
-    const int16u UTF8String       = 129;
+    const int16u BYTE       = 1;
+    const int16u ASCII      = 2;
+    const int16u SHORT      = 3;
+    const int16u LONG       = 4;
+    const int16u RATIONAL   = 5;
+    const int16u SBYTE      = 6;
+    const int16u UNDEFINED  = 7;
+    const int16u SSHORT     = 8;
+    const int16u SLONG      = 9;
+    const int16u SRATIONAL  = 10;
+    const int16u FLOAT      = 11;
+    const int16u DOUBLE     = 12;
+    const int16u UTF8       = 129;
 }
 
 //---------------------------------------------------------------------------
@@ -61,20 +64,20 @@ static const char* Exif_Type_Name(int16u Type)
 {
     switch (Type)
     {
-    case Exif_Type::UnsignedByte    : return "unsigned byte";
-    case Exif_Type::ASCIIString     : return "ASCII string";
-    case Exif_Type::UnsignedShort   : return "unsigned short";
-    case Exif_Type::UnsignedLong    : return "unsigned long";
-    case Exif_Type::UnsignedRational: return "unsigned rational";
-    case Exif_Type::SignedByte      : return "signed byte";
-    case Exif_Type::Undefined       : return "undefined";
-    case Exif_Type::SignedShort     : return "signed short";
-    case Exif_Type::SignedLong      : return "signed long";
-    case Exif_Type::SignedRational  : return "signed rational";
-    case Exif_Type::SingleFloat     : return "single float";
-    case Exif_Type::DoubleFloat     : return "double float";
-    case Exif_Type::UTF8String      : return "UTF-8 string";
-    default                         : return "unknown";
+    case Exif_Type::BYTE        : return "BYTE";
+    case Exif_Type::ASCII       : return "ASCII";
+    case Exif_Type::SHORT       : return "SHORT";
+    case Exif_Type::LONG        : return "LONG";
+    case Exif_Type::RATIONAL    : return "RATIONAL";
+    case Exif_Type::SBYTE       : return "SBYTE";
+    case Exif_Type::UNDEFINED   : return "UNDEFINED";
+    case Exif_Type::SSHORT      : return "SSHORT";
+    case Exif_Type::SLONG       : return "SLONG";
+    case Exif_Type::SRATIONAL   : return "SRATIONAL";
+    case Exif_Type::FLOAT       : return "FLOAT";
+    case Exif_Type::DOUBLE      : return "DOUBLE";
+    case Exif_Type::UTF8        : return "UTF-8";
+    default                     : return "";
     }
 }
 
@@ -83,20 +86,20 @@ static const int8u Exif_Type_Size(int16u Type)
 {
     switch (Type)
     {
-        case Exif_Type::UnsignedByte    : return 1;
-        case Exif_Type::ASCIIString     : return 1;
-        case Exif_Type::UnsignedShort   : return 2;
-        case Exif_Type::UnsignedLong    : return 4;
-        case Exif_Type::UnsignedRational: return 8;
-        case Exif_Type::SignedByte      : return 1;
-        case Exif_Type::Undefined       : return 1;
-        case Exif_Type::SignedShort     : return 2;
-        case Exif_Type::SignedLong      : return 4;
-        case Exif_Type::SignedRational  : return 8;
-        case Exif_Type::SingleFloat     : return 4;
-        case Exif_Type::DoubleFloat     : return 8;
-        case Exif_Type::UTF8String      : return 1;
-        default                         : return 0;
+    case Exif_Type::BYTE        : return 1;
+    case Exif_Type::ASCII       : return 1;
+    case Exif_Type::SHORT       : return 2;
+    case Exif_Type::LONG        : return 4;
+    case Exif_Type::RATIONAL    : return 8;
+    case Exif_Type::SBYTE       : return 1;
+    case Exif_Type::UNDEFINED   : return 1;
+    case Exif_Type::SSHORT      : return 2;
+    case Exif_Type::SLONG       : return 4;
+    case Exif_Type::SRATIONAL   : return 8;
+    case Exif_Type::FLOAT       : return 4;
+    case Exif_Type::DOUBLE      : return 8;
+    case Exif_Type::UTF8        : return 1;
+    default                     : return 0;
     }
 }
 
@@ -1531,13 +1534,13 @@ void File_Exif::Read_Directory()
 
     if (Size <= 4)
     {
-        if (IfdItem.Tag == IFD0::IFDExif) {
+        if (currentIFD == Kind_IFD0 && IfdItem.Tag == IFD0::IFDExif) {
             Get_IFDOffset(Kind_Exif);
         }
-        else if (IfdItem.Tag == IFD0::GPSInfoIFD) {
+        else if (currentIFD == Kind_IFD0 && IfdItem.Tag == IFD0::GPSInfoIFD) {
             Get_IFDOffset(Kind_GPS);
         }
-        else if (IfdItem.Tag == IFDExif::InteroperabilityIFD) {
+        else if (currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::InteroperabilityIFD) {
             Get_IFDOffset(Kind_Interop);
         }
         else {
@@ -1576,7 +1579,7 @@ void File_Exif::MulticodeString(ZtringList& Info)
             break;
         case 0x554E49434F444500LL: {                            // [UNICODE] UTF-8 (Unicode)
             Peek_UTF8(Size, Value);
-            if (Value.size() >= Size)
+            if (Value.size() >= (Size - 1) / 4) // UTF-8 string may (shall) have a trailing NULL, and max 4 bytes per character
                 Skip_UTF8(Size,                                 "Value");
             else if (LittleEndian)
                 Get_UTF16L(Size, Value,                         "Value");
@@ -1690,7 +1693,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
 
     ZtringList& Info = Infos[currentIFD][IfdItem.Tag]; Info.clear(); Info.Separator_Set(0, __T(" /"));
 
-    if (IfdItem.Type!=Exif_Type::ASCIIString && IfdItem.Type!=Exif_Type::UTF8String && IfdItem.Type!=Exif_Type::Undefined && IfdItem.Count>=1000)
+    if (IfdItem.Type!=Exif_Type::ASCII && IfdItem.Type!=Exif_Type::UTF8 && IfdItem.Type!=Exif_Type::UNDEFINED && IfdItem.Count>=1000)
     {
         //Too many data, we don't currently need it and we skip it
         Skip_XX(static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
@@ -1699,7 +1702,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
 
     switch (IfdItem.Type)
     {
-    case Exif_Type::UnsignedByte:                               /* 8-bit unsigned integer. */
+    case Exif_Type::BYTE:                                       /* 8-bit unsigned integer. */
         if (currentIFD == Kind_IFD0 && IfdItem.Tag >= IFD0::WinExpTitle && IfdItem.Tag <= IFD0::WinExpSubject) {
             // Content is actually UTF16LE
             Ztring Data;
@@ -1727,21 +1730,21 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             }
         }
         break;
-    case Exif_Type::ASCIIString:                                /* ASCII */
+    case Exif_Type::ASCII:                                      /* ASCII */
         {
             string Data;
             Get_String(IfdItem.Count, Data,                     "Data"); Element_Info1(Data.c_str());
             Info.push_back(Ztring().From_UTF8(Data.c_str()));
         }
         break;
-    case Exif_Type::UTF8String:                                 /* UTF-8 */
+    case Exif_Type::UTF8:                                       /* UTF-8 */
         {
             Ztring Data;
             Get_UTF8(IfdItem.Count, Data,                       "Data"); Element_Info1(Data.To_UTF8().c_str());
             Info.push_back(Data);
         }
         break;
-    case Exif_Type::UnsignedShort:                              /* 16-bit (2-byte) unsigned integer. */
+    case Exif_Type::SHORT:                                      /* 16-bit (2-byte) unsigned integer. */
         for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
         {
             int16u Ret16;
@@ -1772,7 +1775,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             Info.push_back(Ztring::ToZtring(Ret16));
         }
         break;
-    case Exif_Type::UnsignedLong:                               /* 32-bit (4-byte) unsigned integer */
+    case Exif_Type::LONG:                                       /* 32-bit (4-byte) unsigned integer */
         for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
         {
             int32u Ret32;
@@ -1794,7 +1797,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             Info.push_back(Ztring::ToZtring(Ret32));
         }
         break;
-    case Exif_Type::UnsignedRational:                           /* 2x32-bit (2x4-byte) unsigned integers */
+    case Exif_Type::RATIONAL:                                   /* 2x32-bit (2x4-byte) unsigned integers */
         for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
         {
             int32u N, D;
@@ -1827,7 +1830,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 Info.push_back(Ztring()); // Division by zero, undefined
         }
         break;
-    case Exif_Type::SignedRational:                             /* 2x32-bit (2x4-byte) signed integers */
+    case Exif_Type::SRATIONAL:                                  /* 2x32-bit (2x4-byte) signed integers */
         for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
         {
             int32u NU, DU;
@@ -1863,7 +1866,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 Info.push_back(Ztring()); // Division by zero, undefined
         }
         break;
-    case Exif_Type::Undefined:                                  /* Undefined */
+    case Exif_Type::UNDEFINED:                                  /* Undefined */
         if (
             (currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::UserComment) ||
             (currentIFD == Kind_GPS && (IfdItem.Tag == IFDGPS::GPSProcessingMethod || IfdItem.Tag == IFDGPS::GPSAreaInformation))
