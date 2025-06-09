@@ -22,7 +22,6 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_Mk.h"
-#include "MediaInfo/File__MultipleParsing.h"
 #if defined(MEDIAINFO_OGG_YES)
     #include "MediaInfo/Multiple/File_Ogg.h"
 #endif

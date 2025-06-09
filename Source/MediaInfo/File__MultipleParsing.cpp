@@ -586,6 +586,9 @@ File__MultipleParsing::File__MultipleParsing()
     #if defined(MEDIAINFO_HEVC_YES)
         Parser.push_back(new File_Hevc());
     #endif
+    #if defined(MEDIAINFO_AVS3V_YES)
+        Parser.push_back(new File_Avs3V());
+#   endif
     #if defined(MEDIAINFO_AVSV_YES)
         Parser.push_back(new File_AvsV());
     #endif
@@ -670,6 +673,9 @@ File__MultipleParsing::File__MultipleParsing()
 //    #endif
     #if defined(MEDIAINFO_FLAC_YES)
         Parser.push_back(new File_Flac());
+    #endif
+    #if defined(MEDIAINFO_IAMF_YES)
+        Parser.push_back(new File_Iamf());
     #endif
     #if defined(MEDIAINFO_IT_YES)
         Parser.push_back(new File_ImpulseTracker());
