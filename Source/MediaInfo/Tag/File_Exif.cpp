@@ -925,6 +925,29 @@ exif_tag_desc Desc[] =
 };
 };
 
+namespace IFDMakernoteCanon {
+    ELEM(0x0001, CanonCameraSettings)
+    ELEM(0x0002, CanonFocalLength)
+    ELEM(0x0004, CanonShotInfo)
+    ELEM(0x0005, CanonPanorama)
+    ELEM(0x0006, CanonImageType)
+    ELEM(0x0007, CanonFirmwareVersion)
+    ELEM(0x0008, FileNumber)
+    ELEM(0x0009, OwnerName)
+
+exif_tag_desc Desc[] =
+{
+    ELEM_TRACE(CanonCameraSettings, "Canon Camera Settings")
+    ELEM_TRACE(CanonFocalLength, "Canon Focal Length")
+    ELEM_TRACE(CanonShotInfo, "Canon Shot Info")
+    ELEM_TRACE(CanonPanorama, "Canon Panorama")
+    ELEM_TRACE(CanonImageType, "Canon Image Type")
+    ELEM_TRACE(CanonFirmwareVersion, "Canon Firmware Version")
+    ELEM_TRACE(FileNumber, "File Number")
+    ELEM_TRACE(OwnerName, "Owner Name")
+};
+};
+
 //---------------------------------------------------------------------------
 struct exif_tag_desc_size
 {
@@ -944,6 +967,7 @@ enum kind_of_ifd
     Kind_MakernoteNikon,
     Kind_NikonPreview,
     Kind_MakernoteSony,
+    Kind_MakernoteCanon,
     Kind_ParsingThumbnail,
     Kind_ParsingNikonPreview
 };
@@ -958,6 +982,7 @@ exif_tag_desc_size Exif_Descriptions[] =
     DESC_TABLE(IFDMakernoteNikon, "Nikon Makernote")
     DESC_TABLE(IFD0, "Nikon Makernote Preview Image")
     DESC_TABLE(IFDMakernoteSony, "Sony Makernote")
+    DESC_TABLE(IFDMakernoteCanon, "Canon Makernote")
 };
 static string Exif_Tag_Description(int8u NameSpace, int16u Tag_ID)
 {
@@ -1305,7 +1330,7 @@ static const char* Exif_IFDMakernoteSony_WhiteBalance_Name(int32u value) {
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-File_Exif::File_Exif() : LittleEndian{}, currentIFD(Kind_IFD0), IsMakernote{}, MakernoteOffset{}
+File_Exif::File_Exif() : LittleEndian{}, currentIFD(Kind_IFD0), IsMakernote{}, MakernoteOffset{}, HasFooter{}
 {
 }
 
@@ -1780,6 +1805,24 @@ void File_Exif::FileHeader_Parse()
             SkipHeader = true;
             IFD_Offsets[MakernoteOffset + Element_Offset] = currentIFD;
         }
+        else if (Buffer_Size > 26 && 
+            (!strncmp((const char*)Buffer + Buffer_Size - 8, "\x49\x49\x2A\x00", 4)) || // Canon Makernote footer
+            (!strncmp((const char*)Buffer + Buffer_Size - 8, "\x4D\x4D\x00\x2A", 4))
+            ) {
+            Element_Offset = Buffer_Size - 8;
+            int32u makernote_offset;
+            Get_C4(Alignment,                                   "Alignment");
+            if (Alignment == 0x49492A00)
+                LittleEndian = true;
+            else
+                LittleEndian = false;
+            Get_X4(makernote_offset,                            "Makernote offset");
+            currentIFD = Kind_MakernoteCanon;
+            OffsetFromContainer = -static_cast<int64s>(makernote_offset);
+            SkipHeader = true;
+            IFD_Offsets[makernote_offset] = currentIFD;
+            Element_Offset = 0;
+        }
         else {
             --Element_Level;
             Skip_XX(Buffer_Size,                                "Data");
@@ -1857,6 +1900,20 @@ void File_Exif::Header_Parse()
         Header_Fill_Code(0xFFFFFFFF, "Nikon Makernote Preview Image");
         Header_Fill_Size(Buffer_Size - Buffer_Offset);
         return;
+    }
+
+    // Canon Makernote footer
+    if (currentIFD == Kind_MakernoteCanon) {
+        if (!HasFooter)
+            HasFooter = true;
+        else {
+            Element_Name("Footer");
+            int32u temp;
+            Skip_C4(                                            "Alignment");
+            Get_X4(temp,                                        "Makernote offset");
+            Finish();
+            return;
+        }
     }
 
     //Get number of directories for this IFD
@@ -1942,7 +1999,7 @@ void File_Exif::Data_Parse()
             }
         }
 
-        Finish(); //No more IFDs
+        if (!HasFooter) Finish(); //No more IFDs
     }
 }
 

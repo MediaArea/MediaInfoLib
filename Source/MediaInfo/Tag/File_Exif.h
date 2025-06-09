@@ -69,6 +69,7 @@ private :
     bool LittleEndian;
     bool IsMakernote;
     int32u MakernoteOffset;
+    bool HasFooter;
 
     //Helpers
     void Get_X2(int16u& Info, const char* Name);
