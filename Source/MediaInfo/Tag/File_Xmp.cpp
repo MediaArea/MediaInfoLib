@@ -246,6 +246,42 @@ bool File_Xmp::FileHeader_Begin()
                     if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia"))
                         Fill(Stream_General, 0, General_Copyright, "Edited using generative AI");
                 }
+                else if (!strcmp(Description_Item->Value(), "dc:title"))
+                {
+                    XMLElement* rdfAltElement = Description_Item->FirstChildElement("rdf:Alt");
+                    if (rdfAltElement)
+                        XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li");
+                        for (XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
+                            Fill(Stream_General, 0, General_Title, rdfLiElement->GetText());
+                }
+                else if (!strcmp(Description_Item->Value(), "dc:description"))
+                {
+                    XMLElement* rdfAltElement = Description_Item->FirstChildElement("rdf:Alt");
+                    if (rdfAltElement)
+                        for(XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
+                            Fill(Stream_General, 0, General_Description, rdfLiElement->GetText());
+                }
+                else if (!strcmp(Description_Item->Value(), "dc:subject"))
+                {
+                    XMLElement* rdfBagElement = Description_Item->FirstChildElement("rdf:Bag");
+                    if (rdfBagElement)
+                        for (XMLElement* rdfLiElement = rdfBagElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
+                            Fill(Stream_General, 0, General_Subject, rdfLiElement->GetText());
+                }
+                else if (!strcmp(Description_Item->Value(), "dc:creator"))
+                {
+                    XMLElement* rdfSeqElement = Description_Item->FirstChildElement("rdf:Seq");
+                    if (rdfSeqElement)
+                        for (XMLElement* rdfLiElement = rdfSeqElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
+                            Fill(Stream_General, 0, General_Producer, rdfLiElement->GetText());
+                }
+                else if (!strcmp(Description_Item->Value(), "dc:rights"))
+                {
+                    XMLElement* rdfAltElement = Description_Item->FirstChildElement("rdf:Alt");
+                    if (rdfAltElement)
+                        for (XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
+                            Fill(Stream_General, 0, General_Copyright, rdfLiElement->GetText());
+                }
             }
         }
     }
