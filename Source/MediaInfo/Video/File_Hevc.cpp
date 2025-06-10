@@ -3349,20 +3349,21 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_26_0004_0005()
     //for (int8u w=0; w<num_windows; w++)
     {
         bool tone_mapping_enable_mode_flag;
-        Get_SB (tone_mapping_enable_mode_flag,                  "tone_mapping_enable_mode_flag");
+        Get_SB(tone_mapping_enable_mode_flag,                   "tone_mapping_enable_mode_flag");
         if (tone_mapping_enable_mode_flag)
         {
             int8u tone_mapping_param_enable_num;
-            Get_S1 (1, tone_mapping_param_enable_num,           "tone_mapping_param_enable_num");
+            Get_S1(1, tone_mapping_param_enable_num,            "tone_mapping_param_enable_num");
             for (int i=0; i<(tone_mapping_param_enable_num+1); i++)
             {
                 Element_Begin1("tone_mapping_param");
                 int16u targeted_system_display_maximum_luminance_pq;
                 bool base_enable_flag, ThreeSpline_enable_flag;
-                Get_S2 (12, targeted_system_display_maximum_luminance_pq, "targeted_system_display_maximum_luminance_pq");
+                Get_S2(12, targeted_system_display_maximum_luminance_pq, 
+                                                                "targeted_system_display_maximum_luminance_pq");
                 if (targeted_system_display_maximum_luminance_Max<targeted_system_display_maximum_luminance_pq)
                     targeted_system_display_maximum_luminance_Max=targeted_system_display_maximum_luminance_pq;
-                Get_SB (    base_enable_flag,                   "base_enable_flag");
+                Get_SB(    base_enable_flag,                    "base_enable_flag");
                 if (base_enable_flag)
                 {
                     Skip_S2(14,                                 "base_param_m_p");
@@ -3376,42 +3377,42 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_26_0004_0005()
                     Skip_S1( 3,                                 "base_param_Delta_enable_mode");
                     Skip_S1( 7,                                 "base_param_enable_Delta");
                 }
-                Get_SB (    ThreeSpline_enable_flag,        "3Spline_enable_flag");
+                Get_SB(ThreeSpline_enable_flag,                 "3Spline_enable_flag");
                 if (ThreeSpline_enable_flag)
                 {
                     int8u ThreeSpline_enable_num;
-                    Get_S1(1, ThreeSpline_enable_num,       "3Spline_enable_num");
+                    Get_S1(1, ThreeSpline_enable_num,           "3Spline_enable_num");
                     for (int j=0; j<(ThreeSpline_enable_num+1); j++)
                     {
                         Element_Begin1("3Spline");
                         int8u ThreeSpline_TH_enable_mode;
-                        Get_S1 (2, ThreeSpline_TH_enable_mode,     "3Spline_TH_enable_mode");
+                        Get_S1(2, ThreeSpline_TH_enable_mode,   "3Spline_TH_enable_mode");
                         switch (ThreeSpline_TH_enable_mode)
                         {
                             case 0:
                             case 2:
-                                Skip_S1(8,                  "3Spline_TH_enable_MB");
+                                Skip_S1(8,                      "3Spline_TH_enable_MB");
                                 break;
                             default:;
                         }
-                        Skip_S2(12,                         "3Spline_TH_enable");
-                        Skip_S2(10,                         "3Spline_TH_enable_Delta1");
-                        Skip_S2(10,                         "3Spline_TH_enable_Delta2");
-                        Skip_S1( 8,                         "3Spline_enable_Strength");
+                        Skip_S2(12,                             "3Spline_TH_enable");
+                        Skip_S2(10,                             "3Spline_TH_enable_Delta1");
+                        Skip_S2(10,                             "3Spline_TH_enable_Delta2");
+                        Skip_S1( 8,                             "3Spline_enable_Strength");
                         Element_End0();
                     }
                 }
                 Element_End0();
             }
         }
-        Get_SB (color_saturation_mapping_enable_flag,               "color_saturation_mapping_enable_flag");
+        Get_SB(color_saturation_mapping_enable_flag,            "color_saturation_mapping_enable_flag");
         if (color_saturation_mapping_enable_flag)
         {
             int8u color_saturation_enable_num;
-            Get_S1 (3, color_saturation_enable_num,                 "color_saturation_enable_num");
+            Get_S1(3, color_saturation_enable_num,              "color_saturation_enable_num");
             for (int i=0; i<color_saturation_enable_num; i++)
             {
-                Skip_S1(8,                                          "color_saturation_enable_gain");
+                Skip_S1(8,                                      "color_saturation_enable_gain");
             }
         }
     }
