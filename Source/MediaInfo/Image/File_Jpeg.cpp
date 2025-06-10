@@ -34,6 +34,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Image/File_Jpeg.h"
+#if defined(MEDIAINFO_PSD_YES)
+    #include "MediaInfo/Image/File_Psd.h"
+#endif
 #if defined(MEDIAINFO_C2PA_YES)
     #include "MediaInfo/Tag/File_C2pa.h"
 #endif
@@ -1643,6 +1646,30 @@ void File_Jpeg::APPB_JPEGXT_JUMB(int16u Instance, int32u SequenceNumber)
     #endif
     Element_Show();
     return;
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::APPD()
+{
+    if (Element_Size >= 14 && !strncmp((const char*)Buffer + Buffer_Offset, "Photoshop 3.0", 14)) { // the char* contains a terminating \0
+        Element_Info1("Photoshop");
+        Skip_String(14,                                         "Name");
+
+        //Parsing
+        #if defined(MEDIAINFO_PSD_YES)
+        File_Psd MI;
+        MI.Step = File_Psd::Step_ImageResourcesBlock;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI);
+        Open_Buffer_Finalize(&MI);
+        Merge(MI, Stream_General, 0, 0, false);
+        Merge(MI, false);
+        #else
+        Skip_UTF8(Element_Size - Element_Offset,                "Photoshop Tags");
+        #endif
+    }
+    else
+        Skip_XX(Element_Size,                                   "(Unknown)");
 }
 
 //---------------------------------------------------------------------------

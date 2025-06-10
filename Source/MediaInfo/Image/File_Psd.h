@@ -30,6 +30,17 @@ namespace MediaInfoLib
 
 class File_Psd : public File__Analyze
 {
+public:
+    enum step
+    {
+        Step_ColorModeData,
+        Step_ImageResources,
+        Step_ImageResourcesBlock,
+        Step_LayerAndMaskInformation,
+        Step_ImageData,
+    };
+    step Step;
+
 protected :
     //Buffer - File header
     bool FileHeader_Begin();
@@ -47,15 +58,6 @@ protected :
     void ImageData();
 
     //Temp
-    enum step
-    {
-        Step_ColorModeData,
-        Step_ImageResources,
-        Step_ImageResourcesBlock,
-        Step_LayerAndMaskInformation,
-        Step_ImageData,
-    };
-    step Step;
     int64u Alignment_ExtraByte = 0; //Padding from the container
 };
 

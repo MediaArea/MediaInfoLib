@@ -177,7 +177,7 @@ private :
     void APPB_JPEGXT();
     void APPB_JPEGXT_JUMB(int16u Instance, int32u SequenceNumber);
     void APPC() {Skip_XX(Element_Size, "Data");}
-    void APPD() {Skip_XX(Element_Size, "Data");}
+    void APPD();
     void APPE();
     void APPE_Adobe0();
     void APPF() {Skip_XX(Element_Size, "Data");}

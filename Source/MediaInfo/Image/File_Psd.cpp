@@ -290,6 +290,10 @@ static string Psd_Tag_Description(int16u Tag_ID)
 //---------------------------------------------------------------------------
 bool File_Psd::FileHeader_Begin()
 {
+    if (Step == Step_ImageResourcesBlock) {
+        return true;
+    }
+
     if (Buffer_Size < 6)
         return false; //Must wait for more data
 
@@ -307,6 +311,10 @@ bool File_Psd::FileHeader_Begin()
 //---------------------------------------------------------------------------
 void File_Psd::FileHeader_Parse()
 {
+    if (Step == Step_ImageResourcesBlock) {
+        return;
+    }
+
     //Parsing
     int32u Width, Height;
     int16u BitsDepth, Version, channels, ColorMode;
@@ -339,7 +347,7 @@ void File_Psd::FileHeader_Parse()
 //---------------------------------------------------------------------------
 void File_Psd::Header_Parse()
 {
-    if (Element_Level == 2 && Step == Step_ImageResourcesBlock) {
+    if (!IsSub && Element_Level == 2 && Step == Step_ImageResourcesBlock) {
         Step = Step_LayerAndMaskInformation;
         DataMustAlwaysBeComplete = false;
     }
