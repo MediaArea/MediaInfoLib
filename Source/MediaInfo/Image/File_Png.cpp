@@ -145,7 +145,7 @@ static const char* Keywords_Mapping[][2]=
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-File_Png::File_Png()
+File_Png::File_Png() : Data_Size{}, Signature{}
 {
     //Config
     #if MEDIAINFO_TRACE
@@ -880,10 +880,113 @@ void File_Png::Textual(bitset8 Method)
             Text.clear();
             #endif
         }
+        else if (Keyword_UTF8 == "Raw profile type APP1")
+        {
+            Decode_RawProfile(Text.To_UTF8().c_str(), Text.To_UTF8().size());
+            Text.clear();
+        }
         else if (!Language.empty())
             Text.insert(0, __T('(')+Language+__T(')'));
         Fill(Stream_General, 0, Keyword_UTF8.c_str(), Text);
     FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Png::Decode_RawProfile(const char* in, size_t in_len)
+{
+#if defined(MEDIAINFO_EXIF_YES)
+    auto HexStringToBytes{
+        [](const char* src, size_t len, size_t expected_length) -> string {
+            string to_return;
+            auto end = src + len;
+            to_return.resize(expected_length);
+            size_t actual_length = 0;
+            bool is_even = true;
+            for (auto dst = &to_return[0]; actual_length < expected_length && src < end; ++src) {
+                if (*src == '\n') {
+                    continue;
+                }
+                auto c = *src;
+                if (c >= '0' && c <= '9')
+                    c -= '0';
+                else if (c >= 'A' && c <= 'F')
+                    c -= 'A' - 10;
+                else if (c >= 'a' && c <= 'f')
+                    c -= 'a' - 10;
+                else {
+                    return {};
+                }
+                *dst += c << (is_even << 2);
+                if (!is_even) {
+                    ++dst;
+                    ++actual_length;
+                }
+                is_even = !is_even;
+            }
+            if (actual_length != expected_length) {
+                return {};
+            }
+            return to_return;
+        }
+    };
+
+    if (!in || !in_len) {
+        return;
+    }
+
+    // '\n<profile name>\n<length>(%8lu)\n<hex payload>\n'
+    if (*in != '\n') {
+        return;
+    }
+    auto src = in + 1;
+
+    // skip the profile name and extract the length.
+    while (*src != '\0' && *src++ != '\n') {
+    }
+    char* end;
+    auto expected_length = strtoul(src, &end, 10);
+    if (*end != '\n') {
+        return;
+    }
+    ++end;
+
+    // 'end' now points to the profile payload.
+    auto data = HexStringToBytes(end, in_len - (end - in), expected_length);
+    if (data.empty())
+        return;
+    
+    // Parsing
+    if (data.compare(0, 4, "\x49\x49\x2A\x00", 4) && data.compare(0, 4, "\x4D\x4D\x00\x2A", 4))
+        return;
+
+    auto Buffer_Save = Buffer;
+    auto Buffer_Offset_Save = Buffer_Offset;
+    auto Buffer_Size_Save = Buffer_Size;
+    auto Element_Offset_Save = Element_Offset;
+    auto Element_Size_Save = Element_Size;
+    Buffer = (const int8u*)data.c_str();
+    Buffer_Offset = 0;
+    Buffer_Size = data.size();
+    Element_Offset = 0;
+    Element_Size = Buffer_Size;
+
+    File_Exif MI;
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Merge(MI, Stream_General, 0, 0, false);
+    size_t Count = MI.Count_Get(Stream_Image);
+    for (size_t i = 0; i < Count; ++i) {
+        Merge(MI, Stream_Image, i, i, false);
+    }
+
+    Buffer = Buffer_Save;
+    Buffer_Offset = Buffer_Offset_Save;
+    Buffer_Size = Buffer_Size_Save;
+    Element_Offset = Element_Offset_Save;
+    Element_Size = Element_Size_Save;
+
+#endif // defined MEDIAINFO_EXIF_YES
 }
 
 //---------------------------------------------------------------------------

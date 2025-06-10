@@ -103,6 +103,7 @@ private :
         IsUTF8,
     };
     void Textual(bitset8 Method);
+    void Decode_RawProfile(const char* in, size_t in_len);
     void Data_Common();
 
     //Temp
