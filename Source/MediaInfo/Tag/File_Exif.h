@@ -50,6 +50,7 @@ private :
     void Read_Directory();
     void MulticodeString(ZtringList& Info);
     void Thumbnail();
+    void Makernote();
 
     //Temp
     struct ifditem
@@ -63,9 +64,12 @@ private :
     typedef std::map<int16u, ZtringList> infos; //Key is tag value
     std::map<int8u, infos> Infos; // Key is the kind of IFD
     std::map<int32u, int8u> IFD_Offsets; // Value is the kind of IFD
-    int8u OffsetFromContainer = 0;
+    int64s OffsetFromContainer = 0;
     int8u currentIFD;
     bool LittleEndian;
+    bool IsMakernote;
+    int32u MakernoteOffset;
+    bool HasFooter;
 
     //Helpers
     void Get_X2(int16u& Info, const char* Name);
