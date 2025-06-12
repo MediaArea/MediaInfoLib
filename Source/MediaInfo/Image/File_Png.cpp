@@ -880,7 +880,8 @@ void File_Png::Textual(bitset8 Method)
             Text.clear();
             #endif
         }
-        else if (Keyword_UTF8 == "Raw profile type APP1")
+        else if (Keyword_UTF8 == "Raw profile type APP1"
+              || Keyword_UTF8 == "Raw profile type exif")
         {
             Decode_RawProfile(Text.To_UTF8().c_str(), Text.To_UTF8().size());
             Text.clear();
@@ -956,17 +957,18 @@ void File_Png::Decode_RawProfile(const char* in, size_t in_len)
         return;
     
     // Parsing
-    if (data.compare(0, 4, "\x49\x49\x2A\x00", 4) && data.compare(0, 4, "\x4D\x4D\x00\x2A", 4))
-        return;
+    size_t Pos = 0;
+    if (!data.compare(0, 6, "Exif\0\0", 6))
+        Pos = 6;
 
     auto Buffer_Save = Buffer;
     auto Buffer_Offset_Save = Buffer_Offset;
     auto Buffer_Size_Save = Buffer_Size;
     auto Element_Offset_Save = Element_Offset;
     auto Element_Size_Save = Element_Size;
-    Buffer = (const int8u*)data.c_str();
+    Buffer = (const int8u*)data.c_str() + Pos;
     Buffer_Offset = 0;
-    Buffer_Size = data.size();
+    Buffer_Size = data.size() - Pos;
     Element_Offset = 0;
     Element_Size = Buffer_Size;
 
