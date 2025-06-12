@@ -56,6 +56,8 @@ protected :
     void ImageResourcesBlock();
     void LayerAndMaskInformation();
     void ImageData();
+    void Thumbnail();
+    void Thumbnail_New() { Thumbnail(); }
 
     //Temp
     int64u Alignment_ExtraByte = 0; //Padding from the container

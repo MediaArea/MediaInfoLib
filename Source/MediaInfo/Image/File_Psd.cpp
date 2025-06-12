@@ -445,6 +445,8 @@ void File_Psd::ImageResourcesBlock()
         case Elements::NAME: NAME(); break;
 
     switch (Element_Code) {
+    ELEMENT_CASE(Thumbnail);
+    ELEMENT_CASE(Thumbnail_New);
     default: Skip_XX(Element_Size,                              "(Data)");
     }
 
@@ -464,6 +466,20 @@ void File_Psd::ImageData()
     Element_Name("Image data");
     Skip_XX(Element_Size,                                       "(Data)");
     Finish();
+}
+
+//---------------------------------------------------------------------------
+void File_Psd::Thumbnail()
+{
+    Skip_B4(                                                    "Format");
+    Skip_B4(                                                    "Width");
+    Skip_B4(                                                    "Height");
+    Skip_B4(                                                    "Widthbytes");
+    Skip_B4(                                                    "Total size");
+    Skip_B4(                                                    "Size after compression");
+    Skip_B2(                                                    "Bits per pixel");
+    Skip_B2(                                                    "Number of planes");
+    Attachment(IsSub?"PSD":nullptr, {}, "Thumbnail");
 }
 
 } //NameSpace
