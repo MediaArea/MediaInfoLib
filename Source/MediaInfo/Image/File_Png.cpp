@@ -340,9 +340,11 @@ void File_Png::IDAT()
     Skip_XX(Element_TotalSize_Get()-4,                          "Data");
     Param2("CRC",                                               "(Skipped) (4 bytes)");
     Data_Common();
-    if (Config->ParseSpeed < 1.0 && Signature != 0x8B4A4E47) {
+    if (Retrieve_Const(StreamKind_Last, 0, Fill_Parameter(StreamKind_Last, Generic_Format)).empty()) {
         Fill(StreamKind_Last, 0, Fill_Parameter(StreamKind_Last, Generic_Format), "PNG");
         Fill(StreamKind_Last, 0, Fill_Parameter(StreamKind_Last, Generic_Codec), "PNG");
+    }
+    if (Config->ParseSpeed < 1.0 && Signature != 0x8B4A4E47 && Config->File_Names_Pos > 1) {
         if (Data_Size != (int64u)-1) {
             if (File_Size == (int64u)-1) {
                 Data_Size = (int64u)-1;

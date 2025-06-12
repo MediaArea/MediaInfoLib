@@ -66,7 +66,7 @@ private :
     void IHDR();
     void JDAT();
     void JHDR() { Data_Common(); }
-    void MEND() {}
+    void MEND() { Data_Common(); }
     void MHDR();
     void PLTE() { Data_Common(); }
     void acTL() { Data_Common(); }
