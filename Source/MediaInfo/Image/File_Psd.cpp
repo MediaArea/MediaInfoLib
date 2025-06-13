@@ -479,6 +479,8 @@ void File_Psd::Thumbnail()
     Skip_B4(                                                    "Size after compression");
     Skip_B2(                                                    "Bits per pixel");
     Skip_B2(                                                    "Number of planes");
+    if (!Count_Get(Stream_General)) Stream_Prepare(Stream_General);
+    if (!Count_Get(Stream_Image)) Stream_Prepare(Stream_Image);
     Attachment(IsSub?"PSD":nullptr, {}, "Thumbnail");
 }
 

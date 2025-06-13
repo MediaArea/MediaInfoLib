@@ -1454,9 +1454,10 @@ void File_Jpeg::APP1_EXIF()
     Open_Buffer_Continue(&MI);
     Open_Buffer_Finalize(&MI);
     Merge(MI, Stream_General, 0, 0, false);
+    Merge(MI, Stream_Image, 0, 0, false);
     size_t Count = MI.Count_Get(Stream_Image);
-    for (size_t i = 0; i < Count; i++) {
-        Merge(MI, Stream_Image, i, i, false);
+    for (size_t i = 1; i < Count; ++i) {
+        Merge(MI, Stream_Image, i, StreamPos_Last + 1, false);
     }
     #else
     Skip_UTF8(Element_Size - Element_Offset,                    "EXIF Tags");
@@ -1663,7 +1664,11 @@ void File_Jpeg::APPD()
         Open_Buffer_Continue(&MI);
         Open_Buffer_Finalize(&MI);
         Merge(MI, Stream_General, 0, 0, false);
-        Merge(MI, false);
+        Merge(MI, Stream_Image, 0, 0, false);
+        size_t Count = MI.Count_Get(Stream_Image);
+        for (size_t i = 1; i < Count; ++i) {
+            Merge(MI, Stream_Image, i, StreamPos_Last + 1, false);
+        }
         #else
         Skip_UTF8(Element_Size - Element_Offset,                "Photoshop Tags");
         #endif
