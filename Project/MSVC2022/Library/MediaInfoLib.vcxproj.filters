@@ -875,6 +875,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Exif.cpp">
       <Filter>Source Files\Tag</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Iim.cpp">
+      <Filter>Source Files\Tag</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyse_Automatic.h">
@@ -1646,6 +1649,9 @@
       <Filter>Header Files\Tag</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Exif.h">
+      <Filter>Header Files\Tag</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Iim.h">
       <Filter>Header Files\Tag</Filter>
     </ClInclude>
   </ItemGroup>

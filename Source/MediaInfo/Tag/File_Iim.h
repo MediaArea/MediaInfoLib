@@ -6,15 +6,13 @@
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// Information about PSD files
-//
-// Contributor: Lionel Duchateau, kurtnoise@free.fr
+// Information about IPTC-NAA Information Interchange Model
 //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 //---------------------------------------------------------------------------
-#ifndef MediaInfo_File_PsdH
-#define MediaInfo_File_PsdH
+#ifndef MediaInfo_File_IimH
+#define MediaInfo_File_IimH
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
@@ -25,49 +23,23 @@ namespace MediaInfoLib
 {
 
 //***************************************************************************
-// Class File_Psd
+// Class File_Sami
 //***************************************************************************
 
-class File_Psd : public File__Analyze
+class File_Iim : public File__Analyze
 {
-public:
-    enum step
-    {
-        Step_ColorModeData,
-        Step_ImageResources,
-        Step_ImageResourcesBlock,
-        Step_LayerAndMaskInformation,
-        Step_ImageData,
-    };
-    step Step;
-
-protected :
+private :
     //Buffer - File header
     bool FileHeader_Begin();
-    void FileHeader_Parse();
 
     //Buffer - Per element
     void Header_Parse();
     void Data_Parse();
 
     //Elements
-    void ColorModeData();
-    void ImageResources();
-    void ImageResourcesBlock();
-    void LayerAndMaskInformation();
-    void ImageData();
-    void CaptionDigest();
-    void IPTCNAA();
-    void JPEGQuality();
-    void Thumbnail();
-    void VersionInfo();
-    void Thumbnail_New() { Thumbnail(); }
-
-    //Temp
-    int64u Alignment_ExtraByte = 0; //Padding from the container
+    void RecordVersion();
 };
 
 } //NameSpace
 
 #endif
-

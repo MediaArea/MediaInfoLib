@@ -34,6 +34,9 @@
 #if defined(MEDIAINFO_JPEG_YES)
     #include "MediaInfo/Image/File_Jpeg.h"
 #endif
+#if defined(MEDIAINFO_PSD_YES)
+    #include "MediaInfo/Image/File_Psd.h"
+#endif
 #if defined(MEDIAINFO_C2PA_YES)
     #include "MediaInfo/Tag/File_C2pa.h"
 #endif
@@ -43,10 +46,14 @@
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
+#if defined(MEDIAINFO_IIM_YES)
+    #include "MediaInfo/Tag/File_Iim.h"
+#endif
 #if defined(MEDIAINFO_XMP_YES)
     #include "MediaInfo/Tag/File_Xmp.h"
 #endif
 #include <zlib.h>
+#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -145,7 +152,7 @@ static const char* Keywords_Mapping[][2]=
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-File_Png::File_Png()
+File_Png::File_Png() : Data_Size{}, Signature{}
 {
     //Config
     #if MEDIAINFO_TRACE
@@ -340,9 +347,11 @@ void File_Png::IDAT()
     Skip_XX(Element_TotalSize_Get()-4,                          "Data");
     Param2("CRC",                                               "(Skipped) (4 bytes)");
     Data_Common();
-    if (Config->ParseSpeed < 1.0 && Signature != 0x8B4A4E47) {
+    if (Retrieve_Const(StreamKind_Last, 0, Fill_Parameter(StreamKind_Last, Generic_Format)).empty()) {
         Fill(StreamKind_Last, 0, Fill_Parameter(StreamKind_Last, Generic_Format), "PNG");
         Fill(StreamKind_Last, 0, Fill_Parameter(StreamKind_Last, Generic_Codec), "PNG");
+    }
+    if (Config->ParseSpeed < 1.0 && Signature != 0x8B4A4E47 && Config->File_Names_Pos > 1) {
         if (Data_Size != (int64u)-1) {
             if (File_Size == (int64u)-1) {
                 Data_Size = (int64u)-1;
@@ -543,9 +552,10 @@ void File_Png::eXIf()
     Open_Buffer_Continue(&MI);
     Open_Buffer_Finalize(&MI);
     Merge(MI, Stream_General, 0, 0, false);
+    Merge(MI, Stream_Image, 0, 0, false);
     size_t Count = MI.Count_Get(Stream_Image);
-    for (size_t i = 0; i < Count; i++) {
-        Merge(MI, Stream_Image, i, i, false);
+    for (size_t i = 1; i < Count; ++i) {
+        Merge(MI, Stream_Image, i, StreamPos_Last + 1, false);
     }
     #else
     Skip_UTF8(Element_Size - Element_Offset,                    "EXIF Tags");
@@ -880,10 +890,145 @@ void File_Png::Textual(bitset8 Method)
             Text.clear();
             #endif
         }
+        else if (Keyword_UTF8.rfind("Raw profile type ", 0) == 0)
+        {
+            Decode_RawProfile(Text.To_UTF8().c_str(), Text.To_UTF8().size(), Keyword_UTF8.substr(17));
+            Text.clear();
+        }
         else if (!Language.empty())
             Text.insert(0, __T('(')+Language+__T(')'));
         Fill(Stream_General, 0, Keyword_UTF8.c_str(), Text);
     FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Png::Decode_RawProfile(const char* in, size_t in_len, const string& type)
+{
+#if defined(MEDIAINFO_EXIF_YES) || defined(MEDIAINFO_ICC_YES) || defined(MEDIAINFO_IIM_YES)
+    auto HexStringToBytes{
+        [](const char* src, size_t len, size_t expected_length) -> string {
+            string to_return;
+            auto end = src + len;
+            to_return.resize(expected_length);
+            size_t actual_length = 0;
+            bool is_even = true;
+            for (auto dst = &to_return[0]; actual_length < expected_length && src < end; ++src) {
+                if (*src == '\n') {
+                    continue;
+                }
+                auto c = *src;
+                if (c >= '0' && c <= '9')
+                    c -= '0';
+                else if (c >= 'A' && c <= 'F')
+                    c -= 'A' - 10;
+                else if (c >= 'a' && c <= 'f')
+                    c -= 'a' - 10;
+                else {
+                    return {};
+                }
+                *dst += c << (is_even << 2);
+                if (!is_even) {
+                    ++dst;
+                    ++actual_length;
+                }
+                is_even = !is_even;
+            }
+            if (actual_length != expected_length) {
+                return {};
+            }
+            return to_return;
+        }
+    };
+
+    if (!in || !in_len) {
+        return;
+    }
+
+    // '\n<profile name>\n<length>(%8lu)\n<hex payload>\n'
+    if (*in != '\n') {
+        return;
+    }
+    auto src = in + 1;
+
+    // skip the profile name and extract the length.
+    while (*src != '\0' && *src++ != '\n') {
+    }
+    char* end;
+    auto expected_length = strtoul(src, &end, 10);
+    if (*end != '\n') {
+        return;
+    }
+    ++end;
+
+    // 'end' now points to the profile payload.
+    auto data = HexStringToBytes(end, in_len - (end - in), expected_length);
+    if (data.empty())
+        return;
+    
+    // Parsing
+    size_t Pos = 0;
+    if (!data.compare(0, 6, "Exif\0\0", 6))
+        Pos = 6;
+
+    std::unique_ptr<File__Analyze> MI;
+#if defined(MEDIAINFO_PSD_YES)
+    if (type == "8bim" || (type == "iptc" && !data.compare(0, 4, "8bim", 4))) {
+        auto Parser = new File_Psd;
+        Parser->Step = File_Psd::Step_ImageResourcesBlock;
+        MI.reset(Parser);
+    }
+#endif //MEDIAINFO_PSD_YES
+#if defined(MEDIAINFO_EXIF_YES)
+    if (type == "APP1" || type == "exif") {
+        MI.reset(new File_Exif);
+    }
+#endif //MEDIAINFO_EXIF_YES
+#if defined(MEDIAINFO_ICC_YES)
+    if (type == "icc" || type == "icm") {
+        MI.reset(new File_Icc);
+    }
+#endif //MEDIAINFO_ICC_YES
+#if defined(MEDIAINFO_IIM_YES)
+    if (type == "iptc" && data.compare(0, 4, "8bim", 4)) {
+        MI.reset(new File_Iim);
+    }
+#endif //MEDIAINFO_IIM_YES
+#if defined(MEDIAINFO_XMP_YES)
+    if (type == "xmp") {
+        MI.reset(new File_Xmp);
+    }
+#endif //MEDIAINFO_ICC_YES
+    if (!MI) {
+        return;
+    }
+
+    auto Buffer_Save = Buffer;
+    auto Buffer_Offset_Save = Buffer_Offset;
+    auto Buffer_Size_Save = Buffer_Size;
+    auto Element_Offset_Save = Element_Offset;
+    auto Element_Size_Save = Element_Size;
+    Buffer = (const int8u*)data.c_str() + Pos;
+    Buffer_Offset = 0;
+    Buffer_Size = data.size() - Pos;
+    Element_Offset = 0;
+    Element_Size = Buffer_Size;
+
+    Open_Buffer_Init(MI.get());
+    Open_Buffer_Continue(MI.get());
+    Open_Buffer_Finalize(MI.get());
+    Merge(*MI, Stream_General, 0, 0, false);
+    Merge(*MI, Stream_Image, 0, 0, false);
+    size_t Count = MI->Count_Get(Stream_Image);
+    for (size_t i = 1; i < Count; ++i) {
+        Merge(*MI, Stream_Image, i, StreamPos_Last + 1, false);
+    }
+
+    Buffer = Buffer_Save;
+    Buffer_Offset = Buffer_Offset_Save;
+    Buffer_Size = Buffer_Size_Save;
+    Element_Offset = Element_Offset_Save;
+    Element_Size = Element_Size_Save;
+#endif
 }
 
 //---------------------------------------------------------------------------

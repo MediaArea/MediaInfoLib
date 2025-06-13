@@ -184,6 +184,19 @@ bool File_Xmp::FileHeader_Begin()
             const char* Credit = Rdf_Item->Attribute("photoshop:Credit");
             if (Credit && *Credit != '\\') //TODO: support octal and UTF-16 ("\376\377")
                 Fill(Stream_General, 0, General_Copyright, Credit);
+            const char* DigitalSourceType = Rdf_Item->Attribute("Iptc4xmpExt:DigitalSourceType");
+            if (DigitalSourceType && *DigitalSourceType != '\\') { //TODO: support octal and UTF-16 ("\376\377")
+                string URI{ DigitalSourceType };
+                string::size_type pos = URI.find("https://");
+                if (pos != std::string::npos) URI.replace(pos, 5, "http"); // Some Google generated files have https instead of http
+                if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"))
+                    Fill(Stream_General, 0, General_Copyright, "Created using generative AI");
+                if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia"))
+                    Fill(Stream_General, 0, General_Copyright, "Edited using generative AI");
+            }
+            const char* DateTimeOriginal = Rdf_Item->Attribute("exif:DateTimeOriginal");
+            if (DateTimeOriginal && *DateTimeOriginal != '\\') //TODO: support octal and UTF-16 ("\376\377")
+                Fill(Stream_General, 0, General_Recorded_Date, DateTimeOriginal);
             const char* CreatorTool=Rdf_Item->Attribute("xmp:CreatorTool");
             if (CreatorTool && *CreatorTool!='\\') //TODO: support octal and UTF-16 ("\376\377")
                 Fill(Stream_General, 0, General_Encoded_Application, CreatorTool);
@@ -218,6 +231,56 @@ bool File_Xmp::FileHeader_Begin()
                 {
                     const char* GImage = Description_Item->GetText();
                     ParseBase64Image(GImage, "Extended XMP / GImage Data", "Image");
+                }
+                else if (!strcmp(Description_Item->Value(), "photoshop:Credit"))
+                {
+                    Fill(Stream_General, 0, General_Copyright, Description_Item->GetText());
+                }
+                else if (!strcmp(Description_Item->Value(), "Iptc4xmpExt:DigitalSourceType"))
+                {
+                    string URI{ Description_Item->GetText() };
+                    string::size_type pos = URI.find("https://");
+                    if (pos != std::string::npos) URI.replace(pos, 5, "http"); // Some Google generated files have https instead of http
+                    if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"))
+                        Fill(Stream_General, 0, General_Copyright, "Created using generative AI");
+                    if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia"))
+                        Fill(Stream_General, 0, General_Copyright, "Edited using generative AI");
+                }
+                else if (!strcmp(Description_Item->Value(), "dc:title"))
+                {
+                    XMLElement* rdfAltElement = Description_Item->FirstChildElement("rdf:Alt");
+                    if (rdfAltElement)
+                        XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li");
+                        for (XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
+                            Fill(Stream_General, 0, General_Title, rdfLiElement->GetText());
+                }
+                else if (!strcmp(Description_Item->Value(), "dc:description"))
+                {
+                    XMLElement* rdfAltElement = Description_Item->FirstChildElement("rdf:Alt");
+                    if (rdfAltElement)
+                        for(XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
+                            Fill(Stream_General, 0, General_Description, rdfLiElement->GetText());
+                }
+                else if (!strcmp(Description_Item->Value(), "dc:subject"))
+                {
+                    XMLElement* rdfBagElement = Description_Item->FirstChildElement("rdf:Bag");
+                    if (rdfBagElement)
+                        for (XMLElement* rdfLiElement = rdfBagElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
+                            Fill(Stream_General, 0, General_Subject, rdfLiElement->GetText());
+                }
+                else if (!strcmp(Description_Item->Value(), "dc:creator"))
+                {
+                    XMLElement* rdfSeqElement = Description_Item->FirstChildElement("rdf:Seq");
+                    if (rdfSeqElement)
+                        for (XMLElement* rdfLiElement = rdfSeqElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
+                            Fill(Stream_General, 0, General_Producer, rdfLiElement->GetText());
+                }
+                else if (!strcmp(Description_Item->Value(), "dc:rights"))
+                {
+                    XMLElement* rdfAltElement = Description_Item->FirstChildElement("rdf:Alt");
+                    if (rdfAltElement)
+                        for (XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
+                            Fill(Stream_General, 0, General_Copyright, rdfLiElement->GetText());
                 }
             }
         }

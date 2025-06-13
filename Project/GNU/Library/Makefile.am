@@ -191,6 +191,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Tag/File_Icc.cpp \
                        ../../../Source/MediaInfo/Tag/File_Id3.cpp \
                        ../../../Source/MediaInfo/Tag/File_Id3v2.cpp \
+                       ../../../Source/MediaInfo/Tag/File_Iim.cpp \
                        ../../../Source/MediaInfo/Tag/File_Lyrics3.cpp \
                        ../../../Source/MediaInfo/Tag/File_Lyrics3v2.cpp \
                        ../../../Source/MediaInfo/Tag/File_PropertyList.cpp \
