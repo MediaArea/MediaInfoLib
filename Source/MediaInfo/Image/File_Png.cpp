@@ -34,6 +34,9 @@
 #if defined(MEDIAINFO_JPEG_YES)
     #include "MediaInfo/Image/File_Jpeg.h"
 #endif
+#if defined(MEDIAINFO_PSD_YES)
+    #include "MediaInfo/Image/File_Psd.h"
+#endif
 #if defined(MEDIAINFO_C2PA_YES)
     #include "MediaInfo/Tag/File_C2pa.h"
 #endif
@@ -43,10 +46,14 @@
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
+#if defined(MEDIAINFO_IIM_YES)
+    #include "MediaInfo/Tag/File_Iim.h"
+#endif
 #if defined(MEDIAINFO_XMP_YES)
     #include "MediaInfo/Tag/File_Xmp.h"
 #endif
 #include <zlib.h>
+#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -882,10 +889,9 @@ void File_Png::Textual(bitset8 Method)
             Text.clear();
             #endif
         }
-        else if (Keyword_UTF8 == "Raw profile type APP1"
-              || Keyword_UTF8 == "Raw profile type exif")
+        else if (Keyword_UTF8.rfind("Raw profile type ", 0) == 0)
         {
-            Decode_RawProfile(Text.To_UTF8().c_str(), Text.To_UTF8().size());
+            Decode_RawProfile(Text.To_UTF8().c_str(), Text.To_UTF8().size(), Keyword_UTF8.substr(17));
             Text.clear();
         }
         else if (!Language.empty())
@@ -895,9 +901,9 @@ void File_Png::Textual(bitset8 Method)
 }
 
 //---------------------------------------------------------------------------
-void File_Png::Decode_RawProfile(const char* in, size_t in_len)
+void File_Png::Decode_RawProfile(const char* in, size_t in_len, const string& type)
 {
-#if defined(MEDIAINFO_EXIF_YES)
+#if defined(MEDIAINFO_EXIF_YES) || defined(MEDIAINFO_ICC_YES) || defined(MEDIAINFO_IIM_YES)
     auto HexStringToBytes{
         [](const char* src, size_t len, size_t expected_length) -> string {
             string to_return;
@@ -963,6 +969,38 @@ void File_Png::Decode_RawProfile(const char* in, size_t in_len)
     if (!data.compare(0, 6, "Exif\0\0", 6))
         Pos = 6;
 
+    std::unique_ptr<File__Analyze> MI;
+#if defined(MEDIAINFO_PSD_YES)
+    if (type == "8bim" || (type == "iptc" && !data.compare(0, 4, "8bim", 4))) {
+        auto Parser = new File_Psd;
+        Parser->Step = File_Psd::Step_ImageResourcesBlock;
+        MI.reset(Parser);
+    }
+#endif //MEDIAINFO_PSD_YES
+#if defined(MEDIAINFO_EXIF_YES)
+    if (type == "APP1" || type == "exif") {
+        MI.reset(new File_Exif);
+    }
+#endif //MEDIAINFO_EXIF_YES
+#if defined(MEDIAINFO_ICC_YES)
+    if (type == "icc" || type == "icm") {
+        MI.reset(new File_Icc);
+    }
+#endif //MEDIAINFO_ICC_YES
+#if defined(MEDIAINFO_IIM_YES)
+    if (type == "iptc" && data.compare(0, 4, "8bim", 4)) {
+        MI.reset(new File_Iim);
+    }
+#endif //MEDIAINFO_IIM_YES
+#if defined(MEDIAINFO_XMP_YES)
+    if (type == "xmp") {
+        MI.reset(new File_Xmp);
+    }
+#endif //MEDIAINFO_ICC_YES
+    if (!MI) {
+        return;
+    }
+
     auto Buffer_Save = Buffer;
     auto Buffer_Offset_Save = Buffer_Offset;
     auto Buffer_Size_Save = Buffer_Size;
@@ -974,14 +1012,14 @@ void File_Png::Decode_RawProfile(const char* in, size_t in_len)
     Element_Offset = 0;
     Element_Size = Buffer_Size;
 
-    File_Exif MI;
-    Open_Buffer_Init(&MI);
-    Open_Buffer_Continue(&MI);
-    Open_Buffer_Finalize(&MI);
-    Merge(MI, Stream_General, 0, 0, false);
-    size_t Count = MI.Count_Get(Stream_Image);
-    for (size_t i = 0; i < Count; ++i) {
-        Merge(MI, Stream_Image, i, i, false);
+    Open_Buffer_Init(MI.get());
+    Open_Buffer_Continue(MI.get());
+    Open_Buffer_Finalize(MI.get());
+    Merge(*MI, Stream_General, 0, 0, false);
+    Merge(*MI, Stream_Image, 0, 0, false);
+    size_t Count = MI->Count_Get(Stream_Image);
+    for (size_t i = 1; i < Count; ++i) {
+        Merge(*MI, Stream_Image, i, StreamPos_Last + 1, false);
     }
 
     Buffer = Buffer_Save;
@@ -989,8 +1027,7 @@ void File_Png::Decode_RawProfile(const char* in, size_t in_len)
     Buffer_Size = Buffer_Size_Save;
     Element_Offset = Element_Offset_Save;
     Element_Size = Element_Size_Save;
-
-#endif // defined MEDIAINFO_EXIF_YES
+#endif
 }
 
 //---------------------------------------------------------------------------
