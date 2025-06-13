@@ -17,6 +17,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
+#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -41,7 +42,6 @@ public :
 
     //Constructor/Destructor
     File_Jpeg();
-    ~File_Jpeg();
 
 private :
     //Streams management
@@ -201,21 +201,31 @@ private :
     void Data_Common();
 
     //Temp
-    int64u Data_Size;
-    int8u APPE_Adobe0_transform;
-    bool  APP0_JFIF_Parsed;
-    bool  SOS_SOD_Parsed;
-    bool  CME_Text_Parsed;
-    File__Analyze* ICC_Parser=nullptr;
+    int64u Data_Size = 0;
+    int8u APPE_Adobe0_transform = 0;
+    bool  APP0_JFIF_Parsed = false;
+    bool  SOS_SOD_Parsed = false;
+    bool  CME_Text_Parsed = false;
+    std::unique_ptr<File__Analyze> ICC_Parser;
     struct xmpext
     {
-        File__Analyze* Parser = nullptr;
+        xmpext(File__Analyze* NewParser)
+            : Parser(NewParser)
+        {
+        }
+
+        std::unique_ptr<File__Analyze> Parser;
         int32u LastOffset = 0;
     };
     std::map<std::string, xmpext> XmpExt_List;
     struct jpegxtext
     {
-        File__Analyze* Parser = nullptr;
+        jpegxtext(File__Analyze* NewParser)
+            : Parser(NewParser)
+        {
+        }
+
+        std::unique_ptr<File__Analyze> Parser;
         int32u LastSequenceNumber = 0;
     };
     std::map<int16u, jpegxtext> JpegXtExt_List;

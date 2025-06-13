@@ -266,7 +266,7 @@ string Jpeg2000_Rsiz(int16u Rsiz)
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-File_Jpeg::File_Jpeg() : APP0_JFIF_Parsed{}, APPE_Adobe0_transform{}, CME_Text_Parsed{}, Data_Size{}, SOS_SOD_Parsed{}
+File_Jpeg::File_Jpeg()
 {
     //Config
     #if MEDIAINFO_EVENTS
@@ -286,12 +286,6 @@ File_Jpeg::File_Jpeg() : APP0_JFIF_Parsed{}, APPE_Adobe0_transform{}, CME_Text_P
     #if MEDIAINFO_DEMUX
     FrameRate=0;
     #endif //MEDIAINFO_DEMUX
-}
-
-//---------------------------------------------------------------------------
-File_Jpeg::~File_Jpeg()
-{
-    delete ICC_Parser;
 }
 
 //***************************************************************************
@@ -1505,18 +1499,16 @@ void File_Jpeg::APP1_XMP_Extension()
             Skip_XX(Element_Size - Element_Offset,              "(Missing start of content)");
             return;
         }
-        xmpext XmpExt;
-        XmpExt.LastOffset = 0;
-        XmpExt.Parser = new File_Xmp();
-        Open_Buffer_Init(XmpExt.Parser);
-        Item = XmpExt_List.emplace(GUID, XmpExt).first;
+        xmpext XmpExt(new File_Xmp());
+        Open_Buffer_Init(XmpExt.Parser.get());
+        Item = XmpExt_List.emplace(GUID, std::move(XmpExt)).first;
     }
     if (Offset != Item->second.LastOffset) {
         Skip_XX(Element_Size - Element_Offset,                  "(Missing intermediate content)");
         return;
     }
     Item->second.LastOffset += (int32u)(Element_Size - Element_Offset);
-    auto& MI = *(File_Xmp*)Item->second.Parser;
+    auto& MI = *(File_Xmp*)Item->second.Parser.get();
     MI.Wait = Item->second.LastOffset < Size;
     auto Element_Offset_Sav = Element_Offset;
     Open_Buffer_Continue(&MI);
@@ -1547,23 +1539,20 @@ void File_Jpeg::APP2_ICC_PROFILE()
         Skip_Local(12,                                          "Signature");
         Get_B1 (Pos,                                            "Chunk position");
         Get_B1 (Max,                                            "Chunk max");
-        if (Pos==1)
-        {
+        if (Pos == 1) {
             Accept("JPEG");
-            delete ICC_Parser;
-            ICC_Parser=new File_Icc();
-            ((File_Icc*)ICC_Parser)->StreamKind=StreamKind;
-            Open_Buffer_Init(ICC_Parser);
+            ICC_Parser.reset(new File_Icc());
+            ((File_Icc*)ICC_Parser.get())->StreamKind = StreamKind;
+            Open_Buffer_Init(ICC_Parser.get());
         }
-        if (ICC_Parser)
-        {
-            ((File_Icc*)ICC_Parser)->Frame_Count_Max=Max;
-            ((File_Icc*)ICC_Parser)->IsAdditional=true;
-            Open_Buffer_Continue(ICC_Parser);
-            if (Pos==Max)
-            {
-                Open_Buffer_Finalize(ICC_Parser);
-                Merge(*ICC_Parser, StreamKind, 0, 0);
+        if (ICC_Parser) {
+            ((File_Icc*)ICC_Parser.get())->Frame_Count_Max = Max;
+            ((File_Icc*)ICC_Parser.get())->IsAdditional = true;
+            Open_Buffer_Continue(ICC_Parser.get());
+            if (Pos == Max) {
+                Open_Buffer_Finalize(ICC_Parser.get());
+                Merge(*ICC_Parser.get(), StreamKind, 0, 0);
+                ICC_Parser.reset();
             }
         }
         else
@@ -1624,13 +1613,12 @@ void File_Jpeg::APPB_JPEGXT_JUMB(int16u Instance, int32u SequenceNumber)
             Skip_XX(Element_Size - Element_Offset,              "(Missing start of content)");
             return;
         }
-        jpegxtext JpegXtExt;
+        jpegxtext JpegXtExt(new File_C2pa());
         JpegXtExt.LastSequenceNumber = SequenceNumber;
-        JpegXtExt.Parser = new File_C2pa();
         int32u Size;
         Peek_B4(Size);
-        Open_Buffer_Init(JpegXtExt.Parser, Size);
-        Item = JpegXtExt_List.emplace(Instance, JpegXtExt).first;
+        Open_Buffer_Init(JpegXtExt.Parser.get(), Size);
+        Item = JpegXtExt_List.emplace(Instance, std::move(JpegXtExt)).first;
     }
     else {
         auto TheoreticalSequenceNumber = Item->second.LastSequenceNumber + 1;
@@ -1642,7 +1630,7 @@ void File_Jpeg::APPB_JPEGXT_JUMB(int16u Instance, int32u SequenceNumber)
         Skip_B4(                                                "Total size repeated?");
         Skip_C4(                                                "jumb repeated?");
     }
-    auto& MI = *Item->second.Parser;
+    auto& MI = *Item->second.Parser.get();
     Open_Buffer_Continue(&MI);
     #endif
     Element_Show();
