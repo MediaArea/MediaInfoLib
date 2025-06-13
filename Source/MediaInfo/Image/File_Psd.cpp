@@ -448,9 +448,12 @@ void File_Psd::ImageResourcesBlock()
         case Elements::NAME: NAME(); break;
 
     switch (Element_Code) {
+    ELEMENT_CASE(CaptionDigest);
     ELEMENT_CASE(IPTCNAA);
+    ELEMENT_CASE(JPEGQuality);
     ELEMENT_CASE(Thumbnail);
     ELEMENT_CASE(Thumbnail_New);
+    ELEMENT_CASE(VersionInfo);
     default: Skip_XX(Element_Size,                              "(Data)");
     }
 
@@ -470,6 +473,12 @@ void File_Psd::ImageData()
     Element_Name("Image data");
     Skip_XX(Element_Size,                                       "(Data)");
     Finish();
+}
+
+//---------------------------------------------------------------------------
+void File_Psd::CaptionDigest()
+{
+    Skip_Hexa(16,                                               "Digest");
 }
 
 //---------------------------------------------------------------------------
@@ -493,6 +502,15 @@ void File_Psd::IPTCNAA()
 }
 
 //---------------------------------------------------------------------------
+void File_Psd::JPEGQuality()
+{
+    int16u quality, format;
+    Get_B2(quality,                                             "Quality"); Param_Info1(static_cast<int16s>(quality) + 4);
+    Get_B2(format,                                              "Format"); Param_Info1(format == 0x0000 ? "Standard" : format == 0x0001 ? "Optimized" : format == 0x0101 ? "Progressive" : "");
+    Skip_XX(Element_Size - Element_Offset,                      "(Unknown)");
+}
+
+//---------------------------------------------------------------------------
 void File_Psd::Thumbnail()
 {
     Skip_B4(                                                    "Format");
@@ -506,6 +524,19 @@ void File_Psd::Thumbnail()
     if (!Count_Get(Stream_General)) Stream_Prepare(Stream_General);
     if (!Count_Get(Stream_Image)) Stream_Prepare(Stream_Image);
     Attachment(IsSub?"PSD":nullptr, {}, "Thumbnail");
+}
+
+//---------------------------------------------------------------------------
+void File_Psd::VersionInfo()
+{
+    int32u size;
+    Skip_B4     (                                               "version");
+    Skip_B1     (                                               "hasRealMergedData");
+    Get_B4      (size,                                          "writer name length");
+    Skip_UTF16B (static_cast<int64u>(size)*2,                   "writer name");
+    Get_B4      (size,                                          "reader name length");
+    Skip_UTF16B (static_cast<int64u>(size)*2,                   "reader name");
+    Skip_B4     (                                               "file version");
 }
 
 } //NameSpace
