@@ -306,6 +306,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Tag/File_Icc.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Tag/File_Id3.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Tag/File_Id3v2.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Tag/File_Iim.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Tag/File_Lyrics3.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Tag/File_Lyrics3v2.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Tag/File_PropertyList.cpp

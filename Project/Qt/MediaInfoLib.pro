@@ -212,6 +212,7 @@ HEADERS += \
         ../../Source/MediaInfo/Tag/File_Exif.h \
         ../../Source/MediaInfo/Tag/File_Id3.h \
         ../../Source/MediaInfo/Tag/File_Id3v2.h \
+        ../../Source/MediaInfo/Tag/File_Iim.h \
         ../../Source/MediaInfo/Tag/File_Lyrics3.h \
         ../../Source/MediaInfo/Tag/File_Lyrics3v2.h \
         ../../Source/MediaInfo/Tag/File_PropertyList.h \
@@ -458,6 +459,7 @@ SOURCES += \
         ../../Source/MediaInfo/Tag/File_Icc.cpp \
         ../../Source/MediaInfo/Tag/File_Id3.cpp \
         ../../Source/MediaInfo/Tag/File_Id3v2.cpp \
+        ../../Source/MediaInfo/Tag/File_Iim.cpp \
         ../../Source/MediaInfo/Tag/File_Lyrics3.cpp \
         ../../Source/MediaInfo/Tag/File_Lyrics3v2.cpp \
         ../../Source/MediaInfo/Tag/File_PropertyList.cpp \

@@ -173,6 +173,7 @@ AC_ARG_ENABLE(Exif,    AC_HELP_STRING([--disable-Exif],    [Disable Tag - EXIF])
 AC_ARG_ENABLE(icc,     AC_HELP_STRING([--disable-icc],     [Disable Tag - ICC]),                                          MediaInfoIcc=$enableval,     MediaInfoIcc=depend)
 AC_ARG_ENABLE(Id3,     AC_HELP_STRING([--disable-Id3],     [Disable Tag - Id3]),                                          MediaInfoId3=$enableval,     MediaInfoId3=depend)
 AC_ARG_ENABLE(Id3v2,   AC_HELP_STRING([--disable-Id3v2],   [Disable Tag - Id3v2]),                                        MediaInfoId3v2=$enableval,   MediaInfoId3v2=depend)
+AC_ARG_ENABLE(Iim,     AC_HELP_STRING([--disable-Iim],     [Disable Tag - Iim (IPTC-NAA Information Interchange]),        MediaInfoIim=$enableval,     MediaInfoIim=depend)
 AC_ARG_ENABLE(Lyrics3, AC_HELP_STRING([--disable-Lyrics3], [Disable Tag - Lyrics3]),                                      MediaInfoLyrics3=$enableval, MediaInfoLyrics3=depend)
 AC_ARG_ENABLE(Lyrics3v2, AC_HELP_STRING([--disable-Lyrics3v2], [Disable Tag - Lyrics3v2]),                                MediaInfoLyrics3v2=$enableval, MediaInfoLyrics3v2=depend)
 AC_ARG_ENABLE(VorbisCom, AC_HELP_STRING([--disable-VorbisCom], [Disable Tag - VorbisCom]),                                MediaInfoVorbisCom=$enableval, MediaInfoVorbisCom=depend)
@@ -351,6 +352,7 @@ if test "$MediaInfoExif"    = "no";  then AC_DEFINE(MEDIAINFO_EXIF_NO)    fi; if
 if test "$MediaInfoIcc"     = "no";  then AC_DEFINE(MEDIAINFO_ICC_NO)     fi; if test "$MediaInfoIcc"     = "yes"; then AC_DEFINE(MEDIAINFO_ICC_YES)     fi
 if test "$MediaInfoId3"     = "no";  then AC_DEFINE(MEDIAINFO_ID3_NO)     fi; if test "$MediaInfoId3"     = "yes"; then AC_DEFINE(MEDIAINFO_ID3_YES)     fi
 if test "$MediaInfoId3v2"   = "no";  then AC_DEFINE(MEDIAINFO_ID3V2_NO)   fi; if test "$MediaInfoId3v2"   = "yes"; then AC_DEFINE(MEDIAINFO_ID3V2_YES)   fi
+if test "$MediaInfoIim"     = "no";  then AC_DEFINE(MEDIAINFO_IIM_NO)     fi; if test "$MediaInfoIim"     = "yes"; then AC_DEFINE(MEDIAINFO_IIM_YES)     fi
 if test "$MediaInfoLyrics3" = "no";  then AC_DEFINE(MEDIAINFO_LYRICS3_NO) fi; if test "$MediaInfoLyrics3" = "yes"; then AC_DEFINE(MEDIAINFO_LYRICS3_YES) fi
 if test "$MediaInfoLyrics3v2" = "no";  then AC_DEFINE(MEDIAINFO_LYRICS3V2_NO) fi; if test "$MediaInfoLyrics3v2" = "yes"; then AC_DEFINE(MEDIAINFO_LYRICS3V2_YES) fi
 if test "$MediaInfoVorbisCom" = "no";  then AC_DEFINE(MEDIAINFO_VORBISCOM_NO) fi; if test "$MediaInfoVorbisCom" = "yes"; then AC_DEFINE(MEDIAINFO_VORBISCOM_YES) fi
@@ -1120,6 +1122,7 @@ Mcho "Exif   " "$MediaInfoExif"
 Mcho "Icc    " "$MediaInfoIcc"
 Mcho "Id3    " "$MediaInfoId3"
 Mcho "Id3v2  " "$MediaInfoId3v2"
+Mcho "Iim    " "$MediaInfoIim"
 Mcho "Lyrics3" "$MediaInfoLyrics3"
 Mcho "Lyrics3v2" "$MediaInfoLyrics3v2"
 Mcho "VorbisCom" "$MediaInfoVorbisCom"

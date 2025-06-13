@@ -695,6 +695,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Tag\File_Id3v2.cpp">
             <BuildOrder>116</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Tag\File_Iim.cpp">
+            <BuildOrder>242</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3.cpp">
             <BuildOrder>126</BuildOrder>
         </CppCompile>

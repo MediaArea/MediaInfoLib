@@ -1023,6 +1023,9 @@
 #if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_ID3V2_NO) && !defined(MEDIAINFO_ID3V2_YES)
     #define MEDIAINFO_ID3V2_YES
 #endif
+#if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_IIM_NO) && !defined(MEDIAINFO_IIM_YES)
+    #define MEDIAINFO_IIM_YES
+#endif
 #if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_LYRICS3_NO) && !defined(MEDIAINFO_LYRICS3_YES)
     #define MEDIAINFO_LYRICS3_YES
 #endif

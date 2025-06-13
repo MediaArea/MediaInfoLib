@@ -32,6 +32,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Image/File_Psd.h"
+#if defined(MEDIAINFO_IIM_YES)
+    #include "MediaInfo/Tag/File_Iim.h"
+#endif
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -445,6 +448,7 @@ void File_Psd::ImageResourcesBlock()
         case Elements::NAME: NAME(); break;
 
     switch (Element_Code) {
+    ELEMENT_CASE(IPTCNAA);
     ELEMENT_CASE(Thumbnail);
     ELEMENT_CASE(Thumbnail_New);
     default: Skip_XX(Element_Size,                              "(Data)");
@@ -466,6 +470,26 @@ void File_Psd::ImageData()
     Element_Name("Image data");
     Skip_XX(Element_Size,                                       "(Data)");
     Finish();
+}
+
+//---------------------------------------------------------------------------
+void File_Psd::IPTCNAA()
+{
+    //Parsing
+    #if defined(MEDIAINFO_IIM_YES)
+    File_Iim MI;
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Merge(MI, Stream_General, 0, 0, false);
+    Merge(MI, Stream_Image, 0, 0, false);
+    size_t Count = MI.Count_Get(Stream_Image);
+    for (size_t i = 1; i < Count; ++i) {
+        Merge(MI, Stream_Image, i, StreamPos_Last + 1, false);
+    }
+    #else
+    Skip_UTF8(Element_Size - Element_Offset,                    "(Data)");
+    #endif
 }
 
 //---------------------------------------------------------------------------
