@@ -60,6 +60,7 @@ private :
     void id_07();
     void id_0D();
     void id_0E();
+    void id_26();
     void id_25();
     void id_27();
 
