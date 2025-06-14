@@ -37,7 +37,20 @@ private :
     void Data_Parse();
 
     //Elements
+    void CodedCharacterSet();
     void RecordVersion();
+    void ObjectName();
+    void DateCreated();
+    void TimeCreated();
+    void Byline();
+    void CopyrightNotice();
+    void CaptionAbstract();
+
+    //Helpers
+    void SkipString();
+
+    //Temp
+    int8u CodedCharSet = 0;
 };
 
 } //NameSpace
