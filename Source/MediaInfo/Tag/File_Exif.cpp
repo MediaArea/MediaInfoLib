@@ -2396,7 +2396,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 N = static_cast<int32s>(NU);
                 D = static_cast<int32s>(DU);
                 if (D)
-                    Element_Info1(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
+                    Element_Info1(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(abs(N), abs(D))));
             #else //MEDIAINFO_TRACE
                 if (Element_Offset+8>Element_Size)
                 {
@@ -2416,7 +2416,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 Element_Offset+=8;
             #endif //MEDIAINFO_TRACE
             if (D)
-                Info.push_back(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
+                Info.push_back(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(abs(N), abs(D))));
             else
                 Info.push_back(Ztring()); // Division by zero, undefined
         }
