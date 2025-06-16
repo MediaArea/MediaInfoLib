@@ -418,6 +418,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_C2pa.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Exif.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Icc.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Iim.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Id3.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Id3v2.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3.cpp" />
@@ -725,6 +726,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_C2pa.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Exif.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Icc.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Iim.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Id3.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Id3v2.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3.h" />
