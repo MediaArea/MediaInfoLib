@@ -30,6 +30,8 @@ struct mp_entry
     int32u ImgOffset;
     int16u DependentImg1EntryNo;
     int16u DependentImg2EntryNo;
+
+    std::string Type() const;
 };
 typedef std::vector<mp_entry> mp_entries;
 

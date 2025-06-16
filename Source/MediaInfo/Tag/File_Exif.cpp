@@ -1427,8 +1427,24 @@ static string Mpf_ImageAttribute_Desc(int32u value)
     case 0x020002: desc += "Multi-Frame Image, Disparity"; break;
     case 0x020003: desc += "Multi-Frame Image, Multi-Angle"; break;
     case 0x030000: desc += "Baseline MP Primary Image"; break;
+    case 0x050000: desc += "Gain map"; break;
     }
     return desc;
+}
+
+std::string mp_entry::Type() const
+{
+    switch (ImgAttribute & ((1U << 24) - 1)) {
+    case 0x000000: return {};
+    case 0x010001:
+    case 0x010002: return "Thumbnail";
+    case 0x020001: return "Panorama"; break;
+    case 0x020002: return "Disparity"; break;
+    case 0x020003: return "Multi-Angle"; break;
+    case 0x030000: return "Primary Image"; break;
+    case 0x050000: return "Gain map"; break;
+    default: return Ztring::ToZtring_From_CC4(ImgAttribute).To_UTF8();
+    }
 }
 
 //***************************************************************************

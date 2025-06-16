@@ -45,6 +45,7 @@ private :
     //Streams management
     void Streams_Accept();
     void Streams_Finish();
+    void Streams_Finish_PerImage();
 
     //Buffer - File header
     bool FileHeader_Begin();
@@ -207,6 +208,8 @@ private :
     bool  CME_Text_Parsed = false;
     std::shared_ptr<void> MPEntries;
     int64u MPEntries_Offset = 0;
+    std::unique_ptr<File__Analyze> Exif_Parser;
+    std::unique_ptr<File__Analyze> PSD_Parser;
     std::unique_ptr<File__Analyze> ICC_Parser;
     struct xmpext
     {
