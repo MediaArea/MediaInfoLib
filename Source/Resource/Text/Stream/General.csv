@@ -173,18 +173,18 @@ Encryption_InitializationVector;;;N YTY;;;Encryption initialization vector
 UniversalAdID/String;;;Y NT;;;Universal Ad-ID, see https://ad-id.org for more information
 UniversalAdID_Registry;;;N YTY;;;Universal Ad-ID registry
 UniversalAdID_Value;;;N YTY;;;Universal Ad-ID value
-Title;;;N YTY;;;Title of file;;Title
-Title_More;;;N YTY;;;More title information;;Title
-Title/Url;;;N NT;;;URL;;Title
+Title;;;Y YTY;;;Title of file;;Title
+Title_More;;;Y YTY;;;More title information;;Title
+Title/Url;;;Y NT;;;URL;;Title
 Domain;;;Y YTY;;;Universe that the file's contents belong to (e.g. Star Wars, Stargate, Buffy, Dragonball);;Title
 Collection;;;Y YTY;;;Name of the series (e.g. Star Wars movies, Stargate SG-1, Angel);;Title
 Season;;;Y YTY;;;Name of the season (e.g. first Star Wars Trilogy, Season 1);;Title
 Season_Position;;;Y YIY;;;Number of the Season;;Title
 Season_Position_Total;;;Y YIY;;;Total number of seasons;;Title
-Movie;;;Y YTY;;;Name of the movie (e.g. Star Wars: A New Hope);;Title
-Movie_More;;;Y YTY;;;More information about the Movie;;Title
-Movie/Country;;;Y YTY;;;Country where the movie was produced;;Title
-Movie/Url;;;Y YT;;;Homepage for the movie;;Title
+Movie;;;N YTY;;;Name of the movie (e.g. Star Wars: A New Hope);;Title
+Movie_More;;;N YTY;;;More information about the Movie;;Title
+Movie/Country;;;N YTY;;;Deprecated, use Country;;Title
+Movie/Url;;;N YT;;;Homepage for the movie;;Title
 Album;;;Y YTY;;;Name of the album (e.g. The Joshua Tree);;Title
 Album_More;;;Y YTY;;;More information about the Album;;Title
 Album/Sort;;;Y YTY;;;Alternate name of the album, optimized for sorting purposes (e.g. Joshua Tree, The);;Title
@@ -200,9 +200,9 @@ Part/Position_Total;;;Y YIY;;;Total number of parts;;Title
 Reel;;;Y YTY;;;Name of the reel;;Title
 Reel/Position;;;Y YIY;;;Number of the reel;;Title
 Reel/Position_Total;;;Y YIY;;;Total number of reel;;Title
-Track;;;Y YTY;;;Name of the track (e.g. track 1, track 2);;Title
-Track_More;;;Y YTY;;;More information about the Track;;Title
-Track/Url;;;Y YT;;;Link to a site about this Track;;Title
+Track;;;N YTY;;;Name of the track (e.g. track 1, track 2);;Title
+Track_More;;;N YTY;;;More information about the Track;;Title
+Track/Url;;;N YT;;;Link to a site about this Track;;Title
 Track/Sort;;;Y YTY;;;Alternate name for the track, optimized for sorting purposes;;Title
 Track/Position;;;Y YIY;;;Number of this Track;;Title
 Track/Position_Total;;;Y YIY;;;Total number of tracks;;Title
