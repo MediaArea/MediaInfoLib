@@ -1400,6 +1400,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         case General_Encoded_Library:
         case General_Copyright:
         case General_Comment:
+        case General_Description:
             Compare = true;
         }
         break;
