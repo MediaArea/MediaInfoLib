@@ -27,8 +27,6 @@ namespace MediaInfoLib
 // Class File_Jpeg
 //***************************************************************************
 
-class File_C2pa;
-
 class File_Jpeg : public File__Analyze
 {
 public :
@@ -47,6 +45,7 @@ private :
     //Streams management
     void Streams_Accept();
     void Streams_Finish();
+    void Streams_Finish_PerImage();
 
     //Buffer - File header
     bool FileHeader_Begin();
@@ -165,6 +164,7 @@ private :
     void APP1_XMP_Extension();
     void APP2();
     void APP2_ICC_PROFILE();
+    void APP2_MPF();
     void APP3() {Skip_XX(Element_Size, "Data");}
     void APP4() {Skip_XX(Element_Size, "Data");}
     void APP5() {Skip_XX(Element_Size, "Data");}
@@ -206,6 +206,10 @@ private :
     bool  APP0_JFIF_Parsed = false;
     bool  SOS_SOD_Parsed = false;
     bool  CME_Text_Parsed = false;
+    std::shared_ptr<void> MPEntries;
+    int64u MPEntries_Offset = 0;
+    std::unique_ptr<File__Analyze> Exif_Parser;
+    std::unique_ptr<File__Analyze> PSD_Parser;
     std::unique_ptr<File__Analyze> ICC_Parser;
     struct xmpext
     {

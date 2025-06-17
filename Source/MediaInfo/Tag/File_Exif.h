@@ -6,7 +6,7 @@
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// Information about EXIF tags
+// Information about EXIF tags and MPF tags
 //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -22,6 +22,19 @@
 namespace MediaInfoLib
 {
 
+//MP Entries
+struct mp_entry
+{
+    int32u ImgAttribute;
+    int32u ImgSize;
+    int32u ImgOffset;
+    int16u DependentImg1EntryNo;
+    int16u DependentImg2EntryNo;
+
+    std::string Type() const;
+};
+typedef std::vector<mp_entry> mp_entries;
+
 //***************************************************************************
 // Class File_Exif
 //***************************************************************************
@@ -29,11 +42,10 @@ namespace MediaInfoLib
 class File_Exif : public File__Analyze
 {
 public:
-    //Constructor/Destructor
-    File_Exif();
-
     //In
     bool FromHeif = false;
+    mp_entries* MPEntries = nullptr;
+    bool IsFirstImage = true;
 
 private :
     //Streams management
@@ -65,11 +77,11 @@ private :
     std::map<int8u, infos> Infos; // Key is the kind of IFD
     std::map<int32u, int8u> IFD_Offsets; // Value is the kind of IFD
     int64s OffsetFromContainer = 0;
-    int8u currentIFD;
-    bool LittleEndian;
-    bool IsMakernote;
-    int32u MakernoteOffset;
-    bool HasFooter;
+    int8u currentIFD = 0;
+    bool LittleEndian = false;
+    bool IsMakernote = false;
+    int32u MakernoteOffset = 0;
+    bool HasFooter = false;
 
     //Helpers
     void Get_X2(int16u& Info, const char* Name);
