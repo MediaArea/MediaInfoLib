@@ -189,7 +189,7 @@ void File_Png::Streams_Finish()
 {
     if (Data_Size != (int64u)-1) {
         if (StreamKind == Stream_Video && !IsSub && File_Size != (int64u)-1 && !Config->File_Sizes.empty())
-            Fill(Stream_Video, 0, Video_StreamSize, File_Size - (File_Size - Data_Size) * Config->File_Sizes.size()); //We guess that the metadata part has a fixed size
+            Fill(Stream_Video, 0, Video_StreamSize, File_Size - (Config->File_Sizes.front() - Data_Size) * Config->File_Sizes.size()); //We guess that the metadata part has a fixed size
         if (StreamKind == Stream_Image && (IsSub || File_Size != (int64u)-1)) {
             Fill(Stream_Image, 0, Image_StreamSize, Data_Size);
         }
@@ -255,6 +255,15 @@ void File_Png::FileHeader_Parse()
 void File_Png::Read_Buffer_Unsynched()
 {
     Read_Buffer_Unsynched_OneFramePerFile();
+}
+
+//---------------------------------------------------------------------------
+void File_Png::Read_Buffer_AfterParsing()
+{
+    //TODO: should be after the parsing of a file
+    if (Config->ParseSpeed < 1.0 && !Config->File_Sizes.empty() && File_Offset >= Config->File_Sizes.front()) {
+        Finish();
+    }
 }
 
 //***************************************************************************
