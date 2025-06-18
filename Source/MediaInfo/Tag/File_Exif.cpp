@@ -1511,7 +1511,7 @@ void File_Exif::Streams_Finish()
             case IFD0::Model: Parameter = General_Encoded_Hardware_Model; break;
             case IFD0::Software: Parameter = General_Encoded_Application; break;
             case IFD0::DateTime: {
-                Parameter = General_Tagged_Date;
+                Parameter = General_Encoded_Date;
                 Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTime, IFDExif::OffsetTime);
                 break;
             }
@@ -1691,7 +1691,7 @@ void File_Exif::Streams_Finish()
                 Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTimeOriginal, IFDExif::OffsetTimeOriginal);
                 break;
             case IFDExif::DateTimeDigitized:
-                Parameter = General_Encoded_Date;
+                Parameter = General_Mastered_Date;
                 Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTimeDigitized, IFDExif::OffsetTimeDigitized);
                 break;
             case IFDExif::FlashpixVersion: {
