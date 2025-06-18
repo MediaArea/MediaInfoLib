@@ -206,8 +206,17 @@ private :
     bool  APP0_JFIF_Parsed = false;
     bool  SOS_SOD_Parsed = false;
     bool  CME_Text_Parsed = false;
-    std::shared_ptr<void> MPEntries;
-    int64u MPEntries_Offset = 0;
+    int64u GContainerItems_Offset = 0;
+    size_t Seek_Items_PrimaryStreamPos = 0;
+    string Seek_Items_PrimaryImageType;
+    struct seek_item {
+        string Type[2];
+        string MuxingMode[2];
+        size_t DependsOnStreamPos = 0;
+        bool IsParsed = false;
+    };
+    std::map<int64u, seek_item> Seek_Items;
+    std::map<int64u, seek_item> Seek_Items_WithoutFirstImageOffset;
     std::unique_ptr<File__Analyze> Exif_Parser;
     std::unique_ptr<File__Analyze> PSD_Parser;
     std::unique_ptr<File__Analyze> ICC_Parser;

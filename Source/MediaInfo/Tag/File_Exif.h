@@ -45,7 +45,6 @@ public:
     //In
     bool FromHeif = false;
     mp_entries* MPEntries = nullptr;
-    bool IsFirstImage = true;
 
 private :
     //Streams management

@@ -634,6 +634,9 @@ void File_Jpeg::Header_Parse()
     Get_B2 (code,                                               "Marker");
     switch (code)
     {
+        case Elements::SOI:
+            Seek_Items_PrimaryStreamPos = StreamPos_Last == (size_t)-1 ? 0 : StreamPos_Last;
+            [[fallthrough]];
         case Elements::TEM :
         case Elements::RE30 :
         case Elements::RE31 :
@@ -661,7 +664,6 @@ void File_Jpeg::Header_Parse()
         case Elements::RST7 :
         case Elements::SOC  :
         case Elements::SOD  :
-        case Elements::SOI  :
         case Elements::EOI  :
                     size=0; break;
         default   : Get_B2 (size,                               "Fl - Frame header length");
@@ -1321,38 +1323,43 @@ void File_Jpeg::SOS()
     }
     if (Status[IsFilled])
         Fill();
-    if (MPEntries) {
-        const auto& FirstMPEntry = static_cast<mp_entries*>(MPEntries.get())->front();
-        if (FirstMPEntry.ImgOffset == 0 && Retrieve_Const(StreamKind, 0, "Type").empty()) {
-            Fill(StreamKind, 0, "Type", FirstMPEntry.Type());
-            Fill(StreamKind, 0, "MPF_Entry", 1);
-            if (FirstMPEntry.DependentImg1EntryNo)
-                Fill(StreamKind, 0, "MPF_DependentImageEntry", FirstMPEntry.DependentImg1EntryNo);
-            if (FirstMPEntry.DependentImg2EntryNo)
-                Fill(StreamKind, 0, "MPF_DependentImageEntry", FirstMPEntry.DependentImg2EntryNo);
+
+    if (GContainerItems_Offset) {
+        if (Seek_Items_PrimaryImageType != "Primary") {
+            Fill(StreamKind, Seek_Items_PrimaryStreamPos, "Type", Seek_Items_PrimaryImageType);
         }
-        int entrynum{};
-        for (const auto& MPEntry : *static_cast<mp_entries*>(MPEntries.get())) {
-            ++entrynum;
-            auto ImgOffset = MPEntries_Offset + MPEntry.ImgOffset;
-            if (ImgOffset > File_Offset + Buffer_Offset) {
-                Data_Size -= File_Size - ImgOffset;
-                Streams_Finish_PerImage();
-                Stream_Prepare(StreamKind);
-                Fill(StreamKind, StreamPos_Last, "Type", MPEntry.Type());
-                Fill(StreamKind, StreamPos_Last, "MuxingMode", "MPF");
-                Fill(StreamKind, StreamPos_Last, "MPF_Entry", entrynum);
-                if (MPEntry.DependentImg1EntryNo)
-                    Fill(StreamKind, StreamPos_Last, "MPF_DependentImageEntry", MPEntry.DependentImg1EntryNo);
-                if (MPEntry.DependentImg2EntryNo)
-                    Fill(StreamKind, StreamPos_Last, "MPF_DependentImageEntry", MPEntry.DependentImg2EntryNo);
-                SOS_SOD_Parsed = false;
-                Synched = false;
-                GoTo(ImgOffset);
-                break;
-            }
+        for (const auto& Item : Seek_Items_WithoutFirstImageOffset) {
+            auto& Seek_Item = Seek_Items[GContainerItems_Offset + Item.first];
+            Seek_Item.Type[1] = Item.second.Type[1];
+            Seek_Item.MuxingMode[1] = Item.second.MuxingMode[1];
         }
+        GContainerItems_Offset = 0;
     }
+    Seek_Items_PrimaryImageType.clear();
+    Seek_Items_WithoutFirstImageOffset.clear();
+
+    for (auto& Item : Seek_Items) {
+        if (Item.second.IsParsed) {
+            continue;
+        }
+        Item.second.IsParsed = true;
+        Data_Size -= File_Size - Item.first;
+        Streams_Finish_PerImage();
+        Stream_Prepare(StreamKind);
+        Fill(StreamKind, StreamPos_Last, "Type", Item.second.Type[0]);
+        Fill(StreamKind, StreamPos_Last, "Type", Item.second.Type[1]);
+        Fill(StreamKind, StreamPos_Last, "MuxingMode", Item.second.MuxingMode[0]);
+        Fill(StreamKind, StreamPos_Last, "MuxingMode", Item.second.MuxingMode[1]);
+        if (Item.second.DependsOnStreamPos) {
+            Fill(StreamKind, StreamPos_Last, "MuxingMode_MoreInfo", "Muxed in Image #" + to_string(Item.second.DependsOnStreamPos + 1));
+        }
+        Seek_Items_PrimaryStreamPos = 0;
+        SOS_SOD_Parsed = false;
+        Synched = false;
+        GoTo(Item.first);
+        break;
+    }
+
     if (Config->ParseSpeed < 1.0 && File_GoTo == (int64u)-1) {
         Finish("JPEG"); //No need of more
     }
@@ -1542,11 +1549,29 @@ void File_Jpeg::APP1_XMP()
     //Parsing
     #if defined(MEDIAINFO_XMP_YES)
     File_Xmp MI;
+    gc_items GContainerItems;
+    MI.GContainerItems = &GContainerItems;
     Open_Buffer_Init(&MI);
     auto Element_Offset_Sav = Element_Offset;
     Open_Buffer_Continue(&MI);
     Element_Offset = Element_Offset_Sav;
     Open_Buffer_Finalize(&MI);
+    if (!GContainerItems.empty()) {
+        int64u ImgOffset = 0;
+        bool IsNotFirst = false;
+        for (const auto& Entry : GContainerItems) {
+            if (!IsNotFirst) {
+                Seek_Items_PrimaryImageType = Entry.Semantic;
+                IsNotFirst = true;
+                continue;
+            }
+            auto& Seek_Item = Seek_Items_WithoutFirstImageOffset[ImgOffset];
+            Seek_Item.Type[1] = Entry.Semantic;
+            Seek_Item.MuxingMode[1] = "GContainer XMP";
+            ImgOffset += Entry.Length;
+            ImgOffset += Entry.Padding;
+        }
+    }
     Element_Show(); //TODO: why is it needed?
     Merge(MI, Stream_General, 0, 0, false);
     #endif
@@ -1668,22 +1693,33 @@ void File_Jpeg::APP2_MPF()
 
     //Parsing
     #if defined(MEDIAINFO_EXIF_YES)
+    mp_entries MPEntries;
     File_Exif MI;
-    if (!MPEntries) {
-        MPEntries.reset(new mp_entries());
-        MPEntries_Offset = File_Offset + Buffer_Offset + Element_Offset;
-    }
-    else {
-        MI.IsFirstImage = false;
-    }
-    MI.MPEntries = static_cast<mp_entries*>(MPEntries.get());
+    MI.MPEntries = &MPEntries;
+    const auto Offset = File_Offset + Buffer_Offset + Element_Offset;
     Element_Begin1("Multi-Picture Format");
     Open_Buffer_Init(&MI);
     Open_Buffer_Continue(&MI);
     Open_Buffer_Finalize(&MI);
     Element_End0();
-    if (MI.MPEntries->empty()) {
-        MPEntries.reset();
+    if (!MPEntries.empty()) {
+        for (const auto& Entry : MPEntries) {
+            if (!Entry.ImgOffset) {
+                string Type = Entry.Type();
+                if (!Seek_Items_PrimaryStreamPos) {
+                    Fill(StreamKind, 0, "Type", Type);
+                }
+                continue;
+            }
+            auto& Seek_Item = Seek_Items[Offset + Entry.ImgOffset];
+            Seek_Item.Type[0] = Entry.Type();
+            Seek_Item.MuxingMode[0] = "MPF";
+            Seek_Item.DependsOnStreamPos = Seek_Items_PrimaryStreamPos;
+
+        }
+        if (MPEntries.size() > 1) {
+            GContainerItems_Offset = Offset + MPEntries[1].ImgOffset;
+        }
     }
     Merge(MI, Stream_General, 0, 0, false);
     #else
