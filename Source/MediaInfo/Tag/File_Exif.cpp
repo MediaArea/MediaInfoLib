@@ -2350,7 +2350,9 @@ void File_Exif::Get_IFDOffset(int8u KindOfIFD)
 //---------------------------------------------------------------------------
 void File_Exif::GetValueOffsetu(ifditem &IfdItem)
 {
-    auto GetDecimalPlaces = [](int32u numerator, int32u denominator) -> int8u {
+    auto GetDecimalPlaces = [](int64s numerator, int64s denominator) -> int8u {
+        numerator = abs(numerator);
+        denominator = abs(denominator);
         if (denominator == 1)
             return 0;
         int8u count{ 1 };
