@@ -1509,6 +1509,14 @@ void File_Exif::Streams_Finish()
             const char* ParameterC = nullptr;
             string ParameterS;
             switch (Item.first) {
+            case IFD0::SubfileType: {
+                if (Item.second.Read().To_int64u() & 1) {
+                    Fill(Stream_Image, 0, Image_Type, "Thumbnail");
+                    Clear(Stream_General, 0, General_Format);
+                }
+                Parameter = (size_t)-1;
+                break;
+            }
             case IFD0::DocumentName: Parameter = General_Title; break;
             case IFD0::ImageDescription: Parameter = General_Description; break;
             case IFD0::Make: Parameter = General_Encoded_Hardware_CompanyName; break;
