@@ -1314,9 +1314,17 @@ void File_Jpeg::SOS()
         Fill();
     if (MPEntries) {
         const auto& FirstMPEntry = static_cast<mp_entries*>(MPEntries.get())->front();
-        if (FirstMPEntry.ImgOffset == 0 && Retrieve_Const(StreamKind, 0, "Type").empty())
+        if (FirstMPEntry.ImgOffset == 0 && Retrieve_Const(StreamKind, 0, "Type").empty()) {
             Fill(StreamKind, 0, "Type", FirstMPEntry.Type());
+            Fill(StreamKind, 0, "MPF_Entry", 1);
+            if (FirstMPEntry.DependentImg1EntryNo)
+                Fill(StreamKind, 0, "MPF_DependentImageEntry", FirstMPEntry.DependentImg1EntryNo);
+            if (FirstMPEntry.DependentImg2EntryNo)
+                Fill(StreamKind, 0, "MPF_DependentImageEntry", FirstMPEntry.DependentImg2EntryNo);
+        }
+        int entrynum{};
         for (const auto& MPEntry : *static_cast<mp_entries*>(MPEntries.get())) {
+            ++entrynum;
             auto ImgOffset = MPEntries_Offset + MPEntry.ImgOffset;
             if (ImgOffset > File_Offset + Buffer_Offset) {
                 Data_Size -= File_Size - ImgOffset;
@@ -1324,6 +1332,11 @@ void File_Jpeg::SOS()
                 Stream_Prepare(StreamKind);
                 Fill(StreamKind, StreamPos_Last, "Type", MPEntry.Type());
                 Fill(StreamKind, StreamPos_Last, "MuxingMode", "MPF");
+                Fill(StreamKind, StreamPos_Last, "MPF_Entry", entrynum);
+                if (MPEntry.DependentImg1EntryNo)
+                    Fill(StreamKind, StreamPos_Last, "MPF_DependentImageEntry", MPEntry.DependentImg1EntryNo);
+                if (MPEntry.DependentImg2EntryNo)
+                    Fill(StreamKind, StreamPos_Last, "MPF_DependentImageEntry", MPEntry.DependentImg2EntryNo);
                 SOS_SOD_Parsed = false;
                 Synched = false;
                 GoTo(ImgOffset);
