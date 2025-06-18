@@ -2544,7 +2544,6 @@ bool File__Analyze::FileHeader_Manage()
     if ((Buffer_Size && Buffer_Offset+Element_Offset>Buffer_Size) || (sizeof(size_t)<sizeof(int64u) && Buffer_Offset+Element_Offset>=(int64u)(size_t)-1))
     {
         GoTo(File_Offset+Buffer_Offset+Element_Offset);
-        return false;
     }
     else
     {
