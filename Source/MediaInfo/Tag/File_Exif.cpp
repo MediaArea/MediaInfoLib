@@ -25,6 +25,9 @@
 #if defined(MEDIAINFO_JPEG_YES)
     #include "MediaInfo/Image/File_Jpeg.h"
 #endif
+#if defined(MEDIAINFO_ICC_YES)
+    #include "MediaInfo/Tag/File_Icc.h"
+#endif
 #include <cmath>
 #include <memory>
 //---------------------------------------------------------------------------
@@ -1506,6 +1509,7 @@ void File_Exif::Streams_Finish()
             const char* ParameterC = nullptr;
             string ParameterS;
             switch (Item.first) {
+            case IFD0::DocumentName: Parameter = General_Title; break;
             case IFD0::ImageDescription: Parameter = General_Description; break;
             case IFD0::Make: Parameter = General_Encoded_Hardware_CompanyName; break;
             case IFD0::Model: Parameter = General_Encoded_Hardware_Model; break;
@@ -1891,6 +1895,10 @@ void File_Exif::Streams_Finish()
             FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
         }
     }
+
+    //ICC
+    if (ICC_Parser)
+        Merge(*ICC_Parser, Stream_Image, 0, 0);
 }
 
 //***************************************************************************
@@ -2030,7 +2038,11 @@ void File_Exif::Header_Parse()
     //Handling remaining IFD data
     if (!IfdItems.empty())
     {
-        if (Buffer_Offset - OffsetFromContainer != IfdItems.begin()->first) {
+        auto Offset = Buffer_Offset - OffsetFromContainer;
+        if (!IsSub) {
+            Offset += File_Offset;
+        }
+        if (Offset != IfdItems.begin()->first) {
             IfdItems.clear(); //There was a problem during the seek, trashing remaining positions from last IFD
             Finish();
             return;
@@ -2209,6 +2221,9 @@ void File_Exif::Read_Directory()
         int32u IFDOffset;
         Get_X4 (IFDOffset,                                      "IFD offset");
         IfdItems[IFDOffset] = IfdItem;
+        auto End = IFDOffset + Size;
+        if (ExpectedFileSize < End)
+            ExpectedFileSize = End;
     }
     Element_End0();
 }
@@ -2313,7 +2328,18 @@ void File_Exif::Makernote()
         Merge(MI, Stream_Image, i, i, false);
     }
 }
-    
+
+//---------------------------------------------------------------------------
+void File_Exif::ICC_Profile()
+{
+    ICC_Parser.reset(new File_Icc());
+    ((File_Icc*)ICC_Parser.get())->StreamKind = Stream_Image;
+    ((File_Icc*)ICC_Parser.get())->IsAdditional = true;
+    Open_Buffer_Init(ICC_Parser.get());
+    Open_Buffer_Continue(ICC_Parser.get());
+    Open_Buffer_Finalize(ICC_Parser.get());
+}
+
 //***************************************************************************
 // Helpers
 //***************************************************************************
@@ -2578,6 +2604,10 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         }
         break;
     case Exif_Type::UNDEFINED:                                  /* Undefined */
+        if (currentIFD == Kind_IFD0 && IfdItem.Tag == IFD0::ICC_Profile) {
+            ICC_Profile();
+            break;
+        }
         if (
             (currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::UserComment) ||
             (currentIFD == Kind_GPS && (IfdItem.Tag == IFDGPS::GPSProcessingMethod || IfdItem.Tag == IFDGPS::GPSAreaInformation))
@@ -2635,6 +2665,9 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
 void File_Exif::GoToOffset(int64u GoTo_)
 {
     Element_Offset = GoTo_ - (Buffer_Offset - OffsetFromContainer);
+    if (!IsSub) {
+        Element_Offset -= File_Offset;
+    }
 }
 
 } //NameSpace

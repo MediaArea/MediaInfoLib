@@ -17,6 +17,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
+#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -47,7 +48,7 @@ public:
     mp_entries* MPEntries = nullptr;
     bool IsFirstImage = true;
 
-private :
+protected :
     //Streams management
     void Streams_Finish();
 
@@ -63,6 +64,7 @@ private :
     void MulticodeString(ZtringList& Info);
     void Thumbnail();
     void Makernote();
+    void ICC_Profile();
 
     //Temp
     struct ifditem
@@ -76,6 +78,8 @@ private :
     typedef std::map<int16u, ZtringList> infos; //Key is tag value
     std::map<int8u, infos> Infos; // Key is the kind of IFD
     std::map<int32u, int8u> IFD_Offsets; // Value is the kind of IFD
+    std::unique_ptr<File__Analyze> ICC_Parser;
+    int64u ExpectedFileSize = 0;
     int64s OffsetFromContainer = 0;
     int8u currentIFD = 0;
     bool LittleEndian = false;
