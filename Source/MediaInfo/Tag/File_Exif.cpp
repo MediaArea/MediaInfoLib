@@ -173,7 +173,7 @@ namespace IFD0 {
     ELEM(0x0141, HalftoneHints)
     ELEM(0x0142, TileWidth)
     ELEM(0x0143, TileLength)
-    ELEM(0x014A, A100DataOffset)
+    ELEM(0x014A, SubIFDs) // TIFF/EP
     ELEM(0x014C, InkSet)
     ELEM(0x0151, TargetPrinter)
     ELEM(0x015B, JPEGTables) // TIFF/EP / Adobe Photoshop TIFF Technical Notes
@@ -259,20 +259,40 @@ namespace IFD0 {
     ELEM(0x5111, PixelsPerUnitX)
     ELEM(0x5112, PixelsPerUnitY)
     ELEM(0x5113, PaletteHistogram)
+    ELEM(0x828D, CFARepeatPatternDim) // TIFF/EP
+    ELEM(0x828E, CFAPattern) // TIFF/EP
+    ELEM(0x828F, BatteryLevel) // TIFF/EP
     ELEM(0x8298, Copyright)
     ELEM(0x830E, PixelScale)
-    ELEM(0x83BB, IPTC_NAA)
+    ELEM(0x83BB, IPTC_NAA) // TIFF/EP
     ELEM(0x8480, IntergraphMatrix)
     ELEM(0x8482, ModelTiePoint)
     ELEM(0x8546, SEMInfo)
     ELEM(0x85D8, ModelTransform)
     ELEM(0x8649, PhotoshopSettings)
     ELEM(0x8769, IFDExif)
-    ELEM(0x8773, ICC_Profile)
+    ELEM(0x8773, ICC_Profile) // TIFF/EP
     ELEM(0x87AF, GeoTiffDirectory)
     ELEM(0x87B0, GeoTiffDoubleParams)
     ELEM(0x87B1, GeoTiffAsciiParams)
     ELEM(0x8825, GPSInfoIFD)
+    ELEM(0x8829, Interlace) // TIFF/EP
+    ELEM(0x882A, TimeZoneOffset) // TIFF/EP
+    ELEM(0x882B, SelfTimerMode) // TIFF/EP
+    ELEM(0x9003, DateTimeOriginal) // TIFF/EP
+    ELEM(0x920B, FlashEnergy) // TIFF/EP
+    ELEM(0x920C, SpatialFrequencyResponse) // TIFF/EP
+    ELEM(0x920D, Noise) // TIFF/EP
+    ELEM(0x920E, FocalPlaneXResolution) // TIFF/EP
+    ELEM(0x920F, FocalPlaneYResolution) // TIFF/EP
+    ELEM(0x9210, FocalPlaneResolutionUnit) // TIFF/EP
+    ELEM(0x9211, ImageNumber) // TIFF/EP
+    ELEM(0x9212, SecurityClassification) // TIFF/EP
+    ELEM(0x9213, ImageHistory) // TIFF/EP
+    ELEM(0x9214, SubjectLocation) // TIFF/EP
+    ELEM(0x9215, ExposureIndex) // TIFF/EP
+    ELEM(0x9216, TIFFEPStandardID) // TIFF/EP
+    ELEM(0x9217, SensingMethod) // TIFF/EP
     ELEM(0x935C, ImageSourceData)
     ELEM(0x9C9B, WinExpTitle)
     ELEM(0x9C9C, WinExpComment)
@@ -282,6 +302,19 @@ namespace IFD0 {
     ELEM(0xA480, GDALMetadata)
     ELEM(0xA481, GDALNoData)
     ELEM(0xC4A5, PrintIM)
+    ELEM(0xC612, DNGVersion) // 0xC612 - 0xC61E Defined DNG
+    ELEM(0xC613, DNGBackwardVersion)
+    ELEM(0xC614, UniqueCameraModel)
+    ELEM(0xC615, LocalizedCameraModel)
+    ELEM(0xC616, CFAPlaneColor)
+    ELEM(0xC617, CFALayout)
+    ELEM(0xC618, LinearizationTable)
+    ELEM(0xC619, BlackLevelRepeatDim)
+    ELEM(0xC61A, BlackLevel)
+    ELEM(0xC61B, BlackLevelDeltaH)
+    ELEM(0xC61C, BlackLevelDeltaV)
+    ELEM(0xC61D, WhiteLevel)
+    ELEM(0xC61E, DefaultScale)
     ELEM(0xC634, MakerNote)
     ELEM(0xC635, MakerNoteSafety)
     ELEM(0xC65A, CalibrationIlluminant1)
@@ -337,7 +370,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(HalftoneHints, "Halftone hints")
     ELEM_TRACE(TileWidth, "Tile width")
     ELEM_TRACE(TileLength, "Tile length")
-    ELEM_TRACE(A100DataOffset, "A100 IFD")
+    ELEM_TRACE(SubIFDs, "Sub IFDs")
     ELEM_TRACE(InkSet, "Ink set")
     ELEM_TRACE(TargetPrinter, "Target printer")
     ELEM_TRACE(JPEGTables, "JPEG quantization and/or Huffman tables")
@@ -423,6 +456,9 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(PixelsPerUnitX, "PixelsPerUnitX")
     ELEM_TRACE(PixelsPerUnitY, "PixelsPerUnitY")
     ELEM_TRACE(PaletteHistogram, "PaletteHistogram")
+    ELEM_TRACE(CFARepeatPatternDim, "CFA Repeat Pattern Dim")
+    ELEM_TRACE(CFAPattern, "CFA pattern")
+    ELEM_TRACE(BatteryLevel, "Battery Level")
     ELEM_TRACE(Copyright, "Copyright")
     ELEM_TRACE(PixelScale, "Pixel scale")
     ELEM_TRACE(IPTC_NAA, "IPTC NAA")
@@ -437,6 +473,23 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(GeoTiffDoubleParams, "GeoTiff double params")
     ELEM_TRACE(GeoTiffAsciiParams, "GeoTiff ASCII params")
     ELEM_TRACE(GPSInfoIFD, "GPS IFD")
+    ELEM_TRACE(Interlace, "Interlace")
+    ELEM_TRACE(TimeZoneOffset, "Time Zone Offset")
+    ELEM_TRACE(SelfTimerMode, "Self Timer Mode")
+    ELEM_TRACE(DateTimeOriginal, "Date Time Original")
+    ELEM_TRACE(FlashEnergy, "Flash Energy")
+    ELEM_TRACE(SpatialFrequencyResponse, "Spatial Frequency Response")
+    ELEM_TRACE(Noise, "Noise")
+    ELEM_TRACE(FocalPlaneXResolution, "Focal plane X resolution")
+    ELEM_TRACE(FocalPlaneYResolution, "Focal plane Y resolution")
+    ELEM_TRACE(FocalPlaneResolutionUnit, "Focal plane resolutionUnit")
+    ELEM_TRACE(ImageNumber, "Image Number")
+    ELEM_TRACE(SecurityClassification, "Security Classification")
+    ELEM_TRACE(ImageHistory, "Image History")
+    ELEM_TRACE(SubjectLocation, "Subject location")
+    ELEM_TRACE(ExposureIndex, "Exposure index")
+    ELEM_TRACE(TIFFEPStandardID, "TIFF/EP Standard ID")
+    ELEM_TRACE(SensingMethod, "Sensing method")
     ELEM_TRACE(ImageSourceData, "Photoshop image source data")
     ELEM_TRACE(WinExpTitle, "Title (Windows Explorer)")
     ELEM_TRACE(WinExpComment, "Comment (Windows Explorer)")
@@ -446,6 +499,19 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(GDALMetadata, "GDAL metadata")
     ELEM_TRACE(GDALNoData, "GDAL no data")
     ELEM_TRACE(PrintIM, "Print IM")
+    ELEM_TRACE(DNGVersion, "DNG Version")
+    ELEM_TRACE(DNGBackwardVersion, "DNG Backward Version")
+    ELEM_TRACE(UniqueCameraModel, "Unique Camera Model")
+    ELEM_TRACE(LocalizedCameraModel, "Localized Camera Model")
+    ELEM_TRACE(CFAPlaneColor, "CFA Plane Color")
+    ELEM_TRACE(CFALayout, "CFA Layout")
+    ELEM_TRACE(LinearizationTable, "Linearization Table")
+    ELEM_TRACE(BlackLevelRepeatDim, "Black Level Repeat Dim")
+    ELEM_TRACE(BlackLevel, "Black Level")
+    ELEM_TRACE(BlackLevelDeltaH, "Black Level Delta H")
+    ELEM_TRACE(BlackLevelDeltaV, "Black Level Delta V")
+    ELEM_TRACE(WhiteLevel, "White Level")
+    ELEM_TRACE(DefaultScale, "Default Scale")
     ELEM_TRACE(MakerNote, "Manufacturer notes")
     ELEM_TRACE(MakerNoteSafety, "Manufacturer notes safety")
     ELEM_TRACE(CalibrationIlluminant1, "Calibration illuminant 1")
@@ -516,6 +582,7 @@ namespace IFDExif {
     ELEM(0xA004, RelatedSoundFile)
     ELEM(0xA005, InteroperabilityIFD)
     ELEM(0xA20B, FlashEnergy)
+    ELEM(0xA20C, SpatialFrequencyResponse)
     ELEM(0xA20E, FocalPlaneXResolution)
     ELEM(0xA20F, FocalPlaneYResolution)
     ELEM(0xA210, FocalPlaneResolutionUnit)
@@ -629,6 +696,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(RelatedSoundFile, "Related sound file")
     ELEM_TRACE(InteroperabilityIFD, "Interoperability IFD")
     ELEM_TRACE(FlashEnergy, "Flash energy")
+    ELEM_TRACE(SpatialFrequencyResponse, "Spatial Frequency Response")
     ELEM_TRACE(FocalPlaneXResolution, "Focal plane X resolution")
     ELEM_TRACE(FocalPlaneYResolution, "Focal plane Y resolution")
     ELEM_TRACE(FocalPlaneResolutionUnit, "Focal plane resolutionUnit")
@@ -1047,6 +1115,10 @@ enum kind_of_ifd
 {
     // Exif
     Kind_IFD0,
+    Kind_SubIFD0,
+    Kind_SubIFD1,
+    Kind_SubIFD2,
+    Kind_IFD2,
     Kind_IFD1,
     Kind_Exif,
     Kind_GPS,
@@ -1069,6 +1141,10 @@ enum kind_of_ifd
 exif_tag_desc_size Exif_Descriptions[] =
 {
     DESC_TABLE(IFD0, "IFD0 (primary image)")
+    DESC_TABLE(IFD0, "Sub IFD")
+    DESC_TABLE(IFD0, "Sub IFD 2")
+    DESC_TABLE(IFD0, "Sub IFD 3")
+    DESC_TABLE(IFD0, "IFD2")
     DESC_TABLE(IFD0, "IFD1 (thumbnail)")
     DESC_TABLE(IFDExif, "Exif")
     DESC_TABLE(IFDGPS, "GPS")
@@ -1616,13 +1692,42 @@ void File_Exif::Streams_Finish()
                 Parameter = (size_t)-1;
                 break;
             case IFD0::Copyright: Parameter = General_Copyright; break;
+            case IFD0::TIFFEPStandardID: {
+                ParameterC = "TIFFEPVersion";
+                const auto TIFFEPStandardID = Infos_Image.find(IFD0::TIFFEPStandardID);
+                if (TIFFEPStandardID->second.size() == 4) {
+                    Value = TIFFEPStandardID->second.at(0) + __T(".") + TIFFEPStandardID->second.at(1) + __T(".") + TIFFEPStandardID->second.at(2) + __T(".") + TIFFEPStandardID->second.at(3);
+                }
+                break;
+            }
             case IFD0::WinExpTitle: Parameter = General_Title; break;
             case IFD0::WinExpComment: Parameter = General_Comment; break;
             case IFD0::WinExpAuthor: Parameter = General_Performer; break;
             case IFD0::WinExpKeywords: Parameter = General_Keywords; break;
             case IFD0::WinExpSubject: Parameter = General_Subject; break;
+            case IFD0::DNGVersion: {
+                ParameterC = "DNGVersion";
+                const auto DNGVersion = Infos_Image.find(IFD0::DNGVersion);
+                if (DNGVersion->second.size() == 4) {
+                    Value = DNGVersion->second.at(0) + __T(".") + DNGVersion->second.at(1) + __T(".") + DNGVersion->second.at(2) + __T(".") + DNGVersion->second.at(3);
+                }
+                break;
             }
-            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS); 
+            case IFD0::DNGBackwardVersion: {
+                ParameterC = "DNGBackwardVersion";
+                const auto DNGBackwardVersion = Infos_Image.find(IFD0::DNGBackwardVersion);
+                if (DNGBackwardVersion->second.size() == 4) {
+                    Value = DNGBackwardVersion->second.at(0) + __T(".") + DNGBackwardVersion->second.at(1) + __T(".") + DNGBackwardVersion->second.at(2) + __T(".") + DNGBackwardVersion->second.at(3);
+                }
+                break;
+            }
+            }
+            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
+            switch (Item.first) {
+            case IFD0::TIFFEPStandardID: Fill_SetOptions(Stream_General, 0, ParameterC, "N NT"); break;
+            case IFD0::DNGVersion: Fill_SetOptions(Stream_General, 0, ParameterC, "N NT"); break;
+            case IFD0::DNGBackwardVersion: Fill_SetOptions(Stream_General, 0, ParameterC, "N NT"); break;
+            }
         }
     }
 
@@ -1927,6 +2032,10 @@ void File_Exif::Streams_Finish()
     //ICC
     if (ICC_Parser)
         Merge(*ICC_Parser, Stream_Image, 0, 0);
+
+    //Filetype
+    if (!IsSub && Infos_Image_It != Infos.end() && Infos_Image_It->second.find(IFD0::DNGVersion) != Infos_Image_It->second.end())
+        Fill(Stream_General, 0, General_Format, "DNG", Unlimited, true, true);
 }
 
 //***************************************************************************
@@ -2142,7 +2251,7 @@ void File_Exif::Data_Parse()
             while (Element_Offset + 12 <= Element_Size)
                 Read_Directory();
             if (currentIFD != Kind_MakernoteSony) // Sony Makernote IFD does not have offset to next IFD
-                Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : currentIFD == Kind_MPFIndex ? Kind_MPFAttributes : (int8u)-1);
+                Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : currentIFD == Kind_IFD1 ? Kind_IFD2 : currentIFD == Kind_MPFIndex ? Kind_MPFAttributes : (int8u)-1);
         }
     }
     else
@@ -2502,7 +2611,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 Element_Offset+=2;
             #endif //MEDIAINFO_TRACE
             Param_Info1C((currentIFD == Kind_IFD0 || currentIFD == Kind_IFD1) && IfdItem.Tag == IFD0::Orientation, Exif_IFD0_Orientation_Name(Ret16));
-            Param_Info1C((currentIFD == Kind_IFD0 || currentIFD == Kind_IFD1) && IfdItem.Tag == IFD0::Compression, Exif_IFD0_Compression_Name(Ret16));
+            Param_Info1C((currentIFD == Kind_IFD0 || currentIFD == Kind_IFD1 || currentIFD == Kind_SubIFD0 || currentIFD == Kind_SubIFD1 || currentIFD == Kind_SubIFD2) && IfdItem.Tag == IFD0::Compression, Exif_IFD0_Compression_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::LightSource, Exif_ExifIFD_Tag_LightSource_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::Flash, Exif_IFDExif_Flash_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::ColorSpace, Exif_IFDExif_ColorSpace_Name(Ret16));
@@ -2517,6 +2626,13 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
         {
             int32u Ret32;
+            if (currentIFD == Kind_IFD0 && IfdItem.Tag == IFD0::SubIFDs) {
+                if (Pos < 3)
+                    Get_IFDOffset(Kind_SubIFD0 + Pos);
+                else
+                    Get_X4(Ret32,                               "IFD Offset");
+                continue;
+            }
             #if MEDIAINFO_TRACE
             if (IfdItem.Type == Exif_Type::IFD)
                 Get_X4 (Ret32,                                  "IFD Offset");
