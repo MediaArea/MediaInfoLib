@@ -282,6 +282,39 @@ bool File_Xmp::FileHeader_Begin()
                         for (XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
                             Fill(Stream_General, 0, General_Copyright, rdfLiElement->GetText());
                 }
+                else if (GContainerItems && !strcmp(Description_Item->Value(), "Container:Directory"))
+                {
+                    XMLElement* rdfSeqElement = Description_Item->FirstChildElement("rdf:Seq");
+                    if (rdfSeqElement) {
+                        for (XMLElement* rdfLiElement = rdfSeqElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li")) {
+                            if (!strcmp(rdfLiElement->Attribute("rdf:parseType"), "Resource")) {
+                                XMLElement* ContainerItem = rdfLiElement->FirstChildElement("Container:Item");
+                                if (ContainerItem) {
+                                    gc_item GCItem{};
+                                    const char* Mime = ContainerItem->Attribute("Item:Mime");
+                                    if (Mime && *Mime != '\\')
+                                        GCItem.Mime = Mime;
+                                    const char* Semantic = ContainerItem->Attribute("Item:Semantic");
+                                    if (Semantic && *Semantic != '\\')
+                                        GCItem.Semantic = Semantic;
+                                    const char* Length = ContainerItem->Attribute("Item:Length");
+                                    if (Length && *Length != '\\')
+                                        GCItem.Length = Ztring(Length).To_int32u();
+                                    const char* Label = ContainerItem->Attribute("Item:Label");
+                                    if (Label && *Label != '\\')
+                                        GCItem.Label = Label;
+                                    const char* Padding = ContainerItem->Attribute("Item:Padding");
+                                    if (Padding && *Padding != '\\')
+                                        GCItem.Padding = Ztring(Padding).To_int32u();
+                                    const char* URI = ContainerItem->Attribute("Item:URI");
+                                    if (URI && *URI != '\\')
+                                        GCItem.URI = URI;
+                                    GContainerItems->push_back(GCItem);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

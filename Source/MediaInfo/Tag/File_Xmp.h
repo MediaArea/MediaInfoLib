@@ -22,6 +22,18 @@
 namespace MediaInfoLib
 {
 
+//GContainer items
+struct gc_item
+{
+    string Mime;
+    string Semantic;
+    int32u Length;
+    string Label;
+    int32u Padding;
+    string URI;
+};
+typedef std::vector<gc_item> gc_items;
+
 //***************************************************************************
 // Class File_Sami
 //***************************************************************************
@@ -30,6 +42,7 @@ class File_Xmp : public File__Analyze
 {
 public:
     bool Wait = false;
+    gc_items* GContainerItems = nullptr;
 
 private :
     //Buffer - File header
