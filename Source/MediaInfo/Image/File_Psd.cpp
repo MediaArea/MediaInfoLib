@@ -449,6 +449,7 @@ void File_Psd::ImageResourcesBlock()
 
     switch (Element_Code) {
     ELEMENT_CASE(CaptionDigest);
+    ELEMENT_CASE(CopyrightFlag);
     ELEMENT_CASE(IPTCNAA);
     ELEMENT_CASE(JPEGQuality);
     ELEMENT_CASE(Thumbnail);
@@ -473,6 +474,12 @@ void File_Psd::ImageData()
     Element_Name("Image data");
     Skip_XX(Element_Size,                                       "(Data)");
     Finish();
+}
+
+//---------------------------------------------------------------------------
+void File_Psd::CopyrightFlag()
+{
+    Skip_B1(                                                    "Copyright Flag");
 }
 
 //---------------------------------------------------------------------------
