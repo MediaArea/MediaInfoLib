@@ -136,6 +136,12 @@ bool File_Xmp::FileHeader_Begin()
         {
             const char* RelitInputImageData = Rdf_Item->Attribute("GCamera:RelitInputImageData");
             ParseBase64Image(RelitInputImageData, "Extended XMP / GCamera", "Relit Input Image");
+            const char* GDepth = Rdf_Item->Attribute("GDepth:Data");
+            ParseBase64Image(GDepth, "Extended XMP / GDepth Data", "Depth");
+            const char* GDepthConfidence = Rdf_Item->Attribute("GDepth:Confidence");
+            ParseBase64Image(GDepthConfidence, "Extended XMP / GDepth Confidence", "Confidence");
+            const char* GImage = Rdf_Item->Attribute("GImage:Data");
+            ParseBase64Image(GImage, "Extended XMP / GImage Data", "Image");
             const char* Description=Rdf_Item->Attribute("xmp:Description");
             if (!Description)
                 Description=Rdf_Item->Attribute("pdf:Description");
@@ -220,12 +226,12 @@ bool File_Xmp::FileHeader_Begin()
                 else if (!strcmp(Description_Item->Value(), "GDepth:Data"))
                 {
                     const char* GDepth = Description_Item->GetText();
-                    ParseBase64Image(GDepth, "Extended XMP / GDepth Data", "Depth Image");
+                    ParseBase64Image(GDepth, "Extended XMP / GDepth Data", "Depth");
                 }
                 else if (!strcmp(Description_Item->Value(), "GDepth:Confidence"))
                 {
                     const char* GDepth = Description_Item->GetText();
-                    ParseBase64Image(GDepth, "Extended XMP / GDepth Confidence", "Confidence Image");
+                    ParseBase64Image(GDepth, "Extended XMP / GDepth Confidence", "Confidence");
                 }
                 else if (!strcmp(Description_Item->Value(), "GImage:Data"))
                 {
