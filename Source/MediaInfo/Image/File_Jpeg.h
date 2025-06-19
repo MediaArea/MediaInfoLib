@@ -212,6 +212,7 @@ private :
     struct seek_item {
         string Type[2];
         string MuxingMode[2];
+        int64u DependsOnFileOffset = 0;
         size_t DependsOnStreamPos = 0;
         bool IsParsed = false;
     };

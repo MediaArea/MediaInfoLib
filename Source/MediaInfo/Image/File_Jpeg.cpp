@@ -340,6 +340,9 @@ void File_Jpeg::Streams_Finish_PerImage()
         size_t Count = Exif_Parser->Count_Get(StreamKind);
         for (size_t i = 1; i < Count; ++i) {
             Merge(*Exif_Parser, StreamKind, i, StreamPos_Last + 1, false);
+            if (Seek_Items_PrimaryStreamPos) {
+                Fill(StreamKind, StreamPos_Last, "MuxingMode_MoreInfo", "Muxed in Image #" + to_string(Seek_Items_PrimaryStreamPos + 1));
+            }
         }
         Exif_Parser.reset();
     }
@@ -1350,6 +1353,11 @@ void File_Jpeg::SOS()
         Fill(StreamKind, StreamPos_Last, "Type", Item.second.Type[1]);
         Fill(StreamKind, StreamPos_Last, "MuxingMode", Item.second.MuxingMode[0]);
         Fill(StreamKind, StreamPos_Last, "MuxingMode", Item.second.MuxingMode[1]);
+        for (auto& Item2 : Seek_Items) {
+            if (Item2.second.DependsOnFileOffset == Item.first) {
+                Item2.second.DependsOnStreamPos = StreamPos_Last;
+            }
+        }
         if (Item.second.DependsOnStreamPos) {
             Fill(StreamKind, StreamPos_Last, "MuxingMode_MoreInfo", "Muxed in Image #" + to_string(Item.second.DependsOnStreamPos + 1));
         }
@@ -1703,7 +1711,17 @@ void File_Jpeg::APP2_MPF()
     Open_Buffer_Finalize(&MI);
     Element_End0();
     if (!MPEntries.empty()) {
+        vector<int64u> DependsOn;
+        DependsOn.resize(MPEntries.size());
+        size_t Pos = (size_t)-1;
         for (const auto& Entry : MPEntries) {
+            ++Pos;
+            if (Entry.DependentImg1EntryNo && !DependsOn[Entry.DependentImg1EntryNo - 1]) {
+                DependsOn[Entry.DependentImg1EntryNo - 1] = Entry.ImgOffset ? (Offset + Entry.ImgOffset) : 0;
+            }
+            if (Entry.DependentImg2EntryNo && !DependsOn[Entry.DependentImg2EntryNo - 1]) {
+                DependsOn[Entry.DependentImg2EntryNo - 1] = Entry.ImgOffset ? (Offset + Entry.ImgOffset) : 0;
+            }
             if (!Entry.ImgOffset) {
                 string Type = Entry.Type();
                 if (!Seek_Items_PrimaryStreamPos) {
@@ -1715,7 +1733,9 @@ void File_Jpeg::APP2_MPF()
             Seek_Item.Type[0] = Entry.Type();
             Seek_Item.MuxingMode[0] = "MPF";
             Seek_Item.DependsOnStreamPos = Seek_Items_PrimaryStreamPos;
-
+            if (DependsOn[Pos]) {
+                Seek_Item.DependsOnFileOffset = DependsOn[Pos];
+            }
         }
         if (MPEntries.size() > 1) {
             GContainerItems_Offset = Offset + MPEntries[1].ImgOffset;
