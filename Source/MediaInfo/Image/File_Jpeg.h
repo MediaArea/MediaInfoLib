@@ -199,6 +199,7 @@ private :
     
     //Helpers
     void Data_Common();
+    void HandleMultipleImages();
 
     //Temp
     int64u Data_Size = 0;

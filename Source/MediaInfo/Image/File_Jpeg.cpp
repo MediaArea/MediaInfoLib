@@ -723,6 +723,10 @@ void File_Jpeg::Data_Parse()
     if (SOS_SOD_Parsed)
     {
         Skip_XX(Element_Size,                                   "Data");
+        if (!GContainerItems_Offset && !Seek_Items_WithoutFirstImageOffset.empty()) {
+            GContainerItems_Offset = File_Offset + Buffer_Offset + Element_Size;
+            HandleMultipleImages();
+        }
         SOS_SOD_Parsed=false;
         return;
     }
@@ -1327,6 +1331,17 @@ void File_Jpeg::SOS()
     if (Status[IsFilled])
         Fill();
 
+    HandleMultipleImages();
+
+    if (Config->ParseSpeed < 1.0 && File_GoTo == (int64u)-1 && !(!GContainerItems_Offset && !Seek_Items_WithoutFirstImageOffset.empty())) {
+        Finish("JPEG"); //No need of more
+    }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::HandleMultipleImages()
+{
     if (GContainerItems_Offset) {
         if (Seek_Items_PrimaryImageType != "Primary") {
             Fill(StreamKind, Seek_Items_PrimaryStreamPos, "Type", Seek_Items_PrimaryImageType);
@@ -1337,9 +1352,9 @@ void File_Jpeg::SOS()
             Seek_Item.MuxingMode[1] = Item.second.MuxingMode[1];
         }
         GContainerItems_Offset = 0;
+        Seek_Items_PrimaryImageType.clear();
+        Seek_Items_WithoutFirstImageOffset.clear();
     }
-    Seek_Items_PrimaryImageType.clear();
-    Seek_Items_WithoutFirstImageOffset.clear();
 
     for (auto& Item : Seek_Items) {
         if (Item.second.IsParsed) {
@@ -1367,11 +1382,6 @@ void File_Jpeg::SOS()
         GoTo(Item.first);
         break;
     }
-
-    if (Config->ParseSpeed < 1.0 && File_GoTo == (int64u)-1) {
-        Finish("JPEG"); //No need of more
-    }
-    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -1601,12 +1611,14 @@ void File_Jpeg::APP1_XMP_Extension()
     Get_B4 (Offset,                                             "Chunk offset");
     #if defined(MEDIAINFO_XMP_YES)
     auto Item = XmpExt_List.find(GUID);
+    gc_items GContainerItems;
     if (Item == XmpExt_List.end()) {
         if (Offset) {
             Skip_XX(Element_Size - Element_Offset,              "(Missing start of content)");
             return;
         }
         xmpext XmpExt(new File_Xmp());
+        ((File_Xmp*)XmpExt.Parser.get())->GContainerItems = &GContainerItems;
         Open_Buffer_Init(XmpExt.Parser.get());
         Item = XmpExt_List.emplace(GUID, std::move(XmpExt)).first;
     }
@@ -1618,7 +1630,26 @@ void File_Jpeg::APP1_XMP_Extension()
     auto& MI = *(File_Xmp*)Item->second.Parser.get();
     MI.Wait = Item->second.LastOffset < Size;
     auto Element_Offset_Sav = Element_Offset;
+    while (Buffer[(size_t)(Buffer_Offset + Element_Offset)] == '\n') {
+        Element_Offset++;
+    }
     Open_Buffer_Continue(&MI);
+    if (!GContainerItems.empty()) {
+        int64u ImgOffset = 0;
+        bool IsNotFirst = false;
+        for (const auto& Entry : GContainerItems) {
+            if (!IsNotFirst) {
+                Seek_Items_PrimaryImageType = Entry.Semantic;
+                IsNotFirst = true;
+                continue;
+            }
+            auto& Seek_Item = Seek_Items_WithoutFirstImageOffset[ImgOffset];
+            Seek_Item.Type[1] = Entry.Semantic;
+            Seek_Item.MuxingMode[1] = "GContainer Extended XMP";
+            ImgOffset += Entry.Length;
+            ImgOffset += Entry.Padding;
+        }
+    }
     Element_Offset = Element_Offset_Sav;
     Element_Show();
     #endif
