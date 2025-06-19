@@ -6,7 +6,8 @@
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// Source : http://www.wavpack.com/file_format.txt
+// Sources : http://www.wavpack.com/file_format.txt
+//           https://www.wavpack.com/WavPack5FileFormat.pdf
 //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -85,6 +86,7 @@ static const char* Wvpk_id(int8u ID)
         case 0x0B : return "correction file bitstream (wvc file)";
         case 0x0C : return "special extended bitstream for floating point data or integers > 24 bit";
         case 0x0D : return "contains channel count and channel_mask";
+        case 0x0E : return "contains compressed DSD audio"; // Ver 5.0+
         // ids from here are "optional" so decoders should skip them if they don't understand them
         case 0x21 : return "RIFF header for .wav files (before audio)";
         case 0x22 : return "RIFF trailer for .wav files (after audio)";
@@ -96,9 +98,9 @@ static const char* Wvpk_id(int8u ID)
         case 0x24 : return "trailer for non-wav files";
         case 0x28 : return "target filename extension";
         case 0x29 : return "16-byte MD5 sum of raw audio data with non-wav standard";
-        case 0x2a : return "new file configuration stuff";
-        case 0x2b : return "identities of non-MS channels";
-        case 0x2f : return "2- or 4-byte checksum of entire block";
+        case 0x2A : return "new file configuration stuff";
+        case 0x2B : return "identities of non-MS channels";
+        case 0x2F : return "2- or 4-byte checksum of entire block";
         default:    return "";
     }
 }
@@ -395,10 +397,10 @@ void File_Wvpk::Data_Parse()
                     Skip_Flags(flags, 25,                           "sampling rate");
                     Skip_Flags(flags, 26,                           "sampling rate"); SamplingRate_Index=(int8u)(((flags>>23)&0xF)); Param_Info1(Wvpk_SamplingRate[SamplingRate_Index]);
                     Skip_Flags(flags, 27,                           "reserved");
-                    Skip_Flags(flags, 28,                           "reserved");
+                    Skip_Flags(flags, 28,                           "block contains checksum in last 2 or 4 bytes"); // Ver 5.0+
                     Skip_Flags(flags, 29,                           "use IIR for negative hybrid noise shaping");
                     Skip_Flags(flags, 30,                           "false stereo");
-                    Get_Flags (flags, 31, dsf,                      "dsf");
+                    Get_Flags (flags, 31, dsf,                      "dsf"); // Ver 5.0+
             }
             else
             {
@@ -454,6 +456,7 @@ void File_Wvpk::Data_Parse()
                     case 0x25 : id_25(); break;
                     case 0x26 : id_26(); break;
                     case 0x27 : id_27(); break;
+                    case 0x29 : id_29(); break;
                     default   : if (word_size)
                                     Skip_XX(Size,                   "data");
                 }
