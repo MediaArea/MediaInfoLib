@@ -640,7 +640,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(RAWDevelopingSoftware, "RAW developing software")
     ELEM_TRACE(ImageEditingSoftware, "Editing software")
     ELEM_TRACE(MetadataEditingSoftware, "Metadata editing software")
-    ELEM_TRACE(CompositeImage, "Composite iImage")
+    ELEM_TRACE(CompositeImage, "Composite image")
     ELEM_TRACE(CompositeImageCount, "Composite image count")
     ELEM_TRACE(Gamma, "Gamma")
     ELEM_TRACE(Padding, "Padding")
@@ -1258,6 +1258,17 @@ static const char* Exif_IFDExif_WhiteBalance_Name(int16u value)
     switch (value) {
     case 0: return "Auto";
     case 1: return "Manual";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Exif_IFDExif_CompositeImage_Name(int16u value)
+{
+    switch (value) {
+    case 1: return "Not a Composite Image";
+    case 2: return "General Composite Image";
+    case 3: return "Composite Image Captured While Shooting";
     default: return "";
     }
 }
@@ -2452,6 +2463,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::LightSource, Exif_ExifIFD_Tag_LightSource_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::Flash, Exif_IFDExif_Flash_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::ColorSpace, Exif_IFDExif_ColorSpace_Name(Ret16));
+            Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::CompositeImage, Exif_IFDExif_CompositeImage_Name(Ret16));
             Param_Info1C(currentIFD == Kind_MakernoteNikon && IfdItem.Tag == IFDMakernoteNikon::CropHiSpeed, Exif_IFDMakernoteNikon_CropHiSpeed_Name(Ret16));
             Param_Info1C(currentIFD == Kind_MakernoteNikon && IfdItem.Tag == IFDMakernoteNikon::ColorSpace, Exif_IFDMakernoteNikon_ColorSpace_Name(Ret16));
             Param_Info1C(currentIFD == Kind_MakernoteNikon && IfdItem.Tag == IFDMakernoteNikon::ActiveDLighting, Exif_IFDMakernoteNikon_ActiveDLighting_Name(Ret16));
