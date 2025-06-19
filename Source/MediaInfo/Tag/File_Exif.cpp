@@ -1111,27 +1111,27 @@ static const char* Exif_IFD0_Compression_Name(int16u compression)
 {
     switch (compression)
     {
-    case 1: return "Uncompressed";
-    case 2: return "CCITT 1D";
-    case 3: return "T4/Group 3 Fax";
-    case 4: return "T6/Group 4 Fax";
+    case 1: return "Raw";
+    case 2: return "CCITT T.4/Group 3 1D Fax";
+    case 3: return "CCITT T.4/Group 3 Fax";
+    case 4: return "CCITT T.6/Group 4 Fax";
     case 5: return "LZW";
-    case 6: return "JPEG (old-style)";
-    case 7: return "JPEG";
+    case 6: return "JPEG (TIFF v6.0)";
+    case 7: return "JPEG (ISO)";
     case 8: return "Adobe Deflate";
     case 9: return "JBIG B&W";
     case 10: return "JBIG Color";
     case 99: return "JPEG";
     case 262: return "Kodak 262";
     case 32766: return "Next";
-    case 32767: return "Sony ARW Compressed";
+    case 32767: return "Sony ARW";
     case 32769: return "Packed RAW";
-    case 32770: return "Samsung SRW Compressed";
+    case 32770: return "Samsung SRW";
     case 32771: return "CCIRLEW";
-    case 32772: return "Samsung SRW Compressed 2";
+    case 32772: return "Samsung SRW 2";
     case 32773: return "PackBits";
     case 32809: return "Thunderscan";
-    case 32867: return "Kodak KDC Compressed";
+    case 32867: return "Kodak KDC";
     case 32895: return "IT8CTPAD";
     case 32896: return "IT8LW";
     case 32897: return "IT8MP";
@@ -1146,7 +1146,7 @@ static const char* Exif_IFD0_Compression_Name(int16u compression)
     case 34676: return "SGILog";
     case 34677: return "SGILog24";
     case 34712: return "JPEG 2000";
-    case 34713: return "Nikon NEF Compressed";
+    case 34713: return "Nikon NEF";
     case 34715: return "JBIG2 TIFF FX";
     case 34718: return "Microsoft Document Imaging (MDI) Binary Level Codec";
     case 34719: return "Microsoft Document Imaging (MDI) Progressive Transform Codec";
@@ -1162,8 +1162,8 @@ static const char* Exif_IFD0_Compression_Name(int16u compression)
     case 50001: return "WebP";
     case 50002: return "JPEG XL (old)";
     case 52546: return "JPEG XL";
-    case 65000: return "Kodak DCR Compressed";
-    case 65535: return "Pentax PEF Compressed";
+    case 65000: return "Kodak DCR";
+    case 65535: return "Pentax PEF";
     default: return "";
     }
 }
