@@ -330,22 +330,27 @@ void File_Jpeg::Streams_Finish_PerImage()
         }
     }
 
+    auto CurrentMainStream = StreamPos_Last;
+
     #if defined(MEDIAINFO_EXIF_YES)
     if (Exif_Parser) {
-        Merge(*Exif_Parser, Stream_General, 0, 0, false);
+        if (CurrentMainStream == 0)
+            Merge(*Exif_Parser, Stream_General, 0, 0, false);
+        Merge(*Exif_Parser, StreamKind, 0, CurrentMainStream);
         size_t Count = Exif_Parser->Count_Get(StreamKind);
-        for (size_t i = 0; i < Count; i++) {
-            Merge(*Exif_Parser, StreamKind, i, i, false);
+        for (size_t i = 1; i < Count; ++i) {
+            Merge(*Exif_Parser, StreamKind, i, StreamPos_Last + 1, false);
         }
         Exif_Parser.reset();
     }
     #endif
     #if defined(MEDIAINFO_PSD_YES)
     if (PSD_Parser) {
-        Merge(*PSD_Parser, Stream_General, 0, 0, false);
-        Merge(*PSD_Parser.get(), StreamKind, 0, 0);
+        if (CurrentMainStream == 0)
+            Merge(*PSD_Parser, Stream_General, 0, 0, false);
+        Merge(*PSD_Parser, StreamKind, 0, CurrentMainStream);
         size_t Count = PSD_Parser->Count_Get(StreamKind);
-        for (size_t i = 1; i < Count; i++) {
+        for (size_t i = 1; i < Count; ++i) {
             Merge(*PSD_Parser, StreamKind, i, StreamPos_Last + 1, false);
         }
         PSD_Parser.reset();
@@ -353,7 +358,7 @@ void File_Jpeg::Streams_Finish_PerImage()
     #endif
     #if defined(MEDIAINFO_ICC_YES)
     if (ICC_Parser) {
-        Merge(*ICC_Parser.get(), StreamKind, 0, 0);
+        Merge(*ICC_Parser, StreamKind, 0, CurrentMainStream);
         ICC_Parser.reset();
     }
     #endif
@@ -361,8 +366,10 @@ void File_Jpeg::Streams_Finish_PerImage()
     {
         if (Item.second.Parser) {
             Item.second.Parser->Finish();
-            Merge(*Item.second.Parser, Stream_General, 0, 0);
-            Merge(*Item.second.Parser, false);
+            if (CurrentMainStream == 0) {
+                Merge(*Item.second.Parser, Stream_General, 0, 0);
+                Merge(*Item.second.Parser, false);
+            }
         }
     }
     XmpExt_List.clear();
@@ -370,8 +377,10 @@ void File_Jpeg::Streams_Finish_PerImage()
     {
         if (Item.second.Parser) {
             Item.second.Parser->Finish();
-            Merge(*Item.second.Parser, Stream_General, 0, 0);
-            Merge(*Item.second.Parser, false);
+            if (CurrentMainStream == 0) {
+                Merge(*Item.second.Parser, Stream_General, 0, 0);
+                Merge(*Item.second.Parser, false);
+            }
         }
     }
     JpegXtExt_List.clear();
