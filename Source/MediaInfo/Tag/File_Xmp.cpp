@@ -321,6 +321,74 @@ bool File_Xmp::FileHeader_Begin()
                         }
                     }
                 }
+                else if (GContainerItems && !strcmp(Description_Item->Value(), "Device:Container") && !strcmp(Description_Item->Attribute("rdf:parseType"), "Resource"))
+                {
+                    XMLElement* Directory = Description_Item->FirstChildElement("Container_1_:Directory");
+                    if (Directory) {
+                        XMLElement* rdfSeqElement = Directory->FirstChildElement("rdf:Seq");
+                        if (rdfSeqElement) {
+                            for (XMLElement* rdfLiElement = rdfSeqElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li")) {
+                                if (!strcmp(rdfLiElement->Attribute("rdf:parseType"), "Resource")) {
+                                    XMLElement* Value = rdfLiElement->FirstChildElement("rdf:value");
+                                    if (Value && !strcmp(Value->Attribute("rdf:parseType"), "Resource")) {
+                                        gc_item GCItem{};
+                                        XMLElement* Mime = Value->FirstChildElement("Item_1_:Mime");
+                                        if (Mime)
+                                            GCItem.Mime = Mime->GetText();
+                                        XMLElement* Length = Value->FirstChildElement("Item_1_:Length");
+                                        if (Length)
+                                            GCItem.Length = Ztring(Length->GetText()).To_int32u();
+                                        XMLElement* DataURI = Value->FirstChildElement("Item_1_:DataURI");
+                                        if (DataURI) {
+                                            auto DataURIContent = DataURI->GetText();
+                                            if (!strcmp(DataURIContent, "primary_image"))
+                                                GCItem.Semantic = "Primary";
+                                            if (!strcmp(DataURIContent, "android/original_image"))
+                                                GCItem.Semantic = "Original";
+                                            if (!strcmp(DataURIContent, "android/depthmap"))
+                                                GCItem.Semantic = "Depth";
+                                            if (!strcmp(DataURIContent, "android/confidencemap"))
+                                                GCItem.Semantic = "Confidence";
+                                        }
+                                        GContainerItems->push_back(GCItem);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        Directory = Description_Item->FirstChildElement("Container:Directory");
+                        if (Directory) {
+                            XMLElement* rdfSeqElement = Directory->FirstChildElement("rdf:Seq");
+                            if (rdfSeqElement) {
+                                for (XMLElement* rdfLiElement = rdfSeqElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li")) {
+                                    XMLElement* ContainerItem = rdfLiElement->FirstChildElement("Container:Item");
+                                    if (ContainerItem) {
+                                        gc_item GCItem{};
+                                        const char* Mime = ContainerItem->Attribute("Item:Mime");
+                                        if (Mime && *Mime != '\\')
+                                            GCItem.Mime = Mime;
+                                        const char* Length = ContainerItem->Attribute("Item:Length");
+                                        if (Length && *Length != '\\')
+                                            GCItem.Length = Ztring(Length).To_int32u();
+                                        const char* DataURI = ContainerItem->Attribute("Item:DataURI");
+                                        if (DataURI && *DataURI != '\\') {
+                                            if (!strcmp(DataURI, "primary_image"))
+                                                GCItem.Semantic = "Primary";
+                                            if (!strcmp(DataURI, "android/original_image"))
+                                                GCItem.Semantic = "Original";
+                                            if (!strcmp(DataURI, "android/depthmap"))
+                                                GCItem.Semantic = "Depth";
+                                            if (!strcmp(DataURI, "android/confidencemap"))
+                                                GCItem.Semantic = "Confidence";
+                                        }
+                                        GContainerItems->push_back(GCItem);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
