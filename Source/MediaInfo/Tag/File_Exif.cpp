@@ -39,6 +39,8 @@ namespace MediaInfoLib
 // Info
 //***************************************************************************
 
+const char* Tiff_Compression_Name(int16u compression);
+
 //---------------------------------------------------------------------------
 // EXIF Data Types
 // 
@@ -1093,68 +1095,6 @@ static const char* Exif_IFD0_Orientation_Name(int16u orientation)
     case Exif_IFD0_Orientation::Rotate90CW: return "Rotate 90 CW";
     case Exif_IFD0_Orientation::MirrorHorizontalRotate90CW: return "Mirror horizontal and rotate 90 CW";
     case Exif_IFD0_Orientation::Rotate270CW: return "Rotate 270 CW";
-    default: return "";
-    }
-}
-
-//---------------------------------------------------------------------------
-static const char* Exif_IFD0_Compression_Name(int16u compression)
-{
-    switch (compression)
-    {
-    case 1: return "Uncompressed";
-    case 2: return "CCITT 1D";
-    case 3: return "T4/Group 3 Fax";
-    case 4: return "T6/Group 4 Fax";
-    case 5: return "LZW";
-    case 6: return "JPEG (old-style)";
-    case 7: return "JPEG";
-    case 8: return "Adobe Deflate";
-    case 9: return "JBIG B&W";
-    case 10: return "JBIG Color";
-    case 99: return "JPEG";
-    case 262: return "Kodak 262";
-    case 32766: return "Next";
-    case 32767: return "Sony ARW Compressed";
-    case 32769: return "Packed RAW";
-    case 32770: return "Samsung SRW Compressed";
-    case 32771: return "CCIRLEW";
-    case 32772: return "Samsung SRW Compressed 2";
-    case 32773: return "PackBits";
-    case 32809: return "Thunderscan";
-    case 32867: return "Kodak KDC Compressed";
-    case 32895: return "IT8CTPAD";
-    case 32896: return "IT8LW";
-    case 32897: return "IT8MP";
-    case 32898: return "IT8BL";
-    case 32908: return "PixarFilm";
-    case 32909: return "PixarLog";
-    case 32946: return "Deflate";
-    case 32947: return "DCS";
-    case 33003: return "Aperio JPEG 2000 YCbCr";
-    case 33005: return "Aperio JPEG 2000 RGB";
-    case 34661: return "JBIG";
-    case 34676: return "SGILog";
-    case 34677: return "SGILog24";
-    case 34712: return "JPEG 2000";
-    case 34713: return "Nikon NEF Compressed";
-    case 34715: return "JBIG2 TIFF FX";
-    case 34718: return "Microsoft Document Imaging (MDI) Binary Level Codec";
-    case 34719: return "Microsoft Document Imaging (MDI) Progressive Transform Codec";
-    case 34720: return "Microsoft Document Imaging (MDI) Vector";
-    case 34887: return "ESRI Lerc";
-    case 34892: return "Lossy JPEG";
-    case 34925: return "LZMA2";
-    case 34926: return "Zstd (old)";
-    case 34927: return "WebP (old)";
-    case 34933: return "PNG";
-    case 34934: return "JPEG XR";
-    case 50000: return "Zstd";
-    case 50001: return "WebP";
-    case 50002: return "JPEG XL (old)";
-    case 52546: return "JPEG XL";
-    case 65000: return "Kodak DCR Compressed";
-    case 65535: return "Pentax PEF Compressed";
     default: return "";
     }
 }
@@ -2468,7 +2408,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 Element_Offset+=2;
             #endif //MEDIAINFO_TRACE
             Param_Info1C((currentIFD == Kind_IFD0 || currentIFD == Kind_IFD1) && IfdItem.Tag == IFD0::Orientation, Exif_IFD0_Orientation_Name(Ret16));
-            Param_Info1C((currentIFD == Kind_IFD0 || currentIFD == Kind_IFD1) && IfdItem.Tag == IFD0::Compression, Exif_IFD0_Compression_Name(Ret16));
+            Param_Info1C((currentIFD == Kind_IFD0 || currentIFD == Kind_IFD1) && IfdItem.Tag == IFD0::Compression, Tiff_Compression_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::LightSource, Exif_ExifIFD_Tag_LightSource_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::Flash, Exif_IFDExif_Flash_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::ColorSpace, Exif_IFDExif_ColorSpace_Name(Ret16));
