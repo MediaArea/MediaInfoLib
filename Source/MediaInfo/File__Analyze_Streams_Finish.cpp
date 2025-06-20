@@ -1141,6 +1141,9 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
             Fill(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName, "Nikon", Unlimited, true, true);
             Fill(Stream_General, StreamPos, General_Encoded_Hardware_Model, Model.substr(6), true);
         }
+        if (CompanyName == __T("NIKON CORPORATION") && Model.rfind(__T("COOLPIX "), 0) == 0) {
+            Fill(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName, "Nikon", Unlimited, true, true);
+        }
         Ztring Hardware=CompanyName;
         if (!Name.empty())
         {
