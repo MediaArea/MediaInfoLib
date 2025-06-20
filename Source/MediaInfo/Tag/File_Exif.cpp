@@ -42,8 +42,9 @@ namespace MediaInfoLib
 //---------------------------------------------------------------------------
 // EXIF Data Types
 // 
-// All data types are from TIFF 6.0 specification except UTF-8 which is
-// defined independently by EXIF 3.0 specification.
+// All data types are from TIFF 6.0 specification except IFD and UTF-8 which
+// are defined in TIFF Specification Supplement 1 and independently by
+// EXIF 3.0 specification respectively.
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
@@ -60,6 +61,7 @@ namespace Exif_Type {
     const int16u SRATIONAL  = 10;
     const int16u FLOAT      = 11;
     const int16u DOUBLE     = 12;
+    const int16u IFD        = 13;
     const int16u UTF8       = 129;
 }
 
@@ -80,6 +82,7 @@ static const char* Exif_Type_Name(int16u Type)
     case Exif_Type::SRATIONAL   : return "SRATIONAL";
     case Exif_Type::FLOAT       : return "FLOAT";
     case Exif_Type::DOUBLE      : return "DOUBLE";
+    case Exif_Type::IFD         : return "IFD";
     case Exif_Type::UTF8        : return "UTF-8";
     default                     : return "";
     }
@@ -102,6 +105,7 @@ static const int8u Exif_Type_Size(int16u Type)
     case Exif_Type::SRATIONAL   : return 8;
     case Exif_Type::FLOAT       : return 4;
     case Exif_Type::DOUBLE      : return 8;
+    case Exif_Type::IFD         : return 4;
     case Exif_Type::UTF8        : return 1;
     default                     : return 0;
     }
@@ -2493,11 +2497,15 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             Info.push_back(Ztring::ToZtring(Ret16));
         }
         break;
+    case Exif_Type::IFD:                                        /* 32-bit (4-byte) unsigned integer IFD offset */
     case Exif_Type::LONG:                                       /* 32-bit (4-byte) unsigned integer */
         for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
         {
             int32u Ret32;
             #if MEDIAINFO_TRACE
+            if (IfdItem.Type == Exif_Type::IFD)
+                Get_X4 (Ret32,                                  "IFD Offset");
+            else
                 Get_X4 (Ret32,                                  "Data");
                 Element_Info1(Ztring::ToZtring(Ret32));
             #else //MEDIAINFO_TRACE
