@@ -66,6 +66,7 @@ protected :
     void ICC_Profile();
     void XMP();
     void PhotoshopImageResources();
+    void IPTC_NAA();
 
     //Temp
     struct ifditem
