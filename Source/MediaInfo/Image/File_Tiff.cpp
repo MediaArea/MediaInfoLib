@@ -64,6 +64,16 @@ namespace Tiff_Tag
     const int16u ResolutionUnit             = 296;
     const int16u Software                   = 305;
     const int16u ExtraSamples               = 338;
+    const int16u JPEGTables                 = 347;
+    const int16u JPEGProc                   = 512;
+    const int16u JPEGInterchangeFormat      = 513;
+    const int16u JPEGInterchangeFormatLngth = 514;
+    const int16u JPEGRestartInterval        = 515;
+    const int16u JPEGLosslessPredictors     = 517;
+    const int16u JPEGPointTransforms        = 518;
+    const int16u JPEGQTables                = 519;
+    const int16u JPEGDCTables               = 520;
+    const int16u JPEGACTables               = 521;
 }
 
 //---------------------------------------------------------------------------
