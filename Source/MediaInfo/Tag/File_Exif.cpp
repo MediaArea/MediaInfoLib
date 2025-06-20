@@ -34,6 +34,9 @@
 #if defined(MEDIAINFO_PSD_YES)
     #include "MediaInfo/Image/File_Psd.h"
 #endif
+#if defined(MEDIAINFO_IIM_YES)
+    #include "MediaInfo/Tag/File_Iim.h"
+#endif
 #include <cmath>
 #include <memory>
 //---------------------------------------------------------------------------
@@ -438,7 +441,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(PaletteHistogram, "PaletteHistogram")
     ELEM_TRACE(Copyright, "Copyright")
     ELEM_TRACE(PixelScale, "Pixel scale")
-    ELEM_TRACE(IPTC_NAA, "IPTC NAA")
+    ELEM_TRACE(IPTC_NAA, "IPTC-NAA")
     ELEM_TRACE(IntergraphMatrix, "Intergraph matrix")
     ELEM_TRACE(ModelTiePoint, "Model tie point")
     ELEM_TRACE(SEMInfo, "SEM info")
@@ -2337,6 +2340,21 @@ void File_Exif::PhotoshopImageResources()
     #endif
 }
 
+//---------------------------------------------------------------------------
+void File_Exif::IPTC_NAA()
+{
+    //Parsing
+    #if defined(MEDIAINFO_IIM_YES)
+    File_Iim MI;
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Merge(MI, Stream_General, 0, 0, false);
+    #else
+    Skip_UTF8(Element_Size - Element_Offset,                    "IPTC-NAA data");
+    #endif
+}
+
 //***************************************************************************
 // Helpers
 //***************************************************************************
@@ -2501,27 +2519,38 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         break;
     case Exif_Type::IFD:                                        /* 32-bit (4-byte) unsigned integer IFD offset */
     case Exif_Type::LONG:                                       /* 32-bit (4-byte) unsigned integer */
-        for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
-        {
-            int32u Ret32;
-            #if MEDIAINFO_TRACE
-                Get_X4 (Ret32, IfdItem.Type == Exif_Type::IFD ? "IFD Offset" : "Data");
-                Element_Info1(Ztring::ToZtring(Ret32));
-            #else //MEDIAINFO_TRACE
-                if (Element_Offset+4>Element_Size)
-                {
-                    Trusted_IsNot();
-                    break;
-                }
-                if (LittleEndian)
-                    Ret32=LittleEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                else
-                    Ret32=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                Element_Offset+=4;
-            #endif //MEDIAINFO_TRACE
-            Param_Info1C(currentIFD == Kind_MakernoteSony && IfdItem.Tag == IFDMakernoteSony::Quality, Exif_IFDMakernoteSony_Quality_Name(Ret32));
-            Param_Info1C(currentIFD == Kind_MakernoteSony && IfdItem.Tag == IFDMakernoteSony::WhiteBalance, Exif_IFDMakernoteSony_WhiteBalance_Name(Ret32));
-            Info.push_back(Ztring::ToZtring(Ret32));
+        switch (currentIFD) {
+        case Kind_IFD0:
+            switch (IfdItem.Tag) {
+            case IFD0::IPTC_NAA:
+                IPTC_NAA();
+                break;
+            }
+            break;
+        }
+        if (Element_Offset < End) {
+            for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+            {
+                int32u Ret32;
+                #if MEDIAINFO_TRACE
+                    Get_X4 (Ret32, IfdItem.Type == Exif_Type::IFD ? "IFD Offset" : "Data");
+                    Element_Info1(Ztring::ToZtring(Ret32));
+                #else //MEDIAINFO_TRACE
+                    if (Element_Offset+4>Element_Size)
+                    {
+                        Trusted_IsNot();
+                        break;
+                    }
+                    if (LittleEndian)
+                        Ret32=LittleEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                    else
+                        Ret32=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                    Element_Offset+=4;
+                #endif //MEDIAINFO_TRACE
+                Param_Info1C(currentIFD == Kind_MakernoteSony && IfdItem.Tag == IFDMakernoteSony::Quality, Exif_IFDMakernoteSony_Quality_Name(Ret32));
+                Param_Info1C(currentIFD == Kind_MakernoteSony && IfdItem.Tag == IFDMakernoteSony::WhiteBalance, Exif_IFDMakernoteSony_WhiteBalance_Name(Ret32));
+                Info.push_back(Ztring::ToZtring(Ret32));
+            }
         }
         break;
     case Exif_Type::RATIONAL:                                   /* 2x32-bit (2x4-byte) unsigned integers */
