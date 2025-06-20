@@ -31,6 +31,9 @@
 #if defined(MEDIAINFO_XMP_YES)
     #include "MediaInfo/Tag/File_Xmp.h"
 #endif
+#if defined(MEDIAINFO_PSD_YES)
+    #include "MediaInfo/Image/File_Psd.h"
+#endif
 #include <cmath>
 #include <memory>
 //---------------------------------------------------------------------------
@@ -181,6 +184,8 @@ namespace IFD0 {
     ELEM(0x014A, A100DataOffset)
     ELEM(0x014C, InkSet)
     ELEM(0x0151, TargetPrinter)
+    ELEM(0x0152, ExtraSamples)
+    ELEM(0x0153, SampleFormat)
     ELEM(0x015B, JPEGTables) // TIFF/EP / Adobe Photoshop TIFF Technical Notes
     ELEM(0x0200, JPEGProc) // 0x0200 - 0x0209 Defined TIFF 6.0 Section 22
     ELEM(0x0201, JPEGInterchangeFormat)
@@ -266,19 +271,19 @@ namespace IFD0 {
     ELEM(0x5113, PaletteHistogram)
     ELEM(0x8298, Copyright)
     ELEM(0x830E, PixelScale)
-    ELEM(0x83BB, IPTC_NAA)
+    ELEM(0x83BB, IPTC_NAA) // TIFF/EP / Adobe Photoshop File Formats Specification
     ELEM(0x8480, IntergraphMatrix)
     ELEM(0x8482, ModelTiePoint)
     ELEM(0x8546, SEMInfo)
     ELEM(0x85D8, ModelTransform)
-    ELEM(0x8649, PhotoshopSettings)
+    ELEM(0x8649, PhotoshopImageResources) // Adobe Photoshop File Formats Specification
     ELEM(0x8769, IFDExif)
-    ELEM(0x8773, ICC_Profile)
+    ELEM(0x8773, ICC_Profile) // TIFF/EP / Adobe Photoshop File Formats Specification
     ELEM(0x87AF, GeoTiffDirectory)
     ELEM(0x87B0, GeoTiffDoubleParams)
     ELEM(0x87B1, GeoTiffAsciiParams)
     ELEM(0x8825, GPSInfoIFD)
-    ELEM(0x935C, ImageSourceData)
+    ELEM(0x935C, ImageSourceData) // Adobe Photoshop File Formats Specification
     ELEM(0x9C9B, WinExpTitle)
     ELEM(0x9C9C, WinExpComment)
     ELEM(0x9C9D, WinExpAuthor)
@@ -286,6 +291,7 @@ namespace IFD0 {
     ELEM(0x9C9F, WinExpSubject)
     ELEM(0xA480, GDALMetadata)
     ELEM(0xA481, GDALNoData)
+    ELEM(0xC44F, Annotations) // Adobe Photoshop File Formats Specification
     ELEM(0xC4A5, PrintIM)
     ELEM(0xC634, MakerNote)
     ELEM(0xC635, MakerNoteSafety)
@@ -345,6 +351,8 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(A100DataOffset, "A100 IFD")
     ELEM_TRACE(InkSet, "Ink set")
     ELEM_TRACE(TargetPrinter, "Target printer")
+    ELEM_TRACE(ExtraSamples, "Extra samples")
+    ELEM_TRACE(SampleFormat, "Sample format")
     ELEM_TRACE(JPEGTables, "JPEG quantization and/or Huffman tables")
     ELEM_TRACE(JPEGProc, "JPEG process used")
     ELEM_TRACE(JPEGInterchangeFormat, "JPEG interchange format bitstream offset")
@@ -435,7 +443,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(ModelTiePoint, "Model tie point")
     ELEM_TRACE(SEMInfo, "SEM info")
     ELEM_TRACE(ModelTransform, "Model transform")
-    ELEM_TRACE(PhotoshopSettings, "Photoshop settings")
+    ELEM_TRACE(PhotoshopImageResources, "Photoshop image resources (PSIR)")
     ELEM_TRACE(IFDExif, "Exif IFD")
     ELEM_TRACE(ICC_Profile, "ICC profile")
     ELEM_TRACE(GeoTiffDirectory, "GeoTiff directory")
@@ -450,6 +458,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(WinExpSubject, "Subject (Windows Explorer)")
     ELEM_TRACE(GDALMetadata, "GDAL metadata")
     ELEM_TRACE(GDALNoData, "GDAL no data")
+    ELEM_TRACE(Annotations, "Annotations")
     ELEM_TRACE(PrintIM, "Print IM")
     ELEM_TRACE(MakerNote, "Manufacturer notes")
     ELEM_TRACE(MakerNoteSafety, "Manufacturer notes safety")
@@ -2313,6 +2322,21 @@ void File_Exif::XMP()
     Skip_UTF8(Element_Size - Element_Offset,                    "XMP metadata");
 }
 
+//---------------------------------------------------------------------------
+void File_Exif::PhotoshopImageResources()
+{
+    #if defined(MEDIAINFO_PSD_YES)
+    File_Psd MI{};
+    MI.Step = File_Psd::Step_ImageResourcesBlock;
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Merge(MI, Stream_General, 0, 0, false);
+    #else
+    Skip_UTF8(Element_Size - Element_Offset,                    "Photoshop Tags");
+    #endif
+}
+
 //***************************************************************************
 // Helpers
 //***************************************************************************
@@ -2390,6 +2414,9 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             switch (IfdItem.Tag) {
             case IFD0::XMP:
                 XMP();
+                break;
+            case IFD0::PhotoshopImageResources:
+                PhotoshopImageResources();
                 break;
             default:
                 if (IfdItem.Tag >= IFD0::WinExpTitle && IfdItem.Tag <= IFD0::WinExpSubject) {
@@ -2615,6 +2642,9 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             switch (IfdItem.Tag) {
             case IFD0::XMP:
                 XMP();
+                break;
+            case IFD0::PhotoshopImageResources:
+                PhotoshopImageResources();
                 break;
             case IFD0::ICC_Profile:
                 ICC_Profile();

@@ -65,6 +65,7 @@ protected :
     void Makernote();
     void ICC_Profile();
     void XMP();
+    void PhotoshopImageResources();
 
     //Temp
     struct ifditem
