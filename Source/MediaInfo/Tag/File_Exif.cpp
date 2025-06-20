@@ -28,6 +28,9 @@
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
+#if defined(MEDIAINFO_XMP_YES)
+    #include "MediaInfo/Tag/File_Xmp.h"
+#endif
 #include <cmath>
 #include <memory>
 //---------------------------------------------------------------------------
@@ -190,7 +193,7 @@ namespace IFD0 {
     ELEM(0x0212, YCbCrSubSampling)
     ELEM(0x0213, YCbCrPositioning)
     ELEM(0x0214, ReferenceBlackWhite)
-    ELEM(0x02BC, ApplicationNotes)
+    ELEM(0x02BC, XMP) // XMP Part 3
     ELEM(0x4746, Rating)
     ELEM(0x4749, RatingPercent)
     ELEM(0x5001, ResolutionXUnit) // 5001-5113 Defined Microsoft
@@ -387,7 +390,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(YCbCrSubSampling, "Chroma subsampling")
     ELEM_TRACE(YCbCrPositioning, "Chroma positioning")
     ELEM_TRACE(ReferenceBlackWhite, "Reference black and white")
-    ELEM_TRACE(ApplicationNotes, "Application notes")
+    ELEM_TRACE(XMP, "XMP")
     ELEM_TRACE(Rating, "Rating")
     ELEM_TRACE(RatingPercent, "Rating (percent)")
     ELEM_TRACE(ResolutionXUnit, "ResolutionXUnit")
@@ -2453,12 +2456,30 @@ void File_Exif::Makernote()
 //---------------------------------------------------------------------------
 void File_Exif::ICC_Profile()
 {
+    #if defined(MEDIAINFO_ICC_YES)
     ICC_Parser.reset(new File_Icc());
     ((File_Icc*)ICC_Parser.get())->StreamKind = Stream_Image;
     ((File_Icc*)ICC_Parser.get())->IsAdditional = true;
     Open_Buffer_Init(ICC_Parser.get());
     Open_Buffer_Continue(ICC_Parser.get());
     Open_Buffer_Finalize(ICC_Parser.get());
+    #endif
+}
+
+//---------------------------------------------------------------------------
+void File_Exif::XMP()
+{
+    #if defined(MEDIAINFO_XMP_YES)
+    File_Xmp MI{};
+    Open_Buffer_Init(&MI);
+    auto Element_Offset_Sav = Element_Offset;
+    Open_Buffer_Continue(&MI);
+    Element_Offset = Element_Offset_Sav;
+    Open_Buffer_Finalize(&MI);
+    Element_Show(); //TODO: why is it needed?
+    Merge(MI, Stream_General, 0, 0, false);
+    #endif
+    Skip_UTF8(Element_Size - Element_Offset,                    "XMP metadata");
 }
 
 //***************************************************************************
@@ -2520,7 +2541,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
 
     ZtringList& Info = Infos[currentIFD][IfdItem.Tag]; Info.clear(); Info.Separator_Set(0, __T(" /"));
 
-    if (IfdItem.Type!=Exif_Type::ASCII && IfdItem.Type!=Exif_Type::UTF8 && IfdItem.Type!=Exif_Type::UNDEFINED && IfdItem.Count>=1000)
+    if (IfdItem.Type!=Exif_Type::BYTE && IfdItem.Type!=Exif_Type::ASCII && IfdItem.Type!=Exif_Type::UTF8 && IfdItem.Type!=Exif_Type::UNDEFINED && IfdItem.Count>=1000)
     {
         //Too many data, we don't currently need it and we skip it
         Skip_XX(static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
@@ -2530,7 +2551,10 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
     switch (IfdItem.Type)
     {
     case Exif_Type::BYTE:                                       /* 8-bit unsigned integer. */
-        if (currentIFD == Kind_IFD0 && IfdItem.Tag >= IFD0::WinExpTitle && IfdItem.Tag <= IFD0::WinExpSubject) {
+        if (currentIFD >= Kind_IFD0 && currentIFD <= Kind_IFD2 && IfdItem.Tag == IFD0::XMP) {
+            XMP();
+        }
+        else if (currentIFD == Kind_IFD0 && IfdItem.Tag >= IFD0::WinExpTitle && IfdItem.Tag <= IFD0::WinExpSubject) {
             // Content is actually UTF16LE
             Ztring Data;
             Get_UTF16L(IfdItem.Count, Data,                     "Data");
@@ -2737,6 +2761,10 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         }
         break;
     case Exif_Type::UNDEFINED:                                  /* Undefined */
+        if (currentIFD >= Kind_IFD0 && currentIFD <= Kind_IFD2 && IfdItem.Tag == IFD0::XMP) {
+            XMP();
+            break;
+        }
         if (currentIFD == Kind_IFD0 && IfdItem.Tag == IFD0::ICC_Profile) {
             ICC_Profile();
             break;
