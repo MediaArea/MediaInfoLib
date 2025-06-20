@@ -174,8 +174,16 @@ namespace IFD0 {
     ELEM(0x014A, A100DataOffset)
     ELEM(0x014C, InkSet)
     ELEM(0x0151, TargetPrinter)
-    ELEM(0x0201, ImageOffset)
-    ELEM(0x0202, ImageLength)
+    ELEM(0x015B, JPEGTables) // TIFF/EP / Adobe Photoshop TIFF Technical Notes
+    ELEM(0x0200, JPEGProc) // 0x0200 - 0x0209 Defined TIFF 6.0 Section 22
+    ELEM(0x0201, JPEGInterchangeFormat)
+    ELEM(0x0202, JPEGInterchangeFormatLength)
+    ELEM(0x0203, JPEGRestartInterval)
+    ELEM(0x0205, JPEGLosslessPredictors)
+    ELEM(0x0206, JPEGPointTransforms)
+    ELEM(0x0207, JPEGQTables)
+    ELEM(0x0208, JPEGDCTables)
+    ELEM(0x0209, JPEGACTables)
     ELEM(0x0211, YCbCrCoefficients)
     ELEM(0x0212, YCbCrSubSampling)
     ELEM(0x0213, YCbCrPositioning)
@@ -330,8 +338,16 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(A100DataOffset, "A100 IFD")
     ELEM_TRACE(InkSet, "Ink set")
     ELEM_TRACE(TargetPrinter, "Target printer")
-    ELEM_TRACE(ImageOffset, "Image offset")
-    ELEM_TRACE(ImageLength, "Image byte count")
+    ELEM_TRACE(JPEGTables, "JPEG quantization and/or Huffman tables")
+    ELEM_TRACE(JPEGProc, "JPEG process used")
+    ELEM_TRACE(JPEGInterchangeFormat, "JPEG interchange format bitstream offset")
+    ELEM_TRACE(JPEGInterchangeFormatLength, "JPEG interchange format bitstream length")
+    ELEM_TRACE(JPEGRestartInterval, "JPEG restart interval length")
+    ELEM_TRACE(JPEGLosslessPredictors, "JPEG lossless predictor-selection values list")
+    ELEM_TRACE(JPEGPointTransforms, "JPEG point transform values")
+    ELEM_TRACE(JPEGQTables, "JPEG quantization tables offsets list")
+    ELEM_TRACE(JPEGDCTables, "JPEG DC Huffman tables offsets list")
+    ELEM_TRACE(JPEGACTables, "JPEG Huffman AC tables offsets list")
     ELEM_TRACE(YCbCrCoefficients, "Transformation matrix")
     ELEM_TRACE(YCbCrSubSampling, "Chroma subsampling")
     ELEM_TRACE(YCbCrPositioning, "Chroma positioning")
@@ -2074,7 +2090,7 @@ void File_Exif::Data_Parse()
             const auto Infos_Thumbnail_It = Infos.find(Kind_IFD1);
             if (Infos_Thumbnail_It != Infos.end()) {
                 const auto& Infos_Thumbnail = Infos_Thumbnail_It->second;
-                const auto ImageOffset = Infos_Thumbnail.find(IFD0::ImageOffset);
+                const auto ImageOffset = Infos_Thumbnail.find(IFD0::JPEGInterchangeFormat);
                 if (ImageOffset != Infos_Thumbnail.end() && ImageOffset->second.size() == 1) {
                     int32u IFD_Offset = ImageOffset->second.at(0).To_int32u();
                     GoToOffset(IFD_Offset);
@@ -2089,7 +2105,7 @@ void File_Exif::Data_Parse()
             const auto Infos_Thumbnail_It = Infos.find(Kind_NikonPreview);
             if (Infos_Thumbnail_It != Infos.end()) {
                 const auto& Infos_Thumbnail = Infos_Thumbnail_It->second;
-                const auto ImageOffset = Infos_Thumbnail.find(IFD0::ImageOffset);
+                const auto ImageOffset = Infos_Thumbnail.find(IFD0::JPEGInterchangeFormat);
                 if (ImageOffset != Infos_Thumbnail.end() && ImageOffset->second.size() == 1) {
                     int32u IFD_Offset = ImageOffset->second.at(0).To_int32u();
                     GoToOffset(IFD_Offset);
