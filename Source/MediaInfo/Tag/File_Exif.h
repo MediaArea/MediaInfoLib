@@ -65,6 +65,7 @@ protected :
     void Thumbnail();
     void Makernote();
     void ICC_Profile();
+    void XMP();
 
     //Temp
     struct ifditem
