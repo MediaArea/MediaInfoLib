@@ -3088,6 +3088,7 @@ void MediaInfo_Config_CodecID_Other_Mpeg4 (InfoMap &Info)
 {
     Info.Separator_Set(0, __T("\n"));
     Info.Write(Ztring().From_UTF8(
+    "mebx;Timed Metadata Sample\n"
     "rtp ;RTP\n"
     "Ovbi;Omneon VBI\n"
     ));
