@@ -5966,7 +5966,9 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
         Skip_B2(                                                "reserved (0)");
         Get_B2 (SampleRate16,                                   "samplerate");
         Skip_B2(                                                "samplerate (0)");
-        if (Version_Temp==1 || MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("PCM"))
+        if (Version_Temp == 1 ||
+            MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format) == __T("PCM") ||
+            MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format) == __T("Auro-Cx"))
         {
             channelcount=Channels16;
             Channels=Channels16;
