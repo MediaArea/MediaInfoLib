@@ -70,11 +70,13 @@ ADIF;;;A;Adif;Audio Data Interchange Format;;;;
 ADTS;;;A;Adts;Audio Data Transport Stream;aac aacp adts;;;
 ALS;;;A;Als;MPEG-4 Audio Lossless Coding;als;;http://www.nue.tu-berlin.de/forschung/projekte/lossless/mp4als.html#downloads;Lossless
 AMR;;;A;Amr;Adaptive Multi-Rate;amr;audio/AMR;http://www.apple.com/quicktime/download/standalone.html;
+APAC;;;A;;Apple Positional Audio Codec;;;http://www.apple.com/;Lossy
 Atrac;;;A;;Adaptive Transform Acoustic Coding;;audio/ATRAC;;Lossy
 Atrac3;;;A;;Adaptive Transform Acoustic Coding 3;;audio/ATRAC3;;Lossy
 Atrac9;;;A;;Adaptive Transform Acoustic Coding 9;;audio/ATRAC9;https://en.wikipedia.org/wiki/Adaptive_Transform_Acoustic_Coding;Lossy
 APT-X100;;;A;Aptx100;;AUD AUE aud aue;;;Lossy
 AU;;;A;Au;uLaw/AU Audio File;au;audio/basic;;
+Auro-Cx;;;A;;Auro-Cx 3D audio;;;http://www.auro-3d.com/;
 CAF;;;A;Caf;Core Audio Format;caf;audio/x-caf;https://developer.apple.com/library/content/documentation/MusicAudio/Reference/CAFSpec/CAF_overview/CAF_overview.html;
 DAT;;;A;Dat;Digital Audio Tape;hda;;;Lossless
 DolbyE;;;A;Aes3;;dde
