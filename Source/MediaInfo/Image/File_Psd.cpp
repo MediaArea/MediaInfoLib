@@ -454,6 +454,7 @@ void File_Psd::ImageResourcesBlock()
     ELEMENT_CASE(JPEGQuality);
     ELEMENT_CASE(Thumbnail);
     ELEMENT_CASE(Thumbnail_New);
+    ELEMENT_CASE(URL);
     ELEMENT_CASE(VersionInfo);
     default: Skip_XX(Element_Size,                              "(Data)");
     }
@@ -531,6 +532,16 @@ void File_Psd::Thumbnail()
     if (!Count_Get(Stream_General)) Stream_Prepare(Stream_General);
     if (!Count_Get(Stream_Image)) Stream_Prepare(Stream_Image);
     Attachment(IsSub?"PSD":nullptr, {}, "Thumbnail");
+}
+
+//---------------------------------------------------------------------------
+void File_Psd::URL()
+{
+    string url;
+    Get_String(Element_Size, url,                               "URL");
+    FILLING_BEGIN_PRECISE()
+        Fill(Stream_General, 0, "URL", url);
+    FILLING_END()
 }
 
 //---------------------------------------------------------------------------
