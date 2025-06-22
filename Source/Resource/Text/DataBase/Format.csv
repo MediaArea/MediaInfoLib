@@ -126,6 +126,7 @@ Vorbis;;;A;;;;audio/vorbis;http://www.vorbis.com/;Lossy
 Wave;;;A;Riff;;act at9 wav;audio/vnd.wave;;
 Wave64;;;A;Riff;;w64;;;
 WavPack;;;A;Wvpk;;wv wvc;;http://www.wavpack.com;
+APNG;;;I;Png;Animated Portable Network Graphic;apng png pns;image/apng;http://www.w3.org/TR/png/;Lossless
 Arri Raw;;;I;ArriRaw;;ari;;;
 ARW;;;I;Tiff;Sony Alpha RAW;arw;image/x-sony-arw;http://www.sony.com/;
 Bitmap;;;I;Bmp;;bmp bms;image/bmp;;Lossless
@@ -145,7 +146,7 @@ MNG;;;I;Mng;Multiple-Image Network Graphic;mng;;;Lossless
 NEF;;;I;Tiff;Nikon Electronic Format;nef;image/x-nikon-nef;http://www.nikon.com/;
 NRW;;;I;Tiff;Nikon RAW;nrw;image/x-nikon-nrw;http://www.nikon.com/;
 PCX;;;I;pcx;Personal Computer eXchange;pcx;image/pcx;;Lossless
-PNG;;;I;Png;Portable Network Graphic;png pns;image/png;;Lossless
+PNG;;;I;Png;Portable Network Graphic;png pns;image/png;http://www.w3.org/TR/png/;Lossless
 PSD;;;I;Psd;Photoshop File Format;psd;image/psd;http://www.adobe.com/;Lossless
 RIFF Palette;;;I;Riff;RIFF Palette;;;;
 RLE;;;I;;Run-length encoding;rle;;;
