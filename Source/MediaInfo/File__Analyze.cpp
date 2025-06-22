@@ -2126,34 +2126,47 @@ bool File__Analyze::FileHeader_Begin_XML(XMLDocument &Document)
     }
 
     //XML header
-    Ztring Data;
-         if ((Buffer[0]=='<'
-           && Buffer[1]==0x00)
-          || (Buffer[0]==0xFF
-           && Buffer[1]==0xFE
-           && Buffer[2]=='<'
-           && Buffer[3]==0x00))
-        Data.From_UTF16LE((const char*)Buffer, Buffer_Size);
-    else if ((Buffer[0]==0x00
-           && Buffer[1]=='<')
-          || (Buffer[0]==0xFE
-           && Buffer[1]==0xFF
-           && Buffer[2]==0x00
-           && Buffer[3]=='<'))
-        Data.From_UTF16BE((const char*)Buffer, Buffer_Size);
-    else if ((Buffer[0]=='<')
-          || (Buffer[0]==0xEF
-           && Buffer[1]==0xBB
-           && Buffer[2]==0xBF
-           && Buffer[3]=='<'))
-        Data.From_UTF8((const char*)Buffer, Buffer_Size);
-    else
+    auto BOM = CC3(Buffer);
+    switch (BOM)
+    {
+    case 0x00FFFE:
+    case 0xFEFF00:
+    case 0xEFBBBF:
+        Buffer_Offset = 3; //BOM
+        break;
+    }
+    while (Buffer_Offset < Buffer_Size) {
+        switch (Buffer[Buffer_Offset]) {
+        case '\r':
+        case '\n':
+        case '\t':
+        case ' ':
+            Buffer_Offset++;
+            continue;
+        }
+        break;
+    }
+    if (Buffer_Offset >= Buffer_Size || Buffer[Buffer_Offset] != '<')
     {
         Reject();
-        return false;
+        return false; 
     }
 
-    string DataUTF8=Data.To_UTF8();
+    string DataUTF8;
+    auto Buffer_XML = (const char*)Buffer + Buffer_Offset;
+    auto Size_XML = Buffer_Size - Buffer_Offset;
+    switch (BOM) {
+    case 0x00FFFE:
+        DataUTF8 = Ztring().From_UTF16LE(Buffer_XML, Size_XML).To_UTF8();
+        break;
+    case 0xFEFF00:
+        DataUTF8 = Ztring().From_UTF16BE(Buffer_XML, Size_XML).To_UTF8();
+        break;
+    default:
+        DataUTF8.assign(Buffer_XML, Size_XML);
+        break;
+    }
+
     if (Document.Parse(DataUTF8.c_str()))
     {
         Reject();
