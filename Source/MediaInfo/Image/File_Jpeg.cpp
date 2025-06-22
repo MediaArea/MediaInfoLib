@@ -313,9 +313,60 @@ void File_Jpeg::Streams_Accept()
 }
 
 //---------------------------------------------------------------------------
+void File_Jpeg::Streams_Accept_PerImage(const seek_item& Item)
+{
+    string Format;
+    if (Item.Mime.empty() || !Item.Mime.rfind("image/", 0)) {
+        Stream_Prepare(StreamKind);
+        if (!Item.Mime.empty()) {
+            Format = Item.Mime.substr(6);
+            if (Format == "jpeg") {
+                Format = "JPEG";
+            }
+            if (Format == "heic") {
+                Format = "HEIC";
+            }
+            if (Format == "avif") {
+                Format = "AVIF";
+            }
+        }
+    }
+    else if (!Item.Mime.rfind("video/", 0)) {
+        Stream_Prepare(Stream_Video); // the content may or may not have audio or other content, but we can not know so let's put that this way for the moment
+        Format = Item.Mime.substr(6); // Format of the container, until we parse the content
+        {
+            if (Format == "mp4") {
+                Format = "MPEG-4";
+            }
+            if (Format == "quicktime") {
+                Format = "QuickTime";
+            }
+        }
+    }
+    else {
+        Stream_Prepare(Stream_Other);
+        Format = Item.Mime;
+    }
+    Fill(StreamKind_Last, StreamPos_Last, "Format", Format);
+    Fill(StreamKind_Last, StreamPos_Last, "Type", Item.Type[0]);
+    Fill(StreamKind_Last, StreamPos_Last, "Type", Item.Type[1]);
+    Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", Item.MuxingMode[0]);
+    Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", Item.MuxingMode[1]);
+}
+
+//---------------------------------------------------------------------------
 void File_Jpeg::Streams_Finish()
 {
+    for (auto& Item : Seek_Items_WithoutFirstImageOffset) {
+        Data_Size -= Item.second.Size;
+    }
+
     Streams_Finish_PerImage();
+
+    for (auto& Item : Seek_Items_WithoutFirstImageOffset) {
+        Streams_Accept_PerImage(Item.second);
+        Fill(StreamKind_Last, StreamPos_Last, "StreamSize", Item.second.Size);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -1337,9 +1388,9 @@ void File_Jpeg::SOS()
             Seek_Item.MuxingMode[1] = Item.second.MuxingMode[1];
         }
         GContainerItems_Offset = 0;
+        Seek_Items_PrimaryImageType.clear();
+        Seek_Items_WithoutFirstImageOffset.clear();
     }
-    Seek_Items_PrimaryImageType.clear();
-    Seek_Items_WithoutFirstImageOffset.clear();
 
     for (auto& Item : Seek_Items) {
         if (Item.second.IsParsed) {
@@ -1348,18 +1399,17 @@ void File_Jpeg::SOS()
         Item.second.IsParsed = true;
         Data_Size -= File_Size - Item.first;
         Streams_Finish_PerImage();
-        Stream_Prepare(StreamKind);
-        Fill(StreamKind, StreamPos_Last, "Type", Item.second.Type[0]);
-        Fill(StreamKind, StreamPos_Last, "Type", Item.second.Type[1]);
-        Fill(StreamKind, StreamPos_Last, "MuxingMode", Item.second.MuxingMode[0]);
-        Fill(StreamKind, StreamPos_Last, "MuxingMode", Item.second.MuxingMode[1]);
+        Streams_Accept_PerImage(Item.second);
         for (auto& Item2 : Seek_Items) {
             if (Item2.second.DependsOnFileOffset == Item.first) {
                 Item2.second.DependsOnStreamPos = StreamPos_Last;
             }
         }
         if (Item.second.DependsOnStreamPos) {
-            Fill(StreamKind, StreamPos_Last, "MuxingMode_MoreInfo", "Muxed in Image #" + to_string(Item.second.DependsOnStreamPos + 1));
+            Fill(StreamKind_Last, StreamPos_Last, "MuxingMode_MoreInfo", "Muxed in Image #" + to_string(Item.second.DependsOnStreamPos + 1));
+        }
+        if (!Item.second.Mime.empty() && Item.second.Mime != "image/jpeg") {
+            continue;
         }
         Seek_Items_PrimaryStreamPos = 0;
         SOS_SOD_Parsed = false;
@@ -1576,6 +1626,9 @@ void File_Jpeg::APP1_XMP()
             auto& Seek_Item = Seek_Items_WithoutFirstImageOffset[ImgOffset];
             Seek_Item.Type[1] = Entry.Semantic;
             Seek_Item.MuxingMode[1] = "GContainer XMP";
+            Seek_Item.Mime = Entry.Mime;
+            Seek_Item.Size = Entry.Length;
+            Seek_Item.Padding = Entry.Padding;
             ImgOffset += Entry.Length;
             ImgOffset += Entry.Padding;
         }
@@ -1618,7 +1671,29 @@ void File_Jpeg::APP1_XMP_Extension()
     auto& MI = *(File_Xmp*)Item->second.Parser.get();
     MI.Wait = Item->second.LastOffset < Size;
     auto Element_Offset_Sav = Element_Offset;
+    gc_items GContainerItems;
+    MI.GContainerItems = &GContainerItems;
     Open_Buffer_Continue(&MI);
+    MI.GContainerItems = nullptr;
+    if (!GContainerItems.empty()) {
+        int64u ImgOffset = 0;
+        bool IsNotFirst = false;
+        for (const auto& Entry : GContainerItems) {
+            if (!IsNotFirst) {
+                Seek_Items_PrimaryImageType = Entry.Semantic;
+                IsNotFirst = true;
+                continue;
+            }
+            auto& Seek_Item = Seek_Items_WithoutFirstImageOffset[ImgOffset];
+            Seek_Item.Type[1] = Entry.Semantic;
+            Seek_Item.MuxingMode[1] = "GContainer Extended XMP";
+            Seek_Item.Mime = Entry.Mime;
+            Seek_Item.Size = Entry.Length;
+            Seek_Item.Padding = Entry.Padding;
+            ImgOffset += Entry.Length;
+            ImgOffset += Entry.Padding;
+        }
+    }
     Element_Offset = Element_Offset_Sav;
     Element_Show();
     #endif
@@ -1732,6 +1807,7 @@ void File_Jpeg::APP2_MPF()
             auto& Seek_Item = Seek_Items[Offset + Entry.ImgOffset];
             Seek_Item.Type[0] = Entry.Type();
             Seek_Item.MuxingMode[0] = "MPF";
+            Seek_Item.Size = Entry.ImgSize;
             Seek_Item.DependsOnStreamPos = Seek_Items_PrimaryStreamPos;
             if (DependsOn[Pos]) {
                 Seek_Item.DependsOnFileOffset = DependsOn[Pos];

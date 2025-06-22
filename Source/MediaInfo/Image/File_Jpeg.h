@@ -42,8 +42,20 @@ public :
     File_Jpeg();
 
 private :
+    struct seek_item {
+        string Type[2];
+        string MuxingMode[2];
+        string Mime;
+        int64u Size;
+        int64u Padding;
+        int64u DependsOnFileOffset = 0;
+        size_t DependsOnStreamPos = 0;
+        bool IsParsed = false;
+    };
+
     //Streams management
     void Streams_Accept();
+    void Streams_Accept_PerImage(const seek_item& Item);
     void Streams_Finish();
     void Streams_Finish_PerImage();
 
@@ -209,13 +221,6 @@ private :
     int64u GContainerItems_Offset = 0;
     size_t Seek_Items_PrimaryStreamPos = 0;
     string Seek_Items_PrimaryImageType;
-    struct seek_item {
-        string Type[2];
-        string MuxingMode[2];
-        int64u DependsOnFileOffset = 0;
-        size_t DependsOnStreamPos = 0;
-        bool IsParsed = false;
-    };
     std::map<int64u, seek_item> Seek_Items;
     std::map<int64u, seek_item> Seek_Items_WithoutFirstImageOffset;
     std::unique_ptr<File__Analyze> Exif_Parser;
@@ -229,6 +234,7 @@ private :
         }
 
         std::unique_ptr<File__Analyze> Parser;
+        uintptr_t GContainerItems = {};
         int32u LastOffset = 0;
     };
     std::map<std::string, xmpext> XmpExt_List;
