@@ -35,7 +35,7 @@ struct gc_item
 typedef std::vector<gc_item> gc_items;
 
 //***************************************************************************
-// Class File_Sami
+// Class File_Xmp
 //***************************************************************************
 
 class File_Xmp : public File__Analyze
