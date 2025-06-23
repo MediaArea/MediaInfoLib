@@ -1907,14 +1907,14 @@ void File_Exif::FileHeader_Parse()
     //HEIF
     if (FromHeif) {
         int32u Size;
-        Get_B4 (Size,                                           "Size");
+        Get_B4 (Size,                                           "Exif header length");
         string Identifier;
         Get_String(Size, Identifier,                            "Identifier");
-        if (Size != 6 || strncmp(Identifier.c_str(), "Exif\0", 6)) {
+        if (!(Size == 0 || (Size == 6 && !strncmp(Identifier.c_str(), "Exif\0", 6)))) {
             Reject();
             return;
         }
-        OffsetFromContainer = 10;
+        OffsetFromContainer = static_cast<int64s>(4) + Size;
     }
 
     //Exif Makernotes
