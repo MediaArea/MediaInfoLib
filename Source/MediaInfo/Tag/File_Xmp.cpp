@@ -136,6 +136,12 @@ bool File_Xmp::FileHeader_Begin()
         {
             const char* RelitInputImageData = Rdf_Item->Attribute("GCamera:RelitInputImageData");
             ParseBase64Image(RelitInputImageData, "Extended XMP / GCamera", "Relit Input Image");
+            const char* GDepth = Rdf_Item->Attribute("GDepth:Data");
+            ParseBase64Image(GDepth, "Extended XMP / GDepth Data", "Depth");
+            const char* GDepthConfidence = Rdf_Item->Attribute("GDepth:Confidence");
+            ParseBase64Image(GDepthConfidence, "Extended XMP / GDepth Confidence", "Confidence");
+            const char* GImage = Rdf_Item->Attribute("GImage:Data");
+            ParseBase64Image(GImage, "Extended XMP / GImage Data", "Image");
             const char* Description=Rdf_Item->Attribute("xmp:Description");
             if (!Description)
                 Description=Rdf_Item->Attribute("pdf:Description");
@@ -220,12 +226,12 @@ bool File_Xmp::FileHeader_Begin()
                 else if (!strcmp(Description_Item->Value(), "GDepth:Data"))
                 {
                     const char* GDepth = Description_Item->GetText();
-                    ParseBase64Image(GDepth, "Extended XMP / GDepth Data", "Depth Image");
+                    ParseBase64Image(GDepth, "Extended XMP / GDepth Data", "Depth");
                 }
                 else if (!strcmp(Description_Item->Value(), "GDepth:Confidence"))
                 {
                     const char* GDepth = Description_Item->GetText();
-                    ParseBase64Image(GDepth, "Extended XMP / GDepth Confidence", "Confidence Image");
+                    ParseBase64Image(GDepth, "Extended XMP / GDepth Confidence", "Confidence");
                 }
                 else if (!strcmp(Description_Item->Value(), "GImage:Data"))
                 {
@@ -281,6 +287,107 @@ bool File_Xmp::FileHeader_Begin()
                     if (rdfAltElement)
                         for (XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
                             Fill(Stream_General, 0, General_Copyright, rdfLiElement->GetText());
+                }
+                else if (GContainerItems && !strcmp(Description_Item->Value(), "Container:Directory"))
+                {
+                    XMLElement* rdfSeqElement = Description_Item->FirstChildElement("rdf:Seq");
+                    if (rdfSeqElement) {
+                        for (XMLElement* rdfLiElement = rdfSeqElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li")) {
+                            if (!strcmp(rdfLiElement->Attribute("rdf:parseType"), "Resource")) {
+                                XMLElement* ContainerItem = rdfLiElement->FirstChildElement("Container:Item");
+                                if (ContainerItem) {
+                                    gc_item GCItem{};
+                                    const char* Mime = ContainerItem->Attribute("Item:Mime");
+                                    if (Mime && *Mime != '\\')
+                                        GCItem.Mime = Mime;
+                                    const char* Semantic = ContainerItem->Attribute("Item:Semantic");
+                                    if (Semantic && *Semantic != '\\')
+                                        GCItem.Semantic = Semantic;
+                                    const char* Length = ContainerItem->Attribute("Item:Length");
+                                    if (Length && *Length != '\\')
+                                        GCItem.Length = Ztring(Length).To_int32u();
+                                    const char* Label = ContainerItem->Attribute("Item:Label");
+                                    if (Label && *Label != '\\')
+                                        GCItem.Label = Label;
+                                    const char* Padding = ContainerItem->Attribute("Item:Padding");
+                                    if (Padding && *Padding != '\\')
+                                        GCItem.Padding = Ztring(Padding).To_int32u();
+                                    const char* URI = ContainerItem->Attribute("Item:URI");
+                                    if (URI && *URI != '\\')
+                                        GCItem.URI = URI;
+                                    GContainerItems->push_back(GCItem);
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (GContainerItems && !strcmp(Description_Item->Value(), "Device:Container") && !strcmp(Description_Item->Attribute("rdf:parseType"), "Resource"))
+                {
+                    XMLElement* Directory = Description_Item->FirstChildElement("Container_1_:Directory");
+                    if (Directory) {
+                        XMLElement* rdfSeqElement = Directory->FirstChildElement("rdf:Seq");
+                        if (rdfSeqElement) {
+                            for (XMLElement* rdfLiElement = rdfSeqElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li")) {
+                                if (!strcmp(rdfLiElement->Attribute("rdf:parseType"), "Resource")) {
+                                    XMLElement* Value = rdfLiElement->FirstChildElement("rdf:value");
+                                    if (Value && !strcmp(Value->Attribute("rdf:parseType"), "Resource")) {
+                                        gc_item GCItem{};
+                                        XMLElement* Mime = Value->FirstChildElement("Item_1_:Mime");
+                                        if (Mime)
+                                            GCItem.Mime = Mime->GetText();
+                                        XMLElement* Length = Value->FirstChildElement("Item_1_:Length");
+                                        if (Length)
+                                            GCItem.Length = Ztring(Length->GetText()).To_int32u();
+                                        XMLElement* DataURI = Value->FirstChildElement("Item_1_:DataURI");
+                                        if (DataURI) {
+                                            auto DataURIContent = DataURI->GetText();
+                                            if (!strcmp(DataURIContent, "primary_image"))
+                                                GCItem.Semantic = "Primary";
+                                            if (!strcmp(DataURIContent, "android/original_image"))
+                                                GCItem.Semantic = "Original";
+                                            if (!strcmp(DataURIContent, "android/depthmap"))
+                                                GCItem.Semantic = "Depth";
+                                            if (!strcmp(DataURIContent, "android/confidencemap"))
+                                                GCItem.Semantic = "Confidence";
+                                        }
+                                        GContainerItems->push_back(GCItem);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        Directory = Description_Item->FirstChildElement("Container:Directory");
+                        if (Directory) {
+                            XMLElement* rdfSeqElement = Directory->FirstChildElement("rdf:Seq");
+                            if (rdfSeqElement) {
+                                for (XMLElement* rdfLiElement = rdfSeqElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li")) {
+                                    XMLElement* ContainerItem = rdfLiElement->FirstChildElement("Container:Item");
+                                    if (ContainerItem) {
+                                        gc_item GCItem{};
+                                        const char* Mime = ContainerItem->Attribute("Item:Mime");
+                                        if (Mime && *Mime != '\\')
+                                            GCItem.Mime = Mime;
+                                        const char* Length = ContainerItem->Attribute("Item:Length");
+                                        if (Length && *Length != '\\')
+                                            GCItem.Length = Ztring(Length).To_int32u();
+                                        const char* DataURI = ContainerItem->Attribute("Item:DataURI");
+                                        if (DataURI && *DataURI != '\\') {
+                                            if (!strcmp(DataURI, "primary_image"))
+                                                GCItem.Semantic = "Primary";
+                                            if (!strcmp(DataURI, "android/original_image"))
+                                                GCItem.Semantic = "Original";
+                                            if (!strcmp(DataURI, "android/depthmap"))
+                                                GCItem.Semantic = "Depth";
+                                            if (!strcmp(DataURI, "android/confidencemap"))
+                                                GCItem.Semantic = "Confidence";
+                                        }
+                                        GContainerItems->push_back(GCItem);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

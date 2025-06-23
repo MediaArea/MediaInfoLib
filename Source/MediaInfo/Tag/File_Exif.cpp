@@ -643,7 +643,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(RAWDevelopingSoftware, "RAW developing software")
     ELEM_TRACE(ImageEditingSoftware, "Editing software")
     ELEM_TRACE(MetadataEditingSoftware, "Metadata editing software")
-    ELEM_TRACE(CompositeImage, "Composite iImage")
+    ELEM_TRACE(CompositeImage, "Composite image")
     ELEM_TRACE(CompositeImageCount, "Composite image count")
     ELEM_TRACE(Gamma, "Gamma")
     ELEM_TRACE(Padding, "Padding")
@@ -959,25 +959,12 @@ exif_tag_desc Desc[] =
 // MPF Tags
 //---------------------------------------------------------------------------
 
-namespace IFDMPFIndex {
+namespace IFDMPF {
     ELEM(0xB000, MPFVersion)
     ELEM(0xB001, NumberOfImages)
     ELEM(0xB002, MPEntry)
     ELEM(0xB003, ImageUIDList)
     ELEM(0xB004, TotalFrames)
-
-exif_tag_desc Desc[] =
-{
-    ELEM_TRACE(MPFVersion,      "MP Format Version Number")
-    ELEM_TRACE(NumberOfImages,  "Number of Images")
-    ELEM_TRACE(MPEntry,         "MP Entry")
-    ELEM_TRACE(ImageUIDList,    "Individual Image Unique ID list")
-    ELEM_TRACE(TotalFrames,     "Total Number of Captured Frames")
-};
-};
-
-namespace IFDMPFAttributes {
-    ELEM(0xB000, MPFVersion)
     ELEM(0xB101, MPIndividualNum)
     ELEM(0xB201, PanOrientation)
     ELEM(0xB202, PanOverlap_H)
@@ -995,6 +982,11 @@ namespace IFDMPFAttributes {
 
 exif_tag_desc Desc[] =
 {
+    ELEM_TRACE(MPFVersion,          "MP Format Version Number")
+    ELEM_TRACE(NumberOfImages,      "Number of Images")
+    ELEM_TRACE(MPEntry,             "MP Entry")
+    ELEM_TRACE(ImageUIDList,        "Individual Image Unique ID list")
+    ELEM_TRACE(TotalFrames,         "Total Number of Captured Frames")
     ELEM_TRACE(MPFVersion,          "MP Format Version")
     ELEM_TRACE(MPIndividualNum,     "MP Individual Image Number")
     ELEM_TRACE(PanOrientation,      "Panorama Scanning Orientation")
@@ -1031,6 +1023,7 @@ enum kind_of_ifd
     Kind_Exif,
     Kind_GPS,
     Kind_Interop,
+
     // Exif Makernotes
     Kind_MakernoteApple,
     Kind_MakernoteNikon,
@@ -1039,8 +1032,7 @@ enum kind_of_ifd
     Kind_MakernoteCanon,
 
     // MPF
-    Kind_MPFIndex,
-    Kind_MPFAttributes,
+    Kind_MPF,
 
     // Special
     Kind_ParsingThumbnail,
@@ -1058,8 +1050,7 @@ exif_tag_desc_size Exif_Descriptions[] =
     DESC_TABLE(IFD0, "Nikon Makernote Preview Image")
     DESC_TABLE(IFDMakernoteSony, "Sony Makernote")
     DESC_TABLE(IFDMakernoteCanon, "Canon Makernote")
-    DESC_TABLE(IFDMPFIndex, "MP Index IFD")
-    DESC_TABLE(IFDMPFAttributes, "MP Attributes IFD")
+    DESC_TABLE(IFDMPF, "MPF")
 };
 static string Exif_Tag_Description(int8u NameSpace, int16u Tag_ID)
 {
@@ -1266,6 +1257,17 @@ static const char* Exif_IFDExif_WhiteBalance_Name(int16u value)
 }
 
 //---------------------------------------------------------------------------
+static const char* Exif_IFDExif_CompositeImage_Name(int16u value)
+{
+    switch (value) {
+    case 1: return "Not a Composite Image";
+    case 2: return "General Composite Image";
+    case 3: return "Composite Image Captured While Shooting";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
 static const char* Exif_IFDGPS_GPSAltitudeRef_Name(int8u value)
 {
     switch (value) {
@@ -1444,7 +1446,7 @@ std::string mp_entry::Type() const
     case 0x020001: return "Panorama"; break;
     case 0x020002: return "Disparity"; break;
     case 0x020003: return "Multi-Angle"; break;
-    case 0x030000: return "Primary Image"; break;
+    case 0x030000: return "Primary"; break;
     case 0x050000: return "Gain map"; break;
     default: return Ztring::ToZtring_From_CC4(ImgAttribute).To_UTF8();
     }
@@ -1874,26 +1876,11 @@ void File_Exif::Streams_Finish()
         }
     }
 
-    const auto Infos_MPFIndex_It = Infos.find(Kind_MPFIndex);
-    if (Infos_MPFIndex_It != Infos.end()) {
-        currentIFD = Kind_MPFIndex;
-        const auto& Infos_MPFIndex = Infos_MPFIndex_It->second;
-        for (const auto& Item : Infos_MPFIndex) {
-            size_t Parameter = 0;
-            Ztring Value;
-            const char* ParameterC = nullptr;
-            string ParameterS;
-            switch (Item.first) {
-            }
-            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
-        }
-    }
-
-    const auto Infos_MPFAttributes_It = Infos.find(Kind_MPFAttributes);
-    if (Infos_MPFAttributes_It != Infos.end()) {
-        currentIFD = Kind_MPFAttributes;
-        const auto& Infos_MPFAttributes = Infos_MPFAttributes_It->second;
-        for (const auto& Item : Infos_MPFAttributes) {
+    const auto Infos_MPF_It = Infos.find(Kind_MPF);
+    if (Infos_MPF_It != Infos.end()) {
+        currentIFD = Kind_MPF;
+        const auto& Infos_MPF = Infos_MPF_It->second;
+        for (const auto& Item : Infos_MPF) {
             size_t Parameter = 0;
             Ztring Value;
             const char* ParameterC = nullptr;
@@ -1995,10 +1982,7 @@ void File_Exif::FileHeader_Parse()
 
     //MPF
     if (MPEntries) {
-        if (IsFirstImage)
-            currentIFD = Kind_MPFIndex;
-        else
-            currentIFD = Kind_MPFAttributes;
+        currentIFD = Kind_MPF;
     }
 
     if (!SkipHeader) { // Some Makernotes do not have typical header
@@ -2122,7 +2106,7 @@ void File_Exif::Data_Parse()
             while (Element_Offset + 12 <= Element_Size)
                 Read_Directory();
             if (currentIFD != Kind_MakernoteSony) // Sony Makernote IFD does not have offset to next IFD
-                Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : currentIFD == Kind_MPFIndex ? Kind_MPFAttributes : (int8u)-1);
+                Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : currentIFD == Kind_MPF ? Kind_MPF : (int8u)-1);
         }
     }
     else
@@ -2486,6 +2470,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::LightSource, Exif_ExifIFD_Tag_LightSource_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::Flash, Exif_IFDExif_Flash_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::ColorSpace, Exif_IFDExif_ColorSpace_Name(Ret16));
+            Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::CompositeImage, Exif_IFDExif_CompositeImage_Name(Ret16));
             Param_Info1C(currentIFD == Kind_MakernoteNikon && IfdItem.Tag == IFDMakernoteNikon::CropHiSpeed, Exif_IFDMakernoteNikon_CropHiSpeed_Name(Ret16));
             Param_Info1C(currentIFD == Kind_MakernoteNikon && IfdItem.Tag == IFDMakernoteNikon::ColorSpace, Exif_IFDMakernoteNikon_ColorSpace_Name(Ret16));
             Param_Info1C(currentIFD == Kind_MakernoteNikon && IfdItem.Tag == IFDMakernoteNikon::ActiveDLighting, Exif_IFDMakernoteNikon_ActiveDLighting_Name(Ret16));
@@ -2626,8 +2611,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         if (
             (currentIFD == Kind_Exif && (IfdItem.Tag == IFDExif::ExifVersion || IfdItem.Tag == IFDExif::FlashpixVersion)) ||
             (currentIFD == Kind_Interop && IfdItem.Tag == IFDInterop::InteroperabilityVersion) ||
-            (currentIFD == Kind_MPFIndex && IfdItem.Tag == IFDMPFIndex::MPFVersion) ||
-            (currentIFD == Kind_MPFAttributes && IfdItem.Tag == IFDMPFAttributes::MPFVersion)
+            (currentIFD == Kind_MPF && IfdItem.Tag == IFDMPF::MPFVersion)
             ) {
             string Data;
             Get_String(IfdItem.Count, Data,                     "Data"); Element_Info1(Data.c_str());
@@ -2638,8 +2622,8 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             Makernote();
             break;
         }
-        if (currentIFD == Kind_MPFIndex && IfdItem.Tag == IFDMPFIndex::MPEntry) {
-            int32u num_imgs{ Infos.find(Kind_MPFIndex)->second.find(IFDMPFIndex::NumberOfImages)->second.Read().To_int32u() };
+        if (currentIFD == Kind_MPF && IfdItem.Tag == IFDMPF::MPEntry) {
+            int32u num_imgs{ Infos.find(Kind_MPF)->second.find(IFDMPF::NumberOfImages)->second.Read().To_int32u() };
             for (int32u i = 0; i < num_imgs; ++i) {
                 Element_Begin1(("MP Entry " + std::to_string(i + 1)).c_str());
                 mp_entry entry{};
@@ -2653,8 +2637,8 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             }
             break;
         }
-        if (currentIFD == Kind_MPFIndex && IfdItem.Tag == IFDMPFIndex::ImageUIDList) {
-            int32u num_imgs{ Infos.find(Kind_MPFIndex)->second.find(IFDMPFIndex::NumberOfImages)->second.Read().To_int32u() };
+        if (currentIFD == Kind_MPF && IfdItem.Tag == IFDMPF::ImageUIDList) {
+            int32u num_imgs{ Infos.find(Kind_MPF)->second.find(IFDMPF::NumberOfImages)->second.Read().To_int32u() };
             for (int32u i = 0; i < num_imgs; ++i) {
                 string Data;
                 Get_String(33, Data,                            "Individual Image Unique ID"); Element_Info1(Data.c_str());
