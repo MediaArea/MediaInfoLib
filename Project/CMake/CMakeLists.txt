@@ -230,6 +230,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Exr.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Gif.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Ico.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_ISO21496-1.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Jpeg.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Pcx.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Png.cpp

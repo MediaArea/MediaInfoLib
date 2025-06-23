@@ -34,6 +34,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Image/File_Jpeg.h"
+#include "MediaInfo/Image/File_ISO21496-1.h"
 #if defined(MEDIAINFO_PSD_YES)
     #include "MediaInfo/Image/File_Psd.h"
 #endif
@@ -1728,6 +1729,12 @@ void File_Jpeg::APP2()
                 return;
             }
             break;
+        case 28:
+            if (!strncmp((const char*)Buffer + Buffer_Offset, "urn:iso:std:iso:ts:21496:-1", 28)) {
+                APP2_ISO21496_1();
+                return;
+            }
+            break;
         }
         Element_Info1(string((const char*)Buffer + Buffer_Offset, Size - 1));
     }
@@ -1767,6 +1774,20 @@ void File_Jpeg::APP2_ICC_PROFILE()
     #else
         Skip_XX(Element_Size-Element_Offset,                    "ICC profile");
     #endif
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::APP2_ISO21496_1()
+{
+    Element_Info1("ISO 21496-1 Gain map metadata for image conversion");
+
+    //Parsing
+    File_ISO21496_1 MI;
+    GainMap_metadata_ISO.reset(new GainMap_metadata());
+    MI.output = static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get());
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
 }
 
 //---------------------------------------------------------------------------
