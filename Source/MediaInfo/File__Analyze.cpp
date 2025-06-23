@@ -2126,13 +2126,20 @@ bool File__Analyze::FileHeader_Begin_XML(XMLDocument &Document)
     }
 
     //XML header
+    auto BOM2 = CC2(Buffer);
     auto BOM = CC3(Buffer);
     switch (BOM)
     {
-    case 0x00FFFE:
-    case 0xFEFF00:
     case 0xEFBBBF:
-        Buffer_Offset = 3; //BOM
+        Buffer_Offset = 3;
+        break;
+    }
+    switch (BOM2)
+    {
+    case 0xFFFE:
+    case 0xFEFF:
+        Buffer_Offset = 2;
+        BOM = BOM2;
         break;
     }
     while (Buffer_Offset < Buffer_Size) {
@@ -2156,10 +2163,10 @@ bool File__Analyze::FileHeader_Begin_XML(XMLDocument &Document)
     auto Buffer_XML = (const char*)Buffer + Buffer_Offset;
     auto Size_XML = Buffer_Size - Buffer_Offset;
     switch (BOM) {
-    case 0x00FFFE:
+    case 0xFFFE:
         DataUTF8 = Ztring().From_UTF16LE(Buffer_XML, Size_XML).To_UTF8();
         break;
-    case 0xFEFF00:
+    case 0xFEFF:
         DataUTF8 = Ztring().From_UTF16BE(Buffer_XML, Size_XML).To_UTF8();
         break;
     default:
