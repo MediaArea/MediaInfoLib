@@ -37,6 +37,9 @@ private:
     // Streams management
     void Streams_Accept();
 
+    //Buffer - File header
+    bool FileHeader_Begin();
+
     // Buffer - Global
     void Read_Buffer_OutOfBand();
 
