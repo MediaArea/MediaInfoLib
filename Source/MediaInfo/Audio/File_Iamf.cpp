@@ -180,6 +180,27 @@ void File_Iamf::Streams_Accept()
 }
 
 //***************************************************************************
+// Buffer - File header
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+bool File_Iamf::FileHeader_Begin()
+{
+    //Must have enough buffer for having header
+    if (Buffer_Size<6)
+        return false; //Must wait for more data
+
+    if (!IsSub
+     && ((Buffer[0] >> 3) != 0x1F // ia_sequence_header
+      || CC4(Buffer + 2) != 0x69616D66)) {  // "iamf"
+        Reject();
+        return false;
+    }
+
+    return true;
+}
+
+//***************************************************************************
 // Buffer - Global
 //***************************************************************************
 
