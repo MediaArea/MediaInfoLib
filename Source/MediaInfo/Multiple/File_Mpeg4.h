@@ -14,6 +14,7 @@
 #include "MediaInfo/File__HasReferences.h"
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/Multiple/File_Mpeg4_Descriptors.h"
+#include <memory>
 class File_MpegPs;
 //---------------------------------------------------------------------------
 
@@ -765,6 +766,11 @@ private :
     #if MEDIAINFO_CONFORMANCE
         bool            IsCmaf;
     #endif
+
+    //Gain map
+    typedef std::map<int64u, std::unique_ptr<File__Analyze>> idat_items_map;
+    idat_items_map idat_items;
+    std::shared_ptr<void> GainMap_metadata_ISO;
 };
 
 } //NameSpace

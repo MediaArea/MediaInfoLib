@@ -31,6 +31,19 @@ void File_GainMap::Data_Parse()
 {
     Element_Name("ISO 21496-1 Gain Map Metadata");
 
+    if (fromAvif) {
+        if (Buffer_Size < 5) {
+            Reject();
+            return;
+        }
+        int8u version;
+        Get_B1(version,                                         "version");
+        if (version != 0) {
+            Reject();
+            return;
+        }
+    }
+
     if (Buffer_Size < 4) {
         Reject();
         return;
