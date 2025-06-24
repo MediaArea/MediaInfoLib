@@ -3329,7 +3329,7 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_26_0004_0005()
     //Parsing
     int16u targeted_system_display_maximum_luminance_Max=0;
     int8u system_start_code;
-    bool color_saturation_mapping_flag;
+    bool color_saturation_mapping_enable_flag;
     Get_B1(system_start_code,                                   "system_start_code");
     if (system_start_code!=0x01)
     {
@@ -3340,30 +3340,30 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_26_0004_0005()
     //int8u num_windows=1;
     //for (int8u w=0; w<num_windows; w++)
     {
-        Skip_S2(12,                                             "minimum_maxrgb");
-        Skip_S2(12,                                             "average_maxrgb");
-        Skip_S2(12,                                             "variance_maxrgb");
-        Skip_S2(12,                                             "maximum_maxrgb");
+        Skip_S2(12,                                             "minimum_maxrgb_pq");
+        Skip_S2(12,                                             "average_maxrgb_pq");
+        Skip_S2(12,                                             "variance_maxrgb_pq");
+        Skip_S2(12,                                             "maximum_maxrgb_pq");
     }
 
     //for (int8u w=0; w<num_windows; w++)
     {
         bool tone_mapping_enable_mode_flag;
-        Get_SB (tone_mapping_enable_mode_flag,                  "tone_mapping_mode_flag");
+        Get_SB(tone_mapping_enable_mode_flag,                   "tone_mapping_enable_mode_flag");
         if (tone_mapping_enable_mode_flag)
         {
-            bool tone_mapping_param_enable_num_b;
-            Get_SB (tone_mapping_param_enable_num_b,            "tone_mapping_param_num");
-            int tone_mapping_param_enable_num=(int)tone_mapping_param_enable_num_b; // Just for avoiding some compiler warning
-            for (int i=0; i<=tone_mapping_param_enable_num; i++)
+            int8u tone_mapping_param_enable_num;
+            Get_S1(1, tone_mapping_param_enable_num,            "tone_mapping_param_enable_num");
+            for (int i=0; i<(tone_mapping_param_enable_num+1); i++)
             {
                 Element_Begin1("tone_mapping_param");
-                int16u targeted_system_display_maximum_luminance;
+                int16u targeted_system_display_maximum_luminance_pq;
                 bool base_enable_flag, ThreeSpline_enable_flag;
-                Get_S2 (12, targeted_system_display_maximum_luminance, "targeted_system_display_maximum_luminance");
-                if (targeted_system_display_maximum_luminance_Max<targeted_system_display_maximum_luminance)
-                    targeted_system_display_maximum_luminance_Max=targeted_system_display_maximum_luminance;
-                Get_SB (    base_enable_flag,                   "base_enable_flag");
+                Get_S2(12, targeted_system_display_maximum_luminance_pq, 
+                                                                "targeted_system_display_maximum_luminance_pq");
+                if (targeted_system_display_maximum_luminance_Max<targeted_system_display_maximum_luminance_pq)
+                    targeted_system_display_maximum_luminance_Max=targeted_system_display_maximum_luminance_pq;
+                Get_SB(    base_enable_flag,                    "base_enable_flag");
                 if (base_enable_flag)
                 {
                     Skip_S2(14,                                 "base_param_m_p");
@@ -3371,50 +3371,49 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_26_0004_0005()
                     Skip_S2(10,                                 "base_param_m_a");
                     Skip_S2(10,                                 "base_param_m_b");
                     Skip_S1( 6,                                 "base_param_m_n");
-                    Skip_S1( 2,                                 "base_param_k1");
-                    Skip_S1( 2,                                 "base_param_k2");
-                    Skip_S1( 4,                                 "base_param_k2");
+                    Skip_S1( 2,                                 "base_param_K1");
+                    Skip_S1( 2,                                 "base_param_K2");
+                    Skip_S1( 4,                                 "base_param_K3");
                     Skip_S1( 3,                                 "base_param_Delta_enable_mode");
-                    Skip_S1( 7,                                 "base_param_Delta");
-                    Get_SB (    ThreeSpline_enable_flag,        "3Spline_enable_flag");
-                    if (ThreeSpline_enable_flag)
+                    Skip_S1( 7,                                 "base_param_enable_Delta");
+                }
+                Get_SB(ThreeSpline_enable_flag,                 "3Spline_enable_flag");
+                if (ThreeSpline_enable_flag)
+                {
+                    int8u ThreeSpline_enable_num;
+                    Get_S1(1, ThreeSpline_enable_num,           "3Spline_enable_num");
+                    for (int j=0; j<(ThreeSpline_enable_num+1); j++)
                     {
-                        bool ThreeSpline_num_b;
-                        Get_SB(    ThreeSpline_num_b,           "3Spline_num");
-                        int ThreeSpline_num=(int)ThreeSpline_num_b; // Just for avoiding some compiler warning
-                        for (int j=0; j<=ThreeSpline_num; j++)
+                        Element_Begin1("3Spline");
+                        int8u ThreeSpline_TH_enable_mode;
+                        Get_S1(2, ThreeSpline_TH_enable_mode,   "3Spline_TH_enable_mode");
+                        switch (ThreeSpline_TH_enable_mode)
                         {
-                            Element_Begin1("3Spline");
-                            int8u ThreeSpline_TH_mode;
-                            Get_S1 (2, ThreeSpline_TH_mode,     "3Spline_TH_mode");
-                            switch (ThreeSpline_TH_mode)
-                            {
-                                case 0:
-                                case 2:
-                                    Skip_S1(8,                  "3Spline_TH_enable_MB");
-                                    break;
-                                default:;
-                            }
-                            Skip_S2(12,                         "3Spline_TH");
-                            Skip_S2(10,                         "3Spline_TH_Delta1");
-                            Skip_S2(10,                         "3Spline_TH_Delta2");
-                            Skip_S1( 8,                         "3Spline_enable_Strength");
-                            Element_End0();
+                            case 0:
+                            case 2:
+                                Skip_S1(8,                      "3Spline_TH_enable_MB");
+                                break;
+                            default:;
                         }
+                        Skip_S2(12,                             "3Spline_TH_enable");
+                        Skip_S2(10,                             "3Spline_TH_enable_Delta1");
+                        Skip_S2(10,                             "3Spline_TH_enable_Delta2");
+                        Skip_S1( 8,                             "3Spline_enable_Strength");
+                        Element_End0();
                     }
                 }
                 Element_End0();
             }
         }
-    }
-    Get_SB (color_saturation_mapping_flag,                      "color_saturation_mapping_flag");
-    if (color_saturation_mapping_flag)
-    {
-        int8u color_saturation_enable_num;
-        Get_S1 (3, color_saturation_enable_num,                 "color_saturation_enable_num");
-        for (int i=0; i<color_saturation_enable_num; i++)
+        Get_SB(color_saturation_mapping_enable_flag,            "color_saturation_mapping_enable_flag");
+        if (color_saturation_mapping_enable_flag)
         {
-            Skip_S1(8,                                          "color_saturation_enable_gain");
+            int8u color_saturation_enable_num;
+            Get_S1(3, color_saturation_enable_num,              "color_saturation_enable_num");
+            for (int i=0; i<color_saturation_enable_num; i++)
+            {
+                Skip_S1(8,                                      "color_saturation_enable_gain");
+            }
         }
     }
     BS_End();
