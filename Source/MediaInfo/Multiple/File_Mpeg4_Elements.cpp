@@ -122,9 +122,6 @@ using namespace std;
 #if defined(MEDIAINFO_CDP_YES)
     #include "MediaInfo/Text/File_Cdp.h"
 #endif
-#if defined(MEDIAINFO_CDP_YES)
-    #include "MediaInfo/Text/File_Cdp.h"
-#endif
 #if defined(MEDIAINFO_EXIF_YES)
     #include "MediaInfo/Tag/File_Exif.h"
 #endif
@@ -6954,7 +6951,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_av1C()
         //Parsing
         Open_Buffer_OutOfBand(Parser);
     #else
-        Skip_XX(Element_Size,                               "HEVC Data");
+        Skip_XX(Element_Size,                                   "AV1 Data");
     #endif
 }
 
@@ -8050,7 +8047,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
 
         Parser->SizedBlocks=true;  //Now this is SizeBlocks
     #else
-        Skip_XX(Element_Size,                               "HEVC Data");
+        Skip_XX(Element_Size,                                   "HEVC Data");
     #endif
 }
 
@@ -8072,7 +8069,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_iacb()
         mdat_MustParse = true; //Data is in MDAT
     }
     #else
-        Skip_XX(Element_Size, "IAMF Data");
+        Skip_XX(Element_Size,                                   "IAMF Data");
 
         Fill(Stream_Audio, StreamKind_Last, Audio_Format, "IAMF");
     #endif
@@ -8130,7 +8127,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_lhvC()
 
         Parser->SizedBlocks=true;  //Now this is SizeBlocks
     #else
-        Skip_XX(Element_Size,                               "HEVC Data");
+        Skip_XX(Element_Size,                                   "HEVC Data");
     #endif
 }
 

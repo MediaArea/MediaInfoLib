@@ -61,7 +61,7 @@ namespace MediaInfoLib
         } \
     } \
 
-    //***************************************************************************
+//***************************************************************************
 // Buffer - File header
 //***************************************************************************
 
@@ -113,4 +113,4 @@ bool File_SphericalVideo::FileHeader_Begin()
 
 } //NameSpace
 
-#endif //MEDIAINFO_XMP_YES
+#endif //MEDIAINFO_SPHERICALVIDEO_YES
