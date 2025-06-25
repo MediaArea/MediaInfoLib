@@ -35,7 +35,7 @@ using namespace std;
 #include "MediaInfo/Multiple/File_Mpeg4.h"
 #include "MediaInfo/File__MultipleParsing.h"
 #include "MediaInfo/Video/File_DolbyVisionMetadata.h"
-#include "MediaInfo/Image/File_ISO21496-1.h"
+#include "MediaInfo/Image/File_GainMap.h"
 #if defined(MEDIAINFO_DVDIF_YES)
     #include "MediaInfo/Multiple/File_DvDif.h"
 #endif
@@ -2588,12 +2588,19 @@ void File_Mpeg4::meta_iinf_infe()
             case 0x746D6170:    // tmap
                                 {
                                 Format = "ISO 21496-1 Gain map metadata";
-                                std::unique_ptr<File__Analyze> Parser{ new File_ISO21496_1() };
+                                auto Parser = new File_GainMap();
                                 GainMap_metadata_ISO.reset(new GainMap_metadata());
-                                static_cast<File_ISO21496_1*>(Parser.get())->output = static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get());
-                                static_cast<File_ISO21496_1*>(Parser.get())->fromAvif = true;
-                                Open_Buffer_Init(Parser.get());
-                                idat_items.insert({ Streams[item_ID].stco.front() , std::move(Parser)});
+                                Parser->output = static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get());
+                                Parser->fromAvif = true;
+                                Open_Buffer_Init(Parser);
+                                auto& Stream = Streams[item_ID];
+                                Stream.Parsers.push_back(Parser);
+                                mdat_MustParse = true;
+                                //std::unique_ptr<File__Analyze> Parser{ new File_ISO21496_1() };
+                                //static_cast<File_ISO21496_1*>(Parser.get())->output = static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get());
+                                //static_cast<File_ISO21496_1*>(Parser.get())->fromAvif = true;
+                                //Open_Buffer_Init(Parser.get());
+                                //idat_items.insert({ Streams[item_ID].stco.front() , std::move(Parser)});
                                 break;
                                 }
         }
