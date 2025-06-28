@@ -48,7 +48,9 @@ private :
     //Buffer - File header
     bool FileHeader_Begin();
     void dc(const string& name, const string& value);
+    void exif(const string& name, const string& value);
     void pdf(const string& name, const string& value);
+    void photoshop(const string& name, const string& value);
     void xmp(const string& name, const string& value);
     void Iptc4xmpExt(const string& name, const string& value);
 

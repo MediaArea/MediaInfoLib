@@ -220,8 +220,6 @@ bool File_Xmp::FileHeader_Begin()
             XML_ELEMENT_START
             XML_ELEMENT("rdf:Description")
                 XML_ATTRIBUTE_START
-                XML_ATTRIBUTE("exif:DateTimeOriginal")
-                    Fill(Stream_General, 0, General_Recorded_Date, tfsxml_decode(v));
                 XML_ATTRIBUTE("GCamera:RelitInputImageData")
                     ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GCamera", "Relit Input Image");
                 XML_ATTRIBUTE("GDepth:Data")
@@ -230,15 +228,15 @@ bool File_Xmp::FileHeader_Begin()
                     ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Confidence", "Confidence");
                 XML_ATTRIBUTE("GImage:Data")
                     ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GImage Data", "Image");
-                XML_ATTRIBUTE("photoshop:Credit")
-                    Fill(Stream_General, 0, General_Copyright, tfsxml_decode(v));
                 XML_ATTRIBUTE("xmlns:pdfaid")
                     pdfaid = tfsxml_decode(v);
                 XML_ATTRIBUTE("pdfaid:part")
                     pdfaid_part = tfsxml_decode(v);
                 XML_ATTRIBUTE("pdfaid:conformance")
                     pdfaid_conformance = tfsxml_decode(v);
+                XML_ATTRIBUTE_NAMESPACE(exif)
                 XML_ATTRIBUTE_NAMESPACE(pdf)
+                XML_ATTRIBUTE_NAMESPACE(photoshop)
                 XML_ATTRIBUTE_NAMESPACE(xmp)
                 XML_ATTRIBUTE_NAMESPACE(Iptc4xmpExt)
                 XML_ATTRIBUTE_END
@@ -337,15 +335,13 @@ bool File_Xmp::FileHeader_Begin()
                             XML_ELEMENT_END
                         XML_ELEMENT_END
                     }
-                XML_ELEMENT("photoshop:Credit")
-                    XML_VALUE
-                    Fill(Stream_General, 0, General_Copyright, tfsxml_decode(v));
                 XML_ELEMENT("pdfaid:part")
                     XML_VALUE
                     pdfaid_part = tfsxml_decode(v);
                 XML_ELEMENT("pdfaid:conformance")
                     XML_VALUE
                     pdfaid_conformance = tfsxml_decode(v);
+                XML_ELEMENT_NAMESPACE(photoshop)
                 XML_ELEMENT_NAMESPACE(xmp)
                 XML_ELEMENT_NAMESPACE(Iptc4xmpExt)
                 XML_ELEMENT_END
@@ -398,6 +394,15 @@ void File_Xmp::dc(const string &name, const string &value)
 }
 
 //---------------------------------------------------------------------------
+void File_Xmp::exif(const string& name, const string& value)
+{
+    if (name == "exif:DateTimeOriginal")
+        Fill(Stream_General, 0, General_Recorded_Date, value);
+    if (name == "exif:DateTimeDigitized")
+        Fill(Stream_General, 0, General_Mastered_Date, value);
+}
+
+//---------------------------------------------------------------------------
 void File_Xmp::pdf(const string& name, const string& value)
 {
     if (name == "pdf:Description" && Retrieve_Const(Stream_General, 0, General_Description).empty())
@@ -406,6 +411,18 @@ void File_Xmp::pdf(const string& name, const string& value)
         Fill(Stream_General, 0, General_Keywords, value);
     if (name == "pdf:Producer" && Retrieve_Const(Stream_General, 0, General_Encoded_Library).empty())
         Fill(Stream_General, 0, General_Encoded_Library, value);
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::photoshop(const string& name, const string& value)
+{
+    if (name == "photoshop:Credit")
+        Fill(Stream_General, 0, General_Copyright, value);
+    if (name == "photoshop:DateCreated") {
+        CreateDate = Ztring().From_UTF8(value);
+        if (CreateDate > ModifyDate)
+            Fill(Stream_General, 0, General_Encoded_Date, CreateDate, true);
+    }
 }
 
 //---------------------------------------------------------------------------
