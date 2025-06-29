@@ -3564,6 +3564,9 @@ void File_Mk::Segment_Tracks_TrackEntry_BlockAdditionMapping_Manage()
             auto Temp=new File_Gxf_TimeCode();
             Temp->IsBigEndian=true;
             Temp->IsTimeCodeTrack=true;
+            #if MEDIAINFO_ADVANCED
+            Temp->id=std::to_string(TrackNumber)+'-'+std::to_string(BlockAddIDValue);
+            #endif //MEDIAINFO_ADVANCED
             Parser=Temp;
             }
             #endif
