@@ -112,9 +112,9 @@ namespace MediaInfoLib
 
 #define XML_ELEMENT_LIST(TYPE) \
         XML_ELEMENT(TYPE) \
+            int count{}; \
             XML_ELEMENT_START \
             XML_ELEMENT("rdf:li") \
-                XML_ELEMENT_START \
 
 #define XML_ELEMENT_LIST_NAMESPACE(NAMESPACE, NAME, LISTTYPE) \
         XML_ELEMENT(NAME) \
@@ -124,11 +124,11 @@ namespace MediaInfoLib
             XML_ELEMENT_END \
 
 #define XML_ACCEPT \
-        Accept("XMP"); \
+        if (!Status[IsAccepted]) Accept("XMP"); \
 
 #define XML_ELSE_REJECT \
         } \
-        else { \
+        else if (!Status[IsAccepted]) { \
             Reject("XMP"); \
             return false;
 
@@ -170,7 +170,7 @@ namespace MediaInfoLib
     } \
 
 #define XML_ELEMENT_LIST_END \
-                XML_ELEMENT_END \
+                ++count; \
             XML_ELEMENT_END \
 
 //***************************************************************************
@@ -235,6 +235,7 @@ bool File_Xmp::FileHeader_Begin()
                 XML_ATTRIBUTE("pdfaid:conformance")
                     pdfaid_conformance = tfsxml_decode(v);
                 XML_ATTRIBUTE_NAMESPACE(exif)
+                XML_ATTRIBUTE_NAMESPACE(hdrgm)
                 XML_ATTRIBUTE_NAMESPACE(pdf)
                 XML_ATTRIBUTE_NAMESPACE(photoshop)
                 XML_ATTRIBUTE_NAMESPACE(xmp)
@@ -259,6 +260,7 @@ bool File_Xmp::FileHeader_Begin()
                     if (GContainerItems) {
                         XML_ELEMENT_START
                         XML_ELEMENT_LIST("rdf:Seq")
+                            XML_ELEMENT_START
                             XML_ELEMENT("Container:Item")
                                 gc_item GCItem{};
                                 XML_ATTRIBUTE_START
@@ -276,6 +278,7 @@ bool File_Xmp::FileHeader_Begin()
                                     GCItem.URI = tfsxml_decode(v);
                                 XML_ATTRIBUTE_END
                                 GContainerItems->push_back(GCItem);
+                            XML_ELEMENT_END
                         XML_ELEMENT_LIST_END
                         XML_ELEMENT_END
                     }
@@ -285,6 +288,7 @@ bool File_Xmp::FileHeader_Begin()
                         XML_ELEMENT("Container_1_:Directory")
                             XML_ELEMENT_START
                             XML_ELEMENT_LIST("rdf:Seq")
+                                XML_ELEMENT_START
                                 XML_ELEMENT("rdf:value")
                                     gc_item GCItem{};
                                     XML_ELEMENT_START
@@ -307,11 +311,13 @@ bool File_Xmp::FileHeader_Begin()
                                             GCItem.Semantic = "Confidence";
                                     XML_ELEMENT_END
                                     GContainerItems->push_back(GCItem);
+                                XML_ELEMENT_END
                             XML_ELEMENT_LIST_END
                             XML_ELEMENT_END
                         XML_ELEMENT("Container:Directory")
                             XML_ELEMENT_START
                             XML_ELEMENT_LIST("rdf:Seq")
+                                XML_ELEMENT_START
                                 XML_ELEMENT("Container:Item")
                                     gc_item GCItem{};
                                     XML_ATTRIBUTE_START
@@ -331,8 +337,64 @@ bool File_Xmp::FileHeader_Begin()
                                             GCItem.Semantic = "Confidence";
                                     XML_ATTRIBUTE_END
                                     GContainerItems->push_back(GCItem);
+                                XML_ELEMENT_END
                             XML_ELEMENT_LIST_END
                             XML_ELEMENT_END
+                        XML_ELEMENT_END
+                    }
+                XML_ELEMENT("hdrgm:GainMapMin")
+                    if (GainMapData) {
+                        XML_ELEMENT_START
+                        XML_ELEMENT_LIST("rdf:Seq")
+                            XML_VALUE
+                            GainMapData->Multichannel = true;
+                            if (count < 3)
+                                GainMapData->GainMapMin[count] = Ztring(tfsxml_decode(v).c_str()).To_float32();
+                        XML_ELEMENT_LIST_END
+                        XML_ELEMENT_END
+                    }
+                XML_ELEMENT("hdrgm:GainMapMax")
+                    if (GainMapData) {
+                        XML_ELEMENT_START
+                        XML_ELEMENT_LIST("rdf:Seq")
+                            XML_VALUE
+                            GainMapData->Multichannel = true;
+                            if (count < 3)
+                                GainMapData->GainMapMax[count] = Ztring(tfsxml_decode(v).c_str()).To_float32();
+                        XML_ELEMENT_LIST_END
+                        XML_ELEMENT_END
+                    }
+                XML_ELEMENT("hdrgm:Gamma")
+                    if (GainMapData) {
+                        XML_ELEMENT_START
+                        XML_ELEMENT_LIST("rdf:Seq")
+                            XML_VALUE
+                            GainMapData->Multichannel = true;
+                            if (count < 3)
+                                GainMapData->Gamma[count] = Ztring(tfsxml_decode(v).c_str()).To_float32();
+                        XML_ELEMENT_LIST_END
+                        XML_ELEMENT_END
+                    }
+                XML_ELEMENT("hdrgm:OffsetSDR")
+                    if (GainMapData) {
+                        XML_ELEMENT_START
+                        XML_ELEMENT_LIST("rdf:Seq")
+                            XML_VALUE
+                            GainMapData->Multichannel = true;
+                            if (count < 3)
+                                GainMapData->OffsetSDR[count] = Ztring(tfsxml_decode(v).c_str()).To_float32();
+                        XML_ELEMENT_LIST_END
+                        XML_ELEMENT_END
+                    }
+                XML_ELEMENT("hdrgm:OffsetHDR")
+                    if (GainMapData) {
+                        XML_ELEMENT_START
+                        XML_ELEMENT_LIST("rdf:Seq")
+                            XML_VALUE
+                            GainMapData->Multichannel = true;
+                            if (count < 3)
+                                GainMapData->OffsetHDR[count] = Ztring(tfsxml_decode(v).c_str()).To_float32();
+                        XML_ELEMENT_LIST_END
                         XML_ELEMENT_END
                     }
                 XML_ELEMENT("pdfaid:part")
@@ -403,6 +465,32 @@ void File_Xmp::exif(const string& name, const string& value)
 }
 
 //---------------------------------------------------------------------------
+void File_Xmp::hdrgm(const string& name, const string& value)
+{
+    if (!GainMapData)
+        return;
+
+    if (name == "hdrgm:Version")
+        GainMapData->Version = value;
+    if (name == "hdrgm:BaseRenditionIsHDR")
+        GainMapData->BaseRenditionIsHDR = (value == "True" ? true : false);
+    if (name == "hdrgm:HDRCapacityMin")
+        GainMapData->HDRCapacityMin = Ztring(value.c_str()).To_float32();
+    if (name == "hdrgm:HDRCapacityMax")
+        GainMapData->HDRCapacityMax = Ztring(value.c_str()).To_float32();
+    if (name == "hdrgm:GainMapMin")
+        GainMapData->GainMapMin[0] = Ztring(value.c_str()).To_float32();
+    if (name == "hdrgm:GainMapMax")
+        GainMapData->GainMapMax[0] = Ztring(value.c_str()).To_float32();
+    if (name == "hdrgm:Gamma")
+        GainMapData->Gamma[0] = Ztring(value.c_str()).To_float32();
+    if (name == "hdrgm:OffsetSDR")
+        GainMapData->OffsetSDR[0] = Ztring(value.c_str()).To_float32();
+    if (name == "hdrgm:OffsetHDR")
+        GainMapData->OffsetHDR[0] = Ztring(value.c_str()).To_float32();
+}
+
+//---------------------------------------------------------------------------
 void File_Xmp::pdf(const string& name, const string& value)
 {
     if (name == "pdf:Description" && Retrieve_Const(Stream_General, 0, General_Description).empty())
@@ -453,11 +541,11 @@ void File_Xmp::Iptc4xmpExt(const string& name, const string& value)
 {
     if (name == "Iptc4xmpExt:DigitalSourceType") {
         string URI{ value };
-        string::size_type pos = URI.find("https://");
-        if (pos != std::string::npos) URI.replace(pos, 5, "http"); // Some Google generated files have https instead of http
-        if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"))
+        auto pos = URI.find("https://");
+        if (pos != string::npos) URI.replace(pos, 5, "http"); // Some Google generated files have https instead of http
+        if (URI == "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia")
             Fill(Stream_General, 0, General_Copyright, "Created using generative AI");
-        if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia"))
+        if (URI == "http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia")
             Fill(Stream_General, 0, General_Copyright, "Edited using generative AI");
     }
 }
