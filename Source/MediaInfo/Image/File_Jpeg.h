@@ -227,6 +227,7 @@ private :
     std::shared_ptr<void> MPEntries;
     int64u MPEntries_Offset = 0;
     std::shared_ptr<void> GainMap_metadata_ISO;
+    std::shared_ptr<void> GainMap_metadata_Adobe;
     std::unique_ptr<File__Analyze> Exif_Parser;
     std::unique_ptr<File__Analyze> PSD_Parser;
     std::unique_ptr<File__Analyze> ICC_Parser;
