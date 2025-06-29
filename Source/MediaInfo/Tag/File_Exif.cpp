@@ -1525,7 +1525,7 @@ void File_Exif::Streams_Finish()
             case IFD0::Model: Parameter = General_Encoded_Hardware_Model; break;
             case IFD0::Software: Parameter = General_Encoded_Application; break;
             case IFD0::DateTime: {
-                Parameter = General_Tagged_Date;
+                Parameter = General_Encoded_Date;
                 Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTime, IFDExif::OffsetTime);
                 break;
             }
@@ -1705,7 +1705,7 @@ void File_Exif::Streams_Finish()
                 Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTimeOriginal, IFDExif::OffsetTimeOriginal);
                 break;
             case IFDExif::DateTimeDigitized:
-                Parameter = General_Encoded_Date;
+                Parameter = General_Mastered_Date;
                 Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTimeDigitized, IFDExif::OffsetTimeDigitized);
                 break;
             case IFDExif::FlashpixVersion: {
@@ -1910,14 +1910,14 @@ void File_Exif::FileHeader_Parse()
     //HEIF
     if (FromHeif) {
         int32u Size;
-        Get_B4 (Size,                                           "Size");
+        Get_B4 (Size,                                           "Exif header length");
         string Identifier;
         Get_String(Size, Identifier,                            "Identifier");
-        if (Size != 6 || strncmp(Identifier.c_str(), "Exif\0", 6)) {
+        if (!(Size == 0 || (Size == 6 && !strncmp(Identifier.c_str(), "Exif\0", 6)))) {
             Reject();
             return;
         }
-        OffsetFromContainer = 10;
+        OffsetFromContainer = static_cast<int64s>(4) + Size;
     }
 
     //Exif Makernotes
@@ -2368,7 +2368,9 @@ void File_Exif::Get_IFDOffset(int8u KindOfIFD)
 //---------------------------------------------------------------------------
 void File_Exif::GetValueOffsetu(ifditem &IfdItem)
 {
-    auto GetDecimalPlaces = [](int32u numerator, int32u denominator) -> int8u {
+    auto GetDecimalPlaces = [](int64s numerator, int64s denominator) -> int8u {
+        numerator = abs(numerator);
+        denominator = abs(denominator);
         if (denominator == 1)
             return 0;
         int8u count{ 1 };
