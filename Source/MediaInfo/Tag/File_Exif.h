@@ -64,6 +64,9 @@ protected :
     void Thumbnail();
     void Makernote();
     void ICC_Profile();
+    void XMP();
+    void PhotoshopImageResources();
+    void IPTC_NAA();
 
     //Temp
     struct ifditem
