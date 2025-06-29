@@ -206,6 +206,9 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_mebx_keys();
     void moov_trak_mdia_minf_stbl_stsd_mebx_keys_PHDR();
     void moov_trak_mdia_minf_stbl_stsd_mebx_keys_PHDR_keyd();
+    void moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx();
+    void moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_keyd();
+    void moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_dtyp();
     void moov_trak_mdia_minf_stbl_stsd_stpp();
     void moov_trak_mdia_minf_stbl_stsd_stpp_btrt() {moov_trak_mdia_minf_stbl_stsd_xxxx_btrt();}
     void moov_trak_mdia_minf_stbl_stsd_text();
