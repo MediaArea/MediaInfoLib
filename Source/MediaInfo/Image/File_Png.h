@@ -70,7 +70,7 @@ private :
     void MEND() { Data_Common(); }
     void MHDR();
     void PLTE() { Data_Common(); }
-    void acTL() { Data_Common(); }
+    void acTL();
     void bKGD() { Data_Common(); }
     void caBX();
     void caNv() { Data_Common(); }
@@ -79,8 +79,8 @@ private :
     void cLLI();
     void cLLi() { cLLI(); }
     void eXIf();
-    void fcTL() { Data_Common(); }
-    void fdAT() { Data_Common(); }
+    void fcTL();
+    void fdAT();
     void gAMA();
     void hIST() { Data_Common(); }
     void iCCP();
@@ -108,8 +108,14 @@ private :
     void Data_Common();
 
     //Temp
-    int64u Data_Size;
-    int32u Signature;
+    int64u Data_Size{};
+    int32u Signature{};
+    bool IDATseen{};
+    bool isAPNG{};
+    int32u num_plays{};
+    int32u framecount{};
+    float64 framerate_min{};
+    float64 framerate_max{};
 };
 
 } //NameSpace
