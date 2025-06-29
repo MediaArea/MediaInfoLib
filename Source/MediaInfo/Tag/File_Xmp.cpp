@@ -124,11 +124,11 @@ namespace MediaInfoLib
             XML_ELEMENT_END \
 
 #define XML_ACCEPT \
-        Accept("XMP"); \
+        if (!Status[IsAccepted]) Accept("XMP"); \
 
 #define XML_ELSE_REJECT \
         } \
-        else { \
+        else if (!Status[IsAccepted]) { \
             Reject("XMP"); \
             return false;
 
