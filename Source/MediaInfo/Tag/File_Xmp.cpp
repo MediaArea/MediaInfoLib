@@ -22,33 +22,156 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Tag/File_Xmp.h"
+#include "ThirdParty/tfsxml/tfsxml.h"
 #include "ThirdParty/base64/base64.h"
-#include <cstring>
-#include "tinyxml2.h"
-using namespace tinyxml2;
 using namespace std;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
 {
 
-//---------------------------------------------------------------------------
-static char* strnstr(const char* Str, size_t Size, const char* ToSearch)
-{
-    size_t ToSearch_Size = strlen(ToSearch);
-    if (ToSearch_Size == 0)
-        return (char *)Str;
+#define NS(X) #X ":"
 
-    if (ToSearch_Size > Size)
-        return NULL;
+#define XML_XMP_START \
+    Result = tfsxml_enter(&p); \
+    if (Result > 0) { \
+        return false; \
+    } \
+    Result = tfsxml_next(&p, &n); if (Result < 0) { \
+        Reject("XMP"); \
+        return false; \
+    } if (Result > 0) { \
+        return Result; \
+    } \
+    if (!tfsxml_strncmp_charp(n, "?xpacket begin=", 15)) { \
+        Result = tfsxml_enter(&p); \
+        if (Result > 0) { \
+            return false; \
+        } \
+        Result = tfsxml_next(&p, &n); if (Result < 0) { \
+            Reject("XMP"); \
+            return false; \
+        } if (Result > 0) { \
+            return Result; \
+        } \
+    } \
+    if (false) { \
 
-    const char* LastPos = (const char *)Str + Size - ToSearch_Size;
-    for (const char* Start = Str; Start <= LastPos; Start++)
-        if (Start[0] == ToSearch[0] && !memcmp((const void*)&Start[1], (const void*)&ToSearch[1], ToSearch_Size - 1))
-            return (char*)Start;
+#define XML_XMP_END \
+    } \
 
-    return NULL;
-}
+#define XML_ELEMENT_START \
+    Result = tfsxml_enter(&p); \
+    if (Result > 0) { \
+        return false; \
+    } \
+    for (;;) { \
+            Result = tfsxml_next(&p, &n); \
+            if (Result < 0) { \
+                break; \
+            } \
+            if (Result > 0) { \
+                return Result; \
+            } \
+        if (false) { \
+
+#define XML_LIST(NAMESPACE, NAME) \
+    Result = tfsxml_enter(&p); \
+    if (Result > 0) { \
+        return false; \
+    } \
+    for (;;) { \
+            Result = tfsxml_next(&p, &n); \
+            if (Result < 0) { \
+                break; \
+            } \
+            if (Result > 0) { \
+                return Result; \
+            } \
+        if (tfsxml_strcmp_charp(n, "rdf:li")) { \
+            continue; \
+        } \
+        else { \
+            Result = tfsxml_value(&p, &v); \
+            if (Result > 0) { \
+                return Result; \
+            } \
+            NAMESPACE(NAME, tfsxml_decode(v)); \
+        } \
+    } \
+
+#define XML_ELEMENT(NAME) \
+        } \
+        else if (!tfsxml_strcmp_charp(n, NAME)) { \
+
+#define XML_ELEMENT_NAMESPACE(NAMESPACE) \
+        } \
+        else if (!tfsxml_strncmp_charp(n, NS(NAMESPACE), sizeof(#NAMESPACE))) { \
+            XML_VALUE \
+            NAMESPACE(tfsxml_decode(n), tfsxml_decode(v)); \
+
+#define XML_ELEMENT_LIST(TYPE) \
+        XML_ELEMENT(TYPE) \
+            XML_ELEMENT_START \
+            XML_ELEMENT("rdf:li") \
+                XML_ELEMENT_START \
+
+#define XML_ELEMENT_LIST_NAMESPACE(NAMESPACE, NAME, LISTTYPE) \
+        XML_ELEMENT(NAME) \
+            XML_ELEMENT_START \
+            XML_ELEMENT(LISTTYPE) \
+                XML_LIST(NAMESPACE, NAME) \
+            XML_ELEMENT_END \
+
+#define XML_ACCEPT \
+        Accept("XMP"); \
+
+#define XML_ELSE_REJECT \
+        } \
+        else { \
+            Reject("XMP"); \
+            return false;
+
+#define XML_VALUE \
+            Result = tfsxml_value(&p, &v); \
+            if (Result > 0) { \
+                return Result; \
+            } \
+
+#define XML_ATTRIBUTE_START \
+    for (;;) { \
+        { \
+            Result = tfsxml_attr(&p, &n, &v); \
+            if (Result < 0) { \
+                break; \
+            } \
+            if (Result > 0) { \
+                return Result; \
+            } \
+        } \
+        if (false) { \
+
+#define XML_ATTRIBUTE(NAME) \
+        } \
+        else if (!tfsxml_strcmp_charp(n, NAME)) { \
+
+
+#define XML_ATTRIBUTE_NAMESPACE(NAMESPACE) \
+        } \
+        else if (!tfsxml_strncmp_charp(n, NS(NAMESPACE), sizeof(#NAMESPACE))) { \
+            NAMESPACE(tfsxml_decode(n), tfsxml_decode(v)); \
+         
+#define XML_ATTRIBUTE_END \
+        } \
+    } \
+
+#define XML_ELEMENT_END \
+        } \
+    } \
+
+#define XML_ELEMENT_LIST_END \
+                XML_ELEMENT_END \
+            XML_ELEMENT_END \
 
 //***************************************************************************
 // Buffer - File header
@@ -57,344 +180,286 @@ static char* strnstr(const char* Str, size_t Size, const char* ToSearch)
 //---------------------------------------------------------------------------
 bool File_Xmp::FileHeader_Begin()
 {
-    if (Wait) {
+    if (Wait || (!IsSub && Buffer_Size < File_Size)) {
         Element_WaitForMoreData();
         return false;
     }
 
-    auto Buffer_Size_Save=Buffer_Size;
-    if (Buffer_Size>=32)
-    {
-        //TinyXML2 seems to not like preprocessor commands at end of file. TODO: remove that after switch to another XML parser
-        auto Result=strnstr((const char*)Buffer+Buffer_Size-32, 32, "<?xpacket");
-        if (Result)
-            Buffer_Size=(const int8u*)Result-Buffer;
-    }
-
-    XMLDocument document;
-    auto Result=FileHeader_Begin_XML(document);
-    Buffer_Size=Buffer_Size_Save;
-    if (!Result)
-       return false;
-
-    std::string NameSpace;
-    XMLElement* XmpMeta=document.FirstChildElement("xmpmeta");
-    if (XmpMeta==NULL)
-    {
-        NameSpace="x:";
-        XmpMeta=document.FirstChildElement((NameSpace+"xmpmeta").c_str());
-    }
-    if (!XmpMeta)
-    {
-        Reject("XMP");
-        return false;
-    }
-
-    XMLElement* Rdf=XmpMeta->FirstChildElement("RDF");
-    if (Rdf==NULL)
-    {
-        NameSpace="rdf:";
-        Rdf=XmpMeta->FirstChildElement((NameSpace+"RDF").c_str());
-    }
-    if (!Rdf)
-    {
-        Reject("XMP");
-        return false;
-    }
-
-    Accept("XMP");
-
     auto ParseBase64Image = [this](const char* input_data, const char* muxing_mode, const char* description) -> void {
-        if (input_data) {
-            std::string Data_Raw(Base64::decode(input_data));
-            auto Buffer_Save = Buffer;
-            auto Buffer_Offset_Save = Buffer_Offset;
-            auto Buffer_Size_Save = Buffer_Size;
-            auto Element_Offset_Save = Element_Offset;
-            auto Element_Size_Save = Element_Size;
-            Buffer = (const int8u*)Data_Raw.c_str();
-            Buffer_Offset = 0;
-            Buffer_Size = Data_Raw.size();
-            Element_Offset = 0;
-            Element_Size = Buffer_Size;
+            if (input_data) {
+                std::string Data_Raw(Base64::decode(input_data));
+                auto Buffer_Save = Buffer;
+                auto Buffer_Offset_Save = Buffer_Offset;
+                auto Buffer_Size_Save = Buffer_Size;
+                auto Element_Offset_Save = Element_Offset;
+                auto Element_Size_Save = Element_Size;
+                Buffer = (const int8u*)Data_Raw.c_str();
+                Buffer_Offset = 0;
+                Buffer_Size = Data_Raw.size();
+                Element_Offset = 0;
+                Element_Size = Buffer_Size;
 
-            //Filling
-            Attachment(muxing_mode, Ztring(), description);
+                //Filling
+                Attachment(muxing_mode, Ztring(), description);
 
-            Buffer = Buffer_Save;
-            Buffer_Offset = Buffer_Offset_Save;
-            Buffer_Size = Buffer_Size_Save;
-            Element_Offset = Element_Offset_Save;
-            Element_Size = Element_Size_Save;
-        }
+                Buffer = Buffer_Save;
+                Buffer_Offset = Buffer_Offset_Save;
+                Buffer_Size = Buffer_Size_Save;
+                Element_Offset = Element_Offset_Save;
+                Element_Size = Element_Size_Save;
+            }
         };
 
-    for (XMLElement* Rdf_Item=Rdf->FirstChildElement(); Rdf_Item; Rdf_Item=Rdf_Item->NextSiblingElement())
-    {
-        //RDF item
-        if (!strcmp(Rdf_Item->Value(), (NameSpace+"Description").c_str()))
-        {
-            const char* RelitInputImageData = Rdf_Item->Attribute("GCamera:RelitInputImageData");
-            ParseBase64Image(RelitInputImageData, "Extended XMP / GCamera", "Relit Input Image");
-            const char* GDepth = Rdf_Item->Attribute("GDepth:Data");
-            ParseBase64Image(GDepth, "Extended XMP / GDepth Data", "Depth");
-            const char* GDepthConfidence = Rdf_Item->Attribute("GDepth:Confidence");
-            ParseBase64Image(GDepthConfidence, "Extended XMP / GDepth Confidence", "Confidence");
-            const char* GImage = Rdf_Item->Attribute("GImage:Data");
-            ParseBase64Image(GImage, "Extended XMP / GImage Data", "Image");
-            const char* Description=Rdf_Item->Attribute("xmp:Description");
-            if (!Description)
-                Description=Rdf_Item->Attribute("pdf:Description");
-            if (Description && *Description!='\\') //TODO: support octal and UTF-16 ("\376\377")
-                Fill(Stream_General, 0, General_Description, Description);
-            const char* Keywords=Rdf_Item->Attribute("xmp:Keywords");
-            if (!Keywords)
-                Keywords=Rdf_Item->Attribute("pdf:Keywords");
-            if (Keywords && *Keywords !='\\') //TODO: support octal and UTF-16 ("\376\377")
-                Fill(Stream_General, 0, General_Keywords, Keywords);
-            const char* Producer=Rdf_Item->Attribute("xmp:Producer");
-            if (!Producer)
-                Producer=Rdf_Item->Attribute("pdf:Producer");
-            if (Producer && *Producer!='\\') //TODO: support octal and UTF-16 ("\376\377")
-                Fill(Stream_General, 0, General_Encoded_Library, Producer);
-            const char* Attribute=Rdf_Item->Attribute("xmlns:pdfaid");
-            if (Attribute)
-            {
-                string Profile;
-
-                if (strcmp(Attribute, "http://www.aiim.org/pdfa/ns/id/"))
-                    Profile=Attribute;
-                else
-                {
-                    Profile+="A";
-
-                    Attribute=Rdf_Item->Attribute("pdfaid:part");
-                    if (Attribute)
-                    {
-                        Profile+='-';
-                        Profile+=Attribute;
-
-                        Attribute=Rdf_Item->Attribute("pdfaid:conformance");
-                        if (Attribute)
-                        {
-                            string Conformance(Attribute);
-                            if (Conformance.size()==1 && Conformance[0]>='A' && Conformance[0]<='Z')
-                                Conformance[0]+=0x20; // From "A" to "a"
-                            Profile+=Conformance;
-                        }
+    tfsxml_string p{}, n{}, v{};
+    auto Result = tfsxml_init(&p, Buffer, Buffer_Size, 0);
+    XML_XMP_START
+    XML_ELEMENT("x:xmpmeta")
+        XML_ELEMENT_START
+        XML_ELEMENT("rdf:RDF")
+            XML_ACCEPT
+            XML_ELEMENT_START
+            XML_ELEMENT("rdf:Description")
+                XML_ATTRIBUTE_START
+                XML_ATTRIBUTE("GCamera:RelitInputImageData")
+                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GCamera", "Relit Input Image");
+                XML_ATTRIBUTE("GDepth:Data")
+                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Data", "Depth");
+                XML_ATTRIBUTE("GDepth:Confidence")
+                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Confidence", "Confidence");
+                XML_ATTRIBUTE("GImage:Data")
+                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GImage Data", "Image");
+                XML_ATTRIBUTE("xmlns:pdfaid")
+                    pdfaid = tfsxml_decode(v);
+                XML_ATTRIBUTE("pdfaid:part")
+                    pdfaid_part = tfsxml_decode(v);
+                XML_ATTRIBUTE("pdfaid:conformance")
+                    pdfaid_conformance = tfsxml_decode(v);
+                XML_ATTRIBUTE_NAMESPACE(exif)
+                XML_ATTRIBUTE_NAMESPACE(pdf)
+                XML_ATTRIBUTE_NAMESPACE(photoshop)
+                XML_ATTRIBUTE_NAMESPACE(xmp)
+                XML_ATTRIBUTE_NAMESPACE(Iptc4xmpExt)
+                XML_ATTRIBUTE_END
+                XML_ELEMENT_START
+                XML_ELEMENT_LIST_NAMESPACE(dc, "dc:title", "rdf:Alt")
+                XML_ELEMENT_LIST_NAMESPACE(dc, "dc:description", "rdf:Alt")
+                XML_ELEMENT_LIST_NAMESPACE(dc, "dc:subject", "rdf:Bag")
+                XML_ELEMENT_LIST_NAMESPACE(dc, "dc:creator", "rdf:Seq")
+                XML_ELEMENT_LIST_NAMESPACE(dc, "dc:rights", "rdf:Alt")
+                XML_ELEMENT("GDepth:Data")
+                    XML_VALUE
+                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Data", "Depth");
+                XML_ELEMENT("GDepth:Confidence")
+                    XML_VALUE
+                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Confidence", "Confidence");
+                XML_ELEMENT("GImage:Data")
+                    XML_VALUE
+                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GImage Data", "Image");
+                XML_ELEMENT("Container:Directory")
+                    if (GContainerItems) {
+                        XML_ELEMENT_START
+                        XML_ELEMENT_LIST("rdf:Seq")
+                            XML_ELEMENT("Container:Item")
+                                gc_item GCItem{};
+                                XML_ATTRIBUTE_START
+                                XML_ATTRIBUTE("Item:Mime")
+                                    GCItem.Mime = tfsxml_decode(v);
+                                XML_ATTRIBUTE("Item:Semantic")
+                                    GCItem.Semantic = tfsxml_decode(v);
+                                XML_ATTRIBUTE("Item:Length")
+                                    GCItem.Length = Ztring(tfsxml_decode(v).c_str()).To_int32u();
+                                XML_ATTRIBUTE("Item:Label")
+                                    GCItem.Label = tfsxml_decode(v);
+                                XML_ATTRIBUTE("Item:Padding")
+                                    GCItem.Padding = Ztring(tfsxml_decode(v).c_str()).To_int32u();
+                                XML_ATTRIBUTE("Item:URI")
+                                    GCItem.URI = tfsxml_decode(v);
+                                XML_ATTRIBUTE_END
+                                GContainerItems->push_back(GCItem);
+                        XML_ELEMENT_LIST_END
+                        XML_ELEMENT_END
                     }
-                }
-
-                Fill(Stream_General, 0, General_Format_Profile, Profile);
-            }
-            const char* Credit = Rdf_Item->Attribute("photoshop:Credit");
-            if (Credit && *Credit != '\\') //TODO: support octal and UTF-16 ("\376\377")
-                Fill(Stream_General, 0, General_Copyright, Credit);
-            const char* DigitalSourceType = Rdf_Item->Attribute("Iptc4xmpExt:DigitalSourceType");
-            if (DigitalSourceType && *DigitalSourceType != '\\') { //TODO: support octal and UTF-16 ("\376\377")
-                string URI{ DigitalSourceType };
-                string::size_type pos = URI.find("https://");
-                if (pos != std::string::npos) URI.replace(pos, 5, "http"); // Some Google generated files have https instead of http
-                if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"))
-                    Fill(Stream_General, 0, General_Copyright, "Created using generative AI");
-                if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia"))
-                    Fill(Stream_General, 0, General_Copyright, "Edited using generative AI");
-            }
-            const char* DateTimeOriginal = Rdf_Item->Attribute("exif:DateTimeOriginal");
-            if (DateTimeOriginal && *DateTimeOriginal != '\\') //TODO: support octal and UTF-16 ("\376\377")
-                Fill(Stream_General, 0, General_Recorded_Date, DateTimeOriginal);
-            const char* CreatorTool=Rdf_Item->Attribute("xmp:CreatorTool");
-            if (CreatorTool && *CreatorTool!='\\') //TODO: support octal and UTF-16 ("\376\377")
-                Fill(Stream_General, 0, General_Encoded_Application, CreatorTool);
-            Ztring ModifyDate, CreateDate;
-            for (XMLElement* Description_Item = Rdf_Item->FirstChildElement(); Description_Item; Description_Item=Description_Item->NextSiblingElement())
-            {
-                if (!strcmp(Description_Item->Value(), "xmp:ModifyDate"))
-                {
-                    ModifyDate=Ztring().From_UTF8(Description_Item->GetText());
-                    if (ModifyDate>CreateDate)
-                        Fill(Stream_General, 0, General_Encoded_Date, ModifyDate, true);
-                }
-                else if (!strcmp(Description_Item->Value(), "xmp:CreatorTool"))
-                    Fill(Stream_General, 0, General_Encoded_Application, Description_Item->GetText());
-                else if (!strcmp(Description_Item->Value(), "xmp:CreateDate"))
-                {
-                    CreateDate=Ztring().From_UTF8(Description_Item->GetText());
-                    if (CreateDate>ModifyDate)
-                        Fill(Stream_General, 0, General_Encoded_Date, CreateDate, true);
-                }
-                else if (!strcmp(Description_Item->Value(), "GDepth:Data"))
-                {
-                    const char* GDepth = Description_Item->GetText();
-                    ParseBase64Image(GDepth, "Extended XMP / GDepth Data", "Depth");
-                }
-                else if (!strcmp(Description_Item->Value(), "GDepth:Confidence"))
-                {
-                    const char* GDepth = Description_Item->GetText();
-                    ParseBase64Image(GDepth, "Extended XMP / GDepth Confidence", "Confidence");
-                }
-                else if (!strcmp(Description_Item->Value(), "GImage:Data"))
-                {
-                    const char* GImage = Description_Item->GetText();
-                    ParseBase64Image(GImage, "Extended XMP / GImage Data", "Image");
-                }
-                else if (!strcmp(Description_Item->Value(), "photoshop:Credit"))
-                {
-                    Fill(Stream_General, 0, General_Copyright, Description_Item->GetText());
-                }
-                else if (!strcmp(Description_Item->Value(), "Iptc4xmpExt:DigitalSourceType"))
-                {
-                    string URI{ Description_Item->GetText() };
-                    string::size_type pos = URI.find("https://");
-                    if (pos != std::string::npos) URI.replace(pos, 5, "http"); // Some Google generated files have https instead of http
-                    if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"))
-                        Fill(Stream_General, 0, General_Copyright, "Created using generative AI");
-                    if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia"))
-                        Fill(Stream_General, 0, General_Copyright, "Edited using generative AI");
-                }
-                else if (!strcmp(Description_Item->Value(), "dc:title"))
-                {
-                    XMLElement* rdfAltElement = Description_Item->FirstChildElement("rdf:Alt");
-                    if (rdfAltElement)
-                        XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li");
-                        for (XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
-                            Fill(Stream_General, 0, General_Title, rdfLiElement->GetText());
-                }
-                else if (!strcmp(Description_Item->Value(), "dc:description"))
-                {
-                    XMLElement* rdfAltElement = Description_Item->FirstChildElement("rdf:Alt");
-                    if (rdfAltElement)
-                        for(XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
-                            Fill(Stream_General, 0, General_Description, rdfLiElement->GetText());
-                }
-                else if (!strcmp(Description_Item->Value(), "dc:subject"))
-                {
-                    XMLElement* rdfBagElement = Description_Item->FirstChildElement("rdf:Bag");
-                    if (rdfBagElement)
-                        for (XMLElement* rdfLiElement = rdfBagElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
-                            Fill(Stream_General, 0, General_Subject, rdfLiElement->GetText());
-                }
-                else if (!strcmp(Description_Item->Value(), "dc:creator"))
-                {
-                    XMLElement* rdfSeqElement = Description_Item->FirstChildElement("rdf:Seq");
-                    if (rdfSeqElement)
-                        for (XMLElement* rdfLiElement = rdfSeqElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
-                            Fill(Stream_General, 0, General_Producer, rdfLiElement->GetText());
-                }
-                else if (!strcmp(Description_Item->Value(), "dc:rights"))
-                {
-                    XMLElement* rdfAltElement = Description_Item->FirstChildElement("rdf:Alt");
-                    if (rdfAltElement)
-                        for (XMLElement* rdfLiElement = rdfAltElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li"))
-                            Fill(Stream_General, 0, General_Copyright, rdfLiElement->GetText());
-                }
-                else if (GContainerItems && !strcmp(Description_Item->Value(), "Container:Directory"))
-                {
-                    XMLElement* rdfSeqElement = Description_Item->FirstChildElement("rdf:Seq");
-                    if (rdfSeqElement) {
-                        for (XMLElement* rdfLiElement = rdfSeqElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li")) {
-                            if (!strcmp(rdfLiElement->Attribute("rdf:parseType"), "Resource")) {
-                                XMLElement* ContainerItem = rdfLiElement->FirstChildElement("Container:Item");
-                                if (ContainerItem) {
+                XML_ELEMENT("Device:Container")
+                    if (GContainerItems) {
+                        XML_ELEMENT_START
+                        XML_ELEMENT("Container_1_:Directory")
+                            XML_ELEMENT_START
+                            XML_ELEMENT_LIST("rdf:Seq")
+                                XML_ELEMENT("rdf:value")
                                     gc_item GCItem{};
-                                    const char* Mime = ContainerItem->Attribute("Item:Mime");
-                                    if (Mime && *Mime != '\\')
-                                        GCItem.Mime = Mime;
-                                    const char* Semantic = ContainerItem->Attribute("Item:Semantic");
-                                    if (Semantic && *Semantic != '\\')
-                                        GCItem.Semantic = Semantic;
-                                    const char* Length = ContainerItem->Attribute("Item:Length");
-                                    if (Length && *Length != '\\')
-                                        GCItem.Length = Ztring(Length).To_int32u();
-                                    const char* Label = ContainerItem->Attribute("Item:Label");
-                                    if (Label && *Label != '\\')
-                                        GCItem.Label = Label;
-                                    const char* Padding = ContainerItem->Attribute("Item:Padding");
-                                    if (Padding && *Padding != '\\')
-                                        GCItem.Padding = Ztring(Padding).To_int32u();
-                                    const char* URI = ContainerItem->Attribute("Item:URI");
-                                    if (URI && *URI != '\\')
-                                        GCItem.URI = URI;
+                                    XML_ELEMENT_START
+                                    XML_ELEMENT("Item_1_:Mime")
+                                        XML_VALUE
+                                        GCItem.Mime = tfsxml_decode(v);
+                                    XML_ELEMENT("Item_1_:Length")
+                                        XML_VALUE
+                                        GCItem.Length = Ztring(tfsxml_decode(v).c_str()).To_int32u();
+                                    XML_ELEMENT("Item_1_:DataURI")
+                                        XML_VALUE
+                                        auto DataURI = tfsxml_decode(v);
+                                        if (DataURI == "primary_image")
+                                            GCItem.Semantic = "Primary";
+                                        if (DataURI == "android/original_image")
+                                            GCItem.Semantic = "Original";
+                                        if (DataURI == "android/depthmap")
+                                            GCItem.Semantic = "Depth";
+                                        if (DataURI == "android/confidencemap")
+                                            GCItem.Semantic = "Confidence";
+                                    XML_ELEMENT_END
                                     GContainerItems->push_back(GCItem);
-                                }
-                            }
-                        }
+                            XML_ELEMENT_LIST_END
+                            XML_ELEMENT_END
+                        XML_ELEMENT("Container:Directory")
+                            XML_ELEMENT_START
+                            XML_ELEMENT_LIST("rdf:Seq")
+                                XML_ELEMENT("Container:Item")
+                                    gc_item GCItem{};
+                                    XML_ATTRIBUTE_START
+                                    XML_ATTRIBUTE("Item:Mime")
+                                        GCItem.Mime = tfsxml_decode(v);
+                                    XML_ATTRIBUTE("Item:Length")
+                                        GCItem.Length = Ztring(tfsxml_decode(v).c_str()).To_int32u();
+                                    XML_ATTRIBUTE("Item:DataURI")
+                                        auto DataURI = tfsxml_decode(v);
+                                        if (DataURI == "primary_image")
+                                            GCItem.Semantic = "Primary";
+                                        if (DataURI == "android/original_image")
+                                            GCItem.Semantic = "Original";
+                                        if (DataURI == "android/depthmap")
+                                            GCItem.Semantic = "Depth";
+                                        if (DataURI == "android/confidencemap")
+                                            GCItem.Semantic = "Confidence";
+                                    XML_ATTRIBUTE_END
+                                    GContainerItems->push_back(GCItem);
+                            XML_ELEMENT_LIST_END
+                            XML_ELEMENT_END
+                        XML_ELEMENT_END
                     }
-                }
-                else if (GContainerItems && !strcmp(Description_Item->Value(), "Device:Container") && !strcmp(Description_Item->Attribute("rdf:parseType"), "Resource"))
-                {
-                    XMLElement* Directory = Description_Item->FirstChildElement("Container_1_:Directory");
-                    if (Directory) {
-                        XMLElement* rdfSeqElement = Directory->FirstChildElement("rdf:Seq");
-                        if (rdfSeqElement) {
-                            for (XMLElement* rdfLiElement = rdfSeqElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li")) {
-                                if (!strcmp(rdfLiElement->Attribute("rdf:parseType"), "Resource")) {
-                                    XMLElement* Value = rdfLiElement->FirstChildElement("rdf:value");
-                                    if (Value && !strcmp(Value->Attribute("rdf:parseType"), "Resource")) {
-                                        gc_item GCItem{};
-                                        XMLElement* Mime = Value->FirstChildElement("Item_1_:Mime");
-                                        if (Mime)
-                                            GCItem.Mime = Mime->GetText();
-                                        XMLElement* Length = Value->FirstChildElement("Item_1_:Length");
-                                        if (Length)
-                                            GCItem.Length = Ztring(Length->GetText()).To_int32u();
-                                        XMLElement* DataURI = Value->FirstChildElement("Item_1_:DataURI");
-                                        if (DataURI) {
-                                            auto DataURIContent = DataURI->GetText();
-                                            if (!strcmp(DataURIContent, "primary_image"))
-                                                GCItem.Semantic = "Primary";
-                                            if (!strcmp(DataURIContent, "android/original_image"))
-                                                GCItem.Semantic = "Original";
-                                            if (!strcmp(DataURIContent, "android/depthmap"))
-                                                GCItem.Semantic = "Depth";
-                                            if (!strcmp(DataURIContent, "android/confidencemap"))
-                                                GCItem.Semantic = "Confidence";
-                                        }
-                                        GContainerItems->push_back(GCItem);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else {
-                        Directory = Description_Item->FirstChildElement("Container:Directory");
-                        if (Directory) {
-                            XMLElement* rdfSeqElement = Directory->FirstChildElement("rdf:Seq");
-                            if (rdfSeqElement) {
-                                for (XMLElement* rdfLiElement = rdfSeqElement->FirstChildElement("rdf:li"); rdfLiElement; rdfLiElement = rdfLiElement->NextSiblingElement("rdf:li")) {
-                                    XMLElement* ContainerItem = rdfLiElement->FirstChildElement("Container:Item");
-                                    if (ContainerItem) {
-                                        gc_item GCItem{};
-                                        const char* Mime = ContainerItem->Attribute("Item:Mime");
-                                        if (Mime && *Mime != '\\')
-                                            GCItem.Mime = Mime;
-                                        const char* Length = ContainerItem->Attribute("Item:Length");
-                                        if (Length && *Length != '\\')
-                                            GCItem.Length = Ztring(Length).To_int32u();
-                                        const char* DataURI = ContainerItem->Attribute("Item:DataURI");
-                                        if (DataURI && *DataURI != '\\') {
-                                            if (!strcmp(DataURI, "primary_image"))
-                                                GCItem.Semantic = "Primary";
-                                            if (!strcmp(DataURI, "android/original_image"))
-                                                GCItem.Semantic = "Original";
-                                            if (!strcmp(DataURI, "android/depthmap"))
-                                                GCItem.Semantic = "Depth";
-                                            if (!strcmp(DataURI, "android/confidencemap"))
-                                                GCItem.Semantic = "Confidence";
-                                        }
-                                        GContainerItems->push_back(GCItem);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                XML_ELEMENT("pdfaid:part")
+                    XML_VALUE
+                    pdfaid_part = tfsxml_decode(v);
+                XML_ELEMENT("pdfaid:conformance")
+                    XML_VALUE
+                    pdfaid_conformance = tfsxml_decode(v);
+                XML_ELEMENT_NAMESPACE(photoshop)
+                XML_ELEMENT_NAMESPACE(xmp)
+                XML_ELEMENT_NAMESPACE(Iptc4xmpExt)
+                XML_ELEMENT_END
+            XML_ELEMENT_END
+        XML_ELSE_REJECT
+        XML_ELEMENT_END
+    XML_ELSE_REJECT
+    XML_XMP_END
+
+    if (!pdfaid.empty()) {
+        string Profile;
+        if (pdfaid != "http://www.aiim.org/pdfa/ns/id/")
+            Profile = pdfaid;
+        else {
+            Profile += "A";
+            if (!pdfaid_part.empty()) {
+                Profile += '-';
+                Profile += pdfaid_part;
+                if (!pdfaid_conformance.empty()) {
+                    string Conformance{ pdfaid_conformance };
+                    if (Conformance.size() == 1 && Conformance[0] >= 'A' && Conformance[0] <= 'Z')
+                        Conformance[0] += 0x20; // From "A" to "a"
+                    Profile += Conformance;
                 }
             }
         }
+        Fill(Stream_General, 0, General_Format_Profile, Profile);
     }
 
     Finish();
     return true;
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::dc(const string &name, const string &value)
+{
+    size_t parameter{};
+    if (name == "dc:title")
+        parameter = General_Title;
+    if (name == "dc:description")
+        parameter = General_Description;
+    if (name == "dc:subject")
+        parameter = General_Subject;
+    if (name == "dc:creator")
+        parameter = General_Producer;
+    if (name == "dc:rights")
+        parameter = General_Copyright;
+    if (parameter)
+        Fill(Stream_General, 0, parameter, value);
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::exif(const string& name, const string& value)
+{
+    if (name == "exif:DateTimeOriginal")
+        Fill(Stream_General, 0, General_Recorded_Date, value);
+    if (name == "exif:DateTimeDigitized")
+        Fill(Stream_General, 0, General_Mastered_Date, value);
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::pdf(const string& name, const string& value)
+{
+    if (name == "pdf:Description" && Retrieve_Const(Stream_General, 0, General_Description).empty())
+        Fill(Stream_General, 0, General_Description, value);
+    if (name == "pdf:Keywords" && Retrieve_Const(Stream_General, 0, General_Keywords).empty())
+        Fill(Stream_General, 0, General_Keywords, value);
+    if (name == "pdf:Producer" && Retrieve_Const(Stream_General, 0, General_Encoded_Library).empty())
+        Fill(Stream_General, 0, General_Encoded_Library, value);
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::photoshop(const string& name, const string& value)
+{
+    if (name == "photoshop:Credit")
+        Fill(Stream_General, 0, General_Copyright, value);
+    if (name == "photoshop:DateCreated") {
+        CreateDate = Ztring().From_UTF8(value);
+        if (CreateDate > ModifyDate)
+            Fill(Stream_General, 0, General_Encoded_Date, CreateDate, true);
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::xmp(const string& name, const string& value)
+{
+    if (name == "xmp:CreateDate") {
+        CreateDate = Ztring().From_UTF8(value);
+        if (CreateDate > ModifyDate)
+            Fill(Stream_General, 0, General_Encoded_Date, CreateDate, true);
+    }
+    if (name == "xmp:ModifyDate") {
+        ModifyDate = Ztring().From_UTF8(value);
+        if (ModifyDate > CreateDate)
+            Fill(Stream_General, 0, General_Encoded_Date, ModifyDate, true);
+    }
+    if (name == "xmp:CreatorTool")
+        Fill(Stream_General, 0, General_Encoded_Application, value);
+    if (name == "xmp:Description")
+        Fill(Stream_General, 0, General_Description, value, true, true);
+    if (name == "xmp:Keywords")
+        Fill(Stream_General, 0, General_Keywords, value, true, true);
+    if (name == "xmp:Producer")
+        Fill(Stream_General, 0, General_Encoded_Library, value, true, true);
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::Iptc4xmpExt(const string& name, const string& value)
+{
+    if (name == "Iptc4xmpExt:DigitalSourceType") {
+        string URI{ value };
+        string::size_type pos = URI.find("https://");
+        if (pos != std::string::npos) URI.replace(pos, 5, "http"); // Some Google generated files have https instead of http
+        if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"))
+            Fill(Stream_General, 0, General_Copyright, "Created using generative AI");
+        if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia"))
+            Fill(Stream_General, 0, General_Copyright, "Edited using generative AI");
+    }
 }
 
 } //NameSpace
