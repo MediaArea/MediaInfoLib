@@ -33,47 +33,57 @@ namespace MediaInfoLib
 #define NS(X) #X ":"
 
 #define XML_XMP_START \
-    Result = tfsxml_enter(&p); \
-    if (Result > 0) { \
-        return false; \
-    } \
-    Result = tfsxml_next(&p, &n); if (Result < 0) { \
+    Result = tfsxml_enter(&p); if (Result > 0) { \
         Reject("XMP"); \
         return false; \
-    } if (Result > 0) { \
-        return Result; \
+    } \
+    Result = tfsxml_next(&p, &n); if (Result != 0) { \
+        Reject("XMP"); \
+        return false; \
     } \
     if (!tfsxml_strncmp_charp(n, "?xpacket begin=", 15)) { \
-        Result = tfsxml_enter(&p); \
-        if (Result > 0) { \
-            return false; \
-        } \
-        Result = tfsxml_next(&p, &n); if (Result < 0) { \
+        Result = tfsxml_enter(&p); if (Result > 0) { \
             Reject("XMP"); \
             return false; \
-        } if (Result > 0) { \
-            return Result; \
+        } \
+        Result = tfsxml_next(&p, &n); if (Result != 0) { \
+            Reject("XMP"); \
+            return false; \
         } \
     } \
-    if (false) { \
+    if (!tfsxml_strcmp_charp(n, "x:xmpmeta")) { \
+        Result = tfsxml_enter(&p); if (Result != 0) { \
+            Reject("XMP"); \
+            return false; \
+        } \
+        Result = tfsxml_next(&p, &n); if (Result != 0) { \
+            Reject("XMP"); \
+            return false; \
+        } \
+        if (!tfsxml_strcmp_charp(n, "rdf:RDF")) { \
+            Accept("XMP"); \
 
 #define XML_XMP_END \
+        } \
+        else { \
+            Reject("XMP"); \
+            return false; \
+        } \
     } \
+    else { \
+            Reject("XMP"); \
+            return false; \
+        } \
 
 #define XML_ELEMENT_START \
     Result = tfsxml_enter(&p); \
-    if (Result > 0) { \
-        return false; \
-    } \
-    for (;;) { \
+    if (Result == 0) { \
+        for (;;) { \
             Result = tfsxml_next(&p, &n); \
-            if (Result < 0) { \
+            if (Result != 0) { \
                 break; \
             } \
-            if (Result > 0) { \
-                return Result; \
-            } \
-        if (false) { \
+            if (false) { \
 
 #define XML_LIST(NAMESPACE, NAME) \
     Result = tfsxml_enter(&p); \
@@ -81,13 +91,13 @@ namespace MediaInfoLib
         return false; \
     } \
     for (;;) { \
-            Result = tfsxml_next(&p, &n); \
-            if (Result < 0) { \
-                break; \
-            } \
-            if (Result > 0) { \
-                return Result; \
-            } \
+        Result = tfsxml_next(&p, &n); \
+        if (Result < 0) { \
+            break; \
+        } \
+        if (Result > 0) { \
+            return Result; \
+        } \
         if (tfsxml_strcmp_charp(n, "rdf:li")) { \
             continue; \
         } \
@@ -104,6 +114,17 @@ namespace MediaInfoLib
         } \
         else if (!tfsxml_strcmp_charp(n, NAME)) { \
 
+#define XML_ELEMENT_END \
+            } \
+        } \
+    } \
+
+#define XML_VALUE \
+        Result = tfsxml_value(&p, &v); \
+        if (Result > 0) { \
+            return Result; \
+        } \
+
 #define XML_ELEMENT_NAMESPACE(NAMESPACE) \
         } \
         else if (!tfsxml_strncmp_charp(n, NS(NAMESPACE), sizeof(#NAMESPACE))) { \
@@ -112,9 +133,9 @@ namespace MediaInfoLib
 
 #define XML_ELEMENT_LIST(TYPE) \
         XML_ELEMENT(TYPE) \
+            int count{}; \
             XML_ELEMENT_START \
             XML_ELEMENT("rdf:li") \
-                XML_ELEMENT_START \
 
 #define XML_ELEMENT_LIST_NAMESPACE(NAMESPACE, NAME, LISTTYPE) \
         XML_ELEMENT(NAME) \
@@ -123,31 +144,14 @@ namespace MediaInfoLib
                 XML_LIST(NAMESPACE, NAME) \
             XML_ELEMENT_END \
 
-#define XML_ACCEPT \
-        Accept("XMP"); \
-
-#define XML_ELSE_REJECT \
-        } \
-        else { \
-            Reject("XMP"); \
-            return false;
-
-#define XML_VALUE \
-            Result = tfsxml_value(&p, &v); \
-            if (Result > 0) { \
-                return Result; \
-            } \
-
 #define XML_ATTRIBUTE_START \
     for (;;) { \
-        { \
-            Result = tfsxml_attr(&p, &n, &v); \
-            if (Result < 0) { \
-                break; \
-            } \
-            if (Result > 0) { \
-                return Result; \
-            } \
+        Result = tfsxml_attr(&p, &n, &v); \
+        if (Result < 0) { \
+            break; \
+        } \
+        if (Result > 0) { \
+            return Result; \
         } \
         if (false) { \
 
@@ -165,12 +169,8 @@ namespace MediaInfoLib
         } \
     } \
 
-#define XML_ELEMENT_END \
-        } \
-    } \
-
 #define XML_ELEMENT_LIST_END \
-                XML_ELEMENT_END \
+                ++count; \
             XML_ELEMENT_END \
 
 //***************************************************************************
@@ -213,142 +213,141 @@ bool File_Xmp::FileHeader_Begin()
     tfsxml_string p{}, n{}, v{};
     auto Result = tfsxml_init(&p, Buffer, Buffer_Size, 0);
     XML_XMP_START
-    XML_ELEMENT("x:xmpmeta")
         XML_ELEMENT_START
-        XML_ELEMENT("rdf:RDF")
-            XML_ACCEPT
+        XML_ELEMENT("rdf:Description")
+            XML_ATTRIBUTE_START
+            XML_ATTRIBUTE("GCamera:RelitInputImageData")
+                ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GCamera", "Relit Input Image");
+            XML_ATTRIBUTE("GDepth:Data")
+                ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Data", "Depth");
+            XML_ATTRIBUTE("GDepth:Confidence")
+                ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Confidence", "Confidence");
+            XML_ATTRIBUTE("GImage:Data")
+                ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GImage Data", "Image");
+            XML_ATTRIBUTE("xmlns:pdfaid")
+                pdfaid = tfsxml_decode(v);
+            XML_ATTRIBUTE("pdfaid:part")
+                pdfaid_part = tfsxml_decode(v);
+            XML_ATTRIBUTE("pdfaid:conformance")
+                pdfaid_conformance = tfsxml_decode(v);
+            XML_ATTRIBUTE_NAMESPACE(exif)
+            XML_ATTRIBUTE_NAMESPACE(pdf)
+            XML_ATTRIBUTE_NAMESPACE(photoshop)
+            XML_ATTRIBUTE_NAMESPACE(xmp)
+            XML_ATTRIBUTE_NAMESPACE(Iptc4xmpExt)
+            XML_ATTRIBUTE_END
             XML_ELEMENT_START
-            XML_ELEMENT("rdf:Description")
-                XML_ATTRIBUTE_START
-                XML_ATTRIBUTE("GCamera:RelitInputImageData")
-                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GCamera", "Relit Input Image");
-                XML_ATTRIBUTE("GDepth:Data")
-                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Data", "Depth");
-                XML_ATTRIBUTE("GDepth:Confidence")
-                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Confidence", "Confidence");
-                XML_ATTRIBUTE("GImage:Data")
-                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GImage Data", "Image");
-                XML_ATTRIBUTE("xmlns:pdfaid")
-                    pdfaid = tfsxml_decode(v);
-                XML_ATTRIBUTE("pdfaid:part")
-                    pdfaid_part = tfsxml_decode(v);
-                XML_ATTRIBUTE("pdfaid:conformance")
-                    pdfaid_conformance = tfsxml_decode(v);
-                XML_ATTRIBUTE_NAMESPACE(exif)
-                XML_ATTRIBUTE_NAMESPACE(pdf)
-                XML_ATTRIBUTE_NAMESPACE(photoshop)
-                XML_ATTRIBUTE_NAMESPACE(xmp)
-                XML_ATTRIBUTE_NAMESPACE(Iptc4xmpExt)
-                XML_ATTRIBUTE_END
-                XML_ELEMENT_START
-                XML_ELEMENT_LIST_NAMESPACE(dc, "dc:title", "rdf:Alt")
-                XML_ELEMENT_LIST_NAMESPACE(dc, "dc:description", "rdf:Alt")
-                XML_ELEMENT_LIST_NAMESPACE(dc, "dc:subject", "rdf:Bag")
-                XML_ELEMENT_LIST_NAMESPACE(dc, "dc:creator", "rdf:Seq")
-                XML_ELEMENT_LIST_NAMESPACE(dc, "dc:rights", "rdf:Alt")
-                XML_ELEMENT("GDepth:Data")
-                    XML_VALUE
-                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Data", "Depth");
-                XML_ELEMENT("GDepth:Confidence")
-                    XML_VALUE
-                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Confidence", "Confidence");
-                XML_ELEMENT("GImage:Data")
-                    XML_VALUE
-                    ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GImage Data", "Image");
-                XML_ELEMENT("Container:Directory")
-                    if (GContainerItems) {
+            XML_ELEMENT_LIST_NAMESPACE(dc, "dc:title", "rdf:Alt")
+            XML_ELEMENT_LIST_NAMESPACE(dc, "dc:description", "rdf:Alt")
+            XML_ELEMENT_LIST_NAMESPACE(dc, "dc:subject", "rdf:Bag")
+            XML_ELEMENT_LIST_NAMESPACE(dc, "dc:creator", "rdf:Seq")
+            XML_ELEMENT_LIST_NAMESPACE(dc, "dc:rights", "rdf:Alt")
+            XML_ELEMENT("GDepth:Data")
+                XML_VALUE
+                ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Data", "Depth");
+            XML_ELEMENT("GDepth:Confidence")
+                XML_VALUE
+                ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Confidence", "Confidence");
+            XML_ELEMENT("GImage:Data")
+                XML_VALUE
+                ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GImage Data", "Image");
+            XML_ELEMENT("Container:Directory")
+                if (GContainerItems) {
+                    XML_ELEMENT_START
+                    XML_ELEMENT_LIST("rdf:Seq")
+                        XML_ELEMENT_START
+                        XML_ELEMENT("Container:Item")
+                            gc_item GCItem{};
+                            XML_ATTRIBUTE_START
+                            XML_ATTRIBUTE("Item:Mime")
+                                GCItem.Mime = tfsxml_decode(v);
+                            XML_ATTRIBUTE("Item:Semantic")
+                                GCItem.Semantic = tfsxml_decode(v);
+                            XML_ATTRIBUTE("Item:Length")
+                                GCItem.Length = Ztring(tfsxml_decode(v).c_str()).To_int32u();
+                            XML_ATTRIBUTE("Item:Label")
+                                GCItem.Label = tfsxml_decode(v);
+                            XML_ATTRIBUTE("Item:Padding")
+                                GCItem.Padding = Ztring(tfsxml_decode(v).c_str()).To_int32u();
+                            XML_ATTRIBUTE("Item:URI")
+                                GCItem.URI = tfsxml_decode(v);
+                            XML_ATTRIBUTE_END
+                            GContainerItems->push_back(GCItem);
+                        XML_ELEMENT_END
+                    XML_ELEMENT_LIST_END
+                    XML_ELEMENT_END
+                }
+            XML_ELEMENT("Device:Container")
+                if (GContainerItems) {
+                    XML_ELEMENT_START
+                    XML_ELEMENT("Container_1_:Directory")
                         XML_ELEMENT_START
                         XML_ELEMENT_LIST("rdf:Seq")
+                            XML_ELEMENT_START
+                            XML_ELEMENT("rdf:value")
+                                gc_item GCItem{};
+                                XML_ELEMENT_START
+                                XML_ELEMENT("Item_1_:Mime")
+                                    XML_VALUE
+                                    GCItem.Mime = tfsxml_decode(v);
+                                XML_ELEMENT("Item_1_:Length")
+                                    XML_VALUE
+                                    GCItem.Length = Ztring(tfsxml_decode(v).c_str()).To_int32u();
+                                XML_ELEMENT("Item_1_:DataURI")
+                                    XML_VALUE
+                                    auto DataURI = tfsxml_decode(v);
+                                    if (DataURI == "primary_image")
+                                        GCItem.Semantic = "Primary";
+                                    if (DataURI == "android/original_image")
+                                        GCItem.Semantic = "Original";
+                                    if (DataURI == "android/depthmap")
+                                        GCItem.Semantic = "Depth";
+                                    if (DataURI == "android/confidencemap")
+                                        GCItem.Semantic = "Confidence";
+                                XML_ELEMENT_END
+                                GContainerItems->push_back(GCItem);
+                            XML_ELEMENT_END
+                        XML_ELEMENT_LIST_END
+                        XML_ELEMENT_END
+                    XML_ELEMENT("Container:Directory")
+                        XML_ELEMENT_START
+                        XML_ELEMENT_LIST("rdf:Seq")
+                            XML_ELEMENT_START
                             XML_ELEMENT("Container:Item")
                                 gc_item GCItem{};
                                 XML_ATTRIBUTE_START
                                 XML_ATTRIBUTE("Item:Mime")
                                     GCItem.Mime = tfsxml_decode(v);
-                                XML_ATTRIBUTE("Item:Semantic")
-                                    GCItem.Semantic = tfsxml_decode(v);
                                 XML_ATTRIBUTE("Item:Length")
                                     GCItem.Length = Ztring(tfsxml_decode(v).c_str()).To_int32u();
-                                XML_ATTRIBUTE("Item:Label")
-                                    GCItem.Label = tfsxml_decode(v);
-                                XML_ATTRIBUTE("Item:Padding")
-                                    GCItem.Padding = Ztring(tfsxml_decode(v).c_str()).To_int32u();
-                                XML_ATTRIBUTE("Item:URI")
-                                    GCItem.URI = tfsxml_decode(v);
+                                XML_ATTRIBUTE("Item:DataURI")
+                                    auto DataURI = tfsxml_decode(v);
+                                    if (DataURI == "primary_image")
+                                        GCItem.Semantic = "Primary";
+                                    if (DataURI == "android/original_image")
+                                        GCItem.Semantic = "Original";
+                                    if (DataURI == "android/depthmap")
+                                        GCItem.Semantic = "Depth";
+                                    if (DataURI == "android/confidencemap")
+                                        GCItem.Semantic = "Confidence";
                                 XML_ATTRIBUTE_END
                                 GContainerItems->push_back(GCItem);
+                            XML_ELEMENT_END
                         XML_ELEMENT_LIST_END
                         XML_ELEMENT_END
-                    }
-                XML_ELEMENT("Device:Container")
-                    if (GContainerItems) {
-                        XML_ELEMENT_START
-                        XML_ELEMENT("Container_1_:Directory")
-                            XML_ELEMENT_START
-                            XML_ELEMENT_LIST("rdf:Seq")
-                                XML_ELEMENT("rdf:value")
-                                    gc_item GCItem{};
-                                    XML_ELEMENT_START
-                                    XML_ELEMENT("Item_1_:Mime")
-                                        XML_VALUE
-                                        GCItem.Mime = tfsxml_decode(v);
-                                    XML_ELEMENT("Item_1_:Length")
-                                        XML_VALUE
-                                        GCItem.Length = Ztring(tfsxml_decode(v).c_str()).To_int32u();
-                                    XML_ELEMENT("Item_1_:DataURI")
-                                        XML_VALUE
-                                        auto DataURI = tfsxml_decode(v);
-                                        if (DataURI == "primary_image")
-                                            GCItem.Semantic = "Primary";
-                                        if (DataURI == "android/original_image")
-                                            GCItem.Semantic = "Original";
-                                        if (DataURI == "android/depthmap")
-                                            GCItem.Semantic = "Depth";
-                                        if (DataURI == "android/confidencemap")
-                                            GCItem.Semantic = "Confidence";
-                                    XML_ELEMENT_END
-                                    GContainerItems->push_back(GCItem);
-                            XML_ELEMENT_LIST_END
-                            XML_ELEMENT_END
-                        XML_ELEMENT("Container:Directory")
-                            XML_ELEMENT_START
-                            XML_ELEMENT_LIST("rdf:Seq")
-                                XML_ELEMENT("Container:Item")
-                                    gc_item GCItem{};
-                                    XML_ATTRIBUTE_START
-                                    XML_ATTRIBUTE("Item:Mime")
-                                        GCItem.Mime = tfsxml_decode(v);
-                                    XML_ATTRIBUTE("Item:Length")
-                                        GCItem.Length = Ztring(tfsxml_decode(v).c_str()).To_int32u();
-                                    XML_ATTRIBUTE("Item:DataURI")
-                                        auto DataURI = tfsxml_decode(v);
-                                        if (DataURI == "primary_image")
-                                            GCItem.Semantic = "Primary";
-                                        if (DataURI == "android/original_image")
-                                            GCItem.Semantic = "Original";
-                                        if (DataURI == "android/depthmap")
-                                            GCItem.Semantic = "Depth";
-                                        if (DataURI == "android/confidencemap")
-                                            GCItem.Semantic = "Confidence";
-                                    XML_ATTRIBUTE_END
-                                    GContainerItems->push_back(GCItem);
-                            XML_ELEMENT_LIST_END
-                            XML_ELEMENT_END
-                        XML_ELEMENT_END
-                    }
-                XML_ELEMENT("pdfaid:part")
-                    XML_VALUE
-                    pdfaid_part = tfsxml_decode(v);
-                XML_ELEMENT("pdfaid:conformance")
-                    XML_VALUE
-                    pdfaid_conformance = tfsxml_decode(v);
-                XML_ELEMENT_NAMESPACE(photoshop)
-                XML_ELEMENT_NAMESPACE(xmp)
-                XML_ELEMENT_NAMESPACE(Iptc4xmpExt)
-                XML_ELEMENT_END
+                    XML_ELEMENT_END
+                }
+            XML_ELEMENT("pdfaid:part")
+                XML_VALUE
+                pdfaid_part = tfsxml_decode(v);
+            XML_ELEMENT("pdfaid:conformance")
+                XML_VALUE
+                pdfaid_conformance = tfsxml_decode(v);
+            XML_ELEMENT_NAMESPACE(photoshop)
+            XML_ELEMENT_NAMESPACE(xmp)
+            XML_ELEMENT_NAMESPACE(Iptc4xmpExt)
             XML_ELEMENT_END
-        XML_ELSE_REJECT
         XML_ELEMENT_END
-    XML_ELSE_REJECT
     XML_XMP_END
 
     if (!pdfaid.empty()) {
