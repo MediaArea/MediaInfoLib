@@ -452,11 +452,11 @@ void File_Xmp::Iptc4xmpExt(const string& name, const string& value)
 {
     if (name == "Iptc4xmpExt:DigitalSourceType") {
         string URI{ value };
-        string::size_type pos = URI.find("https://");
-        if (pos != std::string::npos) URI.replace(pos, 5, "http"); // Some Google generated files have https instead of http
-        if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"))
+        auto pos = URI.find("https://");
+        if (pos != string::npos) URI.replace(pos, 5, "http"); // Some Google generated files have https instead of http
+        if (URI == "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia")
             Fill(Stream_General, 0, General_Copyright, "Created using generative AI");
-        if (!strcmp(URI.c_str(), "http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia"))
+        if (URI == "http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia")
             Fill(Stream_General, 0, General_Copyright, "Edited using generative AI");
     }
 }
