@@ -223,6 +223,7 @@ private :
     string Seek_Items_PrimaryImageType;
     std::map<int64u, seek_item> Seek_Items;
     std::map<int64u, seek_item> Seek_Items_WithoutFirstImageOffset;
+    std::shared_ptr<void> GainMap_metadata_Adobe;
     std::unique_ptr<File__Analyze> Exif_Parser;
     std::unique_ptr<File__Analyze> PSD_Parser;
     std::unique_ptr<File__Analyze> ICC_Parser;

@@ -1609,6 +1609,8 @@ void File_Jpeg::APP1_XMP()
     File_Xmp MI;
     gc_items GContainerItems;
     MI.GContainerItems = &GContainerItems;
+    GainMap_metadata_Adobe.reset(new gm_data());
+    MI.GainMapData = static_cast<gm_data*>(GainMap_metadata_Adobe.get());
     Open_Buffer_Init(&MI);
     auto Element_Offset_Sav = Element_Offset;
     Open_Buffer_Continue(&MI);
