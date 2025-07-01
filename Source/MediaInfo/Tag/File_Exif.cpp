@@ -184,7 +184,7 @@ namespace IFD0 {
     ELEM(0x0141, HalftoneHints)
     ELEM(0x0142, TileWidth)
     ELEM(0x0143, TileLength)
-    ELEM(0x014A, A100DataOffset)
+    ELEM(0x014A, SubIFDs) // TIFF/EP
     ELEM(0x014C, InkSet)
     ELEM(0x0151, TargetPrinter)
     ELEM(0x0152, ExtraSamples)
@@ -272,6 +272,9 @@ namespace IFD0 {
     ELEM(0x5111, PixelsPerUnitX)
     ELEM(0x5112, PixelsPerUnitY)
     ELEM(0x5113, PaletteHistogram)
+    ELEM(0x828D, CFARepeatPatternDim) // TIFF/EP
+    ELEM(0x828E, CFAPattern) // TIFF/EP
+    ELEM(0x828F, BatteryLevel) // TIFF/EP
     ELEM(0x8298, Copyright)
     ELEM(0x830E, PixelScale)
     ELEM(0x83BB, IPTC_NAA) // TIFF/EP / Adobe Photoshop File Formats Specification
@@ -286,6 +289,23 @@ namespace IFD0 {
     ELEM(0x87B0, GeoTiffDoubleParams)
     ELEM(0x87B1, GeoTiffAsciiParams)
     ELEM(0x8825, GPSInfoIFD)
+    ELEM(0x8829, Interlace) // TIFF/EP
+    ELEM(0x882A, TimeZoneOffset) // TIFF/EP
+    ELEM(0x882B, SelfTimerMode) // TIFF/EP
+    ELEM(0x9003, DateTimeOriginal) // TIFF/EP
+    ELEM(0x920B, FlashEnergy) // TIFF/EP
+    ELEM(0x920C, SpatialFrequencyResponse) // TIFF/EP
+    ELEM(0x920D, Noise) // TIFF/EP
+    ELEM(0x920E, FocalPlaneXResolution) // TIFF/EP
+    ELEM(0x920F, FocalPlaneYResolution) // TIFF/EP
+    ELEM(0x9210, FocalPlaneResolutionUnit) // TIFF/EP
+    ELEM(0x9211, ImageNumber) // TIFF/EP
+    ELEM(0x9212, SecurityClassification) // TIFF/EP
+    ELEM(0x9213, ImageHistory) // TIFF/EP
+    ELEM(0x9214, SubjectLocation) // TIFF/EP
+    ELEM(0x9215, ExposureIndex) // TIFF/EP
+    ELEM(0x9216, TIFFEPStandardID) // TIFF/EP
+    ELEM(0x9217, SensingMethod) // TIFF/EP
     ELEM(0x935C, ImageSourceData) // Adobe Photoshop File Formats Specification
     ELEM(0x9C9B, WinExpTitle)
     ELEM(0x9C9C, WinExpComment)
@@ -296,6 +316,19 @@ namespace IFD0 {
     ELEM(0xA481, GDALNoData)
     ELEM(0xC44F, Annotations) // Adobe Photoshop File Formats Specification
     ELEM(0xC4A5, PrintIM)
+    ELEM(0xC612, DNGVersion) // 0xC612 - 0xC61E Defined DNG
+    ELEM(0xC613, DNGBackwardVersion)
+    ELEM(0xC614, UniqueCameraModel)
+    ELEM(0xC615, LocalizedCameraModel)
+    ELEM(0xC616, CFAPlaneColor)
+    ELEM(0xC617, CFALayout)
+    ELEM(0xC618, LinearizationTable)
+    ELEM(0xC619, BlackLevelRepeatDim)
+    ELEM(0xC61A, BlackLevel)
+    ELEM(0xC61B, BlackLevelDeltaH)
+    ELEM(0xC61C, BlackLevelDeltaV)
+    ELEM(0xC61D, WhiteLevel)
+    ELEM(0xC61E, DefaultScale)
     ELEM(0xC634, MakerNote)
     ELEM(0xC635, MakerNoteSafety)
     ELEM(0xC65A, CalibrationIlluminant1)
@@ -351,7 +384,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(HalftoneHints, "Halftone hints")
     ELEM_TRACE(TileWidth, "Tile width")
     ELEM_TRACE(TileLength, "Tile length")
-    ELEM_TRACE(A100DataOffset, "A100 IFD")
+    ELEM_TRACE(SubIFDs, "Sub IFDs")
     ELEM_TRACE(InkSet, "Ink set")
     ELEM_TRACE(TargetPrinter, "Target printer")
     ELEM_TRACE(ExtraSamples, "Extra samples")
@@ -439,6 +472,9 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(PixelsPerUnitX, "PixelsPerUnitX")
     ELEM_TRACE(PixelsPerUnitY, "PixelsPerUnitY")
     ELEM_TRACE(PaletteHistogram, "PaletteHistogram")
+    ELEM_TRACE(CFARepeatPatternDim, "CFA Repeat Pattern Dim")
+    ELEM_TRACE(CFAPattern, "CFA pattern")
+    ELEM_TRACE(BatteryLevel, "Battery Level")
     ELEM_TRACE(Copyright, "Copyright")
     ELEM_TRACE(PixelScale, "Pixel scale")
     ELEM_TRACE(IPTC_NAA, "IPTC-NAA")
@@ -453,6 +489,23 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(GeoTiffDoubleParams, "GeoTiff double params")
     ELEM_TRACE(GeoTiffAsciiParams, "GeoTiff ASCII params")
     ELEM_TRACE(GPSInfoIFD, "GPS IFD")
+    ELEM_TRACE(Interlace, "Interlace")
+    ELEM_TRACE(TimeZoneOffset, "Time Zone Offset")
+    ELEM_TRACE(SelfTimerMode, "Self Timer Mode")
+    ELEM_TRACE(DateTimeOriginal, "Date Time Original")
+    ELEM_TRACE(FlashEnergy, "Flash Energy")
+    ELEM_TRACE(SpatialFrequencyResponse, "Spatial Frequency Response")
+    ELEM_TRACE(Noise, "Noise")
+    ELEM_TRACE(FocalPlaneXResolution, "Focal plane X resolution")
+    ELEM_TRACE(FocalPlaneYResolution, "Focal plane Y resolution")
+    ELEM_TRACE(FocalPlaneResolutionUnit, "Focal plane resolutionUnit")
+    ELEM_TRACE(ImageNumber, "Image Number")
+    ELEM_TRACE(SecurityClassification, "Security Classification")
+    ELEM_TRACE(ImageHistory, "Image History")
+    ELEM_TRACE(SubjectLocation, "Subject location")
+    ELEM_TRACE(ExposureIndex, "Exposure index")
+    ELEM_TRACE(TIFFEPStandardID, "TIFF/EP Standard ID")
+    ELEM_TRACE(SensingMethod, "Sensing method")
     ELEM_TRACE(ImageSourceData, "Photoshop image source data")
     ELEM_TRACE(WinExpTitle, "Title (Windows Explorer)")
     ELEM_TRACE(WinExpComment, "Comment (Windows Explorer)")
@@ -463,6 +516,19 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(GDALNoData, "GDAL no data")
     ELEM_TRACE(Annotations, "Annotations")
     ELEM_TRACE(PrintIM, "Print IM")
+    ELEM_TRACE(DNGVersion, "DNG Version")
+    ELEM_TRACE(DNGBackwardVersion, "DNG Backward Version")
+    ELEM_TRACE(UniqueCameraModel, "Unique Camera Model")
+    ELEM_TRACE(LocalizedCameraModel, "Localized Camera Model")
+    ELEM_TRACE(CFAPlaneColor, "CFA Plane Color")
+    ELEM_TRACE(CFALayout, "CFA Layout")
+    ELEM_TRACE(LinearizationTable, "Linearization Table")
+    ELEM_TRACE(BlackLevelRepeatDim, "Black Level Repeat Dim")
+    ELEM_TRACE(BlackLevel, "Black Level")
+    ELEM_TRACE(BlackLevelDeltaH, "Black Level Delta H")
+    ELEM_TRACE(BlackLevelDeltaV, "Black Level Delta V")
+    ELEM_TRACE(WhiteLevel, "White Level")
+    ELEM_TRACE(DefaultScale, "Default Scale")
     ELEM_TRACE(MakerNote, "Manufacturer notes")
     ELEM_TRACE(MakerNoteSafety, "Manufacturer notes safety")
     ELEM_TRACE(CalibrationIlluminant1, "Calibration illuminant 1")
@@ -533,6 +599,7 @@ namespace IFDExif {
     ELEM(0xA004, RelatedSoundFile)
     ELEM(0xA005, InteroperabilityIFD)
     ELEM(0xA20B, FlashEnergy)
+    ELEM(0xA20C, SpatialFrequencyResponse)
     ELEM(0xA20E, FocalPlaneXResolution)
     ELEM(0xA20F, FocalPlaneYResolution)
     ELEM(0xA210, FocalPlaneResolutionUnit)
@@ -646,6 +713,7 @@ exif_tag_desc Desc[] =
     ELEM_TRACE(RelatedSoundFile, "Related sound file")
     ELEM_TRACE(InteroperabilityIFD, "Interoperability IFD")
     ELEM_TRACE(FlashEnergy, "Flash energy")
+    ELEM_TRACE(SpatialFrequencyResponse, "Spatial Frequency Response")
     ELEM_TRACE(FocalPlaneXResolution, "Focal plane X resolution")
     ELEM_TRACE(FocalPlaneYResolution, "Focal plane Y resolution")
     ELEM_TRACE(FocalPlaneResolutionUnit, "Focal plane resolutionUnit")
