@@ -2654,6 +2654,30 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 Info.push_back(Ztring()); // Division by zero, undefined
         }
         break;
+    case Exif_Type::SSHORT:                                     /* 16-bit (2-byte) signed integer. */
+        for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+        {
+            int16u Ret16u;
+            int16s Ret16;
+            #if MEDIAINFO_TRACE
+                Get_X2 (Ret16u,                                 "Data");
+                Ret16 = static_cast<int16s>(Ret16u);
+                Element_Info1(Ztring::ToZtring(Ret16));
+            #else //MEDIAINFO_TRACE
+                if (Element_Offset+2>Element_Size)
+                {
+                    Trusted_IsNot();
+                    break;
+                }
+                if (LittleEndian)
+                    Ret16=LittleEndian2int16s(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                else
+                    Ret16=BigEndian2int16s(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                Element_Offset+=2;
+            #endif //MEDIAINFO_TRACE
+            Info.push_back(Ztring::ToZtring(Ret16));
+        }
+        break;
     case Exif_Type::SLONG:                                      /* 32-bit (4-byte) signed integer */
         for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
         {
