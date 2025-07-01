@@ -1124,6 +1124,10 @@ enum kind_of_ifd
 {
     // Exif
     Kind_IFD0,
+    Kind_SubIFD0,
+    Kind_SubIFD1,
+    Kind_SubIFD2,
+    Kind_IFD2,
     Kind_IFD1,
     Kind_Exif,
     Kind_GPS,
@@ -1146,6 +1150,10 @@ enum kind_of_ifd
 exif_tag_desc_size Exif_Descriptions[] =
 {
     DESC_TABLE(IFD0, "IFD0 (primary image)")
+    DESC_TABLE(IFD0, "Sub IFD")
+    DESC_TABLE(IFD0, "Sub IFD 2")
+    DESC_TABLE(IFD0, "Sub IFD 3")
+    DESC_TABLE(IFD0, "IFD2")
     DESC_TABLE(IFD0, "IFD1 (thumbnail)")
     DESC_TABLE(IFDExif, "Exif")
     DESC_TABLE(IFDGPS, "GPS")
@@ -1554,14 +1562,6 @@ void File_Exif::Streams_Finish()
             const char* ParameterC = nullptr;
             string ParameterS;
             switch (Item.first) {
-            case IFD0::SubfileType: {
-                if (Item.second.Read().To_int64u() & 1) {
-                    Fill(Stream_Image, 0, Image_Type, "Thumbnail");
-                    Clear(Stream_General, 0, General_Format);
-                }
-                Parameter = (size_t)-1;
-                break;
-            }
             case IFD0::DocumentName: Parameter = General_Title; break;
             case IFD0::ImageDescription: Parameter = General_Description; break;
             case IFD0::Make: Parameter = General_Encoded_Hardware_CompanyName; break;
@@ -1641,13 +1641,42 @@ void File_Exif::Streams_Finish()
                 Parameter = (size_t)-1;
                 break;
             case IFD0::Copyright: Parameter = General_Copyright; break;
+            case IFD0::TIFFEPStandardID: {
+                ParameterC = "TIFFEPVersion";
+                const auto TIFFEPStandardID = Infos_Image.find(IFD0::TIFFEPStandardID);
+                if (TIFFEPStandardID->second.size() == 4) {
+                    Value = TIFFEPStandardID->second.at(0) + __T(".") + TIFFEPStandardID->second.at(1) + __T(".") + TIFFEPStandardID->second.at(2) + __T(".") + TIFFEPStandardID->second.at(3);
+                }
+                break;
+            }
             case IFD0::WinExpTitle: Parameter = General_Title; break;
             case IFD0::WinExpComment: Parameter = General_Comment; break;
             case IFD0::WinExpAuthor: Parameter = General_Performer; break;
             case IFD0::WinExpKeywords: Parameter = General_Keywords; break;
             case IFD0::WinExpSubject: Parameter = General_Subject; break;
+            case IFD0::DNGVersion: {
+                ParameterC = "DNGVersion";
+                const auto DNGVersion = Infos_Image.find(IFD0::DNGVersion);
+                if (DNGVersion->second.size() == 4) {
+                    Value = DNGVersion->second.at(0) + __T(".") + DNGVersion->second.at(1) + __T(".") + DNGVersion->second.at(2) + __T(".") + DNGVersion->second.at(3);
+                }
+                break;
             }
-            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS); 
+            case IFD0::DNGBackwardVersion: {
+                ParameterC = "DNGBackwardVersion";
+                const auto DNGBackwardVersion = Infos_Image.find(IFD0::DNGBackwardVersion);
+                if (DNGBackwardVersion->second.size() == 4) {
+                    Value = DNGBackwardVersion->second.at(0) + __T(".") + DNGBackwardVersion->second.at(1) + __T(".") + DNGBackwardVersion->second.at(2) + __T(".") + DNGBackwardVersion->second.at(3);
+                }
+                break;
+            }
+            }
+            FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
+            switch (Item.first) {
+            case IFD0::TIFFEPStandardID: Fill_SetOptions(Stream_General, 0, ParameterC, "N NT"); break;
+            case IFD0::DNGVersion: Fill_SetOptions(Stream_General, 0, ParameterC, "N NT"); break;
+            case IFD0::DNGBackwardVersion: Fill_SetOptions(Stream_General, 0, ParameterC, "N NT"); break;
+            }
         }
     }
 
@@ -1897,6 +1926,11 @@ void File_Exif::Streams_Finish()
             case IFDMakernoteNikon::ColorSpace:
                 Fill(Stream_Image, 0, Image_colour_primaries, Exif_IFDMakernoteNikon_ColorSpace_ColourPrimaries(Item.second.Read().To_int16u()));
                 Fill(Stream_Image, 0, Image_transfer_characteristics, Exif_IFDMakernoteNikon_ColorSpace_TransferCharacteristics(Item.second.Read().To_int16u()));
+                break;
+            case IFDMakernoteNikon::Quality:
+                ParameterC = "Quality";
+                Value = Item.second.Read();
+                while (Value.back() == __T(' ')) Value.pop_back();
                 break;
             }
             FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
@@ -2154,7 +2188,7 @@ void File_Exif::Data_Parse()
             while (Element_Size - Element_Offset >= 12)
                 Read_Directory();
             if (Element_Size && currentIFD != Kind_MakernoteSony) // Sony Makernote IFD does not have offset to next IFD
-                Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : currentIFD == Kind_MPF ? Kind_MPF : (int8u)-1);
+                Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : currentIFD == Kind_IFD1 ? Kind_IFD2 : currentIFD == Kind_MPF ? Kind_MPF : (int8u)-1);
         }
     }
     else
@@ -2503,6 +2537,10 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
     case Exif_Type::BYTE:                                       /* 8-bit unsigned integer. */
         switch (currentIFD) {
         case Kind_IFD0:
+        case Kind_IFD2:
+        case Kind_SubIFD0:
+        case Kind_SubIFD1:
+        case Kind_SubIFD2:
             switch (IfdItem.Tag) {
             case IFD0::XMP:
                 XMP();
@@ -2584,7 +2622,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 Element_Offset+=2;
             #endif //MEDIAINFO_TRACE
             Param_Info1C((currentIFD == Kind_IFD0 || currentIFD == Kind_IFD1) && IfdItem.Tag == IFD0::Orientation, Exif_IFD0_Orientation_Name(Ret16));
-            Param_Info1C((currentIFD == Kind_IFD0 || currentIFD == Kind_IFD1) && IfdItem.Tag == IFD0::Compression, Tiff_Compression_Name(Ret16));
+            Param_Info1C((currentIFD == Kind_IFD0 || currentIFD == Kind_IFD1 || currentIFD == Kind_IFD2 || currentIFD == Kind_SubIFD0 || currentIFD == Kind_SubIFD1 || currentIFD == Kind_SubIFD2) && IfdItem.Tag == IFD0::Compression, Tiff_Compression_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::LightSource, Exif_ExifIFD_Tag_LightSource_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::Flash, Exif_IFDExif_Flash_Name(Ret16));
             Param_Info1C(currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::ColorSpace, Exif_IFDExif_ColorSpace_Name(Ret16));
@@ -2603,6 +2641,10 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
     case Exif_Type::LONG:                                       /* 32-bit (4-byte) unsigned integer */
         switch (currentIFD) {
         case Kind_IFD0:
+        case Kind_IFD2:
+        case Kind_SubIFD0:
+        case Kind_SubIFD1:
+        case Kind_SubIFD2:
             switch (IfdItem.Tag) {
             case IFD0::IPTC_NAA:
                 IPTC_NAA();
@@ -2615,6 +2657,13 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             for (int16u Pos=0; Pos<Count; Pos++)
             {
                 int32u Ret32;
+                if (currentIFD == Kind_IFD0 && IfdItem.Tag == IFD0::SubIFDs) {
+                    if (Pos < 3)
+                        Get_IFDOffset(Kind_SubIFD0 + Pos);
+                    else
+                        Get_X4(Ret32,                           "IFD Offset");
+                    continue;
+                }
                 #if MEDIAINFO_TRACE
                     Get_X4 (Ret32, IfdItem.Type == Exif_Type::IFD ? "IFD Offset" : "Data");
                     Element_Info1(Ztring::ToZtring(Ret32));
@@ -2802,6 +2851,10 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         }
         switch (currentIFD) {
         case Kind_IFD0:
+        case Kind_IFD2:
+        case Kind_SubIFD0:
+        case Kind_SubIFD1:
+        case Kind_SubIFD2:
             switch (IfdItem.Tag) {
             case IFD0::XMP:
                 XMP();
