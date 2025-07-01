@@ -482,6 +482,14 @@ bool DateTime_Adapt(string& Value_)
     {
         return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
     }
+    if (Value.size() <= i + 4)
+        return false;
+    if (Value.size() == i + 5
+     && Value[i + 3] >= '0' && Value[i + 3] <= '9'
+     && Value[i + 4] >= '0' && Value[i + 4] <= '9')
+    {
+        Value.insert(i + 3, 1, ':');
+    }
     if (Value.size() <= i + 5)
         return false;
     if (Value[i + 3] != ':'

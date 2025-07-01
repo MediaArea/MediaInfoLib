@@ -799,6 +799,8 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys=0x6B657973;
     const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_PHDR=0x50484452;
     const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_PHDR_keyd=0x6B657964;
+    const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_keyd = 0x6B657964;
+    const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_dtyp = 0x64747970;
     const int64u moov_trak_mdia_minf_stbl_stsd_mett=0x6D657474;
     const int64u moov_trak_mdia_minf_stbl_stsd_mp4a=0x6D703461;
     const int64u moov_trak_mdia_minf_stbl_stsd_mp4s=0x6D703473;
@@ -1230,7 +1232,12 @@ void File_Mpeg4::Data_Parse()
                                         ATOM_BEGIN
                                         ATOM(moov_trak_mdia_minf_stbl_stsd_mebx_keys_PHDR_keyd)
                                         ATOM_END
-                                    ATOM_END
+                                    LIST_DEFAULT_COMPLETE(moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx)
+                                        ATOM_BEGIN
+                                        ATOM(moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_keyd)
+                                        ATOM(moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_dtyp)
+                                        ATOM_END
+                                    ATOM_END_DEFAULT
                                 ATOM_END
                             LIST_COMPLETE(moov_trak_mdia_minf_stbl_stsd_stpp)
                                 ATOM_BEGIN
@@ -5445,6 +5452,71 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_mebx_keys_PHDR_keyd()
 }
 
 //---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx() {
+
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_keyd() {
+    //Parsing
+    string key_value;
+    Skip_C4(                                                    "key_namespace");
+    Get_String(Element_Size - Element_Offset, key_value,        "key_value");
+
+    FILLING_BEGIN();
+    Fill(StreamKind_Last, StreamPos_Last, "Key", key_value);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_dtyp() {
+
+    auto getTypeName = [](int32u code) -> const char* {
+        switch (code) {
+        case 0:  return "reserved";
+        case 1:  return "UTF-8";
+        case 2:  return "UTF-16";
+        case 3:  return "S/JIS";
+        case 4:  return "UTF-8 sort";
+        case 5:  return "UTF-16 sort";
+        case 13: return "JPEG";
+        case 14: return "PNG";
+        case 21: return "BE Signed Integer";
+        case 22: return "BE Unsigned Integer";
+        case 23: return "BE Float32";
+        case 24: return "BE Float64";
+        case 27: return "BMP";
+        case 28: return "QuickTime Metadata atom";
+        case 65: return "8-bit Signed Integer";
+        case 66: return "BE 16-bit Signed Integer";
+        case 67: return "BE 32-bit Signed Integer";
+        case 70: return "BE PointF32";
+        case 71: return "BE DimensionsF32";
+        case 72: return "BE RectF32";
+        case 74: return "BE 64-bit Signed Integer";
+        case 75: return "8-bit Unsigned Integer";
+        case 76: return "BE 16-bit Unsigned Integer";
+        case 77: return "BE 32-bit Unsigned Integer";
+        case 78: return "BE 64-bit Unsigned Integer";
+        case 79: return "AffineTransformF64";
+        default: return "";
+        }
+    };
+
+    //Parsing
+    int32u datatype_namespace, datatype_array_1;
+    Get_B4(datatype_namespace,                                  "datatype_namespace");
+    if (datatype_namespace == 0) {
+        Get_B4(datatype_array_1,                                "datatype_array"); Param_Info1(getTypeName(datatype_array_1));
+    }
+    else if (datatype_namespace == 1) {
+        Skip_UTF8(Element_Size - Element_Offset,                "datatype_array");
+    }
+    else
+        Skip_XX(Element_Size - Element_Offset,                  "datatype_array");
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_stpp()
 {
     Element_Name("Subtitle (stpp)");
@@ -5891,7 +5963,9 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
         Skip_B2(                                                "reserved (0)");
         Get_B2 (SampleRate16,                                   "samplerate");
         Skip_B2(                                                "samplerate (0)");
-        if (Version_Temp==1 || MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("PCM"))
+        if (Version_Temp == 1 ||
+            MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format) == __T("PCM") ||
+            MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format) == __T("Auro-Cx"))
         {
             channelcount=Channels16;
             Channels=Channels16;
