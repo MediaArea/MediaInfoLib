@@ -64,22 +64,77 @@ namespace Tiff_Tag
     const int16u ResolutionUnit             = 296;
     const int16u Software                   = 305;
     const int16u ExtraSamples               = 338;
+    const int16u JPEGTables                 = 347;
+    const int16u JPEGProc                   = 512;
+    const int16u JPEGInterchangeFormat      = 513;
+    const int16u JPEGInterchangeFormatLngth = 514;
+    const int16u JPEGRestartInterval        = 515;
+    const int16u JPEGLosslessPredictors     = 517;
+    const int16u JPEGPointTransforms        = 518;
+    const int16u JPEGQTables                = 519;
+    const int16u JPEGDCTables               = 520;
+    const int16u JPEGACTables               = 521;
 }
 
 //---------------------------------------------------------------------------
-static const char* Tiff_Compression(int32u Compression)
+const char* Tiff_Compression_Name(int16u compression)
 {
-    switch (Compression)
+    switch (compression)
     {
-        case     1 : return "Raw";
-        case     2 : return "CCITT Group 3";
-        case     3 : return "CCITT T.4";
-        case     5 : return "LZW";
-        case     6 : return "JPEG (TIFF v6)";
-        case     7 : return "JPEG (ISO)";
-        case     8 : return "Deflate";
-        case 32773 : return "PackBits";
-        default    : return ""; //Unknown
+    case 1: return "Raw";
+    case 2: return "CCITT T.4/Group 3 1D Fax";
+    case 3: return "CCITT T.4/Group 3 Fax";
+    case 4: return "CCITT T.6/Group 4 Fax";
+    case 5: return "LZW";
+    case 6:
+    case 7:
+    case 99: return "JPEG";
+    case 8: return "Adobe Deflate";
+    case 9: return "JBIG B&W";
+    case 10: return "JBIG Color";
+    case 262: return "Kodak 262";
+    case 32766: return "Next";
+    case 32767: return "Sony ARW";
+    case 32769: return "Packed RAW";
+    case 32770: return "Samsung SRW";
+    case 32771: return "CCIRLEW";
+    case 32772: return "Samsung SRW 2";
+    case 32773: return "PackBits";
+    case 32809: return "Thunderscan";
+    case 32867: return "Kodak KDC";
+    case 32895: return "IT8CTPAD";
+    case 32896: return "IT8LW";
+    case 32897: return "IT8MP";
+    case 32898: return "IT8BL";
+    case 32908: return "PixarFilm";
+    case 32909: return "PixarLog";
+    case 32946: return "Deflate";
+    case 32947: return "DCS";
+    case 33003: return "Aperio JPEG 2000 YCbCr";
+    case 33005: return "Aperio JPEG 2000 RGB";
+    case 34661: return "JBIG";
+    case 34676: return "SGILog";
+    case 34677: return "SGILog24";
+    case 34712: return "JPEG 2000";
+    case 34713: return "Nikon NEF";
+    case 34715: return "JBIG2 TIFF FX";
+    case 34718: return "Microsoft Document Imaging (MDI) Binary Level Codec";
+    case 34719: return "Microsoft Document Imaging (MDI) Progressive Transform Codec";
+    case 34720: return "Microsoft Document Imaging (MDI) Vector";
+    case 34887: return "ESRI Lerc";
+    case 34892: return "Lossy JPEG";
+    case 34925: return "LZMA2";
+    case 34926:
+    case 50000: return "Zstd";
+    case 34927:
+    case 50001: return "WebP";
+    case 34933: return "PNG";
+    case 34934: return "JPEG XR";
+    case 50002:
+    case 52546: return "JPEG XL";
+    case 65000: return "Kodak DCR";
+    case 65535: return "Pentax PEF";
+    default: return "";
     }
 }
 
@@ -191,8 +246,8 @@ void File_Tiff::Streams_Finish()
     if (Info!=Infos[0].end())
     {
         int32u Value=Info->second.Read().To_int32u();
-        Fill(Stream_Image, 0, Image_Format, Tiff_Compression(Value));
-        Fill(Stream_Image, 0, Image_Codec, Tiff_Compression(Value));
+        Fill(Stream_Image, 0, Image_Format, Tiff_Compression_Name(Value));
+        Fill(Stream_Image, 0, Image_Codec, Tiff_Compression_Name(Value));
         Fill(Stream_Image, 0, Image_Compression_Mode, Tiff_Compression_Mode(Value));
     }
 
