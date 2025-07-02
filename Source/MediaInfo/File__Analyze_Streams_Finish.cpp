@@ -50,6 +50,119 @@ namespace MediaInfoLib
 {
 
 //---------------------------------------------------------------------------
+static const char* CompanySuffixes[] = {
+    " AG",
+    " CAMERA",
+    " CO.",
+    " CORP.",
+    " CORPORATION",
+    " ELECTRONICS",
+    " IMAGING",
+    " INC.",
+    " LTD.",
+    " TECHNOLOGIES",
+};
+
+//---------------------------------------------------------------------------
+struct FindReplace_struct {
+    const char* Find;
+    const char* ReplaceBy;
+};
+static const FindReplace_struct CompanyNames_Replace[] = {
+    { "SEIKO EPSON", "EPSON" },
+};
+
+//---------------------------------------------------------------------------
+// Based on https://en.wikipedia.org/wiki/Canon_EOS and https://wiki.magiclantern.fm/camera_models_map and 
+static const FindReplace_struct Model_Replace_Canon[] = {
+    { "EOS 1500D", "EOS 2000D" },
+    { "EOS 200D Mark II", "EOS 250D" },
+    { "EOS 3000D", "EOS 4000D" },
+    { "EOS 770D", "EOS 77D" },
+    { "EOS 8000D", "EOS 760D" },
+    { "EOS 9000D", "EOS 77D" },
+    { "EOS DIGITAL REBEL XT", "EOS 350D" },
+    { "EOS DIGITAL REBEL XTI", "EOS 400D" },
+    { "EOS DIGITAL REBEL", "EOS 300D" },
+    { "EOS HI", "EOS 1200D" },
+    { "EOS KISS DIGITAL N", "EOS 350D" },
+    { "EOS KISS DIGITAL X", "EOS 400D" },
+    { "EOS KISS DIGITAL", "EOS 300D" },
+    { "EOS KISS F", "EOS 1000D" },
+    { "EOS KISS M", "EOS M50" },
+    { "EOS KISS M2", "EOS M50 Mark II" },
+    { "EOS KISS M50m2", "EOS M50 Mark II" },
+    { "EOS KISS X10", "EOS 250D" },
+    { "EOS KISS X10I", "EOS 850D" },
+    { "EOS KISS X2", "EOS 450D" },
+    { "EOS KISS X3", "EOS 500D" },
+    { "EOS KISS X4", "EOS 550D" },
+    { "EOS KISS X5", "EOS 600D" },
+    { "EOS KISS X50", "EOS 1100D" },
+    { "EOS KISS X6I", "EOS 650D" },
+    { "EOS KISS X7", "EOS 100D" },
+    { "EOS KISS X70", "EOS 1200D" },
+    { "EOS KISS X7I", "EOS 700D" },
+    { "EOS KISS X80", "EOS 1300D" },
+    { "EOS KISS X8I", "EOS 750D" },
+    { "EOS KISS X9", "EOS 200D" },
+    { "EOS KISS X90", "EOS 2000D" },
+    { "EOS KISS X9I", "EOS 800D" },
+    { "EOS REBEL SL1", "EOS 100D" },
+    { "EOS REBEL SL2", "EOS 200D" },
+    { "EOS REBEL SL3", "EOS 250D" },
+    { "EOS REBEL T100", "EOS 4000D" },
+    { "EOS REBEL T1I", "EOS 500D" },
+    { "EOS REBEL T2I", "EOS 550D" },
+    { "EOS REBEL T3", "EOS 1100D" },
+    { "EOS REBEL T3I", "EOS 600D" },
+    { "EOS REBEL T4I", "EOS 650D" },
+    { "EOS REBEL T5", "EOS 1200D" },
+    { "EOS REBEL T5I", "EOS 700D" },
+    { "EOS REBEL T6", "EOS 1300D" },
+    { "EOS REBEL T6I", "EOS 750D" },
+    { "EOS REBEL T6S", "EOS 760D" },
+    { "EOS REBEL T7", "EOS 2000D" },
+    { "EOS REBEL T7I", "EOS 800D" },
+    { "EOS REBEL T8I", "EOS 850D" },
+    { "EOS REBEL XS", "EOS 1000D" },
+    { "EOS REBEL XSI", "EOS 450D" },
+};
+struct FindReplaceCompany_struct {
+    const char* CompanyName;
+    const FindReplace_struct* Find;
+    size_t Size;
+};
+static const FindReplaceCompany_struct Model_Replace[] = {
+    { "Canon", Model_Replace_Canon, sizeof(Model_Replace_Canon) / sizeof(Model_Replace_Canon[0])},
+};
+
+//---------------------------------------------------------------------------
+static const char* CompanyNames[] = {
+    "APPLE",
+    "CANON",
+    "EPSON",
+    "FUJIFILM",
+    "LEICA",
+    "HP",
+    "HUAWEI",
+    "MICROSOFT",
+    "NIKON",
+    "OLYMPUS",
+    "NIKON",
+    "PENTAX",
+    "SAMSUNG",
+    "SONY",
+};
+
+//---------------------------------------------------------------------------
+static const char* VersionPrefixes[] = {
+    "V",
+    "VER",
+    "VERSION",
+};
+   
+//---------------------------------------------------------------------------
 extern MediaInfo_Config Config;
 extern size_t DolbyVision_Compatibility_Pos(const Ztring& Value);
 //---------------------------------------------------------------------------
@@ -444,6 +557,7 @@ void File__Analyze::Streams_Finish_Global()
     Streams_Finish_StreamOnly();
     Streams_Finish_InterStreams();
     Streams_Finish_StreamOnly();
+    Streams_Finish_StreamOnly_General_Curate(0);
 
     Config->File_ExpandSubs_Update((void**)(&Stream_More));
 
@@ -1125,45 +1239,310 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
         }
         Fill(Stream_General, StreamPos, General_Encoded_OperatingSystem_String, OperatingSystem);
     }
+}
 
-    //Hardware
-    if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_String).empty())
-    {
-        //Filling
-        const auto& CompanyName=Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName);
-        const auto& Name=Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Name);
-        const auto& Model=Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model);
-        const auto& Version=Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Version);
-        if (!CompanyName.empty() && Model.rfind(CompanyName + __T(' '), 0) == 0) {
-            Fill(Stream_General, StreamPos, General_Encoded_Hardware_Model, Model.substr(CompanyName.size() + 1), true);
+//---------------------------------------------------------------------------
+void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
+{
+    // Remove useless characters
+    auto RemoveUseless = [&](size_t Parameter) {
+        const auto& Value = Retrieve_Const(Stream_General, StreamPos, Parameter);
+        if (Value.size() >= 2 && Value.front() == '[' && Value.back() == ']') {
+            Fill(Stream_General, StreamPos, Parameter, Value.substr(1, Value.size() - 2), true);
         }
-        if (CompanyName == __T("NIKON CORPORATION") && Model.rfind(__T("NIKON "), 0) == 0) {
-            Fill(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName, "Nikon", Unlimited, true, true);
-            Fill(Stream_General, StreamPos, General_Encoded_Hardware_Model, Model.substr(6), true);
+    };
+    RemoveUseless(General_Encoded_Hardware_Model);
+
+    // Remove company legal suffixes and rename some company trademarks
+    auto RemoveLegal = [&](size_t Parameter) {
+        bool DoAgain;
+        do {
+            DoAgain = false;
+            const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter);
+            auto CompanyNameU = CompanyName;
+            CompanyNameU.MakeUpperCase();
+            for (const auto& CompanySuffix : CompanySuffixes) {
+                auto len = strlen(CompanySuffix);
+                if (CompanyNameU.size() >= len && CompanyNameU.find(Ztring().From_UTF8(CompanySuffix), CompanyNameU.size() - len) != string::npos) {
+                    Fill(Stream_General, StreamPos, Parameter, CompanyName.substr(0, CompanyName.size() - len), true);
+                    DoAgain = true;
+                    break;
+                }
+            }
+        } while (DoAgain);
+
+        const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter);
+        auto CompanyName_String = CompanyName.To_UTF8();
+        for (const auto& ToSearch : CompanyNames_Replace) {
+            if (CompanyName_String == ToSearch.Find) {
+                Fill(Stream_General, StreamPos, Parameter, ToSearch.ReplaceBy, Unlimited, true, true);
+            }
         }
-        Ztring Hardware=CompanyName;
-        if (!Name.empty())
-        {
-            if (!Hardware.empty())
-                Hardware+=' ';
-            Hardware+=Name;
+    };
+    RemoveLegal(General_Encoded_Hardware_CompanyName);
+    RemoveLegal(General_Encoded_Library_CompanyName);
+    RemoveLegal(General_Encoded_Application_CompanyName);
+    auto General_StreamPos_Count = Count_Get(Stream_General, StreamPos);
+    for (size_t i = 0; i < General_StreamPos_Count; i++) {
+        const auto Name = Retrieve_Const(Stream_General, StreamPos, i, Info_Name).To_UTF8();
+        if (Name == "LensMake") {
+            RemoveLegal(i);
         }
-        if (!Model.empty())
-        {
-            if (!Hardware.empty())
-                Hardware+=' ';
-            if (!Name.empty())
-                Hardware+='(';
-            Hardware+=Model;
-            if (!Name.empty())
-                Hardware+=')';
-        }
-        if (!Hardware.empty() && !Version.empty())
-            Hardware+=Version;
-        Fill(Stream_General, StreamPos, General_Encoded_Hardware_String, Hardware);
     }
 
-    //Redundancy
+    // Move company name found in name field
+    auto MoveCompanyName = [&](size_t Parameter_Search, size_t Parameter_CompanyName) {
+        const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName);
+        const auto& Search = Retrieve_Const(Stream_General, StreamPos, Parameter_Search);
+
+        auto CompanyNameU = CompanyName;
+        auto SearchU = Search;
+        CompanyNameU.MakeUpperCase();
+        SearchU.MakeUpperCase();
+        if (!CompanyNameU.empty() && SearchU.size() > CompanyNameU .size() && SearchU[CompanyNameU.size()] == ' ' && SearchU.rfind(CompanyNameU, 0) == 0) {
+            Fill(Stream_General, StreamPos, Parameter_Search, Search.substr(CompanyName.size() + 1), true);
+        }
+        else {
+            auto SearchUS = SearchU.To_UTF8();
+            for (const auto& ToSearch : CompanyNames) {
+                if (SearchUS.rfind(ToSearch, 0) == 0) {
+                    const auto ToSearch_Len = strlen(ToSearch);
+                    if (SearchUS.size() > ToSearch_Len && SearchUS[ToSearch_Len] == ' ') {
+                        Fill(Stream_General, StreamPos, Parameter_CompanyName, Search.substr(0, ToSearch_Len));
+                        Fill(Stream_General, StreamPos, Parameter_Search, Search.substr(ToSearch_Len), true);
+                        break;
+                    }
+                }
+            }
+        }
+    };
+    MoveCompanyName(General_Encoded_Hardware_Model, General_Encoded_Hardware_CompanyName);
+    MoveCompanyName(General_Encoded_Library_Name, General_Encoded_Library_CompanyName);
+    MoveCompanyName(General_Encoded_Application_Name, General_Encoded_Application_CompanyName);
+
+    // Move versions found in name field
+    auto MoveVersion = [&](size_t Parameter_Name, size_t Parameter_Version, bool Skip = false) {
+        const auto& Name = Retrieve_Const(Stream_General, StreamPos, Parameter_Name);
+        if (Name.empty()) {
+            return;
+        }
+        const auto& Version = Retrieve_Const(Stream_General, StreamPos, Parameter_Version);
+        size_t Version_Pos = Name.size() - 1;
+        for (;;) {
+            const auto Letter = Name[Version_Pos];
+            if ((Letter < '0' || Letter > '9') && Letter != '.') {
+                break;
+            }
+            if (!Version_Pos) {
+                if (Name != Version) {
+                    Fill(Stream_General, StreamPos, Parameter_Version, Name);
+                }
+                Clear(Stream_General, StreamPos, Parameter_Name);
+                return;
+            }
+            Version_Pos--;
+        }
+        if (Version_Pos == Name.size() - 1) {
+            return; // No version found
+        }
+        Version_Pos++;
+        auto ToRemove = Version_Pos;
+        if (Name[ToRemove] == '.') {
+            Version_Pos++;
+        }
+        bool SpaceFound = false;
+        if (ToRemove && Name[ToRemove - 1] == ' ') {
+            ToRemove--;
+            SpaceFound = true;
+        }
+        Ztring NameU = Name;
+        NameU.MakeUpperCase();
+        for (const auto& VersionPrefix : VersionPrefixes) {
+            Ztring Prefix;
+            Prefix.From_UTF8(VersionPrefix);
+            if (ToRemove >= Prefix.size() && !NameU.compare(ToRemove - Prefix.size(), Prefix.size(), Prefix)) {
+                ToRemove -= Prefix.size();
+                break;
+            }
+        }
+        if (!SpaceFound && ToRemove && Name[ToRemove - 1] != ' ') {
+            if (Name.find(' ') == string::npos && Name.find('.') != string::npos) {
+                // No space, dots, likely a version number
+                if (Name != Version) {
+                    Fill(Stream_General, StreamPos, Parameter_Version, Name);
+                }
+                Clear(Stream_General, StreamPos, Parameter_Name);
+            }
+            return;
+        }
+        auto VersionFromName = Name.substr(Version_Pos);
+        if (VersionFromName != Version) {
+            Fill(Stream_General, StreamPos, Parameter_Version, VersionFromName);
+        }
+        if (!ToRemove) {
+            Clear(Stream_General, StreamPos, Parameter_Name);
+            return; // No name found
+        }
+        if (!Skip) {
+            Fill(Stream_General, StreamPos, Parameter_Name, Name.substr(0, ToRemove), true);
+        }
+    };
+    if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Name).empty() && Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName) == __T("Google")) {
+        const auto& Application = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application);
+        if (Application.rfind(__T("HDR+ "), 0) == 0) {
+            if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Version).empty()) {
+                Fill(Stream_General, StreamPos, General_Encoded_Application_Version, Application.substr(5));
+            }
+            Fill(Stream_General, StreamPos, General_Encoded_Application_Name, Application.substr(0, 4));
+            if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_CompanyName).empty()) {
+                Fill(Stream_General, StreamPos, General_Encoded_Application_CompanyName, Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName));
+            }
+        }
+    }
+    MoveVersion(General_Encoded_Hardware_Name, General_Encoded_Hardware_Version);
+    MoveVersion(General_Encoded_Hardware, General_Encoded_Hardware_Version, true);
+    MoveVersion(General_Encoded_Library_Name, General_Encoded_Library_Version);
+    MoveVersion(General_Encoded_Library, General_Encoded_Library_Version, true);
+    MoveVersion(General_Encoded_Application_Name, General_Encoded_Application_Version);
+    MoveVersion(General_Encoded_Application, General_Encoded_Application_Version, true);
+
+    // Remove synonyms
+    auto RemoveSynonyms = [&](size_t Parameter_CompanyName, size_t Parameter_Model) {
+        const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName).To_UTF8();
+        for (const auto& ToSearch : Model_Replace) {
+            if (CompanyName == ToSearch.CompanyName) {
+                const auto& Model = Retrieve_Const(Stream_General, StreamPos, Parameter_Model).To_UTF8();
+                for (size_t i = 0; i < ToSearch.Size; i++) {
+                    const auto& ToSearch2 = ToSearch.Find[i];
+                    if (Model == ToSearch2.Find) {
+                        Fill(Stream_General, StreamPos, Parameter_Model, ToSearch2.ReplaceBy, Unlimited, true, true);
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    };
+    RemoveSynonyms(General_Encoded_Hardware_CompanyName, General_Encoded_Hardware_Model);
+
+    // Remove capitalization
+    auto RemoveCapitalization = [&](size_t Parameter) {
+        const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter);
+        if (CompanyName.size() < 2) {
+            return;
+        }
+        auto CompanyNameS = CompanyName.To_UTF8();
+        for (const auto& ToSearch : CompanyNames) {
+            if (CompanyNameS.size() > 2 && CompanyNameS == ToSearch) {
+                for (size_t i = 1; i < CompanyName.size(); i++) {
+                    auto& Letter = CompanyNameS[i];
+                    if (Letter >= 'A' && Letter <= 'Z') {
+                        CompanyNameS[i] += 'a' - 'A';
+                    }
+                }
+                Fill(Stream_General, StreamPos, Parameter, CompanyNameS, true, true);
+            }
+        }
+    };
+    RemoveCapitalization(General_Encoded_Hardware_CompanyName);
+    RemoveCapitalization(General_Encoded_Library_CompanyName);
+    RemoveCapitalization(General_Encoded_Application_CompanyName);
+
+    // Crosscheck
+    auto Crosscheck = [&](size_t Parameter_CompanyName_Source, size_t Parameter_Start, bool CheckName) {
+        const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName_Source);
+        if (!CompanyName.empty()) {
+            const auto Parameter = Parameter_Start;
+            const auto Parameter_String = ++Parameter_Start;
+            const auto Parameter_CompanyName = ++Parameter_Start;
+            const auto Parameter_Name = ++Parameter_Start;
+            const auto& Application_CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName);
+            if (Application_CompanyName.empty()) {
+                const auto& Application = Retrieve_Const(Stream_General, StreamPos, CheckName ? Parameter_Name : Parameter);
+                auto CompanyNameU = CompanyName;
+                CompanyNameU.MakeUpperCase();
+                auto ApplicationU = Application;
+                ApplicationU.MakeUpperCase();
+                if (ApplicationU.size() > CompanyNameU.size() && ApplicationU[CompanyNameU.size()] == ' ' && ApplicationU.rfind(CompanyNameU, 0) == 0) {
+                    Fill(Stream_General, StreamPos, Parameter_CompanyName, CompanyName);
+                    Fill(Stream_General, StreamPos, Parameter_Name, Application.substr(CompanyName.size() + 1), true);
+                    if (!CheckName) {
+                        Clear(Stream_General, StreamPos, Parameter);
+                    }
+                }
+            }
+        }
+    };
+    Crosscheck(General_Encoded_Hardware_CompanyName, General_Encoded_Application, false);
+    Crosscheck(General_Encoded_Hardware_CompanyName, General_Encoded_Application, true);
+    Crosscheck(General_Encoded_Hardware_CompanyName, General_Encoded_Library, false);
+    Crosscheck(General_Encoded_Hardware_CompanyName, General_Encoded_Library, true);
+    Crosscheck(General_Encoded_Library_CompanyName, General_Encoded_Application, false);
+    Crosscheck(General_Encoded_Library_CompanyName, General_Encoded_Application, true);
+
+    // Copy name from other sources
+    auto CopyName = [&](size_t IfParameter, size_t Parameter_Name, size_t Parameter_Source) {
+        const auto& If = Retrieve_Const(Stream_General, StreamPos, IfParameter);
+        if (If.empty()) {
+            return;
+        }
+        const auto& Name = Retrieve_Const(Stream_General, StreamPos, Parameter_Name);
+        if (!Name.empty()) {
+            return;
+        }
+        const auto& Source = Retrieve_Const(Stream_General, StreamPos, Parameter_Source);
+        if (Source.empty()) {
+            return;
+        }
+        Fill(Stream_General, StreamPos, Parameter_Name, Source);
+    };
+    CopyName(General_Encoded_Library_CompanyName, General_Encoded_Library_Name, General_Encoded_Hardware_Name);
+    CopyName(General_Encoded_Application_CompanyName, General_Encoded_Application_Name, General_Encoded_Library_Name);
+    if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Name).empty() && !Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Version).empty()) {
+        const auto& Model = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model);
+        if (Model.rfind(__T("iPhone "), 0) == 0) {
+            if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_CompanyName).empty()) {
+                Fill(Stream_General, StreamPos, General_Encoded_Application_CompanyName, Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName));
+            }
+            Fill(Stream_General, StreamPos, General_Encoded_Application_Name, "iOS");
+        }
+        CopyName(General_Encoded_Hardware_Name, General_Encoded_Application_Name, General_Encoded_Hardware_Name);
+        CopyName(General_Encoded_Hardware_Model, General_Encoded_Application_Name, General_Encoded_Hardware_Model);
+    }
+
+    // Copy company name from other sources
+    auto CopyCompanyName = [&](size_t Parameter_Name, size_t Parameter_Source) {
+        const auto& Name = Retrieve_Const(Stream_General, StreamPos, Parameter_Name);
+        if (!Name.empty()) {
+            return;
+        }
+        const auto& Name1 = Retrieve_Const(Stream_General, StreamPos, Parameter_Name + 1);
+        const auto& Name2 = Retrieve_Const(Stream_General, StreamPos, Parameter_Source + 1);
+        if (Name1 != Name2) {
+            return;
+        }
+        const auto& Source = Retrieve_Const(Stream_General, StreamPos, Parameter_Source);
+        if (Source.empty()) {
+            return;
+        }
+        Fill(Stream_General, StreamPos, Parameter_Name, Source);
+    };
+    CopyCompanyName(General_Encoded_Library_CompanyName, General_Encoded_Application_CompanyName);
+    CopyCompanyName(General_Encoded_Application_CompanyName, General_Encoded_Library_CompanyName);
+    if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_CompanyName).empty() && !Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Version).empty()) {
+        CopyName(General_Encoded_Hardware_CompanyName, General_Encoded_Application_CompanyName, General_Encoded_Hardware_CompanyName);
+    }
+
+    // Check if it is really a library
+    if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Name) == Retrieve_Const(Stream_General, StreamPos, General_Encoded_Library_Name)
+        && (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Library_Version).empty() || Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Version) == Retrieve_Const(Stream_General, StreamPos, General_Encoded_Library_Version))) {
+        Clear(Stream_General, StreamPos, General_Encoded_Library);
+        Clear(Stream_General, StreamPos, General_Encoded_Library_CompanyName);
+        Clear(Stream_General, StreamPos, General_Encoded_Library_Name);
+        Clear(Stream_General, StreamPos, General_Encoded_Library_Version);
+    }
+
+    // Redundancy
     if (Retrieve_Const(Stream_General, 0, General_Encoded_Application_Name).empty() && Retrieve_Const(Stream_General, 0, General_Encoded_Application).empty())
     {
         if (Retrieve_Const(Stream_General, 0, General_Comment) == __T("Created with GIMP") || Retrieve_Const(Stream_General, 0, General_Description) == __T("Created with GIMP"))
@@ -1176,6 +1555,50 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
         if (Retrieve_Const(Stream_General, 0, General_Description) == __T("Created with GIMP"))
             Clear(Stream_General, StreamPos, General_Description);
     }
+
+    // Create displayed string
+    auto CreateString = [&](size_t Parameter_Start, bool HasModel = false) {
+        const auto Parameter = Parameter_Start;
+        const auto Parameter_String = ++Parameter_Start;
+        if (!Retrieve_Const(Stream_General, StreamPos, Parameter_String).empty()) {
+            return;
+        }
+        const auto Parameter_CompanyName = ++Parameter_Start;
+        const auto Parameter_Name = ++Parameter_Start;
+        const auto Parameter_Model = ++Parameter_Start;
+        const auto Parameter_Version = Parameter_Start + HasModel;
+
+        const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName);
+        const auto& Name = Retrieve_Const(Stream_General, StreamPos, Parameter_Name);
+        const auto& Model = Retrieve_Const(Stream_General, StreamPos, Parameter_Model);
+        const auto& Version = Retrieve_Const(Stream_General, StreamPos, Parameter_Version);
+
+        auto Value = CompanyName;
+        if (!Name.empty())
+        {
+            if (!Value.empty())
+                Value += ' ';
+            Value += Name;
+        }
+        if (HasModel && !Model.empty())
+        {
+            if (!Value.empty())
+                Value += ' ';
+            if (!Name.empty())
+                Value += '(';
+            Value += Model;
+            if (!Name.empty())
+                Value += ')';
+        }
+        if (!Value.empty() && !Version.empty()) {
+            Value += ' ';
+            Value += Version;
+        }
+        Fill(Stream_General, StreamPos, Parameter_String, Value, true);
+    };
+    CreateString(General_Encoded_Hardware, true);
+    CreateString(General_Encoded_Library);
+    CreateString(General_Encoded_Application);
 }
 
 //---------------------------------------------------------------------------

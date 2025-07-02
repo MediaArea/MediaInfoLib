@@ -1190,6 +1190,7 @@ protected :
     void Streams_Finish_StreamOnly();
     void Streams_Finish_StreamOnly(stream_t StreamKid, size_t StreamPos);
     void Streams_Finish_StreamOnly_General(size_t StreamPos);
+    void Streams_Finish_StreamOnly_General_Curate(size_t StreamPos);
     void Streams_Finish_StreamOnly_Video(size_t StreamPos);
     void Streams_Finish_StreamOnly_Audio(size_t StreamPos);
     void Streams_Finish_StreamOnly_Text(size_t StreamPos);
