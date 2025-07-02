@@ -1670,7 +1670,7 @@ void File_Exif::Streams_Finish()
                 else {
                     ShutterSpeed_Time = std::to_string(exposure_time);
                     ShutterSpeed_Time.erase(ShutterSpeed_Time.find_last_not_of('0') + 1);
-                    if (ShutterSpeed_Time[ShutterSpeed_Time.size() - 1] == '.')
+                    if (ShutterSpeed_Time.back() == '.')
                         ShutterSpeed_Time.pop_back();
                 }
                 Value = Item.second.Read();
