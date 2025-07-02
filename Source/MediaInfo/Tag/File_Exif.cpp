@@ -1948,6 +1948,7 @@ void File_Exif::Streams_Finish()
             string ParameterS;
             switch (Item.first) {
             case IFDMakernoteSony::WhiteBalance: ParameterC = "AutoWhiteBalanceMode"; Value = Exif_IFDMakernoteSony_WhiteBalance_Name(Item.second.Read().To_int32u()); break;
+            case IFDMakernoteSony::Quality: ParameterC = "Quality"; Value = Exif_IFDMakernoteSony_Quality_Name(Item.second.Read().To_int32u()); break;
             }
             FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
         }
@@ -2390,6 +2391,13 @@ void File_Exif::Thumbnail()
 //---------------------------------------------------------------------------
 void File_Exif::Makernote()
 {
+    auto Buffer_Offset_Save = Buffer_Offset;
+    auto Element_Size_Save = Element_Size;
+    if (Buffer_Offset > 12 && !strncmp((const char*)Buffer + Buffer_Offset - 12, "SONY DSC \0\0", 12)) {
+        Buffer_Offset -= 12;
+        Element_Size += 12;
+    }
+
     File_Exif MI{};
     MI.IsMakernote = true;
     MI.LittleEndian = LittleEndian;
@@ -2402,6 +2410,10 @@ void File_Exif::Makernote()
     for (size_t i = 0; i < Count; ++i) {
         Merge(MI, Stream_Image, i, i, false);
     }
+
+    Buffer_Offset = Buffer_Offset_Save;
+    Element_Size = Element_Size_Save;
+    Element_Offset = Element_Size;
 }
 
 //---------------------------------------------------------------------------
