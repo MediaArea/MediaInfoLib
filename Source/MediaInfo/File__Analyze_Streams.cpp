@@ -1468,12 +1468,14 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     }
     if (Compare)
     {
-        if (!Value.empty() && ((Value.front() == __T(' ') && Value.rfind(__T(" / "), 0)) || (Value.back() == __T(' ') && (Value.size() < 3 || Value.find(__T(" / "), Value.size() - 3) == string::npos))))
-        {
-            Ztring Value2(Value);
-            Value2.Trim(__T(' '));
-            if (Value2.empty())
-                return;
+        Ztring Value2(Value);
+        Value2.Trim(__T('\n'));
+        Value2.Trim(__T('\r'));
+        Value2.Trim(__T('\v'));
+        Value2.Trim(__T(' '));
+        if (Value2.empty())
+            return;
+        if (Value2.size() != Value.size()) {
             return Fill(StreamKind, StreamPos, Parameter, Value2, Replace);
         }
         if (!Target.empty() && Target.size() < Value.size() && Value.rfind(Target, 0) != string::npos)
