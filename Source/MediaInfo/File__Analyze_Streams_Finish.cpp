@@ -174,6 +174,171 @@ static const FindReplaceCompany_struct Model_Replace[] = {
     { "OpenCube", Model_Replace_OpenCube, sizeof(Model_Replace_OpenCube) / sizeof(Model_Replace_OpenCube[0])},
 };
 
+// Sony Xperia model name mappings
+static const FindReplace_struct Model_Name_Sony[] = {
+    { "XQ-FS44", "Xperia 1 VII" },
+    { "XQ-FS54", "Xperia 1 VII" },
+    { "XQ-FS72", "Xperia 1 VII" },
+    { "XQ-EC44", "Xperia 1 VI" },
+    { "XQ-EC54", "Xperia 1 VI" },
+    { "XQ-EC72", "Xperia 1 VI" },
+    { "XQ-ES44", "Xperia 10 VI" },
+    { "XQ-ES54", "Xperia 10 VI" },
+    { "XQ-ES72", "Xperia 10 VI" },
+    { "XQ-DE44", "Xperia 5 V" },
+    { "XQ-DE54", "Xperia 5 V" },
+    { "XQ-DE72", "Xperia 5 V" },
+    { "XQ-DQ44", "Xperia 1 V" },
+    { "XQ-DQ54", "Xperia 1 V" },
+    { "XQ-DQ62", "Xperia 1 V" },
+    { "XQ-DQ72", "Xperia 1 V" },
+    { "XQ-DC44", "Xperia 10 V" },
+    { "XQ-DC54", "Xperia 10 V" },
+    { "XQ-DC72", "Xperia 10 V" },
+    { "XQ-CQ44", "Xperia 5 IV" },
+    { "XQ-CQ54", "Xperia 5 IV" },
+    { "XQ-CQ62", "Xperia 5 IV" },
+    { "XQ-CQ72", "Xperia 5 IV" },
+    { "XQ-CT44", "Xperia 1 IV" },
+    { "XQ-CT54", "Xperia 1 IV" },
+    { "XQ-CT62", "Xperia 1 IV" },
+    { "XQ-CT72", "Xperia 1 IV" },
+    { "XQ-CC44", "Xperia 10 IV" },
+    { "XQ-CC54", "Xperia 10 IV" },
+    { "XQ-CC72", "Xperia 10 IV" },
+    { "XQ-BE42", "Xperia PRO-I" },
+    { "XQ-BE52", "Xperia PRO-I" },
+    { "XQ-BE62", "Xperia PRO-I" },
+    { "XQ-BE72", "Xperia PRO-I" },
+    { "XQ-BT44", "Xperia 10 III Lite" },
+    { "XQ-BC42", "Xperia 1 IV" },
+    { "XQ-BC52", "Xperia 1 IV" },
+    { "XQ-BC62", "Xperia 1 IV" },
+    { "XQ-BC72", "Xperia 1 IV" },
+    { "XQ-BQ42", "Xperia 5 III" },
+    { "XQ-BQ52", "Xperia 5 III" },
+    { "XQ-BQ62", "Xperia 5 III" },
+    { "XQ-BQ72", "Xperia 5 III" },
+    { "XQ-BT52", "Xperia 10 III" },
+    { "XQ-AQ52", "Xperia PRO" },
+    { "XQ-AQ62", "Xperia PRO" },
+    { "XQ-AS42", "Xperia 5 II" },
+    { "XQ-AS52", "Xperia 5 II" },
+    { "XQ-AS62", "Xperia 5 II" },
+    { "XQ-AS72", "Xperia 5 II" },
+    { "XQ-AT42", "Xperia 1 II" },
+    { "XQ-AT51", "Xperia 1 II" },
+    { "XQ-AT52", "Xperia 1 II" },
+    { "XQ-AU42", "Xperia 10 II" },
+    { "XQ-AU51", "Xperia 10 II" },
+    { "XQ-AU52", "Xperia 10 II" },
+    { "J8210", "Xperia 5" },
+    { "J8270", "Xperia 5" },
+    { "J9210", "Xperia 5 Dual" },
+    { "J9260", "Xperia 5 Dual" },
+    { "J8110", "Xperia 1" },
+    { "J8170", "Xperia 1" },
+    { "J9180", "Xperia 1" },
+    { "J9110", "Xperia 1 Dual" },
+    { "H8416", "Xperia XZ3" },
+    { "H9436", "Xperia XZ3" },
+    { "H9493", "Xperia XZ3" },
+    { "H8216", "Xperia XZ2" },
+    { "H8276", "Xperia XZ2" },
+    { "H8314", "Xperia XZ2 Compact" },
+    { "H8324", "Xperia XZ2 Compact" },
+    { "H8266", "Xperia XZ2 Dual" },
+    { "H8296", "Xperia XZ2 Dual" },
+    { "H8116", "Xperia XZ2 Premium" },
+    { "H8166", "Xperia XZ2 Premium Dual" },
+    { "G8341", "Xperia XZ1" },
+    { "G8343", "Xperia XZ1" },
+    { "G8441", "Xperia XZ1 Compact" },
+    { "G8342", "Xperia XZ1 Dual" },
+    { "F8331", "Xperia XZ" },
+    { "F8332", "Xperia XZ" },
+    { "G8141", "Xperia XZ Premium" },
+    { "G8188", "Xperia XZ Premium" },
+    { "G8142", "Xperia XZ Premium Dual" },
+    { "G8231", "Xperia XZs" },
+    { "G8232", "Xperia XZs Dual" },
+    { "E6603", "Xperia Z5" },
+    { "E6653", "Xperia Z5" },
+    { "E5803", "Xperia Z5 Compact" },
+    { "E5823", "Xperia Z5 Compact" },
+    { "E6633", "Xperia Z5 Dual" },
+    { "E6683", "Xperia Z5 Dual" },
+    { "E6853", "Xperia Z5 Premium" },
+    { "E6833", "Xperia Z5 Premium Dual" },
+    { "E6883", "Xperia Z5 Premium Dual" },
+    { "SGP712", "Xperia Z4 Tablet" },
+    { "SGP771", "Xperia Z4 Tablet" },
+    { "E6553", "Xperia Z3+" },
+    { "E6533", "Xperia Z3+ Dual" },
+    { "D6603", "Xperia Z3" },
+    { "D6616", "Xperia Z3" },
+    { "D6633", "Xperia Z3" },
+    { "D6643", "Xperia Z3" },
+    { "D6646", "Xperia Z3" },
+    { "D6653", "Xperia Z3" },
+    { "D5803", "Xperia Z3 Compact" },
+    { "D5833", "Xperia Z3 Compact" },
+    { "D6683", "Xperia Z3 Dual TD" },
+    { "D6708", "Xperia Z3v" },
+    { "SGP611", "Xperia Z3 Tablet Compact" },
+    { "SGP612", "Xperia Z3 Tablet Compact" },
+    { "SGP621", "Xperia Z3 Tablet Compact" },
+    { "SGP641", "Xperia Z3 Tablet Compact" },
+    { "D6502", "Xperia Z2" },
+    { "D6503", "Xperia Z2" },
+    { "D6543", "Xperia Z2" },
+    { "D6563", "Xperia Z2a" },
+    { "SGP511", "Xperia Z2 Tablet" },
+    { "SGP512", "Xperia Z2 Tablet" },
+    { "SGP521", "Xperia Z2 Tablet" },
+    { "SGP541", "Xperia Z2 Tablet" },
+    { "SGP551", "Xperia Z2 Tablet" },
+    { "SGP561", "Xperia Z2 Tablet" },
+    { "C6902", "Xperia Z1" },
+    { "C6903", "Xperia Z1" },
+    { "C6906", "Xperia Z1" },
+    { "C6943", "Xperia Z1" },
+    { "C6916", "Xperia Z1s" },
+    { "D5503", "Xperia Z1 Compact" },
+    { "C6802", "Xperia Z Ultra" },
+    { "C6806", "Xperia Z Ultra" },
+    { "C6833", "Xperia Z Ultra" },
+    { "C6843", "Xperia Z Ultra" },
+    { "SGP412", "Xperia Z Ultra" },
+    { "C5502", "Xperia ZR" },
+    { "C5503", "Xperia ZR" },
+    { "C5302", "Xperia SP" },
+    { "C5303", "Xperia SP" },
+    { "C5306", "Xperia SP" },
+    { "C6602", "Xperia Z" },
+    { "C6603", "Xperia Z" },
+    { "C6606", "Xperia Z" },
+    { "C6616", "Xperia Z" },
+    { "C6502", "Xperia ZL" },
+    { "C6503", "Xperia ZL" },
+    { "C6506", "Xperia ZL" },
+};
+static const FindReplace_struct Model_Name_Sony_Ericsson[] = {
+    { "SGPT121", "Xperia Tablet S" },
+    { "SGPT122", "Xperia Tablet S" },
+    { "SGPT123", "Xperia Tablet S" },
+    { "SGPT131", "Xperia Tablet S 3G" },
+    { "SGPT132", "Xperia Tablet S 3G" },
+    { "SGPT133", "Xperia Tablet S 3G" },
+    { "LT26ii", "Xperia SL" },
+    { "LT26w", "Xperia acro S" },
+    { "LT26i", "Xperia S" },
+};
+static const FindReplaceCompany_struct Model_Name[] = {
+    { "Sony", Model_Name_Sony, sizeof(Model_Name_Sony) / sizeof(Model_Name_Sony[0])},
+    { "Sony Ericsson", Model_Name_Sony_Ericsson, sizeof(Model_Name_Sony_Ericsson) / sizeof(Model_Name_Sony_Ericsson[0])},
+};
+
 //---------------------------------------------------------------------------
 static const char* VersionPrefixes[] = {
     ", VERSION: ",
@@ -1544,6 +1709,27 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
     RemoveCapitalization(General_Encoded_Hardware_CompanyName);
     RemoveCapitalization(General_Encoded_Library_CompanyName);
     RemoveCapitalization(General_Encoded_Application_CompanyName);
+
+    // Model name
+    auto FillModelName = [&](size_t Parameter_CompanyName, size_t Parameter_Model, size_t Parameter_Name) {
+        if (!Retrieve_Const(Stream_General, StreamPos, Parameter_Name).empty())
+            return;
+        const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName).To_UTF8();
+        for (const auto& ToSearch : Model_Name) {
+            if (CompanyName == ToSearch.CompanyName) {
+                const auto& Model = Retrieve_Const(Stream_General, StreamPos, Parameter_Model).To_UTF8();
+                for (size_t i = 0; i < ToSearch.Size; i++) {
+                    const auto& ToSearch2 = ToSearch.Find[i];
+                    if (Model == ToSearch2.Find) {
+                        Fill(Stream_General, StreamPos, Parameter_Name, ToSearch2.ReplaceBy);
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    };
+    FillModelName(General_Encoded_Hardware_CompanyName, General_Encoded_Hardware_Model, General_Encoded_Hardware_Name);
 
     // Crosscheck
     auto Crosscheck = [&](size_t Parameter_CompanyName_Source, size_t Parameter_Start, bool CheckName) {
