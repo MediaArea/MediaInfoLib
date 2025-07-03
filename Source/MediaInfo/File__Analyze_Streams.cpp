@@ -1476,7 +1476,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                 return;
             return Fill(StreamKind, StreamPos, Parameter, Value2, Replace);
         }
-        if (!Target.empty() && Target.size() < Value.size() && Value.find(Target, Value.size() - Target.size()) != string::npos)
+        if (!Target.empty() && Target.size() < Value.size() && Value.rfind(Target, 0) != string::npos)
             Replace = true;
         else
             Compare = Target.size() >= Value.size() && !Target.rfind(Value, 0);
