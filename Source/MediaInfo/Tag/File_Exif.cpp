@@ -2125,7 +2125,12 @@ void File_Exif::Header_Parse()
     
     //Filling
     Header_Fill_Code(0xFFFFFFFF, "IFD"); //OxFFFFFFFF can not be a Tag, so using it as a magic value
-    Header_Fill_Size((currentIFD == Kind_MakernoteSony ? 2 : 6) + 12 * ((int64u)NrOfDirectories)); //2 for header + 12 per directory + 4 for next IFD offset
+    auto Size = Element_Offset;
+    if (NrOfDirectories <= 0x100) { // 
+        Size += 12 * ((int64u)NrOfDirectories); // 12 bytes per directory
+        Size += (currentIFD != Kind_MakernoteSony) << 2; // 4 butes for next IFD offset, Sony Makernote IFD does not have offset to next IFD
+    }
+    Header_Fill_Size(Size);
 }
 
 //---------------------------------------------------------------------------
@@ -2146,9 +2151,9 @@ void File_Exif::Data_Parse()
 
             //Parsing new IFD
             int32u IFDOffset{};
-            while (Element_Offset + 12 <= Element_Size)
+            while (Element_Size - Element_Offset >= 12)
                 Read_Directory();
-            if (currentIFD != Kind_MakernoteSony) // Sony Makernote IFD does not have offset to next IFD
+            if (Element_Size && currentIFD != Kind_MakernoteSony) // Sony Makernote IFD does not have offset to next IFD
                 Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : currentIFD == Kind_MPF ? Kind_MPF : (int8u)-1);
         }
     }
@@ -2516,6 +2521,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             break;
         }
         if (Element_Offset < End) {
+            if (IfdItem.Count <= 16) {
             for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
             {
                 int8u Ret8;
@@ -2534,6 +2540,7 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 Param_Info1C(currentIFD == Kind_GPS && IfdItem.Tag == IFDGPS::GPSAltitudeRef, Exif_IFDGPS_GPSAltitudeRef_Name(Ret8));
                 Info.push_back(Ztring::ToZtring(Ret8));
             }
+            }
         }
         break;
     case Exif_Type::ASCII:                                      /* ASCII */
@@ -2551,7 +2558,9 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         }
         break;
     case Exif_Type::SHORT:                                      /* 16-bit (2-byte) unsigned integer. */
-        for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+        {
+        auto Count = IfdItem.Count > 16 ? 16 : IfdItem.Count;
+        for (int16u Pos=0; Pos<Count; Pos++)
         {
             int16u Ret16;
             #if MEDIAINFO_TRACE
@@ -2584,6 +2593,10 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             Param_Info1C(currentIFD == Kind_MakernoteNikon && IfdItem.Tag == IFDMakernoteNikon::ActiveDLighting, Exif_IFDMakernoteNikon_ActiveDLighting_Name(Ret16));
             Info.push_back(Ztring::ToZtring(Ret16));
         }
+        if (Count != IfdItem.Count) {
+            Skip_XX((IfdItem.Count - Count) * 2,                "(Not parsed)");
+        }
+        }
         break;
     case Exif_Type::IFD:                                        /* 32-bit (4-byte) unsigned integer IFD offset */
     case Exif_Type::LONG:                                       /* 32-bit (4-byte) unsigned integer */
@@ -2597,7 +2610,8 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             break;
         }
         if (Element_Offset < End) {
-            for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
+            auto Count = IfdItem.Count > 16 ? 16 : IfdItem.Count;
+            for (int16u Pos=0; Pos<Count; Pos++)
             {
                 int32u Ret32;
                 #if MEDIAINFO_TRACE
@@ -2619,9 +2633,14 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 Param_Info1C(currentIFD == Kind_MakernoteSony && IfdItem.Tag == IFDMakernoteSony::WhiteBalance, Exif_IFDMakernoteSony_WhiteBalance_Name(Ret32));
                 Info.push_back(Ztring::ToZtring(Ret32));
             }
+            if (Count != IfdItem.Count) {
+                Skip_XX((IfdItem.Count - Count) * 4,            "(Not parsed)");
+            }
         }
         break;
     case Exif_Type::RATIONAL:                                   /* 2x32-bit (2x4-byte) unsigned integers */
+        {
+        auto Count = IfdItem.Count > 16 ? 16 : IfdItem.Count;
         for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
         {
             int32u N, D;
@@ -2653,8 +2672,14 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             else
                 Info.push_back(Ztring()); // Division by zero, undefined
         }
+        if (Count != IfdItem.Count) {
+            Skip_XX((IfdItem.Count - Count) * 8,                "(Not parsed)");
+        }
+        }
         break;
     case Exif_Type::SSHORT:                                     /* 16-bit (2-byte) signed integer. */
+        {
+        auto Count = IfdItem.Count > 16 ? 16 : IfdItem.Count;
         for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
         {
             int16u Ret16u;
@@ -2677,8 +2702,14 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             #endif //MEDIAINFO_TRACE
             Info.push_back(Ztring::ToZtring(Ret16));
         }
+        if (Count != IfdItem.Count) {
+            Skip_XX((IfdItem.Count - Count) * 2,                "(Not parsed)");
+        }
+        }
         break;
     case Exif_Type::SLONG:                                      /* 32-bit (4-byte) signed integer */
+        {
+        auto Count = IfdItem.Count > 16 ? 16 : IfdItem.Count;
         for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
         {
             int32u Ret32u;
@@ -2703,8 +2734,14 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             Param_Info1C(currentIFD == Kind_MakernoteApple && IfdItem.Tag == IFDMakernoteApple::CameraType, Exif_IFDMakernoteApple_CameraType_Name(Ret32));
             Info.push_back(Ztring::ToZtring(Ret32));
         }
+        if (Count != IfdItem.Count) {
+            Skip_XX((IfdItem.Count - Count) * 4,                "(Not parsed)");
+        }
+        }
         break;
     case Exif_Type::SRATIONAL:                                  /* 2x32-bit (2x4-byte) signed integers */
+        {
+        auto Count = IfdItem.Count > 16 ? 16 : IfdItem.Count;
         for (int16u Pos=0; Pos<IfdItem.Count; Pos++)
         {
             int32u NU, DU;
@@ -2738,6 +2775,10 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 Info.push_back(Ztring::ToZtring(static_cast<float64>(N) / D, GetDecimalPlaces(N, D)));
             else
                 Info.push_back(Ztring()); // Division by zero, undefined
+        }
+        if (Count != IfdItem.Count) {
+            Skip_XX((IfdItem.Count - Count) * 8,                "(Not parsed)");
+        }
         }
         break;
     case Exif_Type::UNDEFINED:                                  /* Undefined */

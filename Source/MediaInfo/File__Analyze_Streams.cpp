@@ -1396,7 +1396,8 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         return;
     }
 
-    Ztring &Target=(*Stream)[StreamKind][StreamPos](Parameter);
+    auto StreamKind_MaxParameterPos=MediaInfoLib::Config.Info_Get(StreamKind).size();
+    Ztring &Target=Parameter>StreamKind_MaxParameterPos?(*Stream_More)[StreamKind][StreamPos](Parameter-StreamKind_MaxParameterPos)(Info_Text):(*Stream)[StreamKind][StreamPos](Parameter);
     bool Compare=false;
     switch (StreamKind)
     {
@@ -1405,7 +1406,22 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         {
         case General_Title:
         case General_Encoded_Application:
+        case General_Encoded_Application_CompanyName:
+        case General_Encoded_Application_Name:
+        case General_Encoded_Application_Version:
         case General_Encoded_Library:
+        case General_Encoded_Library_CompanyName:
+        case General_Encoded_Library_Name:
+        case General_Encoded_Library_Version:
+        case General_Encoded_OperatingSystem:
+        case General_Encoded_OperatingSystem_CompanyName:
+        case General_Encoded_OperatingSystem_Name:
+        case General_Encoded_OperatingSystem_Version:
+        case General_Encoded_Hardware:
+        case General_Encoded_Hardware_CompanyName:
+        case General_Encoded_Hardware_Name:
+        case General_Encoded_Hardware_Model:
+        case General_Encoded_Hardware_Version:
         case General_Copyright:
         case General_Comment:
         case General_Description:
@@ -1452,15 +1468,17 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     }
     if (Compare)
     {
-        if (!Value.empty() && ((Value.front() == __T(' ') && Value.rfind(__T(" / "), 0)) || (Value.back() == __T(' ') && (Value.size() < 3 || Value.find(__T(" / "), Value.size() - 3) == string::npos))))
-        {
-            Ztring Value2(Value);
-            Value2.Trim(__T(' '));
-            if (Value2.empty())
-                return;
+        Ztring Value2(Value);
+        Value2.Trim(__T('\n'));
+        Value2.Trim(__T('\r'));
+        Value2.Trim(__T('\v'));
+        Value2.Trim(__T(' '));
+        if (Value2.empty())
+            return;
+        if (Value2.size() != Value.size()) {
             return Fill(StreamKind, StreamPos, Parameter, Value2, Replace);
         }
-        if (!Target.empty() && Target.size() < Value.size() && Value.find(Target, Value.size() - Target.size()) != string::npos)
+        if (!Target.empty() && Target.size() < Value.size() && Value.rfind(Target, 0) != string::npos)
             Replace = true;
         else
             Compare = Target.size() >= Value.size() && !Target.rfind(Value, 0);
