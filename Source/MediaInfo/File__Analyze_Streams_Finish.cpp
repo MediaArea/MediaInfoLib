@@ -1343,6 +1343,7 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
         if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_OperatingSystem_Name).empty()) {
             auto Application = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application).To_UTF8();
             auto pos = Application.rfind(" (Android)");
+            if (Application.length() >= 12) {
             if (pos == Application.length() - 10) {
                 Application.erase(pos, 10);
                 Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "Android");
@@ -1356,6 +1357,7 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
             if (pos == Application.length() - 10) {
                 Application.erase(pos, 10);
                 Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "Windows");
+            }
             }
             if (Application != Retrieve_Const(Stream_General, 0, General_Encoded_Application).To_UTF8())
                 Fill(Stream_General, 0, General_Encoded_Application, Application, true, true);
