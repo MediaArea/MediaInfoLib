@@ -1340,6 +1340,37 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
         }
     }
     {
+        if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_OperatingSystem_Name).empty()) {
+            auto Application = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application).To_UTF8();
+            auto pos = Application.rfind(" (Android)");
+            if (pos == Application.length() - 10) {
+                Application.erase(pos, 10);
+                Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "Android");
+            }
+            pos = Application.rfind(" (Macintosh)");
+            if (pos == Application.length() - 12) {
+                Application.erase(pos, 12);
+                Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "macOS");
+            }
+            pos = Application.rfind(" (Windows)");
+            if (pos == Application.length() - 10) {
+                Application.erase(pos, 10);
+                Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "Windows");
+            }
+            if (Application != Retrieve_Const(Stream_General, 0, General_Encoded_Application).To_UTF8())
+                Fill(Stream_General, 0, General_Encoded_Application, Application, true, true);
+        }
+        if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_OperatingSystem_CompanyName).empty()) {
+            const auto OperatingSystem = Retrieve_Const(Stream_General, StreamPos, General_Encoded_OperatingSystem_Name).To_UTF8();
+            if (OperatingSystem == "Android")
+                Fill(Stream_General, 0, General_Encoded_OperatingSystem_CompanyName, "Google");
+            if (OperatingSystem == "macOS")
+                Fill(Stream_General, 0, General_Encoded_OperatingSystem_CompanyName, "Apple");
+            if (OperatingSystem == "Windows")
+                Fill(Stream_General, 0, General_Encoded_OperatingSystem_CompanyName, "Microsoft");
+        }
+    }
+    {
         const auto& Hardware_CompanyName = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName);
         const auto& Hardware_Name = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Name);
         if (Hardware_Name.rfind(Hardware_CompanyName + __T(' '), 0) == 0)
