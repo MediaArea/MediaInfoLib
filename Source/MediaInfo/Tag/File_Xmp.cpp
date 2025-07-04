@@ -231,6 +231,7 @@ bool File_Xmp::FileHeader_Begin()
             XML_ATTRIBUTE("pdfaid:conformance")
                 pdfaid_conformance = tfsxml_decode(v);
             XML_ATTRIBUTE_NAMESPACE(exif)
+            XML_ATTRIBUTE_NAMESPACE(GIMP)
             XML_ATTRIBUTE_NAMESPACE(pdf)
             XML_ATTRIBUTE_NAMESPACE(photoshop)
             XML_ATTRIBUTE_NAMESPACE(xmp)
@@ -350,6 +351,12 @@ bool File_Xmp::FileHeader_Begin()
         XML_ELEMENT_END
     XML_XMP_END
 
+    auto application = Retrieve_Const(Stream_General, 0, General_Encoded_Application).To_UTF8();
+    if (application == "GIMP" && !gimp_version.empty()) {
+        application += " " + gimp_version;
+        Fill(Stream_General, 0, General_Encoded_Application, application, true, true);
+    }
+
     if (!pdfaid.empty()) {
         string Profile;
         if (pdfaid != "http://www.aiim.org/pdfa/ns/id/")
@@ -402,6 +409,15 @@ void File_Xmp::exif(const string& name, const string& value)
 }
 
 //---------------------------------------------------------------------------
+void File_Xmp::GIMP(const string& name, const string& value)
+{
+    if (name == "GIMP:Platform")
+        Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, value);
+    if (name == "GIMP:Version")
+        gimp_version = value;
+}
+
+//---------------------------------------------------------------------------
 void File_Xmp::pdf(const string& name, const string& value)
 {
     if (name == "pdf:Description" && Retrieve_Const(Stream_General, 0, General_Description).empty())
@@ -418,7 +434,8 @@ void File_Xmp::photoshop(const string& name, const string& value)
     if (name == "photoshop:Credit")
         Fill(Stream_General, 0, General_Copyright, value);
     if (name == "photoshop:DateCreated") {
-        CreateDate = Ztring().From_UTF8(value);
+        Ztring CreateDateT = Ztring().From_UTF8(value);
+        if (CreateDateT > CreateDate) CreateDate = CreateDateT;
         if (CreateDate > ModifyDate)
             Fill(Stream_General, 0, General_Encoded_Date, CreateDate, true);
     }
@@ -428,7 +445,8 @@ void File_Xmp::photoshop(const string& name, const string& value)
 void File_Xmp::xmp(const string& name, const string& value)
 {
     if (name == "xmp:CreateDate") {
-        CreateDate = Ztring().From_UTF8(value);
+        Ztring CreateDateT = Ztring().From_UTF8(value);
+        if (CreateDateT > CreateDate) CreateDate = CreateDateT;
         if (CreateDate > ModifyDate)
             Fill(Stream_General, 0, General_Encoded_Date, CreateDate, true);
     }

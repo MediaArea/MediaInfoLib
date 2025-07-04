@@ -49,6 +49,7 @@ private :
     bool FileHeader_Begin();
     void dc(const string& name, const string& value);
     void exif(const string& name, const string& value);
+    void GIMP(const string& name, const string& value);
     void pdf(const string& name, const string& value);
     void photoshop(const string& name, const string& value);
     void xmp(const string& name, const string& value);
@@ -56,7 +57,7 @@ private :
 
     //Temp
     Ztring ModifyDate, CreateDate;
-    string pdfaid, pdfaid_part, pdfaid_conformance;
+    string gimp_version, pdfaid, pdfaid_part, pdfaid_conformance;
 };
 
 } //NameSpace

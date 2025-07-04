@@ -2127,8 +2127,8 @@ void File_Exif::Header_Parse()
     Header_Fill_Code(0xFFFFFFFF, "IFD"); //OxFFFFFFFF can not be a Tag, so using it as a magic value
     auto Size = Element_Offset;
     if (NrOfDirectories <= 0x100) { // 
-        Size += 12 * ((int64u)NrOfDirectories); // 12 bytes per directory
-        Size += (currentIFD != Kind_MakernoteSony) << 2; // 4 butes for next IFD offset, Sony Makernote IFD does not have offset to next IFD
+        Size += 12 * static_cast<int64u>(NrOfDirectories); // 12 bytes per directory
+        Size += static_cast<int64u>(currentIFD != Kind_MakernoteSony) << 2; // 4 bytes for next IFD offset, Sony Makernote IFD does not have offset to next IFD
     }
     Header_Fill_Size(Size);
 }
@@ -2260,7 +2260,8 @@ void File_Exif::Read_Directory()
     {
         int32u IFDOffset;
         Get_X4 (IFDOffset,                                      "IFD offset");
-        IfdItems[IFDOffset] = IfdItem;
+        if (IFDOffset) // Offset cannot be zero. Zero usually means no data.
+            IfdItems[IFDOffset] = IfdItem;
         auto End = IFDOffset + Size;
         if (ExpectedFileSize < End)
             ExpectedFileSize = End;
