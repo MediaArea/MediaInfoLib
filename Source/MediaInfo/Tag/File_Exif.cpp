@@ -1510,7 +1510,7 @@ void File_Exif::Streams_Finish()
 
     auto FillMetadata = [&](Ztring& Value, const std::pair<const int16u, ZtringList>& Item, size_t Parameter, const char* ParameterC, const string& Unit) {
         if (Value.empty()) {
-            Value = Item.second.Read();
+            Value = Item.second.size() == 1 ? Item.second.front() : Item.second.Read();
         }
         if (Parameter) {
             if (Parameter != (size_t)-1) {
