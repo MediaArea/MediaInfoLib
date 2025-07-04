@@ -1791,10 +1791,10 @@ void File_Jpeg::APP2_MPF()
         size_t Pos = (size_t)-1;
         for (const auto& Entry : MPEntries) {
             ++Pos;
-            if (Entry.DependentImg1EntryNo && !DependsOn[Entry.DependentImg1EntryNo - 1]) {
+            if (Entry.DependentImg1EntryNo && Entry.DependentImg1EntryNo <= DependsOn .size() && !DependsOn[Entry.DependentImg1EntryNo - 1]) {
                 DependsOn[Entry.DependentImg1EntryNo - 1] = Entry.ImgOffset ? (Offset + Entry.ImgOffset) : 0;
             }
-            if (Entry.DependentImg2EntryNo && !DependsOn[Entry.DependentImg2EntryNo - 1]) {
+            if (Entry.DependentImg2EntryNo && Entry.DependentImg2EntryNo <= DependsOn.size() && !DependsOn[Entry.DependentImg2EntryNo - 1]) {
                 DependsOn[Entry.DependentImg2EntryNo - 1] = Entry.ImgOffset ? (Offset + Entry.ImgOffset) : 0;
             }
             if (!Entry.ImgOffset) {
