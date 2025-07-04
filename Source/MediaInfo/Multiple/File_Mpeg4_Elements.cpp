@@ -5265,7 +5265,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stco()
     int32u Count, Offset;
     Get_B4 (Count,                                              "Number of entries");
     Loop_CheckValue(Count, 4, "entry_count");
-    auto HandleAllContent = Stream->second.TimeCode || Stream->second.IsCaption || (Stream->second.Parsers.empty() && Stream->second.StreamKind == Stream_Video) || (!Stream->second.Parsers.empty() && Stream->second.MayHaveCaption);
+    auto& Stream = Streams[moov_trak_tkhd_TrackID];
+    auto HandleAllContent = Stream.TimeCode || Stream.IsCaption || (Stream.Parsers.empty() && Stream.StreamKind == Stream_Video) || (!Stream.Parsers.empty() && Stream.MayHaveCaption);
     for (int32u Pos=0; Pos<Count; Pos++)
     {
         //Too much slow
@@ -5280,7 +5281,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stco()
         Element_Offset+=4;
 
         if (Pos<FrameCount_MaxPerStream || HandleAllContent)
-            Streams[moov_trak_tkhd_TrackID].stco.push_back(Offset);
+            Stream.stco.push_back(Offset);
     }
 }
 
