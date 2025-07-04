@@ -2260,7 +2260,8 @@ void File_Exif::Read_Directory()
     {
         int32u IFDOffset;
         Get_X4 (IFDOffset,                                      "IFD offset");
-        IfdItems[IFDOffset] = IfdItem;
+        if (IFDOffset) // Offset cannot be zero. Zero usually means no data.
+            IfdItems[IFDOffset] = IfdItem;
         auto End = IFDOffset + Size;
         if (ExpectedFileSize < End)
             ExpectedFileSize = End;
