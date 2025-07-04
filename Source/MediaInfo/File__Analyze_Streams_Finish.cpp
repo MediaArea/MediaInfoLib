@@ -51,44 +51,95 @@ namespace MediaInfoLib
 
 //---------------------------------------------------------------------------
 static const char* CompanySuffixes[] = {
+    "AB",
     "AG",
     "CAMERA",
+    "CO",
     "CO.",
     "COMPANY",
+    "COMPUTER",
+    "CORP",
     "CORP.",
     "CORPORATION",
+    "CORPORATION.",
+    "ELECTRIC",
     "ELECTRONICS",
+    "FILM",
+    "FOTOTECHNIC",
+    "GERMANY",
+    "GMBH",
+    "GROUP",
     "IMAGING",
     "INC.",
+    "INTERNATIONAL",
     "LABORATORIES",
+    "LIMITED",
+    "LIVING",
     "LTD",
     "LTD.",
     "OP",
+    "OPTICAL",
+    "PHOTO",
+    "SYSTEMS",
+    "TECH",
     "TECHNOLOGIES",
     "TECHNOLOGY",
 };
 
 //---------------------------------------------------------------------------
 static const char* CompanyNames[] = {
+    "ACER",
     "ASHAMPOO",
     "APPLE",
     "CANON",
+    "CASIO",
     "EPSON",
     "FRAUNHOFER",
+    "FUJI",
     "FUJIFILM",
-    "KODAK",
-    "LEICA",
+    "GE",
     "HP",
+    "HITACHI",
     "HUAWEI",
+    "JENOPTIK",
+    "KODAK",
+    "KONICA",
+    "KYOCERA",
+    "LEGEND",
+    "LEICA",
+    "MAGINON",
     "MICROSOFT",
     "NIKON",
+    "ODYS",
     "OLYMPUS",
     "MAMIYA",
+    "MAGINON",
+    "MOTOROLA",
+    "MEDION",
+    "MUSTEK",
     "NIKON",
-    "PENTAX",
+    "PENTACON",
+    "PIONEER",
+    "RECONYX",
     "RICOH",
+    "ROLLEI",
     "SAMSUNG",
+    "SANYO",
+    "SEALIFE",
+    "SHARP",
+    "SIGMA",
+    "SUPRA",
+    "SKANHEX",
     "SONY",
+    "TRAVELER",
+    "TRUST",
+    "TOSHIBA",
+    "VIVITAR",
+    "VODAFONE",
+    "XIAOYI",
+    "YAKUMO",
+    "YASHICA",
+    "ZEISS",
     "ZJMEDIA",
 };
 
@@ -98,11 +149,30 @@ struct FindReplace_struct {
     const char* ReplaceBy;
 };
 static const FindReplace_struct CompanyNames_Replace[] = {
+    { "AGFAPHOTO", "AgfaPhoto" },
+    { "CONCORD", "JENOPTIK" },
+    { "DEFAULT", "" },
     { "EASTMAN KODAK", "KODAK" },
+    { "FLIR SYSTEMS", "FLIR" },
+    { "FUJI", "FUJIFILM" },
+    { "GENERAL", "GE" },
+    { "HEWLETT-PACKARD", "HP" },
+    { "JENIMAGE", "JENOPTIK" },
+    { "KONICA", "Konica Minolta" },
+    { "JK", "Kodak" },
+    { "LG MOBILE", "LG" },
+    { "MOTOROL", "MOTOROLA" },
+    { "NTT DOCOMO", "DoCoMo" },
     { "OC", "OpenCube" },
+    { "OLYMPUS_IMAGING_CORP.", "Olympus" },
+    { "PENTAX RICOH", "Ricoh" },
+    { "PENTAX", "Ricoh" },
     { "SEIKO EPSON", "EPSON" },
     { "SAMSUNG DIGITAL IMA", "SAMSUNG" },
-    { "Thomson Grass Valley", "Grass Valley" },
+    { "SAMSUNG TECHWIN", "Hanwha Vision" },
+    { "SAMSUNG TECHWIN CO,.", "Hanwha Vision" },
+    { "SKANHEX TECHWIN", "Skanhex" },
+    { "THOMSON GRASS VALLEY", "Grass Valley" },
 };
 
 //---------------------------------------------------------------------------
@@ -341,7 +411,7 @@ static const FindReplaceCompany_struct Model_Name[] = {
 
 //---------------------------------------------------------------------------
 static const char* VersionPrefixes[] = {
-    ", VERSION: ",
+    ", VERSION:",
     "FILE VERSION",
     "RELEASE",
     "V",
@@ -1343,6 +1413,7 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
         if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_OperatingSystem_Name).empty()) {
             auto Application = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application).To_UTF8();
             auto pos = Application.rfind(" (Android)");
+            if (Application.length() >= 12) {
             if (pos == Application.length() - 10) {
                 Application.erase(pos, 10);
                 Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "Android");
@@ -1356,6 +1427,7 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
             if (pos == Application.length() - 10) {
                 Application.erase(pos, 10);
                 Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "Windows");
+            }
             }
             if (Application != Retrieve_Const(Stream_General, 0, General_Encoded_Application).To_UTF8())
                 Fill(Stream_General, 0, General_Encoded_Application, Application, true, true);
@@ -1474,8 +1546,16 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
             if (Value.size() < 2) {
                 return;
             }
+            if (Value.find_first_not_of(__T("0. ")) == string::npos) {
+                Clear(Stream_General, StreamPos, Parameter);
+                continue;
+            }
             if (Value.front() == '[' && Value.back() == ']') {
                 Fill(Stream_General, StreamPos, Parameter, Value.substr(1, Value.size() - 2), true);
+                continue;
+            }
+            if (Value.rfind(__T("< "), 0) == 0 && Value.find(__T(" >"), Value.size() - 2) != string::npos) {
+                Fill(Stream_General, StreamPos, Parameter, Value.substr(2, Value.size() - 4), true);
                 continue;
             }
             if (Value.rfind(__T("Digital Camera "), 0) == 0) {
@@ -1494,17 +1574,45 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
                 Fill(Stream_General, StreamPos, Parameter, __T("KODAK EasyShare") + Value.substr(15), true);
                 continue;
             }
-            if (Value.size() >= 15 && Value.find(__T(" DIGITAL CAMERA"), 15) != string::npos) {
-                Fill(Stream_General, StreamPos, Parameter, Value.substr(0, Value.size() - 15), true);
+            if (Value.rfind(__T("PENTAX "), 0) == 0) {
+                Fill(Stream_General, StreamPos, Parameter, __T("Pentax ") + Value.substr(7), true);
+                Fill(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName, "Ricoh", Unlimited, true, true);
                 continue;
             }
-            if (Value.size() >= 15 && Value.find(__T(" Digital Camera"), 0) != string::npos) {
-                Fill(Stream_General, StreamPos, Parameter, Value.substr(0, Value.size() - 15), true);
+            {
+            auto Pos = Value.find(__T(" DIGITAL CAMERA"));
+            if (Pos != string::npos) {
+                Fill(Stream_General, StreamPos, Parameter, Value.substr(0, Pos) + Value.substr(Pos + 15), true);
                 continue;
             }
-            if (Value.size() >= 5 && Value.find(__T(" ZOOM"), 0) != string::npos) {
-                Fill(Stream_General, StreamPos, Parameter, Value.substr(0, Value.size() - 5) + __T(" Zoom"), true);
+            }
+            {
+            auto Pos = Value.find(__T(" Digital Camera"));
+            if (Pos != string::npos) {
+                Fill(Stream_General, StreamPos, Parameter, Value.substr(0, Pos) + Value.substr(Pos + 15), true);
                 continue;
+            }
+            }
+            {
+            auto Pos = Value.find(__T(" Series"));
+            if (Pos != string::npos) {
+                Fill(Stream_General, StreamPos, Parameter, Value.substr(0, Pos) + Value.substr(Pos + 7), true);
+                continue;
+            }
+            }
+            {
+            auto Pos = Value.find(__T(" series"));
+            if (Pos != string::npos) {
+                Fill(Stream_General, StreamPos, Parameter, Value.substr(0, Pos) + Value.substr(Pos + 7), true);
+                continue;
+            }
+            }
+            {
+            auto Pos = Value.find(__T(" ZOOM"));
+            if (Pos != string::npos) {
+                Fill(Stream_General, StreamPos, Parameter, Value.substr(0, Pos) + __T(" Zoom") + Value.substr(Pos + 5), true);
+                continue;
+            }
             }
             break;
         }
@@ -1572,73 +1680,67 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
             return;
         }
         const auto& Version = Retrieve_Const(Stream_General, StreamPos, Parameter_Version);
-        size_t Version_Pos = Name.size() - 1;
-        for (;;) {
-            const auto Letter = Name[Version_Pos];
-            if (((Letter < '0' || Letter > '9') && Letter != '.')
-             && (!Version_Pos || Name[Version_Pos - 1] != '.')) { // We accept e.g. one letter if it is after a dot
-                auto Dot_Pos = Name.find('.');
-                if (Dot_Pos != string::npos) {
-                    Dot_Pos = Name.find('.', Dot_Pos + 1);
-                }
-                auto Space_Pos = Name.find(' ');
-                if (Version_Pos || Dot_Pos == string::npos || Space_Pos != string::npos) {
-                    break;
-                }
-                Version_Pos = 0; // We consider no space and at least 2 dots as a version in full
-            }
-            if (!Version_Pos) {
-                if (Name != Version) {
-                    Fill(Stream_General, StreamPos, Parameter_Version, Name);
-                }
-                Clear(Stream_General, StreamPos, Parameter_Source);
-                return;
-            }
-            Version_Pos--;
-        }
-        Version_Pos++;
-        if (Version_Pos == Name.size()) {
-            return; // No version found
-        }
+
+        size_t Version_Pos = Name.size();
         auto Extra_Pos = Version_Pos;
         auto IsLikelyVersion = false;
 
-        if (Name[Version_Pos] == '.') {
-            Version_Pos++;
-        }
-
-        switch (Name[Extra_Pos - 1]) {
-        case '-':
-        {
-            auto Space_Pos = Name.find(' ');
-            if (Space_Pos != string::npos) {
-                Version_Pos = Space_Pos + 1;
-                Extra_Pos = Version_Pos;
-            }
-        }
-        [[fallthrough]];
-        case ' ':
-            if (Name.find('.', Version_Pos) != string::npos) { // catching version with a dot only for avoiding a digit in the name
-                IsLikelyVersion = true;
-            }
-            Extra_Pos--;
-            break;
-        }
-        
         // Version string
         Ztring NameU = Name;
         NameU.MakeUpperCase();
         for (const auto& VersionPrefix : VersionPrefixes) {
             Ztring Prefix;
             Prefix.From_UTF8(VersionPrefix);
-            if (Extra_Pos >= Prefix.size()
-             && !NameU.compare(Extra_Pos - Prefix.size(), Prefix.size(), Prefix)
-             && (Extra_Pos == Prefix.size()
-              || NameU[Extra_Pos - (Prefix.size() + 1)] == ' '
-              || Prefix.front() == ',')) {
-                Extra_Pos -= Prefix.size() + (Prefix.front() != ',' && Extra_Pos != Prefix.size());
+            auto Prefix_Pos = NameU.rfind(Prefix);
+            auto Prefix_Pos_End = Prefix_Pos + Prefix.size();
+            if (Prefix_Pos != string::npos
+             && (!Prefix_Pos
+                || Prefix.front() == ','
+                || NameU[Prefix_Pos - 1] == ' ')
+             && Prefix_Pos_End != NameU.size()
+             && (NameU[Prefix_Pos_End] == '.'
+                || NameU[Prefix_Pos_End] == ' '
+                || (NameU[Prefix_Pos_End] >= '0' && NameU[Prefix_Pos_End] <= '9'))) {
+                Version_Pos = Prefix_Pos_End;
+                if (Version_Pos < NameU.size() && NameU[Version_Pos] == '.') {
+                    Version_Pos++;
+                }
+                Extra_Pos = Prefix_Pos;
                 IsLikelyVersion = true;
                 break;
+            }
+        }
+
+        if (!IsLikelyVersion) {
+            // Is it only a version number?
+            auto Space_Pos = NameU.find(' ');
+            auto Dot_Pos = NameU.find('.');
+            auto Digit_Pos = NameU.find_first_of(__T("0123456789"));
+            auto Letter_Pos = NameU.find_first_not_of(__T("0123456789."));
+            if (Space_Pos == string::npos
+                && (Dot_Pos != string::npos || Letter_Pos == string::npos)
+                && ((Digit_Pos != string::npos && Digit_Pos > Dot_Pos)
+                    || (Letter_Pos == string::npos || Letter_Pos > Dot_Pos)
+                    || (Digit_Pos <= 1))) {
+                Version_Pos = 0;
+                Extra_Pos = 0;
+                IsLikelyVersion = true;
+            }
+        }
+
+        if (!IsLikelyVersion) {
+            // Is it a version number with only digits at the end
+            auto Space_Pos = NameU.rfind(' ');
+            if (Space_Pos == string::npos) {
+                Space_Pos = NameU.rfind('-');
+            }
+            if (Space_Pos != string::npos) {
+                auto NonDigit_Pos = NameU.find_first_not_of(__T("0123456789."), Space_Pos + 1);
+                if (NonDigit_Pos == string::npos && NameU.find('.') != string::npos) { // At least 1 dot for avoiding e.g. names with one digit
+                    Version_Pos = Space_Pos + 1;
+                    Extra_Pos = Space_Pos;
+                    IsLikelyVersion = true;
+                }
             }
         }
 
@@ -1822,6 +1924,15 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         }
         CopyName(General_Encoded_Hardware_Name, General_Encoded_Application_Name, General_Encoded_Hardware_Name);
         CopyName(General_Encoded_Hardware_Model, General_Encoded_Application_Name, General_Encoded_Hardware_Model);
+    }
+    if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model).rfind(__T("Pentax "), 0) == 0) {
+        if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_CompanyName).empty()
+            && !Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Name).empty()) {
+            Fill(Stream_General, StreamPos, General_Encoded_Application_CompanyName, Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName));
+        }
+        if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model).substr(7) == Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Name)) {
+            Fill(Stream_General, StreamPos, General_Encoded_Application_Name, Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model), true);
+        }
     }
 
     // Copy company name from other sources

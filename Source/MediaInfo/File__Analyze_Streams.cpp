@@ -1472,6 +1472,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         Value2.Trim(__T('\n'));
         Value2.Trim(__T('\r'));
         Value2.Trim(__T('\v'));
+        Value2.Trim(__T('\t'));
         Value2.Trim(__T(' '));
         if (Value2.empty())
             return;
