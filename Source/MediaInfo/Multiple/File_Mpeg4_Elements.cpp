@@ -8130,6 +8130,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_iacb()
 {
     Element_Name("IAConfigurationBox");
+    AddCodecConfigurationBoxInfo();
 
     //Parsing
     #ifdef MEDIAINFO_IAMF_YES
