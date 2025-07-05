@@ -6863,30 +6863,29 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxOthers(const string& CodecIDA
 
 //---------------------------------------------------------------------------
 // Source: http://wiki.multimedia.cx/index.php?title=Apple_Lossless_Audio_Coding
+//         https://github.com/macosforge/alac
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_alac()
 {
-    Element_Name("ALAC");
+    NAME_VERSION_FLAG("ALAC");
 
     //Parsing
     int32u  bitrate, samplerate;
-    int8u   sample_size, channels;
-    Skip_B4(                                                    "?");
-    Skip_B4(                                                    "max sample per frame");
-    Skip_B1(                                                    "?");
-    Get_B1 (sample_size,                                        "sample size");
-    Skip_B1(                                                    "rice history mult");
-    Skip_B1(                                                    "rice initial history");
-    Skip_B1(                                                    "rice kmodifier");
-    Get_B1 (channels,                                           "channels");
-    Skip_B1(                                                    "?");
-    Skip_B1(                                                    "?");
-    Skip_B4(                                                    "max coded frame size");
-    Get_B4 (bitrate,                                            "bitrate");
-    Get_B4 (samplerate,                                         "samplerate");
+    int8u   bitdepth, channels;
+    Skip_B4(                                                    "frameLength (max sample per frame)");
+    Skip_B1(                                                    "compatibleVersion (0)");
+    Get_B1 (bitdepth,                                           "bitDepth");
+    Skip_B1(                                                    "pb (rice history mult)");
+    Skip_B1(                                                    "mb (rice initial history)");
+    Skip_B1(                                                    "kb (rice kmodifier)");
+    Get_B1 (channels,                                           "numChannels");
+    Skip_B2(                                                    "maxRun");
+    Skip_B4(                                                    "maxFrameBytes (max coded frame size)");
+    Get_B4 (bitrate,                                            "avgBitRate");
+    Get_B4 (samplerate,                                         "sampleRate");
 
     FILLING_BEGIN_PRECISE();
-        if (sample_size)
-            Fill(Stream_Audio, StreamPos_Last, Audio_BitDepth, sample_size, 10, true);
+        if (bitdepth)
+            Fill(Stream_Audio, StreamPos_Last, Audio_BitDepth, bitdepth, 10, true);
         if (channels)
             Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, channels, 10, true);
         if (bitrate)
@@ -8130,6 +8129,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_iacb()
 {
     Element_Name("IAConfigurationBox");
+    AddCodecConfigurationBoxInfo();
 
     //Parsing
     #ifdef MEDIAINFO_IAMF_YES
