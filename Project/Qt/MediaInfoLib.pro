@@ -14,10 +14,11 @@ INCLUDEPATH += \
         ../../Source/ThirdParty/sha1-gladman \
         ../../Source/ThirdParty/sha2-gladman \
         ../../Source/ThirdParty/hmac-gladman \
+        ../../Source/ThirdParty \
         ../../../ZenLib/Source
 
 # Note: UNICODE is a must
-QMAKE_CXXFLAGS +=  -D_UNICODE -DMEDIAINFO_LIBMMS_NO -DMEDIAINFO_LIBCURL_NO -DMEDIAINFO_GRAPHVIZ_NO
+QMAKE_CXXFLAGS +=  -D_UNICODE -DMEDIAINFO_LIBMMS_NO -DMEDIAINFO_LIBCURL_NO -DMEDIAINFO_GRAPHVIZ_NO -FMT_UNICODE=0
 
 # surpressing way too many warnings here, with a heavy sigh
 # these should be looked at one group at a time
@@ -525,6 +526,7 @@ SOURCES += \
         ../../Source/ThirdParty/aes-gladman/aescrypt.c \
         ../../Source/ThirdParty/aes-gladman/aeskey.c \
         ../../Source/ThirdParty/aes-gladman/aestab.c \
+        ../../Source/ThirdParty/fmt/format.cc \
         ../../Source/ThirdParty/hmac-gladman/hmac.c \
         ../../Source/ThirdParty/md5/md5.c \
         ../../Source/ThirdParty/sha1-gladman/sha1.c \

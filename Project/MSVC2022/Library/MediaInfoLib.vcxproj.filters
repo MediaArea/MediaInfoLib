@@ -96,6 +96,9 @@
     <Filter Include="ThirdParty\tfsxml">
       <UniqueIdentifier>{20bdbfdd-1a76-4a45-bc2c-6c8cd43dd7fe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ThirdParty\fmt">
+      <UniqueIdentifier>{814a2a31-9661-4c43-a166-77b4e44fbfaf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\MediaInfo\File__Analyze.cpp">
@@ -877,6 +880,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Iim.cpp">
       <Filter>Source Files\Tag</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ThirdParty\fmt\format.cc">
+      <Filter>ThirdParty\fmt</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

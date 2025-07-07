@@ -95,6 +95,7 @@ include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/aes-gladman/)
 include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha1-gladman/)
 include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha2-gladman/)
 include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/hmac-gladman/)
+include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/)
 include_directories(${ZLIB_INCLUDE_DIRS})
 
 set(MediaInfoLib_PUBLIC_HDRS
@@ -385,6 +386,7 @@ endif()
 
 # disable some features. Maybe it should be enabled.
 target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBMMS_NO)
+target_compile_definitions(mediainfo PRIVATE FMT_UNICODE=0)
 if(NOT CURL_FOUND)
   target_compile_definitions(mediainfo PRIVATE MEDIAINFO_LIBCURL_NO)
 else()
