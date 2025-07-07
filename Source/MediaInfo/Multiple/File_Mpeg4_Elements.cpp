@@ -149,6 +149,8 @@ using namespace std;
 #include "MediaInfo/Multiple/File_Mpeg4_TimeCode.h"
 #include "ZenLib/FileName.h"
 #include "ThirdParty/base64/base64.h"
+#define FMT_UNICODE 0
+#include "ThirdParty/fmt/format.h"
 #include <zlib.h>
 #include <algorithm>
 #include <cmath>
@@ -630,6 +632,43 @@ int8u File_Mpeg4_PcmSampleSizeFromCodecID(int32u CodecID)
 extern const char* AC3_Mode[];
 extern const char* AC3_Mode_String[];
 
+//---------------------------------------------------------------------------
+const char* File_Mpeg4_st3d_Layout_Values[] =
+{
+    "Top-Bottom (left eye first)",
+    "Side by Side (left eye first)",
+    "Stereo-Custom",
+    "Side by Side (right eye first)",
+};
+const auto File_Mpeg4_st3d_Layout_Values_Size = sizeof(File_Mpeg4_st3d_Layout_Values) / sizeof(*File_Mpeg4_st3d_Layout_Values);
+std::string File_Mpeg4_st3d_Layout(int8u Value)
+{
+    if (!Value) {
+        return {};
+    }
+    if (Value > File_Mpeg4_st3d_Layout_Values_Size) {
+        return std::to_string(Value);
+    }
+    return File_Mpeg4_st3d_Layout_Values[Value - 1];
+}
+
+//---------------------------------------------------------------------------
+const char* File_Mpeg4_sv3d_ProjectionType_Values[] =
+{
+    "Rectangular",
+    "Equirectangular",
+    "Cubemap",
+    "Mesh",
+};
+const auto File_Mpeg4_sv3d_ProjectionType_Values_Size = sizeof(File_Mpeg4_sv3d_ProjectionType_Values) / sizeof(*File_Mpeg4_sv3d_ProjectionType_Values);
+std::string File_Mpeg4_sv3d_ProjectionType(int8u Value)
+{
+    if (Value >= File_Mpeg4_sv3d_ProjectionType_Values_Size) {
+        return std::to_string(Value);
+    }
+    return File_Mpeg4_sv3d_ProjectionType_Values[Value - 1];
+}
+
 //***************************************************************************
 // Constants
 //***************************************************************************
@@ -875,6 +914,15 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_imif=0x696D6966;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schi=0x73636869;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schm=0x7363686D;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_st3d=0x73743364;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d=0x73763364;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_svhd=0x73766864;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj=0x70726F6A;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_prhd=0x70726864;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_cbmp=0x63626D70;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_equi=0x65717569;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp=0x6D736870;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh=0x6D657368;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_udts=0x75647473;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_vexu=0x76657875;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_eyes=0x65796573;
@@ -1309,6 +1357,21 @@ void File_Mpeg4::Data_Parse()
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_imif)
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schi)
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schm)
+                                    ATOM_END
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_st3d)
+                                LIST(moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d)
+                                    ATOM_BEGIN
+                                    ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_svhd)
+                                    LIST(moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj)
+                                        ATOM_BEGIN
+                                        ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_prhd)
+                                        ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_cbmp)
+                                        ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_equi)
+                                        LIST(moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp)
+                                            ATOM_BEGIN
+                                            ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh)
+                                            ATOM_END
+                                        ATOM_END
                                     ATOM_END
                                 LIST(moov_trak_mdia_minf_stbl_stsd_xxxx_udts)
                                     ATOM_BEGIN
@@ -6770,7 +6833,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                 }
         }
 
-        //RGB(A)
+        //RGB(Vertices_String)
         if (Codec==__T("raw ") || Codec==__T("rle "))
         {
             if (IsGreyscale)
@@ -8427,6 +8490,289 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schm()
     Skip_B4(                                                    "scheme_version");
     if (Flags&0x000001)
         Skip_UTF8(Element_Size-Element_Offset,                  "scheme_uri");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_st3d()
+{
+    NAME_VERSION_FLAG("Stereoscopic 3D Video");
+
+    //Parsing
+    int8u stereo_mode;
+    Get_B1 (stereo_mode,                                        "stereo_mode");
+    
+    FILLING_BEGIN()
+        if (StreamKind_Last == Stream_Video) {
+            if (stereo_mode) {
+                Fill(Stream_Video, StreamPos_Last, Video_MultiView_Count, 2);
+            }
+            Fill(Stream_Video, StreamPos_Last, Video_MultiView_Layout, File_Mpeg4_st3d_Layout(stereo_mode));
+        }
+    FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d()
+{
+    Element_Name("Spherical Video");
+
+    FILLING_BEGIN()
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial", "Yes");
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Format", "Spherical Video 2");
+    FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_svhd()
+{
+    NAME_VERSION_FLAG("Spherical Video Header");
+
+    //Parsing
+    Skip_String(Element_Size - Element_Offset,                  "metadata_source");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj()
+{
+    Element_Name("Projection");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_prhd()
+{
+    NAME_VERSION_FLAG("Projection Header");
+
+    //Parsing
+    float32 pose_yaw_degrees, pose_pitch_degrees, pose_roll_degrees;
+    Get_BFP4(16, pose_yaw_degrees,                              "pose_yaw_degrees");
+    Get_BFP4(16, pose_pitch_degrees,                            "pose_pitch_degrees");
+    Get_BFP4(16, pose_roll_degrees,                             "pose_roll_degrees");
+
+    FILLING_BEGIN()
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial PoseYaw", pose_yaw_degrees);
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial PosePitch", pose_pitch_degrees);
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial PoseRoll", pose_roll_degrees);
+    FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_cbmp()
+{
+    NAME_VERSION_FLAG("Cubemap Projection");
+
+    //Parsing
+    int32u layout, padding;
+    Get_B4 (layout,                                             "layout");
+    Get_B4 (padding,                                            "padding");
+
+    FILLING_BEGIN()
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial", "Yes", Unlimited, true, true);
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial ProjectionType", File_Mpeg4_sv3d_ProjectionType(2));
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Cubemap", "Yes", Unlimited, true, true);
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Cubemap Layout", layout);
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Cubemap Padding", padding);
+    FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_equi()
+{
+    NAME_VERSION_FLAG("Equirectangular Projection");
+
+    //Parsing
+    float32 projection_bounds_top, projection_bounds_bottom, projection_bounds_left, projection_bounds_right;
+    Get_BFP4(0, projection_bounds_top,                          "projection_bounds_top");
+    Get_BFP4(0, projection_bounds_bottom,                       "projection_bounds_bottom");
+    Get_BFP4(0, projection_bounds_left,                         "projection_bounds_left");
+    Get_BFP4(0, projection_bounds_right,                        "projection_bounds_right");
+
+    FILLING_BEGIN()
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial", "Yes", Unlimited, true, true);
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial ProjectionType", File_Mpeg4_sv3d_ProjectionType(1));
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Equirectangular", "Yes", Unlimited, true, true);
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Equirectangular bounds_top", projection_bounds_top);
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Equirectangular bounds_bottom", projection_bounds_bottom);
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Equirectangular bounds_left", projection_bounds_left);
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Equirectangular bounds_right", projection_bounds_right);
+    FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp()
+{
+    NAME_VERSION_FLAG("Mesh Projection");
+
+    //Parsing
+    if (Version) {
+        Skip_XX(Element_TotalSize_Get() - Element_Offset,       "(Unknown)");
+        return;
+    }
+    int32u encoding_four_cc;
+    Skip_B4(                                                    "crc");
+    Get_C4 (encoding_four_cc,                                   "encoding_four_cc");
+    
+    FILLING_BEGIN()
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial", "Yes", Unlimited, true, true);
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial ProjectionType", File_Mpeg4_sv3d_ProjectionType(3));
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh", "Yes", Unlimited, true, true);
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh Encoding", Ztring().From_CC4(encoding_four_cc));
+        switch (encoding_four_cc) {
+        case 0x72617720: // "raw "
+            break;
+        case 0x64666C38: { // "dfl8"
+            z_stream strm{};
+            strm.next_in = (Bytef*)Buffer + Buffer_Offset + (size_t)Element_Offset;
+            strm.avail_in = (size_t)(Element_Size - Element_Offset);
+
+            if (inflateInit2(&strm, -15) == Z_OK) { // windowBits = -15 means raw deflate (no zlib/gzip header)
+                size_t Data_Size = 0x10000;
+                std::unique_ptr<Bytef> Data(new Bytef[Data_Size]);
+                size_t Processed = 0;
+                for (;;) {
+                    strm.next_out = Data.get() + Processed;
+                    strm.avail_out = Data_Size - Processed;
+                    auto Result = inflate(&strm, Z_NO_FLUSH);
+                    Processed = strm.next_out - Data.get();
+                    if (Result == Z_STREAM_END) {
+                        break;
+                    }
+                    if (Result != Z_OK || Data_Size >= 0x10000000) {
+                        Data.reset();
+                        break;
+                    }
+                    Data_Size *= 2;
+                    std::unique_ptr<Bytef> New_Data(new Bytef[Data_Size]);
+                    memcpy(New_Data.get(), Data.get(), Processed);
+                    Data = std::move(New_Data);
+                }
+                inflateEnd(&strm);
+                if (Data) {
+                    Skip_XX(Element_Size - Element_Offset,      "Will be parsed");
+                    File_Mpeg4 MI;
+                    Open_Buffer_Init(&MI, Processed);
+                    MI.Accept();
+                    MI.Stream_Prepare(StreamKind_Last);
+                    for (size_t i = 0; i < Element_Level; ++i) {
+                        MI.Element_Begin0();
+                        MI.Element[i].Code = Element[i].Code;
+                    }
+                    MI.Element[Element_Level].Code = Element[Element_Level].Code;
+                    Open_Buffer_Continue(&MI, Data.get(), Processed);
+                    Open_Buffer_Finalize(&MI);
+                    Merge(MI, StreamKind_Last, 0, StreamPos_Last, false);
+                }
+            }
+            break;
+        }
+        default:
+            Skip_XX(Element_Size - Element_Offset,              "(Unsupported)");
+        }
+    FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh()
+{
+    Element_Name("Mesh");
+
+    //Parsing
+    int32u coordinate_count, vertex_count, vertex_list_count;
+    Get_B4 (coordinate_count,                                   "coordinate_count");
+    coordinate_count &= 0x7FFFFFFF;
+    if (coordinate_count > Element_Size) {
+        return;
+    }
+    Element_Begin1("coordinates");
+    std::unique_ptr<float32> coordinates(new float32[coordinate_count]);
+    auto coordinates_Cur = coordinates.get();
+    for (int32u i = 0; i < coordinate_count; ++i) {
+        Get_BF4(*coordinates_Cur++,                             "coordinate");
+    }
+    Element_End0();
+    Get_B4 (vertex_count,                                       "vertex_count");
+    vertex_count &= 0x7FFFFFFF;
+    if (vertex_count > Element_Size) {
+        return;
+    }
+    auto ccsb = std::ceil(std::log2(coordinate_count * 2));
+    Element_Begin1("index_deltas");
+    string Vertices_String;
+    int32u indexes[6]{};
+    BS_Begin();
+    #if MEDIAINFO_ADVANCED
+    const auto Vertex_Data = MediaInfoLib::Config.Flags1_Get(Flags_Enable_Mesh_Vertex_Data);
+    #else //MEDIAINFO_ADVANCED
+    constexpr auto Vertex_Data = false;
+    #endif //MEDIAINFO_ADVANCED
+    for (int32u i = 0; i < vertex_count; ++i) {
+        Element_Begin1("index_delta");
+        auto index_delta = [&](size_t i, const char* Name) {
+            int32u index_delta_zigzag;
+            Get_S4 (ccsb, index_delta_zigzag,               Name);
+            if (!Vertex_Data || i == (int32u)-1) {
+                return;
+            }
+            int32s index_delta = index_delta_zigzag & 1 ? (-int32s((index_delta_zigzag + 1) >> 1)) : (index_delta_zigzag >> 1);
+            auto& Index = indexes[i];
+            if (index_delta >= coordinate_count - Index || -index_delta > (int32s)coordinate_count) {
+                Index = (int32u)-1;
+                return;
+            }
+            Index += index_delta;
+            auto coordinate = coordinates.get()[Index];
+            if (!Vertices_String.empty()) {
+                Vertices_String += ' ';
+            }
+            Vertices_String += 'u' + i;
+            Vertices_String += ' ';
+            Vertices_String += fmt::format("{:#.6g}", coordinate);
+        };
+        index_delta(3,                                          "x_index_delta");
+        index_delta(4,                                          "y_index_delta");
+        index_delta(5,                                          "z_index_delta");
+        index_delta(0,                                          "u_index_delta");
+        index_delta(1,                                          "v_index_delta");
+        Element_End0();
+    }
+    Fill(StreamKind_Last, StreamPos_Last, "Spatial", "Yes", Unlimited, true, true);
+    Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh", "Yes", Unlimited, true, true);
+    Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh Vertex_Count", vertex_count);
+    if (!Vertices_String.empty()) {
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh Vertex_Values", Vertices_String);
+    }
+    Element_End0();
+    Skip_S1(Data_BS_Remain() % 8,                               "padding");
+    BS_End();
+    Get_B4 (vertex_list_count,                                  "vertex_list_count");
+    vertex_list_count &= 0x7FFFFFFF;
+    if (vertex_list_count > Element_Size) {
+        return;
+    }
+    auto vcsb = std::ceil(std::log2(vertex_count * 2));
+    Element_Begin1("vertex_list");
+    for (int32u i = 0; i < vertex_list_count; ++i) {
+        Element_Begin1("vertex");
+        int32u index_count;
+        Skip_B1(                                                "texture_id");
+        Skip_B1(                                                "index_type");
+        Get_B4 (index_count,                                    "index_count");
+        index_count &= 0x7FFFFFFF;
+        if (index_count > Element_Size) {
+            Element_End0();
+            Element_End0();
+            return;
+        }
+        Element_Begin1("indexes");
+        BS_Begin();
+        for (int32u i = 0; i < index_count; ++i) {
+            Skip_S4(vcsb,                                       "index_as_delta");
+        }
+        Element_End0();
+        Skip_S1(Data_BS_Remain() % 8,                           "padding");
+        BS_End();
+        Element_End0();
+    }
+    Element_End0();
 }
 
 //---------------------------------------------------------------------------
