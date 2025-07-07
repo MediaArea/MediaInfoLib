@@ -3479,6 +3479,22 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
     RemoveCapitalization(General_Encoded_Library_CompanyName);
     RemoveCapitalization(General_Encoded_Application_CompanyName);
 
+    // Model is sometimes the actual name
+    auto ModelToName = [&](size_t Parameter_CompanyName, size_t Parameter_Model, size_t Parameter_Name) {
+        if (!Retrieve_Const(Stream_General, StreamPos, Parameter_Name).empty())
+            return;
+        const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName).To_UTF8();
+        const auto& Model = Retrieve_Const(Stream_General, StreamPos, Parameter_Model).To_UTF8();
+        if (CompanyName == "Samsung") {
+            auto space = Model.find("Galaxy ");
+            if (space != string::npos) {
+                Fill(Stream_General, StreamPos, Parameter_Name, Model);
+                Clear(Stream_General, StreamPos, Parameter_Model);
+            }
+        }
+    };
+    ModelToName(General_Encoded_Hardware_CompanyName, General_Encoded_Hardware_Model, General_Encoded_Hardware_Name);
+
     // Model name
     auto FillModelName = [&](size_t Parameter_CompanyName, size_t Parameter_Model, size_t Parameter_Name) {
         if (!Retrieve_Const(Stream_General, StreamPos, Parameter_Name).empty())
