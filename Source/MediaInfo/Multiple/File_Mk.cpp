@@ -551,7 +551,7 @@ static const char* Mk_ContentCompAlgo(int64u Algo)
 }
 
 //---------------------------------------------------------------------------
-static const char* Mk_StereoMode(int64u StereoMode)
+const char* Mk_StereoMode(int64u StereoMode)
 {
     switch (StereoMode)
     {
@@ -709,6 +709,9 @@ const char* Mk_Video_Colour_Range(int8u range)
         default: return "";
     }
 }
+
+//---------------------------------------------------------------------------
+std::string File_Mpeg4_sv3d_ProjectionType(int8u Value);
 
 //***************************************************************************
 // Constructor/Destructor
@@ -3441,6 +3444,67 @@ void File_Mk::Segment_Tracks_TrackEntry()
     Fill_Flush();
     Fill(StreamKind_Last, StreamPos_Last, "Language", "eng");
     Fill(StreamKind_Last, StreamPos_Last, General_StreamOrder, Stream.size());
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_Video_Projection()
+{
+    Fill(StreamKind_Last, StreamPos_Last, "Spatial", "Yes", Unlimited, true, true);
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_Video_Projection_ProjectionType()
+{
+    //Parsing
+    int64u UInteger=UInteger_Get();
+
+    FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
+        if (UInteger)
+        {
+            Fill(StreamKind_Last, StreamPos_Last, "Spatial ProjectionType", File_Mpeg4_sv3d_ProjectionType(UInteger));
+        }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_Video_Projection_ProjectionPoseYaw()
+{
+    //Parsing
+    auto Value=Float_Get();
+
+    FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial PoseYaw", Value);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_Video_Projection_ProjectionPosePitch()
+{
+    //Parsing
+    auto Value=Float_Get();
+
+    FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial PosePitch", Value);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_Video_Projection_ProjectionPoseRoll()
+{
+    //Parsing
+    auto Value=Float_Get();
+
+    FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial PoseRoll", Value);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------

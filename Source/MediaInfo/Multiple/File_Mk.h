@@ -233,12 +233,12 @@ private :
     void Segment_Tracks_TrackEntry_Video_Colour_MasteringMetadata_WhitePointChromaticityY() {Segment_Tracks_TrackEntry_Video_Colour_MasteringMetadata_Primary(3*2+1);};
     void Segment_Tracks_TrackEntry_Video_Colour_MasteringMetadata_LuminanceMax()            {Segment_Tracks_TrackEntry_Video_Colour_MasteringMetadata_Luminance(1);};
     void Segment_Tracks_TrackEntry_Video_Colour_MasteringMetadata_LuminanceMin()            {Segment_Tracks_TrackEntry_Video_Colour_MasteringMetadata_Luminance(0);};
-    void Segment_Tracks_TrackEntry_Video_Projection(){};
-    void Segment_Tracks_TrackEntry_Video_Projection_ProjectionType(){UInteger_Info();};
+    void Segment_Tracks_TrackEntry_Video_Projection();
+    void Segment_Tracks_TrackEntry_Video_Projection_ProjectionType();
     void Segment_Tracks_TrackEntry_Video_Projection_ProjectionPrivate(){Skip_XX(Element_Size, "Data");};
-    void Segment_Tracks_TrackEntry_Video_Projection_ProjectionPoseYaw(){Float_Info();};
-    void Segment_Tracks_TrackEntry_Video_Projection_ProjectionPosePitch(){Float_Info();};
-    void Segment_Tracks_TrackEntry_Video_Projection_ProjectionPoseRoll(){Float_Info();};
+    void Segment_Tracks_TrackEntry_Video_Projection_ProjectionPoseYaw();
+    void Segment_Tracks_TrackEntry_Video_Projection_ProjectionPosePitch();
+    void Segment_Tracks_TrackEntry_Video_Projection_ProjectionPoseRoll();
     void Segment_Tracks_TrackEntry_Audio();
     void Segment_Tracks_TrackEntry_Audio_SamplingFrequency();
     void Segment_Tracks_TrackEntry_Audio_OutputSamplingFrequency();
