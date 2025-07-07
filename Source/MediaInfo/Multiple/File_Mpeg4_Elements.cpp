@@ -854,8 +854,8 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys=0x6B657973;
     const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_PHDR=0x50484452;
     const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_PHDR_keyd=0x6B657964;
-    const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_keyd = 0x6B657964;
-    const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_dtyp = 0x64747970;
+    const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_keyd=0x6B657964;
+    const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_dtyp=0x64747970;
     const int64u moov_trak_mdia_minf_stbl_stsd_mett=0x6D657474;
     const int64u moov_trak_mdia_minf_stbl_stsd_mp4a=0x6D703461;
     const int64u moov_trak_mdia_minf_stbl_stsd_mp4s=0x6D703473;
@@ -871,6 +871,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_alac=0x616C6163;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_AALP=0x41414C50;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_ACLR=0x41434C52;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_amve=0x616D7665;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_APRG=0x41505247;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_ARES=0x41524553;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_AORD=0x414F5244;
@@ -1321,6 +1322,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_alac)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_AALP)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ACLR)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_amve)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_APRG)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ARES)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_AORD)
@@ -6975,6 +6977,27 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_alac()
         if (samplerate)
             Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, samplerate, 10, true);
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_amve()
+{
+    Element_Name("Ambient Viewing Environment");
+
+    //Parsing
+    float64 ambient_viewing_environment_illuminance;
+    Ztring ambient_viewing_environment_illuminance_string, ambient_viewing_environment_chromaticity;
+    Get_AmbientViewingEnvironment(ambient_viewing_environment_illuminance, ambient_viewing_environment_illuminance_string, ambient_viewing_environment_chromaticity);
+
+    //Filling
+    if (ambient_viewing_environment_illuminance && !ambient_viewing_environment_illuminance_string.empty()) {
+        Fill(Stream_Video, 0, "AmbientViewingEnvironment_Illuminance", ambient_viewing_environment_illuminance);
+        Fill_SetOptions(Stream_Video, 0, "AmbientViewingEnvironment_Illuminance", "N NF");
+        Fill(Stream_Video, 0, "AmbientViewingEnvironment_Illuminance/String", ambient_viewing_environment_illuminance_string);
+    }
+    if (!ambient_viewing_environment_chromaticity.empty()) {
+        Fill(Stream_Video, 0, "AmbientViewingEnvironment_Chromaticity", ambient_viewing_environment_chromaticity);
+    }
 }
 
 //---------------------------------------------------------------------------
