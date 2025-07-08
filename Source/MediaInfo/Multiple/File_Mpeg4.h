@@ -275,6 +275,15 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_imif();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schm();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_schi();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_st3d();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_svhd();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_prhd();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_cbmp();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_equi();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_udts();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_vexu();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_eyes();

@@ -272,6 +272,7 @@ endif
 
 if COMPILE_AES
 lib@MediaInfoLib_LibName@_la_SOURCES += \
+                       ../../../Source/ThirdParty/fmt/format.cc \
                        ../../../Source/ThirdParty/aes-gladman/aes_modes.c \
                        ../../../Source/ThirdParty/aes-gladman/aes_ni.c \
                        ../../../Source/ThirdParty/aes-gladman/aescrypt.c \
