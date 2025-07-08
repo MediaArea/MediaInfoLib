@@ -152,7 +152,7 @@ static const char* Keywords_Mapping[][2]=
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-File_Png::File_Png() : Data_Size{}, Signature{}
+File_Png::File_Png()
 {
     //Config
     #if MEDIAINFO_TRACE
@@ -187,6 +187,17 @@ void File_Png::Streams_Accept()
 //---------------------------------------------------------------------------
 void File_Png::Streams_Finish()
 {
+    if (isAPNG && Signature == 0x89504E47) {
+        Fill(Stream_General, 0, General_Format, "APNG", Unlimited, true, true);
+        Fill(StreamKind, 0, Fill_Parameter(StreamKind, Generic_Format), "APNG", Unlimited, true, true);
+        Fill(StreamKind, 0, "FrameCount", framecount);
+        Fill(StreamKind, 0, "FrameRate_Minimum", framerate_min);
+        Fill(StreamKind, 0, "FrameRate_Maximum", framerate_max);
+        if (num_plays)
+            Fill(StreamKind, 0, "RepeatCount", num_plays);
+        else
+            Fill(StreamKind, 0, "RepeatCount", "Unlimited");
+    }
     if (Data_Size != (int64u)-1) {
         if (StreamKind == Stream_Video && !IsSub && File_Size != (int64u)-1 && !Config->File_Sizes.empty())
             Fill(Stream_Video, 0, Video_StreamSize, File_Size - (Config->File_Sizes.front() - Data_Size) * Config->File_Sizes.size()); //We guess that the metadata part has a fixed size
@@ -352,6 +363,8 @@ void File_Png::Data_Parse()
 //---------------------------------------------------------------------------
 void File_Png::IDAT()
 {
+    IDATseen = true;
+
     //Parsing
     Skip_XX(Element_TotalSize_Get()-4,                          "Data");
     Param2("CRC",                                               "(Skipped) (4 bytes)");
@@ -494,6 +507,19 @@ void File_Png::MHDR()
 }
 
 //---------------------------------------------------------------------------
+void File_Png::acTL()
+{
+    //Parsing
+    Skip_B4(                                                    "num_frames");
+    Get_B4(num_plays,                                           "num_plays");
+
+    FILLING_BEGIN_PRECISE()
+        if (!IDATseen && Signature == 0x89504E47)
+            isAPNG = true;
+    FILLING_END()
+}
+
+//---------------------------------------------------------------------------
 void File_Png::caBX()
 {
     //Parsing
@@ -569,6 +595,45 @@ void File_Png::eXIf()
     #else
     Skip_UTF8(Element_Size - Element_Offset,                    "EXIF Tags");
     #endif
+}
+
+//---------------------------------------------------------------------------
+void File_Png::fcTL()
+{
+    //Parsing
+    int16u delay_num, delay_den;
+    float64 framerate;
+    Skip_B4(                                                    "sequence_number");
+    Skip_B4(                                                    "width");
+    Skip_B4(                                                    "height");
+    Skip_B4(                                                    "x_offset");
+    Skip_B4(                                                    "y_offset");
+    Get_B2(delay_num,                                           "delay_num");
+    Get_B2(delay_den,                                           "delay_den");
+    Skip_B1(                                                    "dispose_op");
+    Skip_B1(                                                    "blend_op");
+    Data_Common();
+
+    FILLING_BEGIN()
+        ++framecount;
+        if (delay_den)
+            framerate = static_cast<float64>(delay_den) / delay_num;
+        else
+            framerate = static_cast<float64>(100) / delay_num;
+        if (framerate_min == 0 || framerate < framerate_min)
+            framerate_min = framerate;
+        if (framerate > framerate_max)
+            framerate_max = framerate;
+    FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Png::fdAT()
+{
+    //Parsing
+    Skip_B4(                                                    "sequence_number");
+    Skip_XX(Element_Size - Element_Offset,                      "frame_data");
+    Data_Common();
 }
 
 //---------------------------------------------------------------------------
