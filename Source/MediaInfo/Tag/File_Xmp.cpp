@@ -445,14 +445,44 @@ void File_Xmp::xmp(const string& name, const string& value)
 //---------------------------------------------------------------------------
 void File_Xmp::Iptc4xmpExt(const string& name, const string& value)
 {
+    struct DigitalSourceType_mapping {
+        const char* URI;
+        const char* Name;
+    };
+    static const DigitalSourceType_mapping DigitalSourceTypes[] = {
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture", "Digital capture sampled from real life" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/computationalCapture", "Multi-frame computational capture sampled from real life" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/negativeFilm", "Digitised from a transparent negative" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/positiveFilm", "Digitised from a transparent positive" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/print", "Digitised from a non-transparent medium" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/humanEdits", "Human-edited media" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia", "Edited using Generative AI" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicallyEnhanced", "Algorithmically-altered media" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/digitalCreation", "Digital creation" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/dataDrivenMedia", "Data-driven media" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia", "Created using Generative AI" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicMedia", "Pure algorithmic media" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/screenCapture", "Screen capture" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/virtualRecording", "Virtual event recording" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/composite", "Composite of elements" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/compositeCapture", "Composite of captured elements" },
+        { "http://cv.iptc.org/newscodes/digitalsourcetype/compositeSynthetic", "Composite including generative AI elements" },
+    };
+    static const int8u DigitalSourceTypes_size = sizeof(DigitalSourceTypes) / sizeof(DigitalSourceTypes[0]);
+
     if (name == "Iptc4xmpExt:DigitalSourceType") {
         string URI{ value };
         auto pos = URI.find("https://");
-        if (pos != string::npos) URI.replace(pos, 5, "http"); // Some Google generated files have https instead of http
-        if (URI == "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia")
-            Fill(Stream_General, 0, General_Copyright, "Created using generative AI");
-        if (URI == "http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia")
-            Fill(Stream_General, 0, General_Copyright, "Edited using generative AI");
+        if (pos == 0) URI.erase(4, 1); // Some Google generated files have https instead of http
+        Fill(Stream_General, 0, "DigitalSourceType", URI);
+        Fill_SetOptions(Stream_General, 0, "DigitalSourceType", "N NTY");
+        int8u i;
+        for (i = 0; i < DigitalSourceTypes_size; ++i) {
+            if (URI == DigitalSourceTypes[i].URI)
+                break;
+        }
+        Fill(Stream_General, 0, "DigitalSourceType/String", i < DigitalSourceTypes_size ? DigitalSourceTypes[i].Name : URI.c_str());
+        Fill_SetOptions(Stream_General, 0, "DigitalSourceType/String", "Y NTN");
     }
 }
 
