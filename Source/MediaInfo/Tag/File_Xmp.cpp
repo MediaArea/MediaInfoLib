@@ -85,31 +85,6 @@ namespace MediaInfoLib
             } \
             if (false) { \
 
-#define XML_LIST(NAMESPACE, NAME) \
-    Result = tfsxml_enter(&p); \
-    if (Result > 0) { \
-        return false; \
-    } \
-    for (;;) { \
-        Result = tfsxml_next(&p, &n); \
-        if (Result < 0) { \
-            break; \
-        } \
-        if (Result > 0) { \
-            return Result; \
-        } \
-        if (tfsxml_strcmp_charp(n, "rdf:li")) { \
-            continue; \
-        } \
-        else { \
-            Result = tfsxml_value(&p, &v); \
-            if (Result > 0) { \
-                return Result; \
-            } \
-            NAMESPACE(NAME, tfsxml_decode(v)); \
-        } \
-    } \
-
 #define XML_ELEMENT(NAME) \
         } \
         else if (!tfsxml_strcmp_charp(n, NAME)) { \
@@ -140,8 +115,10 @@ namespace MediaInfoLib
 #define XML_ELEMENT_LIST_NAMESPACE(NAMESPACE, NAME, LISTTYPE) \
         XML_ELEMENT(NAME) \
             XML_ELEMENT_START \
-            XML_ELEMENT(LISTTYPE) \
-                XML_LIST(NAMESPACE, NAME) \
+            XML_ELEMENT_LIST(LISTTYPE) \
+                XML_VALUE \
+                NAMESPACE(NAME, tfsxml_decode(v)); \
+            XML_ELEMENT_LIST_END \
             XML_ELEMENT_END \
 
 #define XML_ATTRIBUTE_START \
@@ -382,7 +359,7 @@ bool File_Xmp::FileHeader_Begin()
 }
 
 //---------------------------------------------------------------------------
-void File_Xmp::dc(const string &name, const string &value)
+void File_Xmp::dc(const string& name, const string& value)
 {
     size_t parameter{};
     if (name == "dc:title")
