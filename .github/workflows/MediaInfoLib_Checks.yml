@@ -10,8 +10,6 @@ jobs:
         environement: [gcc, utf8, minified, minimal, minimal-with-xml, cmake]
         exclude:
           - os: macos-latest
-            environement: utf8
-          - os: macos-latest
             environement: minified
           - os: macos-latest
             environement: minimal
