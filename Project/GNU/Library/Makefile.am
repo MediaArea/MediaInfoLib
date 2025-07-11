@@ -250,7 +250,8 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/XmlUtils.cpp \
                        ../../../Source/MediaInfo/OutputHelpers.cpp \
                        ../../../Source/MediaInfo/ExternalCommandHelpers.cpp \
-                       ../../../Source/ThirdParty/tfsxml/tfsxml.c
+                       ../../../Source/ThirdParty/tfsxml/tfsxml.c \
+                       ../../../Source/ThirdParty/fmt/format.cc
 
 @MediaInfoLib_LibName@includedir = $(includedir)/MediaInfo
 @MediaInfoLib_LibName@include_HEADERS = \
@@ -272,7 +273,6 @@ endif
 
 if COMPILE_AES
 lib@MediaInfoLib_LibName@_la_SOURCES += \
-                       ../../../Source/ThirdParty/fmt/format.cc \
                        ../../../Source/ThirdParty/aes-gladman/aes_modes.c \
                        ../../../Source/ThirdParty/aes-gladman/aes_ni.c \
                        ../../../Source/ThirdParty/aes-gladman/aescrypt.c \
