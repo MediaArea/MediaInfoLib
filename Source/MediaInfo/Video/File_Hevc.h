@@ -410,6 +410,7 @@ private :
     void sei_message_mastering_display_colour_volume();
     void sei_message_light_level();
     void sei_alternative_transfer_characteristics();
+    void sei_ambient_viewing_environment();
     void three_dimensional_reference_displays_info(int32u payloadSize);
 
     //Packets - SubElements
@@ -524,6 +525,9 @@ private :
     Ztring  maximum_frame_average_light_level;
     int8u   nuh_layer_id;
     int8u   preferred_transfer_characteristics;
+    float64 ambient_viewing_environment_illuminance{};
+    Ztring  ambient_viewing_environment_illuminance_string;
+    Ztring  ambient_viewing_environment_chromaticity;
     bool    RapPicFlag;
     bool    first_slice_segment_in_pic_flag;
 };
