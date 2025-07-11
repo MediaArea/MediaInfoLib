@@ -3529,6 +3529,37 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
     };
     FillModelName(General_Encoded_Hardware_CompanyName, General_Encoded_Hardware_Model, General_Encoded_Hardware_Name);
 
+    // Attempt to derive Samsung Galaxy model number
+    auto DetermineModel = [&](size_t Parameter_CompanyName, size_t Parameter_Name, size_t Parameter_Application, size_t Parameter_Model) {
+        if (!Retrieve_Const(Stream_General, StreamPos, Parameter_Model).empty())
+            return;
+        const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName).To_UTF8();
+        const auto& Application = Retrieve_Const(Stream_General, StreamPos, Parameter_Application).To_UTF8();
+        if (CompanyName == "Samsung") {
+            auto Model = "SM-" + Application.substr(0, Application.size() - 8);
+            bool Found{};
+            for (const auto& ToSearch : Model_Name) {
+                if (CompanyName == ToSearch.CompanyName) {
+                    auto Model2 = Model;
+                    for (;;) {
+                        auto Result = Find_Replacement(ToSearch.Find, Model2);
+                        if (Result.data()) {
+                            Found = true;
+                            Fill(Stream_General, StreamPos, Parameter_Model, Model);
+                        }
+                        if (!Found && Model2.size() >= 7) {
+                            Model2.pop_back();
+                            continue;
+                        }
+                        break;
+                    }
+                    break;
+                }
+            }
+        }
+        };
+    DetermineModel(General_Encoded_Hardware_CompanyName, General_Encoded_Hardware_Name, General_Encoded_Application, General_Encoded_Hardware_Model);
+
     // Crosscheck
     auto Crosscheck = [&](size_t Parameter_CompanyName_Source, size_t Parameter_Start, bool CheckName) {
         const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName_Source);
