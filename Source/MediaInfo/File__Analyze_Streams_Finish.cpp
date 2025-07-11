@@ -3401,6 +3401,45 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
     ExtractName(General_Encoded_Hardware_CompanyName, General_Encoded_Hardware_Model, General_Encoded_Hardware_Name);
     FillModelName(General_Encoded_Hardware_CompanyName, General_Encoded_Hardware_Model, General_Encoded_Hardware_Name);
 
+    // Attempt to derive Samsung Galaxy model number
+    auto DetermineModel = [&](size_t Parameter_CompanyName, size_t Parameter_Name, size_t Parameter_Application, size_t Parameter_Model) {
+        if (!Retrieve_Const(Stream_General, StreamPos, Parameter_Model).empty())
+            return;
+        const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName).To_UTF8();
+        const auto& Name = Retrieve_Const(Stream_General, StreamPos, Parameter_Name).To_UTF8();
+        const auto& Application = Retrieve_Const(Stream_General, StreamPos, Parameter_Application).To_UTF8();
+        if (CompanyName == "Samsung") {
+            auto model = "SM-" + Application.substr(0, Application.size() - 8);
+            bool match{};
+            for (const auto& ToSearch : Model_Name) {
+                if (CompanyName == ToSearch.CompanyName) {
+                    auto Model2 = model;
+                    for (;;) {
+                        bool found{};
+                        for (size_t i = 0; i < ToSearch.Size; ++i) {
+                            const auto& ToSearch2 = ToSearch.Find[i];
+                            if (Model2 == ToSearch2.Find) {
+                                found = true;
+                                if (ToSearch2.ReplaceBy == Name)
+                                    match = true;
+                                break;
+                            }
+                        }
+                        if (!found && Model2.size() >= 7) {
+                            Model2.pop_back();
+                            continue;
+                        }
+                        break;
+                    }
+                    break;
+                }
+            }
+            if (match)
+                Fill(Stream_General, StreamPos, Parameter_Model, model);
+        }
+        };
+    DetermineModel(General_Encoded_Hardware_CompanyName, General_Encoded_Hardware_Name, General_Encoded_Application, General_Encoded_Hardware_Model);
+
     // Crosscheck
     auto Crosscheck = [&](size_t Parameter_CompanyName_Source, size_t Parameter_Start, bool CheckName) {
         const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName_Source);
