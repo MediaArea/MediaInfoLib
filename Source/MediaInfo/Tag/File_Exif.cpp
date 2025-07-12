@@ -1679,7 +1679,7 @@ void File_Exif::Streams_Finish()
             }
             case IFDExif::FNumber: ParameterC = "IrisFNumber"; Value.From_Number(Item.second.Read().To_float64(), 1); break;
             case IFDExif::ExposureProgram: ParameterC = "AutoExposureMode"; Value = Exif_IFDExif_ExposureProgram_Name(Item.second.Read().To_int16u()); break;
-            case IFDExif::PhotographicSensitivity: ParameterC = "ISOSensitivity"; break;
+            case IFDExif::PhotographicSensitivity: if (Item.second.Read().To_int16u()) ParameterC = "ISOSensitivity"; break;
             case IFDExif::SensitivityType: {
                 int16u ISOSensitivityType = 0;
                 switch (Item.second.Read().To_int16u()) {
