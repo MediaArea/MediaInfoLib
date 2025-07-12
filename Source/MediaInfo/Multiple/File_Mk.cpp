@@ -4781,7 +4781,11 @@ Ztring File_Mk::String_Get()
             while (s && !Data[s-1])
                 s--;
             for (size_t i=0; i<s; i++)
+                #if defined(_UNICODE) || defined(UNICODE)
                 if (Data[i]<0x20 || Data[i]>=0x80)
+                #else
+                if ((unsigned char)Data[i]<0x20 || (unsigned char)Data[i]>=0x80)
+                #endif //defined(_UNICODE) || defined(UNICODE)
                 {
                     Param_Error("EBML-ASCII-ONLY-IN-STRING:1");
                     break;
