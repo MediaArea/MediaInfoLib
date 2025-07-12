@@ -899,9 +899,9 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         #else
             Value_NotBOM_Pos=0;
             while (Value.size()-Value_NotBOM_Pos>=3 // Avoid deep recursivity
-             && Value[Value_NotBOM_Pos  ]==0xEF
-             && Value[Value_NotBOM_Pos+1]==0xBB
-             && Value[Value_NotBOM_Pos+2]==0xBF
+             && (unsigned char)Value[Value_NotBOM_Pos  ]==0xEF
+             && (unsigned char)Value[Value_NotBOM_Pos+1]==0xBB
+             && (unsigned char)Value[Value_NotBOM_Pos+2]==0xBF
                 )
                 Value_NotBOM_Pos+=3;
         #endif //defined(UNICODE) || defined (_UNICODE)

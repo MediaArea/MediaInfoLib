@@ -4739,7 +4739,7 @@ Ztring File_Mk::String_Get()
             while (s && !Data[s-1])
                 s--;
             for (size_t i=0; i<s; i++)
-                if (Data[i]<0x20 || Data[i]>=0x80)
+                if ((unsigned)Data[i]<0x20 || (unsigned)Data[i]>=0x80)
                 {
                     Param_Error("EBML-ASCII-ONLY-IN-STRING:1");
                     break;
