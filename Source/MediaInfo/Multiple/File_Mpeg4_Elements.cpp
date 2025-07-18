@@ -666,7 +666,23 @@ std::string File_Mpeg4_sv3d_ProjectionType(int8u Value)
     if (Value >= File_Mpeg4_sv3d_ProjectionType_Values_Size) {
         return std::to_string(Value);
     }
-    return File_Mpeg4_sv3d_ProjectionType_Values[Value - 1];
+    return File_Mpeg4_sv3d_ProjectionType_Values[Value];
+}
+
+//---------------------------------------------------------------------------
+const char* File_Mpeg4_sv3d_Mesh_index_type_Values[] =
+{
+    "Triangles",
+    "Triangle Strip",
+    "Triangle Fan",
+};
+const auto File_Mpeg4_sv3d_Mesh_index_type_Values_Size = sizeof(File_Mpeg4_sv3d_Mesh_index_type_Values) / sizeof(*File_Mpeg4_sv3d_Mesh_index_type_Values);
+std::string File_Mpeg4_sv3d_Mesh_index_type(int8u Value)
+{
+    if (Value >= File_Mpeg4_sv3d_Mesh_index_type_Values_Size) {
+        return std::to_string(Value);
+    }
+    return File_Mpeg4_sv3d_Mesh_index_type_Values[Value];
 }
 
 //***************************************************************************
@@ -8657,6 +8673,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp()
                         MI.Element[i].Code = Element[i].Code;
                     }
                     MI.Element[Element_Level].Code = Element[Element_Level].Code;
+                    MI.Element[Element_Level].Next = (int64u)-1;
                     Open_Buffer_Continue(&MI, Data.get(), Processed);
                     Open_Buffer_Finalize(&MI);
                     Merge(MI, StreamKind_Last, 0, StreamPos_Last, false);
@@ -8696,50 +8713,60 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh()
     }
     auto ccsb = std::ceil(std::log2(coordinate_count * 2));
     Element_Begin1("index_deltas");
-    string Vertices_String;
-    int32u indexes[6]{};
     BS_Begin();
     #if MEDIAINFO_ADVANCED
-    const auto Vertex_Data = MediaInfoLib::Config.Flags1_Get(Flags_Enable_Mesh_Vertex_Data);
+    string Vertices_String;
+    int32u indexes[6]{};
+    const auto Vertex_Data = true; // MediaInfoLib::Config.Flags1_Get(Flags_Enable_Mesh_Vertex_Data);
+    static const char* const Vertices_String_Digits = " {:#.6g} "; // the digit here must be same as the one below (last digit of the formula)
+    vector<size_t> Vertices_String_OffsetPerItem;
+    Vertices_String_OffsetPerItem.resize(vertex_count);
     #else //MEDIAINFO_ADVANCED
     constexpr auto Vertex_Data = false;
     #endif //MEDIAINFO_ADVANCED
     for (int32u i = 0; i < vertex_count; ++i) {
         Element_Begin1("index_delta");
         auto index_delta = [&](size_t i, const char* Name) {
+            #if MEDIAINFO_ADVANCED
             int32u index_delta_zigzag;
-            Get_S4 (ccsb, index_delta_zigzag,               Name);
-            if (!Vertex_Data || i == (int32u)-1) {
+            Get_S4 (ccsb, index_delta_zigzag,                   Name);
+            auto& Index = indexes[i];
+            if (!Vertex_Data || Index == (int32u)-1) {
                 return;
             }
             int32s index_delta = index_delta_zigzag & 1 ? (-int32s((index_delta_zigzag + 1) >> 1)) : (index_delta_zigzag >> 1);
-            auto& Index = indexes[i];
-            if (index_delta >= coordinate_count - Index || -index_delta > (int32s)coordinate_count) {
+            if (index_delta >= (int32s)(coordinate_count - Index) || -index_delta > (int32s)coordinate_count) {
                 Index = (int32u)-1;
                 return;
             }
             Index += index_delta;
             auto coordinate = coordinates.get()[Index];
-            if (!Vertices_String.empty()) {
-                Vertices_String += ' ';
-            }
             Vertices_String += 'u' + i;
-            Vertices_String += ' ';
-            Vertices_String += fmt::format("{:#.6g}", coordinate);
+            Vertices_String += fmt::format(Vertices_String_Digits, coordinate);
+            #else //MEDIAINFO_ADVANCED
+            Skip_S4(ccsb,                                       Name);
+            #endif //MEDIAINFO_ADVANCED
         };
         index_delta(3,                                          "x_index_delta");
         index_delta(4,                                          "y_index_delta");
         index_delta(5,                                          "z_index_delta");
         index_delta(0,                                          "u_index_delta");
         index_delta(1,                                          "v_index_delta");
+        #if MEDIAINFO_ADVANCED
+        Vertices_String_OffsetPerItem[i] = Vertices_String.size();
+        #endif //MEDIAINFO_ADVANCED
         Element_End0();
     }
     Fill(StreamKind_Last, StreamPos_Last, "Spatial", "Yes", Unlimited, true, true);
     Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh", "Yes", Unlimited, true, true);
     Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh Vertex_Count", vertex_count);
+    #if MEDIAINFO_ADVANCED
     if (!Vertices_String.empty()) {
+        Vertices_String.pop_back();
         Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh Vertex_Values", Vertices_String);
+        Vertices_String += ' ';
     }
+    #endif //MEDIAINFO_ADVANCED
     Element_End0();
     Skip_S1(Data_BS_Remain() % 8,                               "padding");
     BS_End();
@@ -8750,12 +8777,16 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh()
     }
     auto vcsb = std::ceil(std::log2(vertex_count * 2));
     Element_Begin1("vertex_list");
+    Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh Vertex_List_Count", vertex_list_count);
     for (int32u i = 0; i < vertex_list_count; ++i) {
         Element_Begin1("vertex");
         int32u index_count;
+        int8u index_type;
         Skip_B1(                                                "texture_id");
-        Skip_B1(                                                "index_type");
+        Get_B1 (index_type,                                     "index_type"); Param_Info1(File_Mpeg4_sv3d_Mesh_index_type(index_type));
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh Vertex_List_IndexType", File_Mpeg4_sv3d_Mesh_index_type(index_type));
         Get_B4 (index_count,                                    "index_count");
+        Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh Vertex_List_IndexCount", index_count);
         index_count &= 0x7FFFFFFF;
         if (index_count > Element_Size) {
             Element_End0();
@@ -8764,9 +8795,41 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh()
         }
         Element_Begin1("indexes");
         BS_Begin();
+        string Vertices_Indices_String;
+        string Vertices_List_String;
+        int32u Index{};
         for (int32u i = 0; i < index_count; ++i) {
-            Skip_S4(vcsb,                                       "index_as_delta");
+            auto index_delta = [&](const char* Name) {
+                #if MEDIAINFO_ADVANCED
+                int32u index_delta_zigzag;
+                Get_S4 (vcsb, index_delta_zigzag,               Name);
+                if (!Vertex_Data || Index == (int32u)-1) {
+                    return;
+                }
+                int32s index_delta = index_delta_zigzag & 1 ? (-int32s((index_delta_zigzag + 1) >> 1)) : (index_delta_zigzag >> 1);
+                if (index_delta >= (int32s)(vertex_count - Index) || -index_delta > (int32s)vertex_count) {
+                    Index = (int32u)-1;
+                    return;
+                }
+                Index += index_delta;
+                Vertices_Indices_String += fmt::format("{} ", Index);
+                const auto Offset = Index ? Vertices_String_OffsetPerItem[Index - 1] : 0;
+                const auto Size = Vertices_String_OffsetPerItem[Index] - Offset;
+                Vertices_List_String += Vertices_String.substr(Offset, Size);
+                #else //MEDIAINFO_ADVANCED
+                Skip_S4(vcsb,                                   Name);
+                #endif //MEDIAINFO_ADVANCED
+            };
+            index_delta(                                        "index_as_delta");
         }
+        #if MEDIAINFO_ADVANCED
+        if (!Vertices_List_String.empty()) {
+            Vertices_Indices_String.pop_back();
+            Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh Vertex_List_Indices", Vertices_Indices_String);
+            Vertices_List_String.pop_back();
+            Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh Vertex_List_Values", Vertices_List_String);
+        }
+        #endif //MEDIAINFO_ADVANCED
         Element_End0();
         Skip_S1(Data_BS_Remain() % 8,                           "padding");
         BS_End();
