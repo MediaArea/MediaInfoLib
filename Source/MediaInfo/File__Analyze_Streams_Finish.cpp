@@ -70,6 +70,7 @@ static const char* CompanySuffixes[] = {
     "GMBH",
     "GROUP",
     "IMAGING",
+    "INC",
     "INC.",
     "INTERNATIONAL",
     "LABORATORIES",
@@ -91,12 +92,14 @@ static const char* CompanyNames[] = {
     "ACER",
     "ASHAMPOO",
     "APPLE",
+    "CAMERA",
     "CANON",
     "CASIO",
     "EPSON",
     "FRAUNHOFER",
     "FUJI",
     "FUJIFILM",
+    "GATEWAY",
     "GE",
     "HP",
     "HITACHI",
@@ -116,10 +119,12 @@ static const char* CompanyNames[] = {
     "MAGINON",
     "MOTOROLA",
     "MEDION",
+    "MINOLTA",
     "MUSTEK",
     "NIKON",
     "PENTACON",
     "PIONEER",
+    "POLAROID",
     "RECONYX",
     "RICOH",
     "ROLLEI",
@@ -159,8 +164,10 @@ static const FindReplace_struct CompanyNames_Replace[] = {
     { "HEWLETT-PACKARD", "HP" },
     { "JENIMAGE", "JENOPTIK" },
     { "KONICA", "Konica Minolta" },
+    { "KONICA MINOLTA", "Konica Minolta" },
     { "JK", "Kodak" },
     { "LG MOBILE", "LG" },
+    { "MINOLTA", "Konica Minolta" },
     { "MOTOROL", "MOTOROLA" },
     { "NTT DOCOMO", "DoCoMo" },
     { "OC", "OpenCube" },
@@ -171,6 +178,7 @@ static const FindReplace_struct CompanyNames_Replace[] = {
     { "SAMSUNG DIGITAL IMA", "SAMSUNG" },
     { "SAMSUNG TECHWIN", "Hanwha Vision" },
     { "SAMSUNG TECHWIN CO,.", "Hanwha Vision" },
+    { "SUPRA / MAGINON", "supra / Maginon" },
     { "SKANHEX TECHWIN", "Skanhex" },
     { "THOMSON GRASS VALLEY", "Grass Valley" },
 };
@@ -1737,6 +1745,12 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
             if (Space_Pos != string::npos) {
                 auto NonDigit_Pos = NameU.find_first_not_of(__T("0123456789."), Space_Pos + 1);
                 if (NonDigit_Pos == string::npos && NameU.find('.') != string::npos) { // At least 1 dot for avoiding e.g. names with one digit
+                    if (Space_Pos) {
+                        auto NonDigit_Pos2 = NameU.find_last_not_of(__T("0123456789."), Space_Pos - 1);
+                        if (NonDigit_Pos != string::npos && NonDigit_Pos != Space_Pos - 1) {
+                            Space_Pos = NonDigit_Pos2;
+                        }
+                    }
                     Version_Pos = Space_Pos + 1;
                     Extra_Pos = Space_Pos;
                     IsLikelyVersion = true;
@@ -1750,6 +1764,7 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
 
         auto Plus_Pos = Name.rfind(__T(" + "), Extra_Pos);
         auto And_Pos = Name.rfind(__T(" & "), Extra_Pos);
+        auto Slash_Pos = Name.rfind(__T(" / "), Extra_Pos);
         auto Comma_Pos = Extra_Pos ? Name.rfind(__T(", "), Extra_Pos - 1) : string::npos;
         if (Plus_Pos != string::npos || And_Pos != string::npos || Comma_Pos != string::npos) {
             return; // TODO: handle complex string e.g. with 2 versions
@@ -2021,12 +2036,10 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         const auto& Version = Retrieve_Const(Stream_General, StreamPos, Parameter_Version);
 
         auto Value = CompanyName;
-        if (!Name.empty())
-        {
-            if (!Value.empty())
-                Value += ' ';
-            Value += Name;
+        if (!Name.empty() && !Value.empty()) {
+            Value += ' ';
         }
+        Value += Name;
         if (HasModel && !Model.empty())
         {
             if (!Value.empty())
@@ -2039,8 +2052,8 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         }
         if (!Value.empty() && !Version.empty()) {
             Value += ' ';
-            Value += Version;
         }
+        Value += Version;
         Fill(Stream_General, StreamPos, Parameter_String, Value, true);
     };
     CreateString(General_Encoded_Hardware, true);
