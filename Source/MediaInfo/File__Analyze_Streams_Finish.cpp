@@ -44,389 +44,504 @@
 #endif //MEDIAINFO_FIXITY
 #include <algorithm>
 using namespace ZenLib;
+using namespace std;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
 {
 
 //---------------------------------------------------------------------------
-static const char* CompanySuffixes[] = {
-    "AB",
-    "AG",
-    "CAMERA",
-    "CO",
-    "CO.",
-    "COMPANY",
-    "COMPUTER",
-    "CORP",
-    "CORP.",
-    "CORPORATION",
-    "CORPORATION.",
-    "ELECTRIC",
-    "ELECTRONICS",
-    "FILM",
-    "FOTOTECHNIC",
-    "GERMANY",
-    "GMBH",
-    "GROUP",
-    "IMAGING",
-    "INC",
-    "INC.",
-    "INTERNATIONAL",
-    "LABORATORIES",
-    "LIMITED",
-    "LIVING",
-    "LTD",
-    "LTD.",
-    "OP",
-    "OPTICAL",
-    "PHOTO",
-    "SYSTEMS",
-    "TECH",
-    "TECHNOLOGIES",
-    "TECHNOLOGY",
+#if __cplusplus >= 201703 || (defined(_MSC_VER) && _MSC_VER >= 1910 && _MSVC_LANG >= 201703)
+#else
+struct string_view {
+public:
+    constexpr string_view() noexcept {
+    }
+    constexpr string_view(const char* Data, size_t Size) noexcept
+        : _Data(Data), _Size(Size) {
+    }
+    constexpr const char* data() const noexcept {
+        return _Data;
+    }
+    constexpr size_t size() const noexcept {
+        return _Size;
+    }
+private:
+    const char* _Data{};
+    size_t _Size{};
+};
+#endif
+static string_view Find_Replacement(const char* Database, const string& ToFind) {
+    if (ToFind.empty() || !ToFind.front()) {
+        return {}; // Nothing to search
+    }
+    auto Current = Database;
+    for (;;) {
+        auto Location = strstr(Current, ToFind.c_str());
+        if (!Location) {
+            return { nullptr, 0 }; // No more to search
+        }
+        if ((Location != Database && Location[-1] != '\n') || Location[ToFind.size()] != ';') {
+            Current = strchr(Location, '\n') + 1;  // Note: \n is always the last character of Database so no need to check if it is not found
+            continue; // Not a full match
+        }
+        Location += ToFind.size() + 1; // Skip the key and the semicolon
+        const auto Size = static_cast<size_t>(strchr(Location, '\n') - Location); // Note: \n is always the last character of Database so no need to check if it is not found
+        return { Location, Size };
+    }
+}
+static bool IsPresent(const char* Database, const string& ToFind) {
+    if (ToFind.empty() || !ToFind.front()) {
+        return false; // Nothing to search
+    }
+    auto Current = Database;
+    for (;;) {
+        auto Location = strstr(Current, ToFind.c_str());
+        if (!Location) {
+            return false; // No more to search
+        }
+        if ((Location != Database && Location[-1] != '\n') || Location[ToFind.size()] != '\n') {
+            Current = Location + 1;
+            continue; // Not a full match
+        }
+        return true;
+    }
+}
+struct ValueView
+{
+    const char* data;
+    size_t size;
+};
+class NewlineRange
+{
+public:
+    class Iterator
+    {
+    public:
+        constexpr Iterator() {
+        }
+        Iterator(const char* pos) {
+            update(pos);
+        }
+
+        constexpr ValueView operator*() const {
+            return ValueView{ current, static_cast<size_t>(next - current) };
+        }
+
+        Iterator& operator++() {
+            if (*next) {
+                update(next + 1);
+            }
+            else {
+                current = next;
+            }
+            return *this;
+        }
+
+        constexpr bool operator!=(const Iterator&) const {
+            return *current;
+        }
+
+    private:
+        void update(const char* pos) {
+            current = pos;
+            next = pos;
+            while (*next && *next != '\n') {
+                ++next;
+            }
+        }
+        const char* current = {};
+        const char* next = {};
+    };
+
+    constexpr NewlineRange(const char* str) : begin_(str) {}
+
+    Iterator begin() const { return Iterator(begin_); }
+    constexpr Iterator end() const { return Iterator(); }
+
+private:
+    const char* begin_;
 };
 
 //---------------------------------------------------------------------------
-static const char* CompanyNames[] = {
-    "ACER",
-    "ASHAMPOO",
-    "APPLE",
-    "CAMERA",
-    "CANON",
-    "CASIO",
-    "EPSON",
-    "FRAUNHOFER",
-    "FUJI",
-    "FUJIFILM",
-    "GATEWAY",
-    "GE",
-    "HP",
-    "HITACHI",
-    "HUAWEI",
-    "JENOPTIK",
-    "KODAK",
-    "KONICA",
-    "KYOCERA",
-    "LEGEND",
-    "LEICA",
-    "MAGINON",
-    "MICROSOFT",
-    "NIKON",
-    "ODYS",
-    "OLYMPUS",
-    "MAMIYA",
-    "MAGINON",
-    "MOTOROLA",
-    "MEDION",
-    "MINOLTA",
-    "MUSTEK",
-    "NIKON",
-    "PENTACON",
-    "PIONEER",
-    "POLAROID",
-    "RECONYX",
-    "RICOH",
-    "ROLLEI",
-    "SAMSUNG",
-    "SANYO",
-    "SEALIFE",
-    "SHARP",
-    "SIGMA",
-    "SUPRA",
-    "SKANHEX",
-    "SONY",
-    "TRAVELER",
-    "TRUST",
-    "TOSHIBA",
-    "VIVITAR",
-    "VODAFONE",
-    "XIAOYI",
-    "YAKUMO",
-    "YASHICA",
-    "ZEISS",
-    "ZJMEDIA",
-};
+static const char* CompanySuffixes =
+    "AB\n"
+    "AG\n"
+    "CAMERA\n"
+    "CO\n"
+    "CO.\n"
+    "COMPANY\n"
+    "COMPUTER\n"
+    "CORP\n"
+    "CORP.\n"
+    "CORPORATION\n"
+    "CORPORATION.\n"
+    "ELECTRIC\n"
+    "ELECTRONICS\n"
+    "FILM\n"
+    "FOTOTECHNIC\n"
+    "GERMANY\n"
+    "GMBH\n"
+    "GROUP\n"
+    "IMAGING\n"
+    "INC\n"
+    "INC.\n"
+    "INTERNATIONAL\n"
+    "LABORATORIES\n"
+    "LIMITED\n"
+    "LIVING\n"
+    "LTD\n"
+    "LTD.\n"
+    "OP\n"
+    "OPTICAL\n"
+    "PHOTO\n"
+    "SYSTEMS\n"
+    "TECH\n"
+    "TECHNOLOGIES\n"
+    "TECHNOLOGY\n"
+;
 
 //---------------------------------------------------------------------------
-struct FindReplace_struct {
-    const char* Find;
-    const char* ReplaceBy;
-};
-static const FindReplace_struct CompanyNames_Replace[] = {
-    { "AGFAPHOTO", "AgfaPhoto" },
-    { "CONCORD", "JENOPTIK" },
-    { "DEFAULT", "" },
-    { "EASTMAN KODAK", "KODAK" },
-    { "FLIR SYSTEMS", "FLIR" },
-    { "FUJI", "FUJIFILM" },
-    { "GENERAL", "GE" },
-    { "HEWLETT-PACKARD", "HP" },
-    { "JENIMAGE", "JENOPTIK" },
-    { "KONICA", "Konica Minolta" },
-    { "KONICA MINOLTA", "Konica Minolta" },
-    { "JK", "Kodak" },
-    { "LG MOBILE", "LG" },
-    { "MINOLTA", "Konica Minolta" },
-    { "MOTOROL", "MOTOROLA" },
-    { "NTT DOCOMO", "DoCoMo" },
-    { "OC", "OpenCube" },
-    { "OLYMPUS_IMAGING_CORP.", "Olympus" },
-    { "PENTAX RICOH", "Ricoh" },
-    { "PENTAX", "Ricoh" },
-    { "SEIKO EPSON", "EPSON" },
-    { "SAMSUNG DIGITAL IMA", "SAMSUNG" },
-    { "SAMSUNG TECHWIN", "Hanwha Vision" },
-    { "SAMSUNG TECHWIN CO,.", "Hanwha Vision" },
-    { "SUPRA / MAGINON", "supra / Maginon" },
-    { "SKANHEX TECHWIN", "Skanhex" },
-    { "THOMSON GRASS VALLEY", "Grass Valley" },
-};
+static const char* CompanyNames =
+    "ACER\n"
+    "APPLE\n"
+    "ASHAMPOO\n"
+    "CAMERA\n"
+    "CANON\n"
+    "CASIO\n"
+    "EPSON\n"
+    "FRAUNHOFER\n"
+    "FUJI\n"
+    "FUJIFILM\n"
+    "GATEWAY\n"
+    "GE\n"
+    "HITACHI\n"
+    "HP\n"
+    "HUAWEI\n"
+    "JENOPTIK\n"
+    "KODAK\n"
+    "KONICA\n"
+    "KYOCERA\n"
+    "LEGEND\n"
+    "LEICA\n"
+    "MAGINON\n"
+    "MAGINON\n"
+    "MAMIYA\n"
+    "MEDION\n"
+    "MICROSOFT\n"
+    "MINOLTA\n"
+    "MOTOROLA\n"
+    "MUSTEK\n"
+    "NIKON\n"
+    "NIKON\n"
+    "ODYS\n"
+    "OLYMPUS\n"
+    "PENTACON\n"
+    "PIONEER\n"
+    "POLAROID\n"
+    "RECONYX\n"
+    "RICOH\n"
+    "ROLLEI\n"
+    "SAMSUNG\n"
+    "SANYO\n"
+    "SEALIFE\n"
+    "SHARP\n"
+    "SIGMA\n"
+    "SKANHEX\n"
+    "SONY\n"
+    "SUPRA\n"
+    "TOSHIBA\n"
+    "TRAVELER\n"
+    "TRUST\n"
+    "VIVITAR\n"
+    "VODAFONE\n"
+    "XIAOYI\n"
+    "YAKUMO\n"
+    "YASHICA\n"
+    "ZEISS\n"
+    "ZJMEDIA\n"
+;
 
 //---------------------------------------------------------------------------
-static const FindReplace_struct Model_Replace_Canon[] = { // Based on https://en.wikipedia.org/wiki/Canon_EOS and https://wiki.magiclantern.fm/camera_models_map
-    { "EOS 1500D", "EOS 2000D" },
-    { "EOS 200D Mark II", "EOS 250D" },
-    { "EOS 3000D", "EOS 4000D" },
-    { "EOS 770D", "EOS 77D" },
-    { "EOS 8000D", "EOS 760D" },
-    { "EOS 9000D", "EOS 77D" },
-    { "EOS DIGITAL REBEL XT", "EOS 350D" },
-    { "EOS DIGITAL REBEL XTI", "EOS 400D" },
-    { "EOS DIGITAL REBEL", "EOS 300D" },
-    { "EOS HI", "EOS 1200D" },
-    { "EOS KISS DIGITAL N", "EOS 350D" },
-    { "EOS KISS DIGITAL X", "EOS 400D" },
-    { "EOS KISS DIGITAL", "EOS 300D" },
-    { "EOS KISS F", "EOS 1000D" },
-    { "EOS KISS M", "EOS M50" },
-    { "EOS KISS M2", "EOS M50 Mark II" },
-    { "EOS KISS M50m2", "EOS M50 Mark II" },
-    { "EOS KISS X10", "EOS 250D" },
-    { "EOS KISS X10I", "EOS 850D" },
-    { "EOS KISS X2", "EOS 450D" },
-    { "EOS KISS X3", "EOS 500D" },
-    { "EOS KISS X4", "EOS 550D" },
-    { "EOS KISS X5", "EOS 600D" },
-    { "EOS KISS X50", "EOS 1100D" },
-    { "EOS KISS X6I", "EOS 650D" },
-    { "EOS KISS X7", "EOS 100D" },
-    { "EOS KISS X70", "EOS 1200D" },
-    { "EOS KISS X7I", "EOS 700D" },
-    { "EOS KISS X80", "EOS 1300D" },
-    { "EOS KISS X8I", "EOS 750D" },
-    { "EOS KISS X9", "EOS 200D" },
-    { "EOS KISS X90", "EOS 2000D" },
-    { "EOS KISS X9I", "EOS 800D" },
-    { "EOS REBEL SL1", "EOS 100D" },
-    { "EOS REBEL SL2", "EOS 200D" },
-    { "EOS REBEL SL3", "EOS 250D" },
-    { "EOS REBEL T100", "EOS 4000D" },
-    { "EOS REBEL T1I", "EOS 500D" },
-    { "EOS REBEL T2I", "EOS 550D" },
-    { "EOS REBEL T3", "EOS 1100D" },
-    { "EOS REBEL T3I", "EOS 600D" },
-    { "EOS REBEL T4I", "EOS 650D" },
-    { "EOS REBEL T5", "EOS 1200D" },
-    { "EOS REBEL T5I", "EOS 700D" },
-    { "EOS REBEL T6", "EOS 1300D" },
-    { "EOS REBEL T6I", "EOS 750D" },
-    { "EOS REBEL T6S", "EOS 760D" },
-    { "EOS REBEL T7", "EOS 2000D" },
-    { "EOS REBEL T7I", "EOS 800D" },
-    { "EOS REBEL T8I", "EOS 850D" },
-    { "EOS REBEL XS", "EOS 1000D" },
-    { "EOS REBEL XSI", "EOS 450D" },
-};
-static const FindReplace_struct Model_Replace_OpenCube[] = {
-    { "OCTk", "Toolkit" },
-    { "Tk", "Toolkit" },
-};
+static const char* CompanyNames_Replace =
+    "AGFAPHOTO;AgfaPhoto\n"
+    "CONCORD;JENOPTIK\n"
+    "DEFAULT;\n"
+    "EASTMAN KODAK;KODAK\n"
+    "FLIR SYSTEMS;FLIR\n"
+    "FUJI;FUJIFILM\n"
+    "GENERAL;GE\n"
+    "HEWLETT-PACKARD;HP\n"
+    "JENIMAGE;JENOPTIK\n"
+    "JK;Kodak\n"
+    "KONICA MINOLTA;Konica Minolta\n"
+    "KONICA;Konica Minolta\n"
+    "LG MOBILE;LG\n"
+    "MINOLTA;Konica Minolta\n"
+    "MOTOROL;MOTOROLA\n"
+    "NTT DOCOMO;DoCoMo\n"
+    "OC;OpenCube\n"
+    "OLYMPUS_IMAGING_CORP.;Olympus\n"
+    "PENTAX RICOH;Ricoh\n"
+    "PENTAX;Ricoh\n"
+    "SAMSUNG DIGITAL IMA;SAMSUNG\n"
+    "SAMSUNG TECHWIN;Hanwha Vision\n"
+    "SAMSUNG TECHWIN CO,.;Hanwha Vision\n"
+    "SEIKO EPSON;EPSON\n"
+    "SKANHEX TECHWIN;Skanhex\n"
+    "SUPRA / MAGINON;supra / Maginon\n"
+    "THOMSON GRASS VALLEY;Grass Valley\n"
+;
+
+//---------------------------------------------------------------------------
+static const char* Model_Replace_Canon = // Based on https://en.wikipedia.org/wiki/Canon_EOS and https://wiki.magiclantern.fm/camera_models_map
+    "EOS 1500D;EOS 2000D\n"
+    "EOS 200D Mark II;EOS 250D\n"
+    "EOS 3000D;EOS 4000D\n"
+    "EOS 770D;EOS 77D\n"
+    "EOS 8000D;EOS 760D\n"
+    "EOS 9000D;EOS 77D\n"
+    "EOS DIGITAL REBEL XT;EOS 350D\n"
+    "EOS DIGITAL REBEL XTI;EOS 400D\n"
+    "EOS DIGITAL REBEL;EOS 300D\n"
+    "EOS HI;EOS 1200D\n"
+    "EOS KISS DIGITAL N;EOS 350D\n"
+    "EOS KISS DIGITAL X;EOS 400D\n"
+    "EOS KISS DIGITAL;EOS 300D\n"
+    "EOS KISS F;EOS 1000D\n"
+    "EOS KISS M;EOS M50\n"
+    "EOS KISS M2;EOS M50 Mark II\n"
+    "EOS KISS M50m2;EOS M50 Mark II\n"
+    "EOS KISS X10;EOS 250D\n"
+    "EOS KISS X10I;EOS 850D\n"
+    "EOS KISS X2;EOS 450D\n"
+    "EOS KISS X3;EOS 500D\n"
+    "EOS KISS X4;EOS 550D\n"
+    "EOS KISS X5;EOS 600D\n"
+    "EOS KISS X50;EOS 1100D\n"
+    "EOS KISS X6I;EOS 650D\n"
+    "EOS KISS X7;EOS 100D\n"
+    "EOS KISS X70;EOS 1200D\n"
+    "EOS KISS X7I;EOS 700D\n"
+    "EOS KISS X80;EOS 1300D\n"
+    "EOS KISS X8I;EOS 750D\n"
+    "EOS KISS X9;EOS 200D\n"
+    "EOS KISS X90;EOS 2000D\n"
+    "EOS KISS X9I;EOS 800D\n"
+    "EOS REBEL SL1;EOS 100D\n"
+    "EOS REBEL SL2;EOS 200D\n"
+    "EOS REBEL SL3;EOS 250D\n"
+    "EOS REBEL T100;EOS 4000D\n"
+    "EOS REBEL T1I;EOS 500D\n"
+    "EOS REBEL T2I;EOS 550D\n"
+    "EOS REBEL T3;EOS 1100D\n"
+    "EOS REBEL T3I;EOS 600D\n"
+    "EOS REBEL T4I;EOS 650D\n"
+    "EOS REBEL T5;EOS 1200D\n"
+    "EOS REBEL T5I;EOS 700D\n"
+    "EOS REBEL T6;EOS 1300D\n"
+    "EOS REBEL T6I;EOS 750D\n"
+    "EOS REBEL T6S;EOS 760D\n"
+    "EOS REBEL T7;EOS 2000D\n"
+    "EOS REBEL T7I;EOS 800D\n"
+    "EOS REBEL T8I;EOS 850D\n"
+    "EOS REBEL XS;EOS 1000D\n"
+    "EOS REBEL XSI;EOS 450D\n"
+;
+
+static const char* Model_Replace_OpenCube =
+    "OCTk;Toolkit\n"
+    "Tk;Toolkit\n"
+;
+
 struct FindReplaceCompany_struct {
     const char* CompanyName;
-    const FindReplace_struct* Find;
-    size_t Size;
-};
-static const FindReplaceCompany_struct Model_Replace[] = {
-    { "Canon", Model_Replace_Canon, sizeof(Model_Replace_Canon) / sizeof(Model_Replace_Canon[0])},
-    { "OpenCube", Model_Replace_OpenCube, sizeof(Model_Replace_OpenCube) / sizeof(Model_Replace_OpenCube[0])},
+    const char* Find;
+    const char* Prefix;
 };
 
-// Sony Xperia model name mappings
-static const FindReplace_struct Model_Name_Sony[] = {
-    { "XQ-FS44", "Xperia 1 VII" },
-    { "XQ-FS54", "Xperia 1 VII" },
-    { "XQ-FS72", "Xperia 1 VII" },
-    { "XQ-EC44", "Xperia 1 VI" },
-    { "XQ-EC54", "Xperia 1 VI" },
-    { "XQ-EC72", "Xperia 1 VI" },
-    { "XQ-ES44", "Xperia 10 VI" },
-    { "XQ-ES54", "Xperia 10 VI" },
-    { "XQ-ES72", "Xperia 10 VI" },
-    { "XQ-DE44", "Xperia 5 V" },
-    { "XQ-DE54", "Xperia 5 V" },
-    { "XQ-DE72", "Xperia 5 V" },
-    { "XQ-DQ44", "Xperia 1 V" },
-    { "XQ-DQ54", "Xperia 1 V" },
-    { "XQ-DQ62", "Xperia 1 V" },
-    { "XQ-DQ72", "Xperia 1 V" },
-    { "XQ-DC44", "Xperia 10 V" },
-    { "XQ-DC54", "Xperia 10 V" },
-    { "XQ-DC72", "Xperia 10 V" },
-    { "XQ-CQ44", "Xperia 5 IV" },
-    { "XQ-CQ54", "Xperia 5 IV" },
-    { "XQ-CQ62", "Xperia 5 IV" },
-    { "XQ-CQ72", "Xperia 5 IV" },
-    { "XQ-CT44", "Xperia 1 IV" },
-    { "XQ-CT54", "Xperia 1 IV" },
-    { "XQ-CT62", "Xperia 1 IV" },
-    { "XQ-CT72", "Xperia 1 IV" },
-    { "XQ-CC44", "Xperia 10 IV" },
-    { "XQ-CC54", "Xperia 10 IV" },
-    { "XQ-CC72", "Xperia 10 IV" },
-    { "XQ-BE42", "Xperia PRO-I" },
-    { "XQ-BE52", "Xperia PRO-I" },
-    { "XQ-BE62", "Xperia PRO-I" },
-    { "XQ-BE72", "Xperia PRO-I" },
-    { "XQ-BT44", "Xperia 10 III Lite" },
-    { "XQ-BC42", "Xperia 1 IV" },
-    { "XQ-BC52", "Xperia 1 IV" },
-    { "XQ-BC62", "Xperia 1 IV" },
-    { "XQ-BC72", "Xperia 1 IV" },
-    { "XQ-BQ42", "Xperia 5 III" },
-    { "XQ-BQ52", "Xperia 5 III" },
-    { "XQ-BQ62", "Xperia 5 III" },
-    { "XQ-BQ72", "Xperia 5 III" },
-    { "XQ-BT52", "Xperia 10 III" },
-    { "XQ-AQ52", "Xperia PRO" },
-    { "XQ-AQ62", "Xperia PRO" },
-    { "XQ-AS42", "Xperia 5 II" },
-    { "XQ-AS52", "Xperia 5 II" },
-    { "XQ-AS62", "Xperia 5 II" },
-    { "XQ-AS72", "Xperia 5 II" },
-    { "XQ-AT42", "Xperia 1 II" },
-    { "XQ-AT51", "Xperia 1 II" },
-    { "XQ-AT52", "Xperia 1 II" },
-    { "XQ-AU42", "Xperia 10 II" },
-    { "XQ-AU51", "Xperia 10 II" },
-    { "XQ-AU52", "Xperia 10 II" },
-    { "J8210", "Xperia 5" },
-    { "J8270", "Xperia 5" },
-    { "J9210", "Xperia 5 Dual" },
-    { "J9260", "Xperia 5 Dual" },
-    { "J8110", "Xperia 1" },
-    { "J8170", "Xperia 1" },
-    { "J9180", "Xperia 1" },
-    { "J9110", "Xperia 1 Dual" },
-    { "H8416", "Xperia XZ3" },
-    { "H9436", "Xperia XZ3" },
-    { "H9493", "Xperia XZ3" },
-    { "H8216", "Xperia XZ2" },
-    { "H8276", "Xperia XZ2" },
-    { "H8314", "Xperia XZ2 Compact" },
-    { "H8324", "Xperia XZ2 Compact" },
-    { "H8266", "Xperia XZ2 Dual" },
-    { "H8296", "Xperia XZ2 Dual" },
-    { "H8116", "Xperia XZ2 Premium" },
-    { "H8166", "Xperia XZ2 Premium Dual" },
-    { "G8341", "Xperia XZ1" },
-    { "G8343", "Xperia XZ1" },
-    { "G8441", "Xperia XZ1 Compact" },
-    { "G8342", "Xperia XZ1 Dual" },
-    { "F8331", "Xperia XZ" },
-    { "F8332", "Xperia XZ" },
-    { "G8141", "Xperia XZ Premium" },
-    { "G8188", "Xperia XZ Premium" },
-    { "G8142", "Xperia XZ Premium Dual" },
-    { "G8231", "Xperia XZs" },
-    { "G8232", "Xperia XZs Dual" },
-    { "E6603", "Xperia Z5" },
-    { "E6653", "Xperia Z5" },
-    { "E5803", "Xperia Z5 Compact" },
-    { "E5823", "Xperia Z5 Compact" },
-    { "E6633", "Xperia Z5 Dual" },
-    { "E6683", "Xperia Z5 Dual" },
-    { "E6853", "Xperia Z5 Premium" },
-    { "E6833", "Xperia Z5 Premium Dual" },
-    { "E6883", "Xperia Z5 Premium Dual" },
-    { "SGP712", "Xperia Z4 Tablet" },
-    { "SGP771", "Xperia Z4 Tablet" },
-    { "E6553", "Xperia Z3+" },
-    { "E6533", "Xperia Z3+ Dual" },
-    { "D6603", "Xperia Z3" },
-    { "D6616", "Xperia Z3" },
-    { "D6633", "Xperia Z3" },
-    { "D6643", "Xperia Z3" },
-    { "D6646", "Xperia Z3" },
-    { "D6653", "Xperia Z3" },
-    { "D5803", "Xperia Z3 Compact" },
-    { "D5833", "Xperia Z3 Compact" },
-    { "D6683", "Xperia Z3 Dual TD" },
-    { "D6708", "Xperia Z3v" },
-    { "SGP611", "Xperia Z3 Tablet Compact" },
-    { "SGP612", "Xperia Z3 Tablet Compact" },
-    { "SGP621", "Xperia Z3 Tablet Compact" },
-    { "SGP641", "Xperia Z3 Tablet Compact" },
-    { "D6502", "Xperia Z2" },
-    { "D6503", "Xperia Z2" },
-    { "D6543", "Xperia Z2" },
-    { "D6563", "Xperia Z2a" },
-    { "SGP511", "Xperia Z2 Tablet" },
-    { "SGP512", "Xperia Z2 Tablet" },
-    { "SGP521", "Xperia Z2 Tablet" },
-    { "SGP541", "Xperia Z2 Tablet" },
-    { "SGP551", "Xperia Z2 Tablet" },
-    { "SGP561", "Xperia Z2 Tablet" },
-    { "C6902", "Xperia Z1" },
-    { "C6903", "Xperia Z1" },
-    { "C6906", "Xperia Z1" },
-    { "C6943", "Xperia Z1" },
-    { "C6916", "Xperia Z1s" },
-    { "D5503", "Xperia Z1 Compact" },
-    { "C6802", "Xperia Z Ultra" },
-    { "C6806", "Xperia Z Ultra" },
-    { "C6833", "Xperia Z Ultra" },
-    { "C6843", "Xperia Z Ultra" },
-    { "SGP412", "Xperia Z Ultra" },
-    { "C5502", "Xperia ZR" },
-    { "C5503", "Xperia ZR" },
-    { "C5302", "Xperia SP" },
-    { "C5303", "Xperia SP" },
-    { "C5306", "Xperia SP" },
-    { "C6602", "Xperia Z" },
-    { "C6603", "Xperia Z" },
-    { "C6606", "Xperia Z" },
-    { "C6616", "Xperia Z" },
-    { "C6502", "Xperia ZL" },
-    { "C6503", "Xperia ZL" },
-    { "C6506", "Xperia ZL" },
-};
-static const FindReplace_struct Model_Name_Sony_Ericsson[] = {
-    { "SGPT121", "Xperia Tablet S" },
-    { "SGPT122", "Xperia Tablet S" },
-    { "SGPT123", "Xperia Tablet S" },
-    { "SGPT131", "Xperia Tablet S 3G" },
-    { "SGPT132", "Xperia Tablet S 3G" },
-    { "SGPT133", "Xperia Tablet S 3G" },
-    { "LT26ii", "Xperia SL" },
-    { "LT26w", "Xperia acro S" },
-    { "LT26i", "Xperia S" },
-};
+static const FindReplaceCompany_struct Model_Replace[] = {
+    { "Canon", Model_Replace_Canon, {} },
+    { "OpenCube", Model_Replace_OpenCube, {} },
+}; 
+
+//---------------------------------------------------------------------------
+static const char* Model_Name_Sony =
+    "C5302;SP\n"
+    "C5303;SP\n"
+    "C5306;SP\n"
+    "C5502;ZR\n"
+    "C5503;ZR\n"
+    "C6502;ZL\n"
+    "C6503;ZL\n"
+    "C6506;ZL\n"
+    "C6602;Z\n"
+    "C6603;Z\n"
+    "C6606;Z\n"
+    "C6616;Z\n"
+    "C6802;Z Ultra\n"
+    "C6806;Z Ultra\n"
+    "C6833;Z Ultra\n"
+    "C6843;Z Ultra\n"
+    "C6902;Z1\n"
+    "C6903;Z1\n"
+    "C6906;Z1\n"
+    "C6916;Z1s\n"
+    "C6943;Z1\n"
+    "D5503;Z1 Compact\n"
+    "D5803;Z3 Compact\n"
+    "D5833;Z3 Compact\n"
+    "D6502;Z2\n"
+    "D6503;Z2\n"
+    "D6543;Z2\n"
+    "D6563;Z2a\n"
+    "D6603;Z3\n"
+    "D6616;Z3\n"
+    "D6633;Z3\n"
+    "D6643;Z3\n"
+    "D6646;Z3\n"
+    "D6653;Z3\n"
+    "D6683;Z3 Dual TD\n"
+    "D6708;Z3v\n"
+    "E5803;Z5 Compact\n"
+    "E5823;Z5 Compact\n"
+    "E6533;Z3+ Dual\n"
+    "E6553;Z3+\n"
+    "E6603;Z5\n"
+    "E6633;Z5 Dual\n"
+    "E6653;Z5\n"
+    "E6683;Z5 Dual\n"
+    "E6833;Z5 Premium Dual\n"
+    "E6853;Z5 Premium\n"
+    "E6883;Z5 Premium Dual\n"
+    "F8331;XZ\n"
+    "F8332;XZ\n"
+    "G8141;XZ Premium\n"
+    "G8142;XZ Premium Dual\n"
+    "G8188;XZ Premium\n"
+    "G8231;XZs\n"
+    "G8232;XZs Dual\n"
+    "G8341;XZ1\n"
+    "G8342;XZ1 Dual\n"
+    "G8343;XZ1\n"
+    "G8441;XZ1 Compact\n"
+    "H8116;XZ2 Premium\n"
+    "H8166;XZ2 Premium Dual\n"
+    "H8216;XZ2\n"
+    "H8266;XZ2 Dual\n"
+    "H8276;XZ2\n"
+    "H8296;XZ2 Dual\n"
+    "H8314;XZ2 Compact\n"
+    "H8324;XZ2 Compact\n"
+    "H8416;XZ3\n"
+    "H9436;XZ3\n"
+    "H9493;XZ3\n"
+    "J8110;1\n"
+    "J8170;1\n"
+    "J8210;5\n"
+    "J8270;5\n"
+    "J9110;1 Dual\n"
+    "J9180;1\n"
+    "J9210;5 Dual\n"
+    "J9260;5 Dual\n"
+    "SGP412;Z Ultra\n"
+    "SGP511;Z2 Tablet\n"
+    "SGP512;Z2 Tablet\n"
+    "SGP521;Z2 Tablet\n"
+    "SGP541;Z2 Tablet\n"
+    "SGP551;Z2 Tablet\n"
+    "SGP561;Z2 Tablet\n"
+    "SGP611;Z3 Tablet Compact\n"
+    "SGP612;Z3 Tablet Compact\n"
+    "SGP621;Z3 Tablet Compact\n"
+    "SGP641;Z3 Tablet Compact\n"
+    "SGP712;Z4 Tablet\n"
+    "SGP771;Z4 Tablet\n"
+    "XQ-AQ52;PRO\n"
+    "XQ-AQ62;PRO\n"
+    "XQ-AS42;5 II\n"
+    "XQ-AS52;5 II\n"
+    "XQ-AS62;5 II\n"
+    "XQ-AS72;5 II\n"
+    "XQ-AT42;1 II\n"
+    "XQ-AT51;1 II\n"
+    "XQ-AT52;1 II\n"
+    "XQ-AU42;10 II\n"
+    "XQ-AU51;10 II\n"
+    "XQ-AU52;10 II\n"
+    "XQ-BC42;1 IV\n"
+    "XQ-BC52;1 IV\n"
+    "XQ-BC62;1 IV\n"
+    "XQ-BC72;1 IV\n"
+    "XQ-BE42;PRO-I\n"
+    "XQ-BE52;PRO-I\n"
+    "XQ-BE62;PRO-I\n"
+    "XQ-BE72;PRO-I\n"
+    "XQ-BQ42;5 III\n"
+    "XQ-BQ52;5 III\n"
+    "XQ-BQ62;5 III\n"
+    "XQ-BQ72;5 III\n"
+    "XQ-BT44;10 III Lite\n"
+    "XQ-BT52;10 III\n"
+    "XQ-CC44;10 IV\n"
+    "XQ-CC54;10 IV\n"
+    "XQ-CC72;10 IV\n"
+    "XQ-CQ44;5 IV\n"
+    "XQ-CQ54;5 IV\n"
+    "XQ-CQ62;5 IV\n"
+    "XQ-CQ72;5 IV\n"
+    "XQ-CT44;1 IV\n"
+    "XQ-CT54;1 IV\n"
+    "XQ-CT62;1 IV\n"
+    "XQ-CT72;1 IV\n"
+    "XQ-DC44;10 V\n"
+    "XQ-DC54;10 V\n"
+    "XQ-DC72;10 V\n"
+    "XQ-DE44;5 V\n"
+    "XQ-DE54;5 V\n"
+    "XQ-DE72;5 V\n"
+    "XQ-DQ44;1 V\n"
+    "XQ-DQ54;1 V\n"
+    "XQ-DQ62;1 V\n"
+    "XQ-DQ72;1 V\n"
+    "XQ-EC44;1 VI\n"
+    "XQ-EC54;1 VI\n"
+    "XQ-EC72;1 VI\n"
+    "XQ-ES44;10 VI\n"
+    "XQ-ES54;10 VI\n"
+    "XQ-ES72;10 VI\n"
+    "XQ-FS44;1 VII\n"
+    "XQ-FS54;1 VII\n"
+    "XQ-FS72;1 VII\n"
+;
+
+static const char* Model_Name_Sony_Ericsson =
+    "LT26i;S\n"
+    "LT26ii;SL\n"
+    "LT26w;acro S\n"
+    "SGPT121;Tablet S\n"
+    "SGPT122;Tablet S\n"
+    "SGPT123;Tablet S\n"
+    "SGPT131;Tablet S 3G\n"
+    "SGPT132;Tablet S 3G\n"
+    "SGPT133;Tablet S 3G\n"
+;
+
 static const FindReplaceCompany_struct Model_Name[] = {
-    { "Sony", Model_Name_Sony, sizeof(Model_Name_Sony) / sizeof(Model_Name_Sony[0])},
-    { "Sony Ericsson", Model_Name_Sony_Ericsson, sizeof(Model_Name_Sony_Ericsson) / sizeof(Model_Name_Sony_Ericsson[0])},
+    { "Sony", Model_Name_Sony, "Xperia " },
+    { "Sony Ericsson", Model_Name_Sony_Ericsson, "Xperia " },
 };
 
 //---------------------------------------------------------------------------
-static const char* VersionPrefixes[] = {
-    ", VERSION:",
-    "FILE VERSION",
-    "RELEASE",
-    "V",
-    "VER",
-    "VERSION",
-};
-   
+static const char* VersionPrefixes =
+    ", VERSION:\n"
+    "FILE VERSION\n"
+    "RELEASE\n"
+    "V\n"
+    "VER\n"
+    "VERSION\n"
+;
+
 //---------------------------------------------------------------------------
 extern MediaInfo_Config Config;
 extern size_t DolbyVision_Compatibility_Pos(const Ztring& Value);
@@ -1642,13 +1757,13 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
             }
             auto CompanyNameU = CompanyName;
             CompanyNameU.MakeUpperCase();
-            for (const auto& CompanySuffix : CompanySuffixes) {
-                auto len = strlen(CompanySuffix);
+            for (const auto& CompanySuffix : NewlineRange(CompanySuffixes)) {
+                auto len = CompanySuffix.size;
                 if (len < CompanyNameU.size() - 1
                     && (CompanyNameU[CompanyNameU.size() - (len + 1)] == ' '
                         || CompanyNameU[CompanyNameU.size() - (len + 1)] == ','
                         || CompanyNameU[CompanyNameU.size() - (len + 1)] == '-' )
-                    && CompanyNameU.find(Ztring().From_UTF8(CompanySuffix), CompanyNameU.size() - len) != string::npos) {
+                    && CompanyNameU.find(Ztring().From_UTF8(CompanySuffix.data, len), CompanyNameU.size() - len) != string::npos) {
                     len++;
                     if (len < CompanyName.size() && CompanyName[CompanyName.size() - (len + 1)] == ',') {
                         len++;
@@ -1664,10 +1779,9 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         auto CompanyNameU = CompanyName;
         CompanyNameU.MakeUpperCase();
         auto CompanyNameUS = CompanyNameU.To_UTF8();
-        for (const auto& ToSearch : CompanyNames_Replace) {
-            if (CompanyNameUS == ToSearch.Find) {
-                Fill(Stream_General, StreamPos, Parameter, ToSearch.ReplaceBy, Unlimited, true, true);
-            }
+        auto Result = Find_Replacement(CompanyNames_Replace, CompanyNameUS);
+        if (Result.data()) {
+            Fill(Stream_General, StreamPos, Parameter, Result.data(), Result.size(), true, true);
         }
     };
     RemoveLegal(General_Encoded_Hardware_CompanyName);
@@ -1696,9 +1810,9 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         // Version string
         Ztring NameU = Name;
         NameU.MakeUpperCase();
-        for (const auto& VersionPrefix : VersionPrefixes) {
+        for (const auto& VersionPrefix : NewlineRange(VersionPrefixes)) {
             Ztring Prefix;
-            Prefix.From_UTF8(VersionPrefix);
+            Prefix.From_UTF8(VersionPrefix.data, VersionPrefix.size);
             auto Prefix_Pos = NameU.rfind(Prefix);
             auto Prefix_Pos_End = Prefix_Pos + Prefix.size();
             if (Prefix_Pos != string::npos
@@ -1817,9 +1931,9 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         }
         else {
             auto SearchUS = SearchU.To_UTF8();
-            for (const auto& ToSearch : CompanyNames) {
-                if (SearchUS.rfind(ToSearch, 0) == 0) {
-                    const auto ToSearch_Len = strlen(ToSearch);
+            for (const auto& ToSearch : NewlineRange(CompanyNames)) {
+                if (SearchUS.rfind(ToSearch.data, 0, ToSearch.size) == 0) {
+                    const auto ToSearch_Len = ToSearch.size;
                     if (SearchUS.size() > ToSearch_Len && SearchUS[ToSearch_Len] == ' ') {
                         Fill(Stream_General, StreamPos, Parameter_CompanyName, Search.substr(0, ToSearch_Len));
                         Fill(Stream_General, StreamPos, Parameter_Search, Search.substr(ToSearch_Len), true);
@@ -1842,8 +1956,8 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         auto CompanyNameU = CompanyName;
         CompanyNameU.MakeUpperCase();
         auto CompanyNameUS = CompanyNameU.To_UTF8();
-        for (const auto& ToSearch : CompanyNames) {
-            if (CompanyNameUS.size() > 2 && CompanyNameUS == ToSearch) {
+        for (const auto& ToSearch : NewlineRange(CompanyNames)) {
+            if (CompanyNameUS.size() > 2 && !CompanyNameUS.compare(0, CompanyNameUS.size(), ToSearch.data, ToSearch.size)) {
                 for (size_t i = 1; i < CompanyName.size(); i++) {
                     auto& Letter = CompanyNameUS[i];
                     if (Letter >= 'A' && Letter <= 'Z') {
@@ -1863,15 +1977,19 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         if (!Retrieve_Const(Stream_General, StreamPos, Parameter_Name).empty())
             return;
         const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName).To_UTF8();
+        const auto IsSamsung = CompanyName == "Samsung";
+        const auto& Model = Retrieve_Const(Stream_General, StreamPos, Parameter_Model).To_UTF8();
         for (const auto& ToSearch : Model_Name) {
             if (CompanyName == ToSearch.CompanyName) {
                 const auto& Model = Retrieve_Const(Stream_General, StreamPos, Parameter_Model).To_UTF8();
-                for (size_t i = 0; i < ToSearch.Size; i++) {
-                    const auto& ToSearch2 = ToSearch.Find[i];
-                    if (Model == ToSearch2.Find) {
-                        Fill(Stream_General, StreamPos, Parameter_Name, ToSearch2.ReplaceBy);
-                        break;
+                auto Result = Find_Replacement(ToSearch.Find, Model);
+                if (Result.data()) {
+                    string Result2;
+                    if (ToSearch.Prefix) {
+                        Result2 = ToSearch.Prefix;
                     }
+                    Result2.append(Result.data(), Result.size());
+                    Fill(Stream_General, StreamPos, Parameter_Name, Result2);
                 }
                 break;
             }
@@ -2003,15 +2121,11 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName).To_UTF8();
         for (const auto& ToSearch : Model_Replace) {
             if (CompanyName == ToSearch.CompanyName) {
-                const auto& Model = Retrieve_Const(Stream_General, StreamPos, Parameter_Model).To_UTF8();
-                for (size_t i = 0; i < ToSearch.Size; i++) {
-                    const auto& ToSearch2 = ToSearch.Find[i];
-                    if (Model == ToSearch2.Find) {
-                        Fill(Stream_General, StreamPos, Parameter_Model, ToSearch2.ReplaceBy, Unlimited, true, true);
-                        break;
-                    }
+                const auto& Model = Ztring(Retrieve_Const(Stream_General, StreamPos, Parameter_Model)).MakeUpperCase().To_UTF8();
+                auto Result = Find_Replacement(ToSearch.Find, Model);
+                if (Result.data()) {
+                    Fill(Stream_General, StreamPos, Parameter_Model, Result.data(), Result.size(), true, true);
                 }
-                break;
             }
         }
         };
