@@ -2976,6 +2976,9 @@ void File_Mpeg4::meta_iprp_ipma()
         Buffer=meta_iprp_ipco_Buffer;
         Buffer_Offset=0;
         Buffer_Size=meta_iprp_ipco_Buffer_Size;
+        Buffer_Temp=nullptr;
+        Buffer_Temp_Size=0;
+        Buffer_Temp_Size_Max=0;
         File_Offset=0;
         Element_Offset=0;
         Element_Size=Buffer_Size;
