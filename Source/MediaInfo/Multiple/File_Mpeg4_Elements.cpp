@@ -2513,7 +2513,10 @@ void File_Mpeg4::meta_iinf()
     NAME_VERSION_FLAG("Item Information");
 
     //Parsing
-    Skip_B2(                                                    "entry-count");
+    if (Version == 0)
+        Skip_B2(                                                "entry-count");
+    else
+        Skip_B4(                                                "entry-count");
 }
 
 //---------------------------------------------------------------------------
