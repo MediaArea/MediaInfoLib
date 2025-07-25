@@ -1397,7 +1397,7 @@ void File_Jpeg::SOS()
             continue;
         }
         Item.second.IsParsed = true;
-        Data_Size -= File_Size - Item.first;
+        Data_Size -= (IsSub ? Buffer_Size : File_Size) - Item.first;
         Streams_Finish_PerImage();
         Streams_Accept_PerImage(Item.second);
         for (auto& Item2 : Seek_Items) {
