@@ -22,6 +22,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Tag/File_Exif.h"
+#include "MediaInfo/File__MultipleParsing.h"
 #if defined(MEDIAINFO_JPEG_YES)
     #include "MediaInfo/Image/File_Jpeg.h"
 #endif
@@ -2340,17 +2341,14 @@ void File_Exif::Thumbnail()
             }
         }
     }
+    if (!Parser) {
+        Parser.reset(new File__MultipleParsing);
+    }
 
-    if (Parser) {
-        Open_Buffer_Init(Parser.get());
-        Open_Buffer_Continue(Parser.get());
-        Open_Buffer_Finalize(Parser.get());
-        Merge(*Parser, Stream_Image, 0, StreamPos_Last, false);
-    }
-    else {
-        //No parser available, skipping
-        Skip_XX(Element_Size,                                   "(Not parsed)");
-    }
+    Open_Buffer_Init(Parser.get());
+    Open_Buffer_Continue(Parser.get());
+    Open_Buffer_Finalize(Parser.get());
+    Merge(*Parser, Stream_Image, 0, StreamPos_Last, false);
 }
 
 //---------------------------------------------------------------------------
