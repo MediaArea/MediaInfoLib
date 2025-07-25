@@ -107,11 +107,6 @@ static bool IsPresent(const char* Database, const string& ToFind) {
         return true;
     }
 }
-struct ValueView
-{
-    const char* data;
-    size_t size;
-};
 class NewlineRange
 {
 public:
@@ -124,8 +119,8 @@ public:
             update(pos);
         }
 
-        constexpr ValueView operator*() const {
-            return ValueView{ current, static_cast<size_t>(next - current) };
+        constexpr string_view operator*() const {
+            return { current, static_cast<size_t>(next - current) };
         }
 
         Iterator& operator++() {
@@ -165,19 +160,30 @@ private:
 
 //---------------------------------------------------------------------------
 static const char* CompanySuffixes =
+    ".,LTD\n"
+    "5MP\n"
     "AB\n"
     "AG\n"
     "CAMERA\n"
     "CO\n"
     "CO.\n"
+    "CO.,\n"
+    "CO.LTD.\n"
     "COMPANY\n"
     "COMPUTER\n"
     "CORP\n"
     "CORP.\n"
     "CORPORATION\n"
     "CORPORATION.\n"
+    "DIGITAL\n"
+    "DIGITCAM\n"
+    "DSC\n"
+    "ELEC\n"
+    "ELEC.\n"
     "ELECTRIC\n"
     "ELECTRONICS\n"
+    "ENTERTAINMENT\n"
+    "EUROPE\n"
     "FILM\n"
     "FOTOTECHNIC\n"
     "GERMANY\n"
@@ -187,43 +193,60 @@ static const char* CompanySuffixes =
     "INC\n"
     "INC.\n"
     "INTERNATIONAL\n"
+    "KOREA\n"
     "LABORATORIES\n"
     "LIMITED\n"
     "LIVING\n"
     "LTD\n"
     "LTD.\n"
+    "MOBILE\n"
+    "MOBILITY\n"
     "OP\n"
     "OPTICAL\n"
     "PHOTO\n"
+    "PRODUCTS\n"
+    "SOLUTIONS\n"
     "SYSTEMS\n"
     "TECH\n"
     "TECHNOLOGIES\n"
     "TECHNOLOGY\n"
+    "WIRELESS\n"
 ;
 
 //---------------------------------------------------------------------------
 static const char* CompanyNames =
     "ACER\n"
+    "AGFA\n"
+    "AIPTEK\n"
     "APPLE\n"
+    "ASUS\n"
     "ASHAMPOO\n"
-    "CAMERA\n"
+    "BENQ\n"
+    "BUSHNELL\n"
     "CANON\n"
     "CASIO\n"
+    "DIGILIFE\n"
     "EPSON\n"
     "FRAUNHOFER\n"
     "FUJI\n"
     "FUJIFILM\n"
     "GATEWAY\n"
     "GE\n"
+    "GOOGLE\n"
+    "HASSELBLAD\n"
     "HITACHI\n"
+    "HONOR\n"
     "HP\n"
     "HUAWEI\n"
+    "INSTA360\n"
     "JENOPTIK\n"
     "KODAK\n"
     "KONICA\n"
     "KYOCERA\n"
+    "JENOPTIFIED\n"
     "LEGEND\n"
     "LEICA\n"
+    "LUMICRON\n"
     "MAGINON\n"
     "MAGINON\n"
     "MAMIYA\n"
@@ -231,17 +254,22 @@ static const char* CompanyNames =
     "MICROSOFT\n"
     "MINOLTA\n"
     "MOTOROLA\n"
+    "MOULTRIE\n"
     "MUSTEK\n"
     "NIKON\n"
     "NIKON\n"
     "ODYS\n"
     "OLYMPUS\n"
+    "PANTECH\n"
+    "PARROT\n"
     "PENTACON\n"
     "PIONEER\n"
     "POLAROID\n"
     "RECONYX\n"
+    "RED\n"
     "RICOH\n"
     "ROLLEI\n"
+    "SAGEM\n"
     "SAMSUNG\n"
     "SANYO\n"
     "SEALIFE\n"
@@ -249,48 +277,79 @@ static const char* CompanyNames =
     "SIGMA\n"
     "SKANHEX\n"
     "SONY\n"
+    "SUNPLUS\n"
     "SUPRA\n"
+    "T-MOBILE\n"
+    "TESCO\n"
     "TOSHIBA\n"
     "TRAVELER\n"
     "TRUST\n"
+    "VISTAQUEST\n"
     "VIVITAR\n"
+    "VIVO\n"
     "VODAFONE\n"
-    "XIAOYI\n"
+    "XIAOMI\n"
     "YAKUMO\n"
     "YASHICA\n"
     "ZEISS\n"
     "ZJMEDIA\n"
+    "ZTE\n"
 ;
 
 //---------------------------------------------------------------------------
 static const char* CompanyNames_Replace =
-    "AGFAPHOTO;AgfaPhoto\n"
-    "CONCORD;JENOPTIK\n"
+    "AGFA GEVAERT;Agfa\n"
+    "AGFAPHOTO;Agfa\n"
+    "BENQ;BenQ\n"
+    "BENQ-SIEMENS;BenQ\n"
+    "BLACKBERRY;BlackBerry\n"
+    "CAMERA;\n"
+    "CONCORD;Jenoptik\n"
+    "CREATIVE;Creative Labs\n"
     "DEFAULT;\n"
+    "DOCOMO;DoCoMo\n"
     "EASTMAN KODAK;KODAK\n"
     "FLIR SYSTEMS;FLIR\n"
+    "FS-NIKON;Nikon\n"
     "FUJI;FUJIFILM\n"
     "GENERAL;GE\n"
+    "GEDSC;GE\n"
+    "GRANDTECH;Jenoptik\n"
+    "HMD GLOBAL;Nokia\n"
+    "HEWLETT PACKARD;HP\n"
     "HEWLETT-PACKARD;HP\n"
     "JENIMAGE;JENOPTIK\n"
     "JK;Kodak\n"
     "KONICA MINOLTA;Konica Minolta\n"
     "KONICA;Konica Minolta\n"
+    "LG CYON;LG\n"
     "LG MOBILE;LG\n"
+    "LGE;LG\n"
     "MINOLTA;Konica Minolta\n"
     "MOTOROL;MOTOROLA\n"
+    "NORITSU KOKI;Noritsu Koki\n"
     "NTT DOCOMO;DoCoMo\n"
     "OC;OpenCube\n"
-    "OLYMPUS_IMAGING_CORP.;Olympus\n"
+    "OM;Olympus\n"
     "PENTAX RICOH;Ricoh\n"
     "PENTAX;Ricoh\n"
-    "SAMSUNG DIGITAL IMA;SAMSUNG\n"
-    "SAMSUNG TECHWIN;Hanwha Vision\n"
-    "SAMSUNG TECHWIN CO,.;Hanwha Vision\n"
-    "SEIKO EPSON;EPSON\n"
+    "PLA100Z;Polaroid\n"
+    "PRAKTICA;Pentacon\n"
+    "RESEARCH IN MOTION;BlackBerry\n"
+    "SAMSUNG ANYCALL;Samsung\n"
+    "SAMSUNG DIGITAL IMA;Samsung\n"
+    "SAMSUNG TECHWIN;Samsung\n"
+    "SAMSUNG TECHWIN CO,.;Samsung\n"
+    "SONY ERICSSON;Sony Ericsson\n"
+    "SEIKO EPSON;Epson\n"
     "SKANHEX TECHWIN;Skanhex\n"
     "SUPRA / MAGINON;supra / Maginon\n"
+    "T-MOBILE;T-Mobile\n"
+    "TELEDYNE FLIR;FLIR\n"
     "THOMSON GRASS VALLEY;Grass Valley\n"
+    "VIVICAM;Vivitar\n"
+    "WWL;Polaroid\n"
+    "XIAOYI;Xiaomi\n"
 ;
 
 //---------------------------------------------------------------------------
@@ -350,8 +409,8 @@ static const char* Model_Replace_Canon = // Based on https://en.wikipedia.org/wi
 ;
 
 static const char* Model_Replace_OpenCube =
-    "OCTk;Toolkit\n"
-    "Tk;Toolkit\n"
+    "OCTK;Toolkit\n"
+    "TK;Toolkit\n"
 ;
 
 struct FindReplaceCompany_struct {
@@ -3168,7 +3227,10 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
     if (Retrieve_Const(Stream_General, StreamPos, General_Copyright) == Retrieve_Const(Stream_General, StreamPos, General_Encoded_Library_Name)) {
         Clear(Stream_General, StreamPos, General_Copyright);
     }
-    
+    if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName) == Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model)) {
+        Clear(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName);
+    }
+
     // Remove useless characters
     auto RemoveUseless = [&](size_t Parameter) {
         for (;;) {
@@ -3181,6 +3243,10 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
                 continue;
             }
             if (Value.front() == '[' && Value.back() == ']') {
+                Fill(Stream_General, StreamPos, Parameter, Value.substr(1, Value.size() - 2), true);
+                continue;
+            }
+            if (Value.front() == '<' && Value.back() == '>') {
                 Fill(Stream_General, StreamPos, Parameter, Value.substr(1, Value.size() - 2), true);
                 continue;
             }
@@ -3200,6 +3266,10 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
                 Fill(Stream_General, StreamPos, Parameter, Value.substr(22), true);
                 continue;
             }
+            if (Value.rfind(__T("made by "), 0) == 0) {
+                Fill(Stream_General, StreamPos, Parameter, Value.substr(8), true);
+                continue;
+            }
             if (Value.rfind(__T("KODAK EASYSHARE "), 0) == 0) {
                 Fill(Stream_General, StreamPos, Parameter, __T("KODAK EasyShare") + Value.substr(15), true);
                 continue;
@@ -3208,6 +3278,13 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
                 Fill(Stream_General, StreamPos, Parameter, __T("Pentax ") + Value.substr(7), true);
                 Fill(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName, "Ricoh", Unlimited, true, true);
                 continue;
+            }
+            {
+            auto Pos = Value.find(__T("(R)"));
+            if (Pos != string::npos) {
+                Fill(Stream_General, StreamPos, Parameter, Value.substr(0, Pos) + Value.substr(Pos + 3), true);
+                continue;
+            }
             }
             {
             auto Pos = Value.find(__T(" DIGITAL CAMERA"));
@@ -3247,11 +3324,13 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
             break;
         }
     };
-    RemoveUseless(General_Encoded_Hardware_Model);
     RemoveUseless(General_Encoded_Application);
+    RemoveUseless(General_Encoded_Application_CompanyName);
     RemoveUseless(General_Encoded_Application_Name);
     RemoveUseless(General_Encoded_Library);
     RemoveUseless(General_Encoded_Library_Name);
+    RemoveUseless(General_Encoded_Hardware_CompanyName);
+    RemoveUseless(General_Encoded_Hardware_Model);
 
     // Remove company legal suffixes and rename some company trademarks
     auto RemoveLegal = [&](size_t Parameter) {
@@ -3265,13 +3344,15 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
             auto CompanyNameU = CompanyName;
             CompanyNameU.MakeUpperCase();
             for (const auto& CompanySuffix : NewlineRange(CompanySuffixes)) {
-                auto len = CompanySuffix.size;
+                auto len = CompanySuffix.size();
+                auto CompanySuffixU = Ztring().From_UTF8(CompanySuffix.data(), len);
+                len++;
                 if (len < CompanyNameU.size() - 1
-                    && (CompanyNameU[CompanyNameU.size() - (len + 1)] == ' '
-                        || CompanyNameU[CompanyNameU.size() - (len + 1)] == ','
-                        || CompanyNameU[CompanyNameU.size() - (len + 1)] == '-' )
-                    && CompanyNameU.find(Ztring().From_UTF8(CompanySuffix.data, len), CompanyNameU.size() - len) != string::npos) {
-                    len++;
+                    && (CompanyNameU[CompanyNameU.size() - len] == ' '
+                        || CompanyNameU[CompanyNameU.size() - len] == ','
+                        || CompanyNameU[CompanyNameU.size() - len] == '_'
+                        || CompanyNameU[CompanyNameU.size() - len] == '-')
+                    && CompanyNameU.find(CompanySuffixU, CompanyNameU.size() - len) != string::npos) {
                     if (len < CompanyName.size() && CompanyName[CompanyName.size() - (len + 1)] == ',') {
                         len++;
                     }
@@ -3279,8 +3360,29 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
                     DoAgain = true;
                     break;
                 }
+                if (CompanyNameU == CompanySuffixU) {
+                    Clear(Stream_General, StreamPos, Parameter);
+                }
             }
         } while (DoAgain);
+
+        {
+            const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter);
+            auto CompanyNameU = CompanyName;
+            CompanyNameU.MakeUpperCase();
+            if (CompanyNameU.size() > 8
+                && CompanyNameU[0] == '('
+                && CompanyNameU[1] == 'C'
+                && CompanyNameU[2] == ')'
+                && CompanyNameU[3] == ' '
+                && IsAsciiDigit(CompanyNameU[4])
+                && IsAsciiDigit(CompanyNameU[5])
+                && IsAsciiDigit(CompanyNameU[6])
+                && IsAsciiDigit(CompanyNameU[7])
+                && CompanyNameU[8] == ' ') {
+                Fill(Stream_General, StreamPos, Parameter, CompanyName.substr(9), true);
+            }
+        }
 
         const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter);
         auto CompanyNameU = CompanyName;
@@ -3319,7 +3421,7 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         NameU.MakeUpperCase();
         for (const auto& VersionPrefix : NewlineRange(VersionPrefixes)) {
             Ztring Prefix;
-            Prefix.From_UTF8(VersionPrefix.data, VersionPrefix.size);
+            Prefix.From_UTF8(VersionPrefix.data(), VersionPrefix.size());
             auto Prefix_Pos = NameU.rfind(Prefix);
             auto Prefix_Pos_End = Prefix_Pos + Prefix.size();
             if (Prefix_Pos != string::npos
@@ -3327,6 +3429,7 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
                 || Prefix.front() == ','
                 || NameU[Prefix_Pos - 1] == ' ')
              && Prefix_Pos_End != NameU.size()
+             && (VersionPrefix.size() > 1 || NameU.find_first_of(__T(".-_")) != string::npos)
              && (NameU[Prefix_Pos_End] == '.'
                 || NameU[Prefix_Pos_End] == ' '
                 || (NameU[Prefix_Pos_End] >= '0' && NameU[Prefix_Pos_End] <= '9'))) {
@@ -3345,9 +3448,10 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
             auto Space_Pos = NameU.find(' ');
             auto Dot_Pos = NameU.find('.');
             auto Digit_Pos = NameU.find_first_of(__T("0123456789"));
+            auto NotDigit_Pos = NameU.find_first_not_of(__T("0123456789"));
             auto Letter_Pos = NameU.find_first_not_of(__T("0123456789."));
             if (Space_Pos == string::npos
-                && (Dot_Pos != string::npos || Letter_Pos == string::npos)
+                && (Dot_Pos != string::npos || (Letter_Pos == string::npos && NotDigit_Pos != string::npos))
                 && ((Digit_Pos != string::npos && Digit_Pos > Dot_Pos)
                     || (Letter_Pos == string::npos || Letter_Pos > Dot_Pos)
                     || (Digit_Pos <= 1))) {
@@ -3416,9 +3520,6 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
             }
         }
     }
-    MoveVersion(General_Encoded_Hardware_Model, General_Encoded_Hardware_Version);
-    MoveVersion(General_Encoded_Hardware_Name, General_Encoded_Hardware_Version);
-    MoveVersion(General_Encoded_Hardware, General_Encoded_Hardware_Version, General_Encoded_Hardware_Name);
     MoveVersion(General_Encoded_Library_Name, General_Encoded_Library_Version);
     MoveVersion(General_Encoded_Library, General_Encoded_Library_Version, General_Encoded_Library_Name);
     MoveVersion(General_Encoded_Application_Name, General_Encoded_Application_Version);
@@ -3439,12 +3540,24 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         else {
             auto SearchUS = SearchU.To_UTF8();
             for (const auto& ToSearch : NewlineRange(CompanyNames)) {
-                if (SearchUS.rfind(ToSearch.data, 0, ToSearch.size) == 0) {
-                    const auto ToSearch_Len = ToSearch.size;
-                    if (SearchUS.size() > ToSearch_Len && SearchUS[ToSearch_Len] == ' ') {
-                        Fill(Stream_General, StreamPos, Parameter_CompanyName, Search.substr(0, ToSearch_Len));
-                        Fill(Stream_General, StreamPos, Parameter_Search, Search.substr(ToSearch_Len), true);
+                if (SearchUS.rfind(ToSearch.data(), 0, ToSearch.size()) == 0) {
+                    const auto ToSearch_Len = ToSearch.size();
+                    if (SearchUS.size() > ToSearch_Len
+                        && (SearchUS[ToSearch_Len] == ' '
+                        || SearchUS[ToSearch_Len] == '_')) {
+                        auto CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName);
+                        CompanyName.MakeUpperCase();
+                        auto CompanyName2 = Ztring(Search.substr(0, ToSearch_Len));
+                        CompanyName2.MakeUpperCase();
+                        if (CompanyName2 != CompanyName) {
+                            Fill(Stream_General, StreamPos, Parameter_CompanyName, Search.substr(0, ToSearch_Len));
+                        }
+                        Fill(Stream_General, StreamPos, Parameter_Search, Search.substr(ToSearch_Len + 1), true);
                         break;
+                    }
+                    if (!SearchUS.compare(0, SearchUS.size(), ToSearch.data(), ToSearch.size())) {
+                        Fill(Stream_General, StreamPos, Parameter_CompanyName, Search);
+                        Clear(Stream_General, StreamPos, Parameter_Search);
                     }
                 }
             }
@@ -3464,7 +3577,11 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         CompanyNameU.MakeUpperCase();
         auto CompanyNameUS = CompanyNameU.To_UTF8();
         for (const auto& ToSearch : NewlineRange(CompanyNames)) {
-            if (CompanyNameUS.size() > 2 && !CompanyNameUS.compare(0, CompanyNameUS.size(), ToSearch.data, ToSearch.size)) {
+            if (CompanyNameUS.size() > 3 && !CompanyNameUS.compare(0, CompanyNameUS.size(), ToSearch.data(), ToSearch.size())) {
+                auto Result = Find_Replacement(CompanyNames_Replace, CompanyNameUS);
+                if (Result.data()) {
+                    break;
+                }
                 for (size_t i = 1; i < CompanyName.size(); i++) {
                     auto& Letter = CompanyNameUS[i];
                     if (Letter >= 'A' && Letter <= 'Z') {
