@@ -204,21 +204,11 @@ static const char* Tiff_ExtraSamples_ColorSpace(int32u ExtraSamples)
 //---------------------------------------------------------------------------
 void File_Tiff::Streams_Finish()
 {
-    if (Infos.find(0) != Infos.end() && Infos[0].find(0xC612) != Infos[0].end())
+    if (Infos.find(0) != Infos.end() && Infos[0].find(0xC612) != Infos[0].end()) {
         Fill(Stream_General, 0, General_Format, "DNG");
-    if (Infos.find(2) != Infos.end()) {
-        auto compression = Infos[2].find(Tiff_Tag::Compression);
-        if (compression != Infos[2].end() && compression->second.Read().To_int16u() == 0x8799)
-            Fill(Stream_General, 0, General_Format, "NEF");
-        if (compression != Infos[2].end() && compression->second.Read().To_int16u() == 0x1 && Retrieve_Const(Stream_General, 0, "Quality") == __T("NRW"))
-            Fill(Stream_General, 0, General_Format, "NRW");
     }
     if (Retrieve_Const(Stream_General, 0, General_Format).empty()) {
-        const auto FileExt{ Retrieve_Const(Stream_General, 0, General_FileExtension) };
-        if (FileExt == __T("arw") || FileExt == __T("ARW"))
-            Fill(Stream_General, 0, General_Format, "ARW");
-        else
-            Fill(Stream_General, 0, General_Format, "TIFF");
+        Fill(Stream_General, 0, General_Format, "TIFF");
     }
 
     infos::iterator Info;
@@ -288,18 +278,6 @@ void File_Tiff::Streams_Finish()
             int32u Value = Info->second.Read().To_int32u();
             Fill(Stream_Image, StreamPos_Current, Image_ColorSpace, Tiff_PhotometricInterpretation_ColorSpace(Value));
             //Note: should we differeniate between raw RGB and palette (also RGB actually...)
-        }
-
-        if (Retrieve_Const(Stream_General, 0, General_Format) == __T("TIFF")) {
-            //Make
-            Info = Infos[0].find(Tiff_Tag::Make);
-            if (Info != Infos[0].end())
-                Fill(Stream_General, 0, General_Encoded_Application_CompanyName, Info->second.Read()); // TODO: if this is removed, we lose some info in the displayed string when there are several sources for application name (TIFF, Exif, XMP...)
-
-            //Model
-            Info = Infos[0].find(Tiff_Tag::Model);
-            if (Info != Infos[0].end())
-                Fill(Stream_General, 0, General_Encoded_Library_Name, Info->second.Read()); // TODO: if this is removed, we lose some info in the displayed string when there are several sources for application name (TIFF, Exif, XMP...)
         }
 
         //XResolution

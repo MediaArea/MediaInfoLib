@@ -1536,7 +1536,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "PSD;;;I;Psd;Photoshop File Format;psd;image/psd;http://www.adobe.com/;Lossless\n"
     "RIFF Palette;;;I;Riff;RIFF Palette\n"
     "RLE;;;I;;Run-length encoding;rle\n"
-    "TIFF;;;I;Tiff;Tag Image File Format;tiff tif;image/tiff\n"
+    "TIFF;;;I;Tiff;Tag Image File Format;3fr arw cr2 dcr erf exif kdc mef mos nef nrw pef sr2 srf srw tiff tif;image/tiff\n"
     "TGA;;;I;Tga;;tga;image/tga\n"
     "7-Zip;;;C;7z;;7z;;http://7-zip.org\n"
     "ACE;;;C;Ace;;ace;;http://winace.com\n"

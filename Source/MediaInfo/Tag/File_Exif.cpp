@@ -1520,12 +1520,18 @@ void File_Exif::Streams_Finish()
         if (Value.empty()) {
             Value = Item.second.size() == 1 ? Item.second.front() : Item.second.Read();
         }
+        if (Value.empty()) {
+            return;
+        }
         if (Parameter) {
             if (Parameter != (size_t)-1) {
                 Fill(Stream_General, 0, Parameter, Value);
             }
         }
         else if (ParameterC) {
+            if (Retrieve_Const(Stream_General, 0, ParameterC) == Value) {
+                return;
+            }
             Fill(Stream_General, 0, ParameterC, Value);
             if (!Unit.empty()) {
                 Fill_SetOptions(Stream_General, 0, ParameterC, "N NF");
@@ -2122,7 +2128,33 @@ void File_Exif::Header_Parse()
         #else //MEDIAINFO_TRACE
         Header_Fill_Code(IfdItems.begin()->second.Tag);
         #endif //MEDIAINFO_TRACE
-        Header_Fill_Size(static_cast<int64u>(Exif_Type_Size(IfdItems.begin()->second.Type)) * IfdItems.begin()->second.Count);
+        auto SizePerBlock = Exif_Type_Size(IfdItems.begin()->second.Type);
+        auto Size = static_cast<int64u>(SizePerBlock) * IfdItems.begin()->second.Count;
+        if (IfdItems.size() > 1) {
+            // Found buggy IFD with 2 items having the right size but the second item has a buggy offset
+            auto Next = IfdItems.begin();
+            ++Next;
+            auto MaxSize = Next->first - IfdItems.begin()->first;
+            if (Size > MaxSize) {
+                bool IsCurated = false;
+                if (IfdItems.size() > 2) {
+                    auto Size1 = static_cast<int64u>(Exif_Type_Size(Next->second.Type)) * Next->second.Count;
+                    auto Next2 = Next;
+                    ++Next2;
+                    auto MaxSize2 = Next2->first - IfdItems.begin()->first;
+                    if (Size + Size1 == MaxSize2) {
+                        IfdItems[IfdItems.begin()->first + Size] = Next->second;
+                        IfdItems.erase(Next->first);
+                        IsCurated = true;
+                    }
+                }
+                if (!IsCurated) {
+                    Size = MaxSize;
+                    IfdItems.begin()->second.Count = Size / SizePerBlock;
+                }
+            }
+        }
+        Header_Fill_Size(Size);
         return;
     }
 
@@ -2164,6 +2196,11 @@ void File_Exif::Header_Parse()
     if (NrOfDirectories <= 0x100) { // 
         Size += 12 * static_cast<int64u>(NrOfDirectories); // 12 bytes per directory
         Size += static_cast<int64u>(currentIFD != Kind_MakernoteSony) << 2; // 4 bytes for next IFD offset, Sony Makernote IFD does not have offset to next IFD
+        if (currentIFD != Kind_MakernoteSony && Size < Element_Size) { //TODO: when directory is not in full 
+            if (Buffer[Buffer_Offset + (size_t)Size - (LittleEndian ? 1 : 4)]) {
+                Size -= 4;
+            }
+        }
     }
     Header_Fill_Size(Size);
 }
@@ -2188,7 +2225,7 @@ void File_Exif::Data_Parse()
             int32u IFDOffset{};
             while (Element_Size - Element_Offset >= 12)
                 Read_Directory();
-            if (Element_Size && currentIFD != Kind_MakernoteSony) // Sony Makernote IFD does not have offset to next IFD
+            if (Element_Offset < Element_Size) // Some IFD does not have offset to next IFD
                 Get_IFDOffset(currentIFD == Kind_IFD0 ? Kind_IFD1 : currentIFD == Kind_IFD1 ? Kind_IFD2 : currentIFD == Kind_MPF ? Kind_MPF : (int8u)-1);
         }
     }
@@ -2295,7 +2332,10 @@ void File_Exif::Read_Directory()
     {
         int32u IFDOffset;
         Get_X4 (IFDOffset,                                      "IFD offset");
-        if (IFDOffset) // Offset cannot be zero. Zero usually means no data.
+        auto IFDBase = (IsSub ? 0 : File_Offset) + (Buffer_Offset - OffsetFromContainer);
+        auto IsInsideDirectory = IFDOffset >= IFDBase && IFDOffset < IFDBase + Element_Size;
+        if (IFDOffset // Offset cannot be zero. Zero usually means no data.
+            && !IsInsideDirectory)  // Offset can not be inside the directory
             IfdItems[IFDOffset] = IfdItem;
         auto End = IFDOffset + Size;
         if (ExpectedFileSize < End)
