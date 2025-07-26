@@ -234,6 +234,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Dds.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Dpx.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Exr.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_GainMap.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Pcx.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Psd.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Tga.cpp" />
@@ -566,6 +567,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Dds.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Dpx.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Exr.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_GainMap.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Pcx.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Psd.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Tga.h" />

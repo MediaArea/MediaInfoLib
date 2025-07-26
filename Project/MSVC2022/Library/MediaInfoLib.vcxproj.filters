@@ -881,6 +881,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Iim.cpp">
       <Filter>Source Files\Tag</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_GainMap.cpp">
+      <Filter>Source Files\Image</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\ThirdParty\fmt\format.cc">
       <Filter>ThirdParty\fmt</Filter>
     </ClCompile>
@@ -1659,6 +1662,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Iim.h">
       <Filter>Header Files\Tag</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_GainMap.h">
+      <Filter>Header Files\Image</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
