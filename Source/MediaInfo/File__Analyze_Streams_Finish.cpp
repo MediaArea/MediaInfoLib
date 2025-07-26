@@ -315,7 +315,7 @@ static const char* CompanyNames_Replace =
     "GENERAL;GE\n"
     "GEDSC;GE\n"
     "GRANDTECH;Jenoptik\n"
-    "HMD GLOBAL;Nokia\n"
+    "HMD GLOBAL;HMD\n"
     "HEWLETT PACKARD;HP\n"
     "HEWLETT-PACKARD;HP\n"
     "JENIMAGE;JENOPTIK\n"
@@ -3603,14 +3603,30 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName).To_UTF8();
         const auto& Model = Retrieve_Const(Stream_General, StreamPos, Parameter_Model).To_UTF8();
         if (CompanyName == "Samsung") {
-            auto space = Model.find("Galaxy ");
-            if (space != string::npos) {
+            if (Model.find("Galaxy ") == 0) {
+                Fill(Stream_General, StreamPos, Parameter_Name, Model);
+                Clear(Stream_General, StreamPos, Parameter_Model);
+            }
+        }
+        if (CompanyName == "HMD") {
+            if (Model.find("TA-") == string::npos) {
                 Fill(Stream_General, StreamPos, Parameter_Name, Model);
                 Clear(Stream_General, StreamPos, Parameter_Model);
             }
         }
     };
     ModelToName(General_Encoded_Hardware_CompanyName, General_Encoded_Hardware_Model, General_Encoded_Hardware_Name);
+
+    // Special case
+    auto Special = [&](size_t Parameter_CompanyName, size_t Parameter_Name) {
+        const auto& CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName).To_UTF8();
+        const auto& Name = Retrieve_Const(Stream_General, StreamPos, Parameter_Name).To_UTF8();
+        if (CompanyName == "HMD" && Name.find("Nokia ") == 0) {
+            Fill(Stream_General, StreamPos, Parameter_CompanyName, Name.substr(0, 5), true, true);
+            Fill(Stream_General, StreamPos, Parameter_Name, Name.substr(6), true, true);
+        }
+    };
+    Special(General_Encoded_Hardware_CompanyName, General_Encoded_Hardware_Name);
 
     // Model name
     auto FillModelName = [&](size_t Parameter_CompanyName, size_t Parameter_Model, size_t Parameter_Name) {
