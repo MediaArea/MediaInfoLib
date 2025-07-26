@@ -125,9 +125,11 @@ Wave;;;A;Riff;;act at9 wav;audio/vnd.wave;;
 Wave64;;;A;Riff;;w64;;;
 WavPack;;;A;Wvpk;;wv wvc;;http://www.wavpack.com;
 Arri Raw;;;I;ArriRaw;;ari;;;
+ARW;;;I;Tiff;Sony Alpha RAW;arw;image/x-sony-arw;http://www.sony.com/;
 Bitmap;;;I;Bmp;;bmp bms;image/bmp;;Lossless
 BPG;;;I;Bpg;Better Portable Graphics;bpg;image/bpg;http://bellard.org/bpg/;
 DDS;;;I;Dds;DirectDraw Surface;dds;;;
+DNG;;;I;Tiff;Digital Negative;dng;image/x-adobe-dng;http://www.adobe.com/;
 DPX;;;I;Dpx;;dpx cin;;;Lossless
 EXR;;;I;Exr;;exr;;;Lossless
 DIB;;;I;Riff;RIFF Device Independent Bitmap;;;;Lossless
@@ -138,12 +140,14 @@ JPEG;;;I;Jpeg;;h3d jpeg jpg jpe jps mpo;image/jpeg;;Lossy
 JPEG 2000;;;I;Jpeg;;jp2 jph j2c j2k jhc;image/jp2;http://www.morgan-multimedia.com/JPEG 2000/;
 LZ77;;;I;;;;;;
 MNG;;;I;Mng;Multiple-Image Network Graphic;mng;;;Lossless
+NEF;;;I;Tiff;Nikon Electronic Format;nef;image/x-nikon-nef;http://www.nikon.com/;
+NRW;;;I;Tiff;Nikon RAW;nrw;image/x-nikon-nrw;http://www.nikon.com/;
 PCX;;;I;pcx;Personal Computer eXchange;pcx;image/pcx;;Lossless
 PNG;;;I;Png;Portable Network Graphic;png pns;image/png;;Lossless
 PSD;;;I;Psd;Photoshop File Format;psd;image/psd;http://www.adobe.com/;Lossless
 RIFF Palette;;;I;Riff;RIFF Palette;;;;
 RLE;;;I;;Run-length encoding;rle;;;
-TIFF;;;I;Tiff;;tiff tif;image/tiff;;
+TIFF;;;I;Tiff;Tag Image File Format;3fr arw cr2 dcr erf exif kdc mef mos nef nrw pef sr2 srf srw tiff tif;image/tiff;;
 TGA;;;I;Tga;;tga;image/tga;;
 7-Zip;;;C;7z;;7z;;http://7-zip.org;
 ACE;;;C;Ace;;ace;;http://winace.com;
