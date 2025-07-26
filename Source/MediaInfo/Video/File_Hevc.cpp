@@ -364,6 +364,14 @@ void File_Hevc::Streams_Fill()
     if (chroma_sample_loc_type_bottom_field != (int32u)-1 && chroma_sample_loc_type_bottom_field != chroma_sample_loc_type_top_field)
         Fill(Stream_Video, 0, "ChromaSubsampling_Position", __T("Type ") + Ztring::ToZtring(chroma_sample_loc_type_bottom_field));
     }
+    if (ambient_viewing_environment_illuminance && !ambient_viewing_environment_illuminance_string.empty()) {
+        Fill(Stream_Video, 0, "AmbientViewingEnvironment_Illuminance", ambient_viewing_environment_illuminance);
+        Fill_SetOptions(Stream_Video, 0, "AmbientViewingEnvironment_Illuminance", "N NF");
+        Fill(Stream_Video, 0, "AmbientViewingEnvironment_Illuminance/String", ambient_viewing_environment_illuminance_string);
+    }
+    if (!ambient_viewing_environment_chromaticity.empty()) {
+        Fill(Stream_Video, 0, "AmbientViewingEnvironment_Chromaticity", ambient_viewing_environment_chromaticity);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -2562,6 +2570,7 @@ void File_Hevc::sei_message(int32u &seq_parameter_set_id)
         case 137 :   sei_message_mastering_display_colour_volume(); break;
         case 144 :   sei_message_light_level(); break;
         case 147 :   sei_alternative_transfer_characteristics(); break;
+        case 148 :   sei_ambient_viewing_environment(); break;
         case 176 :   three_dimensional_reference_displays_info(payloadSize); break;
         default :
                     Element_Info1("unknown");
@@ -3729,6 +3738,15 @@ void File_Hevc::sei_alternative_transfer_characteristics()
 
     //Parsing
     Get_B1(preferred_transfer_characteristics,                  "preferred_transfer_characteristics"); Param_Info1(Mpegv_transfer_characteristics(preferred_transfer_characteristics));
+}
+
+//---------------------------------------------------------------------------
+void File_Hevc::sei_ambient_viewing_environment()
+{
+    Element_Info1("ambient_viewing_environment");
+
+    //Parsing
+    Get_AmbientViewingEnvironment(ambient_viewing_environment_illuminance, ambient_viewing_environment_illuminance_string, ambient_viewing_environment_chromaticity);
 }
 
 //---------------------------------------------------------------------------

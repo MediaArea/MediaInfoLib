@@ -604,7 +604,7 @@ void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_Col
 #endif
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MATROSKA_YES) || defined(MEDIAINFO_MXF_YES)
+#if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_MXF_YES)
 struct masteringdisplaycolorvolume_values
 {
     int8u Code; //ISO code
@@ -692,6 +692,58 @@ void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_Col
                                   +__T(" cd/m2, max: ")+Ztring::ToZtring(((float64)Meta.Luminance[1])/Luminance_Max_Ratio, ((float64)Meta.Luminance[1]/Luminance_Max_Ratio-Meta.Luminance[1]/Luminance_Max_Ratio==0)?0:4)
                                   +__T(" cd/m2");
     }
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES)
+void File__Analyze::Get_AmbientViewingEnvironment(float64& AmbientViewingEnvironment_Illuminance, Ztring& AmbientViewingEnvironment_Illuminance_string, Ztring& AmbientViewingEnvironment_Chromaticity)
+{
+    struct ambientviewingenvironmentchromaticity_values {
+        int16u Values_x;
+        int16u Values_y;
+        string Name;        // standard illuminant name
+    };
+    static const ambientviewingenvironmentchromaticity_values AmbientViewingEnvironmentChromaticity_Values[]{
+        { 15635, 16450, "D65" },
+        { 14155, 14855, "D93" },
+    };
+    static const int8u AmbientViewingEnvironmentChromaticity_Values_Size = sizeof(AmbientViewingEnvironmentChromaticity_Values) / sizeof(AmbientViewingEnvironmentChromaticity_Values[0]);
+
+    //Parsing
+    int32u ambient_illuminance;
+    int16u ambient_light_x, ambient_light_y;
+    float64 ambient_illuminance_f;
+    Ztring ambient_illuminance_s, ambient_light_x_s, ambient_light_y_s;
+
+    Get_B4(ambient_illuminance,                                 "ambient_illuminance");
+    ambient_illuminance_f = ambient_illuminance * 0.0001;
+    ambient_illuminance_s = Ztring::ToZtring(ambient_illuminance_f, 4) + __T(" lux");
+    Param_Info1(ambient_illuminance_s);
+
+    Get_B2(ambient_light_x,                                     "ambient_light_x");
+    ambient_light_x_s = Ztring::ToZtring(ambient_light_x * 0.00002, 5);
+    Param_Info1(ambient_light_x_s);
+
+    Get_B2(ambient_light_y,                                     "ambient_light_y");
+    ambient_light_y_s = Ztring::ToZtring(ambient_light_y * 0.00002, 5);
+    Param_Info1(ambient_light_y_s);
+
+    FILLING_BEGIN_PRECISE();
+        AmbientViewingEnvironment_Illuminance = ambient_illuminance_f;
+        AmbientViewingEnvironment_Illuminance_string = ambient_illuminance_s;
+        for (int8u i = 0; i < AmbientViewingEnvironmentChromaticity_Values_Size; ++i) {
+            // +/- 0.00005 (4 digits after comma)
+            if (ambient_light_x > AmbientViewingEnvironmentChromaticity_Values[i].Values_x - 3 && ambient_light_x < AmbientViewingEnvironmentChromaticity_Values[i].Values_x + 3
+                && ambient_light_y > AmbientViewingEnvironmentChromaticity_Values[i].Values_y - 3 && ambient_light_y < AmbientViewingEnvironmentChromaticity_Values[i].Values_y + 3) {
+                AmbientViewingEnvironment_Chromaticity = Ztring().From_UTF8(AmbientViewingEnvironmentChromaticity_Values[i].Name);
+            }
+        }
+        if (AmbientViewingEnvironment_Chromaticity.empty()) {
+            AmbientViewingEnvironment_Chromaticity = __T("x=") + ambient_light_x_s + __T(", y=") + ambient_light_y_s;
+        }
+        Element_Info1(AmbientViewingEnvironment_Illuminance_string + __T(", ") + AmbientViewingEnvironment_Chromaticity);
+    FILLING_END();
 }
 #endif
 
