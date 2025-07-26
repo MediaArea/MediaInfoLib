@@ -1030,9 +1030,9 @@ void File__Analyze::Get_SMPTE_ST_2094_40(int8u& application_version, bool& IsHDR
             Element_Begin1("window");
             for(int8u i=0; i<3; i++)
             {
-                Get_S3 (17, maxscl[i],                          "maxscl"); Param_Info2(Ztring::ToZtring(((float)maxscl[i])/100000, 5), " cd/m2");
+                Get_S3 (17, maxscl[i],                          "maxscl");          Param_Info2(Ztring::ToZtring(((float)maxscl[i])/10, 1), " cd/m2");
             }
-            Get_S3 (17, maxscl[3],                              "average_maxrgb");   Param_Info2(Ztring::ToZtring(((float)maxscl[3])/ 100000, 5), " cd/m2");
+            Get_S3 (17, maxscl[3],                              "average_maxrgb");  Param_Info2(Ztring::ToZtring(((float)maxscl[3])/10, 1), " cd/m2");
 
             Get_S1(4, num_distribution_maxrgb_percentiles,      "num_distribution_maxrgb_percentiles");
             for (int8u i=0; i< num_distribution_maxrgb_percentiles; i++)
