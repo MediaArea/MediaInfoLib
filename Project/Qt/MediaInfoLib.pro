@@ -130,6 +130,7 @@ HEADERS += \
         ../../Source/MediaInfo/Image/File_Exr.h \
         ../../Source/MediaInfo/Image/File_Gif.h \
         ../../Source/MediaInfo/Image/File_Ico.h \
+        ../../Source/MediaInfo/Image/File_GainMap.h \
         ../../Source/MediaInfo/Image/File_Jpeg.h \
         ../../Source/MediaInfo/Image/File_Pcx.h \
         ../../Source/MediaInfo/Image/File_Png.h \
@@ -373,6 +374,7 @@ SOURCES += \
         ../../Source/MediaInfo/Image/File_Exr.cpp \
         ../../Source/MediaInfo/Image/File_Gif.cpp \
         ../../Source/MediaInfo/Image/File_Ico.cpp \
+        ../../Source/MediaInfo/Image/File_GainMap.cpp \
         ../../Source/MediaInfo/Image/File_Jpeg.cpp \
         ../../Source/MediaInfo/Image/File_Pcx.cpp \
         ../../Source/MediaInfo/Image/File_Png.cpp \

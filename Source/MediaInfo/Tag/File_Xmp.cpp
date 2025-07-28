@@ -112,12 +112,25 @@ namespace MediaInfoLib
             XML_ELEMENT_START \
             XML_ELEMENT("rdf:li") \
 
+#define XML_ELEMENT_LIST_END \
+                ++count; \
+            XML_ELEMENT_END \
+
 #define XML_ELEMENT_LIST_NAMESPACE(NAMESPACE, NAME, LISTTYPE) \
         XML_ELEMENT(NAME) \
             XML_ELEMENT_START \
             XML_ELEMENT_LIST(LISTTYPE) \
                 XML_VALUE \
                 NAMESPACE(NAME, tfsxml_decode(v)); \
+            XML_ELEMENT_LIST_END \
+            XML_ELEMENT_END \
+
+#define XML_ELEMENT_LIST_NAMESPACE_COUNT(NAMESPACE, NAME, LISTTYPE) \
+        XML_ELEMENT(NAME) \
+            XML_ELEMENT_START \
+            XML_ELEMENT_LIST(LISTTYPE) \
+                XML_VALUE \
+                NAMESPACE(NAME, tfsxml_decode(v), count); \
             XML_ELEMENT_LIST_END \
             XML_ELEMENT_END \
 
@@ -145,10 +158,6 @@ namespace MediaInfoLib
 #define XML_ATTRIBUTE_END \
         } \
     } \
-
-#define XML_ELEMENT_LIST_END \
-                ++count; \
-            XML_ELEMENT_END \
 
 //***************************************************************************
 // Buffer - File header
@@ -209,6 +218,7 @@ bool File_Xmp::FileHeader_Begin()
                 pdfaid_conformance = tfsxml_decode(v);
             XML_ATTRIBUTE_NAMESPACE(exif)
             XML_ATTRIBUTE_NAMESPACE(GIMP)
+            XML_ATTRIBUTE_NAMESPACE(hdrgm)
             XML_ATTRIBUTE_NAMESPACE(pdf)
             XML_ATTRIBUTE_NAMESPACE(photoshop)
             XML_ATTRIBUTE_NAMESPACE(xmp)
@@ -315,6 +325,11 @@ bool File_Xmp::FileHeader_Begin()
                         XML_ELEMENT_END
                     XML_ELEMENT_END
                 }
+            XML_ELEMENT_LIST_NAMESPACE_COUNT(hdrgm, "hdrgm:GainMapMin", "rdf:Seq")
+            XML_ELEMENT_LIST_NAMESPACE_COUNT(hdrgm, "hdrgm:GainMapMax", "rdf:Seq")
+            XML_ELEMENT_LIST_NAMESPACE_COUNT(hdrgm, "hdrgm:Gamma", "rdf:Seq")
+            XML_ELEMENT_LIST_NAMESPACE_COUNT(hdrgm, "hdrgm:OffsetSDR", "rdf:Seq")
+            XML_ELEMENT_LIST_NAMESPACE_COUNT(hdrgm, "hdrgm:OffsetHDR", "rdf:Seq")
             XML_ELEMENT("pdfaid:part")
                 XML_VALUE
                 pdfaid_part = tfsxml_decode(v);
@@ -392,6 +407,34 @@ void File_Xmp::GIMP(const string& name, const string& value)
         Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, value);
     if (name == "GIMP:Version")
         gimp_version = value;
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::hdrgm(const string& name, const string& value, const int count)
+{
+    if (!GainMapData || count >= 3)
+        return;
+
+    if (count >= 1)
+        GainMapData->Multichannel = true;
+    if (name == "hdrgm:Version")
+        GainMapData->Version = value;
+    if (name == "hdrgm:BaseRenditionIsHDR")
+        GainMapData->BaseRenditionIsHDR = (value == "True" ? true : false);
+    if (name == "hdrgm:HDRCapacityMin")
+        GainMapData->HDRCapacityMin = Ztring(value.c_str()).To_float32();
+    if (name == "hdrgm:HDRCapacityMax")
+        GainMapData->HDRCapacityMax = Ztring(value.c_str()).To_float32();
+    if (name == "hdrgm:GainMapMin")
+        GainMapData->GainMapMin[count] = Ztring(value.c_str()).To_float32();
+    if (name == "hdrgm:GainMapMax")
+        GainMapData->GainMapMax[count] = Ztring(value.c_str()).To_float32();
+    if (name == "hdrgm:Gamma")
+        GainMapData->Gamma[count] = Ztring(value.c_str()).To_float32();
+    if (name == "hdrgm:OffsetSDR")
+        GainMapData->OffsetSDR[count] = Ztring(value.c_str()).To_float32();
+    if (name == "hdrgm:OffsetHDR")
+        GainMapData->OffsetHDR[count] = Ztring(value.c_str()).To_float32();
 }
 
 //---------------------------------------------------------------------------

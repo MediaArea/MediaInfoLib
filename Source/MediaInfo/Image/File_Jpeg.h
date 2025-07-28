@@ -176,6 +176,7 @@ private :
     void APP1_XMP_Extension();
     void APP2();
     void APP2_ICC_PROFILE();
+    void APP2_ISO21496_1();
     void APP2_MPF();
     void APP3() {Skip_XX(Element_Size, "Data");}
     void APP4() {Skip_XX(Element_Size, "Data");}
@@ -223,6 +224,8 @@ private :
     string Seek_Items_PrimaryImageType;
     std::map<int64u, seek_item> Seek_Items;
     std::map<int64u, seek_item> Seek_Items_WithoutFirstImageOffset;
+    std::shared_ptr<void> GainMap_metadata_Adobe;
+    std::shared_ptr<void> GainMap_metadata_ISO;
     std::unique_ptr<File__Analyze> Exif_Parser;
     std::unique_ptr<File__Analyze> PSD_Parser;
     std::unique_ptr<File__Analyze> ICC_Parser;

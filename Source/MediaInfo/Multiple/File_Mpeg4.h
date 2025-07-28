@@ -14,6 +14,7 @@
 #include "MediaInfo/File__HasReferences.h"
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/Multiple/File_Mpeg4_Descriptors.h"
+#include <memory>
 class File_MpegPs;
 //---------------------------------------------------------------------------
 
@@ -350,7 +351,6 @@ private :
     void moov_udta_AllF();
     void moov_udta_chpl();
     void moov_udta_clsf();
-    void moov_udta_cprt();
     void moov_udta_date();
     void moov_udta_DcMD();
     void moov_udta_DcMD_Cmbo();
@@ -416,9 +416,6 @@ private :
     void wide();
 
     //Helpers
-    bool Element_Level_Get();
-    bool Element_Name_Get();
-    bool Element_Size_Get();
     Ztring Language_Get(int16u Language);
     bool IsQt();
     enum method
@@ -691,6 +688,7 @@ private :
             IsCaption=false;
             MayHaveCaption=false;
             tkhd_Found=false;
+            TrackID = 0;
             CleanAperture_Width=0;
             CleanAperture_Height=0;
             CleanAperture_PixelAspectRatio=0;
@@ -766,6 +764,17 @@ private :
     #if MEDIAINFO_CONFORMANCE
         bool            IsCmaf;
     #endif
+
+    //meta_idat parsing
+    struct idat_item {
+        int64u offset{};
+        int64u length{};
+        std::unique_ptr<File__Analyze> parser;
+    };
+    std::map<int16u, idat_item> idat_items;
+
+    //Gain map
+    std::shared_ptr<void> GainMap_metadata_ISO;
 };
 
 } //NameSpace
