@@ -35,6 +35,7 @@ using namespace std;
 #include "MediaInfo/Multiple/File_Mpeg4.h"
 #include "MediaInfo/File__MultipleParsing.h"
 #include "MediaInfo/Video/File_DolbyVisionMetadata.h"
+#include "MediaInfo/Image/File_GainMap.h"
 #if defined(MEDIAINFO_DVDIF_YES)
     #include "MediaInfo/Multiple/File_DvDif.h"
 #endif
@@ -2479,12 +2480,24 @@ void File_Mpeg4::mdat_StreamJump()
 void File_Mpeg4::meta()
 {
     NAME_VERSION_FLAG("Metadata");
+
+    idat_items.clear();
 }
 
 //---------------------------------------------------------------------------
 void File_Mpeg4::meta_idat()
 {
     Element_Name("Item data");
+
+    for (auto& item : idat_items) {
+        Element_Begin1(Ztring().From_Number(item.first));
+        Element_Offset = item.second.offset;
+        Open_Buffer_Continue(item.second.parser.get(), item.second.length);
+        Open_Buffer_Finalize(item.second.parser.get());
+        Element_End0();
+    }
+
+    idat_items.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -2613,6 +2626,23 @@ void File_Mpeg4::meta_iinf_infe()
             case 0x696F766C:    // iovl
                                 Format="Image Overlay";
                                 break;
+            case 0x746D6170:    // tmap
+                                {
+                                Format = "ISO 21496-1 Gain map metadata";
+                                auto Parser = new File_GainMap();
+                                GainMap_metadata_ISO.reset(new GainMap_metadata());
+                                Parser->output = static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get());
+                                Parser->fromAvif = true;
+                                Open_Buffer_Init(Parser);
+                                if (idat_items.find(item_ID) != idat_items.end())
+                                    idat_items[item_ID].parser.reset(Parser);
+                                else {
+                                    auto& Stream = Streams[item_ID];
+                                    Stream.Parsers.push_back(Parser);
+                                    mdat_MustParse = true;
+                                }
+                                break;
+                                }
         }
         if (!Skip)
         {
@@ -2659,11 +2689,12 @@ void File_Mpeg4::meta_iloc()
         Element_Begin1("item");
         int64u base_offset;
         int16u item_ID, extent_count;
+        int8u construction_method{};
         Get_S2 (16, item_ID,                                    "item_ID"); Element_Info1("item_ID " + std::to_string(item_ID));
         if (Version)
         {
             Skip_S2(12,                                         "reserved");
-            Skip_S1( 4,                                         "construction_method");
+            Get_S1 ( 4, construction_method,                    "construction_method");
         }
         Skip_S2(16,                                             "data_reference_index");
         Get_S8 (base_offset_size, base_offset,                  "base_offset");
@@ -2680,7 +2711,10 @@ void File_Mpeg4::meta_iloc()
                 Get_BS (offset_size, extent_offset,             "extent_offset");
 
                 FILLING_BEGIN();
-                    Streams[item_ID].stco.push_back(base_offset + extent_offset);
+                    if (construction_method == 1)
+                        idat_items[item_ID].offset = base_offset + extent_offset;
+                    else
+                        Streams[item_ID].stco.push_back(base_offset + extent_offset);
                 FILLING_END();
             }
             if (length_size)
@@ -2689,6 +2723,9 @@ void File_Mpeg4::meta_iloc()
                 Get_BS (length_size, extent_length,             "extent_length");
 
                 FILLING_BEGIN();
+                    if (construction_method == 1)
+                        idat_items[item_ID].length = extent_length;
+
                     Streams[item_ID].stsz_StreamSize+=extent_length;
                     Streams[item_ID].stsz_Sample_Size=extent_length;
                     Streams[item_ID].stsc.push_back({1, 1});

@@ -46,6 +46,7 @@ class File_GainMap : public File__Analyze
 public:
     //In
     GainMap_metadata* output{};
+    bool fromAvif{ false };
 
 private :
     void Data_Parse();
