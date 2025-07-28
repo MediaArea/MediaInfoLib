@@ -350,7 +350,6 @@ private :
     void moov_udta_AllF();
     void moov_udta_chpl();
     void moov_udta_clsf();
-    void moov_udta_cprt();
     void moov_udta_date();
     void moov_udta_DcMD();
     void moov_udta_DcMD_Cmbo();
@@ -416,9 +415,6 @@ private :
     void wide();
 
     //Helpers
-    bool Element_Level_Get();
-    bool Element_Name_Get();
-    bool Element_Size_Get();
     Ztring Language_Get(int16u Language);
     bool IsQt();
     enum method
@@ -691,6 +687,7 @@ private :
             IsCaption=false;
             MayHaveCaption=false;
             tkhd_Found=false;
+            TrackID = 0;
             CleanAperture_Width=0;
             CleanAperture_Height=0;
             CleanAperture_PixelAspectRatio=0;
