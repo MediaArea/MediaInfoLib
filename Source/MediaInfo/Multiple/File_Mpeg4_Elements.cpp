@@ -140,6 +140,9 @@ using namespace std;
 #if defined(MEDIAINFO_TTML_YES)
     #include "MediaInfo/Text/File_Ttml.h"
 #endif
+#if defined(MEDIAINFO_XMP_YES)
+    #include "MediaInfo/Tag/File_Xmp.h"
+#endif
 #if defined(MEDIAINFO_JPEG_YES)
     #include "MediaInfo/Image/File_Jpeg.h"
 #endif
@@ -2544,6 +2547,7 @@ void File_Mpeg4::meta_iinf_infe()
         return;
     int32u item_ID, item_type;
     int16u protection_index;
+    string content_type;
     Get_B4_DEPENDOFVERSION(3, item_ID,                          "item_ID"); Element_Info1("item_ID " + std::to_string(item_ID));
     Get_B2 (protection_index,                                   "protection_index");
     Get_C4 (item_type,                                          "item_type"); Element_Info1(Ztring().From_CC4(item_type));
@@ -2551,7 +2555,8 @@ void File_Mpeg4::meta_iinf_infe()
     switch (item_type)
     {
         case 0x6D696D65:    // mime
-                            Skip_NulString(                     "content_type");
+                            Get_String(SizeUpTo0(), content_type, "content_type");
+                            ++Element_Offset; //null
                             if (Element_Offset<Element_Size)
                                 Skip_NulString(                 "content_encoding");
                             break;
@@ -2581,6 +2586,18 @@ void File_Mpeg4::meta_iinf_infe()
                                 }
             //case 0x68767431:    // hvt1 --> image tile TODO
             case 0x6D696D65:    // mime
+                                if (content_type == "application/rdf+xml") {
+                                    auto Parser = new File_Xmp();
+                                    Open_Buffer_Init(Parser);
+                                    auto& Stream = Streams[item_ID];
+                                    Stream.Parsers.push_back(Parser);
+                                    Stream.StreamKind = Stream_General;
+                                    Stream.StreamPos = 0;
+                                    mdat_MustParse = true;
+                                    Skip = true;
+                                    break;
+                                }
+                                [[fallthrough]];
             case 0x75726900:    // uri
                                 Skip=true; // Currently not supported
                                 break;
