@@ -291,7 +291,7 @@ void File_Av1::Header_Parse()
 void File_Av1::Data_Parse()
 {
     //Probing mode in case of raw stream //TODO: better reject of bad files
-    if (!IsSub && !Status[IsAccepted] && (!Element_Code || Element_Code>5))
+    if (!IsSub && !Status[IsAccepted] && (!Element_Code || Element_Code>6))
     {
         Reject();
         return;
@@ -305,6 +305,7 @@ void File_Av1::Data_Parse()
         case  0x3 : frame_header(); break;
         case  0x4 : tile_group(); break;
         case  0x5 : metadata(); break;
+        case  0x6 : frame(); break;
         case  0xF : padding(); break;
         default   : Skip_XX(Element_Size-Element_Offset,        "Data");
     }
@@ -530,11 +531,14 @@ void File_Av1::temporal_delimiter()
 //---------------------------------------------------------------------------
 void File_Av1::frame_header()
 {
+    /* bitstream conformance requires SeenFrameHeader is only 1 when OBU type is OBU_REDUNDANT_FRAME_HEADER
+     * since tile_group is not parsed, SeenFrameHeader cannot be relied upon as it is supposed to be reset by tile_group
     if (SeenFrameHeader)
     {
         Skip_XX(Element_Size,                                   "Duplicated data");
         return;
     }
+    */
     SeenFrameHeader=1;
 
     if (!sequence_header_Parsed)
@@ -549,6 +553,7 @@ void File_Av1::frame_header()
         int8u frame_type;
         TEST_SB_SKIP(                                           "show_existing_frame");
             BS_End();
+            SeenFrameHeader = 0;
             Skip_XX(Element_Size-Element_Offset,                "Data");
             return;
         TEST_SB_END();
@@ -576,7 +581,7 @@ void File_Av1::frame_header()
 //---------------------------------------------------------------------------
 void File_Av1::tile_group()
 {
-    Skip_XX(Element_Size,                                       "Data");
+    Skip_XX(Element_Size - Element_Offset,                      "Data");
 }
 
 //---------------------------------------------------------------------------
@@ -686,6 +691,19 @@ void File_Av1::metadata_itu_t_t35_B5_003C_0001_04()
                 HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt209440]=tone_mapping_flag?__T("HDR10+ Profile B"):__T("HDR10+ Profile A");
         }
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Av1::frame()
+{
+    //Parsing
+    Element_Begin1("frame_header");
+    frame_header();
+    Element_End0();
+
+    Element_Begin1("tile_group");
+    tile_group();
+    Element_End0();
 }
 
 //---------------------------------------------------------------------------
