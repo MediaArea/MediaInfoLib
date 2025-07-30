@@ -2758,12 +2758,12 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 if (LittleEndian)
                 {
                     N=LittleEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                    D=LittleEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                    D=LittleEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset+4);
                 }
                 else
                 {
                     N=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                    D=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                    D=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset+4);
                 }
                 Element_Offset+=8;
             #endif //MEDIAINFO_TRACE
@@ -2862,12 +2862,12 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 if (LittleEndian)
                 {
                     N=LittleEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                    D=LittleEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                    D=LittleEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset+4);
                 }
                 else
                 {
                     N=BigEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
-                    D=BigEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
+                    D=BigEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset+4);
                 }
                 Element_Offset+=8;
             #endif //MEDIAINFO_TRACE
