@@ -504,7 +504,7 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     else if (Option_Lower==__T("file_defaultframerate"))
     {
         #if MEDIAINFO_ADVANCED
-            File_DefaultFrameRate_Set(Ztring(Value).To_float64());
+            File_DefaultFrameRate_Set(Value);
             return Ztring();
         #else //MEDIAINFO_ADVANCED
             return __T("File_DefaultFrameRate is disabled due to compilation options");
@@ -1926,8 +1926,15 @@ int64u MediaInfo_Config_MediaInfo::File_SequenceFilesSkipFrames_Get ()
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_ADVANCED
-void MediaInfo_Config_MediaInfo::File_DefaultFrameRate_Set (float64 NewValue)
+void MediaInfo_Config_MediaInfo::File_DefaultFrameRate_Set (const Ztring& NewValueZ)
 {
+    auto NewValue = NewValueZ.To_float64();
+    auto Den_Separator = NewValueZ.find('/');
+    if (Den_Separator != string::npos) {
+        auto Denominator = Ztring(NewValueZ.substr(Den_Separator + 1)).To_float64();
+        if (Denominator)
+            NewValue /= Denominator;
+    }
     CriticalSectionLocker CSL(CS);
     File_DefaultFrameRate=NewValue;
     #if MEDIAINFO_DEMUX
