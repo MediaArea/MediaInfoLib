@@ -100,20 +100,27 @@ void File_Pac::Streams_Finish()
         const auto FrameMax = (FrameRate_FromConfig && FrameRate_FromConfig >= FF_Max + 1)
             ? ((const uint32_t)ceil(FrameRate_FromConfig) - 1)
             : (FF_Max <= 23 ? 23 : FF_Max <= 24 ? 24 : FF_Max <= 29 ? 29 : FF_Max); // Files I have are all with frame rate of 24 fps
-        const auto FrameRate_F = FrameRate_FromConfig ? FrameRate_FromConfig : ((const float64)FrameMax + 1);
+        const auto FrameRate_FromFrameMax = (const float64)FrameMax + 1;
+        const auto FrameRate = FrameRate_FromConfig ? FrameRate_FromConfig : FrameRate_FromFrameMax;
         const auto FrameRateIsGuessed = FrameRate_FromConfig == 0;
         const auto DropFrame = Config->File_DefaultTimeCodeDropFrame_Get() == 1;
+        const auto FrameRate_Diff = float64_int64s(FrameRate_FromFrameMax / (FrameRate_FromFrameMax - FrameRate));
+        const auto Is1001 = FrameRate_Diff == 1001;
     #else //MEDIAINFO_ADVANCED
         const uint32_t FrameMax = FF_Max <= 23 ? 23 : FF_Max <= 24 ? 24 : FF_Max <= 30 ? 30 : FF_Max;
-        const auto FrameRate_F = (const float32)FrameMax + 1;
+        const auto FrameRate_FromFrameMax = (const float32)FrameMax + 1;
+        const auto FrameRate = FrameRate_FromFrameMax;
         const auto FrameRateIsGuessed = true;
         const auto DropFrame = false;
+        const auto Is1001 = false;
     #endif //MEDIAINFO_ADVANCED
-    Fill(Stream_Text, 0, Text_FrameRate, FrameRate_F, FrameRateIsGuessed?0:3); // Default without decimal as a hint that this is a guessed value
+    Fill(Stream_Text, 0, Text_FrameRate, Is1001 ? (FrameRate_FromFrameMax / 1.001) : FrameRate, FrameRateIsGuessed?0:3); // Default without decimal as a hint that this is a guessed value
     Time_Start_Command.SetFramesMax(FrameMax);
     Time_Start_Command.SetDropFrame(DropFrame);
+    Time_Start_Command.Set1001fps(Is1001);
     Time_End_Command.SetFramesMax(FrameMax);
     Time_End_Command.SetDropFrame(DropFrame);
+    Time_End_Command.Set1001fps(Is1001);
     TimeCode Delay_TC;
     TimeCode Offset;
     if (Time_Delay.IsValid()) {
@@ -137,12 +144,14 @@ void File_Pac::Streams_Finish()
     Fill(Stream_Text, 0, Text_TimeCode_LastFrame, LastFrame.ToString());
     if (Time_Start.IsValid()) {
         Time_Start.SetFramesMax(FrameMax);
-        Time_End.SetDropFrame(DropFrame);
+        Time_Start.SetDropFrame(DropFrame);
+        Time_Start.Set1001fps(Is1001);
         Fill(Stream_Text, 0, Text_Duration_Start, (int64s)(Time_Start - Offset).ToMilliseconds());
     }
     if (Time_End.IsValid()) {
         Time_End.SetFramesMax(FrameMax);
         Time_End.SetDropFrame(DropFrame);
+        Time_End.Set1001fps(Is1001);
         Fill(Stream_Text, 0, Text_Duration_End, (int64s)(Time_End - Offset).ToMilliseconds());
     }
     if (Time_End.IsValid() && Time_Start.IsValid()) {
