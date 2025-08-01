@@ -1935,6 +1935,16 @@ void MediaInfo_Config_MediaInfo::File_DefaultFrameRate_Set (const Ztring& NewVal
         if (Denominator)
             NewValue /= Denominator;
     }
+    else {
+        auto Decimal_Separator = NewValueZ.find('.');
+        if (Decimal_Separator != string::npos && NewValueZ.size() - Decimal_Separator <= 3) {
+            auto NewValue_Ceil = ceil(NewValue);
+            auto NewValue_Diff = float64_int64s(NewValue / (NewValue_Ceil - NewValue));
+            if (NewValue_Diff == 999) {
+                NewValue = NewValue_Ceil / 1.001;
+            }
+        }
+    }
     CriticalSectionLocker CSL(CS);
     File_DefaultFrameRate=NewValue;
     #if MEDIAINFO_DEMUX
