@@ -18,6 +18,7 @@ SetCompressor /FINAL /SOLID lzma
 
 ; x64 stuff
 !include "x64.nsh"
+!define LIBRARY_X64
 
 ; File size
 !include FileFunc.nsh
