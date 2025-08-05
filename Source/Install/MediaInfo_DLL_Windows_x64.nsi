@@ -18,7 +18,6 @@ SetCompressor /FINAL /SOLID lzma
 
 ; x64 stuff
 !include "x64.nsh"
-!define LIBRARY_X64
 
 ; File size
 !include FileFunc.nsh
@@ -109,7 +108,9 @@ FunctionEnd
 
 Section "SectionPrincipale" SEC01
   SetOutPath "$INSTDIR"
+  ${DisableX64FSRedirection}
   !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "..\..\Project\MSVC2022\x64\Release\MediaInfo.dll" $SYSDIR\MediaInfo.dll $SYSDIR
+  ${EnableX64FSRedirection}
   !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "..\..\Project\MSVC2022\x64\Release\MediaInfo_InfoTip.dll" $INSTDIR\MediaInfo_InfoTip.dll $INSTDIR
 SectionEnd
 
@@ -135,7 +136,9 @@ SectionEnd
 Section Uninstall
   UnRegDLL "$INSTDIR\MediaInfo_InfoTip.dll"
   Delete "$INSTDIR\MediaInfo_uninst.exe"
+  ${DisableX64FSRedirection}
   !insertmacro UnInstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED $SYSDIR\MediaInfo.dll
+  ${EnableX64FSRedirection}
   !insertmacro UnInstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED $INSTDIR\MediaInfo_InfoTip.dll
   RMDir "$INSTDIR"
 
