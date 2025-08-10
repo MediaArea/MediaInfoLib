@@ -1270,6 +1270,7 @@ protected :
     void           ChooseParser_SmpteSt0337(const essences::iterator &Essence, const descriptors::iterator &Descriptor);
     void           ChooseParser_Jpeg2000(const essences::iterator &Essence, const descriptors::iterator &Descriptor);
     void           ChooseParser_ProRes(const essences::iterator &Essence, const descriptors::iterator &Descriptor);
+    void           ChooseParser_ArriRaw(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_Ffv1(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_Isxd(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_Phdr(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
@@ -1462,6 +1463,7 @@ protected :
     #if defined(MEDIAINFO_IAB_YES)
     File__Analyze* Adm_ForLaterMerge;
     #endif
+    bool IsArriExperimental = false;
         
     //Demux
     #if MEDIAINFO_DEMUX
