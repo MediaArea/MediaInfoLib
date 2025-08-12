@@ -17,6 +17,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/MediaInfo.h"
+#include <vector>
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
@@ -68,6 +69,14 @@ public :
         ///                  FileOption_Close = Close all already opened files before
         /// @return Number of files successfuly added
     size_t Open (const String &File, const fileoptions_t Options=FileOption_Nothing);
+        /// Open one or more files and collect information about them (technical information and tags)
+        /// @brief Open files
+        /// @param File Full name of file(s) to open \n
+        ///             or Full name of folder(s) to open \n
+        /// @param Options: FileOption_Recursive = Recursive mode for folders \n
+        ///                  FileOption_Close = Close all already opened files before
+        /// @return Number of files successfuly added
+    size_t Open (const std::vector<String> &Files, const fileoptions_t Options=FileOption_Nothing);
         /// Open a stream and collect information about it (technical information and tags)
         /// @brief Open a stream (Init)
         /// @param File_Size Estimated file size
