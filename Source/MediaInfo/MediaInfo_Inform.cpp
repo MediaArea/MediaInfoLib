@@ -420,12 +420,14 @@ Ztring MediaInfo_Internal::Inform()
     #if defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
     Node* Node_Main=NULL;
     Node* Node_MI=NULL;
+    Node* Node_Tracks=NULL;
     #endif //MEDIAINFO_XML_YES || MEDIAINFO_JSON_YES
     Ztring Retour;
     bool HTML=false;
     bool XML=false;
     bool XML_0_7_78_MA=false;
     bool XML_0_7_78_MI=false;
+    bool OLDJSON=false;
     bool JSON=false;
     bool Conformance_JSON=false;
     bool CSV=false;
@@ -442,10 +444,12 @@ Ztring MediaInfo_Internal::Inform()
         XML_0_7_78_MI=true;
     #endif //defined(MEDIAINFO_XML_YES)
      #if defined(MEDIAINFO_JSON_YES)
-    if (MediaInfoLib::Config.Inform_Get()==__T("JSON") || MediaInfoLib::Config.Inform_Get()==__T("JSON_URL") || MediaInfoLib::Config.Inform_Get()==__T("Conformance_JSON"))
+    if (MediaInfoLib::Config.Inform_Get()==__T("JSON") || MediaInfoLib::Config.Inform_Get()==__T("OLDJSON") || MediaInfoLib::Config.Inform_Get()==__T("JSON_URL") || MediaInfoLib::Config.Inform_Get()==__T("Conformance_JSON"))
         JSON=true;
     if (MediaInfoLib::Config.Inform_Get()==__T("JSON_URL") || MediaInfoLib::Config.Inform_Get()==__T("Conformance_JSON"))
         Conformance_JSON=true;
+    if (MediaInfoLib::Config.Inform_Get()==__T("OLDJSON"))
+        OLDJSON=true;
     #endif //defined(MEDIAINFO_JSON_YES)
     #if defined(MEDIAINFO_CSV_YES)
     if (MediaInfoLib::Config.Inform_Get()==__T("CSV"))
@@ -494,7 +498,7 @@ Ztring MediaInfo_Internal::Inform()
             "  </head>\n"
             "  <body>\n");
     #if defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
-    if (XML_0_7_78_MA || XML_0_7_78_MI || JSON)
+    if (XML_0_7_78_MA || XML_0_7_78_MI || OLDJSON)
     {
         Node_Main=new Node("media");
         Ztring Options=Get(Stream_General, 0, General_CompleteName, Info_Options);
@@ -517,6 +521,17 @@ Ztring MediaInfo_Internal::Inform()
         else
             Node_Main=new Node("File");
     }
+    if (JSON && !OLDJSON)
+    {
+        Node_Main=new Node("Media");
+        Ztring Options=Get(Stream_General, 0, General_CompleteName, Info_Options);
+        if (InfoOption_ShowInInform<Options.size() && Options[InfoOption_ShowInInform]==__T('Y'))
+            Node_Main->Add_Attribute("Ref", Get(Stream_General, 0, General_CompleteName));
+        if (Info && !Info->ParserName.empty())
+            Node_Main->Add_Attribute("Parser", Info->ParserName);
+
+        Node_Tracks=Node_Main->Add_Child("Tracks");
+    }
     #endif //defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
 
     for (size_t StreamKind=(size_t)Stream_General; StreamKind<Stream_Max; StreamKind++)
@@ -528,13 +543,12 @@ Ztring MediaInfo_Internal::Inform()
             if (HTML) Retour+=__T("    <table>\n      <tr>\n        <td colspan=\"2\"><h2>");
             #if defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
             Node* Node_Current=NULL;
-            if (XML || XML_0_7_78_MA || XML_0_7_78_MI || JSON) Node_Current=Node_MI?Node_MI->Add_Child("track", true):Node_Main->Add_Child("track", true);
+            if (XML || XML_0_7_78_MA || XML_0_7_78_MI || OLDJSON) Node_Current=Node_MI?Node_MI->Add_Child("track", true):Node_Main->Add_Child("track", true);
             #endif //defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
+            Ztring A=Get((stream_t)StreamKind, StreamPos, __T("StreamKind/String"));
             Ztring B=Get((stream_t)StreamKind, StreamPos, __T("StreamKindPos"));
             if (!XML && !XML_0_7_78_MA && !XML_0_7_78_MI && !JSON)
             {
-                Ztring A=Get((stream_t)StreamKind, StreamPos, __T("StreamKind/String"));
-
                 if (!B.empty())
                 {
                     if (CSV)
@@ -547,7 +561,7 @@ Ztring MediaInfo_Internal::Inform()
             }
             if (HTML) Retour+=__T("</h2></td>\n      </tr>");
             #if defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
-            if (XML || XML_0_7_78_MA || XML_0_7_78_MI || JSON)
+            if (XML || XML_0_7_78_MA || XML_0_7_78_MI || OLDJSON)
             {
                 Ztring A=Get((stream_t)StreamKind, StreamPos, __T("StreamKind"));
 
@@ -559,6 +573,19 @@ Ztring MediaInfo_Internal::Inform()
                 Node* Track=new Node();
                 Track->RawContent=Inform((stream_t)StreamKind, StreamPos, false).To_UTF8();
                 Node_Current->Childs.push_back(Track);
+            }
+            else if (JSON && !OLDJSON)
+            {
+                Node_Current=Node_Tracks->Add_Child(A.To_UTF8(), true);
+
+                Node* Track=new Node();
+                Ztring TrackContent=Inform((stream_t)StreamKind, StreamPos, false);
+                if (!TrackContent.empty())
+                {
+                    if (!B.empty()) Track->RawContent="\"Typeorder\": \"" + B.To_UTF8() + "\",\n";
+                    Track->RawContent+=TrackContent.To_UTF8();
+                    Node_Current->Childs.push_back(Track);
+                }
             }
             else
             #endif //defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
@@ -723,6 +750,7 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
         #if defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
         bool XML=false;
         bool XML_0_7_78=false;
+        bool OLDJSON=false;
         bool JSON=false;
         bool Conformance_JSON=false;
         #endif //MEDIAINFO_XML_YES || MEDIAINFO_JSON_YES
@@ -737,8 +765,9 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
             XML=true;
         #endif //defined(MEDIAINFO_XML_YES)
         #if defined(MEDIAINFO_JSON_YES)
-        JSON=(MediaInfoLib::Config.Inform_Get()==__T("JSON") || MediaInfoLib::Config.Inform_Get()==__T("JSON_URL") || MediaInfoLib::Config.Inform_Get()==__T("Conformance_JSON"))?true:false;
+        JSON=(MediaInfoLib::Config.Inform_Get()==__T("JSON") || MediaInfoLib::Config.Inform_Get()==__T("OLDJSON") || MediaInfoLib::Config.Inform_Get()==__T("JSON_URL") || MediaInfoLib::Config.Inform_Get()==__T("Conformance_JSON"))?true:false;
         Conformance_JSON=MediaInfoLib::Config.Inform_Get()==__T("JSON_URL") || MediaInfoLib::Config.Inform_Get()==__T("Conformance_JSON");
+        OLDJSON=MediaInfoLib::Config.Inform_Get()==__T("OLDJSON")?true:false;
         #endif //defined(MEDIAINFO_JSON_YES)
         #if defined(MEDIAINFO_CSV_YES)
         bool CSV=MediaInfoLib::Config.Inform_Get()==__T("CSV")?true:false;
@@ -815,7 +844,7 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                 //Extra
                 if ((XML_0_7_78 || JSON) && !Extra && Champ_Pos>=Stream[StreamKind][StreamPos].size())
                 {
-                    Node* Node_Extra=new Node("extra");
+                    Node* Node_Extra=new Node((XML_0_7_78 || OLDJSON)?"extra":"Extra");
                     Fields.push_back(Node_Extra);
                     Fields_Current=Extra=&Node_Extra->Childs;
                 }
@@ -1070,6 +1099,20 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
             Config.File_ExpandSubs_Set(true);
         for (size_t Field=0; Field < Fields.size(); Field++)
         {
+            if (Fields[Field]->Name == "extra" || Fields[Field]->Name == "Extra")
+            {   std::string TmpRetour;
+                for (size_t Field2=0; Field2 < Fields[Field]->Childs.size(); Field2++)
+                    if (XML)
+                        TmpRetour+=To_XML(*(Fields[Field]->Childs[Field2]), 1, false, false);
+                    else if (JSON)
+                        TmpRetour+=To_JSON(*(Fields[Field]->Childs[Field2]), 1, false, false)+(Field2<Fields[Field]->Childs.size()-1?",\n":"");
+
+                Fields[Field]->Childs.clear();
+                Node* Node_Raw=new Node();
+                Node_Raw->RawContent=TmpRetour;
+                Fields[Field]->Childs.push_back(Node_Raw);
+            }
+
             if (XML)
                 Retour+=Ztring().From_UTF8(To_XML(*(Fields[Field]), 1, false, false));
             else if (JSON)
