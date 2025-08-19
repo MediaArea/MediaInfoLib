@@ -1296,7 +1296,7 @@ void File_Ac3::Streams_Fill()
             int32u Divider=bsid_Max==9?2:1; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
             int32u TimeStamp_BitRate=0;
             if (TimeStamp_Count==Frame_Count || TimeStamp_Count>Frame_Count/2) // In case of corrupted stream, check that there is a minimal count of timestamps 
-                TimeStamp_BitRate+=float32_int32s(AC3_SamplingRate[fscod]/Divider/12.0); // 12 = 1536 samples per frame / 128 bits per timestamp frame
+                TimeStamp_BitRate+=float32_int32s(AC3_SamplingRate[fscod]/Divider/12.0f); // 12 = 1536 samples per frame / 128 bits per timestamp frame
             Fill(Stream_Audio, 0, Audio_BitRate, BitRate/Divider);
             if (TimeStamp_BitRate)
                 Fill(Stream_Audio, 0, Audio_BitRate_Encoded, BitRate/Divider+TimeStamp_BitRate);
