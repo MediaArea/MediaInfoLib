@@ -588,6 +588,22 @@ int CRC16_Init(int16u *Table, int16u Polynomial)
     return 0;
 }
 
+static void CRC8_Init(int8u *Table, int8u Polynomial)
+{
+    for (size_t Pos = 0; Pos < 256; ++Pos)
+    {
+        Table[Pos] = static_cast<int8u>(Pos);
+
+        for (int8u bit = 0; bit < 8; ++bit)
+        {
+            if (Table[Pos] & 0x80)
+                Table[Pos] = (Table[Pos] << 1) ^ Polynomial;
+            else
+                Table[Pos] = Table[Pos] << 1;
+        }
+    }
+}
+
 //---------------------------------------------------------------------------
 extern const float64 AC3_dynrng[]=
 {
@@ -4376,6 +4392,7 @@ void File_Ac3::joc_ext_data()
 void File_Ac3::HD()
 {
     //Parsing
+    bool MajorSyncOK{ true };
     int32u Synch;
     Peek_B3(Synch);
     if (Synch==0xF8726F)
@@ -4385,21 +4402,6 @@ void File_Ac3::HD()
             Trusted_IsNot("Not enough data");
             return; //Need more data
         }
-
-        //Testing
-        /* Not working
-        int16u CRC_16_Table_HD[256];
-        CRC16_Init(CRC_16_Table_HD, 0x002D);
-
-        int16u CRC_16=0x0000;
-        const int8u* CRC_16_Buffer=Buffer+Buffer_Offset;
-        while(CRC_16_Buffer<Buffer+Buffer_Offset+24)
-        {
-            CRC_16=(CRC_16<<8) ^ CRC_16_Table_HD[(CRC_16>>8)^(*CRC_16_Buffer)];
-            CRC_16_Buffer++;
-        }
-        CRC_16^=LittleEndian2int16u(Buffer+Buffer_Offset+24);
-        */
 
         Element_Info1("major_sync");
         Element_Begin1("major_sync_info");
@@ -4491,7 +4493,28 @@ void File_Ac3::HD()
             else
                 Skip_B8(                                        "Unknown");
         Element_End0();
-        Skip_B2(                                                "major_sync_info_CRC");
+
+        int16u major_sync_info_CRC;
+        Get_B2 (major_sync_info_CRC,                            "major_sync_info_CRC");
+
+        FILLING_BEGIN();
+            // major_sync_info CRC check
+            //  MLP uses checksums that seem to be based on the standard CRC algorithm, but are not (in implementation terms, the table lookup and XOR are reversed).
+            //  This behavior can be implemented using standard CRC on all but the last element, then XOR that with the last element. -FFmpeg
+            if (!CRC_16_Table_HD) {
+                CRC_16_Table_HD.reset(new int16u[256]);
+                CRC16_Init(CRC_16_Table_HD.get(), 0x002D);
+            }
+            int16u CRC_16 = 0x0000;
+            const int8u* CRC_16_Buffer = Buffer + Buffer_Offset;
+            while (CRC_16_Buffer < Buffer + Buffer_Offset + Element_Offset - 4) {
+                CRC_16 = (CRC_16 << 8) ^ CRC_16_Table_HD[(CRC_16 >> 8) ^ (*CRC_16_Buffer++)];
+            }
+            CRC_16 ^= BigEndian2int16u(Buffer + Buffer_Offset + Element_Offset - 4);
+            Param_Info1(CRC_16 == major_sync_info_CRC ? "OK" : "NOK");
+            MajorSyncOK = (CRC_16 == major_sync_info_CRC ? true : false);
+        FILLING_END();
+
         Element_End0();
     }
     else if (!HD_MajorSync_Parsed)
@@ -4500,11 +4523,14 @@ void File_Ac3::HD()
     }
 
     int64u PosBeforeDirectory=Element_Offset;
+    bool crc_present{};
+    std::vector<int16u> substream_end_ptrs;
     BS_Begin();
     for (int8u i=0; i<HD_SubStreams_Count; i++)
     {
         Element_Begin1("substream_directory");
         bool extra_substream_word, restart_nonexistent;
+        int16u substream_end_ptr;
         Get_SB (extra_substream_word,                           "extra_substream_word");
         Get_SB (restart_nonexistent,                            "restart_nonexistent");
         if ((!restart_nonexistent && Synch!=0xF8726F) || (restart_nonexistent && Synch==0xF8726F))
@@ -4512,9 +4538,9 @@ void File_Ac3::HD()
             Element_End0();
             return;
         }
-        Skip_SB(                                                "crc_present");
-        Skip_SB(                                                "reserved");
-        Skip_S2(12,                                             "substream_end_ptr");
+        Get_SB (crc_present,                                    "crc_present");
+        Skip_S1( 1,                                             "reserved");
+        Get_S2 (12, substream_end_ptr,                          "substream_end_ptr");
         if (extra_substream_word)
         {
             Skip_S2(9,                                          "drc_gain_update");
@@ -4522,6 +4548,7 @@ void File_Ac3::HD()
             Skip_S1(4,                                          "reserved");
         }
         Element_End0();
+        substream_end_ptrs.push_back(substream_end_ptr);
     }
     BS_End();
 
@@ -4543,7 +4570,7 @@ void File_Ac3::HD()
             Value>>=4;
             crc^=Value;
         }
-        if (crc!=0xF)
+        if (crc!=0xF || !MajorSyncOK)
         {
             return;
         }
@@ -4556,6 +4583,199 @@ void File_Ac3::HD()
         }
     FILLING_END();
 
+    if (HD_MajorSync_Parsed && HD_StreamType == 0xBA) {
+        auto substreams_begin_ptr = Element_Offset;
+        for (int8u i = 0; i < HD_SubStreams_Count; ++i) {
+            Element_Begin1("substream_segment");
+            auto substream_segment_begin = Element_Offset;
+            #if MEDIAINFO_TRACE
+            BS_Begin();
+            //bool last_block_in_segment;
+            //do {
+                Element_Begin1("block");
+                bool block_header_exists;
+                Get_SB(block_header_exists,                     "block_header_exists");
+                if (block_header_exists) {
+                    TEST_SB_SKIP(                               "restart_header");
+                        auto restart_BeginRemain = Data_BS_Remain();
+                        int8u max_matrix_chan{};
+                        Skip_S2(14,                             "restart_sync_word");
+                        Skip_S2(16,                             "output_timing");
+                        Skip_S1( 4,                             "min_chan");
+                        Skip_S1( 4,                             "max_chan");
+                        Get_S1 ( 4, max_matrix_chan,            "max_matrix_chan");
+                        Skip_S1( 4,                             "dither_shift");
+                        Skip_S3(23,                             "dither_seed");
+                        Skip_S1( 4,                             "max_shift");
+                        Skip_S1( 5,                             "max_lsbs");
+                        Skip_S1( 5,                             "max_bits");
+                        Skip_S1( 5,                             "max_bits");
+                        Skip_SB(                                "error_protect");
+                        Skip_S1( 8,                             "lossless_check");
+                        Skip_S2(16,                             "reserved");
+                        for (int8u ch = 0; ch <= max_matrix_chan; ++ch) {
+                            Skip_S1(6,                          ("ch_assign[" + std::to_string(ch) + "]").c_str());
+                        }
+                        auto restart_size = restart_BeginRemain - Data_BS_Remain();
+                        int8u restart_header_CRC;
+                        Get_S1 (8, restart_header_CRC,          "restart_header_CRC");
+                        FILLING_BEGIN();
+                        if (Trace_Activated) {
+                            if (!CRC_8_1D_Table_HD) {
+                                CRC_8_1D_Table_HD.reset(new int8u[256]);
+                                CRC8_Init(CRC_8_1D_Table_HD.get(), 0x1D);
+                            }
+                            const int8u* CRC_8_Buffer = Buffer + Buffer_Offset + substream_segment_begin;
+                            int8u CRC_8 = CRC_8_1D_Table_HD[*CRC_8_Buffer & 0x3F];
+                            auto aligned_size = restart_size + 2;
+                            auto num_bytes = aligned_size / 8;
+                            for (int8u c = 1; c < num_bytes - 1; ++c) {
+                                CRC_8 = CRC_8_1D_Table_HD[CRC_8 ^ CRC_8_Buffer[c]];
+                            }
+                            CRC_8 ^= CRC_8_Buffer[num_bytes - 1];
+                            for (int8u c = 0; c < (aligned_size & 7); ++c) {
+                                if (CRC_8 & 0x80)
+                                    CRC_8 = (CRC_8 << 1) ^ 0x1D;
+                                else
+                                    CRC_8 <<= 1;
+                                CRC_8 ^= (CRC_8_Buffer[num_bytes] >> (7 - c)) & 1;
+                            }
+                            Param_Info1(CRC_8 == restart_header_CRC ? "OK" : "NOK");
+                        }
+                        FILLING_END();
+                    TEST_SB_END();
+                    Element_Begin1("block_header");
+                    // Not parsed, too much data
+                    Element_End0();
+                }
+                //if (error_protect) {
+                //    Skip_S2(16,                               "block_data_bits");
+                //}
+                //Element_Begin1("block_data");
+                //Element_End0();
+                //if (error_protect) {
+                //    Skip_S1( 8,                               "block_header_CRC");
+                //}
+                //Get_SB(last_block_in_segment,                 "last_block_in_segment");
+                Element_End0();
+            //} while (!last_block_in_segment);
+
+            // padding
+
+            // if (last_access_unit_in_stream) {
+            // ...
+            // }
+
+            BS_End();
+            #endif // MEDIAINFO_TRACE
+            Skip_XX(substreams_begin_ptr + substream_end_ptrs[i] * 2LL - (crc_present ? 2 : 0) - Element_Offset, "(Not parsed)");
+            Element_End0();
+            if (crc_present) {
+                int8u substream_parity;
+                Get_B1 (substream_parity,                       "substream_parity");
+                #if MEDIAINFO_TRACE
+                FILLING_BEGIN();
+                if (Trace_Activated) {
+                    auto size = Element_Offset - 1 - substream_segment_begin;
+                    // The 8-bit substream_parity field is a parity check. The value of the substream_parity field is equal
+                    // to the exclusive - OR of all the bytes in the expansion of substream_segment(), exclusive - ORed with
+                    // the constant 0xA9 (the purpose of the latter being to force the check to fail in the event of the
+                    // stream consisting entirely of zeroes).
+                    int8u parity{};
+                    for (int16u i = 0; i < size; ++i) {
+                        int8u Value = Buffer[Buffer_Offset + substream_segment_begin + i];
+                        parity ^= Value;
+                    }
+                    parity ^= 0xA9;
+                    Param_Info1(parity == substream_parity ? "OK" : "NOK");
+                }
+                FILLING_END();
+                #endif // MEDIAINFO_TRACE
+                int8u substream_CRC;
+                Get_B1(substream_CRC,                           "substream_CRC");
+                #if MEDIAINFO_TRACE
+                FILLING_BEGIN();
+                if (Trace_Activated) {
+                    if (!CRC_8_Table_HD) {
+                        CRC_8_Table_HD.reset(new int8u[256]);
+                        CRC8_Init(CRC_8_Table_HD.get(), 0x63);
+                    }
+                    int8u CRC_8 = CRC_8_Table_HD[0xA2];
+                    const int8u* CRC_8_Buffer = Buffer + Buffer_Offset + substream_segment_begin;
+                    while (CRC_8_Buffer < Buffer + Buffer_Offset + Element_Offset - 3) {
+                        CRC_8 = CRC_8_Table_HD[CRC_8 ^ *CRC_8_Buffer++];
+                    }
+                    CRC_8 ^= BigEndian2int8u(Buffer + Buffer_Offset + Element_Offset - 3);
+                    Param_Info1(CRC_8 == substream_CRC ? "OK" : "NOK");
+                }
+                FILLING_END();
+                #endif // MEDIAINFO_TRACE
+            }
+        }
+        if (Element_Size - Element_Offset >= 2) {
+            Element_Begin1("EXTRA_DATA");
+            int8u length_check_nibble;
+            int16u EXTRA_DATA_length;
+            BS_Begin();
+            Get_S1( 4, length_check_nibble,                     "length_check_nibble");
+            Get_S2(12, EXTRA_DATA_length,                       "EXTRA_DATA_length");
+            BS_End();
+            if (length_check_nibble == 0 && EXTRA_DATA_length == 0) {
+                Skip_XX(Element_Size - Element_Offset,          "EXTRA_DATA_padding");
+            }
+            else if (((length_check_nibble ^ (EXTRA_DATA_length & 0x000F) ^ ((EXTRA_DATA_length >> 4) & 0x000F) ^ ((EXTRA_DATA_length >> 8) & 0x000F)) == 0xF)
+                && (Element_Offset + EXTRA_DATA_length * 2LL) <= Element_Size) {
+                int32u extra_data_size = EXTRA_DATA_length * 2 - 1;
+                auto extra_data_end = Element_Offset + extra_data_size;
+                bool ExtraDataParityOK{};
+                int8u parity{};
+                FILLING_BEGIN();
+                    // The 8-bit EXTRA_DATA_parity field is a parity check. The value of the field is equal to the exclusive-
+                    // OR of all the bytes calculated over all the bytes in the expansion of EXTRA_DATA(excluding
+                    // length_check_nibble, EXTRA_DATA_length, and the EXTRA_DATA_parity fields), exclusive - ORed
+                    // with the constant 0xA9 (the purpose of the latter being to force the check to fail in the event of the
+                    // stream consisting entirely of zeroes).
+                    for (int16u i = 0; i < extra_data_size; ++i) {
+                        int8u Value = Buffer[Buffer_Offset + Element_Offset + i];
+                        parity ^= Value;
+                    }
+                    parity ^= 0xA9;
+                    if (parity == Buffer[Buffer_Offset + extra_data_end])
+                        ExtraDataParityOK = true;
+                FILLING_END();
+                if (ExtraDataParityOK && (HD_flags & 0x1000)) {
+                    Element_Begin1("emdf_frame");
+                    int16u length;
+                    BS_Begin();
+                    Skip_S1( 4,                                 "reserved");
+                    Get_S2 (12, length,                         "length");
+                    BS_End();
+                    if (length <= extra_data_size - 2) {
+                        auto frame_begin = Element_Offset;
+                        BS_Begin();
+                        emdf_container();
+                        BS_End(); 
+                        Skip_XX(frame_begin + length - Element_Offset, "(Not parsed)");
+                    }
+                    Element_End0();
+                    if (extra_data_end - Element_Offset == 1)
+                        Skip_XX(1,                              "EXTRA_DATA_padding");
+                    else
+                        Skip_XX(extra_data_end - Element_Offset, "(Not parsed)");
+                }
+                else {
+                    Skip_XX(extra_data_size,                    "data");
+                }
+                int8u EXTRA_DATA_parity;
+                Get_B1 (EXTRA_DATA_parity,                      "EXTRA_DATA_parity");
+                Param_Info1(parity == EXTRA_DATA_parity ? "OK" : "NOK");
+            }
+            else {
+                Skip_XX(Element_Size - Element_Offset,          "(Data)");
+            }
+            Element_End0();
+        }
+    }
 
     /*
     if (HD_MajorSync_Parsed)
