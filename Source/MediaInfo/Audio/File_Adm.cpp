@@ -2227,8 +2227,8 @@ struct Items_Struct {
     }
 
     vector<Item_Struct> Items;
-    size_t Attributes_Size;
-    size_t Elements_Size;
+    size_t Attributes_Size{};
+    size_t Elements_Size{};
 };
 
 static string Apply_Init(File__Analyze& F, const char* Name, size_t i, const Items_Struct& audioProgramme_List, Ztring Summary) {
@@ -2370,7 +2370,7 @@ class file_adm_private : public tfsxml
 {
 public:
     // In
-    bool IsSub;
+    bool IsSub{};
 
     // Out
     Items_Struct Items[item_Max];
@@ -3608,6 +3608,7 @@ void audioBlockFormat_Check(file_adm_private* File_Adm_Private) {
         }
         default:;
         }
+        break;
     }
 
     if (Type == Type_DirectSpeakers) {
