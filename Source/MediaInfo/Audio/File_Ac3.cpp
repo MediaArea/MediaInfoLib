@@ -2454,12 +2454,12 @@ void File_Ac3::Core_Frame()
             Get_S1 (5, bsid,                                        "bsid - Bit Stream Identification");
             Get_S1 (3, bsmod,                                       "bsmod - Bit Stream Mode"); Param_Info1(AC3_Mode[bsmod]);
             Get_S1 (3, acmod,                                       "acmod - Audio Coding Mode"); Param_Info1(AC3_ChannelPositions[acmod]);
-            if ((acmod&1) && acmod!=1) //central present
-                Get_S1 (2, cmixlev,                                 "cmixlev - Center Mix Level");
-            if (acmod&4) //back present
-                Get_S1 (2, surmixlev,                               "surmixlev - Surround Mix Level");
-            if (acmod==2)
-                Get_S1 (2, dsurmod,                                 "dsurmod - Dolby Surround Mode"); Param_Info1(AC3_Surround[dsurmod]);
+            if ((acmod&1) && acmod!=1) { //central present
+                Get_S1 (2, cmixlev,                                 "cmixlev - Center Mix Level"); Param_Info2(-3 - cmixlev * 1.5, " dB"); }
+            if (acmod&4) { //back present
+                Get_S1 (2, surmixlev,                               "surmixlev - Surround Mix Level"); Param_Info2(cmixlev == 2 ? "-inf" : to_string(-3 - cmixlev * 3), " dB"); }
+            if (acmod==2) {
+                Get_S1 (2, dsurmod,                                 "dsurmod - Dolby Surround Mode"); Param_Info1(AC3_Surround[dsurmod]); }
             Get_SB (   lfeon,                                       "lfeon - Low Frequency Effects");
             Get_S1 (5, dialnorm,                                    "dialnorm - Dialogue Normalization");
             Get_SB (   compre,                                      "compre - Compression Gain Word Exists");
