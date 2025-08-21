@@ -1183,6 +1183,11 @@ void File_Ac3::Streams_Fill()
                 Fill(Stream_Audio, 0, Audio_Format_Profile, "MLP FBA 16-ch / MLP FBA");
                 Fill(Stream_Audio, 0, Audio_Codec_Profile, "MLP FBA 16-ch / MLP FBA");
             }
+            else
+            {
+                Fill(Stream_Audio, 0, Audio_Format_Profile, "MLP FBA");
+                Fill(Stream_Audio, 0, Audio_Codec_Profile, "MLP FBA");
+            }
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
             Fill(Stream_Audio, 0, Audio_Compression_Mode, "Lossless");
             Ztring Sampling;
