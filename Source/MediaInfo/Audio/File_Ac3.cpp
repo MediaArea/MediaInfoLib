@@ -873,6 +873,33 @@ static const char* AC3_TrueHD_SubstreamInfo8ch(int8u presentation_8ch)
 }
 
 //---------------------------------------------------------------------------
+static const char* AC3_TrueHD_ExtendedSubstreamInfoNum(int8u extended_substream_info)
+{
+    switch (extended_substream_info) {
+    case 0b00: return "3";
+    case 0b01: return "2 + 3";
+    case 0b10: return "1 + 2 + 3";
+    case 0b11: return "0 + 1 + 2 + 3";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* AC3_TrueHD_SubstreamInfoNum(int8u presentation)
+{
+    switch (presentation) {
+    case 0b001: return "0";
+    case 0b010: return "1";
+    case 0b011: return "0 + 1";
+    case 0b100: return "2";
+    case 0b101: return "0 + 2";
+    case 0b110: return "1 + 2";
+    case 0b111: return "0 + 1 + 2";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
 static const int32u AC3_MLP_Channels[32]=
 {
     1,
@@ -1197,9 +1224,12 @@ void File_Ac3::Streams_Fill()
             Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_TrueHD_Channels_Positions(HD_Channels2, HD_flags&(1<<11)));
             Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, AC3_TrueHD_Channels_Positions2(HD_Channels2, HD_flags&(1<<11)));
             Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_TrueHD_Channels_ChannelLayout(HD_Channels2, HD_flags&(1<<11)));
+            Fill(Stream_Audio, 0, Audio_BitDepth, AC3_MLP_Resolution[HD_Resolution2]);
+            Fill(Stream_Audio, 0, "NumberOfPresentations", HD_HasAtmos ? 4 : 3);
+            Fill(Stream_Audio, 0, "NumberOfSubstreams", HD_SubStreams_Count);
         }
 
-        if (HD_StreamType==0xBB) //TrueHD
+        if (HD_StreamType==0xBB) //MLP
         {
             {
                 Fill(Stream_Audio, 0, Audio_Format, "MLP");
@@ -1447,6 +1477,51 @@ void File_Ac3::Streams_Fill()
         List.Write(Retrieve(Stream_Audio, 0, Audio_BitRate));
         if (List.size()>=2)
             Fill(Stream_Audio, 0, Audio_BitRate_Maximum, List[1]);
+    }
+
+    //TrueHD presentations
+    if (HD_MajorSync_Parsed && HD_StreamType == 0xBA) {
+        for (int p = 0; p < p_max - !HD_HasAtmos; ++p) {
+            const Presentation& Presentation_Current = presentations[p];
+            string P = Ztring(__T("Presentation") + Ztring::ToZtring(p)).To_UTF8();
+            if (p == p_16ch) {
+                Fill(Stream_Audio, 0, P.c_str(), "16-ch presentation");
+                Fill(Stream_Audio, 0, (P + " LinkedTo_Substream_Pos").c_str(), AC3_TrueHD_ExtendedSubstreamInfoNum(Presentation_Current.presentation));
+                Fill(Stream_Audio, 0, (P + " Elements").c_str(), Presentation_Current.elements);
+            }
+            else {
+                Fill(Stream_Audio, 0, P.c_str(), (to_string(AC3_TrueHD_Channels(Presentation_Current.ch_assign)) + "-ch presentation"));
+                Fill(Stream_Audio, 0, (P + " LinkedTo_Substream_Pos").c_str(), AC3_TrueHD_SubstreamInfoNum(Presentation_Current.presentation));
+                Fill(Stream_Audio, 0, (P + " Channel(s)").c_str(), AC3_TrueHD_Channels(Presentation_Current.ch_assign));
+                Fill(Stream_Audio, 0, (P + " ChannelLayout").c_str(), AC3_TrueHD_Channels_ChannelLayout(Presentation_Current.ch_assign, HD_flags & (1 << 11)));
+            }
+            if (p == p_2ch) {
+                string type;
+                switch (Presentation_Current.modifier) {
+                case 0b00: type = "Stereo"; break;
+                case 0b01: type = "Lt/Rt"; break;
+                case 0b10: type = "Lbin/Rbin"; break;
+                case 0b11: type = "Mono"; break;
+                default: break;
+                }
+                Fill(Stream_Audio, 0, (P + " Type").c_str(), type);
+            }
+            else {
+                if (Presentation_Current.modifier == 0b10)
+                    Fill(Stream_Audio, 0, (P + " Format_Settings_Mode").c_str(), "Dolby Surround EX / Dolby Pro Logic IIx");
+                if (Presentation_Current.modifier == 0b11)
+                    Fill(Stream_Audio, 0, (P + " Format_Settings_Mode").c_str(), "Dolby Pro Logic IIz");
+            }
+            Fill(Stream_Audio, 0, (P + " control_enabled").c_str(), Presentation_Current.control_enabled ? "Yes" : "No");
+            Fill(Stream_Audio, 0, (P + " dialogue_norm").c_str(), Presentation_Current.dialogue_norm == 0 ? -31 : -Presentation_Current.dialogue_norm);
+            Fill_SetOptions(Stream_Audio, 0, (P + " dialogue_norm").c_str(), "N NT");
+            Fill(Stream_Audio, 0, (P + " dialogue_norm/String").c_str(), Ztring::ToZtring(Presentation_Current.dialogue_norm == 0 ? -31 : -Presentation_Current.dialogue_norm) + __T(" LKFS"));
+            Fill_SetOptions(Stream_Audio, 0, (P + " dialogue_norm/String").c_str(), "Y NTN");
+            Fill(Stream_Audio, 0, (P + " mix_level").c_str(), 70 + Presentation_Current.mix_level);
+            Fill_SetOptions(Stream_Audio, 0, (P + " mix_level").c_str(), "N NT");
+            Fill(Stream_Audio, 0, (P + " mix_level/String").c_str(), Ztring::ToZtring(70 + Presentation_Current.mix_level) + __T(" dB"));
+            Fill_SetOptions(Stream_Audio, 0, (P + " mix_level/String").c_str(), "Y NTN");
+        }
     }
 
     //Dolby Metadata
@@ -4419,7 +4494,6 @@ void File_Ac3::HD()
             Skip_XX(Element_Size-Element_Offset,                "Data");
             return;
         }
-        int8u HD_extended_substream_info;
         HD_format_info();
         Skip_B2(                                                "signature");
         Get_B2 (HD_flags,                                       "flags");
@@ -4429,14 +4503,14 @@ void File_Ac3::HD()
         Get_S2 (15, HD_BitRate_Max,                             "peak_data_rate"); Param_Info2((HD_BitRate_Max*(AC3_HD_SamplingRate(HD_SamplingRate2)?AC3_HD_SamplingRate(HD_SamplingRate2):AC3_HD_SamplingRate(HD_SamplingRate1))+8)>>4, " bps");
         Get_S1 ( 4, HD_SubStreams_Count,                        "substreams");
         Skip_S1( 2,                                             "reserved");
-        Get_S1 ( 2, HD_extended_substream_info,                 "extended_substream_info"); Param_Info1C(HD_StreamType == 0xBA, AC3_TrueHD_ExtendedSubstreamInfo(HD_extended_substream_info));
+        Get_S1 ( 2, presentations[p_16ch].presentation,         "extended_substream_info"); Param_Info1C(HD_StreamType == 0xBA, AC3_TrueHD_ExtendedSubstreamInfo(presentations[p_16ch].presentation));
+        presentations[p_2ch].presentation = 1;
         if (HD_StreamType==0xBA)
         {
             Element_Begin1("substream_info");
-            int8u presentation_8ch, presentation_6ch;
                 Get_SB (    HD_HasAtmos,                        "16-channel presentation is present");
-                Get_S1 ( 3, presentation_8ch,                   "8-ch presentation"); Param_Info1(AC3_TrueHD_SubstreamInfo8ch(presentation_8ch));
-                Get_S1 ( 2, presentation_6ch,                   "6-ch presentation"); Param_Info1(AC3_TrueHD_SubstreamInfo6ch(presentation_6ch));
+                Get_S1 ( 3, presentations[p_8ch].presentation,  "8-ch presentation"); Param_Info1(AC3_TrueHD_SubstreamInfo8ch(presentations[p_8ch].presentation));
+                Get_S1 ( 2, presentations[p_6ch].presentation,  "6-ch presentation"); Param_Info1(AC3_TrueHD_SubstreamInfo6ch(presentations[p_6ch].presentation));
                 Skip_S1( 2,                                     "reserved");
             Element_End0();
         }
@@ -4447,21 +4521,20 @@ void File_Ac3::HD()
             if (HD_StreamType==0xBA)
             {
                 bool HasExtend;
-                int8u dialogue_norm_2ch, mix_level_2ch, dialogue_norm_6ch, mix_level_6ch, dialogue_norm_8ch, mix_level_8ch;
                 BS_Begin();
                 Skip_S1( 6,                                     "reserved");
-                Skip_SB(                                        "2ch_control_enabled");
-                Skip_SB(                                        "6ch_control_enabled");
-                Skip_SB(                                        "8ch_control_enabled");
+                Get_SB (  presentations[p_2ch].control_enabled, "2ch_control_enabled");
+                Get_SB (  presentations[p_6ch].control_enabled, "6ch_control_enabled");
+                Get_SB (  presentations[p_8ch].control_enabled, "8ch_control_enabled");
                 Skip_S1( 1,                                     "reserved");
                 Skip_S1( 7,                                     "drc_start_up_gain");
-                Get_S1 ( 6, dialogue_norm_2ch,                  "2ch_dialogue_norm"); Param_Info2(dialogue_norm_2ch == 0 ? -31 : -dialogue_norm_2ch, " LKFS");
-                Get_S1 ( 6, mix_level_2ch,                      "2ch_mix_level");     Param_Info2(70 + mix_level_2ch, " dB");
-                Get_S1 ( 5, dialogue_norm_6ch,                  "6ch_dialogue_norm"); Param_Info2(dialogue_norm_6ch == 0 ? -31 : -dialogue_norm_6ch, " LKFS");
-                Get_S1 ( 6, mix_level_6ch,                      "6ch_mix_level");     Param_Info2(70 + mix_level_6ch, " dB");
+                Get_S1 ( 6, presentations[p_2ch].dialogue_norm, "2ch_dialogue_norm"); Param_Info2(presentations[p_2ch].dialogue_norm == 0 ? -31 : -presentations[p_2ch].dialogue_norm, " LKFS");
+                Get_S1 ( 6, presentations[p_2ch].mix_level,     "2ch_mix_level");     Param_Info2(70 + presentations[p_2ch].mix_level, " dB");
+                Get_S1 ( 5, presentations[p_6ch].dialogue_norm, "6ch_dialogue_norm"); Param_Info2(presentations[p_6ch].dialogue_norm == 0 ? -31 : -presentations[p_6ch].dialogue_norm, " LKFS");
+                Get_S1 ( 6, presentations[p_6ch].mix_level,     "6ch_mix_level");     Param_Info2(70 + presentations[p_6ch].mix_level, " dB");
                 Skip_S1( 5,                                     "6ch_source_format");
-                Get_S1 ( 5, dialogue_norm_8ch,                  "8ch_dialogue_norm"); Param_Info2(dialogue_norm_8ch == 0 ? -31 : -dialogue_norm_8ch, " LKFS");
-                Get_S1 ( 6, mix_level_8ch,                      "8ch_mix_level");     Param_Info2(70 + mix_level_8ch, " dB");
+                Get_S1 ( 5, presentations[p_8ch].dialogue_norm, "8ch_dialogue_norm"); Param_Info2(presentations[p_8ch].dialogue_norm == 0 ? -31 : -presentations[p_8ch].dialogue_norm, " LKFS");
+                Get_S1 ( 6, presentations[p_8ch].mix_level,     "8ch_mix_level");     Param_Info2(70 + presentations[p_8ch].mix_level, " dB");
                 Skip_S1( 6,                                     "8ch_source_format");
                 Skip_S1( 1,                                     "reserved");
                 Get_SB (    HasExtend,                          "extra_channel_meaning_present");
@@ -4471,7 +4544,6 @@ void File_Ac3::HD()
                     unsigned char Extend = 0;
                     unsigned char Unknown = 0;
                     bool HasContent = false;
-                    int8u dialogue_norm_16ch, mix_level_16ch;
                     BS_Begin();
                     Get_S1( 4, Extend,                          "extra_channel_meaning_length");
                     size_t After=(((size_t)Extend)+1)*16-4;
@@ -4482,10 +4554,11 @@ void File_Ac3::HD()
                     if (HD_HasAtmos)
                     {
                         Element_Begin1("16ch_channel_meaning");
-                        Get_S1 (5, dialogue_norm_16ch,          "16ch_dialogue_norm"); Param_Info2(dialogue_norm_16ch == 0 ? -31 : -dialogue_norm_16ch, " LKFS");
-                        Get_S1 (6, mix_level_16ch,              "16ch_mix_level");     Param_Info2(70 + mix_level_16ch, " dB");
-                        Get_S1 (5, num_dynamic_objects,         "16ch_channel_count");
-                        num_dynamic_objects++;                                         Param_Info2(num_dynamic_objects, " channels");
+                        Get_S1 (5, presentations[p_16ch].dialogue_norm, "16ch_dialogue_norm");  Param_Info2(presentations[p_16ch].dialogue_norm == 0 ? -31 : -presentations[p_16ch].dialogue_norm, " LKFS");
+                        Get_S1 (6, presentations[p_16ch].mix_level,     "16ch_mix_level");      Param_Info2(70 + presentations[p_16ch].mix_level, " dB");
+                        Get_S1 (5, num_dynamic_objects,                 "16ch_channel_count");
+                        num_dynamic_objects++;                                                  Param_Info2(num_dynamic_objects, " channels");
+                        presentations[p_16ch].elements = num_dynamic_objects;
                         program_assignment();
                         Element_End0();
                     }
@@ -4890,21 +4963,29 @@ void File_Ac3::HD_format_info()
     if (HD_StreamType==0xBA)
     {
         Element_Begin1("format_info");
+        int8u dsurexmod_6ch;
         BS_Begin();
         Get_S1 ( 4, HD_SamplingRate1,                           "audio_sampling_frequency"); Param_Info2(AC3_HD_SamplingRate(HD_SamplingRate1), " Hz");
         Skip_SB(                                                "6ch_multichannel_type");
         Skip_SB(                                                "8ch_multichannel_type");
         Skip_S1( 2,                                             "reserved");
-        Skip_S1( 2,                                             "2ch_presentation_channel_modifier");
-        Skip_S1( 2,                                             "6ch_presentation_channel_modifier");
+        Get_S1 ( 2, presentations[p_2ch].modifier,              "2ch_presentation_channel_modifier");
+        Get_S1 ( 2, dsurexmod_6ch,                              "6ch_presentation_channel_modifier");
         Get_S1 ( 5, HD_Channels1,                               "6ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels1)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels1)));
         Get_S1 ( 2, dsurexmod,                                  "8ch_presentation_channel_modifier");
         Get_S2 (13, HD_Channels2,                               "8ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels2)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels2)));
         BS_End();
-        HD_Resolution2=HD_Resolution1=24; //Not sure
+        HD_Resolution2=HD_Resolution1=2; //24-bits
         HD_SamplingRate2=HD_SamplingRate1;
+        if (dsurexmod_6ch && !(HD_Channels2 & (1 << 3)))
+            dsurexmod_6ch = 0; //Only if Ls/Rs
         if (dsurexmod && !(HD_Channels2&(1<<3)))
             dsurexmod=0; //Only if Ls/Rs
+        presentations[p_2ch].ch_assign = 1;
+        presentations[p_6ch].ch_assign = HD_Channels1;
+        presentations[p_8ch].ch_assign = HD_Channels2;
+        presentations[p_6ch].modifier = dsurexmod_6ch;
+        presentations[p_8ch].modifier = dsurexmod;
         Element_End0();
     }
     if (HD_StreamType==0xBB)
