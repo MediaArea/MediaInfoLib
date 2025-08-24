@@ -206,6 +206,23 @@ private :
     std::unique_ptr<int16u[]> CRC_16_Table_HD;
     std::unique_ptr<int8u[]> CRC_8_Table_HD;
     std::unique_ptr<int8u[]> CRC_8_1D_Table_HD;
+    struct Presentation {
+        int16u ch_assign{};
+        bool control_enabled{};
+        int8u elements{};
+        int8u modifier{};
+        int8u presentation{};
+        int8u dialogue_norm{};
+        int8u mix_level{};
+    };
+    enum presentation_ids {
+        p_2ch,
+        p_6ch,
+        p_8ch,
+        p_16ch,
+        p_max
+    };
+    std::vector<Presentation> presentations{ std::vector<Presentation>(p_max) };
 };
 
 } //NameSpace
