@@ -4286,6 +4286,7 @@ void File_Ac3::emdf_protection()
 void File_Ac3::object_audio_metadata_payload()
 {
     Element_Begin1("object_audio_metadata_payload");
+    auto RemainingBitsBegin = Data_BS_Remain();
     int8u oa_md_version_bits;
     Get_S1 (2, oa_md_version_bits,                              "oa_md_version_bits");
     if (oa_md_version_bits == 0x3)
@@ -4304,10 +4305,335 @@ void File_Ac3::object_audio_metadata_payload()
         Get_S1 (7, object_count_bits_ext,                       "object_count_bits_ext");
         num_dynamic_objects += object_count_bits_ext;
     }
+    int8u object_count{ num_dynamic_objects };
 
     program_assignment();
 
-    //TODO: next
+    #if MEDIAINFO_TRACE
+
+    bool b_alternate_object_data_present;
+    Get_SB(b_alternate_object_data_present,                     "b_alternate_object_data_present");
+    
+    int8u oa_element_count_bits;
+    int8u num_obj_info_blocks;
+    std::vector<std::vector<bool>> b_obj_not_active_Vec;
+    Get_S1(4, oa_element_count_bits,                            "oa_element_count_bits");
+    if (oa_element_count_bits == 0xF)
+    {
+        int8u oa_element_count_bits_ext;
+        Get_S1(3, oa_element_count_bits_ext,                    "oa_element_count_bits_ext");
+        oa_element_count_bits += oa_element_count_bits_ext;
+    }
+    for (int8u i = 0; i < oa_element_count_bits; ++i) {
+        Element_Begin1("oa_element_md");
+        int8u oa_element_id_idx;
+        int32u oa_element_size_bits;
+        Get_S1 (4, oa_element_id_idx,                           "oa_element_id_idx");
+        Get_V4 (4, oa_element_size_bits,                        "oa_element_size_bits");
+        auto oa_element_EndRemain = Data_BS_Remain() - (oa_element_size_bits + 1LL) * 8;
+        if (b_alternate_object_data_present)
+            Skip_S1(4,                                          "alternate_object_data_id_idx");
+        Skip_SB(                                                "b_discard_unknown_element");
+        switch (oa_element_id_idx)
+        {
+        case 1:                                                 // object_element
+        {
+            Element_Begin1("object_element");
+            Element_Begin1("md_update_info");
+            int8u sample_offset_code;
+            Get_S1(2, sample_offset_code,                       "sample_offset_code");
+            if (sample_offset_code == 0b01)
+                Skip_S1(2,                                      "sample_offset_idx");
+            else
+                if (sample_offset_code == 0b10)
+                    Skip_S1(5,                                  "sample_offset_bits");
+            int8u num_obj_info_blocks_bits;
+            Get_S1(3, num_obj_info_blocks_bits,                 "num_obj_info_blocks_bits");
+            num_obj_info_blocks = num_obj_info_blocks_bits + 1;
+            for (int8u blk = 0; blk < num_obj_info_blocks; ++blk) {
+                Element_Begin1("block_update_info");
+                Skip_S1(6,                                      "block_offset_factor_bits");
+                int8u ramp_duration_code;
+                Get_S1(2, ramp_duration_code,                   "ramp_duration_code");
+                if (ramp_duration_code == 0b11) {
+                    bool b_use_ramp_duration_idx;
+                    Get_SB(b_use_ramp_duration_idx,             "b_use_ramp_duration_idx");
+                        if (b_use_ramp_duration_idx)
+                            Skip_S1(6,                          "ramp_duration_idx");
+                        else
+                            Skip_S2(11,                         "ramp_duration_bits");
+                }
+                Element_End0(); //block_update_info
+            }
+            Element_End0(); //md_update_info
+            bool b_reserved_data_not_present;
+            Get_SB(b_reserved_data_not_present,                 "b_reserved_data_not_present");
+            if (!b_reserved_data_not_present)
+                Skip_S1(5,                                      "reserved");
+            
+            for (int8u j = 0; j < object_count; ++j) {
+                b_obj_not_active_Vec.push_back(std::vector<bool>());
+                Element_Begin1("object_data");
+                for (int8u blk = 0; blk < num_obj_info_blocks; ++blk) {
+                    Element_Begin1("object_info_block");
+                    bool b_object_not_active;
+                    int8u object_basic_info_status_idx;
+                    Get_SB(b_object_not_active,                 "b_object_not_active");
+                    b_obj_not_active_Vec[j].push_back(b_object_not_active);
+                    if (b_object_not_active)
+                        object_basic_info_status_idx = 0b00;
+                    else {
+                        if (blk == 0)
+                            object_basic_info_status_idx = 0b01;
+                        else
+                            Get_S1(2, object_basic_info_status_idx, "object_basic_info_status_idx");
+                    }
+                    if ((object_basic_info_status_idx == 0b01) || (object_basic_info_status_idx == 0b11)) {
+                        Element_Begin1("object_basic_info");
+                        bool object_basic_info[2]{};
+                        if (object_basic_info_status_idx == 0b01) {
+                            object_basic_info[1] = true;
+                            object_basic_info[0] = true;
+                        }
+                        else {
+                            Get_SB(object_basic_info[1],        "object_basic_info[1]");
+                            Get_SB(object_basic_info[0],        "object_basic_info[0]");
+                        }
+                        if (object_basic_info[1]) {
+                            int8u object_gain_idx;
+                            Get_S1(2, object_gain_idx,          "object_gain_idx");
+                            if (object_gain_idx == 0b10)
+                                Skip_S1(6,                      "object_gain_bits");
+                        }
+                        if (object_basic_info[0]) {
+                            bool b_default_object_priority;
+                            Get_SB(b_default_object_priority,   "b_default_object_priority");
+                            if (!b_default_object_priority)
+                                Skip_S1(5,                      "object_priority_bits");
+                        }
+                        Element_End0(); //object_basic_info
+                    }
+                    int8u object_render_info_status_idx{};
+                    if (b_object_not_active) {
+                        object_render_info_status_idx = 0b00;
+                    }
+                    else {
+                        bool b_object_in_bed_or_isf = j < (num_bed_objects + num_isf_objects);
+                        if (!b_object_in_bed_or_isf) {
+                            if (blk == 0) {
+                                object_render_info_status_idx = 0b01;
+                            }
+                            else {
+                                Get_S1(2, object_render_info_status_idx, "object_render_info_status_idx");
+                            }
+                        }
+                        else {
+                            object_render_info_status_idx = 0b00;
+                        }
+                    }
+                    if ((object_render_info_status_idx == 0b01) || (object_render_info_status_idx == 0b11)) {
+                        Element_Begin1("object_render_info");
+                        int8u obj_render_info{};
+                        if (object_render_info_status_idx == 0b01)
+                            obj_render_info = 0b1111;
+                        else
+                            Get_S1(4, obj_render_info,          "obj_render_info");
+                        bool b_differential_position_specified{};
+                        if (obj_render_info & 0b0001) {
+                            if (blk == 0)
+                                b_differential_position_specified = false;
+                            else
+                                Get_SB(b_differential_position_specified, "b_differential_position_specified");
+                            if (b_differential_position_specified) {
+                                Skip_S1(3,                      "diff_pos3D_X_bits");
+                                Skip_S1(3,                      "diff_pos3D_Y_bits");
+                                Skip_S1(3,                      "diff_pos3D_Z_bits");
+                            }
+                            else {
+                                Skip_S1(6,                      "pos3D_X_bits");
+                                Skip_S1(6,                      "pos3D_Y_bits");
+                                Skip_SB(                        "pos3D_Z_sign_bits");
+                                Skip_S1(4,                      "pos3D_Z_bits");
+                            }
+                            bool b_object_distance_specified;
+                            Get_SB(b_object_distance_specified, "b_object_distance_specified");
+                            if (b_object_distance_specified) {
+                                bool b_object_at_infinity;
+                                Get_SB(b_object_at_infinity,    "b_object_at_infinity");
+                                if (b_object_at_infinity) {
+                                    // object_distance = inf
+                                }
+                                else
+                                    Skip_S1(4,                  "distance_factor_idx");
+                            }
+                        }
+                        if (obj_render_info & 0b0010) {
+                            Skip_S1(3,                          "zone_constraints_idx");
+                            Skip_SB(                            "b_enable_elevation");
+                        }
+                        if (obj_render_info & 0b0100) {
+                            int8u object_size_idx;
+                            Get_S1(2, object_size_idx,          "object_size_idx");
+                            if (object_size_idx == 0b01)
+                                Skip_S1(5,                      "object_size_bits");
+                            else {
+                                if (object_size_idx == 0b10) {
+                                    Skip_S1(5,                  "object_width_bits");
+                                    Skip_S1(5,                  "object_depth_bits");
+                                    Skip_S1(5,                  "object_height_bits");
+                                }
+                            }
+                        }
+                        if (obj_render_info & 0b1000) {
+                            bool b_object_use_screen_ref;
+                            Get_SB(b_object_use_screen_ref,     "b_object_use_screen_ref");
+                            if (b_object_use_screen_ref) {
+                                Skip_S1(3,                      "screen_factor_bits");
+                                Skip_S1(2,                      "depth_factor_idx");
+                            }
+                            else {
+                                // screen_factor_bits = 0;
+                            }
+                        }
+                        Skip_SB(                                "b_object_snap");
+                        Element_End0(); //object_render_info
+                    }
+                    bool b_additional_table_data_exists;
+                    Get_SB(b_additional_table_data_exists,      "b_additional_table_data_exists");
+                    if (b_additional_table_data_exists) {
+                        int8u additional_table_data_size_bits;
+                        Get_S1(4, additional_table_data_size_bits, "additional_table_data_size_bits");
+                        Skip_BS((additional_table_data_size_bits+1LL)*8, "additional_table_data");
+                    }
+                    Element_End0(); //object_info_block
+                }
+                Element_End0(); //object_data
+            }
+            
+            Element_End0(); //object_element
+            break;
+        }
+        case 2:                                                 // trim_element
+        {
+            Element_Begin1("trim_element");
+            const int8u NUM_TRIM_CONFIGS{ 9 };
+            Skip_S1(2,                                          "warp_mode");
+            Skip_S1(2,                                          "reserved");
+            int8u global_trim_mode;
+            Get_S1(2, global_trim_mode,                         "global_trim_mode"); Param_Info1(global_trim_mode == 0 ? "default_trim" : global_trim_mode == 1 ? "disable_trim" : global_trim_mode == 2 ? "custom_trim" : "");
+            if (global_trim_mode == 0b10) {
+                for (int8u cfg = 0; cfg < NUM_TRIM_CONFIGS; ++cfg) {
+                    bool b_default_trim;
+                    Get_SB(b_default_trim,                      "b_default_trim");
+                    if (b_default_trim == 0) {
+                        bool b_disable_trim;
+                        Get_SB(b_disable_trim,                  "b_disable_trim");
+                        if (b_disable_trim == 0) {
+                            int8u trim_balance_presence;
+                            Get_S1(5, trim_balance_presence,    "trim_balance_presence");
+                            if (trim_balance_presence & 0b10000)
+                                Skip_S1(4,                      "trim_centre");
+                            if (trim_balance_presence & 0b01000)
+                                Skip_S1(4,                      "trim_surround");
+                            if (trim_balance_presence & 0b00100)
+                                Skip_S1(4,                      "trim_height");
+                            if (trim_balance_presence & 0b00010) {
+                                Skip_SB(                        "bal3D_Y_sign_tb_code");
+                                Skip_S1(4,                      "bal3D_Y_amount_tb");
+                            }
+                            if (trim_balance_presence & 0b00010) {
+                                Skip_SB(                        "bal3D_Y_sign_lis_code");
+                                Skip_S1(4,                      "bal3D_Y_amount_lis");
+                            }
+                        }
+                    }
+                }
+            }
+            TEST_SB_SKIP(                                       "b_disable_trim_per_obj");
+                for (int8u obj = 0; obj < object_count; obj++)
+                    Skip_SB(                                    "b_disable_trim");
+            TEST_SB_END();
+            Element_End0(); // trim_element
+            break;
+        }
+        case 5:                                                 // extended_object_element
+        {
+            Element_Begin1("extended_object_element");
+            TEST_SB_SKIP(                                       "b_obj_div_block");
+                for (int8u obj = 0; obj < object_count; ++obj) {
+                    for (int8u blk = 0; blk < num_obj_info_blocks; ++blk) {
+                        Element_Begin1("obj_div_block");
+                        if (b_obj_not_active_Vec[obj][blk]) {
+                            // object_divergence = 0;
+                        }
+                        else {
+                            bool obj_type_DYNAMIC = obj >= (num_bed_objects + num_isf_objects);
+                            if (obj_type_DYNAMIC) {
+                                TEST_SB_SKIP(                   "b_object_divergence");
+                                    int8u object_div_mode;
+                                    Get_S1(2, object_div_mode,  "object_div_mode");
+                                    if (object_div_mode == 0)
+                                        Skip_S1(2,              "object_div_table");
+                                    if (object_div_mode == 2 || object_div_mode == 3) {
+                                        Skip_S1(6,              "object_div_code");
+                                    }
+                                    else {
+                                        // object_divergence = 0;
+                                    }
+                                TEST_SB_END();
+                            }
+                        }
+                        Element_End0(); // obj_div_block
+                    }
+                }
+            TEST_SB_END();
+            TEST_SB_SKIP(                                       "b_ext_prec_pos_block");
+                for (int8u obj = 0; obj < object_count; ++obj) {
+                    for (int8u blk = 0; blk < num_obj_info_blocks; ++blk) {
+                        Element_Begin1("ext_prec_pos_block");
+                        if (b_obj_not_active_Vec[obj][blk]) {
+                            // b_ext_prec_pos = false;
+                        }
+                        else {
+                            bool obj_type_DYNAMIC = obj >= (num_bed_objects + num_isf_objects);
+                            if (obj_type_DYNAMIC) {
+                                TEST_SB_SKIP(                   "b_ext_prec_pos");
+                                    int8u ext_prec_pos_presence;
+                                    Get_S1(3, ext_prec_pos_presence, "ext_prec_pos_presence");
+                                    if (ext_prec_pos_presence & 0b100)
+                                        Skip_S1(2,              "ext_prec_pos3D_X");
+                                    if (ext_prec_pos_presence & 0b010)
+                                        Skip_S1(2,              "ext_prec_pos3D_Y");
+                                    if (ext_prec_pos_presence & 0b001)
+                                        Skip_S1(2,              "ext_prec_pos3D_Z");
+                                TEST_SB_END();
+                            }
+                        }
+                        Element_End0(); // ext_prec_pos_block
+                    }
+                }
+            TEST_SB_END();
+            Element_End0(); // extended_object_element
+            break;
+        }
+        default:                                                // reserved
+        {
+            auto RemainingBits = Data_BS_Remain();
+            if (RemainingBits > oa_element_EndRemain)
+                Skip_BS(RemainingBits - oa_element_EndRemain,   "(Not parsed)");
+            break;
+        }
+        }
+        auto RemainingBits = Data_BS_Remain();
+        if (RemainingBits > oa_element_EndRemain)
+            Skip_BS(RemainingBits - oa_element_EndRemain,       "padding");
+        Element_End0(); //oa_element_md
+    }
+    auto RemainingBitsEnd = Data_BS_Remain();
+    auto size = RemainingBitsBegin - RemainingBitsEnd;
+    Skip_BS(8 - (size & 7),                                     "padding");
+
+    #endif // MEDIAINFO_TRACE
 
     Element_End0();
 }
@@ -4369,8 +4695,12 @@ void File_Ac3::program_assignment()
             }
         }
 
-        if (content_description_mask & 0x2)
-            Skip_S1(3,                                          "intermediate_spatial_format_idx");
+        if (content_description_mask & 0x2) {
+            const int8u num_isf_objects_lookup[] = {4, 8, 10, 14, 15, 30};
+            int8u intermediate_spatial_format_idx;
+            Get_S1(3, intermediate_spatial_format_idx,          "intermediate_spatial_format_idx");
+            num_isf_objects = num_isf_objects_lookup[intermediate_spatial_format_idx];
+        }
 
         if (content_description_mask & 0x4)
         {
@@ -4396,6 +4726,13 @@ void File_Ac3::program_assignment()
             if (padding)
                 Skip_S1(padding,                                "padding");
         }
+    }
+
+    num_bed_objects = 0;
+    int32u n{ nonstd_bed_channel_assignment_mask };
+    while (n) {
+        n &= (n - 1);
+        ++num_bed_objects;
     }
 
     Element_End0();
