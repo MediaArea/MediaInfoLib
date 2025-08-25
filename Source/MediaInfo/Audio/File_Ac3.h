@@ -148,6 +148,8 @@ private :
     int16u HD_Channels2{};
     int16u HD_flags{};
     int8u  num_dynamic_objects;
+    int32u num_bed_objects{};
+    int8u  num_isf_objects{};
     int8u  fscod;
     int8u  fscod2;
     int8u  frmsizecod;
