@@ -11478,8 +11478,10 @@ void File_Mxf::PartitionMetadata()
     {
         switch ((Code.lo>>8)&0xFF)
         {
-            case 0x02 :
-            case 0x04 :
+            case 0x02 : Fill(Stream_General, 0, General_Format_Settings, "Closed / Incomplete", Unlimited, true, true);
+                        Config->File_IsGrowing=false;
+                        break;
+            case 0x04 : Fill(Stream_General, 0, General_Format_Settings, "Closed / Complete"  , Unlimited, true, true);
                         Config->File_IsGrowing=false;
                         break;
             default   : ;
