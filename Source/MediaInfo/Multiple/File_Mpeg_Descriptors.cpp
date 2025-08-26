@@ -777,8 +777,10 @@ const char* Mpeg_Descriptors_component_type_O9(int8u stream_content_ext, int8u c
     }
 }
 
-const string Mpeg_Descriptors_component_type_OB_ext_0E(int8u component_type)
+const char *Mpeg_Descriptors_component_type_OB_ext_0E(int8u component_type)
 {
+
+
     vector<string> evals;
     if (component_type & 0b01000000)
         evals.push_back("pre-rendered for headphones");
@@ -797,7 +799,7 @@ const string Mpeg_Descriptors_component_type_OB_ext_0E(int8u component_type)
         case 0b00000011 : evals.push_back("3B"); break;
     }
 
-     string ret;
+    static string ret;
     for (unsigned int i = 0; i < evals.size(); i++) {
         ret += evals[i];
         if (i >= (evals.size() - 1)) {
@@ -805,7 +807,7 @@ const string Mpeg_Descriptors_component_type_OB_ext_0E(int8u component_type)
         }
         ret += ", "; // concatenating string
     }
-    return ret;
+    return ret.c_str();
 }
 
 const char* Mpeg_Descriptors_component_type_OB_ext_0F(int8u component_type)
