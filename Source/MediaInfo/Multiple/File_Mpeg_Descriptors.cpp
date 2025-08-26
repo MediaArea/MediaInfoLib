@@ -797,7 +797,7 @@ const char* Mpeg_Descriptors_component_type_OB_ext_0E(int8u component_type)
         case 0b00000011 : evals.push_back("3B"); break;
     }
 
-    string ret = "";
+    static string ret = "";
     for (unsigned int i = 0; i < evals.size(); i++) {
         ret += evals[i];
         if (i >= (evals.size() - 1)) {
