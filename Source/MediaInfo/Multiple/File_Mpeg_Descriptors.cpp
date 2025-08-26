@@ -777,38 +777,6 @@ const char* Mpeg_Descriptors_component_type_O9(int8u stream_content_ext, int8u c
     }
 }
 
-/* use this when we have a solution that does not use 'static'
-const char *Mpeg_Descriptors_component_type_OB_ext_0E(int8u component_type)
-{
-    vector<string> evals;
-    if (component_type & 0b01000000)
-        evals.push_back("pre-rendered for headphones");
-    if (component_type & 0b00100000)
-        evals.push_back("enables interactivity");
-    if (component_type & 0b00010000)
-        evals.push_back("enables dialogue enhancement");
-    if (component_type & 0b00001000)
-        evals.push_back("contains spoken subtitles");
-    if (component_type & 0b00000100)
-        evals.push_back("contains audio description");
-
-    switch (component_type & 0b00000011) {
-        case 0b00000001 : evals.push_back("stereo"); break;
-        case 0b00000010 : evals.push_back("2D"); break;
-        case 0b00000011 : evals.push_back("3B"); break;
-    }
-
-    static string ret;
-    for (unsigned int i = 0; i < evals.size(); i++) {
-        ret += evals[i];
-        if (i >= (evals.size() - 1)) {
-            break; // escaping in the last iteration
-        }
-        ret += ", "; // concatenating string
-    }
-    return ret.c_str();
-}
-*/
 const char* Mpeg_Descriptors_component_type_OB_ext_0F(int8u component_type)
 {
     switch (component_type)
@@ -833,7 +801,6 @@ const char* Mpeg_Descriptors_component_type_OB(int8u stream_content_ext, int8u c
 {
     switch(stream_content_ext)
     {
-//      case 0x0E : return Mpeg_Descriptors_component_type_OB_ext_0E(component_type);
         case 0x0F : return Mpeg_Descriptors_component_type_OB_ext_0F(component_type);
         default:
             return RESERVED_FUTURE_USE;
@@ -866,6 +833,7 @@ const char* Mpeg_Descriptors_codepage_1(int8u codepage)
 
 const char* Mpeg_Descriptors_component_type(int8u stream_content, int8u stream_content_ext, int8u component_type)
 {
+     // case of (component_type stream_content == 0x0B && stream_content_ext == 0x0E) is handled in NGA_component()
     switch (stream_content)
     {
         case 0x01 : return Mpeg_Descriptors_component_type_O1(component_type);
