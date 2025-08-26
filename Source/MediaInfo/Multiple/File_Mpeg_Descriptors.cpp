@@ -777,10 +777,9 @@ const char* Mpeg_Descriptors_component_type_O9(int8u stream_content_ext, int8u c
     }
 }
 
+/* use this when we have a solution that does not use 'static'
 const char *Mpeg_Descriptors_component_type_OB_ext_0E(int8u component_type)
 {
-
-
     vector<string> evals;
     if (component_type & 0b01000000)
         evals.push_back("pre-rendered for headphones");
@@ -809,7 +808,7 @@ const char *Mpeg_Descriptors_component_type_OB_ext_0E(int8u component_type)
     }
     return ret.c_str();
 }
-
+*/
 const char* Mpeg_Descriptors_component_type_OB_ext_0F(int8u component_type)
 {
     switch (component_type)
@@ -834,7 +833,7 @@ const char* Mpeg_Descriptors_component_type_OB(int8u stream_content_ext, int8u c
 {
     switch(stream_content_ext)
     {
-        case 0x0E : return Mpeg_Descriptors_component_type_OB_ext_0E(component_type);
+//      case 0x0E : return Mpeg_Descriptors_component_type_OB_ext_0E(component_type);
         case 0x0F : return Mpeg_Descriptors_component_type_OB_ext_0F(component_type);
         default:
             return RESERVED_FUTURE_USE;
@@ -2945,6 +2944,51 @@ void File_Mpeg_Descriptors::Descriptor_4D()
 }
 
 //---------------------------------------------------------------------------
+void File_Mpeg_Descriptors::NGA_component()
+{
+    int8u flag;
+    Element_Begin1("component_type");
+    BS_Begin();
+    // see Table 27 of DVB A038 / ETSI EN 300 468
+    Skip_S1(1,                                              "reserved_zero_future_use");
+    Peek_S1(1, flag);
+    if (flag) {
+        Get_S1(1, flag, "b6");  Param_Info1("content is pre-rendered for consumption with headphones"); Element_Info1("content is pre-rendered for consumption with headphones");
+    }
+    else Skip_S1(1, "b6");
+    Peek_S1(1, flag);
+    if (flag) {
+        Get_S1(1, flag, "b5");  Param_Info1("content enables interactivity"); Element_Info1("content enables interactivity");
+    }
+    else Skip_S1(1, "b5");
+    Peek_S1(1, flag);
+    if (flag) {
+        Get_S1(1, flag, "b4");  Param_Info1("content enables dialogue enhancement"); Element_Info1("content enables dialogue enhancement");
+    }
+    else Skip_S1(1, "b4");
+    Peek_S1(1, flag);
+    if (flag) {
+        Get_S1(1, flag, "b3");  Param_Info1("content contains spoken subtitles"); Element_Info1("content contains spoken subtitles");
+    }
+    else Skip_S1(1, "b3");
+    Peek_S1(1, flag);
+    if (flag) {
+        Get_S1(1, flag, "b2");  Param_Info1("content contains audio description"); Element_Info1("content contains audio description");
+    }
+    else Skip_S1(1, "b2");
+    Get_S1(2, flag, "preferred_reproduction"); 
+    switch (flag) {
+        case 0x00 : Param_Info1("no preference"); Element_Info1("no preference"); break;
+        case 0x01 : Param_Info1("stereo"); Element_Info1("stereo"); break;
+        case 0x02 : Param_Info1("two-dimensional"); Element_Info1("two-dimensional"); break;
+        case 0x03 : Param_Info1("three-dimensional"); Element_Info1("three-dimensional"); break;
+        default : ;
+    }
+    BS_End();
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg_Descriptors::Descriptor_50()
 {
     //Parsing
@@ -2954,7 +2998,11 @@ void File_Mpeg_Descriptors::Descriptor_50()
     Get_S1 (4, stream_content_ext,                              "stream_content_ext");
     Get_S1 (4, stream_content,                                  "stream_content"); Param_Info1(Mpeg_Descriptors_stream_content(stream_content)); Element_Info1(Mpeg_Descriptors_stream_content(stream_content));
     BS_End();
-    Info_B1(component_type,                                     "component_type"); Param_Info1(Mpeg_Descriptors_component_type(stream_content, stream_content_ext, component_type)); Element_Info1(Mpeg_Descriptors_component_type(stream_content, stream_content_ext, component_type));
+    if (stream_content == 0x0B && stream_content_ext == 0x0E)
+        NGA_component();
+    else {
+        Info_B1(component_type,                                 "component_type"); Param_Info1(Mpeg_Descriptors_component_type(stream_content, stream_content_ext, component_type)); Element_Info1(Mpeg_Descriptors_component_type(stream_content, stream_content_ext, component_type));
+    }
     Info_B1(component_tag,                                      "component_tag");
     Get_C3 (ISO_639_language_code,                              "ISO_639_language_code");
     Skip_DVB_Text(Element_Size-Element_Offset, ISO_639_language_code, "text");
