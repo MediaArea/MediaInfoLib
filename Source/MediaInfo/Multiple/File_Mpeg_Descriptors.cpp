@@ -1621,6 +1621,14 @@ const int16u DVB_Text_00[96]=
 };
 
 //---------------------------------------------------------------------------
+static const char* NGA_component_preferred_reproduction[] =
+{
+    "stereo",
+    "two-dimensional",
+    "three-dimensional",
+};
+
+//---------------------------------------------------------------------------
 extern const size_t DolbyVision_Compatibility_Size;
 extern const char* DolbyVision_Compatibility[];
 
@@ -2915,44 +2923,16 @@ void File_Mpeg_Descriptors::Descriptor_4D()
 //---------------------------------------------------------------------------
 void File_Mpeg_Descriptors::NGA_component()
 {
-    int8u flag;
     Element_Begin1("component_type");
     BS_Begin();
     // see Table 27 of DVB A038 / ETSI EN 300 468
-    Skip_S1(1,                                              "reserved_zero_future_use");
-    Peek_S1(1, flag);
-    if (flag) {
-        Get_S1(1, flag, "b6");  Param_Info1("content is pre-rendered for consumption with headphones"); Element_Info1("content is pre-rendered for consumption with headphones");
-    }
-    else Skip_S1(1, "b6");
-    Peek_S1(1, flag);
-    if (flag) {
-        Get_S1(1, flag, "b5");  Param_Info1("content enables interactivity"); Element_Info1("content enables interactivity");
-    }
-    else Skip_S1(1, "b5");
-    Peek_S1(1, flag);
-    if (flag) {
-        Get_S1(1, flag, "b4");  Param_Info1("content enables dialogue enhancement"); Element_Info1("content enables dialogue enhancement");
-    }
-    else Skip_S1(1, "b4");
-    Peek_S1(1, flag);
-    if (flag) {
-        Get_S1(1, flag, "b3");  Param_Info1("content contains spoken subtitles"); Element_Info1("content contains spoken subtitles");
-    }
-    else Skip_S1(1, "b3");
-    Peek_S1(1, flag);
-    if (flag) {
-        Get_S1(1, flag, "b2");  Param_Info1("content contains audio description"); Element_Info1("content contains audio description");
-    }
-    else Skip_S1(1, "b2");
-    Get_S1(2, flag, "preferred_reproduction"); 
-    switch (flag) {
-        case 0x00 : Param_Info1("no preference"); Element_Info1("no preference"); break;
-        case 0x01 : Param_Info1("stereo"); Element_Info1("stereo"); break;
-        case 0x02 : Param_Info1("two-dimensional"); Element_Info1("two-dimensional"); break;
-        case 0x03 : Param_Info1("three-dimensional"); Element_Info1("three-dimensional"); break;
-        default : ;
-    }
+    Skip_SB(                                                "reserved_zero_future_use");
+    Info_SB(b6,                                             "content is pre-rendered for consumption with headphones"); Element_Info1C(b6, "content is pre-rendered for consumption with headphones");
+    Info_SB(b5,                                             "content enables interactivity"); Element_Info1C(b5, "content enables interactivity");
+    Info_SB(b4,                                             "content enables dialogue enhancement"); Element_Info1C(b4, "content enables dialogue enhancement");
+    Info_SB(b3,                                             "content contains spoken subtitles"); Element_Info1C(b3, "content contains spoken subtitles");
+    Info_SB(b2,                                             "content contains audio description"); Element_Info1C(b2, "content contains audio description");
+    Info_S1(2, b10,                                         "preferred reproduction channel layout"); Element_Info1C(b10, NGA_component_preferred_reproduction[b10-1]);
     BS_End();
     Element_End0();
 }
