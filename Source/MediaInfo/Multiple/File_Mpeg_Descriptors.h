@@ -785,6 +785,7 @@ private :
     void Descriptor_4D();
     void Descriptor_4E() {Skip_XX(Element_Size, "Data");};
     void Descriptor_4F() {Skip_XX(Element_Size, "Data");};
+    void NGA_component();
     void Descriptor_50();
     void Descriptor_51() {Skip_XX(Element_Size, "Data");};
     void Descriptor_52();
