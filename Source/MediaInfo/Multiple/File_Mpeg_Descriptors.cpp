@@ -777,6 +777,7 @@ const char* Mpeg_Descriptors_component_type_O9(int8u stream_content_ext, int8u c
     }
 }
 
+
 const char* Mpeg_Descriptors_component_type_OB_ext_0F(int8u component_type)
 {
     switch (component_type)
@@ -797,9 +798,9 @@ const char* Mpeg_Descriptors_component_type_OB_ext_0F(int8u component_type)
     }
 }
 
-const char* Mpeg_Descriptors_component_type_OB(int8u stream_content_ext, int8u component_type)
+static string Mpeg_Descriptors_component_type_OB(int8u stream_content_ext, int8u component_type)
 {
-    switch(stream_content_ext)
+    switch (stream_content_ext)
     {
         case 0x0F : return Mpeg_Descriptors_component_type_OB_ext_0F(component_type);
         default:
@@ -831,7 +832,7 @@ const char* Mpeg_Descriptors_codepage_1(int8u codepage)
     }
 }
 
-const char* Mpeg_Descriptors_component_type(int8u stream_content, int8u stream_content_ext, int8u component_type)
+static string Mpeg_Descriptors_component_type(int8u stream_content, int8u stream_content_ext, int8u component_type)
 {
      // case of (component_type stream_content == 0x0B && stream_content_ext == 0x0E) is handled in NGA_component()
     switch (stream_content)
@@ -849,9 +850,9 @@ const char* Mpeg_Descriptors_component_type(int8u stream_content, int8u stream_c
 
         default   :
             if (component_type>=0xB0 && component_type<=0xFE)
-                    return "user defined";
+                return "user defined";
             else
-                    return "reserved for future use";
+                return "reserved for future use";
     }
 }
 
