@@ -55,6 +55,7 @@ File_Flac::File_Flac()
     FromIamf=false;
 
     //Temp
+    Last_metadata_block=false;
     IsAudioFrames=false;
 }
 
@@ -166,7 +167,8 @@ void File_Flac::Data_Parse()
     if (Element_Code==(int8u)-1)
     {
         //No more need data
-        File__Tags_Helper::Finish("Flac");
+        if (!FromIamf)
+            File__Tags_Helper::Finish("Flac");
     }
     else if (Last_metadata_block)
     {
