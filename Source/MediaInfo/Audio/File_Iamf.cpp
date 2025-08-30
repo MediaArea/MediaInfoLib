@@ -776,6 +776,10 @@ void File_Iamf::ia_parameter_block()
     //Parsing
     int64u parameter_id, subblock_duration;
     Get_leb128    (parameter_id,                                "parameter_id");
+    if (param_definitions.find(parameter_id) == param_definitions.end()) {
+        Trusted_IsNot("parameter_id is not found in any OBU_IA_Audio_Element or OBU_IA_Mix_Presentation");
+        return;
+    }
     auto& param_definition = param_definitions[parameter_id];
     if (param_definition.param_definition_mode) {
         Get_leb128(param_definition.duration,                   "duration");

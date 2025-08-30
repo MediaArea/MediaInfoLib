@@ -177,6 +177,11 @@ void File_Opus::Identification()
     Get_X4 (sample_rate,                                        "rate");
     Skip_X2(                                                    "ouput_gain");
     Get_L1 (ch_map,                                             "channel_map");
+    if (FromIamf && ch_map) {
+        Identification_Done = true;
+        Trusted_IsNot("Opus ID Header does not conform with ChannelMappingFamily = 0 when in IAMF");
+        return;
+    }
     if (ch_map)
     {
         Skip_L1(                                                "Stream count (N)");
@@ -203,6 +208,13 @@ void File_Opus::Identification()
         }
 
         if (!FromIamf) {
+            //      0       Mono, L/R stereo                    [RFC7845, Section 5.1.1.1][RFC8486, Section 5]
+            //      1       1 - 8 channel surround              [RFC7845, Section 5.1.1.2][RFC8486, Section 5]
+            //      2       Ambisonics as individual channels   [RFC8486, Section 3.1]
+            //      3       Ambisonics with demixing matrix     [RFC8486, Section 3.2]
+            //    4 - 239   Unassigned
+            //  240 - 254   Experimental use                    [RFC8486, Section 6]
+            //     255      Discrete channels                   [RFC7845, Section 5.1.1.3][RFC8486, Section 5]
             switch (ch_map)
             {
             case 0 : // Mono/Stereo
