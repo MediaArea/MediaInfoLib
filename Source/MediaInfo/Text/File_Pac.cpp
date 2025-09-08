@@ -133,7 +133,7 @@ void File_Pac::Streams_Finish()
         Offset.SetSeconds(0);
         Offset.SetFrames(0);
     }
-    int64s Duration = (Time_End_Command - Time_Start_Command).ToMilliseconds();
+    int64s Duration = (Time_End_Command - Offset).ToMilliseconds();
     Fill(Stream_General, 0, General_Duration, Duration);
     Fill(Stream_Text, 0, Text_Duration, Duration);
     Fill(Stream_Text, 0, Text_Duration_Start_Command, (int64s)(Time_Start_Command - Offset).ToMilliseconds());
@@ -158,9 +158,7 @@ void File_Pac::Streams_Finish()
         auto Start2End = (int64s)(Time_End - Time_Start).ToMilliseconds();
         Fill(Stream_Text, 0, Text_Duration_Start2End, Start2End);
     }
-    if (Delay_TC.IsValid()) {
-        Fill(Stream_Text, 0, Text_Delay, (int64s)Delay_TC.ToMilliseconds());
-    }
+    Fill(Stream_Text, 0, Text_Delay, (int64s)(Delay_TC.IsValid()?Delay_TC:Offset).ToMilliseconds());
 
     if (Frame_Count) {
         Fill(Stream_Text, 0, Text_Events_Total, Frame_Count - EmptyCount);
