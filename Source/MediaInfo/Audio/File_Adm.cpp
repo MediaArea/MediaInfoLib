@@ -279,26 +279,46 @@ enum check_flags_items {
     Count0,
     Count1,
     Count2,
-    Dolby0,
-    Dolby1,
-    Dolby2,
+    CountReserved,
+    Atmos0,
+    Atmos1,
+    Atmos2,
+    AtmosReserved,
     AdvSSE0,
     AdvSSE1,
     AdvSSE2,
-    Reserved9,
+    AdvSSEReserved,
     Version_Max0,
     Version_Max1,
     Version_Max2,
+    Version_MaxReserved,
     Version_Min0,
     Version_Min1,
     Version_Min3,
+    Version_MinReserved,
     flags_Max
 };
+auto Info_Flag_Max = Version_Max0 >> 2;
 class check_flags : public bitset<flags_Max> {
 public:
     consteval check_flags(unsigned long val) : bitset(val) {}
-    consteval check_flags(unsigned long min, unsigned long max, unsigned long val0, unsigned long val1, unsigned long val2, unsigned long val3, unsigned long val4, unsigned long val5, unsigned long val6, unsigned long val7, unsigned long val8)
-    : check_flags((val0 << 0) | (val1 << 1) | (val2 << 2) | (val3 << 3) | (val4 << 4) | (val5 << 5) | (val6 << 6) | (val7 << 7) | (val8 << 8) | (min << Version_Min0) | (max << Version_Max0)) {}
+    consteval check_flags(unsigned long min, unsigned long max,
+                          unsigned long Flag_Count0, unsigned long Flag_Count1, unsigned long Flag_Count2,
+                          unsigned long Flag_Atmos0, unsigned long Flag_Atmos1, unsigned long Flag_Atmos2,
+                          unsigned long Flag_AdvSSE0, unsigned long Flag_AdvSSE1, unsigned long Flag_AdvSSE2,
+                          unsigned long = 1)
+    : check_flags(((Flag_Count0) << Count0)
+                | ((Flag_Count1) << Count1)
+                | ((Flag_Count2) << Count2)
+                | ((Flag_Atmos0 | !Flag_Count0) << Atmos0)
+                | ((Flag_Atmos1 | !Flag_Count1) << Atmos1)
+                | ((Flag_Atmos2 | !Flag_Count2) << Atmos2)
+                | ((Flag_AdvSSE0 | !Flag_Count0) << AdvSSE0)
+                | ((Flag_AdvSSE1 | !Flag_Count1) << AdvSSE1)
+                | ((Flag_AdvSSE2 | !Flag_Count2) << AdvSSE2)
+                | (min << Version_Min0)
+                | (max << Version_Max0)
+                ) {}
 };
 
 struct attribute_item {
@@ -1042,15 +1062,16 @@ enum error_Type {
 enum source {
     Source_ADM,
     Source_Atmos_1_0,
-    Source_Atmos_1_1,
     Source_AdvSSE_1,
+    // Minor update, not in the common checks
+    Source_Atmos_1_1,
     source_Max,
 };
 static const char* Source_Strings[] = {
     "",
     ADM_Atmos_1_0,
-    ADM_Atmos_1_1,
     ADM_AdvSSE_1,
+    ADM_Atmos_1_1,
 };
 static_assert(sizeof(Source_Strings) / sizeof(Source_Strings[0]) == source_Max, "");
 
@@ -1076,8 +1097,8 @@ static constexpr size_t schema_String_Size = sizeof(schema_String) / sizeof(sche
 static_assert(schema_String_Size + 1 == Schema_Max, IncoherencyMessage);
 
 
-                                                 // Ver  |Count|Atmos   |AdvSS-E
-                                                 // m  M |0  2+|0  1  2+|0  1  2+
+                                                 // Ver  |Count   |Atmos   |AdvSS-E
+                                                 // m  M |0  1  2+|0  1  2+|0  1  2+
 static constexpr element_items root_Elements =
 {
     { "frameHeader"                             , { 0, 7, 1, 1, 0, 1, 1, 0, 1, 1, 0 }, item_frameHeader },
@@ -1145,7 +1166,7 @@ static element_items audioContent_Elements =
     { "audioObjectIDRef"                        , { 0, 7, 0, 1, 1, 0, 1, 1, 0, 1, 0 } },
     { "loudnessMetadata"                        , { 0, 7, 1, 1, 1, 1, 0, 0, 0, 1, 0 }, item_loudnessMetadata },
     { "dialogue"                                , { 0, 7, 1, 1, 0, 0, 1, 0, 0, 1, 0 } },
-    { "alternativeValueSetIDRef"                , { 2, 7, 1, 1, 1, 1, 0, 0, 1, 0, 1 } },
+    { "alternativeValueSetIDRef"                , { 2, 7, 1, 1, 1, 1, 0, 0, 1, 1, 1 } },
 };
 static_assert(sizeof(audioContent_Elements) / sizeof(element_item) == audioContent_Element_Max, IncoherencyMessage);
 
@@ -1160,7 +1181,7 @@ static attribute_items audioObject_Attributes =
     { "importance"                              , { 0, 7, 1, 1, 0, 1, 0, 0, 1, 0, 0 } },
     { "interact"                                , { 0, 7, 1, 1, 0, 1, 0, 0, 0, 1, 0 } },
     { "disableDucking"                          , { 0, 7, 1, 1, 0, 1, 1, 0, 1, 0, 0 } },
-    { "typeLabel"                               , { 0, 0, 1,1,  0, 1, 0, 0, 1, 0, 0 } }, // TODO
+    { "typeLabel"                               , { 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0 } }, // TODO
 };
 static_assert(sizeof(audioObject_Attributes) / sizeof(attribute_item) == audioObject_Attribute_Max, IncoherencyMessage);
 
@@ -2914,31 +2935,21 @@ static void CheckErrors_Attributes(file_adm_private* File_Adm_Private, item Item
     auto& Attributes_Present = Item.Attributes_Present;
     for (size_t j = 0; j < Attributes.size(); j++) {
         const auto& Info = Attribute_Infos[j];
-        switch (Attributes_Counts[j]) {
-        case 0:
-            if (!Info.Flags[Count0]) {
-                Item.AddError(Error, 0x80 | (int8u)j, E::Present0, 0);
-                break;
-            }
-            if (!Info.Flags[AdvSSE0]) {
-                Item.AddError(Error, 0x80 | (int8u)j, E::Present0, 0, Source_AdvSSE_1);
-            }
-            if (!Info.Flags[Dolby0]) {
-                Item.AddError(Error, 0x80 | (int8u)j, E::Present0, 0, Source_Atmos_1_0);
-            }
-            break;
-        default:
+        const auto Count = Attributes_Counts[j];
+        auto Count_Max1 = Count ? 1 : Count;
+        if (Count > 1) {
             Item.AddError(Error, ':' + CraftName(item_Infos[Item_Type].Name) + to_string(i) + ":" + CraftName(Attribute_Infos[j].Name) + ":" + string(Attribute_Infos[j].Name) + " attribute shall be unique");
-            [[fallthrough]];
-        case 1:
-        {
+        }
+        if (!Count_Max1 || Info.Flags[Atmos1] || (/*File_Adm_Private->Schema != Schema_ebuCore_2014 ||*/ strcmp(Info.Name, "typeLabel") && strcmp(Info.Name, "typeDefinition"))) {
+            // Handling generic errors from arrays
+            for (int k = 0; k < Info_Flag_Max; k++) {
+                if (!Info.Flags[Count0 + Count_Max1 + (k << 2)]) {
+                    Item.AddError(Error, 0x80 | (int8u)j, E((unsigned)E::Present0 + Count_Max1), 0, (source)k);
+                }
+            }
+        }
+        if (Count) {
             Attributes_Present[j] = true;
-            if (!Info.Flags[AdvSSE1]) {
-                Item.AddError(Error, 0x80 | (int8u)j, E::Present1, 0, Source_AdvSSE_1);
-            }
-            if (!Info.Flags[Dolby1] && (/*File_Adm_Private->Schema != Schema_ebuCore_2014 ||*/ strcmp(Info.Name, "typeLabel") && strcmp(Info.Name, "typeDefinition"))) {
-                Item.AddError(Error, 0x80 | (int8u)j, E::Present1, 0, Source_Atmos_1_0);
-            }
             const auto& Attribute = Attributes[j];
             if (Attribute.size() > 64) {
                 auto Attribute_Unicode = Ztring().From_UTF8(Attribute).To_Unicode();
@@ -2952,7 +2963,6 @@ static void CheckErrors_Attributes(file_adm_private* File_Adm_Private, item Item
                     Item.AddError(Warning, Item_Type, i, ':' + string(Info.Name) + ':' + string(Info.Name) + " attribute is present but empty");
                 }
             }
-        }
         }
     }
 };
@@ -2980,46 +2990,13 @@ static void CheckErrors_Elements(file_adm_private* File_Adm_Private, item Item_T
     for (size_t j = 0; j < Elements.size(); j++) {
         const auto& Element = Elements[j];
         const auto& Info = Element_Infos[j];
-        const auto Element_Size = Element.size();
-        switch (Element.size()) {
-        case 0:
-            if (!Info.Flags[Count0]) {
-                Item.AddError(Error, j, E::Present0, 0);
-                break;
-            }
-            else {
-                if (!Info.Flags[AdvSSE0]) {
-                    Item.AddError(Error, j, E::Present0, 0, Source_AdvSSE_1);
-                }
-                if (!Info.Flags[Dolby0]) {
-                    Item.AddError(Error, j, E::Present0, 0, Source_Atmos_1_0);
-                }
-            }
-            break;
-        case 1:
-            if (!Info.Flags[Count1]) {
-                Item.AddError(Error, j, E::Present1, 0);
-            }
-            else {
-                if (!Info.Flags[AdvSSE1]) {
-                    Item.AddError(Error, j, E::Present1, 0, Source_AdvSSE_1);
-                }
-                if (!Info.Flags[Dolby1]) {
-                    Item.AddError(Error, j, E::Present1, 0, Source_Atmos_1_0);
-                }
-            }
-            break;
-        default:
-            if (!Info.Flags[Count2]) {
-                Item.AddError(Error, j, E::Present2, (int8u)Element_Size);
-                break;
-            }
-            else {
-                if (!Info.Flags[AdvSSE2]) {
-                    Item.AddError(Error, j, E::Present2, (int8u)Element_Size, Source_AdvSSE_1);
-                }
-                if (!Info.Flags[Dolby2]) {
-                    Item.AddError(Error, j, E::Present2, (int8u)Element_Size, Source_Atmos_1_0);
+        const auto Count = Element.size();
+        auto Count_Max2 = Count > 2 ? 2 : Count;
+        if (true) {
+            // Handling generic errors from arrays
+            for (int k = 0; k < Info_Flag_Max; k++) {
+                if (!Info.Flags[Count0 + Count_Max2 + (k << 2)]) {
+                    Item.AddError(Error, j, E((unsigned)E::Present0 + Count_Max2), Count <= (int8u)-1 ? (int8u)Count : (int8u)-1, (source)k);
                 }
             }
         }
