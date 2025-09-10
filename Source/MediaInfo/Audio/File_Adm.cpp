@@ -5471,6 +5471,7 @@ void File_Adm::Streams_Fill()
                 continue;
             }
             if (Profile_Item.Attributes[profile_profileName] == "Advanced sound system: ADM and S-ADM Profile for emission"
+                || Profile_Item.Attributes[profile_profileName] == "Advanced sound system: ADM and S-ADM profile for emission"
                 || Profile_Item.Attributes[profile_profileName] == "AdvSS Emission S-ADM Profile") {
                 ProfileInfo.Strings[0] = "AdvSS Emission";
                 IsAdvSSE = true;
