@@ -4752,15 +4752,16 @@ void File_Ac3::joc_header()
 void File_Ac3::joc_info()
 {
     Element_Begin1("joc_info");
-    int8u joc_clipgain_x_bits, joc_clipgain_y_bits;
-    int16u joc_seq_count_bits;
-    Get_S1 (3, joc_clipgain_x_bits,                                 "joc_clipgain_x_bits");
-    Get_S1 (5, joc_clipgain_y_bits,                                 "joc_clipgain_y_bits");
-    Get_S2 (10, joc_seq_count_bits,                                 "joc_seq_count_bits");
-    for (int8u obj = 0; obj < joc_num_objects; obj++)
+    Skip_S1(3,                                                  "joc_clipgain_x_bits");
+    Skip_S1(5,                                                  "joc_clipgain_y_bits");
+    Skip_S2(10,                                                 "joc_seq_count_bits");
+    for (int8u obj = 0; obj < joc_num_objects; ++obj)
     {
-        TEST_SB_SKIP("b_joc_obj_present[obj]");
-            //TODO
+        TEST_SB_SKIP(                                           "b_joc_obj_present[obj]");
+            Skip_S1(3,                                          "joc_num_bands_idx[obj]");
+            Skip_SB(                                            "b_joc_sparse[obj]");
+            Skip_S1(1,                                          "joc_num_quant_idx[obj]");
+            joc_data_point_info();
         TEST_SB_END();
     }
     Element_End0();
@@ -4770,7 +4771,14 @@ void File_Ac3::joc_info()
 void File_Ac3::joc_data_point_info()
 {
     Element_Begin1("joc_data_point_info");
-    //TODO
+    int8u joc_slope_idx_obj, joc_num_dpoints_bits_obj;
+    Get_S1(1, joc_slope_idx_obj,                                "joc_slope_idx[obj]");
+    Get_S1(1, joc_num_dpoints_bits_obj,                         "joc_num_dpoints_bits[obj]");
+    if (joc_slope_idx_obj == 1) {
+        for (int8u dp = 0; dp <= joc_num_dpoints_bits_obj; ++dp) {
+            Skip_S1(5,                                          "joc_offset_ts_bits[obj,dp]");
+        }
+    }
     Element_End0();
 }
 
