@@ -182,7 +182,6 @@ private :
     int8u  substreams_Count;
     int8u  joc_complexity_index_Container;
     int8u  joc_complexity_index_Stream;
-    bool   b_lfe_present{};
     bool   lfeon_Max[8][9];
     bool   dxc3_Parsed;
     bool   HD_MajorSync_Parsed;
