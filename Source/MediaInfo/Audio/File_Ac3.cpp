@@ -1328,7 +1328,6 @@ void File_Ac3::Streams_Fill()
             if (Frame_Count_HD)
                 Fill(Stream_Audio, 0, Audio_BitRate, "Unknown");
             int32u BitRate=AC3_BitRate[frmsizecod/2]*1000;
-            int32u Divider=bsid_Max==9?2:1; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
             int32u TimeStamp_BitRate=0;
             if (TimeStamp_Count==Frame_Count || TimeStamp_Count>Frame_Count/2) // In case of corrupted stream, check that there is a minimal count of timestamps 
                 TimeStamp_BitRate+=float32_int32s(AC3_SamplingRate[fscod]/Divider/12.0f); // 12 = 1536 samples per frame / 128 bits per timestamp frame
@@ -2123,16 +2122,8 @@ bool File_Ac3::Synched_Test()
     if (TimeStamp_IsPresent && !TimeStamp_Parsed)
     {
         Buffer_Offset-=16;
-        if (Synched)
-        {
-            TimeStamp_IsParsing=true;
-            TimeStamp_Parsed=false;
-        }
-        else
-        {
-            TimeStamp_IsParsing=false;
-            TimeStamp_Parsed=false;
-        }
+        TimeStamp_IsParsing=true;
+        TimeStamp_Parsed=false;
     }
 
     //We continue
@@ -2667,7 +2658,6 @@ void File_Ac3::Core_Frame()
         Element_End0();
         Element_Begin1("bsi");
             BS_Begin();
-            size_t Bits_Begin=Data_BS_Remain();
             Get_S1 ( 2, strmtyp,                                    "strmtyp");
             Get_S1 ( 3, substreamid,                                "substreamid");
             Get_S2 (11, frmsiz,                                     "frmsiz");
@@ -4120,7 +4110,6 @@ void File_Ac3::emdf_sync()
 //---------------------------------------------------------------------------
 void File_Ac3::emdf_container()
 {
-    size_t Start = Data_BS_Remain();
     int32u version, key_id;
     Element_Begin1("emdf_container");
     Get_S4 (2, version,                                         "emdf_version");
@@ -4437,8 +4426,8 @@ void File_Ac3::object_audio_metadata_payload()
                             obj_render_info = 0b1111;
                         else
                             Get_S1(4, obj_render_info,          "obj_render_info");
-                        bool b_differential_position_specified{};
                         if (obj_render_info & 0b0001) {
+                            bool b_differential_position_specified{};
                             if (blk == 0)
                                 b_differential_position_specified = false;
                             else
@@ -4630,7 +4619,7 @@ void File_Ac3::object_audio_metadata_payload()
     }
     auto RemainingBitsEnd = Data_BS_Remain();
     auto size = RemainingBitsBegin - RemainingBitsEnd;
-    Skip_BS(8 - (size & 7),                                     "padding");
+    Skip_BS((8 - (size & 7)) & 7,                               "padding");
 
     #endif // MEDIAINFO_TRACE
 
@@ -4720,10 +4709,7 @@ void File_Ac3::program_assignment()
         {
             int8u reserved_data_size_bits;
             Get_S1 (4, reserved_data_size_bits,                 "reserved_data_size_bits");
-            int8u padding = 8 - (reserved_data_size_bits % 8);
-            Skip_S1(reserved_data_size_bits,                    "reserved_data()");
-            if (padding)
-                Skip_S1(padding,                                "padding");
+            Skip_BS((reserved_data_size_bits + 1LL) * 8,        "reserved_data() + padding");
         }
     }
 
@@ -4877,9 +4863,7 @@ void File_Ac3::HD()
                 BS_End();
                 if (HasExtend)
                 {
-                    unsigned char Extend = 0;
-                    unsigned char Unknown = 0;
-                    bool HasContent = false;
+                    int8u Extend;
                     BS_Begin();
                     Get_S1( 4, Extend,                          "extra_channel_meaning_length");
                     size_t After=(((size_t)Extend)+1)*16-4;
@@ -5096,8 +5080,8 @@ void File_Ac3::HD()
                     // the constant 0xA9 (the purpose of the latter being to force the check to fail in the event of the
                     // stream consisting entirely of zeroes).
                     int8u parity{};
-                    for (int16u i = 0; i < size; ++i) {
-                        int8u Value = Buffer[Buffer_Offset + substream_segment_begin + i];
+                    for (int16u j = 0; j < size; ++j) {
+                        int8u Value = Buffer[Buffer_Offset + substream_segment_begin + j];
                         parity ^= Value;
                     }
                     parity ^= 0xA9;
