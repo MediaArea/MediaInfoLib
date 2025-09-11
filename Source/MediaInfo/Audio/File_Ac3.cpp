@@ -1580,6 +1580,11 @@ void File_Ac3::Streams_Fill()
                     Fill_SetOptions(Stream_Audio, 0, "lfeon", "N NT");
                 }
             }
+
+        if (dynrngprof)
+            Fill(Stream_Audio, 0, "dynrngprof", AC3_dynrngprof_Get(dynrngprof));
+        if (comprprof)
+            Fill(Stream_Audio, 0, "comprprof", AC3_dynrngprof_Get(comprprof));
     }
 
     //TimeStamp
@@ -4164,6 +4169,8 @@ void File_Ac3::emdf_container()
         Element_Begin1("emdf_payload_bytes");
             switch (emdf_payload_id)
             {
+                case  1: loudness_data(); break;
+                case  2: programme_information(); break;
                 case 11: object_audio_metadata_payload(); break;
                 case 14: joc(); break;
                 default: Skip_BS(emdf_payload_size*8,           "(Unknown)");
@@ -4267,6 +4274,186 @@ void File_Ac3::emdf_protection()
     Skip_BS(len_primary,                                        "protection_bits_primary");
     Skip_BS(len_second,                                         "protection_bits_secondary");
 
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Ac3::loudness_data()
+{
+#if MEDIAINFO_TRACE
+
+    Element_Begin1("loudness_data");
+    auto RemainingBitsBegin = Data_BS_Remain();
+
+    int8u version, loudpractyp;
+    bool loudcorrdialgat{}, loudrelgate, loudspchgate, loudstrm3se, truepke;
+    Get_S1(2, version,                                          "version");
+    if (version == 0x3) {
+        int8u extended_version;
+        Get_S1(4, extended_version,                             "extended_version");
+        version += extended_version;
+    }
+    TEST_SB_SKIP(                                               "dialchane");
+        Skip_S1(3,                                              "dialchan");
+    TEST_SB_END();
+    Get_S1(4, loudpractyp,                                      "loudpractyp");
+    if (loudpractyp != 0x0) {
+        Get_SB (loudcorrdialgat,                                "loudcorrdialgat");
+        Skip_S1(1,                                              "loudcorrtyp");
+    }
+    TEST_SB_GET(loudrelgate,                                    "loudrelgate");
+        Skip_S1(7,                                              "loudrelgat");
+    TEST_SB_END();
+    TEST_SB_GET(loudspchgate,                                   "loudspchgate");
+        Skip_S1(7,                                              "loudspchgat");
+    TEST_SB_END();
+    TEST_SB_GET(loudstrm3se,                                    "loudstrm3se");
+        Skip_S1(8,                                              "loudstrm3s");
+    TEST_SB_END();
+    TEST_SB_GET(truepke,                                        "truepke");
+        Skip_S1(8,                                              "truepk");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "dmixloudoffste");
+        Skip_S1(5,                                              "dmixloudoffst");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "prgmbndye");
+        bool prgmbndy_bit = 0;
+        while (prgmbndy_bit == 0) {
+            Get_SB(prgmbndy_bit,                                "prgmbndy_bit");
+        }
+        Skip_SB(                                                "end_or_start");
+        TEST_SB_SKIP(                                           "prgmbndyoffste");
+            Skip_S2(11,                                         "prgmbndyoffst");
+        TEST_SB_END();
+    TEST_SB_END();
+    auto RemainingBitsEnd = Data_BS_Remain();
+    auto size = RemainingBitsBegin - RemainingBitsEnd;
+    Skip_BS((8 - (size & 7)) & 7,                               "fill bits = 0");
+
+    if (version >= 1) {
+        bool extloudspchgate;
+        if (loudrelgate) {
+            TEST_SB_SKIP(                                       "hrloudrelgate");
+                Skip_S1(3,                                      "hrloudrelgat");
+            TEST_SB_END();
+        }
+        if (loudspchgate) {
+            TEST_SB_SKIP(                                       "hrloudspchgate");
+                Skip_S1(3,                                      "hrloudspchgat");
+            TEST_SB_END();
+        }
+        if (loudstrm3se) {
+            TEST_SB_SKIP(                                       "hrloudstrm3se");
+                Skip_S1(3,                                      "hrloudstrm3s");
+            TEST_SB_END();
+        }
+        if (truepke) {
+            TEST_SB_SKIP(                                       "hrtruepke");
+                Skip_S1(3,                                      "hrtruepk");
+            TEST_SB_END();
+        }
+        TEST_SB_SKIP(                                           "hrtruepke");
+            Skip_S1(3,                                          "hrtruepk");
+        TEST_SB_END();
+        if (loudcorrdialgat)
+            Skip_S1(3,                                          "loudcorrdialgattyp");
+        if (loudrelgate == 0) {
+            TEST_SB_SKIP(                                       "extloudrelgate");
+                Skip_S2(11,                                     "extloudrelgat");
+            TEST_SB_END();
+        }
+        if (loudspchgate == 0) {
+            TEST_SB_GET(extloudspchgate,                        "extloudspchgate");
+                Skip_S2(11,                                     "extloudspchgat");
+            TEST_SB_END();
+        }
+        if (loudspchgate || extloudspchgate)
+            Skip_S1(3,                                          "loudspchdialgattyp");
+        if (loudstrm3se == 0) {
+            TEST_SB_SKIP(                                       "extloudstrm3se");
+                Skip_S2(11,                                     "extloudstrm3s");
+            TEST_SB_END();
+        }
+        if (truepke == 0) {
+            TEST_SB_SKIP(                                       "exttruepke");
+                Skip_S2(11,                                     "exttruepk");
+            TEST_SB_END();
+        }
+        TEST_SB_SKIP(                                           "maxloudstrm3se");
+            Skip_S2(11,                                         "maxloudstrm3s");
+        TEST_SB_END();
+        TEST_SB_SKIP(                                           "maxtruepke");
+            Skip_S2(11,                                         "maxtruepk");
+        TEST_SB_END();
+        TEST_SB_SKIP(                                           "lrae");
+            Skip_S2(10,                                         "lra");
+            Skip_S1(3,                                          "lrapractyp");
+        TEST_SB_END();
+        TEST_SB_SKIP(                                           "loudmntrye");
+            Skip_S2(11,                                         "loudmntry");
+        TEST_SB_END();
+        TEST_SB_SKIP(                                           "maxloudmntrye");
+            Skip_S2(11,                                         "maxloudmntry");
+        TEST_SB_END();
+        RemainingBitsEnd = Data_BS_Remain();
+        size = RemainingBitsBegin - RemainingBitsEnd;
+        Skip_BS((8 - (size & 7)) & 7,                           "fill bits = 0");
+    }
+
+    Element_End0();
+
+#endif // MEDIAINFO_TRACE
+}
+
+//---------------------------------------------------------------------------
+void File_Ac3::programme_information()
+{
+    Element_Begin1("programme_information");
+    auto RemainingBitsBegin = Data_BS_Remain();
+    int8u version;
+    Get_S1(2, version,                                          "version");
+    if (version == 0x3) {
+        int8u extended_version;
+        Get_S1(4, extended_version,                             "extended_version");
+        version += extended_version;
+    }
+    TEST_SB_SKIP(                                               "activechane");
+        Skip_S2(16,                                             "activechan");
+    TEST_SB_END();
+    bool dmixtype;
+    Get_SB(dmixtype,                                            "dmixtype");
+    if (!dmixtype) {
+        TEST_SB_SKIP(                                           "upmixtype");
+            Skip_S1(4,                                          "upmixtyp");
+        TEST_SB_END();
+    }
+    else {
+        Skip_S1(4,                                              "dmixtyp");
+    }
+    TEST_SB_SKIP(                                               "preproinfoe");
+        Skip_SB(                                                "suratten");
+        Skip_SB(                                                "ph90filt");
+        Skip_SB(                                                "lfefilt");
+        Skip_S1(2,                                              "lfemonlevcod");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "drcprofinfoe");
+        Get_S1(3, dynrngprof,                                   "dynrngprof"); Param_Info1(AC3_dynrngprof_Get(dynrngprof));
+        Get_S1(3, comprprof,                                    "comprprof"); Param_Info1(AC3_dynrngprof_Get(comprprof));
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "specprocinfoe");
+        Skip_S1(3,                                              "specprocstartf");
+        Skip_S1(3,                                              "specprocendf");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "chancplinfoe");
+        Skip_S1(5,                                              "chancplstartf");
+        Skip_S1(5,                                              "chancplendf");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "enhncrnge");
+        Skip_S1(2,                                              "enhncrng");
+    TEST_SB_END();
+    auto RemainingBitsEnd = Data_BS_Remain();
+    auto size = RemainingBitsBegin - RemainingBitsEnd;
+    Skip_BS((8 - (size & 7)) & 7,                               "fill bits = 0");
     Element_End0();
 }
 
