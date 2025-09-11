@@ -76,6 +76,8 @@ private :
     void emdf_container();
     void emdf_payload_config();
     void emdf_protection();
+    void loudness_data();
+    void programme_information();
     void object_audio_metadata_payload();
     void program_assignment();
     void joc();
@@ -182,6 +184,8 @@ private :
     int8u  substreams_Count;
     int8u  joc_complexity_index_Container;
     int8u  joc_complexity_index_Stream;
+    int8u  dynrngprof{};
+    int8u  comprprof{};
     bool   lfeon_Max[8][9];
     bool   dxc3_Parsed;
     bool   HD_MajorSync_Parsed;
