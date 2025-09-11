@@ -27,6 +27,7 @@
 #include "MediaInfo/OutputHelpers.h"
 #include <ctime>
 #include <cmath>
+#include <stddef.h>
 
 #ifdef MEDIAINFO_GRAPHVIZ_YES
     #ifdef MEDIAINFO_GRAPHVIZ_DLL_RUNTIME
@@ -116,7 +117,11 @@ Ztring Dot2Svg(const Ztring& Dot)
     GVC_t* Context=NULL;
     graph_t* Graph=NULL;
     char* Buffer=NULL;
-    unsigned int Size;
+    #if defined(GV_VERSION_MAJOR) && GV_VERSION_MAJOR >= 13
+        size_t Size;
+    #else
+        unsigned int Size;
+    #endif
     bool Cairo=false;
 
     if (!Export_Graph::Load())

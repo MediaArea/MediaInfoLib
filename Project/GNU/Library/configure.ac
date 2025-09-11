@@ -556,6 +556,38 @@ else
 fi
 
 dnl -------------------------------------------------------------------------
+dnl Graphviz version detection
+
+if test "$using_graphviz" != "no" -a "$using_graphviz" != ""; then
+	# Try to detect Graphviz version using pkg-config
+	if ${PKG_CONFIG:-pkg-config} --exists libgvc; then
+		GV_PKG_VERSION=$(${PKG_CONFIG:-pkg-config} --modversion libgvc)
+		AC_MSG_NOTICE([Detected Graphviz version via pkg-config: $GV_PKG_VERSION])
+	else
+		# Fallback: use $(dot -V)
+		AC_PATH_PROG([DOT], [dot], [no])
+		if test "$DOT" != "no"; then
+			GV_PKG_VERSION=$($DOT -V 2>&1 | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -n1)
+			AC_MSG_NOTICE([Detected Graphviz version via dot -V: $GV_PKG_VERSION])
+		else
+			AC_MSG_WARN([Could not determine Graphviz version - neither pkg-config nor dot found])
+		fi
+	fi
+
+	# Extract major version
+	if test -n "$GV_PKG_VERSION"; then
+		GV_VERSION_MAJOR=$(echo "$GV_PKG_VERSION" | cut -d. -f1)
+		AC_MSG_NOTICE([Graphviz major version: $GV_VERSION_MAJOR])
+	else
+		GV_VERSION_MAJOR=0
+		AC_MSG_WARN([Graphviz version unknown, defaulting GV_VERSION_MAJOR=0])
+	fi
+
+	# Define GV_VERSION_MAJOR
+	AC_DEFINE_UNQUOTED([GV_VERSION_MAJOR], [$GV_VERSION_MAJOR], [Graphviz major version])
+fi
+
+dnl -------------------------------------------------------------------------
 dnl libcurl
 dnl
 if test -d $with_libcurl; then
