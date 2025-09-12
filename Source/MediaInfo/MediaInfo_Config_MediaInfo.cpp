@@ -18,6 +18,7 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/MediaInfo_Config.h"
+#include "MediaInfo/TimeCode.h"
 #include "ZenLib/ZtringListListF.h"
 #if MEDIAINFO_EVENTS
     #include "ZenLib/FileName.h"
@@ -133,6 +134,18 @@ const size_t Buffer_NormalSize=/*188*7;//*/64*1024;
 // Info
 //***************************************************************************
 
+const char* DisplayCaptions_Strings[] =
+{
+    "Command",
+    "Content",
+    "Stream",
+};
+static_assert(sizeof(DisplayCaptions_Strings) / sizeof(*DisplayCaptions_Strings) == DisplayCaptions_Max, "");
+
+//***************************************************************************
+// Class
+//***************************************************************************
+
 MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
 {
     MediaInfoLib::Config.Init(); //Initialize Configuration
@@ -241,8 +254,8 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     #if defined(MEDIAINFO_LIBMMS_YES)
         File_Mmsh_Describe_Only=false;
     #endif //defined(MEDIAINFO_LIBMMS_YES)
-    File_Eia608_DisplayEmptyStream=false;
-    File_Eia708_DisplayEmptyStream=false;
+    DisplayCaptions=DisplayCaptions_Command;
+    File_ProbeCaption_Set({});
     State=0;
     #if defined(MEDIAINFO_AC3_YES)
     File_Ac3_IgnoreCrc=false;
@@ -491,7 +504,7 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     else if (Option_Lower==__T("file_defaultframerate"))
     {
         #if MEDIAINFO_ADVANCED
-            File_DefaultFrameRate_Set(Ztring(Value).To_float64());
+            File_DefaultFrameRate_Set(Value);
             return Ztring();
         #else //MEDIAINFO_ADVANCED
             return __T("File_DefaultFrameRate is disabled due to compilation options");
@@ -851,7 +864,7 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     }
     else if (Option_Lower==__T("file_demux_rate"))
     {
-        #if MEDIAINFO_DEMUX
+        #if 1 //MEDIAINFO_DEMUX
             Demux_Rate_Set(Ztring(Value).To_float64());
             return Ztring();
         #else //MEDIAINFO_DEMUX
@@ -1236,23 +1249,31 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
             return __T("Libmms support is disabled due to compilation options");
         #endif //defined(MEDIAINFO_LIBMMS_YES)
     }
+    else if (Option_Lower==__T("file_displaycaptions"))
+    {
+        return File_DisplayCaptions_Set(Value);
+    }
     else if (Option_Lower==__T("file_eia708_displayemptystream"))
     {
-        File_Eia708_DisplayEmptyStream_Set(!(Value==__T("0") || Value.empty()));
-        return __T("");
-    }
-    else if (Option_Lower==__T("file_eia708_displayemptystream_get"))
-    {
-        return File_Eia708_DisplayEmptyStream_Get()?"1":"0";
+        return File_DisplayCaptions_Set(Ztring().From_UTF8(DisplayCaptions_Strings[Value==__T("0")?DisplayCaptions_Command:DisplayCaptions_Stream]));
     }
     else if (Option_Lower==__T("file_eia608_displayemptystream"))
     {
-        File_Eia608_DisplayEmptyStream_Set(!(Value==__T("0") || Value.empty()));
+        return File_DisplayCaptions_Set(Ztring().From_UTF8(DisplayCaptions_Strings[Value==__T("0")?DisplayCaptions_Command:DisplayCaptions_Stream]));
+    }
+    else if (Option_Lower==__T("file_commandonlymeansempty"))
+    {
+        return File_DisplayCaptions_Set(Ztring().From_UTF8(DisplayCaptions_Strings[Value==__T("0")?DisplayCaptions_Command:DisplayCaptions_Content]));
         return __T("");
     }
-    else if (Option_Lower==__T("file_eia608_displayemptystream_get"))
+    else if (Option_Lower==__T("file_probecaption"))
     {
-        return File_Eia608_DisplayEmptyStream_Get()?"1":"0";
+        File_ProbeCaption_Set(Value);
+        return __T("");
+    }
+    else if (Option_Lower==__T("file_probecaption_get"))
+    {
+        return __T("(Not supported)");
     }
     else if (Option_Lower==__T("file_ac3_ignorecrc"))
     {
@@ -1783,13 +1804,21 @@ void MediaInfo_Config_MediaInfo::File_ExpandSubs_Update(void** Source)
                         }
                         for (size_t i=0; i<Names.size(); i++)
                         {
-                            Ztring TranslatedName=MediaInfoLib::Config.Language_Get(Names[i]);
+                            auto& Name=Names[i];
+                            Ztring TranslatedName=MediaInfoLib::Config.Language_Get(Name);
                             if (!TranslatedName.empty())
-                                Names[i]=TranslatedName;
+                                Name=TranslatedName;
                             if (Nested && !i)
-                                Names[i].insert(0, Spaces, __T(' '));
-                            if (Numbers[i])
-                                Names[i]+=MediaInfoLib::Config.Language_Get(__T("  Config_Text_NumberTag"))+Ztring::ToZtring(Numbers[i]);
+                                Name.insert(0, Spaces, __T(' '));
+                            if (Name.size()>1 && Name.back()==__T('_'))
+                            {
+                                auto Last2=Name[Name.size()-2];
+                                if (Last2>='0' && Last2<='9')
+                                    Name.pop_back();
+                            }
+                            auto& Number=Numbers[i];
+                            if (Number)
+                                Name+=MediaInfoLib::Config.Language_Get(__T("  Config_Text_NumberTag"))+Ztring::ToZtring(Number);
                         }
                         Names.Separator_Set(0, __T(" "));
                         Names.Quote_Set(__T(""));
@@ -1897,8 +1926,25 @@ int64u MediaInfo_Config_MediaInfo::File_SequenceFilesSkipFrames_Get ()
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_ADVANCED
-void MediaInfo_Config_MediaInfo::File_DefaultFrameRate_Set (float64 NewValue)
+void MediaInfo_Config_MediaInfo::File_DefaultFrameRate_Set (const Ztring& NewValueZ)
 {
+    auto NewValue = NewValueZ.To_float64();
+    auto Den_Separator = NewValueZ.find('/');
+    if (Den_Separator != string::npos) {
+        auto Denominator = Ztring(NewValueZ.substr(Den_Separator + 1)).To_float64();
+        if (Denominator)
+            NewValue /= Denominator;
+    }
+    else {
+        auto Decimal_Separator = NewValueZ.find('.');
+        if (Decimal_Separator != string::npos && NewValueZ.size() - Decimal_Separator <= 3) {
+            auto NewValue_Ceil = ceil(NewValue);
+            auto NewValue_Diff = float64_int64s(NewValue / (NewValue_Ceil - NewValue));
+            if (NewValue_Diff == 999) {
+                NewValue = NewValue_Ceil / 1.001;
+            }
+        }
+    }
     CriticalSectionLocker CSL(CS);
     File_DefaultFrameRate=NewValue;
     #if MEDIAINFO_DEMUX
@@ -2426,7 +2472,7 @@ bool MediaInfo_Config_MediaInfo::Demux_SplitAudioBlocks_Get()
 #endif //MEDIAINFO_DEMUX
 
 //---------------------------------------------------------------------------
-#if MEDIAINFO_DEMUX
+#if 1 //MEDIAINFO_DEMUX
 void MediaInfo_Config_MediaInfo::Demux_Rate_Set (float64 NewValue)
 {
     CriticalSectionLocker CSL(CS);
@@ -3102,6 +3148,42 @@ void MediaInfo_Config_MediaInfo::Event_Send (File__Analyze* Source, const int8u*
                 New->OriginalContent=OriginalContent;
             }
         }
+        if (((*EventCode) & 0x00FFFF00) == (MediaInfo_Event_DvDif_Change << 8) && Data_Size == sizeof(MediaInfo_Event_DvDif_Change_0))
+        {
+            MediaInfo_Event_DvDif_Change_0* Old = (MediaInfo_Event_DvDif_Change_0*)Data_Content;
+            MediaInfo_Event_DvDif_Change_0* New = (MediaInfo_Event_DvDif_Change_0*)Event->Data_Content;
+            if (New->MoreData)
+            {
+                auto MoreData_Size = sizeof(size_t) + *((size_t*)New->MoreData);
+                int8u* MoreData = new int8u[MoreData_Size];
+                std::memcpy(MoreData, Old->MoreData, MoreData_Size * sizeof(int8u));
+                New->MoreData = MoreData;
+            }
+        }
+        if (((*EventCode) & 0x00FFFF00) == (MediaInfo_Event_DvDif_Analysis_Frame << 8) && Data_Size >= sizeof(MediaInfo_Event_DvDif_Analysis_Frame_0))
+        {
+            MediaInfo_Event_DvDif_Analysis_Frame_1* Old = (MediaInfo_Event_DvDif_Analysis_Frame_1*)Data_Content;
+            MediaInfo_Event_DvDif_Analysis_Frame_1* New = (MediaInfo_Event_DvDif_Analysis_Frame_1*)Event->Data_Content;
+            if (New->Errors)
+            {
+                auto Errors_Size = strlen(New->Errors) + 1;
+                char* Errors = new char[Errors_Size];
+                std::memcpy(Errors, Old->Errors, Errors_Size * sizeof(char));
+                New->Errors = Errors;
+            }
+        }
+        if (((*EventCode) & 0x00FFFF00) == (MediaInfo_Event_DvDif_Analysis_Frame << 8) && Data_Size >= sizeof(MediaInfo_Event_DvDif_Analysis_Frame_1))
+        {
+            MediaInfo_Event_DvDif_Analysis_Frame_1* Old = (MediaInfo_Event_DvDif_Analysis_Frame_1*)Data_Content;
+            MediaInfo_Event_DvDif_Analysis_Frame_1* New = (MediaInfo_Event_DvDif_Analysis_Frame_1*)Event->Data_Content;
+            if (New->MoreData)
+            {
+                auto MoreData_Size = sizeof(size_t) + *((size_t*)New->MoreData);
+                int8u* MoreData = new int8u[MoreData_Size];
+                std::memcpy(MoreData, Old->MoreData, MoreData_Size * sizeof(int8u));
+                New->MoreData = MoreData;
+            }
+        }
     }
     else if (Event_CallBackFunction)
     {
@@ -3194,6 +3276,22 @@ void MediaInfo_Config_MediaInfo::Event_Accepted (File__Analyze* Source)
                         {
                             delete[] Old->OriginalContent; Old->OriginalContent=NULL;
                         }
+                    }
+
+                    if (((EventCode) & 0x00FFFF00) == (MediaInfo_Event_DvDif_Change << 8) && Event->second[Pos]->Data_Size >= sizeof(MediaInfo_Event_DvDif_Change_0))
+                    {
+                        MediaInfo_Event_DvDif_Change_0* New = (MediaInfo_Event_DvDif_Change_0*)Event->second[Pos]->Data_Content;
+                        delete[] New->MoreData;
+                    }
+                    if (((EventCode) & 0x00FFFF00) == (MediaInfo_Event_DvDif_Analysis_Frame << 8) && Event->second[Pos]->Data_Size >= sizeof(MediaInfo_Event_DvDif_Analysis_Frame_0))
+                    {
+                        MediaInfo_Event_DvDif_Analysis_Frame_1* New = (MediaInfo_Event_DvDif_Analysis_Frame_1*)Event->second[Pos]->Data_Content;
+                        delete[] New->Errors;
+                    }
+                    if (((EventCode) & 0x00FFFF00) == (MediaInfo_Event_DvDif_Analysis_Frame << 8) && Event->second[Pos]->Data_Size >= sizeof(MediaInfo_Event_DvDif_Analysis_Frame_1))
+                    {
+                        MediaInfo_Event_DvDif_Analysis_Frame_1* New = (MediaInfo_Event_DvDif_Analysis_Frame_1*)Event->second[Pos]->Data_Content;
+                        delete[] New->MoreData;
                     }
 
                     delete Event->second[Pos]; Event->second[Pos]=NULL;
@@ -3548,29 +3646,192 @@ bool MediaInfo_Config_MediaInfo::File_Mmsh_Describe_Only_Get ()
 #endif //defined(MEDIAINFO_LIBMMS_YES)
 
 //---------------------------------------------------------------------------
-void MediaInfo_Config_MediaInfo::File_Eia608_DisplayEmptyStream_Set (bool NewValue)
+Ztring MediaInfo_Config_MediaInfo::File_DisplayCaptions_Set (const Ztring& NewValue)
 {
+    auto NewValueS = NewValue.To_UTF8();
+    size_t i = 0;
+    for (; i < DisplayCaptions_Max; i++) {
+        if (NewValueS == DisplayCaptions_Strings[i]) {
+            break;
+        }
+    }
+    if (i >= DisplayCaptions_Max)
+        return __T("Unknown value");
+
     CriticalSectionLocker CSL(CS);
-    File_Eia608_DisplayEmptyStream=NewValue;
+    DisplayCaptions = (display_captions)i;
+
+    return {};
 }
 
-bool MediaInfo_Config_MediaInfo::File_Eia608_DisplayEmptyStream_Get ()
+display_captions MediaInfo_Config_MediaInfo::File_DisplayCaptions_Get ()
 {
     CriticalSectionLocker CSL(CS);
-    return File_Eia608_DisplayEmptyStream;
+    return DisplayCaptions;
 }
 
 //---------------------------------------------------------------------------
-void MediaInfo_Config_MediaInfo::File_Eia708_DisplayEmptyStream_Set (bool NewValue)
+Ztring MediaInfo_Config_MediaInfo::File_ProbeCaption_Set (const Ztring& NewValue)
 {
+    static const auto Malformed = __T("File_ProbeCaption option malformed");
+    ZtringListList List;
+    List.Separator_Set(0, __T(","));
+    List.Separator_Set(1, __T("+"));
+    List.Write(NewValue);
     CriticalSectionLocker CSL(CS);
-    File_Eia708_DisplayEmptyStream=NewValue;
+    File_ProbeCaption.clear();
+    bool HasForAll = false;
+    string AllMinus;
+    for (const auto& Line : List) {
+        config_probe Item;
+        for (const auto& Value : Line) {
+            auto Pos = Value.find_first_not_of(__T("0123456789"));
+            if (Pos == string::npos) {
+                Item.Start_Type = config_probe_size;
+                Item.Start = Value.To_int64u();
+            }
+            else if (!Value.empty() && ((Value[0] >= __T('A') && Value[0] <= __T('Z')) || (Value[0] >= __T('a') && Value[0] <= __T('z')))) {
+                string Value2(Ztring(Value).MakeUpperCase().To_UTF8());
+                bool Negative = false;
+                if (Value2.rfind("ALL", 0) == 0) {
+                    if (Value2.size() > 3) {
+                        if (Value2[3] != __T('-'))
+                            return Malformed;
+                        Negative = true;
+                        Value2 = Value.To_UTF8().substr(4);
+                        AllMinus += '-';
+                        AllMinus += Value2;
+                    }
+                }
+                if (Value2 != "MP4" && Value2 != "MPEG-4" && Value2 != "MXF" && !Value2.empty()) { //TODO: full list
+                    return Malformed;
+                }
+                Item.Parser = Value2 != "MP4" ? Value2 : "MPEG-4";
+                if (Negative) {
+                    Item.Parser.insert(Item.Parser.begin(), __T('-'));
+                }
+            }
+            else if (Pos == Value.size() - 1 && Value[Pos] == __T('%')) {
+                auto Value_Int = Value.To_int64u();
+                if (Value_Int > 100) {
+                    return Malformed;
+                }
+                if (Item.Start_Type == config_probe_none) {
+                    Item.Start_Type = config_probe_percent;
+                    Item.Start = Value_Int;
+                }
+                else if (Item.Duration_Type == config_probe_none) {
+                    Item.Duration_Type = config_probe_percent;
+                    Item.Duration = Value_Int;
+                }
+                else {
+                    return Malformed;
+                }
+            }
+            else if (Pos == Value.size() - 1 && (Value[Pos] == __T('E') || Value[Pos] == __T('G') || Value[Pos] == __T('K') || Value[Pos] == __T('M') || Value[Pos] == __T('P') || Value[Pos] == __T('T') || Value[Pos] == __T('k'))) {
+                auto Value_Int = Value.To_int64u();
+                switch (Value[Pos])
+                {
+                case 'E':
+                    Value_Int <<= 10;
+                    [[fallthrough]];
+                case 'P':
+                    Value_Int <<= 10;
+                    [[fallthrough]];
+                case 'T':
+                    Value_Int <<= 10;
+                    [[fallthrough]];
+                case 'G':
+                    Value_Int <<= 10;
+                    [[fallthrough]];
+                case 'M':
+                    Value_Int <<= 10;
+                    [[fallthrough]];
+                default:
+                    Value_Int <<= 10;
+                }
+                if (Item.Start_Type == config_probe_none) {
+                    Item.Start_Type = config_probe_size;
+                    Item.Start = Value_Int;
+                }
+                else if (Item.Duration_Type == config_probe_none) {
+                    Item.Duration_Type = config_probe_size;
+                    Item.Duration = Value_Int;
+                }
+                else {
+                    return Malformed;
+                }
+            }
+            else {
+                TimeCode TC(Value.To_UTF8(), 999);
+                if (!TC.IsValid()) {
+                    return Malformed;
+                }
+                auto Seconds = TC.ToSeconds();
+                if (Seconds < 0) {
+                    return Malformed;
+                }
+                if (Item.Start_Type == config_probe_none) {
+                    Item.Start_Type = config_probe_dur;
+                    Item.Start = Seconds;
+                }
+                else if (Item.Duration_Type == config_probe_none) {
+                    Item.Duration_Type = config_probe_dur;
+                    Item.Duration = Seconds;
+                }
+                else {
+                    return Malformed;
+                }
+            }
+        }
+        if (Item.Parser.empty()) {
+            HasForAll=true;
+        }
+        if (Item.Duration_Type == config_probe_none) {
+            Item.Duration_Type = config_probe_dur;
+            Item.Duration = 30;
+        }
+        File_ProbeCaption.push_back(Item);
+    }
+    File_ProbeCaption_Pos=0;
+    if (!HasForAll) {
+        config_probe Probe;
+        Probe.Start_Type = config_probe_percent;
+        Probe.Start = 50;
+        Probe.Duration_Type = config_probe_dur;
+        Probe.Duration = 30;
+        Probe.Parser = AllMinus;
+        File_ProbeCaption.push_back(Probe);
+    }
+
+    return {};
 }
 
-bool MediaInfo_Config_MediaInfo::File_Eia708_DisplayEmptyStream_Get ()
+config_probe MediaInfo_Config_MediaInfo::File_ProbeCaption_Get(const string& ParserName)
 {
+    if (ParseSpeed<=0 && ParseSpeed>=1)
+        return {};
+
     CriticalSectionLocker CSL(CS);
-    return File_Eia708_DisplayEmptyStream;
+    for (;;)
+    {
+        if (File_ProbeCaption_Pos >= File_ProbeCaption.size())
+            return {};
+        const auto& Item = File_ProbeCaption[File_ProbeCaption_Pos];
+        File_ProbeCaption_Pos++;
+        if (!Item.Parser.empty()) {
+            if (Item.Parser[0] == '-') {
+                if (Item.Parser.substr(1) == ParserName) {
+                    continue;
+                }
+            }
+            else if (Item.Parser != ParserName) {
+                continue;
+            }
+        }
+
+        return Item;
+    }
 }
 
 //---------------------------------------------------------------------------

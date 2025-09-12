@@ -46,6 +46,7 @@ WTV;;;M;Wtv;;wtv;;;
 AV1;;;V;Av1;AOMedia Video 1;;;http://aomedia.org/
 AVC;;;V;Avc;Advanced Video Codec;avc h264 264;video/H264;http://developers.videolan.org/x264.html
 AVS Video;;;V;AvsV;Audio Video Standard, Video part;;;http://www.avs.org.cn/;Lossy
+AVS3 Video;;;V;Avs3V;Audio Video Standard 3, Video part;avs3;;http://www.avs.org.cn/;Lossy
 Dirac;;;V;Dirac;;drc;;http://diracvideo.org/;Lossy
 FFV1;;;V;;;;;;Lossless
 FFV2;;;V;;;;;;Lossless
@@ -69,19 +70,22 @@ ADIF;;;A;Adif;Audio Data Interchange Format;;;;
 ADTS;;;A;Adts;Audio Data Transport Stream;aac aacp adts;;;
 ALS;;;A;Als;MPEG-4 Audio Lossless Coding;als;;http://www.nue.tu-berlin.de/forschung/projekte/lossless/mp4als.html#downloads;Lossless
 AMR;;;A;Amr;Adaptive Multi-Rate;amr;audio/AMR;http://www.apple.com/quicktime/download/standalone.html;
+APAC;;;A;;Apple Positional Audio Codec;;;http://www.apple.com/;Lossy
 Atrac;;;A;;Adaptive Transform Acoustic Coding;;audio/ATRAC;;Lossy
 Atrac3;;;A;;Adaptive Transform Acoustic Coding 3;;audio/ATRAC3;;Lossy
 Atrac9;;;A;;Adaptive Transform Acoustic Coding 9;;audio/ATRAC9;https://en.wikipedia.org/wiki/Adaptive_Transform_Acoustic_Coding;Lossy
 APT-X100;;;A;Aptx100;;AUD AUE aud aue;;;Lossy
 AU;;;A;Au;uLaw/AU Audio File;au;audio/basic;;
+Auro-Cx;;;A;;Auro-Cx 3D audio;;;http://www.auro-3d.com/;
 CAF;;;A;Caf;Core Audio Format;caf;audio/x-caf;https://developer.apple.com/library/content/documentation/MusicAudio/Reference/CAFSpec/CAF_overview/CAF_overview.html;
+DAT;;;A;Dat;Digital Audio Tape;hda;;;Lossless
 DolbyE;;;A;Aes3;;dde
 DSDIFF;;;A;Dsdiff;Direct Stream Digital Interchange File Format;dff;;;Lossy
 DSD;;;A;;Direct Stream Digital;;;;Lossless
 DSF;;;A;Dsf;Direct Stream Digital Stream File;dsf;;;
 DST;;;A;;Direct Stream Transfer;;;;Lossless
-DTS;;;A;Dts;Digital Theater Systems;dts dtshd dtshdma;;https://en.wikipedia.org/wiki/DTS_(sound_system);
-DTS-HD;;;A;Dts;Digital Theater Systems;dts dtshd dtshdma;;;Lossy
+DTS;;;A;Dts;Digital Theater Systems;dts dtshd dtsma dtshdma;;https://en.wikipedia.org/wiki/DTS_(sound_system);
+DTS-HD;;;A;Dts;Digital Theater Systems;dts dtshd dtsma dtshdma;;;Lossy
 DTS-UHD;;;A;Dts;;dtsx;;;
 E-AC-3;;;A;Ac3;Enhanced AC-3;dd+ ec3 eac3;audio/eac3;https://en.wikipedia.org/wiki/Dolby_Digital_Plus;Lossy
 Extended Module;;;A;ExtendedModule;;xm;;;
@@ -92,6 +96,7 @@ G.722.1;;;A;;;;audio/G7221;;Lossy
 G.723;;;A;;;;audio/G723;;Lossy
 G.729;;;A;;;;audio/G729;;Lossy
 G.729.1;;;A;;;;audio/G7291;;Lossy
+IAMF;;;A;Iamf;Immersive Audio Model and Formats;iamf;;http://aomedia.org/
 Impulse Tracker;;;A;ImpulseTracker;;it;;;
 LA;;;A;La;Lossless Audio Codec;la;;http://www.lossless-audio.com/;Lossless
 MIDI;;;A;Riff;RIFF Musical Instrument Digital Interface;midi mid kar;audio/midi;;
@@ -120,9 +125,11 @@ Wave;;;A;Riff;;act at9 wav;audio/vnd.wave;;
 Wave64;;;A;Riff;;w64;;;
 WavPack;;;A;Wvpk;;wv wvc;;http://www.wavpack.com;
 Arri Raw;;;I;ArriRaw;;ari;;;
+ARW;;;I;Tiff;Sony Alpha RAW;arw;image/x-sony-arw;http://www.sony.com/;
 Bitmap;;;I;Bmp;;bmp bms;image/bmp;;Lossless
 BPG;;;I;Bpg;Better Portable Graphics;bpg;image/bpg;http://bellard.org/bpg/;
 DDS;;;I;Dds;DirectDraw Surface;dds;;;
+DNG;;;I;Tiff;Digital Negative;dng;image/x-adobe-dng;http://www.adobe.com/;
 DPX;;;I;Dpx;;dpx cin;;;Lossless
 EXR;;;I;Exr;;exr;;;Lossless
 DIB;;;I;Riff;RIFF Device Independent Bitmap;;;;Lossless
@@ -130,20 +137,24 @@ GIF;;;I;Gif;Graphics Interchange Format;gif gis;image/gif;;Lossless
 ICO;;;I;Ico;;ico;image/vnd.microsoft.icon;;Lossless
 JNG;;;I;Jng;JPEG Network Graphic;jng;;;Lossy
 JPEG;;;I;Jpeg;;h3d jpeg jpg jpe jps mpo;image/jpeg;;Lossy
-JPEG 2000;;;I;Jpeg;;jp2;image/jp2;http://www.morgan-multimedia.com/JPEG 2000/;
+JPEG 2000;;;I;Jpeg;;jp2 jph j2c j2k jhc;image/jp2;http://www.morgan-multimedia.com/JPEG 2000/;
 LZ77;;;I;;;;;;
 MNG;;;I;Mng;Multiple-Image Network Graphic;mng;;;Lossless
+NEF;;;I;Tiff;Nikon Electronic Format;nef;image/x-nikon-nef;http://www.nikon.com/;
+NRW;;;I;Tiff;Nikon RAW;nrw;image/x-nikon-nrw;http://www.nikon.com/;
 PCX;;;I;pcx;Personal Computer eXchange;pcx;image/pcx;;Lossless
 PNG;;;I;Png;Portable Network Graphic;png pns;image/png;;Lossless
 PSD;;;I;Psd;Photoshop File Format;psd;image/psd;http://www.adobe.com/;Lossless
 RIFF Palette;;;I;Riff;RIFF Palette;;;;
 RLE;;;I;;Run-length encoding;rle;;;
-TIFF;;;I;Tiff;;tiff tif;image/tiff;;
+TIFF;;;I;Tiff;Tag Image File Format;3fr arw cr2 dcr erf exif kdc mef mos nef nrw pef sr2 srf srw tiff tif;image/tiff;;
 TGA;;;I;Tga;;tga;image/tga;;
 7-Zip;;;C;7z;;7z;;http://7-zip.org;
 ACE;;;C;Ace;;ace;;http://winace.com;
 ELF;;;C;Elf;;so;;;
 ISO 9660;;;C;Iso9660;;iso;;;
+Mach-O;;;C;MachO;;o dylib kext;;;
+Mach-O Universal;;;C;MachO;;o dylib kext;;;
 MZ;;;C;Mz;;exe dll;;;
 RAR;;;C;Rar;From Rarlabs;rar;application/x-rar-compressed;http://rarlabs.com;
 ZIP;;;C;Zip;;zip docx odt xlsx ods;application/zip;http://winzip.com;
@@ -155,11 +166,12 @@ Captions Inc;;;T;Other;;txt;;;Lossless
 CPC Captioning;;;T;Other;;txt;;http://www.cpcweb.com/Captioning/cap_software.htm;Lossless
 Cheeta;;;T;Other;;asc;;;Lossless
 N19;;;T;N19;;stl;;;Lossless
+PAC;;;T;Pac;;pac fpc;;;
 PDF;;;T;Pdf;;pdf;;;
 SAMI;;;T;Sami;;smi sami;;;Lossless
 SCC;;;T;SCC;;scc sc2;;;Lossless
 SubRip;;;T;SubRip;;srt;;http://ffdshow.sourceforge.net/tikiwiki/tiki-index.php?page=Getting+ffdshow;Lossless
-TTML;;;T;TTML;Timed Text Markup Language;dfxp ttml;;https://en.wikipedia.org/wiki/Timed_Text_Markup_Language;Lossless
+TTML;;;T;TTML;Timed Text Markup Language;dfxp ttml imsc imscr;;https://en.wikipedia.org/wiki/Timed_Text_Markup_Language;Lossless
 SSA;;;T;Other;;ssa;;http://ffdshow.sourceforge.net/tikiwiki/tiki-index.php?page=Getting+ffdshow;Lossless
 WebVTT;;;T;WebVTT;;vtt;;;Lossless
 Blender;;;O;Other;;blenders;;http://www.blender3d.com;
@@ -167,3 +179,4 @@ AutoCAD;;;O;Other;;;;http://www.autodesk.com;
 PlayLater Video;;;V;Other;;;;http://www.playon.tv/playlater;
 WTV;;;M;WTV;Windows Recorded TV Show;wtv;video/wtv;;
 VVC;;;V;Vvc;Versatile Video Coding;vvc h266 266;video/H266;
+WebP;;;I;WebP;;webp;image/webp;

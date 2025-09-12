@@ -129,10 +129,12 @@ private :
         };
         data Minimal;
         int8u WindowID;
+        bool HasContent;
 
         stream()
         {
             WindowID=(int8u)-1;
+            HasContent=false;
         }
 
         ~stream()
@@ -145,7 +147,6 @@ private :
     int8u service_number;
     int8u block_size;
     bool   HasContent;
-    int64u DataDetected; //1 service per bit
 
     //Elements
     void NUL();                 //NUL

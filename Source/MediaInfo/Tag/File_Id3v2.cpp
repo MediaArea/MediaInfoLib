@@ -24,39 +24,43 @@
 #if defined(MEDIAINFO_ID3V2_YES) || defined(MEDIAINFO_FLAC_YES) || defined(MEDIAINFO_VORBISCOM_YES) || defined(MEDIAINFO_OGG_YES)
 //---------------------------------------------------------------------------
 
-#include "MediaInfo/MediaInfo_Internal.h"
 #include "ZenLib/Conf.h"
+#include <string>
 using namespace ZenLib;
 
 namespace MediaInfoLib
 {
 
 //---------------------------------------------------------------------------
-extern const char* Id3v2_PictureType(int8u Type)
+static const char* Id3v2_PictureType_Data[] =
 {
-    switch (Type)
-    {
-        case 0x01 :
-        case 0x02 : return "File icon";
-        case 0x03 : return "Cover (front)";
-        case 0x04 : return "Cover (back)";
-        case 0x05 : return "Leaflet page";
-        case 0x06 : return "Media";
-        case 0x07 :
-        case 0x08 : return "Performer";
-        case 0x09 : return "Conductor";
-        case 0x0A : return "Performer";
-        case 0x0B : return "Composer";
-        case 0x0C : return "Lyricist";
-        case 0x0D : return "Recording Location";
-        case 0x0E : return "During recording";
-        case 0x0F : return "During performance";
-        case 0x10 : return "Screen capture";
-        case 0x12 : return "Illustration";
-        case 0x13 : return "Performer logo";
-        case 0x14 : return "Publisher logo";
-        default   : return "";
-    }
+    "Picture", // Generic
+    "FileIcon_32x32",
+    "FileIcon",
+    "Cover",
+    "Cover_Back",
+    "LeafletPage",
+    "Cover_Media",
+    "Performer_Lead",
+    "Performer",
+    "Conductor",
+    "Performer",
+    "Composer",
+    "Lyricist",
+    "RecordingLocation",
+    "DuringRecording",
+    "DuringPerformance",
+    "ScreenCapture",
+    "Illustration",
+    "PerformerLogo",
+    "PublisherLogo",
+};
+const size_t Id3v2_PictureType_Data_Size=sizeof(Id3v2_PictureType_Data)/sizeof(*Id3v2_PictureType_Data);
+extern std::string Id3v2_PictureType(int8u Type)
+{
+    if (Type>=Id3v2_PictureType_Data_Size)
+        return std::to_string(Type);
+    return Id3v2_PictureType_Data[Type];
 }
 
 } //NameSpace
@@ -508,16 +512,30 @@ void File_Id3v2::Header_Parse()
             Element_WaitForMoreData();
             return;
         }
-        for (size_t Element_Offset_Unsynch=0; Element_Offset_Unsynch+2<Element_Offset+Size; Element_Offset_Unsynch++)
-            if (CC2(Buffer+Buffer_Offset+Element_Offset_Unsynch)==0xFF00)
+        auto Buffer_Beg=Buffer+Buffer_Offset+(size_t)Element_Offset;
+        auto Buffer_Cur=Buffer_Beg;
+        auto Buffer_End=Buffer_Beg+(size_t)Size-1;
+        for (; Buffer_Cur<Buffer_End; Buffer_Cur++)
+        {
+            if (*Buffer_Cur==0xFF) // check 0xFF00
             {
-                Size++;
-                if (Buffer_Offset+(size_t)Element_Offset+Size>Buffer_Size)
+                auto Buffer_Cur2=Buffer_Cur+1;
+                if (!*Buffer_Cur2) 
                 {
-                    Element_WaitForMoreData();
-                    return;
+                    Unsynch_List.push_back(Buffer_Cur2-Buffer_Beg);
+                    if (Id3v2_Version<4)
+                    {
+                        Size++;
+                        Buffer_End++;
+                        if (Buffer_Offset+(size_t)Element_Offset+Size>Buffer_Size)
+                        {
+                            Element_WaitForMoreData();
+                            return;
+                        }
+                    }
                 }
             }
+        }
     }
 
     //Filling
@@ -554,24 +572,12 @@ void File_Id3v2::Data_Parse()
     int64u Save_File_Offset=File_Offset;
     size_t Save_Buffer_Offset=Buffer_Offset;
     int64u Save_Element_Size=Element_Size;
-    std::vector<size_t> Unsynch_List;
-    if ((Unsynchronisation_Global || Unsynchronisation_Frame) && Element_Size-Element_Offset>1)
-    {
-        auto Buffer_Beg=Buffer+Buffer_Offset;
-        auto Buffer_Cur=Buffer_Beg+(size_t)Element_Offset;
-        Buffer_Beg--;
-        auto Buffer_End=Buffer_Beg+(size_t)Element_Size;
-        for (; Buffer_Cur<Buffer_End; Buffer_Cur++)
-        {
-            if (BigEndian2int16u(Buffer_Cur)==0xFF00)
-                Unsynch_List.push_back(Buffer_Cur-Buffer_Beg);
-        }
-    }
     if (DataLength!=(int32u)-1)
     {
         int64u TotalLength=4+(int64u)DataLength;
         if (TotalLength>Element_Size-Unsynch_List.size())
         {
+            Unsynch_List.clear();
             Skip_XX(Element_Size-Element_Offset,                "Size coherency issue");
             return;
         }
@@ -591,16 +597,8 @@ void File_Id3v2::Data_Parse()
                 size_t Pos0=(Pos==Unsynch_List.size())?(size_t)(Element_Size+Unsynch_List.size()):(Unsynch_List[Pos]);
                 size_t Pos1=(Pos==0)?0:(Unsynch_List[Pos-1]+1);
                 size_t Buffer_Unsynch_Begin=Pos1-Pos;
-                if (Buffer_Unsynch_Begin>=Element_Size)
-                {
-                    Unsynch_List.resize(Pos-1);
-                    break;
-                }
                 size_t Save_Buffer_Begin  =Pos1;
                 size_t Size=               Pos0-Pos1;
-                auto NextPos=Buffer_Unsynch_Begin+Size;
-                if (NextPos>Element_Size)
-                    Size=Element_Size-Buffer_Unsynch_Begin;
                 std::memcpy(Buffer_Unsynch+Buffer_Unsynch_Begin, Save_Buffer+Save_Buffer_Offset+Save_Buffer_Begin, Size);
             }
             Buffer=Buffer_Unsynch;
@@ -788,6 +786,7 @@ void File_Id3v2::Data_Parse()
         delete[] Buffer; Buffer=Save_Buffer;
         Buffer_Unsynch=NULL; //Same as Buffer...
         Element_Offset+=Unsynch_List.size();
+        Unsynch_List.clear();
     }
     if (Element_Offset<Element_Size)
         Skip_XX(Element_Size-Element_Offset,                    "Junk");
@@ -980,29 +979,7 @@ void File_Id3v2::APIC()
 
     //Filling
     Fill_Name();
-    Fill(Stream_General, 0, General_Cover_Description, Description);
-    Fill(Stream_General, 0, General_Cover_Type, Id3v2_PictureType(PictureType));
-    Fill(Stream_General, 0, General_Cover_Mime, Mime);
-    MediaInfo_Internal MI;
-    Ztring Demux_Save = MI.Option(__T("Demux_Get"), __T(""));
-    MI.Option(__T("Demux"), Ztring());
-    size_t MiOpenResult = MI.Open(Buffer + (size_t)(Buffer_Offset + Element_Offset), (size_t)(Element_Size - Element_Offset), nullptr, 0, (size_t)(Element_Size - Element_Offset));
-    MI.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
-    if (MI.Count_Get(Stream_Image))
-    {
-        Stream_Prepare(Stream_Image);
-        Merge(MI, Stream_Image, 0, StreamPos_Last);
-    }
-    #if MEDIAINFO_ADVANCED
-        if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64))
-        {
-            std::string Data_Raw((const char*)(Buffer+(size_t)(Buffer_Offset+Element_Offset)), (size_t)(Element_Size-Element_Offset));
-            std::string Data_Base64(Base64::encode(Data_Raw));
-            Fill(Stream_General, 0, General_Cover_Data, Data_Base64);
-        }
-    #endif //MEDIAINFO_ADVANCED
-
-    Skip_XX(Element_Size-Element_Offset, "Data");
+    Attachment("ID3v2 APIC", Description, Id3v2_PictureType(PictureType).c_str(), Mime, true);
 }
 
 //---------------------------------------------------------------------------
@@ -1087,16 +1064,14 @@ void File_Id3v2::PRIV()
     //Ztring Owner;
     //Get_ISO_8859_1(Element_Size, Owner,                         "Owner identifier");
     string Owner;
-    size_t Owner_Size=0;
-    while (Element_Offset+Owner_Size<Element_Size && Buffer[Buffer_Offset+(size_t)Element_Offset+Owner_Size]!='\0')
-        Owner_Size++;
-    if (Owner_Size==0 || Element_Offset+Owner_Size>=Element_Size)
+    auto Owner_Size=SizeUpTo0();
+    if (Owner_Size==0 || Owner_Size>=Element_Size-Element_Offset)
     {
         Skip_XX(Element_Size-Element_Offset,                    "Unknown");
         return;
     }
     Get_String(Owner_Size, Owner,                               "Owner identifier");
-    Skip_B1(                                                    "Null");
+    Skip_B1(                                                    "Zero");
     if (Owner=="com.apple.streaming.transportStreamTimestamp")
     {
         //http://tools.ietf.org/html/draft-pantos-http-live-streaming-13
@@ -1198,7 +1173,7 @@ void File_Id3v2::Fill_Name()
     switch (Element_Code)
     {
         case Elements::AENC : break;
-        case Elements::APIC : Fill(Stream_General, 0, General_Cover, "Yes"); break;
+        case Elements::APIC : break;
         case Elements::ASPI : break;
         case Elements::COMM : Fill(Stream_General, 0, Element_Values(0).To_UTF8().c_str(), Element_Values(1)); break;
         case Elements::COMR : Fill(Stream_General, 0, "Commercial frame", Element_Value); break;
@@ -1364,7 +1339,7 @@ void File_Id3v2::Fill_Name()
         case Elements::LNK  : Fill(Stream_General, 0, "Linked information,", Element_Value); break;
         case Elements::MCI  : Fill(Stream_General, 0, "MCDI", Element_Value); break;
         case Elements::MLL  : break;
-        case Elements::PIC_ : Fill(Stream_General, 0, "Cover", "Yes"); break;
+        case Elements::PIC_ : break;
         case Elements::POP  : break;
         case Elements::REV  : break;
         case Elements::RVA  : break;

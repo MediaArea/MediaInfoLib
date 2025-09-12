@@ -67,6 +67,7 @@ File_Aac::File_Aac()
     Frame_Count_Valid=0;
     FrameIsAlwaysComplete=false;
     Mode=Mode_Unknown;
+    FromIamf=false;
     
     //Conformance
     #if MEDIAINFO_CONFORMANCE
@@ -126,6 +127,7 @@ void File_Aac::Streams_Accept()
          case Mode_ADTS :
                        if (!IsSub)
                             TestContinuousFileNames();
+                       break;
         default : ;
     }
     if (Frame_Count_NotParsedIncluded==(int64u)-1)
@@ -317,6 +319,12 @@ void File_Aac::FileHeader_Parse_ADIF()
 //***************************************************************************
 // Buffer - Global
 //***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Aac::Read_Buffer_Init()
+{
+    File_Usac::Read_Buffer_Init();
+}
 
 //---------------------------------------------------------------------------
 void File_Aac::Read_Buffer_Continue()

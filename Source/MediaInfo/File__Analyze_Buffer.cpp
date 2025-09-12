@@ -308,9 +308,9 @@ void File__Analyze::Get_BFP4(int8u Bits, float32 &Info, const char* Name)
     int32u Fraction=BS->Get4(32-Bits);
     BS_End();
     Element_Offset-=4; //Because of BS_End()
-    if (Integer>=(1<<Bits)/2)
+    if (Bits && Integer>=(1<<Bits)/2)
         Integer-=1<<Bits;
-    Info=Integer+((float32)Fraction)/(1<<(32-Bits));
+    Info=Integer+((float32)Fraction)/(1LL<<(32-Bits));
     if (Trace_Activated) Param(Name, Info);
     Element_Offset+=4;
 }
@@ -1440,6 +1440,7 @@ void File__Analyze::Get_VL(const vlc Vlc[], size_t &Info, const char* Name)
                         if (BS->GetB())
                             Value++;
                         CountOfBits++;
+                        break;
             case   0 :  ;
         }
 
@@ -1926,6 +1927,13 @@ void File__Analyze::Get_UTF8(int64u Bytes, Ztring &Info, const char* Name)
 }
 
 //---------------------------------------------------------------------------
+void File__Analyze::Peek_UTF8(int64u Bytes, Ztring &Info)
+{
+    INTEGRITY_SIZE_ATLEAST_STRING(Bytes);
+    Info.From_UTF8((const char*)(Buffer+Buffer_Offset+(size_t)Element_Offset), (size_t)Bytes);
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Get_UTF16(int64u Bytes, Ztring &Info, const char* Name)
 {
     INTEGRITY_SIZE_ATLEAST_STRING(Bytes);
@@ -2020,6 +2028,18 @@ void File__Analyze::Skip_UTF16L(int64u Bytes, const char* Name)
     INTEGRITY_SIZE_ATLEAST(Bytes);
     if (Trace_Activated && Bytes) Param(Name, Ztring().From_UTF16LE((const char*)(Buffer+Buffer_Offset+(size_t)Element_Offset), (size_t)Bytes));
     Element_Offset+=Bytes;
+}
+
+//---------------------------------------------------------------------------
+size_t File__Analyze::SizeUpTo0(size_t MaxSize)
+{
+    auto Buffer_Begin=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    auto Buffer_Current=Buffer_Begin;
+    auto Remaining=(size_t)(Element_Size-Element_Offset);
+    auto Buffer_End=Buffer_Begin+(MaxSize>Remaining?Remaining:MaxSize);
+    while (Buffer_Current<Buffer_End && *Buffer_Current)
+        Buffer_Current++;
+    return Buffer_Current-Buffer_Begin;
 }
 
 //***************************************************************************

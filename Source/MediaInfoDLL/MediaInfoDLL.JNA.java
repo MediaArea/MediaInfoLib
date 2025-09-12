@@ -22,6 +22,7 @@ import com.sun.jna.Native;
 import com.sun.jna.NativeLibrary;
 import com.sun.jna.Pointer;
 import com.sun.jna.WString;
+import com.sun.jna.IntegerType;
 
 class MediaInfo
 {
@@ -77,10 +78,21 @@ class MediaInfo
     //Internal stuff
     interface MediaInfoDLL_Internal extends Library
     {
+        class SizeT extends IntegerType
+        {
+            public SizeT()
+            {
+                super(Native.SIZE_T_SIZE, 0, true);
+            }
+
+            public SizeT(long value)
+            {
+                super(Native.SIZE_T_SIZE, value, true);
+            }
+        }
 
         MediaInfoDLL_Internal INSTANCE = (MediaInfoDLL_Internal) Native.loadLibrary(LibraryPath, MediaInfoDLL_Internal.class, singletonMap(OPTION_FUNCTION_MAPPER, new FunctionMapper()
             {
-
                 @Override
                 public String getFunctionName(NativeLibrary lib, Method method)
                 {
@@ -95,18 +107,18 @@ class MediaInfo
         void Delete(Pointer Handle);
 
         //File
-        int Open(Pointer Handle, WString file);
-        int Open_Buffer_Init(Pointer handle, long length, long offset);
-        int Open_Buffer_Continue(Pointer handle, byte[] buffer, int size);
-        long Open_Buffer_Continue_GoTo_Get(Pointer handle);
-        int Open_Buffer_Finalize(Pointer handle);
-        void Close(Pointer Handle);
+        SizeT Open(Pointer Handle, WString file);
+        SizeT Open_Buffer_Init(Pointer handle, long length, long offset);
+        SizeT Open_Buffer_Continue(Pointer handle, byte[] buffer, SizeT size);
+        long  Open_Buffer_Continue_GoTo_Get(Pointer handle);
+        SizeT Open_Buffer_Finalize(Pointer handle);
+        void  Close(Pointer Handle);
 
         //Infos
         WString Inform(Pointer Handle, int Reserved);
-        WString Get(Pointer Handle, int StreamKind, int StreamNumber, WString parameter, int infoKind, int searchKind);
-        WString GetI(Pointer Handle, int StreamKind, int StreamNumber, int parameterIndex, int infoKind);
-        int     Count_Get(Pointer Handle, int StreamKind, int StreamNumber);
+        WString Get(Pointer Handle, int StreamKind, SizeT StreamNumber, WString parameter, int infoKind, int searchKind);
+        WString GetI(Pointer Handle, int StreamKind, SizeT StreamNumber, SizeT parameterIndex, int infoKind);
+        SizeT   Count_Get(Pointer Handle, int StreamKind, SizeT StreamNumber);
 
         //Options
         WString Option(Pointer Handle, WString option, WString value);
@@ -212,40 +224,40 @@ class MediaInfo
      */
     public int Open(String File_Name)
     {
-        return MediaInfoDLL_Internal.INSTANCE.Open(Handle, new WString(File_Name));
+        return MediaInfoDLL_Internal.INSTANCE.Open(Handle, new WString(File_Name)).intValue();
     }
 
-	public int Open_Buffer_Init(long length, long offset)
+    public int Open_Buffer_Init(long length, long offset)
     {
-        return MediaInfoDLL_Internal.INSTANCE.Open_Buffer_Init(Handle, length, offset);
+        return MediaInfoDLL_Internal.INSTANCE.Open_Buffer_Init(Handle, length, offset).intValue();
     }
 
-	/**
-	 *  Open a stream and collect information about it (technical information and tags) (By buffer, Continue)
+    /**
+     *  Open a stream and collect information about it (technical information and tags) (By buffer, Continue)
 
-	 * @param buffer pointer to the stream
-	 * @param size Count of bytes to read
-	 * @return a bitfield 
-				bit 0: Is Accepted (format is known) 
-				bit 1: Is Filled (main data is collected) 
-				bit 2: Is Updated (some data have beed updated, example: duration for a real time MPEG-TS stream) 
-				bit 3: Is Finalized (No more data is needed, will not use further data) 
-				bit 4-15: Reserved 
-				bit 16-31: User defined
-	 */
-	public int Open_Buffer_Continue(byte[] buffer, int size)
+     * @param buffer pointer to the stream
+     * @param size Count of bytes to read
+     * @return a bitfield
+                bit 0: Is Accepted (format is known)
+                bit 1: Is Filled (main data is collected)
+                bit 2: Is Updated (some data have beed updated, example: duration for a real time MPEG-TS stream)
+                bit 3: Is Finalized (No more data is needed, will not use further data)
+                bit 4-15: Reserved
+                bit 16-31: User defined
+    */
+    public int Open_Buffer_Continue(byte[] buffer, int size)
     {
-        return MediaInfoDLL_Internal.INSTANCE.Open_Buffer_Continue(Handle, buffer, size);
+        return MediaInfoDLL_Internal.INSTANCE.Open_Buffer_Continue(Handle, buffer, new MediaInfoDLL_Internal.SizeT(size)).intValue();
     }
 
-	public long Open_Buffer_Continue_GoTo_Get()
+    public long Open_Buffer_Continue_GoTo_Get()
     {
         return MediaInfoDLL_Internal.INSTANCE.Open_Buffer_Continue_GoTo_Get(Handle);
     }
 
-	public int Open_Buffer_Finalize()
+    public int Open_Buffer_Finalize()
     {
-        return MediaInfoDLL_Internal.INSTANCE.Open_Buffer_Finalize(Handle);
+        return MediaInfoDLL_Internal.INSTANCE.Open_Buffer_Finalize(Handle).intValue();
     }
 
     /**
@@ -314,7 +326,7 @@ class MediaInfo
      */
     public String Get(StreamKind StreamKind, int StreamNumber, String parameter, InfoKind infoKind, InfoKind searchKind)
     {
-        return MediaInfoDLL_Internal.INSTANCE.Get(Handle, StreamKind.ordinal(), StreamNumber, new WString(parameter), infoKind.ordinal(), searchKind.ordinal()).toString();
+        return MediaInfoDLL_Internal.INSTANCE.Get(Handle, StreamKind.ordinal(), new MediaInfoDLL_Internal.SizeT(StreamNumber), new WString(parameter), infoKind.ordinal(), searchKind.ordinal()).toString();
     }
 
 
@@ -348,7 +360,7 @@ class MediaInfo
      */
     public String Get(StreamKind StreamKind, int StreamNumber, int parameterIndex, InfoKind infoKind)
     {
-        return MediaInfoDLL_Internal.INSTANCE.GetI(Handle, StreamKind.ordinal(), StreamNumber, parameterIndex, infoKind.ordinal()).toString();
+        return MediaInfoDLL_Internal.INSTANCE.GetI(Handle, StreamKind.ordinal(), new MediaInfoDLL_Internal.SizeT(StreamNumber), new MediaInfoDLL_Internal.SizeT(parameterIndex), infoKind.ordinal()).toString();
     }
 
     /**
@@ -361,14 +373,7 @@ class MediaInfo
      */
     public int Count_Get(StreamKind StreamKind)
     {
-        //We should use NativeLong for -1, but it fails on 64-bit
-        //int Count_Get(Pointer Handle, int StreamKind, NativeLong StreamNumber);
-        //return MediaInfoDLL_Internal.INSTANCE.Count_Get(Handle, StreamKind.ordinal(), -1);
-        //so we use slower Get() with a character string
-        String StreamCount = Get(StreamKind, 0, "StreamCount");
-        if (StreamCount == null || StreamCount.length() == 0)
-            return 0;
-        return Integer.parseInt(StreamCount);
+        return MediaInfoDLL_Internal.INSTANCE.Count_Get(Handle, StreamKind.ordinal(), new MediaInfoDLL_Internal.SizeT(-1)).intValue();
     }
 
 
@@ -382,7 +387,7 @@ class MediaInfo
      */
     public int Count_Get(StreamKind StreamKind, int StreamNumber)
     {
-        return MediaInfoDLL_Internal.INSTANCE.Count_Get(Handle, StreamKind.ordinal(), StreamNumber);
+        return MediaInfoDLL_Internal.INSTANCE.Count_Get(Handle, StreamKind.ordinal(), new MediaInfoDLL_Internal.SizeT(StreamNumber)).intValue();
     }
 
 

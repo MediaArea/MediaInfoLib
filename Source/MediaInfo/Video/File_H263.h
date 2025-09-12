@@ -31,7 +31,6 @@ class File_H263 : public File__Analyze
 public :
     //In
     int64u Frame_Count_Valid;
-    bool   FrameIsAlwaysComplete;
 
     //Constructor/Destructor
     File_H263();
@@ -54,7 +53,6 @@ private :
 
     //Buffer - Per element
     void Header_Parse();
-    bool Header_Parser_Fill_Size();
     void Data_Parse();
 
     //Elements
@@ -65,6 +63,9 @@ private :
     int8u PAR_W;
     int8u PAR_H;
     bool  Temporal_Reference_IsValid;
+
+    //Utils
+    size_t Header_Parser_GetSize();
 };
 
 } //NameSpace

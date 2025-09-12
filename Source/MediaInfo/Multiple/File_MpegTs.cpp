@@ -259,7 +259,6 @@ File_MpegTs::File_MpegTs()
         Demux_Level=4; //Intermediate
     #endif //MEDIAINFO_DEMUX
     MustSynchronize=true;
-    Buffer_TotalBytes_FirstSynched_Max=64*1024;
     Buffer_TotalBytes_Fill_Max=(int64u)-1; //Disabling this feature for this format, this is done in the parser
     Trusted_Multiplier=2;
     #if MEDIAINFO_DEMUX
@@ -280,7 +279,7 @@ File_MpegTs::File_MpegTs()
 
     //Data
     MpegTs_JumpTo_Begin=MediaInfoLib::Config.MpegTs_MaximumOffset_Get();
-    MpegTs_JumpTo_End=MediaInfoLib::Config.MpegTs_MaximumOffset_Get()/4;
+    MpegTs_JumpTo_End=MediaInfoLib::Config.MpegTs_MaximumOffset_Get();
     MpegTs_ScanUpTo=(int64u)-1;
     Searching_TimeStamp_Start=true;
     Complete_Stream=NULL;
@@ -331,7 +330,7 @@ void File_MpegTs::Streams_Accept()
 
     //Temp
     MpegTs_JumpTo_Begin=(File_Offset_FirstSynched==(int64u)-1?0:Buffer_TotalBytes_LastSynched)+MediaInfoLib::Config.MpegTs_MaximumOffset_Get();
-    MpegTs_JumpTo_End=MediaInfoLib::Config.MpegTs_MaximumOffset_Get()/4;
+    MpegTs_JumpTo_End=MediaInfoLib::Config.MpegTs_MaximumOffset_Get();
     if (MpegTs_JumpTo_Begin==(int64u)-1 || MpegTs_JumpTo_Begin+MpegTs_JumpTo_End>=File_Size)
     {
         if (MpegTs_JumpTo_Begin+MpegTs_JumpTo_End>File_Size)
@@ -534,7 +533,7 @@ void File_MpegTs::Streams_Update_Programs()
                         {
                         Ztring Format=Retrieve(Complete_Stream->Streams[elementary_PID]->StreamKind, Complete_Stream->Streams[elementary_PID]->StreamPos, Fill_Parameter(Complete_Stream->Streams[elementary_PID]->StreamKind, Generic_Format));
                         if (Format.empty())
-                            Format=Mpeg_Psi_stream_type_Format(Complete_Stream->Streams[elementary_PID]->stream_type, Program->second.registration_format_identifier);
+                            Format=Mpeg_Psi_stream_type_Format(Complete_Stream->Streams[elementary_PID]->stream_type, Complete_Stream->Streams[elementary_PID]->registration_format_identifier?Complete_Stream->Streams[elementary_PID]->registration_format_identifier:Program->second.registration_format_identifier);
                         if (Format.empty())
                         {
                             std::map<std::string, Ztring>::iterator Format_FromInfo=Complete_Stream->Streams[elementary_PID]->Infos.find("Format");
@@ -760,7 +759,9 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
         //By the descriptors
         if (StreamKind_Last==Stream_Max && Complete_Stream->transport_stream_id_IsValid && !Temp->program_numbers.empty() && !Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs.empty())
         {
-            int32u format_identifier=Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[Temp->program_numbers[0]].registration_format_identifier;
+            auto format_identifier=Temp->registration_format_identifier;
+            if (!format_identifier)
+                format_identifier=Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[Temp->program_numbers[0]].registration_format_identifier;
             if (Temp->IsRegistered
              && Mpeg_Descriptors_registration_format_identifier_StreamKind(format_identifier)!=Stream_Max)
             {
@@ -783,7 +784,9 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
         //By the stream_type
         if (StreamKind_Last==Stream_Max && Complete_Stream->transport_stream_id_IsValid && !Temp->program_numbers.empty() && !Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs.empty())
         {
-            int32u format_identifier=Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[Temp->program_numbers[0]].registration_format_identifier;
+            auto format_identifier=Temp->registration_format_identifier;
+            if (!format_identifier)
+                format_identifier=Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[Temp->program_numbers[0]].registration_format_identifier;
             if (Mpeg_Psi_stream_type_StreamKind(Temp->stream_type, format_identifier)!=Stream_Max && (Temp->IsRegistered || ForceStreamDisplay || format_identifier==Elements::HDMV))
             {
                 StreamKind_Last=Mpeg_Psi_stream_type_StreamKind(Temp->stream_type, format_identifier);
@@ -793,9 +796,15 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
                     StreamKind_Last=Stream_Max;
                 }
                 Stream_Prepare(StreamKind_Last);
-                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format), Mpeg_Psi_stream_type_Format(Temp->stream_type, format_identifier));
-                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Codec), Mpeg_Psi_stream_type_Codec(Temp->stream_type, format_identifier));
             }
+        }
+        if (StreamKind_Last!=Stream_Max && Retrieve_Const(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format)).empty())
+        {
+            auto format_identifier=Temp->registration_format_identifier;
+            if (!format_identifier)
+                format_identifier=Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[Temp->program_numbers[0]].registration_format_identifier;
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format), Mpeg_Psi_stream_type_Format(Temp->stream_type, format_identifier));
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Codec), Mpeg_Psi_stream_type_Codec(Temp->stream_type, format_identifier));
         }
 
         //By the StreamKind
@@ -1344,18 +1353,20 @@ void File_MpegTs::Streams_Update_Duration_Update()
         }
     }
 
-    if (Duration_Max)
-        Fill(Stream_General, 0, General_Duration, ((float64)Duration_Max) / 27000, 6, true);
     if (Duration_Count && Duration_Sum && Bytes_Sum)
     {
         //Filling Duration and bitrate with an average of content from all streams with PCR
         //Min and Max are based on a a 1 byte precision in the computed byte count + +/- 500 ns tolerance for hte PCR vale
-        Fill(Stream_General, 0, General_OverallBitRate, Bytes_Sum * 8 / (((float64)Duration_Sum) / 27000000), 0, true);
+        auto OverallBitRate = Bytes_Sum / (((float64)Duration_Sum) / ( 8 * 27000000) ); // 8-bit per byte and 27 MHz duration
+        Fill(Stream_General, 0, General_Duration, File_Size / (OverallBitRate / 8000), 6, true);
+        Fill(Stream_General, 0, General_OverallBitRate, OverallBitRate, 0, true);
         Fill(Stream_General, 0, "OverallBitRate_Precision_Min", (Bytes_Sum - Duration_Count) * 8 / (((float64)(Duration_Sum + 13500 * Duration_Count)) / 27000000), 0, true);
         Fill_SetOptions(Stream_General, 0, "OverallBitRate_Precision_Min", "N NT");
         Fill(Stream_General, 0, "OverallBitRate_Precision_Max", (Bytes_Sum + Duration_Count) * 8 / (((float64)(Duration_Sum - 13500 * Duration_Count)) / 27000000), 0, true);
         Fill_SetOptions(Stream_General, 0, "OverallBitRate_Precision_Max", "N NT");
     }
+    else if (Duration_Max)
+        Fill(Stream_General, 0, General_Duration, ((float64)Duration_Max) / 27000, 6, true);
 
     if (IsVbr)
         Fill(Stream_General, 0, General_OverallBitRate_Mode, "VBR", Unlimited, true, true);
@@ -1510,7 +1521,10 @@ bool File_MpegTs::Synched_Test()
         //Synchro testing
         if (Buffer[Buffer_Offset+BDAV_Size]!=0x47)
         {
-            Synched=false;
+            Frame_Count=(int64u)-1;
+            Frame_Count_NotParsedIncluded=(int64u)-1;
+            SynchLost("MPEG-TS");
+            Frame_Count=0;
             #if MEDIAINFO_DUPLICATE
                 if (File__Duplicate_Get())
                     Trusted++; //We don't want to stop parsing if duplication is requested, TS is not a lot stable, normal...
@@ -1800,7 +1814,24 @@ bool File_MpegTs::Synched_Test()
     }
 
     if (File_Offset+Buffer_Size>=File_Size)
+    {
         Detect_EOF(); //for TRP files
+        if (File_GoTo==(int64u)-1)
+        {
+            int64u Current_Offset=File_Offset+Buffer_Offset;
+            if (Current_Offset!=File_Size)
+            {
+                IsTruncated(Current_Offset+TS_Size, true, "MPEG-TS");
+                auto LastPacket_Size=File_Size-Current_Offset;
+                auto LastPacker_Missing=TS_Size-LastPacket_Size;
+                if (LastPacker_Missing>=TSP_Size)
+                    TSP_Size=0; // Last bytes of a content and partial TS packet without the content after the TS content
+                else
+                    TSP_Size-=LastPacker_Missing;
+            }
+        }
+        return true;
+    }
 
     return false; //Not enough data
 }
@@ -2079,8 +2110,8 @@ void File_MpegTs::Read_Buffer_AfterParsing()
                                 if (Duration) 
                                     Ratio = (27000000 * 2) / Duration; 
                                 MpegTs_JumpTo_End*=Ratio;
-                                if (MpegTs_JumpTo_End>MediaInfoLib::Config.MpegTs_MaximumOffset_Get()/4)
-                                    MpegTs_JumpTo_End=MediaInfoLib::Config.MpegTs_MaximumOffset_Get()/4;
+                                if (MpegTs_JumpTo_End>MediaInfoLib::Config.MpegTs_MaximumOffset_Get())
+                                    MpegTs_JumpTo_End=MediaInfoLib::Config.MpegTs_MaximumOffset_Get();
                                 break; //Using the first PES found
                             }
                         }
@@ -3147,7 +3178,7 @@ void File_MpegTs::PES()
 void File_MpegTs::PES_Parse_Finish()
 {
     //Test if parsing of headers is OK
-    if (NoPatPmt && !Status[IsAccepted])
+    if (NoPatPmt && !Status[IsAccepted] && Complete_Stream->Streams[pid]->Parser->Status[IsAccepted])
         Accept("MPEG-TS");
 
     if (Complete_Stream->Streams[pid]->Parser->Status[IsUpdated])

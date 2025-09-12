@@ -8,6 +8,7 @@
 #include <MediaInfo/MediaInfo_Internal.h>
 #include <MediaInfo/MediaInfo.h>
 #include <emscripten/bind.h>
+#include <clocale>
 #include <string>
 //---------------------------------------------------------------------------
 
@@ -17,11 +18,14 @@ class MediaInfoJs
 private:
     MediaInfoLib::MediaInfo_Internal* Internal;
     MediaInfoJs(const MediaInfoJs&);
-	MediaInfoJs& operator=(const MediaInfoJs&);  
+	MediaInfoJs& operator=(const MediaInfoJs&);
 public:
     // Constructor/Destructor
     MediaInfoJs()
     {
+        // Set locale to C.UTF-8 (emscripten support only C and C.UTF-8 locales by default)
+        std::setlocale(LC_ALL, "C.UTF-8");
+
         Internal = new MediaInfoLib::MediaInfo_Internal;
     }
 

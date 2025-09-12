@@ -284,9 +284,9 @@ void File__Analyze::Get_BFP4_(int8u  Bits, float32 &Info)
     int32s Integer=(int32s)BS->Get4(Bits);
     int32u Fraction=BS->Get4(32-Bits);
     BS_End();
-    if (Integer>=(1<<Bits)/2)
+    if (Bits && Integer>=(1<<Bits)/2)
         Integer-=1<<Bits;
-    Info=Integer+((float32)Fraction)/(1<<(32-Bits));
+    Info=Integer+((float32)Fraction)/(1LL<<(32-Bits));
 }
 
 //---------------------------------------------------------------------------
@@ -1426,6 +1426,13 @@ void File__Analyze::Get_UTF8(int64u Bytes, Ztring &Info)
 }
 
 //---------------------------------------------------------------------------
+void File__Analyze::Peek_UTF8(int64u Bytes, Ztring& Info)
+{
+    INTEGRITY_SIZE_ATLEAST_STRING(Bytes);
+    Info.From_UTF8((const char*)(Buffer+Buffer_Offset+(size_t)Element_Offset), (size_t)Bytes);
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Get_UTF16(int64u Bytes, Ztring &Info)
 {
     INTEGRITY_SIZE_ATLEAST_STRING(Bytes);
@@ -1447,6 +1454,17 @@ void File__Analyze::Get_UTF16L(int64u Bytes, Ztring &Info)
     INTEGRITY_SIZE_ATLEAST_STRING(Bytes);
     Info.From_UTF16LE((const char*)(Buffer+Buffer_Offset+(size_t)Element_Offset), (size_t)Bytes);
     Element_Offset+=Bytes;
+}
+
+//---------------------------------------------------------------------------
+size_t File__Analyze::SizeUpTo0(size_t MaxSize)
+{
+    auto Buffer_Begin=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    auto Buffer_Current=Buffer_Begin;
+    auto Buffer_End=Buffer+Buffer_Offset+(MaxSize>((size_t)Element_Size)?((size_t)Element_Size):MaxSize);
+    while (Buffer_Current<Buffer_End && *Buffer_Current)
+        Buffer_Current++;
+    return Buffer_Current-Buffer_Begin;
 }
 
 //***************************************************************************

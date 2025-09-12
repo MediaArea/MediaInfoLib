@@ -7,9 +7,19 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        environement: [normal, minified, minimal, minimal-with-xml]
+        environement: [gcc, utf8, minified, minimal, minimal-with-xml, cmake]
+        exclude:
+          - os: macos-latest
+            environement: minified
+          - os: macos-latest
+            environement: minimal
+          - os: macos-latest
+            environement: minimal-with-xml
         include:
-          - environement: normal
+          - environement: gcc
+            CXXFLAGS: ""
+            RUN_TESTS: "all"
+          - environement: cmake
             CXXFLAGS: ""
             RUN_TESTS: "all"
           - environement: minified
@@ -26,13 +36,11 @@ jobs:
     env:
       S3_KEY: ${{ secrets.S3_KEY }}
       S3_PASS: ${{ secrets.S3_PASS }}
-      CXXFLAGS: ${{ matrix.CXXFLAGS }}
+      CXXFLAGS: -Werror -Wno-error=deprecated-declarations ${{ matrix.CXXFLAGS }}
       RUN_TESTS: ${{ matrix.RUN_TESTS }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
+        uses: actions/checkout@v4
       - name: Dependencies
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
@@ -40,38 +48,70 @@ jobs:
             sudo apt-get install -y libxml2-utils zlib1g-dev libcurl4-gnutls-dev libmms-dev
           fi
           if [ "$RUNNER_OS" == "macOS" ]; then
-            brew install automake pkg-config
+            brew install libtool automake
           fi
-          sudo npm install -g jsonlint
       - name: ZenLib
         run: |
           git -C .. clone --depth=1 https://github.com/MediaArea/ZenLib.git
+      - name: Configure
+        if: ${{ matrix.environement != 'cmake' }}
+        run: |
           pushd ../ZenLib/Project/GNU/Library
             autoreconf -if
-            ./configure --enable-static
+            ./configure --enable-silent-rules --enable-static ${{ matrix.environement == 'utf8' && '--disable-unicode' || '' }}
             make
           popd
-      - name: Configure
-        run: |
           cd Project/GNU/Library
           autoreconf -if
-          ./configure --with-libcurl=runtime
+          ./configure --enable-silent-rules --with-libcurl=runtime
       - name: Build
+        if: ${{ matrix.environement != 'cmake' }}
         run: |
           cd Project/GNU/Library
-          make
+          make -j4
       - name: Check files
+        if: ${{ matrix.environement != 'cmake' }}
         run: |
           cd Project/GNU/Library
           make clone_regression_files
       - name: Check
+        if: ${{ matrix.environement != 'cmake' }}
         run: |
+          sudo npm install -g jsonlint
           cd Project/GNU/Library
           make check
       - name: CMake Build
-        if: ${{ matrix.environement == 'normal' }}
+        if: ${{ matrix.environement == 'cmake' }}
         run: |
           mkdir Project/CMake/Build
           cd Project/CMake/Build
           cmake -DBUILD_ZENLIB=1 ..
-          make
+          make -j4
+
+  Windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        architecture: [ Win32, x64, ARM64 ]
+      fail-fast: false
+    steps:
+      - name: Checkout zlib
+        uses: actions/checkout@v4
+        with:
+          repository: MediaArea/zlib
+          path: zlib
+      - name: Checkout ZenLib
+        uses: actions/checkout@v4
+        with:
+          repository: MediaArea/ZenLib
+          path: ZenLib
+      - name: Checkout MediaInfoLib
+        uses: actions/checkout@v4
+        with:
+          path: MediaInfoLib
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+      - name: Build
+        run: msbuild -p:Configuration=Release -p:Platform=${{ matrix.architecture }} ${{ github.workspace }}\MediaInfoLib\Project\MSVC2022\MediaInfoLib.sln -verbosity:quiet -warnaserror

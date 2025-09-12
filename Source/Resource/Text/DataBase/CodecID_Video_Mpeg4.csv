@@ -1,4 +1,4 @@
-2vuy;YUV;;;;;;YUV;4:2:2
+2vuy;YUV;;;;;;YUV;4:2:2;8
 2Vuy;YUV;;;;;;YUV;4:2:2
 8BPS;RGB;;;;;;RGB;8:8:8
 ac16;YUV;;;;;;YUV;4:2:2
@@ -35,6 +35,7 @@ ai56;AVC;;Advanced Video Coding;;;;
 ai5p;AVC;;Advanced Video Coding;;;;
 ai5q;AVC;;Advanced Video Coding;;;;
 AV01;AV1;;;;;;
+av01;AV1;;;;;;
 AV1x;YUV;;;;;;YUV;4:2:2
 avc1;AVC;;Advanced Video Coding;;;;;
 avc2;AVC;;Advanced Video Coding;;;;;
@@ -52,6 +53,7 @@ AVmp;MPEG Video;Avid IMX;;;;Version 2;;;
 AVUI;Avid Meridien Uncompressed;;;;;;
 avr ;JPEG;;;;;;;
 AVrp;RGB;Avid;;;;;RGB;
+avs3;AVS3 Video;;;;;;;
 b16g;Gray;;;;;;Y;16
 b32a;Gray/Alpha;;;;;;YA;16:16
 b48r;RGB;;;;;;RGB;16:16:16
@@ -174,6 +176,8 @@ SVQ3;Sorenson 3;;Sorenson Media Video 3 (Apple QuickTime 5);http://www.apple.com
 v210;YUV;AJA Video Systems Xena;;;;;YUV;4:2:2
 V210;YUV;AJA Video Systems Xena;;;;;YUV;4:2:2
 vc-1;VC-1;;SMPTE VC-1;http://www.smpte.org/;;;YUV;
+vp08;VP8;;;http://www.webmproject.org;;;YUV;4:2:0
+vp09;VP9;;;http://www.webmproject.org;;;YUV;4:2:0
 vvc1;VVC;;Versatile Video Coding;;;;;
 vvi1;VVC;;Versatile Video Coding;;;;;
 WMV3;VC-1;WMV3;Windows Media Video 9;http://www.microsoft.com/windows/windowsmedia/format/codecdownload.aspx;;;;

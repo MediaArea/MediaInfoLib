@@ -323,27 +323,31 @@ namespace MediaInfoLib
 const size_t Avc_Errors_MaxCount=32;
 
 //---------------------------------------------------------------------------
-extern const int8u Avc_PixelAspectRatio_Size=17;
-extern const float32 Avc_PixelAspectRatio[Avc_PixelAspectRatio_Size]=
+struct par
 {
-    (float32)1, //Reserved
-    (float32)1,
-    (float32)12/(float32)11,
-    (float32)10/(float32)11,
-    (float32)16/(float32)11,
-    (float32)40/(float32)33,
-    (float32)24/(float32)11,
-    (float32)20/(float32)11,
-    (float32)32/(float32)11,
-    (float32)80/(float32)33,
-    (float32)18/(float32)11,
-    (float32)15/(float32)11,
-    (float32)64/(float32)33,
-    (float32)160/(float32)99,
-    (float32)4/(float32)3,
-    (float32)3/(float32)2,
-    (float32)2,
+    int8u w;
+    int8u h;
 };
+extern const par Avc_PixelAspectRatio[] =
+{
+    {   1,   1 },
+    {  12,  11 },
+    {  10,  11 },
+    {  16,  11 },
+    {  40,  33 },
+    {  24,  11 },
+    {  20,  11 },
+    {  32,  11 },
+    {  80,  33 },
+    {  18,  11 },
+    {  15,  11 },
+    {  64,  33 },
+    { 160,  99 },
+    {   4,   3 },
+    {   3,   2 },
+    {   2,   1 },
+};
+extern const auto Avc_PixelAspectRatio_Size = sizeof(Avc_PixelAspectRatio) / sizeof(*Avc_PixelAspectRatio);
 
 //---------------------------------------------------------------------------
 const char* Avc_video_format[]=
@@ -657,7 +661,6 @@ File_Avc::File_Avc()
         Trace_Layers_Update(8); //Stream
     #endif //MEDIAINFO_TRACE
     MustSynchronize=true;
-    Buffer_TotalBytes_FirstSynched_Max=64*1024;
     PTS_DTS_Needed=true;
     StreamSource=IsStream;
     Frame_Count_NotParsedIncluded=0;
@@ -890,8 +893,10 @@ void File_Avc::Streams_Fill()
 }
 
 //---------------------------------------------------------------------------
-void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item)
+void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item_)
 {
+    auto seq_parameter_set_Item = *seq_parameter_set_Item_;
+
     if (Count_Get(Stream_Video) && !Retrieve_Const(Stream_Video, 0, Video_Format).empty())
         return;
     if (!Count_Get(Stream_Video))
@@ -900,50 +905,62 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
     Fill(Stream_Video, 0, Video_Codec, "AVC");
 
     //Calculating - Pixels
-    int32u Width =((*seq_parameter_set_Item)->pic_width_in_mbs_minus1       +1)*16;
-    int32u Height=((*seq_parameter_set_Item)->pic_height_in_map_units_minus1+1)*16*(2-(*seq_parameter_set_Item)->frame_mbs_only_flag);
-    int8u chromaArrayType = (*seq_parameter_set_Item)->ChromaArrayType();
+    int32u Width =(seq_parameter_set_Item->pic_width_in_mbs_minus1       +1)*16;
+    int32u Height=(seq_parameter_set_Item->pic_height_in_map_units_minus1+1)*16*(2-seq_parameter_set_Item->frame_mbs_only_flag);
+    int8u chromaArrayType = seq_parameter_set_Item->ChromaArrayType();
     if (chromaArrayType >= 4)
         chromaArrayType = 0;
     int32u CropUnitX=Avc_SubWidthC [chromaArrayType];
-    int32u CropUnitY=Avc_SubHeightC[chromaArrayType]*(2-(*seq_parameter_set_Item)->frame_mbs_only_flag);
-    Width -=((*seq_parameter_set_Item)->frame_crop_left_offset+(*seq_parameter_set_Item)->frame_crop_right_offset )*CropUnitX;
-    Height-=((*seq_parameter_set_Item)->frame_crop_top_offset +(*seq_parameter_set_Item)->frame_crop_bottom_offset)*CropUnitY;
+    int32u CropUnitY=Avc_SubHeightC[chromaArrayType]*(2-seq_parameter_set_Item->frame_mbs_only_flag);
+    Width -=(seq_parameter_set_Item->frame_crop_left_offset+seq_parameter_set_Item->frame_crop_right_offset )*CropUnitX;
+    Height-=(seq_parameter_set_Item->frame_crop_top_offset +seq_parameter_set_Item->frame_crop_bottom_offset)*CropUnitY;
 
     //From vui_parameters
-    float64 PixelAspectRatio=1;
-    if ((*seq_parameter_set_Item)->vui_parameters)
+    float64 FrameRate=0;
+    const auto vui_parameters = seq_parameter_set_Item->vui_parameters;
+    if (vui_parameters)
     {
-        if ((*seq_parameter_set_Item)->vui_parameters->aspect_ratio_info_present_flag)
+        if (vui_parameters->flags[timing_info_present_flag])
         {
-            if ((*seq_parameter_set_Item)->vui_parameters->aspect_ratio_idc<Avc_PixelAspectRatio_Size)
-                PixelAspectRatio=Avc_PixelAspectRatio[(*seq_parameter_set_Item)->vui_parameters->aspect_ratio_idc];
-            else if ((*seq_parameter_set_Item)->vui_parameters->aspect_ratio_idc==0xFF && (*seq_parameter_set_Item)->vui_parameters->sar_height)
-                PixelAspectRatio=((float64)(*seq_parameter_set_Item)->vui_parameters->sar_width)/(*seq_parameter_set_Item)->vui_parameters->sar_height;
-        }
-        if ((*seq_parameter_set_Item)->vui_parameters->timing_info_present_flag)
-        {
-            if (!(*seq_parameter_set_Item)->vui_parameters->fixed_frame_rate_flag)
+            if (!vui_parameters->flags[fixed_frame_rate_flag])
                 Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode, "VFR");
-            else if ((*seq_parameter_set_Item)->vui_parameters->timing_info_present_flag && (*seq_parameter_set_Item)->vui_parameters->time_scale && (*seq_parameter_set_Item)->vui_parameters->num_units_in_tick)
-                Fill(Stream_Video, StreamPos_Last, Video_FrameRate, (float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick/((*seq_parameter_set_Item)->frame_mbs_only_flag?2:(((*seq_parameter_set_Item)->pic_order_cnt_type==2 && Structure_Frame/2>Structure_Field)?1:2))/FrameRate_Divider);
+            else if (vui_parameters->time_scale && vui_parameters->num_units_in_tick)
+            {
+                FrameRate = (float32)vui_parameters->time_scale / vui_parameters->num_units_in_tick / (seq_parameter_set_Item->frame_mbs_only_flag ? 2 : ((seq_parameter_set_Item->pic_order_cnt_type == 2 && Structure_Frame / 2 > Structure_Field) ? 1 : 2)) / FrameRate_Divider;
+                Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate);
+            }
+        }
+
+        if (vui_parameters->sar_width && vui_parameters->sar_height)
+        {
+            auto PixelAspectRatio = ((float32)vui_parameters->sar_width) / vui_parameters->sar_height;
+            Fill(Stream_Video, 0, Video_PixelAspectRatio, PixelAspectRatio, 3, true);
+            if (Width && Height)
+                Fill(Stream_Video, 0, Video_DisplayAspectRatio, Width*PixelAspectRatio/Height, 3, true); //More precise
+        }
+
+        if (vui_parameters->chroma_sample_loc_type_top_field != (int32u)-1)
+        {
+            Fill(Stream_Video, 0, "ChromaSubsampling_Position", __T("Type ") + Ztring::ToZtring(vui_parameters->chroma_sample_loc_type_top_field));
+            if (vui_parameters->chroma_sample_loc_type_bottom_field != (int32u)-1 && vui_parameters->chroma_sample_loc_type_bottom_field != vui_parameters->chroma_sample_loc_type_top_field)
+                Fill(Stream_Video, 0, "ChromaSubsampling_Position", __T("Type ") + Ztring::ToZtring(vui_parameters->chroma_sample_loc_type_bottom_field));
         }
 
         //Colour description
         if (preferred_transfer_characteristics!=2)
             Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(preferred_transfer_characteristics));
-        if ((*seq_parameter_set_Item)->vui_parameters->video_signal_type_present_flag)
+        if (vui_parameters->flags[video_signal_type_present_flag])
         {
-            Fill(Stream_Video, 0, Video_Standard, Avc_video_format[(*seq_parameter_set_Item)->vui_parameters->video_format]);
-            Fill(Stream_Video, 0, Video_colour_range, Avc_video_full_range[(*seq_parameter_set_Item)->vui_parameters->video_full_range_flag]);
-            if ((*seq_parameter_set_Item)->vui_parameters->colour_description_present_flag)
+            Fill(Stream_Video, 0, Video_Standard, Avc_video_format[vui_parameters->video_format]);
+            Fill(Stream_Video, 0, Video_colour_range, Avc_video_full_range[vui_parameters->flags[video_full_range_flag]]);
+            if (vui_parameters->flags[colour_description_present_flag])
             {
                 Fill(Stream_Video, 0, Video_colour_description_present, "Yes");
-                Fill(Stream_Video, 0, Video_colour_primaries, Mpegv_colour_primaries((*seq_parameter_set_Item)->vui_parameters->colour_primaries));
-                Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics((*seq_parameter_set_Item)->vui_parameters->transfer_characteristics));
-                Fill(Stream_Video, 0, Video_matrix_coefficients, Mpegv_matrix_coefficients((*seq_parameter_set_Item)->vui_parameters->matrix_coefficients));
-                if ((*seq_parameter_set_Item)->vui_parameters->matrix_coefficients!=2)
-                    Fill(Stream_Video, 0, Video_ColorSpace, Mpegv_matrix_coefficients_ColorSpace((*seq_parameter_set_Item)->vui_parameters->matrix_coefficients), Unlimited, true, true);
+                Fill(Stream_Video, 0, Video_colour_primaries, Mpegv_colour_primaries(vui_parameters->colour_primaries));
+                Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(vui_parameters->transfer_characteristics));
+                Fill(Stream_Video, 0, Video_matrix_coefficients, Mpegv_matrix_coefficients(vui_parameters->matrix_coefficients));
+                if (vui_parameters->matrix_coefficients!=2)
+                    Fill(Stream_Video, 0, Video_ColorSpace, Mpegv_matrix_coefficients_ColorSpace(vui_parameters->matrix_coefficients), Unlimited, true, true);
             }
         }
 
@@ -953,7 +970,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         bool   cbr_flag=false;
         bool   cbr_flag_IsSet=false;
         bool   cbr_flag_IsValid=true;
-        seq_parameter_set_struct::vui_parameters_struct::xxl* NAL=(*seq_parameter_set_Item)->vui_parameters->NAL;
+        seq_parameter_set_struct::vui_parameters_struct::xxl* NAL=vui_parameters->NAL;
         if (NAL)
             for (size_t Pos=0; Pos<NAL->SchedSel.size(); Pos++)
             {
@@ -971,7 +988,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
                     cbr_flag_IsSet=true;
                 }
             }
-        seq_parameter_set_struct::vui_parameters_struct::xxl* VCL=(*seq_parameter_set_Item)->vui_parameters->VCL;
+        seq_parameter_set_struct::vui_parameters_struct::xxl* VCL=vui_parameters->VCL;
         if (VCL)
             for (size_t Pos=0; Pos<VCL->SchedSel.size(); Pos++)
             {
@@ -996,18 +1013,15 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         }
     }
 
-    auto Profile=Avc_profile_level_string((*seq_parameter_set_Item)->profile_idc, (*seq_parameter_set_Item)->level_idc, (*seq_parameter_set_Item)->constraint_set_flags);
+    auto Profile=Avc_profile_level_string(seq_parameter_set_Item->profile_idc, seq_parameter_set_Item->level_idc, seq_parameter_set_Item->constraint_set_flags);
     Fill(Stream_Video, 0, Video_Format_Profile, Profile);
     Fill(Stream_Video, 0, Video_Codec_Profile, Profile);
     Fill(Stream_Video, StreamPos_Last, Video_Width, Width);
     Fill(Stream_Video, StreamPos_Last, Video_Height, Height);
-    if ((*seq_parameter_set_Item)->frame_crop_left_offset || (*seq_parameter_set_Item)->frame_crop_right_offset)
-        Fill(Stream_Video, StreamPos_Last, Video_Stored_Width, ((*seq_parameter_set_Item)->pic_width_in_mbs_minus1       +1)*16);
-    if ((*seq_parameter_set_Item)->frame_crop_top_offset || (*seq_parameter_set_Item)->frame_crop_bottom_offset)
-        Fill(Stream_Video, StreamPos_Last, Video_Stored_Height, ((*seq_parameter_set_Item)->pic_height_in_map_units_minus1+1)*16*(2-(*seq_parameter_set_Item)->frame_mbs_only_flag));
-    Fill(Stream_Video, 0, Video_PixelAspectRatio, PixelAspectRatio, 3, true);
-    if(Height)
-        Fill(Stream_Video, 0, Video_DisplayAspectRatio, Width*PixelAspectRatio/Height, 3, true); //More precise
+    if (seq_parameter_set_Item->frame_crop_left_offset || seq_parameter_set_Item->frame_crop_right_offset)
+        Fill(Stream_Video, StreamPos_Last, Video_Stored_Width, (seq_parameter_set_Item->pic_width_in_mbs_minus1       +1)*16);
+    if (seq_parameter_set_Item->frame_crop_top_offset || seq_parameter_set_Item->frame_crop_bottom_offset)
+        Fill(Stream_Video, StreamPos_Last, Video_Stored_Height, (seq_parameter_set_Item->pic_height_in_map_units_minus1+1)*16*(2-seq_parameter_set_Item->frame_mbs_only_flag));
     if (FrameRate_Divider==2)
     {
         Fill(Stream_Video, StreamPos_Last, Video_Format_Settings_FrameMode, "Frame doubling");
@@ -1020,14 +1034,14 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
     }
 
     //Interlacement
-    if ((*seq_parameter_set_Item)->mb_adaptive_frame_field_flag && Structure_Frame>0) //Interlaced macro-block
+    if (seq_parameter_set_Item->mb_adaptive_frame_field_flag && Structure_Frame>0) //Interlaced macro-block
     {
         Fill(Stream_Video, 0, Video_ScanType, "MBAFF");
         Fill(Stream_Video, 0, Video_Interlacement, "MBAFF");
     }
-    else if ((*seq_parameter_set_Item)->frame_mbs_only_flag || (Structure_Frame>0 && Structure_Field==0)) //No interlaced frame
+    else if (seq_parameter_set_Item->frame_mbs_only_flag || (Structure_Frame>0 && Structure_Field==0)) //No interlaced frame
     {
-        switch ((*seq_parameter_set_Item)->pic_struct_FirstDetected)
+        switch (seq_parameter_set_Item->pic_struct_FirstDetected)
         {
             case  3 :
                         Fill(Stream_Video, 0, Video_ScanType, "Interlaced");
@@ -1053,18 +1067,45 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
     }
     std::string ScanOrders, PictureTypes(PictureTypes_PreviousFrames);
     ScanOrders.reserve(TemporalReferences.size());
-    for (size_t Pos=0; Pos<TemporalReferences.size(); Pos++)
+    const auto TemporalReferences_End=std::find_if(TemporalReferences.rbegin(), TemporalReferences.rend(), [](temporal_reference* i) { return i; });
+    const auto TemporalReferences_Size=std::distance(TemporalReferences_End, TemporalReferences.rend());
+    PictureTypes.reserve(TemporalReferences_Size);
+    //TODO: check specs for catching when even reference numbers are used in progressive streams
+    auto HasOddNumbers=false;
+    for (size_t Pos=1; Pos<TemporalReferences_Size; Pos+=2)
+        if (TemporalReferences[Pos])
+            HasOddNumbers=true;
+    for (size_t Pos=0; Pos<TemporalReferences_Size; Pos++)
         if (TemporalReferences[Pos])
         {
             ScanOrders+=TemporalReferences[Pos]->IsTop?'T':'B';
-            if ((Pos%2)==0)
+            if ((HasOddNumbers && seq_parameter_set_Item->frame_mbs_only_flag) || (Pos%2)==0)
                 PictureTypes+=Avc_slice_type[TemporalReferences[Pos]->slice_type];
         }
         else if (!PictureTypes.empty()) //Only if stream already started
         {
-            ScanOrders+=' ';
-            if ((Pos%2)==0)
-                PictureTypes+=' ';
+            auto IsBeforeI=false;
+            for (size_t Pos2=Pos; Pos2<TemporalReferences_Size; Pos2++)
+            {
+                auto TemporalReference=TemporalReferences[Pos2];
+                if (TemporalReference)
+                {
+                    for (; Pos2<TemporalReferences_Size; Pos2++)
+                    {
+                        TemporalReference=TemporalReferences[Pos2];
+                        if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))
+                            break;
+                    }
+                    IsBeforeI=TemporalReference && (TemporalReference->slice_type==2 || TemporalReference->slice_type==7);
+                    break;
+                }
+            }
+            if (!IsBeforeI)
+            {
+                ScanOrders+=' ';
+                if ((HasOddNumbers && seq_parameter_set_Item->frame_mbs_only_flag) || (Pos%2)==0)
+                    PictureTypes+=' ';
+            }
         }
     Fill(Stream_Video, 0, Video_ScanOrder, ScanOrder_Detect(ScanOrders));
     { //Legacy
@@ -1076,7 +1117,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         }
         else
         {
-            switch ((*seq_parameter_set_Item)->pic_struct_FirstDetected)
+            switch (seq_parameter_set_Item->pic_struct_FirstDetected)
             {
                 case  1 :
                             Fill(Stream_Video, 0, Video_ScanOrder, (string) "TFF");
@@ -1099,6 +1140,11 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         }
     }
     Fill(Stream_Video, 0, Video_Format_Settings_GOP, GOP_Detect(PictureTypes));
+    if (Retrieve_Const(Stream_Video, 0, Video_BitRate).empty() && Retrieve_Const(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && FrameRate && FrameSizes.size()==1)
+    {
+        Fill(Stream_Video, 0, Video_BitRate, FrameSizes.begin()->first*FrameRate*8, 0);
+        Fill(Stream_Video, 0, Video_BitRate_Mode, "CBR");
+    }
 
     Fill(Stream_General, 0, General_Encoded_Library, Encoded_Library);
     Fill(Stream_General, 0, General_Encoded_Library_Name, Encoded_Library_Name);
@@ -1112,7 +1158,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         Fill(Stream_Video, 0, Video_BitRate_Nominal, BitRate_Nominal);
     Fill(Stream_Video, 0, Video_MuxingMode, MuxingMode);
     for (std::vector<pic_parameter_set_struct*>::iterator pic_parameter_set_Item=pic_parameter_sets.begin(); pic_parameter_set_Item!=pic_parameter_sets.end(); ++pic_parameter_set_Item)
-        if (*pic_parameter_set_Item && (*pic_parameter_set_Item)->seq_parameter_set_id==seq_parameter_set_Item-(seq_parameter_sets.empty()?subset_seq_parameter_sets.begin():seq_parameter_sets.begin()))
+        if (*pic_parameter_set_Item && (*pic_parameter_set_Item)->seq_parameter_set_id==seq_parameter_set_Item_-(seq_parameter_sets.empty()?subset_seq_parameter_sets.begin():seq_parameter_sets.begin()))
         {
             if ((*pic_parameter_set_Item)->entropy_coding_mode_flag)
             {
@@ -1128,18 +1174,18 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
             }
             break; //TODO: currently, testing only the first pic_parameter_set
         }
-    if ((*seq_parameter_set_Item)->max_num_ref_frames>0)
+    if (seq_parameter_set_Item->max_num_ref_frames>0)
     {
-        Fill(Stream_Video, 0, Video_Format_Settings, Ztring::ToZtring((*seq_parameter_set_Item)->max_num_ref_frames)+__T(" Ref Frames"));
-        Fill(Stream_Video, 0, Video_Codec_Settings, Ztring::ToZtring((*seq_parameter_set_Item)->max_num_ref_frames)+__T(" Ref Frames"));
-        Fill(Stream_Video, 0, Video_Format_Settings_RefFrames, (*seq_parameter_set_Item)->max_num_ref_frames);
-        Fill(Stream_Video, 0, Video_Codec_Settings_RefFrames, (*seq_parameter_set_Item)->max_num_ref_frames);
+        Fill(Stream_Video, 0, Video_Format_Settings, Ztring::ToZtring(seq_parameter_set_Item->max_num_ref_frames)+__T(" Ref Frames"));
+        Fill(Stream_Video, 0, Video_Codec_Settings, Ztring::ToZtring(seq_parameter_set_Item->max_num_ref_frames)+__T(" Ref Frames"));
+        Fill(Stream_Video, 0, Video_Format_Settings_RefFrames, seq_parameter_set_Item->max_num_ref_frames);
+        Fill(Stream_Video, 0, Video_Codec_Settings_RefFrames, seq_parameter_set_Item->max_num_ref_frames);
     }
     if (Retrieve(Stream_Video, 0, Video_ColorSpace).empty())
-        Fill(Stream_Video, 0, Video_ColorSpace, Avc_ChromaSubsampling_format_idc_ColorSpace((*seq_parameter_set_Item)->chroma_format_idc));
-    Fill(Stream_Video, 0, Video_ChromaSubsampling, Avc_ChromaSubsampling_format_idc((*seq_parameter_set_Item)->chroma_format_idc));
-    if ((*seq_parameter_set_Item)->bit_depth_luma_minus8==(*seq_parameter_set_Item)->bit_depth_chroma_minus8)
-        Fill(Stream_Video, 0, Video_BitDepth, (*seq_parameter_set_Item)->bit_depth_luma_minus8+8);
+        Fill(Stream_Video, 0, Video_ColorSpace, Avc_ChromaSubsampling_format_idc_ColorSpace(seq_parameter_set_Item->chroma_format_idc));
+    Fill(Stream_Video, 0, Video_ChromaSubsampling, Avc_ChromaSubsampling_format_idc(seq_parameter_set_Item->chroma_format_idc));
+    if (seq_parameter_set_Item->bit_depth_luma_minus8==seq_parameter_set_Item->bit_depth_chroma_minus8)
+        Fill(Stream_Video, 0, Video_BitDepth, seq_parameter_set_Item->bit_depth_luma_minus8+8);
     if (MaxSlicesCount>1)
         Fill(Stream_Video, 0, Video_Format_Settings_SliceCount, MaxSlicesCount);
 
@@ -1162,7 +1208,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
             case Video_MasteringDisplay_Luminance:
                 if (Retrieve_Const(Stream_Video, 0, Item->first) == Item->second)
                     break;
-                // Fallthrough
+                [[fallthrough]];
             default:
                 Fill(Stream_Video, 0, Item->first, Item->second);
             }
@@ -1241,7 +1287,7 @@ void File_Avc::Streams_Finish()
     #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
 
     #if MEDIAINFO_IBIUSAGE
-        if (seq_parameter_sets.size()==1 && (*seq_parameter_sets.begin())->vui_parameters && (*seq_parameter_sets.begin())->vui_parameters->timing_info_present_flag && (*seq_parameter_sets.begin())->vui_parameters->fixed_frame_rate_flag)
+        if (seq_parameter_sets.size()==1 && (*seq_parameter_sets.begin())->vui_parameters && (*seq_parameter_sets.begin())->vui_parameters->time_scale && (*seq_parameter_sets.begin())->vui_parameters->fixed_frame_rate_flag)
             Ibi_Stream_Finish((*seq_parameter_sets.begin())->vui_parameters->time_scale, (*seq_parameter_sets.begin())->vui_parameters->num_units_in_tick);
     #endif //MEDIAINFO_IBIUSAGE
 }
@@ -1879,19 +1925,13 @@ void File_Avc::Header_Parse()
                         Size=Size_;
                     }
                     break;
+            default:    Trusted_IsNot("No size of NALU defined");
+                        Header_Fill_Size(Buffer_Size-Buffer_Offset);
+                        return;
         }
-        if (Size>Element_Size-Element_Offset)
-        {
-            if (File_Offset+Buffer_Size==File_Size)
-                Size=Element_Size-Element_Offset; //Partial but end of file so we do with what we have
-            else
-            {
-                Size=Element_Size-Element_Offset; //If Size is 0 or Size biger than sample size, it is not normal, we skip the complete frame
-                Element_Offset=Element_Size;
-            }
-        }
-        Size+=Element_Offset;
-        Header_Fill_Size(Size);
+        if (Element_Size<(int64u)SizeOfNALU_Minus1+1+1 || Size>Element_Size-Element_Offset)
+            return RanOutOfData("AVC");
+        Header_Fill_Size(Element_Offset+Size);
         BS_Begin();
         Mark_0 ();
         Get_S1 ( 2, nal_ref_idc,                                "nal_ref_idc");
@@ -1933,7 +1973,7 @@ bool File_Avc::Header_Parser_Fill_Size()
             return false;
     }
 
-    if (Buffer[Buffer_Offset_Temp-1]==0x00)
+    if (!FrameIsAlwaysComplete && Buffer[Buffer_Offset_Temp-1]==0x00)
         Buffer_Offset_Temp--;
 
     //OK, we continue
@@ -2391,7 +2431,7 @@ void File_Avc::slice_header()
             (*seq_parameter_set_Item)->pic_struct_FirstDetected=bottom_field_flag?2:1; //2=BFF, 1=TFF
 
         //Saving some info
-        if ((*seq_parameter_set_Item)->vui_parameters && (*seq_parameter_set_Item)->vui_parameters->timing_info_present_flag && (*seq_parameter_set_Item)->vui_parameters->num_units_in_tick)
+        if ((*seq_parameter_set_Item)->vui_parameters && (*seq_parameter_set_Item)->vui_parameters->time_scale && (*seq_parameter_set_Item)->vui_parameters->num_units_in_tick)
             tc=float64_int64s(((float64)1000000000)/((float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick/((*seq_parameter_set_Item)->pic_order_cnt_type==2?1:2)/FrameRate_Divider)/((!(*seq_parameter_set_Item)->frame_mbs_only_flag && field_pic_flag)?2:1));
 
         int32s TemporalReferences_Offset_pic_order_cnt_lsb_Diff=0;
@@ -2558,19 +2598,48 @@ void File_Avc::slice_header()
                 }
                 while (TemporalReferences_Offset+pic_order_cnt>=3*TemporalReferences_Reserved)
                 {
+                    const auto TemporalReferences_End=std::find_if(TemporalReferences.rbegin(), TemporalReferences.rend(), [](temporal_reference* i) { return i; });
+                    const auto TemporalReferences_Size=std::distance(TemporalReferences_End, TemporalReferences.rend());
+                    PictureTypes_PreviousFrames.reserve(PictureTypes_PreviousFrames.size()+TemporalReferences_Size);
+                    auto PictureTypes_PreviousFrames_InitialSize=PictureTypes_PreviousFrames.size();
+                    //TODO: check specs for catching when even reference numbers are used in progressive streams
+                    auto HasOddNumbers=false;
+                    for (size_t Pos=1; Pos<TemporalReferences_Size; Pos+=2)
+                        if (TemporalReferences[Pos])
+                            HasOddNumbers=true;
+                    bool IsStarted=false;
                     for (size_t Pos=0; Pos<TemporalReferences_Reserved; Pos++)
                     {
                         if (TemporalReferences[Pos])
                         {
-                            if ((Pos%2)==0)
+                            if ((HasOddNumbers && (*seq_parameter_set_Item)->frame_mbs_only_flag) || (Pos%2)==0)
                                 PictureTypes_PreviousFrames+=Avc_slice_type[TemporalReferences[Pos]->slice_type];
                             delete TemporalReferences[Pos];
                             TemporalReferences[Pos] = NULL;
                         }
-                        else if (!PictureTypes_PreviousFrames.empty()) //Only if stream already started
+                        else if (PictureTypes_PreviousFrames.size()!=PictureTypes_PreviousFrames_InitialSize) //Only if stream already started
                         {
-                            if ((Pos%2)==0)
-                                PictureTypes_PreviousFrames+=' ';
+                            auto IsBeforeI=false;
+                            for (size_t Pos2=Pos; Pos2<TemporalReferences_Size; Pos2++)
+                            {
+                                auto TemporalReference=TemporalReferences[Pos2];
+                                if (TemporalReference)
+                                {
+                                    for (; Pos2<TemporalReferences_Size; Pos2++)
+                                    {
+                                        TemporalReference=TemporalReferences[Pos2];
+                                        if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))
+                                            break;
+                                    }
+                                    IsBeforeI=TemporalReference && (TemporalReference->slice_type==2 || TemporalReference->slice_type==7);
+                                    break;
+                                }
+                            }
+                            if (!IsBeforeI)
+                            {
+                                if ((HasOddNumbers && (*seq_parameter_set_Item)->frame_mbs_only_flag) || (Pos%2)==0)
+                                    PictureTypes_PreviousFrames+=' ';
+                            }
                         }
                     }
                     if (PictureTypes_PreviousFrames.size()>=8*TemporalReferences.size())
@@ -2713,17 +2782,43 @@ void File_Avc::slice_header()
                 if (Frame_Count<=Frame_Count_Valid)
                 {
                     std::string PictureTypes(PictureTypes_PreviousFrames);
-                    PictureTypes.reserve(TemporalReferences.size());
-                    for (size_t Pos=0; Pos<TemporalReferences.size(); Pos++)
+                    const auto TemporalReferences_End=std::find_if(TemporalReferences.rbegin(), TemporalReferences.rend(), [](temporal_reference* i) { return i; });
+                    const auto TemporalReferences_Size=std::distance(TemporalReferences_End, TemporalReferences.rend());
+                    PictureTypes.reserve(TemporalReferences_Size);
+                    //TODO: check specs for catching when even reference numbers are used in progressive streams
+                    auto HasOddNumbers=false;
+                    for (size_t Pos=1; Pos<TemporalReferences_Size; Pos+=2)
+                        if (TemporalReferences[Pos])
+                            HasOddNumbers=true;
+                    for (size_t Pos=0; Pos<TemporalReferences_Size; Pos++)
                         if (TemporalReferences[Pos])
                         {
-                            if ((Pos%2)==0)
+                            if ((HasOddNumbers && (*seq_parameter_set_Item)->frame_mbs_only_flag) || (Pos%2)==0)
                                 PictureTypes+=Avc_slice_type[TemporalReferences[Pos]->slice_type];
                         }
                         else if (!PictureTypes.empty()) //Only if stream already started
                         {
-                            if ((Pos%2)==0)
-                                PictureTypes+=' ';
+                            auto IsBeforeI=false;
+                            for (size_t Pos2=Pos; Pos2<TemporalReferences_Size; Pos2++)
+                            {
+                                auto TemporalReference=TemporalReferences[Pos2];
+                                if (TemporalReference)
+                                {
+                                    for (; Pos2<TemporalReferences_Size; Pos2++)
+                                    {
+                                        TemporalReference=TemporalReferences[Pos2];
+                                        if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))
+                                            break;
+                                    }
+                                    IsBeforeI=TemporalReference && (TemporalReference->slice_type==2 || TemporalReference->slice_type==7);
+                                    break;
+                                }
+                            }
+                            if (!IsBeforeI)
+                            {
+                                if ((HasOddNumbers && (*seq_parameter_set_Item)->frame_mbs_only_flag) || (Pos%2)==0)
+                                    PictureTypes+=' ';
+                            }
                         }
                         #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
                             if (!GOP_Detect(PictureTypes).empty() && !GA94_03_IsPresent)
@@ -2741,7 +2836,7 @@ void File_Avc::slice_header()
                 if (slice_type<9)
                     Element_Info1(__T("slice_type ")+Ztring().From_UTF8(Avc_slice_type[slice_type]));
                 Element_Info1(__T("frame_num ")+Ztring::ToZtring(frame_num));
-                if ((*seq_parameter_set_Item)->vui_parameters && (*seq_parameter_set_Item)->vui_parameters->fixed_frame_rate_flag)
+                if ((*seq_parameter_set_Item)->vui_parameters && (*seq_parameter_set_Item)->vui_parameters->flags[fixed_frame_rate_flag])
                 {
                     if (FrameInfo.PCR!=(int64u)-1)
                         Element_Info1(__T("PCR ")+Ztring().Duration_From_Milliseconds(float64_int64s(((float64)FrameInfo.PCR)/1000000)));
@@ -2799,6 +2894,8 @@ void File_Avc::slice_header()
                 if (!IsSub && !Streams[(size_t)Element_Code].ShouldDuplicate && Config->ParseSpeed<1.0)
                     Finish("AVC");
             }
+            if (FrameIsAlwaysComplete && !first_mb_in_slice && FrameSizes.size()<=1)
+                FrameSizes[Buffer_Size]++;
         }
     FILLING_END();
 }
@@ -2935,7 +3032,7 @@ void File_Avc::dec_ref_pic_marking(std::vector<int8u> &memory_management_control
                                 break;
                     case 3 :
                                 Skip_UE(                        "difference_of_pic_nums_minus1");
-                                //break; 3 --> difference_of_pic_nums_minus1 then long_term_frame_idx
+                                [[fallthrough]]; // 3 --> difference_of_pic_nums_minus1 then long_term_frame_idx
                     case 6 :
                                 Skip_UE(                        "long_term_frame_idx");
                                 break;
@@ -3084,7 +3181,7 @@ void File_Avc::sei_message_pic_timing(int32u /*payloadSize*/, int32u seq_paramet
         Skip_S4(cpb_removal_delay_length_minus1+1,              "cpb_removal_delay");
         Skip_S4(dpb_output_delay_length_minus1+1,               "dpb_output_delay");
     }
-    if ((*seq_parameter_set_Item)->vui_parameters && (*seq_parameter_set_Item)->vui_parameters->pic_struct_present_flag)
+    if ((*seq_parameter_set_Item)->vui_parameters && (*seq_parameter_set_Item)->vui_parameters->flags[pic_struct_present_flag])
     {
         Get_S1 (4, pic_struct,                                  "pic_struct");
         switch (pic_struct)
@@ -3145,7 +3242,7 @@ void File_Avc::sei_message_pic_timing(int32u /*payloadSize*/, int32u seq_paramet
                             n_frames=0;
                             FrameMax=0; //Unsupported type
                         }
-                        else if ((*seq_parameter_set_Item)->vui_parameters->fixed_frame_rate_flag && (*seq_parameter_set_Item)->vui_parameters->timing_info_present_flag && (*seq_parameter_set_Item)->vui_parameters->time_scale && (*seq_parameter_set_Item)->vui_parameters->num_units_in_tick)
+                        else if ((*seq_parameter_set_Item)->vui_parameters->flags[fixed_frame_rate_flag] && (*seq_parameter_set_Item)->vui_parameters->time_scale && (*seq_parameter_set_Item)->vui_parameters->num_units_in_tick)
                             FrameMax=(int32u)(float64_int64s((float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick/((*seq_parameter_set_Item)->frame_mbs_only_flag?2:(((*seq_parameter_set_Item)->pic_order_cnt_type==2 && Structure_Frame/2>Structure_Field)?1:2))/FrameRate_Divider)-1);
                         else if (n_frames>99)
                             FrameMax=n_frames;
@@ -3163,7 +3260,7 @@ void File_Avc::sei_message_pic_timing(int32u /*payloadSize*/, int32u seq_paramet
     BS_End();
 
     FILLING_BEGIN_PRECISE();
-        if ((*seq_parameter_set_Item)->pic_struct_FirstDetected==(int8u)-1 && (*seq_parameter_set_Item)->vui_parameters && (*seq_parameter_set_Item)->vui_parameters->pic_struct_present_flag)
+        if ((*seq_parameter_set_Item)->pic_struct_FirstDetected==(int8u)-1 && (*seq_parameter_set_Item)->vui_parameters && (*seq_parameter_set_Item)->vui_parameters->flags[pic_struct_present_flag])
             (*seq_parameter_set_Item)->pic_struct_FirstDetected=pic_struct;
     FILLING_END();
 }
@@ -3220,7 +3317,7 @@ void File_Avc::sei_message_user_data_registered_itu_t_t35_DTG1()
         File_AfdBarData DTG1_Parser;
         for (auto seq_parameter_set_Item : seq_parameter_sets)
         {
-            if (seq_parameter_set_Item && seq_parameter_set_Item->vui_parameters && seq_parameter_set_Item->vui_parameters->aspect_ratio_info_present_flag)
+            if (seq_parameter_set_Item && seq_parameter_set_Item->vui_parameters && seq_parameter_set_Item->vui_parameters->sar_width && seq_parameter_set_Item->vui_parameters->sar_height)
             {
                 //TODO: avoid duplicated code
                 int32u Width =(seq_parameter_set_Item->pic_width_in_mbs_minus1       +1)*16;
@@ -3234,16 +3331,11 @@ void File_Avc::sei_message_user_data_registered_itu_t_t35_DTG1()
                 Height-=(seq_parameter_set_Item->frame_crop_top_offset +seq_parameter_set_Item->frame_crop_bottom_offset)*CropUnitY;
                 if (Height)
                 {
-                    float64 PixelAspectRatio = 1;
-                    if (seq_parameter_set_Item->vui_parameters->aspect_ratio_idc<Avc_PixelAspectRatio_Size)
-                            PixelAspectRatio = Avc_PixelAspectRatio[seq_parameter_set_Item->vui_parameters->aspect_ratio_idc];
-                    else if (seq_parameter_set_Item->vui_parameters->aspect_ratio_idc == 0xFF && seq_parameter_set_Item->vui_parameters->sar_height)
-                            PixelAspectRatio = ((float64) seq_parameter_set_Item->vui_parameters->sar_width) / seq_parameter_set_Item->vui_parameters->sar_height;
+                    auto PixelAspectRatio=((float32)seq_parameter_set_Item->vui_parameters->sar_width) / seq_parameter_set_Item->vui_parameters->sar_height;
                     auto DAR=Width*PixelAspectRatio/Height;
                     if (DAR>=4.0/3.0*0.95 && DAR<4.0/3.0*1.05) DTG1_Parser.aspect_ratio_FromContainer=0; //4/3
                     if (DAR>=16.0/9.0*0.95 && DAR<16.0/9.0*1.05) DTG1_Parser.aspect_ratio_FromContainer=1; //16/9
                 }
-                break;
             }
         }
         Open_Buffer_Init(&DTG1_Parser);
@@ -3329,24 +3421,24 @@ void File_Avc::sei_message_user_data_registered_itu_t_t35_GA94_03_Delayed(int32u
             }
             if (((File_DtvccTransport*)GA94_03_Parser)->AspectRatio==0)
             {
-                float64 PixelAspectRatio=1;
-                std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item=seq_parameter_sets.begin();
-                for (; seq_parameter_set_Item!=seq_parameter_sets.end(); ++seq_parameter_set_Item)
-                    if ((*seq_parameter_set_Item))
+                std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item_=seq_parameter_sets.begin();
+                for (; seq_parameter_set_Item_!=seq_parameter_sets.end(); ++seq_parameter_set_Item_)
+                    if ((*seq_parameter_set_Item_))
                         break;
-                if (seq_parameter_set_Item!=seq_parameter_sets.end())
+                if (seq_parameter_set_Item_!=seq_parameter_sets.end())
                 {
-                    if (((*seq_parameter_set_Item)->vui_parameters) && ((*seq_parameter_set_Item)->vui_parameters->aspect_ratio_info_present_flag))
+                    const auto seq_parameter_set_Item=*seq_parameter_set_Item_;
+                    const auto vui_parameters=seq_parameter_set_Item->vui_parameters;
+                    if (vui_parameters && vui_parameters->sar_width && vui_parameters->sar_height)
                     {
-                        if ((*seq_parameter_set_Item)->vui_parameters->aspect_ratio_idc<Avc_PixelAspectRatio_Size)
-                            PixelAspectRatio=Avc_PixelAspectRatio[(*seq_parameter_set_Item)->vui_parameters->aspect_ratio_idc];
-                        else if ((*seq_parameter_set_Item)->vui_parameters->aspect_ratio_idc==0xFF && (*seq_parameter_set_Item)->vui_parameters->sar_height)
-                            PixelAspectRatio=((float64)(*seq_parameter_set_Item)->vui_parameters->sar_width)/(*seq_parameter_set_Item)->vui_parameters->sar_height;
+                        const int32u Width =(seq_parameter_set_Item->pic_width_in_mbs_minus1       +1)*16;
+                        const int32u Height=(seq_parameter_set_Item->pic_height_in_map_units_minus1+1)*16*(2-seq_parameter_set_Item->frame_mbs_only_flag);
+                        if (Height)
+                        {
+                            auto PixelAspectRatio=((float32)vui_parameters->sar_width)/vui_parameters->sar_height;
+                            ((File_DtvccTransport*)GA94_03_Parser)->AspectRatio=Width*PixelAspectRatio/Height;
+                        }
                     }
-                    const int32u Width =((*seq_parameter_set_Item)->pic_width_in_mbs_minus1       +1)*16;
-                    const int32u Height=((*seq_parameter_set_Item)->pic_height_in_map_units_minus1+1)*16*(2-(*seq_parameter_set_Item)->frame_mbs_only_flag);
-                    if(Height)
-                        ((File_DtvccTransport*)GA94_03_Parser)->AspectRatio=Width*PixelAspectRatio/Height;
                 }
             }
             if (GA94_03_Parser->PTS_DTS_Needed)
@@ -4435,38 +4527,56 @@ void File_Avc::vui_parameters(seq_parameter_set_struct::vui_parameters_struct* &
 {
     //Parsing
     seq_parameter_set_struct::vui_parameters_struct::xxl *NAL=NULL, *VCL=NULL;
-    int32u  num_units_in_tick=(int32u)-1, time_scale=(int32u)-1;
-    int16u  sar_width=(int16u)-1, sar_height=(int16u)-1;
-    int8u   aspect_ratio_idc=0, video_format=5, video_full_range_flag = 0, colour_primaries=2, transfer_characteristics=2, matrix_coefficients=2;
-    bool    aspect_ratio_info_present_flag, video_signal_type_present_flag, colour_description_present_flag=false, timing_info_present_flag, fixed_frame_rate_flag=false, nal_hrd_parameters_present_flag, vcl_hrd_parameters_present_flag, pic_struct_present_flag;
-    TEST_SB_GET (aspect_ratio_info_present_flag,                "aspect_ratio_info_present_flag");
-        Get_S1 (8, aspect_ratio_idc,                            "aspect_ratio_idc"); Param_Info1C((aspect_ratio_idc<Avc_PixelAspectRatio_Size), Avc_PixelAspectRatio[aspect_ratio_idc]);
+    bitset<vui_flags_Max> flags;
+    int32u  num_units_in_tick=0, time_scale=0, chroma_sample_loc_type_top_field=(int32u)-1, chroma_sample_loc_type_bottom_field=(int32u)-1;
+    int16u  sar_width=0, sar_height=0;
+    int8u   video_format=5, colour_primaries=2, transfer_characteristics=2, matrix_coefficients=2;
+    bool    nal_hrd_parameters_present_flag, vcl_hrd_parameters_present_flag;
+    TEST_SB_SKIP(                                               "aspect_ratio_info_present_flag");
+        int8u aspect_ratio_idc;
+        Get_S1 (8, aspect_ratio_idc,                            "aspect_ratio_idc");
         if (aspect_ratio_idc==0xFF)
         {
             Get_S2 (16, sar_width,                              "sar_width");
             Get_S2 (16, sar_height,                             "sar_height");
         }
+        else if (aspect_ratio_idc && aspect_ratio_idc <= Avc_PixelAspectRatio_Size)
+        {
+            aspect_ratio_idc--;
+            const auto& aspect_ratio = Avc_PixelAspectRatio[aspect_ratio_idc];
+            Param_Info1(aspect_ratio.w);
+            Param_Info1(aspect_ratio.h);
+            sar_width = aspect_ratio.w;
+            sar_height = aspect_ratio.h;
+        }
     TEST_SB_END();
     TEST_SB_SKIP(                                               "overscan_info_present_flag");
         Skip_SB(                                                "overscan_appropriate_flag");
     TEST_SB_END();
-    TEST_SB_GET (video_signal_type_present_flag,                "video_signal_type_present_flag");
+    TEST_SB_SKIP(                                               "video_signal_type_present_flag");
+        flags[video_signal_type_present_flag]=true;
+        bool video_full_range_flag_;
         Get_S1 (3, video_format,                                "video_format"); Param_Info1(Avc_video_format[video_format]);
-        Get_S1 (1, video_full_range_flag,                       "video_full_range_flag"); Param_Info1(Avc_video_full_range[video_full_range_flag]);
-        TEST_SB_GET (colour_description_present_flag,           "colour_description_present_flag");
+        Get_SB (   video_full_range_flag_,                      "video_full_range_flag"); Param_Info1(Avc_video_full_range[video_full_range_flag_]);
+        flags[video_full_range_flag]=video_full_range_flag_;
+        TEST_SB_SKIP(                                           "colour_description_present_flag");
+            flags[colour_description_present_flag]=true;
             Get_S1 (8, colour_primaries,                        "colour_primaries"); Param_Info1(Mpegv_colour_primaries(colour_primaries));
             Get_S1 (8, transfer_characteristics,                "transfer_characteristics"); Param_Info1(Mpegv_transfer_characteristics(transfer_characteristics));
             Get_S1 (8, matrix_coefficients,                     "matrix_coefficients"); Param_Info1(Mpegv_matrix_coefficients(matrix_coefficients));
         TEST_SB_END();
     TEST_SB_END();
     TEST_SB_SKIP(                                               "chroma_loc_info_present_flag");
-        Skip_UE(                                                "chroma_sample_loc_type_top_field");
-        Skip_UE(                                                "chroma_sample_loc_type_bottom_field");
+        Get_UE (chroma_sample_loc_type_top_field,               "chroma_sample_loc_type_top_field");
+        Get_UE (chroma_sample_loc_type_bottom_field,            "chroma_sample_loc_type_bottom_field");
     TEST_SB_END();
-    TEST_SB_GET (timing_info_present_flag,                      "timing_info_present_flag");
+    TEST_SB_SKIP(                                               "timing_info_present_flag");
+        flags[timing_info_present_flag]=true;
+        bool fixed_frame_rate_flag_;
         Get_S4 (32, num_units_in_tick,                          "num_units_in_tick");
         Get_S4 (32, time_scale,                                 "time_scale");
-        Get_SB (    fixed_frame_rate_flag,                      "fixed_frame_rate_flag");
+        Get_SB (    fixed_frame_rate_flag_,                     "fixed_frame_rate_flag");
+        flags[fixed_frame_rate_flag]=fixed_frame_rate_flag_;
     TEST_SB_END();
     TEST_SB_GET (nal_hrd_parameters_present_flag,               "nal_hrd_parameters_present_flag");
         hrd_parameters(NAL);
@@ -4476,7 +4586,9 @@ void File_Avc::vui_parameters(seq_parameter_set_struct::vui_parameters_struct* &
     TEST_SB_END();
     if (nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag)
         Skip_SB(                                                "low_delay_hrd_flag");
-    Get_SB (   pic_struct_present_flag,                         "pic_struct_present_flag");
+    bool pic_struct_present_flag_;
+    Get_SB (   pic_struct_present_flag_,                        "pic_struct_present_flag");
+    flags[pic_struct_present_flag]=pic_struct_present_flag_;
     TEST_SB_SKIP(                                               "bitstream_restriction_flag");
         int32u  max_num_reorder_frames;
         Skip_SB(                                                "motion_vectors_over_pic_boundaries_flag");
@@ -4494,20 +4606,15 @@ void File_Avc::vui_parameters(seq_parameter_set_struct::vui_parameters_struct* &
                                                                                     VCL,
                                                                                     num_units_in_tick,
                                                                                     time_scale,
+                                                                                    chroma_sample_loc_type_top_field,
+                                                                                    chroma_sample_loc_type_bottom_field,
                                                                                     sar_width,
                                                                                     sar_height,
-                                                                                    aspect_ratio_idc,
                                                                                     video_format,
-                                                                                    video_full_range_flag,
                                                                                     colour_primaries,
                                                                                     transfer_characteristics,
                                                                                     matrix_coefficients,
-                                                                                    aspect_ratio_info_present_flag,
-                                                                                    video_signal_type_present_flag,
-                                                                                    colour_description_present_flag,
-                                                                                    timing_info_present_flag,
-                                                                                    fixed_frame_rate_flag,
-                                                                                    pic_struct_present_flag
+                                                                                    flags
                                                                                 );
     FILLING_ELSE();
         delete NAL; NAL=NULL;
@@ -4771,6 +4878,7 @@ void File_Avc::SPS_PPS()
                             Element_End0();
                         }
                         }
+                        break;
             default:;
         }
     }
@@ -4786,6 +4894,10 @@ void File_Avc::SPS_PPS()
         MustParse_SPS_PPS=false;
         if (!Status[IsAccepted])
             Accept("AVC");
+    FILLING_ELSE();
+        Frame_Count_NotParsedIncluded--;
+        RanOutOfData("AVC");
+        Frame_Count_NotParsedIncluded++;
     FILLING_END();
 }
 
@@ -4881,10 +4993,10 @@ std::string File_Avc::GOP_Detect (std::string PictureTypes)
     }
 
     //Some clean up
-    if (GOP_Frame_Count+GOP_BFrames_Max>Frame_Count && !GOPs.empty())
-        GOPs.resize(GOPs.size()-1); //Removing the last one, there may have uncomplete B-frame filling
-    if (GOPs.size()>4)
+    if (GOPs.size()>=4 && GOPs.front()!=GOPs[1])
         GOPs.erase(GOPs.begin()); //Removing the first one, it is sometime different and we have enough to deal with
+    if (GOPs.size()>=4 && GOPs.back()!=GOPs[GOPs.size()-2])
+        GOPs.resize(GOPs.size()-1); //Removing the last one, there may have uncomplete B-frame filling
 
     //Filling
     if (GOPs.size()>=4)

@@ -217,7 +217,6 @@ File_Gxf::File_Gxf()
         Demux_Level=2; //Container
     #endif //MEDIAINFO_DEMUX
     MustSynchronize=true;
-    Buffer_TotalBytes_FirstSynched_Max=64*1024;
     Buffer_TotalBytes_Fill_Max=(int64u)-1; //Disabling this feature for this format, this is done in the parser
     #if MEDIAINFO_DEMUX
         Demux_EventWasSent_Accept_Specific=true;
@@ -714,7 +713,7 @@ size_t File_Gxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u)
                         else
                             Value=float64_int64s(((float64)(Value-Delay))/1000000000*Gxf_FrameRate(Streams[0x00].FrameRate_Code));
                     }
-                    //No break;
+                    [[fallthrough]];
         case 3  :   //FrameNumber
                     {
                     if (Seeks.empty())
@@ -1483,7 +1482,7 @@ void File_Gxf::media()
         {
             if (!Streams[TrackNumber].Parsers[Pos]->Status[IsAccepted] && Streams[TrackNumber].Parsers[Pos]->Status[IsFinished])
             {
-                delete *(Streams[TrackNumber].Parsers.begin()+Pos);
+                delete static_cast<MediaInfoLib::File__Analyze*>(*(Streams[TrackNumber].Parsers.begin()+Pos));
                 Streams[TrackNumber].Parsers.erase(Streams[TrackNumber].Parsers.begin()+Pos);
                 Pos--;
             }
@@ -1493,7 +1492,7 @@ void File_Gxf::media()
                 for (size_t Pos2=0; Pos2<Streams[TrackNumber].Parsers.size(); Pos2++)
                 {
                     if (Pos2!=Pos)
-                        delete *(Streams[TrackNumber].Parsers.begin()+Pos2);
+                        delete static_cast<MediaInfoLib::File__Analyze*>(*(Streams[TrackNumber].Parsers.begin()+Pos2));
                 }
                 Streams[TrackNumber].Parsers.clear();
                 Streams[TrackNumber].Parsers.push_back(Parser);

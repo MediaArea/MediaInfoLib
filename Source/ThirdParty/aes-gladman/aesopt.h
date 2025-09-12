@@ -64,7 +64,7 @@ Issue Date: 20/12/2007
 
      Class AESencrypt  for encryption
 
-      Construtors:
+      Constructors:
           AESencrypt(void)
           AESencrypt(const unsigned char *key) - 128 bit key
       Members:
@@ -74,7 +74,7 @@ Issue Date: 20/12/2007
           AES_RETURN encrypt(const unsigned char *in, unsigned char *out) const
 
       Class AESdecrypt  for encryption
-      Construtors:
+      Constructors:
           AESdecrypt(void)
           AESdecrypt(const unsigned char *key) - 128 bit key
       Members:
@@ -163,32 +163,43 @@ Issue Date: 20/12/2007
 
 /*  2. Intel AES AND VIA ACE SUPPORT */
 
-#if defined( __GNUC__ ) && defined( __i386__ ) \
-	|| defined(_WIN32) && defined(_M_IX86) \
-	&& !(defined(_WIN64) || defined(_WIN32_WCE) || defined(_MSC_VER) && (_MSC_VER <= 800))
+#if defined( __GNUC__ ) && defined( __i386__ ) && !defined(__BEOS__)  \
+ || defined( _WIN32 ) && defined( _M_IX86 ) && !(defined( _WIN64 ) \
+ || defined( _WIN32_WCE ) || defined( _MSC_VER ) && ( _MSC_VER <= 800 ))
 #  define VIA_ACE_POSSIBLE
 #endif
 
-/*  Define this option if support for the Intel AESNI is required (not
-    currently available with GCC). If AESNI is known to be present, then 
-	defining ASSUME_INTEL_AES_VIA_PRESENT will replace the ordinary 
-	encryption/decryption.  If USE_INTEL_AES_IF_PRESENT is defined then
-	AESNI will be used if it is detected (both present and enabled).
-
-	AESNI uses a decryption key schedule with the first decryption
-	round key at the high end of the key scedule with the following
-	round keys at lower positions in memory.  So AES_REV_DKS must NOT
-	be defined when AESNI will be used.  ALthough it is unlikely that
-	assembler code will be used with an AESNI build, if it is then
-	AES_REV_DKS must NOT be defined when such assembler files are
-	built
-*/
-#if 1 && defined( _WIN64 ) && defined( _MSC_VER )
-#  define INTEL_AES_POSSIBLE
+/* AESNI is supported by all Windows x64 compilers, but for Linux/GCC
+   we have to test for SSE 2, SSE 3, and AES to before enabling it; */
+#if !defined( INTEL_AES_POSSIBLE )
+#  if defined( _WIN64 ) && defined( _MSC_VER ) && defined( _M_AMD64 ) \
+   || defined( __GNUC__ ) && defined( __x86_64__ ) && \
+	  defined( __SSE2__ ) && defined( __SSE3__ ) && \
+	  defined( __AES__ )
+#    define INTEL_AES_POSSIBLE
+#  endif
 #endif
 
-#if defined( INTEL_AES_POSSIBLE ) && !defined( USE_INTEL_AES_IF_PRESENT )
-#  define USE_INTEL_AES_IF_PRESENT
+/*  Define this option if support for the Intel AESNI is required
+    If USE_INTEL_AES_IF_PRESENT is defined then AESNI will be used
+    if it is detected (both present and enabled).
+
+	AESNI uses a decryption key schedule with the first decryption
+	round key at the high end of the key schedule with the following
+	round keys at lower positions in memory.  So AES_REV_DKS must NOT
+	be defined when AESNI will be used.  Although it is unlikely that
+	assembler code will be used with an AESNI build, if it is then
+	AES_REV_DKS must NOT be defined when the assembler files are
+	built (the definition of USE_INTEL_AES_IF_PRESENT in the assembler
+	code files must match that here if they are used). 
+*/
+
+#if defined( INTEL_AES_POSSIBLE )
+#  if 1 && !defined( USE_INTEL_AES_IF_PRESENT )
+#    define USE_INTEL_AES_IF_PRESENT
+#  endif
+#elif defined( USE_INTEL_AES_IF_PRESENT )
+#  error: AES_NI is not available on this platform
 #endif
 
 /*  Define this option if support for the VIA ACE is required. This uses
@@ -245,8 +256,14 @@ Issue Date: 20/12/2007
 #  define ASM_AMD64_C
 #endif
 
+#if defined( __i386 ) || defined( _M_IX86 )
+#  define A32_
+#elif defined( __x86_64__ ) || defined( _M_X64 )
+#  define A64_
+#endif
+
 #if (defined ( ASM_X86_V1C ) || defined( ASM_X86_V2 ) || defined( ASM_X86_V2C )) \
-      && !defined( _M_IX86 ) || defined( ASM_AMD64_C ) && !defined( _M_X64 )
+       && !defined( A32_ )  || defined( ASM_AMD64_C ) && !defined( A64_ )
 #  error Assembler code is only available for x86 and AMD64 systems
 #endif
 
@@ -272,7 +289,7 @@ Issue Date: 20/12/2007
 
 /*  5. LOOP UNROLLING
 
-    The code for encryption and decrytpion cycles through a number of rounds
+    The code for encryption and decryption cycles through a number of rounds
     that can be implemented either in a loop or by expanding the code into a
     long sequence of instructions, the latter producing a larger program but
     one that will often be much faster. The latter is called loop unrolling.
@@ -308,7 +325,7 @@ Issue Date: 20/12/2007
 /*  6. FAST FINITE FIELD OPERATIONS
 
     If this section is included, tables are used to provide faster finite
-    field arithmetic (this has no effect if FIXED_TABLES is defined).
+    field arithmetic (this has no effect if STATIC_TABLES is defined).
 */
 #if 1
 #  define FF_TABLES
@@ -317,9 +334,9 @@ Issue Date: 20/12/2007
 /*  7. INTERNAL STATE VARIABLE FORMAT
 
     The internal state of Rijndael is stored in a number of local 32-bit
-    word varaibles which can be defined either as an array or as individual
+    word variables which can be defined either as an array or as individual
     names variables. Include this section if you want to store these local
-    varaibles in arrays. Otherwise individual local variables will be used.
+    variables in arrays. Otherwise individual local variables will be used.
 */
 #if 1
 #  define ARRAYS
@@ -332,12 +349,12 @@ Issue Date: 20/12/2007
     must be called to compute them before the code is first used.
 */
 #if 1 && !(defined( _MSC_VER ) && ( _MSC_VER <= 800 ))
-#  define FIXED_TABLES
+#  define STATIC_TABLES
 #endif
 
 /*  9. MASKING OR CASTING FROM LONGER VALUES TO BYTES
 
-    In some systems it is better to mask longer values to extract bytes 
+    In some systems it is better to mask longer values to extract bytes
     rather than using a cast. This option allows this choice.
 */
 #if 0
@@ -348,10 +365,10 @@ Issue Date: 20/12/2007
 
 /*  10. TABLE ALIGNMENT
 
-    On some sytsems speed will be improved by aligning the AES large lookup
+    On some systems speed will be improved by aligning the AES large lookup
     tables on particular boundaries. This define should be set to a power of
     two giving the desired alignment. It can be left undefined if alignment
-    is not needed.  This option is specific to the Microsft VC++ compiler -
+    is not needed.  This option is specific to the Microsoft VC++ compiler -
     it seems to sometimes cause trouble for the VC++ version 6 compiler.
 */
 
@@ -376,7 +393,7 @@ Issue Date: 20/12/2007
     up using tables.  The basic tables are each 256 32-bit words, with either
     one or four tables being required for each round function depending on
     how much speed is required. The encryption and decryption round functions
-    are different and the last encryption and decrytpion round functions are
+    are different and the last encryption and decryption round functions are
     different again making four different round functions in all.
 
     This means that:
@@ -475,7 +492,7 @@ Issue Date: 20/12/2007
    a column number c to the way the state array variable is to be held.
    The first define below maps the state into an array x[c] whereas the
    second form maps the state into a number of individual variables x0,
-   x1, etc.  Another form could map individual state colums to machine
+   x1, etc.  Another form could map individual state columns to machine
    register names.
 */
 
@@ -678,7 +695,7 @@ Issue Date: 20/12/2007
 #if !(defined( REDUCE_CODE_SIZE ) && (defined( ASM_X86_V2 ) || defined( ASM_X86_V2C )))
 #  if ((FUNCS_IN_C & ENC_KEYING_IN_C) || (FUNCS_IN_C & DEC_KEYING_IN_C))
 #    if KEY_SCHED == ONE_TABLE
-#      if !defined( FL1_SET )  && !defined( FL4_SET ) 
+#      if !defined( FL1_SET )  && !defined( FL4_SET )
 #        define LS1_SET
 #      endif
 #    elif KEY_SCHED == FOUR_TABLES
@@ -727,7 +744,7 @@ Issue Date: 20/12/2007
 /* perform forward and inverse column mix operation on four bytes in long word x in */
 /* parallel. NOTE: x must be a simple variable, NOT an expression in these macros.  */
 
-#if !(defined( REDUCE_CODE_SIZE ) && (defined( ASM_X86_V2 ) || defined( ASM_X86_V2C ))) 
+#if !(defined( REDUCE_CODE_SIZE ) && (defined( ASM_X86_V2 ) || defined( ASM_X86_V2C )))
 
 #if defined( FM4_SET )      /* not currently used */
 #  define fwd_mcol(x)       four_tables(x,t_use(f,m),vf1,rf1,0)

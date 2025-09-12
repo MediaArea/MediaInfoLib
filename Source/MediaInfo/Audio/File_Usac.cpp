@@ -1494,6 +1494,18 @@ File_Usac::~File_Usac()
 {
 }
 
+//***************************************************************************
+// Buffer - Global
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Usac::Read_Buffer_Init()
+{
+    #if MEDIAINFO_CONFORMANCE
+        Warning_Error=MediaInfoLib::Config.WarningError();
+    #endif
+}
+
 //***********************************************************************
 // Temp
 //***********************************************************************
@@ -1526,7 +1538,7 @@ void File_Usac::hcod_sf(const char* Name)
             #if MEDIAINFO_CONFORMANCE
                 Fill_Conformance("UsacCoreCoderData GeneralCompliance", "Issue detected while parsing hcod_sf");
             #endif
-            C.WaitForNextIndependantFrame=true;
+            C.IFrameParsed=false;
             Element_End0();
             return;
         }
@@ -1721,7 +1733,7 @@ bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
         }
         Skip_BS(BitsRemaining,                                  LastByte?"Unknown":"Padding");
     }
-    else if (!C.WaitForNextIndependantFrame && Data_BS_Remain()<B.BitsNotIncluded)
+    else if (C.IFrameParsed && Data_BS_Remain()<B.BitsNotIncluded)
         Trusted_IsNot("Too big");
     bool IsNotValid=!Trusted_Get();
     #if MEDIAINFO_CONFORMANCE
@@ -1884,7 +1896,7 @@ void File_Usac::Streams_Finish_Conformance()
         auto& Conformance_Total = ConformanceErrors_Total[Level];
         if (Conformance_Total.empty())
             continue;
-        for (size_t i = Conformance_Total.size() - 1; i < Conformance_Total.size(); i--) {
+        for (size_t i = Conformance_Total.size(); i-- > 0;) {
             if (!CheckIf(Conformance_Total[i].Flags)) {
                 Conformance_Total.erase(Conformance_Total.begin() + i);
             }
@@ -1999,7 +2011,6 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
     // Init
     C = usac_config();
     #if MEDIAINFO_CONFORMANCE
-        Warning_Error=MediaInfoLib::Config.WarningError();
         C.Reset();
     #endif
 
@@ -2118,7 +2129,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
             Fill_Conformance("UsacConfig coreSbrFrameLengthIndex", ("coreSbrFrameLengthIndex " + to_string(C.coreSbrFrameLengthIndex) + " is known as reserved in ISO/IEC 23003-3:2020, bitstream parsing is partial and may be wrong").c_str(), bitset8(), Info);
     #endif
     UsacDecoderConfig();
-    if (C.WaitForNextIndependantFrame)
+    if (!C.IFrameParsed)
     {
         Element_End0();
         return;
@@ -2162,7 +2173,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
             }
             Skip_BS(BitsRemaining,                              LastByte?"Unknown":"Padding");
         }
-        else if (!C.WaitForNextIndependantFrame && Data_BS_Remain()<BitsNotIncluded)
+        else if (C.IFrameParsed && Data_BS_Remain()<BitsNotIncluded)
             Trusted_IsNot("Too big");
     }
 
@@ -2197,7 +2208,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
         if (!Trace_Activated)
             Finish();
     #endif
-    C.WaitForNextIndependantFrame=true;
+    C.IFrameParsed=false;
 }
 
 //---------------------------------------------------------------------------
@@ -2286,7 +2297,7 @@ void File_Usac::Fill_Loudness(const char* Prefix, bool NoConCh)
     }
 
     #if MEDIAINFO_CONFORMANCE
-        if (NoConCh || C.WaitForNextIndependantFrame)
+        if (NoConCh || !C.IFrameParsed)
             return;
         auto loudnessInfoSet_Present_Total=C.loudnessInfoSet_Present[0]+C.loudnessInfoSet_Present[1];
         if (C.loudnessInfoSet_HasContent[0] && C.loudnessInfoSet_HasContent[1])
@@ -2360,6 +2371,7 @@ void File_Usac::UsacDecoderConfig()
     int32u numElements;
     escapedValue(numElements, 4, 8, 16,                         "numElements minus 1");
 
+    C.IFrameParsed=true;
     for (int32u elemIdx=0; elemIdx<=numElements; elemIdx++)
     {
         Element_Begin1("usacElement");
@@ -2383,7 +2395,7 @@ void File_Usac::UsacDecoderConfig()
             case ID_USAC_EXT                                    : UsacExtElementConfig(); break;
         }
         Element_End0();
-        if (!Trusted_Get() || C.WaitForNextIndependantFrame)
+        if (!Trusted_Get() || !C.IFrameParsed)
             break;
     }
     #if MEDIAINFO_CONFORMANCE
@@ -2394,7 +2406,7 @@ void File_Usac::UsacDecoderConfig()
             bool AccrossCpe = false;
             for (size_t i = 0 ; i < C.usacElements.size(); i++)
             {
-                auto usacElement = C.usacElements[i];
+                auto& usacElement = C.usacElements[i];
                 switch (usacElement.usacElementType)
                 {
                     case ID_USAC_SCE                          : ChannelCount_NonLfe++; break;
@@ -2453,7 +2465,7 @@ void File_Usac::UsacDecoderConfig()
                 channelConfiguration_Orders_Pos = channelConfiguration_Orders_Max;
                 channelConfiguration_Orders_Max = channelConfiguration_Orders[i];
                 auto channelConfiguration_Orders_Base = channelConfiguration_Orders + Aac_Channels_Size_Usac;
-                for (auto usacElement : C.usacElements)
+                for (auto& usacElement : C.usacElements)
                 {
                     if (usacElement.usacElementType >= ID_USAC_EXT)
                         continue;
@@ -2465,14 +2477,14 @@ void File_Usac::UsacDecoderConfig()
                 if (!IsNotMatch)
                 {
                     string ActualOrder;
-                    for (auto usacElement : C.usacElements)
+                    for (auto& usacElement : C.usacElements)
                     {
                         if (usacElement.usacElementType >= ID_USAC_EXT)
                             continue;
                         ActualOrder += usacElementType_IdNames[usacElement.usacElementType];
                         ActualOrder += ' ';
                     }
-                    ActualOrder.pop_back();
+                    if (!ActualOrder.empty()) ActualOrder.pop_back();
                     Fill_Conformance("UsacConfig channelConfigurationIndex", ("channelConfigurationIndex " + to_string(C.channelConfigurationIndex) + " is used but the usacElementType sequence contains " + ActualOrder + ", which is the configuration indicated by channelConfigurationIndex " + to_string(i)).c_str(), bitset8(), Warning);
                     break;
                 }
@@ -2489,16 +2501,16 @@ void File_Usac::UsacDecoderConfig()
                 ExpectedOrder += usacElementType_IdNames[channelConfiguration_Orders_Base[channelConfiguration_Orders_Pos]];
                 ExpectedOrder += ' ';
             }
-            ExpectedOrder.pop_back();
+            if (!ExpectedOrder.empty()) ExpectedOrder.pop_back();
             string ActualOrder;
-            for (auto usacElement : C.usacElements)
+            for (auto& usacElement : C.usacElements)
             {
                 if (usacElement.usacElementType >= ID_USAC_EXT)
                     continue;
                 ActualOrder += usacElementType_IdNames[usacElement.usacElementType];
                 ActualOrder += ' ';
             }
-            ActualOrder.pop_back();
+            if (!ActualOrder.empty()) ActualOrder.pop_back();
             Fill_Conformance("UsacConfig channelConfigurationIndex", ("channelConfigurationIndex " + to_string(C.channelConfigurationIndex) + " implies element order " + ExpectedOrder + " but actual element order is " + ActualOrder).c_str());
         }
     #endif
@@ -2710,7 +2722,7 @@ void File_Usac::Mps212Config(int8u StereoConfigindex)
             #if MEDIAINFO_CONFORMANCE
                 Fill_Conformance("Mps212Config bsFreqRes", "bsFreqRes shall not be encoded with a value of 0");
             #endif
-            C.WaitForNextIndependantFrame=true;
+            C.IFrameParsed=false;
             Element_End0();
             return;
         }
@@ -2890,6 +2902,7 @@ void File_Usac::uniDrcConfigExtension()
             default:
                 Skip_BS(bitSize,                                "Unknown");
         }
+        #pragma warning (suppress : 6385) //Visual Studio fail to detect 'uniDrcConfigExtType<UNIDRCCONFEXT_Max' check when it is inside function parameter and warns about reading invalid data
         BS_Bookmark(B, uniDrcConfigExtType<UNIDRCCONFEXT_Max?string(uniDrcConfigExtType_ConfNames[uniDrcConfigExtType]):("uniDrcConfigExtType"+to_string(uniDrcConfigExtType)));
         Element_End0();
     }
@@ -3365,6 +3378,7 @@ void File_Usac::UsacConfigExtension()
                 case ID_CONFIG_EXT_STREAM_ID                  : streamId(); break;
                 default                                       : Skip_BS(usacConfigExtLength,                "Unknown");
             }
+            #pragma warning (suppress : 6385) //Visual Studio fail to detect 'usacConfigExtType<ID_CONFIG_EXT_Max' check when it is inside function parameter and warns about reading invalid data
             if (BS_Bookmark(B, usacConfigExtType<ID_CONFIG_EXT_Max?string(usacConfigExtType_ConfNames[usacConfigExtType]):("usacConfigExtType"+to_string(usacConfigExtType))))
             {
                 #if MEDIAINFO_CONFORMANCE
@@ -3660,13 +3674,13 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
         Merge_Conformance();
     #endif
     if (usacIndependencyFlag)
-         C.WaitForNextIndependantFrame=false;
+         C.IFrameParsed=usacIndependencyFlag;
     if (!IsParsingRaw)
         IsParsingRaw++;
 
     for (size_t elemIdx=0; elemIdx<C.usacElements.size(); elemIdx++)
     {
-        if (!Trusted_Get() || (C.WaitForNextIndependantFrame && (!usacIndependencyFlag || elemIdx || C.usacElements[0].usacElementType!=((ID_USAC_EXT<<2)|ID_EXT_ELE_AUDIOPREROLL))))
+        if (!Trusted_Get() || (!C.IFrameParsed && (!usacIndependencyFlag || elemIdx || C.usacElements[0].usacElementType!=((ID_USAC_EXT<<2)|ID_EXT_ELE_AUDIOPREROLL))))
         {
             Skip_BS(Data_BS_Remain(),                           "Skipped due to error or non support in previous frame");
             break;
@@ -3688,7 +3702,7 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
             default:
                 ; //Not parsed
         }
-        if (C.WaitForNextIndependantFrame)
+        if (!C.IFrameParsed)
         {
             Skip_BS(Data_BS_Remain(),                           "Skipped due to error or non support in previous frame");
             break;
@@ -3729,7 +3743,7 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
             }
             Skip_BS(BitsRemaining,                              LastByte?"Unknown":"Padding");
         }
-        else if (!C.WaitForNextIndependantFrame && Data_BS_Remain()<BitsNotIncluded)
+        else if (C.IFrameParsed && Data_BS_Remain()<BitsNotIncluded)
             Trusted_IsNot("Too big");
     }
     else if (IsParsingRaw <= 1)
@@ -3820,7 +3834,7 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
             Fill_Conformance("UsacFrame GeneralCompliance", "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed");
             Merge_Conformance();
         #endif
-        C.WaitForNextIndependantFrame=true;
+        C.IFrameParsed=false;
 
         //Counting, TODO: remove duplicate of this code due to not executed in case of parsing issue
         Frame_Count++;
@@ -3835,7 +3849,7 @@ void File_Usac::UsacSingleChannelElement(bool usacIndependencyFlag)
     Element_Begin1("UsacSingleChannelElement");
 
     UsacCoreCoderData(1, usacIndependencyFlag);
-    if (C.WaitForNextIndependantFrame)
+    if (!C.IFrameParsed)
     {
         Element_End0();
         return;
@@ -3843,7 +3857,7 @@ void File_Usac::UsacSingleChannelElement(bool usacIndependencyFlag)
     if (C.coreSbrFrameLengthIndex>=coreSbrFrameLengthIndex_Mapping_Size || coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].sbrRatioIndex)
     {
         UsacSbrData(1, usacIndependencyFlag);
-        if (C.WaitForNextIndependantFrame)
+        if (!C.IFrameParsed)
         {
             Element_End0();
             return;
@@ -3859,7 +3873,7 @@ void File_Usac::UsacChannelPairElement(bool usacIndependencyFlag)
     Element_Begin1("UsacChannelPairElement");
 
     UsacCoreCoderData(C.stereoConfigIndex==1?1:2, usacIndependencyFlag);
-    if (C.WaitForNextIndependantFrame)
+    if (!C.IFrameParsed)
     {
         Element_End0();
         return;
@@ -3867,7 +3881,7 @@ void File_Usac::UsacChannelPairElement(bool usacIndependencyFlag)
     if (C.coreSbrFrameLengthIndex>=coreSbrFrameLengthIndex_Mapping_Size || coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].sbrRatioIndex)
     {
         UsacSbrData((C.stereoConfigIndex==0 || C.stereoConfigIndex==3)?2:1, usacIndependencyFlag);
-        if (C.WaitForNextIndependantFrame)
+        if (!C.IFrameParsed)
         {
             Element_End0();
             return;
@@ -3975,7 +3989,7 @@ void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool ar
             if (N>4096)
                 Fill_Conformance("arithData GeneralCompliance", "N is more than 4096");
         #endif
-        C.WaitForNextIndependantFrame=true;
+        C.IFrameParsed=false;
         return;
     }
 
@@ -3993,7 +4007,7 @@ void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool ar
                 #if MEDIAINFO_CONFORMANCE
                     Fill_Conformance("arithData GeneralCompliance", "N is 0");
                 #endif
-                C.WaitForNextIndependantFrame=true;
+                C.IFrameParsed=false;
                 return;
             }
 
@@ -4094,7 +4108,7 @@ void File_Usac::arithData(size_t ch, int16u N, int16u lg, int16u lg_max, bool ar
                 #if MEDIAINFO_CONFORMANCE
                     Fill_Conformance("arithData GeneralCompliance", "Issue detected while computing lev");
                 #endif
-                C.WaitForNextIndependantFrame=true;
+                C.IFrameParsed=false;
                 Element_End0();
                 Element_End0();
                 return;
@@ -4209,7 +4223,7 @@ void File_Usac::acSpectralData(size_t ch, bool usacIndependencyFlag)
                     Fill_Conformance("acSpectralData Cohenrecy", "Issue in acSpectralData while computing sampling_frequency_index_swb");
             }
         #endif
-        C.WaitForNextIndependantFrame=true;
+        C.IFrameParsed=false;
         Element_End0();
         return;
     }
@@ -4237,7 +4251,7 @@ void File_Usac::acSpectralData(size_t ch, bool usacIndependencyFlag)
     for (int8u win=0; win<num_windows; win++)
     {
         arithData(ch, N, lg, lg_max, arith_reset_flag&&(win==0));
-        if (C.WaitForNextIndependantFrame)
+        if (!C.IFrameParsed)
             break;
     }
 
@@ -4327,7 +4341,7 @@ void File_Usac::fdChannelStream(size_t ch, bool commonWindow, bool commonTw, boo
         tnsData();
 
     acSpectralData(ch, usacIndependencyFlag);
-    if (C.WaitForNextIndependantFrame)
+    if (!C.IFrameParsed)
     {
         Element_End0();
         return;
@@ -4337,7 +4351,7 @@ void File_Usac::fdChannelStream(size_t ch, bool commonWindow, bool commonTw, boo
         #if MEDIAINFO_CONFORMANCE
             //Fill_Conformance("fdChannelStream", "facData support not implemented", bitset8(), Info);
         #endif
-        C.WaitForNextIndependantFrame=true;
+        C.IFrameParsed=false;
         //TODO: facData(true, coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].coreCoderFrameLength/(num_windows==1?8:16));
     TEST_SB_END();
 
@@ -4477,7 +4491,7 @@ void File_Usac::UsacCoreCoderData(size_t nrChannels, bool usacIndependencyFlag)
     Element_Begin1("UsacCoreCoderData");
 
     bool coreModes[2];
-    bool tnsDataPresent[2];
+    bool tnsDataPresent[2]{};
 
     for (size_t ch=0; ch<nrChannels; ch++)
         Get_SB(coreModes[ch],                                   "core_mode");
@@ -4492,7 +4506,7 @@ void File_Usac::UsacCoreCoderData(size_t nrChannels, bool usacIndependencyFlag)
             #if MEDIAINFO_CONFORMANCE
                 //Fill_Conformance("UsacCoreCoderData", "lpd_channel_stream() support not implemented", bitset8(), Info);
             #endif
-            C.WaitForNextIndependantFrame=true;
+            C.IFrameParsed=false;
             //TODO: lpd_channel_stream(indepFlag);
         }
         else
@@ -4502,7 +4516,7 @@ void File_Usac::UsacCoreCoderData(size_t nrChannels, bool usacIndependencyFlag)
 
             fdChannelStream(ch, C.common_window, C.common_tw, tnsDataPresent[ch], usacIndependencyFlag);
         }
-        if (C.WaitForNextIndependantFrame)
+        if (!C.IFrameParsed)
             break;
     }
 
@@ -4738,7 +4752,7 @@ void File_Usac::pvcEnvelope(bool usacIndependencyFlag)
     }
     else
     {
-        int8u num_grid_info;
+        int8u num_grid_info{};
         switch (divMode)
         {
         case 4:
@@ -5057,7 +5071,7 @@ void File_Usac::UsacSbrData(size_t nrSbrChannels, bool usacIndependencyFlag)
     int64s sampling_frequency=C.sampling_frequency;
     if (C.coreSbrFrameLengthIndex==4)
     {
-        sampling_frequency=Frequency_b/2;
+        if (Frequency_b!=0) sampling_frequency=Frequency_b/2;
         C.sbrHandler.ratio=QUAD;
     }
 
@@ -5066,7 +5080,7 @@ void File_Usac::UsacSbrData(size_t nrSbrChannels, bool usacIndependencyFlag)
         if (C.coreSbrFrameLengthIndex>=coreSbrFrameLengthIndex_Mapping_Size)
         {
             Element_End0();
-            C.WaitForNextIndependantFrame=true;
+            C.IFrameParsed=false;
             return;
         }
         if (!Aac_Sbr_Compute(&C.sbrHandler, sampling_frequency, true))
@@ -5075,7 +5089,7 @@ void File_Usac::UsacSbrData(size_t nrSbrChannels, bool usacIndependencyFlag)
             #if MEDIAINFO_CONFORMANCE
                 Fill_Conformance("UsacSbrData GeneralCompliance", "Issue detected while computing SBR bands");
             #endif
-            C.WaitForNextIndependantFrame=true;
+            C.IFrameParsed=false;
             return;
         }
         sbrData(nrSbrChannels, usacIndependencyFlag);
@@ -5594,7 +5608,7 @@ void File_Usac::LsbData(ec_data_type dataType, bool bsQuantCoarseXXX, int8u data
 //---------------------------------------------------------------------------
 void File_Usac::EcDataPair(ec_data_type dataType, int8u paramIdx, int8u setIdx, int8u dataBands, bool bsDataPairXXX, bool bsQuantCoarseXXX, bool usacIndependencyFlag)
 {
-    int8u numQuantSteps;
+    int8u numQuantSteps{};
     switch (dataType)
     {
     case CLD:
@@ -5681,7 +5695,7 @@ void File_Usac::EnvelopeReshapeHuff(bool (&bsTempShapeEnableChannel)[2])
                 #if MEDIAINFO_CONFORMANCE
                     Fill_Conformance("EnvelopeReshapeHuff GeneralCompliance", "Issue detected while computing 2Dhuff_dec");
                 #endif
-                C.WaitForNextIndependantFrame =true;
+                C.IFrameParsed=false;
                 return;
             }
             i += len;
@@ -5834,7 +5848,7 @@ void File_Usac::Mps212Data(bool usacIndependencyFlag)
         #if MEDIAINFO_CONFORMANCE
             Fill_Conformance("Mps212Data", "Mps212Data support not implemented for this coreSbrFrameLengthIndex", bitset8(), Info);
         #endif
-        C.WaitForNextIndependantFrame =true;
+        C.IFrameParsed=false;
         return;
     }
 
@@ -5862,7 +5876,7 @@ void File_Usac::UsacLfeElement(bool usacIndependencyFlag)
         #if MEDIAINFO_CONFORMANCE
             Fill_Conformance("UsacLfeElement", "UsacLfeElement support not implemented", bitset8(), Info);
         #endif
-        C.WaitForNextIndependantFrame=true;
+        C.IFrameParsed=false;
     Element_End0();
 }
 
@@ -5932,6 +5946,7 @@ void File_Usac::UsacExtElement(size_t elemIdx, bool usacIndependencyFlag)
                 default:
                     Skip_BS(usacExtElementPayloadLength,        usacExtElementType==ID_EXT_ELE_FILL?"(Not parsed)":"Unknown");
             }
+            #pragma warning (suppress : 6385) //Visual Studio fail to detect 'usacExtElementType<ID_EXT_ELE_Max' check when it is inside function parameter and warns about reading invalid data
             BS_Bookmark(B, usacExtElementType<ID_EXT_ELE_Max?string(usacExtElementType_Names[usacExtElementType]):("usacExtElementType"+to_string(usacExtElementType)));
         }
     }
@@ -5960,7 +5975,7 @@ void File_Usac::AudioPreRoll()
         {
             Trusted_IsNot("Too big");
             Element_End0();
-            C.WaitForNextIndependantFrame=true;
+            C.IFrameParsed=false;
             return;
         }
         if (IsParsingRaw<=1)
@@ -5969,7 +5984,7 @@ void File_Usac::AudioPreRoll()
             auto B=BS_Bookmark(configLen);
             UsacConfig(B.BitsNotIncluded);
             if (!Trusted_Get())
-                C.WaitForNextIndependantFrame=true;
+                C.IFrameParsed=false;
             BS_Bookmark(B, "AudioPreRoll UsacConfig");
             Element_End0();
         }
@@ -6006,7 +6021,7 @@ void File_Usac::AudioPreRoll()
                 {
                     Trusted_IsNot("Too big");
                     Element_End0();
-                    C.WaitForNextIndependantFrame=true;
+                    C.IFrameParsed=false;
                     break;
                 }
                 if (IsParsingRaw<=1)
@@ -6017,7 +6032,7 @@ void File_Usac::AudioPreRoll()
                     auto B=BS_Bookmark(auLen);
                     UsacFrame(B.BitsNotIncluded);
                     if (!Trusted_Get())
-                        C.WaitForNextIndependantFrame=true;
+                        C.IFrameParsed=false;
                     BS_Bookmark(B, "UsacFrame");
                     Element_End0();
                     IsParsingRaw-=frameIdx+1;
@@ -6041,7 +6056,7 @@ void File_Usac::AudioPreRoll()
     if (!Trusted_Get())
     {
         C=Conf; //If there was an issue in the Preroll parsing, we disable the parsing of next frame but we take the default config for catching next preroll
-        C.WaitForNextIndependantFrame=true;
+        C.IFrameParsed=false;
     }
 }
 

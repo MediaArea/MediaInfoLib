@@ -3,7 +3,7 @@
 # Contributor: hydro <hydro@freenet.de>
 
 pkgname=('libmediainfo' 'python-mediainfo')
-pkgver=24.01
+pkgver=25.07
 pkgrel=1
 pkgdesc="shared library for mediainfo"
 arch=('i686' 'x86_64')
@@ -17,7 +17,7 @@ md5sums=('00000000000000000000000000000000')
 build() {
   cd $srcdir/MediaInfoLib/Project/GNU/Library
   sh ./autogen.sh
-  ./configure --prefix=/usr --enable-shared --disable-static --with-libcurl --with-libmms
+  ./configure --prefix=/usr --enable-shared --disable-static --with-libcurl --with-libmms --with-graphviz=runtime
   make clean
   make
 }

@@ -587,6 +587,8 @@ void File_DvDif::Read_Buffer_Continue()
                     }
 
                     //Audio errors
+                    auto BlockStatus_Pos=(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80;
+                    if (BlockStatus_Pos<BlockStatus_MaxSize)
                     {
                         bool Contains_8000=true; // Note: standards indicate these values so old code was using only theses values, now checking all values (except 0 or -1 as it is for silent audio)
                         bool Contains_800800=true;
@@ -618,11 +620,10 @@ void File_DvDif::Read_Buffer_Continue()
                             uint8_t Dseq=Buffer[Buffer_Offset+1]>>4;
                             bool Is16=(QU==(int8u)-1)?(Contains_8000):(QU==0);
                             int16u Value;
-                            switch (Is16)
-                            {
-                                case 0: Value=(Contains_800800_0<<4)|(Contains_800800_1>>4); break; // Only one half
-                                case 1: Value=(ToCheck_8000_0<<8)|ToCheck_8000_1; break;
-                            }
+                            if (Is16)
+                                Value=(ToCheck_8000_0<<8)|ToCheck_8000_1;
+                            else
+                                Value=(Contains_800800_0<<4)|(Contains_800800_1>>4); // Only one half
                             if (Value && Value!=(0xFFFF>>(Is16?0:4))) // 0 and -1 are often used as silence
                             {
                                 if (Channel>=Audio_Errors.size())
@@ -631,13 +632,13 @@ void File_DvDif::Read_Buffer_Continue()
                                     Audio_Errors[Channel].resize(Dseq_Count);
                                 Audio_Errors[Channel][Dseq].Count++;
                                 Audio_Errors[Channel][Dseq].Values.insert(Value);
-                                BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_NOK;
+                                BlockStatus[BlockStatus_Pos]=BlockStatus_NOK;
                             }
                             else
-                                BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_OK;
+                                BlockStatus[BlockStatus_Pos]=BlockStatus_OK;
                         }
                         else
-                            BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=BlockStatus_OK;
+                            BlockStatus[BlockStatus_Pos]=BlockStatus_OK;
                     }
                 }
                 break;
@@ -684,7 +685,9 @@ void File_DvDif::Read_Buffer_Continue()
                             Video_STA_Errors_ByDseq[(Dseq<<4)|STA_Error]++;
                         }
                     }
-                    BlockStatus[(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80]=STA_Error?BlockStatus_NOK:BlockStatus_OK;
+                    auto BlockStatus_Pos=(File_Offset+Buffer_Offset-Speed_FrameCount_StartOffset)/80;
+                    if (BlockStatus_Pos<BlockStatus_MaxSize)
+                        BlockStatus[BlockStatus_Pos]=STA_Error?BlockStatus_NOK:BlockStatus_OK;
                 }
                 break;
         }
@@ -777,7 +780,7 @@ void File_DvDif::Errors_Stats_Update()
 
         // Coherency checking
         bool FSC_Incoherency=false;
-        if (FSC_WasSet_Sum && FSC_WasSet_Sum)
+        if (FSC_WasNotSet_Sum || FSC_WasSet_Sum)
         {
             int FSC_Diff=FSC_WasSet_Sum-FSC_WasNotSet_Sum;
             if (FSC_Diff<0)
@@ -1069,12 +1072,12 @@ void File_DvDif::Errors_Stats_Update()
             if (AbstBf_Current_Weighted.abst[j].size()>1 && !AbstBf_Current_Weighted.StoredValues.empty())
             {
                 //Difficult to trust one value other another one, we use the smallest trustable stored value
-                for (set<int32s>::iterator StoredValue=AbstBf_Current_Weighted.StoredValues.begin(); ; StoredValue++)
+                for (set<int32s>::iterator StoredValue=AbstBf_Current_Weighted.StoredValues.begin(); ; ++StoredValue)
                     if (abst<=*StoredValue)
                     {
                         abst=*StoredValue;
                         AbstBf_Current_MaxAbst=abst;
-                        for (; StoredValue!=AbstBf_Current_Weighted.StoredValues.end(); StoredValue++)
+                        for (; StoredValue!=AbstBf_Current_Weighted.StoredValues.end(); ++StoredValue)
                         {
                             if (*StoredValue>=(abst+(DSF?12:10)*(FSC_WasSet?2:1)*2)) //Max 2x the expected gap
                                 break;
@@ -1418,8 +1421,7 @@ void File_DvDif::Errors_Stats_Update()
             #if MEDIAINFO_EVENTS
                 Event.Arb|=1<<7;
             #endif //MEDIAINFO_EVENTS
-            if (Speed_Arb_Current.Value!=0xF)
-                Arb_AreDetected=true;
+            Arb_AreDetected=true;
 
             Speed_Arb_Current_Theory.IsValid=false;
         }
@@ -1840,7 +1842,7 @@ void File_DvDif::Errors_Stats_Update()
                             if (!MoreData)
                                 MoreData=new int8u[4096] + sizeof(size_t); // TODO: more dynamic allocation
                             MoreData[MoreData_Offset++]=2+Audio_Errors[ChannelGroup][Dseq].Values.size()*2; // Size of the block
-                            MoreData[MoreData_Offset++]=1; // Audio error value par channel group per Dseq
+                            MoreData[MoreData_Offset++]=MediaInfo_Event_Analysis_Frame_AudioErrorValues; // Audio error value par channel group per Dseq
                             MoreData[MoreData_Offset++]=ChannelGroup;
                             MoreData[MoreData_Offset++]=Dseq;
                             for (std::set<int16u>::iterator Value=Audio_Errors[ChannelGroup][Dseq].Values.begin(); Value!=Audio_Errors[ChannelGroup][Dseq].Values.end(); ++Value)
@@ -1860,7 +1862,7 @@ void File_DvDif::Errors_Stats_Update()
                 if (!MoreData)
                     MoreData=new int8u[4096]+sizeof(size_t); // TODO: more dynamic allocation
                 MoreData[MoreData_Offset++]=DirectionSpeed.size();
-                MoreData[MoreData_Offset++]=2; // DirectionSpeed values
+                MoreData[MoreData_Offset++]=MediaInfo_Event_Analysis_Frame_DirectionSpeed; // DirectionSpeed values
                 for (std::vector<int8u>::iterator DirectionSpeed_Item=DirectionSpeed.begin(); DirectionSpeed_Item!=DirectionSpeed.end(); ++DirectionSpeed_Item)
                 {
                     MoreData[MoreData_Offset++]=*DirectionSpeed_Item;
@@ -1892,7 +1894,7 @@ void File_DvDif::Errors_Stats_Update()
             memset(BlockStatus, 0, Event1.BlockStatus_Count);
         #endif //MEDIAINFO_EVENTS
         if (MoreData)
-            delete (MoreData-sizeof(size_t));
+            delete[] (MoreData-sizeof(size_t));
     }
 
     //Speed_TimeCode_Current

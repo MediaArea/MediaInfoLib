@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM">
@@ -123,8 +123,8 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../zLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WINDOWS_UWP;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../zLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WINDOWS_UWP;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
       <CompileAsWinRT>false</CompileAsWinRT>
@@ -133,8 +133,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../zLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WINDOWS_UWP;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../zLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WINDOWS_UWP;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
       <CompileAsWinRT>false</CompileAsWinRT>
@@ -143,8 +143,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../zLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WINDOWS_UWP;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../zLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WINDOWS_UWP;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
       <CompileAsWinRT>false</CompileAsWinRT>
@@ -153,8 +153,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../zLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WINDOWS_UWP;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../zLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WINDOWS_UWP;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
       <CompileAsWinRT>false</CompileAsWinRT>
@@ -163,8 +163,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../zLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WINDOWS_UWP;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../zLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WINDOWS_UWP;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
       <CompileAsWinRT>false</CompileAsWinRT>
@@ -173,8 +173,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../../ZenLib/Source;../../../../zLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WINDOWS_UWP;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../zLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WINDOWS_UWP;MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>MediaInfo/PreComp.h</PrecompiledHeaderFile>
       <CompileAsWinRT>false</CompileAsWinRT>
@@ -182,7 +182,6 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_Iso9660.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Aac_GeneralAudio.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Aac_GeneralAudio_Sbr.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Aac_GeneralAudio_Sbr_Ps.cpp" />
@@ -192,11 +191,13 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Celt.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ChannelGrouping.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_ChannelSplitting.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dat.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_DolbyAudioMetadata.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_DolbyE.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsdiff.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dsf.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Iab.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Iamf.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mga.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_OpenMG.cpp" />
@@ -233,6 +234,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Dds.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Dpx.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Exr.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_GainMap.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Pcx.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Psd.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Tga.cpp" />
@@ -251,6 +253,8 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_Bzip2.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_Elf.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_Gzip.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_Iso9660.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_MachO.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_Mz.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_Rar.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_Tar.cpp" />
@@ -319,11 +323,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_PropertyList.cpp" />
-    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Xmp.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_AribStdB24B37.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_DtvccTransport.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_DvbSubtitle.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Pac.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Pdf.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Scc.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Sdp.cpp" />
@@ -338,8 +341,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Av1.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Avs3V.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_CineForm.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_HdrVividMetadata.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\XmlUtils.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\OutputHelpers.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\ExternalCommandHelpers.cpp" />
@@ -369,6 +374,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Png.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Rle.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Tiff.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_WebP.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Bdmv.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Cdxa.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Dpg.cpp" />
@@ -410,12 +416,18 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Text\File_Scte20.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File__Tags.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_ApeTag.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_C2pa.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Exif.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Icc.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Iim.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Id3.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Id3v2.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3v2.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_PropertyList.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_SphericalVideo.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_VorbisCom.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Tag\File_Xmp.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Duplicate\File__Duplicate__Base.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Duplicate\File__Duplicate__Writer.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Duplicate\File__Duplicate_MpegTs.cpp" />
@@ -455,6 +467,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\ThirdParty\aes-gladman\aes_ni.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ThirdParty\fmt\format.cc">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -507,11 +525,13 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Celt.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ChannelGrouping.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_ChannelSplitting.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dat.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_DolbyAudioMetadata.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_DolbyE.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dsdiff.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Dsf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Iab.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Iamf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mga.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Mpegh3da.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_OpenMG.h" />
@@ -547,6 +567,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Dds.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Dpx.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Exr.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_GainMap.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Pcx.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Psd.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Tga.h" />
@@ -661,11 +682,11 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Swf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Umf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Wm.h" />
-    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_PropertyList.h" />
-    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Xmp.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_AribStdB24B37.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_DtvccTransport.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_DvbSubtitle.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Pac.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Pac_Codepages.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Pdf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Scc.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Scte20.h" />
@@ -678,6 +699,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Av1.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_CineForm.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_DolbyVisionMetadata.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_HdrVividMetadata.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\XmlUtils.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\OutputHelpers.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\ExternalCommandHelpers.h" />
@@ -709,12 +731,18 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Pgs.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File__Tags.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_ApeTag.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_C2pa.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Exif.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Icc.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Iim.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Id3.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Id3v2.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3v2.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_PropertyList.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_SphericalVideo.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_VorbisCom.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Tag\File_Xmp.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Duplicate\File__Duplicate__Base.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Duplicate\File__Duplicate__Writer.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Duplicate\File__Duplicate_MpegTs.h" />

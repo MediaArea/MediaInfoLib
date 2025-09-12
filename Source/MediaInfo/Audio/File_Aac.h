@@ -89,7 +89,6 @@ class File_Aac : public File_Usac, public File__Tags_Helper
 public :
     //In
     int64u  Frame_Count_Valid;
-    bool    FrameIsAlwaysComplete;
     enum mode
     {
         Mode_Unknown,
@@ -100,6 +99,7 @@ public :
         Mode_LATM,
     };
     mode   Mode;
+    bool   FromIamf;
     void   AudioSpecificConfig_OutOfBand(int64s sampling_frequency, int8u audioObjectType=(int8u)-1, bool sbrData=false, bool psData=false, bool sbrPresentFlag=false, bool psPresentFlag=false);
 
     // Conformance
@@ -125,6 +125,7 @@ protected :
     void FileHeader_Parse_ADTS();
 
     //Buffer - Global
+    void Read_Buffer_Init();
     void Read_Buffer_Continue ();
     void Read_Buffer_Continue_AudioSpecificConfig();
     void Read_Buffer_Continue_payload();

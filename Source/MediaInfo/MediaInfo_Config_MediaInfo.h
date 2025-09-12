@@ -68,6 +68,30 @@ enum encryption_padding
 };
 #endif //MEDIAINFO_AES
 
+enum config_probe_type
+{
+    config_probe_none,
+    config_probe_size,
+    config_probe_dur,
+    config_probe_percent,
+};
+struct config_probe
+{
+    config_probe_type   Start_Type=config_probe_none;
+    config_probe_type   Duration_Type=config_probe_none;
+    int64u              Start=0;
+    int64u              Duration=0;
+    string              Parser;
+};
+
+enum display_captions
+{
+    DisplayCaptions_Command,
+    DisplayCaptions_Content,
+    DisplayCaptions_Stream,
+    DisplayCaptions_Max
+};
+
 //***************************************************************************
 // Class MediaInfo_Config_MediaInfo
 //***************************************************************************
@@ -143,7 +167,7 @@ public :
     #endif //MEDIAINFO_ADVANCED
 
     #if MEDIAINFO_ADVANCED
-        void          File_DefaultFrameRate_Set (float64 NewValue);
+        void          File_DefaultFrameRate_Set (const Ztring& NewValue);
         float64       File_DefaultFrameRate_Get ();
         void          File_DefaultTimeCode_Set (string NewValue);
         string        File_DefaultTimeCode_Get ();
@@ -288,6 +312,8 @@ public :
     void          Event_SubFile_Missing_Absolute(const Ztring &FileName_Absolute);
     #endif //MEDIAINFO_EVENTS
 
+    void          Demux_Rate_Set (float64 NewValue);
+    float64       Demux_Rate_Get ();
     #if MEDIAINFO_DEMUX
     void          Demux_ForceIds_Set (bool NewValue);
     bool          Demux_ForceIds_Get ();
@@ -301,8 +327,6 @@ public :
     bool          Demux_Hevc_Transcode_Iso14496_15_to_AnnexB_Get ();
     void          Demux_Unpacketize_Set (bool NewValue);
     bool          Demux_Unpacketize_Get ();
-    void          Demux_Rate_Set (float64 NewValue);
-    float64       Demux_Rate_Get ();
     void          Demux_FirstDts_Set (int64u NewValue);
     int64u        Demux_FirstDts_Get ();
     void          Demux_FirstFrameNumber_Set (int64u NewValue);
@@ -371,10 +395,10 @@ public :
     void          File_Mmsh_Describe_Only_Set (bool NewValue);
     bool          File_Mmsh_Describe_Only_Get ();
     #endif //defined(MEDIAINFO_LIBMMS_YES)
-    void          File_Eia608_DisplayEmptyStream_Set (bool NewValue);
-    bool          File_Eia608_DisplayEmptyStream_Get ();
-    void          File_Eia708_DisplayEmptyStream_Set (bool NewValue);
-    bool          File_Eia708_DisplayEmptyStream_Get ();
+    Ztring        File_DisplayCaptions_Set (const Ztring& NewValue);
+    display_captions File_DisplayCaptions_Get ();
+    Ztring        File_ProbeCaption_Set(const Ztring& NewValue);
+    config_probe  File_ProbeCaption_Get(const string& Parser);
     #if defined(MEDIAINFO_AC3_YES)
     void          File_Ac3_IgnoreCrc_Set (bool NewValue);
     bool          File_Ac3_IgnoreCrc_Get ();
@@ -559,6 +583,7 @@ private :
     std::vector<event_delayed*> Events_TimestampShift_Delayed;
     #endif //MEDIAINFO_EVENTS
 
+    float64                 Demux_Rate;
     #if MEDIAINFO_DEMUX
     bool                    Demux_ForceIds;
     bool                    Demux_PCM_20bitTo16bit;
@@ -567,7 +592,6 @@ private :
     bool                    Demux_Hevc_Transcode_Iso14496_15_to_AnnexB;
     bool                    Demux_Unpacketize;
     bool                    Demux_SplitAudioBlocks;
-    float64                 Demux_Rate;
     int64u                  Demux_FirstDts;
     int64u                  Demux_FirstFrameNumber;
     int8u                   Demux_InitData;
@@ -607,8 +631,9 @@ private :
     #if defined(MEDIAINFO_LIBMMS_YES)
     bool                    File_Mmsh_Describe_Only;
     #endif //defined(MEDIAINFO_LIBMMS_YES)
-    bool                    File_Eia608_DisplayEmptyStream;
-    bool                    File_Eia708_DisplayEmptyStream;
+    display_captions        DisplayCaptions;
+    std::vector<config_probe> File_ProbeCaption;
+    size_t                  File_ProbeCaption_Pos;
     #if defined(MEDIAINFO_AC3_YES)
     bool                    File_Ac3_IgnoreCrc;
     #endif //defined(MEDIAINFO_AC3_YES)

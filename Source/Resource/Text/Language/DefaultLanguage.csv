@@ -162,6 +162,7 @@
 About;About
 About_Hint;How to contact me and find last version
 Accompaniment;Accompaniment
+AC3_Metadata;AC-3 metadata
 Active_DisplayAspectRatio;Active display aspect ratio
 Active_Height;Active height
 Active_Width;Active width
@@ -304,6 +305,7 @@ Compression_Mode;Compression mode
 Compression_Mode_Lossless;Lossless
 Compression_Mode_Lossy;Lossy
 Compression_Ratio;Compression ratio
+comprprof;RF (compr) profile
 Conductor;Conductor
 ConformanceCheck;Conformance check
 ConformanceErrors;Conformance errors
@@ -362,6 +364,7 @@ Downmix_5.1.x;5.1 and 5.1.x downmix
 Downmix_5to2;5.1 to 2.0 downmix
 DrcSets_Count;DRC set count
 DrcSets_Effects;DRC effect type(s)
+dynrngprof;Line (dynrng) profile
 Duration;Duration
 Duration_End;End time
 Duration_End_Command;End time (commands)
@@ -379,8 +382,10 @@ ElementCount;Count of elements
 EMail;E-Mail
 Encoded_Application;Writing application
 Encoded_Date;Encoded date
+Encoded_Hardware;Writing hardware
 Encoded_Library;Writing library
 Encoded_Library_Settings;Encoding settings
+Encoded_OperatingSystem;Writing operating system
 Encoded_Original;Original support
 EncodedBy;Encoded by
 EPG_Positions;EPG positions (internal)
@@ -1072,6 +1077,7 @@ PackageName;Package name
 PackFormat;Pack format
 Part;Part
 Part_Count;Total count
+PartialParsing;Partial parsing
 PartNumber;Part Number
 PartTotal;Part Total
 Performer;Performer
@@ -1281,6 +1287,26 @@ TrimMode8i;Trim mode for 7.1.4
 TruePeakLevel;True peak level
 TruePeakLevel_Album;True peak level (album)
 Type;Type
+Type_Composer;Composer
+Type_Conductor;Conductor
+Type_Cover;Cover
+Type_Cover_Back;Cover (back)
+Type_Cover_Media;Cover (media)
+Type_DuringPerformance;During performance
+Type_DuringRecording;During recording
+Type_FileIcon;File icon
+Type_FileIcon_32x32;File icon (32x32)
+Type_Illustration;Illustration
+Type_LeafletPage;Leaflet page
+Type_Lyricist;Lyricist
+Type_Performer;Performer
+Type_Performer_Lead;Performer (lead)
+Type_PerformerLogo;Performer logo
+Type_Picture;Picture
+Type_PublisherLogo;Publisher logo
+Type_RecordingLocation;Recording Location
+Type_ScreenCapture;Screen capture
+Type_Thumbnail;Thumbnail
 TypeDefinition;Type definition
 UniqueID;Unique ID
 UniversalAdID;Universal Ad ID

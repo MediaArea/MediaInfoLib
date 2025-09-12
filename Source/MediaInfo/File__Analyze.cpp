@@ -27,7 +27,9 @@
 #if MEDIAINFO_IBIUSAGE
     #include "MediaInfo/Multiple/File_Ibi_Creation.h"
 #endif //MEDIAINFO_IBIUSAGE
+#include "TimeCode.h"
 #include <cstring>
+#include <algorithm>
 using namespace std;
 using namespace tinyxml2;
 #if MEDIAINFO_EVENTS
@@ -164,6 +166,370 @@ string uint128toString(uint128 ii, int radix)
 }
 
 //***************************************************************************
+// Conformance
+//***************************************************************************
+
+#if MEDIAINFO_CONFORMANCE
+struct field_value
+{
+    string Field;
+    string Value;
+    bitset8 Flags;
+    struct frame_pos
+    {
+        int64u Frame_Count_Min = (int64u)-1;
+        int64u Frame_Count_NotParsedIncluded_Min = (int64u)-1;
+        int64u SubFramePos_Min = (int64u)-1;
+        int64u PTS_Min = (int64u)-1;
+        int64u File_Offset_Min = (int64u)-1;
+        int64u Frame_Count_Max = (int64u)-1;
+        int64u Frame_Count_NotParsedIncluded_Max = (int64u)-1;
+        int64u SubFramePos_Max = (int64u)-1;
+        int64u PTS_Max = (int64u)-1;
+        int64u File_Offset_Max = (int64u)-1;
+
+        frame_pos(int64u Frame_Count = (int64u)-1, int64u Frame_Count_NotParsedIncluded = (int64u)-1, int64u SubFramePos = (int64u)-1, int64u PTS = (int64u)-1, int64u File_Offset = (int64u)-1)
+            : Frame_Count_Min(Frame_Count)
+            , Frame_Count_NotParsedIncluded_Min(Frame_Count_NotParsedIncluded)
+            , SubFramePos_Min(SubFramePos)
+            , PTS_Min(PTS)
+            , File_Offset_Min(File_Offset)
+        {}
+    };
+    vector<frame_pos> FramePoss;
+
+    field_value(string&& Field = {}, string&& Value = {}, bitset8 Flags = {}, int64u Frame_Count = (int64u)-1, int64u Frame_Count_NotParsedIncluded = (int64u)-1, int64u SubFramePos = (int64u)-1, int64u PTS = (int64u)-1, int64u File_Offset = (int64u)-1)
+        : Field(Field)
+        , Value(Value)
+        , Flags(Flags)
+    {
+        FramePoss.push_back({ Frame_Count, Frame_Count_NotParsedIncluded, SubFramePos, PTS, File_Offset });
+    }
+
+    friend bool operator==(const field_value& l, const field_value& r)
+    {
+        return l.Field == r.Field && l.Value == r.Value && l.Flags.to_int8u() == r.Flags.to_int8u();
+    }
+};
+struct conformance
+{
+    conformance(File__Analyze* A) : A(A) {}
+
+    File__Analyze*                  A;
+    int64u                          Frame_Count = (int64u)-1;
+    int64u                          Frame_Count_NotParsedIncluded = (int64u)-1;
+    int64u                          PTS = (int64u)-1;
+    int64u                          File_Offset = (int64u)-1;
+    stream_t                        StreamKind_Last = Stream_General;
+    size_t                          StreamPos_Last = 0;
+
+    bitset8                         ConformanceFlags;
+    vector<field_value>             ConformanceErrors_Total[Conformance_Max];
+    vector<field_value>             ConformanceErrors[Conformance_Max];
+    bool                            Warning_Error = false;
+    int8u                           IsParsingRaw = 0;
+    bool                            CheckIf(const bitset8 Flags) { return !Flags || (ConformanceFlags & Flags); }
+
+    void                            Fill_Conformance(const char* Field, const char* Value, bitset8 Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_General, size_t StreamPos = 0);
+    void                            Fill_Conformance(const char* Field, const string& Value, bitset8 Flags = {}, conformance_type Level = Conformance_Error) { Fill_Conformance(Field, Value.c_str(), Flags, Level); }
+    void                            Clear_Conformance();
+    void                            Merge_Conformance(bool FromConfig = false);
+    void                            Streams_Finish_Conformance();
+};
+typedef conformance conformance_data;
+static const char* Conformance_Type_String[] = {
+    "Errors",
+    "Warnings",
+    "Infos",
+};
+static_assert(sizeof(Conformance_Type_String) / sizeof(Conformance_Type_String[0]) == Conformance_Max, "");
+#endif //MEDIAINFO_CONFORMANCE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+string BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix)
+{
+    string Result;
+    if (!Prefix) {
+        Prefix = ParserName.c_str();
+    }
+    if (Prefix) {
+        Result += Prefix;
+    }
+    if (!Result.empty()) {
+        if (Result.back() >= '0' && Result.back() <= '9') {
+            Result += '_';
+        }
+        if (!Result.empty() && Suffix && Suffix[0]) {
+            Result += ' ';
+        }
+    }
+    if (Suffix) {
+        Result += Suffix;
+        if (!Result.empty() && Result.back() >= '0' && Result.back() <= '9') {
+            Result += '_';
+        }
+    }
+    return Result;
+}
+void conformance::Fill_Conformance(const char* Field, const char* Value, bitset8 Flags, conformance_type Level, stream_t StreamKind, size_t StreamPos)
+{
+    if (Level == Conformance_Warning && Warning_Error)
+        Level = Conformance_Error;
+    field_value FieldValue(Field, Value, Flags, (int64u)-1, (int64u)-1, IsParsingRaw >= 2 ? (IsParsingRaw - 2) : (int64u)-1, (int64u)-1, (int64u)-1);
+    auto& Conformance = ConformanceErrors[Level];
+    auto Current = find(Conformance.begin(), Conformance.end(), FieldValue);
+    if (Current != Conformance.end())
+        return;
+    Conformance.emplace_back(FieldValue);
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void conformance::Clear_Conformance()
+{
+    for (size_t Level = 0; Level < Conformance_Max; Level++) {
+        auto& Conformance = ConformanceErrors[Level];
+        Conformance.clear();
+    }
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void conformance::Merge_Conformance(bool FromConfig)
+{
+    auto Limit = MediaInfoLib::Config.Conformance_Limit_Get();
+    if (!Limit) {
+        return;
+    }
+    for (size_t Level = 0; Level < Conformance_Max; Level++) {
+        auto& Conformance = ConformanceErrors[Level];
+        auto& Conformance_Total = ConformanceErrors_Total[Level];
+        for (const auto& FieldValue : Conformance) {
+            auto Current = find(Conformance_Total.begin(), Conformance_Total.end(), FieldValue);
+            if (Current != Conformance_Total.end()) {
+                if (Current->FramePoss.size() < Limit) {
+                    if (FromConfig) {
+                        Current->FramePoss.insert(Current->FramePoss.begin(), { (int64u)-2 });
+                    }
+                    else if (Frame_Count != (int64u)-1 && !Current->FramePoss.empty() && (Frame_Count - Current->FramePoss.back().Frame_Count_Min <= 1 || Frame_Count - Current->FramePoss.back().Frame_Count_Max <= 1)) {
+                        Current->FramePoss.back().Frame_Count_Max = Frame_Count;
+                        Current->FramePoss.back().Frame_Count_NotParsedIncluded_Max = Frame_Count_NotParsedIncluded;
+                        Current->FramePoss.back().SubFramePos_Min = FieldValue.FramePoss[0].SubFramePos_Min;
+                        Current->FramePoss.back().PTS_Max = PTS;
+                        Current->FramePoss.back().File_Offset_Max = File_Offset;
+                    }
+                    else {
+                        Current->FramePoss.push_back({ Frame_Count, Frame_Count_NotParsedIncluded, FieldValue.FramePoss[0].SubFramePos_Min, PTS, File_Offset });
+                    }
+                }
+                else if (Current->FramePoss.size() == Limit)
+                    Current->FramePoss.push_back({}); //Indicating "..."
+                continue;
+            }
+            if (!CheckIf(FieldValue.Flags)) {
+                continue;
+            }
+            if (Conformance_Total.size() < Limit) {
+                Conformance_Total.push_back(FieldValue);
+                Conformance_Total.back().FramePoss.front() = { FromConfig ? ((int64u)-2) : Frame_Count, FromConfig ? ((int64u)-1) : Frame_Count_NotParsedIncluded, FieldValue.FramePoss[0].SubFramePos_Min, FromConfig ? ((int64u)-1) : PTS, File_Offset };
+            }
+            else {
+                if (Conformance_Total.size() == Limit) {
+                    field_value TooMany;
+                    TooMany.Field = "GeneralCompliance";
+                    TooMany.Value = "[More conformance errors...]";
+                    Conformance_Total.push_back(TooMany);
+                }
+                break;
+            }
+        }
+        Conformance.clear();
+    }
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void conformance::Streams_Finish_Conformance()
+{
+    Merge_Conformance(true);
+
+    for (size_t Level = 0; Level < Conformance_Max; Level++)
+    {
+        auto& Conformance_Total = ConformanceErrors_Total[Level];
+        if (Conformance_Total.empty())
+            continue;
+        for (size_t i = Conformance_Total.size(); i-- > 0;) {
+            if (!CheckIf(Conformance_Total[i].Flags)) {
+                Conformance_Total.erase(Conformance_Total.begin() + i);
+            }
+        }
+        if (Conformance_Total.empty())
+            continue;
+        string Conformance_String = "Conformance";
+        Conformance_String += Conformance_Type_String[Level];
+        A->Fill(StreamKind_Last, StreamPos_Last, Conformance_String.c_str(), Conformance_Total.size());
+        Conformance_String += ' ';
+        for (const auto& ConformanceError : Conformance_Total) {
+            size_t Space = 0;
+            for (;;) {
+                Space = ConformanceError.Field.find(' ', Space + 1);
+                if (Space == string::npos) {
+                    break;
+                }
+                const auto Field = Conformance_String + ConformanceError.Field.substr(0, Space);
+                const auto& Value = A->Retrieve_Const(StreamKind_Last, StreamPos_Last, Field.c_str());
+                if (Value.empty()) {
+                    A->Fill(StreamKind_Last, StreamPos_Last, Field.c_str(), "Yes");
+                }
+            }
+            string Extra;
+            if (!ConformanceError.FramePoss.empty())
+            {
+                string Frames, Times, Offsets;
+                auto Pos_Total = ConformanceError.FramePoss.size();
+                if (ConformanceError.FramePoss.back().File_Offset_Min == (int64u)-1) {
+                    Pos_Total--;
+                }
+                size_t Frames_HasContent, Times_HasContent, Offsets_HasContent;
+                Frames_HasContent = Times_HasContent = Offsets_HasContent = Pos_Total;
+                for (size_t i = 0; i < Pos_Total; i++) {
+                    auto& FramePos = ConformanceError.FramePoss[i];
+                    if (FramePos.Frame_Count_Min == (int64u)-2) {
+                        Frames += "conf";
+                    }
+                    else {
+                        if (FramePos.Frame_Count_NotParsedIncluded_Min != (int64u)-1) {
+                            if (FramePos.Frame_Count_NotParsedIncluded_Max != (int64u)-1) {
+                                Frames += '[';
+                            }
+                            Frames += to_string(FramePos.Frame_Count_NotParsedIncluded_Min);
+                            if (FramePos.SubFramePos_Min != (int64u)-1) {
+                                Frames += '.';
+                                Frames += to_string(FramePos.SubFramePos_Min);
+                            }
+                            if (FramePos.Frame_Count_NotParsedIncluded_Max != (int64u)-1) {
+                                Frames += '.';
+                                Frames += '.';
+                                Frames += to_string(FramePos.Frame_Count_NotParsedIncluded_Max);
+                                if (FramePos.SubFramePos_Min != (int64u)-1) {
+                                    Frames += '.';
+                                    Frames += to_string(FramePos.SubFramePos_Max);
+                                }
+                                Frames += ']';
+                            }
+                        }
+                        else {
+                            Frames += '?';
+                            Frames_HasContent--;
+                        }
+                        if (FramePos.PTS_Min != (int64u)-1) {
+                            if (FramePos.PTS_Max != (int64u)-1) {
+                                Times += '[';
+                            }
+                            auto PTS = (int64_t)FramePos.PTS_Min;
+                            if (PTS >= 0) {
+                                PTS += 500000;
+                            }
+                            else {
+                                PTS -= 500000;
+                            }
+                            PTS /= 1000000;
+                            TimeCode TC(PTS, 999, TimeCode::Timed());
+                            Times += TC.ToString();
+                            if (FramePos.PTS_Max != (int64u)-1) {
+                                Times += '.';
+                                Times += '.';
+                                auto PTS = (int64_t)FramePos.PTS_Max;
+                                if (PTS >= 0) {
+                                    PTS += 500000;
+                                }
+                                else {
+                                    PTS -= 500000;
+                                }
+                                PTS /= 1000000;
+                                TimeCode TC(PTS, 999, TimeCode::Timed());
+                                Times += TC.ToString();
+                                Times += ']';
+                            }
+                        }
+                        else {
+                            Times += '?';
+                            Times_HasContent--;
+                        }
+                    }
+                    if (FramePos.File_Offset_Min != (int64u)-1) {
+                        if (FramePos.File_Offset_Max != (int64u)-1) {
+                            Offsets += '[';
+                        }
+                        Offsets += "0x" + Ztring::ToZtring(FramePos.File_Offset_Min, 16).To_UTF8();
+                        if (FramePos.File_Offset_Max != (int64u)-1) {
+                            Offsets += '.';
+                            Offsets += '.';
+                            Offsets += "0x" + Ztring::ToZtring(FramePos.File_Offset_Max, 16).To_UTF8();
+                            Offsets += ']';
+                        }
+                    }
+                    else {
+                        Offsets += '?';
+                        Offsets_HasContent--;
+                    }
+                    Frames += '+';
+                    Times += '+';
+                    Offsets += '+';
+                }
+                if (ConformanceError.FramePoss.back().File_Offset_Min == (int64u)-1) {
+                    Frames += "...";
+                    Times += "...";
+                    Offsets += "...";
+                }
+                else {
+                    Frames.pop_back();
+                    Times.pop_back();
+                    Offsets.pop_back();
+                }
+                if (Frames_HasContent + Times_HasContent + Offsets_HasContent) {
+                    Extra = ' ';
+                    Extra += '(';
+                    if (Frames == "conf") {
+                        Extra += Frames;
+                    }
+                    else {
+                        if (Frames_HasContent) {
+                            Extra += "frame ";
+                            Extra += Frames;
+                        }
+                        if (Times_HasContent) {
+                            if (Frames_HasContent) {
+                                Extra += ',';
+                                Extra += ' ';
+                            }
+                            Extra += "time ";
+                            Extra += Times;
+                        }
+                    }
+                    if (Offsets_HasContent) {
+                        if (Frames_HasContent + Times_HasContent) {
+                            Extra += ',';
+                            Extra += ' ';
+                        }
+                        Extra += "offset ";
+                        Extra += Offsets;
+                    }
+                    Extra += ')';
+                }
+            }
+            A->Fill(StreamKind_Last, StreamPos_Last, (Conformance_String + ConformanceError.Field).c_str(), ConformanceError.Value + Extra);
+        }
+        Conformance_Total.clear();
+    }
+}
+#endif
+
+//***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
 
@@ -263,7 +629,7 @@ File__Analyze::File__Analyze ()
     if (MediaInfoLib::Config.FormatDetection_MaximumOffset_Get())
         Buffer_TotalBytes_FirstSynched_Max=MediaInfoLib::Config.FormatDetection_MaximumOffset_Get();
     else
-        Buffer_TotalBytes_FirstSynched_Max=1024*1024;
+        Buffer_TotalBytes_FirstSynched_Max=16*1024*1024;
     if (Buffer_TotalBytes_FirstSynched_Max<(int64u)-1-64*1024*1024)
         Buffer_TotalBytes_Fill_Max=Buffer_TotalBytes_FirstSynched_Max+64*1024*1024;
     else
@@ -274,6 +640,7 @@ File__Analyze::File__Analyze ()
 
     //Synchro
     MustParseTheHeaderFile=true;
+    FrameIsAlwaysComplete=false;
     Synched=false;
     UnSynched_IsNotJunk=false;
     MustExtendParsingDuration=false;
@@ -321,6 +688,7 @@ File__Analyze::File__Analyze ()
 
     //Events data
     PES_FirstByte_IsAvailable=false;
+    PES_FirstByte_Value=false;
 
     //AES
     #if MEDIAINFO_AES
@@ -336,6 +704,10 @@ File__Analyze::File__Analyze ()
         Hash_Offset=0;
         Hash_ParseUpTo=0;
     #endif //MEDIAINFO_HASH
+
+    #if MEDIAINFO_CONFORMANCE
+        Conformance_Data=nullptr;
+    #endif //MEDIAINFO_CONFORMANCE
 
     Unsynch_Frame_Count=(int64u)-1;
     #if MEDIAINFO_IBIUSAGE
@@ -370,6 +742,10 @@ File__Analyze::~File__Analyze ()
     #if MEDIAINFO_HASH
         delete Hash; //Hash=NULL;
     #endif //MEDIAINFO_HASH
+
+    #if MEDIAINFO_CONFORMANCE
+        delete (conformance_data*)Conformance_Data;
+    #endif //MEDIAINFO_CONFORMANCE
 
     #if MEDIAINFO_IBIUSAGE
         if (!IsSub)
@@ -457,7 +833,7 @@ void File__Analyze::Open_Buffer_Init (int64u File_Size_)
 
 void File__Analyze::Open_Buffer_Init (File__Analyze* Sub)
 {
-    Open_Buffer_Init(Sub, File_Size);
+    Open_Buffer_Init(Sub, File_Size == (int64u)-1 ? (int64u)-1 : (File_Size - Element_Offset));
 }
 
 void File__Analyze::Open_Buffer_Init (File__Analyze* Sub, int64u File_Size_)
@@ -686,7 +1062,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
         //Copying buffer
         if (ToAdd_Size>0)
         {
-            memcpy_Unaligned_Unaligned(Buffer_Temp+Buffer_Size, ToAdd, ToAdd_Size);
+            memcpy_Unaligned_Unaligned(Buffer_Temp+Buffer_Temp_Size, ToAdd, ToAdd_Size);
             Buffer_Temp_Size+=ToAdd_Size;
         }
 
@@ -770,6 +1146,11 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
          )
     {
         BookMark_Get();
+        if (File_GoTo==File_Size)
+        {
+            File_GoTo=(int64u)-1;
+            ForceFinish();
+        }
     }
 
     //Demand to go elsewhere
@@ -963,6 +1344,13 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
     //Sub
     if (Sub->File_GoTo!=(int64u)-1)
         Sub->File_GoTo=(int64u)-1;
+    if (Sub->MustAdaptSubOffsets) {
+        auto NewOffset = File_Offset + Buffer_Offset + Element_Offset;
+        auto OldOffset = Sub->File_Offset + Sub->Buffer_Size;
+        auto DiffOffset = NewOffset - OldOffset;
+        for (size_t i = 0; i <= Sub->Element_Level; i++)
+            Sub->Element[i].Next += DiffOffset;
+    }
     Sub->File_Offset=File_Offset+Buffer_Offset+Element_Offset;
     if (Sub->File_Size!=File_Size)
     {
@@ -1031,8 +1419,11 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
             int8u* Temp=Sub->OriginalBuffer;
             Sub->OriginalBuffer_Capacity=(size_t)(Sub->OriginalBuffer_Size+Element_Size-Element_Offset);
             Sub->OriginalBuffer=new int8u[Sub->OriginalBuffer_Capacity];
-            memcpy_Unaligned_Unaligned(Sub->OriginalBuffer, Temp, Sub->OriginalBuffer_Size);
-            delete[] Temp;
+            if (Temp)
+            {
+                memcpy_Unaligned_Unaligned(Sub->OriginalBuffer, Temp, Sub->OriginalBuffer_Size);
+                delete[] Temp;
+            }
         }
         memcpy_Unaligned_Unaligned(Sub->OriginalBuffer+Sub->OriginalBuffer_Size, Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset));
         Sub->OriginalBuffer_Size+=(size_t)(Element_Size-Element_Offset);
@@ -1445,6 +1836,7 @@ size_t File__Analyze::Read_Buffer_Seek_OneFramePerFile (size_t Method, int64u Va
                         if (Config->Demux_Rate_Get()==0)
                             return (size_t)-1; //Not supported
                         Value=float64_int64s(((float64)Value)/1000000000*Config->Demux_Rate_Get());
+                        return 1;
                     #else //MEDIAINFO_DEMUX
                         return (size_t)-1; //Not supported
                     #endif //MEDIAINFO_DEMUX
@@ -1557,6 +1949,7 @@ bool File__Analyze::Buffer_Parse()
         return false; //Wait for more data
 
     Buffer_TotalBytes_LastSynched=Buffer_TotalBytes+Buffer_Offset;
+    Merge_Conformance();
 
     return true;
 }
@@ -1581,6 +1974,7 @@ void File__Analyze::Buffer_Clear()
         }
     }
     Buffer_Size=0;
+    Buffer_Temp=nullptr;
     Buffer_Temp_Size=0;
     Buffer_Offset=0;
     Buffer_Offset_Temp=0;
@@ -1717,7 +2111,8 @@ bool File__Analyze::FileHeader_Begin_0x000001()
 bool File__Analyze::FileHeader_Begin_XML(XMLDocument &Document)
 {
     //Element_Size
-    if (Buffer_Size<32 || (!IsSub && File_Size>16*1024*1024))
+    //IMF Composition Playlist documents can be larger than 16 MB
+    if (Buffer_Size<32 || (!IsSub && File_Size>64*1024*1024))
     {
         Reject();
         return false; //XML files are not expected to be so big
@@ -1731,34 +2126,54 @@ bool File__Analyze::FileHeader_Begin_XML(XMLDocument &Document)
     }
 
     //XML header
-    Ztring Data;
-         if ((Buffer[0]=='<'
-           && Buffer[1]==0x00)
-          || (Buffer[0]==0xFF
-           && Buffer[1]==0xFE
-           && Buffer[2]=='<'
-           && Buffer[3]==0x00))
-        Data.From_UTF16LE((const char*)Buffer, Buffer_Size);
-    else if ((Buffer[0]==0x00
-           && Buffer[1]=='<')
-          || (Buffer[0]==0xFE
-           && Buffer[1]==0xFF
-           && Buffer[2]==0x00
-           && Buffer[3]=='<'))
-        Data.From_UTF16BE((const char*)Buffer, Buffer_Size);
-    else if ((Buffer[0]=='<')
-          || (Buffer[0]==0xEF
-           && Buffer[1]==0xBB
-           && Buffer[2]==0xBF
-           && Buffer[3]=='<'))
-        Data.From_UTF8((const char*)Buffer, Buffer_Size);
-    else
+    auto BOM2 = CC2(Buffer);
+    auto BOM = CC3(Buffer);
+    switch (BOM)
+    {
+    case 0xEFBBBF:
+        Buffer_Offset = 3;
+        break;
+    }
+    switch (BOM2)
+    {
+    case 0xFFFE:
+    case 0xFEFF:
+        Buffer_Offset = 2;
+        BOM = BOM2;
+        break;
+    }
+    while (Buffer_Offset < Buffer_Size) {
+        switch (Buffer[Buffer_Offset]) {
+        case '\r':
+        case '\n':
+        case '\t':
+        case ' ':
+            Buffer_Offset++;
+            continue;
+        }
+        break;
+    }
+    if (Buffer_Offset >= Buffer_Size || Buffer[Buffer_Offset] != '<')
     {
         Reject();
-        return false;
+        return false; 
     }
 
-    string DataUTF8=Data.To_UTF8();
+    string DataUTF8;
+    auto Buffer_XML = (const char*)Buffer + Buffer_Offset;
+    auto Size_XML = Buffer_Size - Buffer_Offset;
+    switch (BOM) {
+    case 0xFFFE:
+        DataUTF8 = Ztring().From_UTF16LE(Buffer_XML, Size_XML).To_UTF8();
+        break;
+    case 0xFEFF:
+        DataUTF8 = Ztring().From_UTF16BE(Buffer_XML, Size_XML).To_UTF8();
+        break;
+    default:
+        DataUTF8.assign(Buffer_XML, Size_XML);
+        break;
+    }
+
     if (Document.Parse(DataUTF8.c_str()))
     {
         Reject();
@@ -2016,11 +2431,8 @@ bool File__Analyze::Synchro_Manage()
         {
             if (Status[IsFinished])
                 Finish(); //Finish
-            if (!IsSub && File_Offset_FirstSynched==(int64u)-1 && Buffer_TotalBytes+Buffer_Offset>=Buffer_TotalBytes_FirstSynched_Max)
-            {
-                Open_Buffer_Unsynch();
-                GoToFromEnd(0);
-            }
+            if (!IsSub && !Status[IsAccepted] && Buffer_TotalBytes+Buffer_Offset>=Buffer_TotalBytes_FirstSynched_Max)
+                Reject();
             return false; //Wait for more data
         }
         Synched=true;
@@ -2152,7 +2564,6 @@ bool File__Analyze::FileHeader_Manage()
     if ((Buffer_Size && Buffer_Offset+Element_Offset>Buffer_Size) || (sizeof(size_t)<sizeof(int64u) && Buffer_Offset+Element_Offset>=(int64u)(size_t)-1))
     {
         GoTo(File_Offset+Buffer_Offset+Element_Offset);
-        return false;
     }
     else
     {
@@ -2195,7 +2606,6 @@ bool File__Analyze::FileHeader_Manage()
     if ((Buffer_Size && Buffer_Offset+Element_Offset>Buffer_Size) || (sizeof(size_t)<sizeof(int64u) && Buffer_Offset+Element_Offset>=(int64u)(size_t)-1))
     {
         GoTo(File_Offset+Buffer_Offset+Element_Offset);
-        return false;
     }
     else
     {
@@ -2273,13 +2683,16 @@ bool File__Analyze::Header_Manage()
             if(Element_Level<2)
                return false;
             //Can not synchronize anymore in this block
-            Element_Offset=Element[Element_Level-2].Next-(File_Offset+Buffer_Offset);
+            if (FrameIsAlwaysComplete)
+                Element_Offset=Buffer_Size-Buffer_Offset;
+            else
+                Element_Offset=Element[Element_Level-2].Next-(File_Offset+Buffer_Offset);
             Header_Fill_Size(Element_Offset);
         }
     }
     if(Element_Level<1)
        return false;
-    if (Element_IsWaitingForMoreData() || ((DataMustAlwaysBeComplete && Element[Element_Level-1].Next>File_Offset+Buffer_Size) || File_GoTo!=(int64u)-1) //Wait or want to have a comple data chunk
+    if (Element_IsWaitingForMoreData() || ((!FrameIsAlwaysComplete && DataMustAlwaysBeComplete && Element[Element_Level-1].Next>File_Offset+Buffer_Size) || File_GoTo!=(int64u)-1) //Wait or want to have a comple data chunk
         #if MEDIAINFO_DEMUX
             || (Config->Demux_EventWasSent)
         #endif //MEDIAINFO_DEMUX
@@ -2384,7 +2797,18 @@ void File__Analyze::Header_Fill_Size(int64u Size)
     if (Element_Level==1)
         Element[0].Next=File_Offset+Buffer_Offset+Size;
     else if (File_Offset+Buffer_Offset+Size>Element[Element_Level-2].Next)
+    {
+        if (Element_IsComplete_Get() && (!IsSub || (File_Offset + Buffer_Size < File_Size && File_Size - (File_Offset + Buffer_Size) >= 0x10000))) { //TODO: good support of end of TS dumps
+            auto Name = CreateElementName();
+            if (!Name.empty()) {
+                Name += ' ';
+            }
+            Name += "GeneralCompliance";
+            Fill_Conformance(Name.c_str(), "Element size " + to_string(Size - Element_Offset) + " is more than maximal permitted size " + to_string(Element[Element_Level - 2].Next - (File_Offset + Buffer_Offset + Element_Offset)));
+        }
+
         Element[Element_Level-1].Next=Element[Element_Level-2].Next;
+    }
     else
         Element[Element_Level-1].Next=File_Offset+Buffer_Offset+Size;
     Element[Element_Level-1].IsComplete=true;
@@ -2471,12 +2895,13 @@ bool File__Analyze::Data_Manage()
 
     //Next element
     if (!Element_WantNextLevel
+        && Buffer_Size // If the buffer is cleared after Open_Buffer_Unsynch(), Element[Element_Level].Next is no more relevant
         #if MEDIAINFO_HASH
             && Hash==NULL
         #endif //MEDIAINFO_HASH
             )
     {
-        if (Element[Element_Level].Next<=File_Offset+Buffer_Size)
+        if (Element[Element_Level].Next>=File_Offset && Element[Element_Level].Next<=File_Offset+Buffer_Size)
         {
             if (Element_Offset<(size_t)(Element[Element_Level].Next-File_Offset-Buffer_Offset))
                 Element_Offset=(size_t)(Element[Element_Level].Next-File_Offset-Buffer_Offset);
@@ -2758,11 +3183,34 @@ void File__Analyze::Element_Parser(const char* Parser)
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_Error(const char* Message)
 {
-    //Needed?
-    if (Config_Trace_Level<=0.7)
-        return;
+    if (Trace_Activated)
+        Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Message, "Error"));
 
-    Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Message, "Error"));
+    // Quick transform of old fashion error to new system. TODO: better wording of errors
+    string M(Message);
+    size_t Dash_Pos=string::npos;
+    if (M.find(' ')!=string::npos)
+    {
+        Fill_Conformance("GeneralCompliance", M.c_str());
+    }
+    else
+    {
+        auto Version_Pos=M.find(':');
+        if (Version_Pos!=string::npos)
+            M.erase(Version_Pos);
+        auto FFV1_Pos=M.rfind("FFV1-", 0);
+        if (FFV1_Pos !=string::npos)
+            M.erase(0, 5);
+        for (;;)
+        {
+            auto Temp=M.find('-', Dash_Pos+1);
+            if (Temp==string::npos)
+                break;
+            Dash_Pos=Temp;
+            M[Dash_Pos]=' ';
+        }
+        Fill_Conformance(M.c_str(), M.substr(Dash_Pos+1));
+    }
 }
 #endif //MEDIAINFO_TRACE
 
@@ -2770,7 +3218,36 @@ void File__Analyze::Element_Error(const char* Message)
 #if MEDIAINFO_TRACE
 void File__Analyze::Param_Error(const char* Message)
 {
-    Param_Info(Message, "Error");
+    if (Trace_Activated)
+        Param_Info(Message, "Error");
+
+    // Quick transform of old fashion error to new system. TODO: better wording of errors
+    string M(Message);
+    if (M=="TRUNCATED-ELEMENT:1")
+        return; // Redundant, TODO: sub-elements
+    size_t Dash_Pos=string::npos;
+    if (M.find(' ')!=string::npos)
+    {
+        Fill_Conformance("GeneralCompliance", M.c_str());
+    }
+    else
+    {
+        auto Version_Pos=M.find(':');
+        if (Version_Pos!=string::npos)
+            M.erase(Version_Pos);
+        auto FFV1_Pos=M.rfind("FFV1-", 0);
+        if (FFV1_Pos !=string::npos)
+            M.erase(0, 5);
+        for (;;)
+        {
+            auto Temp=M.find('-', Dash_Pos+1);
+            if (Temp==string::npos)
+                break;
+            Dash_Pos=Temp;
+            M[Dash_Pos]=' ';
+        }
+        Fill_Conformance(M.c_str(), M.substr(Dash_Pos+1));
+    }
 }
 #endif //MEDIAINFO_TRACE
 
@@ -2938,7 +3415,7 @@ void File__Analyze::Trusted_IsNot ()
         #endif //MEDIAINFO_TRACE
 
         //Enough data?
-        if (!Element[Element_Level].IsComplete)
+        if (!FrameIsAlwaysComplete && !Element[Element_Level].IsComplete)
         {
             Element_WaitForMoreData();
             return;
@@ -2981,7 +3458,6 @@ void File__Analyze::Accept ()
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(ParserName+", accepted");
             if (MustElementBegin)
                 Element_Level++;
         }
@@ -3061,7 +3537,6 @@ void File__Analyze::Fill ()
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(ParserName+", filling");
             if (MustElementBegin)
                 Element_Level++;
         }
@@ -3148,7 +3623,6 @@ void File__Analyze::ForceFinish ()
             bool MustElementBegin=Element_Level?true:false;
             if (Element_Level>0)
                 Element_End0(); //Element
-            Info(ParserName+", finished");
             if (MustElementBegin)
                 Element_Level++;
         }
@@ -3186,6 +3660,7 @@ void File__Analyze::ForceFinish ()
                     return;
             #endif //MEDIAINFO_DEMUX
         }
+        Streams_Finish_Conformance();
         Streams_Finish_Global();
         #if MEDIAINFO_DEMUX
             if (Config->Demux_EventWasSent)
@@ -3887,6 +4362,165 @@ void File__Analyze::Decoded (const int8u* Buffer, size_t Buffer_Size)
 }
 
 #endif //MEDIAINFO_DECODE
+
+//***************************************************************************
+// Conformance
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File__Analyze::Fill_Conformance(const char* Field, const char* Value, uint8_t Flags, conformance_type Level, stream_t StreamKind, size_t StreamPos)
+{
+    if (!Conformance_Data) {
+        Conformance_Data = new conformance_data(this);
+        ((conformance_data*)Conformance_Data)->Warning_Error = MediaInfoLib::Config.WarningError();
+    }
+    auto& Data = *(conformance_data*)Conformance_Data;
+    Data.Frame_Count = Frame_Count;
+    Data.Frame_Count_NotParsedIncluded = Frame_Count_NotParsedIncluded;
+    if (IsSub) {
+        if (Frame_Count != (int64u)-1) {
+            Data.Frame_Count -= Frame_Count_InThisBlock;
+        }
+        if (Frame_Count_NotParsedIncluded != (int64u)-1) {
+            Data.Frame_Count_NotParsedIncluded -= Frame_Count_InThisBlock;
+        }
+    }
+    if (FrameInfo.PTS != (int64u)-1 && PTS_Begin != (int64u)-1)
+        FrameInfo.PTS -= PTS_Begin;
+    Data.PTS = FrameInfo.PTS == (int64u)-1 ? FrameInfo.DTS : FrameInfo.PTS;
+    if (FrameInfo.PTS != (int64u)-1 && PTS_Begin != (int64u)-1)
+        FrameInfo.PTS -= PTS_Begin;
+    if (Data.PTS != (int64u)-1) {
+        if (Frame_Count_InThisBlock) {
+            Data.PTS -= FrameInfo.DUR;
+        }
+    }
+    #if !MEDIAINFO_TRACE
+        static const size_t BS_Size=0;
+    #endif //MEDIAINFO_TRACE
+    Data.File_Offset = File_Offset + Buffer_Offset + Element_Offset + BS_Size - (BS->Remain() + 7) / 8;
+    Data.Fill_Conformance( Field, Value, Flags, Level, StreamKind, StreamPos);
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File__Analyze::Clear_Conformance()
+{
+    if (!Conformance_Data) {
+        return;
+    }
+    auto& Data = *(conformance_data*)Conformance_Data;
+    Data.Clear_Conformance();
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File__Analyze::Merge_Conformance(bool FromConfig)
+{
+    if (!Conformance_Data) {
+        return;
+    }
+    auto& Data = *(conformance_data*)Conformance_Data;
+    Data.Merge_Conformance(FromConfig);
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File__Analyze::Streams_Finish_Conformance()
+{
+    if (!Conformance_Data) {
+        return;
+    }
+    auto& Data = *(conformance_data*)Conformance_Data;
+    if (IsSub)
+    {
+        for (size_t StreamKind = Stream_General + 1; StreamKind < Stream_Max; StreamKind++) {
+            if (Count_Get((stream_t)StreamKind)) {
+                Data.StreamKind_Last = (stream_t)StreamKind;
+            }
+        }
+    }
+    Data.Streams_Finish_Conformance();
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+string File__Analyze::CreateElementName()
+{
+    string Result;
+    for (size_t i = 1; i < Element_Level; i++) {
+        if (!Element[i].Code) {
+            continue;
+        }
+        Result += '0';
+        Result += 'x';
+        Result += Ztring().From_Number(Element[i].Code, 16).To_UTF8();
+        if (Result.back() >= '0' && Result.back() <= '9') {
+            Result += '_';
+        }
+        Result += ' ';
+    }
+    if (!Result.empty())
+        Result.pop_back();
+    return Result;
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File__Analyze::IsTruncated(int64u ExpectedSize, bool MoreThan, const char* Prefix)
+{
+    if (IsSub) {
+        return;
+    }
+    auto Frame_Count_Save = Frame_Count;
+    auto Frame_Count_NotParsedIncluded_Save = Frame_Count_NotParsedIncluded;
+    Frame_Count = (int64u)-1;
+    Frame_Count_NotParsedIncluded = (int64u)-1;
+    Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
+    Fill_SetOptions(Stream_General, 0, "IsTruncated", "N NT");
+    Fill_Conformance(BuildConformanceName(ParserName, Prefix, "GeneralCompliance").c_str(), "File size " + std::to_string(File_Size) + " is less than expected size " + (ExpectedSize == (int64u)-1 ? std::string() : ((MoreThan ? "at least " : "") + std::to_string(ExpectedSize))));
+    Merge_Conformance();
+    Frame_Count = Frame_Count_Save;
+    Frame_Count_NotParsedIncluded = Frame_Count_NotParsedIncluded_Save;
+}
+
+#endif //MEDIAINFO_CONFORMANCE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File__Analyze::RanOutOfData(const char* Prefix)
+{
+    if (File_Offset + Buffer_Offset + Element_Size >= File_Size) {
+        return;
+    }
+    if (FrameIsAlwaysComplete && !Frame_Count_InThisBlock) {
+        Frame_Count++;
+        if (Frame_Count_NotParsedIncluded != (int64u)-1)
+            Frame_Count_NotParsedIncluded++;
+        Frame_Count_InThisBlock++;
+    }
+    Trusted_IsNot("out of data");
+    Clear_Conformance();
+    Fill_Conformance(BuildConformanceName(ParserName, Prefix, "GeneralCompliance").c_str(), "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed");
+}
+
+#endif //MEDIAINFO_CONFORMANCE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File__Analyze::SynchLost(const char* Prefix)
+{
+    Synched=false;
+    Fill_Conformance(BuildConformanceName(ParserName, Prefix, "GeneralCompliance").c_str(), "Bitstream synchronisation is lost");
+}
+
+#endif //MEDIAINFO_CONFORMANCE
 
 //***************************************************************************
 // IBI

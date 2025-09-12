@@ -262,6 +262,9 @@ void File_ChannelSplitting::Read_Buffer_Continue()
         return;
     }
 
+    if (!Common)
+        return;
+
     //Size of buffer
     for (int c=0; c<2; c++)
         for (size_t i=0; i<Common->SplittedChannels[c].size(); i++)
@@ -427,7 +430,7 @@ void File_ChannelSplitting::Read_Buffer_Continue_Parse()
                     }
                     if (!SplittedChannel->Parsers[Pos]->Status[IsAccepted] && SplittedChannel->Parsers[Pos]->Status[IsFinished])
                     {
-                        delete *(SplittedChannel->Parsers.begin()+Pos);
+                        delete static_cast<MediaInfoLib::File__Analyze*>(*(SplittedChannel->Parsers.begin()+Pos));
                         SplittedChannel->Parsers.erase(SplittedChannel->Parsers.begin()+Pos);
                         Pos--;
                     }
@@ -440,7 +443,7 @@ void File_ChannelSplitting::Read_Buffer_Continue_Parse()
                         for (size_t Pos2=0; Pos2<SplittedChannel->Parsers.size(); Pos2++)
                         {
                             if (Pos2!=Pos)
-                                delete *(SplittedChannel->Parsers.begin()+Pos2);
+                                delete static_cast<MediaInfoLib::File__Analyze*>(*(SplittedChannel->Parsers.begin()+Pos2));
                         }
                         SplittedChannel->Parsers.clear();
                         SplittedChannel->Parsers.push_back(Parser);

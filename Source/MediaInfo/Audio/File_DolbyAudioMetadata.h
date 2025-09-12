@@ -37,7 +37,7 @@ public:
     vector<int8u> BinauralRenderModes;
 
     //Constructor/Destructor
-    File_DolbyAudioMetadata();
+    File_DolbyAudioMetadata(bool IsXml_ = false);
 
     //Delayed
     void Merge(File__Analyze& In, size_t StreamPos);

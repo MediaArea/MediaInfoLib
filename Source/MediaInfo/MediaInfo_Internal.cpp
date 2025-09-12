@@ -66,12 +66,14 @@
 #if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
     #include <limits>
     #ifdef WINDOWS
-    namespace WindowsNamespace
-    {
+        #ifndef WIN32_LEAN_AND_MEAN
+            #define WIN32_LEAN_AND_MEAN
+        #endif
+        #ifndef NOMINMAX
+            #define NOMINMAX
+        #endif
         #include <windows.h>
         #undef Yield
-        #undef max
-    }
     #else
         #include <unistd.h>
         #include <signal.h>
@@ -445,7 +447,7 @@ Ztring ChannelLayout_2018_Rename(stream_t StreamKind, size_t Parameter, ZtringLi
     ShouldReturn=ShouldReturn_Save;
     return Info[Parameter];
 }
-Ztring ChannelLayout_2018_Rename(stream_t StreamKind, const Ztring& Parameter, const Ztring& Value, const Ztring& StreamFormat, bool &ShouldReturn)
+Ztring ChannelLayout_2018_Rename(stream_t StreamKind, const Ztring Parameter, const Ztring Value, const Ztring StreamFormat, bool &ShouldReturn)
 {
     bool ShouldReturn_Save=ShouldReturn;
     ShouldReturn=true;
@@ -1017,7 +1019,7 @@ static void CtrlC_Received()
 }
 
 #ifdef WINDOWS
-static WindowsNamespace::BOOL WINAPI SignalHandler(WindowsNamespace::DWORD SignalType)
+static BOOL WINAPI SignalHandler(DWORD SignalType)
 {
     if (SignalType==CTRL_C_EVENT)
     {
@@ -1030,12 +1032,12 @@ static WindowsNamespace::BOOL WINAPI SignalHandler(WindowsNamespace::DWORD Signa
 
 static void CtrlC_Register()
 {
-    WindowsNamespace::SetConsoleCtrlHandler(SignalHandler, TRUE);
+    SetConsoleCtrlHandler(SignalHandler, TRUE);
 }
 
 static void CtrlC_Unregister()
 {
-    WindowsNamespace::SetConsoleCtrlHandler(SignalHandler, FALSE);
+    SetConsoleCtrlHandler(SignalHandler, FALSE);
 }
 #else //WINDOWS
 static void SignalHandler(int SignalType)
@@ -1489,7 +1491,7 @@ void MediaInfo_Internal::Entry()
                     }
 
                     #ifdef WINDOWS
-                        WindowsNamespace::Sleep(0);
+                        Sleep(0);
                     #elif defined(_POSIX_PRIORITY_SCHEDULING)
                         sched_yield();
                     #endif //_POSIX_PRIORITY_SCHEDULING
@@ -1677,7 +1679,7 @@ std::bitset<32> MediaInfo_Internal::Open_Buffer_Continue (const int8u* ToAdd, si
         bool base64=MediaInfoLib::Config.FlagsX_Get(Flags_Input_base64);
         if (zlib || base64)
         {
-            if (ToAdd_Size!=Config.File_Size)
+            if (!ToAdd_Size || ToAdd_Size!=Config.File_Size)
             {
                 Info->ForceFinish(); // File must be complete when this option is used
                 return Info->Status;
@@ -1685,10 +1687,10 @@ std::bitset<32> MediaInfo_Internal::Open_Buffer_Continue (const int8u* ToAdd, si
             string Input_Cache; // In case of encoded content, this string must live up to the end of the parsing
             if (base64)
             {
-                Input_Cache.assign((const char*)ToAdd, ToAdd_Size); ;
+                Input_Cache.assign((const char*)ToAdd, ToAdd_Size);
                 Input_Cache=Base64::decode(Input_Cache);
                 ToAdd=(const int8u*)Input_Cache.c_str();
-                ToAdd_Size= Input_Cache.size();
+                ToAdd_Size=Input_Cache.size();
             }
             if (zlib)
             {

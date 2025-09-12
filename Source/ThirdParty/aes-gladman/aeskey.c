@@ -37,6 +37,13 @@ extern "C"
 {
 #endif
 
+/* Use the low bit in the context's inf.b[2] as a flag to
+   indicate whether a context was initialized for encryption
+   or decryption.
+*/
+#define MARK_AS_ENCRYPTION_CTX(cx) (cx)->inf.b[2] |= (uint8_t)0x01
+#define MARK_AS_DECRYPTION_CTX(cx) (cx)->inf.b[2] &= (uint8_t)0xfe
+
 /* Initialise the key schedule from the user supplied key. The key
    length can be specified in bytes, with legal values of 16, 24
    and 32, or in bits, with legal values of 128, 192 and 256. These
@@ -101,12 +108,13 @@ AES_RETURN aes_xi(encrypt_key128)(const unsigned char *key, aes_encrypt_ctx cx[1
 #endif
     ke4(cx->ks, 9);
     cx->inf.l = 0;
-    cx->inf.b[0] = 10 * 16;
+    cx->inf.b[0] = 10 * AES_BLOCK_SIZE;
 
 #ifdef USE_VIA_ACE_IF_PRESENT
     if(VIA_ACE_AVAILABLE)
         cx->inf.b[1] = 0xff;
 #endif
+    MARK_AS_ENCRYPTION_CTX(cx);
     return EXIT_SUCCESS;
 }
 
@@ -150,12 +158,13 @@ AES_RETURN aes_xi(encrypt_key192)(const unsigned char *key, aes_encrypt_ctx cx[1
 #endif
     kef6(cx->ks, 7);
     cx->inf.l = 0;
-    cx->inf.b[0] = 12 * 16;
+    cx->inf.b[0] = 12 * AES_BLOCK_SIZE;
 
 #ifdef USE_VIA_ACE_IF_PRESENT
     if(VIA_ACE_AVAILABLE)
         cx->inf.b[1] = 0xff;
 #endif
+    MARK_AS_ENCRYPTION_CTX(cx);
     return EXIT_SUCCESS;
 }
 
@@ -202,12 +211,13 @@ AES_RETURN aes_xi(encrypt_key256)(const unsigned char *key, aes_encrypt_ctx cx[1
 #endif
     kef8(cx->ks, 6);
     cx->inf.l = 0;
-    cx->inf.b[0] = 14 * 16;
+    cx->inf.b[0] = 14 * AES_BLOCK_SIZE;
 
 #ifdef USE_VIA_ACE_IF_PRESENT
     if(VIA_ACE_AVAILABLE)
         cx->inf.b[1] = 0xff;
 #endif
+    MARK_AS_ENCRYPTION_CTX(cx);
     return EXIT_SUCCESS;
 }
 
@@ -329,12 +339,13 @@ AES_RETURN aes_xi(decrypt_key128)(const unsigned char *key, aes_decrypt_ctx cx[1
     }
 #endif
     cx->inf.l = 0;
-    cx->inf.b[0] = 10 * 16;
+    cx->inf.b[0] = 10 * AES_BLOCK_SIZE;
 
 #ifdef USE_VIA_ACE_IF_PRESENT
     if(VIA_ACE_AVAILABLE)
         cx->inf.b[1] = 0xff;
 #endif
+    MARK_AS_DECRYPTION_CTX(cx);
     return EXIT_SUCCESS;
 }
 
@@ -393,8 +404,10 @@ AES_RETURN aes_xi(decrypt_key192)(const unsigned char *key, aes_decrypt_ctx cx[1
     cx->ks[v(48,(3))] = ss[3] = word_in(key, 3);
 
 #ifdef DEC_KS_UNROLL
-    cx->ks[v(48,(4))] = ff(ss[4] = word_in(key, 4));
-    cx->ks[v(48,(5))] = ff(ss[5] = word_in(key, 5));
+    ss[4] = word_in(key, 4);
+    ss[5] = word_in(key, 5);
+    cx->ks[v(48, (4))] = ff(ss[4]);
+    cx->ks[v(48, (5))] = ff(ss[5]);
     kdf6(cx->ks, 0); kd6(cx->ks, 1);
     kd6(cx->ks, 2);  kd6(cx->ks, 3);
     kd6(cx->ks, 4);  kd6(cx->ks, 5);
@@ -414,12 +427,13 @@ AES_RETURN aes_xi(decrypt_key192)(const unsigned char *key, aes_decrypt_ctx cx[1
     }
 #endif
     cx->inf.l = 0;
-    cx->inf.b[0] = 12 * 16;
+    cx->inf.b[0] = 12 * AES_BLOCK_SIZE;
 
 #ifdef USE_VIA_ACE_IF_PRESENT
     if(VIA_ACE_AVAILABLE)
         cx->inf.b[1] = 0xff;
 #endif
+    MARK_AS_DECRYPTION_CTX(cx);
     return EXIT_SUCCESS;
 }
 
@@ -485,10 +499,14 @@ AES_RETURN aes_xi(decrypt_key256)(const unsigned char *key, aes_decrypt_ctx cx[1
     cx->ks[v(56,(3))] = ss[3] = word_in(key, 3);
 
 #ifdef DEC_KS_UNROLL
-    cx->ks[v(56,(4))] = ff(ss[4] = word_in(key, 4));
-    cx->ks[v(56,(5))] = ff(ss[5] = word_in(key, 5));
-    cx->ks[v(56,(6))] = ff(ss[6] = word_in(key, 6));
-    cx->ks[v(56,(7))] = ff(ss[7] = word_in(key, 7));
+    ss[4] = word_in(key, 4);
+    ss[5] = word_in(key, 5);
+    ss[6] = word_in(key, 6);
+    ss[7] = word_in(key, 7);
+    cx->ks[v(56,(4))] = ff(ss[4]);
+    cx->ks[v(56,(5))] = ff(ss[5]);
+    cx->ks[v(56,(6))] = ff(ss[6]);
+    cx->ks[v(56,(7))] = ff(ss[7]);
     kdf8(cx->ks, 0); kd8(cx->ks, 1);
     kd8(cx->ks, 2);  kd8(cx->ks, 3);
     kd8(cx->ks, 4);  kd8(cx->ks, 5);
@@ -510,12 +528,13 @@ AES_RETURN aes_xi(decrypt_key256)(const unsigned char *key, aes_decrypt_ctx cx[1
     }
 #endif
     cx->inf.l = 0;
-    cx->inf.b[0] = 14 * 16;
+    cx->inf.b[0] = 14 * AES_BLOCK_SIZE;
 
 #ifdef USE_VIA_ACE_IF_PRESENT
     if(VIA_ACE_AVAILABLE)
         cx->inf.b[1] = 0xff;
 #endif
+    MARK_AS_DECRYPTION_CTX(cx);
     return EXIT_SUCCESS;
 }
 

@@ -117,6 +117,7 @@ Ztring Dot2Svg(const Ztring& Dot)
     graph_t* Graph=NULL;
     char* Buffer=NULL;
     unsigned int Size;
+    bool Cairo=false;
 
     if (!Export_Graph::Load())
         return ToReturn;
@@ -127,6 +128,17 @@ Ztring Dot2Svg(const Ztring& Dot)
     Context=gvContext();
     if (!Context)
         return ToReturn;
+
+    int Renderers_Size=0;
+    char** Renderers=gvPluginList(Context, "render", &Renderers_Size);
+    for (int Pos=0; Pos<Renderers_Size; Pos++) {
+        if (!strcmp(Renderers[Pos], "cairo"))
+            Cairo=true;
+
+        free(Renderers[Pos]);
+    }
+    if (Renderers_Size)
+        free(Renderers);
 
     Graph=agmemread(Dot.To_UTF8().c_str()); 
     if (!Graph)
@@ -144,7 +156,10 @@ Ztring Dot2Svg(const Ztring& Dot)
         return ToReturn;
     }
 
-    gvRenderData(Context, Graph, "svg", &Buffer, &Size);
+    if (Cairo)
+        gvRenderData(Context, Graph, "svg:cairo", &Buffer, &Size);
+    else
+        gvRenderData(Context, Graph, "svg", &Buffer, &Size);
 
     if (Buffer && Size)
         ToReturn=Ztring().From_UTF8(Buffer);
@@ -191,6 +206,7 @@ bool Export_Graph::Load()
             bool Error=false;
             ASSIGN(gvc_Module, gvContext)
             ASSIGN(gvc_Module, gvFreeContext)
+            ASSIGN(gvc_Module, gvPluginList)
             ASSIGN(gvc_Module, gvLayout)
             ASSIGN(gvc_Module, gvFreeLayout)
             ASSIGN(gvc_Module, gvRenderData)

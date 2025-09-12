@@ -495,7 +495,7 @@ extern string Aac_ChannelMode_GetString(const Aac_OutputChannel* const OutputCha
     memset(ChannelModes, 0, Aac_ChannelMode_Max+1);
     for (int i=0; i<OutputChannels_Size; i++)
     {
-        if (OutputChannels[i]>Aac_OutputChannelPosition_Size)
+        if (OutputChannels[i]>=Aac_OutputChannelPosition_Size)
             ChannelModes[Aac_ChannelMode_Max]++;
         else
             ChannelModes[Aac_ChannelMode[OutputChannels[i]]]++;
@@ -723,6 +723,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
                     Frame_Count=(size_t)-1; //Forcing not to parse following data anymore
                 }
             }
+            break;
         default : ;
     }
 
@@ -842,14 +843,14 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
     Infos["Format"].From_UTF8(Aac_Format(audioObjectType));
     Infos["Format_Profile"].From_UTF8(Aac_Format_Profile(audioObjectType));
     Infos["Codec"].From_UTF8(Aac_audioObjectType(audioObjectType));
-    if (channelConfiguration && channelConfiguration!=(int8u)-1)
+    if (channelConfiguration && channelConfiguration!=(int8u)-1 && !FromIamf)
     {
         Infos["Channel(s)"].From_UTF8(Aac_Channels_GetString(channelConfiguration));
         Infos["ChannelPositions"].From_UTF8(Aac_ChannelConfiguration_GetString(channelConfiguration));
         Infos["ChannelPositions/String2"].From_UTF8(Aac_ChannelConfiguration2_GetString(channelConfiguration));
         Infos["ChannelLayout"].From_UTF8(Aac_ChannelLayout_GetString(channelConfiguration));
     }
-    else if (audioObjectType_==42 && !Conf.WaitForNextIndependantFrame && Conf.numOutChannels)
+    else if (audioObjectType_==42 && Conf.IFrameParsed && Conf.numOutChannels &&!FromIamf)
     {
         Infos["Channel(s)"].From_Number(Conf.numOutChannels);
     }

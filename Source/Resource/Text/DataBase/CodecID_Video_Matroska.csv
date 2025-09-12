@@ -1,5 +1,8 @@
 V_UNCOMPRESSED;RGB;;Raw uncompressed video frames;
 V_AV1;AV1;;;http://aomedia.org/
+V_AVS;AVS Video;;;
+V_AVS2;AVS2 Video;;;
+V_AVS3;AVS3 Video;;;
 V_DIRAC;Dirac;;;http://diracvideo.org/
 V_FFV1;FFV1;;;
 V_MPEG4/IS0/SP;MPEG-4 Visual;;There is a zero instead of a O, may be a problem;http://www.divx.com
@@ -11,6 +14,7 @@ V_MPEG4/ISO/ASP;MPEG-4 Visual;;Advanced Simple Profile;http://www.xvid.org/Downl
 V_MPEG4/ISO/AP;MPEG-4 Visual;;Advanced Profile;http://ffdshow-tryout.sourceforge.net/
 V_MPEG4/ISO/AVC;AVC;;;http://ffdshow-tryout.sourceforge.net/
 V_MPEGH/ISO/HEVC;HEVC;;;
+V_MPEGI/ISO/VVC;VVC;;;
 V_MPEG4/MS/V2;MPEG-4 Visual;MS MPEG-4 v2;MS MPEG-4 v2;http://ffdshow-tryout.sourceforge.net/
 V_MPEG4/MS/V3;MPEG-4 Visual;MS MPEG-4 v3;MS MPEG-4 v3;http://ffdshow-tryout.sourceforge.net/
 V_MPEG1;MPEG Video;;MPEG 1 or 2 Video;http://ffdshow-tryout.sourceforge.net/

@@ -44,6 +44,9 @@
 #if defined(MEDIAINFO_AVSV_YES)
     #include "MediaInfo/Video/File_AvsV.h"
 #endif
+#if defined(MEDIAINFO_AVS3V_YES)
+    #include "MediaInfo/Video/File_Avs3V.h"
+#endif
 #if defined(MEDIAINFO_DIRAC_YES)
     #include "MediaInfo/Video/File_Dirac.h"
 #endif
@@ -200,7 +203,6 @@ File_MpegPs::File_MpegPs()
         Trace_Layers_Update(0); //Container1
     #endif //MEDIAINFO_TRACE
     MustSynchronize=true;
-    Buffer_TotalBytes_FirstSynched_Max=64*1024;
     Buffer_TotalBytes_Fill_Max=(int64u)-1; //Disabling this feature for this format, this is done in the parser
     Trusted_Multiplier=2;
 
@@ -875,10 +877,19 @@ bool File_MpegPs::Synched_Test()
     if (Buffer[Buffer_Offset  ]!=0x00
      || Buffer[Buffer_Offset+1]!=0x00
      || Buffer[Buffer_Offset+2]!=0x01)
-        Synched=false;
+    {
+        Frame_Count=(int64u)-1;
+        Frame_Count_NotParsedIncluded=(int64u)-1;
+        if (Streams[stream_id].TimeStamp_End.PTS.TimeStamp!=(int64u)-1 && Streams[stream_id].TimeStamp_Start.PTS.TimeStamp!=(int64u)-1)
+            FrameInfo.PTS=(Streams[stream_id].TimeStamp_End.PTS.TimeStamp-Streams[stream_id].TimeStamp_Start.PTS.TimeStamp)*100000/9;
+        SynchLost("MPEG-PS");
+        Frame_Count=0;
+        FrameInfo=frame_info();
+        return true;
+    }
 
     //Quick search
-    if (Synched && !Header_Parser_QuickSearch())
+    if (!Header_Parser_QuickSearch())
         return false;
 
     //We continue
@@ -1445,6 +1456,12 @@ bool File_MpegPs::Header_Parse_PES_packet(int8u stream_id)
         if (Demux_UnpacketizeContainer && Buffer_Offset+6+PES_packet_length>Buffer_Size)
             return false;
     #endif //MEDIAINFO_DEMUX
+    if (!IsSub)
+    {
+        int64u ExpectedSize=Buffer_Offset+6+PES_packet_length;
+        if (ExpectedSize>File_Size)
+            IsTruncated(ExpectedSize, true, "MPEG-PS");
+    }
 
     //Parsing
     switch (stream_id)
@@ -3482,6 +3499,12 @@ void File_MpegPs::video_stream()
                             Streams[stream_id].Parsers.push_back(Parser);
                         }
                         #endif
+                        #if defined(MEDIAINFO_AVSV_YES)
+                        {
+                            File_Avs3V* Parser = new File_Avs3V;
+                            Streams[stream_id].Parsers.push_back(Parser);
+                        }
+                        #endif
         }
         for (size_t Pos=0; Pos<Streams[stream_id].Parsers.size(); Pos++)
         {
@@ -3775,6 +3798,9 @@ void File_MpegPs::extension_stream()
                 case 0x56432D31 :
                                     Streams_Extension[stream_id_extension].Parsers.push_back(ChooseParser_VC1());
                                     break;
+                case 0x41565356:    
+                                    Streams_Extension[stream_id_extension].Parsers.push_back(ChooseParser_Avs3V());
+                                    break;
                 case 0x64726163 :
                                     Streams_Extension[stream_id_extension].Parsers.push_back(ChooseParser_Dirac());
                                     break;
@@ -3807,6 +3833,8 @@ void File_MpegPs::extension_stream()
                                                                 {} //IPMP Control Information stream
                                                             else if (stream_id_extension==0x01)
                                                                 {} //IPMP stream
+                                                            else if (stream_id_extension==0x41)
+                                                                 Streams_Extension[stream_id_extension].Parsers.push_back(ChooseParser_Avs3V());
                                                             else if (stream_id_extension>=0x55 && stream_id_extension<=0x5F)
                                                                  Streams_Extension[stream_id_extension].Parsers.push_back(ChooseParser_VC1());
                                                             else if (stream_id_extension>=0x60 && stream_id_extension<=0x6F)
@@ -4018,6 +4046,7 @@ void File_MpegPs::xxx_stream_Parse(ps_stream &Temp, int8u &stream_Count)
                     Temp.Searching_TimeStamp_Start=false;
                 }
             }
+            break;
         default : ;
     }
 
@@ -4081,7 +4110,7 @@ void File_MpegPs::xxx_stream_Parse(ps_stream &Temp, int8u &stream_Count)
             {
                 if (!Temp.Parsers[Pos]->Status[IsAccepted] && Temp.Parsers[Pos]->Status[IsFinished])
                 {
-                    delete *(Temp.Parsers.begin()+Pos);
+                    delete static_cast<MediaInfoLib::File__Analyze*>(*(Temp.Parsers.begin()+Pos));
                     Temp.Parsers.erase(Temp.Parsers.begin()+Pos);
                     Pos--;
                 }
@@ -4091,7 +4120,7 @@ void File_MpegPs::xxx_stream_Parse(ps_stream &Temp, int8u &stream_Count)
                     for (size_t Pos2=0; Pos2<Temp.Parsers.size(); Pos2++)
                     {
                         if (Pos2!=Pos)
-                            delete *(Temp.Parsers.begin()+Pos2);
+                            delete static_cast<MediaInfoLib::File__Analyze*>(*(Temp.Parsers.begin()+Pos2));
                     }
                     Temp.Parsers.clear();
                     Temp.Parsers.push_back(Parser);
@@ -4523,6 +4552,32 @@ File__Analyze* File_MpegPs::ChooseParser_VC1()
         Parser->Stream_Prepare(Stream_Video);
         Parser->Fill(Stream_Video, 0, Video_Codec,  "VC-1");
         Parser->Fill(Stream_Video, 0, Video_Format, "VC-1");
+    #endif
+    return Parser;
+}
+
+//---------------------------------------------------------------------------
+File__Analyze* File_MpegPs::ChooseParser_Avs3V()
+{
+    //Filling
+    #if defined(MEDIAINFO_AVSV_YES)
+        File_Avs3V* Parser = new File_Avs3V;
+    #if MEDIAINFO_DEMUX
+        if (Config->Demux_Unpacketize_Get())
+        {
+            Demux_UnpacketizeContainer = false; //No demux from this parser
+            Demux_Level = 4; //Intermediate
+            Parser->Demux_Level = 2; //Container
+            Parser->Demux_UnpacketizeContainer = true;
+        }
+    #endif //MEDIAINFO_DEMUX
+    #else
+        //Filling
+        File__Analyze* Parser = new File_Unknown();
+        Open_Buffer_Init(Parser);
+        Parser->Stream_Prepare(Stream_Video);
+        Parser->Fill(Stream_Video, 0, Video_Codec, "AVS3V");
+        Parser->Fill(Stream_Video, 0, Video_Format, "AVS3V");
     #endif
     return Parser;
 }

@@ -1,6 +1,6 @@
-%global libmediainfo_version      24.01
-%global libmediainfo_version_major      24
-%global libmediainfo_version_minor      01
+%global libmediainfo_version      25.07
+%global libmediainfo_version_major      25
+%global libmediainfo_version_minor      07
 %global libzen_version            0.4.41
 %global libzen_version_major      0
 %global libzen_version_minor      4
@@ -46,7 +46,7 @@ BuildRequires:  libtool
 BuildRequires:  automake
 BuildRequires:  autoconf
 %if ! 0%{?rhel} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
-%if ! (0%{?sle_version} == 120300 && 0%{?is_opensuse})
+%if 0%{?suse_version} < 1699 && 0%{?fedora_version} < 41
 BuildRequires: python2-devel
 %endif
 BuildRequires: python3-devel
@@ -199,7 +199,7 @@ for development.
 %endif
 
 %if ! 0%{?rhel} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
-%if ! (0%{?sle_version} == 120300 && 0%{?is_opensuse})
+%if 0%{?suse_version} < 1699 && 0%{?fedora_version} < 41
 %package        -n python2-mediainfo
 Summary:        Most relevant technical and tag data for video and audio files -- python2 binding
 Group:          Development/Libraries
@@ -286,7 +286,7 @@ popd
 cp Source/Doc/*.html ./
 
 pushd Project/GNU/Library
-%configure --enable-shared --disable-static --enable-visibility --with-libcurl
+%configure --enable-shared --disable-static --enable-visibility --with-libcurl --with-graphviz=runtime
 make %{?_smp_mflags}
 popd
 
@@ -313,7 +313,7 @@ install -m 644 Source/MediaInfoDLL/MediaInfoDLL3.py %{buildroot}%{_includedir}/M
 
 # Python modules
 %if ! 0%{?rhel} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
-%if ! (0%{?sle_version} == 120300 && 0%{?is_opensuse})
+%if 0%{?suse_version} < 1699 && 0%{?fedora_version} < 41
 install -dm 755 %{buildroot}%{python2_sitelib}
 install -m 644 Source/MediaInfoDLL/MediaInfoDLL.py %{buildroot}%{python2_sitelib}
 %endif
@@ -375,7 +375,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 %endif
 
 %if ! 0%{?rhel} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
-%if ! (0%{?sle_version} == 120300 && 0%{?is_opensuse})
+%if 0%{?suse_version} < 1699 && 0%{?fedora_version} < 41
 %files     -n python2-mediainfo
 %{python2_sitelib}/*
 %endif
@@ -385,7 +385,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 %endif
 
 %changelog
-* Sun Jan 01 2012 MediaArea.net SARL <info@mediaarea.net> - 24.01-0
+* Sun Jan 01 2012 MediaArea.net SARL <info@mediaarea.net> - 25.07-0
 - See History.txt for more info and real dates
 - Previous packages made by Toni Graffy <toni@links2linux.de>
 - Fedora style made by Vasiliy N. Glazov <vascom2@gmail.com>

@@ -530,6 +530,12 @@ struct MediaInfo_Event_DvDif_Analysis_Frame_1
     MediaInfo_int32u        MoreFlags;
     const MediaInfo_int8u*  MoreData;
 };
+enum MediaInfo_Event_Analysis_Frame_Enums {
+    MediaInfo_Event_Analysis_Frame_None,
+    MediaInfo_Event_Analysis_Frame_AudioErrorValues,
+    MediaInfo_Event_Analysis_Frame_DirectionSpeed,
+    MediaInfo_Event_Analysis_Frame_TimeCode,
+};
 
 /*-------------------------------------------------------------------------*/
 /* Change in the stream config                                             */
@@ -550,6 +556,12 @@ struct MediaInfo_Event_DvDif_Change_0
     MediaInfo_int32u        AudioChannels;
     MediaInfo_int32u        AudioBitDepth;
     MediaInfo_int32u        Captions_Flags; // bit 0 = present
+    const MediaInfo_int8u*  MoreData;
+};
+enum MediaInfo_Event_Change_MoreData_Enums {
+    MediaInfo_Event_Change_MoreData_None,
+    MediaInfo_Event_Change_MoreData_Emphasis,
+    MediaInfo_Event_Change_MoreData_ProgramNumber,
 };
 
 /***************************************************************************/

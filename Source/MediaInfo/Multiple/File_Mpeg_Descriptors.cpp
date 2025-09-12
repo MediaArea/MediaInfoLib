@@ -50,6 +50,7 @@ namespace MediaInfoLib
 namespace Elements
 {
     const int32u AC_3=0x41432D33; //Exactly AC-3
+    const int32u AVSV=0x41565356; //AVSV
     const int32u BSSD=0x42535344; //PCM
     const int32u CUEI=0x43554549; //SCTE
     const int32u DTS1=0x44545331; //DTS
@@ -733,6 +734,7 @@ stream_t Mpeg_Descriptors_registration_format_identifier_StreamKind(int32u forma
     switch (format_identifier)
     {
         case Elements::AC_3 : return Stream_Audio;
+        case Elements::AVSV : return Stream_Video;
         case Elements::BSSD : return Stream_Audio;
         case Elements::DTS1 : return Stream_Audio;
         case Elements::DTS2 : return Stream_Audio;
@@ -2583,13 +2585,15 @@ void File_Mpeg_Descriptors::Descriptor_3F_14()
                 Complete_Stream->Streams[elementary_PID]->Infos["BitRate_Maximum"].From_Number(brat*1000000);
             if (Framerate_Numerator && Framerate_Denominator && Framerate_Denominator<=2)
             {
+                int32u Num=Framerate_Numerator;
+                int32u Den=Framerate_Denominator;
                 if (Framerate_Denominator==2)
                 {
-                    Framerate_Numerator*=1000;
-                    Framerate_Denominator=1001;
+                    Num*=1000;
+                    Den=1001;
                 }
-                Complete_Stream->Streams[elementary_PID]->Infos["FrameRate_Num"].From_Number(Framerate_Numerator);
-                Complete_Stream->Streams[elementary_PID]->Infos["FrameRate_Den"].From_Number(Framerate_Denominator);
+                Complete_Stream->Streams[elementary_PID]->Infos["FrameRate_Num"].From_Number(Num);
+                Complete_Stream->Streams[elementary_PID]->Infos["FrameRate_Den"].From_Number(Den);
             }
             if (Interlace_Mode!=3)
             {
@@ -2929,12 +2933,13 @@ void File_Mpeg_Descriptors::Descriptor_59()
 {
     //Parsing
     Ztring Languages;
+    int8u subtitling_type{};
     while (Element_Offset<Element_Size)
     {
         Element_Begin1("subtitle");
         int32u ISO_639_language_code;
         Get_C3 (ISO_639_language_code,                              "ISO_639_language_code");
-        Info_B1(subtitling_type,                                    "subtitling_type"); Param_Info1(Mpeg_Descriptors_component_type_O3(subtitling_type));
+        Get_B1 (subtitling_type,                                    "subtitling_type"); Param_Info1(Mpeg_Descriptors_component_type_O3(subtitling_type));
         Skip_B2(                                                    "composition_page_id");
         Skip_B2(                                                    "ancillary_page_id");
 
@@ -2970,6 +2975,7 @@ void File_Mpeg_Descriptors::Descriptor_59()
                             Complete_Stream->Streams[elementary_PID]->Infos["Language"]=Languages;
                             Complete_Stream->Streams[elementary_PID]->Infos["Format"]=__T("DVB Subtitle");
                             Complete_Stream->Streams[elementary_PID]->Infos["Codec"]=__T("DVB Subtitle");
+                            Complete_Stream->Streams[elementary_PID]->Infos["subtitling_type"].From_Number(subtitling_type);
                         }
                         break;
             default    : ;
@@ -3266,6 +3272,7 @@ void File_Mpeg_Descriptors::Descriptor_7B()
                         {
                             Complete_Stream->Streams[elementary_PID]->descriptor_tag=0x7B;
                         }
+                        break;
             default   : ;
         }
     FILLING_END();
@@ -3304,6 +3311,7 @@ void File_Mpeg_Descriptors::Descriptor_7C()
                             Complete_Stream->Streams[elementary_PID]->descriptor_tag=0x7C;
                             Complete_Stream->Streams[elementary_PID]->Infos["Format_Profile"]=Mpeg_Descriptors_MPEG_4_audio_profile_and_level(Profile_and_level);
                         }
+                        break;
             default   : ;
         }
     FILLING_END();
@@ -3497,7 +3505,7 @@ void File_Mpeg_Descriptors::Descriptor_7F_19()
         {
             Complete_Stream->Streams[elementary_PID]->StreamKind_FromDescriptor=Stream_Audio;
             size_t Infos_Pos=0;
-            for (map<int8u, Descriptor_7F_19_Info>::iterator Info=Infos.begin(); Info!=Infos.end(); Info++)
+            for (map<int8u, Descriptor_7F_19_Info>::iterator Info=Infos.begin(); Info!=Infos.end(); ++Info)
             {
                 string Prefix="Preselection"+Ztring::ToZtring(Info->first).To_UTF8();
                 if (Info->second.preselection_id!=Infos_Pos)

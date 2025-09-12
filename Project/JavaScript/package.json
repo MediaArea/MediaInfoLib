@@ -1,0 +1,21 @@
+{
+  "name": "libmediainfo",
+  "description": "Get most relevant technical and tag data for video and audio files (emscripten port of the library)",
+  "version": "25.7",
+  "keywords": [
+    "mediainfo"
+  ],
+  "author": {
+    "name": "MediaArea.net SARL",
+    "email": "info@mediaarea.net",
+    "url": "https://mediaarea.net"
+  },
+  "bugs": {
+    "url": "https://github.com/MediaArea/MediaInfoLib/issues",
+    "email": "info@mediaarea.net"
+  },
+  "homepage": "https://mediaarea.net/MediaInfo",
+  "license": "BSD-2-Clause",
+  "main": "MediaInfoWasm.js",
+  "type": "commonjs"
+}

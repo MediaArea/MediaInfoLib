@@ -104,7 +104,7 @@
     #if !defined (MEDIAINFO_LIBCURL_NO) && !defined (MEDIAINFO_LIBCURL_YES)
         #define MEDIAINFO_LIBCURL_NO
     #endif
-    #if !defined (MEDIAINFO_LIBMMS_NO) && !defined (MEDIAINFO_LIBMM_YES)
+    #if !defined (MEDIAINFO_LIBMMS_NO) && !defined (MEDIAINFO_LIBMMS_YES)
         #define MEDIAINFO_LIBMMS_NO
     #endif
     #if !defined (MEDIAINFO_DVDIF_ANALYZE_NO) && !defined (MEDIAINFO_DVDIF_ANALYZE_YES)
@@ -633,6 +633,9 @@
 #if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_AVSV_NO) && !defined(MEDIAINFO_AVSV_YES)
     #define MEDIAINFO_AVSV_YES
 #endif
+#if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_AVSV3_NO) && !defined(MEDIAINFO_AVS3V_YES)
+    #define MEDIAINFO_AVS3V_YES
+#endif
 #if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_CANOPUS_NO) && !defined(MEDIAINFO_CANOPUS_YES)
     #define MEDIAINFO_CANOPUS_YES
 #endif
@@ -738,6 +741,9 @@
 #if !defined(MEDIAINFO_AUDIO_NO) && !defined(MEDIAINFO_CELT_NO) && !defined(MEDIAINFO_CELT_YES)
     #define MEDIAINFO_CELT_YES
 #endif
+#if !defined(MEDIAINFO_AUDIO_NO) && !defined(MEDIAINFO_DAT_NO) && !defined(MEDIAINFO_DAT_YES)
+    #define MEDIAINFO_DAT_YES
+#endif
 #if !defined(MEDIAINFO_AUDIO_NO) && !defined(MEDIAINFO_DOLBYE_NO) && !defined(MEDIAINFO_DOLBYE_YES)
     #define MEDIAINFO_DOLBYE_YES
 #endif
@@ -758,6 +764,9 @@
 #endif
 #if !defined(MEDIAINFO_AUDIO_NO) && !defined(MEDIAINFO_IAB_NO) && !defined(MEDIAINFO_IAB_YES)
     #define MEDIAINFO_IAB_YES
+#endif
+#if !defined(MEDIAINFO_AUDIO_NO) && !defined(MEDIAINFO_IAMF_NO) && !defined(MEDIAINFO_IAMF_YES)
+    #define MEDIAINFO_IAMF_YES
 #endif
 #if !defined(MEDIAINFO_AUDIO_NO) && !defined(MEDIAINFO_IT_NO) && !defined(MEDIAINFO_IT_YES)
     #define MEDIAINFO_IT_YES
@@ -870,6 +879,9 @@
 #if !defined(MEDIAINFO_TEXT_NO) && !defined(MEDIAINFO_KATE_NO) && !defined(MEDIAINFO_KATE_YES)
     #define MEDIAINFO_KATE_YES
 #endif
+#if !defined(MEDIAINFO_TEXT_NO) && !defined(MEDIAINFO_PAC_NO) && !defined(MEDIAINFO_PAC_YES)
+    #define MEDIAINFO_PAC_YES
+#endif
 #if !defined(MEDIAINFO_TEXT_NO) && !defined(MEDIAINFO_PDF_NO) && !defined(MEDIAINFO_PDF_YES)
     #define MEDIAINFO_PDF_YES
 #endif
@@ -948,6 +960,9 @@
 #if !defined(MEDIAINFO_IMAGE_NO) && !defined(MEDIAINFO_TGA_NO) && !defined(MEDIAINFO_TGA_YES)
     #define MEDIAINFO_TGA_YES
 #endif
+#if !defined(MEDIAINFO_IMAGE_NO) && !defined(MEDIAINFO_WEBP_NO) && !defined(MEDIAINFO_WEBP_YES)
+    #define MEDIAINFO_WEBP_YES
+#endif
 
 //---------------------------------------------------------------------------
 // Archive
@@ -968,6 +983,9 @@
 #endif
 #if !defined(MEDIAINFO_ARCHIVE_NO) && !defined(MEDIAINFO_ISO9660_NO) && !defined(MEDIAINFO_ISO9660_YES)
     #define MEDIAINFO_ISO9660_YES
+#endif
+#if !defined(MEDIAINFO_ARCHIVE_NO) && !defined(MEDIAINFO_MACHO_NO) && !defined(MEDIAINFO_MACHO_YES)
+    #define MEDIAINFO_MACHO_YES
 #endif
 #if !defined(MEDIAINFO_ARCHIVE_NO) && !defined(MEDIAINFO_MZ_NO) && !defined(MEDIAINFO_MZ_YES)
     #define MEDIAINFO_MZ_YES
@@ -990,6 +1008,12 @@
 #if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_APETAG_NO) && !defined(MEDIAINFO_APETAG_YES)
     #define MEDIAINFO_APETAG_YES
 #endif
+#if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_C2PA_NO) && !defined(MEDIAINFO_C2PA_YES)
+    #define MEDIAINFO_C2PA_YES
+#endif
+#if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_EXIF_NO) && !defined(MEDIAINFO_EXIF_YES)
+    #define MEDIAINFO_EXIF_YES
+#endif
 #if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_ICC_NO) && !defined(MEDIAINFO_ICC_YES)
     #define MEDIAINFO_ICC_YES
 #endif
@@ -998,6 +1022,9 @@
 #endif
 #if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_ID3V2_NO) && !defined(MEDIAINFO_ID3V2_YES)
     #define MEDIAINFO_ID3V2_YES
+#endif
+#if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_IIM_NO) && !defined(MEDIAINFO_IIM_YES)
+    #define MEDIAINFO_IIM_YES
 #endif
 #if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_LYRICS3_NO) && !defined(MEDIAINFO_LYRICS3_YES)
     #define MEDIAINFO_LYRICS3_YES
@@ -1008,8 +1035,14 @@
 #if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_PROPERTYLIST_NO) && !defined(MEDIAINFO_PROPERTYLIST_YES)
     #define MEDIAINFO_PROPERTYLIST_YES
 #endif
+#if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_SPHERICALVIDEO_NO) && !defined(MEDIAINFO_SPHERICALVIDEO_YES)
+    #define MEDIAINFO_SPHERICALVIDEO_YES
+#endif
 #if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_VORBISCOM_NO) && !defined(MEDIAINFO_VORBISCOM_YES)
     #define MEDIAINFO_VORBISCOM_YES
+#endif
+#if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_XMP_NO) && !defined(MEDIAINFO_XMP_YES)
+    #define MEDIAINFO_XMP_YES
 #endif
 
 //---------------------------------------------------------------------------

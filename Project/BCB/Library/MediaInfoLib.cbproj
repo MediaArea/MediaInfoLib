@@ -66,7 +66,7 @@
         <VerInfo_Locale>1036</VerInfo_Locale>
         <AllPackageLibs>rtl.lib</AllPackageLibs>
         <Manifest_File>None</Manifest_File>
-        <IncludePath>..\..\..\Source\ThirdParty\hmac-gladman\;..\..\..\Source\ThirdParty\sha1-gladman\;..\..\..\Source\ThirdParty\sha2-gladman\;..\..\..\Source\MediaInfo\Archive\;..\..\..\Source\MediaInfo\Video\;..\..\..\Source\MediaInfo\Text\;..\..\..\Source\MediaInfo\Audio\;..\..\..\Source\MediaInfo\Duplicate\;..\..\..\Source\;..\..\..\Source\MediaInfo\;..\..\..\Source\MediaInfo\Reader\;..\..\..\Source\MediaInfo\Tag\;..\..\..\Source\MediaInfo\Export\;..\..\..\Source\MediaInfo\Image\;..\..\..\Source\MediaInfo\Multiple\;..\..\..\Source\ThirdParty\aes-gladman\;..\..\..\Source\ThirdParty\base64\;..\..\..\Source\ThirdParty\md5\;..\..\..\Source\ThirdParty\tinyxml2\;..\..\..\Source\ThirdParty\tfsxml\;..\..\..\..\ZenLib\Source\;..\..\..\..\zlib\;$(IncludePath)</IncludePath>
+        <IncludePath>..\..\..\Source\ThirdParty\hmac-gladman\;..\..\..\Source\ThirdParty\sha1-gladman\;..\..\..\Source\ThirdParty\sha2-gladman\;..\..\..\Source\MediaInfo\Archive\;..\..\..\Source\MediaInfo\Video\;..\..\..\Source\MediaInfo\Text\;..\..\..\Source\MediaInfo\Audio\;..\..\..\Source\MediaInfo\Duplicate\;..\..\..\Source\;..\..\..\Source\MediaInfo\;..\..\..\Source\MediaInfo\Reader\;..\..\..\Source\MediaInfo\Tag\;..\..\..\Source\MediaInfo\Export\;..\..\..\Source\MediaInfo\Image\;..\..\..\Source\MediaInfo\Multiple\;..\..\..\Source\ThirdParty\aes-gladman\;..\..\..\Source\ThirdParty\base64\;..\..\..\Source\ThirdParty\;..\..\..\Source\ThirdParty\md5\;..\..\..\Source\ThirdParty\tinyxml2\;..\..\..\Source\ThirdParty\tfsxml\;..\..\..\..\ZenLib\Source\;..\..\..\..\zlib\;$(IncludePath)</IncludePath>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <IntermediateOutputDir>.\$(Platform)\$(Config)</IntermediateOutputDir>
         <FinalOutputDir>.\$(Platform)\$(Config)</FinalOutputDir>
@@ -79,10 +79,10 @@
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
         <PackageImports>vcldbx;frx16;TeeDB;Rave100VCL;vclib;Tee;inetdbbde;DBXOdbcDriver;DBXSybaseASEDriver;ibxpress;vclimg;frxDB16;intrawebdb_120_160;fs16;TeeUI;FMXTee;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;Intraweb_120_160;DBXDb2Driver;bcbsmp;websnap;vclribbon;frxe16;VclSmp;fsDB16;vcl;DataSnapConnectors;CloudService;DBXMSSQLDriver;FmxTeeUI;dsnapcon;vclx;webdsnap;bdertl;adortl;bcbie;$(PackageImports)</PackageImports>
-        <Defines>MEDIAINFO_LIBCURL_NO;MEDIAINFO_GRAPHVIZ_NO;MEDIAINFO_AES_NO;MEDIAINFO_ALL_NO;$(Defines)</Defines>
+        <Defines>MEDIAINFO_LIBCURL_NO;MEDIAINFO_GRAPHVIZ_NO;FMT_UNICODE=0;MEDIAINFO_AES_NO;MEDIAINFO_ALL_NO;$(Defines)</Defines>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
-        <Defines>MEDIAINFO_LIBCURL_NO;MEDIAINFO_GRAPHVIZ_NO;MEDIAINFO_AES_NO;MEDIAINFO_ALL_NO;$(Defines)</Defines>
+        <Defines>MEDIAINFO_LIBCURL_NO;MEDIAINFO_GRAPHVIZ_NO;FMT_UNICODE=0;MEDIAINFO_AES_NO;MEDIAINFO_ALL_NO;$(Defines)</Defines>
         <PackageImports>vcldbx;frx16;TeeDB;Rave100VCL;vclib;Tee;inetdbbde;DBXOdbcDriver;DBXSybaseASEDriver;ibxpress;vclimg;frxDB16;intrawebdb_120_160;fs16;TeeUI;FMXTee;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;Intraweb_120_160;DBXDb2Driver;bcbsmp;websnap;vclribbon;frxe16;VclSmp;fsDB16;vcl;DataSnapConnectors;CloudService;DBXMSSQLDriver;FmxTeeUI;dsnapcon;vclx;webdsnap;bdertl;adortl;bcbie;$(PackageImports)</PackageImports>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -116,7 +116,7 @@
         <Defines>NDEBUG;$(Defines)</Defines>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-        <Defines>NDEBUG;MEDIAINFO_LIBCURL_NO;MEDIAINFO_GRAPHVIZ_NO;MEDIAINFO_AES_NO;MEDIAINFO_ALL_NO;$(Defines)</Defines>
+        <Defines>NDEBUG;MEDIAINFO_LIBCURL_NO;MEDIAINFO_GRAPHVIZ_NO;FMT_UNICODE=0;MEDIAINFO_AES_NO;MEDIAINFO_ALL_NO;$(Defines)</Defines>
     </PropertyGroup>
     <ItemGroup>
         <CppCompile Include="..\..\..\Source\MediaInfo\Archive\File_7z.cpp">
@@ -139,6 +139,9 @@
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Archive\File_Mz.cpp">
             <BuildOrder>137</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Archive\File_MachO.cpp">
+            <BuildOrder>241</BuildOrder>
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Archive\File_Rar.cpp">
             <BuildOrder>158</BuildOrder>
@@ -202,6 +205,9 @@
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_ChannelGrouping.cpp">
             <BuildOrder>81</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_Dat.cpp">
+            <BuildOrder>243</BuildOrder>
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Audio\File_DolbyE.cpp">
             <BuildOrder>86</BuildOrder>
@@ -437,6 +443,9 @@
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Image\File_Tiff.cpp">
             <BuildOrder>177</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Image\File_WebP.cpp">
+            <BuildOrder>240</BuildOrder>
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\MediaInfo.cpp">
             <DependentOn>..\..\..\Source\MediaInfo\MediaInfo.h</DependentOn>
@@ -686,6 +695,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Tag\File_Id3v2.cpp">
             <BuildOrder>116</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Tag\File_Iim.cpp">
+            <BuildOrder>242</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Tag\File_Lyrics3.cpp">
             <BuildOrder>126</BuildOrder>
         </CppCompile>
@@ -733,6 +745,9 @@
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Text\File_OtherText.cpp">
             <BuildOrder>145</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Text\File_Pac.cpp">
+            <BuildOrder>243</BuildOrder>
         </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Text\File_Pdf.cpp">
             <BuildOrder>150</BuildOrder>
@@ -803,6 +818,9 @@
         <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_H263.cpp">
             <BuildOrder>108</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_HdrVividMetadata.cpp">
+            <BuildOrder>245</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\Source\MediaInfo\Video\File_Hevc.cpp">
             <BuildOrder>24</BuildOrder>
         </CppCompile>
@@ -856,6 +874,9 @@
         </CppCompile>
         <CppCompile Include="..\..\..\Source\ThirdParty\aes-gladman\aes_modes.c">
             <BuildOrder>214</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\..\Source\ThirdParty\fmt\format.cc">
+            <BuildOrder>243</BuildOrder>
         </CppCompile>
         <CppCompile Include="..\..\..\Source\ThirdParty\hmac-gladman\hmac.c">
             <BuildOrder>219</BuildOrder>

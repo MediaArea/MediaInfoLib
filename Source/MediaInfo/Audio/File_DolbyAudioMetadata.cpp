@@ -117,13 +117,13 @@ void Merge_FillTimeCode(File__Analyze& In, const string& Prefix, const TimeCode&
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-File_DolbyAudioMetadata::File_DolbyAudioMetadata()
+File_DolbyAudioMetadata::File_DolbyAudioMetadata(bool IsXML_)
 {
     //Configuration
     StreamSource=IsContainerExtra;
 
     //In
-    IsXML=false;
+    IsXML=IsXML_;
 
     //Out
     HasSegment9=false;
@@ -184,6 +184,7 @@ bool File_DolbyAudioMetadata::FileHeader_Begin()
 void File_DolbyAudioMetadata::Read_Buffer_Continue()
 {
     Accept("DolbyAudioMetadata");
+    Fill(Stream_General, 0, General_Format, "Dolby Audio Metadata");
     Stream_Prepare(Stream_Audio);
 
     //Parsing
@@ -530,6 +531,8 @@ void File_DolbyAudioMetadata::Merge(File__Analyze& In, size_t StreamPos)
         {
             string Name=TrackUID_String+Pos.To_UTF8();
             auto PosI=(size_t)Pos.To_int64u();
+            if (In.Retrieve_Const(Stream_Audio, 0, Name.c_str()).empty())
+                In.Fill(Stream_Audio, 0, Name.c_str(), "Yes");
             Name+=BinauralRenderMode_String;
             In.Fill(Stream_Audio, 0, Name.c_str(), BinauralRenderMode);
         }
@@ -543,6 +546,8 @@ void File_DolbyAudioMetadata::Merge(File__Analyze& In, size_t StreamPos)
         ZtringList LinkedToList;
         LinkedToList.Separator_Set(0, " + ");
         LinkedToList.Write(LinkedTos);
+        if (In.Retrieve_Const(Stream_Audio, 0, Name.c_str()).empty())
+            In.Fill(Stream_Audio, 0, Name.c_str(), "Yes");
         Name+=BinauralRenderMode_String;
         ZtringList BinauralRenderModes;
         set<Ztring> BinauralRenderMode_Diffs;

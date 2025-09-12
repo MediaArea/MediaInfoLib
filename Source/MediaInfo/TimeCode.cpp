@@ -508,6 +508,10 @@ int TimeCode::FromString(const string_view& V, bool Ignore1001FromDropFrame)
                 return 1;
             }
             int FramesRate_Index = i - 1 - i_Start;
+            if (FramesRate_Index < 0) {
+                *this = TimeCode();
+                return 1;
+            }
             uint64_t FramesRate = PowersOf10[FramesRate_Index];
             SetFramesMax((uint32_t)FramesRate - 1);
             switch (Unit)
@@ -723,7 +727,7 @@ TimeCode TimeCode::ToRescaled(uint32_t FramesMax, flags Flags, rounding Rounding
     {
     case Nearest:
         Result += FrameRate / 2;
-        //fall through
+        [[fallthrough]];
     case Floor:
         Result /= FrameRate;
         break;
@@ -890,6 +894,8 @@ std::string Date_MJD(uint16_t Date_)
 {
     //Calculating
     double Date = Date_;
+    if ((Date_ & 0x8000) == 0) 
+        Date += 0x10000;    // adjust the MJD to support dates beyond the 16 bit rollover in 2038
     int Y2 = (int)((Date - 15078.2) / 365.25);
     int M2 = (int)(((Date - 14956.1) - ((int)(Y2 * 365.25))) / 30.6001);
     int D = (int)(Date - 14956 - ((int)(Y2 * 365.25)) - ((int)(M2 * 30.6001)));

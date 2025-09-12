@@ -66,6 +66,10 @@ private :
 
     bool BookMark_Needed();
 
+    #if MEDIAINFO_CONFORMANCE
+        string CreateElementName();
+    #endif //MEDIAINFO_CONFORMANCE
+
     //Data
     struct stream
     {
@@ -135,6 +139,12 @@ private :
     int64u Interleaved1_10;
 
     //Temp
+    struct chunk_size_64
+    {
+        int32u                  ChunkId;
+        int64u                  Size;
+    };
+    std::vector<chunk_size_64> DS64_Table;
     Ztring INFO_ISMP;
     Ztring Tdat_tc_A;
     Ztring Tdat_tc_O;
@@ -170,6 +180,7 @@ private :
     bool   IsBigEndian;
     bool   IsWave64;
     bool   IsRIFF64;
+    bool   IsBW64;
     bool   IsWaveBroken;
     bool   IsNotWordAligned;
     bool   IsNotWordAligned_Tested;
