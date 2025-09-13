@@ -12,6 +12,7 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/TimeCode.h"
+#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -412,6 +413,8 @@ private :
     void sei_alternative_transfer_characteristics();
     void sei_ambient_viewing_environment();
     void three_dimensional_reference_displays_info(int32u payloadSize);
+    void Dolby_Vision_reference_processing_unit();
+    void Dolby_Vision_enhancement_layer();
 
     //Packets - SubElements
     void slice_segment_header();
@@ -530,6 +533,9 @@ private :
     Ztring  ambient_viewing_environment_chromaticity;
     bool    RapPicFlag{};
     bool    first_slice_segment_in_pic_flag{};
+
+    //CRC Tables
+    std::unique_ptr<int32u[]> CRC_32_Table_IEEE;
 };
 
 } //NameSpace
