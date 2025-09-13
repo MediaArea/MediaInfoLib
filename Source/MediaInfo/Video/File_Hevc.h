@@ -412,6 +412,8 @@ private :
     void sei_alternative_transfer_characteristics();
     void sei_ambient_viewing_environment();
     void three_dimensional_reference_displays_info(int32u payloadSize);
+    void Dolby_Vision_reference_processing_unit();
+    void Dolby_Vision_enhancement_layer();
 
     //Packets - SubElements
     void slice_segment_header();
@@ -515,6 +517,7 @@ private :
     };
     typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
     hdr                                 HDR;
+    DV_RPU                              DV_RPU_data;
     Ztring                              EtsiTS103433;
     int32u  chroma_format_idc{};
     int32u  slice_pic_parameter_set_id{};
