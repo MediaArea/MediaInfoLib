@@ -3993,6 +3993,26 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
             Fill(Stream_Video, Pos, Video_ChromaSubsampling_String, Retrieve(Stream_Video, Pos, Video_ChromaSubsampling)+__T(" (")+ Retrieve(Stream_Video, Pos, Video_ChromaSubsampling_Position)+__T(')'));
     }
 
+    //MasteringDisplay_Luminance
+    {
+        const auto& Luminance_Min = Retrieve_Const(Stream_Video, Pos, Video_MasteringDisplay_Luminance_Min);
+        const auto& Luminance_Max = Retrieve_Const(Stream_Video, Pos, Video_MasteringDisplay_Luminance_Max);
+        const auto& Luminance = Retrieve(Stream_Video, Pos, Video_MasteringDisplay_Luminance);
+        if (Luminance_Min.empty() && Luminance_Max.empty() && !Luminance.empty())
+        {
+            Fill(Stream_Video, Pos, Video_MasteringDisplay_Luminance_Min, Luminance.SubString(__T("min: "), __T(" ")));
+            Fill(Stream_Video, Pos, Video_MasteringDisplay_Luminance_Max, Luminance.SubString(__T("max: "), __T(" ")));
+        }
+        const auto& Luminance_Original_Min = Retrieve_Const(Stream_Video, Pos, Video_MasteringDisplay_Luminance_Original_Min);
+        const auto& Luminance_Original_Max = Retrieve_Const(Stream_Video, Pos, Video_MasteringDisplay_Luminance_Original_Max);
+        const auto& Luminance_Original = Retrieve(Stream_Video, Pos, Video_MasteringDisplay_Luminance_Original);
+        if (Luminance_Original_Min.empty() && Luminance_Original_Max.empty() && !Luminance_Original.empty())
+        {
+            Fill(Stream_Video, Pos, Video_MasteringDisplay_Luminance_Original_Min, Luminance.SubString(__T("min: "), __T(" ")));
+            Fill(Stream_Video, Pos, Video_MasteringDisplay_Luminance_Original_Max, Luminance.SubString(__T("max: "), __T(" ")));
+        }
+    }
+
     //Commercial name
     if (Retrieve(Stream_Video, Pos, Video_HDR_Format_Compatibility).rfind(__T("HDR10"), 0)==0
      && ((!Retrieve(Stream_Video, Pos, Video_BitDepth).empty() && Retrieve(Stream_Video, Pos, Video_BitDepth).To_int64u()<10) //e.g. ProRes has not bitdepth info
