@@ -378,8 +378,12 @@ MasteringDisplay_ColorPrimaries_Original;;;Y NTY;;;Chromaticity coordinates of t
 MasteringDisplay_ColorPrimaries_Original_Source;;;N NTY;;;Chromaticity coordinates of the source primaries of the mastering display (source if incoherencies)
 MasteringDisplay_Luminance;;;Y YTY;;;Luminance of the mastering display
 MasteringDisplay_Luminance_Source;;;N YTY;;;Luminance of the mastering display (source)
+MasteringDisplay_Luminance_Min;;;N YTY;;;Min luminance of the mastering display
+MasteringDisplay_Luminance_Max;;;N YTY;;;Max luminance of the mastering display
 MasteringDisplay_Luminance_Original;;;Y NTY;;;Luminance of the mastering display (if incoherencies)
 MasteringDisplay_Luminance_Original_Source;;;N NTY;;;Luminance of the mastering display (source if incoherencies)
+MasteringDisplay_Luminance_Original_Min;;;N YTY;;;Min luminance of the mastering display (source if incoherencies)
+MasteringDisplay_Luminance_Original_Max;;;N YTY;;;Max luminance of the mastering display (source if incoherencies)
 MaxCLL;;;Y YTY;;;Maximum content light level
 MaxCLL_Source;;;N YTY;;;Maximum content light level (source)
 MaxCLL_Original;;;Y NTY;;;Maximum content light level (if incoherencies)
