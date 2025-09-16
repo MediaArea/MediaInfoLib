@@ -925,13 +925,15 @@ void File_Iamf::Get_leb128(int64u& Info, const char* Name)
         Info |= (static_cast<int64u>(leb128_byte & 0x7f) << (i * 7));
         if (!(leb128_byte & 0x80))
         {
-        #if MEDIAINFO_TRACE
+            #if MEDIAINFO_TRACE
             if (Trace_Activated)
             {
-                Param(Name, Info, i + 1);
+                Element_Offset -= (1LL + i);
+                Param(Name, Info, (i + 1) * 8);
                 Param_Info(__T("(") + Ztring::ToZtring(i + 1) + __T(" bytes)"));
+                Element_Offset += (1LL + i);
             }
-        #endif //MEDIAINFO_TRACE
+            #endif //MEDIAINFO_TRACE
             return;
         }
     }
