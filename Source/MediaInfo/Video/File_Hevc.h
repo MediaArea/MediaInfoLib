@@ -12,7 +12,6 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/TimeCode.h"
-#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -518,6 +517,7 @@ private :
     };
     typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
     hdr                                 HDR;
+    DV_RPU                              DV_RPU_data;
     Ztring                              EtsiTS103433;
     int32u  chroma_format_idc{};
     int32u  slice_pic_parameter_set_id{};
@@ -533,9 +533,6 @@ private :
     Ztring  ambient_viewing_environment_chromaticity;
     bool    RapPicFlag{};
     bool    first_slice_segment_in_pic_flag{};
-
-    //CRC Tables
-    std::unique_ptr<int32u[]> CRC_32_Table_IEEE;
 };
 
 } //NameSpace
