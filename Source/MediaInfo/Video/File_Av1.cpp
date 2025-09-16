@@ -844,8 +844,10 @@ void File_Av1::Get_leb128(int64u& Info, const char* Name)
             #if MEDIAINFO_TRACE
                 if (Trace_Activated)
                 {
-                    Param(Name, Info, i+1);
+                    Element_Offset-=(1LL+i);
+                    Param(Name, Info, (i+1)*8);
                     Param_Info(__T("(")+Ztring::ToZtring(i+1)+__T(" bytes)"));
+                    Element_Offset+=(1LL+i);
                 }
             #endif //MEDIAINFO_TRACE
             return;
