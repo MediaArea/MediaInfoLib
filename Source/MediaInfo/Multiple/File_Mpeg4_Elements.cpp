@@ -114,6 +114,9 @@ using namespace std;
 #if defined(MEDIAINFO_MPEGH3DA_YES)
     #include "MediaInfo/Audio/File_Mpegh3da.h"
 #endif
+#if defined(MEDIAINFO_OPUS_YES)
+    #include "MediaInfo/Audio/File_Opus.h"
+#endif
 #if defined(MEDIAINFO_PCM_YES)
     #include "MediaInfo/Audio/File_Pcm.h"
 #endif
@@ -903,6 +906,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_ddts=0x64647473;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dfLa=0x64664C61;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dmlp=0x646D6C70;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dOps=0x644F7073;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dvc1=0x64766331;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC=0x64766343;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_dvvC=0x64767643;
@@ -1352,6 +1356,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ddts)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dfLa)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dmlp)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dOps)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dvc1)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dvcC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_dvvC)
@@ -7935,6 +7940,31 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_dmlp()
         Skip_XX(Element_Size,                                   "TrueHD Data");
 
         Fill(Stream_Audio, StreamKind_Last, Audio_Format, "TrueHD");
+    #endif
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_dOps()
+{
+    Element_Name("OpusSpecificBox");
+
+    //Parsing
+    #ifdef MEDIAINFO_OPUS_YES
+    if (Streams[moov_trak_tkhd_TrackID].Parsers.empty())
+    {
+        File_Opus* Parser = new File_Opus;
+        Open_Buffer_Init(Parser);
+        Parser->FromMP4 = true;
+        Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+        mdat_MustParse = true; //Data is in MDAT
+
+        //Parsing
+        Open_Buffer_OutOfBand(Parser);
+    }
+    #else
+        Skip_XX(Element_Size,                                   "Opus Data");
+
+        Fill(Stream_Audio, StreamKind_Last, Audio_Format, "Opus");
     #endif
 }
 
