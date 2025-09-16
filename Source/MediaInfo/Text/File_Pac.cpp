@@ -133,12 +133,12 @@ void File_Pac::Streams_Finish()
         Offset.SetSeconds(0);
         Offset.SetFrames(0);
     }
-    int64s Duration = (Time_End_Command - Time_Start_Command).ToMilliseconds();
+    int64s Duration = (Time_End_Command - Offset).ToMilliseconds();
     Fill(Stream_General, 0, General_Duration, Duration);
     Fill(Stream_Text, 0, Text_Duration, Duration);
-    Fill(Stream_Text, 0, Text_Duration_Start_Command, (int64s)(Time_Start_Command - Offset).ToMilliseconds());
+    Fill(Stream_Text, 0, Text_Duration_Start_Command, (int64s)(Time_Start_Command).ToMilliseconds());
     Fill(Stream_Text, 0, Text_TimeCode_FirstFrame, Time_Start_Command.ToString());
-    Fill(Stream_Text, 0, Text_Duration_End_Command, (int64s)(Time_End_Command - Offset).ToMilliseconds());
+    Fill(Stream_Text, 0, Text_Duration_End_Command, (int64s)(Time_End_Command).ToMilliseconds());
     TimeCode LastFrame = Time_End_Command;
     --LastFrame;
     Fill(Stream_Text, 0, Text_TimeCode_LastFrame, LastFrame.ToString());
@@ -146,21 +146,19 @@ void File_Pac::Streams_Finish()
         Time_Start.SetFramesMax(FrameMax);
         Time_Start.SetDropFrame(DropFrame);
         Time_Start.Set1001fps(Is1001);
-        Fill(Stream_Text, 0, Text_Duration_Start, (int64s)(Time_Start - Offset).ToMilliseconds());
+        Fill(Stream_Text, 0, Text_Duration_Start, (int64s)(Time_Start).ToMilliseconds());
     }
     if (Time_End.IsValid()) {
         Time_End.SetFramesMax(FrameMax);
         Time_End.SetDropFrame(DropFrame);
         Time_End.Set1001fps(Is1001);
-        Fill(Stream_Text, 0, Text_Duration_End, (int64s)(Time_End - Offset).ToMilliseconds());
+        Fill(Stream_Text, 0, Text_Duration_End, (int64s)(Time_End).ToMilliseconds());
     }
     if (Time_End.IsValid() && Time_Start.IsValid()) {
         auto Start2End = (int64s)(Time_End - Time_Start).ToMilliseconds();
         Fill(Stream_Text, 0, Text_Duration_Start2End, Start2End);
     }
-    if (Delay_TC.IsValid()) {
-        Fill(Stream_Text, 0, Text_Delay, (int64s)Delay_TC.ToMilliseconds());
-    }
+    Fill(Stream_Text, 0, Text_Delay, (int64s)(Delay_TC.IsValid()?Delay_TC:Offset).ToMilliseconds());
 
     if (Frame_Count) {
         Fill(Stream_Text, 0, Text_Events_Total, Frame_Count - EmptyCount);
