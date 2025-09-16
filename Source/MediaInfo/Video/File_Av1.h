@@ -60,7 +60,6 @@ private :
     void metadata_itu_t_t35_B5();
     void metadata_itu_t_t35_B5_003B();
     void metadata_itu_t_t35_B5_003B_00000800();
-    void Dolby_Vision_reference_processing_unit();
     void metadata_itu_t_t35_B5_003C();
     void metadata_itu_t_t35_B5_003C_0001();
     void metadata_itu_t_t35_B5_003C_0001_04();
@@ -81,6 +80,7 @@ private :
     };
     typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
     hdr HDR;
+    DV_RPU DV_RPU_data;
 
     //Helpers
     std::string GOP_Detect(std::string PictureTypes);
