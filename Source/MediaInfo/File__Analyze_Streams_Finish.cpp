@@ -3359,7 +3359,11 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
                     if (len < CompanyName.size() && CompanyName[CompanyName.size() - (len + 1)] == ',') {
                         len++;
                     }
+                    #if defined(UNICODE) || defined (_UNICODE)
                     Fill(Stream_General, StreamPos, Parameter, CompanyName.substr(0, CompanyName.size() - len), true);
+                    #else
+                    Fill(Stream_General, StreamPos, Parameter, CompanyName.substr(0, CompanyName.size() - len), true, true);
+                    #endif // defined(UNICODE) || defined (_UNICODE)
                     DoAgain = true;
                     break;
                 }
@@ -3383,7 +3387,11 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
                 && IsAsciiDigit(CompanyNameU[6])
                 && IsAsciiDigit(CompanyNameU[7])
                 && CompanyNameU[8] == ' ') {
+                #if defined(UNICODE) || defined (_UNICODE)
                 Fill(Stream_General, StreamPos, Parameter, CompanyName.substr(9), true);
+                #else
+                Fill(Stream_General, StreamPos, Parameter, CompanyName.substr(9), true, true);
+                #endif // defined(UNICODE) || defined (_UNICODE)
             }
         }
 
