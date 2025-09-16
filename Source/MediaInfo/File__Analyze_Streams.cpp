@@ -44,6 +44,8 @@ namespace MediaInfoLib
     //---------------------------------------------------------------------------
     extern MediaInfo_Config Config;
     const char* Mpegv_colour_primaries(int8u colour_primaries);
+    const char* Mpegv_transfer_characteristics(int8u transfer_characteristics);
+    const char* Mpegv_matrix_coefficients(int8u matrix_coefficients);
     //---------------------------------------------------------------------------
 
     //***************************************************************************
@@ -942,6 +944,14 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
                     (*Infos)["HDR_Format_Compatibility"].From_UTF8(Compatibility);
                 else
                     Fill(Stream_Video, StreamPos_Last, Video_HDR_Format_Compatibility, Compatibility);
+            }
+            if (dv_profile == 5) {
+                // VUI information is optional for a profile 5 bitstream.
+                if (Retrieve_Const(Stream_Video, StreamPos_Last, Video_colour_primaries).empty() && Retrieve_Const(Stream_Video, StreamPos_Last, Video_transfer_characteristics).empty() && Retrieve_Const(Stream_Video, StreamPos_Last, Video_matrix_coefficients).empty()) {
+                    Fill(Stream_Video, StreamPos_Last, Video_colour_primaries, Mpegv_colour_primaries(9));
+                    Fill(Stream_Video, StreamPos_Last, Video_transfer_characteristics, Mpegv_transfer_characteristics(16));
+                    Fill(Stream_Video, StreamPos_Last, Video_matrix_coefficients, Mpegv_matrix_coefficients(15));
+                }
             }
         }
         else
