@@ -384,11 +384,15 @@ MasteringDisplay_Luminance_Original;;;Y NTY;;;Luminance of the mastering display
 MasteringDisplay_Luminance_Original_Source;;;N NTY;;;Luminance of the mastering display (source if incoherencies)
 MasteringDisplay_Luminance_Original_Min;;;N YTY;;;Min luminance of the mastering display (source if incoherencies)
 MasteringDisplay_Luminance_Original_Max;;;N YTY;;;Max luminance of the mastering display (source if incoherencies)
-MaxCLL;;;Y YTY;;;Maximum content light level
+MaxCLL;; cd/m2;N YTY;;;Maximum content light level
+MaxCLL/String;;;Y NTN;;;Maximum content light level, with measurement
 MaxCLL_Source;;;N YTY;;;Maximum content light level (source)
-MaxCLL_Original;;;Y NTY;;;Maximum content light level (if incoherencies)
+MaxCLL_Original;; cd/m2;N NTY;;;Maximum content light level (if incoherencies), with measurement
+MaxCLL_Original/String;;;Y NTN;;;Maximum content light level (if incoherencies)
 MaxCLL_Original_Source;;;N NTY;;;Maximum content light level (source if incoherencies)
-MaxFALL;;;Y YTY;;;Maximum frame average light level
-MaxFALL_Source;;;N YTY;;;Maximum frame average light level (source)
-MaxFALL_Original;;;Y NTY;;;Maximum frame average light level (if incoherencies)
+MaxFALL;; cd/m2;N YTY;;;Maximum frame average light level
+MaxFALL/String;;;Y NTN;;;Maximum frame average light level
+MaxFALL_Source;;;N YTY;;;Maximum frame average light level (source), with measurement
+MaxFALL_Original;; cd/m2;N NTY;;;Maximum frame average light level (if incoherencies)
+MaxFALL_Original/String;;;Y NTN;;;Maximum frame average light level (if incoherencies), with measurement
 MaxFALL_Original_Source;;;N NTY;;;Maximum frame average light level (source if incoherencies)
