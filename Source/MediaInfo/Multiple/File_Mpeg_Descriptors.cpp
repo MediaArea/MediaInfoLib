@@ -2392,8 +2392,8 @@ void File_Mpeg_Descriptors::Descriptor_39()
     Skip_SB(                                                    "VVC_24hr_picture_present_flag");
     Skip_S1(5,                                                  "reserved");
     Get_S1 (2, HDR_WCG_idc,                                     "HDR_WCG_idc");
-    Skip_S1(4,                                                  "reserved");
-    Get_S1 (2, video_properties_tag,                            "video_properties_tag");
+    Skip_S1(2,                                                  "reserved");
+    Get_S1 (4, video_properties_tag,                            "video_properties_tag");
     if (temporal_layer_subset_flag)
     {
         Skip_S1(5,                                              "reserved");
