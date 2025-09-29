@@ -230,6 +230,7 @@ BitRate_Mode;Bit rate mode
 BitRate_Mode_CBR;Constant
 BitRate_Mode_VBR;Variable
 BitRate_Nominal;Nominal bit rate
+BitstreamLevel;Bitstream level
 Bits-(Pixel*Frame);Bits/(Pixel*Frame)
 BufferSize;Buffer size
 Cancel;Cancel
@@ -1108,6 +1109,7 @@ Presentation;Presentation
 PresentationConfig;Presentation config
 PresentationConfig_ContentClassifier;Presentation config from content classifiers
 PresentationID;Presentation ID
+PresentationLevel;Presentation level
 PreviousDownmixType5ch;Previous Downmix Type 5-ch
 PreviousMixType2ch;Previous Mix Type 2-ch
 PrimaryAudioLanguage;Primary Audio Language
