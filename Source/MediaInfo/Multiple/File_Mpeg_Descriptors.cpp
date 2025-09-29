@@ -988,6 +988,52 @@ const char* Mpeg_Descriptors_stream_Codec(int8u descriptor_tag, int32u format_id
     }
 }
 
+static const char* Mpeg_Descriptors_descriptor_tag_extension_Array[] = {
+    "image_icon_descriptor",
+    "cpcm_delivery_signalling_descriptor",
+    "CP_descriptor",
+    "CP_identifier_descriptor",
+    "T2_delivery_system_descriptor",
+    "SH_delivery_system_descriptor",
+    "supplementary_audio_descriptor",
+    "network_change_notify_descriptor",
+    "message_descriptor",
+    "target_region_descriptor",
+    "target_region_name_descriptor",
+    "service_relocated_descriptor-",
+    "XAIT_PID_descriptor",
+    "C2_delivery_system_descriptor",
+    "DTS-HD_descriptor",
+    "DTS_Neural_descriptor",
+    "video_depth_range_descriptor",
+    "T2MI_descriptor",
+    nullptr,
+    "URI_linkage_descriptor",
+    "CI_ancillary_data_descriptor",
+    "AC-4_descriptor (see annex D)",
+    "C2_bundle_delivery_system_descriptor",
+    "S2X_satellite_delivery_system_descriptor",
+    "protection_message_descriptor",
+    "audio_preselection_descriptor",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    "TTML_subtitling_descriptor",
+    "DTS-UHD_descriptor ",
+};
+static const auto Mpeg_Descriptors_descriptor_tag_extension_Array_Size = sizeof(Mpeg_Descriptors_descriptor_tag_extension_Array) / sizeof(*Mpeg_Descriptors_descriptor_tag_extension_Array);
+static string Mpeg_Descriptors_descriptor_tag_extension(int8u descriptor_tag_extension)
+{
+    const auto Name = descriptor_tag_extension < Mpeg_Descriptors_descriptor_tag_extension_Array_Size ? Mpeg_Descriptors_descriptor_tag_extension_Array[descriptor_tag_extension] : nullptr;
+    if (Name) {
+        return Name;
+    }
+    return to_string(descriptor_tag_extension);
+}
+
 stream_t Mpeg_Descriptors_stream_Kind(int8u descriptor_tag, int32u format_identifier)
 {
     switch (descriptor_tag)
@@ -3499,7 +3545,7 @@ void File_Mpeg_Descriptors::Descriptor_7F()
 {
     //Parsing
     int8u descriptor_tag_extension;
-    Get_B1(descriptor_tag_extension,                            "descriptor_tag_extension");
+    Get_B1(descriptor_tag_extension, "descriptor_tag_extension"); Param_Info1(Mpeg_Descriptors_descriptor_tag_extension(descriptor_tag_extension)); Element_Info1(Mpeg_Descriptors_descriptor_tag_extension(descriptor_tag_extension));
     switch (descriptor_tag_extension)
     {
         case 0x06 : Descriptor_7F_06(); break;
@@ -3617,8 +3663,6 @@ const char* audio_rendering_indication[audio_rendering_indication_Size]=
 void File_Mpeg_Descriptors::Descriptor_7F_19()
 {
     //Parsing
-    Param_Info1("audio_preselection_descriptor");
-    Element_Info1("audio_preselection_descriptor");
     int8u num_preselections;
     map<int8u, Descriptor_7F_19_Info> Infos;
     BS_Begin();
