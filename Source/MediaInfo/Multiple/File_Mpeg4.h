@@ -293,6 +293,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_eyes_hero();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_eyes_stri();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_must();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_vpcC();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_vvcC();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_wave();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_wave_acbf();

@@ -81,6 +81,9 @@ using namespace std;
 #if defined(MEDIAINFO_VC3_YES)
     #include "MediaInfo/Video/File_Vc3.h"
 #endif
+#if defined(MEDIAINFO_VP9_YES)
+    #include "MediaInfo/Video/File_Vp9.h"
+#endif
 #if defined(MEDIAINFO_AAC_YES)
     #include "MediaInfo/Audio/File_Aac.h"
 #endif
@@ -954,6 +957,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_eyes_hero=0x6865726F;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_eyes_stri=0x73747269;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_must=0x6D757374;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_vpcC=0x76706343;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_vvcC=0x76766343;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_wave=0x77617665;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_wave_acbf=0x61636266;
@@ -1412,6 +1416,7 @@ void File_Mpeg4::Data_Parse()
                                         ATOM_END
                                     ATOM_END
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_must)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vpcC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vvcC)
                                 LIST(moov_trak_mdia_minf_stbl_stsd_xxxx_wave)
                                     ATOM_BEGIN
@@ -6863,6 +6868,14 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
                 }
             #endif
+            #if defined(MEDIAINFO_VP9_YES)
+                if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("VP9"))
+                {
+                    File_Vp9* Parser=new File_Vp9;
+                    Parser->fromMP4 = true;
+                    Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                }
+            #endif
             #if defined(MEDIAINFO_JPEG_YES)
                 if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Mpeg4, Codec, InfoCodecID_Format)==__T("JPEG"))
                 {
@@ -9104,6 +9117,27 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_must()
     //Parsing
     while (Element_Offset<Element_Size)
         Skip_B4(                                                "required_box_type");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_vpcC()
+{
+    NAME_VERSION_FLAG("VPCodecConfigurationBox");
+    AddCodecConfigurationBoxInfo();
+    
+    //Parsing
+    #ifdef MEDIAINFO_VP9_YES
+    if (Streams[moov_trak_tkhd_TrackID].Parsers.size() == 1)
+    {
+        Open_Buffer_Init(Streams[moov_trak_tkhd_TrackID].Parsers.front());
+
+        //Parsing
+        Open_Buffer_OutOfBand(Streams[moov_trak_tkhd_TrackID].Parsers.front());
+        mdat_MustParse = true; //Data is in MDAT
+    }
+    else
+    #endif
+        Skip_XX(Element_Size - Element_Offset,                  "Data");
 }
 
 //---------------------------------------------------------------------------
