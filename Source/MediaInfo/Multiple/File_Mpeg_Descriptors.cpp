@@ -3549,6 +3549,7 @@ void File_Mpeg_Descriptors::Descriptor_7F()
     switch (descriptor_tag_extension)
     {
         case 0x06 : Descriptor_7F_06(); break;
+        case 0x08 : Descriptor_7F_08(); break;
         case 0x0F : Descriptor_7F_0F(); break;
         case 0x15 : Descriptor_7F_15(); break;
         case 0x19 : Descriptor_7F_19(); break;
@@ -3597,6 +3598,22 @@ void File_Mpeg_Descriptors::Descriptor_7F_06()
                 Complete_Stream->Streams[elementary_PID]->Infos["Language/String"]=MediaInfoLib::Config.Iso639_Translate(Language);
             }
         }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg_Descriptors::Descriptor_7F_08()
+{
+    //Parsing
+    Ztring text_char;
+    int32u ISO_639_language_code;
+    int8u message_id;
+    Get_B1 (message_id,                                         "message_id");
+    Get_C3 (ISO_639_language_code,                              "ISO_639_language_code");
+    Get_DVB_Text(Element_Size-Element_Offset, ISO_639_language_code, text_char,  "text_char");
+
+    FILLING_BEGIN();
+        Complete_Stream->Transport_Streams[transport_stream_id].message_ids[message_id][ISO_639_language_code]=text_char;
     FILLING_END();
 }
 
