@@ -1947,6 +1947,8 @@ File_Mxf::File_Mxf()
     StereoscopicPictureSubDescriptor_IsPresent=false;
     UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony=false;
     Essences_UsedForFrameCount=(int32u)-1;
+    IndexTable_NSL=0;
+    IndexTable_NPE=0;
     #if MEDIAINFO_ADVANCED
         Footer_Position=(int64u)-1;
     #endif //MEDIAINFO_ADVANCED
