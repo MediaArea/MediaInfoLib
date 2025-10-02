@@ -3,10 +3,10 @@ name: Checks
 on: [push, pull_request]
 
 jobs:
-  Unix:
+  Build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         environement: [gcc, utf8, minified, minimal, minimal-with-xml, cmake]
         exclude:
           - os: macos-latest
@@ -14,6 +14,16 @@ jobs:
           - os: macos-latest
             environement: minimal
           - os: macos-latest
+            environement: minimal-with-xml
+          - os: windows-latest
+            environement: gcc
+          - os: windows-latest
+            environement: utf8
+          - os: windows-latest
+            environement: minified
+          - os: windows-latest
+            environement: minimal
+          - os: windows-latest
             environement: minimal-with-xml
         include:
           - environement: gcc
@@ -40,8 +50,9 @@ jobs:
       RUN_TESTS: ${{ matrix.RUN_TESTS }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Dependencies
+        if: ${{ runner.os != 'Windows' }}
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
             sudo apt-get update -y
@@ -50,6 +61,10 @@ jobs:
           if [ "$RUNNER_OS" == "macOS" ]; then
             brew install libtool automake
           fi
+      - name: zlib
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          git -C .. clone --depth=1 https://github.com/MediaArea/zlib.git
       - name: ZenLib
         run: |
           git -C .. clone --depth=1 https://github.com/MediaArea/ZenLib.git
@@ -82,13 +97,17 @@ jobs:
           make check
       - name: CMake Build
         if: ${{ matrix.environement == 'cmake' }}
+        shell: bash
         run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            export CXXFLAGS="/std:c++20 /WX /MP"
+          fi
           mkdir Project/CMake/Build
           cd Project/CMake/Build
-          cmake -DBUILD_ZENLIB=1 ..
-          make -j4
+          cmake -DBUILD_ZENLIB=1 -DZLIB_BUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build . ${{ runner.os == 'Windows' && '--config Release' || '-j4' }}
 
-  Windows:
+  MSBuild:
     runs-on: windows-latest
     strategy:
       matrix:
@@ -96,17 +115,17 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout zlib
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: MediaArea/zlib
           path: zlib
       - name: Checkout ZenLib
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: MediaArea/ZenLib
           path: ZenLib
       - name: Checkout MediaInfoLib
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: MediaInfoLib
       - name: Add msbuild to PATH

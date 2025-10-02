@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.5.0...3.31)
 
 project(MediaInfoLib)
 
@@ -21,6 +21,10 @@ if (NOT WIN32)
 else()
   option(BUILD_ZLIB "Build bundled zlib" ON)
   option(BUILD_ZENLIB "Build bundled ZenLib" ON)
+endif()
+
+if (MSVC)
+  string(APPEND CMAKE_CXX_FLAGS " /EHsc")
 endif()
 
 set(LIB_SUFFIX "" CACHE STRING "Define suffix of directory name (32/64)" )
@@ -57,10 +61,10 @@ if (NOT BUILD_ZLIB)
 else()
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
   if(NOT BUILD_SHARED_LIBS)
-    set(ZLIB_LIBRARIES "${LIB_INSTALL_DIR}/$<TARGET_LINKER_FILE_NAME:zlibstatic>")
+    set(ZLIB_LIBRARIES ZLIB::ZLIBSTATIC)
   endif()
   if(UNIX AND BUILD_SHARED_LIBS)
-    target_compile_options(zlibstatic PRIVATE -fPIC)
+    target_compile_options(ZLIB::ZLIBSTATIC PRIVATE -fPIC)
   endif()
   set(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../../../zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
 endif()
@@ -383,7 +387,7 @@ add_library(mediainfo ${MediaInfoLib_SRCS})
 target_include_directories(mediainfo INTERFACE ${INCLUDE_INSTALL_DIR})
 
 if(BUILD_ZLIB)
-  add_dependencies(mediainfo zlibstatic)
+  add_dependencies(mediainfo ZLIB::ZLIBSTATIC)
 endif()
 
 # disable some features. Maybe it should be enabled.
