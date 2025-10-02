@@ -79,13 +79,6 @@ endif()
 
 set(MediaInfoLib_SOURCES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../Source)
 
-# On Windows debug library should have 'd' postfix.
-if(WIN32)
-  set(CMAKE_DEBUG_POSTFIX "d")
-elseif(APPLE)
-  set(CMAKE_DEBUG_POSTFIX "_debug")
-endif()
-
 # use bundled tinyxml only if no system
 find_package(TinyXML)
 
