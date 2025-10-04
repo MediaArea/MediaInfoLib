@@ -24,25 +24,25 @@ EXPORTS
     MediaInfoA_New                 @28
     MediaInfoA_New_Quick           @31
     MediaInfoA_Delete              @29
-    MediaInfoA_Open                @01
-    MediaInfoA_Open_Buffer         @06
+    MediaInfoA_Open                @1
+    MediaInfoA_Open_Buffer         @6
     MediaInfoA_Open_Buffer_Init    @68
     MediaInfoA_Open_Buffer_Continue @69
     MediaInfoA_Open_Buffer_Continue_GoTo_Get @70
     MediaInfoA_Open_Buffer_Finalize @71
     MediaInfoA_Open_NextPacket     @77
     MediaInfoA_Save                @10
-    MediaInfoA_Close               @02
-    MediaInfoA_Inform              @03
-    MediaInfoA_GetI                @04
-    MediaInfoA_Get                 @05
-    MediaInfoA_SetI                @08
-    MediaInfoA_Set                 @09
+    MediaInfoA_Close               @2
+    MediaInfoA_Inform              @3
+    MediaInfoA_GetI                @4
+    MediaInfoA_Get                 @5
+    MediaInfoA_SetI                @8
+    MediaInfoA_Set                 @9
     MediaInfoA_Output_Buffer_Get   @73
     MediaInfoA_Output_Buffer_GetI  @75
     MediaInfoA_Option              @11
     MediaInfoA_State_Get           @12
-    MediaInfoA_Count_Get           @07
+    MediaInfoA_Count_Get           @7
     MediaInfo_Info_Version         @13
     MediaInfoList_New              @32
     MediaInfoList_New_Quick        @33
