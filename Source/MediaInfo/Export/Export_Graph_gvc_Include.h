@@ -45,7 +45,7 @@ extern "C"
     static GModule* cgraph_Module=NULL;
 #elif defined (_WIN32) || defined (WIN32)
     #undef __TEXT
-    #include "windows.h"
+    #include <windows.h>
     static HMODULE gvc_Module=NULL;
     static HMODULE cgraph_Module=NULL;
 #else

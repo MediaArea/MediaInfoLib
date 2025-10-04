@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        environement: [gcc, utf8, minified, minimal, minimal-with-xml, cmake]
+        environement: [gcc, utf8, minified, minimal, minimal-with-xml, cmake, cmake-dll]
         exclude:
           - os: macos-latest
             environement: minified
@@ -15,6 +15,8 @@ jobs:
             environement: minimal
           - os: macos-latest
             environement: minimal-with-xml
+          - os: macos-latest
+            environement: cmake-dll
           - os: windows-latest
             environement: gcc
           - os: windows-latest
@@ -56,20 +58,20 @@ jobs:
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
             sudo apt-get update -y
-            sudo apt-get install -y libxml2-utils zlib1g-dev libcurl4-gnutls-dev libmms-dev
+            sudo apt-get install -y libxml2-utils zlib1g-dev libcurl4-gnutls-dev libmms-dev ${{ matrix.environement == 'cmake-dll' && 'g++-mingw-w64-x86-64' || '' }}
           fi
           if [ "$RUNNER_OS" == "macOS" ]; then
             brew install libtool automake
           fi
       - name: zlib
-        if: ${{ runner.os == 'Windows' }}
+        if: ${{ (runner.os == 'Windows') || matrix.environement == 'cmake-dll' }}
         run: |
           git -C .. clone --depth=1 https://github.com/MediaArea/zlib.git
       - name: ZenLib
         run: |
           git -C .. clone --depth=1 https://github.com/MediaArea/ZenLib.git
       - name: Configure
-        if: ${{ matrix.environement != 'cmake' }}
+        if: ${{ (matrix.environement != 'cmake') && (matrix.environement != 'cmake-dll') }}
         run: |
           pushd ../ZenLib/Project/GNU/Library
             autoreconf -if
@@ -80,31 +82,36 @@ jobs:
           autoreconf -if
           ./configure --enable-silent-rules --with-libcurl=runtime
       - name: Build
-        if: ${{ matrix.environement != 'cmake' }}
+        if: ${{ (matrix.environement != 'cmake') && (matrix.environement != 'cmake-dll') }}
         run: |
           cd Project/GNU/Library
           make -j4
       - name: Check files
-        if: ${{ matrix.environement != 'cmake' }}
+        if: ${{ (matrix.environement != 'cmake') && (matrix.environement != 'cmake-dll') }}
         run: |
           cd Project/GNU/Library
           make clone_regression_files
       - name: Check
-        if: ${{ matrix.environement != 'cmake' }}
+        if: ${{ (matrix.environement != 'cmake') && (matrix.environement != 'cmake-dll') }}
         run: |
           sudo npm install -g jsonlint
           cd Project/GNU/Library
           make check
       - name: CMake Build
-        if: ${{ matrix.environement == 'cmake' }}
+        if: ${{ (matrix.environement == 'cmake') || (matrix.environement == 'cmake-dll') }}
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             export CXXFLAGS="/std:c++20 /WX /MP"
           fi
+          # cmake toolchain file for mingw-w64 x86_64 builds on Ubuntu
+          if [ "$RUNNER_OS" == "Linux" ] && [ "${{ matrix.environement }}" == "cmake-dll" ]; then
+            git clone --depth=1 https://gist.github.com/8cf73f7f12ba270aa8192d6911972fe8.git toolchain
+            export CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/toolchain/mingw-w64-x86_64.cmake
+          fi
           mkdir Project/CMake/Build
           cd Project/CMake/Build
-          cmake -DBUILD_ZENLIB=1 -DZLIB_BUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release ..
+          cmake -DBUILD_ZENLIB=1 -DZLIB_BUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release ${{ matrix.environement == 'cmake-dll' && '-DBUILD_SHARED_LIBS=ON' || '' }} ..
           cmake --build . ${{ runner.os == 'Windows' && '--config Release' || '-j4' }}
 
   MSBuild:

@@ -60,7 +60,7 @@ if (NOT BUILD_ZLIB)
   find_package(ZLIB REQUIRED)
 else()
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
-  if(NOT BUILD_SHARED_LIBS)
+  if(WIN32 OR NOT BUILD_SHARED_LIBS)
     set(ZLIB_LIBRARIES ZLIB::ZLIBSTATIC)
   endif()
   if(UNIX AND BUILD_SHARED_LIBS)
@@ -78,13 +78,6 @@ else()
 endif()
 
 set(MediaInfoLib_SOURCES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../Source)
-
-# On Windows debug library should have 'd' postfix.
-if(WIN32)
-  set(CMAKE_DEBUG_POSTFIX "d")
-elseif(APPLE)
-  set(CMAKE_DEBUG_POSTFIX "_debug")
-endif()
 
 # use bundled tinyxml only if no system
 find_package(TinyXML)
