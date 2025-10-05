@@ -427,11 +427,18 @@ namespace Elements
 //---------------------------------------------------------------------------
 // CRC_32_Table (Little Endian bitstream, )
 // The CRC in use is the IEEE-CRC-32 algorithm as used in the ISO 3309 standard and in section 8.1.1.6.2 of ITU-T recommendation V.42, with initial value of 0xFFFFFFFF. The CRC value MUST be computed on a little endian bitstream and MUST use little endian storage.
-// A CRC is computed like this:
-// Init: int32u CRC32 ^= 0;
-// for each data byte do
-//     CRC32=(CRC32>>8) ^ Mk_CRC32_Table[(CRC32&0xFF)^*Buffer_Current++];
-// End: CRC32 ^= 0;
+// Also known as CRC-32/ISO-HDLC
+//   Polynomial - 0x04C11DB7
+//   Init       - 0xFFFFFFFF
+//   RefIn      - true
+//   RefOut     - true
+//   XorOut     - 0xFFFFFFFF
+//   Check      - 0xCBF43926
+// The CRC is computed like this:
+//   Init: int32u CRC32 = 0xFFFFFFFF;
+//   For each data byte do:
+//       CRC32 = (CRC32 >> 8) ^ Mk_CRC32_Table[(CRC32 & 0xFF) ^ *Buffer_Current++];
+//   End: CRC32 ^= 0xFFFFFFFF;
 static const int32u Mk_CRC32_Table[256] =
 {
     0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
