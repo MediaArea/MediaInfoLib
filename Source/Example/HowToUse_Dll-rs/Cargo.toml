@@ -1,0 +1,8 @@
+[package]
+name = "HowToUse_Dll-rs"
+version = "25.10.0"
+edition = "2024"
+license = "BSD-2-Clause"
+
+[dependencies]
+mediainfo-rs = { path = "../../MediaInfoDLL/MediaInfoDLL-rs" }

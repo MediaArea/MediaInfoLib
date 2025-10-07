@@ -15,6 +15,8 @@
 #ifndef MediaInfoDLL_StaticH
 #define MediaInfoDLL_StaticH
 
+#include <stddef.h>
+
 //***************************************************************************
 // Platforms (from libzen)
 //***************************************************************************
