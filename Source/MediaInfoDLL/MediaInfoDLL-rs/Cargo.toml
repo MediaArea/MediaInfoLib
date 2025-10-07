@@ -1,0 +1,13 @@
+[package]
+name = "mediainfo-rs"
+version = "25.10.0"
+edition = "2024"
+license = "BSD-2-Clause"
+
+[dependencies]
+
+[build-dependencies]
+bindgen = "0.72.1"
+
+[dev-dependencies]
+sequential-test = "0.2.4"
