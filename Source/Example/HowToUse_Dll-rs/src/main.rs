@@ -14,7 +14,10 @@
 //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-use mediainfo_rs::{MediaInfo, MediaInfo_info_t::*, MediaInfo_stream_t::*};
+use mediainfo_rs::{
+    MediaInfo, MediaInfo_fileoptions_t::*, MediaInfo_info_t::*, MediaInfo_stream_t::*,
+    MediaInfoList,
+};
 use std::{
     env,
     fs::File,
@@ -96,11 +99,15 @@ fn main() {
 
     // By buffer example
     by_buffer_example(file).unwrap();
+
+    // MediaInfoList example
+    //mediainfo_list();
 }
 
 //***************************************************************************
 // By buffer example
 //***************************************************************************
+#[allow(dead_code)] //suppress warnings when this function is not called by main
 fn by_buffer_example(file: &str) -> io::Result<()> {
     //From: preparing an example file for reading
     let mut f = File::open(file)?;
@@ -158,4 +165,98 @@ fn by_buffer_example(file: &str) -> io::Result<()> {
     println!("{to_display}");
 
     Ok(())
+}
+
+//***************************************************************************
+// MediaInfoList example
+//***************************************************************************
+#[allow(dead_code)] //suppress warnings when this function is not called by main
+fn mediainfo_list() {
+    // New instance of MediaInfoList
+    let mi = MediaInfoList::new();
+
+    // Open a folder containing multiple media files (change the path to a folder containing files before running)
+    // You can also open multiple files/folders, one file/folder at a time, with multiple calls to mi.open
+    mi.open(r#"C:\Windows\Web\Wallpaper"#, MediaInfo_FileOption_Nothing);
+
+    // Get count of files opened
+    let file_count = mi.count_get_files();
+    println!("\n{file_count} files were opened.\n");
+
+    // Show some information about the files
+    // You can use similar methods as MediaInfo but most methods now have a file_pos parameter.
+    println!(
+        "{: <50} | {: <10} | {: >10} | {: >10} | {: >10}",
+        "Filename", "Format", "File size", "Width", "Height"
+    );
+    println!(
+        "------------------------------------------------------------------------------------------------------"
+    );
+    for i in 0..file_count {
+        println!(
+            "{: <50} | {: <10} | {: >10} | {: >10} | {: >10}",
+            mi.get(
+                i,
+                MediaInfo_Stream_General,
+                0,
+                "FileName",
+                MediaInfo_Info_Text,
+                MediaInfo_Info_Name,
+            ),
+            mi.get(
+                i,
+                MediaInfo_Stream_General,
+                0,
+                "Format",
+                MediaInfo_Info_Text,
+                MediaInfo_Info_Name,
+            ),
+            mi.get(
+                i,
+                MediaInfo_Stream_General,
+                0,
+                "FileSize_String",
+                MediaInfo_Info_Text,
+                MediaInfo_Info_Name,
+            ),
+            mi.get(
+                i,
+                if mi.count_get(i, MediaInfo_Stream_Video, usize::MAX) > 0 {
+                    MediaInfo_Stream_Video
+                } else {
+                    MediaInfo_Stream_Image
+                },
+                0,
+                "Width",
+                MediaInfo_Info_Text,
+                MediaInfo_Info_Name,
+            ),
+            mi.get(
+                i,
+                if mi.count_get(i, MediaInfo_Stream_Video, usize::MAX) > 0 {
+                    MediaInfo_Stream_Video
+                } else {
+                    MediaInfo_Stream_Image
+                },
+                0,
+                "Height",
+                MediaInfo_Info_Text,
+                MediaInfo_Info_Name,
+            )
+        );
+    }
+
+    // Close a file (0 means the first file in the list)
+    mi.close(0);
+    println!(
+        "\n{} files remain open after closing a file.\n",
+        mi.count_get_files()
+    );
+
+    // Close all files
+    mi.close(usize::MAX);
+    println!(
+        "{} files remain open after closing all files.\n",
+        mi.count_get_files()
+    );
 }
