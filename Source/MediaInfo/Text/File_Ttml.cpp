@@ -209,37 +209,36 @@ void File_Ttml::Streams_Finish()
 {
     if (Time_End.IsSet() && Time_Begin.IsSet())
     {
-        int64s Duration=(Time_End-Time_Begin).ToMilliseconds();
-        Fill(Stream_General, 0, General_Duration, Duration);
-        Fill(Stream_Text, 0, Text_Duration, Duration);
-        if (!Time_Begin.IsTimed())
-            Fill(Stream_Text, 0, Text_TimeCode_FirstFrame, Time_Begin.ToString());
-        if (!Time_End.IsTimed() && Time_End>Time_Begin)
+        auto AdaptMediaTime=[&](TimeCode &TC)
         {
-            TimeCode LastFrame=Time_End;
-            --LastFrame;
-            Fill(Stream_Text, 0, Text_TimeCode_LastFrame, LastFrame.ToString());
-        }
-        auto MediaTimeToMilliseconds=[&](TimeCode TC)
-        {
-            auto Is1001fps=TC.Is1001fps();
-            if (TimeBase!=timeBase_media || (!Is1001fps && !TC.DropFrame())) // https://www.w3.org/TR/2018/REC-ttml2-20181108/#semantics-media-timing
-                return TC.ToMilliseconds();
+            if (Time_Begin.IsTimed() || TimeBase!=timeBase_media || (!TC.Is1001fps() && !TC.DropFrame())) // https://www.w3.org/TR/2018/REC-ttml2-20181108/#semantics-media-timing
+                return;
             auto Frames=TC.GetFrames();
             auto MS=((float)Frames)*1000/TC.GetFrameRate();
-            TC.Set1001fps(false);
-            TC.SetDropFrame(false);
-            TC.SetFrames(0);
-            auto Value=TC.ToMilliseconds();
+            auto Temp(TC);
+            Temp.Set1001fps(false);
+            Temp.SetDropFrame(false);
+            Temp.SetFrames(0);
+            auto Value=Temp.ToMilliseconds();
             Value+=float32_int64s(MS);
-            return Value;
+            TC.FromSeconds(Value / 1000.0);
         };
-        auto Time_Begin_ms = (int64s)MediaTimeToMilliseconds(Time_Begin);
-        auto Time_End_ms = (int64s)MediaTimeToMilliseconds(Time_End);
+        AdaptMediaTime(Time_Begin);
+        AdaptMediaTime(Time_End);
+        auto Duration = Time_End - Time_Begin;
+        auto Time_Begin_ms = (int64u)Time_Begin.ToMilliseconds();
+        auto Time_End_ms = (int64u)Time_End.ToMilliseconds();
+        auto Duration_ms = (int64u)(Time_End - Time_Begin).ToMilliseconds();
+        Fill(Stream_General, 0, General_Duration, Duration_ms);
+        Fill(Stream_Text, 0, Text_Duration, Duration_ms);
         Fill(Stream_Text, 0, Text_Duration_Start_Command, Time_Begin_ms);
         Fill(Stream_Text, 0, Text_Duration_Start, Time_Begin_ms);
         Fill(Stream_Text, 0, Text_Duration_End, Time_End_ms);
         Fill(Stream_Text, 0, Text_Duration_End_Command, Time_End_ms);
+        if (!Time_Begin.IsTimed())
+            Fill(Stream_Text, 0, Text_TimeCode_FirstFrame, Time_Begin.ToString());
+        if (!Time_End.IsTimed() && Time_End > Time_Begin)
+            Fill(Stream_Text, 0, Text_TimeCode_LastFrame, (Time_End - 1).ToString());
     }
     Fill(Stream_Text, 0, Text_FrameRate_Mode, "CFR");
     Fill(Stream_Text, 0, Text_Events_Total, FrameCount-EmptyCount);
