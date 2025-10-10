@@ -1232,7 +1232,7 @@ void File_Ac4::Streams_Fill()
             if ((Presentation.b_multi_pid_PresentAndValue && Presentation.b_multi_pid_PresentAndValue != (int8u)-1) || Presentation.mdcompat > 4) {
                 continue;
             }
-            BitstreamLevel = min(BitstreamLevel == 4 ? 4 : 3, BitstreamLevel);
+            BitstreamLevel = min(Presentation.mdcompat == 4 ? 4 : 3, BitstreamLevel);
         }
     }
     Fill(Stream_Audio, 0, "BitstreamLevel", BitstreamLevel);
