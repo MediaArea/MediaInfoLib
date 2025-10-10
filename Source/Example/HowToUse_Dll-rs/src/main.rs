@@ -21,7 +21,7 @@ use mediainfo_rs::{
 use std::{
     env,
     fs::File,
-    io::{self, Read, Seek, SeekFrom},
+    io::{self, Read, Seek, SeekFrom, Write},
 };
 
 fn main() {
@@ -102,6 +102,9 @@ fn main() {
 
     // MediaInfoList example
     //mediainfo_list();
+
+    // File_Duplicate by buffer example
+    //file_duplicate_buffer().unwrap();
 }
 
 //***************************************************************************
@@ -259,4 +262,102 @@ fn mediainfo_list() {
         "{} files remain open after closing all files.\n",
         mi.count_get_files()
     );
+}
+
+//***************************************************************************
+// File_Duplicate by buffer example
+// https://mediaarea.net/en/MediaInfo/Support/SDK/Duplicate
+//***************************************************************************
+#[allow(dead_code)] //suppress warnings when this function is not called by main
+fn file_duplicate_buffer() -> io::Result<()> {
+    //From: preparing an example file for reading
+    //For this example, MPTS.ts is a file generated with:
+    //  ffmpeg -f lavfi -i "testsrc=duration=10:size=1280x720:rate=25" \
+    //    -f lavfi -i "sine=frequency=440:duration=10" \
+    //    -f lavfi -i "testsrc=duration=10:size=640x480:rate=30" \
+    //    -f lavfi -i "sine=frequency=880:duration=10" \
+    //    -map 0:v:0 -map 1:a:0 -map 2:v:0 -map 3:a:0 \
+    //    -program title=ProgOne:st=0:st=1 -program title=ProgTwo:st=2:st=3 \
+    //    -c:v libx264 -c:a aac -f mpegts MPTS.ts
+    let mut f = File::open("MPTS.ts")?;
+
+    //From: preparing a memory buffer for reading
+    let mut from_buffer = [0u8; 102400]; //Note: you can do your own buffer
+    let mut from_buffer_size; //The size of the read file buffer
+
+    //To: preparing a memory buffer for writing
+    let to_buffer = [0u8; 102400]; //Note: you can do your own buffer
+    let mut to_buffer_size_written; //The size of the output buffer that is written by MediaInfo
+
+    //Destination file
+    let mut of = File::create("MPTS_File_Duplicate.ts")?;
+
+    //From: retrieving file size
+    f.seek(SeekFrom::End(0))?;
+    let f_size = f.stream_position()?;
+    f.seek(SeekFrom::Start(0))?;
+
+    //Initializing MediaInfo
+    let mi = MediaInfo::new();
+
+    //Registering for duplication
+    //The streams has multiple programs, one of these program is named "1".
+    //The user wants to have this program, and only this one, in the output.
+    mi.option(
+        "File_Duplicate",
+        &format!(
+            "memory://{}:{};program_number={}",
+            to_buffer.as_ptr() as usize,
+            to_buffer.len(),
+            1
+        ),
+    );
+
+    //Setting MediaInfo as parsing a non seakable file, because we want the complete stream
+    mi.option("File_IsSeekable", "0");
+
+    //Preparing to fill MediaInfo with a buffer
+    mi.open_buffer_init(f_size, 0);
+
+    //The parsing loop
+    let mut can_write_only_if_parsing_is_ok = false;
+    loop {
+        //Reading data somewhere, do what you want for this.
+        from_buffer_size = f.read(&mut from_buffer)?;
+
+        //Sending the buffer to MediaInfo
+        let status = mi.open_buffer_continue(&from_buffer, from_buffer_size);
+        if status & 0x1 == 0x1 && !can_write_only_if_parsing_is_ok {
+            can_write_only_if_parsing_is_ok = true;
+        }
+
+        if can_write_only_if_parsing_is_ok {
+            //Retrieving data written in memory
+            to_buffer_size_written = mi.output_buffer_get(&format!(
+                "memory://{}:{}",
+                to_buffer.as_ptr() as usize,
+                to_buffer.len()
+            ));
+
+            //Writing data to somewhere, do what you want for this.
+            of.write_all(&to_buffer[0..to_buffer_size_written])?;
+        }
+
+        if from_buffer_size == 0 {
+            break;
+        }
+    }
+
+    //Finalizing
+    mi.open_buffer_finalize(); //This is the end of the stream, MediaInfo must finnish some work
+
+    //Inform
+    mi.option("Inform", ""); //reset to default due to previous changes in examnple main()
+    mi.option("Complete", ""); //reset to default due to previous changes in examnple main()
+    println!("\nOriginal:\n\n{}", mi.inform());
+    let mi2 = MediaInfo::new();
+    mi2.open("MPTS_File_Duplicate.ts");
+    println!("\nDuplicated::\n\n{}", mi2.inform());
+
+    Ok(())
 }
