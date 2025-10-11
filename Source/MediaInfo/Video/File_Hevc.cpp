@@ -30,6 +30,10 @@ using namespace ZenLib;
 namespace MediaInfoLib
 {
 
+const char* DV_content_type(int8u content_type);
+const char* DV_white_point(int8u white_point);
+const char* DV_intended_setting(int8u setting, bool off);
+
 //---------------------------------------------------------------------------
 extern const char* Hevc_tier_flag(bool tier_flag)
 {
@@ -3782,6 +3786,41 @@ void File_Hevc::Dolby_Vision_reference_processing_unit()
     BS_Begin();
     Get_DolbyVision_ReferenceProcessingUnit(DV_RPU_data);
     BS_End();
+
+    //Filling
+    FILLING_BEGIN();
+    if (DV_RPU_data.active_area_left_offset || DV_RPU_data.active_area_right_offset || DV_RPU_data.active_area_top_offset || DV_RPU_data.active_area_bottom_offset) {
+        auto width = Retrieve(StreamKind_Last, StreamPos_Last, Video_Width).To_int16u();
+        auto height = Retrieve(StreamKind_Last, StreamPos_Last, Video_Height).To_int16u();
+        auto active_width = width - DV_RPU_data.active_area_left_offset - DV_RPU_data.active_area_right_offset;
+        auto active_height = height - DV_RPU_data.active_area_top_offset - DV_RPU_data.active_area_bottom_offset;
+        Fill(StreamKind_Last, StreamPos_Last, Video_Active_Width, active_width);
+        Fill(StreamKind_Last, StreamPos_Last, Video_Active_Height, active_height);
+        float32 PAR = Retrieve_Const(StreamKind_Last, StreamPos_Last, "PixelAspectRatio").To_float32();
+        if (PAR)
+            Fill(StreamKind_Last, StreamPos_Last, Video_Active_DisplayAspectRatio, ((float32)active_width) / active_height * PAR, 2);
+    }
+    if (DV_RPU_data.max_display_mastering_luminance && DV_RPU_data.min_display_mastering_luminance) {
+        Ztring display_mastering_luminance = __T("min: ") + Ztring::ToZtring((float64)DV_RPU_data.min_display_mastering_luminance/10000, 4)
+            + __T(" cd/m2, max: ") + Ztring::ToZtring(DV_RPU_data.max_display_mastering_luminance, 0)
+            + __T(" cd/m2");
+        Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_Luminance", display_mastering_luminance);
+    }
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision", "RPU Present");
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision RPU_Profile", DV_RPU_data.vdr_rpu_profile);
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Base_Layer", (to_string(DV_RPU_data.bl_bit_depth) + " bits").c_str());
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Enhancement_Layer", (to_string(DV_RPU_data.el_bit_depth) + " bits").c_str());
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision VDR", (to_string(DV_RPU_data.vdr_bit_depth) + " bits").c_str());
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Base_Layer_Video_Range", DV_RPU_data.BL_video_full_range_flag ? "Full" : "Limited");
+    if (DV_RPU_data.isMEL != (int8u)-1) Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Enhancement_Layer_Type", DV_RPU_data.isMEL == 0 ? "Full (FEL)" : "Minimal (MEL)");
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Mapping_version", DV_RPU_data.CMv, 1);
+    if (DV_RPU_data.L11_present) {
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata", "Present");
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata Content_Type", DV_content_type(DV_RPU_data.content_type));
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata White_Point", DV_white_point(DV_RPU_data.white_point));
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata Reference_Mode", DV_RPU_data.reference_mode ? "Yes" : "No");
+    }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
