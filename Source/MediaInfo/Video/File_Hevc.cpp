@@ -30,6 +30,10 @@ using namespace ZenLib;
 namespace MediaInfoLib
 {
 
+const char* DV_content_type(int8u content_type);
+const char* DV_white_point(int8u white_point);
+const char* DV_intended_setting(int8u setting, bool off);
+
 //---------------------------------------------------------------------------
 extern const char* Hevc_tier_flag(bool tier_flag)
 {
@@ -3782,6 +3786,29 @@ void File_Hevc::Dolby_Vision_reference_processing_unit()
     BS_Begin();
     Get_DolbyVision_ReferenceProcessingUnit(DV_RPU_data);
     BS_End();
+
+    //Filling
+    FILLING_BEGIN();
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision", "RPU Present");
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision RPU_Profile", DV_RPU_data.vdr_rpu_profile);
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Base_Layer", (to_string(DV_RPU_data.bl_bit_depth) + " bits").c_str());
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Enhancement_Layer", (to_string(DV_RPU_data.el_bit_depth) + " bits").c_str());
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision VDR", (to_string(DV_RPU_data.vdr_bit_depth) + " bits").c_str());
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Base_Layer_Video_Range", DV_RPU_data.BL_video_full_range_flag ? "Full" : "Limited");
+    if (DV_RPU_data.isMEL != (int8u)-1) Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Enhancement_Layer_Type", DV_RPU_data.isMEL == 0 ? "Full (FEL)" : "Minimal (MEL)");
+    if (DV_RPU_data.L11_present) {
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata", "Present");
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata Content_Type", DV_content_type(DV_RPU_data.content_type));
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata White_Point", DV_white_point(DV_RPU_data.white_point));
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata Sharpness", DV_intended_setting(DV_RPU_data.sharpness, true));
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata Noise_Reduction", DV_intended_setting(DV_RPU_data.noise_reduction, true));
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata MPEG_Noise_Reduction", DV_intended_setting(DV_RPU_data.mpeg_noise_reduction, true));
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata Frame_Rate_Conversion", DV_intended_setting(DV_RPU_data.frame_rate_conversion, true));
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata Brightness", DV_intended_setting(DV_RPU_data.brightness, false));
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata Color", DV_intended_setting(DV_RPU_data.color, false));
+    }
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Deduced_Profile", DV_RPU_data.profile_deduced);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
