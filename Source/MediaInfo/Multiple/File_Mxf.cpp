@@ -6069,6 +6069,11 @@ void File_Mxf::Data_Parse()
     switch (Code.hi >> 8) {
     case 0x060E2B34010201LL: {
     {
+        if (IsArriExperimental && Code.lo == 0x0F01030101010100LL) {
+            Code_Compare3 = (int32u)(Essences::MPEG_Frame >> 32);
+            Code_Compare4 = (int32u)Essences::MPEG_Frame | 0x010000;
+        }
+
         auto Name = Mxf_Param_Info((int32u)Code.hi, Code.lo & 0xFFFFFFFFFF00FF00);
         Element_Name(Name ? Name : "Unknown stream");
 
@@ -10349,7 +10354,7 @@ void File_Mxf::Identification_ProductName()
 
     FILLING_BEGIN();
         Identifications[InstanceUID].ProductName=Data;
-        if (Data == __T("ALEXA Mini")) {
+        if (Data == __T("ALEXA Mini") || Data == __T("ALEXA Mini LF")) {
             IsArriExperimental = true;
         }
     FILLING_END();
@@ -14415,7 +14420,9 @@ void File_Mxf::ChooseParser__FromCodingScheme(const essences::iterator &Essence,
         return;
 
     if (IsArriExperimental) {
-        if ((Code.lo & 0xFFFFFFFFFF0FF000) == 0x0401020102010000) {
+        switch (Descriptor->second.EssenceCompression.lo) {
+        case 0x0401020102010203:
+        case 0x0F01020201010100:
             return ChooseParser_ArriRaw(Essence, Descriptor);
         }
     }
@@ -14656,9 +14663,9 @@ void File_Mxf::ChooseParser__FromEssenceContainer(const essences::iterator &Esse
 void File_Mxf::ChooseParser__FromEssence(const essences::iterator &Essence, const descriptors::iterator &Descriptor)
 {
     if (IsArriExperimental) {
-        if ((Code.lo & 0xFFFFFFFFFF00FF00) == 0x0F01030101000100) {
-            ChooseParser_ArriRaw(Essence, Descriptor);
-            return;
+        switch (Code.lo & 0xFFFFFFFFFF00FF00) {
+        case 0x0F01030101000100:
+            return ChooseParser_ArriRaw(Essence, Descriptor);
         }
     }
 
@@ -15136,6 +15143,8 @@ void File_Mxf::ChooseParser_Pcm(const essences::iterator &Essence, const descrip
     //Creating the parser
     #if defined(MEDIAINFO_PCM_YES)
         File_Pcm* Parser=new File_Pcm;
+        if (IsArriExperimental)
+            Parser->Frame_Count_Valid=1;
         if (Descriptor!=Descriptors.end())
         {
             if (Channels)
@@ -15325,6 +15334,7 @@ void File_Mxf::ChooseParser_ArriRaw(const essences::iterator &Essence, const des
                 Parser->Fill(Stream_Video, 0, Video_Format, "ARRIRAW HDE", Unlimited, true, true);
             }
         }
+        Parser->Finish();
         Essence->second.Parsers.push_back(Parser);
     #endif
 }
