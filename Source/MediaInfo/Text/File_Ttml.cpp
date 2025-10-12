@@ -28,6 +28,7 @@
 #endif //MEDIAINFO_EVENTS
 #include "tinyxml2.h"
 #include <cstring>
+#include <limits>
 using namespace tinyxml2;
 using namespace std;
 //---------------------------------------------------------------------------
@@ -315,6 +316,7 @@ void File_Ttml::Read_Buffer_Continue()
     // Root attributes
     bool IsSmpteTt=false, IsEbuTt=false, IsImsc1=false;
     int32u tickRate=0;
+    int32u TimeCodeFrameMax=0;
     const char* Tt_Attribute;
     Tt_Attribute=Root->Attribute("ittp:aspectRatio");
     if (!Tt_Attribute)
@@ -370,24 +372,6 @@ void File_Ttml::Read_Buffer_Continue()
         Fill(Stream_Text, 0, Text_FrameRate_Num, FrameRate_Int*FrameRateMultiplier_Num, 10, true);
         Fill(Stream_Text, 0, Text_FrameRate_Den, FrameRateMultiplier_Den, 10, true);
     }
-    if (!FrameRate_Int && !tickRate)
-    {
-        #if MEDIAINFO_ADVANCED
-            float64 FrameRate_F=Video_FrameRate_Rounded(Config->File_DefaultFrameRate_Get());
-            if (!FrameRate_F)
-                FrameRate_F=30; //"if no application defined frame rate applies, then thirty (30) frames per second" https://www.w3.org/TR/2018/REC-ttml2-20181108/#parameter-attribute-frameRate
-        #else //MEDIAINFO_ADVANCED
-            const float64 FrameRate_F=30;
-        #endif //MEDIAINFO_ADVANCED
-        FrameRate_Int=float64_int64s(FrameRate_F);
-        if (FrameRate_Int != FrameRate_F)
-        {
-            FrameRateMultiplier_Num=1000;
-            FrameRateMultiplier_Den=float64_int64s(FrameRate_Int/FrameRate_F*1000);
-            if (FrameRateMultiplier_Num==1000 && FrameRateMultiplier_Den==1001)
-                FrameRate_Is1001=true;
-        }
-    }
     Tt_Attribute=Root->Attribute("xml:lang");
     if (!Tt_Attribute)
         Tt_Attribute=Root->Attribute("lang");
@@ -428,6 +412,13 @@ void File_Ttml::Read_Buffer_Continue()
     {
         Fill(Stream_General, 0, General_Format_Profile, "SMPTE-TT");
         Fill(Stream_Text, 0, Text_Format_Profile, "SMPTE-TT");
+        if (!FrameRate_Int && tickRate >= 2000)
+        {
+            // Not clear but it seems that tickRate is actually frame rate x 1000 in several files without frame rate
+            auto Temp = float64_int64s(tickRate / 1000.0) - 1;
+            if (Temp <= numeric_limits<int32u>::max())
+                TimeCodeFrameMax = Temp;
+        }
     }
     if (IsEbuTt)
     {
@@ -438,6 +429,24 @@ void File_Ttml::Read_Buffer_Continue()
     {
         Fill(Stream_General, 0, General_Format_Profile, "IMSC1");
         Fill(Stream_Text, 0, Text_Format_Profile, "IMSC1");
+    }
+    if (!FrameRate_Int && !tickRate)
+    {
+        #if MEDIAINFO_ADVANCED
+            float64 FrameRate_F=Video_FrameRate_Rounded(Config->File_DefaultFrameRate_Get());
+            if (!FrameRate_F)
+                FrameRate_F=30; //"if no application defined frame rate applies, then thirty (30) frames per second" https://www.w3.org/TR/2018/REC-ttml2-20181108/#parameter-attribute-frameRate
+        #else //MEDIAINFO_ADVANCED
+            const float64 FrameRate_F=30;
+        #endif //MEDIAINFO_ADVANCED
+        FrameRate_Int=float64_int64s(FrameRate_F);
+        if (FrameRate_Int != FrameRate_F)
+        {
+            FrameRateMultiplier_Num=1000;
+            FrameRateMultiplier_Den=float64_int64s(FrameRate_Int/FrameRate_F*1000);
+            if (FrameRateMultiplier_Num==1000 && FrameRateMultiplier_Den==1001)
+                FrameRate_Is1001=true;
+        }
     }
     string Rosetta_Profile, Rosetta_Version;
 
@@ -467,6 +476,8 @@ void File_Ttml::Read_Buffer_Continue()
                     {
                         if (!Time_Begin_New.FromString(Attribute))
                         {
+                            if (TimeCodeFrameMax && !Time_Begin_New.IsTimed())
+                                Time_Begin_New.SetFramesMax(TimeCodeFrameMax);
                             if (!Time_Begin.IsSet() || Time_Begin>Time_Begin_New)
                                 Time_Begin=Time_Begin_New;
                             if (!Time_End.IsSet() || Time_End<Time_Begin_New)
@@ -477,6 +488,8 @@ void File_Ttml::Read_Buffer_Continue()
                     {
                         if (!Time_End_New.FromString(Attribute))
                         {
+                            if (TimeCodeFrameMax && !Time_End_New.IsTimed())
+                                Time_End_New.SetFramesMax(TimeCodeFrameMax);
                             if (!Time_Begin.IsSet() || Time_Begin>Time_End_New)
                                 Time_Begin=Time_End_New;
                             if (!Time_End.IsSet() || Time_End<Time_End_New)
@@ -488,6 +501,8 @@ void File_Ttml::Read_Buffer_Continue()
                         TimeCode Time_Dur_New=Time_Template;
                         if (Time_Begin.IsSet() && !Time_Dur_New.FromString(Attribute))
                         {
+                            if (TimeCodeFrameMax && !Time_Dur_New.IsTimed())
+                                Time_Dur_New.SetFramesMax(TimeCodeFrameMax);
                             Time_End_New=Time_Begin_New;
                             Time_End_New+=Time_Dur_New;
                             if (!Time_Begin.IsSet() || Time_Begin>Time_End_New)
@@ -506,6 +521,8 @@ void File_Ttml::Read_Buffer_Continue()
                             {
                                 if (!Time_Begin_New.FromString(Attribute))
                                 {
+                                    if (TimeCodeFrameMax && !Time_Begin_New.IsTimed())
+                                        Time_Begin_New.SetFramesMax(TimeCodeFrameMax);
                                     if (!Time_Begin.IsSet() || Time_Begin>Time_Begin_New)
                                         Time_Begin=Time_Begin_New;
                                     if (!Time_End.IsSet() || Time_End<Time_Begin_New)
@@ -516,6 +533,8 @@ void File_Ttml::Read_Buffer_Continue()
                             {
                                 if (!Time_End_New.FromString(Attribute))
                                 {
+                                    if (TimeCodeFrameMax && !Time_End_New.IsTimed())
+                                        Time_End_New.SetFramesMax(TimeCodeFrameMax);
                                     if (!Time_Begin.IsSet() || Time_Begin>Time_End_New)
                                         Time_Begin=Time_End_New;
                                     if (!Time_End.IsSet() || Time_End<Time_End_New)
@@ -527,6 +546,8 @@ void File_Ttml::Read_Buffer_Continue()
                                 TimeCode Time_Dur_New=Time_Template;
                                 if (Time_Begin.IsSet() && !Time_Dur_New.FromString(Attribute))
                                 {
+                                    if (TimeCodeFrameMax && !Time_Dur_New.IsTimed())
+                                        Time_Dur_New.SetFramesMax(TimeCodeFrameMax);
                                     Time_End_New=Time_Begin_New;
                                     Time_End_New+=Time_Dur_New;
                                     if (!Time_Begin.IsSet() || Time_Begin>Time_End_New)
