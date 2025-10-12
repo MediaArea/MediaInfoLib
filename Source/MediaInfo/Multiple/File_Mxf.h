@@ -1285,7 +1285,7 @@ protected :
     void           ChooseParser_xAnc(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_Hdcam(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_Hevc(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
-    void           ChooseParser_JpegXs(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
+    void           ChooseParser(const essences::iterator& Essence, const descriptors::iterator& Descriptor, stream_t StreamKind, const char* Format = nullptr);
 
     //Helpers
     int32u Vector(int32u ExpectedLength=(int32u)-1);
