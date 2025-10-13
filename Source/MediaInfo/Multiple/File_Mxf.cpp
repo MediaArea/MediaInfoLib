@@ -2428,6 +2428,10 @@ void File_Mxf::Streams_Finish()
         Merge(*DolbyAudioMetadata, Stream_Audio, 0, 0);
     if (Adm)
     {
+        Fill(Adm);
+        #if defined(MEDIAINFO_ADM_YES)
+        CompareAdmProfiles();
+        #endif
         Finish(Adm);
         Merge(*Adm, Stream_Audio, 0, 0);
     }
@@ -2472,7 +2476,7 @@ void File_Mxf::Streams_Finish()
     //Commercial names
     Streams_Finish_CommercialNames();
 
-    Merge_Conformance();
+    Streams_Finish_Conformance();
 }
 
 //---------------------------------------------------------------------------
@@ -10908,8 +10912,15 @@ void File_Mxf::RIFFChunkStreamID_link1()
 void File_Mxf::ADMProfileLevelULBatch()
 {
     VECTOR(16);
+    set<int128u> List;
     for (int32u i=0; i<Count; i++)
-        Skip_UUID(                                              "UUID");
+    {
+        int128u UUID;
+        Get_UUID (UUID,                                         "UUID"); Param_Info1(Mxf_Param_Info((int32u)UUID.hi, UUID.lo)); Element_Info1(Mxf_Param_Info((int32u)UUID.hi, UUID.lo));
+        List.insert(UUID);
+    }
+
+    ADMProfileLevelULBatch_List[InstanceUID] = std::move(List);
 }
 
 //---------------------------------------------------------------------------
@@ -11343,25 +11354,6 @@ void File_Mxf::MGAMetadataSectionLinkID()
 {
     //Parsing
     Skip_UUID(                                                  "UUID");
-}
-
-//---------------------------------------------------------------------------
-void File_Mxf::SADMMetadataSectionLinkID()
-{
-    //Parsing
-    Skip_UUID(                                                  "UUID");
-}
-
-//---------------------------------------------------------------------------
-void File_Mxf::SADMProfileLevelULBatch()
-{
-    //Parsing
-    VECTOR(16);
-    for (int32u i=0; i<Count; i++)
-    {
-        //Parsing
-        Skip_UUID(                                              "UUID");
-    }
 }
 
 //---------------------------------------------------------------------------
@@ -16018,6 +16010,87 @@ void File_Mxf::Descriptor_Fill(const char* Name, const Ztring& Value)
     else
         Info->second = Value;
 }
+
+//---------------------------------------------------------------------------
+#if defined(MEDIAINFO_ADM_YES)
+struct adm_ul_to_string
+{
+    int64u UL;
+    const char* Name;
+};
+static adm_ul_to_string Mxf_ADM_UL_To_String[] = {
+    { 0x0402021102010000LL, "AdvSS Emission, Version 1, Level 0" },
+    { 0x0402021102020000LL, "AdvSS Emission, Version 1, Level 1" },
+    { 0x0402021102030000LL, "AdvSS Emission, Version 1, Level 2" },
+    { 0x0D02020101000000LL, "EBU Production, Version 1"},
+    { 0x0E09010106010100LL, "Dolby Atmos Master, Version 1"},
+    { 0x0E09010106010200LL, "Dolby Atmos Master, Version 1"}, // 1.1
+    { 0x0E09010106020100LL, "Dolby E Emission, Version 1, Level 1"},
+};
+void File_Mxf::CompareAdmProfiles()
+{
+    if (ADMProfileLevelULBatch_List.empty() || ADMProfileLevelULBatch_List.size() > 1)
+        return; // TODO: support multiple ADMProfileLevelULBatch
+
+    std::set<string> Profile_List_Container;
+    auto CanNotCompare = false;
+    for (const auto& Item : ADMProfileLevelULBatch_List.cbegin()->second)
+    {
+        const char* Item_String = nullptr;
+        for (const auto& UL_To_String : Mxf_ADM_UL_To_String)
+        {
+            if (Item.lo == UL_To_String.UL)
+            {
+                Item_String = UL_To_String.Name;
+                break;
+            }
+        }
+
+        if (!Item_String)
+        {
+            CanNotCompare = true;
+            continue;
+        }
+
+        Profile_List_Container.insert(Item_String);
+    }
+
+    auto Max = Adm->Count_Get(Stream_Audio, 0);
+    std::set<string> Profile_List_Stream;
+    for (size_t Pos = 0; Pos < Max; Pos++)
+    {
+        const auto& Name = Adm->Retrieve_Const(Stream_Audio, 0, Pos, Info_Name);
+        if ((Name.size() < 22 || Name.size() > 23 || Name.rfind(__T("AdmProfile AdmProfile"), 0)) && Name != __T("AdmProfile"))
+            continue;
+
+        Profile_List_Stream.insert(Adm->Retrieve_Const(Stream_Audio, 0, Pos, Info_Text).To_UTF8());
+    }
+
+    for (const auto& Profile_Container : Profile_List_Container)
+    {
+        const auto Profile_Stream = Profile_List_Stream.find(Profile_Container);
+        if (Profile_Stream == Profile_List_Stream.end())
+            Adm->Fill_Conformance("Crosscheck AdmProfile", '\"' + Profile_Container + "\" is listed in the container but not found in the ADM content");
+        else
+            Profile_List_Stream.erase(Profile_Stream);
+    }
+
+    for (const auto& Profile_Stream : Profile_List_Stream)
+    {
+        auto IsKnown = false;
+        for (const auto& UL_To_String : Mxf_ADM_UL_To_String)
+        {
+            if (Profile_Stream == UL_To_String.Name)
+            {
+                IsKnown = true;
+                break;
+            }
+        }
+        if (IsKnown && !CanNotCompare)
+            Adm->Fill_Conformance("Crosscheck AdmProfile", '\"' + Profile_Stream + "\" is not listed in the container but found in the ADM content");
+    }
+}
+#endif
 
 } //NameSpace
 
