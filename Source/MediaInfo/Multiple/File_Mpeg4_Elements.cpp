@@ -883,6 +883,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_ACLR=0x41434C52;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_amve=0x616D7665;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_APRG=0x41505247;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_apvC=0x61707643;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_ARES=0x41524553;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_AORD=0x414F5244;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_av1C=0x61763143;
@@ -1336,6 +1337,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ACLR)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_amve)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_APRG)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_apvC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ARES)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_AORD)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_av1C)
@@ -7113,6 +7115,56 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_APRG()
     Skip_C4(                                                    "Version");
     Get_B4 (ScanType,                                           "Number of fields"); Param_Info1(ScanType==1?"Progressive":ScanType==2?"Interlaced":"");
     Skip_B4(                                                    "Reserved"); // Must be 0
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_apvC()
+{
+    NAME_VERSION_FLAG("APVDecoderConfigurationBox");
+    AddCodecConfigurationBoxInfo();
+
+    //Parsing
+    Element_Begin1("APVDecoderConfigurationRecord");
+    int8u number_of_configuration_entry;
+    Skip_B1(                                                    "configurationVersion");
+    Get_B1 (number_of_configuration_entry,                      "number_of_configuration_entry");
+    for (int8u i = 0; i < number_of_configuration_entry; ++i) {
+        int8u number_of_frame_info;
+        Skip_B1(                                                "pbu_type[i]");
+        Get_B1 (number_of_frame_info,                           "number_of_frame_info[i]");
+        for (int8u j = 0; j < number_of_frame_info; ++j) {
+            bool color_description_present_flag;
+            BS_Begin();
+            Skip_S1(6,                                          "reserved_zero_6bits");
+            Get_SB (color_description_present_flag,             "color_description_present_flag[i][j]");
+            Skip_SB(                                            "capture_time_distance_ignored[i][j]");
+            BS_End();
+            Skip_B1(                                            "profile_idc[i][j]");
+            Skip_B1(                                            "level_idc[i][j]");
+            Skip_B1(                                            "band_idc[i][j]");
+            Skip_B4(                                            "frame_width[i][j]");
+            Skip_B4(                                            "frame_height[i][j]");
+            BS_Begin();
+            Skip_S1(4,                                          "chroma_format_idc[i][j]");
+            Skip_S1(4,                                          "bit_depth_minus8[i][j]");
+            BS_End();
+            Skip_B1(                                            "capture_time_distance[i][j]");
+            if (color_description_present_flag) {
+                Skip_B1(                                        "color_primaries[i][j]");
+                Skip_B1(                                        "transfer_characteristics[i][j]");
+                Skip_B1(                                        "matrix_coefficients[i][j]");
+                BS_Begin();
+                Skip_SB(                                        "full_range_flag[i][j]");
+                Skip_S1(7,                                      "reserved_zero_7bits");
+                BS_End();
+            }
+        }
+    }
+    Element_End0();
+
+    //Filling
+    FILLING_BEGIN_PRECISE();
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
