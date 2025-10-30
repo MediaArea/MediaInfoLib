@@ -1994,15 +1994,15 @@ void File_Exif::FileHeader_Parse()
 
     //HEIF
     if (FromHeif) {
-        int32u Size;
-        Get_B4 (Size,                                           "Exif header length");
+        int32u exif_tiff_header_offset;
+        Get_B4 (exif_tiff_header_offset,                        "exif_tiff_header_offset");
         string Identifier;
-        Get_String(Size, Identifier,                            "Identifier");
-        if (!(Size == 0 || (Size == 6 && !strncmp(Identifier.c_str(), "Exif\0", 6)))) {
+        Get_String(exif_tiff_header_offset, Identifier,         "Identifier");
+        if (!(exif_tiff_header_offset == 0 || (exif_tiff_header_offset == 6 && !strncmp(Identifier.c_str(), "Exif\0", 6)))) {
             Reject();
             return;
         }
-        OffsetFromContainer = static_cast<int64s>(4) + Size;
+        OffsetFromContainer = static_cast<int64s>(4) + exif_tiff_header_offset;
     }
 
     //Exif Makernotes
