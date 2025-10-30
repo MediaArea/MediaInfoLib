@@ -709,8 +709,10 @@ std::string File_Mpeg4_sv3d_Mesh_index_type(int8u Value)
 namespace Elements
 {
     const int64u bloc=0x626C6F63;
+    const int64u brob=0x62726F62;
     const int64u cdat=0x63646174;
     const int64u cdt2=0x63647432;
+    const int64u Exif=0x45786966;
     const int64u free=0x66726565;
     const int64u ftyp=0x66747970;
     const int64u ftyp_qt=0x71742020;
@@ -721,6 +723,7 @@ namespace Elements
     const int64u ftyp_dash=0x64617368;
     const int64u ftyp_isom=0x69736F6D;
     const int64u ftyp_caqv=0x63617176;
+    const int64u hrgm=0x6872676D;
     const int64u idat=0x69646174;
     const int64u idsc=0x69647363;
     const int64u jp2c=0x6A703263;
@@ -728,6 +731,7 @@ namespace Elements
     const int64u jp2h_colr=0x636F6C72;
     const int64u jp2h_ihdr=0x69686472;
     const int64u jp2h_ricc=0x72696363;
+    const int64u JXL_=0x4A584C20;
     const int64u mdat=0x6D646174;
     const int64u meta=0x6D657461;
     const int64u meta_grpl=0x6772706C;
@@ -1095,6 +1099,7 @@ namespace Elements
     const int64u sidx=0x73696478;
     const int64u uuid=0x75756964;
     const int64u wide=0x77696465;
+    const int64u xml_=0x786D6C20;
 }
 
 //---------------------------------------------------------------------------
@@ -1136,10 +1141,13 @@ void File_Mpeg4::Data_Parse()
     //Parsing
     DATA_BEGIN
     ATOM(bloc)
+    ATOM(brob)
     ATOM(cdat)
     ATOM(cdt2)
+    ATOM(Exif)
     LIST_SKIP(free)
     ATOM(ftyp)
+    ATOM(hrgm)
     ATOM(idat)
     ATOM(idsc)
     ATOM(jp2c)
@@ -1149,6 +1157,7 @@ void File_Mpeg4::Data_Parse()
         ATOM(jp2h_ihdr)
         ATOM(jp2h_ricc)
         ATOM_END
+    ATOM(JXL_)
     LIST(mdat)
         ATOM_DEFAULT_ALONE(mdat_xxxx)
     LIST(meta)
@@ -1601,6 +1610,7 @@ void File_Mpeg4::Data_Parse()
     ATOM(sidx)
     ATOM(uuid)
     LIST_SKIP(wide)
+    ATOM(xml_)
     DATA_END
 
     #pragma warning(pop)
@@ -1724,6 +1734,18 @@ void File_Mpeg4::bloc()
     Skip_XX(512,                                                "Reserved");
 }
 
+//-------------------------------------------------------------------------
+void File_Mpeg4::brob()
+{
+    Element_Name("Brotli-compressed box");
+
+    int32u type;
+    Get_C4(type,                                                "payload box type");
+    Element_Info1(Ztring::ToZtring_From_CC4(type));
+
+    Skip_XX(Element_Size - 4,                                   "compressed data");
+}
+
 //---------------------------------------------------------------------------
 void File_Mpeg4::cdat()
 {
@@ -1760,6 +1782,29 @@ void File_Mpeg4::cdat()
             Open_Buffer_Continue(Streams[(int32u)Element_Code].Parsers[Pos], Buffer+Buffer_Offset+(size_t)Element_Offset, 2);
         Element_Offset+=2;
     }
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::Exif()
+{
+    Element_Name("Exif box");
+
+    //Parsing
+    #if defined(MEDIAINFO_EXIF_YES)
+    File_Exif MI{};
+    MI.FromHeif = true;
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Merge(MI, Stream_General, 0, 0, false);
+    Merge(MI, Stream_Image, 0, 0, false);
+    size_t Count = MI.Count_Get(Stream_Image);
+    for (size_t i = 1; i < Count; ++i) {
+        Merge(MI, Stream_Image, i, StreamPos_Last + 1, false);
+    }
+    #else
+    Skip_UTF8(Element_Size - Element_Offset,                    "EXIF Tags");
+    #endif
 }
 
 //---------------------------------------------------------------------------
@@ -1854,6 +1899,13 @@ void File_Mpeg4::ftyp()
         }
         Fill(Stream_General, 0, General_CodecID_String, CodecID_String, true);
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::hrgm()
+{
+    Element_Name("HDR Gain Map");
+    Skip_XX(Element_Size,                                       "Data");
 }
 
 //---------------------------------------------------------------------------
@@ -2020,6 +2072,18 @@ void File_Mpeg4::jp2h_ihdr()
         BPC++;
         if (BPC)
             Fill(StreamKind_Last, StreamPos_Last, "BitDepth", BPC, 10, true);
+    FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::JXL_()
+{
+    Element_Name("JPEG XL Signature box");
+    int32u signature;
+    Get_B4(signature,                                           "Signature");
+    FILLING_BEGIN_PRECISE()
+        if (signature == 0x0D0A870A)
+            Fill(Stream_General, 0, General_Format, "JPEG XL");
     FILLING_END()
 }
 
@@ -11398,6 +11462,25 @@ void File_Mpeg4::wide()
 
     //Parsing
     Skip_XX(Element_Size,                                       "Free");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::xml_()
+{
+    Element_Name("XML box");
+
+    //Parsing
+    #if defined(MEDIAINFO_XMP_YES)
+    File_Xmp MI{};
+    Open_Buffer_Init(&MI);
+    auto Element_Offset_Sav = Element_Offset;
+    Open_Buffer_Continue(&MI);
+    Element_Offset = Element_Offset_Sav;
+    Open_Buffer_Finalize(&MI);
+    Element_Show(); //TODO: why is it needed?
+    Merge(MI, Stream_General, 0, 0, false);
+    #endif
+    Skip_UTF8(Element_Size - Element_Offset,                    "XMP metadata");
 }
 
 //***************************************************************************
