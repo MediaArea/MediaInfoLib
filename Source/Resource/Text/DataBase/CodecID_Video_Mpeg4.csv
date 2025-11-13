@@ -69,12 +69,15 @@ brvm;Blackmagic RAW;;;https://www.blackmagicdesign.com/products/blackmagicraw;VM
 brhq;Blackmagic RAW;;;https://www.blackmagicdesign.com/products/blackmagicraw;HQ;;;
 brvl;Blackmagic RAW;;;https://www.blackmagicdesign.com/products/blackmagicraw;VL;;;
 brvn;Blackmagic RAW;;;https://www.blackmagicdesign.com/products/blackmagicraw;VN;;;
+CDA2;Cinegy Daniel2;;;https://www.cinegy.com;;;;
 CFHD;CineForm;;CineForm High-Definition (HD) wavelet codec;http://www.cineform.com/;;;;
 CHQX;Canopus HQX;;;;;;;
 CLLC;Canopus Lossless;;;;;;;
+CNGA;Cinegy Daniel;;;https://www.cinegy.com;;;RGBA;
 CUVC;Canopus HQ;;;;;;;
 cmyk;CMYK;;;;;;;
 cvid;Cinepak;;;http://www.apple.com/quicktime/download/standalone.html;;;;
+DNL2;Cinegy Daniel2;;;https://www.cinegy.com;;;;
 drac;Dirac;;Dirac Video Coder;http://www.bbc.co.uk/rd/projects/dirac/index.shtml;;;;
 dslv;Cross Fade;;;http://www.apple.com/quicktime/download/standalone.html;;;;
 DV10;Digital Voodoo;;Digital Voodoo 10 bit Uncompressed 4:2:2 codec;http://www.digitalvoodoo.net/;;;;
