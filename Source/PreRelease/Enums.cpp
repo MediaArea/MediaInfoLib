@@ -28,7 +28,7 @@ ZenLib::Ztring Enums_Create_Load(Ztring FileName, Ztring &Contents)
     }
 
     char C[FILE_MAX];
-    size_t Size=F.Read(C, FILE_MAX-1);
+    size_t Size=F.Read(reinterpret_cast<int8u*>(C), FILE_MAX-1);
     Contents.From_Local(C, Size);
     return L"";
 }

@@ -1,0 +1,8 @@
+<Solution>
+  <Configurations>
+    <Platform Name="ARM" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Library/MediaInfoLib_UWP.vcxproj" Id="b1b1d325-5a77-4ee8-9980-9cad6b6cae31" />
+</Solution>
