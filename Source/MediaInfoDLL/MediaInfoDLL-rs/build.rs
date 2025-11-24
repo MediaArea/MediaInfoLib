@@ -23,6 +23,14 @@ fn main() {
     println!(
         "cargo:rustc-link-search=native={}",
         Path::new(&dir)
+            .join("../../../Project/MSVC2026")
+            .join(arch)
+            .join("Release")
+            .display()
+    );
+    println!(
+        "cargo:rustc-link-search=native={}",
+        Path::new(&dir)
             .join("../../../Project/MSVC2022")
             .join(arch)
             .join("Release")
@@ -67,6 +75,11 @@ fn main() {
             // For release package
             Path::new(&dir).join("../../../..").join(dll_name),
             // For self-built
+            Path::new(&dir)
+                .join("../../../Project/MSVC2026")
+                .join(arch)
+                .join("Release")
+                .join(dll_name),
             Path::new(&dir)
                 .join("../../../Project/MSVC2022")
                 .join(arch)
