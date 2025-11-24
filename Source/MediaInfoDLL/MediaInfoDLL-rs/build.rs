@@ -36,6 +36,7 @@ fn main() {
             .join("Release")
             .display()
     );
+    println!("cargo:rustc-link-search=native=/usr/local/lib");
 
     // Tell cargo to tell rustc to link the shared library.
     println!("cargo:rustc-link-lib=mediainfo");
