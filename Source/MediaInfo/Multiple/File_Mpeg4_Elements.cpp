@@ -8844,7 +8844,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh()
     string Vertices_String;
     int32u indexes[6]{};
     const auto Vertex_Data = true; // MediaInfoLib::Config.Flags1_Get(Flags_Enable_Mesh_Vertex_Data);
-    static const char* const Vertices_String_Digits = " {:#.6g} "; // the digit here must be same as the one below (last digit of the formula)
+    constexpr static const char* const Vertices_String_Digits = " {:#.6g} "; // the digit here must be same as the one below (last digit of the formula)
     vector<size_t> Vertices_String_OffsetPerItem;
     Vertices_String_OffsetPerItem.resize(vertex_count);
     #else //MEDIAINFO_ADVANCED
