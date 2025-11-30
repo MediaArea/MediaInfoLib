@@ -368,6 +368,16 @@ static const char* Mxf_EssenceContainer(const int128u EssenceContainer)
                                                     }
                                          default   : return "";
                                     }
+                        case 0x21 : //Cinegy
+                                    switch (Code3)
+                                    {
+                                        case 0x02 :
+                                            switch (Code4)
+                                            {
+                                                default: return "Cinegy Daniel2";
+                                            }
+                                        default: return "Cinegy";
+                                    }
                         default   : return "";
                     }
         default   : return "";
@@ -721,6 +731,30 @@ static const char* Mxf_EssenceCompression(const int128u EssenceCompression)
                                                     {
                                                         case 0x04 : return "IAB";
                                                         default   : return "";
+                                                    }
+                                         default   : return "";
+                                    }
+                        case 0x21 : //Cinegy
+                                    switch (Code3)
+                                    {
+                                        case 0x01 :
+                                                    switch (Code4)
+                                                    {
+                                                        case 0x01 :
+                                                                    switch (Code5)
+                                                                    {
+                                                                        case 0x01 :
+                                                                                    switch (Code7 & 0xF0)
+                                                                                    {
+                                                                                        case 0x10 : return "Cinegy Daniel2 (M0)";
+                                                                                        case 0x20 : return "Cinegy Daniel2 (M1)";
+                                                                                        case 0x30 : return "Cinegy Daniel2 (M2)";
+                                                                                        case 0x40 : return "Cinegy Daniel2 (M3)";
+                                                                                        default   : return "Cinegy Daniel2";
+                                                                                    }
+                                                                        default   : return "Cinegy Daniel2";
+                                                                    }
+                                                         default   : return "";
                                                     }
                                          default   : return "";
                                     }
