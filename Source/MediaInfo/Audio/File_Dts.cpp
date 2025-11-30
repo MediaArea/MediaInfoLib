@@ -488,6 +488,7 @@ enum extension
     Ext_XCh,
     Ext_XBR,
     Ext_Aux,
+    Ext_Rev2Aux,
     Ext_Max
 };
 static int32u DTS_Extension_Mapping[]=
@@ -501,6 +502,7 @@ static int32u DTS_Extension_Mapping[]=
     0x5A5A5A5A,
     0x655E315E,
     0x9A1105A0,
+    0x7004C070,
 };
 static_assert(sizeof(DTS_Extension_Mapping)/sizeof(decltype(*DTS_Extension_Mapping))==Ext_Max, "");
 static const char* DTS_Extension_Names[]=
@@ -514,6 +516,7 @@ static const char* DTS_Extension_Names[]=
     "XCh (6.1 Channels)",
     "XBR (Extended Bit Rate)",
     "Aux",
+    "Rev2Aux",
 };
 static_assert(sizeof(DTS_Extension_Names)/sizeof(decltype(*DTS_Extension_Names))==Ext_Max, "");
 static size_t DTS_Extension_Index_Get(int32u SyncWord)
@@ -572,6 +575,8 @@ File_Dts::File_Dts()
     ExtendedCoding=false;
     ES=false;
     Core_Exists=false;
+    Rev2AuxPresent=false;
+    Type1CertifiedContent=false;
 }
 
 //***************************************************************************
@@ -883,6 +888,13 @@ void File_Dts::Streams_Fill()
     }
     if (Data[Profiles].size()==1 && Data[Profiles][0]==__T("Core"))
         Data[Profiles].clear(); //Core is the default one
+
+    // IMAX in core-only stream
+    if (Type1CertifiedContent)
+    {
+        Fill(Stream_Audio, 0, Audio_Format_Settings, "T1-CC");
+        Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, "DTS with IMAX Enhanced");
+    }
 
     // Filling
     bool LegacyStreamDisplay=MediaInfoLib::Config.LegacyStreamDisplay_Get();
@@ -1536,7 +1548,6 @@ void File_Dts::Data_Parse()
         Get_SB (    ES,                                             "ES");
         Skip_SB(                                                    "Front Sum/Difference");
         Skip_SB(                                                    "Surrounds Sum/Difference");
-        Skip_S1( 4,                                                 "Dialog Normalisation Parameter");
         switch (EncoderSoftwareRevision)
         {
             case 6 :
@@ -1549,7 +1560,50 @@ void File_Dts::Data_Parse()
                     Skip_S1( 4,                                     "Unspecified");
                     break;
         }
+
+        Element_Begin1("Primary Audio Coding Header");
+        int8u SubFrames, PrimaryChannels;
+        Get_S1( 4, SubFrames,                                       "Number of Subframes");
+        SubFrames++;
+        Param_Info2(SubFrames,                                      " Subframes");
+        Get_S1( 3, PrimaryChannels,                                 "Number of Primary Audio Channels");
+        PrimaryChannels++;
+        Param_Info2(PrimaryChannels,                                " Channels");
+        Skip_S8(PrimaryChannels*5,                                  "Subband Activity Count");
+        Skip_S8(PrimaryChannels*5,                                  "High Frequency VQ Start Subband");
+        Skip_S8(PrimaryChannels*3,                                  "Joint Intensity Coding Index");
+        Skip_S8(PrimaryChannels*2,                                  "Transient Mode Code Book");
+        Skip_S8(PrimaryChannels*3,                                  "Scale Factor Code Book");
+        Skip_S8(PrimaryChannels*3,                                  "Bit Allocation Quantizer Select");
+
+        #if MEDIAINFO_TRACE
+        auto Trace_Activated_Sav=Trace_Activated;
+        Trace_Activated=false; // Hide trace for numerous ABIT selectors
+        #endif
+
+        int ABITBits=SkipABITSelector(PrimaryChannels, 1, 1);
+        for (int i=1; i<5; i++)
+            ABITBits+=SkipABITSelector(PrimaryChannels, 2, 3);
+        for (int i=5; i<10; i++)
+            ABITBits+=SkipABITSelector(PrimaryChannels, 3, 7);
+        Skip_BS(ABITBits,                                           "Scale Factor Adjustment Indexes");
+
+        #if MEDIAINFO_TRACE
+        Trace_Activated=Trace_Activated_Sav;
+        #endif
+
+        if (crc_present)
+            Skip_S2(16,                                             "Audio Header CRC Check Word");
+
+        Element_End0();
+
+        // SubSubFrameCount is needed for later parsing of Rev2AUXData
+        Get_S1( 2, SubSubFrameCount,                                "SubSubFrame Count");
+        SubSubFrameCount++;
+        Param_Info2(SubSubFrameCount,                               " frames");
+
         BS_End();
+        Rev2AuxPresent=Rev2AuxProbe();
     }
 
     //PTS
@@ -1615,6 +1669,20 @@ void File_Dts::Data_Parse()
     }
 }
 
+//---------------------------------------------------------------------------
+int File_Dts::SkipABITSelector(int Channels, int BitCount, int Limit)
+{
+    int ABITBits=0;
+    for (int Channel=0; Channel<Channels; Channel++)
+    {
+        int8u Bits;
+        Get_S1(BitCount, Bits,                                  "Quantization Index Codebook Select");
+        if (Bits < Limit)
+            ABITBits+=2;
+    }
+    return ABITBits;
+}
+
 //***************************************************************************
 // Elements
 //***************************************************************************
@@ -1629,7 +1697,7 @@ void File_Dts::Core()
     Presence.set(presence_Core_Core);
 
     //Parsing
-    if (AuxiliaryData || ExtendedCoding)
+    if (AuxiliaryData || ExtendedCoding || Rev2AuxPresent)
     {
         Extensions_Resynch(true);
         Asset_Sizes.push_back(Element_Size-Element_Offset);
@@ -1688,6 +1756,7 @@ void File_Dts::Extensions()
                 CASE(XCh);
                 CASE(XBR);
                 CASE(Aux);
+                CASE(Rev2Aux);
                 #undef CASE
                 default:
                     Extensions_Resynch(false);
@@ -1702,14 +1771,19 @@ void File_Dts::Extensions()
 
     //Filling
     FILLING_BEGIN();
-        if (Count_Get(Stream_Audio)==0 && Frame_Count>=Frame_Count_Valid)
+        if (!Status[IsAccepted] && Frame_Count>=2 && (Frame_Count>=Frame_Count_Valid || (Frame_Count_Valid && (File_Size-Buffer_TotalBytes_FirstSynched)/Frame_Count_Valid<Element_Size))) //2 frames mini in order to catch HD part. TODO: find a better way to accept stream in short files so with only few frames
         {
             Accept("DTS");
             Fill("DTS");
 
             //No more need data
             if (!IsSub && Config->ParseSpeed<1.0)
-                Finish("DTS");
+            {
+                if (Stream_Offset_Max!=-1)
+                    GoTo(Stream_Offset_Max);
+                else
+                    Finish("DTS");
+            }
         }
     FILLING_END();
 
@@ -1778,6 +1852,9 @@ void File_Dts::Extensions_Resynch(bool Known)
                         break;
                     case Ext_Aux:
                         IsNok=!AuxiliaryData;
+                        break;
+                    case Ext_Rev2Aux:
+                        IsNok=!Rev2AuxPresent;
                         break;
                     default:
                         IsNok=true;
@@ -2304,6 +2381,88 @@ void File_Dts::XBR()
     Extensions_Padding();
 }
 
+//---------------------------------------------------------------------------
+void File_Dts::Rev2Aux()
+{
+    // ETSI TS 102 114 v1.6.1 Section 5.8.3.
+    // The Rev2 Auxiliary Data Chunk Structure contains the T1CC indicator
+    // in the reserved data.
+    int8u Rev2Bytes;
+    Peek_B1(Rev2Bytes);
+    auto Rev2AUXDataByteSize=(Rev2Bytes>>1)+1;
+    if (Element_Size-Element_Offset>=Rev2Bytes && Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, Rev2Bytes)==0)
+    {
+        BS_Begin();
+        // Will later use Rev2BitsRemain to skip padding up to CRC
+        auto Rev2BitsRemain=(Rev2AUXDataByteSize-2)*8-Data_BS_Remain();
+
+        Skip_S1(7,                                              "Rev2AUXDataByteSize");
+        bool ESMetaDataFlag;
+        Get_SB(ESMetaDataFlag,                                  "ESMetaDataFlag");
+        if (ESMetaDataFlag)
+            Skip_S1(8,                                          "EmbESDownMixScaleIndex");
+
+        if (Rev2AUXDataByteSize>4)
+        {
+            bool BroadcastMetadataPresent;
+            Get_SB (BroadcastMetadataPresent,                   "BroadcastMetadataPresent");
+            if (BroadcastMetadataPresent)
+            {
+                Element_Begin1("BroadcastMetadata");
+                bool DRCMetadataPresent, DialnormMetadataPresent;
+                Get_SB (DRCMetadataPresent,                     "DRCMetadataPresent");
+                Get_SB (DialnormMetadataPresent,                "DialnormMetadata");
+                if (DRCMetadataPresent)
+                    Skip_S1(4,                                  "DRCversion_Rev2AUX");
+                auto Remain=Data_BS_Remain()%8;
+                if (Remain)
+                    Skip_S1(Remain,                             "ByteAlign");
+                if (DRCMetadataPresent)
+                {
+                    Element_Begin1("Rev2_DRCs");
+                    for (int i=0; i<SubSubFrameCount; i++)
+                        Skip_S1(8,                              "DRCCoeff_Rev2");
+                    Element_End0();
+                }
+                Element_End0();
+
+                if (DialnormMetadataPresent)
+                    Skip_S1(5,                                  "DIALNORM_rev2aux");
+            }
+        }
+
+        Rev2BitsRemain+=Data_BS_Remain();
+        if (Rev2BitsRemain >= 3)
+        {
+            Skip_S1(2,                                          "NEOX Encoded Height Info");
+            bool T1CC;
+            Get_SB(Type1CertifiedContent,                       "Type 1 Certified Content");
+            Rev2BitsRemain-=3;
+        }
+        if (Rev2BitsRemain)
+            Skip_S4(Rev2BitsRemain,                             "ByteAlign");
+        BS_End();
+        Skip_B2(                                                "Rev2AUXCRC16");
+        Skip_XX(Element_Size-Element_Offset,                    "Padding");
+    }
+}
+
+//---------------------------------------------------------------------------
+bool File_Dts::Rev2AuxProbe() const
+{
+    auto Base=Buffer+Buffer_Offset;
+    auto Offset=Element_Offset;
+    auto Offset_Max=Element_Size-3;
+    auto AlignmentBytes=Element_Offset%4;
+    if (AlignmentBytes)
+        Offset+=4-AlignmentBytes;
+
+    for (; Offset<Offset_Max; Offset+=4)
+        if (DTS_Extension_Index_Get(BigEndian2int32u(Base+Offset))==Ext_Rev2Aux)
+            return true;
+
+    return false;
+}
 
 //---------------------------------------------------------------------------
 void File_Dts::Extensions2()
