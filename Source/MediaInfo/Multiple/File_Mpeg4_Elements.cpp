@@ -156,6 +156,9 @@ using namespace std;
 #if defined(MEDIAINFO_DTSUHD_YES)
     #include "MediaInfo/Audio/File_DtsUhd.h"
 #endif
+#if defined(MEDIAINFO_C2PA_YES)
+    #include "MediaInfo/Tag/File_C2pa.h"
+#endif
 #include "MediaInfo/Multiple/File_Mpeg4_TimeCode.h"
 #include "ZenLib/FileName.h"
 #include "ThirdParty/base64/base64.h"
@@ -1085,6 +1088,7 @@ namespace Elements
     const int64u REOB=0x52454F42;
     const int64u skip=0x736B6970;
     const int64u sidx=0x73696478;
+    const int64u uuid=0x75756964;
     const int64u wide=0x77696465;
 }
 
@@ -1585,6 +1589,7 @@ void File_Mpeg4::Data_Parse()
     ATOM(pnot)
     LIST_SKIP(skip)
     ATOM(sidx)
+    ATOM(uuid)
     LIST_SKIP(wide)
     DATA_END
 }
@@ -11310,6 +11315,36 @@ void File_Mpeg4::sidx()
     BS_End();
 }
 
+//---------------------------------------------------------------------------
+void File_Mpeg4::uuid()
+{
+    if (Name_UUID.hi == 0xD8FEC3D61B0E483CLL && Name_UUID.lo == 0x92975828877EC481LL) {
+        uuid_C2PA();
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::uuid_C2PA()
+{
+    //Parsing
+    NAME_VERSION_FLAG("C2PA");
+    #if defined(MEDIAINFO_C2PA_YES)
+        string box_purpose;
+        Get_String(SizeUpTo0(), box_purpose,                    "box_purpose");
+        if (box_purpose != "manifest")
+            return;
+        Skip_B1(                                                "zero");
+        Skip_B8(                                                "first_auxiliary_offset");
+        File_C2pa MI;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI);
+        Open_Buffer_Finalize(&MI);
+        Merge(MI, Stream_General, 0, 0, false);
+        Merge(MI);
+    #else
+        Skip_XX(Element_Size,                                   "(Not parsed)");
+    #endif
+}
 //---------------------------------------------------------------------------
 void File_Mpeg4::wide()
 {
