@@ -76,16 +76,20 @@ private :
 
     //Elements
     void bloc();
+    void brob();
     void cdat();
+    void Exif();
     void cdt2() {cdat();}
     void free();
     void ftyp();
+    void hrgm();
     void idat();
     void idsc();
     void jp2c();
     void jp2h();
     void jp2h_colr();
     void jp2h_ihdr();
+    void JXL_();
     void jp2h_ricc() {jp2h_colr(); }
     void mdat();
     void mdat_xxxx();
@@ -418,6 +422,7 @@ private :
     void uuid();
     void uuid_C2PA();
     void wide();
+    void xml_();
 
     //Helpers
     Ztring Language_Get(int16u Language);
