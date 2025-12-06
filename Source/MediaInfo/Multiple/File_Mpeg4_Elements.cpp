@@ -886,6 +886,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_ACLR=0x41434C52;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_amve=0x616D7665;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_APRG=0x41505247;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_apvC=0x61707643;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_ARES=0x41524553;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_AORD=0x414F5244;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_av1C=0x61763143;
@@ -1340,6 +1341,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ACLR)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_amve)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_APRG)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_apvC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ARES)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_AORD)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_av1C)
@@ -7118,6 +7120,95 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_APRG()
     Skip_C4(                                                    "Version");
     Get_B4 (ScanType,                                           "Number of fields"); Param_Info1(ScanType==1?"Progressive":ScanType==2?"Interlaced":"");
     Skip_B4(                                                    "Reserved"); // Must be 0
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_apvC()
+{
+    NAME_VERSION_FLAG("APVDecoderConfigurationBox");
+    AddCodecConfigurationBoxInfo();
+
+    auto APV_Profile =
+        [](int8u profile_idc) -> const char* {
+        switch (profile_idc) {
+        case 33: return "422-10";
+        case 44: return "422-12";
+        case 55: return "444-10";
+        case 66: return "444-12";
+        case 77: return "4444-10";
+        case 88: return "4444-12";
+        case 99: return "400-10";
+        default: return "";
+        }
+        };
+
+    auto APV_Chroma =
+        [](int8u chroma_format_idc) -> const char* {
+        switch (chroma_format_idc) {
+        case 0: return "4:0:0";
+        case 2: return "4:2:2";
+        case 3: return "4:4:4";
+        case 4: return "4:4:4:4";
+        default: return "";
+        }
+        };
+
+    //Parsing
+    Element_Begin1("APVDecoderConfigurationRecord");
+    int8u number_of_configuration_entry, number_of_frame_info;
+    int8u profile_idc, level_idc, band_idc, chroma_format_idc, bit_depth_minus8;
+    int8u color_primaries, transfer_characteristics, matrix_coefficients;
+    bool color_description_present_flag, full_range_flag;
+    Skip_B1(                                                    "configurationVersion");
+    Get_B1 (number_of_configuration_entry,                      "number_of_configuration_entry");
+    for (int8u i = 0; i < number_of_configuration_entry; ++i) {
+        Skip_B1(                                                "pbu_type[i]");
+        Get_B1 (number_of_frame_info,                           "number_of_frame_info[i]");
+        for (int8u j = 0; j < number_of_frame_info; ++j) {
+            BS_Begin();
+            Skip_S1(6,                                          "reserved_zero_6bits");
+            Get_SB (color_description_present_flag,             "color_description_present_flag[i][j]");
+            Skip_SB(                                            "capture_time_distance_ignored[i][j]");
+            BS_End();
+            Get_B1 (profile_idc,                                "profile_idc[i][j]");                       Param_Info1(APV_Profile(profile_idc));
+            Get_B1 (level_idc,                                  "level_idc[i][j]");                         Param_Info3((float)level_idc / 30, nullptr, 1);
+            Get_B1 (band_idc,                                   "band_idc[i][j]");
+            Skip_B4(                                            "frame_width[i][j]");
+            Skip_B4(                                            "frame_height[i][j]");
+            BS_Begin();
+            Get_S1 (4, chroma_format_idc,                       "chroma_format_idc[i][j]");                 Param_Info1(APV_Chroma(chroma_format_idc));
+            Get_S1 (4, bit_depth_minus8,                        "bit_depth_minus8[i][j]");
+            BS_End();
+            Skip_B1(                                            "capture_time_distance[i][j]");
+            if (color_description_present_flag) {
+                Get_B1 (color_primaries,                        "color_primaries[i][j]");                   Param_Info1(Mpegv_colour_primaries(color_primaries));
+                Get_B1 (transfer_characteristics,               "transfer_characteristics[i][j]");          Param_Info1(Mpegv_transfer_characteristics(transfer_characteristics));
+                Get_B1 (matrix_coefficients,                    "matrix_coefficients[i][j]");               Param_Info1(Mpegv_matrix_coefficients(matrix_coefficients));
+                BS_Begin();
+                Get_SB (full_range_flag,                        "full_range_flag[i][j]");
+                Skip_S1(7,                                      "reserved_zero_7bits");
+                BS_End();
+            }
+        }
+    }
+    Element_End0();
+
+    //Filling
+    FILLING_BEGIN_PRECISE();
+    if (number_of_configuration_entry == 1 && number_of_frame_info == 1) { //TODO: handle multiple
+        Fill(Stream_Video, StreamPos_Last, Video_Format_Profile, APV_Profile(profile_idc));
+        Fill(Stream_Video, StreamPos_Last, Video_Format_Level, (float)level_idc / 30, 1);
+        Fill(Stream_Video, StreamPos_Last, "band_idc", band_idc);
+        Fill(Stream_Video, StreamPos_Last, Video_ChromaSubsampling, APV_Chroma(chroma_format_idc));
+        Fill(Stream_Video, StreamPos_Last, Video_BitDepth, bit_depth_minus8 + 8);
+        if (color_description_present_flag) {
+            Fill(Stream_Video, StreamPos_Last, Video_colour_primaries, Mpegv_colour_primaries(color_primaries));
+            Fill(Stream_Video, StreamPos_Last, Video_transfer_characteristics, Mpegv_transfer_characteristics(transfer_characteristics));
+            Fill(Stream_Video, StreamPos_Last, Video_matrix_coefficients, Mpegv_matrix_coefficients(matrix_coefficients));
+            Fill(Stream_Video, StreamPos_Last, Video_colour_range, full_range_flag ? "Full" : "Limited");
+        }
+    }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
