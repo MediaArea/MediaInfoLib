@@ -157,7 +157,7 @@ ELF;;;C;Elf;;so;;;
 ISO 9660;;;C;Iso9660;;iso;;;
 Mach-O;;;C;MachO;;o dylib kext;;;
 Mach-O Universal;;;C;MachO;;o dylib kext;;;
-MZ;;;C;Mz;;exe dll;;;
+MZ;;;C;Mz;;exe dll efi;;;
 RAR;;;C;Rar;From Rarlabs;rar;application/x-rar-compressed;http://rarlabs.com;
 ZIP;;;C;Zip;;zip docx odt xlsx ods;application/zip;http://winzip.com;
 Adobe encore DVD;;;T;Other;;txt;;http://www.adobe.fr/products/encore/;Lossless
