@@ -22,7 +22,6 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Archive/File_Mz.h"
-#include "ZenLib/Utils.h"
 using namespace ZenLib;
 //---------------------------------------------------------------------------
 
@@ -83,6 +82,77 @@ string Mz_Machine(int16u Machine)
             return Item.Name;
     return "0x" + Ztring().From_CC2(Machine).To_UTF8();
 }
+
+static const char* Mz_Windows_Subsystem(int16u Subsystem)
+{
+    switch (Subsystem) {
+    case 0: return "Unknown";
+    case 1: return "Native";
+    case 2: return "Windows GUI";
+    case 3: return "Windows CUI";
+    case 5: return "OS2 CUI";
+    case 7: return "POSIX CUI";
+    case 8: return "Native Windows";
+    case 9: return "Windows CE GUI";
+    case 10: return "EFI Application";
+    case 11: return "EFI Boot Service Driver";
+    case 12: return "EFI Runtime Driver";
+    case 13: return "EFI ROM";
+    case 14: return "XBOX";
+    case 16: return "Windows Boot Application";
+    default: return "";
+    }
+}
+
+struct mz_dllcharacteristics_data
+{
+    int16u Value;
+    const char* Characteristic;
+};
+mz_dllcharacteristics_data Mz_DLLCharacteristics_Data[] =
+{
+    { 0x0020, "High Entropy VA" },
+    { 0x0040, "Dynamic Base" },
+    { 0x0080, "Force Integrity" },
+    { 0x0100, "NX Compat" },
+    { 0x0200, "No Isolation" },
+    { 0x0400, "No SEH" },
+    { 0x0800, "No Bind" },
+    { 0x1000, "AppContainer" },
+    { 0x2000, "WDM Driver" },
+    { 0x4000, "Guard CF" },
+    { 0x8000, "Terminal Server Aware" },
+};
+static string Mz_DLL_Characteristics(int16u DllCharacteristics)
+{
+    string Characteristics;
+    for (const auto& Item : Mz_DLLCharacteristics_Data)
+        if (Item.Value & DllCharacteristics) {
+            if (!Characteristics.empty())
+                Characteristics += ", ";
+            Characteristics += Item.Characteristic;
+        }
+    return Characteristics;
+}
+
+const char* Mz_Directories[]{
+    "Export Table",
+    "Import Table",
+    "Resource Table",
+    "Exception Table",
+    "Certificate Table",
+    "Base Relocation Table",
+    "Debug",
+    "Architecture",
+    "Global Ptr",
+    "TLS Table",
+    "Load Config Table",
+    "Bound Import",
+    "Import Address Table",
+    "Delay Import Descriptor",
+    "CLR Runtime Header",
+    "Reserved"
+};
 
 //***************************************************************************
 // Static stuff
@@ -162,19 +232,97 @@ void File_Mz::Read_Buffer_Continue()
 
     //Parsing
     int32u Signature, TimeDateStamp=0;
-    int16u Machine=0, Characteristics=0;
+    int16u Machine{}, NumberOfSections{}, SizeOfOptionalHeader{}, Characteristics{}, Subsystem{}, DllCharacteristics{}, MajorSubsystemVersion{}, MinorSubsystemVersion{};
+    int8u MajorLinkerVersion{}, MinorLinkerVersion{};
     Peek_B4(Signature);
     if (Signature==0x50450000) //"PE"
     {
         Element_Begin1("PE");
-        Skip_C4(                                                "Header");
+        Skip_C4(                                                "Signature");
+        Element_Begin1("COFF File Header");
         Get_L2 (Machine,                                        "Machine"); Param_Info1(Mz_Machine(Machine));
-        Skip_L2(                                                "NumberOfSections");
+        Get_L2 (NumberOfSections,                               "NumberOfSections");
         Get_L4 (TimeDateStamp,                                  "TimeDateStamp"); Param_Info1(Ztring().Date_From_Seconds_1970(TimeDateStamp));
         Skip_L4(                                                "PointerToSymbolTable");
         Skip_L4(                                                "NumberOfSymbols");
-        Skip_L2(                                                "SizeOfOptionalHeader");
+        Get_L2 (SizeOfOptionalHeader,                           "SizeOfOptionalHeader");
         Get_L2 (Characteristics,                                "Characteristics");
+        Element_End0();
+        if (SizeOfOptionalHeader >= 20) {
+            Element_Begin1("Optional Header");
+            int16u Magic;
+            Get_L2(Magic,                                       "Magic"); Param_Info1(Magic == 0x10B ? "PE32" : Magic == 0x20B ? "PE32+" : Magic == 0x107 ? "ROM" : "");
+            Get_L1 (MajorLinkerVersion,                         "MajorLinkerVersion");
+            Get_L1 (MinorLinkerVersion,                         "MinorLinkerVersion");
+            Skip_L4(                                            "SizeOfCode");
+            Skip_L4(                                            "SizeOfInitializedData");
+            Skip_L4(                                            "SizeOfUninitializedData");
+            Skip_L4(                                            "AddressOfEntryPoint");
+            Skip_L4(                                            "BaseOfCode");
+            if (Magic == 0x10B)
+                Skip_L4(                                        "BaseOfData");
+            if (SizeOfOptionalHeader > 24) {
+                int32u NumberOfRvaAndSizes;
+                if (Magic == 0x10B)
+                    Skip_L4(                                    "ImageBase");
+                if (Magic == 0x20B)
+                    Skip_L8(                                    "ImageBase");
+                Skip_L4(                                        "SectionAlignment");
+                Skip_L4(                                        "FileAlignment");
+                Skip_L2(                                        "MajorOperatingSystemVersion");
+                Skip_L2(                                        "MinorOperatingSystemVersion");
+                Skip_L2(                                        "MajorImageVersion");
+                Skip_L2(                                        "MinorImageVersion");
+                Get_L2 (MajorSubsystemVersion,                  "MajorSubsystemVersion");
+                Get_L2 (MinorSubsystemVersion,                  "MinorSubsystemVersion");
+                Skip_L4(                                        "Win32VersionValue");
+                Skip_L4(                                        "SizeOfImage");
+                Skip_L4(                                        "SizeOfHeaders");
+                Skip_L4(                                        "CheckSum");
+                Get_L2 (Subsystem,                              "Subsystem"); Param_Info1(Mz_Windows_Subsystem(Subsystem));
+                Get_L2 (DllCharacteristics,                     "DllCharacteristics"); Param_Info1(Mz_DLL_Characteristics(DllCharacteristics));
+                if (Magic == 0x10B) {
+                    Skip_L4(                                    "SizeOfStackReserve");
+                    Skip_L4(                                    "SizeOfStackCommit");
+                    Skip_L4(                                    "SizeOfHeapReserve");
+                    Skip_L4(                                    "SizeOfHeapCommit");
+                }
+                if (Magic == 0x20B) {
+                    Skip_L8(                                    "SizeOfStackReserve");
+                    Skip_L8(                                    "SizeOfStackCommit");
+                    Skip_L8(                                    "SizeOfHeapReserve");
+                    Skip_L8(                                    "SizeOfHeapCommit");
+                }
+                Skip_L4(                                        "LoaderFlags");
+                Get_L4 (NumberOfRvaAndSizes,                    "NumberOfRvaAndSizes");
+                for (int32u i = 0; i < NumberOfRvaAndSizes; ++i) {
+                    Element_Begin1("Data Directory");
+                    if (i < sizeof(Mz_Directories) / sizeof(Mz_Directories[0]))
+                        Element_Info1(Mz_Directories[i]);
+                    Skip_L4(                                    "VirtualAddress");
+                    Skip_L4(                                    "Size");
+                    Element_End0();
+                }
+            }
+            Element_End0();
+        }
+        if (SizeOfOptionalHeader > 24) {
+            for (int8u i = 0; i < NumberOfSections; ++i) {
+                Element_Begin1("Section Header");
+                int64u Name;
+                Get_C8 (Name,                                   "Name"); Element_Info1(Ztring::ToZtring_From_CC4(Name >> 32) + Ztring::ToZtring_From_CC4(Name));
+                Skip_L4(                                        "VirtualSize");
+                Skip_L4(                                        "VirtualAddress");
+                Skip_L4(                                        "SizeOfRawData");
+                Skip_L4(                                        "PointerToRawData");
+                Skip_L4(                                        "PointerToRelocations");
+                Skip_L4(                                        "PointerToLinenumbers");
+                Skip_L2(                                        "NumberOfRelocations");
+                Skip_L2(                                        "NumberOfLinenumbers");
+                Skip_L4(                                        "Characteristics");
+                Element_End0();
+            }
+        }
         Element_End0();
     }
 
@@ -197,6 +345,12 @@ void File_Mz::Read_Buffer_Continue()
             }
             Fill(Stream_General, 0, General_Encoded_Date, Time);
         }
+        if (MajorLinkerVersion)
+            Fill(Stream_General, 0, "Linker_Version", std::to_string(MajorLinkerVersion) + "." + std::to_string(MinorLinkerVersion));
+        Fill(Stream_General, 0, "Windows_Subsystem", Mz_Windows_Subsystem(Subsystem));
+        if (MajorSubsystemVersion)
+            Fill(Stream_General, 0, "Subsystem_Version", std::to_string(MajorSubsystemVersion) + "." + std::to_string(MinorSubsystemVersion));
+        Fill(Stream_General, 0, "Dll_Characteristics", Mz_DLL_Characteristics(DllCharacteristics));
 
         //No more need data
         Finish("MZ");
