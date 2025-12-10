@@ -34,6 +34,16 @@ protected :
 
     //Buffer - Global
     void Read_Buffer_Continue ();
+
+    void Parse_Resources();
+    bool Parse_StringFileInfo(int8u level = 0);
+
+    //Temp
+    int32u rsrc_size{};
+    int32u rsrc_virtual_addr{};
+    int32u rsrc_offset{};
+    map<int32u, Ztring> Named_Resource;
+    map<int32u, int32u> Resource;
 };
 
 } //NameSpace
