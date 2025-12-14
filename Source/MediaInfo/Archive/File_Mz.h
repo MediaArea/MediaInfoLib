@@ -37,11 +37,14 @@ protected :
 
     void Parse_Resources();
     bool Parse_StringFileInfo(int8u level = 0);
+    void Parse_SBAT();
 
     //Temp
     int32u rsrc_size{};
     int32u rsrc_virtual_addr{};
     int32u rsrc_offset{};
+    int32u sbat_offset{};
+    int32u sbat_size{};
     map<int32u, Ztring> Named_Resource;
     map<int32u, int32u> Resource;
 };

@@ -187,7 +187,19 @@ bool File_Mz::FileHeader_Begin()
 void File_Mz::Read_Buffer_Continue()
 {
     if (rsrc_offset) {
-        Parse_Resources();       
+        Parse_Resources();
+        rsrc_offset = 0;
+
+        if (sbat_offset)
+            GoTo(sbat_offset);
+        else
+            Finish("MZ");
+
+        return;
+    }
+    if (sbat_offset) {
+        Parse_SBAT();
+        sbat_offset = 0;
 
         Finish("MZ");
         return;
@@ -337,6 +349,10 @@ void File_Mz::Read_Buffer_Continue()
                     rsrc_virtual_addr = VirtualAddress;
                     rsrc_offset = PointerToRawData;
                 }
+                if (Name == 0x2E73626174000000) { // .sbat
+                    sbat_offset = PointerToRawData;
+                    sbat_size = VirtualSize;
+                }
                 Element_End0();
             }
         }
@@ -373,7 +389,9 @@ void File_Mz::Read_Buffer_Continue()
         if (rsrc_offset) {
             GoTo(rsrc_offset);
         }
-        else {
+        else if (sbat_offset) {
+            GoTo(sbat_offset);
+        } else {
             //No more need data
             Finish("MZ");
         }
@@ -563,6 +581,13 @@ bool File_Mz::Parse_StringFileInfo(int8u level) {
     FILLING_END();
 
     return true;
+}
+
+//---------------------------------------------------------------------------
+void File_Mz::Parse_SBAT() {
+    Ztring sbat;
+    Get_UTF8(sbat_size, sbat,                                   "SBAT");
+    Fill(Stream_General, 0, "SBAT", sbat);
 }
 
 } //NameSpace
