@@ -131,6 +131,14 @@ jobs:
         with:
           repository: MediaArea/ZenLib
           path: ZenLib
+      - name: Checkout MediaArea-Utils-Binaries for 7-Zip and NSIS
+        uses: actions/checkout@v5
+        with:
+          repository: MediaArea/MediaArea-Utils-Binaries
+          path: MediaArea-Utils-Binaries
+          sparse-checkout: |
+            Windows/7-Zip
+            Windows/NSIS
       - name: Checkout MediaInfoLib
         uses: actions/checkout@v5
         with:
@@ -141,3 +149,88 @@ jobs:
           msbuild-architecture: x64
       - name: Build
         run: msbuild -p:Configuration=Release -p:Platform=${{ matrix.architecture }} ${{ github.workspace }}\MediaInfoLib\Project\MSVC2022\MediaInfoLib.sln -verbosity:quiet -warnaserror
+      - name: Prepare package script
+        run: (Get-Content ${{ github.workspace }}\MediaInfoLib\Release\Release_DLL_Windows_ARM64.bat) -replace 'ARM64EC', 'ARM64' | Set-Content ${{ github.workspace }}\MediaInfoLib\Release\Release_DLL_Windows_ARM64.bat
+      - name: Package
+        if: ${{ matrix.architecture != 'Win32' }}
+        run: |
+          cd ${{ github.workspace }}\MediaInfoLib\Release
+          .\Release_DLL_Windows_${{ matrix.architecture }}.bat
+      - name: Upload artifact
+        if: ${{ matrix.architecture != 'Win32' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.architecture }}
+          path: ${{ github.workspace }}\MediaInfoLib\Release\MediaInfo_DLL_Windows_${{ matrix.architecture }}_WithoutInstaller.7z
+
+  Rust:
+    needs: MSBuild
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            architecture: x64
+          - os: windows-11-arm
+            architecture: ARM64
+          - os: ubuntu-latest
+            architecture: AMD64
+          - os: ubuntu-24.04-arm
+            architecture: AArch64
+          - os: macos-latest
+            architecture: AArch64
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: Checkout MediaInfoLib
+        if: ${{ runner.os != 'Windows' }}
+        uses: actions/checkout@v5
+      - name: libmediainfo
+        if: ${{ runner.os != 'Windows' }}
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            sudo apt-get update -y
+            sudo apt-get install -y libmediainfo-dev
+          fi
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            git -C .. clone --depth=1 https://github.com/MediaArea/ZenLib.git
+            mkdir Project/CMake/Build
+            cd Project/CMake/Build
+            cmake -DBUILD_ZENLIB=1 -DZLIB_BUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
+            cmake --build . -j4
+            sudo cmake --install .
+          fi
+      - name: Download artifact
+        if: ${{ runner.os == 'Windows' }}
+        uses: actions/download-artifact@v5
+        with:
+          name: ${{ matrix.architecture }}
+      - name: Delete artifact
+        if: ${{ runner.os == 'Windows' }}
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: ${{ matrix.architecture }}
+      - name: Extract package
+        if: ${{ runner.os == 'Windows' }}
+        run: 7z x MediaInfo_DLL_Windows_${{ matrix.architecture }}_WithoutInstaller.7z
+      - name: Test wrapper
+        run: |
+          cd ${{ runner.os == 'Windows' && 'Developers\Source\MediaInfoDLL\MediaInfoDLL-rs' || 'Source/MediaInfoDLL/MediaInfoDLL-rs' }}
+          cargo test
+      - name: Check wrapper
+        run: |
+          cd ${{ runner.os == 'Windows' && 'Developers\Source\MediaInfoDLL\MediaInfoDLL-rs' || 'Source/MediaInfoDLL/MediaInfoDLL-rs' }}
+          cargo clippy -- -D warnings
+      - name: Build example
+        run: |
+          cd ${{ runner.os == 'Windows' && 'Developers\Source\Example\HowToUse_Dll-rs' || 'Source/Example/HowToUse_Dll-rs' }}
+          cargo build --release
+      - name: Check example
+        run: |
+          cd ${{ runner.os == 'Windows' && 'Developers\Source\Example\HowToUse_Dll-rs' || 'Source/Example/HowToUse_Dll-rs' }}
+          cargo clippy --release -- -D warnings
+      - name: Test run example
+        run: |
+          cd ${{ runner.os == 'Windows' && 'Developers\Source\Example\HowToUse_Dll-rs' || 'Source/Example/HowToUse_Dll-rs' }}
+          cargo run --release ${{ runner.os != 'Windows' && '-- ../../../Release/Example.ogg' || '' }}

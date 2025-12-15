@@ -35,6 +35,7 @@ mkdir MediaInfoDLL_Windows_ARM64\Developers\List_Of_Parameters
 copy ..\Source\Resource\Text\Stream\*.csv MediaInfoDLL_Windows_ARM64\Developers\List_Of_Parameters
 
 rem --- Copying : Include ---
+xcopy ..\Source\MediaInfoDLL\MediaInfoDLL-rs\ MediaInfoDLL_Windows_ARM64\Developers\Source\MediaInfoDLL\MediaInfoDLL-rs\ /E
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.h MediaInfoDLL_Windows_ARM64\Developers\Source\MediaInfoDLL\
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL_Static.h MediaInfoDLL_Windows_ARM64\Developers\Source\MediaInfoDLL\
 xcopy ..\Source\MediaInfoDLL\MediaInfoDLL.def MediaInfoDLL_Windows_ARM64\Developers\Source\MediaInfoDLL\
@@ -134,6 +135,7 @@ xcopy ..\Project\MSVC2022\ARM64EC\Debug\MediaInfo.lib MediaInfoDLL_Windows_ARM64
 xcopy ..\Project\MSVC2022\ARM64\Debug\MediaInfo.lib MediaInfoDLL_Windows_ARM64\Developers\Project\MSVC2022\ARM64\Debug\
 
 rem --- Copying : Examples ---
+xcopy ..\Source\Example\HowToUse_Dll-rs\ MediaInfoDLL_Windows_ARM64\Developers\Source\Example\HowToUse_Dll-rs\ /E
 xcopy ..\Source\Example\HowToUse_Dll*.* MediaInfoDLL_Windows_ARM64\Developers\Source\Example\
 xcopy Example.ogg MediaInfoDLL_Windows_ARM64\Developers\
 
