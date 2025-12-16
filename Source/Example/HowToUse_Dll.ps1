@@ -2,15 +2,20 @@
 #
 #  Use of this source code is governed by a BSD-style license that can
 #  be found in the License.html file in the root of the source tree.
-#
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
 # PowerShell example
 #
-# To make this example working, you must put MediaInfo.dll and Example.ogg
-# in the working directory when executing this script
-# and change $MediaInfoLibDllWrapperPath to the path to MediaInfoDLL.cs
+# To make this example working, you must put Example.ogg
+# in the working directory or pass a file via command line argument
+# when executing this script.
+# 
+# Change $MediaInfoLibDllWrapperPathto the actual path to MediaInfoDLL.cs
+#
+# Additionally,
+# on Windows, MediaInfo.dll must be in the working directory or PATH while
+# on Linux, libmediainfo-dev must be installed.
 #
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -39,6 +44,9 @@ if ($Args.Count -gt 0) {
 # Initialize the MediaInfo object (similar to C# 'MediaInfo MI = new MediaInfo();')
 # '$MI = [MediaInfoLib.MediaInfo]::new()' is an alternative method
 $MI = New-Object -TypeName MediaInfoLib.MediaInfo
+
+# Set encoding to UTF-8
+$MI.Option("CharSet", "UTF-8")
 
 # Variable to accumulate output
 $ToDisplay = ""

@@ -9,8 +9,9 @@
 // Microsoft Visual C# wrapper for MediaInfo Library
 // See MediaInfo.h for help
 //
-// To make it working, you must put MediaInfo.Dll
-// in the executable folder
+// To make it working, you must put MediaInfo.dll
+// in the executable folder on Windows
+// or install libmediainfo-dev on Linux
 //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -74,51 +75,51 @@ namespace MediaInfoLib
     public class MediaInfo
     {
         //Import of DLL functions. DO NOT USE until you know what you do (MediaInfo DLL do NOT use CoTaskMemAlloc to allocate memory)
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfo_New();
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern void   MediaInfo_Delete(IntPtr Handle);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfo_Open(IntPtr Handle, [MarshalAs(UnmanagedType.LPWStr)] string FileName);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoA_Open(IntPtr Handle, IntPtr FileName);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfo_Open_Buffer_Init(IntPtr Handle, Int64 File_Size, Int64 File_Offset);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoA_Open(IntPtr Handle, Int64 File_Size, Int64 File_Offset);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfo_Open_Buffer_Continue(IntPtr Handle, IntPtr Buffer, IntPtr Buffer_Size);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoA_Open_Buffer_Continue(IntPtr Handle, Int64 File_Size, byte[] Buffer, IntPtr Buffer_Size);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern Int64  MediaInfo_Open_Buffer_Continue_GoTo_Get(IntPtr Handle);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern Int64  MediaInfoA_Open_Buffer_Continue_GoTo_Get(IntPtr Handle);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfo_Open_Buffer_Finalize(IntPtr Handle);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoA_Open_Buffer_Finalize(IntPtr Handle);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern void   MediaInfo_Close(IntPtr Handle);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfo_Inform(IntPtr Handle, IntPtr Reserved);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoA_Inform(IntPtr Handle, IntPtr Reserved);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfo_GetI(IntPtr Handle, IntPtr StreamKind, IntPtr StreamNumber, IntPtr Parameter, IntPtr KindOfInfo);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoA_GetI(IntPtr Handle, IntPtr StreamKind, IntPtr StreamNumber, IntPtr Parameter, IntPtr KindOfInfo);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfo_Get(IntPtr Handle, IntPtr StreamKind, IntPtr StreamNumber, [MarshalAs(UnmanagedType.LPWStr)] string Parameter, IntPtr KindOfInfo, IntPtr KindOfSearch);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoA_Get(IntPtr Handle, IntPtr StreamKind, IntPtr StreamNumber, IntPtr Parameter, IntPtr KindOfInfo, IntPtr KindOfSearch);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfo_Option(IntPtr Handle, [MarshalAs(UnmanagedType.LPWStr)] string Option, [MarshalAs(UnmanagedType.LPWStr)] string Value);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoA_Option(IntPtr Handle, IntPtr Option,  IntPtr Value);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfo_State_Get(IntPtr Handle);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfo_Count_Get(IntPtr Handle, IntPtr StreamKind, IntPtr StreamNumber);
 
         //MediaInfo class
@@ -249,25 +250,25 @@ namespace MediaInfoLib
     public class MediaInfoList
     {
         //Import of DLL functions. DO NOT USE until you know what you do (MediaInfo DLL do NOT use CoTaskMemAlloc to allocate memory)
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoList_New();
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern void MediaInfoList_Delete(IntPtr Handle);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoList_Open(IntPtr Handle, [MarshalAs(UnmanagedType.LPWStr)] string FileName, IntPtr Options);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern void MediaInfoList_Close(IntPtr Handle, IntPtr FilePos);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoList_Inform(IntPtr Handle, IntPtr FilePos, IntPtr Reserved);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoList_GetI(IntPtr Handle, IntPtr FilePos, IntPtr StreamKind, IntPtr StreamNumber, IntPtr Parameter, IntPtr KindOfInfo);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoList_Get(IntPtr Handle, IntPtr FilePos, IntPtr StreamKind, IntPtr StreamNumber, [MarshalAs(UnmanagedType.LPWStr)] string Parameter, IntPtr KindOfInfo, IntPtr KindOfSearch);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoList_Option(IntPtr Handle, [MarshalAs(UnmanagedType.LPWStr)] string Option, [MarshalAs(UnmanagedType.LPWStr)] string Value);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoList_State_Get(IntPtr Handle);
-        [DllImport("MediaInfo.dll")]
+        [DllImport("mediainfo")]
         private static extern IntPtr MediaInfoList_Count_Get(IntPtr Handle, IntPtr FilePos, IntPtr StreamKind, IntPtr StreamNumber);
 
         //MediaInfo class
