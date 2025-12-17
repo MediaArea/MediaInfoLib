@@ -380,7 +380,7 @@ void File_Iamf::ia_codec_config()
     Element_Begin1("codec_config");
         Get_C4 (        codec_id,                               "codec_id");
         Get_leb128 (    num_samples_per_frame,                  "num_samples_per_frame");
-        Get_B2 (        audio_roll_distance,                    "audio_roll_distance"); Param_Info1(reinterpret_cast<int16_t&>(audio_roll_distance));
+        Get_B2 (        audio_roll_distance,                    "audio_roll_distance"); Param_Info1(static_cast<int16s>(audio_roll_distance));
         FILLING_BEGIN();
             auto CodecID = Ztring::ToZtring_From_CC4(codec_id);
             if (CodecID != Retrieve_Const(Stream_Audio, 0, Audio_CodecID)) {
@@ -549,7 +549,7 @@ void File_Iamf::ia_audio_element()
                     Skip_S1(6,                              "output_gain_flags");
                     Skip_S1(2,                              "reserved_for_future_use");
                     BS_End();
-                    Get_B2(output_gain,                     "output_gain"); Param_Info1(reinterpret_cast<int16_t&>(output_gain));
+                    Get_B2(output_gain,                     "output_gain"); Param_Info1(static_cast<int16s>(output_gain));
                 }
                 if (num_layers == 1 && loudspeaker_layout == 15)
                     Skip_B1(                                "expanded_loudspeaker_layout");
@@ -674,8 +674,8 @@ void File_Iamf::ia_mix_presentation()
             int16u integrated_loudness, digital_peak;
                 int8u info_type;
                 Get_B1( info_type,                          "info_type");
-                Get_B2( integrated_loudness,                "integrated_loudness"); Param_Info1(reinterpret_cast<int16_t&>(integrated_loudness));
-                Get_B2( digital_peak,                       "digital_peak"); Param_Info1(reinterpret_cast<int16_t&>(digital_peak));
+                Get_B2( integrated_loudness,                "integrated_loudness"); Param_Info1(static_cast<int16s>(integrated_loudness));
+                Get_B2( digital_peak,                       "digital_peak"); Param_Info1(static_cast<int16s>(digital_peak));
                 if (info_type & 1) {
                     Skip_B2(                                "true_peak");
                 }
@@ -685,7 +685,7 @@ void File_Iamf::ia_mix_presentation()
                     for (int8u n = 0; n < num_anchored_loudness; ++n) {
                         int16u anchored_loudness;
                         Skip_B1 (                           "anchor_element");
-                        Get_B2  (anchored_loudness,         "anchored_loudness"); Param_Info1(reinterpret_cast<int16_t&>(anchored_loudness));
+                        Get_B2  (anchored_loudness,         "anchored_loudness"); Param_Info1(static_cast<int16s>(anchored_loudness));
                     }
                 }
                 if ((info_type & 0b11111100) > 0) {
@@ -743,7 +743,9 @@ void File_Iamf::ParamDefinition(int64u param_definition_type)
     }
     if (param_definition_type == PARAMETER_DEFINITION_MIX_GAIN) {
         int16u default_mix_gain;
-        Get_B2(         default_mix_gain,                   "default_mix_gain"); Param_Info1(reinterpret_cast<int16_t&>(default_mix_gain));
+        Get_B2(         default_mix_gain,                   "default_mix_gain");
+        Param_Info1(static_cast<int16s>(default_mix_gain));
+        Param_Info2(static_cast<double>(static_cast<int16s>(default_mix_gain)) / 256, " dB");
     }
     if (param_definition_type == PARAMETER_DEFINITION_DEMIXING) {
         Element_Begin1("default_demixing_info_parameter_data");
