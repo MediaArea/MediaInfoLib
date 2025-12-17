@@ -743,7 +743,9 @@ void File_Iamf::ParamDefinition(int64u param_definition_type)
     }
     if (param_definition_type == PARAMETER_DEFINITION_MIX_GAIN) {
         int16u default_mix_gain;
-        Get_B2(         default_mix_gain,                   "default_mix_gain"); Param_Info1(reinterpret_cast<int16_t&>(default_mix_gain));
+        Get_B2(         default_mix_gain,                   "default_mix_gain");
+        Param_Info1(static_cast<int16s>(default_mix_gain));
+        Param_Info2(static_cast<double>(static_cast<int16s>(default_mix_gain)) / 256, " dB");
     }
     if (param_definition_type == PARAMETER_DEFINITION_DEMIXING) {
         Element_Begin1("default_demixing_info_parameter_data");
