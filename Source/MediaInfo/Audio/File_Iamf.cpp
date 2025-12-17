@@ -58,11 +58,18 @@ namespace CodecIDs
 // audio_element_type
 #define CHANNEL_BASED   0
 #define SCENE_BASED     1
+#define OBJECT_BASED    2
 
 // param_definition_type
-#define PARAMETER_DEFINITION_MIX_GAIN   0
-#define PARAMETER_DEFINITION_DEMIXING   1
-#define PARAMETER_DEFINITION_RECON_GAIN 2
+#define PARAMETER_DEFINITION_MIX_GAIN       0
+#define PARAMETER_DEFINITION_DEMIXING       1
+#define PARAMETER_DEFINITION_RECON_GAIN     2
+#define PARAMETER_DEFINITION_POLAR          3
+#define PARAMETER_DEFINITION_CART_8         4
+#define PARAMETER_DEFINITION_CART_16        5
+#define PARAMETER_DEFINITION_DUAL_POLAR     6
+#define PARAMETER_DEFINITION_DUAL_CART_8    7
+#define PARAMETER_DEFINITION_DUAL_CART_16   8
 
 // ambisonics_mode
 #define MONO        0
@@ -121,6 +128,7 @@ static const char* Iamf_audio_element_type(int8u audio_element_type)
     {
     case CHANNEL_BASED  : return "CHANNEL_BASED";
     case SCENE_BASED    : return "SCENE_BASED";
+    case OBJECT_BASED   : return "OBJECT_BASED";
     default             : return "";
     }
 }
@@ -133,6 +141,9 @@ static string Iamf_profile(int8u profile)
     case   0: return "Simple Profile";
     case   1: return "Base Profile";
     case   2: return "Base-Enhanced Profile";
+    case   3: return "Base-Advanced Profile";
+    case   4: return "Advanced-1 Profile";
+    case   5: return "Advanced-2 Profile";
     default : return std::to_string(profile);
     }
 }
@@ -158,6 +169,35 @@ static string Iamf_loudspeaker_layout(int8u loudspeaker_layout)
 }
 
 //---------------------------------------------------------------------------
+static string Iamf_expanded_loudspeaker_layout(int8u expanded_loudspeaker_layout)
+{
+    switch (expanded_loudspeaker_layout)
+    {
+    case 0:  return "LFE";            // The low-frequency effects subset (LFE) of 7.1.4ch
+    case 1:  return "Stereo-S";       // The surround subset (Ls/Rs) of 5.1.4ch
+    case 2:  return "Stereo-SS";      // The side surround subset (Lss/Rss) of 7.1.4ch
+    case 3:  return "Stereo-RS";      // The rear surround subset (Lrs/Rrs) of 7.1.4ch
+    case 4:  return "Stereo-TF";      // The top front subset (Ltf/Rtf) of 7.1.4ch
+    case 5:  return "Stereo-TB";      // The top back subset (Ltb/Rtb) of 7.1.4ch
+    case 6:  return "Top-4ch";        // The top 4 channels (Ltf/Rtf/Ltb/Rtb) of 7.1.4ch
+    case 7:  return "3.0ch";          // The front 3 channels (L/C/R) of 7.1.4ch
+    case 8:  return "9.1.6ch";        // Loudspeaker location ordering of 9.1.6ch
+    case 9:  return "Stereo-F";       // The front subset (FL/FR) of 9.1.6ch
+    case 10: return "Stereo-Si";      // The side subset (SiL/SiR) of 9.1.6ch
+    case 11: return "Stereo-TpSi";    // The top side subset (TpSiL/TpSiR) of 9.1.6ch
+    case 12: return "Top-6ch";        // The top 6 channels (TpFL/TpFR/TpSiL/TpSiR/TpBL/TpBR) of 9.1.6ch
+    case 13: return "10.2.9.3ch";     // Loudspeaker location ordering of 10.2.9.3ch
+    case 14: return "LFE-Pair";       // The low-frequency effects subset (LFE1/LFE2) of 10.2.9.3ch
+    case 15: return "Bottom-3ch";     // The bottom 3 channels (BtFL/BtFC/BtFR) of 10.2.9.3ch
+    case 16: return "7.1.5.4ch";      // Loudspeaker location ordering of 7.1.5.4ch
+    case 17: return "Bottom-4ch";     // The bottom 4 channels (BtFL/BtFR/BtBL/BtBR) of 7.1.5.4ch
+    case 18: return "Top-1ch";        // The top subset (TpC) of 7.1.5.4ch
+    case 19: return "Top-5ch";        // The top 5 channels (Ltf/Rtf/TpC/Ltb/Rtb) of 7.1.5.4ch
+    default: return std::to_string(expanded_loudspeaker_layout);
+    }
+}
+
+//---------------------------------------------------------------------------
 static string Iamf_animation_type(int64u animation_type)
 {
     switch (animation_type)
@@ -166,6 +206,36 @@ static string Iamf_animation_type(int64u animation_type)
     case LINEAR : return "LINEAR";
     case BEZIER : return "BEZIER";
     default: return std::to_string(animation_type);
+    }
+}
+
+//---------------------------------------------------------------------------
+static string Iamf_headphones_rendering_mode(int8u headphones_rendering_mode)
+{
+    switch (headphones_rendering_mode)
+    {
+    case 0: return "Stereo";
+    case 1: return "Binaural World-locked";
+    case 2: return "Binaural Head-locked";
+    default: return std::to_string(headphones_rendering_mode);
+    }
+}
+
+//---------------------------------------------------------------------------
+static string Iamf_parameter_definition_type(int64u parameter_definition_type)
+{
+    switch (parameter_definition_type)
+    {
+    case PARAMETER_DEFINITION_MIX_GAIN      : return "MIX_GAIN";
+    case PARAMETER_DEFINITION_DEMIXING      : return "DEMIXING";
+    case PARAMETER_DEFINITION_RECON_GAIN    : return "RECON_GAIN";
+    case PARAMETER_DEFINITION_POLAR         : return "POLAR";
+    case PARAMETER_DEFINITION_CART_8        : return "CART_8";
+    case PARAMETER_DEFINITION_CART_16       : return "CART_16";
+    case PARAMETER_DEFINITION_DUAL_POLAR    : return "DUAL_POLAR";
+    case PARAMETER_DEFINITION_DUAL_CART_8   : return "DUAL_CART_8";
+    case PARAMETER_DEFINITION_DUAL_CART_16  : return "DUAL_CART_16";
+    default: return std::to_string(parameter_definition_type);
     }
 }
 
@@ -210,6 +280,7 @@ void File_Iamf::Streams_Finish()
 
     Fill(Stream_Audio, 0, "NumberOfPresentations", mixpresentations.size());
     Fill(Stream_Audio, 0, "NumberOfSubstreams", substreams.size());
+    Fill(Stream_Audio, 0, "NumberOfObjects", num_objects_total);
 
     // Currently multiple ia_codec_config are not well handled //TODO: how to manage multiple ia_codec_config or if it changes midstream?
     if (!IsSub && Config->ParseSpeed >= 1 && Frame_Count && substreams.size() && codec_config_count == 1) {
@@ -551,8 +622,10 @@ void File_Iamf::ia_audio_element()
                     BS_End();
                     Get_B2(output_gain,                     "output_gain"); Param_Info1(reinterpret_cast<int16_t&>(output_gain));
                 }
-                if (num_layers == 1 && loudspeaker_layout == 15)
-                    Skip_B1(                                "expanded_loudspeaker_layout");
+                if (num_layers == 1 && loudspeaker_layout == 15) {
+                    int8u expanded_loudspeaker_layout;
+                    Get_B1(expanded_loudspeaker_layout, "expanded_loudspeaker_layout"); Param_Info1(Iamf_expanded_loudspeaker_layout(expanded_loudspeaker_layout));
+                }
                 recon_gain_is_present_flag_Vec.push_back(recon_gain_is_present_flag);
                 Element_End0();
             }
@@ -581,6 +654,19 @@ void File_Iamf::ia_audio_element()
                 Element_End0();
             }
         Element_End0();
+        break;
+    }
+    case OBJECT_BASED: {
+        Element_Begin1("objects_config");
+        int64u objects_config_size;
+        int8u num_objects;
+        Get_leb128(objects_config_size,                     "objects_config_size");
+        Get_B1(num_objects,                                 "num_objects");
+        Skip_XX(objects_config_size - 1,                    "objects_config_extension_bytes");
+        Element_End0();
+        FILLING_BEGIN_PRECISE();
+            num_objects_total += num_objects;
+        FILLING_END();
         break;
     }
     default: {
@@ -634,14 +720,7 @@ void File_Iamf::ia_mix_presentation()
                 Skip_B1(                                    "zero");
             }
             Element_Begin1("rendering_config");
-                int8u headphones_rendering_mode;
-                int64u rendering_config_extension_size;
-                BS_Begin();
-                Get_S1  (2, headphones_rendering_mode,      "headphones_rendering_mode");  Param_Info1(!headphones_rendering_mode?"Stereo":headphones_rendering_mode==1?"Binaural":"Reserved");
-                Skip_S1 (6,                                 "reserved_for_future_use");
-                BS_End();
-                Get_leb128(rendering_config_extension_size, "rendering_config_extension_size");
-                Skip_XX (  rendering_config_extension_size, "rendering_config_extension_bytes");
+                RenderingConfig();
             Element_End0();
             Element_Begin1("element_mix_gain");
                 ParamDefinition(PARAMETER_DEFINITION_MIX_GAIN);
@@ -759,6 +838,55 @@ void File_Iamf::ParamDefinition(int64u param_definition_type)
     }
     if (param_definition_type == PARAMETER_DEFINITION_RECON_GAIN) {
     }
+    if (param_definition_type == PARAMETER_DEFINITION_POLAR) {
+        Element_Name("polar_param_definition");
+        BS_Begin();
+        Skip_S2(9,                                          "default_azimuth");
+        Skip_S1(8,                                          "default_elevation");
+        Skip_S1(7,                                          "default_distance");
+        BS_End();
+    }
+    if (param_definition_type == PARAMETER_DEFINITION_CART_8) {
+        Element_Name("cart8_param_definition");
+        Skip_B1(                                            "default_x");
+        Skip_B1(                                            "default_y");
+        Skip_B1(                                            "default_z");
+    }
+    if (param_definition_type == PARAMETER_DEFINITION_CART_16) {
+        Element_Name("cart16_param_definition");
+        Skip_B2(                                            "default_x");
+        Skip_B2(                                            "default_y");
+        Skip_B2(                                            "default_z");
+    }
+    if (param_definition_type == PARAMETER_DEFINITION_DUAL_POLAR) {
+        Element_Name("dual_polar_param_definition");
+        BS_Begin();
+        Skip_S2(9,                                          "default_first_azimuth");
+        Skip_S1(8,                                          "default_first_elevation");
+        Skip_S1(7,                                          "default_first_distance");
+        Skip_S2(9,                                          "default_second_azimuth");
+        Skip_S1(8,                                          "default_second_elevation");
+        Skip_S1(7,                                          "default_second_distance");
+        BS_End();
+    }
+    if (param_definition_type == PARAMETER_DEFINITION_DUAL_CART_8) {
+        Element_Name("dual_cart8_param_definition");
+        Skip_B1(                                            "default_first_x");
+        Skip_B1(                                            "default_first_y");
+        Skip_B1(                                            "default_first_z");
+        Skip_B1(                                            "default_second_x");
+        Skip_B1(                                            "default_second_y");
+        Skip_B1(                                            "default_second_z");
+    }
+    if (param_definition_type == PARAMETER_DEFINITION_DUAL_CART_16) {
+        Element_Name("dual_cart16_param_definition");
+        Skip_B2(                                            "default_first_x");
+        Skip_B2(                                            "default_first_y");
+        Skip_B2(                                            "default_first_z");
+        Skip_B2(                                            "default_second_x");
+        Skip_B2(                                            "default_second_y");
+        Skip_B2(                                            "default_second_z");
+    }
 
     //Filling
     FILLING_BEGIN();
@@ -770,6 +898,43 @@ void File_Iamf::ParamDefinition(int64u param_definition_type)
         param_definition.num_subblocks = num_subblocks;
         param_definitions.insert({ parameter_id, param_definition });
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Iamf::RenderingConfig()
+{
+    int8u headphones_rendering_mode;
+    int64u rendering_config_extension_size;
+    BS_Begin();
+    Get_S1    (2, headphones_rendering_mode,                    "headphones_rendering_mode"); Param_Info1(Iamf_headphones_rendering_mode(headphones_rendering_mode));
+    Skip_S1   (6,                                               "reserved_for_future_use");
+    BS_End();
+    Get_leb128(rendering_config_extension_size,                 "rendering_config_extension_size");
+    auto Element_Offset_Ext_Begin = Element_Offset;
+    if (rendering_config_extension_size) {
+        int64u num_parameters;
+        Get_leb128(num_parameters,                              "num_parameters");
+        if (num_parameters > Element_Size) {
+            Reject();
+            return;
+        }
+        for (int64u i = 0; i < num_parameters; ++i) {
+            int64u param_definition_type;
+            Get_leb128(param_definition_type,                   "param_definition_type"); Param_Info1(Iamf_parameter_definition_type(param_definition_type));
+            if (param_definition_type >= PARAMETER_DEFINITION_POLAR && param_definition_type <= PARAMETER_DEFINITION_DUAL_CART_16) {
+                Element_Begin0();
+                    ParamDefinition(param_definition_type);
+                Element_End0();
+            }
+            else {
+                int64u rendering_config_params_extension_size;
+                Get_leb128(rendering_config_params_extension_size, "rendering_config_params_extension_size");
+                Skip_XX(rendering_config_params_extension_size, "rendering_config_params_extension_bytes");
+            }
+        }
+    }
+    auto N = Element_Offset - Element_Offset_Ext_Begin;
+    Skip_XX   (rendering_config_extension_size - N,             "rendering_config_extension_bytes");
 }
 
 //---------------------------------------------------------------------------
