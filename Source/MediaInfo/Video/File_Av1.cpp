@@ -634,7 +634,7 @@ void File_Av1::metadata_itu_t_t35()
 
     switch (itu_t_t35_country_code)
     {
-    case 0xB5: metadata_itu_t_t35_B5(); break; // USA
+    case 0xB5: Param_Info1("United States"); metadata_itu_t_t35_B5(); break;
     }
 }
 
@@ -646,7 +646,8 @@ void File_Av1::metadata_itu_t_t35_B5()
 
     switch (itu_t_t35_terminal_provider_code)
     {
-    case 0x003C: metadata_itu_t_t35_B5_003C(); break;
+    case 0x003C: Param_Info1("Samsung Electronics America"); metadata_itu_t_t35_B5_003C(); break;
+    case 0x5890: Param_Info1("AOMedia"); metadata_itu_t_t35_B5_5890(); break;
     }
 }
 
@@ -693,6 +694,38 @@ void File_Av1::metadata_itu_t_t35_B5_003C_0001_04()
                 HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt209440]=tone_mapping_flag?__T("HDR10+ Profile B"):__T("HDR10+ Profile A");
         }
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Av1::metadata_itu_t_t35_B5_5890()
+{
+    int8u itu_t_t35_terminal_provider_oriented_code;
+    Get_B1(itu_t_t35_terminal_provider_oriented_code,           "itu_t_t35_terminal_provider_oriented_code");
+
+    switch (itu_t_t35_terminal_provider_oriented_code)
+    {
+    case 0x01: metadata_itu_t_t35_B5_5890_01(); break;
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Av1::metadata_itu_t_t35_B5_5890_01()
+{
+    Element_Info1("AOMedia Film Grain Synthesis 1 (AFGS1)");
+
+    Element_Begin1("av1_film_grain_param_sets");
+    BS_Begin();
+    bool afgs1_enable_flag;
+    Get_SB(afgs1_enable_flag,                                   "afgs1_enable_flag");
+    if (!afgs1_enable_flag) {
+        BS_End();
+        return;
+    }
+    Skip_S1(4,                                                  "reserved_4bits");
+    Skip_S1(3,                                                  "num_film_grain_sets_minus1");
+    BS_End();
+    Skip_XX(Element_Size - Element_Offset, "(Not parsed)");
+    Element_End0();
 }
 
 //---------------------------------------------------------------------------
