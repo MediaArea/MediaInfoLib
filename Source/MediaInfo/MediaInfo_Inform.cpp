@@ -189,12 +189,43 @@ Ztring MediaInfo_Internal::Inform()
                 Result+=TimeCode_Dump.second.Attributes_First;
                 if (TimeCode_Dump.second.Attributes_First.find(" frame_rate=\"")==string::npos && Count_Get(Stream_Video)==1)
                 {
+                    auto FrameRate_Num=Get(Stream_Video, 0, Video_FrameRate_Num);
+                    auto FrameRate_Den=Get(Stream_Video, 0, Video_FrameRate_Den);
                     auto FrameRate=Get(Stream_Video, 0, Video_FrameRate);
+                    if (!FrameRate_Num.empty() && !FrameRate_Den.empty())
+                        FrameRate=FrameRate_Num+__T('/')+FrameRate_Den;
                     if (!FrameRate.empty())
                     {
                         Result += " frame_rate=\"";
                         Result += XML_Encode(FrameRate).To_UTF8();
                         Result += '"';
+                    }
+                }
+                if (TimeCode_Dump.second.Attributes_First.find(" source=\"")==string::npos)
+                {
+                    auto ID_Pos=TimeCode_Dump.second.Attributes_First.find(" id=\"");
+                    if (ID_Pos!=string::npos)
+                    {
+                        ID_Pos+=5;
+                        auto ID_Pos2=TimeCode_Dump.second.Attributes_First.find("\"", ID_Pos);
+                        if (ID_Pos2!=string::npos)
+                        {
+                            Ztring ID;
+                            ID.From_UTF8(TimeCode_Dump.second.Attributes_First.substr(ID_Pos, ID_Pos2-ID_Pos));
+                            auto Count = Count_Get(Stream_Other);
+                            for (size_t i = 0; i < Count; i++)
+                            {
+                                if (Get(Stream_Other, i, Other_ID) != ID)
+                                    continue;
+                                auto Source = Get(Stream_Other, i, Other_TimeCode_Source);
+                                if (!Source.empty())
+                                {
+                                    Result += " source=\"";
+                                    Result += Source.To_UTF8();
+                                    Result += '"';
+                                }
+                            }
+                        }
                     }
                 }
                 Result+=" frame_count=\""+std::to_string(TimeCode_Dump.second.FrameCount)+'\"';

@@ -334,13 +334,15 @@ private :
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessCommand_ChapProcessData(){Skip_XX(Element_Size, "Data");};
     void Segment_Tags();
     void Segment_Tags_Tag();
-    void Segment_Tags_Tag_Targets(){};
+    void Segment_Tags_Tag_Targets();
+    void Segment_Tags_Tag_Targets_Remap();
     void Segment_Tags_Tag_Targets_TargetTypeValue(){UInteger_Info();};
     void Segment_Tags_Tag_Targets_TargetType(){String_Info();};
     void Segment_Tags_Tag_Targets_TagTrackUID();
     void Segment_Tags_Tag_Targets_TagEditionUID(){UInteger_Info();};
     void Segment_Tags_Tag_Targets_TagChapterUID(){UInteger_Info();};
     void Segment_Tags_Tag_Targets_TagAttachmentUID(){UInteger_Info();};
+    void Segment_Tags_Tag_Targets_TagBlockAddIDValue();
     void Segment_Tags_Tag_SimpleTag(){};
     void Segment_Tags_Tag_SimpleTag_TagName();
     void Segment_Tags_Tag_SimpleTag_TagLanguage();
@@ -397,7 +399,11 @@ private :
         int64u                  PixelCropRight;
         int64u                  PixelCropTop;
         mastering_metadata_2086      MasteringMetadata;
-        std::map<int64u, File__Analyze*> BlockAdditions;
+        struct block_addition {
+            Ztring Title;
+            File__Analyze* Parser = nullptr;
+        };
+        std::map<int64u, block_addition> BlockAdditions;
         #if MEDIAINFO_TRACE
             size_t Trace_Segment_Cluster_Block_Count;
         #endif // MEDIAINFO_TRACE
@@ -437,7 +443,7 @@ private :
             delete Parser; //Parser=NULL;
             delete[] ContentCompSettings_Buffer; //ContentCompSettings_Buffer=NULL;
             for (auto BlockAddition : BlockAdditions)
-                delete BlockAddition.second;
+                delete BlockAddition.second.Parser;
         }
     };
     std::map<int64u, stream> Stream;
@@ -485,10 +491,31 @@ private :
     size_t  Segment_Info_Count;
     size_t  Segment_Tracks_Count;
     size_t  Segment_Cluster_Count;
+    struct tagid {
+        int64u  TagTrackUID{};
+        int64u  TagBlockAddIDValue{};
+
+        tagid() = default;
+        tagid(int64u TagTrackUID_, int64u TagBlockAddIDValue)
+            : TagTrackUID(TagTrackUID_), TagBlockAddIDValue(TagBlockAddIDValue)
+        {}
+
+        constexpr bool operator==(const tagid& c) const noexcept {
+            return std::tie(TagTrackUID, TagBlockAddIDValue) == std::tie(c.TagTrackUID, c.TagBlockAddIDValue);
+        }
+
+        constexpr bool operator!=(const tagid& c) const noexcept {
+            return std::tie(TagTrackUID, TagBlockAddIDValue) != std::tie(c.TagTrackUID, c.TagBlockAddIDValue);
+        }
+
+        constexpr bool operator<(const tagid& c) const noexcept {
+            return std::tie(TagTrackUID, TagBlockAddIDValue) < std::tie(c.TagTrackUID, c.TagBlockAddIDValue);
+        }
+    };
     typedef std::map<Ztring, Ztring> tagspertrack;
-    typedef std::map<int64u, tagspertrack> tags;
+    typedef std::map<tagid, tagspertrack> tags;
     tags    Segment_Tags_Tag_Items;
-    int64u  Segment_Tags_Tag_Targets_TagTrackUID_Value{};
+    tagid   Segment_Tags_Tag_Target_Value{};
     string  AttachedFile_FileName;
     string  AttachedFile_FileMimeType;
     string  AttachedFile_FileDescription;
