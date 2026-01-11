@@ -492,24 +492,28 @@ private :
     size_t  Segment_Tracks_Count;
     size_t  Segment_Cluster_Count;
     struct tagid {
-        int64u  TagTrackUID{};
-        int64u  TagBlockAddIDValue{};
+        int64u TagTrackUID{};
+        int64u TagBlockAddIDValue{};
 
         tagid() = default;
-        tagid(int64u TagTrackUID_, int64u TagBlockAddIDValue)
-            : TagTrackUID(TagTrackUID_), TagBlockAddIDValue(TagBlockAddIDValue)
-        {}
+        tagid(int64u TagTrackUID_, int64u TagBlockAddIDValue_)
+            : TagTrackUID(TagTrackUID_), TagBlockAddIDValue(TagBlockAddIDValue_)
+        {
+        }
 
         constexpr bool operator==(const tagid& c) const noexcept {
-            return std::tie(TagTrackUID, TagBlockAddIDValue) == std::tie(c.TagTrackUID, c.TagBlockAddIDValue);
+            return TagTrackUID == c.TagTrackUID
+                && TagBlockAddIDValue == c.TagBlockAddIDValue;
         }
 
         constexpr bool operator!=(const tagid& c) const noexcept {
-            return std::tie(TagTrackUID, TagBlockAddIDValue) != std::tie(c.TagTrackUID, c.TagBlockAddIDValue);
+            return !(*this == c);
         }
 
         constexpr bool operator<(const tagid& c) const noexcept {
-            return std::tie(TagTrackUID, TagBlockAddIDValue) < std::tie(c.TagTrackUID, c.TagBlockAddIDValue);
+            return (TagTrackUID < c.TagTrackUID) ||
+                (TagTrackUID == c.TagTrackUID &&
+                    TagBlockAddIDValue < c.TagBlockAddIDValue);
         }
     };
     typedef std::map<Ztring, Ztring> tagspertrack;
