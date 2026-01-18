@@ -2065,6 +2065,9 @@ void File_Mk::Data_Parse()
                 ATO2(Segment_Attachments_AttachedFile_FileDescription, "FileDescription")
                 ATO2(Segment_Attachments_AttachedFile_FileName, "FileName")
                 ATO2(Segment_Attachments_AttachedFile_FileMimeType, "FileMimeType")
+                LIS2(Segment_Attachments_AttachedFile_FileData, "FileData") //This is ATOM, but some ATOMs are too big
+                    ATOM_BEGIN
+                    ATOM_END_MK
                 ATO2(Segment_Attachments_AttachedFile_FileUID, "FileUID")
                 ATO2(Segment_Attachments_AttachedFile_FileReferral, "FileReferral")
                 ATO2(Segment_Attachments_AttachedFile_FileUsedStartTime, "FileUsedStartTime")
