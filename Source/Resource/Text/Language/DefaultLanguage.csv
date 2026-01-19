@@ -841,6 +841,7 @@ Language_lv;Latvian
 Language_mg;Malagasy
 Language_mh;Marshallese
 Language_mi;Maori
+Language_mis;Uncoded languages
 Language_mk;Macedonian
 Language_ml;Malayalam
 Language_mn;Mongolian
@@ -917,6 +918,7 @@ Language_tw;Twi
 Language_ty;Tahitian
 Language_ug;Uighur
 Language_uk;Ukrainian
+Language_und;Undetermined
 Language_ur;Urdu
 Language_uz;Uzbek
 Language_ve;Venda
@@ -939,6 +941,7 @@ Language_zh-yue;Cantonese
 Language_zh-Hans;Chinese (Simplified)
 Language_zh-Hant;Chinese (Traditional)
 Language_zu;Zulu
+Language_zxx;No linguistic content or not applicable
 LawRating;Law rating
 LCCN;LCCN
 LfeAttenuationKnown;LFE attenuation known
