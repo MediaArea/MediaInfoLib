@@ -2619,6 +2619,13 @@ void File_Mk::Segment_Attachments_AttachedFile_FileData()
             if (Trace_Activated)
             {
                 //Parsing
+                MediaInfo_Internal MI;
+                MI.Option(__T("File_IsReferenced"), __T("1"));
+                MI.Option(__T("File_KeepInfo"), __T("1"));
+                MI.Open_Buffer_Init(Element_Size-Element_Offset);
+                MI.Open_Buffer_Continue(Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset));
+                MI.Open_Buffer_Finalize();
+                Element[Element_Level].TraceNode.TakeChilrenFrom(MI.Info->Element[0].TraceNode);
             }
         #endif //MEDIAINFO_TRACE
 
