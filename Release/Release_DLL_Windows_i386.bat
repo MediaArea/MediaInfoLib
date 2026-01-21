@@ -129,8 +129,8 @@ xcopy ..\Project\NetBeans\Example.JNative\src\*.java MediaInfoDLL_Windows_i386\D
 
 rem --- Copying : Libs ---
 xcopy ..\Release\BCB\DLL\MediaInfo.lib MediaInfoDLL_Windows_i386\Developers\Release\BCB\DLL\
-xcopy ..\Project\MSVC2022\Win32\Release\MediaInfo.lib MediaInfoDLL_Windows_x64\Developers\Project\MSVC2022\Win32\Release\
-xcopy ..\Project\MSVC2022\Win32\Debug\MediaInfo.lib MediaInfoDLL_Windows_x64\Developers\Project\MSVC2022\x64\Debug\
+xcopy ..\Project\MSVC2022\Win32\Release\MediaInfo.lib MediaInfoDLL_Windows_i386\Developers\Project\MSVC2022\Win32\Release\
+xcopy ..\Project\MSVC2022\Win32\Debug\MediaInfo.lib MediaInfoDLL_Windows_i386\Developers\Project\MSVC2022\Win32\Debug\
 
 rem --- Copying : Examples ---
 xcopy ..\Source\Example\HowToUse_Dll*.* MediaInfoDLL_Windows_i386\Developers\Source\Example\
