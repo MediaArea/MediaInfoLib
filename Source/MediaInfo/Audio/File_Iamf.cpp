@@ -348,7 +348,8 @@ bool File_Iamf::FileHeader_Begin()
         return false; //Must wait for more data
 
     if (!IsSub
-     && ((Buffer[0] >> 3) != 0x1F // ia_sequence_header
+     && ((Buffer[0] != 0xF8 && Buffer[0] != 0xFC) // ia_sequence_header can only start with 0xF806 or 0xFC06
+      || Buffer[1] != 0x06
       || CC4(Buffer + 2) != 0x69616D66)) {  // "iamf"
         Reject();
         return false;
