@@ -696,7 +696,14 @@ void File_Iamf::ia_audio_element()
                     int8u output_channel_count;
                     Get_B1(output_channel_count,            "output_channel_count");
                     Skip_B1(                                "substream_count");
-                    Skip_XX(output_channel_count,           "channel_mapping");
+                    if (Config->ParseSpeed > 0.5) {
+                        for (int8u i = 0; i < output_channel_count; ++i) {
+                            Skip_B1(                        ("channel_mapping[" + std::to_string(i) + "]").c_str());
+                        }
+                    }
+                    else {
+                        Skip_XX(output_channel_count,       "channel_mapping");
+                    }
                 Element_End0();
             }
             else if (ambisonics_mode == PROJECTION) {
@@ -705,7 +712,15 @@ void File_Iamf::ia_audio_element()
                     Get_B1(output_channel_count,            "output_channel_count");
                     Get_B1(substream_count,                 "substream_count");
                     Get_B1(coupled_substream_count,         "coupled_substream_count");
-                    Skip_XX(2*static_cast<int64u>(substream_count+coupled_substream_count)*output_channel_count, "demixing_matrix");
+                    if (Config->ParseSpeed > 0.5) {
+                        for (int i = 0; i < (substream_count + coupled_substream_count) * output_channel_count; ++i) {
+                            int16u demixing_matrix;
+                            Get_B2(demixing_matrix,         ("demixing_matrix[" + std::to_string(i) + "]").c_str()); Param_Info1(static_cast<int16s>(demixing_matrix));
+                        }
+                    }
+                    else {
+                        Skip_XX(2 * static_cast<int64u>(substream_count + coupled_substream_count) * output_channel_count, "demixing_matrix");
+                    }
                 Element_End0();
             }
         Element_End0();
