@@ -1456,6 +1456,7 @@ public :
         void                Merge_Conformance(bool FromConfig = false);
         void                Streams_Finish_Conformance();
         virtual string      CreateElementName();
+        string              BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix);
         void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* Prefix = nullptr);
         void                RanOutOfData(const char* Prefix = nullptr);
         void                SynchLost(const char* Prefix = nullptr);
