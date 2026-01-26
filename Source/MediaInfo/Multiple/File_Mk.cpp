@@ -1046,7 +1046,7 @@ void File_Mk::Streams_Finish()
                             }
                         }
                     }
-                    if ((Tag->first!=__T("Language") || Retrieve(StreamKind_Last, StreamPos_Last, "Language").empty())) // Prioritize Tracks block over tags
+                    if (Tag->first!=__T("BPS") && (Tag->first!=__T("Language") || Retrieve(StreamKind_Last, StreamPos_Last, "Language").empty())) // Prioritize Tracks block over tags
                         Fill(StreamKind_Last, StreamPos_Last, Tag->first.To_UTF8().c_str(), Tag->second);
                 }
             }
@@ -3304,7 +3304,6 @@ void File_Mk::Segment_SeekHead_Seek_SeekPosition()
 //---------------------------------------------------------------------------
 void File_Mk::Segment_Tags()
 {
-    Segment_Tag_SimpleTag_TagNames.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -3315,6 +3314,7 @@ void File_Mk::Segment_Tags_Tag()
 
     //Init
     Segment_Tags_Tag_Target_Value = { (int64u)-1, (int64u)-1 };
+    Segment_Tags_Tag_SimpleTag_TagString_Value.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -3329,6 +3329,12 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagLanguage()
 }
 
 //---------------------------------------------------------------------------
+void File_Mk::Segment_Tags_Tag_SimpleTag()
+{
+    Segment_Tag_SimpleTag_TagNames.resize(Element_Level - 4); //4 is the first level of a tag main element
+}
+
+//---------------------------------------------------------------------------
 void File_Mk::Segment_Tags_Tag_SimpleTag_TagName()
 {
     //Parsing
@@ -3336,20 +3342,26 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagName()
 
     Segment_Tag_SimpleTag_TagNames.resize(Element_Level-5); //5 is the first level of a tag
     Segment_Tag_SimpleTag_TagNames.push_back(TagName);
+    Segment_Tags_Tag_SimpleTag_Assign();
 }
 
 //---------------------------------------------------------------------------
 void File_Mk::Segment_Tags_Tag_SimpleTag_TagString()
 {
     //Parsing
-    Ztring TagString;
-    TagString=UTF8_Get();
+    Segment_Tags_Tag_SimpleTag_TagString_Value=UTF8_Get();
+    Segment_Tags_Tag_SimpleTag_Assign();
+}
 
-    if (Segment_Tag_SimpleTag_TagNames.empty())
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tags_Tag_SimpleTag_Assign()
+{
+    if (Segment_Tag_SimpleTag_TagNames.empty() || Segment_Tags_Tag_SimpleTag_TagString_Value.empty())
         return;
+    auto TagString=std::move(Segment_Tags_Tag_SimpleTag_TagString_Value);
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("AERMS_OF_USE")) Segment_Tag_SimpleTag_TagNames[0]=__T("TermsOfUse"); //Typo in the source file
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("BITSPS")) return; //Useless
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("COMPATIBLE_BRANDS")) return; //QuickTime techinical info, useless
+    if (Segment_Tag_SimpleTag_TagNames[0]==__T("BITSPS")) Segment_Tag_SimpleTag_TagNames[0].clear(); //Useless
+    if (Segment_Tag_SimpleTag_TagNames[0]==__T("COMPATIBLE_BRANDS")) Segment_Tag_SimpleTag_TagNames[0].clear(); //QuickTime techinical info, useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("CONTENT_TYPE")) Segment_Tag_SimpleTag_TagNames[0]=__T("ContentType");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("COPYRIGHT")) Segment_Tag_SimpleTag_TagNames[0]=__T("Copyright");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("CREATION_TIME")) {Segment_Tag_SimpleTag_TagNames[0]=__T("Encoded_Date"); TagString+=__T(" UTC");}
@@ -3363,28 +3375,32 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagString()
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("ENCODED_BY")) Segment_Tag_SimpleTag_TagNames[0]=__T("EncodedBy");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("ENCODER")) Segment_Tag_SimpleTag_TagNames[0]=__T("Encoded_Library");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("ENCODER_SETTINGS")) Segment_Tag_SimpleTag_TagNames[0]=__T("Encoded_Library_Settings");
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("FPS")) return; //Useless
+    if (Segment_Tag_SimpleTag_TagNames[0]==__T("FPS")) Segment_Tag_SimpleTag_TagNames[0].clear(); //Useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("HANDLER_NAME"))
     {
         if (TagString.find(__T("Handler"))!=std::string::npos || TagString.find(__T("handler"))!=std::string::npos || TagString.find(__T("vide"))!=std::string::npos || TagString.find(__T("soun"))!=std::string::npos)
-            return; //This is not a Title
-        Segment_Tag_SimpleTag_TagNames[0]=__T("Title");
+            Segment_Tag_SimpleTag_TagNames[0].clear(); //This is not a Title
+        else 
+            Segment_Tag_SimpleTag_TagNames[0]=__T("Title");
     }
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("LANGUAGE")) Segment_Tag_SimpleTag_TagNames[0]=__T("Language");
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("MAJOR_BRAND")) return; //QuickTime techinical info, useless
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("MINOR_VERSION")) return; //QuickTime techinical info, useless
+    if (Segment_Tag_SimpleTag_TagNames[0]==__T("MAJOR_BRAND")) Segment_Tag_SimpleTag_TagNames[0].clear(); //QuickTime techinical info, useless
+    if (Segment_Tag_SimpleTag_TagNames[0]==__T("MINOR_VERSION")) Segment_Tag_SimpleTag_TagNames[0].clear(); //QuickTime techinical info, useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("PART_NUMBER")) Segment_Tag_SimpleTag_TagNames[0]=__T("Track/Position");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("ORIGINAL_MEDIA_TYPE")) Segment_Tag_SimpleTag_TagNames[0]=__T("OriginalSourceForm");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("SAMPLE") && Segment_Tag_SimpleTag_TagNames.size()==2 && Segment_Tag_SimpleTag_TagNames[1]==__T("PART_NUMBER")) return; //Useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("SAMPLE") && Segment_Tag_SimpleTag_TagNames.size()==2 && Segment_Tag_SimpleTag_TagNames[1]==__T("TITLE")) {Segment_Tag_SimpleTag_TagNames.resize(1); Segment_Tag_SimpleTag_TagNames[0]=__T("Title_More");}
-    if (Segment_Tag_SimpleTag_TagNames[0]==__T("STEREO_MODE")) return; //Useless
+    if (Segment_Tag_SimpleTag_TagNames[0]==__T("STEREO_MODE")) Segment_Tag_SimpleTag_TagNames[0].clear(); //Useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("TERMS_OF_USE")) Segment_Tag_SimpleTag_TagNames[0]=__T("TermsOfUse");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("TIMECODE"))
     {
         if (TagString.find(__T("Handler"))!=std::string::npos || TagString.find(__T("handler"))!=std::string::npos || TagString.find(__T("vide"))!=std::string::npos || TagString.find(__T("soun"))!=std::string::npos)
-            return; //This is not a Title
-        Segment_Tag_SimpleTag_TagNames[0]=__T("TimeCode_FirstFrame");
-        Segment_Tags_Tag_Items[Segment_Tags_Tag_Target_Value]["TimeCode_Source"]="Matroska tags";
+            Segment_Tag_SimpleTag_TagNames[0].clear(); //This is not a Title
+        else
+        {
+            Segment_Tag_SimpleTag_TagNames[0]=__T("TimeCode_FirstFrame");
+            Segment_Tags_Tag_Items[Segment_Tags_Tag_Target_Value]["TimeCode_Source"]="Matroska tags";
+        }
     }
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("TITLE")) Segment_Tag_SimpleTag_TagNames[0]=__T("Title");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("TOTAL_PARTS")) Segment_Tag_SimpleTag_TagNames[0]=__T("Track/Position_Total");
@@ -3404,7 +3420,8 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagString()
             TagName+=__T('/');
     }
 
-    Segment_Tags_Tag_Items[Segment_Tags_Tag_Target_Value][TagName]=TagString;
+    if (!TagName.empty())
+        Segment_Tags_Tag_Items[Segment_Tags_Tag_Target_Value][TagName]=TagString;
 }
 
 //---------------------------------------------------------------------------
@@ -4148,6 +4165,12 @@ void File_Mk::Segment_Tracks_TrackEntry_TrackNumber()
             return; //First element has the priority
         Fill(StreamKind_Last, StreamPos_Last, General_ID, TrackNumber);
         stream& streamItem = Stream[TrackNumber];
+        auto Previous=Stream.find((int64u)-1);
+        if (Previous!=Stream.end())
+        {
+            streamItem=Previous->second;
+            Stream.erase(Previous);
+        }
         if (StreamKind_Last!=Stream_Max)
         {
             streamItem.StreamKind=StreamKind_Last;

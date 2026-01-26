@@ -343,13 +343,14 @@ private :
     void Segment_Tags_Tag_Targets_TagChapterUID(){UInteger_Info();};
     void Segment_Tags_Tag_Targets_TagAttachmentUID(){UInteger_Info();};
     void Segment_Tags_Tag_Targets_TagBlockAddIDValue();
-    void Segment_Tags_Tag_SimpleTag(){};
+    void Segment_Tags_Tag_SimpleTag();
     void Segment_Tags_Tag_SimpleTag_TagName();
     void Segment_Tags_Tag_SimpleTag_TagLanguage();
     void Segment_Tags_Tag_SimpleTag_TagLanguageIETF(){Segment_Tags_Tag_SimpleTag_TagLanguage();};
     void Segment_Tags_Tag_SimpleTag_TagDefault(){UInteger_Info();};
     void Segment_Tags_Tag_SimpleTag_TagString();
     void Segment_Tags_Tag_SimpleTag_TagBinary(){Skip_XX(Element_Size, "Data");};
+    void Segment_Tags_Tag_SimpleTag_Assign();
 
     // Extra
     enum hdr_format
@@ -520,6 +521,7 @@ private :
     typedef std::map<tagid, tagspertrack> tags;
     tags    Segment_Tags_Tag_Items;
     tagid   Segment_Tags_Tag_Target_Value{};
+    Ztring  Segment_Tags_Tag_SimpleTag_TagString_Value;
     string  AttachedFile_FileName;
     string  AttachedFile_FileMimeType;
     string  AttachedFile_FileDescription;
