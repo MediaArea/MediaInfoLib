@@ -479,7 +479,7 @@ Ztring MediaInfo_Internal::Inform()
         XML=true;
     if (MediaInfoLib::Config.Inform_Get()==__T("MAXML"))
         XML_0_7_78_MA=true;
-    if (MediaInfoLib::Config.Inform_Get()==__T("MIXML") || MediaInfoLib::Config.Inform_Get()==__T("XML"))
+    if (MediaInfoLib::Config.Inform_Get()==__T("MIXML") || MediaInfoLib::Config.Inform_Get()==__T("XML") || MediaInfoLib::Config.Inform_Get().MakeLowerCase() == __T("xmlwithattr"))
         XML_0_7_78_MI=true;
     #endif //defined(MEDIAINFO_XML_YES)
      #if defined(MEDIAINFO_JSON_YES)
@@ -774,6 +774,9 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
         #if defined(MEDIAINFO_XML_YES)
         XML=MediaInfoLib::Config.Inform_Get()==__T("OLDXML")?true:false;
         XML_0_7_78=(MediaInfoLib::Config.Inform_Get()==__T("MAXML") || MediaInfoLib::Config.Inform_Get()==__T("MIXML") || MediaInfoLib::Config.Inform_Get() == __T("XML"))?true:false;
+        bool XWM_WithAttr=(MediaInfoLib::Config.Inform_Get().MakeLowerCase()==__T("xmlwithattr"));
+        if (XWM_WithAttr)
+            XML_0_7_78=true;
         if (XML_0_7_78)
             XML=true;
         #endif //defined(MEDIAINFO_XML_YES)
@@ -873,6 +876,7 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
 
                 //Subs
                 #if defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES)
+                bool IsXmlAttributeConformance=false;
                 if (XML || JSON)
                 {
                     const Ztring& NextName=Get((stream_t)StreamKind, StreamPos, Champ_Pos+1, Info_Name);
@@ -898,7 +902,11 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                                 Fields_Current=&Fields;
                         }
                         else
+                        {
                             Nom_ToErase=LastNested->Name.size()+1;
+                            if (XWM_WithAttr && LastNested->Name.rfind(__T("Conformance"), 0)==0)
+                                IsXmlAttributeConformance=true;
+                        }
                     }
 
                     if (NextName.size()>Nom.size() && !NextName.rfind(Nom, Nom.size()) && NextName[Nom.size()]==__T(' '))
@@ -1056,15 +1064,86 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                             Valeur.erase(SlashPos);
                     }
 
+                    if (IsXmlAttributeConformance)
+                    {
+                        auto Valeur_Parenthesis_Begin = Valeur.find(__T(" ("));
+                        if (Valeur_Parenthesis_Begin != string::npos) {
+                            auto Valeur_Parenthesis_Begin2 = Valeur_Parenthesis_Begin + 2;
+                            auto Valeur_Parenthesis_End = Valeur.find(')', Valeur_Parenthesis_Begin2);
+                            ZtringListList AttributesList;
+                            if (Valeur_Parenthesis_End != string::npos) {
+                                AttributesList.Separator_Set(0, ", ");
+                                AttributesList.Separator_Set(1, " ");
+                                AttributesList.Write(Valeur.substr(Valeur_Parenthesis_Begin2, Valeur_Parenthesis_End - Valeur_Parenthesis_Begin2));
+                                Valeur.erase(Valeur_Parenthesis_Begin);
+                            }
+                            for (auto& Item : AttributesList) {
+                                if (Item.size() == 1 && Item[0] == __T("conf")) {
+                                    Item[0] = __T("frame");
+                                    Item.push_back(__T("conf"));
+                                }
+                            }
+                            if (AttributesList.empty()) {
+                                AttributesList.resize(1);
+                            }
+                            vector<ZtringList> AttributesValues;
+                            AttributesValues.resize(AttributesList.size());
+                            for (size_t i = 0; i < AttributesValues.size(); i++) {
+                                if (AttributesList[i].size() <= 1) {
+                                    continue;
+                                }
+                                AttributesValues[i].Separator_Set(0, "+");
+                                AttributesValues[i].Write(AttributesList[i][1]);
+                            }
+
+                            auto ItemCount = 0;
+                            for (const auto& Item : AttributesValues) {
+                                if (ItemCount < Item.size()) {
+                                    ItemCount = Item.size();
+                                }
+                            }
+                            for (size_t j = 0; j < ItemCount; j++) {
+                                auto Node_Current = new Node(Nom.To_UTF8());
+                                for (size_t i = 0; i < AttributesValues.size(); i++) {
+                                    auto Att = AttributesList[i][0].To_UTF8();
+                                    string Value;
+                                    if (j < AttributesValues[i].size()) {
+                                        Value = AttributesValues[i][j].To_UTF8();
+                                    }
+                                    string Att2;
+                                    string Value2;
+                                    for (size_t k = 2; k < AttributesList[i].size(); k++) {
+                                        const auto Item = AttributesList[i][k];
+                                        if (!Item.empty()) {
+                                            if (Item.back() == '%') {
+                                                Att2 = Att + "_percent";
+                                                Value2 = Item.To_UTF8();
+                                            }
+                                            else {
+                                                Value += ' ';
+                                                Value += Item.To_UTF8();
+                                            }
+                                        }
+                                    }
+                                    Node_Current->Add_Attribute(Att, Value);
+                                    if (!Att2.empty()) {
+                                        Node_Current->Add_Attribute(Att2, Value2);
+                                    }
+                                }
+                                Node_Current->Value = Valeur.To_UTF8();
+                                Fields_Current->push_back(Node_Current);
+                            }
+                        }
+                    }
+                    else {
                     Node* Node_Current=NULL;
                     Node_Current=new Node(Nom.To_UTF8());
                     if (Modified==1 && !MediaInfoLib::Config.SkipBinaryData_Get()) //Base64
-                        Node_Current->Add_Attribute("dt", "binary.base64");
-
-                    if (Modified==1 && MediaInfoLib::Config.SkipBinaryData_Get())
-                        Node_Current->Value="(Binary data)";
+                    Node_Current->Add_Attribute("dt", "binary.base64");
+                    if (Modified == 1 && MediaInfoLib::Config.SkipBinaryData_Get())
+                        Node_Current->Value = "(Binary data)";
                     else
-                        Node_Current->Value=Valeur.To_UTF8();
+                        Node_Current->Value = Valeur.To_UTF8();
                     Fields_Current->push_back(Node_Current);
 
                     if (!Format_Profile_More.empty())
@@ -1084,6 +1163,7 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                             Node_Current=new Node("Format_Level", Format_Profile_More.To_UTF8());
                             Fields_Current->push_back(Node_Current);
                         }
+                    }
                     }
                 }
 

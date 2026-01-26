@@ -44,6 +44,8 @@ using namespace tinyxml2;
     #define memcpy_Unaligned_Unaligned std::memcpy
     #define memcpy_Unaligned_Unaligned_Once1024 std::memcpy
 #endif //MEDIAINFO_SSE2_YES
+#define FMT_UNICODE 0
+#include "ThirdParty/fmt/format.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -247,7 +249,7 @@ static_assert(sizeof(Conformance_Type_String) / sizeof(Conformance_Type_String[0
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
-string BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix)
+string File__Analyze::BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix)
 {
     string Result;
     if (!Prefix) {
@@ -387,6 +389,7 @@ void conformance::Streams_Finish_Conformance()
                 }
             }
             string Extra;
+            bool RemoveOneValueCharacter = false;
             if (!ConformanceError.FramePoss.empty())
             {
                 string Frames, Times, Offsets;
@@ -492,8 +495,15 @@ void conformance::Streams_Finish_Conformance()
                     Offsets.pop_back();
                 }
                 if (Frames_HasContent + Times_HasContent + Offsets_HasContent) {
-                    Extra = ' ';
-                    Extra += '(';
+                    if (ConformanceError.Value.back() == ')') {
+                        RemoveOneValueCharacter = true;
+                        Extra = ',';
+                        Extra += ' ';
+                    }
+                    else {
+                        Extra = ' ';
+                        Extra += '(';
+                    }
                     if (Frames == "conf") {
                         Extra += Frames;
                     }
@@ -522,7 +532,11 @@ void conformance::Streams_Finish_Conformance()
                     Extra += ')';
                 }
             }
-            A->Fill(StreamKind_Last, StreamPos_Last, (Conformance_String + ConformanceError.Field).c_str(), ConformanceError.Value + Extra);
+            auto Value = ConformanceError.Value;
+            if (RemoveOneValueCharacter)
+                Value.pop_back();
+            Value += Extra;
+            A->Fill(StreamKind_Last, StreamPos_Last, (Conformance_String + ConformanceError.Field).c_str(), Value);
         }
         Conformance_Total.clear();
     }
@@ -2804,7 +2818,7 @@ void File__Analyze::Header_Fill_Size(int64u Size)
                 Name += ' ';
             }
             Name += "GeneralCompliance";
-            Fill_Conformance(Name.c_str(), "Element size " + to_string(Size - Element_Offset) + " is more than maximal permitted size " + to_string(Element[Element_Level - 2].Next - (File_Offset + Buffer_Offset + Element_Offset)));
+            Fill_Conformance(Name.c_str(), "Element size is more than maximal permitted size (actual " + to_string(Size - Element_Offset) + ", expected " + to_string(Element[Element_Level - 2].Next - (File_Offset + Buffer_Offset + Element_Offset)) + ")");
         }
 
         Element[Element_Level-1].Next=Element[Element_Level-2].Next;
@@ -4484,7 +4498,21 @@ void File__Analyze::IsTruncated(int64u ExpectedSize, bool MoreThan, const char* 
     Frame_Count_NotParsedIncluded = (int64u)-1;
     Fill(Stream_General, 0, "IsTruncated", "Yes", Unlimited, true, true);
     Fill_SetOptions(Stream_General, 0, "IsTruncated", "N NT");
-    Fill_Conformance(BuildConformanceName(ParserName, Prefix, "GeneralCompliance").c_str(), "File size " + std::to_string(File_Size) + " is less than expected size " + (ExpectedSize == (int64u)-1 ? std::string() : ((MoreThan ? "at least " : "") + std::to_string(ExpectedSize))));
+    auto Percent = (float)File_Size / ExpectedSize * 100;
+    string ActualPercent;
+    static const string Zero("0.000000000");
+    if (!MoreThan) {
+        for (auto i = 0; i <= 9; i++) {
+            ActualPercent = fmt::format("{:.{}f}", Percent, i);
+            if ((ActualPercent.front() == '0' && !Zero.rfind(ActualPercent, 0))// Not "0%"
+                || (ActualPercent.front() != '0' && ActualPercent.size() > 2 && ActualPercent[2] != '.')) { // Not "100%"
+                continue;
+            }
+            ActualPercent = ' ' + ActualPercent + '%';
+            break;
+        }
+    }
+    Fill_Conformance(BuildConformanceName(ParserName, Prefix, "GeneralCompliance").c_str(), "File size is less than expected size (actual " + fmt::format("{}", File_Size) + ActualPercent + ", expected " + (ExpectedSize == (int64u)-1 ? std::string() : ((MoreThan ? ">=" : "") + fmt::format("{}", ExpectedSize) + ")")));
     Merge_Conformance();
     Frame_Count = Frame_Count_Save;
     Frame_Count_NotParsedIncluded = Frame_Count_NotParsedIncluded_Save;
