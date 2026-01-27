@@ -159,8 +159,8 @@ Push-Location "${release_directory}"
         New-Item -Force -ItemType Directory "Developers\Project\NetBeans\Example.JNative\src"
         Copy-Item -Force "..\..\Project\NetBeans\Example.JNative\src\*.java" "Developers\Project\NetBeans\Example.JNative\src"
         ### Copying: Contrib ###
-        New-Item -Force -ItemType Directory "Contrib"
-        Copy-Item -Force -Recurse "..\..\Contrib\*.*" "Contrib"
+        New-Item -Force -ItemType Directory "Developers/Contrib"
+        Copy-Item -Force -Recurse "..\..\Contrib\*" "Developers\Contrib"
         ### Copying: Libs ###
         New-Item -Force -ItemType Directory "Developers\Project\MSVC2022\${arch}\Release"
         Copy-Item -Force "..\..\Project\MSVC2022\${arch}\Release\MediaInfo.lib" "Developers\Project\MSVC2022\${arch}\Release"
