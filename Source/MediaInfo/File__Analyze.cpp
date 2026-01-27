@@ -4532,6 +4532,34 @@ void File__Analyze::IsTruncated(int64u ExpectedSize, bool MoreThan, const char* 
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
+void File__Analyze::DurationIssue(int64u ActualDuration, int64u ExpectedDuration, bool MoreThan, const char* Prefix)
+{
+    auto ExpectedDuration_Min = ExpectedDuration;
+    auto ExpectedDurationI = ((int64u)(ExpectedDuration / 1000)) * 1000;
+    float64 Multiplier;
+    if (ExpectedDuration - ExpectedDurationI == 0) { // If precision is second only, we tolerate +/- 1s
+        ExpectedDuration_Min -= 1000;
+        Multiplier = 1000;
+    }
+    else {
+        ExpectedDuration_Min += 1;
+        Multiplier = 1;
+    }
+    if (ActualDuration < ExpectedDuration_Min) {
+        auto ActualTC = TimeCode((double)ActualDuration / 1000, 999, TimeCode::Timed()).ToString();
+        auto ForPercentage = to_string_with_percent(ActualDuration, ExpectedDuration, false);
+        auto ForPercentage_CutPos = ForPercentage.find(' ');
+        if (ForPercentage_CutPos != string::npos) {
+            ActualTC += ForPercentage.substr(ForPercentage_CutPos);
+        }
+        auto ExpectedTC = TimeCode((double)ExpectedDuration / 1000, (Multiplier - 1) ? 0 : 999, TimeCode::Timed()).ToString();
+        Fill_Conformance(BuildConformanceName(ParserName, Prefix ? Prefix : "", "Duration").c_str(), "Duration is less than expected duration (actual " + ActualTC + ", expected " + ExpectedTC + ')');
+    }
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
 void File__Analyze::RanOutOfData(const char* Prefix)
 {
     if (File_Offset + Buffer_Offset + Element_Size >= File_Size) {

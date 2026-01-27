@@ -526,7 +526,12 @@ void File_Mpega::Streams_Finish()
 
     if (FrameInfo.PTS!=(int64u)-1 && FrameInfo.PTS>PTS_Begin)
     {
-        Fill(Stream_Audio, 0, Audio_Duration, float64_int64s(((float64)(FrameInfo.PTS-PTS_Begin))/1000000));
+        auto Duration = ((float64)(FrameInfo.PTS - PTS_Begin)) / 1000000;
+        const auto& ExpectedDurationS = Retrieve_Const(Stream_Audio, 0, Audio_Duration);
+        if (!ExpectedDurationS.empty()) {
+            DurationIssue(float64_int64s(Duration), ExpectedDurationS.To_int64u(), false, "MPEG-Audio");
+        }
+        Fill(Stream_Audio, 0, Audio_Duration, Duration, 0, true);
         if (Retrieve(Stream_Audio, 0, Audio_BitRate_Mode)==__T("CBR") && ID<4 && sampling_frequency<4)
         {
             int16u Samples;
