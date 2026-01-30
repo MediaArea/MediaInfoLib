@@ -28,6 +28,11 @@ SetCompressor /FINAL /SOLID lzma
 !define MUI_ABORTWARNING
 !define MUI_ICON "..\Resource\Image\MediaInfo.ico"
 
+; Uninstaller signing
+!ifdef EXPORT_UNINST
+  !uninstfinalize 'copy /Y "%1" "../../Release/${PRODUCT_NAME}_DLL_${PRODUCT_VERSION}_Windows_x64-uninst.exe"'
+!endif
+
 ; Language Selection Dialog Settings
 !define MUI_LANGDLL_REGISTRY_ROOT "${PRODUCT_UNINST_ROOT_KEY}"
 !define MUI_LANGDLL_REGISTRY_KEY "${PRODUCT_UNINST_KEY}"
@@ -88,7 +93,7 @@ BrandingText " "
 ; Modern UI end
 
 Name "${PRODUCT_NAME}.dll ${PRODUCT_VERSION}"
-OutFile "..\..\Release\MediaInfo_DLL_${PRODUCT_VERSION}_Windows_x64.exe"
+OutFile "..\..\Release\${PRODUCT_NAME}_DLL_${PRODUCT_VERSION}_Windows_x64.exe"
 InstallDir "$PROGRAMFILES64\MediaInfo.dll"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails nevershow
@@ -115,7 +120,11 @@ Section "SectionPrincipale" SEC01
 SectionEnd
 
 Section -Post
-  WriteUninstaller "$INSTDIR\MediaInfo_uninst.exe"
+  !if /FileExists "..\..\Release\${PRODUCT_NAME}_DLL_${PRODUCT_VERSION}_Windows_x64-uninst.exe"
+    File "/oname=$INSTDIR\MediaInfo_uninst.exe" "..\..\Release\${PRODUCT_NAME}_DLL_${PRODUCT_VERSION}_Windows_x64-uninst.exe"
+  !else
+    WriteUninstaller "$INSTDIR\MediaInfo_uninst.exe"
+  !endif
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "" "$INSTDIR\MediaInfo.dll"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "$(^Name)"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
