@@ -245,6 +245,8 @@ HEADERS += \
         ../../Source/MediaInfo/TimeCode.h \
         ../../Source/MediaInfo/Video/File_AfdBarData.h \
         ../../Source/MediaInfo/Video/File_Aic.h \
+        ../../Source/MediaInfo/Video/File_Av1.h \
+        ../../Source/MediaInfo/Video/File_Av2.h \
         ../../Source/MediaInfo/Video/File_Avc.h \
         ../../Source/MediaInfo/Video/File_AvsV.h \
         ../../Source/MediaInfo/Video/File_Avs3V.h \
@@ -492,6 +494,8 @@ SOURCES += \
         ../../Source/MediaInfo/TimeCode.cpp \
         ../../Source/MediaInfo/Video/File_AfdBarData.cpp \
         ../../Source/MediaInfo/Video/File_Aic.cpp \
+        ../../Source/MediaInfo/Video/File_Av1.cpp \
+        ../../Source/MediaInfo/Video/File_Av2.cpp \
         ../../Source/MediaInfo/Video/File_Avc.cpp \
         ../../Source/MediaInfo/Video/File_Avc_Duplicate.cpp \
         ../../Source/MediaInfo/Video/File_AvsV.cpp \

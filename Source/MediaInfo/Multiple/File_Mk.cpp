@@ -37,6 +37,9 @@
 #if defined(MEDIAINFO_AV1_YES)
     #include "MediaInfo/Video/File_Av1.h"
 #endif
+#if defined(MEDIAINFO_AV2_YES)
+#include "MediaInfo/Video/File_Av2.h"
+#endif
 #if defined(MEDIAINFO_AVC_YES)
     #include "MediaInfo/Video/File_Avc.h"
 #endif
@@ -4887,7 +4890,7 @@ void File_Mk::CodecID_Manage()
     stream& streamItem = Stream[TrackNumber];
 
     //Creating the parser
-    #if defined(MEDIAINFO_MPEG4V_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_VC1_YES) || defined(MEDIAINFO_DIRAC_YES) || defined(MEDIAINFO_MPEGV_YES) || defined(MEDIAINFO_VP8_YES) || defined(MEDIAINFO_VP9_YES) || defined(MEDIAINFO_OGG_YES) || defined(MEDIAINFO_DTS_YES)
+    #if defined(MEDIAINFO_MPEG4V_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_VC1_YES) || defined(MEDIAINFO_DIRAC_YES) || defined(MEDIAINFO_MPEGV_YES) || defined(MEDIAINFO_VP8_YES) || defined(MEDIAINFO_VP9_YES) || defined(MEDIAINFO_OGG_YES) || defined(MEDIAINFO_DTS_YES)
         const Ztring &Format=MediaInfoLib::Config.CodecID_Get(StreamKind_Last, InfoCodecID_Format_Type, CodecID, InfoCodecID_Format);
     #endif
         if (0);
@@ -4902,6 +4905,14 @@ void File_Mk::CodecID_Manage()
     else if (Format==__T("AV1"))
     {
         File_Av1* Parser=new File_Av1;
+        Parser->FrameIsAlwaysComplete=true;
+        streamItem.Parser=Parser;
+    }
+    #endif
+    #if defined(MEDIAINFO_AV2_YES)
+    else if (Format==__T("AV2"))
+    {
+        File_Av2* Parser=new File_Av2;
         Parser->FrameIsAlwaysComplete=true;
         streamItem.Parser=Parser;
     }
