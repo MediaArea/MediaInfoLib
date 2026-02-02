@@ -238,6 +238,11 @@ namespace Elements
     const int64u Segment_Tracks_TrackEntry_FlagEnabled=0x39;
     const int64u Segment_Tracks_TrackEntry_FlagDefault=0x8;
     const int64u Segment_Tracks_TrackEntry_FlagForced=0x15AA;
+    const int64u Segment_Tracks_TrackEntry_FlagHearingImpaired=0x15AB;
+    const int64u Segment_Tracks_TrackEntry_FlagVisualImpaired=0x15AC;
+    const int64u Segment_Tracks_TrackEntry_FlagTextDescriptions=0x15AD;
+    const int64u Segment_Tracks_TrackEntry_FlagOriginal=0x15AE;
+    const int64u Segment_Tracks_TrackEntry_FlagCommentary=0x15AF;
     const int64u Segment_Tracks_TrackEntry_FlagLacing=0x1C;
     const int64u Segment_Tracks_TrackEntry_MinCache=0x2DE7;
     const int64u Segment_Tracks_TrackEntry_MaxCache=0x2DF8;
@@ -1410,6 +1415,16 @@ void File_Mk::Streams_Finish()
         //Flags
         Fill(StreamKind_Last, StreamPos_Last, "Default", Temp->second.Default?"Yes":"No");
         Fill(StreamKind_Last, StreamPos_Last, "Forced", Temp->second.Forced?"Yes":"No");
+        Fill(StreamKind_Last, StreamPos_Last, "Original", Temp->second.Original?"Yes":"No");
+
+        if (StreamKind_Last != Stream_Video)
+        {
+            Fill(StreamKind_Last, StreamPos_Last, "HearingImpaired", Temp->second.HearingImpaired?"Yes":"No");
+            Fill(StreamKind_Last, StreamPos_Last, "Commentary", Temp->second.Commentary?"Yes":"No");
+            Fill(StreamKind_Last, StreamPos_Last, "TextDescriptions", Temp->second.TextDescriptions?"Yes":"No");
+        }
+        else
+            Fill(StreamKind_Last, StreamPos_Last, "VisualImpaired", Temp->second.VisualImpaired?"Yes":"No");
     }
 
     //Chapters
@@ -1891,6 +1906,11 @@ void File_Mk::Data_Parse()
                 ATO2(Segment_Tracks_TrackEntry_FlagEnabled, "FlagEnabled")
                 ATO2(Segment_Tracks_TrackEntry_FlagDefault, "FlagDefault")
                 ATO2(Segment_Tracks_TrackEntry_FlagForced, "FlagForced")
+                ATO2(Segment_Tracks_TrackEntry_FlagHearingImpaired, "FlagHearingImpaired")
+                ATO2(Segment_Tracks_TrackEntry_FlagVisualImpaired, "FlagVisualImpaired")
+                ATO2(Segment_Tracks_TrackEntry_FlagTextDescriptions, "FlagTextDescriptions")
+                ATO2(Segment_Tracks_TrackEntry_FlagOriginal, "FlagOriginal")
+                ATO2(Segment_Tracks_TrackEntry_FlagCommentary, "FlagCommentary")
                 ATO2(Segment_Tracks_TrackEntry_FlagLacing, "FlagLacing")
                 ATO2(Segment_Tracks_TrackEntry_MinCache, "MinCache")
                 ATO2(Segment_Tracks_TrackEntry_MaxCache, "MaxCache")
@@ -4131,6 +4151,70 @@ void File_Mk::Segment_Tracks_TrackEntry_FlagForced()
         if (Segment_Info_Count>1)
             return; //First element has the priority
         Stream[TrackNumber].Forced=UInteger?true:false;
+    FILLING_END();
+}
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_FlagHearingImpaired()
+{
+    //Parsing
+    int64u UInteger=UInteger_Get();
+
+    FILLING_BEGIN();
+    if (Segment_Info_Count>1)
+        return; //First element has the priority
+    Stream[TrackNumber].HearingImpaired=UInteger?true:false;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_FlagVisualImpaired()
+{
+    //Parsing
+    int64u UInteger=UInteger_Get();
+
+    FILLING_BEGIN();
+    if (Segment_Info_Count>1)
+        return; //First element has the priority
+    Stream[TrackNumber].VisualImpaired=UInteger?true:false;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_FlagTextDescriptions()
+{
+    //Parsing
+    int64u UInteger=UInteger_Get();
+
+    FILLING_BEGIN();
+    if (Segment_Info_Count>1)
+        return; //First element has the priority
+    Stream[TrackNumber].TextDescriptions=UInteger?true:false;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_FlagOriginal()
+{
+    //Parsing
+    int64u UInteger=UInteger_Get();
+
+    FILLING_BEGIN();
+    if (Segment_Info_Count>1)
+        return; //First element has the priority
+    Stream[TrackNumber].Original=UInteger?true:false;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_FlagCommentary()
+{
+    //Parsing
+    int64u UInteger=UInteger_Get();
+
+    FILLING_BEGIN();
+    if (Segment_Info_Count>1)
+        return; //First element has the priority
+    Stream[TrackNumber].Commentary=UInteger?true:false;
     FILLING_END();
 }
 
