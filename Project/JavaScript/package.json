@@ -1,7 +1,7 @@
 {
   "name": "libmediainfo",
   "description": "Get most relevant technical and tag data for video and audio files (emscripten port of the library)",
-  "version": "25.10",
+  "version": "26.1",
   "keywords": [
     "mediainfo"
   ],
