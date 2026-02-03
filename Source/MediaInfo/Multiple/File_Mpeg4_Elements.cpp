@@ -10422,18 +10422,7 @@ void File_Mpeg4::moov_udta_loci()
     SkipString(                                                 "Notes");
 
     // Format coordinates as ISO-6709 string
-    char ISO6709_buff[50];
-    string OldLocale;
-    auto OldLocale_Temp = setlocale(LC_NUMERIC, nullptr);
-    if (OldLocale_Temp && (*OldLocale_Temp != 'C' || *(OldLocale_Temp + 1))) {
-        OldLocale = OldLocale_Temp;
-        setlocale(LC_NUMERIC, "C");
-    }
-    snprintf(ISO6709_buff, sizeof(ISO6709_buff), "%+010.6f%+011.6f%+.3f/", lat, lon, alt);
-    if (!OldLocale.empty()) {
-        setlocale(LC_NUMERIC, OldLocale.c_str());
-    }
-    Ztring ISO6709{ ISO6709_buff };
+    auto ISO6709 = fmt::format("{:+010.6f}{:+011.6f}{:+.3f}/", lat, lon, alt);
 
     // Filling
     FILLING_BEGIN();
