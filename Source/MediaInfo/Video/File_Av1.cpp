@@ -611,6 +611,7 @@ void File_Av1::metadata()
         case    1 : metadata_hdr_cll(); break;
         case    2 : metadata_hdr_mdcv(); break;
         case    4 : metadata_itu_t_t35(); break;
+        case    5 : metadata_timecode(); break;
         default   : Skip_XX(Element_Size-Element_Offset,        "Data");
     }
 }
@@ -746,6 +747,41 @@ void File_Av1::metadata_itu_t_t35_B5_5890_01()
     BS_End();
     Skip_XX(Element_Size - Element_Offset, "(Not parsed)");
     Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Av1::metadata_timecode()
+{
+    BS_Begin();
+    Skip_S1(5,                                                  "counting_type");
+    bool full_timestamp_flag;
+    Get_SB(full_timestamp_flag,                                 "full_timestamp_flag");
+    Skip_SB(                                                    "discontinuity_flag");
+    Skip_SB(                                                    "cnt_dropped_flag");
+    Skip_S2(9,                                                  "n_frames");
+    if (full_timestamp_flag) {
+        Skip_S1(6,                                              "seconds_value");
+        Skip_S1(6,                                              "minutes_value");
+        Skip_S1(5,                                              "hours_value");
+    }
+    else {
+        TEST_SB_SKIP(                                           "seconds_flag");
+            Skip_S1(6,                                          "seconds_value");
+            TEST_SB_SKIP(                                       "minutes_flag");
+                Skip_S1(6,                                      "minutes_value");
+                TEST_SB_SKIP(                                   "hours_flag");
+                    Skip_S1(5,                                  "hours_value");
+                TEST_SB_END();
+            TEST_SB_END();
+        TEST_SB_END();
+    }
+    int8u time_offset_length;
+    Get_S1(5, time_offset_length,                               "time_offset_length");
+    if (time_offset_length > 0) {
+        Skip_BS(time_offset_length,                             "time_offset_value");
+    }
+    trailing_bits();
+    BS_End();
 }
 
 //---------------------------------------------------------------------------

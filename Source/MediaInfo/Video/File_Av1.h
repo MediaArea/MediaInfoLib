@@ -64,6 +64,7 @@ private :
     void metadata_itu_t_t35_B5_003C_0001_04();
     void metadata_itu_t_t35_B5_5890();
     void metadata_itu_t_t35_B5_5890_01();
+    void metadata_timecode();
     void frame();
     void padding();
 
