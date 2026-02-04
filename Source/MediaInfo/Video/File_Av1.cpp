@@ -215,6 +215,29 @@ void File_Av1::Streams_Finish()
 }
 
 //***************************************************************************
+// Buffer - File header
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+bool File_Av1::FileHeader_Begin()
+{
+    //Must have enough buffer for having header
+    if (Buffer_Size < 1)
+        return false; //Must wait for more data
+
+    //Raw OBU sequences always start with temporal delimiter and contain size field
+    //Note: MediaInfo does not currently support Annex B AV1 streams
+    if (!IsSub
+        && (Buffer[0] != 0x12 && Buffer[0] != 0x16) // temporal_delimiter
+       ) {
+        Reject();
+        return false;
+    }
+
+    return true;
+}
+
+//***************************************************************************
 // Buffer - Global
 //***************************************************************************
 

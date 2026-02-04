@@ -41,6 +41,9 @@ private :
     void Streams_Fill();
     void Streams_Finish();
 
+    //Buffer - File header
+    bool FileHeader_Begin();
+
     //Buffer - Global
     void Read_Buffer_OutOfBand();
 
