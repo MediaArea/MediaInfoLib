@@ -49,6 +49,7 @@ private :
     void Data_Parse();
 
     //Elements
+    void trailing_bits();
     void sequence_header();
     void temporal_delimiter();
     void frame_header();

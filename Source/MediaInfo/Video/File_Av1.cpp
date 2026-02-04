@@ -40,7 +40,7 @@ extern const char* Mpegv_matrix_coefficients_ColorSpace(int8u matrix_coefficient
 extern const char* Avc_video_full_range[];
 
 //---------------------------------------------------------------------------
-const char* Av1_obu_type(int8u obu_type)
+static const char* Av1_obu_type(int8u obu_type)
 {
     switch (obu_type)
     {
@@ -58,7 +58,7 @@ const char* Av1_obu_type(int8u obu_type)
 }
 
 //---------------------------------------------------------------------------
-const char* Av1_seq_profile(int8u seq_profile)
+static const char* Av1_seq_profile(int8u seq_profile)
 {
     switch (seq_profile)
     {
@@ -70,7 +70,7 @@ const char* Av1_seq_profile(int8u seq_profile)
 }
 
 //---------------------------------------------------------------------------
-const char* Av1_metadata_type(int8u metadata_type)
+static const char* Av1_metadata_type(int8u metadata_type)
 {
     switch (metadata_type)
     {
@@ -84,7 +84,7 @@ const char* Av1_metadata_type(int8u metadata_type)
 }
 
 //---------------------------------------------------------------------------
-const char* Av1_frame_type[4] =
+static const char* Av1_frame_type[4] =
 {
     "Key",
     "Inter",
@@ -291,7 +291,9 @@ void File_Av1::Header_Parse()
 void File_Av1::Data_Parse()
 {
     //Probing mode in case of raw stream //TODO: better reject of bad files
-    if (!IsSub && !Status[IsAccepted] && (!Element_Code || Element_Code>6))
+    if (!IsSub && !Status[IsAccepted]
+        && ((Element_Code != 1 && Element_Code != 2 && Element_Code != 5 && Element_Code != 0xF && !sequence_header_Parsed)
+           || ((Element_Code < 1 || Element_Code > 6) && Element_Code != 0xF)))
     {
         Reject();
         return;
@@ -316,12 +318,20 @@ void File_Av1::Data_Parse()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+void File_Av1::trailing_bits()
+{
+    Mark_1();
+    while (Data_BS_Remain())
+        Mark_0();
+}
+
+//---------------------------------------------------------------------------
 void File_Av1::sequence_header()
 {
     //Parsing
     int32u max_frame_width_minus_1, max_frame_height_minus_1;
-    int8u seq_profile, seq_level_idx[33]{}, operating_points_cnt_minus_1, buffer_delay_length_minus_1, frame_width_bits_minus_1, frame_height_bits_minus_1, seq_force_screen_content_tools, BitDepth, color_primaries, transfer_characteristics, matrix_coefficients, chroma_sample_position;
-    bool reduced_still_picture_header, seq_tier[33], timing_info_present_flag, decoder_model_info_present_flag, seq_choose_screen_content_tools, mono_chrome, color_range, color_description_present_flag, subsampling_x, subsampling_y, film_grain_params_present;
+    int8u seq_profile, seq_level_idx[33]{}, operating_points_cnt_minus_1, buffer_delay_length_minus_1, frame_width_bits_minus_1, frame_height_bits_minus_1, seq_force_screen_content_tools, BitDepth, color_primaries, transfer_characteristics, matrix_coefficients, chroma_sample_position{};
+    bool reduced_still_picture_header, timing_info_present_flag, decoder_model_info_present_flag, seq_choose_screen_content_tools, mono_chrome, color_range, color_description_present_flag, subsampling_x, subsampling_y, film_grain_params_present;
     BS_Begin();
     Get_S1 ( 3, seq_profile,                                    "seq_profile"); Param_Info1(Av1_seq_profile(seq_profile));
     Skip_SB(                                                    "still_picture");
@@ -330,7 +340,6 @@ void File_Av1::sequence_header()
     {
         Get_S1 ( 5, seq_level_idx[0],                           "seq_level_idx[0]");
         decoder_model_info_present_flag=false;
-        seq_tier[0]=false;
     }
     else
     {
@@ -348,7 +357,8 @@ void File_Av1::sequence_header()
                 Skip_S1( 5,                                     "frame_presentation_time_length_minus_1");
             TEST_SB_END();
         TEST_SB_END();
-        Skip_SB(                                                "initial_display_delay_present_flag");
+        bool initial_display_delay_present_flag;
+        Get_SB (initial_display_delay_present_flag,             "initial_display_delay_present_flag");
         Get_S1 ( 5, operating_points_cnt_minus_1,               "operating_points_cnt_minus_1");
         for (int8u i=0; i<=operating_points_cnt_minus_1; i++)
         {
@@ -356,7 +366,7 @@ void File_Av1::sequence_header()
             Skip_S2(12,                                         "operating_point_idc[i]");
             Get_S1(5, seq_level_idx[i],                         "seq_level_idx[i]");
             if (seq_level_idx[i]>7)
-                Get_SB(seq_tier[i],                             "seq_tier[i]");
+                Skip_SB(                                        "seq_tier[i]");
             if (timing_info_present_flag && decoder_model_info_present_flag)
             {
                 TEST_SB_SKIP(                                   "decoder_model_present_for_this_op[i]");
@@ -365,6 +375,11 @@ void File_Av1::sequence_header()
                     Skip_SB(                                    "low_delay_mode_flag[op]");
                 TEST_SB_END();
 
+            }
+            if (initial_display_delay_present_flag) {
+                TEST_SB_SKIP(                                   "initial_display_delay_present_for_this_op[i]");
+                    Skip_S1(4,                                  "initial_display_delay_minus_1[i]");
+                TEST_SB_END();
             }
             Element_End0();
         }
@@ -482,10 +497,7 @@ void File_Av1::sequence_header()
         Skip_SB(                                                "separate_uv_delta_q");
     Element_End0();
     Get_SB (film_grain_params_present,                          "film_grain_params_present");
-    Mark_1();
-    if (Data_BS_Remain()<8)
-        while (Data_BS_Remain())
-            Mark_0();
+    trailing_bits();
     BS_End();
 
     FILLING_BEGIN_PRECISE();
@@ -575,7 +587,7 @@ void File_Av1::frame_header()
         if (!Status[IsAccepted])
             Accept();
         Frame_Count++;
-        if (Frame_Count>=Frame_Count_Valid)
+        if (Element_Level < 2 && Frame_Count >= Frame_Count_Valid) //Only Finish here if not part of frame else Finish in frame
             Finish();
     FILLING_END();
 }
@@ -592,7 +604,7 @@ void File_Av1::metadata()
     //Parsing
     int64u metadata_type;
     Get_leb128 (metadata_type,                                  "metadata_type");
-    Param_Info1(Av1_metadata_type(metadata_type));
+    Param_Info1(Av1_metadata_type(static_cast<int8u>(metadata_type)));
 
     switch (metadata_type)
     {
@@ -608,6 +620,10 @@ void File_Av1::metadata_hdr_cll()
 {
     //Parsing
     Get_LightLevel(maximum_content_light_level, maximum_frame_average_light_level);
+
+    BS_Begin();
+    trailing_bits();
+    BS_End();
 }
 
 //---------------------------------------------------------------------------
@@ -621,6 +637,10 @@ void File_Av1::metadata_hdr_mdcv()
         HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt2086] = "HDR10";
     }
     Get_MasteringDisplayColorVolume(HDR[Video_MasteringDisplay_ColorPrimaries][HdrFormat_SmpteSt2086], HDR[Video_MasteringDisplay_Luminance][HdrFormat_SmpteSt2086], true);
+
+    BS_Begin();
+    trailing_bits();
+    BS_End();
 }
 
 //---------------------------------------------------------------------------
@@ -739,6 +759,11 @@ void File_Av1::frame()
     Element_Begin1("tile_group");
     tile_group();
     Element_End0();
+
+    FILLING_BEGIN();
+    if (Frame_Count >= Frame_Count_Valid)
+        Finish();
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
