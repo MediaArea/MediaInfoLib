@@ -610,6 +610,7 @@ void File_Av1::metadata()
     {
         case    1 : metadata_hdr_cll(); break;
         case    2 : metadata_hdr_mdcv(); break;
+        case    3 : metadata_scalability(); break;
         case    4 : metadata_itu_t_t35(); break;
         case    5 : metadata_timecode(); break;
         default   : Skip_XX(Element_Size-Element_Offset,        "Data");
@@ -747,6 +748,78 @@ void File_Av1::metadata_itu_t_t35_B5_5890_01()
     BS_End();
     Skip_XX(Element_Size - Element_Offset, "(Not parsed)");
     Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Av1::metadata_scalability()
+{
+#if MEDIAINFO_TRACE
+    if (Trace_Activated)
+    {
+        int8u scalability_mode_idc;
+        Get_B1(scalability_mode_idc,                            "scalability_mode_idc");
+        if (scalability_mode_idc == 14)
+            scalability_structure();
+        BS_Begin();
+        trailing_bits();
+        BS_End();
+    }
+    else
+#endif
+        Skip_XX(Element_Size - Element_Offset,                  "Data");
+}
+
+//---------------------------------------------------------------------------
+void File_Av1::scalability_structure()
+{
+#if MEDIAINFO_TRACE
+    if (Trace_Activated)
+    {
+        Element_Begin1("scalability_structure");
+        BS_Begin();
+        int8u spatial_layers_cnt_minus_1;
+        bool spatial_layer_dimensions_present_flag, spatial_layer_description_present_flag, temporal_group_description_present_flag;
+        Get_S1(2, spatial_layers_cnt_minus_1,                   "spatial_layers_cnt_minus_1");
+        Get_SB(spatial_layer_dimensions_present_flag,           "spatial_layer_dimensions_present_flag");
+        Get_SB(spatial_layer_description_present_flag,          "spatial_layer_description_present_flag");
+        Get_SB(temporal_group_description_present_flag,         "temporal_group_description_present_flag");
+        Skip_S1(3,                                              "scalability_structure_reserved_3bits");
+        BS_End();
+        if (spatial_layer_dimensions_present_flag) {
+            Element_Begin1("spatial_layer_dimensions");
+            for (int8u i = 0; i <= spatial_layers_cnt_minus_1; ++i) {
+                Skip_B2(                                        "spatial_layer_max_width[i]");
+                Skip_B2(                                        "spatial_layer_max_height[i]");
+            }
+            Element_End0();
+        }
+        if (spatial_layer_description_present_flag) {
+            Element_Begin1("spatial_layer_descriptions");
+            for (int8u i = 0; i <= spatial_layers_cnt_minus_1; i++)
+                Skip_B1(                                        "spatial_layer_ref_id[i]");
+            Element_End0();
+        }
+        if (temporal_group_description_present_flag) {
+            Element_Begin1("temporal_group_descriptions");
+            int8u temporal_group_size;
+            Get_B1(temporal_group_size,                         "temporal_group_size");
+            for (int8u i = 0; i < temporal_group_size; ++i) {
+                int8u temporal_group_ref_cnt_i;
+                BS_Begin();
+                Skip_S1(3,                                      "temporal_group_temporal_id[i]");
+                Skip_SB(                                        "temporal_group_temporal_switching_up_point_flag[i]");
+                Skip_SB(                                        "temporal_group_spatial_switching_up_point_flag[i]");
+                Get_S1(3, temporal_group_ref_cnt_i,             "temporal_group_ref_cnt[i]");
+                BS_End();
+                for (int8u j = 0; j < temporal_group_ref_cnt_i; ++j) {
+                    Skip_B1(                                    "temporal_group_ref_pic_diff[i][j]");
+                }
+            }
+            Element_End0();
+        }
+        Element_End0();
+    }
+#endif
 }
 
 //---------------------------------------------------------------------------
