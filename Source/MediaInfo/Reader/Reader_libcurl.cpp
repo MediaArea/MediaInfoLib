@@ -486,7 +486,20 @@ void Amazon_AWS_Sign(struct curl_slist* &HttpHeader, const Http::Url &File_URL, 
     char timeStamp_Buffer[17];
     time_t timeStamp_Time=time(0);
 
-    strftime(timeStamp_Buffer, sizeof(timeStamp_Buffer), "%Y%m%dT%H%M%SZ", gmtime(&timeStamp_Time));
+    #if defined(_WIN32)
+        // MSVC and MinGW-w64 argument order and return value differs from C11 standard
+        tm Gmt_Temp;
+        errno_t gmtime_s_Result = gmtime_s(&Gmt_Temp, &timeStamp_Time);
+        tm* Gmt = gmtime_s_Result ? nullptr : &Gmt_Temp;
+    #elif defined(_POSIX_VERSION) || defined(__APPLE__)
+        // POSIX
+        tm Gmt_Temp;
+        tm* Gmt = gmtime_r(&timeStamp_Time, &Gmt_Temp);
+    #else
+        // Fallback: not thread-safe, but prevents compile errors
+        tm* Gmt = gmtime(&timeStamp_Time);
+    #endif
+    strftime(timeStamp_Buffer, sizeof(timeStamp_Buffer), "%Y%m%dT%H%M%SZ", Gmt);
 
     string timeStamp(timeStamp_Buffer);
     string dateStamp=timeStamp.substr(0, 8);
@@ -705,8 +718,13 @@ size_t libcurl_WriteData_CallBack(void *ptr, size_t size, size_t nmemb, void *da
                 return size*nmemb;
             }
         }
+#if LIBCURL_VERSION_NUM >= 0x073700 // 7.55.0
+        curl_off_t File_SizeD;
+        CURLcode Result = curl_easy_getinfo(((Reader_libcurl::curl_data*)data)->Curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &File_SizeD);
+#else
         double File_SizeD;
-        CURLcode Result=curl_easy_getinfo(((Reader_libcurl::curl_data*)data)->Curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &File_SizeD);
+        CURLcode Result = curl_easy_getinfo(((Reader_libcurl::curl_data*)data)->Curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &File_SizeD);
+#endif
         if (Result==CURLE_OK && File_SizeD==0)
         {
             ((Reader_libcurl::curl_data*)data)->Init_NotAFile=true;
@@ -793,6 +811,7 @@ bool Reader_libcurl_HomeIsSet()
     #ifdef WINDOWS_UWP
         return false; //Environment is not aviable
     #else
+        #pragma warning(suppress : 4996) //'getenv': This function or variable may be unsafe.
         return getenv("HOME")?true:false;
     #endif
 }
@@ -805,12 +824,14 @@ Ztring Reader_libcurl_ExpandFileName(const Ztring &FileName)
         Ztring FileName_Modified(FileName);
         if (FileName_Modified.find(__T("$HOME"))==0)
         {
+            #pragma warning(suppress : 4996) //'getenv': This function or variable may be unsafe.
             char* env=getenv("HOME");
             if (env)
                 FileName_Modified.FindAndReplace(__T("$HOME"), Ztring().From_Local(env));
         }
         if (FileName_Modified.find(__T('~'))==0)
         {
+            #pragma warning(suppress : 4996) //'getenv': This function or variable may be unsafe.
             char* env=getenv("HOME");
             if (env)
                 FileName_Modified.FindAndReplace(__T("~"), Ztring().From_Local(env));
