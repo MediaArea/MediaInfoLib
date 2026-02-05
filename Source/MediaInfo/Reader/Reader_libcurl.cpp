@@ -486,7 +486,20 @@ void Amazon_AWS_Sign(struct curl_slist* &HttpHeader, const Http::Url &File_URL, 
     char timeStamp_Buffer[17];
     time_t timeStamp_Time=time(0);
 
-    strftime(timeStamp_Buffer, sizeof(timeStamp_Buffer), "%Y%m%dT%H%M%SZ", gmtime(&timeStamp_Time));
+    #if defined(_WIN32)
+        // MSVC and MinGW-w64 argument order and return value differs from C11 standard
+        tm Gmt_Temp;
+        errno_t gmtime_s_Result = gmtime_s(&Gmt_Temp, &timeStamp_Time);
+        tm* Gmt = gmtime_s_Result ? nullptr : &Gmt_Temp;
+    #elif defined(_POSIX_VERSION) || defined(__APPLE__)
+        // POSIX
+        tm Gmt_Temp;
+        tm* Gmt = gmtime_r(&timeStamp_Time, &Gmt_Temp);
+    #else
+        // Fallback: not thread-safe, but prevents compile errors
+        tm* Gmt = gmtime(&timeStamp_Time);
+    #endif
+    strftime(timeStamp_Buffer, sizeof(timeStamp_Buffer), "%Y%m%dT%H%M%SZ", Gmt);
 
     string timeStamp(timeStamp_Buffer);
     string dateStamp=timeStamp.substr(0, 8);
@@ -793,6 +806,7 @@ bool Reader_libcurl_HomeIsSet()
     #ifdef WINDOWS_UWP
         return false; //Environment is not aviable
     #else
+        #pragma warning(suppress : 4996) //'getenv': This function or variable may be unsafe.
         return getenv("HOME")?true:false;
     #endif
 }
@@ -805,12 +819,14 @@ Ztring Reader_libcurl_ExpandFileName(const Ztring &FileName)
         Ztring FileName_Modified(FileName);
         if (FileName_Modified.find(__T("$HOME"))==0)
         {
+            #pragma warning(suppress : 4996) //'getenv': This function or variable may be unsafe.
             char* env=getenv("HOME");
             if (env)
                 FileName_Modified.FindAndReplace(__T("$HOME"), Ztring().From_Local(env));
         }
         if (FileName_Modified.find(__T('~'))==0)
         {
+            #pragma warning(suppress : 4996) //'getenv': This function or variable may be unsafe.
             char* env=getenv("HOME");
             if (env)
                 FileName_Modified.FindAndReplace(__T("~"), Ztring().From_Local(env));
