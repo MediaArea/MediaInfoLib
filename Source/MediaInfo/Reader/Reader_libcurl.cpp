@@ -718,8 +718,13 @@ size_t libcurl_WriteData_CallBack(void *ptr, size_t size, size_t nmemb, void *da
                 return size*nmemb;
             }
         }
+#if LIBCURL_VERSION_NUM >= 0x073700 // 7.55.0
+        curl_off_t File_SizeD;
+        CURLcode Result = curl_easy_getinfo(((Reader_libcurl::curl_data*)data)->Curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &File_SizeD);
+#else
         double File_SizeD;
-        CURLcode Result=curl_easy_getinfo(((Reader_libcurl::curl_data*)data)->Curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &File_SizeD);
+        CURLcode Result = curl_easy_getinfo(((Reader_libcurl::curl_data*)data)->Curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &File_SizeD);
+#endif
         if (Result==CURLE_OK && File_SizeD==0)
         {
             ((Reader_libcurl::curl_data*)data)->Init_NotAFile=true;
