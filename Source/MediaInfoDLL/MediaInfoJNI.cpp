@@ -153,7 +153,7 @@ static jint JNI_Open_Buffer_Init(JNIEnv* _env, jobject _this, jlong fileSize, jl
     if (mi == NULL)
         return (jint)-1;
 
-    return mi->Open_Buffer_Init((int64u)fileSize, (int64u)fileOffset);
+    return (jint)mi->Open_Buffer_Init((int64u)fileSize, (int64u)fileOffset);
 }
 
 //------------------------------------------------------------------------------
