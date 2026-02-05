@@ -3367,11 +3367,13 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_Assign()
         return;
     auto TagString=std::move(Segment_Tags_Tag_SimpleTag_TagString_Value);
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("AERMS_OF_USE")) Segment_Tag_SimpleTag_TagNames[0]=__T("TermsOfUse"); //Typo in the source file
+    if (Segment_Tag_SimpleTag_TagNames[0]==__T("ARTIST")) Segment_Tag_SimpleTag_TagNames[0]=__T("Performer");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("BITSPS")) Segment_Tag_SimpleTag_TagNames[0].clear(); //Useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("COMPATIBLE_BRANDS")) Segment_Tag_SimpleTag_TagNames[0].clear(); //QuickTime techinical info, useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("CONTENT_TYPE")) Segment_Tag_SimpleTag_TagNames[0]=__T("ContentType");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("COPYRIGHT")) Segment_Tag_SimpleTag_TagNames[0]=__T("Copyright");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("CREATION_TIME")) {Segment_Tag_SimpleTag_TagNames[0]=__T("Encoded_Date"); TagString+=__T(" UTC");}
+    if (Segment_Tag_SimpleTag_TagNames[0]==__T("DATE")) Segment_Tag_SimpleTag_TagNames[0]=__T("Recorded_Date");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("DATE_DIGITIZED")) {Segment_Tag_SimpleTag_TagNames[0]=__T("Mastered_Date"); TagString+=__T(" UTC");}
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("DATE_ENCODED")) Segment_Tag_SimpleTag_TagNames[0]=__T("Encoded_Date");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("DATE_RECORDED")) Segment_Tag_SimpleTag_TagNames[0]=__T("Recorded_Date");
@@ -3383,6 +3385,7 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_Assign()
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("ENCODER")) Segment_Tag_SimpleTag_TagNames[0]=__T("Encoded_Library");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("ENCODER_SETTINGS")) Segment_Tag_SimpleTag_TagNames[0]=__T("Encoded_Library_Settings");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("FPS")) Segment_Tag_SimpleTag_TagNames[0].clear(); //Useless
+    if (Segment_Tag_SimpleTag_TagNames[0]==__T("GENRE")) Segment_Tag_SimpleTag_TagNames[0]=__T("Genre");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("HANDLER_NAME"))
     {
         if (TagString.find(__T("Handler"))!=std::string::npos || TagString.find(__T("handler"))!=std::string::npos || TagString.find(__T("vide"))!=std::string::npos || TagString.find(__T("soun"))!=std::string::npos)
@@ -3394,10 +3397,12 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_Assign()
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("MAJOR_BRAND")) Segment_Tag_SimpleTag_TagNames[0].clear(); //QuickTime techinical info, useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("MINOR_VERSION")) Segment_Tag_SimpleTag_TagNames[0].clear(); //QuickTime techinical info, useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("PART_NUMBER")) Segment_Tag_SimpleTag_TagNames[0]=__T("Track/Position");
+    if (Segment_Tag_SimpleTag_TagNames[0]==__T("PURL")) Segment_Tag_SimpleTag_TagNames[0]=__T("Podcast_Url");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("ORIGINAL_MEDIA_TYPE")) Segment_Tag_SimpleTag_TagNames[0]=__T("OriginalSourceForm");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("SAMPLE") && Segment_Tag_SimpleTag_TagNames.size()==2 && Segment_Tag_SimpleTag_TagNames[1]==__T("PART_NUMBER")) return; //Useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("SAMPLE") && Segment_Tag_SimpleTag_TagNames.size()==2 && Segment_Tag_SimpleTag_TagNames[1]==__T("TITLE")) {Segment_Tag_SimpleTag_TagNames.resize(1); Segment_Tag_SimpleTag_TagNames[0]=__T("Title_More");}
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("STEREO_MODE")) Segment_Tag_SimpleTag_TagNames[0].clear(); //Useless
+    if (Segment_Tag_SimpleTag_TagNames[0]==__T("SYNOPSIS")) Segment_Tag_SimpleTag_TagNames[0]=__T("Synopsis");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("TERMS_OF_USE")) Segment_Tag_SimpleTag_TagNames[0]=__T("TermsOfUse");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("TIMECODE"))
     {
