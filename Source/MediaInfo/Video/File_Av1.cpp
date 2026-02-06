@@ -532,8 +532,9 @@ void File_Av1::sequence_header()
             Fill(Stream_Video, 0, Video_Width, max_frame_width_minus_1+1);
             Fill(Stream_Video, 0, Video_Height, max_frame_height_minus_1+1);
             Fill(Stream_Video, 0, Video_BitDepth, BitDepth);
-            Fill(Stream_Video, 0, Video_ColorSpace, mono_chrome?"Y":((color_primaries==1 && transfer_characteristics==13 && matrix_coefficients==0)?"RGB":"YUV"));
-            if (Retrieve(Stream_Video, 0, Video_ColorSpace)==__T("YUV"))
+            string ColorSpace = mono_chrome ? "Y" : ((color_primaries == 1 && transfer_characteristics == 13 && matrix_coefficients == 0) ? "RGB" : "YUV");
+            Fill(Stream_Video, 0, Video_ColorSpace, ColorSpace);
+            if (ColorSpace == "YUV")
             {
                 Fill(Stream_Video, 0, Video_ChromaSubsampling, subsampling_x?(subsampling_y?"4:2:0":"4:2:2"):"4:4:4"); // "!subsampling_x && subsampling_y" (4:4:0) not possible
                 if (subsampling_x && subsampling_y && chroma_sample_position)
