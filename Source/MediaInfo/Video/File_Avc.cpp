@@ -758,10 +758,10 @@ File_Avc::avcintra_header File_Avc::AVC_Intra_Headers_Data(int32u CodecID)
 }
 
 //---------------------------------------------------------------------------
-int32u File_Avc::AVC_Intra_CodecID_FromMeta(int32u Width, int32u Height, int32u Fields, int32u SampleDuration, int32u TimeScale, int32u SizePerFrame)
+int32u File_Avc::AVC_Intra_CodecID_FromMeta(int32u Width, int32u Height, int32u Fields, int32u SampleDuration, int32u TimeScale, int64u SizePerFrame)
 {
     // Computing bitrate
-    int64u BitRate=SampleDuration?(((int64u)SizePerFrame)*8*TimeScale/SampleDuration):0;
+    int64u BitRate=SampleDuration?((SizePerFrame)*8*TimeScale/SampleDuration):0;
     int64u SampleRate=SampleDuration?(float64_int64s(((float64)TimeScale)/SampleDuration)):0;
     int32u Class;
     switch (Width)
