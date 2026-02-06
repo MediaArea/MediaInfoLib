@@ -92,6 +92,7 @@ BXRG;RGB;Boxx;;;;;RGB;
 BXY2;YUV;Boxx;10-bit;;;;YUV;
 BXYV;YUV;Boxx;;;;;YUV;
 CC12;YUV;Intel;;;;;YUV;
+CDA2;Cinegy Daniel2;;;https://www.cinegy.com;;;;
 CDV5;DV;Canopus;Canopus SD50/DVHD;http://www.cineform.com/products/ConnectHD.htm;;;YUV;
 CDVC;DV;Canopus;Canopus DV (DV);http://www.cineform.com/products/ConnectHD.htm;;;YUV;
 CDVH;DV;Canopus;Canopus SD50/DVHD;http://www.cineform.com/products/ConnectHD.htm;;;YUV;
@@ -106,6 +107,7 @@ CLLC;Canopus Lossless;;;;;;;
 CLPL;YUV;;Format similar to YV12 but including a level of indirection.;;;;YUV;
 CM10;MediaShow;;CyberLink Corporation;http://www.cyberlink.com;;;;
 CMYK;CMYK;;Common Data Format in Printing;;;;;
+CNGA;Cinegy Daniel;;;https://www.cinegy.com;;;RGBA;
 COL0;MPEG-4 Visual;;Hacked MS MPEG-4 v3;http://ffdshow-tryout.sourceforge.net/;;;YUV;4:2:0
 COL1;MPEG-4 Visual;;Hacked MS MPEG-4 v3;http://ffdshow-tryout.sourceforge.net/;;;YUV;4:2:0
 CPLA;YUV;Weitek;;;;;YUV;4:2:0
@@ -142,6 +144,7 @@ DM4V;MPEG-4 Visual;Dicas;;;;;YUV;4:2:0
 DMB1;JPEG;Rainbow;Matrox Rainbow Runner hardware compression;http://mirror01.iptelecom.net.ua/~video/codecs/PICVideo.MJPG.v2.10.27.codec.exe;;;YUV
 DMB2;JPEG;Paradigm;;;;;YUV
 DMK2;V36 PDA;;ViewSonic V36 PDA Video;;;;;
+DNL2;Cinegy Daniel2;;;https://www.cinegy.com;;;;
 DP02;MPEG-4 Visual;DynaPel;;;;;YUV;4:2:0
 DP16;YUV;Matsushita;With DPCM 6-bit compression;;;;YUV;4:1:1
 DP18;YUV;Matsushita;With DPCM 8-bit compression;;;;YUV;4:1:1

@@ -47,6 +47,8 @@ AV1;;;V;Av1;AOMedia Video 1;;;http://aomedia.org/
 AVC;;;V;Avc;Advanced Video Codec;avc h264 264;video/H264;http://developers.videolan.org/x264.html
 AVS Video;;;V;AvsV;Audio Video Standard, Video part;;;http://www.avs.org.cn/;Lossy
 AVS3 Video;;;V;Avs3V;Audio Video Standard 3, Video part;avs3;;http://www.avs.org.cn/;Lossy
+Cinegy Daniel;;;V;;;;;https://www.cinegy.com;
+Cinegy Daniel2;;;V;;;;;https://www.cinegy.com;
 Dirac;;;V;Dirac;;drc;;http://diracvideo.org/;Lossy
 FFV1;;;V;;;;;;Lossless
 FFV2;;;V;;;;;;Lossless
