@@ -59,6 +59,7 @@ Push-Location "${release_directory}"
         Copy-Item -Force "..\..\Source\Resource\Text\Stream\*.csv" "Developers\List_Of_Parameters"
         ### Copying: Include ###
         New-Item -Force -ItemType Directory "Developers\Source\MediaInfoDLL"
+        Copy-Item -Force "..\..\Source\MediaInfoDLL\MediaInfoDLL-rs" "Developers\Source\MediaInfoDLL" -Recurse
         Copy-Item -Force "..\..\Source\MediaInfoDLL\MediaInfoDLL.h" "Developers\Source\MediaInfoDLL"
         Copy-Item -Force "..\..\Source\MediaInfoDLL\MediaInfoDLL_Static.h" "Developers\Source\MediaInfoDLL"
         Copy-Item -Force "..\..\Source\MediaInfoDLL\MediaInfoDLL.def" "Developers\Source\MediaInfoDLL"
@@ -173,6 +174,7 @@ Push-Location "${release_directory}"
             Copy-Item -Force "..\..\Project\MSVC2022\${arch}EC\Debug\MediaInfo.lib" "Developers\Project\MSVC2022\${arch}EC\Debug"
         }
         New-Item -Force -ItemType Directory "Developers\Source\Example"
+        Copy-Item -Force "..\..\Source\Example\HowToUse_Dll-rs" "Developers\Source\Example" -Recurse
         Copy-Item -Force "..\..\Source\Example\HowToUse_Dll*.*" "Developers\Source\Example"
         New-Item -Force -ItemType Directory "Developers"
         Copy-Item -Force "..\Example.ogg" "Developers"
