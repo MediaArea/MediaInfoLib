@@ -2717,7 +2717,7 @@ void File_Mpeg_Descriptors::Descriptor_3F_14()
 {
     //Parsing
     int32u brat, max_buffer_size;
-    int16u horizontal_size, vertical_size, Framerate_Numerator, Ppih, Plev, MaxCLL, MaxFALL;
+    int16u horizontal_size, vertical_size, Framerate_Numerator, Ppih, Plev;
     int8u Interlace_Mode, Framerate_Denominator, Sample_Bitdepth, Sampling_Structure, descriptor_version, colour_primaries, transfer_characteristics, matrix_coefficients;
     bool schar_Valid_Flag, video_full_range_flag, mdm_flag;
     Get_B1 (descriptor_version,                                 "descriptor_version");
@@ -3689,7 +3689,6 @@ void File_Mpeg_Descriptors::Descriptor_7F_19()
     {
         Element_Begin1("preselection");
         Descriptor_7F_19_Info& Info=Infos[p];
-        int8u preselection_id;
         bool language_code_present, text_label_present, multi_stream_info_present, future_extension;
         Get_S1 (5, Info.preselection_id,                        "preselection_id");
         Get_S1 (3, Info.audio_rendering_indication,             "audio_rendering_indication");

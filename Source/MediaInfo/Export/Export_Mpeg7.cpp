@@ -2736,7 +2736,6 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
 
     //MultimediaContent
     Node* Node_MultimediaContent;
-    Node* Node_Type;
     auto Collection_Display=Config.Collection_Display_Get();
     if (Collection_Display>=display_if::Always || (Collection_Display>display_if::Never && MI.Get(Stream_General, 0, General_Format).find(__T("DVD Video"))!=string::npos && (Collection_Display>=display_if::Supported || MI.Count_Get(Stream_Menu)>1)))
     {

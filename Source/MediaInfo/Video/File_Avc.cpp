@@ -4366,7 +4366,7 @@ File_Avc::seq_parameter_set_struct* File_Avc::seq_parameter_set_data(int32u &Dat
     seq_parameter_set_struct::vui_parameters_struct* vui_parameters_Item=NULL;
     int32u  chroma_format_idc=1, bit_depth_luma_minus8=0, bit_depth_chroma_minus8=0, log2_max_frame_num_minus4, pic_order_cnt_type, log2_max_pic_order_cnt_lsb_minus4=(int32u)-1, max_num_ref_frames, pic_width_in_mbs_minus1, pic_height_in_map_units_minus1, frame_crop_left_offset=0, frame_crop_right_offset=0, frame_crop_top_offset=0, frame_crop_bottom_offset=0;
     int8u   profile_idc, constraint_set_flags, level_idc;
-    bool    constraint_set1_flag, constraint_set3_flag, separate_colour_plane_flag=false, delta_pic_order_always_zero_flag=false, frame_mbs_only_flag, mb_adaptive_frame_field_flag=false;
+    bool    separate_colour_plane_flag=false, delta_pic_order_always_zero_flag=false, frame_mbs_only_flag, mb_adaptive_frame_field_flag=false;
     Get_B1 (profile_idc,                                        "profile_idc");
     Get_B1 (constraint_set_flags,                               "constraint_sett_flags");
         Skip_Flags(constraint_set_flags, 7,                     "constraint_sett0_flag");

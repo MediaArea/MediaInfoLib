@@ -124,6 +124,8 @@ using namespace std;
 namespace MediaInfoLib
 {
 
+#pragma warning(disable: 4065) // switch statement contains 'default' but no 'case' labels
+
 #if defined(MEDIAINFO_IAB_YES)
     Ztring ChannelLayout_2018_Rename(const Ztring& Channels, const Ztring& Format);
 #endif
@@ -6967,7 +6969,7 @@ void File_Mxf::Data_Parse()
         std::map<int16u, int128u>::iterator Primer_Value = Primer_Values.find(Code2); \
         if (Primer_Value != Primer_Values.end()) \
         { \
-            if (false); \
+            if (false) {} \
 
 #define ELEMENT_END() \
         } \
@@ -6979,7 +6981,6 @@ void File_Mxf::Data_Parse()
 #define ELEMENT(_CODE, _CALL) \
     case 0x##_CODE :    { \
                         std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(0x##_CODE); \
-                        const char* Temp; \
                         if (Primer_Value!=Primer_Values.end()) { \
                             auto Temp = Mxf_Param_Info((int32u)Primer_Value->second.hi, Primer_Value->second.lo); \
                             Element_Name(Temp ? Temp : Ztring().From_UUID(Code).To_UTF8().c_str()); \
