@@ -602,7 +602,7 @@ static File__Analyze* SelectFromExtension(const String& Parser)
 
     // Video
     #if defined(MEDIAINFO_AV1_YES)
-        if (Parser==__T("Av1"))         return new File_Av1();
+        if (Parser==__T("Av1"))         {auto Parser=new File_Av1(); Parser->IsAnnexB=true; return Parser;} // Prioritization Annex B
     #endif
     #if defined(MEDIAINFO_AV2_YES)
         if (Parser==__T("Av2"))         return new File_Av2();
@@ -1034,6 +1034,7 @@ int MediaInfo_Internal::ListFormats(const String &File_Name)
 
     // Video
     #if defined(MEDIAINFO_AV1_YES)
+        SAFE_DELETE(Info); Info=new File_Av1(); ((File_Av1*)Info)->IsAnnexB=true; if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name) > 0) return 1; // Prioritization Annex B
         SAFE_DELETE(Info); Info=new File_Av1();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     #endif
     #if defined(MEDIAINFO_AV2_YES)
