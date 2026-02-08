@@ -765,6 +765,42 @@ static const char* Mxf_EssenceCompression_Profile(const int128u& EssenceCompress
 
     switch (Code1)
     {
+        case 0x04 : // Parametric
+                    switch (Code2)
+                    {
+                        case 0x01 : //Picture
+                                    switch (Code3)
+                                    {
+                                        case 0x02 : //Coding characteristics
+                                                    switch (Code4)
+                                                    {
+                                                        case 0x02 : //Compressed coding
+                                                                    switch (Code5)
+                                                                    {
+                                                                        case 0x03 : //Individual Picture Coding Schemes
+                                                                                    switch (Code6)
+                                                                                    {
+                                                                                        case 0x06 : //ProRes
+                                                                                                    switch (Code7)
+                                                                                                    {
+                                                                                                        case 0x01 : return "422 Proxy";
+                                                                                                        case 0x02 : return "422 LT";
+                                                                                                        case 0x03 : return "422";
+                                                                                                        case 0x04 : return "422 HQ";
+                                                                                                        case 0x05 : return "4444";
+                                                                                                        case 0x06 : return "4444 XQ";
+                                                                                                        default   : return "";
+                                                                                                    }
+                                                                                        default   : return "";
+                                                                                    }
+                                                                        default   : return "";
+                                                                    }
+                                                         default   : return "";
+                                                    }
+                                         default   : return "";
+                                    }
+                        default   : return "";
+                    }
         case 0x0D : //
                     switch (Code2)
                     {
@@ -796,22 +832,6 @@ static const char* Mxf_EssenceCompression_Profile(const int128u& EssenceCompress
                                                                                                                                     return Mpeg4v_Profile_Level(B8(11101011)-5+Code8);
                                                                                                                         default   : return "";
                                                                                                                     }
-                                                                                                        default   : return "";
-                                                                                                    }
-                                                                                        default   : return "";
-                                                                                    }
-                                                                        case 0x03 : //Individual Picture Coding Schemes
-                                                                                    switch (Code6)
-                                                                                    {
-                                                                                        case 0x06 : //ProRes
-                                                                                                    switch (Code7)
-                                                                                                    {
-                                                                                                        case 0x01 : return "422 Proxy";
-                                                                                                        case 0x02 : return "422 LT";
-                                                                                                        case 0x03 : return "422";
-                                                                                                        case 0x04 : return "422 HQ";
-                                                                                                        case 0x05 : return "4444";
-                                                                                                        case 0x06 : return "4444 XQ";
                                                                                                         default   : return "";
                                                                                                     }
                                                                                         default   : return "";
