@@ -199,9 +199,6 @@ void File_Av2::Streams_Accept()
 
     Stream_Prepare(Stream_Video);
     Fill(Stream_Video, 0, Video_Format, "AV2");
-
-    if (!Frame_Count_Valid)
-        Frame_Count_Valid=Config->ParseSpeed>=0.3?8:(IsSub?1:2);
 }
 
 //---------------------------------------------------------------------------
@@ -240,8 +237,13 @@ void File_Av2::Read_Buffer_OutOfBand()
     Get_SB (   initial_presentation_delay_present,              "initial_presentation_delay_present");
     Skip_S1(4,                                                  initial_presentation_delay_present?"initial_presentation_delay_minus_one":"reserved");
     BS_End();
+}
 
-    Open_Buffer_Continue(Buffer, Buffer_Size);
+//---------------------------------------------------------------------------
+void File_Av2::Read_Buffer_Init()
+{
+    if (!Frame_Count_Valid)
+        Frame_Count_Valid = IsSub ? 1 : 2;
 }
 
 //***************************************************************************
@@ -258,11 +260,11 @@ void File_Av2::Header_Parse()
         Element_End0();
         Get_leb128(obu_size,                                    "num_bytes_in_obu");
         Element_Begin0();
+        obu_size += Element_Offset;
     }
     else {
         obu_size = Element_Size;
     }
-    auto sizeof_obu_size = Element_Offset;
 
     Element_Name("obu_header");
     bool obu_header_extension_flag;
@@ -282,7 +284,7 @@ void File_Av2::Header_Parse()
     BS_End();
 
     FILLING_BEGIN();
-    Header_Fill_Size(obu_size + sizeof_obu_size);
+    Header_Fill_Size(obu_size);
     Header_Fill_Code(obu_type, Av2_obu_type(obu_type));
     FILLING_END();
 }
@@ -494,8 +496,6 @@ void File_Av2::sequence_header_obu()
     FILLING_BEGIN_PRECISE();
     if (!sequence_header_Parsed)
     {
-        if (IsSub)
-            Accept();
         Fill(Stream_Video, 0, Video_Width, max_frame_width_minus_1 + 1);
         Fill(Stream_Video, 0, Video_Height, max_frame_height_minus_1 + 1);
         Fill(Stream_Video, 0, Video_BitDepth, bit_depth_idc == 0 ? 10 : (bit_depth_idc == 1 ? 8 : 12));
@@ -1305,11 +1305,12 @@ void File_Av2::frame_header(bool isFirst)
     Element_End0();
 
     FILLING_BEGIN();
-    if (!Status[IsAccepted])
-        Accept();
     Frame_Count++;
-    if (Element_Level < 2 && Frame_Count >= Frame_Count_Valid)
-        Finish();
+    if (!Status[IsAccepted] && Frame_Count >= Frame_Count_Valid) {
+        Accept();
+        if (Config->ParseSpeed <= 1.0)
+            Finish();
+    }
     FILLING_END();
 }
 
