@@ -35,11 +35,19 @@ protected :
     //Buffer - Global
     void Read_Buffer_Continue ();
 
+    void Parse_ReadonlyData();
+    void Parse_ImageDebugDirectory();
     void Parse_Resources();
     bool Parse_StringFileInfo(int8u level = 0);
     void Parse_SBAT();
 
     //Temp
+    int32u img_debug_dir_virtual_addr{};
+    int32u img_debug_dir_size{};
+    int32u img_debug_dir_offset{};
+    int32u rdata_size{};
+    int32u rdata_virtual_addr{};
+    int32u rdata_offset{};
     int32u rsrc_size{};
     int32u rsrc_virtual_addr{};
     int32u rsrc_offset{};

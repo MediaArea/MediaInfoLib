@@ -186,6 +186,35 @@ bool File_Mz::FileHeader_Begin()
 //---------------------------------------------------------------------------
 void File_Mz::Read_Buffer_Continue()
 {
+    if (rdata_offset) {
+        Parse_ReadonlyData();
+        rdata_offset = 0;
+
+        if (img_debug_dir_offset)
+            return;
+
+        if (rsrc_offset)
+            GoTo(rsrc_offset);
+        else if (sbat_offset)
+            GoTo(sbat_offset);
+        else
+            Finish("MZ");
+
+        return;
+    }
+    if (img_debug_dir_offset) {
+        Parse_ImageDebugDirectory();
+        img_debug_dir_offset = 0;
+
+        if (rsrc_offset)
+            GoTo(rsrc_offset);
+        else if (sbat_offset)
+            GoTo(sbat_offset);
+        else
+            Finish("MZ");
+
+        return;
+    }
     if (rsrc_offset) {
         Parse_Resources();
         rsrc_offset = 0;
@@ -322,8 +351,15 @@ void File_Mz::Read_Buffer_Continue()
                     Element_Begin1("Data Directory");
                     if (i < sizeof(Mz_Directories) / sizeof(Mz_Directories[0]))
                         Element_Info1(Mz_Directories[i]);
-                    Skip_L4(                                    "VirtualAddress");
-                    Skip_L4(                                    "Size");
+                    int32u VirtualAddress, Size;
+                    Get_L4(VirtualAddress,                      "VirtualAddress");
+                    Get_L4(Size,                                "Size");
+                    FILLING_BEGIN();
+                    if (i == 6) { // IMAGE_DEBUG_DIRECTORY
+                        img_debug_dir_virtual_addr = VirtualAddress;
+                        img_debug_dir_size = Size;
+                    }
+                    FILLING_END();
                     Element_End0();
                 }
             }
@@ -344,6 +380,12 @@ void File_Mz::Read_Buffer_Continue()
                 Skip_L2(                                        "NumberOfRelocations");
                 Skip_L2(                                        "NumberOfLinenumbers");
                 Skip_L4(                                        "Characteristics");
+                FILLING_BEGIN();
+                if (Name == 0x2E72646174610000) { // .rdata
+                    rdata_size = VirtualSize;
+                    rdata_virtual_addr = VirtualAddress;
+                    rdata_offset = PointerToRawData;
+                }
                 if (Name == 0x2E72737263000000) { // .rsrc
                     rsrc_size = VirtualSize;
                     rsrc_virtual_addr = VirtualAddress;
@@ -353,6 +395,7 @@ void File_Mz::Read_Buffer_Continue()
                     sbat_offset = PointerToRawData;
                     sbat_size = VirtualSize;
                 }
+                FILLING_END();
                 Element_End0();
             }
         }
@@ -386,7 +429,10 @@ void File_Mz::Read_Buffer_Continue()
             Fill(Stream_General, 0, "Subsystem_Version", std::to_string(MajorSubsystemVersion) + "." + std::to_string(MinorSubsystemVersion));
         Fill(Stream_General, 0, "Format_Settings", Mz_DLL_Characteristics(DllCharacteristics));
 
-        if (rsrc_offset) {
+        if (rdata_offset) {
+            GoTo(rdata_offset);
+        }
+        else if (rsrc_offset) {
             GoTo(rsrc_offset);
         }
         else if (sbat_offset) {
@@ -395,6 +441,62 @@ void File_Mz::Read_Buffer_Continue()
             //No more need data
             Finish("MZ");
         }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mz::Parse_ReadonlyData() {
+
+    // Get Image Debug Directory
+    if (img_debug_dir_virtual_addr && img_debug_dir_virtual_addr > rdata_virtual_addr && img_debug_dir_virtual_addr < rdata_virtual_addr + rdata_size) {
+        img_debug_dir_offset = img_debug_dir_virtual_addr - rdata_virtual_addr + rdata_offset;
+
+        GoTo(img_debug_dir_offset);
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mz::Parse_ImageDebugDirectory() {
+    auto Element_Offset_End = Element_Offset + img_debug_dir_size;
+
+    int32u ExtendedDllCharacteristics_Offset{};
+    while (Element_Offset + 28 <= Element_Offset_End) {
+        Element_Begin1("Image Debug Directory");
+        int32u Type, PointerToRawData;
+        Skip_L4(                                                "Characteristics");
+        Skip_L4(                                                "TimeDateStamp");
+        Skip_L2(                                                "MajorVersion");
+        Skip_L2(                                                "MinorVersion");
+        Get_L4 (Type,                                           "Type");
+        Skip_L4(                                                "SizeOfData");
+        Skip_L4(                                                "AddressOfRawData");
+        Get_L4 (PointerToRawData,                               "PointerToRawData");
+        Element_End0();
+        if (Type == 20) // IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS
+            ExtendedDllCharacteristics_Offset = PointerToRawData;
+    }
+
+    int16u Ex_DLLCharacteristics_bits{};
+    if (ExtendedDllCharacteristics_Offset) {
+        Element_Offset = ExtendedDllCharacteristics_Offset - Buffer_Offset - File_Offset;
+        Get_L2(Ex_DLLCharacteristics_bits,                      "ExtendedDllCharacteristics");
+    }
+
+    FILLING_BEGIN();
+    if (Ex_DLLCharacteristics_bits) {
+        string DLL_Characteristics = Retrieve_Const(Stream_General, 0, "Format_Settings").To_UTF8();
+        if (Ex_DLLCharacteristics_bits & 0x0001) {
+            if (!DLL_Characteristics.empty())
+                DLL_Characteristics += ", ";
+            DLL_Characteristics += "CET compatible";
+        }
+        if (Ex_DLLCharacteristics_bits & 0x0040) {
+            if (!DLL_Characteristics.empty())
+                DLL_Characteristics += ", ";
+            DLL_Characteristics += "Forward CFI compatible";
+        }
+        Fill(Stream_General, 0, "Format_Settings", DLL_Characteristics, true, true);
+    }
     FILLING_END();
 }
 
