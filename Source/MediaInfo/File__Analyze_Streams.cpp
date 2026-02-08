@@ -161,13 +161,13 @@ namespace MediaInfoLib
 
 //---------------------------------------------------------------------------
 static const float digit_to_precision[] = {
-    0.5,
-    0.05,
-    0.005,
-    0.0005,
-    0.00005,
-    0.000005,
-    0.0000005,
+    0.5f,
+    0.05f,
+    0.005f,
+    0.0005f,
+    0.00005f,
+    0.000005f,
+    0.0000005f,
 };
 const size_t digit_to_precision_Size = sizeof(digit_to_precision) / sizeof(*digit_to_precision);
 bool Location_Compare(const string& Current, const string& CompareTo, bool& Replace)
@@ -688,8 +688,8 @@ void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_Col
 
     if (Meta.Luminance[0]!=(int32u)-1 && Meta.Luminance[1]!=(int32u)-1)
     {
-        float32 Luminance_Min_Ratio=FromAV1?16384:10000; // 18.14 fixed-point, MPEG values are x10000
-        float32 Luminance_Max_Ratio=FromAV1?256:10000; // 24.8 fixed-point, MPEG values are x10000
+        float32 Luminance_Min_Ratio=static_cast<float32>(FromAV1?16384:10000); // 18.14 fixed-point, MPEG values are x10000
+        float32 Luminance_Max_Ratio=static_cast<float32>(FromAV1?256:10000); // 24.8 fixed-point, MPEG values are x10000
         MasteringDisplay_Luminance=        __T("min: ")+Ztring::ToZtring(((float64)Meta.Luminance[0])/Luminance_Min_Ratio, 4)
                                   +__T(" cd/m2, max: ")+Ztring::ToZtring(((float64)Meta.Luminance[1])/Luminance_Max_Ratio, ((float64)Meta.Luminance[1]/Luminance_Max_Ratio-Meta.Luminance[1]/Luminance_Max_Ratio==0)?0:4)
                                   +__T(" cd/m2");
@@ -1586,9 +1586,9 @@ void File__Analyze::Get_LightLevel(Ztring &MaxCLL, Ztring &MaxFALL, int32u Divis
 
         auto Decimals=to_string(Divisor).size()-1;
         if (maximum_content_light_level)
-            MaxCLL=Ztring::ToZtring(((float32)maximum_content_light_level)/Divisor, Decimals);
+            MaxCLL=Ztring::ToZtring(((float32)maximum_content_light_level)/Divisor, (int8u)Decimals);
         if (maximum_frame_average_light_level)
-            MaxFALL=Ztring::ToZtring(((float32)maximum_frame_average_light_level)/Divisor, Decimals);
+            MaxFALL=Ztring::ToZtring(((float32)maximum_frame_average_light_level)/Divisor, (int8u)Decimals);
     }
     else
     {

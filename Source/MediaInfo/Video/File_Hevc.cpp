@@ -1153,7 +1153,7 @@ void File_Hevc::Header_Parse()
         if (Buffer_Offset_Temp+3<=Buffer_Offset+Size)
         {
             SizedBlocks_FileThenStream=File_Offset+Buffer_Offset+Size;
-            Size=Buffer_Offset_Temp-(Buffer_Offset+Element_Offset);
+            Size=static_cast<int32u>(Buffer_Offset_Temp-(Buffer_Offset+Element_Offset));
         }
 
         Header_Fill_Size(Element_Offset+Size);
@@ -1823,18 +1823,18 @@ void File_Hevc::video_parameter_set()
         vector<vector<int32u> > LayerSetLayerIdList;
         vector<vector<int32u> > highest_layer_idx_plus1List;
         highest_layer_idx_plus1List.resize(num_add_layer_sets);
-        for (int i = 0; i < num_add_layer_sets; i++)
+        for (int32u i = 0; i < num_add_layer_sets; i++)
         {
             highest_layer_idx_plus1List[i].reserve(NumIndependentLayers);
             highest_layer_idx_plus1List[i].push_back(0); // Unused?
             for (int j = 1; j < NumIndependentLayers; j++)
             {
                 int32u highest_layer_idx_plus1;
-                Get_S4 (ceil(log2(NumLayersInTreePartition[j] + 1)), highest_layer_idx_plus1, "highest_layer_idx_plus1");
+                Get_S4 ((int8u)ceil(log2(NumLayersInTreePartition[j] + 1)), highest_layer_idx_plus1, "highest_layer_idx_plus1");
                 highest_layer_idx_plus1List[i].push_back(highest_layer_idx_plus1);
             }
         }
-        for (int i = 0; i < num_add_layer_sets; i++)
+        for (int32u i = 0; i < num_add_layer_sets; i++)
         {
             int32u layerNum = 0;
             auto lsIdx = vps_num_layer_sets_minus1 + 1 + i;
@@ -1865,7 +1865,7 @@ void File_Hevc::video_parameter_set()
         Skip_SB(                                                "default_ref_layers_active_flag");
         int32u vps_num_profile_tier_level_minus1;
         Get_UE(vps_num_profile_tier_level_minus1,               "vps_num_profile_tier_level_minus1");
-        for (int i = vps_base_layer_internal_flag ? 2 : 1; i <= vps_num_profile_tier_level_minus1; i++)
+        for (int32u i = vps_base_layer_internal_flag ? 2 : 1; i <= vps_num_profile_tier_level_minus1; i++)
         {
             bool vps_profile_present_flag;
             Get_SB(vps_profile_present_flag,                    "vps_profile_present_flag");
@@ -3152,7 +3152,7 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003A_02()
         Skip_S1 (3,                                             "sl_hdr_mode_support");
     }
     else
-        Skip_S1 (Data_BS_Remain(),                              "Unknown");
+        Skip_BS (Data_BS_Remain(),                              "Unknown");
     BS_End();
 }
 
@@ -3949,13 +3949,13 @@ void File_Hevc::slice_segment_header()
         return;
     float FrameRate=0;
     if ((*seq_parameter_set_Item)->vui_parameters->time_scale && (*seq_parameter_set_Item)->vui_parameters->num_units_in_tick)
-        FrameRate=(float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick;
+        FrameRate=(float)((float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick);
     else
         FrameRate=0;
     if (first_slice_segment_in_pic_flag && pic_order_cnt_DTS_Ref!=(int64u)-1 && FrameInfo.PTS!=(int64u)-1 && FrameRate && TemporalReferences_Reserved)
     {
         int64s pic_order_cnt=float64_int64s(int64s(FrameInfo.PTS-pic_order_cnt_DTS_Ref)*FrameRate/1000000000);
-        if (pic_order_cnt>=TemporalReferences.size()/4 || pic_order_cnt<=-((int64s)TemporalReferences.size()/4))
+        if (pic_order_cnt>= ((int64s)TemporalReferences.size()/4) || pic_order_cnt<=-((int64s)TemporalReferences.size()/4))
             pic_order_cnt_DTS_Ref=(int64u)-1; // Incoherency in DTS? Disabling compute by DTS, TODO: more generic test (all formats)
     }
     if (first_slice_segment_in_pic_flag && pic_order_cnt_DTS_Ref!=(int64u)-1 && FrameInfo.PTS!=(int64u)-1 && FrameRate && TemporalReferences_Reserved)
@@ -4787,7 +4787,7 @@ void File_Hevc::rbsp_trailing_bits()
     {
         int8u RealValue;
         const int8u ExpectedValue=1<<(Remain-1);
-        Peek_S1(Remain, RealValue);
+        Peek_S1((int8u)Remain, RealValue);
         if (RealValue==ExpectedValue)
         {
             // Conform to specs
