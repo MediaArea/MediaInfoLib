@@ -336,6 +336,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Aic.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_AfdBarData.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Av1.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Av2.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Avc.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Avc_Duplicate.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_AvsV.cpp

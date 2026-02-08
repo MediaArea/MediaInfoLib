@@ -1437,6 +1437,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "Windows Media;;;M;Wm;;asf dvr-ms wma wmv;video/x-ms-wmv\n"
     "WTV;;;M;Wtv;;wtv\n"
     "AV1;;;V;Av1;AOMedia Video 1;;;http://aomedia.org/\n"
+    "AV2;;;V;Av2;AOMedia Video 2;;;http://aomedia.org/\n"
     "AVC;;;V;Avc;Advanced Video Codec;avc h264 264;video/H264;http://developers.videolan.org/x264.html\n"
     "AVS Video;;;V;AvsV;Audio Video Standard, Video part;;;http://www.avs.org.cn/;Lossy\n"
     "AVS3 Video;;;V;Avs3V;Audio Video Standard 3, Video part;avs3;;http://www.avs.org.cn/;Lossy\n"
@@ -1659,6 +1660,7 @@ void MediaInfo_Config_CodecID_Video_Matroska (InfoMap &Info)
     Info.Write(Ztring().From_UTF8(
     "V_UNCOMPRESSED;RGB;;Raw uncompressed video frames\n"
     "V_AV1;AV1;;;http://aomedia.org/\n"
+    "V_AV2;AV2;;;http://aomedia.org/\n"
     "V_AVS;AVS Video\n"
     "V_AVS2;AVS2 Video\n"
     "V_AVS3;AVS3 Video\n"
