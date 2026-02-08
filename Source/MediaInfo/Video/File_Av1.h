@@ -41,6 +41,9 @@ private :
     void Streams_Fill();
     void Streams_Finish();
 
+    //Buffer - File header
+    bool FileHeader_Begin();
+
     //Buffer - Global
     void Read_Buffer_OutOfBand();
 
@@ -49,6 +52,7 @@ private :
     void Data_Parse();
 
     //Elements
+    void trailing_bits();
     void sequence_header();
     void temporal_delimiter();
     void frame_header();
@@ -61,6 +65,11 @@ private :
     void metadata_itu_t_t35_B5_003C();
     void metadata_itu_t_t35_B5_003C_0001();
     void metadata_itu_t_t35_B5_003C_0001_04();
+    void metadata_itu_t_t35_B5_5890();
+    void metadata_itu_t_t35_B5_5890_01();
+    void metadata_scalability();
+    void scalability_structure();
+    void metadata_timecode();
     void frame();
     void padding();
 

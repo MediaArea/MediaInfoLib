@@ -40,7 +40,7 @@ extern const char* Mpegv_matrix_coefficients_ColorSpace(int8u matrix_coefficient
 extern const char* Avc_video_full_range[];
 
 //---------------------------------------------------------------------------
-const char* Av1_obu_type(int8u obu_type)
+static const char* Av1_obu_type(int8u obu_type)
 {
     switch (obu_type)
     {
@@ -58,7 +58,7 @@ const char* Av1_obu_type(int8u obu_type)
 }
 
 //---------------------------------------------------------------------------
-const char* Av1_seq_profile(int8u seq_profile)
+static const char* Av1_seq_profile(int8u seq_profile)
 {
     switch (seq_profile)
     {
@@ -70,7 +70,7 @@ const char* Av1_seq_profile(int8u seq_profile)
 }
 
 //---------------------------------------------------------------------------
-const char* Av1_metadata_type(int8u metadata_type)
+static const char* Av1_metadata_type(int8u metadata_type)
 {
     switch (metadata_type)
     {
@@ -84,7 +84,7 @@ const char* Av1_metadata_type(int8u metadata_type)
 }
 
 //---------------------------------------------------------------------------
-const char* Av1_frame_type[4] =
+static const char* Av1_frame_type[4] =
 {
     "Key",
     "Inter",
@@ -215,6 +215,29 @@ void File_Av1::Streams_Finish()
 }
 
 //***************************************************************************
+// Buffer - File header
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+bool File_Av1::FileHeader_Begin()
+{
+    //Must have enough buffer for having header
+    if (Buffer_Size < 1)
+        return false; //Must wait for more data
+
+    //Raw OBU sequences always start with temporal delimiter and contain size field
+    //Note: MediaInfo does not currently support Annex B AV1 streams
+    if (!IsSub
+        && (Buffer[0] != 0x12 && Buffer[0] != 0x16) // temporal_delimiter
+       ) {
+        Reject();
+        return false;
+    }
+
+    return true;
+}
+
+//***************************************************************************
 // Buffer - Global
 //***************************************************************************
 
@@ -291,7 +314,9 @@ void File_Av1::Header_Parse()
 void File_Av1::Data_Parse()
 {
     //Probing mode in case of raw stream //TODO: better reject of bad files
-    if (!IsSub && !Status[IsAccepted] && (!Element_Code || Element_Code>6))
+    if (!IsSub && !Status[IsAccepted]
+        && ((Element_Code != 1 && Element_Code != 2 && Element_Code != 5 && Element_Code != 0xF && !sequence_header_Parsed)
+           || ((Element_Code < 1 || Element_Code > 6) && Element_Code != 0xF)))
     {
         Reject();
         return;
@@ -316,12 +341,20 @@ void File_Av1::Data_Parse()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+void File_Av1::trailing_bits()
+{
+    Mark_1();
+    while (Data_BS_Remain())
+        Mark_0();
+}
+
+//---------------------------------------------------------------------------
 void File_Av1::sequence_header()
 {
     //Parsing
     int32u max_frame_width_minus_1, max_frame_height_minus_1;
-    int8u seq_profile, seq_level_idx[33]{}, operating_points_cnt_minus_1, buffer_delay_length_minus_1, frame_width_bits_minus_1, frame_height_bits_minus_1, seq_force_screen_content_tools, BitDepth, color_primaries, transfer_characteristics, matrix_coefficients, chroma_sample_position;
-    bool reduced_still_picture_header, seq_tier[33], timing_info_present_flag, decoder_model_info_present_flag, seq_choose_screen_content_tools, mono_chrome, color_range, color_description_present_flag, subsampling_x, subsampling_y, film_grain_params_present;
+    int8u seq_profile, seq_level_idx[33]{}, operating_points_cnt_minus_1, buffer_delay_length_minus_1, frame_width_bits_minus_1, frame_height_bits_minus_1, seq_force_screen_content_tools, BitDepth, color_primaries, transfer_characteristics, matrix_coefficients, chroma_sample_position{};
+    bool reduced_still_picture_header, timing_info_present_flag, decoder_model_info_present_flag, seq_choose_screen_content_tools, mono_chrome, color_range, color_description_present_flag, subsampling_x, subsampling_y, film_grain_params_present;
     BS_Begin();
     Get_S1 ( 3, seq_profile,                                    "seq_profile"); Param_Info1(Av1_seq_profile(seq_profile));
     Skip_SB(                                                    "still_picture");
@@ -330,7 +363,6 @@ void File_Av1::sequence_header()
     {
         Get_S1 ( 5, seq_level_idx[0],                           "seq_level_idx[0]");
         decoder_model_info_present_flag=false;
-        seq_tier[0]=false;
     }
     else
     {
@@ -348,7 +380,8 @@ void File_Av1::sequence_header()
                 Skip_S1( 5,                                     "frame_presentation_time_length_minus_1");
             TEST_SB_END();
         TEST_SB_END();
-        Skip_SB(                                                "initial_display_delay_present_flag");
+        bool initial_display_delay_present_flag;
+        Get_SB (initial_display_delay_present_flag,             "initial_display_delay_present_flag");
         Get_S1 ( 5, operating_points_cnt_minus_1,               "operating_points_cnt_minus_1");
         for (int8u i=0; i<=operating_points_cnt_minus_1; i++)
         {
@@ -356,7 +389,7 @@ void File_Av1::sequence_header()
             Skip_S2(12,                                         "operating_point_idc[i]");
             Get_S1(5, seq_level_idx[i],                         "seq_level_idx[i]");
             if (seq_level_idx[i]>7)
-                Get_SB(seq_tier[i],                             "seq_tier[i]");
+                Skip_SB(                                        "seq_tier[i]");
             if (timing_info_present_flag && decoder_model_info_present_flag)
             {
                 TEST_SB_SKIP(                                   "decoder_model_present_for_this_op[i]");
@@ -365,6 +398,11 @@ void File_Av1::sequence_header()
                     Skip_SB(                                    "low_delay_mode_flag[op]");
                 TEST_SB_END();
 
+            }
+            if (initial_display_delay_present_flag) {
+                TEST_SB_SKIP(                                   "initial_display_delay_present_for_this_op[i]");
+                    Skip_S1(4,                                  "initial_display_delay_minus_1[i]");
+                TEST_SB_END();
             }
             Element_End0();
         }
@@ -482,10 +520,7 @@ void File_Av1::sequence_header()
         Skip_SB(                                                "separate_uv_delta_q");
     Element_End0();
     Get_SB (film_grain_params_present,                          "film_grain_params_present");
-    Mark_1();
-    if (Data_BS_Remain()<8)
-        while (Data_BS_Remain())
-            Mark_0();
+    trailing_bits();
     BS_End();
 
     FILLING_BEGIN_PRECISE();
@@ -497,8 +532,9 @@ void File_Av1::sequence_header()
             Fill(Stream_Video, 0, Video_Width, max_frame_width_minus_1+1);
             Fill(Stream_Video, 0, Video_Height, max_frame_height_minus_1+1);
             Fill(Stream_Video, 0, Video_BitDepth, BitDepth);
-            Fill(Stream_Video, 0, Video_ColorSpace, mono_chrome?"Y":((color_primaries==1 && transfer_characteristics==13 && matrix_coefficients==0)?"RGB":"YUV"));
-            if (Retrieve(Stream_Video, 0, Video_ColorSpace)==__T("YUV"))
+            string ColorSpace = mono_chrome ? "Y" : ((color_primaries == 1 && transfer_characteristics == 13 && matrix_coefficients == 0) ? "RGB" : "YUV");
+            Fill(Stream_Video, 0, Video_ColorSpace, ColorSpace);
+            if (ColorSpace == "YUV")
             {
                 Fill(Stream_Video, 0, Video_ChromaSubsampling, subsampling_x?(subsampling_y?"4:2:0":"4:2:2"):"4:4:4"); // "!subsampling_x && subsampling_y" (4:4:0) not possible
                 if (subsampling_x && subsampling_y && chroma_sample_position)
@@ -575,7 +611,7 @@ void File_Av1::frame_header()
         if (!Status[IsAccepted])
             Accept();
         Frame_Count++;
-        if (Frame_Count>=Frame_Count_Valid)
+        if (Element_Level < 2 && Frame_Count >= Frame_Count_Valid) //Only Finish here if not part of frame else Finish in frame
             Finish();
     FILLING_END();
 }
@@ -592,13 +628,15 @@ void File_Av1::metadata()
     //Parsing
     int64u metadata_type;
     Get_leb128 (metadata_type,                                  "metadata_type");
-    Param_Info1(Av1_metadata_type(metadata_type));
+    Param_Info1(Av1_metadata_type(static_cast<int8u>(metadata_type)));
 
     switch (metadata_type)
     {
         case    1 : metadata_hdr_cll(); break;
         case    2 : metadata_hdr_mdcv(); break;
+        case    3 : metadata_scalability(); break;
         case    4 : metadata_itu_t_t35(); break;
+        case    5 : metadata_timecode(); break;
         default   : Skip_XX(Element_Size-Element_Offset,        "Data");
     }
 }
@@ -608,6 +646,10 @@ void File_Av1::metadata_hdr_cll()
 {
     //Parsing
     Get_LightLevel(maximum_content_light_level, maximum_frame_average_light_level);
+
+    BS_Begin();
+    trailing_bits();
+    BS_End();
 }
 
 //---------------------------------------------------------------------------
@@ -621,6 +663,10 @@ void File_Av1::metadata_hdr_mdcv()
         HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt2086] = "HDR10";
     }
     Get_MasteringDisplayColorVolume(HDR[Video_MasteringDisplay_ColorPrimaries][HdrFormat_SmpteSt2086], HDR[Video_MasteringDisplay_Luminance][HdrFormat_SmpteSt2086], true);
+
+    BS_Begin();
+    trailing_bits();
+    BS_End();
 }
 
 //---------------------------------------------------------------------------
@@ -634,7 +680,7 @@ void File_Av1::metadata_itu_t_t35()
 
     switch (itu_t_t35_country_code)
     {
-    case 0xB5: metadata_itu_t_t35_B5(); break; // USA
+    case 0xB5: Param_Info1("United States"); metadata_itu_t_t35_B5(); break;
     }
 }
 
@@ -646,7 +692,8 @@ void File_Av1::metadata_itu_t_t35_B5()
 
     switch (itu_t_t35_terminal_provider_code)
     {
-    case 0x003C: metadata_itu_t_t35_B5_003C(); break;
+    case 0x003C: Param_Info1("Samsung Electronics America"); metadata_itu_t_t35_B5_003C(); break;
+    case 0x5890: Param_Info1("AOMedia"); metadata_itu_t_t35_B5_5890(); break;
     }
 }
 
@@ -696,6 +743,145 @@ void File_Av1::metadata_itu_t_t35_B5_003C_0001_04()
 }
 
 //---------------------------------------------------------------------------
+void File_Av1::metadata_itu_t_t35_B5_5890()
+{
+    int8u itu_t_t35_terminal_provider_oriented_code;
+    Get_B1(itu_t_t35_terminal_provider_oriented_code,           "itu_t_t35_terminal_provider_oriented_code");
+
+    switch (itu_t_t35_terminal_provider_oriented_code)
+    {
+    case 0x01: metadata_itu_t_t35_B5_5890_01(); break;
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Av1::metadata_itu_t_t35_B5_5890_01()
+{
+    Element_Info1("AOMedia Film Grain Synthesis 1 (AFGS1)");
+
+    Element_Begin1("av1_film_grain_param_sets");
+    BS_Begin();
+    bool afgs1_enable_flag;
+    Get_SB(afgs1_enable_flag,                                   "afgs1_enable_flag");
+    if (!afgs1_enable_flag) {
+        BS_End();
+        return;
+    }
+    Skip_S1(4,                                                  "reserved_4bits");
+    Skip_S1(3,                                                  "num_film_grain_sets_minus1");
+    BS_End();
+    Skip_XX(Element_Size - Element_Offset, "(Not parsed)");
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Av1::metadata_scalability()
+{
+#if MEDIAINFO_TRACE
+    if (Trace_Activated)
+    {
+        int8u scalability_mode_idc;
+        Get_B1(scalability_mode_idc,                            "scalability_mode_idc");
+        if (scalability_mode_idc == 14)
+            scalability_structure();
+        BS_Begin();
+        trailing_bits();
+        BS_End();
+    }
+    else
+#endif
+        Skip_XX(Element_Size - Element_Offset,                  "Data");
+}
+
+//---------------------------------------------------------------------------
+void File_Av1::scalability_structure()
+{
+#if MEDIAINFO_TRACE
+    if (Trace_Activated)
+    {
+        Element_Begin1("scalability_structure");
+        BS_Begin();
+        int8u spatial_layers_cnt_minus_1;
+        bool spatial_layer_dimensions_present_flag, spatial_layer_description_present_flag, temporal_group_description_present_flag;
+        Get_S1(2, spatial_layers_cnt_minus_1,                   "spatial_layers_cnt_minus_1");
+        Get_SB(spatial_layer_dimensions_present_flag,           "spatial_layer_dimensions_present_flag");
+        Get_SB(spatial_layer_description_present_flag,          "spatial_layer_description_present_flag");
+        Get_SB(temporal_group_description_present_flag,         "temporal_group_description_present_flag");
+        Skip_S1(3,                                              "scalability_structure_reserved_3bits");
+        BS_End();
+        if (spatial_layer_dimensions_present_flag) {
+            Element_Begin1("spatial_layer_dimensions");
+            for (int8u i = 0; i <= spatial_layers_cnt_minus_1; ++i) {
+                Skip_B2(                                        "spatial_layer_max_width[i]");
+                Skip_B2(                                        "spatial_layer_max_height[i]");
+            }
+            Element_End0();
+        }
+        if (spatial_layer_description_present_flag) {
+            Element_Begin1("spatial_layer_descriptions");
+            for (int8u i = 0; i <= spatial_layers_cnt_minus_1; i++)
+                Skip_B1(                                        "spatial_layer_ref_id[i]");
+            Element_End0();
+        }
+        if (temporal_group_description_present_flag) {
+            Element_Begin1("temporal_group_descriptions");
+            int8u temporal_group_size;
+            Get_B1(temporal_group_size,                         "temporal_group_size");
+            for (int8u i = 0; i < temporal_group_size; ++i) {
+                int8u temporal_group_ref_cnt_i;
+                BS_Begin();
+                Skip_S1(3,                                      "temporal_group_temporal_id[i]");
+                Skip_SB(                                        "temporal_group_temporal_switching_up_point_flag[i]");
+                Skip_SB(                                        "temporal_group_spatial_switching_up_point_flag[i]");
+                Get_S1(3, temporal_group_ref_cnt_i,             "temporal_group_ref_cnt[i]");
+                BS_End();
+                for (int8u j = 0; j < temporal_group_ref_cnt_i; ++j) {
+                    Skip_B1(                                    "temporal_group_ref_pic_diff[i][j]");
+                }
+            }
+            Element_End0();
+        }
+        Element_End0();
+    }
+#endif
+}
+
+//---------------------------------------------------------------------------
+void File_Av1::metadata_timecode()
+{
+    BS_Begin();
+    Skip_S1(5,                                                  "counting_type");
+    bool full_timestamp_flag;
+    Get_SB(full_timestamp_flag,                                 "full_timestamp_flag");
+    Skip_SB(                                                    "discontinuity_flag");
+    Skip_SB(                                                    "cnt_dropped_flag");
+    Skip_S2(9,                                                  "n_frames");
+    if (full_timestamp_flag) {
+        Skip_S1(6,                                              "seconds_value");
+        Skip_S1(6,                                              "minutes_value");
+        Skip_S1(5,                                              "hours_value");
+    }
+    else {
+        TEST_SB_SKIP(                                           "seconds_flag");
+            Skip_S1(6,                                          "seconds_value");
+            TEST_SB_SKIP(                                       "minutes_flag");
+                Skip_S1(6,                                      "minutes_value");
+                TEST_SB_SKIP(                                   "hours_flag");
+                    Skip_S1(5,                                  "hours_value");
+                TEST_SB_END();
+            TEST_SB_END();
+        TEST_SB_END();
+    }
+    int8u time_offset_length;
+    Get_S1(5, time_offset_length,                               "time_offset_length");
+    if (time_offset_length > 0) {
+        Skip_BS(time_offset_length,                             "time_offset_value");
+    }
+    trailing_bits();
+    BS_End();
+}
+
+//---------------------------------------------------------------------------
 void File_Av1::frame()
 {
     //Parsing
@@ -706,6 +892,11 @@ void File_Av1::frame()
     Element_Begin1("tile_group");
     tile_group();
     Element_End0();
+
+    FILLING_BEGIN();
+    if (Frame_Count >= Frame_Count_Valid)
+        Finish();
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -844,8 +1035,10 @@ void File_Av1::Get_leb128(int64u& Info, const char* Name)
             #if MEDIAINFO_TRACE
                 if (Trace_Activated)
                 {
-                    Param(Name, Info, i+1);
+                    Element_Offset-=(1LL+i);
+                    Param(Name, Info, (i+1)*8);
                     Param_Info(__T("(")+Ztring::ToZtring(i+1)+__T(" bytes)"));
+                    Element_Offset+=(1LL+i);
                 }
             #endif //MEDIAINFO_TRACE
             return;
