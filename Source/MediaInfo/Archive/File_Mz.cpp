@@ -22,7 +22,6 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Archive/File_Mz.h"
-#include "ZenLib/Utils.h"
 using namespace ZenLib;
 //---------------------------------------------------------------------------
 
@@ -75,14 +74,88 @@ mz_machine_data Mz_Machine_Data[] =
     { 0x8664, "AMD x86-64" },
     { 0x9041, "Mitsubishi M32R" },
     { 0xAA64, "ARM64" },
+    { 0xA641, "ARM64EC" },
+    { 0xA64E, "ARM64X" },
 };
-string Mz_Machine(int16u Machine)
+static string Mz_Machine(int16u Machine)
 {
     for (const auto& Item : Mz_Machine_Data)
         if (Item.ID == Machine)
             return Item.Name;
     return "0x" + Ztring().From_CC2(Machine).To_UTF8();
 }
+
+const char* Mz_Windows_Subsystem[]{
+    "Unknown",
+    "Native",
+    "Windows GUI",
+    "Windows CUI",
+    "",
+    "OS2 CUI",
+    "",
+    "POSIX CUI",
+    "Native Windows",
+    "Windows CE GUI",
+    "EFI Application",
+    "EFI Boot Service Driver",
+    "EFI Runtime Driver",
+    "EFI ROM",
+    "XBOX",
+    "",
+    "Windows Boot Application"
+};
+
+static string Mz_DLL_Characteristics(int16u DllCharacteristics)
+{
+    const char* DllCharacteristics_List[]{
+        "ProcessInit",
+        "ProcessTerm",
+        "ThreadInit",
+        "ThreadTerm",
+        "",
+        "High Entropy VA",
+        "Dynamic Base",
+        "Force Integrity",
+        "NX Compat",
+        "No Isolation",
+        "No SEH",
+        "No Bind",
+        "AppContainer",
+        "WDM Drive",
+        "Control Flow Guard",
+        "Terminal Server Aware"
+    };
+    int DllCharacteristics_List_Sz = sizeof(DllCharacteristics_List) / sizeof(DllCharacteristics_List[0]);
+
+    string to_return;
+    for (int i = 0; i < DllCharacteristics_List_Sz; ++i) {
+        if (DllCharacteristics & (1U << i)) {
+            if (!to_return.empty())
+                to_return += ", ";
+            to_return += DllCharacteristics_List[i];
+        }
+    }
+    return to_return;
+}
+
+const char* Mz_Directories[]{
+    "Export Table",
+    "Import Table",
+    "Resource Table",
+    "Exception Table",
+    "Certificate Table",
+    "Base Relocation Table",
+    "Debug",
+    "Architecture",
+    "Global Ptr",
+    "TLS Table",
+    "Load Config Table",
+    "Bound Import",
+    "Import Address Table",
+    "Delay Import Descriptor",
+    "CLR Runtime Header",
+    "Reserved"
+};
 
 //***************************************************************************
 // Static stuff
@@ -113,6 +186,54 @@ bool File_Mz::FileHeader_Begin()
 //---------------------------------------------------------------------------
 void File_Mz::Read_Buffer_Continue()
 {
+    if (rdata_offset) {
+        Parse_ReadonlyData();
+        rdata_offset = 0;
+
+        if (img_debug_dir_offset)
+            return;
+
+        if (rsrc_offset)
+            GoTo(rsrc_offset);
+        else if (sbat_offset)
+            GoTo(sbat_offset);
+        else
+            Finish("MZ");
+
+        return;
+    }
+    if (img_debug_dir_offset) {
+        Parse_ImageDebugDirectory();
+        img_debug_dir_offset = 0;
+
+        if (rsrc_offset)
+            GoTo(rsrc_offset);
+        else if (sbat_offset)
+            GoTo(sbat_offset);
+        else
+            Finish("MZ");
+
+        return;
+    }
+    if (rsrc_offset) {
+        Parse_Resources();
+        rsrc_offset = 0;
+
+        if (sbat_offset)
+            GoTo(sbat_offset);
+        else
+            Finish("MZ");
+
+        return;
+    }
+    if (sbat_offset) {
+        Parse_SBAT();
+        sbat_offset = 0;
+
+        Finish("MZ");
+        return;
+    }
+
     //Parsing
     int32u lfanew;
     Element_Begin1("MZ");
@@ -162,19 +283,122 @@ void File_Mz::Read_Buffer_Continue()
 
     //Parsing
     int32u Signature, TimeDateStamp=0;
-    int16u Machine=0, Characteristics=0;
+    int16u Machine{}, NumberOfSections{}, SizeOfOptionalHeader{}, Characteristics{}, Subsystem{}, DllCharacteristics{}, MajorSubsystemVersion{}, MinorSubsystemVersion{};
+    int8u MajorLinkerVersion{}, MinorLinkerVersion{};
     Peek_B4(Signature);
     if (Signature==0x50450000) //"PE"
     {
         Element_Begin1("PE");
-        Skip_C4(                                                "Header");
+        Skip_C4(                                                "Signature");
+        Element_Begin1("COFF File Header");
         Get_L2 (Machine,                                        "Machine"); Param_Info1(Mz_Machine(Machine));
-        Skip_L2(                                                "NumberOfSections");
+        Get_L2 (NumberOfSections,                               "NumberOfSections");
         Get_L4 (TimeDateStamp,                                  "TimeDateStamp"); Param_Info1(Ztring().Date_From_Seconds_1970(TimeDateStamp));
         Skip_L4(                                                "PointerToSymbolTable");
         Skip_L4(                                                "NumberOfSymbols");
-        Skip_L2(                                                "SizeOfOptionalHeader");
+        Get_L2 (SizeOfOptionalHeader,                           "SizeOfOptionalHeader");
         Get_L2 (Characteristics,                                "Characteristics");
+        Element_End0();
+        if (SizeOfOptionalHeader >= 20) {
+            Element_Begin1("Optional Header");
+            int16u Magic;
+            Get_L2(Magic,                                       "Magic"); Param_Info1(Magic == 0x10B ? "PE32" : Magic == 0x20B ? "PE32+" : Magic == 0x107 ? "ROM" : "");
+            Get_L1 (MajorLinkerVersion,                         "MajorLinkerVersion");
+            Get_L1 (MinorLinkerVersion,                         "MinorLinkerVersion");
+            Skip_L4(                                            "SizeOfCode");
+            Skip_L4(                                            "SizeOfInitializedData");
+            Skip_L4(                                            "SizeOfUninitializedData");
+            Skip_L4(                                            "AddressOfEntryPoint");
+            Skip_L4(                                            "BaseOfCode");
+            if (Magic == 0x10B)
+                Skip_L4(                                        "BaseOfData");
+            if (SizeOfOptionalHeader > 24) {
+                int32u NumberOfRvaAndSizes;
+                if (Magic == 0x10B)
+                    Skip_L4(                                    "ImageBase");
+                if (Magic == 0x20B)
+                    Skip_L8(                                    "ImageBase");
+                Skip_L4(                                        "SectionAlignment");
+                Skip_L4(                                        "FileAlignment");
+                Skip_L2(                                        "MajorOperatingSystemVersion");
+                Skip_L2(                                        "MinorOperatingSystemVersion");
+                Skip_L2(                                        "MajorImageVersion");
+                Skip_L2(                                        "MinorImageVersion");
+                Get_L2 (MajorSubsystemVersion,                  "MajorSubsystemVersion");
+                Get_L2 (MinorSubsystemVersion,                  "MinorSubsystemVersion");
+                Skip_L4(                                        "Win32VersionValue");
+                Skip_L4(                                        "SizeOfImage");
+                Skip_L4(                                        "SizeOfHeaders");
+                Skip_L4(                                        "CheckSum");
+                Get_L2 (Subsystem,                              "Subsystem");
+                if (Subsystem < sizeof(Mz_Windows_Subsystem) / sizeof(Mz_Windows_Subsystem[0])) Param_Info1(Mz_Windows_Subsystem[Subsystem]);
+                Get_L2 (DllCharacteristics,                     "DllCharacteristics"); Param_Info1(Mz_DLL_Characteristics(DllCharacteristics));
+                if (Magic == 0x10B) {
+                    Skip_L4(                                    "SizeOfStackReserve");
+                    Skip_L4(                                    "SizeOfStackCommit");
+                    Skip_L4(                                    "SizeOfHeapReserve");
+                    Skip_L4(                                    "SizeOfHeapCommit");
+                }
+                if (Magic == 0x20B) {
+                    Skip_L8(                                    "SizeOfStackReserve");
+                    Skip_L8(                                    "SizeOfStackCommit");
+                    Skip_L8(                                    "SizeOfHeapReserve");
+                    Skip_L8(                                    "SizeOfHeapCommit");
+                }
+                Skip_L4(                                        "LoaderFlags");
+                Get_L4 (NumberOfRvaAndSizes,                    "NumberOfRvaAndSizes");
+                for (int32u i = 0; i < NumberOfRvaAndSizes; ++i) {
+                    Element_Begin1("Data Directory");
+                    if (i < sizeof(Mz_Directories) / sizeof(Mz_Directories[0]))
+                        Element_Info1(Mz_Directories[i]);
+                    int32u VirtualAddress, Size;
+                    Get_L4(VirtualAddress,                      "VirtualAddress");
+                    Get_L4(Size,                                "Size");
+                    FILLING_BEGIN();
+                    if (i == 6) { // IMAGE_DEBUG_DIRECTORY
+                        img_debug_dir_virtual_addr = VirtualAddress;
+                        img_debug_dir_size = Size;
+                    }
+                    FILLING_END();
+                    Element_End0();
+                }
+            }
+            Element_End0();
+        }
+        if (SizeOfOptionalHeader > 24) {
+            for (int8u i = 0; i < NumberOfSections; ++i) {
+                Element_Begin1("Section Header");
+                int64u Name;
+                int32u VirtualSize, VirtualAddress, PointerToRawData;
+                Get_C8 (Name,                                   "Name"); Element_Info1(Ztring::ToZtring_From_CC4(Name >> 32) + Ztring::ToZtring_From_CC4(Name & 0xFFFFFFFF));
+                Get_L4 (VirtualSize,                            "VirtualSize");
+                Get_L4 (VirtualAddress,                         "VirtualAddress");
+                Skip_L4(                                        "SizeOfRawData");
+                Get_L4 (PointerToRawData,                       "PointerToRawData");
+                Skip_L4(                                        "PointerToRelocations");
+                Skip_L4(                                        "PointerToLinenumbers");
+                Skip_L2(                                        "NumberOfRelocations");
+                Skip_L2(                                        "NumberOfLinenumbers");
+                Skip_L4(                                        "Characteristics");
+                FILLING_BEGIN();
+                if (Name == 0x2E72646174610000) { // .rdata
+                    rdata_size = VirtualSize;
+                    rdata_virtual_addr = VirtualAddress;
+                    rdata_offset = PointerToRawData;
+                }
+                if (Name == 0x2E72737263000000) { // .rsrc
+                    rsrc_size = VirtualSize;
+                    rsrc_virtual_addr = VirtualAddress;
+                    rsrc_offset = PointerToRawData;
+                }
+                if (Name == 0x2E73626174000000) { // .sbat
+                    sbat_offset = PointerToRawData;
+                    sbat_size = VirtualSize;
+                }
+                FILLING_END();
+                Element_End0();
+            }
+        }
         Element_End0();
     }
 
@@ -197,10 +421,275 @@ void File_Mz::Read_Buffer_Continue()
             }
             Fill(Stream_General, 0, General_Encoded_Date, Time);
         }
+        if (MajorLinkerVersion)
+            Fill(Stream_General, 0, "Linker_Version", std::to_string(MajorLinkerVersion) + "." + std::to_string(MinorLinkerVersion));
+        if (Subsystem < sizeof(Mz_Windows_Subsystem) / sizeof(Mz_Windows_Subsystem[0]))
+            Fill(Stream_General, 0, "Subsystem_Name", Mz_Windows_Subsystem[Subsystem]);
+        if (MajorSubsystemVersion)
+            Fill(Stream_General, 0, "Subsystem_Version", std::to_string(MajorSubsystemVersion) + "." + std::to_string(MinorSubsystemVersion));
+        Fill(Stream_General, 0, "Format_Settings", Mz_DLL_Characteristics(DllCharacteristics));
 
-        //No more need data
-        Finish("MZ");
+        if (rdata_offset) {
+            GoTo(rdata_offset);
+        }
+        else if (rsrc_offset) {
+            GoTo(rsrc_offset);
+        }
+        else if (sbat_offset) {
+            GoTo(sbat_offset);
+        } else {
+            //No more need data
+            Finish("MZ");
+        }
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mz::Parse_ReadonlyData() {
+
+    // Get Image Debug Directory
+    if (img_debug_dir_virtual_addr && img_debug_dir_virtual_addr > rdata_virtual_addr && img_debug_dir_virtual_addr < rdata_virtual_addr + rdata_size) {
+        img_debug_dir_offset = img_debug_dir_virtual_addr - rdata_virtual_addr + rdata_offset;
+
+        GoTo(img_debug_dir_offset);
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mz::Parse_ImageDebugDirectory() {
+    auto Element_Offset_End = Element_Offset + img_debug_dir_size;
+
+    int32u ExtendedDllCharacteristics_Offset{};
+    while (Element_Offset + 28 <= Element_Offset_End) {
+        Element_Begin1("Image Debug Directory");
+        int32u Type, PointerToRawData;
+        Skip_L4(                                                "Characteristics");
+        Skip_L4(                                                "TimeDateStamp");
+        Skip_L2(                                                "MajorVersion");
+        Skip_L2(                                                "MinorVersion");
+        Get_L4 (Type,                                           "Type");
+        Skip_L4(                                                "SizeOfData");
+        Skip_L4(                                                "AddressOfRawData");
+        Get_L4 (PointerToRawData,                               "PointerToRawData");
+        Element_End0();
+        if (Type == 20) // IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS
+            ExtendedDllCharacteristics_Offset = PointerToRawData;
+    }
+
+    int16u Ex_DLLCharacteristics_bits{};
+    if (ExtendedDllCharacteristics_Offset) {
+        Element_Offset = ExtendedDllCharacteristics_Offset - Buffer_Offset - File_Offset;
+        Get_L2(Ex_DLLCharacteristics_bits,                      "ExtendedDllCharacteristics");
+    }
+
+    FILLING_BEGIN();
+    if (Ex_DLLCharacteristics_bits) {
+        string DLL_Characteristics = Retrieve_Const(Stream_General, 0, "Format_Settings").To_UTF8();
+        if (Ex_DLLCharacteristics_bits & 0x0001) {
+            if (!DLL_Characteristics.empty())
+                DLL_Characteristics += ", ";
+            DLL_Characteristics += "CET compatible";
+        }
+        if (Ex_DLLCharacteristics_bits & 0x0040) {
+            if (!DLL_Characteristics.empty())
+                DLL_Characteristics += ", ";
+            DLL_Characteristics += "Forward CFI compatible";
+        }
+        Fill(Stream_General, 0, "Format_Settings", DLL_Characteristics, true, true);
+    }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mz::Parse_Resources() {
+    int16u num_name, num_ID;
+    vector<int32u> NameOffsets;
+    vector<int32u> OffsetToDirectories;
+    vector<int32u> OffsetToData;
+    auto resource_name = Named_Resource.find((int32u)Element_Offset);
+    auto resource_id = Resource.find((int32u)Element_Offset);
+    Element_Begin1("Resource Directory Table");
+    Skip_L4(                                                    "Characteristics");
+    Skip_L4(                                                    "TimeDateStamp");
+    Skip_L2(                                                    "MajorVersion");
+    Skip_L2(                                                    "MinorVersion");
+    Get_L2 (num_name,                                           "NumberOfNamedEntries");
+    Get_L2 (num_ID,                                             "NumberOfIdEntries");
+    Element_End0();
+    for (int16u i = 0; i < num_name; ++i) {
+        Element_Begin1("Resource Directory Entry");
+        int32u NameOffset, OffsetToDirectory;
+        Ztring name;
+        Get_L4(NameOffset,                                      "NameOffset");
+        Get_L4(OffsetToDirectory,                               "OffsetToDirectory");
+        bool DataIsDirectory = OffsetToDirectory & (1U << 31);
+        if (DataIsDirectory)
+            OffsetToDirectories.push_back(OffsetToDirectory & 0x7FFFFFFF);
+        else
+            OffsetToData.push_back(OffsetToDirectory);
+        bool NameIsString = NameOffset & (1U << 31);
+        Element_End0();
+        if (NameIsString) {
+            auto Element_Offset_Save = Element_Offset;
+            Element_Offset = NameOffset & 0x7FFFFFFF;
+            Element_Begin1("Resource Directory String");
+            int16u Length;
+            Get_L2(Length,                                      "Length");
+            Get_UTF16L(Length * 2LL, name,                      "Unicode String");
+            Element_End0();
+            Element_Offset = Element_Offset_Save;
+        }
+        Named_Resource.insert({ OffsetToDirectory & 0x7FFFFFFF, name });
+    }
+    for (int16u i = 0; i < num_ID; ++i) {
+        Element_Begin1("Resource Directory Entry");
+        int32u Id, OffsetToDirectory;
+        Get_L4(Id,                                              "Id");
+        Get_L4(OffsetToDirectory,                               "OffsetToDirectory");
+        bool DataIsDirectory = OffsetToDirectory & (1U << 31);
+        if (DataIsDirectory)
+            OffsetToDirectories.push_back(OffsetToDirectory & 0x7FFFFFFF);
+        else
+            OffsetToData.push_back(OffsetToDirectory);
+        if (resource_name != Named_Resource.end()) {
+            Named_Resource.insert({ OffsetToDirectory & 0x7FFFFFFF, resource_name->second });
+        }
+        if (resource_id != Resource.end()) {
+            Resource.insert({ OffsetToDirectory & 0x7FFFFFFF, resource_id->second });
+        }
+        else {
+            Resource.insert({ OffsetToDirectory & 0x7FFFFFFF, Id });
+        }
+        Element_End0();
+        
+    }
+    for (const int& directory_offset : OffsetToDirectories) {
+        Element_Offset = directory_offset;
+        Parse_Resources();
+    }
+    for (const int& data_offset : OffsetToData) {
+        Element_Offset = data_offset;
+        auto resource_name = Named_Resource.find((int32u)Element_Offset);
+        auto resource_id = Resource.find((int32u)Element_Offset);
+        Element_Begin1("Resource Data Entry");
+        int32u OffsetToData;
+        Get_L4 (OffsetToData,                                   "OffsetToData");
+        Skip_L4(                                                "Size");
+        Skip_L4(                                                "CodePage");
+        Skip_L4(                                                "Reserved");
+        Element_End0();
+        if (resource_name != Named_Resource.end() && resource_name->second == __T("BOOTMGRSECURITYVERSIONNUMBER")) {
+            if (OffsetToData > rsrc_virtual_addr && OffsetToData < rsrc_virtual_addr + rsrc_size) {
+                Element_Offset = (OffsetToData - rsrc_virtual_addr + rsrc_offset) - Buffer_Offset - File_Offset;
+                Element_Begin1("BOOTMGRSECURITYVERSIONNUMBER");
+                int16u minorver, majorver;
+                Get_L2(minorver,                                "MinorVersion");
+                Get_L2(majorver,                                "MajorVersion");
+
+                FILLING_BEGIN();
+                Fill(Stream_General, 0, "BootMgrSecurity_Version", std::to_string(majorver) + "." + std::to_string(minorver));
+                FILLING_END();
+                Element_End0();
+            }
+        }
+        if (resource_id != Resource.end() && resource_id->second == 16) { // VS_VERSIONINFO
+            if (OffsetToData > rsrc_virtual_addr && OffsetToData < rsrc_virtual_addr + rsrc_size) {
+                Element_Offset = (OffsetToData - rsrc_virtual_addr + rsrc_offset) - Buffer_Offset - File_Offset;
+                Element_Begin1("VS_VERSIONINFO");
+                Ztring szKey;
+                Skip_L2(                                        "wLength");
+                Skip_L2(                                        "wValueLength");
+                Skip_L2(                                        "wType");
+                Get_UTF16L(32, szKey,                           "szKey");
+                if (szKey == __T("VS_VERSION_INFO")) {
+                    Skip_XX((4 - (File_Offset + Buffer_Offset + Element_Offset) & 3) & 3, "Padding1");
+                    Element_Begin1("VS_FIXEDFILEINFO");
+                    Skip_L4(                                    "dwSignature");
+                    Skip_L4(                                    "dwStrucVersion");
+                    Skip_L4(                                    "dwFileVersionMS");
+                    Skip_L4(                                    "dwFileVersionLS");
+                    Skip_L4(                                    "dwProductVersionMS");
+                    Skip_L4(                                    "dwProductVersionLS");
+                    Skip_L4(                                    "dwFileFlagsMask");
+                    Skip_L4(                                    "dwFileFlags");
+                    Skip_L4(                                    "dwFileOS");
+                    Skip_L4(                                    "dwFileType");
+                    Skip_L4(                                    "dwFileSubtype");
+                    Skip_L4(                                    "dwFileDateMS");
+                    Skip_L4(                                    "dwFileDateLS");
+                    Element_End0();
+                    Skip_XX((4 - (File_Offset + Buffer_Offset + Element_Offset) & 3) & 3, "Padding2");
+                    Element_Begin0();
+                    Parse_StringFileInfo();
+                    Element_End0();
+                }
+                Element_End0();
+            }
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
+bool File_Mz::Parse_StringFileInfo(int8u level) {
+    auto SizeUpTo0_16 = [&]() -> int64u {
+            auto Buffer_Begin = Buffer + Buffer_Offset + (size_t)Element_Offset;
+            auto Buffer_Current = Buffer_Begin;
+            auto Remaining = (size_t)(Element_Size - Element_Offset);
+            auto Buffer_End = Buffer_Begin + (128 > Remaining ? Remaining : 128);
+            while (Buffer_Current < Buffer_End && (Buffer_Current[0] || Buffer_Current[1]))
+                Buffer_Current += 2;
+            return Buffer_Current - Buffer_Begin;
+        };
+    int16u wLength, wValueLength;
+    Ztring szKey, Value;
+    Get_L2 (wLength,                                            "wLength");
+    auto Offset_End = Element_Offset + wLength - 2;
+    Get_L2 (wValueLength,                                       "wValueLength");
+    Skip_L2(                                                    "wType");
+    Get_UTF16L(SizeUpTo0_16(), szKey,                           "szKey");
+    Element_Offset += 2;
+    Skip_XX((4 - (File_Offset + Buffer_Offset + Element_Offset) & 3) & 3, "Padding");
+    if (szKey == __T("StringFileInfo")) {
+        Element_Name("StringFileInfo");
+        Element_Begin1("StringTable");
+        Parse_StringFileInfo(1);
+        Element_End0();
+    } else if (szKey.size() == 8 && level == 1) {
+        while (Element_Offset + 6 < Offset_End) {
+            Element_Begin1("String");
+            Parse_StringFileInfo(2);
+            Element_End0();
+        }
+    } else if (level == 2) {
+        Get_UTF16L(wValueLength * 2LL, Value,                   "Value");
+    } else {
+        return 0;
+    }
+    Skip_XX((4 - (File_Offset + Buffer_Offset + Element_Offset) & 3) & 3, "Padding");
+
+    FILLING_BEGIN();
+    if (level == 2) {
+        string Key;
+        string szKey_utf8{ szKey.To_UTF8() };
+        if (szKey_utf8 == "CompanyName") Key = "Software_CompanyName";
+        else if (szKey_utf8 == "FileDescription") Key = "Software_Description";
+        else if (szKey_utf8 == "FileVersion") Key = "Software_Version";
+        else if (szKey_utf8 == "LegalCopyright") Key = "Copyright";
+        else if (szKey_utf8 == "ProductName") Key = "Software_Name";
+        else if (szKey_utf8 == "ProductVersion") Key = "Software_Version";
+        else Key = szKey_utf8;
+        Fill(Stream_General, 0, Key.c_str(), Value);
+    }
+    FILLING_END();
+
+    return true;
+}
+
+//---------------------------------------------------------------------------
+void File_Mz::Parse_SBAT() {
+    Ztring sbat;
+    Get_UTF8(sbat_size, sbat,                                   "SBAT");
+    Fill(Stream_General, 0, "SBAT", sbat);
 }
 
 } //NameSpace
