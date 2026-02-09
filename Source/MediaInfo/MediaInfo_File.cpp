@@ -605,7 +605,7 @@ static File__Analyze* SelectFromExtension(const String& Parser)
         if (Parser==__T("Av1"))         return new File_Av1();
     #endif
     #if defined(MEDIAINFO_AV2_YES)
-        if (Parser==__T("Av2"))         return new File_Av2();
+        if (Parser==__T("Av2"))         {auto Parser=new File_Av2(); Parser->IsAnnexB=true; return Parser;}
     #endif
     #if defined(MEDIAINFO_AVC_YES)
         if (Parser==__T("Avc"))         return new File_Avc();
@@ -1037,7 +1037,7 @@ int MediaInfo_Internal::ListFormats(const String &File_Name)
         SAFE_DELETE(Info); Info=new File_Av1();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     #endif
     #if defined(MEDIAINFO_AV2_YES)
-        SAFE_DELETE(Info); Info=new File_Av2();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
+        SAFE_DELETE(Info); Info=new File_Av2(); ((File_Av2*)Info)->IsAnnexB=true; if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     #endif
     #if defined(MEDIAINFO_AVC_YES)
         SAFE_DELETE(Info); Info=new File_Avc();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;

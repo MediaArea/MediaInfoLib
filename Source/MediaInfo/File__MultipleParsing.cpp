@@ -603,7 +603,7 @@ File__MultipleParsing::File__MultipleParsing()
         Parser.push_back(new File_Av1());
     #endif
     #if defined(MEDIAINFO_AV2_YES)
-        Parser.push_back(new File_Av2());
+        {auto Temp=new File_Av2(); Temp->IsAnnexB=true; Parser.push_back(Temp);}
     #endif
     #if defined(MEDIAINFO_AVS3V_YES)
         Parser.push_back(new File_Avs3V());

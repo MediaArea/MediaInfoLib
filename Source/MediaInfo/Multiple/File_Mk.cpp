@@ -4914,6 +4914,7 @@ void File_Mk::CodecID_Manage()
     {
         File_Av2* Parser=new File_Av2;
         Parser->FrameIsAlwaysComplete=true;
+        Parser->IsAnnexB=true;
         streamItem.Parser=Parser;
     }
     #endif

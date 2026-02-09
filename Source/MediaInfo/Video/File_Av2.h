@@ -27,7 +27,7 @@ class File_Av2 : public File__Analyze
 public :
     //In
     int64u  Frame_Count_Valid{};
-    bool    IsAnnexB{ true };
+    bool    IsAnnexB{};
 
     //Constructor/Destructor
     File_Av2();
@@ -41,6 +41,7 @@ private :
 
     //Buffer - Global
     void Read_Buffer_OutOfBand() override;
+    void Read_Buffer_Init() override;
 
     //Buffer - Per element
     void Header_Parse() override;
