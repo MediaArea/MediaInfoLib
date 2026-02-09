@@ -141,9 +141,6 @@ void File_Av1::Streams_Accept()
 
     Stream_Prepare(Stream_Video);
     Fill(Stream_Video, 0, Video_Format, "AV1");
-
-    if (!Frame_Count_Valid)
-        Frame_Count_Valid=Config->ParseSpeed>=0.3?8:(IsSub?1:2);
 }
 
 //---------------------------------------------------------------------------
@@ -215,29 +212,6 @@ void File_Av1::Streams_Finish()
 }
 
 //***************************************************************************
-// Buffer - File header
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-bool File_Av1::FileHeader_Begin()
-{
-    //Must have enough buffer for having header
-    if (Buffer_Size < 1)
-        return false; //Must wait for more data
-
-    //Raw OBU sequences always start with temporal delimiter and contain size field
-    //Note: MediaInfo does not currently support Annex B AV1 streams
-    if (!IsSub
-        && (Buffer[0] != 0x12 && Buffer[0] != 0x16) // temporal_delimiter
-       ) {
-        Reject();
-        return false;
-    }
-
-    return true;
-}
-
-//***************************************************************************
 // Buffer - Global
 //***************************************************************************
 
@@ -262,8 +236,13 @@ void File_Av1::Read_Buffer_OutOfBand()
     Get_SB (   initial_presentation_delay_present,              "initial_presentation_delay_present");
     Skip_S1(4,                                                  initial_presentation_delay_present?"initial_presentation_delay_minus_one":"reserved");
     BS_End();
+}
 
-    Open_Buffer_Continue(Buffer, Buffer_Size);
+//---------------------------------------------------------------------------
+void File_Av1::Read_Buffer_Init()
+{
+    if (!Frame_Count_Valid)
+        Frame_Count_Valid = IsSub ? 1 : 2;
 }
 
 //***************************************************************************
@@ -275,12 +254,26 @@ void File_Av1::Header_Parse()
 {
     //Parsing
     int8u obu_type;
-    bool obu_extension_flag;
+    bool obu_extension_flag, obu_has_size_field;
+    int64u obu_size;
+    if (IsAnnexB) {
+        Get_leb128 (obu_size,                                   "obu_size");
+        obu_size += Element_Offset;
+        if (Element_Level <= 3)
+        {
+            Header_Fill_Size(obu_size);
+            switch (Element_Level) {
+            case 2:  Header_Fill_Code(0, "temporal_unit"); break;
+            case 3:  Header_Fill_Code(0, "frame_unit"); break;
+            }
+            return;
+        }
+    }
     BS_Begin();
     Mark_0 ();
     Get_S1 ( 4, obu_type,                                       "obu_type");
     Get_SB (    obu_extension_flag,                             "obu_extension_flag");
-    Skip_SB(                                                    "obu_has_size_field");
+    Get_SB (    obu_has_size_field,                             "obu_has_size_field");
     Skip_SB(                                                    "obu_reserved_1bit");
     if (obu_extension_flag)
     {
@@ -290,14 +283,24 @@ void File_Av1::Header_Parse()
     }
     BS_End();
 
-    int64u obu_size;
-    Get_leb128 (obu_size,                                       "obu_size");
+    if (obu_has_size_field) {
+        int64u obu_size2;
+        Get_leb128 (obu_size2,                                  "obu_size");
+        if (!IsAnnexB) {
+            obu_size = Element_Offset + obu_size2;
+        }
+    }
+    else if (IsAnnexB) {
+        obu_size = Element_TotalSize_Get();
+    }
+    else if (FrameIsAlwaysComplete) {
+        obu_size = Element_Size;
+    }
+    else {
+        Trusted_IsNot("obu_size");
+    }
 
-    FILLING_BEGIN();
-    Header_Fill_Size(Element_Offset+obu_size);
-    FILLING_END();
-
-    if (FrameIsAlwaysComplete && (Element_IsWaitingForMoreData() || Element_Offset+obu_size>Element_Size))
+    if (FrameIsAlwaysComplete && (Element_IsWaitingForMoreData() || obu_size>Element_Size))
     {
         // Trashing the remaining bytes, as the the frame is always complete so remaining bytes should not be prepending the next frame
         Buffer_Offset=Buffer_Size;
@@ -306,13 +309,20 @@ void File_Av1::Header_Parse()
     }
 
     FILLING_BEGIN();
-        Header_Fill_Code(obu_type, Av1_obu_type(obu_type));
+    Header_Fill_Size(obu_size);
+    Header_Fill_Code(obu_type, Av1_obu_type(obu_type));
     FILLING_END();
 }
 
 //---------------------------------------------------------------------------
 void File_Av1::Data_Parse()
 {
+    if (IsAnnexB && Element_Level <= 2)
+    {
+        Element_ThisIsAList();
+        return;
+    }
+
     //Probing mode in case of raw stream //TODO: better reject of bad files
     if (!IsSub && !Status[IsAccepted]
         && ((Element_Code != 1 && Element_Code != 2 && Element_Code != 5 && Element_Code != 0xF && !sequence_header_Parsed)
@@ -526,8 +536,6 @@ void File_Av1::sequence_header()
     FILLING_BEGIN_PRECISE();
         if (!sequence_header_Parsed)
         {
-            if (IsSub)
-                Accept();
             Fill(Stream_Video, 0, Video_Format_Profile, Ztring().From_UTF8(Av1_seq_profile(seq_profile))+(seq_level_idx[0]==31?Ztring():(__T("@L")+Ztring().From_Number(2+(seq_level_idx[0]>>2))+__T(".")+Ztring().From_Number(seq_level_idx[0]&3))));
             Fill(Stream_Video, 0, Video_Width, max_frame_width_minus_1+1);
             Fill(Stream_Video, 0, Video_Height, max_frame_height_minus_1+1);
@@ -608,11 +616,12 @@ void File_Av1::frame_header()
     BS_End();
 
     FILLING_BEGIN();
-        if (!Status[IsAccepted])
-            Accept();
         Frame_Count++;
-        if (Element_Level < 2 && Frame_Count >= Frame_Count_Valid) //Only Finish here if not part of frame else Finish in frame
-            Finish();
+        if (!Status[IsAccepted] && Frame_Count >= Frame_Count_Valid) {
+            Accept();
+            if (Config->ParseSpeed <= 1.0)
+                Finish();
+        }
     FILLING_END();
 }
 

@@ -27,6 +27,7 @@ class File_Av1 : public File__Analyze
 public :
     //In
     int64u Frame_Count_Valid;
+    bool IsAnnexB = {};
 
     //Constructor/Destructor
     File_Av1();
@@ -41,11 +42,9 @@ private :
     void Streams_Fill();
     void Streams_Finish();
 
-    //Buffer - File header
-    bool FileHeader_Begin();
-
     //Buffer - Global
     void Read_Buffer_OutOfBand();
+    void Read_Buffer_Init();
 
     //Buffer - Per element
     void Header_Parse();

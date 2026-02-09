@@ -600,6 +600,7 @@ File__MultipleParsing::File__MultipleParsing()
         Parser.push_back(new File_Hevc());
     #endif
     #if defined(MEDIAINFO_AV1_YES)
+        {auto Temp=new File_Av1(); Temp->IsAnnexB=true; Parser.push_back(Temp);}
         Parser.push_back(new File_Av1());
     #endif
     #if defined(MEDIAINFO_AV2_YES)
