@@ -105,6 +105,12 @@ private :
     bool    Monochrome{};
     bool    use_256x256_superblock{};
     bool    use_128x128_superblock{};
+    bool    ColorDescriptionPresent{};
+    bool    FullRange{};
+    int8u   ColorPrimaries{ 2 };
+    int8u   TransferCharacteristics{ 2 };
+    int8u   MatrixCoefficients{ 2 };
+    int32u  chroma_format_idc{};
     Ztring  maximum_content_light_level;
     Ztring  maximum_frame_average_light_level;
     enum hdr_format

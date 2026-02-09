@@ -38,7 +38,7 @@
     #include "MediaInfo/Video/File_Av1.h"
 #endif
 #if defined(MEDIAINFO_AV2_YES)
-#include "MediaInfo/Video/File_Av2.h"
+    #include "MediaInfo/Video/File_Av2.h"
 #endif
 #if defined(MEDIAINFO_AVC_YES)
     #include "MediaInfo/Video/File_Avc.h"

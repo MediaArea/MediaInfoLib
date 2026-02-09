@@ -100,6 +100,39 @@ static const char* Av1_chroma_sample_position[3] =
     "3",
 };
 
+//---------------------------------------------------------------------------
+static const char* Av1_scalability_mode[] = {
+    "L1T2",                // 0
+    "L1T3",                // 1
+    "L2T1",                // 2
+    "L2T2",                // 3
+    "L2T3",                // 4
+    "S2T1",                // 5
+    "S2T2",                // 6
+    "S2T3",                // 7
+    "L2T1h",               // 8
+    "L2T2h",               // 9
+    "L2T3h",               // 10
+    "S2T1h",               // 11
+    "S2T2h",               // 12
+    "S2T3h",               // 13
+    "SS",                  // 14
+    "L3T1",                // 15
+    "L3T2",                // 16
+    "L3T3",                // 17
+    "S3T1",                // 18
+    "S3T2",                // 19
+    "S3T3",                // 20
+    "L3T2_KEY",            // 21
+    "L3T3_KEY",            // 22
+    "L4T5_KEY",            // 23
+    "L4T7_KEY",            // 24
+    "L3T2_KEY_SHIFT",      // 25
+    "L3T3_KEY_SHIFT",      // 26
+    "L4T5_KEY_SHIFT",      // 27
+    "L4T7_KEY_SHIFT"       // 28
+};
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -255,7 +288,7 @@ void File_Av1::Header_Parse()
     //Parsing
     int8u obu_type;
     bool obu_extension_flag, obu_has_size_field;
-    int64u obu_size;
+    int64u obu_size{};
     if (IsAnnexB) {
         Get_leb128 (obu_size,                                   "obu_size");
         obu_size += Element_Offset;
@@ -786,73 +819,78 @@ void File_Av1::metadata_itu_t_t35_B5_5890_01()
 //---------------------------------------------------------------------------
 void File_Av1::metadata_scalability()
 {
-#if MEDIAINFO_TRACE
-    if (Trace_Activated)
-    {
-        int8u scalability_mode_idc;
-        Get_B1(scalability_mode_idc,                            "scalability_mode_idc");
-        if (scalability_mode_idc == 14)
-            scalability_structure();
-        BS_Begin();
-        trailing_bits();
-        BS_End();
+    int8u scalability_mode_idc;
+    Get_B1(scalability_mode_idc,                                "scalability_mode_idc");
+    if (scalability_mode_idc == 14)
+        scalability_structure();
+    BS_Begin();
+    trailing_bits();
+    BS_End();
+
+    FILLING_BEGIN_PRECISE();
+    string svc = "Scalable Video Coding";
+    if (scalability_mode_idc < sizeof(Av1_scalability_mode) / sizeof(Av1_scalability_mode[0])) {
+        svc += " (";
+        svc += Av1_scalability_mode[scalability_mode_idc];
+        svc += ")";
     }
-    else
-#endif
-        Skip_XX(Element_Size - Element_Offset,                  "Data");
+    Fill(Stream_Video, 0, Video_Format_Settings, svc);
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
 void File_Av1::scalability_structure()
 {
-#if MEDIAINFO_TRACE
-    if (Trace_Activated)
-    {
-        Element_Begin1("scalability_structure");
-        BS_Begin();
-        int8u spatial_layers_cnt_minus_1;
-        bool spatial_layer_dimensions_present_flag, spatial_layer_description_present_flag, temporal_group_description_present_flag;
-        Get_S1(2, spatial_layers_cnt_minus_1,                   "spatial_layers_cnt_minus_1");
-        Get_SB(spatial_layer_dimensions_present_flag,           "spatial_layer_dimensions_present_flag");
-        Get_SB(spatial_layer_description_present_flag,          "spatial_layer_description_present_flag");
-        Get_SB(temporal_group_description_present_flag,         "temporal_group_description_present_flag");
-        Skip_S1(3,                                              "scalability_structure_reserved_3bits");
-        BS_End();
-        if (spatial_layer_dimensions_present_flag) {
+    Element_Begin1("scalability_structure");
+    BS_Begin();
+    int8u spatial_layers_cnt_minus_1;
+    bool spatial_layer_dimensions_present_flag, spatial_layer_description_present_flag, temporal_group_description_present_flag;
+    Get_S1(2, spatial_layers_cnt_minus_1,                       "spatial_layers_cnt_minus_1");
+    Get_SB(spatial_layer_dimensions_present_flag,               "spatial_layer_dimensions_present_flag");
+    Get_SB(spatial_layer_description_present_flag,              "spatial_layer_description_present_flag");
+    Get_SB(temporal_group_description_present_flag,             "temporal_group_description_present_flag");
+    Skip_S1(3,                                                  "scalability_structure_reserved_3bits");
+    BS_End();
+    if (spatial_layer_dimensions_present_flag) {
+        Element_Begin1("spatial_layer_dimensions");
+        for (int8u i = 0; i <= spatial_layers_cnt_minus_1; ++i) {
             Element_Begin1("spatial_layer_dimensions");
-            for (int8u i = 0; i <= spatial_layers_cnt_minus_1; ++i) {
-                Skip_B2(                                        "spatial_layer_max_width[i]");
-                Skip_B2(                                        "spatial_layer_max_height[i]");
-            }
+            Skip_B2(                                            "spatial_layer_max_width");
+            Skip_B2(                                            "spatial_layer_max_height");
             Element_End0();
         }
-        if (spatial_layer_description_present_flag) {
-            Element_Begin1("spatial_layer_descriptions");
-            for (int8u i = 0; i <= spatial_layers_cnt_minus_1; i++)
-                Skip_B1(                                        "spatial_layer_ref_id[i]");
+        Element_End0();
+    }
+    if (spatial_layer_description_present_flag) {
+        Element_Begin1("spatial_layer_descriptions");
+        for (int8u i = 0; i <= spatial_layers_cnt_minus_1; i++) {
+            Element_Begin1("spatial_layer_description");
+            Skip_B1(                                            "spatial_layer_ref_id[i]");
             Element_End0();
         }
-        if (temporal_group_description_present_flag) {
-            Element_Begin1("temporal_group_descriptions");
-            int8u temporal_group_size;
-            Get_B1(temporal_group_size,                         "temporal_group_size");
-            for (int8u i = 0; i < temporal_group_size; ++i) {
-                int8u temporal_group_ref_cnt_i;
-                BS_Begin();
-                Skip_S1(3,                                      "temporal_group_temporal_id[i]");
-                Skip_SB(                                        "temporal_group_temporal_switching_up_point_flag[i]");
-                Skip_SB(                                        "temporal_group_spatial_switching_up_point_flag[i]");
-                Get_S1(3, temporal_group_ref_cnt_i,             "temporal_group_ref_cnt[i]");
-                BS_End();
-                for (int8u j = 0; j < temporal_group_ref_cnt_i; ++j) {
-                    Skip_B1(                                    "temporal_group_ref_pic_diff[i][j]");
-                }
+        Element_End0();
+    }
+    if (temporal_group_description_present_flag) {
+        Element_Begin1("temporal_group_descriptions");
+        int8u temporal_group_size;
+        Get_B1(temporal_group_size,                             "temporal_group_size");
+        for (int8u i = 0; i < temporal_group_size; ++i) {
+            Element_Begin1("temporal_group_description");
+            int8u temporal_group_ref_cnt_i;
+            BS_Begin();
+            Skip_S1(3,                                          "temporal_group_temporal_id");
+            Skip_SB(                                            "temporal_group_temporal_switching_up_point_flag");
+            Skip_SB(                                            "temporal_group_spatial_switching_up_point_flag");
+            Get_S1(3, temporal_group_ref_cnt_i,                 "temporal_group_ref_cnt");
+            BS_End();
+            for (int8u j = 0; j < temporal_group_ref_cnt_i; ++j) {
+                Skip_B1(                                        "temporal_group_ref_pic_diff");
             }
             Element_End0();
         }
         Element_End0();
     }
-#endif
+    Element_End0();
 }
 
 //---------------------------------------------------------------------------
