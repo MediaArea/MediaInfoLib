@@ -204,6 +204,19 @@ void File_Av2::Streams_Accept()
 //---------------------------------------------------------------------------
 void File_Av2::Streams_Fill()
 {
+    string ColorSpace = chroma_format_idc == 1 ? "Y" : (ColorPrimaries == 1 && TransferCharacteristics == 13 && MatrixCoefficients == 0) ? "RGB" : "YUV";
+    Fill(Stream_Video, 0, Video_ColorSpace, ColorSpace);
+    if (ColorSpace == "YUV")
+    {
+        Fill(Stream_Video, 0, Video_ChromaSubsampling, chroma_format_idc == 0 ? "4:2:0" : chroma_format_idc == 2 ? "4:4:4" : chroma_format_idc == 3 ? "4:2:2" : "");
+    }
+    if (ColorDescriptionPresent) {
+        Fill(Stream_Video, 0, Video_colour_description_present, "Yes");
+        Fill(Stream_Video, 0, Video_colour_primaries, Mpegv_colour_primaries(ColorPrimaries));
+        Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(TransferCharacteristics));
+        Fill(Stream_Video, 0, Video_matrix_coefficients, Mpegv_matrix_coefficients(MatrixCoefficients));
+        Fill(Stream_Video, 0, Video_colour_range, Avc_video_full_range[FullRange]);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -419,7 +432,7 @@ void File_Av2::sequence_header_obu()
         // seq_cropping_win_bottom_offset = 0
     TESTELSE_SB_END();
     Element_Begin1("color_config");
-        int32u chroma_format_idc, bit_depth_idc;
+        int32u bit_depth_idc;
         Get_uvlc(chroma_format_idc,                             "chroma_format_idc"); Param_Info1(chroma_format_idc == 0 ? "4:2:0" : chroma_format_idc == 2 ? "4:4:4" : chroma_format_idc == 3 ? "4:2:2" : "");
         Get_uvlc(bit_depth_idc,                                 "bit_depth_idc"); Param_Info2(bit_depth_idc == 0 ? 10 : (bit_depth_idc == 1 ? 8 : 12), " bits");
         Monochrome = (chroma_format_idc == 1);
@@ -499,11 +512,6 @@ void File_Av2::sequence_header_obu()
         Fill(Stream_Video, 0, Video_Width, max_frame_width_minus_1 + 1);
         Fill(Stream_Video, 0, Video_Height, max_frame_height_minus_1 + 1);
         Fill(Stream_Video, 0, Video_BitDepth, bit_depth_idc == 0 ? 10 : (bit_depth_idc == 1 ? 8 : 12));
-        Fill(Stream_Video, 0, Video_ColorSpace, chroma_format_idc == 1 ? "Y" : "YUV");
-        if (chroma_format_idc != 1)
-        {
-            Fill(Stream_Video, 0, Video_ChromaSubsampling, chroma_format_idc == 0 ? "4:2:0" : chroma_format_idc == 2 ? "4:4:4" : chroma_format_idc == 3 ? "4:2:2" : "");
-        }
         if (film_grain_params_present)
             Fill(Stream_Video, 0, Video_Format_Settings, "Film Grain Synthesis");
         if (max_mlayer_id > 0 || max_tlayer_id > 0)
@@ -986,11 +994,11 @@ void File_Av2::content_interpretation_obu()
     FILLING_BEGIN_PRECISE();
     if (color_description_present_flag)
     {
-        Fill(Stream_Video, 0, Video_colour_description_present, "Yes");
-        Fill(Stream_Video, 0, Video_colour_primaries, Mpegv_colour_primaries(color_primaries));
-        Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(transfer_characteristics));
-        Fill(Stream_Video, 0, Video_matrix_coefficients, Mpegv_matrix_coefficients(matrix_coefficients));
-        Fill(Stream_Video, 0, Video_colour_range, Avc_video_full_range[full_range_flag]);
+        ColorDescriptionPresent = color_description_present_flag;
+        ColorPrimaries = color_primaries;
+        TransferCharacteristics = transfer_characteristics;
+        MatrixCoefficients = matrix_coefficients;
+        FullRange = full_range_flag;
     }
     if (timing_info_present_flag) {
         Fill(Stream_Video, 0, Video_FrameRate, framerate, 3);
