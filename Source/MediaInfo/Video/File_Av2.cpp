@@ -506,6 +506,8 @@ void File_Av2::sequence_header_obu()
         }
         if (film_grain_params_present)
             Fill(Stream_Video, 0, Video_Format_Settings, "Film Grain Synthesis");
+        if (max_mlayer_id > 0 || max_tlayer_id > 0)
+            Fill(Stream_Video, 0, Video_Format_Settings, "Scalable Video Coding");
 
         sequence_header_Parsed = true;
     }
