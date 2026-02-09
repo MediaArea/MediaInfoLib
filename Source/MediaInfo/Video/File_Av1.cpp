@@ -255,7 +255,7 @@ void File_Av1::Header_Parse()
     //Parsing
     int8u obu_type;
     bool obu_extension_flag, obu_has_size_field;
-    int64u obu_size;
+    int64u obu_size{};
     if (IsAnnexB) {
         Get_leb128 (obu_size,                                   "obu_size");
         obu_size += Element_Offset;
