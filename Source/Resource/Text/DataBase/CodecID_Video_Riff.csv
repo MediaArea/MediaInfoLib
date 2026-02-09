@@ -55,6 +55,7 @@ AUR2;YUV;;Auravision Aura 2;;;;YUV;4:2:2
 AURA;YUV;;Auravision Aura 1;;;;YUV;4:1:1
 AUVX;AUVX;;USH GmbH;;;;;
 AV01;AV1;;;;;;
+AV02;AV2;;;;;;
 AV1X;Avid 1:1;;;http://mirror01.iptelecom.net.ua/~video/codecs/Avid.VfW.codec.v2.0d2.exe;;;;
 AVC1;AVC;;;http://ffdshow-tryout.sourceforge.net/;;;YUV;4:2:0;
 avc1;AVC;;;http://ffdshow-tryout.sourceforge.net/;;;YUV;4:2:0;
@@ -633,6 +634,7 @@ VP70;VP7;On2;;;General;;;
 VP71;VP7;On2;;;Error Resilient;;;
 VP72;VP7;On2;;;;;;
 VP80;VP8;;;http://www.webmproject.org;;;YUV;4:2:0
+VP90;VP9;;;http://www.webmproject.org;;;;
 VQC1;Vector 1;;Vector-quantised 1 (high compression) http://eprints.ecs.soton.ac.uk/archive/00001310/01/VTC97-js.pdf;;;;;
 VQC2;Vector 2;;Vector-quantised 2 (high robustness against channel errors) http://eprints.ecs.soton.ac.uk/archive/00001310/01/VTC97-js.pdf;;;;;
 VQJP;VQ630;;Dual-mode digital camera;;;;;
