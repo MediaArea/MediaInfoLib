@@ -277,6 +277,8 @@ void File_Av1::Read_Buffer_OutOfBand()
     Get_SB (   initial_presentation_delay_present,              "initial_presentation_delay_present");
     Skip_S1(4,                                                  initial_presentation_delay_present?"initial_presentation_delay_minus_one":"reserved");
     BS_End();
+
+    Open_Buffer_Continue(Buffer, Buffer_Size);
 }
 
 //---------------------------------------------------------------------------
@@ -965,11 +967,6 @@ void File_Av1::frame()
     Element_Begin1("tile_group");
     tile_group();
     Element_End0();
-
-    FILLING_BEGIN();
-    if (Frame_Count >= Frame_Count_Valid)
-        Finish();
-    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
