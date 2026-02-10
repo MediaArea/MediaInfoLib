@@ -23,6 +23,7 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/Video/File_Av1.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
+#include "ThirdParty/fmt/format.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -152,10 +153,6 @@ File_Av1::File_Av1()
     //In
     Frame_Count_Valid=0;
     FrameIsAlwaysComplete=false;
-
-    //Temp
-    sequence_header_Parsed=false;
-    SeenFrameHeader=false;
 }
 
 //---------------------------------------------------------------------------
@@ -185,6 +182,17 @@ void File_Av1::Streams_Fill()
 void File_Av1::Streams_Finish()
 {
     Fill(Stream_Video, 0, Video_Format_Settings_GOP, GOP_Detect(GOP));
+    for (const auto& item : scalability_structure_seen) {
+        string svc = "Scalable Video Coding (";
+        if (item < sizeof(Av1_scalability_mode) / sizeof(Av1_scalability_mode[0])) {
+            svc += Av1_scalability_mode[item];
+        }
+        else {
+            svc += fmt::to_string(item);
+        }
+        svc += ')';
+        Fill(Stream_Video, 0, Video_Format_Settings, svc);
+    }
 
     //Merge info about different HDR formats
     auto HDR_Format = HDR.find(Video_HDR_Format);
@@ -292,7 +300,8 @@ void File_Av1::Header_Parse()
     if (IsAnnexB) {
         Get_leb128 (obu_size,                                   "obu_size");
         obu_size += Element_Offset;
-        if (Element_Level <= 3)
+        DataMustAlwaysBeComplete = Element_Level > 3;
+        if (!DataMustAlwaysBeComplete)
         {
             Header_Fill_Size(obu_size);
             switch (Element_Level) {
@@ -322,9 +331,11 @@ void File_Av1::Header_Parse()
         if (!IsAnnexB) {
             obu_size = Element_Offset + obu_size2;
         }
+        else if (obu_size != Element_Offset + obu_size2) {
+            Trusted_IsNot("obu_size mismatch");
+        }
     }
     else if (IsAnnexB) {
-        obu_size = Element_TotalSize_Get();
     }
     else if (FrameIsAlwaysComplete) {
         obu_size = Element_Size;
@@ -356,15 +367,6 @@ void File_Av1::Data_Parse()
         return;
     }
 
-    //Probing mode in case of raw stream //TODO: better reject of bad files
-    if (!IsSub && !Status[IsAccepted]
-        && ((Element_Code != 1 && Element_Code != 2 && Element_Code != 5 && Element_Code != 0xF && !sequence_header_Parsed)
-           || ((Element_Code < 1 || Element_Code > 6) && Element_Code != 0xF)))
-    {
-        Reject();
-        return;
-    }
-
     //Parsing
     switch (Element_Code)
     {
@@ -376,6 +378,10 @@ void File_Av1::Data_Parse()
         case  0x6 : frame(); break;
         case  0xF : padding(); break;
         default   : Skip_XX(Element_Size-Element_Offset,        "Data");
+    }
+
+    if (!Status[IsAccepted] && Frame_Count && !IsSub && File_Offset + Buffer_Offset + Element_TotalSize_Get() >= File_Size) {
+        Accept();
     }
 }
 
@@ -397,7 +403,7 @@ void File_Av1::sequence_header()
     //Parsing
     int32u max_frame_width_minus_1, max_frame_height_minus_1;
     int8u seq_profile, seq_level_idx[33]{}, operating_points_cnt_minus_1, buffer_delay_length_minus_1, frame_width_bits_minus_1, frame_height_bits_minus_1, seq_force_screen_content_tools, BitDepth, color_primaries, transfer_characteristics, matrix_coefficients, chroma_sample_position{};
-    bool reduced_still_picture_header, timing_info_present_flag, decoder_model_info_present_flag, seq_choose_screen_content_tools, mono_chrome, color_range, color_description_present_flag, subsampling_x, subsampling_y, film_grain_params_present;
+    bool timing_info_present_flag, decoder_model_info_present_flag, seq_choose_screen_content_tools, mono_chrome, color_range, color_description_present_flag, subsampling_x, subsampling_y, film_grain_params_present;
     BS_Begin();
     Get_S1 ( 3, seq_profile,                                    "seq_profile"); Param_Info1(Av1_seq_profile(seq_profile));
     Skip_SB(                                                    "still_picture");
@@ -593,6 +599,7 @@ void File_Av1::sequence_header()
             if (film_grain_params_present)
                 Fill(Stream_Video, 0, Video_Format_Settings, "Film Grain Synthesis");
 
+            Buffer_MaximumSize = 0x10000000; // Frames may be big
             sequence_header_Parsed=true;
         }
     FILLING_END();
@@ -627,13 +634,46 @@ void File_Av1::frame_header()
     }
 
     //Parsing
+    frame_header_uncompressed_header();
+    if (show_existing_frame) {
+        SeenFrameHeader = false;
+    }
+    else {
+        SeenFrameHeader = true;
+    }
+
+    FILLING_BEGIN();
+    if (sequence_header_Parsed) {
+        Frame_Count++;
+        if (!Status[IsAccepted]) {
+            if (Frame_Count >= Frame_Count_Valid) {
+                Accept();
+            }
+        }
+        if (!Status[IsFilled] && Frame_Count >= (Frame_Count_Valid << 2)) {
+            Fill();
+            if (Config->ParseSpeed <= 1.0) {
+                Finish();
+            }
+        }
+    }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Av1::frame_header_uncompressed_header()
+{
+    //Parsing
     BS_Begin();
     Element_Begin1("uncompressed_header");
+    if (reduced_still_picture_header) {
+        show_existing_frame = false;
+    }
+    else {
         int8u frame_type;
-        TEST_SB_SKIP(                                           "show_existing_frame");
+        TEST_SB_GET (show_existing_frame,                       "show_existing_frame");
+            Skip_BS(Data_BS_Remain(),                           "(Not parsed)");
             BS_End();
-            SeenFrameHeader = 0;
-            Skip_XX(Element_Size-Element_Offset,                "Data");
             return;
         TEST_SB_END();
         Get_S1 (2, frame_type,                                  "frame_type"); Param_Info1(Av1_frame_type[frame_type]);
@@ -644,18 +684,10 @@ void File_Av1::frame_header()
             GOP.push_back(' ');
         FILLING_END();
         if (GOP.size()>=512)
-            GOP.resize(384);
+            GOP.erase(0, 128);
+    }
     Element_End0();
     BS_End();
-
-    FILLING_BEGIN();
-        Frame_Count++;
-        if (!Status[IsAccepted] && Frame_Count >= Frame_Count_Valid) {
-            Accept();
-            if (Config->ParseSpeed <= 1.0)
-                Finish();
-        }
-    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -828,13 +860,7 @@ void File_Av1::metadata_scalability()
     BS_End();
 
     FILLING_BEGIN_PRECISE();
-    string svc = "Scalable Video Coding";
-    if (scalability_mode_idc < sizeof(Av1_scalability_mode) / sizeof(Av1_scalability_mode[0])) {
-        svc += " (";
-        svc += Av1_scalability_mode[scalability_mode_idc];
-        svc += ")";
-    }
-    Fill(Stream_Video, 0, Video_Format_Settings, svc);
+    scalability_structure_seen.insert(scalability_mode_idc);
     FILLING_END();
 }
 
