@@ -344,6 +344,10 @@ void File_Av2::Data_Parse()
     case 25: padding_obu(); break;
     default: reserved_obu(); break;
     }
+
+    if (!Status[IsAccepted] && Frame_Count && !IsSub && File_Offset + Buffer_Offset + Element_TotalSize_Get() >= File_Size) {
+        Accept();
+    }
 }
 
 //***************************************************************************
@@ -1020,9 +1024,12 @@ void File_Av2::padding_obu()
 void File_Av2::metadata_unit(int64u metadata_type, int64u payload_size)
 {
     auto Element_Size_Save = Element_Size;
+    if (payload_size > Element_Size - Element_Offset) {
+        Trusted_IsNot("payload_size");
+        payload_size = Element_Size - Element_Offset;
+    }
     Element_Size = Element_Offset + payload_size;
 
-    Element_Begin1("metadata_unit");
     switch (metadata_type) {
     case 1: metadata_hdr_cll(); break;
     case 2: metadata_hdr_mdcv(); break;
@@ -1032,9 +1039,8 @@ void File_Av2::metadata_unit(int64u metadata_type, int64u payload_size)
     case 7: metadata_icc_profile(); break;
     case 8: metadata_scan_type(); break;
     case 9: metadata_temporal_point_info(); break;
-    default: Skip_XX(Element_Size,                              "Data");
+    default: Skip_XX(Element_Size - Element_Offset,             "(Unknown)");
     }
-    Element_End0();
 
     Element_Size = Element_Size_Save;
 }
@@ -1043,6 +1049,7 @@ void File_Av2::metadata_unit(int64u metadata_type, int64u payload_size)
 void File_Av2::metadata_short_obu()
 {
     Element_Begin1("metadata_short_obu");
+    Element_Begin1("muh");
     BS_Begin();
     Skip_SB(                                                    "metadata_is_suffix");
     Skip_S1(3,                                                  "muh_layer_idc");
@@ -1052,11 +1059,10 @@ void File_Av2::metadata_short_obu()
     BS_End();
     int64u metadata_type;
     Get_leb128(metadata_type,                                   "metadata_type"); Param_Info1(Av2_metadata_type(static_cast<int8u>(metadata_type)));
-    if (muh_cancel_flag) {
-        Element_End0();
-        return;
+    Element_End0();
+    if (!muh_cancel_flag) {
+        metadata_unit(metadata_type, Element_Size - Element_Offset);
     }
-    metadata_unit(metadata_type, Element_Size - Element_Offset);
     Element_End0();
     if (Element_Size - Element_Offset) {
         BS_Begin();
@@ -1084,6 +1090,8 @@ void File_Av2::metadata_group_obu()
         return;
     }
     for (int64u i = 0; i <= metadata_unit_cnt_minus1; ++i) {
+        Element_Begin1("metadata_unit");
+        Element_Begin1("muh");
         int64u metadata_type;
         Get_leb128(metadata_type,                               "metadata_type"); Param_Info1(Av2_metadata_type(static_cast<int8u>(metadata_type)));
         BS_Begin();
@@ -1120,9 +1128,11 @@ void File_Av2::metadata_group_obu()
         }
         auto headerRemainingBytes = muh_header_size - (Element_Offset - Element_Offset_Header_Begin);
         Skip_XX(headerRemainingBytes,                           "muh_header_extension_bytes");
+        Element_End0();
         if (!muh_cancel_flag) {
             metadata_unit(metadata_type, muh_payload_size);
         }
+        Element_End0();
     }
     Element_End0();
     if (Element_Size - Element_Offset) {
@@ -1315,11 +1325,22 @@ void File_Av2::frame_header(bool isFirst)
     Element_End0();
 
     FILLING_BEGIN();
-    Frame_Count++;
-    if (!Status[IsAccepted] && Frame_Count >= Frame_Count_Valid) {
-        Accept();
-        if (Config->ParseSpeed <= 1.0)
-            Finish();
+    if (isFirst && sequence_header_Parsed) {
+        Frame_Count++;
+        if (!Status[IsAccepted]) {
+            if (Frame_Count == 1) {
+                Buffer_MaximumSize *= 4; // Frames may be big
+            }
+            if (Frame_Count >= Frame_Count_Valid) {
+                Accept();
+            }
+        }
+        if (!Status[IsFilled] && Frame_Count >= (Frame_Count_Valid << 2)) {
+            Fill();
+            if (Config->ParseSpeed <= 1.0) {
+                Finish();
+            }
+        }
     }
     FILLING_END();
 }
@@ -1428,11 +1449,6 @@ void File_Av2::tile_group_obu(int64u obuPayloadSize)
     Skip_BS(BS->Remain(), "(Not parsed)");
     BS_End();
     Element_End0();
-
-    FILLING_BEGIN();
-    if (Element_Level < 2 && Frame_Count >= Frame_Count_Valid)
-        Finish();
-    FILLING_END();
 }
 
 //***************************************************************************
