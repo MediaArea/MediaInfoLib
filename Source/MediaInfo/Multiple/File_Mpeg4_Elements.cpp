@@ -1682,6 +1682,19 @@ void File_Mpeg4::Data_Parse()
             Get_B8(_INFO,                                       _NAME); \
     } \
 
+// Bigendian signed
+#define Get_BS_DEPENDOFVERSION(_INFO, _NAME) \
+    { \
+        if (Version==0) \
+        { \
+            int32s Info; \
+            Get_B4S(Info,                                        _NAME); \
+            _INFO=Info; \
+        } \
+        else \
+            Get_B8S(_INFO,                                       _NAME); \
+    } \
+
 #define Get_DATE1904_DEPENDOFVERSION(_INFO, _NAME) \
     { \
         if (Version==0) \
@@ -4428,7 +4441,7 @@ void File_Mpeg4::moov_trak_edts_elst()
         stream::edts_struct edts;
         Element_Begin1("Entry");
         Get_B_DEPENDOFVERSION(edts.Duration,                    "Track duration"); Param_Info2C(moov_mvhd_TimeScale, (int64u)edts.Duration*1000/moov_mvhd_TimeScale, " ms");
-        Get_B_DEPENDOFVERSION(edts.Delay,                       "Media time"); Param_Info2C(moov_mvhd_TimeScale && (edts.Delay!=(int32u)-1), (int64u)edts.Delay*1000/moov_mvhd_TimeScale, " ms");
+        Get_BS_DEPENDOFVERSION(edts.Delay,                      "Media time"); Param_Info2C(edts.Delay > 0, edts.Delay, " / media header time scale");
         Get_B4 (edts.Rate,                                      "Media rate"); Param_Info1(((float)edts.Rate)/0x10000);
         Element_End0();
 
