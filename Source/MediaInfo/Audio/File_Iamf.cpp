@@ -284,8 +284,7 @@ static string Iamf_parameter_definition_type(int64u parameter_definition_type)
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-File_Iamf::File_Iamf()
-    :File__Analyze()
+File_Iamf::File_Iamf() :File__Analyze()
 {
     // Configuration
     StreamSource = IsStream;
@@ -348,9 +347,14 @@ bool File_Iamf::FileHeader_Begin()
         return false; //Must wait for more data
 
     if (!IsSub
-     && ((Buffer[0] != 0xF8 && Buffer[0] != 0xFC) // ia_sequence_header can only start with 0xF806 or 0xFC06
-      || Buffer[1] != 0x06
-      || CC4(Buffer + 2) != 0x69616D66)) {  // "iamf"
+        // Must start with ia_sequence_header
+        // obu_type (5)           = 31
+        // obu_redundant_copy (1) = 0 or 1
+        // reserved (1)           = 0
+        // obu_extension_flag (1) = 0 or 1 (extension is not used as at IAMF v2)
+        && Buffer[0] != 0xF8 && Buffer[0] != 0xFC  // obu_extension_flag = 0
+        && Buffer[0] != 0xF9 && Buffer[0] != 0xFD) // obu_extension_flag = 1
+    {
         Reject();
         return false;
     }
@@ -491,6 +495,8 @@ void File_Iamf::ia_sequence_header()
             Accept();
             Fill(Stream_Audio, 0, Audio_Format_Profile, Iamf_profile(additional_profile));
         }
+    FILLING_ELSE();
+        Reject();
     FILLING_END();
 }
 
