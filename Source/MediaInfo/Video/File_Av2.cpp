@@ -240,16 +240,17 @@ void File_Av2::Read_Buffer_OutOfBand()
     Skip_S1(3,                                                  "seq_profile");
     Skip_S1(5,                                                  "seq_level_idx_0");
     Skip_SB(                                                    "seq_tier_0");
-    Skip_SB(                                                    "high_bitdepth");
-    Skip_SB(                                                    "twelve_bit");
+    Skip_S1(2,                                                  "bitdepth_idx");
     Skip_SB(                                                    "monochrome");
     Skip_SB(                                                    "chroma_subsampling_x");
     Skip_SB(                                                    "chroma_subsampling_y");
-    Skip_S1(2,                                                  "chroma_sample_position");
-    Skip_S1(3,                                                  "reserved");
+    Skip_S1(3,                                                  "chroma_sample_position");
+    Skip_S1(2,                                                  "reserved");
     Get_SB (   initial_presentation_delay_present,              "initial_presentation_delay_present");
     Skip_S1(4,                                                  initial_presentation_delay_present?"initial_presentation_delay_minus_one":"reserved");
     BS_End();
+
+    Open_Buffer_Continue(Buffer, Buffer_Size);
 }
 
 //---------------------------------------------------------------------------
@@ -307,8 +308,7 @@ void File_Av2::Data_Parse()
 {
     //Probing mode in case of raw stream //TODO: better reject of bad files
     if (!IsSub && !Status[IsAccepted]
-        && ((Element_Code != 1 && Element_Code != 2 && Element_Code != 9 && Element_Code != 16 && Element_Code != 17 && Element_Code != 18 && Element_Code != 20 && !sequence_header_Parsed)
-            || (Element_Code < 1 || Element_Code > 25)))
+        && !sequence_header_Parsed && Element_Code != 1)
     {
         Reject();
         return;
