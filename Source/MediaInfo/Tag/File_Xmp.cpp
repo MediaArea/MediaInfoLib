@@ -197,7 +197,7 @@ bool File_Xmp::FileHeader_Begin()
         };
 
     tfsxml_string p{}, n{}, v{};
-    auto Result = tfsxml_init(&p, Buffer, Buffer_Size, 0);
+    auto Result = tfsxml_init(&p, Buffer, static_cast<unsigned>(Buffer_Size), 0);
     XML_XMP_START
         XML_ELEMENT_START
         XML_ELEMENT("rdf:Description")

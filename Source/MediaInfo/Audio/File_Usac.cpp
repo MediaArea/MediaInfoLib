@@ -3500,7 +3500,6 @@ bool File_Usac::loudnessInfo(bool FromAlbum, bool V1)
         Element_Begin1("measurement");
         int8u methodDefinition, methodValue, measurementSystem, reliability;
         Get_S1 (4, methodDefinition,                            "methodDefinition"); Param_Info1C(methodDefinition && methodDefinition<=LoudnessMeaning_Size, LoudnessMeaning[methodDefinition-1]);
-        int8u Size;
         if (methodDefinition>=methodDefinition_Format_Size)
         {
             Param_Info1("(Unsupported)");

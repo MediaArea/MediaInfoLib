@@ -3384,6 +3384,7 @@ static void CheckErrors_Attributes(file_adm_private* File_Adm_Private, item Item
         if (!Count_Max1 || Info.Flags[Atmos1] || (/*File_Adm_Private->Schema != Schema_ebuCore_2014 ||*/ strcmp(Info.Name, "typeLabel") && strcmp(Info.Name, "typeDefinition"))) {
             // Handling generic errors from arrays
             for (int k = 0; k < Info_Flag_Max; k++) {
+                #pragma warning(suppress: 6297, justification: "shifting k by 2 will not overflow an int")
                 if (!Info.Flags[Count0 + Count_Max1 + (k << 2)]) {
                     Item.AddError(Error, 0x80 | (int8u)j, E((unsigned)E::Present0 + Count_Max1), 0, (source)k);
                 }
@@ -3436,6 +3437,7 @@ static void CheckErrors_Elements(file_adm_private* File_Adm_Private, item Item_T
         if (true) {
             // Handling generic errors from arrays
             for (int k = 0; k < Info_Flag_Max; k++) {
+                #pragma warning(suppress: 6297, justification: "shifting k by 2 will not overflow an int")
                 if (!Info.Flags[Count0 + Count_Max2 + (k << 2)]) {
                     Item.AddError(Error, j, E((unsigned)E::Present0 + Count_Max2), Count <= (int8u)-1 ? (int8u)Count : (int8u)-1, (source)k);
                 }

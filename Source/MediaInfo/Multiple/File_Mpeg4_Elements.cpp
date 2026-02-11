@@ -1114,6 +1114,9 @@ static const char* Mpeg4_Description(int32u Description)
 //---------------------------------------------------------------------------
 void File_Mpeg4::Data_Parse()
 {
+    #pragma warning(push)
+    #pragma warning(disable: 4065) // switch statement contains 'default' but no 'case' labels
+
     //mdat
     if (IsParsing_mdat)
     {
@@ -1592,6 +1595,8 @@ void File_Mpeg4::Data_Parse()
     ATOM(uuid)
     LIST_SKIP(wide)
     DATA_END
+
+    #pragma warning(pop)
 }
 
 //***************************************************************************
@@ -2341,7 +2346,7 @@ void File_Mpeg4::mdat_xxxx()
                                             ProbeCaption_mdatPos=File_Size;
                                             break;
                                         case config_probe_dur:
-                                            ProbeCaption_mdatPos=Probe.Start*FrameRate;
+                                            ProbeCaption_mdatPos=(int64u)(Probe.Start*FrameRate);
                                             break;
                                         case config_probe_size:
                                             Probe.Start=Probe.Start*100/File_Size; //File pos is not relevant there
@@ -2357,7 +2362,7 @@ void File_Mpeg4::mdat_xxxx()
                                             ProbeCaption_mdatDur=0;
                                             break;
                                         case config_probe_dur:
-                                            ProbeCaption_mdatDur=Probe.Duration*FrameRate;
+                                            ProbeCaption_mdatDur=(int64u)(Probe.Duration*FrameRate);
                                             break;
                                         case config_probe_size:
                                             Probe.Duration=Probe.Duration*100/File_Size; //File pos is not relevant there
@@ -4156,7 +4161,7 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
             {
                 FILLING_BEGIN();
                     std::string Parameter;
-                    int32u keys_Pos=Element_Code_Get(Element_Level-1);
+                    int64u keys_Pos=Element_Code_Get(Element_Level-1);
                     if (keys_Pos && keys_Pos<=moov_udta_meta_keys_List.size())
                         Metadata_Get(Parameter, moov_udta_meta_keys_List[keys_Pos-1]);
                     if (Parameter=="Recorded_Date" && Value.size()>=10 && Value[4]==__T(':') && Value[7]==__T(':'))
@@ -6301,7 +6306,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
         if (MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Codec, InfoCodecID_Format)==__T("PCM"))
         {
             //Info of stream size
-            Streams[moov_trak_tkhd_TrackID].stsz_Sample_Multiplier=Channels*SampleSize/8;
+            Streams[moov_trak_tkhd_TrackID].stsz_Sample_Multiplier=Channels*(int64u)SampleSize/8;
             #if MEDIAINFO_DEMUX
                 Streams[moov_trak_tkhd_TrackID].PtsDtsAreSame=true;
             #endif // MEDIAINFO_DEMUX
@@ -6364,7 +6369,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
                 }
                 Parser->Codec=Codec;
                 Parser->Channel_Total=(int8u)Channels;
-                Parser->SamplingRate=SampleRate;
+                Parser->SamplingRate=(int16u)SampleRate;
                 Parser->ShouldContinueParsing=true;
                 #if MEDIAINFO_DEMUX
                     if (Config->Demux_Unpacketize_Get())
@@ -6790,8 +6795,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                 if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("FFV1"))
                 {
                     File_Ffv1* Parser=new File_Ffv1;
-                    Parser->Width=moov_trak_tkhd_Width;
-                    Parser->Height=moov_trak_tkhd_Height;
+                    Parser->Width=(int32u)moov_trak_tkhd_Width;
+                    Parser->Height=(int32u)moov_trak_tkhd_Height;
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
                 }
             #endif
@@ -8769,7 +8774,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp()
         case 0x64666C38: { // "dfl8"
             z_stream strm{};
             strm.next_in = (Bytef*)Buffer + Buffer_Offset + (size_t)Element_Offset;
-            strm.avail_in = (size_t)(Element_Size - Element_Offset);
+            strm.avail_in = (uInt)(Element_Size - Element_Offset);
 
             if (inflateInit2(&strm, -15) == Z_OK) { // windowBits = -15 means raw deflate (no zlib/gzip header)
                 size_t Data_Size = 0x10000;
@@ -8777,7 +8782,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp()
                 size_t Processed = 0;
                 for (;;) {
                     strm.next_out = Data.get() + Processed;
-                    strm.avail_out = Data_Size - Processed;
+                    strm.avail_out = (uInt)(Data_Size - Processed);
                     auto Result = inflate(&strm, Z_NO_FLUSH);
                     Processed = strm.next_out - Data.get();
                     if (Result == Z_STREAM_END) {
@@ -8842,7 +8847,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh()
     if (vertex_count > Element_Size) {
         return;
     }
-    auto ccsb = std::ceil(std::log2(coordinate_count * 2));
+    auto ccsb = (int8u)std::ceil(std::log2(coordinate_count * 2));
     Element_Begin1("index_deltas");
     BS_Begin();
     #if MEDIAINFO_ADVANCED
@@ -8872,7 +8877,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh()
             }
             Index += index_delta;
             auto coordinate = coordinates.get()[Index];
-            Vertices_String += 'u' + i;
+            Vertices_String += static_cast<char>('u' + i);
             Vertices_String += fmt::format(Vertices_String_Digits, coordinate);
             #else //MEDIAINFO_ADVANCED
             Skip_S4(ccsb,                                       Name);
@@ -8906,7 +8911,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh()
     if (vertex_list_count > Element_Size) {
         return;
     }
-    auto vcsb = std::ceil(std::log2(vertex_count * 2));
+    auto vcsb = (int8u)std::ceil(std::log2(vertex_count * 2));
     Element_Begin1("vertex_list");
     Fill(StreamKind_Last, StreamPos_Last, "Spatial Mesh Vertex_List_Count", vertex_list_count);
     for (int32u i = 0; i < vertex_list_count; ++i) {
@@ -9018,7 +9023,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_udts()
             IDTagPresent_TotalPresent += IDTagPresent;
         }
     Element_End0();
-    auto ByteAlign = Data_BS_Remain() % 8;
+    auto ByteAlign = (int8u)(Data_BS_Remain() & 7);
     if (ByteAlign)
         Skip_S1(ByteAlign,                                      "ByteAlign");
     BS_End();
@@ -10422,18 +10427,7 @@ void File_Mpeg4::moov_udta_loci()
     SkipString(                                                 "Notes");
 
     // Format coordinates as ISO-6709 string
-    char ISO6709_buff[50];
-    string OldLocale;
-    auto OldLocale_Temp = setlocale(LC_NUMERIC, nullptr);
-    if (OldLocale_Temp && (*OldLocale_Temp != 'C' || *(OldLocale_Temp + 1))) {
-        OldLocale = OldLocale_Temp;
-        setlocale(LC_NUMERIC, "C");
-    }
-    snprintf(ISO6709_buff, sizeof(ISO6709_buff), "%+010.6f%+011.6f%+.3f/", lat, lon, alt);
-    if (!OldLocale.empty()) {
-        setlocale(LC_NUMERIC, OldLocale.c_str());
-    }
-    Ztring ISO6709{ ISO6709_buff };
+    auto ISO6709 = fmt::format("{:+010.6f}{:+011.6f}{:+.3f}/", lat, lon, alt);
 
     // Filling
     FILLING_BEGIN();
@@ -11076,7 +11070,7 @@ void File_Mpeg4::moov_udta_xxxx()
                             }
                             if (MediaInfoLib::Config.Verbosity_Get()>=(float32)1.0)
                             {
-                                auto Field= (Ztring().From_CC4(Element[Element_Level-1].Code).To_UTF8()+'_'+ Ztring().From_CC4(Element[Element_Level].Code).To_UTF8()+'_'+value);
+                                auto Field= (Ztring().From_CC4((int32u)Element[Element_Level-1].Code).To_UTF8()+'_'+ Ztring().From_CC4((int32u)Element[Element_Level].Code).To_UTF8()+'_'+value);
                                 Fill(StreamKind_Last, StreamPos_Last, Field.c_str(), "Yes");
                                 Fill_SetOptions(StreamKind_Last, StreamPos_Last, Field.c_str(), "N NTY");
                             }
