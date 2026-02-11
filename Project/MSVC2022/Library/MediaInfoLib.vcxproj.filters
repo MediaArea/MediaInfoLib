@@ -1603,6 +1603,9 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_CineForm.h">
       <Filter>Header Files\Video</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\File__Analyze_Streams.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Adm.h">
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
