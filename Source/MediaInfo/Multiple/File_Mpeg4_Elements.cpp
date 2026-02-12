@@ -45,6 +45,9 @@ using namespace std;
 #if defined(MEDIAINFO_AIC_YES)
     #include "MediaInfo/Video/File_Aic.h"
 #endif
+#if defined(MEDIAINFO_APV_YES)
+    #include "MediaInfo/Video/File_Apv.h"
+#endif
 #if defined(MEDIAINFO_AV1_YES)
     #include "MediaInfo/Video/File_Av1.h"
 #endif
@@ -886,6 +889,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_ACLR=0x41434C52;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_amve=0x616D7665;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_APRG=0x41505247;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_apvC=0x61707643;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_ARES=0x41524553;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_AORD=0x414F5244;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_av1C=0x61763143;
@@ -1340,6 +1344,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ACLR)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_amve)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_APRG)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_apvC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ARES)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_AORD)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_av1C)
@@ -7118,6 +7123,34 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_APRG()
     Skip_C4(                                                    "Version");
     Get_B4 (ScanType,                                           "Number of fields"); Param_Info1(ScanType==1?"Progressive":ScanType==2?"Interlaced":"");
     Skip_B4(                                                    "Reserved"); // Must be 0
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_apvC()
+{
+    NAME_VERSION_FLAG("APVDecoderConfigurationBox");
+    AddCodecConfigurationBoxInfo();
+
+    //Parsing
+        #ifdef MEDIAINFO_APV_YES
+        for (size_t Pos=0; Pos<Streams[moov_trak_tkhd_TrackID].Parsers.size(); Pos++) //Removing any previous parser (in case of multiple streams in one track, or dummy parser for demux)
+            delete Streams[moov_trak_tkhd_TrackID].Parsers[Pos];
+        Streams[moov_trak_tkhd_TrackID].Parsers_Clear();
+
+        File_Apv* Parser=new File_Apv;
+        Parser->FrameIsAlwaysComplete=true;
+        #if MEDIAINFO_DEMUX
+            Element_Code=moov_trak_tkhd_TrackID;
+        #endif //MEDIAINFO_DEMUX
+        Open_Buffer_Init(Parser);
+        Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+        mdat_MustParse=true; //Data is in MDAT
+
+        //Parsing
+        Open_Buffer_OutOfBand(Parser);
+    #else
+        Skip_XX(Element_Size,                                   "APV Data");
+    #endif
 }
 
 //---------------------------------------------------------------------------

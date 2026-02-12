@@ -624,6 +624,9 @@
 #if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_AFDBARDATA_NO) && !defined(MEDIAINFO_AFDBARDATA_YES)
     #define MEDIAINFO_AFDBARDATA_YES
 #endif
+#if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_APV_NO) && !defined(MEDIAINFO_APV_YES)
+    #define MEDIAINFO_APV_YES
+#endif
 #if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_AV1_NO) && !defined(MEDIAINFO_AV1_YES)
     #define MEDIAINFO_AV1_YES
 #endif
