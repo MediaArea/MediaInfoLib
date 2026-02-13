@@ -11,8 +11,6 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
-#include "MediaInfo/File__Duplicate.h"
-#include <cmath>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
