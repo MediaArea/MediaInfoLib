@@ -422,6 +422,24 @@ dnl ### Needed libs
 dnl #########################################################################
 
 dnl -------------------------------------------------------------------------
+dnl brotli
+dnl
+
+PKG_CHECK_MODULES([BROTLI], [libbrotlidec libbrotlicommon], [
+    with_brotli="system"
+    
+    LIBS="$LIBS $BROTLI_LIBS"
+    CFLAGS="$CFLAGS $BROTLI_CFLAGS"
+    CPPFLAGS="$CPPFLAGS $BROTLI_CFLAGS"
+    
+    MediaInfoLib_LIBS="$MediaInfoLib_LIBS $BROTLI_LIBS"
+    MediaInfoLib_LIBS_Static="$MediaInfoLib_LIBS_Static $BROTLI_LIBS"
+], [
+    with_brotli="no"
+    AC_MSG_ERROR([brotli is not found, please install development package of brotli (libbrotli-dev or brotli)])
+])
+
+dnl -------------------------------------------------------------------------
 dnl zlib
 dnl
 
@@ -1010,6 +1028,7 @@ echo "  Using ZenLib?                                           $with_zenlib"
 echo "  Using graphviz?                                         $using_graphviz"
 echo "  Using libcurl?                                          $using_libcurl"
 echo "  Using libmms?                                           $using_libmms"
+echo "  Using brotli?                                           $with_brotli"
 echo "  Using zlib?                                             $with_zlib"
 echo "  Using aes?                                              $using_libaes"
 echo "  Using md5?                                              $using_libmd5"
