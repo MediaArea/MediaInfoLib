@@ -161,13 +161,13 @@ namespace MediaInfoLib
 
 //---------------------------------------------------------------------------
 static const float digit_to_precision[] = {
-    0.5,
-    0.05,
-    0.005,
-    0.0005,
-    0.00005,
-    0.000005,
-    0.0000005,
+    0.5f,
+    0.05f,
+    0.005f,
+    0.0005f,
+    0.00005f,
+    0.000005f,
+    0.0000005f,
 };
 const size_t digit_to_precision_Size = sizeof(digit_to_precision) / sizeof(*digit_to_precision);
 bool Location_Compare(const string& Current, const string& CompareTo, bool& Replace)
@@ -688,8 +688,8 @@ void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_Col
 
     if (Meta.Luminance[0]!=(int32u)-1 && Meta.Luminance[1]!=(int32u)-1)
     {
-        float32 Luminance_Min_Ratio=FromAV1?16384:10000; // 18.14 fixed-point, MPEG values are x10000
-        float32 Luminance_Max_Ratio=FromAV1?256:10000; // 24.8 fixed-point, MPEG values are x10000
+        float32 Luminance_Min_Ratio=static_cast<float32>(FromAV1?16384:10000); // 18.14 fixed-point, MPEG values are x10000
+        float32 Luminance_Max_Ratio=static_cast<float32>(FromAV1?256:10000); // 24.8 fixed-point, MPEG values are x10000
         MasteringDisplay_Luminance=        __T("min: ")+Ztring::ToZtring(((float64)Meta.Luminance[0])/Luminance_Min_Ratio, 4)
                                   +__T(" cd/m2, max: ")+Ztring::ToZtring(((float64)Meta.Luminance[1])/Luminance_Max_Ratio, ((float64)Meta.Luminance[1]/Luminance_Max_Ratio-Meta.Luminance[1]/Luminance_Max_Ratio==0)?0:4)
                                   +__T(" cd/m2");
@@ -964,6 +964,616 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
 #endif
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES)
+
+const char* DV_content_type(int8u content_type)
+{
+    switch (content_type) {
+    case 0  : return "Default";
+    case 1  : return "Movies";
+    case 2  : return "Game";
+    case 3  : return "Sport";
+    case 4  : return "User Generated Content";
+    default : return "";
+    }
+}
+
+const char* DV_white_point(int8u white_point)
+{
+    switch (white_point) {
+    case 0  : return "D65";
+    case 8  : return "D93";
+    default : return "";
+    }
+}
+
+// CRC Table for CRC-32/MPEG-2
+// Polynomial - 0x04C11DB7
+static const int32u CRC_32_MPEG_2_Table[256] =
+{
+    0x00000000, 0x04C11DB7,  0x09823B6E, 0x0D4326D9,   0x130476DC, 0x17C56B6B,  0x1A864DB2, 0x1E475005,
+    0x2608EDB8, 0x22C9F00F,  0x2F8AD6D6, 0x2B4BCB61,   0x350C9B64, 0x31CD86D3,  0x3C8EA00A, 0x384FBDBD,
+    0x4C11DB70, 0x48D0C6C7,  0x4593E01E, 0x4152FDA9,   0x5F15ADAC, 0x5BD4B01B,  0x569796C2, 0x52568B75,
+    0x6A1936C8, 0x6ED82B7F,  0x639B0DA6, 0x675A1011,   0x791D4014, 0x7DDC5DA3,  0x709F7B7A, 0x745E66CD,
+    0x9823B6E0, 0x9CE2AB57,  0x91A18D8E, 0x95609039,   0x8B27C03C, 0x8FE6DD8B,  0x82A5FB52, 0x8664E6E5,
+    0xBE2B5B58, 0xBAEA46EF,  0xB7A96036, 0xB3687D81,   0xAD2F2D84, 0xA9EE3033,  0xA4AD16EA, 0xA06C0B5D,
+    0xD4326D90, 0xD0F37027,  0xDDB056FE, 0xD9714B49,   0xC7361B4C, 0xC3F706FB,  0xCEB42022, 0xCA753D95,
+    0xF23A8028, 0xF6FB9D9F,  0xFBB8BB46, 0xFF79A6F1,   0xE13EF6F4, 0xE5FFEB43,  0xE8BCCD9A, 0xEC7DD02D,
+    0x34867077, 0x30476DC0,  0x3D044B19, 0x39C556AE,   0x278206AB, 0x23431B1C,  0x2E003DC5, 0x2AC12072,
+    0x128E9DCF, 0x164F8078,  0x1B0CA6A1, 0x1FCDBB16,   0x018AEB13, 0x054BF6A4,  0x0808D07D, 0x0CC9CDCA,
+    0x7897AB07, 0x7C56B6B0,  0x71159069, 0x75D48DDE,   0x6B93DDDB, 0x6F52C06C,  0x6211E6B5, 0x66D0FB02,
+    0x5E9F46BF, 0x5A5E5B08,  0x571D7DD1, 0x53DC6066,   0x4D9B3063, 0x495A2DD4,  0x44190B0D, 0x40D816BA,
+    0xACA5C697, 0xA864DB20,  0xA527FDF9, 0xA1E6E04E,   0xBFA1B04B, 0xBB60ADFC,  0xB6238B25, 0xB2E29692,
+    0x8AAD2B2F, 0x8E6C3698,  0x832F1041, 0x87EE0DF6,   0x99A95DF3, 0x9D684044,  0x902B669D, 0x94EA7B2A,
+    0xE0B41DE7, 0xE4750050,  0xE9362689, 0xEDF73B3E,   0xF3B06B3B, 0xF771768C,  0xFA325055, 0xFEF34DE2,
+    0xC6BCF05F, 0xC27DEDE8,  0xCF3ECB31, 0xCBFFD686,   0xD5B88683, 0xD1799B34,  0xDC3ABDED, 0xD8FBA05A,
+    0x690CE0EE, 0x6DCDFD59,  0x608EDB80, 0x644FC637,   0x7A089632, 0x7EC98B85,  0x738AAD5C, 0x774BB0EB,
+    0x4F040D56, 0x4BC510E1,  0x46863638, 0x42472B8F,   0x5C007B8A, 0x58C1663D,  0x558240E4, 0x51435D53,
+    0x251D3B9E, 0x21DC2629,  0x2C9F00F0, 0x285E1D47,   0x36194D42, 0x32D850F5,  0x3F9B762C, 0x3B5A6B9B,
+    0x0315D626, 0x07D4CB91,  0x0A97ED48, 0x0E56F0FF,   0x1011A0FA, 0x14D0BD4D,  0x19939B94, 0x1D528623,
+    0xF12F560E, 0xF5EE4BB9,  0xF8AD6D60, 0xFC6C70D7,   0xE22B20D2, 0xE6EA3D65,  0xEBA91BBC, 0xEF68060B,
+    0xD727BBB6, 0xD3E6A601,  0xDEA580D8, 0xDA649D6F,   0xC423CD6A, 0xC0E2D0DD,  0xCDA1F604, 0xC960EBB3,
+    0xBD3E8D7E, 0xB9FF90C9,  0xB4BCB610, 0xB07DABA7,   0xAE3AFBA2, 0xAAFBE615,  0xA7B8C0CC, 0xA379DD7B,
+    0x9B3660C6, 0x9FF77D71,  0x92B45BA8, 0x9675461F,   0x8832161A, 0x8CF30BAD,  0x81B02D74, 0x857130C3,
+    0x5D8A9099, 0x594B8D2E,  0x5408ABF7, 0x50C9B640,   0x4E8EE645, 0x4A4FFBF2,  0x470CDD2B, 0x43CDC09C,
+    0x7B827D21, 0x7F436096,  0x7200464F, 0x76C15BF8,   0x68860BFD, 0x6C47164A,  0x61043093, 0x65C52D24,
+    0x119B4BE9, 0x155A565E,  0x18197087, 0x1CD86D30,   0x029F3D35, 0x065E2082,  0x0B1D065B, 0x0FDC1BEC,
+    0x3793A651, 0x3352BBE6,  0x3E119D3F, 0x3AD08088,   0x2497D08D, 0x2056CD3A,  0x2D15EBE3, 0x29D4F654,
+    0xC5A92679, 0xC1683BCE,  0xCC2B1D17, 0xC8EA00A0,   0xD6AD50A5, 0xD26C4D12,  0xDF2F6BCB, 0xDBEE767C,
+    0xE3A1CBC1, 0xE760D676,  0xEA23F0AF, 0xEEE2ED18,   0xF0A5BD1D, 0xF464A0AA,  0xF9278673, 0xFDE69BC4,
+    0x89B8FD09, 0x8D79E0BE,  0x803AC667, 0x84FBDBD0,   0x9ABC8BD5, 0x9E7D9662,  0x933EB0BB, 0x97FFAD0C,
+    0xAFB010B1, 0xAB710D06,  0xA6322BDF, 0xA2F33668,   0xBCB4666D, 0xB8757BDA,  0xB5365D03, 0xB1F740B4
+};
+
+// CRC32 check for Dolby Vision Rererence Processing Unit (RPU)
+// Supports non-byte aligned RPU
+// Uses CRC-32/MPEG-2
+//   Polynomial - 0x04C11DB7
+//   Init       - 0xFFFFFFFF
+//   RefIn      - false
+//   RefOut     - false
+//   XorOut     - 0x00000000
+//   Check      - 0x0376E6E7
+static bool DV_CRC32_Check(const int8u* Buffer, int64u BufferOffsetBegin, size_t RemainingBitsBegin, size_t RemainingBitsEnd)
+{
+    const int8u* CRC_32_Buffer = Buffer + BufferOffsetBegin;
+    const int32u CRC_Poly{ 0x04C11DB7 };
+    int32u CRC_32 = 0xFFFFFFFF;
+
+    const auto first_bits = RemainingBitsBegin & 7;
+
+    for (int8u c = 0; c < first_bits; ++c) {
+        CRC_32 ^= ((CRC_32_Buffer[0] >> (first_bits - 1 - c)) & 1) << 31;
+        if (CRC_32 & 0x80000000)
+            CRC_32 = (CRC_32 << 1) ^ CRC_Poly;
+        else
+            CRC_32 <<= 1;
+    }
+
+    const auto aligned_size = (RemainingBitsBegin - RemainingBitsEnd) + ((8 - first_bits) & 7);
+    const auto num_bytes = aligned_size / 8;
+    
+    for (size_t c = (first_bits != 0); c < num_bytes; ++c) {
+        CRC_32 = (CRC_32 << 8) ^ CRC_32_MPEG_2_Table[(CRC_32 >> 24) ^ CRC_32_Buffer[c]];
+    }
+
+    for (int8u c = 0; c < (aligned_size & 7); ++c) {
+        CRC_32 ^= ((CRC_32_Buffer[num_bytes] >> (7 - c)) & 1) << 31;
+        if (CRC_32 & 0x80000000)
+            CRC_32 = (CRC_32 << 1) ^ CRC_Poly;
+        else
+            CRC_32 <<= 1;
+    }
+
+    return (CRC_32 != 0);
+}
+
+// Must be in bitstream before calling this function.
+void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
+{
+    using std::to_string;
+
+    #define UNSUPPORTED() \
+        BS_End(); \
+        Skip_XX(Element_Size - Element_Offset, "Data"); \
+        Trusted_IsNot("Unsupported"); \
+        return;
+
+    //Parsing
+    Element_Begin1("rpu_data");
+    auto OffsetBegin{ Element_Offset + BS->Offset_Get() };
+    auto RemainingBitsBegin{ Data_BS_Remain() };
+
+    // EDR RPU header
+    Element_Begin1("rpu_data_header");
+    int8u rpu_type;
+    int16u rpu_format;
+    Get_S1 ( 6, rpu_type,                                       "rpu_type");
+    Get_S2 (11, rpu_format,                                     "rpu_format");
+    if (rpu_type != 2 || (rpu_format & 0x700) != 0) {
+        UNSUPPORTED();
+    }
+    // if (rpu_type == 2) {
+    // EDR RPU frame header
+    int32u coefficient_log2_denom, bl_bit_depth_minus8, el_bit_depth_minus8, vdr_bit_depth_minus8;
+    int8u vdr_rpu_profile, dm_compression, coefficient_data_type;
+    bool BL_video_full_range_flag, el_spatial_resampling_filter_flag, disable_residual_flag;
+    Get_S1 ( 4, vdr_rpu_profile,                                "vdr_rpu_profile");
+    Skip_S1( 4,                                                 "vdr_rpu_level");
+    TESTELSE_SB_SKIP(                                           "vdr_seq_info_present_flag");
+        // EDR RPU sequence header
+        Skip_SB(                                                "chroma_resampling_explicit_filter_flag");
+        Get_S1 (2, coefficient_data_type,                       "coefficient_data_type");
+        switch (coefficient_data_type) {
+        case 0: //COEFF_FIXED
+            Get_UE(coefficient_log2_denom,                      "coefficient_log2_denom");
+            break;
+        case 1: //COEFF_FLOAT
+            break;
+        }
+        Skip_S1(2,                                              "vdr_rpu_normalized_idc");
+        Get_SB (BL_video_full_range_flag,                       "BL_video_full_range_flag");
+        if ((rpu_format & 0x700) == 0) {
+            // sequence header
+            Get_UE (bl_bit_depth_minus8,                        "BL_bit_depth_minus8");
+            Get_UE (el_bit_depth_minus8,                        "EL_bit_depth_minus8");
+            Get_UE (vdr_bit_depth_minus8,                       "vdr_bit_depth_minus8");
+            Skip_SB(                                            "spatial_resampling_filter_flag");
+            Get_S1 (3, dm_compression,                          "dm_compression");
+            Get_SB (el_spatial_resampling_filter_flag,          "el_spatial_resampling_filter_flag");
+            Get_SB (disable_residual_flag,                      "disable_residual_flag");
+        }
+        else {
+            UNSUPPORTED();
+        }
+    TESTELSE_SB_ELSE("vdr_seq_info_present");
+        UNSUPPORTED();
+    TESTELSE_SB_END();
+    bool use_prev_vdr_rpu_flag, vdr_dm_metadata_present_flag;
+    int8u isMEL{ 0xFF };
+    Get_SB (vdr_dm_metadata_present_flag,                       "vdr_dm_metadata_present_flag");
+    Get_SB (use_prev_vdr_rpu_flag,                              "use_prev_vdr_rpu_flag");
+    if (use_prev_vdr_rpu_flag) {
+        Skip_UE(                                                "prev_vdr_rpu_id");
+    }
+    else {
+        int32u num_pivots_minus_2[3]{};
+        Skip_UE(                                                "vdr_rpu_id");
+        Skip_UE(                                                "mapping_color_space");
+        Skip_UE(                                                "mapping_chroma_format_idc");
+        // pivot points for BL three components
+        for (int8u cmp = 0; cmp < 3; ++cmp) {
+            Get_UE(num_pivots_minus_2[cmp],                     ("num_pivots_minus_2[" + to_string(cmp) + "]").c_str());
+            for (int32u pivot_idx = 0; pivot_idx < num_pivots_minus_2[cmp] + 2; ++pivot_idx) {
+                Skip_BS(static_cast<size_t>(bl_bit_depth_minus8) + 8, ("pred_pivot_value[" + to_string(cmp) + "][" + to_string(pivot_idx) + "]").c_str());
+            }
+        }
+        auto use_nlq{ (rpu_format & 0x700) == 0 && !disable_residual_flag };
+        int8u nlq_method_idc;
+        if (use_nlq) {
+            // vl.x architecture EL specific
+            Get_S1(3, nlq_method_idc,                           "nlq_method_idc");
+            for (int8u i = 0; i < 2; ++i) {
+                Skip_BS(static_cast<size_t>(bl_bit_depth_minus8) + 8, "nlq_pred_pivot_value");
+            }
+        }
+        Skip_UE(                                                "num_x_partitions_minus1");
+        Skip_UE(                                                "num_y_partitions_minus1");
+        // }
+        Element_End0(); // rpu_data_header / EDR RPU header
+
+        // if (rpu_type == 2) {
+        // EDR RPU data
+        Element_Begin1("vdr_rpu_data_payload");
+        Element_Begin1("rpu_data_mapping");
+        for (int8u cmp = 0; cmp < 3; ++cmp) {
+            for (int32u pivot_idx = 0; pivot_idx < num_pivots_minus_2[cmp] + 1; ++pivot_idx) {
+                Element_Begin1("rpu_data_mapping_param");
+                int32u mapping_idc;
+                Get_UE(mapping_idc,                             ("mapping_idc[" + to_string(cmp) + "][" + to_string(pivot_idx) + "]").c_str());
+                switch (mapping_idc) {
+                case 0: //MAPPING_POLYNOMIAL
+                {
+                    // Polynomial coefficients
+                    int32u poly_order_minus1;
+                    bool linear_interp_flag{};
+                    Get_UE(poly_order_minus1,                   ("poly_order_minus1[" + to_string(cmp) + "][" + to_string(pivot_idx) + "]").c_str());
+                    if (poly_order_minus1 == 0)
+                        Get_SB(linear_interp_flag,              ("linear_interp_flag[" + to_string(cmp) + "][" + to_string(pivot_idx) + "]").c_str());
+                    if (poly_order_minus1 == 0 && linear_interp_flag) {
+                        // Linear interpolation
+                        if (coefficient_data_type == 0) {
+                            Skip_UE(                            ("pred_linear_interp_value_int[" + to_string(cmp) + "][" + to_string(pivot_idx) + "]").c_str());
+                            Skip_BS(coefficient_log2_denom,     ("pred_linear_interp_value[" + to_string(cmp) + "][" + to_string(pivot_idx) + "]").c_str());
+                        }
+                        else
+                            Skip_S4(32,                         ("pred_linear_interp_value[" + to_string(cmp) + "][" + to_string(pivot_idx) + "]").c_str());
+                        if (pivot_idx == num_pivots_minus_2[cmp]) {
+                            if (coefficient_data_type == 0) {
+                                Skip_UE(                        ("pred_linear_interp_value_int[" + to_string(cmp) + "][" + to_string(pivot_idx + 1) + "]").c_str());
+                                Skip_BS(coefficient_log2_denom, ("pred_linear_interp_value[" + to_string(cmp) + "][" + to_string(pivot_idx + 1) + "]").c_str());
+                            }
+                            else
+                                Skip_S4(32,                     ("pred_linear_interp_value[" + to_string(cmp) + "][" + to_string(pivot_idx + 1) + "]").c_str());
+                        }
+                    }
+                    else {
+                        // Non-linear
+                        // the i-th order
+                        for (int32u i = 0; i <= poly_order_minus1 + 1; ++i) {
+                            if (coefficient_data_type == 0) {
+                                Skip_SE(                        ("poly_coef_int[" + to_string(cmp) + "][" + to_string(pivot_idx) + "][" + to_string(i) + "]").c_str());
+                                Skip_BS(coefficient_log2_denom, ("poly_coef[" + to_string(cmp) + "][" + to_string(pivot_idx) + "][" + to_string(i) + "]").c_str());
+                            }
+                            else
+                                Skip_S4(32,                     ("poly_coef[" + to_string(cmp) + "][" + to_string(pivot_idx) + "][" + to_string(i) + "]").c_str());
+                        }
+                    }
+                    break;
+                }
+                case 1: //MAPPING_MMR
+                {
+                    // MR coefficients
+                    int8u mmr_order_minus1;
+                    Get_S1(2, mmr_order_minus1,                 ("mmr_order_minus1[" + to_string(cmp) + "][" + to_string(pivot_idx) + "]").c_str());
+                    if (coefficient_data_type == 0) {
+                        Skip_SE(                                ("mmr_constant_int[" + to_string(cmp) + "][" + to_string(pivot_idx) + "]").c_str());
+                        Skip_BS(coefficient_log2_denom,         ("mmr_constant[" + to_string(cmp) + "][" + to_string(pivot_idx) + "]").c_str());
+                    }
+                    else
+                        Skip_S4(32,                             ("mmr_constant[" + to_string(cmp) + "][" + to_string(pivot_idx) + "]").c_str());
+                    // the i-th order
+                    for (int8u i = 1; i <= mmr_order_minus1 + 1; ++i) {
+                        // the j-th coefficients
+                        for (int8u j = 0; j < 7; ++j) {
+                            if (coefficient_data_type == 0) {
+                                Skip_SE(                        ("mmr_coef_int[" + to_string(cmp) + "][" + to_string(pivot_idx) + "][" + to_string(i) + "][" + to_string(j) + "]").c_str());
+                                Skip_BS(coefficient_log2_denom, ("mmr_coef[" + to_string(cmp) + "][" + to_string(pivot_idx) + "][" + to_string(i) + "][" + to_string(j) + "]").c_str());
+                            }
+                            else
+                                Skip_S4(32,                     ("mmr_coef[" + to_string(cmp) + "][" + to_string(pivot_idx) + "][" + to_string(i) + "][" + to_string(j) + "]").c_str());
+                        }
+                    }
+                    break;
+                }
+                }
+                Element_End0(); // rpu_data_mapping_param
+            }
+        }
+        Element_End0(); // rpu_data_mapping
+        if (use_nlq) {
+            Element_Begin1("rpu_data_nlq");
+            isMEL = 1;
+            // nlq_num_pivots_minus2 == 0 so no pivot_idx loop
+            for (int8u cmp = 0; cmp < 3; ++cmp) {
+                // Nonlinear Quantization Parameters
+                Element_Begin1("rpu_data_nlq_param");
+                int16u nlq_offset;
+                int32u vdr_in_max_int, vdr_in_max, linear_deadzone_slope_int, linear_deadzone_slope, linear_deadzone_threshold_int, linear_deadzone_threshold;
+                Get_S2(static_cast<int8u>(el_bit_depth_minus8 + 8), nlq_offset, ("nlq_offset[0][" + to_string(cmp) + "]").c_str());
+                if (coefficient_data_type == 0) {
+                    Get_UE(vdr_in_max_int,                      ("vdr_in_max_int[0][" + to_string(cmp) + "]").c_str());
+                    Get_S4(coefficient_log2_denom, vdr_in_max,  ("vdr_in_max[0][" + to_string(cmp) + "]").c_str());
+                }
+                else
+                    Get_S4(32, vdr_in_max,                      ("vdr_in_max[0][" + to_string(cmp) + "]").c_str());
+                switch (nlq_method_idc) {
+                case 0: //NLQ_LINEAR_DZ
+                    //  Linear dead zone coefficients
+                    if (coefficient_data_type == 0) {
+                        Get_UE(linear_deadzone_slope_int,       ("linear_deadzone_slope_int[0][" + to_string(cmp) + "]").c_str());
+                        Get_S4(coefficient_log2_denom, linear_deadzone_slope, ("linear_deadzone_slope[0][" + to_string(cmp) + "]").c_str());
+                    }
+                    else
+                        Get_S4(32, linear_deadzone_slope,       ("linear_deadzone_slope[0][" + to_string(cmp) + "]").c_str());
+                    if (coefficient_data_type == 0) {
+                        Get_UE(linear_deadzone_threshold_int,   ("linear_deadzone_threshold_int[0][" + to_string(cmp) + "]").c_str());
+                        Get_S4(coefficient_log2_denom, linear_deadzone_threshold, ("linear_deadzone_threshold[0][" + to_string(cmp) + "]").c_str());
+                    }
+                    else
+                        Get_S4(32, vdr_in_max,                  ("linear_deadzone_threshold[0][" + to_string(cmp) + "]").c_str());
+                    break;
+                }
+                if ((nlq_offset | vdr_in_max | linear_deadzone_slope_int | linear_deadzone_slope | linear_deadzone_threshold_int | linear_deadzone_threshold) != 0 || vdr_in_max_int != 1)
+                    isMEL = 0;
+                Element_End0(); // rpu_data_nlq_param
+            }
+            Element_End0(); // rpu_data_nlq
+        }
+        
+    }
+    // }
+    Element_End0(); // vdr_rpu_data_payload
+
+    // Display Management
+    bool L11_present{}, reference_mode_flag{};
+    float CMv{};
+    int8u content_type{}, white_point{};
+    int16u active_area_left_offset{}, active_area_right_offset{}, active_area_top_offset{}, active_area_bottom_offset{}, max_display_mastering_luminance{}, min_display_mastering_luminance{}, max_content_light_level{}, max_frame_average_light_level{};
+    if (vdr_dm_metadata_present_flag) {
+        Element_Begin1("vdr_dm_data_payload");
+        Skip_UE(                                                "affected_dm_metadata_id");
+        Skip_UE(                                                "current_dm_metadata_id");
+        Skip_UE(                                                "scene_refresh_flag");
+        if (dm_compression) {
+            UNSUPPORTED();
+        }
+        for (int8u i = 0; i < 9; ++i) {
+            Skip_S2(16,                                         ("YCCtoRGB_coef" + to_string(i)).c_str());
+        }
+        for (int8u i = 0; i < 3; ++i) {
+            Skip_S4(32,                                         ("YCCtoRGB_offset" + to_string(i)).c_str());
+        }
+        for (int8u i = 0; i < 9; ++i) {
+            Skip_S2(16,                                         ("RGBtoLMS_coef" + to_string(i)).c_str());
+        }
+        Skip_S2(16,                                             "signal_eotf");
+        Skip_S2(16,                                             "signal_eotf_param0");
+        Skip_S2(16,                                             "signal_eotf_param1");
+        Skip_S4(32,                                             "signal_eotf_param2");
+        Skip_S1( 5,                                             "signal_bit_depth");
+        Skip_S1( 2,                                             "signal_color_space");
+        Skip_S1( 2,                                             "signal_chroma_format");
+        Skip_S1( 2,                                             "signal_full_range_flag");
+        Skip_S2(12,                                             "source_min_PQ");
+        Skip_S2(12,                                             "source_max_PQ");
+        Skip_S2(10,                                             "source_diagonal");
+
+        // Extension blocks
+        // ----------------------------------------------------------------------------------------
+        
+        // Content Mapping v2.9 (CMv2.9)
+        int32u num_ext_blocks;
+        Get_UE(num_ext_blocks,                                  "num_ext_blocks");
+        if (num_ext_blocks) {
+            CMv = 2.9f;
+            auto RemainingBitsEnd = Data_BS_Remain();
+            auto size = RemainingBitsBegin - RemainingBitsEnd;
+            Skip_BS((8 - (size & 7)) & 7,                       "dm_alignment_zero_bit");
+            for (int32u i = 0; i < num_ext_blocks; ++i) {
+                Element_Begin1("ext_metadata_block");
+                int32u ext_block_length;
+                int8u ext_block_level;
+                Get_UE(ext_block_length,                        "ext_block_length");
+                Get_S1(8, ext_block_level,                      "ext_block_level");
+                Element_Begin1("ext_block_payload");
+                size_t ext_block_len_bits{ static_cast<size_t>(ext_block_length) * 8 };
+                size_t ext_block_use_bits{ 0 };
+                switch (ext_block_level) {
+                case 1: // ANALYSIS METADATA (DYNAMIC)
+                    Skip_S2(12,                                 "min_PQ");
+                    Skip_S2(12,                                 "max_PQ");
+                    Skip_S2(12,                                 "avg_PQ");
+                    ext_block_use_bits += 36;
+                    break;
+                case 2: // PER-TARGET TRIM METADATA (DYNAMIC)
+                    Skip_S2(12,                                 "target_max_PQ");
+                    Skip_S2(12,                                 "trim_slope");
+                    Skip_S2(12,                                 "trim_offset");
+                    Skip_S2(12,                                 "trim_power");
+                    Skip_S2(12,                                 "trim_chroma_weight");
+                    Skip_S2(12,                                 "trim_saturation_gain");
+                    Skip_S2(13,                                 "ms_weight");
+                    ext_block_use_bits += 85;
+                    break;
+                case 4:
+                    Skip_S2(12,                                 "anchor_pq");
+                    Skip_S2(12,                                 "anchor_power");
+                    ext_block_use_bits += 24;
+                    break;
+                case 5: // PER-SHOT ASPECT RATIO (DYNAMIC)
+                    Get_S2(13, active_area_left_offset,         "active_area_left_offset");
+                    Get_S2(13, active_area_right_offset,        "active_area_right_offset");
+                    Get_S2(13, active_area_top_offset,          "active_area_top_offset");
+                    Get_S2(13, active_area_bottom_offset,       "active_area_bottom_offset");
+                    ext_block_use_bits += 52;
+                    break;
+                case 6: // OPTIONAL HDR10 METADATA (STATIC)
+                    Get_S2(16, max_display_mastering_luminance, "max_display_mastering_luminance");
+                    Get_S2(16, min_display_mastering_luminance, "min_display_mastering_luminance");
+                    Get_S2(16, max_content_light_level,         "max_content_light_level");
+                    Get_S2(16, max_frame_average_light_level,   "max_frame_average_light_level");
+                    ext_block_use_bits += 64;
+                    break;
+                case 255:
+                    Skip_S1(8,                                  "dm_run_mode");
+                    Skip_S1(8,                                  "dm_run_version");
+                    Skip_S1(8,                                  "dm_debug0");
+                    Skip_S1(8,                                  "dm_debug1");
+                    Skip_S1(8,                                  "dm_debug2");
+                    Skip_S1(8,                                  "dm_debug3");
+                    ext_block_use_bits += 48;
+                    break;
+                default:
+                    Skip_BS(ext_block_len_bits,                 "(Unknown)");
+                    ext_block_use_bits += ext_block_len_bits;
+                    break;
+                }
+                Skip_BS(ext_block_len_bits - ext_block_use_bits, "ext_dm_alignment_zero_bit");
+                Element_End0(); // ext_block_payload
+                Element_End0(); // ext_metadata_block
+            }
+        }
+
+        // Content Mapping v4.0 (CMv4.0)
+        if (Data_BS_Remain() >= 56) {
+            int32u num_ext_blocks2;
+            Get_UE(num_ext_blocks2,                             "num_ext_blocks");
+            if (num_ext_blocks2) {
+                CMv = 4.0;
+                auto RemainingBitsEnd = Data_BS_Remain();
+                auto size = RemainingBitsBegin - RemainingBitsEnd;
+                Skip_BS((8 - (size & 7)) & 7,                   "dm_alignment_zero_bit");
+                for (int32u i = 0; i < num_ext_blocks2; ++i) {
+                    Element_Begin1("ext_metadata_block");
+                    int32u ext_block_length;
+                    int8u ext_block_level;
+                    Get_UE(ext_block_length,                    "ext_block_length");
+                    Get_S1(8, ext_block_level,                  "ext_block_level");
+                    Element_Begin1("ext_block_payload");
+                    size_t ext_block_len_bits{ static_cast<size_t>(ext_block_length) * 8 };
+                    size_t ext_block_use_bits{ 0 };
+                    switch (ext_block_level) {
+                    case 3: // OFFSETS TO L1 (DYNAMIC)
+                        Skip_S2(12,                             "min_pq_offset");
+                        Skip_S2(12,                             "max_pq_offset");
+                        Skip_S2(12,                             "avg_pq_offset");
+                        ext_block_use_bits += 36;
+                        break;
+                    case 8: // PER-TARGET TRIM METADATA (DYNAMIC)
+                        Skip_S1( 8,                             "target_display_index");
+                        Skip_S2(12,                             "trim_slope");
+                        Skip_S2(12,                             "trim_offset");
+                        Skip_S2(12,                             "trim_power");
+                        Skip_S2(12,                             "trim_chroma_weight");
+                        Skip_S2(12,                             "trim_saturation_gain");
+                        Skip_S2(12,                             "ms_weight");
+                        ext_block_use_bits += 80;
+                        if (ext_block_length > 10) {
+                            Skip_S2(12,                         "target_mid_contrast");
+                            ext_block_use_bits += 12;
+                        }
+                        if (ext_block_length > 12) {
+                            Skip_S2(12,                         "clip_trim");
+                            ext_block_use_bits += 12;
+                        }
+                        if (ext_block_length > 13) {
+                            for (int8u i = 0; i < 6; ++i) {
+                                Skip_S1(8,                      ("saturation_vector_field" + to_string(i)).c_str());
+                            }
+                            ext_block_use_bits += 48;
+                        }
+                        if (ext_block_length > 19) {
+                            for (int8u i = 0; i < 6; ++i) {
+                                Skip_S1(8,                      ("hue_vector_field" + to_string(i)).c_str());
+                            }
+                            ext_block_use_bits += 48;
+                        }
+                        break;
+                    case 9: // PER-SHOT SOURCE CONTENT PRIMARIES (DYNAMIC)
+                        Skip_S1(8,                              "source_primary_index");
+                        ext_block_use_bits += 8;
+                        if (ext_block_length > 1) {
+                            Skip_S2(16,                         "source_primary_red_x");
+                            Skip_S2(16,                         "source_primary_red_y");
+                            Skip_S2(16,                         "source_primary_green_x");
+                            Skip_S2(16,                         "source_primary_green_y");
+                            Skip_S2(16,                         "source_primary_blue_x");
+                            Skip_S2(16,                         "source_primary_blue_y");
+                            Skip_S2(16,                         "source_primary_white_x");
+                            Skip_S2(16,                         "source_primary_white_y");
+                            ext_block_use_bits += 128;
+                        }
+                        break;
+                    case 10:
+                        Skip_S1( 8,                             "target_display_index");
+                        Skip_S2(12,                             "target_max_pq");
+                        Skip_S2(12,                             "target_min_pq");
+                        Skip_S1( 8,                             "target_primary_index");
+                        ext_block_use_bits += 40;
+                        if (ext_block_length > 5) {
+                            Skip_S2(16,                         "target_primary_red_x");
+                            Skip_S2(16,                         "target_primary_red_y");
+                            Skip_S2(16,                         "target_primary_green_x");
+                            Skip_S2(16,                         "target_primary_green_y");
+                            Skip_S2(16,                         "target_primary_blue_x");
+                            Skip_S2(16,                         "target_primary_blue_y");
+                            Skip_S2(16,                         "target_primary_white_x");
+                            Skip_S2(16,                         "target_primary_white_y");
+                            ext_block_use_bits += 128;
+                        }
+                        break;
+                    case 11:
+                    {   // Automatic Picture/Playback Optimization (APO) / Dolby Vision IQ - Content Type Metadata (L11)
+                        L11_present = true;
+                        Get_S1 (8, content_type,                "content_type");            Param_Info1(DV_content_type(content_type));
+                        Get_S1 (4, white_point,                 "white_point");             Param_Info1(DV_white_point(white_point));
+                        Get_SB (reference_mode_flag,            "reference_mode_flag");
+                        Skip_S1(3,                              "reserved");
+                        Skip_S2(16,                             "(Unknown)"); // Motion control metadata
+                        ext_block_use_bits += 32;
+                        break;
+                    }
+                    case 15:
+                    {   // Consumer look metadata, Precision Rendering/Detail
+                        Skip_BS(ext_block_len_bits,             "(Unknown)");
+                        ext_block_use_bits += ext_block_len_bits;
+                        break;
+                    }
+                    case 16:
+                    {   // Local tone mapping metadata
+                        Skip_BS(ext_block_len_bits,             "(Unknown)");
+                        ext_block_use_bits += ext_block_len_bits;
+                        break;
+                    }
+                    case 17:
+                    {   // Up mapping metadata
+                        Skip_BS(ext_block_len_bits,             "(Unknown)");
+                        ext_block_use_bits += ext_block_len_bits;
+                        break;
+                    }
+                    case 254: // CM version
+                        Skip_S1(8,                              "dm_mode");
+                        Skip_S1(8,                              "dm_version_index");
+                        ext_block_use_bits += 16;
+                        break;
+                    default:
+                        Skip_BS(ext_block_len_bits,             "(Unknown)");
+                        ext_block_use_bits += ext_block_len_bits;
+                        break;
+                    }
+                    Skip_BS(ext_block_len_bits - ext_block_use_bits, "ext_dm_alignment_zero_bit");
+                    Element_End0(); // ext_block_payload
+                    Element_End0(); // ext_metadata_block
+                }
+            }
+        }
+        Element_End0(); // vdr_dm_data_payload
+    }
+
+    auto RemainingBitsEnd = Data_BS_Remain();
+    auto size = RemainingBitsBegin - RemainingBitsEnd;
+    Skip_BS((8 - (size & 7)) & 7,                               "rpu_alignment_zero_bit");
+    Skip_S4(32,                                                 "rpu_data_crc32");
+    auto CRC32_Check = DV_CRC32_Check(Buffer, Buffer_Offset + OffsetBegin, RemainingBitsBegin, Data_BS_Remain());
+    Param_Info1(CRC32_Check ? "NOK" : "OK");
+    Element_End0(); // rpu_data
+
+    Element_Begin1("rbsp_trailing_bits");
+    Mark_1(); // rbsp_stop_one_bit
+    Skip_S1(7,                                                  "rbsp_alignment_zero_bit");
+    Element_End0(); // rbsp_trailing_bits
+
+    #undef UNSUPPORTED
+
+    FILLING_BEGIN();
+    if (CRC32_Check)
+        return;
+    data.vdr_rpu_profile = vdr_rpu_profile;
+    data.bl_bit_depth = bl_bit_depth_minus8 + 8;
+    data.el_bit_depth = el_bit_depth_minus8 + 8;
+    data.vdr_bit_depth = vdr_bit_depth_minus8 + 8;
+    data.BL_video_full_range_flag = BL_video_full_range_flag;
+    data.isMEL = isMEL;
+    data.CMv = CMv;
+    data.active_area_left_offset = active_area_left_offset;
+    data.active_area_right_offset = active_area_right_offset;
+    data.active_area_top_offset = active_area_top_offset;
+    data.active_area_bottom_offset = active_area_bottom_offset;
+    data.max_display_mastering_luminance = max_display_mastering_luminance;
+    data.min_display_mastering_luminance = min_display_mastering_luminance;
+    data.max_content_light_level = max_content_light_level;
+    data.max_frame_average_light_level = max_frame_average_light_level;
+    data.L11_present = L11_present;
+    data.content_type = content_type;
+    data.white_point = white_point;
+    data.reference_mode = reference_mode_flag;
+    FILLING_END();
+}
+
+#endif // defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES)
+
+//---------------------------------------------------------------------------
 #if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES)
 void File__Analyze::Get_LightLevel(Ztring &MaxCLL, Ztring &MaxFALL, int32u Divisor)
 {
@@ -976,9 +1586,9 @@ void File__Analyze::Get_LightLevel(Ztring &MaxCLL, Ztring &MaxFALL, int32u Divis
 
         auto Decimals=to_string(Divisor).size()-1;
         if (maximum_content_light_level)
-            MaxCLL=Ztring::ToZtring(((float32)maximum_content_light_level)/Divisor, Decimals);
+            MaxCLL=Ztring::ToZtring(((float32)maximum_content_light_level)/Divisor, (int8u)Decimals);
         if (maximum_frame_average_light_level)
-            MaxFALL=Ztring::ToZtring(((float32)maximum_frame_average_light_level)/Divisor, Decimals);
+            MaxFALL=Ztring::ToZtring(((float32)maximum_frame_average_light_level)/Divisor, (int8u)Decimals);
     }
     else
     {

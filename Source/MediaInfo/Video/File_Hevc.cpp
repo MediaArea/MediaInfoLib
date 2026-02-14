@@ -30,6 +30,10 @@ using namespace ZenLib;
 namespace MediaInfoLib
 {
 
+const char* DV_content_type(int8u content_type);
+const char* DV_white_point(int8u white_point);
+const char* DV_intended_setting(int8u setting, bool off);
+
 //---------------------------------------------------------------------------
 extern const char* Hevc_tier_flag(bool tier_flag)
 {
@@ -1153,7 +1157,7 @@ void File_Hevc::Header_Parse()
         if (Buffer_Offset_Temp+3<=Buffer_Offset+Size)
         {
             SizedBlocks_FileThenStream=File_Offset+Buffer_Offset+Size;
-            Size=Buffer_Offset_Temp-(Buffer_Offset+Element_Offset);
+            Size=static_cast<int32u>(Buffer_Offset_Temp-(Buffer_Offset+Element_Offset));
         }
 
         Header_Fill_Size(Element_Offset+Size);
@@ -1344,6 +1348,8 @@ void File_Hevc::Data_Parse()
         case 39 :
         case 40 :
                   sei(); break;
+        case 62 : Dolby_Vision_reference_processing_unit(); break;
+        case 63 : Dolby_Vision_enhancement_layer(); break;
         default :
                   Skip_XX(Element_Size-Element_Offset, "Data");
                   if (Element_Code>=48)
@@ -1821,18 +1827,18 @@ void File_Hevc::video_parameter_set()
         vector<vector<int32u> > LayerSetLayerIdList;
         vector<vector<int32u> > highest_layer_idx_plus1List;
         highest_layer_idx_plus1List.resize(num_add_layer_sets);
-        for (int i = 0; i < num_add_layer_sets; i++)
+        for (int32u i = 0; i < num_add_layer_sets; i++)
         {
             highest_layer_idx_plus1List[i].reserve(NumIndependentLayers);
             highest_layer_idx_plus1List[i].push_back(0); // Unused?
             for (int j = 1; j < NumIndependentLayers; j++)
             {
                 int32u highest_layer_idx_plus1;
-                Get_S4 (ceil(log2(NumLayersInTreePartition[j] + 1)), highest_layer_idx_plus1, "highest_layer_idx_plus1");
+                Get_S4 ((int8u)ceil(log2(NumLayersInTreePartition[j] + 1)), highest_layer_idx_plus1, "highest_layer_idx_plus1");
                 highest_layer_idx_plus1List[i].push_back(highest_layer_idx_plus1);
             }
         }
-        for (int i = 0; i < num_add_layer_sets; i++)
+        for (int32u i = 0; i < num_add_layer_sets; i++)
         {
             int32u layerNum = 0;
             auto lsIdx = vps_num_layer_sets_minus1 + 1 + i;
@@ -1863,7 +1869,7 @@ void File_Hevc::video_parameter_set()
         Skip_SB(                                                "default_ref_layers_active_flag");
         int32u vps_num_profile_tier_level_minus1;
         Get_UE(vps_num_profile_tier_level_minus1,               "vps_num_profile_tier_level_minus1");
-        for (int i = vps_base_layer_internal_flag ? 2 : 1; i <= vps_num_profile_tier_level_minus1; i++)
+        for (int32u i = vps_base_layer_internal_flag ? 2 : 1; i <= vps_num_profile_tier_level_minus1; i++)
         {
             bool vps_profile_present_flag;
             Get_SB(vps_profile_present_flag,                    "vps_profile_present_flag");
@@ -3150,7 +3156,7 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003A_02()
         Skip_S1 (3,                                             "sl_hdr_mode_support");
     }
     else
-        Skip_S1 (Data_BS_Remain(),                              "Unknown");
+        Skip_BS (Data_BS_Remain(),                              "Unknown");
     BS_End();
 }
 
@@ -3761,6 +3767,150 @@ void File_Hevc::three_dimensional_reference_displays_info(int32u payloadSize)
     FILLING_END();
 }
 
+//---------------------------------------------------------------------------
+// Packet "62"
+void File_Hevc::Dolby_Vision_reference_processing_unit()
+{
+    int8u nal_prefix;
+    Peek_B1(nal_prefix);
+    if (nal_prefix != 25) {
+        Skip_XX(Element_Size - Element_Offset, "Data");
+        Trusted_IsNot("Unspecified");
+        return;
+    }
+
+    Element_Name("Dolby Vision Reference Processing Unit (RPU)");
+
+    //Parsing
+    Skip_B1(                                                    "nal_prefix");
+    BS_Begin();
+    Get_DolbyVision_ReferenceProcessingUnit(DV_RPU_data);
+    BS_End();
+
+    //Filling
+    FILLING_BEGIN();
+    if (DV_RPU_data.active_area_left_offset || DV_RPU_data.active_area_right_offset || DV_RPU_data.active_area_top_offset || DV_RPU_data.active_area_bottom_offset) {
+        auto width = Retrieve(StreamKind_Last, StreamPos_Last, Video_Width).To_int16u();
+        auto height = Retrieve(StreamKind_Last, StreamPos_Last, Video_Height).To_int16u();
+        auto active_width = width - DV_RPU_data.active_area_left_offset - DV_RPU_data.active_area_right_offset;
+        auto active_height = height - DV_RPU_data.active_area_top_offset - DV_RPU_data.active_area_bottom_offset;
+        Fill(StreamKind_Last, StreamPos_Last, Video_Active_Width, active_width);
+        Fill(StreamKind_Last, StreamPos_Last, Video_Active_Height, active_height);
+        float32 PAR = Retrieve_Const(StreamKind_Last, StreamPos_Last, "PixelAspectRatio").To_float32();
+        if (PAR)
+            Fill(StreamKind_Last, StreamPos_Last, Video_Active_DisplayAspectRatio, ((float32)active_width) / active_height * PAR, 2);
+    }
+    if (DV_RPU_data.max_display_mastering_luminance && DV_RPU_data.min_display_mastering_luminance) {
+        Ztring display_mastering_luminance = __T("min: ") + Ztring::ToZtring((float64)DV_RPU_data.min_display_mastering_luminance/10000, 4)
+            + __T(" cd/m2, max: ") + Ztring::ToZtring(DV_RPU_data.max_display_mastering_luminance, 0)
+            + __T(" cd/m2");
+        Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_Luminance", display_mastering_luminance);
+    }
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision", "RPU Present");
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision RPU_Profile", DV_RPU_data.vdr_rpu_profile);
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Base_Layer", (to_string(DV_RPU_data.bl_bit_depth) + " bits").c_str());
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Enhancement_Layer", (to_string(DV_RPU_data.el_bit_depth) + " bits").c_str());
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision VDR", (to_string(DV_RPU_data.vdr_bit_depth) + " bits").c_str());
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Base_Layer_Video_Range", DV_RPU_data.BL_video_full_range_flag ? "Full" : "Limited");
+    if (DV_RPU_data.isMEL != (int8u)-1) Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Enhancement_Layer_Type", DV_RPU_data.isMEL == 0 ? "Full (FEL)" : "Minimal (MEL)");
+    Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Mapping_version", DV_RPU_data.CMv, 1);
+    if (DV_RPU_data.L11_present) {
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata", "Present");
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata Content_Type", DV_content_type(DV_RPU_data.content_type));
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata White_Point", DV_white_point(DV_RPU_data.white_point));
+        Fill(StreamKind_Last, StreamPos_Last, "Dolby_Vision Content_Type_Metadata Reference_Mode", DV_RPU_data.reference_mode ? "Yes" : "No");
+    }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+// Packet "63"
+void File_Hevc::Dolby_Vision_enhancement_layer()
+{
+#if MEDIAINFO_TRACE
+
+    Element_Name("Dolby Vision Enhancement Layer (EL)");
+
+    Element_Begin0();
+    Element_Begin1("Header");
+    int8u nal_unit_type;
+    BS_Begin();
+    Mark_0();
+    Get_S1 (6, nal_unit_type,                                   "nal_unit_type");
+    Skip_S1(6,                                                  "nuh_layer_id");
+    Skip_S1(3,                                                  "nuh_temporal_id_plus1");
+    BS_End();
+    Element_End0();
+
+    switch (nal_unit_type) {
+    case  0:
+    case  1:
+    case  2:
+    case  3:
+    case  4:
+    case  5:
+    case  6:
+    case  7:
+    case  8:
+    case  9:
+    case 16:
+    case 17:
+    case 18:
+    case 19:
+    case 20:
+    case 21:
+             Element_Name("slice_segment_layer"); break;
+    case 32: Element_Name("video_parameter_set"); break;
+    case 33: Element_Name("seq_parameter_set"); break;
+    case 34: Element_Name("pic_parameter_set"); break;
+    case 35:
+        {
+            Element_Name("access_unit_delimiter");
+            BS_Begin();
+            Info_S1(3, pic_type,                                "pic_type"); Param_Info1(Hevc_pic_type[pic_type]);
+            Mark_1();
+            BS_End();
+            break;
+        }
+    case 36: Element_Name("end_of_seq"); break;
+    case 37: Element_Name("end_of_bitstream"); break;
+    case 38: Element_Name("filler_data"); break;
+    case 39:
+    case 40:
+        {
+            Element_Name("sei");
+            Element_Begin1("sei message header");
+            int8u payload_type_byte;
+            Get_B1 (payload_type_byte,                          "payload_type_byte");
+            Skip_B1(                                            "payload_size_byte");
+            Element_End0();
+            switch (payload_type_byte)
+            {
+            case   0:   Element_Info1("buffering_period"); break;
+            case   1:   Element_Info1("pic_timing"); break;
+            case   4:   Element_Info1("user_data_registered_itu_t_t35"); break;
+            case   5:   Element_Info1("user_data_unregistered"); break;
+            case   6:   Element_Info1("recovery_point"); break;
+            case 129:   Element_Info1("active_parameter_sets"); break;
+            case 132:   Element_Info1("decoded_picture_hash"); break;
+            case 136:   Element_Info1("time_code"); break;
+            case 137:   Element_Info1("mastering_display_colour_volume"); break;
+            case 144:   Element_Info1("light_level"); break;
+            case 147:   Element_Info1("transfer_characteristics"); break;
+            case 148:   Element_Info1("viewing_environment"); break;
+            case 176:   Element_Info1("three_dimensional_reference_displays_info"); break;
+            default :   Element_Info1(Ztring().From_CC1(payload_type_byte)); break;
+            }
+            break;
+        }
+    default: Element_Name(Ztring().From_CC1(nal_unit_type)); break;
+    }
+    Skip_XX(Element_Size - Element_Offset,                      "Data");
+    Element_End0();
+
+#endif // MEDIAINFO_TRACE
+}
+
 //***************************************************************************
 // Sub-elements
 //***************************************************************************
@@ -3838,13 +3988,13 @@ void File_Hevc::slice_segment_header()
         return;
     float FrameRate=0;
     if ((*seq_parameter_set_Item)->vui_parameters->time_scale && (*seq_parameter_set_Item)->vui_parameters->num_units_in_tick)
-        FrameRate=(float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick;
+        FrameRate=(float)((float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick);
     else
         FrameRate=0;
     if (first_slice_segment_in_pic_flag && pic_order_cnt_DTS_Ref!=(int64u)-1 && FrameInfo.PTS!=(int64u)-1 && FrameRate && TemporalReferences_Reserved)
     {
         int64s pic_order_cnt=float64_int64s(int64s(FrameInfo.PTS-pic_order_cnt_DTS_Ref)*FrameRate/1000000000);
-        if (pic_order_cnt>=TemporalReferences.size()/4 || pic_order_cnt<=-((int64s)TemporalReferences.size()/4))
+        if (pic_order_cnt>= ((int64s)TemporalReferences.size()/4) || pic_order_cnt<=-((int64s)TemporalReferences.size()/4))
             pic_order_cnt_DTS_Ref=(int64u)-1; // Incoherency in DTS? Disabling compute by DTS, TODO: more generic test (all formats)
     }
     if (first_slice_segment_in_pic_flag && pic_order_cnt_DTS_Ref!=(int64u)-1 && FrameInfo.PTS!=(int64u)-1 && FrameRate && TemporalReferences_Reserved)
@@ -4676,7 +4826,7 @@ void File_Hevc::rbsp_trailing_bits()
     {
         int8u RealValue;
         const int8u ExpectedValue=1<<(Remain-1);
-        Peek_S1(Remain, RealValue);
+        Peek_S1((int8u)Remain, RealValue);
         if (RealValue==ExpectedValue)
         {
             // Conform to specs
