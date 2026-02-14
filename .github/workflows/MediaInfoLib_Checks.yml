@@ -128,7 +128,8 @@ jobs:
       - name: Checkout brotli
         uses: actions/checkout@v6
         with:
-          repository: MediaArea/brotli
+          repository: cjee21/brotli #!! TO CHANGE !!
+          ref: MSVC                 #!! TO REMOVE !!
           path: brotli
       - name: Checkout zlib
         uses: actions/checkout@v6
