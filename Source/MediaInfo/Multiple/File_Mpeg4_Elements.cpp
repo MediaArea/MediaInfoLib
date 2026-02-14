@@ -156,6 +156,9 @@ using namespace std;
 #if defined(MEDIAINFO_JPEG_YES)
     #include "MediaInfo/Image/File_Jpeg.h"
 #endif
+#if defined(MEDIAINFO_JPEGXL_YES)
+    #include "MediaInfo/Image/File_JpegXL.h"
+#endif
 #if defined(MEDIAINFO_DTSUHD_YES)
     #include "MediaInfo/Audio/File_DtsUhd.h"
 #endif
@@ -727,12 +730,15 @@ namespace Elements
     const int64u hrgm=0x6872676D;
     const int64u idat=0x69646174;
     const int64u idsc=0x69647363;
+    const int64u jbrd=0x6A627264;
     const int64u jp2c=0x6A703263;
     const int64u jp2h=0x6A703268;
     const int64u jp2h_colr=0x636F6C72;
     const int64u jp2h_ihdr=0x69686472;
     const int64u jp2h_ricc=0x72696363;
     const int64u JXL_=0x4A584C20;
+    const int64u jxlc=0x6A786C63;
+    const int64u jxlp=0x6A786C70;
     const int64u mdat=0x6D646174;
     const int64u meta=0x6D657461;
     const int64u meta_grpl=0x6772706C;
@@ -1151,6 +1157,7 @@ void File_Mpeg4::Data_Parse()
     ATOM(hrgm)
     ATOM(idat)
     ATOM(idsc)
+    ATOM(jbrd)
     ATOM(jp2c)
     LIST(jp2h)
         ATOM_BEGIN
@@ -1159,6 +1166,8 @@ void File_Mpeg4::Data_Parse()
         ATOM(jp2h_ricc)
         ATOM_END
     ATOM(JXL_)
+    ATOM(jxlc)
+    ATOM(jxlp)
     LIST(mdat)
         ATOM_DEFAULT_ALONE(mdat_xxxx)
     LIST(meta)
@@ -1976,6 +1985,16 @@ void File_Mpeg4::idsc()
 }
 
 //---------------------------------------------------------------------------
+void File_Mpeg4::jbrd()
+{
+    Element_Name("JPEG Bitstream Reconstruction Data box");
+
+    FILLING_BEGIN();
+    Fill(Stream_Image, 0, Image_Format_Settings, "Lossless JPEG Reconstruction");
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg4::jp2c()
 {
     Element_Name("JPEG 2000 content");
@@ -2120,6 +2139,38 @@ void File_Mpeg4::JXL_()
         if (signature == 0x0D0A870A)
             Fill(Stream_General, 0, General_Format, "JPEG XL");
     FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::jxlc()
+{
+    Element_Name("JPEG XL Codestream box");
+    
+    #ifdef MEDIAINFO_JPEGXL_YES
+        File_JpegXL MI;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI);
+        Open_Buffer_Finalize(&MI);
+        Merge(MI, Stream_Image, 0, 0);
+    #endif
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::jxlp()
+{
+    Element_Name("JPEG XL Partial Codestream box");
+
+    int32u index;
+    Get_B4(index,                                               "index");
+    if (index == 0) { // TODO: Concat all jxlp into one codestream
+        #ifdef MEDIAINFO_JPEGXL_YES
+            File_JpegXL MI;
+            Open_Buffer_Init(&MI);
+            Open_Buffer_Continue(&MI);
+            Open_Buffer_Finalize(&MI);
+            Merge(MI, Stream_Image, 0, 0);
+        #endif
+    }
 }
 
 //---------------------------------------------------------------------------

@@ -372,6 +372,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Gif.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Ico.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Jpeg.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_JpegXL.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Png.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Rle.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Tiff.cpp" />
@@ -656,6 +657,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Gif.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Ico.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Jpeg.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_JpegXL.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Png.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Rle.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Tiff.h" />
