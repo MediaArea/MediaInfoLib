@@ -90,6 +90,8 @@ private :
     void jp2h_colr();
     void jp2h_ihdr();
     void JXL_();
+    void jxlc();
+    void jxlp();
     void jp2h_ricc() {jp2h_colr(); }
     void mdat();
     void mdat_xxxx();

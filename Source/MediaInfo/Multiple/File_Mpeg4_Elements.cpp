@@ -730,6 +730,8 @@ namespace Elements
     const int64u jp2h_ihdr=0x69686472;
     const int64u jp2h_ricc=0x72696363;
     const int64u JXL_=0x4A584C20;
+    const int64u jxlc=0x6A786C63;
+    const int64u jxlp=0x6A786C70;
     const int64u mdat=0x6D646174;
     const int64u meta=0x6D657461;
     const int64u meta_grpl=0x6772706C;
@@ -1151,6 +1153,8 @@ void File_Mpeg4::Data_Parse()
         ATOM(jp2h_ricc)
         ATOM_END
     ATOM(JXL_)
+    ATOM(jxlc)
+    ATOM(jxlp)
     LIST(mdat)
         ATOM_DEFAULT_ALONE(mdat_xxxx)
     LIST(meta)
@@ -2108,6 +2112,79 @@ void File_Mpeg4::JXL_()
         if (signature == 0x0D0A870A)
             Fill(Stream_General, 0, General_Format, "JPEG XL");
     FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::jxlc()
+{
+    Element_Name("JPEG XL Codestream box");
+    int32u BITS[]{ 9, 13, 18, 30 };
+    int16u signature;
+    Get_B2(signature,                                           "Signature");
+    if (signature != 0xFF0A) return;
+    Element_Begin1("SizeHeader");
+    int32u width, height;
+    bool div8;
+    BS_Begin_LE();
+    Get_TB(div8,                                                "div8");
+    if (div8) {
+        int8u h_div8;
+        Get_T1(5, h_div8,                                       "h_div8");
+        h_div8 += 1;
+        height = h_div8 * 8;
+    }
+    else {
+        int8u selector;
+        Get_T1(2, selector,                                     "selector");
+        Get_T4(BITS[selector], height,                          "height");
+        height += 1;
+    }
+    int8u ratio;
+    Get_T1(3, ratio,                                            "ratio");
+    if (ratio) {
+        switch (ratio) {
+        case 1: width = height; break;
+        case 2: width = height * 6 / 5; break;
+        case 3: width = height * 4 / 3; break;
+        case 4: width = height * 3 / 2; break;
+        case 5: width = height * 16 / 9; break;
+        case 6: width = height * 5 / 4; break;
+        case 7: width = height * 2; break;
+        default: width = 0; break; // invalid
+        }
+    }
+    if (div8 && !ratio) {
+        int8u w_div8;
+        Get_T1(5, w_div8,                                       "w_div8");
+        w_div8 += 1;
+        width = w_div8 * 8;
+    }
+    else {
+        int8u selector;
+        Get_T1(2, selector,                                     "selector");
+        Get_T4(BITS[selector], width,                           "width");
+        width += 1;
+    }
+    BS_End_LE();
+    FILLING_BEGIN();
+    Fill(Stream_Image, 0, Image_Format, "JPEG XL");
+    Fill(Stream_Image, 0, Image_Width, width);
+    Fill(Stream_Image, 0, Image_Height, height);
+    FILLING_END();
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::jxlp()
+{
+    Element_Name("JPEG XL Partial Codestream box");
+
+    int32u index;
+    Get_B4(index,                                               "index");
+    if (index == 0) {
+        jxlc();
+        Element_Name("JPEG XL Partial Codestream box");
+    }
 }
 
 //---------------------------------------------------------------------------
