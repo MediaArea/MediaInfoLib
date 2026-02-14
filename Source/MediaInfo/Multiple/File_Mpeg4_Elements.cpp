@@ -164,6 +164,7 @@ using namespace std;
 #include "ThirdParty/base64/base64.h"
 #define FMT_UNICODE 0
 #include "ThirdParty/fmt/format.h"
+#include <brotli/decode.h>
 #include <zlib.h>
 #include <algorithm>
 #include <cmath>
@@ -1731,7 +1732,41 @@ void File_Mpeg4::brob()
     Get_C4(type,                                                "payload box type");
     Element_Info1(Ztring::ToZtring_From_CC4(type));
 
-    Skip_XX(Element_Size - 4,                                   "compressed data");
+    std::vector<int8u> decoded_buffer(Element_Size * 6);
+    const auto encoded_size{ Element_Size - 4 };
+    const auto encoded_buffer{ Buffer + Buffer_Offset + Element_Offset };
+    auto decoded_size{ decoded_buffer.size() };
+    BrotliDecoderResult br_result = BrotliDecoderDecompress(encoded_size, encoded_buffer, &decoded_size, decoded_buffer.data());
+
+    if (br_result != BROTLI_DECODER_RESULT_SUCCESS) {
+        Skip_XX(Element_Size - 4,                               "compressed data");
+        return;
+    }
+
+    auto buffer_save{ Buffer };
+    auto buffer_offset_save{ Buffer_Offset };
+    auto buffer_size_save{ Buffer_Size };
+    auto element_offset_save{ Element_Offset };
+    auto element_size_save{ Element_Size };
+    Buffer = decoded_buffer.data();
+    Buffer_Offset = 0;
+    Buffer_Size = decoded_buffer.size();
+    Element_Offset = 0;
+    Element_Size = decoded_size;
+
+    switch (type) {
+    case Elements::Exif: Exif(); break;
+    case 0x584D4C20: // XML
+    case Elements::xml_: xml_(); break;
+    default: Skip_XX(Element_Size,                              "Data"); break;
+    }
+    Element_Name("Brotli-compressed box"); // restore element name
+
+    Buffer = buffer_save;
+    Buffer_Offset = buffer_offset_save;
+    Buffer_Size = buffer_size_save;
+    Element_Offset = element_offset_save;
+    Element_Size = element_size_save;
 }
 
 //---------------------------------------------------------------------------
