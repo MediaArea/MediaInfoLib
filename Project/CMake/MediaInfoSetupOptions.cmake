@@ -114,6 +114,7 @@ set(MEDIAINFO_FEATURE_LIST
     IVF
     JNI
     JPEG
+    JPEGXL
     JSON
     KATE
     LA
