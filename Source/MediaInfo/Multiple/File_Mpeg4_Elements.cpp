@@ -164,6 +164,7 @@ using namespace std;
 #include "ThirdParty/base64/base64.h"
 #define FMT_UNICODE 0
 #include "ThirdParty/fmt/format.h"
+#include <brotli/decode.h>
 #include <zlib.h>
 #include <algorithm>
 #include <cmath>
@@ -706,8 +707,10 @@ std::string File_Mpeg4_sv3d_Mesh_index_type(int8u Value)
 namespace Elements
 {
     const int64u bloc=0x626C6F63;
+    const int64u brob=0x62726F62;
     const int64u cdat=0x63646174;
     const int64u cdt2=0x63647432;
+    const int64u Exif=0x45786966;
     const int64u free=0x66726565;
     const int64u ftyp=0x66747970;
     const int64u ftyp_qt=0x71742020;
@@ -718,6 +721,7 @@ namespace Elements
     const int64u ftyp_dash=0x64617368;
     const int64u ftyp_isom=0x69736F6D;
     const int64u ftyp_caqv=0x63617176;
+    const int64u hrgm=0x6872676D;
     const int64u idat=0x69646174;
     const int64u idsc=0x69647363;
     const int64u jp2c=0x6A703263;
@@ -725,6 +729,9 @@ namespace Elements
     const int64u jp2h_colr=0x636F6C72;
     const int64u jp2h_ihdr=0x69686472;
     const int64u jp2h_ricc=0x72696363;
+    const int64u JXL_=0x4A584C20;
+    const int64u jxlc=0x6A786C63;
+    const int64u jxlp=0x6A786C70;
     const int64u mdat=0x6D646174;
     const int64u meta=0x6D657461;
     const int64u meta_grpl=0x6772706C;
@@ -1090,6 +1097,7 @@ namespace Elements
     const int64u sidx=0x73696478;
     const int64u uuid=0x75756964;
     const int64u wide=0x77696465;
+    const int64u xml_=0x786D6C20;
 }
 
 //---------------------------------------------------------------------------
@@ -1128,10 +1136,13 @@ void File_Mpeg4::Data_Parse()
     //Parsing
     DATA_BEGIN
     ATOM(bloc)
+    ATOM(brob)
     ATOM(cdat)
     ATOM(cdt2)
+    ATOM(Exif)
     LIST_SKIP(free)
     ATOM(ftyp)
+    ATOM(hrgm)
     ATOM(idat)
     ATOM(idsc)
     ATOM(jp2c)
@@ -1141,6 +1152,9 @@ void File_Mpeg4::Data_Parse()
         ATOM(jp2h_ihdr)
         ATOM(jp2h_ricc)
         ATOM_END
+    ATOM(JXL_)
+    ATOM(jxlc)
+    ATOM(jxlp)
     LIST(mdat)
         ATOM_DEFAULT_ALONE(mdat_xxxx)
     LIST(meta)
@@ -1591,6 +1605,7 @@ void File_Mpeg4::Data_Parse()
     ATOM(sidx)
     ATOM(uuid)
     LIST_SKIP(wide)
+    ATOM(xml_)
     DATA_END
 }
 
@@ -1712,6 +1727,52 @@ void File_Mpeg4::bloc()
     Skip_XX(512,                                                "Reserved");
 }
 
+//-------------------------------------------------------------------------
+void File_Mpeg4::brob()
+{
+    Element_Name("Brotli-compressed box");
+
+    int32u type;
+    Get_C4(type,                                                "payload box type");
+    Element_Info1(Ztring::ToZtring_From_CC4(type));
+
+    std::vector<int8u> decoded_buffer(Element_Size * 6);
+    const auto encoded_size{ Element_Size - 4 };
+    const auto encoded_buffer{ Buffer + Buffer_Offset + Element_Offset };
+    auto decoded_size{ decoded_buffer.size() };
+    BrotliDecoderResult br_result = BrotliDecoderDecompress(encoded_size, encoded_buffer, &decoded_size, decoded_buffer.data());
+
+    if (br_result != BROTLI_DECODER_RESULT_SUCCESS) {
+        Skip_XX(Element_Size - 4,                               "compressed data");
+        return;
+    }
+
+    auto buffer_save{ Buffer };
+    auto buffer_offset_save{ Buffer_Offset };
+    auto buffer_size_save{ Buffer_Size };
+    auto element_offset_save{ Element_Offset };
+    auto element_size_save{ Element_Size };
+    Buffer = decoded_buffer.data();
+    Buffer_Offset = 0;
+    Buffer_Size = decoded_buffer.size();
+    Element_Offset = 0;
+    Element_Size = decoded_size;
+
+    switch (type) {
+    case Elements::Exif: Exif(); break;
+    case 0x584D4C20: // XML
+    case Elements::xml_: xml_(); break;
+    default: Skip_XX(Element_Size,                              "Data"); break;
+    }
+    Element_Name("Brotli-compressed box"); // restore element name
+
+    Buffer = buffer_save;
+    Buffer_Offset = buffer_offset_save;
+    Buffer_Size = buffer_size_save;
+    Element_Offset = element_offset_save;
+    Element_Size = element_size_save;
+}
+
 //---------------------------------------------------------------------------
 void File_Mpeg4::cdat()
 {
@@ -1748,6 +1809,29 @@ void File_Mpeg4::cdat()
             Open_Buffer_Continue(Streams[(int32u)Element_Code].Parsers[Pos], Buffer+Buffer_Offset+(size_t)Element_Offset, 2);
         Element_Offset+=2;
     }
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::Exif()
+{
+    Element_Name("Exif box");
+
+    //Parsing
+    #if defined(MEDIAINFO_EXIF_YES)
+    File_Exif MI{};
+    MI.FromHeif = true;
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Merge(MI, Stream_General, 0, 0, false);
+    Merge(MI, Stream_Image, 0, 0, false);
+    size_t Count = MI.Count_Get(Stream_Image);
+    for (size_t i = 1; i < Count; ++i) {
+        Merge(MI, Stream_Image, i, StreamPos_Last + 1, false);
+    }
+    #else
+    Skip_UTF8(Element_Size - Element_Offset,                    "EXIF Tags");
+    #endif
 }
 
 //---------------------------------------------------------------------------
@@ -1842,6 +1926,13 @@ void File_Mpeg4::ftyp()
         }
         Fill(Stream_General, 0, General_CodecID_String, CodecID_String, true);
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::hrgm()
+{
+    Element_Name("HDR Gain Map");
+    Skip_XX(Element_Size,                                       "Data");
 }
 
 //---------------------------------------------------------------------------
@@ -2009,6 +2100,91 @@ void File_Mpeg4::jp2h_ihdr()
         if (BPC)
             Fill(StreamKind_Last, StreamPos_Last, "BitDepth", BPC, 10, true);
     FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::JXL_()
+{
+    Element_Name("JPEG XL Signature box");
+    int32u signature;
+    Get_B4(signature,                                           "Signature");
+    FILLING_BEGIN_PRECISE()
+        if (signature == 0x0D0A870A)
+            Fill(Stream_General, 0, General_Format, "JPEG XL");
+    FILLING_END()
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::jxlc()
+{
+    Element_Name("JPEG XL Codestream box");
+    int32u BITS[]{ 9, 13, 18, 30 };
+    int16u signature;
+    Get_B2(signature,                                           "Signature");
+    if (signature != 0xFF0A) return;
+    Element_Begin1("SizeHeader");
+    int32u width, height;
+    bool div8;
+    BS_Begin_LE();
+    Get_TB(div8,                                                "div8");
+    if (div8) {
+        int8u h_div8;
+        Get_T1(5, h_div8,                                       "h_div8");
+        h_div8 += 1;
+        height = h_div8 * 8;
+    }
+    else {
+        int8u selector;
+        Get_T1(2, selector,                                     "selector");
+        Get_T4(BITS[selector], height,                          "height");
+        height += 1;
+    }
+    int8u ratio;
+    Get_T1(3, ratio,                                            "ratio");
+    if (ratio) {
+        switch (ratio) {
+        case 1: width = height; break;
+        case 2: width = height * 6 / 5; break;
+        case 3: width = height * 4 / 3; break;
+        case 4: width = height * 3 / 2; break;
+        case 5: width = height * 16 / 9; break;
+        case 6: width = height * 5 / 4; break;
+        case 7: width = height * 2; break;
+        default: width = 0; break; // invalid
+        }
+    }
+    if (div8 && !ratio) {
+        int8u w_div8;
+        Get_T1(5, w_div8,                                       "w_div8");
+        w_div8 += 1;
+        width = w_div8 * 8;
+    }
+    else {
+        int8u selector;
+        Get_T1(2, selector,                                     "selector");
+        Get_T4(BITS[selector], width,                           "width");
+        width += 1;
+    }
+    BS_End_LE();
+    FILLING_BEGIN();
+    Fill(Stream_Image, 0, Image_Format, "JPEG XL");
+    Fill(Stream_Image, 0, Image_Width, width);
+    Fill(Stream_Image, 0, Image_Height, height);
+    FILLING_END();
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::jxlp()
+{
+    Element_Name("JPEG XL Partial Codestream box");
+
+    int32u index;
+    Get_B4(index,                                               "index");
+    if (index == 0) {
+        jxlc();
+        Element_Name("JPEG XL Partial Codestream box");
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -11352,6 +11528,25 @@ void File_Mpeg4::wide()
 
     //Parsing
     Skip_XX(Element_Size,                                       "Free");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::xml_()
+{
+    Element_Name("XML box");
+
+    //Parsing
+    #if defined(MEDIAINFO_XMP_YES)
+    File_Xmp MI{};
+    Open_Buffer_Init(&MI);
+    auto Element_Offset_Sav = Element_Offset;
+    Open_Buffer_Continue(&MI);
+    Element_Offset = Element_Offset_Sav;
+    Open_Buffer_Finalize(&MI);
+    Element_Show(); //TODO: why is it needed?
+    Merge(MI, Stream_General, 0, 0, false);
+    #endif
+    Skip_UTF8(Element_Size - Element_Offset,                    "XMP metadata");
 }
 
 //***************************************************************************

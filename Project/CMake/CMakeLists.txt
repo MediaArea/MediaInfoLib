@@ -16,9 +16,11 @@ endif()
 set(MediaInfoLib_SOVERSION 0)
 
 if (NOT WIN32)
+  option(BUILD_BROTLI "Build bundled Brotli" OFF)
   option(BUILD_ZLIB "Build bundled zlib" OFF)
   option(BUILD_ZENLIB "Build bundled ZenLib" OFF)
 else()
+  option(BUILD_BROTLI "Build bundled Brotli" ON)
   option(BUILD_ZLIB "Build bundled zlib" ON)
   option(BUILD_ZENLIB "Build bundled ZenLib" ON)
 endif()
@@ -67,6 +69,21 @@ else()
     target_compile_options(ZLIB::ZLIBSTATIC PRIVATE -fPIC)
   endif()
   set(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../../../zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
+endif()
+
+if (NOT BUILD_BROTLI)
+  find_package(Brotli REQUIRED)
+else()
+  set(_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+  set(BUILD_SHARED_LIBS OFF)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../brotli ${CMAKE_CURRENT_BINARY_DIR}/brotli)
+  set(BUILD_SHARED_LIBS ${_BUILD_SHARED_LIBS})
+  set(BROTLI_LIBRARIES brotlicommon brotlidec)
+  unset(_BUILD_SHARED_LIBS)
+  if(UNIX AND BUILD_SHARED_LIBS)
+    target_compile_options(brotlicommon brotlidec PRIVATE -fPIC)
+  endif()
+  set(BROTLI_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../../../brotli ${CMAKE_CURRENT_BINARY_DIR}/brotli)
 endif()
 
 if(VCPKG_TARGET_TRIPLET)
@@ -419,7 +436,7 @@ if(BUILD_ZENLIB)
   target_include_directories(mediainfo PRIVATE ${ZLIB_INCLUDE_DIRS})
 endif()
 
-target_link_libraries(mediainfo ${ZenLib_LIBRARY} ${ZLIB_LIBRARIES})
+target_link_libraries(mediainfo ${ZenLib_LIBRARY} ${ZLIB_LIBRARIES} ${BROTLI_LIBRARIES})
 
 if(MSVC AND BUILD_SHARED_LIBS)
   install(FILES $<TARGET_PDB_FILE:mediainfo> DESTINATION ${BIN_INSTALL_DIR} OPTIONAL)
@@ -440,6 +457,10 @@ set_target_properties(mediainfo PROPERTIES
   CXX_EXTENSIONS NO
   CXX_STANDARD_REQUIRED YES
 )
+
+if (BUILD_BROTLI OR ANDROID)
+  install(TARGETS brotlicommon brotlidec EXPORT mediainfo-export)
+endif()
 
 install(TARGETS mediainfo EXPORT mediainfo-export
   RUNTIME DESTINATION ${BIN_INSTALL_DIR}

@@ -500,7 +500,7 @@ public :
         node->Pos = File_Offset+Buffer_Offset+Element_Offset;
         if (BS_Size)
         {
-            int64u BS_BitOffset = BS_Size-BS->Remain();
+            int64u BS_BitOffset = BS_Size-(BS->Remain() ? BS->Remain() : BT->Remain());
             if (GenericOption != (int8u)-1)
                 BS_BitOffset -= GenericOption;
             node->Pos += BS_BitOffset>>3; //Including Bits to Bytes

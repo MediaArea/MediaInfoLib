@@ -178,7 +178,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;../../../../brotli/c/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -191,7 +191,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;../../../../brotli/c/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -204,7 +204,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;../../../../brotli/c/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -217,7 +217,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64EC'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;../../../../brotli/c/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -230,7 +230,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;../../../../brotli/c/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -246,7 +246,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;../../../../brotli/c/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -262,7 +262,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;../../../../brotli/c/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -277,7 +277,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;../../../../brotli/c/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -294,7 +294,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64EC'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;../../../../brotli/c/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -311,7 +311,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Source;../../../Source/ThirdParty/aes-gladman;../../../Source/ThirdParty/hmac-gladman;../../../Source/ThirdParty/sha1-gladman;../../../Source/ThirdParty/sha2-gladman;../../../Source/ThirdParty/tinyxml2;../../../Source/ThirdParty/md5;../../../Source/ThirdParty/base64;../../../Source/ThirdParty;../../../../ZenLib/Source;../../../../ZLib;../../../../curl/include;../../../../brotli/c/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>MEDIAINFO_MPEGTS_DUPLICATE_NO;MEDIAINFO_LIBCURL_DLL_RUNTIME;MEDIAINFO_GRAPHVIZ_DLL_RUNTIME;FMT_UNICODE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -1004,6 +1004,12 @@
     <ClInclude Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\brotli\Project\MSVC2026\brotlicommon.vcxproj">
+      <Project>{a2c733d0-0511-3374-ab76-169fafc276bc}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\brotli\Project\MSVC2026\brotlidec.vcxproj">
+      <Project>{abd0c651-f2d8-3560-9313-6df99d388406}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\..\ZenLib\Project\MSVC2026\Library\ZenLib.vcxproj">
       <Project>{0da1da7d-f393-4e7c-a7ce-cb5c6a67bc94}</Project>
     </ProjectReference>
