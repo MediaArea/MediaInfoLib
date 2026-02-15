@@ -4364,7 +4364,11 @@ void File_Riff::Parser_Pcm(stream& StreamItem, int16u Channels, int16u BitsPerSa
         Parser->Codec=Retrieve(Stream_Audio, StreamPos_Last, Audio_CodecID);
         if (Endianness)
             Parser->Endianness=Endianness;
+        else if (BitsPerSample>=16 && BitsPerSample<=32)
+            Parser->Endianness='L'; // WAV PCM is little-endian by default
         Parser->BitDepth=(int8u)BitsPerSample;
+        Parser->Channels=(int8u)Channels;
+        Parser->SamplingRate=SamplesPerSec;
         if (ValidBitsPerSample!=BitsPerSample)
             Parser->BitDepth_Significant=(int8u)ValidBitsPerSample;
         #if MEDIAINFO_DEMUX
