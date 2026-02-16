@@ -95,49 +95,52 @@ static uint16_t compute_crc16_ccitt_over_pcm24_at(const std::vector<int32_t>& sa
 }
 
 static int mux_bit_from_pos_false(const MuxIteratorFalse& it) {
-    int v6 = it.pos, m = it.m, p = it.param;
+    const int bit_pos = it.pos;
+    const int m = it.m;
+    const int p = it.param;
     int idx = 0;
     uint32_t mask = 0;
-    if (v6 > 0x2F) {
-        if (v6 >= 16 * m) {
-            int v12 = (v6 - m) / p + v6;
-            idx = v12 / m;
-            int rem = v12 % m;
+    if (bit_pos > 0x2F) {
+        if (bit_pos >= 16 * m) {
+            int adjusted = (bit_pos - m) / p + bit_pos;
+            idx = adjusted / m;
+            int rem = adjusted % m;
             mask = 1u << (m - 1 - rem);
         } else {
-            idx = (v6 - 48) / (m - 3);
-            int rem = (v6 - 48) % (m - 3);
+            idx = (bit_pos - 48) / (m - 3);
+            int rem = (bit_pos - 48) % (m - 3);
             mask = 1u << (m - 1 - rem);
         }
     } else {
-        if (v6 >= 0x10) {
-            if (v6 <= 0x1F) { idx = v6 - 16; mask = 2; }
-            else { idx = v6 - 32; mask = 4; }
-        } else { idx = v6; mask = 1; }
+        if (bit_pos >= 0x10) {
+            if (bit_pos <= 0x1F) { idx = bit_pos - 16; mask = 2; }
+            else { idx = bit_pos - 32; mask = 4; }
+        } else { idx = bit_pos; mask = 1; }
     }
     return (u32((*it.samples)[it.base + idx]) & mask) ? 1 : 0;
 }
 
 static int mux_bit_from_pos_true(const MuxIteratorTrue& it) {
-    int v8 = it.pos, m = it.m;
+    const int bit_pos = it.pos;
+    const int m = it.m;
     int idx = 0;
     uint32_t mask = 0;
-    if (v8 > 0x2F) {
-        if (v8 >= 16 * m) {
-            int rem = v8 % m;
-            idx = v8 / m;
+    if (bit_pos > 0x2F) {
+        if (bit_pos >= 16 * m) {
+            int rem = bit_pos % m;
+            idx = bit_pos / m;
             mask = 1u << (m - 1 - rem);
         } else {
-            int v11 = v8 - 48;
-            idx = v11 / (m - 3);
-            int rem2 = v11 - idx * (m - 3);
+            int pos_mid = bit_pos - 48;
+            idx = pos_mid / (m - 3);
+            int rem2 = pos_mid - idx * (m - 3);
             mask = 1u << (m - 1 - rem2);
         }
     } else {
-        if (v8 >= 0x10) {
-            if (v8 <= 0x1F) { idx = v8 - 16; mask = 2; }
-            else { idx = v8 - 32; mask = 4; }
-        } else { idx = v8; mask = 1; }
+        if (bit_pos >= 0x10) {
+            if (bit_pos <= 0x1F) { idx = bit_pos - 16; mask = 2; }
+            else { idx = bit_pos - 32; mask = 4; }
+        } else { idx = bit_pos; mask = 1; }
     }
     return (u32((*it.samples)[it.base + idx]) & mask) ? 1 : 0;
 }
@@ -200,43 +203,43 @@ static bool parse_sync_pcm24_at(const std::vector<int32_t>& samples, int start, 
     int block_size = (block_raw == 0x3D0u) ? 1000 : static_cast<int>(block_raw + 16u);
     MuxIteratorTrue it_true = {&samples, start, 3, 44};
     int bits_left = 8;
-    uint64_t v30 = 0;
-    if (!read_unsigned_u64_true(4, it_true, bits_left, v30) || (v30 + 13u) >= 0x19u) return false;
-    int m = 14 - static_cast<int>(v30);
+    uint64_t encoded_m = 0;
+    if (!read_unsigned_u64_true(4, it_true, bits_left, encoded_m) || (encoded_m + 13u) >= 0x19u) return false;
+    int m = 14 - static_cast<int>(encoded_m);
     if (m < 3) return false;
     if (strict_len) {
         if (avail_len != block_size) return false;
     } else {
         if (avail_len < block_size) return false;
     }
-    int v15 = m, v17 = block_size, v19 = 16 * v15;
-    int v20 = (v15 <= 3) ? 3 : v15;
-    int v21 = v15 * v17;
-    int v24 = 17 * v15 - 1;
-    if (v24 < v21) {
-        int v25 = v20 - 3;
-        while (v24 < v21) {
+    const int reserved_stride = 16 * m;
+    const int eff_m = (m <= 3) ? 3 : m;
+    const int total_bits = m * block_size;
+    int reserved_pos = 17 * m - 1;
+    if (reserved_pos < total_bits) {
+        const int mid_divisor = eff_m - 3;
+        while (reserved_pos < total_bits) {
             int idx = 0;
             uint32_t mask = 0;
-            if (v24 > 0x2F) {
-                if (v24 >= 16 * v20) {
-                    idx = v24 / v20;
-                    int rem = v24 % v20;
-                    mask = 1u << (v20 - 1 - rem);
+            if (reserved_pos > 0x2F) {
+                if (reserved_pos >= 16 * eff_m) {
+                    idx = reserved_pos / eff_m;
+                    int rem = reserved_pos % eff_m;
+                    mask = 1u << (eff_m - 1 - rem);
                 } else {
-                    idx = (v24 - 48) / v25;
-                    int rem = (v24 - 48) % v25;
-                    mask = 1u << (v20 - 1 - rem);
+                    idx = (reserved_pos - 48) / mid_divisor;
+                    int rem = (reserved_pos - 48) % mid_divisor;
+                    mask = 1u << (eff_m - 1 - rem);
                 }
             } else {
-                idx = v24 - 16;
-                if (v24 >= 0x10) {
-                    if (v24 <= 0x1F) mask = 2;
-                    else { idx = v24 - 32; mask = 4; }
-                } else { idx = v24; mask = 1; }
+                idx = reserved_pos - 16;
+                if (reserved_pos >= 0x10) {
+                    if (reserved_pos <= 0x1F) mask = 2;
+                    else { idx = reserved_pos - 32; mask = 4; }
+                } else { idx = reserved_pos; mask = 1; }
             }
             if ((u32(samples[start + idx]) & mask) != 0) return false;
-            v24 += v19;
+            reserved_pos += reserved_stride;
         }
     }
     out.block_size = block_size;
@@ -285,32 +288,32 @@ static bool adol_parse(MuxIteratorFalse& it, int& bits_left, std::vector<AdolIns
         ins.u1 = 0;
         ins.has_u2 = false;
         ins.u2 = 0;
-        uint32_t v = 0;
+        uint32_t operand = 0;
         switch (ins.opcode) {
             case 1: case 3: case 0x5A: case 0x5B: case 0x5C: case 0x5D: case 0x5E:
             case 0x5F: case 0x60: case 0x61: case 0x62:
-                if (!read_unsigned_u32_false(16, it, bits_left, v)) return false;
-                ins.has_u1 = true; ins.u1 = v; break;
+                if (!read_unsigned_u32_false(16, it, bits_left, operand)) return false;
+                ins.has_u1 = true; ins.u1 = operand; break;
             case 2: case 4: case 0x1E: case 0x1F: case 0x41: case 0x47: case 0x50:
             case 0x51: case 0x52: case 0x53: case 0x54: case 0x55: case 0x56: case 0x57: case 0x58:
-                if (!read_unsigned_u32_false(8, it, bits_left, v)) return false;
-                ins.has_u1 = true; ins.u1 = v; break;
+                if (!read_unsigned_u32_false(8, it, bits_left, operand)) return false;
+                ins.has_u1 = true; ins.u1 = operand; break;
             case 0x0E: case 0x46: case 0x6E: case 0x6F: case 0x70: case 0x71: case 0x72:
             case 0x73: case 0x74: case 0x75: case 0x76: case 0x80: case 0x81: case 0x82:
             case 0x83: case 0x84: case 0x85: case 0x8C: case 0x8D: case 0x8E: case 0x8F: case 0x90:
-                if (!read_unsigned_u32_false(32, it, bits_left, v)) return false;
-                ins.has_u1 = true; ins.u1 = v; break;
+                if (!read_unsigned_u32_false(32, it, bits_left, operand)) return false;
+                ins.has_u1 = true; ins.u1 = operand; break;
             case 0x40: {
-                uint32_t v2 = 0;
-                if (!read_unsigned_u32_false(8, it, bits_left, v)) return false;
-                if (!read_unsigned_u32_false(8, it, bits_left, v2)) return false;
-                ins.has_u1 = true; ins.u1 = v;
-                ins.has_u2 = true; ins.u2 = v2;
+                uint32_t operand2 = 0;
+                if (!read_unsigned_u32_false(8, it, bits_left, operand)) return false;
+                if (!read_unsigned_u32_false(8, it, bits_left, operand2)) return false;
+                ins.has_u1 = true; ins.u1 = operand;
+                ins.has_u2 = true; ins.u2 = operand2;
                 break;
             }
             case 0x64: case 0x65: case 0x66: case 0x67: case 0x68: case 0x69: case 0x6A: case 0x6B: case 0x6C:
-                if (!read_unsigned_u32_false(24, it, bits_left, v)) return false;
-                ins.has_u1 = true; ins.u1 = v; break;
+                if (!read_unsigned_u32_false(24, it, bits_left, operand)) return false;
+                ins.has_u1 = true; ins.u1 = operand; break;
             case 0:
                 out.push_back(ins);
                 return true;
@@ -380,11 +383,11 @@ static bool extract_layout_and_cfg_from_a3d_block_at(const std::vector<int32_t>&
     uint8_t adol_blocks = 0;
     if (!read_unsigned_u8_false(8, it, bits_left, adol_blocks)) return false;
     if (!read_unsigned_u8_false(8, it, bits_left, u8)) return false;
-    uint32_t v32 = 0;
+    uint32_t value = 0;
     int count = 0;
     for (int i = 0; i < 4; ++i) {
-        if (!read_unsigned_u32_false(8, it, bits_left, v32)) return false;
-        if (v32 != 255u) count += 1;
+        if (!read_unsigned_u32_false(8, it, bits_left, value)) return false;
+        if (value != 255u) count += 1;
     }
     for (int i = 0; i < 4; ++i) { if (!read_unsigned_u8_false(8, it, bits_left, u8)) return false; }
     int vec_sz = -1;
@@ -392,7 +395,7 @@ static bool extract_layout_and_cfg_from_a3d_block_at(const std::vector<int32_t>&
     else if (count == 2) vec_sz = 2;
     else if (count == 3) vec_sz = 5;
     if (vec_sz < 0) return false;
-    for (int i = 0; i < vec_sz; ++i) { if (!read_unsigned_u32_false(32, it, bits_left, v32)) return false; }
+    for (int i = 0; i < vec_sz; ++i) { if (!read_unsigned_u32_false(32, it, bits_left, value)) return false; }
     std::vector<AdolInstruction> instructions;
     for (int i = 0; i < static_cast<int>(adol_blocks); ++i) {
         uint32_t tag = 0;
@@ -424,9 +427,9 @@ static bool parse_sync_header_first16(const std::vector<int32_t>& samples16, A3D
     int block_size = (block_raw == 0x3D0u) ? 1000 : static_cast<int>(block_raw + 16u);
     MuxIteratorTrue it_true = {&samples16, 0, 3, 44};
     int bits_left = 8;
-    uint64_t v30 = 0;
-    if (!read_unsigned_u64_true(4, it_true, bits_left, v30) || (v30 + 13u) >= 0x19u) return false;
-    int m = 14 - static_cast<int>(v30);
+    uint64_t encoded_m = 0;
+    if (!read_unsigned_u64_true(4, it_true, bits_left, encoded_m) || (encoded_m + 13u) >= 0x19u) return false;
+    int m = 14 - static_cast<int>(encoded_m);
     if (m < 3) return false;
     out.block_size = block_size;
     out.m = m;
