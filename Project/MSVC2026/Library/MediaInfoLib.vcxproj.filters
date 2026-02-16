@@ -188,6 +188,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_Zip.cpp">
       <Filter>Source Files\Archive</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\Auro.cpp">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Aac.cpp">
       <Filter>Source Files\Audio</Filter>
     </ClCompile>
@@ -978,6 +981,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Archive\File_Zip.h">
       <Filter>Header Files\Archive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\Auro.h">
+      <Filter>Header Files\Audio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Aac.h">
       <Filter>Header Files\Audio</Filter>

@@ -50,6 +50,7 @@ HEADERS += \
         ../../Source/MediaInfo/Archive/File_Rar.h \
         ../../Source/MediaInfo/Archive/File_Tar.h \
         ../../Source/MediaInfo/Archive/File_Zip.h \
+        ../../Source/MediaInfo/Audio/Auro.h \
         ../../Source/MediaInfo/Audio/File_Aac.h \
         ../../Source/MediaInfo/Audio/File_Aac_GeneralAudio.h \
         ../../Source/MediaInfo/Audio/File_Aac_GeneralAudio_Sbr.h \
@@ -289,6 +290,7 @@ SOURCES += \
         ../../Source/MediaInfo/Archive/File_Rar.cpp \
         ../../Source/MediaInfo/Archive/File_Tar.cpp \
         ../../Source/MediaInfo/Archive/File_Zip.cpp \
+        ../../Source/MediaInfo/Audio/Auro.cpp \
         ../../Source/MediaInfo/Audio/File_Aac.cpp \
         ../../Source/MediaInfo/Audio/File_Aac_GeneralAudio.cpp \
         ../../Source/MediaInfo/Audio/File_Aac_GeneralAudio_Sbr.cpp \

@@ -38,6 +38,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Archive/File_Rar.cpp \
                        ../../../Source/MediaInfo/Archive/File_Tar.cpp \
                        ../../../Source/MediaInfo/Archive/File_Zip.cpp \
+                       ../../../Source/MediaInfo/Audio/Auro.cpp \
                        ../../../Source/MediaInfo/Audio/File_Aac.cpp \
                        ../../../Source/MediaInfo/Audio/File_Aac_GeneralAudio.cpp \
                        ../../../Source/MediaInfo/Audio/File_Aac_GeneralAudio_Sbr.cpp \
