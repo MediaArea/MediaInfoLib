@@ -374,10 +374,12 @@ public :
     void Get_B2_   (int16u  &Info);
     void Get_B3_   (int32u  &Info);
     void Get_B4_   (int32u  &Info);
+    void Get_B4S_  (int32s  &Info);
     void Get_B5_   (int64u  &Info);
     void Get_B6_   (int64u  &Info);
     void Get_B7_   (int64u  &Info);
     void Get_B8_   (int64u  &Info);
+    void Get_B8S_  (int64s  &Info);
     void Get_B16_  (int128u &Info);
     void Get_BF2_  (float32 &Info);
     void Get_BF4_  (float32 &Info);
@@ -388,10 +390,12 @@ public :
     #define Get_B2(Info, Name) Get_B2_(Info)
     #define Get_B3(Info, Name) Get_B3_(Info)
     #define Get_B4(Info, Name) Get_B4_(Info)
+    #define Get_B4S(Info, Name) Get_B4S_(Info)
     #define Get_B5(Info, Name) Get_B5_(Info)
     #define Get_B6(Info, Name) Get_B6_(Info)
     #define Get_B7(Info, Name) Get_B7_(Info)
     #define Get_B8(Info, Name) Get_B8_(Info)
+    #define Get_B8S(Info, Name) Get_B8S_(Info)
     #define Get_B16(Info, Name) Get_B16_(Info)
     #define Get_BF2(Info, Name) Get_BF2_(Info)
     #define Get_BF4(Info, Name) Get_BF4_(Info)

@@ -188,6 +188,16 @@ void File__Analyze::Get_B4(int32u &Info, const char* Name)
 }
 
 //---------------------------------------------------------------------------
+void File__Analyze::Get_B4S(int32s &Info, const char* Name)
+{
+    INTEGRITY_SIZE_ATLEAST_INT(4);
+    Info=BigEndian2int32s(Buffer+Buffer_Offset+(size_t)Element_Offset);
+    if (Trace_Activated)
+        Param(Name, Info);
+    Element_Offset+=4;
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Get_B5(int64u &Info, const char* Name)
 {
     INTEGRITY_SIZE_ATLEAST_INT(5);
@@ -219,6 +229,15 @@ void File__Analyze::Get_B8(int64u &Info, const char* Name)
 {
     INTEGRITY_SIZE_ATLEAST_INT(8);
     Info=BigEndian2int64u(Buffer+Buffer_Offset+(size_t)Element_Offset);
+    if (Trace_Activated) Param(Name, Info);
+    Element_Offset+=8;
+}
+
+//---------------------------------------------------------------------------
+void File__Analyze::Get_B8S(int64s &Info, const char* Name)
+{
+    INTEGRITY_SIZE_ATLEAST_INT(8);
+    Info=BigEndian2int64s(Buffer+Buffer_Offset+(size_t)Element_Offset);
     if (Trace_Activated) Param(Name, Info);
     Element_Offset+=8;
 }
