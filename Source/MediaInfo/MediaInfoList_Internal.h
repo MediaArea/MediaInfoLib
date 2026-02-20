@@ -33,6 +33,7 @@ public :
 
     //Files
     size_t Open (const String &File, const fileoptions_t Options=FileOption_Nothing);
+    size_t Open (const std::vector<String> &Files, const fileoptions_t Options=FileOption_Nothing);
     size_t Open_Buffer_Init (ZenLib::int64u File_Size=(ZenLib::int64u)-1, ZenLib::int64u File_Offset=0);
     size_t Open_Buffer_Continue (size_t FilePos, const ZenLib::int8u* Buffer, size_t Buffer_Size);
     ZenLib::int64u Open_Buffer_Continue_GoTo_Get (size_t FilePos);
