@@ -786,8 +786,14 @@ public :
     #if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MATROSKA_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_MPEGTS_YES)
     struct mastering_metadata_2086
     {
-        int16u Primaries[8];
-        int32u Luminance[2];
+        int16u Primaries[8]{};
+        int32u Luminance[2]{};
+
+        bool operator==(const mastering_metadata_2086& o) const
+        {
+            return !std::memcmp(Primaries, o.Primaries, sizeof(Primaries)) && !std::memcmp(Luminance, o.Luminance, sizeof(Luminance));
+        }
+        bool operator!=(const mastering_metadata_2086& o) const { return !(*this == o); }
     };
     void Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_ColorPrimaries, Ztring &MasteringDisplay_Luminance, mastering_metadata_2086 &Meta, bool FromAV1=false);
     #endif
