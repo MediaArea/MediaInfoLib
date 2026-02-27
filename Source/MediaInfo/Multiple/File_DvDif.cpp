@@ -1818,7 +1818,7 @@ void File_DvDif::recdate(bool FromVideo)
     Year+=Temp*10;
     Get_S1 (4, Temp,                                            "Year (Units)");
     Year+=Temp;
-    Year+=Year<25?2000:1900;
+    Year+=Year<95?2000:1900;
     Element_Info1(Ztring::ToZtring(Year)+__T("-")+Ztring::ToZtring(Month)+__T("-")+Ztring::ToZtring(Day));
 
     BS_End();
