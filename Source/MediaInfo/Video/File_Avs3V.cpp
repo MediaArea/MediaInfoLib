@@ -621,7 +621,7 @@ void File_Avs3V::slice()
 // reference_picture_list_set
 void File_Avs3V::reference_picture_list_set(int8u list, int32u rpls)
 {
-    int32u i, j;
+    int32u i;
     bool reference_to_library_enable_flag=false;
     int32u num_of_ref_pic;
 

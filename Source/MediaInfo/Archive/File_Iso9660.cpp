@@ -290,7 +290,6 @@ void File_Iso9660::Primary_Volume_Descriptor2()
 
     //Parsing
     Ztring VolumeIdentifier;
-    int32u Volume_Space_Size, Location_Of_Path_Table;
     int8u VolumeIdentifier_Size;
     Skip_L4(                                                    "Volume Descriptor Sequence Number");
     Skip_L4(                                                    "Primary Volume Descriptor Number");

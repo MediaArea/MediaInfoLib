@@ -1013,7 +1013,7 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                             Retour += __T("Cover image :</td>\n        <td>");
 
                             Ztring cover_data = Get((stream_t)StreamKind, StreamPos, __T("Cover_Data"));
-                            Ztring delimiter = " / ";
+                            Ztring delimiter = MediaInfoLib::Config.TagSeparator_Get();
                             std::vector<Ztring> cover_data_vec;
                             size_t pos = 0;
                             while ((pos = cover_data.find(delimiter)) != std::string::npos) {

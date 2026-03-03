@@ -183,7 +183,7 @@ void File_Flac::Header_Parse()
             Param_Info1(CRC_8 == crc ? "OK" : "NOK");
         }
         #endif // MEDIAINFO_TRACE
-        Length=IsSub?(Element_Size-Element_Offset):0; // Unknown if raw, else full frame
+        Length=IsSub?static_cast<int32u>(Element_Size-Element_Offset):0; // Unknown if raw, else full frame
     }
     else
     {
