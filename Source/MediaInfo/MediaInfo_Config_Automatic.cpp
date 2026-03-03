@@ -1736,6 +1736,7 @@ void MediaInfo_Config_CodecID_Video_Mpeg4 (InfoMap &Info)
     "ai5q;AVC;;Advanced Video Coding\n"
     "AV01;AV1\n"
     "av01;AV1\n"
+    "av02;AV2\n"
     "AV1x;YUV;;;;;;YUV;4:2:2\n"
     "avc1;AVC;;Advanced Video Coding\n"
     "avc2;AVC;;Advanced Video Coding\n"
