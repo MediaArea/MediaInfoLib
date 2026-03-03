@@ -227,6 +227,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_AALP();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_ACLR();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_APRG();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_apvC();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_ARES();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_AORD();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_av1C();

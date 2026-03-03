@@ -502,6 +502,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM64EC'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Apv.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Av1.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Av2.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Avs3V.cpp" />
@@ -926,6 +927,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_TimedText.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Ttml.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\TimeCode.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Apv.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Av1.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Av2.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_CineForm.h" />
