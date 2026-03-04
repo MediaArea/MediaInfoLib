@@ -31,6 +31,9 @@
 #if defined(MEDIAINFO_RM_YES)
     #include "MediaInfo/Multiple/File_Rm.h"
 #endif
+#if defined(MEDIAINFO_T35_YES)
+    #include "MediaInfo/Multiple/File_T35.h"
+#endif
 #if defined(MEDIAINFO_MPEG4V_YES)
     #include "MediaInfo/Video/File_Mpeg4v.h"
 #endif
@@ -1183,71 +1186,19 @@ void File_Mk::Streams_Finish()
 
             Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode, IsVfr?"VFR":"CFR");
 
-            //MasteringDisplay
-            Ztring& MasteringDisplay_ColorPrimaries=HDR[Video_MasteringDisplay_ColorPrimaries][HdrFormat_SmpteSt2086];
-            Ztring& MasteringDisplay_Luminance=HDR[Video_MasteringDisplay_Luminance][HdrFormat_SmpteSt2086];
-            Get_MasteringDisplayColorVolume(MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance, Temp->second.MasteringMetadata);
-            if (!MasteringDisplay_ColorPrimaries.empty() || !MasteringDisplay_Luminance.empty())
-            {
-                auto& HDR_Format=HDR[Video_HDR_Format][HdrFormat_SmpteSt2086];
-                if (HDR_Format.empty())
-                {
-                    HDR_Format=__T("SMPTE ST 2086");
-                    HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt2086]="HDR10";
-                }
-            }
-
             //Merge info about different HDR formats
-            auto HDR_Format=HDR.find(Video_HDR_Format);
-            if (HDR_Format!=HDR.end())
-            {
-                bitset<HdrFormat_Max> HDR_Present;
-                size_t HDR_FirstFormatPos=(size_t)-1;
-                for (size_t i=0; i<HdrFormat_Max; i++)
-                    if (!HDR_Format->second[i].empty())
-                    {
-                        if (HDR_FirstFormatPos==(size_t)-1)
-                            HDR_FirstFormatPos=i;
-                        HDR_Present[i]=true;
-                    }
-                bool LegacyStreamDisplay=MediaInfoLib::Config.LegacyStreamDisplay_Get();
-                for (const auto& HDR_Item: HDR)
-                {
-                    size_t i=HDR_FirstFormatPos;
-                    size_t HDR_FirstFieldNonEmpty=(size_t)-1;
-                    if (HDR_Item.first>Video_HDR_Format_Compatibility)
-                    {
-                        for (; i<HdrFormat_Max; i++)
-                        {
-                            if (!HDR_Present[i])
-                                continue;
-                            if (HDR_FirstFieldNonEmpty==(size_t)-1 && !HDR_Item.second[i].empty())
-                                HDR_FirstFieldNonEmpty=i;
-                            if (!HDR_Item.second[i].empty() && HDR_Item.second[i]!=HDR_Item.second[HDR_FirstFieldNonEmpty])
-                                break;
-                        }
-                    }
-                    if (i==HdrFormat_Max && HDR_FirstFieldNonEmpty!=(size_t)-1)
-                        Fill(Stream_Video, 0, HDR_Item.first, HDR_Item.second[HDR_FirstFieldNonEmpty]);
-                    else
-                    {
-                        ZtringList Value;
-                        Value.Separator_Set(0, __T(" / "));
-                        if (i!=HdrFormat_Max)
-                            for (i=HDR_FirstFormatPos; i<HdrFormat_Max; i++)
-                            {
-                                if (!LegacyStreamDisplay && HDR_FirstFormatPos != HdrFormat_SmpteSt2086 && i >= HdrFormat_SmpteSt2086)
-                                    break;
-                                if (!HDR_Present[i])
-                                    continue;
-                                Value.push_back(HDR_Item.second[i]);
-                            }
-                        auto Value_Flat = Value.Read();
-                        if (!Value.empty() && Value_Flat.size() > (Value.size() - 1) * 3)
-                            Fill(Stream_Video, 0, HDR_Item.first, Value.Read());
-                    }
-                }
+            #if defined(MEDIAINFO_T35_YES)
+            if (!T35_Parser && Temp->second.MasteringMetadata != mastering_metadata_2086()) {
+                T35_Parser.reset(new File_T35());
+                Open_Buffer_Init(T35_Parser.get());
             }
+            if (T35_Parser) {
+                ((File_T35*)T35_Parser.get())->MasteringMetadata = &Temp->second.MasteringMetadata;
+                T35_Parser->StreamSource = IsContainer;
+                T35_Parser->Finish();
+                Merge(*T35_Parser, Stream_Video, 0, StreamPos_Last);
+            }
+            #endif
         }
 
         //Delay
@@ -5429,215 +5380,17 @@ void File_Mk::CRC32_Check ()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-// SEI - 4
 void File_Mk::sei_message_user_data_registered_itu_t_t35()
 {
-    Element_Info1("user_data_registered_itu_t_t35");
-
-    int8u itu_t_t35_country_code;
-    Get_B1(itu_t_t35_country_code,                              "itu_t_t35_country_code");
-
-    switch (itu_t_t35_country_code)
-    {
-        case 0xB5:  sei_message_user_data_registered_itu_t_t35_B5(); break; // USA
-        case 0x26:  sei_message_user_data_registered_itu_t_t35_26(); break; // China
+    #if defined(MEDIAINFO_T35_YES)
+    if (!T35_Parser) {
+        T35_Parser.reset(new File_T35());
+        Open_Buffer_Init(T35_Parser.get());
     }
-}
-
-//---------------------------------------------------------------------------
-// SEI - 4 - USA
-void File_Mk::sei_message_user_data_registered_itu_t_t35_B5()
-{
-    int16u itu_t_t35_terminal_provider_code;
-    Get_B2 (itu_t_t35_terminal_provider_code,                   "itu_t_t35_terminal_provider_code");
-
-    switch (itu_t_t35_terminal_provider_code)
-    {
-        case 0x003C: sei_message_user_data_registered_itu_t_t35_B5_003C(); break;
-    }
-}
-
-//---------------------------------------------------------------------------
-// SEI - 4 - USA - 003C
-void File_Mk::sei_message_user_data_registered_itu_t_t35_B5_003C()
-{
-    int16u itu_t_t35_terminal_provider_oriented_code;
-    Get_B2 (itu_t_t35_terminal_provider_oriented_code,          "itu_t_t35_terminal_provider_oriented_code");
-
-    switch (itu_t_t35_terminal_provider_oriented_code)
-    {
-        case 0x0001: sei_message_user_data_registered_itu_t_t35_B5_003C_0001(); break;
-    }
-}
-
-//---------------------------------------------------------------------------
-// SEI - 4 - USA - 003C - 0001
-void File_Mk::sei_message_user_data_registered_itu_t_t35_B5_003C_0001()
-{
-    int8u application_identifier;
-    Get_B1 (application_identifier,                             "application_identifier");
-
-    switch (application_identifier)
-    {
-        case 0x04: sei_message_user_data_registered_itu_t_t35_B5_003C_0001_04(); break;
-    }
-}
-
-//---------------------------------------------------------------------------
-// SEI - 4 - USA - 003C - 0001 - SMPTE ST 2094-40 (HDR10+)
-void File_Mk::sei_message_user_data_registered_itu_t_t35_B5_003C_0001_04()
-{
-    Element_Info1("SMPTE ST 2094 App 4");
-
-    int8u application_version{};
-    bool IsHDRplus{ false }, tone_mapping_flag{};
-    Get_SMPTE_ST_2094_40(application_version, IsHDRplus, tone_mapping_flag);
-
-    FILLING_BEGIN();
-        auto& HDR_Format=HDR[Video_HDR_Format][HdrFormat_SmpteSt209440];
-        if (HDR_Format.empty())
-        {
-            HDR_Format=__T("SMPTE ST 2094 App 4");
-            HDR[Video_HDR_Format_Version][HdrFormat_SmpteSt209440].From_Number(application_version);
-            if (IsHDRplus)
-                HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt209440]=tone_mapping_flag?__T("HDR10+ Profile B"):__T("HDR10+ Profile A");
-        }
-    FILLING_END();
-}
-
-
-//---------------------------------------------------------------------------
-// SEI - 4 - China
-void File_Mk::sei_message_user_data_registered_itu_t_t35_26()
-{
-    int16u itu_t_t35_terminal_provider_code;
-    Get_B2(itu_t_t35_terminal_provider_code, "itu_t_t35_terminal_provider_code");
-
-    //HDR Vivid terminal provide code 0x0004, terminal provide oriented code 0x0005 , 0x0005 indicates HDR Vivid version 1
-    switch (itu_t_t35_terminal_provider_code)
-    {
-    case 0x0004: sei_message_user_data_registered_itu_t_t35_26_0004(); break;
-    }
-}
-
-//---------------------------------------------------------------------------
-// SEI - 4 - China    similar to sei_message_user_data_registered_itu_t_t35_B5_003C()
-void File_Mk::sei_message_user_data_registered_itu_t_t35_26_0004()
-{
-    int16u itu_t_t35_terminal_provider_oriented_code;
-    Get_B2(itu_t_t35_terminal_provider_oriented_code, "itu_t_t35_terminal_provider_oriented_code");
-    //HDR Vivid terminal provide code 0x0004, terminal provide oriented code 0x0005
-    switch (itu_t_t35_terminal_provider_oriented_code)
-    {
-    case 0x0005: sei_message_user_data_registered_itu_t_t35_26_0004_0005(); break;
-    }
-}
-
-//---------------------------------------------------------------------------
-// SEI - 4 - China - 0004
-void File_Mk::sei_message_user_data_registered_itu_t_t35_26_0004_0005()
-{
-    //Parsing
-    Element_Info1("T/UWA 005 (HDR Vivid)");
-    int16u targeted_system_display_maximum_luminance_Max = 0;
-    int8u system_start_code;
-    bool color_saturation_mapping_enable_flag;
-    Get_B1(system_start_code, "system_start_code");
-    if (system_start_code != 0x01)
-    {
-        Skip_XX(Element_Size, "Unknown");
-        return;
-    }
-    BS_Begin();
-    //int8u num_windows=1;
-    //for (int8u w=0; w<num_windows; w++)
-    {
-        Skip_S2(12, "minimum_maxrgb_pq");
-        Skip_S2(12, "average_maxrgb_pq");
-        Skip_S2(12, "variance_maxrgb_pq");
-        Skip_S2(12, "maximum_maxrgb_pq");
-    }
-
-    //for (int8u w=0; w<num_windows; w++)
-    {
-        bool tone_mapping_enable_mode_flag;
-        Get_SB(tone_mapping_enable_mode_flag, "tone_mapping_enable_mode_flag");
-        if (tone_mapping_enable_mode_flag)
-        {
-            int8u tone_mapping_param_enable_num;
-            Get_S1(1, tone_mapping_param_enable_num, "tone_mapping_param_enable_num");
-            for (int i = 0; i < (tone_mapping_param_enable_num + 1); i++)
-            {
-                Element_Begin1("tone_mapping_param");
-                int16u targeted_system_display_maximum_luminance_pq;
-                bool base_enable_flag, ThreeSpline_enable_flag;
-                Get_S2(12, targeted_system_display_maximum_luminance_pq,
-                    "targeted_system_display_maximum_luminance_pq");
-                if (targeted_system_display_maximum_luminance_Max < targeted_system_display_maximum_luminance_pq)
-                    targeted_system_display_maximum_luminance_Max = targeted_system_display_maximum_luminance_pq;
-                Get_SB(base_enable_flag, "base_enable_flag");
-                if (base_enable_flag)
-                {
-                    Skip_S2(14, "base_param_m_p");
-                    Skip_S1(6, "base_param_m_m");
-                    Skip_S2(10, "base_param_m_a");
-                    Skip_S2(10, "base_param_m_b");
-                    Skip_S1(6, "base_param_m_n");
-                    Skip_S1(2, "base_param_K1");
-                    Skip_S1(2, "base_param_K2");
-                    Skip_S1(4, "base_param_K3");
-                    Skip_S1(3, "base_param_Delta_enable_mode");
-                    Skip_S1(7, "base_param_enable_Delta");
-                }
-                Get_SB(ThreeSpline_enable_flag, "3Spline_enable_flag");
-                if (ThreeSpline_enable_flag)
-                {
-                    int8u ThreeSpline_enable_num;
-                    Get_S1(1, ThreeSpline_enable_num, "3Spline_enable_num");
-                    for (int j = 0; j < (ThreeSpline_enable_num + 1); j++)
-                    {
-                        Element_Begin1("3Spline");
-                        int8u ThreeSpline_TH_enable_mode;
-                        Get_S1(2, ThreeSpline_TH_enable_mode, "3Spline_TH_enable_mode");
-                        switch (ThreeSpline_TH_enable_mode)
-                        {
-                        case 0:
-                        case 2:
-                            Skip_S1(8, "3Spline_TH_enable_MB");
-                            break;
-                        default:;
-                        }
-                        Skip_S2(12, "3Spline_TH_enable");
-                        Skip_S2(10, "3Spline_TH_enable_Delta1");
-                        Skip_S2(10, "3Spline_TH_enable_Delta2");
-                        Skip_S1(8, "3Spline_enable_Strength");
-                        Element_End0();
-                    }
-                }
-                Element_End0();
-            }
-        }
-        Get_SB(color_saturation_mapping_enable_flag, "color_saturation_mapping_enable_flag");
-        if (color_saturation_mapping_enable_flag)
-        {
-            int8u color_saturation_enable_num;
-            Get_S1(3, color_saturation_enable_num, "color_saturation_enable_num");
-            for (int i = 0; i < color_saturation_enable_num; i++)
-            {
-                Skip_S1(8, "color_saturation_enable_gain");
-            }
-        }
-    }
-    BS_End();
-
-    FILLING_BEGIN();
-    auto& HDR_Format = HDR[Video_HDR_Format][HdrFormat_T_UWA005];
-    if (HDR_Format.empty())
-    {
-        HDR_Format = __T("HDR Vivid");
-        HDR[Video_HDR_Format_Version][HdrFormat_T_UWA005] = Ztring::ToZtring(system_start_code);
-    }
-    FILLING_END();
+    Open_Buffer_Continue(T35_Parser.get());
+    #else
+    Skip_XX(Element_Size - Element_Offset,                      "(Not parsed)");
+    #endif
 }
 
 } //NameSpace

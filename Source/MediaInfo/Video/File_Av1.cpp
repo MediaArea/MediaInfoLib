@@ -195,61 +195,12 @@ void File_Av1::Streams_Finish()
     }
 
     //Merge info about different HDR formats
-    auto HDR_Format = HDR.find(Video_HDR_Format);
-    if (HDR_Format != HDR.end())
-    {
-        std::bitset<HdrFormat_Max> HDR_Present;
-        size_t HDR_FirstFormatPos = (size_t)-1;
-        for (size_t i = 0; i < HdrFormat_Max; ++i)
-            if (!HDR_Format->second[i].empty())
-            {
-                if (HDR_FirstFormatPos == (size_t)-1)
-                    HDR_FirstFormatPos = i;
-                HDR_Present[i] = true;
-            }
-        bool LegacyStreamDisplay = MediaInfoLib::Config.LegacyStreamDisplay_Get();
-        for (const auto& HDR_Item : HDR)
-        {
-            size_t i = HDR_FirstFormatPos;
-            size_t HDR_FirstFieldNonEmpty = (size_t)-1;
-            if (HDR_Item.first > Video_HDR_Format_Compatibility)
-            {
-                for (; i < HdrFormat_Max; ++i)
-                {
-                    if (!HDR_Present[i])
-                        continue;
-                    if (HDR_FirstFieldNonEmpty == (size_t)-1 && !HDR_Item.second[i].empty())
-                        HDR_FirstFieldNonEmpty = i;
-                    if (!HDR_Item.second[i].empty() && HDR_FirstFieldNonEmpty < HdrFormat_Max && HDR_Item.second[i] != HDR_Item.second[HDR_FirstFieldNonEmpty])
-                        break;
-                }
-            }
-            if (i == HdrFormat_Max && HDR_FirstFieldNonEmpty != (size_t)-1)
-                Fill(Stream_Video, 0, HDR_Item.first, HDR_Item.second[HDR_FirstFieldNonEmpty]);
-            else
-            {
-                ZtringList Value;
-                Value.Separator_Set(0, __T(" / "));
-                if (i != HdrFormat_Max)
-                    for (i = HDR_FirstFormatPos; i < HdrFormat_Max; ++i)
-                    {
-                        if (!LegacyStreamDisplay && HDR_FirstFormatPos != HdrFormat_SmpteSt2086 && i >= HdrFormat_SmpteSt2086)
-                            break;
-                        if (!HDR_Present[i])
-                            continue;
-                        Value.push_back(HDR_Item.second[i]);
-                    }
-                auto Value_Flat = Value.Read();
-                if (!Value.empty() && Value_Flat.size() > (Value.size() - 1) * 3)
-                    Fill(Stream_Video, 0, HDR_Item.first, Value.Read());
-            }
-        }
+    #if defined(MEDIAINFO_T35_YES)
+    if (T35_Parser) {
+        T35_Parser->Finish();
+        Merge(*T35_Parser, Stream_Video, 0, 0);
     }
-
-    if (!maximum_content_light_level.empty())
-        Fill(Stream_Video, 0, Video_MaxCLL, maximum_content_light_level);
-    if (!maximum_frame_average_light_level.empty())
-        Fill(Stream_Video, 0, Video_MaxFALL, maximum_frame_average_light_level);
+    #endif
 }
 
 //***************************************************************************
@@ -705,6 +656,7 @@ void File_Av1::metadata()
     int64u metadata_type;
     Get_leb128 (metadata_type,                                  "metadata_type");
     Param_Info1(Av1_metadata_type(static_cast<int8u>(metadata_type)));
+    Element_Info1(Av1_metadata_type(static_cast<int8u>(metadata_type)));
 
     switch (metadata_type)
     {
@@ -715,139 +667,6 @@ void File_Av1::metadata()
         case    5 : metadata_timecode(); break;
         default   : Skip_XX(Element_Size-Element_Offset,        "Data");
     }
-}
-
-//---------------------------------------------------------------------------
-void File_Av1::metadata_hdr_cll()
-{
-    //Parsing
-    Get_LightLevel(maximum_content_light_level, maximum_frame_average_light_level);
-
-    BS_Begin();
-    trailing_bits();
-    BS_End();
-}
-
-//---------------------------------------------------------------------------
-void File_Av1::metadata_hdr_mdcv()
-{
-    //Parsing
-    auto& HDR_Format = HDR[Video_HDR_Format][HdrFormat_SmpteSt2086];
-    if (HDR_Format.empty())
-    {
-        HDR_Format = __T("SMPTE ST 2086");
-        HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt2086] = "HDR10";
-    }
-    Get_MasteringDisplayColorVolume(HDR[Video_MasteringDisplay_ColorPrimaries][HdrFormat_SmpteSt2086], HDR[Video_MasteringDisplay_Luminance][HdrFormat_SmpteSt2086], true);
-
-    BS_Begin();
-    trailing_bits();
-    BS_End();
-}
-
-//---------------------------------------------------------------------------
-void File_Av1::metadata_itu_t_t35()
-{
-    //Parsing
-    int8u itu_t_t35_country_code;
-    Get_B1(itu_t_t35_country_code,                              "itu_t_t35_country_code");
-    if (itu_t_t35_country_code == 0xFF)
-        Skip_B1(                                                "itu_t_t35_country_code_extension_byte");
-
-    switch (itu_t_t35_country_code)
-    {
-    case 0xB5: Param_Info1("United States"); metadata_itu_t_t35_B5(); break;
-    }
-}
-
-//---------------------------------------------------------------------------
-void File_Av1::metadata_itu_t_t35_B5()
-{
-    int16u itu_t_t35_terminal_provider_code;
-    Get_B2(itu_t_t35_terminal_provider_code,                    "itu_t_t35_terminal_provider_code");
-
-    switch (itu_t_t35_terminal_provider_code)
-    {
-    case 0x003C: Param_Info1("Samsung Electronics America"); metadata_itu_t_t35_B5_003C(); break;
-    case 0x5890: Param_Info1("AOMedia"); metadata_itu_t_t35_B5_5890(); break;
-    }
-}
-
-//---------------------------------------------------------------------------
-void File_Av1::metadata_itu_t_t35_B5_003C()
-{
-    int16u itu_t_t35_terminal_provider_oriented_code;
-    Get_B2(itu_t_t35_terminal_provider_oriented_code,           "itu_t_t35_terminal_provider_oriented_code");
-
-    switch (itu_t_t35_terminal_provider_oriented_code)
-    {
-    case 0x0001: metadata_itu_t_t35_B5_003C_0001(); break;
-    }
-}
-
-//---------------------------------------------------------------------------
-void File_Av1::metadata_itu_t_t35_B5_003C_0001()
-{
-    int8u application_identifier;
-    Get_B1(application_identifier,                              "application_identifier");
-
-    switch (application_identifier)
-    {
-    case 0x04: metadata_itu_t_t35_B5_003C_0001_04(); break;
-    }
-}
-
-//---------------------------------------------------------------------------
-void File_Av1::metadata_itu_t_t35_B5_003C_0001_04()
-{
-    Element_Info1("SMPTE ST 2094 App 4");
-
-    int8u application_version{};
-    bool IsHDRplus{ false }, tone_mapping_flag{};
-    Get_SMPTE_ST_2094_40(application_version, IsHDRplus, tone_mapping_flag);
-
-    FILLING_BEGIN();
-        auto& HDR_Format=HDR[Video_HDR_Format][HdrFormat_SmpteSt209440];
-        if (HDR_Format.empty())
-        {
-            HDR_Format=__T("SMPTE ST 2094 App 4");
-            HDR[Video_HDR_Format_Version][HdrFormat_SmpteSt209440].From_Number(application_version);
-            if (IsHDRplus)
-                HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt209440]=tone_mapping_flag?__T("HDR10+ Profile B"):__T("HDR10+ Profile A");
-        }
-    FILLING_END();
-}
-
-//---------------------------------------------------------------------------
-void File_Av1::metadata_itu_t_t35_B5_5890()
-{
-    int8u itu_t_t35_terminal_provider_oriented_code;
-    Get_B1(itu_t_t35_terminal_provider_oriented_code,           "itu_t_t35_terminal_provider_oriented_code");
-
-    switch (itu_t_t35_terminal_provider_oriented_code)
-    {
-    case 0x01: metadata_itu_t_t35_B5_5890_01(); break;
-    }
-}
-
-//---------------------------------------------------------------------------
-void File_Av1::metadata_itu_t_t35_B5_5890_01()
-{
-    Element_Info1("AOMedia Film Grain Synthesis 1 (AFGS1)");
-
-    Element_Begin1("av1_film_grain_param_sets");
-    BS_Begin();
-    bool afgs1_enable_flag;
-    Get_SB(afgs1_enable_flag,                                   "afgs1_enable_flag");
-    if (!afgs1_enable_flag) {
-        BS_End();
-        return;
-    }
-    Skip_S1(4,                                                  "reserved_4bits");
-    Skip_S1(3,                                                  "num_film_grain_sets_minus1");
-    BS_End();
-    Skip_XX(Element_Size - Element_Offset, "(Not parsed)");
-    Element_End0();
 }
 
 //---------------------------------------------------------------------------
@@ -869,7 +688,6 @@ void File_Av1::metadata_scalability()
 //---------------------------------------------------------------------------
 void File_Av1::scalability_structure()
 {
-    Element_Begin1("scalability_structure");
     BS_Begin();
     int8u spatial_layers_cnt_minus_1;
     bool spatial_layer_dimensions_present_flag, spatial_layer_description_present_flag, temporal_group_description_present_flag;
@@ -918,7 +736,6 @@ void File_Av1::scalability_structure()
         }
         Element_End0();
     }
-    Element_End0();
 }
 
 //---------------------------------------------------------------------------
@@ -1117,6 +934,33 @@ void File_Av1::Get_leb128(int64u& Info, const char* Name)
     Trusted_IsNot("Size is wrong");
     Info=0;
 }
+
+//---------------------------------------------------------------------------
+#if defined(MEDIAINFO_T35_YES)
+void File_Av1::T35(File_T35::style Style)
+{
+    auto Element_Size_Save = Element_Size;
+    const int8u* Buffer2 = Buffer + Buffer_Offset;
+    while (Element_Size && !Buffer2[Element_Size - 1])
+        --Element_Size;
+    if (!Element_Size || Buffer2[Element_Size - 1] != 0x80) {
+        Trusted_IsNot("Invalid trailing byte");
+        Element_Size = Element_Size_Save;
+        return;
+    }
+    --Element_Size;
+
+    if (!T35_Parser) {
+        T35_Parser.reset(new File_T35(File_T35::source::aomedia));
+        Open_Buffer_Init(T35_Parser.get());
+    }
+    ((File_T35*)T35_Parser.get())->Style = Style;
+    Open_Buffer_Continue(T35_Parser.get());
+
+    Element_Size = Element_Size_Save;
+    Element_Offset = Element_Size;
+}
+#endif
 
 //---------------------------------------------------------------------------
 } //NameSpace

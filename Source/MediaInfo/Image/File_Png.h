@@ -18,7 +18,6 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/TimeCode.h"
-#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib

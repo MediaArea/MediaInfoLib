@@ -291,6 +291,9 @@ size_t Avc_profile_level_Indexes(const string& ProfileLevelS) // Note: 1-based, 
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Video/File_Avc.h"
+#if defined(MEDIAINFO_T35_YES)
+    #include "MediaInfo/Multiple/File_T35.h"
+#endif
 #if defined(MEDIAINFO_AFDBARDATA_YES)
     #include "MediaInfo/Video/File_AfdBarData.h"
 #endif //defined(MEDIAINFO_AFDBARDATA_YES)
@@ -599,6 +602,57 @@ namespace AVC_Intra_Headers
                                                             0x00, 0x00, 0x01, 0x68, 0xCE, 0x33, 0x48, 0xD0 };
 };
 
+
+//---------------------------------------------------------------------------
+static constexpr const char* Avc_SEI_Names[] =
+{
+    "buffering_period",
+    "pic_timing",
+    "pan_scan_rect",
+    "filler_payload",
+    "user_data_registered_itu_t_t35",
+    "user_data_unregistered",
+    "recovery_point",
+    "dec_ref_pic_marking_repetition",
+    "spare_pic",
+    "scene_info",
+    "sub_seq_info",
+    "sub_seq_layer_characteristics",
+    "sub_seq_characteristics",
+    "full_frame_freeze",
+    "full_frame_freeze_release",
+    "full_frame_snapshot",
+    "progressive_refinement_segment_start",
+    "progressive_refinement_segment_end",
+    "motion_constrained_slice_group_set",
+    "film_grain_characteristics",
+    "deblocking_filter_display_preference",
+    "stereo_video_info",
+    "post_filter_hint",
+    "tone_mapping_info",
+    "scalability_info",
+    "sub_pic_scalable_layer",
+    "non_required_layer_rep",
+    "priority_layer_info",
+    "layers_not_present",
+    "layer_dependency_change",
+    "scalable_nesting",
+    "base_layer_temporal_hrd",
+    "quality_layer_integrity_check",
+    "redundant_pic_property",
+    "tl0_dep_rep_index",
+    "tl_switching_point",
+    "parallel_decoding_info",
+    "mvc_scalable_nesting",
+    "view_scalability_info",
+    "multiview_scene_info",
+    "multiview_acquisition_info",
+    "non_required_view_component",
+    "view_dependency_change",
+    "operation_points_not_present",
+    "base_view_temporal_hrd",
+};
+extern const auto Avc_SEI_Names_Size = sizeof(Avc_SEI_Names) / sizeof(*Avc_SEI_Names);
 
 //---------------------------------------------------------------------------
 // Some DV Metadata info: http://www.freepatentsonline.com/20050076039.pdf
@@ -1189,58 +1243,13 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
     if (MaxSlicesCount>1)
         Fill(Stream_Video, 0, Video_Format_Settings_SliceCount, MaxSlicesCount);
 
-    hdr::iterator EtsiTs103433 = HDR.find(HdrFormat_EtsiTs103433);
-    if (EtsiTs103433 != HDR.end())
-    {
-        for (std::map<video, Ztring>::iterator Item = EtsiTs103433->second.begin(); Item != EtsiTs103433->second.end(); ++Item)
-        {
-            Fill(Stream_Video, 0, Item->first, Item->second);
-        }
+    //Merge info about different HDR formats
+    #if defined(MEDIAINFO_T35_YES)
+    if (T35_Parser) {
+        T35_Parser->Finish();
+        Merge(*T35_Parser, Stream_Video, 0, 0);
     }
-    hdr::iterator SmpteSt209440 = HDR.find(HdrFormat_SmpteSt209440);
-    if (SmpteSt209440 != HDR.end())
-    {
-        for (std::map<video, Ztring>::iterator Item = SmpteSt209440->second.begin(); Item != SmpteSt209440->second.end(); ++Item)
-        {
-            switch (Item->first)
-            {
-            case Video_MasteringDisplay_ColorPrimaries:
-            case Video_MasteringDisplay_Luminance:
-                if (Retrieve_Const(Stream_Video, 0, Item->first) == Item->second)
-                    break;
-                [[fallthrough]];
-            default:
-                Fill(Stream_Video, 0, Item->first, Item->second);
-            }
-        }
-    }
-    hdr::iterator SmpteSt2086 = HDR.find(HdrFormat_SmpteSt2086);
-    if (SmpteSt2086 != HDR.end())
-    {
-        for (std::map<video, Ztring>::iterator Item = SmpteSt2086->second.begin(); Item != SmpteSt2086->second.end(); ++Item)
-        {
-            bool Ignore;
-            switch (Item->first)
-            {
-            case Video_HDR_Format:
-                Ignore = !Retrieve_Const(Stream_Video, 0, Item->first).empty();
-                break;
-            case Video_MasteringDisplay_ColorPrimaries:
-            case Video_MasteringDisplay_Luminance:
-                Ignore = Retrieve_Const(Stream_Video, 0, Item->first) == Item->second;
-                break;
-            default:
-                Ignore = false;
-            }
-            if (!Ignore)
-                Fill(Stream_Video, 0, Item->first, Item->second);
-        }
-    }
-
-    if (!maximum_content_light_level.empty())
-        Fill(Stream_Video, 0, Video_MaxCLL, maximum_content_light_level);
-    if (!maximum_frame_average_light_level.empty())
-        Fill(Stream_Video, 0, Video_MaxFALL, maximum_frame_average_light_level);
+    #endif
 }
 
 //---------------------------------------------------------------------------
@@ -3053,17 +3062,26 @@ void File_Avc::sei()
 {
     Element_Name("sei");
 
-    //Parsing
+    auto Element_Size_Save = Element_Size;
+    const int8u* Buffer2 = Buffer + Buffer_Offset;
+    while (Element_Size && !Buffer2[Element_Size - 1])
+        --Element_Size;
+    if (!Element_Size || Buffer2[Element_Size - 1] != 0x80) {
+        Trusted_IsNot("Invalid trailing byte");
+        Element_Size = Element_Size_Save;
+        return;
+    }
+    --Element_Size;
+
     int32u seq_parameter_set_id=(int32u)-1;
-    while(Element_Offset+1<Element_Size)
+    while (Element_Offset < Element_Size)
     {
         Element_Begin1("sei message");
             sei_message(seq_parameter_set_id);
         Element_End0();
     }
-    BS_Begin();
-    Mark_1(                                                     );
-    BS_End();
+
+    Element_Size = Element_Size_Save;
 }
 
 //---------------------------------------------------------------------------
@@ -3072,7 +3090,7 @@ void File_Avc::sei_message(int32u &seq_parameter_set_id)
     //Parsing
     int32u payloadType=0, payloadSize=0;
     int8u payload_type_byte, payload_size_byte;
-    Element_Begin1("sei message header");
+    Element_Begin1("Header");
         do
         {
             Get_B1 (payload_type_byte,                          "payload_type_byte");
@@ -3086,6 +3104,7 @@ void File_Avc::sei_message(int32u &seq_parameter_set_id)
         }
         while(payload_size_byte==0xFF);
     Element_End0();
+    Element_Info1C(payloadType < Avc_SEI_Names_Size, Avc_SEI_Names[payloadType]);
 
     int64u Element_Offset_Save=Element_Offset+payloadSize;
     if (Element_Offset_Save>Element_Size)
@@ -3271,94 +3290,49 @@ void File_Avc::sei_message_user_data_registered_itu_t_t35()
 {
     Element_Info1("user_data_registered_itu_t_t35");
 
-    //Parsing
-    int8u itu_t_t35_country_code;
-    Get_B1 (itu_t_t35_country_code,                             "itu_t_t35_country_code");
-    if (itu_t_t35_country_code==0xFF)
-        Skip_B1(                                                "itu_t_t35_country_code_extension_byte");
-    if (itu_t_t35_country_code!=0xB5 || Element_Offset+2>=Element_Size)
-    {
-        if (Element_Size-Element_Offset)
-            Skip_XX(Element_Size-Element_Offset,                "Unknown");
-        return;
+    int64u Probe;
+    Peek_B8(Probe);
+    if (Probe == 0xB500314741393403) { // Temporary, it is not supported by the T35 parser
+    Skip_B1(                                                    "itu_t_t35_country_code");
+    Skip_B2(                                                    "itu_t_t35_terminal_provider_code");
+    Skip_C4(                                                    "identifier");
+    Skip_B1(                                                    "user_data_type_code");
+    sei_message_user_data_registered_itu_t_t35_GA94_03();
+    }
+    else {
+    #if defined(MEDIAINFO_T35_YES)
+    if (!T35_Parser) {
+        T35_Parser.reset(new File_T35());
+        Open_Buffer_Init(T35_Parser.get());
     }
 
-    //United-States
-    int16u id;
-    Get_B2 (id,                                                 "id?");
-    if (id!=0x0031 || Element_Offset+4>=Element_Size)
+    for (auto seq_parameter_set_Item : seq_parameter_sets)
     {
-        if (Element_Size-Element_Offset)
-            Skip_XX(Element_Size-Element_Offset,                "Unknown");
-        return;
-    }
-
-    int32u Identifier;
-    Peek_B4(Identifier);
-    switch (Identifier)
-    {
-        case 0x44544731 :   sei_message_user_data_registered_itu_t_t35_DTG1(); return;
-        case 0x47413934 :   sei_message_user_data_registered_itu_t_t35_GA94(); return;
-        default         :   if (Element_Size-Element_Offset)
-                                Skip_XX(Element_Size-Element_Offset, "Unknown");
-    }
-}
-
-//---------------------------------------------------------------------------
-// SEI - 5 - DTG1
-void File_Avc::sei_message_user_data_registered_itu_t_t35_DTG1()
-{
-    Element_Info1("Active Format Description");
-
-    //Parsing
-    Skip_C4(                                                    "afd_identifier");
-    if (Element_Offset<Element_Size)
-    {
-        File_AfdBarData DTG1_Parser;
-        for (auto seq_parameter_set_Item : seq_parameter_sets)
+        if (seq_parameter_set_Item && seq_parameter_set_Item->vui_parameters && seq_parameter_set_Item->vui_parameters->sar_width && seq_parameter_set_Item->vui_parameters->sar_height)
         {
-            if (seq_parameter_set_Item && seq_parameter_set_Item->vui_parameters && seq_parameter_set_Item->vui_parameters->sar_width && seq_parameter_set_Item->vui_parameters->sar_height)
+            //TODO: avoid duplicated code
+            int32u Width = (seq_parameter_set_Item->pic_width_in_mbs_minus1 + 1) * 16;
+            int32u Height = (seq_parameter_set_Item->pic_height_in_map_units_minus1 + 1) * 16 * (2 - seq_parameter_set_Item->frame_mbs_only_flag);
+            int8u chromaArrayType = seq_parameter_set_Item->ChromaArrayType();
+            if (chromaArrayType >= 4)
+                chromaArrayType = 0;
+            int32u CropUnitX = Avc_SubWidthC[chromaArrayType];
+            int32u CropUnitY = Avc_SubHeightC[chromaArrayType] * (2 - seq_parameter_set_Item->frame_mbs_only_flag);
+            Width -= (seq_parameter_set_Item->frame_crop_left_offset + seq_parameter_set_Item->frame_crop_right_offset) * CropUnitX;
+            Height -= (seq_parameter_set_Item->frame_crop_top_offset + seq_parameter_set_Item->frame_crop_bottom_offset) * CropUnitY;
+            if (Height)
             {
-                //TODO: avoid duplicated code
-                int32u Width =(seq_parameter_set_Item->pic_width_in_mbs_minus1       +1)*16;
-                int32u Height=(seq_parameter_set_Item->pic_height_in_map_units_minus1+1)*16*(2-seq_parameter_set_Item->frame_mbs_only_flag);
-                int8u chromaArrayType = seq_parameter_set_Item->ChromaArrayType();
-                if (chromaArrayType >= 4)
-                    chromaArrayType = 0;
-                int32u CropUnitX=Avc_SubWidthC [chromaArrayType];
-                int32u CropUnitY=Avc_SubHeightC[chromaArrayType]*(2-seq_parameter_set_Item->frame_mbs_only_flag);
-                Width -=(seq_parameter_set_Item->frame_crop_left_offset+seq_parameter_set_Item->frame_crop_right_offset )*CropUnitX;
-                Height-=(seq_parameter_set_Item->frame_crop_top_offset +seq_parameter_set_Item->frame_crop_bottom_offset)*CropUnitY;
-                if (Height)
-                {
-                    auto PixelAspectRatio=((float32)seq_parameter_set_Item->vui_parameters->sar_width) / seq_parameter_set_Item->vui_parameters->sar_height;
-                    auto DAR=Width*PixelAspectRatio/Height;
-                    if (DAR>=4.0/3.0*0.95 && DAR<4.0/3.0*1.05) DTG1_Parser.aspect_ratio_FromContainer=0; //4/3
-                    if (DAR>=16.0/9.0*0.95 && DAR<16.0/9.0*1.05) DTG1_Parser.aspect_ratio_FromContainer=1; //16/9
-                }
+                auto PixelAspectRatio = ((float32)seq_parameter_set_Item->vui_parameters->sar_width) / seq_parameter_set_Item->vui_parameters->sar_height;
+                auto DAR = Width * PixelAspectRatio / Height;
+                if (DAR >= 4.0 / 3.0 * 0.95 && DAR < 4.0 / 3.0 * 1.05) ((File_T35*)T35_Parser.get())->aspect_ratio_FromContainer = 0; //4/3
+                if (DAR >= 16.0 / 9.0 * 0.95 && DAR < 16.0 / 9.0 * 1.05) ((File_T35*)T35_Parser.get())->aspect_ratio_FromContainer = 1; //16/9
             }
         }
-        Open_Buffer_Init(&DTG1_Parser);
-        DTG1_Parser.Format=File_AfdBarData::Format_A53_4_DTG1;
-        Open_Buffer_Continue(&DTG1_Parser, Buffer+Buffer_Offset+(size_t)Element_Offset, Element_Size-Element_Offset);
-        Merge(DTG1_Parser, Stream_Video, 0, 0);
-        Element_Offset=Element_Size;
     }
-}
 
-//---------------------------------------------------------------------------
-// SEI - 5 - GA94
-void File_Avc::sei_message_user_data_registered_itu_t_t35_GA94()
-{
-    //Parsing
-    int8u user_data_type_code;
-    Skip_B4(                                                    "GA94_identifier");
-    Get_B1 (user_data_type_code,                                "user_data_type_code");
-    switch (user_data_type_code)
-    {
-        case 0x03 : sei_message_user_data_registered_itu_t_t35_GA94_03(); break;
-        case 0x06 : sei_message_user_data_registered_itu_t_t35_GA94_06(); break;
-        default   : Skip_XX(Element_Size-Element_Offset,        "GA94_reserved_user_data");
+    ((File_T35*)T35_Parser.get())->Style = File_T35::style::itu_t_t35;
+    Open_Buffer_Continue(T35_Parser.get());
+    #endif
     }
 }
 
@@ -3470,62 +3444,6 @@ void File_Avc::sei_message_user_data_registered_itu_t_t35_GA94_03_Delayed(int32u
 
         TemporalReferences_Min+=((seq_parameter_sets[seq_parameter_set_id]->frame_mbs_only_flag | !TemporalReferences[TemporalReferences_Min]->IsField)?2:1);
     }
-}
-
-//---------------------------------------------------------------------------
-// SEI - 5 - GA94 - 0x03
-void File_Avc::sei_message_user_data_registered_itu_t_t35_GA94_06()
-{
-    Element_Info1("Bar data");
-
-    //Parsing
-    bool   top_bar_flag, bottom_bar_flag, left_bar_flag, right_bar_flag;
-    BS_Begin();
-    Get_SB (top_bar_flag,                                       "top_bar_flag");
-    Get_SB (bottom_bar_flag,                                    "bottom_bar_flag");
-    Get_SB (left_bar_flag,                                      "left_bar_flag");
-    Get_SB (right_bar_flag,                                     "right_bar_flag");
-    Mark_1_NoTrustError();
-    Mark_1_NoTrustError();
-    Mark_1_NoTrustError();
-    Mark_1_NoTrustError();
-    BS_End();
-    if (top_bar_flag)
-    {
-        Mark_1();
-        Mark_1();
-        Skip_S2(14,                                             "line_number_end_of_top_bar");
-    }
-    if (bottom_bar_flag)
-    {
-        Mark_1();
-        Mark_1();
-        Skip_S2(14,                                             "line_number_start_of_bottom_bar");
-    }
-    if (left_bar_flag)
-    {
-        Mark_1();
-        Mark_1();
-        Skip_S2(14,                                             "pixel_number_end_of_left_bar");
-    }
-    if (right_bar_flag)
-    {
-        Mark_1();
-        Mark_1();
-        Skip_S2(14,                                             "pixel_number_start_of_right_bar");
-    }
-    Mark_1();
-    Mark_1();
-    Mark_1();
-    Mark_1();
-    Mark_1();
-    Mark_1();
-    Mark_1();
-    Mark_1();
-    BS_End();
-
-    if (Element_Size-Element_Offset)
-        Skip_XX(Element_Size-Element_Offset,                    "additional_bar_data");
 }
 
 //---------------------------------------------------------------------------
@@ -3872,29 +3790,6 @@ void File_Avc::consumer_camera_2()
     Info_S1(3, zoom_U,                                          "units of e-zoom");
     Info_S1(4, zoom_D,                                          "1/10 of e-zoom"); /*if (zoom_D!=0xF)*/ Param_Info1(__T("zoom=")+Ztring().From_Number(zoom_U+((float32)zoom_U)/10, 2));
     BS_End();
-}
-
-//---------------------------------------------------------------------------
-void File_Avc::sei_message_mastering_display_colour_volume()
-{
-    Element_Info1("mastering_display_colour_volume");
-
-    std::map<video, Ztring>& SmpteSt2086 = HDR[HdrFormat_SmpteSt2086];
-    Ztring& HDR_Format = SmpteSt2086[Video_HDR_Format];
-    if (HDR_Format.empty())
-    {
-        HDR_Format = __T("SMPTE ST 2086");
-        SmpteSt2086[Video_HDR_Format_Compatibility] = "HDR10";
-    }
-    Get_MasteringDisplayColorVolume(SmpteSt2086[Video_MasteringDisplay_ColorPrimaries], SmpteSt2086[Video_MasteringDisplay_Luminance]);
-}
-//---------------------------------------------------------------------------
-void File_Avc::sei_message_light_level()
-{
-    Element_Info1("light_level");
-
-    //Parsing
-    Get_LightLevel(maximum_content_light_level, maximum_frame_average_light_level);
 }
 
 //---------------------------------------------------------------------------
@@ -5058,6 +4953,19 @@ std::string File_Avc::ScanOrder_Detect (std::string ScanOrders)
         return ("BFF");
     return string();
 }
+
+//---------------------------------------------------------------------------
+#if defined(MEDIAINFO_T35_YES)
+void File_Avc::T35(File_T35::style Style)
+{
+    if (!T35_Parser) {
+        T35_Parser.reset(new File_T35());
+        Open_Buffer_Init(T35_Parser.get());
+    }
+    ((File_T35*)T35_Parser.get())->Style = Style;
+    Open_Buffer_Continue(T35_Parser.get());
+}
+#endif
 
 } //NameSpace
 

@@ -54,7 +54,6 @@
     #include "MediaInfo/Tag/File_Xmp.h"
 #endif
 #include <zlib.h>
-#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
