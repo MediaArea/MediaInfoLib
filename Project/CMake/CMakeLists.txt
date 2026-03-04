@@ -380,6 +380,20 @@ endif()
 add_library(mediainfo ${MediaInfoLib_SRCS})
 target_include_directories(mediainfo INTERFACE ${INCLUDE_INSTALL_DIR})
 
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16")
+    target_precompile_headers(mediainfo PRIVATE "${MediaInfoLib_SOURCES_PATH}/MediaInfo/PreComp.h")
+    file(GLOB_RECURSE MEDIAINFO_THIRD_PARTY_SOURCES
+        ${MediaInfoLib_SOURCES_PATH}/ThirdParty/*.c
+        ${MediaInfoLib_SOURCES_PATH}/ThirdParty/*.cc
+        ${MediaInfoLib_SOURCES_PATH}/ThirdParty/*.cpp
+    )
+    set_source_files_properties(
+        ${MediaInfoLib_SOURCES_PATH}/MediaInfo/TimeCode.cpp
+        ${MEDIAINFO_THIRD_PARTY_SOURCES}
+        PROPERTIES SKIP_PRECOMPILE_HEADERS ON
+    )
+endif()
+
 if(BUILD_ZLIB)
   add_dependencies(mediainfo ZLIB::ZLIBSTATIC)
 endif()
