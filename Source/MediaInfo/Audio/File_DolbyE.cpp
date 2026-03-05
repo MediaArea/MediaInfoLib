@@ -3276,10 +3276,11 @@ void File_DolbyE::metadata_extension_segment()
                 break;
             }
             Get_S2 (12, metadata_extension_subsegment_length,   "metadata_extension_subsegment_length");
-            switch (metadata_extension_subsegment_id)
-            {
-                default: Skip_BS(metadata_extension_subsegment_length,"metadata_extension_subsegment (unknown)");
-            }
+            //switch (metadata_extension_subsegment_id)
+            //{
+            //    default: 
+                    Skip_BS(metadata_extension_subsegment_length,"metadata_extension_subsegment (unknown)");
+            //}
             Element_End0();
         }
         Param_Info1(metadata_extension_segment_BitCountAfter);

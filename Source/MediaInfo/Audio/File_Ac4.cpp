@@ -3895,12 +3895,12 @@ void File_Ac4::metadata(audio_substream& AudioSubstream, size_t Substream_Index)
             Element_End0();
             Get_V4 (8, umd_payload_size,                        "umd_payload_size");
 
-            switch (umd_payload_id)
-            {
-                default:
+            //switch (umd_payload_id)
+            //{
+            //    default:
                     if (umd_payload_size)
-                        Skip_BS(umd_payload_size*8,             "(Unknown)");
-            }
+                        Skip_BS((size_t)umd_payload_size*8,     "(Unknown)");
+            //}
             Element_End0();
         }
     TEST_SB_END();
