@@ -1679,7 +1679,7 @@ int32s File_Ffv1::pixel_GR(int32s context)
     {
         if (context)
         {
-            if (context >= Context_GR_Size)
+            if ((size_t)context >= Context_GR_Size)
             {
                 BS->Skip(BS->Remain());
                 return 0;

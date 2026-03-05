@@ -1961,7 +1961,7 @@ void File_Usac::Streams_Finish_Conformance()
 void File_Usac::numPreRollFrames_Check(usac_config& CurrentConf, int32u numPreRollFrames, const string& numPreRollFramesConchString)
 {
     string FieldName = numPreRollFramesConchString.substr(numPreRollFramesConchString.rfind(' ') + 1);
-    int numPreRollFrames_Max;
+    int32u numPreRollFrames_Max;
     if (CurrentConf.coreSbrFrameLengthIndex >= coreSbrFrameLengthIndex_Mapping_Size || coreSbrFrameLengthIndex_Mapping[CurrentConf.coreSbrFrameLengthIndex].sbrRatioIndex)
     {
         if (CurrentConf.harmonicSBR)
@@ -3248,7 +3248,7 @@ bool File_Usac::drcInstructionsUniDrc(bool V1, bool NoV0)
             continue; // 0 means not present
         Element_Begin1("DrcChannel");
         int8s gainSetIndex=*DrcChannelGroup-1;
-        int8u bandCount=V1?(gainSetIndex<C.gainSets.size()?C.gainSets[gainSetIndex].bandCount:0):1;
+        int8u bandCount=V1?(gainSetIndex<(int64s)C.gainSets.size()?C.gainSets[gainSetIndex].bandCount:0):1;
         for (int8u k=0; k<bandCount; k++)
         {
             Element_Begin1("band");

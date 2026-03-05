@@ -268,7 +268,7 @@ int File_DtsUhd::ResolveAudPresParams()
         memset(AudPresParam, 0, sizeof(AudPresParam[0])*NumAudioPres);
     }
 
-    for (int AuPresInd=0; AuPresInd<NumAudioPres; AuPresInd++)
+    for (int32u AuPresInd=0; AuPresInd<NumAudioPres; AuPresInd++)
     {
         Element_Begin1("AudPres");
         if (SyncFrameFlag)
@@ -441,7 +441,7 @@ int File_DtsUhd::NaviFindIndex(int DesiredIndex, int32u* ListIndex)
         }
     }
 
-    int Index=0;
+    size_t Index=0;
     for (auto& Navi : Audio_Chunks)
     {
         if (Navi.Present&&Navi.AudioChunkSize==0)
@@ -548,7 +548,7 @@ int File_DtsUhd::ExtractMDChunkObjIDList(MD01* MD01)
     {
         constexpr int8u Table[4] = {3, 4, 6, 8};
         Get_VR (Table, MD01->NumObjects,                        "NumObjects");
-        for (int i=0; i<MD01->NumObjects; i++)
+        for (int32u i=0; i<MD01->NumObjects; i++)
         {
             bool NumBitsforObjID_b;
             Get_SB (NumBitsforObjID_b,                          "NumBitsforObjID");
@@ -894,7 +894,7 @@ int File_DtsUhd::ParseMD01(MD01 *MD01, int AuPresInd)
             Skip_S2(11,                                     "MixStudioParams");
     }
 
-    for (int i=0; i<MD01->NumObjects; i++)
+    for (int32u i=0; i<MD01->NumObjects; i++)
     {
         int32u Id = MD01->ObjectList[i];
         if (!CheckIfMDIsSuitableforImplObjRenderer(MD01, Id))

@@ -2197,7 +2197,7 @@ void File_Mk::Data_Parse()
 
     if (IsParsingSegmentTrack_SeekBackTo && File_Offset+Buffer_Offset+Element_Offset==SegmentTrack_Offset_End) //TODO: implement check at end of an element
     {
-        while (Element_Level>(Element_Offset==Element_Size?2:1))
+        while (Element_Level>(size_t)(Element_Offset==Element_Size?2:1))
             Element_End0();
         GoTo(IsParsingSegmentTrack_SeekBackTo);
         IsParsingSegmentTrack_SeekBackTo=0;

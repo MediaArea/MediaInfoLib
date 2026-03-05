@@ -287,7 +287,7 @@ static std::array<char, 12> DvDif_Time2String(int32u Value, bool DSF = false)
     Result[7] = '0' + SU;
     if (FU < 10) {
         unsigned FF = FT * 10 + FU;
-        auto const FrameRate = DSF ? 25 : 30;
+        unsigned const FrameRate = DSF ? 25 : 30;
         if (FF < FrameRate) {
             auto ms = (FF * 1000 + FrameRate / 2) / FrameRate;
             Result[8] = '.';

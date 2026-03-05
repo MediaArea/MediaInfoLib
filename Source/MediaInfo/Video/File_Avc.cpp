@@ -1072,10 +1072,10 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
     PictureTypes.reserve(TemporalReferences_Size);
     //TODO: check specs for catching when even reference numbers are used in progressive streams
     auto HasOddNumbers=false;
-    for (size_t Pos=1; Pos<TemporalReferences_Size; Pos+=2)
+    for (size_t Pos=1; Pos<(size_t)TemporalReferences_Size; Pos+=2)
         if (TemporalReferences[Pos])
             HasOddNumbers=true;
-    for (size_t Pos=0; Pos<TemporalReferences_Size; Pos++)
+    for (size_t Pos=0; Pos<(size_t)TemporalReferences_Size; Pos++)
         if (TemporalReferences[Pos])
         {
             ScanOrders+=TemporalReferences[Pos]->IsTop?'T':'B';
@@ -1085,12 +1085,12 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         else if (!PictureTypes.empty()) //Only if stream already started
         {
             auto IsBeforeI=false;
-            for (size_t Pos2=Pos; Pos2<TemporalReferences_Size; Pos2++)
+            for (size_t Pos2=Pos; Pos2<(size_t)TemporalReferences_Size; Pos2++)
             {
                 auto TemporalReference=TemporalReferences[Pos2];
                 if (TemporalReference)
                 {
-                    for (; Pos2<TemporalReferences_Size; Pos2++)
+                    for (; Pos2<(size_t)TemporalReferences_Size; Pos2++)
                     {
                         TemporalReference=TemporalReferences[Pos2];
                         if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))
@@ -2604,7 +2604,7 @@ void File_Avc::slice_header()
                     auto PictureTypes_PreviousFrames_InitialSize=PictureTypes_PreviousFrames.size();
                     //TODO: check specs for catching when even reference numbers are used in progressive streams
                     auto HasOddNumbers=false;
-                    for (size_t Pos=1; Pos<TemporalReferences_Size; Pos+=2)
+                    for (size_t Pos=1; Pos<(size_t)TemporalReferences_Size; Pos+=2)
                         if (TemporalReferences[Pos])
                             HasOddNumbers=true;
                     bool IsStarted=false;
@@ -2620,12 +2620,12 @@ void File_Avc::slice_header()
                         else if (PictureTypes_PreviousFrames.size()!=PictureTypes_PreviousFrames_InitialSize) //Only if stream already started
                         {
                             auto IsBeforeI=false;
-                            for (size_t Pos2=Pos; Pos2<TemporalReferences_Size; Pos2++)
+                            for (size_t Pos2=Pos; Pos2<(size_t)TemporalReferences_Size; Pos2++)
                             {
                                 auto TemporalReference=TemporalReferences[Pos2];
                                 if (TemporalReference)
                                 {
-                                    for (; Pos2<TemporalReferences_Size; Pos2++)
+                                    for (; Pos2<(size_t)TemporalReferences_Size; Pos2++)
                                     {
                                         TemporalReference=TemporalReferences[Pos2];
                                         if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))
@@ -2787,10 +2787,10 @@ void File_Avc::slice_header()
                     PictureTypes.reserve(TemporalReferences_Size);
                     //TODO: check specs for catching when even reference numbers are used in progressive streams
                     auto HasOddNumbers=false;
-                    for (size_t Pos=1; Pos<TemporalReferences_Size; Pos+=2)
+                    for (size_t Pos=1; Pos<(size_t)TemporalReferences_Size; Pos+=2)
                         if (TemporalReferences[Pos])
                             HasOddNumbers=true;
-                    for (size_t Pos=0; Pos<TemporalReferences_Size; Pos++)
+                    for (size_t Pos=0; Pos<(size_t)TemporalReferences_Size; Pos++)
                         if (TemporalReferences[Pos])
                         {
                             if ((HasOddNumbers && (*seq_parameter_set_Item)->frame_mbs_only_flag) || (Pos%2)==0)
@@ -2799,12 +2799,12 @@ void File_Avc::slice_header()
                         else if (!PictureTypes.empty()) //Only if stream already started
                         {
                             auto IsBeforeI=false;
-                            for (size_t Pos2=Pos; Pos2<TemporalReferences_Size; Pos2++)
+                            for (size_t Pos2=Pos; Pos2<(size_t)TemporalReferences_Size; Pos2++)
                             {
                                 auto TemporalReference=TemporalReferences[Pos2];
                                 if (TemporalReference)
                                 {
-                                    for (; Pos2<TemporalReferences_Size; Pos2++)
+                                    for (; Pos2<(size_t)TemporalReferences_Size; Pos2++)
                                     {
                                         TemporalReference=TemporalReferences[Pos2];
                                         if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))

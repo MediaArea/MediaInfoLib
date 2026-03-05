@@ -3046,7 +3046,7 @@ void File_Mpeg4::meta_iprp_ipma()
             Element_End0();
             if (property_index)
             {
-                if (property_index-1>=meta_iprp_ipma_Entries.size())
+                if ((size_t)property_index-1>=meta_iprp_ipma_Entries.size())
                     meta_iprp_ipma_Entries.resize(property_index);
                 std::vector<int32u>& Entry=meta_iprp_ipma_Entries[property_index-1];
                 if (find(Entry.begin(), Entry.end(), item_ID)==Entry.end())

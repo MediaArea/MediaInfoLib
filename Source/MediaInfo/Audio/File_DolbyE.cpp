@@ -2883,7 +2883,7 @@ void File_DolbyE::mgi_payload()
             preset::target_device_config& T=P.target_device_configs[j];
             Element_Begin1("target_device_config");
             Get_V4 (3, T.target_devices_mask,                   "target_devices_mask"); Param_Info1(default_target_device_config_Value(T.target_devices_mask));
-            for (int32u k=0; k<num_dyn_objects+num_bed_instances; k++)
+            for (int32u k=0; k<(int32u)num_dyn_objects+num_bed_instances; k++)
             {
                 Element_Begin1(k<num_dyn_objects?"object":"bed");
                 bool active;
