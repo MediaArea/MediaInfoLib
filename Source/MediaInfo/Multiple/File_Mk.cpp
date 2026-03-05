@@ -3983,25 +3983,22 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_auds_ExtensibleWave(int16u 
             Fill(Stream_Audio, StreamPos_Last, Audio_CodecID, __T("A_MS/ACM / ")+Ztring().From_GUID(SubFormat), true);
             Fill(Stream_Audio, StreamPos_Last, Audio_Codec, MediaInfoLib::Config.Codec_Get(Ztring().From_Number(LegacyCodecID, 16)), true);
 
-            //Creating the parser
+            //Creating the parser so block data is fed to it (e.g. for Auro-3D detection in 24-bit PCM)
             #if defined(MEDIAINFO_PCM_YES)
-            if (MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Riff, Ztring().From_Number(LegacyCodecID, 16))==__T("PCM"))
+            if (MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Riff, Ztring().From_Number(LegacyCodecID, 16))==__T("PCM") && TrackNumber!=(int64u)-1 && !Stream[TrackNumber].Parser)
             {
-                //Creating the parser
-                File_Pcm MI;
-                MI.Frame_Count_Valid=0;
-                MI.Codec=Ztring().From_GUID(SubFormat);
-                MI.BitDepth=(int8u)BitsPerSample;
+                File_Pcm* Parser=new File_Pcm;
+                Parser->Codec=Ztring().From_GUID(SubFormat);
+                Parser->BitDepth=(int8u)BitsPerSample;
                 if (ValidBitsPerSample!=BitsPerSample)
-                    MI.BitDepth_Significant=(int8u)ValidBitsPerSample;
-
-                //Parsing
-                Open_Buffer_Init(&MI);
-                Open_Buffer_Continue(&MI, 0);
-
-                //Filling
-                Finish(&MI);
-                Merge(MI, StreamKind_Last, 0, StreamPos_Last);
+                    Parser->BitDepth_Significant=(int8u)ValidBitsPerSample;
+                Parser->Endianness='L';
+                Parser->Channels=(int8u)Retrieve(Stream_Audio, StreamPos_Last, Audio_Channel_s_).To_int8u();
+                Parser->SamplingRate=Retrieve(Stream_Audio, StreamPos_Last, Audio_SamplingRate).To_int32u();
+                Parser->Sign=(BitsPerSample==8?'U':'S');
+                Stream[TrackNumber].Parser=Parser;
+                Stream[TrackNumber].StreamKind=Stream_Audio;
+                Open_Buffer_Init(Stream[TrackNumber].Parser);
             }
             #endif
         }
