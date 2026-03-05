@@ -945,6 +945,9 @@
 #if !defined(MEDIAINFO_IMAGE_NO) && !defined(MEDIAINFO_JPEG_NO) && !defined(MEDIAINFO_JPEG_YES)
     #define MEDIAINFO_JPEG_YES
 #endif
+#if !defined(MEDIAINFO_IMAGE_NO) && !defined(MEDIAINFO_JPEGXL_NO) && !defined(MEDIAINFO_JPEGXL_YES)
+    #define MEDIAINFO_JPEGXL_YES
+#endif
 #if !defined(MEDIAINFO_IMAGE_NO) && !defined(MEDIAINFO_PCX_NO) && !defined(MEDIAINFO_PCX_YES)
     #define MEDIAINFO_PCX_YES
 #endif

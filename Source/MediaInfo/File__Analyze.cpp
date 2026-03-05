@@ -3149,7 +3149,7 @@ void File__Analyze::Element_Begin(const char* Name)
         Element[Element_Level].TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset; //TODO: change this, used in Element_End0()
         if (BS_Size)
         {
-            int64u BS_BitOffset=BS_Size-BS->Remain();
+            int64u BS_BitOffset=BS_Size-(BS->Remain() ? BS->Remain() : BT->Remain());
             Element[Element_Level].TraceNode.Pos+=BS_BitOffset>>3; //Including Bits to Bytes
         }
         Element[Element_Level].TraceNode.Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());

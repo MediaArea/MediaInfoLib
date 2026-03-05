@@ -117,6 +117,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Image/File_Ico.cpp \
                        ../../../Source/MediaInfo/Image/File_GainMap.cpp \
                        ../../../Source/MediaInfo/Image/File_Jpeg.cpp \
+                       ../../../Source/MediaInfo/Image/File_JpegXL.cpp \
                        ../../../Source/MediaInfo/Image/File_Pcx.cpp \
                        ../../../Source/MediaInfo/Image/File_Png.cpp \
                        ../../../Source/MediaInfo/Image/File_Psd.cpp \
