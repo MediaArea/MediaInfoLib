@@ -1096,7 +1096,7 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                                 AttributesValues[i].Write(AttributesList[i][1]);
                             }
 
-                            auto ItemCount = 0;
+                            size_t ItemCount = 0;
                             for (const auto& Item : AttributesValues) {
                                 if (ItemCount < Item.size()) {
                                     ItemCount = Item.size();

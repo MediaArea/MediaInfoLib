@@ -1138,7 +1138,7 @@ void File_Wm::Header_ExtendedContentDescription()
                             int8u PictureType;
                             Get_L1 (PictureType,                                    "Picture Ttype"); Element_Info1(Id3v2_PictureType(PictureType));
                             Get_L4 (Data_Size,                                      "Data size");
-                            if (Value_Length<5 || Data_Size>Value_Length-5)
+                            if (Value_Length<5 || Data_Size>Value_Length-5U)
                                 return; //There is a problem
                             int64u End = Element_Offset;
                             while (End + 1 < Element_Size && *(int16u*)(Buffer + Buffer_Offset + End)) {

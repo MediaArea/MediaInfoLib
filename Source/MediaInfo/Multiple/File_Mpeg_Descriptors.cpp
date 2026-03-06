@@ -4449,10 +4449,11 @@ void File_Mpeg_Descriptors::Get_DVB_Text(int64u Size, int32u LanguageCode, Ztrin
                     return; //Invalid
                 Size--;
                 Get_B1 (CodePage1,                              "CodePage2");
-                switch (CodePage1)
-                {
-                    default:     Get_ISO_8859_1(Size, Value,    Info); //Not implemented, trying best effort at least for letters <0x80
-                }
+                //switch (CodePage1)
+                //{
+                //    default:     
+                                 Get_ISO_8859_1(Size, Value,    Info); //Not implemented, trying best effort at least for letters <0x80
+                //}
                 break;
             case 0x11:
             case 0x14: Get_UTF16B(Size, Value,                  Info); break;
