@@ -154,8 +154,9 @@ void File_AmigaIcon::Read_Buffer_Continue()
             Skip_B1(                                                "im_PlaneOnOff");
             Skip_B4(                                                "im_Next");
 
-            int32u PlaneDataSize=((int32u)((ImgWidth+15)/16)*2)*ImgHeight*ImgDepth;
-            Skip_XX(PlaneDataSize,                                  "Plane data");
+            int64u PlaneDataSize=((int64u)((ImgWidth+15)/16)*2)*ImgHeight*ImgDepth;
+            if (Element_Offset+PlaneDataSize<=Element_Size)
+                Skip_XX(PlaneDataSize,                              "Plane data");
         Element_End0();
 
         ClassicWidth=ImgWidth;
@@ -178,8 +179,9 @@ void File_AmigaIcon::Read_Buffer_Continue()
             Skip_B1(                                                "im_PlaneOnOff");
             Skip_B4(                                                "im_Next");
 
-            int32u PlaneDataSize=((int32u)((ImgWidth+15)/16)*2)*ImgHeight*ImgDepth;
-            Skip_XX(PlaneDataSize,                                  "Plane data");
+            int64u PlaneDataSize=((int64u)((ImgWidth+15)/16)*2)*ImgHeight*ImgDepth;
+            if (Element_Offset+PlaneDataSize<=Element_Size)
+                Skip_XX(PlaneDataSize,                              "Plane data");
         Element_End0();
     }
 
@@ -202,11 +204,14 @@ void File_AmigaIcon::Read_Buffer_Continue()
         Element_Begin1("ToolTypes");
             Get_B4 (CountField,                                     "Count");
 
-            if (CountField)
+            if (CountField>=8)
             {
                 int32u NumEntries=CountField/4-1;
                 for (int32u i=0; i<NumEntries; i++)
                 {
+                    if (Element_Offset>=Element_Size)
+                        break;
+
                     int32u Length;
                     Get_B4 (Length,                                  "Length");
 
@@ -217,7 +222,9 @@ void File_AmigaIcon::Read_Buffer_Continue()
                         {
                             HasNewIcon=true;
                             //Parse NewIcon header: transparency(1) + width(1) + height(1) + colors_hi(1) + colors_lo(1)
-                            if (Element_Offset+9<=(int64u)Buffer_Size)
+                            if (Element_Offset+9<=(int64u)Buffer_Size
+                             && Buffer[(size_t)Element_Offset+5]>=0x21
+                             && Buffer[(size_t)Element_Offset+6]>=0x21)
                             {
                                 NewIconWidth=Buffer[(size_t)Element_Offset+5]-0x21;
                                 NewIconHeight=Buffer[(size_t)Element_Offset+6]-0x21;
@@ -294,11 +301,11 @@ void File_AmigaIcon::Read_Buffer_Continue()
                     Get_B4 (FormSize,                               "Size");
                     Skip_B4(                                        "ICON");
 
-                    int64u FormEnd=Element_Offset+FormSize-4;
                     int16u FaceWidth=0, FaceHeight=0;
                     bool HasIMAG=false, HasARGB=false;
                     int8u  IMAGDepth=0;
 
+                    int64u FormEnd=FormSize>=4?Element_Offset+FormSize-4:Element_Offset;
                     while (Element_Offset+8<=FormEnd && Element_Offset+8<=Element_Size)
                     {
                         int32u ChunkSize;
