@@ -162,10 +162,11 @@ Ztring Dot2Svg(const Ztring& Dot)
         if (!strcmp(Renderers[Pos], "cairo"))
             Cairo=true;
 
-        free(Renderers[Pos]); // Note: Cannot free memory if Graphviz DLL uses different (debug vs release) ucrt from MediaInfo
+        gvFreeRenderData(Renderers[Pos]); // Make use of `gvFreeRenderData` to call Graphviz's internal `free` to prevent ucrt mismatch
     }
     if (Renderers_Size)
-        free(Renderers); // Note: Cannot free memory if Graphviz DLL uses different (debug vs release) ucrt from MediaInfo
+        gvFreeRenderData(reinterpret_cast<char*>(Renderers)); // Make use of `gvFreeRenderData` to call Graphviz's internal `free` to prevent ucrt mismatch
+    Renderers = nullptr;
 
     Graph=agmemread(Dot.To_UTF8().c_str()); 
     if (!Graph)
