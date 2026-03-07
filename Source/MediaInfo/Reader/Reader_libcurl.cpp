@@ -1112,6 +1112,11 @@ size_t Reader_libcurl::Format_Test_PerParser(MediaInfo_Internal* MI, const Strin
         Curl_Data->Time_Max=time(0)+(time_t)MI->Config.File_TimeToLive_Get();
     if (!MI->Config.File_Curl_Get(__T("UserAgent")).empty())
         curl_easy_setopt(Curl_Data->Curl, CURLOPT_USERAGENT, MI->Config.File_Curl_Get(__T("UserAgent")).To_Local().c_str());
+    else {
+        auto Info_Version = Config.Info_Version_Get();
+        Info_Version.FindAndReplace(__T(" - v"), __T("/"));
+        curl_easy_setopt(Curl_Data->Curl, CURLOPT_USERAGENT, Info_Version.To_Local().c_str());
+    }
     if (!MI->Config.File_Curl_Get(__T("Proxy")).empty())
         curl_easy_setopt(Curl_Data->Curl, CURLOPT_PROXY, MI->Config.File_Curl_Get(__T("Proxy")).To_Local().c_str());
     ZtringList HttpHeaderStrings; HttpHeaderStrings.Separator_Set(0, EOL); //End of line is set depending of the platform: \n on Linux, \r on Mac, or \r\n on Windows
