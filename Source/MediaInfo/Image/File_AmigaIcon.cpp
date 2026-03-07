@@ -267,7 +267,8 @@ void File_AmigaIcon::Read_Buffer_Continue()
         Fill(Stream_Image, StreamPos_Last, Image_Width, ClassicWidth);
         Fill(Stream_Image, StreamPos_Last, Image_Height, ClassicHeight);
         Fill(Stream_Image, StreamPos_Last, Image_BitDepth, ClassicDepth);
-        Fill(Stream_Image, StreamPos_Last, Image_Format, "Classic planar");
+        Fill(Stream_Image, StreamPos_Last, Image_Format, "Raw");
+        Fill(Stream_Image, StreamPos_Last, Image_Format_Profile, "Classic");
         Fill(Stream_Image, StreamPos_Last, Image_ColorSpace, "RGB");
     }
 
@@ -277,7 +278,8 @@ void File_AmigaIcon::Read_Buffer_Continue()
         Stream_Prepare(Stream_Image);
         Fill(Stream_Image, StreamPos_Last, Image_Width, NewIconWidth);
         Fill(Stream_Image, StreamPos_Last, Image_Height, NewIconHeight);
-        Fill(Stream_Image, StreamPos_Last, Image_Format, "NewIcon");
+        Fill(Stream_Image, StreamPos_Last, Image_Format, "Raw");
+        Fill(Stream_Image, StreamPos_Last, Image_Format_Profile, "NewIcon");
         Fill(Stream_Image, StreamPos_Last, Image_ColorSpace, "RGB");
     }
 
@@ -303,7 +305,7 @@ void File_AmigaIcon::Read_Buffer_Continue()
 
                     int16u FaceWidth=0, FaceHeight=0;
                     bool HasIMAG=false, HasARGB=false;
-                    int8u  IMAGDepth=0;
+                    int8u  IMAGDepth=0, IMAGFormat=0;
 
                     int64u FormEnd=FormSize>=4?Element_Offset+FormSize-4:Element_Offset;
                     while (Element_Offset+8<=FormEnd && Element_Offset+8<=Element_Size)
@@ -326,6 +328,7 @@ void File_AmigaIcon::Read_Buffer_Continue()
                         {
                             if (!HasIMAG && ChunkSize>=10 && Element_Offset+6<=Element_Size)
                             {
+                                IMAGFormat=Buffer[(size_t)Element_Offset+3];
                                 IMAGDepth=Buffer[(size_t)Element_Offset+5];
                                 HasIMAG=true;
                             }
@@ -354,7 +357,8 @@ void File_AmigaIcon::Read_Buffer_Continue()
                     Fill(Stream_Image, StreamPos_Last, Image_Width, FaceWidth);
                     Fill(Stream_Image, StreamPos_Last, Image_Height, FaceHeight);
                     Fill(Stream_Image, StreamPos_Last, Image_BitDepth, IMAGDepth);
-                    Fill(Stream_Image, StreamPos_Last, Image_Format, "GlowIcon");
+                    Fill(Stream_Image, StreamPos_Last, Image_Format, IMAGFormat==1?"RLE":"Raw");
+                    Fill(Stream_Image, StreamPos_Last, Image_Format_Profile, "GlowIcon");
                     Fill(Stream_Image, StreamPos_Last, Image_ColorSpace, "RGB");
                 }
 
@@ -365,7 +369,8 @@ void File_AmigaIcon::Read_Buffer_Continue()
                     Fill(Stream_Image, StreamPos_Last, Image_Width, FaceWidth);
                     Fill(Stream_Image, StreamPos_Last, Image_Height, FaceHeight);
                     Fill(Stream_Image, StreamPos_Last, Image_BitDepth, 32);
-                    Fill(Stream_Image, StreamPos_Last, Image_Format, "ARGB");
+                    Fill(Stream_Image, StreamPos_Last, Image_Format, "Raw");
+                    Fill(Stream_Image, StreamPos_Last, Image_Format_Profile, "ARGB");
                     Fill(Stream_Image, StreamPos_Last, Image_ColorSpace, "RGBA");
                 }
 
