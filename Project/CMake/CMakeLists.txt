@@ -221,6 +221,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_PBCore.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_PBCore2.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Export/Export_reVTMD.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_AmigaIcon.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_ArriRaw.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Bmp.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Image/File_Bpg.cpp
