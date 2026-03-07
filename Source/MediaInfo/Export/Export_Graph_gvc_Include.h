@@ -9,12 +9,9 @@
 #define Export_Graph_gvc_IncludeH
 //---------------------------------------------------------------------------
 
-//***************************************************************************
-// Needed gvc.h and cgraph.h definitions
-//***************************************************************************
-
-typedef void GVC_t;
-typedef void graph_t;
+//Add support for Graphiz 13.x
+#include <gvc.h>
+#include <stddef.h>
 
 //***************************************************************************
 // Dynamic load stuff
@@ -102,7 +99,11 @@ typedef int (*gvc_Module_gvFreeContext)(GVC_t*); static gvc_Module_gvFreeContext
 typedef char** (*gvc_Module_gvPluginList)(GVC_t*, const char*, int*); static gvc_Module_gvPluginList gvPluginList=NULL;
 typedef int (*gvc_Module_gvLayout)(GVC_t*, graph_t*, const char*); static gvc_Module_gvLayout gvLayout=NULL;
 typedef int (*gvc_Module_gvFreeLayout)(GVC_t*, graph_t*); static gvc_Module_gvFreeLayout gvFreeLayout=NULL;
-typedef int (*gvc_Module_gvRenderData)(GVC_t*, graph_t*, const char*, char**, unsigned int*); static gvc_Module_gvRenderData gvRenderData=NULL;
+#if defined(GV_VERSION_MAJOR) && GV_VERSION_MAJOR >= 13
+    typedef int (*gvc_Module_gvRenderData)(GVC_t*, graph_t*, const char*, char**, size_t*); static gvc_Module_gvRenderData gvRenderData=NULL;
+#else
+    typedef int (*gvc_Module_gvRenderData)(GVC_t*, graph_t*, const char*, char**, unsigned int*); static gvc_Module_gvRenderData gvRenderData=NULL;
+#endif
 typedef void (*gvc_Module_gvFreeRenderData)(char*); static gvc_Module_gvFreeRenderData gvFreeRenderData=NULL;
 typedef void (*gvc_Module_gvFinalize)(GVC_t*); static gvc_Module_gvFinalize gvFinalize=NULL;
 typedef graph_t* (*cgraph_Module_agmemread)(const char*); static cgraph_Module_agmemread agmemread=NULL;
