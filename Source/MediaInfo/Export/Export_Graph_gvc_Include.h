@@ -99,10 +99,13 @@ extern "C"
 // Interface
 typedef GVC_t* (*gvc_Module_gvContext)(); static gvc_Module_gvContext gvContext=NULL;
 typedef int (*gvc_Module_gvFreeContext)(GVC_t*); static gvc_Module_gvFreeContext gvFreeContext=NULL;
+typedef char* (*gvc_Module_gvcVersion)(GVC_t*); static gvc_Module_gvcVersion gvcVersion = NULL;
 typedef char** (*gvc_Module_gvPluginList)(GVC_t*, const char*, int*); static gvc_Module_gvPluginList gvPluginList=NULL;
 typedef int (*gvc_Module_gvLayout)(GVC_t*, graph_t*, const char*); static gvc_Module_gvLayout gvLayout=NULL;
 typedef int (*gvc_Module_gvFreeLayout)(GVC_t*, graph_t*); static gvc_Module_gvFreeLayout gvFreeLayout=NULL;
-typedef int (*gvc_Module_gvRenderData)(GVC_t*, graph_t*, const char*, char**, unsigned int*); static gvc_Module_gvRenderData gvRenderData=NULL;
+typedef void (*gvc_Module_gvRenderData)(); static gvc_Module_gvRenderData gvRenderData=NULL;
+typedef int (*gvRenderData_new)(GVC_t*, graph_t*, const char*, char**, size_t*);
+typedef int (*gvRenderData_old)(GVC_t*, graph_t*, const char*, char**, unsigned int*);
 typedef void (*gvc_Module_gvFreeRenderData)(char*); static gvc_Module_gvFreeRenderData gvFreeRenderData=NULL;
 typedef void (*gvc_Module_gvFinalize)(GVC_t*); static gvc_Module_gvFinalize gvFinalize=NULL;
 typedef graph_t* (*cgraph_Module_agmemread)(const char*); static cgraph_Module_agmemread agmemread=NULL;

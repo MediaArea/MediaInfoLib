@@ -110,14 +110,41 @@ Ztring Element2Html(MediaInfo_Internal &MI, stream_t StreamKind, size_t StreamPo
 //---------------------------------------------------------------------------
 
 #ifdef MEDIAINFO_GRAPHVIZ_YES
+
+// gvRenderData wrapper function to handle API changes in Graphviz version 13
+// Graphviz 13: Breaking: gvRenderData takes its length parameter as a size_t *.
+static int gvRenderData_dispatch(GVC_t* gvc, graph_t* g, const char* format, char** result, size_t* length)
+{
+    int ret{};
+    #ifdef MEDIAINFO_GRAPHVIZ_DLL_RUNTIME
+        if (atoi(gvcVersion(gvc)) >= 13) {
+            ret = ((gvRenderData_new)gvRenderData)(gvc, g, format, result, length);
+        }
+        else {
+            unsigned int uLength{};
+            ret = ((gvRenderData_old)gvRenderData)(gvc, g, format, result, &uLength);
+            *length = static_cast<size_t>(uLength);
+        }
+    #else
+        #if defined(GV_VERSION_MAJOR) && GV_VERSION_MAJOR != 0 && GV_VERSION_MAJOR < 13
+            unsigned int uLength{};
+            ret = gvRenderData(gvc, g, format, result, &uLength);
+            *length = static_cast<size_t>(uLength);
+        #else
+            ret = gvRenderData(gvc, g, format, result, length);
+        #endif
+    #endif //MEDIAINFO_GRAPHVIZ_DLL_RUNTIME
+    return ret;
+}
+
 Ztring Dot2Svg(const Ztring& Dot)
 {
     Ztring ToReturn;
-    GVC_t* Context=NULL;
-    graph_t* Graph=NULL;
-    char* Buffer=NULL;
-    unsigned int Size;
-    bool Cairo=false;
+    GVC_t* Context{};
+    graph_t* Graph{};
+    char* Buffer{};
+    size_t Size{};
+    bool Cairo{};
 
     if (!Export_Graph::Load())
         return ToReturn;
@@ -135,10 +162,10 @@ Ztring Dot2Svg(const Ztring& Dot)
         if (!strcmp(Renderers[Pos], "cairo"))
             Cairo=true;
 
-        free(Renderers[Pos]);
+        free(Renderers[Pos]); // Note: Cannot free memory if Graphviz DLL uses different (debug vs release) ucrt from MediaInfo
     }
     if (Renderers_Size)
-        free(Renderers);
+        free(Renderers); // Note: Cannot free memory if Graphviz DLL uses different (debug vs release) ucrt from MediaInfo
 
     Graph=agmemread(Dot.To_UTF8().c_str()); 
     if (!Graph)
@@ -156,10 +183,7 @@ Ztring Dot2Svg(const Ztring& Dot)
         return ToReturn;
     }
 
-    if (Cairo)
-        gvRenderData(Context, Graph, "svg:cairo", &Buffer, &Size);
-    else
-        gvRenderData(Context, Graph, "svg", &Buffer, &Size);
+    gvRenderData_dispatch(Context, Graph, Cairo ? "svg:cairo" : "svg", &Buffer, &Size);
 
     if (Buffer && Size)
         ToReturn=Ztring().From_UTF8(Buffer);
@@ -206,6 +230,7 @@ bool Export_Graph::Load()
             bool Error=false;
             ASSIGN(gvc_Module, gvContext)
             ASSIGN(gvc_Module, gvFreeContext)
+            ASSIGN(gvc_Module, gvcVersion)
             ASSIGN(gvc_Module, gvPluginList)
             ASSIGN(gvc_Module, gvLayout)
             ASSIGN(gvc_Module, gvFreeLayout)
