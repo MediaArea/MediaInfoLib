@@ -133,14 +133,17 @@ void File_AmigaIcon::Read_Buffer_Continue()
     //DrawerData
     if (HasDrawerData)
     {
-        Element_Begin1("DrawerData");
-            Skip_XX(56,                                             "DrawerData");
-        Element_End0();
+        if (Element_Offset+56<=Element_Size)
+        {
+            Element_Begin1("DrawerData");
+                Skip_XX(56,                                         "DrawerData");
+            Element_End0();
+        }
     }
 
     //Classic image (normal)
     int16u ClassicWidth=0, ClassicHeight=0, ClassicDepth=0;
-    if (GadgetRender)
+    if (GadgetRender && Element_Offset+20<=Element_Size)
     {
         int16u ImgWidth, ImgHeight, ImgDepth;
         Element_Begin1("Classic image");
@@ -154,9 +157,12 @@ void File_AmigaIcon::Read_Buffer_Continue()
             Skip_B1(                                                "im_PlaneOnOff");
             Skip_B4(                                                "im_Next");
 
-            int64u PlaneDataSize=((int64u)((ImgWidth+15)/16)*2)*ImgHeight*ImgDepth;
-            if (Element_Offset+PlaneDataSize<=Element_Size)
-                Skip_XX(PlaneDataSize,                              "Plane data");
+            if (ImgWidth>0 && ImgHeight>0 && ImgDepth>0 && ImgDepth<=8)
+            {
+                int64u PlaneDataSize=((int64u)((ImgWidth+15)/16)*2)*ImgHeight*ImgDepth;
+                if (Element_Offset+PlaneDataSize<=Element_Size)
+                    Skip_XX(PlaneDataSize,                          "Plane data");
+            }
         Element_End0();
 
         ClassicWidth=ImgWidth;
@@ -165,7 +171,7 @@ void File_AmigaIcon::Read_Buffer_Continue()
     }
 
     //Classic image (selected)
-    if (SelectRender)
+    if (SelectRender && Element_Offset+20<=Element_Size)
     {
         int16u ImgWidth, ImgHeight, ImgDepth;
         Element_Begin1("Classic image (selected)");
@@ -179,26 +185,30 @@ void File_AmigaIcon::Read_Buffer_Continue()
             Skip_B1(                                                "im_PlaneOnOff");
             Skip_B4(                                                "im_Next");
 
-            int64u PlaneDataSize=((int64u)((ImgWidth+15)/16)*2)*ImgHeight*ImgDepth;
-            if (Element_Offset+PlaneDataSize<=Element_Size)
-                Skip_XX(PlaneDataSize,                              "Plane data");
+            if (ImgWidth>0 && ImgHeight>0 && ImgDepth>0 && ImgDepth<=8)
+            {
+                int64u PlaneDataSize=((int64u)((ImgWidth+15)/16)*2)*ImgHeight*ImgDepth;
+                if (Element_Offset+PlaneDataSize<=Element_Size)
+                    Skip_XX(PlaneDataSize,                          "Plane data");
+            }
         Element_End0();
     }
 
     //DefaultTool
-    if (HasDefaultTool)
+    if (HasDefaultTool && Element_Offset+4<=Element_Size)
     {
         int32u Length;
         Element_Begin1("DefaultTool");
             Get_B4 (Length,                                         "Length");
-            Skip_XX(Length,                                         "Text");
+            if (Element_Offset+Length<=Element_Size)
+                Skip_XX(Length,                                     "Text");
         Element_End0();
     }
 
     //ToolTypes
     bool HasNewIcon=false;
     int16u NewIconWidth=0, NewIconHeight=0;
-    if (HasToolTypes)
+    if (HasToolTypes && Element_Offset+4<=Element_Size)
     {
         int32u CountField;
         Element_Begin1("ToolTypes");
@@ -209,7 +219,7 @@ void File_AmigaIcon::Read_Buffer_Continue()
                 int32u NumEntries=CountField/4-1;
                 for (int32u i=0; i<NumEntries; i++)
                 {
-                    if (Element_Offset>=Element_Size)
+                    if (Element_Offset+4>Element_Size)
                         break;
 
                     int32u Length;
@@ -232,6 +242,8 @@ void File_AmigaIcon::Read_Buffer_Continue()
                         }
                     }
 
+                    if (Element_Offset+Length>Element_Size)
+                        break;
                     Skip_XX(Length,                                  "ToolType");
                 }
             }
@@ -239,12 +251,13 @@ void File_AmigaIcon::Read_Buffer_Continue()
     }
 
     //ToolWindow
-    if (HasToolWindow)
+    if (HasToolWindow && Element_Offset+4<=Element_Size)
     {
         int32u Length;
         Element_Begin1("ToolWindow");
             Get_B4 (Length,                                         "Length");
-            Skip_XX(Length,                                         "Text");
+            if (Element_Offset+Length<=Element_Size)
+                Skip_XX(Length,                                     "Text");
         Element_End0();
     }
 
