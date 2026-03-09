@@ -23,10 +23,6 @@ else()
   option(BUILD_ZENLIB "Build bundled ZenLib" ON)
 endif()
 
-if (MSVC)
-  string(APPEND CMAKE_CXX_FLAGS " /EHsc")
-endif()
-
 set(LIB_SUFFIX "" CACHE STRING "Define suffix of directory name (32/64)" )
 set(BIN_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/bin" CACHE STRING "Directory where binary will install")
 set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}" CACHE STRING "Directory where library will install")
@@ -449,11 +445,8 @@ else()
     SOVERSION ${MediaInfoLib_SOVERSION})
 endif()
 
-set_target_properties(mediainfo PROPERTIES
-  CXX_STANDARD 11
-  CXX_EXTENSIONS NO
-  CXX_STANDARD_REQUIRED YES
-)
+include(EnableLatestCXX)
+enable_latest_cxx(mediainfo)
 
 install(TARGETS mediainfo EXPORT mediainfo-export
   RUNTIME DESTINATION ${BIN_INSTALL_DIR}
