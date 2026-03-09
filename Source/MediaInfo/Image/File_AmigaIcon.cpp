@@ -133,7 +133,7 @@ void File_AmigaIcon::Read_Buffer_Continue()
     //DrawerData
     if (HasDrawerData)
     {
-        if (Element_Offset+56<=Element_Size)
+        if (56<=Element_Size-Element_Offset)
         {
             Element_Begin1("DrawerData");
                 Skip_XX(56,                                         "DrawerData");
@@ -143,7 +143,7 @@ void File_AmigaIcon::Read_Buffer_Continue()
 
     //Classic image (normal)
     int16u ClassicWidth=0, ClassicHeight=0, ClassicDepth=0;
-    if (GadgetRender && Element_Offset+20<=Element_Size)
+    if (GadgetRender && 20<=Element_Size-Element_Offset)
     {
         int16u ImgWidth, ImgHeight, ImgDepth;
         Element_Begin1("Classic image");
@@ -160,7 +160,7 @@ void File_AmigaIcon::Read_Buffer_Continue()
             if (ImgWidth>0 && ImgHeight>0 && ImgDepth>0 && ImgDepth<=8)
             {
                 int64u PlaneDataSize=((int64u)((ImgWidth+15)/16)*2)*ImgHeight*ImgDepth;
-                if (Element_Offset+PlaneDataSize<=Element_Size)
+                if (PlaneDataSize<=Element_Size-Element_Offset)
                     Skip_XX(PlaneDataSize,                          "Plane data");
             }
         Element_End0();
@@ -171,7 +171,7 @@ void File_AmigaIcon::Read_Buffer_Continue()
     }
 
     //Classic image (selected)
-    if (SelectRender && Element_Offset+20<=Element_Size)
+    if (SelectRender && 20<=Element_Size-Element_Offset)
     {
         int16u ImgWidth, ImgHeight, ImgDepth;
         Element_Begin1("Classic image (selected)");
@@ -188,19 +188,19 @@ void File_AmigaIcon::Read_Buffer_Continue()
             if (ImgWidth>0 && ImgHeight>0 && ImgDepth>0 && ImgDepth<=8)
             {
                 int64u PlaneDataSize=((int64u)((ImgWidth+15)/16)*2)*ImgHeight*ImgDepth;
-                if (Element_Offset+PlaneDataSize<=Element_Size)
+                if (PlaneDataSize<=Element_Size-Element_Offset)
                     Skip_XX(PlaneDataSize,                          "Plane data");
             }
         Element_End0();
     }
 
     //DefaultTool
-    if (HasDefaultTool && Element_Offset+4<=Element_Size)
+    if (HasDefaultTool && 4<=Element_Size-Element_Offset)
     {
         int32u Length;
         Element_Begin1("DefaultTool");
             Get_B4 (Length,                                         "Length");
-            if (Element_Offset+Length<=Element_Size)
+            if (Length<=Element_Size-Element_Offset)
                 Skip_XX(Length,                                     "Text");
         Element_End0();
     }
@@ -208,7 +208,7 @@ void File_AmigaIcon::Read_Buffer_Continue()
     //ToolTypes
     bool HasNewIcon=false;
     int16u NewIconWidth=0, NewIconHeight=0;
-    if (HasToolTypes && Element_Offset+4<=Element_Size)
+    if (HasToolTypes && 4<=Element_Size-Element_Offset)
     {
         int32u CountField;
         Element_Begin1("ToolTypes");
@@ -217,22 +217,24 @@ void File_AmigaIcon::Read_Buffer_Continue()
             if (CountField>=8)
             {
                 int32u NumEntries=CountField/4-1;
+                if (NumEntries>(int32u)((Element_Size-Element_Offset)/4))
+                    NumEntries=(int32u)((Element_Size-Element_Offset)/4);
                 for (int32u i=0; i<NumEntries; i++)
                 {
-                    if (Element_Offset+4>Element_Size)
+                    if (4>Element_Size-Element_Offset)
                         break;
 
                     int32u Length;
                     Get_B4 (Length,                                  "Length");
 
                     //Check for IM1= prefix to detect NewIcon
-                    if (!HasNewIcon && Length>=5 && Element_Offset+4<=(int64u)Buffer_Size)
+                    if (!HasNewIcon && Length>=5 && 4<=(int64u)Buffer_Size-Element_Offset)
                     {
                         if (Buffer[(size_t)Element_Offset]=='I' && Buffer[(size_t)Element_Offset+1]=='M' && Buffer[(size_t)Element_Offset+2]=='1' && Buffer[(size_t)Element_Offset+3]=='=')
                         {
                             HasNewIcon=true;
                             //Parse NewIcon header: transparency(1) + width(1) + height(1) + colors_hi(1) + colors_lo(1)
-                            if (Element_Offset+9<=(int64u)Buffer_Size
+                            if (9<=(int64u)Buffer_Size-Element_Offset
                              && Buffer[(size_t)Element_Offset+5]>=0x21
                              && Buffer[(size_t)Element_Offset+6]>=0x21)
                             {
@@ -242,7 +244,7 @@ void File_AmigaIcon::Read_Buffer_Continue()
                         }
                     }
 
-                    if (Element_Offset+Length>Element_Size)
+                    if (Length>Element_Size-Element_Offset)
                         break;
                     Skip_XX(Length,                                  "ToolType");
                 }
@@ -251,12 +253,12 @@ void File_AmigaIcon::Read_Buffer_Continue()
     }
 
     //ToolWindow
-    if (HasToolWindow && Element_Offset+4<=Element_Size)
+    if (HasToolWindow && 4<=Element_Size-Element_Offset)
     {
         int32u Length;
         Element_Begin1("ToolWindow");
             Get_B4 (Length,                                         "Length");
-            if (Element_Offset+Length<=Element_Size)
+            if (Length<=Element_Size-Element_Offset)
                 Skip_XX(Length,                                     "Text");
         Element_End0();
     }
@@ -264,7 +266,7 @@ void File_AmigaIcon::Read_Buffer_Continue()
     //DrawerData2
     if (HasDrawerData && (UserData&0xFF))
     {
-        if (Element_Offset+6<=Element_Size)
+        if (6<=Element_Size-Element_Offset)
         {
             Element_Begin1("DrawerData2");
                 Skip_B4(                                            "dd_Flags");
@@ -297,11 +299,11 @@ void File_AmigaIcon::Read_Buffer_Continue()
     }
 
     //FORM ICON (GlowIcons / ARGB)
-    if (Element_Offset+12<=Element_Size)
+    if (12<=Element_Size-Element_Offset)
     {
         //Search for "FORM" + "ICON"
         int64u SearchPos=Element_Offset;
-        while (SearchPos+12<=Element_Size)
+        while (12<=Element_Size-SearchPos)
         {
             if (Buffer[(size_t)SearchPos]=='F' && Buffer[(size_t)SearchPos+1]=='O' && Buffer[(size_t)SearchPos+2]=='R' && Buffer[(size_t)SearchPos+3]=='M'
              && Buffer[(size_t)SearchPos+8]=='I' && Buffer[(size_t)SearchPos+9]=='C' && Buffer[(size_t)SearchPos+10]=='O' && Buffer[(size_t)SearchPos+11]=='N')
@@ -320,8 +322,10 @@ void File_AmigaIcon::Read_Buffer_Continue()
                     bool HasIMAG=false, HasARGB=false;
                     int8u  IMAGDepth=0, IMAGFormat=0;
 
-                    int64u FormEnd=FormSize>=4?Element_Offset+FormSize-4:Element_Offset;
-                    while (Element_Offset+8<=FormEnd && Element_Offset+8<=Element_Size)
+                    int64u FormEnd=Element_Offset+(FormSize>=4?FormSize-4:0);
+                    if (FormEnd>Element_Size)
+                        FormEnd=Element_Size;
+                    while (Element_Offset<=FormEnd && 8<=FormEnd-Element_Offset && 8<=Element_Size-Element_Offset)
                     {
                         int32u ChunkSize;
                         int32u ChunkName;
@@ -331,7 +335,7 @@ void File_AmigaIcon::Read_Buffer_Continue()
 
                         if (ChunkName==0x46414345) //"FACE"
                         {
-                            if (ChunkSize>=4 && Element_Offset+4<=Element_Size)
+                            if (ChunkSize>=4 && 4<=Element_Size-Element_Offset)
                             {
                                 FaceWidth=Buffer[(size_t)Element_Offset]+1;
                                 FaceHeight=Buffer[(size_t)Element_Offset+1]+1;
@@ -339,7 +343,7 @@ void File_AmigaIcon::Read_Buffer_Continue()
                         }
                         else if (ChunkName==0x494D4147) //"IMAG"
                         {
-                            if (!HasIMAG && ChunkSize>=10 && Element_Offset+6<=Element_Size)
+                            if (!HasIMAG && ChunkSize>=10 && 6<=Element_Size-Element_Offset)
                             {
                                 IMAGFormat=Buffer[(size_t)Element_Offset+3];
                                 IMAGDepth=Buffer[(size_t)Element_Offset+5];
@@ -352,10 +356,16 @@ void File_AmigaIcon::Read_Buffer_Continue()
                         }
 
                         //Skip chunk data (padded to even)
+                        if (ChunkSize==0)
+                            break;
                         int32u SkipSize=ChunkSize;
                         if (SkipSize%2)
+                        {
+                            if (SkipSize==0xFFFFFFFF)
+                                break;
                             SkipSize++;
-                        if (Element_Offset+SkipSize<=Element_Size)
+                        }
+                        if (SkipSize<=Element_Size-Element_Offset)
                             Skip_XX(SkipSize,                       "Chunk data");
                         else
                             break;
