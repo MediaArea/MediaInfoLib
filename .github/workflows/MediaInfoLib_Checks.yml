@@ -6,7 +6,7 @@ jobs:
   Build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
         environement: [gcc, utf8, minified, minimal, minimal-with-xml, cmake, cmake-dll]
         exclude:
           - os: macos-latest
@@ -16,6 +16,14 @@ jobs:
           - os: macos-latest
             environement: minimal-with-xml
           - os: macos-latest
+            environement: cmake-dll
+          - os: ubuntu-24.04-arm
+            environement: minified
+          - os: ubuntu-24.04-arm
+            environement: minimal
+          - os: ubuntu-24.04-arm
+            environement: minimal-with-xml
+          - os: ubuntu-24.04-arm
             environement: cmake-dll
           - os: windows-latest
             environement: gcc
