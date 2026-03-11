@@ -393,6 +393,8 @@ endif()
 add_library(mediainfo ${MediaInfoLib_SRCS})
 target_include_directories(mediainfo INTERFACE ${INCLUDE_INSTALL_DIR})
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/MediaInfoSetupOptions.cmake)
+
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16")
     target_precompile_headers(mediainfo PRIVATE "${MediaInfoLib_SOURCES_PATH}/MediaInfo/PreComp.h")
     file(GLOB_RECURSE MEDIAINFO_THIRD_PARTY_SOURCES
