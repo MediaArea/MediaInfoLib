@@ -202,6 +202,8 @@ void File_AmigaIcon::Read_Buffer_Continue()
             Get_B4 (Length,                                         "Length");
             if (Length<=Element_Size-Element_Offset)
                 Skip_XX(Length,                                     "Text");
+            else
+                Skip_XX(Element_Size-Element_Offset,               "(Problem)");
         Element_End0();
     }
 
@@ -228,13 +230,13 @@ void File_AmigaIcon::Read_Buffer_Continue()
                     Get_B4 (Length,                                  "Length");
 
                     //Check for IM1= prefix to detect NewIcon
-                    if (!HasNewIcon && Length>=5 && 4<=(int64u)Buffer_Size-Element_Offset)
+                    if (!HasNewIcon && Length>=5 && 4<=Element_Size-Element_Offset)
                     {
                         if (Buffer[(size_t)Element_Offset]=='I' && Buffer[(size_t)Element_Offset+1]=='M' && Buffer[(size_t)Element_Offset+2]=='1' && Buffer[(size_t)Element_Offset+3]=='=')
                         {
                             HasNewIcon=true;
                             //Parse NewIcon header: transparency(1) + width(1) + height(1) + colors_hi(1) + colors_lo(1)
-                            if (9<=(int64u)Buffer_Size-Element_Offset
+                            if (Length>=9 && 9<=Element_Size-Element_Offset
                              && Buffer[(size_t)Element_Offset+5]>=0x21
                              && Buffer[(size_t)Element_Offset+6]>=0x21)
                             {
@@ -260,6 +262,8 @@ void File_AmigaIcon::Read_Buffer_Continue()
             Get_B4 (Length,                                         "Length");
             if (Length<=Element_Size-Element_Offset)
                 Skip_XX(Length,                                     "Text");
+            else
+                Skip_XX(Element_Size-Element_Offset,               "(Problem)");
         Element_End0();
     }
 
