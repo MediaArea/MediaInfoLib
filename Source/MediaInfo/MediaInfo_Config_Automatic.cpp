@@ -1520,6 +1520,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "Wave;;;A;Riff;;act at9 wav;audio/vnd.wave\n"
     "Wave64;;;A;Riff;;w64\n"
     "WavPack;;;A;Wvpk;;wv wvc;;http://www.wavpack.com\n"
+    "Amiga Icon;;;I;AmigaIcon;Amiga Workbench Icon;info;image/x-amiga-icon;;Lossless\n"
     "APNG;;;I;Png;Animated Portable Network Graphic;apng png pns;image/apng;http://www.w3.org/TR/png/;Lossless\n"
     "Arri Raw;;;I;ArriRaw;;ari\n"
     "ARW;;;I;Tiff;Sony Alpha RAW;arw;image/x-sony-arw;http://www.sony.com/\n"
