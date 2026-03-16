@@ -12,6 +12,9 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/File__Duplicate.h"
+#if defined(MEDIAINFO_T35_YES)
+    #include "MediaInfo/Multiple/File_T35.h"
+#endif
 #include <cmath>
 //---------------------------------------------------------------------------
 
@@ -48,6 +51,9 @@ private :
     void Data_Parse() override;
 
     //Elements
+    #if !defined(MEDIAINFO_T35_YES)
+    #define T35(x) { Skip_XX(Element_Size - Element_Offset, "(Not parsed)"); }
+    #endif
     void obu_extension_data(int64u sz);
     void trailing_bits(int64u nbBits);
     void byte_alignment();
@@ -75,9 +81,9 @@ private :
     void metadata_unit(int64u metadata_type, int64u payload_size);
     void metadata_short_obu();
     void metadata_group_obu();
-    void metadata_itu_t_t35();
-    void metadata_hdr_cll();
-    void metadata_hdr_mdcv();
+    void metadata_itu_t_t35() { T35(File_T35::style::itu_t_t35); }
+    void metadata_hdr_cll() { T35(File_T35::style::light_level); }
+    void metadata_hdr_mdcv() { T35(File_T35::style::mastering_display_colour_volume); }
     void metadata_timecode();
     void metadata_banding_hints();
     void metadata_icc_profile();
@@ -111,16 +117,10 @@ private :
     int8u   TransferCharacteristics{ 2 };
     int8u   MatrixCoefficients{ 2 };
     int32u  chroma_format_idc{};
-    Ztring  maximum_content_light_level;
-    Ztring  maximum_frame_average_light_level;
-    enum hdr_format
-    {
-        HdrFormat_SmpteSt209440,
-        HdrFormat_SmpteSt2086,
-        HdrFormat_Max,
-    };
-    typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
-    hdr     HDR;
+
+    #if defined(MEDIAINFO_T35_YES)
+    std::unique_ptr<File__Analyze> T35_Parser{};
+    #endif
 
     //Helpers
     void Get_leb128(int64u& Info, const char* Name);
@@ -131,6 +131,9 @@ private :
     void Get_ns(int8u n, int64u& Info, const char* Name);
     void Skip_ns(int8u n, const char* Name);
     void Get_rg(int8u n, int64u& Info, const char* Name);
+    #if defined(MEDIAINFO_T35_YES)
+    void T35(File_T35::style Style);
+    #endif
 };
 
 } //NameSpace

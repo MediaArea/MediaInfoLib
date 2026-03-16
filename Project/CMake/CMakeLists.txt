@@ -306,6 +306,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_SequenceInfo.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Skm.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Swf.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_T35.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Umf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Vbi.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Wm.cpp

@@ -12,6 +12,9 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/File__Duplicate.h"
+#if defined(MEDIAINFO_T35_YES)
+    #include "MediaInfo/Multiple/File_T35.h"
+#endif
 #include "MediaInfo/TimeCode.h"
 #include <bitset>
 #include <cmath>
@@ -392,6 +395,9 @@ private :
     void Option_Manage ();
 
     //Elements
+    #if !defined(MEDIAINFO_T35_YES)
+    #define T35(x) { Skip_XX(Element_Size - Element_Offset, "(Not parsed)"); }
+    #endif
     void slice_layer_without_partitioning_IDR();
     void slice_layer_without_partitioning_non_IDR();
     void slice_header();
@@ -404,32 +410,14 @@ private :
     void sei_message_buffering_period_xxl(seq_parameter_set_struct::vui_parameters_struct::xxl* xxl);
     void sei_message_pic_timing(int32u payloadSize, int32u seq_parameter_set_id);
     void sei_message_user_data_registered_itu_t_t35();
-    void sei_message_user_data_registered_itu_t_t35_DTG1();
-    void sei_message_user_data_registered_itu_t_t35_GA94();
     void sei_message_user_data_registered_itu_t_t35_GA94_03();
     void sei_message_user_data_registered_itu_t_t35_GA94_03_Delayed(int32u seq_parameter_set_id);
-    void sei_message_user_data_registered_itu_t_t35_GA94_06();
     void sei_message_user_data_unregistered(int32u payloadSize);
     void sei_message_user_data_unregistered_x264(int32u payloadSize);
     void sei_message_user_data_unregistered_bluray(int32u payloadSize);
     void sei_message_user_data_unregistered_bluray_MDPM(int32u payloadSize);
-    void sei_message_mastering_display_colour_volume();
-    void sei_message_light_level();
-
-    enum hdr_format
-    {
-        HdrFormat_EtsiTs103433,
-        HdrFormat_SmpteSt209440,
-        HdrFormat_SmpteSt2086,
-    };
-
-    typedef std::map<hdr_format, std::map<video, Ztring> > hdr;
-
-    hdr                                 HDR;
-
-
-    Ztring  maximum_content_light_level;
-    Ztring  maximum_frame_average_light_level;
+    void sei_message_mastering_display_colour_volume() { T35(File_T35::style::mastering_display_colour_volume); }
+    void sei_message_light_level() { T35(File_T35::style::light_level); }
 
     void consumer_camera_1();
     void consumer_camera_2();
@@ -512,6 +500,10 @@ private :
     size_t                              TemporalReferences_Offset_pic_order_cnt_lsb_Last;
     int64s                              TemporalReferences_pic_order_cnt_Min;
 
+    #if defined(MEDIAINFO_T35_YES)
+    std::unique_ptr<File__Analyze>      T35_Parser{};
+    #endif
+
     //Text
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
         File__Analyze*                  GA94_03_Parser;
@@ -579,6 +571,9 @@ private :
     //Helpers
     string                              GOP_Detect                              (string PictureTypes);
     string                              ScanOrder_Detect                        (string ScanOrders);
+    #if defined(MEDIAINFO_T35_YES)
+    void T35(File_T35::style Style);
+    #endif
 
     #if MEDIAINFO_DUPLICATE
         bool   File__Duplicate_Set  (const Ztring &Value); //Fill a new File__Duplicate value

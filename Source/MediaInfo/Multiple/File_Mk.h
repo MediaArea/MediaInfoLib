@@ -352,25 +352,11 @@ private :
     void Segment_Tags_Tag_SimpleTag_TagBinary(){Skip_XX(Element_Size, "Data");};
     void Segment_Tags_Tag_SimpleTag_Assign();
 
-    // Extra
-    enum hdr_format
-    {
-        HdrFormat_SmpteSt209440,
-        HdrFormat_T_UWA005,
-        HdrFormat_SmpteSt2086,
-        HdrFormat_Max,
-    };
-    typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
-    hdr                                 HDR;
     void sei_message_user_data_registered_itu_t_t35();
-    void sei_message_user_data_registered_itu_t_t35_B5();
-    void sei_message_user_data_registered_itu_t_t35_B5_003C();
-    void sei_message_user_data_registered_itu_t_t35_B5_003C_0001();
-    void sei_message_user_data_registered_itu_t_t35_B5_003C_0001_04();
 
-    void sei_message_user_data_registered_itu_t_t35_26();
-    void sei_message_user_data_registered_itu_t_t35_26_0004();
-    void sei_message_user_data_registered_itu_t_t35_26_0004_0005();
+    #if defined(MEDIAINFO_T35_YES)
+    std::unique_ptr<File__Analyze> T35_Parser{};
+    #endif
 
     struct stream
     {

@@ -29,7 +29,6 @@
 #if defined(MEDIAINFO_DIRECTORY_YES)
 #include "ZenLib/Dir.h"
 #endif //defined(MEDIAINFO_DIRECTORY_YES)
-#include <memory>
 #include <algorithm>
 using namespace std;
 //---------------------------------------------------------------------------
