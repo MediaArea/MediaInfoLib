@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>MediaInfoLib.Native</id>
+        <title>MediaInfoLib DLL and header for native(c++) projects</title>
+        <version>18.08.1</version>
+        <authors>MediaArea.net</authors>
+        <copyright>Copyright (c) MediaArea.net SARL.</copyright>
+        <tags>mediainfo mediainfolib libmediainfo native</tags>
+        <description>MediaInfo is a convenient unified display of the most relevant technical and tag data for video and audio files.</description>
+        <language>en-US</language>
+        <projectUrl>https://mediaarea.net/MediaInfo</projectUrl>
+        <licenseUrl>https://github.com/MediaArea/MediaInfoLib/blob/master/LICENSE</licenseUrl>
+        <iconUrl>https://mediaarea.net/_/img/MediaInfo_90x90.png</iconUrl>
+    </metadata>
+
+    <files>
+        <file src="..\..\MSVC2017\Win32\Release\MediaInfo.dll" target="build/native/x86/" />
+        <file src="..\..\MSVC2017\Win32\Release\MediaInfo.lib" target="build/native/x86/" />
+        <file src="..\..\MSVC2017\x64\Release\MediaInfo.dll" target="build/native/x64/" />
+        <file src="..\..\MSVC2017\x64\Release\MediaInfo.lib" target="build/native/x64/" />
+        <file src="MediaInfoLib.Native.targets" target="build/native/" />
+        <file src="..\..\..\Source\MediaInfoDLL\MediaInfoDLL.h" target="build/native/Include/" />
+    </files>
+</package>

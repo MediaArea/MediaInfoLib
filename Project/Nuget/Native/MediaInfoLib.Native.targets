@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" InitialTargets="MediaInfoLib_init">
+    <ItemDefinitionGroup>
+        <ClCompile>
+            <PreprocessorDefinitions>UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)..\..\build\native\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        </ClCompile>
+        <ResourceCompile>
+            <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)..\..\build\native\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        </ResourceCompile>
+    </ItemDefinitionGroup>
+    <ItemDefinitionGroup Label="x64" Condition="'$(Platform.ToLower())' == 'x64'">
+        <Link>
+            <AdditionalDependencies>$(MSBuildThisFileDirectory)..\..\build\native\x64\MediaInfo.lib;%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
+    </ItemDefinitionGroup>
+    <ItemDefinitionGroup Label="Win32" Condition="'$(Platform.ToLower())' == 'win32'">
+        <Link>
+            <AdditionalDependencies>$(MSBuildThisFileDirectory)..\..\build\native\x86\MediaInfo.lib;%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
+    </ItemDefinitionGroup>
+    <Target Name="MediaInfoLib_init">
+    </Target>
+    <Target Name="CopyMediaInfoDll" AfterTargets="AfterBuild">
+    <ItemGroup  Label="x64" Condition="'$(Platform.ToLower())' == 'x64'">
+      <MediaInfoDll Include="$(MSBuildThisFileDirectory)..\..\build\native\x64\MediaInfo.dll"/>
+    </ItemGroup>
+    <ItemGroup  Label="Win32" Condition="'$(Platform.ToLower())' == 'win32'"> 
+      <MediaInfoDll Include="$(MSBuildThisFileDirectory)..\..\build\native\x86\MediaInfo.dll"/>
+    </ItemGroup> 
+    <Copy SourceFiles="@(MediaInfoDll)" DestinationFolder="$(OutputPath)" />
+  </Target>
+</Project>
