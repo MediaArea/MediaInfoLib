@@ -314,6 +314,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Jpeg.cpp">
       <Filter>Source Files\Image</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_JpegXL.cpp">
+      <Filter>Source Files\Image</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Png.cpp">
       <Filter>Source Files\Image</Filter>
     </ClCompile>
@@ -1067,6 +1070,9 @@
       <Filter>Header Files\Image</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Jpeg.h">
+      <Filter>Header Files\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_JpegXL.h">
       <Filter>Header Files\Image</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Png.h">

@@ -1535,6 +1535,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "JNG;;;I;Jng;JPEG Network Graphic;jng;;;Lossy\n"
     "JPEG;;;I;Jpeg;;h3d jpeg jpg jpe jps mpo;image/jpeg;;Lossy\n"
     "JPEG 2000;;;I;Jpeg;;jp2 jph j2c j2k jhc;image/jp2;http://www.morgan-multimedia.com/JPEG 2000/\n"
+    "JPEG XL;;;I;JpegXL;;jxl;image/jxl;https://jpeg.org/jpegxl/\n"
     "LZ77;;;I\n"
     "MNG;;;I;Mng;Multiple-Image Network Graphic;mng;;;Lossless\n"
     "NEF;;;I;Tiff;Nikon Electronic Format;nef;image/x-nikon-nef;http://www.nikon.com/\n"
