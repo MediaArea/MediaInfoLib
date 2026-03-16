@@ -146,6 +146,9 @@
 #if defined(MEDIAINFO_AVC_YES)
     #include "MediaInfo/Video/File_Avc.h"
 #endif
+#if defined(MEDIAINFO_APV_YES)
+    #include "MediaInfo/Video/File_Apv.h"
+#endif
 #if defined(MEDIAINFO_AV1_YES)
     #include "MediaInfo/Video/File_Av1.h"
 #endif
@@ -598,6 +601,9 @@ File__MultipleParsing::File__MultipleParsing()
     #endif
     #if defined(MEDIAINFO_HEVC_YES)
         Parser.push_back(new File_Hevc());
+    #endif
+    #if defined(MEDIAINFO_APV_YES)
+        Parser.push_back(new File_Apv());
     #endif
     #if defined(MEDIAINFO_AV1_YES)
         {auto Temp=new File_Av1(); Temp->IsAnnexB=true; Parser.push_back(Temp);}
