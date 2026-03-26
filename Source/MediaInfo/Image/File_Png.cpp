@@ -1047,7 +1047,7 @@ void File_Png::Textual(bitset8 Method)
 void File_Png::Decode_RawProfile(const char* in, size_t in_len, const string& type)
 {
 #if defined(MEDIAINFO_EXIF_YES) || defined(MEDIAINFO_ICC_YES) || defined(MEDIAINFO_IIM_YES)
-    auto HexStringToBytes{
+    auto HexStringToBytes =
         [](const char* src, size_t len, size_t expected_length) -> string {
             string to_return;
             auto end = src + len;
@@ -1079,8 +1079,7 @@ void File_Png::Decode_RawProfile(const char* in, size_t in_len, const string& ty
                 return {};
             }
             return to_return;
-        }
-    };
+        };
 
     if (!in || !in_len) {
         return;
