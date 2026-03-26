@@ -420,8 +420,8 @@ struct FindReplaceCompany_struct {
 };
 
 static const FindReplaceCompany_struct Model_Replace[] = {
-    { "Canon", Model_Replace_Canon, {} },
-    { "OpenCube", Model_Replace_OpenCube, {} },
+    { "Canon", Model_Replace_Canon, "" },
+    { "OpenCube", Model_Replace_OpenCube, "" },
 }; 
 
 //---------------------------------------------------------------------------
@@ -2098,7 +2098,7 @@ static const FindReplaceCompany_struct Model_Name[] = {
     { "Sony", Model_Name_Sony, "Xperia " },
     { "Sony Ericsson", Model_Name_Sony_Ericsson, "Xperia " },
     { "Samsung", Model_Name_Samsung, "Galaxy " },
-    { "Xiaomi", Model_Name_Xiaomi, {} },
+    { "Xiaomi", Model_Name_Xiaomi, "" },
 };
 
 //---------------------------------------------------------------------------
