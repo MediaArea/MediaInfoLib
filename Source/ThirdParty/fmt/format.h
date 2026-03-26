@@ -4092,7 +4092,7 @@ template <typename T, typename Char = char> struct nested_formatter {
 
 inline namespace literals {
 #if FMT_USE_NONTYPE_TEMPLATE_ARGS
-template <detail::fixed_string S> constexpr auto operator""_a() {
+template <detail::fixed_string S> constexpr auto operator"" _a() {
   using char_t = remove_cvref_t<decltype(*S.data)>;
   return detail::udl_arg<char_t, sizeof(S.data) / sizeof(char_t), S>();
 }
@@ -4105,7 +4105,7 @@ template <detail::fixed_string S> constexpr auto operator""_a() {
  *     using namespace fmt::literals;
  *     fmt::print("The answer is {answer}.", "answer"_a=42);
  */
-constexpr auto operator""_a(const char* s, size_t) -> detail::udl_arg<char> {
+constexpr auto operator"" _a(const char* s, size_t) -> detail::udl_arg<char> {
   return {s};
 }
 #endif  // FMT_USE_NONTYPE_TEMPLATE_ARGS
