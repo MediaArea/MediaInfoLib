@@ -1698,7 +1698,7 @@ void File_Exif::Streams_Finish()
             switch (Item.first) {
             case IFDExif::ExposureTime: {
                 ParameterC = "ShutterSpeed_Time";
-                const auto exposure_time{ Item.second.Read().To_float64() };
+                const float64 exposure_time{ Item.second.Read().To_float64() };
                 string ShutterSpeed_Time;
                 if (exposure_time < 0.25001 && exposure_time > 0) {
                     ShutterSpeed_Time = "1/" + std::to_string(static_cast<int>(round(1 / exposure_time)));
