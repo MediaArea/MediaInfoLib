@@ -1398,6 +1398,7 @@ void File_Jpeg::SOS()
             auto& Seek_Item = Seek_Items[GContainerItems_Offset + Item.first];
             Seek_Item.Type[1] = Item.second.Type[1];
             Seek_Item.MuxingMode[1] = Item.second.MuxingMode[1];
+            Seek_Item.Mime = Item.second.Mime;
         }
         GContainerItems_Offset = 0;
         Seek_Items_PrimaryImageType.clear();
