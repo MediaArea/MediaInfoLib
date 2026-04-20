@@ -18,6 +18,7 @@
 #endif
 //---------------------------------------------------------------------------
 
+#include "MediaInfo/File__Analyze_Streams.h" //declaration of Encoded_Library_Tag
 //---------------------------------------------------------------------------
 #include "MediaInfo/Setup.h"
 //---------------------------------------------------------------------------
@@ -2139,6 +2140,8 @@ Ztring File__Analyze_Encoded_Library_String (const Ztring &CompanyName, const Zt
             String+=Date;
             String+=__T(")");
         }
+        if (!Encoded_Library_Tag.empty())
+            String+=MediaInfoLib::Config.TagSeparator_Get()+Encoded_Library_Tag; //add discarded Encoder tag back
         return String;
     }
     else
@@ -5031,9 +5034,13 @@ void File__Analyze::Streams_Finish_HumanReadable()
 {
     //Generic
     for (size_t StreamKind=Stream_General; StreamKind<Stream_Max; StreamKind++)
+    {
+        if(StreamKind>Stream_Video || StreamKind==Stream_Max)
+            Encoded_Library_Tag = __T(""); //reset tag for new files
         for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
             for (size_t Parameter=0; Parameter<Count_Get((stream_t)StreamKind, StreamPos); Parameter++)
                 Streams_Finish_HumanReadable_PerStream((stream_t)StreamKind, StreamPos, Parameter);
+    }
 }
 
 //---------------------------------------------------------------------------
