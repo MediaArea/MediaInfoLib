@@ -713,6 +713,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\MediaInfo_Config_PerPackage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_AmigaIcon.cpp">
+      <Filter>Source Files\Image</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_ArriRaw.cpp">
       <Filter>Source Files\Image</Filter>
     </ClCompile>
@@ -1488,6 +1491,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\MediaInfo_Config_PerPackage.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_AmigaIcon.h">
+      <Filter>Header Files\Image</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_ArriRaw.h">
       <Filter>Header Files\Image</Filter>

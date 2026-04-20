@@ -404,6 +404,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\File_Other.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\File_Unknown.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\HashWrapper.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_AmigaIcon.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_ArriRaw.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Bpg.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Dds.cpp" />
@@ -823,6 +824,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\File_Other.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\File_Unknown.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\HashWrapper.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_AmigaIcon.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_ArriRaw.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Bpg.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Dds.h" />
