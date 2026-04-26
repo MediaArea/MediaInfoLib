@@ -106,7 +106,7 @@ static tag_struct Mpeg_Descriptors_video_properties_tag_1=
     {  9, 14,  0, 1},
     { 12,  1,  6, 1},
 };
-static int8u Mpeg_Descriptors_video_properties_tag_1_Size=sizeof(Mpeg_Descriptors_video_properties_tag_0)/sizeof(Mpeg_Descriptors_video_properties_tag_0[0]);
+static int8u Mpeg_Descriptors_video_properties_tag_1_Size=sizeof(Mpeg_Descriptors_video_properties_tag_1)/sizeof(Mpeg_Descriptors_video_properties_tag_1[0]);
 static tag_struct Mpeg_Descriptors_video_properties_tag_2=
 {
     {  9, 16,  9, 0},
@@ -115,7 +115,7 @@ static tag_struct Mpeg_Descriptors_video_properties_tag_2=
     {  9, 16,  0, 0},
     {  9, 18,  0, 0},
 };
-static int8u Mpeg_Descriptors_video_properties_tag_2_Size=sizeof(Mpeg_Descriptors_video_properties_tag_0)/sizeof(Mpeg_Descriptors_video_properties_tag_0[0]);
+static int8u Mpeg_Descriptors_video_properties_tag_2_Size=sizeof(Mpeg_Descriptors_video_properties_tag_2)/sizeof(Mpeg_Descriptors_video_properties_tag_2[0]);
 static int8u Mpeg_Descriptors_video_properties_tag_Sizes[]=
 {
     Mpeg_Descriptors_video_properties_tag_0_Size,
