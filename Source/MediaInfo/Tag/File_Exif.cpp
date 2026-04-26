@@ -2463,6 +2463,8 @@ void File_Exif::ICC_Profile()
     Open_Buffer_Init(ICC_Parser.get());
     Open_Buffer_Continue(ICC_Parser.get());
     Open_Buffer_Finalize(ICC_Parser.get());
+    #else
+    Skip_XX(Element_Size - Element_Offset,                      "ICC Profile");
     #endif
 }
 
@@ -2491,7 +2493,7 @@ void File_Exif::PhotoshopImageResources()
     Open_Buffer_Finalize(&MI);
     Merge(MI, Stream_General, 0, 0, false);
     #else
-    Skip_UTF8(Element_Size - Element_Offset,                    "Photoshop Tags");
+    Skip_XX(Element_Size - Element_Offset,                      "Photoshop Tags");
     #endif
 }
 
@@ -2506,7 +2508,7 @@ void File_Exif::IPTC_NAA()
     Open_Buffer_Finalize(&MI);
     Merge(MI, Stream_General, 0, 0, false);
     #else
-    Skip_UTF8(Element_Size - Element_Offset,                    "IPTC-NAA data");
+    Skip_XX(Element_Size - Element_Offset,                      "IPTC-NAA data");
     #endif
 }
 
