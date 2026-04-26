@@ -369,7 +369,6 @@ bool File_Xmp::FileHeader_Begin()
         Fill(Stream_General, 0, General_Format_Profile, Profile);
     }
 
-    Finish();
     return true;
 }
 
@@ -527,6 +526,17 @@ void File_Xmp::Iptc4xmpExt(const string& name, const string& value)
         Fill(Stream_General, 0, "DigitalSourceType/String", i < DigitalSourceTypes_size ? DigitalSourceTypes[i].Name : URI.c_str());
         Fill_SetOptions(Stream_General, 0, "DigitalSourceType/String", "Y NTN");
     }
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::Read_Buffer_Continue()
+{
+#if MEDIAINFO_TRACE
+    if (Trace_Activated && IsSub && !NoTrace) {
+        Skip_UTF8(Element_Size - Element_Offset,                "XMP metadata");
+    }
+#endif
+    Finish();
 }
 
 } //NameSpace
