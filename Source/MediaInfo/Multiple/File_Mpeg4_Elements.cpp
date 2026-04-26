@@ -6025,7 +6025,6 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx()
         {
         case Elements::moov_trak_mdia_minf_stbl_stsd_mett:
         {
-            string mime_format;
             Element_Name("Metadata");
             Skip_String(SizeUpTo0(),                            "content_encoding");
             Skip_B1(                                            "zero");
