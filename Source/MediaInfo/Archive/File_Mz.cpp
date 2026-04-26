@@ -186,51 +186,28 @@ bool File_Mz::FileHeader_Begin()
 //---------------------------------------------------------------------------
 void File_Mz::Read_Buffer_Continue()
 {
-    if (rdata_offset) {
+    switch (parsing_state) {
+    case State::Main:
+        break;
+    case State::ReadonlyData:
         Parse_ReadonlyData();
-        rdata_offset = 0;
-
-        if (img_debug_dir_offset)
-            return;
-
-        if (rsrc_offset)
-            GoTo(rsrc_offset);
-        else if (sbat_offset)
-            GoTo(sbat_offset);
-        else
-            Finish("MZ");
-
+        to_parse.erase(to_parse.find(parsing_state));
+        Goto_Next();
         return;
-    }
-    if (img_debug_dir_offset) {
+    case State::ImageDebug:
         Parse_ImageDebugDirectory();
-        img_debug_dir_offset = 0;
-
-        if (rsrc_offset)
-            GoTo(rsrc_offset);
-        else if (sbat_offset)
-            GoTo(sbat_offset);
-        else
-            Finish("MZ");
-
+        to_parse.erase(to_parse.find(parsing_state));
+        Goto_Next();
         return;
-    }
-    if (rsrc_offset) {
+    case State::Resources:
         Parse_Resources();
-        rsrc_offset = 0;
-
-        if (sbat_offset)
-            GoTo(sbat_offset);
-        else
-            Finish("MZ");
-
+        to_parse.erase(to_parse.find(parsing_state));
+        Goto_Next();
         return;
-    }
-    if (sbat_offset) {
+    case State::SBAT:
         Parse_SBAT();
-        sbat_offset = 0;
-
-        Finish("MZ");
+        to_parse.erase(to_parse.find(parsing_state));
+        Goto_Next();
         return;
     }
 
@@ -356,8 +333,10 @@ void File_Mz::Read_Buffer_Continue()
                     Get_L4(Size,                                "Size");
                     FILLING_BEGIN();
                     if (i == 6) { // IMAGE_DEBUG_DIRECTORY
-                        img_debug_dir_virtual_addr = VirtualAddress;
-                        img_debug_dir_size = Size;
+                        PESectionInfo info{};
+                        info.size = Size;
+                        info.virtual_address = VirtualAddress;
+                        to_parse.insert({ State::ImageDebug, info });
                     }
                     FILLING_END();
                     Element_End0();
@@ -382,18 +361,25 @@ void File_Mz::Read_Buffer_Continue()
                 Skip_L4(                                        "Characteristics");
                 FILLING_BEGIN();
                 if (Name == 0x2E72646174610000) { // .rdata
-                    rdata_size = VirtualSize;
-                    rdata_virtual_addr = VirtualAddress;
-                    rdata_offset = PointerToRawData;
+                    PESectionInfo info{};
+                    info.size = VirtualSize;
+                    info.virtual_address = VirtualAddress;
+                    info.offset = PointerToRawData;
+                    to_parse.insert({ State::ReadonlyData, info });
                 }
                 if (Name == 0x2E72737263000000) { // .rsrc
-                    rsrc_size = VirtualSize;
-                    rsrc_virtual_addr = VirtualAddress;
-                    rsrc_offset = PointerToRawData;
+                    PESectionInfo info{};
+                    info.size = VirtualSize;
+                    info.virtual_address = VirtualAddress;
+                    info.offset = PointerToRawData;
+                    to_parse.insert({ State::Resources, info });
                 }
                 if (Name == 0x2E73626174000000) { // .sbat
-                    sbat_offset = PointerToRawData;
-                    sbat_size = VirtualSize;
+                    PESectionInfo info{};
+                    info.size = VirtualSize;
+                    info.virtual_address = VirtualAddress;
+                    info.offset = PointerToRawData;
+                    to_parse.insert({ State::SBAT, info });
                 }
                 FILLING_END();
                 Element_End0();
@@ -429,34 +415,46 @@ void File_Mz::Read_Buffer_Continue()
             Fill(Stream_General, 0, "Subsystem_Version", std::to_string(MajorSubsystemVersion) + "." + std::to_string(MinorSubsystemVersion));
         Fill(Stream_General, 0, "Format_Settings", Mz_DLL_Characteristics(DllCharacteristics));
 
-        if (rdata_offset) {
-            GoTo(rdata_offset);
-        }
-        else if (rsrc_offset) {
-            GoTo(rsrc_offset);
-        }
-        else if (sbat_offset) {
-            GoTo(sbat_offset);
-        } else {
-            //No more need data
-            Finish("MZ");
-        }
+        Goto_Next();
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mz::Goto_Next() {
+    if (!to_parse.empty()) {
+        auto it = to_parse.begin();
+        if (it->second.offset) {
+            parsing_state = it->first;
+            GoTo(it->second.offset);
+        }
+        else {
+            to_parse.erase(it);
+            Goto_Next();
+        }
+    }
+    else {
+        //No more need data
+        Finish("MZ");
+    }
 }
 
 //---------------------------------------------------------------------------
 void File_Mz::Parse_ReadonlyData() {
 
     // Get Image Debug Directory
-    if (img_debug_dir_virtual_addr && img_debug_dir_virtual_addr > rdata_virtual_addr && img_debug_dir_virtual_addr < rdata_virtual_addr + rdata_size) {
-        img_debug_dir_offset = img_debug_dir_virtual_addr - rdata_virtual_addr + rdata_offset;
-
-        GoTo(img_debug_dir_offset);
+    auto r_data = to_parse.find(State::ReadonlyData);
+    auto img_dbg = to_parse.find(State::ImageDebug);
+    if (r_data != to_parse.end() && img_dbg != to_parse.end()) {
+        auto& rdata = r_data->second;
+        auto& imgdbg = img_dbg->second;
+        if (imgdbg.virtual_address > rdata.virtual_address && imgdbg.virtual_address < rdata.virtual_address + rdata.size)
+            imgdbg.offset = imgdbg.virtual_address - rdata.virtual_address + rdata.offset;
     }
 }
 
 //---------------------------------------------------------------------------
 void File_Mz::Parse_ImageDebugDirectory() {
+    auto img_debug_dir_size = to_parse[State::ImageDebug].size;
     auto Element_Offset_End = Element_Offset + img_debug_dir_size;
 
     int32u ExtendedDllCharacteristics_Offset{};
@@ -479,6 +477,7 @@ void File_Mz::Parse_ImageDebugDirectory() {
     int16u Ex_DLLCharacteristics_bits{};
     if (ExtendedDllCharacteristics_Offset) {
         Element_Offset = ExtendedDllCharacteristics_Offset - Buffer_Offset - File_Offset;
+        if (Element_Offset > Element_Size) Element_Offset = Element_Size;
         Get_L2(Ex_DLLCharacteristics_bits,                      "ExtendedDllCharacteristics");
     }
 
@@ -503,9 +502,8 @@ void File_Mz::Parse_ImageDebugDirectory() {
 //---------------------------------------------------------------------------
 void File_Mz::Parse_Resources() {
     int16u num_name, num_ID;
-    vector<int32u> NameOffsets;
     vector<int32u> OffsetToDirectories;
-    vector<int32u> OffsetToData;
+    vector<int32u> OffsetsToData;
     auto resource_name = Named_Resource.find((int32u)Element_Offset);
     auto resource_id = Resource.find((int32u)Element_Offset);
     Element_Begin1("Resource Directory Table");
@@ -526,12 +524,13 @@ void File_Mz::Parse_Resources() {
         if (DataIsDirectory)
             OffsetToDirectories.push_back(OffsetToDirectory & 0x7FFFFFFF);
         else
-            OffsetToData.push_back(OffsetToDirectory);
+            OffsetsToData.push_back(OffsetToDirectory);
         bool NameIsString = NameOffset & (1U << 31);
         Element_End0();
         if (NameIsString) {
             auto Element_Offset_Save = Element_Offset;
             Element_Offset = NameOffset & 0x7FFFFFFF;
+            if (Element_Offset > Element_Size) Element_Offset = Element_Size;
             Element_Begin1("Resource Directory String");
             int16u Length;
             Get_L2(Length,                                      "Length");
@@ -550,7 +549,7 @@ void File_Mz::Parse_Resources() {
         if (DataIsDirectory)
             OffsetToDirectories.push_back(OffsetToDirectory & 0x7FFFFFFF);
         else
-            OffsetToData.push_back(OffsetToDirectory);
+            OffsetsToData.push_back(OffsetToDirectory);
         if (resource_name != Named_Resource.end()) {
             Named_Resource.insert({ OffsetToDirectory & 0x7FFFFFFF, resource_name->second });
         }
@@ -565,12 +564,15 @@ void File_Mz::Parse_Resources() {
     }
     for (const int& directory_offset : OffsetToDirectories) {
         Element_Offset = directory_offset;
+        if (Element_Offset > Element_Size) Element_Offset = Element_Size;
         Parse_Resources();
     }
-    for (const int& data_offset : OffsetToData) {
+    auto rsrc = to_parse[State::Resources];
+    for (const int& data_offset : OffsetsToData) {
         Element_Offset = data_offset;
-        auto resource_name = Named_Resource.find((int32u)Element_Offset);
-        auto resource_id = Resource.find((int32u)Element_Offset);
+        if (Element_Offset > Element_Size) Element_Offset = Element_Size;
+        auto resource_name_ = Named_Resource.find((int32u)Element_Offset);
+        auto resource_id_ = Resource.find((int32u)Element_Offset);
         Element_Begin1("Resource Data Entry");
         int32u OffsetToData;
         Get_L4 (OffsetToData,                                   "OffsetToData");
@@ -578,9 +580,10 @@ void File_Mz::Parse_Resources() {
         Skip_L4(                                                "CodePage");
         Skip_L4(                                                "Reserved");
         Element_End0();
-        if (resource_name != Named_Resource.end() && resource_name->second == __T("BOOTMGRSECURITYVERSIONNUMBER")) {
-            if (OffsetToData > rsrc_virtual_addr && OffsetToData < rsrc_virtual_addr + rsrc_size) {
-                Element_Offset = (OffsetToData - rsrc_virtual_addr + rsrc_offset) - Buffer_Offset - File_Offset;
+        if (resource_name_ != Named_Resource.end() && resource_name_->second == __T("BOOTMGRSECURITYVERSIONNUMBER")) {
+            if (OffsetToData > rsrc.virtual_address && OffsetToData < rsrc.virtual_address + rsrc.size) {
+                Element_Offset = ((int64u)OffsetToData - rsrc.virtual_address + rsrc.offset) - Buffer_Offset - File_Offset;
+                if (Element_Offset > Element_Size) Element_Offset = Element_Size;
                 Element_Begin1("BOOTMGRSECURITYVERSIONNUMBER");
                 int16u minorver, majorver;
                 Get_L2(minorver,                                "MinorVersion");
@@ -592,9 +595,10 @@ void File_Mz::Parse_Resources() {
                 Element_End0();
             }
         }
-        if (resource_id != Resource.end() && resource_id->second == 16) { // VS_VERSIONINFO
-            if (OffsetToData > rsrc_virtual_addr && OffsetToData < rsrc_virtual_addr + rsrc_size) {
-                Element_Offset = (OffsetToData - rsrc_virtual_addr + rsrc_offset) - Buffer_Offset - File_Offset;
+        if (resource_id_ != Resource.end() && resource_id_->second == 16) { // VS_VERSIONINFO
+            if (OffsetToData > rsrc.virtual_address && OffsetToData < rsrc.virtual_address + rsrc.size) {
+                Element_Offset = ((int64u)OffsetToData - rsrc.virtual_address + rsrc.offset) - Buffer_Offset - File_Offset;
+                if (Element_Offset > Element_Size) Element_Offset = Element_Size;
                 Element_Begin1("VS_VERSIONINFO");
                 Ztring szKey;
                 Skip_L2(                                        "wLength");
@@ -602,7 +606,7 @@ void File_Mz::Parse_Resources() {
                 Skip_L2(                                        "wType");
                 Get_UTF16L(32, szKey,                           "szKey");
                 if (szKey == __T("VS_VERSION_INFO")) {
-                    Skip_XX((4 - (File_Offset + Buffer_Offset + Element_Offset) & 3) & 3, "Padding1");
+                    Skip_XX((~(File_Offset + Buffer_Offset + Element_Offset) + 1) & 3, "Padding1");
                     Element_Begin1("VS_FIXEDFILEINFO");
                     Skip_L4(                                    "dwSignature");
                     Skip_L4(                                    "dwStrucVersion");
@@ -618,7 +622,7 @@ void File_Mz::Parse_Resources() {
                     Skip_L4(                                    "dwFileDateMS");
                     Skip_L4(                                    "dwFileDateLS");
                     Element_End0();
-                    Skip_XX((4 - (File_Offset + Buffer_Offset + Element_Offset) & 3) & 3, "Padding2");
+                    Skip_XX((~(File_Offset + Buffer_Offset + Element_Offset) + 1) & 3, "Padding2");
                     Element_Begin0();
                     Parse_StringFileInfo();
                     Element_End0();
@@ -647,8 +651,8 @@ bool File_Mz::Parse_StringFileInfo(int8u level) {
     Get_L2 (wValueLength,                                       "wValueLength");
     Skip_L2(                                                    "wType");
     Get_UTF16L(SizeUpTo0_16(), szKey,                           "szKey");
-    Element_Offset += 2;
-    Skip_XX((4 - (File_Offset + Buffer_Offset + Element_Offset) & 3) & 3, "Padding");
+    if (2 <= Element_Size - Element_Offset) Element_Offset += 2;
+    Skip_XX((~(File_Offset + Buffer_Offset + Element_Offset) + 1) & 3, "Padding");
     if (szKey == __T("StringFileInfo")) {
         Element_Name("StringFileInfo");
         Element_Begin1("StringTable");
@@ -665,7 +669,7 @@ bool File_Mz::Parse_StringFileInfo(int8u level) {
     } else {
         return 0;
     }
-    Skip_XX((4 - (File_Offset + Buffer_Offset + Element_Offset) & 3) & 3, "Padding");
+    Skip_XX((~(File_Offset + Buffer_Offset + Element_Offset) + 1) & 3, "Padding");
 
     FILLING_BEGIN();
     if (level == 2) {
@@ -687,6 +691,7 @@ bool File_Mz::Parse_StringFileInfo(int8u level) {
 
 //---------------------------------------------------------------------------
 void File_Mz::Parse_SBAT() {
+    auto sbat_size = to_parse[State::SBAT].size;
     Ztring sbat;
     Get_UTF8(sbat_size, sbat,                                   "SBAT");
     Fill(Stream_General, 0, "SBAT", sbat);

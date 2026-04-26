@@ -30,11 +30,12 @@ class File_Mz : public File__Analyze
 {
 protected :
     //Buffer - File header
-    bool FileHeader_Begin();
+    bool FileHeader_Begin() override;
 
     //Buffer - Global
-    void Read_Buffer_Continue ();
+    void Read_Buffer_Continue() override;
 
+    void Goto_Next();
     void Parse_ReadonlyData();
     void Parse_ImageDebugDirectory();
     void Parse_Resources();
@@ -42,17 +43,20 @@ protected :
     void Parse_SBAT();
 
     //Temp
-    int32u img_debug_dir_virtual_addr{};
-    int32u img_debug_dir_size{};
-    int32u img_debug_dir_offset{};
-    int32u rdata_size{};
-    int32u rdata_virtual_addr{};
-    int32u rdata_offset{};
-    int32u rsrc_size{};
-    int32u rsrc_virtual_addr{};
-    int32u rsrc_offset{};
-    int32u sbat_offset{};
-    int32u sbat_size{};
+    enum class State : int8u {
+        Main,
+        ReadonlyData,
+        ImageDebug,
+        Resources,
+        SBAT
+    };
+    State parsing_state{ State::Main };
+    struct PESectionInfo {
+        int32u virtual_address;
+        int32u size;
+        int32u offset;
+    };
+    std::map<State, PESectionInfo> to_parse;
     map<int32u, Ztring> Named_Resource;
     map<int32u, int32u> Resource;
 };
