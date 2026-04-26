@@ -4967,8 +4967,7 @@ void File__Analyze::Streams_Finish_InterStreams()
                 continue;
             for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
             {
-                if (!IsValid)
-                    IsValid=true;
+                IsValid=true;
                 if (Retrieve((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_BitRate_Mode))!=__T("CBR"))
                     IsCBR=false;
                 if (Retrieve((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_BitRate_Mode))==__T("VBR"))
