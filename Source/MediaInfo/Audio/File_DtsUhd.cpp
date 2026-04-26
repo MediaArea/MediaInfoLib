@@ -627,8 +627,6 @@ int File_DtsUhd::ParseStaticMDParams(MD01* MD01, bool OnlyFirst)
         bool CustomDRCSmoothMDPresent;
         Get_SB (CustomDRCSmoothMDPresent,                       "CustomDRCSmoothMDPresent");
         if (CustomDRCSmoothMDPresent)
-            Skip_BS(6*6,                                        "CDRCProfiles");
-        if (CustomDRCSmoothMDPresent)
         {
             Skip_S1(6,                                          "FastAttack");
             Skip_S1(6,                                          "SlowAttack");
