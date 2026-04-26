@@ -41,6 +41,7 @@ protected :
     void Parse_Resources();
     bool Parse_StringFileInfo(int8u level = 0);
     void Parse_SBAT();
+    void Parse_CargoAuditable();
 
     //Temp
     enum class State : int8u {
@@ -48,7 +49,8 @@ protected :
         ReadonlyData,
         ImageDebug,
         Resources,
-        SBAT
+        SBAT,
+        CargoAuditable
     };
     State parsing_state{ State::Main };
     struct PESectionInfo {

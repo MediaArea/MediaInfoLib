@@ -22,6 +22,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Archive/File_Mz.h"
+#include <zlib.h>
 using namespace ZenLib;
 //---------------------------------------------------------------------------
 
@@ -209,6 +210,11 @@ void File_Mz::Read_Buffer_Continue()
         to_parse.erase(to_parse.find(parsing_state));
         Goto_Next();
         return;
+    case State::CargoAuditable:
+        Parse_CargoAuditable();
+        to_parse.erase(to_parse.find(parsing_state));
+        Goto_Next();
+        return;
     }
 
     //Parsing
@@ -380,6 +386,13 @@ void File_Mz::Read_Buffer_Continue()
                     info.virtual_address = VirtualAddress;
                     info.offset = PointerToRawData;
                     to_parse.insert({ State::SBAT, info });
+                }
+                if (Name == 0x2E6465702D763000) { // .dep-v0
+                    PESectionInfo info{};
+                    info.size = VirtualSize;
+                    info.virtual_address = VirtualAddress;
+                    info.offset = PointerToRawData;
+                    to_parse.insert({ State::CargoAuditable, info });
                 }
                 FILLING_END();
                 Element_End0();
@@ -695,6 +708,67 @@ void File_Mz::Parse_SBAT() {
     Ztring sbat;
     Get_UTF8(sbat_size, sbat,                                   "SBAT");
     Fill(Stream_General, 0, "SBAT", sbat);
+}
+
+//---------------------------------------------------------------------------
+void File_Mz::Parse_CargoAuditable() {
+    auto data_size = to_parse[State::CargoAuditable].size;
+    auto Element_Size_Save = Element_Size;
+    if (data_size <= Element_Size)
+        Element_Size = data_size;
+
+#if MEDIAINFO_TRACE
+    if (Trace_Activated) {
+        // Decompress the JSON data which is compressed with zlib
+        z_stream strm{};
+        strm.next_in = const_cast<Bytef*>(Buffer) + Buffer_Offset + static_cast<size_t>(Element_Offset);
+        strm.avail_in = static_cast<int>(Element_Size - Element_Offset);
+        strm.next_out = NULL;
+        strm.avail_out = 0;
+        strm.total_out = 0;
+        strm.zalloc = Z_NULL;
+        strm.zfree = Z_NULL;
+        inflateInit(&strm);
+
+        //Prepare out
+        strm.avail_out = 0x1000000; //Blocks of 64 KiB, arbitrary chosen, as a begin //TEMP increase
+        strm.next_out = new Bytef[strm.avail_out];
+
+        //Parse compressed data, with handling of the case the output buffer is not big enough
+        for (;;)
+        {
+            //inflate
+            int inflate_Result = inflate(&strm, Z_NO_FLUSH);
+            if (inflate_Result < 0)
+                break;
+
+            //Check if we need to stop
+            if (strm.avail_out || inflate_Result)
+                break;
+
+            //Need to increase buffer
+            size_t UncompressedData_NewMaxSize = static_cast<size_t>(strm.total_out) * 4;
+            int8u* UncompressedData_New = new int8u[UncompressedData_NewMaxSize];
+            memcpy(UncompressedData_New, strm.next_out - strm.total_out, strm.total_out);
+            delete[](strm.next_out - strm.total_out); strm.next_out = UncompressedData_New;
+            strm.next_out = strm.next_out + strm.total_out;
+            strm.avail_out = static_cast<uInt>(UncompressedData_NewMaxSize - strm.total_out);
+        }
+        auto Buffer = reinterpret_cast<const char*>(strm.next_out) - strm.total_out;
+        auto Buffer_Size = static_cast<size_t>(strm.total_out);
+        inflateEnd(&strm);
+        // End of zlib decompression routine
+
+        // Only show raw JSON string in MediaTrace for now as we do not have JSON parsing
+        Ztring JSON;
+        JSON.From_UTF8(Buffer, Buffer_Size);
+        Param("Cargo Auditable JSON Data", JSON);
+    }
+#endif
+
+    Element_Size = Element_Size_Save;
+
+    Fill(Stream_General, 0, "CargoAuditable_Present", "Yes");
 }
 
 } //NameSpace
