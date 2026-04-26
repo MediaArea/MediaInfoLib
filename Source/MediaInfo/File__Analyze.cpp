@@ -892,8 +892,7 @@ void File__Analyze::Open_Buffer_OutOfBand (File__Analyze* Sub, size_t Size)
     }
 
     //Sub
-    if (Sub->File_GoTo!=(int64u)-1)
-        Sub->File_GoTo=(int64u)-1;
+    Sub->File_GoTo=(int64u)-1;
     Sub->File_Offset=File_Offset+Buffer_Offset+Element_Offset;
     if (Sub->File_Size!=File_Size)
     {
@@ -1356,8 +1355,7 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
         return;
 
     //Sub
-    if (Sub->File_GoTo!=(int64u)-1)
-        Sub->File_GoTo=(int64u)-1;
+    Sub->File_GoTo=(int64u)-1;
     if (Sub->MustAdaptSubOffsets) {
         auto NewOffset = File_Offset + Buffer_Offset + Element_Offset;
         auto OldOffset = Sub->File_Offset + Sub->Buffer_Size;
