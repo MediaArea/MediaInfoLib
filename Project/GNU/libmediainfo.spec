@@ -266,7 +266,9 @@ This package contains the python3 wrapper of the library.
 %setup -q -n MediaInfoLib
 cp           Release/ReadMe_DLL_Linux.txt ReadMe.txt
 mv           History_DLL.txt History.txt
-sed -i 's/\r$//g' *.txt Source/Example/*
+
+sed -i 's/\r$//g' *.txt
+find Source/Example -type f -exec sed -i 's/\r$//g' {} ';'
 
 find . -type f -exec chmod 644 {} ';'
 
