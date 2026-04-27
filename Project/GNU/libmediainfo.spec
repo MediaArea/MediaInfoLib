@@ -46,7 +46,7 @@ BuildRequires:  libtool
 BuildRequires:  automake
 BuildRequires:  autoconf
 %if ! 0%{?rhel} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
-%if 0%{?suse_version} < 1699 && 0%{?fedora_version} < 41
+%if 0%{?suse_version} < 1599 && 0%{?fedora_version} < 41
 BuildRequires: python2-devel
 %endif
 BuildRequires: python3-devel
@@ -199,7 +199,7 @@ for development.
 %endif
 
 %if ! 0%{?rhel} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
-%if 0%{?suse_version} < 1699 && 0%{?fedora_version} < 41
+%if 0%{?suse_version} < 1599 && 0%{?fedora_version} < 41
 %package        -n python2-mediainfo
 Summary:        Most relevant technical and tag data for video and audio files -- python2 binding
 Group:          Development/Libraries
@@ -315,7 +315,7 @@ install -m 644 Source/MediaInfoDLL/MediaInfoDLL3.py %{buildroot}%{_includedir}/M
 
 # Python modules
 %if ! 0%{?rhel} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
-%if 0%{?suse_version} < 1699 && 0%{?fedora_version} < 41
+%if 0%{?suse_version} < 1599 && 0%{?fedora_version} < 41
 install -dm 755 %{buildroot}%{python2_sitelib}
 install -m 644 Source/MediaInfoDLL/MediaInfoDLL.py %{buildroot}%{python2_sitelib}
 %endif
@@ -377,7 +377,7 @@ rm -f %{buildroot}%{_libdir}/%{name_without_0_ending}.la
 %endif
 
 %if ! 0%{?rhel} && ((! 0%{?sles_version} && ! 0%{?sle_version}) || 0%{?sle_version} >= 150000)
-%if 0%{?suse_version} < 1699 && 0%{?fedora_version} < 41
+%if 0%{?suse_version} < 1599 && 0%{?fedora_version} < 41
 %files     -n python2-mediainfo
 %{python2_sitelib}/*
 %endif
