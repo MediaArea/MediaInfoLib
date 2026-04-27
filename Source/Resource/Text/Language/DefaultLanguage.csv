@@ -686,6 +686,7 @@ GroupPreset;Group preset
 h; h
 HDR_Format;HDR format
 Header file;Create a header file
+HearingImpaired;Hearing impaired
 Height;Height
 Height_CleanAperture;Clean aperture height
 Height_Original;Original height
@@ -1242,6 +1243,7 @@ Text1;First text stream
 Text2;Second text stream
 Text3;Third text stream
 TextCount;Count of text streams
+TextDescriptions;Text descriptions
 TextlessElementsExist;Textless Elements Exist
 ThanksTo;Thanks to
 Thousands separator;Thousands separator
@@ -1330,6 +1332,7 @@ VideoComments;Video Comments
 VideoCount;Count of video streams
 View;View
 View_Hint;Change the means of viewing information
+VisualImpaired;Visual impaired
 Warning : more streams in the files;Warning : there are more streams in the files
 Web;Web
 WebSite_Audio;Go to the web site of this audio codec
