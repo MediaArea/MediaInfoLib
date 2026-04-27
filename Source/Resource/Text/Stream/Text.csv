@@ -281,6 +281,14 @@ Default;;Yes;N YTY;;;Flag set if this stream should be used if no language found
 Default/String;;;Y NT;;;Flag set if this stream should be used if no language found matches the user preference (Yes, No);;
 Forced;;Yes;N YTY;;;Flag set if this stream should be used regardless of user preferences, often used for sparse subtitle dialogue in an otherwise unsubtitled movie (Yes, No);;
 Forced/String;;;Y NT;;;Flag set if this stream should be used regardless of user preferences, often used for sparse subtitle dialogue in an otherwise unsubtitled movie (Yes, No);;
+HearingImpaired;;Yes;N YTY;;;Flag set if this subtitle track is suitable for users with hearing impairments, e.g. SDH captions (Yes, No);;
+HearingImpaired/String;;;Y NT;;;Flag set if this subtitle track is suitable for users with hearing impairments, e.g. SDH captions (Yes, No);;
+TextDescriptions;;Yes;N YTY;;;Flag set if this subtitle track contains textual descriptions of video content (Yes, No);;
+TextDescriptions/String;;;Y NT;;;Flag set if this subtitle track contains textual descriptions of video content (Yes, No);;
+Original;;Yes;N YTY;;;Flag set if this subtitle track is in the content's original language (Yes, No);;
+Original/String;;;Y NT;;;Flag set if this subtitle track is in the content's original language (Yes, No);;
+Commentary;;Yes;N YTY;;;Flag set if this subtitle track contains commentary, e.g. director's commentary (Yes, No);;
+Commentary/String;;;Y NT;;;Flag set if this subtitle track contains commentary, e.g. director's commentary (Yes, No);;
 AlternateGroup;;Yes;N YTY;;;Number of a group in order to provide versions of the same track;;
 AlternateGroup/String;;;Y NT;;;Number of a group in order to provide versions of the same track;;
 Summary;;;N YTY;;;Plot outline or a summary of the story;;
