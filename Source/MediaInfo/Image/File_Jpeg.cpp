@@ -50,6 +50,9 @@
 #if defined(MEDIAINFO_XMP_YES)
     #include "MediaInfo/Tag/File_Xmp.h"
 #endif
+#if defined(MEDIAINFO_MPEG4_YES)
+    #include "MediaInfo/Multiple/File_Mpeg4.h"
+#endif
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "ZenLib/Utils.h"
 #include <vector>
@@ -471,6 +474,9 @@ bool File_Jpeg::FileHeader_Begin()
 //---------------------------------------------------------------------------
 bool File_Jpeg::Synchronize()
 {
+    if (Parsing_MotionPhoto) {
+        return true;
+    }
     //Synchronizing
     while(Buffer_Offset+2<=Buffer_Size && (Buffer[Buffer_Offset  ]!=0xFF
                                         || Buffer[Buffer_Offset+1]==0x00))
@@ -490,6 +496,9 @@ bool File_Jpeg::Synchronize()
 //---------------------------------------------------------------------------
 bool File_Jpeg::Synched_Test()
 {
+    if (Parsing_MotionPhoto) {
+        return true;
+    }
     if (SOS_SOD_Parsed)
         return true; ///No sync after SOD
 
@@ -673,6 +682,10 @@ void File_Jpeg::Read_Buffer_Continue()
 //---------------------------------------------------------------------------
 void File_Jpeg::Header_Parse()
 {
+    if (Parsing_MotionPhoto) {
+        Header_Fill_Size(File_Size - (File_Offset + Buffer_Offset));
+        return;
+    }
     if (SOS_SOD_Parsed)
     {
         Header_Fill_Code(0, "Data");
@@ -772,6 +785,24 @@ void File_Jpeg::Data_Parse()
         case Elements::_NAME : Element_Info1(#_NAME); Element_Info1(_DETAIL); _NAME(); break;
 
     //Parsing
+    if (Parsing_MotionPhoto) {
+        #if defined(MEDIAINFO_MPEG4_YES)
+        auto MI = new File_Mpeg4;
+        Open_Buffer_Init(MI);
+        Open_Buffer_Continue(MI);
+        Open_Buffer_Finalize(MI);
+        Merge(*MI, Stream_Video, 0, 0);
+        size_t Count = MI->Count_Get(Stream_Other);
+        for (size_t i = 0; i < Count; ++i) {
+            Merge(*MI, Stream_Other, i, i);
+            Fill(Stream_Other, i, "MuxingMode_MoreInfo", "Muxed in Video #1");
+        }
+        #else
+        Skip_UTF8(Element_Size - Element_Offset,                "MP4 file");
+        #endif
+        Finish("JPEG");
+        return;
+    }
     if (SOS_SOD_Parsed)
     {
         Skip_XX(Element_Size,                                   "Data");
@@ -1398,6 +1429,7 @@ void File_Jpeg::SOS()
             auto& Seek_Item = Seek_Items[GContainerItems_Offset + Item.first];
             Seek_Item.Type[1] = Item.second.Type[1];
             Seek_Item.MuxingMode[1] = Item.second.MuxingMode[1];
+            Seek_Item.Mime = Item.second.Mime;
         }
         GContainerItems_Offset = 0;
         Seek_Items_PrimaryImageType.clear();
@@ -1420,8 +1452,11 @@ void File_Jpeg::SOS()
         if (Item.second.DependsOnStreamPos) {
             Fill(StreamKind_Last, StreamPos_Last, "MuxingMode_MoreInfo", "Muxed in Image #" + to_string(Item.second.DependsOnStreamPos + 1));
         }
-        if (!Item.second.Mime.empty() && Item.second.Mime != "image/jpeg") {
+        if (!Item.second.Mime.empty() && Item.second.Mime != "image/jpeg" && Item.second.Mime != "video/mp4") {
             continue;
+        }
+        if (Item.second.Mime == "video/mp4") {
+            Parsing_MotionPhoto = true;
         }
         Seek_Items_PrimaryStreamPos = 0;
         SOS_SOD_Parsed = false;

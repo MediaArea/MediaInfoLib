@@ -265,6 +265,32 @@ bool File_Xmp::FileHeader_Begin()
                     XML_ELEMENT_LIST_END
                     XML_ELEMENT_END
                 }
+            XML_ELEMENT("Container_1_:Directory")
+                if (GContainerItems) {
+                    XML_ELEMENT_START
+                    XML_ELEMENT_LIST("rdf:Seq")
+                        XML_ELEMENT_START
+                        XML_ELEMENT("Container_1_:Item")
+                            gc_item GCItem{};
+                            XML_ATTRIBUTE_START
+                            XML_ATTRIBUTE("Item_1_:Mime")
+                                GCItem.Mime = tfsxml_decode(v);
+                            XML_ATTRIBUTE("Item_1_:Semantic")
+                                GCItem.Semantic = tfsxml_decode(v);
+                            XML_ATTRIBUTE("Item_1_:Length")
+                                GCItem.Length = Ztring(tfsxml_decode(v).c_str()).To_int32u();
+                            XML_ATTRIBUTE("Item_1_:Label")
+                                GCItem.Label = tfsxml_decode(v);
+                            XML_ATTRIBUTE("Item_1_:Padding")
+                                GCItem.Padding = Ztring(tfsxml_decode(v).c_str()).To_int32u();
+                            XML_ATTRIBUTE("Item_1_:URI")
+                                GCItem.URI = tfsxml_decode(v);
+                            XML_ATTRIBUTE_END
+                            GContainerItems->push_back(GCItem);
+                        XML_ELEMENT_END
+                    XML_ELEMENT_LIST_END
+                    XML_ELEMENT_END
+                }
             XML_ELEMENT("Device:Container")
                 if (GContainerItems) {
                     XML_ELEMENT_START
