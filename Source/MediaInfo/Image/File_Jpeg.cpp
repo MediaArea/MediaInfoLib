@@ -1624,9 +1624,7 @@ void File_Jpeg::APP1_XMP()
     GainMap_metadata_Adobe.reset(new gm_data());
     MI.GainMapData = static_cast<gm_data*>(GainMap_metadata_Adobe.get());
     Open_Buffer_Init(&MI);
-    auto Element_Offset_Sav = Element_Offset;
     Open_Buffer_Continue(&MI);
-    Element_Offset = Element_Offset_Sav;
     Open_Buffer_Finalize(&MI);
     if (!GContainerItems.empty()) {
         int64u ImgOffset = 0;
@@ -1647,10 +1645,10 @@ void File_Jpeg::APP1_XMP()
             ImgOffset += Entry.Padding;
         }
     }
-    Element_Show(); //TODO: why is it needed?
     Merge(MI, Stream_General, 0, 0, false);
+    #else
+        Skip_UTF8(Element_Size - Element_Offset,                "XMP metadata");
     #endif
-    Skip_UTF8(Element_Size - Element_Offset,                    "XMP metadata");
 }
 
 //---------------------------------------------------------------------------
@@ -1684,7 +1682,6 @@ void File_Jpeg::APP1_XMP_Extension()
     Item->second.LastOffset += (int32u)(Element_Size - Element_Offset);
     auto& MI = *(File_Xmp*)Item->second.Parser.get();
     MI.Wait = Item->second.LastOffset < Size;
-    auto Element_Offset_Sav = Element_Offset;
     gc_items GContainerItems;
     MI.GContainerItems = &GContainerItems;
     Open_Buffer_Continue(&MI);
@@ -1708,10 +1705,9 @@ void File_Jpeg::APP1_XMP_Extension()
             ImgOffset += Entry.Padding;
         }
     }
-    Element_Offset = Element_Offset_Sav;
-    Element_Show();
+    #else
+        Skip_UTF8(Element_Size - Element_Offset,                "XMP metadata");
     #endif
-    Skip_UTF8(Element_Size - Element_Offset,                    "XMP metadata");
     return;
 }
 
