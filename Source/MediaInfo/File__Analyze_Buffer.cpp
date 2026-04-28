@@ -49,7 +49,7 @@ extern MediaInfo_Config Config;
     } \
 
 #define INTEGRITY_SIZE_ATLEAST(_BYTES) \
-    if (Element_Offset+_BYTES>Element_Size) \
+    if (Element_Offset>Element_Size || _BYTES>Element_Size-Element_Offset) \
     { \
         Trusted_IsNot("Size is wrong"); \
         return; \
@@ -2069,7 +2069,7 @@ void File__Analyze::Skip_XX(int64u Bytes, const char* Name)
 {
     if (Element_Offset+Bytes!=Element_TotalSize_Get()) //Exception for seek to end of the element
     {
-        //INTEGRITY_SIZE_ATLEAST(Bytes);
+        INTEGRITY_SIZE_ATLEAST(Bytes);
     }
     if (Trace_Activated && Bytes) Param(Name, Ztring("(")+Ztring::ToZtring(Bytes)+Ztring(" bytes)"));
     Element_Offset+=Bytes;

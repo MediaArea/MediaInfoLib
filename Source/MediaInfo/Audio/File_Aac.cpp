@@ -199,7 +199,6 @@ void File_Aac::Streams_Update()
 //---------------------------------------------------------------------------
 void File_Aac::Streams_Finish()
 {
-    std::bitset<32> sect_cb_used;
     for (int g = 0; g < num_window_groups; g++)
     {
         for (int8u i = 0; i < num_sec[g]; i++)

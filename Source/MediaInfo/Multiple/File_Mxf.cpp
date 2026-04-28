@@ -5035,8 +5035,7 @@ void File_Mxf::Read_Buffer_Unsynched()
         Partitions.erase(Partitions.end()-1);
         Partitions_IsCalculatingHeaderByteCount=false;
     }
-    if (Partitions_IsCalculatingSdtiByteCount)
-        Partitions_IsCalculatingSdtiByteCount=false;
+    Partitions_IsCalculatingSdtiByteCount=false;
 
     #if MEDIAINFO_SEEK
         IndexTables_Pos=0;

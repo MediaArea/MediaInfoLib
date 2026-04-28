@@ -2867,7 +2867,6 @@ void File_Usac::uniDrcConfigExtension()
                     #if MEDIAINFO_CONFORMANCE
                         if (C.drcSetEffect && (C.drcSetEffect & 0x27) != 0x27) // If one of the 8 first bits is set, bits (1 is LSB) 1, 2, 3, 6 must be set
                         {
-                            string Value;
                             for (int8u i = 0; i < 6; i++)
                             {
                                 if (!(C.drcSetEffect & (1 << i)))

@@ -106,7 +106,7 @@ static tag_struct Mpeg_Descriptors_video_properties_tag_1=
     {  9, 14,  0, 1},
     { 12,  1,  6, 1},
 };
-static int8u Mpeg_Descriptors_video_properties_tag_1_Size=sizeof(Mpeg_Descriptors_video_properties_tag_0)/sizeof(Mpeg_Descriptors_video_properties_tag_0[0]);
+static int8u Mpeg_Descriptors_video_properties_tag_1_Size=sizeof(Mpeg_Descriptors_video_properties_tag_1)/sizeof(Mpeg_Descriptors_video_properties_tag_1[0]);
 static tag_struct Mpeg_Descriptors_video_properties_tag_2=
 {
     {  9, 16,  9, 0},
@@ -115,7 +115,7 @@ static tag_struct Mpeg_Descriptors_video_properties_tag_2=
     {  9, 16,  0, 0},
     {  9, 18,  0, 0},
 };
-static int8u Mpeg_Descriptors_video_properties_tag_2_Size=sizeof(Mpeg_Descriptors_video_properties_tag_0)/sizeof(Mpeg_Descriptors_video_properties_tag_0[0]);
+static int8u Mpeg_Descriptors_video_properties_tag_2_Size=sizeof(Mpeg_Descriptors_video_properties_tag_2)/sizeof(Mpeg_Descriptors_video_properties_tag_2[0]);
 static int8u Mpeg_Descriptors_video_properties_tag_Sizes[]=
 {
     Mpeg_Descriptors_video_properties_tag_0_Size,
@@ -3576,16 +3576,10 @@ void File_Mpeg_Descriptors::Descriptor_7F_06()
     Get_S1 (5, editorial_classification,                        "editorial_classification");
     Skip_SB(                                                    "reserved_future_use");
     Get_SB (language_code_present,                              "language_code_present");
-    if (language_code_present)
-    {
-        BS_End();
-        Get_Local (3, Language,                                 "ISO_639_language_code");
-        BS_Begin();
-    }
-    if (language_code_present)
-    if (Data_BS_Remain())
-        Skip_BS(Data_BS_Remain(),                               "private_data_bytes");
     BS_End();
+    if (language_code_present)
+        Get_Local (3, Language,                                 "ISO_639_language_code");
+    Skip_XX(Element_Size - Element_Offset,                      "private_data_bytes");
 
     FILLING_BEGIN();
         if (elementary_PID_IsValid)
