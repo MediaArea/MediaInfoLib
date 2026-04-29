@@ -4035,8 +4035,12 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
      || Retrieve(Stream_Video, Pos, Video_MasteringDisplay_ColorPrimaries).empty()
         ))
     {
-        //We actually fill HDR10/HDR10+ by default, so it will be removed below if not fitting in the color related rules
-        Clear(Stream_Video, Pos, Video_HDR_Format_Compatibility);
+        //If HDR10+ Profile A with HLG, it is actually HLG+
+        if (Retrieve(Stream_Video, Pos, Video_transfer_characteristics) == __T("HLG") && Retrieve(Stream_Video, Pos, Video_HDR_Format_Compatibility).rfind(__T("HDR10+ Profile A"), 0) == 0)
+            Fill(Stream_Video, Pos, Video_HDR_Format_Compatibility, "HLG+", Unlimited, true, true);
+        else
+            //We actually fill HDR10/HDR10+ by default, so it will be removed below if not fitting in the color related rules
+            Clear(Stream_Video, Pos, Video_HDR_Format_Compatibility);
     }
     if (Retrieve(Stream_Video, Pos, Video_HDR_Format_String).empty())
     {
