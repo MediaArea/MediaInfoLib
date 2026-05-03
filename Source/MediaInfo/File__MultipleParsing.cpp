@@ -353,6 +353,9 @@
 #if defined(MEDIAINFO_JPEG_YES)
     #include "MediaInfo/Image/File_Jpeg.h"
 #endif
+#if defined(MEDIAINFO_JPEGXL_YES)
+    #include "MediaInfo/Image/File_JpegXL.h"
+#endif
 #if defined(MEDIAINFO_PCX_YES)
     #include "MediaInfo/Image/File_Pcx.h"
 #endif
@@ -794,6 +797,9 @@ File__MultipleParsing::File__MultipleParsing()
     #endif
     #if defined(MEDIAINFO_JPEG_YES)
         Parser.push_back(new File_Jpeg());
+    #endif
+    #if defined(MEDIAINFO_JPEGXL_YES)
+        Parser.push_back(new File_JpegXL());
     #endif
     #if defined(MEDIAINFO_PCX_YES)
         Parser.push_back(new File_Pcx());
