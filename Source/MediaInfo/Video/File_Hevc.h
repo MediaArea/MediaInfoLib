@@ -11,6 +11,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
+#if defined(MEDIAINFO_T35_YES)
+    #include "MediaInfo/Multiple/File_T35.h"
+#endif
 #include "MediaInfo/TimeCode.h"
 //---------------------------------------------------------------------------
 
@@ -381,6 +384,9 @@ private :
     void Data_Parse();
 
     //Elements
+    #if !defined(MEDIAINFO_T35_YES)
+    #define T35(x) { Skip_XX(Element_Size - Element_Offset, "(Not parsed)"); }
+    #endif
     void slice_segment_layer();
     void video_parameter_set();
     void video_parameter_sets_creating_data(int8u vps_video_parameter_set_id, const vector<profile_tier_level_struct>& profile_tier_level_info_layers, int8u vps_max_sub_layers_minus1, const vector<int16u>& view_id_val);
@@ -396,22 +402,8 @@ private :
     void sei_message_buffering_period_xxl(seq_parameter_set_struct::vui_parameters_struct::xxl_common* xxL_Common, bool irap_cpb_params_present_flag, seq_parameter_set_struct::vui_parameters_struct::xxl* xxl);
     void sei_message_pic_timing(int32u &seq_parameter_set_id, int32u payloadSize);
     void sei_message_user_data_registered_itu_t_t35();
-    void sei_message_user_data_registered_itu_t_t35_B5();
-    void sei_message_user_data_registered_itu_t_t35_B5_0031();
-    void sei_message_user_data_registered_itu_t_t35_B5_0031_DTG1();
-    void sei_message_user_data_registered_itu_t_t35_B5_0031_GA94();
     void sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03();
     void sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03_Delayed(int32u seq_parameter_set_id);
-    void sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_09();
-    void sei_message_user_data_registered_itu_t_t35_B5_003A();
-    void sei_message_user_data_registered_itu_t_t35_B5_003A_00();
-    void sei_message_user_data_registered_itu_t_t35_B5_003A_02();
-    void sei_message_user_data_registered_itu_t_t35_B5_003C();
-    void sei_message_user_data_registered_itu_t_t35_B5_003C_0001();
-    void sei_message_user_data_registered_itu_t_t35_B5_003C_0001_04();
-    void sei_message_user_data_registered_itu_t_t35_26();
-    void sei_message_user_data_registered_itu_t_t35_26_0004();
-    void sei_message_user_data_registered_itu_t_t35_26_0004_0005();
     void sei_message_user_data_unregistered(int32u payloadSize);
     void sei_message_user_data_unregistered_Ateme(int32u payloadSize);
     void sei_message_user_data_unregistered_x265(int32u payloadSize);
@@ -419,8 +411,8 @@ private :
     void sei_message_active_parameter_sets();
     void sei_time_code();
     void sei_message_decoded_picture_hash(int32u payloadSize);
-    void sei_message_mastering_display_colour_volume();
-    void sei_message_light_level();
+    void sei_message_mastering_display_colour_volume() { T35(File_T35::style::mastering_display_colour_volume); }
+    void sei_message_light_level() { T35(File_T35::style::light_level); }
     void sei_alternative_transfer_characteristics();
     void sei_ambient_viewing_environment();
     void three_dimensional_reference_displays_info(int32u payloadSize);
@@ -483,6 +475,10 @@ private :
     int64s                              TemporalReferences_pic_order_cnt_Min;
     int64u                              pic_order_cnt_DTS_Ref;
 
+    #if defined(MEDIAINFO_T35_YES)
+    std::unique_ptr<File__Analyze>      T35_Parser{};
+    #endif
+
     //Text
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
         File__Analyze*                  GA94_03_Parser;
@@ -516,25 +512,11 @@ private :
     Ztring                              Encoded_Library_Version;
     Ztring                              Encoded_Library_Date;
     Ztring                              Encoded_Library_Settings;
-    enum hdr_format
-    {
-        HdrFormat_SmpteSt209410,
-        HdrFormat_SmpteSt209440,
-        HdrFormat_EtsiTs103433,
-        HdrFormat_HdrVivid,
-        HdrFormat_SmpteSt2086,
-        HdrFormat_Max,
-    };
-    typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
-    hdr                                 HDR;
-    Ztring                              EtsiTS103433;
     int32u  chroma_format_idc{};
     int32u  slice_pic_parameter_set_id{};
     int32u  slice_type{};
     int32u  chroma_sample_loc_type_top_field{};
     int32u  chroma_sample_loc_type_bottom_field{};
-    Ztring  maximum_content_light_level;
-    Ztring  maximum_frame_average_light_level;
     int8u   nuh_layer_id{};
     int8u   preferred_transfer_characteristics{};
     float64 ambient_viewing_environment_illuminance{};
@@ -542,6 +524,9 @@ private :
     Ztring  ambient_viewing_environment_chromaticity;
     bool    RapPicFlag{};
     bool    first_slice_segment_in_pic_flag{};
+    #if defined(MEDIAINFO_T35_YES)
+    void T35(File_T35::style Style);
+    #endif
 };
 
 } //NameSpace

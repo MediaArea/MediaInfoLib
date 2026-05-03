@@ -217,6 +217,14 @@ void File_Av2::Streams_Fill()
         Fill(Stream_Video, 0, Video_matrix_coefficients, Mpegv_matrix_coefficients(MatrixCoefficients));
         Fill(Stream_Video, 0, Video_colour_range, Avc_video_full_range[FullRange]);
     }
+
+    //Merge info about different HDR formats
+    #if defined(MEDIAINFO_T35_YES)
+    if (T35_Parser) {
+        T35_Parser->Finish();
+        Merge(*T35_Parser, Stream_Video, 0, 0);
+    }
+    #endif
 }
 
 //---------------------------------------------------------------------------
@@ -1146,45 +1154,6 @@ void File_Av2::metadata_group_obu()
 }
 
 //---------------------------------------------------------------------------
-void File_Av2::metadata_itu_t_t35()
-{
-    Element_Begin1("metadata_itu_t_t35");
-
-    // TODO: Use ITUT T35 parser
-    Skip_XX(Element_Size,                                       "Data");
-    
-    Element_End0();
-}
-
-//---------------------------------------------------------------------------
-void File_Av2::metadata_hdr_cll()
-{
-    Element_Begin1("metadata_hdr_cll");
-
-    //Parsing
-    Get_LightLevel(maximum_content_light_level, maximum_frame_average_light_level);
-    
-    Element_End0();
-}
-
-//---------------------------------------------------------------------------
-void File_Av2::metadata_hdr_mdcv()
-{
-    Element_Begin1("metadata_hdr_mdcv");
-
-    //Parsing
-    auto& HDR_Format = HDR[Video_HDR_Format][HdrFormat_SmpteSt2086];
-    if (HDR_Format.empty())
-    {
-        HDR_Format = __T("SMPTE ST 2086");
-        HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt2086] = "HDR10";
-    }
-    Get_MasteringDisplayColorVolume(HDR[Video_MasteringDisplay_ColorPrimaries][HdrFormat_SmpteSt2086], HDR[Video_MasteringDisplay_Luminance][HdrFormat_SmpteSt2086], true);
-    
-    Element_End0();
-}
-
-//---------------------------------------------------------------------------
 void File_Av2::metadata_timecode()
 {
     BS_Begin();
@@ -1667,6 +1636,19 @@ void File_Av2::Get_rg(int8u n, int64u& Info, const char* Name)
     }
     Trusted_IsNot("Size is wrong"); // bitstream conformance fail
 }
+
+//---------------------------------------------------------------------------
+#if defined(MEDIAINFO_T35_YES)
+void File_Av2::T35(File_T35::style Style)
+{
+    if (!T35_Parser) {
+        T35_Parser.reset(new File_T35(File_T35::source::aomedia));
+        Open_Buffer_Init(T35_Parser.get());
+    }
+    ((File_T35*)T35_Parser.get())->Style = Style;
+    Open_Buffer_Continue(T35_Parser.get());
+}
+#endif
 
 //---------------------------------------------------------------------------
 } //NameSpace

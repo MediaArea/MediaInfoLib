@@ -14,7 +14,6 @@
 #include "MediaInfo/File__HasReferences.h"
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/Multiple/File_Mpeg4_Descriptors.h"
-#include <memory>
 class File_MpegPs;
 //---------------------------------------------------------------------------
 

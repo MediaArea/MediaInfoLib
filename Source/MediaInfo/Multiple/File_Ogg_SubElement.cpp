@@ -27,7 +27,6 @@
 #include "ZenLib/BitStream.h"
 #include "ZenLib/Utils.h"
 #include <cmath>
-#include <memory>
 #if defined(MEDIAINFO_DIRAC_YES)
     #include "MediaInfo/Video/File_Dirac.h"
 #endif

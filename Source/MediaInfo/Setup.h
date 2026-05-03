@@ -588,6 +588,9 @@
 #if !defined(MEDIAINFO_MULTI_NO) && !defined(MEDIAINFO_SWF_NO) && !defined(MEDIAINFO_SWF_YES)
     #define MEDIAINFO_SWF_YES
 #endif
+#if !defined(MEDIAINFO_MULTI_NO) && !defined(MEDIAINFO_T35_NO) && !defined(MEDIAINFO_T35_YES)
+    #define MEDIAINFO_T35_YES
+#endif
 #if !defined(MEDIAINFO_MULTI_NO) && !defined(MEDIAINFO_TSP_NO) && !defined(MEDIAINFO_TSP_YES)
     #define MEDIAINFO_TSP_YES
 #endif

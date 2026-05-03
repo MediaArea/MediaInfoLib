@@ -30,7 +30,6 @@
 #if defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/File.h"
 #endif //defined(MEDIAINFO_REFERENCES_YES)
-#include <memory>
 #include <algorithm>
 #if MEDIAINFO_EVENTS
     #include "MediaInfo/MediaInfo_Config_MediaInfo.h"

@@ -39,7 +39,6 @@
     #include "MediaInfo/Tag/File_Iim.h"
 #endif
 #include <cmath>
-#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
