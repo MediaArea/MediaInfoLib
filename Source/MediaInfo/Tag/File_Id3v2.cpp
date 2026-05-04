@@ -576,13 +576,11 @@ void File_Id3v2::Data_Parse()
     if (DataLength!=(int32u)-1)
     {
         int64u TotalLength=4+(int64u)DataLength;
-        if (TotalLength>Element_Size-Unsynch_List.size())
+        if (TotalLength==Element_Size-Unsynch_List.size())
         {
-            Unsynch_List.clear();
-            Skip_XX(Element_Size-Element_Offset,                "Size coherency issue");
-            return;
+            Element_Size=TotalLength;
+            Param_Info1("Incoherent");
         }
-        Element_Size=TotalLength;
     }
     else
         Element_Size-=Unsynch_List.size();
