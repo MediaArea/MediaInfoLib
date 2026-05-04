@@ -62,7 +62,7 @@ void File_Gzip::Read_Buffer_Continue()
     Get_B1 (CM,                                                 "Compression Method");
     Skip_B1(                                                    "FLaGs");
     Skip_B4(                                                    "Modified TIME");
-    Skip_XX(File_Size-10,                                       "Data");
+    Skip_XX(File_Size-8,                                        "Data");
 
     FILLING_BEGIN();
         //Filling
