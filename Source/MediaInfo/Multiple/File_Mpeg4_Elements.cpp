@@ -2479,6 +2479,8 @@ void File_Mpeg4::meta_idat()
     Element_Name("Item data");
 
     for (auto& item : idat_items) {
+        if (item.second.offset > Element_Size)
+            continue;
         Element_Begin1(Ztring().From_Number(item.first));
         Element_Offset = item.second.offset;
         Open_Buffer_Continue(item.second.parser.get(), item.second.length);
@@ -2558,7 +2560,7 @@ void File_Mpeg4::meta_iinf_infe()
     {
         case 0x6D696D65:    // mime
                             Get_String(SizeUpTo0(), content_type, "content_type");
-                            ++Element_Offset; //null
+                            Skip_B1(                            "zero");
                             if (Element_Offset<Element_Size)
                                 Skip_NulString(                 "content_encoding");
                             break;
@@ -5951,7 +5953,6 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx()
         {
         case Elements::moov_trak_mdia_minf_stbl_stsd_mett:
         {
-            string mime_format;
             Element_Name("Metadata");
             Skip_String(SizeUpTo0(),                            "content_encoding");
             Skip_B1(                                            "zero");
