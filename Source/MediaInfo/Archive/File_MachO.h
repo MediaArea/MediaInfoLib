@@ -33,7 +33,12 @@ protected :
     bool FileHeader_Begin();
 
     //Buffer - Global
-    void Read_Buffer_Continue ();
+    void Read_Buffer_Continue();
+
+    //Buffer - Per element
+    bool Header_Begin();
+    void Header_Parse();
+    void Data_Parse();
 
     //Temp
     struct BinaryInfo {

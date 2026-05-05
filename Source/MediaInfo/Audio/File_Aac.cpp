@@ -105,6 +105,7 @@ File_Aac::File_Aac()
 
     //Temp
     CanFill=true;
+    gain_control_data_present_AtLeastOnce=false;
 }
 
 //---------------------------------------------------------------------------
@@ -165,6 +166,11 @@ void File_Aac::Streams_Fill()
     if (!MediaInfoLib::Config.LegacyStreamDisplay_Get() && Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_Format).find(__T("AAC"))==0 && Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_Format_Settings_SBR).find(__T("Yes"))==0)
         frame_length_Multiplier=2;
     Fill(Stream_Audio, StreamPos_Last, Audio_SamplesPerFrame, frame_length*frame_length_Multiplier);
+    }
+    if (gain_control_data_present_AtLeastOnce)
+    {
+        Fill(Stream_Audio, 0, "GainControl_Present", "Yes");
+        Fill_SetOptions(Stream_Audio, 0, "GainControl_Present", "N NTY");
     }
 }
 

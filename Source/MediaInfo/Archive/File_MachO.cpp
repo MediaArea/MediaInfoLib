@@ -136,9 +136,12 @@ bool File_MachO::FileHeader_Begin() {
         return false;
     }
 
+    DataMustAlwaysBeComplete = false;
+
     //All should be OK...
     return true;
 }
+
 
 //***************************************************************************
 // Buffer - Global
@@ -146,27 +149,50 @@ bool File_MachO::FileHeader_Begin() {
 
 //---------------------------------------------------------------------------
 void File_MachO::Read_Buffer_Continue() {
-    //Parsing
-    if (File_Offset + Buffer_Offset != 0) {
-        Element_Begin1("arch");
+    if (File_Offset + Buffer_Offset == 0) {
+        Data_Parse();
     }
-    int32u magic, cputype{}, filetype{}, nfat_arch{};
-    Element_Begin1("Header");
+}
+
+//***************************************************************************
+// Buffer - Per element
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+bool File_MachO::Header_Begin() {
+    // Manage intermediate padding
+    auto Next = Universal_Current == Universal_Positions.end() ? File_Size : Universal_Current->first;
+    if (Next > File_Offset + Buffer_Offset) {
+        auto Size = Next - (File_Offset + Buffer_Offset);
+        Element_Begin0();
+        Element_Begin0();
+        Header_Fill_Size(Size);
+        Element_End0();
+        Skip_XX(Size,                                           "Padding");
+        Element_End0();
+    }
+    else if (Next < File_Offset + Buffer_Offset) {
+        GoTo(Next);
+        return false;
+    }
+
+    return true;
+}
+
+//---------------------------------------------------------------------------
+void File_MachO::Header_Parse() {
+    Header_Fill_Code(0, "arch");
+    Header_Fill_Size(Universal_Positions.empty() ? File_Size : Universal_Current->second.size);
+}
+
+//---------------------------------------------------------------------------
+void File_MachO::Data_Parse() {
+    int32u magic, nfat_arch{}, cputype{}, filetype{};
     Get_B4 (magic,                                              "magic"); Param_Info1(MachO_Magic(magic)); Element_Info1(MachO_Magic(magic));
     switch (magic) {
     case 0xCEFAEDFE: // 32-bit Mach-O (little-endian)
     case 0xCFFAEDFE: // 64-bit Mach-O (little-endian)
-        Get_L4 (cputype,                                        "cputype");
-        #if MEDIAINFO_TRACE
-        Param_Info1(MachO_cputype(cputype));
-        Element_Info1(MachO_cputype(cputype));
-        if (File_Offset + Buffer_Offset != 0) {
-            Element_Level--;
-            Param_Info1(MachO_Magic(magic));
-            Element_Info1(MachO_cputype(cputype));
-            Element_Level++;
-        }
-        #endif
+        Get_L4 (cputype,                                        "cputype"); Param_Info1(MachO_cputype(cputype)); Element_Info1(MachO_cputype(cputype));
         Skip_L4(                                                "cpusubtype");
         Get_L4 (filetype,                                       "filetype");
         Skip_L4(                                                "ncmds");
@@ -174,20 +200,11 @@ void File_MachO::Read_Buffer_Continue() {
         Skip_L4(                                                "flags");
         if (magic == 0xCFFAEDFE)
             Skip_L4(                                            "reserved");
+        Skip_XX(Element_TotalSize_Get() - Element_Offset,       "(Not parsed)");
         break;
     case 0xFEEDFACE: // 32-bit Mach-O (big-endian)
     case 0xFEEDFACF: // 64-bit Mach-O (big-endian)
         Get_B4 (cputype,                                        "cputype"); Param_Info1(MachO_cputype(cputype)); Element_Info1(MachO_cputype(cputype));
-        #if MEDIAINFO_TRACE
-        Param_Info1(MachO_cputype(cputype));
-        Element_Info1(MachO_cputype(cputype));
-        if (File_Offset + Buffer_Offset != 0) {
-            Element_Level--;
-            Param_Info1(MachO_Magic(magic));
-            Element_Info1(MachO_cputype(cputype));
-            Element_Level++;
-        }
-        #endif
         Skip_B4(                                                "cpusubtype");
         Get_B4 (filetype,                                       "filetype");
         Skip_B4(                                                "ncmds");
@@ -195,20 +212,20 @@ void File_MachO::Read_Buffer_Continue() {
         Skip_B4(                                                "flags");
         if (magic == 0xFEEDFACF)
             Skip_B4(                                            "reserved");
+        Skip_XX(Element_TotalSize_Get() - Element_Offset,       "(Not parsed)");
         break;
     case 0xCAFEBABE: // 32-bit Universal fat binary
     case 0xCAFEBABF: // 64-bit Universal fat binary
         if (File_Offset + Buffer_Offset != 0) {
             Reject();
-            Element_End0();
             return;
         }
         Get_B4 (nfat_arch,                                      "nfat_arch");
         if (!nfat_arch || nfat_arch > (File_Size - 4) / (magic == 0xCAFEBABE ? 12 : 24)) {
             Reject();
-            Element_End0();
             return;
         }
+        Element_Begin1("nfat_arch_entries");
         for (int32u i = 0; i < nfat_arch; ++i) {
             Element_Begin1("arch");
             BinaryInfo binary{};
@@ -237,21 +254,14 @@ void File_MachO::Read_Buffer_Continue() {
             Universal_Positions[offset] = binary;
             Element_End0();
         }
+        Element_End0();
+        Element_ThisIsAList();
         break;
     }
-    Element_End0();
-    #if MEDIAINFO_TRACE
-    if (File_Offset + Buffer_Offset == 0) {
-        if (!Universal_Positions.empty()) {
-            Skip_XX(Universal_Positions.begin()->first - Element_Offset, "Padding");
-        }
-    }
-    else {
-        Skip_XX(Universal_Current->second.size - Element_Offset, "(Note parsed)");
-        Element_End0();
-    }
-    #endif
 
+    if (Element_IsWaitingForMoreData()) {
+        return;
+    }
     FILLING_BEGIN();
         Accept();
         if (Universal_Positions.empty()) {
@@ -262,8 +272,6 @@ void File_MachO::Read_Buffer_Continue() {
         }
         else if (File_Offset + Buffer_Offset == 0) {
             Fill(Stream_General, 0, General_Format, "Mach-O Universal");
-            Universal_Current = Universal_Positions.begin();
-            GoTo(Universal_Current->first);
         }
         else {
             Stream_Prepare(Stream_Other);
@@ -276,19 +284,16 @@ void File_MachO::Read_Buffer_Continue() {
             Fill_SetOptions(Stream_Other, StreamPos_Last, "Alignment", "N NIY");
             Fill(Stream_Other, StreamPos_Last, "Alignment/String", Power2_WithUnits(Universal_Current->second.align));
             Fill_SetOptions(Stream_Other, StreamPos_Last, "Alignment/String", "Y NTN");
-            Universal_Current++;
-            if (Universal_Current == Universal_Positions.end()) {
-                if (File_Size != (int64u)-1) {
-                    Skip_XX(File_Size - (File_Offset + Buffer_Offset + Element_Offset), "Padding");
-                }
-                Finish();
-            }
-            else {
-                GoTo(Universal_Current->first);
-            }
-
         }
     FILLING_END();
+    if (!Universal_Positions.empty()) {
+        if (File_Offset + Buffer_Offset == 0) {
+            Universal_Current = Universal_Positions.begin();
+        }
+        else {
+            ++Universal_Current;
+        }
+    }
 }
 
 } //NameSpace
