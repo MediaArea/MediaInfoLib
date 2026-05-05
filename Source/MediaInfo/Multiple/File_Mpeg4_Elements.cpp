@@ -3654,9 +3654,14 @@ void File_Mpeg4::moov_iods()
 void File_Mpeg4::moov_meta()
 {
     Element_Name("Metadata");
-    if (!IsQt() && Element_Size>=12 && BigEndian2int32u(Buffer+Buffer_Offset+4)<=Element_Size && BigEndian2int32u(Buffer+Buffer_Offset+8)==Elements::moov_meta_hdlr)
-    {
-        VERSION_FLAG(0);
+    if (Element_Size>=12 && BigEndian2int32u(Buffer+Buffer_Offset+4)<=Element_Size) {
+        switch (BigEndian2int32u(Buffer + Buffer_Offset + 8)) {
+        case Elements::moov_udta_meta_keys:
+        case Elements::moov_udta_meta_hdlr:
+        case Elements::moov_udta_meta_ilst:
+        case Elements::moov_udta_meta_uuid:
+            VERSION_FLAG(0);
+        }
     }
 
     //Filling
@@ -10426,7 +10431,16 @@ void File_Mpeg4::moov_udta_MCPS()
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_udta_meta()
 {
-    NAME_VERSION_FLAG("Metadata", 0);
+    Element_Name("Metadata");
+    if (Element_Size>=12 && BigEndian2int32u(Buffer+Buffer_Offset+4)<=Element_Size) {
+        switch (BigEndian2int32u(Buffer + Buffer_Offset + 8)) {
+        case Elements::moov_udta_meta_keys:
+        case Elements::moov_udta_meta_hdlr:
+        case Elements::moov_udta_meta_ilst:
+        case Elements::moov_udta_meta_uuid:
+            VERSION_FLAG(0);
+        }
+    }
 
     //Filling
     moov_meta_hdlr_Type=Elements::moov_udta_meta;
