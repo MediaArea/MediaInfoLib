@@ -781,7 +781,7 @@ void File_Av1::metadata_itu_t_t35_B5_003C()
 
     switch (itu_t_t35_terminal_provider_oriented_code)
     {
-    case 0x0001: metadata_itu_t_t35_B5_003C_0001(); break;
+    case 0x0001: case 0x0003: metadata_itu_t_t35_B5_003C_0001(); break;
     }
 }
 
