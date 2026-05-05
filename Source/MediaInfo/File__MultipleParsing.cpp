@@ -335,6 +335,9 @@
 #if defined(MEDIAINFO_BPG_YES)
     #include "MediaInfo/Image/File_Bpg.h"
 #endif
+#if defined(MEDIAINFO_AMIGAICON_YES)
+    #include "MediaInfo/Image/File_AmigaIcon.h"
+#endif
 #if defined(MEDIAINFO_DDS_YES)
     #include "MediaInfo/Image/File_Dds.h"
 #endif
@@ -776,6 +779,9 @@ File__MultipleParsing::File__MultipleParsing()
     #endif
     #if defined(MEDIAINFO_BPG_YES)
         Parser.push_back(new File_Bpg());
+    #endif
+    #if defined(MEDIAINFO_AMIGAICON_YES)
+        Parser.push_back(new File_AmigaIcon());
     #endif
     #if defined(MEDIAINFO_DDS_YES)
         Parser.push_back(new File_Dds());

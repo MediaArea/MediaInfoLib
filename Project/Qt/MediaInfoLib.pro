@@ -122,6 +122,7 @@ HEADERS += \
         ../../Source/MediaInfo/File_Other.h \
         ../../Source/MediaInfo/File_Unknown.h \
         ../../Source/MediaInfo/HashWrapper.h \
+        ../../Source/MediaInfo/Image/File_AmigaIcon.h \
         ../../Source/MediaInfo/Image/File_ArriRaw.h \
         ../../Source/MediaInfo/Image/File_Bmp.h \
         ../../Source/MediaInfo/Image/File_Bpg.h \
@@ -368,6 +369,7 @@ SOURCES += \
         ../../Source/MediaInfo/File_Other.cpp \
         ../../Source/MediaInfo/File_Unknown.cpp \
         ../../Source/MediaInfo/HashWrapper.cpp \
+        ../../Source/MediaInfo/Image/File_AmigaIcon.cpp \
         ../../Source/MediaInfo/Image/File_ArriRaw.cpp \
         ../../Source/MediaInfo/Image/File_Bmp.cpp \
         ../../Source/MediaInfo/Image/File_Bpg.cpp \
