@@ -72,13 +72,25 @@ static string APV_Profile(int8u profile_idc)
 }
 
 //---------------------------------------------------------------------------
+static string APV_Colorspace(int8u chroma_format_idc)
+{
+    switch (chroma_format_idc) {
+    case 0:
+    case 2:
+    case 3: return "YUV";
+    case 4: return "YUVA";
+    default: return std::to_string(chroma_format_idc);
+    }
+}
+
+//---------------------------------------------------------------------------
 static string APV_Chroma(int8u chroma_format_idc)
 {
     switch (chroma_format_idc) {
     case 0: return "4:0:0";
     case 2: return "4:2:2";
-    case 3: return "4:4:4";
-    case 4: return "4:4:4:4";
+    case 3:
+    case 4: return "4:4:4";
     default: return std::to_string(chroma_format_idc);
     }
 }
@@ -110,26 +122,24 @@ void File_Apv::Streams_Accept()
 
     Stream_Prepare(Stream_Video);
     Fill(Stream_Video, 0, Video_Format, "APV");
+    Fill(Stream_Video, 0, Video_Format_Profile, APV_Profile(frame_info_Current.profile_idc)+'@'+Ztring::ToZtring((float)frame_info_Current.level_idc / 30, 1).To_UTF8());
+    Fill(Stream_Video, 0, "band_idc", frame_info_Current.band_idc);
+    Fill(Stream_Video, 0, Video_Width, frame_info_Current.frame_width);
+    Fill(Stream_Video, 0, Video_Height, frame_info_Current.frame_height);
+    Fill(Stream_Video, 0, Video_ColorSpace, APV_Colorspace(frame_info_Current.chroma_format_idc));
+    Fill(Stream_Video, 0, Video_ChromaSubsampling, APV_Chroma(frame_info_Current.chroma_format_idc));
+    Fill(Stream_Video, 0, Video_BitDepth, frame_info_Current.bit_depth_minus8 + 8);
+    if (frame_info_Current.color_description_present_flag) {
+        Fill(Stream_Video, 0, Video_colour_primaries, Mpegv_colour_primaries(frame_info_Current.color_primaries));
+        Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(frame_info_Current.transfer_characteristics));
+        Fill(Stream_Video, 0, Video_matrix_coefficients, Mpegv_matrix_coefficients(frame_info_Current.matrix_coefficients));
+        Fill(Stream_Video, 0, Video_colour_range, frame_info_Current.full_range_flag ? "Full" : "Limited");
+    }
 }
 
 //---------------------------------------------------------------------------
 void File_Apv::Streams_Fill()
 {
-    for (const auto& fi : frame_infos) {
-        Fill(Stream_Video, 0, Video_Format_Profile, APV_Profile(fi.profile_idc));
-        Fill(Stream_Video, 0, Video_Format_Level, (float)fi.level_idc / 30, 1);
-        Fill(Stream_Video, 0, "band_idc", fi.band_idc);
-        Fill(Stream_Video, 0, Video_Width, fi.frame_width);
-        Fill(Stream_Video, 0, Video_Height, fi.frame_height);
-        Fill(Stream_Video, 0, Video_ChromaSubsampling, APV_Chroma(fi.chroma_format_idc));
-        Fill(Stream_Video, 0, Video_BitDepth, fi.bit_depth_minus8 + 8);
-        if (fi.color_description_present_flag) {
-            Fill(Stream_Video, 0, Video_colour_primaries, Mpegv_colour_primaries(fi.color_primaries));
-            Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(fi.transfer_characteristics));
-            Fill(Stream_Video, 0, Video_matrix_coefficients, Mpegv_matrix_coefficients(fi.matrix_coefficients));
-            Fill(Stream_Video, 0, Video_colour_range, fi.full_range_flag ? "Full" : "Limited");
-        }
-    }
 }
 
 //---------------------------------------------------------------------------
@@ -200,12 +210,14 @@ void File_Apv::Streams_Finish()
 //---------------------------------------------------------------------------
 bool File_Apv::FileHeader_Begin()
 {
+    if (IsSub)
+        return true;
+
     //Must have enough buffer for having header
     if (Buffer_Size < 8)
         return false; //Must wait for more data
 
-    if (!IsSub
-        && CC4(Buffer + 4) != 0x61507631) // signature = aPv1
+    if (CC4(Buffer + 4) != 0x61507631) // signature = aPv1
     {
         Reject();
         return false;
@@ -257,7 +269,9 @@ void File_Apv::Read_Buffer_OutOfBand()
                 BS_End();
             }
             FILLING_BEGIN();
-            frame_infos.insert(fi);
+                if (!i && !j) {
+                    frame_info_Current = fi; // Using the first frame info as the reference
+                }
             FILLING_END();
             Element_End0();
         }
@@ -266,6 +280,7 @@ void File_Apv::Read_Buffer_OutOfBand()
     Element_End0();
 
     FILLING_BEGIN_PRECISE();
+        Accept();
     FILLING_END();
 }
 
@@ -277,57 +292,103 @@ void File_Apv::Read_Buffer_OutOfBand()
 void File_Apv::Header_Parse()
 {
     //Parsing
-    DataMustAlwaysBeComplete = Element_Level > 3;
-    if (Element_Level == 2) {
-        Get_B4(au_size,                                         "au_size");
-        Header_Fill_Size(au_size + Element_Offset);
-        Header_Fill_Code(0, "raw_bitstream_access_unit");
-        return;
+    switch (Element_Level) {
+    case 2: {
+        Get_B4 (au_size,                                        "au_size");
+        FILLING_BEGIN();
+            Header_Fill_Size(Element_Offset + au_size);
+            Header_Fill_Code(0, "raw_bitstream_access_unit");
+            DataMustAlwaysBeComplete = false;
+        FILLING_END();
+        break;
     }
-    if (Element_Level == 3) {
+    case 3: {
         int32u signature;
-        Get_C4(signature,                                       "signature");
-        if (signature != 0x61507631) Reject();
-        Header_Fill_Size(au_size);
-        Header_Fill_Code(0, "access_unit");
-        return;
+        Get_C4 (signature,                                      "signature");
+        if (signature != 0x61507631) {
+            Trusted_IsNot("signature");
+            if (IsSub) {
+                Header_Fill_Size(Buffer_Size);
+            }
+            else {
+                Reject();
+            }
+            break;
+        }
+        FILLING_BEGIN();
+            Header_Fill_Size(au_size);
+            Header_Fill_Code(0, "access_unit");
+            DataMustAlwaysBeComplete = false;
+        FILLING_END();
+        break;
     }
-
-    int32u pbu_size;
-    int8u pbu_type;
-    Get_B4 (pbu_size,                                           "pbu_size");
-    Element_Begin1(                                             "pbu_header");
-    Get_B1 (pbu_type,                                           "pbu_type");
-    Skip_B2(                                                    "group_id");
-    Skip_B1(                                                    "reserved_zero_8bits");
-    Element_End0();
-
-    FILLING_BEGIN();
-    Header_Fill_Size(pbu_size + 4LL);
-    Header_Fill_Code(pbu_type, Apv_pbu_type(pbu_type).c_str());
-    FILLING_END();
+    case 4: {
+        int32u pbu_size;
+        int8u pbu_type;
+        Get_B4 (pbu_size,                                       "pbu_size");
+        Element_Begin1(                                         "pbu_header");
+            Get_B1 (pbu_type,                                   "pbu_type");
+            Skip_B2(                                            "group_id");
+            Skip_B1(                                            "reserved_zero_8bits");
+        Element_End0();
+        FILLING_BEGIN();
+            Header_Fill_Size(4 + pbu_size);
+            Header_Fill_Code(pbu_type, Apv_pbu_type(pbu_type).c_str());
+            switch (pbu_type) {
+            case 65:
+            case 66:
+            case 67:
+                DataMustAlwaysBeComplete = true;
+                break;
+            default:
+                DataMustAlwaysBeComplete = false;
+            }
+        FILLING_END();
+        break;
+    }
+    case 5: {
+        int32u tile_size;
+        Get_B4 (tile_size,                                      "tile_size");
+        FILLING_BEGIN();
+            Header_Fill_Size(Element_Offset + tile_size);
+            Header_Fill_Code(0, PosTiles < frame_info_Current.NumTiles ? "title" : "filler");
+            DataMustAlwaysBeComplete = true;
+        FILLING_END();
+        break;
+    }
+    }
 }
 
 //---------------------------------------------------------------------------
 void File_Apv::Data_Parse()
 {
-    if (Element_Level <= 2)
-    {
+    switch (Element_Level) {
+    case 1:
+    case 2:
         Element_ThisIsAList();
-        return;
+        break;
+    case 3:
+        switch (Element_Code) {
+        case   1:
+        case   2:
+        case  25:
+        case  26:
+        case  27: frame(); break;
+        case  65: au_info(); break;
+        case  66: metadata(); break;
+        case  67: filler(); break;
+        default : Skip_XX(Element_Size,                         "(Unknown)");
+        }
+        break;
+    case 4:
+        if (PosTiles < frame_info_Current.NumTiles) {
+            tile();
+        }
+        else {
+            filler();
+        }
+        break;
     }
-
-    if ((1 <= Element_Code && Element_Code <= 2) ||
-        (25 <= Element_Code && Element_Code <= 27))
-        frame();
-    else if (Element_Code == 65)
-        au_info();
-    else if (Element_Code == 66)
-        metadata();
-    else if (Element_Code == 67)
-        filler();
-    else
-        Skip_XX(Element_Size,                                   "Data");
 }
 
 //***************************************************************************
@@ -337,33 +398,24 @@ void File_Apv::Data_Parse()
 //---------------------------------------------------------------------------
 void File_Apv::frame()
 {
-    FrameInfo fi;
+    frame_header();
 
-    frame_header(fi);
-    for (int32u i = 0; i < fi.NumTiles; ++i) {
-        int32u tile_size;
-        Get_B4(tile_size,                                       "tile_size[i]");
-        auto Element_Size_Save = Element_Size;
-        if (tile_size <= Element_Size - Element_Offset)
-            Element_Size = Element_Offset + tile_size;
-        else
-            Trusted_IsNot("Size is wrong (tile_size)");
-        tile(fi);
-        Element_Size = Element_Size_Save;
-    }
-    filler();
-
-    FILLING_BEGIN_PRECISE();
-    Accept();
-    frame_infos.insert(fi);
-    FILLING_ELSE();
-    Reject();
+    FILLING_BEGIN();
+        Element_ThisIsAList();
+        if (!Status[IsFilled] && Frame_Count) {
+            Fill();
+            if (Config->ParseSpeed < 1.0) {
+                Finish();
+            }
+        }
+        Frame_Count++;
     FILLING_END();
 }
 
 //---------------------------------------------------------------------------
-void File_Apv::frame_header(FrameInfo& fi)
+void File_Apv::frame_header()
 {
+    FrameInfo fi;
     Element_Begin1("frame_header");
     frame_info(fi);
     Skip_B1 (                                                   "reserved_zero_8bits");
@@ -374,14 +426,24 @@ void File_Apv::frame_header(FrameInfo& fi)
         Get_S1 ( 8, fi.matrix_coefficients,                     "matrix_coefficients");         Param_Info1(Mpegv_matrix_coefficients(fi.matrix_coefficients));
         Get_SB (    fi.full_range_flag,                         "full_range_flag");
     TEST_SB_END();
+    if (fi.NumComps) { // We can not decode if chroma_format_idc is unknown, so we skip the rest of the frame header
     TEST_SB_SKIP(                                               "use_q_matrix");
-    quantization_matrix(fi);
+        quantization_matrix(fi);
     TEST_SB_END();
     tile_info(fi);
     Skip_S1 ( 8,                                                "reserved_zero_8bits");
     byte_alignment();
+    }
     BS_End();
     Element_End0();
+
+    FILLING_BEGIN();
+        frame_info_Current = fi;
+        PosTiles = 0;
+        if (!Status[IsAccepted]) {
+            Accept();
+        }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -420,7 +482,7 @@ void File_Apv::quantization_matrix(const FrameInfo& fi)
     for (int8u i = 0; i < fi.NumComps; ++i) {
         for (int8u y = 0; y < 8; ++y) {
             for (int8u x = 0; x < 8; ++x) {
-                Skip_S1(8,                                      "q_matrix[i][x][y]");
+                Skip_S1(8,                                      "q_matrix");
             }
         }
     }
@@ -462,7 +524,7 @@ void File_Apv::tile_info(FrameInfo& fi)
     fi.NumTiles = tileCols * tileRows;
     TEST_SB_SKIP(                                               "tile_size_present_in_fh_flag");
     for (int32u i = 0; i < fi.NumTiles; ++i) {
-        Skip_S4(32,                                             "tile_size_in_fh[i]");
+        Skip_S4(32,                                             "tile_size_in_fh");
     }
     TEST_SB_END();
     Element_End0();
@@ -488,7 +550,10 @@ void File_Apv::au_info()
     Element_End0();
 
     FILLING_BEGIN_PRECISE();
-    frame_infos.insert(fi);
+        frame_info_Current = fi;
+        if (!Status[IsAccepted]) {
+            Accept();
+        }
     FILLING_END();
 }
 
@@ -542,33 +607,36 @@ void File_Apv::filler()
 }
 
 //---------------------------------------------------------------------------
-void File_Apv::tile(const FrameInfo& fi)
+void File_Apv::tile()
 {
     vector<int32u> tile_data_sizes;
-    Element_Begin1("tile");
     Element_Begin1("tile_header");
     auto Element_Offset_begin = Element_Offset;
     int16u tile_header_size;
     Get_B2 (tile_header_size,                                   "tile_header_size");
     Skip_B2(                                                    "tile_index");
-    for (int8u i = 0; i < fi.NumComps; ++i) {
+    if (!frame_info_Current.NumComps) { // We can not decode if chroma_format_idc is unknown, so we skip the rest of the frame header
+        Skip_XX(Element_Size - Element_Offset,                  "(Unknown)");
+        return;
+    }
+    for (int8u i = 0; i < frame_info_Current.NumComps; ++i) {
         int32u tile_data_size;
-        Get_B4(tile_data_size,                                  "tile_data_size[i]");
+        Get_B4(tile_data_size,                                  "tile_data_size");
         tile_data_sizes.push_back(tile_data_size);
     }
-    for (int8u i = 0; i < fi.NumComps; ++i) {
-        Skip_B1(                                                "tile_qp[i]");
+    for (int8u i = 0; i < frame_info_Current.NumComps; ++i) {
+        Skip_B1(                                                "tile_qp");
     }
     Skip_B1(                                                    "reserved_zero_8bits");
     byte_alignment();
     if (Element_Offset_begin + tile_header_size != Element_Offset)
         Trusted_IsNot("Size is wrong (tile_header_size)");
     Element_End0();
-    for (int8u i = 0; i < fi.NumComps; ++i) {
+    for (int8u i = 0; i < frame_info_Current.NumComps; ++i) {
         Skip_XX(tile_data_sizes.at(i),                          "tile_data");
     }
     Skip_XX(Element_Size - Element_Offset,                      "tile_dummy_byte");
-    Element_End0();
+    PosTiles++;
 }
 
 //---------------------------------------------------------------------------

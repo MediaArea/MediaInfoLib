@@ -44,17 +44,6 @@ private :
 
         int8u  NumComps{};
         int32u NumTiles{};
-
-        bool operator<(const FrameInfo& other) const {
-            return std::tie(profile_idc, level_idc, band_idc, frame_width, frame_height,
-                chroma_format_idc, bit_depth_minus8, color_primaries,
-                transfer_characteristics, matrix_coefficients,
-                color_description_present_flag, full_range_flag) <
-                std::tie(other.profile_idc, other.level_idc, other.band_idc, other.frame_width, other.frame_height,
-                    other.chroma_format_idc, other.bit_depth_minus8, other.color_primaries,
-                    other.transfer_characteristics, other.matrix_coefficients,
-                    other.color_description_present_flag, other.full_range_flag);
-        }
     };
 
     //Streams management
@@ -71,15 +60,17 @@ private :
     //Buffer - Per element
     void Header_Parse() override;
     void Data_Parse() override;
+
+    //Elements
     void frame();
-    void frame_header(FrameInfo& fi);
+    void frame_header();
     void frame_info(FrameInfo& fi);
     void quantization_matrix(const FrameInfo& fi);
     void tile_info(FrameInfo& fi);
     void au_info();
     void metadata();
     void filler();
-    void tile(const FrameInfo& fi);
+    void tile();
     void byte_alignment();
     void metadata_payload(int64u payloadType, int64u payloadSize);
     void metadata_filler();
@@ -91,7 +82,8 @@ private :
 
     //Temp
     int32u  au_size{};
-    std::set<FrameInfo> frame_infos;
+    FrameInfo frame_info_Current;
+    int32u PosTiles{};
     enum hdr_format
     {
         HdrFormat_SmpteSt209440,
