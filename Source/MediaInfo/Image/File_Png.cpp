@@ -1024,10 +1024,11 @@ void File_Png::Textual(bitset8 Method)
             #if defined(MEDIAINFO_XMP_YES)
             auto Text_UTF8=Text.To_UTF8();
             File_Xmp MI;
+            MI.NoTrace = true; //Already have trace (Text string) from above
             Open_Buffer_Init(&MI, Text_UTF8.size());
             Open_Buffer_Continue(&MI, (const int8u*)Text_UTF8.c_str(), Text_UTF8.size());
             Open_Buffer_Finalize(&MI);
-            Element_Show(); //TODO: why is it needed?
+            Element_Show(); //Needed since element (including the previous trace) will be removed if sub parser has no trace output
             Merge(MI, Stream_General, 0, 0, false);
             Text.clear();
             #endif
