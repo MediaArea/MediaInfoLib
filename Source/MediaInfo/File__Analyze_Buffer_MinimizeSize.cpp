@@ -57,14 +57,14 @@ extern MediaInfo_Config Config;
     } \
 
 #define INTEGRITY_SIZE_ATLEAST(_BYTES) \
-    if (_BYTES>Element_Size-Element_Offset) \
+    if (Element_Offset+_BYTES>Element_Size) \
     { \
         Trusted_IsNot(); \
         return; \
     } \
 
 #define INTEGRITY_SIZE_ATLEAST_STRING(_BYTES) \
-    if (_BYTES>Element_Size-Element_Offset) \
+    if (Element_Offset+_BYTES>Element_Size) \
     { \
         Trusted_IsNot(); \
         Info.clear(); \
@@ -72,7 +72,7 @@ extern MediaInfo_Config Config;
     } \
 
 #define INTEGRITY_SIZE_ATLEAST_INT(_BYTES) \
-    if (_BYTES>Element_Size-Element_Offset) \
+    if (Element_Offset+_BYTES>Element_Size) \
     { \
         Trusted_IsNot(); \
         Info=0; \
