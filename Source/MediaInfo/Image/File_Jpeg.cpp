@@ -34,6 +34,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Image/File_Jpeg.h"
+#include "MediaInfo/File__MultipleParsing.h"
 #include "MediaInfo/Image/File_GainMap.h"
 #if defined(MEDIAINFO_PSD_YES)
     #include "MediaInfo/Image/File_Psd.h"
@@ -54,6 +55,7 @@
     #include "MediaInfo/Multiple/File_Mpeg4.h"
 #endif
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
+#include "ThirdParty/fmt/format.h"
 #include "ZenLib/Utils.h"
 #include <vector>
 using namespace ZenLib;
@@ -319,7 +321,7 @@ void File_Jpeg::Streams_Accept()
 //---------------------------------------------------------------------------
 void File_Jpeg::Streams_Accept_PerImage(const seek_item& Item)
 {
-    string Format;
+    string MuxingMode, Format;
     if (Item.Mime.empty() || !Item.Mime.rfind("image/", 0)) {
         Stream_Prepare(StreamKind);
         if (!Item.Mime.empty()) {
@@ -328,10 +330,12 @@ void File_Jpeg::Streams_Accept_PerImage(const seek_item& Item)
                 Format = "JPEG";
             }
             if (Format == "heic") {
-                Format = "HEIC";
+                Format = "HEVC";
+                MuxingMode = "HEIF";
             }
             if (Format == "avif") {
-                Format = "AVIF";
+                Format = "AV1";
+                MuxingMode = "HEIF";
             }
         }
     }
@@ -340,10 +344,12 @@ void File_Jpeg::Streams_Accept_PerImage(const seek_item& Item)
         Format = Item.Mime.substr(6); // Format of the container, until we parse the content
         {
             if (Format == "mp4") {
-                Format = "MPEG-4";
+                Format.clear();
+                MuxingMode = "MPEG-4";
             }
             if (Format == "quicktime") {
-                Format = "QuickTime";
+                Format.clear();
+                MuxingMode = "QuickTime";
             }
         }
     }
@@ -351,9 +357,10 @@ void File_Jpeg::Streams_Accept_PerImage(const seek_item& Item)
         Stream_Prepare(Stream_Other);
         Format = Item.Mime;
     }
-    Fill(StreamKind_Last, StreamPos_Last, "Format", Format);
+    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format), Format);
     Fill(StreamKind_Last, StreamPos_Last, "Type", Item.Type[0]);
     Fill(StreamKind_Last, StreamPos_Last, "Type", Item.Type[1]);
+    Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", MuxingMode);
     Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", Item.MuxingMode[0]);
     Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", Item.MuxingMode[1]);
 }
@@ -474,9 +481,6 @@ bool File_Jpeg::FileHeader_Begin()
 //---------------------------------------------------------------------------
 bool File_Jpeg::Synchronize()
 {
-    if (Parsing_MotionPhoto) {
-        return true;
-    }
     //Synchronizing
     while(Buffer_Offset+2<=Buffer_Size && (Buffer[Buffer_Offset  ]!=0xFF
                                         || Buffer[Buffer_Offset+1]==0x00))
@@ -496,9 +500,6 @@ bool File_Jpeg::Synchronize()
 //---------------------------------------------------------------------------
 bool File_Jpeg::Synched_Test()
 {
-    if (Parsing_MotionPhoto) {
-        return true;
-    }
     if (SOS_SOD_Parsed)
         return true; ///No sync after SOD
 
@@ -682,8 +683,10 @@ void File_Jpeg::Read_Buffer_Continue()
 //---------------------------------------------------------------------------
 void File_Jpeg::Header_Parse()
 {
-    if (Parsing_MotionPhoto) {
-        Header_Fill_Size(File_Size - (File_Offset + Buffer_Offset));
+    if (Parsing_NonJPEG) {
+        const auto& Item = Seek_Items[Parsing_NonJPEG];
+        auto Size = Item.Size ? Item.Size : (File_Size - (File_Offset + Buffer_Offset));
+        Header_Fill_Size(Size);
         return;
     }
     if (SOS_SOD_Parsed)
@@ -785,20 +788,72 @@ void File_Jpeg::Data_Parse()
         case Elements::_NAME : Element_Info1(#_NAME); Element_Info1(_DETAIL); _NAME(); break;
 
     //Parsing
-    if (Parsing_MotionPhoto) {
+    if (Parsing_NonJPEG) {
+        const auto& Item = Seek_Items[Parsing_NonJPEG];
+        Element_Name(Item.Mime.c_str());
+        Element_Info1(Item.MuxingMode[0].c_str());
+        Element_Info1(Item.MuxingMode[1].c_str());
+        Element_Info1(Item.Type[0].c_str());
+        Element_Info1(Item.Type[1].c_str());
         #if defined(MEDIAINFO_MPEG4_YES)
-        auto MI = new File_Mpeg4;
+        File__Analyze* MI;
+        if (Item.Mime == "image/heic"
+         || Item.Mime == "image/avif"
+         || Item.Mime == "video/mp4"
+         || Item.Mime == "video/quicktime") {
+            MI = new File_Mpeg4;
+        }
+        else {
+            MI = new File__MultipleParsing;
+        }
         Open_Buffer_Init(MI);
         Open_Buffer_Continue(MI);
         Open_Buffer_Finalize(MI);
-        Merge(*MI, Stream_Video, 0, 0);
-        size_t Count = MI->Count_Get(Stream_Other);
-        for (size_t i = 0; i < Count; ++i) {
-            Merge(*MI, Stream_Other, i, i);
-            Fill(Stream_Other, i, "MuxingMode_MoreInfo", "Muxed in Video #1");
+        stream_t StreamKind_First = Stream_General;
+        size_t StreamPos_First;
+        for (size_t StreamKind = Stream_General + 1; StreamKind < Stream_Max; StreamKind++) {
+            const auto StreamCount = MI->Count_Get((stream_t)StreamKind);
+            for (size_t Pos = 0; Pos < StreamCount; Pos++) {
+                Stream_Prepare((stream_t)StreamKind);
+                Fill(StreamKind_Last, StreamPos_Last, "Type", Item.Type[0]);
+                Fill(StreamKind_Last, StreamPos_Last, "Type", Item.Type[1]);
+                Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", Item.MuxingMode[0]);
+                Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", Item.MuxingMode[1]);
+                Merge(*MI, StreamKind_Last, Pos, StreamPos_Last);
+                if (StreamKind_First == Stream_General) {
+                    StreamKind_First = StreamKind_Last;
+                    StreamPos_First = StreamPos_Last;
+                    for (auto& Item2 : Seek_Items) {
+                        if (Item2.second.DependsOnFileOffset == File_Offset + Buffer_Offset) {
+                            Item2.second.DependsOnStreamPos = StreamPos_Last;
+                        }
+                    }
+                    if (Item.DependsOnStreamPos) {
+                        Fill(StreamKind_Last, StreamPos_Last, "MuxingMode_MoreInfo", "Muxed in Image #" + to_string(Item.DependsOnStreamPos + 1));
+                    }
+                }
+                else {
+                    const char* StreamKind_String;
+                    switch (StreamKind_First) {
+                    case Stream_Video: StreamKind_String = "Video"; break;
+                    case Stream_Audio: StreamKind_String = "Audio"; break;
+                    case Stream_Text: StreamKind_String = "Text"; break;
+                    case Stream_Other: StreamKind_String = "Other"; break;
+                    case Stream_Image: StreamKind_String = "Image"; break;
+                    default: StreamKind_String = nullptr;
+                    }
+                    if (StreamKind_String) {
+                        Fill(StreamKind_Last, StreamPos_Last, "MuxingMode_MoreInfo", fmt::format("Muxed in {} #{}", StreamKind_String, StreamPos_First + 1));
+                    }
+                }
+            }
         }
+        if (StreamKind_First == Stream_General) {
+            Streams_Accept_PerImage(Item);
+        }
+        delete MI;
         #else
-        Skip_UTF8(Element_Size - Element_Offset,                "MP4 file");
+        Skip_UTF8(Element_Size - Element_Offset,                "(Unknown)");
         #endif
         Finish("JPEG");
         return;
@@ -1262,8 +1317,8 @@ void File_Jpeg::SOF_(int8u Encoding)
             }
             if (Count_Get(StreamKind_Last)==0)
                 Stream_Prepare(StreamKind_Last);
-            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format), "JPEG");
-            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Codec), "JPEG");
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format), "JPEG", Unlimited, true, true);
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Codec), "JPEG", Unlimited, true, true);
             if (StreamKind_Last==Stream_Image)
                 Fill(Stream_Image, StreamPos_Last, Image_Codec_String, "JPEG", Unlimited, true, true); //To Avoid automatic filling
             if (StreamKind_Last==Stream_Video)
@@ -1443,20 +1498,44 @@ void File_Jpeg::SOS()
         Item.second.IsParsed = true;
         Data_Size -= (IsSub ? Buffer_Size : File_Size) - Item.first;
         Streams_Finish_PerImage();
-        Streams_Accept_PerImage(Item.second);
-        for (auto& Item2 : Seek_Items) {
-            if (Item2.second.DependsOnFileOffset == Item.first) {
-                Item2.second.DependsOnStreamPos = StreamPos_Last;
+        while (Element_Level)
+            Element_End0();
+        MustSynchronize = Item.second.Mime.empty() || Item.second.Mime == "image/jpeg";
+        Parsing_NonJPEG = MustSynchronize ? 0 : Item.first;
+        if (!Parsing_NonJPEG) {
+            Streams_Accept_PerImage(Item.second);
+            for (auto& Item2 : Seek_Items) {
+                if (Item2.second.DependsOnFileOffset == Item.first) {
+                    Item2.second.DependsOnStreamPos = StreamPos_Last;
+                }
+            }
+            if (Item.second.DependsOnStreamPos) {
+                Fill(StreamKind_Last, StreamPos_Last, "MuxingMode_MoreInfo", "Muxed in Image #" + to_string(Item.second.DependsOnStreamPos + 1));
             }
         }
-        if (Item.second.DependsOnStreamPos) {
-            Fill(StreamKind_Last, StreamPos_Last, "MuxingMode_MoreInfo", "Muxed in Image #" + to_string(Item.second.DependsOnStreamPos + 1));
+        auto WillParse = Parsing_NonJPEG || MustSynchronize;
+        #if MEDIAINFO_TRACE
+        if (Trace_Activated) {
+            auto Element_Offset_Save = Element_Offset;
+            if (!Parsing_NonJPEG) {
+                Element_Offset = Item.first - (File_Offset + Buffer_Offset);
+                Element_Begin1(Item.second.Mime.empty() ? "JPEG" : Item.second.Mime.c_str());
+                Element_Info1(Item.second.MuxingMode[0].c_str());
+                Element_Info1(Item.second.MuxingMode[1].c_str());
+                Element_Info1(Item.second.Type[0].c_str());
+                Element_Info1(Item.second.Type[1].c_str());
+                Element_Begin0();
+            }
+            if (!WillParse) {
+                auto Size = Item.second.Size ? Item.second.Size : (File_Size - Item.first);
+                Param("(Unknown)", Ztring("(") + Ztring::ToZtring(Size) + Ztring(" bytes)"));
+                Element_End0(); // TODO: fix element size info in trace
+            }
+            Element_Offset = Element_Offset_Save;
         }
-        if (!Item.second.Mime.empty() && Item.second.Mime != "image/jpeg" && Item.second.Mime != "video/mp4") {
+        #endif
+        if (!WillParse) {
             continue;
-        }
-        if (Item.second.Mime == "video/mp4") {
-            Parsing_MotionPhoto = true;
         }
         Seek_Items_PrimaryStreamPos = 0;
         SOS_SOD_Parsed = false;
