@@ -1252,6 +1252,8 @@ void File_Wm::Header_ExtendedContentDescription()
                 else
                     Fill(Stream_General, 0, General_Part_Position, Value);
             }
+            else if (Name==__T("WM/SetSubTitle"))
+                Fill(Stream_General, 0, General_Part, Value);
             else if (Name==__T("WM/Provider"))
                 Fill(Stream_General, 0, "Provider", Value);
             else if (Name==__T("WM/Publisher"))
