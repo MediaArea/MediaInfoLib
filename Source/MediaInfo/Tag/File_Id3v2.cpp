@@ -1303,7 +1303,7 @@ void File_Id3v2::Fill_Name()
         case Elements::TSOT : Fill(Stream_General, 0, General_Track_Sort, Element_Value); break;
         case Elements::TSRC : Fill(Stream_General, 0, General_ISRC, Element_Value); break;
         case Elements::TSSE : Fill(Stream_General, 0, General_Encoded_Library, Element_Value); break;
-        case Elements::TSST : Fill(Stream_General, 0, "Set subtitle", Element_Value); break;
+        case Elements::TSST : Fill(Stream_General, 0, General_Part, Element_Value); break;
         case Elements::TXXX : if (Element_Values(0)==__T("AccurateRipResult"))      ;
                          else if (Element_Values(0)==__T("AccurateRipDiscID"))      ;
                          else if (Element_Values(0)==__T("CT_GAPLESS_DATA"))        ;
