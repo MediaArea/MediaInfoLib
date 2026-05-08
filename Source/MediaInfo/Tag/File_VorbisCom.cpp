@@ -276,6 +276,7 @@ void File_VorbisCom::Data_Parse()
                 Fill(Stream_General, 0, General_Part_Position, Value);
         }
         else if (Key==__T("DISCNUMBER"))             Fill(StreamKind_Common,   0, General_Part_Position, Value, true);
+        else if (Key==__T("DISCSUBTITLE"))           Fill(StreamKind_Common,   0, General_Part, Value, true);
         else if (Key==__T("DISCTOTAL"))              {if (Value!=Retrieve(StreamKind_Common, 0, General_Part_Position_Total)) Fill(StreamKind_Common,   0, General_Part_Position_Total, Value);}
         else if (Key==__T("ENCODEDBY"))              Fill(StreamKind_Common,   0, "EncodedBy", Value);
         else if (Key==__T("ENCODED-BY"))             Fill(StreamKind_Common,   0, "EncodedBy", Value);
