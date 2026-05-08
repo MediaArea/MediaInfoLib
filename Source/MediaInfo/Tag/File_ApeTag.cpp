@@ -163,7 +163,7 @@ void File_ApeTag::Data_Parse()
                                         Fill(Stream_General, 0, General_Part_Position, Value.SubString(__T(""), __T("/")));
                                     }
                                     else
-                                        Fill(Stream_General, 0, General_Track_Position, Value);
+                                        Fill(Stream_General, 0, General_Part_Position, Value);
     }
     else if (Key=="ENCODEDBY")      Fill(Stream_General, 0, General_EncodedBy, Value);
     else if (Key=="GENRE")          Fill(Stream_General, 0, General_Genre, Value);
