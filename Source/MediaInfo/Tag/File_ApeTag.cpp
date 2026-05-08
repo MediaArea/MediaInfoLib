@@ -155,7 +155,7 @@ void File_ApeTag::Data_Parse()
     else if (Key=="COMPOSER")       Fill(Stream_General, 0, General_Composer, Value);
     else if (Key=="CONTENTGROUP")   Fill(Stream_General, 0, General_Genre, Value);
     else if (Key=="COPYRIGHT")      Fill(Stream_General, 0, General_Copyright, Value);
-    else if (Key=="DISK")
+    else if (Key=="DISK" || Key=="DISC")
     {
                                     if (Value.find(__T('/'))!=Error)
                                     {
