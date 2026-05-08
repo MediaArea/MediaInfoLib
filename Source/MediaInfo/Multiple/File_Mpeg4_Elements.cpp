@@ -4126,6 +4126,11 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                         else if (Value==__T("143583")) Value=__T("Fiji Islands");
                         else if (Value==__T("143597")) Value=__T("Papua New Guinea");
                     }
+                    if (Parameter=="DISCSUBTITLE")
+                    {
+                        Fill(Stream_General, 0, General_Part, Value);
+                        Parameter.clear(); //Set as already filled
+                    }
                     if (!Parameter.empty())
                     {
                         Element_Info1(Parameter.c_str());
