@@ -2689,7 +2689,7 @@ void File_Mk::Segment_Attachments_AttachedFile_FileData()
         #endif //MEDIAINFO_TRACE
 
         //Filling
-        Attachment("Attachment", Ztring().From_UTF8(AttachedFile_FileName));
+        Attachment("Attachment", Ztring().From_UTF8(AttachedFile_FileDescription.empty() ? AttachedFile_FileName : AttachedFile_FileDescription), Ztring(),  Ztring().From_UTF8(AttachedFile_FileMimeType));
 
         #if MEDIAINFO_EVENTS
             {

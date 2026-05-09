@@ -522,23 +522,44 @@ void File__Analyze::Attachment(const char* MuxingMode, const Ztring& Description
         return;
     }
 
+    auto containsWord = [](const std::string& text, const std::string& word) {
+        auto pos = text.find(word);
+        while (pos != std::string::npos)
+        {
+            bool leftOk =
+                (pos == 0) ||
+                !std::isalpha(static_cast<unsigned char>(text[pos - 1]));
+
+            bool rightOk =
+                (pos + word.size() >= text.size()) ||
+                !std::isalpha(static_cast<unsigned char>(text[pos + word.size()]));
+            if (leftOk && rightOk)
+                return true;
+
+            pos = text.find(word, pos + 1);
+        }
+
+        return false;
+    };
+
     Ztring ModifiedType(Type);
-    if (ModifiedType.empty()) {
+    if (ModifiedType.empty() && (IsCover || MimeType.empty() || MimeType.rfind(__T("image/"), 0) == 0)) {
         auto Description_Lower(Description);
         Description_Lower.MakeLowerCase();
-        if (Description_Lower.find(__T("thumbnail")) != string::npos && Description_Lower.find(__T("c2pa.thumbnail")) == string::npos) {
+        auto Description_String = Description_Lower.To_UTF8();
+        if (containsWord(Description_String, "thumbnail") && Description_String.find("c2pa.thumbnail") == string::npos) {
             IsCover = true;
             ModifiedType = "Thumbnail";
         }
-        if (Description_Lower.find(__T("cover")) != string::npos || Description_Lower.find(__T("front")) != string::npos) {
+        if (containsWord(Description_String, "cover") || containsWord(Description_String, "front") || containsWord(Description_String, "frontcover")) {
             IsCover = true;
             ModifiedType = "Cover";
         }
-        if (Description_Lower.find(__T("back")) != string::npos) {
+        if (containsWord(Description_String, "back") || containsWord(Description_String, "backcover")) {
             IsCover = true;
             ModifiedType = "Cover_Back";
         }
-        if (Description_Lower.find(__T("cd")) != string::npos && Description_Lower.find(__T("uuid")) == string::npos) {
+        if (containsWord(Description_String, "cd") && !containsWord(Description_String, "uuid")) {
             IsCover = true;
             ModifiedType = "Cover_Media";
         }
