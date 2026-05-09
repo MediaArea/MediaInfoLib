@@ -674,12 +674,6 @@ void File__Analyze::Get_EB(int64u &Info)
 {
     //Element size
     INTEGRITY_SIZE_ATLEAST_INT(1);
-    if (Buffer[Buffer_Offset+Element_Offset]==0xFF)
-    {
-        Info=File_Size-(File_Offset+Buffer_Offset+Element_Offset);
-        Element_Offset++;
-        return;
-    }
     int8u  Size=0;
     int8u  Size_Mark=0;
     BS_Begin();

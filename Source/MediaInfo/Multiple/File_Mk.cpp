@@ -1681,7 +1681,22 @@ void File_Mk::Header_Parse()
     if (NameIsValid)
     {
     Get_EB (Name,                                               "Name");
+    auto Element_Offset_Before = Element_Offset;
     Get_EB (Size,                                               "Size");
+    auto Size_Size = Element_Offset - Element_Offset_Before;
+    if ((Size & 0x7F) == 0x7F) {
+        int64u Unlimited_Value = 0;
+        while (Size_Size) {
+            Unlimited_Value <<= 7;
+            Unlimited_Value |= 0x7F;
+            Size_Size--;
+        }
+        if (Size == Unlimited_Value)
+        {
+            Param_Info1("Unlimited");
+            Size = Element_TotalSize_Get() - Element_Offset;
+        }
+    }
 
     //Detection of 0-sized Segment expected to be -1-sized (unlimited)
     if (Name==Elements::Segment && Size==0)
