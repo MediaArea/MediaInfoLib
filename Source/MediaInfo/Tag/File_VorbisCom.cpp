@@ -271,6 +271,7 @@ void File_VorbisCom::Data_Parse()
         else if (Key==__T("ENCODEDBY"))              Fill(StreamKind_Common,   0, "EncodedBy", Value);
         else if (Key==__T("ENCODED-BY"))             Fill(StreamKind_Common,   0, "EncodedBy", Value);
         else if (Key==__T("ENCODER"))                Fill(StreamKind_Common,   0, "Encoded_Application", Value);
+        else if (Key==__T("ENCODER_OPTIONS"))        Fill(StreamKind_Specific, 0, "Encoded_Library_Settings", Value);
         else if (Key==__T("ENCODED_USING"))          Fill(StreamKind_Common,   0, "Encoded_Application", Value);
         else if (Key==__T("ENCODER_URL"))            Fill(StreamKind_Common,   0, "Encoded_Application/Url", Value);
         else if (Key==__T("ENSEMBLE"))               Accompaniments.push_back(Value);

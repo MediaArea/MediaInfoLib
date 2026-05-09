@@ -3436,6 +3436,7 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_Assign()
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("ENCODED_BY")) Segment_Tag_SimpleTag_TagNames[0]=__T("EncodedBy");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("ENCODER")) Segment_Tag_SimpleTag_TagNames[0]=__T("Encoded_Library");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("ENCODER_SETTINGS")) Segment_Tag_SimpleTag_TagNames[0]=__T("Encoded_Library_Settings");
+    if (Segment_Tag_SimpleTag_TagNames[0]==__T("ENCODER_OPTIONS")) Segment_Tag_SimpleTag_TagNames[0]=__T("Encoded_Library_Settings");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("FPS")) Segment_Tag_SimpleTag_TagNames[0].clear(); //Useless
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("GENRE")) Segment_Tag_SimpleTag_TagNames[0]=__T("Genre");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("HANDLER_NAME"))
