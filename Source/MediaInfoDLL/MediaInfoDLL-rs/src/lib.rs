@@ -813,6 +813,11 @@ mod test_mediainfo {
             MediaInfo_fileoptions_t::MediaInfo_FileOption_Nothing,
         );
         assert_eq!(ret, 2);
+        let ret = mi.open(
+            "target/test.png",
+            MediaInfo_fileoptions_t::MediaInfo_FileOption_CloseAll,
+        );
+        assert_eq!(ret, 1);
     }
 
     #[test]

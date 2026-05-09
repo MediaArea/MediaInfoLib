@@ -491,7 +491,7 @@ void            __stdcall MediaInfoListA_Delete (void* Handle)
     MediaInfoList_Delete(Handle);
 }
 
-size_t          __stdcall MediaInfoListA_Open (void* Handle, const char* File, const MediaInfo_fileoptions_C Options)
+size_t          __stdcall MediaInfoListA_Open (void* Handle, const char* File, MediaInfo_fileoptions_C Options)
 {
     return MediaInfoList_Open(Handle, MB2WC(Handle, 0, File), Options);
 }
@@ -932,12 +932,13 @@ void            __stdcall MediaInfoList_Delete (void* Handle)
                         )
 }
 
-size_t          __stdcall MediaInfoList_Open (void* Handle, const wchar_t* File, const MediaInfo_fileoptions_C Options)
+size_t          __stdcall MediaInfoList_Open (void* Handle, const wchar_t* File, MediaInfo_fileoptions_C Options)
 {
+    Options=(MediaInfo_fileoptions_C)(((size_t)Options)&0xFF);
     MANAGE_SIZE_T(  "Open",
                     MediaInfoList,
-                    Open(File),
-                    Debug+=", File=";Debug+=Ztring(File).To_UTF8();)
+                    Open(File, (fileoptions_t)Options),
+                    Debug+=", File=";Debug+=Ztring(File).To_UTF8();Debug+=", Options=";Debug+=Ztring(Options).To_UTF8();)
 }
 
 size_t          __stdcall MediaInfoList_Open_Buffer (void* Handle, const unsigned char* Begin, size_t  Begin_Size, const unsigned char* End, size_t  End_Size)
