@@ -394,7 +394,7 @@ size_t          __stdcall MediaInfoA_Open_Buffer_Init (void* Handle, MediaInfo_i
     return MediaInfo_Open_Buffer_Init(Handle, File_Size, File_Offset);
 }
 
-size_t          __stdcall MediaInfoA_Open_Buffer_Continue (void* Handle, MediaInfo_int8u* Buffer, size_t Buffer_Size)
+size_t          __stdcall MediaInfoA_Open_Buffer_Continue (void* Handle, const MediaInfo_int8u* Buffer, size_t Buffer_Size)
 {
     return MediaInfo_Open_Buffer_Continue(Handle, Buffer, Buffer_Size);
 }
@@ -665,7 +665,7 @@ size_t          __stdcall MediaInfo_Open_Buffer_Init (void* Handle, MediaInfo_in
                     Debug+=", File_Size=";Debug+=Ztring::ToZtring(File_Size).To_UTF8();Debug+=", File_Offset=";Debug+=Ztring::ToZtring(File_Offset).To_UTF8();)
 }
 
-size_t          __stdcall MediaInfo_Open_Buffer_Continue (void* Handle, MediaInfo_int8u* Buffer, size_t Buffer_Size)
+size_t          __stdcall MediaInfo_Open_Buffer_Continue (void* Handle, const MediaInfo_int8u* Buffer, size_t Buffer_Size)
 {
     MANAGE_SIZE_T(  "Open_Buffer_Continue",
                     MediaInfo,
