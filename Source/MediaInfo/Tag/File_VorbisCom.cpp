@@ -267,15 +267,18 @@ void File_VorbisCom::Data_Parse()
         else if (Key==__T("DESCRIPTION"))            Fill(StreamKind_Common,   0, "Description", Value);
         else if (Key==__T("DISC"))
         {
-            if (Value.find(__T('/'))!=Error)
+            auto SlashPos=Value.find(__T('/'));
+            if (SlashPos!=Error)
             {
-                Fill(Stream_General, 0, General_Part_Position_Total, Value.SubString(__T("/"), __T("")));
-                Fill(Stream_General, 0, General_Part_Position, Value.SubString(__T(""), __T("/")));
+                auto Position_Total=Value.substr(SlashPos + 1);
+                auto Position=Value.substr(0, SlashPos);
+                {if (Position_Total!=Retrieve(StreamKind_Common, 0, General_Part_Position_Total)) Fill(Stream_General, 0, General_Part_Position_Total, Position_Total);}
+                {if (Position!=Retrieve(StreamKind_Common, 0, General_Part_Position)) Fill(Stream_General, 0, General_Part_Position, Position);}
             }
             else
-                Fill(Stream_General, 0, General_Part_Position, Value);
+                {if (Value!=Retrieve(StreamKind_Common, 0, General_Part_Position)) Fill(Stream_General, 0, General_Part_Position, Value);}
         }
-        else if (Key==__T("DISCNUMBER"))             Fill(StreamKind_Common,   0, General_Part_Position, Value, true);
+        else if (Key==__T("DISCNUMBER"))             {if (Value!=Retrieve(StreamKind_Common, 0, General_Part_Position)) Fill(StreamKind_Common,   0, General_Part_Position, Value, true);}
         else if (Key==__T("DISCSUBTITLE"))           Fill(StreamKind_Common,   0, General_Part, Value, true);
         else if (Key==__T("DISCTOTAL"))              {if (Value!=Retrieve(StreamKind_Common, 0, General_Part_Position_Total)) Fill(StreamKind_Common,   0, General_Part_Position_Total, Value);}
         else if (Key==__T("ENCODEDBY"))              Fill(StreamKind_Common,   0, "EncodedBy", Value);
