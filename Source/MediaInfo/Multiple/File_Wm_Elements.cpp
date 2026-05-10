@@ -1243,6 +1243,17 @@ void File_Wm::Header_ExtendedContentDescription()
                 Fill(Stream_General, 0, General_LawRating, Value);
             else if (Name==__T("WM/ParentalRatingReason"))
                 Fill(Stream_General, 0, General_LawRating_Reason, Value);
+            else if (Name==__T("WM/PartOfSet")) {
+                if (Value.find(__T('/'))!=Error)
+                {
+                    Fill(Stream_General, 0, General_Part_Position_Total, Value.SubString(__T("/"), __T("")));
+                    Fill(Stream_General, 0, General_Part_Position, Value.SubString(__T(""), __T("/")));
+                }
+                else
+                    Fill(Stream_General, 0, General_Part_Position, Value);
+            }
+            else if (Name==__T("WM/SetSubTitle"))
+                Fill(Stream_General, 0, General_Part, Value);
             else if (Name==__T("WM/Provider"))
                 Fill(Stream_General, 0, "Provider", Value);
             else if (Name==__T("WM/Publisher"))
