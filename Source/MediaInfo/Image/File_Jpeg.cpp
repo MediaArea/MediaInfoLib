@@ -360,9 +360,9 @@ void File_Jpeg::Streams_Accept_PerImage(const seek_item& Item)
     Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format), Format);
     Fill(StreamKind_Last, StreamPos_Last, "Type", Item.Type[0]);
     Fill(StreamKind_Last, StreamPos_Last, "Type", Item.Type[1]);
-    Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", MuxingMode);
     Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", Item.MuxingMode[0]);
     Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", Item.MuxingMode[1]);
+    Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", MuxingMode);
 }
 
 //---------------------------------------------------------------------------
