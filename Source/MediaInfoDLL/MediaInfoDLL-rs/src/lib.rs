@@ -87,15 +87,7 @@ impl MediaInfo {
     ) -> usize {
         let begin_ptr = begin.as_ptr();
         let end_ptr = end.as_ptr();
-        unsafe {
-            MediaInfoA_Open_Buffer(
-                self.handle,
-                begin_ptr as *mut MediaInfo_int8u,
-                begin_size,
-                end_ptr as *mut MediaInfo_int8u,
-                end_size,
-            )
-        }
+        unsafe { MediaInfoA_Open_Buffer(self.handle, begin_ptr, begin_size, end_ptr, end_size) }
     }
 
     /// Open a stream and collect information about it (technical information and tags)
@@ -130,13 +122,7 @@ impl MediaInfo {
     ///         bit 16-31: User defined
     pub fn open_buffer_continue(&self, buffer: &[u8], buffer_size: usize) -> usize {
         let buffer_ptr = buffer.as_ptr();
-        unsafe {
-            MediaInfoA_Open_Buffer_Continue(
-                self.handle,
-                buffer_ptr as *mut MediaInfo_int8u,
-                buffer_size,
-            )
-        }
+        unsafe { MediaInfoA_Open_Buffer_Continue(self.handle, buffer_ptr, buffer_size) }
     }
 
     /// Open a stream and collect information about it (technical information and tags)
@@ -409,15 +395,7 @@ impl MediaInfoList {
     ) -> usize {
         let begin_ptr = begin.as_ptr();
         let end_ptr = end.as_ptr();
-        unsafe {
-            MediaInfoListA_Open_Buffer(
-                self.handle,
-                begin_ptr as *mut MediaInfo_int8u,
-                begin_size,
-                end_ptr as *mut MediaInfo_int8u,
-                end_size,
-            )
-        }
+        unsafe { MediaInfoListA_Open_Buffer(self.handle, begin_ptr, begin_size, end_ptr, end_size) }
     }
 
     /// Close a file opened before with Open() (without saving)

@@ -246,7 +246,7 @@ MEDIAINFO_EXP size_t            __stdcall MediaInfo_Open_Buffer (void* Handle, c
 /** @brief Wrapper for MediaInfoLib::MediaInfo::Open (with a buffer, Init) */
 MEDIAINFO_EXP size_t            __stdcall MediaInfo_Open_Buffer_Init (void* Handle, MediaInfo_int64u File_Size, MediaInfo_int64u File_Offset);
 /** @brief Wrapper for MediaInfoLib::MediaInfo::Open (with a buffer, Continue) */
-MEDIAINFO_EXP size_t            __stdcall MediaInfo_Open_Buffer_Continue (void* Handle, MediaInfo_int8u* Buffer, size_t Buffer_Size);
+MEDIAINFO_EXP size_t            __stdcall MediaInfo_Open_Buffer_Continue (void* Handle, const MediaInfo_int8u* Buffer, size_t Buffer_Size);
 /** @brief Wrapper for MediaInfoLib::MediaInfo::Open (with a buffer, Continue_GoTo_Get) */
 MEDIAINFO_EXP MediaInfo_int64u  __stdcall MediaInfo_Open_Buffer_Continue_GoTo_Get (void* Handle);
 /** @brief Wrapper for MediaInfoLib::MediaInfo::Open (with a buffer, Finalize) */
@@ -315,7 +315,7 @@ MEDIAINFO_EXP size_t            __stdcall MediaInfoA_Open_Buffer (void* Handle, 
 /** @brief Wrapper for MediaInfoLib::MediaInfo::Open (with a buffer, Init) */
 MEDIAINFO_EXP size_t            __stdcall MediaInfoA_Open_Buffer_Init (void* Handle, MediaInfo_int64u File_Size, MediaInfo_int64u File_Offset);
 /** @brief Wrapper for MediaInfoLib::MediaInfo::Open (with a buffer, Continue) */
-MEDIAINFO_EXP size_t            __stdcall MediaInfoA_Open_Buffer_Continue (void* Handle, MediaInfo_int8u* Buffer, size_t Buffer_Size);
+MEDIAINFO_EXP size_t            __stdcall MediaInfoA_Open_Buffer_Continue (void* Handle, const MediaInfo_int8u* Buffer, size_t Buffer_Size);
 /** @brief Wrapper for MediaInfoLib::MediaInfo::Open (with a buffer, Continue_GoTo_Get) */
 MEDIAINFO_EXP MediaInfo_int64u  __stdcall MediaInfoA_Open_Buffer_Continue_GoTo_Get (void* Handle);
 /** @brief Wrapper for MediaInfoLib::MediaInfo::Open (with a buffer, Finalize) */
