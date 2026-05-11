@@ -811,6 +811,7 @@ void File_Jpeg::Data_Parse()
         Open_Buffer_Finalize(MI);
         stream_t StreamKind_First = Stream_General;
         size_t StreamPos_First;
+        const auto& MuxingMode = MI->Retrieve_Const(Stream_General, 0, General_Format);
         for (size_t StreamKind = Stream_General + 1; StreamKind < Stream_Max; StreamKind++) {
             const auto StreamCount = MI->Count_Get((stream_t)StreamKind);
             for (size_t Pos = 0; Pos < StreamCount; Pos++) {
@@ -819,6 +820,7 @@ void File_Jpeg::Data_Parse()
                 Fill(StreamKind_Last, StreamPos_Last, "Type", Item.Type[1]);
                 Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", Item.MuxingMode[0]);
                 Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", Item.MuxingMode[1]);
+                Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", MuxingMode);
                 Merge(*MI, StreamKind_Last, Pos, StreamPos_Last);
                 if (StreamKind_First == Stream_General) {
                     StreamKind_First = StreamKind_Last;
