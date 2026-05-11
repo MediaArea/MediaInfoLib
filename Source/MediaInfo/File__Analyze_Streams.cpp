@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <limits>
+#include <type_traits>
 using namespace std;
 //---------------------------------------------------------------------------
 
@@ -1382,6 +1383,31 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
 
         if (Value_NotBOM_Pos)
             return Fill(StreamKind, StreamPos, Parameter, Value.substr(Value_NotBOM_Pos), Replace);
+    }
+
+    // Replace bad characters
+    const auto IsBadChar = [](Char Character) {
+        auto c = static_cast<typename std::make_unsigned<Char>::type>(Character);
+        return
+            ((c < 0x20 &&
+              c != 0x09 && c != 0x0A && c != 0x0D)) // C0 Keep TAB, LF, CR
+            || (c >= 0x7F && c < 0xA0);             // DEL + C1
+    };
+    auto it = std::find_if(Value.begin(), Value.end(), IsBadChar);
+    if (it != Value.end()) {
+        Ztring Cleaned;
+        Cleaned.reserve(Value.size());
+        Cleaned.append(Value.begin(), it);
+        for (auto i = it; i != Value.end(); ++i) {
+            Cleaned += IsBadChar(*i) ?
+            #if defined(UNICODE) || defined (_UNICODE)
+                L'\uFFFD'
+            #else
+                '?'
+            #endif
+                : *i;
+        }
+        return Fill(StreamKind, StreamPos, Parameter, Cleaned, Replace);
     }
 
     // Ignore useless values
