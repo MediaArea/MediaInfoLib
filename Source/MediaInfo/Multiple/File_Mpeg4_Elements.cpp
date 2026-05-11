@@ -6587,9 +6587,14 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
     if (CompressorName_Size<32)
     {
         //This is pascal string
+        int8u CompressorName_Size2;
         Skip_B1(                                                "Compressor name size");
+        Peek_B1(CompressorName_Size2);
+        auto Duplicate = CompressorName_Size == CompressorName_Size2;
+        if (Duplicate)
+            Skip_B1(                                            "Compressor name size (duplicate)");
         Get_UTF8(CompressorName_Size, CompressorName,           "Compressor name");
-        Skip_XX(32-1-CompressorName_Size,                       "Padding");
+        Skip_XX(32-1- Duplicate-CompressorName_Size,            "Padding");
     }
     else
         //this is hard-coded 32-byte string
