@@ -95,6 +95,7 @@ void File_Gif::Read_Buffer_Continue()
     if (GCT_Flag)
         Skip_XX((int16u)pow(2.0, 1+GCT_Size)*3,                 "Global Color Table");
     int64u DelayTime_Total=0;
+    int32u RepeatCount=(int32u)-1;
     Element_Begin1("Data");
         while (Element_Offset<Element_Size-1)
         {
@@ -136,10 +137,13 @@ void File_Gif::Read_Buffer_Continue()
                         Element_End0();
                         break;
                     case 0x21:
+                    {
                         Element_Name("Extension");
                         Param_Info1("Extension Introducer");
                         Get_L1 (Label,                              "Extension Label");
                         Element_Begin1("Extension");
+                        string ApplicationIdentifier;
+                        int32u ApplicationAuthenticationCode{};
                         while (Element_Offset<Element_Size)
                         {
                             int8u Size;
@@ -151,8 +155,6 @@ void File_Gif::Read_Buffer_Continue()
                                 case 0xFF :
                                     if (Size == 11)
                                     {
-                                        string ApplicationIdentifier;
-                                        int32u ApplicationAuthenticationCode;
                                         Get_String(8, ApplicationIdentifier, "Application Identifier");
                                         Get_B3(ApplicationAuthenticationCode, "Application Authentication Code");
                                         if (ApplicationIdentifier == "XMP Data" && ApplicationAuthenticationCode == 0x584D50) {
@@ -179,6 +181,21 @@ void File_Gif::Read_Buffer_Continue()
                                         }
                                         break;
                                     }
+                                    if (Size == 3) {
+                                        if (ApplicationIdentifier == "NETSCAPE" && ApplicationAuthenticationCode == 0x322E30) {
+                                            int8u subblockid;
+                                            Get_L1(subblockid,      "Sub-block ID");
+                                            if (subblockid == 0x01) {
+                                                int16u LoopCount;
+                                                Get_L2(LoopCount,   "Loop count");
+                                                RepeatCount = LoopCount;
+                                            }
+                                            else {
+                                                Skip_L2(            "(Unknown)");
+                                            }
+                                            break;
+                                        }
+                                    }
                                     [[fallthrough]];
                                 case 0xF9 :
                                     if (Size==4)
@@ -199,6 +216,7 @@ void File_Gif::Read_Buffer_Continue()
                         }
                         Element_End0();
                         break;
+                    }
                     default: ;
                         if (Element_Offset<Element_Size)
                             Skip_XX(Element_Size-Element_Offset-1,  "Unknown");
@@ -225,6 +243,12 @@ void File_Gif::Read_Buffer_Continue()
         Fill(StreamKind_Last, 0, Fill_Parameter(StreamKind_Last, Generic_Codec), __T("GIF")+Version);
         if (PixelAspectRatio)
             Fill(StreamKind_Last, 0, "PixelAspectRatio", (((float)PixelAspectRatio)+15)/64);
+        if (RepeatCount != (int32u)-1) {
+            if (RepeatCount == 0)
+                Fill(StreamKind_Last, 0, "RepeatCount", "Unlimited");
+            else
+                Fill(StreamKind_Last, 0, "RepeatCount", RepeatCount);
+        }
 
         Finish("GIF");
     FILLING_END();
