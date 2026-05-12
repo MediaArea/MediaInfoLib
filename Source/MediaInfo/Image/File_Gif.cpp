@@ -28,6 +28,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Image/File_Gif.h"
+#if defined(MEDIAINFO_XMP_YES)
+    #include "MediaInfo/Tag/File_Xmp.h"
+#endif
 #include <cmath>
 //---------------------------------------------------------------------------
 
@@ -145,6 +148,38 @@ void File_Gif::Read_Buffer_Continue()
                                 break;
                             switch (Label)
                             {
+                                case 0xFF :
+                                    if (Size == 11)
+                                    {
+                                        string ApplicationIdentifier;
+                                        int32u ApplicationAuthenticationCode;
+                                        Get_String(8, ApplicationIdentifier, "Application Identifier");
+                                        Get_B3(ApplicationAuthenticationCode, "Application Authentication Code");
+                                        if (ApplicationIdentifier == "XMP Data" && ApplicationAuthenticationCode == 0x584D50) {
+                                            auto Element_Offset_Save = Element_Offset;
+                                            int8u peek{ 0xFF };
+                                            while (peek != 0x00 && Element_Offset < Element_Size) {
+                                                Peek_B1(peek);
+                                                ++Element_Offset;
+                                            }
+                                            auto XMP_size = Element_Offset - Element_Offset_Save;
+                                            Element_Offset = Element_Offset_Save;
+                                            if (XMP_size > 257) {
+                                                #if defined(MEDIAINFO_XMP_YES)
+                                                File_Xmp MI;
+                                                Open_Buffer_Init(&MI);
+                                                Open_Buffer_Continue(&MI, XMP_size - 257);
+                                                Open_Buffer_Finalize(&MI);
+                                                Merge(MI, Stream_General, 0, 0, false);
+                                                #else
+                                                Skip_UTF8(XMP_size - 257, "XMP metadata");
+                                                #endif
+                                            }
+                                            Skip_XX(257,            "Trailer");
+                                        }
+                                        break;
+                                    }
+                                    [[fallthrough]];
                                 case 0xF9 :
                                     if (Size==4)
                                     {
