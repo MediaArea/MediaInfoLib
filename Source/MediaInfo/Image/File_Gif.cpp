@@ -28,7 +28,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Image/File_Gif.h"
-#include <cmath>
+#if defined(MEDIAINFO_XMP_YES)
+    #include "MediaInfo/Tag/File_Xmp.h"
+#endif
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -84,14 +86,20 @@ void File_Gif::Read_Buffer_Continue()
         Get_SB (   GCT_Flag,                                    "Global Color Table Flag");
         Get_S1 (3, Resolution,                                  "Color Resolution");
         Get_SB (   Sort,                                        "Sort Flag to Global Color Table");
-        Get_S1 (3, GCT_Size,                                    "Size of Global Color Table"); Param_Info1(Ztring::ToZtring((int16u)pow(2.0, 1+GCT_Size)));
+        Get_S1 (3, GCT_Size,                                    "Size of Global Color Table"); const int16u GCT_Entries = 2 << GCT_Size; Param_Info1(Ztring::ToZtring(GCT_Entries));
         BS_End();
         Get_L1 (BackgroundColorIndex,                           "Background Color Index");
         Get_L1 (PixelAspectRatio,                               "Pixel Aspect Ratio");
     Element_End0();
-    if (GCT_Flag)
-        Skip_XX((int16u)pow(2.0, 1+GCT_Size)*3,                 "Global Color Table");
+    if (GCT_Flag) {
+        Element_Begin1("Global Color Table");
+        for (int16u i = 0; i < GCT_Entries; ++i) {
+            Skip_Hexa(3,                                        "RGB Triplet");
+        }
+        Element_End0();
+    }
     int64u DelayTime_Total=0;
+    int32u RepeatCount=(int32u)-1;
     Element_Begin1("Data");
         while (Element_Offset<Element_Size-1)
         {
@@ -101,6 +109,7 @@ void File_Gif::Read_Buffer_Continue()
                 switch (Label)
                 {
                     case 0x2C:
+                    {
                         Element_Name("Table-Based Image");
                         Param_Info1("Image Separator");
                         Element_Begin1("Image Descriptor");
@@ -114,11 +123,16 @@ void File_Gif::Read_Buffer_Continue()
                         Skip_SB(                                    "Sort Flag");
                         Skip_SB(                                    "Reserved");
                         Skip_SB(                                    "Reserved");
-                        Get_S1 (3, GCT_Size,                        "Size of Local Color Table"); Param_Info1(Ztring::ToZtring((int16u)pow(2.0, 1+GCT_Size)));
+                        Get_S1 (3, GCT_Size,                        "Size of Local Color Table"); const int16u GCT_Entries = 2 << GCT_Size; Param_Info1(Ztring::ToZtring(GCT_Entries));
                         BS_End();
                         Element_End0();
-                        if (GCT_Flag)
-                            Skip_XX((int16u)pow(2.0, 1+GCT_Size)*3, "Local Color Table");
+                        if (GCT_Flag) {
+                            Element_Begin1("Local Color Table");
+                            for (int16u i = 0; i < GCT_Entries; ++i) {
+                                Skip_Hexa(3,                        "RGB Triplet");
+                            }
+                            Element_End0();
+                        }
                         Element_Begin1("Image Data");
                         Skip_L1(                                    "LZW Minimum Code Size");
                         while (Element_Offset<Element_Size)
@@ -132,11 +146,15 @@ void File_Gif::Read_Buffer_Continue()
                         Element_End0();
                         Element_End0();
                         break;
+                    }
                     case 0x21:
+                    {
                         Element_Name("Extension");
                         Param_Info1("Extension Introducer");
                         Get_L1 (Label,                              "Extension Label");
                         Element_Begin1("Extension");
+                        string ApplicationIdentifier;
+                        int32u ApplicationAuthenticationCode{};
                         while (Element_Offset<Element_Size)
                         {
                             int8u Size;
@@ -145,6 +163,51 @@ void File_Gif::Read_Buffer_Continue()
                                 break;
                             switch (Label)
                             {
+                                case 0xFF :
+                                    if (Size == 11)
+                                    {
+                                        Get_String(8, ApplicationIdentifier, "Application Identifier");
+                                        Get_B3(ApplicationAuthenticationCode, "Application Authentication Code");
+                                        if (ApplicationIdentifier == "XMP Data" && ApplicationAuthenticationCode == 0x584D50) {
+                                            auto Element_Offset_Save = Element_Offset;
+                                            int8u peek{ 0xFF };
+                                            while (peek != 0x00 && Element_Offset < Element_Size) {
+                                                Peek_B1(peek);
+                                                ++Element_Offset;
+                                            }
+                                            auto XMP_size = Element_Offset - Element_Offset_Save;
+                                            Element_Offset = Element_Offset_Save;
+                                            if (XMP_size > 257) {
+                                                #if defined(MEDIAINFO_XMP_YES)
+                                                File_Xmp MI;
+                                                Open_Buffer_Init(&MI);
+                                                Open_Buffer_Continue(&MI, XMP_size - 257);
+                                                Open_Buffer_Finalize(&MI);
+                                                Merge(MI, Stream_General, 0, 0, false);
+                                                #else
+                                                Skip_UTF8(XMP_size - 257, "XMP metadata");
+                                                #endif
+                                            }
+                                            Skip_XX(257,            "Trailer");
+                                        }
+                                        break;
+                                    }
+                                    if (Size == 3) {
+                                        if (ApplicationIdentifier == "NETSCAPE" && ApplicationAuthenticationCode == 0x322E30) {
+                                            int8u subblockid;
+                                            Get_L1(subblockid,      "Sub-block ID");
+                                            if (subblockid == 0x01) {
+                                                int16u LoopCount;
+                                                Get_L2(LoopCount,   "Loop count");
+                                                RepeatCount = LoopCount;
+                                            }
+                                            else {
+                                                Skip_L2(            "(Unknown)");
+                                            }
+                                            break;
+                                        }
+                                    }
+                                    [[fallthrough]];
                                 case 0xF9 :
                                     if (Size==4)
                                     {
@@ -164,6 +227,7 @@ void File_Gif::Read_Buffer_Continue()
                         }
                         Element_End0();
                         break;
+                    }
                     default: ;
                         if (Element_Offset<Element_Size)
                             Skip_XX(Element_Size-Element_Offset-1,  "Unknown");
@@ -190,6 +254,12 @@ void File_Gif::Read_Buffer_Continue()
         Fill(StreamKind_Last, 0, Fill_Parameter(StreamKind_Last, Generic_Codec), __T("GIF")+Version);
         if (PixelAspectRatio)
             Fill(StreamKind_Last, 0, "PixelAspectRatio", (((float)PixelAspectRatio)+15)/64);
+        if (RepeatCount != (int32u)-1) {
+            if (RepeatCount == 0)
+                Fill(StreamKind_Last, 0, "RepeatCount", "Unlimited");
+            else
+                Fill(StreamKind_Last, 0, "RepeatCount", RepeatCount);
+        }
 
         Finish("GIF");
     FILLING_END();
