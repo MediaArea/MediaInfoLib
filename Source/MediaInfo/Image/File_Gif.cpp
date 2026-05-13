@@ -31,7 +31,6 @@
 #if defined(MEDIAINFO_XMP_YES)
     #include "MediaInfo/Tag/File_Xmp.h"
 #endif
-#include <cmath>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -87,13 +86,18 @@ void File_Gif::Read_Buffer_Continue()
         Get_SB (   GCT_Flag,                                    "Global Color Table Flag");
         Get_S1 (3, Resolution,                                  "Color Resolution");
         Get_SB (   Sort,                                        "Sort Flag to Global Color Table");
-        Get_S1 (3, GCT_Size,                                    "Size of Global Color Table"); Param_Info1(Ztring::ToZtring((int16u)pow(2.0, 1+GCT_Size)));
+        Get_S1 (3, GCT_Size,                                    "Size of Global Color Table"); const int16u GCT_Entries = 2 << GCT_Size; Param_Info1(Ztring::ToZtring(GCT_Entries));
         BS_End();
         Get_L1 (BackgroundColorIndex,                           "Background Color Index");
         Get_L1 (PixelAspectRatio,                               "Pixel Aspect Ratio");
     Element_End0();
-    if (GCT_Flag)
-        Skip_XX((int16u)pow(2.0, 1+GCT_Size)*3,                 "Global Color Table");
+    if (GCT_Flag) {
+        Element_Begin1("Global Color Table");
+        for (int16u i = 0; i < GCT_Entries; ++i) {
+            Skip_Hexa(3,                                        "RGB Triplet");
+        }
+        Element_End0();
+    }
     int64u DelayTime_Total=0;
     int32u RepeatCount=(int32u)-1;
     Element_Begin1("Data");
@@ -105,6 +109,7 @@ void File_Gif::Read_Buffer_Continue()
                 switch (Label)
                 {
                     case 0x2C:
+                    {
                         Element_Name("Table-Based Image");
                         Param_Info1("Image Separator");
                         Element_Begin1("Image Descriptor");
@@ -118,11 +123,16 @@ void File_Gif::Read_Buffer_Continue()
                         Skip_SB(                                    "Sort Flag");
                         Skip_SB(                                    "Reserved");
                         Skip_SB(                                    "Reserved");
-                        Get_S1 (3, GCT_Size,                        "Size of Local Color Table"); Param_Info1(Ztring::ToZtring((int16u)pow(2.0, 1+GCT_Size)));
+                        Get_S1 (3, GCT_Size,                        "Size of Local Color Table"); const int16u GCT_Entries = 2 << GCT_Size; Param_Info1(Ztring::ToZtring(GCT_Entries));
                         BS_End();
                         Element_End0();
-                        if (GCT_Flag)
-                            Skip_XX((int16u)pow(2.0, 1+GCT_Size)*3, "Local Color Table");
+                        if (GCT_Flag) {
+                            Element_Begin1("Local Color Table");
+                            for (int16u i = 0; i < GCT_Entries; ++i) {
+                                Skip_Hexa(3,                        "RGB Triplet");
+                            }
+                            Element_End0();
+                        }
                         Element_Begin1("Image Data");
                         Skip_L1(                                    "LZW Minimum Code Size");
                         while (Element_Offset<Element_Size)
@@ -136,6 +146,7 @@ void File_Gif::Read_Buffer_Continue()
                         Element_End0();
                         Element_End0();
                         break;
+                    }
                     case 0x21:
                     {
                         Element_Name("Extension");
