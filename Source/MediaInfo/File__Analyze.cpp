@@ -2943,6 +2943,12 @@ bool File__Analyze::Data_Manage()
             GoTo(File_Offset+Buffer_Offset+Element_Offset);
         else
             Buffer_Offset+=(size_t)Element_Offset;
+        if (Element_Size == 0 && Element_Offset == 0)
+        {
+            Clear();
+            Status[IsFinished] = true;
+            return false;
+        }
     }
     Header_Size=0;
     Element_Size=0;
