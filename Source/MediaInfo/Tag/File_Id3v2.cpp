@@ -1046,6 +1046,50 @@ void File_Id3v2::RGAD()
 }
 
 //---------------------------------------------------------------------------
+void File_Id3v2::POPM()
+{
+    string Owner;
+    size_t Owner_Size=0;
+    int8u Rating;
+    while (Element_Offset+Owner_Size<Element_Size && Buffer[Buffer_Offset+(size_t)Element_Offset+Owner_Size]!='\0')
+        Owner_Size++;
+    if (Owner_Size==0 || Element_Offset+Owner_Size>=Element_Size)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
+        return;
+    }
+    Get_String(Owner_Size, Owner,                               "Owner identifier");
+    Skip_B1(                                                    "Null");
+    Get_B1 (Rating,                                             "Rating");
+    if (Element_Offset<Element_Size)
+        Skip_B4(                                                "Counter");
+
+    FILLING_BEGIN();
+        if (Rating)
+        {
+            const int8u Limits[] = { 31, 95, 159, 224 };
+            int8u Stars = 1;
+            while (Stars < 5 && Rating > Limits[Stars - 1])
+                Stars++;
+            auto StarsS = Ztring::ToZtring(Stars);
+            auto NumS = Ztring::ToZtring(Rating);
+            auto DenS = Ztring::ToZtring(255);
+            auto OwnerS = Ztring().From_ISO_8859_1(Owner.c_str());
+            Fill(Stream_General, 0, "Popularimeter/5Stars", StarsS);
+            Fill(Stream_General, 0, "Popularimeter/String", MediaInfoLib::Config.Language_Get(StarsS, __T(" star")) + __T(" (") + NumS + __T("/255, ") + OwnerS + __T(')'));
+            Fill(Stream_General, 0, "Popularimeter/Numerator", Rating);
+            Fill(Stream_General, 0, "Popularimeter/Denominator", 255);
+            Fill(Stream_General, 0, "Popularimeter/Source", Owner);
+            Fill_SetOptions(Stream_General, 0, "Popularimeter/5Stars", "N NIY");
+            Fill_SetOptions(Stream_General, 0, "Popularimeter/String", "Y NTN");
+            Fill_SetOptions(Stream_General, 0, "Popularimeter/Numerator", "N NIY");
+            Fill_SetOptions(Stream_General, 0, "Popularimeter/Denominator", "N NIY");
+            Fill_SetOptions(Stream_General, 0, "Popularimeter/Source", "N NTY");
+        }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Id3v2::PRIV()
 {
     //Parsing
