@@ -827,6 +827,9 @@ static const char* Model_Name_Sony =
     "XQ-FE44;10 VII\n"
     "XQ-FE54;10 VII\n"
     "XQ-FE72;10 VII\n"
+    "XQ-GE44;1 VIII\n"
+    "XQ-GE54;1 VIII\n"
+    "XQ-GE74;1 VIII\n"
 ;
 
 static const char* Model_Name_Sony_Ericsson =
