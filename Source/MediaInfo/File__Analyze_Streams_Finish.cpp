@@ -827,6 +827,9 @@ static const char* Model_Name_Sony =
     "XQ-FE44;10 VII\n"
     "XQ-FE54;10 VII\n"
     "XQ-FE72;10 VII\n"
+    "XQ-GE44;1 VIII\n"
+    "XQ-GE54;1 VIII\n"
+    "XQ-GE74;1 VIII\n"
 ;
 
 static const char* Model_Name_Sony_Ericsson =
@@ -1740,6 +1743,7 @@ static constexpr const char* Model_Name_Samsung =
     "SM-S550TL;On5\n"
     "SM-S711;S23 FE\n"
     "SM-S721;S24 FE\n"
+    "SM-S731;S25 FE\n"
     "SM-S727VL;J7 Pop\n"
     "SM-S737TL;J7 Sky Pro\n"
     "SM-S757BL;J7 Crown\n"
@@ -1765,6 +1769,9 @@ static constexpr const char* Model_Name_Samsung =
     "SM-S936;S25+\n"
     "SM-S937;S25 Edge\n"
     "SM-S938;S25 Ultra\n"
+    "SM-S942;S26\n"
+    "SM-S947;S26+\n"
+    "SM-S948;S26 Ultra\n"
     "SM-S975L;S4\n"
     "SM-S978;E5\n"
     "SM-T110;Tab 3 Lite\n"
