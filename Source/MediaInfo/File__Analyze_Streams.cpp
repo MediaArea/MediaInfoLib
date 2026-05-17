@@ -3806,6 +3806,8 @@ void File__Analyze::FileSize_FileSize123(stream_t StreamKind, size_t StreamPos, 
         case  2 : Measure=__T(" MiB");  MeasureIsAlwaysSame=true;  break;
         case  3 : Measure=__T(" GiB");  MeasureIsAlwaysSame=true;  break;
         case  4 : Measure=__T(" TiB");  MeasureIsAlwaysSame=true;  break;
+        case  5 : Measure=__T(" PiB");  MeasureIsAlwaysSame=true;  break;
+        case  6 : Measure=__T(" EiB");  MeasureIsAlwaysSame=true;  break;
         default : Measure=__T(" ?iB");  MeasureIsAlwaysSame=true;
     }
     Fill(StreamKind, StreamPos, Parameter+2, MediaInfoLib::Config.Language_Get(Ztring::ToZtring(F1,  0), Measure, MeasureIsAlwaysSame), true); // /String1
