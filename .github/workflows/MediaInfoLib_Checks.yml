@@ -36,6 +36,10 @@ jobs:
           - os: windows-latest
             environement: minimal-with-xml
         include:
+          - os: ubuntu-latest
+            environement: link-curl-graphviz
+          - os: macos-latest
+            environement: link-curl-graphviz
           - environement: gcc
             CXXFLAGS: ""
             RUN_TESTS: "all"
@@ -67,10 +71,10 @@ jobs:
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
             sudo apt-get update -y
-            sudo apt-get install -y libxml2-utils zlib1g-dev libcurl4-gnutls-dev libmms-dev ${{ matrix.environement == 'cmake-dll' && 'g++-mingw-w64-x86-64' || '' }}
+            sudo apt-get install -y libxml2-utils zlib1g-dev libcurl4-gnutls-dev libmms-dev ${{ matrix.environement == 'cmake-dll' && 'g++-mingw-w64-x86-64' || '' }} ${{ matrix.environement == 'link-curl-graphviz' && 'libgraphviz-dev' || '' }}
           fi
           if [ "$RUNNER_OS" == "macOS" ]; then
-            brew install libtool automake
+            brew install libtool automake ${{ matrix.environement == 'link-curl-graphviz' && 'graphviz' || '' }}
           fi
       - name: zlib
         if: ${{ (runner.os == 'Windows') || matrix.environement == 'cmake-dll' }}
@@ -89,7 +93,7 @@ jobs:
           popd
           cd Project/GNU/Library
           autoreconf -if
-          ./configure --enable-silent-rules --with-libcurl=runtime
+          ./configure --enable-silent-rules ${{ matrix.environement == 'link-curl-graphviz' && '--with-libcurl --with-graphviz' || '--with-libcurl=runtime --with-graphviz=runtime' }}
       - name: Build
         if: ${{ (matrix.environement != 'cmake') && (matrix.environement != 'cmake-dll') }}
         run: |
