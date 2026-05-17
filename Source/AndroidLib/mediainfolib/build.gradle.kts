@@ -64,6 +64,7 @@ android {
     }
     buildFeatures {
         prefabPublishing = true
+        prefab = true
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
@@ -88,5 +89,6 @@ tasks.configureEach {
 }
 
 dependencies {
-
+    // Curl static build from https://github.com/vvb2060/curl-android
+    implementation("io.github.vvb2060.ndk:curl:8.18.0")
 }
