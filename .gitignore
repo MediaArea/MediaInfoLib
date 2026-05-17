@@ -55,8 +55,10 @@ MediaInfoLib.VC.db
 
 # Android app directories
 **/.cxx/*
-/Source/AndroidLib/.gradle
-/Source/AndroidLib/.idea
+**/.gradle
+**/.idea
+**/local.properties
 /Source/AndroidLib/app/build
 /Source/AndroidLib/build
-Source/AndroidLib/local.properties
+/Source/Example/HowToUse_Dll-Android/app/build
+/Source/Example/HowToUse_Dll-Android/build
