@@ -1972,6 +1972,7 @@ void File__Analyze::Buffer_Clear()
 {
     //Buffer
     BS->Attach(NULL, 0);
+    BT->Attach(NULL, 0);
     delete[] Buffer_Temp; Buffer_Temp=NULL;
     if (!Status[IsFinished])
         File_Offset+=Buffer_Size;
@@ -2857,6 +2858,7 @@ bool File__Analyze::Data_Manage()
         //size_t Element_Level_Save=Element_Level;
         Data_Parse();
         BS->Attach(NULL, 0); //Clear it
+        BT->Attach(NULL, 0); //Clear it
         //Element_Level=Element_Level_Save;
 
         if (Buffer_Offset+(Element_WantNextLevel?Element_Offset:Element_Size)>=FrameInfo.Buffer_Offset_End)
