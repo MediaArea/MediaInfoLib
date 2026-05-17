@@ -2048,7 +2048,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
         if (Frequency_b && C.sampling_frequency && C.sampling_frequency != Frequency_b)
             Fill_Conformance("Crosscheck AudioSpecificConfig samplingFrequency", ("MP4 AudioSpecificConfig samplingFrequency " + to_string(Frequency_b) + " does not match USAC UsacConfig usacSamplingFrequency " + to_string(C.sampling_frequency)).c_str());
     #endif
-    Get_S1 (3, C.coreSbrFrameLengthIndex,                       "coreSbrFrameLengthIndex");
+    Get_S1 (3, C.coreSbrFrameLengthIndex,                       "coreSbrFrameLengthIndex"); if (C.coreSbrFrameLengthIndex >= coreSbrFrameLengthIndex_Mapping_Size) Trusted_IsNot("coreSbrFrameLengthIndex too large");
     Get_S1 (5, C.channelConfigurationIndex,                     "channelConfigurationIndex"); Param_Info1C(C.channelConfigurationIndex, Aac_ChannelLayout_GetString(C.channelConfigurationIndex));
     #if MEDIAINFO_CONFORMANCE
         if (channelConfiguration && C.channelConfigurationIndex && C.channelConfigurationIndex != channelConfiguration)
