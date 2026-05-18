@@ -10133,7 +10133,9 @@ void File_Mpeg4::moov_udta_AllF()
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_udta_chpl()
 {
-    Element_Name("Chapters");
+    Stream_Prepare(Stream_Menu);
+
+    NAME_VERSION_FLAG("Chapters", 1);
 
     //Parsing
     Ztring Value;
@@ -10141,13 +10143,12 @@ void File_Mpeg4::moov_udta_chpl()
     int64u Time;
     int8u Size;
     size_t Pos=0;
-    Stream_Prepare(Stream_Menu);
-    Skip_B8(                                                    "Unknown");
+    Skip_B4(                                                    "(Unknown)");
     Skip_B1(                                                    "Chapter Count");
     Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_Begin, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
     while (Element_Offset<Element_Size)
     {
-        Get_B8 (Time,                                           "Time");
+        Get_B_DEPENDOFVERSION(Time,                             "Time");
         Get_B1 (Size,                                           "Text size");
         Get_String(Size, ValueS,                                "Value");
         Value.From_UTF8(ValueS.c_str());
