@@ -122,17 +122,17 @@ static int8u Mpeg_Descriptors_video_properties_tag_Sizes[]=
     Mpeg_Descriptors_video_properties_tag_1_Size,
     Mpeg_Descriptors_video_properties_tag_2_Size,
 };
-static tag_struct* Mpeg_Descriptors_video_properties_tag_Data[]=
+static int8u (*Mpeg_Descriptors_video_properties_tag_Data[])[4]=
 {
-    (tag_struct*)&Mpeg_Descriptors_video_properties_tag_0,
-    (tag_struct*)&Mpeg_Descriptors_video_properties_tag_1,
-    (tag_struct*)&Mpeg_Descriptors_video_properties_tag_2,
+    Mpeg_Descriptors_video_properties_tag_0,
+    Mpeg_Descriptors_video_properties_tag_1,
+    Mpeg_Descriptors_video_properties_tag_2,
 };
 static void Mpeg_Descriptors_video_properties_tag(std::map<std::string, Ztring>& Infos, int8u HDR_WCG_idc, int8u video_properties_tag)
 {
     if (HDR_WCG_idc>=3 || !video_properties_tag || video_properties_tag>Mpeg_Descriptors_video_properties_tag_Sizes[HDR_WCG_idc])
         return;
-    const auto& Data=(*(Mpeg_Descriptors_video_properties_tag_Data[HDR_WCG_idc]))[video_properties_tag-1];
+    const auto& Data=Mpeg_Descriptors_video_properties_tag_Data[HDR_WCG_idc][video_properties_tag-1];
     Infos["colour_description_present"]=__T("Yes");
     Infos["colour_primaries"].From_UTF8(Mpegv_colour_primaries(Data[0]));
     Infos["transfer_characteristics"].From_UTF8(Mpegv_transfer_characteristics(Data[1]));
