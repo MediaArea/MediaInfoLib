@@ -45,10 +45,10 @@
 #include <cstdlib>
 using namespace ZenLib;
 using namespace std;
-#if __cplusplus > 202002L || (defined(_MSC_VER) && _MSC_VER >= 1910 && _MSVC_LANG > 202002L)
-    #define constexpr23 constexpr
+#if (__cplusplus > 202002L || (defined(_MSC_VER) && _MSC_VER >= 1910 && _MSVC_LANG > 202002L)) && defined(__cpp_lib_constexpr_bitset)
+    #define constexpr_bitset constexpr
 #else
-    #define constexpr23
+    #define constexpr_bitset
 #endif
 #if __cplusplus >= 202002L || (defined(_MSC_VER) && _MSC_VER >= 1910 && _MSVC_LANG >= 202002L)
 #else
@@ -348,10 +348,10 @@ struct element_item {
     const uint8_t       LinkedItem;
     constexpr element_item(const char* const Name, const check_flags Flags, const uint8_t LinkedItem = 0)
         : Name(Name), Flags(Flags), LinkedItem(LinkedItem) {}
-    constexpr23 unsigned long Min() const noexcept {
+    constexpr_bitset unsigned long Min() const noexcept {
         return (Flags.to_ulong() >> Version_Min0);
     }
-    constexpr23 unsigned long Max() const noexcept {
+    constexpr_bitset unsigned long Max() const noexcept {
         return (Flags.to_ulong() >> Version_Max0) & 0x7;
     }
 };
