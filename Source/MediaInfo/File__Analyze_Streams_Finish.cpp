@@ -3422,7 +3422,7 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
     }
 
     // Move versions found in name field
-    auto MoveVersion = [&](size_t Parameter_Source, size_t Parameter_Version, size_t Parameter_Name = 0) {
+    auto MoveVersion = [&](size_t Parameter_Source, size_t Parameter_Version, size_t Parameter_Name) {
         const auto& Name = Retrieve_Const(Stream_General, StreamPos, Parameter_Source);
         if (Name.empty()) {
             return;
@@ -3537,9 +3537,9 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
             }
         }
     }
-    MoveVersion(General_Encoded_Library_Name, General_Encoded_Library_Version);
+    MoveVersion(General_Encoded_Library_Name, General_Encoded_Library_Version, 0);
     MoveVersion(General_Encoded_Library, General_Encoded_Library_Version, General_Encoded_Library_Name);
-    MoveVersion(General_Encoded_Application_Name, General_Encoded_Application_Version);
+    MoveVersion(General_Encoded_Application_Name, General_Encoded_Application_Version, 0);
     MoveVersion(General_Encoded_Application, General_Encoded_Application_Version, General_Encoded_Application_Name);
 
     // Move company name found in name field
@@ -3846,7 +3846,7 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
     RemoveSynonyms(General_Encoded_Application_CompanyName, General_Encoded_Application_Name);
 
     // Create displayed string
-    auto CreateString = [&](size_t Parameter_Start, bool HasModel = false) {
+    auto CreateString = [&](size_t Parameter_Start, bool HasModel) {
         const auto Parameter = Parameter_Start;
         const auto Parameter_String = ++Parameter_Start;
         if (!Retrieve_Const(Stream_General, StreamPos, Parameter_String).empty()) {
@@ -3884,8 +3884,8 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         Fill(Stream_General, StreamPos, Parameter_String, Value, true);
     };
     CreateString(General_Encoded_Hardware, true);
-    CreateString(General_Encoded_Library);
-    CreateString(General_Encoded_Application);
+    CreateString(General_Encoded_Library, false);
+    CreateString(General_Encoded_Application, false);
 }
 
 //---------------------------------------------------------------------------
