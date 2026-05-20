@@ -3402,7 +3402,7 @@ void File_Usac::fill_bytes(size_t usacConfigExtLength)
         {
             int8u fill_byte;
             Get_S1 (8, fill_byte,                               "fill_byte");
-            if (fill_byte != 0b10100101)
+            if (fill_byte != 0xA5)
                 fill_bytes[fill_byte]++;
         }
         if (!fill_bytes.empty())
