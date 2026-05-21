@@ -847,7 +847,7 @@ void File_Iamf::ia_mix_presentation()
                     }
                     Element_End0();
                 }
-                if ((info_type & 0b11111100) > 0) {
+                if ((info_type & 0xFC) > 0) {
                     int64u info_type_size;
                     Get_leb128  (info_type_size,            "info_type_size");
                     auto Element_Offset_Begin = Element_Offset;

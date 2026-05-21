@@ -122,17 +122,17 @@ static int8u Mpeg_Descriptors_video_properties_tag_Sizes[]=
     Mpeg_Descriptors_video_properties_tag_1_Size,
     Mpeg_Descriptors_video_properties_tag_2_Size,
 };
-static tag_struct* Mpeg_Descriptors_video_properties_tag_Data[]=
+static int8u (*Mpeg_Descriptors_video_properties_tag_Data[])[4]=
 {
-    (tag_struct*)&Mpeg_Descriptors_video_properties_tag_0,
-    (tag_struct*)&Mpeg_Descriptors_video_properties_tag_1,
-    (tag_struct*)&Mpeg_Descriptors_video_properties_tag_2,
+    Mpeg_Descriptors_video_properties_tag_0,
+    Mpeg_Descriptors_video_properties_tag_1,
+    Mpeg_Descriptors_video_properties_tag_2,
 };
 static void Mpeg_Descriptors_video_properties_tag(std::map<std::string, Ztring>& Infos, int8u HDR_WCG_idc, int8u video_properties_tag)
 {
     if (HDR_WCG_idc>=3 || !video_properties_tag || video_properties_tag>Mpeg_Descriptors_video_properties_tag_Sizes[HDR_WCG_idc])
         return;
-    const auto& Data=(*(Mpeg_Descriptors_video_properties_tag_Data[HDR_WCG_idc]))[video_properties_tag-1];
+    const auto& Data=Mpeg_Descriptors_video_properties_tag_Data[HDR_WCG_idc][video_properties_tag-1];
     Infos["colour_description_present"]=__T("Yes");
     Infos["colour_primaries"].From_UTF8(Mpegv_colour_primaries(Data[0]));
     Infos["transfer_characteristics"].From_UTF8(Mpegv_transfer_characteristics(Data[1]));
@@ -1534,16 +1534,16 @@ static string JpegXs_Plev(int16u Value, bool Bayer=false)
     auto SubLevel=Value&0xFF;
     switch (Level)
     {
-        case 0b00000000 : return {};
-        case 0b00000100 : Result=Bayer?"bayer2k-1":"1k-1"; break;
-        case 0b00010000 : Result=Bayer?"bayer4k-1":"2k-1"; break;
-        case 0b00100000 : Result=Bayer?"bayer8k-1":"4k-1"; break;
-        case 0b00100100 : Result=Bayer?"bayer8k-2":"4k-2"; break;
-        case 0b00101000 : Result=Bayer?"bayer8k-3":"4k-3"; break;
-        case 0b00110000 : Result=Bayer?"bayer16k-1":"8k-1"; break;
-        case 0b00110100 : Result=Bayer?"bayer16k-2":"8k-2"; break;
-        case 0b00111000 : Result=Bayer?"bayer16k-3":"8k-3"; break;
-        case 0b01000000 : Result=Bayer?"bayer20k-1":"10k-1"; break;
+        case 0x00 : return {};
+        case 0x04 : Result=Bayer?"bayer2k-1":"1k-1"; break;
+        case 0x10 : Result=Bayer?"bayer4k-1":"2k-1"; break;
+        case 0x20 : Result=Bayer?"bayer8k-1":"4k-1"; break;
+        case 0x24 : Result=Bayer?"bayer8k-2":"4k-2"; break;
+        case 0x28 : Result=Bayer?"bayer8k-3":"4k-3"; break;
+        case 0x30 : Result=Bayer?"bayer16k-1":"8k-1"; break;
+        case 0x34 : Result=Bayer?"bayer16k-2":"8k-2"; break;
+        case 0x38 : Result=Bayer?"bayer16k-3":"8k-3"; break;
+        case 0x40 : Result=Bayer?"bayer20k-1":"10k-1"; break;
         default         : Result=to_string(Level);
     }
     if (!SubLevel)
@@ -1551,12 +1551,12 @@ static string JpegXs_Plev(int16u Value, bool Bayer=false)
     Result+='.';
     switch (SubLevel)
     {
-        case 0b10000000 : Result+="Full"; break;
-        case 0b00010000 : Result+="Sublev12bpp"; break;
-        case 0b00001100 : Result+="Sublev9bpp"; break;
-        case 0b00001000 : Result+="Sublev6bpp"; break;
-        case 0b00000100 : Result+="Sublev3bpp"; break;
-        case 0b00000011 : Result+="Sublev2bpp"; break;
+        case 0x80 : Result+="Full"; break;
+        case 0x10 : Result+="Sublev12bpp"; break;
+        case 0x0C : Result+="Sublev9bpp"; break;
+        case 0x08 : Result+="Sublev6bpp"; break;
+        case 0x04 : Result+="Sublev3bpp"; break;
+        case 0x03 : Result+="Sublev2bpp"; break;
         default         : Result+=to_string(SubLevel);
     }
     return Result;

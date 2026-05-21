@@ -1243,25 +1243,25 @@ static const char* Exif_ExifIFD_Tag_LightSource_Name(int16u value) {
 //---------------------------------------------------------------------------
 static string Exif_IFDExif_Flash_Name(int8u value) {
     string flash;
-    switch (value & 0b00011000) {
-    case 0b00000000: flash += "Unknown"; break;
-    case 0b00001000: flash += "On"; break;
-    case 0b00010000: flash += "Off"; break;
-    case 0b00011000: flash += "Auto"; break;
+    switch (value & 0x18) {
+    case 0x00: flash += "Unknown"; break;
+    case 0x08: flash += "On"; break;
+    case 0x10: flash += "Off"; break;
+    case 0x18: flash += "Auto"; break;
     }
-    switch (value & 0b00000001) {
-    case 0b00000000: flash += ", Did not fire"; break;
-    case 0b00000001: flash += ", Fired"; break;
+    switch (value & 0x01) {
+    case 0x00: flash += ", Did not fire"; break;
+    case 0x01: flash += ", Fired"; break;
     }
-    switch (value & 0b00100000) {
-    case 0b00100000: flash += ", No flash function"; break;
+    switch (value & 0x20) {
+    case 0x20: flash += ", No flash function"; break;
     }
-    switch (value & 0b01000000) {
-    case 0b01000000: flash += ", Red-eye reduction"; break;
+    switch (value & 0x40) {
+    case 0x40: flash += ", Red-eye reduction"; break;
     }
-    switch (value & 0b00000110) {
-    case 0b00000100: flash += ", Return not detected"; break;
-    case 0b00000110: flash += ", Return detected"; break;
+    switch (value & 0x06) {
+    case 0x04: flash += ", Return not detected"; break;
+    case 0x06: flash += ", Return detected"; break;
     }
     return flash;
 }
