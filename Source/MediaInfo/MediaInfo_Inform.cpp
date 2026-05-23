@@ -99,7 +99,7 @@ Ztring Xml_Name_Escape_0_7_78 (const Ztring &Name)
 }
 
 //---------------------------------------------------------------------------
-std::wstring ToFullWidth(const std::wstring& input)
+static std::wstring ToFullWidth(const std::wstring& input)
 {
     std::wstring result;
     for (wchar_t ch : input) {
@@ -113,6 +113,17 @@ std::wstring ToFullWidth(const std::wstring& input)
             result += ch;
     }
     return result;
+}
+
+//---------------------------------------------------------------------------
+static size_t nonASCII_Count(const std::wstring& input)
+{
+    size_t count{};
+    for (wchar_t ch : input) {
+        if (!(ch >= 0x20 && ch <= 0x7E))
+            ++count;
+    }
+    return count;
 }
 
 //---------------------------------------------------------------------------
@@ -940,23 +951,26 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                 if (Text)
                 #endif //defined(MEDIAINFO_TEXT_YES) && (defined(MEDIAINFO_HTML_YES) || defined(MEDIAINFO_XML_YES) || defined(MEDIAINFO_JSON_YES) || defined(MEDIAINFO_CSV_YES))
                 {
-                     int8u Nom_Size=MediaInfoLib::Config.Language_Get(__T("  Config_Text_ColumnSize")).To_int8u();
-                     if (Nom_Size==0)
+                    int8u Nom_Size=MediaInfoLib::Config.Language_Get(__T("  Config_Text_ColumnSize")).To_int8u();
+                    if (Nom_Size==0)
                         Nom_Size=32; //Default
-                     Ztring lang = MediaInfoLib::Config.Language_Get(__T("  Language_ISO639"));
-                     if (!lang.compare(__T("ja")) || !lang.compare(__T("ko")) || !lang.compare(__T("zh-CN")) || !lang.compare(__T("zh-HK")) || !lang.compare(__T("zh-TW")))
-                     {
+                    Ztring lang = MediaInfoLib::Config.Language_Get(__T("  Language_ISO639"));
+                    if (!lang.compare(__T("ja")) || !lang.compare(__T("ko")) || !lang.compare(__T("zh-CN")) || !lang.compare(__T("zh-HK")) || !lang.compare(__T("zh-TW")))
+                    {
                         #if !defined(UNICODE) && !defined(_UNICODE)
                         std::wstring_convert<std::codecvt_utf8<wchar_t>> Converter;
                         std::wstring Nom_Wide=Converter.from_bytes(Nom);
-                        Nom_Wide.resize(Nom_Size, ' ');
-                        Nom=Ztring().From_Unicode(ToFullWidth(Nom_Wide)); //Align Japanese, Korean and Chinese characters with ASCII characters
+                        //Nom_Wide.resize(Nom_Size, ' ');
+                        //Nom=Ztring().From_Unicode(ToFullWidth(Nom_Wide)); //Align Japanese, Korean and Chinese characters with ASCII characters
+                        Nom_Size -= nonASCII_Count(Nom_Wide); //Align Japanese, Korean and Chinese characters with ASCII characters
                         #else
-                        Nom.resize(Nom_Size, ' ');
-                        Nom=ToFullWidth(Nom); //Align Japanese, Korean and Chinese characters with ASCII characters
+                        //Nom.resize(Nom_Size, ' ');
+                        //Nom=ToFullWidth(Nom); //Align Japanese, Korean and Chinese characters with ASCII characters
+                        Nom_Size -= nonASCII_Count(Nom); //Align Japanese, Korean and Chinese characters with ASCII characters
                         #endif
-                     }
-                     else
+                        Nom.resize(Nom_Size, ' ');
+                    }
+                    else
                         Nom.resize(Nom_Size, ' ');
                 }
                 Ztring Valeur=Get((stream_t)StreamKind, StreamPos, Champ_Pos, Info_Text);
