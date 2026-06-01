@@ -1692,6 +1692,8 @@ void File_Dts::Extensions()
                 default:
                     Extensions_Resynch(false);
             }
+            if (Element_Offset>Element_Size)
+                Element_Offset=Element_Size; //Prevent unsigned underflow in loop condition if handler left offset past asset boundary
             Element_End0();
         }
         Element_Size=Element_Size_Save;
