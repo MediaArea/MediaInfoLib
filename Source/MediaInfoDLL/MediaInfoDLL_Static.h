@@ -356,7 +356,7 @@ MEDIAINFO_EXP void*             __stdcall MediaInfoList_New_Quick (const wchar_t
 /** @brief Delete a MediaInfoList interface*/
 MEDIAINFO_EXP void              __stdcall MediaInfoList_Delete (void* Handle);
 /** @brief Wrapper for MediaInfoListLib::MediaInfoList::Open (with a filename)*/
-MEDIAINFO_EXP size_t            __stdcall MediaInfoList_Open (void* Handle, const wchar_t* Files, const MediaInfo_fileoptions_C Options); /*Default : Options=MediaInfo_FileOption_Nothing*/
+MEDIAINFO_EXP size_t            __stdcall MediaInfoList_Open (void* Handle, const wchar_t* Files, MediaInfo_fileoptions_C Options); /*Default : Options=MediaInfo_FileOption_Nothing*/
 /** @brief Wrapper for MediaInfoListLib::MediaInfoList::Open (with a buffer) */
 MEDIAINFO_EXP size_t            __stdcall MediaInfoList_Open_Buffer (void* Handle, const unsigned char* Begin, size_t Begin_Size, const unsigned char* End, size_t End_Size); /*return Handle*/
 /** @brief Wrapper for MediaInfoListLib::MediaInfoList::Save */
@@ -414,7 +414,7 @@ MEDIAINFO_EXP void*             __stdcall MediaInfoListA_New_Quick (const char* 
 /** @brief Delete a MediaInfoList interface*/
 MEDIAINFO_EXP void              __stdcall MediaInfoListA_Delete (void* Handle);
 /** @brief Wrapper for MediaInfoListLib::MediaInfoList::Open (with a filename)*/
-MEDIAINFO_EXP size_t            __stdcall MediaInfoListA_Open (void* Handle, const char* Files, const MediaInfo_fileoptions_C Options); /*Default : Options=0*/
+MEDIAINFO_EXP size_t            __stdcall MediaInfoListA_Open (void* Handle, const char* Files, MediaInfo_fileoptions_C Options); /*Default : Options=0*/
 /** @brief Wrapper for MediaInfoListLib::MediaInfoList::Open (with a buffer) */
 MEDIAINFO_EXP size_t            __stdcall MediaInfoListA_Open_Buffer (void* Handle, const unsigned char* Begin, size_t Begin_Size, const unsigned char* End, size_t End_Size); /*return Handle*/
 /** @brief Wrapper for MediaInfoListLib::MediaInfoList::Save */
