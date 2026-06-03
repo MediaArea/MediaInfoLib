@@ -67,6 +67,7 @@ extern const char* Hevc_profile_idc(int32u profile_idc)
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Video/File_Hevc.h"
+#include "MediaInfo/Video/File_Avc.h"
 #if defined(MEDIAINFO_AFDBARDATA_YES)
     #include "MediaInfo/Video/File_AfdBarData.h"
 #endif //defined(MEDIAINFO_AFDBARDATA_YES)
@@ -532,6 +533,49 @@ void File_Hevc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator se
                     Fill(Stream_Video, 0, Video_ColorSpace, Mpegv_matrix_coefficients_ColorSpace(vui_parameters->matrix_coefficients), Unlimited, true, true);
             }
         }
+
+        //hrd_parameter_sets
+        int64u bit_rate_value=(int64u)-1;
+        bool   bit_rate_value_IsValid=true;
+        bool   cbr_flag=false;
+        bool   cbr_flag_IsSet=false;
+        bool   cbr_flag_IsValid=true;
+        seq_parameter_set_struct::vui_parameters_struct::xxl* NAL=vui_parameters->NAL;
+        if (NAL)
+            for (size_t Pos=0; Pos<NAL->SchedSel.size(); Pos++)
+            {
+                if (NAL->SchedSel[Pos].cpb_size_value!=(int32u)-1)
+                    Fill(Stream_Video, 0, Video_BufferSize, NAL->SchedSel[Pos].cpb_size_value);
+                if (bit_rate_value!=(int64u)-1 && bit_rate_value!=NAL->SchedSel[Pos].bit_rate_value)
+                    bit_rate_value_IsValid=false;
+                if (bit_rate_value==(int64u)-1)
+                    bit_rate_value=NAL->SchedSel[Pos].bit_rate_value;
+                if (cbr_flag_IsSet==true && cbr_flag!=NAL->SchedSel[Pos].cbr_flag)
+                    cbr_flag_IsValid=false;
+                if (cbr_flag_IsSet==0)
+                {
+                    cbr_flag=NAL->SchedSel[Pos].cbr_flag;
+                    cbr_flag_IsSet=true;
+                }
+            }
+        seq_parameter_set_struct::vui_parameters_struct::xxl* VCL=vui_parameters->VCL;
+        if (VCL)
+            for (size_t Pos=0; Pos<VCL->SchedSel.size(); Pos++)
+            {
+                Fill(Stream_Video, 0, Video_BufferSize, VCL->SchedSel[Pos].cpb_size_value);
+                if (bit_rate_value!=(int64u)-1 && bit_rate_value!=VCL->SchedSel[Pos].bit_rate_value)
+                    bit_rate_value_IsValid=false;
+                if (bit_rate_value==(int64u)-1)
+                    bit_rate_value=VCL->SchedSel[Pos].bit_rate_value;
+                if (cbr_flag_IsSet==true && cbr_flag!=VCL->SchedSel[Pos].cbr_flag)
+                    cbr_flag_IsValid=false;
+                if (cbr_flag_IsSet==0)
+                {
+                    cbr_flag=VCL->SchedSel[Pos].cbr_flag;
+                    cbr_flag_IsSet=true;
+                }
+            }
+        File_Avc::Fill_BitRate_Mode(this, cbr_flag, cbr_flag_IsSet, cbr_flag_IsValid, bit_rate_value, bit_rate_value_IsValid);
     }
 }
 
