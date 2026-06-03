@@ -2321,9 +2321,9 @@ void File__Analyze::Skip_BS(size_t Bits, const char* Name)
     INTEGRITY(Bits<=BS->Remain(), "Size is wrong", BS->Offset_Get())
     if (Trace_Activated)
     {
-        if (Bits<=32) //TODO: in BitStream.h, handle >32 bit gets
+        if (Bits<=64) //TODO: in BitStream.h, handle >64 bit gets
         {
-            Param(Name, BS->Get4((int8u)Bits), Bits);
+            Param(Name, BS->Get8((int8u)Bits), Bits);
             Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
         }
         else
