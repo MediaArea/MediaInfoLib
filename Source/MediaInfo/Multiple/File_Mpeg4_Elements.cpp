@@ -2673,6 +2673,22 @@ void File_Mpeg4::meta_iloc()
         index_size=0;
     }
     Get_S2 (16, item_count,                                     "item_count");
+    if (offset_size != 0 && offset_size != 4 && offset_size != 8) {
+        Trusted_IsNot("Invalid offset_size"); // TODO: Conformance error
+        return;
+    }
+    if (length_size != 0 && length_size != 4 && length_size != 8) {
+        Trusted_IsNot("Invalid length_size"); // TODO: Conformance error
+        return;
+    }
+    if (base_offset_size != 0 && base_offset_size != 4 && base_offset_size != 8) {
+        Trusted_IsNot("Invalid base_offset_size"); // TODO: Conformance error
+        return;
+    }
+    if (index_size != 0 && index_size != 4 && index_size != 8) {
+        Trusted_IsNot("Invalid index_size"); // TODO: Conformance error
+        return;
+    }
     offset_size*=8;
     length_size*=8;
     base_offset_size*=8;
@@ -2701,8 +2717,8 @@ void File_Mpeg4::meta_iloc()
                 Skip_BS(index_size,                             "extent_index");
             if (offset_size)
             {
-                int32u extent_offset;
-                Get_BS (offset_size, extent_offset,             "extent_offset");
+                int64u extent_offset;
+                Get_S8 (offset_size, extent_offset,             "extent_offset");
 
                 FILLING_BEGIN();
                     if (construction_method == 1)
@@ -2713,8 +2729,8 @@ void File_Mpeg4::meta_iloc()
             }
             if (length_size)
             {
-                int32u extent_length;
-                Get_BS (length_size, extent_length,             "extent_length");
+                int64u extent_length;
+                Get_S8 (length_size, extent_length,             "extent_length");
 
                 FILLING_BEGIN();
                     if (construction_method == 1)
