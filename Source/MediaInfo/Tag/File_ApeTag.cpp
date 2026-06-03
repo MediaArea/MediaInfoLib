@@ -193,7 +193,7 @@ void File_ApeTag::Data_Parse()
     }
 
     //Filling
-    transform(Key.begin(), Key.end(), Key.begin(), (int(*)(int))toupper); //(int(*)(int)) is a patch for unix
+    transform(Key.begin(), Key.end(), Key.begin(), [](unsigned char c) { return toupper(c); });
          if (Key=="ALBUM")          Fill(Stream_General, 0, General_Album, Value);
     else if (Key=="ALBUM ARTIST")   Fill(Stream_General, 0, General_Album_Performer, Value);
     else if (Key=="ARTIST")         Fill(Stream_General, 0, General_Performer, Value);
