@@ -1948,6 +1948,13 @@ void File_Dts::XLL()
         return;
     }
     auto Element_Size_Save=Element_Size;
+    if (Element_Offset_Start-3+LLFrameSize>Element_Size_Save)
+    {
+        BS_End();
+        Element_End0();
+        Skip_XX(Element_Size-Element_Offset,                    "(Unknown)");
+        return;
+    }
     Element_Size=Element_Offset_Start-3+LLFrameSize;
     Get_S1 (4, NumChSetsInFrame,                                "NumChSetsInFrame");
     NumChSetsInFrame++; Param_Info1(NumChSetsInFrame);
