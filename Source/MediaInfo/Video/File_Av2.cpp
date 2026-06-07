@@ -919,13 +919,13 @@ void File_Av2::sequence_filter_config()
     TEST_SB_SKIP(                                               "enable_restoration");
         Skip_SB(                                                "lr_tools_disable[ 0 ][ RESTORE_PC_WIENER ]");
         Skip_SB(                                                "lr_tools_disable[ 0 ][ RESTORE_WIENER_NONSEP ]");
-        TEST_SB_SKIP(                                           "enable_restoration");
+        TEST_SB_SKIP(                                           "lr_tools_uv_present");
             Skip_SB(                                            "lr_tools_disable[ 1 ][ RESTORE_WIENER_NONSEP ]");
         TEST_SB_END();
     TEST_SB_END();
     TESTELSE_SB_SKIP(                                           "enable_ccso");
         Skip_SB(                                                "ccso_unit_matches_sb_size");
-    TESTELSE_TB_ELSE(                                           "enable_ccso");
+    TESTELSE_SB_ELSE(                                           "enable_ccso");
         // ccso_unit_matches_sb_size = 0
     TESTELSE_SB_END();
     if (single_picture_header_flag) {
