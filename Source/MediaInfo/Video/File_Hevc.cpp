@@ -150,6 +150,29 @@ static const char* Hevc_pic_type[]=
 };
 
 //---------------------------------------------------------------------------
+// Interpretation of pic_struct (ISO/IEC 23008-2, Table D.2)
+static const char* Hevc_pic_struct(int8u pic_struct)
+{
+    static const char* const Strings[]=
+    {
+        "frame",                                            //  0
+        "top field",                                        //  1
+        "bottom field",                                     //  2
+        "top field, bottom field",                          //  3
+        "bottom field, top field",                          //  4
+        "top field, bottom field, top field repeated",      //  5
+        "bottom field, top field, bottom field repeated",   //  6
+        "frame doubling",                                   //  7
+        "frame tripling",                                   //  8
+        "top field paired with previous bottom field",      //  9
+        "bottom field paired with previous top field",      // 10
+        "top field paired with next bottom field",          // 11
+        "bottom field paired with next top field",          // 12
+    };
+    return (size_t)pic_struct<sizeof(Strings)/sizeof(*Strings) ? Strings[pic_struct] : "";
+}
+
+//---------------------------------------------------------------------------
 static const char* Hevc_slice_type(int32u slice_type)
 {
     switch (slice_type)
@@ -488,6 +511,15 @@ void File_Hevc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator se
     Width -=(seq_parameter_set_Item->conf_win_left_offset+seq_parameter_set_Item->conf_win_right_offset)*CropUnitX;
     Height-=(seq_parameter_set_Item->conf_win_top_offset +seq_parameter_set_Item->conf_win_bottom_offset)*CropUnitY;
 
+    //Interlacement: HEVC conveys fields only via metadata (pic_struct in the pic_timing SEI, source_scan_type, VUI field_seq_flag and the profile_tier_level constraint flags)
+    const int8u pic_struct      =seq_parameter_set_Item->pic_struct_FirstDetected;
+    const int8u source_scan_type=seq_parameter_set_Item->source_scan_type_FirstDetected;
+    //Separated fields: each coded picture carries a single field, so the coded dimensions are those of a field (ISO/IEC 23008-2, field_seq_flag semantics, NOTE 11)
+    const bool  SeparatedFields =(seq_parameter_set_Item->vui_parameters && seq_parameter_set_Item->vui_parameters->flags[field_seq_flag])
+                              || pic_struct==1 || pic_struct==2 || (pic_struct>=9 && pic_struct<=12);
+    if (SeparatedFields)
+        Height*=2; //Coded height is the field height; the displayed frame is twice as high
+
     const auto& p=seq_parameter_set_Item->profile_tier_level_info;
     Streams_Fill_Profile(p);
     Fill(Stream_Video, StreamPos_Last, Video_Width, Width);
@@ -496,6 +528,60 @@ void File_Hevc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator se
         Fill(Stream_Video, StreamPos_Last, Video_Stored_Width, seq_parameter_set_Item->pic_width_in_luma_samples);
     if (seq_parameter_set_Item->conf_win_top_offset || seq_parameter_set_Item->conf_win_bottom_offset)
         Fill(Stream_Video, StreamPos_Last, Video_Stored_Height, seq_parameter_set_Item->pic_height_in_luma_samples);
+
+    //Scan type / scan order. For separated fields the order is taken from the parity of the first coded field (the initial IRAP); see Table D.2.
+    switch (pic_struct)
+    {
+        case  3 : //top field, bottom field
+        case  5 : //top field, bottom field, top field repeated
+                    Fill(Stream_Video, 0, Video_ScanType, "Interlaced");
+                    Fill(Stream_Video, 0, Video_ScanOrder, "TFF");
+                    Fill(Stream_Video, 0, Video_Interlacement, "TFF");
+                    Fill(Stream_Video, 0, Video_Format_Settings_PictureStructure, "Frame");
+                    Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "InterleavedFields");
+                    break;
+        case  4 : //bottom field, top field
+        case  6 : //bottom field, top field, bottom field repeated
+                    Fill(Stream_Video, 0, Video_ScanType, "Interlaced");
+                    Fill(Stream_Video, 0, Video_ScanOrder, "BFF");
+                    Fill(Stream_Video, 0, Video_Interlacement, "BFF");
+                    Fill(Stream_Video, 0, Video_Format_Settings_PictureStructure, "Frame");
+                    Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "InterleavedFields");
+                    break;
+        case  1 : //top field
+        case  9 : //top field paired with previous bottom field
+        case 11 : //top field paired with next bottom field
+                    Fill(Stream_Video, 0, Video_ScanType, "Interlaced");
+                    Fill(Stream_Video, 0, Video_ScanOrder, "TFF");
+                    Fill(Stream_Video, 0, Video_Interlacement, "TFF");
+                    Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "SeparatedFields");
+                    break;
+        case  2 : //bottom field
+        case 10 : //bottom field paired with previous top field
+        case 12 : //bottom field paired with next top field
+                    Fill(Stream_Video, 0, Video_ScanType, "Interlaced");
+                    Fill(Stream_Video, 0, Video_ScanOrder, "BFF");
+                    Fill(Stream_Video, 0, Video_Interlacement, "BFF");
+                    Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "SeparatedFields");
+                    break;
+        case  0 : //(progressive) frame
+        case  7 : //frame doubling
+        case  8 : //frame tripling
+                    Fill(Stream_Video, 0, Video_ScanType, "Progressive");
+                    Fill(Stream_Video, 0, Video_Interlacement, "PPF");
+                    break;
+        default : //pic_struct not present: fall back to source_scan_type, field_seq_flag and the profile_tier_level constraint flags
+                    if (source_scan_type==0 || SeparatedFields || (!p.general_progressive_source_flag && p.general_interlaced_source_flag))
+                    {
+                        Fill(Stream_Video, 0, Video_ScanType, "Interlaced");
+                        Fill(Stream_Video, 0, Video_Interlacement, "Interlaced");
+                    }
+                    else if (source_scan_type==1 || (p.general_progressive_source_flag && !p.general_interlaced_source_flag))
+                    {
+                        Fill(Stream_Video, 0, Video_ScanType, "Progressive");
+                        Fill(Stream_Video, 0, Video_Interlacement, "PPF");
+                    }
+    }
 
     Fill(Stream_Video, 0, Video_ColorSpace, Hevc_chroma_format_idc_ColorSpace(seq_parameter_set_Item->chroma_format_idc));
     Fill(Stream_Video, 0, Video_ChromaSubsampling, Hevc_chroma_format_idc(seq_parameter_set_Item->chroma_format_idc));
@@ -508,7 +594,12 @@ void File_Hevc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator se
     if (vui_parameters)
     {
         if (vui_parameters->time_scale && vui_parameters->num_units_in_tick)
-            Fill(Stream_Video, StreamPos_Last, Video_FrameRate, (float32)vui_parameters->time_scale / vui_parameters->num_units_in_tick);
+        {
+            float64 FrameRate=(float64)vui_parameters->time_scale / vui_parameters->num_units_in_tick;
+            if (SeparatedFields)
+                FrameRate/=2; //Timing expresses the field rate; report the frame rate (e.g. 25 fps for 50 fields/s), as for AVC
+            Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate);
+        }
 
         if (vui_parameters->sar_width && vui_parameters->sar_height)
         {
@@ -2697,9 +2788,15 @@ void File_Hevc::sei_message_pic_timing(int32u &seq_parameter_set_id, int32u payl
     BS_Begin();
     if ((*seq_parameter_set_Item)->vui_parameters?(*seq_parameter_set_Item)->vui_parameters->flags[frame_field_info_present_flag]:((*seq_parameter_set_Item)->profile_tier_level_info.general_progressive_source_flag && (*seq_parameter_set_Item)->profile_tier_level_info.general_interlaced_source_flag))
     {
-        Skip_S1(4,                                              "pic_struct");
-        Skip_S1(2,                                              "source_scan_type");
+        int8u pic_struct, source_scan_type;
+        Get_S1 (4, pic_struct,                                  "pic_struct"); Param_Info1(Hevc_pic_struct(pic_struct));
+        Get_S1 (2, source_scan_type,                            "source_scan_type");
         Skip_SB(                                                "duplicate_flag");
+        //Keep the value of the first coded picture (the initial IRAP) to determine the field order for separated fields
+        if ((*seq_parameter_set_Item)->pic_struct_FirstDetected==(int8u)-1)
+            (*seq_parameter_set_Item)->pic_struct_FirstDetected=pic_struct;
+        if ((*seq_parameter_set_Item)->source_scan_type_FirstDetected==(int8u)-1)
+            (*seq_parameter_set_Item)->source_scan_type_FirstDetected=source_scan_type;
     }
     if ((*seq_parameter_set_Item)->CpbDpbDelaysPresentFlag())
     {
@@ -4187,7 +4284,8 @@ void File_Hevc::vui_parameters(seq_parameter_set_struct::vui_parameters_struct* 
         Get_UE (chroma_sample_loc_type_bottom_field,            "chroma_sample_loc_type_bottom_field");
     TEST_SB_END();
     Skip_SB(                                                    "neutral_chroma_indication_flag");
-    Skip_SB(                                                    "field_seq_flag");
+    Get_SB (   flag,                                            "field_seq_flag");
+    flags[field_seq_flag]=flag;
     Get_SB (   flag,                                            "frame_field_info_present_flag");
     flags[frame_field_info_present_flag]=flag;
     TEST_SB_SKIP(                                               "default_display_window_flag ");
