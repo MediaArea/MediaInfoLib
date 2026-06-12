@@ -6,24 +6,24 @@ jobs:
   Build:
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
+        os: [ubuntu-26.04, ubuntu-26.04-arm, macos-26, windows-latest]
         environement: [gcc, utf8, minified, minimal, minimal-with-xml, cmake, cmake-dll]
         exclude:
-          - os: macos-latest
+          - os: macos-26
             environement: minified
-          - os: macos-latest
+          - os: macos-26
             environement: minimal
-          - os: macos-latest
+          - os: macos-26
             environement: minimal-with-xml
-          - os: macos-latest
+          - os: macos-26
             environement: cmake-dll
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-26.04-arm
             environement: minified
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-26.04-arm
             environement: minimal
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-26.04-arm
             environement: minimal-with-xml
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-26.04-arm
             environement: cmake-dll
           - os: windows-latest
             environement: gcc
@@ -36,9 +36,9 @@ jobs:
           - os: windows-latest
             environement: minimal-with-xml
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-26.04
             environement: link-curl-graphviz
-          - os: macos-latest
+          - os: macos-26
             environement: link-curl-graphviz
           - environement: gcc
             CXXFLAGS: ""
@@ -67,6 +67,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Dependencies
+        env:
+          HOMEBREW_NO_REQUIRE_TAP_TRUST: 1 # Prevent Homebrew third-party trust warnings due to GitHub's pre-installed taps
         if: ${{ runner.os != 'Windows' }}
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
@@ -153,4 +155,4 @@ jobs:
         with:
           msbuild-architecture: x64
       - name: Build
-        run: msbuild -p:Configuration=Release -p:Platform=${{ matrix.architecture }} ${{ github.workspace }}\MediaInfoLib\Project\MSVC2022\MediaInfoLib.sln -verbosity:quiet -warnaserror
+        run: msbuild -p:Configuration=Release -p:Platform=${{ matrix.architecture }} ${{ github.workspace }}\MediaInfoLib\Project\MSVC2026\MediaInfoLib.slnx -verbosity:quiet -warnaserror
