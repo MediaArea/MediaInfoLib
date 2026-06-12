@@ -2441,7 +2441,7 @@ bool File_Mk::Rawcooked_Compressed_Start(rawcookedtrack::mask* Mask, bool UseMas
             }
             if (!UseMask)
             {
-                Mask->Buffer=Dest;
+                Mask->Buffer.reset(Dest);
                 Mask->Size=Dest_Size;
             }
         }
