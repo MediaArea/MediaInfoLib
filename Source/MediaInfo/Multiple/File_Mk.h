@@ -18,6 +18,7 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
 #include <bitset>
+#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -598,23 +599,12 @@ private :
     {
         struct mask
         {
-            int8u*      Buffer;
-            size_t      Size;
-
-            //mask(); //Init done in rawcookedtrack() in 1 shot
-            ~mask()
-            {
-                delete[] Buffer;
-            }
+            std::unique_ptr<int8u[]> Buffer;
+            size_t      Size = 0;
         };
-        int64u          FramePos;
+        int64u          FramePos = 0;
         mask            MaskBaseFileName;
         mask            MaskBaseBeforeData;
-
-        rawcookedtrack()
-        {
-            memset(this, 0x00, sizeof(rawcookedtrack));
-        }
     };
     rawcookedtrack RawcookedTrack_Data;
     const int8u* Rawcooked_Compressed_Save_Buffer{};
