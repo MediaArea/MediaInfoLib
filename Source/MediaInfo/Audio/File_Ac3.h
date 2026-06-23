@@ -200,6 +200,7 @@ private :
     TimeCode TimeStamp_FirstFrame;
     int16u   TimeStamp_FirstFrame_SampleNumber;
     size_t TimeStamp_Count;
+    int64u   Stream_Size_Total;
 };
 
 } //NameSpace
