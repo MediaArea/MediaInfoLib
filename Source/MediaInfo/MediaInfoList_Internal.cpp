@@ -77,6 +77,14 @@ MediaInfoList_Internal::~MediaInfoList_Internal()
 //---------------------------------------------------------------------------
 size_t MediaInfoList_Internal::Open(const String &File_Name, const fileoptions_t Options)
 {
+    vector<String> File_Names;
+    File_Names.push_back(File_Name);
+    return Open(File_Names, Options);
+}
+
+//---------------------------------------------------------------------------
+size_t MediaInfoList_Internal::Open(const vector<String> &File_Names, const fileoptions_t Options)
+{
     //Option FileOption_Close
     if (Options & FileOption_CloseAll)
         Close(All);
@@ -86,32 +94,36 @@ size_t MediaInfoList_Internal::Open(const String &File_Name, const fileoptions_t
 
     //Get all filenames
     ZtringList List;
-    #if defined(MEDIAINFO_DIRECTORY_YES)
-    if (Dir::Exists(File_Name))
+    for (const auto& File_Name : File_Names)
     {
-        List=Dir::GetAllFileNames(File_Name, (Options&FileOption_NoRecursive)?Dir::Include_Files:((Dir::dirlist_t)(Dir::Include_Files|Dir::Parse_SubDirs)));
-        sort(List.begin(), List.end());
+        #if defined(MEDIAINFO_DIRECTORY_YES)
+        if (Dir::Exists(File_Name))
+        {
+            ZtringList LocalList=Dir::GetAllFileNames(File_Name, (Options&FileOption_NoRecursive)?Dir::Include_Files:((Dir::dirlist_t)(Dir::Include_Files|Dir::Parse_SubDirs)));
+            List.insert(List.end(), LocalList.begin(), LocalList.end());
+            sort(List.begin(), List.end());
 
-        #if MEDIAINFO_ADVANCED
-            if (MediaInfoLib::Config.ParseOnlyKnownExtensions_IsSet())
-            {
-                set<Ztring> ExtensionsList=MediaInfoLib::Config.ParseOnlyKnownExtensions_GetList_Set();
-                bool AcceptNoExtension=ExtensionsList.find(Ztring())!=ExtensionsList.end();
-                for (size_t i=List.size()-1; i!=(size_t)-1; i--)
+            #if MEDIAINFO_ADVANCED
+                if (MediaInfoLib::Config.ParseOnlyKnownExtensions_IsSet())
                 {
-                    const Ztring& Name=List[i];
-                    size_t Extension_Pos=Name.rfind(__T('.'));
-                    if (Extension_Pos!=string::npos && ExtensionsList.find(Name.substr(Extension_Pos+1))==ExtensionsList.end()
-                     || Extension_Pos==string::npos && !AcceptNoExtension)
-                            List.erase(List.begin()+i);
+                    set<Ztring> ExtensionsList=MediaInfoLib::Config.ParseOnlyKnownExtensions_GetList_Set();
+                    bool AcceptNoExtension=ExtensionsList.find(Ztring())!=ExtensionsList.end();
+                    for (size_t i=List.size()-1; i!=(size_t)-1; i--)
+                    {
+                        const Ztring& Name=List[i];
+                        size_t Extension_Pos=Name.rfind(__T('.'));
+                        if (Extension_Pos!=string::npos && ExtensionsList.find(Name.substr(Extension_Pos+1))==ExtensionsList.end()
+                        || Extension_Pos==string::npos && !AcceptNoExtension)
+                                List.erase(List.begin()+i);
+                    }
                 }
-            }
-        #endif //MEDIAINFO_ADVANCED
-    }
-    else
-    #endif //defined(MEDIAINFO_DIRECTORY_YES)
-    {
-        List.push_back(File_Name);
+            #endif //MEDIAINFO_ADVANCED
+        }
+        else
+        #endif //defined(MEDIAINFO_DIRECTORY_YES)
+        {
+            List.push_back(File_Name);
+        }
     }
 
     #if defined(MEDIAINFO_DIRECTORY_YES)
