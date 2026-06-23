@@ -82,8 +82,10 @@ private :
     void XXCH();
     void XBR();
     void Aux() { Extensions_Resynch(true); }
+    void Rev2Aux();
     void AfterAssets();
     void Extensions2();
+    int SkipABITSelector(int Channels, int BitCount, int Limit);
 
     //Buffer
     bool FrameSynchPoint_Test();
@@ -110,6 +112,7 @@ private :
     int8u  HD_MaximumSampleRate_Real;
     int8u  HD_TotalNumberChannels;
     int8u  HD_ExSSFrameDurationCode;
+    int8u  SubSubFrameCount;
     bool   AuxiliaryData;
     bool   ExtendedCoding;
     bool   Word;
@@ -117,6 +120,8 @@ private :
     bool   ES;
     bool   Core_Exists;
     bool   One2OneMapChannels2Speakers;
+    bool   Rev2AuxPresent;
+    bool   Type1CertifiedContent;
     enum   presence
     {
         presence_Core_Core,
@@ -161,6 +166,7 @@ private :
 
     //Helpers
     float64 BitRate_Get(bool WithHD=false);
+    bool    Rev2AuxProbe() const;
     void    Streams_Fill_Extension();
     void    Streams_Fill_Core_ES();
     void    Streams_Fill_Core(bool With96k=false);
