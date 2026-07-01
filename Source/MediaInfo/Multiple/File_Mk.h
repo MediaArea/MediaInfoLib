@@ -180,7 +180,7 @@ private :
     void Segment_Tracks_TrackEntry_MaxBlockAdditionID(){UInteger_Info();};
     void Segment_Tracks_TrackEntry_Name();
     void Segment_Tracks_TrackEntry_Language();
-    void Segment_Tracks_TrackEntry_LanguageIETF(){Segment_Tracks_TrackEntry_Language();};
+    void Segment_Tracks_TrackEntry_LanguageIETF();
     void Segment_Tracks_TrackEntry_CodecID();
     void Segment_Tracks_TrackEntry_CodecPrivate();
     void Segment_Tracks_TrackEntry_CodecName(){UTF8_Info();};
@@ -478,6 +478,7 @@ private :
     void     CodecID_Manage();
     int64u   TrackType{};
     int64u   AudioBitDepth{};
+    bool     TrackHasLanguageIETF{};
 
     //Temp - BlockAddition
     int64u  BlockAddIDType;
