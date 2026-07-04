@@ -132,6 +132,17 @@ namespace
     { return ((int32u)p[0] << 24) | ((int32u)p[1] << 16) | ((int32u)p[2] << 8) | p[3]; }
     inline int32u RL32(const int8u* p)
     { return ((int32u)p[3] << 24) | ((int32u)p[2] << 16) | ((int32u)p[1] << 8) | p[0]; }
+    inline int64u RB64(const int8u* p)
+    { return ((int64u)RB32(p) << 32) | RB32(p + 4); }
+
+    // NTP 32.32 -> us. The epoch offset cancels in a duration, so it is not
+    // subtracted.
+    inline int64s Ntp32_32_To_Us(int64u ntp)
+    {
+        int64u sec  = ntp >> 32;
+        int64u frac = ntp & 0xFFFFFFFFULL;
+        return (int64s)(sec * 1000000ULL + (frac * 1000000ULL) / 0x100000000ULL);
+    }
 
     inline bool Is_Tlv_Type(int8u t)
     {
@@ -217,6 +228,9 @@ File_MmtTlv::File_MmtTlv()
     Now_Utc                  = -1;
     Now_First                = -1;
     Now_Last                 = -1;
+    Pts_First_Us             = -1;
+    Pts_Last_Us              = -1;
+    Pts_Last_At_Tail         = -1;
     Eit_Boundary_Hops        = 0;
     Phase                    = Phase_Scan;
 }
@@ -392,16 +406,22 @@ void File_MmtTlv::Streams_Finish()
         Fill(Stream_General, 0, General_Duration_Start,
              Ztring().Date_From_Seconds_1970(Now_First));
 
-    //Stream span, distinct from the Menu Program/Duration (scheduled).
-    if (Now_First >= 0 && Now_Last > Now_First)
+    //Stream span, distinct from the Menu Duration (scheduled event length). Prefer
+    //the MPU-PTS span; fall back to the whole-second clock.
+    float64 span_ms = -1;
+    if (Pts_First_Us >= 0 && Pts_Last_Us > Pts_First_Us)
+        span_ms = (float64)(Pts_Last_Us - Pts_First_Us) / 1000.0; // us -> ms, sub-second
+    else if (Now_First >= 0 && Now_Last > Now_First)
+        span_ms = (float64)(Now_Last - Now_First) * 1000.0;       // s -> ms
+    if (span_ms > 0)
     {
-        int64s span_ms = (Now_Last - Now_First) * 1000;
-        Fill(Stream_General, 0, General_Duration, span_ms);
+        //Float ms keeps the sub-second precision.
+        Fill(Stream_General, 0, General_Duration, span_ms, 3);
         //Same span per A/V track -> correct per-stream and overall bitrate.
         for (size_t Pos = 0; Pos < Count_Get(Stream_Video); ++Pos)
-            Fill(Stream_Video, Pos, Video_Duration, span_ms);
+            Fill(Stream_Video, Pos, Video_Duration, span_ms, 3);
         for (size_t Pos = 0; Pos < Count_Get(Stream_Audio); ++Pos)
-            Fill(Stream_Audio, Pos, Audio_Duration, span_ms);
+            Fill(Stream_Audio, Pos, Audio_Duration, span_ms, 3);
     }
 }
 
@@ -542,7 +562,7 @@ void File_MmtTlv::Data_Parse()
     const int8u* Payload = Buffer + Buffer_Offset;
     size_t       Size    = (size_t)Element_Size;
 
-    //Tail phase: near EOF for the last clock (stream span). Only signaling matters.
+    //Tail phase: near EOF for the last PTS and clock. Only signaling matters.
     if (Phase == Phase_Tail)
     {
         if (Element_Code == TLV_HEADER_COMPRESSED_IP_PACKET)
@@ -550,8 +570,12 @@ void File_MmtTlv::Data_Parse()
         else if (Element_Code == TLV_IPV6_PACKET)
             Parse_Ntp(Payload, Size);
         Skip_XX(Element_Size, "Data");
-        //Done at a distinct last "now", or when the tail budget is spent.
-        if ((Now_Last > Now_First) || Packets_Since_Accept >= GIVE_UP_AFTER_PACKETS)
+        //With PTS, wait for a fresher one from the tail rather than stopping on
+        //the earlier clock; else fall back to a distinct last "now".
+        bool HavePts    = (Pts_First_Us >= 0);
+        bool GotTailPts = (Pts_Last_Us > Pts_Last_At_Tail);
+        bool Done = HavePts ? GotTailPts : (Now_Last > Now_First);
+        if (Done || Packets_Since_Accept >= GIVE_UP_AFTER_PACKETS)
         {
             Phase = Phase_Done;
             Finish();
@@ -610,6 +634,7 @@ void File_MmtTlv::Data_Parse()
          && File_Offset + Buffer_Offset < File_Size - TAIL_PROBE_BYTES)
         {
             Phase = Phase_Tail;
+            Pts_Last_At_Tail = Pts_Last_Us; //require a fresher PTS from the tail
             Packets_Since_Accept = 0;       //tail has its own budget
             GoToFromEnd(TAIL_PROBE_BYTES, "MmtTlv");
             return;
@@ -1023,7 +1048,11 @@ void File_MmtTlv::Parse_Table(const int8u* Data, size_t Size)
         return;
     switch (Data[0])
     {
-        case TABLE_MPT:     Parse_Mpt(Data, Size);   break;
+        case TABLE_MPT:
+            //Timestamps come from every MPT; the asset-list commit stays latched.
+            Extract_MpuTimestamps(Data, Size);
+            Parse_Mpt(Data, Size);
+            break;
         case TABLE_MH_EIT:  Parse_MhEit(Data, Size); break;
         case TABLE_MH_SDT:  Parse_MhSdt(Data, Size); break;
         case TABLE_MH_TOT:  Parse_MhTot(Data, Size); break;
@@ -1228,6 +1257,90 @@ void File_MmtTlv::Parse_Mpt(const int8u* Data, size_t Size)
                 #endif
             }
         }
+    }
+}
+
+//***************************************************************************
+// MPU_timestamp_descriptor (0x0001) in the video asset: repeated
+// { mpu_sequence_number(32), presentation_time(64, NTP 32.32) }. Min/max over
+// all MPTs (start + tail probe) is the stream span. Re-walks the MPT for
+// asset_type + descriptors only.
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_MmtTlv::Extract_MpuTimestamps(const int8u* Data, size_t Size)
+{
+    if (Size < 4) return;
+    int16u length = RB16(Data + 2);
+    if (length > Size - 4) length = (int16u)(Size - 4);
+    const int8u* p = Data + 4; size_t n = length;
+
+    if (n < 2) return;
+    p += 1; n -= 1;                       // MPT_mode
+    int8u pkg_id_len = *p++; n -= 1;
+    if (pkg_id_len > n) return;
+    p += pkg_id_len; n -= pkg_id_len;
+
+    if (n < 2) return;
+    int16u mpt_desc_len = RB16(p); p += 2; n -= 2;
+    if (mpt_desc_len > n) return;
+    p += mpt_desc_len; n -= mpt_desc_len;
+
+    if (n < 1) return;
+    int8u number_of_assets = *p++; n -= 1;
+    for (int i = 0; i < number_of_assets && n > 0; ++i)
+    {
+        if (n < 6) break;
+        p += 5; n -= 5;                   // identifier_type + asset_id_scheme
+        int8u asset_id_len = *p++; n -= 1;
+        if (asset_id_len > n) break;
+        p += asset_id_len; n -= asset_id_len;
+
+        if (n < 4) break;
+        int32u asset_type = RL32(p); p += 4; n -= 4;
+        if (n < 1) break;
+        p += 1; n -= 1;                   // asset_clock_relation_flag
+
+        if (n < 1) break;
+        int8u location_count = *p++; n -= 1;
+        for (int j = 0; j < location_count && n >= 1; ++j)
+        {
+            int8u location_type = *p++; n -= 1;
+            size_t loc_len = location_type == 0x00 ? 2
+                           : location_type == 0x01 ? 8
+                           : location_type == 0x02 ? 34
+                           : location_type == 0x05 ? 6 : 0;
+            if (loc_len > n) { n = 0; break; }
+            p += loc_len; n -= loc_len;
+        }
+
+        if (n < 2) break;
+        int16u asset_desc_len = RB16(p); p += 2; n -= 2;
+        if (asset_desc_len > n) break;
+
+        if (asset_type == ASSET_HEV1)
+        {
+            const int8u* d = p; size_t dn = asset_desc_len;
+            while (dn >= 3)
+            {
+                int16u dtag = RB16(d);
+                int8u  dlen = d[2];
+                if ((size_t)3 + dlen > dn) break;
+                if (dtag == 0x0001)       // MPU_timestamp_descriptor
+                {
+                    const int8u* e = d + 3; size_t en = dlen;
+                    while (en >= 12)      // seq(4) + presentation_time(8)
+                    {
+                        int64s us = Ntp32_32_To_Us(RB64(e + 4));
+                        if (Pts_First_Us < 0 || us < Pts_First_Us) Pts_First_Us = us;
+                        if (Pts_Last_Us  < 0 || us > Pts_Last_Us ) Pts_Last_Us  = us;
+                        e += 12; en -= 12;
+                    }
+                }
+                d += 3 + dlen; dn -= 3 + dlen;
+            }
+        }
+        p += asset_desc_len; n -= asset_desc_len;
     }
 }
 

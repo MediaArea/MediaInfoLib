@@ -63,6 +63,9 @@ private :
     void Parse_SignalingMessage(const int8u* Data, size_t Size);
     void Parse_Table(const int8u* Data, size_t Size);
     void Parse_Mpt(const int8u* Data, size_t Size);
+    //Runs on EVERY MPT, not gated by Mpt_Found: the tail-probe MPT carries the
+    //last PTS.
+    void Extract_MpuTimestamps(const int8u* Data, size_t Size);
     void Parse_MhEit(const int8u* Data, size_t Size);
     void Parse_MhTot(const int8u* Data, size_t Size);
     void Parse_MhSdt(const int8u* Data, size_t Size); // service (channel) name
@@ -157,6 +160,12 @@ private :
     int64s   Now_Utc;            //latest, drives the boundary check
     int64s   Now_First;
     int64s   Now_Last;           //incl. tail probe
+
+    //Min/max video MPU presentation time, us. In the clear, so it works for
+    //scrambled video. -1 = none seen.
+    int64s   Pts_First_Us;
+    int64s   Pts_Last_Us;
+    int64s   Pts_Last_At_Tail; //snapshot on entering the tail probe
 
     //Bounded so a bad stream is not walked forever.
     int      Eit_Boundary_Hops;
