@@ -63,6 +63,9 @@ private :
     void Parse_Table(const int8u* Data, size_t Size);
     void Parse_Mpt(const int8u* Data, size_t Size);
     void Parse_MhEit(const int8u* Data, size_t Size);
+    void Parse_MhTot(const int8u* Data, size_t Size);
+    void Parse_Ntp(const int8u* Data, size_t Size); // IPv6/UDP -> NTP fallback clock
+    void Note_StreamNow(int64s Utc);                // record earliest/latest "now"
 
     void Parse_Mpu(int16u packet_id, int32u seq_num, const int8u* Data, size_t Size);
     void Feed_DataUnit(int16u packet_id, const int8u* Data, size_t Size);
@@ -120,6 +123,18 @@ private :
     Ztring   Eit_Language;
 
     bool     Mpt_Found;
+
+    //Stream wall clock, JST seconds since the Unix epoch. MH-TOT preferred, NTP
+    //transmit timestamp fallback. -1 = not seen.
+    int64s   Now_Utc;            //latest, drives the boundary check
+    int64s   Now_First;
+    int64s   Now_Last;           //incl. tail probe
+
+    //Bounded so a bad stream is not walked forever.
+    int      Eit_Boundary_Hops;
+
+    enum probe_phase { Phase_Scan, Phase_Tail, Phase_Done };
+    probe_phase Phase;
 
     //Bound on scanning past accept, so a huge file is not read end-to-end when
     //the present EIT never appears.

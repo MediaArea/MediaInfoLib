@@ -33,6 +33,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_MmtTlv.h"
+#include "MediaInfo/TimeCode.h" //Date_MJD(), Time_BCD()
 #if defined(MEDIAINFO_HEVC_YES)
     #include "MediaInfo/Video/File_Hevc.h"
 #endif
@@ -80,6 +81,7 @@ namespace
     // Table ids
     const int8u TABLE_MPT                       = 0x20; // MMT Package Table
     const int8u TABLE_MH_EIT                    = 0x8B; // MH-EIT[p/f]
+    const int8u TABLE_MH_TOT                    = 0xA1; // MH-TOT (current JST)
 
     // Descriptor tags
     const int16u DESC_MH_SHORT_EVENT            = 0xF001;
@@ -97,6 +99,17 @@ namespace
     // 8K, whose sparse RAPs can put the first in-band SPS tens of MB in.
     const int64u MEDIA_BYTES_BUDGET             = 64 * 1024 * 1024;
 
+    const int64u BOUNDARY_HOP_BYTES             = 8 * 1024 * 1024;
+    const int    BOUNDARY_MAX_HOPS              = 8;
+    // Present event with under this long left at "now" is the previous program's
+    // tail, not the stream's main program.
+    const int64s BOUNDARY_GUARD_SECONDS         = 30;
+
+    const int64u TAIL_PROBE_BYTES               = 4 * 1024 * 1024;
+
+    const int64s NTP_UNIX_EPOCH_DELTA           = 2208988800LL;
+    const int64s JST_OFFSET_SECONDS             = 9 * 3600;
+
     // Bounds checked by caller.
     inline int16u RB16(const int8u* p) { return ((int16u)p[0] << 8) | p[1]; }
     inline int32u RB24(const int8u* p)
@@ -111,6 +124,21 @@ namespace
         return t == TLV_IPV4_PACKET || t == TLV_IPV6_PACKET
             || t == TLV_HEADER_COMPRESSED_IP_PACKET
             || t == TLV_TRANSMISSION_CONTROL_PACKET || t == TLV_NULL_PACKET;
+    }
+
+    inline int bcd2(int8u b) { return (b >> 4) * 10 + (b & 0x0F); }
+
+    // 16-bit MJD + 24-bit BCD HHMMSS -> JST seconds since the Unix epoch, so
+    // start/end/now compare directly. -1 on an invalid date.
+    inline int64s DateTime_To_Seconds(int16u mjd, int32u bcd_hhmmss)
+    {
+        if (mjd == 0 || mjd == 0xFFFF)
+            return -1;
+        int64s days = (int64s)mjd - 40587;
+        int hh = bcd2((int8u)(bcd_hhmmss >> 16));
+        int mm = bcd2((int8u)(bcd_hhmmss >> 8));
+        int ss = bcd2((int8u)(bcd_hhmmss));
+        return days * 86400 + hh * 3600 + mm * 60 + ss;
     }
 }
 
@@ -135,6 +163,11 @@ File_MmtTlv::File_MmtTlv()
     Packets_Since_Accept     = 0;
     Media_Probe_Done         = false;
     Media_Bytes              = 0;
+    Now_Utc                  = -1;
+    Now_First                = -1;
+    Now_Last                 = -1;
+    Eit_Boundary_Hops        = 0;
+    Phase                    = Phase_Scan;
 }
 
 //***************************************************************************
@@ -191,6 +224,32 @@ void File_MmtTlv::Streams_Fill()
                 break;
         }
     }
+
+    //Present event -> a Menu chapter, as File_MpegTs renders DVB/ATSC EPG: the
+    //entry key is the scheduled start (UTC), the value a "/"-delimited record
+    //(name / text / content / rating / duration / running_status).
+    if (Eit_Present_Found)
+    {
+        Stream_Prepare(Stream_Menu);
+        Fill(Stream_Menu, StreamPos_Last, Menu_ID, Eit_EventId, 10);
+        if (!Eit_EventName.empty())
+            Fill(Stream_General, 0, General_Title, Eit_EventName);
+        if (!Eit_Language.empty())
+            Fill(Stream_Menu, StreamPos_Last, Menu_Language, Eit_Language);
+
+        int64s Start = DateTime_To_Seconds(Eit_StartDate, Eit_StartTime); // JST
+        if (Start >= 0)
+        {
+            Ztring Time = Ztring().Date_From_Seconds_1970(Start - JST_OFFSET_SECONDS);
+            Time.FindAndReplace(__T("UTC "), __T(""));
+            Time += __T(" UTC");
+            Ztring Dur; Dur.From_UTF8(Time_BCD(Eit_Duration).c_str());
+            Ztring Event = Eit_EventName + __T(" / ") + Eit_EventText + __T(" /  /  / ") + Dur + __T(" / ");
+            Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_Begin, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
+            Fill(Stream_Menu, StreamPos_Last, Time.To_UTF8().c_str(), Event, true);
+            Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_End, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
+        }
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -209,6 +268,23 @@ void File_MmtTlv::Streams_Finish()
         M.Parser = NULL;
     }
     MediaParsers.clear();
+
+    //Stream start wall clock (UTC), the same field File_MpegTs uses.
+    if (Now_First >= 0)
+        Fill(Stream_General, 0, General_Duration_Start,
+             Ztring().Date_From_Seconds_1970(Now_First));
+
+    //Stream span, distinct from the Menu Program/Duration (scheduled).
+    if (Now_First >= 0 && Now_Last > Now_First)
+    {
+        int64s span_ms = (Now_Last - Now_First) * 1000;
+        Fill(Stream_General, 0, General_Duration, span_ms);
+        //Same span per A/V track -> correct per-stream and overall bitrate.
+        for (size_t Pos = 0; Pos < Count_Get(Stream_Video); ++Pos)
+            Fill(Stream_Video, Pos, Video_Duration, span_ms);
+        for (size_t Pos = 0; Pos < Count_Get(Stream_Audio); ++Pos)
+            Fill(Stream_Audio, Pos, Audio_Duration, span_ms);
+    }
 }
 
 //***************************************************************************
@@ -348,14 +424,36 @@ void File_MmtTlv::Data_Parse()
     const int8u* Payload = Buffer + Buffer_Offset;
     size_t       Size    = (size_t)Element_Size;
 
+    //Tail phase: near EOF for the last clock (stream span). Only signaling matters.
+    if (Phase == Phase_Tail)
+    {
+        if (Element_Code == TLV_HEADER_COMPRESSED_IP_PACKET)
+            Parse_CompressedIp(Payload, Size);
+        else if (Element_Code == TLV_IPV6_PACKET)
+            Parse_Ntp(Payload, Size);
+        Skip_XX(Element_Size, "Data");
+        //Done at a distinct last "now", or when the tail budget is spent.
+        if ((Now_Last > Now_First) || Packets_Since_Accept >= GIVE_UP_AFTER_PACKETS)
+        {
+            Phase = Phase_Done;
+            Finish();
+        }
+        return;
+    }
+
     switch ((int8u)Element_Code)
     {
         case TLV_HEADER_COMPRESSED_IP_PACKET:
             if (!(Mpt_Found && Eit_Present_Found && Media_Probe_Done))
                 Parse_CompressedIp(Payload, Size);
             break;
+        case TLV_IPV6_PACKET:
+            //NTP fallback clock, only until MH-TOT provides one.
+            if (Now_Utc < 0)
+                Parse_Ntp(Payload, Size);
+            break;
         default:
-            break; // IPv6 (NTP), NULL, control: no naming/schedule info
+            break;
     }
 
     Skip_XX(Element_Size, "Data");
@@ -377,11 +475,27 @@ void File_MmtTlv::Data_Parse()
     if (Mpt_Found && MediaParsers.empty())
         Media_Probe_Done = true;
 
-    //Stop once the codec map, present program and ES probe are all in hand, or
-    //after a bounded packet count (a stream may carry no in-band MPT and/or no
-    //present EIT; do not read a multi-GB file end to end).
-    if ((Mpt_Found && Eit_Present_Found && Media_Probe_Done)
-     || Packets_Since_Accept >= GIVE_UP_AFTER_PACKETS)
+    //Everything for the current program is in hand (codec map, present program,
+    //ES probe). Before finishing, sample the tail so Duration/OverallBitRate use
+    //the real stream span rather than the EIT's scheduled length.
+    bool ScanComplete = (Mpt_Found && Eit_Present_Found && Media_Probe_Done);
+    if (ScanComplete)
+    {
+        if (Now_First >= 0
+         && File_Size != (int64u)-1
+         && File_Size > TAIL_PROBE_BYTES
+         && File_Offset + Buffer_Offset < File_Size - TAIL_PROBE_BYTES)
+        {
+            Phase = Phase_Tail;
+            Packets_Since_Accept = 0;       //tail has its own budget
+            GoToFromEnd(TAIL_PROBE_BYTES, "MmtTlv");
+            return;
+        }
+        Finish();
+        return;
+    }
+
+    if (Packets_Since_Accept >= GIVE_UP_AFTER_PACKETS)
         Finish();
 }
 
@@ -762,6 +876,7 @@ void File_MmtTlv::Parse_Table(const int8u* Data, size_t Size)
     {
         case TABLE_MPT:     Parse_Mpt(Data, Size);   break;
         case TABLE_MH_EIT:  Parse_MhEit(Data, Size); break;
+        case TABLE_MH_TOT:  Parse_MhTot(Data, Size); break;
         default: break;
     }
 }
@@ -980,6 +1095,47 @@ void File_MmtTlv::Parse_MhEit(const int8u* Data, size_t Size)
         p += 12; n -= 12;
         if (desc_loop_len > n) return;
 
+        // If this present event has already ended at "now", it is the previous
+        // program's tail (the stream started on a boundary): hop forward and
+        // re-scan for the one whose window contains "now".
+        if (Now_Utc >= 0)
+        {
+            int64s start_s = DateTime_To_Seconds(start_date, start_time); // JST
+            if (start_s >= 0)
+            {
+                start_s -= JST_OFFSET_SECONDS; // -> UTC, to compare with Now_Utc
+                int dur_h = bcd2((int8u)(duration >> 16));
+                int dur_m = bcd2((int8u)(duration >> 8));
+                int dur_s = bcd2((int8u)(duration));
+                int64s dur = dur_h * 3600 + dur_m * 60 + dur_s;
+                int64s end_s = start_s + dur;
+                if (dur > 0 && end_s <= Now_Utc + BOUNDARY_GUARD_SECONDS
+                 && Eit_Boundary_Hops < BOUNDARY_MAX_HOPS)
+                {
+                    // The boundary may reconfigure the A/V (5.1<->stereo,
+                    // resolution, asset set), so drop the prior program's probe
+                    // and re-derive after the hop.
+                    for (std::map<int16u, media_parser>::iterator It = MediaParsers.begin();
+                         It != MediaParsers.end(); ++It)
+                        delete It->second.Parser;
+                    MediaParsers.clear();
+                    MfuAssemblers.clear();
+                    Assets.clear();
+                    Mpt_Found        = false;
+                    Media_Probe_Done = false;
+                    Media_Bytes      = 0;
+
+                    ++Eit_Boundary_Hops;
+                    int64u here = File_Offset + Buffer_Offset;
+                    int64u target = here + BOUNDARY_HOP_BYTES;
+                    if (File_Size != (int64u)-1 && target >= File_Size)
+                        target = here + BOUNDARY_HOP_BYTES / 4; // small final nudge
+                    GoTo(target, "MmtTlv");
+                    return;
+                }
+            }
+        }
+
         Eit_EventId   = event_id;
         Eit_StartDate = start_date;
         Eit_StartTime = start_time;
@@ -1023,6 +1179,66 @@ void File_MmtTlv::Parse_MhEit(const int8u* Data, size_t Size)
         Eit_Present_Found = true; // present event only
         return;
     }
+}
+
+//***************************************************************************
+// MH-TOT: current wall clock (JST), in the clear.
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_MmtTlv::Parse_MhTot(const int8u* Data, size_t Size)
+{
+    // table_id(8) + section_syntax/section_length(16) + 40-bit JST time.
+    if (Size < 3 + 5)
+        return;
+    int16u mjd  = RB16(Data + 3);
+    int32u hms  = RB24(Data + 5);
+    int64s utc  = DateTime_To_Seconds(mjd, hms); // JST
+    if (utc < 0)
+        return;
+    utc -= JST_OFFSET_SECONDS;
+    Now_Utc = utc; // authoritative, overrides NTP
+    Note_StreamNow(utc);
+}
+
+//***************************************************************************
+// Fallback clock: the NTP transmit timestamp in the IPv6/UDP time-distribution
+// packet, used until MH-TOT arrives. Only a coarse "now" is needed.
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_MmtTlv::Parse_Ntp(const int8u* Data, size_t Size)
+{
+    const size_t IPV6_HEADER = 40;
+    const size_t UDP_HEADER  = 8;
+    const size_t NTP_MIN     = 48;
+    if (Size < IPV6_HEADER + UDP_HEADER + NTP_MIN)
+        return;
+    // IPv6 version nibble 6, next_header UDP (17).
+    if ((Data[0] >> 4) != 6 || Data[6] != 17)
+        return;
+    const int8u* ntp = Data + IPV6_HEADER + UDP_HEADER;
+    // Reject a non-NTP UDP payload: implausible mode/stratum.
+    int8u mode = ntp[0] & 0x07;
+    if (mode == 0 || ntp[1] > 15)
+        return;
+    // transmit_timestamp seconds
+    int32u ntp_secs = RB32(ntp + 40);
+    if (ntp_secs == 0)
+        return;
+    int64s utc = (int64s)ntp_secs - NTP_UNIX_EPOCH_DELTA;
+    if (Now_Utc < 0)
+        Now_Utc = utc; // provisional until MH-TOT
+    Note_StreamNow(utc);
+}
+
+//---------------------------------------------------------------------------
+void File_MmtTlv::Note_StreamNow(int64s Utc)
+{
+    if (Now_First < 0 || Utc < Now_First)
+        Now_First = Utc;
+    if (Now_Last < 0 || Utc > Now_Last)
+        Now_Last = Utc;
 }
 
 } //NameSpace
