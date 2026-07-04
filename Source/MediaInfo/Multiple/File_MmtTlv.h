@@ -28,6 +28,8 @@
 namespace MediaInfoLib
 {
 
+class File__Analyze;
+
 //***************************************************************************
 // Class File_MmtTlv
 //***************************************************************************
@@ -40,6 +42,7 @@ public :
 private :
     //Streams management
     void Streams_Fill() override;
+    void Streams_Finish() override;
 
     //Buffer - File header (probe)
     bool FileHeader_Begin() override;
@@ -61,6 +64,9 @@ private :
     void Parse_Mpt(const int8u* Data, size_t Size);
     void Parse_MhEit(const int8u* Data, size_t Size);
 
+    void Parse_Mpu(int16u packet_id, int32u seq_num, const int8u* Data, size_t Size);
+    void Feed_DataUnit(int16u packet_id, const int8u* Data, size_t Size);
+
     //FIRST/MIDDLE/LAST fragments accumulated per packet_id with sequence-number
     //continuity. The MPT is fragmented across MMTP packets, so without this no
     //A/V/subtitle streams appear.
@@ -74,6 +80,10 @@ private :
     };
     std::map<int16u, fragment_assembler> Assemblers;
 
+    //As Assemblers, but the completed DU is framed and fed to a child ES parser
+    //rather than dispatched as a table.
+    std::map<int16u, fragment_assembler> MfuAssemblers;
+
     struct asset
     {
         int32u Type;        //asset_type FourCC (little-endian as read)
@@ -82,6 +92,23 @@ private :
         asset() : Type(0), PacketId(0), Superimpose(false) {}
     };
     std::vector<asset> Assets;
+
+    //Child ES parser per A/V asset, keyed by packet_id, Merge()d onto the
+    //MPT-created stream at finish.
+    struct media_parser
+    {
+        File__Analyze* Parser;      //owned; deleted in Streams_Finish
+        stream_t       StreamKind;
+        size_t         StreamPos;   //as created in Streams_Fill
+        bool           IsAac;       //frame DUs as LOAS (else HEVC Annex-B)
+        bool           Done;
+        int64u         Fed;         //bytes fed so far
+        media_parser() : Parser(NULL), StreamKind(Stream_Video), StreamPos(0),
+                         IsAac(false), Done(false), Fed(0) {}
+    };
+    std::map<int16u, media_parser> MediaParsers;
+    bool     Media_Probe_Done;
+    int64u   Media_Bytes;        //global probe budget
 
     bool     Eit_Present_Found;
     Ztring   Eit_EventName;

@@ -33,6 +33,12 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_MmtTlv.h"
+#if defined(MEDIAINFO_HEVC_YES)
+    #include "MediaInfo/Video/File_Hevc.h"
+#endif
+#if defined(MEDIAINFO_AAC_YES)
+    #include "MediaInfo/Audio/File_Aac.h"
+#endif
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -64,6 +70,7 @@ namespace
     const size_t PARTIAL_IPV6_HEADER_LENGTH     = 40 - 2;  // 38
 
     // MMTP payload types
+    const int8u MMTP_PAYLOAD_MPU                = 0x00;
     const int8u MMTP_PAYLOAD_SIGNALING          = 0x02;
 
     // Signaling message ids
@@ -85,6 +92,10 @@ namespace
     // Stop scanning after this many packets, so a multi-GB file is not read
     // end-to-end when the present EIT never arrives.
     const int64u GIVE_UP_AFTER_PACKETS          = 200000;
+
+    // Feeding stops on SPS/ASC, so this only bounds a no-parse stream. Sized for
+    // 8K, whose sparse RAPs can put the first in-band SPS tens of MB in.
+    const int64u MEDIA_BYTES_BUDGET             = 64 * 1024 * 1024;
 
     // Bounds checked by caller.
     inline int16u RB16(const int8u* p) { return ((int16u)p[0] << 8) | p[1]; }
@@ -122,6 +133,8 @@ File_MmtTlv::File_MmtTlv()
     Eit_Duration             = 0;
     Mpt_Found                = false;
     Packets_Since_Accept     = 0;
+    Media_Probe_Done         = false;
+    Media_Bytes              = 0;
 }
 
 //***************************************************************************
@@ -147,6 +160,11 @@ void File_MmtTlv::Streams_Fill()
                 Fill(Stream_Video, StreamPos_Last, Video_CodecID, "hev1");
                 if (A.PacketId)
                     Fill(Stream_Video, StreamPos_Last, Video_ID, A.PacketId, 10);
+                {
+                    std::map<int16u, media_parser>::iterator It = MediaParsers.find(A.PacketId);
+                    if (It != MediaParsers.end())
+                        It->second.StreamPos = StreamPos_Last;
+                }
                 break;
             case ASSET_MP4A:
                 Stream_Prepare(Stream_Audio);
@@ -154,6 +172,11 @@ void File_MmtTlv::Streams_Fill()
                 Fill(Stream_Audio, StreamPos_Last, Audio_CodecID, "mp4a");
                 if (A.PacketId)
                     Fill(Stream_Audio, StreamPos_Last, Audio_ID, A.PacketId, 10);
+                {
+                    std::map<int16u, media_parser>::iterator It = MediaParsers.find(A.PacketId);
+                    if (It != MediaParsers.end())
+                        It->second.StreamPos = StreamPos_Last;
+                }
                 break;
             case ASSET_STPP:
                 Stream_Prepare(Stream_Text);
@@ -168,6 +191,24 @@ void File_MmtTlv::Streams_Fill()
                 break;
         }
     }
+}
+
+//---------------------------------------------------------------------------
+void File_MmtTlv::Streams_Finish()
+{
+    for (std::map<int16u, media_parser>::iterator It = MediaParsers.begin();
+         It != MediaParsers.end(); ++It)
+    {
+        media_parser& M = It->second;
+        if (!M.Parser)
+            continue;
+        Open_Buffer_Finalize(M.Parser);
+        //Non-erasing: keep the container-level Format/CodecID/ID, add codec detail.
+        Merge(*M.Parser, M.StreamKind, 0, M.StreamPos, false);
+        delete M.Parser;
+        M.Parser = NULL;
+    }
+    MediaParsers.clear();
 }
 
 //***************************************************************************
@@ -310,7 +351,7 @@ void File_MmtTlv::Data_Parse()
     switch ((int8u)Element_Code)
     {
         case TLV_HEADER_COMPRESSED_IP_PACKET:
-            if (!(Mpt_Found && Eit_Present_Found))
+            if (!(Mpt_Found && Eit_Present_Found && Media_Probe_Done))
                 Parse_CompressedIp(Payload, Size);
             break;
         default:
@@ -319,10 +360,27 @@ void File_MmtTlv::Data_Parse()
 
     Skip_XX(Element_Size, "Data");
 
-    //Stop once we have both the codec map and the present program, or after a
-    //bounded packet count (a stream may carry no in-band MPT and/or no present
-    //EIT; do not read a multi-GB file end to end).
-    if ((Mpt_Found && Eit_Present_Found)
+    //Probe done once every A/V parser has finished or the budget is spent.
+    if (Mpt_Found && !Media_Probe_Done)
+    {
+        bool AllDone = true;
+        for (std::map<int16u, media_parser>::iterator It = MediaParsers.begin();
+             It != MediaParsers.end(); ++It)
+            if (!It->second.Done)
+            {
+                AllDone = false;
+                break;
+            }
+        if (AllDone || Media_Bytes >= MEDIA_BYTES_BUDGET)
+            Media_Probe_Done = true;
+    }
+    if (Mpt_Found && MediaParsers.empty())
+        Media_Probe_Done = true;
+
+    //Stop once the codec map, present program and ES probe are all in hand, or
+    //after a bounded packet count (a stream may carry no in-band MPT and/or no
+    //present EIT; do not read a multi-GB file end to end).
+    if ((Mpt_Found && Eit_Present_Found && Media_Probe_Done)
      || Packets_Since_Accept >= GIVE_UP_AFTER_PACKETS)
         Finish();
 }
@@ -400,7 +458,158 @@ void File_MmtTlv::Parse_Mmtp(const int8u* Data, size_t Size)
 
     if (payload_type == MMTP_PAYLOAD_SIGNALING)
         Parse_SignalingMessages(packet_id, seq_num, p, n);
-    // MPU (media) carries no naming/schedule info; ignored.
+    else if (payload_type == MMTP_PAYLOAD_MPU && !Media_Probe_Done)
+    {
+        std::map<int16u, media_parser>::iterator It = MediaParsers.find(packet_id);
+        if (It != MediaParsers.end() && !It->second.Done)
+            Parse_Mpu(packet_id, seq_num, p, n);
+    }
+}
+
+//***************************************************************************
+// MPU (media) -> MFU data units -> per-asset HEVC/AAC child parser.
+// MPU payload -> MFU data units (timed and non-timed).
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_MmtTlv::Parse_Mpu(int16u packet_id, int32u seq_num, const int8u* Data, size_t Size)
+{
+    if (Size < 8)
+        return;
+
+    // MPU_payload_length(16) must equal the remaining bytes.
+    int16u length = RB16(Data);
+    if (length != Size - 2)
+        return;
+    const int8u* q = Data + 2; size_t qn = Size - 2;
+
+    int8u b                       = q[0];
+    int8u fragment_type           = b >> 4;
+    bool  timed_flag              = (b >> 3) & 1;
+    int   fragmentation_indicator = (b >> 1) & 0x03;
+    bool  aggregation_flag        = b & 1;
+
+    if (aggregation_flag && fragmentation_indicator != 0)
+        return;
+    if (fragment_type != 2) // not an MFU
+        return;
+
+    // flags(1) fragment_counter(1) mpu_sequence_number(4)
+    const int8u* p = q + 6;
+    size_t       n = qn - 6;
+
+    // Per-DU header before each fragment:
+    //   timed  -> movie_fragment_seq(32) sample(32) offset(32) prio(8) dep(8)
+    //   !timed -> item_id(32)
+    const size_t du_header = timed_flag ? (32 + 32 + 32 + 8 + 8) / 8 : 32 / 8;
+
+    if (aggregation_flag)
+    {
+        // Run of length-prefixed COMPLETE DUs.
+        while (n >= 2)
+        {
+            int16u du_len = RB16(p); p += 2; n -= 2;
+            if (du_len > n)
+                return;
+            if (du_len >= du_header)
+                Feed_DataUnit(packet_id, p + du_header, du_len - du_header);
+            p += du_len; n -= du_len;
+        }
+        return;
+    }
+
+    if (n < du_header)
+        return;
+    p += du_header; n -= du_header;
+
+    fragment_assembler& Ass = MfuAssemblers[packet_id];
+
+    //A seq jump or first-ever sighting drops any partial.
+    if (Ass.State == fragment_assembler::Init)
+        Ass.State = fragment_assembler::Skip;
+    else if (seq_num != Ass.LastSeq + 1)
+    {
+        Ass.Data.clear();
+        Ass.State = fragment_assembler::Skip;
+    }
+    Ass.LastSeq = seq_num;
+
+    switch (fragmentation_indicator)
+    {
+        case 0: // NOT_FRAGMENTED (complete DU)
+            Ass.State = fragment_assembler::NotStarted;
+            Ass.Data.clear();
+            Feed_DataUnit(packet_id, p, n);
+            break;
+        case 1: // FIRST
+            Ass.State = fragment_assembler::InFragment;
+            Ass.Data.assign(p, p + n);
+            break;
+        case 2: // MIDDLE
+            if (Ass.State == fragment_assembler::InFragment)
+                Ass.Data.insert(Ass.Data.end(), p, p + n);
+            break;
+        case 3: // LAST
+            if (Ass.State == fragment_assembler::InFragment)
+            {
+                Ass.Data.insert(Ass.Data.end(), p, p + n);
+                if (!Ass.Data.empty())
+                    Feed_DataUnit(packet_id, &Ass.Data[0], Ass.Data.size());
+            }
+            Ass.Data.clear();
+            Ass.State = fragment_assembler::NotStarted;
+            break;
+        default:
+            break;
+    }
+}
+
+//---------------------------------------------------------------------------
+// A COMPLETE data unit, framed for the child parser (Annex-B / LOAS) and fed.
+void File_MmtTlv::Feed_DataUnit(int16u packet_id, const int8u* Data, size_t Size)
+{
+    std::map<int16u, media_parser>::iterator It = MediaParsers.find(packet_id);
+    if (It == MediaParsers.end())
+        return;
+    media_parser& M = It->second;
+    if (M.Done || !M.Parser)
+        return;
+
+    std::vector<int8u> Frame;
+    if (M.IsAac)
+    {
+        // The DU is the LATM payload; prepend a LOAS sync header.
+        if (Size == 0 || (Size >> 13))
+            return;
+        Frame.reserve(3 + Size);
+        Frame.push_back(0x56);
+        Frame.push_back((int8u)(0xE0 | (Size >> 8)));
+        Frame.push_back((int8u)(Size & 0xFF));
+        Frame.insert(Frame.end(), Data, Data + Size);
+    }
+    else
+    {
+        // The DU is be32 length + NAL; emit Annex-B.
+        if (Size < 4)
+            return;
+        int32u nal_size = RB32(Data);
+        const int8u* nal = Data + 4;
+        size_t       nal_n = Size - 4;
+        if (nal_size != nal_n)
+            return;
+        Frame.reserve(3 + nal_n);
+        Frame.push_back(0x00);
+        Frame.push_back(0x00);
+        Frame.push_back(0x01);
+        Frame.insert(Frame.end(), nal, nal + nal_n);
+    }
+
+    Open_Buffer_Continue(M.Parser, &Frame[0], Frame.size());
+    M.Fed       += Frame.size();
+    Media_Bytes += Frame.size();
+
+    if (M.Parser->Status[IsAccepted] || M.Parser->Status[IsFinished])
+        M.Done = true;
 }
 
 //---------------------------------------------------------------------------
@@ -686,6 +895,40 @@ void File_MmtTlv::Parse_Mpt(const int8u* Data, size_t Size)
     {
         Assets    = Found;
         Mpt_Found = true;
+
+        //A child ES parser per A/V asset, keyed by packet_id. Text needs none.
+        for (size_t i = 0; i < Assets.size(); ++i)
+        {
+            const asset& A = Assets[i];
+            if (!A.PacketId || MediaParsers.count(A.PacketId))
+                continue;
+            if (A.Type == ASSET_HEV1)
+            {
+                #if defined(MEDIAINFO_HEVC_YES)
+                    File_Hevc* Parser = new File_Hevc;
+                    Parser->FrameIsAlwaysComplete = true;
+                    media_parser M;
+                    M.Parser     = Parser;
+                    M.StreamKind = Stream_Video;
+                    M.IsAac      = false;
+                    Open_Buffer_Init(Parser);
+                    MediaParsers[A.PacketId] = M;
+                #endif
+            }
+            else if (A.Type == ASSET_MP4A)
+            {
+                #if defined(MEDIAINFO_AAC_YES)
+                    File_Aac* Parser = new File_Aac;
+                    Parser->Mode = File_Aac::Mode_LATM;
+                    media_parser M;
+                    M.Parser     = Parser;
+                    M.StreamKind = Stream_Audio;
+                    M.IsAac      = true;
+                    Open_Buffer_Init(Parser);
+                    MediaParsers[A.PacketId] = M;
+                #endif
+            }
+        }
     }
 }
 
