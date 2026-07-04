@@ -23,6 +23,7 @@
 #include "MediaInfo/File__Analyze.h"
 #include <vector>
 #include <map>
+#include <set>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -67,6 +68,7 @@ private :
     void Parse_MhSdt(const int8u* Data, size_t Size); // service (channel) name
     void Parse_Ntp(const int8u* Data, size_t Size); // IPv6/UDP -> NTP fallback clock
     void Note_StreamNow(int64s Utc);                // record earliest/latest "now"
+    bool PidEncrypted(int16u PacketId) const;
 
     void Parse_Mpu(int16u packet_id, int32u seq_num, const int8u* Data, size_t Size);
     void Feed_DataUnit(int16u packet_id, const int8u* Data, size_t Size);
@@ -98,8 +100,11 @@ private :
         Ztring Title;         //component description (e.g. 主音声 / 解説)
         bool   MainComponent; //-> Default track
         int8u  Handicapped;   //audio_for_handicapped: 0b01 = VI commentary
+        int8u  AudioMode;     //component_type & 0x1F (0=none)
+        int8u  SamplingCode;  //sampling_rate 3-bit code (0=none)
         asset() : Type(0), PacketId(0), Superimpose(false),
-                  MainComponent(false), Handicapped(0) {}
+                  MainComponent(false), Handicapped(0),
+                  AudioMode(0), SamplingCode(0) {}
     };
     std::vector<asset> Assets;
 
@@ -112,13 +117,22 @@ private :
         size_t         StreamPos;   //as created in Streams_Fill
         bool           IsAac;       //frame DUs as LOAS (else HEVC Annex-B)
         bool           Done;
-        int64u         Fed;         //bytes fed so far
+        int64u         Fed;         //validated bytes fed (readability signal)
+        int64u         MpuSeen;     //MPU packets routed here (scramble give-up)
         media_parser() : Parser(NULL), StreamKind(Stream_Video), StreamPos(0),
-                         IsAac(false), Done(false), Fed(0) {}
+                         IsAac(false), Done(false), Fed(0), MpuSeen(0) {}
     };
     std::map<int16u, media_parser> MediaParsers;
     bool     Media_Probe_Done;
     int64u   Media_Bytes;        //global probe budget
+
+    //PIDs flagged scrambled in the MMTP scramble sub-header.
+    std::set<int16u> ScrambledPids;
+
+    //An ECM (0x82/0x83) was seen -> CAS active. A scrambled PID counts as
+    //encrypted only after this: a descrambled file's pre-ECM lead-in is still
+    //scrambled but not encrypted.
+    bool     Ecm_Seen;
 
     bool     Eit_Present_Found;
     Ztring   Eit_EventName;

@@ -80,6 +80,8 @@ namespace
 
     // Table ids
     const int8u TABLE_MPT                       = 0x20; // MMT Package Table
+    const int8u TABLE_ECM_0                     = 0x82; // ECM (CAS active)
+    const int8u TABLE_ECM_1                     = 0x83; // ECM (alt)
     const int8u TABLE_MH_EIT                    = 0x8B; // MH-EIT[p/f]
     const int8u TABLE_MH_SDT                    = 0x9F; // MH-SDT (service name)
     const int8u TABLE_MH_TOT                    = 0xA1; // MH-TOT (current JST)
@@ -99,6 +101,13 @@ namespace
     // Feeding stops on SPS/ASC, so this only bounds a no-parse stream. Sized for
     // 8K, whose sparse RAPs can put the first in-band SPS tens of MB in.
     const int64u MEDIA_BYTES_BUDGET             = 64 * 1024 * 1024;
+
+    // A scrambled PID feeds nothing decodable; give up after this many MPUs so
+    // the probe (and tail) still finish.
+    const int64u SCRAMBLED_GIVEUP_MPU           = 64;
+    // Bytes fed that count as readable (not encrypted). Clear HEVC feeds 100s of
+    // KB; a scrambled payload ~0, a spurious AAC accept a few hundred.
+    const int64u READABLE_MIN_BYTES             = 4096;
 
     const int64u BOUNDARY_HOP_BYTES             = 8 * 1024 * 1024;
     const int    BOUNDARY_MAX_HOPS              = 8;
@@ -132,6 +141,38 @@ namespace
     }
 
     inline int bcd2(int8u b) { return (b >> 4) * 10 + (b & 0x0F); }
+
+    // MH-audio-component sampling_rate 3-bit code -> Hz. 0/4 reserved.
+    inline int32u AudioSamplingRate(int8u code)
+    {
+        switch (code)
+        {
+            case 0x1: return 16000;
+            case 0x2: return 22050;
+            case 0x3: return 24000;
+            case 0x5: return 32000;
+            case 0x6: return 44100;
+            case 0x7: return 48000;
+            default:  return 0;
+        }
+    }
+
+    // MH-audio-component audio_mode -> channels + layout (ARIB STD-B10), for the
+    // unambiguous configurations only; 0 = leave to the ES parser.
+    inline int AudioModeChannels(int8u mode, const char** Layout)
+    {
+        *Layout = NULL;
+        switch (mode)
+        {
+            case 0x01: *Layout = "C";                 return 1;  // 1/0     mono
+            case 0x02:                                return 2;  // 1/0+1/0 dual mono
+            case 0x03: *Layout = "L R";               return 2;  // 2/0     stereo
+            case 0x08: *Layout = "C L R Ls Rs LFE";   return 6;  // 3/2+LFE 5.1
+            case 0x09: *Layout = "C L R Ls Rs Lrs Rrs LFE"; return 8; // 3/2/2+LFE 7.1
+            case 0x11: return 24; // 22.2ch
+            default:   return 0;
+        }
+    }
 
     // 16-bit MJD + 24-bit BCD HHMMSS -> JST seconds since the Unix epoch, so
     // start/end/now compare directly. -1 on an invalid date.
@@ -168,6 +209,7 @@ File_MmtTlv::File_MmtTlv()
     Eit_ServiceId_Found      = false;
     Mpt_Found                = false;
     Sdt_Found                = false;
+    Ecm_Seen                 = false;
     Packets_Since_Accept     = 0;
     Core_Done_At             = (int64u)-1;
     Media_Probe_Done         = false;
@@ -182,6 +224,33 @@ File_MmtTlv::File_MmtTlv()
 //***************************************************************************
 // Streams management
 //***************************************************************************
+
+//---------------------------------------------------------------------------
+bool File_MmtTlv::PidEncrypted(int16u PacketId) const
+{
+    if (!PacketId || !ScrambledPids.count(PacketId))
+        return false;
+    //Bytes fed, not the accept flag: clear HEVC can finish on the byte budget
+    //without IsAccepted, and File_Aac can accept a garbage LOAS frame. A readable
+    //PID was descrambled in place, not encrypted.
+    std::map<int16u, media_parser>::const_iterator It = MediaParsers.find(PacketId);
+    if (It != MediaParsers.end())
+    {
+        if (It->second.Fed >= READABLE_MIN_BYTES)
+            return false;
+    }
+    else
+    {
+        //No ES parser here (e.g. subtitle): readable iff any A/V parser was.
+        for (std::map<int16u, media_parser>::const_iterator J = MediaParsers.begin();
+             J != MediaParsers.end(); ++J)
+            if (J->second.Fed >= READABLE_MIN_BYTES)
+                return false;
+    }
+    //Gate on ECM: before it, a descrambled file's still-scrambled lead-in is not
+    //yet encrypted.
+    return Ecm_Seen;
+}
 
 //---------------------------------------------------------------------------
 void File_MmtTlv::Streams_Fill()
@@ -202,6 +271,8 @@ void File_MmtTlv::Streams_Fill()
                 Fill(Stream_Video, StreamPos_Last, Video_CodecID, "hev1");
                 if (A.PacketId)
                     Fill(Stream_Video, StreamPos_Last, Video_ID, A.PacketId, 10);
+                if (PidEncrypted(A.PacketId))
+                    Fill(Stream_Video, StreamPos_Last, "Encryption", "Encrypted");
                 {
                     std::map<int16u, media_parser>::iterator It = MediaParsers.find(A.PacketId);
                     if (It != MediaParsers.end())
@@ -227,6 +298,20 @@ void File_MmtTlv::Streams_Fill()
                     Fill(Stream_Audio, StreamPos_Last, Audio_ServiceKind, "VI");
                     Fill(Stream_Audio, StreamPos_Last, Audio_ServiceKind_String, "Visually Impaired");
                 }
+                //Encrypted: no ES detail, so fall back to the clear descriptor.
+                if (PidEncrypted(A.PacketId))
+                {
+                    Fill(Stream_Audio, StreamPos_Last, "Encryption", "Encrypted");
+                    int32u SamplingRate = AudioSamplingRate(A.SamplingCode);
+                    if (SamplingRate)
+                        Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, SamplingRate);
+                    const char* Layout = NULL;
+                    int Channels = AudioModeChannels(A.AudioMode, &Layout);
+                    if (Channels)
+                        Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, Channels);
+                    if (Layout)
+                        Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, Layout);
+                }
                 {
                     std::map<int16u, media_parser>::iterator It = MediaParsers.find(A.PacketId);
                     if (It != MediaParsers.end())
@@ -241,6 +326,8 @@ void File_MmtTlv::Streams_Fill()
                     Fill(Stream_Text, StreamPos_Last, Text_ID, A.PacketId, 10);
                 Fill(Stream_Text, StreamPos_Last, Text_Format_Profile,
                      A.Superimpose ? "Superimpose" : "Subtitle");
+                if (PidEncrypted(A.PacketId))
+                    Fill(Stream_Text, StreamPos_Last, "Encryption", "Encrypted");
                 break;
             default:
                 break;
@@ -603,6 +690,21 @@ void File_MmtTlv::Parse_Mmtp(const int8u* Data, size_t Size)
         int16u ext_len = RB16(p + 2); // extension_header_type(16) + length(16)
         p += 4; n -= 4;
         if (n < ext_len) return;
+        //Sub-header chain: sub_type(16) sub_len(16) data[sub_len]. Scramble
+        //sub-header is (sub_type&0x7FFF)==1, data[0] bits 4-3 = encryption_flag
+        //(>=2 means scrambled).
+        {
+            const int8u* e = p; size_t en = ext_len;
+            while (en >= 4)
+            {
+                int16u sub_type = RB16(e) & 0x7FFF;
+                int16u sub_len  = RB16(e + 2);
+                if ((size_t)4 + sub_len > en) break;
+                if (sub_type == 0x0001 && sub_len >= 1 && ((e[4] >> 3) & 0x03) >= 2)
+                    ScrambledPids.insert(packet_id);
+                e += 4 + sub_len; en -= 4 + sub_len;
+            }
+        }
         p += ext_len; n -= ext_len;
     }
 
@@ -612,7 +714,18 @@ void File_MmtTlv::Parse_Mmtp(const int8u* Data, size_t Size)
     {
         std::map<int16u, media_parser>::iterator It = MediaParsers.find(packet_id);
         if (It != MediaParsers.end() && !It->second.Done)
+        {
+            //The scramble flag can't gate feeding: a stream descrambled in place
+            //keeps it set. So always probe; encrypted payload just fails the
+            //MFU/NAL checks. Give up on a scrambled PID feeding nothing so the
+            //probe (and tail) finish.
+            ++It->second.MpuSeen;
             Parse_Mpu(packet_id, seq_num, p, n);
+            if (ScrambledPids.count(packet_id)
+             && It->second.Fed < READABLE_MIN_BYTES
+             && It->second.MpuSeen >= SCRAMBLED_GIVEUP_MPU)
+                It->second.Done = true;
+        }
     }
 }
 
@@ -914,6 +1027,8 @@ void File_MmtTlv::Parse_Table(const int8u* Data, size_t Size)
         case TABLE_MH_EIT:  Parse_MhEit(Data, Size); break;
         case TABLE_MH_SDT:  Parse_MhSdt(Data, Size); break;
         case TABLE_MH_TOT:  Parse_MhTot(Data, Size); break;
+        case TABLE_ECM_0:   // presence = CAS active; not parsed
+        case TABLE_ECM_1:   Ecm_Seen = true; break;
         default: break;
     }
 }
@@ -1011,6 +1126,8 @@ void File_MmtTlv::Parse_Mpt(const int8u* Data, size_t Size)
         Ztring aud_title;
         bool   aud_main      = false;
         int8u  aud_handicap  = 0;
+        int8u  aud_mode      = 0;
+        int8u  aud_samp      = 0;
         {
             const int8u* d = p; size_t dn = asset_desc_len;
             while (dn >= 3)
@@ -1036,9 +1153,11 @@ void File_MmtTlv::Parse_Mpt(const int8u* Data, size_t Size)
                     {
                         int8u component_type = db[1];
                         aud_handicap = (component_type >> 5) & 0x03;
+                        aud_mode      = component_type & 0x1F;
                         int8u flags   = db[6];
                         bool es_multi = (flags >> 7) & 1;
                         aud_main      = (flags >> 6) & 1;
+                        aud_samp      = (flags >> 1) & 0x07; // sampling_rate code
                         aud_language.From_UTF8(std::string((const char*)(db + 7), 3));
                         size_t t = 10 + (es_multi ? 3 : 0);
                         if ((size_t)dlen > t)
@@ -1058,6 +1177,8 @@ void File_MmtTlv::Parse_Mpt(const int8u* Data, size_t Size)
         a.Title         = aud_title;
         a.MainComponent = aud_main;
         a.Handicapped   = aud_handicap;
+        a.AudioMode     = aud_mode;
+        a.SamplingCode  = aud_samp;
         Found.push_back(a);
     }
 
