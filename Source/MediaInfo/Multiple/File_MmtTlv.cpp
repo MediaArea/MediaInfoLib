@@ -81,6 +81,7 @@ namespace
     // Table ids
     const int8u TABLE_MPT                       = 0x20; // MMT Package Table
     const int8u TABLE_MH_EIT                    = 0x8B; // MH-EIT[p/f]
+    const int8u TABLE_MH_SDT                    = 0x9F; // MH-SDT (service name)
     const int8u TABLE_MH_TOT                    = 0xA1; // MH-TOT (current JST)
 
     // Descriptor tags
@@ -106,6 +107,10 @@ namespace
     const int64s BOUNDARY_GUARD_SECONDS         = 30;
 
     const int64u TAIL_PROBE_BYTES               = 4 * 1024 * 1024;
+
+    // MH-SDT recurs less often than MPT/EIT, so scan this far past core
+    // completion to catch it.
+    const int64u SDT_GRACE_PACKETS              = 20000;
 
     const int64s NTP_UNIX_EPOCH_DELTA           = 2208988800LL;
     const int64s JST_OFFSET_SECONDS             = 9 * 3600;
@@ -159,8 +164,12 @@ File_MmtTlv::File_MmtTlv()
     Eit_StartDate            = 0;
     Eit_StartTime            = 0;
     Eit_Duration             = 0;
+    Eit_ServiceId            = 0;
+    Eit_ServiceId_Found      = false;
     Mpt_Found                = false;
+    Sdt_Found                = false;
     Packets_Since_Accept     = 0;
+    Core_Done_At             = (int64u)-1;
     Media_Probe_Done         = false;
     Media_Bytes              = 0;
     Now_Utc                  = -1;
@@ -205,6 +214,19 @@ void File_MmtTlv::Streams_Fill()
                 Fill(Stream_Audio, StreamPos_Last, Audio_CodecID, "mp4a");
                 if (A.PacketId)
                     Fill(Stream_Audio, StreamPos_Last, Audio_ID, A.PacketId, 10);
+                //From the MH-audio-component descriptor (0x8014).
+                if (!A.Language.empty())
+                    Fill(Stream_Audio, StreamPos_Last, Audio_Language, A.Language);
+                if (!A.Title.empty())
+                    Fill(Stream_Audio, StreamPos_Last, Audio_Title, A.Title);
+                if (A.MainComponent)
+                    Fill(Stream_Audio, StreamPos_Last, Audio_Default, "Yes");
+                //audio_for_handicapped 0b01 = 音声解説. Only the VI case maps cleanly.
+                if (A.Handicapped == 0x01)
+                {
+                    Fill(Stream_Audio, StreamPos_Last, Audio_ServiceKind, "VI");
+                    Fill(Stream_Audio, StreamPos_Last, Audio_ServiceKind_String, "Visually Impaired");
+                }
                 {
                     std::map<int16u, media_parser>::iterator It = MediaParsers.find(A.PacketId);
                     if (It != MediaParsers.end())
@@ -225,6 +247,13 @@ void File_MmtTlv::Streams_Fill()
         }
     }
 
+    if (Sdt_Found && !Sdt_ServiceName.empty())
+    {
+        Fill(Stream_General, 0, General_ServiceName, Sdt_ServiceName);
+        if (!Sdt_Provider.empty())
+            Fill(Stream_General, 0, General_ServiceProvider, Sdt_Provider);
+    }
+
     //Present event -> a Menu chapter, as File_MpegTs renders DVB/ATSC EPG: the
     //entry key is the scheduled start (UTC), the value a "/"-delimited record
     //(name / text / content / rating / duration / running_status).
@@ -236,6 +265,8 @@ void File_MmtTlv::Streams_Fill()
             Fill(Stream_General, 0, General_Title, Eit_EventName);
         if (!Eit_Language.empty())
             Fill(Stream_Menu, StreamPos_Last, Menu_Language, Eit_Language);
+        if (Sdt_Found && !Sdt_ServiceName.empty())
+            Fill(Stream_Menu, StreamPos_Last, Menu_ServiceName, Sdt_ServiceName);
 
         int64s Start = DateTime_To_Seconds(Eit_StartDate, Eit_StartTime); // JST
         if (Start >= 0)
@@ -444,7 +475,7 @@ void File_MmtTlv::Data_Parse()
     switch ((int8u)Element_Code)
     {
         case TLV_HEADER_COMPRESSED_IP_PACKET:
-            if (!(Mpt_Found && Eit_Present_Found && Media_Probe_Done))
+            if (!(Mpt_Found && Eit_Present_Found && Media_Probe_Done && Sdt_Found))
                 Parse_CompressedIp(Payload, Size);
             break;
         case TLV_IPV6_PACKET:
@@ -475,10 +506,15 @@ void File_MmtTlv::Data_Parse()
     if (Mpt_Found && MediaParsers.empty())
         Media_Probe_Done = true;
 
-    //Everything for the current program is in hand (codec map, present program,
-    //ES probe). Before finishing, sample the tail so Duration/OverallBitRate use
-    //the real stream span rather than the EIT's scheduled length.
-    bool ScanComplete = (Mpt_Found && Eit_Present_Found && Media_Probe_Done);
+    //Grace past core completion for the less-frequent MH-SDT.
+    bool CoreComplete = (Mpt_Found && Eit_Present_Found && Media_Probe_Done);
+    if (CoreComplete && Core_Done_At == (int64u)-1)
+        Core_Done_At = Packets_Since_Accept;
+
+    bool ScanComplete = CoreComplete
+                     && (Sdt_Found
+                      || (Core_Done_At != (int64u)-1
+                       && Packets_Since_Accept - Core_Done_At >= SDT_GRACE_PACKETS));
     if (ScanComplete)
     {
         if (Now_First >= 0
@@ -876,6 +912,7 @@ void File_MmtTlv::Parse_Table(const int8u* Data, size_t Size)
     {
         case TABLE_MPT:     Parse_Mpt(Data, Size);   break;
         case TABLE_MH_EIT:  Parse_MhEit(Data, Size); break;
+        case TABLE_MH_SDT:  Parse_MhSdt(Data, Size); break;
         case TABLE_MH_TOT:  Parse_MhTot(Data, Size); break;
         default: break;
     }
@@ -969,7 +1006,11 @@ void File_MmtTlv::Parse_Mpt(const int8u* Data, size_t Size)
         int16u asset_desc_len = RB16(p); p += 2; n -= 2;
         if (asset_desc_len > n) break;
 
-        bool superimpose = false;
+        bool   superimpose   = false;
+        Ztring aud_language;
+        Ztring aud_title;
+        bool   aud_main      = false;
+        int8u  aud_handicap  = 0;
         {
             const int8u* d = p; size_t dn = asset_desc_len;
             while (dn >= 3)
@@ -977,14 +1018,32 @@ void File_MmtTlv::Parse_Mpt(const int8u* Data, size_t Size)
                 int16u dtag = RB16(d);
                 int8u  dlen = d[2]; // 8-bit length for these MMT descriptor tags
                 if ((size_t)3 + dlen > dn) break;
+                const int8u* db = d + 3;
                 if (dtag == 0x8020) // MH_DATA_COMPONENT_DESCRIPTOR
                 {
-                    const int8u* db = d + 3;
                     // data_component_id 0x0020 = 2nd-gen closed caption; then
                     // Additional_Arib_Subtitle_Info type (top 2 bits of body[5])
                     // == 0b01 is superimpose (ARIB STD-B60).
                     if (dlen >= 8 && RB16(db) == 0x0020)
                         superimpose = ((db[7] >> 6) & 0x03) == 0x01;
+                }
+                else if (dtag == 0x8014) // MH_AUDIO_COMPONENT_DESCRIPTOR
+                {
+                    // component_type(db[1]) = dialog<<7 | handicapped(2)<<5 |
+                    // audio_mode(5); flags(db[6]) has main_component/ES_multi;
+                    // then language(3) [+language2(3)] and UTF-8 text.
+                    if (dlen >= 10)
+                    {
+                        int8u component_type = db[1];
+                        aud_handicap = (component_type >> 5) & 0x03;
+                        int8u flags   = db[6];
+                        bool es_multi = (flags >> 7) & 1;
+                        aud_main      = (flags >> 6) & 1;
+                        aud_language.From_UTF8(std::string((const char*)(db + 7), 3));
+                        size_t t = 10 + (es_multi ? 3 : 0);
+                        if ((size_t)dlen > t)
+                            aud_title.From_UTF8(std::string((const char*)(db + t), (size_t)dlen - t));
+                    }
                 }
                 d += 3 + dlen; dn -= 3 + dlen;
             }
@@ -992,9 +1051,13 @@ void File_MmtTlv::Parse_Mpt(const int8u* Data, size_t Size)
         p += asset_desc_len; n -= asset_desc_len;
 
         asset a;
-        a.Type        = asset_type;
-        a.PacketId    = packet_id;
-        a.Superimpose = superimpose;
+        a.Type          = asset_type;
+        a.PacketId      = packet_id;
+        a.Superimpose   = superimpose;
+        a.Language      = aud_language;
+        a.Title         = aud_title;
+        a.MainComponent = aud_main;
+        a.Handicapped   = aud_handicap;
         Found.push_back(a);
     }
 
@@ -1075,8 +1138,14 @@ void File_MmtTlv::Parse_MhEit(const int8u* Data, size_t Size)
     // section_number(8) last_section_number(8) TLV_stream_id(16)
     // original_network_id(16) segment_last_section_number(8) last_table_id(8)
     if (n < 11) return;
+    int16u service_id    = RB16(p);
     int8u version_byte   = p[2];
     int8u section_number = p[3];
+    if (!Eit_ServiceId_Found) // matched later against MH-SDT
+    {
+        Eit_ServiceId       = service_id;
+        Eit_ServiceId_Found = true;
+    }
     p += 11; n -= 11;
 
     // Present event is section 0 with current_next_indicator == 1.
@@ -1124,6 +1193,7 @@ void File_MmtTlv::Parse_MhEit(const int8u* Data, size_t Size)
                     Mpt_Found        = false;
                     Media_Probe_Done = false;
                     Media_Bytes      = 0;
+                    Core_Done_At     = (int64u)-1; // core re-derives at new pos
 
                     ++Eit_Boundary_Hops;
                     int64u here = File_Offset + Buffer_Offset;
@@ -1199,6 +1269,87 @@ void File_MmtTlv::Parse_MhTot(const int8u* Data, size_t Size)
     utc -= JST_OFFSET_SECONDS;
     Now_Utc = utc; // authoritative, overrides NTP
     Note_StreamNow(utc);
+}
+
+//***************************************************************************
+// MH-SDT: service (channel) name + provider. Matched to the present-EIT
+// service_id, else the first service.
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_MmtTlv::Parse_MhSdt(const int8u* Data, size_t Size)
+{
+    if (Sdt_Found)
+        return;
+    // table_id(8) section_syntax+section_length(16, low12) tlv_stream_id(16)
+    // version/current(8) section_number(8) last_section_number(8)
+    // original_network_id(16) reserved(8) -> services loop -> CRC32.
+    if (Size < 3) return;
+    int16u section_length = RB16(Data + 1) & 0x0FFF;
+    if (section_length < 4) return;
+    size_t n = (size_t)section_length - 4; // drop trailing CRC32
+    size_t avail = Size - 3;
+    if (n > avail) n = avail;
+    const int8u* p = Data + 3;
+
+    // tlv_stream_id(16) version(8) section_number(8) last_section_number(8)
+    // original_network_id(16) reserved(8) = 8 bytes before the services loop.
+    if (n < 8) return;
+    p += 8; n -= 8;
+
+    while (n >= 5)
+    {
+        int16u service_id = RB16(p);
+        // eit_flags(8); running_status(3)+free_ca(1)+descriptors_loop_length(12)
+        int16u dll_word   = RB16(p + 3);
+        int16u desc_len   = dll_word & 0x0FFF;
+        p += 5; n -= 5;
+        if (desc_len > n) desc_len = (int16u)n;
+
+        bool take = Eit_ServiceId_Found ? (service_id == Eit_ServiceId) : true;
+
+        if (take)
+        {
+            const int8u* d = p; size_t dn = desc_len;
+            while (dn >= 3)
+            {
+                int16u dtag = RB16(d);
+                int8u  dlen = d[2];
+                if ((size_t)3 + dlen > dn) break;
+                if (dtag == 0x8019 && dlen >= 2) // MH_SERVICE_DESCRIPTOR
+                {
+                    // service_type(8) provider_name_length(8) provider
+                    // service_name_length(8) service_name  (UTF-8)
+                    const int8u* db = d + 3; size_t dbn = dlen;
+                    size_t off = 1; // skip service_type
+                    if (off + 1 <= dbn)
+                    {
+                        int8u prov_len = db[off]; off += 1;
+                        if (off + prov_len <= dbn)
+                        {
+                            if (prov_len)
+                                Sdt_Provider.From_UTF8(std::string((const char*)(db + off), prov_len));
+                            off += prov_len;
+                            if (off + 1 <= dbn)
+                            {
+                                int8u name_len = db[off]; off += 1;
+                                if (off + name_len <= dbn && name_len)
+                                    Sdt_ServiceName.From_UTF8(std::string((const char*)(db + off), name_len));
+                            }
+                        }
+                    }
+                }
+                d += 3 + dlen; dn -= 3 + dlen;
+            }
+            if (!Sdt_ServiceName.empty())
+            {
+                Sdt_Found = true;
+                return;
+            }
+        }
+
+        p += desc_len; n -= desc_len;
+    }
 }
 
 //***************************************************************************

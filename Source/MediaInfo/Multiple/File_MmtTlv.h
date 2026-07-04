@@ -64,6 +64,7 @@ private :
     void Parse_Mpt(const int8u* Data, size_t Size);
     void Parse_MhEit(const int8u* Data, size_t Size);
     void Parse_MhTot(const int8u* Data, size_t Size);
+    void Parse_MhSdt(const int8u* Data, size_t Size); // service (channel) name
     void Parse_Ntp(const int8u* Data, size_t Size); // IPv6/UDP -> NTP fallback clock
     void Note_StreamNow(int64s Utc);                // record earliest/latest "now"
 
@@ -92,7 +93,13 @@ private :
         int32u Type;        //asset_type FourCC (little-endian as read)
         int16u PacketId;    //location_type 0x00 packet_id, else 0
         bool   Superimpose; //stpp: 文字スーパー (true) vs 字幕 (false)
-        asset() : Type(0), PacketId(0), Superimpose(false) {}
+        //MH-audio-component descriptor (0x8014), MP4A assets only:
+        Ztring Language;
+        Ztring Title;         //component description (e.g. 主音声 / 解説)
+        bool   MainComponent; //-> Default track
+        int8u  Handicapped;   //audio_for_handicapped: 0b01 = VI commentary
+        asset() : Type(0), PacketId(0), Superimpose(false),
+                  MainComponent(false), Handicapped(0) {}
     };
     std::vector<asset> Assets;
 
@@ -116,6 +123,8 @@ private :
     bool     Eit_Present_Found;
     Ztring   Eit_EventName;
     Ztring   Eit_EventText;      //short event description
+    int16u   Eit_ServiceId;      //matches the SDT service
+    bool     Eit_ServiceId_Found;
     int16u   Eit_EventId;
     int16u   Eit_StartDate;      //MJD
     int32u   Eit_StartTime;      //24-bit BCD HHMMSS
@@ -123,6 +132,11 @@ private :
     Ztring   Eit_Language;
 
     bool     Mpt_Found;
+
+    //Per-channel, so it survives an EIT boundary re-scan (unlike the MPT).
+    bool     Sdt_Found;
+    Ztring   Sdt_ServiceName;
+    Ztring   Sdt_Provider;
 
     //Stream wall clock, JST seconds since the Unix epoch. MH-TOT preferred, NTP
     //transmit timestamp fallback. -1 = not seen.
@@ -139,6 +153,10 @@ private :
     //Bound on scanning past accept, so a huge file is not read end-to-end when
     //the present EIT never appears.
     int64u   Packets_Since_Accept;
+
+    //When the core (MPT + present EIT + media probe) completed; a bounded grace
+    //after it catches the less-frequent MH-SDT. -1 = not yet.
+    int64u   Core_Done_At;
 };
 
 } //NameSpace
