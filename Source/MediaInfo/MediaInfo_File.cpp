@@ -100,6 +100,9 @@
 #if defined(MEDIAINFO_MIXML_YES)
     #include "MediaInfo/Multiple/File_MiXml.h"
 #endif
+#if defined(MEDIAINFO_MMTTLV_YES)
+    #include "MediaInfo/Multiple/File_MmtTlv.h"
+#endif
 #if defined(MEDIAINFO_MPEG4_YES)
     #include "MediaInfo/Multiple/File_Mpeg4.h"
 #endif
@@ -548,6 +551,9 @@ static File__Analyze* SelectFromExtension(const String& Parser)
     #if defined(MEDIAINFO_MK_YES)
         if (Parser==__T("Mk"))          return new File_Mk();
     #endif
+    #if defined(MEDIAINFO_MMTTLV_YES)
+        if (Parser==__T("MmtTlv"))      return new File_MmtTlv();
+    #endif
     #if defined(MEDIAINFO_MPEG4_YES)
         if (Parser==__T("Mpeg4"))       return new File_Mpeg4();
     #endif
@@ -977,6 +983,9 @@ int MediaInfo_Internal::ListFormats(const String &File_Name)
     #endif
     #if defined(MEDIAINFO_MIXML_YES)
         SAFE_DELETE(Info); Info=new File_MiXml();              if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
+    #endif
+    #if defined(MEDIAINFO_MMTTLV_YES)
+        SAFE_DELETE(Info); Info=new File_MmtTlv();             if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     #endif
     #if defined(MEDIAINFO_MPEG4_YES)
         SAFE_DELETE(Info); Info=new File_Mpeg4();              if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;

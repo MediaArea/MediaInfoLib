@@ -284,6 +284,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Lxf.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Mk.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_MiXml.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_MmtTlv.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Mpeg4.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Mpeg4_Descriptors.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Multiple/File_Mpeg4_Elements.cpp
