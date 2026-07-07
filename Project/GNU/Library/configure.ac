@@ -153,6 +153,7 @@ AC_ARG_ENABLE(hdsf4m,  AS_HELP_STRING([--disable-hdsf4m],  [Disable Multiple - H
 AC_ARG_ENABLE(hls,     AS_HELP_STRING([--disable-hls],     [Disable Multiple - HLS]),                                     MediaInfoHls=$enableval,     MediaInfoHls=depend)
 AC_ARG_ENABLE(mk,      AS_HELP_STRING([--disable-mk],      [Disable Multiple - Matroska]),                                MediaInfoMk=$enableval,      MediaInfoMk=depend)
 AC_ARG_ENABLE(mixml,   AS_HELP_STRING([--disable-mixml],   [Disable Multiple - MIXML]),                                   MediaInfoMiXml=$enableval,   MediaInfoMiXml=depend)
+AC_ARG_ENABLE(mmttlv,  AS_HELP_STRING([--disable-mmttlv],  [Disable Multiple - MMT/TLV (ARIB MMT over TLV)]),             MediaInfoMmtTlv=$enableval,  MediaInfoMmtTlv=depend)
 AC_ARG_ENABLE(mpeg4,   AS_HELP_STRING([--disable-mpeg4],   [Disable Multiple - MPEG-4 based formats (MOV, AAC...)]),      MediaInfoMpeg4=$enableval,   MediaInfoMpeg4=depend)
 AC_ARG_ENABLE(mpegps,  AS_HELP_STRING([--disable-mpegps],  [Disable Multiple - MPEG-PS]),                                 MediaInfoMpegPs=$enableval,  MediaInfoMpegPs=depend)
 AC_ARG_ENABLE(mpegts,  AS_HELP_STRING([--disable-mpegts],  [Disable Multiple - MPEG-TS]),                                 MediaInfoMpegTs=$enableval,  MediaInfoMpegTs=depend)
@@ -335,6 +336,7 @@ if test "$MediaInfohdsF4m"  = "no";  then AC_DEFINE(MEDIAINFO_HDSF4M_NO)  fi; if
 if test "$MediaInfoHls"     = "no";  then AC_DEFINE(MEDIAINFO_HLS_NO)     fi; if test "$MediaInfoHls"     = "yes"; then AC_DEFINE(MEDIAINFO_HLS_YES)     fi
 if test "$MediaInfoMk"      = "no";  then AC_DEFINE(MEDIAINFO_MK_NO)      fi; if test "$MediaInfoMk"      = "yes"; then AC_DEFINE(MEDIAINFO_MK_YES)      fi
 if test "$MediaInfoMiXml"   = "no";  then AC_DEFINE(MEDIAINFO_MIXML_NO)   fi; if test "$MediaInfoMiXml"   = "yes"; then AC_DEFINE(MEDIAINFO_MIXML_YES)   fi
+if test "$MediaInfoMmtTlv"  = "no";  then AC_DEFINE(MEDIAINFO_MMTTLV_NO)  fi; if test "$MediaInfoMmtTlv"  = "yes"; then AC_DEFINE(MEDIAINFO_MMTTLV_YES)  fi
 if test "$MediaInfoMpeg4"   = "no";  then AC_DEFINE(MEDIAINFO_MPEG4_NO)   fi; if test "$MediaInfoMpeg4"   = "yes"; then AC_DEFINE(MEDIAINFO_MPEG4_YES)   fi
 if test "$MediaInfoMpegPs"  = "no";  then AC_DEFINE(MEDIAINFO_MPEGPS_NO)  fi; if test "$MediaInfoMpegPs"  = "yes"; then AC_DEFINE(MEDIAINFO_MPEGPS_YES)  fi
 if test "$MediaInfoMpegTs"  = "no";  then AC_DEFINE(MEDIAINFO_MPEGTS_NO)  fi; if test "$MediaInfoMpegTs"  = "yes"; then AC_DEFINE(MEDIAINFO_MPEGTS_YES)  fi
@@ -1178,6 +1180,7 @@ Mcho "Hls    " "$MediaInfoHls"
 Mcho "Flv    " "$MediaInfoFlv"
 Mcho "Mk     " "$MediaInfoMk"
 Mcho "MiXml  " "$MediaInfoMiXml"
+Mcho "MmtTlv " "$MediaInfoMmtTlv"
 Mcho "Mpeg4  " "$MediaInfoMpeg4"
 Mcho "MpegPs " "$MediaInfoMpegPs"
 Mcho "MpegTs " "$MediaInfoMpegTs"
