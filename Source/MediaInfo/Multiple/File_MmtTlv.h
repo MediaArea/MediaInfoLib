@@ -25,6 +25,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -67,7 +68,7 @@ private :
     void Note_StreamNow(int64s Utc);                // record earliest/latest "now"
     bool PidEncrypted(int16u PacketId) const;
 
-    void Parse_Mpu(int16u packet_id, int32u seq_num, const int8u* Data, size_t Size);
+    void Parse_Mpu(int16u packet_id, int32u seq_num);
     void Feed_DataUnit(int16u packet_id, const int8u* Data, size_t Size);
 
     //Child ES parser factory: maps an MPT asset_type (STD-B60) to a MediaInfo
@@ -82,10 +83,9 @@ private :
     struct fragment_assembler
     {
         enum state_t { Init, NotStarted, InFragment, Skip };
-        state_t            State;
-        int32u             LastSeq;
+        state_t            State = Init;
+        int32u             LastSeq = 0;
         std::vector<int8u> Data;
-        fragment_assembler() : State(Init), LastSeq(0) {}
     };
     std::map<int16u, fragment_assembler> Assemblers;
 
@@ -104,27 +104,23 @@ private :
     //MPT-created stream at finish.
     struct media_parser
     {
-        File__Analyze* Parser;      //owned; deleted in Streams_Finish
-        stream_t       StreamKind;
-        size_t         StreamPos;   //as created in Streams_Fill
-        es_framing     Framing;     //how Feed_DataUnit frames a DU for the parser
-        bool           Done;
-        int64u         Fed;         //validated bytes fed (readability signal)
-        int64u         MpuSeen;     //MPU packets routed here (scramble give-up)
-        int            DescCh;      //audio-component channel count
-        int8u          DescCfg;     //MPEG-4 channel_configuration for the shared Aac_* strings
+        std::unique_ptr<File__Analyze> Parser; //owned; freed with the map entry
+        stream_t       StreamKind = Stream_Video;
+        size_t         StreamPos = 0;   //as created in Streams_Fill
+        es_framing     Framing = Es_Nal;     //how Feed_DataUnit frames a DU for the parser
+        bool           Done = false;
+        int64u         Fed = 0;         //validated bytes fed (readability signal)
+        int64u         MpuSeen = 0;     //MPU packets routed here (scramble give-up)
+        int            DescCh = 0;      //audio-component channel count
+        int8u          DescCfg = 0;     //MPEG-4 channel_configuration for the shared Aac_* strings
         //Video geometry from 0x8010; fills the ES's gaps at finish.
-        int            DescWidth, DescHeight;
-        float64        DescFrameRate;
-        int8u          DescScan;              //0xFF=none
-        media_parser() : Parser(NULL), StreamKind(Stream_Video), StreamPos(0),
-                         Framing(Es_Nal), Done(false), Fed(0), MpuSeen(0),
-                         DescCh(0), DescCfg(0),
-                         DescWidth(0), DescHeight(0), DescFrameRate(0), DescScan(0xFF) {}
+        int            DescWidth = 0, DescHeight = 0;
+        float64        DescFrameRate = 0;
+        int8u          DescScan = 0xFF;              //0xFF=none
     };
     std::map<int16u, media_parser> MediaParsers;
-    bool     Media_Probe_Done;
-    int64u   Media_Bytes;        //global probe budget
+    bool     Media_Probe_Done = false;
+    int64u   Media_Bytes = 0;        //global probe budget
 
     //PIDs flagged scrambled in the MMTP scramble sub-header.
     std::set<int16u> ScrambledPids;
@@ -132,61 +128,61 @@ private :
     //An ECM (0x82/0x83) was seen -> CAS active. A scrambled PID counts as
     //encrypted only after this: a descrambled file's pre-ECM lead-in is still
     //scrambled but not encrypted.
-    bool     Ecm_Seen;
+    bool     Ecm_Seen = false;
 
-    bool     Eit_Present_Found;
+    bool     Eit_Present_Found = false;
     Ztring   Eit_EventName;
     Ztring   Eit_EventText;      //short event description
-    int16u   Eit_ServiceId;      //matches the SDT service
-    bool     Eit_ServiceId_Found;
-    int16u   Eit_EventId;
-    int16u   Eit_StartDate;      //MJD
-    int32u   Eit_StartTime;      //24-bit BCD HHMMSS
-    int64s   Eit_Start_Utc;      //present event start, UTC (settle grace)
-    int32u   Eit_Duration;       //24-bit BCD HHMMSS
+    int16u   Eit_ServiceId = 0;      //matches the SDT service
+    bool     Eit_ServiceId_Found = false;
+    int16u   Eit_EventId = 0;
+    int16u   Eit_StartDate = 0;      //MJD
+    int32u   Eit_StartTime = 0;      //24-bit BCD HHMMSS
+    int64s   Eit_Start_Utc = -1;     //present event start, UTC (settle grace)
+    int32u   Eit_Duration = 0;       //24-bit BCD HHMMSS
     Ztring   Eit_Language;
 
-    bool     Mpt_Found;
-    int      Mpt_AssetCount;     //media assets in the committed MPT version (fullest within it)
-    int      Mpt_Version;        //committed MPT version; a change replaces the track set
-    int8u    Transfer_Last;      //newest 0x8010 transfer code (STD-B60 7-51); 0xFF = none seen
+    bool     Mpt_Found = false;
+    int      Mpt_AssetCount = -1;    //media assets in the committed MPT version (fullest within it)
+    int      Mpt_Version = -1;       //committed MPT version; a change replaces the track set
+    int8u    Transfer_Last = 0xFF;   //newest 0x8010 transfer code (STD-B60 7-51); 0xFF = none seen
 
     //Per-channel, so it survives an EIT boundary re-scan (unlike the MPT).
-    bool     Sdt_Found;
+    bool     Sdt_Found = false;
     Ztring   Sdt_ServiceName;
     Ztring   Sdt_Provider;
     Ztring   Sdt_ServiceType;
 
     //TLV stream id (transport_stream_id analog) from the MH-SDT/MH-EIT header. -1 = not seen.
-    int32s   Tlv_Stream_Id;
+    int32s   Tlv_Stream_Id = -1;
 
     //Stream wall clock, JST seconds since the Unix epoch. MH-TOT preferred, NTP
     //transmit timestamp fallback. -1 = not seen.
-    bool     Tot_Seen;   //authoritative MH-TOT clock seen; until then NTP advances it
-    int64s   Now_Utc;            //latest, drives the boundary check
-    int64s   Now_First;
-    int64s   Now_Last;           //incl. tail probe
+    bool     Tot_Seen = false;   //authoritative MH-TOT clock seen; until then NTP advances it
+    int64s   Now_Utc = -1;            //latest, drives the boundary check
+    int64s   Now_First = -1;
+    int64s   Now_Last = -1;           //incl. tail probe
 
     //Min/max video MPU presentation time, us. In the clear, so it works for
     //scrambled video. -1 = none seen.
-    int64s   Pts_First_Us;
-    int64s   Pts_Last_Us;
-    int64s   Pts_Last_At_Tail; //snapshot on entering the tail probe
+    int64s   Pts_First_Us = -1;
+    int64s   Pts_Last_Us = -1;
+    int64s   Pts_Last_At_Tail = -1; //snapshot on entering the tail probe
 
     //Bounded so a bad stream is not walked forever.
-    int      Eit_Boundary_Hops;
+    int      Eit_Boundary_Hops = 0;
 
     enum probe_phase { Phase_Scan, Phase_Tail, Phase_Done };
-    probe_phase Phase;
+    probe_phase Phase = Phase_Scan;
 
     //Bound on scanning past accept, so a huge file is not read end-to-end when
     //the present EIT never appears.
-    int64u   Packets_Since_Accept;
+    int64u   Packets_Since_Accept = 0;
 
     //When the core (MPT + present EIT + media probe) completed; a bounded grace
     //after it catches the less-frequent MH-SDT. -1 = not yet.
-    int64u   Core_Done_At;
-    int64s   Media_Done_Utc;     //clock when MPT+media first done, to time-box the EIT wait
+    int64u   Core_Done_At = (int64u)-1;
+    int64s   Media_Done_Utc = -1;     //clock when MPT+media first done, to time-box the EIT wait
 };
 
 } //NameSpace

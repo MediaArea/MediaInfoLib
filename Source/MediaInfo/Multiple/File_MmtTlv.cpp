@@ -163,17 +163,6 @@ namespace
 
     const int64s NTP_UNIX_EPOCH_DELTA           = 2208988800LL;
 
-    // Bounds checked by caller.
-    inline int16u RB16(const int8u* p) { return ((int16u)p[0] << 8) | p[1]; }
-    inline int32u RB24(const int8u* p)
-    { return ((int32u)p[0] << 16) | ((int32u)p[1] << 8) | p[2]; }
-    inline int32u RB32(const int8u* p)
-    { return ((int32u)p[0] << 24) | ((int32u)p[1] << 16) | ((int32u)p[2] << 8) | p[3]; }
-    inline int32u RL32(const int8u* p)
-    { return ((int32u)p[3] << 24) | ((int32u)p[2] << 16) | ((int32u)p[1] << 8) | p[0]; }
-    inline int64u RB64(const int8u* p)
-    { return ((int64u)RB32(p) << 32) | RB32(p + 4); }
-
     // NTP 32.32 -> us. The epoch offset cancels in a duration, so it is not
     // subtracted.
     inline int64s Ntp32_32_To_Us(int64u ntp)
@@ -260,37 +249,6 @@ File_MmtTlv::File_MmtTlv()
 {
     //Configuration
     MustSynchronize          = true;
-
-    //Init
-    Eit_Present_Found        = false;
-    Eit_EventId              = 0;
-    Eit_StartDate            = 0;
-    Eit_StartTime            = 0;
-    Eit_Duration             = 0;
-    Eit_ServiceId            = 0;
-    Eit_ServiceId_Found      = false;
-    Mpt_Found                = false;
-    Mpt_AssetCount           = -1;
-    Mpt_Version              = -1;
-    Eit_Start_Utc            = -1;
-    Transfer_Last            = 0xFF;
-    Sdt_Found                = false;
-    Tlv_Stream_Id            = -1;
-    Ecm_Seen                 = false;
-    Packets_Since_Accept     = 0;
-    Core_Done_At             = (int64u)-1;
-    Media_Done_Utc           = -1;
-    Media_Probe_Done         = false;
-    Media_Bytes              = 0;
-    Now_Utc                  = -1;
-    Tot_Seen                 = false;
-    Now_First                = -1;
-    Now_Last                 = -1;
-    Pts_First_Us             = -1;
-    Pts_Last_Us              = -1;
-    Pts_Last_At_Tail         = -1;
-    Eit_Boundary_Hops        = 0;
-    Phase                    = Phase_Scan;
 }
 
 //***************************************************************************
@@ -515,7 +473,7 @@ void File_MmtTlv::Streams_Finish()
         media_parser& M = It->second;
         if (!M.Parser)
             continue;
-        Open_Buffer_Finalize(M.Parser);
+        Open_Buffer_Finalize(M.Parser.get());
         //Non-erasing: keep the container-level Format/CodecID/ID, add codec detail.
         Merge(*M.Parser, M.StreamKind, 0, M.StreamPos, false);
         //Keep the descriptor channels when the decoded ES read fewer (a boundary transient).
@@ -565,8 +523,6 @@ void File_MmtTlv::Streams_Finish()
             if (M.DescScan != 0xFF && Retrieve_Const(Stream_Video, M.StreamPos, Video_ScanType).empty())
                 Fill(Stream_Video, M.StreamPos, Video_ScanType, M.DescScan ? "Progressive" : "Interlaced");
         }
-        delete M.Parser;
-        M.Parser = NULL;
     }
     MediaParsers.clear();
 
@@ -633,7 +589,7 @@ bool File_MmtTlv::FileHeader_Begin()
         ++processed;
 
         int8u  packet_type = Buffer[i + 1];
-        int16u data_length = RB16(Buffer + i + 2);
+        int16u data_length = BigEndian2int16u(Buffer + i + 2);
         i += 4;
 
         if (packet_type == TLV_HEADER_COMPRESSED_IP_PACKET)
@@ -926,31 +882,41 @@ void File_MmtTlv::Parse_Mmtp()
             Skip_B2(                                            "extension_header_type");
             Get_B2 (ext_len,                                    "extension_header_length");
             if (Element_Size - Element_Offset < ext_len) { Element_End0(); return; }
-            //Sub-header chain: (sub_type&0x7FFF)==1 is the scramble sub-header; data[0] bits 4-3 =
-            //encryption_flag (>=2 means scrambled). Peeked so the PID flag matches the byte pass.
+            //Sub-header chain: (type & 0x7FFF)==1 is the scramble sub-header, whose first byte
+            //carries the encryption_flag in bits 4-3 (>=2 means scrambled).
+            int64u ext_end = Element_Offset + ext_len;
+            while (Element_Offset + 4 <= ext_end)
             {
-                const int8u* e = Buffer + Buffer_Offset + (size_t)Element_Offset;
-                size_t en = ext_len;
-                while (en >= 4)
+                int16u sub_type, sub_len;
+                Get_B2 (sub_type,                               "header_extension_type");
+                Get_B2 (sub_len,                                "header_extension_length");
+                if (Element_Offset + sub_len > ext_end)
+                    break;
+                if ((sub_type & 0x7FFF) == 0x0001 && sub_len >= 1)
                 {
-                    int16u sub_type = RB16(e) & 0x7FFF;
-                    int16u sub_len  = RB16(e + 2);
-                    if ((size_t)4 + sub_len > en) break;
-                    if (sub_type == 0x0001 && sub_len >= 1 && ((e[4] >> 3) & 0x03) >= 2)
+                    int8u scrambling;
+                    Get_B1 (scrambling,                         "scrambling_control");
+                    if (((scrambling >> 3) & 0x03) >= 2)
                         ScrambledPids.insert(packet_id);
-                    e += 4 + sub_len; en -= 4 + sub_len;
+                    if (sub_len > 1)
+                        Skip_XX(sub_len - 1,                    "header_extension_data");
                 }
+                else if (sub_len)
+                    Skip_XX(sub_len,                            "header_extension_data");
             }
-            Skip_XX(ext_len,                                    "extension_header");
+            if (Element_Offset < ext_end)
+                Skip_XX(ext_end - Element_Offset,               "header_extension_data");
         }
     Element_End0();
 
-    //Payload handed to the still-byte-based inner parsers at the current cursor; Data_Parse trails
-    //with Skip_XX(Element_Size - Element_Offset) to consume it.
-    const int8u* P = Buffer + Buffer_Offset + (size_t)Element_Offset;
-    size_t       N = (size_t)(Element_Size - Element_Offset);
     if (payload_type == MMTP_PAYLOAD_SIGNALING)
+    {
+        //The reassembler concatenates fragment payloads across packets, so it works on a raw
+        //buffer rather than the per-element cursor.
+        const int8u* P = Buffer + Buffer_Offset + (size_t)Element_Offset;
+        size_t       N = (size_t)(Element_Size - Element_Offset);
         Parse_SignalingMessages(packet_id, seq_num, P, N);
+    }
     else if (payload_type == MMTP_PAYLOAD_MPU && !Media_Probe_Done)
     {
         std::map<int16u, media_parser>::iterator It = MediaParsers.find(packet_id);
@@ -960,7 +926,7 @@ void File_MmtTlv::Parse_Mmtp()
             //always probe; encrypted payload just fails the MFU/NAL checks. Give up on a scrambled
             //PID feeding nothing so the probe (and tail) finish.
             ++It->second.MpuSeen;
-            Parse_Mpu(packet_id, seq_num, P, N);
+            Parse_Mpu(packet_id, seq_num);
             if (ScrambledPids.count(packet_id)
              && It->second.Fed < READABLE_MIN_BYTES
              && It->second.MpuSeen >= SCRAMBLED_GIVEUP_MPU)
@@ -975,9 +941,9 @@ void File_MmtTlv::Parse_Mmtp()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-void File_MmtTlv::Parse_Mpu(int16u packet_id, int32u seq_num, const int8u* Data, size_t Size)
+void File_MmtTlv::Parse_Mpu(int16u packet_id, int32u seq_num)
 {
-    (void)Data; (void)Size; // parse at the element cursor (== Data/Size handed by Parse_Mmtp)
+    //Parses at the element cursor, which Parse_Mmtp left at the MPU payload.
     if (Element_Size - Element_Offset < 8)
         return;
 
@@ -1102,7 +1068,7 @@ bool File_MmtTlv::Create_MediaParser(int32u asset_type, media_parser& M)
             {
                 File_Hevc* Parser = new File_Hevc;
                 Parser->FrameIsAlwaysComplete = true;
-                M.Parser     = Parser;
+                M.Parser.reset(Parser);
                 M.StreamKind = Stream_Video;
                 M.Framing    = Es_Nal;
                 Open_Buffer_Init(Parser);
@@ -1116,7 +1082,7 @@ bool File_MmtTlv::Create_MediaParser(int32u asset_type, media_parser& M)
             {
                 File_Aac* Parser = new File_Aac;
                 Parser->Mode = File_Aac::Mode_LATM;
-                M.Parser     = Parser;
+                M.Parser.reset(Parser);
                 M.StreamKind = Stream_Audio;
                 M.Framing    = Es_Loas;
                 Open_Buffer_Init(Parser);
@@ -1158,7 +1124,7 @@ void File_MmtTlv::Feed_DataUnit(int16u packet_id, const int8u* Data, size_t Size
         // The DU is be32 length + NAL; emit Annex-B.
         if (Size < 4)
             return;
-        int32u nal_size = RB32(Data);
+        int32u nal_size = BigEndian2int32u(Data);
         const int8u* nal = Data + 4;
         size_t       nal_n = Size - 4;
         if (nal_size != nal_n)
@@ -1170,7 +1136,7 @@ void File_MmtTlv::Feed_DataUnit(int16u packet_id, const int8u* Data, size_t Size
         Frame.insert(Frame.end(), nal, nal + nal_n);
     }
 
-    Open_Buffer_Continue(M.Parser, &Frame[0], Frame.size());
+    Open_Buffer_Continue(M.Parser.get(), &Frame[0], Frame.size());
     M.Fed       += Frame.size();
     Media_Bytes += Frame.size();
 
@@ -1251,12 +1217,12 @@ void File_MmtTlv::Parse_SignalingMessages(int16u packet_id, int32u seq_num, cons
         if (length_extension)
         {
             if (n < 4) return;
-            length = RB32(p); p += 4; n -= 4;
+            length = BigEndian2int32u(p); p += 4; n -= 4;
         }
         else
         {
             if (n < 2) return;
-            length = RB16(p); p += 2; n -= 2;
+            length = BigEndian2int16u(p); p += 2; n -= 2;
         }
         if (length > n) return;
         Parse_SignalingMessage(p, (size_t)length);
@@ -1270,13 +1236,13 @@ void File_MmtTlv::Parse_SignalingMessage(const int8u* Data, size_t Size)
 {
     if (Size < 4)
         return;
-    int16u msg_id = RB16(Data);
+    int16u msg_id = BigEndian2int16u(Data);
 
     if (msg_id == MSG_PA_MESSAGE)
     {
         // id(16) version(8) length(32)
         if (Size < 7) return;
-        int32u length = RB32(Data + 3);
+        int32u length = BigEndian2int32u(Data + 3);
         const int8u* body = Data + 7;
         if (length > Size - 7) length = (int32u)(Size - 7);
         size_t n = length;
@@ -1295,9 +1261,9 @@ void File_MmtTlv::Parse_SignalingMessage(const int8u* Data, size_t Size)
             int8u  tid = p[0];
             size_t consumed;
             if (tid == TABLE_MPT)
-                consumed = (size_t)4 + RB16(p + 2);
+                consumed = (size_t)4 + BigEndian2int16u(p + 2);
             else
-                consumed = (size_t)3 + (RB16(p + 1) & 0x0FFF);
+                consumed = (size_t)3 + (BigEndian2int16u(p + 1) & 0x0FFF);
             if (consumed < 4)
                 break;
             //Parse a truncated final table against the bytes we have.
@@ -1312,7 +1278,7 @@ void File_MmtTlv::Parse_SignalingMessage(const int8u* Data, size_t Size)
     {
         // id(16) version(8) length(16)
         if (Size < 5) return;
-        int16u length = RB16(Data + 3);
+        int16u length = BigEndian2int16u(Data + 3);
         const int8u* body = Data + 5;
         if (length > Size - 5) length = (int16u)(Size - 5);
         Parse_Table(body, length);
@@ -1365,9 +1331,6 @@ void File_MmtTlv::Parse_Table(const int8u* Data, size_t Size)
                 if (NewVersion)
                 {
                     //Drop the previous package's parsers; its packet_ids and count may differ.
-                    for (std::map<int16u, media_parser>::iterator It = MediaParsers.begin();
-                         It != MediaParsers.end(); ++It)
-                        delete It->second.Parser;
                     MediaParsers.clear();
                     Mpt_Version      = Stream.MptVersion;
                     Media_Probe_Done = false;
@@ -1387,7 +1350,7 @@ void File_MmtTlv::Parse_Table(const int8u* Data, size_t Size)
                         continue;
                     media_parser M;
                     if (Create_MediaParser(A.Type, M))
-                        MediaParsers[A.PacketId] = M;
+                        MediaParsers[A.PacketId] = std::move(M);
                 }
             }
             break;
@@ -1438,9 +1401,6 @@ void File_MmtTlv::Parse_Table(const int8u* Data, size_t Size)
                     {
                         //The boundary may reconfigure the A/V, so drop the prior program's probe
                         //and re-derive after the hop.
-                        for (std::map<int16u, media_parser>::iterator It = MediaParsers.begin();
-                             It != MediaParsers.end(); ++It)
-                            delete It->second.Parser;
                         MediaParsers.clear();
                         MfuAssemblers.clear();
                         Assets.clear();

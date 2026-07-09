@@ -50,29 +50,24 @@ inline int64s Mmt_DateTime_To_Seconds(int16u mjd, int32u bcd_hhmmss)
 //***************************************************************************
 struct asset
 {
-    int32u Type;        //asset_type FourCC (little-endian as read)
-    int16u PacketId;    //location_type 0x00 packet_id, else 0
-    bool   Superimpose; //stpp: superimposed text (true) vs subtitle (false)
+    int32u Type = 0;        //asset_type FourCC (little-endian as read)
+    int16u PacketId = 0;    //location_type 0x00 packet_id, else 0
+    bool   Superimpose = false; //stpp: superimposed text (true) vs subtitle (false)
     //MH-audio-component descriptor (0x8014), MP4A assets only:
     Ztring Language;
     Ztring Title;         //component description (e.g. main audio / commentary)
-    bool   MainComponent; //-> Default track
-    int8u  Handicapped;   //audio_for_handicapped: 0b01 = VI commentary
-    int8u  AudioMode;     //component_type & 0x1F (0=none)
-    int8u  SamplingCode;  //sampling_rate 3-bit code (0=none)
+    bool   MainComponent = false; //-> Default track
+    int8u  Handicapped = 0;   //audio_for_handicapped: 0b01 = VI commentary
+    int8u  AudioMode = 0;     //component_type & 0x1F (0=none)
+    int8u  SamplingCode = 0;  //sampling_rate 3-bit code (0=none)
     //Video_Component_Descriptor (0x8010):
-    int8u  VideoResolution; //0=none, 6=2160, 7=4320
-    int8u  VideoAspect;
-    int8u  VideoScan;       //0=interlaced, 1=progressive, 0xFF=none
-    int8u  VideoFrameRate;
+    int8u  VideoResolution = 0; //0=none, 6=2160, 7=4320
+    int8u  VideoAspect = 0;
+    int8u  VideoScan = 0xFF;       //0=interlaced, 1=progressive, 0xFF=none
+    int8u  VideoFrameRate = 0;
     //Asset_Group_Descriptor (0x8000): main+backup of a stream share GroupId; level 0 = default.
-    int    GroupId;
-    int8u  SelectionLevel;
-    asset() : Type(0), PacketId(0), Superimpose(false),
-              MainComponent(false), Handicapped(0),
-              AudioMode(0), SamplingCode(0),
-              VideoResolution(0), VideoAspect(0), VideoScan(0xFF), VideoFrameRate(0),
-              GroupId(-1), SelectionLevel(0) {}
+    int    GroupId = -1;
+    int8u  SelectionLevel = 0;
 };
 
 //***************************************************************************
@@ -140,9 +135,7 @@ class File_Mmt : public File__Analyze
 {
 public :
     //In - set by the container before feeding a table buffer.
-    mmt_stream* Complete_Stream;
-
-    File_Mmt();
+    mmt_stream* Complete_Stream = NULL;
 
 private :
     //Buffer - Global

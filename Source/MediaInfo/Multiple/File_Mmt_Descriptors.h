@@ -32,10 +32,8 @@ class File_Mmt_Descriptors : public File__Analyze
 {
 public :
     //In - set by File_Mmt before feeding a descriptor loop.
-    mmt_stream* Complete_Stream;
-    asset*      CurrentAsset;   //the MPT asset being built (NULL for non-asset loops)
-
-    File_Mmt_Descriptors();
+    mmt_stream* Complete_Stream = NULL;
+    asset*      CurrentAsset = NULL;   //the MPT asset being built (NULL for non-asset loops)
 
 private :
     //Buffer - Global

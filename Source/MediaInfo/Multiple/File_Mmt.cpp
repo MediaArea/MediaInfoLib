@@ -92,16 +92,6 @@ namespace
 }
 
 //***************************************************************************
-// Constructor/Destructor
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-File_Mmt::File_Mmt()
-{
-    Complete_Stream = NULL;
-}
-
-//***************************************************************************
 // Buffer - Global
 //***************************************************************************
 
@@ -234,10 +224,10 @@ void File_Mmt::Mpt()
         //Package-level descriptors: not extracted, but named in the trace.
         File_Mmt_Descriptors Desc;
         Desc.Complete_Stream = Complete_Stream;
+        Element_Begin1("MPT_descriptors");
         Open_Buffer_Init(&Desc);
-        Open_Buffer_Continue(&Desc, Buffer + Buffer_Offset + (size_t)Element_Offset, mpt_desc_len);
-        Open_Buffer_Finalize(&Desc);
-        Skip_XX(mpt_desc_len,                                   "MPT_descriptors");
+        Open_Buffer_Continue(&Desc, mpt_desc_len);
+        Element_End0();
     }
     if (Element_Size - Element_Offset < 1) return;
     Get_B1 (number_of_assets,                                   "number_of_assets");
@@ -307,10 +297,10 @@ void File_Mmt::Mpt()
             File_Mmt_Descriptors Desc;
             Desc.Complete_Stream = Complete_Stream;
             Desc.CurrentAsset    = &a;
+            Element_Begin1("asset_descriptors");
             Open_Buffer_Init(&Desc);
-            Open_Buffer_Continue(&Desc, Buffer + Buffer_Offset + (size_t)Element_Offset, asset_desc_len);
-            Open_Buffer_Finalize(&Desc);
-            Skip_XX(asset_desc_len,                             "asset_descriptors");
+            Open_Buffer_Continue(&Desc, asset_desc_len);
+            Element_End0();
         }
         Found.push_back(a);
         Element_End0();
@@ -373,10 +363,10 @@ void File_Mmt::MhEit()
     {
         File_Mmt_Descriptors Desc;
         Desc.Complete_Stream = Complete_Stream; //short_event writes name/text into mmt_stream
+        Element_Begin1("descriptors");
         Open_Buffer_Init(&Desc);
-        Open_Buffer_Continue(&Desc, Buffer + Buffer_Offset + (size_t)Element_Offset, desc_loop_len);
-        Open_Buffer_Finalize(&Desc);
-        Skip_XX(desc_loop_len,                                  "descriptors");
+        Open_Buffer_Continue(&Desc, desc_loop_len);
+        Element_End0();
     }
     Element_End0();
 
@@ -438,11 +428,12 @@ void File_Mmt::MhSdt()
         {
             File_Mmt_Descriptors Desc;
             Desc.Complete_Stream = Complete_Stream;
+            Element_Begin1("descriptors");
             Open_Buffer_Init(&Desc);
-            Open_Buffer_Continue(&Desc, Buffer + Buffer_Offset + (size_t)Element_Offset, desc_len);
-            Open_Buffer_Finalize(&Desc);
+            Open_Buffer_Continue(&Desc, desc_len);
+            Element_End0();
         }
-        if (desc_len)
+        else if (desc_len)
             Skip_XX(desc_len,                                   "descriptors");
         Element_End0();
 
