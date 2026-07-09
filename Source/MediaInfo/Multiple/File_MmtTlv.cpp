@@ -1380,55 +1380,59 @@ void File_MmtTlv::Parse_Table(const int8u* Data, size_t Size)
             if (!Stream.EitParsed)
                 break;
 
+            //The boundary decision below compares the present event's window to the wall clock, so
+            //it needs one. Do not assume the first EIT arrives before or after the first NTP/TOT:
+            //without a clock, leave the present event uncommitted (Eit_Present_Found stays false, so
+            //the forward scan cannot finalize) and re-decide on a later EIT once the clock is in hand.
+            if (Now_Utc < 0)
+                break;
+
             //If this present event has already ended at "now", it is the previous program's tail
             //(the stream started on a boundary): hop forward and re-scan for the one whose window
             //contains "now".
             bool hopped = false;
-            if (Now_Utc >= 0)
+            int64s start_s = Mmt_DateTime_To_Seconds(Stream.EitStartDate, Stream.EitStartTime); // JST
+            if (start_s >= 0)
             {
-                int64s start_s = Mmt_DateTime_To_Seconds(Stream.EitStartDate, Stream.EitStartTime); // JST
-                if (start_s >= 0)
+                start_s -= Mmt_JST_Offset_Seconds; // -> UTC, to compare with Now_Utc
+                Eit_Start_Utc = start_s;
+                int dur_h = Mmt_Bcd2((int8u)(Stream.EitDuration >> 16));
+                int dur_m = Mmt_Bcd2((int8u)(Stream.EitDuration >> 8));
+                int dur_s = Mmt_Bcd2((int8u)(Stream.EitDuration));
+                int64s dur   = dur_h * 3600 + dur_m * 60 + dur_s;
+                int64s end_s = start_s + dur;
+                if (dur > 0 && end_s <= Now_Utc + BOUNDARY_GUARD_SECONDS
+                 && Eit_Boundary_Hops < BOUNDARY_MAX_HOPS)
                 {
-                    start_s -= Mmt_JST_Offset_Seconds; // -> UTC, to compare with Now_Utc
-                    Eit_Start_Utc = start_s;
-                    int dur_h = Mmt_Bcd2((int8u)(Stream.EitDuration >> 16));
-                    int dur_m = Mmt_Bcd2((int8u)(Stream.EitDuration >> 8));
-                    int dur_s = Mmt_Bcd2((int8u)(Stream.EitDuration));
-                    int64s dur   = dur_h * 3600 + dur_m * 60 + dur_s;
-                    int64s end_s = start_s + dur;
-                    if (dur > 0 && end_s <= Now_Utc + BOUNDARY_GUARD_SECONDS
-                     && Eit_Boundary_Hops < BOUNDARY_MAX_HOPS)
-                    {
-                        //The boundary may reconfigure the A/V, so drop the prior program's probe
-                        //and re-derive after the hop.
-                        MediaParsers.clear();
-                        MfuAssemblers.clear();
-                        Assets.clear();
-                        Mpt_Found        = false;
-                        Mpt_AssetCount   = -1;
-                        Transfer_Last    = 0xFF;
-                        Media_Probe_Done = false;
-                        Media_Bytes      = 0;
-                        Core_Done_At     = (int64u)-1; // core re-derives at new pos
-                        Media_Done_Utc   = -1;
+                    //The boundary may reconfigure the A/V, so drop the prior program's probe
+                    //and re-derive after the hop.
+                    MediaParsers.clear();
+                    MfuAssemblers.clear();
+                    Assets.clear();
+                    Mpt_Found        = false;
+                    Mpt_AssetCount   = -1;
+                    Transfer_Last    = 0xFF;
+                    Media_Probe_Done = false;
+                    Media_Bytes      = 0;
+                    Core_Done_At     = (int64u)-1; // core re-derives at new pos
+                    Media_Done_Utc   = -1;
 
-                        ++Eit_Boundary_Hops;
-                        int64u here = File_Offset + Buffer_Offset;
-                        //Size the hop to land just past the event's end, from the byte rate
-                        //observed so far; a fixed nudge cannot cross a minute-long tail.
-                        int64u hop = BOUNDARY_HOP_BYTES;
-                        if (Now_Utc > Now_First && end_s + 2 > Now_Utc)
-                        {
-                            int64u rate = here / (int64u)(Now_Utc - Now_First);
-                            if (rate > 0 && (int64u)(end_s + 2 - Now_Utc) > BOUNDARY_HOP_BYTES / rate)
-                                hop = rate * (int64u)(end_s + 2 - Now_Utc);
-                        }
-                        int64u target = here + hop;
-                        if (File_Size != (int64u)-1 && target >= File_Size)
-                            target = here + BOUNDARY_HOP_BYTES / 4; // small final nudge
-                        GoTo(target, "MmtTlv");
-                        hopped = true;
+                    ++Eit_Boundary_Hops;
+                    int64u here = File_Offset + Buffer_Offset;
+                    //Size the hop to land just past the event's end, from the byte rate
+                    //observed so far; a fixed nudge cannot cross a minute-long tail.
+                    int64u hop = BOUNDARY_HOP_BYTES;
+                    if (Now_Utc > Now_First && end_s + 2 > Now_Utc)
+                    {
+                        int64u rate = here / (int64u)(Now_Utc - Now_First);
+                        if (rate > 0 && (int64u)(end_s + 2 - Now_Utc) > BOUNDARY_HOP_BYTES / rate)
+                            hop = rate * (int64u)(end_s + 2 - Now_Utc);
                     }
+                    int64u target = here + hop;
+                    if (File_Size != (int64u)-1 && target >= File_Size)
+                        target = here + BOUNDARY_HOP_BYTES / 4; // small final nudge
+                    GoTo(target, "MmtTlv");
+                    hopped = true;
                 }
             }
             if (hopped)
