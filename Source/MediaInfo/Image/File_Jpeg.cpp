@@ -1798,6 +1798,8 @@ void File_Jpeg::APP1_XMP_Extension()
     Item->second.LastOffset += (int32u)(Element_Size - Element_Offset);
     auto& MI = *(File_Xmp*)Item->second.Parser.get();
     MI.Wait = Item->second.LastOffset < Size;
+    auto Element_Offset_Sav = Element_Offset;
+    MI.NoTrace = true; // Handle trace here to see each chunk
     gc_items GContainerItems;
     MI.GContainerItems = &GContainerItems;
     Open_Buffer_Continue(&MI);
@@ -1821,9 +1823,10 @@ void File_Jpeg::APP1_XMP_Extension()
             ImgOffset += Entry.Padding;
         }
     }
-    #else
-        Skip_UTF8(Element_Size - Element_Offset,                "XMP metadata");
+    Element_Offset = Element_Offset_Sav;
+    Element_Show();
     #endif
+    Skip_UTF8(Element_Size - Element_Offset,                    "XMP metadata");
     return;
 }
 
