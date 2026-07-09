@@ -1320,7 +1320,7 @@ void File_MmtTlv::Parse_Table(const int8u* Data, size_t Size)
             //(dropping what the new program no longer carries); within a version keep the fullest,
             //as the asset list builds up after a tune-in. The tail probe is a different program
             //near EOF, so skip it.
-            std::vector<asset>& Found = Stream.Assets;
+            const std::vector<asset>& Found = Stream.Assets;
             int Media = 0;
             for (size_t i = 0; i < Found.size(); ++i)
                 if (Found[i].Type == ASSET_HEV1 || Found[i].Type == ASSET_HVC1 || Found[i].Type == ASSET_MP4A || Found[i].Type == ASSET_STPP)
@@ -1493,6 +1493,7 @@ void File_MmtTlv::Parse_Table(const int8u* Data, size_t Size)
         }
         case TABLE_ECM_0:   // presence = CAS active; not parsed
         case TABLE_ECM_1:   Ecm_Seen = true; // and name it in the trace, below
+            [[fallthrough]];
         default:
             #if MEDIAINFO_TRACE
             //Not parsed; route through the signaling sub-parser only for the
