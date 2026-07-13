@@ -70,6 +70,7 @@ private :
 
     void Parse_Mpu(int16u packet_id, int32u seq_num);
     void Feed_DataUnit(int16u packet_id, const int8u* Data, size_t Size);
+    void Feed_NalFragment(int16u packet_id, const int8u* Data, size_t Size, bool First);
 
     //Child ES parser factory: maps an MPT asset_type (STD-B60) to a MediaInfo
     //parser + stream kind + DU framing. Returns false for a type with no ES

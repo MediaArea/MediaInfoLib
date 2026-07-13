@@ -1021,6 +1021,11 @@ void File_MmtTlv::Parse_Mpu(int16u packet_id, int32u seq_num)
     }
     Ass.LastSeq = seq_num;
 
+    // HEVC is fed fragment-by-fragment, so each fragment is parsed at its real file offset. AAC is
+    // not: its LOAS length header is unknown until the whole DU is reassembled.
+    std::map<int16u, media_parser>::iterator MpIt = MediaParsers.find(packet_id);
+    bool nal = (MpIt != MediaParsers.end() && MpIt->second.Framing == Es_Nal);
+
     switch (fragmentation_indicator)
     {
         case 0: // NOT_FRAGMENTED (complete DU)
@@ -1030,18 +1035,31 @@ void File_MmtTlv::Parse_Mpu(int16u packet_id, int32u seq_num)
             break;
         case 1: // FIRST
             Ass.State = fragment_assembler::InFragment;
-            Ass.Data.assign(p, p + n);
+            if (nal)
+                Feed_NalFragment(packet_id, p, n, true);
+            else
+                Ass.Data.assign(p, p + n);
             break;
         case 2: // MIDDLE
             if (Ass.State == fragment_assembler::InFragment)
-                Ass.Data.insert(Ass.Data.end(), p, p + n);
+            {
+                if (nal)
+                    Feed_NalFragment(packet_id, p, n, false);
+                else
+                    Ass.Data.insert(Ass.Data.end(), p, p + n);
+            }
             break;
         case 3: // LAST
             if (Ass.State == fragment_assembler::InFragment)
             {
-                Ass.Data.insert(Ass.Data.end(), p, p + n);
-                if (!Ass.Data.empty())
-                    Feed_DataUnit(packet_id, &Ass.Data[0], Ass.Data.size());
+                if (nal)
+                    Feed_NalFragment(packet_id, p, n, false);
+                else
+                {
+                    Ass.Data.insert(Ass.Data.end(), p, p + n);
+                    if (!Ass.Data.empty())
+                        Feed_DataUnit(packet_id, &Ass.Data[0], Ass.Data.size());
+                }
             }
             Ass.Data.clear();
             Ass.State = fragment_assembler::NotStarted;
@@ -1067,7 +1085,8 @@ bool File_MmtTlv::Create_MediaParser(int32u asset_type, media_parser& M)
             #if defined(MEDIAINFO_HEVC_YES)
             {
                 File_Hevc* Parser = new File_Hevc;
-                Parser->FrameIsAlwaysComplete = true;
+                Parser->FrameIsAlwaysComplete = false; // a NAL spans several MFU fragments; stream them
+                Parser->MustAdaptSubOffsets = true;    // trace each fragment at its real file offset
                 M.Parser.reset(Parser);
                 M.StreamKind = Stream_Video;
                 M.Framing    = Es_Nal;
@@ -1135,6 +1154,47 @@ void File_MmtTlv::Feed_DataUnit(int16u packet_id, const int8u* Data, size_t Size
         Frame.push_back(0x01);
         Frame.insert(Frame.end(), nal, nal + nal_n);
     }
+
+    Open_Buffer_Continue(M.Parser.get(), &Frame[0], Frame.size());
+    M.Fed       += Frame.size();
+    Media_Bytes += Frame.size();
+
+    if (M.Parser->Status[IsAccepted] || M.Parser->Status[IsFinished])
+        M.Done = true;
+}
+
+//---------------------------------------------------------------------------
+// Feeds one MFU fragment of a NAL to the child at the current element cursor, so its trace lands
+// at the fragment's real file offset (MustAdaptSubOffsets re-aligns the child between feeds). The
+// first fragment's leading be32 NAL length becomes the Annex-B start code; the rest is fed raw.
+void File_MmtTlv::Feed_NalFragment(int16u packet_id, const int8u* Data, size_t Size, bool First)
+{
+    std::map<int16u, media_parser>::iterator It = MediaParsers.find(packet_id);
+    if (It == MediaParsers.end())
+        return;
+    media_parser& M = It->second;
+    if (M.Done || !M.Parser)
+        return;
+
+    std::vector<int8u> Frame;
+    if (First)
+    {
+        if (Size < 4) // be32 length prefix
+            return;
+        Frame.reserve(3 + (Size - 4));
+        Frame.push_back(0x00);
+        Frame.push_back(0x00);
+        Frame.push_back(0x01);
+        Frame.insert(Frame.end(), Data + 4, Data + Size);
+    }
+    else
+    {
+        if (!Size)
+            return;
+        Frame.assign(Data, Data + Size);
+    }
+    if (Frame.empty())
+        return;
 
     Open_Buffer_Continue(M.Parser.get(), &Frame[0], Frame.size());
     M.Fed       += Frame.size();
