@@ -106,6 +106,41 @@ namespace
     const int32u ASSET_MP4A                     = 0x6134706D; // 'mp4a'
     const int32u ASSET_STPP                     = 0x70707473; // 'stpp'
 
+    // asset_type -> trace label for the MPU line: the printable 4CC (as the MPT declared it) plus a
+    // friendly codec name when known. An un-mapped/future asset_type still shows its 4CC, so the MPU
+    // payload is never an unlabelled block.
+    inline Ztring Mmt_AssetLabel(int32u asset_type)
+    {
+        Ztring Label; // asset_type was read little-endian, so byte i spells 4CC character i
+        for (int i = 0; i < 4; ++i)
+        {
+            int8u c = (int8u)(asset_type >> (8 * i));
+            Label += (c >= 0x20 && c < 0x7F) ? (Char)c : (Char)__T('.');
+        }
+        switch (asset_type)
+        {
+            case ASSET_HEV1:
+            case ASSET_HVC1: Label += __T(" (HEVC)"); break;
+            case ASSET_MP4A: Label += __T(" (AAC)");  break;
+            case ASSET_STPP: Label += __T(" (TTML)"); break;
+            default:;
+        }
+        return Label;
+    }
+
+    // MMTP MPU fragmentation_indicator (ISO/IEC 23008-1): where this fragment sits in its data unit.
+    inline const char* Mmt_fragmentation_indicator(int8u i)
+    {
+        switch (i)
+        {
+            case 0: return "Not fragmented";
+            case 1: return "First";
+            case 2: return "Middle";
+            case 3: return "Last";
+            default: return "";
+        }
+    }
+
     // Stop scanning after this many packets, so a multi-GB file is not read
     // end-to-end when the present EIT never arrives.
     const int64u GIVE_UP_AFTER_PACKETS          = 200000;
@@ -961,6 +996,7 @@ void File_MmtTlv::Parse_Mpu(int16u packet_id, int32u seq_num)
         Get_S1 (4, fragment_type,                               "fragment_type");
         Get_SB (   timed_flag,                                  "timed_flag");
         Get_S1 (2, fragmentation_indicator,                     "fragmentation_indicator");
+        Param_Info1(Mmt_fragmentation_indicator(fragmentation_indicator));
         Get_SB (   aggregation_flag,                            "aggregation_flag");
     BS_End();
     Skip_B1(                                                    "fragment_counter");
@@ -971,6 +1007,16 @@ void File_MmtTlv::Parse_Mpu(int16u packet_id, int32u seq_num)
         Element_End0();
         return;
     }
+
+    // Name the MFU payload on the MPU line (hev1/mp4a/... + codec), so the child ES that follows is
+    // not an unlabelled block. Sourced from the MPT's asset_type, so a type with no ES parser (or a
+    // future one) still shows its 4CC.
+    for (size_t i = 0; i < Assets.size(); ++i)
+        if (Assets[i].PacketId == packet_id)
+        {
+            Element_Info1(Mmt_AssetLabel(Assets[i].Type));
+            break;
+        }
 
     // Per-DU header before each fragment:
     //   timed  -> movie_fragment_seq(32) sample(32) offset(32) prio(8) dep(8)
