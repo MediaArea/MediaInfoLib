@@ -394,7 +394,7 @@ size_t          __stdcall MediaInfoA_Open_Buffer_Init (void* Handle, MediaInfo_i
     return MediaInfo_Open_Buffer_Init(Handle, File_Size, File_Offset);
 }
 
-size_t          __stdcall MediaInfoA_Open_Buffer_Continue (void* Handle, MediaInfo_int8u* Buffer, size_t Buffer_Size)
+size_t          __stdcall MediaInfoA_Open_Buffer_Continue (void* Handle, const MediaInfo_int8u* Buffer, size_t Buffer_Size)
 {
     return MediaInfo_Open_Buffer_Continue(Handle, Buffer, Buffer_Size);
 }
@@ -491,7 +491,7 @@ void            __stdcall MediaInfoListA_Delete (void* Handle)
     MediaInfoList_Delete(Handle);
 }
 
-size_t          __stdcall MediaInfoListA_Open (void* Handle, const char* File, const MediaInfo_fileoptions_C Options)
+size_t          __stdcall MediaInfoListA_Open (void* Handle, const char* File, MediaInfo_fileoptions_C Options)
 {
     return MediaInfoList_Open(Handle, MB2WC(Handle, 0, File), Options);
 }
@@ -665,7 +665,7 @@ size_t          __stdcall MediaInfo_Open_Buffer_Init (void* Handle, MediaInfo_in
                     Debug+=", File_Size=";Debug+=Ztring::ToZtring(File_Size).To_UTF8();Debug+=", File_Offset=";Debug+=Ztring::ToZtring(File_Offset).To_UTF8();)
 }
 
-size_t          __stdcall MediaInfo_Open_Buffer_Continue (void* Handle, MediaInfo_int8u* Buffer, size_t Buffer_Size)
+size_t          __stdcall MediaInfo_Open_Buffer_Continue (void* Handle, const MediaInfo_int8u* Buffer, size_t Buffer_Size)
 {
     MANAGE_SIZE_T(  "Open_Buffer_Continue",
                     MediaInfo,
@@ -932,12 +932,13 @@ void            __stdcall MediaInfoList_Delete (void* Handle)
                         )
 }
 
-size_t          __stdcall MediaInfoList_Open (void* Handle, const wchar_t* File, const MediaInfo_fileoptions_C Options)
+size_t          __stdcall MediaInfoList_Open (void* Handle, const wchar_t* File, MediaInfo_fileoptions_C Options)
 {
+    Options=(MediaInfo_fileoptions_C)(((size_t)Options)&0xFF);
     MANAGE_SIZE_T(  "Open",
                     MediaInfoList,
-                    Open(File),
-                    Debug+=", File=";Debug+=Ztring(File).To_UTF8();)
+                    Open(File, (fileoptions_t)Options),
+                    Debug+=", File=";Debug+=Ztring(File).To_UTF8();Debug+=", Options=";Debug+=Ztring(Options).To_UTF8();)
 }
 
 size_t          __stdcall MediaInfoList_Open_Buffer (void* Handle, const unsigned char* Begin, size_t  Begin_Size, const unsigned char* End, size_t  End_Size)

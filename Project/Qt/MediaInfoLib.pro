@@ -122,6 +122,7 @@ HEADERS += \
         ../../Source/MediaInfo/File_Other.h \
         ../../Source/MediaInfo/File_Unknown.h \
         ../../Source/MediaInfo/HashWrapper.h \
+        ../../Source/MediaInfo/Image/File_AmigaIcon.h \
         ../../Source/MediaInfo/Image/File_ArriRaw.h \
         ../../Source/MediaInfo/Image/File_Bmp.h \
         ../../Source/MediaInfo/Image/File_Bpg.h \
@@ -245,6 +246,7 @@ HEADERS += \
         ../../Source/MediaInfo/TimeCode.h \
         ../../Source/MediaInfo/Video/File_AfdBarData.h \
         ../../Source/MediaInfo/Video/File_Aic.h \
+        ../../Source/MediaInfo/Video/File_Apv.h \
         ../../Source/MediaInfo/Video/File_Av1.h \
         ../../Source/MediaInfo/Video/File_Av2.h \
         ../../Source/MediaInfo/Video/File_Avc.h \
@@ -368,6 +370,7 @@ SOURCES += \
         ../../Source/MediaInfo/File_Other.cpp \
         ../../Source/MediaInfo/File_Unknown.cpp \
         ../../Source/MediaInfo/HashWrapper.cpp \
+        ../../Source/MediaInfo/Image/File_AmigaIcon.cpp \
         ../../Source/MediaInfo/Image/File_ArriRaw.cpp \
         ../../Source/MediaInfo/Image/File_Bmp.cpp \
         ../../Source/MediaInfo/Image/File_Bpg.cpp \
@@ -494,6 +497,7 @@ SOURCES += \
         ../../Source/MediaInfo/TimeCode.cpp \
         ../../Source/MediaInfo/Video/File_AfdBarData.cpp \
         ../../Source/MediaInfo/Video/File_Aic.cpp \
+        ../../Source/MediaInfo/Video/File_Apv.cpp \
         ../../Source/MediaInfo/Video/File_Av1.cpp \
         ../../Source/MediaInfo/Video/File_Av2.cpp \
         ../../Source/MediaInfo/Video/File_Avc.cpp \

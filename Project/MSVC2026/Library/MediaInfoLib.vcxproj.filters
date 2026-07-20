@@ -713,6 +713,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\MediaInfo_Config_PerPackage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_AmigaIcon.cpp">
+      <Filter>Source Files\Image</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_ArriRaw.cpp">
       <Filter>Source Files\Image</Filter>
     </ClCompile>
@@ -888,6 +891,9 @@
       <Filter>ThirdParty\fmt</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Av2.cpp">
+      <Filter>Source Files\Video</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Apv.cpp">
       <Filter>Source Files\Video</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1489,6 +1495,9 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\MediaInfo_Config_PerPackage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_AmigaIcon.h">
+      <Filter>Header Files\Image</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_ArriRaw.h">
       <Filter>Header Files\Image</Filter>
     </ClInclude>
@@ -1670,6 +1679,9 @@
       <Filter>Header Files\Image</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Av2.h">
+      <Filter>Header Files\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Apv.h">
       <Filter>Header Files\Video</Filter>
     </ClInclude>
   </ItemGroup>

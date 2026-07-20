@@ -1024,10 +1024,11 @@ void File_Png::Textual(bitset8 Method)
             #if defined(MEDIAINFO_XMP_YES)
             auto Text_UTF8=Text.To_UTF8();
             File_Xmp MI;
+            MI.NoTrace = true; //Already have trace (Text string) from above
             Open_Buffer_Init(&MI, Text_UTF8.size());
             Open_Buffer_Continue(&MI, (const int8u*)Text_UTF8.c_str(), Text_UTF8.size());
             Open_Buffer_Finalize(&MI);
-            Element_Show(); //TODO: why is it needed?
+            Element_Show(); //Needed since element (including the previous trace) will be removed if sub parser has no trace output
             Merge(MI, Stream_General, 0, 0, false);
             Text.clear();
             #endif
@@ -1047,7 +1048,7 @@ void File_Png::Textual(bitset8 Method)
 void File_Png::Decode_RawProfile(const char* in, size_t in_len, const string& type)
 {
 #if defined(MEDIAINFO_EXIF_YES) || defined(MEDIAINFO_ICC_YES) || defined(MEDIAINFO_IIM_YES)
-    auto HexStringToBytes{
+    auto HexStringToBytes =
         [](const char* src, size_t len, size_t expected_length) -> string {
             string to_return;
             auto end = src + len;
@@ -1079,8 +1080,7 @@ void File_Png::Decode_RawProfile(const char* in, size_t in_len, const string& ty
                 return {};
             }
             return to_return;
-        }
-    };
+        };
 
     if (!in || !in_len) {
         return;

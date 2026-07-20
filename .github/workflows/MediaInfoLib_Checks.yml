@@ -6,16 +6,24 @@ jobs:
   Build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-26.04, ubuntu-26.04-arm, macos-26, windows-latest]
         environement: [gcc, utf8, minified, minimal, minimal-with-xml, cmake, cmake-dll]
         exclude:
-          - os: macos-latest
+          - os: macos-26
             environement: minified
-          - os: macos-latest
+          - os: macos-26
             environement: minimal
-          - os: macos-latest
+          - os: macos-26
             environement: minimal-with-xml
-          - os: macos-latest
+          - os: macos-26
+            environement: cmake-dll
+          - os: ubuntu-26.04-arm
+            environement: minified
+          - os: ubuntu-26.04-arm
+            environement: minimal
+          - os: ubuntu-26.04-arm
+            environement: minimal-with-xml
+          - os: ubuntu-26.04-arm
             environement: cmake-dll
           - os: windows-latest
             environement: gcc
@@ -28,6 +36,10 @@ jobs:
           - os: windows-latest
             environement: minimal-with-xml
         include:
+          - os: ubuntu-26.04
+            environement: link-curl-graphviz
+          - os: macos-26
+            environement: link-curl-graphviz
           - environement: gcc
             CXXFLAGS: ""
             RUN_TESTS: "all"
@@ -49,19 +61,22 @@ jobs:
       S3_KEY: ${{ secrets.S3_KEY }}
       S3_PASS: ${{ secrets.S3_PASS }}
       CXXFLAGS: -Werror ${{ matrix.CXXFLAGS }}
+      MSVC_CXXFLAGS: //WX
       RUN_TESTS: ${{ matrix.RUN_TESTS }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Dependencies
+        env:
+          HOMEBREW_NO_REQUIRE_TAP_TRUST: 1 # Prevent Homebrew third-party trust warnings due to GitHub's pre-installed taps
         if: ${{ runner.os != 'Windows' }}
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
             sudo apt-get update -y
-            sudo apt-get install -y libxml2-utils zlib1g-dev libcurl4-gnutls-dev libmms-dev ${{ matrix.environement == 'cmake-dll' && 'g++-mingw-w64-x86-64' || '' }}
+            sudo apt-get install -y libxml2-utils zlib1g-dev libcurl4-gnutls-dev libmms-dev ${{ matrix.environement == 'cmake-dll' && 'g++-mingw-w64-x86-64' || '' }} ${{ matrix.environement == 'link-curl-graphviz' && 'libgraphviz-dev' || '' }}
           fi
           if [ "$RUNNER_OS" == "macOS" ]; then
-            brew install libtool automake
+            brew install libtool automake ${{ matrix.environement == 'link-curl-graphviz' && 'graphviz' || '' }}
           fi
       - name: zlib
         if: ${{ (runner.os == 'Windows') || matrix.environement == 'cmake-dll' }}
@@ -80,7 +95,7 @@ jobs:
           popd
           cd Project/GNU/Library
           autoreconf -if
-          ./configure --enable-silent-rules --with-libcurl=runtime
+          ./configure --enable-silent-rules ${{ matrix.environement == 'link-curl-graphviz' && '--with-libcurl --with-graphviz' || '--with-libcurl=runtime --with-graphviz=runtime' }}
       - name: Build
         if: ${{ (matrix.environement != 'cmake') && (matrix.environement != 'cmake-dll') }}
         run: |
@@ -102,7 +117,7 @@ jobs:
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
-            export CXXFLAGS="/std:c++20 /WX /MP"
+            export CXXFLAGS="$MSVC_CXXFLAGS"
           fi
           # cmake toolchain file for mingw-w64 x86_64 builds on Ubuntu
           if [ "$RUNNER_OS" == "Linux" ] && [ "${{ matrix.environement }}" == "cmake-dll" ]; then
@@ -111,7 +126,7 @@ jobs:
           fi
           mkdir Project/CMake/Build
           cd Project/CMake/Build
-          cmake -DBUILD_ZENLIB=1 -DZLIB_BUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release ${{ matrix.environement == 'cmake-dll' && '-DBUILD_SHARED_LIBS=ON' || '' }} ..
+          cmake -DBUILD_ZENLIB=1 -DZLIB_BUILD_SHARED=OFF -DZLIB_BUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release ${{ matrix.environement == 'cmake-dll' && '-DBUILD_SHARED_LIBS=ON' || '' }} ..
           cmake --build . ${{ runner.os == 'Windows' && '--config Release' || '-j4' }}
 
   MSBuild:
@@ -122,22 +137,22 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout zlib
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: MediaArea/zlib
           path: zlib
       - name: Checkout ZenLib
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: MediaArea/ZenLib
           path: ZenLib
       - name: Checkout MediaInfoLib
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: MediaInfoLib
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@v3
         with:
           msbuild-architecture: x64
       - name: Build
-        run: msbuild -p:Configuration=Release -p:Platform=${{ matrix.architecture }} ${{ github.workspace }}\MediaInfoLib\Project\MSVC2022\MediaInfoLib.sln -verbosity:quiet -warnaserror
+        run: msbuild -p:Configuration=Release -p:Platform=${{ matrix.architecture }} ${{ github.workspace }}\MediaInfoLib\Project\MSVC2026\MediaInfoLib.slnx -verbosity:quiet -warnaserror

@@ -892,8 +892,7 @@ void File__Analyze::Open_Buffer_OutOfBand (File__Analyze* Sub, size_t Size)
     }
 
     //Sub
-    if (Sub->File_GoTo!=(int64u)-1)
-        Sub->File_GoTo=(int64u)-1;
+    Sub->File_GoTo=(int64u)-1;
     Sub->File_Offset=File_Offset+Buffer_Offset+Element_Offset;
     if (Sub->File_Size!=File_Size)
     {
@@ -1356,8 +1355,7 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
         return;
 
     //Sub
-    if (Sub->File_GoTo!=(int64u)-1)
-        Sub->File_GoTo=(int64u)-1;
+    Sub->File_GoTo=(int64u)-1;
     if (Sub->MustAdaptSubOffsets) {
         auto NewOffset = File_Offset + Buffer_Offset + Element_Offset;
         auto OldOffset = Sub->File_Offset + Sub->Buffer_Size;
@@ -1673,6 +1671,7 @@ void File__Analyze::Open_Buffer_Unsynch ()
     {
         Synched=false;
         UnSynched_IsNotJunk=true;
+        NextCode_Clear();
         Read_Buffer_Unsynched();
         Ibi_Read_Buffer_Unsynched();
     }
@@ -1973,6 +1972,7 @@ void File__Analyze::Buffer_Clear()
 {
     //Buffer
     BS->Attach(NULL, 0);
+    BT->Attach(NULL, 0);
     delete[] Buffer_Temp; Buffer_Temp=NULL;
     if (!Status[IsFinished])
         File_Offset+=Buffer_Size;
@@ -2657,6 +2657,14 @@ bool File__Analyze::Header_Manage()
         }
         return false; //Wait for more data
     }
+    if (Element_Offset) {
+        if (Element_Offset >= Buffer_Size - Buffer_Offset) {
+            GoTo(File_Offset + Buffer_Offset + Element_Offset);
+            return false;
+        }
+        Buffer_Offset+=(size_t)Element_Offset;
+        Element_Offset=0;
+    }
 
     //Going in a lower level
     Element_Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset+Element_Offset);
@@ -2670,7 +2678,6 @@ bool File__Analyze::Header_Manage()
         Element[Element_Level].IsComplete=true;
     if (Element_Size==0)
         return false;
-    Element_Offset=0;
     Element_Begin0(); //Element
     #if MEDIAINFO_TRACE
         Data_Level=Element_Level;
@@ -2851,6 +2858,7 @@ bool File__Analyze::Data_Manage()
         //size_t Element_Level_Save=Element_Level;
         Data_Parse();
         BS->Attach(NULL, 0); //Clear it
+        BT->Attach(NULL, 0); //Clear it
         //Element_Level=Element_Level_Save;
 
         if (Buffer_Offset+(Element_WantNextLevel?Element_Offset:Element_Size)>=FrameInfo.Buffer_Offset_End)
@@ -3415,34 +3423,35 @@ void File__Analyze::Trusted_IsNot (const char* Reason)
 void File__Analyze::Trusted_IsNot ()
 #endif //MEDIAINFO_TRACE
 {
+    if (Element[Element_Level].UnTrusted)
+        return;
+
+    //Enough data?
+    if (!FrameIsAlwaysComplete && !Element[Element_Level].IsComplete && (Buffer_Size - (Buffer_Offset + Element_Offset + BS->Offset_Get() + BT->Offset_Get()) < 64))
+    {
+        Element_WaitForMoreData();
+        return;
+    }
+
+    #if MEDIAINFO_TRACE
+        Param(Reason, 0);
+    #endif //MEDIAINFO_TRACE
+
+    Element[Element_Level].UnTrusted=true;
+    Synched=false;
+    if (!Status[IsFilled] && Trusted>0)
+    {
+        Trusted--;
+        if (Trusted == 0 && !Status[IsAccepted])
+            Reject();
+    }
+
     if (BS && (BS->Offset_Get() || BS->Remain()))
         BS->Skip(BS->Remain());
     else if (BT && (BT->Offset_Get() || BT->Remain()))
         BT->Skip(BT->Remain());
     else
         Element_Offset=Element_Size;
-
-    if (!Element[Element_Level].UnTrusted)
-    {
-        #if MEDIAINFO_TRACE
-            Param(Reason, 0);
-        #endif //MEDIAINFO_TRACE
-
-        //Enough data?
-        if (!FrameIsAlwaysComplete && !Element[Element_Level].IsComplete)
-        {
-            Element_WaitForMoreData();
-            return;
-        }
-
-        Element[Element_Level].UnTrusted=true;
-        Synched=false;
-        if (!Status[IsFilled] && Trusted>0)
-            Trusted--;
-    }
-
-    if (Trusted==0 && !Status[IsAccepted])
-        Reject();
 }
 
 //***************************************************************************
@@ -3967,8 +3976,6 @@ void File__Analyze::Element_DoNotTrust (const char* Reason)
 void File__Analyze::Element_DoNotTrust ()
 #endif //MEDIAINFO_TRACE
 {
-    Element[Element_Level].WaitForMoreData=false;
-    Element[Element_Level].IsComplete=true;
     #if MEDIAINFO_TRACE
         Trusted_IsNot(Reason);
     #else //MEDIAINFO_TRACE
@@ -4574,9 +4581,9 @@ void File__Analyze::RanOutOfData(const char* Prefix)
             Frame_Count_NotParsedIncluded++;
         Frame_Count_InThisBlock++;
     }
-    Trusted_IsNot("out of data");
     Clear_Conformance();
     Fill_Conformance(BuildConformanceName(ParserName, Prefix, "GeneralCompliance").c_str(), "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed");
+    Trusted_IsNot("out of data");
 }
 
 #endif //MEDIAINFO_CONFORMANCE

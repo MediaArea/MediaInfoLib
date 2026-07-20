@@ -327,7 +327,7 @@ void File_Iamf::Streams_Finish()
         int32u SamplesPerFrame = Retrieve_Const(Stream_Audio, 0, Audio_SamplesPerFrame).To_int32u();
         if (SamplingRate && SamplesPerFrame)
         {
-            auto SamplesCountPerSubstream{ SamplesPerFrame * Frame_Count / substreams.size() };
+            int64u SamplesCountPerSubstream{ SamplesPerFrame * Frame_Count / substreams.size() };
             Fill(Stream_Audio, 0, Audio_Duration, SamplesCountPerSubstream / (static_cast<float64>(SamplingRate) / 1000), 0);
             Fill(Stream_Audio, 0, Audio_SamplingCount, SamplesPerFrame * Frame_Count);
             Fill(Stream_Audio, 0, Audio_BitRate, File_Size / (SamplesCountPerSubstream / static_cast<float64>(SamplingRate)) * 8, 0);
@@ -847,7 +847,7 @@ void File_Iamf::ia_mix_presentation()
                     }
                     Element_End0();
                 }
-                if ((info_type & 0b11111100) > 0) {
+                if ((info_type & 0xFC) > 0) {
                     int64u info_type_size;
                     Get_leb128  (info_type_size,            "info_type_size");
                     auto Element_Offset_Begin = Element_Offset;

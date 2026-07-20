@@ -17,6 +17,8 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
+#include <bitset>
+#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -163,6 +165,11 @@ private :
     void Segment_Tracks_TrackEntry_FlagEnabled(){UInteger_Info();};
     void Segment_Tracks_TrackEntry_FlagDefault();
     void Segment_Tracks_TrackEntry_FlagForced();
+    void Segment_Tracks_TrackEntry_FlagHearingImpaired();
+    void Segment_Tracks_TrackEntry_FlagVisualImpaired();
+    void Segment_Tracks_TrackEntry_FlagTextDescriptions();
+    void Segment_Tracks_TrackEntry_FlagOriginal();
+    void Segment_Tracks_TrackEntry_FlagCommentary();
     void Segment_Tracks_TrackEntry_FlagLacing(){UInteger_Info();};
     void Segment_Tracks_TrackEntry_MinCache(){UInteger_Info();};
     void Segment_Tracks_TrackEntry_MaxCache(){UInteger_Info();};
@@ -387,8 +394,7 @@ private :
         bool                    Searching_Payload;
         bool                    Searching_TimeStamps;
         bool                    Searching_TimeStamp_Start;
-        bool                    Default;
-        bool                    Forced;
+        std::bitset<8>          ServiceKind;
         int64u                  ContentCompAlgo;
         size_t                  ContentCompSettings_Buffer_Size;
         int8u*                  ContentCompSettings_Buffer;
@@ -423,8 +429,6 @@ private :
             Searching_Payload=true;
             Searching_TimeStamps=false;
             Searching_TimeStamp_Start=false;
-            Default=true;
-            Forced=false;
             ContentCompAlgo=(int32u)-1;
             ContentCompSettings_Buffer_Size=0;
             ContentCompSettings_Buffer=NULL;
@@ -595,23 +599,12 @@ private :
     {
         struct mask
         {
-            int8u*      Buffer;
-            size_t      Size;
-
-            //mask(); //Init done in rawcookedtrack() in 1 shot
-            ~mask()
-            {
-                delete[] Buffer;
-            }
+            std::unique_ptr<int8u[]> Buffer;
+            size_t      Size = 0;
         };
-        int64u          FramePos;
+        int64u          FramePos = 0;
         mask            MaskBaseFileName;
         mask            MaskBaseBeforeData;
-
-        rawcookedtrack()
-        {
-            memset(this, 0x00, sizeof(rawcookedtrack));
-        }
     };
     rawcookedtrack RawcookedTrack_Data;
     const int8u* Rawcooked_Compressed_Save_Buffer{};

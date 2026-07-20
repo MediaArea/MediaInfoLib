@@ -1,6 +1,6 @@
 [package]
 name = "mediainfo-rs"
-version = "25.10.0"
+version = "26.05.0"
 edition = "2024"
 license = "BSD-2-Clause"
 

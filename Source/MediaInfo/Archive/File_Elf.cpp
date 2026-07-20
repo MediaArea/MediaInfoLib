@@ -149,7 +149,11 @@ string Elf_machine(int16u machine)
         case  92 : return "OpenRISC 32-bit";
         case  93 : return "ARC Cores Tangent-A5";
         case  94 : return "Tensilica Xtensa";
+
         case 183 : return "ARM64";
+
+        case 243 : return "RISC-V";
+
         default  : return std::to_string(machine);
     }
 }
@@ -222,8 +226,12 @@ void File_Elf::Read_Buffer_Continue()
         Fill(Stream_General, 0, General_Format, "ELF");
         if (type!=(int16u)-1)
             Fill(Stream_General, 0, General_Format_Profile, Elf_type(type));
-        if (machine!=(int16u)-1)
-            Fill(Stream_General, 0, General_Format_Profile, Elf_machine(machine));
+        if (machine!=(int16u)-1) {
+            string Format_Profile = Elf_machine(machine);
+            if (machine == 243)
+                Format_Profile += classs == 1 ? " 32-bit" : classs == 2 ? " 64-bit" : "";
+            Fill(Stream_General, 0, General_Format_Profile, Format_Profile);
+        }
 
         //No need of more
         Finish("ELF");

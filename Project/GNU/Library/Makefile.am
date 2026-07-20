@@ -107,6 +107,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Export/Export_reVTMD.cpp \
                        ../../../Source/MediaInfo/Export/Export_Niso.cpp \
                        ../../../Source/MediaInfo/Export/Export_Graph.cpp \
+                       ../../../Source/MediaInfo/Image/File_AmigaIcon.cpp \
                        ../../../Source/MediaInfo/Image/File_ArriRaw.cpp \
                        ../../../Source/MediaInfo/Image/File_Bmp.cpp \
                        ../../../Source/MediaInfo/Image/File_Bpg.cpp \
@@ -221,6 +222,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/Text/File_Ttml.cpp \
                        ../../../Source/MediaInfo/Video/File_Aic.cpp \
                        ../../../Source/MediaInfo/Video/File_AfdBarData.cpp \
+                       ../../../Source/MediaInfo/Video/File_Apv.cpp \
                        ../../../Source/MediaInfo/Video/File_Av1.cpp \
                        ../../../Source/MediaInfo/Video/File_Av2.cpp \
                        ../../../Source/MediaInfo/Video/File_Avc.cpp \

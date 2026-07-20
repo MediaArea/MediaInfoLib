@@ -52,6 +52,8 @@ fn main() {
                 .display()
                 .to_string(),
         )
+        // Only generate bindings for MediaInfoDLL_Static.h header file
+        .allowlist_file(".*MediaInfoDLL_Static\\.h")
         // Use a regex to apply `rustified_enum()` only to enums
         // that start with "MediaInfo_".
         .rustified_enum("^MediaInfo_.*")

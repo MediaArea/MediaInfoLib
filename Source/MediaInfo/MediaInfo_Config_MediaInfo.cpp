@@ -345,7 +345,7 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     size_t Egal_Pos=Option_Lower.find(__T('='));
     if (Egal_Pos==string::npos)
         Egal_Pos=Option_Lower.size();
-    transform(Option_Lower.begin(), Option_Lower.begin()+Egal_Pos, Option_Lower.begin(), (int(*)(int))tolower); //(int(*)(int)) is a patch for unix
+    transform(Option_Lower.begin(), Option_Lower.begin()+Egal_Pos, Option_Lower.begin(), [](unsigned char c) { return tolower(c); });
 
     if (Option_Lower==__T("file_requestterminate"))
     {
@@ -1853,8 +1853,10 @@ void MediaInfo_Config_MediaInfo::File_Hash_Set (HashWrapper::HashFunctions Funti
     Hash_Functions=Funtions;
     
     //Legacy
+    #if MEDIAINFO_MD5
     if (File_Md5)
         Hash_Functions.set(HashWrapper::MD5);
+    #endif
 }
 
 HashWrapper::HashFunctions MediaInfo_Config_MediaInfo::File_Hash_Get ()
