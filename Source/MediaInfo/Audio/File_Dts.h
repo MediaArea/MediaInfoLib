@@ -110,6 +110,7 @@ private :
     int8u  HD_MaximumSampleRate_Real;
     int8u  HD_TotalNumberChannels;
     int8u  HD_ExSSFrameDurationCode;
+    int8u  DtsXObjectCount;
     bool   AuxiliaryData;
     bool   ExtendedCoding;
     bool   Word;
