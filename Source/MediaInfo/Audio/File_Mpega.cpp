@@ -1559,7 +1559,7 @@ void File_Mpega::Header_Encoders_Lame()
                 Encoded_Library_Settings+=__T( " -q ")+Ztring::ToZtring((100-Xing_Scale)%10);
             }
             if (lowpass)
-                Encoded_Library_Settings+=(Encoded_Library_Settings.empty()?__T("-lowpass "):__T(" -lowpass "))+((lowpass%10)?Ztring::ToZtring(((float)lowpass)/10, 1):Ztring::ToZtring(lowpass/10));
+                Encoded_Library_Settings+=(Encoded_Library_Settings.empty()?__T("--lowpass "):__T(" --lowpass "))+((lowpass%10)?Ztring::ToZtring(((float)lowpass)/10, 1):Ztring::ToZtring(lowpass/10));
             switch (Flags&0x0F)
             {
                 case  2 :
