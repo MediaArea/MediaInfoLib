@@ -1555,7 +1555,8 @@ void File_Mpega::Header_Encoders_Lame()
             }
             if (Xing_Scale<=100) //Xing_Scale is used for LAME quality
             {
-                Encoded_Library_Settings+=__T( " -V ")+Ztring::ToZtring((100-Xing_Scale)/10);
+                if ((Flags & 0x0F) == 3 || (Flags & 0x0F) == 4 || (Flags & 0x0F) == 5 || (Flags & 0x0F) == 6 || (Flags & 0x0F) == 9) //VBR modes only
+                    Encoded_Library_Settings+=__T( " -V ")+Ztring::ToZtring((100-Xing_Scale)/10);
                 Encoded_Library_Settings+=__T( " -q ")+Ztring::ToZtring((100-Xing_Scale)%10);
             }
             if (lowpass)
@@ -1593,6 +1594,17 @@ void File_Mpega::Header_Encoders_Lame()
                         Encoded_Library_Settings+=__T(" -b ")+Ztring::ToZtring(BitRate);
                         break;
                     default : ;
+                }
+            }
+            else if (BitRate==0xFF) //Fallback for CBR bitrates that do not fit in the LAME tag byte (e.g. 256/320)
+            {
+                if ((Flags&0x0F)==1 || (Flags&0x0F)==8) //CBR mode only
+                {
+                    if (ID<4 && layer<4 && bitrate_index<16 && Mpega_BitRate[ID][layer][bitrate_index]!=0)
+                    {
+                        int16u FrameBitRate=Mpega_BitRate[ID][layer][bitrate_index];
+                        Encoded_Library_Settings+=__T(" -b ")+Ztring::ToZtring(FrameBitRate);
+                    }
                 }
             }
         FILLING_END();
