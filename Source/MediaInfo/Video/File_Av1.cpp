@@ -301,6 +301,13 @@ void File_Av1::Header_Parse()
     int64u obu_size{};
     if (IsAnnexB) {
         Get_leb128 (obu_size,                                   "obu_size");
+        if (obu_size == 0 && Element_Offset < Element_Size) {
+            // Prevents looping on zero bytes
+            // Real AV1 files should have OBU of at least one byte for the OBU header
+            // Exclude conditions where Get_leb128 runs out of buffer on valid files and returns 0
+            Reject();
+            return;
+        }
         obu_size += Element_Offset;
         DataMustAlwaysBeComplete = Element_Level > 3;
         if (!DataMustAlwaysBeComplete)
