@@ -869,6 +869,17 @@ int32u File_Avc::AVC_Intra_CodecID_FromMeta(int32u Width, int32u Height, int32u 
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+void File_Avc::Fill_BitRate_Mode(File__Analyze* Instance, bool cbr_flag, bool cbr_flag_IsSet, bool cbr_flag_IsValid, int64u bit_rate_value, bool bit_rate_value_IsValid)
+{
+    if (cbr_flag_IsSet && cbr_flag_IsValid)
+    {
+        Instance->Fill(Stream_Video, 0, Video_BitRate_Mode, cbr_flag?"CBR":"VBR");
+        if (bit_rate_value!=(int64u)-1 && bit_rate_value_IsValid)
+            Instance->Fill(Stream_Video, 0, cbr_flag?Video_BitRate_Nominal:Video_BitRate_Maximum, bit_rate_value);
+    }
+}
+
+//---------------------------------------------------------------------------
 void File_Avc::Streams_Fill()
 {
     for (std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item=seq_parameter_sets.begin(); seq_parameter_set_Item!=seq_parameter_sets.end(); ++seq_parameter_set_Item)
@@ -1005,12 +1016,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
                     cbr_flag_IsSet=true;
                 }
             }
-        if (cbr_flag_IsSet && cbr_flag_IsValid)
-        {
-            Fill(Stream_Video, 0, Video_BitRate_Mode, cbr_flag?"CBR":"VBR");
-            if (bit_rate_value!=(int64u)-1 && bit_rate_value_IsValid)
-                Fill(Stream_Video, 0, cbr_flag?Video_BitRate_Nominal:Video_BitRate_Maximum, bit_rate_value);
-        }
+        Fill_BitRate_Mode(this, cbr_flag, cbr_flag_IsSet, cbr_flag_IsValid, bit_rate_value, bit_rate_value_IsValid);
     }
 
     auto Profile=Avc_profile_level_string(seq_parameter_set_Item->profile_idc, seq_parameter_set_Item->level_idc, seq_parameter_set_Item->constraint_set_flags);

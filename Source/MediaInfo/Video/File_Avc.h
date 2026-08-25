@@ -56,6 +56,9 @@ public :
     static avcintra_header AVC_Intra_Headers_Data(int32u CodecID);
     static int32u AVC_Intra_CodecID_FromMeta(int32u Width, int32u Height, int32u Fields, int32u SampleDuration, int32u TimeScale, int64u SizePerFrame);
 
+    //Helper for BitRate_Mode
+    static void Fill_BitRate_Mode(File__Analyze* Instance, bool cbr_flag, bool cbr_flag_IsSet, bool cbr_flag_IsValid, int64u bit_rate_value, bool bit_rate_value_IsValid);
+
 private :
     File_Avc(const File_Avc &File_Avc); //No copy
     File_Avc &operator =(const File_Avc &);
