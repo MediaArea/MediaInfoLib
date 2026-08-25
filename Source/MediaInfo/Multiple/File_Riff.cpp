@@ -1030,7 +1030,7 @@ void File_Riff::Header_Parse()
             Element_WaitForMoreData();
             return;
         }
-        if (Name==Elements::RF64 && CC4(Buffer+Buffer_Offset+0x0C)==Elements::WAVE_ds64)
+        if ((Name==Elements::RF64 || Name==Elements::BW64) && CC4(Buffer+Buffer_Offset+0x0C)==Elements::WAVE_ds64)
         {
             Size_Complete=LittleEndian2int64u(Buffer+Buffer_Offset+0x14);
             Param_Info1(Size_Complete);
