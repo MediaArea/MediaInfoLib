@@ -979,6 +979,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "Lightness;Lightness\n"
     "Lines_Count;Count of lines\n"
     "Lines_MaxCountPerEvent;Maximum count of lines per event\n"
+    "Lines_MaxCharacterCount;Maximum count of characters per line\n"
     "LineUpStart;Line Up Start\n"
     "LinkedTo_Bed_Pos;Bed #s\n"
     "LinkedTo_ChannelFormat_Pos;Channel format #s\n"

@@ -950,6 +950,7 @@ Library;Muxing library
 Lightness;Lightness
 Lines_Count;Count of lines
 Lines_MaxCountPerEvent;Maximum count of lines per event
+Lines_MaxCharacterCount;Maximum count of characters per line
 LineUpStart;Line Up Start
 LinkedTo_Bed_Pos;Bed #s
 LinkedTo_ChannelFormat_Pos;Channel format #s
