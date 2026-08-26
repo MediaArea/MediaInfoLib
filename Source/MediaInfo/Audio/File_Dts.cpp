@@ -499,17 +499,166 @@ static bool DtsX_PresentationObjectCount(const int8u* Data, size_t Size, int8u A
     return Source.Valid();
 }
 
-static bool DtsX_ExtensionProbe(const int8u* Buffer, size_t Size, int8u& ObjectCount)
+static bool DtsX_ReadBitsAt(const int8u* Buffer, size_t Size, size_t BitOffset, size_t BitCount, int32u& Value)
+{
+    Value=0;
+    if (BitCount>32 || BitOffset>((size_t)-1)-BitCount)
+        return false;
+    size_t End=BitOffset+BitCount;
+    if (End/8>Size || (End/8==Size && End%8))
+        return false;
+    for (size_t Bit=0; Bit<BitCount; ++Bit)
+    {
+        size_t Absolute=BitOffset+Bit;
+        Value=(Value<<1)|((Buffer[Absolute>>3]>>(7-(Absolute&7)))&1);
+    }
+    return true;
+}
+
+static bool DtsX_FourChannelSetHeader(const int8u* Buffer, size_t Size, size_t ByteOffset)
+{
+    if (ByteOffset>Size)
+        return false;
+    const int8u* Header=Buffer+ByteOffset;
+    size_t HeaderAvailable=Size-ByteOffset;
+    int32u HeaderSizeMinusOne, ChannelsMinusOne;
+    if (!DtsX_ReadBitsAt(Header, HeaderAvailable, 0, 10, HeaderSizeMinusOne)
+     || !DtsX_ReadBitsAt(Header, HeaderAvailable, 10, 4, ChannelsMinusOne)
+     || ChannelsMinusOne+1!=4)
+        return false;
+    size_t BitOffset=14+ChannelsMinusOne+1;
+    int32u PcmMinusOne, StorageMinusOne, FrequencyIndex, FrequencyModifier, ReplacementSet;
+    if (!DtsX_ReadBitsAt(Header, HeaderAvailable, BitOffset, 5, PcmMinusOne)
+     || !DtsX_ReadBitsAt(Header, HeaderAvailable, BitOffset+5, 5, StorageMinusOne)
+     || !DtsX_ReadBitsAt(Header, HeaderAvailable, BitOffset+10, 4, FrequencyIndex)
+     || !DtsX_ReadBitsAt(Header, HeaderAvailable, BitOffset+14, 2, FrequencyModifier)
+     || !DtsX_ReadBitsAt(Header, HeaderAvailable, BitOffset+16, 2, ReplacementSet))
+        return false;
+    size_t HeaderSize=HeaderSizeMinusOne+1;
+    int32u Pcm=PcmMinusOne+1;
+    int32u Storage=StorageMinusOne+1;
+    return HeaderSize<=HeaderAvailable
+        && Pcm<=Storage
+        && (Storage==16 || Storage==20 || Storage==24)
+        && FrequencyIndex==12
+        && !FrequencyModifier
+        && !ReplacementSet
+        && !Dts_CRC_CCIT_Compute(Header, HeaderSize);
+}
+
+static bool DtsX_AlternateGeometryAt(const int8u* Control, size_t Size, size_t BitOffset)
+{
+    int32u SegmentLog2, SegmentSampleLog2, NavigationSizeMinusOne;
+    if (!DtsX_ReadBitsAt(Control, Size, BitOffset, 4, SegmentLog2)
+     || !DtsX_ReadBitsAt(Control, Size, BitOffset+4, 4, SegmentSampleLog2)
+     || !DtsX_ReadBitsAt(Control, Size, BitOffset+8, 5, NavigationSizeMinusOne)
+     || SegmentLog2>3 || SegmentSampleLog2>9)
+        return false;
+    int32u Segments=1U<<SegmentLog2;
+    int32u SegmentSamples=1U<<SegmentSampleLog2;
+    int32u NavigationSize=NavigationSizeMinusOne+1;
+    return Segments<=8 && Segments*SegmentSamples==512 && NavigationSize>=4 && NavigationSize<=20;
+}
+
+static bool DtsX_AlternateFourChannelSet(const int8u* Buffer, size_t Size, size_t Offset, int32u Sync)
+{
+    static const int8u OuterSuffix[6]={0x03, 0x34, 0x38, 0x8C, 0x4F, 0x00};
+    if (Offset>Size || Size-Offset<4)
+        return false;
+    const int8u* Payload=Buffer+Offset;
+    size_t PayloadSize=Size-Offset;
+    size_t PrefixEnd=(size_t)-1;
+    for (size_t Candidate=4; Candidate+sizeof(OuterSuffix)<=PayloadSize; ++Candidate)
+    {
+        bool Matches=true;
+        for (size_t i=0; i<sizeof(OuterSuffix); ++i)
+            if (Payload[Candidate+i]!=OuterSuffix[i])
+                Matches=false;
+        if (!Matches || Dts_CRC_CCIT_Compute(Payload, Candidate))
+            continue;
+        if (PrefixEnd!=(size_t)-1)
+            return false;
+        PrefixEnd=Candidate;
+    }
+    if (PrefixEnd==(size_t)-1)
+        return false;
+    size_t ControlStart=PrefixEnd+sizeof(OuterSuffix);
+    if (ControlStart>=PayloadSize)
+        return false;
+    int8u Tag=Payload[ControlStart];
+    size_t ControlSize=Tag==0xB2?7:(Tag>=0xC2 && Tag<=0xC6?8:0);
+    if (!ControlSize || ControlSize>PayloadSize-ControlStart)
+        return false;
+    size_t LastGeometryBit=Sync==0xF14000D3?31:(Sync==0xF14000D4?26:25);
+    size_t CommonBit=(size_t)-1;
+    for (size_t Bit=18; Bit<=LastGeometryBit; ++Bit)
+    {
+        if (!DtsX_AlternateGeometryAt(Payload+ControlStart, ControlSize, Bit))
+            continue;
+        if (CommonBit!=(size_t)-1)
+            return false;
+        CommonBit=Bit;
+    }
+    if (CommonBit==(size_t)-1 || CommonBit<14)
+        return false;
+    int32u EncodedSpan;
+    if (!DtsX_ReadBitsAt(Payload+ControlStart, ControlSize, 9, CommonBit-14, EncodedSpan))
+        return false;
+    size_t Nominal=(size_t)EncodedSpan*2+ControlStart+12;
+    bool Found=false;
+    for (size_t Adjustment=0; Adjustment<2; ++Adjustment)
+    {
+        if (Adjustment && !Nominal)
+            continue;
+        size_t Candidate=Nominal-Adjustment;
+        if (!DtsX_FourChannelSetHeader(Payload, PayloadSize, Candidate))
+            continue;
+        if (Found)
+            return false;
+        Found=true;
+    }
+    return Found;
+}
+
+static bool DtsX_StandardFourChannelSet(const int8u* Buffer, size_t Size, size_t Offset)
+{
+    if (Offset>Size || Size-Offset<4)
+        return false;
+    size_t LastCandidate=min(Size-Offset, (size_t)32);
+    bool Found=false;
+    for (size_t Relative=4; Relative<=LastCandidate; ++Relative)
+    {
+        if (!DtsX_FourChannelSetHeader(Buffer, Size, Offset+Relative))
+            continue;
+        if (Found)
+            return false;
+        Found=true;
+    }
+    return Found;
+}
+
+static int8u DtsX_ConfirmedSupplementalChannelCount(const int8u* Buffer, size_t Size, size_t Offset, int32u Sync)
+{
+    if (Sync==0x02000850)
+        return DtsX_StandardFourChannelSet(Buffer, Size, Offset)?4:0;
+    if (Sync>=0xF14000D0 && Sync<=0xF14000D4)
+        return DtsX_AlternateFourChannelSet(Buffer, Size, Offset, Sync)?4:0;
+    return 0;
+}
+
+static bool DtsX_ExtensionProbe(const int8u* Buffer, size_t Size, int8u& ObjectCount, int8u& SupplementalChannelCount)
 {
     bool IsDtsX=false;
     ObjectCount=0;
+    SupplementalChannelCount=0;
     for (size_t Offset=0; Offset+4<=Size; Offset+=4)
     {
         int32u Sync=BigEndian2int32u(Buffer+Offset);
         if (Sync!=0x02000850 && Sync!=0xF14000D0 && Sync!=0xF14000D1
-         && Sync!=0xF14000D3 && Sync!=0xF14000D4)
+         && Sync!=0xF14000D2 && Sync!=0xF14000D3 && Sync!=0xF14000D4)
             continue;
         IsDtsX=true;
+        SupplementalChannelCount=max(SupplementalChannelCount, DtsX_ConfirmedSupplementalChannelCount(Buffer, Size, Offset, Sync));
         int8u Count=0;
         // D3 is both the DTS:X extension sync and a primary type-241
         // presentation header, so its payload carries the real object count.
@@ -1028,6 +1177,7 @@ File_Dts::File_Dts()
     HD_TotalNumberChannels=(int8u)-1;
     HD_ExSSFrameDurationCode=(int8u)-1;
     DtsXObjectCount=0;
+    DtsXSupplementalChannelCount=0;
     DtsXObjectCountProbeDone=false;
     AuxiliaryData=false;
     ExtendedCoding=false;
@@ -1206,6 +1356,8 @@ void File_Dts::Streams_Fill()
 
     Stream_Prepare(Stream_Audio);
     Fill(Stream_Audio, 0, Audio_Format, "DTS");
+    Ztring DtsXBedChannelConfiguration;
+    size_t DtsXBedChannelCount=0;
 
     // IMAX DTS:X
     if (Presence[presence_Extended_IMAX])
@@ -1235,6 +1387,11 @@ void File_Dts::Streams_Fill()
     {
         Data[Profiles].push_back(__T("X"));
         Streams_Fill_Extension();
+        if (DtsXSupplementalChannelCount && !Data[ChannelLayout].back().empty() && !Data[Channels].back().empty())
+        {
+            DtsXBedChannelConfiguration=Data[ChannelLayout].back()+__T(" Tfl Tfr Tbl Tbr");
+            DtsXBedChannelCount=Data[Channels].back().To_int64u()+DtsXSupplementalChannelCount;
+        }
         if (DtsXObjectCount)
         {
             Ztring Objects=__T("Objects (")+Ztring::ToZtring(DtsXObjectCount)+__T(")");
@@ -1369,6 +1526,14 @@ void File_Dts::Streams_Fill()
     Fill(Stream_Audio, 0, Audio_BitRate_Mode, LegacyStreamDisplay?Data[BitRate_Mode].Read():Data[BitRate_Mode].Read(0), true);
     Fill(Stream_General, 0, General_OverallBitRate_Mode, Retrieve(Stream_Audio, 0, Audio_BitRate_Mode));
     Fill(Stream_Audio, 0, Audio_Compression_Mode, LegacyStreamDisplay?Data[Compression_Mode].Read():Data[Compression_Mode].Read(0), true);
+    if (DtsXBedChannelCount)
+    {
+        Ztring DtsXChannelLayout=DtsXBedChannelConfiguration;
+        if (DtsXObjectCount)
+            DtsXChannelLayout+=__T(" Objects (")+Ztring::ToZtring(DtsXObjectCount)+__T(")");
+        Fill(Stream_Audio, 0, Audio_Channel_s_, DtsXBedChannelCount, 10, true);
+        Fill(Stream_Audio, 0, Audio_ChannelLayout, DtsXChannelLayout, true);
+    }
 
     // Cleanup up
     for (size_t Pos=0; Pos<10; ++Pos)
@@ -1824,18 +1989,20 @@ void File_Dts::Data_Parse()
     }
 
     //Parsing
-    if (!Presence[presence_Extended_X])
+    if (!Presence[presence_Extended_X] || !DtsXSupplementalChannelCount)
     {
         int8u BufferedDtsXObjectCount=0;
+        int8u BufferedDtsXSupplementalChannelCount=0;
         size_t DtsXProbeSize=Buffer_Size-Buffer_Offset;
         if (DtsXProbeSize>Element_Size)
             DtsXProbeSize=(size_t)Element_Size;
         if (DtsXProbeSize>0x10000)
             DtsXProbeSize=0x10000;
-        if (DtsX_ExtensionProbe(Buffer+Buffer_Offset, DtsXProbeSize, BufferedDtsXObjectCount))
+        if (DtsX_ExtensionProbe(Buffer+Buffer_Offset, DtsXProbeSize, BufferedDtsXObjectCount, BufferedDtsXSupplementalChannelCount))
         {
             Presence.set(presence_Extended_X);
             DtsXObjectCount=max(DtsXObjectCount, BufferedDtsXObjectCount);
+            DtsXSupplementalChannelCount=max(DtsXSupplementalChannelCount, BufferedDtsXSupplementalChannelCount);
         }
     }
 
@@ -2813,6 +2980,7 @@ void File_Dts::Extensions2()
     {
         case 0x02000850:
         case 0xF14000D1:
+        case 0xF14000D2:
         case 0xF14000D3:
         case 0xF14000D4:
             Element_Name("X?");

@@ -111,6 +111,7 @@ private :
     int8u  HD_TotalNumberChannels;
     int8u  HD_ExSSFrameDurationCode;
     int8u  DtsXObjectCount;
+    int8u  DtsXSupplementalChannelCount;
     bool   DtsXObjectCountProbeDone;
     bool   AuxiliaryData;
     bool   ExtendedCoding;
