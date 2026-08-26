@@ -1435,7 +1435,19 @@ bool File_Mpega::Header_Encoders()
             Get_String (20, Encoded_Library,                    "Encoded_Library");
         else
             Get_String ( 8, Encoded_Library,                    "Encoded_Library");
-        Encoded_Library.erase(Encoded_Library.find_last_not_of("AU\xAA")+1);
+        // Keep only leading printable ASCII part
+        size_t End=0;
+        while (End<Encoded_Library.size())
+        {
+            const unsigned char C=(unsigned char)(Encoded_Library[End]);
+            if (C>=0x20 && C<=0x7E)
+                ++End;
+            else
+                break;
+        }
+        Encoded_Library.resize(End);
+        Encoded_Library.erase(Encoded_Library.find_last_not_of("AU")+1); // Clean LAME3.100AAAA...UUU
+
         Element_Offset=0; //Reseting it
         return true;
     }
