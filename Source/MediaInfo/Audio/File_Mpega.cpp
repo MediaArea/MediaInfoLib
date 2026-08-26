@@ -458,6 +458,14 @@ void File_Mpega::Streams_Finish()
         }
     }
 
+    //VBR detection without header
+    //BitRate_Count may have changed after Streams_Fill() sampled the first frames.
+    if (VBR_Frames==0)
+    {
+        if (BitRate_Count.size()>1)
+            BitRate_Mode=__T("VBR");
+    }
+
     //Bitrate calculation if VBR
     int64u FrameCount=0;
     if (VBR_Frames>0)
