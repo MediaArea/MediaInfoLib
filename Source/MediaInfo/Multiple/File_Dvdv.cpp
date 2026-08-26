@@ -287,10 +287,23 @@ void File_Dvdv::Streams_Finish()
     {
         Ztring VOB_File=File_Name.substr(0, File_Name.size()-5)+__T("1.VOB");
 
+        // The IFO is authoritative for stream languages. VOBs do not carry
+        // this information, so merging them would otherwise clear it.
+        vector<Ztring> Languages[2];
+        for (size_t StreamKind=Stream_Audio; StreamKind<=Stream_Text; StreamKind++)
+            for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
+                Languages[StreamKind-Stream_Audio].push_back(Retrieve_Const((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_Language)));
+
         MediaInfo_Internal MI;
         MI.Option(__T("File_IsReferenced"), __T("1"));
         if (MI.Open(VOB_File))
+        {
             Merge(MI);
+            for (size_t StreamKind=Stream_Audio; StreamKind<=Stream_Text; StreamKind++)
+                for (size_t StreamPos=0; StreamPos<Languages[StreamKind-Stream_Audio].size(); StreamPos++)
+                    if (!Languages[StreamKind-Stream_Audio][StreamPos].empty())
+                        Fill((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_Language), Languages[StreamKind-Stream_Audio][StreamPos], true);
+        }
         auto SeparatorPos=VOB_File.find_last_of(__T("/\\"));
         if (SeparatorPos!=string::npos)
         {
