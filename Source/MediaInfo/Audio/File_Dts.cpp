@@ -140,7 +140,7 @@ public:
 
     int32u Get(size_t Bits)
     {
-        if (Bits>32 || BitOffset+Bits>BitLimit)
+        if (Bits>32 || BitOffset>BitLimit || Bits>BitLimit-BitOffset)
         {
             IsValid=false;
             return 0;
@@ -157,7 +157,7 @@ public:
 
     void Skip(size_t Bits)
     {
-        if (BitOffset+Bits>BitLimit)
+        if (BitOffset>BitLimit || Bits>BitLimit-BitOffset)
             IsValid=false;
         else
             BitOffset+=Bits;
@@ -282,6 +282,8 @@ static bool DtsX_ExssHeader(const int8u* Buffer, size_t Size, dtsx_exss_probe& H
     {
         Header.AssetHeaderBitOffsets[i]=Source.Offset();
         int32u AssetHeaderSize=Source.Get(9)+1;
+        if (AssetHeaderSize<2)
+            return false;
         Source.Skip(AssetHeaderSize*8-9);
     }
     return Source.Valid();
@@ -295,7 +297,7 @@ static bool DtsX_AssetHeader(const int8u* Buffer, size_t Size, const dtsx_exss_p
     Source.Skip(Exss.AssetHeaderBitOffsets[AssetOrdinal]);
     size_t AssetStart=Source.Offset();
     Asset.HeaderSize=Source.Get(9)+1;
-    if (!Source.Valid() || AssetStart+Asset.HeaderSize*8>Size*8)
+    if (!Source.Valid() || Asset.HeaderSize<2 || AssetStart+Asset.HeaderSize*8>Size*8)
         return false;
     Source.Get(3); // AssetIndex
 
@@ -421,46 +423,48 @@ static bool DtsX_AssetHeader(const int8u* Buffer, size_t Size, const dtsx_exss_p
         Source.Skip(14);
 
     const bool HasXll=Asset.CodingMode==1 || (Asset.CodingMode==0 && (Asset.CodingComponents&(1<<9)));
-    const size_t AssetEnd=AssetStart+Asset.HeaderSize*8;
-    if (HasXll && Source.Offset()+3<=AssetEnd)
+    // Private XLL navigation may continue beyond the nominal asset header.
+    // The decoder reads this tail from the containing ExSS frame.
+    const size_t XllPrivateEnd=Size*8;
+    if (HasXll && Source.Offset()+3<=XllPrivateEnd)
         Source.Skip(3);
-    if (Asset.OneToOneMapping && Exss.StaticFieldsPresent && Exss.SpeakerMetadataPresent && !MixMetadataPresent && Source.Offset()<AssetEnd)
+    if (Asset.OneToOneMapping && Exss.StaticFieldsPresent && Exss.SpeakerMetadataPresent && !MixMetadataPresent && Source.Offset()<XllPrivateEnd)
     {
-        if (Source.Get(1) && Source.Offset()<AssetEnd)
+        if (Source.Get(1) && Source.Offset()<XllPrivateEnd)
         {
             bool PerSpeaker=Source.Get(1)!=0;
             Source.Skip(6*(PerSpeaker?Asset.ChannelCount:1));
         }
     }
-    if (Source.Offset()<AssetEnd)
+    if (Source.Offset()<XllPrivateEnd)
         Source.Skip(1);
-    if (Source.Offset()<AssetEnd && Source.Get(1) && Source.Offset()+4<=AssetEnd)
+    if (Source.Offset()<XllPrivateEnd && Source.Get(1) && Source.Offset()+4<=XllPrivateEnd)
     {
         Source.Skip(4);
-        if (Source.Offset()+8*(Exss.FrameDuration>>8)<=AssetEnd)
+        if (Source.Offset()+8*(Exss.FrameDuration>>8)<=XllPrivateEnd)
             Source.Skip(8*(Exss.FrameDuration>>8));
     }
-    if (HasXll && Source.Offset()<AssetEnd)
+    if (HasXll && Source.Offset()<XllPrivateEnd)
         Source.Skip(1);
-    if (Asset.SpeakerMaskPresent && Source.Offset()+2<=AssetEnd)
+    if (Asset.SpeakerMaskPresent && Source.Offset()+2<=XllPrivateEnd)
         Source.Skip(2);
-    if (HasXll && Source.Offset()+2<=AssetEnd)
+    if (HasXll && Source.Offset()+2<=XllPrivateEnd)
     {
         Asset.XllMetadataPresent=Source.Get(1)!=0;
         Asset.XllObjectMetadataPresent=Source.Get(1)!=0;
-        if ((Asset.XllMetadataPresent || Asset.XllObjectMetadataPresent) && Source.Offset()+Exss.SizeFieldBits<=AssetEnd)
+        if ((Asset.XllMetadataPresent || Asset.XllObjectMetadataPresent) && Source.Offset()+Exss.SizeFieldBits<=XllPrivateEnd)
         {
             Asset.XllMetadataOffset=Source.Get(Exss.SizeFieldBits);
-            if (Asset.XllMetadataPresent && Source.Offset()+4<=AssetEnd)
+            if (Asset.XllMetadataPresent && Source.Offset()+4<=XllPrivateEnd)
             {
                 int8u Count=(int8u)(Source.Get(4)+1);
-                if (Source.Offset()+Count*8<=AssetEnd)
+                if (Source.Offset()+Count*8<=XllPrivateEnd)
                     for (size_t i=0; i<Count; ++i)
                         Asset.MetadataElementSizes.push_back((int8u)Source.Get(8));
             }
         }
     }
-    return Source.Valid() && Source.Offset()<=AssetEnd;
+    return Source.Valid() && Source.Offset()<=XllPrivateEnd;
 }
 
 static bool DtsX_PresentationObjectCount(const int8u* Data, size_t Size, int8u AssociationMode, int8u& ObjectCount)
@@ -538,12 +542,13 @@ static int8u DtsX_ObjectCount(const int8u* Buffer, size_t Size)
         size_t MetadataSize=2;
         for (auto ElementSize : Asset.MetadataElementSizes)
             MetadataSize+=2+ElementSize;
-        if (MetadataOffset>Size || MetadataSize>Size-MetadataOffset)
+        if (MetadataOffset>Size)
         {
             AssetPayloadOffset+=Exss.AssetSizes[AssetOrdinal];
             continue;
         }
-        if (Dts_CRC_CCIT_Compute(Buffer+MetadataOffset, MetadataSize))
+        size_t MetadataAvailable=Size-MetadataOffset;
+        if (MetadataSize>MetadataAvailable || Dts_CRC_CCIT_Compute(Buffer+MetadataOffset, MetadataSize))
         {
             // Private XLL navigation may overread the nominal final element
             // size. The in-band CRC is authoritative, as in the decoder.
@@ -552,7 +557,7 @@ static int8u DtsX_ObjectCount(const int8u* Buffer, size_t Size)
             for (size_t LastSize=0; LastSize<=0xFF; ++LastSize)
             {
                 size_t RecoveredSize=MetadataSizeWithoutLastPayload+LastSize;
-                if (RecoveredSize<=Size-MetadataOffset && !Dts_CRC_CCIT_Compute(Buffer+MetadataOffset, RecoveredSize))
+                if (RecoveredSize<=MetadataAvailable && !Dts_CRC_CCIT_Compute(Buffer+MetadataOffset, RecoveredSize))
                 {
                     Asset.MetadataElementSizes.back()=(int8u)LastSize;
                     MetadataSize=RecoveredSize;
@@ -1023,6 +1028,7 @@ File_Dts::File_Dts()
     HD_TotalNumberChannels=(int8u)-1;
     HD_ExSSFrameDurationCode=(int8u)-1;
     DtsXObjectCount=0;
+    DtsXObjectCountProbeDone=false;
     AuxiliaryData=false;
     ExtendedCoding=false;
     ES=false;
@@ -1822,6 +1828,8 @@ void File_Dts::Data_Parse()
     {
         int8u BufferedDtsXObjectCount=0;
         size_t DtsXProbeSize=Buffer_Size-Buffer_Offset;
+        if (DtsXProbeSize>Element_Size)
+            DtsXProbeSize=(size_t)Element_Size;
         if (DtsXProbeSize>0x10000)
             DtsXProbeSize=0x10000;
         if (DtsX_ExtensionProbe(Buffer+Buffer_Offset, DtsXProbeSize, BufferedDtsXObjectCount))
@@ -1835,11 +1843,16 @@ void File_Dts::Data_Parse()
     Peek_B4 (Sync);
     if (Sync==0x64582025)
     {
-        int8u FrameDtsXObjectCount=DtsX_ObjectCount(Buffer+Buffer_Offset, Element_Size);
-        if (FrameDtsXObjectCount)
+        if (Presence[presence_Extended_X] || !DtsXObjectCountProbeDone)
         {
-            DtsXObjectCount=max(DtsXObjectCount, FrameDtsXObjectCount);
-            Presence.set(presence_Extended_X);
+            int8u FrameDtsXObjectCount=DtsX_ObjectCount(Buffer+Buffer_Offset, Element_Size);
+            if (FrameDtsXObjectCount)
+            {
+                DtsXObjectCount=max(DtsXObjectCount, FrameDtsXObjectCount);
+                Presence.set(presence_Extended_X);
+            }
+            if (!Presence[presence_Extended_X])
+                DtsXObjectCountProbeDone=true;
         }
 
         //HD
