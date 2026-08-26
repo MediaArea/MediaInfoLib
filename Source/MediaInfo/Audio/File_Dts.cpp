@@ -207,6 +207,7 @@ struct dtsx_asset_probe
     bool EmbeddedStereo=false;
     bool EmbeddedSixChannel=false;
     bool SpeakerMaskPresent=false;
+    int32u SpeakerActivityMask=0;
     int8u CodingMode=0;
     int16u CodingComponents=0;
     int32u ComponentSize[12]{};
@@ -215,6 +216,8 @@ struct dtsx_asset_probe
     bool XllObjectMetadataPresent=false;
     int32u XllMetadataOffset=0;
     vector<int8u> MetadataElementSizes;
+    vector<int8u> AssociatedChunkTypes;
+    vector<int16u> AssociatedChunkExtents;
 };
 
 static int8u DtsX_SpeakerCount(int32u Mask)
@@ -228,6 +231,76 @@ static int8u DtsX_SpeakerCount(int32u Mask)
         if (Mask&(1<<i))
             Count+=Counts[i];
     return Count;
+}
+
+static int8u DtsX_AddedSpeakerCount(const int8u* Buffer, size_t Size, size_t Offset, int32u FallbackReferenceMask)
+{
+    if (Offset>=Size)
+        return 0;
+    dtsx_bit_reader Source(Buffer+Offset, Size-Offset);
+    int8u ChunkId=(int8u)Source.Get(8);
+    Source.Skip(8); // Association flags
+    if (ChunkId<2 || ChunkId>4)
+        return 0;
+    Source.Skip(1+4+4);
+    if (Source.Get(1))
+        Source.Skip(1);
+    int32u ReferenceMask;
+    if (Source.Get(1))
+    {
+        Source.Skip(2+3);
+        int8u MaskWords=(int8u)(Source.Get(3)+1);
+        ReferenceMask=Source.Get(4*MaskWords);
+    }
+    else
+    {
+        Source.Skip(4);
+        ReferenceMask=FallbackReferenceMask;
+    }
+    if (Source.Get(1))
+    {
+        Source.Skip(6);
+        if (Source.Get(1))
+            Source.Skip(6);
+    }
+    int8u MaskWords=(int8u)(Source.Get(3)+1);
+    int32u OutputMask=Source.Get(4*MaskWords);
+    // A type-69 chunk is supplemental only when the combined-mix matrix
+    // identifies actual speakers added to the coded bed.
+    int8u ReferenceCount=DtsX_SpeakerCount(ReferenceMask);
+    int8u AddedCount=DtsX_SpeakerCount(OutputMask&~ReferenceMask);
+    bool FirstGainPresent=false;
+    if (ChunkId<=3)
+    {
+        Source.Skip(5+6);
+        FirstGainPresent=Source.Get(1)!=0;
+        if (Source.Get(1))
+        {
+            Source.Skip(6);
+            if (FirstGainPresent && Source.Get(1))
+                Source.Skip(6);
+        }
+    }
+    else
+        Source.Skip(4);
+    bool DownmixPresent=Source.Get(1)!=0;
+    bool CoefficientsPresent=DownmixPresent || Source.Get(1)!=0;
+    if (!CoefficientsPresent || !ReferenceCount || !AddedCount || ReferenceCount>32 || AddedCount>32)
+        return 0;
+    Source.Skip(6);
+    int8u CommonGainSelector=(int8u)Source.Get(FirstGainPresent?1:3);
+    if (CommonGainSelector)
+        Source.Skip(6*(1<<(CommonGainSelector-1)));
+    for (size_t Added=0; Added<AddedCount; ++Added)
+    {
+        int32u UpdateMask=Source.Get(ReferenceCount);
+        if (!UpdateMask)
+            return 0;
+        for (size_t Reference=0; Reference<ReferenceCount; ++Reference)
+            if ((UpdateMask&((int32u)1<<Reference)) && Source.Get(6)>61)
+                return 0;
+    }
+    return Source.Valid()?AddedCount:0;
 }
 
 static bool DtsX_ExssHeader(const int8u* Buffer, size_t Size, dtsx_exss_probe& Header)
@@ -324,7 +397,7 @@ static bool DtsX_AssetHeader(const int8u* Buffer, size_t Size, const dtsx_exss_p
             if (Asset.SpeakerMaskPresent)
             {
                 MaskBits=(int8u)(4*(Source.Get(2)+1));
-                Source.Skip(MaskBits);
+                Asset.SpeakerActivityMask=Source.Get(MaskBits);
             }
             int8u RemapSets=(int8u)Source.Get(3);
             for (size_t Set=0; Set<RemapSets; ++Set)
@@ -461,6 +534,17 @@ static bool DtsX_AssetHeader(const int8u* Buffer, size_t Size, const dtsx_exss_p
                 if (Source.Offset()+Count*8<=XllPrivateEnd)
                     for (size_t i=0; i<Count; ++i)
                         Asset.MetadataElementSizes.push_back((int8u)Source.Get(8));
+            }
+            if (Asset.XllObjectMetadataPresent && Source.Offset()+4<=XllPrivateEnd)
+            {
+                int8u Count=(int8u)(Source.Get(4)+1);
+                if (Source.Offset()+Count*8+Count*15<=XllPrivateEnd)
+                {
+                    for (size_t i=0; i<Count; ++i)
+                        Asset.AssociatedChunkTypes.push_back((int8u)Source.Get(8));
+                    for (size_t i=0; i<Count; ++i)
+                        Asset.AssociatedChunkExtents.push_back((int16u)(Source.Get(15)+1));
+                }
             }
         }
     }
@@ -629,27 +713,8 @@ static bool DtsX_AlternateFourChannelSet(const int8u* Buffer, size_t Size, size_
     return Found;
 }
 
-static bool DtsX_StandardFourChannelSet(const int8u* Buffer, size_t Size, size_t Offset)
-{
-    if (Offset>Size || Size-Offset<4)
-        return false;
-    size_t LastCandidate=min(Size-Offset, (size_t)32);
-    bool Found=false;
-    for (size_t Relative=4; Relative<=LastCandidate; ++Relative)
-    {
-        if (!DtsX_FourChannelSetHeader(Buffer, Size, Offset+Relative))
-            continue;
-        if (Found)
-            return false;
-        Found=true;
-    }
-    return Found;
-}
-
 static int8u DtsX_ConfirmedSupplementalChannelCount(const int8u* Buffer, size_t Size, size_t Offset, int32u Sync)
 {
-    if (Sync==0x02000850)
-        return DtsX_StandardFourChannelSet(Buffer, Size, Offset)?4:0;
     if (Sync>=0xF14000D0 && Sync<=0xF14000D4)
         return DtsX_AlternateFourChannelSet(Buffer, Size, Offset, Sync)?4:0;
     return 0;
@@ -687,7 +752,7 @@ static bool DtsX_ExtensionProbe(const int8u* Buffer, size_t Size, int8u& ObjectC
     return HasValidatedEvidence;
 }
 
-static int8u DtsX_ObjectCount(const int8u* Buffer, size_t Size)
+static int8u DtsX_ObjectCount(const int8u* Buffer, size_t Size, int8u& SupplementalChannelCount)
 {
     dtsx_exss_probe Exss;
     if (!DtsX_ExssHeader(Buffer, Size, Exss))
@@ -701,7 +766,7 @@ static int8u DtsX_ObjectCount(const int8u* Buffer, size_t Size)
         if (!DtsX_AssetHeader(Buffer, Size, Exss, AssetOrdinal, Asset)
          || !Asset.XllMetadataPresent
          || Asset.MetadataElementSizes.empty()
-         || !(Asset.CodingComponents&(1<<9)))
+         || !(Asset.CodingMode==1 || (Asset.CodingComponents&(1<<9))))
         {
             AssetPayloadOffset+=Exss.AssetSizes[AssetOrdinal];
             continue;
@@ -748,6 +813,23 @@ static int8u DtsX_ObjectCount(const int8u* Buffer, size_t Size)
             if (DtsX_PresentationObjectCount(Buffer+ElementOffset, Size-ElementOffset, Exss.AssetCount, ObjectCount))
                 MaximumObjectCount=max(MaximumObjectCount, ObjectCount);
             ElementOffset+=2+ElementSize;
+        }
+        size_t AssociatedOffset=MetadataOffset+MetadataSize;
+        int8u AddedSpeakerCount=DtsX_AddedSpeakerCount(Buffer, Size, MetadataOffset, Asset.SpeakerActivityMask);
+        for (size_t i=0; i<Asset.AssociatedChunkTypes.size() && i<Asset.AssociatedChunkExtents.size(); ++i)
+        {
+            size_t Extent=Asset.AssociatedChunkExtents[i];
+            if (AssociatedOffset>=Size)
+                break;
+            size_t ChunkEnd=AssociatedOffset+min(Extent, Size-AssociatedOffset);
+            if (Asset.AssociatedChunkTypes[i]==69 && AddedSpeakerCount==4)
+                for (size_t Candidate=AssociatedOffset; Candidate<ChunkEnd; ++Candidate)
+                    if (DtsX_FourChannelSetHeader(Buffer, ChunkEnd, Candidate))
+                    {
+                        SupplementalChannelCount=max(SupplementalChannelCount, (int8u)4);
+                        break;
+                    }
+            AssociatedOffset=ChunkEnd;
         }
         AssetPayloadOffset+=Exss.AssetSizes[AssetOrdinal];
     }
@@ -2057,10 +2139,12 @@ void File_Dts::Data_Parse()
     {
         if (Presence[presence_Extended_X] || !DtsXObjectCountProbeDone)
         {
-            int8u FrameDtsXObjectCount=DtsX_ObjectCount(Buffer+Buffer_Offset, Element_Size);
-            if (FrameDtsXObjectCount)
+            int8u FrameDtsXSupplementalChannelCount=0;
+            int8u FrameDtsXObjectCount=DtsX_ObjectCount(Buffer+Buffer_Offset, Element_Size, FrameDtsXSupplementalChannelCount);
+            if (FrameDtsXObjectCount || FrameDtsXSupplementalChannelCount)
             {
                 DtsXObjectCount=max(DtsXObjectCount, FrameDtsXObjectCount);
+                DtsXSupplementalChannelCount=max(DtsXSupplementalChannelCount, FrameDtsXSupplementalChannelCount);
                 Presence.set(presence_Extended_X);
             }
             if (!Presence[presence_Extended_X])
