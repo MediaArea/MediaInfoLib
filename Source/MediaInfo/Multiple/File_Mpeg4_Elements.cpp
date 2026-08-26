@@ -402,6 +402,123 @@ const char* Mpeg4_chan_Layout(int16u Ordering)
 }
 
 //---------------------------------------------------------------------------
+// Auro-Cx channel IDs 0..15 (from auro3d-decode / Auro channel mask)
+static const char* Mpeg4_AuroCx_ChannelLayout_List[16] =
+{
+    "L", "R", "C", "LFE", "Ls", "Rs", "Cb", "Lb",
+    "Rb", "Tfl", "Tfr", "Tfc", "Tc", "Tbl", "Tbr", "Tbc",
+};
+
+static const char* Mpeg4_AuroCx_LayoutName(int16u Layout)
+{
+    switch (Layout)
+    {
+        case 0x01BF : return "7.1";
+        case 0x663F : return "5.1+4H (9.1)";
+        case 0x67BF : return "7.1+4H (11.1)";
+        case 0x7FBF : return "7.1+5H+T (13.1)";
+        default     : return NULL;
+    }
+}
+
+static std::string Mpeg4_AuroCx_ChannelLayout(int16u Layout)
+{
+    std::string Text;
+    for (int8u i=0; i<16; i++)
+        if (Layout&(1<<i))
+        {
+            if (!Text.empty())
+                Text+=' ';
+            Text+=Mpeg4_AuroCx_ChannelLayout_List[i];
+        }
+    return Text;
+}
+
+static std::string Mpeg4_AuroCx_ChannelPositions(int16u Layout)
+{
+    std::string Text;
+    if (Layout&0x0007)
+    {
+        Text+="Front:";
+        if (Layout&0x0001) Text+=" L";
+        if (Layout&0x0004) Text+=" C";
+        if (Layout&0x0002) Text+=" R";
+    }
+    if (Layout&0x0030)
+    {
+        if (!Text.empty()) Text+=", ";
+        Text+="Side:";
+        if (Layout&0x0010) Text+=" L";
+        if (Layout&0x0020) Text+=" R";
+    }
+    if (Layout&0x01C0)
+    {
+        if (!Text.empty()) Text+=", ";
+        Text+="Back:";
+        if (Layout&0x0080) Text+=" L";
+        if (Layout&0x0040) Text+=" C";
+        if (Layout&0x0100) Text+=" R";
+    }
+    if (Layout&0x0E00)
+    {
+        if (!Text.empty()) Text+=", ";
+        Text+="TopFront:";
+        if (Layout&0x0200) Text+=" L";
+        if (Layout&0x0800) Text+=" C";
+        if (Layout&0x0400) Text+=" R";
+    }
+    if (Layout&0x1000)
+    {
+        if (!Text.empty()) Text+=", ";
+        Text+="Top: C";
+    }
+    if (Layout&0xE000)
+    {
+        if (!Text.empty()) Text+=", ";
+        Text+="TopRear:";
+        if (Layout&0x2000) Text+=" L";
+        if (Layout&0x8000) Text+=" C";
+        if (Layout&0x4000) Text+=" R";
+    }
+    if (Layout&0x0008)
+    {
+        if (!Text.empty()) Text+=", ";
+        Text+="LFE";
+    }
+    return Text;
+}
+
+static std::string Mpeg4_AuroCx_ChannelPositions2(int16u Layout)
+{
+    int8u Front=0, Side=0, Back=0, LFE=0, Height=0;
+    if (Layout&0x0001) Front++;
+    if (Layout&0x0002) Front++;
+    if (Layout&0x0004) Front++;
+    if (Layout&0x0010) Side++;
+    if (Layout&0x0020) Side++;
+    if (Layout&0x0040) Back++;
+    if (Layout&0x0080) Back++;
+    if (Layout&0x0100) Back++;
+    if (Layout&0x0008) LFE++;
+    if (Layout&0x0200) Height++;
+    if (Layout&0x0400) Height++;
+    if (Layout&0x0800) Height++;
+    if (Layout&0x1000) Height++;
+    if (Layout&0x2000) Height++;
+    if (Layout&0x4000) Height++;
+    if (Layout&0x8000) Height++;
+
+    Ztring Text;
+    Text+=Ztring::ToZtring(Front);
+    Text+=__T('/')+Ztring::ToZtring(Side);
+    Text+=__T('/')+Ztring::ToZtring(Back);
+    Text+=__T('.')+Ztring::ToZtring(LFE);
+    if (Height)
+        Text+=__T('.')+Ztring::ToZtring(Height);
+    return Text.To_UTF8();
+}
+
+//---------------------------------------------------------------------------
 static std::string Mpeg4_chan_ChannelDescription (int64u ChannelLabels)
 {
     std::string Text;
@@ -906,6 +1023,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_clap=0x636C6170;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_chan=0x6368616E;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_chnl=0x63686E6C;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_acxd=0x61637864;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_clli=0x636C6C69;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr=0x636F6C72;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_colr_clcn=0x636C636E;
@@ -1365,6 +1483,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_ccst)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_chan)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_chnl)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_acxd)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_clap)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_clli)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_mdcv)
@@ -7548,6 +7667,58 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_chnl()
                 speaker_positions.pop_back();
                 Fill(Stream_Audio, 0, Audio_ChannelLayout, speaker_positions, true, true);
             }
+        }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_acxd()
+{
+    Element_Name("Auro-Cx Decoder Config");
+
+    //Parsing
+    // Declared layout is a BE16 Auro channel-id bit mask near the end of acxd
+    // (offset 36 for the common 39-byte config; Element_Size-3 for longer boxes).
+    int16u Layout=0;
+    if (Element_Size>=39)
+    {
+        Skip_XX(Element_Size-3,                                 "Decoder config");
+        Get_B2 (Layout,                                         "channel_layout"); Param_Info1(Ztring::ToZtring(Layout, 16));
+        if (const char* Name=Mpeg4_AuroCx_LayoutName(Layout))
+            Param_Info1(Name);
+        Skip_B1(                                                "reserved");
+    }
+    else if (Element_Size>=38)
+    {
+        Skip_XX(36,                                             "Decoder config");
+        Get_B2 (Layout,                                         "channel_layout"); Param_Info1(Ztring::ToZtring(Layout, 16));
+        if (const char* Name=Mpeg4_AuroCx_LayoutName(Layout))
+            Param_Info1(Name);
+        Skip_XX(Element_Size-Element_Offset,                    "reserved");
+    }
+    else
+    {
+        Skip_XX(Element_Size,                                   "Decoder config");
+        return;
+    }
+
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+        return; //Handling only the first description
+
+    FILLING_BEGIN();
+        if (StreamKind_Last==Stream_Audio && Layout)
+        {
+            int8u ChannelCount=0;
+            for (int8u i=0; i<16; i++)
+                if (Layout&(1<<i))
+                    ChannelCount++;
+            if (ChannelCount)
+                Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, ChannelCount, 10, true);
+            Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, Mpeg4_AuroCx_ChannelLayout(Layout), true, true);
+            Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions, Mpeg4_AuroCx_ChannelPositions(Layout), true, true);
+            Fill(Stream_Audio, StreamPos_Last, Audio_ChannelPositions_String2, Mpeg4_AuroCx_ChannelPositions2(Layout), true, true);
+            if (const char* Name=Mpeg4_AuroCx_LayoutName(Layout))
+                Fill(Stream_Audio, StreamPos_Last, Audio_Format_Settings, Name);
         }
     FILLING_END();
 }
