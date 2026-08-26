@@ -3076,6 +3076,8 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         {
             Fill(Stream_Audio, StreamPos_To, Audio_Channel_s_, ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_Channel_s_), true);
             Fill(Stream_Audio, StreamPos_To, Audio_ChannelLayout, StreamChannelLayout, true);
+            Fill(Stream_Audio, StreamPos_To, Audio_ChannelPositions, ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_ChannelPositions), true);
+            Fill(Stream_Audio, StreamPos_To, Audio_ChannelPositions_String2, ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_ChannelPositions_String2), true);
         }
         else
         {
@@ -3084,23 +3086,23 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
             for (size_t i=0; i<4; i++)
                 if (!Channels_Temp[i].empty())
                 {
-                //Test with legacy streams information
-                bool IsOk=(Channels_Temp[i]==Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
-                if (!IsOk)
-                {
-                    ZtringList Temp; Temp.Separator_Set(0, __T(" / "));
-                    Temp.Write(Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
-                    for (size_t Pos=0; Pos<Temp.size(); Pos++)
-                        if (Channels_Temp[i]==Temp[Pos])
-                            IsOk=true;
-                }
+                    //Test with legacy streams information
+                    bool IsOk=(Channels_Temp[i]==Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
+                    if (!IsOk)
+                    {
+                        ZtringList Temp; Temp.Separator_Set(0, __T(" / "));
+                        Temp.Write(Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
+                        for (size_t Pos=0; Pos<Temp.size(); Pos++)
+                            if (Channels_Temp[i]==Temp[Pos])
+                                IsOk=true;
+                    }
 
-                //Special case with AES3: wrong container information is accepted
-                if (!IsOk && Retrieve(Stream_Audio, StreamPos_To, Audio_MuxingMode).find(__T("SMPTE ST 337"))!=string::npos)
-                    IsOk=true;
+                    //Special case with AES3: wrong container information is accepted
+                    if (!IsOk && Retrieve(Stream_Audio, StreamPos_To, Audio_MuxingMode).find(__T("SMPTE ST 337"))!=string::npos)
+                        IsOk=true;
 
-                if (!IsOk)
-                    IsOkGlobal=false;
+                    if (!IsOk)
+                        IsOkGlobal=false;
                 }
 
             if (!IsOkGlobal)
