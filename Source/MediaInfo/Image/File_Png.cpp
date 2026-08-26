@@ -89,6 +89,17 @@ static string Png_Colour_type_Settings(int8u Colour_type, int8u Bit_depth)
         default: return "";
     }
 }
+static const char* Png_sRGB_Rendering_intent(int8u Colour_type)
+{
+    switch (Colour_type)
+    {
+    case 0: return "Perceptual";
+    case 1: return "Relative colorimetric";
+    case 2: return "Saturation";
+    case 3: return "Absolute colorimetric";
+    default: return "";
+    }
+}
 
 //---------------------------------------------------------------------------
 const char* Mpegv_colour_primaries(int8u colour_primaries);
@@ -846,6 +857,22 @@ void File_Png::sBIT()
     FILLING_BEGIN()
         if (Bits.size()==1)
             Fill(StreamKind_Last, 0, "BitDepth", Bits.begin()->first, 10, true);
+    FILLING_END()
+
+    Data_Common();
+}
+
+//---------------------------------------------------------------------------
+void File_Png::sRGB()
+{
+    //Parsing
+    int8u rendering_intent;
+    Get_B1(rendering_intent,                                    "Rendering intent"); Param_Info1(Png_sRGB_Rendering_intent(rendering_intent));
+
+    FILLING_BEGIN()
+        Fill(StreamKind_Last, 0, "colour_primaries", Mpegv_colour_primaries(1));
+        Fill(StreamKind_Last, 0, "transfer_characteristics", Mpegv_transfer_characteristics(13));
+        Fill(StreamKind_Last, 0, "matrix_coefficients", Mpegv_matrix_coefficients(0));
     FILLING_END()
 
     Data_Common();

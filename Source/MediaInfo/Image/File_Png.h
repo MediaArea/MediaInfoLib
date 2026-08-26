@@ -93,7 +93,7 @@ private :
     void pHYs();
     void sBIT();
     void sPLT() { Data_Common(); }
-    void sRGB() { Data_Common(); }
+    void sRGB();
     void tEXt() { Textual(bitset8()); }
     void tIME();
     void tRNS() { Data_Common(); }
