@@ -1526,6 +1526,7 @@ void File_Mpega::Header_Encoders_Lame()
     if (HasInfoTag)
     {
         int8u Flags, lowpass, EncodingFlags, BitRate, StereoMode;
+        int16u PresetAndSurround;
         Param_Info1(Ztring(__T("V "))+Ztring::ToZtring((100-Xing_Scale)/10));
         Param_Info1(Ztring(__T("q "))+Ztring::ToZtring((100-Xing_Scale)%10));
         Get_String (9, Encoded_Library,                         "Encoded_Library");
@@ -1555,7 +1556,7 @@ void File_Mpega::Header_Encoders_Lame()
         Skip_S1(2,                                              "noise shapings");
         BS_End();
         Skip_B1(                                                "MP3 Gain");
-        Skip_B2(                                                "Preset and surround info");
+        Get_B2 (PresetAndSurround,                              "Preset and surround info");
         Skip_B4(                                                "MusicLength");
         Skip_B2(                                                "MusicCRC");
         Skip_B2(                                                "CRC-16 of Info Tag");
@@ -1575,7 +1576,7 @@ void File_Mpega::Header_Encoders_Lame()
             }
             if (Xing_Scale<=100) //Xing_Scale is used for LAME quality
             {
-                if ((Flags & 0x0F) == 3 || (Flags & 0x0F) == 4 || (Flags & 0x0F) == 5 || (Flags & 0x0F) == 6 || (Flags & 0x0F) == 9) //VBR modes only
+                if ((Flags&0x0F)==3 || (Flags&0x0F)==4 || (Flags&0x0F)==5 || (Flags&0x0F)==6) //VBR modes only
                     Encoded_Library_Settings+=__T( " -V ")+Ztring::ToZtring((100-Xing_Scale)/10);
                 Encoded_Library_Settings+=__T( " -q ")+Ztring::ToZtring((100-Xing_Scale)%10);
             }
@@ -1616,14 +1617,23 @@ void File_Mpega::Header_Encoders_Lame()
                     default : ;
                 }
             }
-            else if (BitRate==0xFF) //Fallback for CBR bitrates that do not fit in the LAME tag byte (e.g. 256/320)
+            else if (BitRate==0xFF) //Fallback for CBR and ABR bitrates that do not fit in the LAME tag byte (e.g. 256/320)
             {
-                if ((Flags&0x0F)==1 || (Flags&0x0F)==8) //CBR mode only
+                if ((Flags&0x0F)==1 || (Flags&0x0F)==8) //CBR modes only
                 {
                     if (ID<4 && layer<4 && bitrate_index<16 && Mpega_BitRate[ID][layer][bitrate_index]!=0)
                     {
                         int16u FrameBitRate=Mpega_BitRate[ID][layer][bitrate_index];
                         Encoded_Library_Settings+=__T(" -b ")+Ztring::ToZtring(FrameBitRate);
+                    }
+                }
+                else if ((Flags&0x0F)==2 || (Flags&0x0F)==9) // ABR modes only
+                {
+                    int16u PresetBitRate = PresetAndSurround&0x7FF;
+                    if (PresetBitRate>=8 && PresetBitRate<=320)
+                    {
+                        BitRate_Nominal.From_Number(PresetBitRate*1000);
+                        Encoded_Library_Settings+=__T(" ")+Ztring::ToZtring(PresetBitRate);
                     }
                 }
             }
