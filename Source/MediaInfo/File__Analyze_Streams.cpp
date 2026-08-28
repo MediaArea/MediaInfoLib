@@ -3071,29 +3071,39 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
     }
     if (StreamKind==Stream_Audio)
     {
-        bool IsOkGlobal=true;
-        static audio AudioField[4]={ Audio_Channel_s_, Audio_ChannelLayout, Audio_ChannelPositions, Audio_ChannelPositions_String2 };
-        for (size_t i=0; i<4; i++)
-            if (!Channels_Temp[i].empty())
-            {
-                //Test with legacy streams information
-                bool IsOk=(Channels_Temp[i]==Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
-                if (!IsOk)
+        const Ztring& StreamChannelLayout=ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_ChannelLayout);
+        if (ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_Format)==__T("DTS") && StreamChannelLayout.find(__T(" Tfl Tfr Tbl Tbr"))!=string::npos)
+        {
+            Fill(Stream_Audio, StreamPos_To, Audio_Channel_s_, ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_Channel_s_), true);
+            Fill(Stream_Audio, StreamPos_To, Audio_ChannelLayout, StreamChannelLayout, true);
+            Fill(Stream_Audio, StreamPos_To, Audio_ChannelPositions, ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_ChannelPositions), true);
+            Fill(Stream_Audio, StreamPos_To, Audio_ChannelPositions_String2, ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_ChannelPositions_String2), true);
+        }
+        else
+        {
+            bool IsOkGlobal=true;
+            static audio AudioField[4]={ Audio_Channel_s_, Audio_ChannelLayout, Audio_ChannelPositions, Audio_ChannelPositions_String2 };
+            for (size_t i=0; i<4; i++)
+                if (!Channels_Temp[i].empty())
                 {
-                    ZtringList Temp; Temp.Separator_Set(0, __T(" / "));
-                    Temp.Write(Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
-                    for (size_t Pos=0; Pos<Temp.size(); Pos++)
-                        if (Channels_Temp[i]==Temp[Pos])
-                            IsOk=true;
+                    //Test with legacy streams information
+                    bool IsOk=(Channels_Temp[i]==Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
+                    if (!IsOk)
+                    {
+                        ZtringList Temp; Temp.Separator_Set(0, __T(" / "));
+                        Temp.Write(Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
+                        for (size_t Pos=0; Pos<Temp.size(); Pos++)
+                            if (Channels_Temp[i]==Temp[Pos])
+                                IsOk=true;
+                    }
+
+                    //Special case with AES3: wrong container information is accepted
+                    if (!IsOk && Retrieve(Stream_Audio, StreamPos_To, Audio_MuxingMode).find(__T("SMPTE ST 337"))!=string::npos)
+                        IsOk=true;
+
+                    if (!IsOk)
+                        IsOkGlobal=false;
                 }
-
-                //Special case with AES3: wrong container information is accepted
-                if (!IsOk && Retrieve(Stream_Audio, StreamPos_To, Audio_MuxingMode).find(__T("SMPTE ST 337"))!=string::npos)
-                    IsOk=true;
-
-                if (!IsOk)
-                    IsOkGlobal=false;
-            }
 
             if (!IsOkGlobal)
                 for (size_t i=0; i<4; i++)
@@ -3108,6 +3118,7 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
                         Fill_SetOptions(Stream_Audio, StreamPos_To, Original.c_str(), Retrieve_Const(Stream_Audio, StreamPos_To, AudioField[i], Info_Options).To_UTF8().c_str());
                         Fill(Stream_Audio, StreamPos_To, AudioField[i], Channels_Temp[i], true);
                     }
+        }
     }
     if (StreamKind==Stream_Text)
     {
