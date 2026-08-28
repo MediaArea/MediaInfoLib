@@ -582,6 +582,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Flv.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Gxf.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Mk.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_MmtTlv.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Mmt.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Mmt_Descriptors.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Mpeg4.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Mpeg4_Descriptors.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Mpeg4_Elements.cpp" />
@@ -932,6 +935,9 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Flv.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Gxf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Mk.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_MmtTlv.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Mmt.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Mmt_Descriptors.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Mpeg4.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Mpeg4_TimeCode.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Mpeg_Descriptors.h" />
