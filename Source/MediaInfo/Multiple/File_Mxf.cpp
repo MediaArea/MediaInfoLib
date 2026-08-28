@@ -16044,16 +16044,29 @@ bool File_Mxf::BookMark_Needed()
                 ProbeCaptionByteDur=ContentSize/100*Probe.Duration;
                 break;
         }
-        auto MaxOffset=ProbeCaptionBytePos+ProbeCaptionByteDur;
-        auto CurrentEnd=File_Offset+Buffer_Offset;
-        if (ProbeCaptionBytePos!=(int64u)-1 && ProbeCaptionByteDur!=(int64u)-1 && File_Size/2>ProbeCaptionByteDur)
+        if (ProbeCaptionBytePos!=(int64u)-1 && ProbeCaptionByteDur!=(int64u)-1)
         {
-            IsParsingMiddle_MaxOffset=MaxOffset;
-            GoTo(ProbeCaptionBytePos);
-            Open_Buffer_Unsynch();
-            IsParsingEnd=false;
-            IsCheckingRandomAccessTable=false;
-            Streams_Count=(size_t)-1;
+            if (File_Size/2<ProbeCaptionByteDur &&
+                HeaderSize+ContentSize-ProbeCaptionBytePos>0x4000000 && ContentSize/2>0x4000000)
+            {
+                // Clamp probe window to file size as long as it can be at least
+                // 64 MB. (For example, if a file is under 60 seconds total and
+                // is probed with the default duration window of 30 seconds,
+                // then there will be less than 30s of content after the halfway
+                // point of the file.)
+                ProbeCaptionByteDur=std::min(HeaderSize+ContentSize-ProbeCaptionBytePos, ContentSize/2);
+            }
+            auto MaxOffset=ProbeCaptionBytePos+ProbeCaptionByteDur;
+            auto CurrentEnd=File_Offset+Buffer_Offset;
+            if (File_Size/2>=ProbeCaptionByteDur)
+            {
+                IsParsingMiddle_MaxOffset=MaxOffset;
+                GoTo(ProbeCaptionBytePos);
+                Open_Buffer_Unsynch();
+                IsParsingEnd=false;
+                IsCheckingRandomAccessTable=false;
+                Streams_Count=(size_t)-1;
+            }
         }
     }
 
