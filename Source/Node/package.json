@@ -1,0 +1,32 @@
+{
+    "name": "mediainfolib",
+    "version": "19.04",
+    "author": {
+        "name": "MediaArea.net SARL",
+        "email": "info@mediaarea.net",
+        "url": "https://mediaarea.net"
+    },
+    "description": "Get most relevant technical and tag data for video and audio files",
+    "homepage": "https://mediaarea.net/MediaInfo",
+    "bugs": "https://github.com/MediaArea/MediaInfoLib/issues",
+    "license": "BSD-2-Clause",
+    "main": "main.js",
+    "keywords": [
+        "mediainfo"
+    ],
+    "scripts": {
+        "build:dev": "node-gyp build --debug",
+        "build": "node-gyp build",
+        "rebuild:dev": "node-gyp rebuild --debug",
+        "rebuild": "node-gyp rebuild",
+        "clean": "node-gyp clean"
+    },
+    "engines": {
+        "node": ">=8.0.0"
+    },
+    "dependencies": {
+        "bindings": "^1.3.0",
+        "node-addon-api": "^1.6.0",
+        "package.json": "^2.0.1"
+    }
+}
