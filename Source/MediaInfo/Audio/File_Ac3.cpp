@@ -588,6 +588,22 @@ int CRC16_Init(int16u *Table, int16u Polynomial)
     return 0;
 }
 
+static void CRC8_Init(int8u *Table, int8u Polynomial)
+{
+    for (size_t Pos = 0; Pos < 256; ++Pos)
+    {
+        Table[Pos] = static_cast<int8u>(Pos);
+
+        for (int8u bit = 0; bit < 8; ++bit)
+        {
+            if (Table[Pos] & 0x80)
+                Table[Pos] = (Table[Pos] << 1) ^ Polynomial;
+            else
+                Table[Pos] = Table[Pos] << 1;
+        }
+    }
+}
+
 //---------------------------------------------------------------------------
 extern const float64 AC3_dynrng[]=
 {
@@ -814,6 +830,73 @@ std::string AC3_TrueHD_Channels_ChannelLayout(int16u ChannelsMap, bool Bit11=fal
         }
 
     return Text;
+}
+
+//---------------------------------------------------------------------------
+static const char* AC3_TrueHD_ExtendedSubstreamInfo(int8u extended_substream_info)
+{
+    switch (extended_substream_info) {
+    case 0b00: return "16-channel presentation is carried in substream 3";
+    case 0b01: return "16-channel presentation is carried in substreams 2 and 3";
+    case 0b10: return "16-channel presentation is carried in substreams 1, 2 and 3";
+    case 0b11: return "16-channel presentation is carried in substreams 0, 1, 2 and 3";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* AC3_TrueHD_SubstreamInfo6ch(int8u presentation_6ch)
+{
+    switch (presentation_6ch) {
+    case 0b00: return "Illegal";
+    case 0b01: return "6-ch presentation is a copy of the 2-ch presentation carried in substream 0";
+    case 0b10: return "6-ch presentation is carried in substream 1";
+    case 0b11: return "6-ch presentation is carried in substreams 0 and 1";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* AC3_TrueHD_SubstreamInfo8ch(int8u presentation_8ch)
+{
+    switch (presentation_8ch) {
+    case 0b000: return "Illegal";
+    case 0b001: return "8-ch presentation is a copy of the 2-ch presentation carried in substream 0";
+    case 0b010: return "8-ch presentation is a copy of the 6-ch presentation carried in substream 1";
+    case 0b011: return "8-ch presentation is a copy of the 6-ch presentation carried in substreams 0 and 1";
+    case 0b100: return "8-ch presentation is carried in substream 2";
+    case 0b101: return "8-ch presentation is carried in substreams 0 and 2";
+    case 0b110: return "8-ch presentation is carried in substreams 1 and 2";
+    case 0b111: return "8-ch presentation is carried in substreams 0, 1 and 2";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* AC3_TrueHD_ExtendedSubstreamInfoNum(int8u extended_substream_info)
+{
+    switch (extended_substream_info) {
+    case 0b00: return "3";
+    case 0b01: return "2 + 3";
+    case 0b10: return "1 + 2 + 3";
+    case 0b11: return "0 + 1 + 2 + 3";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* AC3_TrueHD_SubstreamInfoNum(int8u presentation)
+{
+    switch (presentation) {
+    case 0b001: return "0";
+    case 0b010: return "1";
+    case 0b011: return "0 + 1";
+    case 0b100: return "2";
+    case 0b101: return "0 + 2";
+    case 0b110: return "1 + 2";
+    case 0b111: return "0 + 1 + 2";
+    default: return "";
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -1127,6 +1210,11 @@ void File_Ac3::Streams_Fill()
                 Fill(Stream_Audio, 0, Audio_Format_Profile, "MLP FBA 16-ch / MLP FBA");
                 Fill(Stream_Audio, 0, Audio_Codec_Profile, "MLP FBA 16-ch / MLP FBA");
             }
+            else
+            {
+                Fill(Stream_Audio, 0, Audio_Format_Profile, "MLP FBA");
+                Fill(Stream_Audio, 0, Audio_Codec_Profile, "MLP FBA");
+            }
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
             Fill(Stream_Audio, 0, Audio_Compression_Mode, "Lossless");
             Ztring Sampling;
@@ -1136,9 +1224,12 @@ void File_Ac3::Streams_Fill()
             Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_TrueHD_Channels_Positions(HD_Channels2, HD_flags&(1<<11)));
             Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, AC3_TrueHD_Channels_Positions2(HD_Channels2, HD_flags&(1<<11)));
             Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_TrueHD_Channels_ChannelLayout(HD_Channels2, HD_flags&(1<<11)));
+            Fill(Stream_Audio, 0, Audio_BitDepth, AC3_MLP_Resolution[HD_Resolution2]);
+            Fill(Stream_Audio, 0, "NumberOfPresentations", HD_HasAtmos ? 4 : 3);
+            Fill(Stream_Audio, 0, "NumberOfSubstreams", HD_SubStreams_Count);
         }
 
-        if (HD_StreamType==0xBB) //TrueHD
+        if (HD_StreamType==0xBB) //MLP
         {
             {
                 Fill(Stream_Audio, 0, Audio_Format, "MLP");
@@ -1237,10 +1328,9 @@ void File_Ac3::Streams_Fill()
             if (Frame_Count_HD)
                 Fill(Stream_Audio, 0, Audio_BitRate, "Unknown");
             int32u BitRate=AC3_BitRate[frmsizecod/2]*1000;
-            int32u Divider=bsid_Max==9?2:1; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
             int32u TimeStamp_BitRate=0;
             if (TimeStamp_Count==Frame_Count || TimeStamp_Count>Frame_Count/2) // In case of corrupted stream, check that there is a minimal count of timestamps 
-                TimeStamp_BitRate+=float32_int32s(AC3_SamplingRate[fscod]/Divider/12.0); // 12 = 1536 samples per frame / 128 bits per timestamp frame
+                TimeStamp_BitRate+=float32_int32s(AC3_SamplingRate[fscod]/Divider/12.0f); // 12 = 1536 samples per frame / 128 bits per timestamp frame
             Fill(Stream_Audio, 0, Audio_BitRate, BitRate/Divider);
             if (TimeStamp_BitRate)
                 Fill(Stream_Audio, 0, Audio_BitRate_Encoded, BitRate/Divider+TimeStamp_BitRate);
@@ -1388,6 +1478,51 @@ void File_Ac3::Streams_Fill()
             Fill(Stream_Audio, 0, Audio_BitRate_Maximum, List[1]);
     }
 
+    //TrueHD presentations
+    if (HD_MajorSync_Parsed && HD_StreamType == 0xBA) {
+        for (int p = 0; p < p_max - !HD_HasAtmos; ++p) {
+            const Presentation& Presentation_Current = presentations[p];
+            string P = Ztring(__T("Presentation") + Ztring::ToZtring(p)).To_UTF8();
+            if (p == p_16ch) {
+                Fill(Stream_Audio, 0, P.c_str(), "16-ch presentation");
+                Fill(Stream_Audio, 0, (P + " LinkedTo_Substream_Pos").c_str(), AC3_TrueHD_ExtendedSubstreamInfoNum(Presentation_Current.presentation));
+                Fill(Stream_Audio, 0, (P + " Elements").c_str(), Presentation_Current.elements);
+            }
+            else {
+                Fill(Stream_Audio, 0, P.c_str(), (to_string(AC3_TrueHD_Channels(Presentation_Current.ch_assign)) + "-ch presentation"));
+                Fill(Stream_Audio, 0, (P + " LinkedTo_Substream_Pos").c_str(), AC3_TrueHD_SubstreamInfoNum(Presentation_Current.presentation));
+                Fill(Stream_Audio, 0, (P + " Channel(s)").c_str(), AC3_TrueHD_Channels(Presentation_Current.ch_assign));
+                Fill(Stream_Audio, 0, (P + " ChannelLayout").c_str(), AC3_TrueHD_Channels_ChannelLayout(Presentation_Current.ch_assign, HD_flags & (1 << 11)));
+            }
+            if (p == p_2ch) {
+                string type;
+                switch (Presentation_Current.modifier) {
+                case 0b00: type = "Stereo"; break;
+                case 0b01: type = "Lt/Rt"; break;
+                case 0b10: type = "Lbin/Rbin"; break;
+                case 0b11: type = "Mono"; break;
+                default: break;
+                }
+                Fill(Stream_Audio, 0, (P + " Type").c_str(), type);
+            }
+            else {
+                if (Presentation_Current.modifier == 0b10)
+                    Fill(Stream_Audio, 0, (P + " Format_Settings_Mode").c_str(), "Dolby Surround EX / Dolby Pro Logic IIx");
+                if (Presentation_Current.modifier == 0b11)
+                    Fill(Stream_Audio, 0, (P + " Format_Settings_Mode").c_str(), "Dolby Pro Logic IIz");
+            }
+            Fill(Stream_Audio, 0, (P + " control_enabled").c_str(), Presentation_Current.control_enabled ? "Yes" : "No");
+            Fill(Stream_Audio, 0, (P + " dialogue_norm").c_str(), Presentation_Current.dialogue_norm == 0 ? -31 : -Presentation_Current.dialogue_norm);
+            Fill_SetOptions(Stream_Audio, 0, (P + " dialogue_norm").c_str(), "N NT");
+            Fill(Stream_Audio, 0, (P + " dialogue_norm/String").c_str(), Ztring::ToZtring(Presentation_Current.dialogue_norm == 0 ? -31 : -Presentation_Current.dialogue_norm) + __T(" LKFS"));
+            Fill_SetOptions(Stream_Audio, 0, (P + " dialogue_norm/String").c_str(), "Y NTN");
+            Fill(Stream_Audio, 0, (P + " mix_level").c_str(), 70 + Presentation_Current.mix_level);
+            Fill_SetOptions(Stream_Audio, 0, (P + " mix_level").c_str(), "N NT");
+            Fill(Stream_Audio, 0, (P + " mix_level/String").c_str(), Ztring::ToZtring(70 + Presentation_Current.mix_level) + __T(" dB"));
+            Fill_SetOptions(Stream_Audio, 0, (P + " mix_level/String").c_str(), "Y NTN");
+        }
+    }
+
     //Dolby Metadata
     if (Core_IsPresent)
     {
@@ -1445,6 +1580,11 @@ void File_Ac3::Streams_Fill()
                     Fill_SetOptions(Stream_Audio, 0, "lfeon", "N NT");
                 }
             }
+
+        if (dynrngprof)
+            Fill(Stream_Audio, 0, "dynrngprof", AC3_dynrngprof_Get(dynrngprof));
+        if (comprprof)
+            Fill(Stream_Audio, 0, "comprprof", AC3_dynrngprof_Get(comprprof));
     }
 
     //TimeStamp
@@ -1987,16 +2127,8 @@ bool File_Ac3::Synched_Test()
     if (TimeStamp_IsPresent && !TimeStamp_Parsed)
     {
         Buffer_Offset-=16;
-        if (Synched)
-        {
-            TimeStamp_IsParsing=true;
-            TimeStamp_Parsed=false;
-        }
-        else
-        {
-            TimeStamp_IsParsing=false;
-            TimeStamp_Parsed=false;
-        }
+        TimeStamp_IsParsing=true;
+        TimeStamp_Parsed=false;
     }
 
     //We continue
@@ -2202,10 +2334,10 @@ void File_Ac3::Header_Parse()
     //MLP or TrueHD specific
     int16u Size;
     BS_Begin();
-    Skip_S1( 4,                                                 "CRC?");
-    Get_S2 (12, Size,                                           "Size");
+    Skip_S1( 4,                                                 "check_nibble");
+    Get_S2 (12, Size,                                           "access_unit_length");
     BS_End();
-    Skip_B2(                                                    "Timestamp?");
+    Skip_B2(                                                    "input_timing");
 
     //Little Endian management
     if (Save_Buffer)
@@ -2398,12 +2530,12 @@ void File_Ac3::Core_Frame()
             Get_S1 (5, bsid,                                        "bsid - Bit Stream Identification");
             Get_S1 (3, bsmod,                                       "bsmod - Bit Stream Mode"); Param_Info1(AC3_Mode[bsmod]);
             Get_S1 (3, acmod,                                       "acmod - Audio Coding Mode"); Param_Info1(AC3_ChannelPositions[acmod]);
-            if ((acmod&1) && acmod!=1) //central present
-                Get_S1 (2, cmixlev,                                 "cmixlev - Center Mix Level");
-            if (acmod&4) //back present
-                Get_S1 (2, surmixlev,                               "surmixlev - Surround Mix Level");
-            if (acmod==2)
-                Get_S1 (2, dsurmod,                                 "dsurmod - Dolby Surround Mode"); Param_Info1(AC3_Surround[dsurmod]);
+            if ((acmod&1) && acmod!=1) { //central present
+                Get_S1 (2, cmixlev,                                 "cmixlev - Center Mix Level"); Param_Info2(-3 - cmixlev * 1.5, " dB"); }
+            if (acmod&4) { //back present
+                Get_S1 (2, surmixlev,                               "surmixlev - Surround Mix Level"); Param_Info2(cmixlev == 2 ? "-inf" : to_string(-3 - cmixlev * 3), " dB"); }
+            if (acmod==2) {
+                Get_S1 (2, dsurmod,                                 "dsurmod - Dolby Surround Mode"); Param_Info1(AC3_Surround[dsurmod]); }
             Get_SB (   lfeon,                                       "lfeon - Low Frequency Effects");
             Get_S1 (5, dialnorm,                                    "dialnorm - Dialogue Normalization");
             Get_SB (   compre,                                      "compre - Compression Gain Word Exists");
@@ -2531,7 +2663,6 @@ void File_Ac3::Core_Frame()
         Element_End0();
         Element_Begin1("bsi");
             BS_Begin();
-            size_t Bits_Begin=Data_BS_Remain();
             Get_S1 ( 2, strmtyp,                                    "strmtyp");
             Get_S1 ( 3, substreamid,                                "substreamid");
             Get_S2 (11, frmsiz,                                     "frmsiz");
@@ -3984,7 +4115,6 @@ void File_Ac3::emdf_sync()
 //---------------------------------------------------------------------------
 void File_Ac3::emdf_container()
 {
-    size_t Start = Data_BS_Remain();
     int32u version, key_id;
     Element_Begin1("emdf_container");
     Get_S4 (2, version,                                         "emdf_version");
@@ -4039,6 +4169,8 @@ void File_Ac3::emdf_container()
         Element_Begin1("emdf_payload_bytes");
             switch (emdf_payload_id)
             {
+                case  1: loudness_data(); break;
+                case  2: programme_information(); break;
                 case 11: object_audio_metadata_payload(); break;
                 case 14: joc(); break;
                 default: Skip_BS(emdf_payload_size*8,           "(Unknown)");
@@ -4140,9 +4272,188 @@ void File_Ac3::emdf_protection()
         default:; //Cannot append, read only 2 bits
     };
     Skip_BS(len_primary,                                        "protection_bits_primary");
-    if (len_second)
-        Skip_BS(len_primary,                                    "protection_bits_secondary");
+    Skip_BS(len_second,                                         "protection_bits_secondary");
 
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Ac3::loudness_data()
+{
+#if MEDIAINFO_TRACE
+
+    Element_Begin1("loudness_data");
+    auto RemainingBitsBegin = Data_BS_Remain();
+
+    int8u version, loudpractyp;
+    bool loudcorrdialgat{}, loudrelgate, loudspchgate, loudstrm3se, truepke;
+    Get_S1(2, version,                                          "version");
+    if (version == 0x3) {
+        int8u extended_version;
+        Get_S1(4, extended_version,                             "extended_version");
+        version += extended_version;
+    }
+    TEST_SB_SKIP(                                               "dialchane");
+        Skip_S1(3,                                              "dialchan");
+    TEST_SB_END();
+    Get_S1(4, loudpractyp,                                      "loudpractyp");
+    if (loudpractyp != 0x0) {
+        Get_SB (loudcorrdialgat,                                "loudcorrdialgat");
+        Skip_S1(1,                                              "loudcorrtyp");
+    }
+    TEST_SB_GET(loudrelgate,                                    "loudrelgate");
+        Skip_S1(7,                                              "loudrelgat");
+    TEST_SB_END();
+    TEST_SB_GET(loudspchgate,                                   "loudspchgate");
+        Skip_S1(7,                                              "loudspchgat");
+    TEST_SB_END();
+    TEST_SB_GET(loudstrm3se,                                    "loudstrm3se");
+        Skip_S1(8,                                              "loudstrm3s");
+    TEST_SB_END();
+    TEST_SB_GET(truepke,                                        "truepke");
+        Skip_S1(8,                                              "truepk");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "dmixloudoffste");
+        Skip_S1(5,                                              "dmixloudoffst");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "prgmbndye");
+        bool prgmbndy_bit = 0;
+        while (prgmbndy_bit == 0) {
+            Get_SB(prgmbndy_bit,                                "prgmbndy_bit");
+        }
+        Skip_SB(                                                "end_or_start");
+        TEST_SB_SKIP(                                           "prgmbndyoffste");
+            Skip_S2(11,                                         "prgmbndyoffst");
+        TEST_SB_END();
+    TEST_SB_END();
+    auto RemainingBitsEnd = Data_BS_Remain();
+    auto size = RemainingBitsBegin - RemainingBitsEnd;
+    Skip_BS((8 - (size & 7)) & 7,                               "fill bits = 0");
+
+    if (version >= 1) {
+        bool extloudspchgate;
+        if (loudrelgate) {
+            TEST_SB_SKIP(                                       "hrloudrelgate");
+                Skip_S1(3,                                      "hrloudrelgat");
+            TEST_SB_END();
+        }
+        if (loudspchgate) {
+            TEST_SB_SKIP(                                       "hrloudspchgate");
+                Skip_S1(3,                                      "hrloudspchgat");
+            TEST_SB_END();
+        }
+        if (loudstrm3se) {
+            TEST_SB_SKIP(                                       "hrloudstrm3se");
+                Skip_S1(3,                                      "hrloudstrm3s");
+            TEST_SB_END();
+        }
+        if (truepke) {
+            TEST_SB_SKIP(                                       "hrtruepke");
+                Skip_S1(3,                                      "hrtruepk");
+            TEST_SB_END();
+        }
+        TEST_SB_SKIP(                                           "hrtruepke");
+            Skip_S1(3,                                          "hrtruepk");
+        TEST_SB_END();
+        if (loudcorrdialgat)
+            Skip_S1(3,                                          "loudcorrdialgattyp");
+        if (loudrelgate == 0) {
+            TEST_SB_SKIP(                                       "extloudrelgate");
+                Skip_S2(11,                                     "extloudrelgat");
+            TEST_SB_END();
+        }
+        if (loudspchgate == 0) {
+            TEST_SB_GET(extloudspchgate,                        "extloudspchgate");
+                Skip_S2(11,                                     "extloudspchgat");
+            TEST_SB_END();
+        }
+        if (loudspchgate || extloudspchgate)
+            Skip_S1(3,                                          "loudspchdialgattyp");
+        if (loudstrm3se == 0) {
+            TEST_SB_SKIP(                                       "extloudstrm3se");
+                Skip_S2(11,                                     "extloudstrm3s");
+            TEST_SB_END();
+        }
+        if (truepke == 0) {
+            TEST_SB_SKIP(                                       "exttruepke");
+                Skip_S2(11,                                     "exttruepk");
+            TEST_SB_END();
+        }
+        TEST_SB_SKIP(                                           "maxloudstrm3se");
+            Skip_S2(11,                                         "maxloudstrm3s");
+        TEST_SB_END();
+        TEST_SB_SKIP(                                           "maxtruepke");
+            Skip_S2(11,                                         "maxtruepk");
+        TEST_SB_END();
+        TEST_SB_SKIP(                                           "lrae");
+            Skip_S2(10,                                         "lra");
+            Skip_S1(3,                                          "lrapractyp");
+        TEST_SB_END();
+        TEST_SB_SKIP(                                           "loudmntrye");
+            Skip_S2(11,                                         "loudmntry");
+        TEST_SB_END();
+        TEST_SB_SKIP(                                           "maxloudmntrye");
+            Skip_S2(11,                                         "maxloudmntry");
+        TEST_SB_END();
+        RemainingBitsEnd = Data_BS_Remain();
+        size = RemainingBitsBegin - RemainingBitsEnd;
+        Skip_BS((8 - (size & 7)) & 7,                           "fill bits = 0");
+    }
+
+    Element_End0();
+
+#endif // MEDIAINFO_TRACE
+}
+
+//---------------------------------------------------------------------------
+void File_Ac3::programme_information()
+{
+    Element_Begin1("programme_information");
+    auto RemainingBitsBegin = Data_BS_Remain();
+    int8u version;
+    Get_S1(2, version,                                          "version");
+    if (version == 0x3) {
+        int8u extended_version;
+        Get_S1(4, extended_version,                             "extended_version");
+        version += extended_version;
+    }
+    TEST_SB_SKIP(                                               "activechane");
+        Skip_S2(16,                                             "activechan");
+    TEST_SB_END();
+    bool dmixtype;
+    Get_SB(dmixtype,                                            "dmixtype");
+    if (!dmixtype) {
+        TEST_SB_SKIP(                                           "upmixtype");
+            Skip_S1(4,                                          "upmixtyp");
+        TEST_SB_END();
+    }
+    else {
+        Skip_S1(4,                                              "dmixtyp");
+    }
+    TEST_SB_SKIP(                                               "preproinfoe");
+        Skip_SB(                                                "suratten");
+        Skip_SB(                                                "ph90filt");
+        Skip_SB(                                                "lfefilt");
+        Skip_S1(2,                                              "lfemonlevcod");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "drcprofinfoe");
+        Get_S1(3, dynrngprof,                                   "dynrngprof"); Param_Info1(AC3_dynrngprof_Get(dynrngprof));
+        Get_S1(3, comprprof,                                    "comprprof"); Param_Info1(AC3_dynrngprof_Get(comprprof));
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "specprocinfoe");
+        Skip_S1(3,                                              "specprocstartf");
+        Skip_S1(3,                                              "specprocendf");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "chancplinfoe");
+        Skip_S1(5,                                              "chancplstartf");
+        Skip_S1(5,                                              "chancplendf");
+    TEST_SB_END();
+    TEST_SB_SKIP(                                               "enhncrnge");
+        Skip_S1(2,                                              "enhncrng");
+    TEST_SB_END();
+    auto RemainingBitsEnd = Data_BS_Remain();
+    auto size = RemainingBitsBegin - RemainingBitsEnd;
+    Skip_BS((8 - (size & 7)) & 7,                               "fill bits = 0");
     Element_End0();
 }
 
@@ -4150,6 +4461,7 @@ void File_Ac3::emdf_protection()
 void File_Ac3::object_audio_metadata_payload()
 {
     Element_Begin1("object_audio_metadata_payload");
+    auto RemainingBitsBegin = Data_BS_Remain();
     int8u oa_md_version_bits;
     Get_S1 (2, oa_md_version_bits,                              "oa_md_version_bits");
     if (oa_md_version_bits == 0x3)
@@ -4168,10 +4480,335 @@ void File_Ac3::object_audio_metadata_payload()
         Get_S1 (7, object_count_bits_ext,                       "object_count_bits_ext");
         num_dynamic_objects += object_count_bits_ext;
     }
+    int8u object_count{ num_dynamic_objects };
 
     program_assignment();
 
-    //TODO: next
+    #if MEDIAINFO_TRACE
+
+    bool b_alternate_object_data_present;
+    Get_SB(b_alternate_object_data_present,                     "b_alternate_object_data_present");
+    
+    int8u oa_element_count_bits;
+    int8u num_obj_info_blocks;
+    std::vector<std::vector<bool>> b_obj_not_active_Vec;
+    Get_S1(4, oa_element_count_bits,                            "oa_element_count_bits");
+    if (oa_element_count_bits == 0xF)
+    {
+        int8u oa_element_count_bits_ext;
+        Get_S1(3, oa_element_count_bits_ext,                    "oa_element_count_bits_ext");
+        oa_element_count_bits += oa_element_count_bits_ext;
+    }
+    for (int8u i = 0; i < oa_element_count_bits; ++i) {
+        Element_Begin1("oa_element_md");
+        int8u oa_element_id_idx;
+        int32u oa_element_size_bits;
+        Get_S1 (4, oa_element_id_idx,                           "oa_element_id_idx");
+        Get_V4 (4, oa_element_size_bits,                        "oa_element_size_bits");
+        auto oa_element_EndRemain = Data_BS_Remain() - (oa_element_size_bits + 1LL) * 8;
+        if (b_alternate_object_data_present)
+            Skip_S1(4,                                          "alternate_object_data_id_idx");
+        Skip_SB(                                                "b_discard_unknown_element");
+        switch (oa_element_id_idx)
+        {
+        case 1:                                                 // object_element
+        {
+            Element_Begin1("object_element");
+            Element_Begin1("md_update_info");
+            int8u sample_offset_code;
+            Get_S1(2, sample_offset_code,                       "sample_offset_code");
+            if (sample_offset_code == 0b01)
+                Skip_S1(2,                                      "sample_offset_idx");
+            else
+                if (sample_offset_code == 0b10)
+                    Skip_S1(5,                                  "sample_offset_bits");
+            int8u num_obj_info_blocks_bits;
+            Get_S1(3, num_obj_info_blocks_bits,                 "num_obj_info_blocks_bits");
+            num_obj_info_blocks = num_obj_info_blocks_bits + 1;
+            for (int8u blk = 0; blk < num_obj_info_blocks; ++blk) {
+                Element_Begin1("block_update_info");
+                Skip_S1(6,                                      "block_offset_factor_bits");
+                int8u ramp_duration_code;
+                Get_S1(2, ramp_duration_code,                   "ramp_duration_code");
+                if (ramp_duration_code == 0b11) {
+                    bool b_use_ramp_duration_idx;
+                    Get_SB(b_use_ramp_duration_idx,             "b_use_ramp_duration_idx");
+                        if (b_use_ramp_duration_idx)
+                            Skip_S1(6,                          "ramp_duration_idx");
+                        else
+                            Skip_S2(11,                         "ramp_duration_bits");
+                }
+                Element_End0(); //block_update_info
+            }
+            Element_End0(); //md_update_info
+            bool b_reserved_data_not_present;
+            Get_SB(b_reserved_data_not_present,                 "b_reserved_data_not_present");
+            if (!b_reserved_data_not_present)
+                Skip_S1(5,                                      "reserved");
+            
+            for (int8u j = 0; j < object_count; ++j) {
+                b_obj_not_active_Vec.push_back(std::vector<bool>());
+                Element_Begin1("object_data");
+                for (int8u blk = 0; blk < num_obj_info_blocks; ++blk) {
+                    Element_Begin1("object_info_block");
+                    bool b_object_not_active;
+                    int8u object_basic_info_status_idx;
+                    Get_SB(b_object_not_active,                 "b_object_not_active");
+                    b_obj_not_active_Vec[j].push_back(b_object_not_active);
+                    if (b_object_not_active)
+                        object_basic_info_status_idx = 0b00;
+                    else {
+                        if (blk == 0)
+                            object_basic_info_status_idx = 0b01;
+                        else
+                            Get_S1(2, object_basic_info_status_idx, "object_basic_info_status_idx");
+                    }
+                    if ((object_basic_info_status_idx == 0b01) || (object_basic_info_status_idx == 0b11)) {
+                        Element_Begin1("object_basic_info");
+                        bool object_basic_info[2]{};
+                        if (object_basic_info_status_idx == 0b01) {
+                            object_basic_info[1] = true;
+                            object_basic_info[0] = true;
+                        }
+                        else {
+                            Get_SB(object_basic_info[1],        "object_basic_info[1]");
+                            Get_SB(object_basic_info[0],        "object_basic_info[0]");
+                        }
+                        if (object_basic_info[1]) {
+                            int8u object_gain_idx;
+                            Get_S1(2, object_gain_idx,          "object_gain_idx");
+                            if (object_gain_idx == 0b10)
+                                Skip_S1(6,                      "object_gain_bits");
+                        }
+                        if (object_basic_info[0]) {
+                            bool b_default_object_priority;
+                            Get_SB(b_default_object_priority,   "b_default_object_priority");
+                            if (!b_default_object_priority)
+                                Skip_S1(5,                      "object_priority_bits");
+                        }
+                        Element_End0(); //object_basic_info
+                    }
+                    int8u object_render_info_status_idx{};
+                    if (b_object_not_active) {
+                        object_render_info_status_idx = 0b00;
+                    }
+                    else {
+                        bool b_object_in_bed_or_isf = j < (num_bed_objects + num_isf_objects);
+                        if (!b_object_in_bed_or_isf) {
+                            if (blk == 0) {
+                                object_render_info_status_idx = 0b01;
+                            }
+                            else {
+                                Get_S1(2, object_render_info_status_idx, "object_render_info_status_idx");
+                            }
+                        }
+                        else {
+                            object_render_info_status_idx = 0b00;
+                        }
+                    }
+                    if ((object_render_info_status_idx == 0b01) || (object_render_info_status_idx == 0b11)) {
+                        Element_Begin1("object_render_info");
+                        int8u obj_render_info{};
+                        if (object_render_info_status_idx == 0b01)
+                            obj_render_info = 0b1111;
+                        else
+                            Get_S1(4, obj_render_info,          "obj_render_info");
+                        if (obj_render_info & 0b0001) {
+                            bool b_differential_position_specified{};
+                            if (blk == 0)
+                                b_differential_position_specified = false;
+                            else
+                                Get_SB(b_differential_position_specified, "b_differential_position_specified");
+                            if (b_differential_position_specified) {
+                                Skip_S1(3,                      "diff_pos3D_X_bits");
+                                Skip_S1(3,                      "diff_pos3D_Y_bits");
+                                Skip_S1(3,                      "diff_pos3D_Z_bits");
+                            }
+                            else {
+                                Skip_S1(6,                      "pos3D_X_bits");
+                                Skip_S1(6,                      "pos3D_Y_bits");
+                                Skip_SB(                        "pos3D_Z_sign_bits");
+                                Skip_S1(4,                      "pos3D_Z_bits");
+                            }
+                            bool b_object_distance_specified;
+                            Get_SB(b_object_distance_specified, "b_object_distance_specified");
+                            if (b_object_distance_specified) {
+                                bool b_object_at_infinity;
+                                Get_SB(b_object_at_infinity,    "b_object_at_infinity");
+                                if (b_object_at_infinity) {
+                                    // object_distance = inf
+                                }
+                                else
+                                    Skip_S1(4,                  "distance_factor_idx");
+                            }
+                        }
+                        if (obj_render_info & 0b0010) {
+                            Skip_S1(3,                          "zone_constraints_idx");
+                            Skip_SB(                            "b_enable_elevation");
+                        }
+                        if (obj_render_info & 0b0100) {
+                            int8u object_size_idx;
+                            Get_S1(2, object_size_idx,          "object_size_idx");
+                            if (object_size_idx == 0b01)
+                                Skip_S1(5,                      "object_size_bits");
+                            else {
+                                if (object_size_idx == 0b10) {
+                                    Skip_S1(5,                  "object_width_bits");
+                                    Skip_S1(5,                  "object_depth_bits");
+                                    Skip_S1(5,                  "object_height_bits");
+                                }
+                            }
+                        }
+                        if (obj_render_info & 0b1000) {
+                            bool b_object_use_screen_ref;
+                            Get_SB(b_object_use_screen_ref,     "b_object_use_screen_ref");
+                            if (b_object_use_screen_ref) {
+                                Skip_S1(3,                      "screen_factor_bits");
+                                Skip_S1(2,                      "depth_factor_idx");
+                            }
+                            else {
+                                // screen_factor_bits = 0;
+                            }
+                        }
+                        Skip_SB(                                "b_object_snap");
+                        Element_End0(); //object_render_info
+                    }
+                    bool b_additional_table_data_exists;
+                    Get_SB(b_additional_table_data_exists,      "b_additional_table_data_exists");
+                    if (b_additional_table_data_exists) {
+                        int8u additional_table_data_size_bits;
+                        Get_S1(4, additional_table_data_size_bits, "additional_table_data_size_bits");
+                        Skip_BS((additional_table_data_size_bits+1LL)*8, "additional_table_data");
+                    }
+                    Element_End0(); //object_info_block
+                }
+                Element_End0(); //object_data
+            }
+            
+            Element_End0(); //object_element
+            break;
+        }
+        case 2:                                                 // trim_element
+        {
+            Element_Begin1("trim_element");
+            const int8u NUM_TRIM_CONFIGS{ 9 };
+            Skip_S1(2,                                          "warp_mode");
+            Skip_S1(2,                                          "reserved");
+            int8u global_trim_mode;
+            Get_S1(2, global_trim_mode,                         "global_trim_mode"); Param_Info1(global_trim_mode == 0 ? "default_trim" : global_trim_mode == 1 ? "disable_trim" : global_trim_mode == 2 ? "custom_trim" : "");
+            if (global_trim_mode == 0b10) {
+                for (int8u cfg = 0; cfg < NUM_TRIM_CONFIGS; ++cfg) {
+                    bool b_default_trim;
+                    Get_SB(b_default_trim,                      "b_default_trim");
+                    if (b_default_trim == 0) {
+                        bool b_disable_trim;
+                        Get_SB(b_disable_trim,                  "b_disable_trim");
+                        if (b_disable_trim == 0) {
+                            int8u trim_balance_presence;
+                            Get_S1(5, trim_balance_presence,    "trim_balance_presence");
+                            if (trim_balance_presence & 0b10000)
+                                Skip_S1(4,                      "trim_centre");
+                            if (trim_balance_presence & 0b01000)
+                                Skip_S1(4,                      "trim_surround");
+                            if (trim_balance_presence & 0b00100)
+                                Skip_S1(4,                      "trim_height");
+                            if (trim_balance_presence & 0b00010) {
+                                Skip_SB(                        "bal3D_Y_sign_tb_code");
+                                Skip_S1(4,                      "bal3D_Y_amount_tb");
+                            }
+                            if (trim_balance_presence & 0b00010) {
+                                Skip_SB(                        "bal3D_Y_sign_lis_code");
+                                Skip_S1(4,                      "bal3D_Y_amount_lis");
+                            }
+                        }
+                    }
+                }
+            }
+            TEST_SB_SKIP(                                       "b_disable_trim_per_obj");
+                for (int8u obj = 0; obj < object_count; obj++)
+                    Skip_SB(                                    "b_disable_trim");
+            TEST_SB_END();
+            Element_End0(); // trim_element
+            break;
+        }
+        case 5:                                                 // extended_object_element
+        {
+            Element_Begin1("extended_object_element");
+            TEST_SB_SKIP(                                       "b_obj_div_block");
+                for (int8u obj = 0; obj < object_count; ++obj) {
+                    for (int8u blk = 0; blk < num_obj_info_blocks; ++blk) {
+                        Element_Begin1("obj_div_block");
+                        if (b_obj_not_active_Vec[obj][blk]) {
+                            // object_divergence = 0;
+                        }
+                        else {
+                            bool obj_type_DYNAMIC = obj >= (num_bed_objects + num_isf_objects);
+                            if (obj_type_DYNAMIC) {
+                                TEST_SB_SKIP(                   "b_object_divergence");
+                                    int8u object_div_mode;
+                                    Get_S1(2, object_div_mode,  "object_div_mode");
+                                    if (object_div_mode == 0)
+                                        Skip_S1(2,              "object_div_table");
+                                    if (object_div_mode == 2 || object_div_mode == 3) {
+                                        Skip_S1(6,              "object_div_code");
+                                    }
+                                    else {
+                                        // object_divergence = 0;
+                                    }
+                                TEST_SB_END();
+                            }
+                        }
+                        Element_End0(); // obj_div_block
+                    }
+                }
+            TEST_SB_END();
+            TEST_SB_SKIP(                                       "b_ext_prec_pos_block");
+                for (int8u obj = 0; obj < object_count; ++obj) {
+                    for (int8u blk = 0; blk < num_obj_info_blocks; ++blk) {
+                        Element_Begin1("ext_prec_pos_block");
+                        if (b_obj_not_active_Vec[obj][blk]) {
+                            // b_ext_prec_pos = false;
+                        }
+                        else {
+                            bool obj_type_DYNAMIC = obj >= (num_bed_objects + num_isf_objects);
+                            if (obj_type_DYNAMIC) {
+                                TEST_SB_SKIP(                   "b_ext_prec_pos");
+                                    int8u ext_prec_pos_presence;
+                                    Get_S1(3, ext_prec_pos_presence, "ext_prec_pos_presence");
+                                    if (ext_prec_pos_presence & 0b100)
+                                        Skip_S1(2,              "ext_prec_pos3D_X");
+                                    if (ext_prec_pos_presence & 0b010)
+                                        Skip_S1(2,              "ext_prec_pos3D_Y");
+                                    if (ext_prec_pos_presence & 0b001)
+                                        Skip_S1(2,              "ext_prec_pos3D_Z");
+                                TEST_SB_END();
+                            }
+                        }
+                        Element_End0(); // ext_prec_pos_block
+                    }
+                }
+            TEST_SB_END();
+            Element_End0(); // extended_object_element
+            break;
+        }
+        default:                                                // reserved
+        {
+            auto RemainingBits = Data_BS_Remain();
+            if (RemainingBits > oa_element_EndRemain)
+                Skip_BS(RemainingBits - oa_element_EndRemain,   "(Not parsed)");
+            break;
+        }
+        }
+        auto RemainingBits = Data_BS_Remain();
+        if (RemainingBits > oa_element_EndRemain)
+            Skip_BS(RemainingBits - oa_element_EndRemain,       "padding");
+        Element_End0(); //oa_element_md
+    }
+    auto RemainingBitsEnd = Data_BS_Remain();
+    auto size = RemainingBitsBegin - RemainingBitsEnd;
+    Skip_BS((8 - (size & 7)) & 7,                               "padding");
+
+    #endif // MEDIAINFO_TRACE
 
     Element_End0();
 }
@@ -4233,8 +4870,12 @@ void File_Ac3::program_assignment()
             }
         }
 
-        if (content_description_mask & 0x2)
-            Skip_S1(3,                                          "intermediate_spatial_format_idx");
+        if (content_description_mask & 0x2) {
+            const int8u num_isf_objects_lookup[] = {4, 8, 10, 14, 15, 30};
+            int8u intermediate_spatial_format_idx;
+            Get_S1(3, intermediate_spatial_format_idx,          "intermediate_spatial_format_idx");
+            num_isf_objects = num_isf_objects_lookup[intermediate_spatial_format_idx];
+        }
 
         if (content_description_mask & 0x4)
         {
@@ -4255,11 +4896,15 @@ void File_Ac3::program_assignment()
         {
             int8u reserved_data_size_bits;
             Get_S1 (4, reserved_data_size_bits,                 "reserved_data_size_bits");
-            int8u padding = 8 - (reserved_data_size_bits % 8);
-            Skip_S1(reserved_data_size_bits,                    "reserved_data()");
-            if (padding)
-                Skip_S1(padding,                                "padding");
+            Skip_BS((reserved_data_size_bits + 1LL) * 8,        "reserved_data() + padding");
         }
+    }
+
+    num_bed_objects = 0;
+    int32u n{ nonstd_bed_channel_assignment_mask };
+    while (n) {
+        n &= (n - 1);
+        ++num_bed_objects;
     }
 
     Element_End0();
@@ -4294,15 +4939,16 @@ void File_Ac3::joc_header()
 void File_Ac3::joc_info()
 {
     Element_Begin1("joc_info");
-    int8u joc_clipgain_x_bits, joc_clipgain_y_bits;
-    int16u joc_seq_count_bits;
-    Get_S1 (3, joc_clipgain_x_bits,                                 "joc_clipgain_x_bits");
-    Get_S1 (5, joc_clipgain_y_bits,                                 "joc_clipgain_y_bits");
-    Get_S2 (10, joc_seq_count_bits,                                 "joc_seq_count_bits");
-    for (int8u obj = 0; obj < joc_num_objects; obj++)
+    Skip_S1(3,                                                  "joc_clipgain_x_bits");
+    Skip_S1(5,                                                  "joc_clipgain_y_bits");
+    Skip_S2(10,                                                 "joc_seq_count_bits");
+    for (int8u obj = 0; obj < joc_num_objects; ++obj)
     {
-        TEST_SB_SKIP("b_joc_obj_present[obj]");
-            //TODO
+        TEST_SB_SKIP(                                           "b_joc_obj_present[obj]");
+            Skip_S1(3,                                          "joc_num_bands_idx[obj]");
+            Skip_SB(                                            "b_joc_sparse[obj]");
+            Skip_S1(1,                                          "joc_num_quant_idx[obj]");
+            joc_data_point_info();
         TEST_SB_END();
     }
     Element_End0();
@@ -4312,7 +4958,14 @@ void File_Ac3::joc_info()
 void File_Ac3::joc_data_point_info()
 {
     Element_Begin1("joc_data_point_info");
-    //TODO
+    int8u joc_slope_idx_obj, joc_num_dpoints_bits_obj;
+    Get_S1(1, joc_slope_idx_obj,                                "joc_slope_idx[obj]");
+    Get_S1(1, joc_num_dpoints_bits_obj,                         "joc_num_dpoints_bits[obj]");
+    if (joc_slope_idx_obj == 1) {
+        for (int8u dp = 0; dp <= joc_num_dpoints_bits_obj; ++dp) {
+            Skip_S1(5,                                          "joc_offset_ts_bits[obj,dp]");
+        }
+    }
     Element_End0();
 }
 
@@ -4336,6 +4989,7 @@ void File_Ac3::joc_ext_data()
 void File_Ac3::HD()
 {
     //Parsing
+    bool MajorSyncOK{ true };
     int32u Synch;
     Peek_B3(Synch);
     if (Synch==0xF8726F)
@@ -4346,25 +5000,10 @@ void File_Ac3::HD()
             return; //Need more data
         }
 
-        //Testing
-        /* Not working
-        int16u CRC_16_Table_HD[256];
-        CRC16_Init(CRC_16_Table_HD, 0x002D);
-
-        int16u CRC_16=0x0000;
-        const int8u* CRC_16_Buffer=Buffer+Buffer_Offset;
-        while(CRC_16_Buffer<Buffer+Buffer_Offset+24)
-        {
-            CRC_16=(CRC_16<<8) ^ CRC_16_Table_HD[(CRC_16>>8)^(*CRC_16_Buffer)];
-            CRC_16_Buffer++;
-        }
-        CRC_16^=LittleEndian2int16u(Buffer+Buffer_Offset+24);
-        */
-
         Element_Info1("major_sync");
         Element_Begin1("major_sync_info");
         int32u format_sync;
-        Get_B4(format_sync,                                     "major_sync");
+        Get_B4(format_sync,                                     "format_sync");
         HD_StreamType=(int8u)format_sync; Param_Info1(AC3_HD_StreamType(HD_StreamType));
 
         if ((HD_StreamType&0xFE)!=0xBA)
@@ -4381,39 +5020,45 @@ void File_Ac3::HD()
         Get_S2 (15, HD_BitRate_Max,                             "peak_data_rate"); Param_Info2((HD_BitRate_Max*(AC3_HD_SamplingRate(HD_SamplingRate2)?AC3_HD_SamplingRate(HD_SamplingRate2):AC3_HD_SamplingRate(HD_SamplingRate1))+8)>>4, " bps");
         Get_S1 ( 4, HD_SubStreams_Count,                        "substreams");
         Skip_S1( 2,                                             "reserved");
-        Skip_S1( 2,                                             "extended_substream_info");
+        Get_S1 ( 2, presentations[p_16ch].presentation,         "extended_substream_info"); Param_Info1C(HD_StreamType == 0xBA, AC3_TrueHD_ExtendedSubstreamInfo(presentations[p_16ch].presentation));
+        presentations[p_2ch].presentation = 1;
         if (HD_StreamType==0xBA)
         {
             Element_Begin1("substream_info");
                 Get_SB (    HD_HasAtmos,                        "16-channel presentation is present");
-                Skip_S1(3,                                      "8-ch presentation");
-                Skip_S1(2,                                      "6-ch presentation");
-                Skip_S1(2,                                      "reserved");
+                Get_S1 ( 3, presentations[p_8ch].presentation,  "8-ch presentation"); Param_Info1(AC3_TrueHD_SubstreamInfo8ch(presentations[p_8ch].presentation));
+                Get_S1 ( 2, presentations[p_6ch].presentation,  "6-ch presentation"); Param_Info1(AC3_TrueHD_SubstreamInfo6ch(presentations[p_6ch].presentation));
+                Skip_S1( 2,                                     "reserved");
             Element_End0();
         }
         else
             Skip_S1(8,                                          "Unknown");
         BS_End();
         Element_Begin1("channel_meaning");
-            Skip_B1(                                            "Unknown");
-            Skip_B1(                                            "Unknown");
-            Skip_B1(                                            "Unknown");
-            Skip_B1(                                            "Unknown");
-            Skip_B1(                                            "Unknown");
-            Skip_B1(                                            "Unknown");
-            Skip_B1(                                            "Unknown");
             if (HD_StreamType==0xBA)
             {
-                BS_Begin();
-                Skip_S1( 7,                                     "Unknown");
                 bool HasExtend;
+                BS_Begin();
+                Skip_S1( 6,                                     "reserved");
+                Get_SB (  presentations[p_2ch].control_enabled, "2ch_control_enabled");
+                Get_SB (  presentations[p_6ch].control_enabled, "6ch_control_enabled");
+                Get_SB (  presentations[p_8ch].control_enabled, "8ch_control_enabled");
+                Skip_S1( 1,                                     "reserved");
+                Skip_S1( 7,                                     "drc_start_up_gain");
+                Get_S1 ( 6, presentations[p_2ch].dialogue_norm, "2ch_dialogue_norm"); Param_Info2(presentations[p_2ch].dialogue_norm == 0 ? -31 : -presentations[p_2ch].dialogue_norm, " LKFS");
+                Get_S1 ( 6, presentations[p_2ch].mix_level,     "2ch_mix_level");     Param_Info2(70 + presentations[p_2ch].mix_level, " dB");
+                Get_S1 ( 5, presentations[p_6ch].dialogue_norm, "6ch_dialogue_norm"); Param_Info2(presentations[p_6ch].dialogue_norm == 0 ? -31 : -presentations[p_6ch].dialogue_norm, " LKFS");
+                Get_S1 ( 6, presentations[p_6ch].mix_level,     "6ch_mix_level");     Param_Info2(70 + presentations[p_6ch].mix_level, " dB");
+                Skip_S1( 5,                                     "6ch_source_format");
+                Get_S1 ( 5, presentations[p_8ch].dialogue_norm, "8ch_dialogue_norm"); Param_Info2(presentations[p_8ch].dialogue_norm == 0 ? -31 : -presentations[p_8ch].dialogue_norm, " LKFS");
+                Get_S1 ( 6, presentations[p_8ch].mix_level,     "8ch_mix_level");     Param_Info2(70 + presentations[p_8ch].mix_level, " dB");
+                Skip_S1( 6,                                     "8ch_source_format");
+                Skip_S1( 1,                                     "reserved");
                 Get_SB (    HasExtend,                          "extra_channel_meaning_present");
                 BS_End();
                 if (HasExtend)
                 {
-                    unsigned char Extend = 0;
-                    unsigned char Unknown = 0;
-                    bool HasContent = false;
+                    int8u Extend;
                     BS_Begin();
                     Get_S1( 4, Extend,                          "extra_channel_meaning_length");
                     size_t After=(((size_t)Extend)+1)*16-4;
@@ -4424,23 +5069,45 @@ void File_Ac3::HD()
                     if (HD_HasAtmos)
                     {
                         Element_Begin1("16ch_channel_meaning");
-                        Skip_S1(5,                              "16ch_dialogue_norm");
-                        Skip_S1(6,                              "16ch_mix_level");
-                        Get_S1 (5, num_dynamic_objects,         "16ch_channel_count");
-                        num_dynamic_objects++;
+                        Get_S1 (5, presentations[p_16ch].dialogue_norm, "16ch_dialogue_norm");  Param_Info2(presentations[p_16ch].dialogue_norm == 0 ? -31 : -presentations[p_16ch].dialogue_norm, " LKFS");
+                        Get_S1 (6, presentations[p_16ch].mix_level,     "16ch_mix_level");      Param_Info2(70 + presentations[p_16ch].mix_level, " dB");
+                        Get_S1 (5, num_dynamic_objects,                 "16ch_channel_count");
+                        num_dynamic_objects++;                                                  Param_Info2(num_dynamic_objects, " channels");
+                        presentations[p_16ch].elements = num_dynamic_objects;
                         program_assignment();
                         Element_End0();
                     }
                     size_t RemainginBits=Data_BS_Remain();
                     if (RemainginBits>After)
-                        Skip_BS(RemainginBits-After,            "(Unparsed bits)");
+                        Skip_BS(RemainginBits-After,            HD_HasAtmos ? "reserved" : "(Unparsed bits)");
                     BS_End();
                 }
             }
             else
-                Skip_B1(                                        "Unknown");
+                Skip_B8(                                        "Unknown");
         Element_End0();
-        Skip_B2(                                                "major_sync_info_CRC");
+
+        int16u major_sync_info_CRC;
+        Get_B2 (major_sync_info_CRC,                            "major_sync_info_CRC");
+
+        FILLING_BEGIN();
+            // major_sync_info CRC check
+            //  MLP uses checksums that seem to be based on the standard CRC algorithm, but are not (in implementation terms, the table lookup and XOR are reversed).
+            //  This behavior can be implemented using standard CRC on all but the last element, then XOR that with the last element. -FFmpeg
+            if (!CRC_16_Table_HD) {
+                CRC_16_Table_HD.reset(new int16u[256]);
+                CRC16_Init(CRC_16_Table_HD.get(), 0x002D);
+            }
+            int16u CRC_16 = 0x0000;
+            const int8u* CRC_16_Buffer = Buffer + Buffer_Offset;
+            while (CRC_16_Buffer < Buffer + Buffer_Offset + Element_Offset - 4) {
+                CRC_16 = (CRC_16 << 8) ^ CRC_16_Table_HD[(CRC_16 >> 8) ^ (*CRC_16_Buffer++)];
+            }
+            CRC_16 ^= BigEndian2int16u(Buffer + Buffer_Offset + Element_Offset - 4);
+            Param_Info1(CRC_16 == major_sync_info_CRC ? "OK" : "NOK");
+            MajorSyncOK = (CRC_16 == major_sync_info_CRC ? true : false);
+        FILLING_END();
+
         Element_End0();
     }
     else if (!HD_MajorSync_Parsed)
@@ -4449,11 +5116,14 @@ void File_Ac3::HD()
     }
 
     int64u PosBeforeDirectory=Element_Offset;
+    bool crc_present{};
+    std::vector<int16u> substream_end_ptrs;
     BS_Begin();
     for (int8u i=0; i<HD_SubStreams_Count; i++)
     {
         Element_Begin1("substream_directory");
         bool extra_substream_word, restart_nonexistent;
+        int16u substream_end_ptr;
         Get_SB (extra_substream_word,                           "extra_substream_word");
         Get_SB (restart_nonexistent,                            "restart_nonexistent");
         if ((!restart_nonexistent && Synch!=0xF8726F) || (restart_nonexistent && Synch==0xF8726F))
@@ -4461,9 +5131,9 @@ void File_Ac3::HD()
             Element_End0();
             return;
         }
-        Skip_SB(                                                "crc_present");
-        Skip_SB(                                                "reserved");
-        Skip_S2(12,                                             "substream_end_ptr");
+        Get_SB (crc_present,                                    "crc_present");
+        Skip_S1( 1,                                             "reserved");
+        Get_S2 (12, substream_end_ptr,                          "substream_end_ptr");
         if (extra_substream_word)
         {
             Skip_S2(9,                                          "drc_gain_update");
@@ -4471,6 +5141,7 @@ void File_Ac3::HD()
             Skip_S1(4,                                          "reserved");
         }
         Element_End0();
+        substream_end_ptrs.push_back(substream_end_ptr);
     }
     BS_End();
 
@@ -4492,7 +5163,7 @@ void File_Ac3::HD()
             Value>>=4;
             crc^=Value;
         }
-        if (crc!=0xF)
+        if (crc!=0xF || !MajorSyncOK)
         {
             return;
         }
@@ -4505,6 +5176,199 @@ void File_Ac3::HD()
         }
     FILLING_END();
 
+    if (HD_MajorSync_Parsed && HD_StreamType == 0xBA) {
+        auto substreams_begin_ptr = Element_Offset;
+        for (int8u i = 0; i < HD_SubStreams_Count; ++i) {
+            Element_Begin1("substream_segment");
+            auto substream_segment_begin = Element_Offset;
+            #if MEDIAINFO_TRACE
+            BS_Begin();
+            //bool last_block_in_segment;
+            //do {
+                Element_Begin1("block");
+                bool block_header_exists;
+                Get_SB(block_header_exists,                     "block_header_exists");
+                if (block_header_exists) {
+                    TEST_SB_SKIP(                               "restart_header");
+                        auto restart_BeginRemain = Data_BS_Remain();
+                        int8u max_matrix_chan{};
+                        Skip_S2(14,                             "restart_sync_word");
+                        Skip_S2(16,                             "output_timing");
+                        Skip_S1( 4,                             "min_chan");
+                        Skip_S1( 4,                             "max_chan");
+                        Get_S1 ( 4, max_matrix_chan,            "max_matrix_chan");
+                        Skip_S1( 4,                             "dither_shift");
+                        Skip_S3(23,                             "dither_seed");
+                        Skip_S1( 4,                             "max_shift");
+                        Skip_S1( 5,                             "max_lsbs");
+                        Skip_S1( 5,                             "max_bits");
+                        Skip_S1( 5,                             "max_bits");
+                        Skip_SB(                                "error_protect");
+                        Skip_S1( 8,                             "lossless_check");
+                        Skip_S2(16,                             "reserved");
+                        for (int8u ch = 0; ch <= max_matrix_chan; ++ch) {
+                            Skip_S1(6,                          ("ch_assign[" + std::to_string(ch) + "]").c_str());
+                        }
+                        auto restart_size = restart_BeginRemain - Data_BS_Remain();
+                        int8u restart_header_CRC;
+                        Get_S1 (8, restart_header_CRC,          "restart_header_CRC");
+                        FILLING_BEGIN();
+                        if (Trace_Activated) {
+                            if (!CRC_8_1D_Table_HD) {
+                                CRC_8_1D_Table_HD.reset(new int8u[256]);
+                                CRC8_Init(CRC_8_1D_Table_HD.get(), 0x1D);
+                            }
+                            const int8u* CRC_8_Buffer = Buffer + Buffer_Offset + substream_segment_begin;
+                            int8u CRC_8 = CRC_8_1D_Table_HD[*CRC_8_Buffer & 0x3F];
+                            auto aligned_size = restart_size + 2;
+                            auto num_bytes = aligned_size / 8;
+                            for (int8u c = 1; c < num_bytes - 1; ++c) {
+                                CRC_8 = CRC_8_1D_Table_HD[CRC_8 ^ CRC_8_Buffer[c]];
+                            }
+                            CRC_8 ^= CRC_8_Buffer[num_bytes - 1];
+                            for (int8u c = 0; c < (aligned_size & 7); ++c) {
+                                if (CRC_8 & 0x80)
+                                    CRC_8 = (CRC_8 << 1) ^ 0x1D;
+                                else
+                                    CRC_8 <<= 1;
+                                CRC_8 ^= (CRC_8_Buffer[num_bytes] >> (7 - c)) & 1;
+                            }
+                            Param_Info1(CRC_8 == restart_header_CRC ? "OK" : "NOK");
+                        }
+                        FILLING_END();
+                    TEST_SB_END();
+                    Element_Begin1("block_header");
+                    // Not parsed, too much data
+                    Element_End0();
+                }
+                //if (error_protect) {
+                //    Skip_S2(16,                               "block_data_bits");
+                //}
+                //Element_Begin1("block_data");
+                //Element_End0();
+                //if (error_protect) {
+                //    Skip_S1( 8,                               "block_header_CRC");
+                //}
+                //Get_SB(last_block_in_segment,                 "last_block_in_segment");
+                Element_End0();
+            //} while (!last_block_in_segment);
+
+            // padding
+
+            // if (last_access_unit_in_stream) {
+            // ...
+            // }
+
+            BS_End();
+            #endif // MEDIAINFO_TRACE
+            Skip_XX(substreams_begin_ptr + substream_end_ptrs[i] * 2LL - (crc_present ? 2 : 0) - Element_Offset, "(Not parsed)");
+            Element_End0();
+            if (crc_present) {
+                int8u substream_parity;
+                Get_B1 (substream_parity,                       "substream_parity");
+                #if MEDIAINFO_TRACE
+                FILLING_BEGIN();
+                if (Trace_Activated) {
+                    auto size = Element_Offset - 1 - substream_segment_begin;
+                    // The 8-bit substream_parity field is a parity check. The value of the substream_parity field is equal
+                    // to the exclusive - OR of all the bytes in the expansion of substream_segment(), exclusive - ORed with
+                    // the constant 0xA9 (the purpose of the latter being to force the check to fail in the event of the
+                    // stream consisting entirely of zeroes).
+                    int8u parity{};
+                    for (int16u j = 0; j < size; ++j) {
+                        int8u Value = Buffer[Buffer_Offset + substream_segment_begin + j];
+                        parity ^= Value;
+                    }
+                    parity ^= 0xA9;
+                    Param_Info1(parity == substream_parity ? "OK" : "NOK");
+                }
+                FILLING_END();
+                #endif // MEDIAINFO_TRACE
+                int8u substream_CRC;
+                Get_B1(substream_CRC,                           "substream_CRC");
+                #if MEDIAINFO_TRACE
+                FILLING_BEGIN();
+                if (Trace_Activated) {
+                    if (!CRC_8_Table_HD) {
+                        CRC_8_Table_HD.reset(new int8u[256]);
+                        CRC8_Init(CRC_8_Table_HD.get(), 0x63);
+                    }
+                    int8u CRC_8 = CRC_8_Table_HD[0xA2];
+                    const int8u* CRC_8_Buffer = Buffer + Buffer_Offset + substream_segment_begin;
+                    while (CRC_8_Buffer < Buffer + Buffer_Offset + Element_Offset - 3) {
+                        CRC_8 = CRC_8_Table_HD[CRC_8 ^ *CRC_8_Buffer++];
+                    }
+                    CRC_8 ^= BigEndian2int8u(Buffer + Buffer_Offset + Element_Offset - 3);
+                    Param_Info1(CRC_8 == substream_CRC ? "OK" : "NOK");
+                }
+                FILLING_END();
+                #endif // MEDIAINFO_TRACE
+            }
+        }
+        if (Element_Size - Element_Offset >= 2) {
+            Element_Begin1("EXTRA_DATA");
+            int8u length_check_nibble;
+            int16u EXTRA_DATA_length;
+            BS_Begin();
+            Get_S1( 4, length_check_nibble,                     "length_check_nibble");
+            Get_S2(12, EXTRA_DATA_length,                       "EXTRA_DATA_length");
+            BS_End();
+            if (length_check_nibble == 0 && EXTRA_DATA_length == 0) {
+                Skip_XX(Element_Size - Element_Offset,          "EXTRA_DATA_padding");
+            }
+            else if (((length_check_nibble ^ (EXTRA_DATA_length & 0x000F) ^ ((EXTRA_DATA_length >> 4) & 0x000F) ^ ((EXTRA_DATA_length >> 8) & 0x000F)) == 0xF)
+                && (Element_Offset + EXTRA_DATA_length * 2LL) <= Element_Size) {
+                int32u extra_data_size = EXTRA_DATA_length * 2 - 1;
+                auto extra_data_end = Element_Offset + extra_data_size;
+                bool ExtraDataParityOK{};
+                int8u parity{};
+                FILLING_BEGIN();
+                    // The 8-bit EXTRA_DATA_parity field is a parity check. The value of the field is equal to the exclusive-
+                    // OR of all the bytes calculated over all the bytes in the expansion of EXTRA_DATA(excluding
+                    // length_check_nibble, EXTRA_DATA_length, and the EXTRA_DATA_parity fields), exclusive - ORed
+                    // with the constant 0xA9 (the purpose of the latter being to force the check to fail in the event of the
+                    // stream consisting entirely of zeroes).
+                    for (int16u i = 0; i < extra_data_size; ++i) {
+                        int8u Value = Buffer[Buffer_Offset + Element_Offset + i];
+                        parity ^= Value;
+                    }
+                    parity ^= 0xA9;
+                    if (parity == Buffer[Buffer_Offset + extra_data_end])
+                        ExtraDataParityOK = true;
+                FILLING_END();
+                if (ExtraDataParityOK && (HD_flags & 0x1000)) {
+                    Element_Begin1("emdf_frame");
+                    int16u length;
+                    BS_Begin();
+                    Skip_S1( 4,                                 "reserved");
+                    Get_S2 (12, length,                         "length");
+                    BS_End();
+                    if (length <= extra_data_size - 2) {
+                        auto frame_begin = Element_Offset;
+                        BS_Begin();
+                        emdf_container();
+                        BS_End(); 
+                        Skip_XX(frame_begin + length - Element_Offset, "(Not parsed)");
+                    }
+                    Element_End0();
+                    if (extra_data_end - Element_Offset == 1)
+                        Skip_XX(1,                              "EXTRA_DATA_padding");
+                    else
+                        Skip_XX(extra_data_end - Element_Offset, "(Not parsed)");
+                }
+                else {
+                    Skip_XX(extra_data_size,                    "data");
+                }
+                int8u EXTRA_DATA_parity;
+                Get_B1 (EXTRA_DATA_parity,                      "EXTRA_DATA_parity");
+                Param_Info1(parity == EXTRA_DATA_parity ? "OK" : "NOK");
+            }
+            else {
+                Skip_XX(Element_Size - Element_Offset,          "(Data)");
+            }
+            Element_End0();
+        }
+    }
 
     /*
     if (HD_MajorSync_Parsed)
@@ -4614,21 +5478,29 @@ void File_Ac3::HD_format_info()
     if (HD_StreamType==0xBA)
     {
         Element_Begin1("format_info");
+        int8u dsurexmod_6ch;
         BS_Begin();
         Get_S1 ( 4, HD_SamplingRate1,                           "audio_sampling_frequency"); Param_Info2(AC3_HD_SamplingRate(HD_SamplingRate1), " Hz");
         Skip_SB(                                                "6ch_multichannel_type");
-        Skip_SB(                                                "8ch_multichannel_typ");
+        Skip_SB(                                                "8ch_multichannel_type");
         Skip_S1( 2,                                             "reserved");
-        Skip_S1( 2,                                             "2ch_presentation_channel_modifier");
-        Skip_S1( 2,                                             "6ch_presentation_channel_modifier");
+        Get_S1 ( 2, presentations[p_2ch].modifier,              "2ch_presentation_channel_modifier");
+        Get_S1 ( 2, dsurexmod_6ch,                              "6ch_presentation_channel_modifier");
         Get_S1 ( 5, HD_Channels1,                               "6ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels1)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels1)));
         Get_S1 ( 2, dsurexmod,                                  "8ch_presentation_channel_modifier");
         Get_S2 (13, HD_Channels2,                               "8ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels2)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels2)));
         BS_End();
-        HD_Resolution2=HD_Resolution1=24; //Not sure
+        HD_Resolution2=HD_Resolution1=2; //24-bits
         HD_SamplingRate2=HD_SamplingRate1;
+        if (dsurexmod_6ch && !(HD_Channels2 & (1 << 3)))
+            dsurexmod_6ch = 0; //Only if Ls/Rs
         if (dsurexmod && !(HD_Channels2&(1<<3)))
             dsurexmod=0; //Only if Ls/Rs
+        presentations[p_2ch].ch_assign = 1;
+        presentations[p_6ch].ch_assign = HD_Channels1;
+        presentations[p_8ch].ch_assign = HD_Channels2;
+        presentations[p_6ch].modifier = dsurexmod_6ch;
+        presentations[p_8ch].modifier = dsurexmod;
         Element_End0();
     }
     if (HD_StreamType==0xBB)
