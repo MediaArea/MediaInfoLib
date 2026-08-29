@@ -2712,7 +2712,7 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
     else
     #endif //defined(MEDIAINFO_XML_YES)
     #if defined(MEDIAINFO_JSON_YES)
-    if (MediaInfoLib::Config.Inform_Get()==__T("JSON"))
+    if (MediaInfoLib::Config.Inform_Get()==__T("JSON") || MediaInfoLib::Config.Inform_Get()==__T("OLDJSON"))
     {
         if (Info.size() > 1)
             Result+=__T("[")+MediaInfoLib::Config.LineSeparator_Get();
