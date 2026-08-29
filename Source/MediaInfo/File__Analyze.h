@@ -932,6 +932,31 @@ public :
     #if defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MK_YES)
     void dvcC(bool has_dependency_pid=false, std::map<std::string, Ztring>* Infos=NULL);
     #endif
+    #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES)
+    struct DV_RPU {
+        int8u vdr_rpu_profile{};
+        int32u bl_bit_depth{};
+        int32u el_bit_depth{};
+        int32u vdr_bit_depth{};
+        bool BL_video_full_range_flag{};
+        int8u isMEL{};
+        float CMv{};
+        int16u active_area_left_offset{};
+        int16u active_area_right_offset{};
+        int16u active_area_top_offset{};
+        int16u active_area_bottom_offset{};
+        int16u max_display_mastering_luminance{};
+        int16u min_display_mastering_luminance{};
+        int16u max_content_light_level{};
+        int16u max_frame_average_light_level{};
+        bool L11_present{};
+        int8u content_type{};
+        int8u white_point{};
+        bool reference_mode{};
+    };
+    // Must be in bitstream before calling this function.
+    void Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data);
+    #endif
 
     //***************************************************************************
     // Unknown
