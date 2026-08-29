@@ -3562,6 +3562,7 @@ void File_Mk::Segment_Tracks_TrackEntry()
     TrackType=(int64u)-1;
     TrackNumber=(int64u)-1;
     AudioBitDepth=(int64u)-1;
+    TrackHasLanguageIETF=false;
     TrackVideoDisplayWidth=0;
     TrackVideoDisplayHeight=0;
     AvgBytesPerSec=0;
@@ -4282,6 +4283,24 @@ void File_Mk::Segment_Tracks_TrackEntry_Language()
     FILLING_BEGIN();
         if (Segment_Info_Count>1)
             return; //First element has the priority
+        if (TrackHasLanguageIETF)
+            return;
+        Fill(StreamKind_Last, StreamPos_Last, "Language", Data, true);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tracks_TrackEntry_LanguageIETF()
+{
+    //Parsing
+    Ztring Data=String_Get();
+
+    FILLING_BEGIN();
+        if (Segment_Info_Count>1)
+            return; //First element has the priority
+        if (Data.empty())
+            return;
+        TrackHasLanguageIETF=true;
         Fill(StreamKind_Last, StreamPos_Last, "Language", Data, true);
     FILLING_END();
 }
