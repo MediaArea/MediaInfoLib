@@ -333,7 +333,10 @@ File_Mpega::File_Mpega()
     VBR_FileSize=0;
     VBR_Frames=0;
     Reservoir_Max=0;
+    Xing_Info_Found = false; 
     Xing_Scale=0;
+    Encoder_Delay = 0;
+    Encoder_Padding = 0;
     BitRate=0;
     MpegPsPattern_Count=0;
     VBR_Frames_IsCbr=false;
@@ -560,6 +563,10 @@ void File_Mpega::Streams_Finish()
         float64 Size=((float64)Mpega_Coefficient[ID][layer]*Mpega_BitRate[ID][layer][bitrate_index]*1000/Mpega_SamplingRate[ID][sampling_frequency])*Mpega_SlotSize[layer];
         if (Size)
             FrameCount=float64_int64s(VBR_FileSize/Size);
+
+        //Subtract the Xing/Info tag frame from CBR file-size-based estimation
+        if (Xing_Info_Found && FrameCount > 0)
+            FrameCount--;
     }
 
     if (FrameCount)
@@ -571,8 +578,26 @@ void File_Mpega::Streams_Finish()
             Samples=576;
         else
             Samples=1152;
+
+        //Gapless: subtract encoder delay and padding from total sample count
+        int64u SamplingCount = FrameCount * (int64u)Samples;
+        if (Encoder_Delay > 0 || Encoder_Padding > 0)
+        {
+            int64u DelayPadding = (int64u)Encoder_Delay + (int64u)Encoder_Padding;
+            if (SamplingCount > DelayPadding)
+                SamplingCount -= DelayPadding;
+        }
+
         Fill(Stream_Audio, 0, Audio_FrameCount, FrameCount, 10, true);
-        Fill(Stream_Audio, 0, Audio_SamplingCount, FrameCount*Samples, 10, true);
+        Fill(Stream_Audio, 0, Audio_SamplingCount, SamplingCount, 10, true);
+
+        //Recalculate duration from actual (gapless) sample count
+        if (ID<4 && sampling_frequency<4 && Mpega_SamplingRate[ID][sampling_frequency]>0)
+        {
+            int64u Duration = float64_int64s(((float64)SamplingCount) * 1000 / Mpega_SamplingRate[ID][sampling_frequency]);
+            Fill(Stream_Audio, 0, Audio_Duration, Duration, 10, true);
+            Fill(Stream_General, 0, General_Duration, Duration, 10, true);
+        }
         float64 audio_fps = (float64)((float64)Mpega_SamplingRate[ID][sampling_frequency] / (float64)Samples);
         Fill(Stream_Audio, 0, Audio_FrameRate, audio_fps, 3, true);
     }
@@ -1316,6 +1341,7 @@ bool File_Mpega::Header_Xing()
         {
             //This is a "tag"
             Element_Info1("Tag (Xing)");
+            Xing_Info_Found = true;
 
             //Parsing
             Element_Begin1("Xing");
@@ -1358,10 +1384,8 @@ bool File_Mpega::Header_Xing()
                 Skip_XX(100,                                    "TOC");
             if (Scale)
                 Get_B4 (Xing_Scale,                             "Scale");
-            string Lib;
             Element_End0();
-            Peek_String(4, Lib);
-            if (Lame || Lib=="LAME" || Lib=="GOGO" || Lib=="L3.9")
+            if (Element_Offset + 36 <= Element_Size) //Universal: attempt to read extension tag regardless of encoder name
                 Header_Encoders_Lame();
 
             //Clearing Error detection
@@ -1503,32 +1527,11 @@ bool File_Mpega::Header_Encoders()
 
 void File_Mpega::Header_Encoders_Lame()
 {
-    bool HasInfoTag=false;
-    if (Element_Offset+9<=Element_Size)
-    {
-        const int8u* Tag=Buffer+Buffer_Offset+(size_t)Element_Offset;
-        int32u Name=BigEndian2int32u(Tag);
-        if (Name==0x4C414D45   // "LAME"
-         && Tag[5]=='.')
-        {
-            //Needs addtional tests, as v3.89 and less have no Lame Info tag, but v3.100 exists too
-            if ( Tag[4]> '3'                                                                                    // v4 or more
-             || (Tag[4]=='3' && Tag[6]=='9')                                                                    // v3.9yz-v3.9yz
-             ||  Tag[4]=='3' && Tag[8]>='0' && Tag[8]<='9')                                                     // v3.xy0-v3.xy9
-                HasInfoTag=true;
-        }
-        if (Name==0x4C414D45 && Tag[4]=='H') // "LAMEH", Helix MP3 encoder
-            HasInfoTag=true;
-        if (Name==0x4C332E39   // "L3.9"
-         && Tag[4]=='9')
-            HasInfoTag=true; //Form old code, to be confirmed: Ugly version string in Lame 3.99.1 "L3.99r1\0".
-    }
-    if (HasInfoTag)
-    {
+    if (Element_Offset + 36 > Element_Size)
+        return;
+
         int8u Flags, lowpass, EncodingFlags, BitRate, StereoMode;
         int16u PresetAndSurround;
-        Param_Info1(Ztring(__T("V "))+Ztring::ToZtring((100-Xing_Scale)/10));
-        Param_Info1(Ztring(__T("q "))+Ztring::ToZtring((100-Xing_Scale)%10));
         Get_String (9, Encoded_Library,                         "Encoded_Library");
         Get_B1 (Flags,                                          "Flags");
         if ((Flags&0xF0)<=0x20) //Rev. 0 or 1, http://gabriel.mp3-tech.org/mp3infotag.html and Rev. 2 was seen.
@@ -1536,7 +1539,12 @@ void File_Mpega::Header_Encoders_Lame()
             Param_Info1(Lame_Method[Flags&0x0F]);
             BitRate_Mode=Lame_BitRate_Mode[Flags&0x0F];
             if ((Flags&0x0F)==1 || (Flags&0x0F)==8) //2 possible values for CBR
-                VBR_Frames=0;
+            {
+                //LAME CBR: reset VBR_Frames (original behavior, may be needed for accurate bitrate calculation)
+                //Helix CBR: keep VBR_Frames (Helix writes accurate frame count in Info tag)
+                if (Encoded_Library.find("LAME")==0 && Encoded_Library.find("LAMEH")!=0)
+                    VBR_Frames=0;
+            }
         }
         Get_B1 (lowpass,                                        "Lowpass filter value"); Param_Info2(lowpass*100, " Hz");
         Skip_B4(                                                "Peak signal amplitude");
@@ -1548,7 +1556,15 @@ void File_Mpega::Header_Encoders_Lame()
             Skip_Flags(EncodingFlags, 6,                        "nogap (after)");
             Skip_Flags(EncodingFlags, 7,                        "nogap (before)");
         Get_B1 (BitRate,                                        "BitRate");
-        Skip_B3(                                                "Encoder delays");
+
+        //Encoder delay and padding (universal reading, 12+12 bits packed in 3 bytes)
+        int8u DelayPadding_1, DelayPadding_2, DelayPadding_3;
+        Get_B1(DelayPadding_1, "Encoder delay (1/3)");
+        Get_B1(DelayPadding_2, "Encoder delay (2/3)");
+        Get_B1(DelayPadding_3, "Encoder delay (3/3)");
+        Encoder_Delay = ((int32u)DelayPadding_1 << 4) | ((int32u)DelayPadding_2 >> 4);
+        Encoder_Padding = (((int32u)DelayPadding_2 & 0x0F) << 8) | DelayPadding_3;
+
         BS_Begin();
         Skip_S1(2,                                              "Source sample frequency");
         Skip_SB(                                                "unwise settings used");
@@ -1561,7 +1577,13 @@ void File_Mpega::Header_Encoders_Lame()
         Skip_B2(                                                "MusicCRC");
         Skip_B2(                                                "CRC-16 of Info Tag");
 
+        //LAME-specific: format Encoded_Library_Settings only for genuine LAME encoders
+        if ((Encoded_Library.find("LAME")==0 && Encoded_Library.find("LAMEH")!=0)
+            || Encoded_Library.find("L3.9")==0)
+        {
         FILLING_BEGIN();
+        Param_Info1(Ztring(__T("V "))+Ztring::ToZtring((100-Xing_Scale)/10));
+        Param_Info1(Ztring(__T("q "))+Ztring::ToZtring((100-Xing_Scale)%10));
             Encoded_Library_Settings+=__T("-m ");
             switch(StereoMode)
             {
@@ -1639,8 +1661,20 @@ void File_Mpega::Header_Encoders_Lame()
             }
         FILLING_END();
     }
-    else
-        Get_String (20, Encoded_Library,                        "Encoded_Library");
+        //Helix-specific
+        else if (Encoded_Library.find("LAMEH")==0)
+        {
+            FILLING_BEGIN();
+            if (mode<4)
+                Encoded_Library_Settings+=__T("-M")+Ztring::ToZtring(mode);
+            if (Xing_Scale<=150) //Valid VBR scale range; CBR files have 0xFFFFFFFF
+            {
+                if (!Encoded_Library_Settings.empty())
+                    Encoded_Library_Settings+=__T(" ");
+                Encoded_Library_Settings+=__T("-V")+Ztring::ToZtring(Xing_Scale);
+            }
+            FILLING_END();
+        }
 }
 
 void File_Mpega::Encoded_Library_Guess()
