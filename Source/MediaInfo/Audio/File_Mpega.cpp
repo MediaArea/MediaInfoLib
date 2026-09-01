@@ -474,18 +474,29 @@ void File_Mpega::Streams_Finish()
     if (VBR_Frames>0)
     {
         FrameCount=VBR_Frames;
-        float32 FrameLength=((float32)(VBR_FileSize?VBR_FileSize:File_Size-File_EndTagSize-File_BeginTagSize))/VBR_Frames;
-        size_t Divider;
-        if (ID==3 && layer==3) //MPEG 1 layer 1
-             Divider=384/8;
-        else if ((ID==2 || ID==0) && layer==3) ///MPEG 2 or 2.5 layer 1
-             Divider=192/8;
-        else if ((ID==2 || ID==0) && layer==1) //MPEG 2 or 2.5 layer 3
-            Divider=576/8;
+
+        //For CBR files with Info tag, use bitrate from frame header instead of calculating from file size
+        //Calculating from file size gives inaccurate results due to padding
+        if (VBR_Frames_IsCbr && ID<4 && layer<4 && bitrate_index<16)
+        {
+            BitRate=Mpega_BitRate[ID][layer][bitrate_index]*1000;
+        }
         else
-            Divider=1152/8;
-        if (ID<4 && sampling_frequency<4)
-            BitRate=float32_int32s(FrameLength*Mpega_SamplingRate[ID][sampling_frequency]/Divider);
+        {
+            //VBR files: calculate average bitrate from file size
+            float32 FrameLength=((float32)(VBR_FileSize?VBR_FileSize:File_Size-File_EndTagSize-File_BeginTagSize))/VBR_Frames;
+            size_t Divider;
+            if (ID==3 && layer==3) //MPEG 1 layer 1
+                Divider=384/8;
+            else if ((ID==2 || ID==0) && layer==3) ///MPEG 2 or 2.5 layer 1
+                Divider=192/8;
+            else if ((ID==2 || ID==0) && layer==1) //MPEG 2 or 2.5 layer 3
+                Divider=576/8;
+            else
+                Divider=1152/8;
+            if (ID<4 && sampling_frequency<4)
+                BitRate=float32_int32s(FrameLength*Mpega_SamplingRate[ID][sampling_frequency]/Divider);
+        }
         BitRate_Mode=(VBR_Frames_IsCbr?__T("CBR"):__T("VBR"));
     }
     //if (BitRate_Count.size()>1)
@@ -543,7 +554,10 @@ void File_Mpega::Streams_Finish()
             DurationIssue(float64_int64s(Duration), ExpectedDurationS.To_int64u(), false, "MPEG-Audio");
         }
         Fill(Stream_Audio, 0, Audio_Duration, Duration, 0, true);
-        if (Retrieve(Stream_Audio, 0, Audio_BitRate_Mode)==__T("CBR") && ID<4 && sampling_frequency<4)
+        // Only use PTS-based frame count calculation if FrameCount is not already known 
+        // (e.g., from VBR_Frames/Info tag). Overwriting a valid VBR_Frames count with PTS 
+        // calculation causes an off-by-one error (includes the Xing/Info frame).
+        if (FrameCount==0 && Retrieve(Stream_Audio, 0, Audio_BitRate_Mode)==__T("CBR") && ID<4 && sampling_frequency<4)
         {
             int16u Samples;
             if (ID==3 && layer==3) //MPEG 1 layer 1
@@ -599,6 +613,13 @@ void File_Mpega::Streams_Finish()
             int64u Duration = float64_int64s(((float64)SamplingCount) * 1000 / Mpega_SamplingRate[ID][sampling_frequency]);
             Fill(Stream_Audio, 0, Audio_Duration, Duration, 10, true);
             Fill(Stream_General, 0, General_Duration, Duration, 10, true);
+
+            //Update OverallBitRate after duration recalculation for CBR files
+            //This ensures OverallBitRate matches Audio_BitRate for CBR files
+            if (Retrieve(Stream_Audio, 0, Audio_BitRate_Mode)==__T("CBR") && BitRate>0)
+            {
+                Fill(Stream_General, 0, General_OverallBitRate, BitRate, 10, true);
+            }
         }
         float64 audio_fps = (float64)((float64)Mpega_SamplingRate[ID][sampling_frequency] / (float64)Samples);
         Fill(Stream_Audio, 0, Audio_FrameRate, audio_fps, 3, true);
@@ -1540,13 +1561,18 @@ void File_Mpega::Header_Encoders_Lame()
         {
             Param_Info1(Lame_Method[Flags&0x0F]);
             BitRate_Mode=Lame_BitRate_Mode[Flags&0x0F];
-            if ((Flags&0x0F)==1 || (Flags&0x0F)==8) //2 possible values for CBR
-            {
-                //LAME CBR: reset VBR_Frames (original behavior, may be needed for accurate bitrate calculation)
-                //Helix CBR: keep VBR_Frames (Helix writes accurate frame count in Info tag)
-                if (Encoded_Library.find("LAME")==0 && Encoded_Library.find("LAMEH")!=0)
-                    VBR_Frames=0;
-            }
+            // FIX: Do NOT reset VBR_Frames for LAME CBR files.
+            // The Info tag contains the correct frame count (excluding the Info frame itself).
+            // If we reset it to 0, MediaInfo falls back to PTS-based calculation, which incorrectly 
+            // includes the Info frame, resulting in an off-by-one error (e.g., 24 frames instead of 23).
+
+            //if ((Flags&0x0F)==1 || (Flags&0x0F)==8) //2 possible values for CBR
+            //{
+            //    //LAME CBR: reset VBR_Frames (original behavior, may be needed for accurate bitrate calculation)
+            //    //Helix CBR: keep VBR_Frames (Helix writes accurate frame count in Info tag)
+            //    if (Encoded_Library.find("LAME")==0 && Encoded_Library.find("LAMEH")!=0)
+            //        VBR_Frames=0;
+            //}
         }
         Get_B1 (lowpass,                                        "Lowpass filter value"); Param_Info2(lowpass*100, " Hz");
         Skip_B4(                                                "Peak signal amplitude");
