@@ -584,8 +584,10 @@ void File_Mpega::Streams_Finish()
         if (Encoder_Delay > 0 || Encoder_Padding > 0)
         {
             int64u DelayPadding = (int64u)Encoder_Delay + (int64u)Encoder_Padding;
-            if (SamplingCount > DelayPadding)
+            if (SamplingCount >= DelayPadding)
                 SamplingCount -= DelayPadding;
+            else
+                SamplingCount = 0;
         }
 
         Fill(Stream_Audio, 0, Audio_FrameCount, FrameCount, 10, true);
@@ -1557,13 +1559,20 @@ void File_Mpega::Header_Encoders_Lame()
             Skip_Flags(EncodingFlags, 7,                        "nogap (before)");
         Get_B1 (BitRate,                                        "BitRate");
 
-        //Encoder delay and padding (universal reading, 12+12 bits packed in 3 bytes)
         int8u DelayPadding_1, DelayPadding_2, DelayPadding_3;
-        Get_B1(DelayPadding_1, "Encoder delay (1/3)");
-        Get_B1(DelayPadding_2, "Encoder delay (2/3)");
-        Get_B1(DelayPadding_3, "Encoder delay (3/3)");
-        Encoder_Delay = ((int32u)DelayPadding_1 << 4) | ((int32u)DelayPadding_2 >> 4);
-        Encoder_Padding = (((int32u)DelayPadding_2 & 0x0F) << 8) | DelayPadding_3;
+        Get_B1(DelayPadding_1, "Encoder delay/padding (1/3)");
+        Get_B1(DelayPadding_2, "Encoder delay/padding (2/3)");
+        Get_B1(DelayPadding_3, "Encoder delay/padding (3/3)");
+        if ((Flags & 0xF0) <= 0x20) //Only trust delay/padding for known tag revisions
+        {
+            Encoder_Delay = ((int32u)DelayPadding_1 << 4) | ((int32u)DelayPadding_2 >> 4);
+            Encoder_Padding = (((int32u)DelayPadding_2 & 0x0F) << 8) | DelayPadding_3;
+        }
+        else
+        {
+            Encoder_Delay = 0;
+            Encoder_Padding = 0;
+        }
 
         BS_Begin();
         Skip_S1(2,                                              "Source sample frequency");
