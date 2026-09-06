@@ -418,7 +418,10 @@ void File_Mpeg4v::Streams_Fill()
         Fill(Stream_Video, 0, Video_Codec_Profile, Mpeg4v_Profile_Level(profile_and_level_indication));
     }
 
-    if (frame_rate_code!=(int8u)-1)
+    // frame_rate_code is bitstream-controlled; the existing (int8u)-1 sentinel guard
+    // catches only 0xFF, so a crafted MPEG-4 Visual bitstream can index past the
+    // 16-entry Mpegv_frame_rate table -- see gh#2608.
+    if (frame_rate_code!=(int8u)-1 && frame_rate_code<sizeof(Mpegv_frame_rate)/sizeof(*Mpegv_frame_rate))
         Fill(Stream_Video, StreamPos_Last, Video_FrameRate, Mpegv_frame_rate[frame_rate_code]);
     if (bit_rate!=(int32u)-1)
         Fill(Stream_Video, StreamPos_Last, Video_BitRate_Nominal, bit_rate*400);
