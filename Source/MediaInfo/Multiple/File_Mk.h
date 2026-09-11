@@ -568,6 +568,7 @@ private :
     int64u              Segment_Offset_End{};
     int64u              IsParsingSegmentTrack_SeekBackTo;
     int64u              SegmentTrack_Offset_End;
+    bool                Segment_Tracks_SeekBack_Attempted;
     struct seek
     {
         int64u SeekID;

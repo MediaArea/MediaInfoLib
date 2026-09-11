@@ -796,6 +796,7 @@ File_Mk::File_Mk()
     Laces_Pos=0;
     IsParsingSegmentTrack_SeekBackTo=0;
     SegmentTrack_Offset_End=0;
+    Segment_Tracks_SeekBack_Attempted=false;
     #if MEDIAINFO_DEMUX
         Demux_EventWasSent=(int64u)-1;
     #endif //MEDIAINFO_DEMUX
@@ -1748,8 +1749,10 @@ void File_Mk::Header_Parse()
     }
 
     //Should we parse Cluster?
-    if (Element_Level==3 && Name==Elements::Segment_Cluster && !Segment_Tracks_Count)
+    if (Element_Level==3 && Name==Elements::Segment_Cluster && !Segment_Tracks_Count && !Segment_Tracks_SeekBack_Attempted)
     {
+        Segment_Tracks_SeekBack_Attempted=true;
+
         //Jumping
         for (size_t Pos=0; Pos<Segment_Seeks.size(); Pos++)
             if (Segment_Seeks[Pos].SeekID==Elements::Segment_Tracks)
@@ -2627,6 +2630,8 @@ void File_Mk::Segment()
 
     Segment_Offset_Begin=File_Offset+Buffer_Offset;
     Segment_Offset_End=File_Offset+Buffer_Offset+Element_TotalSize_Get();
+    Segment_Tracks_Count=0;
+    Segment_Tracks_SeekBack_Attempted=false;
 
     #if MEDIAINFO_TRACE
         Trace_Segment_Cluster_Count=0;
