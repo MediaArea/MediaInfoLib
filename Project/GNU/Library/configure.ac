@@ -15,7 +15,7 @@ AC_CONFIG_SRCDIR([../../../Source/MediaInfo/MediaInfo.cpp])
 dnl -------------------------------------------------------------------------
 dnl sets build, host, target variables and the same with _alias
 dnl
-AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([foreign -Wall])
 
 dnl -------------------------------------------------------------------------
@@ -26,11 +26,22 @@ CXXFLAGS="$CXXFLAGS"
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CXX
-AC_DISABLE_STATIC
-AC_LIBTOOL_WIN32_DLL
-AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 PKG_PROG_PKG_CONFIG
+
+dnl -------------------------------------------------------------------------
+dnl Libtool init
+dnl
+case "$host_os" in
+	darwin*)
+		dnl libtool wrongly detects -single_module as unsupported with recent Xcode/Clang versions.
+		dnl This causes the master object to be linked using a buggy code path that does not honor
+		dnl $compiler_flags, and flags such as -arch or -mmacos-version-min to be silently dropped.
+		lt_cv_apple_cc_single_mod=yes
+		;;
+esac
+
+LT_INIT([disable-static win32-dll])
 
 dnl #########################################################################
 dnl Configure
@@ -1057,8 +1068,9 @@ AC_SUBST(Curl_Require)
 AC_SUBST(Curl_Lib)
 AC_CONFIG_FILES(libmediainfo-config, [chmod u+x libmediainfo-config])
 AC_CONFIG_FILES(libmediainfo.pc)
+AC_CONFIG_FILES([Makefile test/Makefile])
 
-AC_OUTPUT(Makefile test/Makefile)
+AC_OUTPUT
 
 dnl #########################################################################
 dnl ### Report how we have been configured
