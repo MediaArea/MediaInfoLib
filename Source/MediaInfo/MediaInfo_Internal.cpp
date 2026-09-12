@@ -781,9 +781,9 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
             if (Info[Parameter_Format].find(MLP)!=string::npos || Info[Parameter_Format_Profile].find(MLP)!=string::npos)
             {
                 Ztring ToReturn;
-                if (Info[Parameter_Format]==AC3)
+                if (Info[Parameter_Format].find(AC3)!=string::npos)
                     ToReturn=__T("Audio Coding 3");
-                else if (Info[Parameter_Format]==EAC3)
+                else if (Info[Parameter_Format].find(EAC3)!=string::npos)
                     ToReturn=__T("Enhanced AC-3");
                 if (!ToReturn.empty())
                 {
@@ -792,7 +792,7 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
                     ToReturn+=__T(" + ");
                 }
                 ToReturn+=__T("Meridian Lossless Packing");
-                if (Info[Parameter_Format]==MLPFBA || Info[Parameter_Format_Profile].find(MLPFBA)!=string::npos)
+                if (Info[Parameter_Format].find(MLPFBA)!=string::npos || Info[Parameter_Format_Profile].find(MLPFBA)!=string::npos)
                     ToReturn+=__T(" FBA");
                 if (Info[Parameter_Format_Profile].find(_16ch)!=string::npos)
                     ToReturn+=__T(" with 16-channel presentation");
