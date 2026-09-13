@@ -44,7 +44,7 @@ extern const char* Hevc_profile_idc(int32u profile_idc)
         case   1 : return "Main";
         case   2 : return "Main 10";
         case   3 : return "Main Still";
-        case   4 : return "Format Range"; // extensions, detailed profile computed based on constraint flags
+        case   4 : return "Format Range"; // extensions
         case   5 : return "High Throughput";
         case   6 : return "Multiview Main";
         case   7 : return "Scalable Main"; // can be "Scalable Main 10" depending on general_max_8bit_constraint_flag
@@ -405,72 +405,48 @@ void File_Hevc::Streams_Fill_Profile(const profile_tier_level_struct& p)
     if (!LegacyStreamDisplay && !Retrieve_Const(Stream_Video, 0, Video_Format_Profile).empty())
         return;
 
-    string Profile;
+    Ztring Profile;
     if (p.profile_space==0)
     {
         if (p.profile_idc)
         {
-            if (p.profile_idc == 4)
-            {
-                // Determine chroma format prefix
-                if (p.general_max_monochrome_constraint_flag)
-                    Profile = "Monochrome";
-                else {
-                    int8u ChromaIndex;
-                    if (p.general_max_420chroma_constraint_flag)
-                        ChromaIndex = 1;
-                    else if (p.general_max_422chroma_constraint_flag)
-                        ChromaIndex = 2;
-                    else
-                        ChromaIndex = 3;
-                    Profile = Hevc_profile_idc(1);
-                    Profile += ' ';
-                    Profile += Hevc_chroma_format_idc(ChromaIndex);
-                }
-                if (p.general_intra_constraint_flag)
-                {
-                    if (p.general_one_picture_only_constraint_flag)
-                        Profile += " Still Picture";
-                    else
-                        Profile += " Intra";
-                }
-            }
-            else
-            {
-                Profile=Hevc_profile_idc(p.profile_idc);
-            }
+            Profile=Ztring().From_UTF8(Hevc_profile_idc(p.profile_idc));
+            int8u Profile_Addition_Bits=0;
             switch (p.profile_idc)
             {
-                case 4 :
                 case 6 :
                 case 7 :
-                    if (!p.general_max_8bit_constraint_flag) {
-                        // Compute bit depth from constraint flags
-                        int8u BitDepthIndex;
-                        if (p.general_max_10bit_constraint_flag)
-                            BitDepthIndex = 1;
-                        else if (p.general_max_12bit_constraint_flag)
-                            BitDepthIndex = 2;
-                        else if (p.general_max_14bit_constraint_flag)
-                            BitDepthIndex = 3;
+                    if (!p.general_max_8bit_constraint_flag)
+                    {
+                        if (!p.general_max_10bit_constraint_flag)
+                        {
+                            if (!p.general_max_12bit_constraint_flag)
+                            {
+                                if (!p.general_max_14bit_constraint_flag)
+                                    Profile_Addition_Bits=4;
+                                else
+                                    Profile_Addition_Bits=3;
+                            }
+                            else
+                                Profile_Addition_Bits=2;
+                        }
                         else
-                            BitDepthIndex = 4;
-                        Profile += ' ';
-                        Profile += to_string(8 + BitDepthIndex * 2);
+                            Profile_Addition_Bits=1;
                     }
-                    break;
-                default:
-                    break;
+            }
+            if (Profile_Addition_Bits)
+            {
+                Profile+=' ';
+                Profile+=Ztring::ToZtring(8+Profile_Addition_Bits*2);
             }
         }
         if (p.level_idc)
         {
             if (p.profile_idc)
-                Profile+='@';
-            Profile += 'L';
-            Profile += Ztring().From_Number(((float)p.level_idc) / 30, (p.level_idc % 10) ? 1 : 0).To_UTF8();
-            Profile += '@';
-            Profile += Hevc_tier_flag(p.tier_flag);
+                Profile+=__T('@');
+            Profile+=__T('L')+Ztring().From_Number(((float)p.level_idc)/30, (p.level_idc%10)?1:0);
+            Profile+=__T('@');
+            Profile+=Ztring().From_UTF8(Hevc_tier_flag(p.tier_flag));
         }
     }
     Fill(Stream_Video, 0, Video_Format_Profile, Profile);
@@ -897,7 +873,7 @@ bool File_Hevc::Demux_UnpacketizeContainer_Test()
             Size+=lengthSizeMinusOne+1;
 
             //Coherency checking
-            if (Size<(size_t)(lengthSizeMinusOne+1+2) || Buffer_Offset+Size>Buffer_Size || (Buffer_Offset+Size!=Buffer_Size && Buffer_Offset+Size+lengthSizeMinusOne+1>Buffer_Size))
+            if (Size<(size_t)(lengthSizeMinusOne+1+2) || Buffer_Offset+Size>Buffer_Size || (Buffer_Offset+Size!=Buffer_Size && Buffer_Offset+Size+(size_t)(lengthSizeMinusOne+1)>Buffer_Size))
                 Size=Buffer_Size-Buffer_Offset;
             size_t Buffer_Offset_Temp=Buffer_Offset+lengthSizeMinusOne+1;
 
@@ -1366,7 +1342,7 @@ void File_Hevc::Header_Parse()
         if (Buffer_Offset_Temp+3<=Buffer_Offset+Size)
         {
             SizedBlocks_FileThenStream=File_Offset+Buffer_Offset+Size;
-            Size=Buffer_Offset_Temp-(Buffer_Offset+Element_Offset);
+            Size=static_cast<int32u>(Buffer_Offset_Temp-(Buffer_Offset+Element_Offset));
         }
 
         Header_Fill_Size(Element_Offset+Size);
@@ -1557,6 +1533,8 @@ void File_Hevc::Data_Parse()
         case 39 :
         case 40 :
                   sei(); break;
+        case 62 : Dolby_Vision_reference_processing_unit(); break;
+        case 63 : Dolby_Vision_enhancement_layer(); break;
         default :
                   Skip_XX(Element_Size-Element_Offset, "Data");
                   if (Element_Code>=48)
@@ -2042,7 +2020,7 @@ void File_Hevc::video_parameter_set()
             for (int j = 1; j < NumIndependentLayers; j++)
             {
                 int32u highest_layer_idx_plus1;
-                Get_S4 (ceil(log2(NumLayersInTreePartition[j] + 1)), highest_layer_idx_plus1, "highest_layer_idx_plus1");
+                Get_S4 ((int8u)ceil(log2(NumLayersInTreePartition[j] + 1)), highest_layer_idx_plus1, "highest_layer_idx_plus1");
                 highest_layer_idx_plus1List[i].push_back(highest_layer_idx_plus1);
             }
         }
@@ -3375,7 +3353,7 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003A_02()
         Skip_S1 (3,                                             "sl_hdr_mode_support");
     }
     else
-        Skip_S1 (Data_BS_Remain(),                              "Unknown");
+        Skip_BS (Data_BS_Remain(),                              "Unknown");
     BS_End();
 }
 
@@ -3388,7 +3366,7 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_003C()
 
     switch (itu_t_t35_terminal_provider_oriented_code)
     {
-        case 0x0001: case 0x0003: sei_message_user_data_registered_itu_t_t35_B5_003C_0001(); break;
+        case 0x0001: sei_message_user_data_registered_itu_t_t35_B5_003C_0001(); break;
     }
 }
 
@@ -3986,6 +3964,115 @@ void File_Hevc::three_dimensional_reference_displays_info(int32u payloadSize)
     FILLING_END();
 }
 
+//---------------------------------------------------------------------------
+// Packet "62"
+void File_Hevc::Dolby_Vision_reference_processing_unit()
+{
+    int8u nal_prefix;
+    Peek_B1(nal_prefix);
+    if (nal_prefix != 25) {
+        Skip_XX(Element_Size - Element_Offset, "Data");
+        Trusted_IsNot("Unspecified");
+        return;
+    }
+
+    Element_Name("Dolby Vision Reference Processing Unit (RPU)");
+
+    //Parsing
+    Skip_B1(                                                    "nal_prefix");
+    BS_Begin();
+    Get_DolbyVision_ReferenceProcessingUnit(DV_RPU_data);
+    BS_End();
+}
+
+//---------------------------------------------------------------------------
+// Packet "63"
+void File_Hevc::Dolby_Vision_enhancement_layer()
+{
+#if MEDIAINFO_TRACE
+
+    Element_Name("Dolby Vision Enhancement Layer (EL)");
+
+    Element_Begin0();
+    Element_Begin1("Header");
+    int8u nal_unit_type;
+    BS_Begin();
+    Mark_0();
+    Get_S1 (6, nal_unit_type,                                   "nal_unit_type");
+    Skip_S1(6,                                                  "nuh_layer_id");
+    Skip_S1(3,                                                  "nuh_temporal_id_plus1");
+    BS_End();
+    Element_End0();
+
+    switch (nal_unit_type) {
+    case  0:
+    case  1:
+    case  2:
+    case  3:
+    case  4:
+    case  5:
+    case  6:
+    case  7:
+    case  8:
+    case  9:
+    case 16:
+    case 17:
+    case 18:
+    case 19:
+    case 20:
+    case 21:
+             Element_Name("slice_segment_layer"); break;
+    case 32: Element_Name("video_parameter_set"); break;
+    case 33: Element_Name("seq_parameter_set"); break;
+    case 34: Element_Name("pic_parameter_set"); break;
+    case 35:
+        {
+            Element_Name("access_unit_delimiter");
+            BS_Begin();
+            Info_S1(3, pic_type,                                "pic_type"); Param_Info1(Hevc_pic_type[pic_type]);
+            Mark_1();
+            BS_End();
+            break;
+        }
+    case 36: Element_Name("end_of_seq"); break;
+    case 37: Element_Name("end_of_bitstream"); break;
+    case 38: Element_Name("filler_data"); break;
+    case 39:
+    case 40:
+        {
+            Element_Name("sei");
+            Element_Begin1("sei message header");
+            int8u payload_type_byte;
+            Get_B1 (payload_type_byte,                          "payload_type_byte");
+            Skip_B1(                                            "payload_size_byte");
+            Element_End0();
+            switch (payload_type_byte)
+            {
+            case   0:   Element_Info1("buffering_period"); break;
+            case   1:   Element_Info1("pic_timing"); break;
+            case   4:   Element_Info1("user_data_registered_itu_t_t35"); break;
+            case   5:   Element_Info1("user_data_unregistered"); break;
+            case   6:   Element_Info1("recovery_point"); break;
+            case 129:   Element_Info1("active_parameter_sets"); break;
+            case 132:   Element_Info1("decoded_picture_hash"); break;
+            case 136:   Element_Info1("time_code"); break;
+            case 137:   Element_Info1("mastering_display_colour_volume"); break;
+            case 144:   Element_Info1("light_level"); break;
+            case 147:   Element_Info1("transfer_characteristics"); break;
+            case 148:   Element_Info1("viewing_environment"); break;
+            case 176:   Element_Info1("three_dimensional_reference_displays_info"); break;
+            default :   Element_Info1(Ztring().From_CC1(payload_type_byte)); break;
+            }
+            break;
+        }
+    default: Element_Name(Ztring().From_CC1(nal_unit_type)); break;
+    }
+    Skip_XX(Element_Size - Element_Offset,                      "Data");
+    Element_End0();
+
+#endif // MEDIAINFO_TRACE
+}
+
 //***************************************************************************
 // Sub-elements
 //***************************************************************************
@@ -4070,13 +4157,13 @@ void File_Hevc::slice_segment_header()
         return;
     float FrameRate=0;
     if ((*seq_parameter_set_Item)->vui_parameters->time_scale && (*seq_parameter_set_Item)->vui_parameters->num_units_in_tick)
-        FrameRate=(float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick;
+        FrameRate=(float)((float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick);
     else
         FrameRate=0;
     if (first_slice_segment_in_pic_flag && pic_order_cnt_DTS_Ref!=(int64u)-1 && FrameInfo.PTS!=(int64u)-1 && FrameRate && TemporalReferences_Reserved)
     {
         int64s pic_order_cnt=float64_int64s(int64s(FrameInfo.PTS-pic_order_cnt_DTS_Ref)*FrameRate/1000000000);
-        if (pic_order_cnt>=(int64s)TemporalReferences.size()/4 || pic_order_cnt<=-((int64s)TemporalReferences.size()/4))
+        if (pic_order_cnt>= ((int64s)TemporalReferences.size()/4) || pic_order_cnt<=-((int64s)TemporalReferences.size()/4))
             pic_order_cnt_DTS_Ref=(int64u)-1; // Incoherency in DTS? Disabling compute by DTS, TODO: more generic test (all formats)
     }
     if (first_slice_segment_in_pic_flag && pic_order_cnt_DTS_Ref!=(int64u)-1 && FrameInfo.PTS!=(int64u)-1 && FrameRate && TemporalReferences_Reserved)
@@ -4230,12 +4317,12 @@ void File_Hevc::profile_tier_level(profile_tier_level_struct& p, bool profilePre
         Get_SB (    p.general_max_12bit_constraint_flag,        "general_max_12bit_constraint_flag");
         Get_SB (    p.general_max_10bit_constraint_flag,        "general_max_10bit_constraint_flag");
         Get_SB (    p.general_max_8bit_constraint_flag,         "general_max_8bit_constraint_flag");
-        Get_SB (    p.general_max_422chroma_constraint_flag,    "general_max_422chroma_constraint_flag");
-        Get_SB (    p.general_max_420chroma_constraint_flag,    "general_max_420chroma_constraint_flag");
-        Get_SB (    p.general_max_monochrome_constraint_flag,   "general_max_monochrome_constraint_flag");
-        Get_SB (    p.general_intra_constraint_flag,            "general_intra_constraint_flag");
-        Get_SB (    p.general_one_picture_only_constraint_flag, "general_one_picture_only_constraint_flag");
-        Get_SB (    p.general_lower_bit_rate_constraint_flag,   "general_lower_bit_rate_constraint_flag");
+        Skip_SB(                                                "general_max_422chroma_constraint_flag");
+        Skip_SB(                                                "general_max_420chroma_constraint_flag");
+        Skip_SB(                                                "general_max_monochrome_constraint_flag");
+        Skip_SB(                                                "general_intra_constraint_flag");
+        Skip_SB(                                                "general_one_picture_only_constraint_flag");
+        Skip_SB(                                                "general_lower_bit_rate_constraint_flag");
         Get_SB (    p.general_max_14bit_constraint_flag,        "general_max_14bit_constraint_flag");
         for (int8u constraint_pos=0; constraint_pos<33; constraint_pos++)
             Skip_SB(                                            "general_reserved");
@@ -4909,7 +4996,7 @@ void File_Hevc::rbsp_trailing_bits()
     {
         int8u RealValue;
         const int8u ExpectedValue=1<<(Remain-1);
-        Peek_S1(Remain, RealValue);
+        Peek_S1((int8u)Remain, RealValue);
         if (RealValue==ExpectedValue)
         {
             // Conform to specs
