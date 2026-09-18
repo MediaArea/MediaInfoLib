@@ -2717,7 +2717,13 @@ void File_Avc::slice_header()
                     {
                         if (!pic_order_cnt_lsb || pic_order_cnt_Displayed==numeric_limits<decltype(pic_order_cnt_Displayed)>::max())
                         {
-                            pic_order_cnt_Displayed=pic_order_cnt+pic_order_cnt_Delta;
+                            pic_order_cnt_Displayed=pic_order_cnt;
+                            // At IDR frames, frame reordering resets and the
+                            // delta is no longer relevant. In general, IDRs
+                            // should be decodable without considering any
+                            // prior frame's POC metadata.
+                            if (Element_Code!=0x05)
+                                pic_order_cnt_Displayed+=pic_order_cnt_Delta;
                             pic_order_cnt_Delta=0;
                             FrameInfo.PTS=PTS_End;
                         }
