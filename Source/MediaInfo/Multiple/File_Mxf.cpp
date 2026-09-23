@@ -173,6 +173,8 @@ namespace Arri
     const int64u DmSet_Json         =0x0E17010210030000LL;
     const int64u DmSet_Schema       =0x0E17010210040000LL;
     const int64u BinaryPack         =0x0F01040201010100LL;
+    const int64u BinaryPack_Header  =0x0F01040101010100LL;
+    const int64u BinaryPack_Look    =0x0F01050203010100LL; //Last byte is the look index
 }
 
 //---------------------------------------------------------------------------
@@ -7258,7 +7260,7 @@ void File_Mxf::Data_Parse()
         }
         else if (IsArriExperimental && Code.lo==Arri::BinaryPack) {
             Element_Name("ARRI Camera Metadata");
-            Arri_BinaryPack();
+            ManageGroup(&File_Mxf::Arri_BinaryPack);
         }
         else
             Skip_XX(Element_Size,                               "Unknown");
@@ -7360,7 +7362,7 @@ else if ((Primer_Value->second.hi>>24)==0x060E2B3401LL \
 }
 
 #define ELEM____ARRI_(_CONST, _NAME, _CALL) \
-else if ((Primer_Value->second.hi>>24)==0x060E2B3401LL \
+else if ((Primer_Value->second.hi>>32)==0x060E2B34 \
       && Primer_Value->second.lo==Arri::_CONST) \
 { \
     Element_Name(_NAME); \
@@ -8560,68 +8562,84 @@ namespace Arri
     };
     struct binfield
     {
-        int32s      Offset; //Relative to the UMID label inside the pack
+        int32u      Offset; //Relative to the header start
         bintype     Type;
         size_t      Size;
         const char* Name;
     };
     static const binfield BinFields[]=
     {
-        { -440, Bin_F4,       4, "LensSqueezeFactor" },
-        { -268, Bin_L4,       4, "CameraSerialNumber" },
-        { -260, Bin_String,   1, "CameraIndex" },
-        {  -52, Bin_String,  32, "MediumSerialNumber" },
-        {   40, Bin_String,  32, "MediumType" },
-        {  100, Bin_String,  24, "CameraSoftwarePackageName" },
-        {  124, Bin_String,  32, "CameraModel" },
-        {  260, Bin_L4,       4, "LensSerialNumber" },
-        {  284, Bin_String,  64, "LensModel" },
-        {  636, Bin_String,   8, "ReelName" },
-        {  644, Bin_String,  24, "Scene" },
-        {  668, Bin_String,  32, "Director" },
-        {  700, Bin_String,  32, "Cinematographer" },
-        {  732, Bin_String,  32, "Production" },
-        {  764, Bin_String,  32, "ProductionCompany" },
-        {  796, Bin_String, 256, "UserInfo" },
-        { 1052, Bin_String,  64, "ClipName" },
-        { 1492, Bin_String,  64, "FramelineFilename" },
-        { 1560, Bin_String,  32, "FramelineRect_0_FramelineRectName" },
-        { 1592, Bin_L2,       2, "FramelineRect_0_Left" },
-        { 1594, Bin_L2,       2, "FramelineRect_0_Top" },
-        { 1596, Bin_L2,       2, "FramelineRect_0_Width" },
-        { 1598, Bin_L2,       2, "FramelineRect_0_Height" },
-        { 1608, Bin_String,  32, "FramelineRect_1_FramelineRectName" },
-        { 1640, Bin_L2,       2, "FramelineRect_1_Left" },
-        { 1642, Bin_L2,       2, "FramelineRect_1_Top" },
-        { 1644, Bin_L2,       2, "FramelineRect_1_Width" },
-        { 1646, Bin_L2,       2, "FramelineRect_1_Height" },
+        {  196, Bin_F4,       4, "LensSqueezeFactor" },
+        {  368, Bin_L4,       4, "CameraSerialNumber" },
+        {  376, Bin_String,   1, "CameraIndex" },
+        {  584, Bin_String,  32, "MediumSerialNumber" },
+        {  676, Bin_String,  32, "MediumType" },
+        {  736, Bin_String,  24, "CameraSoftwarePackageName" },
+        {  760, Bin_String,  32, "CameraModel" },
+        {  896, Bin_L4,       4, "LensSerialNumber" },
+        {  920, Bin_String,  64, "LensModel" },
+        { 1272, Bin_String,   8, "ReelName" },
+        { 1280, Bin_String,  24, "Scene" },
+        { 1304, Bin_String,  32, "Director" },
+        { 1336, Bin_String,  32, "Cinematographer" },
+        { 1368, Bin_String,  32, "Production" },
+        { 1400, Bin_String,  32, "ProductionCompany" },
+        { 1432, Bin_String, 256, "UserInfo" },
+        { 1688, Bin_String,  64, "ClipName" },
+        { 2128, Bin_String,  64, "FramelineFilename" },
+        { 2196, Bin_String,  32, "FramelineRect_0_FramelineRectName" },
+        { 2228, Bin_L2,       2, "FramelineRect_0_Left" },
+        { 2230, Bin_L2,       2, "FramelineRect_0_Top" },
+        { 2232, Bin_L2,       2, "FramelineRect_0_Width" },
+        { 2234, Bin_L2,       2, "FramelineRect_0_Height" },
+        { 2244, Bin_String,  32, "FramelineRect_1_FramelineRectName" },
+        { 2276, Bin_L2,       2, "FramelineRect_1_Left" },
+        { 2278, Bin_L2,       2, "FramelineRect_1_Top" },
+        { 2280, Bin_L2,       2, "FramelineRect_1_Width" },
+        { 2282, Bin_L2,       2, "FramelineRect_1_Height" },
     };
-    static const int8u BinAnchor[]={0x06, 0x0A, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x05, 0x01, 0x01, 0x0D, 0x43};
 }
 
 //---------------------------------------------------------------------------
 void File_Mxf::Arri_BinaryPack()
 {
-    //Anchor
-    const int8u* Pack=Buffer+Buffer_Offset;
-    size_t Anchor=0;
-    while (Anchor+sizeof(Arri::BinAnchor)<=Element_Size && memcmp(Pack+Anchor, Arri::BinAnchor, sizeof(Arri::BinAnchor)))
-        Anchor++;
-    if (Anchor+sizeof(Arri::BinAnchor)>Element_Size)
+    ELEMENT_BEGIN()
+    ELEMENT_MIDDLE()
+    ELEM____ARRI_(BinaryPack_Header, "ARRI Header",      Arri_BinaryPack_Header)
+    else if ((Primer_Value->second.hi>>32)==0x060E2B34
+          && (Primer_Value->second.lo&0xFFFFFFFFFFFFFF00LL)==Arri::BinaryPack_Look)
     {
-        Skip_XX(Element_Size,                                   "Unknown");
+        Element_Name("Look");
+        Skip_XX(Element_Size-Element_Offset,                    "Data");
+    }
+    ELEMENT_END()
+    GenerationInterchangeObject();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Arri_BinaryPack_Header()
+{
+    //Parsing
+    const int8u* Header=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    const int64u Header_Offset=Element_Offset;
+    if (Element_Size-Element_Offset<0x1000 || memcmp(Header, "ARRI\x12\x34\x56\x78", 8))
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
         return;
     }
+    Skip_C4(                                                    "Signature");
+    Skip_L4(                                                    "Byte order");
+    Skip_L4(                                                    "Header size");
+    Skip_L4(                                                    "Version");
 
-    //Parsing
     bool Rect_IsPresent=false;
     for (size_t i=0; i<sizeof(Arri::BinFields)/sizeof(Arri::BinFields[0]); i++)
     {
         const Arri::binfield& Field=Arri::BinFields[i];
-        int64s Pos=(int64s)Anchor+Field.Offset;
-        if (Pos<(int64s)Element_Offset || Pos+(int64s)Field.Size>(int64s)Element_Size)
+        int64u Pos=Header_Offset+Field.Offset;
+        if (Pos<Element_Offset || Pos+Field.Size>Element_Size)
             continue;
-        if ((int64u)Pos>Element_Offset)
+        if (Pos>Element_Offset)
             Skip_XX(Pos-Element_Offset,                         "Unknown");
         Ztring Value;
         switch (Field.Type)
@@ -8653,7 +8671,8 @@ void File_Mxf::Arri_BinaryPack()
             default:
             {
                 size_t Size=0;
-                while (Size<Field.Size && Pack[Pos+Size]>=0x20 && Pack[Pos+Size]!=0xFF) //Unset fields are 0x00- or 0xFF-filled
+                const int8u* Text=Buffer+Buffer_Offset+(size_t)Element_Offset;
+                while (Size<Field.Size && Text[Size]>=0x20 && Text[Size]!=0xFF) //Unset fields are 0x00- or 0xFF-filled
                     Size++;
                 if (Size)
                 {

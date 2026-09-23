@@ -245,6 +245,7 @@ protected :
     void Arri_DmSet_Json();
     void Arri_DmSet_Schema();
     void Arri_BinaryPack();
+    void Arri_BinaryPack_Header();
     void Dolby_050201000101() { MXFGenericStreamDataElementKey_09_01(); }
     void PHDRImageMetadataItem();
     void ISXDDataEssenceDescriptor();
