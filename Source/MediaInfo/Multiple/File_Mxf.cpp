@@ -6613,7 +6613,11 @@ void File_Mxf::Data_Parse()
                             Skip_XX(Array_Size-Parsing_Size,    "Padding");
                         Element_End0();
                     }
-                    if (!Essence->second.IsFilled && (!Count || (Essence->second.Parsers.size()==1 && Essence->second.Parsers[0]->Status[IsFilled])))
+                    if (!Essence->second.IsFilled && Essence->second.Parsers.size()==1
+                     // Either the sub-parser reports it is genuinely done (Status[IsFilled]),
+                     // or it never saw any ANC/VBI content at all (!Count && !IsAccepted)
+                     && ((!Count && !Essence->second.Parsers[0]->Status[IsAccepted])
+                         || Essence->second.Parsers[0]->Status[IsFilled]))
                     {
                         if (Streams_Count>0)
                             Streams_Count--;
