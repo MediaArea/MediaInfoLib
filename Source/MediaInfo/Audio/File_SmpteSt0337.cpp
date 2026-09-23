@@ -686,9 +686,6 @@ bool File_SmpteSt0337::Synchronize()
         return false;
     }
 
-    if (!Status[IsAccepted] && IsSub)
-        Accept("SMPTE ST 337");
-
     // Guard band
     GuardBand_Before+=Buffer_Offset-Buffer_Offset_Base;
     if (GuardBand_After)
@@ -1657,7 +1654,7 @@ void File_SmpteSt0337::Data_Parse()
             Frame_Count_NotParsedIncluded++;
 
         int64u Frame_Count_Valid=1+(File_Offset+Buffer_Size<File_Size);
-        if (!Status[IsAccepted] && Frame_Count>=Frame_Count_Valid && (!Parser || Parser->Status[IsAccepted]))
+        if (!Status[IsAccepted] && (Frame_Count>=Frame_Count_Valid || (Parser && Parser->Status[IsAccepted])))
             Accept("SMPTE ST 337");
         if (!Status[IsFilled] && Frame_Count>=2 && (!Parser || Parser->Status[IsFilled]))
         {
