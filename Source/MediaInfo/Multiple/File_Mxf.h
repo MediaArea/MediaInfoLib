@@ -85,6 +85,7 @@ protected :
     void Streams_Finish_ContentStorage (const int128u ContentStorageUID);
     void Streams_Finish_ContentStorage_ForTimeCode (const int128u ContentStorageUID);
     void Streams_Finish_ContentStorage_ForAS11 (const int128u ContentStorageUID);
+    void Streams_Finish_Arri ();
     void Streams_Finish_Package (const int128u PackageUID);
     void Streams_Finish_Package_ForTimeCode (const int128u PackageUID);
     void Streams_Finish_Package_ForAS11 (const int128u PackageUID);
@@ -236,6 +237,14 @@ protected :
     void DM_AS_11_Core_Framework();
     void DM_AS_11_Segmentation_Framework();
     void DM_AS_11_UKDPP_Framework();
+    void Arri_DmFramework();
+    void Arri_DmFramework_Sets();
+    void Arri_DmSet();
+    void Arri_DmSet_Name();
+    void Arri_DmSet_Mime();
+    void Arri_DmSet_Json();
+    void Arri_DmSet_Schema();
+    void Arri_BinaryPack();
     void Dolby_050201000101() { MXFGenericStreamDataElementKey_09_01(); }
     void PHDRImageMetadataItem();
     void ISXDDataEssenceDescriptor();
@@ -1227,6 +1236,19 @@ protected :
     };
     typedef std::map<int128u, as11> as11s; //Key is InstanceUID of the ProductionFramework
     as11s AS11s;
+
+    //Descriptive Metadata - ARRI
+    struct arri_dmset
+    {
+        Ztring      Name;
+        Ztring      Mime;
+        std::string Json;
+    };
+    typedef std::map<int128u, arri_dmset> arri_dmsets; //Key is InstanceUID of the set
+    arri_dmsets ArriDmSets;
+    std::vector<int128u> ArriDmSets_Order; //InstanceUIDs in file order
+    std::set<int128u> ArriDmFrameworks; //InstanceUIDs
+    std::vector<std::pair<std::string, Ztring> > ArriBinaryFields;
 
     //Descriptive Metadata - Omneon
     struct dmomneonlink

@@ -163,6 +163,19 @@ namespace MediaInfoLib
         return; \
 
 //---------------------------------------------------------------------------
+namespace Arri
+{
+    const int64u DmFramework        =0x0E1701020F000000LL;
+    const int64u DmFramework_Sets   =0x0E1701020F010000LL;
+    const int64u DmSet              =0x0E17010210000000LL;
+    const int64u DmSet_Name         =0x0E17010210010000LL;
+    const int64u DmSet_Mime         =0x0E17010210020000LL;
+    const int64u DmSet_Json         =0x0E17010210030000LL;
+    const int64u DmSet_Schema       =0x0E17010210040000LL;
+    const int64u BinaryPack         =0x0F01040201010100LL;
+}
+
+//---------------------------------------------------------------------------
 extern const char* Mpegv_profile_and_level_indication_profile[];
 extern const char* Mpegv_profile_and_level_indication_level[];
 extern const char* Mpeg4v_Profile_Level(int32u Profile_Level);
@@ -2121,6 +2134,219 @@ void File_Mxf::Streams_Fill()
 }
 
 //---------------------------------------------------------------------------
+// Minimal JSON reader, flattening to "Parent_Child" / "Parent_0_Child" names
+namespace Arri
+{
+    typedef std::vector<std::pair<std::string, Ztring> > fields;
+
+    static void Json_Skip(const char*& p, const char* End)
+    {
+        while (p<End && (*p==' ' || *p=='\t' || *p=='\r' || *p=='\n'))
+            p++;
+    }
+
+    static bool Json_Hex4(const char* p, int32u& Value)
+    {
+        Value=0;
+        for (int i=0; i<4; i++)
+        {
+            char c=p[i];
+            Value<<=4;
+            if (c>='0' && c<='9') Value|=c-'0';
+            else if (c>='a' && c<='f') Value|=c-'a'+10;
+            else if (c>='A' && c<='F') Value|=c-'A'+10;
+            else return false;
+        }
+        return true;
+    }
+
+    static void Json_Utf8(int32u C, std::string& Out)
+    {
+        if (C<0x80)
+            Out+=(char)C;
+        else if (C<0x800)
+        {
+            Out+=(char)(0xC0|(C>>6));
+            Out+=(char)(0x80|(C&0x3F));
+        }
+        else if (C<0x10000)
+        {
+            Out+=(char)(0xE0|(C>>12));
+            Out+=(char)(0x80|((C>>6)&0x3F));
+            Out+=(char)(0x80|(C&0x3F));
+        }
+        else
+        {
+            Out+=(char)(0xF0|(C>>18));
+            Out+=(char)(0x80|((C>>12)&0x3F));
+            Out+=(char)(0x80|((C>>6)&0x3F));
+            Out+=(char)(0x80|(C&0x3F));
+        }
+    }
+
+    static bool Json_String(const char*& p, const char* End, std::string& Out)
+    {
+        if (p>=End || *p!='"')
+            return false;
+        p++;
+        while (p<End && *p!='"')
+        {
+            if (*p!='\\')
+            {
+                Out+=*p++;
+                continue;
+            }
+            if (++p>=End)
+                return false;
+            switch (*p)
+            {
+                case 'b': Out+='\b'; break;
+                case 'f': Out+='\f'; break;
+                case 'n': Out+='\n'; break;
+                case 'r': Out+='\r'; break;
+                case 't': Out+='\t'; break;
+                case 'u':
+                {
+                    int32u C;
+                    if (p+4>=End || !Json_Hex4(p+1, C))
+                        return false;
+                    p+=4;
+                    if (C>=0xD800 && C<=0xDBFF && p+6<End && p[1]=='\\' && p[2]=='u')
+                    {
+                        int32u Low;
+                        if (!Json_Hex4(p+3, Low) || Low<0xDC00 || Low>0xDFFF)
+                            return false;
+                        C=0x10000+((C-0xD800)<<10)+(Low-0xDC00);
+                        p+=6;
+                    }
+                    Json_Utf8(C, Out);
+                    break;
+                }
+                default: Out+=*p; //\" \\ \/
+            }
+            p++;
+        }
+        if (p>=End)
+            return false;
+        p++;
+        return true;
+    }
+
+    static std::string Json_Name(const std::string& Prefix, std::string Key)
+    {
+        if (!Key.empty() && Key[0]>='a' && Key[0]<='z')
+            Key[0]-=0x20;
+        return Prefix.empty()?Key:Prefix+'_'+Key;
+    }
+
+    static bool Json_Value(const char*& p, const char* End, const std::string& Name, fields& Out, size_t Depth)
+    {
+        Json_Skip(p, End);
+        if (p>=End || Depth>16)
+            return false;
+        switch (*p)
+        {
+            case '{':
+            {
+                p++;
+                fields Items;
+                for (;;)
+                {
+                    Json_Skip(p, End);
+                    if (p<End && *p=='}')
+                    {
+                        p++;
+                        break;
+                    }
+                    std::string Key;
+                    if (!Json_String(p, End, Key))
+                        return false;
+                    Json_Skip(p, End);
+                    if (p>=End || *p!=':')
+                        return false;
+                    p++;
+                    if (!Json_Value(p, End, Json_Name(Name, Key), Items, Depth+1))
+                        return false;
+                    Json_Skip(p, End);
+                    if (p<End && *p==',')
+                    {
+                        p++;
+                        continue;
+                    }
+                    if (p>=End || *p!='}')
+                        return false;
+                    p++;
+                    break;
+                }
+                //{"key": "a.b.Name", "value": x} pairs become Name=x
+                if (Items.size()==2 && Items[0].first==Name+"_Key" && Items[1].first==Name+"_Value")
+                {
+                    std::string Key=Items[0].second.To_UTF8();
+                    Out.push_back(std::make_pair(Json_Name(std::string(), Key.substr(Key.rfind('.')+1)), Items[1].second));
+                }
+                else
+                    Out.insert(Out.end(), Items.begin(), Items.end());
+                return true;
+            }
+            case '[':
+            {
+                p++;
+                for (size_t i=0; ; i++)
+                {
+                    Json_Skip(p, End);
+                    if (p<End && *p==']')
+                    {
+                        p++;
+                        return true;
+                    }
+                    if (!Json_Value(p, End, Name+'_'+to_string(i), Out, Depth+1))
+                        return false;
+                    Json_Skip(p, End);
+                    if (p<End && *p==',')
+                    {
+                        p++;
+                        continue;
+                    }
+                    if (p>=End || *p!=']')
+                        return false;
+                    p++;
+                    return true;
+                }
+            }
+            case '"':
+            {
+                std::string Value;
+                if (!Json_String(p, End, Value))
+                    return false;
+                if (Value.size()<=1024) //Blobs (e.g. base64 LUT data) are not displayed
+                    Out.push_back(std::make_pair(Name, Ztring().From_UTF8(Value)));
+                return true;
+            }
+            default:
+            {
+                const char* Start=p;
+                while (p<End && *p!=',' && *p!='}' && *p!=']' && *p!=' ' && *p!='\t' && *p!='\r' && *p!='\n')
+                    p++;
+                std::string Value(Start, p);
+                if (Value=="true")
+                    Out.push_back(std::make_pair(Name, Ztring(__T("Yes"))));
+                else if (Value=="false")
+                    Out.push_back(std::make_pair(Name, Ztring(__T("No"))));
+                else if (Value!="null")
+                    Out.push_back(std::make_pair(Name, Ztring().From_UTF8(Value)));
+                return !Value.empty();
+            }
+        }
+    }
+
+    static void Json_Flatten(const std::string& Json, fields& Out)
+    {
+        const char* p=Json.c_str();
+        Json_Value(p, p+Json.size(), std::string(), Out, 0);
+    }
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::Streams_Finish()
 {
     Frame_Count=Frame_Count_NotParsedIncluded=FrameInfo.PTS=FrameInfo.DTS=(int64u)-1;
@@ -2345,6 +2571,9 @@ void File_Mxf::Streams_Finish()
         Fill(Stream_General, 0, "PrimaryPackage", "Material Package");
         Fill_SetOptions(Stream_General, 0, "PrimaryPackage", "N NT");
     }
+
+    //ARRI
+    Streams_Finish_Arri();
 
     //CameraUnitAcquisitionMetadata
     if (!AcquisitionMetadataLists.empty())
@@ -2629,6 +2858,79 @@ void File_Mxf::Streams_Finish_ContentStorage_ForAS11 (const int128u ContentStora
 
     for (size_t Pos=0; Pos<ContentStorage->second.Packages.size(); Pos++)
         Streams_Finish_Package_ForAS11(ContentStorage->second.Packages[Pos]);
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Streams_Finish_Arri ()
+{
+    if (ArriDmSets.empty() && ArriBinaryFields.empty())
+        return;
+
+    //The DM track the sets are attached to
+    int32u TrackID=(int32u)-1;
+    for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end() && TrackID==(int32u)-1; ++Track)
+    {
+        components::iterator Component=Components.find(Track->second.Sequence);
+        if (Component==Components.end())
+            continue;
+        for (size_t Pos=0; Pos<Component->second.StructuralComponents.size(); Pos++)
+        {
+            dmsegments::iterator DescriptiveMarker=DescriptiveMarkers.find(Component->second.StructuralComponents[Pos]);
+            if (DescriptiveMarker!=DescriptiveMarkers.end() && ArriDmFrameworks.count(DescriptiveMarker->second.Framework))
+            {
+                TrackID=Track->second.TrackID;
+                break;
+            }
+        }
+    }
+
+    //Known sets first, others in file order, same-named sets (e.g. several LUTs) suffixed with _1, _2...
+    static const char* Order[]={"Camera Device", "Lens Device", "Recording Medium", "Slate Info", "Frame Line"};
+    const size_t Order_Size=sizeof(Order)/sizeof(Order[0]);
+    Arri::fields Fields;
+    std::map<Ztring, size_t> Names;
+    for (size_t Rank=0; Rank<=Order_Size; Rank++)
+        for (size_t Pos=0; Pos<ArriDmSets_Order.size(); Pos++)
+        {
+            const arri_dmset& Set=ArriDmSets[ArriDmSets_Order[Pos]];
+            if (Set.Mime.find(__T("application/json")))
+                continue;
+            size_t Set_Rank=0;
+            while (Set_Rank<Order_Size && Set.Name!=Ztring().From_UTF8(Order[Set_Rank]))
+                Set_Rank++;
+            if (Set_Rank!=Rank)
+                continue;
+            Arri::fields Set_Fields;
+            Arri::Json_Flatten(Set.Json, Set_Fields);
+            size_t Occurrence=Names[Set.Name]++;
+            for (size_t i=0; i<Set_Fields.size(); i++)
+            {
+                if (Occurrence)
+                    Set_Fields[i].first+='_'+to_string(Occurrence);
+                if (Set_Fields[i].first=="LensSqueezeFactor") //"2/1", same form as the binary pack
+                {
+                    size_t Slash=Set_Fields[i].second.find(__T('/'));
+                    float64 Den=Slash==string::npos?0:Ztring(Set_Fields[i].second.substr(Slash+1)).To_float64();
+                    if (Den)
+                        Set_Fields[i].second.From_Number(Ztring(Set_Fields[i].second.substr(0, Slash)).To_float64()/Den, 2);
+                }
+                Fields.push_back(Set_Fields[i]);
+            }
+        }
+    Fields.insert(Fields.end(), ArriBinaryFields.begin(), ArriBinaryFields.end());
+    if (Fields.empty())
+        return;
+
+    Fill_Flush();
+    Stream_Prepare(Stream_Other);
+    if (TrackID!=(int32u)-1)
+        Fill(Stream_Other, StreamPos_Last, Other_ID, TrackID);
+    Fill(Stream_Other, StreamPos_Last, Other_Type, "Metadata");
+    Fill(Stream_Other, StreamPos_Last, Other_Format, "ARRI Camera Metadata");
+    std::set<std::string> Done;
+    for (size_t Pos=0; Pos<Fields.size(); Pos++)
+        if (Done.insert(Fields[Pos].first).second)
+            Fill(Stream_Other, StreamPos_Last, Fields[Pos].first.c_str(), Fields[Pos].second);
 }
 
 //---------------------------------------------------------------------------
@@ -6068,6 +6370,7 @@ void File_Mxf::Data_Parse()
     auto ManageGroup = [&](method_name MethodName) {
         switch ((int8u)(Code.hi>>16))         {
         case 0x05: (this->*MethodName)(); break;
+        case 0x13:
         case 0x43:
         case 0x53:
         case 0x63:
@@ -6086,7 +6389,12 @@ void File_Mxf::Data_Parse()
                 default:
                     Get_B2(Code2,                               "Code");
                 }
+                int64u Length3 = 0;
                 switch (((int8u)(Code.hi>>16)) & 0xF0) {
+                case 0x10:
+                    Get_BER(Length3,                            "Length");
+                    Length2 = Length3 > 0xFFFF ? 0xFFFF : (int16u)Length3;
+                    break;
                 case 0x60:
                 {
                     int32u Code4;
@@ -6095,10 +6403,12 @@ void File_Mxf::Data_Parse()
                         Skip_XX(Element_Size - Element_Offset,  "(Unsupported)");
                     }
                     Code2 = (int16u)Code4;
+                    Length3 = Length2;
                 }
                 break;
                 default:
                     Get_B2(Length2,                             "Length");
+                    Length3 = Length2;
                 }
                 Element_End0();
                 #if MEDIAINFO_TRACE
@@ -6113,12 +6423,13 @@ void File_Mxf::Data_Parse()
                     }
                 }
                 #endif //MEDIAINFO_TRACE
-                auto Length2_Max = Element_Size - Element_Offset;
-                if (Length2 > Length2_Max) {
-                    Length2 = Length2_Max;
+                auto Length3_Max = Element_Size - Element_Offset;
+                if (Length3 > Length3_Max) {
+                    Length3 = Length3_Max;
+                    Length2 = Length3 > 0xFFFF ? 0xFFFF : (int16u)Length3;
                 }
                 auto Element_Size_Save = Element_Size;
-                Element_Size = Element_Offset + Length2;
+                Element_Size = Element_Offset + Length3;
                 (this->*MethodName)();
                 if (Element_Offset < Element_Size) {
                     Skip_XX(Element_Size - Element_Offset,      "Unknown");
@@ -6136,6 +6447,20 @@ void File_Mxf::Data_Parse()
     { \
         ManageGroup(&File_Mxf::_ELEMENT); \
     } \
+
+    auto ManageArri = [&]() {
+        if (Code.lo==Arri::DmFramework) {
+            Element_Name("ARRI DM Framework");
+            ManageGroup(&File_Mxf::Arri_DmFramework);
+        }
+        else if (Code.lo==Arri::DmSet) {
+            Element_Name("ARRI DM Set");
+            ManageGroup(&File_Mxf::Arri_DmSet);
+        }
+        else
+            return false;
+        return true;
+        };
 
     /*
     int8u Registry = (int8u)(Code.hi >> 16);
@@ -6923,11 +7248,21 @@ void File_Mxf::Data_Parse()
     GROUP(RIFFChunkReferencesSubDescriptor)
     GROUP(ADMAudioMetadataSubDescriptor)
     GROUP(ADMSoundfieldGroupLabelSubDescriptor)
-    else {
+    else if (!ManageArri()) {
         ManageGroup((int8u)(Code.hi>>16)==0x53?&File_Mxf::UnknownGroupItem:&File_Mxf::UnknownElement);
     }
     break;
     }
+    case 0x060E2B34021301LL: //Local sets with BER length, ARRI
+        if (ManageArri()) {
+        }
+        else if (IsArriExperimental && Code.lo==Arri::BinaryPack) {
+            Element_Name("ARRI Camera Metadata");
+            Arri_BinaryPack();
+        }
+        else
+            Skip_XX(Element_Size,                               "Unknown");
+        break;
     default:
         Skip_XX(Element_Size,                                   "Unknown");
     }
@@ -7022,6 +7357,15 @@ else if ((Primer_Value->second.hi>>24)==0x060E2B3401LL \
     _ELEMENT(); \
     Element_Offset=Element_Size; \
     Element_Size=Element_Size_Save; \
+}
+
+#define ELEM____ARRI_(_CONST, _NAME, _CALL) \
+else if ((Primer_Value->second.hi>>24)==0x060E2B3401LL \
+      && Primer_Value->second.lo==Arri::_CONST) \
+{ \
+    Element_Name(_NAME); \
+    _CALL(); \
+    Element_Offset=Element_Size; \
 }
 
 //---------------------------------------------------------------------------
@@ -8115,6 +8459,233 @@ void File_Mxf::DM_AS_11_UKDPP_Framework()
 
     if (Code2==0x3C0A) //InstanceIUD
         AS11s[InstanceUID].Type=as11::Type_UKDPP;
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Arri_DmFramework()
+{
+    ELEMENT_BEGIN()
+    ELEMENT_MIDDLE()
+    ELEM____ARRI_(DmFramework_Sets, "Sets", Arri_DmFramework_Sets)
+    ELEMENT_END()
+    InterchangeObject();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Arri_DmFramework_Sets()
+{
+    //Parsing
+    VECTOR(16);
+    for (int32u i=0; i<Count; i++)
+        Skip_UUID(                                              "Set");
+
+    FILLING_BEGIN();
+        ArriDmFrameworks.insert(InstanceUID);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Arri_DmSet()
+{
+    ELEMENT_BEGIN()
+    ELEMENT_MIDDLE()
+    ELEM____ARRI_(DmSet_Name,   "Name",       Arri_DmSet_Name)
+    ELEM____ARRI_(DmSet_Mime,   "MIME Type",  Arri_DmSet_Mime)
+    ELEM____ARRI_(DmSet_Json,   "JSON",       Arri_DmSet_Json)
+    ELEM____ARRI_(DmSet_Schema, "Schema URI", Arri_DmSet_Schema)
+    ELEMENT_END()
+    InterchangeObject();
+
+    if (Code2!=0x3C0A) //InstanceUID
+        return;
+    for (size_t i=0; i<ArriDmSets_Order.size(); i++)
+        if (ArriDmSets_Order[i]==InstanceUID)
+            return;
+    ArriDmSets_Order.push_back(InstanceUID);
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Arri_DmSet_Name()
+{
+    //Parsing
+    Ztring Value;
+    Get_UTF16B(Element_Size-Element_Offset, Value,              "Value"); Element_Info1(Value);
+
+    FILLING_BEGIN();
+        ArriDmSets[InstanceUID].Name=Value;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Arri_DmSet_Mime()
+{
+    //Parsing
+    Ztring Value;
+    Get_UTF16B(Element_Size-Element_Offset, Value,              "Value"); Element_Info1(Value);
+
+    FILLING_BEGIN();
+        ArriDmSets[InstanceUID].Mime=Value;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Arri_DmSet_Json()
+{
+    //Parsing
+    std::string Value;
+    Get_String(Element_Size-Element_Offset, Value,              "Value");
+
+    FILLING_BEGIN();
+        ArriDmSets[InstanceUID].Json=Value;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Arri_DmSet_Schema()
+{
+    //Parsing
+    Ztring Value;
+    Get_UTF16B(Element_Size-Element_Offset, Value,              "Value"); Element_Info1(Value);
+}
+
+//---------------------------------------------------------------------------
+namespace Arri
+{
+    enum bintype
+    {
+        Bin_String,
+        Bin_L2,
+        Bin_L4,
+        Bin_F4,
+    };
+    struct binfield
+    {
+        int32s      Offset; //Relative to the UMID label inside the pack
+        bintype     Type;
+        size_t      Size;
+        const char* Name;
+    };
+    static const binfield BinFields[]=
+    {
+        { -440, Bin_F4,       4, "LensSqueezeFactor" },
+        { -268, Bin_L4,       4, "CameraSerialNumber" },
+        { -260, Bin_String,   1, "CameraIndex" },
+        {  -52, Bin_String,  32, "MediumSerialNumber" },
+        {   40, Bin_String,  32, "MediumType" },
+        {  100, Bin_String,  24, "CameraSoftwarePackageName" },
+        {  124, Bin_String,  32, "CameraModel" },
+        {  260, Bin_L4,       4, "LensSerialNumber" },
+        {  284, Bin_String,  64, "LensModel" },
+        {  636, Bin_String,   8, "ReelName" },
+        {  644, Bin_String,  24, "Scene" },
+        {  668, Bin_String,  32, "Director" },
+        {  700, Bin_String,  32, "Cinematographer" },
+        {  732, Bin_String,  32, "Production" },
+        {  764, Bin_String,  32, "ProductionCompany" },
+        {  796, Bin_String, 256, "UserInfo" },
+        { 1052, Bin_String,  64, "ClipName" },
+        { 1492, Bin_String,  64, "FramelineFilename" },
+        { 1560, Bin_String,  32, "FramelineRect_0_FramelineRectName" },
+        { 1592, Bin_L2,       2, "FramelineRect_0_Left" },
+        { 1594, Bin_L2,       2, "FramelineRect_0_Top" },
+        { 1596, Bin_L2,       2, "FramelineRect_0_Width" },
+        { 1598, Bin_L2,       2, "FramelineRect_0_Height" },
+        { 1608, Bin_String,  32, "FramelineRect_1_FramelineRectName" },
+        { 1640, Bin_L2,       2, "FramelineRect_1_Left" },
+        { 1642, Bin_L2,       2, "FramelineRect_1_Top" },
+        { 1644, Bin_L2,       2, "FramelineRect_1_Width" },
+        { 1646, Bin_L2,       2, "FramelineRect_1_Height" },
+    };
+    static const int8u BinAnchor[]={0x06, 0x0A, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x05, 0x01, 0x01, 0x0D, 0x43};
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Arri_BinaryPack()
+{
+    //Anchor
+    const int8u* Pack=Buffer+Buffer_Offset;
+    size_t Anchor=0;
+    while (Anchor+sizeof(Arri::BinAnchor)<=Element_Size && memcmp(Pack+Anchor, Arri::BinAnchor, sizeof(Arri::BinAnchor)))
+        Anchor++;
+    if (Anchor+sizeof(Arri::BinAnchor)>Element_Size)
+    {
+        Skip_XX(Element_Size,                                   "Unknown");
+        return;
+    }
+
+    //Parsing
+    bool Rect_IsPresent=false;
+    for (size_t i=0; i<sizeof(Arri::BinFields)/sizeof(Arri::BinFields[0]); i++)
+    {
+        const Arri::binfield& Field=Arri::BinFields[i];
+        int64s Pos=(int64s)Anchor+Field.Offset;
+        if (Pos<(int64s)Element_Offset || Pos+(int64s)Field.Size>(int64s)Element_Size)
+            continue;
+        if ((int64u)Pos>Element_Offset)
+            Skip_XX(Pos-Element_Offset,                         "Unknown");
+        Ztring Value;
+        switch (Field.Type)
+        {
+            case Arri::Bin_L2:
+            {
+                int16u Data;
+                Get_L2 (Data,                                   Field.Name);
+                if (Rect_IsPresent) //Geometry is meaningful only with a named rect
+                    Value.From_Number(Data);
+                break;
+            }
+            case Arri::Bin_L4:
+            {
+                int32u Data;
+                Get_L4 (Data,                                   Field.Name);
+                if (Data && Data!=(int32u)-1)
+                    Value.From_Number(Data);
+                break;
+            }
+            case Arri::Bin_F4:
+            {
+                float32 Data;
+                Get_LF4(Data,                                   Field.Name);
+                if (Data>0)
+                    Value.From_Number(Data, 2);
+                break;
+            }
+            default:
+            {
+                size_t Size=0;
+                while (Size<Field.Size && Pack[Pos+Size]>=0x20 && Pack[Pos+Size]!=0xFF) //Unset fields are 0x00- or 0xFF-filled
+                    Size++;
+                if (Size)
+                {
+                    std::string Data;
+                    Get_String(Size, Data,                      Field.Name);
+                    Value.From_UTF8(Data);
+                }
+                if (Size<Field.Size)
+                    Skip_XX(Field.Size-Size,                    "Padding");
+                if (strstr(Field.Name, "RectName"))
+                    Rect_IsPresent=Size;
+            }
+        }
+        if (Value.empty())
+            continue;
+        if (!strcmp(Field.Name, "UserInfo")) //"Key:Value;Key:Value"
+        {
+            ZtringList Items;
+            Items.Separator_Set(0, __T(";"));
+            Items.Write(Value);
+            for (size_t j=0; j<Items.size(); j++)
+            {
+                size_t Colon=Items[j].find(__T(':'));
+                if (Colon!=string::npos && Colon+1<Items[j].size())
+                    ArriBinaryFields.push_back(std::make_pair(Ztring(Items[j].substr(0, Colon)).To_UTF8(), Ztring(Items[j].substr(Colon+1))));
+            }
+        }
+        else
+            ArriBinaryFields.push_back(std::make_pair(std::string(Field.Name), Value));
+    }
+    if (Element_Offset<Element_Size)
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
 }
 
 //---------------------------------------------------------------------------
@@ -9771,6 +10342,14 @@ void File_Mxf::InterchangeObject_InstanceUID()
             AS11s[InstanceUID]=AS11->second;
             AS11s.erase(AS11);
         }
+        arri_dmsets::iterator ArriDmSet=ArriDmSets.find(0);
+        if (ArriDmSet!=ArriDmSets.end())
+        {
+            ArriDmSets[InstanceUID]=ArriDmSet->second;
+            ArriDmSets.erase(ArriDmSet);
+        }
+        if (ArriDmFrameworks.erase(0))
+            ArriDmFrameworks.insert(InstanceUID);
     FILLING_END();
 }
 
