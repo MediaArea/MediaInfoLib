@@ -731,6 +731,7 @@ private :
         void Parsers_Clear()
         {
             Parsers.clear();
+            IsPcm=false;
             #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
                 IsDvDif=false;
             #endif //MEDIAINFO_DVDIF_ANALYZE_YES
