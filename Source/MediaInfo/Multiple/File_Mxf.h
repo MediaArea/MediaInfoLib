@@ -244,7 +244,10 @@ protected :
     void Arri_DmSet_Mime();
     void Arri_DmSet_Json();
     void Arri_DmSet_Schema();
+    void Arri_ClipSet();
     void Arri_BinaryPack();
+    void Arri_BinaryPack_Header();
+    void Arri_BinaryPack_VideoParameters();
     void Dolby_050201000101() { MXFGenericStreamDataElementKey_09_01(); }
     void PHDRImageMetadataItem();
     void ISXDDataEssenceDescriptor();
@@ -1249,6 +1252,14 @@ protected :
     std::vector<int128u> ArriDmSets_Order; //InstanceUIDs in file order
     std::set<int128u> ArriDmFrameworks; //InstanceUIDs
     std::vector<std::pair<std::string, Ztring> > ArriBinaryFields;
+    std::map<std::string, Ztring> ArriClipFields;
+    std::map<int128u, std::pair<Ztring, Ztring> > ArriClipParams; //Key: InstanceUID of set, value: name and version
+    std::vector<int128u> ArriClipParams_Order; //InstanceUIDs in file order
+    std::vector<int128u> ArriClipParams_Refs; //InstanceUIDs in referenced order
+    std::map<int128u, std::map<std::string, Ztring> > ArriClipObjects; //Key: InstanceUID of LUT or color space set
+    std::map<int128u, std::map<std::string, int128u> > ArriClipObjectRefs; //Key: InstanceUID of LUT set
+    std::vector<int128u> ArriClipLuts_Refs; //InstanceUIDs in referenced order
+    std::map<int8u, std::vector<std::pair<std::string, Ztring> > > ArriClipLooks; //Key: look index (Mini)
 
     //Descriptive Metadata - Omneon
     struct dmomneonlink

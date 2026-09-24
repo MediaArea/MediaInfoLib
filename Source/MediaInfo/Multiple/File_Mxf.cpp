@@ -110,6 +110,7 @@
     #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
 #endif //defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/Format/Http/Http_Utils.h"
+#include <algorithm>
 #include <cfloat>
 #include <cmath>
 #if MEDIAINFO_ADVANCED
@@ -173,6 +174,9 @@ namespace Arri
     const int64u DmSet_Json         =0x0E17010210030000LL;
     const int64u DmSet_Schema       =0x0E17010210040000LL;
     const int64u BinaryPack         =0x0F01040201010100LL;
+    const int64u BinaryPack_Header  =0x0F01040101010100LL;
+    const int64u BinaryPack_Video   =0x0F01050204010100LL;
+    const int64u BinaryPack_Look    =0x0F01050203010100LL; //Last byte is the look index
 }
 
 //---------------------------------------------------------------------------
@@ -2347,6 +2351,96 @@ namespace Arri
 }
 
 //---------------------------------------------------------------------------
+namespace Arri
+{
+    static const int64u ClipSets[]=
+    {
+        0x0E17010101000000LL,
+        0x0E17010201000000LL,
+        0x0E17010301000000LL,
+        0x0E17010204000000LL,
+        0x0E17010205000000LL,
+        0x0E17010206000000LL,
+        0x0E17010207000000LL,
+        0x0E17010208000000LL,
+        0x0E17010209000000LL,
+        0x0E1701020A000000LL,
+        0x0E17010212000000LL,
+    };
+    static const char* ClipOrder[]=
+    {
+        "SensorName",
+        "SensorDimensions_Width",
+        "SensorDimensions_Height",
+        "SensorPixelPitch",
+        "AcquisitionRect_Left",
+        "AcquisitionRect_Top",
+        "AcquisitionRect_Width",
+        "AcquisitionRect_Height",
+        "ExposureIndex",
+        "CaptureFrameRate_FirstFrame",
+        "ShutterSpeed_Angle_FirstFrame",
+        "ShutterSpeed_Time_FirstFrame",
+        "NdFilterDensity_FirstFrame",
+        "ImageReversal_Horizontal",
+        "ImageReversal_Vertical",
+        "BurstDenoise",
+        "LookFilename",
+        "LookNote",
+        "LookIntensity",
+        "LookApplied",
+        "LookModified",
+        "CdlSlope_R",
+        "CdlSlope_G",
+        "CdlSlope_B",
+        "CdlOffset_R",
+        "CdlOffset_G",
+        "CdlOffset_B",
+        "CdlPower_R",
+        "CdlPower_G",
+        "CdlPower_B",
+        "CdlSaturation",
+        "TbccForwardFilterMap",
+        "TbccInverseFilterMap",
+        "WhiteBalanceApplied",
+        "WhiteBalance_FirstFrame",
+        "WhiteBalanceTint_FirstFrame",
+        "ColorimetricDataSetIdentifier",
+        "ImageProcessingModel",
+        "ImageProcessingVersion",
+        "MinimumRequiredImageProcessingVersion",
+        "ImageProcessingModelParameterTables",
+        "BlackLevelOffset",
+        "MaxSampleValue",
+        "BaseImageStoredSize_Width",
+        "BaseImageStoredSize_Height",
+        "BaseImageSampledSize_Width",
+        "BaseImageSampledSize_Height",
+        "BaseImageSampledSize_Left",
+        "BaseImageSampledSize_Top",
+        "TextureApplied",
+        "TextureFilename",
+        "TemporalProcessingApplied",
+        "NoiseReductionStrength",
+        "ChecksumType",
+    };
+    static bool IsClipSet(int64u Code)
+    {
+        for (size_t i=0; i<sizeof(ClipSets)/sizeof(ClipSets[0]); i++)
+            if (ClipSets[i]==Code)
+                return true;
+        return false;
+    }
+    static bool IsClip(const char* Name)
+    {
+        for (size_t i=0; i<sizeof(ClipOrder)/sizeof(ClipOrder[0]); i++)
+            if (!strcmp(ClipOrder[i], Name))
+                return true;
+        return false;
+    }
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::Streams_Finish()
 {
     Frame_Count=Frame_Count_NotParsedIncluded=FrameInfo.PTS=FrameInfo.DTS=(int64u)-1;
@@ -2863,7 +2957,7 @@ void File_Mxf::Streams_Finish_ContentStorage_ForAS11 (const int128u ContentStora
 //---------------------------------------------------------------------------
 void File_Mxf::Streams_Finish_Arri ()
 {
-    if (ArriDmSets.empty() && ArriBinaryFields.empty())
+    if (ArriDmSets.empty() && ArriBinaryFields.empty() && ArriClipFields.empty())
         return;
 
     //The DM track the sets are attached to
@@ -2918,6 +3012,61 @@ void File_Mxf::Streams_Finish_Arri ()
             }
         }
     Fields.insert(Fields.end(), ArriBinaryFields.begin(), ArriBinaryFields.end());
+    std::vector<int128u> Params_Order(ArriClipParams_Refs); //Referenced order first, then file order
+    for (size_t Pos=0; Pos<ArriClipParams_Order.size(); Pos++)
+        if (std::find(Params_Order.begin(), Params_Order.end(), ArriClipParams_Order[Pos])==Params_Order.end())
+            Params_Order.push_back(ArriClipParams_Order[Pos]);
+    Ztring Params;
+    for (size_t Pos=0; Pos<Params_Order.size(); Pos++)
+    {
+        std::map<int128u, std::pair<Ztring, Ztring> >::iterator Param_Item=ArriClipParams.find(Params_Order[Pos]);
+        if (Param_Item==ArriClipParams.end())
+            continue;
+        const std::pair<Ztring, Ztring>& Param=Param_Item->second;
+        if (Param.first.empty())
+            continue;
+        if (!Params.empty())
+            Params+=__T(" / ");
+        Params+=Param.first;
+        if (!Param.second.empty())
+            Params+=__T(" (")+Param.second+__T(")");
+    }
+    if (!Params.empty())
+        ArriClipFields.insert(std::make_pair(std::string("ImageProcessingModelParameterTables"), Params));
+    for (size_t i=0; i<sizeof(Arri::ClipOrder)/sizeof(Arri::ClipOrder[0]); i++)
+    {
+        std::map<std::string, Ztring>::iterator Field=ArriClipFields.find(Arri::ClipOrder[i]);
+        if (Field!=ArriClipFields.end())
+            Fields.push_back(*Field);
+    }
+    std::vector<Arri::fields> Luts;
+    for (std::map<int8u, Arri::fields>::iterator Look=ArriClipLooks.begin(); Look!=ArriClipLooks.end(); ++Look)
+        Luts.push_back(Look->second);
+    for (size_t Pos=0; Pos<ArriClipLuts_Refs.size(); Pos++)
+    {
+        static const char* Lut_Order[]={"ID", "MeshPoints", "ScalingFactor", "Normalization_Gain", "Normalization_Offset"};
+        static const char* Spaces[]={"SourceColorSpace", "TargetColorSpace"};
+        static const char* Space_Order[]={"Primaries", "TransferCurve"};
+        std::map<std::string, Ztring>& Lut=ArriClipObjects[ArriClipLuts_Refs[Pos]];
+        Arri::fields Lut_Fields;
+        for (size_t i=0; i<sizeof(Lut_Order)/sizeof(Lut_Order[0]); i++)
+            if (Lut.count(Lut_Order[i]))
+                Lut_Fields.push_back(std::make_pair(std::string(Lut_Order[i]), Lut[Lut_Order[i]]));
+        for (size_t i=0; i<sizeof(Spaces)/sizeof(Spaces[0]); i++)
+        {
+            std::map<std::string, int128u>& Refs=ArriClipObjectRefs[ArriClipLuts_Refs[Pos]];
+            if (!Refs.count(Spaces[i]))
+                continue;
+            std::map<std::string, Ztring>& Space=ArriClipObjects[Refs[Spaces[i]]];
+            for (size_t j=0; j<sizeof(Space_Order)/sizeof(Space_Order[0]); j++)
+                if (Space.count(Space_Order[j]))
+                    Lut_Fields.push_back(std::make_pair(Spaces[i]+std::string("_")+Space_Order[j], Space[Space_Order[j]]));
+        }
+        Luts.push_back(Lut_Fields);
+    }
+    for (size_t Pos=0; Pos<Luts.size(); Pos++)
+        for (size_t i=0; i<Luts[Pos].size(); i++)
+            Fields.push_back(std::make_pair("Lut3D_"+to_string(Pos)+'_'+Luts[Pos][i].first, Luts[Pos][i].second));
     if (Fields.empty())
         return;
 
@@ -6457,6 +6606,10 @@ void File_Mxf::Data_Parse()
             Element_Name("ARRI DM Set");
             ManageGroup(&File_Mxf::Arri_DmSet);
         }
+        else if (Arri::IsClipSet(Code.lo)) {
+            Element_Name("ARRI Clip Set");
+            ManageGroup(&File_Mxf::Arri_ClipSet);
+        }
         else
             return false;
         return true;
@@ -7262,7 +7415,7 @@ void File_Mxf::Data_Parse()
         }
         else if (IsArriExperimental && Code.lo==Arri::BinaryPack) {
             Element_Name("ARRI Camera Metadata");
-            Arri_BinaryPack();
+            ManageGroup(&File_Mxf::Arri_BinaryPack);
         }
         else
             Skip_XX(Element_Size,                               "Unknown");
@@ -7364,7 +7517,7 @@ else if ((Primer_Value->second.hi>>24)==0x060E2B3401LL \
 }
 
 #define ELEM____ARRI_(_CONST, _NAME, _CALL) \
-else if ((Primer_Value->second.hi>>24)==0x060E2B3401LL \
+else if ((Primer_Value->second.hi>>32)==0x060E2B34 \
       && Primer_Value->second.lo==Arri::_CONST) \
 { \
     Element_Name(_NAME); \
@@ -8555,87 +8708,464 @@ void File_Mxf::Arri_DmSet_Schema()
 //---------------------------------------------------------------------------
 namespace Arri
 {
+    enum cliptype
+    {
+        Clip_Bool,
+        Clip_B2,
+        Clip_B4,
+        Clip_F4,
+        Clip_F4x3,
+        Clip_UTF16,
+        Clip_Label,
+        Clip_ParamRefs,
+        Clip_ParamName,
+        Clip_ParamVersion,
+        Clip_LutRefs,
+        Clip_Ref,
+        Clip_Primaries,
+        Clip_Transfer,
+        Clip_B1List,
+    };
+    struct clipitem
+    {
+        int64u      Code;
+        cliptype    Type;
+        int8u       Precision;
+        const char* Name;
+    };
+    static const clipitem ClipItems[]=
+    {
+        { 0x0E17010101010000LL, Clip_Label,        0, "ChecksumType" },
+        { 0x0E17010101040000LL, Clip_B4,           0, "BlackLevelOffset" },
+        { 0x0E17010101050000LL, Clip_B4,           0, "MaxSampleValue" },
+        { 0x0E17010301030000LL, Clip_B4,           0, "BlackLevelOffset" },
+        { 0x0E17010301040000LL, Clip_B4,           0, "MaxSampleValue" },
+        { 0x0E17010301050000LL, Clip_B4,           0, "BaseImageStoredSize_Width" },
+        { 0x0E17010301060000LL, Clip_B4,           0, "BaseImageStoredSize_Height" },
+        { 0x0E17010301070000LL, Clip_B4,           0, "BaseImageSampledSize_Width" },
+        { 0x0E17010301080000LL, Clip_B4,           0, "BaseImageSampledSize_Height" },
+        { 0x0E17010301090000LL, Clip_B4,           0, "BaseImageSampledSize_Left" },
+        { 0x0E170103010A0000LL, Clip_B4,           0, "BaseImageSampledSize_Top" },
+        { 0x0E17010201010000LL, Clip_Label,        0, "ImageProcessingModel" },
+        { 0x0E17010201020000LL, Clip_Label,        0, "ColorimetricDataSetIdentifier" },
+        { 0x0E17010201030000LL, Clip_Bool,         0, "ImageReversal_Vertical" },
+        { 0x0E17010201040000LL, Clip_Bool,         0, "ImageReversal_Horizontal" },
+        { 0x0E17010201050000LL, Clip_UTF16,        0, "ImageProcessingVersion" },
+        { 0x0E17010201060000LL, Clip_UTF16,        0, "MinimumRequiredImageProcessingVersion" },
+        { 0x0E17010201070000LL, Clip_ParamRefs,    0, "ImageProcessingModelParameterTables" },
+        { 0x0E17010202010000LL, Clip_Bool,         0, "TextureApplied" },
+        { 0x0E17010202020000LL, Clip_Bool,         0, "TemporalProcessingApplied" },
+        { 0x0E17010202030000LL, Clip_Bool,         0, "BurstDenoise" },
+        { 0x0E17010204020000LL, Clip_UTF16,        0, "TextureFilename" },
+        { 0x0E17010205010000LL, Clip_F4,           2, "SensorDimensions_Width" },
+        { 0x0E17010205020000LL, Clip_F4,           2, "SensorDimensions_Height" },
+        { 0x0E17010206010000LL, Clip_B2,           0, "AcquisitionRect_Top" },
+        { 0x0E17010206020000LL, Clip_B2,           0, "AcquisitionRect_Left" },
+        { 0x0E17010206030000LL, Clip_B2,           0, "AcquisitionRect_Width" },
+        { 0x0E17010206040000LL, Clip_B2,           0, "AcquisitionRect_Height" },
+        { 0x0E17010207010000LL, Clip_UTF16,        0, "SensorName" },
+        { 0x0E17010207020000LL, Clip_F4,           3, "SensorPixelPitch" },
+        { 0x0E1701020A010000LL, Clip_Bool,         0, "WhiteBalanceApplied" },
+        { 0x0E1701020A030000LL, Clip_Bool,         0, "LookApplied" },
+        { 0x0E1701020A050000LL, Clip_Bool,         0, "LookModified" },
+        { 0x0E1701020A060000LL, Clip_F4x3,         6, "CdlSlope" },
+        { 0x0E1701020A070000LL, Clip_F4x3,         6, "CdlOffset" },
+        { 0x0E1701020A080000LL, Clip_F4x3,         6, "CdlPower" },
+        { 0x0E1701020A090000LL, Clip_F4,           6, "CdlSaturation" },
+        { 0x0E1701020A0A0000LL, Clip_B4,           0, "LookIntensity" },
+        { 0x0E1701020A0B0000LL, Clip_UTF16,        0, "LookFilename" },
+        { 0x0E1701020A0C0000LL, Clip_UTF16,        0, "LookNote" },
+        { 0x0E1701020A040000LL, Clip_LutRefs,      0, "Lut3D" },
+        { 0x0E1701020A120000LL, Clip_B1List,       0, "TbccForwardFilterMap" },
+        { 0x0E1701020A130000LL, Clip_B1List,       0, "TbccInverseFilterMap" },
+        { 0x0E17010208010000LL, Clip_Primaries,    0, "Primaries" },
+        { 0x0E17010208020000LL, Clip_Transfer,     0, "TransferCurve" },
+        { 0x0E17010209010000LL, Clip_B4,           0, "ScalingFactor" },
+        { 0x0E17010209020000LL, Clip_F4,           8, "Normalization_Gain" },
+        { 0x0E17010209030000LL, Clip_F4,           8, "Normalization_Offset" },
+        { 0x0E17010209040000LL, Clip_B2,           0, "MeshPoints" },
+        { 0x0E17010209070000LL, Clip_Ref,          0, "SourceColorSpace" },
+        { 0x0E17010209080000LL, Clip_Ref,          0, "TargetColorSpace" },
+        { 0x0E17010209090000LL, Clip_UTF16,        0, "ID" },
+        { 0x0E17010212010000LL, Clip_ParamName,    0, "Name" },
+        { 0x0E17010212020000LL, Clip_ParamVersion, 0, "Version" },
+    };
+    struct cliplabel
+    {
+        int64u      Code;
+        const char* Name;
+    };
+    static const cliplabel ClipLabels[]=
+    {
+        { 0x0E17010101040000LL, "CRC32C" },
+        { 0x0E17010201030000LL, "ImageProcessingGen3" },
+        { 0x0E17010202090000LL, "A4RevA-FSND" },
+        { 0x0E17010203020000LL, "AWG4" },
+        { 0x0E17010204020000LL, "LogC4" },
+    };
+    static const char* LookIDs[]=
+    {
+        "arrimxf_llk_3d_lut_rec709",
+        "arrimxf_llk_3d_lut_with_cdl_rec709",
+        "arrimxf_llk_3d_lut_master",
+        "arrimxf_llk_3d_lut_with_cdl_master",
+    };
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Arri_ClipSet()
+{
+    std::map<int16u, int128u>::iterator Primer_Value=Primer_Values.find(Code2);
+    const Arri::clipitem* Item=NULL;
+    if (Primer_Value!=Primer_Values.end() && (Primer_Value->second.hi>>32)==0x060E2B34)
+        for (size_t i=0; i<sizeof(Arri::ClipItems)/sizeof(Arri::ClipItems[0]) && !Item; i++)
+            if (Arri::ClipItems[i].Code==Primer_Value->second.lo)
+                Item=Arri::ClipItems+i;
+    if (!Item)
+    {
+        InterchangeObject();
+        return;
+    }
+    Element_Name(Item->Name);
+
+    //Parsing
+    Ztring Value;
+    switch (Item->Type)
+    {
+        case Arri::Clip_Bool:
+        {
+            int8u Data;
+            Get_B1 (Data,                                       "Value");
+            Value=Data?__T("Yes"):__T("No");
+            break;
+        }
+        case Arri::Clip_B2:
+        {
+            int16u Data;
+            Get_B2 (Data,                                       "Value");
+            Value.From_Number(Data);
+            break;
+        }
+        case Arri::Clip_B4:
+        {
+            int32u Data;
+            Get_B4 (Data,                                       "Value");
+            Value.From_Number(Data);
+            break;
+        }
+        case Arri::Clip_F4:
+        {
+            float32 Data;
+            Get_BF4(Data,                                       "Value");
+            Value.From_Number(Data, Item->Precision);
+            break;
+        }
+        case Arri::Clip_F4x3:
+        {
+            static const char* Components[]={"_R", "_G", "_B"};
+            VECTOR(4);
+            for (int32u i=0; i<Count; i++)
+            {
+                float32 Data;
+                Get_BF4(Data,                                   "Value");
+                FILLING_BEGIN();
+                    if (i<3)
+                        ArriClipFields.insert(std::make_pair(Item->Name+std::string(Components[i]), Ztring().From_Number(Data, Item->Precision)));
+                FILLING_END();
+            }
+            return;
+        }
+        case Arri::Clip_ParamRefs:
+        {
+            VECTOR(16);
+            for (int32u i=0; i<Count; i++)
+            {
+                int128u Data;
+                Get_UUID(Data,                                  "Table");
+                FILLING_BEGIN();
+                    if (std::find(ArriClipParams_Refs.begin(), ArriClipParams_Refs.end(), Data)==ArriClipParams_Refs.end())
+                        ArriClipParams_Refs.push_back(Data);
+                FILLING_END();
+            }
+            return;
+        }
+        case Arri::Clip_LutRefs:
+        {
+            VECTOR(16);
+            for (int32u i=0; i<Count; i++)
+            {
+                int128u Data;
+                Get_UUID(Data,                                  "LUT");
+                FILLING_BEGIN();
+                    if (std::find(ArriClipLuts_Refs.begin(), ArriClipLuts_Refs.end(), Data)==ArriClipLuts_Refs.end())
+                        ArriClipLuts_Refs.push_back(Data);
+                FILLING_END();
+            }
+            return;
+        }
+        case Arri::Clip_Ref:
+        {
+            int128u Data;
+            Get_UUID(Data,                                      "Value");
+            FILLING_BEGIN();
+                ArriClipObjectRefs[InstanceUID].insert(std::make_pair(std::string(Item->Name), Data));
+            FILLING_END();
+            return;
+        }
+        case Arri::Clip_B1List:
+        {
+            VECTOR(1);
+            for (int32u i=0; i<Count; i++)
+            {
+                int8u Data;
+                Get_B1 (Data,                                   "Value");
+                if (i)
+                    Value+=__T(" / ");
+                Value+=Ztring().From_Number(Data);
+            }
+            break;
+        }
+        case Arri::Clip_Label:
+        case Arri::Clip_Primaries:
+        case Arri::Clip_Transfer:
+        {
+            int128u Data;
+            Get_UL (Data,                                       "Value", NULL);
+            for (size_t i=0; i<sizeof(Arri::ClipLabels)/sizeof(Arri::ClipLabels[0]); i++)
+                if (Arri::ClipLabels[i].Code==Data.lo && (Data.hi>>32)==0x060E2B34)
+                    Value.From_UTF8(Arri::ClipLabels[i].Name);
+            if (Value.empty() && Item->Type==Arri::Clip_Primaries && (Data.lo>>24)==0x0401010103LL)
+                Value.From_UTF8(Mxf_ColorPrimaries(Data));
+            if (Value.empty() && Item->Type==Arri::Clip_Transfer)
+                Value.From_UTF8(Mxf_TransferCharacteristic(Data));
+            break;
+        }
+        default:
+            Get_UTF16B(Element_Size-Element_Offset, Value,      "Value");
+    }
+    Element_Info1(Value);
+
+    FILLING_BEGIN();
+        if (Item->Type==Arri::Clip_ParamName || Item->Type==Arri::Clip_ParamVersion)
+        {
+            if (ArriClipParams.find(InstanceUID)==ArriClipParams.end())
+                ArriClipParams_Order.push_back(InstanceUID);
+            (Item->Type==Arri::Clip_ParamName?ArriClipParams[InstanceUID].first:ArriClipParams[InstanceUID].second)=Value;
+        }
+        else if (!Value.empty())
+        {
+            if (Code.lo==0x0E17010208000000LL || Code.lo==0x0E17010209000000LL) //Color space, LUT
+                ArriClipObjects[InstanceUID].insert(std::make_pair(std::string(Item->Name), Value));
+            else
+                ArriClipFields.insert(std::make_pair(std::string(Item->Name), Value));
+        }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+namespace Arri
+{
     enum bintype
     {
         Bin_String,
         Bin_L2,
+        Bin_Origin,
         Bin_L4,
+        Bin_Milli,
+        Bin_Angle,
+        Bin_Exposure,
+        Bin_Id,
         Bin_F4,
+        Bin_Tint,
+        Bin_Cdl,
+        Bin_Flag,
+        Bin_Flag8,
+        Bin_Reversal,
+        Bin_FocusUnits,
+        Bin_FocusLimit,
+        Bin_Rect,
     };
     struct binfield
     {
-        int32s      Offset; //Relative to the UMID label inside the pack
+        int32u      Offset; //Relative to the header start
         bintype     Type;
         size_t      Size;
         const char* Name;
     };
     static const binfield BinFields[]=
     {
-        { -440, Bin_F4,       4, "LensSqueezeFactor" },
-        { -268, Bin_L4,       4, "CameraSerialNumber" },
-        { -260, Bin_String,   1, "CameraIndex" },
-        {  -52, Bin_String,  32, "MediumSerialNumber" },
-        {   40, Bin_String,  32, "MediumType" },
-        {  100, Bin_String,  24, "CameraSoftwarePackageName" },
-        {  124, Bin_String,  32, "CameraModel" },
-        {  260, Bin_L4,       4, "LensSerialNumber" },
-        {  284, Bin_String,  64, "LensModel" },
-        {  636, Bin_String,   8, "ReelName" },
-        {  644, Bin_String,  24, "Scene" },
-        {  668, Bin_String,  32, "Director" },
-        {  700, Bin_String,  32, "Cinematographer" },
-        {  732, Bin_String,  32, "Production" },
-        {  764, Bin_String,  32, "ProductionCompany" },
-        {  796, Bin_String, 256, "UserInfo" },
-        { 1052, Bin_String,  64, "ClipName" },
-        { 1492, Bin_String,  64, "FramelineFilename" },
-        { 1560, Bin_String,  32, "FramelineRect_0_FramelineRectName" },
-        { 1592, Bin_L2,       2, "FramelineRect_0_Left" },
-        { 1594, Bin_L2,       2, "FramelineRect_0_Top" },
-        { 1596, Bin_L2,       2, "FramelineRect_0_Width" },
-        { 1598, Bin_L2,       2, "FramelineRect_0_Height" },
-        { 1608, Bin_String,  32, "FramelineRect_1_FramelineRectName" },
-        { 1640, Bin_L2,       2, "FramelineRect_1_Left" },
-        { 1642, Bin_L2,       2, "FramelineRect_1_Top" },
-        { 1644, Bin_L2,       2, "FramelineRect_1_Width" },
-        { 1646, Bin_L2,       2, "FramelineRect_1_Height" },
+        {   60, Bin_L2,          2, "AcquisitionRect_Width" },
+        {   64, Bin_L2,          2, "AcquisitionRect_Height" },
+        {   76, Bin_Origin,      2, "AcquisitionRect_Left" },
+        {   78, Bin_Origin,      2, "AcquisitionRect_Top" },
+        {   92, Bin_L2,          2, "WhiteBalance_FirstFrame" },
+        {   96, Bin_Tint,        4, "WhiteBalanceTint_FirstFrame" },
+        {  112, Bin_Flag,        4, "WhiteBalanceApplied" },
+        {  116, Bin_L4,          4, "ExposureIndex" },
+        {  196, Bin_F4,          4, "LensSqueezeFactor" },
+        {  200, Bin_Reversal,    4, "ImageReversal" },
+        {  204, Bin_String,     32, "LookFilename" },
+        {  252, Bin_Cdl,         4, "CdlSaturation" },
+        {  256, Bin_Cdl,         4, "CdlSlope_R" },
+        {  260, Bin_Cdl,         4, "CdlSlope_G" },
+        {  264, Bin_Cdl,         4, "CdlSlope_B" },
+        {  268, Bin_Cdl,         4, "CdlOffset_R" },
+        {  272, Bin_Cdl,         4, "CdlOffset_G" },
+        {  276, Bin_Cdl,         4, "CdlOffset_B" },
+        {  280, Bin_Cdl,         4, "CdlPower_R" },
+        {  284, Bin_Cdl,         4, "CdlPower_G" },
+        {  288, Bin_Cdl,         4, "CdlPower_B" },
+        {  368, Bin_L4,          4, "CameraSerialNumber" },
+        {  372, Bin_Id,          4, "CameraId" },
+        {  376, Bin_String,      4, "CameraIndex" },
+        {  396, Bin_Exposure,    4, "ShutterSpeed_Time_FirstFrame" },
+        {  400, Bin_Angle,       4, "ShutterSpeed_Angle_FirstFrame" },
+        {  416, Bin_Milli,       4, "CaptureFrameRate_FirstFrame" },
+        {  584, Bin_String,     32, "MediumSerialNumber" },
+        {  676, Bin_String,     32, "MediumType" },
+        {  736, Bin_String,     24, "CameraSoftwarePackageName" },
+        {  760, Bin_String,     20, "CameraModel" },
+        {  884, Bin_FocusUnits,  4, "LensLimitsFocusUnits" },
+        {  896, Bin_L4,          4, "LensSerialNumber" },
+        {  906, Bin_Milli,       2, "NdFilterDensity_FirstFrame" },
+        {  920, Bin_String,     32, "LensModel" },
+        {  964, Bin_FocusLimit,  2, "LensLimitsFocus_Min" },
+        {  966, Bin_FocusLimit,  2, "LensLimitsFocus_Max" },
+        { 1272, Bin_String,      8, "ReelName" },
+        { 1280, Bin_String,     16, "Scene" },
+        { 1304, Bin_String,     32, "Director" },
+        { 1336, Bin_String,     32, "Cinematographer" },
+        { 1368, Bin_String,     32, "Production" },
+        { 1400, Bin_String,     32, "ProductionCompany" },
+        { 1432, Bin_String,    256, "UserInfo" },
+        { 1688, Bin_String,     64, "ClipName" },
+        { 2128, Bin_String,     64, "FramelineFilename" },
+        { 2192, Bin_Rect,       44, "FramelineRect_0" },
+        { 2240, Bin_Rect,       44, "FramelineRect_1" },
+        { 2288, Bin_Rect,       44, "FramelineRect_2" },
+        { 2524, Bin_F4,          4, "NoiseReductionStrength" },
+        { 2528, Bin_Flag8,       1, "TemporalProcessingApplied" },
     };
-    static const int8u BinAnchor[]={0x06, 0x0A, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x05, 0x01, 0x01, 0x0D, 0x43};
+    static const char* BinRectUsage[]={"inactive", "master", "aux"};
+    static const char* BinVideoParameters[]=
+    {
+        "Knee",
+        "BlackGamma",
+        "Gamma",
+        "Saturation",
+        "SaturationByHue_Red",
+        "SaturationByHue_Yellow",
+        "SaturationByHue_Green",
+        "SaturationByHue_Cyan",
+        "SaturationByHue_Blue",
+        "SaturationByHue_Magenta",
+        "VideoSlope_R",
+        "VideoSlope_G",
+        "VideoSlope_B",
+        "VideoGamma_R",
+        "VideoGamma_G",
+        "VideoGamma_B",
+        "VideoPedestal_R",
+        "VideoPedestal_G",
+        "VideoPedestal_B",
+    };
 }
 
 //---------------------------------------------------------------------------
 void File_Mxf::Arri_BinaryPack()
 {
-    //Anchor
-    const int8u* Pack=Buffer+Buffer_Offset;
-    size_t Anchor=0;
-    while (Anchor+sizeof(Arri::BinAnchor)<=Element_Size && memcmp(Pack+Anchor, Arri::BinAnchor, sizeof(Arri::BinAnchor)))
-        Anchor++;
-    if (Anchor+sizeof(Arri::BinAnchor)>Element_Size)
+    ELEMENT_BEGIN()
+    ELEMENT_MIDDLE()
+    ELEM____ARRI_(BinaryPack_Header, "ARRI Header",      Arri_BinaryPack_Header)
+    ELEM____ARRI_(BinaryPack_Video,  "Video Parameters", Arri_BinaryPack_VideoParameters)
+    else if ((Primer_Value->second.hi>>32)==0x060E2B34
+          && (Primer_Value->second.lo&0xFFFFFFFFFFFFFF00LL)==Arri::BinaryPack_Look)
     {
-        Skip_XX(Element_Size,                                   "Unknown");
+        Element_Name("Look");
+        int64u Look_Start=Element_Offset;
+        int32u Size, ScalingFactor;
+        float32 Gain, Offset;
+        Get_B4 (Size,                                           "Size");
+        Skip_C4(                                                "Signature");
+        Skip_B2(                                                "Version");
+        Skip_B2(                                                "Unknown");
+        Get_B4 (ScalingFactor,                                  "Scaling factor");
+        Get_BF4(Gain,                                           "Normalization gain");
+        Get_BF4(Offset,                                         "Normalization offset");
+        if (Look_Start+Size>Element_Offset && Look_Start+Size<=Element_Size)
+            Skip_XX(Look_Start+Size-Element_Offset,             "Unknown");
+        Skip_XX(Element_Size-Element_Offset,                    "Data");
+
+        FILLING_BEGIN();
+            int8u Index=(int8u)Primer_Value->second.lo;
+            Arri::fields& Look=ArriClipLooks[Index];
+            if (Look.empty())
+            {
+                if (Index<sizeof(Arri::LookIDs)/sizeof(Arri::LookIDs[0]))
+                    Look.push_back(std::make_pair(std::string("ID"), Ztring().From_UTF8(Arri::LookIDs[Index])));
+                Look.push_back(std::make_pair(std::string("ScalingFactor"), Ztring().From_Number(ScalingFactor)));
+                Look.push_back(std::make_pair(std::string("Normalization_Gain"), Ztring().From_Number(Gain, 8)));
+                Look.push_back(std::make_pair(std::string("Normalization_Offset"), Ztring().From_Number(Offset, 8)));
+            }
+        FILLING_END();
+    }
+    ELEMENT_END()
+    GenerationInterchangeObject();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Arri_BinaryPack_Header()
+{
+    //Parsing
+    const int8u* Header=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    const int64u Header_Offset=Element_Offset;
+    if (Element_Size-Element_Offset<0x1000 || memcmp(Header, "ARRI\x12\x34\x56\x78", 8))
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
         return;
     }
+    Skip_C4(                                                    "Signature");
+    Skip_L4(                                                    "Byte order");
+    Skip_L4(                                                    "Header size");
+    Skip_L4(                                                    "Version");
 
-    //Parsing
-    bool Rect_IsPresent=false;
+    auto Get_Text=[&](size_t Size, const char* Name)
+    {
+        //Unset fields are 0x00- or 0xFF-filled
+        size_t Length=0;
+        const int8u* Text=Buffer+Buffer_Offset+(size_t)Element_Offset;
+        while (Length<Size && Text[Length]>=0x20 && Text[Length]!=0xFF)
+            Length++;
+        std::string Data;
+        if (Length)
+            Get_String(Length, Data,                            Name);
+        if (Length<Size)
+            Skip_XX(Size-Length,                                "Padding");
+        return Ztring().From_UTF8(Data);
+    };
+
+    int32u FocusUnits=(int32u)-1;
     for (size_t i=0; i<sizeof(Arri::BinFields)/sizeof(Arri::BinFields[0]); i++)
     {
         const Arri::binfield& Field=Arri::BinFields[i];
-        int64s Pos=(int64s)Anchor+Field.Offset;
-        if (Pos<(int64s)Element_Offset || Pos+(int64s)Field.Size>(int64s)Element_Size)
+        int64u Pos=Header_Offset+Field.Offset;
+        if (Pos<Element_Offset || Pos+Field.Size>Element_Size)
             continue;
-        if ((int64u)Pos>Element_Offset)
+        if (Pos>Element_Offset)
             Skip_XX(Pos-Element_Offset,                         "Unknown");
         Ztring Value;
+        std::string Name(Field.Name);
         switch (Field.Type)
         {
             case Arri::Bin_L2:
+            case Arri::Bin_Origin:
             {
                 int16u Data;
                 Get_L2 (Data,                                   Field.Name);
-                if (Rect_IsPresent) //Geometry is meaningful only with a named rect
+                if (Data!=(int16u)-1)
                     Value.From_Number(Data);
+                else if (Field.Type==Arri::Bin_Origin)
+                    Value.From_Number(0); //Unset origin is 0
                 break;
             }
             case Arri::Bin_L4:
@@ -8646,6 +9176,105 @@ void File_Mxf::Arri_BinaryPack()
                     Value.From_Number(Data);
                 break;
             }
+            case Arri::Bin_Milli:
+            {
+                int32u Data;
+                if (Field.Size==2)
+                {
+                    int16u Data2;
+                    Get_L2 (Data2,                              Field.Name);
+                    Data=Data2==(int16u)-1?(int32u)-1:Data2;
+                }
+                else
+                    Get_L4 (Data,                               Field.Name);
+                if (Data && Data!=(int32u)-1)
+                    Value.From_Number(((float64)Data)/1000, 3);
+                break;
+            }
+            case Arri::Bin_Angle:
+            {
+                int32u Data;
+                Get_L4 (Data,                                   Field.Name);
+                if (Data && Data!=(int32u)-1)
+                    Value.From_Number(((float64)Data)/1000, 1);
+                break;
+            }
+            case Arri::Bin_Exposure:
+            {
+                int32u Data;
+                Get_L4 (Data,                                   Field.Name); Param_Info2C(Data && Data!=(int32u)-1, Data, " us");
+                if (Data && Data!=(int32u)-1)
+                {
+                    int32u Num=Data, Den=1000000, A=Num, B=Den; //Microseconds as a reduced fraction of a second
+                    while (B)
+                    {
+                        int32u T=A%B;
+                        A=B;
+                        B=T;
+                    }
+                    Value=Ztring().From_Number(Num/A)+__T('/')+Ztring().From_Number(Den/A);
+                }
+                break;
+            }
+            case Arri::Bin_Id:
+            {
+                int32u Data;
+                Get_L4 (Data,                                   Field.Name);
+                for (int8u i=0; i<4; i++)
+                {
+                    int8u C=(int8u)(Data>>(24-8*i)); //Stored as a little-endian code, first character in the high byte
+                    if (C<0x20 || C>=0x7F)
+                    {
+                        Value.clear();
+                        break;
+                    }
+                    Value+=(Char)C;
+                }
+                break;
+            }
+            case Arri::Bin_Tint:
+            {
+                float32 Data;
+                Get_LF4(Data,                                   Field.Name);
+                if (Data==Data) //Not NaN
+                    Value.From_Number(Data, 3);
+                break;
+            }
+            case Arri::Bin_Cdl:
+            {
+                float32 Data;
+                Get_LF4(Data,                                   Field.Name);
+                if (Data==Data) //Not NaN
+                    Value.From_Number(Data, 6);
+                break;
+            }
+            case Arri::Bin_Flag:
+            {
+                int32u Data;
+                Get_L4 (Data,                                   Field.Name);
+                if (Data!=(int32u)-1)
+                    Value=Data?__T("Yes"):__T("No");
+                break;
+            }
+            case Arri::Bin_Flag8:
+            {
+                int8u Data;
+                Get_L1 (Data,                                   Field.Name);
+                if (Data!=(int8u)-1)
+                    Value=Data?__T("Yes"):__T("No");
+                break;
+            }
+            case Arri::Bin_Reversal:
+            {
+                int32u Data;
+                Get_L4 (Data,                                   Field.Name);
+                if (Data!=(int32u)-1)
+                {
+                    ArriClipFields.insert(std::make_pair(Name+"_Horizontal", Ztring(Data&0x4?__T("Yes"):__T("No"))));
+                    ArriClipFields.insert(std::make_pair(Name+"_Vertical", Ztring(Data&0x8?__T("Yes"):__T("No"))));
+                }
+                break;
+            }
             case Arri::Bin_F4:
             {
                 float32 Data;
@@ -8654,26 +9283,49 @@ void File_Mxf::Arri_BinaryPack()
                     Value.From_Number(Data, 2);
                 break;
             }
-            default:
+            case Arri::Bin_FocusUnits:
+                Get_L4 (FocusUnits,                             Field.Name); Param_Info1C(FocusUnits<2, FocusUnits?"Metric":"Imperial");
+                break;
+            case Arri::Bin_FocusLimit:
             {
-                size_t Size=0;
-                while (Size<Field.Size && Pack[Pos+Size]>=0x20 && Pack[Pos+Size]!=0xFF) //Unset fields are 0x00- or 0xFF-filled
-                    Size++;
-                if (Size)
+                int16u Data;
+                Get_L2 (Data,                                   Field.Name);
+                if (FocusUnits<2 && Data!=(int16u)-1)
                 {
-                    std::string Data;
-                    Get_String(Size, Data,                      Field.Name);
-                    Value.From_UTF8(Data);
+                    Name.insert(Name.find('_'), FocusUnits?"Metric":"Imperial");
+                    Value.From_Number(Data);
                 }
-                if (Size<Field.Size)
-                    Skip_XX(Field.Size-Size,                    "Padding");
-                if (strstr(Field.Name, "RectName"))
-                    Rect_IsPresent=Size;
+                break;
             }
+            case Arri::Bin_Rect:
+            {
+                int32u Usage;
+                int16u Left, Top, Width, Height;
+                Element_Begin1(Field.Name);
+                Get_L4 (Usage,                                  "Usage"); Param_Info1C(Usage<3, Arri::BinRectUsage[Usage]);
+                Ztring RectName=Get_Text(32,                    "Name");
+                Get_L2 (Left,                                   "Left");
+                Get_L2 (Top,                                    "Top");
+                Get_L2 (Width,                                  "Width");
+                Get_L2 (Height,                                 "Height");
+                Element_End0();
+                if (RectName.empty())
+                    break;
+                ArriBinaryFields.push_back(std::make_pair(Name+"_FramelineRectName", RectName));
+                if (Usage<3)
+                    ArriBinaryFields.push_back(std::make_pair(Name+"_FramelineRectUsage", Ztring().From_UTF8(Arri::BinRectUsage[Usage])));
+                ArriBinaryFields.push_back(std::make_pair(Name+"_Left", Ztring().From_Number(Left)));
+                ArriBinaryFields.push_back(std::make_pair(Name+"_Top", Ztring().From_Number(Top)));
+                ArriBinaryFields.push_back(std::make_pair(Name+"_Width", Ztring().From_Number(Width)));
+                ArriBinaryFields.push_back(std::make_pair(Name+"_Height", Ztring().From_Number(Height)));
+                break;
+            }
+            default:
+                Value=Get_Text(Field.Size, Field.Name);
         }
         if (Value.empty())
             continue;
-        if (!strcmp(Field.Name, "UserInfo")) //"Key:Value;Key:Value"
+        if (Name=="UserInfo") //"Key:Value;Key:Value"
         {
             ZtringList Items;
             Items.Separator_Set(0, __T(";"));
@@ -8685,11 +9337,38 @@ void File_Mxf::Arri_BinaryPack()
                     ArriBinaryFields.push_back(std::make_pair(Ztring(Items[j].substr(0, Colon)).To_UTF8(), Ztring(Items[j].substr(Colon+1))));
             }
         }
+        else if (Arri::IsClip(Name.c_str()))
+            ArriClipFields.insert(std::make_pair(Name, Value));
         else
-            ArriBinaryFields.push_back(std::make_pair(std::string(Field.Name), Value));
+            ArriBinaryFields.push_back(std::make_pair(Name, Value));
     }
     if (Element_Offset<Element_Size)
         Skip_XX(Element_Size-Element_Offset,                    "Unknown");
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Arri_BinaryPack_VideoParameters()
+{
+    //Parsing
+    const size_t Count=sizeof(Arri::BinVideoParameters)/sizeof(Arri::BinVideoParameters[0]);
+    int16u Version;
+    Skip_B4(                                                    "Size");
+    Get_B2 (Version,                                            "Version");
+    Skip_B2(                                                    "Unknown");
+    if (Version!=2 || Element_Offset+Count*4>Element_Size)
+        return;
+    for (size_t i=0; i<Count; i++)
+    {
+        float32 Value;
+        Get_BF4(Value,                                          Arri::BinVideoParameters[i]);
+        ArriBinaryFields.push_back(std::make_pair(std::string(Arri::BinVideoParameters[i]), Ztring().From_Number(Value, 3)));
+    }
+    if (Element_Offset+2>Element_Size)
+        return;
+    int16u Length;
+    Get_B2 (Length,                                             "Color space length");
+    if (Element_Offset+Length<=Element_Size)
+        Skip_String(Length,                                     "Color space");
 }
 
 //---------------------------------------------------------------------------
