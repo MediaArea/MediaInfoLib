@@ -274,8 +274,13 @@ void File_Vc1::Streams_Accept()
 void File_Vc1::Streams_Fill()
 {
     //Calculating - PixelAspectRatio
+    // AspectRatio, profile and colordiff_format come straight from the bitstream;
+    // 0x0F is the 'custom AR' escape and (int8u)-1 the 'unset' sentinel, but a crafted
+    // VC-1 stream can supply any 8-bit value up to 0xFE and slip past both guards into
+    // Vc1_PixelAspectRatio[16] / Vc1_Profile[4] / Vc1_ChromaSubsamplingFormat[4] --
+    // see gh#2611.
     float32 PixelAspectRatio;
-    if (AspectRatio!=0x0F)
+    if (AspectRatio!=0x0F && AspectRatio<sizeof(Vc1_PixelAspectRatio)/sizeof(*Vc1_PixelAspectRatio))
         PixelAspectRatio=Vc1_PixelAspectRatio[AspectRatio];
     else if (AspectRatioY)
         PixelAspectRatio=((float)AspectRatioX)/((float)AspectRatioY);
@@ -283,14 +288,15 @@ void File_Vc1::Streams_Fill()
         PixelAspectRatio=1; //Unknown
 
     Ztring Profile;
-    if (profile!=(int8u)-1)
+    if (profile!=(int8u)-1 && profile<sizeof(Vc1_Profile)/sizeof(*Vc1_Profile))
         Profile=Vc1_Profile[profile];
     if (profile==3 && level!=(int8u)-1)
         Profile+=__T("@L")+Ztring::ToZtring(level);
     Fill(Stream_Video, 0, Video_Format_Profile, Profile);
     Fill(Stream_Video, 0, Video_Codec_Profile, Profile);
     Fill(Stream_Video, 0, Video_ColorSpace, "YUV");
-    Fill(Stream_Video, 0, Video_ChromaSubsampling, Vc1_ChromaSubsamplingFormat[colordiff_format]);
+    if (colordiff_format<sizeof(Vc1_ChromaSubsamplingFormat)/sizeof(*Vc1_ChromaSubsamplingFormat))
+        Fill(Stream_Video, 0, Video_ChromaSubsampling, Vc1_ChromaSubsamplingFormat[colordiff_format]);
     if (coded_width && coded_height)
     {
         Fill(Stream_Video, StreamPos_Last, Video_Width, (coded_width+1)*2);

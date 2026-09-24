@@ -1274,8 +1274,13 @@ void File_Mpegv::Streams_Fill()
 
     Fill(Stream_Video, 0, Video_Width, 0x1000*horizontal_size_extension+horizontal_size_value);
     Fill(Stream_Video, 0, Video_Height, 0x1000*vertical_size_extension+vertical_size_value);
-    Fill(Stream_Video, 0, Video_ChromaSubsampling, Mpegv_chroma_format[chroma_format]);
-    Fill(Stream_Video, 0, Video_ColorSpace, Mpegv_chroma_format_Colorspace[chroma_format]);
+    // chroma_format is bitstream-controlled; a crafted MPEG video can pass an 8-bit
+    // value well past the 4-entry tables. Guard both accesses -- see gh#2612.
+    if (chroma_format<sizeof(Mpegv_chroma_format)/sizeof(*Mpegv_chroma_format))
+    {
+        Fill(Stream_Video, 0, Video_ChromaSubsampling, Mpegv_chroma_format[chroma_format]);
+        Fill(Stream_Video, 0, Video_ColorSpace, Mpegv_chroma_format_Colorspace[chroma_format]);
+    }
     Fill(Stream_Video, 0, Video_BitDepth, 8);
 
     //AspectRatio
@@ -1287,21 +1292,27 @@ void File_Mpegv::Streams_Fill()
             Fill(Stream_Video, 0, Video_PixelAspectRatio, 1.000, 3, true);
         else if (display_horizontal_size && display_vertical_size)
         {
-            if (vertical_size_value && Mpegv_aspect_ratio2[aspect_ratio_information])
+            if (aspect_ratio_information<sizeof(Mpegv_aspect_ratio2)/sizeof(*Mpegv_aspect_ratio2)
+             && vertical_size_value && Mpegv_aspect_ratio2[aspect_ratio_information])
                 Fill(Stream_Video, StreamPos_Last, Video_DisplayAspectRatio, (float)(0x1000*horizontal_size_extension+horizontal_size_value)/(0x1000*vertical_size_extension+vertical_size_value)
                                                                              *Mpegv_aspect_ratio2[aspect_ratio_information]/((float)display_horizontal_size/display_vertical_size), 3, true);
         }
-        else if (Mpegv_aspect_ratio2[aspect_ratio_information])
+        else if (aspect_ratio_information<sizeof(Mpegv_aspect_ratio2)/sizeof(*Mpegv_aspect_ratio2)
+              && Mpegv_aspect_ratio2[aspect_ratio_information])
             Fill(Stream_Video, StreamPos_Last, Video_DisplayAspectRatio, Mpegv_aspect_ratio2[aspect_ratio_information], 3, true);
     }
     else //Version 1
     {
-        if (vertical_size_value && Mpegv_aspect_ratio1[aspect_ratio_information])
+        if (aspect_ratio_information<sizeof(Mpegv_aspect_ratio1)/sizeof(*Mpegv_aspect_ratio1)
+         && vertical_size_value && Mpegv_aspect_ratio1[aspect_ratio_information])
             Fill(Stream_Video, StreamPos_Last, Video_DisplayAspectRatio, (float)(0x1000*horizontal_size_extension+horizontal_size_value)/(0x1000*vertical_size_extension+vertical_size_value)/Mpegv_aspect_ratio1[aspect_ratio_information], 3, true);
     }
 
     //FrameRate
-    if (Mpegv_frame_rate[frame_rate_code])
+    // aspect_ratio_information and frame_rate_code are bitstream-controlled -- same class
+    // of guard as chroma_format above (gh#2612).
+    if (frame_rate_code<sizeof(Mpegv_frame_rate)/sizeof(*Mpegv_frame_rate)
+     && Mpegv_frame_rate[frame_rate_code])
         Fill(Stream_Video, StreamPos_Last, Video_FrameRate, Mpegv_frame_rate[frame_rate_code] * (frame_rate_extension_n + 1) / (frame_rate_extension_d + 1));
 
     //BitRate
@@ -1373,7 +1384,12 @@ void File_Mpegv::Streams_Fill()
     }
 
     //Profile
-    if (!profile_and_level_indication_escape && profile_and_level_indication_profile!=(int8u)-1 && profile_and_level_indication_level!=(int8u)-1)
+    // profile_and_level_indication_profile / _level are bitstream-controlled; the
+    // existing (int8u)-1 guards only catch 0xFF, so a crafted stream can index past
+    // Mpegv_profile_and_level_indication_profile/_level (both char *[16]).
+    if (!profile_and_level_indication_escape
+     && profile_and_level_indication_profile<sizeof(Mpegv_profile_and_level_indication_profile)/sizeof(*Mpegv_profile_and_level_indication_profile)
+     && profile_and_level_indication_level<sizeof(Mpegv_profile_and_level_indication_level)/sizeof(*Mpegv_profile_and_level_indication_level))
     {
         Fill(Stream_Video, 0, Video_Format_Profile, Ztring().From_UTF8(Mpegv_profile_and_level_indication_profile[profile_and_level_indication_profile])+__T("@")+Ztring().From_UTF8(Mpegv_profile_and_level_indication_level[profile_and_level_indication_level]));
         Fill(Stream_Video, 0, Video_Codec_Profile, Ztring().From_UTF8(Mpegv_profile_and_level_indication_profile[profile_and_level_indication_profile])+__T("@")+Ztring().From_UTF8(Mpegv_profile_and_level_indication_level[profile_and_level_indication_level]));
