@@ -119,6 +119,12 @@ size_t MediaInfoList::Open(const String &File, const fileoptions_t Options)
 }
 
 //---------------------------------------------------------------------------
+size_t MediaInfoList::Open (const std::vector<String> &Files, const fileoptions_t Options)
+{
+    return Internal->Open(Files, Options);
+}
+
+//---------------------------------------------------------------------------
 size_t MediaInfoList::Open_Buffer_Init (int64u File_Size_, int64u File_Offset_)
 {
     return Internal->Open_Buffer_Init(File_Size_, File_Offset_);
