@@ -2120,7 +2120,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                 }
             }
 
-            if (Languages.Read()!=Retrieve(StreamKind, StreamPos, Parameter))
+            if (Languages.Read()!=Value && Languages.Read()!=Retrieve(StreamKind, StreamPos, Parameter))
                 Fill(StreamKind, StreamPos, Parameter, Languages.Read(), true);
             else
             {
