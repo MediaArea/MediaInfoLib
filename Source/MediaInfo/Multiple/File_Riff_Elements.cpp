@@ -2434,19 +2434,16 @@ void File_Riff::AVI__JUNK()
     else if (CC8(Buffer+Buffer_Offset)==CC8("odmldmlh"))
         dmlh_TotalFrame=0; //this is not normal to have this string in a JUNK block!!! and in files tested, in this case TotalFrame is broken too
     //VirtualDubMod
-    else if (CC8(Buffer+Buffer_Offset)==CC8("INFOISFT"))
+    else if (CC8(Buffer+Buffer_Offset)==CC8("INFOISFT")
+          || CC8(Buffer+Buffer_Offset)==CC8("INFOIENG"))
     {
-        int32u Size=LittleEndian2int32u(Buffer+Buffer_Offset+8);
-        if (Size>Element_Size-12)
-            Size=(int32u)Element_Size-12;
-        Fill(Stream_General, 0, General_Encoded_Library, (const char*)(Buffer+Buffer_Offset+12), Size);
-    }
-    else if (CC8(Buffer+Buffer_Offset)==CC8("INFOIENG"))
-    {
-        int32u Size=LittleEndian2int32u(Buffer+Buffer_Offset+8);
-        if (Size>Element_Size-12)
-            Size=(int32u)Element_Size-12;
-        Fill(Stream_General, 0, General_Encoded_Library, (const char*)(Buffer+Buffer_Offset+12), Size);
+        if (Element_Size>=12)
+        {
+            int32u Size=LittleEndian2int32u(Buffer+Buffer_Offset+8);
+            if (Size>Element_Size-12)
+                Size=(int32u)Element_Size-12;
+            Fill(Stream_General, 0, General_Encoded_Library, (const char*)(Buffer+Buffer_Offset+12), Size);
+        }
     }
     //Other libraries?
     else if (CC1(Buffer+Buffer_Offset)>=CC1("A") && CC1(Buffer+Buffer_Offset)<=CC1("z") && Retrieve(Stream_General, 0, General_Encoded_Library).empty())
