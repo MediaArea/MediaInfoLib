@@ -1003,7 +1003,7 @@ void File_Png::Textual(bitset8 Method)
                     break;
 
                 //Need to increase buffer
-                size_t UncompressedData_NewMaxSize=strm.total_out*4;
+                size_t UncompressedData_NewMaxSize=static_cast<size_t>(strm.total_out)*4;
                 int8u* UncompressedData_New=new int8u[UncompressedData_NewMaxSize];
                 memcpy(UncompressedData_New, strm.next_out-strm.total_out, strm.total_out);
                 delete[](strm.next_out - strm.total_out); strm.next_out=UncompressedData_New;
