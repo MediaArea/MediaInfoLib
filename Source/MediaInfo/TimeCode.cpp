@@ -519,7 +519,7 @@ int TimeCode::FromString(const string_view& V, bool Ignore1001FromDropFrame)
             case 'h':
             {
                 T *= 3600;
-                uint64_t T_Divider = PowersOf10[2];
+                uint64_t T_Divider = PowersOf10[0];
                 T = (T + T_Divider / 2) / T_Divider;
                 FramesRate /= T_Divider;
                 uint64_t Temp2 = T / FramesRate;
