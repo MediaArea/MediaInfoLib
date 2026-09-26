@@ -243,6 +243,39 @@ File_Vc1::File_Vc1()
         InitData_Buffer=NULL;
         InitData_Buffer_Size=0;
     #endif //MEDIAINFO_DEMUX
+
+    //Init (also done by Synched_Init for synchronized streams)
+    //Count
+    Interlaced_Top=0;
+    Interlaced_Bottom=0;
+    //Temp
+    coded_width=0;
+    coded_height=0;
+    framerateexp=0;
+    frameratecode_enr=0;
+    frameratecode_dr=0;
+    profile=(int8u)-1;
+    level=(int8u)-1;
+    colordiff_format=1; //Default is 4:2:0
+    AspectRatio=0;
+    AspectRatioX=0;
+    AspectRatioY=0;
+    hrd_num_leaky_buckets=0;
+    max_b_frames=7; //Default for advanced profile
+    interlace=false;
+    tfcntrflag=false;
+    framerate_present=false;
+    framerate_form=false;
+    hrd_param_flag=false;
+    finterpflag=false;
+    rangered=false;
+    psf=false;
+    pulldown=false;
+    panscan_flag=false;
+    TemporalReference_Offset=0;
+
+    //Streams init (also done by Synched_Init for synchronized streams)
+    Streams.resize(0x100);
 }
 
 //---------------------------------------------------------------------------
