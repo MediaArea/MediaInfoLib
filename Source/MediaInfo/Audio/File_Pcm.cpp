@@ -23,6 +23,10 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/Audio/File_Pcm.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
+#if defined(MEDIAINFO_PCM_YES)
+    #include "MediaInfo/Audio/Auro.h"
+    #include <cstring>
+#endif
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -87,6 +91,9 @@ File_Pcm::File_Pcm()
     Sign='\0';
 
     //Temp
+    #if defined(MEDIAINFO_PCM_YES)
+    Auro_Detected=false;
+    #endif
     #if MEDIAINFO_CONFORMANCE
     IsNotSilence=false;
     #endif
@@ -444,6 +451,31 @@ void File_Pcm::Data_Parse()
         if (Frame_Count_NotParsedIncluded!=(int64u)-1)
             Frame_Count_NotParsedIncluded++;
     }
+    #if defined(MEDIAINFO_PCM_YES)
+    if (BitDepth==24 && Channels && (Endianness=='L' || !Endianness) && !Auro_Detected && Element_Size)
+    {
+        const size_t frame_bytes=3*(size_t)Channels;
+        if (frame_bytes && (size_t)Element_Size%frame_bytes==0)
+        {
+            const size_t max_auro_buffer=2*1024*1024;
+            if (Auro_Buffer.size()+Element_Size>max_auro_buffer)
+                Auro_Buffer.clear();
+            size_t old_size=Auro_Buffer.size();
+            Auro_Buffer.resize(old_size+(size_t)Element_Size);
+            std::memcpy(Auro_Buffer.data()+old_size, Buffer+Buffer_Offset, (size_t)Element_Size);
+            const size_t min_size=1000*frame_bytes;
+            if (Auro_Buffer.size()>=min_size)
+            {
+                std::string layout=Auro_DetectInPcm24Le((const unsigned char*)Auro_Buffer.data(), Auro_Buffer.size(), Channels);
+                if (!layout.empty())
+                {
+                    Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, Ztring(__T("Auro-3D ("))+Ztring().From_UTF8(layout)+__T(")"));
+                    Auro_Detected=true;
+                }
+            }
+        }
+    }
+    #endif
     if ((!Status[IsAccepted] && Frame_Count>=Frame_Count_Valid) || File_Offset+Buffer_Size>=File_Size)
     {
         Accept();
