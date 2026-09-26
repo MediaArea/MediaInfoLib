@@ -1691,7 +1691,7 @@ void File_Dts::Streams_Finish()
 bool File_Dts_Common::FileHeader_Begin()
 {
     //Must have enough buffer for having header
-    if (Buffer_Size<4)
+    if (Buffer_Size<12)
         return false; //Must wait for more data
 
     //False positives detection: Detect WAV files, the parser can't detect it easily, there is only 70 bytes of beginning for saying WAV
