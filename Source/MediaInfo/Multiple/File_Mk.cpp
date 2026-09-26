@@ -4161,7 +4161,7 @@ void File_Mk::Segment_Tracks_TrackEntry_CodecPrivate_vids()
 
     FILLING_END();
 
-    if (Data_Remain())
+    if (Size>=Element_Offset && Data_Remain())
     {
         Element_Begin1("Private data");
         if (Size>Element_Size)
