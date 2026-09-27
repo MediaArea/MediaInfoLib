@@ -595,6 +595,7 @@ void File_Mpega::Streams_Finish()
 
         //Gapless: subtract encoder delay and padding from total sample count
         int64u SamplingCount = FrameCount * (int64u)Samples;
+        int64u SamplingCount_Source = SamplingCount + Xing_Info_Found * Samples;
         if (Encoder_Delay > 0 || Encoder_Padding > 0)
         {
             int64u DelayPadding = (int64u)Encoder_Delay + (int64u)Encoder_Padding;
@@ -613,6 +614,11 @@ void File_Mpega::Streams_Finish()
             int64u Duration = float64_int64s(((float64)SamplingCount) * 1000 / Mpega_SamplingRate[ID][sampling_frequency]);
             Fill(Stream_Audio, 0, Audio_Duration, Duration, 10, true);
             Fill(Stream_General, 0, General_Duration, Duration, 10, true);
+            if (SamplingCount_Source != SamplingCount)
+            {
+                int64u Duration = float64_int64s(((float64)SamplingCount_Source) * 1000 / Mpega_SamplingRate[ID][sampling_frequency]);
+                Fill(Stream_Audio, 0, Audio_Source_Duration, Duration, 10, true);
+            }
 
             //Update OverallBitRate after duration recalculation for CBR files
             //This ensures OverallBitRate matches Audio_BitRate for CBR files
