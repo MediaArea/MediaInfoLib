@@ -1,0 +1,18 @@
+# The name used here also doesn't matter. This is the name of the "version"
+# which matters when the version script is actually used to create multiple
+# versions of the same symbol, but that's not what we're doing.
+LIBMEDIAINFO {
+  global:
+    # Every symbol named in this section will have "default" (that is, public)
+    # visibility. See below for how to refer to C++ symbols without mangling.
+    JNI_OnLoad;
+    MediaInfo_*;
+    MediaInfoA_*;
+    MediaInfoList_*;
+    MediaInfoListA_*;
+  local:
+    # Every symbol in this section will have "local" (that is, hidden)
+    # visibility. The wildcard * is used to indicate that all symbols not listed
+    # in the global section should be hidden.
+    *;
+};
