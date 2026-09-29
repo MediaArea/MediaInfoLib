@@ -357,6 +357,7 @@ protected :
     //Header - Info
     void Header_Fill_Code (int64u Code);
     void Header_Fill_Code (int64u Code, const Ztring &Name);
+    void Header_Fill_Code (int64u Code, const char* Name);
     #define Header_Fill_Code2(A,B) Header_Fill_Code(A,B)
     void Header_Fill_Size (int64u Size);
 

@@ -2795,6 +2795,19 @@ void File__Analyze::Header_Fill_Code(int64u Code, const Ztring &Name)
         Element_Level++;
     }
 }
+void File__Analyze::Header_Fill_Code(int64u Code, const char* Name)
+{
+    //Filling
+    Element[Element_Level-1].Code=Code;
+
+    //TraceNode
+    if (Config_Trace_Level)
+    {
+        Element_Level--;
+        Element_Name(Name);
+        Element_Level++;
+    }
+}
 #endif //MEDIAINFO_TRACE
 
 void File__Analyze::Header_Fill_Code(int64u Code)
