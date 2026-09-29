@@ -1469,10 +1469,7 @@ void File_Dts::Streams_Fill()
         Streams_Fill_Extension();
         if (DtsXObjectCount)
         {
-            Ztring Objects=__T("Objects (")+Ztring::ToZtring(DtsXObjectCount)+__T(")");
-            Data[ChannelPositions].back()+=__T(", ")+Objects;
-            Data[ChannelPositions2].back()+=__T(".?");
-            Data[ChannelLayout].back()+=__T(" ")+Objects;
+            Data[NumberOfDynamicObjects]=Ztring::ToZtring(DtsXObjectCount);
         }
         Data[BitRate].pop_back();
         Data[BitRate_Mode].pop_back();
@@ -1509,10 +1506,7 @@ void File_Dts::Streams_Fill()
         }
         if (DtsXObjectCount)
         {
-            Ztring Objects=__T("Objects (")+Ztring::ToZtring(DtsXObjectCount)+__T(")");
-            Data[ChannelPositions].back()+=__T(", ")+Objects;
-            Data[ChannelPositions2].back()+=__T(".?");
-            Data[ChannelLayout].back()+=__T(" ")+Objects;
+            Data[NumberOfDynamicObjects]=Ztring::ToZtring(DtsXObjectCount);
         }
         Data[BitRate].pop_back();
         Data[BitRate_Mode].pop_back();
@@ -1641,6 +1635,7 @@ void File_Dts::Streams_Fill()
     Fill(Stream_Audio, 0, Audio_BitRate_Mode, LegacyStreamDisplay?Data[BitRate_Mode].Read():Data[BitRate_Mode].Read(0), true);
     Fill(Stream_General, 0, General_OverallBitRate_Mode, Retrieve(Stream_Audio, 0, Audio_BitRate_Mode));
     Fill(Stream_Audio, 0, Audio_Compression_Mode, LegacyStreamDisplay?Data[Compression_Mode].Read():Data[Compression_Mode].Read(0), true);
+    Fill(Stream_Audio, 0, "NumberOfDynamicObjects", LegacyStreamDisplay?Data[NumberOfDynamicObjects].Read():Data[NumberOfDynamicObjects].Read(0), true);
     if (DtsXBedChannelCount)
     {
         Ztring DtsXChannelLayout=DtsXBedChannelConfiguration;
@@ -1648,11 +1643,7 @@ void File_Dts::Streams_Fill()
         Ztring DtsXChannelPositions2=DtsXBedChannelPositions2;
         if (DtsXObjectCount)
         {
-            DtsXChannelLayout+=__T(" Objects (")+Ztring::ToZtring(DtsXObjectCount)+__T(")");
-            if (!DtsXChannelPositions.empty())
-                DtsXChannelPositions+=__T(", Objects (")+Ztring::ToZtring(DtsXObjectCount)+__T(")");
-            if (!DtsXChannelPositions2.empty())
-                DtsXChannelPositions2+=__T(".?");
+            Data[NumberOfDynamicObjects] = Ztring::ToZtring(DtsXObjectCount);
         }
         Fill(Stream_Audio, 0, Audio_Channel_s_, DtsXBedChannelCount, 10, true);
         Fill(Stream_Audio, 0, Audio_ChannelLayout, DtsXChannelLayout, true);

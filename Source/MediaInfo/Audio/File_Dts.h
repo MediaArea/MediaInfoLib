@@ -154,6 +154,7 @@ private :
         BitRate,
         BitRate_Mode,
         Compression_Mode,
+        NumberOfDynamicObjects,
         data_Max,
     };
     ZtringList Data[data_Max];
