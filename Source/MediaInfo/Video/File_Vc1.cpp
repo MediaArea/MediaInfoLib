@@ -416,27 +416,6 @@ void File_Vc1::Streams_Finish()
 }
 
 //***************************************************************************
-// Buffer - File header
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-bool File_Vc1::FileHeader_Begin()
-{
-    if (!File__Analyze::FileHeader_Begin_0x000001())
-        return false;
-
-    if (!MustSynchronize)
-    {
-        Synched_Init();
-        Buffer_TotalBytes_FirstSynched+=0;
-        File_Offset_FirstSynched=File_Offset;
-    }
-
-    //All should be OK
-    return true;
-}
-
-//***************************************************************************
 // Buffer - Synchro
 //***************************************************************************
 
@@ -745,9 +724,9 @@ bool File_Vc1::Header_Parser_QuickSearch()
 
         //Synchronizing
         Buffer_Offset+=4;
-        Synched=false;
         if (!Synchronize())
         {
+            Synched=false;
             UnSynched_IsNotJunk=true;
             return false;
         }

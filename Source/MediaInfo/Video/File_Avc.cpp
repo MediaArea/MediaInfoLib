@@ -1299,71 +1299,8 @@ void File_Avc::Streams_Finish()
 }
 
 //***************************************************************************
-// Buffer - File header
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-bool File_Avc::FileHeader_Begin()
-{
-    if (!File__Analyze::FileHeader_Begin_0x000001())
-        return false;
-
-    if (!MustSynchronize)
-    {
-        Synched_Init();
-        Buffer_TotalBytes_FirstSynched=0;
-        File_Offset_FirstSynched=File_Offset;
-    }
-
-    //All should be OK
-    return true;
-}
-
-//***************************************************************************
 // Buffer - Synchro
 //***************************************************************************
-
-//---------------------------------------------------------------------------
-bool File_Avc::Synchronize()
-{
-    //Synchronizing
-    size_t Buffer_Offset_Min=Buffer_Offset;
-    while(Buffer_Offset+4<=Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                        || Buffer[Buffer_Offset+1]!=0x00
-                                        || Buffer[Buffer_Offset+2]!=0x01))
-    {
-        Buffer_Offset+=2;
-        while(Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset]!=0x00)
-            Buffer_Offset+=2;
-        if (Buffer_Offset>=Buffer_Size || Buffer[Buffer_Offset-1]==0x00)
-            Buffer_Offset--;
-    }
-    if (Buffer_Offset>Buffer_Offset_Min && Buffer[Buffer_Offset-1]==0x00)
-        Buffer_Offset--;
-
-    //Parsing last bytes if needed
-    if (Buffer_Offset+4==Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                      || Buffer[Buffer_Offset+1]!=0x00
-                                      || Buffer[Buffer_Offset+2]!=0x00
-                                      || Buffer[Buffer_Offset+3]!=0x01))
-        Buffer_Offset++;
-    if (Buffer_Offset+3==Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                      || Buffer[Buffer_Offset+1]!=0x00
-                                      || Buffer[Buffer_Offset+2]!=0x01))
-        Buffer_Offset++;
-    if (Buffer_Offset+2==Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                      || Buffer[Buffer_Offset+1]!=0x00))
-        Buffer_Offset++;
-    if (Buffer_Offset+1==Buffer_Size &&  Buffer[Buffer_Offset  ]!=0x00)
-        Buffer_Offset++;
-
-    if (Buffer_Offset+4>Buffer_Size)
-        return false;
-
-    //Synched is OK
-    Synched=true;
-    return true;
-}
 
 //---------------------------------------------------------------------------
 bool File_Avc::Synched_Test()
@@ -2011,9 +1948,9 @@ bool File_Avc::Header_Parser_QuickSearch()
 
         //Synchronizing
         Buffer_Offset+=4;
-        Synched=false;
         if (!Synchronize())
         {
+            Synched=false;
             UnSynched_IsNotJunk=true;
             return false;
         }

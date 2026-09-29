@@ -2014,37 +2014,37 @@ void File__Analyze::Buffer_Clear()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-bool File__Analyze::Synchronize_0x000001()
+bool File__Analyze::Synchronize_0x000001(bool NeedFour)
 {
-    //Synchronizing
-    while(Buffer_Offset+3<=Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                        || Buffer[Buffer_Offset+1]!=0x00
-                                        || Buffer[Buffer_Offset+2]!=0x01))
+    constexpr size_t Sync_Pos = 2;
+    constexpr size_t Frame_Size = 3;
+    const size_t Required_Size = Frame_Size + NeedFour;
+
+    // Synchronizing
+    while (Buffer_Size - Buffer_Offset >= Required_Size)
     {
-        Buffer_Offset+=2;
-        while(Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset]!=0x00)
-            Buffer_Offset+=2;
-        if ((Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset-1]==0x00) || Buffer_Offset>=Buffer_Size)
-            Buffer_Offset--;
+        const size_t Candidate_End = Buffer_Size - Frame_Size + 1;
+        const size_t Search_Begin = Buffer_Offset + Sync_Pos;
+        const int8u* Sync = (const int8u*)memchr(Buffer + Search_Begin, 0x01, Buffer_Size - Search_Begin);
+        if (!Sync)
+        {
+            Buffer_Offset = Candidate_End - NeedFour;
+            break;
+        }
+        Buffer_Offset = (size_t)(Sync - Buffer) - Sync_Pos;
+
+        if (Buffer[Buffer_Offset] == 0x00
+            && Buffer[Buffer_Offset + 1] == 0x00)
+        {
+            if (NeedFour && Buffer_Offset && Buffer[Buffer_Offset - 1] == 0x00)
+                Buffer_Offset--;
+            return true;
+        }
+
+        Buffer_Offset++;
     }
 
-    //Parsing last bytes if needed
-    if (Buffer_Offset+3==Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                      || Buffer[Buffer_Offset+1]!=0x00
-                                      || Buffer[Buffer_Offset+2]!=0x01))
-        Buffer_Offset++;
-    if (Buffer_Offset+2==Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                      || Buffer[Buffer_Offset+1]!=0x00))
-        Buffer_Offset++;
-    if (Buffer_Offset+1==Buffer_Size &&  Buffer[Buffer_Offset  ]!=0x00)
-        Buffer_Offset++;
-
-    if (Buffer_Offset+3>Buffer_Size)
-        return false;
-
-    //Synched is OK
-    Synched=true;
-    return true;
+    return false;
 }
 
 //---------------------------------------------------------------------------
@@ -2052,7 +2052,15 @@ bool File__Analyze::FileHeader_Begin_0x000001()
 {
     // No need to check if inside a container
     if (IsSub)
+    {
+        if (!MustSynchronize)
+        {
+            Synched_Init();
+            Buffer_TotalBytes_FirstSynched=0;
+            File_Offset_FirstSynched=File_Offset;
+        }
         return true;
+    }
 
     //Element_Size
     if (Buffer_Size<192*4)
@@ -2643,14 +2651,17 @@ bool File__Analyze::Header_Manage()
         return false;
 
     //Header begin
-    Element_Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset);
+    auto& Elem = Element[Element_Level];
+    auto& Elem1 = Element[Element_Level + 1];
+    auto& Elem2 = Element[Element_Level + 2];
+    Element_Size=Elem.Next-(File_Offset+Buffer_Offset);
     Element_Offset=0;
     if (!Header_Begin())
     {
         //Jumping to the end of the file if needed
         if (!EOF_AlreadyDetected && Config->ParseSpeed<1 && File_GoTo==(int64u)-1)
         {
-            Element[Element_Level].WaitForMoreData=false;
+            Elem.WaitForMoreData=false;
             Detect_EOF();
             if ((File_GoTo!=(int64u)-1 && File_GoTo>File_Offset+Buffer_Offset) || (Status[IsFinished] && !ShouldContinueParsing))
                 EOF_AlreadyDetected=true;
@@ -2667,15 +2678,16 @@ bool File__Analyze::Header_Manage()
     }
 
     //Going in a lower level
-    Element_Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset+Element_Offset);
-    Element[Element_Level].UnTrusted=false;
+    auto S = Element_Level;
+    Element_Size=Elem.Next-(File_Offset+Buffer_Offset+Element_Offset);
+    Elem.UnTrusted=false;
     if (Buffer_Offset+Element_Size>Buffer_Size)
     {
         Element_Size=Buffer_Size-Buffer_Offset;
-        Element[Element_Level].IsComplete=false;
+        Elem.IsComplete=false;
     }
     else
-        Element[Element_Level].IsComplete=true;
+        Elem.IsComplete=true;
     if (Element_Size==0)
         return false;
     Element_Begin0(); //Element
@@ -2688,9 +2700,9 @@ bool File__Analyze::Header_Manage()
     Header_Parse();
 
     //Testing the parser result
-    if (Element[Element_Level].UnTrusted) //Problem
+    if (Elem2.UnTrusted) //Problem
     {
-        Element[Element_Level].UnTrusted=false;
+        Elem2.UnTrusted=false;
         Header_Fill_Code(0, "Problem");
         if (MustSynchronize)
         {
@@ -2701,53 +2713,49 @@ bool File__Analyze::Header_Manage()
         }
         else
         {
-            if(Element_Level<2)
-               return false;
             //Can not synchronize anymore in this block
             if (FrameIsAlwaysComplete)
                 Element_Offset=Buffer_Size-Buffer_Offset;
             else
-                Element_Offset=Element[Element_Level-2].Next-(File_Offset+Buffer_Offset);
+                Element_Offset=Elem.Next-(File_Offset+Buffer_Offset);
             Header_Fill_Size(Element_Offset);
         }
     }
-    if(Element_Level<1)
-       return false;
-    if (Element_IsWaitingForMoreData() || ((!FrameIsAlwaysComplete && DataMustAlwaysBeComplete && Element[Element_Level-1].Next>File_Offset+Buffer_Size) || File_GoTo!=(int64u)-1) //Wait or want to have a comple data chunk
+    if (Element_IsWaitingForMoreData() || ((!FrameIsAlwaysComplete && DataMustAlwaysBeComplete && Elem1.Next>File_Offset+Buffer_Size) || File_GoTo!=(int64u)-1) //Wait or want to have a comple data chunk
         #if MEDIAINFO_DEMUX
             || (Config->Demux_EventWasSent)
         #endif //MEDIAINFO_DEMUX
     )
     {
         //The header is not complete, need more data
-        Element[Element_Level].WaitForMoreData=true;
+        Elem2.WaitForMoreData=true;
         Element_End0(); //Header
         Element_End0(); //Element
         return false;
     }
 
     //Filling
-    Element[Element_Level].WaitForMoreData=false;
-    Element[Element_Level].IsComplete=true;
+    Elem2.WaitForMoreData=false;
+    Elem2.IsComplete=true;
 
     //TraceNode
     #if MEDIAINFO_TRACE
     if (Trace_Activated)
     {
-        if (Element[Element_Level-1].TraceNode.Name_Is_Empty())
-            Element[Element_Level-1].TraceNode.Set_Name("Unknown");
-        Element[Element_Level].TraceNode.Size=Element_Offset;
+        if (Elem1.TraceNode.Name_Is_Empty())
+            Elem1.TraceNode.Set_Name("Unknown");
+        Elem2.TraceNode.Size=Element_Offset;
         if (Element_Offset==0)
             Element_DoNotShow();
     }
     #endif //MEDIAINFO_TRACE
 
     //Integrity
-    if (Element[Element_Level-1].Next<(File_Offset+Buffer_Offset+Element_Offset))
-        Element[Element_Level-1].Next=File_Offset+Buffer_Offset+Element_Offset; //Size is not good
+    if (Elem1.Next<(File_Offset+Buffer_Offset+Element_Offset))
+        Elem1.Next=File_Offset+Buffer_Offset+Element_Offset; //Size is not good
 
     //Positionning
-    Element_Size=Element[Element_Level-1].Next-(File_Offset+Buffer_Offset+Element_Offset);
+    Element_Size=Elem1.Next-(File_Offset+Buffer_Offset+Element_Offset);
     Header_Size=Element_Offset;
     Buffer_Offset+=(size_t)Header_Size;
     Element_Offset=0;
@@ -2757,7 +2765,7 @@ bool File__Analyze::Header_Manage()
             Element_Size=Buffer_Size-Buffer_Offset;
         else
             Element_Size=0; //There is an error in the parsing
-        Element[Element_Level-1].IsComplete=false;
+        Elem1.IsComplete=false;
     }
 
     Element_End0(); //Header
@@ -2787,6 +2795,19 @@ void File__Analyze::Header_Fill_Code(int64u Code, const Ztring &Name)
         Element_Level++;
     }
 }
+void File__Analyze::Header_Fill_Code(int64u Code, const char* Name)
+{
+    //Filling
+    Element[Element_Level-1].Code=Code;
+
+    //TraceNode
+    if (Config_Trace_Level)
+    {
+        Element_Level--;
+        Element_Name(Name);
+        Element_Level++;
+    }
+}
 #endif //MEDIAINFO_TRACE
 
 void File__Analyze::Header_Fill_Code(int64u Code)
@@ -2798,16 +2819,18 @@ void File__Analyze::Header_Fill_Code(int64u Code)
 //---------------------------------------------------------------------------
 void File__Analyze::Header_Fill_Size(int64u Size)
 {
+    auto& Elem = Element[Element_Level];
+    auto& Elem1 = Element[Element_Level - 1];
     if (Size==0)
         Trusted_IsNot("Block can't have a size of 0");
     if (DataMustAlwaysBeComplete && Size>Buffer_MaximumSize)
     {
-        Element[Element_Level].IsComplete=true;
-        Element[Element_Level-1].IsComplete=true;
+        Elem.IsComplete=true;
+        Elem1.IsComplete=true;
         Trusted_IsNot("Block is too big");
     }
 
-    if (Element[Element_Level].UnTrusted)
+    if (Elem.UnTrusted)
         return;
 
     //Integrity
@@ -2816,7 +2839,7 @@ void File__Analyze::Header_Fill_Size(int64u Size)
 
     //Filling
     if (Element_Level==1)
-        Element[0].Next=File_Offset+Buffer_Offset+Size;
+        Elem1.Next=File_Offset+Buffer_Offset+Size;
     else if (File_Offset+Buffer_Offset+Size>Element[Element_Level-2].Next)
     {
         if (Element_IsComplete_Get() && (!IsSub || (File_Offset + Buffer_Size < File_Size && File_Size - (File_Offset + Buffer_Size) >= 0x10000))) { //TODO: good support of end of TS dumps
@@ -2828,18 +2851,18 @@ void File__Analyze::Header_Fill_Size(int64u Size)
             Fill_Conformance(Name.c_str(), "Element size is more than maximal permitted size (actual " + to_string(Size - Element_Offset) + ", expected " + to_string(Element[Element_Level - 2].Next - (File_Offset + Buffer_Offset + Element_Offset)) + ")");
         }
 
-        Element[Element_Level-1].Next=Element[Element_Level-2].Next;
+        Elem1.Next=Element[Element_Level-2].Next;
     }
     else
-        Element[Element_Level-1].Next=File_Offset+Buffer_Offset+Size;
-    Element[Element_Level-1].IsComplete=true;
+        Elem1.Next=File_Offset+Buffer_Offset+Size;
+    Elem1.IsComplete=true;
 
     //TraceNode
     #if MEDIAINFO_TRACE
     if (Trace_Activated)
     {
-        Element[Element_Level-1].TraceNode.Pos=File_Offset+Buffer_Offset;
-        Element[Element_Level-1].TraceNode.Size=Element[Element_Level-1].Next-(File_Offset+Buffer_Offset);
+        Elem1.TraceNode.Pos=File_Offset+Buffer_Offset;
+        Elem1.TraceNode.Size=Elem1.Next-(File_Offset+Buffer_Offset);
     }
     #endif //MEDIAINFO_TRACE
 }
@@ -2852,9 +2875,10 @@ void File__Analyze::Header_Fill_Size(int64u Size)
 bool File__Analyze::Data_Manage()
 {
     Element_WantNextLevel=false;
-    if (!Element[Element_Level].UnTrusted)
+    auto& Elem = Element[Element_Level];
+    if (!Elem.UnTrusted)
     {
-        Element_Code=Element[Element_Level].Code;
+        Element_Code=Elem.Code;
         //size_t Element_Level_Save=Element_Level;
         Data_Parse();
         BS->Attach(NULL, 0); //Clear it
@@ -2885,7 +2909,7 @@ bool File__Analyze::Data_Manage()
             return false;
         }
 
-        Element[Element_Level].IsComplete=true;
+        Elem.IsComplete=true;
 
         if (!Element_WantNextLevel && DataMustAlwaysBeComplete && Element_Offset<Element_Size)
             Element_Offset=Element_Size; //In case the element is not fully parsed, an element with size from the header is assumed
@@ -2917,20 +2941,20 @@ bool File__Analyze::Data_Manage()
 
     //Next element
     if (!Element_WantNextLevel
-        && Buffer_Size // If the buffer is cleared after Open_Buffer_Unsynch(), Element[Element_Level].Next is no more relevant
+        && Buffer_Size // If the buffer is cleared after Open_Buffer_Unsynch(), Elem.Next is no more relevant
         #if MEDIAINFO_HASH
             && Hash==NULL
         #endif //MEDIAINFO_HASH
             )
     {
-        if (Element[Element_Level].Next>=File_Offset && Element[Element_Level].Next<=File_Offset+Buffer_Size)
+        if (Elem.Next>=File_Offset && Elem.Next<=File_Offset+Buffer_Size)
         {
-            if (Element_Offset<(size_t)(Element[Element_Level].Next-File_Offset-Buffer_Offset))
-                Element_Offset=(size_t)(Element[Element_Level].Next-File_Offset-Buffer_Offset);
+            if (Element_Offset<(size_t)(Elem.Next-File_Offset-Buffer_Offset))
+                Element_Offset=(size_t)(Elem.Next-File_Offset-Buffer_Offset);
         }
         else if (!Status[IsFinished])
         {
-            GoTo(Element[Element_Level].Next);
+            GoTo(Elem.Next);
             if (!Element_WantNextLevel)
                 Element_End0(); //Element
             return false;
@@ -2961,7 +2985,7 @@ bool File__Analyze::Data_Manage()
 
     #if MEDIAINFO_TRACE
     if (Element_Level>0)
-        Element[Element_Level-1].TraceNode.NoShow=Element[Element_Level].TraceNode.NoShow; //If data must not be shown, we hide the header too
+        Element[Element_Level-1].TraceNode.NoShow=Elem.TraceNode.NoShow; //If data must not be shown, we hide the header too
     else
         Element[0].TraceNode.NoShow=false; //This should never happen, but in case of
     #endif //MEDIAINFO_TRACE
@@ -3093,21 +3117,25 @@ void File__Analyze::Data_GoToFromEnd (int64u GoToFromEnd, const char* ParserName
 void File__Analyze::Element_Begin()
 {
     //Level
+    auto& Elem1 = Element[Element_Level];
     Element_Level++;
+    auto& Elem = Element[Element_Level];
 
     //Element
-    Element[Element_Level].Code=0;
-    Element[Element_Level].Next=Element[Element_Level-1].Next;
-    Element[Element_Level].WaitForMoreData=Element[Element_Level-1].WaitForMoreData;
-    Element[Element_Level].UnTrusted=Element[Element_Level-1].UnTrusted;
-    Element[Element_Level].IsComplete=Element[Element_Level-1].IsComplete;
+    Elem.Code=0;
+    Elem.Next=Elem1.Next;
+    Elem.WaitForMoreData=Elem1.WaitForMoreData;
+    Elem.UnTrusted=Elem1.UnTrusted;
+    Elem.IsComplete=Elem1.IsComplete;
 
     //TraceNode
     #if MEDIAINFO_TRACE
-    Element[Element_Level].TraceNode.Init();
-    Element[Element_Level].TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get(); //TODO: change this, used in Element_End0()
     if (Trace_Activated)
-        Element[Element_Level].TraceNode.Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
+    {
+        Elem.TraceNode.Init();
+        Elem.TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get(); //TODO: change this, used in Element_End0()
+        Elem.TraceNode.Size=Elem.Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
+    }
     #endif //MEDIAINFO_TRACE
 }
 
@@ -3116,21 +3144,23 @@ void File__Analyze::Element_Begin()
 void File__Analyze::Element_Begin(const Ztring &Name)
 {
     //Level
+    auto& Elem1 = Element[Element_Level];
     Element_Level++;
+    auto& Elem = Element[Element_Level];
 
     //Element
-    Element[Element_Level].Code=0;
-    Element[Element_Level].Next=Element[Element_Level-1].Next;
-    Element[Element_Level].WaitForMoreData=false;
-    Element[Element_Level].UnTrusted=Element[Element_Level-1].UnTrusted;
-    Element[Element_Level].IsComplete=Element[Element_Level-1].IsComplete;
+    Elem.Code=0;
+    Elem.Next=Elem1.Next;
+    Elem.WaitForMoreData=false;
+    Elem.UnTrusted=Elem1.UnTrusted;
+    Elem.IsComplete=Elem1.IsComplete;
 
     //TraceNode
-    Element[Element_Level].TraceNode.Init();
-    Element[Element_Level].TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get(); //TODO: change this, used in Element_End0()
     if (Trace_Activated)
     {
-        Element[Element_Level].TraceNode.Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
+        Elem.TraceNode.Init();
+        Elem.TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get(); //TODO: change this, used in Element_End0()
+        Elem.TraceNode.Size=Elem.Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
         Element_Name(Name);
     }
 }
@@ -3141,26 +3171,28 @@ void File__Analyze::Element_Begin(const Ztring &Name)
 void File__Analyze::Element_Begin(const char* Name)
 {
     //Level
+    auto& Elem1 = Element[Element_Level];
     Element_Level++;
+    auto& Elem = Element[Element_Level];
 
     //Element
-    Element[Element_Level].Code=0;
-    Element[Element_Level].Next=Element[Element_Level-1].Next;
-    Element[Element_Level].WaitForMoreData=false;
-    Element[Element_Level].UnTrusted=Element[Element_Level-1].UnTrusted;
-    Element[Element_Level].IsComplete=Element[Element_Level-1].IsComplete;
+    Elem.Code=0;
+    Elem.Next=Elem1.Next;
+    Elem.WaitForMoreData=false;
+    Elem.UnTrusted=Elem1.UnTrusted;
+    Elem.IsComplete=Elem1.IsComplete;
 
     //TraceNode
-    Element[Element_Level].TraceNode.Init();
     if (Trace_Activated)
     {
-        Element[Element_Level].TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset; //TODO: change this, used in Element_End0()
+        Elem.TraceNode.Init();
+        Elem.TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset; //TODO: change this, used in Element_End0()
         if (BS_Size)
         {
             int64u BS_BitOffset=BS_Size-BS->Remain();
-            Element[Element_Level].TraceNode.Pos+=BS_BitOffset>>3; //Including Bits to Bytes
+            Elem.TraceNode.Pos+=BS_BitOffset>>3; //Including Bits to Bytes
         }
-        Element[Element_Level].TraceNode.Size=Element[Element_Level].Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
+        Elem.TraceNode.Size=Elem.Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
         Element_Name(Name);
     }
 }
@@ -3291,9 +3323,10 @@ void File__Analyze::Element_End(const Ztring &Name)
     //TraceNode
     if (Trace_Activated)
     {
-        Element[Element_Level].TraceNode.Size=Element[Element_Level].Next-Element[Element_Level].TraceNode.Pos;
+        auto& Elem = Element[Element_Level]; 
+        Elem.TraceNode.Size=Elem.Next-Elem.TraceNode.Pos;
         if (!Name.empty())
-            Element[Element_Level].TraceNode.Set_Name(Name.To_UTF8());
+            Elem.TraceNode.Set_Name(Name.To_UTF8());
     }
 
     Element_End_Common_Flush();
@@ -3307,10 +3340,15 @@ void File__Analyze::Element_End(const Ztring &Name)
 //---------------------------------------------------------------------------
 void File__Analyze::Element_End_Common_Flush()
 {
+    auto& Elem1 = Element[Element_Level];
+
     #if MEDIAINFO_TRACE
-    //Size if not filled
-    if (File_Offset+Buffer_Offset+Element_Offset+(BS_Size-BS->Remain())/8<=Element[Element_Level].Next)
-        Element[Element_Level].TraceNode.Size=File_Offset+Buffer_Offset+Element_Offset+(BS_Size-BS->Remain())/8-Element[Element_Level].TraceNode.Pos;
+    if (Trace_Activated)
+    {
+        //Size if not filled
+        if (File_Offset+Buffer_Offset+Element_Offset+(BS_Size-BS->Remain())/8<=Elem1.Next)
+            Elem1.TraceNode.Size=File_Offset+Buffer_Offset+Element_Offset+(BS_Size-BS->Remain())/8-Elem1.TraceNode.Pos;
+    }
     #endif //MEDIAINFO_TRACE
 
     //Level
@@ -3319,13 +3357,17 @@ void File__Analyze::Element_End_Common_Flush()
 
     //Element level
     Element_Level--;
+    auto& Elem = Element[Element_Level];
 
     //Element
-    Element[Element_Level].UnTrusted=Element[Element_Level+1].UnTrusted;
-    Element[Element_Level].WaitForMoreData=Element[Element_Level+1].WaitForMoreData;
+    Elem.UnTrusted=Elem1.UnTrusted;
+    Elem.WaitForMoreData=Elem1.WaitForMoreData;
 
     #if MEDIAINFO_TRACE
+    if (Trace_Activated)
+    {
         Element_End_Common_Flush_Details();
+    }
     #endif //MEDIAINFO_TRACE
 }
 
@@ -3335,15 +3377,17 @@ void File__Analyze::Element_End_Common_Flush_Details()
 {
     if (Trace_Activated)// && Config_Trace_Level!=0)
     {
-        if (!Element[Element_Level+1].WaitForMoreData && (Element[Element_Level+1].IsComplete || !Element[Element_Level+1].UnTrusted) && !Element[Element_Level+1].TraceNode.NoShow)
+        auto& Elem1 = Element[Element_Level + 1];
+        auto& Elem = Element[Element_Level];
+        if (!Elem1.WaitForMoreData && (Elem1.IsComplete || !Elem1.UnTrusted) && !Elem1.TraceNode.NoShow)
         {
             //Element
-            Element[Element_Level].TraceNode.Add_Child(&Element[Element_Level+1].TraceNode);
+            Elem.TraceNode.Add_Child(&Elem1.TraceNode);
 
             //Info
-            if (!Element[Element_Level+1].TraceNode.Value.empty())
-                Element[Element_Level].TraceNode.Value=Element[Element_Level+1].TraceNode.Value;
-            Element[Element_Level+1].TraceNode.Init();
+            if (!Elem1.TraceNode.Value.empty())
+                Elem.TraceNode.Value=Elem1.TraceNode.Value;
+            Elem1.TraceNode.Init();
         }
     }
 }
@@ -3995,11 +4039,13 @@ void File__Analyze::Element_DoNotShow ()
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_DoNotShow_Children ()
 {
-    for (size_t i = 0; i < Element[Element_Level].TraceNode.Children.size(); ++i)
+    auto& Elem = Element[Element_Level];
+    const size_t ChildrenCount = Elem.TraceNode.Children.size();
+    for (size_t i = 0; i < ChildrenCount; ++i)
     {
-        if (!Element[Element_Level].TraceNode.Children[i])
+        if (!Elem.TraceNode.Children[i])
             continue;
-        Element[Element_Level].TraceNode.Children[i]->NoShow=true;
+        Elem.TraceNode.Children[i]->NoShow=true;
     }
 }
 #endif //MEDIAINFO_TRACE
@@ -4008,15 +4054,17 @@ void File__Analyze::Element_DoNotShow_Children ()
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_Remove_Children_IfNoErrors ()
 {
-    for (size_t i = 0; i < Element[Element_Level].TraceNode.Children.size(); ++i)
+    auto& Elem = Element[Element_Level];
+    const size_t ChildrenCount = Elem.TraceNode.Children.size();
+    for (size_t i = 0; i < ChildrenCount; ++i)
     {
-        if (!Element[Element_Level].TraceNode.Children[i])
+        if (!Elem.TraceNode.Children[i])
             continue;
-        delete Element[Element_Level].TraceNode.Children[i];
-        Element[Element_Level].TraceNode.Children[i] = NULL;
+        delete Elem.TraceNode.Children[i];
+        Elem.TraceNode.Children[i] = NULL;
     }
 
-    Element[Element_Level].TraceNode.Children.clear();
+    Elem.TraceNode.Children.clear();
 }
 #endif //MEDIAINFO_TRACE
 
@@ -4053,11 +4101,13 @@ void File__Analyze::Element_Show ()
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_Show_Children ()
 {
-    for (size_t i = 0; i < Element[Element_Level].TraceNode.Children.size(); ++i)
+    auto& Elem = Element[Element_Level];
+    const size_t ChildrenCount = Elem.TraceNode.Children.size();
+    for (size_t i = 0; i < ChildrenCount; ++i)
     {
-        if (!Element[Element_Level].TraceNode.Children[i])
+        if (!Elem.TraceNode.Children[i])
             continue;
-        Element[Element_Level].TraceNode.Children[i]->NoShow=false;
+        Elem.TraceNode.Children[i]->NoShow=false;
     }
 }
 #endif //MEDIAINFO_TRACE
@@ -4107,7 +4157,8 @@ bool File__Analyze::Element_IsOK ()
             Trusted_IsNot();
     #endif //MEDIAINFO_TRACE
 
-    return !Element[Element_Level].WaitForMoreData && !Element[Element_Level].UnTrusted;
+    auto& Elem = Element[Element_Level];
+    return !Elem.WaitForMoreData && !Elem.UnTrusted;
 }
 
 //---------------------------------------------------------------------------

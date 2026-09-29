@@ -265,6 +265,7 @@ protected :
     //Header - Info
     void Header_Fill_Code (int64u Code);
     inline void Header_Fill_Code (int64u Code, const Ztring &) {Header_Fill_Code(Code);};
+    inline void Header_Fill_Code (int64u Code, const char*) {Header_Fill_Code(Code);};
     #define Header_Fill_Code2(A,B) Header_Fill_Code(A)
     void Header_Fill_Size (int64u Size);
 
@@ -1305,7 +1306,7 @@ protected :
 
     bool FileHeader_Begin_0x000001();
     bool FileHeader_Begin_XML(tinyxml2::XMLDocument &Document);
-    bool Synchronize_0x000001();
+    bool Synchronize_0x000001(bool NeedFour = false);
 public:
     #if defined(MEDIAINFO_FILE_YES)
     void TestContinuousFileNames(size_t CountOfFiles=24, Ztring FileExtension=Ztring(), bool SkipComputeDelay=false);
